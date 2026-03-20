@@ -1,4 +1,6 @@
 import { type ReactNode } from "react";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { ChannelsListDocument } from "@/gql/graphql";
 import { DefaultChannelSlug } from "@/app/config";
@@ -21,7 +23,9 @@ export const generateStaticParams = async () => {
 		});
 
 		if (result.ok && result.data.channels) {
-			const activeChannelSlugs = result.data.channels.filter((ch) => ch.isActive).map((ch) => ch.slug);
+			const activeChannelSlugs = result.data.channels
+				.filter((ch) => ch.isActive)
+				.map((ch) => ch.slug);
 
 			for (const slug of activeChannelSlugs) {
 				if (!channels.includes(slug)) {
@@ -50,11 +54,14 @@ export default async function ChannelLayout({
 }) {
 	const { channel } = await params;
 	const locale = getLocaleFromChannel(channel);
+	const messages = await getMessages();
 
 	return (
-		<LocaleProvider locale={locale}>
-			<HtmlLangUpdater />
-			{children}
-		</LocaleProvider>
+		<NextIntlClientProvider locale={locale} messages={messages}>
+			<LocaleProvider locale={locale}>
+				<HtmlLangUpdater />
+				{children}
+			</LocaleProvider>
+		</NextIntlClientProvider>
 	);
 }
