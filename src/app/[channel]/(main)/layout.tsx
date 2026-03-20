@@ -1,14 +1,34 @@
 import { type ReactNode, Suspense } from "react";
+import { type Metadata } from "next";
 import { Footer } from "@/ui/components/footer";
 import { Header } from "@/ui/components/header";
 import { CartProvider, CartDrawerWrapper } from "@/ui/components/cart";
 import { brandConfig } from "@/config/brand";
 import { Logo } from "@/ui/components/shared/logo";
+import { getLocaleFromChannel, LOCALE_MAP } from "@/config/locale";
+import { buildAlternatesMetadata } from "@/lib/seo/hreflang";
 
-export const metadata = {
-	title: brandConfig.siteName,
-	description: brandConfig.description,
-};
+/**
+ * Dynamic metadata per channel — hreflang, canonical, OG locale.
+ */
+export async function generateMetadata({
+	params,
+}: {
+	params: Promise<{ channel: string }>;
+}): Promise<Metadata> {
+	const { channel } = await params;
+	const locale = getLocaleFromChannel(channel);
+	const localeConfig = LOCALE_MAP[locale];
+
+	return {
+		title: brandConfig.siteName,
+		description: brandConfig.description,
+		openGraph: {
+			locale: localeConfig?.ogLocale,
+		},
+		...buildAlternatesMetadata(channel),
+	};
+}
 
 function HeaderSkeleton() {
 	return (
@@ -33,15 +53,12 @@ function HeaderSkeleton() {
 
 /**
  * Footer skeleton that matches actual footer dimensions to prevent CLS.
- * Matches: pb-24 pt-12 sm:pb-12 lg:py-16 from Footer component.
- * Uses delayed visibility to avoid flash on fast loads.
  */
 function FooterSkeleton() {
 	return (
 		<footer className="animate-skeleton-delayed bg-foreground text-background opacity-0">
 			<div className="mx-auto max-w-7xl px-4 pb-24 pt-12 sm:px-6 sm:pb-12 lg:px-8 lg:py-16">
 				<div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:gap-12">
-					{/* Brand column */}
 					<div className="col-span-2 md:col-span-1">
 						<div className="mb-4 h-7 w-24 animate-pulse rounded bg-neutral-700" />
 						<div className="mt-4 space-y-2">
@@ -49,7 +66,6 @@ function FooterSkeleton() {
 							<div className="h-4 w-3/4 max-w-xs animate-pulse rounded bg-neutral-700" />
 						</div>
 					</div>
-					{/* Link columns */}
 					{[1, 2, 3].map((i) => (
 						<div key={i} className="hidden md:block">
 							<div className="mb-4 h-4 w-20 animate-pulse rounded bg-neutral-700" />
@@ -61,7 +77,6 @@ function FooterSkeleton() {
 						</div>
 					))}
 				</div>
-				{/* Bottom bar */}
 				<div className="mt-12 flex items-center justify-between border-t border-neutral-800 pt-8">
 					<div className="h-3 w-32 animate-pulse rounded bg-neutral-700" />
 					<div className="flex gap-6">

@@ -5,7 +5,7 @@ import { REVERSE_MAP } from "@/lib/channel-map";
 import { cn } from "@/lib/utils";
 
 /**
- * Wave 1 markets — display order in selector.
+ * All 12 markets — display order in selector.
  * Static list — no API call needed. We know exactly which markets we serve.
  */
 const MARKETS = [
@@ -19,6 +19,9 @@ const MARKETS = [
 	{ slug: "fr", flag: "🇫🇷", label: "France", currency: "EUR" },
 	{ slug: "es", flag: "🇪🇸", label: "España", currency: "EUR" },
 	{ slug: "ro", flag: "🇷🇴", label: "România", currency: "RON" },
+	{ slug: "gb", flag: "🇬🇧", label: "United Kingdom", currency: "GBP" },
+	{ slug: "us", flag: "🇺🇸", label: "United States", currency: "USD" },
+	{ slug: "ca", flag: "🇨🇦", label: "Canada", currency: "CAD" },
 ] as const;
 
 export const ChannelSelect = ({ className }: { className?: string }) => {
