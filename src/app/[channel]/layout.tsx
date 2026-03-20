@@ -2,22 +2,17 @@ import { type ReactNode } from "react";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { ChannelsListDocument } from "@/gql/graphql";
 import { DefaultChannelSlug } from "@/app/config";
+import { getLocaleFromChannel } from "@/config/locale";
+import { LocaleProvider } from "@/providers/locale-provider";
+import { HtmlLangUpdater } from "@/providers/html-lang-updater";
 
-/**
- * Generate static params for channel routes.
- *
- * Uses NEXT_PUBLIC_DEFAULT_CHANNEL as the primary channel.
- * Optionally discovers additional channels via SALEOR_APP_TOKEN (for multi-channel builds).
- */
 export const generateStaticParams = async () => {
 	const channels: string[] = [];
 
-	// 1. Add default channel (required)
 	if (DefaultChannelSlug) {
 		channels.push(DefaultChannelSlug);
 	}
 
-	// 2. Optionally discover additional channels via API (for multi-channel setups)
 	if (process.env.SALEOR_APP_TOKEN) {
 		const result = await executePublicGraphQL(ChannelsListDocument, {
 			headers: {
@@ -28,7 +23,6 @@ export const generateStaticParams = async () => {
 		if (result.ok && result.data.channels) {
 			const activeChannelSlugs = result.data.channels.filter((ch) => ch.isActive).map((ch) => ch.slug);
 
-			// Add channels not already in the list
 			for (const slug of activeChannelSlugs) {
 				if (!channels.includes(slug)) {
 					channels.push(slug);
@@ -39,7 +33,6 @@ export const generateStaticParams = async () => {
 		}
 	}
 
-	// Return channels (or empty if none configured - will show setup page)
 	if (channels.length === 0) {
 		console.warn("[Channels] No channels configured. Set NEXT_PUBLIC_DEFAULT_CHANNEL.");
 		return [];
@@ -48,6 +41,20 @@ export const generateStaticParams = async () => {
 	return channels.map((channel) => ({ channel }));
 };
 
-export default function ChannelLayout({ children }: { children: ReactNode }) {
-	return children;
+export default async function ChannelLayout({
+	children,
+	params,
+}: {
+	children: ReactNode;
+	params: Promise<{ channel: string }>;
+}) {
+	const { channel } = await params;
+	const locale = getLocaleFromChannel(channel);
+
+	return (
+		<LocaleProvider locale={locale}>
+			<HtmlLangUpdater />
+			{children}
+		</LocaleProvider>
+	);
 }
