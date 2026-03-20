@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { type ComponentProps } from "react";
+import { REVERSE_MAP } from "@/lib/channel-map";
 
 export const LinkWithChannel = ({
 	href,
@@ -13,13 +14,13 @@ export const LinkWithChannel = ({
 		return <Link {...props} href={href} />;
 	}
 
-	// During hydration/recovery there can be a transient moment where params
-	// are unavailable. Avoid generating malformed "//..." URLs in that case.
 	if (!channel) {
 		return <Link {...props} href={href} />;
 	}
 
-	const encodedChannel = encodeURIComponent(channel);
-	const hrefWithChannel = `/${encodedChannel}${href}`;
+	// Convert Saleor slug (sk-eur) to friendly prefix (sk)
+	const friendly = REVERSE_MAP[channel] || channel;
+	const hrefWithChannel = `/${friendly}${href}`;
+
 	return <Link {...props} href={hrefWithChannel} />;
 };

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { logout } from "@/app/actions";
 import { useAccountUser } from "@/ui/components/account/account-context";
 import { accountRoutes } from "@/ui/components/account/routes";
+import { marketHref } from "@/lib/channel-map";
 
 const navItems: ReadonlyArray<{
 	href: string;
@@ -26,7 +27,7 @@ export function AccountNav() {
 	const pathname = usePathname();
 	const { channel } = useParams<{ channel: string }>();
 
-	const channelPrefix = `/${channel}`;
+	const channelPrefix = marketHref(channel);
 
 	const isActive = (href: string, exact?: boolean) => {
 		const accountPath = pathname.startsWith(channelPrefix) ? pathname.slice(channelPrefix.length) : pathname;

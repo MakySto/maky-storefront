@@ -5,6 +5,7 @@ import { LoginForm } from "@/ui/components/login-form";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
 import { CurrentUserDocument } from "@/gql/graphql";
 import { AuthProvider } from "@/lib/auth";
+import { marketHref } from "@/lib/channel-map";
 
 export const metadata = {
 	title: "Sign In",
@@ -65,7 +66,7 @@ async function LoginContent({ params: paramsPromise }: { params: Promise<{ chann
 		});
 
 		if (result.ok && result.data.me) {
-			redirect(`/${channel}`);
+			redirect(marketHref(channel));
 		}
 	}
 

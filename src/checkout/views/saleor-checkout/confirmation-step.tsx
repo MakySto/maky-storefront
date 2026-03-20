@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle, Mail, MapPin, Package, CreditCard } from "lucide-react";
 import { type CheckoutFragment } from "@/checkout/graphql";
 import { localeConfig } from "@/config/locale";
+import { marketHref } from "@/lib/channel-map";
 
 interface ConfirmationStepProps {
 	checkout: CheckoutFragment;
@@ -112,7 +113,7 @@ export const ConfirmationStep: FC<ConfirmationStepProps> = ({ checkout }) => {
 			{/* Actions */}
 			<div className="flex flex-col gap-4 sm:flex-row">
 				<Link
-					href={`/${channel}`}
+					href={marketHref(channel)}
 					className="inline-flex h-12 flex-1 items-center justify-center rounded-md border border-input bg-transparent px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
 				>
 					Continue shopping

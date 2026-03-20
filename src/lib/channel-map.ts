@@ -42,3 +42,13 @@ export const COUNTRY_TO_MARKET: Record<string, string> = {
 export const DEFAULT_MARKET = "sk";
 export const COOKIE_NAME = "maky-market";
 export const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
+/**
+ * Convert Saleor channel slug to friendly market URL path.
+ * marketHref("sk-eur", "/products") → "/sk/products"
+ * marketHref("sk-eur") → "/sk"
+ */
+export function marketHref(channel: string, path: string = ""): string {
+  const friendly = REVERSE_MAP[channel] || channel;
+  return `/${friendly}${path ? (path.startsWith("/") ? path : "/" + path) : ""}`;
+}

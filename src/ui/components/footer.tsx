@@ -6,6 +6,7 @@ import { executePublicGraphQL } from "@/lib/graphql";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { CopyrightText } from "./copyright-text";
 import { Logo } from "./shared/logo";
+import { marketHref } from "@/lib/channel-map";
 
 const footerLinks = {
   support: [
@@ -43,7 +44,7 @@ export async function Footer({ channel }: { channel: string }) {
       <div className="mx-auto max-w-7xl px-4 pb-24 pt-12 sm:px-6 sm:pb-12 lg:px-8 lg:py-16">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:gap-12">
           <div className="col-span-2 md:col-span-1">
-            <Link href={`/${channel}`} prefetch={false} className="mb-4 inline-block">
+            <Link href={marketHref(channel)} prefetch={false} className="mb-4 inline-block">
               <Logo className="h-7 w-auto" inverted />
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-neutral-400">

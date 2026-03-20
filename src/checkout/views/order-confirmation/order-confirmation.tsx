@@ -7,6 +7,7 @@ import { OrderSummary } from "@/checkout/views/saleor-checkout/order-summary";
 import { CheckoutHeader } from "@/checkout/views/saleor-checkout/checkout-header";
 import { DefaultChannelSlug } from "@/app/config";
 import { localeConfig } from "@/config/locale";
+import { marketHref } from "@/lib/channel-map";
 
 /** Format address for display */
 function formatAddress(address: {
@@ -119,7 +120,7 @@ export const OrderConfirmation = () => {
 								{/* Actions */}
 								<div className="flex flex-col gap-4 sm:flex-row">
 									<Link
-										href={`/${channel}`}
+										href={marketHref(channel || "sk")}
 										className="inline-flex h-12 flex-1 items-center justify-center rounded-md border border-input bg-transparent px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
 									>
 										Continue shopping

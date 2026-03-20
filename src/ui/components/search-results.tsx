@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { SearchProduct } from "@/lib/search";
 import { localeConfig } from "@/config/locale";
+import { marketHref } from "@/lib/channel-map";
 
 interface SearchResultsProps {
 	products: SearchProduct[];
@@ -44,7 +45,7 @@ function SearchResultCard({
 
 	return (
 		<Link
-			href={`/${channel}/products/${product.slug}`}
+			href={marketHref(channel, "/products/${product.slug}")}
 			className="hover:border-foreground/20 group block overflow-hidden rounded-lg border border-border bg-card transition-colors"
 		>
 			{/* Image */}
