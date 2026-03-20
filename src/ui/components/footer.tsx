@@ -1,9 +1,6 @@
 import Link from "next/link";
 import { LinkWithChannel } from "../atoms/link-with-channel";
 import { ChannelSelect } from "./channel-select";
-import { ChannelsListDocument } from "@/gql/graphql";
-import { executePublicGraphQL } from "@/lib/graphql";
-import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { CopyrightText } from "./copyright-text";
 import { Logo } from "./shared/logo";
 import { marketHref } from "@/lib/channel-map";
@@ -23,22 +20,7 @@ const footerLinks = {
   ],
 };
 
-async function getChannels() {
-  "use cache";
-  applyCacheProfile(CACHE_PROFILES.channels);
-  if (!process.env.SALEOR_APP_TOKEN) {
-    return null;
-  }
-  const result = await executePublicGraphQL(ChannelsListDocument, {
-    headers: {
-      Authorization: `Bearer ${process.env.SALEOR_APP_TOKEN}`,
-    },
-  });
-  return result.ok ? result.data : null;
-}
-
-export async function Footer({ channel }: { channel: string }) {
-  const channels = await getChannels();
+export function Footer({ channel }: { channel: string }) {
   return (
     <footer className="bg-foreground text-background">
       <div className="mx-auto max-w-7xl px-4 pb-24 pt-12 sm:px-6 sm:pb-12 lg:px-8 lg:py-16">
@@ -89,14 +71,10 @@ export async function Footer({ channel }: { channel: string }) {
             </ul>
           </div>
         </div>
-        {channels?.channels && (
-          <div className="mt-8 text-neutral-400">
-            <label className="flex items-center gap-2 text-sm">
-              <span>Zmeniť krajinu:</span>
-              <ChannelSelect channels={channels.channels} />
-            </label>
-          </div>
-        )}
+        <div className="mt-8 flex items-center gap-3">
+          <span className="text-sm text-neutral-400">🌍</span>
+          <ChannelSelect />
+        </div>
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-neutral-800 pt-8 sm:flex-row">
           <p className="text-xs text-neutral-500">
             <CopyrightText />
