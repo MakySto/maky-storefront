@@ -160,5 +160,15 @@
     "howToChooseRoofBox": "Cómo elegir un cofre de techo",
     "whichBikeCarrier": "Qué portabicicletas elegir",
     "towBarInstallation": "Montaje del enganche de remolque"
+  },
+  "trust": {
+    "freeShipping": "Envío gratuito",
+    "freeShippingDesc": "Envío gratis en pedidos superiores a 100 €",
+    "warranty": "Garantía 2 años",
+    "warrantyDesc": "Garantía completa en todos los productos",
+    "expertise": "Asesoramiento experto",
+    "expertiseDesc": "Le ayudamos a elegir el producto adecuado para su vehículo",
+    "support": "Atención al cliente",
+    "supportDesc": "Estamos a su disposición de lunes a viernes"
   }
 }

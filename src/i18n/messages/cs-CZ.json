@@ -160,5 +160,15 @@
     "howToChooseRoofBox": "Jak vybrat střešní box",
     "whichBikeCarrier": "Který nosič kol",
     "towBarInstallation": "Montáž tažného zařízení"
+  },
+  "trust": {
+    "freeShipping": "Doprava zdarma",
+    "freeShippingDesc": "Při objednávce nad 100 € doručíme zdarma",
+    "warranty": "Záruka 2 roky",
+    "warrantyDesc": "Na všechny produkty poskytujeme plnou záruku",
+    "expertise": "Odborné poradenství",
+    "expertiseDesc": "Pomůžeme vám vybrat správný produkt pro vaše vozidlo",
+    "support": "Zákaznická podpora",
+    "supportDesc": "Jsme tu pro vás od pondělí do pátku"
   }
 }

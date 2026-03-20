@@ -160,5 +160,15 @@
     "howToChooseRoofBox": "How to choose a roof box",
     "whichBikeCarrier": "Which bike carrier to choose",
     "towBarInstallation": "Tow bar installation"
+  },
+  "trust": {
+    "freeShipping": "Free delivery",
+    "freeShippingDesc": "Free delivery on orders over £100",
+    "warranty": "2-year warranty",
+    "warrantyDesc": "Full warranty on all products",
+    "expertise": "Expert advice",
+    "expertiseDesc": "We help you find the right product for your vehicle",
+    "support": "Customer support",
+    "supportDesc": "Available Monday to Friday"
   }
 }

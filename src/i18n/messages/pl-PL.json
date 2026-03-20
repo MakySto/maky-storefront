@@ -160,5 +160,15 @@
     "howToChooseRoofBox": "Jak wybrać boks dachowy",
     "whichBikeCarrier": "Który bagażnik na rowery",
     "towBarInstallation": "Montaż haka holowniczego"
+  },
+  "trust": {
+    "freeShipping": "Darmowa dostawa",
+    "freeShippingDesc": "Przy zamówieniu powyżej 100 € wysyłka gratis",
+    "warranty": "Gwarancja 2 lata",
+    "warrantyDesc": "Pełna gwarancja na wszystkie produkty",
+    "expertise": "Fachowe doradztwo",
+    "expertiseDesc": "Pomożemy wybrać odpowiedni produkt do Twojego pojazdu",
+    "support": "Obsługa klienta",
+    "supportDesc": "Jesteśmy do dyspozycji od poniedziałku do piątku"
   }
 }

@@ -160,5 +160,15 @@
     "howToChooseRoofBox": "Comment choisir un coffre de toit",
     "whichBikeCarrier": "Quel porte-vélos choisir",
     "towBarInstallation": "Montage de l'attelage de remorque"
+  },
+  "trust": {
+    "freeShipping": "Livraison gratuite",
+    "freeShippingDesc": "Livraison offerte dès 100 € de commande",
+    "warranty": "Garantie 2 ans",
+    "warrantyDesc": "Garantie complète sur tous les produits",
+    "expertise": "Conseil expert",
+    "expertiseDesc": "Nous vous aidons à choisir le bon produit pour votre véhicule",
+    "support": "Service client",
+    "supportDesc": "À votre disposition du lundi au vendredi"
   }
 }

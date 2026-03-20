@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages } from "next-intl/server";
+import { getMessages, setRequestLocale } from "next-intl/server";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { ChannelsListDocument } from "@/gql/graphql";
 import { DefaultChannelSlug } from "@/app/config";
@@ -54,6 +54,8 @@ export default async function ChannelLayout({
 }) {
 	const { channel } = await params;
 	const locale = getLocaleFromChannel(channel);
+
+	setRequestLocale(locale);
 	const messages = await getMessages();
 
 	return (

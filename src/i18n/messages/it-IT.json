@@ -160,5 +160,15 @@
     "howToChooseRoofBox": "Come scegliere un box da tetto",
     "whichBikeCarrier": "Quale portabiciclette scegliere",
     "towBarInstallation": "Montaggio del gancio traino"
+  },
+  "trust": {
+    "freeShipping": "Spedizione gratuita",
+    "freeShippingDesc": "Spedizione gratuita per ordini superiori a 100 €",
+    "warranty": "Garanzia 2 anni",
+    "warrantyDesc": "Garanzia completa su tutti i prodotti",
+    "expertise": "Consulenza specializzata",
+    "expertiseDesc": "Vi aiutiamo a scegliere il prodotto giusto per il vostro veicolo",
+    "support": "Assistenza clienti",
+    "supportDesc": "Siamo a vostra disposizione dal lunedì al venerdì"
   }
 }

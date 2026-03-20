@@ -160,5 +160,15 @@
     "howToChooseRoofBox": "Cum să alegi o cutie de acoperiș",
     "whichBikeCarrier": "Ce suport de biciclete să alegi",
     "towBarInstallation": "Montajul cârligului de remorcare"
+  },
+  "trust": {
+    "freeShipping": "Livrare gratuită",
+    "freeShippingDesc": "Livrare gratuită pentru comenzi peste 100 €",
+    "warranty": "Garanție 2 ani",
+    "warrantyDesc": "Garanție completă pentru toate produsele",
+    "expertise": "Consultanță de specialitate",
+    "expertiseDesc": "Vă ajutăm să alegeți produsul potrivit pentru vehiculul dvs.",
+    "support": "Suport clienți",
+    "supportDesc": "Suntem la dispoziția dvs. de luni până vineri"
   }
 }

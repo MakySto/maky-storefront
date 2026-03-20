@@ -160,5 +160,15 @@
     "howToChooseRoofBox": "Hogyan válasszunk tetőboxot",
     "whichBikeCarrier": "Melyik kerékpártartót válasszam",
     "towBarInstallation": "Vonóhorog szerelése"
+  },
+  "trust": {
+    "freeShipping": "Ingyenes szállítás",
+    "freeShippingDesc": "100 € feletti rendelésnél díjmentes kiszállítás",
+    "warranty": "2 év garancia",
+    "warrantyDesc": "Teljes garancia minden termékre",
+    "expertise": "Szakértői tanácsadás",
+    "expertiseDesc": "Segítünk kiválasztani a megfelelő terméket járművéhez",
+    "support": "Ügyfélszolgálat",
+    "supportDesc": "Hétfőtől péntekig rendelkezésére állunk"
   }
 }

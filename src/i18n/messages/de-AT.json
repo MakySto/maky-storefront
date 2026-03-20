@@ -160,5 +160,15 @@
     "howToChooseRoofBox": "Wie wähle ich eine Dachbox",
     "whichBikeCarrier": "Welcher Fahrradträger",
     "towBarInstallation": "Montage der Anhängerkupplung"
+  },
+  "trust": {
+    "freeShipping": "Kostenloser Versand",
+    "freeShippingDesc": "Ab 100 € Bestellwert versandkostenfrei",
+    "warranty": "2 Jahre Garantie",
+    "warrantyDesc": "Volle Garantie auf alle Produkte",
+    "expertise": "Fachberatung",
+    "expertiseDesc": "Wir helfen Ihnen das richtige Produkt für Ihr Fahrzeug zu finden",
+    "support": "Kundenservice",
+    "supportDesc": "Montag bis Freitag für Sie erreichbar"
   }
 }
