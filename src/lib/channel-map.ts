@@ -20,6 +20,9 @@ export const CHANNEL_MAP: Record<string, ChannelConfig> = {
   fr: { saleorSlug: "fr-eur", currency: "EUR", locale: "fr-FR", country: "FR" },
   es: { saleorSlug: "es-eur", currency: "EUR", locale: "es-ES", country: "ES" },
   ro: { saleorSlug: "ro-ron", currency: "RON", locale: "ro-RO", country: "RO" },
+  gb: { saleorSlug: "gb-gbp", currency: "GBP", locale: "en-GB", country: "GB" },
+  us: { saleorSlug: "us-usd", currency: "USD", locale: "en-US", country: "US" },
+  ca: { saleorSlug: "ca-cad", currency: "CAD", locale: "en-CA", country: "CA" },
 };
 
 export const FRIENDLY_SLUGS = new Set(Object.keys(CHANNEL_MAP));
@@ -33,6 +36,7 @@ export const REVERSE_MAP: Record<string, string> = Object.fromEntries(
 export const COUNTRY_TO_MARKET: Record<string, string> = {
   SK: "sk", CZ: "cz", DE: "de", AT: "at", PL: "pl",
   HU: "hu", IT: "it", FR: "fr", ES: "es", RO: "ro",
+  GB: "gb", US: "us", CA: "ca",
 };
 
 export const DEFAULT_MARKET = "sk";
