@@ -12,6 +12,7 @@
  */
 
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
+import { LanguageCodeEnum } from "@/gql/graphql";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -23,7 +24,7 @@ export type LocaleConfig = {
 	/** HTML lang attribute (2-letter) */
 	htmlLang: string;
 	/** Saleor LanguageCodeEnum value */
-	graphqlLanguageCode: string;
+	graphqlLanguageCode: LanguageCodeEnum;
 	/** Open Graph locale format */
 	ogLocale: string;
 	/** Fallback currency if API returns null */
@@ -38,91 +39,91 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"sk-SK": {
 		locale: "sk-SK",
 		htmlLang: "sk",
-		graphqlLanguageCode: "SK",
+		graphqlLanguageCode: LanguageCodeEnum.Sk,
 		ogLocale: "sk_SK",
 		fallbackCurrency: "EUR",
 	},
 	"cs-CZ": {
 		locale: "cs-CZ",
 		htmlLang: "cs",
-		graphqlLanguageCode: "CS",
+		graphqlLanguageCode: LanguageCodeEnum.Cs,
 		ogLocale: "cs_CZ",
 		fallbackCurrency: "CZK",
 	},
 	"de-DE": {
 		locale: "de-DE",
 		htmlLang: "de",
-		graphqlLanguageCode: "DE",
+		graphqlLanguageCode: LanguageCodeEnum.De,
 		ogLocale: "de_DE",
 		fallbackCurrency: "EUR",
 	},
 	"de-AT": {
 		locale: "de-AT",
 		htmlLang: "de",
-		graphqlLanguageCode: "DE",
+		graphqlLanguageCode: LanguageCodeEnum.De,
 		ogLocale: "de_AT",
 		fallbackCurrency: "EUR",
 	},
 	"pl-PL": {
 		locale: "pl-PL",
 		htmlLang: "pl",
-		graphqlLanguageCode: "PL",
+		graphqlLanguageCode: LanguageCodeEnum.Pl,
 		ogLocale: "pl_PL",
 		fallbackCurrency: "PLN",
 	},
 	"hu-HU": {
 		locale: "hu-HU",
 		htmlLang: "hu",
-		graphqlLanguageCode: "HU",
+		graphqlLanguageCode: LanguageCodeEnum.Hu,
 		ogLocale: "hu_HU",
 		fallbackCurrency: "HUF",
 	},
 	"it-IT": {
 		locale: "it-IT",
 		htmlLang: "it",
-		graphqlLanguageCode: "IT",
+		graphqlLanguageCode: LanguageCodeEnum.It,
 		ogLocale: "it_IT",
 		fallbackCurrency: "EUR",
 	},
 	"fr-FR": {
 		locale: "fr-FR",
 		htmlLang: "fr",
-		graphqlLanguageCode: "FR",
+		graphqlLanguageCode: LanguageCodeEnum.Fr,
 		ogLocale: "fr_FR",
 		fallbackCurrency: "EUR",
 	},
 	"es-ES": {
 		locale: "es-ES",
 		htmlLang: "es",
-		graphqlLanguageCode: "ES",
+		graphqlLanguageCode: LanguageCodeEnum.Es,
 		ogLocale: "es_ES",
 		fallbackCurrency: "EUR",
 	},
 	"ro-RO": {
 		locale: "ro-RO",
 		htmlLang: "ro",
-		graphqlLanguageCode: "RO",
+		graphqlLanguageCode: LanguageCodeEnum.Ro,
 		ogLocale: "ro_RO",
 		fallbackCurrency: "RON",
 	},
 	"en-GB": {
 		locale: "en-GB",
 		htmlLang: "en",
-		graphqlLanguageCode: "EN_GB",
+		graphqlLanguageCode: LanguageCodeEnum.EnGb,
 		ogLocale: "en_GB",
 		fallbackCurrency: "GBP",
 	},
 	"en-US": {
 		locale: "en-US",
 		htmlLang: "en",
-		graphqlLanguageCode: "EN_US",
+		graphqlLanguageCode: LanguageCodeEnum.EnUs,
 		ogLocale: "en_US",
 		fallbackCurrency: "USD",
 	},
 	"en-CA": {
 		locale: "en-CA",
 		htmlLang: "en",
-		graphqlLanguageCode: "EN_CA",
+		graphqlLanguageCode: LanguageCodeEnum.EnCa,
 		ogLocale: "en_CA",
 		fallbackCurrency: "CAD",
 	},
