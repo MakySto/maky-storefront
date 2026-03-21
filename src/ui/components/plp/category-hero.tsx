@@ -18,40 +18,40 @@ export function CategoryHero({ title, description, backgroundImage, breadcrumbs 
 	const hasImage = !!backgroundImage;
 
 	return (
-		<section className="relative h-[340px] overflow-hidden border-b border-border">
+		<section className="relative h-[340px] overflow-hidden border-b border-border-default">
 			{/* Background */}
 			<div className="absolute inset-0">
 				{hasImage ? (
 					<>
 						{/* eslint-disable-next-line @next/next/no-img-element */}
 						<img src={backgroundImage} alt={title} className="h-full w-full object-cover" />
-						<div className="from-foreground/70 via-foreground/40 absolute inset-0 bg-gradient-to-r to-transparent" />
+						<div className="absolute inset-0 bg-gradient-to-r from-gray-900/70 via-gray-900/40 to-transparent" />
 					</>
 				) : (
 					<WavePattern className="h-full w-full" />
 				)}
 			</div>
 
-			{/* Content - text colors adapt based on background */}
+			{/* Content */}
 			<div className="relative mx-auto flex h-full max-w-7xl flex-col justify-end px-4 pb-10 sm:px-6 lg:px-8">
 				{/* Breadcrumbs */}
 				<nav
 					className={`mb-4 flex items-center gap-1.5 text-sm ${
-						hasImage ? "text-background/70" : "text-muted-foreground"
+						hasImage ? "text-white/70" : "text-text-secondary"
 					}`}
 				>
 					{breadcrumbs.map((crumb, index) => (
 						<span key={crumb.href} className="flex items-center gap-1.5">
 							{index > 0 && <ChevronRight className="h-3.5 w-3.5" />}
 							{index === breadcrumbs.length - 1 ? (
-								<span className={`font-medium ${hasImage ? "text-background" : "text-foreground"}`}>
+								<span className={`font-medium ${hasImage ? "text-white" : "text-text-primary"}`}>
 									{crumb.label}
 								</span>
 							) : (
 								<Link
 									href={crumb.href}
 									className={`transition-colors ${
-										hasImage ? "hover:text-background" : "hover:text-foreground"
+										hasImage ? "hover:text-white" : "hover:text-text-primary"
 									}`}
 								>
 									{crumb.label}
@@ -63,7 +63,7 @@ export function CategoryHero({ title, description, backgroundImage, breadcrumbs 
 
 				<h1
 					className={`text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl ${
-						hasImage ? "text-background" : "text-foreground"
+						hasImage ? "text-white" : "text-text-primary"
 					}`}
 				>
 					{title}
@@ -71,7 +71,7 @@ export function CategoryHero({ title, description, backgroundImage, breadcrumbs 
 				{description && (
 					<p
 						className={`mt-3 max-w-lg text-base md:text-lg ${
-							hasImage ? "text-background/80" : "text-muted-foreground"
+							hasImage ? "text-white/80" : "text-text-secondary"
 						}`}
 					>
 						{description}
