@@ -82,7 +82,7 @@ export function transformToProductCard(product: ProductListItemFragment, channel
 		imageAlt: product.thumbnail?.alt ?? product.name,
 		hoverImage: null, // Would need additional media in fragment
 		href: marketHref(channel, "/products/${product.slug}"),
-		badge: isSale ? "Sale" : null,
+		badge: isSale ? "sale" : null,
 		colors,
 		sizes,
 		category: product.category
