@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, SlidersHorizontal, X, Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/ui/components/ui/button";
 import {
 	DropdownMenu,
@@ -22,14 +23,13 @@ import {
 	SheetTrigger,
 	SheetCloseButton,
 } from "@/ui/components/ui/sheet";
-import { Check } from "lucide-react";
 
 export type SortOption = "featured" | "newest" | "price_asc" | "price_desc" | "bestselling";
 
 export interface FilterOption {
 	name: string;
 	count: number;
-	hex?: string; // For colors
+	hex?: string;
 }
 
 export interface CategoryFilterOption {
@@ -52,17 +52,14 @@ interface FilterBarProps {
 	activeFilters?: readonly ActiveFilter[];
 	onRemoveFilter?: (key: string, value: string) => void;
 	onClearFilters?: () => void;
-	// Filter options
 	categoryOptions?: readonly CategoryFilterOption[];
 	colorOptions?: readonly FilterOption[];
 	sizeOptions?: readonly FilterOption[];
 	priceRanges?: readonly { label: string; value: string; count: number }[];
-	// Selected filters
 	selectedCategories?: readonly string[];
 	selectedColors?: readonly string[];
 	selectedSizes?: readonly string[];
 	selectedPriceRange?: string | null;
-	// Filter handlers
 	onCategoryToggle?: (slug: string) => void;
 	onColorToggle?: (color: string) => void;
 	onSizeToggle?: (size: string) => void;
@@ -89,6 +86,8 @@ export function FilterBar({
 	onSizeToggle,
 	onPriceRangeChange,
 }: FilterBarProps) {
+	const t = useTranslations("plp");
+	const tCommon = useTranslations("common");
 	const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
 	const hasFilters =
@@ -98,20 +97,19 @@ export function FilterBar({
 		selectedCategories.length + selectedColors.length + selectedSizes.length + (selectedPriceRange ? 1 : 0);
 
 	return (
-		<div className="sticky top-16 z-30 border-b border-border bg-background">
+		<div className="sticky top-16 border-b border-border-default bg-surface-card" style={{ zIndex: "var(--z-dropdown)" }}>
 			<div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
 				{/* Main Filter Row */}
 				<div className="flex items-center justify-between gap-4">
 					{/* Left: Filters */}
-					{/* -mx-1 px-1 py-1 -my-1 provides breathing room for focus rings inside overflow */}
 					<div className="scrollbar-hide -mx-1 -my-1 flex items-center gap-2 overflow-x-auto px-1 py-1">
-						{/* All Filters Button (Mobile) - Opens Sheet */}
+						{/* Mobile Filters — Sheet */}
 						{hasFilters && (
 							<Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
 								<SheetTrigger asChild>
 									<Button variant="outline-solid" size="sm" className="shrink-0 bg-transparent md:hidden">
 										<SlidersHorizontal className="mr-2 h-4 w-4" />
-										Filters
+										{tCommon("filters")}
 										{activeFilterCount > 0 && (
 											<Badge variant="secondary" className="ml-2 h-5 px-1.5 py-0 text-xs">
 												{activeFilterCount}
@@ -120,90 +118,46 @@ export function FilterBar({
 									</Button>
 								</SheetTrigger>
 								<SheetContent side="left" className="flex w-[280px] flex-col p-0">
-									<SheetHeader className="flex-row items-center justify-between border-b border-border px-4 py-4">
-										<SheetTitle>Filters</SheetTitle>
+									<SheetHeader className="flex-row items-center justify-between border-b border-border-default px-4 py-4">
+										<SheetTitle>{tCommon("filters")}</SheetTitle>
 										<SheetCloseButton />
 									</SheetHeader>
 
 									<div className="flex-1 overflow-y-auto">
-										<div className="divide-y divide-border">
+										<div className="divide-y divide-border-subtle">
 											{/* Mobile Category Filter */}
 											{categoryOptions.length > 0 && onCategoryToggle && (
-												<div className="px-4 py-6">
-													<h3 className="mb-4 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-														Category
-													</h3>
-													<div className="space-y-3">
-														{categoryOptions.map((category) => {
-															const isSelected = selectedCategories.includes(category.slug);
-															return (
-																<button
-																	key={category.slug}
-																	onClick={() => onCategoryToggle(category.slug)}
-																	className="flex w-full items-center gap-3 text-left"
-																>
-																	<span
-																		className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
-																			isSelected
-																				? "border-foreground bg-foreground text-background"
-																				: "border-border"
-																		}`}
-																	>
-																		{isSelected && <Check className="h-3 w-3" />}
-																	</span>
-																	<span className="text-sm">{category.name}</span>
-																</button>
-															);
-														})}
-													</div>
-												</div>
+												<MobileFilterSection title={t("category")}>
+													{categoryOptions.map((category) => (
+														<CheckboxRow
+															key={category.slug}
+															label={category.name}
+															checked={selectedCategories.includes(category.slug)}
+															onToggle={() => onCategoryToggle(category.slug)}
+														/>
+													))}
+												</MobileFilterSection>
 											)}
 
 											{/* Mobile Color Filter */}
 											{colorOptions.length > 0 && onColorToggle && (
-												<div className="px-4 py-6">
-													<h3 className="mb-4 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-														Color
-													</h3>
-													<div className="space-y-3">
-														{colorOptions.map((color) => {
-															const isSelected = selectedColors.includes(color.name);
-															return (
-																<button
-																	key={color.name}
-																	onClick={() => onColorToggle(color.name)}
-																	className="flex w-full items-center gap-3 text-left"
-																>
-																	<span
-																		className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
-																			isSelected
-																				? "border-foreground bg-foreground text-background"
-																				: "border-border"
-																		}`}
-																	>
-																		{isSelected && <Check className="h-3 w-3" />}
-																	</span>
-																	{color.hex && (
-																		<span
-																			className="h-5 w-5 shrink-0 rounded-full border border-border"
-																			style={{ backgroundColor: color.hex }}
-																		/>
-																	)}
-																	<span className="flex-1 text-sm">{color.name}</span>
-																	<span className="text-xs text-muted-foreground">({color.count})</span>
-																</button>
-															);
-														})}
-													</div>
-												</div>
+												<MobileFilterSection title={t("color")}>
+													{colorOptions.map((color) => (
+														<CheckboxRow
+															key={color.name}
+															label={color.name}
+															checked={selectedColors.includes(color.name)}
+															onToggle={() => onColorToggle(color.name)}
+															swatch={color.hex}
+															count={color.count}
+														/>
+													))}
+												</MobileFilterSection>
 											)}
 
 											{/* Mobile Size Filter */}
 											{sizeOptions.length > 0 && onSizeToggle && (
-												<div className="px-4 py-6">
-													<h3 className="mb-4 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-														Size
-													</h3>
+												<MobileFilterSection title={t("size")}>
 													<div className="flex flex-wrap gap-2">
 														{sizeOptions.map((size) => {
 															const isSelected = selectedSizes.includes(size.name);
@@ -211,10 +165,10 @@ export function FilterBar({
 																<button
 																	key={size.name}
 																	onClick={() => onSizeToggle(size.name)}
-																	className={`rounded-md border px-4 py-2 text-sm transition-colors ${
+																	className={`rounded-sm border px-4 py-2 text-sm transition-colors ${
 																		isSelected
-																			? "border-foreground bg-foreground text-background"
-																			: "border-border hover:border-foreground"
+																			? "border-gray-900 bg-gray-900 text-white"
+																			: "border-border-default hover:border-gray-900"
 																	}`}
 																>
 																	{size.name}
@@ -222,44 +176,39 @@ export function FilterBar({
 															);
 														})}
 													</div>
-												</div>
+												</MobileFilterSection>
 											)}
 
 											{/* Mobile Price Filter */}
 											{priceRanges.length > 0 && onPriceRangeChange && (
-												<div className="px-4 py-6">
-													<h3 className="mb-4 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-														Price
-													</h3>
-													<div className="space-y-3">
-														{priceRanges.map((range) => {
-															const isSelected = selectedPriceRange === range.value;
-															return (
-																<button
-																	key={range.value}
-																	onClick={() => onPriceRangeChange(isSelected ? null : range.value)}
-																	className="flex w-full items-center gap-3 text-left"
+												<MobileFilterSection title={t("price")}>
+													{priceRanges.map((range) => {
+														const isSelected = selectedPriceRange === range.value;
+														return (
+															<button
+																key={range.value}
+																onClick={() => onPriceRangeChange(isSelected ? null : range.value)}
+																className="flex w-full items-center gap-3 text-left"
+															>
+																<span
+																	className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
+																		isSelected ? "border-gray-900 bg-gray-900" : "border-border-default"
+																	}`}
 																>
-																	<span
-																		className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
-																			isSelected ? "border-foreground bg-foreground" : "border-border"
-																		}`}
-																	>
-																		{isSelected && <span className="h-2 w-2 rounded-full bg-background" />}
-																	</span>
-																	<span className="text-sm">{range.label}</span>
-																</button>
-															);
-														})}
-													</div>
-												</div>
+																	{isSelected && <span className="h-2 w-2 rounded-full bg-white" />}
+																</span>
+																<span className="text-sm">{range.label}</span>
+															</button>
+														);
+													})}
+												</MobileFilterSection>
 											)}
 										</div>
 									</div>
 
-									{/* Footer with Clear/Apply buttons */}
+									{/* Footer: Clear all */}
 									{activeFilterCount > 0 && onClearFilters && (
-										<div className="border-t border-border p-4">
+										<div className="border-t border-border-default p-4">
 											<Button
 												variant="outline-solid"
 												className="w-full"
@@ -268,7 +217,7 @@ export function FilterBar({
 													setMobileFiltersOpen(false);
 												}}
 											>
-												Clear all filters ({activeFilterCount})
+												{t("clearAllFilters")} ({activeFilterCount})
 											</Button>
 										</div>
 									)}
@@ -276,162 +225,108 @@ export function FilterBar({
 							</Sheet>
 						)}
 
-						{/* Category Filter - counts hidden since filtering is server-side */}
+						{/* Desktop: Category */}
 						{categoryOptions.length > 0 && onCategoryToggle && (
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
-										variant="outline-solid"
-										size="sm"
-										className="hidden shrink-0 bg-transparent md:flex"
+							<DesktopDropdown
+								label={t("category")}
+								count={selectedCategories.length}
+							>
+								<DropdownMenuLabel>{t("category")}</DropdownMenuLabel>
+								<DropdownMenuSeparator />
+								{categoryOptions.map((category) => (
+									<DropdownMenuCheckboxItem
+										key={category.slug}
+										checked={selectedCategories.includes(category.slug)}
+										onCheckedChange={() => onCategoryToggle(category.slug)}
 									>
-										Category
-										{selectedCategories.length > 0 && (
-											<Badge variant="secondary" className="ml-2 h-5 px-1.5 py-0 text-xs">
-												{selectedCategories.length}
-											</Badge>
-										)}
-										<ChevronDown className="ml-1.5 h-4 w-4 opacity-50" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="start" className="w-56">
-									<DropdownMenuLabel>Category</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									{categoryOptions.map((category) => (
-										<DropdownMenuCheckboxItem
-											key={category.slug}
-											checked={selectedCategories.includes(category.slug)}
-											onCheckedChange={() => onCategoryToggle(category.slug)}
-										>
-											{category.name}
-										</DropdownMenuCheckboxItem>
-									))}
-								</DropdownMenuContent>
-							</DropdownMenu>
+										{category.name}
+									</DropdownMenuCheckboxItem>
+								))}
+							</DesktopDropdown>
 						)}
 
-						{/* Color Filter */}
+						{/* Desktop: Color */}
 						{colorOptions.length > 0 && onColorToggle && (
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
-										variant="outline-solid"
-										size="sm"
-										className="hidden shrink-0 bg-transparent md:flex"
+							<DesktopDropdown
+								label={t("color")}
+								count={selectedColors.length}
+							>
+								<DropdownMenuLabel>{t("color")}</DropdownMenuLabel>
+								<DropdownMenuSeparator />
+								{colorOptions.map((color) => (
+									<DropdownMenuCheckboxItem
+										key={color.name}
+										checked={selectedColors.includes(color.name)}
+										onCheckedChange={() => onColorToggle(color.name)}
 									>
-										Color
-										{selectedColors.length > 0 && (
-											<Badge variant="secondary" className="ml-2 h-5 px-1.5 py-0 text-xs">
-												{selectedColors.length}
-											</Badge>
+										{color.hex && (
+											<span
+												className="mr-2 h-4 w-4 shrink-0 rounded-full border border-border-default"
+												style={{ backgroundColor: color.hex }}
+											/>
 										)}
-										<ChevronDown className="ml-1.5 h-4 w-4 opacity-50" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="start" className="w-56">
-									<DropdownMenuLabel>Color</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									{colorOptions.map((color) => (
-										<DropdownMenuCheckboxItem
-											key={color.name}
-											checked={selectedColors.includes(color.name)}
-											onCheckedChange={() => onColorToggle(color.name)}
-										>
-											{color.hex && (
-												<span
-													className="mr-2 h-4 w-4 shrink-0 rounded-full border border-border"
-													style={{ backgroundColor: color.hex }}
-												/>
-											)}
-											<span className="flex-1">{color.name}</span>
-											<span className="text-xs text-muted-foreground">({color.count})</span>
-										</DropdownMenuCheckboxItem>
-									))}
-								</DropdownMenuContent>
-							</DropdownMenu>
+										<span className="flex-1">{color.name}</span>
+										<span className="text-xs text-text-tertiary">({color.count})</span>
+									</DropdownMenuCheckboxItem>
+								))}
+							</DesktopDropdown>
 						)}
 
-						{/* Size Filter */}
+						{/* Desktop: Size */}
 						{sizeOptions.length > 0 && onSizeToggle && (
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
-										variant="outline-solid"
-										size="sm"
-										className="hidden shrink-0 bg-transparent md:flex"
+							<DesktopDropdown
+								label={t("size")}
+								count={selectedSizes.length}
+								width="w-48"
+							>
+								<DropdownMenuLabel>{t("size")}</DropdownMenuLabel>
+								<DropdownMenuSeparator />
+								{sizeOptions.map((size) => (
+									<DropdownMenuCheckboxItem
+										key={size.name}
+										checked={selectedSizes.includes(size.name)}
+										onCheckedChange={() => onSizeToggle(size.name)}
 									>
-										Size
-										{selectedSizes.length > 0 && (
-											<Badge variant="secondary" className="ml-2 h-5 px-1.5 py-0 text-xs">
-												{selectedSizes.length}
-											</Badge>
-										)}
-										<ChevronDown className="ml-1.5 h-4 w-4 opacity-50" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="start" className="w-48">
-									<DropdownMenuLabel>Size</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									{sizeOptions.map((size) => (
-										<DropdownMenuCheckboxItem
-											key={size.name}
-											checked={selectedSizes.includes(size.name)}
-											onCheckedChange={() => onSizeToggle(size.name)}
-										>
-											<span className="flex-1">{size.name}</span>
-											<span className="text-xs text-muted-foreground">({size.count})</span>
-										</DropdownMenuCheckboxItem>
-									))}
-								</DropdownMenuContent>
-							</DropdownMenu>
+										<span className="flex-1">{size.name}</span>
+										<span className="text-xs text-text-tertiary">({size.count})</span>
+									</DropdownMenuCheckboxItem>
+								))}
+							</DesktopDropdown>
 						)}
 
-						{/* Price Filter - counts hidden since filtering is server-side */}
+						{/* Desktop: Price */}
 						{priceRanges.length > 0 && onPriceRangeChange && (
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
-										variant="outline-solid"
-										size="sm"
-										className="hidden shrink-0 bg-transparent md:flex"
-									>
-										Price
-										{selectedPriceRange && (
-											<Badge variant="secondary" className="ml-2 h-5 px-1.5 py-0 text-xs">
-												1
-											</Badge>
-										)}
-										<ChevronDown className="ml-1.5 h-4 w-4 opacity-50" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="start" className="w-48">
-									<DropdownMenuLabel>Price Range</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									<DropdownMenuRadioGroup
-										value={selectedPriceRange || ""}
-										onValueChange={(v) => onPriceRangeChange(v || null)}
-									>
-										{priceRanges.map((range) => (
-											<DropdownMenuRadioItem key={range.value} value={range.value}>
-												{range.label}
-											</DropdownMenuRadioItem>
-										))}
-									</DropdownMenuRadioGroup>
-								</DropdownMenuContent>
-							</DropdownMenu>
+							<DesktopDropdown
+								label={t("price")}
+								count={selectedPriceRange ? 1 : 0}
+								width="w-48"
+							>
+								<DropdownMenuLabel>{t("priceRange")}</DropdownMenuLabel>
+								<DropdownMenuSeparator />
+								<DropdownMenuRadioGroup
+									value={selectedPriceRange || ""}
+									onValueChange={(v) => onPriceRangeChange(v || null)}
+								>
+									{priceRanges.map((range) => (
+										<DropdownMenuRadioItem key={range.value} value={range.value}>
+											{range.label}
+										</DropdownMenuRadioItem>
+									))}
+								</DropdownMenuRadioGroup>
+							</DesktopDropdown>
 						)}
 					</div>
 
-					{/* Right: Result Count + Sort */}
+					{/* Right: Count + Sort */}
 					<div className="flex shrink-0 items-center gap-3">
-						<span className="hidden text-sm text-muted-foreground sm:block">
-							{resultCount} {resultCount === 1 ? "product" : "products"}
+						<span className="hidden text-sm text-text-secondary sm:block">
+							{t("productCount", { count: resultCount })}
 						</span>
 
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
 								<Button variant="outline-solid" size="sm" className="bg-transparent">
-									Sort
+									{t("sort")}
 									<ChevronDown className="ml-1.5 h-4 w-4 opacity-50" />
 								</Button>
 							</DropdownMenuTrigger>
@@ -440,11 +335,11 @@ export function FilterBar({
 									value={sortValue}
 									onValueChange={(v) => onSortChange(v as SortOption)}
 								>
-									<DropdownMenuRadioItem value="featured">Featured</DropdownMenuRadioItem>
-									<DropdownMenuRadioItem value="newest">Newest</DropdownMenuRadioItem>
-									<DropdownMenuRadioItem value="price_asc">Price: Low to High</DropdownMenuRadioItem>
-									<DropdownMenuRadioItem value="price_desc">Price: High to Low</DropdownMenuRadioItem>
-									<DropdownMenuRadioItem value="bestselling">Best Selling</DropdownMenuRadioItem>
+									<DropdownMenuRadioItem value="featured">{t("featured")}</DropdownMenuRadioItem>
+									<DropdownMenuRadioItem value="newest">{t("newest")}</DropdownMenuRadioItem>
+									<DropdownMenuRadioItem value="price_asc">{t("priceLowToHigh")}</DropdownMenuRadioItem>
+									<DropdownMenuRadioItem value="price_desc">{t("priceHighToLow")}</DropdownMenuRadioItem>
+									<DropdownMenuRadioItem value="bestselling">{t("bestSelling")}</DropdownMenuRadioItem>
 								</DropdownMenuRadioGroup>
 							</DropdownMenuContent>
 						</DropdownMenu>
@@ -460,28 +355,106 @@ export function FilterBar({
 								variant="secondary"
 								className="shrink-0 gap-1.5 pr-1.5"
 							>
-								<span className="text-xs text-muted-foreground">{filter.label}:</span>
+								<span className="text-xs text-text-tertiary">{filter.label}:</span>
 								{filter.value}
 								<button
 									onClick={() => onRemoveFilter(filter.key, filter.value)}
-									className="hover:bg-background/50 ml-0.5 rounded-full p-0.5 transition-colors"
+									className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-surface-muted"
+									aria-label={t("removeFilter", { value: filter.value })}
 								>
 									<X className="h-3 w-3" />
-									<span className="sr-only">Remove {filter.value} filter</span>
 								</button>
 							</Badge>
 						))}
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-6 shrink-0 px-2 text-xs text-muted-foreground"
+							className="h-6 shrink-0 px-2 text-xs text-text-secondary"
 							onClick={onClearFilters}
 						>
-							Clear all
+							{t("clearAll")}
 						</Button>
 					</div>
 				)}
 			</div>
 		</div>
+	);
+}
+
+/* ── Helper components (internal) ────────────────────────────── */
+
+function MobileFilterSection({ title, children }: { title: string; children: React.ReactNode }) {
+	return (
+		<div className="px-4 py-6">
+			<h3 className="mb-4 text-sm font-medium uppercase tracking-wide text-text-secondary">
+				{title}
+			</h3>
+			<div className="space-y-3">{children}</div>
+		</div>
+	);
+}
+
+function CheckboxRow({
+	label,
+	checked,
+	onToggle,
+	swatch,
+	count,
+}: {
+	label: string;
+	checked: boolean;
+	onToggle: () => void;
+	swatch?: string;
+	count?: number;
+}) {
+	return (
+		<button onClick={onToggle} className="flex w-full items-center gap-3 text-left">
+			<span
+				className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
+					checked ? "border-gray-900 bg-gray-900 text-white" : "border-border-default"
+				}`}
+			>
+				{checked && <Check className="h-3 w-3" />}
+			</span>
+			{swatch && (
+				<span
+					className="h-5 w-5 shrink-0 rounded-full border border-border-default"
+					style={{ backgroundColor: swatch }}
+				/>
+			)}
+			<span className="flex-1 text-sm">{label}</span>
+			{count !== undefined && <span className="text-xs text-text-tertiary">({count})</span>}
+		</button>
+	);
+}
+
+function DesktopDropdown({
+	label,
+	count,
+	width = "w-56",
+	children,
+}: {
+	label: string;
+	count: number;
+	width?: string;
+	children: React.ReactNode;
+}) {
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button variant="outline-solid" size="sm" className="hidden shrink-0 bg-transparent md:flex">
+					{label}
+					{count > 0 && (
+						<Badge variant="secondary" className="ml-2 h-5 px-1.5 py-0 text-xs">
+							{count}
+						</Badge>
+					)}
+					<ChevronDown className="ml-1.5 h-4 w-4 opacity-50" />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="start" className={width}>
+				{children}
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }
