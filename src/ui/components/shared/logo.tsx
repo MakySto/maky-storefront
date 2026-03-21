@@ -1,27 +1,46 @@
-/**
- * MAKY.STORE Logo Component
- *
- * Temporary text logo — replace with SVG/PNG when ready.
- * Expected logo files: /public/logo.svg (160x36) and /public/logo-dark.svg (160x36, white)
- */
+import Image from "next/image";
 
 interface LogoProps {
   className?: string;
-  ariaLabel?: string;
   inverted?: boolean;
+  showSlogan?: boolean;
+  slogan?: string;
 }
 
-export const Logo = ({ className, ariaLabel = "MAKY.STORE", inverted = false }: LogoProps) => {
+export const Logo = ({
+  className,
+  inverted = false,
+  showSlogan = false,
+  slogan,
+}: LogoProps) => {
   return (
-    <span
-      className={[
-        "inline-block font-sans text-xl font-bold tracking-tight",
-        inverted ? "text-white" : "text-foreground",
-        className ?? "",
-      ].join(" ")}
-      aria-label={ariaLabel}
-    >
-      MAKY.STORE
-    </span>
+    <div className={`flex items-center gap-3 ${className ?? ""}`}>
+      <Image
+        src="/logo-deer.webp"
+        alt=""
+        width={44}
+        height={44}
+        className={`h-11 w-11 ${inverted ? "brightness-0 invert" : ""}`}
+        priority
+      />
+      <div className="flex flex-col">
+        <span
+          className={`text-xl font-bold tracking-tight leading-tight ${
+            inverted ? "text-white" : "text-copper-600"
+          }`}
+        >
+          MAKY.STORE
+        </span>
+        {showSlogan && slogan && (
+          <span
+            className={`text-[0.6875rem] font-medium tracking-wide leading-tight ${
+              inverted ? "text-neutral-400" : "text-copper-600"
+            }`}
+          >
+            {slogan}
+          </span>
+        )}
+      </div>
+    </div>
   );
 };

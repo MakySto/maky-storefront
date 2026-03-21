@@ -30,7 +30,8 @@
     "error": "Une erreur est survenue",
     "retry": "Réessayer",
     "currency": "EUR",
-    "country": "France"
+    "country": "France",
+    "slogan": "Tout pour votre hobby !"
   },
   "nav": {
     "home": "Accueil",

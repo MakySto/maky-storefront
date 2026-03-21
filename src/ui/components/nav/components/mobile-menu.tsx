@@ -2,7 +2,7 @@
 
 import { type ReactNode, useState, createContext, useContext } from "react";
 import { Menu } from "lucide-react";
-import { Logo } from "../../logo";
+import { Logo } from "../../shared/logo";
 import {
 	Sheet,
 	SheetContent,
@@ -34,13 +34,13 @@ export const MobileMenu = ({ children }: Props) => {
 			<SheetTrigger asChild>
 				<button
 					type="button"
-					className="flex h-10 w-10 items-center justify-center rounded-md transition-colors hover:bg-accent md:hidden"
+					className="flex h-10 w-10 items-center justify-center rounded-md transition-colors hover:bg-accent lg:hidden"
 					aria-label="Open menu"
 				>
 					<Menu className="h-5 w-5" />
 				</button>
 			</SheetTrigger>
-			<SheetContent side="left" className="flex w-full flex-col p-0 sm:max-w-sm">
+			<SheetContent side="left" className="flex w-full flex-col bg-white p-0 sm:max-w-sm">
 				<SheetTitle className="sr-only">Navigation menu</SheetTitle>
 				<SheetHeader className="justify-between border-b border-border px-4 py-4">
 					<Logo />

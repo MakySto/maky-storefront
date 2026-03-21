@@ -6,12 +6,12 @@ export async function HeaderPrimaryNav({ channel }: { channel: string }) {
   const t = await getTranslations("nav");
 
   return (
-    <nav aria-label="Primary navigation" className="hidden items-center gap-1 lg:flex">
+    <nav aria-label="Primary navigation" className="hidden items-center gap-0.5 lg:flex">
       {HEADER_PRIMARY_NAV.map((item) => (
         <LinkWithChannel
           key={item.key}
           href={item.href}
-          className="rounded-xs px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-sand-100 hover:text-gray-900"
+          className="rounded-xs px-3 py-2 text-[0.9375rem] font-medium text-gray-700 transition-colors hover:bg-sand-200 hover:text-gray-900"
         >
           {t(item.key)}
         </LinkWithChannel>

@@ -30,7 +30,8 @@
     "error": "Se ha producido un error",
     "retry": "Reintentar",
     "currency": "EUR",
-    "country": "España"
+    "country": "España",
+    "slogan": "¡Todo para tu hobby!"
   },
   "nav": {
     "home": "Inicio",
