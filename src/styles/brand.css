@@ -133,6 +133,83 @@
 }
 
 /* ──────────────────────────────────────────────────────────────
+   Layer 1b — Semantic Tailwind Aliases (@theme inline)
+   Maps :root semantic tokens → Tailwind utilities so you write
+     bg-surface-card  instead of  bg-[var(--surface-card)]
+     text-text-primary  instead of  text-[var(--text-primary)]
+   ────────────────────────────────────────────────────────────── */
+
+@theme inline {
+  /* ── Surfaces ── */
+  --color-surface-primary:   var(--surface-primary);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-surface-muted:     var(--surface-muted);
+  --color-surface-card:      var(--surface-card);
+  --color-surface-elevated:  var(--surface-elevated);
+  --color-surface-accent:    var(--surface-accent);
+  --color-surface-inverse:   var(--surface-inverse);
+
+  /* ── Text ── */
+  --color-text-primary:    var(--text-primary);
+  --color-text-secondary:  var(--text-secondary);
+  --color-text-tertiary:   var(--text-tertiary);
+  --color-text-inverse:    var(--text-inverse);
+  --color-text-link:       var(--text-link);
+  --color-text-link-hover: var(--text-link-hover);
+
+  /* ── Borders ── */
+  --color-border-default: var(--border-default);
+  --color-border-subtle:  var(--border-subtle);
+  --color-border-strong:  var(--border-strong);
+
+  /* ── Actions ── */
+  --color-action-primary:         var(--action-primary);
+  --color-action-primary-hover:   var(--action-primary-hover);
+  --color-action-primary-text:    var(--action-primary-text);
+  --color-action-secondary:       var(--action-secondary);
+  --color-action-secondary-hover: var(--action-secondary-hover);
+  --color-action-secondary-text:  var(--action-secondary-text);
+  --color-action-ghost-bg:        var(--action-ghost-bg);
+  --color-action-ghost-hover:     var(--action-ghost-hover);
+  --color-action-ghost-text:      var(--action-ghost-text);
+
+  /* ── Status — complete text/bg/border triplety ── */
+  --color-status-success:         var(--color-forest-700);
+  --color-status-success-bg:      var(--color-forest-50);
+  --color-status-success-border:  var(--color-forest-200);
+  --color-status-warning:         var(--color-amber-800);
+  --color-status-warning-bg:      var(--color-amber-50);
+  --color-status-warning-border:  var(--color-amber-500);
+  --color-status-danger:          var(--color-red-600);
+  --color-status-danger-bg:       var(--color-red-50);
+  --color-status-danger-border:   var(--color-red-500);
+  --color-status-info:            var(--color-blue-600);
+  --color-status-info-bg:         var(--color-blue-50);
+  --color-status-info-border:     var(--color-blue-500);
+
+  /* ── Commerce: pricing ── */
+  --color-price-current:  var(--price-current);
+  --color-price-compare:  var(--price-compare);
+  --color-price-sale:     var(--price-sale);
+  --color-price-sale-bg:  var(--price-sale-bg);
+
+  /* ── Commerce: stock ── */
+  --color-stock-in:  var(--stock-in);
+  --color-stock-low: var(--stock-low);
+  --color-stock-out: var(--stock-out);
+
+  /* ── Commerce: fitment ── */
+  --color-fitment-fits:             var(--fitment-fits);
+  --color-fitment-fits-bg:          var(--fitment-fits-bg);
+  --color-fitment-no-fit:           var(--fitment-no-fit);
+  --color-fitment-no-fit-bg:        var(--fitment-no-fit-bg);
+  --color-fitment-unconfirmed:      var(--fitment-unconfirmed);
+  --color-fitment-unconfirmed-bg:   var(--fitment-unconfirmed-bg);
+  --color-fitment-universal:        var(--fitment-universal);
+  --color-fitment-universal-bg:     var(--fitment-universal-bg);
+}
+
+/* ──────────────────────────────────────────────────────────────
    Layer 2 — Semantic Tokens
    Purpose-driven mappings. Components reference these.
    ────────────────────────────────────────────────────────────── */
@@ -252,6 +329,40 @@
   --duration-fast: 150ms;
   --duration-base: 220ms;
   --duration-slow: 320ms;
+  
+  /* ── Component dimensions ── */
+  --header-height-main: 3.5rem;   /* 56px — row 1: logo + search + actions */
+  --header-height-nav:  2.75rem;  /* 44px — row 2: categories + nav + market */
+  --search-height:      2.75rem;  /* 44px — EAA touch target */
+  --search-radius:      var(--radius-sm);
+  --button-height-sm:   2rem;     /* 32px — compact buttons, chips */
+  --button-height-md:   2.75rem;  /* 44px — standard CTA */
+  --button-height-lg:   3rem;     /* 48px — hero CTA */
+  --input-height:       2.75rem;  /* 44px — form inputs, selects */
+  --drawer-width-sm:    20rem;    /* 320px — filter panel */
+  --drawer-width-md:    24rem;    /* 384px — cart drawer */
+  --drawer-width-lg:    28rem;    /* 448px — vehicle selector */
+  --product-card-padding: calc(var(--spacing) * 4);  /* 16px */
+  --category-card-padding: calc(var(--spacing) * 5); /* 20px */
+
+  /* ── Z-index layers ── */
+  --z-header:   100;
+  --z-dropdown: 200;
+  --z-drawer:   300;
+  --z-modal:    400;
+  --z-toast:    500;
+
+  /* ── Interactive controls ── */
+  --control-bg:            var(--color-sand-50);
+  --control-bg-hover:      var(--color-sand-100);
+  --control-border:        var(--color-sand-300);
+  --control-border-hover:  var(--color-gray-400);
+  --control-border-active: var(--color-copper-500);
+
+  /* ── Disabled state ── */
+  --action-disabled-bg:     var(--color-sand-200);
+  --action-disabled-text:   var(--color-gray-400);
+  --action-disabled-border: var(--color-sand-300);
 }
 
 /* ──────────────────────────────────────────────────────────────
