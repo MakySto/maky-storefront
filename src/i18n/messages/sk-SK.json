@@ -53,7 +53,16 @@
     "cart": "Košík",
     "login": "Prihlásiť sa",
     "logout": "Odhlásiť sa",
-    "register": "Registrácia"
+    "register": "Registrácia",
+    "searchPlaceholder": "Hľadať strešné boxy, nosiče bicyklov, ťažné zariadenia...",
+    "searchAriaLabel": "Hľadať produkty",
+    "advice": "Poradňa",
+    "selectVehicle": "Vybrať vozidlo",
+    "myVehicle": "Moje vozidlo",
+    "openMenu": "Otvoriť menu",
+    "account": "Účet",
+    "language": "Jazyk",
+    "currency": "Mena"
   },
   "product": {
     "description": "Popis",

@@ -53,7 +53,16 @@
     "cart": "Panier",
     "login": "Se connecter",
     "logout": "Se déconnecter",
-    "register": "S'inscrire"
+    "register": "S'inscrire",
+    "searchPlaceholder": "Chercher coffres de toit, porte-vélos, attelages...",
+    "searchAriaLabel": "Rechercher des produits",
+    "advice": "Conseils",
+    "selectVehicle": "Choisir un véhicule",
+    "myVehicle": "Mon véhicule",
+    "openMenu": "Ouvrir le menu",
+    "account": "Compte",
+    "language": "Langue",
+    "currency": "Devise"
   },
   "product": {
     "description": "Description",

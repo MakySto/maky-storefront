@@ -53,7 +53,16 @@
     "cart": "Košík",
     "login": "Přihlásit se",
     "logout": "Odhlásit se",
-    "register": "Registrace"
+    "register": "Registrace",
+    "searchPlaceholder": "Hledat střešní boxy, nosiče kol, tažná zařízení...",
+    "searchAriaLabel": "Hledat produkty",
+    "advice": "Poradna",
+    "selectVehicle": "Vybrat vozidlo",
+    "myVehicle": "Moje vozidlo",
+    "openMenu": "Otevřít menu",
+    "account": "Účet",
+    "language": "Jazyk",
+    "currency": "Měna"
   },
   "product": {
     "description": "Popis",

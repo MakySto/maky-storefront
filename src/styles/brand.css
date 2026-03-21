@@ -1,119 +1,352 @@
-/**
- * ========================================
- * SALEOR STOREFRONT - DESIGN TOKENS
- * ========================================
- *
- * This file defines the visual foundation of the storefront using
- * CSS custom properties. These tokens are consumed by Tailwind CSS
- * via the theme configuration in tailwind.config.ts.
- *
- * Color Format: OKLCH (Oklab Lightness Chroma Hue)
- * - Modern perceptually uniform color space
- * - Better for programmatic color manipulation
- * - Supported in all modern browsers
- *
- * Design System:
- * - Minimal e-commerce theme with warm neutrals
- * - Near-black for primary actions and headings
- * - Warm off-whites for backgrounds
- * - Red accent for destructive/sale indicators
- *
- * Typography:
- * - Geist font family (loaded via Next.js font system in layout.tsx)
- * - Font variables set on <html> element: --font-geist-sans, --font-geist-mono
- */
+/* ═══════════════════════════════════════════════════════════════
+   MAKY.STORE — Design Token System
+   Tailwind CSS 4 | OKLCH | Adventure Commerce Clean
+   ---------------------------------------------------------------
+   Layer 1: Primitive tokens (@theme)  → Tailwind utility classes
+   Layer 2: Semantic tokens (:root)    → CSS/JS component access
+   ---------------------------------------------------------------
+   Rules:
+   - Use Tailwind utilities generated from @theme where practical
+   - Use semantic tokens in component CSS for intent-driven styling
+   - Avoid arbitrary values unless there is a real one-off need
+   ---------------------------------------------------------------
+   Contrast verified 2026-03-21 (coloraide / WCAG 2.1):
+     copper-600 on white: 5.65:1 ✅ AA
+     forest-600 on white: 7.86:1 ✅ AA
+     gray-600 on sand-50: 6.68:1 ✅ AA
+     amber-800 on white:  6.69:1 ✅ AA (text-warning)
+     red-600 on white:    6.01:1 ✅ AA
+     blue-600 on white:   5.51:1 ✅ AA
+   ═══════════════════════════════════════════════════════════════ */
 
-/* ============================================
- * Light Theme (Default)
- * ============================================ */
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/typography";
+@import "tw-animate-css";
+
+/* ──────────────────────────────────────────────────────────────
+   Layer 1 — Primitive Tokens
+   These generate Tailwind utilities (bg-copper-500, text-forest-600…)
+   ────────────────────────────────────────────────────────────── */
+
+@theme {
+  /* ── Brand palette — Copper (hue 60°) ──
+     CTA, action, interactive, links */
+  --color-copper-50:  oklch(0.98 0.010 60);
+  --color-copper-100: oklch(0.94 0.025 60);
+  --color-copper-200: oklch(0.88 0.045 60);
+  --color-copper-300: oklch(0.79 0.065 60);
+  --color-copper-400: oklch(0.69 0.082 60);
+  --color-copper-500: oklch(0.60 0.095 60);
+  --color-copper-600: oklch(0.52 0.088 60);
+  --color-copper-700: oklch(0.44 0.072 60);
+  --color-copper-800: oklch(0.35 0.055 60);
+  --color-copper-900: oklch(0.26 0.040 60);
+  --color-copper-950: oklch(0.18 0.028 60);
+
+  /* ── Brand palette — Forest (hue 150°) ──
+     Trust, success, fitment confirmed */
+  --color-forest-50:  oklch(0.98 0.008 150);
+  --color-forest-100: oklch(0.94 0.018 150);
+  --color-forest-200: oklch(0.87 0.032 150);
+  --color-forest-300: oklch(0.76 0.048 150);
+  --color-forest-400: oklch(0.63 0.062 150);
+  --color-forest-500: oklch(0.52 0.072 150);
+  --color-forest-600: oklch(0.43 0.065 150);
+  --color-forest-700: oklch(0.34 0.052 150);
+  --color-forest-800: oklch(0.27 0.040 150);
+  --color-forest-900: oklch(0.20 0.028 150);
+  --color-forest-950: oklch(0.14 0.020 150);
+
+  /* ── Warm Sand surfaces (hue 85°) ──
+     Backgrounds, panels, secondary surfaces */
+  --color-sand-50:  oklch(0.992 0.004 85);
+  --color-sand-100: oklch(0.982 0.008 85);
+  --color-sand-200: oklch(0.955 0.012 85);
+  --color-sand-300: oklch(0.918 0.016 85);
+  --color-sand-400: oklch(0.868 0.020 85);
+  --color-sand-500: oklch(0.795 0.022 85);
+  --color-sand-600: oklch(0.705 0.020 85);
+
+  /* ── Warm Gray (hue 60°, minimal chroma) ──
+     Text, borders, UI chrome */
+  --color-gray-50:  oklch(0.985 0.003 60);
+  --color-gray-100: oklch(0.962 0.004 60);
+  --color-gray-200: oklch(0.918 0.006 60);
+  --color-gray-300: oklch(0.845 0.007 60);
+  --color-gray-400: oklch(0.725 0.008 60);
+  --color-gray-500: oklch(0.590 0.008 60);
+  --color-gray-600: oklch(0.470 0.008 60);
+  --color-gray-700: oklch(0.385 0.008 60);
+  --color-gray-800: oklch(0.290 0.009 60);
+  --color-gray-900: oklch(0.220 0.010 60);
+  --color-gray-950: oklch(0.165 0.010 60);
+
+  /* ── Functional — Red (danger, sale, out-of-stock) ── */
+  --color-red-50:  oklch(0.975 0.020 25);
+  --color-red-500: oklch(0.590 0.190 25);
+  --color-red-600: oklch(0.520 0.170 25);
+
+  /* ── Functional — Amber (warning, low-stock, unconfirmed) ──
+     Note: amber-600 is for BACKGROUNDS only.
+     For TEXT use amber-800 (6.69:1 on white). */
+  --color-amber-50:  oklch(0.985 0.020 85);
+  --color-amber-500: oklch(0.780 0.150 75);
+  --color-amber-600: oklch(0.700 0.135 75);
+  --color-amber-700: oklch(0.600 0.120 75);
+  --color-amber-800: oklch(0.480 0.120 75);
+
+  /* ── Functional — Blue (info, universal fitment) ── */
+  --color-blue-50:  oklch(0.975 0.020 250);
+  --color-blue-500: oklch(0.600 0.150 250);
+  --color-blue-600: oklch(0.520 0.135 250);
+
+  /* ── Radius scale ── */
+  --radius-xs: 0.5rem;   /* 8px  — badges, chips, tags */
+  --radius-sm: 0.75rem;  /* 12px — buttons, inputs, selects */
+  --radius-md: 1rem;     /* 16px — product cards, filter panels */
+  --radius-lg: 1.25rem;  /* 20px — category cards, modals */
+  --radius-xl: 1.5rem;   /* 24px — hero banners, featured sections */
+
+  /* ── Spacing base (Tailwind v4 multiplier) ── */
+  --spacing: 0.25rem; /* 4px — p-4=16px, gap-6=24px, etc. */
+
+  /* ── Shadows (warm-tinted) ── */
+  --shadow-sm: 0 1px 2px oklch(0.20 0.01 60 / 0.06);
+  --shadow-md:
+    0 4px 8px -1px oklch(0.20 0.01 60 / 0.08),
+    0 2px 4px -2px oklch(0.20 0.01 60 / 0.04);
+  --shadow-lg:
+    0 10px 24px -3px oklch(0.20 0.01 60 / 0.10),
+    0 4px 8px -4px oklch(0.20 0.01 60 / 0.05);
+  --shadow-xl:
+    0 20px 40px -5px oklch(0.20 0.01 60 / 0.12),
+    0 8px 16px -6px oklch(0.20 0.01 60 / 0.05);
+
+  /* ── Font families ── */
+  --font-sans: "Geist", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+
+  /* ── Easing curves ── */
+  --ease-standard:   cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Layer 2 — Semantic Tokens
+   Purpose-driven mappings. Components reference these.
+   ────────────────────────────────────────────────────────────── */
+
 :root {
-	/* --- Backgrounds --- */
-	--background: oklch(0.98 0.005 90); /* Page background - warm off-white */
-	--card: oklch(1 0 0); /* Card surfaces - pure white */
-	--popover: oklch(1 0 0); /* Popover/dropdown backgrounds */
-	--secondary: oklch(0.96 0.003 90); /* Secondary surfaces */
-	--muted: oklch(0.94 0.003 90); /* Muted/disabled backgrounds */
-	--accent: oklch(0.94 0.003 90); /* Accent backgrounds */
+  color-scheme: light;
 
-	/* --- Foregrounds (Text Colors) --- */
-	--foreground: oklch(0.12 0 0); /* Primary text - near black */
-	--card-foreground: oklch(0.12 0 0);
-	--popover-foreground: oklch(0.12 0 0);
-	--secondary-foreground: oklch(0.12 0 0);
-	--muted-foreground: oklch(0.45 0 0); /* Secondary/muted text */
-	--accent-foreground: oklch(0.12 0 0);
+  /* ── Layout ── */
+  --page-max-width: 80rem;
+  --header-offset: 5rem;
+  --section-y-sm: calc(var(--spacing) * 12);  /* 48px */
+  --section-y-md: calc(var(--spacing) * 16);  /* 64px */
+  --section-y-lg: calc(var(--spacing) * 20);  /* 80px */
+  --content-gap:  calc(var(--spacing) * 6);   /* 24px */
 
-	/* --- Primary (CTA buttons, links) --- */
-	--primary: oklch(0.12 0 0); /* Near black */
-	--primary-foreground: oklch(0.98 0 0); /* White text on primary */
+  /* ── Controls (44px = EAA minimum touch target) ── */
+  --control-height-md: 2.75rem;  /* 44px */
+  --control-height-lg: 3rem;     /* 48px */
+  --control-radius: var(--radius-sm);
+  --card-radius: var(--radius-md);
+  --banner-radius: var(--radius-xl);
+  --pill-radius: 9999px;
 
-	/* --- Semantic Colors --- */
-	--destructive: oklch(0.55 0.2 25); /* Error/delete - red */
-	--destructive-foreground: oklch(0.98 0 0);
-	--success: oklch(0.55 0.15 145); /* Success - green */
-	--success-foreground: oklch(0.98 0 0);
+  /* ── Typography scale ── */
+  --fs-caption:  0.75rem;     /* 12px */
+  --fs-body-sm:  0.875rem;    /* 14px */
+  --fs-body:     0.9375rem;   /* 15px */
+  --fs-body-lg:  1rem;        /* 16px */
+  --fs-title-sm: 1.125rem;    /* 18px */
+  --fs-title:    1.5rem;      /* 24px */
+  --fs-title-lg: 1.875rem;    /* 30px */
+  --fs-display:  clamp(2rem, 3vw + 1rem, 3.5rem);
 
-	/* --- Interactive Elements --- */
-	--border: oklch(0.9 0.003 90); /* Border color */
-	--input: oklch(0.9 0.003 90); /* Input borders */
-	--ring: oklch(0.12 0 0); /* Focus ring color */
+  --lh-tight: 1.1;
+  --lh-snug:  1.3;
+  --lh-body:  1.6;
 
-	/* --- Layout --- */
-	--radius: 0.5rem; /* Base border radius (8px) */
+  --tracking-eyebrow: 0.18em;
 
-	/* --- Skeleton Delay --- */
-	--skeleton-delay: 300ms; /* Delay before skeleton appears */
+  /* ── Surfaces ── */
+  --surface-primary:   var(--color-sand-50);
+  --surface-secondary: var(--color-sand-100);
+  --surface-muted:     var(--color-sand-200);
+  --surface-card:      oklch(1 0 0);
+  --surface-elevated:  oklch(1 0 0);
+  --surface-accent:    var(--color-copper-50);
+  --surface-success:   var(--color-forest-50);
+  --surface-warning:   var(--color-amber-50);
+  --surface-danger:    var(--color-red-50);
+  --surface-info:      var(--color-blue-50);
+  --surface-inverse:   var(--color-gray-900);
+
+  /* ── Text ── */
+  --text-primary:   var(--color-gray-900);
+  --text-secondary: var(--color-gray-600);
+  --text-tertiary:  var(--color-gray-500);
+  --text-inverse:   oklch(1 0 0);
+  --text-link:      var(--color-copper-700);
+  --text-link-hover: var(--color-copper-800);
+  --text-success:   var(--color-forest-700);
+  --text-warning:   var(--color-amber-800);  /* 6.69:1 on white ✅ AA */
+  --text-danger:    var(--color-red-600);
+  --text-info:      var(--color-blue-600);
+
+  /* ── Borders ── */
+  --border-default: var(--color-sand-300);
+  --border-subtle:  var(--color-sand-200);
+  --border-strong:  var(--color-gray-300);
+  --border-success: var(--color-forest-200);
+  --border-warning: var(--color-amber-500);
+  --border-danger:  var(--color-red-500);
+  --border-info:    var(--color-blue-500);
+
+  /* ── Actions ── */
+  --action-primary:       var(--color-copper-600);   /* 5.65:1 ✅ */
+  --action-primary-hover: var(--color-copper-700);
+  --action-primary-text:  oklch(1 0 0);
+
+  --action-secondary:       var(--color-forest-600); /* 7.86:1 ✅ */
+  --action-secondary-hover: var(--color-forest-700);
+  --action-secondary-text:  oklch(1 0 0);
+
+  --action-ghost-bg:    transparent;
+  --action-ghost-hover: var(--color-sand-100);
+  --action-ghost-text:  var(--color-gray-900);
+
+  /* ── Commerce: pricing ── */
+  --price-current: var(--color-gray-900);
+  --price-compare: var(--color-gray-400);
+  --price-sale:    var(--color-red-600);
+  --price-sale-bg: var(--color-red-50);
+
+  /* ── Commerce: stock ── */
+  --stock-in:  var(--color-forest-600);
+  --stock-low: var(--color-amber-800);  /* text-safe ✅ */
+  --stock-out: var(--color-red-600);
+
+  /* ── Commerce: fitment badges ── */
+  --fitment-fits:          var(--color-forest-600);
+  --fitment-fits-bg:       var(--color-forest-50);
+
+  --fitment-no-fit:        var(--color-red-600);
+  --fitment-no-fit-bg:     var(--color-red-50);
+
+  --fitment-unconfirmed:   var(--color-amber-800);  /* text-safe ✅ */
+  --fitment-unconfirmed-bg: var(--color-amber-50);
+
+  --fitment-universal:     var(--color-blue-600);
+  --fitment-universal-bg:  var(--color-blue-50);
+
+  /* ── Focus (EAA / WCAG 2.1 AA) ── */
+  --focus-ring:        var(--color-copper-500);
+  --focus-ring-width:  2px;
+  --focus-ring-offset: 2px;
+
+  /* ── Motion ── */
+  --duration-fast: 150ms;
+  --duration-base: 220ms;
+  --duration-slow: 320ms;
 }
 
-/* ============================================
- * Delayed Skeleton Animation
- * ============================================
- * Prevents skeleton flash on fast loads.
- * Skeleton stays invisible for --skeleton-delay, then fades in.
- * If content loads before delay, skeleton is never seen.
- */
-@keyframes skeleton-fade-in {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
+/* ──────────────────────────────────────────────────────────────
+   Base styles
+   ────────────────────────────────────────────────────────────── */
 
-/* ============================================
- * Dark Theme
- * Activated by adding .dark class to <html>
- * ============================================ */
-.dark {
-	/* --- Backgrounds --- */
-	--background: oklch(0.12 0 0);
-	--card: oklch(0.16 0 0);
-	--popover: oklch(0.16 0 0);
-	--secondary: oklch(0.22 0 0);
-	--muted: oklch(0.22 0 0);
-	--accent: oklch(0.22 0 0);
+@layer base {
+  html {
+    scroll-padding-top: calc(var(--header-offset) + var(--spacing) * 4);
+  }
 
-	/* --- Foregrounds --- */
-	--foreground: oklch(0.98 0 0);
-	--card-foreground: oklch(0.98 0 0);
-	--popover-foreground: oklch(0.98 0 0);
-	--secondary-foreground: oklch(0.98 0 0);
-	--muted-foreground: oklch(0.65 0 0);
-	--accent-foreground: oklch(0.98 0 0);
+  body {
+    background-color: var(--surface-primary);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-	/* --- Primary --- */
-	--primary: oklch(0.98 0 0);
-	--primary-foreground: oklch(0.12 0 0);
+  :target {
+    scroll-margin-top: calc(var(--header-offset) + var(--spacing) * 4);
+  }
 
-	/* --- Semantic Colors --- */
-	--destructive: oklch(0.45 0.18 25);
-	--destructive-foreground: oklch(0.98 0 0);
-	--success: oklch(0.65 0.15 145);
-	--success-foreground: oklch(0.12 0 0);
+  a {
+    color: var(--text-link);
+    transition:
+      color var(--duration-fast) var(--ease-standard),
+      opacity var(--duration-fast) var(--ease-standard);
+  }
 
-	/* --- Interactive Elements --- */
-	--border: oklch(0.26 0 0);
-	--input: oklch(0.26 0 0);
-	--ring: oklch(0.98 0 0);
+  a:hover {
+    color: var(--text-link-hover);
+  }
+
+  :focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+    border-radius: var(--radius-xs);
+  }
+
+  ::selection {
+    background-color: oklch(0.60 0.095 60 / 0.18);
+  }
+
+  /* ── Skip navigation (accessibility) ── */
+  .skip-nav {
+    position: absolute;
+    top: -100%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    padding: 0.75rem 1.25rem;
+    background: var(--action-primary);
+    color: var(--action-primary-text);
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    transition: top var(--duration-fast) var(--ease-standard);
+  }
+
+  .skip-nav:focus {
+    top: 0.5rem;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-sand-100);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-sand-400);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-sand-500);
+  }
+
+  /* ── Reduced motion (EAA) ── */
+  @media (prefers-reduced-motion: reduce) {
+    html:focus-within {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }

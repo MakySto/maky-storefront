@@ -53,7 +53,16 @@
     "cart": "Carrello",
     "login": "Accedi",
     "logout": "Esci",
-    "register": "Registrati"
+    "register": "Registrati",
+    "searchPlaceholder": "Cerca box tetto, portabici, ganci traino...",
+    "searchAriaLabel": "Cerca prodotti",
+    "advice": "Guide",
+    "selectVehicle": "Seleziona veicolo",
+    "myVehicle": "Il mio veicolo",
+    "openMenu": "Apri menu",
+    "account": "Account",
+    "language": "Lingua",
+    "currency": "Valuta"
   },
   "product": {
     "description": "Descrizione",

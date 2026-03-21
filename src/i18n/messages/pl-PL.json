@@ -53,7 +53,16 @@
     "cart": "Koszyk",
     "login": "Zaloguj się",
     "logout": "Wyloguj się",
-    "register": "Rejestracja"
+    "register": "Rejestracja",
+    "searchPlaceholder": "Szukaj boxów dachowych, bagażników rowerowych, haków...",
+    "searchAriaLabel": "Szukaj produktów",
+    "advice": "Poradnik",
+    "selectVehicle": "Wybierz pojazd",
+    "myVehicle": "Mój pojazd",
+    "openMenu": "Otwórz menu",
+    "account": "Konto",
+    "language": "Język",
+    "currency": "Waluta"
   },
   "product": {
     "description": "Opis",

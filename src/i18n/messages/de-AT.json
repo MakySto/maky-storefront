@@ -53,7 +53,16 @@
     "cart": "Warenkorb",
     "login": "Anmelden",
     "logout": "Abmelden",
-    "register": "Registrieren"
+    "register": "Registrieren",
+    "searchPlaceholder": "Dachboxen, Fahrradträger, Anhängerkupplungen suchen...",
+    "searchAriaLabel": "Produkte suchen",
+    "advice": "Ratgeber",
+    "selectVehicle": "Fahrzeug wählen",
+    "myVehicle": "Mein Fahrzeug",
+    "openMenu": "Menü öffnen",
+    "account": "Konto",
+    "language": "Sprache",
+    "currency": "Währung"
   },
   "product": {
     "description": "Beschreibung",

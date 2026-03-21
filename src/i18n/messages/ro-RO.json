@@ -53,7 +53,16 @@
     "cart": "Coș",
     "login": "Conectare",
     "logout": "Deconectare",
-    "register": "Înregistrare"
+    "register": "Înregistrare",
+    "searchPlaceholder": "Căutare cutii portbagaj, suporturi biciclete, cârlige remorcare...",
+    "searchAriaLabel": "Căutare produse",
+    "advice": "Ghid",
+    "selectVehicle": "Selectează vehiculul",
+    "myVehicle": "Vehiculul meu",
+    "openMenu": "Deschide meniul",
+    "account": "Cont",
+    "language": "Limbă",
+    "currency": "Monedă"
   },
   "product": {
     "description": "Descriere",

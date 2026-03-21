@@ -53,7 +53,16 @@
     "cart": "Cart",
     "login": "Sign in",
     "logout": "Sign out",
-    "register": "Register"
+    "register": "Register",
+    "searchPlaceholder": "Search roof boxes, bike carriers, tow bars...",
+    "searchAriaLabel": "Search products",
+    "advice": "Guides",
+    "selectVehicle": "Select vehicle",
+    "myVehicle": "My vehicle",
+    "openMenu": "Open menu",
+    "account": "Account",
+    "language": "Language",
+    "currency": "Currency"
   },
   "product": {
     "description": "Description",

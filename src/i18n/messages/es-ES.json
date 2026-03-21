@@ -53,7 +53,16 @@
     "cart": "Carrito",
     "login": "Iniciar sesión",
     "logout": "Cerrar sesión",
-    "register": "Registrarse"
+    "register": "Registrarse",
+    "searchPlaceholder": "Buscar cofres de techo, portabicicletas, enganches...",
+    "searchAriaLabel": "Buscar productos",
+    "advice": "Guías",
+    "selectVehicle": "Seleccionar vehículo",
+    "myVehicle": "Mi vehículo",
+    "openMenu": "Abrir menú",
+    "account": "Cuenta",
+    "language": "Idioma",
+    "currency": "Moneda"
   },
   "product": {
     "description": "Descripción",

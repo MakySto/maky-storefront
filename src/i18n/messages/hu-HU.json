@@ -53,7 +53,16 @@
     "cart": "Kosár",
     "login": "Bejelentkezés",
     "logout": "Kijelentkezés",
-    "register": "Regisztráció"
+    "register": "Regisztráció",
+    "searchPlaceholder": "Tetőboxok, kerékpártartók, vonóhorgok keresése...",
+    "searchAriaLabel": "Termékek keresése",
+    "advice": "Tanácsadó",
+    "selectVehicle": "Jármű kiválasztása",
+    "myVehicle": "Járművem",
+    "openMenu": "Menü megnyitása",
+    "account": "Fiók",
+    "language": "Nyelv",
+    "currency": "Pénznem"
   },
   "product": {
     "description": "Leírás",
