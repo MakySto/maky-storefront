@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { type ResolvingMetadata, type Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { ProductListByCategoryDocument } from "@/gql/graphql";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
@@ -50,11 +51,6 @@ export const generateMetadata = async (props: PageProps, parent: ResolvingMetada
 	};
 };
 
-/**
- * Sync page shell with dedicated Suspense boundary.
- * Cached hero + dynamic product grid stream inside this boundary,
- * not through the layout's main Suspense.
- */
 export default function Page(props: PageProps) {
 	return (
 		<Suspense fallback={<PageSkeleton />}>
@@ -71,7 +67,10 @@ async function CategoryContent({
 	searchParams: PageProps["searchParams"];
 }) {
 	const params = await paramsPromise;
-	const category = await getCategoryData(params.slug, params.channel);
+	const [category, t] = await Promise.all([
+		getCategoryData(params.slug, params.channel),
+		getTranslations("plp"),
+	]);
 
 	if (!category) {
 		notFound();
@@ -80,7 +79,7 @@ async function CategoryContent({
 	const plainDescription = parseEditorJSToText(category.description);
 
 	const breadcrumbs = [
-		{ label: "Home", href: `/${params.channel}` },
+		{ label: t("home"), href: `/${params.channel}` },
 		{ label: category.name, href: `/${params.channel}/categories/${params.slug}` },
 	];
 
@@ -142,10 +141,10 @@ async function CategoryProducts({
 function PageSkeleton() {
 	return (
 		<div className="animate-skeleton-delayed opacity-0">
-			<div className="bg-muted px-4 py-12 sm:px-6 lg:px-8">
+			<div className="bg-surface-muted px-4 py-12 sm:px-6 lg:px-8">
 				<div className="mx-auto max-w-7xl">
-					<div className="bg-muted-foreground/10 h-8 w-48 animate-pulse rounded" />
-					<div className="bg-muted-foreground/10 mt-3 h-4 w-96 max-w-full animate-pulse rounded" />
+					<div className="h-8 w-48 animate-pulse rounded-sm bg-surface-secondary" />
+					<div className="mt-3 h-4 w-96 max-w-full animate-pulse rounded-sm bg-surface-secondary" />
 				</div>
 			</div>
 			<ProductsGridSkeleton />
@@ -159,10 +158,10 @@ function ProductsGridSkeleton() {
 			<div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
 				{Array.from({ length: 6 }).map((_, i) => (
 					<div key={i} className="animate-pulse">
-						<div className="mb-4 aspect-[3/4] rounded-xl bg-muted" />
+						<div className="mb-4 aspect-[3/4] rounded-md bg-surface-muted" />
 						<div className="space-y-1.5">
-							<div className="h-4 w-3/4 rounded bg-muted" />
-							<div className="h-4 w-1/2 rounded bg-muted" />
+							<div className="h-4 w-3/4 rounded-sm bg-surface-muted" />
+							<div className="h-4 w-1/2 rounded-sm bg-surface-muted" />
 						</div>
 					</div>
 				))}
