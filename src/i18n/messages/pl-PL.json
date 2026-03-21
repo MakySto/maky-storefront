@@ -160,7 +160,13 @@
     "subscribe": "Subskrybuj",
     "allRightsReserved": "Wszelkie prawa zastrzeżone",
     "paymentMethods": "Metody płatności",
-    "securePayment": "Bezpieczna płatność"
+    "securePayment": "Bezpieczna płatność",
+    "support": "Pomoc",
+    "company": "Firma",
+    "faq": "Najczęściej zadawane pytania",
+    "claims": "Reklamacje",
+    "tagline": "Bagażniki dachowe, uchwyty rowerowe, haki holownicze i akcesoria do Twojego auta.",
+    "contactUs": "Skontaktuj się z nami"
   },
   "pages": {
     "notFound": "Strona nie znaleziona",

@@ -160,7 +160,13 @@
     "subscribe": "Subscribe",
     "allRightsReserved": "All rights reserved",
     "paymentMethods": "Payment methods",
-    "securePayment": "Secure payment"
+    "securePayment": "Secure payment",
+    "support": "Support",
+    "company": "Company",
+    "faq": "FAQ",
+    "claims": "Claims",
+    "tagline": "Roof racks, bike carriers, tow bars and accessories for your car.",
+    "contactUs": "Contact us"
   },
   "pages": {
     "notFound": "Page not found",

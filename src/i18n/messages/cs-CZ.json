@@ -160,7 +160,13 @@
     "subscribe": "Přihlásit se",
     "allRightsReserved": "Všechna práva vyhrazena",
     "paymentMethods": "Platební metody",
-    "securePayment": "Bezpečná platba"
+    "securePayment": "Bezpečná platba",
+    "support": "Podpora",
+    "company": "Společnost",
+    "faq": "Často kladené otázky",
+    "claims": "Reklamační řád",
+    "tagline": "Střešní nosiče, nosiče kol, tažná zařízení a příslušenství pro vaše auto.",
+    "contactUs": "Kontaktujte nás"
   },
   "pages": {
     "notFound": "Stránka nenalezena",

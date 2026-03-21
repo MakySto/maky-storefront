@@ -160,7 +160,13 @@
     "subscribe": "Abonare",
     "allRightsReserved": "Toate drepturile rezervate",
     "paymentMethods": "Metode de plată",
-    "securePayment": "Plată securizată"
+    "securePayment": "Plată securizată",
+    "support": "Asistență",
+    "company": "Companie",
+    "faq": "Întrebări frecvente",
+    "claims": "Reclamații",
+    "tagline": "Bare de acoperiș, suporturi biciclete, cârlige de remorcare și accesorii pentru mașina ta.",
+    "contactUs": "Contactați-ne"
   },
   "pages": {
     "notFound": "Pagina nu a fost găsită",

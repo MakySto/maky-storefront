@@ -160,7 +160,13 @@
     "subscribe": "S'abonner",
     "allRightsReserved": "Tous droits réservés",
     "paymentMethods": "Modes de paiement",
-    "securePayment": "Paiement sécurisé"
+    "securePayment": "Paiement sécurisé",
+    "support": "Aide",
+    "company": "Entreprise",
+    "faq": "Questions fréquentes",
+    "claims": "Réclamations",
+    "tagline": "Barres de toit, porte-vélos, attelages et accessoires pour votre voiture.",
+    "contactUs": "Contactez-nous"
   },
   "pages": {
     "notFound": "Page introuvable",

@@ -160,7 +160,13 @@
     "subscribe": "Feliratkozás",
     "allRightsReserved": "Minden jog fenntartva",
     "paymentMethods": "Fizetési módok",
-    "securePayment": "Biztonságos fizetés"
+    "securePayment": "Biztonságos fizetés",
+    "support": "Támogatás",
+    "company": "Cégünk",
+    "faq": "Gyakran ismételt kérdések",
+    "claims": "Reklamáció",
+    "tagline": "Tetőcsomagtartók, kerékpártartók, vonóhorgok és kiegészítők autójához.",
+    "contactUs": "Lépjen kapcsolatba velünk"
   },
   "pages": {
     "notFound": "Az oldal nem található",

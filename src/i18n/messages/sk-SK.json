@@ -160,7 +160,13 @@
     "subscribe": "Prihlásiť sa",
     "allRightsReserved": "Všetky práva vyhradené",
     "paymentMethods": "Platobné metódy",
-    "securePayment": "Bezpečná platba"
+    "securePayment": "Bezpečná platba",
+    "support": "Podpora",
+    "company": "Spoločnosť",
+    "faq": "Často kladené otázky",
+    "claims": "Reklamačný poriadok",
+    "tagline": "Strešné nosiče, nosiče bicyklov, ťažné zariadenia a príslušenstvo pre vaše auto.",
+    "contactUs": "Kontaktujte nás"
   },
   "pages": {
     "notFound": "Stránka nenájdená",

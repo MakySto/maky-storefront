@@ -160,7 +160,13 @@
     "subscribe": "Iscriviti",
     "allRightsReserved": "Tutti i diritti riservati",
     "paymentMethods": "Metodi di pagamento",
-    "securePayment": "Pagamento sicuro"
+    "securePayment": "Pagamento sicuro",
+    "support": "Assistenza",
+    "company": "Azienda",
+    "faq": "Domande frequenti",
+    "claims": "Reclami",
+    "tagline": "Portapacchi, portabici, ganci traino e accessori per la tua auto.",
+    "contactUs": "Contattaci"
   },
   "pages": {
     "notFound": "Pagina non trovata",

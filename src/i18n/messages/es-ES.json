@@ -160,7 +160,13 @@
     "subscribe": "Suscribirse",
     "allRightsReserved": "Todos los derechos reservados",
     "paymentMethods": "Métodos de pago",
-    "securePayment": "Pago seguro"
+    "securePayment": "Pago seguro",
+    "support": "Ayuda",
+    "company": "Empresa",
+    "faq": "Preguntas frecuentes",
+    "claims": "Reclamaciones",
+    "tagline": "Barras de techo, portabicicletas, enganches y accesorios para tu coche.",
+    "contactUs": "Contáctenos"
   },
   "pages": {
     "notFound": "Página no encontrada",
