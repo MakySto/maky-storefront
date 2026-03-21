@@ -186,5 +186,28 @@
     "expertiseDesc": "Pomôžeme vám vybrať správny produkt pre vaše vozidlo",
     "support": "Zákaznícka podpora",
     "supportDesc": "Sme tu pre vás od pondelka do piatku"
+  },
+  "plp": {
+    "productCount": "{count, plural, one {# produkt} few {# produkty} other {# produktov}}",
+    "noProductsMatch": "Žiadne produkty nezodpovedajú filtrom.",
+    "clearAllFilters": "Zrušiť všetky filtre",
+    "clearAll": "Zrušiť všetko",
+    "sort": "Zoradiť",
+    "featured": "Odporúčané",
+    "newest": "Najnovšie",
+    "priceLowToHigh": "Cena: od najnižšej",
+    "priceHighToLow": "Cena: od najvyššej",
+    "bestSelling": "Najpredávanejšie",
+    "category": "Kategória",
+    "color": "Farba",
+    "size": "Veľkosť",
+    "price": "Cena",
+    "priceRange": "Cenový rozsah",
+    "brand": "Značka",
+    "quickAdd": "Rýchle pridanie",
+    "removeFilter": "Odstrániť filter {value}",
+    "home": "Domov",
+    "allProducts": "Všetky produkty",
+    "showingResults": "Zobrazených {count} produktov"
   }
 }

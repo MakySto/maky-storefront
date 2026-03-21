@@ -186,5 +186,28 @@
     "expertiseDesc": "Le ayudamos a elegir el producto adecuado para su vehículo",
     "support": "Atención al cliente",
     "supportDesc": "Estamos a su disposición de lunes a viernes"
+  },
+  "plp": {
+    "productCount": "{count, plural, one {# producto} other {# productos}}",
+    "noProductsMatch": "Ningún producto coincide con los filtros.",
+    "clearAllFilters": "Borrar todos los filtros",
+    "clearAll": "Borrar todo",
+    "sort": "Ordenar",
+    "featured": "Destacados",
+    "newest": "Más recientes",
+    "priceLowToHigh": "Precio: de menor a mayor",
+    "priceHighToLow": "Precio: de mayor a menor",
+    "bestSelling": "Más vendidos",
+    "category": "Categoría",
+    "color": "Color",
+    "size": "Talla",
+    "price": "Precio",
+    "priceRange": "Rango de precios",
+    "brand": "Marca",
+    "quickAdd": "Añadir rápido",
+    "removeFilter": "Eliminar filtro {value}",
+    "home": "Inicio",
+    "allProducts": "Todos los productos",
+    "showingResults": "{count} productos mostrados"
   }
 }

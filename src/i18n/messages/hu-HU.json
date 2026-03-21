@@ -186,5 +186,28 @@
     "expertiseDesc": "Segítünk kiválasztani a megfelelő terméket járművéhez",
     "support": "Ügyfélszolgálat",
     "supportDesc": "Hétfőtől péntekig rendelkezésére állunk"
+  },
+  "plp": {
+    "productCount": "{count, plural, one {# termék} other {# termék}}",
+    "noProductsMatch": "Nincs a szűrőknek megfelelő termék.",
+    "clearAllFilters": "Összes szűrő törlése",
+    "clearAll": "Összes törlése",
+    "sort": "Rendezés",
+    "featured": "Ajánlott",
+    "newest": "Legújabb",
+    "priceLowToHigh": "Ár: növekvő",
+    "priceHighToLow": "Ár: csökkenő",
+    "bestSelling": "Legnépszerűbb",
+    "category": "Kategória",
+    "color": "Szín",
+    "size": "Méret",
+    "price": "Ár",
+    "priceRange": "Ártartomány",
+    "brand": "Márka",
+    "quickAdd": "Gyors hozzáadás",
+    "removeFilter": "{value} szűrő eltávolítása",
+    "home": "Kezdőlap",
+    "allProducts": "Összes termék",
+    "showingResults": "{count} termék megjelenítve"
   }
 }

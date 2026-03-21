@@ -186,5 +186,28 @@
     "expertiseDesc": "We help you find the right product for your vehicle",
     "support": "Customer support",
     "supportDesc": "Available Monday through Friday"
+  },
+  "plp": {
+    "productCount": "{count, plural, one {# product} other {# products}}",
+    "noProductsMatch": "No products match your filters.",
+    "clearAllFilters": "Clear all filters",
+    "clearAll": "Clear all",
+    "sort": "Sort",
+    "featured": "Featured",
+    "newest": "Newest",
+    "priceLowToHigh": "Price: low to high",
+    "priceHighToLow": "Price: high to low",
+    "bestSelling": "Best selling",
+    "category": "Category",
+    "color": "Colour",
+    "size": "Size",
+    "price": "Price",
+    "priceRange": "Price range",
+    "brand": "Brand",
+    "quickAdd": "Quick add",
+    "removeFilter": "Remove {value} filter",
+    "home": "Home",
+    "allProducts": "All products",
+    "showingResults": "Showing {count} products"
   }
 }

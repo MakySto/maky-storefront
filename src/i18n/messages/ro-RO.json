@@ -186,5 +186,28 @@
     "expertiseDesc": "Vă ajutăm să alegeți produsul potrivit pentru vehiculul dvs.",
     "support": "Suport clienți",
     "supportDesc": "Suntem la dispoziția dvs. de luni până vineri"
+  },
+  "plp": {
+    "productCount": "{count, plural, one {# produs} few {# produse} other {# produse}}",
+    "noProductsMatch": "Niciun produs nu corespunde filtrelor.",
+    "clearAllFilters": "Șterge toate filtrele",
+    "clearAll": "Șterge tot",
+    "sort": "Sortare",
+    "featured": "Recomandate",
+    "newest": "Cele mai noi",
+    "priceLowToHigh": "Preț: crescător",
+    "priceHighToLow": "Preț: descrescător",
+    "bestSelling": "Cele mai vândute",
+    "category": "Categorie",
+    "color": "Culoare",
+    "size": "Mărime",
+    "price": "Preț",
+    "priceRange": "Interval de preț",
+    "brand": "Marcă",
+    "quickAdd": "Adăugare rapidă",
+    "removeFilter": "Elimină filtrul {value}",
+    "home": "Acasă",
+    "allProducts": "Toate produsele",
+    "showingResults": "{count} produse afișate"
   }
 }
