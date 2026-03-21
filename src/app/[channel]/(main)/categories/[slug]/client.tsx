@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import { useTranslations } from "next-intl";
 import { FilterBar, ProductGrid, useProductFilters, type ProductCardData } from "@/ui/components/plp";
 import { Pagination } from "@/ui/components/pagination";
 
@@ -17,14 +18,15 @@ interface CategoryPageClientProps {
 
 function PaginationSkeleton() {
 	return (
-		<nav className="flex items-center justify-center gap-x-4 border-neutral-200 px-4 pt-12">
-			<span className="h-10 w-24 animate-pulse rounded bg-neutral-200" />
-			<span className="h-10 w-24 animate-pulse rounded bg-neutral-200" />
+		<nav className="flex items-center justify-center gap-x-4 px-4 pt-12">
+			<span className="h-10 w-24 animate-pulse rounded-sm bg-surface-muted" />
+			<span className="h-10 w-24 animate-pulse rounded-sm bg-surface-muted" />
 		</nav>
 	);
 }
 
 export function CategoryPageClient({ products, pageInfo }: CategoryPageClientProps) {
+	const t = useTranslations("plp");
 	const {
 		filteredProducts,
 		colorOptions,
@@ -68,12 +70,12 @@ export function CategoryPageClient({ products, pageInfo }: CategoryPageClientPro
 						<ProductGrid products={filteredProducts} />
 					) : (
 						<div className="py-12 text-center">
-							<p className="text-lg text-muted-foreground">No products match your filters.</p>
+							<p className="text-lg text-text-secondary">{t("noProductsMatch")}</p>
 							<button
 								onClick={handleClearFilters}
-								className="mt-4 text-sm font-medium text-foreground underline underline-offset-4"
+								className="mt-4 text-sm font-medium text-text-primary underline underline-offset-4"
 							>
-								Clear all filters
+								{t("clearAllFilters")}
 							</button>
 						</div>
 					)}
