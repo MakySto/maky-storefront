@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { HEADER_PRIMARY_NAV } from "./header.config";
 
-export async function HeaderPrimaryNav({ channel }: { channel: string }) {
+export async function HeaderPrimaryNav({ }: { channel: string }) {
   const t = await getTranslations("nav");
 
   return (

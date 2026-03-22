@@ -31,7 +31,8 @@
     "retry": "Zkusit znovu",
     "currency": "CZK",
     "country": "Česko",
-    "slogan": "Vše pro Vaše hobby!"
+    "slogan": "Vše pro Vaše hobby!",
+    "home": "Domů"
   },
   "nav": {
     "home": "Domů",
@@ -89,7 +90,23 @@
     "advanced": "Pokročilá",
     "relatedProducts": "Souvisejcí produkty",
     "youMayAlsoLike": "Mohlo by se vám líbit",
-    "completeTheSet": "Doplňte sadu"
+    "completeTheSet": "Doplňte sadu",
+    "productDetails": "Detaily produktu",
+    "careInstructions": "Pokyny k údržbě",
+    "shippingAndReturns": "Doprava a vrácení",
+    "freeShippingText": "Doprava zdarma u objednávek nad {amount}. Standardní doručení 3–5 pracovních dní.",
+    "freeReturnsText": "Bezplatné vrácení do 30 dní od nákupu.",
+    "lowStock": "Poslední kusy",
+    "selectVariant": "Vyberte variantu",
+    "notFoundTitle": "Produkt nenalezen",
+    "notFoundMessage": "Tento produkt mohl být odstraněn, přejmenován nebo je dočasně nedostupný.",
+    "browseProducts": "Procházet produkty",
+    "addingToCart": "Přidávám...",
+    "secureCheckout": "Bezpečný nákup",
+    "freeDeliveryOver": "Doprava zdarma nad {amount}",
+    "noImageAvailable": "Obrázek není k dispozici",
+    "selectOptions": "Vyberte možnosti",
+    "goHome": "Na úvod"
   },
   "fitment": {
     "selectVehicle": "Vyberte vaše vozidlo",

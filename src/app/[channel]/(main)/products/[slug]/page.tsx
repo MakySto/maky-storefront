@@ -5,6 +5,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import edjsHTML from "editorjs-html";
 import xss from "xss";
 
+import { getTranslations } from "next-intl/server";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { ProductDetailsDocument, type ProductDetailsQuery } from "@/gql/graphql";
 import { buildPageMetadata, buildProductJsonLd } from "@/lib/seo";
@@ -125,8 +126,9 @@ async function ProductContent({
 	const productAttributes = extractProductAttributes(product);
 	const careInstructions = extractCareInstructions(product);
 
+	const tCommon = await getTranslations("common");
 	const breadcrumbs = [
-		{ label: "Home", href: `/${params.channel}` },
+		{ label: tCommon("home"), href: `/${params.channel}` },
 		...(product.category
 			? [{ label: product.category.name, href: `/${params.channel}/categories/${product.category.slug}` }]
 			: []),

@@ -31,7 +31,8 @@
     "retry": "Réessayer",
     "currency": "EUR",
     "country": "France",
-    "slogan": "Tout pour votre hobby !"
+    "slogan": "Tout pour votre hobby !",
+    "home": "Accueil"
   },
   "nav": {
     "home": "Accueil",
@@ -89,7 +90,23 @@
     "advanced": "Avancé",
     "relatedProducts": "Produits associés",
     "youMayAlsoLike": "Vous aimerez aussi",
-    "completeTheSet": "Complétez l'ensemble"
+    "completeTheSet": "Complétez l'ensemble",
+    "productDetails": "Détails du produit",
+    "careInstructions": "Instructions d'entretien",
+    "shippingAndReturns": "Livraison et retours",
+    "freeShippingText": "Livraison gratuite à partir de {amount}. Livraison standard 3 à 5 jours ouvrés.",
+    "freeReturnsText": "Retours gratuits dans les 30 jours suivant l'achat.",
+    "lowStock": "Dernières pièces",
+    "selectVariant": "Choisir une variante",
+    "notFoundTitle": "Produit introuvable",
+    "notFoundMessage": "Ce produit a peut-être été supprimé, renommé ou est temporairement indisponible.",
+    "browseProducts": "Parcourir les produits",
+    "addingToCart": "Ajout en cours...",
+    "secureCheckout": "Paiement sécurisé",
+    "freeDeliveryOver": "Livraison gratuite dès {amount}",
+    "noImageAvailable": "Aucune image disponible",
+    "selectOptions": "Choisir les options",
+    "goHome": "Accueil"
   },
   "fitment": {
     "selectVehicle": "Sélectionnez votre véhicule",

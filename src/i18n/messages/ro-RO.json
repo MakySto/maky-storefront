@@ -31,7 +31,8 @@
     "retry": "Încearcă din nou",
     "currency": "RON",
     "country": "România",
-    "slogan": "Totul pentru hobby-ul tău!"
+    "slogan": "Totul pentru hobby-ul tău!",
+    "home": "Acasă"
   },
   "nav": {
     "home": "Acasă",
@@ -89,7 +90,23 @@
     "advanced": "Avansat",
     "relatedProducts": "Produse similare",
     "youMayAlsoLike": "S-ar putea să vă placă și",
-    "completeTheSet": "Completați setul"
+    "completeTheSet": "Completați setul",
+    "productDetails": "Detalii produs",
+    "careInstructions": "Instrucțiuni de întreținere",
+    "shippingAndReturns": "Livrare și retururi",
+    "freeShippingText": "Livrare gratuită pentru comenzi peste {amount}. Livrare standard 3–5 zile lucrătoare.",
+    "freeReturnsText": "Retururi gratuite în termen de 30 de zile de la cumpărare.",
+    "lowStock": "Ultimele bucăți",
+    "selectVariant": "Selectați varianta",
+    "notFoundTitle": "Produs negăsit",
+    "notFoundMessage": "Acest produs a fost eliminat, redenumit sau este temporar indisponibil.",
+    "browseProducts": "Răsfoiește produse",
+    "addingToCart": "Se adaugă...",
+    "secureCheckout": "Cumpărături sigure",
+    "freeDeliveryOver": "Livrare gratuită peste {amount}",
+    "noImageAvailable": "Nicio imagine disponibilă",
+    "selectOptions": "Selectați opțiunile",
+    "goHome": "Acasă"
   },
   "fitment": {
     "selectVehicle": "Selectați vehiculul",

@@ -31,7 +31,8 @@
     "retry": "Try again",
     "currency": "CAD",
     "country": "Canada",
-    "slogan": "Everything for Your Hobby!"
+    "slogan": "Everything for Your Hobby!",
+    "home": "Home"
   },
   "nav": {
     "home": "Home",
@@ -89,7 +90,23 @@
     "advanced": "Advanced",
     "relatedProducts": "Related products",
     "youMayAlsoLike": "You may also like",
-    "completeTheSet": "Complete the set"
+    "completeTheSet": "Complete the set",
+    "productDetails": "Product Details",
+    "careInstructions": "Care Instructions",
+    "shippingAndReturns": "Shipping & Returns",
+    "freeShippingText": "Free shipping on orders over {amount}. Standard delivery 3–5 business days.",
+    "freeReturnsText": "Free returns within 30 days of purchase.",
+    "lowStock": "Low Stock",
+    "selectVariant": "Select Variant",
+    "notFoundTitle": "Product Not Found",
+    "notFoundMessage": "This product may have been removed, renamed, or is temporarily unavailable.",
+    "browseProducts": "Browse Products",
+    "addingToCart": "Adding...",
+    "secureCheckout": "Secure checkout",
+    "freeDeliveryOver": "Free delivery over {amount}",
+    "noImageAvailable": "No image available",
+    "selectOptions": "Select options",
+    "goHome": "Go Home"
   },
   "fitment": {
     "selectVehicle": "Select your vehicle",

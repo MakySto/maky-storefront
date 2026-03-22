@@ -31,7 +31,8 @@
     "retry": "Újrapróbálás",
     "currency": "HUF",
     "country": "Magyarország",
-    "slogan": "Minden a hobbihoz!"
+    "slogan": "Minden a hobbihoz!",
+    "home": "Kezdőlap"
   },
   "nav": {
     "home": "Kezdőlap",
@@ -89,7 +90,23 @@
     "advanced": "Haladó",
     "relatedProducts": "Kapcsolódó termékek",
     "youMayAlsoLike": "Ezek is érdekelhetik",
-    "completeTheSet": "Egészítse ki a készletet"
+    "completeTheSet": "Egészítse ki a készletet",
+    "productDetails": "Termékadatok",
+    "careInstructions": "Ápolási útmutató",
+    "shippingAndReturns": "Szállítás és visszaküldés",
+    "freeShippingText": "Ingyenes szállítás {amount} feletti rendelésnél. Standard kiszállítás 3–5 munkanap.",
+    "freeReturnsText": "Ingyenes visszaküldés a vásárlástól számított 30 napon belül.",
+    "lowStock": "Utolsó darabok",
+    "selectVariant": "Válasszon változatot",
+    "notFoundTitle": "A termék nem található",
+    "notFoundMessage": "Ez a termék eltávolításra kerülhetett, átnevezték, vagy ideiglenesen nem érhető el.",
+    "browseProducts": "Termékek böngészése",
+    "addingToCart": "Hozzáadás...",
+    "secureCheckout": "Biztonságos fizetés",
+    "freeDeliveryOver": "Ingyenes szállítás {amount} felett",
+    "noImageAvailable": "Nincs elérhető kép",
+    "selectOptions": "Válasszon opciót",
+    "goHome": "Kezdőlapra"
   },
   "fitment": {
     "selectVehicle": "Válassza ki járművét",
