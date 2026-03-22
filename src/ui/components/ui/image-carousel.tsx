@@ -2,196 +2,195 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { ZoomIn } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { cn } from "@/lib/utils";
 import {
-	Carousel,
-	CarouselContent,
-	CarouselItem,
-	CarouselPrevious,
-	CarouselNext,
-	CarouselDots,
-	useCarousel,
-	type CarouselApi,
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+  CarouselDots,
+  useCarousel,
+  type CarouselApi,
 } from "@/ui/components/ui/carousel";
+import { ImageLightbox, type LightboxImage } from "@/ui/components/ui/image-lightbox";
+import { ImageCarouselEmpty } from "@/ui/components/ui/image-carousel-empty";
 
-export interface ImageCarouselImage {
-	url: string;
-	alt?: string | null;
-}
+export type { LightboxImage as ImageCarouselImage };
 
 interface ImageCarouselProps {
-	images: ImageCarouselImage[];
-	productName: string;
-	/** Show navigation arrows (default: true on desktop) */
-	showArrows?: boolean;
-	/** Show dot indicators (default: true on mobile) */
-	showDots?: boolean;
-	/** Show thumbnail strip (default: true on desktop) */
-	showThumbnails?: boolean;
-	/** Callback when active index changes */
-	onIndexChange?: (index: number) => void;
-	/** Callback when image is tapped/clicked (for lightbox integration) */
-	onImageClick?: (index: number) => void;
-	/** Additional class name for the container */
-	className?: string;
+  images: LightboxImage[];
+  productName: string;
+  showArrows?: boolean;
+  showDots?: boolean;
+  showThumbnails?: boolean;
+  onIndexChange?: (index: number) => void;
+  className?: string;
 }
 
-/**
- * Image carousel with mobile swipe support.
- *
- * Features:
- * - Horizontal swipe on mobile (Embla Carousel)
- * - Arrow navigation on desktop (hover to reveal)
- * - Thumbnail strip on desktop
- * - Dot indicators on mobile
- * - First image has priority={true} for LCP optimization
- *
- * Zoom is intentionally not included - use `onImageClick` to integrate
- * with a separate lightbox/zoom component when needed.
- */
+function getAlt(image: LightboxImage, productName: string, index: number) {
+  return image.alt?.trim() || `${productName} – ${index + 1}`;
+}
+
 export function ImageCarousel({
-	images,
-	productName,
-	showArrows = true,
-	showDots = true,
-	showThumbnails = true,
-	onIndexChange,
-	onImageClick,
-	className,
+  images,
+  productName,
+  showArrows = true,
+  showDots = true,
+  showThumbnails = true,
+  onIndexChange,
+  className,
 }: ImageCarouselProps) {
-	const [api, setApi] = React.useState<CarouselApi>();
-	const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [api, setApi] = React.useState<CarouselApi>();
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [lightboxOpen, setLightboxOpen] = React.useState(false);
 
-	// Reset to first image when images array changes (e.g., variant switch)
-	const imagesKey = images.map((img) => img.url).join(",");
-	React.useEffect(() => {
-		setSelectedIndex(0);
-		api?.scrollTo(0, true); // true = instant scroll (no animation)
-	}, [imagesKey, api]);
+  const tCommon = useTranslations("common");
 
-	// Sync selected index from carousel API
-	React.useEffect(() => {
-		if (!api) return;
+  const imagesSignature = React.useMemo(
+    () => images.map((img) => img.url).join("|"),
+    [images],
+  );
 
-		const onSelect = () => {
-			const index = api.selectedScrollSnap();
-			setSelectedIndex(index);
-			onIndexChange?.(index);
-		};
+  React.useEffect(() => {
+    setSelectedIndex(0);
+    api?.scrollTo(0, true);
+  }, [imagesSignature, api]);
 
-		api.on("select", onSelect);
-		// Set initial index
-		onSelect();
+  React.useEffect(() => {
+    if (!api) return;
 
-		return () => {
-			api.off("select", onSelect);
-		};
-	}, [api, onIndexChange]);
+    const onSelect = () => {
+      const index = api.selectedScrollSnap();
+      setSelectedIndex(index);
+      onIndexChange?.(index);
+    };
 
-	const scrollToImage = (index: number) => {
-		api?.scrollTo(index);
-	};
+    api.on("select", onSelect);
+    onSelect();
+    return () => {
+      api.off("select", onSelect);
+    };
+  }, [api, onIndexChange]);
 
-	const t = useTranslations("product");
+  const scrollToImage = React.useCallback(
+    (index: number) => api?.scrollTo(index),
+    [api],
+  );
 
-	// Handle empty images (after hooks to satisfy rules of hooks)
-	if (!images.length) {
-		return (
-			<div className="flex aspect-[4/5] w-full items-center justify-center rounded-lg bg-surface-muted">
-				<span className="text-text-secondary">{t("noImageAvailable")}</span>
-			</div>
-		);
-	}
+  // Empty state (after all hooks)
+  if (!images.length) {
+    return <ImageCarouselEmpty />;
+  }
 
-	return (
-		<div className={cn("flex flex-col gap-4", className)}>
-			{/* Main Image Carousel */}
-			<Carousel
-				setApi={setApi}
-				opts={{
-					align: "start",
-					loop: images.length > 1,
-				}}
-				className="group w-full"
-			>
-				<div className="relative aspect-[4/5] w-full overflow-hidden rounded-lg bg-secondary">
-					<CarouselContent className="ml-0">
-						{images.map((image, index) => (
-							<CarouselItem key={image.url} className="pl-0">
-								<div
-									className={cn("relative aspect-[4/5] w-full", onImageClick && "cursor-pointer")}
-									onClick={() => onImageClick?.(index)}
-								>
-									<Image
-										src={image.url}
-										alt={image.alt || `${productName} - View ${index + 1}`}
-										fill
-										className="object-cover"
-										sizes="(max-width: 768px) 100vw, 50vw"
-										priority={index === 0}
-									/>
-								</div>
-							</CarouselItem>
-						))}
-					</CarouselContent>
+  return (
+    <>
+      <div className={cn("flex flex-col gap-3", className)}>
+        {/* Main carousel */}
+        <Carousel
+          setApi={setApi}
+          opts={{ align: "start", loop: images.length > 1 }}
+          className="group w-full"
+        >
+          <div className="relative w-full overflow-hidden rounded-lg border border-border-default bg-white">
+            <CarouselContent className="ml-0">
+              {images.map((image, index) => (
+                <CarouselItem key={`img-${image.url}-${index}`} className="pl-0">
+                  <button
+                    type="button"
+                    className="relative flex aspect-square w-full cursor-zoom-in items-center justify-center"
+                    onClick={() => setLightboxOpen(true)}
+                    aria-label={getAlt(image, productName, index)}
+                  >
+                    <Image
+                      src={image.url}
+                      alt={getAlt(image, productName, index)}
+                      fill
+                      className="object-contain p-2"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      priority={index === 0}
+                    />
+                  </button>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
 
-					{/* Navigation arrows - hidden on mobile, visible on desktop hover */}
-					{showArrows && images.length > 1 && (
-						<>
-							<CarouselPrevious
-								variant="ghost"
-								className={cn(
-									"left-4 hidden border border-border bg-background opacity-0 shadow-md transition-opacity hover:bg-accent group-hover:opacity-100 md:flex",
-									"disabled:opacity-0",
-								)}
-							/>
-							<CarouselNext
-								variant="ghost"
-								className={cn(
-									"right-4 hidden border border-border bg-background opacity-0 shadow-md transition-opacity hover:bg-accent group-hover:opacity-100 md:flex",
-									"disabled:opacity-0",
-								)}
-							/>
-						</>
-					)}
-				</div>
+            {/* Zoom hint */}
+            <div className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-1 rounded-md bg-black/50 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+              <ZoomIn className="h-3 w-3" aria-hidden="true" />
+            </div>
 
-				{/* Dot indicators for mobile */}
-				{showDots && images.length > 1 && <CarouselDots className="mt-4 md:hidden" />}
-			</Carousel>
+            {/* Arrows */}
+            {showArrows && images.length > 1 && (
+              <>
+                <CarouselPrevious
+                  variant="ghost"
+                  className={cn(
+                    "left-2 hidden border border-border-default bg-white/90 opacity-0 shadow-sm transition-opacity hover:bg-white group-hover:opacity-100 md:flex",
+                    "disabled:opacity-0",
+                  )}
+                />
+                <CarouselNext
+                  variant="ghost"
+                  className={cn(
+                    "right-2 hidden border border-border-default bg-white/90 opacity-0 shadow-sm transition-opacity hover:bg-white group-hover:opacity-100 md:flex",
+                    "disabled:opacity-0",
+                  )}
+                />
+              </>
+            )}
+          </div>
 
-			{/* Thumbnail Strip for desktop */}
-			{showThumbnails && images.length > 1 && (
-				<div className="scrollbar-hide hidden gap-2 overflow-x-auto px-1 py-1 md:flex">
-					{images.map((image, index) => (
-						<button
-							type="button"
-							key={image.url}
-							onClick={() => scrollToImage(index)}
-							className={cn(
-								"relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md transition-all",
-								selectedIndex === index
-									? "ring-2 ring-foreground ring-offset-2 ring-offset-background"
-									: "opacity-60 hover:opacity-100",
-							)}
-						>
-							<Image
-								src={image.url}
-								alt={`${productName} - Thumbnail ${index + 1}`}
-								fill
-								className="object-cover"
-								sizes="80px"
-							/>
-						</button>
-					))}
-				</div>
-			)}
-		</div>
-	);
+          {/* Mobile dots */}
+          {showDots && images.length > 1 && (
+            <CarouselDots className="mt-2 md:hidden" />
+          )}
+        </Carousel>
+
+        {/* Thumbnails */}
+        {showThumbnails && images.length > 1 && (
+          <div className="scrollbar-hide hidden gap-2 overflow-x-auto md:flex">
+            {images.map((image, index) => (
+              <button
+                type="button"
+                key={`thumb-${image.url}-${index}`}
+                onClick={() => scrollToImage(index)}
+                aria-label={getAlt(image, productName, index)}
+                aria-current={selectedIndex === index ? "true" : undefined}
+                className={cn(
+                  "relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-md border bg-white p-1 transition-all",
+                  selectedIndex === index
+                    ? "border-text-primary ring-1 ring-text-primary"
+                    : "border-border-default opacity-60 hover:opacity-100",
+                )}
+              >
+                <Image
+                  src={image.url}
+                  alt={getAlt(image, productName, index)}
+                  fill
+                  className="object-contain p-1"
+                  sizes="80px"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Lightbox */}
+      {lightboxOpen && (
+        <ImageLightbox
+          images={images}
+          productName={productName}
+          initialIndex={selectedIndex}
+          onClose={() => setLightboxOpen(false)}
+          closeLabel={tCommon("close")}
+        />
+      )}
+    </>
+  );
 }
 
-/**
- * Hook to use carousel context from child components
- */
 export { useCarousel };
