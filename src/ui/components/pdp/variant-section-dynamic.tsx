@@ -6,6 +6,7 @@ import { CheckoutAddLineDocument, type ProductDetailsQuery } from "@/gql/graphql
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
 import * as Checkout from "@/lib/checkout";
 
+import { getTranslations } from "next-intl/server";
 import { AddToCart } from "./add-to-cart";
 import { VariantSelectionSection } from "./variant-selection";
 import { StickyBar } from "./sticky-bar";
@@ -28,6 +29,7 @@ interface VariantSectionDynamicProps {
  */
 export async function VariantSectionDynamic({ product, channel, searchParams }: VariantSectionDynamicProps) {
 	const { variant: variantParam } = await searchParams;
+	const tCommon = await getTranslations("common");
 	const variants = product.variants || [];
 
 	// Auto-select variant: use URL param, or auto-select if only one variant exists
@@ -119,12 +121,12 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 				{product.category && <span className="text-sm text-muted-foreground">{product.category.name}</span>}
 				{isOnSale && (
 					<Badge variant="destructive" className="text-xs">
-						Sale
+						{tCommon("sale")}
 					</Badge>
 				)}
 				{!isAvailable && (
 					<Badge variant="secondary" className="text-xs">
-						Out of stock
+						{tCommon("outOfStock")}
 					</Badge>
 				)}
 			</div>

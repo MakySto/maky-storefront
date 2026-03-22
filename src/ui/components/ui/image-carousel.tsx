@@ -3,6 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import {
 	Carousel,
 	CarouselContent,
@@ -92,11 +93,13 @@ export function ImageCarousel({
 		api?.scrollTo(index);
 	};
 
+	const t = useTranslations("product");
+
 	// Handle empty images (after hooks to satisfy rules of hooks)
 	if (!images.length) {
 		return (
-			<div className="flex aspect-[4/5] w-full items-center justify-center rounded-lg bg-secondary">
-				<span className="text-muted-foreground">No image available</span>
+			<div className="flex aspect-[4/5] w-full items-center justify-center rounded-lg bg-surface-muted">
+				<span className="text-text-secondary">{t("noImageAvailable")}</span>
 			</div>
 		);
 	}
