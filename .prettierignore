@@ -1,2 +1,7 @@
 pnpm-lock.yaml
 .next
+
+# Design-token source file is hand-aligned intentionally (OKLCH tokens are
+# column-aligned for readability). Prettier (useTabs) would reformat the whole
+# file, so token edits don't need --no-verify.
+src/styles/brand.css
