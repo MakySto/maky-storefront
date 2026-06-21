@@ -279,3 +279,25 @@ Ground truth captured by `docs/design/storefront-analysis-20260621.md`:
 - **Stale/misleading:** `src/styles/README.md` describes a hex `--background`/`.dark`
   system that does not exist in `brand.css`; `src/app/api/og/route.tsx` ships those stale
   hex values (Satori can't read CSS vars). Reconcile before declaring "code canonical".
+
+## 13. Build / deploy safety (ops)
+
+Production `maky.store` is served by **PM2** process `maky-storefront` (`npm start` =
+`next start -p 3000`, cwd `/opt/storefront`), proxied by nginx
+(`/etc/nginx/conf.d/storefront.conf` → `proxy_pass 127.0.0.1:3000`). It serves the
+on-disk `.next` build. (`maky-smtp-app` is a separate PM2 process — never touch it.)
+
+- **NEVER run `next build` / `npm run build` in `/opt/storefront` while the PM2
+  `maky-storefront` process is running.** `next build` replaces the hashed CSS/JS chunks
+  on disk; the live `next start` keeps serving HTML (and re-writes ISR cache under
+  `.next/server/app/*.html`) referencing the **old, now-deleted** chunk hashes → global
+  404/500 on `/_next/static/*.css` → unstyled site. This caused a CSS-down incident on
+  2026-06-21.
+- **Safe build/deploy procedure:** `pm2 stop maky-storefront` → `rm -rf .next` →
+  `npm run build` → verify on a spare port (`next start -p 3032`: page actually styled,
+  CSS 200, no stale-chunk 404) → `pm2 start maky-storefront` → verify `:3000` **and**
+  `https://maky.store/sk`.
+- **Rollback:** `git checkout feat/phase0-setup` → `rm -rf .next` → `npm run build` →
+  `pm2 restart maky-storefront` restores the last known-good (pre-token-bridge) state.
+- For local validation that only needs a build artifact, build in a **separate
+  clone/worktree**, never the live deploy dir.
