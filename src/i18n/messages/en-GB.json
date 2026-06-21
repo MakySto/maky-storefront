@@ -183,7 +183,8 @@
     "faq": "FAQ",
     "claims": "Claims",
     "tagline": "Roof racks, bike carriers, tow bars and accessories for your car.",
-    "contactUs": "Contact us"
+    "contactUs": "Contact us",
+    "privacySettings": "Privacy settings"
   },
   "pages": {
     "notFound": "Page not found",
@@ -226,5 +227,21 @@
     "home": "Home",
     "allProducts": "All products",
     "showingResults": "Showing {count} products"
+  },
+  "cookieConsent": {
+    "title": "We value your privacy",
+    "description": "We use cookies to run the store, measure traffic and — with your consent — to show more relevant ads. You can change your choice at any time.",
+    "acceptAll": "Accept all",
+    "rejectAll": "Reject all",
+    "settings": "Settings",
+    "manageTitle": "Privacy settings",
+    "savePreferences": "Save preferences",
+    "alwaysOn": "Always on",
+    "necessary": "Necessary",
+    "necessaryDesc": "Required for the store to work, the cart and saving your choice.",
+    "analytics": "Analytics",
+    "analyticsDesc": "Help us measure traffic and improve the site.",
+    "marketing": "Marketing",
+    "marketingDesc": "Enable personalised ads across Google and Meta networks."
   }
 }

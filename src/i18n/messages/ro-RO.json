@@ -183,7 +183,8 @@
     "faq": "Întrebări frecvente",
     "claims": "Reclamații",
     "tagline": "Bare de acoperiș, suporturi biciclete, cârlige de remorcare și accesorii pentru mașina ta.",
-    "contactUs": "Contactați-ne"
+    "contactUs": "Contactați-ne",
+    "privacySettings": "Setări de confidențialitate"
   },
   "pages": {
     "notFound": "Pagina nu a fost găsită",
@@ -226,5 +227,21 @@
     "home": "Acasă",
     "allProducts": "Toate produsele",
     "showingResults": "{count} produse afișate"
+  },
+  "cookieConsent": {
+    "title": "Ne pasă de confidențialitatea ta",
+    "description": "Folosim cookie-uri pentru funcționarea magazinului, măsurarea traficului și — cu acordul tău — pentru publicitate mai relevantă. Îți poți schimba alegerea oricând.",
+    "acceptAll": "Acceptă toate",
+    "rejectAll": "Respinge toate",
+    "settings": "Setări",
+    "manageTitle": "Setări de confidențialitate",
+    "savePreferences": "Salvează preferințele",
+    "alwaysOn": "Întotdeauna active",
+    "necessary": "Necesare",
+    "necessaryDesc": "Necesare pentru funcționarea magazinului, coș și salvarea alegerii tale.",
+    "analytics": "Analitice",
+    "analyticsDesc": "Ne ajută să măsurăm traficul și să îmbunătățim site-ul.",
+    "marketing": "Marketing",
+    "marketingDesc": "Permit publicitate personalizată în rețelele Google și Meta."
   }
 }
