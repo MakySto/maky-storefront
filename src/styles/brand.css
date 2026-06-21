@@ -207,6 +207,53 @@
   --color-fitment-unconfirmed-bg:   var(--fitment-unconfirmed-bg);
   --color-fitment-universal:        var(--fitment-universal);
   --color-fitment-universal-bg:     var(--fitment-universal-bg);
+
+  /* ── Extended semantics: CTA / brand / promo / overlay ── */
+  --color-cta:          var(--cta);
+  --color-cta-hover:    var(--cta-hover);
+  --color-cta-text:     var(--cta-text);
+  --color-brand:        var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-text:   var(--brand-text);
+  --color-promo:        var(--promo);
+  --color-promo-bg:     var(--promo-bg);
+  --color-promo-border: var(--promo-border);
+  --color-promo-solid:  var(--promo-solid);
+  --color-on-promo:     var(--on-promo);
+  --color-overlay:      var(--overlay);
+
+  /* ── Status alias: error → danger (naming convergence; CLAUDE.md §4.1) ── */
+  --color-status-error:        var(--color-status-danger);
+  --color-status-error-bg:     var(--color-status-danger-bg);
+  --color-status-error-border: var(--color-status-danger-border);
+
+  /* ──────────────────────────────────────────────────────────────
+     shadcn compatibility bridge
+     Maps the shadcn token vocabulary that ~70 components already use
+     (bg-primary, text-muted-foreground, bg-card, border-input, …) onto
+     the existing OKLCH semantics. Purely additive — no component edits.
+     --color-primary = the GREEN purchase CTA (CLAUDE.md §4), NOT
+     --action-primary (copper/brand).
+     ────────────────────────────────────────────────────────────── */
+  --color-background:             var(--surface-primary);
+  --color-foreground:             var(--text-primary);
+  --color-card:                   var(--surface-card);
+  --color-card-foreground:        var(--text-primary);
+  --color-popover:                var(--surface-elevated);
+  --color-popover-foreground:     var(--text-primary);
+  --color-primary:                var(--cta);
+  --color-primary-foreground:     var(--cta-text);
+  --color-secondary:              var(--surface-muted);
+  --color-secondary-foreground:   var(--text-primary);
+  --color-muted:                  var(--surface-muted);
+  --color-muted-foreground:       var(--text-tertiary);
+  --color-accent:                 var(--surface-secondary);
+  --color-accent-foreground:      var(--text-primary);
+  --color-destructive:            var(--color-status-danger);
+  --color-destructive-foreground: var(--text-inverse);
+  --color-border:                 var(--border-default);
+  --color-input:                  var(--border-default);
+  --color-ring:                   var(--focus-ring);
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -295,6 +342,29 @@
   --action-ghost-bg:    transparent;
   --action-ghost-hover: var(--color-sand-100);
   --action-ghost-text:  var(--color-gray-900);
+
+  /* ── Purchase CTA (green — primary buy/continue action; CLAUDE.md §4) ──
+     NOTE: this is the green purchase CTA, distinct from --action-primary
+     (copper/brown = brand). The shadcn --color-primary maps here, so
+     bg-primary (add-to-cart) reads green per the design contract. */
+  --cta:       var(--color-forest-600);  /* 7.86:1 on white ✅ */
+  --cta-hover: var(--color-forest-700);
+  --cta-text:  oklch(1 0 0);
+
+  /* ── Brand (copper/brown — logo, brand nav, "Všetky kategórie") ── */
+  --brand:        var(--color-copper-600);
+  --brand-strong: var(--color-copper-700);
+  --brand-text:   oklch(1 0 0);
+
+  /* ── Promo (amber — promotions, discounts, seasonal highlights) ── */
+  --promo:        var(--color-amber-800);  /* text-safe 6.69:1 ✅ */
+  --promo-bg:     var(--color-amber-50);
+  --promo-border: var(--color-amber-500);
+  --promo-solid:  var(--color-amber-500);  /* filled badge background */
+  --on-promo:     var(--color-gray-900);   /* dark text on amber fill */
+
+  /* ── Overlay (modal / lightbox / drawer scrim) ── */
+  --overlay: oklch(0.20 0.01 60 / 0.55);   /* warm dark scrim */
 
   /* ── Commerce: pricing ── */
   --price-current: var(--color-gray-900);
