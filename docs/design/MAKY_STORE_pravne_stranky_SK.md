@@ -34,6 +34,7 @@ Lermontovova 911/3
 Slovenská republika
 
 **IČO:** 57 704 627
+**DIČ:** 2122890660
 **Platiteľ DPH:** nie
 **Právna forma:** spoločnosť s ručením obmedzeným
 **Zápis v registri:** Obchodný register Mestského súdu Bratislava III, oddiel: Sro, vložka č. 200804/B
@@ -55,7 +56,7 @@ Na otázky odpovedáme spravidla počas pracovných dní. Pri otázke k objedná
 
 MAKY.STORE s. r. o.
 Lermontovova 911/3, 811 05 Bratislava-Staré Mesto, Slovenská republika
-IČO: 57 704 627, nie sme platiteľom DPH
+IČO: 57 704 627, DIČ: 2122890660, nie sme platiteľom DPH
 
 ### Orgán dozoru
 
@@ -107,7 +108,7 @@ Platné a účinné od 24. 6. 2026.
 1.1 Tieto všeobecné obchodné podmienky (ďalej len „podmienky") upravujú práva a povinnosti zmluvných strán pri kúpe tovaru v internetovom obchode na adrese maky.store a sú neoddeliteľnou súčasťou kúpnej zmluvy uzavretej na diaľku.
 
 1.2 Predávajúci:
-**MAKY.STORE s. r. o.**, so sídlom Lermontovova 911/3, 811 05 Bratislava-Staré Mesto, Slovenská republika, IČO: 57 704 627. Predávajúci nie je platiteľom DPH. Spoločnosť je zapísaná v Obchodnom registri Mestského súdu Bratislava III, oddiel: Sro, vložka č. 200804/B. Konateľ: Marek Kysucký.
+**MAKY.STORE s. r. o.**, so sídlom Lermontovova 911/3, 811 05 Bratislava-Staré Mesto, Slovenská republika, IČO: 57 704 627, DIČ: 2122890660. Predávajúci nie je platiteľom DPH. Spoločnosť je zapísaná v Obchodnom registri Mestského súdu Bratislava III, oddiel: Sro, vložka č. 200804/B. Konateľ: Marek Kysucký.
 E-mail: info@maky.store, telefón: +421 901 730 066.
 Adresa na vrátenie tovaru a reklamácie: Stará Vajnorská 11, 831 04 Bratislava.
 

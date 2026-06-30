@@ -122,8 +122,8 @@ Branch: `feat/legal-content-pages` (off `feat/token-bridge`, after the gtm-conse
 **Scope IN:**
 
 - `src/config/company.ts` — single source of truth for entity data (legal name, sídlo, IČO, OR
-  súd+vložka, konateľ, return address, phone, email). **DIČ omitted until assigned** (no public
-  placeholder). Render the entity block in the footer + Kontakt from this.
+  súd+vložka, konateľ, return address, phone, email). **DIČ: 2122890660** (assigned 2026-06; included
+  in Kontakt + VOP §1.2). Render the entity block in the footer + Kontakt from this.
 - 8 RSC pages at `src/app/[channel]/(main)/<slug>/page.tsx`, **SK-channel-gated**, bodies = inline
   Slovak from the content file (verbatim), per-page SEO `title` + `meta description`:
   `kontakt`, `o-nas`, `obchodne-podmienky`, `reklamacie-a-vratenie`, `odstupenie-od-zmluvy`
@@ -169,7 +169,7 @@ kept (Decision 4). **Final legal proofread by Marek recommended before deploy.**
 - [ ] Return window consistent (14 / 30 reg.) across pages + PDP trust row (never blanket "30 dní" to a guest).
 - [ ] "Nastavenia súkromia" actually re-opens consent (post gtm-consent merge).
 - [ ] i18n parity (all 13, missing 0/extra 0, interim values non-empty); CLAUDE.md §11 223→208 fixed.
-- [ ] typecheck + lint + `next build` (per `§13`). DIČ absent from public pages; VOP effective date set.
+- [ ] typecheck + lint + `next build` (per `§13`). DIČ 2122890660 present; VOP effective date set to the real publish date.
 - [ ] Report before commit; commit/deploy only on approval; after deploy confirm URLs + that the
       dashboard business name/descriptor/support email/description match the site (bidirectional).
 
@@ -194,7 +194,7 @@ No "doprava zadarmo" / "vrátenie zadarmo" anywhere. Delivery = FedEx, price at 
 days (conditional ETA wording only). Return window 14 (guest) / 30 (registered), identical across
 pages + PDP trust + (deferred) checkout. "Záruka 2 roky" = statutory liability per OZ. No EU ODR
 reference (discontinued 20.7.2025) — ARS via SOI (Act 391/2015). VAT = "neplatiteľ, ceny konečné". No
-invented entity data; DIČ omitted until assigned. **Stripe named but guarded:** no real orders until
+invented entity data; DIČ 2122890660 now included. **Stripe named but guarded:** no real orders until
 Stripe is integrated.
 
 ## Validation (per `§11` + `§13`)
@@ -224,7 +224,7 @@ top. Both branches edit footer.tsx + all 13 message files — expect/resolve con
 
 Base: feat/token-bridge (post gtm-consent merge). Branch: feat/legal-content-pages.
 
-SCOPE: src/config/company.ts (entity data, DIČ omitted) · 8 RSC pages at
+SCOPE: src/config/company.ts (entity data incl. DIČ 2122890660) · 8 RSC pages at
 src/app/[channel]/(main)/<slug>/page.tsx, SK-gated (if channel !== "sk-eur" notFound()), bodies =
 inline Slovak from the content file, per-page SEO · footer legal links (Slovak slugs) + entity line,
 keep PrivacySettingsLink, drop dead English-slug links · footer label i18n across 13 (reuse + add
