@@ -6,13 +6,13 @@
 >
 > **Zmeny vo v4 (truthfulness pass proti reálnemu storefrontu, 2026-06-24):**
 >
-> 1. Doprava: „cenu dopravy uvidíte **v pokladni** pred odoslaním objednávky" (reálne sa cena dopravy
+> 1. Doprava: „cenu dopravy uvidíte **v pokladni** pred odoslaním objednávky“ (reálne sa cena dopravy
 >    zobrazí v pokladni/checkoute, nie v košíku).
 > 2. GDPR zoznam sprostredkovateľov opravený podľa reálne použitých služieb (AWS hosting, Cloudflare,
 >    Vercel, Google+Meta cez GTM len so súhlasom, FedEx, Stripe; vypustený Postmark ako konkrétne meno).
-> 3. Cookies/GDPR: súhlas sa mení cez tlačidlo **„Nastavenia súkromia"** v pätičke (reálny názov prvku).
+> 3. Cookies/GDPR: súhlas sa mení cez tlačidlo **„Nastavenia súkromia“** v pätičke (reálny názov prvku).
 >
-> **Pozn. k Stripe:** „Stripe" je ponechané ako zvolená platobná brána (rozhodnutie Mareka). Tvrdá
+> **Pozn. k Stripe:** „Stripe“ je ponechané ako zvolená platobná brána (rozhodnutie Mareka). Tvrdá
 > podmienka pred ostrým spustením: web **nesmie prijímať reálne objednávky**, kým Stripe nie je reálne
 > integrovaný do checkoutu (dnes beží len testovacia brána) — viď `legal-content-pages-spec.md`.
 
@@ -105,7 +105,7 @@ Platné a účinné od 24. 6. 2026.
 
 ### 1. Úvodné ustanovenia a identifikácia obchodníka
 
-1.1 Tieto všeobecné obchodné podmienky (ďalej len „podmienky") upravujú práva a povinnosti zmluvných strán pri kúpe tovaru v internetovom obchode na adrese maky.store a sú neoddeliteľnou súčasťou kúpnej zmluvy uzavretej na diaľku.
+1.1 Tieto všeobecné obchodné podmienky (ďalej len „podmienky“) upravujú práva a povinnosti zmluvných strán pri kúpe tovaru v internetovom obchode na adrese maky.store a sú neoddeliteľnou súčasťou kúpnej zmluvy uzavretej na diaľku.
 
 1.2 Predávajúci:
 **MAKY.STORE s. r. o.**, so sídlom Lermontovova 911/3, 811 05 Bratislava-Staré Mesto, Slovenská republika, IČO: 57 704 627, DIČ: 2122890660. Predávajúci nie je platiteľom DPH. Spoločnosť je zapísaná v Obchodnom registri Mestského súdu Bratislava III, oddiel: Sro, vložka č. 200804/B. Konateľ: Marek Kysucký.
@@ -120,7 +120,7 @@ Adresa na vrátenie tovaru a reklamácie: Stará Vajnorská 11, 831 04 Bratislav
 
 2.1 Tovar si zákazník vyberie vložením do košíka. Registrácia účtu je možná, ale nie je podmienkou nákupu.
 
-2.2 Objednávka prebieha v týchto krokoch: výber tovaru, vloženie do košíka, vyplnenie kontaktných a doručovacích údajov, výber dopravy a platby, kontrola a možnosť opravy zadaných údajov a napokon odoslanie objednávky tlačidlom označeným slovami „Objednávka s povinnosťou platby".
+2.2 Objednávka prebieha v týchto krokoch: výber tovaru, vloženie do košíka, vyplnenie kontaktných a doručovacích údajov, výber dopravy a platby, kontrola a možnosť opravy zadaných údajov a napokon odoslanie objednávky tlačidlom označeným slovami „Objednávka s povinnosťou platby“.
 
 2.3 Pred odoslaním objednávky má zákazník možnosť skontrolovať a opraviť zadané údaje.
 
@@ -152,7 +152,7 @@ Adresa na vrátenie tovaru a reklamácie: Stará Vajnorská 11, 831 04 Bratislav
 
 6.2 Registrovaným zákazníkom, ktorí objednávku vytvorili po prihlásení do svojho zákazníckeho účtu, poskytujeme nad rámec zákona predĺženú lehotu na odstúpenie 30 dní od prevzatia tovaru. Táto predĺžená lehota nemení zákonné práva spotrebiteľa.
 
-6.3 Odstúpenie od zmluvy môže spotrebiteľ uplatniť vyplnením vzorového formulára (dostupný na stránke „Odstúpenie od zmluvy") alebo iným jednoznačným vyhlásením zaslaným na e-mail info@maky.store alebo písomne na adresu Stará Vajnorská 11, 831 04 Bratislava. Lehota je zachovaná, ak je oznámenie odoslané pred jej uplynutím.
+6.3 Odstúpenie od zmluvy môže spotrebiteľ uplatniť vyplnením vzorového formulára (dostupný na stránke „Odstúpenie od zmluvy“) alebo iným jednoznačným vyhlásením zaslaným na e-mail info@maky.store alebo písomne na adresu Stará Vajnorská 11, 831 04 Bratislava. Lehota je zachovaná, ak je oznámenie odoslané pred jej uplynutím.
 
 6.4 Tovar je spotrebiteľ povinný zaslať alebo odovzdať najneskôr do 14 dní odo dňa odstúpenia, na adresu Stará Vajnorská 11, 831 04 Bratislava.
 
@@ -204,7 +204,7 @@ Adresa na vrátenie tovaru a reklamácie: Stará Vajnorská 11, 831 04 Bratislav
 
 Tovar môžete ako spotrebiteľ vrátiť bez uvedenia dôvodu do 14 dní od prevzatia. Registrovaným zákazníkom, ktorí objednávku vytvorili po prihlásení do svojho zákazníckeho účtu, poskytujeme predĺženú lehotu na vrátenie 30 dní.
 
-Odstúpenie od zmluvy môžete uplatniť vyplnením vzorového formulára na stránke „Odstúpenie od zmluvy", e-mailom na info@maky.store alebo písomne na adresu Stará Vajnorská 11, 831 04 Bratislava.
+Odstúpenie od zmluvy môžete uplatniť vyplnením vzorového formulára na stránke „Odstúpenie od zmluvy“, e-mailom na info@maky.store alebo písomne na adresu Stará Vajnorská 11, 831 04 Bratislava.
 
 Tovar pošlite späť najneskôr do 14 dní od odstúpenia od zmluvy. Náklady na spätné zaslanie tovaru znáša zákazník.
 
@@ -321,7 +321,7 @@ Niektorí poskytovatelia (Stripe, Google, Amazon Web Services, Cloudflare, Verce
 
 ### Vaše práva
 
-Máte právo na prístup k svojim údajom, ich opravu, vymazanie, obmedzenie spracúvania, prenosnosť a právo namietať proti spracúvaniu. Udelený súhlas môžete kedykoľvek odvolať, a to aj cez tlačidlo „Nastavenia súkromia" v pätičke nášho webu. Svoje práva uplatníte na e-maile info@maky.store. Máte tiež právo podať sťažnosť Úradu na ochranu osobných údajov Slovenskej republiky, Hraničná 12, 820 07 Bratislava 27, [www.dataprotection.gov.sk](https://www.dataprotection.gov.sk).
+Máte právo na prístup k svojim údajom, ich opravu, vymazanie, obmedzenie spracúvania, prenosnosť a právo namietať proti spracúvaniu. Udelený súhlas môžete kedykoľvek odvolať, a to aj cez tlačidlo „Nastavenia súkromia“ v pätičke nášho webu. Svoje práva uplatníte na e-maile info@maky.store. Máte tiež právo podať sťažnosť Úradu na ochranu osobných údajov Slovenskej republiky, Hraničná 12, 820 07 Bratislava 27, [www.dataprotection.gov.sk](https://www.dataprotection.gov.sk).
 
 ### Automatizované rozhodovanie
 
@@ -345,4 +345,4 @@ Používame tieto typy cookies:
 - **Analytické cookies** — pomáhajú nám rozumieť návštevnosti a používaniu webu. Ukladajú sa iba s vaším súhlasom.
 - **Marketingové cookies** — pomáhajú zobrazovať relevantnejší obsah a reklamu. Ukladajú sa iba s vaším súhlasom.
 
-Svoj súhlas môžete kedykoľvek zmeniť alebo odvolať cez tlačidlo „Nastavenia súkromia" v pätičke nášho webu. Cookies môžete obmedziť aj v nastaveniach svojho internetového prehliadača.
+Svoj súhlas môžete kedykoľvek zmeniť alebo odvolať cez tlačidlo „Nastavenia súkromia“ v pätičke nášho webu. Cookies môžete obmedziť aj v nastaveniach svojho internetového prehliadača.
