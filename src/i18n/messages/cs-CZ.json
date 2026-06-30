@@ -184,7 +184,9 @@
     "claims": "Reklamační řád",
     "tagline": "Střešní nosiče, nosiče kol, tažná zařízení a příslušenství pro vaše auto.",
     "contactUs": "Kontaktujte nás",
-    "privacySettings": "Nastavení soukromí"
+    "privacySettings": "Nastavení soukromí",
+    "withdrawal": "Withdrawal from contract",
+    "shippingAndPayment": "Shipping and payment"
   },
   "pages": {
     "notFound": "Stránka nenalezena",

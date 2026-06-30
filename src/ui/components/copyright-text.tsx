@@ -1,8 +1,15 @@
 "use client";
 
-import { getCopyrightText } from "@/config/brand";
+import { useTranslations } from "next-intl";
+import { companyInfo } from "@/config/company";
 
-/** Client component for copyright text (needs current year) */
+/** Client component for the footer copyright line (needs the current year). */
 export function CopyrightText() {
-	return <>{getCopyrightText()}</>;
+	const t = useTranslations("footer");
+	const year = new Date().getFullYear();
+	return (
+		<>
+			© {year} {companyInfo.legalName}. {t("allRightsReserved")}.
+		</>
+	);
 }

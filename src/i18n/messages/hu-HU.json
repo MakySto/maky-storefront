@@ -184,7 +184,9 @@
     "claims": "Reklamáció",
     "tagline": "Tetőcsomagtartók, kerékpártartók, vonóhorgok és kiegészítők autójához.",
     "contactUs": "Lépjen kapcsolatba velünk",
-    "privacySettings": "Adatvédelmi beállítások"
+    "privacySettings": "Adatvédelmi beállítások",
+    "withdrawal": "Withdrawal from contract",
+    "shippingAndPayment": "Shipping and payment"
   },
   "pages": {
     "notFound": "Az oldal nem található",

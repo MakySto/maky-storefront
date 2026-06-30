@@ -184,7 +184,9 @@
     "claims": "Réclamations",
     "tagline": "Barres de toit, porte-vélos, attelages et accessoires pour votre voiture.",
     "contactUs": "Contactez-nous",
-    "privacySettings": "Paramètres de confidentialité"
+    "privacySettings": "Paramètres de confidentialité",
+    "withdrawal": "Withdrawal from contract",
+    "shippingAndPayment": "Shipping and payment"
   },
   "pages": {
     "notFound": "Page introuvable",

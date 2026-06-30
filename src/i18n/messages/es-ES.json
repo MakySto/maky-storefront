@@ -184,7 +184,9 @@
     "claims": "Reclamaciones",
     "tagline": "Barras de techo, portabicicletas, enganches y accesorios para tu coche.",
     "contactUs": "Contáctenos",
-    "privacySettings": "Configuración de privacidad"
+    "privacySettings": "Configuración de privacidad",
+    "withdrawal": "Withdrawal from contract",
+    "shippingAndPayment": "Shipping and payment"
   },
   "pages": {
     "notFound": "Página no encontrada",

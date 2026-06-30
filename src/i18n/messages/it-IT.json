@@ -184,7 +184,9 @@
     "claims": "Reclami",
     "tagline": "Portapacchi, portabici, ganci traino e accessori per la tua auto.",
     "contactUs": "Contattaci",
-    "privacySettings": "Impostazioni privacy"
+    "privacySettings": "Impostazioni privacy",
+    "withdrawal": "Withdrawal from contract",
+    "shippingAndPayment": "Shipping and payment"
   },
   "pages": {
     "notFound": "Pagina non trovata",

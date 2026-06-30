@@ -184,7 +184,9 @@
     "claims": "Reklamačný poriadok",
     "tagline": "Strešné nosiče, nosiče bicyklov, ťažné zariadenia a príslušenstvo pre vaše auto.",
     "contactUs": "Kontaktujte nás",
-    "privacySettings": "Nastavenia súkromia"
+    "privacySettings": "Nastavenia súkromia",
+    "withdrawal": "Odstúpenie od zmluvy",
+    "shippingAndPayment": "Doprava a platba"
   },
   "pages": {
     "notFound": "Stránka nenájdená",

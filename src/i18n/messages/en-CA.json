@@ -184,7 +184,9 @@
     "claims": "Claims",
     "tagline": "Roof racks, bike carriers, tow bars and accessories for your car.",
     "contactUs": "Contact us",
-    "privacySettings": "Privacy settings"
+    "privacySettings": "Privacy settings",
+    "withdrawal": "Withdrawal from contract",
+    "shippingAndPayment": "Shipping and payment"
   },
   "pages": {
     "notFound": "Page not found",
