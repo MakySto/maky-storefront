@@ -183,7 +183,8 @@
     "faq": "Questions fréquentes",
     "claims": "Réclamations",
     "tagline": "Barres de toit, porte-vélos, attelages et accessoires pour votre voiture.",
-    "contactUs": "Contactez-nous"
+    "contactUs": "Contactez-nous",
+    "privacySettings": "Paramètres de confidentialité"
   },
   "pages": {
     "notFound": "Page introuvable",
@@ -226,5 +227,21 @@
     "home": "Accueil",
     "allProducts": "Tous les produits",
     "showingResults": "{count} produits affichés"
+  },
+  "cookieConsent": {
+    "title": "Votre vie privée nous tient à cœur",
+    "description": "Nous utilisons des cookies pour le fonctionnement de la boutique, la mesure d'audience et — avec votre consentement — pour une publicité plus pertinente. Vous pouvez modifier votre choix à tout moment.",
+    "acceptAll": "Tout accepter",
+    "rejectAll": "Tout refuser",
+    "settings": "Paramètres",
+    "manageTitle": "Paramètres de confidentialité",
+    "savePreferences": "Enregistrer les choix",
+    "alwaysOn": "Toujours actifs",
+    "necessary": "Nécessaires",
+    "necessaryDesc": "Nécessaires au fonctionnement de la boutique, au panier et à l'enregistrement de votre choix.",
+    "analytics": "Statistiques",
+    "analyticsDesc": "Nous aident à mesurer l'audience et à améliorer le site.",
+    "marketing": "Marketing",
+    "marketingDesc": "Permettent une publicité personnalisée sur les réseaux Google et Meta."
   }
 }

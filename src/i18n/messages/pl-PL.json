@@ -183,7 +183,8 @@
     "faq": "Najczęściej zadawane pytania",
     "claims": "Reklamacje",
     "tagline": "Bagażniki dachowe, uchwyty rowerowe, haki holownicze i akcesoria do Twojego auta.",
-    "contactUs": "Skontaktuj się z nami"
+    "contactUs": "Skontaktuj się z nami",
+    "privacySettings": "Ustawienia prywatności"
   },
   "pages": {
     "notFound": "Strona nie znaleziona",
@@ -226,5 +227,21 @@
     "home": "Strona główna",
     "allProducts": "Wszystkie produkty",
     "showingResults": "Wyświetlono {count} produktów"
+  },
+  "cookieConsent": {
+    "title": "Zależy nam na Twojej prywatności",
+    "description": "Używamy plików cookie do działania sklepu, pomiaru ruchu oraz — za Twoją zgodą — do trafniejszych reklam. Swój wybór możesz zmienić w dowolnej chwili.",
+    "acceptAll": "Zaakceptuj wszystko",
+    "rejectAll": "Odrzuć wszystko",
+    "settings": "Ustawienia",
+    "manageTitle": "Ustawienia prywatności",
+    "savePreferences": "Zapisz wybór",
+    "alwaysOn": "Zawsze aktywne",
+    "necessary": "Niezbędne",
+    "necessaryDesc": "Potrzebne do działania sklepu, koszyka i zapisania Twojego wyboru.",
+    "analytics": "Analityczne",
+    "analyticsDesc": "Pomagają nam mierzyć ruch i ulepszać stronę.",
+    "marketing": "Marketingowe",
+    "marketingDesc": "Umożliwiają spersonalizowane reklamy w sieciach Google i Meta."
   }
 }

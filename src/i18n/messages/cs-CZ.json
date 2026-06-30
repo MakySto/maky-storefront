@@ -183,7 +183,8 @@
     "faq": "Často kladené otázky",
     "claims": "Reklamační řád",
     "tagline": "Střešní nosiče, nosiče kol, tažná zařízení a příslušenství pro vaše auto.",
-    "contactUs": "Kontaktujte nás"
+    "contactUs": "Kontaktujte nás",
+    "privacySettings": "Nastavení soukromí"
   },
   "pages": {
     "notFound": "Stránka nenalezena",
@@ -226,5 +227,21 @@
     "home": "Domů",
     "allProducts": "Všechny produkty",
     "showingResults": "Zobrazeno {count} produktů"
+  },
+  "cookieConsent": {
+    "title": "Záleží nám na vašem soukromí",
+    "description": "Používáme soubory cookie pro fungování e-shopu, měření návštěvnosti a — s vaším souhlasem — pro relevantnější reklamu. Svou volbu můžete kdykoli změnit.",
+    "acceptAll": "Přijmout vše",
+    "rejectAll": "Odmítnout vše",
+    "settings": "Nastavení",
+    "manageTitle": "Nastavení soukromí",
+    "savePreferences": "Uložit volby",
+    "alwaysOn": "Vždy aktivní",
+    "necessary": "Nezbytné",
+    "necessaryDesc": "Potřebné pro fungování e-shopu, nákupní košík a uložení vaší volby.",
+    "analytics": "Analytické",
+    "analyticsDesc": "Pomáhají nám měřit návštěvnost a vylepšovat web.",
+    "marketing": "Marketingové",
+    "marketingDesc": "Umožňují personalizovanou reklamu v sítích Google a Meta."
   }
 }

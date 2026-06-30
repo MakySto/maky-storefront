@@ -183,7 +183,8 @@
     "faq": "Často kladené otázky",
     "claims": "Reklamačný poriadok",
     "tagline": "Strešné nosiče, nosiče bicyklov, ťažné zariadenia a príslušenstvo pre vaše auto.",
-    "contactUs": "Kontaktujte nás"
+    "contactUs": "Kontaktujte nás",
+    "privacySettings": "Nastavenia súkromia"
   },
   "pages": {
     "notFound": "Stránka nenájdená",
@@ -226,5 +227,21 @@
     "home": "Domov",
     "allProducts": "Všetky produkty",
     "showingResults": "Zobrazených {count} produktov"
+  },
+  "cookieConsent": {
+    "title": "Záleží nám na vašom súkromí",
+    "description": "Používame súbory cookie na fungovanie e-shopu, meranie návštevnosti a — s vaším súhlasom — na relevantnejšiu reklamu. Svoju voľbu môžete kedykoľvek zmeniť.",
+    "acceptAll": "Prijať všetko",
+    "rejectAll": "Odmietnuť všetko",
+    "settings": "Nastavenia",
+    "manageTitle": "Nastavenia súkromia",
+    "savePreferences": "Uložiť voľby",
+    "alwaysOn": "Vždy aktívne",
+    "necessary": "Nevyhnutné",
+    "necessaryDesc": "Potrebné pre fungovanie e-shopu, nákupný košík a uloženie vašej voľby.",
+    "analytics": "Analytické",
+    "analyticsDesc": "Pomáhajú nám merať návštevnosť a vylepšovať stránku.",
+    "marketing": "Marketingové",
+    "marketingDesc": "Umožňujú personalizovanú reklamu v sieťach Google a Meta."
   }
 }

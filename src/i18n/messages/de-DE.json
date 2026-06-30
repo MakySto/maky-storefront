@@ -183,7 +183,8 @@
     "faq": "Häufige Fragen",
     "claims": "Reklamationen",
     "tagline": "Dachträger, Fahrradträger, Anhängerkupplungen und Zubehör für Ihr Auto.",
-    "contactUs": "Kontaktieren Sie uns"
+    "contactUs": "Kontaktieren Sie uns",
+    "privacySettings": "Datenschutzeinstellungen"
   },
   "pages": {
     "notFound": "Seite nicht gefunden",
@@ -226,5 +227,21 @@
     "home": "Startseite",
     "allProducts": "Alle Produkte",
     "showingResults": "{count} Produkte angezeigt"
+  },
+  "cookieConsent": {
+    "title": "Ihre Privatsphäre ist uns wichtig",
+    "description": "Wir verwenden Cookies für den Betrieb des Shops, zur Reichweitenmessung und – mit Ihrer Einwilligung – für relevantere Werbung. Sie können Ihre Auswahl jederzeit ändern.",
+    "acceptAll": "Alle akzeptieren",
+    "rejectAll": "Alle ablehnen",
+    "settings": "Einstellungen",
+    "manageTitle": "Datenschutz-Einstellungen",
+    "savePreferences": "Auswahl speichern",
+    "alwaysOn": "Immer aktiv",
+    "necessary": "Notwendig",
+    "necessaryDesc": "Erforderlich für den Betrieb des Shops, den Warenkorb und das Speichern Ihrer Auswahl.",
+    "analytics": "Statistik",
+    "analyticsDesc": "Helfen uns, die Nutzung zu messen und die Website zu verbessern.",
+    "marketing": "Marketing",
+    "marketingDesc": "Ermöglichen personalisierte Werbung in Google- und Meta-Netzwerken."
   }
 }
