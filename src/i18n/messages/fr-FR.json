@@ -94,8 +94,6 @@
     "productDetails": "Détails du produit",
     "careInstructions": "Instructions d'entretien",
     "shippingAndReturns": "Livraison et retours",
-    "freeShippingText": "Livraison gratuite à partir de {amount}. Livraison standard 3 à 5 jours ouvrés.",
-    "freeReturnsText": "Retours gratuits dans les 30 jours suivant l'achat.",
     "lowStock": "Dernières pièces",
     "selectVariant": "Choisir une variante",
     "notFoundTitle": "Produit introuvable",
@@ -103,7 +101,6 @@
     "browseProducts": "Parcourir les produits",
     "addingToCart": "Ajout en cours...",
     "secureCheckout": "Paiement sécurisé",
-    "freeDeliveryOver": "Livraison gratuite dès {amount}",
     "noImageAvailable": "Aucune image disponible",
     "selectOptions": "Choisir les options",
     "goHome": "Accueil"
@@ -137,8 +134,7 @@
     "checkout": "Passer à la caisse",
     "quantity": "Quantité",
     "remove": "Supprimer",
-    "itemAdded": "Produit ajouté au panier",
-    "freeShippingFrom": "Livraison gratuite dès {amount}"
+    "itemAdded": "Produit ajouté au panier"
   },
   "checkout": {
     "title": "Caisse",
@@ -198,8 +194,6 @@
     "towBarInstallation": "Montage de l'attelage de remorque"
   },
   "trust": {
-    "freeShipping": "Livraison gratuite",
-    "freeShippingDesc": "Livraison offerte dès 100 € de commande",
     "warranty": "Garantie 2 ans",
     "warrantyDesc": "Garantie complète sur tous les produits",
     "expertise": "Conseil expert",

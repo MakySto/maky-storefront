@@ -94,8 +94,6 @@
     "productDetails": "Detalii produs",
     "careInstructions": "Instrucțiuni de întreținere",
     "shippingAndReturns": "Livrare și retururi",
-    "freeShippingText": "Livrare gratuită pentru comenzi peste {amount}. Livrare standard 3–5 zile lucrătoare.",
-    "freeReturnsText": "Retururi gratuite în termen de 30 de zile de la cumpărare.",
     "lowStock": "Ultimele bucăți",
     "selectVariant": "Selectați varianta",
     "notFoundTitle": "Produs negăsit",
@@ -103,7 +101,6 @@
     "browseProducts": "Răsfoiește produse",
     "addingToCart": "Se adaugă...",
     "secureCheckout": "Cumpărături sigure",
-    "freeDeliveryOver": "Livrare gratuită peste {amount}",
     "noImageAvailable": "Nicio imagine disponibilă",
     "selectOptions": "Selectați opțiunile",
     "goHome": "Acasă"
@@ -137,8 +134,7 @@
     "checkout": "Finalizare comandă",
     "quantity": "Cantitate",
     "remove": "Elimină",
-    "itemAdded": "Produs adăugat în coș",
-    "freeShippingFrom": "Livrare gratuită de la {amount}"
+    "itemAdded": "Produs adăugat în coș"
   },
   "checkout": {
     "title": "Finalizare comandă",
@@ -198,8 +194,6 @@
     "towBarInstallation": "Montajul cârligului de remorcare"
   },
   "trust": {
-    "freeShipping": "Livrare gratuită",
-    "freeShippingDesc": "Livrare gratuită pentru comenzi peste 100 €",
     "warranty": "Garanție 2 ani",
     "warrantyDesc": "Garanție completă pentru toate produsele",
     "expertise": "Consultanță de specialitate",

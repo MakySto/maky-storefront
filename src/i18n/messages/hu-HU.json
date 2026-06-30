@@ -94,8 +94,6 @@
     "productDetails": "Termékadatok",
     "careInstructions": "Ápolási útmutató",
     "shippingAndReturns": "Szállítás és visszaküldés",
-    "freeShippingText": "Ingyenes szállítás {amount} feletti rendelésnél. Standard kiszállítás 3–5 munkanap.",
-    "freeReturnsText": "Ingyenes visszaküldés a vásárlástól számított 30 napon belül.",
     "lowStock": "Utolsó darabok",
     "selectVariant": "Válasszon változatot",
     "notFoundTitle": "A termék nem található",
@@ -103,7 +101,6 @@
     "browseProducts": "Termékek böngészése",
     "addingToCart": "Hozzáadás...",
     "secureCheckout": "Biztonságos fizetés",
-    "freeDeliveryOver": "Ingyenes szállítás {amount} felett",
     "noImageAvailable": "Nincs elérhető kép",
     "selectOptions": "Válasszon opciót",
     "goHome": "Kezdőlapra"
@@ -137,8 +134,7 @@
     "checkout": "Pénztárhoz",
     "quantity": "Mennyiség",
     "remove": "Eltávolítás",
-    "itemAdded": "Termék hozzáadva a kosárhoz",
-    "freeShippingFrom": "Ingyenes szállítás {amount} felett"
+    "itemAdded": "Termék hozzáadva a kosárhoz"
   },
   "checkout": {
     "title": "Pénztár",
@@ -198,8 +194,6 @@
     "towBarInstallation": "Vonóhorog szerelése"
   },
   "trust": {
-    "freeShipping": "Ingyenes szállítás",
-    "freeShippingDesc": "100 € feletti rendelésnél díjmentes kiszállítás",
     "warranty": "2 év garancia",
     "warrantyDesc": "Teljes garancia minden termékre",
     "expertise": "Szakértői tanácsadás",

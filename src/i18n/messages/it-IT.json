@@ -94,8 +94,6 @@
     "productDetails": "Dettagli prodotto",
     "careInstructions": "Istruzioni per la cura",
     "shippingAndReturns": "Spedizione e resi",
-    "freeShippingText": "Spedizione gratuita per ordini superiori a {amount}. Consegna standard 3–5 giorni lavorativi.",
-    "freeReturnsText": "Reso gratuito entro 30 giorni dall'acquisto.",
     "lowStock": "Ultimi pezzi",
     "selectVariant": "Seleziona variante",
     "notFoundTitle": "Prodotto non trovato",
@@ -103,7 +101,6 @@
     "browseProducts": "Sfoglia i prodotti",
     "addingToCart": "Aggiunta in corso...",
     "secureCheckout": "Acquisto sicuro",
-    "freeDeliveryOver": "Spedizione gratuita sopra {amount}",
     "noImageAvailable": "Nessuna immagine disponibile",
     "selectOptions": "Seleziona opzioni",
     "goHome": "Vai alla home"
@@ -137,8 +134,7 @@
     "checkout": "Vai alla cassa",
     "quantity": "Quantità",
     "remove": "Rimuovi",
-    "itemAdded": "Prodotto aggiunto al carrello",
-    "freeShippingFrom": "Spedizione gratuita da {amount}"
+    "itemAdded": "Prodotto aggiunto al carrello"
   },
   "checkout": {
     "title": "Cassa",
@@ -198,8 +194,6 @@
     "towBarInstallation": "Montaggio del gancio traino"
   },
   "trust": {
-    "freeShipping": "Spedizione gratuita",
-    "freeShippingDesc": "Spedizione gratuita per ordini superiori a 100 €",
     "warranty": "Garanzia 2 anni",
     "warrantyDesc": "Garanzia completa su tutti i prodotti",
     "expertise": "Consulenza specializzata",

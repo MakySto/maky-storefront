@@ -94,8 +94,6 @@
     "productDetails": "Produktdetails",
     "careInstructions": "Pflegehinweise",
     "shippingAndReturns": "Versand & Rückgabe",
-    "freeShippingText": "Kostenloser Versand ab {amount}. Standardlieferung 3–5 Werktage.",
-    "freeReturnsText": "Kostenlose Rücksendung innerhalb von 30 Tagen.",
     "lowStock": "Nur noch wenige",
     "selectVariant": "Variante wählen",
     "notFoundTitle": "Produkt nicht gefunden",
@@ -103,7 +101,6 @@
     "browseProducts": "Produkte durchsuchen",
     "addingToCart": "Wird hinzugefügt...",
     "secureCheckout": "Sicherer Einkauf",
-    "freeDeliveryOver": "Kostenloser Versand ab {amount}",
     "noImageAvailable": "Kein Bild verfügbar",
     "selectOptions": "Optionen wählen",
     "goHome": "Zur Startseite"
@@ -137,8 +134,7 @@
     "checkout": "Zur Kasse",
     "quantity": "Menge",
     "remove": "Entfernen",
-    "itemAdded": "Produkt zum Warenkorb hinzugefügt",
-    "freeShippingFrom": "Kostenloser Versand ab {amount}"
+    "itemAdded": "Produkt zum Warenkorb hinzugefügt"
   },
   "checkout": {
     "title": "Kasse",
@@ -198,8 +194,6 @@
     "towBarInstallation": "Montage der Anhängerkupplung"
   },
   "trust": {
-    "freeShipping": "Kostenloser Versand",
-    "freeShippingDesc": "Ab 100 € Bestellwert versandkostenfrei",
     "warranty": "2 Jahre Garantie",
     "warrantyDesc": "Volle Garantie auf alle Produkte",
     "expertise": "Fachberatung",

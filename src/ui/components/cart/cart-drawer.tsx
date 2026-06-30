@@ -3,12 +3,11 @@
 import { useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, Truck, RotateCcw } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, RotateCcw } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetCloseButton } from "@/ui/components/ui/sheet";
 import { useCart } from "./cart-context";
 import { deleteCartLine, updateCartLineQuantity } from "./actions";
-import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/utils";
 import { localeConfig } from "@/config/locale";
 import { hasDiscount } from "@/lib/pricing";
@@ -134,69 +133,40 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 		});
 	};
 
-	const freeShippingThreshold = 100;
-	const progressToFreeShipping = Math.min((subtotal / freeShippingThreshold) * 100, 100);
-	const amountToFreeShipping = Math.max(freeShippingThreshold - subtotal, 0);
-
 	return (
 		<Sheet open={isOpen} onOpenChange={(open) => !open && closeCart()}>
 			<SheetContent side="right" className="flex flex-col p-0">
 				{/* Header */}
-				<SheetHeader className="justify-between border-b border-border px-6 py-4">
+				<SheetHeader className="border-border justify-between border-b px-6 py-4">
 					<div className="flex items-center gap-3">
 						<ShoppingBag className="h-5 w-5" />
 						<SheetTitle>Your Bag</SheetTitle>
-						<span className="text-sm text-muted-foreground">({itemCount} items)</span>
+						<span className="text-muted-foreground text-sm">({itemCount} items)</span>
 					</div>
 					<SheetCloseButton className="static" />
 				</SheetHeader>
-
-				{/* Free Shipping Progress */}
-				{lines.length > 0 && (
-					<div className="bg-secondary/50 border-b border-border px-6 py-4">
-						<div className="mb-2 flex items-center gap-2 text-sm">
-							<Truck className={cn("h-4 w-4", amountToFreeShipping <= 0 && "text-success")} />
-							{amountToFreeShipping > 0 ? (
-								<span>
-									Add <strong>{formatMoney(amountToFreeShipping, currency)}</strong> more for free shipping
-								</span>
-							) : (
-								<span className="font-medium text-success">You qualify for free shipping!</span>
-							)}
-						</div>
-						<div className="h-1.5 overflow-hidden rounded-full bg-border">
-							<div
-								className={cn(
-									"h-full rounded-full transition-all duration-500 ease-out",
-									amountToFreeShipping <= 0 ? "bg-success" : "bg-foreground",
-								)}
-								style={{ width: `${progressToFreeShipping}%` }}
-							/>
-						</div>
-					</div>
-				)}
 
 				{/* Cart Items */}
 				<div className="flex-1 overflow-y-auto">
 					{lines.length === 0 ? (
 						<div className="flex h-full flex-col items-center justify-center px-6 text-center">
-							<div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
-								<ShoppingBag className="h-8 w-8 text-muted-foreground" />
+							<div className="bg-secondary mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+								<ShoppingBag className="text-muted-foreground h-8 w-8" />
 							</div>
 							<h3 className="mb-2 text-lg font-medium">Your bag is empty</h3>
-							<p className="mb-6 text-sm text-muted-foreground">
+							<p className="text-muted-foreground mb-6 text-sm">
 								Looks like you haven&apos;t added anything to your bag yet.
 							</p>
 							<Link
 								href={marketHref(channel, "/products")}
 								onClick={closeCart}
-								className="hover:bg-primary/90 inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors"
+								className="hover:bg-primary/90 bg-primary text-primary-foreground inline-flex h-10 items-center justify-center rounded-md px-4 text-sm font-medium transition-colors"
 							>
 								Start Shopping
 							</Link>
 						</div>
 					) : (
-						<ul className="divide-y divide-border">
+						<ul className="divide-border divide-y">
 							{lines.map((line) => {
 								const variantAttributes = getVariantDetails(line.variant);
 								const isDiscounted = hasDiscount(
@@ -209,9 +179,12 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 										<div className="flex gap-4">
 											{/* Product Image */}
 											<Link
-												href={marketHref(channel, "/products/${line.variant.product.slug}?variant=${line.variant.id}")}
+												href={marketHref(
+													channel,
+													"/products/${line.variant.product.slug}?variant=${line.variant.id}",
+												)}
 												onClick={closeCart}
-												className="group relative h-24 w-20 shrink-0 overflow-hidden rounded-lg bg-secondary"
+												className="group bg-secondary relative h-24 w-20 shrink-0 overflow-hidden rounded-lg"
 											>
 												{line.variant.product.thumbnail?.url && (
 													<Image
@@ -228,7 +201,10 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 												<div className="flex items-start justify-between gap-2">
 													<div>
 														<Link
-															href={marketHref(channel, "/products/${line.variant.product.slug}?variant=${line.variant.id}")}
+															href={marketHref(
+																channel,
+																"/products/${line.variant.product.slug}?variant=${line.variant.id}",
+															)}
 															onClick={closeCart}
 															className="line-clamp-1 text-sm font-medium hover:underline"
 														>
@@ -236,13 +212,13 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 														</Link>
 														{/* Variant attributes: Color swatch + values separated by | */}
 														{variantAttributes.length > 0 ? (
-															<div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+															<div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5 text-xs">
 																{variantAttributes.map((attr, index) => (
 																	<span key={attr.name} className="flex items-center gap-1.5">
 																		{index > 0 && <span className="text-border">|</span>}
 																		{attr.colorHex && (
 																			<span
-																				className="h-3 w-3 rounded-full border border-border"
+																				className="border-border h-3 w-3 rounded-full border"
 																				style={{ backgroundColor: attr.colorHex }}
 																			/>
 																		)}
@@ -252,13 +228,13 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 																))}
 															</div>
 														) : line.variant.name && line.variant.name !== line.variant.id ? (
-															<p className="mt-1 text-xs text-muted-foreground">{line.variant.name}</p>
+															<p className="text-muted-foreground mt-1 text-xs">{line.variant.name}</p>
 														) : null}
 													</div>
 													<Button
 														variant="ghost"
 														size="icon"
-														className="-mr-2 -mt-1 h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+														className="text-muted-foreground hover:text-destructive -mt-1 -mr-2 h-8 w-8 shrink-0"
 														onClick={() => handleRemove(line.id)}
 														disabled={isPending}
 													>
@@ -270,12 +246,12 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 												{/* Quantity & Price */}
 												<div className="mt-3 flex items-center justify-between">
 													{/* Quantity Selector */}
-													<div className="flex items-center rounded-lg border border-border">
+													<div className="border-border flex items-center rounded-lg border">
 														<button
 															type="button"
 															onClick={() => handleUpdateQuantity(line.id, line.quantity - 1)}
 															disabled={line.quantity <= 1 || isPending}
-															className="p-2 transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+															className="hover:bg-secondary p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
 														>
 															<Minus className="h-3 w-3" />
 															<span className="sr-only">Decrease quantity</span>
@@ -285,7 +261,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 															type="button"
 															onClick={() => handleUpdateQuantity(line.id, line.quantity + 1)}
 															disabled={isPending}
-															className="p-2 transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+															className="hover:bg-secondary p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
 														>
 															<Plus className="h-3 w-3" />
 															<span className="sr-only">Increase quantity</span>
@@ -298,7 +274,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 															{formatMoney(line.totalPrice.gross.amount, line.totalPrice.gross.currency)}
 														</span>
 														{isDiscounted && line.variant.pricing?.priceUndiscounted && (
-															<span className="block text-xs text-muted-foreground line-through">
+															<span className="text-muted-foreground block text-xs line-through">
 																{formatMoney(
 																	line.variant.pricing.priceUndiscounted.gross.amount * line.quantity,
 																	line.variant.pricing.priceUndiscounted.gross.currency,
@@ -318,7 +294,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 
 				{/* Footer */}
 				{lines.length > 0 && (
-					<div className="border-t border-border bg-background">
+					<div className="border-border bg-background border-t">
 						{/* Order Summary */}
 						<div className="space-y-2 px-6 py-4">
 							<div className="flex items-center justify-between text-sm">
@@ -327,9 +303,9 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 							</div>
 							<div className="flex items-center justify-between text-sm">
 								<span className="text-muted-foreground">Shipping</span>
-								<span>{subtotal >= freeShippingThreshold ? "Free" : "Calculated at checkout"}</span>
+								<span>Calculated at checkout</span>
 							</div>
-							<div className="flex items-center justify-between border-t border-border pt-2 text-base font-semibold">
+							<div className="border-border flex items-center justify-between border-t pt-2 text-base font-semibold">
 								<span>Total</span>
 								<span>{formatMoney(subtotal, currency)}</span>
 							</div>
@@ -340,7 +316,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 							<Link
 								href={`/checkout?checkout=${checkoutId}`}
 								onClick={closeCart}
-								className="hover:bg-primary/90 group inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-primary text-base font-medium text-primary-foreground transition-colors"
+								className="hover:bg-primary/90 group bg-primary text-primary-foreground inline-flex h-12 w-full items-center justify-center gap-2 rounded-md text-base font-medium transition-colors"
 							>
 								<span>Checkout</span>
 								<ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" />
@@ -348,18 +324,14 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 							<Link
 								href={marketHref(channel, "/products")}
 								onClick={closeCart}
-								className="inline-flex h-12 w-full items-center justify-center rounded-md border border-border bg-transparent text-base font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+								className="border-border hover:bg-accent hover:text-accent-foreground inline-flex h-12 w-full items-center justify-center rounded-md border bg-transparent text-base font-medium transition-colors"
 							>
 								Continue Shopping
 							</Link>
 						</div>
 
 						{/* Trust Signals */}
-						<div className="flex items-center justify-center gap-6 border-t border-border px-6 pb-4 pt-4 text-xs text-muted-foreground">
-							<span className="flex items-center gap-1.5">
-								<Truck className="h-4 w-4" />
-								Free delivery over {formatMoney(freeShippingThreshold, currency)}
-							</span>
+						<div className="border-border text-muted-foreground flex items-center justify-center gap-6 border-t px-6 pt-4 pb-4 text-xs">
 							<span className="flex items-center gap-1.5">
 								<RotateCcw className="h-4 w-4" />
 								30-day returns

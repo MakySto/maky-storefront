@@ -94,8 +94,6 @@
     "productDetails": "Detalles del producto",
     "careInstructions": "Instrucciones de cuidado",
     "shippingAndReturns": "Envío y devoluciones",
-    "freeShippingText": "Envío gratuito en pedidos superiores a {amount}. Entrega estándar 3–5 días laborables.",
-    "freeReturnsText": "Devoluciones gratuitas en un plazo de 30 días.",
     "lowStock": "Últimas unidades",
     "selectVariant": "Seleccionar variante",
     "notFoundTitle": "Producto no encontrado",
@@ -103,7 +101,6 @@
     "browseProducts": "Explorar productos",
     "addingToCart": "Añadiendo...",
     "secureCheckout": "Compra segura",
-    "freeDeliveryOver": "Envío gratuito a partir de {amount}",
     "noImageAvailable": "Imagen no disponible",
     "selectOptions": "Seleccionar opciones",
     "goHome": "Ir al inicio"
@@ -137,8 +134,7 @@
     "checkout": "Ir a la caja",
     "quantity": "Cantidad",
     "remove": "Eliminar",
-    "itemAdded": "Producto añadido al carrito",
-    "freeShippingFrom": "Envío gratuito a partir de {amount}"
+    "itemAdded": "Producto añadido al carrito"
   },
   "checkout": {
     "title": "Caja",
@@ -198,8 +194,6 @@
     "towBarInstallation": "Montaje del enganche de remolque"
   },
   "trust": {
-    "freeShipping": "Envío gratuito",
-    "freeShippingDesc": "Envío gratis en pedidos superiores a 100 €",
     "warranty": "Garantía 2 años",
     "warrantyDesc": "Garantía completa en todos los productos",
     "expertise": "Asesoramiento experto",

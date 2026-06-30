@@ -94,8 +94,6 @@
     "productDetails": "Detaily produktu",
     "careInstructions": "Pokyny na údržbu",
     "shippingAndReturns": "Doprava a vrátenie",
-    "freeShippingText": "Doprava zadarmo pri objednávkach nad {amount}. Štandardné doručenie 3–5 pracovných dní.",
-    "freeReturnsText": "Bezplatné vrátenie do 30 dní od nákupu.",
     "lowStock": "Posledné kusy",
     "selectVariant": "Vyberte variant",
     "notFoundTitle": "Produkt nenájdený",
@@ -103,7 +101,6 @@
     "browseProducts": "Prehliadať produkty",
     "addingToCart": "Pridávam...",
     "secureCheckout": "Bezpečný nákup",
-    "freeDeliveryOver": "Doprava zadarmo nad {amount}",
     "noImageAvailable": "Obrázok nie je k dispozícii",
     "selectOptions": "Vyberte možnosti",
     "goHome": "Na úvod"
@@ -137,8 +134,7 @@
     "checkout": "Prejsť k pokladni",
     "quantity": "Množstvo",
     "remove": "Odstrániť",
-    "itemAdded": "Produkt pridaný do košíka",
-    "freeShippingFrom": "Doprava zadarmo od {amount}"
+    "itemAdded": "Produkt pridaný do košíka"
   },
   "checkout": {
     "title": "Pokladňa",
@@ -198,8 +194,6 @@
     "towBarInstallation": "Montáž ťažného zariadenia"
   },
   "trust": {
-    "freeShipping": "Doprava zadarmo",
-    "freeShippingDesc": "Pri objednávke nad 100 € doručíme zadarmo",
     "warranty": "Záruka 2 roky",
     "warrantyDesc": "Na všetky produkty poskytujeme plnú záruku",
     "expertise": "Odborné poradenstvo",

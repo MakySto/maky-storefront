@@ -94,8 +94,6 @@
     "productDetails": "Detaily produktu",
     "careInstructions": "Pokyny k údržbě",
     "shippingAndReturns": "Doprava a vrácení",
-    "freeShippingText": "Doprava zdarma u objednávek nad {amount}. Standardní doručení 3–5 pracovních dní.",
-    "freeReturnsText": "Bezplatné vrácení do 30 dní od nákupu.",
     "lowStock": "Poslední kusy",
     "selectVariant": "Vyberte variantu",
     "notFoundTitle": "Produkt nenalezen",
@@ -103,7 +101,6 @@
     "browseProducts": "Procházet produkty",
     "addingToCart": "Přidávám...",
     "secureCheckout": "Bezpečný nákup",
-    "freeDeliveryOver": "Doprava zdarma nad {amount}",
     "noImageAvailable": "Obrázek není k dispozici",
     "selectOptions": "Vyberte možnosti",
     "goHome": "Na úvod"
@@ -137,8 +134,7 @@
     "checkout": "Přejít k pokladně",
     "quantity": "Množství",
     "remove": "Odstranit",
-    "itemAdded": "Produkt přidán do košíku",
-    "freeShippingFrom": "Doprava zdarma od {amount}"
+    "itemAdded": "Produkt přidán do košíku"
   },
   "checkout": {
     "title": "Pokladna",
@@ -198,8 +194,6 @@
     "towBarInstallation": "Montáž tažného zařízení"
   },
   "trust": {
-    "freeShipping": "Doprava zdarma",
-    "freeShippingDesc": "Při objednávce nad 100 € doručíme zdarma",
     "warranty": "Záruka 2 roky",
     "warrantyDesc": "Na všechny produkty poskytujeme plnou záruku",
     "expertise": "Odborné poradenství",

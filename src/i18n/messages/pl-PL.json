@@ -94,8 +94,6 @@
     "productDetails": "Szczegóły produktu",
     "careInstructions": "Instrukcja pielęgnacji",
     "shippingAndReturns": "Wysyłka i zwroty",
-    "freeShippingText": "Darmowa wysyłka przy zamówieniach powyżej {amount}. Standardowa dostawa 3–5 dni roboczych.",
-    "freeReturnsText": "Bezpłatne zwroty w ciągu 30 dni od zakupu.",
     "lowStock": "Ostatnie sztuki",
     "selectVariant": "Wybierz wariant",
     "notFoundTitle": "Produkt nie znaleziony",
@@ -103,7 +101,6 @@
     "browseProducts": "Przeglądaj produkty",
     "addingToCart": "Dodaję...",
     "secureCheckout": "Bezpieczne zakupy",
-    "freeDeliveryOver": "Darmowa dostawa powyżej {amount}",
     "noImageAvailable": "Brak zdjęcia",
     "selectOptions": "Wybierz opcje",
     "goHome": "Strona główna"
@@ -137,8 +134,7 @@
     "checkout": "Przejdź do kasy",
     "quantity": "Ilość",
     "remove": "Usuń",
-    "itemAdded": "Produkt dodany do koszyka",
-    "freeShippingFrom": "Darmowa dostawa od {amount}"
+    "itemAdded": "Produkt dodany do koszyka"
   },
   "checkout": {
     "title": "Kasa",
@@ -198,8 +194,6 @@
     "towBarInstallation": "Montaż haka holowniczego"
   },
   "trust": {
-    "freeShipping": "Darmowa dostawa",
-    "freeShippingDesc": "Przy zamówieniu powyżej 100 € wysyłka gratis",
     "warranty": "Gwarancja 2 lata",
     "warrantyDesc": "Pełna gwarancja na wszystkie produkty",
     "expertise": "Fachowe doradztwo",
