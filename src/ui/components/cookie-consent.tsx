@@ -13,7 +13,7 @@ type StoredConsent = {
 		ad_storage: ConsentValue;
 		ad_user_data: ConsentValue;
 		ad_personalization: ConsentValue;
-        personalization_storage: ConsentValue;
+		personalization_storage: ConsentValue;
 	};
 };
 
@@ -22,20 +22,23 @@ const STORAGE_KEY = "maky-consent";
 function buildConsent(analytics: boolean, marketing: boolean) {
 	const a: ConsentValue = analytics ? "granted" : "denied";
 	const m: ConsentValue = marketing ? "granted" : "denied";
-	return { analytics_storage: a, ad_storage: m, ad_user_data: m, ad_personalization: m, personalization_storage: m, };
+	return {
+		analytics_storage: a,
+		ad_storage: m,
+		ad_user_data: m,
+		ad_personalization: m,
+		personalization_storage: m,
+	};
 }
 
 export function CookieConsent() {
 	const t = useTranslations("cookieConsent");
-	const [mounted, setMounted] = useState(false);
 	const [visible, setVisible] = useState(false);
 	const [showSettings, setShowSettings] = useState(false);
 	const [analytics, setAnalytics] = useState(false);
 	const [marketing, setMarketing] = useState(false);
 
 	useEffect(() => {
-		setMounted(true);
-
 		let saved: StoredConsent | null = null;
 		try {
 			const raw = localStorage.getItem(STORAGE_KEY);
@@ -44,12 +47,17 @@ export function CookieConsent() {
 			saved = null;
 		}
 
+		// Client-only mount: read persisted consent once and set the initial UI state.
+		// SSR-safe (server renders nothing; the banner/toggles are decided after mount) — the
+		// single intentional render on mount is why the set-state-in-effect rule is scoped off here.
+		/* eslint-disable react-hooks/set-state-in-effect */
 		if (!saved) {
 			setVisible(true);
 		} else {
 			setAnalytics(saved.consent?.analytics_storage === "granted");
 			setMarketing(saved.consent?.ad_storage === "granted");
 		}
+		/* eslint-enable react-hooks/set-state-in-effect */
 
 		const open = () => {
 			setShowSettings(true);
@@ -79,7 +87,7 @@ export function CookieConsent() {
 		setShowSettings(false);
 	}
 
-	if (!mounted || !visible) return null;
+	if (!visible) return null;
 
 	const acceptAll = () => persistAndApply(true, true);
 	const rejectAll = () => persistAndApply(false, false);
@@ -94,7 +102,7 @@ export function CookieConsent() {
 		<div
 			role="dialog"
 			aria-label={t("manageTitle")}
-			className="fixed inset-x-0 bottom-0 z-50 border-t border-sand-300 bg-white/95 shadow-[0_-4px_24px_rgba(0,0,0,0.07)] backdrop-blur-sm"
+			className="border-sand-300 fixed inset-x-0 bottom-0 z-50 border-t bg-white/95 shadow-[0_-4px_24px_rgba(0,0,0,0.07)] backdrop-blur-sm"
 		>
 			<div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
 				{!showSettings ? (
@@ -123,15 +131,15 @@ export function CookieConsent() {
 					<div>
 						<p className="mb-3 text-sm font-semibold text-gray-900">{t("manageTitle")}</p>
 						<div className="space-y-3">
-							<div className="flex items-start justify-between gap-4 rounded-sm border border-sand-200 bg-sand-50 p-3">
+							<div className="border-sand-200 bg-sand-50 flex items-start justify-between gap-4 rounded-sm border p-3">
 								<div>
 									<p className="text-sm font-medium text-gray-900">{t("necessary")}</p>
 									<p className="mt-0.5 text-xs leading-relaxed text-gray-600">{t("necessaryDesc")}</p>
 								</div>
-								<span className="shrink-0 pt-0.5 text-xs font-medium text-forest-600">{t("alwaysOn")}</span>
+								<span className="text-forest-600 shrink-0 pt-0.5 text-xs font-medium">{t("alwaysOn")}</span>
 							</div>
 
-							<div className="flex items-start justify-between gap-4 rounded-sm border border-sand-200 p-3">
+							<div className="border-sand-200 flex items-start justify-between gap-4 rounded-sm border p-3">
 								<div>
 									<p className="text-sm font-medium text-gray-900">{t("analytics")}</p>
 									<p className="mt-0.5 text-xs leading-relaxed text-gray-600">{t("analyticsDesc")}</p>
@@ -139,7 +147,7 @@ export function CookieConsent() {
 								<ConsentToggle checked={analytics} onChange={setAnalytics} label={t("analytics")} />
 							</div>
 
-							<div className="flex items-start justify-between gap-4 rounded-sm border border-sand-200 p-3">
+							<div className="border-sand-200 flex items-start justify-between gap-4 rounded-sm border p-3">
 								<div>
 									<p className="text-sm font-medium text-gray-900">{t("marketing")}</p>
 									<p className="mt-0.5 text-xs leading-relaxed text-gray-600">{t("marketingDesc")}</p>
