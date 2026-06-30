@@ -15,7 +15,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	if (REVERSE_MAP[channel] !== "sk") notFound();
 	return (
 		<LegalPage title="Všeobecné obchodné podmienky">
-			<p>Platné a účinné od 24. 6. 2026.</p>
+			<p>Platné a účinné od 30. 6. 2026.</p>
 
 			<h3>1. Úvodné ustanovenia a identifikácia obchodníka</h3>
 			<p>
@@ -177,7 +177,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 
 			<h3>10. Záverečné ustanovenia</h3>
 			<p>
-				10.1 Tieto podmienky nadobúdajú účinnosť 24. 6. 2026. Predávajúci si vyhradzuje právo podmienky meniť;
+				10.1 Tieto podmienky nadobúdajú účinnosť 30. 6. 2026. Predávajúci si vyhradzuje právo podmienky meniť;
 				pre uzavreté zmluvy platí znenie účinné v čase uzavretia zmluvy.
 			</p>
 			<p>

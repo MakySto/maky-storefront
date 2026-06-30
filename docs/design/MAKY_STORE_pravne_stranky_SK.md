@@ -101,7 +101,7 @@ E-mail: info@maky.store · Telefón: +421 901 730 066
 
 ## Všeobecné obchodné podmienky
 
-Platné a účinné od 24. 6. 2026.
+Platné a účinné od 30. 6. 2026.
 
 ### 1. Úvodné ustanovenia a identifikácia obchodníka
 
@@ -186,7 +186,7 @@ Adresa na vrátenie tovaru a reklamácie: Stará Vajnorská 11, 831 04 Bratislav
 
 ### 10. Záverečné ustanovenia
 
-10.1 Tieto podmienky nadobúdajú účinnosť 24. 6. 2026. Predávajúci si vyhradzuje právo podmienky meniť; pre uzavreté zmluvy platí znenie účinné v čase uzavretia zmluvy.
+10.1 Tieto podmienky nadobúdajú účinnosť 30. 6. 2026. Predávajúci si vyhradzuje právo podmienky meniť; pre uzavreté zmluvy platí znenie účinné v čase uzavretia zmluvy.
 
 10.2 Vzťahy medzi predávajúcim a zákazníkom sa riadia právnym poriadkom Slovenskej republiky. Orgánom dozoru je Slovenská obchodná inšpekcia, Inšpektorát SOI pre Bratislavský kraj, Bajkalská 21/A, P. O. BOX č. 5, 820 07 Bratislava.
 
