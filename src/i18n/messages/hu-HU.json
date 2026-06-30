@@ -183,7 +183,8 @@
     "faq": "Gyakran ismételt kérdések",
     "claims": "Reklamáció",
     "tagline": "Tetőcsomagtartók, kerékpártartók, vonóhorgok és kiegészítők autójához.",
-    "contactUs": "Lépjen kapcsolatba velünk"
+    "contactUs": "Lépjen kapcsolatba velünk",
+    "privacySettings": "Adatvédelmi beállítások"
   },
   "pages": {
     "notFound": "Az oldal nem található",
@@ -226,5 +227,21 @@
     "home": "Kezdőlap",
     "allProducts": "Összes termék",
     "showingResults": "{count} termék megjelenítve"
+  },
+  "cookieConsent": {
+    "title": "Fontos számunkra az adatvédelme",
+    "description": "Sütiket használunk a webáruház működéséhez, a látogatottság méréséhez és — az Ön hozzájárulásával — relevánsabb hirdetésekhez. Választását bármikor módosíthatja.",
+    "acceptAll": "Összes elfogadása",
+    "rejectAll": "Összes elutasítása",
+    "settings": "Beállítások",
+    "manageTitle": "Adatvédelmi beállítások",
+    "savePreferences": "Választás mentése",
+    "alwaysOn": "Mindig aktív",
+    "necessary": "Szükséges",
+    "necessaryDesc": "A webáruház működéséhez, a kosárhoz és a választása mentéséhez szükséges.",
+    "analytics": "Analitikai",
+    "analyticsDesc": "Segítenek mérni a látogatottságot és fejleszteni az oldalt.",
+    "marketing": "Marketing",
+    "marketingDesc": "Személyre szabott hirdetéseket tesznek lehetővé a Google és Meta hálózatokban."
   }
 }

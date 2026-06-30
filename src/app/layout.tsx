@@ -1,5 +1,6 @@
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import Script from "next/script";
 import "./globals.css";
 import { type ReactNode } from "react";
 import { rootMetadata } from "@/lib/seo";
@@ -8,14 +9,80 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata = rootMetadata;
 
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
+const CF_WEB_ANALYTICS_TOKEN = process.env.NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN;
+
 export default function RootLayout(props: { children: ReactNode }) {
 	const { children } = props;
 
 	return (
 		<html lang={LOCALE_MAP[DEFAULT_LOCALE].htmlLang} className={`${GeistSans.variable} ${GeistMono.variable} min-h-dvh`}>
 			<body className="min-h-dvh font-sans">
+				{GTM_ID ? (
+					<noscript>
+						<iframe
+							src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+							height="0"
+							width="0"
+							style={{ display: "none", visibility: "hidden" }}
+							title="Google Tag Manager"
+						/>
+					</noscript>
+				) : null}
+
 				{children}
 				<SpeedInsights />
+
+				{GTM_ID ? (
+					<>
+						<Script
+							id="maky-consent-default"
+							strategy="beforeInteractive"
+							dangerouslySetInnerHTML={{
+								__html: `
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('consent', 'default', {
+  ad_storage: 'denied',
+  ad_user_data: 'denied',
+  ad_personalization: 'denied',
+  analytics_storage: 'denied',
+  personalization_storage: 'denied',
+  functionality_storage: 'granted',
+  security_storage: 'granted',
+  wait_for_update: 500
+});
+try {
+  var s = JSON.parse(localStorage.getItem('maky-consent') || 'null');
+  if (s && s.consent) { gtag('consent', 'update', s.consent); }
+} catch (e) {}
+`,
+							}}
+						/>
+						<Script
+							id="maky-gtm"
+							strategy="afterInteractive"
+							dangerouslySetInnerHTML={{
+								__html: `
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${GTM_ID}');
+`,
+							}}
+						/>
+					</>
+				) : null}
+
+				{CF_WEB_ANALYTICS_TOKEN ? (
+					<Script
+						id="cf-web-analytics"
+						src="https://static.cloudflareinsights.com/beacon.min.js"
+						strategy="afterInteractive"
+						data-cf-beacon={JSON.stringify({ token: CF_WEB_ANALYTICS_TOKEN })}
+					/>
+				) : null}
 			</body>
 		</html>
 	);

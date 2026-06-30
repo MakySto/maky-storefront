@@ -7,6 +7,7 @@ import { DefaultChannelSlug } from "@/app/config";
 import { getLocaleFromChannel } from "@/config/locale";
 import { LocaleProvider } from "@/providers/locale-provider";
 import { HtmlLangUpdater } from "@/providers/html-lang-updater";
+import { CookieConsent } from "@/ui/components/cookie-consent";
 
 export const generateStaticParams = async () => {
 	const channels: string[] = [];
@@ -63,6 +64,7 @@ export default async function ChannelLayout({
 			<LocaleProvider locale={locale}>
 				<HtmlLangUpdater />
 				{children}
+				<CookieConsent />
 			</LocaleProvider>
 		</NextIntlClientProvider>
 	);

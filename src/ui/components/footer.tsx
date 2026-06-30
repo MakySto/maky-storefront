@@ -4,6 +4,7 @@ import { LinkWithChannel } from "../atoms/link-with-channel";
 import { CopyrightText } from "./copyright-text";
 import { Logo } from "./shared/logo";
 import { marketHref } from "@/lib/channel-map";
+import { PrivacySettingsLink } from "./privacy-settings-link";
 
 const FOOTER_LINKS = {
   support: [
@@ -15,7 +16,7 @@ const FOOTER_LINKS = {
   company: [
     { key: "aboutUs", href: "/about" },
     { key: "termsOfService", href: "/terms" },
-    { key: "privacyPolicy", href: "/privacy" },
+    { key: "privacyPolicy", href: "/pages/privacy" },
     { key: "claims", href: "/claims" },
   ],
 } as const;
@@ -83,12 +84,13 @@ export async function Footer({ channel }: { channel: string }) {
             <CopyrightText />
           </p>
           <div className="flex items-center gap-6">
-            <LinkWithChannel href="/privacy" prefetch={false} className="text-xs text-gray-500 transition-colors hover:text-gray-300">
+            <LinkWithChannel href="/pages/privacy" prefetch={false} className="text-xs text-gray-500 transition-colors hover:text-gray-300">
               {t("privacyPolicy")}
             </LinkWithChannel>
             <LinkWithChannel href="/terms" prefetch={false} className="text-xs text-gray-500 transition-colors hover:text-gray-300">
               {t("termsOfService")}
             </LinkWithChannel>
+            <PrivacySettingsLink label={t("privacySettings")} />
           </div>
         </div>
       </div>

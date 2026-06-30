@@ -183,7 +183,8 @@
     "faq": "Domande frequenti",
     "claims": "Reclami",
     "tagline": "Portapacchi, portabici, ganci traino e accessori per la tua auto.",
-    "contactUs": "Contattaci"
+    "contactUs": "Contattaci",
+    "privacySettings": "Impostazioni privacy"
   },
   "pages": {
     "notFound": "Pagina non trovata",
@@ -226,5 +227,21 @@
     "home": "Home",
     "allProducts": "Tutti i prodotti",
     "showingResults": "{count} prodotti visualizzati"
+  },
+  "cookieConsent": {
+    "title": "Teniamo alla tua privacy",
+    "description": "Usiamo i cookie per il funzionamento del negozio, per misurare il traffico e — con il tuo consenso — per pubblicità più pertinenti. Puoi modificare la tua scelta in qualsiasi momento.",
+    "acceptAll": "Accetta tutto",
+    "rejectAll": "Rifiuta tutto",
+    "settings": "Impostazioni",
+    "manageTitle": "Impostazioni privacy",
+    "savePreferences": "Salva preferenze",
+    "alwaysOn": "Sempre attivi",
+    "necessary": "Necessari",
+    "necessaryDesc": "Necessari per il funzionamento del negozio, il carrello e il salvataggio della tua scelta.",
+    "analytics": "Statistici",
+    "analyticsDesc": "Ci aiutano a misurare il traffico e migliorare il sito.",
+    "marketing": "Marketing",
+    "marketingDesc": "Consentono pubblicità personalizzata nei circuiti Google e Meta."
   }
 }
