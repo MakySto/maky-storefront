@@ -34,7 +34,8 @@ všetko v ňom je upstream-origin kód.
    autorovať; seed = nepoužívaný 19-kľúčový `checkout` namespace v `sk-SK.json` (vrátane
    „Objednať s povinnosťou platby").
 9. Vedľajšie nálezy: set-password route nastavuje **mŕtve cookies** (nikto ich nečíta) a leakuje
-   raw token v JSON; `hasCookies` gate je vždy true (market cookie); 2 committed `.bak` súbory.
+   raw token v JSON; `hasCookies` gate je vždy true (market cookie); 2 stale `.bak` súbory na
+   disku (untracked/ignored — git ich netrackuje, overené v samostatnej cleanup session).
 10. **Odhad replay+adopčnej práce: S×12 · M×4 · L×2** (register nižšie); poradie v §8.
 
 ---
@@ -237,7 +238,11 @@ Replay MAKY customizácií je triviálny (S); ťažisko = 2×L foundation + adop
   reálny FedEx odhad?
 - **O5 (i18n scope):** v2 checkout locales = sk + en interim pre ostatných 12 (parity invariant
   drží), plný preklad neskôr — OK?
-- **O6 (cleanup):** committed `src/app/layout.tsx.bak` + `layout.tsx.pre-gtm-20260529-072922.bak`
-  — zmazať v samostatnom cleanup commite?
+- **O6 (cleanup) — VYRIEŠENÉ 2026-07-01:** `src/app/layout.tsx.bak` +
+  `layout.tsx.pre-gtm-20260529-072922.bak` NIE sú committed (pôvodný nález bol nepresný) — sú to
+  untracked/ignored súbory len na disku; git cleanup prebehol už v `389a040` (`*.bak` ignore).
+  Overené: oba sú stale kópie historických verzií `layout.tsx`, plne obnoviteľné z git histórie.
+  Jediné zostávajúce rozhodnutie: zmazať ich z disku obyčajným `rm` (bez commitu), alebo nechať —
+  sú neškodné.
 - **O7 (bug oprava pred migráciou?):** set-password dead-cookie + token-leak (§5 landmine a) —
   opraviť v rámci BFF auth (odporúčam) alebo ako hotfix skôr?
