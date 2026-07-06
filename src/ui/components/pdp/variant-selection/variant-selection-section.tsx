@@ -119,7 +119,7 @@ export function VariantSelectionSection({
 
 			startTransition(() => {
 				setOptimisticSelections(newSelections);
-				router.push(marketHref(channel, "/products/${productSlug}?${params.toString()}"), { scroll: false });
+				router.push(marketHref(channel, `/products/${productSlug}?${params.toString()}`), { scroll: false });
 			});
 		},
 		[optimisticSelections, variants, channel, productSlug, router, startTransition, setOptimisticSelections],
@@ -146,7 +146,7 @@ export function VariantSelectionSection({
 		(variantId: string) => {
 			startTransition(() => {
 				setOptimisticVariantId(variantId);
-				router.push(marketHref(channel, "/products/${productSlug}?variant=${variantId}"), { scroll: false });
+				router.push(marketHref(channel, `/products/${productSlug}?variant=${variantId}`), { scroll: false });
 			});
 		},
 		[channel, productSlug, router, startTransition, setOptimisticVariantId],

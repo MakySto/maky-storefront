@@ -45,7 +45,7 @@ function SearchResultCard({
 
 	return (
 		<Link
-			href={marketHref(channel, "/products/${product.slug}")}
+			href={marketHref(channel, `/products/${product.slug}`)}
 			className="hover:border-foreground/20 group block overflow-hidden rounded-lg border border-border bg-card transition-colors"
 		>
 			{/* Image */}

@@ -181,7 +181,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 											<Link
 												href={marketHref(
 													channel,
-													"/products/${line.variant.product.slug}?variant=${line.variant.id}",
+													`/products/${line.variant.product.slug}?variant=${line.variant.id}`,
 												)}
 												onClick={closeCart}
 												className="group bg-secondary relative h-24 w-20 shrink-0 overflow-hidden rounded-lg"
@@ -203,7 +203,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 														<Link
 															href={marketHref(
 																channel,
-																"/products/${line.variant.product.slug}?variant=${line.variant.id}",
+																`/products/${line.variant.product.slug}?variant=${line.variant.id}`,
 															)}
 															onClick={closeCart}
 															className="line-clamp-1 text-sm font-medium hover:underline"
