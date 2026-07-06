@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import edjsHTML from "editorjs-html";
 import xss from "xss";
 import { PageGetBySlugDocument } from "@/gql/graphql";
@@ -16,9 +17,19 @@ export const generateMetadata = async (props: { params: Promise<{ slug: string }
 
 	const page = result.ok ? result.data.page : null;
 
+	if (!page) {
+		// Streaming/PPR can't set a 404 status after the shell is flushed, so the
+		// noindex robots meta is the only crawler-visible not-found signal here.
+		const t = await getTranslations("pages");
+		return {
+			title: t("notFound"),
+			robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
+		};
+	}
+
 	return {
-		title: `${page?.seoTitle || page?.title || "Page"} · Saleor Storefront example`,
-		description: page?.seoDescription || page?.seoTitle || page?.title,
+		title: `${page.seoTitle || page.title || "Page"} · Saleor Storefront example`,
+		description: page.seoDescription || page.seoTitle || page.title,
 	};
 };
 

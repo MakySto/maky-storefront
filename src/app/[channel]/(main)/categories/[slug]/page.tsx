@@ -43,11 +43,22 @@ type PageProps = {
 export const generateMetadata = async (props: PageProps, parent: ResolvingMetadata): Promise<Metadata> => {
 	const params = await props.params;
 	const category = await getCategoryData(params.slug, params.channel);
-	const plainDescription = parseEditorJSToText(category?.description);
+
+	if (!category) {
+		// Streaming/PPR can't set a 404 status after the shell is flushed, so the
+		// noindex robots meta is the only crawler-visible not-found signal here.
+		const t = await getTranslations("pages");
+		return {
+			title: t("notFound"),
+			robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
+		};
+	}
+
+	const plainDescription = parseEditorJSToText(category.description);
 
 	return {
-		title: `${category?.name || "Category"} | ${category?.seoTitle || (await parent).title?.absolute}`,
-		description: category?.seoDescription || plainDescription || category?.seoTitle || category?.name,
+		title: `${category.name} | ${category.seoTitle || (await parent).title?.absolute}`,
+		description: category.seoDescription || plainDescription || category.seoTitle || category.name,
 	};
 };
 
