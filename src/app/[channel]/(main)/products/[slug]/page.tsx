@@ -135,9 +135,9 @@ async function ProductContent({
 
 	const tCommon = await getTranslations("common");
 	const breadcrumbs = [
-		{ label: tCommon("home"), href: `/${params.channel}` },
+		{ label: tCommon("home"), href: marketHref(params.channel) },
 		...(product.category
-			? [{ label: product.category.name, href: `/${params.channel}/categories/${product.category.slug}` }]
+			? [{ label: product.category.name, href: marketHref(params.channel, `/categories/${product.category.slug}`) }]
 			: []),
 		{ label: product.name },
 	];

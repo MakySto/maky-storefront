@@ -4,6 +4,7 @@ import { ProductListPaginatedDocument } from "@/gql/graphql";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { getPaginatedListVariables } from "@/lib/utils";
 import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
+import { marketHref } from "@/lib/channel-map";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import { resolveCategorySlugsToIds } from "@/ui/components/plp/filter-utils.server";
 import { ProductsPageClient } from "./products-client";
@@ -35,8 +36,8 @@ export default async function Page(props: PageProps) {
 	const params = await props.params;
 
 	const breadcrumbs = [
-		{ label: "Home", href: `/${params.channel}` },
-		{ label: "Products", href: `/${params.channel}/products` },
+		{ label: "Home", href: marketHref(params.channel) },
+		{ label: "Products", href: marketHref(params.channel, "/products") },
 	];
 
 	return (

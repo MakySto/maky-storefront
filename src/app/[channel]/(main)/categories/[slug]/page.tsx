@@ -8,6 +8,7 @@ import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { getPaginatedListVariables } from "@/lib/utils";
 import { parseEditorJSToText } from "@/lib/editorjs";
 import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
+import { marketHref } from "@/lib/channel-map";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import { CategoryPageClient } from "./client";
 
@@ -90,8 +91,8 @@ async function CategoryContent({
 	const plainDescription = parseEditorJSToText(category.description);
 
 	const breadcrumbs = [
-		{ label: t("home"), href: `/${params.channel}` },
-		{ label: category.name, href: `/${params.channel}/categories/${params.slug}` },
+		{ label: t("home"), href: marketHref(params.channel) },
+		{ label: category.name, href: marketHref(params.channel, `/categories/${params.slug}`) },
 	];
 
 	return (

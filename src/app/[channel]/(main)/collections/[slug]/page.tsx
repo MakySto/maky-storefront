@@ -8,6 +8,7 @@ import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { getPaginatedListVariables } from "@/lib/utils";
 import { parseEditorJSToText } from "@/lib/editorjs";
 import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
+import { marketHref } from "@/lib/channel-map";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import { CollectionPageClient } from "./client";
 
@@ -92,8 +93,8 @@ async function CollectionContent({
 	const plainDescription = parseEditorJSToText(collection.description);
 
 	const breadcrumbs = [
-		{ label: "Home", href: `/${params.channel}` },
-		{ label: collection.name, href: `/${params.channel}/collections/${params.slug}` },
+		{ label: "Home", href: marketHref(params.channel) },
+		{ label: collection.name, href: marketHref(params.channel, `/collections/${params.slug}`) },
 	];
 
 	return (
