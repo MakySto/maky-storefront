@@ -9,6 +9,8 @@ Element v legacy checkoute). **Toto je nový hlavný Stripe spec pre Checkout v2
 paralelný legal-critical track).
 **Guarded scope:** `CLAUDE.md §10` (checkout/payment/cart/i18n/routing) — explicit approval pred
 implementáciou; §11 (i18n parity); §13 (live-safe build/deploy).
+**Rev. 2026-07-06:** Marekove rozhodnutia zapracované — trust-badge umiestnenie, SK copy tón,
+launch = tvrdo `sk-eur`, hygiene branch pred Track B (detail §12). **Otvorené rozhodnutia: žiadne.**
 
 > Tento dokument je **plán**, nie kód. Žiadna implementácia, build, install ani deploy nevzniká jeho
 > napísaním. Implementácia je samostatná sekvencia (nižšie §4), každý krok s vlastným §10 schválením.
@@ -93,7 +95,9 @@ nie prijatím upstream route skupín.
 - **SK checkout i18n katalóg** (autorovať; v2 nemá `sk` locale) + 13-locale §11 parita.
 - **Truthfulness cleanup** checkout copy (E1–E9, DPH prechodový stav, order button, trust badges).
 - **Stripe test matica** (§11).
-- **Zachovanie `/sk` `/cz` `/at` `/de` `/gb` …** (variant C, 0 zmien verejných URL).
+- **Zachovanie `/sk` `/cz` `/at` `/de` `/gb` …** (variant C, 0 zmien verejných URL). **Launch = tvrdo
+  testovaný `sk-eur`**; ostatné trhy ostávajú architektonicky v `CHANNEL_MAP`, nie ako launch blocker
+  (rozhodnuté 2026-07-06 — viď §10).
 
 ### Out of scope
 - **Downsizing infra** (`maky-apps` m9g.large → t4g.medium) — tracked later.
@@ -183,6 +187,11 @@ Stripe práce.
 > už **čiastočne rieši homepage-canonical bug (#4)** — pri konsolidácii zjednotiť s bodom 4 vyššie.
 
 Implementácia hygiene branchu = mimo tohto specu (vlastná sekvencia + validácia + §13-safe deploy).
+
+**Poradie (rozhodnuté 2026-07-06):** SEO/e-mail hygiene branch ide **pred Track B**, ale až po
+manuálnom externom check-u. Session-sekvencia: **KROK 2** = GSC / `site:maky.store` indexed check +
+zostavenie Stripe Business URL zoznamu (browser/manuálne vstupy) → **KROK 3** = hygiene branch
+(konsolidácia 3 `claude/*` vetiev + 4 O1 bugy) → **až potom** Track B implementácia (§4).
 
 ---
 
@@ -279,12 +288,14 @@ v2 tieto demo prvky STÁLE obsahuje — adopciou nezmiznú, treba ich aktívne o
 - [ ] **Estimated delivery v confirmation = VYPUSTIŤ** pre launch (E7) — žiadny hardcoded odhad (+7 dní),
       kým nie je reálny carrier estimate.
 
-**Trust badges — áno, minimalistické a pravdivé** (pri platobnej sekcii):
+**Trust badges — áno, minimalistické, pravdivé, s presným umiestnením (rozhodnuté 2026-07-06):**
 
 ```text
-🔒 „Platba zabezpečená cez Stripe"        (pri platobnej sekcii)
-   „Bezpečná platba kartou"
-   odkaz „Právo na odstúpenie od zmluvy"  → /sk/odstupenie-od-zmluvy
+🔒 „Platba zabezpečená cez Stripe"   — HLAVNÝ text, pri platobnej sekcii
+   „Bezpečná platba kartou"          — MENŠÍ text, pod / pri order button
+                                       („Objednať s povinnosťou platby")
+   „Právo na odstúpenie od zmluvy"   — ODKAZ v právnom / summary bloku (→ /sk/odstupenie-od-zmluvy),
+                                       NIE ako marketingový badge
 ```
 
 ŽIADNE neoverené garancie, žiadne „SSL secured", žiadne free-shipping claims. Implementovať cez v2
@@ -315,8 +326,9 @@ DIZAJN: prechod medzi stavmi musí byť triviálny — jedno miesto na zmenu (fl
 - **Treba autorovať slovenský checkout katalóg** (`sk` next-intl namespaces `checkout`+`account`).
   Seed = nepoužívaný 19-kľúčový `checkout` namespace v `sk-SK.json` (vrátane „Objednať s povinnosťou
   platby") + `cart` namespace glosár (Medzisúčet/Doprava/Celkom …).
-- **Tón:** profesionálne vykanie, čistý e-shop tón, žiadne prehnané marketingové formulácie. CC navrhne
-  kompletný draft, **Marek schváli/upraví**.
+- **Tón (rozhodnuté 2026-07-06):** profesionálne vykanie, **vecný e-shop tón, žiadny hype ani neoverené
+  garancie**. CC pripraví kompletný draft katalógu, **Marek ho schváli/upraví** pri review (draft review
+  = execution krok, nie otvorené rozhodnutie).
 - **Ostatné locale držia §11 paritu** — všetkých 13 message súborov štrukturálne identických
   (missing 0 / extra 0). Interim = sk + en pre ostatných 12; plný preklad neskôr (parity invariant drží
   vždy). next-intl NIE je type-augmented → chýbajúce kľúče padajú **ticho za behu**, nie na builde →
@@ -326,6 +338,11 @@ DIZAJN: prechod medzi stavmi musí byť triviálny — jedno miesto na zmenu (fl
 ---
 
 ## 10. Test matica
+
+**Launch scope (rozhodnuté 2026-07-06):** tvrdo testovať **`sk-eur`** (SK = launch trh). Ostatné trhy
+ostávajú architektonicky v `CHANNEL_MAP`, ale **NIE sú launch blocker**, kým nie sú reálne
+nakonfigurované v Saleori a právne/logisticky pripravené. Multi-market test matica sa rozšíri až pri
+aktivácii ďalších trhov.
 
 Minimálne pokryť (spustiť s `sk_test`/`pk_test`, nikdy live kartou v teste):
 
@@ -404,18 +421,27 @@ narýchlo popri checkoute. **Tvrdá veta:** reálne objednávky nesmú ísť liv
 
 ---
 
-## 12. Open questions for Marek
+## 12. Rozhodnutia — všetky uzavreté (stav 2026-07-06)
 
-> Uzavreté rozhodnutia (capture=CHARGE · metódy karty+Apple/Google Pay · auto-complete OFF · order button
-> „Objednať s povinnosťou platby" · trust badges áno + znenie vyššie · estimated delivery vypustiť · DPH
-> prechodový stav · SK copy CC drafts → Marek schvaľuje · O1=C · route segmenty anglické) sa **NEotvárajú**.
-> Otvorené ostáva len:
+Po Marekových odpovediach (2026-07-06) **neostávajú žiadne otvorené rozhodnutia** pre Spec B.
 
-1. **Trust badge umiestnenie:** presná pozícia v checkout layoute — pri „Objednať" tlačidle, v
-   order-summary, alebo pri platobnej sekcii? (Znenie je schválené, len umiestnenie doladiť.)
-2. **SK checkout copy tón:** CC pripraví kompletný draft katalógu — potvrdiť/doladiť tón a konkrétne
-   formulácie pri review.
-3. **Saleor channels — realita:** ktoré z 13 `CHANNEL_MAP` slugov reálne existujú v Saleori (neoverené
-   voči API)? Determinuje rozsah multi-market test matice (launch = len `sk-eur`, ostatné neskôr?).
-4. **SEO/e-mail hygiene ako prvý branch:** potvrdiť, že `fix/seo-email-url-hygiene` (KROK 0) ide PRED
-   Track B implementáciou (odporúčam — je nezávislý a odblokuje čistý externý povrch pred GSC/Stripe live).
+**Uzavreté už skôr (v zadaní):** capture = CHARGE · metódy karty + Apple/Google Pay · auto-complete OFF
+· order button „Objednať s povinnosťou platby" · estimated delivery vypustiť · DPH prechodový stav ·
+O1 = variant C · route segmenty anglické.
+
+**Novo uzavreté (2026-07-06):**
+
+1. **Trust badge umiestnenie** — hlavný „🔒 Platba zabezpečená cez Stripe" pri platobnej sekcii; menší
+   „Bezpečná platba kartou" pod/pri order button; „Právo na odstúpenie od zmluvy" ako odkaz v
+   právnom/summary bloku, **nie** marketingový badge (§8).
+2. **SK checkout copy tón** — profesionálne vykanie, vecný e-shop tón, žiadny hype ani neoverené garancie
+   (§9). CC pripraví draft, Marek schvaľuje pri review (execution, nie rozhodnutie).
+3. **Launch test scope** — tvrdo `sk-eur`; ostatné trhy architektonicky v `CHANNEL_MAP`, nie launch
+   blocker, kým nie sú nakonfigurované + právne/logisticky pripravené (§10).
+4. **Poradie hygiene branchu** — pred Track B, ale až po **KROKU 2** (GSC / `site:maky.store` indexed
+   check + Stripe Business URL zoznam); hygiene branch = **KROK 3** (§5).
+
+**Zostávajúce dopredné položky nie sú rozhodnutia, ale implementačné verifikácie** (riešené v kóde, nie
+Marekom): presné `data` polia z `transactionInitialize` proti nainštalovanej appke `2.6.9` (§6) ·
+skutočná množina Saleor channel slugov voči API (§10 launch scope) · overenie DPH režimu u účtovníka pri
+registrácii za platiteľa (§8).
