@@ -7,6 +7,7 @@ import { Lock, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
 import { Label } from "@/ui/components/ui/label";
+import { marketHref } from "@/lib/channel-map";
 
 type Props = {
 	email: string;
@@ -178,7 +179,7 @@ export function SetPasswordMode({ email, token }: Props) {
 
 					<div className="text-center">
 						<Link
-							href={`/${params.channel}/login`}
+							href={marketHref(params.channel, "/login")}
 							className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground hover:no-underline"
 						>
 							Back to Sign In

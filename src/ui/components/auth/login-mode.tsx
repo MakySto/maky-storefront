@@ -119,7 +119,7 @@ export function LoginMode() {
 					<p className="mt-2 text-sm text-muted-foreground">
 						Don&apos;t have an account?{" "}
 						<Link
-							href={`/${params.channel}/signup`}
+							href={marketHref(params.channel, "/signup")}
 							className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
 						>
 							Sign up

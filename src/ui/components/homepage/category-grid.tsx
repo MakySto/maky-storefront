@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { marketHref } from "@/lib/channel-map";
 
 const CATEGORIES = [
   { key: "roofRacks" as const, icon: RoofRackIcon, href: "/categories/stresne-nosice", color: "bg-sky-50 text-sky-700" },
@@ -28,7 +29,7 @@ export function CategoryGrid() {
         {CATEGORIES.map(({ key, icon: Icon, href, color }) => (
           <Link
             key={key}
-            href={`/${channel}${href}`}
+            href={marketHref(channel, href)}
             className="group flex flex-col items-center gap-3 rounded-xl border border-gray-100 bg-white p-6 text-center shadow-sm transition hover:border-gray-200 hover:shadow-md"
           >
             <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${color} transition group-hover:scale-110`}>
