@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { type ResolvingMetadata, type Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { ProductListByCollectionDocument, ProductOrderField, OrderDirection } from "@/gql/graphql";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
@@ -42,11 +43,22 @@ type PageProps = {
 export const generateMetadata = async (props: PageProps, parent: ResolvingMetadata): Promise<Metadata> => {
 	const params = await props.params;
 	const collection = await getCollectionData(params.slug, params.channel);
-	const plainDescription = parseEditorJSToText(collection?.description);
+
+	if (!collection) {
+		// Streaming/PPR can't set a 404 status after the shell is flushed, so the
+		// noindex robots meta is the only crawler-visible not-found signal here.
+		const t = await getTranslations("pages");
+		return {
+			title: t("notFound"),
+			robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
+		};
+	}
+
+	const plainDescription = parseEditorJSToText(collection.description);
 
 	return {
-		title: `${collection?.name || "Collection"} | ${collection?.seoTitle || (await parent).title?.absolute}`,
-		description: collection?.seoDescription || plainDescription || collection?.seoTitle || collection?.name,
+		title: `${collection.name} | ${collection.seoTitle || (await parent).title?.absolute}`,
+		description: collection.seoDescription || plainDescription || collection.seoTitle || collection.name,
 	};
 };
 

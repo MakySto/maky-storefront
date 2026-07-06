@@ -54,7 +54,13 @@ export async function generateMetadata(props: {
 	const product = await getProductData(params.slug, params.channel);
 
 	if (!product) {
-		return { title: "Product Not Found" };
+		// Streaming/PPR can't set a 404 status after the shell is flushed, so the
+		// noindex robots meta is the only crawler-visible not-found signal here.
+		const t = await getTranslations("product");
+		return {
+			title: t("notFoundTitle"),
+			robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
+		};
 	}
 
 	const description = product.seoDescription || product.name;
