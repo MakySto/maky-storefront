@@ -5,10 +5,13 @@ import edjsHTML from "editorjs-html";
 import xss from "xss";
 import { PageGetBySlugDocument } from "@/gql/graphql";
 import { executePublicGraphQL } from "@/lib/graphql";
+import { buildPageMetadata } from "@/lib/seo";
 
 const parser = edjsHTML();
 
-export const generateMetadata = async (props: { params: Promise<{ slug: string }> }): Promise<Metadata> => {
+export const generateMetadata = async (props: {
+	params: Promise<{ slug: string; channel: string }>;
+}): Promise<Metadata> => {
 	const params = await props.params;
 	const result = await executePublicGraphQL(PageGetBySlugDocument, {
 		variables: { slug: params.slug },
@@ -27,10 +30,11 @@ export const generateMetadata = async (props: { params: Promise<{ slug: string }
 		};
 	}
 
-	return {
-		title: `${page.seoTitle || page.title || "Page"} · Saleor Storefront example`,
+	return buildPageMetadata({
+		title: page.seoTitle || page.title,
 		description: page.seoDescription || page.seoTitle || page.title,
-	};
+		url: `/${params.channel}/pages/${encodeURIComponent(params.slug)}`,
+	});
 };
 
 export default async function Page(props: { params: Promise<{ slug: string }> }) {

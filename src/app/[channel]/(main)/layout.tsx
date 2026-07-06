@@ -21,7 +21,9 @@ export async function generateMetadata({
 	const localeConfig = LOCALE_MAP[locale];
 
 	return {
-		title: brandConfig.siteName,
+		// absolute: the root layout's title.template would otherwise brand the
+		// site name itself ("MAKY.STORE | MAKY.STORE" on the homepage).
+		title: { absolute: brandConfig.siteName },
 		description: brandConfig.description,
 		openGraph: {
 			locale: localeConfig?.ogLocale,
