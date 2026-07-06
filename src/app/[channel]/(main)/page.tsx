@@ -1,5 +1,7 @@
 import { Suspense } from "react";
+import { type Metadata } from "next";
 import { ProductListByCollectionDocument, ProductOrderField, OrderDirection } from "@/gql/graphql";
+import { buildAlternatesMetadata } from "@/lib/seo/hreflang";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { ProductList } from "@/ui/components/product-list";
@@ -25,6 +27,14 @@ async function getFeaturedProducts(channel: string) {
 	}
 
 	return result.data.collection?.products?.edges.map(({ node }) => node) ?? [];
+}
+
+export async function generateMetadata(props: {
+	params: Promise<{ channel: string }>;
+}): Promise<Metadata> {
+	const { channel } = await props.params;
+	// Homepage owns the market canonical (/{market}) + hreflang alternates.
+	return buildAlternatesMetadata(channel);
 }
 
 export default function Page(props: { params: Promise<{ channel: string }> }) {

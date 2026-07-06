@@ -6,7 +6,6 @@ import { CartProvider, CartDrawerWrapper } from "@/ui/components/cart";
 import { brandConfig } from "@/config/brand";
 import { Logo } from "@/ui/components/shared/logo";
 import { getLocaleFromChannel, LOCALE_MAP } from "@/config/locale";
-import { buildAlternatesMetadata } from "@/lib/seo/hreflang";
 
 /**
  * Dynamic metadata per channel — hreflang, canonical, OG locale.
@@ -28,7 +27,9 @@ export async function generateMetadata({
 		openGraph: {
 			locale: localeConfig?.ogLocale,
 		},
-		...buildAlternatesMetadata(channel),
+		// Canonical + hreflang are page-specific and set per page (the homepage
+		// owns the market canonical). A layout-level canonical with path="" would
+		// wrongly mark every page as a duplicate of the market homepage.
 	};
 }
 
