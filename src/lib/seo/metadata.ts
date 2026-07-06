@@ -1,4 +1,5 @@
 import { type Metadata } from "next";
+import { formatPageTitle } from "@/config/brand";
 import { seoConfig, getMetadataBase } from "./config";
 
 /**
@@ -140,8 +141,17 @@ export function buildPageMetadata(options: {
 	const truncatedTitle = truncateText(title, 60);
 	const truncatedDescription = description ? truncateText(description, 155) : undefined;
 
+	// The channel (main) layout defines a plain string title, which resets
+	// Next's title.template inheritance below it — the brand suffix must be
+	// applied here. Saleor seoTitle content may already include the site name,
+	// so only append when it is missing. OG/Twitter titles stay unbranded
+	// (og:site_name carries the brand).
+	const brandedTitle = truncatedTitle.endsWith(seoConfig.siteName)
+		? truncatedTitle
+		: formatPageTitle(truncatedTitle);
+
 	return {
-		title: truncatedTitle,
+		title: brandedTitle,
 		description: truncatedDescription,
 
 		// Canonical URL

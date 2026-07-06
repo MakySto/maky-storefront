@@ -7,10 +7,11 @@ import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import { resolveCategorySlugsToIds } from "@/ui/components/plp/filter-utils.server";
 import { ProductsPageClient } from "./products-client";
+import { brandConfig } from "@/config/brand";
 
 export const metadata = {
-	title: "Products · Saleor Storefront example",
-	description: "All products in Saleor Storefront example",
+	title: "Products",
+	description: `All products at ${brandConfig.siteName}`,
 };
 
 type PageProps = {
