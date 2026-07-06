@@ -10,6 +10,7 @@ import { executePublicGraphQL } from "@/lib/graphql";
 import { ProductDetailsDocument, type ProductDetailsQuery } from "@/gql/graphql";
 import { buildPageMetadata, buildProductJsonLd } from "@/lib/seo";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
+import { marketHref } from "@/lib/channel-map";
 import { Breadcrumbs } from "@/ui/components/breadcrumbs";
 import {
 	ProductGallery,
@@ -72,7 +73,7 @@ export async function generateMetadata(props: {
 		title: product.seoTitle || product.name,
 		description,
 		image: ogImage,
-		url: `/${params.channel}/products/${encodeURIComponent(params.slug)}`,
+		url: marketHref(params.channel, `/products/${encodeURIComponent(params.slug)}`),
 		openGraph:
 			priceAmount && priceCurrency
 				? {
@@ -146,7 +147,7 @@ async function ProductContent({
 		description: product.seoDescription || product.name,
 		images: images.length > 0 ? images.map((img) => img.url) : undefined,
 		brand: product.category?.name,
-		url: `/${params.channel}/products/${product.slug}`,
+		url: marketHref(params.channel, `/products/${product.slug}`),
 		priceRange: product.pricing?.priceRange?.start?.gross
 			? {
 					lowPrice: product.pricing.priceRange.start.gross.amount,

@@ -6,6 +6,7 @@ import xss from "xss";
 import { PageGetBySlugDocument } from "@/gql/graphql";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { buildPageMetadata } from "@/lib/seo";
+import { marketHref } from "@/lib/channel-map";
 
 const parser = edjsHTML();
 
@@ -33,7 +34,7 @@ export const generateMetadata = async (props: {
 	return buildPageMetadata({
 		title: page.seoTitle || page.title,
 		description: page.seoDescription || page.seoTitle || page.title,
-		url: `/${params.channel}/pages/${encodeURIComponent(params.slug)}`,
+		url: marketHref(params.channel, `/pages/${encodeURIComponent(params.slug)}`),
 	});
 };
 
