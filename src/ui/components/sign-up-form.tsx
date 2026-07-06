@@ -8,6 +8,7 @@ import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
 import { Label } from "@/ui/components/ui/label";
 import { cn } from "@/lib/utils";
+import { marketHref } from "@/lib/channel-map";
 
 export function SignUpForm() {
 	const params = useParams<{ channel: string }>();
@@ -57,7 +58,7 @@ export function SignUpForm() {
 					firstName,
 					lastName,
 					channel: params.channel,
-					redirectUrl: `${window.location.origin}/${params.channel}/login`,
+					redirectUrl: `${window.location.origin}${marketHref(params.channel, "/login")}`,
 				}),
 			});
 

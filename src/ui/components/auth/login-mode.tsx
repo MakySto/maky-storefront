@@ -8,6 +8,7 @@ import { useSaleorAuthContext } from "@saleor/auth-sdk/react";
 import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
 import { Label } from "@/ui/components/ui/label";
+import { marketHref } from "@/lib/channel-map";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -85,7 +86,7 @@ export function LoginMode() {
 				body: JSON.stringify({
 					email,
 					channel: params.channel,
-					redirectUrl: `${window.location.origin}/${params.channel}/login`,
+					redirectUrl: `${window.location.origin}${marketHref(params.channel, "/login")}`,
 				}),
 			});
 

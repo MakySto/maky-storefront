@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { requestAccountDeletion } from "@/app/[channel]/(main)/account/actions";
+import { marketHref } from "@/lib/channel-map";
 
 export function DeleteAccountSection() {
 	const params = useParams<{ channel: string }>();
@@ -17,7 +18,7 @@ export function DeleteAccountSection() {
 		setError("");
 		startTransition(async () => {
 			const formData = new FormData();
-			formData.set("redirectUrl", `${window.location.origin}/${params.channel}`);
+			formData.set("redirectUrl", `${window.location.origin}${marketHref(params.channel)}`);
 			formData.set("channel", params.channel);
 			const result = await requestAccountDeletion(formData);
 			if (!result.success) {
