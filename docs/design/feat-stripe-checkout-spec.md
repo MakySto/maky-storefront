@@ -1,3 +1,7 @@
+> **SUPERSEDED (6. 7. 2026):** Tento spec popisoval bespoke Stripe Payment Element
+> v legacy checkoute. Nahradené cestou Checkout v2 + upstream INTEGRATED_GATEWAYS
+> (viď checkout-v2-migration-inventory.md a pripravovaný Spec B). Neimplementovať.
+
 # Stripe Checkout Integration — implementation spec — v1
 
 **Status:** design intent (written spec = design source per `CLAUDE.md §2`). **Date:** 2026-06-30.
