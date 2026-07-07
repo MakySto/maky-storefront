@@ -15,3 +15,16 @@ export const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 export const encodeCookieName = (key: string): string => {
 	return key.replace(/[^a-zA-Z0-9_-]/g, "_");
 };
+
+/**
+ * Decode a cookie value written by the SDK. The client storage encodes with
+ * encodeURIComponent; the server storage writes raw. Best-effort — returns the raw value
+ * unchanged if it is not URI-encoded.
+ */
+export function decodeCookieValue(value: string): string {
+	try {
+		return decodeURIComponent(value);
+	} catch {
+		return value;
+	}
+}

@@ -1,5 +1,5 @@
 import { type ReactNode, Suspense } from "react";
-import { cookies } from "next/headers";
+import { hasAuthSession } from "@/lib/auth/has-auth-session";
 import { LoginForm } from "@/ui/components/login-form";
 import { AccountNav } from "@/ui/components/account/account-nav";
 import { AccountSkeleton } from "@/ui/components/account/account-skeleton";
@@ -19,15 +19,9 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
 }
 
 async function AccountShell({ children }: { children: ReactNode }) {
-	let hasCookies = false;
-	try {
-		const cookieStore = await cookies();
-		hasCookies = cookieStore.getAll().length > 0;
-	} catch {
-		// Static generation
-	}
-
-	if (!hasCookies) {
+	// Proper auth gate: are Saleor session tokens actually present? (Not a loose
+	// "any cookie exists" scan, which was effectively always true.)
+	if (!(await hasAuthSession())) {
 		return <LoginForm />;
 	}
 

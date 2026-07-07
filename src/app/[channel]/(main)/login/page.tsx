@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/ui/components/login-form";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
+import { resolveSessionUser } from "@/lib/auth/resolve-session-user";
 import { CurrentUserDocument } from "@/gql/graphql";
 import { AuthProvider } from "@/lib/auth";
 import { marketHref } from "@/lib/channel-map";
@@ -24,22 +24,22 @@ function LoginSkeleton() {
 	return (
 		<section className="mx-auto max-w-7xl p-8 pb-24">
 			<div className="mx-auto my-16 w-full max-w-md">
-				<div className="rounded-lg border border-border bg-card p-8 shadow-sm">
+				<div className="border-border bg-card rounded-lg border p-8 shadow-sm">
 					<div className="mb-6 flex flex-col items-center gap-2">
-						<div className="h-7 w-40 animate-pulse rounded bg-secondary" />
-						<div className="h-4 w-56 animate-pulse rounded bg-secondary" />
+						<div className="bg-secondary h-7 w-40 animate-pulse rounded" />
+						<div className="bg-secondary h-4 w-56 animate-pulse rounded" />
 					</div>
 					<div className="space-y-4">
 						<div className="space-y-1.5">
-							<div className="h-4 w-24 animate-pulse rounded bg-secondary" />
-							<div className="h-12 w-full animate-pulse rounded-md bg-secondary" />
+							<div className="bg-secondary h-4 w-24 animate-pulse rounded" />
+							<div className="bg-secondary h-12 w-full animate-pulse rounded-md" />
 						</div>
 						<div className="space-y-1.5">
-							<div className="h-4 w-16 animate-pulse rounded bg-secondary" />
-							<div className="h-12 w-full animate-pulse rounded-md bg-secondary" />
+							<div className="bg-secondary h-4 w-16 animate-pulse rounded" />
+							<div className="bg-secondary h-12 w-full animate-pulse rounded-md" />
 						</div>
 						<div className="flex justify-end">
-							<div className="h-4 w-28 animate-pulse rounded bg-secondary" />
+							<div className="bg-secondary h-4 w-28 animate-pulse rounded" />
 						</div>
 						<div className="bg-foreground/10 h-12 w-full animate-pulse rounded-md" />
 					</div>
@@ -52,22 +52,14 @@ function LoginSkeleton() {
 async function LoginContent({ params: paramsPromise }: { params: Promise<{ channel: string }> }) {
 	const { channel } = await paramsPromise;
 
-	let hasCookies = false;
-	try {
-		const cookieStore = await cookies();
-		hasCookies = cookieStore.getAll().length > 0;
-	} catch {
-		// Static generation -- cookies() unavailable
-	}
+	// Already signed in → send to the market home. Existing redirect behavior is kept
+	// verbatim (market-aware routing itself is B.3, out of B.2 scope).
+	const session = await resolveSessionUser(() =>
+		executeAuthenticatedGraphQL(CurrentUserDocument, { cache: "no-cache" }),
+	);
 
-	if (hasCookies) {
-		const result = await executeAuthenticatedGraphQL(CurrentUserDocument, {
-			cache: "no-cache",
-		});
-
-		if (result.ok && result.data.me) {
-			redirect(marketHref(channel));
-		}
+	if (session.status === "authenticated") {
+		redirect(marketHref(channel));
 	}
 
 	return (
