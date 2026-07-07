@@ -334,7 +334,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 						<div className="border-border text-muted-foreground flex items-center justify-center gap-6 border-t px-6 pt-4 pb-4 text-xs">
 							<span className="flex items-center gap-1.5">
 								<RotateCcw className="h-4 w-4" />
-								30-day returns
+								Bezpečný nákup
 							</span>
 						</div>
 					</div>

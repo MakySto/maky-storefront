@@ -6,6 +6,7 @@ fix — recorded here so they are not lost. Each entry says WHERE it must be fix
 ## must-fix-before-launch
 
 ### set-password route leaks the raw token + sets dead cookies
+
 - **Where:** `src/app/api/auth/set-password/route.ts` (~:78–96)
 - **What:** the route returns the raw Saleor **token in the JSON response**, and sets
   HttpOnly `token`/`refreshToken` cookies that **nobody reads** (the session lives in the
@@ -19,6 +20,7 @@ fix — recorded here so they are not lost. Each entry says WHERE it must be fix
 - **Source:** `checkout-v2-migration-inventory.md §5` (landmine a) · O1 routing inventory.
 
 ### Unknown top-level segments render 200 index,follow (no market gate)
+
 - **What:** `src/proxy.ts` has no market gate — any unknown first path segment falls through
   to `NextResponse.next()` and renders **HTTP 200 with `robots: index, follow`** instead of a
   404/noindex. Verified on a spare-port build (2026-07-06): `/admin`, `/products/login`,
@@ -34,3 +36,31 @@ fix — recorded here so they are not lost. Each entry says WHERE it must be fix
   `SALEOR_SLUGS`). It **must not** break `/_next/*`, `/api/*`, `/robots.txt`, `/sitemap.xml`,
   static assets, or webhooks — routing is easy to break, so this needs its own validation.
 - **Source:** O1 routing inventory §1 (no market gate) · SEO hygiene branch runtime verify 2026-07-06.
+
+## deferred (truthfulness + design — fix in Track B / design track)
+
+### Cart drawer vs /checkout Order Summary truthfulness inconsistency (temporary, intentional)
+
+- **What:** the cart drawer trust signal was fixed to **"Bezpečný nákup"** (was the untruthful
+  "30-day returns"), BUT `/checkout` **Order Summary still shows** `Shipping: Free`
+  (`src/checkout/views/saleor-checkout/order-summary.tsx:323`) + a **"30-day returns"** trust
+  badge (`:365–367`) + a **"Free shipping"** trust badge (`:373–376`), and the whole checkout is
+  in **English**.
+- **Why deferred:** checkout is §10-protected (checkout logic) and gets replaced wholesale in
+  **Track B** (checkout v2 adoption). Editing it piecemeal now risks the §10 surface.
+- **Truthfulness:** "Free shipping" is untrue (MAKY has no free shipping — FedEx, price shown in
+  cart); "30-day returns" is untrue (statutory **14 days**; 30 only maybe later for registered
+  users).
+- **Fix:** unify in **Track B** — checkout v2 adoption + Spec B §9 truthfulness cleanup + SK i18n
+  (drop "Free shipping", correct the returns wording, localize the whole Order Summary).
+- **Source:** homepage-truthfulness branch (cart drawer fixed 2026-07-07); checkout left as-is.
+
+### Hero banner is hardcoded — Marek wants an editable banner
+
+- **What:** the homepage hero (`src/ui/components/homepage/hero-section.tsx`) is hardcoded
+  text + CTA. Marek wants an **editable banner** (image + text + CTA) changeable **without a
+  deploy**.
+- **Fix (REDESIGN item, NOT part of the truthfulness fix):** rebuild the hero as an
+  editable-banner system — **Payload CMS** (planned stack) or **Saleor metadata** as an interim
+  source. Separate frontend feature on its own track.
+- **Source:** Marek, 2026-07-07 (during homepage-truthfulness work).

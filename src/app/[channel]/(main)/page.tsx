@@ -6,6 +6,7 @@ import { executePublicGraphQL } from "@/lib/graphql";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { ProductList } from "@/ui/components/product-list";
 import { HeroSection, CategoryGrid, WhyMaky, BrandsStrip, NewsletterCTA } from "@/ui/components/homepage";
+import { getTranslations } from "next-intl/server";
 
 async function getFeaturedProducts(channel: string) {
 	"use cache";
@@ -29,9 +30,7 @@ async function getFeaturedProducts(channel: string) {
 	return result.data.collection?.products?.edges.map(({ node }) => node) ?? [];
 }
 
-export async function generateMetadata(props: {
-	params: Promise<{ channel: string }>;
-}): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {
 	const { channel } = await props.params;
 	// Homepage owns the market canonical (/{market}) + hreflang alternates.
 	return buildAlternatesMetadata(channel);
@@ -43,38 +42,11 @@ export default function Page(props: { params: Promise<{ channel: string }> }) {
 			<HeroSection />
 			<CategoryGrid />
 
-			{/* Featured Products */}
-			<section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-				<h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-					Featured Products
-				</h2>
-				<div className="mt-8">
-					<Suspense
-						fallback={
-							<ul
-								role="list"
-								data-testid="ProductList"
-								className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-							>
-								{Array.from({ length: 8 }).map((_, i) => (
-									<li key={i} className="animate-pulse">
-										<div className="aspect-square overflow-hidden rounded-lg bg-gray-100" />
-										<div className="mt-3 flex justify-between">
-											<div>
-												<div className="h-4 w-32 rounded bg-gray-100" />
-												<div className="mt-2 h-4 w-20 rounded bg-gray-100" />
-											</div>
-											<div className="h-4 w-16 rounded bg-gray-100" />
-										</div>
-									</li>
-								))}
-							</ul>
-						}
-					>
-						<FeaturedProducts params={props.params} />
-					</Suspense>
-				</div>
-			</section>
+			{/* Featured Products — the whole section (heading included) renders only when the
+			    featured-products collection is non-empty; otherwise it is hidden entirely. */}
+			<Suspense fallback={<FeaturedProductsSkeleton />}>
+				<FeaturedProducts params={props.params} />
+			</Suspense>
 
 			<WhyMaky />
 			<BrandsStrip />
@@ -87,13 +59,46 @@ async function FeaturedProducts({ params: paramsPromise }: { params: Promise<{ c
 	const { channel } = await paramsPromise;
 	const products = await getFeaturedProducts(channel);
 
+	// No featured products yet → hide the whole section (no heading, no English placeholder).
 	if (products.length === 0) {
-		return (
-			<p className="text-center text-gray-500 py-8">
-				No featured products yet. Products will appear here after CFM publication.
-			</p>
-		);
+		return null;
 	}
 
-	return <ProductList products={products} />;
+	const t = await getTranslations("home");
+
+	return (
+		<section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+			<h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">{t("featuredTitle")}</h2>
+			<div className="mt-8">
+				<ProductList products={products} />
+			</div>
+		</section>
+	);
+}
+
+function FeaturedProductsSkeleton() {
+	return (
+		<section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+			<div className="mt-8">
+				<ul
+					role="list"
+					data-testid="ProductList"
+					className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+				>
+					{Array.from({ length: 8 }).map((_, i) => (
+						<li key={i} className="animate-pulse">
+							<div className="aspect-square overflow-hidden rounded-lg bg-gray-100" />
+							<div className="mt-3 flex justify-between">
+								<div>
+									<div className="h-4 w-32 rounded bg-gray-100" />
+									<div className="mt-2 h-4 w-20 rounded bg-gray-100" />
+								</div>
+								<div className="h-4 w-16 rounded bg-gray-100" />
+							</div>
+						</li>
+					))}
+				</ul>
+			</div>
+		</section>
+	);
 }
