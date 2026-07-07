@@ -14,6 +14,64 @@ export async function getIdFromCookies(channel: string) {
 	}
 }
 
+/**
+ * Channel slug from cart cookies when the checkout channel is not yet known (e.g. an
+ * empty checkout, or `/checkout` opened without `?checkout=`). Checkout lives at
+ * `/checkout` (no `[channel]` segment) but cart cookies are per channel: the default
+ * channel (`NEXT_PUBLIC_DEFAULT_CHANNEL`, `sk-eur`) wins, else the pick is deterministic
+ * (alphabetical) across channels.
+ */
+export async function getChannelSlugFromCartCookies(): Promise<string | null> {
+	try {
+		const cartCookies = (await cookies())
+			.getAll()
+			.filter((cookie) => cookie.name.startsWith("checkoutId-") && cookie.value);
+
+		if (cartCookies.length === 0) {
+			return null;
+		}
+
+		const channelFromCookie = (name: string) => name.slice(checkoutIdCookieName("").length);
+
+		const defaultChannel = process.env.NEXT_PUBLIC_DEFAULT_CHANNEL;
+		if (defaultChannel) {
+			const preferred = cartCookies.find((cookie) => cookie.name === checkoutIdCookieName(defaultChannel));
+			if (preferred) {
+				return channelFromCookie(preferred.name);
+			}
+		}
+
+		return channelFromCookie([...cartCookies].sort((a, b) => a.name.localeCompare(b.name))[0].name);
+	} catch {
+		return null;
+	}
+}
+
+/** Cart checkout id when `/checkout` has no `?checkout=` param (default channel wins). */
+export async function getFirstCheckoutIdFromCartCookies(): Promise<string | null> {
+	try {
+		const cartCookies = (await cookies())
+			.getAll()
+			.filter((cookie) => cookie.name.startsWith("checkoutId-") && cookie.value);
+
+		if (cartCookies.length === 0) {
+			return null;
+		}
+
+		const defaultChannel = process.env.NEXT_PUBLIC_DEFAULT_CHANNEL;
+		if (defaultChannel) {
+			const preferred = cartCookies.find((cookie) => cookie.name === checkoutIdCookieName(defaultChannel));
+			if (preferred) {
+				return preferred.value;
+			}
+		}
+
+		return [...cartCookies].sort((a, b) => a.name.localeCompare(b.name))[0].value;
+	} catch {
+		return null;
+	}
+}
+
 export async function saveIdToCookie(channel: string, checkoutId: string) {
 	const shouldUseHttps =
 		process.env.NEXT_PUBLIC_STOREFRONT_URL?.startsWith("https") || !!process.env.NEXT_PUBLIC_VERCEL_URL;
@@ -27,6 +85,24 @@ export async function saveIdToCookie(channel: string, checkoutId: string) {
 export async function clearCheckoutCookie(channel: string) {
 	const cookieName = checkoutIdCookieName(channel);
 	(await cookies()).delete(cookieName);
+}
+
+/** Remove any channel cookie that points at a stale checkout id (checkout not found). */
+export async function clearCheckoutCookieByValue(checkoutId: string) {
+	if (!checkoutId) {
+		return;
+	}
+
+	try {
+		const cookieStore = await cookies();
+		for (const cookie of cookieStore.getAll()) {
+			if (cookie.name.startsWith("checkoutId-") && cookie.value === checkoutId) {
+				cookieStore.delete(cookie.name);
+			}
+		}
+	} catch {
+		// Ignore in static contexts
+	}
 }
 
 export async function find(checkoutId: string) {
