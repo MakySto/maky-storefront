@@ -58,7 +58,9 @@ export function LoginMode() {
 			}
 
 			if (result.data?.tokenCreate?.token) {
-				router.push(`/${params.channel}`);
+				// Friendly market URL (e.g. /sk), not the internal Saleor slug (/sk-eur, which
+				// would only 301 back to /sk). marketHref maps every channel via REVERSE_MAP.
+				router.push(marketHref(params.channel));
 				router.refresh();
 			}
 		} catch {
@@ -113,14 +115,14 @@ export function LoginMode() {
 
 	return (
 		<div className="mx-auto my-16 w-full max-w-md">
-			<div className="rounded-lg border border-border bg-card p-8 shadow-sm">
+			<div className="border-border bg-card rounded-lg border p-8 shadow-sm">
 				<div className="mb-6 text-center">
 					<h1 className="text-2xl font-semibold">Welcome Back</h1>
-					<p className="mt-2 text-sm text-muted-foreground">
+					<p className="text-muted-foreground mt-2 text-sm">
 						Don&apos;t have an account?{" "}
 						<Link
 							href={marketHref(params.channel, "/signup")}
-							className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
+							className="text-foreground font-medium underline underline-offset-2 hover:no-underline"
 						>
 							Sign up
 						</Link>
@@ -129,7 +131,7 @@ export function LoginMode() {
 
 				<form onSubmit={handleLogin} className="space-y-4">
 					{error && (
-						<div role="alert" className="bg-destructive/10 rounded-md p-3 text-sm text-destructive">
+						<div role="alert" className="bg-destructive/10 text-destructive rounded-md p-3 text-sm">
 							{error}
 						</div>
 					)}
@@ -145,7 +147,7 @@ export function LoginMode() {
 							Email address
 						</Label>
 						<div className="relative">
-							<Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 							<Input
 								id="email"
 								type="email"
@@ -168,7 +170,7 @@ export function LoginMode() {
 							Password
 						</Label>
 						<div className="relative">
-							<Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 							<Input
 								id="password"
 								type={showPassword ? "text" : "password"}
@@ -176,14 +178,14 @@ export function LoginMode() {
 								autoComplete="current-password"
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
-								className="h-12 pl-10 pr-10"
+								className="h-12 pr-10 pl-10"
 								required
 							/>
 							<button
 								type="button"
 								onClick={() => setShowPassword(!showPassword)}
 								aria-label={showPassword ? "Hide password" : "Show password"}
-								className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+								className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
 							>
 								{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
 							</button>
@@ -195,7 +197,7 @@ export function LoginMode() {
 							type="button"
 							onClick={handleForgotPassword}
 							disabled={isSubmitting}
-							className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground hover:no-underline disabled:opacity-50"
+							className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-2 hover:no-underline disabled:opacity-50"
 						>
 							{resetEmailSent ? "Resend link?" : "Forgot password?"}
 						</button>
