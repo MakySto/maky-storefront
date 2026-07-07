@@ -4,11 +4,11 @@ import { useState, useCallback, type FC } from "react";
 import { Truck, Clock, Leaf, ChevronLeft } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { cn } from "@/lib/utils";
-import { type CheckoutFragment, useCheckoutDeliveryMethodUpdateMutation } from "@/checkout/graphql";
+import { type CheckoutFragment } from "@/checkout/graphql";
+import { checkoutDeliveryMethodUpdateAction } from "@/checkout/lib/actions";
 import { CheckoutSummaryContext, buildShippingSummaryRows } from "./checkout-summary-context";
 import { useCheckout } from "@/checkout/hooks/use-checkout";
 import { formatShippingPrice } from "@/checkout/lib/utils/money";
-import { localeConfig } from "@/config/locale";
 import { MobileStickyAction } from "./mobile-sticky-action";
 import { getStepNumber } from "./flow";
 
@@ -32,9 +32,6 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 	const [selectedMethod, setSelectedMethod] = useState(currentMethodId || shippingMethods[0]?.id);
 	const [isSubmittingLocal, setIsSubmittingLocal] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-
-	// Mutation
-	const [, updateDeliveryMethod] = useCheckoutDeliveryMethodUpdateMutation();
 
 	// Summary rows for context display
 	const summaryRows = buildShippingSummaryRows(checkout);
@@ -75,10 +72,9 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 			setError(null);
 
 			try {
-				const result = await updateDeliveryMethod({
+				const result = await checkoutDeliveryMethodUpdateAction({
 					checkoutId: checkout.id,
 					deliveryMethodId: selectedMethod,
-					languageCode: localeConfig.graphqlLanguageCode,
 				});
 
 				if (result.error) {
@@ -91,7 +87,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 				setIsSubmittingLocal(false);
 			}
 		},
-		[selectedMethod, currentMethodId, onNext, updateDeliveryMethod, checkout.id],
+		[selectedMethod, currentMethodId, onNext, checkout.id],
 	);
 
 	const buttonText = isSubmittingLocal ? "Saving..." : "Continue to payment";
@@ -105,12 +101,12 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 			<section className="space-y-4">
 				<h2 className="text-lg font-semibold">Shipping method</h2>
 
-				{error && <p className="text-sm text-destructive">{error}</p>}
+				{error && <p className="text-destructive text-sm">{error}</p>}
 
 				{fetching ? (
-					<div className="flex items-center gap-3 rounded-lg border border-border p-4">
-						<div className="h-5 w-5 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
-						<p className="text-sm text-muted-foreground">Loading shipping methods...</p>
+					<div className="border-border flex items-center gap-3 rounded-lg border p-4">
+						<div className="border-foreground h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
+						<p className="text-muted-foreground text-sm">Loading shipping methods...</p>
 					</div>
 				) : shippingMethods.length === 0 ? (
 					<div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
@@ -136,7 +132,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 									key={method.id}
 									className={cn(
 										"flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors",
-										"focus-within:ring-2 focus-within:ring-foreground focus-within:ring-offset-2",
+										"focus-within:ring-foreground focus-within:ring-2 focus-within:ring-offset-2",
 										isSelected
 											? "bg-secondary/50 border-foreground"
 											: "hover:border-muted-foreground/50 border-border",
@@ -159,7 +155,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 											isSelected ? "border-foreground" : "border-muted-foreground/50",
 										)}
 									>
-										{isSelected && <div className="h-2.5 w-2.5 rounded-full bg-foreground" />}
+										{isSelected && <div className="bg-foreground h-2.5 w-2.5 rounded-full" />}
 									</div>
 									<Icon className={cn("h-5 w-5", isEco ? "text-green-600" : "text-muted-foreground")} />
 									<div className="flex-1">
@@ -172,7 +168,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 											)}
 										</div>
 										{method.minimumDeliveryDays && method.maximumDeliveryDays && (
-											<p className="text-sm text-muted-foreground">
+											<p className="text-muted-foreground text-sm">
 												{method.minimumDeliveryDays}-{method.maximumDeliveryDays} business days
 											</p>
 										)}
@@ -190,7 +186,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 				<button
 					type="button"
 					onClick={onBack}
-					className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+					className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm transition-colors"
 				>
 					<ChevronLeft className="h-4 w-4" />
 					Return to information

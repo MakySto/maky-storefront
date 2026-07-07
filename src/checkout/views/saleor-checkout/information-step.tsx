@@ -4,13 +4,12 @@ import { useState, useEffect, useCallback, type FC } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/ui/components/ui/button";
 import { ExpressCheckout } from "@/checkout/components/express-checkout";
+import { type CheckoutFragment, type CountryCode } from "@/checkout/graphql";
 import {
-	type CheckoutFragment,
-	type CountryCode,
-	useCheckoutEmailUpdateMutation,
-	useCheckoutShippingAddressUpdateMutation,
-	useUserRegisterMutation,
-} from "@/checkout/graphql";
+	checkoutEmailUpdateAction,
+	checkoutShippingAddressUpdateAction,
+	userRegisterAction,
+} from "@/checkout/lib/actions";
 import { useAvailableShippingCountries } from "@/checkout/hooks/use-available-shipping-countries";
 import { useAddressFormUtils } from "@/checkout/components/address-form/use-address-form-utils";
 import {
@@ -20,7 +19,6 @@ import {
 } from "@/checkout/components/address-form/utils";
 import { useUser } from "@/checkout/hooks/use-user";
 import { getQueryParams, createQueryString } from "@/checkout/lib/utils/url";
-import { localeConfig } from "@/config/locale";
 import { getStepNumber } from "./flow";
 
 // Extracted components
@@ -53,11 +51,6 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 	// Default country: use checkout's address, or first available country from channel
 	const defaultCountry =
 		(shippingAddress?.country?.code as CountryCode) || availableShippingCountries[0] || ("US" as CountryCode);
-
-	// Mutations
-	const [, updateEmail] = useCheckoutEmailUpdateMutation();
-	const [, updateShippingAddress] = useCheckoutShippingAddressUpdateMutation();
-	const [, userRegister] = useUserRegisterMutation();
 
 	// View state - what sub-view are we showing?
 	const [contactView, setContactView] = useState<ContactView>(() => {
@@ -284,10 +277,9 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 			try {
 				// Update email (guests)
 				if (!authenticated) {
-					const emailResult = await updateEmail({
+					const emailResult = await checkoutEmailUpdateAction({
 						checkoutId: checkout.id,
 						email,
-						languageCode: localeConfig.graphqlLanguageCode,
 					});
 					if (emailResult.error) {
 						setErrors({ email: "Failed to update email" });
@@ -305,7 +297,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 
 					// Create account if requested
 					if (createAccount && accountPassword) {
-						const registerResult = await userRegister({
+						const registerResult = await userRegisterAction({
 							input: {
 								email,
 								password: accountPassword,
@@ -336,10 +328,9 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 					}
 
 					if (addressInput) {
-						const addressResult = await updateShippingAddress({
+						const addressResult = await checkoutShippingAddressUpdateAction({
 							checkoutId: checkout.id,
 							shippingAddress: addressInput,
-							languageCode: localeConfig.graphqlLanguageCode,
 						});
 
 						if (addressResult.error) {
@@ -380,9 +371,6 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 			getFieldLabel,
 			formData,
 			countryCode,
-			updateEmail,
-			userRegister,
-			updateShippingAddress,
 			onNext,
 		],
 	);

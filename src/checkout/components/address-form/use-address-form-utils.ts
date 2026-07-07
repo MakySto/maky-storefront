@@ -1,10 +1,7 @@
 import camelCase from "lodash-es/camelCase";
-import { useCallback, useMemo } from "react";
-import {
-	type CountryCode,
-	useAddressValidationRulesQuery,
-	type ValidationRulesFragment,
-} from "@/checkout/graphql";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { type CountryCode, type ValidationRulesFragment } from "@/checkout/graphql";
+import { addressValidationRulesAction } from "@/checkout/lib/actions";
 import { type OptionalAddress, type AddressField } from "@/checkout/components/address-form/types";
 import { defaultCountry } from "@/checkout/lib/consts/countries";
 import { getOrderedAddressFields, getRequiredAddressFields } from "@/checkout/components/address-form/utils";
@@ -56,11 +53,25 @@ export const localizedAddressFieldMessages: Record<LocalizedAddressFieldLabel, s
 };
 
 export const useAddressFormUtils = (countryCode: CountryCode = defaultCountry) => {
-	const [{ data, fetching }] = useAddressValidationRulesQuery({
-		variables: { countryCode },
-	});
+	// Country-specific validation rules — fetched client-side via a server action (no urql).
+	const [validationRules, setValidationRules] = useState<ValidationRulesFragment | undefined>(undefined);
+	const [fetching, setFetching] = useState(true);
 
-	const validationRules = data?.addressValidationRules as ValidationRulesFragment;
+	useEffect(() => {
+		let cancelled = false;
+		// eslint-disable-next-line react-hooks/set-state-in-effect -- reset loading when countryCode changes
+		setFetching(true);
+		void addressValidationRulesAction({ countryCode }).then((result) => {
+			if (cancelled) {
+				return;
+			}
+			setValidationRules((result.data?.addressValidationRules as ValidationRulesFragment) ?? undefined);
+			setFetching(false);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [countryCode]);
 
 	const { countryAreaType, postalCodeType, cityType } = validationRules || {};
 

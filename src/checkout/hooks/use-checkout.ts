@@ -1,30 +1,25 @@
-import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { type Checkout } from "@/checkout/graphql";
+import { useCheckoutData } from "@/checkout/providers/checkout-data";
 
-import { type Checkout, useCheckoutQuery } from "@/checkout/graphql";
-import { extractCheckoutIdFromParams, getQueryParams } from "@/checkout/lib/utils/url";
-import { localeConfig } from "@/config/locale";
+/**
+ * Live checkout from the RSC-hydrated context (replaces the urql `useCheckoutQuery`).
+ *
+ * There is no urql client in the checkout runtime: the checkout is fetched server-side by the
+ * RSC loader and seeded into `CheckoutDataProvider`. `fetching` is always false (data is present
+ * on first paint); `refetch` re-reads from Saleor via a server action.
+ */
+export const useCheckout = ({ pause = false }: { pause?: boolean } = {}) => {
+	void pause; // retained for call-site compatibility; there is no query to pause
+	const { checkout, hasCheckoutId, refreshCheckout } = useCheckoutData();
 
-export const useCheckout = ({ pause = false } = {}) => {
-	const searchParams = useSearchParams();
-	const queryParams = useMemo(() => getQueryParams(searchParams), [searchParams]);
-	const id = extractCheckoutIdFromParams(queryParams);
-
-	// Pause the query if there's no checkout ID
-	const shouldPause = pause || !id;
-
-	const [{ data, fetching, stale }, refetch] = useCheckoutQuery({
-		variables: { id: id || "", languageCode: localeConfig.graphqlLanguageCode },
-		pause: shouldPause,
-	});
-
-	return useMemo(
-		() => ({
-			checkout: data?.checkout as Checkout,
-			fetching: fetching || stale,
-			refetch,
-			hasCheckoutId: !!id,
-		}),
-		[data?.checkout, fetching, refetch, stale, id],
-	);
+	return {
+		// Cast to the broad schema `Checkout` type (as the legacy urql hook did): the RSC query
+		// returns the `...CheckoutFragment` selection, which the views consume as `CheckoutFragment`
+		// and which exposes `user` for the customer-attach flow. The composer null-guards before
+		// rendering steps, so the non-null type matches the render contract.
+		checkout: checkout as Checkout,
+		fetching: false,
+		refetch: refreshCheckout,
+		hasCheckoutId,
+	};
 };

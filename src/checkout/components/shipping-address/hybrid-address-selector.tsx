@@ -1,11 +1,8 @@
 "use client";
 
 import { type FC, useState, useCallback } from "react";
-import {
-	type AddressFragment,
-	type AddressTypeEnum,
-	useUserSetDefaultAddressMutation,
-} from "@/checkout/graphql";
+import { type AddressFragment, type AddressTypeEnum } from "@/checkout/graphql";
+import { userSetDefaultAddressAction } from "@/checkout/lib/actions";
 import { Checkbox } from "@/ui/components/ui/checkbox";
 import { Label } from "@/ui/components/ui/label";
 import { LoadingSpinner } from "@/checkout/ui-kit/loading-spinner";
@@ -58,7 +55,6 @@ export const HybridAddressSelector: FC<HybridAddressSelectorProps> = ({
 	const [sheetOpen, setSheetOpen] = useState(false);
 
 	// For collapsed mode: manage "set as default" state here
-	const [, setDefaultAddress] = useUserSetDefaultAddressMutation();
 	const [isSettingDefault, setIsSettingDefault] = useState(false);
 	const [setAsDefault, setSetAsDefault] = useState(false);
 
@@ -85,7 +81,7 @@ export const HybridAddressSelector: FC<HybridAddressSelectorProps> = ({
 			if (checked && selectedAddressId) {
 				setIsSettingDefault(true);
 				try {
-					const result = await setDefaultAddress({
+					const result = await userSetDefaultAddressAction({
 						id: selectedAddressId,
 						type: addressType,
 					});
@@ -102,12 +98,12 @@ export const HybridAddressSelector: FC<HybridAddressSelectorProps> = ({
 				}
 			}
 		},
-		[selectedAddressId, setDefaultAddress, addressType, onDefaultChange],
+		[selectedAddressId, addressType, onDefaultChange],
 	);
 
 	// Empty state
 	if (addresses.length === 0) {
-		return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
+		return <p className="text-muted-foreground text-sm">{emptyMessage}</p>;
 	}
 
 	// Inline mode: delegate to AddressSelector
@@ -144,7 +140,7 @@ export const HybridAddressSelector: FC<HybridAddressSelectorProps> = ({
 				<button
 					type="button"
 					onClick={() => setSheetOpen(true)}
-					className="border-muted-foreground/50 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed p-4 text-sm text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+					className="border-muted-foreground/50 text-muted-foreground hover:border-foreground hover:text-foreground flex w-full items-center justify-center gap-2 rounded-lg border border-dashed p-4 text-sm transition-colors"
 				>
 					Select an address
 				</button>
@@ -175,7 +171,7 @@ export const HybridAddressSelector: FC<HybridAddressSelectorProps> = ({
 					/>
 					<Label
 						htmlFor={`${name}-setDefault`}
-						className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground"
+						className="text-muted-foreground flex cursor-pointer items-center gap-2 text-sm"
 					>
 						{isSettingDefault && <LoadingSpinner />}
 						Set as my default {addressType === "SHIPPING" ? "shipping" : "billing"} address

@@ -1,11 +1,11 @@
-import { useUserQuery } from "@/checkout/graphql";
+import { useCheckoutUser } from "@/checkout/providers/checkout-user";
 
+/**
+ * Customer from the RSC-hydrated context (replaces the urql `useUserQuery`). The user is fetched
+ * server-side by the RSC loader (B.2 BFF auth path); `loading` is always false on the client.
+ */
 export const useUser = () => {
-	const [{ data, fetching: loading, stale }] = useUserQuery();
+	const { user, authenticated } = useCheckoutUser();
 
-	const user = data?.user;
-
-	const authenticated = !!user?.id;
-
-	return { user, loading: loading || stale, authenticated };
+	return { user, loading: false, authenticated };
 };

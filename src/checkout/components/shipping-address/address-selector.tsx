@@ -1,11 +1,8 @@
 "use client";
 
 import { type FC, useState, useCallback } from "react";
-import {
-	type AddressFragment,
-	type AddressTypeEnum,
-	useUserSetDefaultAddressMutation,
-} from "@/checkout/graphql";
+import { type AddressFragment, type AddressTypeEnum } from "@/checkout/graphql";
+import { userSetDefaultAddressAction } from "@/checkout/lib/actions";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/ui/components/ui/checkbox";
 import { Label } from "@/ui/components/ui/label";
@@ -47,7 +44,6 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 	onEdit,
 	showSetAsDefault = true,
 }) => {
-	const [, setDefaultAddress] = useUserSetDefaultAddressMutation();
 	const [isSettingDefault, setIsSettingDefault] = useState(false);
 	const [setAsDefault, setSetAsDefault] = useState(false);
 
@@ -68,7 +64,7 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 			if (checked && selectedAddressId) {
 				setIsSettingDefault(true);
 				try {
-					const result = await setDefaultAddress({
+					const result = await userSetDefaultAddressAction({
 						id: selectedAddressId,
 						type: addressType,
 					});
@@ -87,11 +83,11 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 				}
 			}
 		},
-		[selectedAddressId, setDefaultAddress, addressType, onDefaultChange],
+		[selectedAddressId, addressType, onDefaultChange],
 	);
 
 	if (addresses.length === 0) {
-		return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
+		return <p className="text-muted-foreground text-sm">{emptyMessage}</p>;
 	}
 
 	const shouldShowSetAsDefault =
@@ -108,7 +104,7 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 						key={address.id}
 						className={cn(
 							"flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-colors",
-							"focus-within:ring-2 focus-within:ring-foreground focus-within:ring-offset-2",
+							"focus-within:ring-foreground focus-within:ring-2 focus-within:ring-offset-2",
 							isSelected ? "bg-muted/30 border-foreground" : "hover:border-muted-foreground/50 border-border",
 						)}
 					>
@@ -126,7 +122,7 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 								isSelected ? "border-foreground" : "border-muted-foreground/50",
 							)}
 						>
-							{isSelected && <div className="h-2.5 w-2.5 rounded-full bg-foreground" />}
+							{isSelected && <div className="bg-foreground h-2.5 w-2.5 rounded-full" />}
 						</div>
 						<div className="flex-1 space-y-1">
 							<div className="flex items-center gap-2">
@@ -134,20 +130,20 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 									{address.firstName} {address.lastName}
 								</span>
 								{isDefault && (
-									<span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+									<span className="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs font-medium">
 										Default
 									</span>
 								)}
 							</div>
-							<p className="text-sm text-muted-foreground">
+							<p className="text-muted-foreground text-sm">
 								{address.streetAddress1}
 								{address.streetAddress2 && `, ${address.streetAddress2}`}
 							</p>
-							<p className="text-sm text-muted-foreground">
+							<p className="text-muted-foreground text-sm">
 								{address.city}
 								{address.countryArea && `, ${address.countryArea}`} {address.postalCode}
 							</p>
-							<p className="text-sm text-muted-foreground">{address.country?.country}</p>
+							<p className="text-muted-foreground text-sm">{address.country?.country}</p>
 						</div>
 						{/* Edit button */}
 						{onEdit && (
@@ -158,7 +154,7 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 									e.stopPropagation();
 									onEdit(address.id);
 								}}
-								className="shrink-0 rounded px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+								className="text-muted-foreground hover:bg-muted hover:text-foreground shrink-0 rounded px-2 py-1 text-sm transition-colors"
 							>
 								Edit
 							</button>
@@ -178,7 +174,7 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 					/>
 					<Label
 						htmlFor={`${name}-setDefault`}
-						className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground"
+						className="text-muted-foreground flex cursor-pointer items-center gap-2 text-sm"
 					>
 						{isSettingDefault && <LoadingSpinner />}
 						Set as my default {addressType === "SHIPPING" ? "shipping" : "billing"} address

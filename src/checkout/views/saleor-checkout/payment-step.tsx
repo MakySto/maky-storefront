@@ -5,21 +5,18 @@ import { ChevronLeft, AlertCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/ui/components/ui/button";
 import { CheckoutSummaryContext, buildPaymentSummaryRows } from "./checkout-summary-context";
+import { type CheckoutFragment, type CountryCode, type AddressFragment } from "@/checkout/graphql";
 import {
-	type CheckoutFragment,
-	type CountryCode,
-	type AddressFragment,
-	useCheckoutBillingAddressUpdateMutation,
-	useTransactionInitializeMutation,
-	useCheckoutCompleteMutation,
-} from "@/checkout/graphql";
+	checkoutBillingAddressUpdateAction,
+	checkoutCompleteAction,
+	transactionInitializeAction,
+} from "@/checkout/lib/actions";
 import { useCheckout } from "@/checkout/hooks/use-checkout";
 import { useUser } from "@/checkout/hooks/use-user";
 import { getAddressInputData } from "@/checkout/components/address-form/utils";
 // Dummy payment gateway ID (from Saleor Dummy Payment app)
 const dummyGatewayId = "mirumee.payments.dummy";
 import { createQueryString } from "@/checkout/lib/utils/url";
-import { localeConfig } from "@/config/locale";
 import { MobileStickyAction } from "./mobile-sticky-action";
 import { getStepNumber } from "./flow";
 
@@ -115,11 +112,6 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [errors, setErrors] = useState<Record<string, string>>({});
 
-	// Mutations
-	const [, updateBillingAddress] = useCheckoutBillingAddressUpdateMutation();
-	const [transactionState, transactionInitialize] = useTransactionInitializeMutation();
-	const [completeState, checkoutComplete] = useCheckoutCompleteMutation();
-
 	// Check for available payment gateways
 	const availableGateways = checkout.availablePaymentGateways || [];
 	const hasDummyGateway = availableGateways.some((g) => g.id === dummyGatewayId);
@@ -191,10 +183,9 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 						});
 					}
 
-					const result = await updateBillingAddress({
+					const result = await checkoutBillingAddressUpdateAction({
 						checkoutId: checkout.id,
 						billingAddress: addressInput,
-						languageCode: localeConfig.graphqlLanguageCode,
 					});
 					if (result.error) {
 						setErrors({ streetAddress1: "Failed to update billing address" });
@@ -227,10 +218,9 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 						phone: shippingAddress.phone || "",
 						countryCode: shippingAddress.country?.code as CountryCode,
 					});
-					await updateBillingAddress({
+					await checkoutBillingAddressUpdateAction({
 						checkoutId: checkout.id,
 						billingAddress: addressInput,
-						languageCode: localeConfig.graphqlLanguageCode,
 					});
 				}
 
@@ -238,7 +228,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 				if (hasDummyGateway) {
 					const checkoutId = checkout.id;
 
-					const initResult = await transactionInitialize({
+					const initResult = await transactionInitializeAction({
 						checkoutId,
 						paymentGateway: {
 							id: dummyGatewayId,
@@ -265,7 +255,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 					}
 
 					// Complete the checkout and create the order
-					const completeResult = await checkoutComplete({
+					const completeResult = await checkoutCompleteAction({
 						checkoutId,
 					});
 
@@ -324,9 +314,6 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 			checkout.id,
 			hasDummyGateway,
 			hasRealGateway,
-			updateBillingAddress,
-			transactionInitialize,
-			checkoutComplete,
 			onComplete,
 			searchParams,
 			router,
@@ -335,14 +322,10 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 
 	const isCardValid = isCardDataValid(cardData);
 
-	const isPaymentProcessing = transactionState.fetching || completeState.fetching;
+	const isPaymentProcessing = false;
 
 	const isLoading = isProcessing || isPaymentProcessing;
-	const buttonText = isLoading
-		? completeState.fetching
-			? "Creating order..."
-			: "Processing payment..."
-		: `Pay ${totalStr}`;
+	const buttonText = isLoading ? "Processing payment..." : `Pay ${totalStr}`;
 
 	const isDisabled =
 		isLoading ||
@@ -405,9 +388,9 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 			{/* Payment/Checkout Error Display */}
 			{errors.payment && (
 				<div className="border-destructive/50 bg-destructive/10 flex items-start gap-3 rounded-lg border p-4">
-					<AlertCircle className="h-5 w-5 flex-shrink-0 text-destructive" />
+					<AlertCircle className="text-destructive h-5 w-5 flex-shrink-0" />
 					<div>
-						<p className="font-medium text-destructive">Payment failed</p>
+						<p className="text-destructive font-medium">Payment failed</p>
 						<p className="text-destructive/80 text-sm">{errors.payment}</p>
 					</div>
 				</div>
@@ -418,7 +401,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 				<button
 					type="button"
 					onClick={onBack}
-					className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+					className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm transition-colors"
 				>
 					<ChevronLeft className="h-4 w-4" />
 					{isShippingRequired ? "Return to shipping" : "Return to information"}
@@ -443,7 +426,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 				isLoading={isLoading}
 				disabled={isDisabled}
 				total={totalStr}
-				loadingText={completeState.fetching ? "Creating order..." : "Processing payment..."}
+				loadingText="Processing payment..."
 			/>
 		</form>
 	);

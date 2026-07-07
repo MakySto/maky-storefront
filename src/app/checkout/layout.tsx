@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { AuthProvider } from "@/lib/auth";
+
 import { brandConfig, formatPageTitle } from "@/config/brand";
 
 export const metadata = {
@@ -7,10 +7,9 @@ export const metadata = {
 	description: brandConfig.description,
 };
 
-export default function RootLayout(props: { children: ReactNode }) {
-	return (
-		<main>
-			<AuthProvider>{props.children}</AuthProvider>
-		</main>
-	);
+// AuthProvider is now installed inside CheckoutApp (co-located with the checkout client tree),
+// so the checkout layout is a plain nested layout under the shared root — no second <html> root
+// (variant C: no dual-root), no route group.
+export default function CheckoutLayout(props: { children: ReactNode }) {
+	return <main>{props.children}</main>;
 }

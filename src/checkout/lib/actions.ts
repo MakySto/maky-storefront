@@ -46,12 +46,23 @@ import { executeAuthenticatedGraphQL, executePublicGraphQL } from "@/lib/graphql
  *
  * These replace the browser-side urql mutation/query hooks the checkout views used. Checkout
  * mutations carry the static-`sk` `languageCode` (variant C — see `@/lib/checkout-locale`),
- * injected here so callers omit it. Payment actions (`transactionInitialize`, `checkoutComplete`)
- * are wired to Saleor but have NO gateway registry behind them yet — that is B.4.4 (Dummy) / B.8
- * (Stripe); they compile and call Saleor but are not end-to-end runnable until then.
+ * injected here so callers omit it. Results are returned in a small urql-compatible shape
+ * (`{ data?, error? }`) so the existing view call-sites keep reading `result.data?.…` /
+ * `result.error`. Payment actions (`transactionInitialize`, `checkoutComplete`) call Saleor but
+ * have NO gateway registry behind them yet — that is B.4.4 (Dummy) / B.8 (Stripe); they compile
+ * and call Saleor but are not end-to-end runnable until then.
  */
 
 type NoLang<T> = Omit<T, "languageCode">;
+
+/** urql-compatible result shape for the checkout view call-sites. */
+type MutationResult<T> = { data?: T; error?: { message: string } };
+
+function toResult<T>(
+	result: { ok: true; data: T } | { ok: false; error: { message: string } },
+): MutationResult<T> {
+	return result.ok ? { data: result.data } : { error: { message: result.error.message } };
+}
 
 const emailUpdateDoc = toTypedDocument<CheckoutEmailUpdateMutation, CheckoutEmailUpdateMutationVariables>(
 	CheckoutEmailUpdateDocument,
@@ -100,68 +111,80 @@ export async function refreshCheckoutAction(checkoutId: string): Promise<Checkou
 }
 
 export async function checkoutEmailUpdateAction(variables: NoLang<CheckoutEmailUpdateMutationVariables>) {
-	return executeAuthenticatedGraphQL(emailUpdateDoc, {
-		variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
-		cache: "no-cache",
-	});
+	return toResult(
+		await executeAuthenticatedGraphQL(emailUpdateDoc, {
+			variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
+			cache: "no-cache",
+		}),
+	);
 }
 
 export async function checkoutShippingAddressUpdateAction(
 	variables: NoLang<CheckoutShippingAddressUpdateMutationVariables>,
 ) {
-	return executeAuthenticatedGraphQL(shippingAddressUpdateDoc, {
-		variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
-		cache: "no-cache",
-	});
+	return toResult(
+		await executeAuthenticatedGraphQL(shippingAddressUpdateDoc, {
+			variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
+			cache: "no-cache",
+		}),
+	);
 }
 
 export async function checkoutBillingAddressUpdateAction(
 	variables: NoLang<CheckoutBillingAddressUpdateMutationVariables>,
 ) {
-	return executeAuthenticatedGraphQL(billingAddressUpdateDoc, {
-		variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
-		cache: "no-cache",
-	});
+	return toResult(
+		await executeAuthenticatedGraphQL(billingAddressUpdateDoc, {
+			variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
+			cache: "no-cache",
+		}),
+	);
 }
 
 export async function checkoutDeliveryMethodUpdateAction(
 	variables: NoLang<CheckoutDeliveryMethodUpdateMutationVariables>,
 ) {
-	return executeAuthenticatedGraphQL(deliveryMethodUpdateDoc, {
-		variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
-		cache: "no-cache",
-	});
+	return toResult(
+		await executeAuthenticatedGraphQL(deliveryMethodUpdateDoc, {
+			variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
+			cache: "no-cache",
+		}),
+	);
 }
 
 export async function checkoutCustomerAttachAction(
 	variables: NoLang<CheckoutCustomerAttachMutationVariables>,
 ) {
-	return executeAuthenticatedGraphQL(customerAttachDoc, {
-		variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
-		cache: "no-cache",
-	});
+	return toResult(
+		await executeAuthenticatedGraphQL(customerAttachDoc, {
+			variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
+			cache: "no-cache",
+		}),
+	);
 }
 
 export async function checkoutCompleteAction(variables: CheckoutCompleteMutationVariables) {
-	return executeAuthenticatedGraphQL(completeDoc, { variables, cache: "no-cache" });
+	return toResult(await executeAuthenticatedGraphQL(completeDoc, { variables, cache: "no-cache" }));
 }
 
 export async function addressValidationRulesAction(variables: AddressValidationRulesQueryVariables) {
-	return executePublicGraphQL(validationRulesDoc, { variables, cache: "no-cache" });
+	return toResult(await executePublicGraphQL(validationRulesDoc, { variables, cache: "no-cache" }));
 }
 
 export async function userRegisterAction(variables: UserRegisterMutationVariables) {
-	return executePublicGraphQL(userRegisterDoc, { variables, cache: "no-cache" });
+	return toResult(await executePublicGraphQL(userRegisterDoc, { variables, cache: "no-cache" }));
 }
 
 export async function requestPasswordResetAction(variables: RequestPasswordResetMutationVariables) {
-	return executePublicGraphQL(requestPasswordResetDoc, { variables, cache: "no-cache" });
+	return toResult(await executePublicGraphQL(requestPasswordResetDoc, { variables, cache: "no-cache" }));
 }
 
 export async function userSetDefaultAddressAction(variables: UserSetDefaultAddressMutationVariables) {
-	return executeAuthenticatedGraphQL(setDefaultAddressDoc, { variables, cache: "no-cache" });
+	return toResult(await executeAuthenticatedGraphQL(setDefaultAddressDoc, { variables, cache: "no-cache" }));
 }
 
 export async function transactionInitializeAction(variables: TransactionInitializeMutationVariables) {
-	return executeAuthenticatedGraphQL(transactionInitializeDoc, { variables, cache: "no-cache" });
+	return toResult(
+		await executeAuthenticatedGraphQL(transactionInitializeDoc, { variables, cache: "no-cache" }),
+	);
 }

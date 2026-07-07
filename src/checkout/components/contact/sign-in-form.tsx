@@ -5,7 +5,7 @@ import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useSaleorAuthContext } from "@saleor/auth-sdk/react";
 import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
-import { useRequestPasswordResetMutation } from "@/checkout/graphql";
+import { requestPasswordResetAction } from "@/checkout/lib/actions";
 
 export interface SignInFormProps {
 	/** Pre-filled email address */
@@ -34,7 +34,6 @@ export const SignInForm: FC<SignInFormProps> = ({
 	onGuestCheckout,
 }) => {
 	const { signIn } = useSaleorAuthContext();
-	const [, requestPasswordReset] = useRequestPasswordResetMutation();
 	const [email, setEmail] = useState(initialEmail);
 	const [password, setPassword] = useState("");
 	const [showPassword, setShowPassword] = useState(false);
@@ -84,7 +83,7 @@ export const SignInForm: FC<SignInFormProps> = ({
 
 		setIsSubmitting(true);
 		try {
-			const result = await requestPasswordReset({
+			const result = await requestPasswordResetAction({
 				email,
 				channel: channelSlug,
 				redirectUrl: window.location.href,
@@ -116,19 +115,19 @@ export const SignInForm: FC<SignInFormProps> = ({
 		<form onSubmit={handleSubmit} className="space-y-4">
 			<div className="flex items-center justify-between">
 				<h2 className="text-xl font-semibold">Sign in</h2>
-				<p className="text-sm text-muted-foreground">
+				<p className="text-muted-foreground text-sm">
 					New customer?{" "}
 					<button
 						type="button"
 						onClick={onGuestCheckout}
-						className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
+						className="text-foreground font-medium underline underline-offset-2 hover:no-underline"
 					>
 						Guest checkout
 					</button>
 				</p>
 			</div>
 
-			{error && <div className="bg-destructive/10 rounded-md p-3 text-sm text-destructive">{error}</div>}
+			{error && <div className="bg-destructive/10 text-destructive rounded-md p-3 text-sm">{error}</div>}
 
 			{successMessage && (
 				<div className="rounded-md bg-green-100 p-3 text-sm text-green-800">{successMessage}</div>
@@ -136,7 +135,7 @@ export const SignInForm: FC<SignInFormProps> = ({
 
 			<div className="space-y-1.5">
 				<div className="relative">
-					<Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
 						type="email"
 						placeholder="Email address"
@@ -154,20 +153,20 @@ export const SignInForm: FC<SignInFormProps> = ({
 
 			<div className="space-y-1.5">
 				<div className="relative">
-					<Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
 						type={showPassword ? "text" : "password"}
 						placeholder="Password"
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
 						autoComplete="current-password"
-						className="h-12 pl-10 pr-10"
+						className="h-12 pr-10 pl-10"
 						required
 					/>
 					<button
 						type="button"
 						onClick={() => setShowPassword(!showPassword)}
-						className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+						className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
 					>
 						{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
 					</button>
@@ -179,7 +178,7 @@ export const SignInForm: FC<SignInFormProps> = ({
 					type="button"
 					onClick={handleForgotPassword}
 					disabled={isSubmitting}
-					className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground hover:no-underline disabled:opacity-50"
+					className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-2 hover:no-underline disabled:opacity-50"
 				>
 					{passwordResetSent ? "Resend link?" : "Forgot password?"}
 				</button>
