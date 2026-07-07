@@ -1,3 +1,12 @@
 blockExoticSubdeps: true
 minimumReleaseAge: 1440 # 24h
 trustPolicy: no-downgrade
+# Scoped exceptions ONLY — global trustPolicy stays no-downgrade, minimumReleaseAge +
+# blockExoticSubdeps stay in force. Both are dev/lint-only transitive deps of
+# eslint-config-next, both ALREADY ship in the deployed build (pre-existing, not introduced
+# by the Track B.1 bump), and pnpm blocks them purely on a provenance-attestation gap — no
+# evidence of compromise (Snyk clean; semver@6.3.1 is a legacy, ubiquitous package).
+# Approved by Marek 2026-07-07 (Track B.1).
+trustPolicyExclude:
+  - eslint-import-resolver-typescript@3.10.1
+  - semver@6.3.1
