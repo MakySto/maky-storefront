@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
 import { CheckoutCreateDocument, CheckoutFindDocument } from "@/gql/graphql";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
+import { checkoutIdCookieName } from "@/session-bridge";
 
 export async function getIdFromCookies(channel: string) {
 	try {
-		const cookieName = `checkoutId-${channel}`;
+		const cookieName = checkoutIdCookieName(channel);
 		const checkoutId = (await cookies()).get(cookieName)?.value || "";
 		return checkoutId;
 	} catch {
@@ -16,7 +17,7 @@ export async function getIdFromCookies(channel: string) {
 export async function saveIdToCookie(channel: string, checkoutId: string) {
 	const shouldUseHttps =
 		process.env.NEXT_PUBLIC_STOREFRONT_URL?.startsWith("https") || !!process.env.NEXT_PUBLIC_VERCEL_URL;
-	const cookieName = `checkoutId-${channel}`;
+	const cookieName = checkoutIdCookieName(channel);
 	(await cookies()).set(cookieName, checkoutId, {
 		sameSite: "lax",
 		secure: shouldUseHttps,
@@ -24,7 +25,7 @@ export async function saveIdToCookie(channel: string, checkoutId: string) {
 }
 
 export async function clearCheckoutCookie(channel: string) {
-	const cookieName = `checkoutId-${channel}`;
+	const cookieName = checkoutIdCookieName(channel);
 	(await cookies()).delete(cookieName);
 }
 
