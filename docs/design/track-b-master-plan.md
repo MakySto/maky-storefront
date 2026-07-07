@@ -4,12 +4,23 @@
 > same server) can continue Track B without the originating chat. Read this + the memory
 > (`~/.claude/projects/-opt-storefront/memory/`) + the references below. Written 2026-07-07.
 
-## 0. TL;DR — start here
-- **Everything is pushed to `origin`. Prod is untouched.** Track B is **branch-only** and does
-  **NOT deploy** until after B.9.
-- **Next step = B.4.1** (route groups + session-bridge + storefront handoff), branched off
-  **`origin/track-b/routing-session`** (current tip; SHA after this doc commit).
-- Create a **fresh scratch worktree** off that branch (NOT `/opt/storefront`). See §5 env setup.
+## 0. TL;DR — start here (updated 2026-07-08 EOD, adversarially verified vs tip 8e76db9)
+- **Everything is pushed to `origin`. Prod is untouched** (`a2db881`, BUILD_ID
+  `O-g51KFEjBKKfQKkHcYEL`, PM2 `maky-storefront`+`maky-smtp-app` online — all re-verified
+  2026-07-08). Track B is **branch-only** and does **NOT deploy** until after B.9.
+- **B.4.1 ✓ and B.4.2 ✓ are DONE.** Current tip = **`origin/track-b/checkout-v2-core @ 8e76db9`**
+  (B.4.2 = checkout v2 RSC core: browser urql removed, RSC data layer + server actions live,
+  legacy `/checkout` retired). Nothing exists beyond this — **no B.4.3/B.5 branch** (any review
+  doc implying B.5 is "done" is wrong; see §1b).
+- **Next step = B.4.3** (order-confirmation split `/checkout/complete` + shallow `?step=`),
+  branched off `origin/track-b/checkout-v2-core @ 8e76db9`.
+- Create a **fresh scratch worktree** off that branch, then `rm -rf node_modules && pnpm install
+  --frozen-lockfile` (base carries B.1 deps — a hardlinked `/opt` node_modules mismatches and
+  yields 2 spurious tsc errors). See §5.
+- **NUMBERING IS LOCKED — do NOT renumber:** `B.4.1–B.4.5` (checkout v2 sub-steps) → `B.5` replay
+  → `B.6` truthfulness → `B.7` sk-i18n → `B.8` Stripe enable → `B.9` test matrix → `B.10`
+  live+§20a. B.4.3 is NOT the last part of B.4 — B.4.4 (payment registry+Dummy) and B.4.5
+  (session mgmt) remain. Truthfulness (B.6) comes **before** i18n (B.7); Stripe is **B.8**. See §3.
 - B.4 is a **subsystem replacement** (checkout v2) — the biggest, riskiest step. Do it in the
   sub-steps below, each validated, plan-before-implementation for the risky ones.
 
@@ -28,6 +39,57 @@ ground truth** (shared repo, concurrent sessions).
 
 **Done:** B.0 preflight · B.1 dep align · B.2 BFF auth + set-password fix (4 security tests
 passed; #3 success-path needs a real reset token = optional manual verify) · B.3 login redirect.
+
+## 1b. State (2026-07-08 EOD) — B.4.1 + B.4.2 DONE (adversarially verified)
+
+| branch | SHA | what |
+|---|---|---|
+| `track-b/checkout-v2` | `0323c53` | **B.4.1** session-bridge + `lib/checkout` cookie-name centralize + 2 cart handoffs → `buildCheckoutPath` |
+| `track-b/checkout-v2-core` | **`8e76db9`** ← **TIP** | **B.4.2** checkout v2 RSC core — browser urql removed, RSC data layer + 12 server actions live, legacy `/checkout` retired |
+
+**B.4.2 (7 commits `9a76129`→`8e76db9`, 54 files +885/−1844):** static-sk `checkout-locale.ts`;
+`lib/checkout` cart-cookie scanners; server fetchers + **`toTypedDocument` bridge** (dep-free,
+reuses existing checkout `gql` docs via `.loc.source.body` — NO codegen split); 12 server actions
+(`src/checkout/lib/actions.ts`, urql-compatible `{data,error}` returns; payment tx actions call
+Saleor but **no gateway** = B.4.4/B.8) + `CheckoutDataProvider`/`CheckoutUserProvider`; adapted RSC
+loader (`src/checkout/checkout-session-loader.tsx`) + reduced `checkout-app.tsx`; **atomic cutover**
+(`8e76db9`): rewired ~13 urql sites → context/actions, `app/checkout/page.tsx` → RSC entry, deleted
+`page-wrapper.tsx`+`root.tsx`+`use-safe-mutation.ts`+`src/_reference/` (25). Validated: tsc/lint/
+build 0; **runtime smoke PASSED** (spare :3035 — `/checkout?checkout=<id>` SSRs HTTP 200, ZERO
+urql-context/window crash, full RSC pipeline works; `/sk`+CSS 200).
+
+**Key structural choices (differ from the original §3 file-list — spike-driven):**
+- **NO `(checkout)` route group** — variant C has no dual-root, so checkout stays at `app/checkout/`
+  (nested under the single root layout). The §3 "(checkout) route group" item is MOOT for MAKY.
+- **Bounded strategy: B.4.2 KEPT MAKY's own view components** (`src/checkout/views/saleor-checkout/*`)
+  and swapped only the data layer (urql→RSC/actions). It did NOT adopt upstream's demo views.
+
+**Verified-true state at tip `8e76db9` (grep/ls-remote, 2026-07-08):**
+- ✅ Tip is `8e76db9`; **no branch beyond B.4.2 exists.** Prod untouched (a2db881 / BUILD_ID
+  `O-g51KFEjBKKfQKkHcYEL` / PM2 both online).
+- ⚠️ **B.5 marketHref replay is effectively ALREADY SATISFIED** (correction to earlier notes AND
+  to review docs claiming B.5 is a pending/done *step*): because B.4.2 kept MAKY's views, the
+  marketHref "Continue shopping" fix was never overwritten — it is live in
+  `views/order-confirmation/order-confirmation.tsx:123` and `views/saleor-checkout/confirmation-step.tsx:116`.
+  B.5's TW3.4→4 pass is also likely moot (MAKY kept its own TW4 views; no upstream TW3.4 to reconcile).
+  **B.4.3 must PRESERVE these marketHref links** when it activates/rebuilds the confirmation route.
+- ❌ **B.6 truthfulness is NOT done** (all offenders live at tip, in MAKY's kept views):
+  `views/saleor-checkout/order-summary.tsx` — `saleor10` (:142,:308), `Tax (VAT)`/`Including VAT`
+  (:328,:344), `30-day` (:365), `shipping===0?"Free"` (:323); `shipping-step.tsx` `isFree` (:127,:176).
+  Any claim that "B.6 is mostly done" is false — verify by grep, not assumption.
+- ❌ **B.4.3 NOT done:** `use-order.ts` still on dead urql `useOrderQuery`; no `/checkout/complete`
+  route (only the 3 confirmation view files exist); no `checkout-search-params`/`use-checkout-step`
+  shallow-`?step=` plumbing.
+- ❌ **B.4.4 NOT done:** no `INTEGRATED_GATEWAYS` anywhere.
+- 🧹 **Deferred (safe):** `auth-provider.tsx` still ships DEAD urql (`UrqlProvider` + `from "urql"`
+  imports; login uses `SaleorAuthProvider.signIn`, so it's inert) — tiny strip follow-up; and dead
+  `use-order`/order-confirmation views get activated in B.4.3.
+
+**⚠️ Not yet runtime-tested with a REAL checkout id.** The smoke proved SSR-no-crash + the not-found
+path only. The ready-state step forms (Information/Shipping/Payment) are unverified beyond tsc+build
++ SSR. **Recommended before stacking B.4.3/B.4.4: a browser proof of the v2 checkout** — add a
+product to cart → open `/checkout?checkout=<real id>` → confirm the steps render + a mutation
+(e.g. email/shipping) round-trips via the server action.
 
 ## 2. Key decisions already closed (do NOT re-litigate)
 - **O1 routing = variant C** — public friendly market prefixes `/sk /cz /at /de /gb …` stay;
