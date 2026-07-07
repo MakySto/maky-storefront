@@ -62,6 +62,7 @@ interface CartLine {
 
 import { getColorHex, isColorAttribute } from "@/lib/colors";
 import { marketHref } from "@/lib/channel-map";
+import { buildCheckoutPath } from "@/session-bridge";
 
 interface VariantAttribute {
 	name: string;
@@ -314,7 +315,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 						{/* Actions */}
 						<div className="space-y-3 px-6 pb-6">
 							<Link
-								href={`/checkout?checkout=${checkoutId}`}
+								href={checkoutId ? buildCheckoutPath({ checkoutId }) : "/checkout"}
 								onClick={closeCart}
 								className="hover:bg-primary/90 group bg-primary text-primary-foreground inline-flex h-12 w-full items-center justify-center gap-2 rounded-md text-base font-medium transition-colors"
 							>
