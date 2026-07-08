@@ -24,10 +24,10 @@ interface CheckoutSummaryContextProps {
  */
 export const CheckoutSummaryContext: FC<CheckoutSummaryContextProps> = ({ rows, onGoToStep }) => {
 	return (
-		<section className="divide-y divide-border rounded-lg border border-border text-sm">
+		<section className="divide-border border-border divide-y rounded-lg border text-sm">
 			{rows.map((row) => (
 				<div key={row.label} className="flex items-start gap-4 p-4">
-					<span className="w-16 shrink-0 pt-0.5 text-muted-foreground">{row.label}</span>
+					<span className="text-muted-foreground w-16 shrink-0 pt-0.5">{row.label}</span>
 					<span className="min-w-0 flex-1 break-words">{row.value}</span>
 					{row.onChangeStep !== undefined && onGoToStep && (
 						<button
@@ -57,7 +57,12 @@ export function formatAddressLine(address: CheckoutFragment["shippingAddress"]):
 /** Get shipping method display string */
 export function formatShippingMethod(checkout: CheckoutFragment): string {
 	const deliveryMethod = checkout.deliveryMethod;
-	const methodId = deliveryMethod?.__typename === "ShippingMethod" ? deliveryMethod.id : undefined;
+	// The CheckoutFragment selects `deliveryMethod { ... on ShippingMethod { id } ... on Warehouse { id } }`
+	// WITHOUT `__typename`, so at runtime `__typename` is absent (GraphQL only returns it when selected) and
+	// the old `__typename === "ShippingMethod"` guard always failed → "Method —". Match the id against
+	// `shippingMethods` directly: a ShippingMethod id resolves to its name; a Warehouse (click & collect)
+	// id won't match any shipping method and falls through to "—".
+	const methodId = deliveryMethod?.id;
 	const method = checkout.shippingMethods?.find((m) => m.id === methodId);
 
 	if (!method) return "—";
