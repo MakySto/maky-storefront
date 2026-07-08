@@ -5,6 +5,16 @@
 > (`~/.claude/projects/-opt-storefront/memory/`) + the references below. Written 2026-07-07.
 
 ## 0. TL;DR — start here (updated 2026-07-08 EOD, adversarially verified vs tip 8e76db9)
+
+- **⭐ LATEST (2026-07-08 late — SUPERSEDES the tip/next-step bullets below; full detail in §1c):**
+  work continued on a NEW branch **`origin/track-b/checkout-v2-confirmation @ c0fcfa1`** (branched
+  off `7895f48`). **B.4.3 is DONE and browser-ACCEPTED end-to-end.** Landed: the leading
+  `toTypedDocument` fragment-dedupe fix (de-facto B.4.2 ready-state completion) + B.4.3
+  order-confirmation split + shallow `?step=` + **FOUR guest-auth fixes of the same class**
+  (checkout-data AND payment mutations were wrongly on `executeAuthenticatedGraphQL` → guest
+  no-persist). **NEXT = B.4.4 core payment registry — plan-first, fresh pass, NOT started.** Prod
+  still `a2db881` / `O-g51KFEjBKKfQKkHcYEL`, PM2 both online. See §1c for commits, caveats, LOCKED
+  decisions, and launch-tracking.
 - **Everything is pushed to `origin`. Prod is untouched** (`a2db881`, BUILD_ID
   `O-g51KFEjBKKfQKkHcYEL`, PM2 `maky-storefront`+`maky-smtp-app` online — all re-verified
   2026-07-08). Track B is **branch-only** and does **NOT deploy** until after B.9.
@@ -15,7 +25,7 @@
 - **Next step = B.4.3** (order-confirmation split `/checkout/complete` + shallow `?step=`),
   branched off `origin/track-b/checkout-v2-core @ 8e76db9`.
 - Create a **fresh scratch worktree** off that branch, then `rm -rf node_modules && pnpm install
-  --frozen-lockfile` (base carries B.1 deps — a hardlinked `/opt` node_modules mismatches and
+--frozen-lockfile` (base carries B.1 deps — a hardlinked `/opt` node_modules mismatches and
   yields 2 spurious tsc errors). See §5.
 - **NUMBERING IS LOCKED — do NOT renumber:** `B.4.1–B.4.5` (checkout v2 sub-steps) → `B.5` replay
   → `B.6` truthfulness → `B.7` sk-i18n → `B.8` Stripe enable → `B.9` test matrix → `B.10`
@@ -25,12 +35,13 @@
   sub-steps below, each validated, plan-before-implementation for the risky ones.
 
 ## 1. State (2026-07-07) — branches (all on origin, branch-only)
-| branch | SHA | what |
-|---|---|---|
-| `feat/legal-content-pages` | `323c324` | mainline = prod content `a2db881` + **Spec B doc** |
-| `track-b/dep-alignment` | `9264ed6` | **B.1** dep align (next 16.2.9, react 19.2.7, next-intl 4.13, +@stripe/*, engines node>=24; TW stays 4.2.2) |
-| `track-b/bff-auth` | `fa5e4f6` | **B.2** BFF auth foundation + **set-password leak fix** |
-| `track-b/routing-session` | `3eb5eb6` (+this doc) | **B.3** market-aware login redirect fix |
+
+| branch                     | SHA                   | what                                                                                                         |
+| -------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `feat/legal-content-pages` | `323c324`             | mainline = prod content `a2db881` + **Spec B doc**                                                           |
+| `track-b/dep-alignment`    | `9264ed6`             | **B.1** dep align (next 16.2.9, react 19.2.7, next-intl 4.13, +@stripe/\*, engines node>=24; TW stays 4.2.2) |
+| `track-b/bff-auth`         | `fa5e4f6`             | **B.2** BFF auth foundation + **set-password leak fix**                                                      |
+| `track-b/routing-session`  | `3eb5eb6` (+this doc) | **B.3** market-aware login redirect fix                                                                      |
 
 **Prod:** `feat/legal-content-pages` content @ `a2db881` (homepage-truthfulness), BUILD_ID
 `O-g51KFEjBKKfQKkHcYEL`, served by PM2 `maky-storefront`. `/opt/storefront` working dir is on
@@ -42,9 +53,9 @@ passed; #3 success-path needs a real reset token = optional manual verify) · B.
 
 ## 1b. State (2026-07-08 EOD) — B.4.1 + B.4.2 DONE (adversarially verified)
 
-| branch | SHA | what |
-|---|---|---|
-| `track-b/checkout-v2` | `0323c53` | **B.4.1** session-bridge + `lib/checkout` cookie-name centralize + 2 cart handoffs → `buildCheckoutPath` |
+| branch                     | SHA                     | what                                                                                                                       |
+| -------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `track-b/checkout-v2`      | `0323c53`               | **B.4.1** session-bridge + `lib/checkout` cookie-name centralize + 2 cart handoffs → `buildCheckoutPath`                   |
 | `track-b/checkout-v2-core` | **`8e76db9`** ← **TIP** | **B.4.2** checkout v2 RSC core — browser urql removed, RSC data layer + 12 server actions live, legacy `/checkout` retired |
 
 **B.4.2 (7 commits `9a76129`→`8e76db9`, 54 files +885/−1844):** static-sk `checkout-locale.ts`;
@@ -59,16 +70,18 @@ build 0; **runtime smoke PASSED** (spare :3035 — `/checkout?checkout=<id>` SSR
 urql-context/window crash, full RSC pipeline works; `/sk`+CSS 200).
 
 **Key structural choices (differ from the original §3 file-list — spike-driven):**
+
 - **NO `(checkout)` route group** — variant C has no dual-root, so checkout stays at `app/checkout/`
   (nested under the single root layout). The §3 "(checkout) route group" item is MOOT for MAKY.
 - **Bounded strategy: B.4.2 KEPT MAKY's own view components** (`src/checkout/views/saleor-checkout/*`)
   and swapped only the data layer (urql→RSC/actions). It did NOT adopt upstream's demo views.
 
 **Verified-true state at tip `8e76db9` (grep/ls-remote, 2026-07-08):**
+
 - ✅ Tip is `8e76db9`; **no branch beyond B.4.2 exists.** Prod untouched (a2db881 / BUILD_ID
   `O-g51KFEjBKKfQKkHcYEL` / PM2 both online).
 - ⚠️ **B.5 marketHref replay is effectively ALREADY SATISFIED** (correction to earlier notes AND
-  to review docs claiming B.5 is a pending/done *step*): because B.4.2 kept MAKY's views, the
+  to review docs claiming B.5 is a pending/done _step_): because B.4.2 kept MAKY's views, the
   marketHref "Continue shopping" fix was never overwritten — it is live in
   `views/order-confirmation/order-confirmation.tsx:123` and `views/saleor-checkout/confirmation-step.tsx:116`.
   B.5's TW3.4→4 pass is also likely moot (MAKY kept its own TW4 views; no upstream TW3.4 to reconcile).
@@ -87,11 +100,78 @@ urql-context/window crash, full RSC pipeline works; `/sk`+CSS 200).
 
 **⚠️ Not yet runtime-tested with a REAL checkout id.** The smoke proved SSR-no-crash + the not-found
 path only. The ready-state step forms (Information/Shipping/Payment) are unverified beyond tsc+build
-+ SSR. **Recommended before stacking B.4.3/B.4.4: a browser proof of the v2 checkout** — add a
-product to cart → open `/checkout?checkout=<real id>` → confirm the steps render + a mutation
-(e.g. email/shipping) round-trips via the server action.
+
+- SSR. **Recommended before stacking B.4.3/B.4.4: a browser proof of the v2 checkout** — add a
+  product to cart → open `/checkout?checkout=<real id>` → confirm the steps render + a mutation
+  (e.g. email/shipping) round-trips via the server action.
+
+## 1c. State (2026-07-08 late) — B.4.3 DONE + ACCEPTED; B.4.4 core NEXT (fresh pass)
+
+**Branch = `origin/track-b/checkout-v2-confirmation` (tip `c0fcfa1`), off `7895f48` (=B.4.2 code).
+Branch-only, prod untouched (`a2db881` / `O-g51KFEjBKKfQKkHcYEL`, PM2 both online).** Commits since
+B.4.2:
+
+- `78204cf` — **fix: `toTypedDocument` GraphQL fragment dedupe** (graphql-tag concatenated
+  interpolated fragments with dupes → Saleor "only one fragment named Money" → ALL 4 server
+  fetchers returned null → checkout never rendered ready-state). Print de-duped AST via
+  `graphql@16.8.1` (added as explicit dep, in-tree, pinned). **De-facto completion of B.4.2's
+  ready-state** — B.4.2 was declared done but never rendered a real checkout.
+- `b78562e` — **feat: B.4.3 order-confirmation split + shallow `?step=`** (MIGRATION 5+6). Flat
+  `/checkout/complete` route + `OrderConfirmationApp` (read-only `OrderDataProvider`) + `use-order`
+  off dead urql → context + payment-step nav-swap via neutral `navigate-to-order` + History-API
+  `?step=` (`checkout-search-params.ts` + `use-checkout-step.ts`, no RSC re-run). ConfirmationStep
+  dormant, `root-views.tsx` deleted, both marketHref links preserved.
+- `1ccf81a` / `1de4094` — docs (known-issues).
+- `0039bdf` — **fix: guest checkout-data persistence** — `email`/`shipping`/`billing`/`delivery`
+  mutations were on `executeAuthenticatedGraphQL`; a guest has no session so `fetchWithAuth`
+  returns transport-ok but silently no-persists → Information data lost into Shipping. Flipped the
+  4 checkoutId-keyed mutations → `executePublicGraphQL`; info-step + shipping-step `await refetch()`
+  after a save (only on data change — bare stepper jumps stay pure `pushState`).
+- `6e07357` — **fix: "Method —" payment-summary** — `formatShippingMethod` matched
+  `deliveryMethod.__typename` but the fragment omits `__typename` (runtime returns just `{id}`);
+  fragment-free local fix matching `deliveryMethod?.id` (no `CheckoutFragment`/codegen touch).
+- `c0fcfa1` — **fix: payment mutations public** — `transactionInitialize` + `checkoutComplete` are
+  checkoutId-keyed → same guest-auth bug → `executePublicGraphQL`. (customer-attach +
+  set-default-address stay authenticated = account-scoped.)
+
+**STATUS: B.4.3 ACCEPTED end-to-end (browser-proven: Information→Shipping→Payment, real "Kuriér –
+Slovensko" 5,90 € rate, total 854,80 €).** **FOUR guest-auth bugs of the same class found + fixed**
+(all checkout-data + payment mutations wrongly authenticated → guest no-persist).
+
+**NEXT = B.4.4 core payment registry (MIGRATION step 7) — plan-first, fresh pass, NOT started.**
+Wholesale-adopt upstream `src/checkout/lib/payment/*` (`INTEGRATED_GATEWAYS` + `resolve-provider` +
+`providers/{dummy,stripe-predicates}` + dummy server-submit) + `components/payment/*`
+(`integrated-payment-ui`, `dummy-payment-placeholder`, gateway alerts; Stripe UI shipped INERT).
+Rewire `payment-step.tsx` off the `hasDummy/hasReal` branching + delete the mock card/PayPal/iDEAL
+selector (sanctioned E9). Browser-observable win: a Stripe-only `sk-eur` checkout resolves to a
+**graceful "payment unavailable"** state instead of today's "only supports test payments" dead-end.
+Payment-mutation public fix already landed (`c0fcfa1`). Read `checkout-payment-gateways.md` first.
+
+**LOCKED decisions for B.4.4:** D1 = **hardcoded EN placeholders** (SK i18n → B.7; keep 13/13
+parity); D2 = **DONE** (`6e07357`, isolated fragment-free local fix); **Dummy app NOT installed**
+(no install on sk-eur or any channel without explicit Marek OK); **Stripe OFF until B.8**
+(`isStripePaymentEnabled()` is `true` in `NODE_ENV=development` — verify Stripe-OFF against a
+**production build**, not the dev server).
+
+**⚠️ OPEN CAVEAT (do not lose):** the **B.4.3 order-confirmation route is NOT verified with a REAL
+order.** `/checkout/complete` is proven only for graceful not-found (bogus/missing order). A real
+order → `/checkout/complete` render is blocked by: (a) no Dummy transaction app installed (only
+Stripe `QXBwOjY=` exists; `availablePaymentGateways` = [Stripe] only), and (b) **unproven anonymous
+`order(id)` readability** — `fetch-order.ts` reads `order(id)` publicly on the "id is the credential"
+assumption (de-risking: `order(bogus)` returns "Invalid ID" not "permission denied", unlike the
+`MANAGE_ORDERS`-gated `orders` list — so it's plausible, but unproven for a real guest order).
+**B.4.4 does NOT close this caveat.** It closes only when either (i) a Dummy app is installed in a
+**controlled non-`sk-eur` channel** and a fake payment is clicked through, or (ii) B.8 Stripe test
+mode creates a real test order.
+
+**LAUNCH-TRACKING (→ B.9, in known-issues.md):** (a) **sk-eur shipping config** — "Kuriér –
+Slovensko" was added manually; verify shipping zones + rates for ALL launch markets before live (a
+missing rate silently dead-ends checkout at Shipping). (b) **"unsupported payment" copy is EN** —
+a real customer will see it on live `sk-eur` between B.4.4 and B.8 (Stripe OFF = every customer gets
+the unsupported state); must be SK before live launch.
 
 ## 2. Key decisions already closed (do NOT re-litigate)
+
 - **O1 routing = variant C** — public friendly market prefixes `/sk /cz /at /de /gb …` stay;
   MAKY is ALREADY variant C (`proxy.ts` + `CHANNEL_MAP` + `marketHref`). Do NOT re-root the
   storefront to upstream `(storefront)/[locale]/[channel]`. Checkout is outside the `[channel]`
@@ -108,12 +188,14 @@ product to cart → open `/checkout?checkout=<real id>` → confirm the steps re
   both are hard gates.
 
 ## 3. Remaining plan (B.4 → B.10). Source: MIGRATION.md (9 steps), inventory §8, Spec B §4.
+
 ### B.4 = Checkout v2 wholesale adoption (MIGRATION.md steps 1–8). Sub-sequence:
+
 - **B.4.1** — MIGRATION 1+2: add `src/app/(checkout)/` route group; adopt `src/session-bridge/`
   (adapt to MAKY market scheme); align `src/lib/checkout.ts` to `checkoutId-{channel}`; replace the
   **2 hardcoded handoffs** (`cart/checkout-link.tsx:15` + `cart-drawer.tsx:317` `/checkout?checkout=`)
   with `buildCheckoutPath`. Validate: cart→checkout link works, session-bridge derives market.
-  *(least invasive; no urql touch — good first sub-step.)*
+  _(least invasive; no urql touch — good first sub-step.)_
 - **B.4.2** — MIGRATION 3+4 (RISKIEST; plan-before-impl): RSC entry (`checkout-session-loader.tsx`,
   `checkout-app.tsx`), client data layer (`providers/checkout-data.tsx`, `actions.ts`); **delete
   urql** (`src/checkout/root.tsx` UrqlProvider), `dynamic(ssr:false)` (`app/checkout/page-wrapper.tsx:6`),
@@ -126,25 +208,38 @@ product to cart → open `/checkout?checkout=<real id>` → confirm the steps re
 - **B.4.5** — MIGRATION 8 session mgmt: **`session-auth-state.ts` + `resolve-session-user.ts` +
   `loginWithBff()` already exist from B.2** — add `revalidate-storefront-chrome.ts` +
   `sync-auth-surfaces-after-sign-in.ts`; wire checkout sign-in to `loginWithBff()`.
+
 ### B.5 = MIGRATION step 9 replay: marketHref "Continue shopping" (`order-confirmation.tsx:123` +
-  `confirmation-step.tsx:116`), extend `brand.css` shadcn bridge, **TW 3.4→4 class pass + visual
-  verify** (v2 checkout ships TW3.4; build does NOT certify tokens — §4.2/§12).
+
+`confirmation-step.tsx:116`), extend `brand.css` shadcn bridge, **TW 3.4→4 class pass + visual
+verify** (v2 checkout ships TW3.4; build does NOT certify tokens — §4.2/§12).
+
 ### B.6 = truthfulness cleanup on v2 (inventory §3, Spec B §8): remove free-shipping badge, "30-day
-  returns", `shipping===0→"Free"`; order button "Objednať s povinnosťou platby"; drop estimated
-  delivery; DPH transitional (neutral "Celková cena", no "vrátane DPH" while non-VAT-payer).
+
+returns", `shipping===0→"Free"`; order button "Objednať s povinnosťou platby"; drop estimated
+delivery; DPH transitional (neutral "Celková cena", no "vrátane DPH" while non-VAT-payer).
+
 ### B.7 = SK checkout i18n catalog (v2 has no `sk` locale) + 13-locale §11 parity. Seed = unused
-  19-key `checkout` namespace in `sk-SK.json`.
+
+19-key `checkout` namespace in `sk-SK.json`.
+
 ### B.8 = Stripe enablement: `INTEGRATED_GATEWAYS` + env flags (`NEXT_PUBLIC_ENABLE_STRIPE_PAYMENTS`
-  + `ENABLE_STRIPE_PAYMENTS` + `NEXT_PUBLIC_ENABLE_STRIPE_EXPRESS_CHECKOUT`), publishable key from
+
+- `ENABLE_STRIPE_PAYMENTS` + `NEXT_PUBLIC_ENABLE_STRIPE_EXPRESS_CHECKOUT`), publishable key from
   Saleor. Verify real `data` field shapes from `transactionInitialize` against the installed app 2.6.9.
+
 ### B.9 = full test matrix (Spec B §10): success/declined/3DS/insufficient/cancel + Apple/Google Pay;
-  browser-closed/webhook-delayed/duplicate/idempotency/price-change/expired; guest+logged-in; routing
-  preservation; order+transaction in Saleor. `sk_test`/`pk_test` only.
+
+browser-closed/webhook-delayed/duplicate/idempotency/price-change/expired; guest+logged-in; routing
+preservation; order+transaction in Saleor. `sk_test`/`pk_test` only.
+
 ### B.10 = live keys + first real order (post-green ONLY): new immutable Stripe config → remap sk-eur
-  → delete old test config → Marek buys cheapest product with own card → verify. Parallel hard gate:
-  **§20a withdrawal (Branch B)** must be live before any real order.
+
+→ delete old test config → Marek buys cheapest product with own card → verify. Parallel hard gate:
+**§20a withdrawal (Branch B)** must be live before any real order.
 
 ## 4. Constraints (CLAUDE.md) — non-negotiable
+
 - **§10** guarded: Saleor/GraphQL structure, checkout logic, cart logic, CFM, channel/routing/i18n,
   env/secrets, deploy. B.4 IS §10-approved (Spec B) but riskiest — don't break the working legacy
   checkout; keep changes on-branch.
@@ -152,12 +247,13 @@ product to cart → open `/checkout?checkout=<real id>` → confirm the steps re
   **`next build` does NOT certify TW tokens** (visually verify components paint).
 - **§13** deploy safety: **NEVER `next build` in `/opt/storefront` while PM2 `maky-storefront`
   runs.** Track B is branch-only until after B.9. Deploy (later) = `pm2 stop → checkout → rm -rf
-  .next → build → spare-port verify (CSS 200!) → pm2 start → live verify`. Rollback: `a2db881`.
+.next → build → spare-port verify (CSS 200!) → pm2 start → live verify`. Rollback: `a2db881`.
 - **Anti-patterns (overview):** no urql Provider in checkout runtime · no `router.replace` for
   step-only nav · don't clear checkout cookie before confirmation nav · storefront must NOT import
   `@/checkout/*`.
 
 ## 5. Env / worktree setup gotchas (learned — don't rediscover)
+
 - Work in a **scratch worktree**, NOT `/opt/storefront` (live). Create off the origin branch:
   `git -C /opt/storefront worktree add <scratch>/wt -b track-b/<name> origin/track-b/routing-session`.
 - **Turbopack build REJECTS a symlinked `node_modules`** ("points out of filesystem root"). For
@@ -181,6 +277,7 @@ product to cart → open `/checkout?checkout=<real id>` → confirm the steps re
 - Small logical commits; commit messages end with `Co-Authored-By: Claude Opus 4.8 …`.
 
 ## 6. References (read before/while implementing)
+
 - `docs/design/checkout-v2-stripe-spec-b.md` — **Spec B** (all decisions closed; §4 sequence, §6
   Stripe arch, §8 truthfulness, §9 SK i18n, §10 test matrix). On mainline (`feat`).
 - `docs/design/checkout-v2-migration-inventory.md` — §3 exclusions, §7 collision, §8 order, MAKY
