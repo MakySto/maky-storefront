@@ -36,6 +36,7 @@
 		"editorjs-html": "3.4.3",
 		"embla-carousel-react": "8.6.0",
 		"geist": "1.5.1",
+		"graphql": "16.8.1",
 		"graphql-tag": "2.12.6",
 		"lodash-es": "4.17.21",
 		"lucide-react": "0.358.0",
