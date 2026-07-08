@@ -5,6 +5,18 @@ fix — recorded here so they are not lost. Each entry says WHERE it must be fix
 
 ## must-fix-before-launch
 
+### Saleor shipping zones/rates missing per launch market (checkout dead-ends)
+
+- **What:** the `sk-eur` channel had **no shipping method** for SK addresses — `checkout.shippingMethods`
+  came back `[]`, so the checkout v2 Shipping step showed "No shipping methods available for Slovakia"
+  and could not proceed to Payment. Marek added a **"Kuriér – Slovensko" 5,90 €** rate manually
+  (2026-07-08) and the flow then completed (Information → Shipping → "Continue to payment", Order
+  Summary computed shipping + total).
+- **Fix (B.9 / launch checklist):** verify a shipping **zone + rate** exists for **every launch market**
+  (all 13 `CHANNEL_MAP` channels, or at least the go-live subset) BEFORE live — a missing rate silently
+  dead-ends checkout at the Shipping step. This is Saleor merchant config, not a frontend bug.
+- **Source:** discovered during the B.4.3 browser-proof, 2026-07-08.
+
 ### set-password route leaks the raw token + sets dead cookies
 
 - **Where:** `src/app/api/auth/set-password/route.ts` (~:78–96)
@@ -89,3 +101,32 @@ fix — recorded here so they are not lost. Each entry says WHERE it must be fix
   Information step) where it previously showed "Checkout not found". **This fix is the de-facto
   completion of B.4.2's ready-state**, done as the prerequisite for B.4.3.
 - **Source:** discovered during the B.4.3 browser-proof, 2026-07-08 (branch-only, prod untouched).
+
+### RESOLVED (B.4.3): guest checkout mutations didn't persist + provider went stale after shallow nav
+
+- **What:** on the first real guest browser run, Information data (email + shipping address) didn't
+  carry into the Shipping step. Two pre-existing B.4.2 bugs: (1) the checkout-data mutations
+  (email/shipping-address/billing-address/delivery-method) ran through `executeAuthenticatedGraphQL`
+  — for a guest (no session) that path doesn't persist yet returns transport-ok, so the step advanced
+  with nothing saved; (2) after save the client `CheckoutDataProvider` kept the stale (address-less)
+  snapshot, because B.4.3's shallow `?step=` removed the incidental RSC refetch B.4.2's `router.push`
+  did.
+- **Fix:** `0039bdf` — the four checkout-id-keyed mutations → `executePublicGraphQL` (checkout id is
+  the credential; customer-attach / set-default-address stay authenticated; complete / transaction
+  untouched = B.4.4/B.8); `information-step` + `shipping-step` `await refetch()` after a successful
+  save, before `onNext()` (only on a real save — bare stepper jumps stay pure `pushState`).
+- **Status:** **B.4.3 ACCEPTED** (browser-proof passed end-to-end, 2 products; tip `0039bdf`,
+  branch-only, prod untouched).
+
+## deferred to B.4.4 (payment)
+
+### Payment step summary "Method" row shows "—" though shipping is applied
+
+- **What:** at the Payment step, the summary context row **"Method"** displays `—` even though the
+  Order Summary correctly applies the chosen shipping method (e.g. Kuriér – Slovensko 5,90 €) and
+  total. A data/display gap in the payment-step summary rows.
+- **Where:** `src/checkout/views/saleor-checkout/checkout-summary-context.tsx` /
+  `payment-step.tsx` (`buildPaymentSummaryRows`).
+- **Fix:** verify during **B.4.4** (payment step rework) — likely the delivery-method label isn't
+  threaded into the payment summary row.
+- **Source:** B.4.3 browser-proof, 2026-07-08.
