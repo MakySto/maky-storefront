@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type FC } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { type FC } from "react";
 import { CheckoutHeader } from "./checkout-header";
 import { OrderSummary } from "./order-summary";
 import { InformationStep } from "./information-step";
@@ -14,8 +13,8 @@ import { useCustomerAttach } from "@/checkout/hooks/use-customer-attach";
 import { EmptyCartPage } from "../empty-cart-page";
 import { PageNotFound } from "../page-not-found";
 import { CheckoutSkeleton } from "./checkout-skeleton";
-import { getCheckoutSteps, getCurrentStepFromParams, type CheckoutStepType } from "./flow";
-import { createQueryString } from "@/checkout/lib/utils/url";
+import { getCheckoutSteps } from "./flow";
+import { useCheckoutStep } from "@/checkout/hooks/use-checkout-step";
 
 /**
  * Saleor checkout view with multi-step flow.
@@ -29,8 +28,6 @@ import { createQueryString } from "@/checkout/lib/utils/url";
  * Layout: Full-width header, centered two-column content on gray background.
  */
 export const SaleorCheckout: FC = () => {
-	const router = useRouter();
-	const searchParams = useSearchParams();
 	const { checkout, fetching: fetchingCheckout, hasCheckoutId } = useCheckout();
 	const { loading: isAuthenticating } = useUser();
 
@@ -41,16 +38,8 @@ export const SaleorCheckout: FC = () => {
 	// For physical products, full flow (1 = info, 2 = shipping, 3 = payment, 4 = confirmation)
 	const isShippingRequired = checkout?.isShippingRequired ?? true;
 
-	// Determine current step from URL
-	const currentStep = getCurrentStepFromParams(searchParams, isShippingRequired);
-
-	const stepRef = useRef<HTMLDivElement>(null);
-
-	// Scroll to top and focus content when step changes (mobile UX + a11y)
-	useEffect(() => {
-		window.scrollTo({ top: 0, behavior: "instant" });
-		stepRef.current?.focus();
-	}, [currentStep.id]);
+	// Current step + shallow `?step=` navigation (History API, no RSC re-run — B.4.3, MIGRATION 6).
+	const { currentStep, stepRef, goToStep } = useCheckoutStep(isShippingRequired);
 
 	// Checkout is invalid if: no checkout ID in URL, or fetching is done but no checkout data
 	const isCheckoutInvalid = !hasCheckoutId || (!fetchingCheckout && !checkout && !isAuthenticating);
@@ -71,19 +60,8 @@ export const SaleorCheckout: FC = () => {
 		return <EmptyCartPage />;
 	}
 
-	// Navigation helper
-	const goToStep = (stepType: CheckoutStepType) => {
-		const steps = getCheckoutSteps(isShippingRequired);
-		const targetStep = steps.find((s) => s.id === stepType);
-		if (targetStep) {
-			const newQuery = createQueryString(searchParams, { step: targetStep.slug });
-			// Using replace for smoother UX, could use push for history
-			router.push(`?${newQuery}`, { scroll: false });
-		}
-	};
-
 	return (
-		<div className="min-h-screen overscroll-none bg-secondary">
+		<div className="bg-secondary min-h-screen overscroll-none">
 			{/* Header - full width, white background */}
 			<CheckoutHeader
 				step={currentStep.index}
@@ -92,7 +70,8 @@ export const SaleorCheckout: FC = () => {
 					const steps = getCheckoutSteps(isShippingRequired);
 					const step = steps.find((s) => s.index === stepIndex);
 					if (step) {
-						goToStep(step.id);
+						// Header only allows clicking prior steps — a backward jump, so replace.
+						goToStep(step.id, "replace");
 					}
 				}}
 				isShippingRequired={isShippingRequired}
@@ -106,10 +85,10 @@ export const SaleorCheckout: FC = () => {
 					{/* Left column: Form (~70%) */}
 					<div className="min-w-0 flex-1">
 						{/* Mobile Order Summary - collapsible, inside scrollable content */}
-						<div className="mb-4 overflow-hidden rounded-lg border border-border bg-card md:hidden">
+						<div className="border-border bg-card mb-4 overflow-hidden rounded-lg border md:hidden">
 							<OrderSummary checkout={checkout} />
 						</div>
-						<div className="rounded-lg border border-border bg-card p-6 md:p-8">
+						<div className="border-border bg-card rounded-lg border p-6 md:p-8">
 							<div ref={stepRef} tabIndex={-1} className="outline-none">
 								{currentStep.id === "INFO" && (
 									<InformationStep
@@ -120,16 +99,15 @@ export const SaleorCheckout: FC = () => {
 								{currentStep.id === "SHIPPING" && (
 									<ShippingStep
 										checkout={checkout}
-										onBack={() => goToStep("INFO")}
+										onBack={() => goToStep("INFO", "replace")}
 										onNext={() => goToStep("PAYMENT")}
 									/>
 								)}
 								{currentStep.id === "PAYMENT" && (
 									<PaymentStep
 										checkout={checkout}
-										onBack={() => goToStep(isShippingRequired ? "SHIPPING" : "INFO")}
-										onComplete={() => goToStep("CONFIRMATION")}
-										onGoToInformation={() => goToStep("INFO")}
+										onBack={() => goToStep(isShippingRequired ? "SHIPPING" : "INFO", "replace")}
+										onGoToInformation={() => goToStep("INFO", "replace")}
 									/>
 								)}
 								{currentStep.id === "CONFIRMATION" && <ConfirmationStep checkout={checkout} />}
@@ -139,7 +117,7 @@ export const SaleorCheckout: FC = () => {
 
 					{/* Right column: Summary (~30%) - hidden on mobile, shown on desktop */}
 					<div className="hidden md:block md:shrink-0 md:basis-[30%]">
-						<div className="overflow-hidden rounded-lg border border-border bg-card md:sticky md:top-8">
+						<div className="border-border bg-card overflow-hidden rounded-lg border md:sticky md:top-8">
 							<OrderSummary checkout={checkout} />
 						</div>
 					</div>

@@ -1,7 +1,10 @@
-import type { CheckoutQuery, CountryCode, UserQuery } from "@/checkout/graphql";
+import type { CheckoutQuery, CountryCode, OrderQuery, UserQuery } from "@/checkout/graphql";
 
 /** Checkout object returned by the server-side checkout query. */
 export type ServerCheckout = NonNullable<CheckoutQuery["checkout"]>;
+
+/** Order object returned by the server-side order query (confirmation route). */
+export type ServerOrder = NonNullable<OrderQuery["order"]>;
 
 /** Load state resolved by the RSC checkout-session-loader. */
 export type CheckoutLoadState = "none" | "not_found" | "empty" | "error" | "ready";

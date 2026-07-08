@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, type FC } from "react";
 import { ChevronLeft, AlertCircle } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/ui/components/ui/button";
 import { CheckoutSummaryContext, buildPaymentSummaryRows } from "./checkout-summary-context";
 import { type CheckoutFragment, type CountryCode, type AddressFragment } from "@/checkout/graphql";
@@ -16,7 +15,7 @@ import { useUser } from "@/checkout/hooks/use-user";
 import { getAddressInputData } from "@/checkout/components/address-form/utils";
 // Dummy payment gateway ID (from Saleor Dummy Payment app)
 const dummyGatewayId = "mirumee.payments.dummy";
-import { createQueryString } from "@/checkout/lib/utils/url";
+import { navigateToOrderConfirmation } from "@/checkout/lib/navigate-to-order";
 import { MobileStickyAction } from "./mobile-sticky-action";
 import { getStepNumber } from "./flow";
 
@@ -35,18 +34,14 @@ import { formatMoneyWithFallback } from "@/checkout/lib/utils/money";
 interface PaymentStepProps {
 	checkout: CheckoutFragment;
 	onBack: () => void;
-	onComplete: () => void;
 	onGoToInformation?: () => void;
 }
 
 export const PaymentStep: FC<PaymentStepProps> = ({
 	checkout: initialCheckout,
 	onBack,
-	onComplete,
 	onGoToInformation,
 }) => {
-	const router = useRouter();
-	const searchParams = useSearchParams();
 	// Use live checkout data to ensure we have the latest total (including shipping)
 	const { checkout: liveCheckout } = useCheckout();
 	const checkout = liveCheckout || initialCheckout;
@@ -276,11 +271,11 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 						return;
 					}
 
-					// Redirect to order confirmation
+					// Order created — leave the checkout SPA for the dedicated confirmation route
+					// (B.4.3, MIGRATION step 5): a hard nav to /checkout/complete?order=<id>.
 					const order = completeResult.data?.checkoutComplete?.order;
 					if (order) {
-						const newQuery = createQueryString(searchParams, { orderId: order.id });
-						router.replace(`?${newQuery}`, { scroll: false });
+						navigateToOrderConfirmation(order.id);
 						return;
 					}
 				} else if (!hasRealGateway) {
@@ -299,8 +294,6 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 					});
 					return;
 				}
-
-				onComplete();
 			} finally {
 				setIsProcessing(false);
 			}
@@ -314,9 +307,6 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 			checkout.id,
 			hasDummyGateway,
 			hasRealGateway,
-			onComplete,
-			searchParams,
-			router,
 		],
 	);
 

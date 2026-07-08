@@ -27,6 +27,11 @@ function formatAddress(address: {
  */
 export const OrderConfirmation = () => {
 	const { order } = useOrder();
+	// The route only renders this view when the order is present (OrderConfirmationApp shows the
+	// not-found otherwise); this guard narrows the type for the render below.
+	if (!order) {
+		return null;
+	}
 	const channel = DefaultChannelSlug;
 
 	// Calculate estimated delivery (7 days from now)
@@ -44,7 +49,7 @@ export const OrderConfirmation = () => {
 	const email = order.userEmail || "";
 
 	return (
-		<div className="min-h-screen bg-secondary">
+		<div className="bg-secondary min-h-screen">
 			{/* Header - same as checkout */}
 			<CheckoutHeader step={4} onStepClick={() => {}} />
 
@@ -54,7 +59,7 @@ export const OrderConfirmation = () => {
 				<div className="flex flex-col gap-8 md:flex-row">
 					{/* Left column: Confirmation content (~70%) */}
 					<div className="order-2 min-w-0 flex-1 md:order-1">
-						<div className="rounded-lg border border-border bg-card p-6 md:p-8">
+						<div className="border-border bg-card rounded-lg border p-6 md:p-8">
 							{/* Same content as ConfirmationStep */}
 							<div className="space-y-8">
 								{/* Success Header */}
@@ -72,10 +77,10 @@ export const OrderConfirmation = () => {
 								</div>
 
 								{/* Order Confirmation Card */}
-								<div className="overflow-hidden rounded-lg border border-border">
-									<div className="bg-secondary/50 border-b border-border p-4">
+								<div className="border-border overflow-hidden rounded-lg border">
+									<div className="bg-secondary/50 border-border border-b p-4">
 										<h2 className="font-semibold">Your order is confirmed</h2>
-										<p className="mt-1 text-sm text-muted-foreground">
+										<p className="text-muted-foreground mt-1 text-sm">
 											You&apos;ll receive a confirmation email at {email}
 										</p>
 									</div>
@@ -83,35 +88,35 @@ export const OrderConfirmation = () => {
 									{/* Order Details */}
 									<div className="space-y-4 p-4">
 										<div className="flex items-start gap-3">
-											<Mail className="mt-0.5 h-5 w-5 text-muted-foreground" />
+											<Mail className="text-muted-foreground mt-0.5 h-5 w-5" />
 											<div>
 												<p className="text-sm font-medium">Confirmation email sent</p>
-												<p className="text-sm text-muted-foreground">{email}</p>
+												<p className="text-muted-foreground text-sm">{email}</p>
 											</div>
 										</div>
 										{shippingAddress && (
 											<div className="flex items-start gap-3">
-												<MapPin className="mt-0.5 h-5 w-5 text-muted-foreground" />
+												<MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
 												<div>
 													<p className="text-sm font-medium">Shipping address</p>
-													<p className="text-sm text-muted-foreground">{formatAddress(shippingAddress)}</p>
+													<p className="text-muted-foreground text-sm">{formatAddress(shippingAddress)}</p>
 												</div>
 											</div>
 										)}
 										{billingAddress && (
 											<div className="flex items-start gap-3">
-												<CreditCard className="mt-0.5 h-5 w-5 text-muted-foreground" />
+												<CreditCard className="text-muted-foreground mt-0.5 h-5 w-5" />
 												<div>
 													<p className="text-sm font-medium">Billing address</p>
-													<p className="text-sm text-muted-foreground">{formatAddress(billingAddress)}</p>
+													<p className="text-muted-foreground text-sm">{formatAddress(billingAddress)}</p>
 												</div>
 											</div>
 										)}
 										<div className="flex items-start gap-3">
-											<Package className="mt-0.5 h-5 w-5 text-muted-foreground" />
+											<Package className="text-muted-foreground mt-0.5 h-5 w-5" />
 											<div>
 												<p className="text-sm font-medium">Estimated delivery</p>
-												<p className="text-sm text-muted-foreground">{formattedDelivery}</p>
+												<p className="text-muted-foreground text-sm">{formattedDelivery}</p>
 											</div>
 										</div>
 									</div>
@@ -121,7 +126,7 @@ export const OrderConfirmation = () => {
 								<div className="flex flex-col gap-4 sm:flex-row">
 									<Link
 										href={marketHref(channel || "sk")}
-										className="inline-flex h-12 flex-1 items-center justify-center rounded-md border border-input bg-transparent px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+										className="border-input hover:bg-accent hover:text-accent-foreground inline-flex h-12 flex-1 items-center justify-center rounded-md border bg-transparent px-4 text-sm font-medium transition-colors"
 									>
 										Continue shopping
 									</Link>
@@ -132,7 +137,7 @@ export const OrderConfirmation = () => {
 
 					{/* Right column: Summary (~30%, max 380px) */}
 					<div className="order-1 md:order-2 md:shrink-0 md:basis-[30%]">
-						<div className="overflow-hidden rounded-lg border border-border bg-card md:sticky md:top-8">
+						<div className="border-border bg-card overflow-hidden rounded-lg border md:sticky md:top-8">
 							<OrderSummary order={order} editable={false} />
 						</div>
 					</div>
