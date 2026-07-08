@@ -20,7 +20,7 @@ interface ShippingStepProps {
 
 export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout, onBack, onNext }) => {
 	// Use live checkout data that updates after mutations
-	const { checkout: liveCheckout, fetching } = useCheckout();
+	const { checkout: liveCheckout, fetching, refetch } = useCheckout();
 	const checkout = liveCheckout || initialCheckout;
 
 	const shippingMethods = checkout.shippingMethods || [];
@@ -82,12 +82,16 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 					return;
 				}
 
+				// Pull the saved delivery method into the provider before the shallow step change, so the
+				// Payment step reads the fresh checkout total. Only after a real save (the unchanged-method
+				// path above advances without a mutation or refresh — bare step nav stays shallow).
+				await refetch();
 				onNext();
 			} finally {
 				setIsSubmittingLocal(false);
 			}
 		},
-		[selectedMethod, currentMethodId, onNext, checkout.id],
+		[selectedMethod, currentMethodId, onNext, checkout.id, refetch],
 	);
 
 	const buttonText = isSubmittingLocal ? "Saving..." : "Continue to payment";

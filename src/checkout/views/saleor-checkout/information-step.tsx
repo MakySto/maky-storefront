@@ -18,6 +18,7 @@ import {
 	isMatchingAddressData,
 } from "@/checkout/components/address-form/utils";
 import { useUser } from "@/checkout/hooks/use-user";
+import { useCheckout } from "@/checkout/hooks/use-checkout";
 import { getQueryParams, createQueryString } from "@/checkout/lib/utils/url";
 import { getStepNumber } from "./flow";
 
@@ -45,6 +46,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { user, authenticated } = useUser();
+	const { refetch } = useCheckout();
 	const { availableShippingCountries } = useAvailableShippingCountries();
 	const shippingAddress = checkout.shippingAddress;
 
@@ -350,6 +352,12 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 					}
 				}
 
+				// Save succeeded — pull the updated checkout (email + shipping address) into the
+				// CheckoutDataProvider BEFORE the shallow step change, so the Shipping step reads the
+				// fresh snapshot. B.4.3's shallow `?step=` no longer re-runs the RSC that used to refresh
+				// it incidentally. This runs only on a real save (after the mutations), never on a bare
+				// stepper jump — the shallow-routing property is preserved.
+				await refetch();
 				onNext();
 			} finally {
 				setIsSubmitting(false);
@@ -372,6 +380,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 			formData,
 			countryCode,
 			onNext,
+			refetch,
 		],
 	);
 

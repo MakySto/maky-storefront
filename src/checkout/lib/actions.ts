@@ -110,9 +110,14 @@ export async function refreshCheckoutAction(checkoutId: string): Promise<Checkou
 	return fetchCheckoutOnServer(checkoutId);
 }
 
+// Checkout-data mutations are keyed by `checkoutId` — the checkout id IS the credential (the same
+// §10-approved public-access rule as the checkout read, B.4.2 D2). They MUST use the public path:
+// a guest checkout has no customer session, and the authenticated `fetchWithAuth` path does not
+// reliably persist for guests. User/account mutations (customer-attach, set-default-address) and
+// payment (complete/transaction, B.4.4/B.8) keep their auth model below.
 export async function checkoutEmailUpdateAction(variables: NoLang<CheckoutEmailUpdateMutationVariables>) {
 	return toResult(
-		await executeAuthenticatedGraphQL(emailUpdateDoc, {
+		await executePublicGraphQL(emailUpdateDoc, {
 			variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
 			cache: "no-cache",
 		}),
@@ -123,7 +128,7 @@ export async function checkoutShippingAddressUpdateAction(
 	variables: NoLang<CheckoutShippingAddressUpdateMutationVariables>,
 ) {
 	return toResult(
-		await executeAuthenticatedGraphQL(shippingAddressUpdateDoc, {
+		await executePublicGraphQL(shippingAddressUpdateDoc, {
 			variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
 			cache: "no-cache",
 		}),
@@ -134,7 +139,7 @@ export async function checkoutBillingAddressUpdateAction(
 	variables: NoLang<CheckoutBillingAddressUpdateMutationVariables>,
 ) {
 	return toResult(
-		await executeAuthenticatedGraphQL(billingAddressUpdateDoc, {
+		await executePublicGraphQL(billingAddressUpdateDoc, {
 			variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
 			cache: "no-cache",
 		}),
@@ -145,7 +150,7 @@ export async function checkoutDeliveryMethodUpdateAction(
 	variables: NoLang<CheckoutDeliveryMethodUpdateMutationVariables>,
 ) {
 	return toResult(
-		await executeAuthenticatedGraphQL(deliveryMethodUpdateDoc, {
+		await executePublicGraphQL(deliveryMethodUpdateDoc, {
 			variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
 			cache: "no-cache",
 		}),
