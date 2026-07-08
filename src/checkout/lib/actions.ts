@@ -113,8 +113,8 @@ export async function refreshCheckoutAction(checkoutId: string): Promise<Checkou
 // Checkout-data mutations are keyed by `checkoutId` — the checkout id IS the credential (the same
 // §10-approved public-access rule as the checkout read, B.4.2 D2). They MUST use the public path:
 // a guest checkout has no customer session, and the authenticated `fetchWithAuth` path does not
-// reliably persist for guests. User/account mutations (customer-attach, set-default-address) and
-// payment (complete/transaction, B.4.4/B.8) keep their auth model below.
+// reliably persist for guests. Only the user/account mutations (customer-attach, set-default-address)
+// keep the authenticated path — they are account-scoped, not checkoutId-scoped.
 export async function checkoutEmailUpdateAction(variables: NoLang<CheckoutEmailUpdateMutationVariables>) {
 	return toResult(
 		await executePublicGraphQL(emailUpdateDoc, {
@@ -168,8 +168,11 @@ export async function checkoutCustomerAttachAction(
 	);
 }
 
+// checkoutComplete + transactionInitialize are checkoutId-keyed (the checkout id is the guest
+// credential) — same public-access rule as the checkout-data mutations. A guest has no customer
+// session, so the authenticated path silently no-ops for them (see 0039bdf). Public it is.
 export async function checkoutCompleteAction(variables: CheckoutCompleteMutationVariables) {
-	return toResult(await executeAuthenticatedGraphQL(completeDoc, { variables, cache: "no-cache" }));
+	return toResult(await executePublicGraphQL(completeDoc, { variables, cache: "no-cache" }));
 }
 
 export async function addressValidationRulesAction(variables: AddressValidationRulesQueryVariables) {
@@ -189,7 +192,5 @@ export async function userSetDefaultAddressAction(variables: UserSetDefaultAddre
 }
 
 export async function transactionInitializeAction(variables: TransactionInitializeMutationVariables) {
-	return toResult(
-		await executeAuthenticatedGraphQL(transactionInitializeDoc, { variables, cache: "no-cache" }),
-	);
+	return toResult(await executePublicGraphQL(transactionInitializeDoc, { variables, cache: "no-cache" }));
 }
