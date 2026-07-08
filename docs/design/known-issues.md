@@ -64,3 +64,28 @@ fix — recorded here so they are not lost. Each entry says WHERE it must be fix
   editable-banner system — **Payload CMS** (planned stack) or **Saleor metadata** as an interim
   source. Separate frontend feature on its own track.
 - **Source:** Marek, 2026-07-07 (during homepage-truthfulness work).
+
+## resolved (Track B)
+
+### RESOLVED (B.4.3): checkout/order RSC fetch was silently broken — `toTypedDocument` duplicated fragments
+
+- **What:** the B.4.2 server GraphQL bridge `toTypedDocument`
+  (`src/checkout/lib/server/to-typed-document.ts`) sent `document.loc.source.body`. graphql-tag
+  assembles that raw string by concatenating interpolated fragment sources **without de-duping**,
+  so a fragment reused across a query (`Money` — checkout ×3, order ×2) appears multiple times.
+  Saleor rejects it: `There can only be one fragment named "Money"`. **Every** server fetch that
+  uses a fragment (`fetchCheckoutOnServer`, `fetchCheckoutUserOnServer`,
+  `fetchChannelCountriesOnServer`, `fetchOrderOnServer`) therefore returned `null` — so `/checkout`
+  never reached ready-state and order confirmation always rendered not-found.
+- **Why it slipped through:** **B.4.2 was declared done but never rendered a real checkout.** Its
+  smoke only proved SSR-no-crash + the not-found/empty paths (build/tsc pass a colourless/empty
+  render); no one drove a real checkout id to ready-state, so the latent bug was invisible.
+- **Fix:** `78204cf` (leading commit of the B.4.3 branch) — print the de-duplicated AST with
+  graphql's `print` instead of the raw source (graphql-tag already de-dupes the parsed
+  `definitions`); defensive keep-first dedupe by fragment name; `graphql@16.8.1` added as an
+  explicit dep (already in-tree via graphql-tag, pinned — no duplicate copy). Unit test in
+  `to-typed-document.test.ts`.
+- **Proof:** `/checkout?checkout=<real sk-eur id>` now SSRs **ready-state** (item + €389,90 +
+  Information step) where it previously showed "Checkout not found". **This fix is the de-facto
+  completion of B.4.2's ready-state**, done as the prerequisite for B.4.3.
+- **Source:** discovered during the B.4.3 browser-proof, 2026-07-08 (branch-only, prod untouched).
