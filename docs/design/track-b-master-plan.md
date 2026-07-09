@@ -4,17 +4,25 @@
 > same server) can continue Track B without the originating chat. Read this + the memory
 > (`~/.claude/projects/-opt-storefront/memory/`) + the references below. Written 2026-07-07.
 
-## 0. TL;DR — start here (updated 2026-07-08 EOD, adversarially verified vs tip 8e76db9)
+## 0. TL;DR — start here (updated 2026-07-08 late — B.4.4 plan APPROVED)
 
-- **⭐ LATEST (2026-07-08 late — SUPERSEDES the tip/next-step bullets below; full detail in §1c):**
-  work continued on a NEW branch **`origin/track-b/checkout-v2-confirmation @ c0fcfa1`** (branched
-  off `7895f48`). **B.4.3 is DONE and browser-ACCEPTED end-to-end.** Landed: the leading
-  `toTypedDocument` fragment-dedupe fix (de-facto B.4.2 ready-state completion) + B.4.3
-  order-confirmation split + shallow `?step=` + **FOUR guest-auth fixes of the same class**
+- **⭐ LATEST (2026-07-08 late — B.4.4 PLAN APPROVED, zero code written):** the full B.4.4
+  implementation plan is written and Marek-approved. It lives in a self-contained git-tracked doc
+  **`docs/design/b44-payment-registry-plan.md`** (on this branch) — a fresh thread on another PC
+  reads THAT + this §0/§1c + `checkout-payment-gateways.md` and executes, no re-analysis needed. The
+  plan was produced via ultracode (4-agent read-only inventory + 6-agent adversarial verify; all
+  claims HOLDS_WITH_CORRECTIONS, corrections folded in). **NEXT = execute B.4.4 (5 commits) on a new
+  branch `track-b/checkout-v2-payment` off the current tip.** Approved new decisions D3–D6 (see the
+  plan doc §6). ⚠️ D5 OVERRIDES §3 below: the Stripe completion-host + entire `stripe/` tree move
+  from B.4.4 to **B.8** (host needs providers MAKY lacks; Stripe stays fully inert in B.4.4). Prod
+  still `a2db881` / `O-g51KFEjBKKfQKkHcYEL`, PM2 both online; branch tip after this docs commit =
+  use `git ls-remote --heads origin track-b/checkout-v2-confirmation` for ground truth.
+- **PRIOR (2026-07-08 late — B.4.3 DONE + browser-ACCEPTED end-to-end):** branch
+  `origin/track-b/checkout-v2-confirmation` (was `c0fcfa1`, prep tip `41248d4`), off `7895f48`.
+  Landed: the leading `toTypedDocument` fragment-dedupe fix (de-facto B.4.2 ready-state completion) +
+  B.4.3 order-confirmation split + shallow `?step=` + **FOUR guest-auth fixes of the same class**
   (checkout-data AND payment mutations were wrongly on `executeAuthenticatedGraphQL` → guest
-  no-persist). **NEXT = B.4.4 core payment registry — plan-first, fresh pass, NOT started.** Prod
-  still `a2db881` / `O-g51KFEjBKKfQKkHcYEL`, PM2 both online. See §1c for commits, caveats, LOCKED
-  decisions, and launch-tracking.
+  no-persist). See §1c for commits, caveats, LOCKED decisions, and launch-tracking.
 - **Everything is pushed to `origin`. Prod is untouched** (`a2db881`, BUILD_ID
   `O-g51KFEjBKKfQKkHcYEL`, PM2 `maky-storefront`+`maky-smtp-app` online — all re-verified
   2026-07-08). Track B is **branch-only** and does **NOT deploy** until after B.9.
