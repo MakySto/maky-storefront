@@ -4,9 +4,23 @@
 > same server) can continue Track B without the originating chat. Read this + the memory
 > (`~/.claude/projects/-opt-storefront/memory/`) + the references below. Written 2026-07-07.
 
-## 0. TL;DR — start here (updated 2026-07-08 late — B.4.4 plan APPROVED)
+## 0. TL;DR — start here (updated 2026-07-18 — B.4.4 IMPLEMENTED)
 
-- **⭐ LATEST (2026-07-08 late — B.4.4 PLAN APPROVED, zero code written):** the full B.4.4
+- **⭐ LATEST (2026-07-18 — B.4.4 IMPLEMENTED on `track-b/checkout-v2-payment`):** the approved
+  plan (`b44-payment-registry-plan.md`) was executed as its 5 commits off `64f0d19`: (1) vitest
+  sessionStorage setup, (2) payment lib closure adopted (registry/providers/pipeline + 9 test
+  files; stripe.ts predicates-only per D6), (3) four `{ok}`-shaped public payment actions with
+  guards + `CheckoutTransport` seam installed in `checkout-app.tsx` (D3: saveAddress dropped),
+  (4) E9 payment-step rewire — mock card/PayPal/iDEAL selector DELETED, `useCheckoutPayment`
+  pipeline + `PaymentGatewayAlerts`/`PaymentMethodArea` (inert `StripePaymentPlaceholder`, D5),
+  (5) these docs. **Live gateway contract probed 2026-07-18 against a fresh guest `sk-eur`
+  checkout: `availablePaymentGateways = [{id: "saleor.app.payment.stripe", name: "Stripe",
+  currencies: ["EUR"], config: []}]`** — matcher confirmed against reality (manifest id, stable
+  across reinstalls). **Correction of an earlier claim:** "browser urql removed" holds for the
+  checkout DATA path (RSC/actions), but `checkout-app.tsx → AuthProvider` still mounts a urql
+  client for the interactive auth flows — urql remains a **transitive runtime dependency** of the
+  checkout shell until the AuthProvider residue is stripped (B.4.5+). NEXT = B.4.5 per §3.
+- **PRIOR (2026-07-08 late — B.4.4 PLAN APPROVED, zero code written):** the full B.4.4
   implementation plan is written and Marek-approved. It lives in a self-contained git-tracked doc
   **`docs/design/b44-payment-registry-plan.md`** (on this branch) — a fresh thread on another PC
   reads THAT + this §0/§1c + `checkout-payment-gateways.md` and executes, no re-analysis needed. The
@@ -146,14 +160,11 @@ B.4.2:
 Slovensko" 5,90 € rate, total 854,80 €).** **FOUR guest-auth bugs of the same class found + fixed**
 (all checkout-data + payment mutations wrongly authenticated → guest no-persist).
 
-**NEXT = B.4.4 core payment registry (MIGRATION step 7) — plan-first, fresh pass, NOT started.**
-Wholesale-adopt upstream `src/checkout/lib/payment/*` (`INTEGRATED_GATEWAYS` + `resolve-provider` +
-`providers/{dummy,stripe-predicates}` + dummy server-submit) + `components/payment/*`
-(`integrated-payment-ui`, `dummy-payment-placeholder`, gateway alerts; Stripe UI shipped INERT).
-Rewire `payment-step.tsx` off the `hasDummy/hasReal` branching + delete the mock card/PayPal/iDEAL
-selector (sanctioned E9). Browser-observable win: a Stripe-only `sk-eur` checkout resolves to a
-**graceful "payment unavailable"** state instead of today's "only supports test payments" dead-end.
-Payment-mutation public fix already landed (`c0fcfa1`). Read `checkout-payment-gateways.md` first.
+**B.4.4 DONE (2026-07-18, branch `track-b/checkout-v2-payment`)** — payment registry + transport
+seam + E9 rewire landed per the approved plan; see §0 LATEST for the commit breakdown and the
+probed live gateway contract. The mock selector and the "only supports test payments" dead-end are
+gone; a Stripe-only `sk-eur` checkout on a prod build (Stripe OFF) resolves to the graceful
+"Unsupported payment gateway" alert.
 
 **LOCKED decisions for B.4.4:** D1 = **hardcoded EN placeholders** (SK i18n → B.7; keep 13/13
 parity); D2 = **DONE** (`6e07357`, isolated fragment-free local fix); **Dummy app NOT installed**

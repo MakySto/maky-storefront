@@ -118,15 +118,20 @@ fix — recorded here so they are not lost. Each entry says WHERE it must be fix
 - **Status:** **B.4.3 ACCEPTED** (browser-proof passed end-to-end, 2 products; tip `0039bdf`,
   branch-only, prod untouched).
 
-## deferred to B.4.4 (payment)
+### RESOLVED (pre-B.4.4, `6e07357`): Payment step summary "Method" row showed "—"
 
-### Payment step summary "Method" row shows "—" though shipping is applied
+- **What:** at the Payment step, the summary context row **"Method"** displayed `—` even though the
+  Order Summary correctly applied the chosen shipping method and total.
+- **Fix:** `6e07357` — `formatShippingMethod` matched `deliveryMethod.__typename` but the fragment
+  omits `__typename` (runtime returns just `{id}`); fragment-free local fix matching
+  `deliveryMethod?.id` (no `CheckoutFragment`/codegen touch). Landed as B.4.4 prep (D2).
 
-- **What:** at the Payment step, the summary context row **"Method"** displays `—` even though the
-  Order Summary correctly applies the chosen shipping method (e.g. Kuriér – Slovensko 5,90 €) and
-  total. A data/display gap in the payment-step summary rows.
-- **Where:** `src/checkout/views/saleor-checkout/checkout-summary-context.tsx` /
-  `payment-step.tsx` (`buildPaymentSummaryRows`).
-- **Fix:** verify during **B.4.4** (payment step rework) — likely the delivery-method label isn't
-  threaded into the payment summary row.
-- **Source:** B.4.3 browser-proof, 2026-07-08.
+## LAUNCH-TRACKING (must close before live — verify in B.9)
+
+- **(a) sk-eur shipping config:** "Kuriér – Slovensko" was added manually in Saleor; verify
+  shipping zones + rates for ALL launch markets before live — a missing rate silently dead-ends
+  checkout at the Shipping step ("No shipping methods available").
+- **(b) checkout payment copy is EN (D1):** the payment-step gateway alerts ("Unsupported payment
+  gateway", price-change notice, payment errors) are hardcoded EN placeholders. Between B.4.4 and
+  B.8 (Stripe OFF in prod) every live `sk-eur` customer would see the EN unsupported state; the
+  copy must be Slovak before live launch (B.7).
