@@ -19,6 +19,7 @@ import {
 } from "@/checkout/components/address-form/utils";
 import { useUser } from "@/checkout/hooks/use-user";
 import { useCheckout } from "@/checkout/hooks/use-checkout";
+import { syncAuthSurfacesAfterSignIn } from "@/lib/auth/sync-auth-surfaces-after-sign-in";
 import { getQueryParams, createQueryString } from "@/checkout/lib/utils/url";
 import { getStepNumber } from "./flow";
 
@@ -412,7 +413,12 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 				<SignInForm
 					initialEmail={email}
 					channelSlug={checkout.channel.slug}
-					onSuccess={() => setContactView("main")}
+					onSuccess={async () => {
+						// BFF cookies are set — bust cached chrome and re-run the RSC loader so
+						// CheckoutUserProvider picks up the signed-in user (B.4.5).
+						await syncAuthSurfacesAfterSignIn(checkout.channel.slug, router);
+						setContactView("main");
+					}}
 					onGuestCheckout={() => setContactView("main")}
 				/>
 			</div>

@@ -2,7 +2,7 @@
 
 import { type FC, useState } from "react";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { useSaleorAuthContext } from "@saleor/auth-sdk/react";
+import { loginWithBff } from "@/lib/auth/bff-client";
 import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
 import { requestPasswordResetAction } from "@/checkout/lib/actions";
@@ -12,8 +12,8 @@ export interface SignInFormProps {
 	initialEmail?: string;
 	/** Saleor channel slug for password reset */
 	channelSlug: string;
-	/** Called when sign-in is successful */
-	onSuccess: () => void;
+	/** Called when sign-in is successful (may be async — form waits before clearing loading state) */
+	onSuccess: () => void | Promise<void>;
 	/** Called when user wants to checkout as guest */
 	onGuestCheckout: () => void;
 }
@@ -22,7 +22,8 @@ export interface SignInFormProps {
  * Sign-in form with email, password, and forgot password functionality.
  *
  * Features:
- * - Email/password authentication via Saleor
+ * - Email/password authentication via the BFF login endpoint (B.4.5 — HttpOnly
+ *   session cookies set server-side; replaces the client auth-sdk signIn)
  * - Password visibility toggle
  * - Forgot password flow with rate limit messaging
  * - "Guest checkout" option
@@ -33,7 +34,6 @@ export const SignInForm: FC<SignInFormProps> = ({
 	onSuccess,
 	onGuestCheckout,
 }) => {
-	const { signIn } = useSaleorAuthContext();
 	const [email, setEmail] = useState(initialEmail);
 	const [password, setPassword] = useState("");
 	const [showPassword, setShowPassword] = useState(false);
@@ -51,12 +51,17 @@ export const SignInForm: FC<SignInFormProps> = ({
 		setIsSubmitting(true);
 
 		try {
-			const result = await signIn({ email, password });
-			if (result.data?.tokenCreate?.errors?.length) {
-				const err = result.data.tokenCreate.errors[0];
-				setError(err.message || "Invalid email or password");
-			} else if (result.data?.tokenCreate?.token) {
-				onSuccess();
+			const result = await loginWithBff(email, password);
+			if (result.errors?.length) {
+				const err = result.errors[0];
+				const isInvalidCredentials =
+					err.code === "INVALID_CREDENTIALS" ||
+					err.code === "INVALID_PASSWORD" ||
+					err.message?.toLowerCase().includes("invalid") ||
+					err.message?.toLowerCase().includes("credentials");
+				setError(isInvalidCredentials ? "Invalid email or password" : "Sign in failed. Please try again.");
+			} else if (result.ok || result.success) {
+				await onSuccess();
 			} else {
 				setError("Sign in failed. Please try again.");
 			}
