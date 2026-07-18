@@ -25,14 +25,12 @@ export const getFormattedMoney = <TMoney extends Money>(money: MightNotExist<TMo
 };
 
 /**
- * Format shipping price - returns "Free" for zero amount.
+ * Format shipping price — always the real rate, including a genuine zero ("0,00 €").
+ * No "Free" wording: the storefront makes no free-shipping claims (B.6 truthfulness).
  */
 export const formatShippingPrice = <TMoney extends Money>(money: MightNotExist<TMoney>): string => {
 	if (!money) {
 		return "—";
-	}
-	if (money.amount === 0) {
-		return "Free";
 	}
 	return getFormattedMoney(money);
 };

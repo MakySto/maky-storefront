@@ -128,7 +128,6 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 							const Icon = getMethodIcon(method.name);
 							const isSelected = selectedMethod === method.id;
 							const isEco = isEcoMethod(method.name);
-							const isFree = method.price?.amount === 0;
 							const priceDisplay = formatShippingPrice(method.price);
 
 							return (
@@ -177,7 +176,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 											</p>
 										)}
 									</div>
-									<span className={cn("font-medium", isFree && "text-green-600")}>{priceDisplay}</span>
+									<span className="font-medium">{priceDisplay}</span>
 								</label>
 							);
 						})}

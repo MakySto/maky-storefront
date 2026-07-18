@@ -2,9 +2,7 @@
 
 import { useState, type FC } from "react";
 import Image from "next/image";
-import { Tag, ShieldCheck, RotateCcw, Truck, ChevronDown, ShoppingBag } from "lucide-react";
-import { Button } from "@/ui/components/ui/button";
-import { Input } from "@/ui/components/ui/input";
+import { Tag, ShieldCheck, ChevronDown, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type CheckoutFragment, type OrderFragment } from "@/checkout/graphql";
 import { localeConfig } from "@/config/locale";
@@ -113,9 +111,7 @@ function extractOrderData(order: OrderFragment): OrderSummaryData {
 // Component
 // ============================================================================
 
-export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order, editable }) => {
-	const [promoCode, setPromoCode] = useState("");
-	const [promoApplied, setPromoApplied] = useState(false);
+export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 	// Collapsed by default on mobile
 	const [isExpanded, setIsExpanded] = useState(false);
 
@@ -126,8 +122,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order, editable 
 		return null;
 	}
 
-	const { lines, currency, subtotal, shipping, tax, discount, total } = data;
-	const isEditable = editable ?? data.editable;
+	const { lines, currency, subtotal, shipping, discount, total } = data;
 	const itemCount = lines.reduce((acc, line) => acc + line.quantity, 0);
 
 	const formatMoney = (amount: number) => {
@@ -135,13 +130,6 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order, editable 
 			style: "currency",
 			currency,
 		}).format(amount);
-	};
-
-	const handleApplyPromo = () => {
-		// TODO: Call Saleor mutation to apply promo code
-		if (promoCode.toLowerCase() === "saleor10") {
-			setPromoApplied(true);
-		}
 	};
 
 	// Product thumbnails for collapsed state (show max 2 for cleaner look)
@@ -165,7 +153,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order, editable 
 								<div
 									key={line.id}
 									className={cn(
-										"relative h-8 w-8 shrink-0 overflow-hidden rounded-md border-2 border-card bg-secondary",
+										"border-card bg-secondary relative h-8 w-8 shrink-0 overflow-hidden rounded-md border-2",
 										idx === 0 && "z-[1]",
 										idx === 1 && "z-[2] -ml-3",
 									)}
@@ -179,19 +167,19 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order, editable 
 											className="h-full w-full object-cover"
 										/>
 									) : (
-										<div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+										<div className="bg-muted text-muted-foreground flex h-full w-full items-center justify-center">
 											<Tag className="h-3 w-3" />
 										</div>
 									)}
 								</div>
 							))
 						) : (
-							<div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary">
-								<ShoppingBag className="h-4 w-4 text-muted-foreground" />
+							<div className="bg-secondary flex h-8 w-8 items-center justify-center rounded-md">
+								<ShoppingBag className="text-muted-foreground h-4 w-4" />
 							</div>
 						)}
 						{remainingCount > 0 && (
-							<div className="z-[3] -ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border-2 border-card bg-muted text-[10px] font-semibold text-muted-foreground">
+							<div className="border-card bg-muted text-muted-foreground z-[3] -ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border-2 text-[10px] font-semibold">
 								+{remainingCount}
 							</div>
 						)}
@@ -199,7 +187,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order, editable 
 					{/* Text */}
 					<div className="flex flex-col items-start">
 						<span className="text-sm font-medium">{isExpanded ? "Hide" : "Show"} order summary</span>
-						<span className="text-xs text-muted-foreground">
+						<span className="text-muted-foreground text-xs">
 							{itemCount} {itemCount === 1 ? "item" : "items"}
 						</span>
 					</div>
@@ -208,7 +196,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order, editable 
 					<span className="text-base font-semibold">{formatMoney(total)}</span>
 					<ChevronDown
 						className={cn(
-							"h-5 w-5 text-muted-foreground transition-transform duration-200",
+							"text-muted-foreground h-5 w-5 transition-transform duration-200",
 							isExpanded && "rotate-180",
 						)}
 					/>
@@ -218,7 +206,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order, editable 
 			{/* Desktop Header - Only visible on desktop */}
 			<header className="bg-secondary/30 hidden items-center gap-2 px-5 py-4 md:flex">
 				<h2 className="text-base font-semibold">Order Summary</h2>
-				<span className="text-sm text-muted-foreground">
+				<span className="text-muted-foreground text-sm">
 					({itemCount} {itemCount === 1 ? "item" : "items"})
 				</span>
 			</header>
@@ -227,16 +215,16 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order, editable 
 			<div id="order-summary-content" className="order-summary-content" data-expanded={isExpanded}>
 				<div className="order-summary-inner">
 					{/* Products */}
-					<section className="border-t border-border">
+					<section className="border-border border-t">
 						<ul className="max-h-[280px] space-y-1 overflow-y-auto px-5 py-4 [scrollbar-gutter:stable]">
 							{lines.map((line) => (
 								<li key={line.id} className="flex gap-4 py-2">
 									{/* Product image with quantity badge */}
 									<figure className="relative shrink-0">
-										<span className="shadow-xs absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-[10px] font-medium text-background">
+										<span className="bg-foreground text-background absolute -top-2 -right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-medium shadow-xs">
 											{line.quantity}
 										</span>
-										<div className="h-14 w-14 overflow-hidden rounded-lg border border-border bg-secondary">
+										<div className="border-border bg-secondary h-14 w-14 overflow-hidden rounded-lg border">
 											{line.imageUrl ? (
 												<Image
 													src={line.imageUrl}
@@ -246,7 +234,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order, editable 
 													className="h-full w-full object-contain object-center"
 												/>
 											) : (
-												<div className="flex h-full w-full items-center justify-center text-muted-foreground">
+												<div className="text-muted-foreground flex h-full w-full items-center justify-center">
 													<Tag className="h-5 w-5" />
 												</div>
 											)}
@@ -255,9 +243,9 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order, editable 
 
 									{/* Product details */}
 									<div className="flex min-w-0 flex-1 flex-col justify-center">
-										<p className="truncate text-sm font-medium leading-tight">{line.name}</p>
+										<p className="truncate text-sm leading-tight font-medium">{line.name}</p>
 										{line.attributes.length > 0 && (
-											<p className="mt-0.5 truncate text-xs text-muted-foreground">
+											<p className="text-muted-foreground mt-0.5 truncate text-xs">
 												{line.attributes.join(" / ")}
 											</p>
 										)}
@@ -275,43 +263,8 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order, editable 
 						</ul>
 					</section>
 
-					{/* Discounts - only for editable checkout */}
-					{isEditable && (
-						<section className="border-t border-border px-5 py-4">
-							<form
-								className="flex gap-2"
-								onSubmit={(e) => {
-									e.preventDefault();
-									handleApplyPromo();
-								}}
-							>
-								<div className="relative flex-1">
-									<Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-									<Input
-										placeholder="Discount code"
-										value={promoCode}
-										onChange={(e) => setPromoCode(e.target.value)}
-										className="h-10 bg-white pl-10 text-sm"
-										disabled={promoApplied}
-									/>
-								</div>
-								<Button
-									type="submit"
-									variant="outline-solid"
-									disabled={!promoCode || promoApplied}
-									className="h-10 bg-white px-4 text-sm"
-								>
-									{promoApplied ? "Applied" : "Apply"}
-								</Button>
-							</form>
-							{promoApplied && (
-								<p className="mt-2 text-sm font-medium text-green-600">SALEOR10 - 10% discount applied</p>
-							)}
-						</section>
-					)}
-
 					{/* Amounts */}
-					<section className="border-t border-border px-5 py-4">
+					<section className="border-border border-t px-5 py-4">
 						<dl className="space-y-2 text-sm tabular-nums">
 							<div className="flex justify-between">
 								<dt className="text-muted-foreground">Subtotal</dt>
@@ -319,16 +272,8 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order, editable 
 							</div>
 							<div className="flex justify-between">
 								<dt className="text-muted-foreground">Shipping</dt>
-								<dd className={cn(shipping === 0 && "text-green-600")}>
-									{shipping === 0 ? "Free" : formatMoney(shipping)}
-								</dd>
+								<dd>{shipping > 0 ? formatMoney(shipping) : "—"}</dd>
 							</div>
-							{tax > 0 && (
-								<div className="flex justify-between">
-									<dt className="text-muted-foreground">Tax (VAT)</dt>
-									<dd>{formatMoney(tax)}</dd>
-								</div>
-							)}
 							{discount > 0 && (
 								<div className="flex justify-between text-green-600">
 									<dt>Discount</dt>
@@ -339,41 +284,18 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order, editable 
 
 						{/* Total */}
 						<div className="border-border/50 mt-4 flex items-baseline justify-between border-t pt-4">
-							<div className="flex flex-col">
-								<span className="text-base font-semibold">Total</span>
-								{tax > 0 && <span className="text-xs text-muted-foreground">Including VAT</span>}
-							</div>
+							<span className="text-base font-semibold">Total</span>
 							<data value={total} className="text-xl font-semibold tabular-nums">
 								{formatMoney(total)}
 							</data>
 						</div>
 					</section>
 
-					{/* Trust/Social proof */}
-					<footer className="bg-secondary/30 grid grid-cols-3 gap-2 border-t border-border px-5 py-4">
-						<div className="flex flex-col items-center rounded-lg bg-secondary p-2.5 text-center">
-							<ShieldCheck className="mb-1 h-4 w-4 text-muted-foreground" />
-							<span className="text-[10px] leading-tight text-muted-foreground">
-								Secure
-								<br />
-								checkout
-							</span>
-						</div>
-						<div className="flex flex-col items-center rounded-lg bg-secondary p-2.5 text-center">
-							<RotateCcw className="mb-1 h-4 w-4 text-muted-foreground" />
-							<span className="text-[10px] leading-tight text-muted-foreground">
-								30-day
-								<br />
-								returns
-							</span>
-						</div>
-						<div className="flex flex-col items-center rounded-lg bg-secondary p-2.5 text-center">
-							<Truck className="mb-1 h-4 w-4 text-muted-foreground" />
-							<span className="text-[10px] leading-tight text-muted-foreground">
-								Free
-								<br />
-								shipping
-							</span>
+					{/* Trust */}
+					<footer className="bg-secondary/30 border-border flex justify-center border-t px-5 py-4">
+						<div className="bg-secondary flex items-center gap-2 rounded-lg px-4 py-2.5">
+							<ShieldCheck className="text-muted-foreground h-4 w-4" />
+							<span className="text-muted-foreground text-[10px] leading-tight">Secure checkout</span>
 						</div>
 					</footer>
 				</div>

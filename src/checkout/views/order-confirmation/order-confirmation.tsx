@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle, Mail, MapPin, Package, CreditCard } from "lucide-react";
+import { CheckCircle, Mail, MapPin, CreditCard } from "lucide-react";
 import { useOrder } from "@/checkout/hooks/use-order";
 import { OrderSummary } from "@/checkout/views/saleor-checkout/order-summary";
 import { CheckoutHeader } from "@/checkout/views/saleor-checkout/checkout-header";
 import { DefaultChannelSlug } from "@/app/config";
-import { localeConfig } from "@/config/locale";
 import { marketHref } from "@/lib/channel-map";
 
 /** Format address for display */
@@ -33,16 +32,6 @@ export const OrderConfirmation = () => {
 		return null;
 	}
 	const channel = DefaultChannelSlug;
-
-	// Calculate estimated delivery (7 days from now)
-	// Using a static calculation - this component only renders once after order creation
-	const estimatedDelivery = new Date();
-	estimatedDelivery.setDate(estimatedDelivery.getDate() + 7);
-	const formattedDelivery = estimatedDelivery.toLocaleDateString(localeConfig.default, {
-		weekday: "long",
-		month: "long",
-		day: "numeric",
-	});
 
 	const shippingAddress = order.shippingAddress;
 	const billingAddress = order.billingAddress;
@@ -112,13 +101,6 @@ export const OrderConfirmation = () => {
 												</div>
 											</div>
 										)}
-										<div className="flex items-start gap-3">
-											<Package className="text-muted-foreground mt-0.5 h-5 w-5" />
-											<div>
-												<p className="text-sm font-medium">Estimated delivery</p>
-												<p className="text-muted-foreground text-sm">{formattedDelivery}</p>
-											</div>
-										</div>
 									</div>
 								</div>
 
