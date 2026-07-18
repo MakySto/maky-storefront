@@ -3,6 +3,8 @@
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
+import { nextCheckoutTransport } from "@/checkout/checkout-transport-next";
+import { setCheckoutTransport } from "@/checkout/lib/checkout-transport";
 import { CheckoutDataProvider } from "@/checkout/providers/checkout-data";
 import { CheckoutUserProvider } from "@/checkout/providers/checkout-user";
 import type {
@@ -25,15 +27,20 @@ type CheckoutAppProps = {
 	shippingCountries: ShippingCountries;
 };
 
+// Installed at module scope, before any payment code can run (upstream pattern) —
+// lib/payment/* reaches Saleor exclusively through this seam.
+setCheckoutTransport(nextCheckoutTransport);
+
 /**
  * Checkout composition root (Track B.4.2, MAKY variant C — reduced).
  *
  * Hydrates the client checkout from RSC-loaded data and installs the data/user context that
  * replaces browser-side urql. `AuthProvider` is kept for the interactive auth-sdk flows the
- * checkout still uses client-side (sign-in / reset / sign-out — B.2 scope). Deliberately omitted
- * vs upstream: CheckoutContentProvider (no CMS), CheckoutIntlProvider/BrowseProvider (static-sk),
- * the payment single-flight transport + StripeCheckoutCompletionHost (B.4.4/B.8), and the
- * session guards (B.4.5).
+ * checkout still uses client-side (sign-in / reset / sign-out — B.2 scope); note it still
+ * mounts a urql client for those flows, so urql remains a transitive runtime dependency of
+ * the checkout shell (the checkout DATA path itself no longer uses urql). Deliberately
+ * omitted vs upstream: CheckoutContentProvider (no CMS), CheckoutIntlProvider/BrowseProvider
+ * (static-sk), StripeCheckoutCompletionHost (B.8), and the session guards (B.4.5).
  */
 export function CheckoutApp({
 	checkoutId,
