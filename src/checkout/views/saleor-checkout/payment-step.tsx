@@ -1,35 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback, type FC } from "react";
-import { ChevronLeft, AlertCircle } from "lucide-react";
+import { useState, useCallback, useEffect, type FC } from "react";
+import { ChevronLeft, AlertTriangle } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { CheckoutSummaryContext, buildPaymentSummaryRows } from "./checkout-summary-context";
 import { type CheckoutFragment, type CountryCode, type AddressFragment } from "@/checkout/graphql";
-import {
-	checkoutBillingAddressUpdateAction,
-	checkoutCompleteAction,
-	transactionInitializeAction,
-} from "@/checkout/lib/actions";
 import { useCheckout } from "@/checkout/hooks/use-checkout";
 import { useUser } from "@/checkout/hooks/use-user";
-import { getAddressInputData } from "@/checkout/components/address-form/utils";
-// Dummy payment gateway ID (from Saleor Dummy Payment app)
-const dummyGatewayId = "mirumee.payments.dummy";
-import { navigateToOrderConfirmation } from "@/checkout/lib/navigate-to-order";
+import { useCheckoutPayment } from "@/checkout/hooks/use-checkout-payment";
 import { MobileStickyAction } from "./mobile-sticky-action";
 import { getStepNumber } from "./flow";
-
-// Extracted reusable components
 import {
-	PaymentMethodSelector,
+	PaymentGatewayAlerts,
+	PaymentMethodArea,
+	PaymentError,
 	BillingAddressSection,
-	type PaymentMethodType,
-	type CardData,
 	type BillingAddressData,
-	isCardDataValid,
 } from "@/checkout/components/payment";
 import { LoadingSpinner } from "@/checkout/ui-kit/loading-spinner";
-import { formatMoneyWithFallback } from "@/checkout/lib/utils/money";
+import { getFormattedMoney, formatMoneyWithFallback } from "@/checkout/lib/utils/money";
+import { isCheckoutFreeOrder } from "@/checkout/lib/payment/checkout-pay-amount";
+import { shouldShowPaymentMethodArea } from "@/checkout/lib/payment/should-show-payment-method-area";
+import { usesClientPaymentSubmit } from "@/checkout/lib/payment";
+import { consumePaymentCompletionError } from "@/checkout/lib/payment/checkout-payment-completion";
 
 interface PaymentStepProps {
 	checkout: CheckoutFragment;
@@ -37,6 +30,14 @@ interface PaymentStepProps {
 	onGoToInformation?: () => void;
 }
 
+/**
+ * Payment step (E9 rewire, B.4.4): the mock card/PayPal/iDEAL selector is gone —
+ * payment UI is resolved from `checkout.availablePaymentGateways` via the payment
+ * registry (`PaymentGatewayAlerts` + `PaymentMethodArea`), and the pay pipeline
+ * (billing update → live refetch → price-change guard → executePayment →
+ * navigateToOrderConfirmation) lives in `useCheckoutPayment`.
+ * Hardcoded EN copy (D1) — SK lands in B.7.
+ */
 export const PaymentStep: FC<PaymentStepProps> = ({
 	checkout: initialCheckout,
 	onBack,
@@ -46,26 +47,13 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 	const { checkout: liveCheckout } = useCheckout();
 	const checkout = liveCheckout || initialCheckout;
 
-	// Get user data for saved addresses
 	const { user, authenticated } = useUser();
-
-	// For digital products, there's no shipping address, so can't use "same as billing"
 	const isShippingRequired = checkout.isShippingRequired;
 	const hasShippingAddress = !!checkout.shippingAddress;
+	const shippingAddress = checkout.shippingAddress;
 
-	// Payment method state
-	const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("card");
-	// Lazy initialization - object only created once on mount
-	const [cardData, setCardData] = useState<CardData>(() => ({
-		cardNumber: "",
-		expiry: "",
-		cvc: "",
-		nameOnCard: "",
-	}));
-
-	// Billing address state
+	const [isPaymentBusy, setIsPaymentBusy] = useState(false);
 	const [sameAsBilling, setSameAsBilling] = useState(isShippingRequired && hasShippingAddress);
-	// Lazy initialization - complex object only created once on mount
 	const [billingData, setBillingData] = useState<BillingAddressData>(() => ({
 		countryCode: (checkout.billingAddress?.country?.code as CountryCode) || "US",
 		formData: {
@@ -81,8 +69,11 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 		},
 	}));
 
-	// Sync billing address from server state
-	useEffect(() => {
+	// Sync billing form state when the server billing address changes (refetch after save).
+	// Adjust-during-render instead of an effect (react.dev/learn/you-might-not-need-an-effect).
+	const [syncedBillingAddress, setSyncedBillingAddress] = useState(checkout.billingAddress);
+	if (checkout.billingAddress !== syncedBillingAddress) {
+		setSyncedBillingAddress(checkout.billingAddress);
 		const billing = checkout.billingAddress;
 		if (billing) {
 			setBillingData((prev) => ({
@@ -102,19 +93,46 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 				},
 			}));
 		}
-	}, [checkout.billingAddress]);
+	}
 
-	const [isProcessing, setIsProcessing] = useState(false);
-	const [errors, setErrors] = useState<Record<string, string>>({});
+	const {
+		submit,
+		errors,
+		setPaymentError,
+		setBillingErrors,
+		setPriceChangeNotice,
+		priceChangeNotice,
+		provider,
+		canSubmit,
+		isLoading,
+		isCompletingOrder,
+	} = useCheckoutPayment({
+		checkout,
+		billingData,
+		sameAsBilling,
+		hasShippingAddress,
+		shippingAddress,
+		userAddresses: user?.addresses,
+		authenticated,
+	});
 
-	// Check for available payment gateways
-	const availableGateways = checkout.availablePaymentGateways || [];
-	const hasDummyGateway = availableGateways.some((g) => g.id === dummyGatewayId);
-	const hasRealGateway = availableGateways.some((g) => g.id !== dummyGatewayId);
+	const usesClientSubmit = usesClientPaymentSubmit(provider);
+	const isFreeOrder = isCheckoutFreeOrder(checkout);
 
-	const shippingAddress = checkout.shippingAddress;
+	const handlePaymentError = useCallback(
+		(message: string) => {
+			setPaymentError(message);
+		},
+		[setPaymentError],
+	);
 
-	// Memoize billing data handler to avoid infinite loops
+	useEffect(() => {
+		const stashedError = consumePaymentCompletionError();
+		if (stashedError) {
+			handlePaymentError(stashedError);
+		}
+	}, [handlePaymentError]);
+
 	const handleBillingDataChange = useCallback((data: BillingAddressData) => {
 		setBillingData(data);
 	}, []);
@@ -134,235 +152,68 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 	const total = checkout.totalPrice?.gross;
 	const totalStr = formatMoneyWithFallback(total);
 
-	const handleSubmit = useCallback(
-		async (event?: React.FormEvent) => {
-			if (event) {
-				event.preventDefault();
-			}
+	const buttonText = isLoading
+		? isCompletingOrder
+			? "Creating order…"
+			: "Processing payment…"
+		: isFreeOrder
+			? "Complete order"
+			: `Pay ${totalStr}`;
 
-			setErrors({});
+	const isDisabled = isLoading || (!canSubmit && !isFreeOrder);
 
-			// Validate billing address if different from shipping (or for digital products)
-			const needsBillingForm = !sameAsBilling || !hasShippingAddress;
-
-			setIsProcessing(true);
-			try {
-				// Update billing address
-				if (needsBillingForm) {
-					let addressInput;
-
-					// Check if user selected a saved address
-					if (billingData.selectedAddressId && user?.addresses) {
-						const selectedAddress = user.addresses.find((addr) => addr.id === billingData.selectedAddressId);
-						if (selectedAddress) {
-							addressInput = getAddressInputData({
-								firstName: selectedAddress.firstName || "",
-								lastName: selectedAddress.lastName || "",
-								streetAddress1: selectedAddress.streetAddress1 || "",
-								streetAddress2: selectedAddress.streetAddress2 || "",
-								companyName: selectedAddress.companyName || "",
-								city: selectedAddress.city || "",
-								postalCode: selectedAddress.postalCode || "",
-								countryArea: selectedAddress.countryArea || "",
-								phone: selectedAddress.phone || "",
-								countryCode: selectedAddress.country?.code as CountryCode,
-							});
-						}
-					}
-
-					// If no saved address selected, use form data
-					if (!addressInput) {
-						addressInput = getAddressInputData({
-							...billingData.formData,
-							countryCode: billingData.countryCode,
-						});
-					}
-
-					const result = await checkoutBillingAddressUpdateAction({
-						checkoutId: checkout.id,
-						billingAddress: addressInput,
-					});
-					if (result.error) {
-						setErrors({ streetAddress1: "Failed to update billing address" });
-						return;
-					}
-					const billingErrors = result.data?.checkoutBillingAddressUpdate?.errors;
-					if (billingErrors?.length) {
-						const errorMap: Record<string, string> = {};
-						billingErrors.forEach((err) => {
-							const field = err.field || "streetAddress1";
-							errorMap[field] = err.message || "Invalid value";
-						});
-						setErrors(errorMap);
-						const firstField = Object.keys(errorMap)[0];
-						const element = document.querySelector(`[name="${firstField}"]`) as HTMLElement;
-						element?.focus();
-						return;
-					}
-				} else if (shippingAddress) {
-					// Copy shipping address to billing
-					const addressInput = getAddressInputData({
-						firstName: shippingAddress.firstName || "",
-						lastName: shippingAddress.lastName || "",
-						streetAddress1: shippingAddress.streetAddress1 || "",
-						streetAddress2: shippingAddress.streetAddress2 || "",
-						companyName: shippingAddress.companyName || "",
-						city: shippingAddress.city || "",
-						postalCode: shippingAddress.postalCode || "",
-						countryArea: shippingAddress.countryArea || "",
-						phone: shippingAddress.phone || "",
-						countryCode: shippingAddress.country?.code as CountryCode,
-					});
-					await checkoutBillingAddressUpdateAction({
-						checkoutId: checkout.id,
-						billingAddress: addressInput,
-					});
-				}
-
-				// Process payment using available gateway
-				if (hasDummyGateway) {
-					const checkoutId = checkout.id;
-
-					const initResult = await transactionInitializeAction({
-						checkoutId,
-						paymentGateway: {
-							id: dummyGatewayId,
-							data: {
-								event: {
-									includePspReference: true,
-									type: "CHARGE_SUCCESS",
-								},
-							},
-						},
-					});
-
-					if (initResult.error) {
-						console.error("Payment initialization error:", initResult.error);
-						setErrors({ streetAddress1: "Payment failed. Please try again." });
-						return;
-					}
-
-					const transactionErrors = initResult.data?.transactionInitialize?.errors;
-					if (transactionErrors?.length) {
-						console.error("Transaction errors:", transactionErrors);
-						setErrors({ streetAddress1: transactionErrors[0].message || "Payment failed" });
-						return;
-					}
-
-					// Complete the checkout and create the order
-					const completeResult = await checkoutCompleteAction({
-						checkoutId,
-					});
-
-					if (completeResult.error) {
-						console.error("Checkout complete error:", completeResult.error);
-						setErrors({ streetAddress1: "Failed to complete order. Please try again." });
-						return;
-					}
-
-					const completeErrors = completeResult.data?.checkoutComplete?.errors;
-					if (completeErrors?.length) {
-						const errorDetails = completeErrors.map((e) => `${e.field}: ${e.message} (${e.code})`).join(", ");
-						console.error("Checkout complete errors:", errorDetails, completeErrors);
-						// Show a more descriptive error
-						const firstError = completeErrors[0];
-						const errorMessage = firstError.message || firstError.code || "Failed to complete order";
-						setErrors({ payment: errorMessage });
-						return;
-					}
-
-					// Order created — leave the checkout SPA for the dedicated confirmation route
-					// (B.4.3, MIGRATION step 5): a hard nav to /checkout/complete?order=<id>.
-					const order = completeResult.data?.checkoutComplete?.order;
-					if (order) {
-						navigateToOrderConfirmation(order.id);
-						return;
-					}
-				} else if (!hasRealGateway) {
-					// No payment gateway configured
-					setErrors({
-						streetAddress1:
-							"No payment gateway configured. Please contact support or configure a payment app in Saleor.",
-					});
-					return;
-				} else {
-					// Real payment gateway - this UI doesn't support it yet
-					// For now, show an error
-					setErrors({
-						streetAddress1:
-							"This checkout UI currently only supports test payments. Please use the standard checkout for real payments.",
-					});
-					return;
-				}
-			} finally {
-				setIsProcessing(false);
-			}
-		},
-		[
-			sameAsBilling,
-			hasShippingAddress,
-			billingData,
-			user?.addresses,
-			shippingAddress,
-			checkout.id,
-			hasDummyGateway,
-			hasRealGateway,
-		],
-	);
-
-	const isCardValid = isCardDataValid(cardData);
-
-	const isPaymentProcessing = false;
-
-	const isLoading = isProcessing || isPaymentProcessing;
-	const buttonText = isLoading ? "Processing payment..." : `Pay ${totalStr}`;
-
-	const isDisabled =
-		isLoading ||
-		(!hasDummyGateway && !hasRealGateway) ||
-		(paymentMethod === "card" && !hasDummyGateway && !isCardValid);
-
-	return (
-		<form className="space-y-8" onSubmit={handleSubmit}>
-			{/* Summary Context */}
-			<CheckoutSummaryContext checkout={checkout} rows={summaryRows} onGoToStep={handleGoToStep} />
-
-			{/* No Payment Gateway Warning */}
-			{!hasDummyGateway && !hasRealGateway && (
-				<div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
-					<AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+	const paymentContent = (
+		<>
+			{priceChangeNotice ? (
+				<div
+					className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4"
+					role="status"
+				>
+					<AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
 					<div>
-						<p className="font-medium text-amber-800">No payment gateway configured</p>
+						<p className="font-medium text-amber-800">Your order total was updated</p>
 						<p className="mt-1 text-sm text-amber-700">
-							To accept payments, install a payment app (like Saleor Dummy Payment for testing, or
-							Stripe/Adyen for production) from the Saleor Dashboard.
+							{`The total changed from ${getFormattedMoney({
+								amount: priceChangeNotice.previousAmount,
+								currency: priceChangeNotice.currency,
+							})} to ${getFormattedMoney({
+								amount: priceChangeNotice.newAmount,
+								currency: priceChangeNotice.currency,
+							})}. Review the updated order summary before completing your payment.`}
 						</p>
 					</div>
 				</div>
-			)}
+			) : null}
 
-			{/* Test Mode Indicator */}
-			{hasDummyGateway && !hasRealGateway && (
-				<div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
-					<AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
-					<div>
-						<p className="font-medium text-blue-800">Test Mode</p>
-						<p className="mt-1 text-sm text-blue-700">
-							Using test payment gateway. No real charges will be made.
-						</p>
-					</div>
-				</div>
-			)}
-
-			{/* Payment Method */}
-			<PaymentMethodSelector
-				value={paymentMethod}
-				onChange={setPaymentMethod}
-				cardData={cardData}
-				onCardDataChange={setCardData}
+			<CheckoutSummaryContext
+				checkout={checkout}
+				rows={summaryRows}
+				onGoToStep={isPaymentBusy ? undefined : handleGoToStep}
 			/>
 
-			{/* Billing Address */}
+			<PaymentGatewayAlerts gateways={checkout.availablePaymentGateways} />
+
+			<PaymentError message={errors.payment || errors.billing || undefined} />
+
+			{shouldShowPaymentMethodArea(checkout) ? (
+				<PaymentMethodArea
+					provider={provider}
+					checkout={checkout}
+					billing={{
+						billingData,
+						sameAsBilling,
+						hasShippingAddress,
+						shippingAddress,
+						userAddresses: user?.addresses,
+						authenticated,
+					}}
+					onPaymentError={handlePaymentError}
+					onBillingErrors={setBillingErrors}
+					onPriceChangeNotice={setPriceChangeNotice}
+					onPaymentActivityChange={setIsPaymentBusy}
+				/>
+			) : null}
+
 			<BillingAddressSection
 				billingAddress={checkout.billingAddress}
 				shippingAddress={shippingAddress}
@@ -375,49 +226,54 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 				initialSameAsShipping={sameAsBilling}
 			/>
 
-			{/* Payment/Checkout Error Display */}
-			{errors.payment && (
-				<div className="border-destructive/50 bg-destructive/10 flex items-start gap-3 rounded-lg border p-4">
-					<AlertCircle className="text-destructive h-5 w-5 flex-shrink-0" />
-					<div>
-						<p className="text-destructive font-medium">Payment failed</p>
-						<p className="text-destructive/80 text-sm">{errors.payment}</p>
-					</div>
-				</div>
-			)}
-
-			{/* Navigation */}
 			<div className="flex items-center justify-between">
 				<button
 					type="button"
 					onClick={onBack}
-					className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm transition-colors"
+					disabled={isPaymentBusy}
+					className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
 				>
 					<ChevronLeft className="h-4 w-4" />
 					{isShippingRequired ? "Return to shipping" : "Return to information"}
 				</button>
-				<Button type="submit" disabled={isDisabled} className="hidden h-12 min-w-[200px] px-8 md:flex">
-					{isLoading ? (
-						<span className="flex items-center gap-2">
-							<LoadingSpinner />
-							{buttonText}
-						</span>
-					) : (
-						buttonText
-					)}
-				</Button>
+				{!usesClientSubmit ? (
+					<Button type="submit" disabled={isDisabled} className="hidden h-12 min-w-[200px] px-8 md:flex">
+						{isLoading ? (
+							<span className="flex items-center gap-2">
+								<LoadingSpinner />
+								{buttonText}
+							</span>
+						) : (
+							buttonText
+						)}
+					</Button>
+				) : null}
 			</div>
 
-			<MobileStickyAction
-				step={getStepNumber("PAYMENT", isShippingRequired)}
-				isShippingRequired={isShippingRequired}
-				type="submit"
-				onAction={handleSubmit}
-				isLoading={isLoading}
-				disabled={isDisabled}
-				total={totalStr}
-				loadingText="Processing payment..."
-			/>
-		</form>
+			{!usesClientSubmit ? (
+				<MobileStickyAction
+					step={getStepNumber("PAYMENT", isShippingRequired)}
+					isShippingRequired={isShippingRequired}
+					type="submit"
+					onAction={submit}
+					isLoading={isLoading}
+					disabled={isDisabled}
+					total={totalStr}
+					loadingText={isCompletingOrder ? "Creating order…" : "Processing payment…"}
+				/>
+			) : null}
+		</>
+	);
+
+	return (
+		<>
+			{usesClientSubmit ? (
+				<div className="space-y-8">{paymentContent}</div>
+			) : (
+				<form className="space-y-8" onSubmit={submit}>
+					{paymentContent}
+				</form>
+			)}
+		</>
 	);
 };

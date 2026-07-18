@@ -67,9 +67,8 @@ import { executeAuthenticatedGraphQL, executePublicGraphQL } from "@/lib/graphql
  * mutations carry the static-`sk` `languageCode` (variant C — see `@/lib/checkout-locale`),
  * injected here so callers omit it. Results are returned in a small urql-compatible shape
  * (`{ data?, error? }`) so the existing view call-sites keep reading `result.data?.…` /
- * `result.error`. Payment actions (`transactionInitialize`, `checkoutComplete`) call Saleor but
- * have NO gateway registry behind them yet — that is B.4.4 (Dummy) / B.8 (Stripe); they compile
- * and call Saleor but are not end-to-end runnable until then.
+ * `result.error`. The payment surface (B.4.4) uses the `{ok}`-shaped actions at the bottom of
+ * this file instead — they back the `CheckoutTransport` seam the payment registry drives.
  */
 
 type NoLang<T> = Omit<T, "languageCode">;
@@ -119,11 +118,6 @@ const setDefaultAddressDoc = toTypedDocument<
 	UserSetDefaultAddressMutation,
 	UserSetDefaultAddressMutationVariables
 >(UserSetDefaultAddressDocument);
-const transactionInitializeDoc = toTypedDocument<
-	TransactionInitializeMutation,
-	TransactionInitializeMutationVariables
->(TransactionInitializeDocument);
-
 /** Live checkout read bypassing the client context cache. */
 export async function refreshCheckoutAction(checkoutId: string): Promise<CheckoutFetchResult> {
 	return fetchCheckoutOnServer(checkoutId);
@@ -187,13 +181,6 @@ export async function checkoutCustomerAttachAction(
 	);
 }
 
-// checkoutComplete + transactionInitialize are checkoutId-keyed (the checkout id is the guest
-// credential) — same public-access rule as the checkout-data mutations. A guest has no customer
-// session, so the authenticated path silently no-ops for them (see 0039bdf). Public it is.
-export async function checkoutCompleteAction(variables: CheckoutCompleteMutationVariables) {
-	return toResult(await executePublicGraphQL(completeDoc, { variables, cache: "no-cache" }));
-}
-
 export async function addressValidationRulesAction(variables: AddressValidationRulesQueryVariables) {
 	return toResult(await executePublicGraphQL(validationRulesDoc, { variables, cache: "no-cache" }));
 }
@@ -210,20 +197,21 @@ export async function userSetDefaultAddressAction(variables: UserSetDefaultAddre
 	return toResult(await executeAuthenticatedGraphQL(setDefaultAddressDoc, { variables, cache: "no-cache" }));
 }
 
-export async function transactionInitializeAction(variables: TransactionInitializeMutationVariables) {
-	return toResult(await executePublicGraphQL(transactionInitializeDoc, { variables, cache: "no-cache" }));
-}
-
 // ---------------------------------------------------------------------------
 // {ok}-shaped payment actions (B.4.4) — the CheckoutTransport surface.
 //
-// All four use `executePublicGraphQL`, a deliberate divergence from upstream's
-// authenticated path: MAKY guest checkouts carry no customer session, and the
-// checkout id IS the credential (c0fcfa1, same §10-approved rule as the other
-// checkout-data mutations). Guards below are defense in depth against direct
+// checkoutComplete + the transaction mutations are checkoutId-keyed (the checkout
+// id is the guest credential) — same §10-approved public-access rule as the
+// checkout-data mutations; a guest has no customer session, so the authenticated
+// path silently no-ops for them (see 0039bdf). This deliberately diverges from
+// upstream's authenticated path. Guards below are defense in depth against direct
 // server-action invocation with disabled gateways or tampered amounts.
 // ---------------------------------------------------------------------------
 
+const transactionInitializeDoc = toTypedDocument<
+	TransactionInitializeMutation,
+	TransactionInitializeMutationVariables
+>(TransactionInitializeDocument);
 const paymentGatewaysInitializeDoc = toTypedDocument<
 	PaymentGatewaysInitializeMutation,
 	PaymentGatewaysInitializeMutationVariables
