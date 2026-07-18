@@ -334,6 +334,9 @@ mutation checkoutComplete($checkoutId: ID!) {
 		}
 		order {
 			id
+			channel {
+				slug
+			}
 		}
 	}
 }

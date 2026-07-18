@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import {
 	AddressValidationRulesDocument,
 	type AddressValidationRulesQuery,
@@ -57,6 +58,11 @@ import { isDummyPaymentAllowed } from "@/checkout/lib/payment/providers/dummy";
 import { getStripePaymentGuardError, isStripePaymentEnabled } from "@/checkout/lib/payment/providers/stripe";
 import { fetchCheckoutOnServer } from "@/checkout/lib/server/fetch-checkout";
 import { toTypedDocument } from "@/checkout/lib/server/to-typed-document";
+import {
+	revalidateStorefrontBrowsePath,
+	revalidateStorefrontChrome,
+} from "@/lib/auth/revalidate-storefront-chrome";
+import { clearCheckoutCookieByValue } from "@/lib/checkout";
 import { checkoutGraphqlLocaleVariables } from "@/lib/checkout-locale";
 import { executeAuthenticatedGraphQL, executePublicGraphQL } from "@/lib/graphql";
 
@@ -359,12 +365,21 @@ export async function runCheckoutCompleteAction(checkoutId: string): Promise<Che
 	}
 
 	const orderId = payload.order?.id;
+	const channelSlug = payload.order?.channel?.slug;
 	if (!orderId) {
 		return { ok: false, error: ORDER_CREATE_FAILED_MESSAGE };
 	}
 
-	// Return orderId for the client `navigateToOrderConfirmation()` — do not `redirect()`
-	// here (see @/checkout/lib/navigate-to-order). No cookie clear / chrome revalidation
-	// yet — that is B.4.5 (needs order.channel{slug} in the selection + after()).
+	// Return orderId for the client `navigateToOrderConfirmation()` — do not `redirect()` here
+	// (see @/checkout/lib/navigate-to-order). Cookie clear + cart/chrome revalidation run in
+	// `after()` so the client can leave `/checkout?checkout=…` first (B.4.5).
+	after(async () => {
+		await clearCheckoutCookieByValue(checkoutId);
+		if (channelSlug) {
+			revalidateStorefrontBrowsePath(channelSlug, "/cart");
+			revalidateStorefrontChrome(channelSlug);
+		}
+	});
+
 	return { ok: true, orderId };
 }

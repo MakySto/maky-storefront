@@ -12,9 +12,9 @@ import { buildOrderConfirmationPath } from "@/session-bridge";
  * Placed outside `lib/payment/` on purpose: it is payment-agnostic (session-bridge only) so it
  * does not couple to the payment registry (B.4.4).
  *
- * B.4.3 reduced port (variant C): the checkout cookie is intentionally NOT cleared here — MAKY's
- * `runCheckoutCompleteAction` performs no cookie clear / chrome revalidation today (that lands in
- * B.4.5), so there is nothing to defer via `after()`.
+ * The checkout cookie is NOT cleared here (client side) — `runCheckoutCompleteAction` clears it
+ * server-side in `after()` together with the cart/chrome revalidation (B.4.5), after the client
+ * has already left `/checkout?checkout=…`.
  */
 export function navigateToOrderConfirmation(orderId: string) {
 	window.location.replace(buildOrderConfirmationPath({ orderId }));
