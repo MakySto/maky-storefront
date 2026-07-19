@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle, Mail, MapPin, CreditCard } from "lucide-react";
 import { type CheckoutFragment } from "@/checkout/graphql";
 import { marketHref } from "@/lib/channel-map";
+import { localizeCountryName } from "@/checkout/lib/utils/locale";
 
 interface ConfirmationStepProps {
 	checkout: CheckoutFragment;
@@ -13,7 +14,12 @@ interface ConfirmationStepProps {
 /** Format address for display */
 function formatAddress(address: CheckoutFragment["shippingAddress"] | CheckoutFragment["billingAddress"]) {
 	if (!address) return null;
-	return [address.streetAddress1, address.city, address.postalCode, address.country?.country]
+	return [
+		address.streetAddress1,
+		address.city,
+		address.postalCode,
+		localizeCountryName(address.country?.code, address.country?.country),
+	]
 		.filter(Boolean)
 		.join(", ");
 }
@@ -36,7 +42,8 @@ export const ConfirmationStep: FC<ConfirmationStepProps> = ({ checkout }) => {
 		<div className="space-y-8">
 			{/* Demo Banner */}
 			<div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-800">
-				<strong>Testovací režim:</strong> Toto je simulované potvrdenie objednávky. Žiadna skutočná platba neprebehla.
+				<strong>Testovací režim:</strong> Toto je simulované potvrdenie objednávky. Žiadna skutočná platba
+				neprebehla.
 			</div>
 
 			{/* Success Header */}

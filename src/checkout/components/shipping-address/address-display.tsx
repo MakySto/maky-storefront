@@ -3,6 +3,7 @@
 import { type FC } from "react";
 import { type AddressFragment } from "@/checkout/graphql";
 import { cn } from "@/lib/utils";
+import { localizeCountryName } from "@/checkout/lib/utils/locale";
 
 export interface AddressDisplayProps {
 	/** Address to display */
@@ -35,8 +36,8 @@ export interface AddressDisplayProps {
 export const AddressDisplay: FC<AddressDisplayProps> = ({ address, title, className, onEdit }) => {
 	if (!address) {
 		return (
-			<div className={cn("text-sm text-muted-foreground", className)}>
-				{title && <p className="mb-1 font-medium text-foreground">{title}</p>}
+			<div className={cn("text-muted-foreground text-sm", className)}>
+				{title && <p className="text-foreground mb-1 font-medium">{title}</p>}
 				<p>Adresa nie je zadaná</p>
 			</div>
 		);
@@ -46,20 +47,20 @@ export const AddressDisplay: FC<AddressDisplayProps> = ({ address, title, classN
 		<div className={cn("text-sm", className)}>
 			{(title || onEdit) && (
 				<div className="mb-1 flex items-center justify-between">
-					{title && <p className="font-medium text-foreground">{title}</p>}
+					{title && <p className="text-foreground font-medium">{title}</p>}
 					{onEdit && (
 						<button
 							type="button"
 							onClick={onEdit}
-							className="text-muted-foreground underline underline-offset-2 hover:text-foreground hover:no-underline"
+							className="text-muted-foreground hover:text-foreground underline underline-offset-2 hover:no-underline"
 						>
 							Upraviť
 						</button>
 					)}
 				</div>
 			)}
-			<div className="space-y-0.5 text-muted-foreground">
-				<p className="font-medium text-foreground">
+			<div className="text-muted-foreground space-y-0.5">
+				<p className="text-foreground font-medium">
 					{address.firstName} {address.lastName}
 				</p>
 				{address.companyName && <p>{address.companyName}</p>}
@@ -69,7 +70,7 @@ export const AddressDisplay: FC<AddressDisplayProps> = ({ address, title, classN
 					{address.city}
 					{address.countryArea && `, ${address.countryArea}`} {address.postalCode}
 				</p>
-				<p>{address.country?.country}</p>
+				<p>{localizeCountryName(address.country?.code, address.country?.country)}</p>
 				{address.phone && <p>{address.phone}</p>}
 			</div>
 		</div>

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, type FC } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/ui/components/ui/button";
-import { ExpressCheckout } from "@/checkout/components/express-checkout";
 import { type CheckoutFragment, type CountryCode } from "@/checkout/graphql";
 import {
 	checkoutEmailUpdateAction,
@@ -66,7 +65,6 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 	const [email, setEmail] = useState(checkout.email || "");
 	const [createAccount, setCreateAccount] = useState(false);
 	const [accountPassword, setAccountPassword] = useState("");
-	const [subscribeNews, setSubscribeNews] = useState(false);
 
 	// ----- Address form state (for guests/new address) -----
 	const [countryCode, setCountryCode] = useState<CountryCode>(defaultCountry);
@@ -389,7 +387,6 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 	if (contactView === "resetPassword") {
 		return (
 			<div className="space-y-8">
-				<ExpressCheckout />
 				<ResetPasswordForm
 					onSuccess={() => setContactView("main")}
 					onBackToSignIn={() => {
@@ -409,7 +406,6 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 	if (contactView === "signIn") {
 		return (
 			<div className="space-y-8">
-				<ExpressCheckout />
 				<SignInForm
 					initialEmail={email}
 					channelSlug={checkout.channel.slug}
@@ -434,8 +430,6 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 
 	return (
 		<form className="space-y-8" onSubmit={handleSubmit} noValidate>
-			<ExpressCheckout />
-
 			<ContactSection
 				isSignedIn={authenticated}
 				user={user}
@@ -450,8 +444,6 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 				password={accountPassword}
 				onPasswordChange={setAccountPassword}
 				passwordError={errors.password}
-				subscribeNews={subscribeNews}
-				onSubscribeChange={setSubscribeNews}
 			/>
 
 			{checkout.isShippingRequired && (

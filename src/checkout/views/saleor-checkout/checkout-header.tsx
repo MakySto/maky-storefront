@@ -29,8 +29,8 @@ export function CheckoutHeader({ step, onStepClick, isShippingRequired = true }:
 	const progressPercentage = Math.min((step / totalSteps) * 100, 100);
 
 	return (
-		<header className="bg-background md:border-b md:border-border">
-			<div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 md:pb-4 md:pt-4 lg:px-8">
+		<header className="bg-background md:border-border md:border-b">
+			<div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 md:pt-4 md:pb-4 lg:px-8">
 				<div className="flex items-center justify-between">
 					{/* Logo */}
 					<Link href="/" className="flex items-center">
@@ -44,9 +44,12 @@ export function CheckoutHeader({ step, onStepClick, isShippingRequired = true }:
 								<button
 									type="button"
 									onClick={() => step > s.number && onStepClick?.(s.number)}
-									disabled={step < s.number}
+									disabled={step < s.number || !onStepClick}
 									aria-current={step === s.number ? "step" : undefined}
-									className={cn("flex items-center gap-2", step > s.number && "cursor-pointer")}
+									className={cn(
+										"flex items-center gap-2",
+										step > s.number && onStepClick && "cursor-pointer",
+									)}
 								>
 									<span
 										className={cn(
@@ -70,7 +73,7 @@ export function CheckoutHeader({ step, onStepClick, isShippingRequired = true }:
 					</nav>
 
 					{/* Secure Badge */}
-					<div className="flex items-center gap-1.5 text-muted-foreground">
+					<div className="text-muted-foreground flex items-center gap-1.5">
 						<Lock className="h-3.5 w-3.5" />
 						<span className="text-xs">Bezpečný nákup</span>
 					</div>
@@ -78,19 +81,19 @@ export function CheckoutHeader({ step, onStepClick, isShippingRequired = true }:
 
 				{/* Mobile Progress Bar */}
 				<div className="mt-3 md:hidden">
-					<div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+					<div className="text-muted-foreground mb-2 flex items-center justify-between text-xs">
 						<span>{step === confirmationStepIndex ? "Potvrdenie" : `Krok ${step} z ${totalSteps}`}</span>
 						<span>{steps[step - 1]?.label}</span>
 					</div>
 					<div
-						className="h-1 overflow-hidden rounded-full bg-muted"
+						className="bg-muted h-1 overflow-hidden rounded-full"
 						role="progressbar"
 						aria-valuenow={progressPercentage}
 						aria-valuemin={0}
 						aria-valuemax={100}
 					>
 						<div
-							className="h-full bg-foreground transition-all duration-300"
+							className="bg-foreground h-full transition-all duration-300"
 							style={{ width: `${progressPercentage}%` }}
 						/>
 					</div>

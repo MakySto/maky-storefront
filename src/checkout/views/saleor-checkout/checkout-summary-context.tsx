@@ -3,6 +3,7 @@
 import { type FC } from "react";
 import { type CheckoutFragment } from "@/checkout/graphql";
 import { formatShippingPrice } from "@/checkout/lib/utils/money";
+import { localizeCountryName } from "@/checkout/lib/utils/locale";
 
 interface SummaryRow {
 	label: string;
@@ -51,7 +52,10 @@ export const CheckoutSummaryContext: FC<CheckoutSummaryContextProps> = ({ rows, 
 /** Format address as single line string */
 export function formatAddressLine(address: CheckoutFragment["shippingAddress"]): string {
 	if (!address) return "";
-	return `${address.streetAddress1}, ${address.city} ${address.postalCode}, ${address.country?.country}`;
+	return `${address.streetAddress1}, ${address.city} ${address.postalCode}, ${localizeCountryName(
+		address.country?.code,
+		address.country?.country,
+	)}`;
 }
 
 /** Get shipping method display string */

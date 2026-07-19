@@ -202,6 +202,21 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 
 			<PaymentError message={errors.payment || errors.billing || returnError || undefined} />
 
+			{/* Client-submit (Stripe): billing ABOVE the payment UI so the Pay button — rendered
+			    inside the Stripe form — is the LAST interaction on the page. Server-submit keeps
+			    billing above the shared Pay row at the bottom. */}
+			<BillingAddressSection
+				billingAddress={checkout.billingAddress}
+				shippingAddress={shippingAddress}
+				userAddresses={authenticated ? (user?.addresses as AddressFragment[]) : undefined}
+				defaultBillingAddressId={user?.defaultBillingAddress?.id}
+				isShippingRequired={isShippingRequired}
+				errors={errors}
+				onChange={handleBillingDataChange}
+				onSameAsShippingChange={setSameAsBilling}
+				initialSameAsShipping={sameAsBilling}
+			/>
+
 			{shouldShowPaymentMethodArea(checkout) ? (
 				<PaymentMethodArea
 					provider={provider}
@@ -220,18 +235,6 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 					onPaymentActivityChange={setIsPaymentBusy}
 				/>
 			) : null}
-
-			<BillingAddressSection
-				billingAddress={checkout.billingAddress}
-				shippingAddress={shippingAddress}
-				userAddresses={authenticated ? (user?.addresses as AddressFragment[]) : undefined}
-				defaultBillingAddressId={user?.defaultBillingAddress?.id}
-				isShippingRequired={isShippingRequired}
-				errors={errors}
-				onChange={handleBillingDataChange}
-				onSameAsShippingChange={setSameAsBilling}
-				initialSameAsShipping={sameAsBilling}
-			/>
 
 			<div className="flex items-center justify-between">
 				<button

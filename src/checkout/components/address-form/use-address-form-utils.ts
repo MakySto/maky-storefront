@@ -30,7 +30,7 @@ export const addressFieldMessages: Record<AddressFieldLabel, string> = {
 	postalCode: "PSČ",
 	companyName: "Firma",
 	streetAddress1: "Ulica a číslo",
-	streetAddress2: "Byt, vchod, poschodie (nepovinné)",
+	streetAddress2: "Byt, vchod, poschodie",
 	phone: "Telefón",
 };
 

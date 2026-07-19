@@ -1,8 +1,6 @@
 "use client";
 
 import { type FC } from "react";
-import { Label } from "@/ui/components/ui/label";
-import { Checkbox } from "@/ui/components/ui/checkbox";
 import { SignedInUser, GuestContact } from "@/checkout/components/contact";
 
 // User type matching what useUser() returns
@@ -36,10 +34,6 @@ interface ContactSectionProps {
 	password: string;
 	onPasswordChange: (value: string) => void;
 	passwordError?: string;
-
-	// Subscribe state (guests)
-	subscribeNews: boolean;
-	onSubscribeChange: (value: boolean) => void;
 }
 
 // =============================================================================
@@ -60,8 +54,6 @@ export const ContactSection: FC<ContactSectionProps> = ({
 	password,
 	onPasswordChange,
 	passwordError,
-	subscribeNews,
-	onSubscribeChange,
 }) => {
 	return (
 		<section className="space-y-4">
@@ -84,20 +76,6 @@ export const ContactSection: FC<ContactSectionProps> = ({
 						onPasswordChange={onPasswordChange}
 						passwordError={passwordError}
 					/>
-
-					{/* Subscribe checkbox (only for guests not creating account) */}
-					{!createAccount && (
-						<div className="flex items-center gap-3">
-							<Checkbox
-								id="subscribe"
-								checked={subscribeNews}
-								onCheckedChange={(checked) => onSubscribeChange(checked === true)}
-							/>
-							<Label htmlFor="subscribe" className="cursor-pointer text-sm text-muted-foreground">
-								Chcem dostávať novinky a ponuky e-mailom
-							</Label>
-						</div>
-					)}
 				</>
 			)}
 		</section>

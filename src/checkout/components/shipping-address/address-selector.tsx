@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Checkbox } from "@/ui/components/ui/checkbox";
 import { Label } from "@/ui/components/ui/label";
 import { LoadingSpinner } from "@/checkout/ui-kit/loading-spinner";
+import { localizeCountryName } from "@/checkout/lib/utils/locale";
 
 export interface AddressSelectorProps {
 	/** List of saved addresses to choose from */
@@ -143,7 +144,9 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 								{address.city}
 								{address.countryArea && `, ${address.countryArea}`} {address.postalCode}
 							</p>
-							<p className="text-muted-foreground text-sm">{address.country?.country}</p>
+							<p className="text-muted-foreground text-sm">
+								{localizeCountryName(address.country?.code, address.country?.country)}
+							</p>
 						</div>
 						{/* Edit button */}
 						{onEdit && (

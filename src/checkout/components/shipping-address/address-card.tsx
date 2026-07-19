@@ -4,6 +4,7 @@ import { type FC } from "react";
 import { MapPin, ChevronRight, Check } from "lucide-react";
 import { type AddressFragment } from "@/checkout/graphql";
 import { cn } from "@/lib/utils";
+import { localizeCountryName } from "@/checkout/lib/utils/locale";
 
 export interface AddressCardProps {
 	/** The address to display */
@@ -61,7 +62,7 @@ export const AddressCard: FC<AddressCardProps> = ({
 					isSelected ? "bg-foreground text-background" : "bg-muted",
 				)}
 			>
-				{isSelected ? <Check className="h-4 w-4" /> : <MapPin className="h-4 w-4 text-muted-foreground" />}
+				{isSelected ? <Check className="h-4 w-4" /> : <MapPin className="text-muted-foreground h-4 w-4" />}
 			</div>
 
 			{/* Address content */}
@@ -71,27 +72,29 @@ export const AddressCard: FC<AddressCardProps> = ({
 						{address.firstName} {address.lastName}
 					</span>
 					{isDefault && (
-						<span className="w-fit rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+						<span className="bg-muted text-muted-foreground w-fit rounded px-1.5 py-0.5 text-xs font-medium">
 							Predvolená
 						</span>
 					)}
 				</div>
 
 				{compact ? (
-					<p className="mt-0.5 truncate text-sm text-muted-foreground">
+					<p className="text-muted-foreground mt-0.5 truncate text-sm">
 						{address.streetAddress1}, {address.city} {address.postalCode}
 					</p>
 				) : (
 					<>
-						<p className="mt-0.5 text-sm text-muted-foreground">
+						<p className="text-muted-foreground mt-0.5 text-sm">
 							{address.streetAddress1}
 							{address.streetAddress2 && `, ${address.streetAddress2}`}
 						</p>
-						<p className="text-sm text-muted-foreground">
+						<p className="text-muted-foreground text-sm">
 							{address.city}
 							{address.countryArea && `, ${address.countryArea}`} {address.postalCode}
 						</p>
-						<p className="text-sm text-muted-foreground">{address.country?.country}</p>
+						<p className="text-muted-foreground text-sm">
+							{localizeCountryName(address.country?.code, address.country?.country)}
+						</p>
 					</>
 				)}
 			</div>
@@ -101,7 +104,7 @@ export const AddressCard: FC<AddressCardProps> = ({
 				<button
 					type="button"
 					onClick={handleChangeClick}
-					className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+					className="text-muted-foreground hover:bg-muted hover:text-foreground flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-sm font-medium transition-colors"
 				>
 					Zmeniť
 					<ChevronRight className="h-4 w-4" />

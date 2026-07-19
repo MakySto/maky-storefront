@@ -7,15 +7,21 @@ import { OrderSummary } from "@/checkout/views/saleor-checkout/order-summary";
 import { CheckoutHeader } from "@/checkout/views/saleor-checkout/checkout-header";
 import { DefaultChannelSlug } from "@/app/config";
 import { marketHref } from "@/lib/channel-map";
+import { localizeCountryName } from "@/checkout/lib/utils/locale";
 
 /** Format address for display */
 function formatAddress(address: {
 	streetAddress1?: string | null;
 	city?: string | null;
 	postalCode?: string | null;
-	country?: { country?: string | null } | null;
+	country?: { code?: string | null; country?: string | null } | null;
 }) {
-	return [address.streetAddress1, address.city, address.postalCode, address.country?.country]
+	return [
+		address.streetAddress1,
+		address.city,
+		address.postalCode,
+		localizeCountryName(address.country?.code, address.country?.country),
+	]
 		.filter(Boolean)
 		.join(", ");
 }
@@ -39,8 +45,8 @@ export const OrderConfirmation = () => {
 
 	return (
 		<div className="bg-secondary min-h-screen">
-			{/* Header - same as checkout */}
-			<CheckoutHeader step={4} onStepClick={() => {}} />
+			{/* Header - same as checkout; no onStepClick — the checkout is consumed, steps are inert */}
+			<CheckoutHeader step={4} />
 
 			{/* Main content - same layout as checkout */}
 			<main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

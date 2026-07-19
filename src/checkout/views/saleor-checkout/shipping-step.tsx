@@ -9,6 +9,7 @@ import { checkoutDeliveryMethodUpdateAction } from "@/checkout/lib/actions";
 import { CheckoutSummaryContext, buildShippingSummaryRows } from "./checkout-summary-context";
 import { useCheckout } from "@/checkout/hooks/use-checkout";
 import { formatShippingPrice } from "@/checkout/lib/utils/money";
+import { localizeCountryName } from "@/checkout/lib/utils/locale";
 import { MobileStickyAction } from "./mobile-sticky-action";
 import { getStepNumber } from "./flow";
 
@@ -28,8 +29,10 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 	const currentMethod = checkout.deliveryMethod;
 	const currentMethodId = currentMethod?.__typename === "ShippingMethod" ? currentMethod.id : undefined;
 
-	// Local state - only saves on Continue
+	// Selection saves IMMEDIATELY on pick (summary + total must be truthful already on this
+	// step); Continue only navigates. On a failed save the previous choice is restored.
 	const [selectedMethod, setSelectedMethod] = useState(currentMethodId || shippingMethods[0]?.id);
+	const [isSavingMethod, setIsSavingMethod] = useState(false);
 	const [isSubmittingLocal, setIsSubmittingLocal] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -48,6 +51,53 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 		return lowerName.includes("eco") || lowerName.includes("green");
 	};
 
+	/** Persist a picked method and refresh the checkout context (live shipping + total). */
+	const saveMethod = useCallback(
+		async (methodId: string): Promise<boolean> => {
+			const result = await checkoutDeliveryMethodUpdateAction({
+				checkoutId: checkout.id,
+				deliveryMethodId: methodId,
+			});
+
+			const fieldErrors = result.data?.checkoutDeliveryMethodUpdate?.errors;
+			if (result.error || fieldErrors?.length) {
+				return false;
+			}
+
+			await refetch();
+			return true;
+		},
+		[checkout.id, refetch],
+	);
+
+	const handleSelectMethod = useCallback(
+		async (methodId: string) => {
+			if (isSavingMethod) {
+				return;
+			}
+
+			const previous = selectedMethod;
+			setSelectedMethod(methodId);
+			setError(null);
+
+			if (methodId === currentMethodId) {
+				return;
+			}
+
+			setIsSavingMethod(true);
+			try {
+				const saved = await saveMethod(methodId);
+				if (!saved) {
+					setSelectedMethod(previous);
+					setError("Dopravu sa nepodarilo uložiť. Skúste to znova.");
+				}
+			} finally {
+				setIsSavingMethod(false);
+			}
+		},
+		[currentMethodId, isSavingMethod, saveMethod, selectedMethod],
+	);
+
 	const handleSubmit = useCallback(
 		async (event?: React.FormEvent) => {
 			if (event) {
@@ -62,7 +112,12 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 				return;
 			}
 
-			// Skip API call if method hasn't changed
+			if (isSavingMethod) {
+				return;
+			}
+
+			// Selection is saved on pick — Continue just navigates. The mutation below is only
+			// the retry path after a failed immediate save.
 			if (selectedMethod === currentMethodId) {
 				onNext();
 				return;
@@ -72,26 +127,17 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 			setError(null);
 
 			try {
-				const result = await checkoutDeliveryMethodUpdateAction({
-					checkoutId: checkout.id,
-					deliveryMethodId: selectedMethod,
-				});
-
-				if (result.error) {
-					setError("Nepodarilo sa uložiť spôsob dopravy");
+				const saved = await saveMethod(selectedMethod);
+				if (!saved) {
+					setError("Dopravu sa nepodarilo uložiť. Skúste to znova.");
 					return;
 				}
-
-				// Pull the saved delivery method into the provider before the shallow step change, so the
-				// Payment step reads the fresh checkout total. Only after a real save (the unchanged-method
-				// path above advances without a mutation or refresh — bare step nav stays shallow).
-				await refetch();
 				onNext();
 			} finally {
 				setIsSubmittingLocal(false);
 			}
 		},
-		[selectedMethod, currentMethodId, onNext, checkout.id, refetch],
+		[selectedMethod, currentMethodId, isSavingMethod, onNext, saveMethod],
 	);
 
 	const buttonText = isSubmittingLocal ? "Ukladám…" : "Pokračovať na platbu";
@@ -118,7 +164,10 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 							{!hasShippingAddress
 								? "Najprv sa vráťte späť a zadajte dodaciu adresu."
 								: `Pre ${
-										checkout.shippingAddress?.country?.country || "vašu adresu"
+										localizeCountryName(
+											checkout.shippingAddress?.country?.code,
+											checkout.shippingAddress?.country?.country,
+										) || "vašu adresu"
 									} nie sú dostupné žiadne spôsoby dopravy. Skontrolujte adresu alebo nás kontaktujte.`}
 						</p>
 					</div>
@@ -146,10 +195,8 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 										name="shipping"
 										value={method.id}
 										checked={isSelected}
-										onChange={() => {
-											setSelectedMethod(method.id);
-											setError(null);
-										}}
+										disabled={isSavingMethod}
+										onChange={() => void handleSelectMethod(method.id)}
 										className="sr-only"
 									/>
 									<div
@@ -196,7 +243,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 				</button>
 				<Button
 					type="submit"
-					disabled={!selectedMethod || isSubmittingLocal}
+					disabled={!selectedMethod || isSavingMethod || isSubmittingLocal}
 					className="hidden h-12 px-8 md:flex"
 				>
 					{buttonText}
@@ -208,8 +255,8 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 				isShippingRequired={true}
 				type="submit"
 				onAction={handleSubmit}
-				isLoading={isSubmittingLocal}
-				disabled={!selectedMethod}
+				isLoading={isSubmittingLocal || isSavingMethod}
+				disabled={!selectedMethod || isSavingMethod}
 				loadingText="Ukladám…"
 			/>
 		</form>
