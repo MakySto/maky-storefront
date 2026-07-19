@@ -28,6 +28,7 @@ import { getStepNumber } from "./flow";
 // Extracted components
 import { SignInForm, ResetPasswordForm } from "@/checkout/components/contact";
 import { ContactSection, ShippingAddressSection } from "./sections";
+import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import { Checkbox } from "@/ui/components/ui/checkbox";
 import { Label } from "@/ui/components/ui/label";
 import { MobileStickyAction } from "./mobile-sticky-action";
@@ -57,9 +58,17 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 	const { availableShippingCountries } = useAvailableShippingCountries();
 	const shippingAddress = checkout.shippingAddress;
 
-	// Default country: use checkout's address, or first available country from channel
+	// Default country: the checkout's saved address wins; otherwise the MARKET's home country
+	// (central market config — a cz-czk checkout defaults to CZ, not to the alphabetically first
+	// channel country), falling back to the channel's first available country.
+	const marketCountry = CHANNEL_MAP[REVERSE_MAP[checkout.channel.slug] ?? ""]?.country as
+		| CountryCode
+		| undefined;
 	const defaultCountry =
-		(shippingAddress?.country?.code as CountryCode) || availableShippingCountries[0] || ("US" as CountryCode);
+		(shippingAddress?.country?.code as CountryCode) ||
+		(marketCountry && availableShippingCountries.includes(marketCountry) ? marketCountry : undefined) ||
+		availableShippingCountries[0] ||
+		("US" as CountryCode);
 
 	// View state - what sub-view are we showing?
 	const [contactView, setContactView] = useState<ContactView>(() => {
