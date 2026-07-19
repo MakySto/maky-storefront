@@ -2,25 +2,30 @@
 
 import Link from "next/link";
 import { CheckCircle, Mail, MapPin, CreditCard } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useOrder } from "@/checkout/hooks/use-order";
 import { OrderSummary } from "@/checkout/views/saleor-checkout/order-summary";
 import { CheckoutHeader } from "@/checkout/views/saleor-checkout/checkout-header";
 import { DefaultChannelSlug } from "@/app/config";
 import { marketHref } from "@/lib/channel-map";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
+import { useLocale } from "@/providers/locale-provider";
 
 /** Format address for display */
-function formatAddress(address: {
-	streetAddress1?: string | null;
-	city?: string | null;
-	postalCode?: string | null;
-	country?: { code?: string | null; country?: string | null } | null;
-}) {
+function formatAddress(
+	address: {
+		streetAddress1?: string | null;
+		city?: string | null;
+		postalCode?: string | null;
+		country?: { code?: string | null; country?: string | null } | null;
+	},
+	locale: string,
+) {
 	return [
 		address.streetAddress1,
 		address.city,
 		address.postalCode,
-		localizeCountryName(address.country?.code, address.country?.country),
+		localizeCountryName(address.country?.code, address.country?.country, locale),
 	]
 		.filter(Boolean)
 		.join(", ");
@@ -31,6 +36,9 @@ function formatAddress(address: {
  * Renders after successful order creation with real order data.
  */
 export const OrderConfirmation = () => {
+	const t = useTranslations("checkout");
+	const tCart = useTranslations("cart");
+	const { locale } = useLocale();
 	const { order } = useOrder();
 	// The route only renders this view when the order is present (OrderConfirmationApp shows the
 	// not-found otherwise); this guard narrows the type for the render below.
@@ -66,17 +74,19 @@ export const OrderConfirmation = () => {
 										</div>
 									</div>
 									<div>
-										<p className="text-muted-foreground">Objednávka č. {order.number}</p>
-										<h1 className="mt-1 text-2xl font-semibold">Ďakujeme za vašu objednávku!</h1>
+										<p className="text-muted-foreground">
+											{t("confirmation.orderNumberLine", { orderNumber: order.number })}
+										</p>
+										<h1 className="mt-1 text-2xl font-semibold">{t("confirmation.title")}</h1>
 									</div>
 								</div>
 
 								{/* Order Confirmation Card */}
 								<div className="border-border overflow-hidden rounded-lg border">
 									<div className="bg-secondary/50 border-border border-b p-4">
-										<h2 className="font-semibold">Vaša objednávka je potvrdená</h2>
+										<h2 className="font-semibold">{t("confirmation.confirmedTitle")}</h2>
 										<p className="text-muted-foreground mt-1 text-sm">
-											Potvrdzujúci e-mail vám pošleme na adresu {email}
+											{t("confirmation.emailNotice", { email })}
 										</p>
 									</div>
 
@@ -85,7 +95,7 @@ export const OrderConfirmation = () => {
 										<div className="flex items-start gap-3">
 											<Mail className="text-muted-foreground mt-0.5 h-5 w-5" />
 											<div>
-												<p className="text-sm font-medium">Potvrdzujúci e-mail odoslaný</p>
+												<p className="text-sm font-medium">{t("confirmation.emailSentLabel")}</p>
 												<p className="text-muted-foreground text-sm">{email}</p>
 											</div>
 										</div>
@@ -93,8 +103,10 @@ export const OrderConfirmation = () => {
 											<div className="flex items-start gap-3">
 												<MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
 												<div>
-													<p className="text-sm font-medium">Dodacia adresa</p>
-													<p className="text-muted-foreground text-sm">{formatAddress(shippingAddress)}</p>
+													<p className="text-sm font-medium">{t("confirmation.shippingAddressLabel")}</p>
+													<p className="text-muted-foreground text-sm">
+														{formatAddress(shippingAddress, locale)}
+													</p>
 												</div>
 											</div>
 										)}
@@ -102,8 +114,10 @@ export const OrderConfirmation = () => {
 											<div className="flex items-start gap-3">
 												<CreditCard className="text-muted-foreground mt-0.5 h-5 w-5" />
 												<div>
-													<p className="text-sm font-medium">Fakturačná adresa</p>
-													<p className="text-muted-foreground text-sm">{formatAddress(billingAddress)}</p>
+													<p className="text-sm font-medium">{t("confirmation.billingAddressLabel")}</p>
+													<p className="text-muted-foreground text-sm">
+														{formatAddress(billingAddress, locale)}
+													</p>
 												</div>
 											</div>
 										)}
@@ -116,7 +130,7 @@ export const OrderConfirmation = () => {
 										href={marketHref(channel || "sk")}
 										className="border-input hover:bg-accent hover:text-accent-foreground inline-flex h-12 flex-1 items-center justify-center rounded-md border bg-transparent px-4 text-sm font-medium transition-colors"
 									>
-										Pokračovať v nákupe
+										{tCart("continueShopping")}
 									</Link>
 								</div>
 							</div>

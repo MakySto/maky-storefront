@@ -58,6 +58,72 @@ export function formatGatewayList(gateways: ReadonlyArray<GatewayLike> | null | 
 	return (gateways ?? []).map((gateway) => `${gateway.name ?? gateway.id} (${gateway.id})`).join(", ");
 }
 
+// ---------------------------------------------------------------------------
+// Payment-lib message registry (krok 2A i18n)
+//
+// Plain (non-hook) payment libs — the transport fallback, the Stripe transaction
+// formatters, `update-billing` and the checkoutComplete error mapper — cannot call
+// next-intl hooks. `useCheckoutPaymentMessages` installs the translated copy here
+// on render (module-level coordination, same style as `setCheckoutTransport`);
+// every pay/billing flow mounts that hook via the payment step before any of these
+// libs can run.
+// ---------------------------------------------------------------------------
+
+/** Copy needed by plain payment libs — catalog keys live under `checkout.payment.*`. */
+export type CheckoutPaymentLibMessages = {
+	/** `checkout.payment.billingSaveFailed` */
+	billingSaveFailed: string;
+	/** `checkout.payment.invalidValue` */
+	invalidValue: string;
+	/** `checkout.payment.gatewayInitFailed` */
+	gatewayInitFailed: string;
+	/** `checkout.payment.stripeWebhookFailed` */
+	stripeWebhookFailed: string;
+	/** `checkout.payment.stripeProcessFailed` */
+	stripeProcessFailed: string;
+	/** `checkout.payment.failed` */
+	paymentFailed: string;
+	/** `checkout.payment.notFullyPaid` */
+	notFullyPaid: string;
+	/** `checkout.payment.alreadyCompleted` */
+	alreadyCompleted: string;
+	/** `checkout.payment.freeOrderTotalChanged` */
+	freeOrderTotalChanged: string;
+};
+
+/**
+ * sk-SK safety net mirroring the `checkout.payment.*` catalog — used only if a payment
+ * lib somehow runs before `useCheckoutPaymentMessages` mounted (not reachable through
+ * the checkout UI). Keep values in sync with `src/i18n/messages/sk-SK.json`.
+ */
+const FALLBACK_PAYMENT_LIB_MESSAGES: CheckoutPaymentLibMessages = {
+	billingSaveFailed: "Nepodarilo sa uložiť fakturačnú adresu.",
+	invalidValue: "Neplatná hodnota",
+	gatewayInitFailed: "Inicializácia platobnej brány zlyhala.",
+	stripeWebhookFailed:
+		"Webhook aplikácie Stripe zlyhal. V Saleor Dashboard → Apps → Stripe skontrolujte, či sa webhooky doručujú úspešne.",
+	stripeProcessFailed:
+		"Platbu sa nepodarilo spracovať. Skontrolujte, či je aplikácia Stripe v Saleore aktívna.",
+	paymentFailed: "Platba zlyhala",
+	notFullyPaid:
+		"Platba zatiaľ nepokrýva celú sumu objednávky. Obnovte stránku — ak boli prostriedky autorizované, použite tlačidlo „Objednať s povinnosťou platby“. Neplaťte znova, kým sa stav nepotvrdí.",
+	alreadyCompleted: "Táto objednávka už bola odoslaná. Potvrdenie nájdete vo svojom e-maile.",
+	freeOrderTotalChanged:
+		"Celková cena objednávky sa zmenila a teraz vyžaduje platbu. Skontrolujte ju a skúste to znova.",
+};
+
+let registeredPaymentLibMessages: CheckoutPaymentLibMessages | null = null;
+
+/** Installed by `useCheckoutPaymentMessages` so plain payment libs resolve translated copy. */
+export function registerCheckoutPaymentLibMessages(messages: CheckoutPaymentLibMessages): void {
+	registeredPaymentLibMessages = messages;
+}
+
+/** Translated payment-lib copy when the hook has registered; sk-SK fallback otherwise. */
+export function getCheckoutPaymentLibMessages(): CheckoutPaymentLibMessages {
+	return registeredPaymentLibMessages ?? FALLBACK_PAYMENT_LIB_MESSAGES;
+}
+
 /** Shown when only unsupported production gateways are available on the checkout. */
 export function getUnsupportedGatewayMessage(
 	gateways: ReadonlyArray<GatewayLike> | null | undefined,

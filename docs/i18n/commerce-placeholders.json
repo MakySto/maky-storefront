@@ -1,0 +1,77 @@
+{
+	"$about": "Placeholder registry for the commerce copy manifest. Every {name} that appears in commerce-source-en.json, with its meaning. Translators must keep placeholder names EXACTLY as-is.",
+	"placeholders": {
+		"countryName": {
+			"meaning": "Localized country name of the shipping address (Intl.DisplayNames via localizeCountryName, threaded with the market locale); falls back to checkout.shipping.yourAddressFallback when unresolvable. Grammar note: interpolated after Slovak preposition \"Pre\" (accusative).",
+			"appearsIn": ["checkout.shipping.noMethodsForCountry"]
+		},
+		"email": {
+			"meaning": "customer email the confirmation is sent to (order.userEmail; may be an empty string, sentence then ends after 'adresu')",
+			"appearsIn": ["checkout.confirmation.emailNotice", "checkout.contactSection.resetLinkSent"]
+		},
+		"field": {
+			"meaning": "The localized address-field label, e.g. 'Mesto' / 'PSČ' (already translated via the address field label keys)",
+			"appearsIn": ["checkout.addressForm.fieldRequired", "checkout.addressForm.selectField"]
+		},
+		"gateway": {
+			"meaning": "Payment gateway display name, e.g. Stripe",
+			"appearsIn": ["checkout.payment.loadingGateway"]
+		},
+		"gateways": {
+			"meaning": "Comma-separated list of gateway entries in the form Name (id)",
+			"appearsIn": ["checkout.payment.gateways.unsupportedList"]
+		},
+		"max": {
+			"meaning": "method.maximumDeliveryDays (number); also drives the plural branch",
+			"appearsIn": ["checkout.shipping.deliveryEstimate"]
+		},
+		"min": {
+			"meaning": "method.minimumDeliveryDays (number)",
+			"appearsIn": ["checkout.shipping.deliveryEstimate"]
+		},
+		"name": {
+			"meaning": "attribute name from Saleor backend data (e.g. \"Size\")",
+			"appearsIn": ["cart.variantAttribute"]
+		},
+		"newTotal": {
+			"meaning": "Formatted new order total including currency symbol (getFormattedMoney)",
+			"appearsIn": ["checkout.payment.priceChangedBody"]
+		},
+		"number": {
+			"meaning": "order number as displayed to the customer",
+			"appearsIn": ["email.orderConfirmed.subject", "email.orderConfirmed.preheader", "email.order.badge"]
+		},
+		"orderNumber": {
+			"meaning": "Saleor order number (e.g. 1023); in the dormant demo confirmation step a DEMO-XXXXXX code",
+			"appearsIn": ["checkout.confirmation.orderNumberLine"]
+		},
+		"previousTotal": {
+			"meaning": "Formatted previous order total including currency symbol (getFormattedMoney)",
+			"appearsIn": ["checkout.payment.priceChangedBody"]
+		},
+		"product": {
+			"meaning": "product name of the cart line from Saleor",
+			"appearsIn": ["cart.removeItemAria"]
+		},
+		"quantity": {
+			"meaning": "line quantity (number)",
+			"appearsIn": ["cart.quantityLabel", "email.order.quantity"]
+		},
+		"step": {
+			"meaning": "current 1-based step number",
+			"appearsIn": ["checkout.steps.progress"]
+		},
+		"total": {
+			"meaning": "Formatted order total with currency, e.g. 0,00 €",
+			"appearsIn": ["checkout.payment.freeOrderBody", "checkout.steps.progress"]
+		},
+		"value": {
+			"meaning": "attribute value name from Saleor backend data (e.g. \"XL\")",
+			"appearsIn": ["cart.variantAttribute"]
+		},
+		"variant": {
+			"meaning": "variant name from Saleor backend data",
+			"appearsIn": ["cart.variantLabel"]
+		}
+	}
+}

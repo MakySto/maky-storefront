@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { useTranslations } from "next-intl";
 
 import type { ServerOrder } from "@/checkout/lib/checkout-types";
 import { OrderDataProvider } from "@/checkout/providers/order-data";
@@ -25,6 +26,7 @@ type OrderConfirmationAppProps = {
  * not-found instead of crashing.
  */
 export function OrderConfirmationApp({ orderId, initialOrder }: OrderConfirmationAppProps) {
+	const t = useTranslations("checkout.confirmation");
 	return (
 		<OrderDataProvider orderId={orderId} initialOrder={initialOrder}>
 			<ErrorBoundary FallbackComponent={PageNotFound}>
@@ -32,10 +34,7 @@ export function OrderConfirmationApp({ orderId, initialOrder }: OrderConfirmatio
 					{initialOrder ? (
 						<OrderConfirmation />
 					) : (
-						<PageNotFound
-							title="Order not found"
-							message="We couldn't find this order. The link may have expired or is incorrect."
-						/>
+						<PageNotFound title={t("orderNotFoundTitle")} message={t("orderNotFoundMessage")} />
 					)}
 				</Suspense>
 			</ErrorBoundary>

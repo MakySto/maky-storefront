@@ -3,26 +3,11 @@ import type { ReadonlyURLSearchParams } from "next/navigation";
 /** sessionStorage value is the checkout id currently being completed. */
 export const PAYMENT_COMPLETING_STORAGE_KEY = "checkout:payment-completing";
 
-/**
- * Interruption copy is tiered by how far the money got — "try again" is only safe
- * while nothing has been authorized at the PSP.
- */
-
-/** Aborted before transactionInitialize / confirmPayment — no charge exists anywhere. */
-export const PAYMENT_INTERRUPTED_MESSAGE =
-	"Platba bola prerušená skôr, než došlo k odpísaniu peňazí. Môžete to bezpečne skúsiť znova.";
-
-/** Aborted after the PSP authorized — retrying would create a second authorization. */
-export const PAYMENT_AUTHORIZED_INTERRUPTED_MESSAGE =
-	"Vaša platba prebehla, ale objednávka ešte nebola odoslaná. Neplaťte znova — dokončite ju tlačidlom „Objednať s povinnosťou platby“ nižšie.";
-
-/** Aborted during the completing screen — order placement continues in the background. */
-export const ORDER_FINALIZING_INTERRUPTED_MESSAGE =
-	"Vaša objednávka sa stále odosiela. Neplaťte znova — po dokončení sa táto stránka aktualizuje.";
-
-/** An interrupted attempt could not be verified against Saleor — block retry guidance. */
-export const PAYMENT_VERIFICATION_UNAVAILABLE_MESSAGE =
-	"Nepodarilo sa nám overiť váš predchádzajúci pokus o platbu. Obnovte stránku — neplaťte znova, kým platba nebude overená.";
+// Interruption copy (tiered by how far the money got — "try again" is only safe while
+// nothing has been authorized at the PSP) lives in the next-intl catalog:
+// `checkout.payment.interruptedBeforeCharge` / `interruptedAfterAuthorize` /
+// `verificationUnavailable` via `useCheckoutPaymentMessages` (krok 2A). The former
+// *_MESSAGE constants here were dead exports and were removed.
 
 /** Survives PaymentStep unmount during the completing screen (shown on remount). */
 export const PAYMENT_COMPLETION_ERROR_STORAGE_KEY = "checkout:payment-completion-error";

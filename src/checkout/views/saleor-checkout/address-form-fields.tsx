@@ -1,6 +1,7 @@
 "use client";
 
 import { type FC, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { User, MapPin, Building, Phone, type LucideIcon } from "lucide-react";
 import { Input } from "@/ui/components/ui/input";
 import { Label } from "@/ui/components/ui/label";
@@ -32,7 +33,7 @@ export const addressFieldPairs: [AddressField, AddressField][] = [
 // =============================================================================
 
 export const FieldError: FC<{ error?: string }> = ({ error }) =>
-	error ? <p className="text-sm text-destructive">{error}</p> : null;
+	error ? <p className="text-destructive text-sm">{error}</p> : null;
 
 interface FormSelectProps {
 	id: string;
@@ -59,8 +60,8 @@ export const FormSelect: FC<FormSelectProps> = ({
 		onChange={(e) => onChange(e.target.value)}
 		autoComplete={autoComplete}
 		className={cn(
-			"flex h-12 w-full items-center justify-between rounded-md border border-input bg-white px-3 py-2 text-sm",
-			"ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+			"border-input flex h-12 w-full items-center justify-between rounded-md border bg-white px-3 py-2 text-sm",
+			"ring-offset-background focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-none",
 			"disabled:cursor-not-allowed disabled:opacity-50",
 			error && "border-destructive",
 		)}
@@ -104,7 +105,7 @@ export const FormInput: FC<FormInputProps> = ({
 	autoComplete,
 }) => (
 	<div className="relative">
-		{Icon && <Icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />}
+		{Icon && <Icon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />}
 		<Input
 			id={id}
 			type={type}
@@ -151,6 +152,8 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 	countryAreaChoices,
 	idPrefix = "",
 }) => {
+	const t = useTranslations("checkout");
+
 	const renderField = (field: AddressField): ReactNode => {
 		if (field === "countryCode") return null;
 
@@ -166,7 +169,9 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 		const fieldLabel = (
 			<Label htmlFor={fieldId} className="text-sm font-medium">
 				{label}
-				{!isRequired && <span className="ml-1 font-normal text-muted-foreground">(nepovinné)</span>}
+				{!isRequired && (
+					<span className="text-muted-foreground ml-1 font-normal">{t("common.optional")}</span>
+				)}
 			</Label>
 		);
 
@@ -180,7 +185,7 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 						value={formData[field] || ""}
 						onChange={(value) => onFieldChange(field, value)}
 						error={error}
-						placeholder={`Vyberte ${label.toLowerCase()}`}
+						placeholder={t("addressForm.selectField", { field: label.toLowerCase() })}
 						autoComplete={autoComplete}
 						options={countryAreaChoices.map(({ raw, verbose }) => ({
 							value: raw as string,

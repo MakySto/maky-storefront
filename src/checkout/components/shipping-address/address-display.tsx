@@ -1,9 +1,11 @@
 "use client";
 
 import { type FC } from "react";
+import { useTranslations } from "next-intl";
 import { type AddressFragment } from "@/checkout/graphql";
 import { cn } from "@/lib/utils";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
+import { useLocale } from "@/providers/locale-provider";
 
 export interface AddressDisplayProps {
 	/** Address to display */
@@ -34,11 +36,14 @@ export interface AddressDisplayProps {
  * ```
  */
 export const AddressDisplay: FC<AddressDisplayProps> = ({ address, title, className, onEdit }) => {
+	const t = useTranslations("checkout.addressForm");
+	const { locale } = useLocale();
+
 	if (!address) {
 		return (
 			<div className={cn("text-muted-foreground text-sm", className)}>
 				{title && <p className="text-foreground mb-1 font-medium">{title}</p>}
-				<p>Adresa nie je zadaná</p>
+				<p>{t("noAddressProvided")}</p>
 			</div>
 		);
 	}
@@ -54,7 +59,7 @@ export const AddressDisplay: FC<AddressDisplayProps> = ({ address, title, classN
 							onClick={onEdit}
 							className="text-muted-foreground hover:text-foreground underline underline-offset-2 hover:no-underline"
 						>
-							Upraviť
+							{t("edit")}
 						</button>
 					)}
 				</div>
@@ -70,7 +75,7 @@ export const AddressDisplay: FC<AddressDisplayProps> = ({ address, title, classN
 					{address.city}
 					{address.countryArea && `, ${address.countryArea}`} {address.postalCode}
 				</p>
-				<p>{localizeCountryName(address.country?.code, address.country?.country)}</p>
+				<p>{localizeCountryName(address.country?.code, address.country?.country, locale)}</p>
 				{address.phone && <p>{address.phone}</p>}
 			</div>
 		</div>

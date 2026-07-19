@@ -1,6 +1,7 @@
 "use client";
 
 import { type FC, useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { type AddressFragment, type AddressTypeEnum } from "@/checkout/graphql";
 import { userSetDefaultAddressAction } from "@/checkout/lib/actions";
 import { cn } from "@/lib/utils";
@@ -8,6 +9,7 @@ import { Checkbox } from "@/ui/components/ui/checkbox";
 import { Label } from "@/ui/components/ui/label";
 import { LoadingSpinner } from "@/checkout/ui-kit/loading-spinner";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
+import { useLocale } from "@/providers/locale-provider";
 
 export interface AddressSelectorProps {
 	/** List of saved addresses to choose from */
@@ -38,13 +40,15 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 	selectedAddressId,
 	onSelectAddress,
 	defaultAddressId,
-	emptyMessage = "Zatiaľ nemáte uložené žiadne adresy.",
+	emptyMessage,
 	name = "shippingAddress",
 	addressType = "SHIPPING",
 	onDefaultChange,
 	onEdit,
 	showSetAsDefault = true,
 }) => {
+	const t = useTranslations("checkout.addressForm");
+	const { locale } = useLocale();
 	const [isSettingDefault, setIsSettingDefault] = useState(false);
 	const [setAsDefault, setSetAsDefault] = useState(false);
 
@@ -88,7 +92,7 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 	);
 
 	if (addresses.length === 0) {
-		return <p className="text-muted-foreground text-sm">{emptyMessage}</p>;
+		return <p className="text-muted-foreground text-sm">{emptyMessage ?? t("noSavedAddressesYet")}</p>;
 	}
 
 	const shouldShowSetAsDefault =
@@ -132,7 +136,7 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 								</span>
 								{isDefault && (
 									<span className="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs font-medium">
-										Predvolená
+										{t("defaultBadge")}
 									</span>
 								)}
 							</div>
@@ -145,7 +149,7 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 								{address.countryArea && `, ${address.countryArea}`} {address.postalCode}
 							</p>
 							<p className="text-muted-foreground text-sm">
-								{localizeCountryName(address.country?.code, address.country?.country)}
+								{localizeCountryName(address.country?.code, address.country?.country, locale)}
 							</p>
 						</div>
 						{/* Edit button */}
@@ -159,7 +163,7 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 								}}
 								className="text-muted-foreground hover:bg-muted hover:text-foreground shrink-0 rounded px-2 py-1 text-sm transition-colors"
 							>
-								Upraviť
+								{t("edit")}
 							</button>
 						)}
 					</label>
@@ -180,7 +184,7 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 						className="text-muted-foreground flex cursor-pointer items-center gap-2 text-sm"
 					>
 						{isSettingDefault && <LoadingSpinner />}
-						Nastaviť ako moju predvolenú {addressType === "SHIPPING" ? "dodaciu" : "fakturačnú"} adresu
+						{addressType === "SHIPPING" ? t("setAsDefaultShipping") : t("setAsDefaultBilling")}
 					</Label>
 				</div>
 			)}

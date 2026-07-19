@@ -2,6 +2,7 @@
 
 import { useState, type FC } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { AlertTriangle } from "lucide-react";
 import { type CheckoutFragment } from "@/checkout/graphql";
 import { isCheckoutReadyToComplete } from "@/checkout/lib/payment/checkout-payment-status";
@@ -20,8 +21,9 @@ type AuthorizedPaymentRecoveryProps = {
 	onError: (message: string) => void;
 };
 
-/** Fallback when authorizeStatus is FULL but checkoutComplete did not run. (MAKY: SK copy.) */
+/** Fallback when authorizeStatus is FULL but checkoutComplete did not run. */
 export const AuthorizedPaymentRecovery: FC<AuthorizedPaymentRecoveryProps> = ({ checkout, onError }) => {
+	const t = useTranslations("checkout.payment");
 	const searchParams = useSearchParams();
 	const paymentMessages = useCheckoutPaymentMessages();
 	const [isCompleting, setIsCompleting] = useState(false);
@@ -70,10 +72,10 @@ export const AuthorizedPaymentRecovery: FC<AuthorizedPaymentRecoveryProps> = ({ 
 					{isCompleting ? (
 						<span className="flex items-center gap-2">
 							<LoadingSpinner />
-							Vytvárame objednávku…
+							{t("creatingOrder")}
 						</span>
 					) : (
-						"Dokončiť objednávku"
+						t("completeOrder")
 					)}
 				</Button>
 			</div>

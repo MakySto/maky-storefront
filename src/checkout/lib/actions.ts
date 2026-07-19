@@ -1,6 +1,7 @@
 "use server";
 
 import { after } from "next/server";
+import { getTranslations } from "next-intl/server";
 import {
 	AddressValidationRulesDocument,
 	type AddressValidationRulesQuery,
@@ -20,6 +21,9 @@ import {
 	CheckoutEmailUpdateDocument,
 	type CheckoutEmailUpdateMutation,
 	type CheckoutEmailUpdateMutationVariables,
+	CheckoutMetadataUpdateDocument,
+	type CheckoutMetadataUpdateMutation,
+	type CheckoutMetadataUpdateMutationVariables,
 	CheckoutShippingAddressUpdateDocument,
 	type CheckoutShippingAddressUpdateMutation,
 	type CheckoutShippingAddressUpdateMutationVariables,
@@ -57,6 +61,7 @@ import { getDummyPaymentGuardError } from "@/checkout/lib/payment/providers/dumm
 import { isDummyPaymentAllowed } from "@/checkout/lib/payment/providers/dummy";
 import { getStripePaymentGuardError, isStripePaymentEnabled } from "@/checkout/lib/payment/providers/stripe";
 import { fetchCheckoutOnServer } from "@/checkout/lib/server/fetch-checkout";
+import { resolveFallbackLocale } from "@/checkout/lib/server/resolve-fallback-locale";
 import { toTypedDocument } from "@/checkout/lib/server/to-typed-document";
 import {
 	revalidateStorefrontBrowsePath,
@@ -124,6 +129,46 @@ const setDefaultAddressDoc = toTypedDocument<
 	UserSetDefaultAddressMutation,
 	UserSetDefaultAddressMutationVariables
 >(UserSetDefaultAddressDocument);
+const metadataUpdateDoc = toTypedDocument<
+	CheckoutMetadataUpdateMutation,
+	CheckoutMetadataUpdateMutationVariables
+>(CheckoutMetadataUpdateDocument);
+
+/**
+ * Durable newsletter-consent record on the checkout (public path — checkout-id-is-credential).
+ * Saleor copies checkout metadata onto the order at checkoutComplete, so the consent survives as
+ * an auditable record on the order (value, server timestamp, source form, market, locale) visible
+ * in the Saleor dashboard. The timestamp is stamped server-side.
+ */
+export async function updateNewsletterConsentAction(input: {
+	checkoutId: string;
+	consent: boolean;
+	market: string;
+	localeSlug: string;
+}): Promise<{ ok: boolean }> {
+	const record = {
+		consent: input.consent,
+		at: new Date().toISOString(),
+		source: "checkout-information-step",
+		market: input.market,
+		locale: input.localeSlug,
+	};
+
+	const result = await executePublicGraphQL(metadataUpdateDoc, {
+		variables: {
+			checkoutId: input.checkoutId,
+			input: [{ key: "newsletter_consent", value: JSON.stringify(record) }],
+		},
+		cache: "no-cache",
+	});
+
+	if (!result.ok || result.data.updateMetadata?.errors?.length) {
+		return { ok: false };
+	}
+
+	return { ok: true };
+}
+
 /** Live checkout read bypassing the client context cache. */
 export async function refreshCheckoutAction(
 	checkoutId: string,
@@ -237,21 +282,21 @@ const transactionProcessDoc = toTypedDocument<
 	TransactionProcessMutationVariables
 >(TransactionProcessDocument);
 
-// Hardcoded SK (D1 resolved by the B.7 checkout i18n pass) — user-facing payment action messages.
-const NO_SALEOR_RESPONSE_MESSAGE = "Zo servera neprišla žiadna odpoveď. Skúste to znova.";
-const GATEWAY_INIT_FAILED_MESSAGE = "Inicializácia platobnej brány zlyhala.";
-const PAYMENT_INIT_FAILED_MESSAGE =
-	"Platbu sa nepodarilo inicializovať. Skontrolujte, či platobná aplikácia v Saleore beží.";
-const TOTAL_VERIFY_FAILED_MESSAGE = "Nepodarilo sa overiť celkovú cenu objednávky. Skúste to znova.";
-const TOTAL_CHANGED_MESSAGE =
-	"Celková cena objednávky sa zmenila. Skontrolujte aktualizovanú sumu a skúste to znova.";
-const PAYMENTS_DISABLED_MESSAGE = "Platby nie sú v tomto prostredí povolené.";
-const PAYMENT_PROCESS_FAILED_MESSAGE = "Platbu sa nepodarilo spracovať. Skúste to znova.";
-const COMPLETE_ORDER_FAILED_MESSAGE = "Objednávku sa nepodarilo dokončiť. Skúste to znova.";
-const ORDER_CREATE_FAILED_MESSAGE = "Objednávka nebola vytvorená. Skúste to znova.";
+/**
+ * Locale-aware translator for user-facing payment action messages (krok 2A — replaces the
+ * hardcoded-SK D1 constants). Explicit `localeSlug` (threaded from the client) wins; without
+ * it the market cookie decides (`resolveFallbackLocale`), defaulting to sk-SK. The cookie
+ * path matters because the `CheckoutTransport` seam carries no locale parameter.
+ * Returned `t` is unscoped — call it with full key paths (`checkout.errors.*` /
+ * `checkout.payment.*`).
+ */
+async function getPaymentActionTranslator(localeSlug?: string) {
+	return getTranslations({ locale: await resolveFallbackLocale(localeSlug) });
+}
 
 export async function initializePaymentGatewaysAction(
 	variables: PaymentGatewaysInitializeMutationVariables,
+	localeSlug?: string,
 ): Promise<PaymentGatewaysInitializeActionResult> {
 	const result = await executePublicGraphQL(paymentGatewaysInitializeDoc, {
 		variables,
@@ -266,11 +311,13 @@ export async function initializePaymentGatewaysAction(
 	// field is `paymentGatewayInitialize` (singular).
 	const payload = result.data.paymentGatewayInitialize;
 	if (!payload) {
-		return { ok: false, error: NO_SALEOR_RESPONSE_MESSAGE };
+		const t = await getPaymentActionTranslator(localeSlug);
+		return { ok: false, error: t("checkout.errors.noSaleorResponse") };
 	}
 
 	if (payload.errors?.length) {
-		return { ok: false, error: payload.errors[0].message ?? GATEWAY_INIT_FAILED_MESSAGE };
+		const t = await getPaymentActionTranslator(localeSlug);
+		return { ok: false, error: payload.errors[0].message ?? t("checkout.payment.gatewayInitFailed") };
 	}
 
 	return { ok: true, data: payload };
@@ -278,15 +325,18 @@ export async function initializePaymentGatewaysAction(
 
 export async function initializeCheckoutTransactionAction(
 	variables: TransactionInitializeMutationVariables,
+	localeSlug?: string,
 ): Promise<TransactionInitializeActionResult> {
-	const dummyGuardError = getDummyPaymentGuardError(variables.paymentGateway?.id);
-	if (dummyGuardError) {
-		return { ok: false, error: dummyGuardError };
+	// The guards return sk sentinels — translate at this boundary (the guard modules are
+	// client-shared and cannot resolve server locale themselves).
+	if (getDummyPaymentGuardError(variables.paymentGateway?.id)) {
+		const t = await getPaymentActionTranslator(localeSlug);
+		return { ok: false, error: t("checkout.errors.testPaymentUnavailable") };
 	}
 
-	const stripeGuardError = getStripePaymentGuardError(variables.paymentGateway?.id);
-	if (stripeGuardError) {
-		return { ok: false, error: stripeGuardError };
+	if (getStripePaymentGuardError(variables.paymentGateway?.id)) {
+		const t = await getPaymentActionTranslator(localeSlug);
+		return { ok: false, error: t("checkout.errors.cardPaymentsDisabled") };
 	}
 
 	// Defense in depth: never trust the client-supplied amount. Saleor re-validates
@@ -294,12 +344,14 @@ export async function initializeCheckoutTransactionAction(
 	if (typeof variables.amount === "number") {
 		const live = await fetchCheckoutOnServer(variables.checkoutId);
 		if (!live.ok || !live.checkout) {
-			return { ok: false, error: TOTAL_VERIFY_FAILED_MESSAGE };
+			const t = await getPaymentActionTranslator(localeSlug);
+			return { ok: false, error: t("checkout.errors.totalVerifyFailed") };
 		}
 
 		const liveAmount = getCheckoutPayAmount(live.checkout);
 		if (liveAmount === null || hasMaterialCheckoutTotalChange(liveAmount, variables.amount)) {
-			return { ok: false, error: TOTAL_CHANGED_MESSAGE };
+			const t = await getPaymentActionTranslator(localeSlug);
+			return { ok: false, error: t("checkout.payment.totalChanged") };
 		}
 	}
 
@@ -311,11 +363,16 @@ export async function initializeCheckoutTransactionAction(
 
 	const payload = result.data.transactionInitialize;
 	if (!payload) {
-		return { ok: false, error: NO_SALEOR_RESPONSE_MESSAGE };
+		const t = await getPaymentActionTranslator(localeSlug);
+		return { ok: false, error: t("checkout.errors.noSaleorResponse") };
 	}
 
 	if (payload.errors?.length) {
-		return { ok: false, error: payload.errors[0].message ?? PAYMENT_INIT_FAILED_MESSAGE };
+		const t = await getPaymentActionTranslator(localeSlug);
+		return {
+			ok: false,
+			error: payload.errors[0].message ?? t("checkout.payment.gateways.paymentInitFailed"),
+		};
 	}
 
 	return { ok: true, data: payload };
@@ -323,11 +380,13 @@ export async function initializeCheckoutTransactionAction(
 
 export async function processCheckoutTransactionAction(
 	variables: TransactionProcessMutationVariables,
+	localeSlug?: string,
 ): Promise<TransactionProcessActionResult> {
 	// Mirror the initialize guards: when every integrated gateway is disabled for this
 	// environment, a direct call to this action must not drive transactions either.
 	if (!isStripePaymentEnabled() && !isDummyPaymentAllowed()) {
-		return { ok: false, error: PAYMENTS_DISABLED_MESSAGE };
+		const t = await getPaymentActionTranslator(localeSlug);
+		return { ok: false, error: t("checkout.errors.paymentsDisabled") };
 	}
 
 	const result = await executePublicGraphQL(transactionProcessDoc, { variables, cache: "no-cache" });
@@ -338,17 +397,22 @@ export async function processCheckoutTransactionAction(
 
 	const payload = result.data.transactionProcess;
 	if (!payload) {
-		return { ok: false, error: NO_SALEOR_RESPONSE_MESSAGE };
+		const t = await getPaymentActionTranslator(localeSlug);
+		return { ok: false, error: t("checkout.errors.noSaleorResponse") };
 	}
 
 	if (payload.errors?.length) {
-		return { ok: false, error: payload.errors[0].message ?? PAYMENT_PROCESS_FAILED_MESSAGE };
+		const t = await getPaymentActionTranslator(localeSlug);
+		return { ok: false, error: payload.errors[0].message ?? t("checkout.errors.paymentProcessFailed") };
 	}
 
 	return { ok: true, data: payload };
 }
 
-export async function runCheckoutCompleteAction(checkoutId: string): Promise<CheckoutCompleteActionResult> {
+export async function runCheckoutCompleteAction(
+	checkoutId: string,
+	localeSlug?: string,
+): Promise<CheckoutCompleteActionResult> {
 	const result = await executePublicGraphQL(completeDoc, {
 		variables: { checkoutId },
 		cache: "no-cache",
@@ -360,16 +424,19 @@ export async function runCheckoutCompleteAction(checkoutId: string): Promise<Che
 
 	const payload = result.data.checkoutComplete;
 	if (!payload) {
-		return { ok: false, error: NO_SALEOR_RESPONSE_MESSAGE };
+		const t = await getPaymentActionTranslator(localeSlug);
+		return { ok: false, error: t("checkout.errors.noSaleorResponse") };
 	}
 
 	if (payload.errors?.length) {
+		const t = await getPaymentActionTranslator(localeSlug);
+		const completeOrderFailed = t("checkout.payment.completeOrderFailed");
 		return {
 			ok: false,
-			error: payload.errors[0].message ?? COMPLETE_ORDER_FAILED_MESSAGE,
+			error: payload.errors[0].message ?? completeOrderFailed,
 			fieldErrors: payload.errors.map((error) => ({
 				field: error.field,
-				message: error.message ?? COMPLETE_ORDER_FAILED_MESSAGE,
+				message: error.message ?? completeOrderFailed,
 				code: error.code,
 			})),
 		};
@@ -378,7 +445,8 @@ export async function runCheckoutCompleteAction(checkoutId: string): Promise<Che
 	const orderId = payload.order?.id;
 	const channelSlug = payload.order?.channel?.slug;
 	if (!orderId) {
-		return { ok: false, error: ORDER_CREATE_FAILED_MESSAGE };
+		const t = await getPaymentActionTranslator(localeSlug);
+		return { ok: false, error: t("checkout.errors.orderCreateFailed") };
 	}
 
 	// Return orderId for the client `navigateToOrderConfirmation()` — do not `redirect()` here

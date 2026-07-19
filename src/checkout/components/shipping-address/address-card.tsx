@@ -1,10 +1,12 @@
 "use client";
 
 import { type FC } from "react";
+import { useTranslations } from "next-intl";
 import { MapPin, ChevronRight, Check } from "lucide-react";
 import { type AddressFragment } from "@/checkout/graphql";
 import { cn } from "@/lib/utils";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
+import { useLocale } from "@/providers/locale-provider";
 
 export interface AddressCardProps {
 	/** The address to display */
@@ -36,6 +38,9 @@ export const AddressCard: FC<AddressCardProps> = ({
 	compact = false,
 	className,
 }) => {
+	const t = useTranslations("checkout");
+	const { locale } = useLocale();
+
 	const handleChangeClick = (e: React.MouseEvent) => {
 		e.stopPropagation();
 		onChangeClick?.();
@@ -73,7 +78,7 @@ export const AddressCard: FC<AddressCardProps> = ({
 					</span>
 					{isDefault && (
 						<span className="bg-muted text-muted-foreground w-fit rounded px-1.5 py-0.5 text-xs font-medium">
-							Predvolená
+							{t("addressForm.defaultBadge")}
 						</span>
 					)}
 				</div>
@@ -93,7 +98,7 @@ export const AddressCard: FC<AddressCardProps> = ({
 							{address.countryArea && `, ${address.countryArea}`} {address.postalCode}
 						</p>
 						<p className="text-muted-foreground text-sm">
-							{localizeCountryName(address.country?.code, address.country?.country)}
+							{localizeCountryName(address.country?.code, address.country?.country, locale)}
 						</p>
 					</>
 				)}
@@ -106,7 +111,7 @@ export const AddressCard: FC<AddressCardProps> = ({
 					onClick={handleChangeClick}
 					className="text-muted-foreground hover:bg-muted hover:text-foreground flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-sm font-medium transition-colors"
 				>
-					Zmeniť
+					{t("common.change")}
 					<ChevronRight className="h-4 w-4" />
 				</button>
 			)}

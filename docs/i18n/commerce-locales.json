@@ -1,0 +1,124 @@
+{
+	"$about": "Locale/market matrix for the commerce copy (mirror of src/lib/channel-map.ts + src/config/locale.ts — code is canonical).",
+	"sourceLocale": "en-US",
+	"locales": {
+		"sk-SK": {
+			"market": "sk",
+			"channel": "sk-eur",
+			"currency": "EUR",
+			"saleorLanguageCode": "SK",
+			"stripeLocale": "sk",
+			"storefrontCatalog": "complete (primary market, ships now)",
+			"emailCatalog": "complete (ships now)"
+		},
+		"cs-CZ": {
+			"market": "cz",
+			"channel": "cz-czk",
+			"currency": "CZK",
+			"saleorLanguageCode": "CS",
+			"stripeLocale": "cs",
+			"storefrontCatalog": "pending translation bundle",
+			"emailCatalog": "pending translation bundle"
+		},
+		"de-DE": {
+			"market": "de",
+			"channel": "de-eur",
+			"currency": "EUR",
+			"saleorLanguageCode": "DE",
+			"stripeLocale": "de",
+			"storefrontCatalog": "pending translation bundle",
+			"emailCatalog": "pending translation bundle"
+		},
+		"de-AT": {
+			"market": "at",
+			"channel": "at-eur",
+			"currency": "EUR",
+			"saleorLanguageCode": "DE",
+			"stripeLocale": "de",
+			"storefrontCatalog": "pending translation bundle",
+			"emailCatalog": "pending translation bundle"
+		},
+		"pl-PL": {
+			"market": "pl",
+			"channel": "pl-pln",
+			"currency": "PLN",
+			"saleorLanguageCode": "PL",
+			"stripeLocale": "pl",
+			"storefrontCatalog": "pending translation bundle",
+			"emailCatalog": "pending translation bundle"
+		},
+		"hu-HU": {
+			"market": "hu",
+			"channel": "hu-huf",
+			"currency": "HUF",
+			"saleorLanguageCode": "HU",
+			"stripeLocale": "hu",
+			"storefrontCatalog": "pending translation bundle",
+			"emailCatalog": "pending translation bundle"
+		},
+		"it-IT": {
+			"market": "it",
+			"channel": "it-eur",
+			"currency": "EUR",
+			"saleorLanguageCode": "IT",
+			"stripeLocale": "it",
+			"storefrontCatalog": "pending translation bundle",
+			"emailCatalog": "pending translation bundle"
+		},
+		"fr-FR": {
+			"market": "fr",
+			"channel": "fr-eur",
+			"currency": "EUR",
+			"saleorLanguageCode": "FR",
+			"stripeLocale": "fr",
+			"storefrontCatalog": "pending translation bundle",
+			"emailCatalog": "pending translation bundle"
+		},
+		"es-ES": {
+			"market": "es",
+			"channel": "es-eur",
+			"currency": "EUR",
+			"saleorLanguageCode": "ES",
+			"stripeLocale": "es",
+			"storefrontCatalog": "pending translation bundle",
+			"emailCatalog": "pending translation bundle"
+		},
+		"ro-RO": {
+			"market": "ro",
+			"channel": "ro-ron",
+			"currency": "RON",
+			"saleorLanguageCode": "RO",
+			"stripeLocale": "ro",
+			"storefrontCatalog": "pending translation bundle",
+			"emailCatalog": "pending translation bundle"
+		},
+		"en-GB": {
+			"market": "gb",
+			"channel": "gb-gbp",
+			"currency": "GBP",
+			"saleorLanguageCode": "EN_GB",
+			"stripeLocale": "en-GB",
+			"storefrontCatalog": "en-US source applies; reviewer may localize (en-GB spelling)",
+			"emailCatalog": "en source applies"
+		},
+		"en-US": {
+			"market": "us",
+			"channel": "us-usd",
+			"currency": "USD",
+			"saleorLanguageCode": "EN_US",
+			"stripeLocale": "en",
+			"storefrontCatalog": "SOURCE",
+			"emailCatalog": "SOURCE"
+		},
+		"en-CA": {
+			"market": "ca",
+			"channel": "ca-cad",
+			"currency": "CAD",
+			"saleorLanguageCode": "EN_CA",
+			"stripeLocale": "en",
+			"storefrontCatalog": "en-US source applies",
+			"emailCatalog": "en source applies"
+		}
+	},
+	"runtimeFallback": "Per-key deep-merge onto the en-US source at request time (src/i18n/request.ts) until the bundle lands; email catalogs fall back per-file to en (resolveCatalogLocale)."
+}

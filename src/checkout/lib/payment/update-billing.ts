@@ -1,6 +1,7 @@
 import { getAddressInputData } from "@/checkout/components/address-form/utils";
 import { type CountryCode, type AddressFragment } from "@/checkout/graphql";
 import { getCheckoutTransport } from "@/checkout/lib/checkout-transport";
+import { getCheckoutPaymentLibMessages } from "@/checkout/lib/payment/gateway-messages";
 import { getBillingAddressOptions } from "@/checkout/lib/billing-addresses";
 import { getBillingSaveAddressFlag } from "@/checkout/lib/shipping-address-submit";
 import { type BillingAddressData } from "@/checkout/components/payment";
@@ -76,15 +77,18 @@ export async function updateCheckoutBilling(params: UpdateBillingParams): Promis
 		});
 
 		if (!result.ok) {
+			const messages = getCheckoutPaymentLibMessages();
 			if (result.fieldErrors?.length) {
 				const errorMap: Record<string, string> = {};
 				result.fieldErrors.forEach((err) => {
 					const field = err.field || "streetAddress1";
-					errorMap[field] = err.message || "Neplatná hodnota";
+					// err.message is Saleor's raw (English) API text when present — pass-through
+					// tracked as a known i18n gap; only the empty-message fallback is localized.
+					errorMap[field] = err.message || messages.invalidValue;
 				});
 				return { ok: false, errors: errorMap, focusField: Object.keys(errorMap)[0] };
 			}
-			return { ok: false, errors: { billing: result.error ?? "Nepodarilo sa uložiť fakturačnú adresu." } };
+			return { ok: false, errors: { billing: result.error ?? messages.billingSaveFailed } };
 		}
 
 		return { ok: true };
@@ -113,7 +117,7 @@ export async function updateCheckoutBilling(params: UpdateBillingParams): Promis
 		if (!result.ok) {
 			return {
 				ok: false,
-				errors: { billing: result.error ?? "Nepodarilo sa uložiť fakturačnú adresu." },
+				errors: { billing: result.error ?? getCheckoutPaymentLibMessages().billingSaveFailed },
 			};
 		}
 	}

@@ -207,6 +207,16 @@ mutation checkoutLinesUpdate(
 	}
 }
 
+mutation checkoutMetadataUpdate($checkoutId: ID!, $input: [MetadataInput!]!) {
+	updateMetadata(id: $checkoutId, input: $input) {
+		errors {
+			field
+			code
+			message
+		}
+	}
+}
+
 mutation checkoutLanguageCodeUpdate($checkoutId: ID!, $languageCode: LanguageCodeEnum!) {
 	checkoutLanguageCodeUpdate(id: $checkoutId, languageCode: $languageCode) {
 		errors {

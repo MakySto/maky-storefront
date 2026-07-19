@@ -1,13 +1,18 @@
 "use client";
 
 import { type FC } from "react";
+import { useTranslations } from "next-intl";
 import { type CheckoutFragment } from "@/checkout/graphql";
 import { formatShippingPrice } from "@/checkout/lib/utils/money";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
 
 interface SummaryRow {
-	label: string;
-	value: string;
+	/** Message key under the `checkout` namespace (e.g. "summary.contact") */
+	labelKey: string;
+	/** Raw display value (customer data); ignored when `valueKey` is set */
+	value?: string;
+	/** Message key under the `checkout` namespace for fully-translated values (e.g. "summary.digitalDelivery") */
+	valueKey?: string;
 	onChangeStep?: number;
 }
 
@@ -24,19 +29,23 @@ interface CheckoutSummaryContextProps {
  * Used in ShippingStep and PaymentStep to show context from previous steps.
  */
 export const CheckoutSummaryContext: FC<CheckoutSummaryContextProps> = ({ rows, onGoToStep }) => {
+	const t = useTranslations("checkout");
+
 	return (
 		<section className="divide-border border-border divide-y rounded-lg border text-sm">
 			{rows.map((row) => (
-				<div key={row.label} className="flex items-start gap-4 p-4">
-					<span className="text-muted-foreground w-16 shrink-0 pt-0.5">{row.label}</span>
-					<span className="min-w-0 flex-1 break-words">{row.value}</span>
+				<div key={row.labelKey} className="flex items-start gap-4 p-4">
+					<span className="text-muted-foreground w-16 shrink-0 pt-0.5">{t(row.labelKey)}</span>
+					<span className="min-w-0 flex-1 break-words">
+						{row.valueKey ? t(row.valueKey) : row.value ?? ""}
+					</span>
 					{row.onChangeStep !== undefined && onGoToStep && (
 						<button
 							type="button"
 							onClick={() => onGoToStep(row.onChangeStep!)}
 							className="shrink-0 text-sm underline underline-offset-2 hover:no-underline"
 						>
-							Zmeniť
+							{t("common.change")}
 						</button>
 					)}
 				</div>
@@ -49,12 +58,13 @@ export const CheckoutSummaryContext: FC<CheckoutSummaryContextProps> = ({ rows, 
 // Helper functions to build summary rows
 // =============================================================================
 
-/** Format address as single line string */
-export function formatAddressLine(address: CheckoutFragment["shippingAddress"]): string {
+/** Format address as single line string. `locale` localizes the country name (store default when omitted). */
+export function formatAddressLine(address: CheckoutFragment["shippingAddress"], locale?: string): string {
 	if (!address) return "";
 	return `${address.streetAddress1}, ${address.city} ${address.postalCode}, ${localizeCountryName(
 		address.country?.code,
 		address.country?.country,
+		locale,
 	)}`;
 }
 
@@ -76,27 +86,35 @@ export function formatShippingMethod(checkout: CheckoutFragment): string {
 	return `${method.name}${priceStr ? ` · ${priceStr}` : ""}`;
 }
 
-/** Build standard summary rows for shipping step */
-export function buildShippingSummaryRows(checkout: CheckoutFragment): SummaryRow[] {
+/** Build standard summary rows for shipping step. `locale` localizes the country name. */
+export function buildShippingSummaryRows(checkout: CheckoutFragment, locale?: string): SummaryRow[] {
 	return [
-		{ label: "Kontakt", value: checkout.email || "", onChangeStep: 1 },
-		{ label: "Doručenie na", value: formatAddressLine(checkout.shippingAddress), onChangeStep: 1 },
+		{ labelKey: "summary.contact", value: checkout.email || "", onChangeStep: 1 },
+		{
+			labelKey: "summary.shipTo",
+			value: formatAddressLine(checkout.shippingAddress, locale),
+			onChangeStep: 1,
+		},
 	];
 }
 
-/** Build standard summary rows for payment step */
-export function buildPaymentSummaryRows(checkout: CheckoutFragment): SummaryRow[] {
-	const rows: SummaryRow[] = [{ label: "Kontakt", value: checkout.email || "", onChangeStep: 1 }];
+/** Build standard summary rows for payment step. `locale` localizes the country name. */
+export function buildPaymentSummaryRows(checkout: CheckoutFragment, locale?: string): SummaryRow[] {
+	const rows: SummaryRow[] = [{ labelKey: "summary.contact", value: checkout.email || "", onChangeStep: 1 }];
 
 	// Only show shipping info for physical products
 	if (checkout.isShippingRequired) {
 		rows.push(
-			{ label: "Doručenie na", value: formatAddressLine(checkout.shippingAddress), onChangeStep: 1 },
-			{ label: "Doprava", value: formatShippingMethod(checkout), onChangeStep: 2 },
+			{
+				labelKey: "summary.shipTo",
+				value: formatAddressLine(checkout.shippingAddress, locale),
+				onChangeStep: 1,
+			},
+			{ labelKey: "summary.method", value: formatShippingMethod(checkout), onChangeStep: 2 },
 		);
 	} else {
 		// Digital products - show delivery type instead
-		rows.push({ label: "Doručenie", value: "Digitálne" });
+		rows.push({ labelKey: "summary.delivery", valueKey: "summary.digitalDelivery" });
 	}
 
 	return rows;

@@ -1,6 +1,7 @@
 "use client";
 
 import { type FC } from "react";
+import { useTranslations } from "next-intl";
 import { LoadingSpinner } from "@/checkout/ui-kit/loading-spinner";
 
 type StripePaymentProcessingOverlayProps = {
@@ -11,8 +12,11 @@ type StripePaymentProcessingOverlayProps = {
 /** Covers Stripe Elements while confirm/process runs — keeps Elements mounted. */
 export const StripePaymentProcessingOverlay: FC<StripePaymentProcessingOverlayProps> = ({
 	title,
-	description = "Túto stránku prosím nezatvárajte ani neobnovujte.",
+	description,
 }) => {
+	const t = useTranslations("checkout.payment");
+	const resolvedDescription = description ?? t("doNotClose");
+
 	return (
 		<div
 			className="bg-card absolute inset-0 z-10 flex flex-col items-center justify-center px-6 text-center"
@@ -22,7 +26,7 @@ export const StripePaymentProcessingOverlay: FC<StripePaymentProcessingOverlayPr
 		>
 			<LoadingSpinner />
 			<p className="text-foreground mt-4 text-sm font-medium">{title}</p>
-			<p className="text-muted-foreground mt-1 max-w-xs text-xs">{description}</p>
+			<p className="text-muted-foreground mt-1 max-w-xs text-xs">{resolvedDescription}</p>
 		</div>
 	);
 };

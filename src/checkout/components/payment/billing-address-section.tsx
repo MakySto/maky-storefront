@@ -2,6 +2,8 @@
 
 import { type FC, useState, useEffect } from "react";
 import { ChevronLeft } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useLocale } from "@/providers/locale-provider";
 import { Label } from "@/ui/components/ui/label";
 import { Checkbox } from "@/ui/components/ui/checkbox";
 import { cn } from "@/lib/utils";
@@ -75,6 +77,8 @@ export const BillingAddressSection: FC<BillingAddressSectionProps> = ({
 	onSameAsShippingChange,
 	initialSameAsShipping,
 }) => {
+	const t = useTranslations("checkout");
+	const { locale } = useLocale();
 	const { availableShippingCountries } = useAvailableShippingCountries();
 
 	const hasShippingAddress = !!shippingAddress;
@@ -161,7 +165,7 @@ export const BillingAddressSection: FC<BillingAddressSectionProps> = ({
 
 	return (
 		<section className="space-y-4">
-			<h2 className="text-lg font-semibold">Fakturačná adresa</h2>
+			<h2 className="text-lg font-semibold">{t("payment.billingAddressTitle")}</h2>
 
 			{/* Only show "Same as shipping" if there's a shipping address */}
 			{hasShippingAddress && (
@@ -172,7 +176,7 @@ export const BillingAddressSection: FC<BillingAddressSectionProps> = ({
 						onCheckedChange={(checked) => handleSameAsShippingChange(checked === true)}
 					/>
 					<Label htmlFor="same-billing" className="cursor-pointer text-sm">
-						Rovnaká ako dodacia adresa
+						{t("payment.sameAsShipping")}
 					</Label>
 				</div>
 			)}
@@ -181,7 +185,7 @@ export const BillingAddressSection: FC<BillingAddressSectionProps> = ({
 			{showForm && (
 				<div
 					className={cn(
-						"space-y-4 rounded-lg border border-border p-4",
+						"border-border space-y-4 rounded-lg border p-4",
 						hasShippingAddress && "bg-secondary/30",
 					)}
 				>
@@ -194,25 +198,25 @@ export const BillingAddressSection: FC<BillingAddressSectionProps> = ({
 									<button
 										type="button"
 										onClick={() => setShowNewAddressForm(false)}
-										className="mb-2 flex items-center gap-1 text-sm font-medium text-foreground underline underline-offset-2 hover:no-underline"
+										className="text-foreground mb-2 flex items-center gap-1 text-sm font-medium underline underline-offset-2 hover:no-underline"
 									>
-										<ChevronLeft className="h-4 w-4" /> Späť na uložené adresy
+										<ChevronLeft className="h-4 w-4" /> {t("addressForm.backToSavedAddresses")}
 									</button>
 
 									{/* Country selector */}
 									<div className="space-y-2">
 										<Label htmlFor="billing-country" className="text-sm font-medium">
-											Krajina/región
+											{t("addressForm.countryRegion")}
 										</Label>
 										<FormSelect
 											id="billing-country"
 											value={countryCode}
 											onChange={handleCountryChange}
-											placeholder="Vyberte krajinu"
+											placeholder={t("addressForm.selectCountry")}
 											autoComplete="country"
 											options={availableShippingCountries.map((code) => ({
 												value: code,
-												label: getCountryName(code),
+												label: getCountryName(code, locale),
 											}))}
 										/>
 									</div>
@@ -237,10 +241,10 @@ export const BillingAddressSection: FC<BillingAddressSectionProps> = ({
 										selectedAddressId={selectedAddressId}
 										onSelectAddress={handleSelectSavedAddress}
 										defaultAddressId={defaultBillingAddressId}
-										emptyMessage="Nie sú dostupné žiadne uložené adresy."
+										emptyMessage={t("addressForm.noSavedAddressesHint")}
 										name="billingAddress"
 										addressType="BILLING"
-										sheetTitle="Vyberte fakturačnú adresu"
+										sheetTitle={t("addressForm.selectBillingAddressTitle")}
 										onAddNew={() => {
 											setShowNewAddressForm(true);
 											setSelectedAddressId(null);
@@ -259,7 +263,7 @@ export const BillingAddressSection: FC<BillingAddressSectionProps> = ({
 										}}
 									/>
 
-									{errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
+									{errors.address && <p className="text-destructive text-sm">{errors.address}</p>}
 								</>
 							)}
 						</>
@@ -269,17 +273,17 @@ export const BillingAddressSection: FC<BillingAddressSectionProps> = ({
 							{/* Country selector */}
 							<div className="space-y-2">
 								<Label htmlFor="billing-country" className="text-sm font-medium">
-									Krajina/región
+									{t("addressForm.countryRegion")}
 								</Label>
 								<FormSelect
 									id="billing-country"
 									value={countryCode}
 									onChange={handleCountryChange}
-									placeholder="Vyberte krajinu"
+									placeholder={t("addressForm.selectCountry")}
 									autoComplete="country"
 									options={availableShippingCountries.map((code) => ({
 										value: code,
-										label: getCountryName(code),
+										label: getCountryName(code, locale),
 									}))}
 								/>
 							</div>
@@ -307,13 +311,14 @@ export const BillingAddressSection: FC<BillingAddressSectionProps> = ({
  * Hook to get billing address validation info.
  */
 export const useBillingAddressValidation = (countryCode: CountryCode) => {
+	const t = useTranslations("checkout");
 	const { orderedAddressFields, getFieldLabel, isRequiredField } = useAddressFormUtils(countryCode);
 
 	const validateBillingAddress = (formData: Record<string, string>): Record<string, string> => {
 		const errors: Record<string, string> = {};
 		orderedAddressFields.forEach((field) => {
 			if (isRequiredField(field) && !formData[field]) {
-				errors[field] = `${getFieldLabel(field)} je povinný údaj`;
+				errors[field] = t("addressForm.fieldRequired", { field: getFieldLabel(field) });
 			}
 		});
 		return errors;

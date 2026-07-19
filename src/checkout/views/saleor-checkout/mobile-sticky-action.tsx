@@ -2,6 +2,7 @@
 
 import { type FC } from "react";
 import { ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/ui/components/ui/button";
 import { LoadingSpinner } from "@/checkout/ui-kit/loading-spinner";
 import { getStepNumber } from "./flow";
@@ -38,6 +39,8 @@ export const MobileStickyAction: FC<MobileStickyActionProps> = ({
 	onAction,
 	type = "button",
 }) => {
+	const t = useTranslations("checkout");
+
 	// Determine button text based on step
 	const getButtonText = () => {
 		if (isLoading && loadingText) return loadingText;
@@ -47,22 +50,22 @@ export const MobileStickyAction: FC<MobileStickyActionProps> = ({
 		const infoStep = getStepNumber("INFO", isShippingRequired);
 
 		if (step === paymentStep) {
-			return "Objednať s povinnosťou platby";
+			return t("placeOrder");
 		}
 
 		if (step === infoStep) {
-			return isShippingRequired ? "Pokračovať na dopravu" : "Pokračovať na platbu";
+			return isShippingRequired ? t("common.continueToShipping") : t("common.continueToPayment");
 		}
 
 		if (step === shippingStep) {
-			return "Pokračovať na platbu";
+			return t("common.continueToPayment");
 		}
 
-		return "Pokračovať";
+		return t("common.continue");
 	};
 
 	return (
-		<div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card p-4 md:hidden">
+		<div className="border-border bg-card fixed inset-x-0 bottom-0 z-50 border-t p-4 md:hidden">
 			<Button
 				type={type}
 				onClick={onAction}

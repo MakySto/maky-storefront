@@ -191,7 +191,7 @@ const StripePaidPayment: FC<StripePaymentProps> = ({
 		return (
 			<div className="bg-muted/30 border-border text-muted-foreground flex items-center gap-3 rounded-lg border p-6 text-sm">
 				<LoadingSpinner />
-				Načítavame celkovú cenu objednávky…
+				{paymentMessages.loadingTotal}
 			</div>
 		);
 	}
@@ -199,11 +199,7 @@ const StripePaidPayment: FC<StripePaymentProps> = ({
 	const elementsOptions = lockedElementsOptions ?? liveElementsOptions;
 
 	if (!elementsOptions) {
-		return (
-			<p className="text-muted-foreground text-sm">
-				Celková cena objednávky nie je dostupná. Obnovte stránku a skúste to znova.
-			</p>
-		);
+		return <p className="text-muted-foreground text-sm">{paymentMessages.totalUnavailable}</p>;
 	}
 
 	return (

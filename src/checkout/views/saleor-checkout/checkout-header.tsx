@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Lock, Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/ui/components/shared/logo";
 import { getCheckoutSteps } from "./flow";
@@ -13,13 +14,14 @@ interface CheckoutHeaderProps {
 }
 
 export function CheckoutHeader({ step, onStepClick, isShippingRequired = true }: CheckoutHeaderProps) {
+	const t = useTranslations("checkout");
 	// Use centralized flow definition, filtering out confirmation for progress bar
 	const allSteps = getCheckoutSteps(isShippingRequired);
 	const steps = allSteps
 		.filter((s) => s.id !== "CONFIRMATION")
 		.map((s) => ({
 			number: s.index,
-			label: s.label,
+			label: t(`steps.${s.labelKey}`),
 		}));
 
 	const totalSteps = steps.length;
@@ -35,10 +37,16 @@ export function CheckoutHeader({ step, onStepClick, isShippingRequired = true }:
 					{/* Logo */}
 					<Link href="/" className="flex items-center">
 						<Logo className="h-7 w-auto" />
+						{/* Staging/test-mode marker (build-time env; never set on production builds) */}
+						{process.env.NEXT_PUBLIC_STAGING_TEST_MODE === "true" && (
+							<span className="ml-2 rounded border border-amber-300 bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-amber-800">
+								TEST
+							</span>
+						)}
 					</Link>
 
 					{/* Progress Steps - Desktop */}
-					<nav className="hidden items-center gap-2 md:flex" aria-label="Kroky pokladne">
+					<nav className="hidden items-center gap-2 md:flex" aria-label={t("steps.navAria")}>
 						{steps.map((s, i) => (
 							<div key={s.number} className="flex items-center">
 								<button
@@ -75,14 +83,18 @@ export function CheckoutHeader({ step, onStepClick, isShippingRequired = true }:
 					{/* Secure Badge */}
 					<div className="text-muted-foreground flex items-center gap-1.5">
 						<Lock className="h-3.5 w-3.5" />
-						<span className="text-xs">Bezpečný nákup</span>
+						<span className="text-xs">{t("common.securePurchase")}</span>
 					</div>
 				</div>
 
 				{/* Mobile Progress Bar */}
 				<div className="mt-3 md:hidden">
 					<div className="text-muted-foreground mb-2 flex items-center justify-between text-xs">
-						<span>{step === confirmationStepIndex ? "Potvrdenie" : `Krok ${step} z ${totalSteps}`}</span>
+						<span>
+							{step === confirmationStepIndex
+								? t("steps.confirmation")
+								: t("steps.progress", { step, total: totalSteps })}
+						</span>
 						<span>{steps[step - 1]?.label}</span>
 					</div>
 					<div

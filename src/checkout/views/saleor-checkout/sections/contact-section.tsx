@@ -1,6 +1,7 @@
 "use client";
 
 import { type FC } from "react";
+import { useTranslations } from "next-intl";
 import { SignedInUser, GuestContact } from "@/checkout/components/contact";
 
 // User type matching what useUser() returns
@@ -55,11 +56,13 @@ export const ContactSection: FC<ContactSectionProps> = ({
 	onPasswordChange,
 	passwordError,
 }) => {
+	const t = useTranslations("checkout.contactSection");
+
 	return (
 		<section className="space-y-4">
 			{isSignedIn && user ? (
 				<>
-					<h2 className="text-xl font-semibold">Kontakt</h2>
+					<h2 className="text-xl font-semibold">{t("title")}</h2>
 					<SignedInUser user={user} onSignOut={onSignOut} />
 				</>
 			) : (

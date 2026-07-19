@@ -147,7 +147,6 @@
 		"contact": "Coordonnées",
 		"shippingAddress": "Adresse de livraison",
 		"shippingMethod": "Mode de livraison",
-		"payment": "Paiement",
 		"review": "Récapitulatif de commande",
 		"placeOrder": "Commander avec obligation de paiement",
 		"email": "E-mail",

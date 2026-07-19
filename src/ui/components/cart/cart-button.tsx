@@ -27,7 +27,7 @@ export function CartButton({ itemCount }: CartButtonProps) {
 					key={itemCount}
 					className="animate-cart-badge-pop bg-foreground text-background absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-medium"
 				>
-					{itemCount > 9 ? "9+" : itemCount}
+					{itemCount > 9 ? t("itemCountOverflow") : itemCount}
 				</span>
 			)}
 			<span className="sr-only">{t("items", { count: itemCount })}</span>

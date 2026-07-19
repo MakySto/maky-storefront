@@ -4,7 +4,8 @@ export type CheckoutStepType = "INFO" | "SHIPPING" | "PAYMENT" | "CONFIRMATION";
 
 interface CheckoutStep {
 	id: CheckoutStepType;
-	label: string;
+	/** Message key under the `checkout.steps` namespace — translate at render, e.g. `t(`steps.${labelKey}`)` */
+	labelKey: string;
 	/** 1-based index for display */
 	index: number;
 	/** Semantic slug for URL (e.g., "?step=contact") */
@@ -16,15 +17,15 @@ interface CheckoutStep {
  * Handles conditional steps (like shipping) based on checkout state.
  */
 export const getCheckoutSteps = (isShippingRequired: boolean): CheckoutStep[] => {
-	const steps: Omit<CheckoutStep, "index">[] = [{ id: "INFO", label: "Informácie", slug: "contact" }];
+	const steps: Omit<CheckoutStep, "index">[] = [{ id: "INFO", labelKey: "information", slug: "contact" }];
 
 	if (isShippingRequired) {
-		steps.push({ id: "SHIPPING", label: "Doprava", slug: "shipping" });
+		steps.push({ id: "SHIPPING", labelKey: "shipping", slug: "shipping" });
 	}
 
 	steps.push(
-		{ id: "PAYMENT", label: "Platba", slug: "payment" },
-		{ id: "CONFIRMATION", label: "Potvrdenie", slug: "confirmation" },
+		{ id: "PAYMENT", labelKey: "payment", slug: "payment" },
+		{ id: "CONFIRMATION", labelKey: "confirmation", slug: "confirmation" },
 	);
 
 	// Add 1-based indices

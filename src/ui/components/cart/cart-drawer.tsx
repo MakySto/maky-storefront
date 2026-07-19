@@ -115,6 +115,7 @@ interface CartDrawerProps {
 
 export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawerProps) {
 	const t = useTranslations("cart");
+	const tCheckoutCommon = useTranslations("checkout.common");
 	const { isOpen, closeCart } = useCart();
 	const [isPending, startTransition] = useTransition();
 
@@ -224,7 +225,11 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 																			/>
 																		)}
 																		{/* Show "Size X" for size attributes, just value for colors */}
-																		<span>{attr.isColor ? attr.value : `${attr.name} ${attr.value}`}</span>
+																		<span>
+																			{attr.isColor
+																				? attr.value
+																				: t("variantAttribute", { name: attr.name, value: attr.value })}
+																		</span>
 																	</span>
 																))}
 															</div>
@@ -241,7 +246,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 													>
 														<Trash2 className="h-4 w-4" />
 														<span className="sr-only">
-															{t("remove")} {line.variant.product.name}
+															{t("removeItemAria", { product: line.variant.product.name })}
 														</span>
 													</Button>
 												</div>
@@ -337,7 +342,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 						<div className="border-border text-muted-foreground flex items-center justify-center gap-6 border-t px-6 pt-4 pb-4 text-xs">
 							<span className="flex items-center gap-1.5">
 								<RotateCcw className="h-4 w-4" />
-								Bezpečný nákup
+								{tCheckoutCommon("securePurchase")}
 							</span>
 						</div>
 					</div>

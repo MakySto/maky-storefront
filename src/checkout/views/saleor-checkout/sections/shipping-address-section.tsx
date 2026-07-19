@@ -1,10 +1,12 @@
 "use client";
 
 import { type FC } from "react";
+import { useTranslations } from "next-intl";
 import { Label } from "@/ui/components/ui/label";
 import { FormSelect, FieldError, AddressFields } from "../address-form-fields";
 import { HybridAddressSelector } from "@/checkout/components/shipping-address";
 import { getCountryName } from "@/checkout/lib/utils/locale";
+import { useLocale } from "@/providers/locale-provider";
 import type { CountryCode, AddressFragment } from "@/checkout/graphql";
 import type { AddressField } from "@/checkout/components/address-form/types";
 
@@ -62,12 +64,14 @@ export const ShippingAddressSection: FC<ShippingAddressSectionProps> = ({
 	isRequiredField,
 	countryAreaChoices,
 }) => {
+	const t = useTranslations("checkout");
+	const { locale } = useLocale();
 	const hasAddresses = userAddresses.length > 0;
 	const showAddressList = isAuthenticated && hasAddresses && !showNewAddressForm;
 
 	return (
 		<section className="space-y-4">
-			<h2 className="text-xl font-semibold">Dodacia adresa</h2>
+			<h2 className="text-xl font-semibold">{t("info.shippingAddressTitle")}</h2>
 
 			{showAddressList ? (
 				<>
@@ -76,9 +80,9 @@ export const ShippingAddressSection: FC<ShippingAddressSectionProps> = ({
 						selectedAddressId={selectedAddressId}
 						onSelectAddress={onSelectAddress}
 						defaultAddressId={defaultAddressId}
-						emptyMessage="Zatiaľ nemáte uložené žiadne adresy. Zadajte prosím dodaciu adresu nižšie."
+						emptyMessage={t("addressForm.noSavedAddressesHint")}
 						addressType="SHIPPING"
-						sheetTitle="Vyberte dodaciu adresu"
+						sheetTitle={t("addressForm.selectShippingAddressTitle")}
 						onAddNew={() => onShowNewAddressForm(true)}
 					/>
 					{errors.address && <FieldError error={errors.address} />}
@@ -90,26 +94,26 @@ export const ShippingAddressSection: FC<ShippingAddressSectionProps> = ({
 						<button
 							type="button"
 							onClick={() => onShowNewAddressForm(false)}
-							className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground hover:no-underline"
+							className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-2 hover:no-underline"
 						>
-							← Späť na uložené adresy
+							← {t("addressForm.backToSavedAddresses")}
 						</button>
 					)}
 
 					{/* Country selector */}
 					<div className="space-y-2">
 						<Label htmlFor="country" className="text-sm font-medium">
-							Krajina/región
+							{t("addressForm.countryRegion")}
 						</Label>
 						<FormSelect
 							id="country"
 							value={countryCode}
 							onChange={onCountryChange}
-							placeholder="Vyberte krajinu"
+							placeholder={t("addressForm.selectCountry")}
 							autoComplete="country"
 							options={availableCountries.map((code) => ({
 								value: code,
-								label: getCountryName(code),
+								label: getCountryName(code, locale),
 							}))}
 						/>
 					</div>

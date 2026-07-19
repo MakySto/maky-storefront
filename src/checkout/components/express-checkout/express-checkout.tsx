@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@/ui/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ApplePayIcon, GooglePayIcon } from "@/checkout/ui-kit/icons";
@@ -21,15 +22,17 @@ interface ExpressCheckoutProps {
  * ExpressCheckoutElement to handle actual wallet payments.
  */
 export function ExpressCheckout({ onApplePay, onGooglePay, className }: ExpressCheckoutProps) {
+	const t = useTranslations("checkout.payment");
+
 	return (
 		<div className={cn("space-y-4", className)}>
 			{/* Top divider with label */}
 			<div className="relative">
 				<div className="absolute inset-0 flex items-center">
-					<span className="w-full border-t border-border" />
+					<span className="border-border w-full border-t" />
 				</div>
 				<div className="relative flex justify-center text-xs uppercase">
-					<span className="bg-card px-4 font-medium text-muted-foreground">Express checkout</span>
+					<span className="bg-card text-muted-foreground px-4 font-medium">{t("expressCheckout")}</span>
 				</div>
 			</div>
 
@@ -40,7 +43,7 @@ export function ExpressCheckout({ onApplePay, onGooglePay, className }: ExpressC
 					variant="outline-solid"
 					onClick={onApplePay}
 					className="h-12 border-black bg-black text-white hover:bg-black/90 focus-visible:ring-offset-0"
-					aria-label="Pay with Apple Pay"
+					aria-label={t("payWithApplePay")}
 				>
 					<ApplePayIcon className="h-5 w-auto" />
 				</Button>
@@ -50,7 +53,7 @@ export function ExpressCheckout({ onApplePay, onGooglePay, className }: ExpressC
 					variant="outline-solid"
 					onClick={onGooglePay}
 					className="h-12 border border-neutral-300 bg-white hover:bg-neutral-50"
-					aria-label="Pay with Google Pay"
+					aria-label={t("payWithGooglePay")}
 				>
 					<GooglePayIcon className="h-5 w-auto" />
 				</Button>
@@ -59,10 +62,10 @@ export function ExpressCheckout({ onApplePay, onGooglePay, className }: ExpressC
 			{/* Bottom divider with label */}
 			<div className="relative">
 				<div className="absolute inset-0 flex items-center">
-					<span className="w-full border-t border-border" />
+					<span className="border-border w-full border-t" />
 				</div>
 				<div className="relative flex justify-center text-xs uppercase">
-					<span className="bg-card px-4 font-medium text-muted-foreground">Or continue below</span>
+					<span className="bg-card text-muted-foreground px-4 font-medium">{t("orContinueBelow")}</span>
 				</div>
 			</div>
 		</div>

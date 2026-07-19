@@ -1,6 +1,7 @@
 "use client";
 
 import { type FC, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { loginWithBff } from "@/lib/auth/bff-client";
 import { Button } from "@/ui/components/ui/button";
@@ -34,6 +35,8 @@ export const SignInForm: FC<SignInFormProps> = ({
 	onSuccess,
 	onGuestCheckout,
 }) => {
+	const t = useTranslations("checkout.contactSection");
+	const tErrors = useTranslations("checkout.errors");
 	const [email, setEmail] = useState(initialEmail);
 	const [password, setPassword] = useState("");
 	const [showPassword, setShowPassword] = useState(false);
@@ -59,16 +62,14 @@ export const SignInForm: FC<SignInFormProps> = ({
 					err.code === "INVALID_PASSWORD" ||
 					err.message?.toLowerCase().includes("invalid") ||
 					err.message?.toLowerCase().includes("credentials");
-				setError(
-					isInvalidCredentials ? "Nesprávny e-mail alebo heslo" : "Prihlásenie zlyhalo. Skúste to znova.",
-				);
+				setError(isInvalidCredentials ? t("invalidCredentials") : t("signInFailed"));
 			} else if (result.ok || result.success) {
 				await onSuccess();
 			} else {
-				setError("Prihlásenie zlyhalo. Skúste to znova.");
+				setError(t("signInFailed"));
 			}
 		} catch {
-			setError("Nastala chyba. Skúste to znova.");
+			setError(tErrors("generic"));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -79,12 +80,12 @@ export const SignInForm: FC<SignInFormProps> = ({
 		setSuccessMessage("");
 
 		if (!email) {
-			setError("Najprv zadajte svoju e-mailovú adresu");
+			setError(t("enterEmailFirst"));
 			return;
 		}
 
 		if (!validateEmail(email)) {
-			setError("Zadajte platnú e-mailovú adresu");
+			setError(t("enterValidEmail"));
 			return;
 		}
 
@@ -97,22 +98,19 @@ export const SignInForm: FC<SignInFormProps> = ({
 			});
 
 			if (result.error) {
-				setError(result.error.message || "Nepodarilo sa odoslať odkaz na obnovenie hesla");
+				setError(result.error.message || t("resetLinkSendFailed"));
 				return;
 			}
 
 			if (result.data?.requestPasswordReset?.errors?.length) {
 				const err = result.data.requestPasswordReset.errors[0];
-				setError(err.message || "Nepodarilo sa odoslať odkaz na obnovenie hesla");
+				setError(err.message || t("resetLinkSendFailed"));
 			} else {
 				setPasswordResetSent(true);
-				setSuccessMessage(
-					`Ak pre adresu ${email} existuje účet, poslali sme na ňu odkaz na obnovenie hesla. ` +
-						`Upozornenie: nový odkaz je možné vyžiadať najskôr o 15 minút.`,
-				);
+				setSuccessMessage(t("resetLinkSent", { email }));
 			}
 		} catch {
-			setError("Nastala chyba. Skúste to znova.");
+			setError(tErrors("generic"));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -121,15 +119,15 @@ export const SignInForm: FC<SignInFormProps> = ({
 	return (
 		<form onSubmit={handleSubmit} className="space-y-4">
 			<div className="flex items-center justify-between">
-				<h2 className="text-xl font-semibold">Prihlásenie</h2>
+				<h2 className="text-xl font-semibold">{t("signInTitle")}</h2>
 				<p className="text-muted-foreground text-sm">
-					Nový zákazník?{" "}
+					{t("newCustomer")}{" "}
 					<button
 						type="button"
 						onClick={onGuestCheckout}
 						className="text-foreground font-medium underline underline-offset-2 hover:no-underline"
 					>
-						Pokračovať bez registrácie
+						{t("continueAsGuest")}
 					</button>
 				</p>
 			</div>
@@ -145,7 +143,7 @@ export const SignInForm: FC<SignInFormProps> = ({
 					<Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
 						type="email"
-						placeholder="E-mailová adresa"
+						placeholder={t("emailPlaceholder")}
 						value={email}
 						onChange={(e) => {
 							setEmail(e.target.value);
@@ -163,7 +161,7 @@ export const SignInForm: FC<SignInFormProps> = ({
 					<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
 						type={showPassword ? "text" : "password"}
-						placeholder="Heslo"
+						placeholder={t("passwordPlaceholder")}
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
 						autoComplete="current-password"
@@ -187,10 +185,10 @@ export const SignInForm: FC<SignInFormProps> = ({
 					disabled={isSubmitting}
 					className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-2 hover:no-underline disabled:opacity-50"
 				>
-					{passwordResetSent ? "Poslať odkaz znova?" : "Zabudli ste heslo?"}
+					{passwordResetSent ? t("resendResetLink") : t("forgotPassword")}
 				</button>
 				<Button type="submit" disabled={isSubmitting}>
-					{isSubmitting ? "Spracovávam…" : "Prihlásiť sa"}
+					{isSubmitting ? t("processing") : t("signIn")}
 				</Button>
 			</div>
 		</form>

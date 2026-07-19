@@ -1,6 +1,7 @@
 "use client";
 
 import { type FC, useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { type AddressFragment, type AddressTypeEnum } from "@/checkout/graphql";
 import { userSetDefaultAddressAction } from "@/checkout/lib/actions";
 import { Checkbox } from "@/ui/components/ui/checkbox";
@@ -44,14 +45,15 @@ export const HybridAddressSelector: FC<HybridAddressSelectorProps> = ({
 	selectedAddressId,
 	onSelectAddress,
 	defaultAddressId,
-	emptyMessage = "Zatiaľ nemáte uložené žiadne adresy.",
+	emptyMessage,
 	name = "shippingAddress",
 	addressType = "SHIPPING",
 	onDefaultChange,
 	onAddNew,
 	onEdit,
-	sheetTitle = "Vyberte adresu",
+	sheetTitle,
 }) => {
+	const t = useTranslations("checkout.addressForm");
 	const [sheetOpen, setSheetOpen] = useState(false);
 
 	// For collapsed mode: manage "set as default" state here
@@ -103,7 +105,7 @@ export const HybridAddressSelector: FC<HybridAddressSelectorProps> = ({
 
 	// Empty state
 	if (addresses.length === 0) {
-		return <p className="text-muted-foreground text-sm">{emptyMessage}</p>;
+		return <p className="text-muted-foreground text-sm">{emptyMessage ?? t("noSavedAddressesYet")}</p>;
 	}
 
 	// Inline mode: delegate to AddressSelector
@@ -142,7 +144,7 @@ export const HybridAddressSelector: FC<HybridAddressSelectorProps> = ({
 					onClick={() => setSheetOpen(true)}
 					className="border-muted-foreground/50 text-muted-foreground hover:border-foreground hover:text-foreground flex w-full items-center justify-center gap-2 rounded-lg border border-dashed p-4 text-sm transition-colors"
 				>
-					Vybrať adresu
+					{t("chooseAddress")}
 				</button>
 			)}
 
@@ -174,7 +176,7 @@ export const HybridAddressSelector: FC<HybridAddressSelectorProps> = ({
 						className="text-muted-foreground flex cursor-pointer items-center gap-2 text-sm"
 					>
 						{isSettingDefault && <LoadingSpinner />}
-						Nastaviť ako moju predvolenú {addressType === "SHIPPING" ? "dodaciu" : "fakturačnú"} adresu
+						{addressType === "SHIPPING" ? t("setAsDefaultShipping") : t("setAsDefaultBilling")}
 					</Label>
 				</div>
 			)}

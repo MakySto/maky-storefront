@@ -3,6 +3,7 @@
 import { type FallbackProps } from "react-error-boundary";
 import Link from "next/link";
 import { ShoppingBag, ArrowLeft, AlertCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Logo } from "@/ui/components/shared/logo";
 
 interface PageNotFoundProps extends Partial<FallbackProps> {
@@ -10,17 +11,19 @@ interface PageNotFoundProps extends Partial<FallbackProps> {
 	message?: string;
 }
 
-export const PageNotFound = ({
-	title = "Pokladňa sa nenašla",
-	message = "Nepodarilo sa nám nájsť váš rozpracovaný nákup. Možno vypršal alebo už bol dokončený.",
-}: PageNotFoundProps) => {
+export const PageNotFound = ({ title, message }: PageNotFoundProps) => {
+	const t = useTranslations("checkout.notFound");
+	const tCart = useTranslations("cart");
+	const tCommon = useTranslations("checkout.common");
+	const resolvedTitle = title ?? t("title");
+	const resolvedMessage = message ?? t("message");
 	return (
-		<div className="min-h-screen bg-secondary">
+		<div className="bg-secondary min-h-screen">
 			{/* Header */}
-			<header className="border-b border-border bg-background">
+			<header className="border-border bg-background border-b">
 				<div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
 					<Link href="/" className="flex items-center">
-						<Logo className="h-5 w-auto text-foreground" />
+						<Logo className="text-foreground h-5 w-auto" />
 					</Link>
 				</div>
 			</header>
@@ -28,41 +31,39 @@ export const PageNotFound = ({
 			{/* Main content */}
 			<main className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
 				<div className="mx-auto max-w-md">
-					<div className="rounded-lg border border-border bg-card p-8 text-center shadow-sm">
+					<div className="border-border bg-card rounded-lg border p-8 text-center shadow-sm">
 						{/* Icon */}
-						<div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-							<AlertCircle className="h-8 w-8 text-muted-foreground" />
+						<div className="bg-muted mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full">
+							<AlertCircle className="text-muted-foreground h-8 w-8" />
 						</div>
 
 						{/* Title */}
-						<h1 className="mb-2 text-xl font-semibold text-foreground">{title}</h1>
+						<h1 className="text-foreground mb-2 text-xl font-semibold">{resolvedTitle}</h1>
 
 						{/* Message */}
-						<p className="mb-8 text-muted-foreground">{message}</p>
+						<p className="text-muted-foreground mb-8">{resolvedMessage}</p>
 
 						{/* Actions */}
 						<div className="flex flex-col gap-3">
 							<Link
 								href="/"
-								className="shadow-xs hover:bg-primary/90 focus-visible:outline-hidden inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-primary font-medium text-primary-foreground transition-all duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+								className="hover:bg-primary/90 bg-primary text-primary-foreground focus-visible:ring-ring inline-flex h-12 w-full items-center justify-center gap-2 rounded-md font-medium shadow-xs transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
 							>
 								<ShoppingBag className="h-4 w-4" />
-								Pokračovať v nákupe
+								{tCart("continueShopping")}
 							</Link>
 							<button
 								onClick={() => history.back()}
-								className="flex items-center justify-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+								className="text-muted-foreground hover:text-foreground flex items-center justify-center gap-2 text-sm transition-colors"
 							>
 								<ArrowLeft className="h-4 w-4" />
-								Späť
+								{tCommon("back")}
 							</button>
 						</div>
 					</div>
 
 					{/* Help text */}
-					<p className="mt-6 text-center text-sm text-muted-foreground">
-						Ak si myslíte, že ide o chybu, skúste pridať tovar do košíka znova alebo kontaktujte podporu.
-					</p>
+					<p className="text-muted-foreground mt-6 text-center text-sm">{t("helpText")}</p>
 				</div>
 			</main>
 		</div>

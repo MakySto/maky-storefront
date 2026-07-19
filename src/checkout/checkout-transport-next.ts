@@ -8,14 +8,19 @@ import {
 } from "@/checkout/lib/actions";
 import type { CheckoutActionResult } from "@/checkout/lib/checkout-action-types";
 import type { CheckoutTransport } from "@/checkout/lib/checkout-transport";
-
-const BILLING_UPDATE_FAILED_MESSAGE = "Nepodarilo sa uložiť fakturačnú adresu.";
+import { getCheckoutPaymentLibMessages } from "@/checkout/lib/payment/gateway-messages";
 
 /**
  * Next.js implementation of `CheckoutTransport`: each method is a server action, so
  * the server-side gateway guards and the amount-tamper re-verify keep running
  * server-side unchanged (MAKY variant C — actions live in `@/checkout/lib/actions`,
  * there is no `(checkout)` route group).
+ *
+ * i18n (krok 2A): the `CheckoutTransport` interface carries no locale, so the payment
+ * actions fall back to the market cookie server-side; the client-side billing fallback
+ * below resolves via the payment-lib message registry. Saleor GraphQL error messages
+ * (`result.error.message`, per-field `errors[].message`) pass through untranslated —
+ * known gap, tracked for the translation-bundle step.
  *
  * D3 (approved): the upstream `saveAddress` flag is DROPPED — MAKY's
  * `checkoutBillingAddressUpdate` mutation has no `$saveAddress` variable, so billing
@@ -45,7 +50,7 @@ export const nextCheckoutTransport: CheckoutTransport = {
 
 		const checkout = payload?.checkout;
 		if (!checkout) {
-			return { ok: false, error: BILLING_UPDATE_FAILED_MESSAGE };
+			return { ok: false, error: getCheckoutPaymentLibMessages().billingSaveFailed };
 		}
 
 		return { ok: true, checkout };

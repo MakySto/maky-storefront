@@ -1,6 +1,7 @@
 "use client";
 
 import { type FC, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Mail, Lock, Eye, EyeOff, Info } from "lucide-react";
 import { Label } from "@/ui/components/ui/label";
 import { Checkbox } from "@/ui/components/ui/checkbox";
@@ -55,29 +56,30 @@ export const GuestContact: FC<GuestContactProps> = ({
 	passwordError,
 }) => {
 	const [showPassword, setShowPassword] = useState(false);
+	const t = useTranslations("checkout.contactSection");
 
 	return (
 		<section className="space-y-4">
 			<div className="flex items-center justify-between">
-				<h2 className="text-xl font-semibold">Kontakt</h2>
-				<p className="text-sm text-muted-foreground">
-					Máte účet?{" "}
+				<h2 className="text-xl font-semibold">{t("title")}</h2>
+				<p className="text-muted-foreground text-sm">
+					{t("haveAccount")}{" "}
 					<button
 						type="button"
 						onClick={onSignInClick}
-						className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
+						className="text-foreground font-medium underline underline-offset-2 hover:no-underline"
 					>
-						Prihlásiť sa
+						{t("signIn")}
 					</button>
 				</p>
 			</div>
 
 			<div className="space-y-1.5">
 				<div className="relative">
-					<Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
 						type="email"
-						placeholder="E-mailová adresa"
+						placeholder={t("emailPlaceholder")}
 						value={email}
 						onChange={(e) => onEmailChange(e.target.value)}
 						onBlur={onEmailBlur}
@@ -88,7 +90,7 @@ export const GuestContact: FC<GuestContactProps> = ({
 					/>
 				</div>
 				{emailError && (
-					<p id="email-error" role="alert" className="text-sm text-destructive">
+					<p id="email-error" role="alert" className="text-destructive text-sm">
 						{emailError}
 					</p>
 				)}
@@ -100,8 +102,8 @@ export const GuestContact: FC<GuestContactProps> = ({
 					checked={createAccount}
 					onCheckedChange={(checked) => onCreateAccountChange(checked === true)}
 				/>
-				<Label htmlFor="createAccount" className="cursor-pointer text-sm text-muted-foreground">
-					Vytvoriť účet pre rýchlejší nákup nabudúce
+				<Label htmlFor="createAccount" className="text-muted-foreground cursor-pointer text-sm">
+					{t("createAccountLabel")}
 				</Label>
 			</div>
 
@@ -109,32 +111,29 @@ export const GuestContact: FC<GuestContactProps> = ({
 				<div className="space-y-3">
 					<div className="space-y-1.5">
 						<div className="relative">
-							<Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 							<Input
 								type={showPassword ? "text" : "password"}
-								placeholder="Heslo (minimálne 8 znakov)"
+								placeholder={t("createAccountPasswordPlaceholder")}
 								value={password}
 								onChange={(e) => onPasswordChange(e.target.value)}
 								autoComplete="new-password"
-								className={cn("h-12 pl-10 pr-10", passwordError && "border-destructive")}
+								className={cn("h-12 pr-10 pl-10", passwordError && "border-destructive")}
 							/>
 							<button
 								type="button"
 								onClick={() => setShowPassword(!showPassword)}
-								className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+								className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
 							>
 								{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
 							</button>
 						</div>
-						{passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
+						{passwordError && <p className="text-destructive text-sm">{passwordError}</p>}
 					</div>
 					{/* Account activation notice */}
-					<div className="bg-muted/50 flex items-start gap-2 rounded-md p-3 text-sm text-muted-foreground">
+					<div className="bg-muted/50 text-muted-foreground flex items-start gap-2 rounded-md p-3 text-sm">
 						<Info className="mt-0.5 h-4 w-4 shrink-0" />
-						<p>
-							Po dokončení objednávky vám pošleme e-mail na aktiváciu účtu. Prihlásiť sa budete môcť až po
-							aktivácii.
-						</p>
+						<p>{t("activationNotice")}</p>
 					</div>
 				</div>
 			)}

@@ -1,4 +1,7 @@
+import { useTranslations } from "next-intl";
+
 export function Loader() {
+	const t = useTranslations("checkout");
 	return (
 		<div className="text-center" aria-busy="true" role="status">
 			<div>
@@ -18,7 +21,7 @@ export function Loader() {
 						fill="currentFill"
 					/>
 				</svg>
-				<span className="sr-only">Loading...</span>
+				<span className="sr-only">{t("common.loading")}</span>
 			</div>
 		</div>
 	);

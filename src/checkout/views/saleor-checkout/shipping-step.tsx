@@ -2,7 +2,9 @@
 
 import { useState, useCallback, useEffect, useRef, type FC } from "react";
 import { Truck, Clock, Leaf, ChevronLeft } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/ui/components/ui/button";
+import { useLocale } from "@/providers/locale-provider";
 import { cn } from "@/lib/utils";
 import { type CheckoutFragment } from "@/checkout/graphql";
 import { checkoutDeliveryMethodUpdateAction } from "@/checkout/lib/actions";
@@ -10,6 +12,10 @@ import { CheckoutSummaryContext, buildShippingSummaryRows } from "./checkout-sum
 import { useCheckout } from "@/checkout/hooks/use-checkout";
 import { formatShippingPrice } from "@/checkout/lib/utils/money";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
+import {
+	resolvePersistedMethodId,
+	resolveSoleMethodToAutoSave,
+} from "@/checkout/lib/shipping-method-selection";
 import { MobileStickyAction } from "./mobile-sticky-action";
 import { getStepNumber } from "./flow";
 
@@ -20,6 +26,8 @@ interface ShippingStepProps {
 }
 
 export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout, onBack, onNext }) => {
+	const t = useTranslations("checkout");
+	const { locale } = useLocale();
 	// Use live checkout data that updates after mutations
 	const { checkout: liveCheckout, fetching, refetch } = useCheckout();
 	const checkout = liveCheckout || initialCheckout;
@@ -27,12 +35,9 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 	const shippingMethods = checkout.shippingMethods || [];
 	const hasShippingAddress = !!checkout.shippingAddress;
 	// The fragment does not select __typename on deliveryMethod, so it is absent at runtime (same
-	// class of bug as the summary "Method —" fix): resolve the persisted ShippingMethod by matching
-	// the id against shippingMethods — a Warehouse (click & collect) id matches nothing.
-	const deliveryMethodId = checkout.deliveryMethod?.id;
-	const currentMethodId = shippingMethods.some((m) => m.id === deliveryMethodId)
-		? deliveryMethodId
-		: undefined;
+	// class of bug as the summary "Method —" fix); the selection invariants live in
+	// shipping-method-selection.ts (unit-tested there — vitest env has no DOM renderer).
+	const currentMethodId = resolvePersistedMethodId(checkout.deliveryMethod?.id, shippingMethods);
 
 	// Selection saves IMMEDIATELY on pick (summary + total must be truthful already on this
 	// step); Continue only navigates. On a failed save the previous choice is restored.
@@ -45,7 +50,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 	const [error, setError] = useState<string | null>(null);
 
 	// Summary rows for context display
-	const summaryRows = buildShippingSummaryRows(checkout);
+	const summaryRows = buildShippingSummaryRows(checkout, locale);
 
 	const getMethodIcon = (name: string) => {
 		const lowerName = name.toLowerCase();
@@ -62,10 +67,13 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 	/** Persist a picked method and refresh the checkout context (live shipping + total). */
 	const saveMethod = useCallback(
 		async (methodId: string): Promise<boolean> => {
-			const result = await checkoutDeliveryMethodUpdateAction({
-				checkoutId: checkout.id,
-				deliveryMethodId: methodId,
-			});
+			const result = await checkoutDeliveryMethodUpdateAction(
+				{
+					checkoutId: checkout.id,
+					deliveryMethodId: methodId,
+				},
+				locale,
+			);
 
 			const fieldErrors = result.data?.checkoutDeliveryMethodUpdate?.errors;
 			if (result.error || fieldErrors?.length) {
@@ -75,7 +83,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 			await refetch();
 			return true;
 		},
-		[checkout.id, refetch],
+		[checkout.id, refetch, locale],
 	);
 
 	// The server-persisted method is the source of truth for what reads as selected. When it
@@ -93,11 +101,8 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 	// never a retry loop. With multiple methods nothing is preselected until the user picks.
 	const autoSaveRan = useRef(false);
 	useEffect(() => {
-		if (autoSaveRan.current || currentMethodId || shippingMethods.length !== 1) {
-			return;
-		}
-		const soleMethodId = shippingMethods[0]?.id;
-		if (!soleMethodId) {
+		const soleMethodId = resolveSoleMethodToAutoSave(currentMethodId, shippingMethods);
+		if (autoSaveRan.current || !soleMethodId) {
 			return;
 		}
 		autoSaveRan.current = true;
@@ -130,13 +135,13 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 				const saved = await saveMethod(methodId);
 				if (!saved) {
 					setSelectedMethod(previous);
-					setError("Dopravu sa nepodarilo uložiť. Skúste to znova.");
+					setError(t("shipping.methodSaveFailed"));
 				}
 			} finally {
 				setIsSavingMethod(false);
 			}
 		},
-		[currentMethodId, isSavingMethod, saveMethod, selectedMethod],
+		[currentMethodId, isSavingMethod, saveMethod, selectedMethod, t],
 	);
 
 	const handleSubmit = useCallback(
@@ -146,7 +151,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 			}
 
 			if (!selectedMethod) {
-				setError("Vyberte spôsob dopravy");
+				setError(t("shipping.selectMethod"));
 				// Focus the first radio option
 				const firstRadio = document.querySelector('input[name="shipping"]') as HTMLElement;
 				firstRadio?.focus();
@@ -170,7 +175,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 			try {
 				const saved = await saveMethod(selectedMethod);
 				if (!saved) {
-					setError("Dopravu sa nepodarilo uložiť. Skúste to znova.");
+					setError(t("shipping.methodSaveFailed"));
 					return;
 				}
 				onNext();
@@ -178,10 +183,10 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 				setIsSubmittingLocal(false);
 			}
 		},
-		[selectedMethod, currentMethodId, isSavingMethod, onNext, saveMethod],
+		[selectedMethod, currentMethodId, isSavingMethod, onNext, saveMethod, t],
 	);
 
-	const buttonText = isSubmittingLocal ? "Ukladám…" : "Pokračovať na platbu";
+	const buttonText = isSubmittingLocal ? t("common.saving") : t("common.continueToPayment");
 
 	return (
 		<form className="space-y-8" onSubmit={handleSubmit}>
@@ -190,26 +195,28 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 
 			{/* Shipping Methods */}
 			<section className="space-y-4">
-				<h2 className="text-lg font-semibold">Spôsob dopravy</h2>
+				<h2 className="text-lg font-semibold">{t("shipping.title")}</h2>
 
 				{error && <p className="text-destructive text-sm">{error}</p>}
 
 				{fetching ? (
 					<div className="border-border flex items-center gap-3 rounded-lg border p-4">
 						<div className="border-foreground h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
-						<p className="text-muted-foreground text-sm">Načítavame spôsoby dopravy…</p>
+						<p className="text-muted-foreground text-sm">{t("shipping.loadingMethods")}</p>
 					</div>
 				) : shippingMethods.length === 0 ? (
 					<div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
 						<p className="text-sm text-amber-800">
 							{!hasShippingAddress
-								? "Najprv sa vráťte späť a zadajte dodaciu adresu."
-								: `Pre ${
-										localizeCountryName(
-											checkout.shippingAddress?.country?.code,
-											checkout.shippingAddress?.country?.country,
-										) || "vašu adresu"
-									} nie sú dostupné žiadne spôsoby dopravy. Skontrolujte adresu alebo nás kontaktujte.`}
+								? t("shipping.noAddressYet")
+								: t("shipping.noMethodsForCountry", {
+										countryName:
+											localizeCountryName(
+												checkout.shippingAddress?.country?.code,
+												checkout.shippingAddress?.country?.country,
+												locale,
+											) || t("shipping.yourAddressFallback"),
+									})}
 						</p>
 					</div>
 				) : (
@@ -254,13 +261,16 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 											<span className="font-medium">{method.name}</span>
 											{isEco && (
 												<span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">
-													Eko
+													{t("shipping.ecoBadge")}
 												</span>
 											)}
 										</div>
 										{method.minimumDeliveryDays && method.maximumDeliveryDays && (
 											<p className="text-muted-foreground text-sm">
-												{method.minimumDeliveryDays}-{method.maximumDeliveryDays} pracovných dní
+												{t("shipping.deliveryEstimate", {
+													min: method.minimumDeliveryDays,
+													max: method.maximumDeliveryDays,
+												})}
 											</p>
 										)}
 									</div>
@@ -280,7 +290,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 					className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm transition-colors"
 				>
 					<ChevronLeft className="h-4 w-4" />
-					Späť na informácie
+					{t("common.backToInformation")}
 				</button>
 				<Button
 					type="submit"
@@ -298,7 +308,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 				onAction={handleSubmit}
 				isLoading={isSubmittingLocal || isSavingMethod}
 				disabled={!selectedMethod || isSavingMethod}
-				loadingText="Ukladám…"
+				loadingText={t("common.saving")}
 			/>
 		</form>
 	);

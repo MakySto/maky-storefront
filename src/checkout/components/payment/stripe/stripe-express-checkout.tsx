@@ -7,6 +7,7 @@ import {
 	type StripeExpressCheckoutElementOptions,
 } from "@stripe/stripe-js";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { type CheckoutFragment } from "@/checkout/graphql";
 import { type CheckoutPriceChangeNotice } from "@/checkout/lib/payment/checkout-pay-amount";
 import { clearPaymentCompleting } from "@/checkout/lib/payment/checkout-payment-completion";
@@ -53,6 +54,7 @@ export const StripeExpressCheckout: FC<StripeExpressCheckoutProps> = ({
 	onPriceChangeNotice,
 	onPaymentActivityChange,
 }) => {
+	const t = useTranslations("checkout.payment");
 	const stripe = useStripe();
 	const elements = useElements();
 	const searchParams = useSearchParams();
@@ -147,7 +149,7 @@ export const StripeExpressCheckout: FC<StripeExpressCheckoutProps> = ({
 						<span className="border-border w-full border-t" />
 					</div>
 					<div className="relative flex justify-center text-xs uppercase">
-						<span className="bg-card text-muted-foreground px-4 font-medium">Alebo zaplaťte kartou</span>
+						<span className="bg-card text-muted-foreground px-4 font-medium">{t("orPayWithCard")}</span>
 					</div>
 				</div>
 			) : null}

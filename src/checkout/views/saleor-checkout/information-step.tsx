@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useCallback, type FC } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useLocale } from "@/providers/locale-provider";
 import { Button } from "@/ui/components/ui/button";
 import { type CheckoutFragment, type CountryCode } from "@/checkout/graphql";
 import {
 	checkoutEmailUpdateAction,
 	checkoutShippingAddressUpdateAction,
 	userRegisterAction,
+	updateNewsletterConsentAction,
 } from "@/checkout/lib/actions";
 import { useAvailableShippingCountries } from "@/checkout/hooks/use-available-shipping-countries";
 import { useAddressFormUtils } from "@/checkout/components/address-form/use-address-form-utils";
@@ -25,6 +28,8 @@ import { getStepNumber } from "./flow";
 // Extracted components
 import { SignInForm, ResetPasswordForm } from "@/checkout/components/contact";
 import { ContactSection, ShippingAddressSection } from "./sections";
+import { Checkbox } from "@/ui/components/ui/checkbox";
+import { Label } from "@/ui/components/ui/label";
 import { MobileStickyAction } from "./mobile-sticky-action";
 
 // =============================================================================
@@ -43,6 +48,8 @@ interface InformationStepProps {
 // =============================================================================
 
 export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) => {
+	const t = useTranslations("checkout");
+	const { locale } = useLocale();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { user, authenticated } = useUser();
@@ -64,6 +71,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 	// ----- Contact form state -----
 	const [email, setEmail] = useState(checkout.email || "");
 	const [createAccount, setCreateAccount] = useState(false);
+	const [newsletterConsent, setNewsletterConsent] = useState(false);
 	const [accountPassword, setAccountPassword] = useState("");
 
 	// ----- Address form state (for guests/new address) -----
@@ -177,7 +185,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 
 	const handleEmailBlur = () => {
 		if (email && !validateEmail(email)) {
-			setErrors((prev) => ({ ...prev, email: "Zadajte platnú e-mailovú adresu" }));
+			setErrors((prev) => ({ ...prev, email: t("info.emailInvalid") }));
 		}
 	};
 
@@ -240,12 +248,12 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 
 			// Validate email (guests only)
 			if (!authenticated) {
-				if (!email) newErrors.email = "E-mailová adresa je povinná";
-				else if (!validateEmail(email)) newErrors.email = "Zadajte platnú e-mailovú adresu";
+				if (!email) newErrors.email = t("info.emailRequired");
+				else if (!validateEmail(email)) newErrors.email = t("info.emailInvalid");
 
 				if (createAccount) {
-					if (!accountPassword) newErrors.password = "Heslo je povinné";
-					else if (accountPassword.length < 8) newErrors.password = "Heslo musí mať aspoň 8 znakov";
+					if (!accountPassword) newErrors.password = t("info.passwordRequired");
+					else if (accountPassword.length < 8) newErrors.password = t("info.passwordTooShort");
 				}
 			}
 
@@ -253,12 +261,12 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 			if (checkout.isShippingRequired) {
 				if (authenticated && user?.addresses?.length && !showNewAddressForm) {
 					if (!selectedAddressId) {
-						newErrors.address = "Vyberte dodaciu adresu";
+						newErrors.address = t("info.selectShippingAddress");
 					}
 				} else {
 					orderedAddressFields.forEach((field) => {
 						if (isRequiredField(field) && !formData[field]) {
-							newErrors[field] = `Pole ${getFieldLabel(field)} je povinné`;
+							newErrors[field] = t("addressForm.fieldRequired", { field: getFieldLabel(field) });
 						}
 					});
 				}
@@ -278,19 +286,22 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 			try {
 				// Update email (guests)
 				if (!authenticated) {
-					const emailResult = await checkoutEmailUpdateAction({
-						checkoutId: checkout.id,
-						email,
-					});
+					const emailResult = await checkoutEmailUpdateAction(
+						{
+							checkoutId: checkout.id,
+							email,
+						},
+						locale,
+					);
 					if (emailResult.error) {
-						setErrors({ email: "Nepodarilo sa uložiť e-mailovú adresu" });
+						setErrors({ email: t("info.emailSaveFailed") });
 						return;
 					}
 					const emailErrors = emailResult.data?.checkoutEmailUpdate?.errors;
 					if (emailErrors?.length) {
 						const errorMap: Record<string, string> = {};
 						emailErrors.forEach((err) => {
-							errorMap[err.field || "email"] = err.message || "Neplatná hodnota";
+							errorMap[err.field || "email"] = err.message || t("errors.invalidValue");
 						});
 						setErrors(errorMap);
 						return;
@@ -309,7 +320,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 						if (registerResult.data?.accountRegister?.errors?.length) {
 							const err = registerResult.data.accountRegister.errors[0];
 							if (err.code !== "UNIQUE") {
-								setErrors({ password: err.message || "Nepodarilo sa vytvoriť účet" });
+								setErrors({ password: err.message || t("info.accountCreateFailed") });
 								return;
 							}
 						}
@@ -329,13 +340,16 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 					}
 
 					if (addressInput) {
-						const addressResult = await checkoutShippingAddressUpdateAction({
-							checkoutId: checkout.id,
-							shippingAddress: addressInput,
-						});
+						const addressResult = await checkoutShippingAddressUpdateAction(
+							{
+								checkoutId: checkout.id,
+								shippingAddress: addressInput,
+							},
+							locale,
+						);
 
 						if (addressResult.error) {
-							setErrors({ streetAddress1: "Nepodarilo sa uložiť adresu" });
+							setErrors({ streetAddress1: t("info.addressSaveFailed") });
 							return;
 						}
 						const addressErrors = addressResult.data?.checkoutShippingAddressUpdate?.errors;
@@ -343,7 +357,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 							const errorMap: Record<string, string> = {};
 							addressErrors.forEach((err) => {
 								const field = err.field || "streetAddress1";
-								errorMap[field] = err.message || "Neplatná hodnota";
+								errorMap[field] = err.message || t("errors.invalidValue");
 							});
 							setErrors(errorMap);
 							return;
@@ -356,6 +370,20 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 				// fresh snapshot. B.4.3's shallow `?step=` no longer re-runs the RSC that used to refresh
 				// it incidentally. This runs only on a real save (after the mutations), never on a bare
 				// stepper jump — the shallow-routing property is preserved.
+				if (newsletterConsent) {
+					// Durable, auditable consent (checkout metadata -> order metadata). Never blocks
+					// the purchase: a failed save is logged, the checkout continues.
+					const consentResult = await updateNewsletterConsentAction({
+						checkoutId: checkout.id,
+						consent: true,
+						market: checkout.channel.slug,
+						localeSlug: locale,
+					});
+					if (!consentResult.ok) {
+						console.error("Newsletter consent could not be saved");
+					}
+				}
+
 				await refetch();
 				onNext();
 			} finally {
@@ -380,6 +408,9 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 			countryCode,
 			onNext,
 			refetch,
+			t,
+			locale,
+			newsletterConsent,
 		],
 	);
 
@@ -423,10 +454,10 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 
 	// ----- Render: Main Form -----
 	const buttonText = isSubmitting
-		? "Ukladám…"
+		? t("common.saving")
 		: checkout.isShippingRequired
-			? "Pokračovať na dopravu"
-			: "Pokračovať na platbu";
+			? t("info.continueToShipping")
+			: t("info.continueToPayment");
 
 	return (
 		<form className="space-y-8" onSubmit={handleSubmit} noValidate>
@@ -445,6 +476,18 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 				onPasswordChange={setAccountPassword}
 				passwordError={errors.password}
 			/>
+
+			{/* Newsletter opt-in — persisted via checkout metadata, carried onto the order (auditable). */}
+			<div className="flex items-center gap-2">
+				<Checkbox
+					id="newsletterConsent"
+					checked={newsletterConsent}
+					onCheckedChange={(checked) => setNewsletterConsent(checked === true)}
+				/>
+				<Label htmlFor="newsletterConsent" className="text-muted-foreground cursor-pointer text-sm">
+					{t("info.newsletterLabel")}
+				</Label>
+			</div>
 
 			{checkout.isShippingRequired && (
 				<ShippingAddressSection
@@ -482,7 +525,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 				type="submit"
 				onAction={handleSubmit}
 				isLoading={isSubmitting}
-				loadingText="Ukladám…"
+				loadingText={t("common.saving")}
 			/>
 		</form>
 	);

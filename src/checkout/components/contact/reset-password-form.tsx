@@ -1,6 +1,7 @@
 "use client";
 
 import { type FC, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Lock, Eye, EyeOff } from "lucide-react";
 import { useSaleorAuthContext } from "@saleor/auth-sdk/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -30,6 +31,9 @@ export interface ResetPasswordFormProps {
  * - Clears URL params after success
  */
 export const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ onSuccess, onBackToSignIn }) => {
+	const t = useTranslations("checkout.contactSection.resetPassword");
+	const tCommon = useTranslations("checkout.common");
+	const tErrors = useTranslations("checkout.errors");
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { resetPassword } = useSaleorAuthContext();
@@ -44,19 +48,19 @@ export const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ onSuccess, onBac
 		setError("");
 
 		if (password.length < 8) {
-			setError("Heslo musí mať aspoň 8 znakov");
+			setError(t("passwordTooShort"));
 			return;
 		}
 
 		if (password !== confirmPassword) {
-			setError("Heslá sa nezhodujú");
+			setError(t("passwordsMismatch"));
 			return;
 		}
 
 		const { passwordResetToken, passwordResetEmail } = getQueryParams(searchParams);
 
 		if (!passwordResetToken) {
-			setError("Odkaz na obnovenie hesla je neplatný alebo mu vypršala platnosť");
+			setError(t("linkInvalid"));
 			return;
 		}
 
@@ -70,7 +74,7 @@ export const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ onSuccess, onBac
 
 			if (result.data?.setPassword?.errors?.length) {
 				const err = result.data.setPassword.errors[0];
-				setError(err.message || "Nepodarilo sa obnoviť heslo");
+				setError(err.message || t("failed"));
 			} else if (result.data?.setPassword?.token) {
 				// Clear the URL params
 				const newQuery = createQueryString(searchParams, {
@@ -80,10 +84,10 @@ export const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ onSuccess, onBac
 				router.replace(`?${newQuery}`, { scroll: false });
 				onSuccess();
 			} else {
-				setError("Nepodarilo sa obnoviť heslo. Platnosť odkazu mohla vypršať.");
+				setError(t("failedMaybeExpired"));
 			}
 		} catch {
-			setError("Nastala chyba. Skúste to znova.");
+			setError(tErrors("generic"));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -92,33 +96,33 @@ export const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ onSuccess, onBac
 	return (
 		<form onSubmit={handleSubmit} className="space-y-4">
 			<div>
-				<h2 className="text-xl font-semibold">Obnovenie hesla</h2>
-				<p className="mt-1 text-sm text-muted-foreground">Zadajte nové heslo pre váš účet</p>
+				<h2 className="text-xl font-semibold">{t("title")}</h2>
+				<p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
 			</div>
 
-			{error && <div className="bg-destructive/10 rounded-md p-3 text-sm text-destructive">{error}</div>}
+			{error && <div className="bg-destructive/10 text-destructive rounded-md p-3 text-sm">{error}</div>}
 
 			<div className="space-y-1.5">
 				<Label htmlFor="new-password" className="text-sm font-medium">
-					Nové heslo
+					{t("newPasswordLabel")}
 				</Label>
 				<div className="relative">
-					<Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
 						id="new-password"
 						type={showPassword ? "text" : "password"}
-						placeholder="Minimálne 8 znakov"
+						placeholder={t("newPasswordPlaceholder")}
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
 						autoComplete="new-password"
-						className="h-12 pl-10 pr-10"
+						className="h-12 pr-10 pl-10"
 						required
 						minLength={8}
 					/>
 					<button
 						type="button"
 						onClick={() => setShowPassword(!showPassword)}
-						className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+						className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
 					>
 						{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
 					</button>
@@ -127,14 +131,14 @@ export const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ onSuccess, onBac
 
 			<div className="space-y-1.5">
 				<Label htmlFor="confirm-password" className="text-sm font-medium">
-					Potvrdenie hesla
+					{t("confirmPasswordLabel")}
 				</Label>
 				<div className="relative">
-					<Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
 						id="confirm-password"
 						type={showPassword ? "text" : "password"}
-						placeholder="Zadajte heslo znova"
+						placeholder={t("confirmPasswordPlaceholder")}
 						value={confirmPassword}
 						onChange={(e) => setConfirmPassword(e.target.value)}
 						autoComplete="new-password"
@@ -148,12 +152,12 @@ export const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ onSuccess, onBac
 				<button
 					type="button"
 					onClick={onBackToSignIn}
-					className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground hover:no-underline"
+					className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-2 hover:no-underline"
 				>
-					Späť na prihlásenie
+					{t("backToSignIn")}
 				</button>
 				<Button type="submit" disabled={isSubmitting}>
-					{isSubmitting ? "Ukladám…" : "Obnoviť heslo"}
+					{isSubmitting ? tCommon("saving") : t("submit")}
 				</Button>
 			</div>
 		</form>

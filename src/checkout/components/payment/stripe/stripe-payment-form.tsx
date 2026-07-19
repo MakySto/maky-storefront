@@ -4,6 +4,7 @@ import { useRef, useState, type FC } from "react";
 import { PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { type StripePaymentElementOptions } from "@stripe/stripe-js";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { type CheckoutFragment } from "@/checkout/graphql";
 import { LoadingSpinner } from "@/checkout/ui-kit/loading-spinner";
 import { Button } from "@/ui/components/ui/button";
@@ -35,8 +36,8 @@ type StripePaymentFormProps = {
 	isPaymentOverlayVisible?: boolean;
 };
 
-// MAKY adaptations (B.8): hardcoded SK copy (static-sk checkout, no next-intl) and no
-// PaymentTrustSignals (D4). The Pay button carries the Slovak statutory order wording.
+// MAKY adaptations (B.8): no PaymentTrustSignals (D4). The Pay button carries the
+// statutory order wording (`checkout.placeOrder`).
 export const StripePaymentForm: FC<StripePaymentFormProps> = ({
 	checkout,
 	billing,
@@ -46,6 +47,7 @@ export const StripePaymentForm: FC<StripePaymentFormProps> = ({
 	onPaymentActivityChange,
 	isPaymentOverlayVisible = false,
 }) => {
+	const t = useTranslations("checkout");
 	const stripe = useStripe();
 	const elements = useElements();
 	const searchParams = useSearchParams();
@@ -102,7 +104,7 @@ export const StripePaymentForm: FC<StripePaymentFormProps> = ({
 	};
 
 	const showProcessingOverlay = isPaymentOverlayVisible || isLoading;
-	const processingTitle = isLoading ? "Spracovávame platbu…" : paymentMessages.confirmingPayment;
+	const processingTitle = isLoading ? t("payment.processingPayment") : paymentMessages.confirmingPayment;
 
 	return (
 		<div
@@ -141,10 +143,10 @@ export const StripePaymentForm: FC<StripePaymentFormProps> = ({
 					{isLoading ? (
 						<span className="flex items-center justify-center gap-2">
 							<LoadingSpinner />
-							Spracovávame platbu…
+							{t("payment.processingPayment")}
 						</span>
 					) : (
-						"Objednať s povinnosťou platby"
+						t("placeOrder")
 					)}
 				</Button>
 			</div>

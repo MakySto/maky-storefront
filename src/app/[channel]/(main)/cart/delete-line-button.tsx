@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { deleteLineFromCheckout } from "./actions";
 
 type Props = {
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export const DeleteLineButton = ({ lineId, checkoutId }: Props) => {
+	const t = useTranslations("cart");
 	const [isPending, startTransition] = useTransition();
 
 	return (
@@ -20,9 +22,9 @@ export const DeleteLineButton = ({ lineId, checkoutId }: Props) => {
 				startTransition(() => deleteLineFromCheckout({ lineId, checkoutId }));
 			}}
 			aria-disabled={isPending}
+			aria-label={isPending ? t("removingLineAria") : t("removeLineAria")}
 		>
-			{isPending ? "Removing" : "Remove"}
-			<span className="sr-only">line from cart</span>
+			{isPending ? t("removing") : t("remove")}
 		</button>
 	);
 };

@@ -1,6 +1,7 @@
 import { type AddressFragment, type CheckoutFragment } from "@/checkout/graphql";
 import { type BillingAddressData } from "@/checkout/components/payment";
 import { isCheckoutFreeOrder } from "@/checkout/lib/payment/checkout-pay-amount";
+import { getCheckoutPaymentLibMessages } from "@/checkout/lib/payment/gateway-messages";
 import { updateCheckoutBilling } from "@/checkout/lib/payment/update-billing";
 import { finalizeCheckoutOrder } from "@/checkout/lib/payment/finalize-checkout-order";
 import { type ServerCheckout } from "@/checkout/lib/checkout-types";
@@ -57,7 +58,7 @@ export async function completeFreeOrderCheckout({
 		return {
 			ok: false,
 			kind: "complete",
-			error: "Your order total has changed and now requires payment. Please review and try again.",
+			error: getCheckoutPaymentLibMessages().freeOrderTotalChanged,
 		};
 	}
 

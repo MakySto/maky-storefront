@@ -1,3 +1,4 @@
+import { getCheckoutPaymentLibMessages } from "../gateway-messages";
 import { type PaymentGatewayLike } from "../types";
 
 /**
@@ -15,7 +16,12 @@ import { type PaymentGatewayLike } from "../types";
  */
 export const STRIPE_GATEWAY_ID = "saleor.app.payment.stripe";
 
-/** Shown when Stripe is on the checkout but the storefront flag is off. */
+/**
+ * Guard sentinel when Stripe is on the checkout but the storefront flag is off.
+ * The customer-facing copy is the `checkout.errors.cardPaymentsDisabled` catalog key —
+ * the guard's only production caller (`initializeCheckoutTransactionAction`) translates
+ * at the boundary; this sk literal remains as the guard's non-null return contract.
+ */
 export const STRIPE_PAYMENT_NOT_ENABLED_MESSAGE = "Platby kartou nie sú v tomto prostredí povolené.";
 
 /** Config returned by paymentGatewayInitialize for the Stripe app. */
@@ -204,7 +210,7 @@ export function getPaymentGatewayInitializeError(
 ): string | null {
 	const errors = payload?.errors;
 	if (errors?.length) {
-		return errors[0]?.message || "Inicializácia platobnej brány zlyhala.";
+		return errors[0]?.message || getCheckoutPaymentLibMessages().gatewayInitFailed;
 	}
 	return null;
 }
@@ -216,19 +222,20 @@ export function getStripeTransactionError(payload: TransactionPayload | null | u
 		return initError;
 	}
 
+	const messages = getCheckoutPaymentLibMessages();
 	const eventType = payload?.transactionEvent?.type;
 	const eventMessage = payload?.transactionEvent?.message;
 
 	if (eventType && FAILED_TRANSACTION_EVENT_TYPES.has(eventType)) {
 		if (eventMessage?.toLowerCase().includes("failed to delivery request")) {
-			return "Webhook aplikácie Stripe zlyhal. V Saleor Dashboard → Apps → Stripe skontrolujte, či sa webhooky doručujú úspešne.";
+			return messages.stripeWebhookFailed;
 		}
 
-		return eventMessage || "Platba zlyhala";
+		return eventMessage || messages.paymentFailed;
 	}
 
 	if (!payload?.transaction?.id) {
-		return "Platbu sa nepodarilo spracovať. Skontrolujte, či je aplikácia Stripe v Saleore aktívna.";
+		return messages.stripeProcessFailed;
 	}
 
 	return null;

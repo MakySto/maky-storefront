@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FC } from "react";
+import { useTranslations } from "next-intl";
 import { type CheckoutFragment } from "@/checkout/graphql";
 import { Button } from "@/ui/components/ui/button";
 import { LoadingSpinner } from "@/checkout/ui-kit/loading-spinner";
@@ -20,7 +21,7 @@ type FreeOrderCheckoutProps = {
 	onPaymentActivityChange?: (active: boolean) => void;
 };
 
-/** Completes a €0 checkout without mounting Stripe Elements. (MAKY: SK copy, no trust signals.) */
+/** Completes a €0 checkout without mounting Stripe Elements. (MAKY: no trust signals.) */
 export const FreeOrderCheckout: FC<FreeOrderCheckoutProps> = ({
 	checkout,
 	billing,
@@ -28,6 +29,7 @@ export const FreeOrderCheckout: FC<FreeOrderCheckoutProps> = ({
 	onBillingErrors,
 	onPaymentActivityChange,
 }) => {
+	const t = useTranslations("checkout");
 	const { refreshCheckout } = useCheckoutData();
 	const paymentMessages = useCheckoutPaymentMessages();
 	const [isLoading, setIsLoading] = useState(false);
@@ -86,10 +88,10 @@ export const FreeOrderCheckout: FC<FreeOrderCheckoutProps> = ({
 				{isLoading ? (
 					<span className="flex items-center justify-center gap-2">
 						<LoadingSpinner />
-						Odosielame objednávku…
+						{t("payment.submittingOrder")}
 					</span>
 				) : (
-					"Objednať s povinnosťou platby"
+					t("placeOrder")
 				)}
 			</Button>
 		</div>

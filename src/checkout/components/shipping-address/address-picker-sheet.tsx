@@ -1,6 +1,7 @@
 "use client";
 
 import { type FC, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { type AddressFragment, type AddressTypeEnum } from "@/checkout/graphql";
 import { cn } from "@/lib/utils";
@@ -40,10 +41,13 @@ export const AddressPickerSheet: FC<AddressPickerSheetProps> = ({
 	selectedAddressId,
 	onSelectAddress,
 	defaultAddressId,
-	title = "Vyberte adresu",
+	title,
 	onAddNew,
 	onEdit,
 }) => {
+	const t = useTranslations("checkout.addressForm");
+	const sheetTitle = title ?? t("selectAddressTitle");
+
 	// Sort addresses: default first, then alphabetically
 	// Note: We don't re-sort based on selection - that would be disorienting.
 	// The radio indicator already shows what's selected.
@@ -69,13 +73,13 @@ export const AddressPickerSheet: FC<AddressPickerSheetProps> = ({
 			<SheetContent side="right" className="flex flex-col p-0">
 				<SheetHeader className="shrink-0 border-b px-4 py-4">
 					<SheetCloseButton className="-ml-2" />
-					<SheetTitle>{title}</SheetTitle>
+					<SheetTitle>{sheetTitle}</SheetTitle>
 				</SheetHeader>
 
 				{/* Address list */}
 				<div className="flex-1 overflow-y-auto px-4 py-3">
 					{sortedAddresses.length === 0 ? (
-						<p className="py-8 text-center text-sm text-muted-foreground">Žiadne uložené adresy</p>
+						<p className="text-muted-foreground py-8 text-center text-sm">{t("noSavedAddresses")}</p>
 					) : (
 						<div className="space-y-2">
 							{sortedAddresses.map((address) => {
@@ -101,7 +105,7 @@ export const AddressPickerSheet: FC<AddressPickerSheetProps> = ({
 												isSelected ? "border-foreground" : "border-muted-foreground/40",
 											)}
 										>
-											{isSelected && <div className="h-2.5 w-2.5 rounded-full bg-foreground" />}
+											{isSelected && <div className="bg-foreground h-2.5 w-2.5 rounded-full" />}
 										</div>
 
 										{/* Address content */}
@@ -111,15 +115,15 @@ export const AddressPickerSheet: FC<AddressPickerSheetProps> = ({
 													{address.firstName} {address.lastName}
 												</span>
 												{isDefault && (
-													<span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
-														Predvolená
+													<span className="bg-muted text-muted-foreground shrink-0 rounded px-1.5 py-0.5 text-xs font-medium">
+														{t("defaultBadge")}
 													</span>
 												)}
 											</div>
-											<p className="mt-0.5 truncate text-sm text-muted-foreground">
+											<p className="text-muted-foreground mt-0.5 truncate text-sm">
 												{address.streetAddress1}
 											</p>
-											<p className="truncate text-sm text-muted-foreground">
+											<p className="text-muted-foreground truncate text-sm">
 												{address.city}, {address.postalCode}
 											</p>
 										</div>
@@ -133,9 +137,9 @@ export const AddressPickerSheet: FC<AddressPickerSheetProps> = ({
 													onEdit(address.id);
 													onOpenChange(false);
 												}}
-												className="shrink-0 rounded px-2 py-1 text-xs text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
+												className="text-muted-foreground hover:bg-muted shrink-0 rounded px-2 py-1 text-xs opacity-0 transition-opacity group-hover:opacity-100"
 											>
-												Upraviť
+												{t("edit")}
 											</button>
 										)}
 									</button>
@@ -158,7 +162,7 @@ export const AddressPickerSheet: FC<AddressPickerSheetProps> = ({
 							}}
 						>
 							<Plus className="h-4 w-4" />
-							Pridať novú adresu
+							{t("addNewAddress")}
 						</Button>
 					</div>
 				)}

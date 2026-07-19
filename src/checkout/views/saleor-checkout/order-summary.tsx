@@ -2,6 +2,7 @@
 
 import { useState, type FC } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Tag, ShieldCheck, ChevronDown, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type CheckoutFragment, type OrderFragment } from "@/checkout/graphql";
@@ -42,7 +43,7 @@ interface OrderSummaryProps {
 // Data Adapters
 // ============================================================================
 
-function extractCheckoutData(checkout: CheckoutFragment): OrderSummaryData {
+function extractCheckoutData(checkout: CheckoutFragment, productNameFallback: string): OrderSummaryData {
 	const lines: LineItem[] = checkout.lines.map((line) => {
 		const variantImage = line.variant?.media?.find((m) => m.type === "IMAGE");
 		const productImage = line.variant?.product?.media?.find((m) => m.type === "IMAGE");
@@ -55,7 +56,7 @@ function extractCheckoutData(checkout: CheckoutFragment): OrderSummaryData {
 		return {
 			id: line.id,
 			quantity: line.quantity,
-			name: line.variant?.product?.name || "Produkt",
+			name: line.variant?.product?.name || productNameFallback,
 			attributes,
 			imageUrl: image?.url,
 			imageAlt: image?.alt,
@@ -75,7 +76,7 @@ function extractCheckoutData(checkout: CheckoutFragment): OrderSummaryData {
 	};
 }
 
-function extractOrderData(order: OrderFragment): OrderSummaryData {
+function extractOrderData(order: OrderFragment, productNameFallback: string): OrderSummaryData {
 	const lines: LineItem[] = order.lines.map((line) => {
 		const attributes =
 			line.variant?.attributes
@@ -85,7 +86,7 @@ function extractOrderData(order: OrderFragment): OrderSummaryData {
 		return {
 			id: line.id,
 			quantity: line.quantity,
-			name: line.productName || "Produkt",
+			name: line.productName || productNameFallback,
 			attributes,
 			imageUrl: line.thumbnail?.url,
 			imageAlt: line.thumbnail?.alt,
@@ -107,23 +108,24 @@ function extractOrderData(order: OrderFragment): OrderSummaryData {
 	};
 }
 
-/** Slovak pluralization for the item counter: 1 → "položka", 2–4 → "položky", otherwise "položiek" */
-function getItemCountLabel(count: number): string {
-	if (count === 1) return "položka";
-	if (count >= 2 && count <= 4) return "položky";
-	return "položiek";
-}
-
 // ============================================================================
 // Component
 // ============================================================================
 
 export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
+	const t = useTranslations("checkout");
+	const tCart = useTranslations("cart");
+
 	// Collapsed by default on mobile
 	const [isExpanded, setIsExpanded] = useState(false);
 
 	// Extract data from either checkout or order
-	const data = checkout ? extractCheckoutData(checkout) : order ? extractOrderData(order) : null;
+	const productNameFallback = t("summary.productFallback");
+	const data = checkout
+		? extractCheckoutData(checkout, productNameFallback)
+		: order
+			? extractOrderData(order, productNameFallback)
+			: null;
 
 	if (!data) {
 		return null;
@@ -194,11 +196,9 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 					{/* Text */}
 					<div className="flex flex-col items-start">
 						<span className="text-sm font-medium">
-							{isExpanded ? "Skryť" : "Zobraziť"} zhrnutie objednávky
+							{isExpanded ? t("summary.hideSummary") : t("summary.showSummary")}
 						</span>
-						<span className="text-muted-foreground text-xs">
-							{itemCount} {getItemCountLabel(itemCount)}
-						</span>
+						<span className="text-muted-foreground text-xs">{tCart("items", { count: itemCount })}</span>
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
@@ -214,10 +214,8 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 
 			{/* Desktop Header - Only visible on desktop */}
 			<header className="bg-secondary/30 hidden items-center gap-2 px-5 py-4 md:flex">
-				<h2 className="text-base font-semibold">Zhrnutie objednávky</h2>
-				<span className="text-muted-foreground text-sm">
-					({itemCount} {getItemCountLabel(itemCount)})
-				</span>
+				<h2 className="text-base font-semibold">{t("summary.title")}</h2>
+				<span className="text-muted-foreground text-sm">({tCart("items", { count: itemCount })})</span>
 			</header>
 
 			{/* Collapsible Content - animated on mobile, always visible on desktop */}
@@ -276,16 +274,16 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 					<section className="border-border border-t px-5 py-4">
 						<dl className="space-y-2 text-sm tabular-nums">
 							<div className="flex justify-between">
-								<dt className="text-muted-foreground">Medzisúčet</dt>
+								<dt className="text-muted-foreground">{tCart("subtotal")}</dt>
 								<dd>{formatMoney(subtotal)}</dd>
 							</div>
 							<div className="flex justify-between">
-								<dt className="text-muted-foreground">Doprava</dt>
+								<dt className="text-muted-foreground">{tCart("shipping")}</dt>
 								<dd>{shipping > 0 ? formatMoney(shipping) : "—"}</dd>
 							</div>
 							{discount > 0 && (
 								<div className="flex justify-between text-green-600">
-									<dt>Zľava</dt>
+									<dt>{t("summary.discount")}</dt>
 									<dd>-{formatMoney(discount)}</dd>
 								</div>
 							)}
@@ -293,7 +291,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 
 						{/* Total */}
 						<div className="border-border/50 mt-4 flex items-baseline justify-between border-t pt-4">
-							<span className="text-base font-semibold">Celková cena</span>
+							<span className="text-base font-semibold">{t("summary.total")}</span>
 							<data value={total} className="text-xl font-semibold tabular-nums">
 								{formatMoney(total)}
 							</data>
@@ -304,7 +302,9 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 					<footer className="bg-secondary/30 border-border flex justify-center border-t px-5 py-4">
 						<div className="bg-secondary flex items-center gap-2 rounded-lg px-4 py-2.5">
 							<ShieldCheck className="text-muted-foreground h-4 w-4" />
-							<span className="text-muted-foreground text-[10px] leading-tight">Bezpečný nákup</span>
+							<span className="text-muted-foreground text-[10px] leading-tight">
+								{t("common.securePurchase")}
+							</span>
 						</div>
 					</footer>
 				</div>

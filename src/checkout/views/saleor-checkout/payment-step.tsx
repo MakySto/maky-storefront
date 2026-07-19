@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useEffect, type FC } from "react";
 import { ChevronLeft, AlertTriangle } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useLocale } from "@/providers/locale-provider";
 import { Button } from "@/ui/components/ui/button";
 import { CheckoutSummaryContext, buildPaymentSummaryRows } from "./checkout-summary-context";
 import { type CheckoutFragment, type CountryCode, type AddressFragment } from "@/checkout/graphql";
@@ -38,13 +40,15 @@ interface PaymentStepProps {
  * registry (`PaymentGatewayAlerts` + `PaymentMethodArea`), and the pay pipeline
  * (billing update → live refetch → price-change guard → executePayment →
  * navigateToOrderConfirmation) lives in `useCheckoutPayment`.
- * Hardcoded EN copy (D1) — SK lands in B.7.
+ * Copy externalized to next-intl (`checkout.payment.*`, krok 2A).
  */
 export const PaymentStep: FC<PaymentStepProps> = ({
 	checkout: initialCheckout,
 	onBack,
 	onGoToInformation,
 }) => {
+	const t = useTranslations("checkout");
+	const { locale } = useLocale();
 	// Use live checkout data to ensure we have the latest total (including shipping)
 	const { checkout: liveCheckout } = useCheckout();
 	const checkout = liveCheckout || initialCheckout;
@@ -143,7 +147,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 	}, []);
 
 	// Summary rows for context display
-	const summaryRows = buildPaymentSummaryRows(checkout);
+	const summaryRows = buildPaymentSummaryRows(checkout, locale);
 
 	// Handle step navigation from summary
 	const handleGoToStep = (step: number) => {
@@ -159,9 +163,9 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 
 	const buttonText = isLoading
 		? isCompletingOrder
-			? "Vytvárame objednávku…"
-			: "Spracovávame platbu…"
-		: "Objednať s povinnosťou platby";
+			? t("payment.creatingOrder")
+			: t("payment.processingPayment")
+		: t("placeOrder");
 
 	const isDisabled = isLoading || (!canSubmit && !isFreeOrder);
 
@@ -174,15 +178,18 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 				>
 					<AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
 					<div>
-						<p className="font-medium text-amber-800">Celková cena vašej objednávky sa zmenila</p>
+						<p className="font-medium text-amber-800">{t("payment.priceChangedTitle")}</p>
 						<p className="mt-1 text-sm text-amber-700">
-							{`Celková cena sa zmenila z ${getFormattedMoney({
-								amount: priceChangeNotice.previousAmount,
-								currency: priceChangeNotice.currency,
-							})} na ${getFormattedMoney({
-								amount: priceChangeNotice.newAmount,
-								currency: priceChangeNotice.currency,
-							})}. Pred dokončením platby si skontrolujte aktualizované zhrnutie objednávky.`}
+							{t("payment.priceChangedBody", {
+								previousTotal: getFormattedMoney({
+									amount: priceChangeNotice.previousAmount,
+									currency: priceChangeNotice.currency,
+								}),
+								newTotal: getFormattedMoney({
+									amount: priceChangeNotice.newAmount,
+									currency: priceChangeNotice.currency,
+								}),
+							})}
 						</p>
 					</div>
 				</div>
@@ -244,7 +251,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 					className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
 				>
 					<ChevronLeft className="h-4 w-4" />
-					{isShippingRequired ? "Späť na dopravu" : "Späť na informácie"}
+					{isShippingRequired ? t("common.backToShipping") : t("common.backToInformation")}
 				</button>
 				{!usesClientSubmit ? (
 					<Button type="submit" disabled={isDisabled} className="hidden h-12 min-w-[200px] px-8 md:flex">
@@ -269,7 +276,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 					isLoading={isLoading}
 					disabled={isDisabled}
 					total={totalStr}
-					loadingText={isCompletingOrder ? "Vytvárame objednávku…" : "Spracovávame platbu…"}
+					loadingText={isCompletingOrder ? t("payment.creatingOrder") : t("payment.processingPayment")}
 				/>
 			) : null}
 		</>
