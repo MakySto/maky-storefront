@@ -26,8 +26,13 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 
 	const shippingMethods = checkout.shippingMethods || [];
 	const hasShippingAddress = !!checkout.shippingAddress;
-	const currentMethod = checkout.deliveryMethod;
-	const currentMethodId = currentMethod?.__typename === "ShippingMethod" ? currentMethod.id : undefined;
+	// The fragment does not select __typename on deliveryMethod, so it is absent at runtime (same
+	// class of bug as the summary "Method —" fix): resolve the persisted ShippingMethod by matching
+	// the id against shippingMethods — a Warehouse (click & collect) id matches nothing.
+	const deliveryMethodId = checkout.deliveryMethod?.id;
+	const currentMethodId = shippingMethods.some((m) => m.id === deliveryMethodId)
+		? deliveryMethodId
+		: undefined;
 
 	// Selection saves IMMEDIATELY on pick (summary + total must be truthful already on this
 	// step); Continue only navigates. On a failed save the previous choice is restored.
