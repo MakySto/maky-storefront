@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, type FC } from "react";
+import { useState, useCallback, useEffect, useRef, type FC } from "react";
 import { Truck, Clock, Leaf, ChevronLeft } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -31,7 +31,10 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 
 	// Selection saves IMMEDIATELY on pick (summary + total must be truthful already on this
 	// step); Continue only navigates. On a failed save the previous choice is restored.
-	const [selectedMethod, setSelectedMethod] = useState(currentMethodId || shippingMethods[0]?.id);
+	// The UI must never mark a method the server does not have: the only initial selection is
+	// the server-persisted one. A sole available method is auto-SAVED (effect below), not just
+	// visually preselected.
+	const [selectedMethod, setSelectedMethod] = useState<string | undefined>(currentMethodId);
 	const [isSavingMethod, setIsSavingMethod] = useState(false);
 	const [isSubmittingLocal, setIsSubmittingLocal] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -69,6 +72,39 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 		},
 		[checkout.id, refetch],
 	);
+
+	// The server-persisted method is the source of truth for what reads as selected. When it
+	// (re)appears — hard refresh, back-navigation from Payment, refetch after save — mirror it,
+	// unless the user already has a pick in flight.
+	useEffect(() => {
+		if (currentMethodId) {
+			setSelectedMethod((prev) => prev ?? currentMethodId);
+		}
+	}, [currentMethodId]);
+
+	// A sole available method is committed immediately and idempotently: save first, mark as
+	// selected only after the server confirms (summary + total are then already truthful on this
+	// step). One-shot per mount — a failed save leaves the method unselected for a manual pick,
+	// never a retry loop. With multiple methods nothing is preselected until the user picks.
+	const autoSaveRan = useRef(false);
+	useEffect(() => {
+		if (autoSaveRan.current || currentMethodId || shippingMethods.length !== 1) {
+			return;
+		}
+		const soleMethodId = shippingMethods[0]?.id;
+		if (!soleMethodId) {
+			return;
+		}
+		autoSaveRan.current = true;
+		setIsSavingMethod(true);
+		void saveMethod(soleMethodId)
+			.then((saved) => {
+				if (saved) {
+					setSelectedMethod(soleMethodId);
+				}
+			})
+			.finally(() => setIsSavingMethod(false));
+	}, [currentMethodId, shippingMethods, saveMethod]);
 
 	const handleSelectMethod = useCallback(
 		async (methodId: string) => {
