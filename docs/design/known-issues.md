@@ -126,12 +126,25 @@ fix — recorded here so they are not lost. Each entry says WHERE it must be fix
   omits `__typename` (runtime returns just `{id}`); fragment-free local fix matching
   `deliveryMethod?.id` (no `CheckoutFragment`/codegen touch). Landed as B.4.4 prep (D2).
 
-## LAUNCH-TRACKING (must close before live — verify in B.9)
+### RESOLVED (B.8, 2026-07-19): real order → /checkout/complete render PROVEN
+
+- The long-open B.4.3 caveat is closed: Stripe test-mode E2E created real sk-eur orders (#1, #2,
+  `FULLY_CHARGED`/`isPaid`), `/checkout/complete?order=<id>` rendered the REAL order for an
+  anonymous guest (public `order(id)` read works), and reloading the confirmation page produced
+  zero new transactions.
+
+## LAUNCH-TRACKING (must close before live — verify in B.9/B.10)
 
 - **(a) sk-eur shipping config:** "Kuriér – Slovensko" was added manually in Saleor; verify
   shipping zones + rates for ALL launch markets before live — a missing rate silently dead-ends
-  checkout at the Shipping step ("No shipping methods available").
-- **(b) checkout payment copy is EN (D1):** the payment-step gateway alerts ("Unsupported payment
-  gateway", price-change notice, payment errors) are hardcoded EN placeholders. Between B.4.4 and
-  B.8 (Stripe OFF in prod) every live `sk-eur` customer would see the EN unsupported state; the
-  copy must be Slovak before live launch (B.7).
+  checkout at the Shipping step.
+- **(b) RESOLVED (B.7, 2026-07-19):** checkout copy incl. payment/gateway errors is Slovak
+  (hardcoded static-sk; catalog 13/13 parity intact).
+- **(c) 3DS manual click-through pending:** headless E2E of the 3DS card is blocked by Stripe
+  Radar's invisible hCaptcha (bot detection — must not be automated). Manually verify once with
+  test card 4000 0027 6000 3184 (challenge modal → order) before live. The return/resume pipeline
+  is the adopted upstream implementation.
+- **(d) logged-in checkout run pending:** needs a real confirmed account; verify sign-in →
+  attach → pay once before live (guest flow fully proven).
+- **(e) test orders #1/#2 in Saleor:** created by the B.8/B.9 E2E (test-mode Stripe, no real
+  money). Cancel/ignore them before live reporting.

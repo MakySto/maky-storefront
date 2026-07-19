@@ -4,9 +4,29 @@
 > same server) can continue Track B without the originating chat. Read this + the memory
 > (`~/.claude/projects/-opt-storefront/memory/`) + the references below. Written 2026-07-07.
 
-## 0. TL;DR — start here (updated 2026-07-18 — B.4.4 IMPLEMENTED)
+## 0. TL;DR — start here (updated 2026-07-19 — B.4.4→B.9 DONE; Stripe TEST-MODE E2E GREEN)
 
-- **⭐ LATEST (2026-07-18 — B.4.4 IMPLEMENTED on `track-b/checkout-v2-payment`):** the approved
+- **⭐⭐ LATEST (2026-07-19 — branch `track-b/checkout-v2-payment`, Stripe checkout WORKS in
+  test mode):** B.4.5 (session mgmt: revalidate-chrome + sync-auth-surfaces + checkout sign-in →
+  `loginWithBff` + post-order cookie-clear/revalidate via `after()` with `order.channel{slug}`),
+  B.5 (marketHref links verified preserved — no-op), B.6 (truthfulness: saleor10 promo mock,
+  Tax(VAT)/Including-VAT, 30-day/Free-shipping badges, `shipping===0→"Free"`, estimated-delivery
+  all REMOVED), B.7 (full SK checkout copy incl. payment errors; catalog 13/13 parity intact;
+  order button = "Objednať s povinnosťou platby"), B.8 (upstream Stripe Elements tree adopted:
+  payment form + express checkout + 3DS return/resume handlers + completing screen; Elements
+  `locale: "sk"`). **E2E PROOF (prod build + `NEXT_PUBLIC_ENABLE_STRIPE_PAYMENTS=true`
+  `ENABLE_STRIPE_PAYMENTS=true`, port 3037, headless Chromium): real guest sk-eur checkouts paid
+  with 4242… → Saleor orders #1 + #2 (`paymentStatus: FULLY_CHARGED`, `isPaid: true`, total
+  395,80 € = checkout total), `/checkout/complete` renders the REAL order (closes the B.4.3
+  order-render caveat: anonymous `order(id)` read PROVEN), confirmation reload triggers ZERO new
+  transactions. Decline card 4000…0002 → inline SK "Platba zlyhala", no order. Stripe-OFF prod
+  build regression: SK "Nepodporovaná platobná brána", no Elements, Pay disabled, billing intact.**
+  MANUAL ITEMS LEFT (Stripe Radar throws invisible hCaptcha at headless/datacenter runs — cannot
+  and must not be automated): (a) 3DS click-through with 4000 0027 6000 3184, (b) a logged-in
+  checkout run (needs a real confirmed account). PRE-LIVE: Stripe app config switch test→live keys
+  + set `NEXT_PUBLIC_ENABLE_STRIPE_PAYMENTS`/`ENABLE_STRIPE_PAYMENTS` in prod env + §20a
+  withdrawal gate + B.10. Prod still untouched (`a2db881`); branch-only.
+- **PRIOR (2026-07-18 — B.4.4 IMPLEMENTED on `track-b/checkout-v2-payment`):** the approved
   plan (`b44-payment-registry-plan.md`) was executed as its 5 commits off `64f0d19`: (1) vitest
   sessionStorage setup, (2) payment lib closure adopted (registry/providers/pipeline + 9 test
   files; stripe.ts predicates-only per D6), (3) four `{ok}`-shaped public payment actions with
