@@ -159,7 +159,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 	};
 
 	const total = checkout.totalPrice?.gross;
-	const totalStr = formatMoneyWithFallback(total);
+	const totalStr = formatMoneyWithFallback(total, locale);
 
 	const buttonText = isLoading
 		? isCompletingOrder
@@ -181,14 +181,22 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 						<p className="font-medium text-amber-800">{t("payment.priceChangedTitle")}</p>
 						<p className="mt-1 text-sm text-amber-700">
 							{t("payment.priceChangedBody", {
-								previousTotal: getFormattedMoney({
-									amount: priceChangeNotice.previousAmount,
-									currency: priceChangeNotice.currency,
-								}),
-								newTotal: getFormattedMoney({
-									amount: priceChangeNotice.newAmount,
-									currency: priceChangeNotice.currency,
-								}),
+								previousTotal: getFormattedMoney(
+									{
+										amount: priceChangeNotice.previousAmount,
+										currency: priceChangeNotice.currency,
+									},
+									false,
+									locale,
+								),
+								newTotal: getFormattedMoney(
+									{
+										amount: priceChangeNotice.newAmount,
+										currency: priceChangeNotice.currency,
+									},
+									false,
+									locale,
+								),
 							})}
 						</p>
 					</div>

@@ -10,14 +10,18 @@ export type Money = {
  * Format money using Intl.NumberFormat with proper currency symbol.
  * Returns empty string for null/undefined input.
  */
-export const getFormattedMoney = <TMoney extends Money>(money: MightNotExist<TMoney>, negative = false) => {
+export const getFormattedMoney = <TMoney extends Money>(
+	money: MightNotExist<TMoney>,
+	negative = false,
+	locale: string = localeConfig.default,
+) => {
 	if (!money) {
 		return "";
 	}
 
 	const { amount, currency } = money;
 
-	return new Intl.NumberFormat(localeConfig.default, {
+	return new Intl.NumberFormat(locale, {
 		style: "currency",
 		currency,
 		currencyDisplay: "symbol",
@@ -28,19 +32,25 @@ export const getFormattedMoney = <TMoney extends Money>(money: MightNotExist<TMo
  * Format shipping price — always the real rate, including a genuine zero ("0,00 €").
  * No "Free" wording: the storefront makes no free-shipping claims (B.6 truthfulness).
  */
-export const formatShippingPrice = <TMoney extends Money>(money: MightNotExist<TMoney>): string => {
+export const formatShippingPrice = <TMoney extends Money>(
+	money: MightNotExist<TMoney>,
+	locale?: string,
+): string => {
 	if (!money) {
 		return "—";
 	}
-	return getFormattedMoney(money);
+	return getFormattedMoney(money, false, locale);
 };
 
 /**
  * Format money with fallback for display (returns "—" for null/undefined).
  */
-export const formatMoneyWithFallback = <TMoney extends Money>(money: MightNotExist<TMoney>): string => {
+export const formatMoneyWithFallback = <TMoney extends Money>(
+	money: MightNotExist<TMoney>,
+	locale?: string,
+): string => {
 	if (!money) {
 		return "—";
 	}
-	return getFormattedMoney(money);
+	return getFormattedMoney(money, false, locale);
 };

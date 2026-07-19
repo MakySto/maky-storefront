@@ -225,7 +225,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 							const Icon = getMethodIcon(method.name);
 							const isSelected = selectedMethod === method.id;
 							const isEco = isEcoMethod(method.name);
-							const priceDisplay = formatShippingPrice(method.price);
+							const priceDisplay = formatShippingPrice(method.price, locale);
 
 							return (
 								<label

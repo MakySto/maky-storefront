@@ -69,7 +69,7 @@ export function formatAddressLine(address: CheckoutFragment["shippingAddress"], 
 }
 
 /** Get shipping method display string */
-export function formatShippingMethod(checkout: CheckoutFragment): string {
+export function formatShippingMethod(checkout: CheckoutFragment, locale?: string): string {
 	const deliveryMethod = checkout.deliveryMethod;
 	// The CheckoutFragment selects `deliveryMethod { ... on ShippingMethod { id } ... on Warehouse { id } }`
 	// WITHOUT `__typename`, so at runtime `__typename` is absent (GraphQL only returns it when selected) and
@@ -81,7 +81,7 @@ export function formatShippingMethod(checkout: CheckoutFragment): string {
 
 	if (!method) return "—";
 
-	const priceStr = formatShippingPrice(checkout.shippingPrice?.gross);
+	const priceStr = formatShippingPrice(checkout.shippingPrice?.gross, locale);
 
 	return `${method.name}${priceStr ? ` · ${priceStr}` : ""}`;
 }
@@ -110,7 +110,7 @@ export function buildPaymentSummaryRows(checkout: CheckoutFragment, locale?: str
 				value: formatAddressLine(checkout.shippingAddress, locale),
 				onChangeStep: 1,
 			},
-			{ labelKey: "summary.method", value: formatShippingMethod(checkout), onChangeStep: 2 },
+			{ labelKey: "summary.method", value: formatShippingMethod(checkout, locale), onChangeStep: 2 },
 		);
 	} else {
 		// Digital products - show delivery type instead

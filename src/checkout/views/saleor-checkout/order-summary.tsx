@@ -7,6 +7,7 @@ import { Tag, ShieldCheck, ChevronDown, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type CheckoutFragment, type OrderFragment } from "@/checkout/graphql";
 import { localeConfig } from "@/config/locale";
+import { useLocale } from "@/providers/locale-provider";
 
 // ============================================================================
 // Types
@@ -114,6 +115,7 @@ function extractOrderData(order: OrderFragment, productNameFallback: string): Or
 
 export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 	const t = useTranslations("checkout");
+	const { locale } = useLocale();
 	const tCart = useTranslations("cart");
 
 	// Collapsed by default on mobile
@@ -135,7 +137,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 	const itemCount = lines.reduce((acc, line) => acc + line.quantity, 0);
 
 	const formatMoney = (amount: number) => {
-		return new Intl.NumberFormat(localeConfig.default, {
+		return new Intl.NumberFormat(locale, {
 			style: "currency",
 			currency,
 		}).format(amount);
