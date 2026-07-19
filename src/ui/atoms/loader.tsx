@@ -1,7 +1,8 @@
-import { useTranslations } from "next-intl";
-
-export function Loader() {
-	const t = useTranslations("checkout");
+// Static atom: it renders as the Suspense FALLBACK of the checkout routes, i.e. before any
+// request/locale data may be read (next-intl here would be uncached request access outside
+// Suspense and fails the PPR build). The sr-only label is passed in where a locale exists;
+// the default is the store-default (sk-SK) wording.
+export function Loader({ label = "Načítavame…" }: { label?: string }) {
 	return (
 		<div className="text-center" aria-busy="true" role="status">
 			<div>
@@ -21,7 +22,7 @@ export function Loader() {
 						fill="currentFill"
 					/>
 				</svg>
-				<span className="sr-only">{t("common.loading")}</span>
+				<span className="sr-only">{label}</span>
 			</div>
 		</div>
 	);
