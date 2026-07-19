@@ -56,6 +56,7 @@ fragment OrderFragment on Order {
 	channel {
 		slug
 	}
+	languageCodeEnum
 	discounts {
 		type
 		name

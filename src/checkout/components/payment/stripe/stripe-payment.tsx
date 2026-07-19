@@ -15,6 +15,8 @@ import {
 	type CheckoutPriceChangeNotice,
 } from "@/checkout/lib/payment/checkout-pay-amount";
 import { useCheckoutData } from "@/checkout/providers/checkout-data";
+import { getLocaleConfigByLocale } from "@/config/locale";
+import { resolveCheckoutLocale } from "@/lib/checkout-locale";
 import { FreeOrderCheckout } from "./free-order-checkout";
 import { StripePaymentForm, type StripeBillingContext } from "./stripe-payment-form";
 import { useStripeGatewayConfig } from "./use-stripe-gateway-config";
@@ -42,8 +44,9 @@ function buildElementsOptions(checkout: CheckoutFragment): StripeElementsOptions
 		mode: "payment",
 		amount: amountInCents,
 		currency,
-		// MAKY: static-sk checkout — Slovak Payment Element UI + Stripe-side error copy.
-		locale: "sk",
+		// Explicit supported locale from the central market config (the checkout's channel
+		// decides) — never "auto", never a hardcoded language.
+		locale: getLocaleConfigByLocale(resolveCheckoutLocale(checkout.channel.slug)).stripeLocale,
 		appearance: { theme: "stripe" },
 	};
 }

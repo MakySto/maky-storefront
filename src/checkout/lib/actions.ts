@@ -125,8 +125,11 @@ const setDefaultAddressDoc = toTypedDocument<
 	UserSetDefaultAddressMutationVariables
 >(UserSetDefaultAddressDocument);
 /** Live checkout read bypassing the client context cache. */
-export async function refreshCheckoutAction(checkoutId: string): Promise<CheckoutFetchResult> {
-	return fetchCheckoutOnServer(checkoutId);
+export async function refreshCheckoutAction(
+	checkoutId: string,
+	localeSlug?: string,
+): Promise<CheckoutFetchResult> {
+	return fetchCheckoutOnServer(checkoutId, localeSlug);
 }
 
 // Checkout-data mutations are keyed by `checkoutId` — the checkout id IS the credential (the same
@@ -134,10 +137,13 @@ export async function refreshCheckoutAction(checkoutId: string): Promise<Checkou
 // a guest checkout has no customer session, and the authenticated `fetchWithAuth` path does not
 // reliably persist for guests. Only the user/account mutations (customer-attach, set-default-address)
 // keep the authenticated path — they are account-scoped, not checkoutId-scoped.
-export async function checkoutEmailUpdateAction(variables: NoLang<CheckoutEmailUpdateMutationVariables>) {
+export async function checkoutEmailUpdateAction(
+	variables: NoLang<CheckoutEmailUpdateMutationVariables>,
+	localeSlug?: string,
+) {
 	return toResult(
 		await executePublicGraphQL(emailUpdateDoc, {
-			variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
+			variables: { ...variables, ...checkoutGraphqlLocaleVariables(localeSlug) },
 			cache: "no-cache",
 		}),
 	);
@@ -145,10 +151,11 @@ export async function checkoutEmailUpdateAction(variables: NoLang<CheckoutEmailU
 
 export async function checkoutShippingAddressUpdateAction(
 	variables: NoLang<CheckoutShippingAddressUpdateMutationVariables>,
+	localeSlug?: string,
 ) {
 	return toResult(
 		await executePublicGraphQL(shippingAddressUpdateDoc, {
-			variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
+			variables: { ...variables, ...checkoutGraphqlLocaleVariables(localeSlug) },
 			cache: "no-cache",
 		}),
 	);
@@ -156,10 +163,11 @@ export async function checkoutShippingAddressUpdateAction(
 
 export async function checkoutBillingAddressUpdateAction(
 	variables: NoLang<CheckoutBillingAddressUpdateMutationVariables>,
+	localeSlug?: string,
 ) {
 	return toResult(
 		await executePublicGraphQL(billingAddressUpdateDoc, {
-			variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
+			variables: { ...variables, ...checkoutGraphqlLocaleVariables(localeSlug) },
 			cache: "no-cache",
 		}),
 	);
@@ -167,10 +175,11 @@ export async function checkoutBillingAddressUpdateAction(
 
 export async function checkoutDeliveryMethodUpdateAction(
 	variables: NoLang<CheckoutDeliveryMethodUpdateMutationVariables>,
+	localeSlug?: string,
 ) {
 	return toResult(
 		await executePublicGraphQL(deliveryMethodUpdateDoc, {
-			variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
+			variables: { ...variables, ...checkoutGraphqlLocaleVariables(localeSlug) },
 			cache: "no-cache",
 		}),
 	);
@@ -178,10 +187,11 @@ export async function checkoutDeliveryMethodUpdateAction(
 
 export async function checkoutCustomerAttachAction(
 	variables: NoLang<CheckoutCustomerAttachMutationVariables>,
+	localeSlug?: string,
 ) {
 	return toResult(
 		await executeAuthenticatedGraphQL(customerAttachDoc, {
-			variables: { ...variables, ...checkoutGraphqlLocaleVariables() },
+			variables: { ...variables, ...checkoutGraphqlLocaleVariables(localeSlug) },
 			cache: "no-cache",
 		}),
 	);
@@ -233,7 +243,8 @@ const GATEWAY_INIT_FAILED_MESSAGE = "Inicializácia platobnej brány zlyhala.";
 const PAYMENT_INIT_FAILED_MESSAGE =
 	"Platbu sa nepodarilo inicializovať. Skontrolujte, či platobná aplikácia v Saleore beží.";
 const TOTAL_VERIFY_FAILED_MESSAGE = "Nepodarilo sa overiť celkovú cenu objednávky. Skúste to znova.";
-const TOTAL_CHANGED_MESSAGE = "Celková cena objednávky sa zmenila. Skontrolujte aktualizovanú sumu a skúste to znova.";
+const TOTAL_CHANGED_MESSAGE =
+	"Celková cena objednávky sa zmenila. Skontrolujte aktualizovanú sumu a skúste to znova.";
 const PAYMENTS_DISABLED_MESSAGE = "Platby nie sú v tomto prostredí povolené.";
 const PAYMENT_PROCESS_FAILED_MESSAGE = "Platbu sa nepodarilo spracovať. Skúste to znova.";
 const COMPLETE_ORDER_FAILED_MESSAGE = "Objednávku sa nepodarilo dokončiť. Skúste to znova.";

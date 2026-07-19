@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { CheckoutCreateDocument, CheckoutFindDocument } from "@/gql/graphql";
+import { checkoutGraphqlLocaleVariables, resolveCheckoutLocale } from "@/lib/checkout-locale";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
 import { checkoutIdCookieName } from "@/session-bridge";
 
@@ -134,5 +135,10 @@ export async function findOrCreate({ channel, checkoutId }: { checkoutId?: strin
 	return result.ok ? result.data.checkoutCreate?.checkout : null;
 }
 
+// The checkout is born with the market's language (central market config, krok 2): the
+// languageCode set here flows to the order and the transactional e-mail.
 export const create = ({ channel }: { channel: string }) =>
-	executeAuthenticatedGraphQL(CheckoutCreateDocument, { cache: "no-cache", variables: { channel } });
+	executeAuthenticatedGraphQL(CheckoutCreateDocument, {
+		cache: "no-cache",
+		variables: { channel, ...checkoutGraphqlLocaleVariables(resolveCheckoutLocale(channel)) },
+	});

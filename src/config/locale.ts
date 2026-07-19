@@ -29,7 +29,26 @@ export type LocaleConfig = {
 	ogLocale: string;
 	/** Fallback currency if API returns null */
 	fallbackCurrency: string;
+	/**
+	 * Explicit Stripe Elements locale (subset of Stripe's supported locales).
+	 * Never "auto" — the market decides, not the browser.
+	 */
+	stripeLocale: StripeSupportedLocale;
 };
+
+/** Stripe Elements locales used by MAKY markets (subset of Stripe's supported list). */
+export type StripeSupportedLocale =
+	| "sk"
+	| "cs"
+	| "de"
+	| "pl"
+	| "hu"
+	| "it"
+	| "fr"
+	| "es"
+	| "ro"
+	| "en-GB"
+	| "en";
 
 // ---------------------------------------------------------------------------
 // Locale map — all 13 markets
@@ -42,6 +61,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 		graphqlLanguageCode: LanguageCodeEnum.Sk,
 		ogLocale: "sk_SK",
 		fallbackCurrency: "EUR",
+		stripeLocale: "sk",
 	},
 	"cs-CZ": {
 		locale: "cs-CZ",
@@ -49,6 +69,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 		graphqlLanguageCode: LanguageCodeEnum.Cs,
 		ogLocale: "cs_CZ",
 		fallbackCurrency: "CZK",
+		stripeLocale: "cs",
 	},
 	"de-DE": {
 		locale: "de-DE",
@@ -56,6 +77,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 		graphqlLanguageCode: LanguageCodeEnum.De,
 		ogLocale: "de_DE",
 		fallbackCurrency: "EUR",
+		stripeLocale: "de",
 	},
 	"de-AT": {
 		locale: "de-AT",
@@ -63,6 +85,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 		graphqlLanguageCode: LanguageCodeEnum.De,
 		ogLocale: "de_AT",
 		fallbackCurrency: "EUR",
+		stripeLocale: "de",
 	},
 	"pl-PL": {
 		locale: "pl-PL",
@@ -70,6 +93,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 		graphqlLanguageCode: LanguageCodeEnum.Pl,
 		ogLocale: "pl_PL",
 		fallbackCurrency: "PLN",
+		stripeLocale: "pl",
 	},
 	"hu-HU": {
 		locale: "hu-HU",
@@ -77,6 +101,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 		graphqlLanguageCode: LanguageCodeEnum.Hu,
 		ogLocale: "hu_HU",
 		fallbackCurrency: "HUF",
+		stripeLocale: "hu",
 	},
 	"it-IT": {
 		locale: "it-IT",
@@ -84,6 +109,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 		graphqlLanguageCode: LanguageCodeEnum.It,
 		ogLocale: "it_IT",
 		fallbackCurrency: "EUR",
+		stripeLocale: "it",
 	},
 	"fr-FR": {
 		locale: "fr-FR",
@@ -91,6 +117,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 		graphqlLanguageCode: LanguageCodeEnum.Fr,
 		ogLocale: "fr_FR",
 		fallbackCurrency: "EUR",
+		stripeLocale: "fr",
 	},
 	"es-ES": {
 		locale: "es-ES",
@@ -98,6 +125,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 		graphqlLanguageCode: LanguageCodeEnum.Es,
 		ogLocale: "es_ES",
 		fallbackCurrency: "EUR",
+		stripeLocale: "es",
 	},
 	"ro-RO": {
 		locale: "ro-RO",
@@ -105,6 +133,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 		graphqlLanguageCode: LanguageCodeEnum.Ro,
 		ogLocale: "ro_RO",
 		fallbackCurrency: "RON",
+		stripeLocale: "ro",
 	},
 	"en-GB": {
 		locale: "en-GB",
@@ -112,6 +141,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 		graphqlLanguageCode: LanguageCodeEnum.EnGb,
 		ogLocale: "en_GB",
 		fallbackCurrency: "GBP",
+		stripeLocale: "en-GB",
 	},
 	"en-US": {
 		locale: "en-US",
@@ -119,6 +149,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 		graphqlLanguageCode: LanguageCodeEnum.EnUs,
 		ogLocale: "en_US",
 		fallbackCurrency: "USD",
+		stripeLocale: "en",
 	},
 	"en-CA": {
 		locale: "en-CA",
@@ -126,6 +157,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 		graphqlLanguageCode: LanguageCodeEnum.EnCa,
 		ogLocale: "en_CA",
 		fallbackCurrency: "CAD",
+		stripeLocale: "en",
 	},
 };
 
@@ -168,11 +200,7 @@ export function getLocaleFromChannel(channelSlug: string): string {
  *   formatPrice(3490, "CZK", "cs-CZ")  → "3 490,00 Kč"
  *   formatPrice(62990, "HUF", "hu-HU") → "62 990 Ft"
  */
-export function formatPrice(
-	amount: number,
-	currency: string,
-	locale: string = DEFAULT_LOCALE,
-): string {
+export function formatPrice(amount: number, currency: string, locale: string = DEFAULT_LOCALE): string {
 	return new Intl.NumberFormat(locale, {
 		style: "currency",
 		currency,

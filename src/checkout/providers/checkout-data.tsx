@@ -4,6 +4,7 @@ import { createContext, type ReactNode, use, useCallback, useMemo, useState } fr
 
 import { refreshCheckoutAction } from "@/checkout/lib/actions";
 import type { CheckoutLoadState, ServerCheckout, ShippingCountries } from "@/checkout/lib/checkout-types";
+import { resolveCheckoutLocale } from "@/lib/checkout-locale";
 
 export type { CheckoutLoadState };
 
@@ -41,13 +42,17 @@ export function CheckoutDataProvider({
 }: CheckoutDataProviderProps) {
 	const [checkout, setCheckout] = useState<ServerCheckout | null>(initialCheckout);
 
+	// The market's locale rides along on refreshes so Saleor translations stay in the
+	// checkout's language (central market config, krok 2).
+	const localeSlug = resolveCheckoutLocale(checkout?.channel.slug);
+
 	const refreshCheckout = useCallback(
 		async (options?: { updateState?: boolean }): Promise<ServerCheckout | null> => {
 			if (!checkoutId) {
 				return null;
 			}
 
-			const result = await refreshCheckoutAction(checkoutId);
+			const result = await refreshCheckoutAction(checkoutId, localeSlug);
 			if (!result.ok || !result.checkout || result.checkout.id !== checkoutId) {
 				return null;
 			}
@@ -59,7 +64,7 @@ export function CheckoutDataProvider({
 			}
 			return result.checkout;
 		},
-		[checkoutId],
+		[checkoutId, localeSlug],
 	);
 
 	const value = useMemo<CheckoutDataContextValue>(
