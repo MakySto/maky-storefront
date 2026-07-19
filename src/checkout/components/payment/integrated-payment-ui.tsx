@@ -5,7 +5,7 @@ import { type AddressFragment, type CheckoutFragment } from "@/checkout/graphql"
 import { isIntegratedPaymentProvider, type ResolvedPaymentProvider } from "@/checkout/lib/payment";
 import { type CheckoutPriceChangeNotice } from "@/checkout/lib/payment/checkout-pay-amount";
 import { DummyPaymentPlaceholder } from "./dummy-payment-placeholder";
-import { StripePaymentPlaceholder } from "./stripe-payment-placeholder";
+import { StripePayment } from "./stripe/stripe-payment";
 import { type BillingAddressData } from "./billing-address-section";
 
 export type IntegratedPaymentUiProps = {
@@ -28,12 +28,16 @@ export type IntegratedPaymentUiProps = {
 /**
  * Renders UI for integrated payment providers.
  * Add new provider components here when wiring a Saleor payment app.
- *
- * MAKY (D5): the stripe case renders the inert `StripePaymentPlaceholder` — the real
- * `StripePayment` (Elements) tree is adopted in B.8. The billing/checkout/error props
- * are kept so the B.8 swap is a one-case change.
  */
-export const IntegratedPaymentUi: FC<IntegratedPaymentUiProps> = ({ provider }) => {
+export const IntegratedPaymentUi: FC<IntegratedPaymentUiProps> = ({
+	provider,
+	checkout,
+	billing,
+	onPaymentError,
+	onBillingErrors,
+	onPriceChangeNotice,
+	onPaymentActivityChange,
+}) => {
 	if (!isIntegratedPaymentProvider(provider)) {
 		return null;
 	}
@@ -42,6 +46,20 @@ export const IntegratedPaymentUi: FC<IntegratedPaymentUiProps> = ({ provider }) 
 		case "dummy":
 			return <DummyPaymentPlaceholder gatewayName={provider.gateway.name} />;
 		case "stripe":
-			return <StripePaymentPlaceholder gatewayName={provider.gateway.name} />;
+			if (!checkout || !billing || !onPaymentError || !onBillingErrors || !onPriceChangeNotice) {
+				return null;
+			}
+
+			return (
+				<StripePayment
+					checkout={checkout}
+					gatewayName={provider.gateway.name}
+					billing={billing}
+					onPaymentError={onPaymentError}
+					onBillingErrors={onBillingErrors}
+					onPriceChangeNotice={onPriceChangeNotice}
+					onPaymentActivityChange={onPaymentActivityChange}
+				/>
+			);
 	}
 };

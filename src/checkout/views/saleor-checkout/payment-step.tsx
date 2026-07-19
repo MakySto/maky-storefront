@@ -23,6 +23,8 @@ import { isCheckoutFreeOrder } from "@/checkout/lib/payment/checkout-pay-amount"
 import { shouldShowPaymentMethodArea } from "@/checkout/lib/payment/should-show-payment-method-area";
 import { usesClientPaymentSubmit } from "@/checkout/lib/payment";
 import { consumePaymentCompletionError } from "@/checkout/lib/payment/checkout-payment-completion";
+import { AuthorizedPaymentRecovery } from "@/checkout/components/payment/stripe/authorized-payment-recovery";
+import { useCheckoutPaymentReturnError } from "@/checkout/providers/checkout-payment-return-error";
 
 interface PaymentStepProps {
 	checkout: CheckoutFragment;
@@ -119,11 +121,14 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 	const usesClientSubmit = usesClientPaymentSubmit(provider);
 	const isFreeOrder = isCheckoutFreeOrder(checkout);
 
+	const { error: returnError, clearError: clearReturnError } = useCheckoutPaymentReturnError();
+
 	const handlePaymentError = useCallback(
 		(message: string) => {
+			clearReturnError();
 			setPaymentError(message);
 		},
-		[setPaymentError],
+		[clearReturnError, setPaymentError],
 	);
 
 	useEffect(() => {
@@ -191,7 +196,11 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 
 			<PaymentGatewayAlerts gateways={checkout.availablePaymentGateways} />
 
-			<PaymentError message={errors.payment || errors.billing || undefined} />
+			{usesClientSubmit && !isFreeOrder ? (
+				<AuthorizedPaymentRecovery checkout={checkout} onError={handlePaymentError} />
+			) : null}
+
+			<PaymentError message={errors.payment || errors.billing || returnError || undefined} />
 
 			{shouldShowPaymentMethodArea(checkout) ? (
 				<PaymentMethodArea

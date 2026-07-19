@@ -1,10 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	findStripeGateway,
+	getStripeClientSecret,
 	getStripePaymentGuardError,
+	getStripeTransactionError,
 	isStripeGateway,
 	isStripeExpressCheckoutEnabled,
 	isStripePaymentEnabled,
+	parseStripeGatewayConfig,
+	parseStripeTransactionData,
+	resolveStripePaymentMethodForInitialize,
 	STRIPE_GATEWAY_ID,
 } from "./stripe";
 
@@ -96,5 +101,129 @@ describe("getStripePaymentGuardError", () => {
 		vi.stubEnv("NODE_ENV", "production");
 		vi.stubEnv("NEXT_PUBLIC_ENABLE_STRIPE_PAYMENTS", "true");
 		expect(getStripePaymentGuardError(STRIPE_GATEWAY_ID)).toBeNull();
+	});
+});
+
+describe("parseStripeTransactionData", () => {
+	it("extracts client secret from transaction initialize data", () => {
+		expect(
+			parseStripeTransactionData({
+				paymentIntent: { stripeClientSecret: "pi_secret_abc" },
+			}),
+		).toEqual({
+			paymentIntent: { stripeClientSecret: "pi_secret_abc" },
+		});
+	});
+
+	it("returns null when payment intent is missing", () => {
+		expect(parseStripeTransactionData({})).toBeNull();
+	});
+});
+
+describe("getStripeClientSecret", () => {
+	it("returns trimmed client secret", () => {
+		expect(
+			getStripeClientSecret({
+				paymentIntent: { stripeClientSecret: "pi_secret_abc" },
+			}),
+		).toBe("pi_secret_abc");
+	});
+});
+
+describe("getStripeTransactionError", () => {
+	it("returns webhook guidance for authorization failures", () => {
+		expect(
+			getStripeTransactionError({
+				transactionEvent: { type: "AUTHORIZATION_FAILURE", message: "Failed to delivery request." },
+				transaction: { id: "tx-1" },
+			}),
+		).toMatch(/webhook/i);
+	});
+});
+
+describe("resolveStripePaymentMethodForInitialize", () => {
+	it("uses express wallet type from Express Checkout onConfirm", () => {
+		expect(
+			resolveStripePaymentMethodForInitialize({
+				surface: "expressCheckout",
+				expressPaymentType: "apple_pay",
+			}),
+		).toBe("apple_pay");
+		expect(
+			resolveStripePaymentMethodForInitialize({
+				surface: "expressCheckout",
+				expressPaymentType: "google_pay",
+			}),
+		).toBe("google_pay");
+		expect(
+			resolveStripePaymentMethodForInitialize({
+				surface: "expressCheckout",
+				expressPaymentType: "link",
+			}),
+		).toBe("link");
+	});
+
+	it("prefers PaymentElement onChange over elements.submit()", () => {
+		expect(
+			resolveStripePaymentMethodForInitialize({
+				surface: "paymentElement",
+				changeType: "link",
+				submitType: "card",
+			}),
+		).toBe("link");
+		expect(
+			resolveStripePaymentMethodForInitialize({
+				surface: "paymentElement",
+				changeType: "card",
+				submitType: "link",
+			}),
+		).toBe("card");
+	});
+
+	it("uses submit result when PaymentElement onChange is empty", () => {
+		expect(
+			resolveStripePaymentMethodForInitialize({
+				surface: "paymentElement",
+				submitType: "card",
+			}),
+		).toBe("card");
+	});
+
+	it("uses onChange for Link when submit returns unknown", () => {
+		expect(
+			resolveStripePaymentMethodForInitialize({
+				surface: "paymentElement",
+				changeType: "link",
+				submitType: "unknown",
+			}),
+		).toBe("link");
+	});
+
+	it("never returns unknown", () => {
+		expect(
+			resolveStripePaymentMethodForInitialize({
+				surface: "paymentElement",
+				submitType: "unknown",
+			}),
+		).toBeNull();
+		expect(
+			resolveStripePaymentMethodForInitialize({
+				surface: "expressCheckout",
+				expressPaymentType: "unknown",
+			}),
+		).toBeNull();
+	});
+});
+
+describe("parseStripeGatewayConfig", () => {
+	it("extracts publishable key from gateway config data", () => {
+		expect(parseStripeGatewayConfig({ stripePublishableKey: "pk_test_abc" })).toEqual({
+			stripePublishableKey: "pk_test_abc",
+		});
+	});
+
+	it("returns null when publishable key is missing", () => {
+		expect(parseStripeGatewayConfig({})).toBeNull();
+		expect(parseStripeGatewayConfig(null)).toBeNull();
 	});
 });

@@ -4,8 +4,12 @@ import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { nextCheckoutTransport } from "@/checkout/checkout-transport-next";
+import { CheckoutSessionCleanup } from "@/checkout/components/checkout-session-cleanup";
+import { StripeCheckoutCompletionHost } from "@/checkout/components/payment/stripe/stripe-checkout-completion-host";
 import { setCheckoutTransport } from "@/checkout/lib/checkout-transport";
 import { CheckoutDataProvider } from "@/checkout/providers/checkout-data";
+import { CheckoutPaymentReturnErrorProvider } from "@/checkout/providers/checkout-payment-return-error";
+import { CheckoutSessionProvider } from "@/checkout/providers/checkout-session";
 import { CheckoutUserProvider } from "@/checkout/providers/checkout-user";
 import type {
 	CheckoutLoadState,
@@ -52,18 +56,26 @@ export function CheckoutApp({
 	return (
 		<AuthProvider>
 			<CheckoutUserProvider initialUser={initialUser}>
-				<CheckoutDataProvider
-					checkoutId={checkoutId}
-					loadState={loadState}
-					initialCheckout={initialCheckout}
-					shippingCountries={shippingCountries}
-				>
-					<ErrorBoundary FallbackComponent={PageNotFound}>
-						<Suspense fallback={<CheckoutSkeleton />}>
-							<SaleorCheckout />
-						</Suspense>
-					</ErrorBoundary>
-				</CheckoutDataProvider>
+				<CheckoutSessionProvider checkoutId={checkoutId} orderId={null}>
+					<CheckoutDataProvider
+						checkoutId={checkoutId}
+						loadState={loadState}
+						initialCheckout={initialCheckout}
+						shippingCountries={shippingCountries}
+					>
+						<CheckoutPaymentReturnErrorProvider>
+							<Suspense fallback={null}>
+								<CheckoutSessionCleanup />
+								<StripeCheckoutCompletionHost />
+							</Suspense>
+							<ErrorBoundary FallbackComponent={PageNotFound}>
+								<Suspense fallback={<CheckoutSkeleton />}>
+									<SaleorCheckout />
+								</Suspense>
+							</ErrorBoundary>
+						</CheckoutPaymentReturnErrorProvider>
+					</CheckoutDataProvider>
+				</CheckoutSessionProvider>
 			</CheckoutUserProvider>
 		</AuthProvider>
 	);

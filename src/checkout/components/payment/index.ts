@@ -4,7 +4,7 @@ export { PaymentGatewayAlerts } from "./payment-gateway-alerts";
 export { PaymentMethodArea } from "./payment-method-area";
 export { PaymentError } from "./payment-error";
 export { DummyPaymentPlaceholder, type DummyPaymentPlaceholderProps } from "./dummy-payment-placeholder";
-export { StripePaymentPlaceholder, type StripePaymentPlaceholderProps } from "./stripe-payment-placeholder";
+export { StripePayment, type StripeBillingContext } from "./stripe/stripe-payment";
 
 export {
 	BillingAddressSection,

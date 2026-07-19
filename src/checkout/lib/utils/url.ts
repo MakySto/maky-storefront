@@ -25,6 +25,7 @@ const queryParamsMap = {
 	// stripe
 	payment_intent: "paymentIntent",
 	payment_intent_client_secret: "paymentIntentClientSecret",
+	redirect_status: "redirectStatus",
 	// flow
 	step: "step",
 } as const;

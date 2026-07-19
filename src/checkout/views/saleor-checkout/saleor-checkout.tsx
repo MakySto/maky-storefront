@@ -13,8 +13,10 @@ import { useCustomerAttach } from "@/checkout/hooks/use-customer-attach";
 import { EmptyCartPage } from "../empty-cart-page";
 import { PageNotFound } from "../page-not-found";
 import { CheckoutSkeleton } from "./checkout-skeleton";
+import { PaymentCompletingScreen } from "./payment-completing-screen";
 import { getCheckoutSteps } from "./flow";
 import { useCheckoutStep } from "@/checkout/hooks/use-checkout-step";
+import { useCheckoutTransition } from "@/checkout/hooks/use-checkout-transition";
 
 /**
  * Saleor checkout view with multi-step flow.
@@ -41,6 +43,10 @@ export const SaleorCheckout: FC = () => {
 	// Current step + shallow `?step=` navigation (History API, no RSC re-run — B.4.3, MIGRATION 6).
 	const { currentStep, stepRef, goToStep } = useCheckoutStep(isShippingRequired);
 
+	// Payment → order transition (B.8): while confirm/process/complete runs (incl. 3DS return),
+	// the step UI must be unreachable so the shopper cannot trigger a second payment.
+	const transition = useCheckoutTransition();
+
 	// Checkout is invalid if: no checkout ID in URL, or fetching is done but no checkout data
 	const isCheckoutInvalid = !hasCheckoutId || (!fetchingCheckout && !checkout && !isAuthenticating);
 	const isEmptyCart = checkout && !checkout.lines.length;
@@ -58,6 +64,17 @@ export const SaleorCheckout: FC = () => {
 
 	if (isEmptyCart) {
 		return <EmptyCartPage />;
+	}
+
+	if (transition === "completing") {
+		return (
+			<div className="bg-secondary min-h-screen overscroll-none">
+				<CheckoutHeader step={99} onStepClick={() => {}} isShippingRequired={isShippingRequired} />
+				<main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 md:py-8 lg:px-8">
+					<PaymentCompletingScreen />
+				</main>
+			</div>
+		);
 	}
 
 	return (

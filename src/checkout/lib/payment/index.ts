@@ -15,12 +15,17 @@ export {
 	type ResolvedPaymentProvider,
 	type PaymentGatewayLike,
 } from "./types";
-// Stripe re-exports are the PREDICATES-ONLY subset (B.4.4 trim) — config/transaction
-// parsers land with the Stripe UI in B.8.
 export {
 	STRIPE_GATEWAY_ID,
 	isStripeGateway,
 	findStripeGateway,
 	isStripePaymentEnabled,
 	getStripePaymentGuardError,
+	getStripeClientSecret,
+	getStripeTransactionError,
+	parseStripeGatewayConfig,
+	parseStripeTransactionData,
+	type StripeGatewayConfig,
+	type StripeGatewayConfigData,
+	type StripeTransactionData,
 } from "./providers/stripe";

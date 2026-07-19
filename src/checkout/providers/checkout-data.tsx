@@ -14,7 +14,7 @@ export type CheckoutDataContextValue = {
 	hasCheckoutId: boolean;
 	setCheckout: (checkout: ServerCheckout | null) => void;
 	/** Re-read the checkout from Saleor (server action); returns null when missing/failed. */
-	refreshCheckout: () => Promise<ServerCheckout | null>;
+	refreshCheckout: (options?: { updateState?: boolean }) => Promise<ServerCheckout | null>;
 };
 
 const CheckoutDataContext = createContext<CheckoutDataContextValue | null>(null);
@@ -41,19 +41,26 @@ export function CheckoutDataProvider({
 }: CheckoutDataProviderProps) {
 	const [checkout, setCheckout] = useState<ServerCheckout | null>(initialCheckout);
 
-	const refreshCheckout = useCallback(async (): Promise<ServerCheckout | null> => {
-		if (!checkoutId) {
-			return null;
-		}
+	const refreshCheckout = useCallback(
+		async (options?: { updateState?: boolean }): Promise<ServerCheckout | null> => {
+			if (!checkoutId) {
+				return null;
+			}
 
-		const result = await refreshCheckoutAction(checkoutId);
-		if (!result.ok || !result.checkout || result.checkout.id !== checkoutId) {
-			return null;
-		}
+			const result = await refreshCheckoutAction(checkoutId);
+			if (!result.ok || !result.checkout || result.checkout.id !== checkoutId) {
+				return null;
+			}
 
-		setCheckout(result.checkout);
-		return result.checkout;
-	}, [checkoutId]);
+			// `updateState: false` = live read without re-rendering the checkout mid-payment
+			// (Stripe Elements must stay mounted with locked options during confirm).
+			if (options?.updateState !== false) {
+				setCheckout(result.checkout);
+			}
+			return result.checkout;
+		},
+		[checkoutId],
+	);
 
 	const value = useMemo<CheckoutDataContextValue>(
 		() => ({
