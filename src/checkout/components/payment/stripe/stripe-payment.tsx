@@ -42,6 +42,8 @@ function buildElementsOptions(checkout: CheckoutFragment): StripeElementsOptions
 		mode: "payment",
 		amount: amountInCents,
 		currency,
+		// MAKY: static-sk checkout — Slovak Payment Element UI + Stripe-side error copy.
+		locale: "sk",
 		appearance: { theme: "stripe" },
 	};
 }
