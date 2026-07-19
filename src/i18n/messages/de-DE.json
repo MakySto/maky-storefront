@@ -134,7 +134,13 @@
 		"checkout": "Zur Kasse",
 		"quantity": "Menge",
 		"remove": "Entfernen",
-		"itemAdded": "Produkt zum Warenkorb hinzugefügt"
+		"itemAdded": "Produkt zum Warenkorb hinzugefügt",
+		"items": "{count, plural, one {# Artikel} other {# Artikel}}",
+		"emptyCartHint": "Sie haben Ihrem Warenkorb noch nichts hinzugefügt.",
+		"startShopping": "Jetzt einkaufen",
+		"shippingAtCheckout": "Wird an der Kasse berechnet",
+		"decreaseQuantity": "Menge verringern",
+		"increaseQuantity": "Menge erhöhen"
 	},
 	"checkout": {
 		"title": "Kasse",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, RotateCcw } from "lucide-react";
@@ -113,6 +114,7 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawerProps) {
+	const t = useTranslations("cart");
 	const { isOpen, closeCart } = useCart();
 	const [isPending, startTransition] = useTransition();
 
@@ -141,8 +143,8 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 				<SheetHeader className="border-border justify-between border-b px-6 py-4">
 					<div className="flex items-center gap-3">
 						<ShoppingBag className="h-5 w-5" />
-						<SheetTitle>Your Bag</SheetTitle>
-						<span className="text-muted-foreground text-sm">({itemCount} items)</span>
+						<SheetTitle>{t("yourCart")}</SheetTitle>
+						<span className="text-muted-foreground text-sm">({t("items", { count: itemCount })})</span>
 					</div>
 					<SheetCloseButton className="static" />
 				</SheetHeader>
@@ -154,16 +156,14 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 							<div className="bg-secondary mb-4 flex h-16 w-16 items-center justify-center rounded-full">
 								<ShoppingBag className="text-muted-foreground h-8 w-8" />
 							</div>
-							<h3 className="mb-2 text-lg font-medium">Your bag is empty</h3>
-							<p className="text-muted-foreground mb-6 text-sm">
-								Looks like you haven&apos;t added anything to your bag yet.
-							</p>
+							<h3 className="mb-2 text-lg font-medium">{t("emptyCart")}</h3>
+							<p className="text-muted-foreground mb-6 text-sm">{t("emptyCartHint")}</p>
 							<Link
 								href={marketHref(channel, "/products")}
 								onClick={closeCart}
 								className="hover:bg-primary/90 bg-primary text-primary-foreground inline-flex h-10 items-center justify-center rounded-md px-4 text-sm font-medium transition-colors"
 							>
-								Start Shopping
+								{t("startShopping")}
 							</Link>
 						</div>
 					) : (
@@ -240,7 +240,9 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 														disabled={isPending}
 													>
 														<Trash2 className="h-4 w-4" />
-														<span className="sr-only">Remove {line.variant.product.name}</span>
+														<span className="sr-only">
+															{t("remove")} {line.variant.product.name}
+														</span>
 													</Button>
 												</div>
 
@@ -255,7 +257,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 															className="hover:bg-secondary p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
 														>
 															<Minus className="h-3 w-3" />
-															<span className="sr-only">Decrease quantity</span>
+															<span className="sr-only">{t("decreaseQuantity")}</span>
 														</button>
 														<span className="w-8 text-center text-sm font-medium">{line.quantity}</span>
 														<button
@@ -265,7 +267,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 															className="hover:bg-secondary p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
 														>
 															<Plus className="h-3 w-3" />
-															<span className="sr-only">Increase quantity</span>
+															<span className="sr-only">{t("increaseQuantity")}</span>
 														</button>
 													</div>
 
@@ -299,15 +301,15 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 						{/* Order Summary */}
 						<div className="space-y-2 px-6 py-4">
 							<div className="flex items-center justify-between text-sm">
-								<span className="text-muted-foreground">Subtotal</span>
+								<span className="text-muted-foreground">{t("subtotal")}</span>
 								<span>{formatMoney(subtotal, currency)}</span>
 							</div>
 							<div className="flex items-center justify-between text-sm">
-								<span className="text-muted-foreground">Shipping</span>
-								<span>Calculated at checkout</span>
+								<span className="text-muted-foreground">{t("shipping")}</span>
+								<span>{t("shippingAtCheckout")}</span>
 							</div>
 							<div className="border-border flex items-center justify-between border-t pt-2 text-base font-semibold">
-								<span>Total</span>
+								<span>{t("total")}</span>
 								<span>{formatMoney(subtotal, currency)}</span>
 							</div>
 						</div>
@@ -319,7 +321,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 								onClick={closeCart}
 								className="hover:bg-primary/90 group bg-primary text-primary-foreground inline-flex h-12 w-full items-center justify-center gap-2 rounded-md text-base font-medium transition-colors"
 							>
-								<span>Checkout</span>
+								<span>{t("checkout")}</span>
 								<ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" />
 							</Link>
 							<Link
@@ -327,7 +329,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 								onClick={closeCart}
 								className="border-border hover:bg-accent hover:text-accent-foreground inline-flex h-12 w-full items-center justify-center rounded-md border bg-transparent text-base font-medium transition-colors"
 							>
-								Continue Shopping
+								{t("continueShopping")}
 							</Link>
 						</div>
 

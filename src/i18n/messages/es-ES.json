@@ -134,7 +134,13 @@
 		"checkout": "Ir a la caja",
 		"quantity": "Cantidad",
 		"remove": "Eliminar",
-		"itemAdded": "Producto añadido al carrito"
+		"itemAdded": "Producto añadido al carrito",
+		"items": "{count, plural, one {# artículo} other {# artículos}}",
+		"emptyCartHint": "Todavía no has añadido nada a tu cesta.",
+		"startShopping": "Empezar a comprar",
+		"shippingAtCheckout": "Se calcula al finalizar la compra",
+		"decreaseQuantity": "Reducir cantidad",
+		"increaseQuantity": "Aumentar cantidad"
 	},
 	"checkout": {
 		"title": "Caja",

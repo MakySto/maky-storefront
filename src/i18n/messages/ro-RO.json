@@ -134,7 +134,13 @@
 		"checkout": "Finalizare comandă",
 		"quantity": "Cantitate",
 		"remove": "Elimină",
-		"itemAdded": "Produs adăugat în coș"
+		"itemAdded": "Produs adăugat în coș",
+		"items": "{count, plural, one {# articol} few {# articole} other {# de articole}}",
+		"emptyCartHint": "Nu ați adăugat încă nimic în coș.",
+		"startShopping": "Începeți cumpărăturile",
+		"shippingAtCheckout": "Calculate la finalizarea comenzii",
+		"decreaseQuantity": "Reduceți cantitatea",
+		"increaseQuantity": "Măriți cantitatea"
 	},
 	"checkout": {
 		"title": "Finalizare comandă",

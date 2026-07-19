@@ -134,7 +134,13 @@
 		"checkout": "Pénztárhoz",
 		"quantity": "Mennyiség",
 		"remove": "Eltávolítás",
-		"itemAdded": "Termék hozzáadva a kosárhoz"
+		"itemAdded": "Termék hozzáadva a kosárhoz",
+		"items": "{count, plural, other {# termék}}",
+		"emptyCartHint": "Még nem tett semmit a kosarába.",
+		"startShopping": "Vásárlás megkezdése",
+		"shippingAtCheckout": "A pénztárnál kerül kiszámításra",
+		"decreaseQuantity": "Mennyiség csökkentése",
+		"increaseQuantity": "Mennyiség növelése"
 	},
 	"checkout": {
 		"title": "Pénztár",

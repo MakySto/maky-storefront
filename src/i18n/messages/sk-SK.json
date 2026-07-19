@@ -134,7 +134,13 @@
 		"checkout": "Prejsť k pokladni",
 		"quantity": "Množstvo",
 		"remove": "Odstrániť",
-		"itemAdded": "Produkt pridaný do košíka"
+		"itemAdded": "Produkt pridaný do košíka",
+		"items": "{count, plural, one {# položka} few {# položky} other {# položiek}}",
+		"emptyCartHint": "Zatiaľ ste si do košíka nič nepridali.",
+		"startShopping": "Začať nakupovať",
+		"shippingAtCheckout": "Vypočíta sa v pokladni",
+		"decreaseQuantity": "Znížiť množstvo",
+		"increaseQuantity": "Zvýšiť množstvo"
 	},
 	"checkout": {
 		"title": "Pokladňa",
