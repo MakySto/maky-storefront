@@ -59,14 +59,16 @@ export const SignInForm: FC<SignInFormProps> = ({
 					err.code === "INVALID_PASSWORD" ||
 					err.message?.toLowerCase().includes("invalid") ||
 					err.message?.toLowerCase().includes("credentials");
-				setError(isInvalidCredentials ? "Invalid email or password" : "Sign in failed. Please try again.");
+				setError(
+					isInvalidCredentials ? "Nesprávny e-mail alebo heslo" : "Prihlásenie zlyhalo. Skúste to znova.",
+				);
 			} else if (result.ok || result.success) {
 				await onSuccess();
 			} else {
-				setError("Sign in failed. Please try again.");
+				setError("Prihlásenie zlyhalo. Skúste to znova.");
 			}
 		} catch {
-			setError("An error occurred. Please try again.");
+			setError("Nastala chyba. Skúste to znova.");
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -77,12 +79,12 @@ export const SignInForm: FC<SignInFormProps> = ({
 		setSuccessMessage("");
 
 		if (!email) {
-			setError("Please enter your email address first");
+			setError("Najprv zadajte svoju e-mailovú adresu");
 			return;
 		}
 
 		if (!validateEmail(email)) {
-			setError("Please enter a valid email address");
+			setError("Zadajte platnú e-mailovú adresu");
 			return;
 		}
 
@@ -95,22 +97,22 @@ export const SignInForm: FC<SignInFormProps> = ({
 			});
 
 			if (result.error) {
-				setError(result.error.message || "Failed to send reset link");
+				setError(result.error.message || "Nepodarilo sa odoslať odkaz na obnovenie hesla");
 				return;
 			}
 
 			if (result.data?.requestPasswordReset?.errors?.length) {
 				const err = result.data.requestPasswordReset.errors[0];
-				setError(err.message || "Failed to send reset link");
+				setError(err.message || "Nepodarilo sa odoslať odkaz na obnovenie hesla");
 			} else {
 				setPasswordResetSent(true);
 				setSuccessMessage(
-					`If an account exists for ${email}, a password reset link has been sent. ` +
-						`Note: You can only request one reset link every 15 minutes.`,
+					`Ak pre adresu ${email} existuje účet, poslali sme na ňu odkaz na obnovenie hesla. ` +
+						`Upozornenie: nový odkaz je možné vyžiadať najskôr o 15 minút.`,
 				);
 			}
 		} catch {
-			setError("An error occurred. Please try again.");
+			setError("Nastala chyba. Skúste to znova.");
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -119,15 +121,15 @@ export const SignInForm: FC<SignInFormProps> = ({
 	return (
 		<form onSubmit={handleSubmit} className="space-y-4">
 			<div className="flex items-center justify-between">
-				<h2 className="text-xl font-semibold">Sign in</h2>
+				<h2 className="text-xl font-semibold">Prihlásenie</h2>
 				<p className="text-muted-foreground text-sm">
-					New customer?{" "}
+					Nový zákazník?{" "}
 					<button
 						type="button"
 						onClick={onGuestCheckout}
 						className="text-foreground font-medium underline underline-offset-2 hover:no-underline"
 					>
-						Guest checkout
+						Pokračovať bez registrácie
 					</button>
 				</p>
 			</div>
@@ -143,7 +145,7 @@ export const SignInForm: FC<SignInFormProps> = ({
 					<Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
 						type="email"
-						placeholder="Email address"
+						placeholder="E-mailová adresa"
 						value={email}
 						onChange={(e) => {
 							setEmail(e.target.value);
@@ -161,7 +163,7 @@ export const SignInForm: FC<SignInFormProps> = ({
 					<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
 						type={showPassword ? "text" : "password"}
-						placeholder="Password"
+						placeholder="Heslo"
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
 						autoComplete="current-password"
@@ -185,10 +187,10 @@ export const SignInForm: FC<SignInFormProps> = ({
 					disabled={isSubmitting}
 					className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-2 hover:no-underline disabled:opacity-50"
 				>
-					{passwordResetSent ? "Resend link?" : "Forgot password?"}
+					{passwordResetSent ? "Poslať odkaz znova?" : "Zabudli ste heslo?"}
 				</button>
 				<Button type="submit" disabled={isSubmitting}>
-					{isSubmitting ? "Processing..." : "Sign in"}
+					{isSubmitting ? "Spracovávam…" : "Prihlásiť sa"}
 				</Button>
 			</div>
 		</form>

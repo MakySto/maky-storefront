@@ -12,7 +12,7 @@ export interface DummyPaymentPlaceholderProps {
 /**
  * Minimal payment UI for Saleor Dummy Payment test checkouts.
  * No card fields or method picker — the gateway is chosen server-side on Pay.
- * MAKY (D1): "Payment" heading hardcoded EN (upstream: `checkout.steps.payment`).
+ * MAKY (D1/B.7): "Platba" heading hardcoded SK (upstream: `checkout.steps.payment`).
  */
 export const DummyPaymentPlaceholder: FC<DummyPaymentPlaceholderProps> = ({ gatewayName }) => {
 	const paymentMessages = useCheckoutPaymentMessages();
@@ -20,7 +20,7 @@ export const DummyPaymentPlaceholder: FC<DummyPaymentPlaceholderProps> = ({ gate
 
 	return (
 		<section className="space-y-3">
-			<h2 className="text-lg font-semibold">Payment</h2>
+			<h2 className="text-lg font-semibold">Platba</h2>
 			<p className="text-muted-foreground flex items-start gap-2 text-sm">
 				<FlaskConical className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
 				<span>

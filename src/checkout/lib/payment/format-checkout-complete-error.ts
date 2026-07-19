@@ -6,11 +6,11 @@
  */
 export function formatCheckoutCompleteError(error: string): string {
 	if (error.includes("CHECKOUT_NOT_FULLY_PAID")) {
-		return "Payment does not fully cover this order total yet. Refresh the page — if funds were authorized, use Complete order. Do not pay again until we confirm the status.";
+		return "Platba zatiaľ nepokrýva celú sumu objednávky. Obnovte stránku — ak boli prostriedky autorizované, použite tlačidlo „Objednať s povinnosťou platby“. Neplaťte znova, kým sa stav nepotvrdí.";
 	}
 
 	if (error.includes("CHECKOUT_ALREADY_COMPLETED")) {
-		return "This order was already placed. Check your email for confirmation.";
+		return "Táto objednávka už bola odoslaná. Potvrdenie nájdete vo svojom e-maile.";
 	}
 
 	return error;

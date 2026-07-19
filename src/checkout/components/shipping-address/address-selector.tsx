@@ -37,7 +37,7 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 	selectedAddressId,
 	onSelectAddress,
 	defaultAddressId,
-	emptyMessage = "You don't have any saved addresses yet.",
+	emptyMessage = "Zatiaľ nemáte uložené žiadne adresy.",
 	name = "shippingAddress",
 	addressType = "SHIPPING",
 	onDefaultChange,
@@ -131,7 +131,7 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 								</span>
 								{isDefault && (
 									<span className="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs font-medium">
-										Default
+										Predvolená
 									</span>
 								)}
 							</div>
@@ -156,7 +156,7 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 								}}
 								className="text-muted-foreground hover:bg-muted hover:text-foreground shrink-0 rounded px-2 py-1 text-sm transition-colors"
 							>
-								Edit
+								Upraviť
 							</button>
 						)}
 					</label>
@@ -177,7 +177,7 @@ export const AddressSelector: FC<AddressSelectorProps> = ({
 						className="text-muted-foreground flex cursor-pointer items-center gap-2 text-sm"
 					>
 						{isSettingDefault && <LoadingSpinner />}
-						Set as my default {addressType === "SHIPPING" ? "shipping" : "billing"} address
+						Nastaviť ako moju predvolenú {addressType === "SHIPPING" ? "dodaciu" : "fakturačnú"} adresu
 					</Label>
 				</div>
 			)}

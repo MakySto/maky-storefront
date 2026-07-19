@@ -4,7 +4,7 @@ import { type PaymentGatewayLike } from "../types";
 export const DUMMY_GATEWAY_IDS = ["saleor.io.dummy-payment-app", "mirumee.payments.dummy"] as const;
 
 /** Shown when dummy payment is blocked (UI and server actions). */
-export const DUMMY_PAYMENT_NOT_ALLOWED_MESSAGE = "Test payment is not available in this environment.";
+export const DUMMY_PAYMENT_NOT_ALLOWED_MESSAGE = "Testovacia platba nie je v tomto prostredí dostupná.";
 
 export function isDummyGateway(gateway: PaymentGatewayLike): boolean {
 	return (DUMMY_GATEWAY_IDS as readonly string[]).includes(gateway.id);

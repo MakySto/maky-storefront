@@ -11,8 +11,8 @@ interface PageNotFoundProps extends Partial<FallbackProps> {
 }
 
 export const PageNotFound = ({
-	title = "Checkout not found",
-	message = "We couldn't find your checkout session. It may have expired or been completed.",
+	title = "Pokladňa sa nenašla",
+	message = "Nepodarilo sa nám nájsť váš rozpracovaný nákup. Možno vypršal alebo už bol dokončený.",
 }: PageNotFoundProps) => {
 	return (
 		<div className="min-h-screen bg-secondary">
@@ -47,21 +47,21 @@ export const PageNotFound = ({
 								className="shadow-xs hover:bg-primary/90 focus-visible:outline-hidden inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-primary font-medium text-primary-foreground transition-all duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 							>
 								<ShoppingBag className="h-4 w-4" />
-								Continue Shopping
+								Pokračovať v nákupe
 							</Link>
 							<button
 								onClick={() => history.back()}
 								className="flex items-center justify-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
 							>
 								<ArrowLeft className="h-4 w-4" />
-								Go back
+								Späť
 							</button>
 						</div>
 					</div>
 
 					{/* Help text */}
 					<p className="mt-6 text-center text-sm text-muted-foreground">
-						If you believe this is an error, please try adding items to your cart again or contact support.
+						Ak si myslíte, že ide o chybu, skúste pridať tovar do košíka znova alebo kontaktujte podporu.
 					</p>
 				</div>
 			</main>

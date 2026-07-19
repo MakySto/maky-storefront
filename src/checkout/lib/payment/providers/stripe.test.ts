@@ -89,7 +89,7 @@ describe("getStripePaymentGuardError", () => {
 
 	it("blocks stripe gateway in production without flag", () => {
 		vi.stubEnv("NODE_ENV", "production");
-		expect(getStripePaymentGuardError(STRIPE_GATEWAY_ID)).toMatch(/not enabled/i);
+		expect(getStripePaymentGuardError(STRIPE_GATEWAY_ID)).toMatch(/nie sú v tomto prostredí povolené/i);
 	});
 
 	it("allows stripe gateway when enabled", () => {

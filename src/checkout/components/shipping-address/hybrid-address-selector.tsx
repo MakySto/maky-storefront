@@ -44,13 +44,13 @@ export const HybridAddressSelector: FC<HybridAddressSelectorProps> = ({
 	selectedAddressId,
 	onSelectAddress,
 	defaultAddressId,
-	emptyMessage = "You don't have any saved addresses yet.",
+	emptyMessage = "Zatiaľ nemáte uložené žiadne adresy.",
 	name = "shippingAddress",
 	addressType = "SHIPPING",
 	onDefaultChange,
 	onAddNew,
 	onEdit,
-	sheetTitle = "Select address",
+	sheetTitle = "Vyberte adresu",
 }) => {
 	const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -142,7 +142,7 @@ export const HybridAddressSelector: FC<HybridAddressSelectorProps> = ({
 					onClick={() => setSheetOpen(true)}
 					className="border-muted-foreground/50 text-muted-foreground hover:border-foreground hover:text-foreground flex w-full items-center justify-center gap-2 rounded-lg border border-dashed p-4 text-sm transition-colors"
 				>
-					Select an address
+					Vybrať adresu
 				</button>
 			)}
 
@@ -174,7 +174,7 @@ export const HybridAddressSelector: FC<HybridAddressSelectorProps> = ({
 						className="text-muted-foreground flex cursor-pointer items-center gap-2 text-sm"
 					>
 						{isSettingDefault && <LoadingSpinner />}
-						Set as my default {addressType === "SHIPPING" ? "shipping" : "billing"} address
+						Nastaviť ako moju predvolenú {addressType === "SHIPPING" ? "dodaciu" : "fakturačnú"} adresu
 					</Label>
 				</div>
 			)}

@@ -10,8 +10,8 @@ type PaymentGatewayAlertsProps = {
 	gateways: ReadonlyArray<PaymentGatewayFragment> | null | undefined;
 };
 
-// MAKY (D1): titles/bodies come from the EN gateway-messages hook instead of
-// upstream's next-intl `checkout.gateways` namespace.
+// MAKY (D1/B.7): titles/bodies come from the hardcoded SK gateway-messages hook
+// instead of upstream's next-intl `checkout.gateways` namespace.
 export const PaymentGatewayAlerts: FC<PaymentGatewayAlertsProps> = ({ gateways }) => {
 	const gatewayMessages = useCheckoutGatewayMessages();
 	const status = resolvePaymentGatewayStatus(gateways);

@@ -80,11 +80,11 @@ export async function updateCheckoutBilling(params: UpdateBillingParams): Promis
 				const errorMap: Record<string, string> = {};
 				result.fieldErrors.forEach((err) => {
 					const field = err.field || "streetAddress1";
-					errorMap[field] = err.message || "Invalid value";
+					errorMap[field] = err.message || "Neplatná hodnota";
 				});
 				return { ok: false, errors: errorMap, focusField: Object.keys(errorMap)[0] };
 			}
-			return { ok: false, errors: { billing: result.error ?? "Failed to update billing address" } };
+			return { ok: false, errors: { billing: result.error ?? "Nepodarilo sa uložiť fakturačnú adresu." } };
 		}
 
 		return { ok: true };
@@ -113,7 +113,7 @@ export async function updateCheckoutBilling(params: UpdateBillingParams): Promis
 		if (!result.ok) {
 			return {
 				ok: false,
-				errors: { billing: result.error ?? "Failed to update billing address" },
+				errors: { billing: result.error ?? "Nepodarilo sa uložiť fakturačnú adresu." },
 			};
 		}
 	}

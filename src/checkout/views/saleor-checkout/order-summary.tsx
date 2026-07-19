@@ -55,7 +55,7 @@ function extractCheckoutData(checkout: CheckoutFragment): OrderSummaryData {
 		return {
 			id: line.id,
 			quantity: line.quantity,
-			name: line.variant?.product?.name || "Product",
+			name: line.variant?.product?.name || "Produkt",
 			attributes,
 			imageUrl: image?.url,
 			imageAlt: image?.alt,
@@ -85,7 +85,7 @@ function extractOrderData(order: OrderFragment): OrderSummaryData {
 		return {
 			id: line.id,
 			quantity: line.quantity,
-			name: line.productName || "Product",
+			name: line.productName || "Produkt",
 			attributes,
 			imageUrl: line.thumbnail?.url,
 			imageAlt: line.thumbnail?.alt,
@@ -105,6 +105,13 @@ function extractOrderData(order: OrderFragment): OrderSummaryData {
 		total: order.total?.gross?.amount || 0,
 		editable: false,
 	};
+}
+
+/** Slovak pluralization for the item counter: 1 → "položka", 2–4 → "položky", otherwise "položiek" */
+function getItemCountLabel(count: number): string {
+	if (count === 1) return "položka";
+	if (count >= 2 && count <= 4) return "položky";
+	return "položiek";
 }
 
 // ============================================================================
@@ -186,9 +193,11 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 					</div>
 					{/* Text */}
 					<div className="flex flex-col items-start">
-						<span className="text-sm font-medium">{isExpanded ? "Hide" : "Show"} order summary</span>
+						<span className="text-sm font-medium">
+							{isExpanded ? "Skryť" : "Zobraziť"} zhrnutie objednávky
+						</span>
 						<span className="text-muted-foreground text-xs">
-							{itemCount} {itemCount === 1 ? "item" : "items"}
+							{itemCount} {getItemCountLabel(itemCount)}
 						</span>
 					</div>
 				</div>
@@ -205,9 +214,9 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 
 			{/* Desktop Header - Only visible on desktop */}
 			<header className="bg-secondary/30 hidden items-center gap-2 px-5 py-4 md:flex">
-				<h2 className="text-base font-semibold">Order Summary</h2>
+				<h2 className="text-base font-semibold">Zhrnutie objednávky</h2>
 				<span className="text-muted-foreground text-sm">
-					({itemCount} {itemCount === 1 ? "item" : "items"})
+					({itemCount} {getItemCountLabel(itemCount)})
 				</span>
 			</header>
 
@@ -267,16 +276,16 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 					<section className="border-border border-t px-5 py-4">
 						<dl className="space-y-2 text-sm tabular-nums">
 							<div className="flex justify-between">
-								<dt className="text-muted-foreground">Subtotal</dt>
+								<dt className="text-muted-foreground">Medzisúčet</dt>
 								<dd>{formatMoney(subtotal)}</dd>
 							</div>
 							<div className="flex justify-between">
-								<dt className="text-muted-foreground">Shipping</dt>
+								<dt className="text-muted-foreground">Doprava</dt>
 								<dd>{shipping > 0 ? formatMoney(shipping) : "—"}</dd>
 							</div>
 							{discount > 0 && (
 								<div className="flex justify-between text-green-600">
-									<dt>Discount</dt>
+									<dt>Zľava</dt>
 									<dd>-{formatMoney(discount)}</dd>
 								</div>
 							)}
@@ -284,7 +293,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 
 						{/* Total */}
 						<div className="border-border/50 mt-4 flex items-baseline justify-between border-t pt-4">
-							<span className="text-base font-semibold">Total</span>
+							<span className="text-base font-semibold">Celková cena</span>
 							<data value={total} className="text-xl font-semibold tabular-nums">
 								{formatMoney(total)}
 							</data>
@@ -295,7 +304,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 					<footer className="bg-secondary/30 border-border flex justify-center border-t px-5 py-4">
 						<div className="bg-secondary flex items-center gap-2 rounded-lg px-4 py-2.5">
 							<ShieldCheck className="text-muted-foreground h-4 w-4" />
-							<span className="text-muted-foreground text-[10px] leading-tight">Secure checkout</span>
+							<span className="text-muted-foreground text-[10px] leading-tight">Bezpečný nákup</span>
 						</div>
 					</footer>
 				</div>

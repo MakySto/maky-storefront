@@ -44,19 +44,19 @@ export const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ onSuccess, onBac
 		setError("");
 
 		if (password.length < 8) {
-			setError("Password must be at least 8 characters");
+			setError("Heslo musí mať aspoň 8 znakov");
 			return;
 		}
 
 		if (password !== confirmPassword) {
-			setError("Passwords do not match");
+			setError("Heslá sa nezhodujú");
 			return;
 		}
 
 		const { passwordResetToken, passwordResetEmail } = getQueryParams(searchParams);
 
 		if (!passwordResetToken) {
-			setError("Invalid or expired reset link");
+			setError("Odkaz na obnovenie hesla je neplatný alebo mu vypršala platnosť");
 			return;
 		}
 
@@ -70,7 +70,7 @@ export const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ onSuccess, onBac
 
 			if (result.data?.setPassword?.errors?.length) {
 				const err = result.data.setPassword.errors[0];
-				setError(err.message || "Failed to reset password");
+				setError(err.message || "Nepodarilo sa obnoviť heslo");
 			} else if (result.data?.setPassword?.token) {
 				// Clear the URL params
 				const newQuery = createQueryString(searchParams, {
@@ -80,10 +80,10 @@ export const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ onSuccess, onBac
 				router.replace(`?${newQuery}`, { scroll: false });
 				onSuccess();
 			} else {
-				setError("Failed to reset password. The link may have expired.");
+				setError("Nepodarilo sa obnoviť heslo. Platnosť odkazu mohla vypršať.");
 			}
 		} catch {
-			setError("An error occurred. Please try again.");
+			setError("Nastala chyba. Skúste to znova.");
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -92,22 +92,22 @@ export const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ onSuccess, onBac
 	return (
 		<form onSubmit={handleSubmit} className="space-y-4">
 			<div>
-				<h2 className="text-xl font-semibold">Reset your password</h2>
-				<p className="mt-1 text-sm text-muted-foreground">Enter a new password for your account</p>
+				<h2 className="text-xl font-semibold">Obnovenie hesla</h2>
+				<p className="mt-1 text-sm text-muted-foreground">Zadajte nové heslo pre váš účet</p>
 			</div>
 
 			{error && <div className="bg-destructive/10 rounded-md p-3 text-sm text-destructive">{error}</div>}
 
 			<div className="space-y-1.5">
 				<Label htmlFor="new-password" className="text-sm font-medium">
-					New password
+					Nové heslo
 				</Label>
 				<div className="relative">
 					<Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 					<Input
 						id="new-password"
 						type={showPassword ? "text" : "password"}
-						placeholder="Minimum 8 characters"
+						placeholder="Minimálne 8 znakov"
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
 						autoComplete="new-password"
@@ -127,14 +127,14 @@ export const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ onSuccess, onBac
 
 			<div className="space-y-1.5">
 				<Label htmlFor="confirm-password" className="text-sm font-medium">
-					Confirm password
+					Potvrdenie hesla
 				</Label>
 				<div className="relative">
 					<Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 					<Input
 						id="confirm-password"
 						type={showPassword ? "text" : "password"}
-						placeholder="Re-enter your password"
+						placeholder="Zadajte heslo znova"
 						value={confirmPassword}
 						onChange={(e) => setConfirmPassword(e.target.value)}
 						autoComplete="new-password"
@@ -150,10 +150,10 @@ export const ResetPasswordForm: FC<ResetPasswordFormProps> = ({ onSuccess, onBac
 					onClick={onBackToSignIn}
 					className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground hover:no-underline"
 				>
-					Back to sign in
+					Späť na prihlásenie
 				</button>
 				<Button type="submit" disabled={isSubmitting}>
-					{isSubmitting ? "Resetting..." : "Reset password"}
+					{isSubmitting ? "Ukladám…" : "Obnoviť heslo"}
 				</Button>
 			</div>
 		</form>

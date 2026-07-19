@@ -21,17 +21,17 @@ const DEFAULT_ADDRESS_FIELDS: AddressField[] = [
 
 export type AddressFieldLabel = Exclude<AddressField, "countryCode"> | "country";
 export const addressFieldMessages: Record<AddressFieldLabel, string> = {
-	city: "City",
-	firstName: "First name",
-	countryArea: "Country area",
-	lastName: "Last name",
-	country: "Country",
-	cityArea: "City area",
-	postalCode: "Postal code",
-	companyName: "Company",
-	streetAddress1: "Street address",
-	streetAddress2: "Apartment, suite, etc.",
-	phone: "Phone number",
+	city: "Mesto",
+	firstName: "Meno",
+	countryArea: "Kraj/oblasť",
+	lastName: "Priezvisko",
+	country: "Krajina",
+	cityArea: "Mestská časť",
+	postalCode: "PSČ",
+	companyName: "Firma",
+	streetAddress1: "Ulica a číslo",
+	streetAddress2: "Byt, vchod, poschodie (nepovinné)",
+	phone: "Telefón",
 };
 
 export type LocalizedAddressFieldLabel =
@@ -43,13 +43,13 @@ export type LocalizedAddressFieldLabel =
 	| "postTown"
 	| "prefecture";
 export const localizedAddressFieldMessages: Record<LocalizedAddressFieldLabel, string> = {
-	province: "Province",
-	district: "District",
-	state: "State",
-	zip: "Zip code",
-	postal: "Postal code",
-	postTown: "Post town",
-	prefecture: "Prefecture",
+	province: "Provincia",
+	district: "Okres",
+	state: "Štát",
+	zip: "PSČ",
+	postal: "PSČ",
+	postTown: "Poštové mesto",
+	prefecture: "Prefektúra",
 };
 
 export const useAddressFormUtils = (countryCode: CountryCode = defaultCountry) => {

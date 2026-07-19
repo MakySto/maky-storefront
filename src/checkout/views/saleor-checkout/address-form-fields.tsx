@@ -166,7 +166,7 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 		const fieldLabel = (
 			<Label htmlFor={fieldId} className="text-sm font-medium">
 				{label}
-				{!isRequired && <span className="ml-1 font-normal text-muted-foreground">(optional)</span>}
+				{!isRequired && <span className="ml-1 font-normal text-muted-foreground">(nepovinné)</span>}
 			</Label>
 		);
 
@@ -180,7 +180,7 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 						value={formData[field] || ""}
 						onChange={(value) => onFieldChange(field, value)}
 						error={error}
-						placeholder={`Select ${label.toLowerCase()}`}
+						placeholder={`Vyberte ${label.toLowerCase()}`}
 						autoComplete={autoComplete}
 						options={countryAreaChoices.map(({ raw, verbose }) => ({
 							value: raw as string,

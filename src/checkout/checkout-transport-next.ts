@@ -9,7 +9,7 @@ import {
 import type { CheckoutActionResult } from "@/checkout/lib/checkout-action-types";
 import type { CheckoutTransport } from "@/checkout/lib/checkout-transport";
 
-const BILLING_UPDATE_FAILED_MESSAGE = "Failed to update billing address";
+const BILLING_UPDATE_FAILED_MESSAGE = "Nepodarilo sa uložiť fakturačnú adresu.";
 
 /**
  * Next.js implementation of `CheckoutTransport`: each method is a server action, so

@@ -227,17 +227,17 @@ const transactionProcessDoc = toTypedDocument<
 	TransactionProcessMutationVariables
 >(TransactionProcessDocument);
 
-// Hardcoded EN (D1) — SK localisation lands with the checkout i18n pass (B.7).
-const NO_SALEOR_RESPONSE_MESSAGE = "No response from Saleor. Please try again.";
-const GATEWAY_INIT_FAILED_MESSAGE = "Payment gateway initialization failed.";
+// Hardcoded SK (D1 resolved by the B.7 checkout i18n pass) — user-facing payment action messages.
+const NO_SALEOR_RESPONSE_MESSAGE = "Zo servera neprišla žiadna odpoveď. Skúste to znova.";
+const GATEWAY_INIT_FAILED_MESSAGE = "Inicializácia platobnej brány zlyhala.";
 const PAYMENT_INIT_FAILED_MESSAGE =
-	"Payment could not be initialized. Check that the payment app is running in Saleor.";
-const TOTAL_VERIFY_FAILED_MESSAGE = "Could not verify the checkout total. Please try again.";
-const TOTAL_CHANGED_MESSAGE = "Order total changed. Review the updated amount and try again.";
-const PAYMENTS_DISABLED_MESSAGE = "Payments are not enabled in this environment.";
-const PAYMENT_PROCESS_FAILED_MESSAGE = "Payment could not be processed. Please try again.";
-const COMPLETE_ORDER_FAILED_MESSAGE = "Could not complete your order. Please try again.";
-const ORDER_CREATE_FAILED_MESSAGE = "Order was not created. Please try again.";
+	"Platbu sa nepodarilo inicializovať. Skontrolujte, či platobná aplikácia v Saleore beží.";
+const TOTAL_VERIFY_FAILED_MESSAGE = "Nepodarilo sa overiť celkovú cenu objednávky. Skúste to znova.";
+const TOTAL_CHANGED_MESSAGE = "Celková cena objednávky sa zmenila. Skontrolujte aktualizovanú sumu a skúste to znova.";
+const PAYMENTS_DISABLED_MESSAGE = "Platby nie sú v tomto prostredí povolené.";
+const PAYMENT_PROCESS_FAILED_MESSAGE = "Platbu sa nepodarilo spracovať. Skúste to znova.";
+const COMPLETE_ORDER_FAILED_MESSAGE = "Objednávku sa nepodarilo dokončiť. Skúste to znova.";
+const ORDER_CREATE_FAILED_MESSAGE = "Objednávka nebola vytvorená. Skúste to znova.";
 
 export async function initializePaymentGatewaysAction(
 	variables: PaymentGatewaysInitializeMutationVariables,

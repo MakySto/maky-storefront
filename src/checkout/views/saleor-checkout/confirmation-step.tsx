@@ -36,7 +36,7 @@ export const ConfirmationStep: FC<ConfirmationStepProps> = ({ checkout }) => {
 		<div className="space-y-8">
 			{/* Demo Banner */}
 			<div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-800">
-				<strong>Demo Mode:</strong> This is a simulated order confirmation. No real payment was processed.
+				<strong>Testovací režim:</strong> Toto je simulované potvrdenie objednávky. Žiadna skutočná platba neprebehla.
 			</div>
 
 			{/* Success Header */}
@@ -48,17 +48,17 @@ export const ConfirmationStep: FC<ConfirmationStepProps> = ({ checkout }) => {
 					</div>
 				</div>
 				<div>
-					<p className="text-muted-foreground">Order {orderNumber}</p>
-					<h1 className="mt-1 text-2xl font-semibold">Thank you for your order!</h1>
+					<p className="text-muted-foreground">Objednávka {orderNumber}</p>
+					<h1 className="mt-1 text-2xl font-semibold">Ďakujeme za vašu objednávku!</h1>
 				</div>
 			</div>
 
 			{/* Order Confirmation Card */}
 			<div className="border-border overflow-hidden rounded-lg border">
 				<div className="bg-secondary/50 border-border border-b p-4">
-					<h2 className="font-semibold">Your order is confirmed</h2>
+					<h2 className="font-semibold">Vaša objednávka je potvrdená</h2>
 					<p className="text-muted-foreground mt-1 text-sm break-words">
-						You&apos;ll receive a confirmation email at {email}
+						Potvrdzujúci e-mail vám pošleme na adresu {email}
 					</p>
 				</div>
 
@@ -67,7 +67,7 @@ export const ConfirmationStep: FC<ConfirmationStepProps> = ({ checkout }) => {
 					<div className="flex items-start gap-3">
 						<Mail className="text-muted-foreground mt-0.5 h-5 w-5 shrink-0" />
 						<div className="min-w-0 flex-1">
-							<p className="text-sm font-medium">Confirmation email sent</p>
+							<p className="text-sm font-medium">Potvrdzujúci e-mail odoslaný</p>
 							<p className="text-muted-foreground text-sm break-words">{email}</p>
 						</div>
 					</div>
@@ -75,7 +75,7 @@ export const ConfirmationStep: FC<ConfirmationStepProps> = ({ checkout }) => {
 						<div className="flex items-start gap-3">
 							<MapPin className="text-muted-foreground mt-0.5 h-5 w-5 shrink-0" />
 							<div className="min-w-0 flex-1">
-								<p className="text-sm font-medium">Shipping address</p>
+								<p className="text-sm font-medium">Dodacia adresa</p>
 								<p className="text-muted-foreground text-sm break-words">{formatAddress(shippingAddress)}</p>
 							</div>
 						</div>
@@ -84,7 +84,7 @@ export const ConfirmationStep: FC<ConfirmationStepProps> = ({ checkout }) => {
 						<div className="flex items-start gap-3">
 							<CreditCard className="text-muted-foreground mt-0.5 h-5 w-5 shrink-0" />
 							<div className="min-w-0 flex-1">
-								<p className="text-sm font-medium">Billing address</p>
+								<p className="text-sm font-medium">Fakturačná adresa</p>
 								<p className="text-muted-foreground text-sm break-words">{formatAddress(billingAddress)}</p>
 							</div>
 						</div>
@@ -98,7 +98,7 @@ export const ConfirmationStep: FC<ConfirmationStepProps> = ({ checkout }) => {
 					href={marketHref(channel)}
 					className="border-input hover:bg-accent hover:text-accent-foreground inline-flex h-12 flex-1 items-center justify-center rounded-md border bg-transparent px-4 text-sm font-medium transition-colors"
 				>
-					Continue shopping
+					Pokračovať v nákupe
 				</Link>
 			</div>
 		</div>

@@ -67,7 +67,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
 		<section className="space-y-4">
 			{isSignedIn && user ? (
 				<>
-					<h2 className="text-xl font-semibold">Contact</h2>
+					<h2 className="text-xl font-semibold">Kontakt</h2>
 					<SignedInUser user={user} onSignOut={onSignOut} />
 				</>
 			) : (
@@ -94,7 +94,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
 								onCheckedChange={(checked) => onSubscribeChange(checked === true)}
 							/>
 							<Label htmlFor="subscribe" className="cursor-pointer text-sm text-muted-foreground">
-								Email me with news and offers
+								Chcem dostávať novinky a ponuky e-mailom
 							</Label>
 						</div>
 					)}

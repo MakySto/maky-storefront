@@ -35,7 +35,7 @@ export const SignedInUser: FC<SignedInUserProps> = ({ user, onSignOut }) => {
 				</div>
 				<div className="min-w-0 flex-1">
 					<p className="break-words font-medium">{user.email}</p>
-					<p className="text-sm text-muted-foreground">Signed in</p>
+					<p className="text-sm text-muted-foreground">Prihlásený používateľ</p>
 				</div>
 			</div>
 			<button
@@ -43,7 +43,7 @@ export const SignedInUser: FC<SignedInUserProps> = ({ user, onSignOut }) => {
 				onClick={handleSignOut}
 				className="shrink-0 text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground hover:no-underline"
 			>
-				Sign out
+				Odhlásiť sa
 			</button>
 		</div>
 	);

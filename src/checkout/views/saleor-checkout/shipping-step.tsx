@@ -55,7 +55,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 			}
 
 			if (!selectedMethod) {
-				setError("Please select a shipping method");
+				setError("Vyberte spôsob dopravy");
 				// Focus the first radio option
 				const firstRadio = document.querySelector('input[name="shipping"]') as HTMLElement;
 				firstRadio?.focus();
@@ -78,7 +78,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 				});
 
 				if (result.error) {
-					setError("Failed to update shipping method");
+					setError("Nepodarilo sa uložiť spôsob dopravy");
 					return;
 				}
 
@@ -94,7 +94,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 		[selectedMethod, currentMethodId, onNext, checkout.id, refetch],
 	);
 
-	const buttonText = isSubmittingLocal ? "Saving..." : "Continue to payment";
+	const buttonText = isSubmittingLocal ? "Ukladám…" : "Pokračovať na platbu";
 
 	return (
 		<form className="space-y-8" onSubmit={handleSubmit}>
@@ -103,23 +103,23 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 
 			{/* Shipping Methods */}
 			<section className="space-y-4">
-				<h2 className="text-lg font-semibold">Shipping method</h2>
+				<h2 className="text-lg font-semibold">Spôsob dopravy</h2>
 
 				{error && <p className="text-destructive text-sm">{error}</p>}
 
 				{fetching ? (
 					<div className="border-border flex items-center gap-3 rounded-lg border p-4">
 						<div className="border-foreground h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
-						<p className="text-muted-foreground text-sm">Loading shipping methods...</p>
+						<p className="text-muted-foreground text-sm">Načítavame spôsoby dopravy…</p>
 					</div>
 				) : shippingMethods.length === 0 ? (
 					<div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
 						<p className="text-sm text-amber-800">
 							{!hasShippingAddress
-								? "Please go back and enter your shipping address first."
-								: `No shipping methods available for ${
-										checkout.shippingAddress?.country?.country || "your address"
-									}. Please check your address or contact support.`}
+								? "Najprv sa vráťte späť a zadajte dodaciu adresu."
+								: `Pre ${
+										checkout.shippingAddress?.country?.country || "vašu adresu"
+									} nie sú dostupné žiadne spôsoby dopravy. Skontrolujte adresu alebo nás kontaktujte.`}
 						</p>
 					</div>
 				) : (
@@ -166,13 +166,13 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 											<span className="font-medium">{method.name}</span>
 											{isEco && (
 												<span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">
-													Eco
+													Eko
 												</span>
 											)}
 										</div>
 										{method.minimumDeliveryDays && method.maximumDeliveryDays && (
 											<p className="text-muted-foreground text-sm">
-												{method.minimumDeliveryDays}-{method.maximumDeliveryDays} business days
+												{method.minimumDeliveryDays}-{method.maximumDeliveryDays} pracovných dní
 											</p>
 										)}
 									</div>
@@ -192,7 +192,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 					className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm transition-colors"
 				>
 					<ChevronLeft className="h-4 w-4" />
-					Return to information
+					Späť na informácie
 				</button>
 				<Button
 					type="submit"
@@ -210,7 +210,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 				onAction={handleSubmit}
 				isLoading={isSubmittingLocal}
 				disabled={!selectedMethod}
-				loadingText="Saving..."
+				loadingText="Ukladám…"
 			/>
 		</form>
 	);

@@ -154,11 +154,9 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 
 	const buttonText = isLoading
 		? isCompletingOrder
-			? "Creating order…"
-			: "Processing payment…"
-		: isFreeOrder
-			? "Complete order"
-			: `Pay ${totalStr}`;
+			? "Vytvárame objednávku…"
+			: "Spracovávame platbu…"
+		: "Objednať s povinnosťou platby";
 
 	const isDisabled = isLoading || (!canSubmit && !isFreeOrder);
 
@@ -171,15 +169,15 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 				>
 					<AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
 					<div>
-						<p className="font-medium text-amber-800">Your order total was updated</p>
+						<p className="font-medium text-amber-800">Celková cena vašej objednávky sa zmenila</p>
 						<p className="mt-1 text-sm text-amber-700">
-							{`The total changed from ${getFormattedMoney({
+							{`Celková cena sa zmenila z ${getFormattedMoney({
 								amount: priceChangeNotice.previousAmount,
 								currency: priceChangeNotice.currency,
-							})} to ${getFormattedMoney({
+							})} na ${getFormattedMoney({
 								amount: priceChangeNotice.newAmount,
 								currency: priceChangeNotice.currency,
-							})}. Review the updated order summary before completing your payment.`}
+							})}. Pred dokončením platby si skontrolujte aktualizované zhrnutie objednávky.`}
 						</p>
 					</div>
 				</div>
@@ -234,7 +232,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 					className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
 				>
 					<ChevronLeft className="h-4 w-4" />
-					{isShippingRequired ? "Return to shipping" : "Return to information"}
+					{isShippingRequired ? "Späť na dopravu" : "Späť na informácie"}
 				</button>
 				{!usesClientSubmit ? (
 					<Button type="submit" disabled={isDisabled} className="hidden h-12 min-w-[200px] px-8 md:flex">
@@ -259,7 +257,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 					isLoading={isLoading}
 					disabled={isDisabled}
 					total={totalStr}
-					loadingText={isCompletingOrder ? "Creating order…" : "Processing payment…"}
+					loadingText={isCompletingOrder ? "Vytvárame objednávku…" : "Spracovávame platbu…"}
 				/>
 			) : null}
 		</>

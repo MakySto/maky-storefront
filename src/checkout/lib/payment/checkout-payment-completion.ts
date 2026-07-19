@@ -10,19 +10,19 @@ export const PAYMENT_COMPLETING_STORAGE_KEY = "checkout:payment-completing";
 
 /** Aborted before transactionInitialize / confirmPayment — no charge exists anywhere. */
 export const PAYMENT_INTERRUPTED_MESSAGE =
-	"Payment was interrupted before you were charged. You can safely try again.";
+	"Platba bola prerušená skôr, než došlo k odpísaniu peňazí. Môžete to bezpečne skúsiť znova.";
 
 /** Aborted after the PSP authorized — retrying would create a second authorization. */
 export const PAYMENT_AUTHORIZED_INTERRUPTED_MESSAGE =
-	"Your payment went through, but your order has not been placed yet. Do not pay again — use “Complete order” below to finish.";
+	"Vaša platba prebehla, ale objednávka ešte nebola odoslaná. Neplaťte znova — dokončite ju tlačidlom „Objednať s povinnosťou platby“ nižšie.";
 
 /** Aborted during the completing screen — order placement continues in the background. */
 export const ORDER_FINALIZING_INTERRUPTED_MESSAGE =
-	"Your order is still being placed. Do not pay again — this page will update once it finishes.";
+	"Vaša objednávka sa stále odosiela. Neplaťte znova — po dokončení sa táto stránka aktualizuje.";
 
 /** An interrupted attempt could not be verified against Saleor — block retry guidance. */
 export const PAYMENT_VERIFICATION_UNAVAILABLE_MESSAGE =
-	"We could not verify your previous payment attempt. Please refresh the page — do not pay again until it is verified.";
+	"Nepodarilo sa nám overiť váš predchádzajúci pokus o platbu. Obnovte stránku — neplaťte znova, kým platba nebude overená.";
 
 /** Survives PaymentStep unmount during the completing screen (shown on remount). */
 export const PAYMENT_COMPLETION_ERROR_STORAGE_KEY = "checkout:payment-completion-error";

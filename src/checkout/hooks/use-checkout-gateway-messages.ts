@@ -7,29 +7,29 @@ import { buildCheckoutGatewayMessages } from "@/checkout/lib/payment/gateway-mes
 /**
  * User-facing payment gateway alerts and pay-flow errors.
  *
- * MAKY (D1): hardcoded EN maps instead of upstream's next-intl `checkout.gateways`
- * namespace — same export name + path, so B.7 swaps the body for next-intl without
- * touching consumers. Copy is verbatim upstream `messages/en.json`.
+ * MAKY (D1/B.7): hardcoded SK maps instead of upstream's next-intl `checkout.gateways`
+ * namespace — same export name + path, so a later i18n pass swaps the body for
+ * next-intl without touching consumers. Copy translated to Slovak (B.7).
  */
 const EN_GATEWAY_MESSAGES: Record<string, string> = {
-	noneTitle: "No payment gateway configured",
+	noneTitle: "Platobná brána nie je nakonfigurovaná",
 	noneBody:
-		"To accept payments, install a payment app (like Saleor Dummy Payment for testing, or Stripe/Adyen for production) from the Saleor Dashboard.",
-	unsupportedTitle: "Unsupported payment gateway",
-	unsupportedList: "This checkout does not support the available payment gateway(s): {gateways}.",
-	unsupportedEmpty: "No supported payment gateway is available for this checkout.",
-	dummyMissingTitle: "Dummy Payment not available on this checkout",
+		"Na prijímanie platieb nainštalujte platobnú aplikáciu (napr. Saleor Dummy Payment na testovanie alebo Stripe/Adyen pre produkciu) zo Saleor Dashboardu.",
+	unsupportedTitle: "Nepodporovaná platobná brána",
+	unsupportedList: "Táto pokladňa nepodporuje dostupné platobné brány: {gateways}.",
+	unsupportedEmpty: "Pre túto pokladňu nie je dostupná žiadna podporovaná platobná brána.",
+	dummyMissingTitle: "Aplikácia Dummy Payment nie je pre túto pokladňu dostupná",
 	dummyMissingBody:
-		"Dummy Payment App is installed, but it is not available for this checkout. In Saleor Dashboard, check the app is active, webhooks are delivering successfully, and the checkout currency is supported (USD for the hosted app).",
+		"Aplikácia Dummy Payment je nainštalovaná, ale pre túto pokladňu nie je dostupná. V Saleor Dashboarde skontrolujte, či je aplikácia aktívna, či sa webhooky doručujú úspešne a či je mena pokladne podporovaná (USD pre hostovanú aplikáciu).",
 	noGatewayConfigured:
-		"No payment gateway configured. Please contact support or configure a payment app in Saleor.",
+		"Platobná brána nie je nakonfigurovaná. Kontaktujte podporu alebo nakonfigurujte platobnú aplikáciu v Saleore.",
 	stripeUseCardForm:
-		"Stripe payment is handled by the card form. Complete payment using the Stripe payment section above.",
-	paymentFailed: "Payment failed",
-	paymentTryAgain: "Payment failed. Please try again.",
+		"Platba cez Stripe prebieha vo formulári karty. Dokončite platbu v sekcii platby Stripe vyššie.",
+	paymentFailed: "Platba zlyhala",
+	paymentTryAgain: "Platba zlyhala. Skúste to znova.",
 	paymentWebhookFailed:
-		"Payment app webhook failed. In Saleor Dashboard → Apps → Dummy Payment App, check webhook deliveries are succeeding.",
-	paymentInitFailed: "Payment could not be initialized. Check that the payment app is running in Saleor.",
+		"Webhook platobnej aplikácie zlyhal. V Saleor Dashboard → Apps → Dummy Payment App skontrolujte, či sa webhooky doručujú úspešne.",
+	paymentInitFailed: "Platbu sa nepodarilo inicializovať. Skontrolujte, či platobná aplikácia v Saleore beží.",
 };
 
 function translate(key: string, values?: Record<string, string>): string {

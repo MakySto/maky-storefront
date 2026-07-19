@@ -38,7 +38,7 @@ export function CheckoutHeader({ step, onStepClick, isShippingRequired = true }:
 					</Link>
 
 					{/* Progress Steps - Desktop */}
-					<nav className="hidden items-center gap-2 md:flex" aria-label="Checkout steps">
+					<nav className="hidden items-center gap-2 md:flex" aria-label="Kroky pokladne">
 						{steps.map((s, i) => (
 							<div key={s.number} className="flex items-center">
 								<button
@@ -72,14 +72,14 @@ export function CheckoutHeader({ step, onStepClick, isShippingRequired = true }:
 					{/* Secure Badge */}
 					<div className="flex items-center gap-1.5 text-muted-foreground">
 						<Lock className="h-3.5 w-3.5" />
-						<span className="text-xs">Secure checkout</span>
+						<span className="text-xs">Bezpečný nákup</span>
 					</div>
 				</div>
 
 				{/* Mobile Progress Bar */}
 				<div className="mt-3 md:hidden">
 					<div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-						<span>{step === confirmationStepIndex ? "Complete" : `Step ${step} of ${totalSteps}`}</span>
+						<span>{step === confirmationStepIndex ? "Potvrdenie" : `Krok ${step} z ${totalSteps}`}</span>
 						<span>{steps[step - 1]?.label}</span>
 					</div>
 					<div

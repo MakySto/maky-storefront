@@ -37,7 +37,7 @@ export const AddressDisplay: FC<AddressDisplayProps> = ({ address, title, classN
 		return (
 			<div className={cn("text-sm text-muted-foreground", className)}>
 				{title && <p className="mb-1 font-medium text-foreground">{title}</p>}
-				<p>No address provided</p>
+				<p>Adresa nie je zadaná</p>
 			</div>
 		);
 	}
@@ -53,7 +53,7 @@ export const AddressDisplay: FC<AddressDisplayProps> = ({ address, title, classN
 							onClick={onEdit}
 							className="text-muted-foreground underline underline-offset-2 hover:text-foreground hover:no-underline"
 						>
-							Edit
+							Upraviť
 						</button>
 					)}
 				</div>

@@ -35,7 +35,7 @@ export const CheckoutSummaryContext: FC<CheckoutSummaryContextProps> = ({ rows, 
 							onClick={() => onGoToStep(row.onChangeStep!)}
 							className="shrink-0 text-sm underline underline-offset-2 hover:no-underline"
 						>
-							Change
+							Zmeniť
 						</button>
 					)}
 				</div>
@@ -75,24 +75,24 @@ export function formatShippingMethod(checkout: CheckoutFragment): string {
 /** Build standard summary rows for shipping step */
 export function buildShippingSummaryRows(checkout: CheckoutFragment): SummaryRow[] {
 	return [
-		{ label: "Contact", value: checkout.email || "", onChangeStep: 1 },
-		{ label: "Ship to", value: formatAddressLine(checkout.shippingAddress), onChangeStep: 1 },
+		{ label: "Kontakt", value: checkout.email || "", onChangeStep: 1 },
+		{ label: "Doručenie na", value: formatAddressLine(checkout.shippingAddress), onChangeStep: 1 },
 	];
 }
 
 /** Build standard summary rows for payment step */
 export function buildPaymentSummaryRows(checkout: CheckoutFragment): SummaryRow[] {
-	const rows: SummaryRow[] = [{ label: "Contact", value: checkout.email || "", onChangeStep: 1 }];
+	const rows: SummaryRow[] = [{ label: "Kontakt", value: checkout.email || "", onChangeStep: 1 }];
 
 	// Only show shipping info for physical products
 	if (checkout.isShippingRequired) {
 		rows.push(
-			{ label: "Ship to", value: formatAddressLine(checkout.shippingAddress), onChangeStep: 1 },
-			{ label: "Method", value: formatShippingMethod(checkout), onChangeStep: 2 },
+			{ label: "Doručenie na", value: formatAddressLine(checkout.shippingAddress), onChangeStep: 1 },
+			{ label: "Doprava", value: formatShippingMethod(checkout), onChangeStep: 2 },
 		);
 	} else {
 		// Digital products - show delivery type instead
-		rows.push({ label: "Delivery", value: "Digital" });
+		rows.push({ label: "Doručenie", value: "Digitálne" });
 	}
 
 	return rows;

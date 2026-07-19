@@ -60,17 +60,17 @@ export const OrderConfirmation = () => {
 										</div>
 									</div>
 									<div>
-										<p className="text-muted-foreground">Order #{order.number}</p>
-										<h1 className="mt-1 text-2xl font-semibold">Thank you for your order!</h1>
+										<p className="text-muted-foreground">Objednávka č. {order.number}</p>
+										<h1 className="mt-1 text-2xl font-semibold">Ďakujeme za vašu objednávku!</h1>
 									</div>
 								</div>
 
 								{/* Order Confirmation Card */}
 								<div className="border-border overflow-hidden rounded-lg border">
 									<div className="bg-secondary/50 border-border border-b p-4">
-										<h2 className="font-semibold">Your order is confirmed</h2>
+										<h2 className="font-semibold">Vaša objednávka je potvrdená</h2>
 										<p className="text-muted-foreground mt-1 text-sm">
-											You&apos;ll receive a confirmation email at {email}
+											Potvrdzujúci e-mail vám pošleme na adresu {email}
 										</p>
 									</div>
 
@@ -79,7 +79,7 @@ export const OrderConfirmation = () => {
 										<div className="flex items-start gap-3">
 											<Mail className="text-muted-foreground mt-0.5 h-5 w-5" />
 											<div>
-												<p className="text-sm font-medium">Confirmation email sent</p>
+												<p className="text-sm font-medium">Potvrdzujúci e-mail odoslaný</p>
 												<p className="text-muted-foreground text-sm">{email}</p>
 											</div>
 										</div>
@@ -87,7 +87,7 @@ export const OrderConfirmation = () => {
 											<div className="flex items-start gap-3">
 												<MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
 												<div>
-													<p className="text-sm font-medium">Shipping address</p>
+													<p className="text-sm font-medium">Dodacia adresa</p>
 													<p className="text-muted-foreground text-sm">{formatAddress(shippingAddress)}</p>
 												</div>
 											</div>
@@ -96,7 +96,7 @@ export const OrderConfirmation = () => {
 											<div className="flex items-start gap-3">
 												<CreditCard className="text-muted-foreground mt-0.5 h-5 w-5" />
 												<div>
-													<p className="text-sm font-medium">Billing address</p>
+													<p className="text-sm font-medium">Fakturačná adresa</p>
 													<p className="text-muted-foreground text-sm">{formatAddress(billingAddress)}</p>
 												</div>
 											</div>
@@ -110,7 +110,7 @@ export const OrderConfirmation = () => {
 										href={marketHref(channel || "sk")}
 										className="border-input hover:bg-accent hover:text-accent-foreground inline-flex h-12 flex-1 items-center justify-center rounded-md border bg-transparent px-4 text-sm font-medium transition-colors"
 									>
-										Continue shopping
+										Pokračovať v nákupe
 									</Link>
 								</div>
 							</div>

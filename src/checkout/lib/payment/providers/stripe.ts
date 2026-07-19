@@ -15,7 +15,7 @@ export const STRIPE_GATEWAY_ID = "saleor.app.payment.stripe";
 
 /** Shown when Stripe is on the checkout but the storefront flag is off. */
 export const STRIPE_PAYMENT_NOT_ENABLED_MESSAGE =
-	"Stripe payments are not enabled in this environment. Set NEXT_PUBLIC_ENABLE_STRIPE_PAYMENTS=true on the storefront.";
+	"Platby kartou nie sú v tomto prostredí povolené.";
 
 export function isStripeGateway(gatewayId: string): boolean {
 	return gatewayId === STRIPE_GATEWAY_ID;

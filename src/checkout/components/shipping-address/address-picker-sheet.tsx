@@ -40,7 +40,7 @@ export const AddressPickerSheet: FC<AddressPickerSheetProps> = ({
 	selectedAddressId,
 	onSelectAddress,
 	defaultAddressId,
-	title = "Select address",
+	title = "Vyberte adresu",
 	onAddNew,
 	onEdit,
 }) => {
@@ -75,7 +75,7 @@ export const AddressPickerSheet: FC<AddressPickerSheetProps> = ({
 				{/* Address list */}
 				<div className="flex-1 overflow-y-auto px-4 py-3">
 					{sortedAddresses.length === 0 ? (
-						<p className="py-8 text-center text-sm text-muted-foreground">No saved addresses</p>
+						<p className="py-8 text-center text-sm text-muted-foreground">Žiadne uložené adresy</p>
 					) : (
 						<div className="space-y-2">
 							{sortedAddresses.map((address) => {
@@ -112,7 +112,7 @@ export const AddressPickerSheet: FC<AddressPickerSheetProps> = ({
 												</span>
 												{isDefault && (
 													<span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
-														Default
+														Predvolená
 													</span>
 												)}
 											</div>
@@ -135,7 +135,7 @@ export const AddressPickerSheet: FC<AddressPickerSheetProps> = ({
 												}}
 												className="shrink-0 rounded px-2 py-1 text-xs text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
 											>
-												Edit
+												Upraviť
 											</button>
 										)}
 									</button>
@@ -158,7 +158,7 @@ export const AddressPickerSheet: FC<AddressPickerSheetProps> = ({
 							}}
 						>
 							<Plus className="h-4 w-4" />
-							Add new address
+							Pridať novú adresu
 						</Button>
 					</div>
 				)}
