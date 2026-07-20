@@ -362,3 +362,39 @@ Ostáva ZAPNUTÁ (Stripe App konfigurácia sa týmto release nemení). Pri Marek
 reálnej Klarna objednávke sledovať: PM2 logy oboch appiek, Saleor order
 (Fully paid + Unconfirmed, 1 transakcia), presne 1 ORDER_CREATED e-mail,
 návrat z redirect flow na confirmation stránku.
+
+### §10 addendum — PROD DEPLOYED (2026-07-20 ~22:35, po pokyne „OK deploy")
+
+| zložka     | SHA                                            | BUILD_ID                | rollback snapshot                                        |
+| ---------- | ---------------------------------------------- | ----------------------- | -------------------------------------------------------- |
+| storefront | `95e772a` = tag **`sk-launch-rc2`**            | `swKto4qN8VlYtgT63w6_N` | `/opt/storefront/.next.rollback-6e0e4e7`                 |
+| SMTP       | `0318ce91` (vetva `maky-i18n-content-release`) | `fruYw0vnjWUgKxAhyF_Jm` | `/opt/saleor-smtp-app/apps/smtp/.next.rollback-d756df58` |
+
+**Korekcia oproti plánu:** snapshot NIE JE v `/opt/.next.rollback-6e0e4e7`
+(zápis do `/opt` root vyžaduje sudo) — je v `/opt/storefront/.next.rollback-6e0e4e7`,
+vytvorený instantným `mv` starého `.next` (žiadna kópia, kratšie downtime okno).
+
+Rollback RC2 → RC1:
+
+```bash
+pm2 stop maky-storefront
+git checkout -f --detach 6e0e4e7
+rm -rf .next && cp -a .next.rollback-6e0e4e7 .next && pm2 start maky-storefront
+# SMTP: pm2 stop maky-smtp-app; git checkout -f --detach d756df58;
+#   rm -rf apps/smtp/.next && cp -a apps/smtp/.next.rollback-d756df58 apps/smtp/.next;
+#   pm2 start maky-smtp-app
+```
+
+Verifikácia po deployi: `https://maky.store/sk` 200; prod `/cz /hu /de /pl` 200
+(lokalizované katalógy servované); CSS chunk 200 (smoke :3032 pred pm2 start);
+SMTP :3010 200; staging :3037 beží ďalej nezávisle (`8MkJa4EM…`, Stripe-OFF).
+Downtime: storefront ≈ 1 build (~4 min), SMTP ≈ 1 build (~3 min) — webhooky
+Saleor retryuje.
+
+Staršie snapshoty na neskorší cleanup (až RC2 preukáže stabilitu):
+`/opt/.next.rollback-a2db881` (pred-RC1 poistka — zatiaľ PONECHAŤ),
+`apps/smtp/.next.rollback-040f947d`.
+
+Otvorené: Klarna reálna objednávka (sledovať logy), refund obj. č. 15,
+zrušenie obj. 1–14, rotácia hesiel (Marek); prvý e-mail po RC2 overiť
+(lifecycle je i18n-driven, reset nebol potrebný).
