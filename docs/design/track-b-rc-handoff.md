@@ -139,3 +139,28 @@ Po tomto freeze sa čaká na schválený 13-locale bundle (Marek/ChatGPT) vyrobe
 „preklad“. Po dodaní bundle sa pokračuje bez nového plánovania: aplikácia → strict
 parity → SMTP deploy + reset event defaults (§3) → staging acceptance → finálny
 release-candidate report.
+
+## 8. Stav k 2. behu (2026-07-20 popoludní)
+
+- **Lifecycle aplikovaný:** Saleor `automaticallyConfirmAllNewOrders=false` (cez API);
+  ORDER_CREATED = prijatie (jediný e-mail s daňovou/faktúrovou poznámkou), manuálny
+  ORDER_CONFIRMED = spracúvame, FULLY_PAID OFF (matica v
+  `apps/smtp/scripts/order-lifecycle.json`, aplikuje sa reset skriptom pri SMTP deployi);
+  confirmation stránka „Objednávku sme prijali"; sk-SK `placeOrder` LOCKED (§4/8 z. 102/2014).
+- **en-GB/gb-gbp odstránené** zo storefrontu, SMTP resolvera, matice aj gates (12 locales).
+- **Deliverability PASS (Gmail):** test ORDER_CREATED doručený do INBOXU;
+  From `info@maky.store`, odoslané z `pm-bounces.maky.store` (SPF align), DKIM podpis
+  `maky.store`, TLS. DMARC zatiaľ `p=none` (odporúčanie: quarantine po launchi).
+  Outlook adresa nebola k dispozícii — doplniť pri acceptance.
+- **SEPA:** čerstvý TEST-mode PaymentIntent ju ponúka (`card, sepa_debit, klarna, link`),
+  LIVE mode ju má podľa Mareka vypnutú — akceptované, riešenie výhradne v Stripe
+  konfigurácii (žiadny frontend blacklist). Pri live canary over, že sa nezobrazuje.
+- **Ancestry + právne stránky:** `a2db881` je predkom RC; `odstupenie-od-zmluvy` obsahuje
+  vzorový §20a formulár. Prod rollback snapshot: `/opt/storefront/.next.rollback-a2db881`.
+- **Pre-freeze runtime audit** (ChatGPT, 2026-07-20 ráno) committnutý ako
+  `docs/i18n/commerce-copy-closure-audit.md` — drží B.6 truthfulness zoznam a medzeru
+  samostatného auth/reset flowu (~67 EN literálov; vedome mimo Commerce Batch 1,
+  vlastný `auth.*` manifest = budúca dávka).
+- **BLOKER: prekladový bundle `maky-commerce-i18n-bundle.zip` stále nie je na VPS** —
+  po dodaní: aplikácia 9 locales + overrides → 1 validačný beh → SMTP deploy + reset
+  `--lifecycle` → staging rebuild → GO-LIVE report.
