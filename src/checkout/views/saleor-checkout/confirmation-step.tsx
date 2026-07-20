@@ -74,7 +74,9 @@ export const ConfirmationStep: FC<ConfirmationStepProps> = ({ checkout }) => {
 				<div className="bg-secondary/50 border-border border-b p-4">
 					<h2 className="font-semibold">{t("confirmation.confirmedTitle")}</h2>
 					<p className="text-muted-foreground mt-1 text-sm break-words">
-						{t("confirmation.emailNotice", { email })}
+						{email
+							? t("confirmation.emailNoticeWithAddress", { confirmationEmail: email })
+							: t("confirmation.emailNoticeGeneric")}
 					</p>
 				</div>
 
@@ -83,8 +85,8 @@ export const ConfirmationStep: FC<ConfirmationStepProps> = ({ checkout }) => {
 					<div className="flex items-start gap-3">
 						<Mail className="text-muted-foreground mt-0.5 h-5 w-5 shrink-0" />
 						<div className="min-w-0 flex-1">
-							<p className="text-sm font-medium">{t("confirmation.emailSentLabel")}</p>
-							<p className="text-muted-foreground text-sm break-words">{email}</p>
+							<p className="text-sm font-medium">{t("confirmation.emailLabel")}</p>
+							{email ? <p className="text-muted-foreground text-sm break-words">{email}</p> : null}
 						</div>
 					</div>
 					{shippingAddress && (

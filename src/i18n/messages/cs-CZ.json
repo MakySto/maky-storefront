@@ -129,12 +129,9 @@
 		"continueShopping": "Pokračovat v nákupu",
 		"subtotal": "Mezisoučet",
 		"shipping": "Doprava",
-		"tax": "DPH",
 		"total": "Celkem",
 		"checkout": "Přejít k pokladně",
-		"quantity": "Množství",
 		"remove": "Odstranit",
-		"itemAdded": "Produkt přidán do košíku",
 		"items": "{count, plural, one {# položka} few {# položky} other {# položek}}",
 		"emptyCartHint": "Zatím jste si do košíku nic nepřidali.",
 		"startShopping": "Začít nakupovat",
@@ -143,24 +140,14 @@
 		"increaseQuantity": "Zvýšit množství"
 	},
 	"checkout": {
-		"title": "Pokladna",
-		"contact": "Kontaktní údaje",
-		"shippingAddress": "Doručovací adresa",
-		"shippingMethod": "Způsob doručení",
-		"review": "Shrnutí objednávky",
 		"placeOrder": "Objednat s povinností platby",
-		"email": "E-mail",
 		"firstName": "Jméno",
 		"lastName": "Příjmení",
-		"company": "Firma (nepovinné)",
 		"address": "Ulice a číslo",
 		"city": "Město",
 		"postalCode": "PSČ",
 		"country": "Země",
-		"phone": "Telefon",
-		"orderConfirmation": "Děkujeme za objednávku!",
-		"orderNumber": "Číslo objednávky: {number}",
-		"confirmationEmail": "Potvrzení jsme odeslali na {email}"
+		"phone": "Telefon"
 	},
 	"footer": {
 		"customerService": "Zákaznický servis",

@@ -46,6 +46,7 @@ export const AddressPickerSheet: FC<AddressPickerSheetProps> = ({
 	onEdit,
 }) => {
 	const t = useTranslations("checkout.addressForm");
+	const tCommon = useTranslations("common");
 	const sheetTitle = title ?? t("selectAddressTitle");
 
 	// Sort addresses: default first, then alphabetically
@@ -72,7 +73,7 @@ export const AddressPickerSheet: FC<AddressPickerSheetProps> = ({
 		<Sheet open={open} onOpenChange={onOpenChange}>
 			<SheetContent side="right" className="flex flex-col p-0">
 				<SheetHeader className="shrink-0 border-b px-4 py-4">
-					<SheetCloseButton className="-ml-2" />
+					<SheetCloseButton className="-ml-2" label={tCommon("close")} />
 					<SheetTitle>{sheetTitle}</SheetTitle>
 				</SheetHeader>
 

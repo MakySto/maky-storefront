@@ -185,7 +185,7 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 						value={formData[field] || ""}
 						onChange={(value) => onFieldChange(field, value)}
 						error={error}
-						placeholder={t("addressForm.selectField", { field: label.toLowerCase() })}
+						placeholder={t("addressForm.selectField")}
 						autoComplete={autoComplete}
 						options={countryAreaChoices.map(({ raw, verbose }) => ({
 							value: raw as string,

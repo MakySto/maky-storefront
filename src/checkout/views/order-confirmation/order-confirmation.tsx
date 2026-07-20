@@ -86,7 +86,9 @@ export const OrderConfirmation = () => {
 									<div className="bg-secondary/50 border-border border-b p-4">
 										<h2 className="font-semibold">{t("confirmation.confirmedTitle")}</h2>
 										<p className="text-muted-foreground mt-1 text-sm">
-											{t("confirmation.emailNotice", { email })}
+											{email
+												? t("confirmation.emailNoticeWithAddress", { confirmationEmail: email })
+												: t("confirmation.emailNoticeGeneric")}
 										</p>
 									</div>
 
@@ -95,8 +97,8 @@ export const OrderConfirmation = () => {
 										<div className="flex items-start gap-3">
 											<Mail className="text-muted-foreground mt-0.5 h-5 w-5" />
 											<div>
-												<p className="text-sm font-medium">{t("confirmation.emailSentLabel")}</p>
-												<p className="text-muted-foreground text-sm">{email}</p>
+												<p className="text-sm font-medium">{t("confirmation.emailLabel")}</p>
+												{email ? <p className="text-muted-foreground text-sm">{email}</p> : null}
 											</div>
 										</div>
 										{shippingAddress && (

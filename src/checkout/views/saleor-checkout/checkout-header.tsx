@@ -93,7 +93,7 @@ export function CheckoutHeader({ step, onStepClick, isShippingRequired = true }:
 						<span>
 							{step === confirmationStepIndex
 								? t("steps.confirmation")
-								: t("steps.progress", { step, total: totalSteps })}
+								: t("steps.progress", { current: step, stepCount: totalSteps })}
 						</span>
 						<span>{steps[step - 1]?.label}</span>
 					</div>

@@ -129,12 +129,9 @@
 		"continueShopping": "Continue shopping",
 		"subtotal": "Subtotal",
 		"shipping": "Shipping",
-		"tax": "Tax",
 		"total": "Total",
 		"checkout": "Proceed to checkout",
-		"quantity": "Quantity",
 		"remove": "Remove",
-		"itemAdded": "Product added to cart",
 		"items": "{count, plural, one {# item} other {# items}}",
 		"emptyCartHint": "Looks like you haven't added anything to your cart yet.",
 		"startShopping": "Start shopping",
@@ -152,24 +149,14 @@
 		"removingLineAria": "Removing line from cart"
 	},
 	"checkout": {
-		"title": "Checkout",
-		"contact": "Contact information",
-		"shippingAddress": "Shipping address",
-		"shippingMethod": "Shipping method",
-		"review": "Order review",
-		"placeOrder": "Place order",
-		"email": "Email",
+		"placeOrder": "Place order with obligation to pay",
 		"firstName": "First name",
 		"lastName": "Last name",
-		"company": "Company (optional)",
 		"address": "Address",
 		"city": "City",
 		"postalCode": "ZIP code",
 		"country": "Country",
 		"phone": "Phone",
-		"orderConfirmation": "Thank you for your order!",
-		"orderNumber": "Order number: {number}",
-		"confirmationEmail": "Confirmation sent to {email}",
 		"common": {
 			"securePurchase": "Secure purchase",
 			"change": "Change",
@@ -189,7 +176,7 @@
 			"payment": "Payment",
 			"confirmation": "Confirmation",
 			"navAria": "Checkout steps",
-			"progress": "Step {step} of {total}"
+			"progress": "Step {current} of {stepCount}"
 		},
 		"summary": {
 			"title": "Order summary",
@@ -220,7 +207,7 @@
 		},
 		"addressForm": {
 			"fieldRequired": "{field} is required",
-			"selectField": "Select {field}",
+			"selectField": "Select an option",
 			"countryRegion": "Country/region",
 			"selectCountry": "Select a country",
 			"backToSavedAddresses": "Back to saved addresses",
@@ -258,11 +245,11 @@
 			"generic": "Something went wrong. Please try again.",
 			"noSaleorResponse": "No response was received from the server. Please try again.",
 			"totalVerifyFailed": "The order total could not be verified. Please try again.",
-			"paymentsDisabled": "Payments are not enabled in this environment.",
+			"paymentsDisabled": "Online payment is not available right now.",
 			"paymentProcessFailed": "The payment could not be processed. Please try again.",
 			"orderCreateFailed": "The order was not created. Please try again.",
 			"testPaymentUnavailable": "Test payment is not available in this environment.",
-			"cardPaymentsDisabled": "Card payments are not enabled in this environment."
+			"cardPaymentsDisabled": "Card payments are not available right now."
 		},
 		"contactSection": {
 			"title": "Contact",
@@ -309,10 +296,10 @@
 			"selectMethod": "Please select a shipping method",
 			"loadingMethods": "Loading shipping methods…",
 			"noAddressYet": "Please go back and enter your shipping address first.",
-			"noMethodsForCountry": "No shipping methods are available for {countryName}. Please check your address or contact us.",
-			"yourAddressFallback": "your address",
+			"noMethodsForCountry": "Shipping is not available for the selected country ({countryName}). Please check the address or contact us.",
 			"ecoBadge": "Eco",
-			"deliveryEstimate": "{min}-{max} {max, plural, one {business day} other {business days}}"
+			"deliveryEstimate": "{min}-{max} {max, plural, one {business day} other {business days}}",
+			"noMethodsForCountryGeneric": "Shipping is not available for the selected country. Please check the address or contact us."
 		},
 		"payment": {
 			"creatingOrder": "Creating your order…",
@@ -343,11 +330,11 @@
 			"bankDeclined": "Your bank declined the payment. Try again or use a different card.",
 			"sessionExpired": "The payment session expired after the redirect. Please try again.",
 			"channelUnresolved": "The order sales channel could not be determined after payment. Please contact support.",
-			"stripeConfigFailed": "Stripe payment gateway configuration failed",
-			"stripeKeyMissing": "The Stripe publishable key is missing. Check the Stripe app configuration in the Saleor Dashboard.",
-			"stripeLoadTitle": "Stripe failed to load",
+			"stripeConfigFailed": "Card payments are temporarily unavailable. Please try again later.",
+			"stripeKeyMissing": "Card payments are temporarily unavailable. Please try again later or contact us.",
+			"stripeLoadTitle": "The payment form failed to load",
 			"interruptedBeforeCharge": "The payment was interrupted before anything was charged. You can safely try again.",
-			"interruptedAfterAuthorize": "Your payment went through, but the order has not been created yet. Do not pay again — finish it with the “Complete order” button below.",
+			"interruptedAfterAuthorize": "Your payment went through, but the order has not been created yet. Do not pay again — finish it using the button below.",
 			"verificationUnavailable": "We could not verify your previous payment attempt. Refresh the page — do not pay again until the status is verified.",
 			"authorizedTitle": "Payment authorized — complete your order",
 			"authorizedBody": "Your payment is authorized (it will be charged when the order is fulfilled). Complete the order with the button below — you will not be charged again.",
@@ -355,36 +342,31 @@
 			"dummyGateway": "Test payment",
 			"failed": "Payment failed",
 			"freeOrderBody": "Your order total is {total}. No payment is needed — complete the order by confirming below.",
-			"dummyTestMode": "Test mode. No card details are needed — complete the test order with the “Place order” button.",
+			"dummyTestMode": "Test mode. No card details are needed — complete the test order using the button below.",
 			"submittingOrder": "Submitting your order…",
 			"billingAddressTitle": "Billing address",
 			"sameAsShipping": "Same as shipping address",
-			"expressCheckout": "Express checkout",
-			"payWithApplePay": "Pay with Apple Pay",
-			"payWithGooglePay": "Pay with Google Pay",
-			"orContinueBelow": "Or continue below",
 			"orPayWithCard": "Or pay with card",
 			"gateways": {
-				"noneTitle": "Payment gateway is not configured",
-				"noneBody": "To accept payments, install a payment app (e.g. Saleor Dummy Payment for testing, or Stripe/Adyen for production) from the Saleor Dashboard.",
-				"unsupportedTitle": "Unsupported payment gateway",
-				"unsupportedList": "This checkout does not support the available payment gateways: {gateways}.",
-				"unsupportedEmpty": "No supported payment gateway is available for this checkout.",
+				"noneTitle": "Payment is currently unavailable",
+				"noneBody": "We can't accept online payments right now. Please try again later or contact us.",
+				"unsupportedTitle": "Payment is currently unavailable",
 				"dummyMissingTitle": "The Dummy Payment app is not available for this checkout",
 				"dummyMissingBody": "The Dummy Payment app is installed but not available for this checkout. In the Saleor Dashboard, check that the app is active, that webhooks are being delivered successfully, and that the checkout currency is supported (USD for the hosted app).",
-				"noGatewayConfigured": "No payment gateway is configured. Contact support or configure a payment app in Saleor.",
+				"noGatewayConfigured": "Online payment is temporarily unavailable. Please try again later or contact us.",
 				"stripeUseCardForm": "Stripe payments are completed in the card form. Finish the payment in the Stripe payment section above.",
 				"paymentFailed": "Payment failed",
 				"paymentTryAgain": "Payment failed. Please try again.",
-				"paymentWebhookFailed": "The payment app webhook failed. In Saleor Dashboard → Apps → Dummy Payment App, check that webhooks are being delivered successfully.",
-				"paymentInitFailed": "The payment could not be initialized. Check that the payment app in Saleor is running."
+				"paymentWebhookFailed": "The payment could not be processed right now. Please try again in a moment.",
+				"paymentInitFailed": "The payment could not be initialized. Please try again in a moment.",
+				"unsupported": "Online payment is temporarily unavailable for this store. Please try again later or contact us."
 			},
 			"gatewayInitFailed": "Payment gateway initialization failed.",
-			"stripeWebhookFailed": "The Stripe app webhook failed. In Saleor Dashboard → Apps → Stripe, check that webhooks are being delivered successfully.",
-			"stripeProcessFailed": "The payment could not be processed. Check that the Stripe app in Saleor is active.",
+			"stripeWebhookFailed": "The payment could not be processed right now. Please try again in a moment.",
+			"stripeProcessFailed": "The payment could not be processed. Please try again.",
 			"billingSaveFailed": "The billing address could not be saved.",
 			"invalidValue": "Invalid value",
-			"notFullyPaid": "The payment does not yet cover the full order total. Refresh the page — if funds were authorized, use the “Place order” button. Do not pay again until the status is confirmed.",
+			"notFullyPaid": "The payment does not yet cover the full order total. Refresh the page — if the funds were authorized, complete the order using the button below. Do not pay again until the status is confirmed.",
 			"alreadyCompleted": "This order has already been placed. You will find the confirmation in your email.",
 			"freeOrderTotalChanged": "Your order total has changed and now requires payment. Please review and try again."
 		},
@@ -393,17 +375,21 @@
 			"orderNumberLine": "Order no. {orderNumber}",
 			"title": "Thank you for your order!",
 			"confirmedTitle": "Your order is confirmed",
-			"emailNotice": "We'll send a confirmation email to {email}",
-			"emailSentLabel": "Confirmation email sent",
 			"shippingAddressLabel": "Shipping address",
 			"billingAddressLabel": "Billing address",
 			"orderNotFoundTitle": "Order not found",
-			"orderNotFoundMessage": "We couldn't find this order. The link may have expired or is incorrect."
+			"orderNotFoundMessage": "We couldn't find this order. The link may have expired or is incorrect.",
+			"emailNoticeWithAddress": "We'll send an order confirmation to {confirmationEmail}.",
+			"emailNoticeGeneric": "We'll send an order confirmation to your email address.",
+			"emailLabel": "Confirmation email"
 		},
 		"notFound": {
 			"title": "Checkout not found",
 			"message": "We couldn't find your checkout session. It may have expired or has already been completed.",
 			"helpText": "If you think this is a mistake, try adding the items to your cart again or contact support."
+		},
+		"meta": {
+			"title": "Checkout"
 		}
 	},
 	"footer": {

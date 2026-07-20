@@ -129,12 +129,9 @@
 		"continueShopping": "Continuați cumpărăturile",
 		"subtotal": "Subtotal",
 		"shipping": "Livrare",
-		"tax": "TVA",
 		"total": "Total",
 		"checkout": "Finalizare comandă",
-		"quantity": "Cantitate",
 		"remove": "Elimină",
-		"itemAdded": "Produs adăugat în coș",
 		"items": "{count, plural, one {# articol} few {# articole} other {# de articole}}",
 		"emptyCartHint": "Nu ați adăugat încă nimic în coș.",
 		"startShopping": "Începeți cumpărăturile",
@@ -143,24 +140,14 @@
 		"increaseQuantity": "Măriți cantitatea"
 	},
 	"checkout": {
-		"title": "Finalizare comandă",
-		"contact": "Date de contact",
-		"shippingAddress": "Adresa de livrare",
-		"shippingMethod": "Metodă de livrare",
-		"review": "Rezumat comandă",
 		"placeOrder": "Plasează comanda cu obligația de plată",
-		"email": "E-mail",
 		"firstName": "Prenume",
 		"lastName": "Nume",
-		"company": "Companie (opțional)",
 		"address": "Strada și numărul",
 		"city": "Oraș",
 		"postalCode": "Cod poștal",
 		"country": "Țară",
-		"phone": "Telefon",
-		"orderConfirmation": "Vă mulțumim pentru comandă!",
-		"orderNumber": "Număr comandă: {number}",
-		"confirmationEmail": "Confirmarea a fost trimisă la {email}"
+		"phone": "Telefon"
 	},
 	"footer": {
 		"customerService": "Serviciu clienți",

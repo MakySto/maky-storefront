@@ -129,12 +129,9 @@
 		"continueShopping": "Continuer les achats",
 		"subtotal": "Sous-total",
 		"shipping": "Livraison",
-		"tax": "TVA",
 		"total": "Total",
 		"checkout": "Passer à la caisse",
-		"quantity": "Quantité",
 		"remove": "Supprimer",
-		"itemAdded": "Produit ajouté au panier",
 		"items": "{count, plural, one {# article} other {# articles}}",
 		"emptyCartHint": "Vous n'avez encore rien ajouté à votre panier.",
 		"startShopping": "Commencer vos achats",
@@ -143,24 +140,14 @@
 		"increaseQuantity": "Augmenter la quantité"
 	},
 	"checkout": {
-		"title": "Caisse",
-		"contact": "Coordonnées",
-		"shippingAddress": "Adresse de livraison",
-		"shippingMethod": "Mode de livraison",
-		"review": "Récapitulatif de commande",
 		"placeOrder": "Commander avec obligation de paiement",
-		"email": "E-mail",
 		"firstName": "Prénom",
 		"lastName": "Nom",
-		"company": "Entreprise (facultatif)",
 		"address": "Rue et numéro",
 		"city": "Ville",
 		"postalCode": "Code postal",
 		"country": "Pays",
-		"phone": "Téléphone",
-		"orderConfirmation": "Merci pour votre commande !",
-		"orderNumber": "Numéro de commande : {number}",
-		"confirmationEmail": "Confirmation envoyée à {email}"
+		"phone": "Téléphone"
 	},
 	"footer": {
 		"customerService": "Service client",

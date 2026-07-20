@@ -209,14 +209,16 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 						<p className="text-sm text-amber-800">
 							{!hasShippingAddress
 								? t("shipping.noAddressYet")
-								: t("shipping.noMethodsForCountry", {
-										countryName:
-											localizeCountryName(
-												checkout.shippingAddress?.country?.code,
-												checkout.shippingAddress?.country?.country,
-												locale,
-											) || t("shipping.yourAddressFallback"),
-									})}
+								: (() => {
+										const countryName = localizeCountryName(
+											checkout.shippingAddress?.country?.code,
+											checkout.shippingAddress?.country?.country,
+											locale,
+										);
+										return countryName
+											? t("shipping.noMethodsForCountry", { countryName })
+											: t("shipping.noMethodsForCountryGeneric");
+									})()}
 						</p>
 					</div>
 				) : (

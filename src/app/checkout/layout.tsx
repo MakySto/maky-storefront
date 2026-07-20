@@ -7,6 +7,8 @@ import { brandConfig, formatPageTitle } from "@/config/brand";
 // known cosmetic limitation for other markets — the page content itself localizes via the RSC
 // loaders once the checkout's channel is known.
 export const metadata = {
+	// Store-default title in the static shell; CheckoutDocumentTitle swaps in the market-locale
+	// title (checkout.meta.title) client-side after hydration.
 	title: formatPageTitle("Pokladňa"),
 	description: brandConfig.description,
 };

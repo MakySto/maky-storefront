@@ -129,12 +129,9 @@
 		"continueShopping": "Weiter einkaufen",
 		"subtotal": "Zwischensumme",
 		"shipping": "Versand",
-		"tax": "MwSt.",
 		"total": "Gesamt",
 		"checkout": "Zur Kasse",
-		"quantity": "Menge",
 		"remove": "Entfernen",
-		"itemAdded": "Produkt zum Warenkorb hinzugefügt",
 		"items": "{count, plural, one {# Artikel} other {# Artikel}}",
 		"emptyCartHint": "Sie haben Ihrem Warenkorb noch nichts hinzugefügt.",
 		"startShopping": "Jetzt einkaufen",
@@ -143,24 +140,14 @@
 		"increaseQuantity": "Menge erhöhen"
 	},
 	"checkout": {
-		"title": "Kasse",
-		"contact": "Kontaktdaten",
-		"shippingAddress": "Lieferadresse",
-		"shippingMethod": "Versandart",
-		"review": "Bestellübersicht",
 		"placeOrder": "Zahlungspflichtig bestellen",
-		"email": "E-Mail",
 		"firstName": "Vorname",
 		"lastName": "Nachname",
-		"company": "Firma (optional)",
 		"address": "Straße und Hausnummer",
 		"city": "Stadt",
 		"postalCode": "PLZ",
 		"country": "Land",
-		"phone": "Telefon",
-		"orderConfirmation": "Vielen Dank für Ihre Bestellung!",
-		"orderNumber": "Bestellnummer: {number}",
-		"confirmationEmail": "Bestätigung wurde an {email} gesendet"
+		"phone": "Telefon"
 	},
 	"footer": {
 		"customerService": "Kundenservice",

@@ -4,12 +4,11 @@ import { type PaymentGatewayLike } from "../types";
 export const DUMMY_GATEWAY_IDS = ["saleor.io.dummy-payment-app", "mirumee.payments.dummy"] as const;
 
 /**
- * Guard sentinel when dummy payment is blocked in this environment.
- * The customer-facing copy is the `checkout.errors.testPaymentUnavailable` catalog key —
- * the guard's only production caller (`initializeCheckoutTransactionAction`) translates
- * at the boundary; this sk literal remains as the guard's non-null return contract.
+ * Guard sentinel (non-linguistic error code) when dummy payment is blocked in this
+ * environment. The customer-facing copy is the `checkout.errors.testPaymentUnavailable`
+ * catalog key — callers translate at the boundary; never render this code to customers.
  */
-export const DUMMY_PAYMENT_NOT_ALLOWED_MESSAGE = "Testovacia platba nie je v tomto prostredí dostupná.";
+export const DUMMY_PAYMENT_NOT_ALLOWED_MESSAGE = "test_payment_unavailable";
 
 export function isDummyGateway(gateway: PaymentGatewayLike): boolean {
 	return (DUMMY_GATEWAY_IDS as readonly string[]).includes(gateway.id);

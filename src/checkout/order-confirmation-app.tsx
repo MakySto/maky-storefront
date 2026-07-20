@@ -5,6 +5,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { useTranslations } from "next-intl";
 
 import type { ServerOrder } from "@/checkout/lib/checkout-types";
+import { CheckoutDocumentTitle } from "@/checkout/components/checkout-document-title";
 import { OrderDataProvider } from "@/checkout/providers/order-data";
 import { OrderConfirmation, OrderConfirmationSkeleton } from "@/checkout/views/order-confirmation";
 import { PageNotFound } from "@/checkout/views/page-not-found";
@@ -29,6 +30,7 @@ export function OrderConfirmationApp({ orderId, initialOrder }: OrderConfirmatio
 	const t = useTranslations("checkout.confirmation");
 	return (
 		<OrderDataProvider orderId={orderId} initialOrder={initialOrder}>
+			<CheckoutDocumentTitle />
 			<ErrorBoundary FallbackComponent={PageNotFound}>
 				<Suspense fallback={<OrderConfirmationSkeleton />}>
 					{initialOrder ? (

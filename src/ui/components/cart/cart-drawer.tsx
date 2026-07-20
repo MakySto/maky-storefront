@@ -116,6 +116,7 @@ interface CartDrawerProps {
 export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawerProps) {
 	const t = useTranslations("cart");
 	const tCheckoutCommon = useTranslations("checkout.common");
+	const tCommon = useTranslations("common");
 	const { isOpen, closeCart } = useCart();
 	const [isPending, startTransition] = useTransition();
 
@@ -147,7 +148,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 						<SheetTitle>{t("yourCart")}</SheetTitle>
 						<span className="text-muted-foreground text-sm">({t("items", { count: itemCount })})</span>
 					</div>
-					<SheetCloseButton className="static" />
+					<SheetCloseButton className="static" label={tCommon("close")} />
 				</SheetHeader>
 
 				{/* Cart Items */}

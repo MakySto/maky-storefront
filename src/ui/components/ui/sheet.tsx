@@ -19,7 +19,7 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<DialogPrimitive.Overlay
 		className={cn(
-			"bg-foreground/20 backdrop-blur-xs fixed inset-0 z-50",
+			"bg-foreground/20 fixed inset-0 z-50 backdrop-blur-xs",
 			"data-[state=open]:animate-in data-[state=closed]:animate-out",
 			"data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
 			className,
@@ -50,7 +50,7 @@ const SheetContent = React.forwardRef<React.ComponentRef<typeof DialogPrimitive.
 			<DialogPrimitive.Content
 				ref={ref}
 				className={cn(
-					"fixed z-50 gap-4 bg-background shadow-lg transition ease-in-out",
+					"bg-background fixed z-50 gap-4 shadow-lg transition ease-in-out",
 					"data-[state=open]:animate-in data-[state=closed]:animate-out",
 					"data-[state=closed]:duration-300 data-[state=open]:duration-300",
 					sheetVariants[side],
@@ -84,7 +84,7 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<DialogPrimitive.Title
 		ref={ref}
-		className={cn("text-lg font-semibold text-foreground", className)}
+		className={cn("text-foreground text-lg font-semibold", className)}
 		{...props}
 	/>
 ));
@@ -96,7 +96,7 @@ const SheetDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<DialogPrimitive.Description
 		ref={ref}
-		className={cn("text-sm text-muted-foreground", className)}
+		className={cn("text-muted-foreground text-sm", className)}
 		{...props}
 	/>
 ));
@@ -104,21 +104,21 @@ SheetDescription.displayName = DialogPrimitive.Description.displayName;
 
 const SheetCloseButton = React.forwardRef<
 	React.ComponentRef<typeof DialogPrimitive.Close>,
-	React.ComponentPropsWithoutRef<typeof DialogPrimitive.Close>
->(({ className, ...props }, ref) => (
+	React.ComponentPropsWithoutRef<typeof DialogPrimitive.Close> & { label?: string }
+>(({ className, label = "Close", ...props }, ref) => (
 	<DialogPrimitive.Close
 		ref={ref}
 		className={cn(
-			"outline-hidden rounded-md border-none bg-transparent p-2 opacity-70 shadow-none transition-opacity",
+			"rounded-md border-none bg-transparent p-2 opacity-70 shadow-none outline-hidden transition-opacity",
 			"hover:bg-accent hover:opacity-100",
-			"focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+			"focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2",
 			"disabled:pointer-events-none",
 			className,
 		)}
 		{...props}
 	>
 		<X className="h-5 w-5" />
-		<span className="sr-only">Close</span>
+		<span className="sr-only">{label}</span>
 	</DialogPrimitive.Close>
 ));
 SheetCloseButton.displayName = "SheetCloseButton";

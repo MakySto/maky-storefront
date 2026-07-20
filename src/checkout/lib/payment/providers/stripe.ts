@@ -17,12 +17,12 @@ import { type PaymentGatewayLike } from "../types";
 export const STRIPE_GATEWAY_ID = "saleor.app.payment.stripe";
 
 /**
- * Guard sentinel when Stripe is on the checkout but the storefront flag is off.
- * The customer-facing copy is the `checkout.errors.cardPaymentsDisabled` catalog key —
- * the guard's only production caller (`initializeCheckoutTransactionAction`) translates
- * at the boundary; this sk literal remains as the guard's non-null return contract.
+ * Guard sentinel (non-linguistic error code) when Stripe is on the checkout but the
+ * storefront flag is off. The customer-facing copy is the
+ * `checkout.errors.cardPaymentsDisabled` catalog key — callers translate at the
+ * boundary; never render this code to customers.
  */
-export const STRIPE_PAYMENT_NOT_ENABLED_MESSAGE = "Platby kartou nie sú v tomto prostredí povolené.";
+export const STRIPE_PAYMENT_NOT_ENABLED_MESSAGE = "card_payments_disabled";
 
 /** Config returned by paymentGatewayInitialize for the Stripe app. */
 export type StripeGatewayConfigData = {
@@ -228,6 +228,7 @@ export function getStripeTransactionError(payload: TransactionPayload | null | u
 
 	if (eventType && FAILED_TRANSACTION_EVENT_TYPES.has(eventType)) {
 		if (eventMessage?.toLowerCase().includes("failed to delivery request")) {
+			console.error(`[checkout] Stripe app webhook delivery failed (${eventType}): ${eventMessage}`);
 			return messages.stripeWebhookFailed;
 		}
 

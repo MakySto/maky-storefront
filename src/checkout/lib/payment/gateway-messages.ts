@@ -3,8 +3,7 @@ import { type PaymentGatewayFragment } from "@/checkout/graphql";
 type GatewayLike = Pick<PaymentGatewayFragment, "id" | "name">;
 
 export type CheckoutGatewayMessages = {
-	unsupportedList: (gateways: string) => string;
-	unsupportedEmpty: string;
+	unsupported: string;
 	dummyMissingBody: string;
 	noneTitle: string;
 	noneBody: string;
@@ -19,8 +18,7 @@ export type CheckoutGatewayMessages = {
 };
 
 type GatewayMessageKey =
-	| "unsupportedList"
-	| "unsupportedEmpty"
+	| "unsupported"
 	| "dummyMissingBody"
 	| "noneTitle"
 	| "noneBody"
@@ -38,8 +36,7 @@ type GatewayTranslator = (key: GatewayMessageKey, values?: Record<string, string
 /** Builds gateway copy from `checkout.gateways` — shared by client hooks and server actions. */
 export function buildCheckoutGatewayMessages(t: GatewayTranslator): CheckoutGatewayMessages {
 	return {
-		unsupportedList: (gateways) => t("unsupportedList", { gateways }),
-		unsupportedEmpty: t("unsupportedEmpty"),
+		unsupported: t("unsupported"),
 		dummyMissingBody: t("dummyMissingBody"),
 		noneTitle: t("noneTitle"),
 		noneBody: t("noneBody"),
@@ -92,24 +89,24 @@ export type CheckoutPaymentLibMessages = {
 };
 
 /**
- * sk-SK safety net mirroring the `checkout.payment.*` catalog — used only if a payment
+ * EN-source safety net mirroring the `checkout.payment.*` catalog — used only if a payment
  * lib somehow runs before `useCheckoutPaymentMessages` mounted (not reachable through
- * the checkout UI). Keep values in sync with `src/i18n/messages/sk-SK.json`.
+ * the checkout UI). English because it is the catalog source language (never a market-
+ * specific fallback); a vitest test asserts these stay in sync with
+ * `src/i18n/messages/en-US.json`.
  */
 const FALLBACK_PAYMENT_LIB_MESSAGES: CheckoutPaymentLibMessages = {
-	billingSaveFailed: "Nepodarilo sa uložiť fakturačnú adresu.",
-	invalidValue: "Neplatná hodnota",
-	gatewayInitFailed: "Inicializácia platobnej brány zlyhala.",
-	stripeWebhookFailed:
-		"Webhook aplikácie Stripe zlyhal. V Saleor Dashboard → Apps → Stripe skontrolujte, či sa webhooky doručujú úspešne.",
-	stripeProcessFailed:
-		"Platbu sa nepodarilo spracovať. Skontrolujte, či je aplikácia Stripe v Saleore aktívna.",
-	paymentFailed: "Platba zlyhala",
+	billingSaveFailed: "The billing address could not be saved.",
+	invalidValue: "Invalid value",
+	gatewayInitFailed: "Payment gateway initialization failed.",
+	stripeWebhookFailed: "The payment could not be processed right now. Please try again in a moment.",
+	stripeProcessFailed: "The payment could not be processed. Please try again.",
+	paymentFailed: "Payment failed",
 	notFullyPaid:
-		"Platba zatiaľ nepokrýva celú sumu objednávky. Obnovte stránku — ak boli prostriedky autorizované, použite tlačidlo „Objednať s povinnosťou platby“. Neplaťte znova, kým sa stav nepotvrdí.",
-	alreadyCompleted: "Táto objednávka už bola odoslaná. Potvrdenie nájdete vo svojom e-maile.",
+		"The payment does not yet cover the full order total. Refresh the page — if the funds were authorized, complete the order using the button below. Do not pay again until the status is confirmed.",
+	alreadyCompleted: "This order has already been placed. You will find the confirmation in your email.",
 	freeOrderTotalChanged:
-		"Celková cena objednávky sa zmenila a teraz vyžaduje platbu. Skontrolujte ju a skúste to znova.",
+		"Your order total has changed and now requires payment. Please review and try again.",
 };
 
 let registeredPaymentLibMessages: CheckoutPaymentLibMessages | null = null;
@@ -124,13 +121,20 @@ export function getCheckoutPaymentLibMessages(): CheckoutPaymentLibMessages {
 	return registeredPaymentLibMessages ?? FALLBACK_PAYMENT_LIB_MESSAGES;
 }
 
-/** Shown when only unsupported production gateways are available on the checkout. */
+/**
+ * Shown when only unsupported production gateways are available on the checkout.
+ * The customer sees generic customer-safe copy; the concrete gateway list (names + raw
+ * ids) is diagnostic detail and goes to the console only.
+ */
 export function getUnsupportedGatewayMessage(
 	gateways: ReadonlyArray<GatewayLike> | null | undefined,
 	messages: CheckoutGatewayMessages,
 ): string {
 	const listed = formatGatewayList(gateways);
-	return listed ? messages.unsupportedList(listed) : messages.unsupportedEmpty;
+	if (listed) {
+		console.error(`[checkout] Unsupported payment gateways for this storefront: ${listed}`);
+	}
+	return messages.unsupported;
 }
 
 const FAILED_TRANSACTION_EVENT_TYPES = new Set([
@@ -165,6 +169,7 @@ export function getTransactionInitializeError(
 
 	if (eventType && FAILED_TRANSACTION_EVENT_TYPES.has(eventType)) {
 		if (eventMessage?.toLowerCase().includes("failed to delivery request")) {
+			console.error(`[checkout] Payment app webhook delivery failed (${eventType}): ${eventMessage}`);
 			return messages.paymentWebhookFailed;
 		}
 

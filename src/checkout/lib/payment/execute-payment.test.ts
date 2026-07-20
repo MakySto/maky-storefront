@@ -4,10 +4,9 @@ import { setCheckoutTransport, type CheckoutTransport } from "@/checkout/lib/che
 import { buildCheckoutGatewayMessages } from "@/checkout/lib/payment/gateway-messages";
 import { executePayment } from "./execute-payment";
 
-const gatewayMessages = buildCheckoutGatewayMessages((key, values) => {
+const gatewayMessages = buildCheckoutGatewayMessages((key) => {
 	const templates: Record<string, string> = {
-		unsupportedList: `Unsupported: ${values?.gateways ?? ""}`,
-		unsupportedEmpty: "No gateway",
+		unsupported: "Online payment is temporarily unavailable",
 		dummyMissingBody: "Dummy missing",
 		noneTitle: "None",
 		noneBody: "None body",
@@ -103,7 +102,8 @@ describe("executePayment", () => {
 		expect(completeCheckout).toHaveBeenCalledWith("checkout-1");
 	});
 
-	it("returns error for unsupported provider", async () => {
+	it("returns a customer-safe error for unsupported provider (no raw gateway ids)", async () => {
+		const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
 		const result = await executePayment(
 			{ type: "unsupported", gateways: [{ id: "stripe", name: "Stripe" }] },
 			{ checkoutId: "checkout-1", amount: 10 },
@@ -112,7 +112,10 @@ describe("executePayment", () => {
 
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
-			expect(result.error).toContain("Stripe");
+			expect(result.error).toBe("Online payment is temporarily unavailable");
+			expect(result.error).not.toContain("(stripe)");
 		}
+		expect(consoleError).toHaveBeenCalledWith(expect.stringContaining("Stripe (stripe)"));
+		consoleError.mockRestore();
 	});
 });

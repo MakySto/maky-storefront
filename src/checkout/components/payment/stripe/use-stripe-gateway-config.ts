@@ -48,7 +48,13 @@ export function useStripeGatewayConfig(checkout: CheckoutFragment): StripeGatewa
 			const stripeConfig = result.data.gatewayConfigs?.find((config) => config.id === STRIPE_GATEWAY_ID);
 			const configErrors = stripeConfig?.errors;
 			if (configErrors?.length) {
-				const message = configErrors[0]?.message ?? paymentMessages.stripeConfigFailed;
+				console.error(
+					`[checkout] Stripe paymentGatewayInitialize returned errors: ${configErrors
+						.map((error) => error?.message)
+						.filter(Boolean)
+						.join("; ")}`,
+				);
+				const message = paymentMessages.stripeConfigFailed;
 				setState((previous) => {
 					if (options?.background && previous.status === "ready") {
 						return previous;
@@ -61,6 +67,9 @@ export function useStripeGatewayConfig(checkout: CheckoutFragment): StripeGatewa
 
 			const parsed = parseStripeGatewayConfig(stripeConfig?.data);
 			if (!parsed?.stripePublishableKey) {
+				console.error(
+					"[checkout] Stripe gateway config is missing the publishable key (check the Stripe app configuration in Saleor)",
+				);
 				const message = paymentMessages.stripeKeyMissing;
 				setState((previous) => {
 					if (options?.background && previous.status === "ready") {

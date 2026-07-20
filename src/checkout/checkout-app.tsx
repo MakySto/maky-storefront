@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { nextCheckoutTransport } from "@/checkout/checkout-transport-next";
+import { CheckoutDocumentTitle } from "@/checkout/components/checkout-document-title";
 import { CheckoutSessionCleanup } from "@/checkout/components/checkout-session-cleanup";
 import { StripeCheckoutCompletionHost } from "@/checkout/components/payment/stripe/stripe-checkout-completion-host";
 import { setCheckoutTransport } from "@/checkout/lib/checkout-transport";
@@ -64,6 +65,7 @@ export function CheckoutApp({
 						shippingCountries={shippingCountries}
 					>
 						<CheckoutPaymentReturnErrorProvider>
+							<CheckoutDocumentTitle />
 							<Suspense fallback={null}>
 								<CheckoutSessionCleanup />
 								<StripeCheckoutCompletionHost />

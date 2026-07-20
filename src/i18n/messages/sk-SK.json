@@ -129,12 +129,9 @@
 		"continueShopping": "Pokračovať v nákupe",
 		"subtotal": "Medzisúčet",
 		"shipping": "Doprava",
-		"tax": "DPH",
 		"total": "Celkom",
 		"checkout": "Prejsť k pokladni",
-		"quantity": "Množstvo",
 		"remove": "Odstrániť",
-		"itemAdded": "Produkt pridaný do košíka",
 		"items": "{count, plural, one {# položka} few {# položky} other {# položiek}}",
 		"emptyCartHint": "Zatiaľ ste si do košíka nič nepridali.",
 		"startShopping": "Začať nakupovať",
@@ -152,24 +149,14 @@
 		"removingLineAria": "Odstraňujem položku z košíka"
 	},
 	"checkout": {
-		"title": "Pokladňa",
-		"contact": "Kontaktné údaje",
-		"shippingAddress": "Doručovacia adresa",
-		"shippingMethod": "Spôsob doručenia",
-		"review": "Zhrnutie objednávky",
 		"placeOrder": "Objednať s povinnosťou platby",
-		"email": "E-mail",
 		"firstName": "Meno",
 		"lastName": "Priezvisko",
-		"company": "Firma (voliteľné)",
 		"address": "Ulica a číslo",
 		"city": "Mesto",
 		"postalCode": "PSČ",
 		"country": "Krajina",
 		"phone": "Telefón",
-		"orderConfirmation": "Ďakujeme za objednávku!",
-		"orderNumber": "Číslo objednávky: {number}",
-		"confirmationEmail": "Potvrdenie sme poslali na {email}",
 		"common": {
 			"securePurchase": "Bezpečný nákup",
 			"change": "Zmeniť",
@@ -189,7 +176,7 @@
 			"payment": "Platba",
 			"confirmation": "Potvrdenie",
 			"navAria": "Kroky pokladne",
-			"progress": "Krok {step} z {total}"
+			"progress": "Krok {current} z {stepCount}"
 		},
 		"summary": {
 			"title": "Zhrnutie objednávky",
@@ -220,7 +207,7 @@
 		},
 		"addressForm": {
 			"fieldRequired": "Pole {field} je povinné",
-			"selectField": "Vyberte {field}",
+			"selectField": "Vyberte možnosť",
 			"countryRegion": "Krajina/región",
 			"selectCountry": "Vyberte krajinu",
 			"backToSavedAddresses": "Späť na uložené adresy",
@@ -258,11 +245,11 @@
 			"generic": "Niečo sa pokazilo. Skúste to znova.",
 			"noSaleorResponse": "Zo servera neprišla žiadna odpoveď. Skúste to znova.",
 			"totalVerifyFailed": "Nepodarilo sa overiť celkovú cenu objednávky. Skúste to znova.",
-			"paymentsDisabled": "Platby nie sú v tomto prostredí povolené.",
+			"paymentsDisabled": "Online platba momentálne nie je dostupná.",
 			"paymentProcessFailed": "Platbu sa nepodarilo spracovať. Skúste to znova.",
 			"orderCreateFailed": "Objednávka nebola vytvorená. Skúste to znova.",
 			"testPaymentUnavailable": "Testovacia platba nie je v tomto prostredí dostupná.",
-			"cardPaymentsDisabled": "Platby kartou nie sú v tomto prostredí povolené."
+			"cardPaymentsDisabled": "Platby kartou momentálne nie sú dostupné."
 		},
 		"contactSection": {
 			"title": "Kontakt",
@@ -309,10 +296,10 @@
 			"selectMethod": "Vyberte spôsob dopravy",
 			"loadingMethods": "Načítavame spôsoby dopravy…",
 			"noAddressYet": "Najprv sa vráťte späť a zadajte dodaciu adresu.",
-			"noMethodsForCountry": "Pre {countryName} nie sú dostupné žiadne spôsoby dopravy. Skontrolujte adresu alebo nás kontaktujte.",
-			"yourAddressFallback": "vašu adresu",
+			"noMethodsForCountry": "Doprava do zvolenej krajiny ({countryName}) nie je dostupná. Skontrolujte adresu alebo nás kontaktujte.",
 			"ecoBadge": "Eko",
-			"deliveryEstimate": "{min}-{max} {max, plural, one {pracovný deň} few {pracovné dni} other {pracovných dní}}"
+			"deliveryEstimate": "{min}-{max} {max, plural, one {pracovný deň} few {pracovné dni} other {pracovných dní}}",
+			"noMethodsForCountryGeneric": "Doprava do zvolenej krajiny nie je dostupná. Skontrolujte adresu alebo nás kontaktujte."
 		},
 		"payment": {
 			"creatingOrder": "Vytvárame objednávku…",
@@ -343,11 +330,11 @@
 			"bankDeclined": "Vaša banka platbu zamietla. Skúste to znova alebo použite inú kartu.",
 			"sessionExpired": "Platnosť platobnej relácie po presmerovaní vypršala. Skúste to znova.",
 			"channelUnresolved": "Po platbe sa nepodarilo určiť predajný kanál objednávky. Kontaktujte podporu.",
-			"stripeConfigFailed": "Konfigurácia platobnej brány Stripe zlyhala",
-			"stripeKeyMissing": "Chýba publikovateľný kľúč Stripe. Skontrolujte konfiguráciu aplikácie Stripe v Saleor Dashboarde.",
-			"stripeLoadTitle": "Stripe sa nepodarilo načítať",
+			"stripeConfigFailed": "Platby kartou sú momentálne nedostupné. Skúste to neskôr.",
+			"stripeKeyMissing": "Platby kartou sú momentálne nedostupné. Skúste to neskôr alebo nás kontaktujte.",
+			"stripeLoadTitle": "Platobný formulár sa nepodarilo načítať",
 			"interruptedBeforeCharge": "Platba bola prerušená ešte pred zaúčtovaním. Môžete to bezpečne skúsiť znova.",
-			"interruptedAfterAuthorize": "Vaša platba prebehla, ale objednávka ešte nebola vytvorená. Neplaťte znova — dokončite ju tlačidlom „Dokončiť objednávku“ nižšie.",
+			"interruptedAfterAuthorize": "Platba prebehla, ale objednávka ešte nebola vytvorená. Neplaťte znova — dokončite ju tlačidlom nižšie.",
 			"verificationUnavailable": "Nepodarilo sa overiť váš predchádzajúci pokus o platbu. Obnovte stránku — neplaťte znova, kým sa stav neoverí.",
 			"authorizedTitle": "Platba je autorizovaná — dokončite objednávku",
 			"authorizedBody": "Vaša platba je autorizovaná (zaúčtuje sa pri vybavení objednávky). Objednávku dokončite tlačidlom nižšie — pri dokončení nebudete platiť znova.",
@@ -355,36 +342,31 @@
 			"dummyGateway": "Testovacia platba",
 			"failed": "Platba zlyhala",
 			"freeOrderBody": "Celková cena vašej objednávky je {total}. Platba nie je potrebná — objednávku dokončíte potvrdením nižšie.",
-			"dummyTestMode": "Testovací režim. Údaje o karte nie sú potrebné — testovaciu objednávku dokončíte tlačidlom „Objednať s povinnosťou platby“.",
+			"dummyTestMode": "Testovací režim. Údaje o karte nie sú potrebné — testovaciu objednávku dokončíte tlačidlom nižšie.",
 			"submittingOrder": "Odosielame objednávku…",
 			"billingAddressTitle": "Fakturačná adresa",
 			"sameAsShipping": "Rovnaká ako dodacia adresa",
-			"expressCheckout": "Expresná platba",
-			"payWithApplePay": "Zaplatiť cez Apple Pay",
-			"payWithGooglePay": "Zaplatiť cez Google Pay",
-			"orContinueBelow": "Alebo pokračujte nižšie",
 			"orPayWithCard": "Alebo zaplaťte kartou",
 			"gateways": {
-				"noneTitle": "Platobná brána nie je nakonfigurovaná",
-				"noneBody": "Na prijímanie platieb nainštalujte platobnú aplikáciu (napr. Saleor Dummy Payment na testovanie alebo Stripe/Adyen pre produkciu) zo Saleor Dashboardu.",
-				"unsupportedTitle": "Nepodporovaná platobná brána",
-				"unsupportedList": "Táto pokladňa nepodporuje dostupné platobné brány: {gateways}.",
-				"unsupportedEmpty": "Pre túto pokladňu nie je dostupná žiadna podporovaná platobná brána.",
+				"noneTitle": "Platba je momentálne nedostupná",
+				"noneBody": "Momentálne nevieme prijať online platbu. Skúste to neskôr alebo nás kontaktujte.",
+				"unsupportedTitle": "Platba je momentálne nedostupná",
 				"dummyMissingTitle": "Aplikácia Dummy Payment nie je pre túto pokladňu dostupná",
 				"dummyMissingBody": "Aplikácia Dummy Payment je nainštalovaná, ale pre túto pokladňu nie je dostupná. V Saleor Dashboarde skontrolujte, či je aplikácia aktívna, či sa webhooky doručujú úspešne a či je mena pokladne podporovaná (USD pre hostovanú aplikáciu).",
-				"noGatewayConfigured": "Platobná brána nie je nakonfigurovaná. Kontaktujte podporu alebo nakonfigurujte platobnú aplikáciu v Saleore.",
+				"noGatewayConfigured": "Online platba je momentálne nedostupná. Skúste to neskôr alebo nás kontaktujte.",
 				"stripeUseCardForm": "Platba cez Stripe prebieha vo formulári karty. Dokončite platbu v sekcii platby Stripe vyššie.",
 				"paymentFailed": "Platba zlyhala",
 				"paymentTryAgain": "Platba zlyhala. Skúste to znova.",
-				"paymentWebhookFailed": "Webhook platobnej aplikácie zlyhal. V Saleor Dashboard → Apps → Dummy Payment App skontrolujte, či sa webhooky doručujú úspešne.",
-				"paymentInitFailed": "Platbu sa nepodarilo inicializovať. Skontrolujte, či platobná aplikácia v Saleore beží."
+				"paymentWebhookFailed": "Platbu momentálne nie je možné spracovať. Skúste to o chvíľu znova.",
+				"paymentInitFailed": "Platbu sa nepodarilo inicializovať. Skúste to o chvíľu znova.",
+				"unsupported": "Online platba je v tomto obchode momentálne nedostupná. Skúste to neskôr alebo nás kontaktujte."
 			},
 			"gatewayInitFailed": "Inicializácia platobnej brány zlyhala.",
-			"stripeWebhookFailed": "Webhook aplikácie Stripe zlyhal. V Saleor Dashboard → Apps → Stripe skontrolujte, či sa webhooky doručujú úspešne.",
-			"stripeProcessFailed": "Platbu sa nepodarilo spracovať. Skontrolujte, či je aplikácia Stripe v Saleore aktívna.",
+			"stripeWebhookFailed": "Platbu momentálne nie je možné spracovať. Skúste to o chvíľu znova.",
+			"stripeProcessFailed": "Platbu sa nepodarilo spracovať. Skúste to znova.",
 			"billingSaveFailed": "Nepodarilo sa uložiť fakturačnú adresu.",
 			"invalidValue": "Neplatná hodnota",
-			"notFullyPaid": "Platba zatiaľ nepokrýva celú sumu objednávky. Obnovte stránku — ak boli prostriedky autorizované, použite tlačidlo „Objednať s povinnosťou platby“. Neplaťte znova, kým sa stav nepotvrdí.",
+			"notFullyPaid": "Platba zatiaľ nepokrýva celú sumu objednávky. Obnovte stránku — ak boli prostriedky autorizované, dokončite objednávku tlačidlom nižšie. Neplaťte znova, kým sa stav nepotvrdí.",
 			"alreadyCompleted": "Táto objednávka už bola odoslaná. Potvrdenie nájdete vo svojom e-maile.",
 			"freeOrderTotalChanged": "Celková cena objednávky sa zmenila a teraz vyžaduje platbu. Skontrolujte ju a skúste to znova."
 		},
@@ -393,17 +375,21 @@
 			"orderNumberLine": "Objednávka č. {orderNumber}",
 			"title": "Ďakujeme za vašu objednávku!",
 			"confirmedTitle": "Vaša objednávka je potvrdená",
-			"emailNotice": "Potvrdzujúci e-mail vám pošleme na adresu {email}",
-			"emailSentLabel": "Potvrdzujúci e-mail odoslaný",
 			"shippingAddressLabel": "Dodacia adresa",
 			"billingAddressLabel": "Fakturačná adresa",
 			"orderNotFoundTitle": "Objednávka sa nenašla",
-			"orderNotFoundMessage": "Nepodarilo sa nám nájsť túto objednávku. Odkaz možno vypršal alebo je nesprávny."
+			"orderNotFoundMessage": "Nepodarilo sa nám nájsť túto objednávku. Odkaz možno vypršal alebo je nesprávny.",
+			"emailNoticeWithAddress": "Potvrdenie objednávky pošleme na {confirmationEmail}.",
+			"emailNoticeGeneric": "Potvrdenie objednávky pošleme na váš e-mail.",
+			"emailLabel": "Potvrdzujúci e-mail"
 		},
 		"notFound": {
 			"title": "Pokladňa sa nenašla",
 			"message": "Nepodarilo sa nám nájsť váš rozpracovaný nákup. Možno vypršal alebo už bol dokončený.",
 			"helpText": "Ak si myslíte, že ide o chybu, skúste pridať tovar do košíka znova alebo kontaktujte podporu."
+		},
+		"meta": {
+			"title": "Pokladňa"
 		}
 	},
 	"footer": {

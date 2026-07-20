@@ -94,7 +94,7 @@ describe("getStripePaymentGuardError", () => {
 
 	it("blocks stripe gateway in production without flag", () => {
 		vi.stubEnv("NODE_ENV", "production");
-		expect(getStripePaymentGuardError(STRIPE_GATEWAY_ID)).toMatch(/nie sú v tomto prostredí povolené/i);
+		expect(getStripePaymentGuardError(STRIPE_GATEWAY_ID)).toBe("card_payments_disabled");
 	});
 
 	it("allows stripe gateway when enabled", () => {
@@ -131,13 +131,16 @@ describe("getStripeClientSecret", () => {
 });
 
 describe("getStripeTransactionError", () => {
-	it("returns webhook guidance for authorization failures", () => {
+	it("returns customer-safe copy for webhook-delivery failures and logs the technical detail", () => {
+		const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
 		expect(
 			getStripeTransactionError({
 				transactionEvent: { type: "AUTHORIZATION_FAILURE", message: "Failed to delivery request." },
 				transaction: { id: "tx-1" },
 			}),
-		).toMatch(/webhook/i);
+		).toMatch(/could not be processed right now/i);
+		expect(consoleError).toHaveBeenCalledWith(expect.stringContaining("Failed to delivery request"));
+		consoleError.mockRestore();
 	});
 });
 
