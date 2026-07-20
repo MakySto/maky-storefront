@@ -164,3 +164,69 @@ release-candidate report.
 - **BLOKER: prekladový bundle `maky-commerce-i18n-bundle.zip` stále nie je na VPS** —
   po dodaní: aplikácia 9 locales + overrides → 1 validačný beh → SMTP deploy + reset
   `--lifecycle` → staging rebuild → GO-LIVE report.
+
+## 9. GO-LIVE runbook (opravený, 2026-07-20 večer — platná verzia)
+
+RC = tag `sk-launch-rc1` (storefront `6e0e4e7`, SMTP `d756df58` — SMTP UŽ nasadený).
+Rollback záloha storefrontu: **`/opt/.next.rollback-a2db881`** (mimo /opt/storefront,
+prežije git clean; obnovuje sa `cp -a`, nikdy `mv`). `/opt/storefront` je na vetve
+`feat/legal-content-pages` — rollback checkout VŽDY detached SHA, nie vetva.
+
+### Pred-deploy kontroly (spustiť a zapísať do reportu)
+
+```bash
+git -C /opt/storefront worktree list && git -C /opt/storefront worktree prune
+df -h /opt /tmp /home
+test -d /opt/.next.rollback-a2db881 || { echo "ZALOHA CHYBA"; exit 1; }
+```
+
+### Deploy sekvencia (po „GO LIVE")
+
+```bash
+# 1. STAGING STRIPE-OFF (KROK, nie poznámka): vo worktree wt-b43 .env vypnúť
+#    NEXT_PUBLIC_ENABLE_STRIPE_PAYMENTS aj ENABLE_STRIPE_PAYMENTS, rebuild, restart :3037
+#    — staging nesmie po live prepnutí vedieť spraviť reálnu platbu.
+# 2. Stripe LIVE switch (Marek, dashboard/Saleor Stripe app config pre sk-eur).
+# 3. Live payment-set probe (čerstvý checkout → PaymentIntent payment_method_types,
+#    livemode:true) — aktívny set do reportu; SEPA sa v LIVE nesmie objaviť.
+#    (Test mode SEPA gate ZRUŠENÝ — v teste ostáva zámerne zapnutá.)
+# 4. Prod .env: PRED buildom doplniť NEXT_PUBLIC_ENABLE_STRIPE_PAYMENTS=true
+#    a ENABLE_STRIPE_PAYMENTS=true (NEXT_PUBLIC_* sa inlinuje pri kompilácii!).
+test -d /opt/.next.rollback-a2db881 || { echo "ZALOHA CHYBA"; exit 1; }
+pm2 stop maky-storefront
+cd /opt/storefront
+git fetch origin && git checkout -f --detach sk-launch-rc1
+pnpm install --frozen-lockfile && pnpm run generate:all
+rm -rf .next && pnpm run build
+pnpm exec next start -p 3032   # verify: štýly + CSS 200, potom proces zabiť
+pm2 start maky-storefront      # verify :3000 aj https://maky.store/sk
+```
+
+### Rollback (sekundy, swap)
+
+```bash
+test -d /opt/.next.rollback-a2db881 || { echo "ZALOHA CHYBA"; exit 1; }
+pm2 stop maky-storefront
+cd /opt/storefront
+git checkout -f --detach a2db881
+rm -rf .next && cp -a /opt/.next.rollback-a2db881 .next
+pm2 start maky-storefront
+```
+
+SMTP rollback: `pm2 stop maky-smtp-app` → `git -C /opt/saleor-smtp-app checkout -f
+maky-postmark-tls12` → `rm -rf apps/smtp/.next && cp -a apps/smtp/.next.rollback-040f947d
+apps/smtp/.next` → `pm2 start maky-smtp-app`; config backupy:
+`apps/smtp/smtp-config-backup-2026-07-20T14-05-44-243Z.json` + `/home/ubuntu/maky-backups/`.
+
+### Druhý release po SK launchi
+
+Bundle `/home/ubuntu/maky-commerce-i18n-bundle.zip` (overený: zip OK, 9×234 storefront +
+9×120 email kľúčov, lifecycle config zhodný s aplikovaným; jediný rozdiel GIFT_CARD_SENT
+enabled+onlyWhenUsed vs. náš OFF — zapnúť pri prvom použití gift kariet) sa aplikuje ako
+samostatný release: merge 9 locales + overrides (sk-SK placeOrder NEMENIŤ — §4/8 z. 102/2014)
+→ i18n gates → build → staging → deploy.
+
+### Deliverability
+
+Gmail PASS (inbox, SPF align pm-bounces.maky.store, DKIM maky.store, TLS);
+Outlook test odoslaný na marekkysucky@hotmail.com (250 queued) — over inbox + hlavičky.
