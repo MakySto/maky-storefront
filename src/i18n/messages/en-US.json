@@ -143,13 +143,13 @@
 		"itemCountOverflow": "9+",
 		"variantLabel": "Variant: {variant}",
 		"quantityLabel": "Qty: {quantity}",
-		"shippingNextStepNote": "Shipping will be calculated in the next step",
+		"shippingNextStepNote": "Shipping is calculated at checkout.",
 		"removing": "Removing",
 		"removeLineAria": "Remove line from cart",
 		"removingLineAria": "Removing line from cart"
 	},
 	"checkout": {
-		"placeOrder": "Place order with obligation to pay",
+		"placeOrder": "Order and pay",
 		"firstName": "First name",
 		"lastName": "Last name",
 		"address": "Address",
@@ -379,9 +379,9 @@
 			"billingAddressLabel": "Billing address",
 			"orderNotFoundTitle": "Order not found",
 			"orderNotFoundMessage": "We couldn't find this order. The link may have expired or is incorrect.",
-			"emailNoticeWithAddress": "We'll send an order confirmation to {confirmationEmail}.",
-			"emailNoticeGeneric": "We'll send an order confirmation to your email address.",
-			"emailLabel": "Confirmation email"
+			"emailNoticeWithAddress": "We'll send an order receipt to {confirmationEmail}.",
+			"emailNoticeGeneric": "We'll send an order receipt to your email address.",
+			"emailLabel": "Order receipt"
 		},
 		"notFound": {
 			"title": "Checkout not found",

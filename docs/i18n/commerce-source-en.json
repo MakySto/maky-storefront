@@ -171,7 +171,7 @@
 			"runtimeStatus": "production"
 		},
 		"cart.shippingNextStepNote": {
-			"source": "Shipping will be calculated in the next step",
+			"source": "Shipping is calculated at checkout.",
 			"context": "Shipping disclaimer under the total label in the full-cart-page summary box (standalone sentence, unlike the drawer's shippingAtCheckout row value).",
 			"kind": "visible",
 			"callSites": ["src/app/[channel]/(main)/cart/page.tsx:114"],
@@ -716,7 +716,7 @@
 			"dormantNote": "Rendered only by the demo ConfirmationStep, reachable solely by hand-typing ?step=confirmation (B.4.3 nav-swap sends real orders to /checkout/complete). Kept so the demo surface never leaks raw keys."
 		},
 		"checkout.confirmation.emailLabel": {
-			"source": "Confirmation email",
+			"source": "Order receipt",
 			"context": "Label of the confirmation-email detail row (Mail icon) on the confirmation card; neutral wording — does NOT claim the e-mail was already sent. The address renders below it only when present.",
 			"kind": "visible",
 			"callSites": [
@@ -727,7 +727,7 @@
 			"runtimeStatus": "production"
 		},
 		"checkout.confirmation.emailNoticeGeneric": {
-			"source": "We'll send an order confirmation to your email address.",
+			"source": "We'll send an order receipt to your email address.",
 			"context": "Variant of the confirmation-email notice used when the order carries no customer e-mail — no address is interpolated.",
 			"kind": "visible",
 			"callSites": [
@@ -738,7 +738,7 @@
 			"runtimeStatus": "production"
 		},
 		"checkout.confirmation.emailNoticeWithAddress": {
-			"source": "We'll send an order confirmation to {confirmationEmail}.",
+			"source": "We'll send an order receipt to {confirmationEmail}.",
 			"context": "Subtitle inside the order-details card header on the confirmation page when the order has a customer e-mail. Truthful future tense — the storefront cannot confirm delivery, only that the confirmation will be sent.",
 			"kind": "visible",
 			"placeholders": {
@@ -1997,7 +1997,7 @@
 			"runtimeStatus": "production"
 		},
 		"checkout.placeOrder": {
-			"source": "Place order with obligation to pay",
+			"source": "Order and pay",
 			"context": "THE order button: desktop pay button (payment step), mobile sticky pay bar, Stripe card form submit and the free-order completion button. EU consumer law requires the label to state the payment obligation explicitly ('Objednať s povinnosťou platby' / 'Zahlungspflichtig bestellen' style) — every translation must preserve the explicit obligation-to-pay meaning. Other copy refers to this button only generically ('the button below'), never by quoting its label. LOCKED for sk-SK: the Slovak label is the statutory wording of §4 ods. 8 zákona č. 102/2014 Z. z. (\"Objednať s povinnosťou platby\") and must not be restyled; other locales may use approved shorter wording that still states the payment obligation.",
 			"kind": "cta",
 			"maxLength": 40,

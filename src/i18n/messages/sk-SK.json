@@ -143,7 +143,7 @@
 		"itemCountOverflow": "9+",
 		"variantLabel": "Variant: {variant}",
 		"quantityLabel": "Množstvo: {quantity}",
-		"shippingNextStepNote": "Cena dopravy sa vypočíta v ďalšom kroku",
+		"shippingNextStepNote": "Doprava sa vypočíta v pokladni.",
 		"removing": "Odstraňujem",
 		"removeLineAria": "Odstrániť položku z košíka",
 		"removingLineAria": "Odstraňujem položku z košíka"
@@ -379,9 +379,9 @@
 			"billingAddressLabel": "Fakturačná adresa",
 			"orderNotFoundTitle": "Objednávka sa nenašla",
 			"orderNotFoundMessage": "Nepodarilo sa nám nájsť túto objednávku. Odkaz možno vypršal alebo je nesprávny.",
-			"emailNoticeWithAddress": "Potvrdenie objednávky pošleme na {confirmationEmail}.",
-			"emailNoticeGeneric": "Potvrdenie objednávky pošleme na váš e-mail.",
-			"emailLabel": "Potvrdzujúci e-mail"
+			"emailNoticeWithAddress": "Potvrdenie o prijatí objednávky pošleme na {confirmationEmail}.",
+			"emailNoticeGeneric": "Potvrdenie o prijatí objednávky vám pošleme e-mailom.",
+			"emailLabel": "Potvrdenie o prijatí objednávky"
 		},
 		"notFound": {
 			"title": "Pokladňa sa nenašla",
