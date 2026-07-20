@@ -56,11 +56,17 @@
 		"email.accountChangeEmailConfirm.newEmailNote": {
 			"newEmail": "the new e-mail address (payload new_email)"
 		},
+		"email.accountChangeEmailConfirm.preheader": {
+			"newEmail": "the new e-mail address (payload new_email)"
+		},
 		"email.accountChangeEmailRequest.intro": {
 			"firstName": "customer first name from the Notify payload (user.first_name); the *Generic variant renders when it is missing",
 			"newEmail": "the new e-mail address (payload new_email)"
 		},
 		"email.accountChangeEmailRequest.introGeneric": {
+			"newEmail": "the new e-mail address (payload new_email)"
+		},
+		"email.accountChangeEmailRequest.preheader": {
 			"newEmail": "the new e-mail address (payload new_email)"
 		},
 		"email.accountConfirmation.intro": {
