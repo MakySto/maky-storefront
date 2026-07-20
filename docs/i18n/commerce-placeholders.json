@@ -1,77 +1,151 @@
 {
-	"$about": "Placeholder registry for the commerce copy manifest. Every {name} that appears in commerce-source-en.json, with its meaning. Translators must keep placeholder names EXACTLY as-is.",
-	"placeholders": {
-		"countryName": {
-			"meaning": "Localized country name of the shipping address (Intl.DisplayNames via localizeCountryName, threaded with the market locale); falls back to checkout.shipping.yourAddressFallback when unresolvable. Grammar note: interpolated after Slovak preposition \"Pre\" (accusative).",
-			"appearsIn": ["checkout.shipping.noMethodsForCountry"]
+	"$about": "Per-key placeholder registry GENERATED from commerce-source-en.json (same placeholder name may have different semantics under different keys — the key-scoped meaning here is authoritative). Translators must keep placeholder names EXACTLY as-is. Regenerate/verify via scripts/i18n/check-commerce-i18n.mjs --write-registry.",
+	"byKey": {
+		"cart.items": {
+			"count": "number of line items in the cart (drives the plural branch)"
 		},
-		"email": {
-			"meaning": "customer email the confirmation is sent to (order.userEmail; may be an empty string, sentence then ends after 'adresu')",
-			"appearsIn": ["checkout.confirmation.emailNotice", "checkout.contactSection.resetLinkSent"]
+		"cart.quantityLabel": {
+			"quantity": "line quantity (number)"
 		},
-		"field": {
-			"meaning": "The localized address-field label, e.g. 'Mesto' / 'PSČ' (already translated via the address field label keys)",
-			"appearsIn": ["checkout.addressForm.fieldRequired", "checkout.addressForm.selectField"]
+		"cart.removeItemAria": {
+			"product": "product name of the cart line from Saleor"
 		},
-		"gateway": {
-			"meaning": "Payment gateway display name, e.g. Stripe",
-			"appearsIn": ["checkout.payment.loadingGateway"]
+		"cart.variantAttribute": {
+			"name": "attribute name from Saleor backend data (e.g. \"Size\")",
+			"value": "attribute value name from Saleor backend data (e.g. \"XL\")"
 		},
-		"gateways": {
-			"meaning": "Comma-separated list of gateway entries in the form Name (id)",
-			"appearsIn": ["checkout.payment.gateways.unsupportedList"]
+		"cart.variantLabel": {
+			"variant": "variant name from Saleor backend data"
 		},
-		"max": {
-			"meaning": "method.maximumDeliveryDays (number); also drives the plural branch",
-			"appearsIn": ["checkout.shipping.deliveryEstimate"]
+		"checkout.addressForm.fieldRequired": {
+			"field": "The localized address-field label, e.g. 'Mesto' / 'PSČ' (already translated via the address field label keys)"
 		},
-		"min": {
-			"meaning": "method.minimumDeliveryDays (number)",
-			"appearsIn": ["checkout.shipping.deliveryEstimate"]
+		"checkout.confirmation.emailNoticeWithAddress": {
+			"confirmationEmail": "customer e-mail address the order confirmation will be sent to (order.userEmail; never empty — the Generic variant renders otherwise)"
 		},
-		"name": {
-			"meaning": "attribute name from Saleor backend data (e.g. \"Size\")",
-			"appearsIn": ["cart.variantAttribute"]
+		"checkout.confirmation.orderNumberLine": {
+			"orderNumber": "Saleor order number (e.g. 1023); in the dormant demo confirmation step a DEMO-XXXXXX code"
 		},
-		"newTotal": {
-			"meaning": "Formatted new order total including currency symbol (getFormattedMoney)",
-			"appearsIn": ["checkout.payment.priceChangedBody"]
+		"checkout.contactSection.resetLinkSent": {
+			"email": "the email address the customer typed into the sign-in form"
 		},
-		"number": {
-			"meaning": "order number as displayed to the customer",
-			"appearsIn": ["email.orderConfirmed.subject", "email.orderConfirmed.preheader", "email.order.badge"]
+		"checkout.payment.freeOrderBody": {
+			"total": "Formatted order total with currency, e.g. 0,00 €"
 		},
-		"orderNumber": {
-			"meaning": "Saleor order number (e.g. 1023); in the dormant demo confirmation step a DEMO-XXXXXX code",
-			"appearsIn": ["checkout.confirmation.orderNumberLine"]
+		"checkout.payment.loadingGateway": {
+			"gateway": "Payment gateway display name, e.g. Stripe"
 		},
-		"previousTotal": {
-			"meaning": "Formatted previous order total including currency symbol (getFormattedMoney)",
-			"appearsIn": ["checkout.payment.priceChangedBody"]
+		"checkout.payment.priceChangedBody": {
+			"previousTotal": "Formatted previous order total including currency symbol (getFormattedMoney)",
+			"newTotal": "Formatted new order total including currency symbol (getFormattedMoney)"
 		},
-		"product": {
-			"meaning": "product name of the cart line from Saleor",
-			"appearsIn": ["cart.removeItemAria"]
+		"checkout.shipping.deliveryEstimate": {
+			"min": "method.minimumDeliveryDays (number)",
+			"max": "method.maximumDeliveryDays (number); also drives the plural branch"
 		},
-		"quantity": {
-			"meaning": "line quantity (number)",
-			"appearsIn": ["cart.quantityLabel", "email.order.quantity"]
+		"checkout.shipping.noMethodsForCountry": {
+			"countryName": "Localized country name of the shipping address (Intl.DisplayNames via localizeCountryName, threaded with the market locale), always rendered inside parentheses — grammatically inert, no inflection needed. When unresolvable the code renders checkout.shipping.noMethodsForCountryGeneric instead."
 		},
-		"step": {
-			"meaning": "current 1-based step number",
-			"appearsIn": ["checkout.steps.progress"]
+		"checkout.steps.progress": {
+			"current": "current 1-based step number",
+			"stepCount": "total number of visible checkout steps (2 or 3)"
 		},
-		"total": {
-			"meaning": "Formatted order total with currency, e.g. 0,00 €",
-			"appearsIn": ["checkout.payment.freeOrderBody", "checkout.steps.progress"]
+		"email.accountChangeEmailConfirm.intro": {
+			"firstName": "customer first name from the Notify payload (user.first_name); the *Generic variant renders when it is missing"
 		},
-		"value": {
-			"meaning": "attribute value name from Saleor backend data (e.g. \"XL\")",
-			"appearsIn": ["cart.variantAttribute"]
+		"email.accountChangeEmailConfirm.newEmailNote": {
+			"newEmail": "the new e-mail address (payload new_email)"
 		},
-		"variant": {
-			"meaning": "variant name from Saleor backend data",
-			"appearsIn": ["cart.variantLabel"]
+		"email.accountChangeEmailRequest.intro": {
+			"firstName": "customer first name from the Notify payload (user.first_name); the *Generic variant renders when it is missing",
+			"newEmail": "the new e-mail address (payload new_email)"
+		},
+		"email.accountChangeEmailRequest.introGeneric": {
+			"newEmail": "the new e-mail address (payload new_email)"
+		},
+		"email.accountConfirmation.intro": {
+			"firstName": "customer first name from the Notify payload (user.first_name); the *Generic variant renders when it is missing"
+		},
+		"email.accountDelete.intro": {
+			"firstName": "customer first name from the Notify payload (user.first_name); the *Generic variant renders when it is missing"
+		},
+		"email.accountPasswordReset.intro": {
+			"firstName": "customer first name from the Notify payload (user.first_name); the *Generic variant renders when it is missing"
+		},
+		"email.accountSetCustomerPassword.intro": {
+			"firstName": "customer first name from the Notify payload (user.first_name); the *Generic variant renders when it is missing"
+		},
+		"email.giftCardSent.validUntil": {
+			"expiryDate": "gift card expiry date as provided by Saleor (ISO date)"
+		},
+		"email.invoiceSent.intro": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.invoiceSent.preheader": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.invoiceSent.subject": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.order.badge": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.order.quantity": {
+			"quantity": "ordered quantity of the line"
+		},
+		"email.orderCancelled.preheader": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderCancelled.subject": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderConfirmed.preheader": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderConfirmed.subject": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderCreated.preheader": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderCreated.subject": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderFulfilled.preheader": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderFulfilled.preheaderDigital": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderFulfilled.shippedVia": {
+			"shippingMethodName": "shipping method display name from the order"
+		},
+		"email.orderFulfilled.subject": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderFulfilled.subjectDigital": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderFulfillmentUpdate.intro": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderFulfillmentUpdate.preheader": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderFulfillmentUpdate.subject": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderFullyPaid.preheader": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderFullyPaid.subject": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderRefunded.preheader": {
+			"number": "order number as displayed to the customer"
+		},
+		"email.orderRefunded.subject": {
+			"number": "order number as displayed to the customer"
 		}
 	}
 }

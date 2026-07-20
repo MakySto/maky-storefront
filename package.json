@@ -20,7 +20,8 @@
 		"test": "vitest",
 		"test:run": "vitest run",
 		"knip": "knip",
-		"prepare": "husky install"
+		"prepare": "husky install",
+		"i18n:check": "node scripts/i18n/check-commerce-i18n.mjs && node scripts/i18n/check-locale-matrix.mjs"
 	},
 	"dependencies": {
 		"@graphql-typed-document-node/core": "3.2.0",

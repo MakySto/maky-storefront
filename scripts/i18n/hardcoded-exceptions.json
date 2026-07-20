@@ -1,0 +1,30 @@
+{
+	"$about": "Documented exceptions to the no-hardcoded-customer-string rule for commerce surfaces. check-commerce-i18n.mjs asserts each literal still exists at its file — if one is fixed or moved, update this ledger in the same change. Nothing may be ADDED here without a written justification.",
+	"entries": [
+		{
+			"file": "src/app/checkout/layout.tsx",
+			"literal": "formatPageTitle(\"Pokladňa\")",
+			"justification": "PPR static shell: the layout metadata prerenders without request data, so it cannot know the market locale. Store-default (sk) tab title is served initially; CheckoutDocumentTitle swaps in the market-locale title (checkout.meta.title) client-side after hydration."
+		},
+		{
+			"file": "src/ui/atoms/loader.tsx",
+			"literal": "Načítavame…",
+			"justification": "Screen-reader-only label of the shared Loader atom. The /checkout and /checkout/complete Suspense fallbacks render inside the PPR static shell (no request locale available), so the store-default (sk) label ships to all markets during the loading state. Known cosmetic limitation; checkout.common.loading stays in the catalog as the reserved localized label for wired call sites."
+		},
+		{
+			"file": "src/checkout/views/saleor-checkout/checkout-header.tsx",
+			"literal": "TEST",
+			"justification": "Environment marker badge rendered only when NEXT_PUBLIC_STAGING_TEST_MODE=true at build time; never set on production builds. Intentionally untranslated."
+		},
+		{
+			"file": "src/checkout/views/saleor-checkout/confirmation-step.tsx",
+			"literal": "DEMO-",
+			"justification": "Untranslated identifier prefix of the demo order number in the dormant demo ConfirmationStep (reachable only by hand-typing ?step=confirmation). Real confirmations use /checkout/complete with the Saleor order number."
+		},
+		{
+			"file": "src/checkout/components/payment/stripe/stripe-payment.tsx",
+			"literal": "\"Stripe\"",
+			"justification": "Brand-name fallback interpolated into checkout.payment.loadingGateway when the gateway config carries no display name. Brand names are not translated."
+		}
+	]
+}

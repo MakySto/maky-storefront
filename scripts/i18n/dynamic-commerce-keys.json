@@ -1,0 +1,110 @@
+{
+	"$about": "Commerce i18n keys reached through DYNAMIC t() calls (variable/template keys) that the static extractor cannot resolve. Each pattern enumerates its full possible key set — keep in sync with the source file listed as callSite. check-commerce-i18n.mjs unions these with the static extraction.",
+	"patterns": [
+		{
+			"pattern": "t(`steps.${s.labelKey}`)",
+			"callSite": "src/checkout/views/saleor-checkout/checkout-header.tsx",
+			"source": "labelKey values from getCheckoutSteps() in src/checkout/views/saleor-checkout/flow.ts (CONFIRMATION filtered out of the desktop nav; the mobile progress text can still render it)",
+			"keys": [
+				"checkout.steps.information",
+				"checkout.steps.shipping",
+				"checkout.steps.payment",
+				"checkout.steps.confirmation"
+			]
+		},
+		{
+			"pattern": "t(row.labelKey) / t(row.valueKey)",
+			"callSite": "src/checkout/views/saleor-checkout/checkout-summary-context.tsx",
+			"source": "rows built by buildShippingSummaryRows/buildPaymentSummaryRows in the same file",
+			"keys": [
+				"checkout.summary.contact",
+				"checkout.summary.shipTo",
+				"checkout.summary.method",
+				"checkout.summary.delivery",
+				"checkout.summary.digitalDelivery"
+			]
+		},
+		{
+			"pattern": "t(addressFieldMessageKeys[field]) / t(localizedAddressFieldMessageKeys[...])",
+			"callSite": "src/checkout/components/address-form/use-address-form-utils.ts",
+			"source": "two literal maps in the same file; flat legacy keys (checkout.city, …) mixed with checkout.addressForm.*",
+			"keys": [
+				"checkout.city",
+				"checkout.firstName",
+				"checkout.lastName",
+				"checkout.country",
+				"checkout.postalCode",
+				"checkout.address",
+				"checkout.phone",
+				"checkout.addressForm.fields.countryArea",
+				"checkout.addressForm.fields.cityArea",
+				"checkout.addressForm.fields.companyName",
+				"checkout.addressForm.fields.streetAddress2",
+				"checkout.addressForm.localized.province",
+				"checkout.addressForm.localized.district",
+				"checkout.addressForm.localized.state",
+				"checkout.addressForm.localized.zip",
+				"checkout.addressForm.localized.postal",
+				"checkout.addressForm.localized.postTown",
+				"checkout.addressForm.localized.prefecture"
+			]
+		},
+		{
+			"pattern": "buildCheckoutGatewayMessages((key, values) => t(key, values))",
+			"callSite": "src/checkout/hooks/use-checkout-gateway-messages.ts",
+			"source": "GatewayMessageKey union in src/checkout/lib/payment/gateway-messages.ts (all eagerly translated on payment-step render)",
+			"keys": [
+				"checkout.payment.gateways.unsupported",
+				"checkout.payment.gateways.dummyMissingBody",
+				"checkout.payment.gateways.noneTitle",
+				"checkout.payment.gateways.noneBody",
+				"checkout.payment.gateways.unsupportedTitle",
+				"checkout.payment.gateways.dummyMissingTitle",
+				"checkout.payment.gateways.noGatewayConfigured",
+				"checkout.payment.gateways.stripeUseCardForm",
+				"checkout.payment.gateways.paymentFailed",
+				"checkout.payment.gateways.paymentTryAgain",
+				"checkout.payment.gateways.paymentWebhookFailed",
+				"checkout.payment.gateways.paymentInitFailed"
+			]
+		},
+		{
+			"pattern": "getPaymentActionTranslator → t(\"<full dotted key>\") in server actions",
+			"callSite": "src/checkout/lib/actions.ts",
+			"source": "unscoped getTranslations({locale}); full-path keys are matched statically too — listed here for the ones built via helper indirection",
+			"keys": [
+				"checkout.errors.noSaleorResponse",
+				"checkout.errors.testPaymentUnavailable",
+				"checkout.errors.cardPaymentsDisabled",
+				"checkout.errors.totalVerifyFailed",
+				"checkout.errors.paymentsDisabled",
+				"checkout.errors.paymentProcessFailed",
+				"checkout.errors.orderCreateFailed",
+				"checkout.errors.generic",
+				"checkout.errors.invalidValue",
+				"checkout.payment.gatewayInitFailed",
+				"checkout.payment.totalChanged",
+				"checkout.payment.gateways.paymentInitFailed",
+				"checkout.payment.completeOrderFailed",
+				"checkout.payment.alreadyCompleted",
+				"checkout.payment.notFullyPaid"
+			]
+		},
+		{
+			"pattern": "registerCheckoutPaymentLibMessages(...) — payment libs read translated copy from the registry",
+			"callSite": "src/checkout/hooks/use-checkout-payment-messages.ts",
+			"source": "CheckoutPaymentLibMessages contract in src/checkout/lib/payment/gateway-messages.ts (EN-source fallback map is test-enforced in sync with en-US.json)",
+			"keys": [
+				"checkout.payment.billingSaveFailed",
+				"checkout.payment.invalidValue",
+				"checkout.payment.gatewayInitFailed",
+				"checkout.payment.stripeWebhookFailed",
+				"checkout.payment.stripeProcessFailed",
+				"checkout.payment.failed",
+				"checkout.payment.notFullyPaid",
+				"checkout.payment.alreadyCompleted",
+				"checkout.payment.freeOrderTotalChanged"
+			]
+		}
+	]
+}

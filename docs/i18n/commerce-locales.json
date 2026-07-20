@@ -1,5 +1,5 @@
 {
-	"$about": "Locale/market matrix for the commerce copy (mirror of src/lib/channel-map.ts + src/config/locale.ts — code is canonical).",
+	"$about": "Locale/market matrix for the commerce copy (mirror of src/lib/channel-map.ts + src/config/locale.ts — code is canonical; verified by scripts/i18n/check-locale-matrix.mjs, which also checks the live Saleor channel list when SALEOR_API_URL+SALEOR_APP_TOKEN are provided). launchStatus/checkoutReady/shippingConfigured are operational facts (verified evidence only — never inferred from a channel display name).",
 	"sourceLocale": "en-US",
 	"locales": {
 		"sk-SK": {
@@ -9,7 +9,12 @@
 			"saleorLanguageCode": "SK",
 			"stripeLocale": "sk",
 			"storefrontCatalog": "complete (primary market, ships now)",
-			"emailCatalog": "complete (ships now)"
+			"emailCatalog": "complete (ships now)",
+			"saleorChannelStatus": "active",
+			"launchStatus": "launch-candidate",
+			"checkoutReady": true,
+			"shippingConfigured": true,
+			"note": "checkout+shipping verified by staging E2E (test orders on sk-eur incl. Stripe test-mode card/decline/3DS, shipping method selectable end-to-end)"
 		},
 		"cs-CZ": {
 			"market": "cz",
@@ -18,7 +23,11 @@
 			"saleorLanguageCode": "CS",
 			"stripeLocale": "cs",
 			"storefrontCatalog": "pending translation bundle",
-			"emailCatalog": "pending translation bundle"
+			"emailCatalog": "pending translation bundle",
+			"saleorChannelStatus": "active",
+			"launchStatus": "pending",
+			"checkoutReady": "unverified",
+			"shippingConfigured": "unverified"
 		},
 		"de-DE": {
 			"market": "de",
@@ -27,7 +36,11 @@
 			"saleorLanguageCode": "DE",
 			"stripeLocale": "de",
 			"storefrontCatalog": "pending translation bundle",
-			"emailCatalog": "pending translation bundle"
+			"emailCatalog": "pending translation bundle",
+			"saleorChannelStatus": "active",
+			"launchStatus": "pending",
+			"checkoutReady": "unverified",
+			"shippingConfigured": "unverified"
 		},
 		"de-AT": {
 			"market": "at",
@@ -36,7 +49,11 @@
 			"saleorLanguageCode": "DE",
 			"stripeLocale": "de",
 			"storefrontCatalog": "pending translation bundle",
-			"emailCatalog": "pending translation bundle"
+			"emailCatalog": "pending translation bundle",
+			"saleorChannelStatus": "active",
+			"launchStatus": "pending",
+			"checkoutReady": "unverified",
+			"shippingConfigured": "unverified"
 		},
 		"pl-PL": {
 			"market": "pl",
@@ -45,7 +62,11 @@
 			"saleorLanguageCode": "PL",
 			"stripeLocale": "pl",
 			"storefrontCatalog": "pending translation bundle",
-			"emailCatalog": "pending translation bundle"
+			"emailCatalog": "pending translation bundle",
+			"saleorChannelStatus": "active",
+			"launchStatus": "pending",
+			"checkoutReady": "unverified",
+			"shippingConfigured": "unverified"
 		},
 		"hu-HU": {
 			"market": "hu",
@@ -54,7 +75,11 @@
 			"saleorLanguageCode": "HU",
 			"stripeLocale": "hu",
 			"storefrontCatalog": "pending translation bundle",
-			"emailCatalog": "pending translation bundle"
+			"emailCatalog": "pending translation bundle",
+			"saleorChannelStatus": "active",
+			"launchStatus": "pending",
+			"checkoutReady": "unverified",
+			"shippingConfigured": "unverified"
 		},
 		"it-IT": {
 			"market": "it",
@@ -63,7 +88,11 @@
 			"saleorLanguageCode": "IT",
 			"stripeLocale": "it",
 			"storefrontCatalog": "pending translation bundle",
-			"emailCatalog": "pending translation bundle"
+			"emailCatalog": "pending translation bundle",
+			"saleorChannelStatus": "active",
+			"launchStatus": "pending",
+			"checkoutReady": "unverified",
+			"shippingConfigured": "unverified"
 		},
 		"fr-FR": {
 			"market": "fr",
@@ -72,7 +101,11 @@
 			"saleorLanguageCode": "FR",
 			"stripeLocale": "fr",
 			"storefrontCatalog": "pending translation bundle",
-			"emailCatalog": "pending translation bundle"
+			"emailCatalog": "pending translation bundle",
+			"saleorChannelStatus": "active",
+			"launchStatus": "pending",
+			"checkoutReady": "unverified",
+			"shippingConfigured": "unverified"
 		},
 		"es-ES": {
 			"market": "es",
@@ -81,7 +114,11 @@
 			"saleorLanguageCode": "ES",
 			"stripeLocale": "es",
 			"storefrontCatalog": "pending translation bundle",
-			"emailCatalog": "pending translation bundle"
+			"emailCatalog": "pending translation bundle",
+			"saleorChannelStatus": "active",
+			"launchStatus": "pending",
+			"checkoutReady": "unverified",
+			"shippingConfigured": "unverified"
 		},
 		"ro-RO": {
 			"market": "ro",
@@ -90,7 +127,11 @@
 			"saleorLanguageCode": "RO",
 			"stripeLocale": "ro",
 			"storefrontCatalog": "pending translation bundle",
-			"emailCatalog": "pending translation bundle"
+			"emailCatalog": "pending translation bundle",
+			"saleorChannelStatus": "active",
+			"launchStatus": "pending",
+			"checkoutReady": "unverified",
+			"shippingConfigured": "unverified"
 		},
 		"en-GB": {
 			"market": "gb",
@@ -99,7 +140,12 @@
 			"saleorLanguageCode": "EN_GB",
 			"stripeLocale": "en-GB",
 			"storefrontCatalog": "en-US source applies; reviewer may localize (en-GB spelling)",
-			"emailCatalog": "en source applies"
+			"emailCatalog": "en source applies",
+			"saleorChannelStatus": "missing",
+			"launchStatus": "blocked",
+			"checkoutReady": "unverified",
+			"shippingConfigured": "unverified",
+			"note": "gb-gbp channel does NOT exist in live Saleor (verified 2026-07-20 via channels query) — routing/channel-map reference it, so /gb currently cannot resolve a channel; create the channel or gate the market before launch"
 		},
 		"en-US": {
 			"market": "us",
@@ -108,7 +154,11 @@
 			"saleorLanguageCode": "EN_US",
 			"stripeLocale": "en",
 			"storefrontCatalog": "SOURCE",
-			"emailCatalog": "SOURCE"
+			"emailCatalog": "SOURCE",
+			"saleorChannelStatus": "active",
+			"launchStatus": "pending",
+			"checkoutReady": "unverified",
+			"shippingConfigured": "unverified"
 		},
 		"en-CA": {
 			"market": "ca",
@@ -117,8 +167,13 @@
 			"saleorLanguageCode": "EN_CA",
 			"stripeLocale": "en",
 			"storefrontCatalog": "en-US source applies",
-			"emailCatalog": "en source applies"
+			"emailCatalog": "en source applies",
+			"saleorChannelStatus": "active",
+			"launchStatus": "pending",
+			"checkoutReady": "unverified",
+			"shippingConfigured": "unverified"
 		}
 	},
-	"runtimeFallback": "Per-key deep-merge onto the en-US source at request time (src/i18n/request.ts) until the bundle lands; email catalogs fall back per-file to en (resolveCatalogLocale)."
+	"runtimeFallback": "Per-key deep-merge onto the en-US source at request time (src/i18n/request.ts) until the bundle lands; email catalogs fall back per-file to en (resolveCatalogLocale).",
+	"$channelFacts": "Live Saleor 2026-07-20: 12 active market channels (sk-eur, cz-czk, de-eur, at-eur, pl-pln, hu-huf, it-eur, fr-eur, es-eur, ro-ron, us-usd, ca-cad) + inactive default-channel; gb-gbp missing. shippingConfigured for non-SK markets is unverifiable with the current app token (needs MANAGE_SHIPPING) — verify in the dashboard before flipping a market to launch-candidate."
 }
