@@ -26,11 +26,6 @@ const expressCheckoutOptions: StripeExpressCheckoutElementOptions = {
 		maxColumns: 2,
 		maxRows: 1,
 	},
-	paymentMethods: {
-		applePay: "always",
-		googlePay: "always",
-		link: "auto",
-	},
 	emailRequired: false,
 	phoneNumberRequired: false,
 	billingAddressRequired: false,
