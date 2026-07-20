@@ -696,8 +696,8 @@
 			"runtimeStatus": "production"
 		},
 		"checkout.confirmation.confirmedTitle": {
-			"source": "Your order is confirmed",
-			"context": "h2 heading of the order-details card on the confirmation page.",
+			"source": "We have received your order",
+			"context": "h2 heading of the order-details card on the confirmation page. Approved lifecycle wording: the order is RECEIVED (awaiting manual review in the dashboard), never claimed as confirmed — ORDER_CONFIRMED is a later manual step.",
 			"kind": "visible",
 			"callSites": [
 				"src/checkout/views/order-confirmation/order-confirmation.tsx:87",
@@ -1998,7 +1998,7 @@
 		},
 		"checkout.placeOrder": {
 			"source": "Place order with obligation to pay",
-			"context": "THE order button: desktop pay button (payment step), mobile sticky pay bar, Stripe card form submit and the free-order completion button. EU consumer law requires the label to state the payment obligation explicitly ('Objednať s povinnosťou platby' / 'Zahlungspflichtig bestellen' style) — every translation must preserve the explicit obligation-to-pay meaning. Other copy refers to this button only generically ('the button below'), never by quoting its label.",
+			"context": "THE order button: desktop pay button (payment step), mobile sticky pay bar, Stripe card form submit and the free-order completion button. EU consumer law requires the label to state the payment obligation explicitly ('Objednať s povinnosťou platby' / 'Zahlungspflichtig bestellen' style) — every translation must preserve the explicit obligation-to-pay meaning. Other copy refers to this button only generically ('the button below'), never by quoting its label. LOCKED for sk-SK: the Slovak label is the statutory wording of §4 ods. 8 zákona č. 102/2014 Z. z. (\"Objednať s povinnosťou platby\") and must not be restyled; other locales may use approved shorter wording that still states the payment obligation.",
 			"kind": "cta",
 			"maxLength": 40,
 			"legallySensitive": true,
@@ -2983,12 +2983,11 @@
 		},
 		"email.order.invoiceSeparate": {
 			"source": "We will send your invoice separately.",
-			"context": "DORMANT — promise that the invoice arrives separately. Not rendered by any template until the invoicing workflow is actually live; kept in the catalog so the bundle translates it ahead of that launch.",
+			"context": "Statutory note rendered ONLY in the initial ORDER_CREATED receipt, right after notTaxDocument: the invoice is prepared and sent manually (INVOICE_SENT) — the promise holds because invoicing is a real manual step.",
 			"kind": "email-body",
 			"repo": "maky-apps/apps/smtp (src/modules/smtp/i18n/catalogs/<locale>.json; branch maky-i18n-order-email on the makysto remote)",
 			"legallySensitive": true,
-			"runtimeStatus": "dormant",
-			"dormantNote": "Not rendered by any template until the invoicing workflow is verified live.",
+			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
 			]
@@ -3015,7 +3014,7 @@
 		},
 		"email.order.notTaxDocument": {
 			"source": "This order confirmation is not a tax document.",
-			"context": "Statutory note under the financial summary of receipt-shaped e-mails (created/confirmed/fully-paid): the confirmation is not a tax document.",
+			"context": "Statutory note rendered ONLY in the initial ORDER_CREATED receipt (approved lifecycle): the confirmation is not a tax document.",
 			"kind": "email-body",
 			"repo": "maky-apps/apps/smtp (src/modules/smtp/i18n/catalogs/<locale>.json; branch maky-i18n-order-email on the makysto remote)",
 			"legallySensitive": true,
@@ -3155,27 +3154,29 @@
 			]
 		},
 		"email.orderConfirmed.intro": {
-			"source": "Thank you! We have received your order and are preparing it.",
+			"source": "We have reviewed your order and started processing it.",
 			"context": "First paragraph under the headline. Belongs to the canonical order-confirmation receipt (ORDER_CONFIRMED webhook) — the single customer receipt.",
 			"kind": "email-body",
 			"repo": "maky-apps/apps/smtp (src/modules/smtp/i18n/catalogs/<locale>.json; branch maky-i18n-order-email on the makysto remote)",
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: sent when the administrator MANUALLY confirms the order in the dashboard — announces the start of processing (not a second receipt)."
 		},
 		"email.orderConfirmed.outro": {
-			"source": "We will let you know as soon as it is on its way.",
+			"source": "We will let you know when it ships.",
 			"context": "Closing/secondary paragraph (muted). Belongs to the canonical order-confirmation receipt (ORDER_CONFIRMED webhook) — the single customer receipt.",
 			"kind": "email-body",
 			"repo": "maky-apps/apps/smtp (src/modules/smtp/i18n/catalogs/<locale>.json; branch maky-i18n-order-email on the makysto remote)",
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: sent when the administrator MANUALLY confirms the order in the dashboard — announces the start of processing (not a second receipt)."
 		},
 		"email.orderConfirmed.preheader": {
-			"source": "Thank you! We have received your order {number} and are preparing it.",
+			"source": "We have started processing your order {number}.",
 			"context": "Hidden inbox preview line next to the subject (per-event — never reuses another family's preheader). Belongs to the canonical order-confirmation receipt (ORDER_CONFIRMED webhook) — the single customer receipt.",
 			"kind": "email-preheader",
 			"repo": "maky-apps/apps/smtp (src/modules/smtp/i18n/catalogs/<locale>.json; branch maky-i18n-order-email on the makysto remote)",
@@ -3185,10 +3186,11 @@
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: sent when the administrator MANUALLY confirms the order in the dashboard — announces the start of processing (not a second receipt)."
 		},
 		"email.orderConfirmed.subject": {
-			"source": "Order {number} confirmed",
+			"source": "We are processing your order {number}",
 			"context": "E-mail subject. Belongs to the canonical order-confirmation receipt (ORDER_CONFIRMED webhook) — the single customer receipt.",
 			"kind": "email-subject",
 			"repo": "maky-apps/apps/smtp (src/modules/smtp/i18n/catalogs/<locale>.json; branch maky-i18n-order-email on the makysto remote)",
@@ -3198,40 +3200,44 @@
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: sent when the administrator MANUALLY confirms the order in the dashboard — announces the start of processing (not a second receipt)."
 		},
 		"email.orderConfirmed.title": {
-			"source": "Your order is confirmed!",
+			"source": "We are processing your order",
 			"context": "Main headline of the e-mail. Belongs to the canonical order-confirmation receipt (ORDER_CONFIRMED webhook) — the single customer receipt.",
 			"kind": "email-body",
 			"repo": "maky-apps/apps/smtp (src/modules/smtp/i18n/catalogs/<locale>.json; branch maky-i18n-order-email on the makysto remote)",
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: sent when the administrator MANUALLY confirms the order in the dashboard — announces the start of processing (not a second receipt)."
 		},
 		"email.orderCreated.intro": {
-			"source": "Thank you! Your order has been received and is awaiting confirmation.",
+			"source": "Thank you. We have received your order and will review it shortly.",
 			"context": "First paragraph under the headline. Belongs to the order-received e-mail (ORDER_CREATED webhook). NOT the canonical receipt — ORDER_CONFIRMED is; this event must stay INACTIVE in the app configuration so customers get exactly one receipt. Wording is deliberately 'received / awaiting confirmation', distinct from the confirmed receipt.",
 			"kind": "email-body",
 			"repo": "maky-apps/apps/smtp (src/modules/smtp/i18n/catalogs/<locale>.json; branch maky-i18n-order-email on the makysto remote)",
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: the immediate receipt — order received, awaiting manual review; the ONLY e-mail carrying the tax-document + invoice-separately notes."
 		},
 		"email.orderCreated.outro": {
-			"source": "We will email you as soon as it is confirmed.",
+			"source": "We will email you when we start processing it.",
 			"context": "Closing/secondary paragraph (muted). Belongs to the order-received e-mail (ORDER_CREATED webhook). NOT the canonical receipt — ORDER_CONFIRMED is; this event must stay INACTIVE in the app configuration so customers get exactly one receipt. Wording is deliberately 'received / awaiting confirmation', distinct from the confirmed receipt.",
 			"kind": "email-body",
 			"repo": "maky-apps/apps/smtp (src/modules/smtp/i18n/catalogs/<locale>.json; branch maky-i18n-order-email on the makysto remote)",
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: the immediate receipt — order received, awaiting manual review; the ONLY e-mail carrying the tax-document + invoice-separately notes."
 		},
 		"email.orderCreated.preheader": {
-			"source": "Your order {number} has been received and is awaiting confirmation.",
+			"source": "Your order {number} has been received and will be reviewed shortly.",
 			"context": "Hidden inbox preview line next to the subject (per-event — never reuses another family's preheader). Belongs to the order-received e-mail (ORDER_CREATED webhook). NOT the canonical receipt — ORDER_CONFIRMED is; this event must stay INACTIVE in the app configuration so customers get exactly one receipt. Wording is deliberately 'received / awaiting confirmation', distinct from the confirmed receipt.",
 			"kind": "email-preheader",
 			"repo": "maky-apps/apps/smtp (src/modules/smtp/i18n/catalogs/<locale>.json; branch maky-i18n-order-email on the makysto remote)",
@@ -3241,7 +3247,8 @@
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: the immediate receipt — order received, awaiting manual review; the ONLY e-mail carrying the tax-document + invoice-separately notes."
 		},
 		"email.orderCreated.subject": {
 			"source": "We have received your order {number}",
@@ -3254,7 +3261,8 @@
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: the immediate receipt — order received, awaiting manual review; the ONLY e-mail carrying the tax-document + invoice-separately notes."
 		},
 		"email.orderCreated.title": {
 			"source": "We have received your order",
@@ -3264,10 +3272,11 @@
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: the immediate receipt — order received, awaiting manual review; the ONLY e-mail carrying the tax-document + invoice-separately notes."
 		},
 		"email.orderFulfilled.intro": {
-			"source": "We have shipped your order.",
+			"source": "We have handed your order to the carrier.",
 			"context": "First paragraph under the headline. Belongs to the shipment e-mail (ORDER_FULFILLED webhook); *Digital keys are the variants used when order.isShippingRequired is false.",
 			"kind": "email-body",
 			"repo": "maky-apps/apps/smtp (src/modules/smtp/i18n/catalogs/<locale>.json; branch maky-i18n-order-email on the makysto remote)",
@@ -3313,7 +3322,7 @@
 			]
 		},
 		"email.orderFulfilled.shippedVia": {
-			"source": "Shipped via {shippingMethodName}",
+			"source": "Carrier: {shippingMethodName}",
 			"context": "Shipping-method line under the intro, rendered only when the order has a shipping method name. Belongs to the shipment e-mail (ORDER_FULFILLED webhook); *Digital keys are the variants used when order.isShippingRequired is false.",
 			"kind": "email-body",
 			"repo": "maky-apps/apps/smtp (src/modules/smtp/i18n/catalogs/<locale>.json; branch maky-i18n-order-email on the makysto remote)",
@@ -3372,7 +3381,7 @@
 			]
 		},
 		"email.orderFulfilled.trackButton": {
-			"source": "Track your order",
+			"source": "Track your shipment",
 			"context": "Track-order CTA button (links to the order confirmation page). Belongs to the shipment e-mail (ORDER_FULFILLED webhook); *Digital keys are the variants used when order.isShippingRequired is false.",
 			"kind": "email-cta",
 			"repo": "maky-apps/apps/smtp (src/modules/smtp/i18n/catalogs/<locale>.json; branch maky-i18n-order-email on the makysto remote)",
@@ -3448,7 +3457,8 @@
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: event DISABLED in the live configuration (prevents a duplicate payment e-mail seconds after checkout); keys stay translated for a possible future re-enable."
 		},
 		"email.orderFullyPaid.outro": {
 			"source": "We are preparing your order and will let you know when it ships.",
@@ -3458,7 +3468,8 @@
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: event DISABLED in the live configuration (prevents a duplicate payment e-mail seconds after checkout); keys stay translated for a possible future re-enable."
 		},
 		"email.orderFullyPaid.preheader": {
 			"source": "We have received your payment for order {number} in full.",
@@ -3471,7 +3482,8 @@
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: event DISABLED in the live configuration (prevents a duplicate payment e-mail seconds after checkout); keys stay translated for a possible future re-enable."
 		},
 		"email.orderFullyPaid.subject": {
 			"source": "Payment received for order {number}",
@@ -3484,7 +3496,8 @@
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: event DISABLED in the live configuration (prevents a duplicate payment e-mail seconds after checkout); keys stay translated for a possible future re-enable."
 		},
 		"email.orderFullyPaid.title": {
 			"source": "Payment received",
@@ -3494,7 +3507,8 @@
 			"runtimeStatus": "production",
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
-			]
+			],
+			"lifecycleNote": "APPROVED LIFECYCLE: event DISABLED in the live configuration (prevents a duplicate payment e-mail seconds after checkout); keys stay translated for a possible future re-enable."
 		},
 		"email.orderRefunded.intro": {
 			"source": "We have processed a refund for your order.",

@@ -133,20 +133,6 @@
 			"checkoutReady": "unverified",
 			"shippingConfigured": "unverified"
 		},
-		"en-GB": {
-			"market": "gb",
-			"channel": "gb-gbp",
-			"currency": "GBP",
-			"saleorLanguageCode": "EN_GB",
-			"stripeLocale": "en-GB",
-			"storefrontCatalog": "en-US source applies; reviewer may localize (en-GB spelling)",
-			"emailCatalog": "en source applies",
-			"saleorChannelStatus": "missing",
-			"launchStatus": "blocked",
-			"checkoutReady": "unverified",
-			"shippingConfigured": "unverified",
-			"note": "gb-gbp channel does NOT exist in live Saleor (verified 2026-07-20 via channels query) — routing/channel-map reference it, so /gb currently cannot resolve a channel; create the channel or gate the market before launch"
-		},
 		"en-US": {
 			"market": "us",
 			"channel": "us-usd",
@@ -175,5 +161,5 @@
 		}
 	},
 	"runtimeFallback": "Per-key deep-merge onto the en-US source at request time (src/i18n/request.ts) until the bundle lands; email catalogs fall back per-file to en (resolveCatalogLocale).",
-	"$channelFacts": "Live Saleor 2026-07-20: 12 active market channels (sk-eur, cz-czk, de-eur, at-eur, pl-pln, hu-huf, it-eur, fr-eur, es-eur, ro-ron, us-usd, ca-cad) + inactive default-channel; gb-gbp missing. shippingConfigured for non-SK markets is unverifiable with the current app token (needs MANAGE_SHIPPING) — verify in the dashboard before flipping a market to launch-candidate."
+	"$channelFacts": "Live Saleor 2026-07-20: 12 active market channels (sk-eur, cz-czk, de-eur, at-eur, pl-pln, hu-huf, it-eur, fr-eur, es-eur, ro-ron, us-usd, ca-cad) + inactive default-channel. The gb-gbp/en-GB market was REMOVED from the storefront (2026-07-20, Marek decision) — no Saleor channel existed for it. shippingConfigured for non-SK markets is unverifiable with the current app token (needs MANAGE_SHIPPING) — verify in the dashboard before flipping a market to launch-candidate."
 }

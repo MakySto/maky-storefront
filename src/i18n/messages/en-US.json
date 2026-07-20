@@ -374,7 +374,7 @@
 			"demoBanner": "<strong>Test mode:</strong> This is a simulated order confirmation. No real payment was taken.",
 			"orderNumberLine": "Order no. {orderNumber}",
 			"title": "Thank you for your order!",
-			"confirmedTitle": "Your order is confirmed",
+			"confirmedTitle": "We have received your order",
 			"shippingAddressLabel": "Shipping address",
 			"billingAddressLabel": "Billing address",
 			"orderNotFoundTitle": "Order not found",

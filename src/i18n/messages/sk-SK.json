@@ -374,7 +374,7 @@
 			"demoBanner": "<strong>Testovací režim:</strong> Toto je simulované potvrdenie objednávky. Žiadna skutočná platba neprebehla.",
 			"orderNumberLine": "Objednávka č. {orderNumber}",
 			"title": "Ďakujeme za vašu objednávku!",
-			"confirmedTitle": "Vaša objednávka je potvrdená",
+			"confirmedTitle": "Objednávku sme prijali",
 			"shippingAddressLabel": "Dodacia adresa",
 			"billingAddressLabel": "Fakturačná adresa",
 			"orderNotFoundTitle": "Objednávka sa nenašla",

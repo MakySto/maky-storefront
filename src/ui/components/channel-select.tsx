@@ -19,7 +19,6 @@ const MARKETS = [
 	{ slug: "fr", flag: "🇫🇷", label: "France", currency: "EUR" },
 	{ slug: "es", flag: "🇪🇸", label: "España", currency: "EUR" },
 	{ slug: "ro", flag: "🇷🇴", label: "România", currency: "RON" },
-	{ slug: "gb", flag: "🇬🇧", label: "United Kingdom", currency: "GBP" },
 	{ slug: "us", flag: "🇺🇸", label: "United States", currency: "USD" },
 	{ slug: "ca", flag: "🇨🇦", label: "Canada", currency: "CAD" },
 ] as const;
@@ -40,10 +39,7 @@ export const ChannelSelect = ({ className }: { className?: string }) => {
 		const newMarket = e.currentTarget.value;
 
 		// Strip current friendly prefix from pathname
-		const pathAfterMarket = pathname.replace(
-			new RegExp(`^/(${currentFriendly}|${params.channel})/?`),
-			"/",
-		);
+		const pathAfterMarket = pathname.replace(new RegExp(`^/(${currentFriendly}|${params.channel})/?`), "/");
 
 		const newPath = `/${newMarket}${pathAfterMarket === "/" ? "" : pathAfterMarket}`;
 		router.push(newPath);
@@ -54,7 +50,7 @@ export const ChannelSelect = ({ className }: { className?: string }) => {
 			className={cn(
 				"h-10 w-fit cursor-pointer rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 pr-8 text-sm",
 				"text-neutral-200",
-				"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900",
+				"focus-visible:ring-2 focus-visible:ring-neutral-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 focus-visible:outline-none",
 				"transition-colors hover:border-neutral-500",
 				className,
 			)}

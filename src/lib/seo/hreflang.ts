@@ -12,9 +12,7 @@ import { getBaseUrl } from "./config";
 /**
  * All 12 markets (Wave 1 + Wave 2).
  */
-const ALL_MARKETS = [
-	"sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "gb", "us", "ca",
-] as const;
+const ALL_MARKETS = ["sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"] as const;
 
 type HreflangEntry = {
 	hreflang: string;
@@ -35,7 +33,6 @@ type HreflangEntry = {
  *   //   { hreflang: "de", url: "https://maky.store/de/products" },
  *   //   { hreflang: "de-AT", url: "https://maky.store/at/products" },
  *   //   ...
- *   //   { hreflang: "en-GB", url: "https://maky.store/gb/products" },
  *   //   { hreflang: "en-US", url: "https://maky.store/us/products" },
  *   //   { hreflang: "en-CA", url: "https://maky.store/ca/products" },
  *   //   { hreflang: "x-default", url: "https://maky.store/sk/products" },
@@ -49,12 +46,10 @@ export function buildHreflangAlternates(path: string = ""): HreflangEntry[] {
 		const config = CHANNEL_MAP[market];
 		const localeConfig = LOCALE_MAP[config.locale];
 
-		// Use full locale for markets sharing a language (de-AT, en-GB, en-US, en-CA)
+		// Use full locale for markets sharing a language (de-AT, en-US, en-CA)
 		let hreflang: string;
 		if (market === "at") {
 			hreflang = "de-AT";
-		} else if (market === "gb") {
-			hreflang = "en-GB";
 		} else if (market === "us") {
 			hreflang = "en-US";
 		} else if (market === "ca") {

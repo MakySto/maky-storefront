@@ -35,7 +35,6 @@ const LOCALES = [
 	"de-AT",
 	"de-DE",
 	"en-CA",
-	"en-GB",
 	"en-US",
 	"es-ES",
 	"fr-FR",

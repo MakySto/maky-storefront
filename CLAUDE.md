@@ -247,12 +247,12 @@ convention.
 
 Additional gates (from design analysis 2026-06-21):
 
-- **i18n 13-locale parity check** whenever copy changes — all message files must stay
-  structurally parallel — the invariant is that **all 13 files are identical** (missing 0 / extra 0),
+- **i18n 12-locale parity check (en-GB/gb-gbp market removed 2026-07-20)** whenever copy changes — all message files must stay
+  structurally parallel — the invariant is that **all 12 files are identical** (missing 0 / extra 0),
   NOT a fixed count (it drifts as keys are added/removed; ~219 as of 2026-06-30). next-intl is NOT type-augmented, so missing
   keys fail silently at runtime, not at build. Parity script:
   ```bash
-  node -e 'const fs=require("fs");function flat(o,p=""){let r=[];for(const k of Object.keys(o)){const key=p?p+"."+k:k;o[k]&&typeof o[k]=="object"&&!Array.isArray(o[k])?r=r.concat(flat(o[k],key)):r.push(key)}return r}const d="src/i18n/messages/",L=["cs-CZ","de-AT","de-DE","en-CA","en-GB","en-US","es-ES","fr-FR","hu-HU","it-IT","pl-PL","ro-RO","sk-SK"],ref=new Set(flat(JSON.parse(fs.readFileSync(d+"en-US.json"))));for(const l of L){const k=new Set(flat(JSON.parse(fs.readFileSync(d+l+".json"))));console.log(l,"missing",[...ref].filter(x=>!k.has(x)),"extra",[...k].filter(x=>!ref.has(x)))}'
+  node -e 'const fs=require("fs");function flat(o,p=""){let r=[];for(const k of Object.keys(o)){const key=p?p+"."+k:k;o[k]&&typeof o[k]=="object"&&!Array.isArray(o[k])?r=r.concat(flat(o[k],key)):r.push(key)}return r}const d="src/i18n/messages/",L=["cs-CZ","de-AT","de-DE","en-CA","en-US","es-ES","fr-FR","hu-HU","it-IT","pl-PL","ro-RO","sk-SK"],ref=new Set(flat(JSON.parse(fs.readFileSync(d+"en-US.json"))));for(const l of L){const k=new Set(flat(JSON.parse(fs.readFileSync(d+l+".json"))));console.log(l,"missing",[...ref].filter(x=>!k.has(x)),"extra",[...k].filter(x=>!ref.has(x)))}'
   ```
 - **Manual light-only visual check.** Dark mode is NOT wired — there is no `.dark` block
   (`color-scheme: light` is hardcoded), so any `dark:` variant in components is dead.

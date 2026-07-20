@@ -37,18 +37,7 @@ export type LocaleConfig = {
 };
 
 /** Stripe Elements locales used by MAKY markets (subset of Stripe's supported list). */
-export type StripeSupportedLocale =
-	| "sk"
-	| "cs"
-	| "de"
-	| "pl"
-	| "hu"
-	| "it"
-	| "fr"
-	| "es"
-	| "ro"
-	| "en-GB"
-	| "en";
+export type StripeSupportedLocale = "sk" | "cs" | "de" | "pl" | "hu" | "it" | "fr" | "es" | "ro" | "en";
 
 // ---------------------------------------------------------------------------
 // Locale map — all 13 markets
@@ -134,14 +123,6 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 		ogLocale: "ro_RO",
 		fallbackCurrency: "RON",
 		stripeLocale: "ro",
-	},
-	"en-GB": {
-		locale: "en-GB",
-		htmlLang: "en",
-		graphqlLanguageCode: LanguageCodeEnum.EnGb,
-		ogLocale: "en_GB",
-		fallbackCurrency: "GBP",
-		stripeLocale: "en-GB",
 	},
 	"en-US": {
 		locale: "en-US",

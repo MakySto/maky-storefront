@@ -6,7 +6,7 @@ import { LOCALE_MAP } from "@/config/locale";
 /**
  * All 13 markets for sitemap generation.
  */
-const ALL_MARKETS = ["sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "gb", "us", "ca"] as const;
+const ALL_MARKETS = ["sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"] as const;
 
 /**
  * Paths that resolve for every market (real routes only — the old demo English
@@ -15,8 +15,8 @@ const ALL_MARKETS = ["sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro",
  * Product/category detail pages are added later via the Saleor API.
  */
 const SHARED_PATHS = [
-	"",           // homepage
-	"/products",  // product listing (PLP)
+	"", // homepage
+	"/products", // product listing (PLP)
 ];
 
 /**
@@ -49,8 +49,6 @@ function buildLanguageAlternates(path: string): Record<string, string> {
 		let hreflang: string;
 		if (market === "at") {
 			hreflang = "de-AT";
-		} else if (market === "gb") {
-			hreflang = "en-GB";
 		} else if (market === "us") {
 			hreflang = "en-US";
 		} else if (market === "ca") {
