@@ -230,3 +230,135 @@ samostatný release: merge 9 locales + overrides (sk-SK placeOrder NEMENIŤ — 
 
 Gmail PASS (inbox, SPF align pm-bounces.maky.store, DKIM maky.store, TLS);
 Outlook test odoslaný na marekkysucky@hotmail.com (250 queued) — over inbox + hlavičky.
+
+## 10. Release 2 — wallet defaults + i18n content (2026-07-20 noc)
+
+**Stav: STAGING NASADENÝ, čaká na Marekovu vizuálnu kontrolu a výslovný pokyn
+na produkčný deploy. Prod (:3000) beží ďalej nezmenený na `sk-launch-rc1 @ 6e0e4e7`
+/ BUILD_ID `qjrYM0S4qBaauXHa0qE0T`, SMTP `d756df58`.**
+
+### Scope — 2 zmeny, 1 release
+
+1. **Express Checkout wallet defaulty** (`4b2b90d`): odstránený
+   `paymentMethods: { applePay: "always", googlePay: "always" }` override —
+   Stripe defaulty (`auto`): Safari ukáže Apple Pay, Chrome Google Pay, Edge
+   ani jedno; Link ostáva `auto`. Overené: `"always"` už nie je v klientskych
+   chunkoch buildu.
+2. **Translation bundle `2026-07-20.2`** (integrita: 28/28 sha256 OK):
+   9 storefront + 9 e-mail katalógov, en/sk overrides, en-GB/gb-gbp bol už
+   odstránený skôr (0 referencií). SK ostáva jediný launch-ready market
+   (`launchStatus` ostatných = `pending`).
+
+### SHAs / vetvy (obe pushnuté)
+
+- **storefront** `track-b/i18n-content-release` (z 6e0e4e7):
+  `4b2b90d` wallet fix → `fb4d991` bundle apply → `1b32695` e-mail manifest
+  lockstep → `2d6a99e` docs (§9 cherry-pick z 3dcd24f) → report commit (tip).
+- **SMTP** `maky-i18n-content-release` (z d756df58):
+  `6c17aa7e` katalógy + en/sk → `0318ce91` lint/vitest scope hygiene.
+- **staging**: BUILD_ID `8MkJa4EM-6ITyCS01e1Js`, Stripe-OFF
+  (`NEXT_PUBLIC_ENABLE_STRIPE_PAYMENTS=false` + `ENABLE_STRIPE_PAYMENTS=false`
+  zapečené v builde), beží z `/home/ubuntu/wt-release` na :3037.
+  Reštart po výpadku: `cd /home/ubuntu/wt-release && nohup pnpm exec next start
+-p 3037 > staging-3037.log 2>&1 &` (nie je pod PM2!).
+
+### ⚠️ AWS kernel reboot 21:57
+
+Server sa počas release reštartol (kernel 1017→1019-aws). PM2 oba prod procesy
+vzkriesil (BUILD_ID nezmenené), ale `/tmp` worktrees (wt-b43, pôvodný wt-release)
+zanikli — preto staging odteraz beží z perzistentného `/home/ubuntu/wt-release`.
+Release commity boli v git object DB, nič sa nestratilo.
+
+### sk-SK storefront overrides — presný diff (ŽIVÝ TRH)
+
+| kľúč                                           | doteraz (prod)                                          | po release                                                                                                                |
+| ---------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `cart.shippingNextStepNote`                    | „Cena dopravy sa vypočíta v ďalšom kroku"               | „Doprava sa vypočíta v pokladni."                                                                                         |
+| `checkout.confirmation.emailNoticeWithAddress` | „Potvrdenie objednávky pošleme na {confirmationEmail}." | „Potvrdenie o prijatí objednávky pošleme na {confirmationEmail}."                                                         |
+| `checkout.confirmation.emailNoticeGeneric`     | „Potvrdenie objednávky pošleme na váš e-mail."          | „Potvrdenie o prijatí objednávky vám pošleme e-mailom."                                                                   |
+| `checkout.confirmation.emailLabel`             | „Potvrdzujúci e-mail"                                   | „Potvrdenie o prijatí objednávky"                                                                                         |
+| `checkout.confirmation.confirmedTitle`         | „Objednávku sme prijali"                                | bez zmeny (dd3aee1 už aplikoval)                                                                                          |
+| `checkout.placeOrder`                          | **„Objednať s povinnosťou platby"**                     | **PRESKOČENÉ — bez zmeny** (bundle chcel „Objednať a zaplatiť"; kľúč je zákonne locknutý, §4 ods. 8 z. č. 102/2014 Z. z.) |
+
+en-US zdroj analogicky (receipt wording + `placeOrder` → „Order and pay",
+čo je pre EN prípustné) s lockstep updatom 5 manifest sources.
+
+### SMTP sk.json — 8 zmien (approved bundle refinements)
+
+`orderCreated.preheader`, `orderConfirmed.preheader` (presnejšie „skontrolovali
+a začali spracúvať"), `orderFullyPaid.outro`, `orderRefunded.subject/preheader/
+intro` („Spracovali sme vrátenie platby za…"), **`orderRefunded.outro` — vypúšťa
+pevný sľub „5 – 10 pracovných dní", nahrádza „Čas pripísania peňazí závisí od
+poskytovateľa platby."** (presne podľa požiadavky), `orderFulfilled.preheader`
+(„odovzdali dopravcovi"). Subjecty/šablóny sú v stored configu i18n-driven
+(dokázané objednávkami č. 14/15 v SK) — reset-event-defaults NIE JE potrebný,
+katalógové zmeny tečú per-send.
+
+### SMTP en.json + 9 katalógov
+
+en: 60 hodnôt (schválený en-email zdroj s manual-review lifecycle). Katalógy:
+`cs, es, fr, hu, it, pl, ro` (bare id, prefix-match pokryje regionálne varianty)
+
+- `de-DE`, `de-AT` (plné id, regionálne identity). Registrované v
+  `enrich-order-payload.ts`; resolver bez zmeny. Kľúčová parita 120/120 ×9,
+  placeholder tokeny ⊆ en zdroja (overené skriptom). Poznámka: bundle pridáva
+  `{newEmail}` do 2 account-change preheaderov (en + 9 locales; sk override ho
+  nemá — sk preheader token nepoužíva, žiadne literálne `{}` riziko).
+
+### Validačný beh (jeden, kompletný)
+
+| check                                    | výsledok                                                                                                              |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| bundle sha256 integrita                  | 28/28 OK                                                                                                              |
+| JSON parse + exact key parity            | 9×425/425 storefront (missing 0/extra 0), 9×120/120 email                                                             |
+| placeholder parity                       | 0 nezhôd (135 kontrol ×9 locales storefront; email subset-check OK)                                                   |
+| ICU plurál                               | cs/ro +few, pl +few+many, fr +many — CLDR správne; gate per-locale PASS                                               |
+| no-English-fallback                      | 9 locales po merge 0 chýbajúcich commerce kľúčov (en-CA zámerne dedí en-US — 211 kľúčov cez runtime merge, nie súbor) |
+| i18n gates (`i18n:check` + SMTP_APP_DIR) | closure OK (354), matrix OK (12)                                                                                      |
+| storefront tsc / eslint / vitest         | 0 chýb / 0 chýb (4 pre-existujúce warningy) / 194/194                                                                 |
+| SMTP tsc / eslint / vitest               | PASS / PASS 0 chýb / 256/256 (28 súborov), snapshoty aktualizované na schválené znenie                                |
+| production build (staging artefakt)      | OK, BUILD_ID `8MkJa4EM-6ITyCS01e1Js`                                                                                  |
+| e-mail snapshoty + HTML preview          | `email-previews/index.html` vygenerované (15 rodín)                                                                   |
+| staging smoke                            | /sk /cz /hu /de 200, CSS 200, BUILD_ID servovaný, nginx 401 auth wall OK, prod :3000 nedotknutý                       |
+
+Hygiene fix popri validácii (`0318ce91`): eslint OOM-padal na 546 MB
+`.next.rollback-*` snapshote a vitest zbieral skompilované `*.test.js` z
+`.next*` — obe tooling-scope opravy, žiadna zmena logiky.
+
+### Produkčný deploy (VYKONAŤ AŽ PO POKYNE)
+
+Storefront (per §9 postup):
+
+```bash
+test -d /opt/.next.rollback-a2db881 || echo ABORT
+git fetch origin
+pm2 stop maky-storefront
+cp -a .next /opt/.next.rollback-6e0e4e7          # nový rollback bod (RC1)
+git checkout -f --detach <release-tip-SHA>        # = origin/track-b/i18n-content-release
+pnpm install --frozen-lockfile && pnpm run generate:all
+# .env NEMENIŤ (prod flagy Stripe ON ostávajú)
+rm -rf .next && pnpm run build
+pnpm exec next start -p 3032   # smoke: styled + CSS 200, potom kill
+pm2 start maky-storefront      # verify :3000 + https://maky.store/sk
+```
+
+SMTP:
+
+```bash
+cd /opt/saleor-smtp-app && pm2 stop maky-smtp-app
+cp -a apps/smtp/.next apps/smtp/.next.rollback-d756df58
+# vetva maky-i18n-content-release je už checknutá
+pnpm --filter saleor-app-smtp build && pm2 start maky-smtp-app
+```
+
+Rollback: storefront `git checkout -f --detach 6e0e4e7` + `cp -a
+/opt/.next.rollback-6e0e4e7 .next` + `pm2 start`; SMTP analogicky
+`d756df58` + `.next.rollback-d756df58`. Snapshot `a2db881` ostáva ako
+posledná pred-RC1 poistka.
+
+### Klarna
+
+Ostáva ZAPNUTÁ (Stripe App konfigurácia sa týmto release nemení). Pri Marekovej
+reálnej Klarna objednávke sledovať: PM2 logy oboch appiek, Saleor order
+(Fully paid + Unconfirmed, 1 transakcia), presne 1 ORDER_CREATED e-mail,
+návrat z redirect flow na confirmation stránku.
