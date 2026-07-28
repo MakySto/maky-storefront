@@ -24,6 +24,9 @@ import {
 } from "@/ui/components/pdp";
 import { getLocaleFromChannel } from "@/config/locale";
 
+/** CFM's manufacturer attribute, keyed on externalReference — see product-attributes.ts. */
+const MANUFACTURER_REF = "cfm:attribute:manufacturer";
+
 // ============================================================================
 // Cached Data Fetching
 // ============================================================================
@@ -169,7 +172,12 @@ async function ProductContent({
 		name: product.name,
 		description: product.seoDescription || product.name,
 		images: images.length > 0 ? images.map((img) => img.url) : undefined,
-		brand: product.category?.name,
+		// The manufacturer attribute, never the category. `category.name` here
+		// declared "Strešné boxy" to be the brand of every roof box in structured
+		// data. Same defect the listing card already had fixed; the JSON-LD was
+		// missed. Absent attribute → no `brand` key, which is better than a wrong one.
+		brand: product.attributes?.find((a) => a.attribute.externalReference === MANUFACTURER_REF)?.values[0]
+			?.name,
 		// The requested slug, not product.slug: they are the same once Saleor has
 		// converged, and while it has not, this is the URL the canonical tag
 		// advertises — the two must never disagree.
