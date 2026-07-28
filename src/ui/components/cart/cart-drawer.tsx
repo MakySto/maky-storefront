@@ -63,6 +63,7 @@ interface CartLine {
 
 import { getColorHex, isColorAttribute } from "@/lib/colors";
 import { marketHref } from "@/lib/channel-map";
+import { productHref } from "@/lib/product-url";
 import { buildCheckoutPath } from "@/session-bridge";
 
 interface VariantAttribute {
@@ -182,10 +183,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 										<div className="flex gap-4">
 											{/* Product Image */}
 											<Link
-												href={marketHref(
-													channel,
-													`/products/${line.variant.product.slug}?variant=${line.variant.id}`,
-												)}
+												href={productHref(channel, line.variant.product.slug, line.variant.id)}
 												onClick={closeCart}
 												className="group bg-secondary relative h-24 w-20 shrink-0 overflow-hidden rounded-lg"
 											>
@@ -204,10 +202,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 												<div className="flex items-start justify-between gap-2">
 													<div>
 														<Link
-															href={marketHref(
-																channel,
-																`/products/${line.variant.product.slug}?variant=${line.variant.id}`,
-															)}
+															href={productHref(channel, line.variant.product.slug, line.variant.id)}
 															onClick={closeCart}
 															className="line-clamp-1 text-sm font-medium hover:underline"
 														>
