@@ -77,7 +77,7 @@
 		"faq": "Časté otázky",
 		"reviews": "Recenzie",
 		"reviewCount": "{count, plural, =0 {Žiadne recenzie} one {# recenzia} few {# recenzie} other {# recenzií}}",
-		"sku": "Kód produktu",
+		"sku": "SKU",
 		"brand": "Značka",
 		"weight": "Hmotnosť",
 		"dimensions": "Rozmery",
