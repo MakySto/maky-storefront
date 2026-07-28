@@ -51,8 +51,6 @@ interface ProductCardProps {
 	product: ProductCardData;
 	/** Preloads the image. Reserve for the single LCP candidate — see ProductGrid. */
 	priority?: boolean;
-	/** Loads immediately without claiming preload priority. For the rest of row one. */
-	eager?: boolean;
 }
 
 function AddButton() {
@@ -85,7 +83,7 @@ function AddButton() {
  * portrait box with `object-cover`, which cropped every wide product — the roof
  * boxes and transport cages that make up most of this catalogue.
  */
-export function ProductCard({ product, priority = false, eager = false }: ProductCardProps) {
+export function ProductCard({ product, priority = false }: ProductCardProps) {
 	const tCommon = useTranslations("common");
 	const tProduct = useTranslations("product");
 	const { locale } = useLocale();
@@ -126,7 +124,6 @@ export function ProductCard({ product, priority = false, eager = false }: Produc
 						sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1536px) 33vw, 25vw"
 						className="object-contain p-3 transition-transform duration-300 ease-out md:group-hover:scale-105"
 						priority={priority}
-						loading={!priority && eager ? "eager" : undefined}
 					/>
 				) : (
 					<span className="text-text-tertiary absolute inset-0 flex items-center justify-center px-4 text-center text-xs">

@@ -18,16 +18,15 @@ export function ProductGrid({ products }: ProductGridProps) {
 			{/* Exactly ONE preload. The grid is single-column on a phone, so only the
 			    first card is above the fold there, yet `priority` on the first four
 			    emitted four high-priority preloads that fought over the connection —
-			    worth ~2.9 s of LCP load delay on mobile. Cards two to four still start
-			    loading immediately (`eager`) for the wider first rows, they just do not
-			    claim preload priority. */}
+			    worth ~2.9 s of LCP load delay on mobile.
+
+			    The rest stay lazy. `loading="eager"` is NOT the middle ground it looks
+			    like: next/image preloads every non-lazy image, so eager produced exactly
+			    the same four preload links under a different name — checked in the served
+			    HTML, not assumed. Lazy images already inside the initial viewport begin
+			    loading during first layout anyway, so the wider first rows lose nothing. */}
 			{products.map((product, index) => (
-				<ProductCard
-					key={product.id}
-					product={product}
-					priority={index === 0}
-					eager={index > 0 && index < 4}
-				/>
+				<ProductCard key={product.id} product={product} priority={index === 0} />
 			))}
 		</div>
 	);
