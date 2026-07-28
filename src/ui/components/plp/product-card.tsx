@@ -9,6 +9,7 @@ import { Badge } from "@/ui/components/ui/badge";
 import { Button } from "@/ui/components/ui/button";
 import { QuantityStepper } from "@/ui/components/ui/quantity-stepper";
 import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
+import { StarRating } from "@/ui/components/product/star-rating";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
 import { addListingItemToCart } from "./actions";
@@ -26,6 +27,8 @@ export interface ProductCardData {
 	variantId?: string | null;
 	quantityAvailable?: number | null;
 	availabilityMode?: string | null;
+	/** Saleor Product.rating — null across the catalogue today. */
+	rating?: number | null;
 	price: number;
 	compareAtPrice?: number | null;
 	currency: string;
@@ -136,13 +139,12 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 			</Link>
 
 			{/* Category + manufacturer */}
-			<div className="text-text-tertiary mt-3 flex flex-wrap items-baseline justify-center gap-x-2 text-center text-xs">
-				<span className="truncate">{product.category?.name}</span>
+			<div className="mt-3 space-y-0.5 text-center text-xs">
+				<p className="text-text-tertiary truncate">{product.category?.name}</p>
 				{product.brand && (
-					<>
-						<span aria-hidden>·</span>
-						<span className="text-text-secondary font-medium">{product.brand}</span>
-					</>
+					<p className="text-text-tertiary truncate">
+						{tProduct("brand")}: <span className="text-text-secondary font-medium">{product.brand}</span>
+					</p>
 				)}
 			</div>
 
@@ -159,6 +161,9 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 					className="text-xs"
 				/>
 			</div>
+
+			{/* Renders nothing until something actually populates Product.rating */}
+			<StarRating rating={product.rating} className="mt-1.5 justify-center" />
 
 			{/* Pinned to the bottom so uneven content above never misaligns a row */}
 			<div className="mt-auto pt-3">

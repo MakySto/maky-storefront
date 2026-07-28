@@ -3,10 +3,9 @@ fragment ProductListItem on Product {
 	name
 	slug
 	created
-	# Availability is CFM-owned. Read from the PRODUCT, not the variants: a
-	# listing renders dozens of cards and fetching variant metadata for each one
-	# just to draw a badge is a needless cost.
-	metafield(key: "cfm_availability_mode")
+	# Saleor's own review score. Null across the whole catalogue today — there is
+	# no review system — so the card renders stars only when it is populated.
+	rating
 	attributes {
 		attribute {
 			name
@@ -60,6 +59,10 @@ fragment ProductListItem on Product {
 		id
 		sku
 		quantityAvailable
+		# Availability is CFM-owned and published on the VARIANT, not the product
+		# (verified live: 100/100 variants carry it, 0/100 products do). Reading
+		# it from the product would silently render no badge at all.
+		metafield(key: "cfm_availability_mode")
 		selectionAttributes: attributes(variantSelection: VARIANT_SELECTION) {
 			attribute {
 				slug

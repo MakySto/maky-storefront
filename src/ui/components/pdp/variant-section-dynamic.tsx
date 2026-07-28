@@ -162,7 +162,7 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 					</span>
 				)}
 				<AvailabilityBadge
-					mode={product.metafield}
+					mode={selectedVariant?.metafield}
 					quantityAvailable={selectedVariant?.quantityAvailable}
 					className="text-xs"
 				/>

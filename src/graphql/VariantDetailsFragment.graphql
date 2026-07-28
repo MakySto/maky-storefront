@@ -3,6 +3,8 @@ fragment VariantDetails on ProductVariant {
 	name
 	sku
 	quantityAvailable
+	# CFM publishes availability here, not on the product.
+	metafield(key: "cfm_availability_mode")
 	selectionAttributes: attributes(variantSelection: VARIANT_SELECTION) {
 		values {
 			name
