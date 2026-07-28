@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingBag } from "lucide-react";
 import { useFormStatus } from "react-dom";
 import { useTranslations } from "next-intl";
 
@@ -53,8 +52,10 @@ function AddButton() {
 	const { pending } = useFormStatus();
 	const tCommon = useTranslations("common");
 	return (
-		<Button type="submit" size="sm" disabled={pending} className="h-11 flex-1 px-2 text-sm">
-			<ShoppingBag className="mr-1.5 h-4 w-4 shrink-0" aria-hidden />
+		// No icon here: at four columns the card leaves the button roughly 180px,
+		// and the icon was enough to push "Pridať do košíka" into an ellipsis. A
+		// truncated call to action is worse than a plain one.
+		<Button type="submit" size="sm" disabled={pending} className="h-11 min-w-0 flex-1 px-2 text-sm">
 			<span className="truncate">{tCommon("addToCart")}</span>
 		</Button>
 	);
@@ -102,7 +103,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 				<h3 className="text-text-primary line-clamp-2 min-h-[2.75rem] text-sm leading-snug font-medium underline-offset-2 group-hover:underline">
 					{product.name}
 				</h3>
-				<p className="text-text-tertiary mt-0.5 min-h-[1.125rem] truncate text-xs">{product.note ?? ""}</p>
+				<p className="text-text-tertiary mt-0.5 line-clamp-2 min-h-[2.25rem] text-xs">{product.note ?? ""}</p>
 			</Link>
 
 			{/* Square, contained, centred — never crops a wide roof box */}
@@ -135,14 +136,23 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 			</Link>
 
 			{/* Category + manufacturer */}
-			<div className="text-text-tertiary mt-3 flex items-baseline justify-between gap-2 text-xs">
+			<div className="text-text-tertiary mt-3 flex flex-wrap items-baseline justify-center gap-x-2 text-center text-xs">
 				<span className="truncate">{product.category?.name}</span>
-				{product.brand && <span className="text-text-secondary shrink-0 font-medium">{product.brand}</span>}
+				{product.brand && (
+					<>
+						<span aria-hidden>·</span>
+						<span className="text-text-secondary font-medium">{product.brand}</span>
+					</>
+				)}
 			</div>
 
 			{/* SKU + availability */}
-			<div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-				{product.sku && <span className="text-text-tertiary text-xs tabular-nums">{product.sku}</span>}
+			<div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+				{product.sku && (
+					<span className="text-text-tertiary text-xs tabular-nums">
+						{tProduct("sku")}: <span className="font-medium">{product.sku.toUpperCase()}</span>
+					</span>
+				)}
 				<AvailabilityBadge
 					mode={product.availabilityMode}
 					quantityAvailable={product.quantityAvailable}
@@ -152,7 +162,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 
 			{/* Pinned to the bottom so uneven content above never misaligns a row */}
 			<div className="mt-auto pt-3">
-				<div className="flex items-baseline gap-2">
+				<div className="flex items-baseline justify-center gap-2">
 					<span className={cn("text-lg font-semibold", product.compareAtPrice && "text-price-sale")}>
 						{formatPrice(product.price, product.currency)}
 					</span>
@@ -162,13 +172,14 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 						</span>
 					)}
 				</div>
+				<p className="text-text-tertiary mt-0.5 text-center text-[0.6875rem]">{tProduct("priceWithVat")}</p>
 
 				{canAddDirectly ? (
 					<form action={addListingItemToCart} className="mt-2 flex items-stretch gap-2">
 						<input type="hidden" name="channel" value={product.channel} />
 						<input type="hidden" name="variantId" value={product.variantId ?? ""} />
 						<input type="hidden" name="maxQuantity" value={product.quantityAvailable ?? ""} />
-						<QuantityStepper name="quantity" max={product.quantityAvailable ?? undefined} />
+						<QuantityStepper name="quantity" max={product.quantityAvailable ?? undefined} compact />
 						<AddButton />
 					</form>
 				) : (

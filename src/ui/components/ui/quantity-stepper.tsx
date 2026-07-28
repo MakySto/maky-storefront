@@ -27,6 +27,12 @@ export interface QuantityStepperProps {
 	name?: string;
 	disabled?: boolean;
 	className?: string;
+	/**
+	 * Narrower control for tight rows such as a listing card, where the stepper
+	 * must not crowd out the add-to-cart button. Still 44px tall, so the touch
+	 * target stays within EAA.
+	 */
+	compact?: boolean;
 }
 
 const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max);
@@ -48,6 +54,7 @@ export function QuantityStepper({
 	name,
 	disabled = false,
 	className,
+	compact = false,
 }: QuantityStepperProps) {
 	const t = useTranslations("product");
 	const inputId = useId();
@@ -65,7 +72,9 @@ export function QuantityStepper({
 	const atMax = current >= max;
 
 	const button =
-		"flex h-11 w-11 shrink-0 items-center justify-center text-text-secondary transition-colors " +
+		`flex h-11 ${
+			compact ? "w-8" : "w-11"
+		} shrink-0 items-center justify-center text-text-secondary transition-colors ` +
 		"hover:bg-control-bg-hover hover:text-text-primary " +
 		"focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset " +
 		"disabled:pointer-events-none disabled:opacity-40";
@@ -73,7 +82,7 @@ export function QuantityStepper({
 	return (
 		<div
 			className={cn(
-				"border-control-border bg-surface-primary inline-flex h-11 items-center rounded-md border",
+				"border-control-border bg-surface-primary inline-flex h-11 shrink-0 items-center rounded-md border",
 				disabled && "pointer-events-none opacity-50",
 				className,
 			)}
@@ -95,7 +104,8 @@ export function QuantityStepper({
 				type="number"
 				inputMode="numeric"
 				className={cn(
-					"h-11 w-10 border-0 bg-transparent text-center text-sm font-medium tabular-nums",
+					compact ? "h-11 w-9" : "h-11 w-10",
+					"border-0 bg-transparent text-center text-sm font-medium tabular-nums",
 					"text-text-primary focus:outline-hidden",
 					// Native spinners duplicate the −/+ buttons.
 					"[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
