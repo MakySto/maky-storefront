@@ -50,7 +50,7 @@ export async function Footer({ channel }: { channel: string }) {
 					{isSk && (
 						<>
 							<div>
-								<h4 className="mb-4 text-sm font-medium text-gray-200">{t("support")}</h4>
+								<h2 className="mb-4 text-sm font-medium text-gray-200">{t("support")}</h2>
 								<ul className="space-y-3">
 									{LEGAL_SUPPORT.map((link) => (
 										<li key={link.href}>
@@ -63,7 +63,7 @@ export async function Footer({ channel }: { channel: string }) {
 							</div>
 
 							<div>
-								<h4 className="mb-4 text-sm font-medium text-gray-200">{t("company")}</h4>
+								<h2 className="mb-4 text-sm font-medium text-gray-200">{t("company")}</h2>
 								<ul className="space-y-3">
 									{LEGAL_COMPANY.map((link) => (
 										<li key={link.href}>

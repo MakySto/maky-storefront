@@ -193,7 +193,7 @@ const CarouselPrevious = React.forwardRef<HTMLButtonElement, React.ComponentProp
 				className={cn(
 					"absolute h-8 w-8 rounded-full",
 					orientation === "horizontal"
-						? "-left-12 top-1/2 -translate-y-1/2"
+						? "top-1/2 -left-12 -translate-y-1/2"
 						: "-top-12 left-1/2 -translate-x-1/2 rotate-90",
 					className,
 				)}
@@ -221,7 +221,7 @@ const CarouselNext = React.forwardRef<HTMLButtonElement, React.ComponentProps<ty
 				className={cn(
 					"absolute h-8 w-8 rounded-full",
 					orientation === "horizontal"
-						? "-right-12 top-1/2 -translate-y-1/2"
+						? "top-1/2 -right-12 -translate-y-1/2"
 						: "-bottom-12 left-1/2 -translate-x-1/2 rotate-90",
 					className,
 				)}
@@ -244,19 +244,28 @@ const CarouselDots = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLD
 		if (slideCount <= 1) return null;
 
 		return (
-			<div ref={ref} className={cn("flex justify-center gap-1.5", className)} {...props}>
+			// The dot stays 8px; the BUTTON is 24px. They were the same element, which
+			// made every dot an 8px touch target — a third of the WCAG 2.2 minimum and
+			// unusable with a thumb. The visual gap is preserved by shrinking the flex
+			// gap to compensate for the new padding.
+			<div ref={ref} className={cn("flex justify-center gap-0", className)} {...props}>
 				{Array.from({ length: slideCount }).map((_, index) => (
 					<button
 						key={index}
 						type="button"
 						onClick={() => scrollTo(index)}
-						className={cn(
-							"h-2 w-2 rounded-full transition-colors",
-							selectedIndex === index ? "bg-foreground" : "hover:bg-muted-foreground/50 bg-border",
-						)}
+						className="flex h-6 w-6 items-center justify-center rounded-full"
 						aria-label={`Go to slide ${index + 1}`}
 						aria-current={selectedIndex === index ? "true" : undefined}
-					/>
+					>
+						<span
+							aria-hidden
+							className={cn(
+								"h-2 w-2 rounded-full transition-colors",
+								selectedIndex === index ? "bg-foreground" : "bg-border",
+							)}
+						/>
+					</button>
 				))}
 			</div>
 		);
