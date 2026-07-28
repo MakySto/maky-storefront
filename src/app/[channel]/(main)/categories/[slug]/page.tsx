@@ -8,7 +8,8 @@ import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { getPaginatedListVariables } from "@/lib/utils";
 import { parseEditorJSToText } from "@/lib/editorjs";
 import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
-import { marketHref } from "@/lib/channel-map";
+import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
+import { buildCanonicalUrl } from "@/lib/seo/hreflang";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import { CategoryPageClient } from "./client";
 
@@ -60,6 +61,18 @@ export const generateMetadata = async (props: PageProps, parent: ResolvingMetada
 	return {
 		title: `${category.name} | ${category.seoTitle || (await parent).title?.absolute}`,
 		description: category.seoDescription || plainDescription || category.seoTitle || category.name,
+		// Category listings had no canonical at all, while product pages have always
+		// had one. The toolbar appends ?sort= and filter params, so without this every
+		// sort order is a separate indexable URL competing with the clean one. Points
+		// at the bare path, deliberately dropping the query. No hreflang: the slugs are
+		// Slovak and the other markets' category pages are unverified — matching what
+		// the PDP does rather than asserting pages that may not resolve.
+		alternates: {
+			canonical: buildCanonicalUrl(
+				REVERSE_MAP[params.channel] || params.channel,
+				`/categories/${params.slug}`,
+			),
+		},
 	};
 };
 
@@ -155,8 +168,8 @@ function PageSkeleton() {
 		<div className="animate-skeleton-delayed opacity-0">
 			<div className="bg-surface-muted px-4 py-12 sm:px-6 lg:px-8">
 				<div className="mx-auto max-w-7xl">
-					<div className="h-8 w-48 animate-pulse rounded-sm bg-surface-secondary" />
-					<div className="mt-3 h-4 w-96 max-w-full animate-pulse rounded-sm bg-surface-secondary" />
+					<div className="bg-surface-secondary h-8 w-48 animate-pulse rounded-sm" />
+					<div className="bg-surface-secondary mt-3 h-4 w-96 max-w-full animate-pulse rounded-sm" />
 				</div>
 			</div>
 			<ProductsGridSkeleton />
@@ -170,10 +183,10 @@ function ProductsGridSkeleton() {
 			<div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
 				{Array.from({ length: 6 }).map((_, i) => (
 					<div key={i} className="animate-pulse">
-						<div className="mb-4 aspect-[3/4] rounded-md bg-surface-muted" />
+						<div className="bg-surface-muted mb-4 aspect-[3/4] rounded-md" />
 						<div className="space-y-1.5">
-							<div className="h-4 w-3/4 rounded-sm bg-surface-muted" />
-							<div className="h-4 w-1/2 rounded-sm bg-surface-muted" />
+							<div className="bg-surface-muted h-4 w-3/4 rounded-sm" />
+							<div className="bg-surface-muted h-4 w-1/2 rounded-sm" />
 						</div>
 					</div>
 				))}
