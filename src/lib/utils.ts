@@ -2,6 +2,7 @@ import { ProductsPerPage } from "@/app/config";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { formatPrice, formatDate as formatLocaleDate } from "@/config/locale";
+import { productPath } from "@/lib/product-url";
 
 /** Merge class names with clsx and tailwind-merge for proper Tailwind class deduplication */
 export function cn(...inputs: ClassValue[]) {
@@ -31,6 +32,10 @@ export const formatMoneyRange = (
 	return `${startMoney} - ${stopMoney}`;
 };
 
+/**
+ * Market-relative product href used by cart lines and order rows.
+ * Delegates to the single product URL helper — see `@/lib/product-url`.
+ */
 export function getHrefForVariant({
 	productSlug,
 	variantId,
@@ -38,14 +43,7 @@ export function getHrefForVariant({
 	productSlug: string;
 	variantId?: string;
 }): string {
-	const pathname = `/products/${encodeURIComponent(productSlug)}`;
-
-	if (!variantId) {
-		return pathname;
-	}
-
-	const query = new URLSearchParams({ variant: variantId });
-	return `${pathname}?${query.toString()}`;
+	return productPath(productSlug, variantId);
 }
 
 export type PaginatedListVariables = {

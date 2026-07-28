@@ -15,7 +15,7 @@ import {
 	type SaleorVariant,
 } from "./utils";
 import { VariantAttributeBadges, extractOptionalAttributes } from "./optional-attributes";
-import { marketHref } from "@/lib/channel-map";
+import { productHref } from "@/lib/product-url";
 
 /**
  * Main container for variant selection with multiple attributes.
@@ -119,7 +119,7 @@ export function VariantSelectionSection({
 
 			startTransition(() => {
 				setOptimisticSelections(newSelections);
-				router.push(marketHref(channel, `/products/${productSlug}?${params.toString()}`), { scroll: false });
+				router.push(`${productHref(channel, productSlug)}?${params.toString()}`, { scroll: false });
 			});
 		},
 		[optimisticSelections, variants, channel, productSlug, router, startTransition, setOptimisticSelections],
@@ -146,7 +146,7 @@ export function VariantSelectionSection({
 		(variantId: string) => {
 			startTransition(() => {
 				setOptimisticVariantId(variantId);
-				router.push(marketHref(channel, `/products/${productSlug}?variant=${variantId}`), { scroll: false });
+				router.push(productHref(channel, productSlug, variantId), { scroll: false });
 			});
 		},
 		[channel, productSlug, router, startTransition, setOptimisticVariantId],

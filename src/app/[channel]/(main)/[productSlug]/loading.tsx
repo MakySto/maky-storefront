@@ -7,15 +7,15 @@
  */
 export default function ProductLoading() {
 	return (
-		<main className="mx-auto w-full max-w-7xl flex-1 animate-skeleton-delayed-long px-4 py-4 opacity-0 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
+		<main className="animate-skeleton-delayed-long mx-auto w-full max-w-7xl flex-1 px-4 py-4 opacity-0 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
 			{/* Breadcrumb skeleton - hidden on mobile */}
 			<div className="mb-6 hidden sm:block">
 				<div className="flex items-center gap-2">
-					<div className="h-4 w-12 animate-pulse rounded bg-muted" />
-					<div className="h-4 w-4 animate-pulse rounded bg-muted" />
-					<div className="h-4 w-20 animate-pulse rounded bg-muted" />
-					<div className="h-4 w-4 animate-pulse rounded bg-muted" />
-					<div className="h-4 w-32 animate-pulse rounded bg-muted" />
+					<div className="bg-muted h-4 w-12 animate-pulse rounded" />
+					<div className="bg-muted h-4 w-4 animate-pulse rounded" />
+					<div className="bg-muted h-4 w-20 animate-pulse rounded" />
+					<div className="bg-muted h-4 w-4 animate-pulse rounded" />
+					<div className="bg-muted h-4 w-32 animate-pulse rounded" />
 				</div>
 			</div>
 
@@ -24,15 +24,15 @@ export default function ProductLoading() {
 				{/* Gallery skeleton */}
 				<div className="lg:sticky lg:top-24 lg:self-start">
 					<div className="flex flex-col gap-4">
-						<div className="aspect-[4/5] w-full animate-pulse rounded-lg bg-muted" />
+						<div className="bg-muted aspect-[4/5] w-full animate-pulse rounded-lg" />
 						<div className="hidden gap-2 sm:flex">
 							{[...Array(4)].map((_, i) => (
-								<div key={i} className="h-20 w-20 animate-pulse rounded-md bg-muted" />
+								<div key={i} className="bg-muted h-20 w-20 animate-pulse rounded-md" />
 							))}
 						</div>
 						<div className="flex justify-center gap-1.5 sm:hidden">
 							{[...Array(4)].map((_, i) => (
-								<div key={i} className="h-2 w-2 animate-pulse rounded-full bg-muted" />
+								<div key={i} className="bg-muted h-2 w-2 animate-pulse rounded-full" />
 							))}
 						</div>
 					</div>
@@ -41,42 +41,42 @@ export default function ProductLoading() {
 				{/* Product Info skeleton */}
 				<div className="space-y-8">
 					<div className="space-y-3">
-						<div className="h-4 w-24 animate-pulse rounded bg-muted" />
-						<div className="h-10 w-3/4 animate-pulse rounded bg-muted" />
+						<div className="bg-muted h-4 w-24 animate-pulse rounded" />
+						<div className="bg-muted h-10 w-3/4 animate-pulse rounded" />
 					</div>
 
 					<div className="space-y-6 py-2">
 						<div className="space-y-3">
-							<div className="h-4 w-16 animate-pulse rounded bg-muted" />
+							<div className="bg-muted h-4 w-16 animate-pulse rounded" />
 							<div className="flex gap-2">
 								{[...Array(3)].map((_, i) => (
-									<div key={i} className="h-12 w-12 animate-pulse rounded-full bg-muted" />
+									<div key={i} className="bg-muted h-12 w-12 animate-pulse rounded-full" />
 								))}
 							</div>
 						</div>
 						<div className="space-y-3">
-							<div className="h-4 w-12 animate-pulse rounded bg-muted" />
+							<div className="bg-muted h-4 w-12 animate-pulse rounded" />
 							<div className="flex gap-2">
 								{[...Array(5)].map((_, i) => (
-									<div key={i} className="h-12 w-16 animate-pulse rounded-md bg-muted" />
+									<div key={i} className="bg-muted h-12 w-16 animate-pulse rounded-md" />
 								))}
 							</div>
 						</div>
 					</div>
 
 					<div className="space-y-4">
-						<div className="h-8 w-24 animate-pulse rounded bg-muted" />
-						<div className="h-14 w-full animate-pulse rounded-md bg-muted" />
+						<div className="bg-muted h-8 w-24 animate-pulse rounded" />
+						<div className="bg-muted h-14 w-full animate-pulse rounded-md" />
 						<div className="flex justify-center gap-6 pt-2">
-							<div className="h-4 w-28 animate-pulse rounded bg-muted" />
-							<div className="h-4 w-36 animate-pulse rounded bg-muted" />
+							<div className="bg-muted h-4 w-28 animate-pulse rounded" />
+							<div className="bg-muted h-4 w-36 animate-pulse rounded" />
 						</div>
 					</div>
 
 					<div className="space-y-0">
 						{[...Array(3)].map((_, i) => (
-							<div key={i} className="border-b border-border py-4">
-								<div className="h-5 w-32 animate-pulse rounded bg-muted" />
+							<div key={i} className="border-border border-b py-4">
+								<div className="bg-muted h-5 w-32 animate-pulse rounded" />
 							</div>
 						))}
 					</div>

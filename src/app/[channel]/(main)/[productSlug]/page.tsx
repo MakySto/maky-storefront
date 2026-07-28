@@ -11,7 +11,10 @@ import { ProductDetailsDocument, type ProductDetailsQuery } from "@/gql/graphql"
 import { buildPageMetadata, buildProductJsonLd } from "@/lib/seo";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { marketHref } from "@/lib/channel-map";
+import { previousProductSlug } from "@/lib/product-redirects";
+import { productHref } from "@/lib/product-url";
 import { Breadcrumbs } from "@/ui/components/breadcrumbs";
+import { getGalleryImages } from "@/ui/components/pdp/gallery-images";
 import {
 	ProductGallery,
 	ProductAttributes,
@@ -24,10 +27,7 @@ import {
 // Cached Data Fetching
 // ============================================================================
 
-async function getProductData(slug: string, channel: string) {
-	"use cache";
-	applyCacheProfile(CACHE_PROFILES.products, slug);
-
+async function fetchProduct(slug: string, channel: string) {
 	const result = await executePublicGraphQL(ProductDetailsDocument, {
 		variables: {
 			slug: decodeURIComponent(slug),
@@ -44,15 +44,32 @@ async function getProductData(slug: string, channel: string) {
 	return result.data.product;
 }
 
+async function getProductData(slug: string, channel: string) {
+	"use cache";
+	applyCacheProfile(CACHE_PROFILES.products, slug);
+
+	const product = await fetchProduct(slug, channel);
+	if (product) {
+		return product;
+	}
+
+	// Migration shim: a product whose Saleor slug has not been updated to the
+	// SKU-last form yet is still reachable at its canonical new URL. Only fires
+	// on a miss, and only for the ten explicitly mapped slugs, so it disappears
+	// on its own once Saleor has converged. See `previousProductSlug`.
+	const previous = previousProductSlug(slug);
+	return previous ? await fetchProduct(previous, channel) : null;
+}
+
 // ============================================================================
 // Metadata
 // ============================================================================
 
 export async function generateMetadata(props: {
-	params: Promise<{ slug: string; channel: string }>;
+	params: Promise<{ productSlug: string; channel: string }>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const product = await getProductData(params.slug, params.channel);
+	const product = await getProductData(params.productSlug, params.channel);
 
 	if (!product) {
 		// Streaming/PPR can't set a 404 status after the shell is flushed, so the
@@ -73,7 +90,7 @@ export async function generateMetadata(props: {
 		title: product.seoTitle || product.name,
 		description,
 		image: ogImage,
-		url: marketHref(params.channel, `/products/${encodeURIComponent(params.slug)}`),
+		url: productHref(params.channel, params.productSlug),
 		openGraph:
 			priceAmount && priceCurrency
 				? {
@@ -99,7 +116,7 @@ const parser = edjsHTML();
  * this boundary, not through the layout's main Suspense.
  */
 export default function ProductPage(props: {
-	params: Promise<{ slug: string; channel: string }>;
+	params: Promise<{ productSlug: string; channel: string }>;
 	searchParams: Promise<{ variant?: string }>;
 }) {
 	return (
@@ -113,12 +130,12 @@ async function ProductContent({
 	params: paramsPromise,
 	searchParams: searchParamsPromise,
 }: {
-	params: Promise<{ slug: string; channel: string }>;
+	params: Promise<{ productSlug: string; channel: string }>;
 	searchParams: Promise<{ variant?: string }>;
 }) {
 	const [params, searchParams] = await Promise.all([paramsPromise, searchParamsPromise]);
 
-	const product = await getProductData(params.slug, params.channel);
+	const product = await getProductData(params.productSlug, params.channel);
 
 	if (!product) {
 		notFound();
@@ -137,7 +154,12 @@ async function ProductContent({
 	const breadcrumbs = [
 		{ label: tCommon("home"), href: marketHref(params.channel) },
 		...(product.category
-			? [{ label: product.category.name, href: marketHref(params.channel, `/categories/${product.category.slug}`) }]
+			? [
+					{
+						label: product.category.name,
+						href: marketHref(params.channel, `/categories/${product.category.slug}`),
+					},
+				]
 			: []),
 		{ label: product.name },
 	];
@@ -147,7 +169,10 @@ async function ProductContent({
 		description: product.seoDescription || product.name,
 		images: images.length > 0 ? images.map((img) => img.url) : undefined,
 		brand: product.category?.name,
-		url: marketHref(params.channel, `/products/${product.slug}`),
+		// The requested slug, not product.slug: they are the same once Saleor has
+		// converged, and while it has not, this is the URL the canonical tag
+		// advertises — the two must never disagree.
+		url: productHref(params.channel, params.productSlug),
 		priceRange: product.pricing?.priceRange?.start?.gross
 			? {
 					lowPrice: product.pricing.priceRange.start.gross.amount,
@@ -163,7 +188,7 @@ async function ProductContent({
 	const lcpImageUrl = images[0]?.url;
 
 	return (
-		<div className="flex min-h-screen flex-col bg-background">
+		<div className="bg-background flex min-h-screen flex-col">
 			{lcpImageUrl && <link rel="preload" as="image" href={lcpImageUrl} fetchPriority="high" />}
 
 			{productJsonLd && (
@@ -184,7 +209,7 @@ async function ProductContent({
 					</div>
 
 					<div className="flex flex-col gap-3">
-						<h1 className="order-2 text-balance text-3xl font-semibold tracking-tight lg:text-4xl">
+						<h1 className="order-2 text-3xl font-semibold tracking-tight text-balance lg:text-4xl">
 							{product.name}
 						</h1>
 
@@ -218,19 +243,19 @@ async function ProductContent({
 
 function ProductPageSkeleton() {
 	return (
-		<div className="flex min-h-screen animate-skeleton-delayed flex-col bg-background opacity-0">
+		<div className="animate-skeleton-delayed bg-background flex min-h-screen flex-col opacity-0">
 			<main className="mx-auto w-full max-w-7xl flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
-				<div className="mb-6 hidden h-4 w-64 animate-pulse rounded bg-secondary sm:block" />
+				<div className="bg-secondary mb-6 hidden h-4 w-64 animate-pulse rounded sm:block" />
 				<div className="grid gap-8 lg:grid-cols-2 lg:gap-16">
-					<div className="aspect-square animate-pulse rounded-lg bg-secondary" />
+					<div className="bg-secondary aspect-square animate-pulse rounded-lg" />
 					<div className="flex flex-col gap-4">
-						<div className="h-8 w-3/4 animate-pulse rounded bg-secondary" />
-						<div className="h-6 w-24 animate-pulse rounded bg-secondary" />
+						<div className="bg-secondary h-8 w-3/4 animate-pulse rounded" />
+						<div className="bg-secondary h-6 w-24 animate-pulse rounded" />
 						<div className="mt-4 space-y-3">
-							<div className="h-10 w-full animate-pulse rounded bg-secondary" />
-							<div className="h-10 w-full animate-pulse rounded bg-secondary" />
+							<div className="bg-secondary h-10 w-full animate-pulse rounded" />
+							<div className="bg-secondary h-10 w-full animate-pulse rounded" />
 						</div>
-						<div className="mt-4 h-12 w-full animate-pulse rounded bg-secondary" />
+						<div className="bg-secondary mt-4 h-12 w-full animate-pulse rounded" />
 					</div>
 				</div>
 			</main>
@@ -288,31 +313,4 @@ function extractCareInstructions(product: NonNullable<ProductDetailsQuery["produ
 			.filter(Boolean)
 			.join(". ") || null
 	);
-}
-
-type Product = NonNullable<ProductDetailsQuery["product"]>;
-type Variant = NonNullable<Product["variants"]>[number];
-
-function getGalleryImages(
-	product: Product,
-	selectedVariant: Variant | null | undefined,
-): { url: string; alt: string | null | undefined }[] {
-	if (selectedVariant?.media && selectedVariant.media.length > 0) {
-		const variantImages = selectedVariant.media
-			.filter((m) => m.type === "IMAGE")
-			.map((m) => ({ url: m.url, alt: m.alt }));
-		if (variantImages.length > 0) {
-			return variantImages;
-		}
-	}
-
-	if (product.media && product.media.length > 0) {
-		return product.media.filter((m) => m.type === "IMAGE").map((m) => ({ url: m.url, alt: m.alt }));
-	}
-
-	if (product.thumbnail) {
-		return [{ url: product.thumbnail.url, alt: product.thumbnail.alt }];
-	}
-
-	return [];
 }

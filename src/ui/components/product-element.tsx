@@ -3,6 +3,7 @@ import { ProductImageWrapper } from "@/ui/atoms/product-image-wrapper";
 
 import type { ProductListItemFragment } from "@/gql/graphql";
 import { formatMoneyRange } from "@/lib/utils";
+import { productPath } from "@/lib/product-url";
 
 export function ProductElement({
 	product,
@@ -11,7 +12,7 @@ export function ProductElement({
 }: { product: ProductListItemFragment } & { loading: "eager" | "lazy"; priority?: boolean }) {
 	return (
 		<li data-testid="ProductElement">
-			<LinkWithChannel href={`/products/${product.slug}`} key={product.id} prefetch={false}>
+			<LinkWithChannel href={productPath(product.slug)} key={product.id} prefetch={false}>
 				<div>
 					{product?.thumbnail?.url && (
 						<ProductImageWrapper

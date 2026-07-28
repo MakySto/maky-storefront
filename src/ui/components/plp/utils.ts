@@ -4,7 +4,7 @@ import { getColorHex, isColorAttribute, isSizeAttribute } from "@/lib/colors";
 import { sortSizes } from "@/lib/sizes";
 import { localeConfig } from "@/config/locale";
 import { hasDiscountInPriceRange } from "@/lib/pricing";
-import { marketHref } from "@/lib/channel-map";
+import { productHref } from "@/lib/product-url";
 
 /**
  * Extract colors from product variants
@@ -81,7 +81,7 @@ export function transformToProductCard(product: ProductListItemFragment, channel
 		image: product.thumbnail?.url ?? "/placeholder.svg",
 		imageAlt: product.thumbnail?.alt ?? product.name,
 		hoverImage: null, // Would need additional media in fragment
-		href: marketHref(channel, `/products/${product.slug}`),
+		href: productHref(channel, product.slug),
 		badge: isSale ? "sale" : null,
 		colors,
 		sizes,

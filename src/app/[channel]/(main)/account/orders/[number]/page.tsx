@@ -5,6 +5,7 @@ import { OrderByNumberDocument } from "@/gql/graphql";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { formatDate, formatMoney } from "@/lib/utils";
+import { productPath } from "@/lib/product-url";
 import { OrderTimeline } from "@/ui/components/account/order-timeline";
 import { OrderStatusBadge } from "@/ui/components/account/order-status-badge";
 import { type AddressDetailsFragment } from "@/gql/graphql";
@@ -43,7 +44,7 @@ export default async function OrderDetailPage({ params }: Props) {
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<h1 className="text-2xl font-semibold tracking-tight">ORD-{order.number}</h1>
-					<p className="mt-1 text-sm text-muted-foreground">
+					<p className="text-muted-foreground mt-1 text-sm">
 						Placed on {formatDate(new Date(order.created))}
 					</p>
 				</div>
@@ -79,15 +80,15 @@ export default async function OrderDetailPage({ params }: Props) {
 										)}
 										<div className="min-w-0 flex-1">
 											<LinkWithChannel
-												href={`/products/${product.slug}`}
+												href={productPath(product.slug)}
 												className="text-sm font-medium hover:underline"
 											>
 												{product.name}
 											</LinkWithChannel>
 											{line.variant.name !== line.variant.id && Boolean(line.variant.name) && (
-												<p className="text-[13px] text-muted-foreground">{line.variant.name}</p>
+												<p className="text-muted-foreground text-[13px]">{line.variant.name}</p>
 											)}
-											<p className="text-[13px] text-muted-foreground">Qty: {line.quantity}</p>
+											<p className="text-muted-foreground text-[13px]">Qty: {line.quantity}</p>
 										</div>
 										{lineTotal != null && currency && (
 											<span className="text-sm font-medium tabular-nums">
@@ -144,7 +145,7 @@ export default async function OrderDetailPage({ params }: Props) {
 						<div className="rounded-xl border px-5 py-4">
 							<h3 className="mb-3 text-sm font-semibold">Payment Method</h3>
 							<div className="flex items-center gap-3">
-								<CreditCard className="h-4 w-4 text-muted-foreground" />
+								<CreditCard className="text-muted-foreground h-4 w-4" />
 								<span className="text-sm">
 									{order.paymentStatus === "FULLY_CHARGED" ? "Paid" : order.paymentStatus}
 								</span>
@@ -169,7 +170,7 @@ function OrderAddress({ title, address }: { title: string; address: AddressDetai
 		<div className="rounded-xl border px-5 py-4">
 			<h3 className="mb-3 text-sm font-semibold">{title}</h3>
 			<div className="flex gap-3">
-				<MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+				<MapPin className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
 				<div className="text-sm leading-relaxed">
 					<p className="font-medium">
 						{address.firstName} {address.lastName}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { SearchProduct } from "@/lib/search";
 import { localeConfig } from "@/config/locale";
-import { marketHref } from "@/lib/channel-map";
+import { productHref } from "@/lib/product-url";
 
 interface SearchResultsProps {
 	products: SearchProduct[];
@@ -45,11 +45,11 @@ function SearchResultCard({
 
 	return (
 		<Link
-			href={marketHref(channel, `/products/${product.slug}`)}
-			className="hover:border-foreground/20 group block overflow-hidden rounded-lg border border-border bg-card transition-colors"
+			href={productHref(channel, product.slug)}
+			className="hover:border-foreground/20 group border-border bg-card block overflow-hidden rounded-lg border transition-colors"
 		>
 			{/* Image */}
-			<div className="relative aspect-square overflow-hidden bg-muted">
+			<div className="bg-muted relative aspect-square overflow-hidden">
 				{product.thumbnailUrl ? (
 					<Image
 						src={product.thumbnailUrl}
@@ -60,15 +60,15 @@ function SearchResultCard({
 						priority={priority}
 					/>
 				) : (
-					<div className="flex h-full items-center justify-center text-muted-foreground">No image</div>
+					<div className="text-muted-foreground flex h-full items-center justify-center">No image</div>
 				)}
 			</div>
 
 			{/* Content */}
 			<div className="p-4">
-				{product.categoryName && <p className="mb-1 text-xs text-muted-foreground">{product.categoryName}</p>}
-				<h3 className="font-medium leading-tight text-foreground group-hover:underline">{product.name}</h3>
-				<p className="mt-2 font-semibold text-foreground">{formattedPrice}</p>
+				{product.categoryName && <p className="text-muted-foreground mb-1 text-xs">{product.categoryName}</p>}
+				<h3 className="text-foreground leading-tight font-medium group-hover:underline">{product.name}</h3>
+				<p className="text-foreground mt-2 font-semibold">{formattedPrice}</p>
 			</div>
 		</Link>
 	);

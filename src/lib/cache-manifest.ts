@@ -28,7 +28,7 @@ const profiles = {
 		label: "Product Pages",
 		cacheProfile: "minutes",
 		tagPattern: "product:{slug}",
-		pathPattern: "/{channel}/products/{slug}",
+		pathPattern: "/{channel}/{slug}",
 	},
 	categories: {
 		id: "categories",
