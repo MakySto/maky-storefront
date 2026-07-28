@@ -5,7 +5,6 @@ import "./globals.css";
 import { type ReactNode } from "react";
 import { rootMetadata } from "@/lib/seo";
 import { DEFAULT_LOCALE, LOCALE_MAP } from "@/config/locale";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata = rootMetadata;
 
@@ -16,7 +15,10 @@ export default function RootLayout(props: { children: ReactNode }) {
 	const { children } = props;
 
 	return (
-		<html lang={LOCALE_MAP[DEFAULT_LOCALE].htmlLang} className={`${GeistSans.variable} ${GeistMono.variable} min-h-dvh`}>
+		<html
+			lang={LOCALE_MAP[DEFAULT_LOCALE].htmlLang}
+			className={`${GeistSans.variable} ${GeistMono.variable} min-h-dvh`}
+		>
 			<body className="min-h-dvh font-sans">
 				{GTM_ID ? (
 					<noscript>
@@ -30,8 +32,11 @@ export default function RootLayout(props: { children: ReactNode }) {
 					</noscript>
 				) : null}
 
+				{/* No <SpeedInsights />. It only works on Vercel's platform; this site is
+				    served by PM2 behind nginx, so its script 404s and the browser refuses
+				    the HTML response as `text/html`. It has never reported a single metric.
+				    Cloudflare Web Analytics below is the one that actually works. */}
 				{children}
-				<SpeedInsights />
 
 				{GTM_ID ? (
 					<>
