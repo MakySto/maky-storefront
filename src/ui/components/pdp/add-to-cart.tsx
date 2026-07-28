@@ -60,17 +60,22 @@ export function AddToCart({
 
 	return (
 		<div className="space-y-4">
-			{/* Price Display */}
-			<div className="flex items-baseline gap-3">
-				<span className="text-text-primary text-2xl font-semibold tracking-tight">{price}</span>
-				{compareAtPrice && (
-					<>
-						<span className="text-text-secondary text-lg line-through">{compareAtPrice}</span>
-						{discountPercent && (
-							<span className="text-price-sale text-sm font-medium">-{discountPercent}%</span>
-						)}
-					</>
-				)}
+			{/* Price. MAKY.STORE is VAT-registered and Saleor returns a gross
+			    amount, so the displayed figure already includes VAT — label it
+			    rather than leaving the customer to assume. */}
+			<div>
+				<div className="flex items-baseline gap-3">
+					<span className="text-text-primary text-3xl font-semibold tracking-tight">{price}</span>
+					{compareAtPrice && (
+						<>
+							<span className="text-text-secondary text-lg line-through">{compareAtPrice}</span>
+							{discountPercent && (
+								<span className="text-price-sale text-sm font-medium">-{discountPercent}%</span>
+							)}
+						</>
+					)}
+				</div>
+				<p className="text-text-tertiary mt-1 text-xs">{t("priceWithVat")}</p>
 			</div>
 
 			{/* Buy row: quantity + CTA. The stepper writes name="quantity" into the
@@ -78,16 +83,6 @@ export function AddToCart({
 			<div className="flex items-stretch gap-3">
 				<QuantityStepper name="quantity" max={maxQuantity} disabled={disabled} />
 				<AddToCartButton disabled={disabled} disabledReason={disabledReason} />
-			</div>
-
-			{/* Trust Signals */}
-			<div className="text-text-secondary flex items-center justify-center gap-6 pt-2 text-xs">
-				<span className="flex items-center gap-1.5">
-					<svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-						<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-					</svg>
-					{t("secureCheckout")}
-				</span>
 			</div>
 		</div>
 	);

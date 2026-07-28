@@ -32,7 +32,8 @@
 		"currency": "EUR",
 		"country": "France",
 		"slogan": "Tout pour votre hobby !",
-		"home": "Accueil"
+		"home": "Accueil",
+		"onDemand": "Sur commande"
 	},
 	"nav": {
 		"home": "Accueil",
@@ -106,7 +107,10 @@
 		"goHome": "Accueil",
 		"quantity": "Quantité",
 		"decreaseQuantity": "Diminuer la quantité",
-		"increaseQuantity": "Augmenter la quantité"
+		"increaseQuantity": "Augmenter la quantité",
+		"priceWithVat": "Prix TTC",
+		"technicalParameters": "Caractéristiques techniques",
+		"outerDimensions": "Dimensions extérieures"
 	},
 	"fitment": {
 		"selectVehicle": "Sélectionnez votre véhicule",

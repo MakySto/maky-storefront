@@ -32,7 +32,8 @@
 		"currency": "RON",
 		"country": "România",
 		"slogan": "Totul pentru hobby-ul tău!",
-		"home": "Acasă"
+		"home": "Acasă",
+		"onDemand": "La comandă"
 	},
 	"nav": {
 		"home": "Acasă",
@@ -106,7 +107,10 @@
 		"goHome": "Acasă",
 		"quantity": "Cantitate",
 		"decreaseQuantity": "Reduce cantitatea",
-		"increaseQuantity": "Crește cantitatea"
+		"increaseQuantity": "Crește cantitatea",
+		"priceWithVat": "Preț cu TVA",
+		"technicalParameters": "Specificații tehnice",
+		"outerDimensions": "Dimensiuni exterioare"
 	},
 	"fitment": {
 		"selectVehicle": "Selectați vehiculul",

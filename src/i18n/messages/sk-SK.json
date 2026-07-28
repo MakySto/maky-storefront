@@ -32,7 +32,8 @@
 		"currency": "EUR",
 		"country": "Slovensko",
 		"slogan": "Všetko pre Vaše hobby!",
-		"home": "Domov"
+		"home": "Domov",
+		"onDemand": "Na objednávku"
 	},
 	"nav": {
 		"home": "Domov",
@@ -106,7 +107,10 @@
 		"goHome": "Na úvod",
 		"quantity": "Množstvo",
 		"decreaseQuantity": "Znížiť množstvo",
-		"increaseQuantity": "Zvýšiť množstvo"
+		"increaseQuantity": "Zvýšiť množstvo",
+		"priceWithVat": "Cena s DPH",
+		"technicalParameters": "Technické parametre",
+		"outerDimensions": "Vonkajšie rozmery"
 	},
 	"fitment": {
 		"selectVehicle": "Vyberte vaše vozidlo",

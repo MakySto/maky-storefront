@@ -514,6 +514,29 @@
   ::-webkit-scrollbar-thumb:hover {
     background: var(--color-sand-500);
   }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Custom utilities
+   ────────────────────────────────────────────────────────────── */
+
+/*
+ * `scrollbar-hide` was already used by the PDP thumbnail strip but had never
+ * been defined. Tailwind v4 emits NOTHING for an unknown utility and the build
+ * still passes, so the global ::-webkit-scrollbar rule above kept painting a
+ * sand-coloured bar under the product gallery. Additive definition only — no
+ * existing utility is renamed.
+ */
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer base {
 
   /* ── Reduced motion (EAA) ── */
   @media (prefers-reduced-motion: reduce) {

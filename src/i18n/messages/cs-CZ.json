@@ -32,7 +32,8 @@
 		"currency": "CZK",
 		"country": "Česko",
 		"slogan": "Vše pro Vaše hobby!",
-		"home": "Domů"
+		"home": "Domů",
+		"onDemand": "Na objednávku"
 	},
 	"nav": {
 		"home": "Domů",
@@ -106,7 +107,10 @@
 		"goHome": "Na úvod",
 		"quantity": "Množství",
 		"decreaseQuantity": "Snížit množství",
-		"increaseQuantity": "Zvýšit množství"
+		"increaseQuantity": "Zvýšit množství",
+		"priceWithVat": "Cena s DPH",
+		"technicalParameters": "Technické parametry",
+		"outerDimensions": "Vnější rozměry"
 	},
 	"fitment": {
 		"selectVehicle": "Vyberte vaše vozidlo",

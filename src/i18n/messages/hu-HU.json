@@ -32,7 +32,8 @@
 		"currency": "HUF",
 		"country": "Magyarország",
 		"slogan": "Minden a hobbihoz!",
-		"home": "Kezdőlap"
+		"home": "Kezdőlap",
+		"onDemand": "Rendelésre"
 	},
 	"nav": {
 		"home": "Kezdőlap",
@@ -106,7 +107,10 @@
 		"goHome": "Kezdőlapra",
 		"quantity": "Mennyiség",
 		"decreaseQuantity": "Mennyiség csökkentése",
-		"increaseQuantity": "Mennyiség növelése"
+		"increaseQuantity": "Mennyiség növelése",
+		"priceWithVat": "Ár áfával",
+		"technicalParameters": "Műszaki adatok",
+		"outerDimensions": "Külső méretek"
 	},
 	"fitment": {
 		"selectVehicle": "Válassza ki járművét",

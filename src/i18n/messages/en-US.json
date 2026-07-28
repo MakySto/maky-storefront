@@ -32,7 +32,8 @@
 		"currency": "USD",
 		"country": "United States",
 		"slogan": "Everything for Your Hobby!",
-		"home": "Home"
+		"home": "Home",
+		"onDemand": "Made to order"
 	},
 	"nav": {
 		"home": "Home",
@@ -106,7 +107,10 @@
 		"goHome": "Go Home",
 		"quantity": "Quantity",
 		"decreaseQuantity": "Decrease quantity",
-		"increaseQuantity": "Increase quantity"
+		"increaseQuantity": "Increase quantity",
+		"priceWithVat": "Price incl. VAT",
+		"technicalParameters": "Technical specifications",
+		"outerDimensions": "Outer dimensions"
 	},
 	"fitment": {
 		"selectVehicle": "Select your vehicle",

@@ -28,6 +28,9 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
 			showArrows={true}
 			showDots={true}
 			showThumbnails={true}
+			// 4:3 keeps the gallery column close in height to the purchase
+			// summary beside it, and suits a catalogue of wide products.
+			aspectClassName="aspect-[4/3]"
 		/>
 	);
 }

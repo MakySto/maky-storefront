@@ -20,6 +20,9 @@ query ProductDetails($slug: String!, $channel: String!) {
 			name
 			slug
 		}
+		# CFM owns availability and publishes it as public metadata. metafield()
+		# returns the single key instead of the whole [MetadataItem!]! array.
+		metafield(key: "cfm_availability_mode")
 		attributes {
 			values {
 				name
@@ -27,6 +30,14 @@ query ProductDetails($slug: String!, $channel: String!) {
 			attribute {
 				name
 				slug
+				# Stable CFM key ("cfm:attribute:max_load") — units are mapped on
+				# this, never on the display name, which is translatable.
+				externalReference
+				inputType
+				# Saleor's native measurement unit. Currently null on every CFM
+				# attribute, and MeasurementUnitsEnum has no speed unit at all,
+				# so the local map is the working source. Preferred when set.
+				unit
 			}
 		}
 		variants {

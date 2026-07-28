@@ -10,8 +10,12 @@ import { getTranslations } from "next-intl/server";
 import { AddToCart } from "./add-to-cart";
 import { VariantSelectionSection } from "./variant-selection";
 import { StickyBar } from "./sticky-bar";
+import { PurchaseTrust } from "./purchase-trust";
 import { Badge } from "@/ui/components/ui/badge";
 import { QUANTITY_FALLBACK_MAX } from "@/ui/components/ui/quantity-stepper";
+import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
+
+const MANUFACTURER_REF = "cfm:attribute:manufacturer";
 
 type Product = NonNullable<ProductDetailsQuery["product"]>;
 
@@ -31,14 +35,12 @@ interface VariantSectionDynamicProps {
 export async function VariantSectionDynamic({ product, channel, searchParams }: VariantSectionDynamicProps) {
 	const { variant: variantParam } = await searchParams;
 	const tCommon = await getTranslations("common");
+	const tProduct = await getTranslations("product");
 	const variants = product.variants || [];
 
 	// Auto-select variant: use URL param, or auto-select if only one variant exists
 	const selectedVariantID = variantParam || (variants.length === 1 ? variants[0].id : undefined);
 	const selectedVariant = variants.find(({ id }) => id === selectedVariantID);
-
-	// Check availability
-	const isAvailable = variants.some((variant) => variant.quantityAvailable);
 
 	// Determine add-to-cart button state
 	const isAddToCartDisabled = !selectedVariantID || !selectedVariant?.quantityAvailable;
@@ -77,6 +79,15 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 	 * never be presented to the customer as "only N left".
 	 */
 	const maxQuantity = selectedVariant?.quantityAvailable || undefined;
+
+	// Manufacturer was previously reachable only by scrolling to parameter row
+	// four. It is a primary buying signal on an accessory store, so it belongs
+	// beside the title.
+	const manufacturer = (product.attributes ?? []).find(
+		(a) => a.attribute.externalReference === MANUFACTURER_REF,
+	)?.values[0]?.name;
+
+	const sku = selectedVariant?.sku ?? variants[0]?.sku ?? null;
 
 	// Server action for adding to cart
 	async function addToCart(formData: FormData) {
@@ -131,7 +142,7 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 
 	return (
 		<>
-			{/* Category + Sale/Stock badges row - order:1 so it appears ABOVE the h1 */}
+			{/* Category + Sale badge row - order:1 so it appears ABOVE the h1 */}
 			<div className="order-1 flex items-center gap-2">
 				{product.category && <span className="text-muted-foreground text-sm">{product.category.name}</span>}
 				{isOnSale && (
@@ -139,15 +150,26 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 						{tCommon("sale")}
 					</Badge>
 				)}
-				{!isAvailable && (
-					<Badge variant="secondary" className="text-xs">
-						{tCommon("outOfStock")}
-					</Badge>
-				)}
 			</div>
 
-			{/* Rest of variant section - order:3 so it appears BELOW the h1 */}
-			<form action={addToCart} className="order-3 mt-4 space-y-6">
+			{/* Manufacturer · SKU · availability - order:3, directly under the h1.
+			    Availability comes from CFM metadata, never from quantityAvailable. */}
+			<div className="order-3 mt-1 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+				{manufacturer && <span className="text-text-primary text-sm font-medium">{manufacturer}</span>}
+				{sku && (
+					<span className="text-text-tertiary text-xs">
+						{tProduct("sku")}: <span className="font-medium tabular-nums">{sku}</span>
+					</span>
+				)}
+				<AvailabilityBadge
+					mode={product.metafield}
+					quantityAvailable={selectedVariant?.quantityAvailable}
+					className="text-xs"
+				/>
+			</div>
+
+			{/* Rest of variant section - order:4 so it appears BELOW the meta row */}
+			<form action={addToCart} className="order-4 mt-5 space-y-6">
 				{/* Variant Selectors */}
 				<VariantSelectionSection
 					variants={variants}
@@ -169,6 +191,11 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 				{/* Sticky Add to Cart Bar (Mobile) */}
 				<StickyBar productName={product.name} price={price} show={!isAddToCartDisabled} />
 			</form>
+
+			{/* Purchase confidence - order:5, outside the form (nothing submittable). */}
+			<div className="order-5 mt-6">
+				<PurchaseTrust channel={channel} />
+			</div>
 		</>
 	);
 }

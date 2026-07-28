@@ -17,11 +17,12 @@ import { Breadcrumbs } from "@/ui/components/breadcrumbs";
 import { getGalleryImages } from "@/ui/components/pdp/gallery-images";
 import {
 	ProductGallery,
-	ProductAttributes,
+	ProductSpecs,
 	VariantSectionDynamic,
 	VariantSectionSkeleton,
 	VariantSectionError,
 } from "@/ui/components/pdp";
+import { getLocaleFromChannel } from "@/config/locale";
 
 // ============================================================================
 // Cached Data Fetching
@@ -198,15 +199,18 @@ async function ProductContent({
 				/>
 			)}
 
-			<main className="mx-auto w-full max-w-7xl flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
+			<main className="mx-auto w-full max-w-[1480px] flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
 				<div className="mb-6 hidden sm:block">
 					<Breadcrumbs items={breadcrumbs} />
 				</div>
 
-				<div className="grid gap-8 lg:grid-cols-2 lg:gap-16">
-					<div className="lg:sticky lg:top-24 lg:self-start">
-						<ProductGallery images={images} productName={product.name} />
-					</div>
+				{/* HERO — gallery beside the purchase summary, and nothing else.
+				    Both columns end at roughly the same height, so neither leaves a
+				    dead area on a wide monitor. Description and parameters moved
+				    below at full width; the gallery is deliberately NOT sticky,
+				    which would only re-create the imbalance. */}
+				<div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-14 xl:gap-20">
+					<ProductGallery images={images} productName={product.name} />
 
 					<div className="flex flex-col gap-3">
 						<h1 className="order-2 text-3xl font-semibold tracking-tight text-balance lg:text-4xl">
@@ -222,16 +226,15 @@ async function ProductContent({
 								/>
 							</Suspense>
 						</ErrorBoundary>
-
-						<div className="order-4 mt-6">
-							<ProductAttributes
-								descriptionHtml={descriptionHtml}
-								attributes={productAttributes}
-								careInstructions={careInstructions}
-							/>
-						</div>
 					</div>
 				</div>
+
+				<ProductSpecs
+					descriptionHtml={descriptionHtml}
+					attributes={productAttributes}
+					careInstructions={careInstructions}
+					locale={getLocaleFromChannel(params.channel)}
+				/>
 			</main>
 		</div>
 	);
@@ -278,25 +281,27 @@ function parseDescription(description: string | null | undefined): string[] | nu
 	}
 }
 
+/**
+ * Attributes for the specifications table.
+ *
+ * The raw Saleor shape is passed through rather than flattened to
+ * `{name, value}`: `formatProductAttributeValue` keys units on
+ * `externalReference`, which flattening would throw away.
+ *
+ * Manufacturer is dropped here because it is surfaced beside the title — a
+ * spec row repeating it adds nothing.
+ */
 function extractProductAttributes(product: NonNullable<ProductDetailsQuery["product"]>) {
 	const variantAttributeSlugs = ["size", "color", "colour", "variant"];
 	const internalAttributeSlugs = ["care-instructions", "care"];
+	const promotedRefs = ["cfm:attribute:manufacturer"];
 
 	return (product.attributes || [])
 		.filter((attr) => attr.attribute.name)
 		.filter((attr) => !variantAttributeSlugs.includes((attr.attribute.slug ?? "").toLowerCase()))
 		.filter((attr) => !internalAttributeSlugs.includes((attr.attribute.slug ?? "").toLowerCase()))
-		.map((attr) => ({
-			name: attr.attribute.name!,
-			value:
-				attr.values.length === 1
-					? attr.values[0]?.name ?? ""
-					: attr.values.map((v) => v.name ?? "").filter(Boolean),
-		}))
-		.filter((attr) => {
-			if (Array.isArray(attr.value)) return attr.value.length > 0;
-			return attr.value !== "";
-		});
+		.filter((attr) => !promotedRefs.includes(attr.attribute.externalReference ?? ""))
+		.filter((attr) => attr.values.some((v) => v.name?.trim()));
 }
 
 function extractCareInstructions(product: NonNullable<ProductDetailsQuery["product"]>): string | null {
