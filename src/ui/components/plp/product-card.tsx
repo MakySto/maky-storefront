@@ -11,6 +11,7 @@ import { QuantityStepper } from "@/ui/components/ui/quantity-stepper";
 import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
 import { StarRating } from "@/ui/components/product/star-rating";
 import { cn } from "@/lib/utils";
+import { marketHref } from "@/lib/channel-map";
 import { useLocale } from "@/providers/locale-provider";
 import { addListingItemToCart } from "./actions";
 
@@ -140,7 +141,16 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 
 			{/* Category + manufacturer */}
 			<div className="mt-3 space-y-0.5 text-center text-xs">
-				<p className="text-text-tertiary truncate">{product.category?.name}</p>
+				{product.category && (
+					<p className="truncate">
+						<Link
+							href={marketHref(product.channel, `/categories/${product.category.slug}`)}
+							className="text-text-tertiary hover:text-text-secondary underline-offset-2 hover:underline"
+						>
+							{product.category.name}
+						</Link>
+					</p>
+				)}
 				{product.brand && (
 					<p className="text-text-tertiary truncate">
 						{tProduct("brand")}: <span className="text-text-secondary font-medium">{product.brand}</span>
@@ -148,12 +158,12 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 				)}
 			</div>
 
-			{/* SKU + availability */}
-			<div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+			{/* SKU, then availability on its own line beneath it */}
+			<div className="mt-1.5 space-y-1 text-center">
 				{product.sku && (
-					<span className="text-text-tertiary text-xs tabular-nums">
+					<p className="text-text-tertiary truncate text-xs tabular-nums">
 						{tProduct("sku")}: <span className="font-medium">{product.sku.toUpperCase()}</span>
-					</span>
+					</p>
 				)}
 				<AvailabilityBadge
 					mode={product.availabilityMode}
