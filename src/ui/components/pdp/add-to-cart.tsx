@@ -4,6 +4,7 @@ import { useFormStatus } from "react-dom";
 import { useTranslations } from "next-intl";
 import { ShoppingBag } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
+import { QuantityStepper } from "@/ui/components/ui/quantity-stepper";
 import { cn } from "@/lib/utils";
 
 interface AddToCartProps {
@@ -12,6 +13,8 @@ interface AddToCartProps {
 	discountPercent?: number | null;
 	disabled?: boolean;
 	disabledReason?: "no-selection" | "out-of-stock";
+	/** Saleor-capped availability ceiling; undefined when unknown. */
+	maxQuantity?: number;
 }
 
 function AddToCartButton({
@@ -37,7 +40,7 @@ function AddToCartButton({
 			type="submit"
 			size="lg"
 			disabled={disabled || pending}
-			className={cn("h-14 w-full text-base font-medium transition-all duration-200", pending && "opacity-80")}
+			className={cn("h-11 flex-1 text-base font-medium transition-all duration-200", pending && "opacity-80")}
 		>
 			<ShoppingBag className={cn("mr-2 h-5 w-5 transition-transform", pending && "scale-90")} />
 			{getButtonText()}
@@ -51,6 +54,7 @@ export function AddToCart({
 	discountPercent,
 	disabled = false,
 	disabledReason,
+	maxQuantity,
 }: AddToCartProps) {
 	const t = useTranslations("product");
 
@@ -69,8 +73,12 @@ export function AddToCart({
 				)}
 			</div>
 
-			{/* Add to Cart Button */}
-			<AddToCartButton disabled={disabled} disabledReason={disabledReason} />
+			{/* Buy row: quantity + CTA. The stepper writes name="quantity" into the
+			    surrounding form, which both this button and the sticky bar submit. */}
+			<div className="flex items-stretch gap-3">
+				<QuantityStepper name="quantity" max={maxQuantity} disabled={disabled} />
+				<AddToCartButton disabled={disabled} disabledReason={disabledReason} />
+			</div>
 
 			{/* Trust Signals */}
 			<div className="text-text-secondary flex items-center justify-center gap-6 pt-2 text-xs">

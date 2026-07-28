@@ -103,7 +103,10 @@
 		"secureCheckout": "Bezpečný nákup",
 		"noImageAvailable": "Obrázok nie je k dispozícii",
 		"selectOptions": "Vyberte možnosti",
-		"goHome": "Na úvod"
+		"goHome": "Na úvod",
+		"quantity": "Množstvo",
+		"decreaseQuantity": "Znížiť množstvo",
+		"increaseQuantity": "Zvýšiť množstvo"
 	},
 	"fitment": {
 		"selectVehicle": "Vyberte vaše vozidlo",

@@ -103,7 +103,10 @@
 		"secureCheckout": "Cumpărături sigure",
 		"noImageAvailable": "Nicio imagine disponibilă",
 		"selectOptions": "Selectați opțiunile",
-		"goHome": "Acasă"
+		"goHome": "Acasă",
+		"quantity": "Cantitate",
+		"decreaseQuantity": "Reduce cantitatea",
+		"increaseQuantity": "Crește cantitatea"
 	},
 	"fitment": {
 		"selectVehicle": "Selectați vehiculul",

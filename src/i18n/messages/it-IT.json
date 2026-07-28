@@ -103,7 +103,10 @@
 		"secureCheckout": "Acquisto sicuro",
 		"noImageAvailable": "Nessuna immagine disponibile",
 		"selectOptions": "Seleziona opzioni",
-		"goHome": "Vai alla home"
+		"goHome": "Vai alla home",
+		"quantity": "Quantità",
+		"decreaseQuantity": "Diminuisci quantità",
+		"increaseQuantity": "Aumenta quantità"
 	},
 	"fitment": {
 		"selectVehicle": "Seleziona il tuo veicolo",

@@ -103,7 +103,10 @@
 		"secureCheckout": "Biztonságos fizetés",
 		"noImageAvailable": "Nincs elérhető kép",
 		"selectOptions": "Válasszon opciót",
-		"goHome": "Kezdőlapra"
+		"goHome": "Kezdőlapra",
+		"quantity": "Mennyiség",
+		"decreaseQuantity": "Mennyiség csökkentése",
+		"increaseQuantity": "Mennyiség növelése"
 	},
 	"fitment": {
 		"selectVehicle": "Válassza ki járművét",

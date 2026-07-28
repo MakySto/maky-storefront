@@ -11,6 +11,7 @@ import { AddToCart } from "./add-to-cart";
 import { VariantSelectionSection } from "./variant-selection";
 import { StickyBar } from "./sticky-bar";
 import { Badge } from "@/ui/components/ui/badge";
+import { QUANTITY_FALLBACK_MAX } from "@/ui/components/ui/quantity-stepper";
 
 type Product = NonNullable<ProductDetailsQuery["product"]>;
 
@@ -70,14 +71,27 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 				)
 			: null;
 
+	/**
+	 * Upper bound for the stepper. `quantityAvailable` is CAPPED by Saleor
+	 * (≈50) rather than being real stock, so it is safe as a ceiling but must
+	 * never be presented to the customer as "only N left".
+	 */
+	const maxQuantity = selectedVariant?.quantityAvailable || undefined;
+
 	// Server action for adding to cart
-	async function addToCart() {
+	async function addToCart(formData: FormData) {
 		"use server";
 
 		if (!selectedVariantID) {
 			// Silently return - button should be disabled if no variant selected
 			return;
 		}
+
+		// The form is the only source of quantity, and it is user-controlled, so
+		// re-clamp on the server: a tampered field must not reach the mutation.
+		const parsed = Number.parseInt(String(formData.get("quantity") ?? ""), 10);
+		const ceiling = maxQuantity ?? QUANTITY_FALLBACK_MAX;
+		const quantity = Number.isFinite(parsed) ? Math.min(Math.max(Math.trunc(parsed), 1), ceiling) : 1;
 
 		try {
 			const checkout = await Checkout.findOrCreate({
@@ -97,6 +111,7 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 				variables: {
 					id: checkout.id,
 					productVariantId: decodeURIComponent(selectedVariantID),
+					quantity,
 				},
 				cache: "no-cache",
 			});
@@ -118,7 +133,7 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 		<>
 			{/* Category + Sale/Stock badges row - order:1 so it appears ABOVE the h1 */}
 			<div className="order-1 flex items-center gap-2">
-				{product.category && <span className="text-sm text-muted-foreground">{product.category.name}</span>}
+				{product.category && <span className="text-muted-foreground text-sm">{product.category.name}</span>}
 				{isOnSale && (
 					<Badge variant="destructive" className="text-xs">
 						{tCommon("sale")}
@@ -148,6 +163,7 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 					discountPercent={discountPercent}
 					disabled={isAddToCartDisabled}
 					disabledReason={disabledReason}
+					maxQuantity={maxQuantity}
 				/>
 
 				{/* Sticky Add to Cart Bar (Mobile) */}
@@ -167,25 +183,25 @@ export function VariantSectionSkeleton() {
 	return (
 		<>
 			{/* Category skeleton - order:1, delayed visibility */}
-			<div className="order-1 h-4 w-20 animate-pulse animate-skeleton-delayed rounded bg-muted opacity-0" />
+			<div className="animate-skeleton-delayed bg-muted order-1 h-4 w-20 animate-pulse rounded opacity-0" />
 
 			{/* Variant section skeleton - order:3, delayed visibility */}
-			<div className="order-3 mt-4 animate-pulse animate-skeleton-delayed space-y-6 opacity-0">
+			<div className="animate-skeleton-delayed order-3 mt-4 animate-pulse space-y-6 opacity-0">
 				{/* Variant selector skeleton */}
 				<div className="space-y-4">
-					<div className="h-4 w-16 rounded bg-muted" />
+					<div className="bg-muted h-4 w-16 rounded" />
 					<div className="flex gap-2">
-						<div className="h-10 w-16 rounded bg-muted" />
-						<div className="h-10 w-16 rounded bg-muted" />
-						<div className="h-10 w-16 rounded bg-muted" />
+						<div className="bg-muted h-10 w-16 rounded" />
+						<div className="bg-muted h-10 w-16 rounded" />
+						<div className="bg-muted h-10 w-16 rounded" />
 					</div>
 				</div>
 
 				{/* Price skeleton */}
-				<div className="h-8 w-24 rounded bg-muted" />
+				<div className="bg-muted h-8 w-24 rounded" />
 
 				{/* Add to cart button skeleton */}
-				<div className="h-12 w-full rounded bg-muted" />
+				<div className="bg-muted h-12 w-full rounded" />
 			</div>
 		</>
 	);
