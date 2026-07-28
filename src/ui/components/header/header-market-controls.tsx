@@ -92,7 +92,7 @@ export function HeaderMarketControls() {
 			</div>
 
 			{isOpen && (
-				<div className="border-sand-300 absolute top-full right-0 z-50 mt-2 w-72 rounded-md border bg-white py-1 shadow-lg">
+				<div className="border-sand-300 absolute top-full right-0 z-[var(--z-dropdown)] mt-2 w-72 rounded-md border bg-white py-1 shadow-lg">
 					{MARKETS.map((market) => (
 						<button
 							key={market.slug}

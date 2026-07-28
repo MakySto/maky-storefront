@@ -97,7 +97,7 @@ export function FilterBar({
 		selectedCategories.length + selectedColors.length + selectedSizes.length + (selectedPriceRange ? 1 : 0);
 
 	return (
-		<div className="sticky top-16 border-b border-border-default bg-surface-card" style={{ zIndex: "var(--z-dropdown)" }}>
+		<div className="border-border-default bg-surface-card sticky top-16 z-[var(--z-header)] border-b">
 			<div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
 				{/* Main Filter Row */}
 				<div className="flex items-center justify-between gap-4">
@@ -118,13 +118,13 @@ export function FilterBar({
 									</Button>
 								</SheetTrigger>
 								<SheetContent side="left" className="flex w-[280px] flex-col p-0">
-									<SheetHeader className="flex-row items-center justify-between border-b border-border-default px-4 py-4">
+									<SheetHeader className="border-border-default flex-row items-center justify-between border-b px-4 py-4">
 										<SheetTitle>{tCommon("filters")}</SheetTitle>
 										<SheetCloseButton />
 									</SheetHeader>
 
 									<div className="flex-1 overflow-y-auto">
-										<div className="divide-y divide-border-subtle">
+										<div className="divide-border-subtle divide-y">
 											{/* Mobile Category Filter */}
 											{categoryOptions.length > 0 && onCategoryToggle && (
 												<MobileFilterSection title={t("category")}>
@@ -208,7 +208,7 @@ export function FilterBar({
 
 									{/* Footer: Clear all */}
 									{activeFilterCount > 0 && onClearFilters && (
-										<div className="border-t border-border-default p-4">
+										<div className="border-border-default border-t p-4">
 											<Button
 												variant="outline-solid"
 												className="w-full"
@@ -227,10 +227,7 @@ export function FilterBar({
 
 						{/* Desktop: Category */}
 						{categoryOptions.length > 0 && onCategoryToggle && (
-							<DesktopDropdown
-								label={t("category")}
-								count={selectedCategories.length}
-							>
+							<DesktopDropdown label={t("category")} count={selectedCategories.length}>
 								<DropdownMenuLabel>{t("category")}</DropdownMenuLabel>
 								<DropdownMenuSeparator />
 								{categoryOptions.map((category) => (
@@ -247,10 +244,7 @@ export function FilterBar({
 
 						{/* Desktop: Color */}
 						{colorOptions.length > 0 && onColorToggle && (
-							<DesktopDropdown
-								label={t("color")}
-								count={selectedColors.length}
-							>
+							<DesktopDropdown label={t("color")} count={selectedColors.length}>
 								<DropdownMenuLabel>{t("color")}</DropdownMenuLabel>
 								<DropdownMenuSeparator />
 								{colorOptions.map((color) => (
@@ -261,12 +255,12 @@ export function FilterBar({
 									>
 										{color.hex && (
 											<span
-												className="mr-2 h-4 w-4 shrink-0 rounded-full border border-border-default"
+												className="border-border-default mr-2 h-4 w-4 shrink-0 rounded-full border"
 												style={{ backgroundColor: color.hex }}
 											/>
 										)}
 										<span className="flex-1">{color.name}</span>
-										<span className="text-xs text-text-tertiary">({color.count})</span>
+										<span className="text-text-tertiary text-xs">({color.count})</span>
 									</DropdownMenuCheckboxItem>
 								))}
 							</DesktopDropdown>
@@ -274,11 +268,7 @@ export function FilterBar({
 
 						{/* Desktop: Size */}
 						{sizeOptions.length > 0 && onSizeToggle && (
-							<DesktopDropdown
-								label={t("size")}
-								count={selectedSizes.length}
-								width="w-48"
-							>
+							<DesktopDropdown label={t("size")} count={selectedSizes.length} width="w-48">
 								<DropdownMenuLabel>{t("size")}</DropdownMenuLabel>
 								<DropdownMenuSeparator />
 								{sizeOptions.map((size) => (
@@ -288,7 +278,7 @@ export function FilterBar({
 										onCheckedChange={() => onSizeToggle(size.name)}
 									>
 										<span className="flex-1">{size.name}</span>
-										<span className="text-xs text-text-tertiary">({size.count})</span>
+										<span className="text-text-tertiary text-xs">({size.count})</span>
 									</DropdownMenuCheckboxItem>
 								))}
 							</DesktopDropdown>
@@ -296,11 +286,7 @@ export function FilterBar({
 
 						{/* Desktop: Price */}
 						{priceRanges.length > 0 && onPriceRangeChange && (
-							<DesktopDropdown
-								label={t("price")}
-								count={selectedPriceRange ? 1 : 0}
-								width="w-48"
-							>
+							<DesktopDropdown label={t("price")} count={selectedPriceRange ? 1 : 0} width="w-48">
 								<DropdownMenuLabel>{t("priceRange")}</DropdownMenuLabel>
 								<DropdownMenuSeparator />
 								<DropdownMenuRadioGroup
@@ -319,7 +305,7 @@ export function FilterBar({
 
 					{/* Right: Count + Sort */}
 					<div className="flex shrink-0 items-center gap-3">
-						<span className="hidden text-sm text-text-secondary sm:block">
+						<span className="text-text-secondary hidden text-sm sm:block">
 							{t("productCount", { count: resultCount })}
 						</span>
 
@@ -355,11 +341,11 @@ export function FilterBar({
 								variant="secondary"
 								className="shrink-0 gap-1.5 pr-1.5"
 							>
-								<span className="text-xs text-text-tertiary">{filter.label}:</span>
+								<span className="text-text-tertiary text-xs">{filter.label}:</span>
 								{filter.value}
 								<button
 									onClick={() => onRemoveFilter(filter.key, filter.value)}
-									className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-surface-muted"
+									className="hover:bg-surface-muted ml-0.5 rounded-full p-0.5 transition-colors"
 									aria-label={t("removeFilter", { value: filter.value })}
 								>
 									<X className="h-3 w-3" />
@@ -369,7 +355,7 @@ export function FilterBar({
 						<Button
 							variant="ghost"
 							size="sm"
-							className="h-6 shrink-0 px-2 text-xs text-text-secondary"
+							className="text-text-secondary h-6 shrink-0 px-2 text-xs"
 							onClick={onClearFilters}
 						>
 							{t("clearAll")}
@@ -386,9 +372,7 @@ export function FilterBar({
 function MobileFilterSection({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
 		<div className="px-4 py-6">
-			<h3 className="mb-4 text-sm font-medium uppercase tracking-wide text-text-secondary">
-				{title}
-			</h3>
+			<h3 className="text-text-secondary mb-4 text-sm font-medium tracking-wide uppercase">{title}</h3>
 			<div className="space-y-3">{children}</div>
 		</div>
 	);
@@ -418,12 +402,12 @@ function CheckboxRow({
 			</span>
 			{swatch && (
 				<span
-					className="h-5 w-5 shrink-0 rounded-full border border-border-default"
+					className="border-border-default h-5 w-5 shrink-0 rounded-full border"
 					style={{ backgroundColor: swatch }}
 				/>
 			)}
 			<span className="flex-1 text-sm">{label}</span>
-			{count !== undefined && <span className="text-xs text-text-tertiary">({count})</span>}
+			{count !== undefined && <span className="text-text-tertiary text-xs">({count})</span>}
 		</button>
 	);
 }

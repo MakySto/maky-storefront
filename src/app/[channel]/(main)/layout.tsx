@@ -35,14 +35,14 @@ export async function generateMetadata({
 
 function HeaderSkeleton() {
 	return (
-		<header className="sticky top-0 z-40 border-b border-border bg-background">
+		<header className="border-border bg-background sticky top-0 z-[var(--z-header)] border-b">
 			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 				<div className="flex h-16 items-center justify-between gap-4">
 					<div className="flex shrink-0 items-center">
 						<Logo className="h-7 w-auto" />
 					</div>
 					<div className="hidden flex-1 justify-center md:flex">
-						<div className="h-10 w-full max-w-md animate-pulse rounded-lg bg-secondary" />
+						<div className="bg-secondary h-10 w-full max-w-md animate-pulse rounded-lg" />
 					</div>
 					<div className="flex items-center gap-1">
 						<div className="h-10 w-10" />
@@ -60,7 +60,7 @@ function HeaderSkeleton() {
 function FooterSkeleton() {
 	return (
 		<footer className="animate-skeleton-delayed bg-foreground text-background opacity-0">
-			<div className="mx-auto max-w-7xl px-4 pb-24 pt-12 sm:px-6 sm:pb-12 lg:px-8 lg:py-16">
+			<div className="mx-auto max-w-7xl px-4 pt-12 pb-24 sm:px-6 sm:pb-12 lg:px-8 lg:py-16">
 				<div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:gap-12">
 					<div className="col-span-2 md:col-span-1">
 						<div className="mb-4 h-7 w-24 animate-pulse rounded bg-neutral-700" />

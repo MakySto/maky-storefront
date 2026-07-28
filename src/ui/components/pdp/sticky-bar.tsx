@@ -66,14 +66,14 @@ export function StickyBar({ productName, price, show = false }: StickyBarProps) 
 	return (
 		<div
 			className={cn(
-				"fixed bottom-0 left-0 right-0 z-50 border-t bg-background transition-transform duration-300 md:hidden",
+				"bg-background fixed right-0 bottom-0 left-0 z-[var(--z-header)] border-t transition-transform duration-300 md:hidden",
 				isVisible ? "translate-y-0" : "translate-y-full",
 			)}
 		>
 			<div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
 				<div className="min-w-0 flex-1">
 					<p className="truncate font-medium">{productName}</p>
-					<p className="text-sm text-muted-foreground">{price}</p>
+					<p className="text-muted-foreground text-sm">{price}</p>
 				</div>
 				<StickyAddButton />
 			</div>
