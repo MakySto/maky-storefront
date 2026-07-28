@@ -15,8 +15,19 @@ interface ProductGridProps {
 export function ProductGrid({ products }: ProductGridProps) {
 	return (
 		<div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5 2xl:grid-cols-4">
+			{/* Exactly ONE preload. The grid is single-column on a phone, so only the
+			    first card is above the fold there, yet `priority` on the first four
+			    emitted four high-priority preloads that fought over the connection —
+			    worth ~2.9 s of LCP load delay on mobile. Cards two to four still start
+			    loading immediately (`eager`) for the wider first rows, they just do not
+			    claim preload priority. */}
 			{products.map((product, index) => (
-				<ProductCard key={product.id} product={product} priority={index < 4} />
+				<ProductCard
+					key={product.id}
+					product={product}
+					priority={index === 0}
+					eager={index > 0 && index < 4}
+				/>
 			))}
 		</div>
 	);

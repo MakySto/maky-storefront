@@ -194,12 +194,15 @@ async function ProductContent({
 		variantCount: product.variants?.length ?? 0,
 	});
 
-	const lcpImageUrl = images[0]?.url;
+	// No manual LCP preload here. The gallery's first <Image> carries `priority`,
+	// and next/image already emits a preload with the correct `imagesrcset` for the
+	// /_next/image URL the browser actually renders. A hand-written preload of
+	// `images[0].url` pointed at the RAW CDN file instead — a second, different
+	// resource, fetched at high priority and never displayed. It cost the LCP image
+	// ~2 s of load delay on mobile by competing for the connection.
 
 	return (
 		<div className="bg-background flex min-h-screen flex-col">
-			{lcpImageUrl && <link rel="preload" as="image" href={lcpImageUrl} fetchPriority="high" />}
-
 			{productJsonLd && (
 				<script
 					type="application/ld+json"
@@ -208,9 +211,11 @@ async function ProductContent({
 			)}
 
 			<main className="mx-auto w-full max-w-[1480px] flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
-				<div className="mb-6 hidden sm:block">
-					<Breadcrumbs items={breadcrumbs} />
-				</div>
+				{/* Shown on mobile now. It used to be `hidden sm:block`, which cost phone
+				    visitors the only "up to the category" control on the page — the trail
+				    stays on one scrollable line instead of wrapping, and drops its own
+				    (redundant) last crumb below `sm`. */}
+				<Breadcrumbs items={breadcrumbs} className="mb-6" />
 
 				{/* HERO — gallery beside the purchase summary, and nothing else.
 				    Both columns end at roughly the same height, so neither leaves a
