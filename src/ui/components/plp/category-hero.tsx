@@ -1,11 +1,5 @@
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { Breadcrumbs, type BreadcrumbItem } from "@/ui/components/breadcrumbs";
 import { WavePattern } from "./wave-pattern";
-
-interface BreadcrumbItem {
-	label: string;
-	href: string;
-}
 
 interface CategoryHeroProps {
 	title: string;
@@ -34,30 +28,7 @@ export function CategoryHero({ title, description, backgroundImage, breadcrumbs 
 
 			{/* Content */}
 			<div className="relative mx-auto flex h-full max-w-[1480px] flex-col justify-end px-4 pb-6 sm:px-6 lg:px-8">
-				{/* Breadcrumbs */}
-				<nav
-					className={`mb-4 flex items-center gap-1.5 text-sm ${
-						hasImage ? "text-white/70" : "text-text-secondary"
-					}`}
-				>
-					{breadcrumbs.map((crumb, index) => (
-						<span key={crumb.href} className="flex items-center gap-1.5">
-							{index > 0 && <ChevronRight className="h-3.5 w-3.5" />}
-							{index === breadcrumbs.length - 1 ? (
-								<span className={`font-medium ${hasImage ? "text-white" : "text-text-primary"}`}>
-									{crumb.label}
-								</span>
-							) : (
-								<Link
-									href={crumb.href}
-									className={`transition-colors ${hasImage ? "hover:text-white" : "hover:text-text-primary"}`}
-								>
-									{crumb.label}
-								</Link>
-							)}
-						</span>
-					))}
-				</nav>
+				<Breadcrumbs items={breadcrumbs} tone={hasImage ? "onImage" : "default"} className="mb-4" />
 
 				<h1
 					className={`text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl ${

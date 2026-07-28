@@ -107,6 +107,35 @@ export function buildProductJsonLd(options: {
 }
 
 /**
+ * BreadcrumbList JSON-LD.
+ *
+ * Google renders the trail in place of the raw URL in results, which on mobile is
+ * the difference between "maky.store › sk › gp-peruzzo-nosic-2-bicyklov-pz-gp019…"
+ * and "Domov › Nosiče bicyklov › GP/Peruzzo nosič na 2 bicykle".
+ *
+ * Crumbs without an `href` (the current page) still get a position — the spec wants
+ * the full trail — but no `item`, which is how you mark the terminal entry.
+ *
+ * @see https://developers.google.com/search/docs/appearance/structured-data/breadcrumb
+ */
+export function buildBreadcrumbJsonLd(items: { label: string; href?: string }[]) {
+	if (items.length < 2) return null;
+
+	const base = getBaseUrl();
+
+	return {
+		"@context": "https://schema.org",
+		"@type": "BreadcrumbList",
+		itemListElement: items.map((item, index) => ({
+			"@type": "ListItem",
+			position: index + 1,
+			name: item.label,
+			...(item.href ? { item: item.href.startsWith("http") ? item.href : `${base}${item.href}` } : {}),
+		})),
+	};
+}
+
+/**
  * JSON-LD Script component helper
  *
  * @example
