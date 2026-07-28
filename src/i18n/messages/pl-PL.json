@@ -33,7 +33,8 @@
 		"country": "Polska",
 		"slogan": "Wszystko dla Twojego hobby!",
 		"home": "Strona główna",
-		"onDemand": "Na zamówienie"
+		"onDemand": "Na zamówienie",
+		"viewDetail": "Szczegóły produktu"
 	},
 	"nav": {
 		"home": "Strona główna",
@@ -466,7 +467,11 @@
 		"removeFilter": "Usuń filtr {value}",
 		"home": "Strona główna",
 		"allProducts": "Wszystkie produkty",
-		"showingResults": "Wyświetlono {count} produktów"
+		"showingResults": "Wyświetlono {count} produktów",
+		"previousPage": "Poprzednia",
+		"nextPage": "Następna",
+		"pagination": "Paginacja",
+		"allProductsDescription": "Pełna oferta akcesoriów do Twojego auta."
 	},
 	"cookieConsent": {
 		"title": "Zależy nam na Twojej prywatności",

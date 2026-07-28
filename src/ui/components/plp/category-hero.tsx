@@ -18,7 +18,7 @@ export function CategoryHero({ title, description, backgroundImage, breadcrumbs 
 	const hasImage = !!backgroundImage;
 
 	return (
-		<section className="relative h-[340px] overflow-hidden border-b border-border-default">
+		<section className="border-border-default relative h-[180px] overflow-hidden border-b sm:h-[210px]">
 			{/* Background */}
 			<div className="absolute inset-0">
 				{hasImage ? (
@@ -33,7 +33,7 @@ export function CategoryHero({ title, description, backgroundImage, breadcrumbs 
 			</div>
 
 			{/* Content */}
-			<div className="relative mx-auto flex h-full max-w-7xl flex-col justify-end px-4 pb-10 sm:px-6 lg:px-8">
+			<div className="relative mx-auto flex h-full max-w-[1480px] flex-col justify-end px-4 pb-6 sm:px-6 lg:px-8">
 				{/* Breadcrumbs */}
 				<nav
 					className={`mb-4 flex items-center gap-1.5 text-sm ${
@@ -50,9 +50,7 @@ export function CategoryHero({ title, description, backgroundImage, breadcrumbs 
 							) : (
 								<Link
 									href={crumb.href}
-									className={`transition-colors ${
-										hasImage ? "hover:text-white" : "hover:text-text-primary"
-									}`}
+									className={`transition-colors ${hasImage ? "hover:text-white" : "hover:text-text-primary"}`}
 								>
 									{crumb.label}
 								</Link>

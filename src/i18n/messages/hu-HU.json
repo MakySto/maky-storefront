@@ -33,7 +33,8 @@
 		"country": "Magyarország",
 		"slogan": "Minden a hobbihoz!",
 		"home": "Kezdőlap",
-		"onDemand": "Rendelésre"
+		"onDemand": "Rendelésre",
+		"viewDetail": "Termék részletei"
 	},
 	"nav": {
 		"home": "Kezdőlap",
@@ -466,7 +467,11 @@
 		"removeFilter": "{value} szűrő eltávolítása",
 		"home": "Kezdőlap",
 		"allProducts": "Összes termék",
-		"showingResults": "{count} termék megjelenítve"
+		"showingResults": "{count} termék megjelenítve",
+		"previousPage": "Előző",
+		"nextPage": "Következő",
+		"pagination": "Lapozás",
+		"allProductsDescription": "A teljes autós kiegészítő kínálat."
 	},
 	"cookieConsent": {
 		"title": "Fontos számunkra az adatvédelme",

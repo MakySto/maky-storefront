@@ -33,7 +33,8 @@
 		"country": "Česko",
 		"slogan": "Vše pro Vaše hobby!",
 		"home": "Domů",
-		"onDemand": "Na objednávku"
+		"onDemand": "Na objednávku",
+		"viewDetail": "Detail produktu"
 	},
 	"nav": {
 		"home": "Domů",
@@ -466,7 +467,11 @@
 		"removeFilter": "Odstranit filtr {value}",
 		"home": "Domů",
 		"allProducts": "Všechny produkty",
-		"showingResults": "Zobrazeno {count} produktů"
+		"showingResults": "Zobrazeno {count} produktů",
+		"previousPage": "Předchozí",
+		"nextPage": "Další",
+		"pagination": "Stránkování",
+		"allProductsDescription": "Kompletní nabídka příslušenství pro vaše auto."
 	},
 	"cookieConsent": {
 		"title": "Záleží nám na vašem soukromí",

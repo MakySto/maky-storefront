@@ -33,7 +33,8 @@
 		"country": "España",
 		"slogan": "¡Todo para tu hobby!",
 		"home": "Inicio",
-		"onDemand": "Bajo pedido"
+		"onDemand": "Bajo pedido",
+		"viewDetail": "Ver producto"
 	},
 	"nav": {
 		"home": "Inicio",
@@ -466,7 +467,11 @@
 		"removeFilter": "Eliminar filtro {value}",
 		"home": "Inicio",
 		"allProducts": "Todos los productos",
-		"showingResults": "{count} productos mostrados"
+		"showingResults": "{count} productos mostrados",
+		"previousPage": "Anterior",
+		"nextPage": "Siguiente",
+		"pagination": "Paginación",
+		"allProductsDescription": "La gama completa de accesorios para su coche."
 	},
 	"cookieConsent": {
 		"title": "Nos importa tu privacidad",

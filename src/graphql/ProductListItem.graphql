@@ -3,6 +3,20 @@ fragment ProductListItem on Product {
 	name
 	slug
 	created
+	# Availability is CFM-owned. Read from the PRODUCT, not the variants: a
+	# listing renders dozens of cards and fetching variant metadata for each one
+	# just to draw a badge is a needless cost.
+	metafield(key: "cfm_availability_mode")
+	attributes {
+		attribute {
+			name
+			externalReference
+			unit
+		}
+		values {
+			name
+		}
+	}
 	pricing {
 		priceRange {
 			start {
@@ -44,6 +58,8 @@ fragment ProductListItem on Product {
 	}
 	variants {
 		id
+		sku
+		quantityAvailable
 		selectionAttributes: attributes(variantSelection: VARIANT_SELECTION) {
 			attribute {
 				slug

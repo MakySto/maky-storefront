@@ -33,7 +33,8 @@
 		"country": "Canada",
 		"slogan": "Everything for Your Hobby!",
 		"home": "Home",
-		"onDemand": "Made to order"
+		"onDemand": "Made to order",
+		"viewDetail": "View product"
 	},
 	"nav": {
 		"home": "Home",
@@ -223,7 +224,11 @@
 		"removeFilter": "Remove {value} filter",
 		"home": "Home",
 		"allProducts": "All products",
-		"showingResults": "Showing {count} products"
+		"showingResults": "Showing {count} products",
+		"previousPage": "Previous",
+		"nextPage": "Next",
+		"pagination": "Pagination",
+		"allProductsDescription": "The complete range of accessories for your car."
 	},
 	"cookieConsent": {
 		"title": "We value your privacy",

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { ProductListPaginatedDocument } from "@/gql/graphql";
 import { executePublicGraphQL } from "@/lib/graphql";
@@ -34,18 +35,19 @@ type PageProps = {
  */
 export default async function Page(props: PageProps) {
 	const params = await props.params;
+	const t = await getTranslations("plp");
 
 	const breadcrumbs = [
-		{ label: "Home", href: marketHref(params.channel) },
-		{ label: "Products", href: marketHref(params.channel, "/products") },
+		{ label: t("home"), href: marketHref(params.channel) },
+		{ label: t("allProducts"), href: marketHref(params.channel, "/products") },
 	];
 
 	return (
 		<>
 			{/* Static shell - renders immediately */}
 			<CategoryHero
-				title="All Products"
-				description="Discover our full collection of premium products."
+				title={t("allProducts")}
+				description={t("allProductsDescription")}
 				breadcrumbs={breadcrumbs}
 			/>
 			{/* Dynamic content - streams in via Suspense */}
@@ -122,16 +124,16 @@ async function ProductsContent({
  */
 function ProductsGridSkeleton() {
 	return (
-		<div className="mx-auto max-w-7xl animate-skeleton-delayed px-4 py-8 opacity-0 sm:px-6 lg:px-8">
+		<div className="animate-skeleton-delayed mx-auto max-w-7xl px-4 py-8 opacity-0 sm:px-6 lg:px-8">
 			{/* Matches ProductGrid: grid-cols-2 lg:grid-cols-3 */}
 			<div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
 				{Array.from({ length: 6 }).map((_, i) => (
 					<div key={i} className="animate-pulse">
 						{/* Matches ProductCard: aspect-[3/4] rounded-xl */}
-						<div className="mb-4 aspect-[3/4] rounded-xl bg-muted" />
+						<div className="bg-muted mb-4 aspect-[3/4] rounded-xl" />
 						<div className="space-y-1.5">
-							<div className="h-4 w-3/4 rounded bg-muted" />
-							<div className="h-4 w-1/2 rounded bg-muted" />
+							<div className="bg-muted h-4 w-3/4 rounded" />
+							<div className="bg-muted h-4 w-1/2 rounded" />
 						</div>
 					</div>
 				))}

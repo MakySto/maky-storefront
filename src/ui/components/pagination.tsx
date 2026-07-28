@@ -1,9 +1,24 @@
 "use client";
 
-import clsx from "clsx";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 
+import { cn } from "@/lib/utils";
+
+/**
+ * Cursor pagination.
+ *
+ * Saleor's `products` is a Relay connection — `first/after/before/last`, with no
+ * offset — so there is no honest way to render "page 7": jumping to an arbitrary
+ * page would mean either storing every cursor or refetching everything up to it.
+ * Numbered pages wait for a backend that supports offsets; until then this is
+ * prev/next, done properly rather than left looking like a prototype.
+ *
+ * Renders nothing at all when the result set fits on one page — which is the
+ * case for every category today, and was previously two dead grey buttons.
+ */
 export function Pagination({
 	pageInfo,
 }: {
@@ -16,43 +31,46 @@ export function Pagination({
 }) {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
+	const t = useTranslations("plp");
 
-	// Construct next and previous page URLs based on the current search parameters
-	// and the pageInfo provided.
-	const nextSearchParams = new URLSearchParams(searchParams);
-	nextSearchParams.set("cursor", pageInfo.endCursor ?? "");
-	nextSearchParams.set("direction", "next");
-	const nextPageUrl = `${pathname}?${nextSearchParams.toString()}`;
+	if (!pageInfo.hasNextPage && !pageInfo.hasPreviousPage) return null;
 
-	const prevSearchParams = new URLSearchParams(searchParams);
-	prevSearchParams.set("cursor", pageInfo.startCursor ?? "");
-	prevSearchParams.set("direction", "prev");
-	const prevPageUrl = `${pathname}?${prevSearchParams.toString()}`;
+	const buildUrl = (cursor: string | null | undefined, direction: "next" | "prev") => {
+		const params = new URLSearchParams(searchParams);
+		params.set("cursor", cursor ?? "");
+		params.set("direction", direction);
+		return `${pathname}?${params.toString()}`;
+	};
+
+	const link = (enabled: boolean) =>
+		cn(
+			"inline-flex h-11 items-center gap-1.5 rounded-md border px-4 text-sm font-medium transition-colors",
+			"focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden",
+			enabled
+				? "border-border-default text-text-primary hover:bg-surface-secondary"
+				: "border-border-subtle text-text-tertiary pointer-events-none",
+		);
 
 	return (
-		<nav className="flex items-center justify-center gap-x-4 border-neutral-200 px-4 pt-12">
+		<nav className="flex items-center justify-center gap-3 pt-12" aria-label={t("pagination")}>
 			<Link
-				href={pageInfo.hasPreviousPage ? prevPageUrl : "#"}
-				className={clsx("px-4 py-2 text-sm font-medium", {
-					"rounded bg-neutral-900 text-white hover:bg-neutral-800": pageInfo.hasPreviousPage,
-					"cursor-not-allowed border text-neutral-400": !pageInfo.hasPreviousPage,
-					"pointer-events-none": !pageInfo.hasPreviousPage,
-				})}
+				href={pageInfo.hasPreviousPage ? buildUrl(pageInfo.startCursor, "prev") : "#"}
+				className={link(pageInfo.hasPreviousPage)}
 				aria-disabled={!pageInfo.hasPreviousPage}
+				tabIndex={pageInfo.hasPreviousPage ? undefined : -1}
 			>
-				Previous
+				<ChevronLeft className="h-4 w-4" aria-hidden />
+				{t("previousPage")}
 			</Link>
 
 			<Link
-				href={pageInfo.hasNextPage ? nextPageUrl : "#"}
-				className={clsx("px-4 py-2 text-sm font-medium", {
-					"rounded bg-neutral-900 text-white hover:bg-neutral-800": pageInfo.hasNextPage,
-					"cursor-not-allowed border text-neutral-400": !pageInfo.hasNextPage,
-					"pointer-events-none": !pageInfo.hasNextPage,
-				})}
+				href={pageInfo.hasNextPage ? buildUrl(pageInfo.endCursor, "next") : "#"}
+				className={link(pageInfo.hasNextPage)}
 				aria-disabled={!pageInfo.hasNextPage}
+				tabIndex={pageInfo.hasNextPage ? undefined : -1}
 			>
-				Next
+				{t("nextPage")}
+				<ChevronRight className="h-4 w-4" aria-hidden />
 			</Link>
 		</nav>
 	);

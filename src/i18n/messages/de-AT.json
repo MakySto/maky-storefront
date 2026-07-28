@@ -33,7 +33,8 @@
 		"country": "Österreich",
 		"slogan": "Alles für Ihr Hobby!",
 		"home": "Startseite",
-		"onDemand": "Auf Bestellung"
+		"onDemand": "Auf Bestellung",
+		"viewDetail": "Zum Produkt"
 	},
 	"nav": {
 		"home": "Startseite",
@@ -466,7 +467,11 @@
 		"removeFilter": "Filter {value} entfernen",
 		"home": "Startseite",
 		"allProducts": "Alle Produkte",
-		"showingResults": "{count} Produkte angezeigt"
+		"showingResults": "{count} Produkte angezeigt",
+		"previousPage": "Zurück",
+		"nextPage": "Weiter",
+		"pagination": "Seitennavigation",
+		"allProductsDescription": "Das komplette Zubehörsortiment für Ihr Auto."
 	},
 	"cookieConsent": {
 		"title": "Ihre Privatsphäre ist uns wichtig",

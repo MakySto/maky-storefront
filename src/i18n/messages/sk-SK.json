@@ -33,7 +33,8 @@
 		"country": "Slovensko",
 		"slogan": "Všetko pre Vaše hobby!",
 		"home": "Domov",
-		"onDemand": "Na objednávku"
+		"onDemand": "Na objednávku",
+		"viewDetail": "Detail produktu"
 	},
 	"nav": {
 		"home": "Domov",
@@ -466,7 +467,11 @@
 		"removeFilter": "Odstrániť filter {value}",
 		"home": "Domov",
 		"allProducts": "Všetky produkty",
-		"showingResults": "Zobrazených {count} produktov"
+		"showingResults": "Zobrazených {count} produktov",
+		"previousPage": "Predchádzajúce",
+		"nextPage": "Ďalšie",
+		"pagination": "Stránkovanie",
+		"allProductsDescription": "Kompletná ponuka príslušenstva pre vaše auto."
 	},
 	"cookieConsent": {
 		"title": "Záleží nám na vašom súkromí",

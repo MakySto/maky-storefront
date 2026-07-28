@@ -33,7 +33,8 @@
 		"country": "România",
 		"slogan": "Totul pentru hobby-ul tău!",
 		"home": "Acasă",
-		"onDemand": "La comandă"
+		"onDemand": "La comandă",
+		"viewDetail": "Vezi produsul"
 	},
 	"nav": {
 		"home": "Acasă",
@@ -466,7 +467,11 @@
 		"removeFilter": "Elimină filtrul {value}",
 		"home": "Acasă",
 		"allProducts": "Toate produsele",
-		"showingResults": "{count} produse afișate"
+		"showingResults": "{count} produse afișate",
+		"previousPage": "Anterior",
+		"nextPage": "Următor",
+		"pagination": "Paginare",
+		"allProductsDescription": "Gama completă de accesorii pentru mașina ta."
 	},
 	"cookieConsent": {
 		"title": "Ne pasă de confidențialitatea ta",
