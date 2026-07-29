@@ -34,6 +34,13 @@ export async function PurchaseTrust({ channel }: { channel: string }) {
 					{href ? (
 						<Link
 							href={marketHref(channel, href)}
+							// These three sit in the viewport right under the buy button, so
+							// the router prefetched all of them on every product page — and
+							// under cacheComponents each one costs four or five segment
+							// requests, not one. That traffic competed with the LCP image
+							// for a policy page almost nobody opens from here. The footer
+							// already links to the same three pages with prefetch off.
+							prefetch={false}
 							className="hover:text-text-primary inline-flex items-center gap-2 transition-colors"
 						>
 							<Icon className="text-text-tertiary h-4 w-4 shrink-0" aria-hidden />
