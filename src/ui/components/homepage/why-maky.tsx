@@ -39,7 +39,7 @@ export function WhyMaky() {
 							</div>
 							<div>
 								<h3 className="text-sm font-semibold text-gray-900">{t(titleKey)}</h3>
-								<p className="mt-1 text-sm text-gray-500">{t(descKey)}</p>
+								<p className="text-text-secondary mt-1 text-sm">{t(descKey)}</p>
 							</div>
 						</div>
 					))}

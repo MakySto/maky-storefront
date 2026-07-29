@@ -80,7 +80,7 @@ export async function Footer({ channel }: { channel: string }) {
 
 				<div className="mt-12 border-t border-gray-800 pt-8">
 					{isSk && (
-						<div className="mb-6 text-xs leading-relaxed text-gray-500">
+						<div className="mb-6 text-xs leading-relaxed text-gray-400">
 							<p>
 								{companyInfo.legalName} · {companyInfo.street}, {companyInfo.city} · IČO: {companyInfo.ico} ·
 								DIČ: {companyInfo.dic}
@@ -94,7 +94,7 @@ export async function Footer({ channel }: { channel: string }) {
 					)}
 
 					<div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-						<p className="text-xs text-gray-500">
+						<p className="text-xs text-gray-400">
 							<CopyrightText />
 						</p>
 						<div className="flex items-center gap-6">
@@ -103,14 +103,14 @@ export async function Footer({ channel }: { channel: string }) {
 									<LinkWithChannel
 										href="/ochrana-osobnych-udajov"
 										prefetch={false}
-										className="text-xs text-gray-500 transition-colors hover:text-gray-300"
+										className="text-xs text-gray-400 transition-colors hover:text-gray-300"
 									>
 										{t("privacyPolicy")}
 									</LinkWithChannel>
 									<LinkWithChannel
 										href="/obchodne-podmienky"
 										prefetch={false}
-										className="text-xs text-gray-500 transition-colors hover:text-gray-300"
+										className="text-xs text-gray-400 transition-colors hover:text-gray-300"
 									>
 										{t("termsOfService")}
 									</LinkWithChannel>

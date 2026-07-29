@@ -105,9 +105,9 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 		<article className="group border-border-subtle bg-surface-card flex flex-col rounded-lg border p-3 transition-shadow duration-200 hover:shadow-md">
 			{/* Title + note, above the image and fixed in height so images align */}
 			<Link href={product.href} className="block focus-visible:outline-hidden">
-				<h3 className="text-text-primary line-clamp-2 min-h-[2.75rem] text-sm leading-snug font-medium underline-offset-2 group-hover:underline">
+				<h2 className="text-text-primary line-clamp-2 min-h-[2.75rem] text-sm leading-snug font-medium underline-offset-2 group-hover:underline">
 					{product.name}
-				</h3>
+				</h2>
 				<p className="text-text-tertiary mt-0.5 line-clamp-2 min-h-[2.25rem] text-xs">{product.note ?? ""}</p>
 			</Link>
 
