@@ -112,6 +112,13 @@ export function ImageCarousel({
 											className="object-contain p-2"
 											sizes="(max-width: 768px) 100vw, 50vw"
 											priority={index === 0}
+											// `priority` only emits the preload link and drops
+											// `loading="lazy"` — in Next 16 it does NOT imply a priority
+											// hint, so the request still started at Chrome priority Low
+											// behind the fonts and the JS chunks. next/image threads
+											// `fetchPriority` into both ReactDOM.preload() and the <img>,
+											// so this one prop covers the preload and the element.
+											fetchPriority={index === 0 ? "high" : undefined}
 										/>
 									</button>
 								</CarouselItem>
