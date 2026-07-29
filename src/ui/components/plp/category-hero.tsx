@@ -27,7 +27,10 @@ export function CategoryHero({ title, description, backgroundImage, breadcrumbs 
 			</div>
 
 			{/* Content */}
-			<div className="relative mx-auto flex h-full max-w-[1480px] flex-col justify-end px-4 pb-6 sm:px-6 lg:px-8">
+			{/* max-w-7xl so the hero title lines up with the breadcrumb and the product
+			    grid underneath it. At max-w-[1480px] the heading sat 80px further left
+			    than everything else on the page. */}
+			<div className="relative mx-auto flex h-full max-w-7xl flex-col justify-end px-4 pb-6 sm:px-6 lg:px-8">
 				<Breadcrumbs items={breadcrumbs} tone={hasImage ? "onImage" : "default"} className="mb-4" />
 
 				<h1

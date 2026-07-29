@@ -210,7 +210,12 @@ async function ProductContent({
 				/>
 			)}
 
-			<main className="mx-auto w-full max-w-[1480px] flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
+			{/* max-w-7xl, like the header, the footer and the other 33 files that lay
+			    out a page. This was max-w-[1480px], so on a 1440px screen the product
+			    body ran the full width while the header and footer stopped 80px short
+			    on each side — and the loading skeleton next door is max-w-7xl too, so
+			    the page also jumped 160px wider the moment the content arrived. */}
+			<main className="mx-auto w-full max-w-7xl flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
 				{/* Shown on mobile now. It used to be `hidden sm:block`, which cost phone
 				    visitors the only "up to the category" control on the page — the trail
 				    stays on one scrollable line instead of wrapping, and drops its own
