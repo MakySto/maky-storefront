@@ -16,8 +16,7 @@ export default function RootLayout(props: { children: ReactNode }) {
 	return (
 		// No GeistMono. next/font preloads every font it is given — the mono face
 		// was fetched at high priority on every page while the LCP image waited —
-		// and nothing here can render it: `font-mono` appears only in
-		// ui/components/dev/graphql-monitor.tsx, which no route imports, and the
+		// and nothing renders it: `font-mono` has no remaining use in src/, and the
 		// `--font-mono` token in brand.css names "Geist Mono" while the @font-face
 		// family is "GeistMono", so the utility never selected this file anyway.
 		<html lang={LOCALE_MAP[DEFAULT_LOCALE].htmlLang} className={`${GeistSans.variable} min-h-dvh`}>
