@@ -40,10 +40,23 @@ function AddToCartButton({
 			type="submit"
 			size="lg"
 			disabled={disabled || pending}
-			className={cn("h-11 flex-1 text-base font-medium transition-all duration-200", pending && "opacity-80")}
+			// min-w-0 + truncate, mirroring the listing card's AddButton. Without it the
+			// flex item keeps its default `min-width: auto` and refuses to go below the
+			// label's width, so stepper + button demanded 365px inside a 328px column on
+			// a 360px phone — which is what let the whole page be panned sideways.
+			className={cn(
+				"h-11 min-w-0 flex-1 text-sm font-medium transition-all duration-200 sm:text-base",
+				pending && "opacity-80",
+			)}
 		>
-			<ShoppingBag className={cn("mr-2 h-5 w-5 transition-transform", pending && "scale-90")} />
-			{getButtonText()}
+			{/* The icon goes below sm. With the stepper fixed at 130px the button had
+			    186px on a 360px phone, and icon + "Pridať do košíka" wanted ~200 — so the
+			    label ellipsised to "Pridať do…". A truncated call to action is worse than
+			    no icon; the listing card's button already made the same trade. */}
+			<ShoppingBag
+				className={cn("mr-2 hidden h-5 w-5 shrink-0 transition-transform sm:inline", pending && "scale-90")}
+			/>
+			<span className="truncate">{getButtonText()}</span>
 		</Button>
 	);
 }

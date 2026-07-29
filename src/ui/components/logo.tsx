@@ -10,7 +10,7 @@ export const Logo = async () => {
 	// An explicit label only reintroduced the visible-text/accessible-name mismatch that
 	// aria-hidden alone did not settle.
 	return (
-		<LinkWithChannel href="/" className="flex shrink-0 items-center">
+		<LinkWithChannel href="/" className="flex min-w-0 items-center">
 			<SharedLogo showSlogan slogan={t("slogan")} />
 		</LinkWithChannel>
 	);

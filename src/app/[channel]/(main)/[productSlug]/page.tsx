@@ -222,7 +222,12 @@ async function ProductContent({
 				    dead area on a wide monitor. Description and parameters moved
 				    below at full width; the gallery is deliberately NOT sticky,
 				    which would only re-create the imbalance. */}
-				<div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-14 xl:gap-20">
+				{/* `[&>*]:min-w-0` is load-bearing on phones. The lg template already uses
+				    minmax(0,…), but below lg this is a single implicit column whose items
+				    keep `min-width: auto` — so the column could not go under its own
+				    min-content (365px) and the document ended up wider than a 360px
+				    viewport, letting the whole page pan sideways while scrolling. */}
+				<div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-14 xl:gap-20 [&>*]:min-w-0">
 					<ProductGallery images={images} productName={product.name} />
 
 					<div className="flex flex-col gap-3">

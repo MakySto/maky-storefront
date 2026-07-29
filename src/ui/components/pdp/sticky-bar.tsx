@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { useFormStatus } from "react-dom";
 import { ShoppingBag } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { throttle } from "lodash-es";
 import { Button } from "@/ui/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,11 @@ interface StickyBarProps {
 
 function StickyAddButton() {
 	const { pending } = useFormStatus();
+	// Was hardcoded English — "Add to bag" shipped on the Slovak storefront, on the
+	// mobile buy bar of every product page. Both keys already existed in all twelve
+	// locales; the button simply never used them.
+	const tCommon = useTranslations("common");
+	const tProduct = useTranslations("product");
 
 	return (
 		<Button
@@ -48,7 +54,7 @@ function StickyAddButton() {
 			)}
 		>
 			<ShoppingBag className="h-4 w-4" />
-			{pending ? "Adding..." : "Add to bag"}
+			<span className="truncate">{pending ? tProduct("addingToCart") : tCommon("addToCart")}</span>
 		</Button>
 	);
 }
