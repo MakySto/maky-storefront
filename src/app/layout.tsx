@@ -1,5 +1,4 @@
 import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
 import Script from "next/script";
 import "./globals.css";
 import { type ReactNode } from "react";
@@ -15,10 +14,13 @@ export default function RootLayout(props: { children: ReactNode }) {
 	const { children } = props;
 
 	return (
-		<html
-			lang={LOCALE_MAP[DEFAULT_LOCALE].htmlLang}
-			className={`${GeistSans.variable} ${GeistMono.variable} min-h-dvh`}
-		>
+		// No GeistMono. next/font preloads every font it is given — the mono face
+		// was fetched at high priority on every page while the LCP image waited —
+		// and nothing here can render it: `font-mono` appears only in
+		// ui/components/dev/graphql-monitor.tsx, which no route imports, and the
+		// `--font-mono` token in brand.css names "Geist Mono" while the @font-face
+		// family is "GeistMono", so the utility never selected this file anyway.
+		<html lang={LOCALE_MAP[DEFAULT_LOCALE].htmlLang} className={`${GeistSans.variable} min-h-dvh`}>
 			<body className="min-h-dvh font-sans">
 				{GTM_ID ? (
 					<noscript>
