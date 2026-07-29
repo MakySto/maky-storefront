@@ -1,0 +1,15 @@
+# Category slugs with a per-channel product count, so the sitemap can leave out
+# the empty ones. Twelve of the thirty categories on this catalogue currently
+# hold no products, including four that sit in the main navigation.
+query SitemapCategories($channel: String!, $first: Int!) {
+	categories(first: $first) {
+		edges {
+			node {
+				slug
+				products(channel: $channel) {
+					totalCount
+				}
+			}
+		}
+	}
+}

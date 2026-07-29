@@ -1,0 +1,17 @@
+# Slugs only. The sitemap needs a URL and a date, not a product card, so this
+# deliberately does not reuse ProductListItem — 453 products through that
+# fragment would be a large query for two fields.
+query SitemapProducts($channel: String!, $first: Int!, $after: String) {
+	products(channel: $channel, first: $first, after: $after) {
+		edges {
+			node {
+				slug
+				updatedAt
+			}
+		}
+		pageInfo {
+			hasNextPage
+			endCursor
+		}
+	}
+}
