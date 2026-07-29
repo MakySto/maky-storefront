@@ -1,6 +1,7 @@
 import { type Metadata } from "next";
 import { notFound } from "next/navigation";
 import { REVERSE_MAP } from "@/lib/channel-map";
+import { companyInfo } from "@/config/company";
 import { formatPageTitle } from "@/config/brand";
 import { LegalPage } from "@/ui/components/legal/legal-page";
 
@@ -26,11 +27,11 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 				Slovenská republika
 			</p>
 			<p>
-				<strong>IČO:</strong> 57 704 627
+				<strong>IČO:</strong> {companyInfo.ico}
 				<br />
-				<strong>DIČ:</strong> 2122890660
+				<strong>DIČ:</strong> {companyInfo.dic}
 				<br />
-				<strong>Platiteľ DPH:</strong> nie
+				<strong>IČ DPH:</strong> {companyInfo.icDph} (platiteľ DPH od {companyInfo.vatEffectiveFrom})
 				<br />
 				<strong>Právna forma:</strong> spoločnosť s ručením obmedzeným
 				<br />
@@ -61,7 +62,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 				<br />
 				Lermontovova 911/3, 811 05 Bratislava-Staré Mesto, Slovenská republika
 				<br />
-				IČO: 57 704 627, DIČ: 2122890660, nie sme platiteľom DPH
+				IČO: {companyInfo.ico}, DIČ: {companyInfo.dic}, IČ DPH: {companyInfo.icDph}
 			</p>
 			<h3>Orgán dozoru</h3>
 			<p>

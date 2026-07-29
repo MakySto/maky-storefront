@@ -1,6 +1,7 @@
 import { type Metadata } from "next";
 import { notFound } from "next/navigation";
 import { REVERSE_MAP } from "@/lib/channel-map";
+import { companyInfo } from "@/config/company";
 import { formatPageTitle } from "@/config/brand";
 import { LegalPage } from "@/ui/components/legal/legal-page";
 
@@ -15,7 +16,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	if (REVERSE_MAP[channel] !== "sk") notFound();
 	return (
 		<LegalPage title="Všeobecné obchodné podmienky">
-			<p>Platné a účinné od 30. 6. 2026.</p>
+			<p>Platné a účinné od {companyInfo.termsEffectiveFrom}.</p>
 
 			<h3>1. Úvodné ustanovenia a identifikácia obchodníka</h3>
 			<p>
@@ -26,10 +27,10 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 			<p>
 				1.2 Predávajúci:
 				<br />
-				<strong>MAKY.STORE s. r. o.</strong>, so sídlom Lermontovova 911/3, 811 05 Bratislava-Staré Mesto,
-				Slovenská republika, IČO: 57 704 627, DIČ: 2122890660. Predávajúci nie je platiteľom DPH. Spoločnosť
-				je zapísaná v Obchodnom registri Mestského súdu Bratislava III, oddiel: Sro, vložka č. 200804/B.
-				Konateľ: Marek Kysucký.
+				<strong>{companyInfo.legalName}</strong>, so sídlom {companyInfo.street}, {companyInfo.city},{" "}
+				{companyInfo.country}, IČO: {companyInfo.ico}, DIČ: {companyInfo.dic}, IČ DPH: {companyInfo.icDph}.
+				Predávajúci je platiteľom dane z pridanej hodnoty. Spoločnosť je zapísaná v Obchodnom registri
+				Mestského súdu Bratislava III, oddiel: Sro, vložka č. 200804/B. Konateľ: Marek Kysucký.
 				<br />
 				E-mail: info@maky.store, telefón: +421 901 730 066.
 				<br />
@@ -65,8 +66,9 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 
 			<h3>3. Ceny a platba</h3>
 			<p>
-				3.1 Ceny tovaru sú uvedené pri jednotlivých produktoch. Predávajúci nie je platiteľom DPH; uvedené
-				ceny sú konečné a k cene sa nepripočítava DPH.
+				3.1 Predávajúci je platiteľom dane z pridanej hodnoty. Ceny tovaru uvádzané v internetovom obchode sú
+				konečné ceny vrátane DPH, ak pri konkrétnej ponuke nie je výslovne uvedené inak. Náklady na dopravu,
+				platbu a prípadné ďalšie poplatky sú zákazníkovi zobrazené pred odoslaním objednávky.
 			</p>
 			<p>
 				3.2 Cena tovaru nezahŕňa cenu dopravy. Celkovú cenu vrátane dopravy zákazník vidí v pokladni pred
@@ -177,8 +179,8 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 
 			<h3>10. Záverečné ustanovenia</h3>
 			<p>
-				10.1 Tieto podmienky nadobúdajú účinnosť 30. 6. 2026. Predávajúci si vyhradzuje právo podmienky meniť;
-				pre uzavreté zmluvy platí znenie účinné v čase uzavretia zmluvy.
+				10.1 Tieto podmienky nadobúdajú účinnosť {companyInfo.termsEffectiveFrom}. Predávajúci si vyhradzuje
+				právo podmienky meniť; pre uzavreté zmluvy platí znenie účinné v čase uzavretia zmluvy.
 			</p>
 			<p>
 				10.2 Vzťahy medzi predávajúcim a zákazníkom sa riadia právnym poriadkom Slovenskej republiky. Orgánom
