@@ -65,9 +65,18 @@ try {
 `,
 							}}
 						/>
+						{/* lazyOnload, not afterInteractive. The container and gtag/js are
+						    304 KB — 49% of all script bytes on the page — and they land in
+						    the middle of the TBT window: measured 183 ms of blocking time
+						    out of 284 ms total, and blocking both of them moved TBT from
+						    284 to 103 ms. Loading during idle after `load` keeps every tag,
+						    GA4, Ads and Consent Mode exactly as they are; it only stops them
+						    competing with the page's own hydration. The consent defaults
+						    above stay beforeInteractive, so dataLayer still carries the
+						    denied state before the container ever reads it. */}
 						<Script
 							id="maky-gtm"
-							strategy="afterInteractive"
+							strategy="lazyOnload"
 							dangerouslySetInnerHTML={{
 								__html: `
 (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
