@@ -33,21 +33,48 @@ export async function generateMetadata({
 	};
 }
 
+/**
+ * Mirrors SiteHeader row for row, because it has to reserve the same height.
+ *
+ * The old skeleton was a single 64px row. The real header is that row plus a
+ * search row below it on mobile and tablet, plus a bordered nav row on desktop —
+ * roughly 120px and 113px. So every cold load pushed the entire page down by
+ * ~50px the moment the header resolved, which was the whole of the measured
+ * 0.06 CLS. The wrapper classes here are copied from SiteHeader and
+ * HeaderMainRow deliberately: if those rows change height, this changes with
+ * them.
+ */
 function HeaderSkeleton() {
 	return (
-		<header className="border-border bg-background sticky top-0 z-[var(--z-header)] border-b">
+		<header className="sticky top-0 z-[var(--z-header)] bg-white/80 backdrop-blur-xl">
 			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-				<div className="flex h-16 items-center justify-between gap-4">
+				<div className="flex h-16 items-center gap-2 sm:gap-4">
+					{/* hamburger — mobile and tablet only */}
+					<div className="bg-sand-100 h-10 w-10 shrink-0 animate-pulse rounded-xs lg:hidden" />
 					<div className="flex shrink-0 items-center">
 						<Logo className="h-7 w-auto" />
 					</div>
-					<div className="hidden flex-1 justify-center md:flex">
-						<div className="bg-secondary h-10 w-full max-w-md animate-pulse rounded-lg" />
+					{/* inline search — desktop only */}
+					<div className="hidden flex-1 justify-center px-8 lg:flex">
+						<div className="bg-sand-100 h-11 w-full max-w-2xl animate-pulse rounded-sm" />
 					</div>
-					<div className="flex items-center gap-1">
-						<div className="h-10 w-10" />
-						<div className="h-10 w-10" />
+					<div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
+						<div className="bg-sand-100 h-10 w-10 animate-pulse rounded-xs" />
+						<div className="bg-sand-100 h-10 w-10 animate-pulse rounded-xs" />
+						<div className="bg-sand-100 h-10 w-10 animate-pulse rounded-xs" />
 					</div>
+				</div>
+
+				{/* search row — mobile and tablet only */}
+				<div className="pb-3 lg:hidden">
+					<div className="bg-sand-100 h-11 w-full max-w-2xl animate-pulse rounded-sm" />
+				</div>
+			</div>
+
+			{/* nav row — desktop only */}
+			<div className="border-sand-200/60 bg-sand-100/50 hidden border-t backdrop-blur-xl lg:block">
+				<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+					<div className="flex h-12 items-center" />
 				</div>
 			</div>
 		</header>
@@ -100,10 +127,15 @@ export default async function RootLayout(props: {
 
 	return (
 		<CartProvider>
-			<Suspense fallback={<HeaderSkeleton />}>
-				<Header channel={channel} />
-			</Suspense>
-			<div className="flex min-h-[calc(100dvh-64px)] flex-col">
+			{/* One flex column for header + content + footer, so nothing has to know
+			    how tall the header is. The previous `min-h-[calc(100dvh-64px)]` hard-coded
+			    a 64px header; the real one is ~120px on mobile and ~113px on desktop, and
+			    it changes again whenever a row is added to it. `flex-1` on <main> pins the
+			    footer to the bottom on short pages without that assumption. */}
+			<div className="flex min-h-dvh flex-col">
+				<Suspense fallback={<HeaderSkeleton />}>
+					<Header channel={channel} />
+				</Suspense>
 				<main className="flex-1">
 					<Suspense fallback={null}>{props.children}</Suspense>
 				</main>
