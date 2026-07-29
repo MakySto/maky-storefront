@@ -12,6 +12,19 @@ import {
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
 
 /**
+ * First path segments that are legitimately not a market.
+ *
+ * Enumerated from `src/app/`, not from memory: `/checkout` and `/checkout/complete`
+ * are the only real market-less pages. `api` and `_next` are already excluded by the
+ * matcher below, and so is anything containing a dot — which covers /robots.txt,
+ * /sitemap.xml, /llms.txt, the icons and /.well-known/acme-challenge/*. They are
+ * repeated here so that a future edit to the matcher cannot silently 404 them.
+ * Certbot uses the dns-cloudflare and nginx authenticators, not webroot, so the ACME
+ * path does not depend on this app — but it costs nothing to keep it safe.
+ */
+const RESERVED_FIRST_SEGMENTS = new Set(["checkout", "api", "_next", ".well-known"]);
+
+/**
  * Detect the best market for a visitor based on cookie, geo, or language.
  */
 function detectMarket(request: NextRequest): string {
@@ -108,6 +121,29 @@ export function proxy(request: NextRequest) {
 			sameSite: "lax",
 		});
 		return res;
+	}
+
+	// INVALID FIRST SEGMENT -> real 404.
+	//
+	// Everything above this point has claimed the request or it is not a market
+	// URL at all. Without this gate `[channel]` accepted any string, so
+	// /pilcicke-nohavice-engelbert-strauss-kwf-profi, /wishlist, /admin and
+	// /products all rendered the storefront with a 200 and `index, follow` — and
+	// then the rendered page's own navigation emitted seven category links under
+	// that same bogus prefix. Google indexed the result. It was a generator, not
+	// a stray URL.
+	//
+	// The status has to be decided here and not in a page component: under PPR
+	// the shell is already flushed by the time notFound() could run, so the
+	// response would come back 200 with a noindex tag — which does not remove
+	// anything already in the index. The acceptance criterion is `curl -I`.
+	if (first && !RESERVED_FIRST_SEGMENTS.has(first)) {
+		const url = request.nextUrl.clone();
+		url.pathname = "/_not-found";
+		return NextResponse.rewrite(url, {
+			status: 404,
+			headers: { "x-robots-tag": "noindex" },
+		});
 	}
 
 	return NextResponse.next();
