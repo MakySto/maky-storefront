@@ -1,0 +1,47 @@
+# MAKY.STORE
+
+> Slovenský e-shop s autopríslušenstvom pre prepravu na streche a za vozidlom:
+> strešné nosiče, strešné boxy, nosiče bicyklov a lyží, snehové reťaze,
+> autochladničky a strešné stany. Predávané značky sú okrem iných Thule,
+> Nordrive, Menabo, Yakima, Peruzzo, Pro-USER, Spinder, Green Valley a DAC.
+
+Prevádzkovateľ je platiteľ DPH, takže všetky ceny na stránkach sú uvedené
+vrátane DPH. Hlavným a jediným zásobeným trhom je momentálne Slovensko
+(`/sk`, ceny v EUR); ostatné jazykové verzie zatiaľ nemajú naskladnený
+katalóg. Obsah je po slovensky.
+
+## Kategórie
+
+- [Strešné nosiče](https://maky.store/sk/categories/stresne-nosice): priečniky, pätky a montážne kity
+- [Strešné boxy](https://maky.store/sk/categories/stresne-boxy): boxy na strechu vozidla
+- [Nosiče bicyklov](https://maky.store/sk/categories/nosice-bicyklov): na ťažné zariadenie, strechu a piate dvere
+- [Nosiče lyží](https://maky.store/sk/categories/nosice-lyzi): nosiče lyží a snowboardov
+- [Snehové reťaze](https://maky.store/sk/categories/snehove-retaze)
+- [Autochladničky](https://maky.store/sk/categories/autochladnicky)
+- [Strešné stany](https://maky.store/sk/categories/stresne-stany)
+- [Všetky produkty](https://maky.store/sk/products): kompletný katalóg s filtrovaním
+
+## Nákup, doprava a vrátenie
+
+- [Doprava a platba](https://maky.store/sk/doprava-a-platba): zásielky doručuje FedEx. Cena dopravy závisí od rozmerov, hmotnosti a miesta doručenia, preto ju zákazník uvidí až v košíku
+- [Reklamácie a vrátenie](https://maky.store/sk/reklamacie-a-vratenie): zákonná dvojročná záruka; lehota na odstúpenie od zmluvy a postup vrátenia sú popísané tu
+- [Obchodné podmienky](https://maky.store/sk/obchodne-podmienky): úplné znenie vrátane údajov o prevádzkovateľovi
+- [Ochrana osobných údajov](https://maky.store/sk/ochrana-osobnych-udajov)
+- [Kontakt](https://maky.store/sk/kontakt)
+
+## Poradňa
+
+- [Poradňa](https://maky.store/sk/poradna): články o výbere a montáži nosičov a boxov
+
+## Poznámky pre agentov
+
+- Detail produktu má tvar `https://maky.store/sk/<slug-produktu>`; staršie
+  adresy `/sk/products/<slug>` presmerúvajú stavom 308.
+- Vyhľadávanie používa parameter `query`, napríklad
+  `https://maky.store/sk/products?query=thule`.
+- Dostupnosť a cena na stránke produktu sú záväzné; údaje z iných zdrojov
+  môžu byť neaktuálne.
+- MAKY.STORE neposkytuje dopravu zadarmo. Akýkoľvek údaj o cene dopravy mimo
+  košíka je nepresný.
+- Strojové rozhrania (`/api/*`), pokladňa a zákaznícky účet nie sú určené na
+  automatizované prehliadanie.
