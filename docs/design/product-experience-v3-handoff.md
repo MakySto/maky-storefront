@@ -18,9 +18,11 @@ Read first, in this order: `CLAUDE.md` (§4 colour semantics, §8 PDP, §10 rest
 Production `maky.store` runs **`2ff14a0`**, BUILD_ID **`bKCAV3OX2heop4vVvhmaC`**,
 PM2 `maky-storefront`, cwd `/opt/storefront`.
 
-`git log -1` on prod, on `feat/product-experience-v1`, and on `origin/` all read
-`2ff14a0`. **Nothing is unshipped.** The worktree `/home/ubuntu/wt-pdp` is clean and on
-the same commit.
+The branch `feat/product-experience-v1` and `origin/` are one commit ahead at
+**`aba3d3b`** — this document. It is docs-only, so **no code is unshipped**: every
+source change in §2 is live. The worktree `/home/ubuntu/wt-pdp` is clean at `aba3d3b`.
+`/opt/storefront` is checked out at `2ff14a0`, which is what the running build was made
+from; that is expected, not drift.
 
 Rollback artefacts in `/opt/storefront`:
 
