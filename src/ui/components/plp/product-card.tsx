@@ -144,9 +144,13 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 			<div className="mt-3 space-y-0.5 text-center text-xs">
 				{product.category && (
 					<p className="truncate">
+						{/* Underlined at rest, not just on hover. Matching the breadcrumb
+						    convention (muted, underline on hover) made it indistinguishable
+						    from the plain text around it, and on a phone there is no hover
+						    and no cursor to reveal it. */}
 						<Link
 							href={marketHref(product.channel, `/categories/${product.category.slug}`)}
-							className="text-text-tertiary hover:text-text-secondary underline-offset-2 hover:underline"
+							className="text-text-tertiary hover:text-text-primary decoration-border-strong hover:decoration-text-primary underline underline-offset-2 transition-colors"
 						>
 							{product.category.name}
 						</Link>

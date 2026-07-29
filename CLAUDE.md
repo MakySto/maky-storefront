@@ -213,8 +213,14 @@ Warranty:
 
 - Standard warranty is 2 years unless a product-specific warranty is confirmed.
 
-Legal footer: show the operating entity's details (currently the sole-trader details,
-to be swapped to MAKY.STORE s.r.o. once active).
+Operating-entity details (legal name, address, IČO, DIČ, register entry, SOI as the
+supervisory authority): the entity is now **MAKY.STORE s. r. o.** These live on
+`/kontakt`, `/obchodne-podmienky` and `/reklamacie-a-vratenie`, NOT in the footer —
+Marek removed the footer block on 2026-07-29 as visual noise. The footer must keep
+linking `/kontakt` and `/obchodne-podmienky` from every page; that link path is what
+satisfies "easily, directly and permanently accessible" under zákon 22/2004 and
+Directive 2000/31/EC Art. 5. **Do not reintroduce the footer block, and do not remove
+those two links without moving the details somewhere equally reachable.**
 
 ## 10. Technical restrictions
 

@@ -78,21 +78,15 @@ export async function Footer({ channel }: { channel: string }) {
 					)}
 				</div>
 
+				{/* No identification block here. It moved out at Marek's request: the same
+				    details (legal name, address, IČO, DIČ, register entry, SOI as the
+				    supervisory authority) are already in full on /kontakt,
+				    /obchodne-podmienky and /reklamacie-a-vratenie — verified before removing.
+				    Both /kontakt and /obchodne-podmienky are linked from this footer on every
+				    page, which is what "easily, directly and permanently accessible" asks for
+				    under zákon 22/2004 and Directive 2000/31/EC Art. 5. The footer itself is
+				    not the required location. */}
 				<div className="mt-12 border-t border-gray-800 pt-8">
-					{isSk && (
-						<div className="mb-6 text-xs leading-relaxed text-gray-400">
-							<p>
-								{companyInfo.legalName} · {companyInfo.street}, {companyInfo.city} · IČO: {companyInfo.ico} ·
-								DIČ: {companyInfo.dic}
-							</p>
-							<p className="mt-1">{companyInfo.registry}</p>
-							<p className="mt-1">
-								Orgán dozoru: {companyInfo.supervisoryAuthority.name},{" "}
-								{companyInfo.supervisoryAuthority.department}
-							</p>
-						</div>
-					)}
-
 					<div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
 						<p className="text-xs text-gray-400">
 							<CopyrightText />
