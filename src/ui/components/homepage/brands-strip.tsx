@@ -1,14 +1,31 @@
 "use client";
 
+/**
+ * Homepage brand strip.
+ *
+ * Every name here must clear two tests, and the previous list cleared neither.
+ *
+ * 1. Approved for the homepage — CLAUDE.md §6 names Thule, Nordrive, Menabo, Yakima,
+ *    Peruzzo, Pro-USER, Spinder, Green Valley, SnowDrive and DAC, and explicitly says
+ *    NOT to show Cruz, HAK-SYSTEM, GALIA, ORIS or JAEGER until approved. All five
+ *    prohibited names were live.
+ * 2. Actually stocked. Checked against the `cfm:attribute:manufacturer` values in
+ *    Saleor: those same five appear NOWHERE in the catalogue, so the homepage was
+ *    advertising five brands the shop does not sell.
+ *
+ * SnowDrive is approved but has no catalogue products either, so it is left out until
+ * it does. An approved brand is still a claim.
+ */
 const BRANDS = [
 	{ name: "Thule", slug: "thule" },
-	{ name: "Cruz", slug: "cruz" },
 	{ name: "Menabo", slug: "menabo" },
 	{ name: "Nordrive", slug: "nordrive" },
-	{ name: "HAK-SYSTEM", slug: "hak-system" },
-	{ name: "ORIS", slug: "oris" },
-	{ name: "JAEGER", slug: "jaeger" },
-	{ name: "Galia", slug: "galia" },
+	{ name: "Yakima", slug: "yakima" },
+	{ name: "Peruzzo", slug: "peruzzo" },
+	{ name: "Pro-USER", slug: "pro-user" },
+	{ name: "Spinder", slug: "spinder" },
+	{ name: "Green Valley", slug: "green-valley" },
+	{ name: "DAC", slug: "dac" },
 ];
 
 export function BrandsStrip() {
