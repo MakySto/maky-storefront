@@ -6,29 +6,29 @@ import { UserMenuContainer } from "@/ui/components/nav/components/user-menu/user
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 
 function ActionSkeleton() {
-  return <div className="h-10 w-10 animate-pulse rounded-xs bg-sand-100" />;
+	return <div className="bg-sand-100 h-10 w-10 animate-pulse rounded-xs" />;
 }
 
 export async function HeaderActions({ channel }: { channel: string }) {
-  const t = await getTranslations("nav");
+	const t = await getTranslations("nav");
 
-  return (
-    <div className="flex items-center gap-1">
-      <Suspense fallback={<ActionSkeleton />}>
-        <UserMenuContainer />
-      </Suspense>
+	return (
+		<div className="flex items-center gap-0.5 sm:gap-1">
+			<Suspense fallback={<ActionSkeleton />}>
+				<UserMenuContainer />
+			</Suspense>
 
-      <LinkWithChannel
-        href="/wishlist"
-        className="inline-flex h-10 w-10 items-center justify-center rounded-xs text-gray-600 transition-colors hover:bg-sand-100 hover:text-gray-900"
-        aria-label={t("wishlist")}
-      >
-        <HeartIcon className="h-5 w-5" aria-hidden />
-      </LinkWithChannel>
+			<LinkWithChannel
+				href="/wishlist"
+				className="hover:bg-sand-100 inline-flex h-10 w-10 items-center justify-center rounded-xs text-gray-600 transition-colors hover:text-gray-900"
+				aria-label={t("wishlist")}
+			>
+				<HeartIcon className="h-5 w-5" aria-hidden />
+			</LinkWithChannel>
 
-      <Suspense fallback={<ActionSkeleton />}>
-        <CartNavItem channel={channel} />
-      </Suspense>
-    </div>
-  );
+			<Suspense fallback={<ActionSkeleton />}>
+				<CartNavItem channel={channel} />
+			</Suspense>
+		</div>
+	);
 }

@@ -15,7 +15,7 @@ export const Logo = ({ className, inverted = false, showSlogan = false, slogan }
 				alt=""
 				width={44}
 				height={44}
-				className={`h-8 w-8 shrink-0 sm:h-11 sm:w-11 ${inverted ? "brightness-0 invert" : ""}`}
+				className={`h-7 w-7 shrink-0 sm:h-11 sm:w-11 ${inverted ? "brightness-0 invert" : ""}`}
 				priority
 			/>
 			<div className="flex min-w-0 flex-col">
@@ -33,10 +33,13 @@ export const Logo = ({ className, inverted = false, showSlogan = false, slogan }
 					// of the visible text.
 					<span
 						aria-hidden
-						// Hidden on the narrowest phones. It is wider than the wordmark, so it
-						// was the thing forcing "MAKY.ST…" — and a truncated slogan reads worse
-						// than no slogan.
-						className={`hidden truncate text-[0.6875rem] leading-tight font-medium tracking-wide min-[400px]:block ${
+						// The slogan is WIDER than the wordmark (130px vs 104px at their mobile
+						// sizes), so it is what decides how much room the lockup needs. Rather
+						// than hide it on small phones, it shrinks: 10px with tighter tracking
+						// measures ~108px and fits the 112px a 360px viewport leaves after the
+						// hamburger and the three action icons. `truncate` stays as the backstop
+						// for anything narrower than ~340px.
+						className={`truncate text-[0.625rem] leading-tight font-medium tracking-tight sm:text-[0.6875rem] sm:tracking-wide ${
 							inverted ? "text-neutral-400" : "text-copper-600"
 						}`}
 					>
