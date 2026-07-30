@@ -19,11 +19,17 @@ replaces the hashed chunks the live `next start` is still serving and takes the 
 Three branches are in flight. Verify every one with `git ls-remote` before trusting a
 SHA — this repo has concurrent sessions and stale tracking refs have lied before.
 
-| Branch                                          | Tip       | State                                          |
-| ----------------------------------------------- | --------- | ---------------------------------------------- |
-| `feat/cms-o-nas-pilot`                          | `b968393` | hardened, **waiting to deploy**                |
-| `feat/withdrawal-form-v1`                       | `45a4344` | converged on the Payload contract, branch-only |
-| `codex/payload-provider-v2-forms-v1` (maky-cms) | `0badf5c` | release candidate, DB acceptance not run       |
+| Branch                                          | Tip       | State                                                |
+| ----------------------------------------------- | --------- | ---------------------------------------------------- |
+| `feat/cms-o-nas-pilot`                          | `b6b633d` | hardened + legalMetadata gate, **waiting to deploy** |
+| `feat/withdrawal-form-v1`                       | `1c6f43b` | consuming vendored contract `1.1.0`, branch-only     |
+| `codex/payload-provider-v2-forms-v1` (maky-cms) | `459146a` | contract `1.1.0`, PostgreSQL CI green, PR #3 draft   |
+
+Every tip above is a **branch/handoff tip** — what `git ls-remote` reports and what a
+deploy checks out. That is not always the last commit that changed behaviour, and an
+earlier version of this table said `45a4344` (the implementation commit) while the branch
+tip was the docs commit above it. Both pilot handoffs now define the four terms;
+`docs/design/withdrawal-form-v1-handoff.md` is the shorter one.
 
 ---
 
@@ -123,12 +129,12 @@ Do not rebase before step 2 — you would land on a base that is about to move.
 
 ## 5. Blocked on other people
 
-|                            |                                                                                                           |
-| -------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Payload Forms release      | `0badf5c` is a candidate — fresh-DB and upgrade migrations have not run, DB-gated tests have not executed |
-| Human submission numbers   | still `WDR-<uuid>`; approved format is `ODS-YYYY-NNNNNN`                                                  |
-| Approved Slovak legal copy | `LEGAL_COPY_APPROVED = false` gates the withdrawal deploy                                                 |
-| Provider pack v2           | needed before M.2; Codex is splitting it into a docs-only branch                                          |
+|                            |                                                                                                                                                                                                                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Payload Forms release      | `459146a` — fresh-DB and upgrade PostgreSQL acceptance are now **green**; the migration `20260730_111111_forms_backend_v1` is still unapplied, and PR #3 is still a draft                                                                                                      |
+| Human submission numbers   | still `WDR-<uuid>`; approved format is `ODS-YYYY-NNNNNN`                                                                                                                                                                                                                       |
+| Approved Slovak legal copy | `LEGAL_COPY_APPROVED = false`. **This line used to be false:** the flag gated nothing until 2026-07-30, because `assertLegalCopyApprovedForProduction()` had zero callers. It gates now — the route 404s and the action refuses in production builds while the copy is a draft |
+| Provider pack v2           | needed before M.2; Codex is splitting it into a docs-only branch                                                                                                                                                                                                               |
 
 **HMAC is done** (2026-07-30). Same secret on both hosts, verified by comparing SHA-256
 prefixes rather than moving the value anywhere: `53719b235c27`. Payload reads it from SSM
