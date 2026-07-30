@@ -1,6 +1,6 @@
 # Online withdrawal function V1 — handoff
 
-Status: **branch-only, not deployed, and blocked on three external deliverables.**
+Status: **branch-only, converged on the Payload Forms V1 contract, not deployed.**
 Branch `feat/withdrawal-form-v1`, based on production `007f75e`.
 
 One withdrawal process, one backend contract, two UX modes. A guest and a signed-in
@@ -10,157 +10,138 @@ precondition.
 
 ---
 
-## 1. What is built
+## 1. What changed in the convergence pass
 
-| Surface                                          | Route                                                          |
-| ------------------------------------------------ | -------------------------------------------------------------- |
-| Online function + explanation                    | `/sk/odstupenie-od-zmluvy`                                     |
-| Statutory model form, printable and downloadable | `/sk/odstupenie-od-zmluvy/vzorovy-formular`                    |
-| Shortcut from an order                           | `/sk/account/orders/[number]` → link, no order data in the URL |
-| Footer, on every SK page                         | „Odstúpiť od zmluvy tu"                                        |
+The first version of this branch tested green against a mock of a contract the storefront
+had invented for itself. Against the real Payload endpoint it would have failed **every
+single request**, three times over.
 
-Non-SK channels 404 with `noindex, nofollow` and no canonical, matching the existing
-legal-page behaviour.
+| #   | Mismatch                                      | Effect                                                       |
+| --- | --------------------------------------------- | ------------------------------------------------------------ |
+| 1   | Timestamp sent as `Date.now()` — milliseconds | `INVALID_TIMESTAMP`; Payload accepts 10–11 digits            |
+| 2   | Body carried `noticeSnapshot`                 | `INVALID_REQUEST`; unknown keys are rejected outright        |
+| 3   | Body carried `customer.phone`                 | `INVALID_REQUEST`; withdrawal allows only `name` and `email` |
 
-Required fields are name, e-mail, a contract identifier and a scope. Optional: phone,
-note, per-line quantities. **Not collected at all:** postal address, IBAN, order date,
-delivery date, reason for withdrawal. There is no `receivedAt` field to be missing and
-no date arithmetic anywhere, so a notice given before delivery is ordinary input.
+The third was not in the review that found the other two. It came out of reading the
+endpoint's key allowlist line by line — worth recording, because two of the three were
+invisible to a mock written from the same assumptions as the client.
+
+Two further behaviours moved to where they belong:
+
+- **Payload owns the notice.** It normalises the submission, stores the canonical
+  `noticeSnapshot`, and generates `submittedAt` and `submissionNumber`. The storefront no
+  longer builds a snapshot; it renders one, as a pure projection of what was stored.
+- **Payload owns the e-mail.** The `maky-smtp-app` seam is gone, and so is the delivery
+  PATCH after a normal create. The earlier finding stands — the Saleor SMTP app exposes
+  only webhooks bound to fifteen fixed events and cannot carry a withdrawal — but the
+  conclusion was too narrow: Payload sends through its own configured adapter, so the
+  work simply belonged on the other side of the wire.
+
+Guest partial withdrawal is now actually possible. It previously invited the customer to
+describe the goods in the note, which the backend does not accept: `scope=selectedItems`
+requires 1–100 structured `items`. A guest could not have exercised a right that does not
+depend on having an account.
 
 ---
 
-## 2. Blocked on
+## 2. The wire contract
 
-Nothing below can be worked around from this repository, and each one is stated
-precisely enough to act on.
-
-### 2.1 Payload — `POST /api/forms/withdrawal` does not exist yet
-
-The client is written against the contract below and exercised against a mock. It calls
-the signed application endpoint and never the raw collection REST create.
-
-**Request**
+### Request
 
 ```
 POST {PAYLOAD_CMS_URL}/api/forms/withdrawal
-CF-Access-Client-Id, CF-Access-Client-Secret     ← network gate, existing service token
-X-Maky-Forms-Timestamp: <epoch ms, integer>
-X-Maky-Forms-Submission-Id: <uuid>
-X-Maky-Forms-Signature: <hex sha256>
 content-type: application/json
+CF-Access-Client-Id / CF-Access-Client-Secret   ← network gate, existing service token
+X-Maky-Forms-Timestamp:     1785000000          ← Unix SECONDS, 10–11 digits
+X-Maky-Forms-Submission-Id: 3f2504e0-…
+X-Maky-Forms-Signature:     <64 lowercase hex>
 ```
 
-Signature is `HMAC-SHA256(MAKY_FORMS_HMAC_SECRET, timestamp + "." + rawBody)` over the
-**exact bytes sent**, verified in constant time, with stale timestamps rejected
-symmetrically (the storefront's own window is ±5 minutes).
-
-Body:
+`HMAC-SHA256(secret, timestamp + "." + rawBody)` over the **exact bytes sent**. The body
+is serialised once; those bytes are signed and those bytes go out. Re-serialising after
+signing eventually diverges over key order and produces an unreproducible
+`INVALID_SIGNATURE`.
 
 ```json
 {
-	"submissionId": "uuid",
-	"source": "guest | account",
+	"submissionId": "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+	"source": "guest",
 	"market": "SK",
 	"locale": "sk",
-	"customer": { "name": "…", "email": "…", "phone": null },
-	"contract": { "orderNumber": "…", "saleorOrderId": null, "saleorCustomerId": null },
-	"scope": "wholeOrder | selectedItems",
-	"items": [{ "orderLineId": "…", "productName": "…", "sku": null, "quantity": 1 }],
+	"customer": { "name": "Jana Nováková", "email": "jana@example.sk" },
+	"contract": { "orderNumber": "ORD-1042", "saleorOrderId": null, "saleorCustomerId": null },
+	"scope": "selectedItems",
+	"items": [
+		{ "orderLineId": null, "productName": "Strešný box Thule Motion 3 L", "sku": null, "quantity": 2 }
+	],
 	"note": null,
-	"noticeSnapshot": "ODSTÚPENIE OD ZMLUVY\n…",
-	"legalNoticeVersion": "…",
-	"privacyNoticeVersion": "…"
+	"legalNoticeVersion": "withdrawal-sk-2026-07-30-v0-DRAFT",
+	"privacyNoticeVersion": "privacy-sk-2026-07-30-v0-DRAFT"
 }
 ```
 
-**Response the client parses**
+Exactly those eleven top-level keys, `name`/`email` inside `customer`, and nothing else.
+A body over 64 KiB is refused locally rather than spending a round trip on a guaranteed 413.
 
+### Response
+
+```json
+{
+  "ok": true,
+  "duplicate": false,
+  "submission": {
+    "id": "018f1000-…",
+    "submissionId": "3f2504e0-…",
+    "submissionNumber": "ODS-2026-000042",
+    "submittedAt": "2026-07-30T09:12:33.123Z",
+    "noticeSnapshot": { "schemaVersion": 1, … },
+    "emailDelivery": { "customerStatus": "sent", "internalStatus": "sent" }
+  }
+}
 ```
-201  { "ok": true, "duplicate": false, "submission": {…} }   created
-200  { "ok": true, "duplicate": true,  "submission": {…} }   submissionId already existed
-4xx  { "ok": false, "error": { "code": "…", "message": "…" } }
-5xx  upstream fault
-```
 
-`submission` must carry `submissionId`, `submissionNumber`, `submittedAt` (ISO 8601) and
-`orderMatchStatus`. A 200 whose body does not match is treated as unavailable, not as
-success — a receipt with no submission number behind it would be worse than an error.
+`emailDelivery` is read when present and left `null` when absent. Absent means **not
+known**, never _failed_ — the create response does not carry it yet, and telling a
+customer their confirmation failed when it is merely unreported would be its own small
+lie. The three states render three different sentences.
 
-Two deltas from the Codex brief, both deliberate:
-
-- **`noticeSnapshot` is sent by the storefront.** Payload cannot reconstruct the exact
-  text the customer confirmed, because the wording is rendered here. It is
-  server-generated in the sense that matters — never by the browser — and must be stored
-  immutably.
-- **`sku` is always `null`.** The order query's variant selection does not request it and
-  changing a Saleor GraphQL document needs sign-off (CLAUDE.md §10). `orderLineId` plus
-  `productName` identify the item. One line of approval would close this.
-
-Also needed: `PATCH /api/forms/withdrawal/:submissionId/email-delivery`, same signing,
-permitted to touch **only** the delivery fields.
-
-### 2.2 `maky-smtp-app` — no transactional send exists
-
-This is the structural blocker, not a configuration gap. `maky-smtp-app` is the Saleor
-SMTP app; its entire HTTP surface is `/api/manifest`, `/api/register`, `/api/trpc/[trpc]`
-(admin configuration, authenticated as a Saleor app) and `/api/webhooks/*`. Each webhook
-is bound to one member of a closed union — `MessageEventTypes` in
-`apps/smtp/src/modules/event-handlers/message-event-types.ts` — of fifteen
-Saleor-originated events (`ACCOUNT_*`, `ORDER_*`, `GIFT_CARD_SENT`, `INVOICE_SENT`).
-
-A withdrawal notice is not a Saleor event, so none of them can carry it, and there is no
-generic send.
-
-**The missing contract, exactly:** an authenticated non-webhook endpoint accepting
-`{ recipient, templateKey, payload }` and dispatching through the configured SMTP
-provider — plus two templates, one for the customer and one for `info@maky.store`.
-
-Rather than invent it, the mailer is an interface whose default implementation reports
-`unsupported`. That routes into the delivery-failure path the law already requires us to
-handle properly: the withdrawal stays received, the customer gets printable proof, and
-delivery is recorded as failed for retry. The customer confirmation must, when it exists,
-carry seller identity, submission number, the complete notice, submission date and time,
-the order identifier, scope and items, an explanation that the notice was received, and
-current return instructions — asserted as a list in `mail.ts` so the requirement cannot
-quietly go missing.
-
-### 2.3 Approved legal copy
-
-`LEGAL_COPY_APPROVED` is `false` in `src/lib/withdrawal/contract.ts` and must stay false
-until the reviewed Slovak legal-content artifact lands.
-`assertLegalCopyApprovedForProduction()` is there for a deploy step to call.
-
-No new legal prose was written here. The explanatory copy and the model form are carried
-over verbatim from the previous page; the notice snapshot is assembled from values the
-customer typed, company identifiers from `@/config/company`, and the statutory model
-phrasing that was already published. Two things for the review thread: the model form
-still asks for a postal address and an IBAN that the online function deliberately does
-not require, and the „30 dní pre registrovaných" claim is inherited, not verified.
-
-### 2.4 Environment
-
-`MAKY_FORMS_HMAC_SECRET` is not set on the box. Until it is, the reader returns
-`notConfigured`, submissions fail closed and the UI says so honestly — it never pretends
-a notice was received. Optional: `MAKY_FORMS_TIMEOUT_MS` (default 8000).
+A 200 whose snapshot is missing or malformed is treated as `unavailable`, not success: a
+receipt with nothing behind it is worse than an error.
 
 ---
 
-## 3. Security model
+## 3. Contract conformance
 
-|                           |                                                                                                                               |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Transport                 | Server Action. Next verifies Origin against Host on every invocation — that is the same-origin check.                         |
-| Network gate              | Cloudflare Access service token, the existing pair.                                                                           |
-| Application authorisation | Timestamped HMAC. This is what lets the Payload collection refuse anonymous creates outright.                                 |
-| Secrets                   | Server-only, `import "server-only"`, never `NEXT_PUBLIC_`. Verified absent from HTML, RSC flight data and every client chunk. |
-| Ownership                 | Re-derived from the session via Saleor `me.orders`. An order id in a form field is a claim and is discarded.                  |
-| PII in URLs               | None. The receipt renders from action state; the order shortcut passes nothing.                                               |
-| Anti-abuse                | Off-screen honeypot, per-IP (12/15 min) and per-e-mail (6/15 min) limits, 64 KB body cap, per-field lengths, max 50 items.    |
-| Logs                      | Submission id, submission number, status codes, reasons. Never the notice, the name, the e-mail or a secret.                  |
+| Requirement                                           | Status                                        |
+| ----------------------------------------------------- | --------------------------------------------- |
+| Timestamp in Unix seconds, 10–11 digits               | ✅ measured: every request 10 digits          |
+| HMAC over `timestamp + "." + rawBody`                 | ✅ verified against the bytes actually sent   |
+| Signed bytes == sent bytes, no second serialisation   | ✅ asserted in test and in the browser run    |
+| No `noticeSnapshot` in the request                    | ✅                                            |
+| No `customer.phone`                                   | ✅ field removed from the form entirely       |
+| Exact top-level key allowlist                         | ✅ asserted key-by-key                        |
+| `wholeOrder` → empty `items`                          | ✅                                            |
+| `selectedItems` → 1–100 structured items              | ✅ including guest manual rows                |
+| `sku` optional, `null` when absent                    | ✅ hand-typed only; account lines send `null` |
+| Ownership from the session, never the request         | ✅                                            |
+| Snapshot / number / timestamp taken from the response | ✅                                            |
+| Error codes mapped, backend message never shown       | ✅                                            |
+| Raw collection REST never called                      | ✅                                            |
+| No delivery PATCH in the normal path                  | ✅ removed                                    |
 
-The limiter shows the e-mail and postal routes on rejection rather than dead-ending a
-legal notice, and a tripped honeypot is reported as blocked rather than as a fake
-success — a false positive must not silently swallow a real submission.
+### Error codes
+
+`INVALID_TIMESTAMP`, `STALE_TIMESTAMP`, `INVALID_SIGNATURE`, `INVALID_REQUEST`,
+`BODY_TOO_LARGE`, `SUBMISSION_ID_CONFLICT`, `FORMS_AUTH_UNAVAILABLE`,
+`FORMS_INTERNAL_ERROR` and the rest are recognised and carried in logs; the backend's
+message text never reaches the page, because it is written for an operator and could echo
+submitted values onto a screen somebody else is looking at.
+
+The customer sees one of three things: _reload and try again_ (`SUBMISSION_ID_CONFLICT` —
+a stale tab), _shorten the form_ (`BODY_TOO_LARGE`), or _it was not stored, here are the
+other routes_. Classification comes from the body's code rather than the status line:
+Payload answers **503** for a missing HMAC secret, which looks transient and is not.
+`FORMS_INTERNAL_ERROR` is the genuinely transient one.
 
 ---
 
@@ -169,19 +150,20 @@ success — a false positive must not silently swallow a real submission.
 ```
 1. validate                     ← authoritative, server-side
 2. persist                      ← the moment the notice is "received"
-3. take submissionNumber + submittedAt from the server
-4. notify the customer          ┐
-5. notify info@maky.store       ├ best-effort, cannot undo step 2
-6. record delivery status       ┘
+   Payload then, in the same transaction: snapshot, number, timestamp,
+   customer e-mail, internal e-mail, delivery status
+3. render the receipt from what came back
 ```
 
-Failing step 2 shows an honest failure and the alternative routes; no e-mail is sent and
-nothing is stored. Failing steps 4–6 leaves the withdrawal received, shows the printable
-receipt, records delivery as failed and emits one structured alert.
+Failing step 2 shows an honest failure and the alternative routes; nothing is stored and
+no e-mail goes out. A confirmation that did not send leaves the withdrawal **received** —
+a withdrawal is effective when it is given, not when an SMTP server cooperates — and the
+receipt says so without implying the notice failed.
 
-Idempotency is the database's unique index on `submissionId`, not the UI. The
-double-click guard is a courtesy; an in-memory token would not survive a restart, a
-second process, or the retry-after-timeout case that matters most.
+Idempotency is the database's unique index on `submissionId`. A retry returns the original
+record with its original timestamp and snapshot, and the receipt says the submission was
+already on file. The UI's double-click guard is a courtesy; an in-memory token would not
+survive a restart, a second process, or the retry-after-timeout case that matters most.
 
 **The page must not be cached.** Each render mints the `submissionId`; a prerendered page
 would hand every visitor the same one and the second submitter would receive the first
@@ -193,39 +175,65 @@ the opt-out is `connection()`. Verified: three requests, three different ids.
 
 ## 5. What was proven, and how
 
-Unit and integration tests (83 new) cover validation, the notice snapshot, HMAC signing
-and verification, every Payload outcome, ownership, and the full mail/delivery matrix.
-On top of that, a real headless Chrome drove the form against a mock Payload endpoint
-(no automation dependency — Node 24's built-in WebSocket speaks CDP directly):
+367 unit and integration tests, plus a real headless Chrome driving the form against a
+**strict** mock of the Payload contract — one that rejects millisecond timestamps, unknown
+keys and an empty `items` array, because a permissive mock is precisely how three
+contract violations survived a whole branch.
 
-| Case                                           | Result                                                       |
-| ---------------------------------------------- | ------------------------------------------------------------ |
-| Guest, whole order                             | received, `ODS-2026-000004`                                  |
-| Retry with the same `submissionId`             | **same submission number, 6 POSTs → 5 stored records**       |
-| Missing name, bad e-mail, missing order number | 3 fields flagged, focus on the first                         |
-| Honeypot filled                                | blocked, alternatives offered, nothing stored                |
-| Payload 500                                    | „neprijali sme" + alternatives                               |
-| Payload timeout                                | „neprijali sme" + alternatives                               |
-| Mail transport absent                          | received, printable proof, delivery marked failed, one alert |
-| Secrets in HTML / client JS                    | none of five needles found                                   |
-| Labels                                         | 7 controls, 0 unlabelled                                     |
-| Keyboard                                       | submit reachable and activatable                             |
-| 360 / 390 / 412 / 1440                         | no horizontal overflow at any width                          |
-| Signature on every request                     | valid; no Payload `Authorization` header ever sent           |
+| Case                                           | Result                                                                                                    |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Guest, whole order                             | received, `ODS-2026-000001`                                                                               |
+| **Guest, partial via manual rows**             | received; notice reads _„Rozsah odstúpenia: vybrané položky / - Strešný box Thule Motion 3 L — počet: 2"_ |
+| Retry with the same `submissionId`             | same number; 4 POSTs → 3 stored records                                                                   |
+| Missing name, bad e-mail, missing order number | 3 fields flagged, focus on the first                                                                      |
+| Honeypot filled                                | blocked, alternatives offered, nothing stored                                                             |
+| Payload 503 `FORMS_AUTH_UNAVAILABLE`           | „neprijali sme" + alternatives                                                                            |
+| Payload timeout                                | „neprijali sme" + alternatives                                                                            |
+| `customerStatus: sent`                         | „Potvrdenie sme odoslali aj e-mailom…"                                                                    |
+| `customerStatus: failed`                       | „Odstúpenie je prijaté a zaevidované. Potvrdenie e-mailom sa nám zatiaľ nepodarilo odoslať…"              |
+| delivery unreported                            | „Potvrdenie vám pošleme aj e-mailom…"                                                                     |
+| Timestamp on the wire                          | 10 digits on every request                                                                                |
+| Signature on every request                     | valid against the exact bytes sent                                                                        |
+| Body keys                                      | exactly the allowlist; no Payload `Authorization` header                                                  |
+| Secrets in HTML / client JS                    | none of five needles found                                                                                |
+| Labels                                         | 6 controls, 0 unlabelled                                                                                  |
+| Keyboard                                       | submit reachable and activatable                                                                          |
+| 360 / 390 / 412 / 1440                         | no horizontal overflow at any width                                                                       |
 
-Two of those started as false results caused by the test harness, not the product: the
-page carries more than one `<form>` (the header search box is first in the document), and
-React replaces nodes on hydration. Both were fixed by scoping to the withdrawal form and
-waiting for hydration. Worth recording, because the first run reported a working honeypot
-as broken and a broken idempotency test as a product bug.
+One aside worth keeping: a delivery run came back empty because the **rate limiter had
+tripped** — twelve submissions from one IP inside fifteen minutes. The limiter working is
+good news; the harness not recognising a blocked state was the bug, and a fresh server
+made the runs pass.
 
 ---
 
-## 6. Deferred
+## 6. Still blocked on Payload
+
+1. **The Forms release is not live.** `codex/payload-provider-v2-forms-v1 @ 0badf5c` is a
+   release candidate: fresh-DB and upgrade-from-main migrations have not actually run, and
+   the DB-gated Forms tests have not executed.
+2. **`MAKY_FORMS_HMAC_SECRET` does not exist** in either runtime. Until it does, the
+   reader returns `notConfigured`, submissions fail closed, and the UI says so honestly.
+   Both hosts need the same secret and synchronised clocks — the window is ±300 s.
+3. **Submission numbers.** The contract currently generates `WDR-<full UUID>`. The
+   approved format is `ODS-YYYY-NNNNNN`; this branch reads the number as an opaque string
+   and does not care which lands, but the customer-facing one should.
+4. **Approved legal copy.** `LEGAL_COPY_APPROVED` is `false` and
+   `assertLegalCopyApprovedForProduction()` is there for a deploy step to call. Two items
+   for the review thread: the statutory model form still asks for a postal address and an
+   IBAN that the online function deliberately does not require, and the „30 dní pre
+   registrovaných" claim is inherited, not verified.
+
+**Proposed rebase base:** the production tip _after_ the CMS pilot deploy, not `007f75e`.
+Rebasing before that would put this branch on a base that is about to move.
+
+---
+
+## 7. Deferred
 
 - Contact form on the same foundation — a separate follow-up, as agreed.
-- A PDF model form. The current download is plain text: a PDF needs a dependency, and
-  text is the more accessible artefact anyway.
-- Retry of a failed confirmation e-mail. The record carries the failed status and the
-  alert fires; the retry mechanism itself waits on 2.2.
-- `sku` on withdrawal items — one GraphQL approval away.
+- A PDF model form. The current download is plain text: a PDF needs a dependency, and text
+  is the more accessible artefact anyway.
+- The signed delivery PATCH remains a supported operational seam on the Payload side; the
+  storefront does not call it in the normal V1 path.
+- `sku` for account-mode lines — one GraphQL approval away, and approved as `null` for V1.
