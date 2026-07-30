@@ -105,7 +105,7 @@ was added, and the parsed page still has exactly its eight fields. The fail-clos
 are re-run in the gate **with the group present** — an unsupported `blockType` and a
 content-bearing unknown Lexical node both still reject the whole document.
 
-The gate lives in `src/lib/cms/legal-metadata-compat.test.ts` (21 tests) and measures
+The gate lives in `src/lib/cms/legal-metadata-compat.test.ts` (27 tests) and measures
 everything against a fixture pair, so none of it rests on a hand-written guess at what
 Payload sends:
 
@@ -124,8 +124,16 @@ so it cannot drift away from real production bytes without failing.
 as symmetry with the all-or-nothing rule and is the opposite of it.
 
 Verified by mutation: adding strict unknown-top-level-key rejection to `parsePagesResponse`
-turns 13 of the 21 tests red, and making `CmsBlocks` render nothing turns 3 red. The gate
-gates.
+turns 13 tests red; making `CmsBlocks` render nothing turns 3 red; rejecting a group whose
+`documentType` is not `editorial` turns 5 red; and copying the group through into `CmsPage`
+turns 8 red. The gate gates.
+
+What is pinned is the FIELD, not the editorial literal. `/sk/o-nas` sends
+`editorial / null / null`, but the legal pages M.2 brings into the CMS will send a
+populated group, and a gate that only knew the one literal would stay green on the day the
+first populated one arrived — the same class of miss this file exists to prevent, one level
+up. A populated `legal / 1.2 / 2026-08-04` group, an explicit `null`, an empty group and
+two malformed shapes all parse to the identical page and reach no markup.
 
 **Noticed while doing this, and not fixed here.** The vendored base fixture is a
 provider-side recording, not a copy of the live document, and the two have drifted:

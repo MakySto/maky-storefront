@@ -168,6 +168,52 @@ describe("legalMetadata — the candidate stays valid", () => {
 	});
 });
 
+/**
+ * What is tolerated is the FIELD, not the one literal the fixture happens to carry.
+ *
+ * `/sk/o-nas` is editorial, so its group is `editorial / null / null`. A legal page —
+ * `/obchodne-podmienky` and the rest, which M.2 brings into the CMS — sends a populated
+ * one. Pinning only the editorial literal would leave the gate green on the day the first
+ * populated group arrives and prove nothing about it, which is the failure this whole file
+ * exists to prevent, one level up.
+ */
+describe("legalMetadata — the field is tolerated, not one value of it", () => {
+	function withGroup(value: unknown) {
+		const doc = vendored();
+		doc.docs[0]!.legalMetadata = value;
+		return parsePagesResponse(doc);
+	}
+
+	const variants: [string, unknown][] = [
+		["a populated legal group", { documentType: "legal", legalVersion: "1.2", effectiveFrom: "2026-08-04" }],
+		["an explicit null", null],
+		["an empty group", {}],
+		// Not expected shapes — the point is that a malformed group cannot become a
+		// rejection vector either. A field nobody reads cannot be malformed.
+		["a string where a group was expected", "editorial"],
+		["an array where a group was expected", ["editorial"]],
+	];
+
+	it.each(variants)("accepts %s and parses to the same page", (_name, value) => {
+		const result = withGroup(value);
+		expect(result.status).toBe("ok");
+		expect(result).toEqual(parsePagesResponse(vendored()));
+	});
+
+	it("keeps a populated legal group out of the rendered markup", () => {
+		const result = withGroup({
+			documentType: "legal",
+			legalVersion: "1.2",
+			effectiveFrom: "2026-08-04",
+		});
+		const html = renderBlocks(result);
+		expect(html).toBe(renderBlocks(parsePagesResponse(vendored())));
+		for (const leak of ["legalMetadata", "legalVersion", "effectiveFrom", "2026-08-04", "1.2"]) {
+			expect(html).not.toContain(leak);
+		}
+	});
+});
+
 describe("legalMetadata — editorial rendering ignores it", () => {
 	it("renders HTML byte-identical to the vendored production response", () => {
 		expect(renderBlocks(parsePagesResponse(augmented()))).toBe(renderBlocks(parsePagesResponse(vendored())));
