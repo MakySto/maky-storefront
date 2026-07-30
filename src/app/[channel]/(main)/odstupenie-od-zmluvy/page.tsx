@@ -7,9 +7,11 @@ import { companyInfo } from "@/config/company";
 import { hasAuthSession } from "@/lib/auth/has-auth-session";
 import { newSubmissionId } from "@/lib/forms/payload-forms-client";
 import { loadOwnedOrders, type OwnedOrder } from "@/lib/withdrawal/account-orders";
+import { isWithdrawalFormServable } from "@/lib/withdrawal/contract";
+import { normalizeWithdrawalPhone } from "@/lib/withdrawal/validate";
 import { LegalPage } from "@/ui/components/legal/legal-page";
 import { WithdrawalForm } from "@/ui/components/withdrawal/withdrawal-form";
-import { getCurrentUser } from "../account/get-current-user";
+import { getCurrentUser, type AccountUser } from "../account/get-current-user";
 import { submitWithdrawalAction } from "./actions";
 
 /**
@@ -43,7 +45,10 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 	const { channel } = await props.params;
 
 	// Non-SK channels 404 below; metadata must agree, or the 404 acquires a canonical.
-	if (REVERSE_MAP[channel] !== "sk") return { robots: { index: false, follow: false } };
+	// The draft-copy gate is the same kind of absence and needs the same agreement.
+	if (REVERSE_MAP[channel] !== "sk" || !isWithdrawalFormServable()) {
+		return { robots: { index: false, follow: false } };
+	}
 
 	return {
 		title: formatPageTitle("Odstúpenie od zmluvy"),
@@ -53,6 +58,37 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 	};
 }
 
+/**
+ * A phone to offer as a default, from data this page already fetched.
+ *
+ * `CurrentUserProfile` — the query the account area runs, reused here — already returns
+ * the customer's saved addresses, and `AddressDetails` already includes `phone`. So this
+ * costs nothing and needs no change to a Saleor document, which would have required
+ * sign-off (CLAUDE.md §10) and would not have been worth it for a convenience default.
+ *
+ * The default billing address wins, then the shipping one, then any address that has a
+ * number at all. Anything the wire contract would refuse is dropped rather than offered:
+ * prefilling a value the server will reject would hand the customer an error they did not
+ * cause, on a field they never filled in.
+ */
+function prefillPhone(user: AccountUser): string | null {
+	const addresses = user.addresses ?? [];
+	const withId = (id: string | undefined) =>
+		id ? addresses.find((address) => address?.id === id) : undefined;
+
+	const candidates = [
+		withId(user.defaultBillingAddress?.id),
+		withId(user.defaultShippingAddress?.id),
+		...addresses,
+	];
+
+	for (const candidate of candidates) {
+		const normalized = normalizeWithdrawalPhone(candidate?.phone);
+		if (normalized.ok && normalized.value) return normalized.value;
+	}
+	return null;
+}
+
 export default async function Page(props: { params: Promise<{ channel: string }> }) {
 	// Opt out of prerendering: every render must mint its own submissionId.
 	await connection();
@@ -60,10 +96,20 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	const { channel } = await props.params;
 	if (REVERSE_MAP[channel] !== "sk") notFound();
 
+	// The copy is still a draft. Serving the form anyway is the one outcome this flag was
+	// introduced to prevent, and until now nothing enforced it.
+	if (!isWithdrawalFormServable()) {
+		console.error(
+			"[withdrawal] blocked-draft-copy",
+			JSON.stringify({ path: PATH, reason: "LEGAL_COPY_APPROVED is false" }),
+		);
+		notFound();
+	}
+
 	// Account mode is a convenience and nothing more. Both of these staying empty is a
 	// perfectly good outcome — requiring a session would make registration a condition
 	// of exercising the right, which it must never be.
-	let prefill: { name: string; email: string } | null = null;
+	let prefill: { name: string; email: string; phone: string | null } | null = null;
 	let orders: OwnedOrder[] = [];
 
 	if (await hasAuthSession()) {
@@ -72,6 +118,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 			prefill = {
 				name: [user.firstName, user.lastName].filter(Boolean).join(" ").trim(),
 				email: user.email,
+				phone: prefillPhone(user),
 			};
 			orders = ownedOrders;
 		}

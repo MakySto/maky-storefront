@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "withdrawal.schema.json",
+  "title": "MAKY Forms Backend V1 withdrawal create request",
+  "description": "Strict wire contract for POST /api/forms/withdrawal. The x-* normalized-string keywords are normative and run after ECMAScript trim; standard JSON Schema validators that ignore them provide only a structural precheck.",
+  "x-normalizedStringSemantics": {
+    "normative": true,
+    "trimOperation": "ECMAScript String.prototype.trim",
+    "requiredMode": "trim-required",
+    "optionalMode": "trim-empty-to-null",
+    "supportedLengthUnits": ["utf16-code-units", "unicode-code-points"]
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "submissionId",
+    "source",
+    "market",
+    "locale",
+    "customer",
+    "contract",
+    "scope",
+    "legalNoticeVersion",
+    "privacyNoticeVersion"
+  ],
+  "properties": {
+    "submissionId": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "source": { "enum": ["guest", "account"] },
+    "market": {
+      "enum": ["SK", "CZ", "PL", "HU", "RO", "AT", "DE", "IT", "FR", "ES", "US", "CA"]
+    },
+    "locale": {
+      "enum": ["sk", "cs", "pl", "hu", "ro", "de", "it", "fr", "es", "en"]
+    },
+    "customer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "email"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "x-normalization": "trim-required",
+          "x-normalizedMinLength": 1,
+          "x-normalizedMaxLength": 200,
+          "x-normalizedLengthUnit": "utf16-code-units"
+        },
+        "email": {
+          "type": "string",
+          "x-normalization": "trim-required",
+          "x-normalizedMinLength": 1,
+          "x-normalizedMaxLength": 320,
+          "x-normalizedLengthUnit": "utf16-code-units",
+          "x-normalizedFormat": "maky-form-email-v1",
+          "x-normalizedPattern": "^(?!.*\\.\\.)[\\w!#$%&'*+/=?^`{|}~-](?:[\\w!#$%&'*+/=?^`{|}~.-]*[\\w!#$%&'*+/=?^`{|}~-])?@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\\.[a-z]{2,}$",
+          "x-normalizedPatternFlags": "i"
+        },
+        "phone": {
+          "description": "Optional and nullable. C0/C1 controls are rejected; surrounding whitespace is trimmed; blank maps to null; the normalized value has at most 32 Unicode characters. E.164 is not required.",
+          "type": ["string", "null"],
+          "pattern": "^[^\\u0000-\\u001F\\u007F-\\u009F]*$",
+          "x-normalization": "trim-empty-to-null",
+          "x-normalizedMaxLength": 32,
+          "x-normalizedLengthUnit": "unicode-code-points"
+        }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["orderNumber"],
+      "properties": {
+        "orderNumber": {
+          "type": "string",
+          "x-normalization": "trim-required",
+          "x-normalizedMinLength": 1,
+          "x-normalizedMaxLength": 128,
+          "x-normalizedLengthUnit": "utf16-code-units"
+        },
+        "saleorOrderId": {
+          "type": ["string", "null"],
+          "x-normalization": "trim-empty-to-null",
+          "x-normalizedMaxLength": 128,
+          "x-normalizedLengthUnit": "utf16-code-units"
+        },
+        "saleorCustomerId": {
+          "type": ["string", "null"],
+          "x-normalization": "trim-empty-to-null",
+          "x-normalizedMaxLength": 128,
+          "x-normalizedLengthUnit": "utf16-code-units"
+        }
+      }
+    },
+    "scope": { "enum": ["wholeOrder", "selectedItems"] },
+    "items": {
+      "type": ["array", "null"],
+      "maxItems": 100,
+      "items": { "$ref": "#/$defs/item" }
+    },
+    "note": {
+      "type": ["string", "null"],
+      "x-normalization": "trim-empty-to-null",
+      "x-normalizedMaxLength": 5000,
+      "x-normalizedLengthUnit": "utf16-code-units"
+    },
+    "legalNoticeVersion": {
+      "type": "string",
+      "x-normalization": "trim-required",
+      "x-normalizedMinLength": 1,
+      "x-normalizedMaxLength": 128,
+      "x-normalizedLengthUnit": "utf16-code-units"
+    },
+    "privacyNoticeVersion": {
+      "type": "string",
+      "x-normalization": "trim-required",
+      "x-normalizedMinLength": 1,
+      "x-normalizedMaxLength": 128,
+      "x-normalizedLengthUnit": "utf16-code-units"
+    }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["productName", "quantity"],
+      "properties": {
+        "orderLineId": {
+          "type": ["string", "null"],
+          "x-normalization": "trim-empty-to-null",
+          "x-normalizedMaxLength": 128,
+          "x-normalizedLengthUnit": "utf16-code-units"
+        },
+        "productName": {
+          "type": "string",
+          "x-normalization": "trim-required",
+          "x-normalizedMinLength": 1,
+          "x-normalizedMaxLength": 300,
+          "x-normalizedLengthUnit": "utf16-code-units"
+        },
+        "sku": {
+          "type": ["string", "null"],
+          "x-normalization": "trim-empty-to-null",
+          "x-normalizedMaxLength": 128,
+          "x-normalizedLengthUnit": "utf16-code-units"
+        },
+        "quantity": { "type": "integer", "minimum": 1, "maximum": 10000 }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "oneOf": [
+        { "properties": { "market": { "const": "SK" }, "locale": { "const": "sk" } } },
+        { "properties": { "market": { "const": "CZ" }, "locale": { "const": "cs" } } },
+        { "properties": { "market": { "const": "PL" }, "locale": { "const": "pl" } } },
+        { "properties": { "market": { "const": "HU" }, "locale": { "const": "hu" } } },
+        { "properties": { "market": { "const": "RO" }, "locale": { "const": "ro" } } },
+        { "properties": { "market": { "const": "AT" }, "locale": { "const": "de" } } },
+        { "properties": { "market": { "const": "DE" }, "locale": { "const": "de" } } },
+        { "properties": { "market": { "const": "IT" }, "locale": { "const": "it" } } },
+        { "properties": { "market": { "const": "FR" }, "locale": { "const": "fr" } } },
+        { "properties": { "market": { "const": "ES" }, "locale": { "const": "es" } } },
+        { "properties": { "market": { "const": "US" }, "locale": { "const": "en" } } },
+        { "properties": { "market": { "const": "CA" }, "locale": { "const": "en" } } }
+      ]
+    },
+    {
+      "if": {
+        "properties": { "scope": { "const": "selectedItems" } },
+        "required": ["scope"]
+      },
+      "then": {
+        "required": ["items"],
+        "properties": {
+          "items": { "type": "array", "minItems": 1, "maxItems": 100 }
+        }
+      },
+      "else": {
+        "properties": {
+          "items": {
+            "oneOf": [{ "type": "null" }, { "type": "array", "maxItems": 0 }]
+          }
+        }
+      }
+    }
+  ]
+}

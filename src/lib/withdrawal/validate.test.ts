@@ -13,6 +13,7 @@ function input(overrides: Partial<RawWithdrawalInput> = {}): RawWithdrawalInput 
 		locale: "sk",
 		name: "Jana Nováková",
 		email: "jana@example.sk",
+		phone: null,
 		orderNumber: "ORD-1042",
 		scope: "wholeOrder",
 		items: [],
@@ -63,14 +64,13 @@ describe("validateWithdrawal — the minimum a notice needs", () => {
 		expect(validateWithdrawal(input({ note: null, items: [] })).ok).toBe(true);
 	});
 
-	it("has no phone field at all — Payload's withdrawal endpoint rejects one", () => {
-		// `customer` allows exactly name and email, and unknown keys are refused, so a
-		// phone would fail the whole request. Collecting it only to drop it would also
-		// be personal data gathered for no purpose.
-		const result = validateWithdrawal(input());
+	it("accepts a notice with no phone — the field is optional and stays null", () => {
+		// Contract 1.1.0 allows `customer.phone`; it does not require it. A missing phone
+		// must never be a reason a withdrawal is not recorded.
+		const result = validateWithdrawal(input({ phone: undefined }));
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
-		expect(Object.keys(result.value)).not.toContain("phone");
+		expect(result.value.phone).toBeNull();
 	});
 });
 

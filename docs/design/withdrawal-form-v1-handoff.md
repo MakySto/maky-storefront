@@ -1,12 +1,46 @@
 # Online withdrawal function V1 — handoff
 
-Status: **branch-only, converged on the Payload Forms V1 contract, not deployed.**
+Status: **branch-only, consuming Payload Forms contract `1.1.0`, not deployed.**
 Branch `feat/withdrawal-form-v1`, based on production `007f75e`.
 
 One withdrawal process, one backend contract, two UX modes. A guest and a signed-in
 customer post the same body to the same endpoint and produce the same kind of record.
 The account mode saves typing; it grants no different right, and signing in is never a
 precondition.
+
+## How to read a SHA in this document
+
+Four different things have been called "the SHA", and mixing them up has already cost a
+round: an earlier version of this document's table named the implementation commit while
+the branch tip was the docs commit written on top of it.
+
+| Term                      | Meaning                                                                                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **production base**       | What `maky.store` serves and what this branch is based on: `007f75e`, `BUILD_ID WRxB8lq9Ps8OmdZq-oBbR`. Also the rollback target.                       |
+| **implementation tip**    | The last commit that changed runtime behaviour. Moves only when code moves.                                                                             |
+| **branch / handoff tip**  | The actual tip, often a docs-only commit above the implementation tip. This is what `git ls-remote` reports and what a deploy checks out.               |
+| **consumed contract SHA** | The commit in the OTHER repository whose contract this branch was built against. Recorded, never inferred, and it does not move when this branch moves. |
+
+A document never contains its own commit SHA — asking for one produces either a lie or an
+amend loop. Take the branch tip from `git ls-remote`. And take it from `ls-remote`, not
+from a tracking ref: this repository has concurrent sessions and a stale `origin/*` has
+produced a confidently wrong claim before.
+
+### Consumed contract
+
+|                  |                                                                    |
+| ---------------- | ------------------------------------------------------------------ |
+| repository       | `MakySto/maky-cms`                                                 |
+| branch           | `codex/payload-provider-v2-forms-v1`                               |
+| commit           | `459146a894e344b8261921e5c4c39879a0407839`                         |
+| contract         | `forms-backend-v1`, revision `1.1.0`, status `candidate`           |
+| manifest SHA-256 | `0ed6e45be585cb4ad27950befd4a8eba7b5f83004767f05bcf0962b90b901632` |
+| artifacts        | 20, all digests re-verified on every test run                      |
+| vendored at      | `src/lib/forms/__fixtures__/forms-backend-v1/`                     |
+
+All three were verified here rather than taken from the report that supplied them: the
+provider tip via `git ls-remote`, the manifest digest by recomputation, and all twenty
+artifact digests against the manifest.
 
 ---
 
@@ -25,6 +59,61 @@ single request**, three times over.
 The third was not in the review that found the other two. It came out of reading the
 endpoint's key allowlist line by line — worth recording, because two of the three were
 invisible to a mock written from the same assumptions as the client.
+
+> **Row 3 is now history.** Contract `1.1.0` allows an optional, nullable
+> `customer.phone`, and the storefront sends one again. The rest of §1 stands.
+
+## 1a. FCR-001 — the contract is vendored, not restated
+
+The lesson of row 3 was not "we got a field wrong". It was that the storefront held its
+own copy of the rules and tested against it. So the copy is gone: the provider's
+machine-readable contract is vendored byte-for-byte under
+`src/lib/forms/__fixtures__/forms-backend-v1/`, and `contract-schema-validator.ts` walks
+`withdrawal.schema.json` rather than repeating what it says. Re-vendoring a newer contract
+changes what the tests accept, with nothing to remember and no second copy to update.
+
+`withdrawal.schema.json` is not plain JSON Schema: its `x-normalization` /
+`x-normalizedMaxLength` / `x-normalizedLengthUnit` keywords are declared normative, and it
+says outright that a validator ignoring them "provides only a structural precheck". The
+validator implements them, and treats an unrecognised keyword as a hard error — a silent
+skip would be the permissive mock all over again. No dependency was added; none was
+available and adding one needs sign-off (CLAUDE.md §10).
+
+Four deltas came out of reading the contract rather than the summary of it:
+
+| Delta                               | What it was                                                                                                                                                                                                                                                |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `customer.phone`                    | Optional, nullable, back in the form. Sent as an explicit `null` when blank.                                                                                                                                                                               |
+| `emailDelivery` **collapsed**       | The parser returned `null` for the whole object on any status it did not know. `unknown` is new in 1.1.0, so a normal response downgraded a **confirmed-sent** customer e-mail to "unreported" and hid the one case the contract flags for reconciliation. |
+| `emailDelivery` **lost six fields** | The contract publishes eight; the storefront typed two.                                                                                                                                                                                                    |
+| `wholeOrder` + items                | The schema allows only `null` or `[]` there. The form already sent `[]`, but `submitWithdrawal` passed any caller's lines straight through — a 400 waiting for the next caller. Now enforced in the library.                                               |
+
+### Phone rules, and the one the fixtures cannot catch
+
+Trim, blank to `null`, at most **32 Unicode code points** of the trimmed value, control
+characters refused. Two of those deserve their reasons written down.
+
+**Code points, not `String.length`.** Every phone fixture the provider ships is BMP-only,
+so a `.length` implementation passes all eight and is still wrong. A test with astral
+characters is the only thing that separates them, and it is in
+`wire-conformance.test.ts`.
+
+**Refused, not stripped** — the opposite of what `validate.ts` does everywhere else, and
+deliberate. The provider's invalid fixture is `"+421 901 730 066\nBcc: injected@example.com"`:
+an e-mail header injection, not a copy-paste artefact. Stripping the newline would turn a
+body Payload correctly refuses into one it accepts. Over-length is refused rather than
+truncated for a smaller reason — a truncated name is still recognisably the person, a
+truncated phone number is just a wrong number. Both are safe because the field is optional
+and the helper text says so.
+
+The account prefill costs nothing: `CurrentUserProfile`, which this page already runs,
+returns the customer's addresses and `AddressDetails` already includes `phone`. No Saleor
+document was touched, so no §10 sign-off was needed. A stored number that the contract
+would refuse is dropped rather than offered.
+
+`PRIVACY_NOTICE_VERSION` moved to `v1`. The legal notice did not change — the declaration
+is the same — but the set of personal data processed did, and a record has to be replayable
+against the privacy copy that was shown when it was given.
 
 Two further behaviours moved to where they belong:
 

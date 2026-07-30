@@ -1,0 +1,15 @@
+{
+  "submissionId": "018f0000-0000-7000-8000-000000000002",
+  "source": "guest",
+  "market": "SK",
+  "locale": "sk",
+  "customer": {
+    "name": "Meno zákazníka",
+    "email": "customer@example.com",
+    "phone": null
+  },
+  "topic": "productAdvice",
+  "order": null,
+  "message": "Text správy.",
+  "privacyNoticeVersion": "privacy-notice-version"
+}

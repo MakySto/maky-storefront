@@ -1,18 +1,38 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { type PayloadNoticeSnapshot, type WithdrawalAccepted } from "./contract";
+import { type EmailDeliveryState, type PayloadNoticeSnapshot, type WithdrawalAccepted } from "./contract";
 import { renderNoticeFromSnapshot } from "./notice";
 import { submitWithdrawal, type PersistPort, type SubmitDeps } from "./submit";
 import { type RawWithdrawalInput } from "./validate";
 
 const VALID_UUID = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
 
+/**
+ * The six attempt fields contract 1.1.0 added, defaulted so a test can state only the
+ * statuses it cares about. Nullable on purpose: absent metadata means "not reported",
+ * which is not the same as zero attempts.
+ */
+function DELIVERY(statuses: {
+	customerStatus: EmailDeliveryState["customerStatus"];
+	internalStatus: EmailDeliveryState["internalStatus"];
+}): EmailDeliveryState {
+	return {
+		customerSentAt: null,
+		customerAttemptCount: null,
+		customerLastAttemptAt: null,
+		internalSentAt: null,
+		internalAttemptCount: null,
+		internalLastAttemptAt: null,
+		...statuses,
+	};
+}
+
 const SNAPSHOT: PayloadNoticeSnapshot = {
 	schemaVersion: 1,
 	source: "guest",
 	market: "SK",
 	locale: "sk",
-	customer: { name: "Jana Nováková", email: "jana@example.sk" },
+	customer: { name: "Jana Nováková", email: "jana@example.sk", phone: null },
 	contract: { orderNumber: "ORD-1042" },
 	scope: "wholeOrder",
 	items: [],
@@ -40,6 +60,7 @@ function raw(overrides: Partial<RawWithdrawalInput> = {}): RawWithdrawalInput {
 		locale: "sk",
 		name: "Jana Nováková",
 		email: "jana@example.sk",
+		phone: null,
 		orderNumber: "ORD-1042",
 		scope: "wholeOrder",
 		items: [],
@@ -66,7 +87,7 @@ afterEach(() => {
 });
 
 describe("submitWithdrawal — the body sent to Payload", () => {
-	it("contains exactly the allowed keys, with no snapshot and no phone", async () => {
+	it("contains exactly the allowed keys, and never a server-owned one", async () => {
 		const persist = vi.fn<PersistPort>(async () => ({ status: "ok" as const, value: ACCEPTED }));
 		await submitWithdrawal(raw(), deps({ persist }));
 
@@ -84,8 +105,11 @@ describe("submitWithdrawal — the body sent to Payload", () => {
 			"source",
 			"submissionId",
 		]);
-		expect(body).not.toHaveProperty("noticeSnapshot");
-		expect(Object.keys(body.customer as object).sort()).toEqual(["email", "name"]);
+		// Payload builds these four and rejects them in a create request.
+		for (const serverOwned of ["noticeSnapshot", "submittedAt", "submissionNumber", "emailDelivery"]) {
+			expect(body).not.toHaveProperty(serverOwned);
+		}
+		expect(Object.keys(body.customer as object).sort()).toEqual(["email", "name", "phone"]);
 	});
 
 	it("takes Saleor ids only from the server, never from the request", async () => {
@@ -181,7 +205,10 @@ describe("submitWithdrawal — received", () => {
 			deps({
 				persist: (async () => ({
 					status: "ok",
-					value: { ...ACCEPTED, emailDelivery: { customerStatus: "failed", internalStatus: "sent" } },
+					value: {
+						...ACCEPTED,
+						emailDelivery: DELIVERY({ customerStatus: "failed", internalStatus: "sent" }),
+					},
 				})) as PersistPort,
 			}),
 		);
@@ -202,7 +229,7 @@ describe("submitWithdrawal — received", () => {
 			deps({
 				persist: (async () => ({
 					status: "ok",
-					value: { ...ACCEPTED, emailDelivery: { customerStatus: "sent", internalStatus: "sent" } },
+					value: { ...ACCEPTED, emailDelivery: DELIVERY({ customerStatus: "sent", internalStatus: "sent" }) },
 				})) as PersistPort,
 			}),
 		);

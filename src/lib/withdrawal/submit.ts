@@ -82,7 +82,7 @@ export async function submitWithdrawal(
 		source: input.source,
 		market: WITHDRAWAL_MARKET,
 		locale: WITHDRAWAL_LOCALE,
-		customer: { name: input.name, email: input.email },
+		customer: { name: input.name, email: input.email, phone: input.phone },
 		contract: {
 			orderNumber: input.orderNumber,
 			// Only ever the server's own answer about ownership.
@@ -90,7 +90,13 @@ export async function submitWithdrawal(
 			saleorCustomerId: deps.verifiedOrder?.saleorCustomerId ?? null,
 		},
 		scope: input.scope,
-		items: input.items,
+		// A whole-order notice carries no item list. The schema is explicit about it —
+		// `scope: "wholeOrder"` requires `items` to be null or empty — so passing lines
+		// through here would be a 400 rather than harmless extra detail. The form already
+		// sends `[]` in that case; this makes the guarantee the caller's rather than the
+		// UI's, because `submitWithdrawal` is a library function and the next caller will
+		// not have read the form.
+		items: input.scope === "selectedItems" ? input.items : [],
 		note: input.note,
 		legalNoticeVersion: LEGAL_NOTICE_VERSION,
 		privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
