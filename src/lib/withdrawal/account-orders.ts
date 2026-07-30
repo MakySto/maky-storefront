@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { OrderByNumberDocument } from "@/gql/graphql";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
+import { formatOrderNumber } from "@/lib/order-number";
 
 /**
  * The signed-in customer's own orders, for the account mode of the withdrawal form.
@@ -102,5 +103,9 @@ export async function verifyOrderSelection(input: {
 		lines.push({ id: line.id, productName: line.productName, quantity });
 	}
 
-	return { saleorOrderId: order.id, orderNumber: order.number, lines };
+	// The customer-facing string, not Saleor's bare integer. This value becomes
+	// `contract.orderNumber` in the stored notice and is printed on the receipt and in
+	// both e-mails, so it has to be the identifier the customer was actually shown.
+	// The machine handle travels separately as `saleorOrderId`.
+	return { saleorOrderId: order.id, orderNumber: formatOrderNumber(order.number), lines };
 }
