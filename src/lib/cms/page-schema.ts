@@ -1,4 +1,9 @@
-import { findUnrenderableNode, isLexicalDocument, type LexicalDocument } from "./lexical";
+import {
+	findUnrenderableNode,
+	findUnsupportedTextFormat,
+	isLexicalDocument,
+	type LexicalDocument,
+} from "./lexical";
 
 /**
  * Runtime validation of the Payload `/api/pages` response.
@@ -178,6 +183,17 @@ function parseBlock(value: unknown, index: number): { ok: true; block: CmsBlock 
 			ok: false,
 			reason: `layout[${index}] richText contains unrenderable node ${unrenderable}`,
 			nodeType: unrenderable,
+		};
+	}
+
+	// A format bit outside the contract's five is a contract violation, not something to
+	// drop quietly — rendering emphasised text as plain text misrepresents what was
+	// published, and unlike a rejection it leaves no trace.
+	const unsupportedFormat = findUnsupportedTextFormat(value.content);
+	if (unsupportedFormat !== null) {
+		return {
+			ok: false,
+			reason: `layout[${index}] richText carries unsupported text format bits ${unsupportedFormat}`,
 		};
 	}
 

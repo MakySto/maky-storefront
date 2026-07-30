@@ -205,9 +205,61 @@ describe("parsePagesResponse — an unrenderable Lexical node rejects the docume
 		expect(result.violation.nodeType).toBe("upload");
 	});
 
-	it("accepts an inert marker node — skipping a separator loses no content", () => {
+	it("refuses a bare marker node — v2 removed the inert exception", () => {
+		// Previously accepted on the grounds that skipping a separator loses nothing. The
+		// v2 contract forbids assuming a node is inert because it has no known text field,
+		// and `horizontalrule` is outside its allowlist regardless.
 		const result = parsePagesResponse(withNode({ type: "horizontalrule", version: 1 }));
-		expect(result.status).toBe("ok");
+		expect(result.status).toBe("invalid");
+		if (result.status !== "invalid") return;
+		expect(result.violation.nodeType).toBe("horizontalrule");
+	});
+
+	it("refuses a text node carrying a format bit the contract does not define", () => {
+		// Bit 32 is not one of the five. Dropping it would render emphasised text as plain
+		// text — a quiet misrepresentation of what was published, and unlike a rejection it
+		// leaves no trace. The contract is explicit: „nesmie sa potichu zahodiť".
+		const result = parsePagesResponse(
+			published({
+				layout: [
+					{
+						blockType: "richText",
+						markets: null,
+						content: {
+							root: {
+								type: "root",
+								children: [{ type: "paragraph", children: [{ type: "text", text: "Ahoj", format: 32 }] }],
+							},
+						},
+					},
+				],
+			}),
+		);
+		expect(result.status).toBe("invalid");
+		if (result.status !== "invalid") return;
+		expect(result.violation.reason).toContain("format");
+	});
+
+	it("still accepts every bit the contract does define, and plain text", () => {
+		for (const format of [0, 1, 2, 4, 8, 16, 31]) {
+			const result = parsePagesResponse(
+				published({
+					layout: [
+						{
+							blockType: "richText",
+							markets: null,
+							content: {
+								root: {
+									type: "root",
+									children: [{ type: "paragraph", children: [{ type: "text", text: "Ahoj", format }] }],
+								},
+							},
+						},
+					],
+				}),
+			);
+			expect(result.status, `format ${format}`).toBe("ok");
+		}
 	});
 
 	it("accepts the node types the renderer handles", () => {

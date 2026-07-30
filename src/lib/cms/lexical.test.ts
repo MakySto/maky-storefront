@@ -241,14 +241,29 @@ describe("findUnrenderableNode", () => {
 		expect(findUnrenderableNode(doc({ type: "block", fields: { blockType: "cta" } }))).toBe("block");
 	});
 
-	it("lets an inert marker node through — a separator is not content", () => {
-		expect(findUnrenderableNode(doc({ type: "horizontalrule", version: 1 }))).toBeNull();
-		expect(findUnrenderableNode(doc({ type: "tab", version: 1 }))).toBeNull();
+	it("refuses a bare marker node too — v2 removed the inert exception", () => {
+		// This used to pass. The old rule asked whether a node LOOKED like it carried
+		// content and let a separator through; the v2 contract forbids that judgement
+		// outright: „Neznámy node sa nesmie automaticky považovať za inertný len preto, že
+		// nemá známe textové pole." `horizontalrule` is itself outside the v2 allowlist now.
+		expect(findUnrenderableNode(doc({ type: "horizontalrule", version: 1 }))).toBe("horizontalrule");
+		expect(findUnrenderableNode(doc({ type: "tab", version: 1 }))).toBe("tab");
 	});
 
-	it("treats whitespace-only text as not content", () => {
-		// Otherwise an indentation artefact would take a whole page down.
-		expect(findUnrenderableNode(doc({ type: "someFutureNode", text: "   " }))).toBeNull();
+	it("refuses an unknown node whose only text is whitespace", () => {
+		// The old rule read this as an indentation artefact and let it through. The type is
+		// what decides now, not a guess about where the content might be hiding — the
+		// failure that guess protects against is a page taken down by a stray node, and the
+		// failure it causes is published content rendered as if it were not there.
+		expect(findUnrenderableNode(doc({ type: "someFutureNode", text: "   " }))).toBe("someFutureNode");
+	});
+
+	it("still accepts every node on the contract's allowlist", () => {
+		// The tightening must not have narrowed the allowlist itself.
+		for (const type of ["paragraph", "heading", "quote", "list", "listitem", "link", "autolink"]) {
+			expect(findUnrenderableNode(doc({ type, children: [{ type: "text", text: "x" }] })), type).toBeNull();
+		}
+		expect(findUnrenderableNode(doc({ type: "linebreak" }))).toBeNull();
 	});
 
 	it("reports the FIRST offender, so the log names one thing to fix", () => {

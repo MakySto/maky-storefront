@@ -257,14 +257,28 @@ describe("legalMetadata — even inside a rich-text value it stays invisible", (
 				(root.children[0] as Record<string, unknown>).legalMetadata = populated;
 			},
 		],
-		[
-			"as a bare marker node in the tree",
-			(block) => {
-				const root = (block.content as Record<string, unknown>).root as { children: unknown[] };
-				root.children.push({ type: "legalMetadata", ...populated });
-			},
-		],
 	];
+
+	it("REFUSES the document if the group ever arrives as a Lexical node", () => {
+		// This case used to pass as a no-op: v1 judged a node with no known text field
+		// inert and let it through. The v2 contract removed that judgement, so the same
+		// placement now rejects the whole candidate — and that is the better answer. A
+		// group field on the document is inert and must be ignored; the same name appearing
+		// as a NODE inside published content is something the storefront does not know how
+		// to render, and rendering the page without it would be a silent omission.
+		//
+		// The provider announced a group field on the Page, not a Lexical node, so this is
+		// a guard against a shape nobody has proposed rather than a live concern.
+		const doc = vendored();
+		const block = (doc.docs[0]!.layout as Record<string, unknown>[])[0]!;
+		const root = (block.content as Record<string, unknown>).root as { children: unknown[] };
+		root.children.push({ type: "legalMetadata", ...populated });
+
+		const result = parsePagesResponse(doc);
+		expect(result.status).toBe("invalid");
+		if (result.status !== "invalid") return;
+		expect(result.violation.nodeType).toBe("legalMetadata");
+	});
 
 	it.each(placements)("renders identically with the group %s", (_name, mutate) => {
 		const html = renderWith(mutate);

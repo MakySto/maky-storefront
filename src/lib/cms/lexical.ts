@@ -92,36 +92,7 @@ export const RENDERABLE_NODE_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Whether skipping this node would lose published content.
- *
- * Text is the obvious case. But an `upload` node carries an image and no text at all,
- * so a plain "does it have text" test would let a published photograph vanish in
- * silence — the exact failure this policy exists to prevent. A node therefore also
- * counts as content-bearing when it carries any of the payload shapes Payload uses to
- * embed content: children, a `fields` object, or a relationship.
- *
- * What stays inert is a bare marker such as `{ type: "horizontalrule", version: 1 }`.
- * Skipping one of those loses a separator, not content, and it is logged either way.
- *
- * Known limit: a future node could hold text in a field this function does not look at,
- * and would then be judged inert. There is no way to recognise content in a shape
- * nobody has described yet; the structured log is what makes that case findable.
- */
-function isContentBearing(node: LexicalNode): boolean {
-	if (typeof node.text === "string" && node.text.trim().length > 0) return true;
-
-	const children = nodeChildren(node);
-	if (children.length > 0) return true;
-
-	if (typeof node.fields === "object" && node.fields !== null) return true;
-	if (typeof node.relationTo === "string" && node.relationTo.length > 0) return true;
-	if (node.value !== undefined && node.value !== null) return true;
-
-	return false;
-}
-
-/**
- * Find the first node the storefront cannot render without losing content.
+ * Find the first node outside the contract's allowlist.
  *
  * Returns the offending node's type, or `null` when the whole tree is renderable.
  *
@@ -129,10 +100,30 @@ function isContentBearing(node: LexicalNode): boolean {
  * unrenderable node mid-render leaves only two bad options — throw, or drop it and
  * serve a page missing a paragraph nobody will notice. Discovering it here means the
  * whole CMS candidate can be rejected while the previous good render is still intact.
+ *
+ * ## Any unknown type, not just an obviously content-bearing one
+ *
+ * This used to ask a second question — does the node LOOK like it carries content? — and
+ * let a bare marker such as `{ type: "horizontalrule", version: 1 }` through on the
+ * grounds that skipping a separator loses nothing. The v2 contract removes that
+ * judgement, in `unsupported-content-policy.md`:
+ *
+ *   „Neznámy node sa nesmie automaticky považovať za inertný len preto, že nemá známe
+ *   textové pole."
+ *
+ * The old rule required guessing, from a shape nobody has described yet, whether content
+ * lives in a field this function does not read. It got `horizontalrule` right and would
+ * have got a future `callout` with its text under an unread key wrong — silently, which is
+ * the one failure mode this whole layer exists to prevent. `horizontalrule` is itself
+ * outside the v2 allowlist now, so the case that motivated the exception no longer needs
+ * it.
+ *
+ * Safe to tighten because it was checked first: the live `o-nas` document contains only
+ * `root`, `paragraph` and `text`.
  */
 export function findUnrenderableNode(document: LexicalDocument): string | null {
 	const walk = (node: LexicalNode): string | null => {
-		if (!RENDERABLE_NODE_TYPES.has(node.type) && isContentBearing(node)) return node.type;
+		if (!RENDERABLE_NODE_TYPES.has(node.type)) return node.type;
 
 		for (const child of nodeChildren(node)) {
 			const found = walk(child);
@@ -142,6 +133,45 @@ export function findUnrenderableNode(document: LexicalDocument): string | null {
 		return null;
 	};
 
+	return walk(document.root);
+}
+
+/** Every bit the contract defines. Anything outside this mask is not ours to interpret. */
+const KNOWN_FORMAT_BITS =
+	TEXT_FORMAT.bold |
+	TEXT_FORMAT.italic |
+	TEXT_FORMAT.strikethrough |
+	TEXT_FORMAT.underline |
+	TEXT_FORMAT.code;
+
+/**
+ * Find the first `text` node carrying a format bit the contract does not define.
+ *
+ * Returns the offending bitmask, or `null`. Deliberately a rejection rather than a
+ * silent drop, which is the v2 contract's explicit instruction:
+ *
+ *   „Neznámy bit znamená contract violation kandidáta; nesmie sa potichu zahodiť."
+ *
+ * The v1 comment argued the other way — ignore unknown bits so a future editor feature
+ * cannot blank out a paragraph — and that reasoning was sound for the failure it feared.
+ * It is the wrong trade here. Dropping a bit does not blank a paragraph; it renders the
+ * paragraph without the emphasis the editor applied, which is a quiet misrepresentation of
+ * published content. A rejected candidate is visible and recoverable; a subscript silently
+ * rendered as plain text is neither.
+ *
+ * Bit 0 — no formatting — is the overwhelmingly common case and passes trivially.
+ */
+export function findUnsupportedTextFormat(document: LexicalDocument): number | null {
+	const walk = (node: LexicalNode): number | null => {
+		if (node.type === "text" && typeof node.format === "number" && Number.isInteger(node.format)) {
+			if ((node.format & ~KNOWN_FORMAT_BITS) !== 0) return node.format;
+		}
+		for (const child of nodeChildren(node)) {
+			const found = walk(child);
+			if (found !== null) return found;
+		}
+		return null;
+	};
 	return walk(document.root);
 }
 
