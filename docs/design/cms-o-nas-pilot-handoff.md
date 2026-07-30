@@ -1,6 +1,6 @@
 # CMS pilot `/sk/o-nas` — handoff
 
-Status: **DEPLOYED to production 2026-07-30. Acceptance complete — step 7 passed.**
+Status: **DEPLOYED to production 2026-07-30. Acceptance COMPLETE — step 7 passed twice, cache verified by measurement.**
 
 ```
 production base   b6b633da6b4969967cdc3244b9eab2fce3a206ea   BUILD_ID JAODjLtaigo1DL9m6h614
@@ -19,17 +19,30 @@ limitation, the limitation is real — none of it is worked around elsewhere.
 
 ## Cutover record, 2026-07-30
 
-| Check                         | Result                                                                                                                                                               |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CMS document cleaned          | 4 paragraphs, all 9 company-identity markers absent, `updatedAt` 19:26:24.111Z                                                                                       |
-| Release candidate on `:3032`  | accepted before production was touched                                                                                                                               |
-| Routes                        | `/sk`, `/sk/o-nas`, `/sk/obchodne-podmienky`, a real PDP — all 200 via Cloudflare                                                                                    |
-| CSS / JS chunks               | 200, utilities present in the served stylesheet                                                                                                                      |
-| `CompanyDetails`              | exactly once in the visible DOM; `IČO` once, seat once                                                                                                               |
-| Secrets in HTML / RSC payload | none                                                                                                                                                                 |
-| `[cms] served`                | `outcome: found`, `documentId 019fb008-…`, `blocks 1`                                                                                                                |
-| contract-violation            | 0                                                                                                                                                                    |
-| **Step 7** — publish an edit  | webhook `[cms-revalidate] ok` with tags `cms:collection:pages`, `cms:page:o-nas`; `updatedAt` moved `19:26:24.111Z` → `20:05:32.363Z`; the new wording rendered live |
+| Check                         | Result                                                                                                                                                                                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| CMS document cleaned          | 4 paragraphs, all 9 company-identity markers absent, `updatedAt` 19:26:24.111Z                                                                                                                                                                                     |
+| Release candidate on `:3032`  | accepted before production was touched                                                                                                                                                                                                                             |
+| Routes                        | `/sk`, `/sk/o-nas`, `/sk/obchodne-podmienky`, a real PDP — all 200 via Cloudflare                                                                                                                                                                                  |
+| CSS / JS chunks               | 200, utilities present in the served stylesheet                                                                                                                                                                                                                    |
+| `CompanyDetails`              | exactly once in the visible DOM; `IČO` once, seat once                                                                                                                                                                                                             |
+| Secrets in HTML / RSC payload | none                                                                                                                                                                                                                                                               |
+| `[cms] served`                | `outcome: found`, `documentId 019fb008-…`, `blocks 1`                                                                                                                                                                                                              |
+| contract-violation            | 0                                                                                                                                                                                                                                                                  |
+| **Step 7** — publish an edit  | run twice. Add: webhook `[cms-revalidate] ok` with tags `cms:collection:pages` + `cms:page:o-nas`, `updatedAt` `19:26:24.111Z` → `20:05:32.363Z`, new wording live. Remove: same, `updatedAt` → `20:53:35.835Z`, wording gone, `CompanyDetails` still exactly once |
+
+### One thing the gate could not show on production
+
+Neither step-7 run caught the stale first view. Both times the background refresh had
+already completed before the first measuring request — the SWR window is one request wide
+and the site has real traffic, including this session's own probes. So on production the
+evidence is the webhook line plus the `updatedAt` move, not an observed stale→fresh
+transition.
+
+That transition was observed precisely, against a mock with a request counter, in
+`docs/design/cms-cache-audit-20260730.md`. Between the two, the chain is established
+end to end; but "first view stale" is not a thing to expect to see on a live site, and a
+future gate should not treat its absence as a failure.
 
 ### Two things the cutover taught, both worth keeping
 
