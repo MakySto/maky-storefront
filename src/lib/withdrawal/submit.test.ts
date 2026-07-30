@@ -1,18 +1,35 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { type WithdrawalAccepted } from "./contract";
-import { type MailResult, type WithdrawalMailer } from "./mail";
-import { submitWithdrawal, type PersistPort, type RecordDeliveryPort, type SubmitDeps } from "./submit";
+import { type PayloadNoticeSnapshot, type WithdrawalAccepted } from "./contract";
+import { renderNoticeFromSnapshot } from "./notice";
+import { submitWithdrawal, type PersistPort, type SubmitDeps } from "./submit";
 import { type RawWithdrawalInput } from "./validate";
 
 const VALID_UUID = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
 
+const SNAPSHOT: PayloadNoticeSnapshot = {
+	schemaVersion: 1,
+	source: "guest",
+	market: "SK",
+	locale: "sk",
+	customer: { name: "Jana Nováková", email: "jana@example.sk" },
+	contract: { orderNumber: "ORD-1042" },
+	scope: "wholeOrder",
+	items: [],
+	note: null,
+	legalNoticeVersion: "withdrawal-sk-2026-07-30-v0-DRAFT",
+	privacyNoticeVersion: "privacy-sk-2026-07-30-v0-DRAFT",
+};
+
 const ACCEPTED: WithdrawalAccepted = {
+	id: "018f1000-0000-7000-8000-000000000001",
 	submissionId: VALID_UUID,
 	submissionNumber: "ODS-2026-000042",
 	submittedAt: "2026-07-30T09:12:33.123Z",
+	noticeSnapshot: SNAPSHOT,
 	orderMatchStatus: "matched",
 	duplicate: false,
+	emailDelivery: null,
 };
 
 function raw(overrides: Partial<RawWithdrawalInput> = {}): RawWithdrawalInput {
@@ -23,7 +40,6 @@ function raw(overrides: Partial<RawWithdrawalInput> = {}): RawWithdrawalInput {
 		locale: "sk",
 		name: "Jana Nováková",
 		email: "jana@example.sk",
-		phone: null,
 		orderNumber: "ORD-1042",
 		scope: "wholeOrder",
 		items: [],
@@ -32,19 +48,9 @@ function raw(overrides: Partial<RawWithdrawalInput> = {}): RawWithdrawalInput {
 	};
 }
 
-function mailer(customer: MailResult, internal: MailResult = customer): WithdrawalMailer {
-	return {
-		sendCustomerConfirmation: vi.fn(async () => customer),
-		sendInternalNotification: vi.fn(async () => internal),
-	};
-}
-
 function deps(overrides: Partial<SubmitDeps> = {}): SubmitDeps {
 	return {
 		persist: (async () => ({ status: "ok", value: ACCEPTED })) as PersistPort,
-		mailer: mailer({ status: "sent" }),
-		recordDelivery: (async () => ({ status: "ok" })) as RecordDeliveryPort,
-		returnsPageUrl: "https://maky.store/sk/reklamacie-a-vratenie",
 		...overrides,
 	};
 }
@@ -59,213 +65,29 @@ afterEach(() => {
 	errorSpy.mockRestore();
 });
 
-describe("submitWithdrawal — order of operations", () => {
-	it("persists before it sends anything", async () => {
-		const calls: string[] = [];
-		const result = await submitWithdrawal(
-			raw(),
-			deps({
-				persist: (async () => {
-					calls.push("persist");
-					return { status: "ok", value: ACCEPTED };
-				}) as PersistPort,
-				mailer: {
-					sendCustomerConfirmation: async () => {
-						calls.push("customer");
-						return { status: "sent" };
-					},
-					sendInternalNotification: async () => {
-						calls.push("internal");
-						return { status: "sent" };
-					},
-				},
-				recordDelivery: (async () => {
-					calls.push("recordDelivery");
-					return { status: "ok" };
-				}) as RecordDeliveryPort,
-			}),
-		);
-
-		expect(result.status).toBe("received");
-		expect(calls).toEqual(["persist", "customer", "internal", "recordDelivery"]);
-	});
-
-	it("sends the server's own submission number and timestamp back, never a local clock", async () => {
-		const result = await submitWithdrawal(raw(), deps());
-		expect(result.status).toBe("received");
-		if (result.status !== "received") return;
-		expect(result.accepted.submissionNumber).toBe("ODS-2026-000042");
-		expect(result.accepted.submittedAt).toBe("2026-07-30T09:12:33.123Z");
-	});
-
-	it("stamps a canonical notice snapshot containing what the customer confirmed", async () => {
-		const result = await submitWithdrawal(
-			raw({
-				scope: "selectedItems",
-				items: [{ orderLineId: "l1", productName: "Strešný box Thule", quantity: 2 }],
-				note: "Tovar mi ešte nebol doručený.",
-			}),
-			deps(),
-		);
-		expect(result.status).toBe("received");
-		if (result.status !== "received") return;
-
-		const snapshot = result.submission.noticeSnapshot;
-		expect(snapshot).toContain("Jana Nováková");
-		expect(snapshot).toContain("ORD-1042");
-		expect(snapshot).toContain("Strešný box Thule");
-		expect(snapshot).toContain("Rozsah odstúpenia: vybrané položky");
-		expect(snapshot).toContain("Tovar mi ešte nebol doručený.");
-		// No timestamp inside the evidence — the record owns the time it was given.
-		expect(snapshot).not.toContain("2026-07-30T09:12:33");
-	});
-});
-
-describe("submitWithdrawal — persistence failed, so nothing was received", () => {
-	it.each([
-		["timeout", { status: "unavailable", reason: "timeout after 8000ms" }, "unavailable"],
-		["5xx", { status: "unavailable", reason: "upstream HTTP 502" }, "unavailable"],
-		["4xx", { status: "rejected", httpStatus: 422, code: "invalidBody" }, "rejected"],
-		["not configured", { status: "notConfigured", missing: ["MAKY_FORMS_HMAC_SECRET"] }, "notConfigured"],
-	])("reports %s as not received", async (_label, persisted, reason) => {
-		const result = await submitWithdrawal(
-			raw(),
-			deps({ persist: (async () => persisted) as unknown as PersistPort }),
-		);
-		expect(result.status).toBe("notReceived");
-		if (result.status !== "notReceived") return;
-		expect(result.reason).toBe(reason);
-	});
-
-	it("does not send any e-mail when nothing was stored", async () => {
-		// Confirming receipt of a notice that was never recorded is the worst available
-		// outcome: the customer stops chasing a right they still have.
-		const mail = mailer({ status: "sent" });
-		const result = await submitWithdrawal(
-			raw(),
-			deps({
-				persist: (async () => ({ status: "unavailable", reason: "timeout" })) as PersistPort,
-				mailer: mail,
-			}),
-		);
-		expect(result.status).toBe("notReceived");
-		expect(mail.sendCustomerConfirmation).not.toHaveBeenCalled();
-		expect(mail.sendInternalNotification).not.toHaveBeenCalled();
-	});
-});
-
-describe("submitWithdrawal — stored, but the e-mail did not go out", () => {
-	it("still reports the withdrawal as received", async () => {
-		const result = await submitWithdrawal(
-			raw(),
-			deps({ mailer: mailer({ status: "failed", reason: "SMTP 421" }) }),
-		);
-		expect(result.status).toBe("received");
-		if (result.status !== "received") return;
-		expect(result.email.customer).toEqual({ status: "failed", reason: "SMTP 421" });
-	});
-
-	it("treats a missing transport as a delivery failure, not a submission failure", async () => {
-		const result = await submitWithdrawal(raw(), deps());
-		expect(result.status).toBe("received");
-
-		const { unavailableMailer } = await import("./mail");
-		const withReal = await submitWithdrawal(raw(), deps({ mailer: unavailableMailer }));
-		expect(withReal.status).toBe("received");
-		if (withReal.status !== "received") return;
-		expect(withReal.email.customer.status).toBe("unsupported");
-	});
-
-	it("survives a mailer that throws instead of returning", async () => {
-		const result = await submitWithdrawal(
-			raw(),
-			deps({
-				mailer: {
-					sendCustomerConfirmation: async () => {
-						throw new TypeError("boom");
-					},
-					sendInternalNotification: async () => ({ status: "sent" }),
-				},
-			}),
-		);
-		expect(result.status).toBe("received");
-		if (result.status !== "received") return;
-		expect(result.email.customer).toEqual({ status: "failed", reason: "TypeError" });
-	});
-
-	it("records the delivery outcome against the record", async () => {
-		const recordDelivery = vi.fn<RecordDeliveryPort>(async () => ({ status: "ok" }));
-		await submitWithdrawal(
-			raw(),
-			deps({
-				mailer: mailer({ status: "failed", reason: "SMTP 421" }, { status: "sent" }),
-				recordDelivery,
-			}),
-		);
-		expect(recordDelivery).toHaveBeenCalledWith(VALID_UUID, {
-			customerStatus: "failed",
-			internalStatus: "sent",
-			lastError: "SMTP 421",
-		});
-	});
-
-	it("stays received even when the delivery status cannot be written back", async () => {
-		const result = await submitWithdrawal(
-			raw(),
-			deps({
-				recordDelivery: (async () => {
-					throw new Error("payload down");
-				}) as unknown as RecordDeliveryPort,
-			}),
-		);
-		expect(result.status).toBe("received");
-		if (result.status !== "received") return;
-		expect(result.email.recorded).toBe(false);
-	});
-
-	it("emits one structured alert when delivery is degraded, and none when it is clean", async () => {
-		await submitWithdrawal(raw(), deps());
-		expect(errorSpy).not.toHaveBeenCalled();
-
-		await submitWithdrawal(raw(), deps({ mailer: mailer({ status: "failed", reason: "SMTP 421" }) }));
-		expect(errorSpy).toHaveBeenCalledWith("[withdrawal] delivery-degraded", expect.any(String));
-
-		const [, body] = errorSpy.mock.calls[0] as [string, string];
-		const alert = JSON.parse(body) as Record<string, unknown>;
-		expect(alert.submissionNumber).toBe("ODS-2026-000042");
-		// An on-call log is not a place for the notice or the customer's details.
-		expect(body).not.toContain("jana@example.sk");
-		expect(body).not.toContain("Jana Nováková");
-	});
-});
-
-describe("submitWithdrawal — idempotency", () => {
-	it("passes a duplicate through as a success, not as an error", async () => {
-		// A retry after a timeout must return the original receipt. The database unique
-		// index is what decides this; the storefront just reports what came back.
-		const result = await submitWithdrawal(
-			raw(),
-			deps({
-				persist: (async () => ({
-					status: "ok",
-					value: { ...ACCEPTED, duplicate: true },
-				})) as PersistPort,
-			}),
-		);
-		expect(result.status).toBe("received");
-		if (result.status !== "received") return;
-		expect(result.accepted.duplicate).toBe(true);
-		expect(result.accepted.submissionNumber).toBe("ODS-2026-000042");
-	});
-
-	it("sends the same submissionId it was given, so the retry can be recognised", async () => {
+describe("submitWithdrawal — the body sent to Payload", () => {
+	it("contains exactly the allowed keys, with no snapshot and no phone", async () => {
 		const persist = vi.fn<PersistPort>(async () => ({ status: "ok" as const, value: ACCEPTED }));
 		await submitWithdrawal(raw(), deps({ persist }));
-		expect(persist.mock.calls[0]?.[0]).toMatchObject({ submissionId: VALID_UUID });
-	});
-});
 
-describe("submitWithdrawal — ownership", () => {
+		const body = persist.mock.calls[0]?.[0] as unknown as Record<string, unknown>;
+		expect(Object.keys(body).sort()).toEqual([
+			"contract",
+			"customer",
+			"items",
+			"legalNoticeVersion",
+			"locale",
+			"market",
+			"note",
+			"privacyNoticeVersion",
+			"scope",
+			"source",
+			"submissionId",
+		]);
+		expect(body).not.toHaveProperty("noticeSnapshot");
+		expect(Object.keys(body.customer as object).sort()).toEqual(["email", "name"]);
+	});
+
 	it("takes Saleor ids only from the server, never from the request", async () => {
 		const persist = vi.fn<PersistPort>(async () => ({ status: "ok" as const, value: ACCEPTED }));
 
@@ -279,12 +101,139 @@ describe("submitWithdrawal — ownership", () => {
 		persist.mockClear();
 		await submitWithdrawal(
 			raw(),
-			deps({
-				persist,
-				verifiedOrder: { saleorOrderId: "T3JkZXI6MQ==", saleorCustomerId: null },
-			}),
+			deps({ persist, verifiedOrder: { saleorOrderId: "T3JkZXI6MQ==", saleorCustomerId: null } }),
 		);
 		expect(persist.mock.calls[0]?.[0].contract.saleorOrderId).toBe("T3JkZXI6MQ==");
+	});
+
+	it("carries structured items for a guest partial withdrawal", async () => {
+		// A note is not a substitute: Payload requires items[] when the scope is
+		// selectedItems, so without these a guest could not withdraw from part of an
+		// order at all — a right that does not depend on having an account.
+		const persist = vi.fn<PersistPort>(async () => ({ status: "ok" as const, value: ACCEPTED }));
+		await submitWithdrawal(
+			raw({
+				scope: "selectedItems",
+				items: [
+					{ orderLineId: null, productName: "Strešný box Thule", sku: "TH-6299", quantity: 2 },
+					{ orderLineId: null, productName: "Nosič bicyklov", quantity: 1 },
+				],
+			}),
+			deps({ persist }),
+		);
+
+		expect(persist.mock.calls[0]?.[0].items).toEqual([
+			{ orderLineId: null, productName: "Strešný box Thule", sku: "TH-6299", quantity: 2 },
+			{ orderLineId: null, productName: "Nosič bicyklov", sku: null, quantity: 1 },
+		]);
+	});
+});
+
+describe("submitWithdrawal — persistence failed, so nothing was received", () => {
+	it.each([
+		["timeout", { status: "unavailable", reason: "timeout after 8000ms" }, "unavailable", null],
+		["5xx", { status: "unavailable", reason: "upstream HTTP 502" }, "unavailable", null],
+		["4xx", { status: "rejected", httpStatus: 400, code: "INVALID_REQUEST" }, "rejected", "INVALID_REQUEST"],
+		[
+			"conflict",
+			{ status: "rejected", httpStatus: 409, code: "SUBMISSION_ID_CONFLICT" },
+			"rejected",
+			"SUBMISSION_ID_CONFLICT",
+		],
+		[
+			"auth unavailable",
+			{ status: "rejected", httpStatus: 503, code: "FORMS_AUTH_UNAVAILABLE" },
+			"rejected",
+			"FORMS_AUTH_UNAVAILABLE",
+		],
+		[
+			"not configured",
+			{ status: "notConfigured", missing: ["MAKY_FORMS_HMAC_SECRET"] },
+			"notConfigured",
+			null,
+		],
+	])("reports %s as not received, carrying the code", async (_label, persisted, reason, code) => {
+		const result = await submitWithdrawal(
+			raw(),
+			deps({ persist: (async () => persisted) as unknown as PersistPort }),
+		);
+		expect(result.status).toBe("notReceived");
+		if (result.status !== "notReceived") return;
+		expect(result.reason).toBe(reason);
+		expect(result.code).toBe(code);
+	});
+});
+
+describe("submitWithdrawal — received", () => {
+	it("returns the server's own number, timestamp and snapshot", async () => {
+		const result = await submitWithdrawal(raw(), deps());
+		expect(result.status).toBe("received");
+		if (result.status !== "received") return;
+		expect(result.accepted.submissionNumber).toBe("ODS-2026-000042");
+		expect(result.accepted.submittedAt).toBe("2026-07-30T09:12:33.123Z");
+		expect(result.accepted.noticeSnapshot).toEqual(SNAPSHOT);
+	});
+
+	it("stays received when the confirmation e-mail failed, and says so in a log", async () => {
+		// A withdrawal is effective when it is given, not when an SMTP server cooperates.
+		const result = await submitWithdrawal(
+			raw(),
+			deps({
+				persist: (async () => ({
+					status: "ok",
+					value: { ...ACCEPTED, emailDelivery: { customerStatus: "failed", internalStatus: "sent" } },
+				})) as PersistPort,
+			}),
+		);
+		expect(result.status).toBe("received");
+		if (result.status !== "received") return;
+		expect(result.accepted.emailDelivery?.customerStatus).toBe("failed");
+
+		expect(errorSpy).toHaveBeenCalledWith("[withdrawal] delivery-degraded", expect.any(String));
+		const [, body] = errorSpy.mock.calls[0] as [string, string];
+		// An on-call log is not a place for the notice or the customer's details.
+		expect(body).not.toContain("jana@example.sk");
+		expect(body).not.toContain("Jana Nováková");
+	});
+
+	it("says nothing when the e-mail was sent, or when delivery is simply unreported", async () => {
+		await submitWithdrawal(
+			raw(),
+			deps({
+				persist: (async () => ({
+					status: "ok",
+					value: { ...ACCEPTED, emailDelivery: { customerStatus: "sent", internalStatus: "sent" } },
+				})) as PersistPort,
+			}),
+		);
+		expect(errorSpy).not.toHaveBeenCalled();
+
+		// Unreported is not failed — the create response does not carry delivery yet.
+		await submitWithdrawal(raw(), deps());
+		expect(errorSpy).not.toHaveBeenCalled();
+	});
+
+	it("passes a duplicate through as a success with the ORIGINAL time and snapshot", async () => {
+		const original: WithdrawalAccepted = {
+			...ACCEPTED,
+			duplicate: true,
+			submittedAt: "2026-07-30T08:00:00.000Z",
+			noticeSnapshot: { ...SNAPSHOT, note: "pôvodná poznámka" },
+		};
+		const result = await submitWithdrawal(
+			raw({ note: "iná poznámka" }),
+			deps({ persist: (async () => ({ status: "ok", value: original })) as PersistPort }),
+		);
+
+		expect(result.status).toBe("received");
+		if (result.status !== "received") return;
+		expect(result.accepted.duplicate).toBe(true);
+		expect(result.accepted.submittedAt).toBe("2026-07-30T08:00:00.000Z");
+		// The stored notice wins over what was just typed — that is the whole point of
+		// the record being authoritative.
+		const rendered = renderNoticeFromSnapshot(result.accepted.noticeSnapshot);
+		expect(rendered).toContain("pôvodná poznámka");
+		expect(rendered).not.toContain("iná poznámka");
 	});
 });
 
@@ -294,5 +243,33 @@ describe("submitWithdrawal — invalid input", () => {
 		const result = await submitWithdrawal(raw({ email: "nope" }), deps({ persist }));
 		expect(result.status).toBe("invalid");
 		expect(persist).not.toHaveBeenCalled();
+	});
+});
+
+describe("renderNoticeFromSnapshot", () => {
+	it("is a pure projection of the stored snapshot", () => {
+		const text = renderNoticeFromSnapshot({
+			...SNAPSHOT,
+			scope: "selectedItems",
+			items: [{ orderLineId: null, productName: "Strešný box", sku: "TH-6299", quantity: 2 }],
+			note: "Tovar mi ešte nebol doručený.",
+		});
+
+		expect(text).toContain("Jana Nováková");
+		expect(text).toContain("ORD-1042");
+		expect(text).toContain("Rozsah odstúpenia: vybrané položky");
+		expect(text).toContain("Strešný box (SKU TH-6299) — počet: 2");
+		expect(text).toContain("Tovar mi ešte nebol doručený.");
+		expect(text).toContain("withdrawal-sk-2026-07-30-v0-DRAFT");
+	});
+
+	it("carries no timestamp — the record owns the time the notice was given", () => {
+		expect(renderNoticeFromSnapshot(SNAPSHOT)).not.toMatch(/\d{4}-\d{2}-\d{2}T/);
+	});
+
+	it("renders sentences rather than the raw JSON a customer should never be shown", () => {
+		const text = renderNoticeFromSnapshot(SNAPSHOT);
+		expect(text).not.toContain("schemaVersion");
+		expect(text).toContain("Týmto oznamujem, že odstupujem od zmluvy uzavretej na diaľku.");
 	});
 });

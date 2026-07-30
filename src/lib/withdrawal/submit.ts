@@ -6,41 +6,29 @@ import {
 	type WithdrawalAccepted,
 	type WithdrawalSubmission,
 } from "./contract";
-import { INTERNAL_NOTIFICATION_RECIPIENT, type MailResult, type WithdrawalMailer } from "./mail";
-import { buildNoticeSnapshot } from "./notice";
+import { type FormsErrorCode } from "../forms/payload-forms-client";
 import { validateWithdrawal, type FieldError, type RawWithdrawalInput } from "./validate";
 
 /**
  * The one place the order of operations is enforced.
  *
  *   1. validate
- *   2. persist the immutable record — this is the moment the notice is "received"
- *   3. take the server's submission number and timestamp
- *   4. notify the customer
- *   5. notify the shop
- *   6. record how 4 and 5 went
+ *   2. persist — this is the moment the notice is "received"
  *
- * Steps 4 to 6 are best-effort and cannot undo step 2. That asymmetry is the whole
- * point: a withdrawal is effective when it is given, not when an SMTP server feels
- * like cooperating. Telling a customer their notice failed because an e-mail bounced
- * would deny them a right they have already exercised.
+ * There is no step 3 here any more, and the deletion is the point. The storefront used
+ * to send the confirmation e-mail, the internal notification, and then patch the
+ * delivery status back. Payload now does all three in the same transaction that stores
+ * the record, from the same stored snapshot — so the notice, the e-mail and the
+ * database row are built from one source and cannot drift. It also removes the window
+ * where the record existed but the storefront process died before telling anyone.
  *
- * The inverse is equally strict. If step 2 fails there is no record, so the UI must
- * say so plainly and point at the e-mail and postal routes. Showing a success page
- * with no stored notice would be the worst outcome available: the customer stops
- * worrying, and nothing exists.
- *
- * Dependencies are injected so every infrastructure branch — timeout, 4xx, 5xx,
- * duplicate, mail failure, delivery-update failure — is reachable from a test without
- * a network.
+ * What survives is the asymmetry that matters. If persistence fails there is no record,
+ * so the UI says so plainly and points at the e-mail and postal routes: a success page
+ * with nothing stored is the worst outcome available, because the customer stops
+ * worrying and nothing exists. If persistence succeeds but the confirmation e-mail did
+ * not go out, the withdrawal is still received — a withdrawal is effective when it is
+ * given, not when an SMTP server cooperates — and the receipt says exactly that.
  */
-
-export interface EmailDeliveryReport {
-	readonly customer: MailResult;
-	readonly internal: MailResult;
-	/** False when the delivery statuses could not be written back to the record. */
-	readonly recorded: boolean;
-}
 
 export type WithdrawalOutcome =
 	/** Nothing was stored; the customer must be told and offered the other routes. */
@@ -48,14 +36,14 @@ export type WithdrawalOutcome =
 	| {
 			readonly status: "notReceived";
 			readonly reason: "unavailable" | "rejected" | "notConfigured";
+			readonly code: FormsErrorCode | null;
 			readonly detail: string;
 	  }
-	/** Durable. The notice is legally given, whatever the e-mails did. */
+	/** Durable. The notice is legally given, whatever the e-mail did. */
 	| {
 			readonly status: "received";
 			readonly accepted: WithdrawalAccepted;
 			readonly submission: WithdrawalSubmission;
-			readonly email: EmailDeliveryReport;
 	  };
 
 export interface PersistPort {
@@ -63,69 +51,19 @@ export interface PersistPort {
 		submission: WithdrawalSubmission,
 	): Promise<
 		| { status: "ok"; value: WithdrawalAccepted }
-		| { status: "rejected"; httpStatus: number; code: string }
+		| { status: "rejected"; httpStatus: number; code: FormsErrorCode }
 		| { status: "unavailable"; reason: string }
 		| { status: "notConfigured"; missing: readonly string[] }
 	>;
 }
 
-export interface RecordDeliveryPort {
-	(
-		submissionId: string,
-		delivery: {
-			customerStatus: "pending" | "sent" | "failed";
-			internalStatus: "pending" | "sent" | "failed";
-			lastError?: string | null;
-		},
-	): Promise<{ status: string }>;
-}
-
 export interface SubmitDeps {
 	readonly persist: PersistPort;
-	readonly mailer: WithdrawalMailer;
-	readonly recordDelivery: RecordDeliveryPort;
-	/** Absolute, market-prefixed URL of the returns page, for the customer e-mail. */
-	readonly returnsPageUrl: string;
 	/**
 	 * Server-verified ownership, or nulls for a guest. Never derived from the request
 	 * body — the client may claim any order it likes and the claim is worthless.
 	 */
 	readonly verifiedOrder?: { saleorOrderId: string | null; saleorCustomerId: string | null };
-}
-
-function mailStatus(result: MailResult): "sent" | "failed" {
-	return result.status === "sent" ? "sent" : "failed";
-}
-
-function mailError(result: MailResult): string | null {
-	if (result.status === "failed") return result.reason;
-	if (result.status === "unsupported") return `unsupported: ${result.missingContract}`;
-	return null;
-}
-
-/**
- * One structured alert per degraded delivery.
- *
- * Carries the submission number and never the notice or the customer's details — an
- * operational log is read by whoever is on call, not by someone entitled to the
- * personal data inside a legal notice.
- */
-function alertDegradedDelivery(accepted: WithdrawalAccepted, email: EmailDeliveryReport): void {
-	const customerError = mailError(email.customer);
-	const internalError = mailError(email.internal);
-	if (!customerError && !internalError && email.recorded) return;
-
-	console.error(
-		"[withdrawal] delivery-degraded",
-		JSON.stringify({
-			submissionNumber: accepted.submissionNumber,
-			customerStatus: mailStatus(email.customer),
-			internalStatus: mailStatus(email.internal),
-			deliveryRecorded: email.recorded,
-			customerError,
-			internalError,
-		}),
-	);
 }
 
 export async function submitWithdrawal(
@@ -137,12 +75,14 @@ export async function submitWithdrawal(
 
 	const input = validation.value;
 
+	// Exactly the keys Payload allows, and no others: the endpoint rejects unknown keys
+	// at every level, so an extra field is a 400 rather than something it ignores.
 	const submission: WithdrawalSubmission = {
 		submissionId: input.submissionId,
 		source: input.source,
 		market: WITHDRAWAL_MARKET,
 		locale: WITHDRAWAL_LOCALE,
-		customer: { name: input.name, email: input.email, phone: input.phone },
+		customer: { name: input.name, email: input.email },
 		contract: {
 			orderNumber: input.orderNumber,
 			// Only ever the server's own answer about ownership.
@@ -152,62 +92,47 @@ export async function submitWithdrawal(
 		scope: input.scope,
 		items: input.items,
 		note: input.note,
-		noticeSnapshot: buildNoticeSnapshot({ ...input, legalNoticeVersion: LEGAL_NOTICE_VERSION }),
 		legalNoticeVersion: LEGAL_NOTICE_VERSION,
 		privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
 	};
 
-	// ---- 2. Persist. Everything before this is reversible; nothing after it is. ----
 	const persisted = await deps.persist(submission);
 
 	if (persisted.status === "notConfigured") {
 		return {
 			status: "notReceived",
 			reason: "notConfigured",
+			code: null,
 			detail: `forms transport not configured: ${persisted.missing.join(", ")}`,
 		};
 	}
 	if (persisted.status === "unavailable") {
-		return { status: "notReceived", reason: "unavailable", detail: persisted.reason };
+		return { status: "notReceived", reason: "unavailable", code: null, detail: persisted.reason };
 	}
 	if (persisted.status === "rejected") {
 		return {
 			status: "notReceived",
 			reason: "rejected",
+			code: persisted.code,
 			detail: `HTTP ${persisted.httpStatus} ${persisted.code}`,
 		};
 	}
 
 	const accepted = persisted.value;
 
-	// ---- 4 & 5. Notify. A throw here must not look like a persistence failure. ----
-	const customer = await deps.mailer
-		.sendCustomerConfirmation({ submission, accepted, returnsPageUrl: deps.returnsPageUrl })
-		.catch((error: unknown): MailResult => ({ status: "failed", reason: describe(error) }));
-
-	const internal = await deps.mailer
-		.sendInternalNotification({ submission, accepted, recipient: INTERNAL_NOTIFICATION_RECIPIENT })
-		.catch((error: unknown): MailResult => ({ status: "failed", reason: describe(error) }));
-
-	// ---- 6. Record delivery. Best-effort; the record stands either way. ----
-	let recorded = false;
-	try {
-		const update = await deps.recordDelivery(accepted.submissionId, {
-			customerStatus: mailStatus(customer),
-			internalStatus: mailStatus(internal),
-			lastError: mailError(customer) ?? mailError(internal),
-		});
-		recorded = update.status === "ok";
-	} catch {
-		recorded = false;
+	// A confirmation that did not go out is an operational problem, not a failed
+	// submission. It is logged so somebody can retry it, and the receipt tells the
+	// customer the truth without implying their notice failed.
+	if (accepted.emailDelivery && accepted.emailDelivery.customerStatus !== "sent") {
+		console.error(
+			"[withdrawal] delivery-degraded",
+			JSON.stringify({
+				submissionNumber: accepted.submissionNumber,
+				customerStatus: accepted.emailDelivery.customerStatus,
+				internalStatus: accepted.emailDelivery.internalStatus,
+			}),
+		);
 	}
 
-	const email: EmailDeliveryReport = { customer, internal, recorded };
-	alertDegradedDelivery(accepted, email);
-
-	return { status: "received", accepted, submission, email };
-}
-
-function describe(error: unknown): string {
-	return error instanceof Error ? error.name : "unknown error";
+	return { status: "received", accepted, submission };
 }
