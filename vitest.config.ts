@@ -11,6 +11,9 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@": path.resolve(__dirname, "./src"),
+			// See vitest.server-only-stub.ts — the real package throws on import outside
+			// the react-server condition, which would make every server module untestable.
+			"server-only": path.resolve(__dirname, "./vitest.server-only-stub.ts"),
 		},
 	},
 });
