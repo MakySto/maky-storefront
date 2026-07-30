@@ -1,0 +1,47 @@
+{
+  "docs": [
+    {
+      "id": "fixture-page-cz",
+      "title": "O nás",
+      "slug": "o-nas",
+      "summary": null,
+      "layout": [
+        {
+          "id": "fixture-block-cz",
+          "anchorId": null,
+          "blockName": null,
+          "markets": ["CZ"],
+          "blockType": "richText",
+          "content": {
+            "root": {
+              "type": "root",
+              "format": "",
+              "indent": 0,
+              "version": 1,
+              "children": [],
+              "direction": null
+            }
+          }
+        }
+      ],
+      "markets": ["CZ"],
+      "meta": {
+        "title": "O nás",
+        "description": null,
+        "image": null
+      },
+      "updatedAt": "2026-07-30T00:00:00.000Z",
+      "createdAt": "2026-07-30T00:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

@@ -1,0 +1,165 @@
+{
+  "root": {
+    "type": "root",
+    "format": "",
+    "indent": 0,
+    "version": 1,
+    "children": [
+      {
+        "type": "heading",
+        "tag": "h2",
+        "format": "",
+        "indent": 0,
+        "version": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Nadpis",
+            "format": 0,
+            "detail": 0,
+            "mode": "normal",
+            "style": "",
+            "version": 1
+          }
+        ],
+        "direction": null
+      },
+      {
+        "type": "paragraph",
+        "format": "start",
+        "indent": 0,
+        "version": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "bold",
+            "format": 1,
+            "detail": 0,
+            "mode": "normal",
+            "style": "",
+            "version": 1
+          },
+          {
+            "type": "text",
+            "text": " italic",
+            "format": 2,
+            "detail": 0,
+            "mode": "normal",
+            "style": "",
+            "version": 1
+          },
+          {
+            "type": "linebreak",
+            "version": 1
+          },
+          {
+            "type": "autolink",
+            "fields": {
+              "url": "https://maky.store/sk/kontakt",
+              "linkType": "custom"
+            },
+            "format": "",
+            "indent": 0,
+            "version": 2,
+            "children": [
+              {
+                "type": "text",
+                "text": "Externý odkaz",
+                "format": 0,
+                "detail": 0,
+                "mode": "normal",
+                "style": "",
+                "version": 1
+              }
+            ],
+            "direction": null
+          },
+          {
+            "type": "link",
+            "fields": {
+              "linkType": "internal",
+              "newTab": false,
+              "doc": {
+                "relationTo": "pages",
+                "value": {
+                  "id": "fixture-contact-page",
+                  "title": "Kontakt",
+                  "slug": "kontakt"
+                }
+              }
+            },
+            "format": "",
+            "indent": 0,
+            "version": 3,
+            "children": [
+              {
+                "type": "text",
+                "text": "Interný odkaz",
+                "format": 0,
+                "detail": 0,
+                "mode": "normal",
+                "style": "",
+                "version": 1
+              }
+            ],
+            "direction": null
+          }
+        ],
+        "direction": null,
+        "textStyle": "",
+        "textFormat": 0
+      },
+      {
+        "type": "list",
+        "listType": "bullet",
+        "start": 1,
+        "tag": "ul",
+        "format": "",
+        "indent": 0,
+        "version": 1,
+        "children": [
+          {
+            "type": "listitem",
+            "value": 1,
+            "checked": null,
+            "format": "",
+            "indent": 0,
+            "version": 1,
+            "children": [
+              {
+                "type": "text",
+                "text": "Položka zoznamu",
+                "format": 0,
+                "detail": 0,
+                "mode": "normal",
+                "style": "",
+                "version": 1
+              }
+            ],
+            "direction": null
+          }
+        ],
+        "direction": null
+      },
+      {
+        "type": "quote",
+        "format": "",
+        "indent": 0,
+        "version": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Citácia",
+            "format": 0,
+            "detail": 0,
+            "mode": "normal",
+            "style": "",
+            "version": 1
+          }
+        ],
+        "direction": null
+      }
+    ],
+    "direction": null
+  }
+}

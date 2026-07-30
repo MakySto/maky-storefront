@@ -1,0 +1,10 @@
+{
+  "source": "maky-cms",
+  "entityType": "collection",
+  "entitySlug": "pages",
+  "entityId": "019fb008-504b-779e-ad3f-1ff353267c88",
+  "event": "update",
+  "locale": "sk",
+  "slug": "o-spolocnosti",
+  "previousSlug": "o-nas"
+}

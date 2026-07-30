@@ -1,0 +1,31 @@
+{
+  "id": "storefront-cms-o-nas",
+  "version": 1,
+  "status": "candidate",
+  "providerRelease": "20260718T113448Z-91dc302982a1",
+  "providerCommit": "91dc302982a103e1cfa6b0d456f5293ec905d275",
+  "payloadVersion": "3.86.0",
+  "testedConsumerCommit": "fb4b60419ad18c4a634f53ac73f3bd8d768a9c9b",
+  "route": "/sk/o-nas",
+  "locale": "sk",
+  "market": "SK",
+  "depth": 1,
+  "supportedBlocks": ["richText"],
+  "previewSupported": false,
+  "contentCleanupRequired": true,
+  "fixtures": {
+    "fixtures/rest/page-o-nas.sk.published.depth-1.json": "sha256:c96f3cb585d447c8124e1854e3b80d960cf5ab4203f57116849ece112737139e",
+    "fixtures/rest/page-empty.sk.json": "sha256:7eaf2281a777dc0282e65502a24a30f3b8391f5b4ac480696e3549b823ead247",
+    "fixtures/rest/page-anonymous-draft-request.sk.json": "sha256:b8e93be161fcce18cda6687a42143610b604b9779d3c0c6d0c4e713788cf109c",
+    "fixtures/rest/page-market-excluded.sk.json": "sha256:ba27ac8d7e778905bc6a33b6a61db65058d045cbe4255af445275f60ba7b70ca",
+    "fixtures/rest/page-unsupported-block.sk.json": "sha256:5d71ce989fd6ca29706a5b1926d885b5108f9b30aa45bbbcc3b4f14b2d807069",
+    "fixtures/lexical/o-nas.observed.json": "sha256:7a47744d54f8a7b075fbea1a21a39a9de5fdbca3448b483f333342345c572ab8",
+    "fixtures/lexical/supported-nodes.synthetic.json": "sha256:d925ab19fa427b63b52fd755a79a129c744bcff124f1ae3c315aef8b84f5a7de",
+    "fixtures/lexical/unsupported-node.synthetic.json": "sha256:4496e517fc672e00eec8638ca87a301ca0d5548104a5ec7ca56e4777d383b031",
+    "fixtures/revalidation/page-publish.json": "sha256:6c6812c93bf9efc19023ce78e19d326d77f55272259b07755436a7dce0cf11b4",
+    "fixtures/revalidation/page-update.json": "sha256:f5a1d84b3993929a78372d3005f931e26442b9092a22701922fcf67ebbb1dc75",
+    "fixtures/revalidation/page-slug-change.json": "sha256:cf94fe429e77c8ab2e9bfca462a901270a2ece6e2fc097383e8a7fe606478451",
+    "fixtures/revalidation/page-unpublish.json": "sha256:de47cfc04beccf0656d4df20a5ced63b1580bb3a747383da7bff8a21a78a3138",
+    "fixtures/revalidation/page-delete.json": "sha256:49b34b7f038af9712d1adee437effb2607369bfe50115fd4a48def913eee252a"
+  }
+}

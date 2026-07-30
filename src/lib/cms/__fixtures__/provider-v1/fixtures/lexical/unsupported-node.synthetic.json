@@ -1,0 +1,46 @@
+{
+  "root": {
+    "type": "root",
+    "format": "",
+    "indent": 0,
+    "version": 1,
+    "children": [
+      {
+        "type": "paragraph",
+        "format": "start",
+        "indent": 0,
+        "version": 1,
+        "children": [
+          {
+            "type": "text",
+            "text": "Podporovaný text pred neznámym node.",
+            "format": 0,
+            "detail": 0,
+            "mode": "normal",
+            "style": "",
+            "version": 1
+          },
+          {
+            "type": "someFutureNode",
+            "version": 1,
+            "children": [
+              {
+                "type": "text",
+                "text": "Tento node sa vo V1 preskočí a zaloguje.",
+                "format": 0,
+                "detail": 0,
+                "mode": "normal",
+                "style": "",
+                "version": 1
+              }
+            ]
+          }
+        ],
+        "direction": null,
+        "textStyle": "",
+        "textFormat": 0
+      }
+    ],
+    "direction": null
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "request": {
+    "draft": true,
+    "payloadAuthorization": false
+  },
+  "response": {
+    "docs": [
+      {
+        "id": "019fb008-504b-779e-ad3f-1ff353267c88",
+        "slug": "o-nas",
+        "updatedAt": "2026-07-29T22:46:10.035Z",
+        "_status": "published"
+      }
+    ],
+    "hasNextPage": false,
+    "hasPrevPage": false,
+    "limit": 1,
+    "nextPage": null,
+    "page": 1,
+    "pagingCounter": 1,
+    "prevPage": null,
+    "totalDocs": 1,
+    "totalPages": 1
+  }
+}
