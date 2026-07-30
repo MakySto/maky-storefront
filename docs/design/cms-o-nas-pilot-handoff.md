@@ -1,11 +1,66 @@
 # CMS pilot `/sk/o-nas` — handoff
 
-Status: **hardened, branch-only, not deployed.**
-Branch `feat/cms-o-nas-pilot`, based on production `007f75e`.
+Status: **DEPLOYED to production 2026-07-30. Acceptance complete — step 7 passed.**
+
+```
+production base   b6b633da6b4969967cdc3244b9eab2fce3a206ea   BUILD_ID JAODjLtaigo1DL9m6h614
+rollback          007f75e6be3110ff3df26826b6ff9f95fdabbb32   BUILD_ID WRxB8lq9Ps8OmdZq-oBbR
+downtime          53 s
+```
+
+`/sk/o-nas` is now served from Payload. The rollback build is retained as a hardlink at
+`/opt/storefront/.next.rollback-007f75e-cmspilot`; restoring it is `rm -rf .next && cp -al
+.next.rollback-007f75e-cmspilot .next && git checkout --detach 007f75e && pm2 restart
+maky-storefront`, about fifteen seconds.
 
 This document is the truthful record of what the pilot does, what it deliberately does
 not do, and what has to be true before a second page follows it. Where it describes a
 limitation, the limitation is real — none of it is worked around elsewhere.
+
+## Cutover record, 2026-07-30
+
+| Check                         | Result                                                                                                                                                               |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CMS document cleaned          | 4 paragraphs, all 9 company-identity markers absent, `updatedAt` 19:26:24.111Z                                                                                       |
+| Release candidate on `:3032`  | accepted before production was touched                                                                                                                               |
+| Routes                        | `/sk`, `/sk/o-nas`, `/sk/obchodne-podmienky`, a real PDP — all 200 via Cloudflare                                                                                    |
+| CSS / JS chunks               | 200, utilities present in the served stylesheet                                                                                                                      |
+| `CompanyDetails`              | exactly once in the visible DOM; `IČO` once, seat once                                                                                                               |
+| Secrets in HTML / RSC payload | none                                                                                                                                                                 |
+| `[cms] served`                | `outcome: found`, `documentId 019fb008-…`, `blocks 1`                                                                                                                |
+| contract-violation            | 0                                                                                                                                                                    |
+| **Step 7** — publish an edit  | webhook `[cms-revalidate] ok` with tags `cms:collection:pages`, `cms:page:o-nas`; `updatedAt` moved `19:26:24.111Z` → `20:05:32.363Z`; the new wording rendered live |
+
+### Two things the cutover taught, both worth keeping
+
+**The build bakes the CMS document in.** The first release-candidate run on the spare port
+rendered the company block **twice** — the build had captured the pre-cleanup document in
+`.next/cache/fetch-cache`, and `next start` served it. Rebuilding after the cleanup fixed
+it. So `rm -rf .next` before the production build is load-bearing, not hygiene, and the
+content cleanup must precede the build rather than merely the deploy. Had the candidate
+not been run on a spare port first, the duplicate would have shipped.
+
+**The page is not cached, so step 7 does not test what it looks like it tests.** Measured
+on production: `[cms] served` appears **twice per request**, every request — once from
+`generateMetadata`, once from the page component — directly against `:3000` as well as
+through Cloudflare. Under `cacheComponents: true` (Next 16) `fetch` is no longer
+implicitly cached, so `next: { revalidate: 900, tags }` in `client.ts` creates no entry
+and the cache tags have nothing to invalidate.
+
+Consequences, in order of importance:
+
+- **Step 7's "must appear on the second view" cannot discriminate.** With nothing cached,
+  a published edit appears on the _first_ view whether or not the webhook works. What
+  actually proved the webhook on 2026-07-30 was its own log line, `[cms-revalidate] ok`
+  carrying the derived tags — that is the check to rely on, not the second view.
+- A Payload outage sends every single view to the bootstrap copy rather than a stale-but-
+  cached render. Safe, and silent.
+- No measurable latency cost today: `/sk/o-nas` answers in ~207 ms, the same as the static
+  `/sk/obchodne-podmienky` and `/sk/kontakt`.
+
+Not fixed here, and not urgent. Fixing it means `"use cache"` on the reader, which is a
+change to caching semantics on a live route and deserves its own pass — most sensibly
+alongside M.2, when there is more than one CMS page to cache.
 
 ## How to read a SHA in this document
 
@@ -16,7 +71,7 @@ here, and every SHA elsewhere in this document says which kind it is.
 
 | Term                                 | Meaning                                                                                                                                                                                                            |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **production base**                  | What `maky.store` is serving now, and what this branch is based on. `007f75e`, `BUILD_ID WRxB8lq9Ps8OmdZq-oBbR`. Also the rollback target.                                                                         |
+| **production base**                  | What `maky.store` is serving now. Since 2026-07-30 that is `b6b633d`, `BUILD_ID JAODjLtaigo1DL9m6h614`. The branch was _based on_ `007f75e`, which is now the rollback target rather than the base.                |
 | **implementation tip**               | The last commit that changed runtime behaviour. Moves only when code moves.                                                                                                                                        |
 | **branch / handoff tip**             | The actual tip of the branch, which is often a docs-only commit sitting above the implementation tip. This is what a deploy checks out and what `git ls-remote` reports.                                           |
 | **deploy candidate**                 | A branch/handoff tip that has passed validation and is offered for deployment. Not yet deployed; it becomes the new production base only after a cutover.                                                          |
@@ -144,14 +199,21 @@ first populated one arrived — the same class of miss this file exists to preve
 up. A populated `legal / 1.2 / 2026-08-04` group, an explicit `null`, an empty group and
 two malformed shapes all parse to the identical page and reach no markup.
 
-**Noticed while doing this, and not fixed here.** The vendored base fixture is a
-provider-side recording, not a copy of the live document, and the two have drifted:
-`page-o-nas.sk.published.depth-1.json` holds four paragraphs with no company block and no
-`info@maky.store` autolink, while `1e62961` inspected the live document and reported five
-paragraphs including exactly those two markers. Three of the fixture's four paragraphs are
-shortened rewrites of `o-nas-static.tsx` rather than character-for-character matches.
-`provider-conformance.test.ts` calls this fixture "the real production response", which is
-where the two records collide.
+**Settled at cutover — an earlier note here got the conclusion wrong.** The vendored base
+fixture is a provider-side recording rather than a copy of the live document:
+`page-o-nas.sk.published.depth-1.json` holds four _shortened_ paragraphs, while the live
+document held the long ones plus a company block. That looked like a contradiction of
+`1e62961`, and it was reported as one. It is not.
+
+Reading the live document through the reader's own request path on 2026-07-30 settled it:
+after the cleanup, its four paragraphs are **character-for-character** `o-nas-static.tsx`
+— checked by string equality, not by eye. `1e62961` was right about the live document; the
+fixture is simply a different one. `provider-conformance.test.ts` calling it "the real
+production response" is the only loose wording left, and it is the provider pack's framing
+to fix, not this branch's.
+
+So the byte-identical warning stands at full strength: the CMS path and the bootstrap path
+now render the same HTML, and `[cms] served` is the only thing that tells them apart.
 
 Nothing in this gate rests on it — every assertion renders from the frozen fixture — but
 two things elsewhere do. `§6`'s claim that the paths become byte-identical after cleanup is
