@@ -15,6 +15,11 @@ import {
  * It refuses input that is malformed: a missing name, an address that cannot be an
  * e-mail, a quantity of zero, a body longer than any real notice.
  *
+ * Note what it does not accept at all: a phone number. Payload's withdrawal endpoint
+ * allows exactly `name` and `email` inside `customer` and rejects unknown keys, so a
+ * phone would fail the whole request. Collecting a field only to drop it before sending
+ * would also be personal data gathered for no purpose. The contact form keeps it.
+ *
  * It does NOT refuse a notice because the order cannot be found, because the order
  * looks older than fourteen days, because nothing has been delivered yet, or because
  * the goods might fall under a statutory exception. Every one of those has an innocent
@@ -31,7 +36,6 @@ import {
 export type WithdrawalField =
 	| "customerName"
 	| "customerEmail"
-	| "customerPhone"
 	| "orderNumber"
 	| "scope"
 	| "items"
@@ -50,7 +54,6 @@ export interface ValidatedInput {
 	readonly source: WithdrawalSource;
 	readonly name: string;
 	readonly email: string;
-	readonly phone: string | null;
 	readonly orderNumber: string;
 	readonly scope: WithdrawalScope;
 	readonly items: readonly WithdrawalItem[];
@@ -68,7 +71,6 @@ export interface RawWithdrawalInput {
 	readonly locale: unknown;
 	readonly name: unknown;
 	readonly email: unknown;
-	readonly phone: unknown;
 	readonly orderNumber: unknown;
 	readonly scope: unknown;
 	readonly items: unknown;
@@ -146,11 +148,13 @@ function parseItems(raw: unknown, errors: FieldError[]): WithdrawalItem[] {
 		}
 
 		const orderLineId = clean(record.orderLineId);
+		const sku = clean(record.sku);
 		items.push({
 			orderLineId: orderLineId.length > 0 ? orderLineId.slice(0, 128) : null,
 			productName,
-			// Never populated in V1 — see WithdrawalItem.sku.
-			sku: null,
+			// Optional and hand-typed. Account-mode lines never carry one, because the
+			// order query does not request `sku` — see WithdrawalItem.sku.
+			sku: sku.length > 0 ? sku.slice(0, 128) : null,
 			quantity: rawQuantity,
 		});
 	}
@@ -180,9 +184,6 @@ export function validateWithdrawal(raw: RawWithdrawalInput): ValidationResult {
 	const email = clean(raw.email).slice(0, WITHDRAWAL_LIMITS.email);
 	if (email.length === 0) errors.push({ field: "customerEmail", code: "required" });
 	else if (!EMAIL_RE.test(email)) errors.push({ field: "customerEmail", code: "invalid" });
-
-	const phoneRaw = clean(raw.phone);
-	const phone = phoneRaw.length > 0 ? phoneRaw.slice(0, WITHDRAWAL_LIMITS.phone) : null;
 
 	// The contract identifier. An order number is the usual one, but any identifier the
 	// customer can give is accepted — the point is that the contract is identifiable,
@@ -214,7 +215,6 @@ export function validateWithdrawal(raw: RawWithdrawalInput): ValidationResult {
 			source,
 			name,
 			email,
-			phone,
 			orderNumber,
 			// Both narrowed above; the guard is for the type checker, not for runtime.
 			scope: scope ?? "wholeOrder",

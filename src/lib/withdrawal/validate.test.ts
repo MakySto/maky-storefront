@@ -13,7 +13,6 @@ function input(overrides: Partial<RawWithdrawalInput> = {}): RawWithdrawalInput 
 		locale: "sk",
 		name: "Jana Nováková",
 		email: "jana@example.sk",
-		phone: null,
 		orderNumber: "ORD-1042",
 		scope: "wholeOrder",
 		items: [],
@@ -61,8 +60,17 @@ describe("validateWithdrawal — the minimum a notice needs", () => {
 		// A notice carrying none of those is complete. This is the whole point of the
 		// field list: § 20a asks for a name, a contract identifier and an online
 		// contact, and anything further would narrow the right by making it harder.
-		const result = validateWithdrawal(input({ phone: null, note: null, items: [] }));
+		expect(validateWithdrawal(input({ note: null, items: [] })).ok).toBe(true);
+	});
+
+	it("has no phone field at all — Payload's withdrawal endpoint rejects one", () => {
+		// `customer` allows exactly name and email, and unknown keys are refused, so a
+		// phone would fail the whole request. Collecting it only to drop it would also
+		// be personal data gathered for no purpose.
+		const result = validateWithdrawal(input());
 		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(Object.keys(result.value)).not.toContain("phone");
 	});
 });
 
@@ -137,7 +145,7 @@ describe("validateWithdrawal — malformed input", () => {
 		expect(codes(raw)).toContain("items:invalidQuantity");
 	});
 
-	it("caps the item count", () => {
+	it("caps the item count at Payload's limit of 100", () => {
 		const items = Array.from({ length: WITHDRAWAL_LIMITS.items + 1 }, (_, index) => ({
 			orderLineId: `l${index}`,
 			productName: "Nosič",
@@ -170,11 +178,25 @@ describe("validateWithdrawal — normalisation", () => {
 	});
 
 	it("treats a blank optional field as absent, not as an empty string", () => {
-		const result = validateWithdrawal(input({ phone: "   ", note: "  " }));
+		const result = validateWithdrawal(input({ note: "  " }));
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
-		expect(result.value.phone).toBeNull();
 		expect(result.value.note).toBeNull();
+	});
+
+	it("keeps a hand-typed SKU and nulls a blank one", () => {
+		const result = validateWithdrawal(
+			input({
+				scope: "selectedItems",
+				items: [
+					{ productName: "Strešný box", sku: " TH-6299 ", quantity: 1 },
+					{ productName: "Nosič", sku: "  ", quantity: 1 },
+				],
+			}),
+		);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.value.items.map((item) => item.sku)).toEqual(["TH-6299", null]);
 	});
 
 	it("never lets the client's `source` claim mean anything more than a hint", () => {
