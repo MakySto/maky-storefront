@@ -34,7 +34,8 @@ export type LexicalElementFormat = "" | "left" | "start" | "center" | "right" | 
 /**
  * A Lexical node as it arrives over the wire: an object with a string `type` and
  * otherwise unknown shape. Narrowing happens per node in the renderer, so an
- * unrecognised node is a no-op instead of a crash.
+ * unrecognised node cannot crash it — but one that carries content is rejected before
+ * it ever gets there. See {@link findUnrenderableNode}.
  */
 export interface LexicalNode {
 	readonly type: string;
@@ -66,6 +67,82 @@ export function nodeChildren(node: LexicalNode): LexicalNode[] {
 	const raw = node.children;
 	if (!Array.isArray(raw)) return [];
 	return raw.filter(isLexicalNode);
+}
+
+/**
+ * Node types the renderer has a case for.
+ *
+ * The renderer switches on `node.type`; this set is the same list in data form so
+ * validation can reject a document *before* it reaches the renderer. The two are kept
+ * honest by a test that renders one of each type and asserts none of them logs as
+ * unsupported — a comment asking two files to stay in sync would not survive contact
+ * with a new node type.
+ */
+export const RENDERABLE_NODE_TYPES: ReadonlySet<string> = new Set([
+	"root",
+	"paragraph",
+	"heading",
+	"quote",
+	"list",
+	"listitem",
+	"text",
+	"linebreak",
+	"link",
+	"autolink",
+]);
+
+/**
+ * Whether skipping this node would lose published content.
+ *
+ * Text is the obvious case. But an `upload` node carries an image and no text at all,
+ * so a plain "does it have text" test would let a published photograph vanish in
+ * silence — the exact failure this policy exists to prevent. A node therefore also
+ * counts as content-bearing when it carries any of the payload shapes Payload uses to
+ * embed content: children, a `fields` object, or a relationship.
+ *
+ * What stays inert is a bare marker such as `{ type: "horizontalrule", version: 1 }`.
+ * Skipping one of those loses a separator, not content, and it is logged either way.
+ *
+ * Known limit: a future node could hold text in a field this function does not look at,
+ * and would then be judged inert. There is no way to recognise content in a shape
+ * nobody has described yet; the structured log is what makes that case findable.
+ */
+function isContentBearing(node: LexicalNode): boolean {
+	if (typeof node.text === "string" && node.text.trim().length > 0) return true;
+
+	const children = nodeChildren(node);
+	if (children.length > 0) return true;
+
+	if (typeof node.fields === "object" && node.fields !== null) return true;
+	if (typeof node.relationTo === "string" && node.relationTo.length > 0) return true;
+	if (node.value !== undefined && node.value !== null) return true;
+
+	return false;
+}
+
+/**
+ * Find the first node the storefront cannot render without losing content.
+ *
+ * Returns the offending node's type, or `null` when the whole tree is renderable.
+ *
+ * This runs at validation time rather than at render time on purpose. Discovering an
+ * unrenderable node mid-render leaves only two bad options — throw, or drop it and
+ * serve a page missing a paragraph nobody will notice. Discovering it here means the
+ * whole CMS candidate can be rejected while the previous good render is still intact.
+ */
+export function findUnrenderableNode(document: LexicalDocument): string | null {
+	const walk = (node: LexicalNode): string | null => {
+		if (!RENDERABLE_NODE_TYPES.has(node.type) && isContentBearing(node)) return node.type;
+
+		for (const child of nodeChildren(node)) {
+			const found = walk(child);
+			if (found) return found;
+		}
+
+		return null;
+	};
+
+	return walk(document.root);
 }
 
 /** Text of a `text` node. Empty string when absent — never `undefined`. */

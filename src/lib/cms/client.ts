@@ -123,8 +123,19 @@ export async function fetchCmsPage(slug: string, locale: PayloadLocale): Promise
 	const parsed = parsePagesResponse(body);
 
 	if (parsed.status === "invalid") {
-		logCmsError("contract-violation", { slug, locale, reason: parsed.reason });
-		return { status: "error", reason: parsed.reason };
+		// One line, carrying everything needed to find the offending document in Payload:
+		// its id and slug, plus the block or node type that made it unrenderable.
+		const { reason, documentId, blockType, nodeType } = parsed.violation;
+		logCmsError("contract-violation", {
+			slug,
+			locale,
+			reason,
+			documentId,
+			documentSlug: parsed.violation.slug,
+			blockType,
+			nodeType,
+		});
+		return { status: "error", reason };
 	}
 
 	if (parsed.status === "empty") {

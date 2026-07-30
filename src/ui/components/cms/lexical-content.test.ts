@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { type LexicalDocument } from "@/lib/cms/lexical";
+import { RENDERABLE_NODE_TYPES, type LexicalDocument } from "@/lib/cms/lexical";
 import { LexicalContent } from "./lexical-content";
 
 /** Render the component the way a server component would, and return the HTML. */
@@ -148,6 +148,10 @@ describe("LexicalContent — safety", () => {
 
 describe("LexicalContent — resilience", () => {
 	it("renders nothing for an unknown node and logs it, instead of throwing", () => {
+		// Belt and braces. `parsePagesResponse` rejects a document containing a
+		// content-bearing unknown node before it ever reaches this component, so in
+		// production this branch is only reachable for inert marker nodes. It stays
+		// because a renderer that throws on unexpected input takes the page with it.
 		const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 		const html = render({
 			children: [paragraph(text("pred")), { type: "someFutureNode", children: [text("stratené")] }],
@@ -157,6 +161,38 @@ describe("LexicalContent — resilience", () => {
 			"[cms] unsupported-lexical-node",
 			JSON.stringify({ nodeType: "someFutureNode" }),
 		);
+		spy.mockRestore();
+	});
+
+	it("has a case for every type in RENDERABLE_NODE_TYPES", () => {
+		// The validator rejects documents using this set; the renderer switches on
+		// node.type. If the two drift, either published content is refused for no
+		// reason or an unrenderable node slips past validation. This test is what
+		// keeps them honest — a comment asking two files to agree would not.
+		const sample: Record<string, Record<string, unknown>> = {
+			paragraph: paragraph(text("x")),
+			heading: { type: "heading", tag: "h2", children: [text("x")] },
+			quote: { type: "quote", children: [text("x")] },
+			list: { type: "list", listType: "bullet", children: [{ type: "listitem", children: [text("x")] }] },
+			listitem: { type: "listitem", children: [text("x")] },
+			text: text("x"),
+			linebreak: { type: "linebreak" },
+			link: { type: "link", fields: { url: "https://maky.store" }, children: [text("x")] },
+			autolink: { type: "autolink", fields: { url: "mailto:a@b.c" }, children: [text("x")] },
+		};
+
+		// `root` is the document wrapper, never a child, so it has no renderer case.
+		const renderable = [...RENDERABLE_NODE_TYPES].filter((type) => type !== "root");
+		expect(Object.keys(sample).sort()).toEqual([...renderable].sort());
+
+		const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+		for (const [type, node] of Object.entries(sample)) {
+			render({ children: [node] });
+			expect(spy, `renderer has no case for "${type}"`).not.toHaveBeenCalledWith(
+				"[cms] unsupported-lexical-node",
+				expect.stringContaining(type),
+			);
+		}
 		spy.mockRestore();
 	});
 

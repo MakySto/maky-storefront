@@ -1,4 +1,4 @@
-import { isLexicalDocument, type LexicalDocument } from "./lexical";
+import { findUnrenderableNode, isLexicalDocument, type LexicalDocument } from "./lexical";
 
 /**
  * Runtime validation of the Payload `/api/pages` response.
@@ -17,6 +17,19 @@ import { isLexicalDocument, type LexicalDocument } from "./lexical";
  *
  * `empty` means the page does not exist and must NOT resurrect a stale fallback.
  * `invalid` means we cannot trust what we got and must fall back.
+ *
+ * ## All-or-nothing
+ *
+ * A document is rendered whole or not at all. Anything the storefront cannot render
+ * faithfully — an unsupported `blockType`, an unknown content-bearing Lexical node —
+ * makes the entire candidate `invalid` rather than being skipped.
+ *
+ * The rejected alternative was to drop the offending part and render the rest. It
+ * produces a page that looks fine, a publish that reported success, and an editor who
+ * never learns a paragraph is missing. A page that visibly reverts to its bootstrap
+ * copy is a worse-looking failure and a far better one: it is noticed. The cost is
+ * real and worth stating — adding a block type in Payload takes this route back to its
+ * code fallback until the storefront learns to render it.
  */
 
 export interface CmsSeoMeta {
@@ -37,20 +50,8 @@ export interface CmsRichTextBlock extends CmsBlockCommon {
 	readonly content: LexicalDocument;
 }
 
-/**
- * A block type this version does not render.
- *
- * Kept in the parsed output rather than dropped during parsing so the renderer can
- * emit one structured log line naming it. A published block that vanishes without
- * a trace is the failure mode worth engineering against: the editor sees "success"
- * and never learns half the page is missing.
- */
-export interface CmsUnsupportedBlock extends CmsBlockCommon {
-	readonly blockType: string;
-	readonly unsupported: true;
-}
-
-export type CmsBlock = CmsRichTextBlock | CmsUnsupportedBlock;
+/** V1 renders `richText` and nothing else. An unknown type rejects the document. */
+export type CmsBlock = CmsRichTextBlock;
 
 export interface CmsPage {
 	readonly id: string;
@@ -63,10 +64,28 @@ export interface CmsPage {
 	readonly updatedAt: string | null;
 }
 
+/**
+ * Why a candidate was rejected, in a shape a log line can carry.
+ *
+ * `reason` alone is not enough to act on. When an editor reports "the About page went
+ * back to the old text", the answer has to be one grep away: which document, which
+ * slug, which block type or node type. Hence the identifying fields, populated
+ * whenever validation got far enough to know them.
+ */
+export interface CmsContractViolation {
+	readonly reason: string;
+	readonly documentId: string | null;
+	readonly slug: string | null;
+	/** Set when an unsupported Page `blockType` is the cause. */
+	readonly blockType: string | null;
+	/** Set when an unrenderable Lexical node type is the cause. */
+	readonly nodeType: string | null;
+}
+
 export type CmsPageParse =
 	| { readonly status: "ok"; readonly page: CmsPage }
 	| { readonly status: "empty" }
-	| { readonly status: "invalid"; readonly reason: string };
+	| { readonly status: "invalid"; readonly violation: CmsContractViolation };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -103,10 +122,9 @@ function parseMeta(value: unknown): CmsSeoMeta {
 	};
 }
 
-function parseBlock(
-	value: unknown,
-	index: number,
-): { ok: true; block: CmsBlock } | { ok: false; reason: string } {
+type BlockFailure = { ok: false; reason: string; blockType?: string; nodeType?: string };
+
+function parseBlock(value: unknown, index: number): { ok: true; block: CmsBlock } | BlockFailure {
 	if (!isRecord(value)) return { ok: false, reason: `layout[${index}] is not an object` };
 
 	const blockType = value.blockType;
@@ -117,58 +135,95 @@ function parseBlock(
 	const markets = parseMarkets(value.markets);
 	if (!markets.ok) return { ok: false, reason: `layout[${index}].markets is not null or string[]` };
 
-	const common: CmsBlockCommon = {
-		id: optionalString(value.id),
-		anchorId: optionalString(value.anchorId),
-		blockName: optionalString(value.blockName),
-		markets: markets.markets,
-	};
-
-	if (blockType === "richText") {
-		// A known block type with a malformed payload is a contract break, not an
-		// unsupported block — we would be silently dropping content we claim to render.
-		if (!isLexicalDocument(value.content)) {
-			return { ok: false, reason: `layout[${index}] richText content is not a Lexical document` };
-		}
-		return { ok: true, block: { ...common, blockType: "richText", content: value.content } };
+	// An unsupported block type rejects the document. Rendering the rest would show a
+	// page the editor never published and never gets told about.
+	if (blockType !== "richText") {
+		return { ok: false, reason: `layout[${index}] has unsupported blockType ${blockType}`, blockType };
 	}
 
-	return { ok: true, block: { ...common, blockType, unsupported: true } };
+	// A known block type with a malformed payload is a contract break too — we would be
+	// silently dropping content we claim to render.
+	if (!isLexicalDocument(value.content)) {
+		return { ok: false, reason: `layout[${index}] richText content is not a Lexical document` };
+	}
+
+	// The Lexical tree is validated here, not in the renderer, so an unrenderable node
+	// can still reject the whole candidate while the previous good render stands.
+	const unrenderable = findUnrenderableNode(value.content);
+	if (unrenderable) {
+		return {
+			ok: false,
+			reason: `layout[${index}] richText contains unrenderable node ${unrenderable}`,
+			nodeType: unrenderable,
+		};
+	}
+
+	return {
+		ok: true,
+		block: {
+			id: optionalString(value.id),
+			anchorId: optionalString(value.anchorId),
+			blockName: optionalString(value.blockName),
+			markets: markets.markets,
+			blockType: "richText",
+			content: value.content,
+		},
+	};
 }
 
 export function parsePagesResponse(raw: unknown): CmsPageParse {
-	if (!isRecord(raw)) return { status: "invalid", reason: "response body is not an object" };
+	/** Identifying fields are filled in as soon as they are known and trusted. */
+	let documentId: string | null = null;
+	let documentSlug: string | null = null;
+
+	const invalid = (reason: string, extra: { blockType?: string; nodeType?: string } = {}): CmsPageParse => ({
+		status: "invalid",
+		violation: {
+			reason,
+			documentId,
+			slug: documentSlug,
+			blockType: extra.blockType ?? null,
+			nodeType: extra.nodeType ?? null,
+		},
+	});
+
+	if (!isRecord(raw)) return invalid("response body is not an object");
 
 	const docs = raw.docs;
-	if (!Array.isArray(docs)) return { status: "invalid", reason: "response has no docs array" };
+	if (!Array.isArray(docs)) return invalid("response has no docs array");
 	if (docs.length === 0) return { status: "empty" };
 
 	const doc = docs[0];
-	if (!isRecord(doc)) return { status: "invalid", reason: "docs[0] is not an object" };
+	if (!isRecord(doc)) return invalid("docs[0] is not an object");
 
 	const id = optionalString(doc.id);
 	const title = optionalString(doc.title);
 	const slug = optionalString(doc.slug);
-	if (!id) return { status: "invalid", reason: "docs[0].id is missing" };
-	if (!title) return { status: "invalid", reason: "docs[0].title is missing" };
-	if (!slug) return { status: "invalid", reason: "docs[0].slug is missing" };
+	documentId = id;
+	documentSlug = slug;
+
+	if (!id) return invalid("docs[0].id is missing");
+	if (!title) return invalid("docs[0].title is missing");
+	if (!slug) return invalid("docs[0].slug is missing");
 
 	// Defence in depth. The query already filters `_status=published`; refusing a
 	// non-published document here means a CMS-side change to that filter cannot
 	// quietly publish a draft to the storefront.
 	if (doc._status !== "published") {
-		return { status: "invalid", reason: `docs[0]._status is ${JSON.stringify(doc._status)}, not published` };
+		return invalid(`docs[0]._status is ${JSON.stringify(doc._status)}, not published`);
 	}
 
-	if (!Array.isArray(doc.layout)) return { status: "invalid", reason: "docs[0].layout is not an array" };
+	if (!Array.isArray(doc.layout)) return invalid("docs[0].layout is not an array");
 
 	const markets = parseMarkets(doc.markets);
-	if (!markets.ok) return { status: "invalid", reason: "docs[0].markets is not null or string[]" };
+	if (!markets.ok) return invalid("docs[0].markets is not null or string[]");
 
 	const layout: CmsBlock[] = [];
 	for (const [index, entry] of doc.layout.entries()) {
 		const parsed = parseBlock(entry, index);
-		if (!parsed.ok) return { status: "invalid", reason: parsed.reason };
+		if (!parsed.ok) {
+			return invalid(parsed.reason, { blockType: parsed.blockType, nodeType: parsed.nodeType });
+		}
 		layout.push(parsed.block);
 	}
 

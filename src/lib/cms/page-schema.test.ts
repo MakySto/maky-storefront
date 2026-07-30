@@ -73,7 +73,7 @@ describe("parsePagesResponse — draft refusal", () => {
 		const result = parsePagesResponse(published({ _status: "draft" }));
 		expect(result.status).toBe("invalid");
 		if (result.status !== "invalid") return;
-		expect(result.reason).toContain("not published");
+		expect(result.violation.reason).toContain("not published");
 	});
 
 	it("refuses a document with no status at all", () => {
@@ -108,8 +108,11 @@ describe("parsePagesResponse — required fields", () => {
 	});
 });
 
-describe("parsePagesResponse — block handling", () => {
-	it("keeps an unsupported block so the renderer can log it, rather than dropping it silently", () => {
+describe("parsePagesResponse — an unsupported block rejects the whole document", () => {
+	it("refuses the document rather than rendering the supported blocks around the gap", () => {
+		// The behaviour this replaces returned status "ok" with the bannerGrid marked
+		// unsupported, and the renderer dropped it. The page looked complete, the
+		// publish reported success, and nobody found out.
 		const result = parsePagesResponse(
 			published({
 				layout: [
@@ -118,15 +121,20 @@ describe("parsePagesResponse — block handling", () => {
 				],
 			}),
 		);
-		expect(result.status).toBe("ok");
-		if (result.status !== "ok") return;
-		expect(result.page.layout).toHaveLength(2);
-		const unsupported = result.page.layout[1];
-		expect(unsupported?.blockType).toBe("bannerGrid");
-		expect(unsupported && "unsupported" in unsupported ? unsupported.unsupported : false).toBe(true);
+		expect(result.status).toBe("invalid");
 	});
 
-	it("treats a KNOWN block with a malformed payload as a contract break, not as unsupported", () => {
+	it("names the document and the offending block type, so the log can be acted on", () => {
+		const result = parsePagesResponse(published({ layout: [{ blockType: "bannerGrid", markets: null }] }));
+		expect(result.status).toBe("invalid");
+		if (result.status !== "invalid") return;
+		expect(result.violation.blockType).toBe("bannerGrid");
+		expect(result.violation.documentId).toBe("019fb008-504b-779e-ad3f-1ff353267c88");
+		expect(result.violation.slug).toBe("o-nas");
+		expect(result.violation.nodeType).toBeNull();
+	});
+
+	it("treats a KNOWN block with a malformed payload as a contract break too", () => {
 		// Dropping this quietly would mean rendering a page we claim supports richText
 		// while omitting its only paragraph.
 		const result = parsePagesResponse(
@@ -134,7 +142,9 @@ describe("parsePagesResponse — block handling", () => {
 		);
 		expect(result.status).toBe("invalid");
 		if (result.status !== "invalid") return;
-		expect(result.reason).toContain("richText");
+		expect(result.violation.reason).toContain("richText");
+		// Not an unsupported block type — the type was fine, the payload was not.
+		expect(result.violation.blockType).toBeNull();
 	});
 
 	it("refuses a block with no blockType", () => {
@@ -146,6 +156,65 @@ describe("parsePagesResponse — block handling", () => {
 			parsePagesResponse(published({ layout: [{ blockType: "richText", content: lexical, markets: 7 }] }))
 				.status,
 		).toBe("invalid");
+	});
+});
+
+describe("parsePagesResponse — an unrenderable Lexical node rejects the document", () => {
+	/** A richText block whose paragraph contains `node`. */
+	function withNode(node: Record<string, unknown>) {
+		return published({
+			layout: [
+				{
+					blockType: "richText",
+					markets: null,
+					content: {
+						root: {
+							type: "root",
+							children: [
+								{
+									type: "paragraph",
+									children: [{ type: "text", text: "Pred", format: 0 }, node],
+								},
+							],
+						},
+					},
+				},
+			],
+		});
+	}
+
+	it("refuses a node that carries text, naming the node type", () => {
+		const result = parsePagesResponse(
+			withNode({ type: "someFutureNode", children: [{ type: "text", text: "Stratený odsek", format: 0 }] }),
+		);
+		expect(result.status).toBe("invalid");
+		if (result.status !== "invalid") return;
+		expect(result.violation.nodeType).toBe("someFutureNode");
+		expect(result.violation.slug).toBe("o-nas");
+		expect(result.violation.blockType).toBeNull();
+	});
+
+	it("refuses an upload node, which carries an image and no text at all", () => {
+		// The reason the rule is "content-bearing" and not "text-bearing": a published
+		// photograph has no text to detect, and would otherwise vanish in silence.
+		const result = parsePagesResponse(
+			withNode({ type: "upload", relationTo: "media", value: { url: "https://x/a.png" } }),
+		);
+		expect(result.status).toBe("invalid");
+		if (result.status !== "invalid") return;
+		expect(result.violation.nodeType).toBe("upload");
+	});
+
+	it("accepts an inert marker node — skipping a separator loses no content", () => {
+		const result = parsePagesResponse(withNode({ type: "horizontalrule", version: 1 }));
+		expect(result.status).toBe("ok");
+	});
+
+	it("accepts the node types the renderer handles", () => {
+		const result = parsePagesResponse(
+			withNode({ type: "link", fields: { url: "https://maky.store" }, children: [] }),
+		);
+		expect(result.status).toBe("ok");
 	});
 });
 

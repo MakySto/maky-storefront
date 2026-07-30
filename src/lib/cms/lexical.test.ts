@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { alignmentClass, headingTag, listTag, readLink, safeLinkUrl, textFormats } from "./lexical";
+import {
+	alignmentClass,
+	findUnrenderableNode,
+	headingTag,
+	listTag,
+	readLink,
+	RENDERABLE_NODE_TYPES,
+	safeLinkUrl,
+	textFormats,
+	type LexicalDocument,
+} from "./lexical";
 
 describe("safeLinkUrl", () => {
 	it("allows the three protocols the content actually uses", () => {
@@ -165,5 +175,98 @@ describe("readLink", () => {
 
 	it("survives a missing fields object", () => {
 		expect(readLink({ type: "autolink" })).toEqual({ url: null, internal: null, newTab: false });
+	});
+});
+
+describe("findUnrenderableNode", () => {
+	/** Wrap `children` in a document, the way a richText block carries one. */
+	function doc(...children: Record<string, unknown>[]): LexicalDocument {
+		return { root: { type: "root", children } } as unknown as LexicalDocument;
+	}
+
+	it("passes a tree made only of renderable nodes", () => {
+		expect(
+			findUnrenderableNode(
+				doc(
+					{ type: "heading", tag: "h2", children: [{ type: "text", text: "Nadpis" }] },
+					{
+						type: "paragraph",
+						children: [
+							{ type: "text", text: "Text" },
+							{ type: "linebreak" },
+							{ type: "autolink", fields: { url: "mailto:a@b.c" }, children: [] },
+						],
+					},
+					{
+						type: "list",
+						listType: "bullet",
+						children: [{ type: "listitem", children: [{ type: "text", text: "položka" }] }],
+					},
+				),
+			),
+		).toBeNull();
+	});
+
+	it("finds an unknown node that carries text", () => {
+		expect(
+			findUnrenderableNode(
+				doc({ type: "someFutureNode", children: [{ type: "text", text: "Publikovaný odsek" }] }),
+			),
+		).toBe("someFutureNode");
+	});
+
+	it("finds an unknown node nested deep inside renderable ones", () => {
+		expect(
+			findUnrenderableNode(
+				doc({
+					type: "list",
+					children: [
+						{
+							type: "listitem",
+							children: [{ type: "table", children: [{ type: "text", text: "bunka" }] }],
+						},
+					],
+				}),
+			),
+		).toBe("table");
+	});
+
+	it("finds an upload node, which has no text but is still published content", () => {
+		expect(
+			findUnrenderableNode(doc({ type: "upload", relationTo: "media", value: { url: "https://x/a.png" } })),
+		).toBe("upload");
+	});
+
+	it("finds a block node carrying a fields payload", () => {
+		expect(findUnrenderableNode(doc({ type: "block", fields: { blockType: "cta" } }))).toBe("block");
+	});
+
+	it("lets an inert marker node through — a separator is not content", () => {
+		expect(findUnrenderableNode(doc({ type: "horizontalrule", version: 1 }))).toBeNull();
+		expect(findUnrenderableNode(doc({ type: "tab", version: 1 }))).toBeNull();
+	});
+
+	it("treats whitespace-only text as not content", () => {
+		// Otherwise an indentation artefact would take a whole page down.
+		expect(findUnrenderableNode(doc({ type: "someFutureNode", text: "   " }))).toBeNull();
+	});
+
+	it("reports the FIRST offender, so the log names one thing to fix", () => {
+		expect(
+			findUnrenderableNode(
+				doc(
+					{ type: "upload", value: { url: "x" } },
+					{ type: "table", children: [{ type: "text", text: "y" }] },
+				),
+			),
+		).toBe("upload");
+	});
+
+	it("accepts an empty document", () => {
+		expect(findUnrenderableNode(doc())).toBeNull();
+	});
+
+	it("keeps `root` in the renderable set, or every document would be rejected", () => {
+		expect(RENDERABLE_NODE_TYPES.has("root")).toBe(true);
 	});
 });
