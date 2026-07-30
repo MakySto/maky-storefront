@@ -110,7 +110,7 @@ everything against a fixture pair, so none of it rests on a hand-written guess a
 Payload sends:
 
 ```
-__fixtures__/provider-v1/…/page-o-nas.sk.published.depth-1.json   vendored production bytes
+__fixtures__/provider-v1/…/page-o-nas.sk.published.depth-1.json   vendored provider recording
 __fixtures__/forward-compat/…legal-metadata.json                  the same document + group
 ```
 
@@ -118,7 +118,8 @@ The second file is storefront-authored and deliberately **not** inside the vendo
 whose `PROVENANCE.md` says not to edit a fixture and whose integrity test would have
 ignored an extra file in silence. Its derivation is enforced, not claimed: the gate deletes
 `docs[0].legalMetadata` and asserts the remainder is deep-equal to the vendored response,
-so it cannot drift away from real production bytes without failing.
+so it cannot drift away from the recorded document without failing. That equality is
+structural, not byte-for-byte: the two files are indented differently, deliberately.
 
 `page-schema.ts` now carries the matching warning in prose — rejecting unknown keys reads
 as symmetry with the all-or-nothing rule and is the opposite of it.

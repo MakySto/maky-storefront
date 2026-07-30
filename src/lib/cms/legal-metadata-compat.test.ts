@@ -101,7 +101,7 @@ afterEach(() => {
 	vi.restoreAllMocks();
 });
 
-describe("legalMetadata — the fixture is production bytes plus exactly one group", () => {
+describe("legalMetadata — the fixture is the vendored document plus exactly one group", () => {
 	// Without this, the gate could pass against a document nobody has ever received, and
 	// would prove nothing about the CMS. The derivation is enforced, not asserted in prose.
 	it("adds the group the Payload Forms migration will send", () => {

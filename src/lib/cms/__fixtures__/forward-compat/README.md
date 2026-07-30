@@ -26,13 +26,16 @@ Forms migration adds to every Page document:
 Derived from `provider-v1/fixtures/rest/page-o-nas.sk.published.depth-1.json`. The
 derivation is not a claim in this file — it is enforced. `legal-metadata-compat.test.ts`
 deletes `docs[0].legalMetadata` from this fixture and asserts the remainder is deep-equal
-to the vendored response, so this file cannot drift away from real production bytes
-without a test failing. Everything the gate proves therefore rests on the genuine
-production document, not on a hand-written approximation of one.
+to the vendored response, so this file cannot drift away from the recorded document
+without a test failing. What the gate proves therefore rests on a document that really
+came off the wire, not on a hand-written approximation of one.
 
-Formatting is Prettier's, deliberately: the derivation check is structural, not
-byte-based, so the pre-commit formatter has nothing to break here. The vendored pack needs
-its `.prettierignore` entry because its checksums are byte-based; this file does not.
+The equality is structural, not byte-for-byte — the vendored file is two-space indented,
+this one is tabbed — and that is deliberate rather than a compromise. Byte-identity is the
+right check for the vendored pack, whose `manifest.json` records SHA-256 digests and whose
+`.prettierignore` entry exists because the pre-commit formatter once broke thirteen of
+them. Here the contract is the content, so the formatter has nothing to break and this
+directory needs no `.prettierignore` entry.
 
 One thing to be precise about, because the base fixture's own test calls it "the real
 production response": it is a **provider-side recording**, and it is not the same content
