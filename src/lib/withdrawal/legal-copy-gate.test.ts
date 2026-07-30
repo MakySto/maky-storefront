@@ -4,7 +4,7 @@ import {
 	LEGAL_COPY_APPROVED,
 	LEGAL_NOTICE_VERSION,
 	PRIVACY_NOTICE_VERSION,
-	WITHDRAWAL_BACKEND_LIVE,
+	isWithdrawalBackendLive,
 	assertLegalCopyApprovedForProduction,
 	isWithdrawalFormServable,
 	withdrawalBlockReason,
@@ -49,21 +49,49 @@ describe("the withdrawal legal-copy gate", () => {
 		expect(PRIVACY_NOTICE_VERSION).toContain("v2");
 	});
 
-	it("still refuses to serve in production, because the backend is not live", () => {
+	it("pins the version literals, because nothing else does any more", () => {
+		// Every fixture now imports these constants instead of repeating them, which is
+		// right — but it means editing a string the code calls "permanent" would otherwise
+		// keep the whole suite green. This is the one place the values themselves are held.
+		expect(LEGAL_NOTICE_VERSION).toBe("withdrawal-sk-2026-07-30-v1");
+		expect(PRIVACY_NOTICE_VERSION).toBe("privacy-sk-2026-07-30-v2");
+	});
+
+	it("withholds the online function in production until the backend is live", () => {
 		// Approving the copy and standing the backend up are different claims. The Forms
 		// endpoint does not exist in production yet — its migration has never been applied
 		// — so a submitted notice would fail at the transport. Honestly, but a customer
 		// exercising a statutory right should not meet that at all.
 		vi.stubEnv("NODE_ENV", "production");
-		expect(WITHDRAWAL_BACKEND_LIVE).toBe(false);
+		vi.stubEnv("WITHDRAWAL_BACKEND_LIVE", "");
+		expect(isWithdrawalBackendLive()).toBe(false);
 		expect(isWithdrawalFormServable()).toBe(false);
 		expect(withdrawalBlockReason()).toContain("WITHDRAWAL_BACKEND_LIVE");
 	});
 
-	it("names the copy flag first when both are unset, so the log is actionable", () => {
+	it("offers it once the environment says the backend is live", () => {
+		// The flag is an env var read at call time, not a source constant keyed off
+		// NODE_ENV. A constant would have made the form unreachable in EVERY
+		// production-mode build — staging and the spare-port verification build included —
+		// so the signed live matrix the release gate demands could not have been run
+		// without first shipping a change to disable the gate.
 		vi.stubEnv("NODE_ENV", "production");
-		// With the copy approved, the reason can only be the backend one. This pins the
-		// ordering so a future flip of either flag produces the right message.
+		vi.stubEnv("WITHDRAWAL_BACKEND_LIVE", "true");
+		expect(isWithdrawalFormServable()).toBe(true);
+		expect(withdrawalBlockReason()).toBeNull();
+	});
+
+	it("accepts only the exact string true, so a stray value cannot open it", () => {
+		vi.stubEnv("NODE_ENV", "production");
+		for (const value of ["TRUE", "1", "yes", "false", " true"]) {
+			vi.stubEnv("WITHDRAWAL_BACKEND_LIVE", value);
+			expect(isWithdrawalBackendLive(), value).toBe(false);
+		}
+	});
+
+	it("names the backend flag, not the copy flag, now that the copy is approved", () => {
+		vi.stubEnv("NODE_ENV", "production");
+		vi.stubEnv("WITHDRAWAL_BACKEND_LIVE", "");
 		expect(withdrawalBlockReason()).not.toContain("LEGAL_COPY_APPROVED");
 	});
 

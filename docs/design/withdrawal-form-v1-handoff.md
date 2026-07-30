@@ -111,8 +111,9 @@ returns the customer's addresses and `AddressDetails` already includes `phone`. 
 document was touched, so no §10 sign-off was needed. A stored number that the contract
 would refuse is dropped rather than offered.
 
-`PRIVACY_NOTICE_VERSION` moved to `v1`. The legal notice did not change — the declaration
-is the same — but the set of personal data processed did, and a record has to be replayable
+`PRIVACY_NOTICE_VERSION` moved to `v2` (`v1` was the draft that introduced the field).
+The legal notice did not change — the declaration is the same — but the set of personal
+data processed did, and a record has to be replayable
 against the privacy copy that was shown when it was given.
 
 Two further behaviours moved to where they belong:
@@ -326,10 +327,16 @@ made the runs pass.
    change — a record stamped `-DRAFT` while the copy is approved is a contradiction inside
    the evidence, and those strings are permanent.
 
-   Two items were raised in review and are **not** resolved by the approval. They are copy
-   questions for a later pass, not blockers on the function: the statutory model form still
-   asks for a postal address and an IBAN that the online function deliberately does not
-   require, and the „30 dní pre registrovaných" claim is inherited rather than verified.
+   Two items were raised in review and are **not** resolved by the approval. Neither is a
+   blocker on the function:
+
+   - The statutory model form still asks for a postal address and an IBAN that the online
+     function deliberately does not require.
+   - The „30 dní pre registrovaných" claim. Reclassified after checking: it is **already
+     binding** — `obchodne-podmienky` §107 commits to it and has been live since the
+     legal-pages release, so the restatement this branch adds to the account order page is
+     consistent rather than new exposure. What is open is whether the business honours it,
+     which is a commercial decision and not a code question.
 
    > **The gate was not a gate, and now it is — twice over.** > `assertLegalCopyApprovedForProduction()` had **zero callers** repo-wide when this was
    > found: the only occurrences of the name were its own definition, its own doc-comment
@@ -350,13 +357,24 @@ made the runs pass.
    transport — honestly (the UI says the notice was not recorded and points at e-mail and
    post) but a customer exercising a statutory right should not meet that at all.
 
-   `WITHDRAWAL_BACKEND_LIVE = false` in `contract.ts` blocks it, and
-   `withdrawalBlockReason()` names which flag is holding so a production 404 has an
-   explanation. **Flip it in the same change that ships after the Forms release is live,
-   the migration is applied and the signed live matrix has passed.** It is one line and it
-   is meant to be flipped.
+   **It gates the FUNCTION, not the page.** That distinction cost a review round and is
+   the important part: `/sk/odstupenie-od-zmluvy` has been live since the legal-pages
+   release, sits in `sitemap.ts`, and carries statutory information a consumer needs in
+   order to withdraw at all. A first version of this interlock called `notFound()` on the
+   whole route — which under `cacheComponents` would not even have produced a 404 but HTTP
+   200 serving the global English "Page Not Found", behind a sitemap entry. Pulling a
+   required disclosure off a live site is a worse outcome than the one the interlock
+   exists to prevent. The route now renders its legal content either way and only the
+   form section is suppressed, with `[withdrawal] online-function-off` in the log.
 
-   To undo the interlock entirely if you disagree: `WITHDRAWAL_BACKEND_LIVE` and
+   `WITHDRAWAL_BACKEND_LIVE` is an **environment** flag read at call time, documented in
+   `.env.example`, not a source constant: a constant keyed off `NODE_ENV` would have made
+   the form unreachable in every production-mode build — staging and the §13 spare-port
+   verification build included — so the signed live matrix this gate demands could not
+   have been run without first shipping a change to disable the gate. Set it to `"true"`
+   once the Forms release is live and the migration is applied.
+
+   To undo the interlock entirely if you disagree: `isWithdrawalBackendLive` and
    `withdrawalBlockReason` in `src/lib/withdrawal/contract.ts`, the two call sites in
    `odstupenie-od-zmluvy/{page,actions}.ts`, and `legal-copy-gate.test.ts`.
 

@@ -1,20 +1,24 @@
 /**
  * The order number as a customer sees it.
  *
- * Saleor's `order.number` is a bare integer string — `"23"`. Every customer-facing
- * surface in this storefront prefixes it: the account order list, the order detail
- * heading, and the withdrawal form's order picker all render `ORD-23`. Nobody is ever
- * shown the bare number.
+ * Saleor's `order.number` is a bare integer string — `"23"`. `ORD-` is the ACCOUNT-AREA
+ * convention: the order list, the order detail heading and the withdrawal form's order
+ * picker all render `ORD-23`. It is not universal, and an earlier version of this comment
+ * wrongly said it was — the transactional order-confirmation e-mail ("Prijali sme
+ * objednávku č. 23") and the checkout confirmation screen both show the bare number, and
+ * the withdrawal form's own guest hint points customers at that e-mail.
  *
- * That made a quiet defect possible, and it is why this function exists rather than a
- * fourth inline template. The withdrawal form displayed `ORD-23` while the server action
- * overwrote the submitted value with Saleor's raw `order.number`, so the stored notice,
- * the receipt and both confirmation e-mails said:
+ * The defect this exists to prevent is narrower than "the customer never saw it", and
+ * real regardless: inside the account flow the customer picks an order labelled `ORD-23`
+ * and the server action overwrote their submission with the raw number, so the stored
+ * notice, the receipt and both confirmation e-mails said:
  *
  *     Identifikácia zmluvy (číslo objednávky): 23
  *
- * — an identifier the customer had never seen anywhere, on the one document the whole
- * feature exists to produce. It is the machine's name for the order, not the contract's.
+ * — not the label they had just clicked, on the one document the whole feature exists to
+ * produce. A guest who types what the e-mail showed them stores the bare number, and that
+ * is fine: it is their identification of the contract. The account path should likewise
+ * store what IT showed them.
  *
  * Payload does not care either way: it does not match orders against Saleor, and the
  * machine-readable handle travels separately as `saleorOrderId`. So the human field
