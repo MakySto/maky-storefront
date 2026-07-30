@@ -12,10 +12,16 @@ import { WithdrawalReceiptPanel } from "./withdrawal-receipt";
 /**
  * The § 20a online withdrawal function.
  *
- * One form, two modes. A guest types an order number; a signed-in customer picks from
- * their own orders and, if they want, individual lines. Both produce the same body and
- * the same record — the account mode saves typing, it does not grant a different right,
- * and nothing here may make signing in feel like a precondition.
+ * One form, two modes. A guest types an order number and, for a partial withdrawal,
+ * lists the items by hand; a signed-in customer picks from their own orders and ticks
+ * individual lines. Both produce the same body and the same record — the account mode
+ * saves typing, it does not grant a different right, and nothing here may make signing
+ * in feel like a precondition.
+ *
+ * That is why the manual item rows exist at all. Describing the goods in the note was
+ * not equivalent: the backend requires `items[]` when the scope is `selectedItems`, so
+ * a guest without structured rows simply could not make a partial withdrawal — a right
+ * the law gives them regardless of whether they have an account.
  *
  * The result is rendered from action state rather than by navigating to a success URL.
  * A URL would put a submission number and, in any careless version, the notice itself
@@ -34,9 +40,18 @@ export interface WithdrawalFormProps {
 
 const MANUAL = "__manual__";
 
+interface ManualItem {
+	readonly key: string;
+	productName: string;
+	quantity: number;
+	sku: string;
+}
+
 const inputBase =
 	"border-border-default bg-surface-primary text-text-primary focus-visible:ring-focus-ring w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none";
 const invalidRing = "border-status-danger";
+const buttonSecondary =
+	"border-border-default bg-surface-primary text-text-primary hover:bg-surface-muted focus-visible:ring-focus-ring inline-flex min-h-11 items-center rounded-md border px-4 text-sm font-medium focus-visible:ring-2 focus-visible:outline-none";
 
 function Field({
 	id,
@@ -101,6 +116,21 @@ function SubmitButton() {
 	);
 }
 
+const FAILURE_TEXT: Record<string, { title: string; body: string }> = {
+	conflict: {
+		title: "Formulár je neaktuálny.",
+		body: "Vyzerá to, že táto stránka bola otvorená dlhšie a údaje sa medzitým zmenili. Načítajte ju prosím znova a odošlite odstúpenie ešte raz.",
+	},
+	tooLarge: {
+		title: "Formulár je príliš dlhý.",
+		body: "Skráťte prosím poznámku alebo zoznam položiek a skúste to znova.",
+	},
+	unavailable: {
+		title: "Odstúpenie sa nepodarilo uložiť.",
+		body: "Vaše oznámenie sme neprijali. Skúste to prosím znova, alebo nám odstúpenie pošlite jednou z ciest nižšie — sú rovnocenné.",
+	},
+};
+
 export function WithdrawalForm({
 	submissionId,
 	action,
@@ -116,6 +146,10 @@ export function WithdrawalForm({
 	const [selectedOrderId, setSelectedOrderId] = useState<string>(orders[0]?.id ?? MANUAL);
 	const [scope, setScope] = useState<"wholeOrder" | "selectedItems">("wholeOrder");
 	const [lineQuantities, setLineQuantities] = useState<Record<string, number>>({});
+	const [manualItems, setManualItems] = useState<ManualItem[]>([
+		{ key: "m0", productName: "", quantity: 1, sku: "" },
+	]);
+	const manualCounter = useRef(1);
 
 	const selectedOrder = useMemo(
 		() => orders.find((order) => order.id === selectedOrderId) ?? null,
@@ -140,18 +174,33 @@ export function WithdrawalForm({
 
 	const id = (name: string) => `${baseId}-${name}`;
 
+	// Account lines when an owned order is selected; hand-typed rows otherwise. Both
+	// produce the same shape, because the backend contract is the same either way.
 	const itemsPayload =
-		scope === "selectedItems" && selectedOrder
-			? JSON.stringify(
-					selectedOrder.lines
-						.filter((line) => (lineQuantities[line.id] ?? 0) > 0)
-						.map((line) => ({
-							orderLineId: line.id,
-							productName: line.productName,
-							quantity: lineQuantities[line.id] ?? 0,
-						})),
-				)
-			: "[]";
+		scope !== "selectedItems"
+			? "[]"
+			: selectedOrder
+				? JSON.stringify(
+						selectedOrder.lines
+							.filter((line) => (lineQuantities[line.id] ?? 0) > 0)
+							.map((line) => ({
+								orderLineId: line.id,
+								productName: line.productName,
+								quantity: lineQuantities[line.id] ?? 0,
+							})),
+					)
+				: JSON.stringify(
+						manualItems
+							.filter((item) => item.productName.trim().length > 0)
+							.map((item) => ({
+								orderLineId: null,
+								productName: item.productName.trim(),
+								// Optional. Sent when the customer typed one, `null` otherwise —
+								// account lines have no SKU to send at all in V1.
+								sku: item.sku.trim() || null,
+								quantity: item.quantity,
+							})),
+					);
 
 	return (
 		<form ref={formRef} action={formAction} noValidate className="space-y-6">
@@ -178,14 +227,14 @@ export function WithdrawalForm({
 
 			{state.status === "failed" ? (
 				<div className="border-status-danger bg-status-danger-bg text-text-primary rounded-md border p-4 text-sm">
-					<p className="font-semibold">Odstúpenie sa nepodarilo uložiť.</p>
-					<p className="mt-1">
-						Vaše oznámenie sme <strong>neprijali</strong>. Skúste to prosím znova, alebo nám odstúpenie
-						pošlite e-mailom na{" "}
+					<p className="font-semibold">{FAILURE_TEXT[state.kind]?.title}</p>
+					<p className="mt-1">{FAILURE_TEXT[state.kind]?.body}</p>
+					<p className="mt-2">
+						E-mail:{" "}
 						<a className="underline" href={`mailto:${alternatives.email}`}>
 							{alternatives.email}
-						</a>{" "}
-						alebo poštou na adresu {alternatives.postalAddress}. Obe cesty sú rovnocenné.
+						</a>
+						{" · "}Pošta: {alternatives.postalAddress}
 					</p>
 				</div>
 			) : null}
@@ -251,22 +300,6 @@ export function WithdrawalForm({
 						/>
 					)}
 				</Field>
-
-				<Field id={id("phone")} label="Telefón" error={errors?.customerPhone}>
-					{(describedBy, invalid) => (
-						<input
-							id={id("phone")}
-							name="customerPhone"
-							data-field="customerPhone"
-							type="tel"
-							autoComplete="tel"
-							maxLength={40}
-							aria-invalid={invalid || undefined}
-							aria-describedby={describedBy}
-							className={`${inputBase} ${invalid ? invalidRing : ""}`}
-						/>
-					)}
-				</Field>
 			</fieldset>
 
 			<fieldset className="space-y-4">
@@ -289,7 +322,6 @@ export function WithdrawalForm({
 								onChange={(event) => {
 									setSelectedOrderId(event.target.value);
 									setLineQuantities({});
-									if (event.target.value === MANUAL) setScope("wholeOrder");
 								}}
 								aria-describedby={describedBy}
 								className={inputBase}
@@ -324,7 +356,7 @@ export function WithdrawalForm({
 							name="orderNumber"
 							data-field="orderNumber"
 							type="text"
-							maxLength={64}
+							maxLength={128}
 							readOnly={Boolean(selectedOrder)}
 							defaultValue={selectedOrder ? `ORD-${selectedOrder.number}` : ""}
 							key={selectedOrder?.id ?? MANUAL}
@@ -362,17 +394,9 @@ export function WithdrawalForm({
 						value="selectedItems"
 						checked={scope === "selectedItems"}
 						onChange={() => setScope("selectedItems")}
-						disabled={!selectedOrder}
 						className="mt-1"
 					/>
-					<span>
-						Odstupujem len od vybraných položiek
-						{!selectedOrder ? (
-							<span className="text-text-tertiary block text-xs">
-								Dostupné po výbere objednávky. Bez prihlásenia položky opíšte v poznámke nižšie.
-							</span>
-						) : null}
-					</span>
+					<span>Odstupujem len od vybraných položiek</span>
 				</label>
 
 				{scope === "selectedItems" && selectedOrder ? (
@@ -418,12 +442,115 @@ export function WithdrawalForm({
 						})}
 					</div>
 				) : null}
+
+				{/* Manual rows. Reachable without an account, because a partial withdrawal
+				    is a right that does not depend on having one. */}
+				{scope === "selectedItems" && !selectedOrder ? (
+					<div className="border-border-default space-y-4 rounded-md border p-4" data-testid="manual-items">
+						<p className="text-text-tertiary text-xs">
+							Uveďte tovar, ktorého sa odstúpenie týka. Stačí názov a počet kusov.
+						</p>
+						{errors?.items ? <p className="text-status-danger text-xs font-medium">{errors.items}</p> : null}
+
+						{manualItems.map((item, index) => (
+							<div key={item.key} className="grid gap-3 sm:grid-cols-[1fr_5rem_7rem_auto] sm:items-end">
+								<Field id={id(`item-name-${item.key}`)} label={`Tovar ${index + 1}`} required>
+									{() => (
+										<input
+											id={id(`item-name-${item.key}`)}
+											data-field="items"
+											type="text"
+											maxLength={300}
+											value={item.productName}
+											onChange={(event) =>
+												setManualItems((current) =>
+													current.map((row) =>
+														row.key === item.key ? { ...row, productName: event.target.value } : row,
+													),
+												)
+											}
+											className={inputBase}
+										/>
+									)}
+								</Field>
+
+								<Field id={id(`item-qty-${item.key}`)} label="Počet" required>
+									{() => (
+										<input
+											id={id(`item-qty-${item.key}`)}
+											type="number"
+											min={1}
+											max={999}
+											value={item.quantity}
+											onChange={(event) =>
+												setManualItems((current) =>
+													current.map((row) =>
+														row.key === item.key
+															? { ...row, quantity: Math.max(1, Number(event.target.value) || 1) }
+															: row,
+													),
+												)
+											}
+											className={inputBase}
+										/>
+									)}
+								</Field>
+
+								<Field id={id(`item-sku-${item.key}`)} label="Kód (SKU)">
+									{() => (
+										<input
+											id={id(`item-sku-${item.key}`)}
+											type="text"
+											maxLength={128}
+											value={item.sku}
+											onChange={(event) =>
+												setManualItems((current) =>
+													current.map((row) =>
+														row.key === item.key ? { ...row, sku: event.target.value } : row,
+													),
+												)
+											}
+											className={inputBase}
+										/>
+									)}
+								</Field>
+
+								<button
+									type="button"
+									onClick={() =>
+										setManualItems((current) =>
+											current.length > 1 ? current.filter((row) => row.key !== item.key) : current,
+										)
+									}
+									disabled={manualItems.length === 1}
+									className={`${buttonSecondary} disabled:opacity-50`}
+									aria-label={`Odstrániť položku ${index + 1}`}
+								>
+									Odstrániť
+								</button>
+							</div>
+						))}
+
+						<button
+							type="button"
+							onClick={() =>
+								setManualItems((current) => [
+									...current,
+									{ key: `m${manualCounter.current++}`, productName: "", quantity: 1, sku: "" },
+								])
+							}
+							className={buttonSecondary}
+						>
+							Pridať ďalšiu položku
+						</button>
+					</div>
+				) : null}
 			</fieldset>
 
 			<Field
 				id={id("note")}
 				label="Poznámka"
-				hint="Napríklad opis tovaru, ak sa objednávku nepodarilo načítať. Dôvod odstúpenia uvádzať nemusíte."
+				hint="Napríklad doplňujúce informácie k objednávke. Dôvod odstúpenia uvádzať nemusíte."
 				error={errors?.note}
 			>
 				{(describedBy, invalid) => (
