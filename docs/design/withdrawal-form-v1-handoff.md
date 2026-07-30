@@ -164,8 +164,8 @@ signing eventually diverges over key order and produces an unreproducible
 		{ "orderLineId": null, "productName": "Strešný box Thule Motion 3 L", "sku": null, "quantity": 2 }
 	],
 	"note": null,
-	"legalNoticeVersion": "withdrawal-sk-2026-07-30-v0-DRAFT",
-	"privacyNoticeVersion": "privacy-sk-2026-07-30-v0-DRAFT"
+	"legalNoticeVersion": "withdrawal-sk-2026-07-30-v1",
+	"privacyNoticeVersion": "privacy-sk-2026-07-30-v2"
 }
 ```
 
@@ -318,36 +318,69 @@ made the runs pass.
 3. **Submission numbers.** The contract currently generates `WDR-<full UUID>`. The
    approved format is `ODS-YYYY-NNNNNN`; this branch reads the number as an opaque string
    and does not care which lands, but the customer-facing one should.
-4. **Approved legal copy.** `LEGAL_COPY_APPROVED` is `false`. Two items for the review
-   thread: the statutory model form still asks for a postal address and an IBAN that the
-   online function deliberately does not require, and the „30 dní pre registrovaných"
-   claim is inherited, not verified.
+4. **Approved legal copy — DONE, 2026-07-30.** Marek approved the Slovak wording as it
+   stands in this branch: the model form, the route copy, the field labels and the notice
+   `renderNoticeFromSnapshot` produces. There is no separate reviewed legal-content
+   artifact and there may never be one; the approval is of the text itself.
+   `LEGAL_COPY_APPROVED` is `true` and the notice versions moved off `-DRAFT` in the same
+   change — a record stamped `-DRAFT` while the copy is approved is a contradiction inside
+   the evidence, and those strings are permanent.
 
-   > **The gate was not a gate, and now it is.** `assertLegalCopyApprovedForProduction()`
-   > had **zero callers** repo-wide — the only three occurrences of the name were its own
-   > definition, its own doc-comment describing it as "the check a deploy step _can_
-   > call", and the line in this document that used to sit here. Nothing in
-   > `package.json`, no `instrumentation.ts`, no hook, and the route rendered the form
-   > unconditionally. This document and the session notes both stated the flag gated the
-   > deploy. It gated nothing: deploying this branch would have put a legally mandated
-   > form live with unreviewed Slovak copy.
-   >
-   > An affordance nobody wires up reads exactly like a guarantee, which is worse than
-   > having neither. So `isWithdrawalFormServable()` now sits on the path a request takes
-   > — the route 404s and the server action refuses, **in production builds only**, while
-   > the copy is a draft. Development and preview are untouched, which is where the form
-   > is meant to be exercised. A blocked request logs `[withdrawal] blocked-draft-copy`,
-   > so a 404 in production has an explanation rather than being a mystery.
-   >
-   > **This was not asked for.** It came out of FCR-001 and is easy to undo if you
-   > disagree: `isWithdrawalFormServable` in `src/lib/withdrawal/contract.ts`, its two
-   > call sites in `odstupenie-od-zmluvy/{page,actions}.ts`, and
-   > `legal-copy-gate.test.ts`. Flipping `LEGAL_COPY_APPROVED` to `true` is the intended
-   > way through, and one test fails when you do — deliberately, because that line is
-   > where a human confirms they read the wording.
+   Two items were raised in review and are **not** resolved by the approval. They are copy
+   questions for a later pass, not blockers on the function: the statutory model form still
+   asks for a postal address and an IBAN that the online function deliberately does not
+   require, and the „30 dní pre registrovaných" claim is inherited rather than verified.
 
-**Proposed rebase base:** the production tip _after_ the CMS pilot deploy, not `007f75e`.
-Rebasing before that would put this branch on a base that is about to move.
+   > **The gate was not a gate, and now it is — twice over.** > `assertLegalCopyApprovedForProduction()` had **zero callers** repo-wide when this was
+   > found: the only occurrences of the name were its own definition, its own doc-comment
+   > calling it "the check a deploy step _can_ call", and a line in this document. Both
+   > this handoff and the session notes claimed the flag gated the deploy. It gated
+   > nothing. `isWithdrawalFormServable()` now sits on the path a request actually takes —
+   > the route 404s and the server action refuses, in production builds only.
+   >
+   > Flipping the copy flag left that gate wide open with **no backend behind it**, so a
+   > second interlock was added: `WITHDRAWAL_BACKEND_LIVE`, default `false`. Approving the
+   > copy and standing the backend up are different claims and now have different flags.
+   > This one was not asked for; see below for why and how to undo it.
+
+5. **The Payload Forms backend is not live.** `POST /api/forms/withdrawal` does not exist
+   in production: the Forms release is a draft PR and its migration
+   `20260730_111111_forms_backend_v1` has never been applied. With only the copy flag,
+   deploying this branch would render the form and every submission would fail at the
+   transport — honestly (the UI says the notice was not recorded and points at e-mail and
+   post) but a customer exercising a statutory right should not meet that at all.
+
+   `WITHDRAWAL_BACKEND_LIVE = false` in `contract.ts` blocks it, and
+   `withdrawalBlockReason()` names which flag is holding so a production 404 has an
+   explanation. **Flip it in the same change that ships after the Forms release is live,
+   the migration is applied and the signed live matrix has passed.** It is one line and it
+   is meant to be flipped.
+
+   To undo the interlock entirely if you disagree: `WITHDRAWAL_BACKEND_LIVE` and
+   `withdrawalBlockReason` in `src/lib/withdrawal/contract.ts`, the two call sites in
+   `odstupenie-od-zmluvy/{page,actions}.ts`, and `legal-copy-gate.test.ts`.
+
+## The order number the record carries
+
+`contract.orderNumber` used to receive Saleor's bare `order.number` in account mode — the
+form showed `ORD-23`, the stored notice, the receipt and both confirmation e-mails said
+`23`. An identifier the customer had never seen, on the one document the feature exists to
+produce. `formatOrderNumber()` in `src/lib/order-number.ts` is now the single source for
+that string and both the display and the verifier call it.
+
+A guest still stores exactly what they typed. If they write `23` and an account holder
+selects the same order, the two records differ — deliberately. The guest's value is _their_
+identification of the contract, and normalising it would be the storefront asserting
+knowledge it does not have. Payload does not match orders against Saleor either way; the
+machine handle travels separately as `saleorOrderId`.
+
+The account order list and order detail page still build `ORD-{n}` inline. Left alone —
+they are live pages outside this change and the value is identical.
+
+**Rebase: DONE 2026-07-30.** This branch now sits on `b6b633d`, the production base since
+the CMS pilot cutover. Two conflicts were resolved by keeping both sides — `.env.example`
+(CMS keys + forms keys) and `.prettierignore` (both vendored packs; losing either would let
+the pre-commit formatter rewrite checksummed fixtures).
 
 ---
 

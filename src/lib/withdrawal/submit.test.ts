@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { type EmailDeliveryState, type PayloadNoticeSnapshot, type WithdrawalAccepted } from "./contract";
+import {
+	PRIVACY_NOTICE_VERSION,
+	LEGAL_NOTICE_VERSION,
+	type EmailDeliveryState,
+	type PayloadNoticeSnapshot,
+	type WithdrawalAccepted,
+} from "./contract";
 import { renderNoticeFromSnapshot } from "./notice";
 import { submitWithdrawal, type PersistPort, type SubmitDeps } from "./submit";
 import { type RawWithdrawalInput } from "./validate";
@@ -37,8 +43,8 @@ const SNAPSHOT: PayloadNoticeSnapshot = {
 	scope: "wholeOrder",
 	items: [],
 	note: null,
-	legalNoticeVersion: "withdrawal-sk-2026-07-30-v0-DRAFT",
-	privacyNoticeVersion: "privacy-sk-2026-07-30-v0-DRAFT",
+	legalNoticeVersion: LEGAL_NOTICE_VERSION,
+	privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
 };
 
 const ACCEPTED: WithdrawalAccepted = {
@@ -287,7 +293,7 @@ describe("renderNoticeFromSnapshot", () => {
 		expect(text).toContain("Rozsah odstúpenia: vybrané položky");
 		expect(text).toContain("Strešný box (SKU TH-6299) — počet: 2");
 		expect(text).toContain("Tovar mi ešte nebol doručený.");
-		expect(text).toContain("withdrawal-sk-2026-07-30-v0-DRAFT");
+		expect(text).toContain(LEGAL_NOTICE_VERSION);
 	});
 
 	it("carries no timestamp — the record owns the time the notice was given", () => {

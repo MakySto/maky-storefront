@@ -205,23 +205,41 @@ export function formsTimestampSeconds(nowMs: number = Date.now()): string {
  *
  * ## Deploy gate
  *
- * `LEGAL_COPY_APPROVED` is `false` and must stay `false` until the reviewed Slovak
- * legal-content artifact is delivered. The functional flow is complete without it —
- * this flag exists so "the form works" cannot be mistaken for "the wording is signed
- * off". `assertLegalCopyApprovedForProduction` is the check a deploy step can call.
- */
-export const LEGAL_COPY_APPROVED = false;
-export const LEGAL_NOTICE_VERSION = "withdrawal-sk-2026-07-30-v0-DRAFT";
-/**
- * Bumped when the optional phone field landed.
+ * The flag exists so "the form works" cannot be mistaken for "the wording is signed off".
+ * Those are different claims and only a human can make the second one.
  *
- * The legal notice did not change — the wording of the withdrawal declaration is the
- * same. What changed is the set of personal data processed, which is what this version
- * stamps. A record has to be replayable against the privacy copy that was actually shown
- * when it was given, and "we may now also store your phone number" is a different
- * statement from the one v0 made.
+ * **Approved by Marek on 2026-07-30.** Recorded precisely, because the approval is not
+ * what the flag originally anticipated: there is no separate reviewed legal-content
+ * artifact, and there may never be one. What was approved is the Slovak wording as it
+ * stands in this branch — the model form at `/sk/odstupenie-od-zmluvy/vzorovy-formular`,
+ * the explanatory copy on the route, the field labels, and the notice
+ * `renderNoticeFromSnapshot` produces. The owner read it and signed it off. That is the
+ * decision the flag was built to carry.
+ *
+ * Two items were raised during review and are NOT resolved by this approval; they are
+ * copy questions for a later pass, not blockers on the function:
+ * the statutory model form still asks for a postal address and an IBAN that the online
+ * function deliberately does not require, and the „30 dní pre registrovaných" claim is
+ * inherited rather than verified.
+ *
+ * `isWithdrawalFormServable()` below is what actually enforces this on the request path.
  */
-export const PRIVACY_NOTICE_VERSION = "privacy-sk-2026-07-30-v1-DRAFT";
+export const LEGAL_COPY_APPROVED = true;
+
+/**
+ * Versions stamped onto every stored record, permanently.
+ *
+ * They lose their `-DRAFT` suffix here for the same reason the flag flipped, and they had
+ * to move together: a record stamped `-DRAFT` while the copy is approved is a
+ * contradiction inside the evidence, and these strings are the only thing that lets a
+ * notice be replayed against the text that was actually shown when it was given.
+ *
+ * `legal` stays at v1 — the declaration's wording is unchanged since it was written.
+ * `privacy` is at v2: v1 was the draft that added the optional phone field, and this is
+ * the approved form of the same statement.
+ */
+export const LEGAL_NOTICE_VERSION = "withdrawal-sk-2026-07-30-v1";
+export const PRIVACY_NOTICE_VERSION = "privacy-sk-2026-07-30-v2";
 
 export function assertLegalCopyApprovedForProduction(): void {
 	if (!LEGAL_COPY_APPROVED) {
@@ -252,6 +270,43 @@ export function assertLegalCopyApprovedForProduction(): void {
  * Flipping `LEGAL_COPY_APPROVED` to `true` is the intended way through. It is not a
  * formality — it asserts that a human has read the Slovak wording.
  */
+/**
+ * The other precondition, and the one the copy approval does not cover.
+ *
+ * `POST /api/forms/withdrawal` does not exist in production yet: the Payload Forms
+ * release is a draft PR and its migration `20260730_111111_forms_backend_v1` has never
+ * been applied. Until it is, a submitted notice fails at the transport — honestly, the UI
+ * says it was not recorded and points at the e-mail and postal routes, but a customer
+ * exercising a statutory right should not meet that at all.
+ *
+ * Approving the copy and standing the backend up are different claims, so they get
+ * different flags. Before, the copy flag was the only thing between a customer and a
+ * broken legal form; the moment it flipped, the sole remaining protection was somebody
+ * remembering not to deploy this branch. Every other guarantee in this feature that was
+ * documented rather than enforced turned out to be false when checked, so this one is
+ * enforced.
+ *
+ * Flip to `true` in the same change that goes out after the Forms release is live, the
+ * migration is applied and the signed live matrix has passed. It is one line and it is
+ * meant to be flipped — it is a sequencing interlock, not an opinion about the feature.
+ */
+export const WITHDRAWAL_BACKEND_LIVE = false;
+
+/**
+ * Whether the route may serve the form in this process.
+ *
+ * Both preconditions, and development is exempt from both because that is where the form
+ * is exercised. A blocked request logs `[withdrawal] blocked-*` so a production 404 has an
+ * explanation rather than being a mystery.
+ */
 export function isWithdrawalFormServable(): boolean {
-	return LEGAL_COPY_APPROVED || process.env.NODE_ENV !== "production";
+	if (process.env.NODE_ENV !== "production") return true;
+	return LEGAL_COPY_APPROVED && WITHDRAWAL_BACKEND_LIVE;
+}
+
+/** Why the form is not being served, for the log line. `null` when it is. */
+export function withdrawalBlockReason(): string | null {
+	if (isWithdrawalFormServable()) return null;
+	if (!LEGAL_COPY_APPROVED) return "LEGAL_COPY_APPROVED is false";
+	return "WITHDRAWAL_BACKEND_LIVE is false — the Payload Forms endpoint is not deployed";
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { type PayloadNoticeSnapshot } from "./contract";
+import { PRIVACY_NOTICE_VERSION, LEGAL_NOTICE_VERSION, type PayloadNoticeSnapshot } from "./contract";
 import { renderNoticeFromSnapshot } from "./notice";
 
 /**
@@ -23,8 +23,8 @@ function snapshot(phone: string | null): PayloadNoticeSnapshot {
 		scope: "wholeOrder",
 		items: [],
 		note: null,
-		legalNoticeVersion: "withdrawal-sk-2026-07-30-v0-DRAFT",
-		privacyNoticeVersion: "privacy-sk-2026-07-30-v1-DRAFT",
+		legalNoticeVersion: LEGAL_NOTICE_VERSION,
+		privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
 	};
 }
 
