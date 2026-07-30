@@ -185,6 +185,27 @@ export async function fetchCmsPage(slug: string, locale: PayloadLocale): Promise
 		return { status: "not-found" };
 	}
 
+	// The document we asked for, and not some other one.
+	//
+	// Nothing has ever checked this: correctness rested entirely on Payload honouring
+	// `where[slug][equals]`. Harmless while the pilot had exactly one CMS page — a wrong
+	// document could only have been the same document. With a second page it stops being
+	// harmless, because the failure is silent and well-formed: the wrong page renders
+	// under the right URL, with a canonical that confidently points at the URL you are
+	// already on. Nothing in the render looks broken.
+	if (parsed.page.slug !== slug) {
+		logCmsError("contract-violation", {
+			slug,
+			locale,
+			reason: "response carried a different slug than the one requested",
+			documentId: parsed.page.id,
+			documentSlug: parsed.page.slug,
+			blockType: null,
+			nodeType: null,
+		});
+		return { status: "error", reason: `slug mismatch: asked for ${slug}, got ${parsed.page.slug}` };
+	}
+
 	logCmsServed({
 		slug,
 		locale,
