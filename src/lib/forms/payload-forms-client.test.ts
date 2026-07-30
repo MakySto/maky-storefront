@@ -5,7 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ContractSchemaValidator } from "./contract-schema-validator";
 
-import { type PayloadNoticeSnapshot, type WithdrawalSubmission } from "../withdrawal/contract";
+import {
+	PRIVACY_NOTICE_VERSION,
+	LEGAL_NOTICE_VERSION,
+	type PayloadNoticeSnapshot,
+	type WithdrawalSubmission,
+} from "../withdrawal/contract";
 import { submitWithdrawalToPayload } from "./payload-forms-client";
 import { verifyFormsSignature } from "./signature";
 
@@ -34,8 +39,8 @@ const SUBMISSION: WithdrawalSubmission = {
 	scope: "wholeOrder",
 	items: [],
 	note: null,
-	legalNoticeVersion: "withdrawal-sk-2026-07-30-v0-DRAFT",
-	privacyNoticeVersion: "privacy-sk-2026-07-30-v0-DRAFT",
+	legalNoticeVersion: LEGAL_NOTICE_VERSION,
+	privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
 };
 
 const SNAPSHOT: PayloadNoticeSnapshot = {
@@ -48,8 +53,8 @@ const SNAPSHOT: PayloadNoticeSnapshot = {
 	scope: "wholeOrder",
 	items: [],
 	note: null,
-	legalNoticeVersion: "withdrawal-sk-2026-07-30-v0-DRAFT",
-	privacyNoticeVersion: "privacy-sk-2026-07-30-v0-DRAFT",
+	legalNoticeVersion: LEGAL_NOTICE_VERSION,
+	privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
 };
 
 const ACCEPTED_BODY = {

@@ -7,7 +7,7 @@ import { companyInfo } from "@/config/company";
 import { hasAuthSession } from "@/lib/auth/has-auth-session";
 import { newSubmissionId } from "@/lib/forms/payload-forms-client";
 import { loadOwnedOrders, type OwnedOrder } from "@/lib/withdrawal/account-orders";
-import { isWithdrawalFormServable } from "@/lib/withdrawal/contract";
+import { isWithdrawalFormServable, withdrawalBlockReason } from "@/lib/withdrawal/contract";
 import { normalizeWithdrawalPhone } from "@/lib/withdrawal/validate";
 import { LegalPage } from "@/ui/components/legal/legal-page";
 import { WithdrawalForm } from "@/ui/components/withdrawal/withdrawal-form";
@@ -99,10 +99,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	// The copy is still a draft. Serving the form anyway is the one outcome this flag was
 	// introduced to prevent, and until now nothing enforced it.
 	if (!isWithdrawalFormServable()) {
-		console.error(
-			"[withdrawal] blocked-draft-copy",
-			JSON.stringify({ path: PATH, reason: "LEGAL_COPY_APPROVED is false" }),
-		);
+		console.error("[withdrawal] blocked", JSON.stringify({ path: PATH, reason: withdrawalBlockReason() }));
 		notFound();
 	}
 
