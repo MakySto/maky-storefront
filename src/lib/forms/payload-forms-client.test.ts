@@ -1,8 +1,25 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { ContractSchemaValidator } from "./contract-schema-validator";
 
 import { type PayloadNoticeSnapshot, type WithdrawalSubmission } from "../withdrawal/contract";
 import { submitWithdrawalToPayload } from "./payload-forms-client";
 import { verifyFormsSignature } from "./signature";
+
+const contractValidator = new ContractSchemaValidator(
+	JSON.parse(
+		readFileSync(
+			join(
+				fileURLToPath(new URL(".", import.meta.url)),
+				"__fixtures__/forms-backend-v1/withdrawal.schema.json",
+			),
+			"utf8",
+		),
+	) as Record<string, unknown>,
+);
 
 const SECRET = "forms-hmac-secret-for-tests";
 const VALID_UUID = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
@@ -128,9 +145,23 @@ describe("submitWithdrawalToPayload — the wire contract", () => {
 		expect(body).not.toHaveProperty("noticeSnapshot");
 	});
 
+	it("sends a body the vendored contract accepts, byte for byte", async () => {
+		// Asserted against the schema Payload published, not against a list written here.
+		// A hand-kept allowlist is a second copy of the rules, and a second copy is what
+		// let three mismatches through a green suite.
+		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
+		await submitWithdrawalToPayload(SUBMISSION);
+
+		const sentBytes = lastRequest().init.body as string;
+		const violations = contractValidator
+			.validate(JSON.parse(sentBytes))
+			.map((v) => `${v.path} [${v.keyword}] ${v.message}`);
+		expect(violations).toEqual([]);
+	});
+
 	it("sends exactly the keys on Payload's allowlist and nothing else", async () => {
-		// The endpoint rejects unknown keys at every level, so one extra field is a 400
-		// rather than something it quietly ignores.
+		// Kept alongside the schema check because it names the keys in the failure output,
+		// which is what someone reading a red CI log actually needs.
 		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
 		await submitWithdrawalToPayload(SUBMISSION);
 
