@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { type WithdrawalSubmission } from "../withdrawal/contract";
-import { submitWithdrawalToPayload, updateWithdrawalEmailDelivery } from "./payload-forms-client";
+import { type PayloadNoticeSnapshot, type WithdrawalSubmission } from "../withdrawal/contract";
+import { submitWithdrawalToPayload } from "./payload-forms-client";
 import { verifyFormsSignature } from "./signature";
 
 const SECRET = "forms-hmac-secret-for-tests";
@@ -12,32 +12,43 @@ const SUBMISSION: WithdrawalSubmission = {
 	source: "guest",
 	market: "SK",
 	locale: "sk",
-	customer: { name: "Jana Nováková", email: "jana@example.sk", phone: null },
+	customer: { name: "Jana Nováková", email: "jana@example.sk" },
 	contract: { orderNumber: "ORD-1042", saleorOrderId: null, saleorCustomerId: null },
 	scope: "wholeOrder",
 	items: [],
 	note: null,
-	noticeSnapshot: "ODSTÚPENIE OD ZMLUVY\n…",
-	legalNoticeVersion: "sk-withdrawal-DRAFT-2026-07-30",
-	privacyNoticeVersion: "sk-privacy-DRAFT-2026-07-30",
+	legalNoticeVersion: "withdrawal-sk-2026-07-30-v0-DRAFT",
+	privacyNoticeVersion: "privacy-sk-2026-07-30-v0-DRAFT",
+};
+
+const SNAPSHOT: PayloadNoticeSnapshot = {
+	schemaVersion: 1,
+	source: "guest",
+	market: "SK",
+	locale: "sk",
+	customer: { name: "Jana Nováková", email: "jana@example.sk" },
+	contract: { orderNumber: "ORD-1042" },
+	scope: "wholeOrder",
+	items: [],
+	note: null,
+	legalNoticeVersion: "withdrawal-sk-2026-07-30-v0-DRAFT",
+	privacyNoticeVersion: "privacy-sk-2026-07-30-v0-DRAFT",
 };
 
 const ACCEPTED_BODY = {
 	ok: true,
 	duplicate: false,
 	submission: {
+		id: "018f1000-0000-7000-8000-000000000001",
 		submissionId: VALID_UUID,
 		submissionNumber: "ODS-2026-000042",
 		submittedAt: "2026-07-30T09:12:33.123Z",
-		orderMatchStatus: "matched",
+		noticeSnapshot: SNAPSHOT,
 	},
 };
 
 function jsonResponse(status: number, body: unknown): Response {
-	return new Response(JSON.stringify(body), {
-		status,
-		headers: { "content-type": "application/json" },
-	});
+	return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
 
 const ORIGINAL_ENV = { ...process.env };
@@ -61,141 +72,247 @@ afterEach(() => {
 	vi.restoreAllMocks();
 });
 
-describe("submitWithdrawalToPayload — the request on the wire", () => {
+function lastRequest(): { url: string; init: RequestInit; headers: Record<string, string> } {
+	const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+	return { url, init, headers: init.headers as Record<string, string> };
+}
+
+describe("submitWithdrawalToPayload — the wire contract", () => {
 	it("posts to the signed forms endpoint, never to the raw collection", async () => {
 		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
 		await submitWithdrawalToPayload(SUBMISSION);
 
-		const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+		const { url, init } = lastRequest();
 		expect(url).toBe("https://cms.example.test/api/forms/withdrawal");
-		// The raw REST create is off-limits: the collection refuses anonymous creates
-		// and the endpoint is what applies the server-owned rules.
+		// Raw REST create is refused by the collection even for an authenticated admin.
 		expect(url).not.toContain("/api/withdrawal-requests");
 		expect(init.method).toBe("POST");
+		expect(url).not.toContain("//api/");
 	});
 
-	it("strips a trailing slash so Access does not redirect the request away", async () => {
+	it("sends the timestamp in SECONDS, ten digits", async () => {
 		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
 		await submitWithdrawalToPayload(SUBMISSION);
-		expect(fetchMock.mock.calls[0]?.[0]).not.toContain("//api/");
+		expect(lastRequest().headers["X-Maky-Forms-Timestamp"]).toMatch(/^\d{10}$/);
 	});
 
-	it("carries both the CF Access token and a signature over exactly the bytes sent", async () => {
+	it("signs the EXACT bytes it sends, with no second serialisation", async () => {
 		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
 		await submitWithdrawalToPayload(SUBMISSION);
 
-		const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
-		const headers = init.headers as Record<string, string>;
+		const { init, headers } = lastRequest();
+		const sentBytes = init.body as string;
 
+		// The whole point: verifying against the body that actually went out, not
+		// against a re-stringified object that might order keys differently.
+		expect(
+			verifyFormsSignature({
+				secret: SECRET,
+				timestamp: headers["X-Maky-Forms-Timestamp"] as string,
+				rawBody: sentBytes,
+				signature: headers["X-Maky-Forms-Signature"] as string,
+				nowSeconds: Math.floor(Date.now() / 1000),
+			}),
+		).toEqual({ ok: true });
+
+		// And a re-serialisation of the same object must be byte-identical, or the
+		// signature would have been over something else.
+		expect(sentBytes).toBe(JSON.stringify(SUBMISSION));
+	});
+
+	it("sends NO noticeSnapshot — Payload builds and owns it", async () => {
+		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
+		await submitWithdrawalToPayload(SUBMISSION);
+
+		const body = JSON.parse(lastRequest().init.body as string) as Record<string, unknown>;
+		expect(body).not.toHaveProperty("noticeSnapshot");
+	});
+
+	it("sends exactly the keys on Payload's allowlist and nothing else", async () => {
+		// The endpoint rejects unknown keys at every level, so one extra field is a 400
+		// rather than something it quietly ignores.
+		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
+		await submitWithdrawalToPayload(SUBMISSION);
+
+		const body = JSON.parse(lastRequest().init.body as string) as Record<string, unknown>;
+		expect(Object.keys(body).sort()).toEqual([
+			"contract",
+			"customer",
+			"items",
+			"legalNoticeVersion",
+			"locale",
+			"market",
+			"note",
+			"privacyNoticeVersion",
+			"scope",
+			"source",
+			"submissionId",
+		]);
+		// `phone` belongs to the contact endpoint, not this one.
+		expect(Object.keys(body.customer as object).sort()).toEqual(["email", "name"]);
+		expect(Object.keys(body.contract as object).sort()).toEqual([
+			"orderNumber",
+			"saleorCustomerId",
+			"saleorOrderId",
+		]);
+	});
+
+	it("carries the CF Access token and the submission-id header, and no Payload auth", async () => {
+		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
+		await submitWithdrawalToPayload(SUBMISSION);
+
+		const { headers } = lastRequest();
 		expect(headers["CF-Access-Client-Id"]).toBe("cf-client-id");
 		expect(headers["CF-Access-Client-Secret"]).toBe("cf-client-secret");
 		expect(headers["X-Maky-Forms-Submission-Id"]).toBe(VALID_UUID);
-		// No Payload Authorization header — this is not an admin session.
 		expect(headers.Authorization ?? headers.authorization).toBeUndefined();
-
-		const verified = verifyFormsSignature({
-			secret: SECRET,
-			timestamp: headers["X-Maky-Forms-Timestamp"] as string,
-			rawBody: init.body as string,
-			signature: headers["X-Maky-Forms-Signature"] as string,
-			now: Date.now(),
-		});
-		expect(verified).toEqual({ ok: true });
 	});
 
-	it("never follows a redirect, because Access answers with 302 and an HTML login page", async () => {
+	it("never follows a redirect, because Access answers 302 with an HTML login page", async () => {
 		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
 		await submitWithdrawalToPayload(SUBMISSION);
-		expect((fetchMock.mock.calls[0]?.[1] as RequestInit).redirect).toBe("manual");
+		expect(lastRequest().init.redirect).toBe("manual");
+	});
+
+	it("refuses a body over 64 KiB locally rather than spending a round trip on a 413", async () => {
+		const huge = { ...SUBMISSION, note: "x".repeat(70_000) };
+		const result = await submitWithdrawalToPayload(huge);
+		expect(result).toEqual({ status: "rejected", httpStatus: 413, code: "BODY_TOO_LARGE" });
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 });
 
-describe("submitWithdrawalToPayload — outcome classification", () => {
-	it("returns the accepted record on 201", async () => {
+describe("submitWithdrawalToPayload — the response is authoritative", () => {
+	it("returns Payload's id, number, timestamp and stored snapshot", async () => {
 		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
 		const result = await submitWithdrawalToPayload(SUBMISSION);
-		expect(result).toEqual({
-			status: "ok",
-			value: {
-				submissionId: VALID_UUID,
-				submissionNumber: "ODS-2026-000042",
-				submittedAt: "2026-07-30T09:12:33.123Z",
-				orderMatchStatus: "matched",
-				duplicate: false,
-			},
-		});
+		expect(result.status).toBe("ok");
+		if (result.status !== "ok") return;
+		expect(result.value.id).toBe("018f1000-0000-7000-8000-000000000001");
+		expect(result.value.submissionNumber).toBe("ODS-2026-000042");
+		expect(result.value.submittedAt).toBe("2026-07-30T09:12:33.123Z");
+		expect(result.value.noticeSnapshot).toEqual(SNAPSHOT);
+		expect(result.value.duplicate).toBe(false);
+		expect(result.value.emailDelivery).toBeNull();
 	});
 
-	it("treats a 200 as the idempotent replay of an existing submission", async () => {
-		fetchMock.mockResolvedValue(jsonResponse(200, { ...ACCEPTED_BODY, duplicate: true }));
+	it("treats a 200 as the idempotent replay, preserving the ORIGINAL time and snapshot", async () => {
+		const original = {
+			...ACCEPTED_BODY,
+			duplicate: true,
+			submission: {
+				...ACCEPTED_BODY.submission,
+				submittedAt: "2026-07-30T08:00:00.000Z",
+				noticeSnapshot: { ...SNAPSHOT, note: "pôvodná poznámka" },
+			},
+		};
+		fetchMock.mockResolvedValue(jsonResponse(200, original));
+
 		const result = await submitWithdrawalToPayload(SUBMISSION);
 		expect(result.status).toBe("ok");
 		if (result.status !== "ok") return;
 		expect(result.value.duplicate).toBe(true);
-		expect(result.value.submissionNumber).toBe("ODS-2026-000042");
+		expect(result.value.submittedAt).toBe("2026-07-30T08:00:00.000Z");
+		expect(result.value.noticeSnapshot.note).toBe("pôvodná poznámka");
 	});
 
-	it("infers duplicate from the status code when the body omits the flag", async () => {
-		const { duplicate: _omitted, ...withoutFlag } = ACCEPTED_BODY;
-		fetchMock.mockResolvedValue(jsonResponse(200, withoutFlag));
-		const result = await submitWithdrawalToPayload(SUBMISSION);
-		expect(result.status === "ok" && result.value.duplicate).toBe(true);
+	it("reads delivery status when present, and leaves it null when absent", async () => {
+		fetchMock.mockResolvedValue(
+			jsonResponse(201, {
+				...ACCEPTED_BODY,
+				submission: {
+					...ACCEPTED_BODY.submission,
+					emailDelivery: { customerStatus: "sent", internalStatus: "failed" },
+				},
+			}),
+		);
+		const sent = await submitWithdrawalToPayload(SUBMISSION);
+		expect(sent.status === "ok" && sent.value.emailDelivery).toEqual({
+			customerStatus: "sent",
+			internalStatus: "failed",
+		});
+
+		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
+		const absent = await submitWithdrawalToPayload(SUBMISSION);
+		// Absent means "not known". It must never be read as "failed".
+		expect(absent.status === "ok" && absent.value.emailDelivery).toBeNull();
 	});
 
-	it.each([
-		["a 302 from Cloudflare Access", 302],
-		["a 500", 500],
-		["a 502", 502],
-	])("classifies %s as unavailable, so the caller may retry", async (_label, status) => {
-		fetchMock.mockResolvedValue(new Response("<html>Sign in</html>", { status }));
-		const result = await submitWithdrawalToPayload(SUBMISSION);
-		expect(result.status).toBe("unavailable");
-	});
-
-	it("classifies a 4xx as rejected, which is our bug rather than the customer's", async () => {
-		fetchMock.mockResolvedValue(jsonResponse(422, { ok: false, error: { code: "invalidBody" } }));
-		const result = await submitWithdrawalToPayload(SUBMISSION);
-		expect(result).toEqual({ status: "rejected", httpStatus: 422, code: "invalidBody" });
-	});
-
-	it("classifies a timeout as unavailable", async () => {
-		fetchMock.mockRejectedValue(Object.assign(new Error("aborted"), { name: "TimeoutError" }));
-		const result = await submitWithdrawalToPayload(SUBMISSION);
-		expect(result.status).toBe("unavailable");
-		if (result.status !== "unavailable") return;
-		expect(result.reason).toContain("timeout");
-	});
-
-	it("classifies a network error as unavailable", async () => {
-		fetchMock.mockRejectedValue(new TypeError("fetch failed"));
-		const result = await submitWithdrawalToPayload(SUBMISSION);
-		expect(result).toEqual({ status: "unavailable", reason: "network error" });
-	});
-
-	it("refuses a 200 whose body does not match the contract", async () => {
-		// A success we cannot read is not a success: reporting it as stored would hand
-		// the customer a receipt with no submission number behind it.
-		for (const body of [{ ok: true }, { ok: true, submission: {} }, { ok: false }]) {
-			fetchMock.mockResolvedValue(jsonResponse(200, body));
+	it("refuses a success whose snapshot is missing or malformed", async () => {
+		// A receipt with nothing behind it would be worse than an error.
+		for (const submission of [
+			{ ...ACCEPTED_BODY.submission, noticeSnapshot: undefined },
+			{ ...ACCEPTED_BODY.submission, noticeSnapshot: {} },
+			{ ...ACCEPTED_BODY.submission, id: undefined },
+		]) {
+			fetchMock.mockResolvedValue(jsonResponse(200, { ...ACCEPTED_BODY, submission }));
 			expect((await submitWithdrawalToPayload(SUBMISSION)).status).toBe("unavailable");
 		}
 	});
+});
 
-	it("refuses a 200 carrying an unparseable body", async () => {
-		fetchMock.mockResolvedValue(new Response("{", { status: 200 }));
+describe("submitWithdrawalToPayload — outcome classification", () => {
+	it.each([
+		["a 302 from Cloudflare Access", 302],
+		["a 500 with no contract body", 500],
+		["a 502 from a proxy", 502],
+	])("classifies %s as unavailable, so the caller may retry", async (_label, status) => {
+		fetchMock.mockResolvedValue(new Response("<html>Sign in</html>", { status }));
 		expect((await submitWithdrawalToPayload(SUBMISSION)).status).toBe("unavailable");
+	});
+
+	it("treats FORMS_INTERNAL_ERROR as transient rather than as a refusal", async () => {
+		fetchMock.mockResolvedValue(jsonResponse(500, { ok: false, error: { code: "FORMS_INTERNAL_ERROR" } }));
+		expect((await submitWithdrawalToPayload(SUBMISSION)).status).toBe("unavailable");
+	});
+
+	it.each([
+		[400, "INVALID_REQUEST"],
+		[401, "INVALID_TIMESTAMP"],
+		[401, "STALE_TIMESTAMP"],
+		[401, "INVALID_SIGNATURE"],
+		[409, "SUBMISSION_ID_CONFLICT"],
+		[413, "BODY_TOO_LARGE"],
+		[503, "FORMS_AUTH_UNAVAILABLE"],
+	])("maps HTTP %s %s to a rejected outcome carrying the code", async (status, code) => {
+		fetchMock.mockResolvedValue(jsonResponse(status, { ok: false, error: { code, message: "…" } }));
+		expect(await submitWithdrawalToPayload(SUBMISSION)).toEqual({
+			status: "rejected",
+			httpStatus: status,
+			code,
+		});
+	});
+
+	it("normalises an unrecognised code rather than passing it through", async () => {
+		fetchMock.mockResolvedValue(jsonResponse(400, { ok: false, error: { code: "SOMETHING_NEW" } }));
+		const result = await submitWithdrawalToPayload(SUBMISSION);
+		expect(result.status === "rejected" && result.code).toBe("UNKNOWN");
+	});
+
+	it("classifies a timeout and a network error as unavailable", async () => {
+		fetchMock.mockRejectedValue(Object.assign(new Error("aborted"), { name: "TimeoutError" }));
+		const timeout = await submitWithdrawalToPayload(SUBMISSION);
+		expect(timeout.status === "unavailable" && timeout.reason).toContain("timeout");
+
+		fetchMock.mockRejectedValue(new TypeError("fetch failed"));
+		expect(await submitWithdrawalToPayload(SUBMISSION)).toEqual({
+			status: "unavailable",
+			reason: "network error",
+		});
 	});
 
 	it("reports missing settings distinctly, because retrying will not help", async () => {
 		delete process.env.MAKY_FORMS_HMAC_SECRET;
-		const result = await submitWithdrawalToPayload(SUBMISSION);
-		expect(result).toEqual({ status: "notConfigured", missing: ["MAKY_FORMS_HMAC_SECRET"] });
+		expect(await submitWithdrawalToPayload(SUBMISSION)).toEqual({
+			status: "notConfigured",
+			missing: ["MAKY_FORMS_HMAC_SECRET"],
+		});
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 });
 
 describe("submitWithdrawalToPayload — logs", () => {
-	it("never writes the secret, the notice or the customer into a log line", async () => {
+	it("never writes a secret, the notice or the customer into a log line", async () => {
 		fetchMock.mockResolvedValue(jsonResponse(500, {}));
 		await submitWithdrawalToPayload(SUBMISSION);
 
@@ -204,32 +321,23 @@ describe("submitWithdrawalToPayload — logs", () => {
 		expect(logged).not.toContain("cf-client-secret");
 		expect(logged).not.toContain("jana@example.sk");
 		expect(logged).not.toContain("Jana Nováková");
-		expect(logged).not.toContain("ODSTÚPENIE OD ZMLUVY");
-		// It does say enough to act on.
-		expect(logged).toContain("upstream-status");
+		// It still says enough to act on: which submission, and why.
 		expect(logged).toContain(VALID_UUID);
-	});
-});
-
-describe("updateWithdrawalEmailDelivery", () => {
-	it("targets the delivery-only endpoint for that submission", async () => {
-		fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
-		await updateWithdrawalEmailDelivery(VALID_UUID, { customerStatus: "sent", internalStatus: "sent" });
-
-		const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-		expect(url).toBe(`https://cms.example.test/api/forms/withdrawal/${VALID_UUID}/email-delivery`);
-
-		// It may only ever carry delivery fields — the submitted notice is immutable.
-		const body = JSON.parse(init.body as string) as Record<string, unknown>;
-		expect(Object.keys(body).sort()).toEqual(["emailDelivery", "submissionId"]);
+		expect(logged).toMatch(/\[forms\] (rejected|upstream-status|fetch-failed)/);
 	});
 
-	it("reports failure without throwing, because this step must not undo a receipt", async () => {
-		fetchMock.mockResolvedValue(jsonResponse(503, {}));
-		const result = await updateWithdrawalEmailDelivery(VALID_UUID, {
-			customerStatus: "failed",
-			internalStatus: "sent",
-		});
-		expect(result.status).toBe("unavailable");
+	it("logs Payload's error CODE and never its message text", async () => {
+		fetchMock.mockResolvedValue(
+			jsonResponse(400, {
+				ok: false,
+				error: { code: "INVALID_REQUEST", message: "customer.phone is not allowed for jana@example.sk" },
+			}),
+		);
+		await submitWithdrawalToPayload(SUBMISSION);
+
+		const logged = logSpy.mock.calls.map((call: unknown[]) => call.join(" ")).join("\n");
+		expect(logged).toContain("INVALID_REQUEST");
+		expect(logged).not.toContain("is not allowed");
+		expect(logged).not.toContain("jana@example.sk");
 	});
 });

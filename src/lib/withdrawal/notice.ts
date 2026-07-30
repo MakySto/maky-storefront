@@ -1,45 +1,48 @@
 import { companyInfo } from "@/config/company";
-import { type ValidatedInput } from "./validate";
+import { type PayloadNoticeSnapshot } from "./contract";
 
 /**
- * The canonical notice snapshot — the exact text the customer confirmed.
+ * Human-readable rendering of the notice Payload stored.
  *
- * This is the evidential core of the whole feature. § 20a requires the confirmation on
- * a durable medium to contain the notice that was submitted, so a record that stores
- * only structured fields is not enough: the fields could be re-rendered differently
- * later by a template change, and then nobody can say what the customer actually saw
- * and agreed to. A frozen block of text can.
+ * ## Why this reads the stored snapshot and not the form input
  *
- * Built on the server from validated input, then sent with the submission and stored
- * immutably. It is deliberately NOT built in the browser — a snapshot the client could
- * author would prove nothing.
+ * The storefront used to build this text from what the customer typed and send it along
+ * with the submission. That was one copy too many. With the request, the database row
+ * and the confirmation e-mail each assembling their own version, they only have to
+ * drift once for nobody to be able to say what the customer actually confirmed — which
+ * is the single thing this feature exists to produce.
  *
- * ## Why the wording is not new
+ * So Payload normalises the submission, stores the canonical structured snapshot, and
+ * this function is a **pure projection of that stored object**. Same snapshot in, same
+ * text out, on the receipt and in any later reprint. It has no access to the form
+ * input and cannot disagree with the record even in principle.
  *
- * Everything here is either a value the customer typed, a company identifier from
- * `@/config/company`, or the statutory model-form phrasing already published on
- * `/sk/odstupenie-od-zmluvy`. No new legal prose is written in this file. When the
- * reviewed legal artifact lands, the phrasing changes here and `LEGAL_NOTICE_VERSION`
- * moves with it, which is precisely why the version is stamped onto every record.
+ * The snapshot itself is JSON, which is right for a database and wrong for a person: a
+ * customer asked to keep proof of a legal notice should be handed sentences, not
+ * `{"schemaVersion":1,…}`. Hence a rendering rather than a dump.
+ *
+ * ## Wording
+ *
+ * Nothing here is new legal prose. Every line is either a value the customer typed,
+ * a company identifier from `@/config/company`, or the statutory model-form phrasing
+ * already published on `/sk/odstupenie-od-zmluvy`. When the reviewed legal artifact
+ * lands, the phrasing changes here and `LEGAL_NOTICE_VERSION` moves with it — which is
+ * exactly why the version is stamped onto every record and printed at the bottom.
  */
 
 function line(label: string, value: string): string {
 	return `${label}: ${value}`;
 }
 
-export interface NoticeSnapshotInput extends ValidatedInput {
-	readonly legalNoticeVersion: string;
-}
-
 /**
- * Deterministic: the same input always produces the same text.
+ * Deterministic: the same snapshot always produces the same text.
  *
- * Note what is absent — a timestamp. The submission time is assigned by the server
- * that stores the record and is shown alongside the snapshot, not baked into it.
- * Putting a locally computed clock inside the evidence would mean the storefront and
- * the record could disagree about when the notice was given.
+ * Note what is absent — a timestamp. The submission time is assigned by the server and
+ * is displayed alongside this text, not baked into it. A locally computed clock inside
+ * the evidence would let the receipt and the record disagree about when the notice was
+ * given.
  */
-export function buildNoticeSnapshot(input: NoticeSnapshotInput): string {
+export function renderNoticeFromSnapshot(snapshot: PayloadNoticeSnapshot): string {
 	const parts: string[] = [];
 
 	parts.push("ODSTÚPENIE OD ZMLUVY");
@@ -48,29 +51,29 @@ export function buildNoticeSnapshot(input: NoticeSnapshotInput): string {
 	parts.push("");
 	parts.push("Týmto oznamujem, že odstupujem od zmluvy uzavretej na diaľku.");
 	parts.push("");
-	parts.push(line("Meno a priezvisko", input.name));
-	parts.push(line("E-mail", input.email));
-	if (input.phone) parts.push(line("Telefón", input.phone));
-	parts.push(line("Identifikácia zmluvy (číslo objednávky)", input.orderNumber));
+	parts.push(line("Meno a priezvisko", snapshot.customer.name));
+	parts.push(line("E-mail", snapshot.customer.email));
+	parts.push(line("Identifikácia zmluvy (číslo objednávky)", snapshot.contract.orderNumber));
 	parts.push("");
 
-	if (input.scope === "wholeOrder") {
+	if (snapshot.scope === "wholeOrder") {
 		parts.push("Rozsah odstúpenia: celá objednávka");
 	} else {
 		parts.push("Rozsah odstúpenia: vybrané položky");
-		for (const item of input.items) {
-			parts.push(`  - ${item.productName} — počet: ${item.quantity}`);
+		for (const item of snapshot.items) {
+			const sku = item.sku ? ` (SKU ${item.sku})` : "";
+			parts.push(`  - ${item.productName}${sku} — počet: ${item.quantity}`);
 		}
 	}
 
-	if (input.note) {
+	if (snapshot.note) {
 		parts.push("");
 		parts.push("Poznámka spotrebiteľa:");
-		parts.push(input.note);
+		parts.push(snapshot.note);
 	}
 
 	parts.push("");
-	parts.push(`Verzia poučenia: ${input.legalNoticeVersion}`);
+	parts.push(`Verzia poučenia: ${snapshot.legalNoticeVersion}`);
 
 	return parts.join("\n");
 }
