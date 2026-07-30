@@ -163,8 +163,9 @@ export async function submitWithdrawalAction(
 ): Promise<WithdrawalFormState> {
 	if (REVERSE_MAP[channel] !== "sk") return { status: "failed", kind: "unavailable" };
 
-	// The page 404s while the legal copy is a draft, but a form already open in a tab
-	// would still post here. The gate has to sit on both, or it is only a suggestion.
+	// The page stops rendering the form while the online function is off, but a form
+	// already open in a tab would still post here. The gate has to sit on both, or it is
+	// only a suggestion.
 	if (!isWithdrawalFormServable()) return { status: "failed", kind: "unavailable" };
 
 	// A field no human sees and no assistive technology announces. A filled one is a

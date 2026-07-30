@@ -45,10 +45,11 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 	const { channel } = await props.params;
 
 	// Non-SK channels 404 below; metadata must agree, or the 404 acquires a canonical.
-	// The draft-copy gate is the same kind of absence and needs the same agreement.
-	if (REVERSE_MAP[channel] !== "sk" || !isWithdrawalFormServable()) {
-		return { robots: { index: false, follow: false } };
-	}
+	//
+	// The online-function interlock deliberately does NOT appear here. It suppresses the
+	// form, not the page: the legal content, the deadlines and the model-form link stay
+	// reachable and indexable either way, and `sitemap.ts` lists this path.
+	if (REVERSE_MAP[channel] !== "sk") return { robots: { index: false, follow: false } };
 
 	return {
 		title: formatPageTitle("Odstúpenie od zmluvy"),
@@ -96,11 +97,23 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	const { channel } = await props.params;
 	if (REVERSE_MAP[channel] !== "sk") notFound();
 
-	// The copy is still a draft. Serving the form anyway is the one outcome this flag was
-	// introduced to prevent, and until now nothing enforced it.
-	if (!isWithdrawalFormServable()) {
-		console.error("[withdrawal] blocked", JSON.stringify({ path: PATH, reason: withdrawalBlockReason() }));
-		notFound();
+	// The online function can be switched off. The PAGE cannot.
+	//
+	// `/sk/odstupenie-od-zmluvy` has been live since the legal-pages release, sits in
+	// `sitemap.ts`, and carries the statutory information a consumer needs in order to
+	// withdraw at all — the deadlines, the e-mail and postal routes, and the model form.
+	// An earlier version of this gate called `notFound()` here, which would have pulled a
+	// legally required disclosure off a live site. Worse than that: under `cacheComponents`
+	// a page-level `notFound()` does not even produce a 404 (see `src/proxy.ts`), so the
+	// result would have been HTTP 200 serving the global English "Page Not Found".
+	//
+	// Suppressing the form is a product decision. Suppressing the page is a legal defect.
+	const formServable = isWithdrawalFormServable();
+	if (!formServable) {
+		console.error(
+			"[withdrawal] online-function-off",
+			JSON.stringify({ path: PATH, reason: withdrawalBlockReason() }),
+		);
 	}
 
 	// Account mode is a convenience and nothing more. Both of these staying empty is a
@@ -126,23 +139,25 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 
 	return (
 		<LegalPage title="Odstúpenie od zmluvy">
-			<section aria-labelledby="online-withdrawal" className="not-prose mb-10">
-				<h2 id="online-withdrawal" className="text-text-primary text-xl font-semibold">
-					Odstúpiť od zmluvy online
-				</h2>
-				<p className="text-text-secondary mt-2 mb-6 text-sm">
-					Vyplňte formulár nižšie. Hneď po odoslaní vám zobrazíme potvrdenie s číslom podania a presným
-					dátumom a časom, kedy sme oznámenie prijali. Prihlásenie nie je potrebné.
-				</p>
-				<WithdrawalForm
-					submissionId={newSubmissionId()}
-					action={submitWithdrawalAction.bind(null, channel)}
-					prefill={prefill}
-					orders={orders}
-					alternatives={alternatives}
-					modelFormHref={modelFormHref}
-				/>
-			</section>
+			{formServable ? (
+				<section aria-labelledby="online-withdrawal" className="not-prose mb-10">
+					<h2 id="online-withdrawal" className="text-text-primary text-xl font-semibold">
+						Odstúpiť od zmluvy online
+					</h2>
+					<p className="text-text-secondary mt-2 mb-6 text-sm">
+						Vyplňte formulár nižšie. Hneď po odoslaní vám zobrazíme potvrdenie s číslom podania a presným
+						dátumom a časom, kedy sme oznámenie prijali. Prihlásenie nie je potrebné.
+					</p>
+					<WithdrawalForm
+						submissionId={newSubmissionId()}
+						action={submitWithdrawalAction.bind(null, channel)}
+						prefill={prefill}
+						orders={orders}
+						alternatives={alternatives}
+						modelFormHref={modelFormHref}
+					/>
+				</section>
+			) : null}
 
 			<h2>Ako odstúpenie funguje</h2>
 			<p>
@@ -155,9 +170,9 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 				niektorých položiek.
 			</p>
 			<p>
-				Okrem formulára vyššie nám odstúpenie môžete oznámiť e-mailom na {companyInfo.email} alebo zaslaním
-				vyplneného <a href={modelFormHref}>vzorového formulára</a> e-mailom či poštou na adresu{" "}
-				{companyInfo.returnAddress}. Po prijatí oznámenia vám potvrdíme jeho prijatie.
+				{formServable ? "Okrem formulára vyššie nám" : "Odstúpenie nám"} môžete oznámiť e-mailom na{" "}
+				{companyInfo.email} alebo zaslaním vyplneného <a href={modelFormHref}>vzorového formulára</a> e-mailom
+				či poštou na adresu {companyInfo.returnAddress}. Po prijatí oznámenia vám potvrdíme jeho prijatie.
 			</p>
 			<p>
 				Tovar nám zašlite najneskôr do 14 dní od odstúpenia. Vrátenie platby prebehne po splnení podmienok

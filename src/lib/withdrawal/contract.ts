@@ -251,26 +251,6 @@ export function assertLegalCopyApprovedForProduction(): void {
 }
 
 /**
- * Whether the route may serve the form in this process.
- *
- * This exists because the flag above was not a gate. `assertLegalCopyApprovedForProduction`
- * had **zero callers** repo-wide — the only three occurrences of its name were its own
- * definition, its own doc-comment ("the check a deploy step *can* call"), and a line in
- * the handoff. Nothing in `package.json`, no `instrumentation.ts`, no hook. The handoff
- * and the session notes both stated that `LEGAL_COPY_APPROVED = false` gated the deploy;
- * it gated nothing, and deploying the branch would have put a legally mandated form live
- * with unreviewed copy.
- *
- * An affordance nobody wires up reads exactly like a guarantee, which is worse than
- * having neither. So the check now lives on the path a request actually takes: the route
- * 404s and the server action refuses while the copy is a draft, in production builds
- * only. Development and preview are unaffected, because that is where the form is meant
- * to be exercised.
- *
- * Flipping `LEGAL_COPY_APPROVED` to `true` is the intended way through. It is not a
- * formality — it asserts that a human has read the Slovak wording.
- */
-/**
  * The other precondition, and the one the copy approval does not cover.
  *
  * `POST /api/forms/withdrawal` does not exist in production yet: the Payload Forms
@@ -286,27 +266,39 @@ export function assertLegalCopyApprovedForProduction(): void {
  * documented rather than enforced turned out to be false when checked, so this one is
  * enforced.
  *
- * Flip to `true` in the same change that goes out after the Forms release is live, the
- * migration is applied and the signed live matrix has passed. It is one line and it is
- * meant to be flipped — it is a sequencing interlock, not an opinion about the feature.
+ * It is an ENVIRONMENT flag, not a source constant, and read at call time. A constant
+ * keyed off `NODE_ENV` would have made the form unreachable in every production-mode
+ * build — staging and the CLAUDE.md §13 spare-port verification build included — so the
+ * signed live matrix this flag's own release gate demands could not have been run without
+ * first shipping a code change to disable the gate. Set `WITHDRAWAL_BACKEND_LIVE=true` in
+ * the environment once the Forms release is live and the migration is applied; it is a
+ * sequencing interlock, not an opinion about the feature.
  */
-export const WITHDRAWAL_BACKEND_LIVE = false;
+export function isWithdrawalBackendLive(): boolean {
+	return process.env.WITHDRAWAL_BACKEND_LIVE === "true";
+}
 
 /**
- * Whether the route may serve the form in this process.
+ * Whether the ONLINE FUNCTION may be offered in this process.
+ *
+ * Not whether the page may be served — that distinction cost a review round. The page is
+ * a legally required disclosure, live since the legal-pages release and listed in the
+ * sitemap; only the form section is behind this. When it returns false the route still
+ * renders the deadlines, the e-mail and postal routes and the model-form link, and logs
+ * `[withdrawal] online-function-off` with `withdrawalBlockReason()` so the absence has an
+ * explanation.
  *
  * Both preconditions, and development is exempt from both because that is where the form
- * is exercised. A blocked request logs `[withdrawal] blocked-*` so a production 404 has an
- * explanation rather than being a mystery.
+ * is exercised.
  */
 export function isWithdrawalFormServable(): boolean {
 	if (process.env.NODE_ENV !== "production") return true;
-	return LEGAL_COPY_APPROVED && WITHDRAWAL_BACKEND_LIVE;
+	return LEGAL_COPY_APPROVED && isWithdrawalBackendLive();
 }
 
 /** Why the form is not being served, for the log line. `null` when it is. */
 export function withdrawalBlockReason(): string | null {
 	if (isWithdrawalFormServable()) return null;
 	if (!LEGAL_COPY_APPROVED) return "LEGAL_COPY_APPROVED is false";
-	return "WITHDRAWAL_BACKEND_LIVE is false — the Payload Forms endpoint is not deployed";
+	return 'WITHDRAWAL_BACKEND_LIVE is not "true" — the Payload Forms endpoint is not deployed';
 }

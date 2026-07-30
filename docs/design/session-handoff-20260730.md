@@ -129,12 +129,20 @@ Do not rebase before step 2 — you would land on a base that is about to move.
 
 ## 5. Blocked on other people
 
-|                            |                                                                                                                                                                                                                                                                                |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Payload Forms release      | `459146a` — fresh-DB and upgrade PostgreSQL acceptance are now **green**; the migration `20260730_111111_forms_backend_v1` is still unapplied, and PR #3 is still a draft                                                                                                      |
-| Human submission numbers   | still `WDR-<uuid>`; approved format is `ODS-YYYY-NNNNNN`                                                                                                                                                                                                                       |
-| Approved Slovak legal copy | `LEGAL_COPY_APPROVED = false`. **This line used to be false:** the flag gated nothing until 2026-07-30, because `assertLegalCopyApprovedForProduction()` had zero callers. It gates now — the route 404s and the action refuses in production builds while the copy is a draft |
-| Provider pack v2           | needed before M.2; Codex is splitting it into a docs-only branch                                                                                                                                                                                                               |
+|                          |                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Payload Forms release    | `459146a` — fresh-DB and upgrade PostgreSQL acceptance are **green**; the migration `20260730_111111_forms_backend_v1` is still unapplied and PR #3 is still a draft. The storefront holds `WITHDRAWAL_BACKEND_LIVE` off until this lands; set it to `"true"` in the environment in the same change that ships after the live matrix passes |
+| Human submission numbers | still `WDR-<uuid>`; approved format is `ODS-YYYY-NNNNNN`                                                                                                                                                                                                                                                                                    |
+| Provider pack v2         | available at `maky-cms @ 459146a` under `docs/contracts/storefront-cms-pages-v2/`; provider-only PR #4 is open on `b20422f2` and pending a byte-equality gate before merge                                                                                                                                                                  |
+
+**Approved Slovak legal copy is DONE** (Marek, 2026-07-30). `LEGAL_COPY_APPROVED = true`
+and the notice versions moved off `-DRAFT` with it — legal `v1`, privacy `v2`. There is no
+separate reviewed legal artifact; what was approved is the text as it stands on the branch.
+The flag it replaced had gated nothing: `assertLegalCopyApprovedForProduction()` had zero
+callers repo-wide, so the line that used to sit in the table above was false. The gate is
+real now, and it is `isWithdrawalFormServable()` on the request path — but note what it
+gates: the FORM, not the page. `/sk/odstupenie-od-zmluvy` keeps serving its legal content
+either way.
 
 **HMAC is done** (2026-07-30). Same secret on both hosts, verified by comparing SHA-256
 prefixes rather than moving the value anywhere: `53719b235c27`. Payload reads it from SSM
