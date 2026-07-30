@@ -31,18 +31,31 @@ limitation, the limitation is real — none of it is worked around elsewhere.
 | contract-violation            | 0                                                                                                                                                                                                                                                                  |
 | **Step 7** — publish an edit  | run twice. Add: webhook `[cms-revalidate] ok` with tags `cms:collection:pages` + `cms:page:o-nas`, `updatedAt` `19:26:24.111Z` → `20:05:32.363Z`, new wording live. Remove: same, `updatedAt` → `20:53:35.835Z`, wording gone, `CompanyDetails` still exactly once |
 
-### One thing the gate could not show on production
+### The stale-while-revalidate window, caught on production
 
-Neither step-7 run caught the stale first view. Both times the background refresh had
-already completed before the first measuring request — the SWR window is one request wide
-and the site has real traffic, including this session's own probes. So on production the
-evidence is the webhook line plus the `updatedAt` move, not an observed stale→fresh
-transition.
+The first two step-7 runs did not catch the stale first view: the background refresh had
+already finished before the first measuring request, because the SWR window is one request
+wide and the site has real traffic — including this session's own probes. That is a
+measurement problem, not a fault, and it was recorded as such.
 
-That transition was observed precisely, against a mock with a request counter, in
-`docs/design/cms-cache-audit-20260730.md`. Between the two, the chain is established
-end to end; but "first view stale" is not a thing to expect to see on a live site, and a
-future gate should not treat its absence as a failure.
+The third run caught it. Marek published without opening the page himself, so no request
+had consumed the stale entry:
+
+```
+view 1  STALE   (previous revision)
+view 2  NEW
+view 3  NEW
+view 4  NEW
+```
+
+with `[cms-revalidate] ok` carrying both tags and `updatedAt` at `20:58:20.786Z`. So the
+behaviour measured against the mock is the behaviour on the live site: one visitor after a
+publish may still see the previous revision, and the next one sees the new one.
+
+The practical note for the next gate: **do not treat a missing stale view as a failure.**
+Seeing it requires that nobody — no crawler, no colleague, no earlier curl — touched the
+page between the publish and the first measurement. On a live site that is luck, not a
+property you can require.
 
 ### Two things the cutover taught, both worth keeping
 
