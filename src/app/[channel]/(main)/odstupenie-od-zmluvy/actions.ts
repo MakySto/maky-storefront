@@ -3,12 +3,11 @@
 import { headers } from "next/headers";
 import { checkRateLimit } from "@/lib/auth/auth-rate-limit";
 import { hasAuthSession } from "@/lib/auth/has-auth-session";
-import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
-import { getBaseUrl } from "@/lib/seo/config";
-import { submitWithdrawalToPayload, updateWithdrawalEmailDelivery } from "@/lib/forms/payload-forms-client";
+import { REVERSE_MAP } from "@/lib/channel-map";
+import { submitWithdrawalToPayload, type FormsErrorCode } from "@/lib/forms/payload-forms-client";
 import { verifyOrderSelection } from "@/lib/withdrawal/account-orders";
 import { WITHDRAWAL_LIMITS, WITHDRAWAL_LOCALE, WITHDRAWAL_MARKET } from "@/lib/withdrawal/contract";
-import { unavailableMailer } from "@/lib/withdrawal/mail";
+import { renderNoticeFromSnapshot } from "@/lib/withdrawal/notice";
 import { submitWithdrawal } from "@/lib/withdrawal/submit";
 import { type WithdrawalField } from "@/lib/withdrawal/validate";
 
@@ -22,13 +21,22 @@ import { type WithdrawalField } from "@/lib/withdrawal/validate";
  * the whole path is server-only, so no credential can be reachable from the bundle.
  */
 
+/** Whether the customer's confirmation e-mail went out. `unknown` is not `failed`. */
+export type CustomerEmailState = "sent" | "failed" | "unknown";
+
 export interface WithdrawalReceipt {
 	readonly submissionNumber: string;
 	readonly submittedAt: string;
-	readonly noticeSnapshot: string;
-	readonly customerEmailSent: boolean;
+	/** Rendered from the snapshot Payload stored — never rebuilt from the form input. */
+	readonly notice: string;
+	readonly customerEmail: CustomerEmailState;
 	readonly orderNumber: string;
+	/** True when this was a retry and the original record was returned. */
+	readonly duplicate: boolean;
 }
+
+/** Why nothing was stored, in terms the UI can act on. */
+export type FailureKind = "conflict" | "tooLarge" | "unavailable";
 
 export type WithdrawalFormState =
 	| { readonly status: "idle" }
@@ -39,7 +47,7 @@ export type WithdrawalFormState =
 			readonly focus: WithdrawalField;
 	  }
 	| { readonly status: "blocked"; readonly retryAfterSeconds: number }
-	| { readonly status: "failed" }
+	| { readonly status: "failed"; readonly kind: FailureKind }
 	| { readonly status: "received"; readonly receipt: WithdrawalReceipt };
 
 /**
@@ -55,9 +63,9 @@ const MESSAGES: Record<string, string> = {
 	"customerEmail:invalid": "Skontrolujte tvar e-mailovej adresy.",
 	"orderNumber:required": "Zadajte číslo objednávky alebo iné označenie zmluvy.",
 	"scope:required": "Vyberte, či odstupujete od celej objednávky alebo od vybraných položiek.",
-	"items:required": "Označte aspoň jednu položku alebo ich opíšte v poznámke.",
+	"items:required": "Uveďte aspoň jednu položku — názov tovaru a počet kusov.",
 	"items:invalidQuantity": "Počet kusov musí byť aspoň 1.",
-	"items:tooMany": "Naraz je možné uviesť najviac 50 položiek.",
+	"items:tooMany": "Naraz je možné uviesť najviac 100 položiek.",
 	"note:tooLong": "Poznámka je príliš dlhá.",
 	"market:unsupportedMarket": "Tento formulár je zatiaľ dostupný len na slovenskom trhu.",
 	"submissionId:invalid": "Formulár vypršal. Načítajte stránku znova a skúste to ešte raz.",
@@ -67,11 +75,39 @@ function messageFor(field: WithdrawalField, code: string): string {
 	return MESSAGES[`${field}:${code}`] ?? "Skontrolujte prosím túto položku.";
 }
 
+/**
+ * Payload's error codes, mapped to what the customer should do about it.
+ *
+ * The backend's own message text never reaches the page. It is written for an operator,
+ * and echoing it would risk putting submitted values in front of whoever is looking at
+ * the screen — including, on a shared machine, somebody who should not see them.
+ *
+ * Almost everything here is our bug rather than the customer's, so it collapses to the
+ * same honest answer: the notice was not stored, here are the other ways to give it.
+ * Two codes are worth distinguishing, because the customer can actually act on them.
+ */
+function failureKindFor(code: FormsErrorCode | null): FailureKind {
+	switch (code) {
+		// Same submissionId, different content: a stale tab re-posted after an edit.
+		case "SUBMISSION_ID_CONFLICT":
+			return "conflict";
+		case "BODY_TOO_LARGE":
+			return "tooLarge";
+		case "INVALID_TIMESTAMP":
+		case "STALE_TIMESTAMP":
+		case "INVALID_SIGNATURE":
+		case "INVALID_REQUEST":
+		case "FORMS_AUTH_UNAVAILABLE":
+		case "FORMS_INTERNAL_ERROR":
+		default:
+			return "unavailable";
+	}
+}
+
 /** Order the fields appear in, so focus lands on the first problem the user can see. */
 const FIELD_ORDER: readonly WithdrawalField[] = [
 	"customerName",
 	"customerEmail",
-	"customerPhone",
 	"orderNumber",
 	"scope",
 	"items",
@@ -114,7 +150,7 @@ export async function submitWithdrawalAction(
 	_previous: WithdrawalFormState,
 	formData: FormData,
 ): Promise<WithdrawalFormState> {
-	if (REVERSE_MAP[channel] !== "sk") return { status: "failed" };
+	if (REVERSE_MAP[channel] !== "sk") return { status: "failed", kind: "unavailable" };
 
 	// A field no human sees and no assistive technology announces. A filled one is a
 	// bot, and it is dropped rather than answered — but as a *blocked* state, never as
@@ -156,6 +192,7 @@ export async function submitWithdrawalAction(
 	// an order id gets nothing, and a signed-in one only ever gets their own order back.
 	let verifiedOrder: { saleorOrderId: string | null; saleorCustomerId: string | null } | undefined;
 	let orderNumber = String(formData.get("orderNumber") ?? "");
+	let items = claimedItems;
 
 	if (claimedOrderId && (await hasAuthSession())) {
 		const verified = await verifyOrderSelection({
@@ -167,8 +204,13 @@ export async function submitWithdrawalAction(
 		});
 		if (verified) {
 			verifiedOrder = { saleorOrderId: verified.saleorOrderId, saleorCustomerId: null };
-			// The server's own view of the order number wins over the posted one.
+			// The server's own view of the order wins over anything that was posted.
 			orderNumber = verified.orderNumber;
+			items = verified.lines.map((line) => ({
+				orderLineId: line.id,
+				productName: line.productName,
+				quantity: line.quantity,
+			}));
 		}
 	}
 
@@ -180,19 +222,12 @@ export async function submitWithdrawalAction(
 			locale: WITHDRAWAL_LOCALE,
 			name: formData.get("customerName"),
 			email: formData.get("customerEmail"),
-			phone: formData.get("customerPhone"),
 			orderNumber,
 			scope: formData.get("scope"),
-			items: claimedItems,
+			items,
 			note: formData.get("note"),
 		},
-		{
-			persist: submitWithdrawalToPayload,
-			mailer: unavailableMailer,
-			recordDelivery: updateWithdrawalEmailDelivery,
-			returnsPageUrl: `${getBaseUrl()}${marketHref(channel, "/reklamacie-a-vratenie")}`,
-			verifiedOrder,
-		},
+		{ persist: submitWithdrawalToPayload, verifiedOrder },
 	);
 
 	if (outcome.status === "invalid") {
@@ -209,19 +244,27 @@ export async function submitWithdrawalAction(
 		// outcome, because the customer would stop pursuing a right they still have.
 		console.error(
 			"[withdrawal] not-received",
-			JSON.stringify({ reason: outcome.reason, detail: outcome.detail }),
+			JSON.stringify({ reason: outcome.reason, code: outcome.code, detail: outcome.detail }),
 		);
-		return { status: "failed" };
+		return { status: "failed", kind: failureKindFor(outcome.code) };
 	}
+
+	const { accepted } = outcome;
 
 	return {
 		status: "received",
 		receipt: {
-			submissionNumber: outcome.accepted.submissionNumber,
-			submittedAt: outcome.accepted.submittedAt,
-			noticeSnapshot: outcome.submission.noticeSnapshot,
-			customerEmailSent: outcome.email.customer.status === "sent",
-			orderNumber: outcome.submission.contract.orderNumber,
+			submissionNumber: accepted.submissionNumber,
+			submittedAt: accepted.submittedAt,
+			// The authoritative snapshot, rendered. Not a second copy of the notice.
+			notice: renderNoticeFromSnapshot(accepted.noticeSnapshot),
+			customerEmail: accepted.emailDelivery
+				? accepted.emailDelivery.customerStatus === "sent"
+					? "sent"
+					: "failed"
+				: "unknown",
+			orderNumber: accepted.noticeSnapshot.contract.orderNumber,
+			duplicate: accepted.duplicate,
 		},
 	};
 }
