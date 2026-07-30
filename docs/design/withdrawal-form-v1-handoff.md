@@ -211,10 +211,21 @@ made the runs pass.
 
 1. **The Forms release is not live.** `codex/payload-provider-v2-forms-v1 @ 0badf5c` is a
    release candidate: fresh-DB and upgrade-from-main migrations have not actually run, and
-   the DB-gated Forms tests have not executed.
-2. **`MAKY_FORMS_HMAC_SECRET` does not exist** in either runtime. Until it does, the
-   reader returns `notConfigured`, submissions fail closed, and the UI says so honestly.
-   Both hosts need the same secret and synchronised clocks — the window is ±300 s.
+   the DB-gated Forms tests have not executed. This is now the only _technical_ blocker —
+   everything else on this list is a decision or a content deliverable.
+2. ~~`MAKY_FORMS_HMAC_SECRET` does not exist in either runtime.~~ **Done 2026-07-30.**
+   Present on both hosts, 64 characters, and the same value on both — verified by
+   comparing SHA-256 prefixes (`53719b235c27`) rather than by moving the secret anywhere
+   it could be read. Payload holds it in SSM at
+   `/maky/prod/payload/runtime/MAKY_FORMS_HMAC_SECRET`, rendered into `/run/payload/`;
+   the storefront holds it in `/opt/storefront/.env` (0600, gitignored). Both clocks are
+   NTP-synchronised, which matters because the signature window is ±300 s.
+
+   One operational note: the running `maky-storefront` process started _before_ the
+   write, so it does not have the variable yet. Next reads `.env` at process start, so it
+   is picked up at the next restart or deploy. Irrelevant while this branch is
+   branch-only; it must not be forgotten on the day the form goes live.
+
 3. **Submission numbers.** The contract currently generates `WDR-<full UUID>`. The
    approved format is `ODS-YYYY-NNNNNN`; this branch reads the number as an opaque string
    and does not care which lands, but the customer-facing one should.
