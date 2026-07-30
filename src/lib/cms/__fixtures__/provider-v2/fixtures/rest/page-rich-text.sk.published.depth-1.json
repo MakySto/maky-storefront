@@ -1,0 +1,139 @@
+{
+  "docs": [
+    {
+      "id": "018f0000-0000-7000-8000-000000000002",
+      "title": "Rich text fixture",
+      "slug": "fixture-rich-text",
+      "summary": "Sanitizovaný RichText block s podporovaným heading, paragraph a list obsahom.",
+      "layout": [
+        {
+          "content": {
+            "root": {
+              "type": "root",
+              "children": [
+                {
+                  "type": "heading",
+                  "tag": "h2",
+                  "format": "",
+                  "indent": 0,
+                  "version": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Ako vybrať správne riešenie",
+                      "format": 0,
+                      "detail": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "version": 1
+                    }
+                  ],
+                  "direction": null
+                },
+                {
+                  "type": "paragraph",
+                  "format": "start",
+                  "indent": 0,
+                  "version": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Najprv overte model vozidla a požadovanú nosnosť.",
+                      "format": 0,
+                      "detail": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "version": 1
+                    }
+                  ],
+                  "direction": null,
+                  "textStyle": "",
+                  "textFormat": 0
+                },
+                {
+                  "type": "list",
+                  "listType": "bullet",
+                  "start": 1,
+                  "tag": "ul",
+                  "format": "",
+                  "indent": 0,
+                  "version": 1,
+                  "children": [
+                    {
+                      "type": "listitem",
+                      "value": 1,
+                      "checked": null,
+                      "format": "",
+                      "indent": 0,
+                      "version": 1,
+                      "children": [
+                        {
+                          "type": "text",
+                          "text": "Kompatibilita",
+                          "format": 1,
+                          "detail": 0,
+                          "mode": "normal",
+                          "style": "",
+                          "version": 1
+                        }
+                      ],
+                      "direction": null
+                    },
+                    {
+                      "type": "listitem",
+                      "value": 2,
+                      "checked": null,
+                      "format": "",
+                      "indent": 0,
+                      "version": 1,
+                      "children": [
+                        {
+                          "type": "text",
+                          "text": "Nosnosť",
+                          "format": 0,
+                          "detail": 0,
+                          "mode": "normal",
+                          "style": "",
+                          "version": 1
+                        }
+                      ],
+                      "direction": null
+                    }
+                  ],
+                  "direction": null
+                }
+              ],
+              "direction": null,
+              "format": "",
+              "indent": 0,
+              "version": 1
+            }
+          },
+          "anchorId": "vyber",
+          "markets": ["SK"],
+          "id": "b00000000000000000000002",
+          "blockName": null,
+          "blockType": "richText"
+        }
+      ],
+      "markets": ["SK"],
+      "meta": {
+        "title": "Rich text fixture",
+        "description": "Provider V2 contract fixture pre RichText block.",
+        "image": null
+      },
+      "updatedAt": "2026-07-30T10:00:00.000Z",
+      "createdAt": "2026-07-30T09:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

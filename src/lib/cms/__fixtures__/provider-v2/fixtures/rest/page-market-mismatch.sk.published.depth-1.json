@@ -1,0 +1,68 @@
+{
+  "docs": [
+    {
+      "id": "018f0000-0000-7000-8000-000000000010",
+      "title": "Page market mismatch fixture",
+      "slug": "fixture-page-market-mismatch",
+      "summary": "Slovenský locale dokument, ktorého page allowlist nepovoľuje market SK.",
+      "layout": [
+        {
+          "content": {
+            "root": {
+              "type": "root",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "format": "start",
+                  "indent": 0,
+                  "version": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Tento candidate sa pre market SK nesmie renderovať.",
+                      "format": 0,
+                      "detail": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "version": 1
+                    }
+                  ],
+                  "direction": null,
+                  "textStyle": "",
+                  "textFormat": 0
+                }
+              ],
+              "direction": null,
+              "format": "",
+              "indent": 0,
+              "version": 1
+            }
+          },
+          "anchorId": null,
+          "markets": [],
+          "id": "b00000000000000000000101",
+          "blockName": null,
+          "blockType": "richText"
+        }
+      ],
+      "markets": ["CZ"],
+      "meta": {
+        "title": "Page market mismatch fixture",
+        "description": "Provider V2 page-level market mismatch sentinel.",
+        "image": null
+      },
+      "updatedAt": "2026-07-30T10:00:00.000Z",
+      "createdAt": "2026-07-30T09:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

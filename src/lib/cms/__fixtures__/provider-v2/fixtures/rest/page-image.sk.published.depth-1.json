@@ -1,0 +1,97 @@
+{
+  "docs": [
+    {
+      "id": "018f0000-0000-7000-8000-000000000003",
+      "title": "Image fixture",
+      "slug": "fixture-image",
+      "summary": "Sanitizovaný Image block; media objekt zachytáva všetkých päť image sizes.",
+      "layout": [
+        {
+          "media": {
+            "id": "018f1000-0000-7000-8000-000000000103",
+            "alt": "Detail strešného nosiča",
+            "caption": "Verejné contract médium so všetkými sizes",
+            "prefix": "provider-v2",
+            "updatedAt": "2026-07-30T10:00:00.000Z",
+            "createdAt": "2026-07-30T09:00:00.000Z",
+            "url": "https://cms-media.maky.store/media/provider-v2/rack-detail.webp",
+            "thumbnailURL": "https://cms-media.maky.store/media/provider-v2/rack-detail-400x300.webp",
+            "filename": "rack-detail.webp",
+            "mimeType": "image/webp",
+            "filesize": 312000,
+            "width": 2400,
+            "height": 1600,
+            "focalX": 48,
+            "focalY": 52,
+            "sizes": {
+              "thumbnail": {
+                "url": "https://cms-media.maky.store/media/provider-v2/rack-detail-400x300.webp",
+                "width": 400,
+                "height": 300,
+                "mimeType": "image/webp",
+                "filesize": 31000,
+                "filename": "rack-detail-400x300.webp"
+              },
+              "card": {
+                "url": "https://cms-media.maky.store/media/provider-v2/rack-detail-960x720.webp",
+                "width": 960,
+                "height": 720,
+                "mimeType": "image/webp",
+                "filesize": 92000,
+                "filename": "rack-detail-960x720.webp"
+              },
+              "content": {
+                "url": "https://cms-media.maky.store/media/provider-v2/rack-detail-1600x1067.webp",
+                "width": 1600,
+                "height": 1067,
+                "mimeType": "image/webp",
+                "filesize": 181000,
+                "filename": "rack-detail-1600x1067.webp"
+              },
+              "hero": {
+                "url": "https://cms-media.maky.store/media/provider-v2/rack-detail-2400x1600.webp",
+                "width": 2400,
+                "height": 1600,
+                "mimeType": "image/webp",
+                "filesize": 312000,
+                "filename": "rack-detail-2400x1600.webp"
+              },
+              "og": {
+                "url": "https://cms-media.maky.store/media/provider-v2/rack-detail-1200x630.webp",
+                "width": 1200,
+                "height": 630,
+                "mimeType": "image/webp",
+                "filesize": 107000,
+                "filename": "rack-detail-1200x630.webp"
+              }
+            }
+          },
+          "caption": "Bezpečné uchytenie pred cestou vždy skontrolujte.",
+          "anchorId": "detail",
+          "markets": [],
+          "id": "b00000000000000000000003",
+          "blockName": null,
+          "blockType": "image"
+        }
+      ],
+      "markets": ["SK"],
+      "meta": {
+        "title": "Image fixture",
+        "description": "Provider V2 contract fixture pre Image block a PublicMedia sizes.",
+        "image": null
+      },
+      "updatedAt": "2026-07-30T10:00:00.000Z",
+      "createdAt": "2026-07-30T09:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

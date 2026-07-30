@@ -1,0 +1,58 @@
+{
+  "docs": [
+    {
+      "id": "018f0000-0000-7000-8000-000000000014",
+      "title": "Null relationships fixture",
+      "slug": "fixture-null-relationships",
+      "summary": "Podporovaný block s null a chýbajúcim relationship cieľom.",
+      "layout": [
+        {
+          "heading": "Nedostupné ciele",
+          "text": "Consumer nesmie z null alebo chýbajúceho relationship zostaviť route.",
+          "links": [
+            {
+              "type": "reference",
+              "newTab": false,
+              "reference": null,
+              "url": null,
+              "label": "Odstránená stránka",
+              "appearance": "primary",
+              "id": "a00000000000000000000141"
+            },
+            {
+              "type": "reference",
+              "newTab": false,
+              "url": null,
+              "label": "Chýbajúci vzťah",
+              "appearance": "secondary",
+              "id": "a00000000000000000000142"
+            }
+          ],
+          "anchorId": "missing-links",
+          "markets": ["SK"],
+          "id": "b00000000000000000000141",
+          "blockName": null,
+          "blockType": "cta"
+        }
+      ],
+      "markets": ["SK"],
+      "meta": {
+        "title": "Null relationships fixture",
+        "description": "Provider V2 null/missing relationship edge fixture.",
+        "image": null
+      },
+      "updatedAt": "2026-07-30T10:00:00.000Z",
+      "createdAt": "2026-07-30T09:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

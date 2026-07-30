@@ -1,0 +1,170 @@
+{
+  "docs": [
+    {
+      "id": "018f0000-0000-7000-8000-000000000013",
+      "title": "Internal links fixture",
+      "slug": "fixture-internal-links",
+      "summary": "CTA s depth=1 polymorphic Page a Post relationship objektmi.",
+      "layout": [
+        {
+          "heading": "Pokračujte v čítaní",
+          "text": "Oba ciele sú populované o jednu úroveň.",
+          "links": [
+            {
+              "type": "reference",
+              "newTab": false,
+              "reference": {
+                "relationTo": "pages",
+                "value": {
+                  "id": "018f2000-0000-7000-8000-000000000201",
+                  "title": "Kontakt",
+                  "slug": "kontakt",
+                  "summary": "Kontaktné možnosti MAKY.STORE.",
+                  "layout": [
+                    {
+                      "content": {
+                        "root": {
+                          "type": "root",
+                          "children": [
+                            {
+                              "type": "paragraph",
+                              "format": "start",
+                              "indent": 0,
+                              "version": 1,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "text": "Kontaktujte nás cez dostupné kanály.",
+                                  "format": 0,
+                                  "detail": 0,
+                                  "mode": "normal",
+                                  "style": "",
+                                  "version": 1
+                                }
+                              ],
+                              "direction": null,
+                              "textStyle": "",
+                              "textFormat": 0
+                            }
+                          ],
+                          "direction": null,
+                          "format": "",
+                          "indent": 0,
+                          "version": 1
+                        }
+                      },
+                      "anchorId": null,
+                      "markets": ["SK"],
+                      "id": "b00000000000000000000201",
+                      "blockName": null,
+                      "blockType": "richText"
+                    }
+                  ],
+                  "markets": ["SK"],
+                  "meta": {
+                    "title": "Kontakt",
+                    "description": "Kontaktné možnosti MAKY.STORE.",
+                    "image": null
+                  },
+                  "updatedAt": "2026-07-30T08:30:00.000Z",
+                  "createdAt": "2026-07-29T12:00:00.000Z",
+                  "_status": "published"
+                }
+              },
+              "url": null,
+              "label": "Kontakt",
+              "appearance": "primary",
+              "id": "a00000000000000000000131"
+            },
+            {
+              "type": "reference",
+              "newTab": false,
+              "reference": {
+                "relationTo": "posts",
+                "value": {
+                  "id": "018f3000-0000-7000-8000-000000000301",
+                  "title": "Ako vybrať strešný nosič",
+                  "slug": "ako-vybrat-stresny-nosic",
+                  "excerpt": "Základné kroky pri výbere kompatibilného nosiča.",
+                  "heroImage": "018f1000-0000-7000-8000-000000000301",
+                  "content": {
+                    "root": {
+                      "type": "root",
+                      "children": [
+                        {
+                          "type": "paragraph",
+                          "format": "start",
+                          "indent": 0,
+                          "version": 1,
+                          "children": [
+                            {
+                              "type": "text",
+                              "text": "Najprv identifikujte typ strechy a model vozidla.",
+                              "format": 0,
+                              "detail": 0,
+                              "mode": "normal",
+                              "style": "",
+                              "version": 1
+                            }
+                          ],
+                          "direction": null,
+                          "textStyle": "",
+                          "textFormat": 0
+                        }
+                      ],
+                      "direction": null,
+                      "format": "",
+                      "indent": 0,
+                      "version": 1
+                    }
+                  },
+                  "author": "018f4000-0000-7000-8000-000000000401",
+                  "categories": [
+                    "018f5000-0000-7000-8000-000000000501"
+                  ],
+                  "publishedAt": "2026-07-29T12:00:00.000Z",
+                  "markets": ["SK"],
+                  "meta": {
+                    "title": "Ako vybrať strešný nosič",
+                    "description": "Základné kroky pri výbere kompatibilného nosiča.",
+                    "image": "018f1000-0000-7000-8000-000000000301"
+                  },
+                  "updatedAt": "2026-07-30T08:00:00.000Z",
+                  "createdAt": "2026-07-29T11:00:00.000Z",
+                  "_status": "published"
+                }
+              },
+              "url": null,
+              "label": "Článok v poradni",
+              "appearance": "secondary",
+              "id": "a00000000000000000000132"
+            }
+          ],
+          "anchorId": "odkazy",
+          "markets": ["SK"],
+          "id": "b00000000000000000000131",
+          "blockName": "Interné odkazy",
+          "blockType": "cta"
+        }
+      ],
+      "markets": ["SK"],
+      "meta": {
+        "title": "Internal links fixture",
+        "description": "Provider V2 depth=1 Page a Post relationship fixture.",
+        "image": null
+      },
+      "updatedAt": "2026-07-30T10:00:00.000Z",
+      "createdAt": "2026-07-30T09:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

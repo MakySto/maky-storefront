@@ -1,0 +1,110 @@
+{
+  "docs": [
+    {
+      "id": "018f0000-0000-7000-8000-000000000006",
+      "title": "FAQ fixture",
+      "slug": "fixture-faq",
+      "summary": "Sanitizovaný FAQ block s dvoma rich-text odpoveďami.",
+      "layout": [
+        {
+          "heading": "Časté otázky",
+          "items": [
+            {
+              "question": "Ako overím kompatibilitu?",
+              "answer": {
+                "root": {
+                  "type": "root",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "format": "start",
+                      "indent": 0,
+                      "version": 1,
+                      "children": [
+                        {
+                          "type": "text",
+                          "text": "Použite údaje o modeli vozidla a roku výroby.",
+                          "format": 0,
+                          "detail": 0,
+                          "mode": "normal",
+                          "style": "",
+                          "version": 1
+                        }
+                      ],
+                      "direction": null,
+                      "textStyle": "",
+                      "textFormat": 0
+                    }
+                  ],
+                  "direction": null,
+                  "format": "",
+                  "indent": 0,
+                  "version": 1
+                }
+              },
+              "id": "c00000000000000000000061"
+            },
+            {
+              "question": "Kde nájdem návod?",
+              "answer": {
+                "root": {
+                  "type": "root",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "format": "start",
+                      "indent": 0,
+                      "version": 1,
+                      "children": [
+                        {
+                          "type": "text",
+                          "text": "Návod je dostupný pri konkrétnom produkte.",
+                          "format": 0,
+                          "detail": 0,
+                          "mode": "normal",
+                          "style": "",
+                          "version": 1
+                        }
+                      ],
+                      "direction": null,
+                      "textStyle": "",
+                      "textFormat": 0
+                    }
+                  ],
+                  "direction": null,
+                  "format": "",
+                  "indent": 0,
+                  "version": 1
+                }
+              },
+              "id": "c00000000000000000000062"
+            }
+          ],
+          "anchorId": "faq",
+          "markets": ["SK", "CZ"],
+          "id": "b00000000000000000000006",
+          "blockName": "Najčastejšie otázky",
+          "blockType": "faq"
+        }
+      ],
+      "markets": ["SK"],
+      "meta": {
+        "title": "FAQ fixture",
+        "description": "Provider V2 contract fixture pre FAQ block.",
+        "image": null
+      },
+      "updatedAt": "2026-07-30T10:00:00.000Z",
+      "createdAt": "2026-07-30T09:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

@@ -1,0 +1,97 @@
+{
+  "docs": [
+    {
+      "id": "018f0000-0000-7000-8000-000000000011",
+      "title": "Unsupported block sentinel",
+      "slug": "fixture-unsupported-block",
+      "summary": "Obsahový neznámy block medzi dvoma podporovanými blokmi.",
+      "layout": [
+        {
+          "content": {
+            "root": {
+              "type": "root",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "format": "start",
+                  "indent": 0,
+                  "version": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Podporovaný obsah pred neznámym blokom.",
+                      "format": 0,
+                      "detail": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "version": 1
+                    }
+                  ],
+                  "direction": null,
+                  "textStyle": "",
+                  "textFormat": 0
+                }
+              ],
+              "direction": null,
+              "format": "",
+              "indent": 0,
+              "version": 1
+            }
+          },
+          "anchorId": null,
+          "markets": ["SK"],
+          "id": "b00000000000000000000111",
+          "blockName": null,
+          "blockType": "richText"
+        },
+        {
+          "heading": "Budúci obsahový blok",
+          "body": "Tento významový obsah consumer V2 nepozná a nesmie ho iba preskočiť.",
+          "anchorId": "future",
+          "markets": ["SK"],
+          "id": "b00000000000000000000112",
+          "blockName": null,
+          "blockType": "futureEditorial"
+        },
+        {
+          "heading": "Podporovaný obsah za neznámym blokom",
+          "text": "Ani tento CTA sa z odmietnutého candidate nesmie vykresliť.",
+          "links": [
+            {
+              "type": "custom",
+              "newTab": false,
+              "reference": null,
+              "url": "https://maky.store/sk/kontakt",
+              "label": "Kontakt",
+              "appearance": "primary",
+              "id": "a00000000000000000000111"
+            }
+          ],
+          "anchorId": null,
+          "markets": ["SK"],
+          "id": "b00000000000000000000113",
+          "blockName": null,
+          "blockType": "cta"
+        }
+      ],
+      "markets": ["SK"],
+      "meta": {
+        "title": "Unsupported block sentinel",
+        "description": "Celý candidate musí byť odmietnutý.",
+        "image": null
+      },
+      "updatedAt": "2026-07-30T10:00:00.000Z",
+      "createdAt": "2026-07-30T09:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

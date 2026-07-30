@@ -1,0 +1,59 @@
+{
+  "docs": [
+    {
+      "id": "018f0000-0000-7000-8000-000000000005",
+      "title": "CTA fixture",
+      "slug": "fixture-cta",
+      "summary": "Sanitizovaný CTA block s primary a secondary custom linkom.",
+      "layout": [
+        {
+          "heading": "Potrebujete poradiť?",
+          "text": "Napíšte nám údaje o vozidle a plánovanom použití.",
+          "links": [
+            {
+              "type": "custom",
+              "newTab": false,
+              "reference": null,
+              "url": "https://maky.store/sk/kontakt",
+              "label": "Kontaktovať podporu",
+              "appearance": "primary",
+              "id": "a00000000000000000000051"
+            },
+            {
+              "type": "custom",
+              "newTab": true,
+              "reference": null,
+              "url": "https://maky.store/sk/poradna",
+              "label": "Otvoriť poradňu",
+              "appearance": "secondary",
+              "id": "a00000000000000000000052"
+            }
+          ],
+          "anchorId": "kontakt",
+          "markets": null,
+          "id": "b00000000000000000000005",
+          "blockName": "Poradenstvo",
+          "blockType": "cta"
+        }
+      ],
+      "markets": ["SK"],
+      "meta": {
+        "title": "CTA fixture",
+        "description": "Provider V2 contract fixture pre CTA block.",
+        "image": null
+      },
+      "updatedAt": "2026-07-30T10:00:00.000Z",
+      "createdAt": "2026-07-30T09:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

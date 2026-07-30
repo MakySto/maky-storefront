@@ -1,0 +1,164 @@
+{
+  "docs": [
+    {
+      "id": "018f0000-0000-7000-8000-000000000009",
+      "title": "Block markets fixture",
+      "slug": "fixture-block-markets",
+      "summary": "Page pre samostatné vyhodnotenie null, empty a allowlist block markets.",
+      "layout": [
+        {
+          "heading": "Viditeľné všade — null",
+          "subheading": null,
+          "media": null,
+          "links": [],
+          "anchorId": "all-null",
+          "markets": null,
+          "id": "b00000000000000000000091",
+          "blockName": null,
+          "blockType": "hero"
+        },
+        {
+          "content": {
+            "root": {
+              "type": "root",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "format": "start",
+                  "indent": 0,
+                  "version": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Viditeľné všade — prázdny zoznam.",
+                      "format": 0,
+                      "detail": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "version": 1
+                    }
+                  ],
+                  "direction": null,
+                  "textStyle": "",
+                  "textFormat": 0
+                }
+              ],
+              "direction": null,
+              "format": "",
+              "indent": 0,
+              "version": 1
+            }
+          },
+          "anchorId": "all-empty",
+          "markets": [],
+          "id": "b00000000000000000000092",
+          "blockName": null,
+          "blockType": "richText"
+        },
+        {
+          "heading": "Viditeľné pre SK",
+          "text": null,
+          "links": [
+            {
+              "type": "custom",
+              "newTab": false,
+              "reference": null,
+              "url": "https://maky.store/sk/kontakt",
+              "label": "SK kontakt",
+              "appearance": "primary",
+              "id": "a00000000000000000000091"
+            }
+          ],
+          "anchorId": "sk-only",
+          "markets": ["SK"],
+          "id": "b00000000000000000000093",
+          "blockName": null,
+          "blockType": "cta"
+        },
+        {
+          "heading": "Skryté pre SK",
+          "items": [
+            {
+              "question": "CZ-only otázka",
+              "answer": {
+                "root": {
+                  "type": "root",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "format": "start",
+                      "indent": 0,
+                      "version": 1,
+                      "children": [
+                        {
+                          "type": "text",
+                          "text": "Tento blok je povolený iba pre CZ.",
+                          "format": 0,
+                          "detail": 0,
+                          "mode": "normal",
+                          "style": "",
+                          "version": 1
+                        }
+                      ],
+                      "direction": null,
+                      "textStyle": "",
+                      "textFormat": 0
+                    }
+                  ],
+                  "direction": null,
+                  "format": "",
+                  "indent": 0,
+                  "version": 1
+                }
+              },
+              "id": "c00000000000000000000091"
+            }
+          ],
+          "anchorId": "cz-only",
+          "markets": ["CZ"],
+          "id": "b00000000000000000000094",
+          "blockName": null,
+          "blockType": "faq"
+        },
+        {
+          "heading": "Viditeľné pre SK aj CZ",
+          "text": null,
+          "links": [
+            {
+              "type": "custom",
+              "newTab": false,
+              "reference": null,
+              "url": "https://maky.store/sk/poradna",
+              "label": "Spoločný obsah",
+              "appearance": "secondary",
+              "id": "a00000000000000000000092"
+            }
+          ],
+          "anchorId": "sk-cz",
+          "markets": ["SK", "CZ"],
+          "id": "b00000000000000000000095",
+          "blockName": null,
+          "blockType": "cta"
+        }
+      ],
+      "markets": ["SK", "CZ"],
+      "meta": {
+        "title": "Block markets fixture",
+        "description": "Provider V2 contract fixture pre per-block market filtering.",
+        "image": null
+      },
+      "updatedAt": "2026-07-30T10:00:00.000Z",
+      "createdAt": "2026-07-30T09:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}
