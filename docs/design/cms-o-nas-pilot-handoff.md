@@ -7,6 +7,29 @@ This document is the truthful record of what the pilot does, what it deliberatel
 not do, and what has to be true before a second page follows it. Where it describes a
 limitation, the limitation is real — none of it is worked around elsewhere.
 
+## How to read a SHA in this document
+
+Four different things have been called "the SHA" across these threads, and mixing them up
+has already cost a round of confusion — a handoff table naming an implementation commit
+while the branch tip was the docs commit written on top of it. Each one is spelled out
+here, and every SHA elsewhere in this document says which kind it is.
+
+| Term                                 | Meaning                                                                                                                                                                                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **production base**                  | What `maky.store` is serving now, and what this branch is based on. `007f75e`, `BUILD_ID WRxB8lq9Ps8OmdZq-oBbR`. Also the rollback target.                                                                         |
+| **implementation tip**               | The last commit that changed runtime behaviour. Moves only when code moves.                                                                                                                                        |
+| **branch / handoff tip**             | The actual tip of the branch, which is often a docs-only commit sitting above the implementation tip. This is what a deploy checks out and what `git ls-remote` reports.                                           |
+| **deploy candidate**                 | A branch/handoff tip that has passed validation and is offered for deployment. Not yet deployed; it becomes the new production base only after a cutover.                                                          |
+| **consumed provider / contract SHA** | The commit in the OTHER repository whose contract this branch was built against — `MakySto/maky-cms @ 704381d` for the vendored pack. It is recorded, never inferred, and it does not move when this branch moves. |
+
+Two rules that follow from the table and are worth stating separately:
+
+- **A document never contains its own commit SHA.** Asking for one produces either a lie
+  or an amend loop. Report the branch tip from `git ls-remote` at the moment you need it.
+- **Verify every SHA with `git ls-remote`, not with a tracking ref.** This repository has
+  concurrent sessions; a stale `origin/*` has already produced a confidently wrong claim
+  that a merge "never took".
+
 ---
 
 ## 1. Provider contract
@@ -49,6 +72,76 @@ The thirteen fixtures are vendored at `src/lib/cms/__fixtures__/provider-v1/` wi
 digests from the manifest on every run. Tests touch no network and no second checkout.
 Payload's generated `payload-types.ts` is not vendored: it describes fourteen block
 types and a `type: any` Lexical tree, so it would type-check against anything.
+
+### Forward compatibility: the `legalMetadata` group
+
+The Payload Forms migration adds an optional group to **every** Page document:
+
+```json
+"legalMetadata": { "documentType": "editorial", "legalVersion": null, "effectiveFrom": null }
+```
+
+It is inert for this pilot — `/sk/o-nas` is editorial and the storefront renders
+`richText` blocks only. But this pilot rejects an entire candidate document on anything it
+cannot render faithfully, and Payload has no way to discover whether that rule would fire
+on an additive field. If it did, the CMS migration would take a healthy `/sk/o-nas` back
+to its bootstrap copy on the day it landed, and — since §3 and §6 expect the two render
+paths to be byte-identical after cleanup — nobody would see it happen.
+
+It does not fire, and that is now pinned rather than assumed:
+
+| Question                                   | Answer                                                                                                                                      |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Does the candidate stay valid?             | Yes. `parsePagesResponse` names the eight fields it wants and rebuilds a `CmsPage` from them; it has never enumerated the incoming key set. |
+| Does the group reach the renderer?         | No. The parsed `CmsPage` is **deep-equal** to the one parsed from the same response without the group, so nothing downstream can differ.    |
+| Is a `contract-violation` logged?          | No. `console.error` is not called at all; `[cms] served … "outcome":"found"` is.                                                            |
+| Does the route fall back to the bootstrap? | No — proven by invoking the real route component, not by inspecting a status field.                                                         |
+| Was validation weakened to achieve this?   | No. See below.                                                                                                                              |
+
+The last row is the one that matters. Tolerance here is **narrow and pre-existing**, not a
+new exemption: `createdAt`, `hasNextPage` and `totalDocs` already arrive and are already
+read past. `legalMetadata` joins them. No parser rule changed, no unknown-field passthrough
+was added, and the parsed page still has exactly its eight fields. The fail-closed rules
+are re-run in the gate **with the group present** — an unsupported `blockType` and a
+content-bearing unknown Lexical node both still reject the whole document.
+
+The gate lives in `src/lib/cms/legal-metadata-compat.test.ts` (21 tests) and measures
+everything against a fixture pair, so none of it rests on a hand-written guess at what
+Payload sends:
+
+```
+__fixtures__/provider-v1/…/page-o-nas.sk.published.depth-1.json   vendored production bytes
+__fixtures__/forward-compat/…legal-metadata.json                  the same document + group
+```
+
+The second file is storefront-authored and deliberately **not** inside the vendored pack,
+whose `PROVENANCE.md` says not to edit a fixture and whose integrity test would have
+ignored an extra file in silence. Its derivation is enforced, not claimed: the gate deletes
+`docs[0].legalMetadata` and asserts the remainder is deep-equal to the vendored response,
+so it cannot drift away from real production bytes without failing.
+
+`page-schema.ts` now carries the matching warning in prose — rejecting unknown keys reads
+as symmetry with the all-or-nothing rule and is the opposite of it.
+
+Verified by mutation: adding strict unknown-top-level-key rejection to `parsePagesResponse`
+turns 13 of the 21 tests red, and making `CmsBlocks` render nothing turns 3 red. The gate
+gates.
+
+**Noticed while doing this, and not fixed here.** The vendored base fixture is a
+provider-side recording, not a copy of the live document, and the two have drifted:
+`page-o-nas.sk.published.depth-1.json` holds four paragraphs with no company block and no
+`info@maky.store` autolink, while `1e62961` inspected the live document and reported five
+paragraphs including exactly those two markers. Three of the fixture's four paragraphs are
+shortened rewrites of `o-nas-static.tsx` rather than character-for-character matches.
+`provider-conformance.test.ts` calls this fixture "the real production response", which is
+where the two records collide.
+
+Nothing in this gate rests on it — every assertion renders from the frozen fixture — but
+two things elsewhere do. `§6`'s claim that the paths become byte-identical after cleanup is
+about the LIVE document and cannot be checked against this pack, and the pack's own
+"tests what the CMS actually sends" framing is weaker than it reads. Worth one look at
+cutover; it does not change step 7, which is right either way and is the check that does
+not depend on any of this.
 
 ### Known divergence, owned by the CMS repository
 

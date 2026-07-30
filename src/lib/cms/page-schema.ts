@@ -30,6 +30,22 @@ import { findUnrenderableNode, isLexicalDocument, type LexicalDocument } from ".
  * copy is a worse-looking failure and a far better one: it is noticed. The cost is
  * real and worth stating — adding a block type in Payload takes this route back to its
  * code fallback until the storefront learns to render it.
+ *
+ * ## All-or-nothing is about CONTENT, not about key sets
+ *
+ * The rule above fires on things the storefront would have to render and cannot: an
+ * unsupported `blockType`, a content-bearing Lexical node it has no case for. It does
+ * NOT fire on an unread field. Every response already carries several — `createdAt`,
+ * `hasNextPage`, `totalDocs` — and the parser reads past them by naming what it wants
+ * and rebuilding a `CmsPage` from scratch, so nothing unnamed reaches the renderer.
+ *
+ * Do not "harden" this by rejecting unknown keys. It reads as symmetry with the rule
+ * above and is the opposite of it: a CMS-side field addition is routine and additive,
+ * and turning one into a rejection would take a healthy page back to its bootstrap copy
+ * for a field nobody renders. The concrete case is `legalMetadata`, the inert group the
+ * Payload Forms migration adds to every Page; `legal-metadata-compat.test.ts` pins that
+ * behaviour, and re-runs the genuine fail-closed rules with the group present to show
+ * they still bite.
  */
 
 export interface CmsSeoMeta {
