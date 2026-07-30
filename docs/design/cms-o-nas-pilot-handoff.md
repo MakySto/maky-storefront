@@ -238,6 +238,12 @@ change to one must change the other.
 A definitive status model is required before generic or legal pages migrate. Not before
 `/sk/poradna`, which is editorial.
 
+What the visitor actually sees in that state was captured rather than assumed: an English
+"Page Not Found" with no header and no footer, because the boundary that catches
+`notFound()` here is the root `src/app/not-found.tsx`, which sits outside `[channel]` and
+therefore has neither the channel chrome nor a locale. Acceptable for a state that only
+occurs when an editor unpublishes the page, and recorded in §7 rather than fixed here.
+
 ---
 
 ## 6. Cutover — avoiding a visible duplicate company block
@@ -288,11 +294,23 @@ Recorded here so they are not lost, and not fixed on this branch:
   mostly `checkout.*` and `cart.*`. Verified identical on production `007f75e`, so this is
   **pre-existing, not a regression from the CMS work.** next-intl is not type-augmented,
   so these fail silently at runtime rather than at build.
-- **Global `src/app/not-found.tsx`** — has no `robots` metadata and is written in English.
-  It also uses undefined shadcn tokens (`bg-muted`, `bg-primary`, `border-input`), which
-  under Tailwind v4 emit no rule at all, so it paints colourless (CLAUDE.md §4.2). A
-  localized `[channel]/(main)/not-found.tsx` would fix the language for every page under
-  that segment, which is a blast radius belonging to the route-safety track, not here.
+- **Global `src/app/not-found.tsx`** — this is what a visitor sees if `/sk/o-nas` is
+  unpublished or market-excluded, and it was captured at 360/390/412/1440 to be sure.
+  It renders **in English** ("Page Not Found"), with **no header and no footer**, because
+  it sits outside `[channel]` and so gets neither the channel layout nor a locale; its
+  two links point at `/` and `/products` **without the market prefix**. It carries no
+  `robots` metadata of its own either — the `noindex` on this route comes from the page's
+  own `generateMetadata`, which is why that had to be the fix rather than touching the
+  boundary.
+
+  It does paint correctly: the shadcn token bridge described in CLAUDE.md §4.2 as missing
+  has since landed in `src/styles/brand.css` (lines 245–263), so `bg-primary` and friends
+  resolve. §4.2 is stale on that point.
+
+  A localized `[channel]/(main)/not-found.tsx` would fix the language, chrome and links
+  for every page under that segment at once. That blast radius — products, categories,
+  every 404 on twelve markets — belongs to the route-safety track, not to a CMS pilot.
+
 - **Dotted-route firewall** and **reset-password `redirectUrl`** — separate urgent
   hotfixes, to land on their own branch before or after this one, not mixed into it.
 - **Preview / draft** — requires a read-only preview principal and a signed preview
