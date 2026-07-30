@@ -12,6 +12,7 @@ vi.mock("server-only", () => ({}));
 import { CmsBlocks } from "@/ui/components/cms/cms-blocks";
 import { isVisibleInMarket, marketForChannel, payloadLocaleForChannel } from "./markets";
 import { parsePagesResponse, type CmsPageParse } from "./page-schema";
+import { parseCmsRevalidateEvent, tagsForCmsEvent } from "./revalidate-event";
 
 /**
  * Compatibility gate: the additive `legalMetadata` group must not trip the fail-closed rule.
@@ -207,6 +208,66 @@ describe("legalMetadata — the field is tolerated, not one value of it", () => 
 			effectiveFrom: "2026-08-04",
 		});
 		const html = renderBlocks(result);
+		expect(html).toBe(renderBlocks(parsePagesResponse(vendored())));
+		for (const leak of ["legalMetadata", "legalVersion", "effectiveFrom", "2026-08-04", "1.2"]) {
+			expect(html).not.toContain(leak);
+		}
+	});
+});
+
+/**
+ * The one place the "rebuilt from named parts" summary is not the whole truth.
+ *
+ * `content` is passed through whole — a Lexical tree is not something this layer can
+ * usefully rebuild — so a key sitting inside a rich-text value really does reach the block
+ * object, unlike every other unnamed field. It is never read and never emitted, because
+ * the renderer switches on `node.type` and reads named props, and the walk that rejects
+ * things descends only through `children` arrays of objects with a string `type`. That is
+ * a claim about two files agreeing, which is exactly the kind that rots, so it is pinned.
+ */
+describe("legalMetadata — even inside a rich-text value it stays invisible", () => {
+	const populated = { documentType: "legal", legalVersion: "1.2", effectiveFrom: "2026-08-04" };
+
+	function renderWith(mutate: (block: Record<string, unknown>) => void): string {
+		const doc = vendored();
+		mutate((doc.docs[0]!.layout as Record<string, unknown>[])[0]!);
+		const parsed = parsePagesResponse(doc);
+		expect(parsed.status).toBe("ok");
+		return renderBlocks(parsed);
+	}
+
+	const placements: [string, (block: Record<string, unknown>) => void][] = [
+		[
+			"as a sibling of root inside the rich-text value",
+			(block) => {
+				(block.content as Record<string, unknown>).legalMetadata = populated;
+			},
+		],
+		[
+			"as a property of the root Lexical node",
+			(block) => {
+				((block.content as Record<string, unknown>).root as Record<string, unknown>).legalMetadata =
+					populated;
+			},
+		],
+		[
+			"as a property of the first paragraph node",
+			(block) => {
+				const root = (block.content as Record<string, unknown>).root as { children: unknown[] };
+				(root.children[0] as Record<string, unknown>).legalMetadata = populated;
+			},
+		],
+		[
+			"as a bare marker node in the tree",
+			(block) => {
+				const root = (block.content as Record<string, unknown>).root as { children: unknown[] };
+				root.children.push({ type: "legalMetadata", ...populated });
+			},
+		],
+	];
+
+	it.each(placements)("renders identically with the group %s", (_name, mutate) => {
+		const html = renderWith(mutate);
 		expect(html).toBe(renderBlocks(parsePagesResponse(vendored())));
 		for (const leak of ["legalMetadata", "legalVersion", "effectiveFrom", "2026-08-04", "1.2"]) {
 			expect(html).not.toContain(leak);
@@ -424,5 +485,56 @@ describe("legalMetadata — validation is not weakened", () => {
 		const doc = augmented();
 		doc.docs = [];
 		expect(parsePagesResponse(doc)).toEqual({ status: "empty" });
+	});
+});
+
+/**
+ * The other door into the storefront, which the acceptance criteria do not name.
+ *
+ * `/api/revalidate/payload` takes a body from Payload describing what changed. Payload's
+ * `afterChange` hook echoing document fields into that body is a plausible next move, and
+ * `legalMetadata` would be among them. The webhook parser is the same allow-list shape as
+ * the page parser, so the answer is the same — but "the same shape, so presumably the same
+ * answer" is how the three contract mismatches on the withdrawal branch happened, and the
+ * tags this derives are what purge the cache.
+ */
+describe("legalMetadata — the revalidation webhook is unaffected", () => {
+	function event(): Record<string, unknown> {
+		return JSON.parse(
+			readFileSync(join(HERE, "__fixtures__/provider-v1/fixtures/revalidation/page-publish.json"), "utf8"),
+		) as Record<string, unknown>;
+	}
+
+	it("parses a body carrying the group and derives the unchanged tags", () => {
+		const body = event();
+		body.legalMetadata = { documentType: "legal", legalVersion: "1.2", effectiveFrom: "2026-08-04" };
+
+		const parsed = parseCmsRevalidateEvent(body);
+		expect(parsed.ok).toBe(true);
+		if (!parsed.ok) return;
+
+		// Rebuilt from named fields, like the page parser — the group does not survive.
+		expect(parsed.event).not.toHaveProperty("legalMetadata");
+		expect(JSON.stringify(parsed.event)).not.toContain("legalMetadata");
+
+		// The tags are what actually purge the cache. Same before and after.
+		expect(tagsForCmsEvent(parsed.event)).toEqual(["cms:collection:pages", "cms:page:o-nas"]);
+		const clean = parseCmsRevalidateEvent(event());
+		if (!clean.ok) throw new Error("vendored event must parse");
+		expect(parsed.event).toEqual(clean.event);
+	});
+
+	it("still rejects a body whose source or event name is wrong, group or no group", () => {
+		// The webhook's own fail-closed rules are value gates, and the group does not soften
+		// them any more than it softens the page parser's.
+		const forged = event();
+		forged.legalMetadata = { documentType: "editorial", legalVersion: null, effectiveFrom: null };
+		forged.source = "not-maky-cms";
+		expect(parseCmsRevalidateEvent(forged).ok).toBe(false);
+
+		const badEvent = event();
+		badEvent.legalMetadata = { documentType: "editorial", legalVersion: null, effectiveFrom: null };
+		badEvent.event = "obliterate";
+		expect(parseCmsRevalidateEvent(badEvent).ok).toBe(false);
 	});
 });

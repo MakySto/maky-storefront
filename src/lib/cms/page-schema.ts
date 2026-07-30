@@ -37,7 +37,14 @@ import { findUnrenderableNode, isLexicalDocument, type LexicalDocument } from ".
  * unsupported `blockType`, a content-bearing Lexical node it has no case for. It does
  * NOT fire on an unread field. Every response already carries several — `createdAt`,
  * `hasNextPage`, `totalDocs` — and the parser reads past them by naming what it wants
- * and rebuilding a `CmsPage` from scratch, so nothing unnamed reaches the renderer.
+ * and rebuilding a `CmsPage` from the named parts.
+ *
+ * One honest exception to "rebuilt from named parts": `content` is passed through whole,
+ * because a Lexical tree is not something this layer can usefully rebuild. So an unnamed
+ * key sitting inside a rich-text value does reach the block object — it is simply never
+ * read and never emitted, since the renderer switches on `node.type` and reads named
+ * props. The walk that DOES reject descends only through `children` arrays of things with
+ * a string `type`, so a plain object hung off the tree is invisible to it. Pinned.
  *
  * Do not "harden" this by rejecting unknown keys. It reads as symmetry with the rule
  * above and is the opposite of it: a CMS-side field addition is routine and additive,

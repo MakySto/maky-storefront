@@ -98,6 +98,14 @@ It does not fire, and that is now pinned rather than assumed:
 | Does the route fall back to the bootstrap? | No — proven by invoking the real route component, not by inspecting a status field.                                                         |
 | Was validation weakened to achieve this?   | No. See below.                                                                                                                              |
 
+Two qualifications, because the table is tidier than the truth. `content` is passed through
+whole rather than rebuilt — a Lexical tree is not something that layer can usefully
+reconstruct — so a key sitting _inside_ a rich-text value does reach the block object,
+unlike every other unnamed field. It is never read and never emitted, and the gate pins
+that at four placements inside the tree. Separately, the revalidation webhook is covered
+too: Payload's `afterChange` hook echoing document fields into that body is a plausible
+next move, and the derived cache tags are unchanged when it does.
+
 The last row is the one that matters. Tolerance here is **narrow and pre-existing**, not a
 new exemption: `createdAt`, `hasNextPage` and `totalDocs` already arrive and are already
 read past. `legalMetadata` joins them. No parser rule changed, no unknown-field passthrough
@@ -105,7 +113,7 @@ was added, and the parsed page still has exactly its eight fields. The fail-clos
 are re-run in the gate **with the group present** — an unsupported `blockType` and a
 content-bearing unknown Lexical node both still reject the whole document.
 
-The gate lives in `src/lib/cms/legal-metadata-compat.test.ts` (27 tests) and measures
+The gate lives in `src/lib/cms/legal-metadata-compat.test.ts` (33 tests) and measures
 everything against a fixture pair, so none of it rests on a hand-written guess at what
 Payload sends:
 
@@ -268,6 +276,16 @@ to observe and it is clear what actually needs caching.
 3. **Legal pages** — only after both, and only once Payload has an effective-date field.
    For terms and conditions a stale version is not a cosmetic defect; it is the document a
    customer bought under.
+
+   > **Read this before treating step 3 as unblocked.** The Payload Forms migration ships
+   > `legalMetadata.effectiveFrom`, so the literal wording of that last condition is about
+   > to be satisfied — by a field that arrived for an unrelated reason. It does not unblock
+   > anything. Steps 1 and 2 are still open, the storefront deliberately does not read the
+   > field (see §1, "Forward compatibility"), and the real precondition was never the
+   > field's existence but the durable last-known-good layer that keeps a stale legal
+   > version off the site. A field appearing in a schema is not a decision. This one is
+   > still a human one.
+
 4. **Homepage, banners, globals** — after that. It is the most-visited page, so a silent
    fallback costs most there; globals (Header, Footer, AnnouncementBar) touch every page
    on twelve markets; and part of the homepage is commerce blocks anyway.
