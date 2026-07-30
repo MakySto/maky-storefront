@@ -81,6 +81,7 @@ function logCmsServed(detail: Record<string, unknown>): void {
  *     ?where[slug][equals]={slug}
  *     &where[_status][equals]=published
  *     &locale={locale}
+ *     &fallback-locale=none
  *     &depth=1
  *     &limit=1
  *
@@ -107,6 +108,12 @@ export async function fetchCmsPage(slug: string, locale: PayloadLocale): Promise
 	url.searchParams.set("where[slug][equals]", slug);
 	url.searchParams.set("where[_status][equals]", "published");
 	url.searchParams.set("locale", locale);
+	// Without this Payload falls back to another locale when the requested one has no
+	// translation, so a market with no Slovak copy would quietly be served someone else's
+	// language instead of an authoritative "not here". Invisible on the SK-only pilot,
+	// which is exactly why it survived to here; the v2 contract names it in the canonical
+	// request and M.2's whole point is proving the reader is not hard-wired to one page.
+	url.searchParams.set("fallback-locale", "none");
 	url.searchParams.set("depth", "1");
 	url.searchParams.set("limit", "1");
 
