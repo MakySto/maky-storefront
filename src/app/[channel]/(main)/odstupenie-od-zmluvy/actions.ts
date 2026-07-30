@@ -6,7 +6,12 @@ import { hasAuthSession } from "@/lib/auth/has-auth-session";
 import { REVERSE_MAP } from "@/lib/channel-map";
 import { submitWithdrawalToPayload, type FormsErrorCode } from "@/lib/forms/payload-forms-client";
 import { verifyOrderSelection } from "@/lib/withdrawal/account-orders";
-import { WITHDRAWAL_LIMITS, WITHDRAWAL_LOCALE, WITHDRAWAL_MARKET } from "@/lib/withdrawal/contract";
+import {
+	WITHDRAWAL_LIMITS,
+	WITHDRAWAL_LOCALE,
+	WITHDRAWAL_MARKET,
+	isWithdrawalFormServable,
+} from "@/lib/withdrawal/contract";
 import { renderNoticeFromSnapshot } from "@/lib/withdrawal/notice";
 import { submitWithdrawal } from "@/lib/withdrawal/submit";
 import { type WithdrawalField } from "@/lib/withdrawal/validate";
@@ -61,6 +66,11 @@ const MESSAGES: Record<string, string> = {
 	"customerName:required": "Zadajte meno a priezvisko.",
 	"customerEmail:required": "Zadajte e-mailovú adresu.",
 	"customerEmail:invalid": "Skontrolujte tvar e-mailovej adresy.",
+	// Both phone errors say the field can simply be left out, because it can. Nobody
+	// should lose a withdrawal to a formatting argument about an optional field.
+	"customerPhone:invalid": "Telefónne číslo obsahuje neplatné znaky. Opravte ho alebo pole nechajte prázdne.",
+	"customerPhone:tooLong":
+		"Telefónne číslo môže mať najviac 32 znakov. Skráťte ho alebo pole nechajte prázdne.",
 	"orderNumber:required": "Zadajte číslo objednávky alebo iné označenie zmluvy.",
 	"scope:required": "Vyberte, či odstupujete od celej objednávky alebo od vybraných položiek.",
 	"items:required": "Uveďte aspoň jednu položku — názov tovaru a počet kusov.",
@@ -108,6 +118,7 @@ function failureKindFor(code: FormsErrorCode | null): FailureKind {
 const FIELD_ORDER: readonly WithdrawalField[] = [
 	"customerName",
 	"customerEmail",
+	"customerPhone",
 	"orderNumber",
 	"scope",
 	"items",
@@ -151,6 +162,10 @@ export async function submitWithdrawalAction(
 	formData: FormData,
 ): Promise<WithdrawalFormState> {
 	if (REVERSE_MAP[channel] !== "sk") return { status: "failed", kind: "unavailable" };
+
+	// The page 404s while the legal copy is a draft, but a form already open in a tab
+	// would still post here. The gate has to sit on both, or it is only a suggestion.
+	if (!isWithdrawalFormServable()) return { status: "failed", kind: "unavailable" };
 
 	// A field no human sees and no assistive technology announces. A filled one is a
 	// bot, and it is dropped rather than answered — but as a *blocked* state, never as
@@ -222,6 +237,7 @@ export async function submitWithdrawalAction(
 			locale: WITHDRAWAL_LOCALE,
 			name: formData.get("customerName"),
 			email: formData.get("customerEmail"),
+			phone: formData.get("customerPhone"),
 			orderNumber,
 			scope: formData.get("scope"),
 			items,
@@ -258,11 +274,19 @@ export async function submitWithdrawalAction(
 			submittedAt: accepted.submittedAt,
 			// The authoritative snapshot, rendered. Not a second copy of the notice.
 			notice: renderNoticeFromSnapshot(accepted.noticeSnapshot),
-			customerEmail: accepted.emailDelivery
-				? accepted.emailDelivery.customerStatus === "sent"
+			// Only a definitive `failed` is reported as failed. `pending` means the attempt
+			// has not finished and `unknown` means it finished ambiguously — the contract
+			// requires an operator to reconcile that against the provider's log before
+			// anyone concludes anything. Both are "we do not know yet", and saying
+			// otherwise would tell a customer their confirmation did not arrive when it
+			// may well have.
+			customerEmail: !accepted.emailDelivery
+				? "unknown"
+				: accepted.emailDelivery.customerStatus === "sent"
 					? "sent"
-					: "failed"
-				: "unknown",
+					: accepted.emailDelivery.customerStatus === "failed"
+						? "failed"
+						: "unknown",
 			orderNumber: accepted.noticeSnapshot.contract.orderNumber,
 			duplicate: accepted.duplicate,
 		},

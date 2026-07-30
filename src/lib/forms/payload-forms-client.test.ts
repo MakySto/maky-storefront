@@ -12,7 +12,7 @@ const SUBMISSION: WithdrawalSubmission = {
 	source: "guest",
 	market: "SK",
 	locale: "sk",
-	customer: { name: "Jana Nováková", email: "jana@example.sk" },
+	customer: { name: "Jana Nováková", email: "jana@example.sk", phone: null },
 	contract: { orderNumber: "ORD-1042", saleorOrderId: null, saleorCustomerId: null },
 	scope: "wholeOrder",
 	items: [],
@@ -26,7 +26,7 @@ const SNAPSHOT: PayloadNoticeSnapshot = {
 	source: "guest",
 	market: "SK",
 	locale: "sk",
-	customer: { name: "Jana Nováková", email: "jana@example.sk" },
+	customer: { name: "Jana Nováková", email: "jana@example.sk", phone: null },
 	contract: { orderNumber: "ORD-1042" },
 	scope: "wholeOrder",
 	items: [],
@@ -148,8 +148,9 @@ describe("submitWithdrawalToPayload — the wire contract", () => {
 			"source",
 			"submissionId",
 		]);
-		// `phone` belongs to the contact endpoint, not this one.
-		expect(Object.keys(body.customer as object).sort()).toEqual(["email", "name"]);
+		// `phone` joined the allowlist in contract 1.1.0 — optional, but always sent, as
+		// an explicit `null` when the customer gave none.
+		expect(Object.keys(body.customer as object).sort()).toEqual(["email", "name", "phone"]);
 		expect(Object.keys(body.contract as object).sort()).toEqual([
 			"orderNumber",
 			"saleorCustomerId",
@@ -222,20 +223,97 @@ describe("submitWithdrawalToPayload — the response is authoritative", () => {
 				...ACCEPTED_BODY,
 				submission: {
 					...ACCEPTED_BODY.submission,
-					emailDelivery: { customerStatus: "sent", internalStatus: "failed" },
+					emailDelivery: {
+						customerStatus: "sent",
+						customerSentAt: "2026-07-30T12:00:01.000Z",
+						customerAttemptCount: 1,
+						customerLastAttemptAt: "2026-07-30T12:00:00.500Z",
+						internalStatus: "failed",
+						internalSentAt: null,
+						internalAttemptCount: 2,
+						internalLastAttemptAt: "2026-07-30T12:00:02.000Z",
+					},
 				},
 			}),
 		);
 		const sent = await submitWithdrawalToPayload(SUBMISSION);
 		expect(sent.status === "ok" && sent.value.emailDelivery).toEqual({
 			customerStatus: "sent",
+			customerSentAt: "2026-07-30T12:00:01.000Z",
+			customerAttemptCount: 1,
+			customerLastAttemptAt: "2026-07-30T12:00:00.500Z",
 			internalStatus: "failed",
+			internalSentAt: null,
+			internalAttemptCount: 2,
+			internalLastAttemptAt: "2026-07-30T12:00:02.000Z",
 		});
 
 		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
 		const absent = await submitWithdrawalToPayload(SUBMISSION);
 		// Absent means "not known". It must never be read as "failed".
 		expect(absent.status === "ok" && absent.value.emailDelivery).toBeNull();
+	});
+
+	it("keeps an `unknown` delivery status instead of discarding the whole object", async () => {
+		// Contract 1.1.0 added `unknown` — an SMTP attempt with an ambiguous outcome. The
+		// parser used to return null for the entire delivery object when it met a status it
+		// did not recognise, which downgraded a CONFIRMED-sent customer e-mail to
+		// "unreported" and hid the one case the contract says needs reconciliation.
+		fetchMock.mockResolvedValue(
+			jsonResponse(201, {
+				...ACCEPTED_BODY,
+				submission: {
+					...ACCEPTED_BODY.submission,
+					emailDelivery: {
+						customerStatus: "sent",
+						customerSentAt: "2026-07-30T12:00:01.000Z",
+						customerAttemptCount: 1,
+						customerLastAttemptAt: "2026-07-30T12:00:00.500Z",
+						internalStatus: "unknown",
+						internalSentAt: null,
+						internalAttemptCount: 1,
+						internalLastAttemptAt: "2026-07-30T12:00:02.000Z",
+					},
+				},
+			}),
+		);
+
+		const result = await submitWithdrawalToPayload(SUBMISSION);
+		expect(result.status).toBe("ok");
+		if (result.status !== "ok") return;
+		expect(result.value.emailDelivery?.customerStatus).toBe("sent");
+		expect(result.value.emailDelivery?.internalStatus).toBe("unknown");
+	});
+
+	it("still refuses a delivery status that is not in the contract at all", async () => {
+		fetchMock.mockResolvedValue(
+			jsonResponse(201, {
+				...ACCEPTED_BODY,
+				submission: {
+					...ACCEPTED_BODY.submission,
+					emailDelivery: { customerStatus: "teleported", internalStatus: "sent" },
+				},
+			}),
+		);
+		const result = await submitWithdrawalToPayload(SUBMISSION);
+		expect(result.status === "ok" && result.value.emailDelivery).toBeNull();
+	});
+
+	it("degrades missing attempt metadata to null rather than to zero", async () => {
+		// Zero attempts and "nobody told us" are different facts, and an operator reading
+		// the admin needs them to stay different.
+		fetchMock.mockResolvedValue(
+			jsonResponse(201, {
+				...ACCEPTED_BODY,
+				submission: {
+					...ACCEPTED_BODY.submission,
+					emailDelivery: { customerStatus: "pending", internalStatus: "pending" },
+				},
+			}),
+		);
+		const result = await submitWithdrawalToPayload(SUBMISSION);
+		expect(result.status === "ok" && result.value.emailDelivery?.customerAttemptCount).toBeNull();
+		expect(result.status === "ok" && result.value.emailDelivery?.customerSentAt).toBeNull();
 	});
 
 	it("refuses a success whose snapshot is missing or malformed", async () => {
