@@ -318,11 +318,33 @@ made the runs pass.
 3. **Submission numbers.** The contract currently generates `WDR-<full UUID>`. The
    approved format is `ODS-YYYY-NNNNNN`; this branch reads the number as an opaque string
    and does not care which lands, but the customer-facing one should.
-4. **Approved legal copy.** `LEGAL_COPY_APPROVED` is `false` and
-   `assertLegalCopyApprovedForProduction()` is there for a deploy step to call. Two items
-   for the review thread: the statutory model form still asks for a postal address and an
-   IBAN that the online function deliberately does not require, and the „30 dní pre
-   registrovaných" claim is inherited, not verified.
+4. **Approved legal copy.** `LEGAL_COPY_APPROVED` is `false`. Two items for the review
+   thread: the statutory model form still asks for a postal address and an IBAN that the
+   online function deliberately does not require, and the „30 dní pre registrovaných"
+   claim is inherited, not verified.
+
+   > **The gate was not a gate, and now it is.** `assertLegalCopyApprovedForProduction()`
+   > had **zero callers** repo-wide — the only three occurrences of the name were its own
+   > definition, its own doc-comment describing it as "the check a deploy step _can_
+   > call", and the line in this document that used to sit here. Nothing in
+   > `package.json`, no `instrumentation.ts`, no hook, and the route rendered the form
+   > unconditionally. This document and the session notes both stated the flag gated the
+   > deploy. It gated nothing: deploying this branch would have put a legally mandated
+   > form live with unreviewed Slovak copy.
+   >
+   > An affordance nobody wires up reads exactly like a guarantee, which is worse than
+   > having neither. So `isWithdrawalFormServable()` now sits on the path a request takes
+   > — the route 404s and the server action refuses, **in production builds only**, while
+   > the copy is a draft. Development and preview are untouched, which is where the form
+   > is meant to be exercised. A blocked request logs `[withdrawal] blocked-draft-copy`,
+   > so a 404 in production has an explanation rather than being a mystery.
+   >
+   > **This was not asked for.** It came out of FCR-001 and is easy to undo if you
+   > disagree: `isWithdrawalFormServable` in `src/lib/withdrawal/contract.ts`, its two
+   > call sites in `odstupenie-od-zmluvy/{page,actions}.ts`, and
+   > `legal-copy-gate.test.ts`. Flipping `LEGAL_COPY_APPROVED` to `true` is the intended
+   > way through, and one test fails when you do — deliberately, because that line is
+   > where a human confirms they read the wording.
 
 **Proposed rebase base:** the production tip _after_ the CMS pilot deploy, not `007f75e`.
 Rebasing before that would put this branch on a base that is about to move.
