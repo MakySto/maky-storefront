@@ -40,27 +40,45 @@ it. So `rm -rf .next` before the production build is load-bearing, not hygiene, 
 content cleanup must precede the build rather than merely the deploy. Had the candidate
 not been run on a spare port first, the duplicate would have shipped.
 
-**The page is not cached, so step 7 does not test what it looks like it tests.** Measured
-on production: `[cms] served` appears **twice per request**, every request — once from
-`generateMetadata`, once from the page component — directly against `:3000` as well as
-through Cloudflare. Under `cacheComponents: true` (Next 16) `fetch` is no longer
-implicitly cached, so `next: { revalidate: 900, tags }` in `client.ts` creates no entry
-and the cache tags have nothing to invalidate.
+**The cache works — and the first report that it did not was a measurement error.** Worth
+keeping in full, because the mistake is easy to repeat.
 
-Consequences, in order of importance:
+On cutover day `[cms] served` was seen twice per HTTP request and read as two round trips
+to Payload, i.e. "nothing is cached". That inference is invalid: `logCmsServed()` runs
+after every `fetchCmsPage()` call regardless of whether Next's patched `fetch` hit the
+network or the Data Cache, and the route calls it twice — once from `generateMetadata`,
+once from the page component. **Two lines per request is the healthy steady state.** The
+log is a consumer-read signal; only the far end of the wire can count origin traffic.
 
-- **Step 7's "must appear on the second view" cannot discriminate.** With nothing cached,
-  a published edit appears on the _first_ view whether or not the webhook works. What
-  actually proved the webhook on 2026-07-30 was its own log line, `[cms-revalidate] ok`
-  carrying the derived tags — that is the check to rely on, not the second view.
-- A Payload outage sends every single view to the bootstrap copy rather than a stale-but-
-  cached render. Safe, and silent.
-- No measurable latency cost today: `/sk/o-nas` answers in ~207 ms, the same as the static
-  `/sk/obchodne-podmienky` and `/sk/kontakt`.
+Measured properly at the deployed SHA, in an isolated worktree against a mock Payload with
+a request counter, `next build` + `NEXT_PRIVATE_DEBUG_CACHE=1 next start`, production mode:
 
-Not fixed here, and not urgent. Fixing it means `"use cache"` on the reader, which is a
-change to caching semantics on a live route and deserves its own pass — most sensibly
-alongside M.2, when there is more than one CMS page to cache.
+| Measurement                                    | Result                                              |
+| ---------------------------------------------- | --------------------------------------------------- |
+| build                                          | 1 origin request                                    |
+| 5 page requests after resetting the counter    | **0** origin requests                               |
+| `[cms] served` lines for those 5 requests      | 10                                                  |
+| mock switched A→B with no revalidation, 1 view | still A, 0 origin requests                          |
+| signed publish webhook                         | `200`, `[cms-revalidate] ok`, both tags             |
+| view 1 after invalidation                      | still A — **1** origin request (background refresh) |
+| views 2–5                                      | B                                                   |
+| 5 further warm views                           | origin counter unchanged                            |
+
+So the whole chain is real: publish → webhook → tag invalidation → exactly one origin
+refresh → new cached document → render. `next: { revalidate: 900, tags }` does create a
+Data Cache entry under `cacheComponents` in Next 16.2.9.
+
+Two corrections follow from it, both applied:
+
+- `route.ts` claimed `revalidateTag(tag, "max")` means immediate expiry. It means
+  **stale-while-revalidate**. The runtime call was always right; only the comment was
+  wrong. This is also why the gate says "by the second view" — that is the semantics, not
+  slack.
+- `client.ts` said a `[cms] served` line implies a cache miss. It does not, and now says
+  so.
+
+Nothing in the runtime was changed on the strength of the wrong reading — no `"use cache"`,
+no `force-cache`. The audit harness lives at `docs/design/cms-cache-audit-20260730.md`.
 
 ## How to read a SHA in this document
 

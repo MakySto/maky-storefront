@@ -21,8 +21,16 @@ import { parseCmsRevalidateEvent, tagsForCmsEvent } from "@/lib/cms/revalidate-e
  * 405 before any of this runs.
  *
  * `revalidateTag` is used rather than `updateTag`, which throws outside a Server
- * Action — Next checks for a route handler explicitly. The `"max"` profile is the
- * value Next's own deprecation notice recommends for immediate expiry.
+ * Action — Next checks for a route handler explicitly.
+ *
+ * `"max"` is **stale-while-revalidate, not immediate expiry** — an earlier version of
+ * this comment said the opposite. The next visitor after a publish may still be served
+ * the previous revision while the refresh happens behind them; the one after that gets
+ * the new one. Measured at the deployed SHA against a mock Payload: view 1 stale, view 2
+ * onwards new, and **exactly one** origin request for the refresh.
+ *
+ * That is why the cutover gate is worded as "the edit must appear by the second view".
+ * It is not slack in the check — it is the documented semantics of this line.
  */
 
 /** Only ever tags this endpoint derived itself — never a path or tag from the body. */

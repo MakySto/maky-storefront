@@ -54,8 +54,19 @@ function logCmsError(event: string, detail: Record<string, unknown>): void {
  *
  *   pm2 logs maky-storefront --nostream | grep '\[cms\]'
  *
- * Cheap to leave on: a fetch only happens on a cache miss, so this is a handful of
- * lines an hour, not one per request.
+ * ## What this line does NOT mean
+ *
+ * It is a **consumer-read** log, not an origin-fetch counter. It runs after every
+ * `fetchCmsPage()` call, whether Next's patched `fetch` went to the network or answered
+ * from the Data Cache — and the route calls `fetchCmsPage()` twice per request, once from
+ * `generateMetadata` and once from the page component. So **two lines per HTTP request is
+ * the healthy steady state**, not evidence of two round trips.
+ *
+ * This was got wrong once, on the cutover day: the doubled lines were read as "the page is
+ * not cached at all", which is a conclusion this log is structurally incapable of
+ * supporting. Measuring it properly means counting arrivals at the other end. Done at the
+ * deployed SHA against a mock Payload with a request counter: five page requests produced
+ * ten of these lines and **zero** origin requests. The cache works.
  */
 function logCmsServed(detail: Record<string, unknown>): void {
 	console.log("[cms] served", JSON.stringify(detail));
