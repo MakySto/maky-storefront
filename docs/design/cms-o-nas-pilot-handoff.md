@@ -156,6 +156,22 @@ A durable snapshot design is deliberately **not** attempted here, and is schedul
 M.2 rather than before it — it will be designed better once there is more than one page
 to observe and it is clear what actually needs caching.
 
+### Migration order after this pilot (agreed 2026-07-30)
+
+1. **M.2** — core renderers for `hero`, `richText`, `image`, `gallery`, `cta`, `faq`,
+   `mediaText`, plus a second page `/sk/poradna`. The second page is the point: it proves
+   the reader is not quietly hard-wired to `o-nas`, and it exercises media, CTA, FAQ and
+   several blocks at once.
+2. **Durable last-known-good snapshot.**
+3. **Legal pages** — only after both, and only once Payload has an effective-date field.
+   For terms and conditions a stale version is not a cosmetic defect; it is the document a
+   customer bought under.
+4. **Homepage, banners, globals** — after that. It is the most-visited page, so a silent
+   fallback costs most there; globals (Header, Footer, AnnouncementBar) touch every page
+   on twelve markets; and part of the homepage is commerce blocks anyway.
+5. **Commerce blocks** — last, and blocked until the Saleor collections/brand-attribute
+   track is done.
+
 ---
 
 ## 4. Revalidation
@@ -255,23 +271,54 @@ the company details twice.
 
 Deploy-first is therefore the wrong order. The correct sequence:
 
-1. **Payload side first:** confirm that a failing revalidation webhook does not block a
-   save or publish. Today the endpoint does not exist in production, so the hook gets a
-   `404`.
-2. If publish proceeds: remove the duplicate company paragraph from `o-nas` in Payload and
-   publish the clean content.
+1. ~~Confirm a failing webhook does not block publish.~~ **Already established empirically
+   on 2026-07-30:** `o-nas` was published twice while the endpoint did not exist, the hook
+   returned `404` both times, and both publishes went through — the hook wraps
+   revalidation in `try/catch` and only logs the failure. No need to re-test.
+2. Remove the duplicate company paragraph from `o-nas` in Payload and publish the clean
+   content.
 3. Production is **visually unchanged** — it is still serving the JSX version.
 4. The webhook returns `404` once more. Expected, and harmless.
 5. Deploy the storefront pilot.
 6. The first request reads the clean CMS content; `<CompanyDetails />` appears exactly
    once.
-7. Make a small approved content edit and verify the live webhook: first request may be
-   stale, the second must be fresh, and subsequent ones must not increase the CMS hit
-   count.
+7. **The gate — see below. Until this passes, the deploy is not finished.**
 
-**If a failing webhook does block publish**, do not knowingly publish a duplicated page.
-Have the Payload side make revalidation best-effort and retryable first, then resume at
-step 2.
+### Step 7 is not an extra check. It is the only proof.
+
+After the cleanup in step 2, the CMS document and `o-nas-static.tsx` contain the **same
+four paragraphs, character for character** — verified against the live document, not
+assumed. The two markers that distinguish the paths today, the duplicate company block and
+the `info@maky.store` autolink, both live in the paragraph being deleted.
+
+So from step 2 onward the CMS path and the bootstrap path render **byte-identical HTML**.
+A silent fallback — `PAYLOAD_*` missing from the production process, a rotated Cloudflare
+service token, Payload simply down — would look exactly like success. Nobody would notice,
+possibly for months. That is not a cutover risk; it is a permanent property of this route
+until its content diverges from the JSX.
+
+Two things follow.
+
+**At cutover:** make a small content edit in Payload, publish, and confirm it appears on
+the second view. The first view may still be stale; that is the documented SWR contract,
+not a failure.
+
+**At any time afterwards**, the objective check is the server log — the CMS reader emits a
+positive line on every successful fetch, not only on failure:
+
+```bash
+pm2 logs maky-storefront --nostream --lines 200 | grep '\[cms\]'
+```
+
+```
+[cms] served {"slug":"o-nas","locale":"sk","outcome":"found",
+  "documentId":"019fb008-504b-779e-ad3f-1ff353267c88","updatedAt":"2026-07-29T22:46:10.035Z","blocks":1}
+```
+
+`updatedAt` is the useful field: it names **which revision** is live, so "did my edit
+land?" is a fact rather than an eyeball comparison. Absence of `[cms] served` alongside a
+normal-looking page is the signature of a silent fallback. A fetch only happens on a cache
+miss, so this is a few lines an hour, not one per request.
 
 After a successful cutover the provider manifest moves to `status: accepted` with
 `contentCleanupRequired: false`, recording the deployed storefront SHA and BUILD_ID.
