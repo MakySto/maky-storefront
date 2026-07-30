@@ -38,6 +38,30 @@ function logCmsError(event: string, detail: Record<string, unknown>): void {
 }
 
 /**
+ * Confirmation that a document really came from the CMS.
+ *
+ * This exists because of a property of the pilot that is easy to miss: once the
+ * duplicate company paragraph is removed from Payload, the four remaining paragraphs
+ * of `o-nas` are character-for-character identical to `o-nas-static.tsx`. Verified
+ * against the live document, not assumed. So the CMS path and the bootstrap path
+ * render byte-identical HTML, and a silent fallback — a rotated Cloudflare service
+ * token, `PAYLOAD_*` missing from the process environment, Payload down — would look
+ * exactly like success. Possibly for months.
+ *
+ * Errors were already logged; success was not, so there was no positive signal to
+ * grep for. `updatedAt` is the useful part: it says WHICH revision is live, which
+ * turns "did my edit land?" into a fact instead of an eyeball comparison.
+ *
+ *   pm2 logs maky-storefront --nostream | grep '\[cms\]'
+ *
+ * Cheap to leave on: a fetch only happens on a cache miss, so this is a handful of
+ * lines an hour, not one per request.
+ */
+function logCmsServed(detail: Record<string, unknown>): void {
+	console.log("[cms] served", JSON.stringify(detail));
+}
+
+/**
  * Fetch one published page by slug.
  *
  * Contract, matching the CMS provider exactly:
@@ -139,8 +163,18 @@ export async function fetchCmsPage(slug: string, locale: PayloadLocale): Promise
 	}
 
 	if (parsed.status === "empty") {
+		logCmsServed({ slug, locale, outcome: "not-found" });
 		return { status: "not-found" };
 	}
+
+	logCmsServed({
+		slug,
+		locale,
+		outcome: "found",
+		documentId: parsed.page.id,
+		updatedAt: parsed.page.updatedAt,
+		blocks: parsed.page.layout.length,
+	});
 
 	return { status: "found", page: parsed.page };
 }
