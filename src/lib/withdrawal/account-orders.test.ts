@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { formatOrderNumber } from "@/lib/order-number";
 
 const executeAuthenticatedGraphQL = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/graphql", () => ({ executeAuthenticatedGraphQL }));
@@ -108,7 +109,7 @@ describe("verifyOrderSelection — the client's claim is worthless", () => {
 		});
 		expect(verified).toEqual({
 			saleorOrderId: "T3JkZXI6MQ==",
-			orderNumber: "1042",
+			orderNumber: "ORD-1042",
 			lines: [{ id: "line-a", productName: "Strešný box", quantity: 1 }],
 		});
 	});
@@ -171,6 +172,20 @@ describe("verifyOrderSelection — the client's claim is worthless", () => {
 			claimedOrderId: "T3JkZXI6Mg==",
 			claimedLines: [],
 		});
-		expect(verified?.orderNumber).toBe("1099");
+		expect(verified?.orderNumber).toBe("ORD-1099");
+	});
+
+	it("returns the number in the form the customer was shown, not Saleor's bare integer", async () => {
+		// This value becomes `contract.orderNumber` in the stored notice and is printed on
+		// the receipt and in both e-mails. It used to be "1099" — an identifier the
+		// customer had never seen, on the document the feature exists to produce. The
+		// machine handle travels separately as `saleorOrderId`.
+		const verified = await verifyOrderSelection({
+			claimedOrderId: "T3JkZXI6Mg==",
+			claimedLines: [],
+		});
+		expect(verified?.orderNumber).toBe(formatOrderNumber("1099"));
+		expect(verified?.orderNumber).not.toBe("1099");
+		expect(verified?.saleorOrderId).toBe("T3JkZXI6Mg==");
 	});
 });

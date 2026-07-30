@@ -6,6 +6,7 @@ import {
 	type WithdrawalFormState,
 	type WithdrawalReceipt,
 } from "@/app/[channel]/(main)/odstupenie-od-zmluvy/actions";
+import { formatOrderNumber } from "@/lib/order-number";
 import { type OwnedOrder } from "@/lib/withdrawal/account-orders";
 import { WithdrawalReceiptPanel } from "./withdrawal-receipt";
 
@@ -359,7 +360,7 @@ export function WithdrawalForm({
 							>
 								{orders.map((order) => (
 									<option key={order.id} value={order.id}>
-										{`Objednávka ORD-${order.number}`}
+										{`Objednávka ${formatOrderNumber(order.number)}`}
 									</option>
 								))}
 								<option value={MANUAL}>Moja objednávka tu nie je — zadám číslo ručne</option>
@@ -389,7 +390,7 @@ export function WithdrawalForm({
 							type="text"
 							maxLength={128}
 							readOnly={Boolean(selectedOrder)}
-							defaultValue={selectedOrder ? `ORD-${selectedOrder.number}` : ""}
+							defaultValue={selectedOrder ? formatOrderNumber(selectedOrder.number) : ""}
 							key={selectedOrder?.id ?? MANUAL}
 							aria-invalid={invalid || undefined}
 							aria-describedby={describedBy}
