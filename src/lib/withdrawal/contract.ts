@@ -53,9 +53,17 @@ export interface WithdrawalItem {
 /**
  * The request body, exactly.
  *
- * Every key here is on Payload's allowlist and nothing else is. Note what is absent:
- * `customer.phone` (accepted by the contact endpoint, not by this one), and
- * `noticeSnapshot`, which the server builds from these fields.
+ * Every key here is on Payload's allowlist and nothing else is — the allowlist itself
+ * lives in `src/lib/forms/__fixtures__/forms-backend-v1/withdrawal.schema.json`, vendored
+ * from the Payload repository, and the tests validate against that file rather than
+ * against this interface. Note what is still absent: `noticeSnapshot`, `submittedAt`,
+ * `submissionNumber` and `emailDelivery`, all of which the server builds and all of which
+ * the endpoint rejects in a create request.
+ *
+ * `customer.phone` was absent too, until contract revision `1.1.0` made it optional and
+ * nullable. It is sent as an explicit `null` rather than omitted, so the body has one
+ * canonical shape — the endpoint accepts both, and one shape is easier to reason about
+ * than two.
  */
 export interface WithdrawalSubmission {
 	readonly submissionId: string;
@@ -65,6 +73,8 @@ export interface WithdrawalSubmission {
 	readonly customer: {
 		readonly name: string;
 		readonly email: string;
+		/** Optional. `null` when the customer left it blank — never omitted. */
+		readonly phone: string | null;
 	};
 	readonly contract: {
 		readonly orderNumber: string;
@@ -93,7 +103,12 @@ export interface PayloadNoticeSnapshot {
 	readonly source: WithdrawalSource;
 	readonly market: string;
 	readonly locale: string;
-	readonly customer: { readonly name: string; readonly email: string };
+	readonly customer: {
+		readonly name: string;
+		readonly email: string;
+		/** Present from contract 1.1.0. `null` when the customer gave none. */
+		readonly phone: string | null;
+	};
 	readonly contract: { readonly orderNumber: string };
 	readonly scope: WithdrawalScope;
 	readonly items: readonly WithdrawalItem[];
@@ -102,19 +117,39 @@ export interface PayloadNoticeSnapshot {
 	readonly privacyNoticeVersion: string;
 }
 
-export type EmailDeliveryStatus = "pending" | "sent" | "failed";
+/**
+ * The four states Payload reports, per `manifest.deliveryContract.statuses`.
+ *
+ * `unknown` is the one worth understanding. It does not mean "failed" — it means an SMTP
+ * attempt returned an ambiguous outcome (a timeout, typically) and nobody yet knows
+ * whether the message went out. The manifest flags it `unknownRequiresReconciliation`:
+ * an operator has to check the provider's log before anything is retried, because
+ * resending a message that was in fact delivered is its own defect. Rendering it as
+ * "failed" would tell a customer their confirmation did not arrive when the honest answer
+ * is that we do not know yet.
+ */
+export type EmailDeliveryStatus = "pending" | "sent" | "failed" | "unknown";
 
 /**
  * Delivery state, when the endpoint reports it.
  *
- * Optional on purpose: Payload owns sending in V1, but the create response does not
- * carry these fields yet. Absent must therefore mean "not known", never "failed" —
- * telling a customer their confirmation failed when it is merely unreported would be
- * its own small lie.
+ * Optional at the call site on purpose: absent must mean "not known", never "failed" —
+ * telling a customer their confirmation failed when it is merely unreported would be its
+ * own small lie.
+ *
+ * The eight fields are exactly `manifest.deliveryContract.publicAcknowledgementFields`.
+ * The attempt metadata is nullable rather than absent so a consumer has to decide what to
+ * do about "not reported", instead of reading `undefined` as zero.
  */
 export interface EmailDeliveryState {
 	readonly customerStatus: EmailDeliveryStatus;
+	readonly customerSentAt: string | null;
+	readonly customerAttemptCount: number | null;
+	readonly customerLastAttemptAt: string | null;
 	readonly internalStatus: EmailDeliveryStatus;
+	readonly internalSentAt: string | null;
+	readonly internalAttemptCount: number | null;
+	readonly internalLastAttemptAt: string | null;
 }
 
 /** What the server returns once the record is durable. */
@@ -141,6 +176,15 @@ export interface WithdrawalAccepted {
 export const WITHDRAWAL_LIMITS = {
 	name: 120,
 	email: 254,
+	/**
+	 * Payload's own ceiling, matched exactly rather than undercut.
+	 *
+	 * Measured in **Unicode code points of the trimmed value**, not in `String.length`.
+	 * Every phone fixture the provider ships is BMP-only, so a `.length` implementation
+	 * passes the entire vendored set and is still wrong; only an astral character shows
+	 * the difference. `validate.ts` counts code points and a test pins it.
+	 */
+	phoneCodePoints: 32,
 	orderNumber: 128,
 	note: 2_000,
 	productName: 300,
@@ -168,7 +212,16 @@ export function formsTimestampSeconds(nowMs: number = Date.now()): string {
  */
 export const LEGAL_COPY_APPROVED = false;
 export const LEGAL_NOTICE_VERSION = "withdrawal-sk-2026-07-30-v0-DRAFT";
-export const PRIVACY_NOTICE_VERSION = "privacy-sk-2026-07-30-v0-DRAFT";
+/**
+ * Bumped when the optional phone field landed.
+ *
+ * The legal notice did not change — the wording of the withdrawal declaration is the
+ * same. What changed is the set of personal data processed, which is what this version
+ * stamps. A record has to be replayable against the privacy copy that was actually shown
+ * when it was given, and "we may now also store your phone number" is a different
+ * statement from the one v0 made.
+ */
+export const PRIVACY_NOTICE_VERSION = "privacy-sk-2026-07-30-v1-DRAFT";
 
 export function assertLegalCopyApprovedForProduction(): void {
 	if (!LEGAL_COPY_APPROVED) {
@@ -177,4 +230,28 @@ export function assertLegalCopyApprovedForProduction(): void {
 				"artifact, set LEGAL_COPY_APPROVED and bump the notice versions before deploying.",
 		);
 	}
+}
+
+/**
+ * Whether the route may serve the form in this process.
+ *
+ * This exists because the flag above was not a gate. `assertLegalCopyApprovedForProduction`
+ * had **zero callers** repo-wide — the only three occurrences of its name were its own
+ * definition, its own doc-comment ("the check a deploy step *can* call"), and a line in
+ * the handoff. Nothing in `package.json`, no `instrumentation.ts`, no hook. The handoff
+ * and the session notes both stated that `LEGAL_COPY_APPROVED = false` gated the deploy;
+ * it gated nothing, and deploying the branch would have put a legally mandated form live
+ * with unreviewed copy.
+ *
+ * An affordance nobody wires up reads exactly like a guarantee, which is worse than
+ * having neither. So the check now lives on the path a request actually takes: the route
+ * 404s and the server action refuses while the copy is a draft, in production builds
+ * only. Development and preview are unaffected, because that is where the form is meant
+ * to be exercised.
+ *
+ * Flipping `LEGAL_COPY_APPROVED` to `true` is the intended way through. It is not a
+ * formality — it asserts that a human has read the Slovak wording.
+ */
+export function isWithdrawalFormServable(): boolean {
+	return LEGAL_COPY_APPROVED || process.env.NODE_ENV !== "production";
 }

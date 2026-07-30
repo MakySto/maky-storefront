@@ -104,16 +104,38 @@ function isOrderMatchStatus(value: unknown): value is OrderMatchStatus {
 }
 
 function isDeliveryStatus(value: unknown): value is EmailDeliveryState["customerStatus"] {
-	return value === "pending" || value === "sent" || value === "failed";
+	// `unknown` arrived with contract 1.1.0 and is a real state, not a parse failure: an
+	// SMTP attempt whose outcome was ambiguous. Omitting it here used to make the whole
+	// delivery object null, which reported a CONFIRMED-sent customer e-mail as unreported
+	// and hid the very case the contract flags as needing operator reconciliation.
+	return value === "pending" || value === "sent" || value === "failed" || value === "unknown";
+}
+
+function optionalIsoString(value: unknown): string | null {
+	return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function optionalCount(value: unknown): number | null {
+	return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
 }
 
 function parseDelivery(value: unknown): EmailDeliveryState | null {
 	if (typeof value !== "object" || value === null) return null;
 	const record = value as Record<string, unknown>;
-	// Absent must mean "not known", never "failed" — the create response does not carry
-	// delivery yet, and reporting an unsent confirmation as failed would be its own lie.
+	// Absent must mean "not known", never "failed" — reporting an unsent confirmation as
+	// failed would be its own lie. The two statuses are the load-bearing part; the six
+	// attempt fields degrade to null individually rather than taking the object with them.
 	if (!isDeliveryStatus(record.customerStatus) || !isDeliveryStatus(record.internalStatus)) return null;
-	return { customerStatus: record.customerStatus, internalStatus: record.internalStatus };
+	return {
+		customerStatus: record.customerStatus,
+		customerSentAt: optionalIsoString(record.customerSentAt),
+		customerAttemptCount: optionalCount(record.customerAttemptCount),
+		customerLastAttemptAt: optionalIsoString(record.customerLastAttemptAt),
+		internalStatus: record.internalStatus,
+		internalSentAt: optionalIsoString(record.internalSentAt),
+		internalAttemptCount: optionalCount(record.internalAttemptCount),
+		internalLastAttemptAt: optionalIsoString(record.internalLastAttemptAt),
+	};
 }
 
 /** The stored snapshot is untrusted input like any other response field. */
@@ -149,7 +171,14 @@ function parseSnapshot(value: unknown): PayloadNoticeSnapshot | null {
 		source: snapshot.source === "account" ? "account" : "guest",
 		market: typeof snapshot.market === "string" ? snapshot.market : "",
 		locale: typeof snapshot.locale === "string" ? snapshot.locale : "",
-		customer: { name: customer.name, email: customer.email },
+		customer: {
+			name: customer.name,
+			email: customer.email,
+			// Only what the server stored. The receipt renders the phone from here and
+			// nowhere else, so a value the customer typed but Payload did not keep never
+			// appears on a document that claims to be the record.
+			phone: typeof customer.phone === "string" && customer.phone.length > 0 ? customer.phone : null,
+		},
 		contract: { orderNumber: contract.orderNumber },
 		scope: snapshot.scope,
 		items,

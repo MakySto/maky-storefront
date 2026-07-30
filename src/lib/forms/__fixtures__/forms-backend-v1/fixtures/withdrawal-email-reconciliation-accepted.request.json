@@ -1,0 +1,10 @@
+{
+  "formType": "withdrawal",
+  "submissionId": "018f0000-0000-7000-8000-000000000003",
+  "reconciliation": {
+    "channel": "customer",
+    "expectedAttemptCount": 1,
+    "outcome": "accepted",
+    "providerMessageId": "018f2000-0000-7000-8000-000000000001"
+  }
+}

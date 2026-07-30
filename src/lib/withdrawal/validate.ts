@@ -15,10 +15,11 @@ import {
  * It refuses input that is malformed: a missing name, an address that cannot be an
  * e-mail, a quantity of zero, a body longer than any real notice.
  *
- * Note what it does not accept at all: a phone number. Payload's withdrawal endpoint
- * allows exactly `name` and `email` inside `customer` and rejects unknown keys, so a
- * phone would fail the whole request. Collecting a field only to drop it before sending
- * would also be personal data gathered for no purpose. The contact form keeps it.
+ * A phone number is accepted from contract revision `1.1.0` — optional, nullable, and
+ * never a condition of submitting. It is the one field here whose rules are copied from
+ * the wire contract rather than chosen, because Payload rejects the whole request over
+ * them; `withdrawal.schema.json` in the vendored pack is the source and a test binds this
+ * file's constants to it.
  *
  * It does NOT refuse a notice because the order cannot be found, because the order
  * looks older than fourteen days, because nothing has been delivered yet, or because
@@ -36,6 +37,7 @@ import {
 export type WithdrawalField =
 	| "customerName"
 	| "customerEmail"
+	| "customerPhone"
 	| "orderNumber"
 	| "scope"
 	| "items"
@@ -54,6 +56,8 @@ export interface ValidatedInput {
 	readonly source: WithdrawalSource;
 	readonly name: string;
 	readonly email: string;
+	/** `null` when the customer gave none. Normalized per the wire contract. */
+	readonly phone: string | null;
 	readonly orderNumber: string;
 	readonly scope: WithdrawalScope;
 	readonly items: readonly WithdrawalItem[];
@@ -71,6 +75,7 @@ export interface RawWithdrawalInput {
 	readonly locale: unknown;
 	readonly name: unknown;
 	readonly email: unknown;
+	readonly phone: unknown;
 	readonly orderNumber: unknown;
 	readonly scope: unknown;
 	readonly items: unknown;
@@ -119,6 +124,58 @@ function cleanMultiline(value: unknown): string {
 		.replace(/[ \t]+/g, " ")
 		.replace(/\n{3,}/g, "\n\n")
 		.trim();
+}
+
+/**
+ * The character range the wire contract forbids in `customer.phone`.
+ *
+ * Wider than `CONTROL_CHARS` above, which stops at DEL: the schema's pattern also
+ * excludes the C1 block, so a C1 byte would sail through this module's usual cleaner
+ * and then be refused by Payload.
+ */
+const PHONE_FORBIDDEN_CHARS = /[\u0000-\u001f\u007f-\u009f]/;
+
+/**
+ * Phone, normalized exactly as the contract specifies — and rejected, not cleaned.
+ *
+ * This is the one field in this file that refuses input containing control characters
+ * instead of stripping them, which is a deliberate inversion of the rule two functions
+ * up. The reason is in the provider's own invalid fixture:
+ *
+ *     "+421 901 730 066\nBcc: injected@example.com"
+ *
+ * That is not a copy-paste artefact, it is an e-mail header injection, and the phone
+ * reaches an e-mail Payload renders. Stripping the newline would turn a body Payload
+ * correctly refuses into one it accepts — sanitising an attack into a valid request is
+ * the worst of the three available behaviours.
+ *
+ * Over-length is refused rather than truncated for a smaller reason: a truncated name is
+ * still recognisably the person, but a truncated phone number is simply a wrong number.
+ * Both refusals are safe to make because the field is optional and the form says so — a
+ * customer who cannot fix it can submit without it, and their notice still stands.
+ *
+ * No E.164, deliberately. People write numbers with spaces, brackets and dashes, and a
+ * withdrawal is not the place to argue about formatting.
+ */
+export type PhoneNormalization =
+	| { readonly ok: true; readonly value: string | null }
+	| { readonly ok: false; readonly code: "invalid" | "tooLong" };
+
+export function normalizeWithdrawalPhone(raw: unknown): PhoneNormalization {
+	if (typeof raw !== "string") return { ok: true, value: null };
+
+	if (PHONE_FORBIDDEN_CHARS.test(raw)) return { ok: false, code: "invalid" };
+
+	// ECMAScript trim, and nothing else — the contract names that operation exactly, so
+	// collapsing internal whitespace here would be a normalization it never asked for.
+	const trimmed = raw.trim();
+	if (trimmed.length === 0) return { ok: true, value: null };
+
+	// Code points, not UTF-16 code units. Every phone fixture the provider ships is
+	// BMP-only, so `.length` passes all of them and is still wrong for an astral value.
+	if ([...trimmed].length > WITHDRAWAL_LIMITS.phoneCodePoints) return { ok: false, code: "tooLong" };
+
+	return { ok: true, value: trimmed };
 }
 
 function parseItems(raw: unknown, errors: FieldError[]): WithdrawalItem[] {
@@ -185,6 +242,11 @@ export function validateWithdrawal(raw: RawWithdrawalInput): ValidationResult {
 	if (email.length === 0) errors.push({ field: "customerEmail", code: "required" });
 	else if (!EMAIL_RE.test(email)) errors.push({ field: "customerEmail", code: "invalid" });
 
+	// Optional, and never a condition of submitting.
+	const normalizedPhone = normalizeWithdrawalPhone(raw.phone);
+	if (!normalizedPhone.ok) errors.push({ field: "customerPhone", code: normalizedPhone.code });
+	const phone = normalizedPhone.ok ? normalizedPhone.value : null;
+
 	// The contract identifier. An order number is the usual one, but any identifier the
 	// customer can give is accepted — the point is that the contract is identifiable,
 	// not that it matches a row we can find today.
@@ -215,6 +277,7 @@ export function validateWithdrawal(raw: RawWithdrawalInput): ValidationResult {
 			source,
 			name,
 			email,
+			phone,
 			orderNumber,
 			// Both narrowed above; the guard is for the type checker, not for runtime.
 			scope: scope ?? "wholeOrder",

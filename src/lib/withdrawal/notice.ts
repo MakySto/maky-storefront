@@ -53,6 +53,10 @@ export function renderNoticeFromSnapshot(snapshot: PayloadNoticeSnapshot): strin
 	parts.push("");
 	parts.push(line("Meno a priezvisko", snapshot.customer.name));
 	parts.push(line("E-mail", snapshot.customer.email));
+	// Only when Payload stored one. A line reading "Telefón: " on a document the customer
+	// is told to keep as proof would suggest something was lost; and printing a number the
+	// server did not keep would make the receipt disagree with the record.
+	if (snapshot.customer.phone) parts.push(line("Telefón", snapshot.customer.phone));
 	parts.push(line("Identifikácia zmluvy (číslo objednávky)", snapshot.contract.orderNumber));
 	parts.push("");
 

@@ -32,7 +32,11 @@ export interface WithdrawalFormProps {
 	/** Freshly minted on the server for this render. One id per form attempt. */
 	readonly submissionId: string;
 	readonly action: (state: WithdrawalFormState, formData: FormData) => Promise<WithdrawalFormState>;
-	readonly prefill: { readonly name: string; readonly email: string } | null;
+	readonly prefill: {
+		readonly name: string;
+		readonly email: string;
+		readonly phone: string | null;
+	} | null;
 	readonly orders: readonly OwnedOrder[];
 	readonly alternatives: { readonly email: string; readonly postalAddress: string };
 	readonly modelFormHref: string;
@@ -294,6 +298,33 @@ export function WithdrawalForm({
 							defaultValue={prefill?.email ?? ""}
 							maxLength={254}
 							aria-required="true"
+							aria-invalid={invalid || undefined}
+							aria-describedby={describedBy}
+							className={`${inputBase} ${invalid ? invalidRing : ""}`}
+						/>
+					)}
+				</Field>
+
+				<Field
+					id={id("phone")}
+					label="Telefón"
+					hint="Použijeme ho iba vtedy, ak potrebujeme rýchlo upresniť údaje k tomuto odstúpeniu. Odstúpenie môžete odoslať aj bez telefónu."
+					error={errors?.customerPhone}
+				>
+					{(describedBy, invalid) => (
+						<input
+							id={id("phone")}
+							name="customerPhone"
+							data-field="customerPhone"
+							type="tel"
+							autoComplete="tel"
+							inputMode="tel"
+							defaultValue={prefill?.phone ?? ""}
+							// The browser counts UTF-16 code units and the contract counts
+							// Unicode code points, so this is the stricter of the two for
+							// astral input. That is the safe direction, and it is only a
+							// typing guard — the server decides.
+							maxLength={32}
 							aria-invalid={invalid || undefined}
 							aria-describedby={describedBy}
 							className={`${inputBase} ${invalid ? invalidRing : ""}`}

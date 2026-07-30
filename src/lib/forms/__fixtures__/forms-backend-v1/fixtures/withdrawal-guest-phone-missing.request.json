@@ -1,0 +1,20 @@
+{
+  "submissionId": "018f0000-0000-7000-8000-000000000005",
+  "source": "guest",
+  "market": "SK",
+  "locale": "sk",
+  "customer": {
+    "name": "Meno zákazníka",
+    "email": "customer@example.com"
+  },
+  "contract": {
+    "orderNumber": "ORDER-10003",
+    "saleorOrderId": null,
+    "saleorCustomerId": null
+  },
+  "scope": "wholeOrder",
+  "items": null,
+  "note": null,
+  "legalNoticeVersion": "withdrawal-notice-version",
+  "privacyNoticeVersion": "privacy-notice-version"
+}
