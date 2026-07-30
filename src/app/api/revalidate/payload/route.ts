@@ -1,7 +1,6 @@
 import { revalidateTag } from "next/cache";
 import { type NextRequest } from "next/server";
-import { extractBearerToken } from "@/lib/api-auth";
-import { verifyPayloadRevalidateSecret } from "@/lib/cms/revalidate-auth";
+import { readBearerToken, verifyPayloadRevalidateSecret } from "@/lib/cms/revalidate-auth";
 import { parseCmsRevalidateEvent, tagsForCmsEvent } from "@/lib/cms/revalidate-event";
 
 /**
@@ -15,6 +14,11 @@ import { parseCmsRevalidateEvent, tagsForCmsEvent } from "@/lib/cms/revalidate-e
  * Configure in Payload as:
  *   POST https://maky.store/api/revalidate/payload
  *   Authorization: Bearer <PAYLOAD_REVALIDATE_SECRET>
+ *
+ * The Authorization header is the ONLY accepted carrier for the secret. `?secret=`
+ * and custom headers are rejected even when the value is correct — see
+ * `readBearerToken`. Only POST is exported, so Next answers every other method with
+ * 405 before any of this runs.
  *
  * `revalidateTag` is used rather than `updateTag`, which throws outside a Server
  * Action — Next checks for a route handler explicitly. The `"max"` profile is the
@@ -31,7 +35,7 @@ function revalidateDerivedTags(tags: readonly string[]): void {
 export async function POST(request: NextRequest) {
 	// Authenticate before reading the body: no work happens for an unauthenticated
 	// caller, and a missing secret rejects everyone rather than admitting everyone.
-	if (!verifyPayloadRevalidateSecret(extractBearerToken(request))) {
+	if (!verifyPayloadRevalidateSecret(readBearerToken(request))) {
 		console.warn("[cms-revalidate] unauthorized");
 		return Response.json({ error: "Unauthorized" }, { status: 401 });
 	}
