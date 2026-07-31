@@ -1,3 +1,5 @@
+import { cmsPathForRelationship } from "./link-routes";
+
 /**
  * Lexical (Payload rich text) node model — the subset the storefront renders.
  *
@@ -15,11 +17,7 @@
  * because the editor can emit them and a missing case would silently drop half a
  * page: heading (h2–h4), list, listitem, link.
  */
-
-/**
- * Lexical text-format bitmask. Unknown bits are ignored rather than fatal — a
- * future editor feature must not blank out a paragraph.
- */
+/** Lexical text-format bitmask admitted by the V2 consumer contract. */
 export const TEXT_FORMAT = {
 	bold: 1,
 	italic: 2,
@@ -62,6 +60,10 @@ export function isLexicalDocument(value: unknown): value is LexicalDocument {
 	);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 /** Children of an element node; `[]` for leaves and for anything malformed. */
 export function nodeChildren(node: LexicalNode): LexicalNode[] {
 	const raw = node.children;
@@ -90,6 +92,19 @@ export const RENDERABLE_NODE_TYPES: ReadonlySet<string> = new Set([
 	"link",
 	"autolink",
 ]);
+
+const ELEMENT_FORMATS: ReadonlySet<unknown> = new Set([
+	"",
+	"left",
+	"start",
+	"center",
+	"right",
+	"end",
+	"justify",
+]);
+
+const HEADING_TAGS: ReadonlySet<unknown> = new Set(["h2", "h3", "h4"]);
+const LIST_TYPES: ReadonlySet<unknown> = new Set(["bullet", "number"]);
 
 /**
  * Find the first node outside the contract's allowlist.
@@ -143,6 +158,194 @@ const KNOWN_FORMAT_BITS =
 	TEXT_FORMAT.strikethrough |
 	TEXT_FORMAT.underline |
 	TEXT_FORMAT.code;
+
+export type LexicalValidation =
+	| { readonly ok: true }
+	| { readonly ok: false; readonly reason: string; readonly nodeType: string | null };
+
+type LexicalFailure = Extract<LexicalValidation, { readonly ok: false }>;
+
+/**
+ * Validate the complete Lexical tree before any element is rendered.
+ *
+ * The allowlist alone is insufficient. A known node with malformed children, a heading
+ * outside h2–h4, a list whose enum is unknown, or a link with a malformed relationship
+ * wrapper would otherwise pass validation and be silently coerced or truncated by the
+ * defensive renderer. V2 explicitly requires node types, required fields, enums, format
+ * bits, URL protocols and relationship targets to be checked recursively.
+ */
+export function validateLexicalDocument(document: LexicalDocument): LexicalValidation {
+	const fail = (reason: string, nodeType: string | null = null): LexicalFailure => ({
+		ok: false,
+		reason,
+		nodeType,
+	});
+
+	const validateElementFormat = (node: LexicalNode, path: string): LexicalValidation | null => {
+		if (node.format === undefined || node.format === null) return null;
+		if (!ELEMENT_FORMATS.has(node.format)) {
+			return fail(`${path}.format is outside the supported alignment enum`, node.type);
+		}
+		return null;
+	};
+
+	const validateChildren = (
+		node: LexicalNode,
+		path: string,
+	): { readonly ok: true; readonly children: readonly LexicalNode[] } | LexicalFailure => {
+		if (!Array.isArray(node.children)) {
+			return fail(`${path}.children is not an array`, node.type);
+		}
+		const children: LexicalNode[] = [];
+		for (const [index, child] of node.children.entries()) {
+			if (!isLexicalNode(child)) {
+				return fail(`${path}.children[${index}] is not a Lexical node`, node.type);
+			}
+			children.push(child);
+		}
+		return { ok: true, children };
+	};
+
+	const validateLink = (node: LexicalNode, path: string): LexicalValidation | null => {
+		if (!isRecord(node.fields)) return fail(`${path}.fields is not an object`, node.type);
+
+		const { linkType, newTab } = node.fields;
+		if (newTab !== undefined && newTab !== null && typeof newTab !== "boolean") {
+			return fail(`${path}.fields.newTab is not a boolean`, node.type);
+		}
+
+		if (linkType === "custom") {
+			if (typeof node.fields.url !== "string" || safeLinkUrl(node.fields.url) === null) {
+				return fail(`${path}.fields.url is not an allowed absolute URL`, node.type);
+			}
+			return null;
+		}
+
+		if (linkType !== "internal") {
+			return fail(`${path}.fields.linkType is not custom or internal`, node.type);
+		}
+
+		const doc = node.fields.doc;
+		// A deleted or inaccessible target is an explicit degrade in V2: keep the words
+		// and emit no guessed route.
+		if (doc === undefined || doc === null) return null;
+		if (!isRecord(doc)) {
+			return fail(`${path}.fields.doc is a malformed relationship wrapper`, node.type);
+		}
+
+		const relationTo = doc.relationTo;
+		if (relationTo !== "pages" && relationTo !== "posts") {
+			return fail(`${path}.fields.doc.relationTo is unsupported`, node.type);
+		}
+
+		const target = doc.value;
+		if (target === undefined || target === null) return null;
+		if (!isRecord(target)) {
+			return fail(`${path}.fields.doc.value is not a populated relationship target`, node.type);
+		}
+		if (typeof target.slug !== "string" || target.slug.length === 0) {
+			return fail(`${path}.fields.doc.value.slug is missing`, node.type);
+		}
+		if (cmsPathForRelationship(relationTo, target.slug) === null) {
+			return fail(`${path}.fields.doc target has no storefront route`, node.type);
+		}
+		return null;
+	};
+
+	const walk = (
+		node: LexicalNode,
+		path: string,
+		documentRoot: boolean,
+		parentType: string | null,
+	): LexicalValidation => {
+		if (!RENDERABLE_NODE_TYPES.has(node.type)) {
+			return fail(`${path} has unsupported node type ${node.type}`, node.type);
+		}
+		if (node.type === "root" && !documentRoot) {
+			return fail(`${path} contains a nested root node`, node.type);
+		}
+
+		switch (node.type) {
+			case "text": {
+				if (typeof node.text !== "string") return fail(`${path}.text is not a string`, node.type);
+				if (node.children !== undefined && node.children !== null) {
+					return fail(`${path} text unexpectedly carries children`, node.type);
+				}
+				if (
+					typeof node.format !== "number" ||
+					!Number.isInteger(node.format) ||
+					node.format < 0 ||
+					node.format > KNOWN_FORMAT_BITS ||
+					(node.format & ~KNOWN_FORMAT_BITS) !== 0
+				) {
+					return fail(`${path}.format is not a supported text-format bitmask`, node.type);
+				}
+				return { ok: true };
+			}
+
+			case "linebreak":
+				if (node.children !== undefined && node.children !== null) {
+					return fail(`${path} linebreak unexpectedly carries children`, node.type);
+				}
+				return { ok: true };
+
+			case "heading":
+				if (!HEADING_TAGS.has(node.tag)) {
+					return fail(`${path}.tag is not h2, h3 or h4`, node.type);
+				}
+				break;
+
+			case "list": {
+				if (!LIST_TYPES.has(node.listType)) {
+					return fail(`${path}.listType is not bullet or number`, node.type);
+				}
+				const expectedTag = node.listType === "number" ? "ol" : "ul";
+				if (node.tag !== expectedTag) {
+					return fail(`${path}.tag does not match listType`, node.type);
+				}
+				if (typeof node.start !== "number" || !Number.isInteger(node.start) || node.start < 1) {
+					return fail(`${path}.start is not a positive integer`, node.type);
+				}
+				break;
+			}
+
+			case "listitem":
+				if (parentType !== "list") {
+					return fail(`${path} listitem is not a direct child of a list`, node.type);
+				}
+				if (typeof node.value !== "number" || !Number.isInteger(node.value) || node.value < 1) {
+					return fail(`${path}.value is not a positive integer`, node.type);
+				}
+				if (node.checked !== undefined && node.checked !== null) {
+					return fail(`${path}.checked is unsupported outside checklist content`, node.type);
+				}
+				break;
+
+			case "link":
+			case "autolink": {
+				const linkFailure = validateLink(node, path);
+				if (linkFailure) return linkFailure;
+				break;
+			}
+		}
+
+		const formatFailure = validateElementFormat(node, path);
+		if (formatFailure) return formatFailure;
+
+		const children = validateChildren(node, path);
+		if (!children.ok) return children;
+		if (node.type === "list" && children.children.some((child) => child.type !== "listitem")) {
+			return fail(`${path}.children contains a non-listitem node`, node.type);
+		}
+		for (const [index, child] of children.children.entries()) {
+			const childResult = walk(child, `${path}.children[${index}]`, false, node.type);
+			if (!childResult.ok) return childResult;
+		}
+		return { ok: true };
+	};
+
+	return walk(document.root, "root", true, null);
+}
 
 /**
  * Find the first `text` node carrying a format bit the contract does not define.
@@ -252,16 +455,6 @@ export function safeLinkUrl(raw: unknown): string | null {
 
 	const trimmed = raw.trim();
 	if (trimmed.length === 0) return null;
-
-	// Same-page anchors and root-relative paths carry no scheme to abuse.
-	//
-	// `//host` is protocol-relative rather than relative, so it must not take this branch.
-	// Neither must `/\host`: the WHATWG URL parser treats a backslash in the authority
-	// position exactly like a slash for special schemes, so `/\evil.example` resolves to
-	// `https://evil.example/` in every browser. An earlier version of this guard checked
-	// only for `//` and let that through — a cross-origin link built from CMS text.
-	if (trimmed.startsWith("#")) return trimmed;
-	if (trimmed.startsWith("/") && !/^\/[/\\]/.test(trimmed)) return trimmed;
 
 	try {
 		const parsed = new URL(trimmed);

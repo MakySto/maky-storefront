@@ -62,17 +62,26 @@ describe("LexicalContent — nodes the editor can produce", () => {
 		);
 	});
 
-	it("renders both list flavours", () => {
-		const items = [
-			{ type: "listitem", children: [text("jedna")] },
-			{ type: "listitem", children: [text("dva")] },
+	it("renders both list flavours and preserves ordered numbering", () => {
+		const bulletItems = [
+			{ type: "listitem", value: 1, children: [text("jedna")] },
+			{ type: "listitem", value: 2, children: [text("dva")] },
 		];
-		expect(render({ children: [{ type: "list", listType: "bullet", children: items }] })).toBe(
-			"<ul><li>jedna</li><li>dva</li></ul>",
-		);
-		expect(render({ children: [{ type: "list", listType: "number", children: items }] })).toBe(
-			"<ol><li>jedna</li><li>dva</li></ol>",
-		);
+		expect(
+			render({
+				children: [{ type: "list", listType: "bullet", tag: "ul", start: 1, children: bulletItems }],
+			}),
+		).toBe("<ul><li>jedna</li><li>dva</li></ul>");
+
+		const numberedItems = [
+			{ type: "listitem", value: 5, children: [text("päť")] },
+			{ type: "listitem", value: 7, children: [text("sedem")] },
+		];
+		expect(
+			render({
+				children: [{ type: "list", listType: "number", tag: "ol", start: 5, children: numberedItems }],
+			}),
+		).toBe(`<ol start="5"><li value="5">päť</li><li value="7">sedem</li></ol>`);
 	});
 
 	it("renders combined text formats", () => {

@@ -1,4 +1,5 @@
-import { parseBlock, type CmsBlock } from "./blocks";
+import { parseBlock, readBlockMarkets, readMedia, type CmsBlock } from "./blocks";
+import { isMarketCode, isVisibleInMarket, type MarketCode } from "./markets";
 
 // Re-exported so consumers keep importing the page contract from one place; the block
 // shapes live in `blocks.ts` because seven of them would bury the envelope logic here.
@@ -24,13 +25,14 @@ export type {
  * arrived over the wire. A published page is untrusted input like any other HTTP
  * response, so it is validated structurally at this boundary.
  *
- * Three outcomes, which must never collapse into one branch:
+ * Four outcomes, which must never collapse into one branch:
  *
  *   `ok`      — a published document to render
  *   `empty`   — the CMS answered authoritatively that nothing matches (`docs: []`)
+ *   `market-mismatch` — a valid envelope excludes the requested market
  *   `invalid` — the response did not match the contract; treat as an upstream fault
  *
- * `empty` means the page does not exist and must NOT resurrect a stale fallback.
+ * `empty` and `market-mismatch` are authoritative absences and must NOT resurrect a stale fallback.
  * `invalid` means we cannot trust what we got and must fall back.
  *
  * ## All-or-nothing
@@ -108,6 +110,12 @@ export interface CmsContractViolation {
 export type CmsPageParse =
 	| { readonly status: "ok"; readonly page: CmsPage }
 	| { readonly status: "empty" }
+	| {
+			readonly status: "market-mismatch";
+			readonly documentId: string;
+			readonly slug: string;
+			readonly markets: readonly string[];
+	  }
 	| { readonly status: "invalid"; readonly violation: CmsContractViolation };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -118,34 +126,44 @@ function optionalString(value: unknown): string | null {
 	return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-/** `null` (all markets) or an array of strings. Anything else is a contract break. */
+/** `null`/`[]` means all markets; every entry must be a provider market enum. */
 function parseMarkets(value: unknown): { ok: true; markets: readonly string[] | null } | { ok: false } {
 	if (value === null || value === undefined) return { ok: true, markets: null };
-	if (!Array.isArray(value)) return { ok: false };
-	if (!value.every((entry) => typeof entry === "string")) return { ok: false };
-	return { ok: true, markets: value as readonly string[] };
+	if (!Array.isArray(value) || !value.every(isMarketCode)) return { ok: false };
+	return { ok: true, markets: value };
 }
 
-function parseMeta(value: unknown): CmsSeoMeta {
-	if (!isRecord(value)) return { title: null, description: null, image: null };
+type MetaResult =
+	| { readonly ok: true; readonly meta: CmsSeoMeta }
+	| { readonly ok: false; readonly reason: string };
 
-	// `image` is an upload relationship: an id string at depth 0, a populated object
-	// at depth >= 1. Only a populated absolute URL is usable in OG metadata.
+function parseMeta(value: unknown): MetaResult {
+	if (value === undefined || value === null) {
+		return { ok: true, meta: { title: null, description: null, image: null } };
+	}
+	if (!isRecord(value)) return { ok: false, reason: "docs[0].meta is not an object" };
+
 	let image: string | null = null;
-	const rawImage = value.image;
-	if (isRecord(rawImage)) {
-		const url = optionalString(rawImage.url);
-		if (url && /^https?:\/\//.test(url)) image = url;
+	if (value.image !== undefined && value.image !== null) {
+		const parsedImage = readMedia(value.image);
+		if (parsedImage.kind !== "ok") {
+			const why = parsedImage.kind === "unusable" ? parsedImage.why : "is absent";
+			return { ok: false, reason: `docs[0].meta.image ${why}` };
+		}
+		image = parsedImage.media.url;
 	}
 
 	return {
-		title: optionalString(value.title),
-		description: optionalString(value.description),
-		image,
+		ok: true,
+		meta: {
+			title: optionalString(value.title),
+			description: optionalString(value.description),
+			image,
+		},
 	};
 }
 
-export function parsePagesResponse(raw: unknown): CmsPageParse {
+export function parsePagesResponse(raw: unknown, market?: MarketCode): CmsPageParse {
 	/** Identifying fields are filled in as soon as they are known and trusted. */
 	let documentId: string | null = null;
 	let documentSlug: string | null = null;
@@ -190,16 +208,37 @@ export function parsePagesResponse(raw: unknown): CmsPageParse {
 	if (!Array.isArray(doc.layout)) return invalid("docs[0].layout is not an array");
 
 	const markets = parseMarkets(doc.markets);
-	if (!markets.ok) return invalid("docs[0].markets is not null or string[]");
+	if (!markets.ok) return invalid("docs[0].markets contains an unsupported market");
+
+	// Page visibility is authoritative and precedes all block validation. A CZ-only
+	// document cannot become an indexable SK bootstrap merely because its CZ content uses
+	// a block this storefront does not understand.
+	if (market && !isVisibleInMarket(markets.markets, market)) {
+		return {
+			status: "market-mismatch",
+			documentId: id,
+			slug,
+			markets: markets.markets ?? [],
+		};
+	}
 
 	const layout: CmsBlock[] = [];
 	for (const [index, entry] of doc.layout.entries()) {
+		// Filter each block before validating its content, as required by V2. We still
+		// validate the markets field itself, because an unknown market is an enum break.
+		const visibility = readBlockMarkets(entry, index);
+		if (!visibility.ok) return invalid(visibility.reason);
+		if (market && !isVisibleInMarket(visibility.markets, market)) continue;
+
 		const parsed = parseBlock(entry, index);
 		if (!parsed.ok) {
 			return invalid(parsed.reason, { blockType: parsed.blockType, nodeType: parsed.nodeType });
 		}
 		layout.push(parsed.block);
 	}
+
+	const meta = parseMeta(doc.meta);
+	if (!meta.ok) return invalid(meta.reason);
 
 	return {
 		status: "ok",
@@ -210,7 +249,7 @@ export function parsePagesResponse(raw: unknown): CmsPageParse {
 			summary: optionalString(doc.summary),
 			layout,
 			markets: markets.markets,
-			meta: parseMeta(doc.meta),
+			meta: meta.meta,
 			updatedAt: optionalString(doc.updatedAt),
 		},
 	};

@@ -12,6 +12,7 @@ import {
 	type LexicalLink,
 	type LexicalNode,
 } from "@/lib/cms/lexical";
+import { cmsPathForRelationship } from "@/lib/cms/link-routes";
 import { marketHref } from "@/lib/channel-map";
 
 /**
@@ -37,16 +38,14 @@ function logUnsupported(event: string, detail: Record<string, unknown>): void {
 /**
  * Storefront URL for an internally linked CMS document.
  *
- * Only `pages` has a public route today. Next resolves static segments before the
+ * Only registered `pages` slugs have public routes today. Next resolves static segments before the
  * `[productSlug]` catch-all, so `/sk/o-nas` reaches the o-nas route rather than
- * being read as a product slug — but a CMS page with no matching route would fall
- * through to the product lookup. `posts` has no storefront route at all yet, so those
- * links render as plain text instead of pointing at a 404. (A collection outside the
- * contract never reaches here — the candidate was rejected before rendering.)
+ * being read as a product slug. Unknown Page slugs and populated Post targets are
+ * rejected before rendering; the nullable return is defensive, not a degradation path.
  */
 function internalHref(internal: NonNullable<LexicalLink["internal"]>, channel: string): string | null {
-	if (internal.collection === "pages") return marketHref(channel, `/${internal.slug}`);
-	return null;
+	const path = cmsPathForRelationship(internal.collection, internal.slug);
+	return path ? marketHref(channel, path) : null;
 }
 
 function renderTextNode(node: LexicalNode, key: string): ReactNode {
@@ -98,8 +97,21 @@ function renderLinkNode(node: LexicalNode, channel: string, key: string): ReactN
 		);
 	}
 
-	// Unsafe scheme or an unresolvable reference: keep the words, drop the link.
+	// A null/missing supported relationship target may intentionally keep only its words.
+	// Unsafe schemes and malformed/populated unroutable targets fail validation earlier.
 	return <Fragment key={key}>{children}</Fragment>;
+}
+
+function renderListItem(node: LexicalNode, channel: string, key: string, numbered: boolean): ReactNode {
+	const value =
+		numbered && typeof node.value === "number" && Number.isInteger(node.value) && node.value > 0
+			? node.value
+			: undefined;
+	return (
+		<li key={key} {...(value === undefined ? {} : { value })}>
+			{renderChildren(node, channel, key)}
+		</li>
+	);
 }
 
 function renderNode(node: LexicalNode, channel: string, key: string): ReactNode {
@@ -125,11 +137,25 @@ function renderNode(node: LexicalNode, channel: string, key: string): ReactNode 
 
 		case "list": {
 			const List = listTag(node);
-			return <List key={key}>{renderChildren(node, channel, key)}</List>;
+			const numbered = List === "ol";
+			const start =
+				numbered && typeof node.start === "number" && Number.isInteger(node.start) && node.start > 0
+					? node.start
+					: undefined;
+			const children = nodeChildren(node).map((child, index) =>
+				child.type === "listitem"
+					? renderListItem(child, channel, key + "." + index, numbered)
+					: renderNode(child, channel, key + "." + index),
+			);
+			return (
+				<List key={key} {...(start === undefined ? {} : { start })}>
+					{children}
+				</List>
+			);
 		}
 
 		case "listitem":
-			return <li key={key}>{renderChildren(node, channel, key)}</li>;
+			return renderListItem(node, channel, key, false);
 
 		case "text":
 			return renderTextNode(node, key);

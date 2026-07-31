@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { type ReactNode } from "react";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { fetchCmsPage, type CmsPageOutcome } from "@/lib/cms/client";
-import { isVisibleInMarket, marketForChannel, payloadLocaleForChannel } from "@/lib/cms/markets";
+import { marketForChannel, payloadLocaleForChannel } from "@/lib/cms/markets";
 import { buildPageMetadata } from "@/lib/seo";
 import { CmsBlocks } from "@/ui/components/cms/cms-blocks";
 
@@ -87,8 +87,10 @@ export function cmsPageRoute(config: CmsRouteConfig): CmsRoute {
 
 	async function load(channel: string): Promise<CmsPageOutcome> {
 		const locale = payloadLocaleForChannel(channel);
-		if (!locale) return { status: "error", reason: `no Payload locale for channel ${channel}` };
-		return fetchCmsPage(slug, locale);
+		const market = marketForChannel(channel);
+		if (!locale || !market)
+			return { status: "error", reason: `no Payload market/locale for channel ${channel}` };
+		return fetchCmsPage(slug, locale, market);
 	}
 
 	async function generateMetadata({ params }: { params: Promise<{ channel: string }> }): Promise<Metadata> {
@@ -97,10 +99,7 @@ export function cmsPageRoute(config: CmsRouteConfig): CmsRoute {
 		if (!isSlovakChannel(channel)) return absentPageMetadata();
 
 		const outcome = await load(channel);
-		if (outcome.status === "not-found") return absentPageMetadata();
-
-		const market = marketForChannel(channel);
-		if (outcome.status === "found" && !isVisibleInMarket(outcome.page.markets, market)) {
+		if (outcome.status === "not-found" || outcome.status === "market-mismatch") {
 			return absentPageMetadata();
 		}
 
@@ -131,13 +130,12 @@ export function cmsPageRoute(config: CmsRouteConfig): CmsRoute {
 			notFound();
 		}
 
-		// A document that excludes this market is also an authoritative absence, not a
-		// fault. Rendering the Slovak bootstrap because the CMS said "this page is for CZ"
-		// would publish content the editor deliberately withheld.
-		if (outcome.status === "found" && !isVisibleInMarket(outcome.page.markets, market)) {
+		// Market exclusion is resolved inside the parser before any block content is
+		// validated, so an editor decision can never turn into a bootstrap.
+		if (outcome.status === "market-mismatch") {
 			console.warn(
 				"[cms] page-filtered-by-market",
-				JSON.stringify({ slug, market, markets: outcome.page.markets }),
+				JSON.stringify({ slug, market, markets: outcome.markets, documentId: outcome.documentId }),
 			);
 			notFound();
 		}

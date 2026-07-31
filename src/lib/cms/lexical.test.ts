@@ -9,6 +9,7 @@ import {
 	RENDERABLE_NODE_TYPES,
 	safeLinkUrl,
 	textFormats,
+	validateLexicalDocument,
 	type LexicalDocument,
 } from "./lexical";
 
@@ -20,9 +21,9 @@ describe("safeLinkUrl", () => {
 		expect(safeLinkUrl("mailto:info@maky.store")).toBe("mailto:info@maky.store");
 	});
 
-	it("allows same-page anchors and root-relative paths", () => {
-		expect(safeLinkUrl("#kontakt")).toBe("#kontakt");
-		expect(safeLinkUrl("/sk/obchodne-podmienky")).toBe("/sk/obchodne-podmienky");
+	it("rejects relative and same-page URLs outside the V2 protocol contract", () => {
+		expect(safeLinkUrl("#kontakt")).toBeNull();
+		expect(safeLinkUrl("/sk/obchodne-podmienky")).toBeNull();
 	});
 
 	it("rejects script-bearing schemes", () => {
@@ -53,10 +54,10 @@ describe("safeLinkUrl", () => {
 		expect(safeLinkUrl("/\\/evil.example")).toBeNull();
 	});
 
-	it("still passes ordinary internal paths", () => {
-		expect(safeLinkUrl("/kontakt")).toBe("/kontakt");
-		expect(safeLinkUrl("/sk/poradna")).toBe("/sk/poradna");
-		expect(safeLinkUrl("#sekcia")).toBe("#sekcia");
+	it("does not treat internal routes as custom URLs", () => {
+		expect(safeLinkUrl("/kontakt")).toBeNull();
+		expect(safeLinkUrl("/sk/poradna")).toBeNull();
+		expect(safeLinkUrl("#sekcia")).toBeNull();
 	});
 
 	it("rejects non-strings and blanks", () => {
@@ -186,6 +187,167 @@ describe("readLink", () => {
 
 	it("survives a missing fields object", () => {
 		expect(readLink({ type: "autolink" })).toEqual({ url: null, internal: null, newTab: false });
+	});
+});
+
+describe("validateLexicalDocument", () => {
+	function documentWith(...children: unknown[]): LexicalDocument {
+		return { root: { type: "root", format: "", children } } as unknown as LexicalDocument;
+	}
+
+	const text = { type: "text", text: "Obsah", format: 0 };
+
+	it("accepts a complete canonical tree and a registered internal Page target", () => {
+		const result = validateLexicalDocument(
+			documentWith({
+				type: "paragraph",
+				format: "start",
+				children: [
+					text,
+					{
+						type: "link",
+						fields: {
+							linkType: "internal",
+							doc: { relationTo: "pages", value: { slug: "kontakt" } },
+						},
+						children: [text],
+					},
+				],
+			}),
+		);
+
+		expect(result).toEqual({ ok: true });
+	});
+
+	it("rejects malformed children, nested roots and missing required fields", () => {
+		const cases: Array<[string, LexicalDocument]> = [
+			["non-node child", documentWith({})],
+			["nested root", documentWith({ type: "root", children: [] })],
+			["element without children", documentWith({ type: "paragraph" })],
+			["text without text", documentWith({ type: "text", format: 0 })],
+			[
+				"text carrying hidden children",
+				documentWith({
+					type: "text",
+					text: "Viditeľné",
+					format: 0,
+					children: [{ type: "futureDisclosure", children: [] }],
+				}),
+			],
+		];
+
+		for (const [label, candidate] of cases) {
+			expect(validateLexicalDocument(candidate).ok, label).toBe(false);
+		}
+	});
+
+	it("rejects heading, list and alignment enum coercions", () => {
+		for (const candidate of [
+			{ type: "heading", tag: "h1", children: [text] },
+			{ type: "heading", tag: "h5", children: [text] },
+			{ type: "heading", children: [text] },
+			{ type: "list", listType: "ordered", tag: "ol", start: 1, children: [] },
+			{ type: "list", listType: "number", tag: "ul", start: 1, children: [] },
+			{ type: "paragraph", format: "future", children: [text] },
+		]) {
+			expect(validateLexicalDocument(documentWith(candidate)).ok).toBe(false);
+		}
+	});
+
+	it("validates list numbering and direct listitem structure", () => {
+		const valid = documentWith({
+			type: "list",
+			listType: "number",
+			tag: "ol",
+			start: 5,
+			children: [
+				{ type: "listitem", value: 5, checked: null, children: [text] },
+				{ type: "listitem", value: 7, checked: null, children: [text] },
+			],
+		});
+		expect(validateLexicalDocument(valid)).toEqual({ ok: true });
+
+		const invalid = [
+			documentWith({ type: "list", listType: "number", tag: "ol", children: [] }),
+			documentWith({ type: "list", listType: "number", tag: "ol", start: 0, children: [] }),
+			documentWith({ type: "list", listType: "number", tag: "ol", start: 1.5, children: [] }),
+			documentWith({ type: "list", listType: "number", tag: "ol", start: 1, children: [text] }),
+			documentWith({ type: "listitem", value: 1, children: [text] }),
+			documentWith({
+				type: "list",
+				listType: "bullet",
+				tag: "ul",
+				start: 1,
+				children: [{ type: "listitem", children: [text] }],
+			}),
+			documentWith({
+				type: "list",
+				listType: "bullet",
+				tag: "ul",
+				start: 1,
+				children: [{ type: "listitem", value: 0, children: [text] }],
+			}),
+			documentWith({
+				type: "list",
+				listType: "bullet",
+				tag: "ul",
+				start: 1,
+				children: [{ type: "listitem", value: 1.5, children: [text] }],
+			}),
+			documentWith({
+				type: "list",
+				listType: "bullet",
+				tag: "ul",
+				start: 1,
+				children: [{ type: "listitem", value: 1, checked: true, children: [text] }],
+			}),
+		];
+
+		for (const candidate of invalid) {
+			expect(validateLexicalDocument(candidate).ok).toBe(false);
+		}
+	});
+
+	it("requires an integer non-negative text format using only known bits", () => {
+		for (const format of ["bold", 1.5, Number.POSITIVE_INFINITY, -1, 32, 2 ** 32, Number.MAX_SAFE_INTEGER]) {
+			const result = validateLexicalDocument(documentWith({ type: "text", text: "Obsah", format }));
+			expect(result.ok, String(format)).toBe(false);
+		}
+	});
+
+	it("rejects malformed, unsafe and populated unroutable links", () => {
+		const cases = [
+			{ type: "link", fields: { linkType: "custom", url: "javascript:alert(1)" }, children: [text] },
+			{ type: "link", fields: { linkType: "internal", doc: "id" }, children: [text] },
+			{
+				type: "link",
+				fields: { linkType: "internal", doc: { relationTo: 42, value: { slug: "kontakt" } } },
+				children: [text],
+			},
+			{
+				type: "link",
+				fields: { linkType: "internal", doc: { relationTo: "pages", value: { slug: "future" } } },
+				children: [text],
+			},
+			{
+				type: "link",
+				fields: { linkType: "internal", doc: { relationTo: "posts", value: { slug: "article" } } },
+				children: [text],
+			},
+		];
+
+		for (const candidate of cases) {
+			expect(validateLexicalDocument(documentWith(candidate)).ok).toBe(false);
+		}
+	});
+
+	it("allows only a null or missing supported relationship target to degrade", () => {
+		for (const doc of [undefined, null, { relationTo: "pages", value: null }]) {
+			const result = validateLexicalDocument(
+				documentWith({ type: "link", fields: { linkType: "internal", doc }, children: [text] }),
+			);
+			expect(result).toEqual({ ok: true });
+		}
 	});
 });
 

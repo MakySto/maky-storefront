@@ -27,9 +27,19 @@ const config = {
 				hostname: "*.media.saleor.cloud",
 			},
 			{
-				// Allow all hostnames in development (restrict in production)
-				hostname: "*",
+				// Payload public media CDN — the runtime parser enforces the same origin.
+				protocol: "https",
+				hostname: "cms-media.maky.store",
+				pathname: "/media/**",
 			},
+			...(process.env.NODE_ENV === "development"
+				? [
+						{
+							// Local development may use ad-hoc fixture hosts.
+							hostname: "*",
+						},
+					]
+				: []),
 		],
 	},
 	typedRoutes: false,

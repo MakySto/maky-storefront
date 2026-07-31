@@ -85,13 +85,21 @@ async function render(): Promise<string> {
 	return renderToStaticMarkup(await Page(CHANNEL));
 }
 
-/** Did the route 404 rather than render? `notFound()` throws a routing signal. */
+/** Did the route emit Next.js exact 404 signal rather than any arbitrary render error? */
 async function rendersNotFound(): Promise<boolean> {
 	try {
 		await render();
 		return false;
-	} catch {
-		return true;
+	} catch (error) {
+		if (
+			typeof error === "object" &&
+			error !== null &&
+			"digest" in error &&
+			error.digest === "NEXT_HTTP_ERROR_FALLBACK;404"
+		) {
+			return true;
+		}
+		throw error;
 	}
 }
 
@@ -110,6 +118,29 @@ describe("/sk/poradna — a published document", () => {
 
 		const html = await render();
 		expect(html).toContain("Ako vybrať strešný nosič.");
+		expect(html).not.toContain(BOOTSTRAP);
+	});
+
+	it("filters a hidden malformed block before validating the visible candidate", async () => {
+		vi.spyOn(console, "log").mockImplementation(() => undefined);
+		stub(
+			json(
+				published({
+					layout: [
+						{
+							id: "visible",
+							blockType: "richText",
+							markets: ["SK"],
+							content: lexical("Viditeľný CMS obsah."),
+						},
+						{ id: "hidden", blockType: "futureThing", markets: ["CZ"] },
+					],
+				}),
+			),
+		);
+
+		const html = await render();
+		expect(html).toContain("Viditeľný CMS obsah.");
 		expect(html).not.toContain(BOOTSTRAP);
 	});
 
@@ -185,6 +216,23 @@ describe("/sk/poradna — an authoritative absence is NOT a fault", () => {
 		stub(json(published({ markets: ["CZ"] })));
 
 		expect(await rendersNotFound()).toBe(true);
+	});
+
+	it("treats page market exclusion before validating unsupported content", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => undefined);
+		vi.spyOn(console, "log").mockImplementation(() => undefined);
+		stub(json(published({ markets: ["CZ"], layout: [{ blockType: "futureThing", markets: ["CZ"] }] })));
+
+		expect(await rendersNotFound()).toBe(true);
+	});
+
+	it("keeps excluded malformed content noindex with no canonical", async () => {
+		vi.spyOn(console, "log").mockImplementation(() => undefined);
+		stub(json(published({ markets: ["CZ"], layout: [{ blockType: "futureThing", markets: ["CZ"] }] })));
+
+		const metadata = await (await routeModule()).generateMetadata(CHANNEL);
+		expect(metadata.robots).toEqual({ index: false, follow: false });
+		expect(metadata.alternates?.canonical).toBeUndefined();
 	});
 
 	it("marks both as noindex with no canonical, so the metadata agrees with the page", async () => {

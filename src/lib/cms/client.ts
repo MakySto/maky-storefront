@@ -1,7 +1,7 @@
 import "server-only";
 import { cmsCollectionTag, cmsPageTag } from "./cache-tags";
 import { readCmsConnection } from "./env";
-import { type PayloadLocale } from "./markets";
+import { type MarketCode, type PayloadLocale } from "./markets";
 import { parsePagesResponse, type CmsPage } from "./page-schema";
 
 /**
@@ -29,6 +29,8 @@ export type CmsPageOutcome =
 	| { readonly status: "found"; readonly page: CmsPage }
 	/** The CMS answered authoritatively: no such published page. Do not use a fallback. */
 	| { readonly status: "not-found" }
+	/** A published candidate exists, but the requested market is authoritatively excluded. */
+	| { readonly status: "market-mismatch"; readonly documentId: string; readonly markets: readonly string[] }
 	/** Upstream fault or contract break. Render the code fallback. */
 	| { readonly status: "error"; readonly reason: string };
 
@@ -88,7 +90,11 @@ function logCmsServed(detail: Record<string, unknown>): void {
  * `depth=1` populates upload and relationship fields one level deep, which is
  * enough for media URLs and for the slug of an internally linked document.
  */
-export async function fetchCmsPage(slug: string, locale: PayloadLocale): Promise<CmsPageOutcome> {
+export async function fetchCmsPage(
+	slug: string,
+	locale: PayloadLocale,
+	market?: MarketCode,
+): Promise<CmsPageOutcome> {
 	const pageTag = cmsPageTag(slug);
 	const collectionTag = cmsCollectionTag("pages");
 	if (!pageTag || !collectionTag) {
@@ -162,7 +168,7 @@ export async function fetchCmsPage(slug: string, locale: PayloadLocale): Promise
 		return { status: "error", reason: "malformed json" };
 	}
 
-	const parsed = parsePagesResponse(body);
+	const parsed = parsePagesResponse(body, market);
 
 	if (parsed.status === "invalid") {
 		// One line, carrying everything needed to find the offending document in Payload:
@@ -185,25 +191,35 @@ export async function fetchCmsPage(slug: string, locale: PayloadLocale): Promise
 		return { status: "not-found" };
 	}
 
-	// The document we asked for, and not some other one.
-	//
-	// Nothing has ever checked this: correctness rested entirely on Payload honouring
-	// `where[slug][equals]`. Harmless while the pilot had exactly one CMS page — a wrong
-	// document could only have been the same document. With a second page it stops being
-	// harmless, because the failure is silent and well-formed: the wrong page renders
-	// under the right URL, with a canonical that confidently points at the URL you are
-	// already on. Nothing in the render looks broken.
-	if (parsed.page.slug !== slug) {
+	const parsedSlug = parsed.status === "ok" ? parsed.page.slug : parsed.slug;
+	const parsedDocumentId = parsed.status === "ok" ? parsed.page.id : parsed.documentId;
+	if (parsedSlug !== slug) {
 		logCmsError("contract-violation", {
 			slug,
 			locale,
 			reason: "response carried a different slug than the one requested",
-			documentId: parsed.page.id,
-			documentSlug: parsed.page.slug,
+			documentId: parsedDocumentId,
+			documentSlug: parsedSlug,
 			blockType: null,
 			nodeType: null,
 		});
-		return { status: "error", reason: `slug mismatch: asked for ${slug}, got ${parsed.page.slug}` };
+		return { status: "error", reason: `slug mismatch: asked for ${slug}, got ${parsedSlug}` };
+	}
+
+	if (parsed.status === "market-mismatch") {
+		logCmsServed({
+			slug,
+			locale,
+			market,
+			outcome: "market-mismatch",
+			documentId: parsed.documentId,
+			markets: parsed.markets,
+		});
+		return {
+			status: "market-mismatch",
+			documentId: parsed.documentId,
+			markets: parsed.markets,
+		};
 	}
 
 	logCmsServed({

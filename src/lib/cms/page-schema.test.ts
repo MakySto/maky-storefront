@@ -108,6 +108,56 @@ describe("parsePagesResponse — required fields", () => {
 	});
 });
 
+describe("parsePagesResponse — market-first candidate selection", () => {
+	it("rejects unknown market enum values at page and block level", () => {
+		expect(parsePagesResponse(published({ markets: ["XX"] }), "SK").status).toBe("invalid");
+		expect(parsePagesResponse(published({ markets: ["SK", "XX"] }), "SK").status).toBe("invalid");
+		expect(
+			parsePagesResponse(
+				published({
+					layout: [{ blockType: "richText", content: lexical, markets: ["XX"] }],
+				}),
+				"SK",
+			).status,
+		).toBe("invalid");
+	});
+
+	it("returns an authoritative page mismatch before validating excluded content", () => {
+		const result = parsePagesResponse(
+			published({
+				markets: ["CZ"],
+				layout: [{ blockType: "futureThing", markets: ["CZ"] }],
+			}),
+			"SK",
+		);
+
+		expect(result).toEqual({
+			status: "market-mismatch",
+			documentId: "019fb008-504b-779e-ad3f-1ff353267c88",
+			slug: "o-nas",
+			markets: ["CZ"],
+		});
+	});
+
+	it("filters block markets before validating the market-specific candidate", () => {
+		const response = published({
+			markets: ["SK", "CZ"],
+			layout: [
+				{ id: "visible", blockType: "richText", content: lexical, markets: ["SK"] },
+				{ id: "hidden", blockType: "futureThing", markets: ["CZ"] },
+			],
+		});
+
+		const sk = parsePagesResponse(response, "SK");
+		expect(sk.status).toBe("ok");
+		if (sk.status === "ok") expect(sk.page.layout.map((block) => block.id)).toEqual(["visible"]);
+
+		const cz = parsePagesResponse(response, "CZ");
+		expect(cz.status).toBe("invalid");
+		if (cz.status === "invalid") expect(cz.violation.blockType).toBe("futureThing");
+	});
+});
+
 describe("parsePagesResponse — an unsupported block rejects the whole document", () => {
 	it("refuses the document rather than rendering the supported blocks around the gap", () => {
 		// The behaviour this replaces returned status "ok" with the bannerGrid marked
@@ -264,7 +314,7 @@ describe("parsePagesResponse — an unrenderable Lexical node rejects the docume
 
 	it("accepts the node types the renderer handles", () => {
 		const result = parsePagesResponse(
-			withNode({ type: "link", fields: { url: "https://maky.store" }, children: [] }),
+			withNode({ type: "link", fields: { linkType: "custom", url: "https://maky.store" }, children: [] }),
 		);
 		expect(result.status).toBe("ok");
 	});
@@ -278,19 +328,42 @@ describe("parsePagesResponse — meta", () => {
 		expect(result.page.meta).toEqual({ title: null, description: null, image: null });
 	});
 
-	it("reads a populated absolute image url", () => {
-		const result = parsePagesResponse(
-			published({ meta: { title: "T", image: { url: "https://cms-media.maky.store/a.png" } } }),
-		);
+	it("reads a fully populated image from the approved media origin", () => {
+		const image = {
+			id: "019fb008-media",
+			alt: "OG náhľad",
+			url: "https://cms-media.maky.store/media/pages/o-nas-og.png",
+			mimeType: "image/png",
+			width: 1200,
+			height: 630,
+		};
+		const result = parsePagesResponse(published({ meta: { title: "T", image } }));
 		expect(result.status).toBe("ok");
 		if (result.status !== "ok") return;
-		expect(result.page.meta.image).toBe("https://cms-media.maky.store/a.png");
+		expect(result.page.meta.image).toBe(image.url);
 	});
 
-	it("ignores an unpopulated image relationship", () => {
+	it("rejects an unpopulated depth=1 image relationship", () => {
 		const result = parsePagesResponse(published({ meta: { image: "019fb008" } }));
-		expect(result.status).toBe("ok");
-		if (result.status !== "ok") return;
-		expect(result.page.meta.image).toBeNull();
+		expect(result.status).toBe("invalid");
+		if (result.status === "invalid") expect(result.violation.reason).toContain("meta.image");
+	});
+
+	it("rejects malformed or off-origin populated SEO images", () => {
+		const base = {
+			id: "019fb008-media",
+			alt: "OG náhľad",
+			url: "https://cms-media.maky.store/media/pages/o-nas-og.png",
+			mimeType: "image/png",
+		};
+		for (const image of [
+			{ ...base, url: "https://" },
+			{ ...base, url: "https://images.example.com/media/o-nas.png" },
+			{ ...base, url: "https://cms-media.maky.store/private/o-nas.png" },
+			{ ...base, width: -1 },
+		]) {
+			expect(parsePagesResponse(published({ meta: { image } })).status).toBe("invalid");
+		}
+		expect(parsePagesResponse(published({ meta: "not-an-object" })).status).toBe("invalid");
 	});
 });
