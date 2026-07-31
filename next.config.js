@@ -32,14 +32,30 @@ const config = {
 				hostname: "cms-media.maky.store",
 				pathname: "/media/**",
 			},
-			...(process.env.NODE_ENV === "development"
-				? [
-						{
-							// Local development may use ad-hoc fixture hosts.
-							hostname: "*",
-						},
-					]
-				: []),
+			{
+				// Every product image on the live site comes from here — 284 of them on a
+				// single crawl of /sk, /sk/products and one category. Saleor is SELF-HOSTED,
+				// so the two *.saleor.cloud patterns above match nothing in this deployment
+				// and provide no cover for it.
+				protocol: "https",
+				hostname: "cdn.maky.store",
+			},
+			{
+				// Saleor's on-demand thumbnail endpoint, the fallback when no generated
+				// thumbnail exists yet.
+				protocol: "https",
+				hostname: "api.maky.store",
+			},
+			{
+				// Kept deliberately. Narrowing this is a good idea and NOT this commit's job:
+				// it is CLAUDE.md §10 deployment configuration, it needs its own approval, and
+				// it needs an acceptance step that a homepage smoke test cannot give you.
+				// Removing it here returned HTTP 400 '"url" parameter is not allowed' for
+				// every cdn.maky.store image on a real production build — 142 broken images on
+				// one PLP — while /logo-deer.webp kept working, so the homepage looked fine.
+				// `next dev` cannot see this; only `next start` can.
+				hostname: "*",
+			},
 		],
 	},
 	typedRoutes: false,
