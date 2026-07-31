@@ -1,9 +1,19 @@
-import {
-	findUnrenderableNode,
-	findUnsupportedTextFormat,
-	isLexicalDocument,
-	type LexicalDocument,
-} from "./lexical";
+import { parseBlock, type CmsBlock } from "./blocks";
+
+// Re-exported so consumers keep importing the page contract from one place; the block
+// shapes live in `blocks.ts` because seven of them would bury the envelope logic here.
+export type {
+	CmsBlock,
+	CmsBlockLink,
+	CmsMedia,
+	CmsCtaBlock,
+	CmsFaqBlock,
+	CmsGalleryBlock,
+	CmsHeroBlock,
+	CmsImageBlock,
+	CmsMediaTextBlock,
+	CmsRichTextBlock,
+} from "./blocks";
 
 /**
  * Runtime validation of the Payload `/api/pages` response.
@@ -65,21 +75,6 @@ export interface CmsSeoMeta {
 	readonly description: string | null;
 	readonly image: string | null;
 }
-
-interface CmsBlockCommon {
-	readonly id: string | null;
-	readonly anchorId: string | null;
-	readonly blockName: string | null;
-	readonly markets: readonly string[] | null;
-}
-
-export interface CmsRichTextBlock extends CmsBlockCommon {
-	readonly blockType: "richText";
-	readonly content: LexicalDocument;
-}
-
-/** V1 renders `richText` and nothing else. An unknown type rejects the document. */
-export type CmsBlock = CmsRichTextBlock;
 
 export interface CmsPage {
 	readonly id: string;
@@ -147,66 +142,6 @@ function parseMeta(value: unknown): CmsSeoMeta {
 		title: optionalString(value.title),
 		description: optionalString(value.description),
 		image,
-	};
-}
-
-type BlockFailure = { ok: false; reason: string; blockType?: string; nodeType?: string };
-
-function parseBlock(value: unknown, index: number): { ok: true; block: CmsBlock } | BlockFailure {
-	if (!isRecord(value)) return { ok: false, reason: `layout[${index}] is not an object` };
-
-	const blockType = value.blockType;
-	if (typeof blockType !== "string" || blockType.length === 0) {
-		return { ok: false, reason: `layout[${index}] has no blockType` };
-	}
-
-	const markets = parseMarkets(value.markets);
-	if (!markets.ok) return { ok: false, reason: `layout[${index}].markets is not null or string[]` };
-
-	// An unsupported block type rejects the document. Rendering the rest would show a
-	// page the editor never published and never gets told about.
-	if (blockType !== "richText") {
-		return { ok: false, reason: `layout[${index}] has unsupported blockType ${blockType}`, blockType };
-	}
-
-	// A known block type with a malformed payload is a contract break too — we would be
-	// silently dropping content we claim to render.
-	if (!isLexicalDocument(value.content)) {
-		return { ok: false, reason: `layout[${index}] richText content is not a Lexical document` };
-	}
-
-	// The Lexical tree is validated here, not in the renderer, so an unrenderable node
-	// can still reject the whole candidate while the previous good render stands.
-	const unrenderable = findUnrenderableNode(value.content);
-	if (unrenderable) {
-		return {
-			ok: false,
-			reason: `layout[${index}] richText contains unrenderable node ${unrenderable}`,
-			nodeType: unrenderable,
-		};
-	}
-
-	// A format bit outside the contract's five is a contract violation, not something to
-	// drop quietly — rendering emphasised text as plain text misrepresents what was
-	// published, and unlike a rejection it leaves no trace.
-	const unsupportedFormat = findUnsupportedTextFormat(value.content);
-	if (unsupportedFormat !== null) {
-		return {
-			ok: false,
-			reason: `layout[${index}] richText carries unsupported text format bits ${unsupportedFormat}`,
-		};
-	}
-
-	return {
-		ok: true,
-		block: {
-			id: optionalString(value.id),
-			anchorId: optionalString(value.anchorId),
-			blockName: optionalString(value.blockName),
-			markets: markets.markets,
-			blockType: "richText",
-			content: value.content,
-		},
 	};
 }
 
