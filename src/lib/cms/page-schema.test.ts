@@ -326,6 +326,17 @@ describe("parsePagesResponse — meta", () => {
 		expect(result.status).toBe("ok");
 		if (result.status !== "ok") return;
 		expect(result.page.meta).toEqual({ title: null, description: null, image: null });
+		expect(result.warnings).toEqual([]);
+	});
+
+	it("treats null or missing meta.image as an ordinary omission", () => {
+		for (const meta of [null, {}, { image: null }]) {
+			const result = parsePagesResponse(published({ meta }));
+			expect(result.status).toBe("ok");
+			if (result.status !== "ok") continue;
+			expect(result.page.meta.image).toBeNull();
+			expect(result.warnings).toEqual([]);
+		}
 	});
 
 	it("reads a fully populated image from the approved media origin", () => {
@@ -341,15 +352,20 @@ describe("parsePagesResponse — meta", () => {
 		expect(result.status).toBe("ok");
 		if (result.status !== "ok") return;
 		expect(result.page.meta.image).toBe(image.url);
+		expect(result.warnings).toEqual([]);
 	});
 
-	it("rejects an unpopulated depth=1 image relationship", () => {
+	it("omits and reports an unpopulated depth=1 image relationship", () => {
 		const result = parsePagesResponse(published({ meta: { image: "019fb008" } }));
-		expect(result.status).toBe("invalid");
-		if (result.status === "invalid") expect(result.violation.reason).toContain("meta.image");
+		expect(result.status).toBe("ok");
+		if (result.status !== "ok") return;
+		expect(result.page.meta.image).toBeNull();
+		expect(result.warnings).toEqual([
+			expect.objectContaining({ code: "meta-image-omitted", reason: expect.stringContaining("meta.image") }),
+		]);
 	});
 
-	it("rejects malformed or off-origin populated SEO images", () => {
+	it("omits and reports malformed or off-origin populated SEO images", () => {
 		const base = {
 			id: "019fb008-media",
 			alt: "OG náhľad",
@@ -362,8 +378,19 @@ describe("parsePagesResponse — meta", () => {
 			{ ...base, url: "https://cms-media.maky.store/private/o-nas.png" },
 			{ ...base, width: -1 },
 		]) {
-			expect(parsePagesResponse(published({ meta: { image } })).status).toBe("invalid");
+			const result = parsePagesResponse(published({ meta: { image } }));
+			expect(result.status).toBe("ok");
+			if (result.status !== "ok") continue;
+			expect(result.page.meta.image).toBeNull();
+			expect(result.warnings).toEqual([
+				expect.objectContaining({
+					code: "meta-image-omitted",
+					reason: expect.stringContaining("meta.image"),
+				}),
+			]);
 		}
+
+		// The optional image may degrade; a malformed meta wrapper is still a contract break.
 		expect(parsePagesResponse(published({ meta: "not-an-object" })).status).toBe("invalid");
 	});
 });

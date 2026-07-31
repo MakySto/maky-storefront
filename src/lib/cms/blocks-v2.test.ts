@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { CmsBlocks } from "@/ui/components/cms/cms-blocks";
 import { SUPPORTED_BLOCK_TYPES } from "./blocks";
@@ -546,12 +546,19 @@ describe("v2 blocks — internal links get a market prefix", () => {
 		expect(html).toContain(`href="/sk/kontakt"`);
 	});
 
-	it("fails closed on a populated Post until a real Post route contract exists", () => {
+	it("keeps a populated Post label without inventing a route", () => {
+		const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 		const parsed = parsePagesResponse(response, "SK");
-		expect(parsed.status).toBe("invalid");
-		if (parsed.status === "invalid") {
-			expect(parsed.violation.reason).toContain("no storefront route");
-		}
+		expect(parsed.status).toBe("ok");
+
+		const html = render(response);
+		expect(html).toContain("Článok v poradni");
+		expect(html).not.toMatch(/<a[^>]*>Článok v poradni<\/a>/);
+		expect(warning).toHaveBeenCalledWith(
+			"[cms] link-target-has-no-route",
+			JSON.stringify({ collection: "posts", slug: "ako-vybrat-stresny-nosic" }),
+		);
+		warning.mockRestore();
 	});
 
 	it("emits no href with two segments after the market prefix", () => {
@@ -575,17 +582,56 @@ describe("v2 blocks — internal links get a market prefix", () => {
 		expect(parsePagesResponse(broken).status).toBe("invalid");
 	});
 
-	it("rejects a populated Page slug with no registered storefront route", () => {
+	it("keeps a populated Page label when no registered storefront route exists", () => {
+		const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 		const broken = pageOnlyResponse();
 		const reference = broken.docs[0].layout[0].links[0]?.reference;
 		if (!reference?.value) throw new Error("fixture must carry a populated Page target");
 		reference.value.slug = "future-editorial-page";
 
 		const parsed = parsePagesResponse(broken, "SK");
-		expect(parsed.status).toBe("invalid");
-		if (parsed.status === "invalid") {
-			expect(parsed.violation.reason).toContain("no storefront route");
+		expect(parsed.status).toBe("ok");
+		const html = render(broken);
+		expect(html).toContain("Kontakt");
+		expect(html).not.toMatch(/<a[^>]*>Kontakt<\/a>/);
+		expect(warning).toHaveBeenCalledWith(
+			"[cms] link-target-has-no-route",
+			JSON.stringify({ collection: "pages", slug: "future-editorial-page" }),
+		);
+		warning.mockRestore();
+	});
+
+	it("rejects blank or whitespace-padded populated block relationship slugs", () => {
+		for (const slug of ["   ", " kontakt "]) {
+			const broken = pageOnlyResponse();
+			const reference = broken.docs[0].layout[0].links[0]?.reference;
+			if (!reference?.value) throw new Error("fixture must carry a populated Page target");
+			reference.value.slug = slug;
+
+			expect(parsePagesResponse(broken, "SK").status).toBe("invalid");
 		}
+	});
+
+	it("keeps a root-relative custom link label but rejects unsafe schemes", () => {
+		const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+		const relative = pageOnlyResponse();
+		const link = relative.docs[0].layout[0].links[0] as Record<string, unknown>;
+		link.type = "custom";
+		link.url = "/kontakt";
+		link.reference = null;
+
+		expect(parsePagesResponse(relative, "SK").status).toBe("ok");
+		const html = render(relative);
+		expect(html).toContain("Kontakt");
+		expect(html).not.toMatch(/<a[^>]*>Kontakt<\/a>/);
+		expect(warning).toHaveBeenCalledWith(
+			"[cms] link-url-rendered-as-text",
+			JSON.stringify({ url: "/kontakt" }),
+		);
+		warning.mockRestore();
+
+		link.url = "javascript:alert(1)";
+		expect(parsePagesResponse(relative, "SK").status).toBe("invalid");
 	});
 
 	it("rejects a rich-text link whose relationship target is outside the contract", () => {

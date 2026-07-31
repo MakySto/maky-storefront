@@ -35,13 +35,17 @@ function logUnsupported(event: string, detail: Record<string, unknown>): void {
 	console.error(`[cms] ${event}`, JSON.stringify(detail));
 }
 
+function logDegraded(event: string, detail: Record<string, unknown>): void {
+	console.warn(`[cms] ${event}`, JSON.stringify(detail));
+}
+
 /**
  * Storefront URL for an internally linked CMS document.
  *
  * Only registered `pages` slugs have public routes today. Next resolves static segments before the
  * `[productSlug]` catch-all, so `/sk/o-nas` reaches the o-nas route rather than
- * being read as a product slug. Unknown Page slugs and populated Post targets are
- * rejected before rendering; the nullable return is defensive, not a degradation path.
+ * being read as a product slug. Unknown Page slugs and populated Post targets keep
+ * their visible label but cannot emit an href until a real route exists.
  */
 function internalHref(internal: NonNullable<LexicalLink["internal"]>, channel: string): string | null {
 	const path = cmsPathForRelationship(internal.collection, internal.slug);
@@ -82,7 +86,7 @@ function renderLinkNode(node: LexicalNode, channel: string, key: string): ReactN
 				</Link>
 			);
 		}
-		logUnsupported("link-target-has-no-route", {
+		logDegraded("link-target-has-no-route", {
 			collection: link.internal.collection,
 			slug: link.internal.slug,
 		});
@@ -97,8 +101,14 @@ function renderLinkNode(node: LexicalNode, channel: string, key: string): ReactN
 		);
 	}
 
-	// A null/missing supported relationship target may intentionally keep only its words.
-	// Unsafe schemes and malformed/populated unroutable targets fail validation earlier.
+	if (link.degradation?.kind === "relative-url") {
+		logDegraded("link-url-rendered-as-text", {
+			url: link.degradation.value,
+		});
+	}
+
+	// A null/missing supported relationship target or harmless local URL keeps only its words.
+	// Unsafe schemes and malformed relationship wrappers fail validation earlier.
 	return <Fragment key={key}>{children}</Fragment>;
 }
 

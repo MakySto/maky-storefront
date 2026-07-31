@@ -93,4 +93,28 @@ describe("fetchCmsPage — the document must be the one requested", () => {
 		vi.unstubAllEnvs();
 		vi.restoreAllMocks();
 	});
+
+	it("serves the body without an unusable optional meta image and logs the omission", async () => {
+		const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+		vi.spyOn(console, "log").mockImplementation(() => undefined);
+		const body = DOC("o-nas") as unknown as {
+			docs: [{ meta: { image: unknown } }];
+		};
+		body.docs[0].meta.image = "unpopulated-depth-1-id";
+		stubCms(body);
+
+		const { fetchCmsPage } = await import("./client");
+		const outcome = await fetchCmsPage("o-nas", "sk");
+
+		expect(outcome.status).toBe("found");
+		if (outcome.status === "found") expect(outcome.page.meta.image).toBeNull();
+		expect(consoleWarn).toHaveBeenCalledWith(
+			"[cms] content-degraded",
+			expect.stringContaining('"code":"meta-image-omitted"'),
+		);
+
+		vi.unstubAllGlobals();
+		vi.unstubAllEnvs();
+		vi.restoreAllMocks();
+	});
 });

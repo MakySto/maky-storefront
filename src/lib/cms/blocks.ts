@@ -1,5 +1,10 @@
-import { isLexicalDocument, safeLinkUrl, type LexicalDocument, validateLexicalDocument } from "./lexical";
-import { cmsPathForRelationship } from "./link-routes";
+import {
+	classifyLinkUrl,
+	isLexicalDocument,
+	readRelationshipSlug,
+	type LexicalDocument,
+	validateLexicalDocument,
+} from "./lexical";
 import { isMarketCode } from "./markets";
 
 /**
@@ -74,7 +79,13 @@ export type CmsLinkTarget =
 			readonly collection: "pages" | "posts";
 			readonly slug: string;
 	  }
-	| { readonly kind: "none" };
+	| {
+			readonly kind: "none";
+			readonly degradation?: {
+				readonly kind: "relative-url";
+				readonly value: string;
+			};
+	  };
 
 export interface CmsBlockLink {
 	readonly label: string;
@@ -341,9 +352,9 @@ export function readMedia(value: unknown): MediaResult {
 /**
  * Parse one block-level link without silently repairing malformed published content.
  *
- * Only a null/missing reference target may degrade to inert text. Unknown enums,
- * malformed wrappers, unsafe custom URLs and populated targets with no storefront route
- * reject the complete candidate.
+ * A null/missing target, a supported Page/Post without a route and a harmless local URL
+ * may degrade to inert text. Unknown enums, malformed wrappers and unsafe custom URLs
+ * still reject the complete candidate.
  */
 type BlockLinkRead =
 	| { readonly ok: true; readonly link: CmsBlockLink }
@@ -372,9 +383,14 @@ function readBlockLink(value: unknown): BlockLinkRead {
 	let target: CmsLinkTarget;
 
 	if (value.type === "custom") {
-		const url = safeLinkUrl(value.url);
-		if (!url) return { ok: false, reason: "custom link url is not allowed" };
-		target = { kind: "external", url };
+		const classified = classifyLinkUrl(value.url);
+		if (classified.kind === "invalid") {
+			return { ok: false, reason: "custom link url is not allowed" };
+		}
+		target =
+			classified.kind === "href"
+				? { kind: "external", url: classified.url }
+				: { kind: "none", degradation: { kind: "relative-url", value: classified.url } };
 	} else if (value.type === "reference") {
 		const reference = value.reference;
 		if (reference === undefined || reference === null) {
@@ -403,14 +419,8 @@ function readBlockLink(value: unknown): BlockLinkRead {
 						reason: "link target is not populated at depth=1",
 					};
 				}
-				const slug = optionalString(doc.slug)?.trim() ?? null;
+				const slug = readRelationshipSlug(doc.slug);
 				if (!slug) return { ok: false, reason: "populated link target has no slug" };
-				if (cmsPathForRelationship(collection, slug) === null) {
-					return {
-						ok: false,
-						reason: "populated link target has no storefront route",
-					};
-				}
 				target = { kind: "internal", collection, slug };
 			}
 		}

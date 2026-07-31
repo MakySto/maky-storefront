@@ -153,6 +153,50 @@ describe("LexicalContent — safety", () => {
 		expect(html).toContain('target="_blank"');
 		expect(html).toContain('rel="noopener noreferrer"');
 	});
+
+	it("keeps a root-relative URL as text and logs the degradation", () => {
+		const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const html = render({
+			children: [
+				paragraph({
+					type: "link",
+					fields: { url: "/kontakt", linkType: "custom" },
+					children: [text("Kontakt")],
+				}),
+			],
+		});
+
+		expect(html).toBe("<p>Kontakt</p>");
+		expect(html).not.toContain("href");
+		expect(spy).toHaveBeenCalledWith("[cms] link-url-rendered-as-text", JSON.stringify({ url: "/kontakt" }));
+		spy.mockRestore();
+	});
+
+	it("keeps populated Page/Post targets without a route as text and logs them", () => {
+		const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+		for (const collection of ["pages", "posts"] as const) {
+			const html = render({
+				children: [
+					paragraph({
+						type: "link",
+						fields: {
+							linkType: "internal",
+							doc: { relationTo: collection, value: { slug: "future" } },
+						},
+						children: [text(collection)],
+					}),
+				],
+			});
+
+			expect(html).toBe(`<p>${collection}</p>`);
+			expect(html).not.toContain("href");
+			expect(spy).toHaveBeenCalledWith(
+				"[cms] link-target-has-no-route",
+				JSON.stringify({ collection, slug: "future" }),
+			);
+		}
+		spy.mockRestore();
+	});
 });
 
 describe("LexicalContent — resilience", () => {
@@ -230,7 +274,7 @@ describe("LexicalContent — resilience", () => {
 	});
 
 	it("logs an internal link to a collection with no storefront route and keeps the text", () => {
-		const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
 		const html = render({
 			children: [
 				paragraph({

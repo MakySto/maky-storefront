@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
 	alignmentClass,
+	classifyLinkUrl,
 	findUnrenderableNode,
 	headingTag,
 	listTag,
@@ -21,9 +22,20 @@ describe("safeLinkUrl", () => {
 		expect(safeLinkUrl("mailto:info@maky.store")).toBe("mailto:info@maky.store");
 	});
 
-	it("rejects relative and same-page URLs outside the V2 protocol contract", () => {
+	it("does not emit relative and same-page URLs as hrefs", () => {
 		expect(safeLinkUrl("#kontakt")).toBeNull();
 		expect(safeLinkUrl("/sk/obchodne-podmienky")).toBeNull();
+	});
+
+	it("distinguishes harmless local references from unsafe destinations", () => {
+		expect(classifyLinkUrl("/kontakt")).toEqual({ kind: "inert-relative", url: "/kontakt" });
+		expect(classifyLinkUrl("kontakt")).toEqual({ kind: "inert-relative", url: "kontakt" });
+		expect(classifyLinkUrl("./kontakt")).toEqual({ kind: "inert-relative", url: "./kontakt" });
+		expect(classifyLinkUrl("?tab=kontakt")).toEqual({ kind: "inert-relative", url: "?tab=kontakt" });
+		expect(classifyLinkUrl("#sekcia")).toEqual({ kind: "inert-relative", url: "#sekcia" });
+		expect(classifyLinkUrl("javascript:alert(1)")).toEqual({ kind: "invalid" });
+		expect(classifyLinkUrl("//evil.example")).toEqual({ kind: "invalid" });
+		expect(classifyLinkUrl("/\\evil.example")).toEqual({ kind: "invalid" });
 	});
 
 	it("rejects script-bearing schemes", () => {
@@ -166,6 +178,17 @@ describe("readLink", () => {
 				},
 			}),
 		).toEqual({ url: null, internal: { collection: "pages", slug: "kontakt" }, newTab: true });
+	});
+
+	it("does not repair whitespace in a populated relationship slug", () => {
+		for (const slug of ["   ", " kontakt "]) {
+			expect(
+				readLink({
+					type: "link",
+					fields: { linkType: "internal", doc: { relationTo: "pages", value: { slug } } },
+				}),
+			).toEqual({ url: null, internal: null, newTab: false });
+		}
 	});
 
 	it("gives up on an unpopulated relationship rather than emitting a broken href", () => {
@@ -315,15 +338,35 @@ describe("validateLexicalDocument", () => {
 		}
 	});
 
-	it("rejects malformed, unsafe and populated unroutable links", () => {
+	it("rejects malformed and unsafe links", () => {
 		const cases = [
 			{ type: "link", fields: { linkType: "custom", url: "javascript:alert(1)" }, children: [text] },
+			{ type: "link", fields: { linkType: "custom", url: "//evil.example" }, children: [text] },
 			{ type: "link", fields: { linkType: "internal", doc: "id" }, children: [text] },
 			{
 				type: "link",
 				fields: { linkType: "internal", doc: { relationTo: 42, value: { slug: "kontakt" } } },
 				children: [text],
 			},
+			{
+				type: "link",
+				fields: { linkType: "internal", doc: { relationTo: "pages", value: { slug: "   " } } },
+				children: [text],
+			},
+			{
+				type: "link",
+				fields: { linkType: "internal", doc: { relationTo: "pages", value: { slug: " kontakt " } } },
+				children: [text],
+			},
+		];
+
+		for (const candidate of cases) {
+			expect(validateLexicalDocument(documentWith(candidate)).ok).toBe(false);
+		}
+	});
+
+	it("keeps supported unroutable targets and harmless local URLs valid for text degradation", () => {
+		const candidates = [
 			{
 				type: "link",
 				fields: { linkType: "internal", doc: { relationTo: "pages", value: { slug: "future" } } },
@@ -334,14 +377,17 @@ describe("validateLexicalDocument", () => {
 				fields: { linkType: "internal", doc: { relationTo: "posts", value: { slug: "article" } } },
 				children: [text],
 			},
+			{ type: "link", fields: { linkType: "custom", url: "/kontakt" }, children: [text] },
+			{ type: "link", fields: { linkType: "custom", url: "#sekcia" }, children: [text] },
+			{ type: "link", fields: { linkType: "custom", url: "../kontakt" }, children: [text] },
 		];
 
-		for (const candidate of cases) {
-			expect(validateLexicalDocument(documentWith(candidate)).ok).toBe(false);
+		for (const candidate of candidates) {
+			expect(validateLexicalDocument(documentWith(candidate))).toEqual({ ok: true });
 		}
 	});
 
-	it("allows only a null or missing supported relationship target to degrade", () => {
+	it("also allows a null or missing supported relationship target to degrade", () => {
 		for (const doc of [undefined, null, { relationTo: "pages", value: null }]) {
 			const result = validateLexicalDocument(
 				documentWith({ type: "link", fields: { linkType: "internal", doc }, children: [text] }),

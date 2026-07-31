@@ -48,6 +48,14 @@ export type {
  * real and worth stating — adding a block type in Payload takes this route back to its
  * code fallback until the storefront learns to render it.
  *
+ * This does not turn optional presentation metadata into page availability. A supported
+ * Page/Post link whose destination has no consumer route and a harmless relative URL keep
+ * their visible label without an `href`; an unusable optional `meta.image` is omitted. Each
+ * degradation is logged. Unknown relationship collections, malformed wrappers, unsafe URL
+ * schemes and unsupported content remain hard failures. In other words, the words stay
+ * all-or-nothing; only a destination or optional preview that cannot be emitted safely may
+ * disappear.
+ *
  * ## All-or-nothing is about CONTENT, not about key sets
  *
  * The rule above fires on things the storefront would have to render and cannot: an
@@ -107,8 +115,13 @@ export interface CmsContractViolation {
 	readonly nodeType: string | null;
 }
 
+export interface CmsParseWarning {
+	readonly code: "meta-image-omitted";
+	readonly reason: string;
+}
+
 export type CmsPageParse =
-	| { readonly status: "ok"; readonly page: CmsPage }
+	| { readonly status: "ok"; readonly page: CmsPage; readonly warnings: readonly CmsParseWarning[] }
 	| { readonly status: "empty" }
 	| {
 			readonly status: "market-mismatch";
@@ -134,23 +147,28 @@ function parseMarkets(value: unknown): { ok: true; markets: readonly string[] | 
 }
 
 type MetaResult =
-	| { readonly ok: true; readonly meta: CmsSeoMeta }
+	| { readonly ok: true; readonly meta: CmsSeoMeta; readonly warnings: readonly CmsParseWarning[] }
 	| { readonly ok: false; readonly reason: string };
 
 function parseMeta(value: unknown): MetaResult {
 	if (value === undefined || value === null) {
-		return { ok: true, meta: { title: null, description: null, image: null } };
+		return { ok: true, meta: { title: null, description: null, image: null }, warnings: [] };
 	}
 	if (!isRecord(value)) return { ok: false, reason: "docs[0].meta is not an object" };
 
 	let image: string | null = null;
+	const warnings: CmsParseWarning[] = [];
 	if (value.image !== undefined && value.image !== null) {
 		const parsedImage = readMedia(value.image);
 		if (parsedImage.kind !== "ok") {
 			const why = parsedImage.kind === "unusable" ? parsedImage.why : "is absent";
-			return { ok: false, reason: `docs[0].meta.image ${why}` };
+			warnings.push({
+				code: "meta-image-omitted",
+				reason: `docs[0].meta.image ${why}`,
+			});
+		} else {
+			image = parsedImage.media.url;
 		}
-		image = parsedImage.media.url;
 	}
 
 	return {
@@ -160,6 +178,7 @@ function parseMeta(value: unknown): MetaResult {
 			description: optionalString(value.description),
 			image,
 		},
+		warnings,
 	};
 }
 
@@ -252,5 +271,6 @@ export function parsePagesResponse(raw: unknown, market?: MarketCode): CmsPagePa
 			meta: meta.meta,
 			updatedAt: optionalString(doc.updatedAt),
 		},
+		warnings: meta.warnings,
 	};
 }

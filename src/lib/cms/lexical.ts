@@ -1,5 +1,3 @@
-import { cmsPathForRelationship } from "./link-routes";
-
 /**
  * Lexical (Payload rich text) node model — the subset the storefront renders.
  *
@@ -215,8 +213,8 @@ export function validateLexicalDocument(document: LexicalDocument): LexicalValid
 		}
 
 		if (linkType === "custom") {
-			if (typeof node.fields.url !== "string" || safeLinkUrl(node.fields.url) === null) {
-				return fail(`${path}.fields.url is not an allowed absolute URL`, node.type);
+			if (classifyLinkUrl(node.fields.url).kind === "invalid") {
+				return fail(`${path}.fields.url is not an allowed link destination`, node.type);
 			}
 			return null;
 		}
@@ -243,11 +241,8 @@ export function validateLexicalDocument(document: LexicalDocument): LexicalValid
 		if (!isRecord(target)) {
 			return fail(`${path}.fields.doc.value is not a populated relationship target`, node.type);
 		}
-		if (typeof target.slug !== "string" || target.slug.length === 0) {
+		if (readRelationshipSlug(target.slug) === null) {
 			return fail(`${path}.fields.doc.value.slug is missing`, node.type);
-		}
-		if (cmsPathForRelationship(relationTo, target.slug) === null) {
-			return fail(`${path}.fields.doc target has no storefront route`, node.type);
 		}
 		return null;
 	};
@@ -437,6 +432,15 @@ export function alignmentClass(node: LexicalNode): string | undefined {
 }
 
 const SAFE_PROTOCOLS = new Set(["http:", "https:", "mailto:"]);
+const ABSOLUTE_SCHEME = /^[a-z][a-z\d+.-]*:/iu;
+const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/u;
+const RAW_WHITESPACE = /\s/u;
+const RELATIVE_URL_BASE = "https://cms-link.invalid/";
+
+export type LinkUrlClassification =
+	| { readonly kind: "href"; readonly url: string }
+	| { readonly kind: "inert-relative"; readonly url: string }
+	| { readonly kind: "invalid" };
 
 /**
  * Validate a URL destined for an `href`.
@@ -451,17 +455,59 @@ const SAFE_PROTOCOLS = new Set(["http:", "https:", "mailto:"]);
  * both normalise to the `javascript:` protocol and get rejected.
  */
 export function safeLinkUrl(raw: unknown): string | null {
-	if (typeof raw !== "string") return null;
+	const classified = classifyLinkUrl(raw);
+	return classified.kind === "href" ? classified.url : null;
+}
+
+/**
+ * Separate an emit-safe href from a harmless local reference and an unsafe value.
+ *
+ * Payload's free-form URL field can contain root-relative routes and same-page anchors.
+ * M.2 has no contract for translating either across market prefixes, so they keep their
+ * label but emit no href. This is deliberately narrower than treating every parse failure
+ * as harmless: script/data schemes, protocol-relative URLs and malformed values still
+ * reject the candidate before render.
+ */
+export function classifyLinkUrl(raw: unknown): LinkUrlClassification {
+	if (typeof raw !== "string") return { kind: "invalid" };
 
 	const trimmed = raw.trim();
-	if (trimmed.length === 0) return null;
+	if (trimmed.length === 0 || CONTROL_CHARACTERS.test(trimmed)) return { kind: "invalid" };
+
+	if (ABSOLUTE_SCHEME.test(trimmed)) {
+		try {
+			const parsed = new URL(trimmed);
+			return SAFE_PROTOCOLS.has(parsed.protocol) ? { kind: "href", url: trimmed } : { kind: "invalid" };
+		} catch {
+			return { kind: "invalid" };
+		}
+	}
+
+	// Scheme-relative and backslash-normalised URLs could escape the current origin if
+	// somebody later made this branch clickable. Raw whitespace and a colon in the first
+	// path segment are malformed URI references, not harmless local destinations.
+	if (trimmed.startsWith("//") || trimmed.includes("\\") || RAW_WHITESPACE.test(trimmed)) {
+		return { kind: "invalid" };
+	}
+	const firstDelimiter = trimmed.search(/[/?#]/u);
+	const colon = trimmed.indexOf(":");
+	if (colon >= 0 && (firstDelimiter === -1 || colon < firstDelimiter)) return { kind: "invalid" };
 
 	try {
-		const parsed = new URL(trimmed);
-		return SAFE_PROTOCOLS.has(parsed.protocol) ? trimmed : null;
+		const parsed = new URL(trimmed, RELATIVE_URL_BASE);
+		return parsed.origin === new URL(RELATIVE_URL_BASE).origin
+			? { kind: "inert-relative", url: trimmed }
+			: { kind: "invalid" };
 	} catch {
-		return null;
+		return { kind: "invalid" };
 	}
+}
+
+/** A populated relationship slug is already canonical; never repair whitespace silently. */
+export function readRelationshipSlug(raw: unknown): string | null {
+	if (typeof raw !== "string") return null;
+	const trimmed = raw.trim();
+	return trimmed.length > 0 && trimmed === raw ? raw : null;
 }
 
 /** Which Payload collection an internal link points at. */
@@ -473,6 +519,8 @@ export interface LexicalLink {
 	/** Internal link: the referenced collection plus that document's slug. */
 	readonly internal: { collection: LinkTargetCollection; slug: string } | null;
 	readonly newTab: boolean;
+	/** A safe local reference retained as text because M.2 cannot derive its market route. */
+	readonly degradation?: { readonly kind: "relative-url"; readonly value: string };
 }
 
 /**
@@ -502,18 +550,16 @@ export function readLink(node: LexicalNode): LexicalLink {
 		if (typeof doc === "object" && doc !== null) {
 			const relationTo = (doc as { relationTo?: unknown }).relationTo;
 			const value = (doc as { value?: unknown }).value;
-			if (
-				typeof relationTo === "string" &&
-				LINK_COLLECTIONS.has(relationTo) &&
-				typeof value === "object" &&
-				value !== null &&
-				typeof (value as { slug?: unknown }).slug === "string"
-			) {
+			const slug =
+				typeof value === "object" && value !== null
+					? readRelationshipSlug((value as { slug?: unknown }).slug)
+					: null;
+			if (typeof relationTo === "string" && LINK_COLLECTIONS.has(relationTo) && slug !== null) {
 				return {
 					url: null,
 					internal: {
 						collection: relationTo as LinkTargetCollection,
-						slug: (value as { slug: string }).slug,
+						slug,
 					},
 					newTab,
 				};
@@ -522,7 +568,16 @@ export function readLink(node: LexicalNode): LexicalLink {
 		return { url: null, internal: null, newTab };
 	}
 
-	return { url: safeLinkUrl(fields.url), internal: null, newTab };
+	const classified = classifyLinkUrl(fields.url);
+	if (classified.kind === "inert-relative") {
+		return {
+			url: null,
+			internal: null,
+			newTab,
+			degradation: { kind: "relative-url", value: classified.url },
+		};
+	}
+	return { url: classified.kind === "href" ? classified.url : null, internal: null, newTab };
 }
 
 /**
@@ -557,8 +612,11 @@ export function findUnsupportedLinkTarget(document: LexicalDocument): string | n
 				if (typeof relationTo === "string" && !LINK_COLLECTIONS.has(relationTo)) {
 					return `relationTo ${relationTo}`;
 				}
-			} else if (fields.url !== undefined && fields.url !== null && safeLinkUrl(fields.url) === null) {
-				return `url ${typeof fields.url === "string" ? fields.url : typeof fields.url}`;
+			} else if (fields.url !== undefined && fields.url !== null) {
+				const classified = classifyLinkUrl(fields.url);
+				if (classified.kind === "invalid") {
+					return `url ${typeof fields.url === "string" ? fields.url : typeof fields.url}`;
+				}
 			}
 		}
 		for (const child of nodeChildren(node)) {

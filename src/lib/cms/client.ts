@@ -39,6 +39,11 @@ function logCmsError(event: string, detail: Record<string, unknown>): void {
 	console.error(`[cms] ${event}`, JSON.stringify(detail));
 }
 
+function logCmsWarning(event: string, detail: Record<string, unknown>): void {
+	// Structured single line for accepted content whose optional presentation degraded.
+	console.warn(`[cms] ${event}`, JSON.stringify(detail));
+}
+
 /**
  * Confirmation that a document really came from the CMS.
  *
@@ -220,6 +225,16 @@ export async function fetchCmsPage(
 			documentId: parsed.documentId,
 			markets: parsed.markets,
 		};
+	}
+
+	for (const warning of parsed.warnings) {
+		logCmsWarning("content-degraded", {
+			slug,
+			locale,
+			documentId: parsed.page.id,
+			code: warning.code,
+			reason: warning.reason,
+		});
 	}
 
 	logCmsServed({

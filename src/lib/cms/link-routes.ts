@@ -25,9 +25,9 @@ export type CmsRelationshipCollection = "pages" | "posts";
  *
  * Posts deliberately return `null`. V2 describes their relationship wire shape, but the
  * storefront has no Post route and the provider pack contains no direct-Post read
- * contract from which one could be implemented safely. The parser treats a populated
- * target with no path as a contract failure; only a genuinely null/missing target may
- * degrade to inert text.
+ * contract from which one could be implemented safely. The renderer therefore keeps the
+ * published label as non-interactive text and logs the missing route; it never guesses a
+ * path that could collide with the product catch-all.
  */
 export function cmsPathForRelationship(collection: CmsRelationshipCollection, slug: string): string | null {
 	if (collection === "posts") return null;
