@@ -99,6 +99,28 @@ function visibleStrings(node: unknown, out: string[] = []): string[] {
 	return out;
 }
 
+/**
+ * The `alt` of every media object the page's own blocks carry.
+ *
+ * Stops at `reference`: a linked document's layout is somebody else's page, and its
+ * pictures are not supposed to render here.
+ */
+function mediaAlts(response: unknown): string[] {
+	const out: string[] = [];
+	const walk = (node: unknown): void => {
+		if (Array.isArray(node)) return node.forEach(walk);
+		if (typeof node !== "object" || node === null) return;
+		const record = node as Record<string, unknown>;
+		if (typeof record.mimeType === "string" && typeof record.alt === "string") out.push(record.alt);
+		for (const [key, value] of Object.entries(record)) {
+			if (key === "reference") continue;
+			walk(value);
+		}
+	};
+	walk((response as { docs?: [{ layout?: unknown }] }).docs?.[0]?.layout);
+	return out;
+}
+
 /** Strings that belong to the asset library rather than the page. */
 function isMediaOwnCaption(response: unknown, text: string): boolean {
 	const seen: string[] = [];
@@ -150,13 +172,46 @@ describe("v2 blocks — every scenario parses, and nothing an editor wrote is dr
 		}
 	});
 
-	it("renders alt text for every image, never an empty alt", () => {
-		for (const block of ["hero", "image", "gallery", "mediaText"]) {
-			const response = scenario(block);
-			const html = render(response);
-			const alts = [...html.matchAll(/alt="([^"]*)"/g)].map((m) => m[1]);
-			for (const alt of alts) expect(alt, `${block} has an empty alt`).not.toBe("");
+	it.each(["hero", "image", "gallery", "mediaText"])("%s renders one image per media object", (block) => {
+		// Derived from the fixture, not from the output. The earlier version of this test
+		// iterated over the alts it FOUND in the html, so a renderer that emitted no images
+		// at all iterated zero times and passed. Counting against the fixture is the only
+		// version that fails when a picture disappears — which is the failure hero used to
+		// have, because it was the one media path that dropped an unusable object silently.
+		const response = scenario(block);
+		const expectedAlts = mediaAlts(response);
+		expect(expectedAlts.length, `${block} fixture carries no media`).toBeGreaterThan(0);
+
+		const html = render(response);
+		const alts = [...html.matchAll(/alt="([^"]*)"/g)].map((m) => m[1]);
+		expect(alts.length, `${block} rendered ${alts.length} images for ${expectedAlts.length} media`).toBe(
+			expectedAlts.length,
+		);
+		for (const alt of expectedAlts) {
+			expect(alts, `${block} lost the image with alt: ${alt}`).toContain(alt);
+			expect(alt, `${block} has an empty alt`).not.toBe("");
 		}
+	});
+
+	it("rejects the candidate when a hero image arrives unusable, rather than dropping it", () => {
+		// The other three media blocks already rejected; hero assigned the reader's `null`
+		// straight through, so an image with no alt vanished from a page that still looked
+		// finished. `blocks.ts` logs nothing, so there was not even a line to grep for.
+		const response = scenario("hero") as { docs: [{ layout: [Record<string, unknown>] }] };
+		const media = response.docs[0].layout[0].media as Record<string, unknown>;
+		response.docs[0].layout[0].media = { ...media, alt: "" };
+
+		const result = parsePagesResponse(response);
+		expect(result.status).toBe("invalid");
+	});
+
+	it("still accepts a hero with no media relationship at all", () => {
+		// The distinction that makes the rejection above safe: at depth=0 the relationship
+		// arrives as a bare id string, and "not expanded" is not "broken".
+		const response = scenario("hero") as { docs: [{ layout: [Record<string, unknown>] }] };
+		response.docs[0].layout[0].media = "018f1000-0000-7000-8000-000000000101";
+
+		expect(parsePagesResponse(response).status).toBe("ok");
 	});
 });
 
@@ -238,6 +293,29 @@ describe("v2 blocks — market filtering, exactly as the manifest expects", () =
 		}
 	});
 
+	it("actually withholds the hidden block from the html, in both directions", () => {
+		// The two tests above assert the manifest against `isVisibleInMarket`, a pure
+		// function. Neither of them touches the line in `CmsBlocks` that calls it: deleting
+		// that filter left the whole suite green while every market-hidden block started
+		// rendering to visitors of the wrong market. This is the test that fails.
+		// The link labels, not the headings: „Viditeľné pre SK" is a substring of
+		// „Viditeľné pre SK aj CZ", so the heading cannot tell the SK-only block from the
+		// one both markets keep, and the test would pass for the wrong reason.
+		const skOnly = "SK kontakt";
+		const czOnly = "CZ-only otázka";
+
+		const sk = visibleText(render(response, "SK"));
+		expect(sk).toContain(skOnly);
+		expect(sk).not.toContain(czOnly);
+
+		const cz = visibleText(render(response, "CZ"));
+		expect(cz).toContain(czOnly);
+		expect(cz).not.toContain(skOnly);
+
+		// Both markets keep the blocks that name neither of them.
+		for (const html of [sk, cz]) expect(html).toContain("Spoločný obsah");
+	});
+
 	it("validates hidden blocks too — stricter than the contract requires, deliberately", () => {
 		// The contract says the consumer validates the market-filtered candidate. This
 		// validates everything, so a block only CZ visitors see still has to be renderable.
@@ -288,9 +366,85 @@ describe("v2 blocks — a link with nowhere to go", () => {
 });
 
 describe("v2 blocks — internal links get a market prefix", () => {
+	const response = fixture("fixtures/rest/page-links.sk.published.depth-1.json");
+
 	it("derives a route for a populated pages reference", () => {
-		const html = render(fixture("fixtures/rest/page-links.sk.published.depth-1.json"));
+		const html = render(response);
 		// `marketHref` puts the channel's market segment in front; the parser never does.
 		expect(html).toMatch(/href="\/sk\/[a-z0-9-]+"/);
+	});
+
+	it("renders a posts reference as text, because posts have no storefront route", () => {
+		// This link used to emit `/sk/poradna/ako-vybrat-stresny-nosic`, which matches no
+		// route — a hard 404 from a link the contract's own fixture ships.
+		const html = render(response);
+		expect(visibleText(html)).toContain("Článok v poradni");
+		expect(html).not.toContain("ako-vybrat-stresny-nosic");
+	});
+
+	it("emits no href with two segments after the market prefix", () => {
+		const hrefs = [...render(response).matchAll(/href="([^"]*)"/g)].map((m) => m[1]);
+		for (const href of hrefs) {
+			if (!href.startsWith("/sk/")) continue;
+			expect(href.slice("/sk/".length).split("/"), href).toHaveLength(1);
+		}
+	});
+
+	it("rejects the candidate when a link points at a collection outside the contract", () => {
+		// `brands` is the contract's named example: the Payload editor offers it, this
+		// consumer contract does not. Degrading it to inert text would hide a link an
+		// editor believed they had made — and the contract calls it a violation, not a
+		// degrade, which is a different fact from a target that is simply gone.
+		const broken = fixture("fixtures/rest/page-links.sk.published.depth-1.json") as {
+			docs: [{ layout: [{ links: [{ reference: { relationTo: string } }] }] }];
+		};
+		broken.docs[0].layout[0].links[0].reference.relationTo = "brands";
+
+		expect(parsePagesResponse(broken).status).toBe("invalid");
+	});
+
+	it("rejects a rich-text link whose relationship target is outside the contract", () => {
+		const doc = {
+			docs: [
+				{
+					id: "018f2000-0000-7000-8000-000000000999",
+					title: "T",
+					slug: "o-nas",
+					markets: ["SK"],
+					meta: { title: null, description: null, image: null },
+					updatedAt: "2026-07-31T08:00:00.000Z",
+					_status: "published",
+					layout: [
+						{
+							id: "b1",
+							blockType: "richText",
+							markets: null,
+							content: {
+								root: {
+									type: "root",
+									children: [
+										{
+											type: "paragraph",
+											children: [
+												{
+													type: "link",
+													fields: {
+														linkType: "internal",
+														doc: { relationTo: "brands", value: { slug: "thule" } },
+													},
+													children: [{ type: "text", text: "Thule", format: 0 }],
+												},
+											],
+										},
+									],
+								},
+							},
+						},
+					],
+				},
+			],
+		};
+
+		expect(parsePagesResponse(doc).status).toBe("invalid");
 	});
 });

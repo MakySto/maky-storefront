@@ -254,10 +254,14 @@ export function safeLinkUrl(raw: unknown): string | null {
 	if (trimmed.length === 0) return null;
 
 	// Same-page anchors and root-relative paths carry no scheme to abuse.
-	// `//host` is protocol-relative, not relative — it falls through to URL parsing,
-	// which rejects it for having no base.
+	//
+	// `//host` is protocol-relative rather than relative, so it must not take this branch.
+	// Neither must `/\host`: the WHATWG URL parser treats a backslash in the authority
+	// position exactly like a slash for special schemes, so `/\evil.example` resolves to
+	// `https://evil.example/` in every browser. An earlier version of this guard checked
+	// only for `//` and let that through — a cross-origin link built from CMS text.
 	if (trimmed.startsWith("#")) return trimmed;
-	if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed;
+	if (trimmed.startsWith("/") && !/^\/[/\\]/.test(trimmed)) return trimmed;
 
 	try {
 		const parsed = new URL(trimmed);
@@ -268,7 +272,7 @@ export function safeLinkUrl(raw: unknown): string | null {
 }
 
 /** Which Payload collection an internal link points at. */
-export type LinkTargetCollection = "pages" | "posts" | "brands";
+export type LinkTargetCollection = "pages" | "posts";
 
 export interface LexicalLink {
 	/** External/custom link: an already-validated href. */
@@ -278,7 +282,13 @@ export interface LexicalLink {
 	readonly newTab: boolean;
 }
 
-const LINK_COLLECTIONS = new Set<string>(["pages", "posts", "brands"]);
+/**
+ * The collections this consumer contract understands. `brands` is deliberately absent:
+ * the Payload editor offers it, the Page V2 consumer contract does not, and the contract
+ * states that an unknown `relationTo` is a violation rather than something to degrade.
+ * {@link findUnsupportedLinkTarget} enforces that before anything renders.
+ */
+const LINK_COLLECTIONS = new Set<string>(["pages", "posts"]);
 
 /**
  * Read a `link` / `autolink` node's destination.
@@ -320,4 +330,49 @@ export function readLink(node: LexicalNode): LexicalLink {
 	}
 
 	return { url: safeLinkUrl(fields.url), internal: null, newTab };
+}
+
+/**
+ * The first link in `document` whose destination the contract does not allow, or `null`.
+ *
+ * Two cases, both contract violations rather than degrades:
+ *
+ *   custom url the storefront refuses   `javascript:`, `data:`, a protocol-relative or
+ *                                       backslash-authority path — {@link safeLinkUrl}
+ *                                       decides, and this reuses that exact decision so
+ *                                       the two can never disagree.
+ *   `relationTo` outside the contract   `brands` is the named example.
+ *
+ * The distinction against a degrade is the relationship *target*, not the relationship:
+ * „Podporovaný Page/Post link s `null` alebo chýbajúcim relationship targetom nesmie
+ * vytvoriť odhadovanú route" — that one still renders as inert text, because the editor
+ * pointed at a collection this contract knows and the document is simply gone. A link to
+ * a collection the contract never agreed to is a different fact: it means the provider
+ * and this consumer disagree about what a link can be, and the candidate is rejected.
+ */
+export function findUnsupportedLinkTarget(document: LexicalDocument): string | null {
+	const walk = (node: LexicalNode): string | null => {
+		if (node.type === "link" || node.type === "autolink") {
+			const fields =
+				typeof node.fields === "object" && node.fields !== null
+					? (node.fields as Record<string, unknown>)
+					: {};
+			if (fields.linkType === "internal") {
+				const doc = fields.doc;
+				const relationTo =
+					typeof doc === "object" && doc !== null ? (doc as { relationTo?: unknown }).relationTo : undefined;
+				if (typeof relationTo === "string" && !LINK_COLLECTIONS.has(relationTo)) {
+					return `relationTo ${relationTo}`;
+				}
+			} else if (fields.url !== undefined && fields.url !== null && safeLinkUrl(fields.url) === null) {
+				return `url ${typeof fields.url === "string" ? fields.url : typeof fields.url}`;
+			}
+		}
+		for (const child of nodeChildren(node)) {
+			const found = walk(child);
+			if (found !== null) return found;
+		}
+		return null;
+	};
+	return walk(document.root);
 }

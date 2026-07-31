@@ -1,5 +1,6 @@
 import {
 	findUnrenderableNode,
+	findUnsupportedLinkTarget,
 	findUnsupportedTextFormat,
 	isLexicalDocument,
 	type LexicalDocument,
@@ -229,14 +230,24 @@ function readCommon(value: Record<string, unknown>): { ok: true; common: CmsBloc
  * malformed response, it is a relationship the query did not expand, so it reads as
  * absent rather than as a contract violation.
  */
-function readMedia(value: unknown): CmsMedia | null {
-	if (!isRecord(value)) return null;
+type MediaResult =
+	/** No relationship at all, or one the query did not expand. Legitimately no media. */
+	| { readonly kind: "absent" }
+	/** A populated object the storefront cannot render — missing alt, unsafe url. */
+	| { readonly kind: "unusable"; readonly why: string }
+	| { readonly kind: "ok"; readonly media: CmsMedia };
+
+function readMedia(value: unknown): MediaResult {
+	// An unpopulated relationship arrives as a bare id string or null. That is not a
+	// malformed response, it is a relationship the query did not expand.
+	if (!isRecord(value)) return { kind: "absent" };
 
 	const id = optionalString(value.id);
 	const url = optionalString(value.url);
 	const alt = optionalString(value.alt);
-	if (!id || !url || !alt) return null;
-	if (!/^https?:\/\//.test(url)) return null;
+	if (!id && !url) return { kind: "absent" };
+	if (!alt) return { kind: "unusable", why: "media has no alt text" };
+	if (!url || !/^https?:\/\//.test(url)) return { kind: "unusable", why: "media url is not http(s)" };
 
 	const sizes: Record<string, { url: string; width: number | null }> = {};
 	if (isRecord(value.sizes)) {
@@ -249,13 +260,16 @@ function readMedia(value: unknown): CmsMedia | null {
 	}
 
 	return {
-		id,
-		url,
-		alt,
-		width: optionalNumber(value.width),
-		height: optionalNumber(value.height),
-		mimeType: optionalString(value.mimeType),
-		sizes,
+		kind: "ok",
+		media: {
+			id: id ?? url,
+			url,
+			alt,
+			width: optionalNumber(value.width),
+			height: optionalNumber(value.height),
+			mimeType: optionalString(value.mimeType),
+			sizes,
+		},
 	};
 }
 
@@ -271,7 +285,7 @@ function readMedia(value: unknown): CmsMedia | null {
  * yields `kind: "none"` rather than a rejection — the contract says such a link must not
  * produce a guessed route, and that its label may still render as text.
  */
-function readBlockLink(value: unknown): CmsBlockLink | null {
+function readBlockLink(value: unknown): CmsBlockLink | null | { unsupportedCollection: string } {
 	if (!isRecord(value)) return null;
 
 	const label = optionalString(value.label);
@@ -292,6 +306,15 @@ function readBlockLink(value: unknown): CmsBlockLink | null {
 		const reference = value.reference;
 		if (isRecord(reference)) {
 			const collection = reference.relationTo;
+			// An unknown collection is a contract violation, not a degrade. The contract
+			// separates the two cases explicitly: a null or absent target must not produce a
+			// guessed route (degrade), while „Neznáme `relationTo` … sú contract violation".
+			// `brands` is the named example — the Payload editor offers it, this consumer
+			// contract does not, and quietly rendering the label as text would hide a link
+			// an editor believed they had made.
+			if (typeof collection === "string" && collection !== "pages" && collection !== "posts") {
+				return { unsupportedCollection: collection };
+			}
 			const doc = reference.value;
 			const slug = isRecord(doc) ? optionalString(doc.slug) : null;
 			if ((collection === "pages" || collection === "posts") && slug) {
@@ -303,12 +326,19 @@ function readBlockLink(value: unknown): CmsBlockLink | null {
 	return { label, target, newTab, appearance, id };
 }
 
-function readLinks(value: unknown): readonly CmsBlockLink[] {
-	if (!Array.isArray(value)) return [];
-	return value.flatMap((entry) => {
+function readLinks(
+	value: unknown,
+):
+	| { readonly ok: true; readonly links: readonly CmsBlockLink[] }
+	| { readonly ok: false; readonly collection: string } {
+	if (!Array.isArray(value)) return { ok: true, links: [] };
+	const links: CmsBlockLink[] = [];
+	for (const entry of value) {
 		const link = readBlockLink(entry);
-		return link ? [link] : [];
-	});
+		if (link && "unsupportedCollection" in link) return { ok: false, collection: link.unsupportedCollection };
+		if (link) links.push(link);
+	}
+	return { ok: true, links };
 }
 
 /** Validate one Lexical document, wherever it sits. Returns a failure or `null`. */
@@ -327,6 +357,10 @@ function checkLexical(value: unknown, where: string): BlockFailure | null {
 	const format = findUnsupportedTextFormat(value);
 	if (format !== null) {
 		return { ok: false, reason: `${where} carries unsupported text format bits ${format}` };
+	}
+	const link = findUnsupportedLinkTarget(value);
+	if (link !== null) {
+		return { ok: false, reason: `${where} contains an unsupported link target: ${link}` };
 	}
 	return null;
 }
@@ -366,6 +400,14 @@ export function parseBlock(value: unknown, index: number): BlockResult {
 		case "hero": {
 			const heading = optionalString(value.heading);
 			if (!heading) return { ok: false, reason: `${at} hero has no heading` };
+			const heroMedia = readMedia(value.media);
+			if (heroMedia.kind === "unusable") {
+				return { ok: false, reason: `${at} hero ${heroMedia.why}` };
+			}
+			const heroLinks = readLinks(value.links);
+			if (!heroLinks.ok) {
+				return { ok: false, reason: `${at} hero links to unsupported collection ${heroLinks.collection}` };
+			}
 			return {
 				ok: true,
 				block: {
@@ -373,8 +415,11 @@ export function parseBlock(value: unknown, index: number): BlockResult {
 					blockType: "hero",
 					heading,
 					subheading: optionalString(value.subheading),
-					media: readMedia(value.media),
-					links: readLinks(value.links),
+					// Optional — but "no image" and "an image we cannot render" are different
+					// facts. Treating the second as the first would drop a published picture in
+					// silence, which is what every other media block rejects the document for.
+					media: heroMedia.kind === "ok" ? heroMedia.media : null,
+					links: heroLinks.links,
 				},
 			};
 		}
@@ -390,10 +435,12 @@ export function parseBlock(value: unknown, index: number): BlockResult {
 
 		case "image": {
 			const media = readMedia(value.media);
-			if (!media) return { ok: false, reason: `${at} image has no usable media` };
+			if (media.kind !== "ok") {
+				return { ok: false, reason: `${at} image ${media.kind === "unusable" ? media.why : "has no media"}` };
+			}
 			return {
 				ok: true,
-				block: { ...base, blockType: "image", media, caption: optionalString(value.caption) },
+				block: { ...base, blockType: "image", media: media.media, caption: optionalString(value.caption) },
 			};
 		}
 
@@ -403,8 +450,15 @@ export function parseBlock(value: unknown, index: number): BlockResult {
 			for (const entry of value.items) {
 				if (!isRecord(entry)) return { ok: false, reason: `${at} gallery item is not an object` };
 				const media = readMedia(entry.media);
-				if (!media) return { ok: false, reason: `${at} gallery item has no usable media` };
-				items.push({ id: optionalString(entry.id), media, caption: optionalString(entry.caption) });
+				if (media.kind !== "ok") {
+					const why = media.kind === "unusable" ? media.why : "has no media";
+					return { ok: false, reason: `${at} gallery item ${why}` };
+				}
+				items.push({
+					id: optionalString(entry.id),
+					media: media.media,
+					caption: optionalString(entry.caption),
+				});
 			}
 			// The contract's required content is "at least two". A one-image gallery is a
 			// shape the provider schema forbids, so its arrival means something upstream is
@@ -416,11 +470,20 @@ export function parseBlock(value: unknown, index: number): BlockResult {
 		case "cta": {
 			const heading = optionalString(value.heading);
 			if (!heading) return { ok: false, reason: `${at} cta has no heading` };
-			const links = readLinks(value.links);
-			if (links.length === 0) return { ok: false, reason: `${at} cta has no links` };
+			const ctaLinks = readLinks(value.links);
+			if (!ctaLinks.ok) {
+				return { ok: false, reason: `${at} cta links to unsupported collection ${ctaLinks.collection}` };
+			}
+			if (ctaLinks.links.length === 0) return { ok: false, reason: `${at} cta has no links` };
 			return {
 				ok: true,
-				block: { ...base, blockType: "cta", heading, text: optionalString(value.text), links },
+				block: {
+					...base,
+					blockType: "cta",
+					heading,
+					text: optionalString(value.text),
+					links: ctaLinks.links,
+				},
 			};
 		}
 
@@ -446,9 +509,19 @@ export function parseBlock(value: unknown, index: number): BlockResult {
 			const failure = checkLexical(value.content, `${at} mediaText content`);
 			if (failure) return failure;
 			const media = readMedia(value.media);
-			if (!media) return { ok: false, reason: `${at} mediaText has no usable media` };
+			if (media.kind !== "ok") {
+				const why = media.kind === "unusable" ? media.why : "has no media";
+				return { ok: false, reason: `${at} mediaText ${why}` };
+			}
 			if (typeof value.mediaPosition !== "string" || value.mediaPosition.length === 0) {
 				return { ok: false, reason: `${at} mediaText has no mediaPosition` };
+			}
+			const mediaTextLinks = readLinks(value.links);
+			if (!mediaTextLinks.ok) {
+				return {
+					ok: false,
+					reason: `${at} mediaText links to unsupported collection ${mediaTextLinks.collection}`,
+				};
 			}
 			return {
 				ok: true,
@@ -457,12 +530,12 @@ export function parseBlock(value: unknown, index: number): BlockResult {
 					blockType: "mediaText",
 					heading: optionalString(value.heading),
 					content: value.content as LexicalDocument,
-					media,
+					media: media.media,
 					// The contract names the field required but never enumerates its values, so
 					// an unrecognised one degrades to the default layout instead of taking the
 					// page down over a presentation detail. Absence still fails, above.
 					mediaPosition: readMediaPosition(value.mediaPosition),
-					links: readLinks(value.links),
+					links: mediaTextLinks.links,
 				},
 			};
 		}

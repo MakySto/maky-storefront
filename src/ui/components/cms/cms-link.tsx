@@ -32,10 +32,19 @@ export function CmsLink({ link, channel }: { link: CmsBlockLink; channel: string
 		return <span className={`${shared} ${style} cursor-default opacity-60`}>{link.label}</span>;
 	}
 
+	const path = link.target.kind === "internal" ? hrefForCollection(link.target.collection) : null;
+
+	// An internal target whose collection has no storefront route is the same situation as
+	// a missing relationship: there is nowhere to send the visitor. Rendering the label as
+	// text is the contract's answer, and it is better than an anchor to a URL that 404s.
+	if (link.target.kind === "internal" && path === null) {
+		return <span className={`${shared} ${style} cursor-default opacity-60`}>{link.label}</span>;
+	}
+
 	const href =
 		link.target.kind === "external"
 			? link.target.url
-			: marketHref(channel, hrefForCollection(link.target.collection, link.target.slug));
+			: marketHref(channel, `${path}/${(link.target as { slug: string }).slug}`);
 
 	const external = link.target.kind === "external";
 
@@ -51,12 +60,17 @@ export function CmsLink({ link, channel }: { link: CmsBlockLink; channel: string
 }
 
 /**
- * The storefront path for an internal target.
+ * The storefront path prefix for an internal target, or `null` when there is none.
  *
- * `pages` are CMS routes at the market root. `posts` belong to Poradňa; until that route
- * exists the honest answer is that the collection has no storefront home, and the caller
- * turns that into non-interactive text rather than a link into nothing.
+ * `pages` are CMS routes at the market root. `posts` have no route: `/sk/poradna` is a
+ * single CMS page, not an index with `/poradna/<slug>` articles under it. An earlier
+ * version of this function returned `/poradna/${slug}` anyway while the comment above it
+ * claimed the opposite — an anchor to a hard 404, from a fixture the contract ships.
+ *
+ * When posts do get a route, this returns its prefix and the caller starts linking them.
+ * Until then `null` sends the label down the non-interactive path, which is what the
+ * Lexical link reader already does for the same target.
  */
-function hrefForCollection(collection: "pages" | "posts", slug: string): string {
-	return collection === "pages" ? `/${slug}` : `/poradna/${slug}`;
+function hrefForCollection(collection: "pages" | "posts"): string | null {
+	return collection === "pages" ? "" : null;
 }

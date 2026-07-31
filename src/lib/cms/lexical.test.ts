@@ -46,6 +46,17 @@ describe("safeLinkUrl", () => {
 
 	it("rejects protocol-relative URLs rather than guessing a scheme", () => {
 		expect(safeLinkUrl("//evil.example")).toBeNull();
+		// The WHATWG parser treats a backslash like a slash after a leading `/` for special
+		// schemes, so `/\evil.example` resolves to https://evil.example/ — an off-site link
+		// that reads as an internal path. Only the `//` spelling used to be caught.
+		expect(safeLinkUrl("/\\evil.example")).toBeNull();
+		expect(safeLinkUrl("/\\/evil.example")).toBeNull();
+	});
+
+	it("still passes ordinary internal paths", () => {
+		expect(safeLinkUrl("/kontakt")).toBe("/kontakt");
+		expect(safeLinkUrl("/sk/poradna")).toBe("/sk/poradna");
+		expect(safeLinkUrl("#sekcia")).toBe("#sekcia");
 	});
 
 	it("rejects non-strings and blanks", () => {

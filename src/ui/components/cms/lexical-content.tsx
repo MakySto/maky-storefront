@@ -40,8 +40,9 @@ function logUnsupported(event: string, detail: Record<string, unknown>): void {
  * Only `pages` has a public route today. Next resolves static segments before the
  * `[productSlug]` catch-all, so `/sk/o-nas` reaches the o-nas route rather than
  * being read as a product slug — but a CMS page with no matching route would fall
- * through to the product lookup. `posts` and `brands` have no storefront route at
- * all yet, so those links render as plain text instead of pointing at a 404.
+ * through to the product lookup. `posts` has no storefront route at all yet, so those
+ * links render as plain text instead of pointing at a 404. (A collection outside the
+ * contract never reaches here — the candidate was rejected before rendering.)
  */
 function internalHref(internal: NonNullable<LexicalLink["internal"]>, channel: string): string | null {
 	if (internal.collection === "pages") return marketHref(channel, `/${internal.slug}`);
