@@ -117,4 +117,52 @@ describe("fetchCmsPage — the document must be the one requested", () => {
 		vi.unstubAllEnvs();
 		vi.restoreAllMocks();
 	});
+
+	it("serves a hero without provider-unsupported optional media and logs the MIME", async () => {
+		const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+		vi.spyOn(console, "log").mockImplementation(() => undefined);
+		const body = DOC("o-nas") as unknown as {
+			docs: [{ layout: Array<Record<string, unknown>> }];
+		};
+		body.docs[0].layout = [
+			{
+				id: "hero-1",
+				anchorId: null,
+				blockName: null,
+				markets: null,
+				blockType: "hero",
+				heading: "O nás",
+				media: {
+					id: "media-1",
+					alt: "Logo",
+					url: "https://cms-media.maky.store/media/logo.svg",
+					mimeType: "image/svg+xml",
+					width: 120,
+					height: 60,
+				},
+				links: [],
+			},
+		];
+		stubCms(body);
+
+		const { fetchCmsPage } = await import("./client");
+		const outcome = await fetchCmsPage("o-nas", "sk");
+
+		expect(outcome.status).toBe("found");
+		if (outcome.status === "found") {
+			expect(outcome.page.layout[0]).toMatchObject({ blockType: "hero", media: null });
+		}
+		expect(consoleWarn).toHaveBeenCalledWith(
+			"[cms] content-degraded",
+			expect.stringContaining('"code":"hero-media-omitted"'),
+		);
+		expect(consoleWarn).toHaveBeenCalledWith(
+			"[cms] content-degraded",
+			expect.stringContaining("image/svg+xml"),
+		);
+
+		vi.unstubAllGlobals();
+		vi.unstubAllEnvs();
+		vi.restoreAllMocks();
+	});
 });

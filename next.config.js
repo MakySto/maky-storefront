@@ -1,6 +1,9 @@
 import createNextIntlPlugin from "next-intl/plugin";
 
+import { CMS_MEDIA_BASE_URL } from "./src/config/cms-media.js";
+
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+const cmsMediaBaseUrl = new URL(CMS_MEDIA_BASE_URL);
 
 /** @type {import('next').NextConfig} */
 const config = {
@@ -28,9 +31,10 @@ const config = {
 			},
 			{
 				// Payload public media CDN — the runtime parser enforces the same origin.
-				protocol: "https",
-				hostname: "cms-media.maky.store",
-				pathname: "/media/**",
+				protocol: cmsMediaBaseUrl.protocol.slice(0, -1),
+				hostname: cmsMediaBaseUrl.hostname,
+				port: cmsMediaBaseUrl.port,
+				pathname: `${cmsMediaBaseUrl.pathname}**`,
 			},
 			{
 				// Every product image on the live site comes from here — 284 of them on a

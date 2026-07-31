@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { CmsBlocks } from "@/ui/components/cms/cms-blocks";
-import { SUPPORTED_BLOCK_TYPES } from "./blocks";
+import { readMedia, SUPPORTED_BLOCK_TYPES } from "./blocks";
 import { parsePagesResponse } from "./page-schema";
 
 /**
@@ -192,16 +192,59 @@ describe("v2 blocks — every scenario parses, and nothing an editor wrote is dr
 		}
 	});
 
-	it("rejects the candidate when a hero image arrives unusable, rather than dropping it", () => {
-		// The other three media blocks already rejected; hero assigned the reader's `null`
-		// straight through, so an image with no alt vanished from a page that still looked
-		// finished. `blocks.ts` logs nothing, so there was not even a line to grep for.
+	it("rejects malformed optional hero media rather than dropping it", () => {
+		// Optional means the relationship may be absent. It does not make a populated object
+		// with missing alt text structurally valid, and that fault must not use the narrow
+		// unsupported-MIME degradation below.
 		const response = scenario("hero") as { docs: [{ layout: [Record<string, unknown>] }] };
 		const media = response.docs[0].layout[0].media as Record<string, unknown>;
 		response.docs[0].layout[0].media = { ...media, alt: "" };
 
 		const result = parsePagesResponse(response);
 		expect(result.status).toBe("invalid");
+	});
+
+	it.each(["image/svg+xml", "image/gif", "application/pdf", "video/mp4"])(
+		"omits optional hero media with provider-unsupported MIME %s and reports it",
+		(mimeType) => {
+			const response = scenario("hero") as { docs: [{ layout: [Record<string, unknown>] }] };
+			const media = response.docs[0].layout[0].media as Record<string, unknown>;
+			media.mimeType = mimeType;
+
+			const result = parsePagesResponse(response);
+			expect(result.status).toBe("ok");
+			if (result.status !== "ok") return;
+			expect(result.page.layout[0]).toMatchObject({ blockType: "hero", media: null });
+			expect(result.warnings).toEqual([
+				expect.objectContaining({
+					code: "hero-media-omitted",
+					reason: expect.stringContaining(mimeType),
+				}),
+			]);
+			expect(result.warnings[0]?.reason).toContain("optional media omitted");
+		},
+	);
+
+	it("does not let an unsupported hero MIME mask a malformed media object", () => {
+		const response = scenario("hero") as { docs: [{ layout: [Record<string, unknown>] }] };
+		const media = response.docs[0].layout[0].media as Record<string, unknown>;
+		media.mimeType = "image/svg+xml";
+		media.alt = " ";
+
+		expect(parsePagesResponse(response).status).toBe("invalid");
+	});
+
+	it.each([
+		["missing", undefined],
+		["blank", "   "],
+		["non-string number", 42],
+		["non-string object", { type: "image/svg+xml" }],
+	] as const)("rejects %s hero mimeType as malformed rather than degrading it", (_label, mimeType) => {
+		const response = scenario("hero") as { docs: [{ layout: [Record<string, unknown>] }] };
+		const media = response.docs[0].layout[0].media as Record<string, unknown>;
+		media.mimeType = mimeType;
+
+		expect(parsePagesResponse(response).status).toBe("invalid");
 	});
 
 	it("distinguishes an absent optional hero image from an unpopulated relationship", () => {
@@ -235,12 +278,6 @@ describe("v2 media — exact depth=1 and CDN boundary", () => {
 				"blank alt",
 				(media) => {
 					media.alt = "   ";
-				},
-			],
-			[
-				"unsupported MIME",
-				(media) => {
-					media.mimeType = "application/pdf";
 				},
 			],
 			[
@@ -300,6 +337,52 @@ describe("v2 media — exact depth=1 and CDN boundary", () => {
 			expect(parsePagesResponse(response).status, label).toBe("invalid");
 		}
 	});
+
+	it.each(["image/avif", "image/jpeg", "image/png", "image/webp"])("accepts provider MIME %s", (mimeType) => {
+		const response = hero();
+		const media = response.docs[0].layout[0].media as Record<string, unknown>;
+		media.mimeType = mimeType;
+		expect(readMedia(media)).toMatchObject({ kind: "ok", media: { mimeType } });
+		expect(parsePagesResponse(response).status).toBe("ok");
+	});
+
+	it.each([
+		["GIF", "image/gif", "unsupported-mime"],
+		["SVG", "image/svg+xml", "unsupported-mime"],
+		["PDF", "application/pdf", "unsupported-mime"],
+		["video", "video/mp4", "unsupported-mime"],
+		["missing", undefined, "invalid-mime"],
+		["blank", " ", "invalid-mime"],
+		["non-string", 42, "invalid-mime"],
+	] as const)("rejects %s outside the exact provider MIME set", (_label, mimeType, code) => {
+		const response = hero();
+		const media = response.docs[0].layout[0].media as Record<string, unknown>;
+		media.mimeType = mimeType;
+		expect(readMedia(media)).toMatchObject({ kind: "unusable", code });
+	});
+
+	it.each(["image", "gallery", "mediaText"])(
+		"keeps required %s media fail-closed for an SVG outside the provider contract",
+		(block) => {
+			const response = scenario(block) as { docs: [{ layout: Array<Record<string, unknown>> }] };
+			const target = response.docs[0].layout.find((entry) => entry.blockType === block);
+			if (!target) throw new Error(`fixture must carry ${block}`);
+
+			const mutateFirstMedia = (value: unknown): boolean => {
+				if (Array.isArray(value)) return value.some(mutateFirstMedia);
+				if (typeof value !== "object" || value === null) return false;
+				const record = value as Record<string, unknown>;
+				if (typeof record.mimeType === "string") {
+					record.mimeType = "image/svg+xml";
+					return true;
+				}
+				return Object.values(record).some(mutateFirstMedia);
+			};
+
+			expect(mutateFirstMedia(target)).toBe(true);
+			expect(parsePagesResponse(response).status).toBe("invalid");
+		},
+	);
 
 	it("passes accepted media through the actual image renderer", () => {
 		const html = render(hero());

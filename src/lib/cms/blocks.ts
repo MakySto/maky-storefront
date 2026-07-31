@@ -6,6 +6,7 @@ import {
 	validateLexicalDocument,
 } from "./lexical";
 import { isMarketCode } from "./markets";
+import { CMS_MEDIA_BASE_URL } from "@/config/cms-media";
 
 /**
  * The seven Page block types of provider contract v2, and the parsers that admit them.
@@ -194,7 +195,18 @@ export type BlockFailure = {
 	readonly nodeType?: string;
 };
 
-type BlockResult = { readonly ok: true; readonly block: CmsBlock } | BlockFailure;
+export interface CmsBlockWarning {
+	readonly code: "hero-media-omitted";
+	readonly reason: string;
+}
+
+type BlockResult =
+	| {
+			readonly ok: true;
+			readonly block: CmsBlock;
+			readonly warnings?: readonly CmsBlockWarning[];
+	  }
+	| BlockFailure;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -256,13 +268,11 @@ function readCommon(value: Record<string, unknown>): { ok: true; common: CmsBloc
  * The canonical request uses `depth=1`, so only null/missing is absence. A bare id or
  * another non-object value means the relationship was not populated as promised and must
  * reject the candidate. Public block media is restricted to the provider CDN origin and
- * image MIME types that `next/image` can render safely.
+ * provider-admitted image MIME types that `next/image` can render safely.
  */
-const CMS_MEDIA_HOSTNAME = "cms-media.maky.store";
-const CMS_MEDIA_PATH_PREFIX = "/media/";
+const CMS_MEDIA_BASE = new URL(CMS_MEDIA_BASE_URL);
 const SUPPORTED_IMAGE_MIME_TYPES: ReadonlySet<string> = new Set([
 	"image/avif",
-	"image/gif",
 	"image/jpeg",
 	"image/png",
 	"image/webp",
@@ -274,13 +284,11 @@ function readCmsMediaUrl(value: unknown): string | null {
 	try {
 		const url = new URL(raw);
 		if (
-			url.protocol !== "https:" ||
-			url.hostname !== CMS_MEDIA_HOSTNAME ||
-			url.port !== "" ||
+			url.origin !== CMS_MEDIA_BASE.origin ||
 			url.username !== "" ||
 			url.password !== "" ||
-			!url.pathname.startsWith(CMS_MEDIA_PATH_PREFIX) ||
-			url.pathname.length <= CMS_MEDIA_PATH_PREFIX.length
+			!url.pathname.startsWith(CMS_MEDIA_BASE.pathname) ||
+			url.pathname.length <= CMS_MEDIA_BASE.pathname.length
 		) {
 			return null;
 		}
@@ -292,32 +300,53 @@ function readCmsMediaUrl(value: unknown): string | null {
 
 export type MediaResult =
 	| { readonly kind: "absent" }
-	| { readonly kind: "unusable"; readonly why: string }
+	| {
+			readonly kind: "unusable";
+			readonly code:
+				| "relationship-not-populated"
+				| "missing-id"
+				| "missing-alt"
+				| "unapproved-url"
+				| "invalid-mime"
+				| "unsupported-mime"
+				| "invalid-dimensions"
+				| "invalid-size-dimensions";
+			readonly why: string;
+	  }
 	| { readonly kind: "ok"; readonly media: CmsMedia };
 
 export function readMedia(value: unknown): MediaResult {
 	if (value === null || value === undefined) return { kind: "absent" };
-	if (!isRecord(value)) return { kind: "unusable", why: "media relationship is not populated" };
+	if (!isRecord(value)) {
+		return {
+			kind: "unusable",
+			code: "relationship-not-populated",
+			why: "media relationship is not populated",
+		};
+	}
 
 	const id = optionalString(value.id)?.trim() ?? null;
 	const url = readCmsMediaUrl(value.url);
 	const alt = optionalString(value.alt)?.trim() ?? null;
-	const mimeType = optionalString(value.mimeType)?.trim().toLowerCase() ?? null;
-	if (!id) return { kind: "unusable", why: "media has no id" };
-	if (!alt) return { kind: "unusable", why: "media has no alt text" };
+	const rawMimeType = optionalString(value.mimeType)?.trim() ?? null;
+	const mimeType = rawMimeType?.toLowerCase() ?? null;
+	if (!id) return { kind: "unusable", code: "missing-id", why: "media has no id" };
+	if (!alt) return { kind: "unusable", code: "missing-alt", why: "media has no alt text" };
 	if (!url)
 		return {
 			kind: "unusable",
+			code: "unapproved-url",
 			why: "media url is outside the approved CDN origin",
 		};
-	if (!mimeType || !SUPPORTED_IMAGE_MIME_TYPES.has(mimeType)) {
-		return { kind: "unusable", why: "media mimeType is not a supported image" };
-	}
 
 	const width = readOptionalPositiveInteger(value.width);
 	const height = readOptionalPositiveInteger(value.height);
 	if (!width.ok || !height.ok) {
-		return { kind: "unusable", why: "media dimensions are not positive integers" };
+		return {
+			kind: "unusable",
+			code: "invalid-dimensions",
+			why: "media dimensions are not positive integers",
+		};
 	}
 
 	const sizes: Record<string, { url: string; width: number | null }> = {};
@@ -329,10 +358,34 @@ export function readMedia(value: unknown): MediaResult {
 			const sizeWidth = readOptionalPositiveInteger(raw.width);
 			const sizeHeight = readOptionalPositiveInteger(raw.height);
 			if (!sizeWidth.ok || !sizeHeight.ok) {
-				return { kind: "unusable", why: `media size ${name} dimensions are not positive integers` };
+				return {
+					kind: "unusable",
+					code: "invalid-size-dimensions",
+					why: `media size ${name} dimensions are not positive integers`,
+				};
 			}
 			sizes[name] = { url: sizeUrl, width: sizeWidth.value };
 		}
+	}
+
+	// This set mirrors PublicMedia.mimeTypes in provider contract v2. Keep this after
+	// structural validation so fail-soft optional media cannot mask a malformed object.
+	if (!mimeType) {
+		return {
+			kind: "unusable",
+			code: "invalid-mime",
+			why: "media mimeType is missing or malformed",
+		};
+	}
+	if (!SUPPORTED_IMAGE_MIME_TYPES.has(mimeType)) {
+		const diagnosticMimeType = mimeType.length > 80 ? `${mimeType.slice(0, 79)}…` : mimeType;
+		return {
+			kind: "unusable",
+			code: "unsupported-mime",
+			why: `media mimeType ${JSON.stringify(
+				diagnosticMimeType,
+			)} is not admitted by the provider image contract`,
+		};
 	}
 
 	return {
@@ -498,7 +551,7 @@ export function parseBlock(value: unknown, index: number): BlockResult {
 			const heading = optionalString(value.heading);
 			if (!heading) return { ok: false, reason: `${at} hero has no heading` };
 			const heroMedia = readMedia(value.media);
-			if (heroMedia.kind === "unusable") {
+			if (heroMedia.kind === "unusable" && heroMedia.code !== "unsupported-mime") {
 				return { ok: false, reason: `${at} hero ${heroMedia.why}` };
 			}
 			const heroLinks = readLinks(value.links);
@@ -515,12 +568,19 @@ export function parseBlock(value: unknown, index: number): BlockResult {
 					blockType: "hero",
 					heading,
 					subheading: optionalString(value.subheading),
-					// Optional — but "no image" and "an image we cannot render" are different
-					// facts. Treating the second as the first would drop a published picture in
-					// silence, which is what every other media block rejects the document for.
 					media: heroMedia.kind === "ok" ? heroMedia.media : null,
 					links: heroLinks.links,
 				},
+				...(heroMedia.kind === "unusable"
+					? {
+							warnings: [
+								{
+									code: "hero-media-omitted" as const,
+									reason: `${at} hero ${heroMedia.why}; optional media omitted`,
+								},
+							],
+						}
+					: {}),
 			};
 		}
 

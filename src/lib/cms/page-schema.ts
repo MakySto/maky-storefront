@@ -1,4 +1,4 @@
-import { parseBlock, readBlockMarkets, readMedia, type CmsBlock } from "./blocks";
+import { parseBlock, readBlockMarkets, readMedia, type CmsBlock, type CmsBlockWarning } from "./blocks";
 import { isMarketCode, isVisibleInMarket, type MarketCode } from "./markets";
 
 // Re-exported so consumers keep importing the page contract from one place; the block
@@ -6,6 +6,7 @@ import { isMarketCode, isVisibleInMarket, type MarketCode } from "./markets";
 export type {
 	CmsBlock,
 	CmsBlockLink,
+	CmsBlockWarning,
 	CmsMedia,
 	CmsCtaBlock,
 	CmsFaqBlock,
@@ -50,11 +51,12 @@ export type {
  *
  * This does not turn optional presentation metadata into page availability. A supported
  * Page/Post link whose destination has no consumer route and a harmless relative URL keep
- * their visible label without an `href`; an unusable optional `meta.image` is omitted. Each
- * degradation is logged. Unknown relationship collections, malformed wrappers, unsafe URL
- * schemes and unsupported content remain hard failures. In other words, the words stay
- * all-or-nothing; only a destination or optional preview that cannot be emitted safely may
- * disappear.
+ * their visible label without an `href`; an unusable optional `meta.image` is omitted. A
+ * structurally valid optional hero upload whose MIME is outside the provider image contract
+ * is omitted too. Each degradation is logged. Unknown relationship collections, malformed
+ * wrappers, unsafe URL schemes and unsupported required media remain hard failures. In other
+ * words, the words stay all-or-nothing; only a destination or optional preview that cannot be
+ * emitted safely may disappear.
  *
  * ## All-or-nothing is about CONTENT, not about key sets
  *
@@ -115,10 +117,12 @@ export interface CmsContractViolation {
 	readonly nodeType: string | null;
 }
 
-export interface CmsParseWarning {
-	readonly code: "meta-image-omitted";
-	readonly reason: string;
-}
+export type CmsParseWarning =
+	| CmsBlockWarning
+	| {
+			readonly code: "meta-image-omitted";
+			readonly reason: string;
+	  };
 
 export type CmsPageParse =
 	| { readonly status: "ok"; readonly page: CmsPage; readonly warnings: readonly CmsParseWarning[] }
@@ -242,6 +246,7 @@ export function parsePagesResponse(raw: unknown, market?: MarketCode): CmsPagePa
 	}
 
 	const layout: CmsBlock[] = [];
+	const warnings: CmsParseWarning[] = [];
 	for (const [index, entry] of doc.layout.entries()) {
 		// Filter each block before validating its content, as required by V2. We still
 		// validate the markets field itself, because an unknown market is an enum break.
@@ -254,6 +259,7 @@ export function parsePagesResponse(raw: unknown, market?: MarketCode): CmsPagePa
 			return invalid(parsed.reason, { blockType: parsed.blockType, nodeType: parsed.nodeType });
 		}
 		layout.push(parsed.block);
+		if (parsed.warnings) warnings.push(...parsed.warnings);
 	}
 
 	const meta = parseMeta(doc.meta);
@@ -271,6 +277,6 @@ export function parsePagesResponse(raw: unknown, market?: MarketCode): CmsPagePa
 			meta: meta.meta,
 			updatedAt: optionalString(doc.updatedAt),
 		},
-		warnings: meta.warnings,
+		warnings: [...warnings, ...meta.warnings],
 	};
 }
