@@ -292,19 +292,161 @@ Ground truth captured by `docs/design/storefront-analysis-20260621.md`:
 Production `maky.store` is served by **PM2** process `maky-storefront` (`npm start` =
 `next start -p 3000`, cwd `/opt/storefront`), proxied by nginx
 (`/etc/nginx/conf.d/storefront.conf` → `proxy_pass 127.0.0.1:3000`). It serves the
-on-disk `.next` build. (`maky-smtp-app` is a separate PM2 process — never touch it.)
+on-disk `.next` build. `maky-smtp-app` is a **separate** PM2 process on the same box and
+carries transactional e-mail — never stop, restart or include it in a deploy.
 
-- **NEVER run `next build` / `npm run build` in `/opt/storefront` while the PM2
-  `maky-storefront` process is running.** `next build` replaces the hashed CSS/JS chunks
-  on disk; the live `next start` keeps serving HTML (and re-writes ISR cache under
-  `.next/server/app/*.html`) referencing the **old, now-deleted** chunk hashes → global
-  404/500 on `/_next/static/*.css` → unstyled site. This caused a CSS-down incident on
-  2026-06-21.
-- **Safe build/deploy procedure:** `pm2 stop maky-storefront` → `rm -rf .next` →
-  `npm run build` → verify on a spare port (`next start -p 3032`: page actually styled,
-  CSS 200, no stale-chunk 404) → `pm2 start maky-storefront` → verify `:3000` **and**
-  `https://maky.store/sk`.
-- **Rollback:** `git checkout feat/phase0-setup` → `rm -rf .next` → `npm run build` →
-  `pm2 restart maky-storefront` restores the last known-good (pre-token-bridge) state.
-- For local validation that only needs a build artifact, build in a **separate
-  clone/worktree**, never the live deploy dir.
+### 13.1 The one rule
+
+**NEVER run `pnpm build` / `next build` in `/opt/storefront` while the PM2
+`maky-storefront` process is running** — not to deploy, and not "just to measure
+something". The build replaces the hashed chunks on disk while the live `next start`
+keeps serving HTML that references the old, now-deleted hashes. Every `/_next/static/*`
+request 404s, so the site answers **HTTP 200 and renders unstyled**. Confirmed twice:
+2026-06-21, and again 2026-08-01 when an agent ran a build to measure peak memory.
+
+This is not a memory problem and no amount of RAM fixes it — `pnpm build` peaks at
+~988 MB on a 15 GiB box. The failure is about _replacing files under a running server_.
+
+It is also invisible to every uptime check that only looks at status codes. An external
+monitor on `/sk` must use a **keyword check**, not HTTP 200.
+
+### 13.2 Production deploy — run the script, not the steps
+
+```bash
+cd /opt/storefront
+./scripts/ops/deploy-production.sh -m "why this is going out"
+```
+
+Manual deploys are forbidden. The script exists because the order of the steps is what
+makes them safe, and five steps in the wrong order is exactly what an agent or a tired
+human gets wrong at 23:00. What it does:
+
+```
+preflight   memory, disk, clean tree, current BUILD_ID, NEXT_OUTPUT unset, sudo, PM2 app
+stop        maky-storefront only — never maky-smtp-app
+snapshot    sudo mv .next → /opt/storefront-rollbacks/.next.rollback-<sha>-<BUILD_ID>
+build       pnpm build, output teed to a log file
+metadata    write .next/MAKY_DEPLOY_META (git sha, build id, timestamp)
+start       pm2 start maky-storefront, wait for the port to answer
+smoke       HTML 200 + CSS chunk 200 with real bytes, locally AND through nginx
+log         append a block to /opt/DEPLOYMENTS.log
+prune       keep the newest 2 snapshots plus any pinned with a .keep file
+on failure  restore the snapshot, restart PM2, verify, exit non-zero
+```
+
+Budget 2–5 minutes of planned downtime. That is the accepted cost until the scratch
+worktree swap (§13.8) is proven.
+
+Rehearse with `--dry-run` first: it runs preflight, prints the plan and touches nothing.
+
+**Snapshotting by `mv` also gives the build a cold `.next/cache`.** That is load-bearing,
+not hygiene: on the CMS pilot cutover a warm `fetch-cache` baked a pre-cleanup CMS
+document into the build and shipped a duplicated company block. Content changes in the
+CMS must precede the build, and the build must not inherit the old fetch cache.
+
+### 13.3 Snapshots and rollback — never `cp -al`
+
+`/opt/storefront-rollbacks/` is `root:root`, so every move into or out of it needs
+`sudo mv`. Deliberate: an agent working in `/opt/storefront` cannot delete the rollbacks
+by accident.
+
+- **Out (deploy):** `sudo mv .next /opt/storefront-rollbacks/.next.rollback-<sha>-<BUILD_ID>`
+- **Back (rollback):** `sudo cp -a <snapshot> .next` — a copy, so the snapshot survives
+  and can be used again
+- **Never `cp -al`.** Hardlinks share the inode, and `next start` rewrites ISR cache
+  under `.next/server/app/*.html` with `O_TRUNC` — it modifies the existing inode rather
+  than replacing the file, so the live server silently mutates the snapshot. Static
+  chunks under `.next/static/` are never rewritten after a build, so a hardlinked
+  snapshot is not useless — but it stops being _immutable_, which is its whole point.
+
+Manual rollback to a known-good build — seconds, no rebuild:
+
+```bash
+ls /opt/storefront-rollbacks/                  # what is available
+cat /opt/storefront-rollbacks/<pick>/MAKY_DEPLOY_META   # which sha it was built from
+pm2 stop maky-storefront
+cd /opt/storefront
+rm -rf .next                                   # only now: the snapshot is safe
+sudo cp -a /opt/storefront-rollbacks/<pick> .next
+sudo chown -R ubuntu:ubuntu .next              # PM2 runs as ubuntu and writes ISR cache
+git checkout <git_sha from MAKY_DEPLOY_META>   # keep the tree in sync with the artifact
+pm2 start maky-storefront
+```
+
+**Do not rebuild from a branch during an incident** — slow, and the result is unverified
+at the worst possible moment. Restore the artifact, then diagnose.
+
+Keep at most 2 snapshots. A snapshot that must never be pruned gets a `.keep` file
+inside it (`sudo touch <snapshot>/.keep`); the script skips those.
+
+### 13.4 When the build fails
+
+- **Never start PM2 over a partial `.next`.** A build killed halfway leaves an
+  unservable tree; starting it turns a failed deploy into an outage.
+- `rm -rf .next` is **forbidden before the snapshot exists** — that is what leaves you
+  with no fast rollback. After a _failed_ build it is exactly right: delete the partial
+  artifact, restore the snapshot, then work out why the build failed.
+- `pm2 restart maky-storefront` is a valid recovery **only after a build that finished**
+  (`.next/BUILD_ID` exists and the smoke test passes). It is the fix for the unstyled-site
+  symptom in §13.1. After an interrupted build it starts the broken tree — roll back
+  instead.
+
+### 13.5 Smoke test — HTTP 200 is not the test
+
+The failure mode this catches returns 200. The page must be _styled_, and the stylesheet
+must be one this build actually contains.
+
+```bash
+HTML=$(mktemp)
+curl -fsS http://127.0.0.1:3000/sk -o "$HTML"
+CSS=$(grep -oE '/_next/static/[^"]+\.css' "$HTML" | head -1)
+test -n "$CSS" || { echo "FAIL: no CSS chunk in the served HTML"; exit 1; }
+test -f ".next/${CSS#/_next/}" || { echo "FAIL: served CSS is not in this build"; exit 1; }
+curl -sS -o /dev/null -w '%{http_code} %{size_download}\n' "http://127.0.0.1:3000$CSS"
+curl -sS -o /dev/null -w '%{http_code} %{size_download}\n' "https://maky.store$CSS"
+rm -f "$HTML"
+```
+
+Both must be `200` with a non-trivial byte count — a 200 serving an empty file is still a
+broken site. Check the chunk **locally and through nginx**: they fail independently.
+
+Two traps that have already produced wrong runbooks:
+
+- **The path is `/_next/static/chunks/*.css`, not `/_next/static/css/*.css`.** Next 16
+  with Turbopack emits stylesheets next to the JS chunks. A pattern anchored on
+  `/_next/static/css/` matches nothing on a perfectly healthy page — verified against
+  live production on 2026-08-01 — so it would fail every smoke test and trigger a
+  needless rollback.
+- **Guard against an empty variable.** `curl "$URL$CSS"` with an empty `$CSS` fetches the
+  homepage and returns 200, so the test passes while proving nothing.
+
+Finish with a look in a real browser. Automated checks cannot see a colourless button
+(§4.2).
+
+### 13.6 Never set `NEXT_OUTPUT` for a production deploy
+
+`next.config.js` selects the output mode from `NEXT_OUTPUT`; unset means normal mode,
+which is what production runs. PM2 starts `/usr/bin/npm start -- -p 3000` = `next start`,
+which reads `.next` directly.
+
+Setting `NEXT_OUTPUT=standalone` produces `.next/standalone/server.js`, which that PM2
+command never launches — you get a build that looks fine and serves nothing new. The
+variable is legitimate for the **Dockerfile**; the ban is on the production PM2 deploy
+path only. Any runbook telling you to build standalone and copy `public` and
+`.next/static` into `.next/standalone/` is stale — it does not describe this box.
+
+### 13.7 Local validation
+
+For a build artifact that only needs to be inspected, build in a **separate
+worktree or clone** and never in the live deploy directory. Nothing about §13.1 changes
+because the intent is "just checking".
+
+### 13.8 Open, not approved: scratch worktree swap
+
+Building in a scratch worktree and swapping the directory would cut the downtime from
+minutes to seconds. It is **not approved** — `.next/required-server-files.json` records
+an absolute path to the project root, and whether a moved build tolerates that has not
+been tested. Prove it off production first: build in worktree A, create worktree B at the
+same sha, move A's `.next` into B, serve B on a spare port, and check homepage, CSS, a
+PLP, a PDP and a CMS page. Until that passes, stop–build–start with planned downtime is
+the procedure.
