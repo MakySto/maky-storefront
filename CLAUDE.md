@@ -324,7 +324,7 @@ human gets wrong at 23:00. What it does:
 ```
 lock        flock — Claude, Codex and a human share this box; two deploys must not race
 preflight   memory, disk, clean tree, current BUILD_ID + its sha, NEXT_OUTPUT unset,
-            sudo (kept warm for the whole run), PM2 app
+            sudo, PM2 app
 stop        maky-storefront only — never maky-smtp-app
 snapshot    sudo mv -T .next → rollbacks/.next.rollback-<prev-sha>-<prev-BUILD_ID>-<UTC>
 build       pnpm build, output teed to a log file
@@ -463,6 +463,12 @@ Two traps that have already produced wrong runbooks:
   needless rollback.
 - **Guard against an empty variable.** `curl "$URL$CSS"` with an empty `$CSS` fetches the
   homepage and returns 200, so the test passes while proving nothing.
+- **Probe sudo with `sudo -n true`, never `sudo -v`.** `-v` validates credentials, and
+  that asks for a password even under `NOPASSWD` — the rule exempts running commands, not
+  authenticating. `ubuntu` on this box has `NOPASSWD` from cloud-init, so `sudo -n true`
+  succeeds while `sudo -n -v` answers "a password is required". A `-v` probe therefore
+  blocks the deploy on a box where sudo was never a problem, which is how the first run of
+  this script died (2026-08-01).
 
 Finish with a look in a real browser. Automated checks cannot see a colourless button
 (§4.2).

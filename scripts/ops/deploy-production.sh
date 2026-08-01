@@ -86,22 +86,38 @@ while [[ $# -gt 0 ]]; do
 done
 
 # --- sudo ----------------------------------------------------------------------------
-# The restore path needs sudo. If the timestamp expired during a long build, the recovery
-# would stop to ask for a password with the site already down — so keep it warm.
-start_sudo_keepalive() {
+# The restore path needs sudo. If a password were required and the timestamp expired
+# during a long build, the recovery would stop to ask for one with the site already down.
+#
+# Probe with `sudo -n true`, never with `sudo -v`. `-v` *validates credentials*, and that
+# asks for a password even under NOPASSWD — the rule exempts running commands, not
+# authenticating. On this box (`ubuntu`, NOPASSWD from cloud-init) `sudo -n true` succeeds
+# while `sudo -n -v` answers "a password is required", so probing with `-v` killed
+# preflight on a box where sudo was never actually a problem.
+ensure_sudo() {
+	if sudo -n true 2>/dev/null; then
+		info "sudo is passwordless — no keepalive needed"
+		return 0
+	fi
 	sudo -v || die "sudo is required (snapshot moves into $ROLLBACK_DIR, and $DEPLOY_LOG)"
+	# A password is required here, so the ticket can expire mid-build. Each successful
+	# `sudo -n true` extends it; `-v` would prompt again and is unusable non-interactively.
 	local parent=$$
 	(
 		while kill -0 "$parent" 2>/dev/null; do
-			sudo -n -v 2>/dev/null || exit 1
+			sudo -n true 2>/dev/null || exit 1
 			sleep 50
 		done
 	) &
 	SUDO_KEEPALIVE_PID=$!
+	info "sudo needs a password — keeping the ticket warm (pid $SUDO_KEEPALIVE_PID)"
 }
 
 stop_sudo_keepalive() {
 	if [[ -n "$SUDO_KEEPALIVE_PID" ]]; then
+		# Children first: killing the loop alone would orphan its `sleep`, which then
+		# lingers for up to a minute after the deploy has finished.
+		pkill -P "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
 		kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
 		SUDO_KEEPALIVE_PID=""
 	fi
@@ -281,7 +297,7 @@ preflight() {
 	done
 	pm2 describe "$PM2_APP" >/dev/null 2>&1 || die "PM2 knows no app called '$PM2_APP'"
 
-	start_sudo_keepalive
+	ensure_sudo
 	[[ -d "$ROLLBACK_DIR" ]] || { info "creating $ROLLBACK_DIR"; sudo mkdir -p "$ROLLBACK_DIR"; }
 
 	local avail_disk
