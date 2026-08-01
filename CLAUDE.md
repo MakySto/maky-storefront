@@ -322,22 +322,44 @@ makes them safe, and five steps in the wrong order is exactly what an agent or a
 human gets wrong at 23:00. What it does:
 
 ```
-preflight   memory, disk, clean tree, current BUILD_ID, NEXT_OUTPUT unset, sudo, PM2 app
+lock        flock — Claude, Codex and a human share this box; two deploys must not race
+preflight   memory, disk, clean tree, current BUILD_ID + its sha, NEXT_OUTPUT unset,
+            sudo (kept warm for the whole run), PM2 app
 stop        maky-storefront only — never maky-smtp-app
-snapshot    sudo mv .next → /opt/storefront-rollbacks/.next.rollback-<sha>-<BUILD_ID>
+snapshot    sudo mv -T .next → rollbacks/.next.rollback-<prev-sha>-<prev-BUILD_ID>-<UTC>
 build       pnpm build, output teed to a log file
 metadata    write .next/MAKY_DEPLOY_META (git sha, build id, timestamp)
 start       pm2 start maky-storefront, wait for the port to answer
-smoke       HTML 200 + CSS chunk 200 with real bytes, locally AND through nginx
+─────────── the commit point ────────────────────────────────────────────────────
+gate        127.0.0.1:3000 — page, CSS chunk on disk, CSS chunk over HTTP
+verify      nginx via --resolve, then the public URL — retried, warn only
 log         append a block to /opt/DEPLOYMENTS.log
-prune       keep the newest 2 snapshots plus any pinned with a .keep file
-on failure  restore the snapshot, restart PM2, verify, exit non-zero
+prune       keep the newest 2 snapshots plus any pinned with a sidecar .keep
 ```
+
+**Everything before the gate rolls back on failure. Nothing after it does.** Once the
+artifact is serving correctly on `127.0.0.1:3000`, it stays — a failed log write, a
+pruning error or a network blip on the public check is a post-deploy problem, not a
+reason to throw away a verified build. The script exits `75` in that case and says so.
+
+Only the artifact's own behaviour is in the rollback gate. If nginx or public DNS is
+broken, swapping the build back does not fix it, so those checks report and do not
+revert. Exit codes: `0` deployed, `1` failed and rolled back, `70` internal state error,
+`71` the deploy failed **and** the restore failed (site may be down), `75` deployed but a
+post-deploy step failed.
 
 Budget 2–5 minutes of planned downtime. That is the accepted cost until the scratch
 worktree swap (§13.8) is proven.
 
 Rehearse with `--dry-run` first: it runs preflight, prints the plan and touches nothing.
+
+Two deliberate omissions. There is **no `--allow-dirty`**: a deploy from an uncommitted
+tree would write a `git_sha` into `MAKY_DEPLOY_META` that does not describe what was
+built, which defeats the point of recording it. Commit first, even for a hotfix. And
+preflight demands ~10 GB of free memory — the build itself peaks under 1 GB, so this is
+really an interlock against deploying while an agent is holding several gigabytes. Override
+it per-run (`MIN_FREE_MEM_MB=6144 ./scripts/ops/deploy-production.sh`) rather than lowering
+the default, until a real cgroup `memory.peak` has been measured across a few deploys.
 
 **Snapshotting by `mv` also gives the build a cold `.next/cache`.** That is load-bearing,
 not hygiene: on the CMS pilot cutover a warm `fetch-cache` baked a pre-cleanup CMS
@@ -350,9 +372,20 @@ CMS must precede the build, and the build must not inherit the old fetch cache.
 `sudo mv`. Deliberate: an agent working in `/opt/storefront` cannot delete the rollbacks
 by accident.
 
-- **Out (deploy):** `sudo mv .next /opt/storefront-rollbacks/.next.rollback-<sha>-<BUILD_ID>`
-- **Back (rollback):** `sudo cp -a <snapshot> .next` — a copy, so the snapshot survives
-  and can be used again
+- **Out (deploy):** `sudo mv -T .next /opt/storefront-rollbacks/.next.rollback-<prev-sha>-<prev-BUILD_ID>-<UTC>`
+- **Back, automatic** (the deploy just failed): `sudo mv -T <snapshot> .next`. That
+  snapshot is the artifact this run displaced seconds ago, nothing else refers to it, and
+  `mv` is instant. The script does this itself.
+- **Back, manual** (restoring an older, pinned build): `sudo cp -a <snapshot> .next`, so
+  the snapshot survives and can be used again.
+- Always `-T` on `mv`. Without it, if the target directory already exists, `mv` puts
+  `.next` **inside** it instead of failing — which corrupts the snapshot and breaks the
+  automatic restore that depends on it. The snapshot name also carries a UTC timestamp so
+  a repeat deploy of the same sha cannot collide in the first place.
+- The snapshot is named after the **commit the snapshotted build came from**, read from
+  its `MAKY_DEPLOY_META` — not from `git HEAD`, which is the commit about to be built. A
+  build with no metadata is named `unknown`, which is honest; during an incident people
+  read directory names, not the files inside them.
 - **Never `cp -al`.** Hardlinks share the inode, and `next start` rewrites ISR cache
   under `.next/server/app/*.html` with `O_TRUNC` — it modifies the existing inode rather
   than replacing the file, so the live server silently mutates the snapshot. Static
@@ -376,8 +409,17 @@ pm2 start maky-storefront
 **Do not rebuild from a branch during an incident** — slow, and the result is unverified
 at the worst possible moment. Restore the artifact, then diagnose.
 
-Keep at most 2 snapshots. A snapshot that must never be pruned gets a `.keep` file
-inside it (`sudo touch <snapshot>/.keep`); the script skips those.
+Keep at most 2 snapshots. A snapshot that must never be pruned gets a **sidecar** marker
+next to it, not a file inside it:
+
+```bash
+sudo touch /opt/storefront-rollbacks/.next.rollback-b6b633da-JAODjLtaigo1DL9m6h614.keep
+```
+
+The marker must stay outside the directory because a restore moves the snapshot's
+contents back into the live tree. A `.keep` stored inside would ride along, and the next
+deploy would move it into the new snapshot — silently pinning the wrong build and letting
+the one you meant to protect be pruned.
 
 ### 13.4 When the build fails
 
@@ -394,7 +436,9 @@ inside it (`sudo touch <snapshot>/.keep`); the script skips those.
 ### 13.5 Smoke test — HTTP 200 is not the test
 
 The failure mode this catches returns 200. The page must be _styled_, and the stylesheet
-must be one this build actually contains.
+must be one this build actually contains. Run this against `127.0.0.1:3000` — that is the
+rollback gate. The same checks against nginx and the public URL come after the commit
+point and only warn (§13.2).
 
 ```bash
 HTML=$(mktemp)
