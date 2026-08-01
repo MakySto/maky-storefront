@@ -316,9 +316,23 @@ made the runs pass.
    is picked up at the next restart or deploy. Irrelevant while this branch is
    branch-only; it must not be forgotten on the day the form goes live.
 
-3. **Submission numbers.** The contract currently generates `WDR-<full UUID>`. The
-   approved format is `ODS-YYYY-NNNNNN`; this branch reads the number as an opaque string
-   and does not care which lands, but the customer-facing one should.
+3. **Submission numbers — nothing to do in this repo.** Corrected 2026-08-01: the claim
+   that "the contract currently generates `WDR-<full UUID>`" was never true of any code.
+   `WDR-` appears in no commit of this branch under `src/`; it survives only in prose.
+   The storefront does not generate the number at all — it reads `submissionNumber` out of
+   Payload's create response (`payload-forms-client.ts:201`) and validates only that it is
+   a non-empty string (`:205`). The vendored contract pack, copied verbatim from PR #3's
+   head `459146a` and SHA-256-verified, already specifies `ODS-YYYY-NNNNNN` from a
+   PostgreSQL sequence (`__fixtures__/forms-backend-v1/README.md:261`), and the canonical
+   response fixture already returns `ODS-2026-000001`. Tests feed `ODS-2026-000042`
+   through the real parser and pass.
+
+   So `ODS-YYYY-NNNNNN` is a **Payload-side change with zero storefront files to touch**.
+   Do not open a storefront task for it. (The one thing that would need work here is a new
+   contract _revision_: that means re-vendoring the pack and updating `MANIFEST_SHA256` in
+   `contract-conformance.test.ts` — a backend catch-up to the format the pack already
+   documents needs none of it.)
+
 4. **Approved legal copy — DONE, 2026-07-30.** Marek approved the Slovak wording as it
    stands in this branch: the model form, the route copy, the field labels and the notice
    `renderNoticeFromSnapshot` produces. There is no separate reviewed legal-content
