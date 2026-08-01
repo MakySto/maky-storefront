@@ -46,3 +46,7 @@ next-env.d.ts
 
 # editor / pre-edit backups
 *.bak
+
+# Next.js build output a rollback snapshoty
+/.next
+/.next.*

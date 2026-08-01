@@ -38,6 +38,15 @@
 	"search.exclude": {
 		"**/src/gql/**": true,
 		"**/node_modules": true,
-		"**/.next": true
+		"**/.next": true,
+		"**/.next.*": true
+	},
+	// === Watcher Exclusions (inode watch pressure) ===
+	"files.watcherExclude": {
+		"**/node_modules/**": true,
+		"**/.next/**": true,
+		"**/.next.*/**": true,
+		"**/.git/objects/**": true,
+		"**/.git/subtree-cache/**": true
 	}
 }
