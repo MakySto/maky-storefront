@@ -3,8 +3,10 @@ import {
 	PRIVACY_NOTICE_VERSION,
 	WITHDRAWAL_LOCALE,
 	WITHDRAWAL_MARKET,
-	type WithdrawalAccepted,
+	type WithdrawalCustomerOrderItem,
 	type WithdrawalSubmission,
+	type WithdrawalV2Accepted,
+	withdrawalCustomerStatement,
 } from "./contract";
 import { type FormsErrorCode } from "../forms/payload-forms-client";
 import { validateWithdrawal, type FieldError, type RawWithdrawalInput } from "./validate";
@@ -31,7 +33,7 @@ import { validateWithdrawal, type FieldError, type RawWithdrawalInput } from "./
  */
 
 export type WithdrawalOutcome =
-	/** Nothing was stored; the customer must be told and offered the other routes. */
+	/** Validation failed before transport. */
 	| { readonly status: "invalid"; readonly errors: readonly FieldError[] }
 	| {
 			readonly status: "notReceived";
@@ -39,10 +41,12 @@ export type WithdrawalOutcome =
 			readonly code: FormsErrorCode | null;
 			readonly detail: string;
 	  }
+	/** The record may already exist; retry the identical body to obtain its artifacts. */
+	| { readonly status: "confirmationPending" }
 	/** Durable. The notice is legally given, whatever the e-mail did. */
 	| {
 			readonly status: "received";
-			readonly accepted: WithdrawalAccepted;
+			readonly accepted: WithdrawalV2Accepted;
 			readonly submission: WithdrawalSubmission;
 	  };
 
@@ -50,7 +54,7 @@ export interface PersistPort {
 	(
 		submission: WithdrawalSubmission,
 	): Promise<
-		| { status: "ok"; value: WithdrawalAccepted }
+		| { status: "ok"; value: WithdrawalV2Accepted }
 		| { status: "rejected"; httpStatus: number; code: FormsErrorCode }
 		| { status: "unavailable"; reason: string }
 		| { status: "notConfigured"; missing: readonly string[] }
@@ -64,6 +68,22 @@ export interface SubmitDeps {
 	 * body — the client may claim any order it likes and the claim is worthless.
 	 */
 	readonly verifiedOrder?: { saleorOrderId: string | null; saleorCustomerId: string | null };
+	/** Whole-order lines from the server-verified Saleor order, never from hidden form input. */
+	readonly customerOrderItems?: readonly WithdrawalCustomerOrderItem[];
+}
+
+function customerSafeOrderItems(
+	items: readonly WithdrawalCustomerOrderItem[] | undefined,
+): WithdrawalCustomerOrderItem[] {
+	return (items ?? []).slice(0, 100).flatMap((item) => {
+		const name = item.name
+			.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ")
+			.replace(/\s+/g, " ")
+			.trim()
+			.slice(0, 300);
+		if (!name || !Number.isSafeInteger(item.quantity) || item.quantity <= 0) return [];
+		return [{ name, quantity: Math.min(item.quantity, 10_000) }];
+	});
 }
 
 export async function submitWithdrawal(
@@ -79,6 +99,13 @@ export async function submitWithdrawal(
 	// at every level, so an extra field is a 400 rather than something it ignores.
 	const submission: WithdrawalSubmission = {
 		submissionId: input.submissionId,
+		experienceVersion: "returns-v2",
+		customerStatement: withdrawalCustomerStatement(input.orderNumber, input.scope),
+		customerOrderItems:
+			input.scope === "wholeOrder" && deps.verifiedOrder
+				? customerSafeOrderItems(deps.customerOrderItems)
+				: [],
+		returnMethod: "merchantPickup",
 		source: input.source,
 		market: WITHDRAWAL_MARKET,
 		locale: WITHDRAWAL_LOCALE,
@@ -113,9 +140,15 @@ export async function submitWithdrawal(
 		};
 	}
 	if (persisted.status === "unavailable") {
-		return { status: "notReceived", reason: "unavailable", code: null, detail: persisted.reason };
+		// A timeout, unreadable proxy response or malformed 2xx can happen after Payload
+		// durably stored the notice. Never claim it was not received: retrying the exact
+		// submissionId/body either returns the immutable original or completes normally.
+		return { status: "confirmationPending" };
 	}
 	if (persisted.status === "rejected") {
+		if (persisted.code === "WITHDRAWAL_CONFIRMATION_PENDING") {
+			return { status: "confirmationPending" };
+		}
 		return {
 			status: "notReceived",
 			reason: "rejected",
@@ -124,21 +157,5 @@ export async function submitWithdrawal(
 		};
 	}
 
-	const accepted = persisted.value;
-
-	// A confirmation that did not go out is an operational problem, not a failed
-	// submission. It is logged so somebody can retry it, and the receipt tells the
-	// customer the truth without implying their notice failed.
-	if (accepted.emailDelivery && accepted.emailDelivery.customerStatus !== "sent") {
-		console.error(
-			"[withdrawal] delivery-degraded",
-			JSON.stringify({
-				submissionNumber: accepted.submissionNumber,
-				customerStatus: accepted.emailDelivery.customerStatus,
-				internalStatus: accepted.emailDelivery.internalStatus,
-			}),
-		);
-	}
-
-	return { status: "received", accepted, submission };
+	return { status: "received", accepted: persisted.value, submission };
 }

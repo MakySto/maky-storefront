@@ -111,6 +111,10 @@ describe("verifyOrderSelection — the client's claim is worthless", () => {
 			saleorOrderId: "T3JkZXI6MQ==",
 			orderNumber: "ORD-1042",
 			lines: [{ id: "line-a", productName: "Strešný box", quantity: 1 }],
+			customerOrderItems: [
+				{ name: "Strešný box", quantity: 2 },
+				{ name: "Nosič bicyklov", quantity: 1 },
+			],
 		});
 	});
 

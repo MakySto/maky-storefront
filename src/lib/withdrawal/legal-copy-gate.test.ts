@@ -19,10 +19,9 @@ import {
  * notes stated that `LEGAL_COPY_APPROVED = false` gated the withdrawal deploy. It gated
  * nothing. `isWithdrawalFormServable()` put the check on the path a request actually takes.
  *
- * Marek approved the Slovak copy on 2026-07-30, so the flag is now `true` and these tests
- * changed direction with it. That is exactly what they were for: the earlier version
- * asserted the flag was still `false` so that flipping it could not happen silently, and
- * this version asserts the things that must be true once it has.
+ * The runtime gate is open because the owner explicitly authorized the V2 storefront
+ * release on 2026-08-02. This is an operational authorization, not a claim that the
+ * outstanding real-client visual gate or final content acceptance is complete.
  */
 
 afterEach(() => {
@@ -42,26 +41,22 @@ describe("the withdrawal legal-copy gate", () => {
 		expect(PRIVACY_NOTICE_VERSION).not.toContain("DRAFT");
 	});
 
-	it("keeps the privacy version ahead of the legal one", () => {
-		// The declaration's wording is unchanged; the personal data processed grew by an
-		// optional phone number. The two version lines move independently on purpose.
-		expect(LEGAL_NOTICE_VERSION).toContain("v1");
-		expect(PRIVACY_NOTICE_VERSION).toContain("v2");
+	it("keeps the V2 withdrawal and privacy versions independently pinned", () => {
+		expect(LEGAL_NOTICE_VERSION).toContain("v2");
+		expect(PRIVACY_NOTICE_VERSION).toContain("v1");
 	});
 
 	it("pins the version literals, because nothing else does any more", () => {
 		// Every fixture now imports these constants instead of repeating them, which is
 		// right — but it means editing a string the code calls "permanent" would otherwise
 		// keep the whole suite green. This is the one place the values themselves are held.
-		expect(LEGAL_NOTICE_VERSION).toBe("withdrawal-sk-2026-07-30-v1");
-		expect(PRIVACY_NOTICE_VERSION).toBe("privacy-sk-2026-07-30-v2");
+		expect(LEGAL_NOTICE_VERSION).toBe("withdrawal-sk-v2");
+		expect(PRIVACY_NOTICE_VERSION).toBe("privacy-sk-v1");
 	});
 
 	it("withholds the online function in production until the backend is live", () => {
-		// Approving the copy and standing the backend up are different claims. The Forms
-		// endpoint does not exist in production yet — its migration has never been applied
-		// — so a submitted notice would fail at the transport. Honestly, but a customer
-		// exercising a statutory right should not meet that at all.
+		// The storefront flag remains an independent fail-closed interlock even though the
+		// Payload V2 backend is already live.
 		vi.stubEnv("NODE_ENV", "production");
 		vi.stubEnv("WITHDRAWAL_BACKEND_LIVE", "");
 		expect(isWithdrawalBackendLive()).toBe(false);

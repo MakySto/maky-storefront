@@ -8,6 +8,7 @@ import {
 } from "@/app/[channel]/(main)/odstupenie-od-zmluvy/actions";
 import { formatOrderNumber } from "@/lib/order-number";
 import { type OwnedOrder } from "@/lib/withdrawal/account-orders";
+import { WITHDRAWAL_LIMITS, withdrawalCustomerStatement } from "@/lib/withdrawal/contract";
 import { WithdrawalReceiptPanel } from "./withdrawal-receipt";
 
 /**
@@ -105,7 +106,7 @@ function Field({
 	);
 }
 
-function SubmitButton() {
+function SubmitButton({ retry }: { retry: boolean }) {
 	// useFormStatus is the double-click guard. It is a courtesy only — the authoritative
 	// idempotency gate is the unique submissionId index in the database, because a
 	// disabled button does nothing about a retry after a timeout or a second tab.
@@ -116,7 +117,7 @@ function SubmitButton() {
 			disabled={pending}
 			className="bg-action-primary text-action-primary-text hover:bg-action-primary-hover focus-visible:ring-focus-ring inline-flex min-h-11 w-full items-center justify-center rounded-md px-6 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-60 sm:w-auto"
 		>
-			{pending ? "Odosielam…" : "Potvrdiť odstúpenie od zmluvy"}
+			{pending ? "Odosielam…" : retry ? "Znova overiť podanie" : "Potvrdiť odstúpenie od zmluvy"}
 		</button>
 	);
 }
@@ -150,6 +151,7 @@ export function WithdrawalForm({
 
 	const [selectedOrderId, setSelectedOrderId] = useState<string>(orders[0]?.id ?? MANUAL);
 	const [scope, setScope] = useState<"wholeOrder" | "selectedItems">("wholeOrder");
+	const [manualOrderNumber, setManualOrderNumber] = useState("");
 	const [lineQuantities, setLineQuantities] = useState<Record<string, number>>({});
 	const [manualItems, setManualItems] = useState<ManualItem[]>([
 		{ key: "m0", productName: "", quantity: 1, sku: "" },
@@ -160,6 +162,9 @@ export function WithdrawalForm({
 		() => orders.find((order) => order.id === selectedOrderId) ?? null,
 		[orders, selectedOrderId],
 	);
+	const orderNumber = selectedOrder ? formatOrderNumber(selectedOrder.number) : manualOrderNumber;
+	const statementOrderNumber = orderNumber.trim() || "[číslo objednávky]";
+	const customerStatement = withdrawalCustomerStatement(statementOrderNumber, scope);
 
 	const errors = state.status === "invalid" ? state.errors : undefined;
 
@@ -172,9 +177,7 @@ export function WithdrawalForm({
 	}, [state]);
 
 	if (state.status === "received") {
-		return (
-			<WithdrawalReceiptPanel receipt={state.receipt as WithdrawalReceipt} alternatives={alternatives} />
-		);
+		return <WithdrawalReceiptPanel receipt={state.receipt as WithdrawalReceipt} />;
 	}
 
 	const id = (name: string) => `${baseId}-${name}`;
@@ -201,7 +204,7 @@ export function WithdrawalForm({
 								orderLineId: null,
 								productName: item.productName.trim(),
 								// Optional. Sent when the customer typed one, `null` otherwise —
-								// account lines have no SKU to send at all in V1.
+								// account lines have no SKU in this contract.
 								sku: item.sku.trim() || null,
 								quantity: item.quantity,
 							})),
@@ -228,7 +231,19 @@ export function WithdrawalForm({
 				{state.status === "invalid" ? "Formulár obsahuje chyby. Skontrolujte označené polia." : null}
 				{state.status === "failed" ? "Odstúpenie sa nepodarilo odoslať." : null}
 				{state.status === "blocked" ? "Odoslanie bolo dočasne zablokované." : null}
+				{state.status === "confirmationPending"
+					? "Stav podania sa zatiaľ nepodarilo potvrdiť. Zopakujte overenie bez zmeny údajov."
+					: null}
 			</div>
+
+			{state.status === "confirmationPending" ? (
+				<div className="border-status-warning bg-status-warning-bg text-text-primary rounded-md border p-4 text-sm">
+					<p className="font-semibold">Stav podania sa zatiaľ nepodarilo potvrdiť.</p>
+					<p className="mt-1">
+						Údaje nemeňte a odošlite formulár znova. Overíme rovnaké podanie; nové podanie nevytvoríme.
+					</p>
+				</div>
+			) : null}
 
 			{state.status === "failed" ? (
 				<div className="border-status-danger bg-status-danger-bg text-text-primary rounded-md border p-4 text-sm">
@@ -390,8 +405,8 @@ export function WithdrawalForm({
 							type="text"
 							maxLength={128}
 							readOnly={Boolean(selectedOrder)}
-							defaultValue={selectedOrder ? formatOrderNumber(selectedOrder.number) : ""}
-							key={selectedOrder?.id ?? MANUAL}
+							value={orderNumber}
+							onChange={(event) => setManualOrderNumber(event.target.value)}
 							aria-invalid={invalid || undefined}
 							aria-describedby={describedBy}
 							className={`${inputBase} ${invalid ? invalidRing : ""} ${
@@ -566,12 +581,17 @@ export function WithdrawalForm({
 						<button
 							type="button"
 							onClick={() =>
-								setManualItems((current) => [
-									...current,
-									{ key: `m${manualCounter.current++}`, productName: "", quantity: 1, sku: "" },
-								])
+								setManualItems((current) =>
+									current.length >= WITHDRAWAL_LIMITS.items
+										? current
+										: [
+												...current,
+												{ key: `m${manualCounter.current++}`, productName: "", quantity: 1, sku: "" },
+											],
+								)
 							}
-							className={buttonSecondary}
+							disabled={manualItems.length >= WITHDRAWAL_LIMITS.items}
+							className={`${buttonSecondary} disabled:opacity-50`}
 						>
 							Pridať ďalšiu položku
 						</button>
@@ -599,7 +619,37 @@ export function WithdrawalForm({
 				)}
 			</Field>
 
-			<SubmitButton />
+			<section
+				aria-labelledby={id("pickup-heading")}
+				className="border-border-default bg-surface-muted space-y-2 rounded-md border p-4 text-sm"
+			>
+				<h3 id={id("pickup-heading")} className="text-text-primary font-semibold">
+					Zvoz tovaru zabezpečíme my
+				</h3>
+				<p>
+					Tovar zatiaľ neposielajte. Ozveme sa vám e-mailom s presnou cenou zvozu a navrhneme termín
+					vyzdvihnutia.
+				</p>
+				<p>
+					Náklady na spätnú prepravu znášate vy. Presnú cenu vám oznámime vopred. Zvoz objednáme až po vašom
+					výslovnom súhlase.
+				</p>
+				<p>Ak potrebujete zabezpečiť dopravu vlastným spôsobom, kontaktujte nás pred odoslaním tovaru.</p>
+			</section>
+
+			<section aria-labelledby={id("statement-heading")} className="space-y-2">
+				<h3 id={id("statement-heading")} className="text-text-primary text-base font-semibold">
+					Vaše oznámenie
+				</h3>
+				<p className="border-border-default bg-surface-primary text-text-primary rounded-md border p-4 text-sm font-medium">
+					{customerStatement}
+				</p>
+				<p className="text-text-tertiary text-xs">
+					Odoslaním potvrdíte toto presné znenie. Uložíme ho bez prepisovania do potvrdenia.
+				</p>
+			</section>
+
+			<SubmitButton retry={state.status === "confirmationPending"} />
 		</form>
 	);
 }

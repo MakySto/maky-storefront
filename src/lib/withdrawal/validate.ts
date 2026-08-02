@@ -84,15 +84,9 @@ export interface RawWithdrawalInput {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-/**
- * Deliberately permissive.
- *
- * A regex cannot decide whether an address exists, and every strict pattern in the
- * wild rejects addresses that work. This checks the shape a typo would break —
- * exactly one `@`, something either side, a dot in the domain, no whitespace — and
- * leaves the rest to the confirmation e-mail.
- */
-const EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+/** Exact `maky-form-email-v1` pattern enforced by the Payload forms boundary. */
+const EMAIL_RE =
+	/^(?!.*\.\.)[\w!#$%&'*+/=?^`{|}~-](?:[\w!#$%&'*+/=?^`{|}~.-]*[\w!#$%&'*+/=?^`{|}~-])?@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/i;
 
 /**
  * Trim, collapse whitespace, drop control characters.
@@ -106,9 +100,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
  * Written as escapes, never as literal bytes — a raw control character in a source file
  * makes git treat it as binary and the diff becomes unreviewable.
  */
-const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
+const CONTROL_CHARS = /[\u0000-\u001f\u007f-\u009f]/g;
 // Same, minus \n and \t, which are meaningful in a multi-line field.
-const CONTROL_CHARS_KEEP_BREAKS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g;
+const CONTROL_CHARS_KEEP_BREAKS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/g;
 
 function clean(value: unknown): string {
 	if (typeof value !== "string") return "";
@@ -222,7 +216,7 @@ function parseItems(raw: unknown, errors: FieldError[]): WithdrawalItem[] {
 export function validateWithdrawal(raw: RawWithdrawalInput): ValidationResult {
 	const errors: FieldError[] = [];
 
-	// Market and locale are fixed for V1. A mismatch means the request did not come
+	// Market and locale are fixed for V2. A mismatch means the request did not come
 	// from the route that is supposed to serve this form.
 	if (raw.market !== WITHDRAWAL_MARKET || raw.locale !== WITHDRAWAL_LOCALE) {
 		errors.push({ field: "market", code: "unsupportedMarket" });

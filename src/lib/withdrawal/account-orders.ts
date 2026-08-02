@@ -67,6 +67,8 @@ export interface VerifiedOrderSelection {
 	readonly orderNumber: string;
 	/** Only the lines that really belong to that order, with clamped quantities. */
 	readonly lines: readonly OwnedOrderLine[];
+	/** All server-owned lines, used only for the customer-safe V2 whole-order summary. */
+	readonly customerOrderItems: readonly { name: string; quantity: number }[];
 }
 
 /**
@@ -107,5 +109,13 @@ export async function verifyOrderSelection(input: {
 	// `contract.orderNumber` in the stored notice and is printed on the receipt and in
 	// both e-mails, so it has to be the identifier the customer was actually shown.
 	// The machine handle travels separately as `saleorOrderId`.
-	return { saleorOrderId: order.id, orderNumber: formatOrderNumber(order.number), lines };
+	return {
+		saleorOrderId: order.id,
+		orderNumber: formatOrderNumber(order.number),
+		lines,
+		customerOrderItems: order.lines.map((line) => ({
+			name: line.productName,
+			quantity: line.quantity,
+		})),
+	};
 }

@@ -8,7 +8,6 @@ import { ContractSchemaValidator } from "./contract-schema-validator";
 import {
 	PRIVACY_NOTICE_VERSION,
 	LEGAL_NOTICE_VERSION,
-	type PayloadNoticeSnapshot,
 	type WithdrawalSubmission,
 } from "../withdrawal/contract";
 import { submitWithdrawalToPayload } from "./payload-forms-client";
@@ -31,6 +30,10 @@ const VALID_UUID = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
 
 const SUBMISSION: WithdrawalSubmission = {
 	submissionId: VALID_UUID,
+	experienceVersion: "returns-v2",
+	customerStatement: "Odstupujem od zmluvy k objednávke ORD-1042 v celom rozsahu.",
+	customerOrderItems: [{ name: "Strešný box Northline", quantity: 1 }],
+	returnMethod: "merchantPickup",
 	source: "guest",
 	market: "SK",
 	locale: "sk",
@@ -43,31 +46,25 @@ const SUBMISSION: WithdrawalSubmission = {
 	privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
 };
 
-const SNAPSHOT: PayloadNoticeSnapshot = {
-	schemaVersion: 1,
-	source: "guest",
-	market: "SK",
-	locale: "sk",
-	customer: { name: "Jana Nováková", email: "jana@example.sk", phone: null },
-	contract: { orderNumber: "ORD-1042" },
-	scope: "wholeOrder",
-	items: [],
-	note: null,
-	legalNoticeVersion: LEGAL_NOTICE_VERSION,
-	privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
-};
-
 const ACCEPTED_BODY = {
 	ok: true,
 	duplicate: false,
 	submission: {
-		id: "018f1000-0000-7000-8000-000000000001",
-		submissionId: VALID_UUID,
 		submissionNumber: "ODS-2026-000042",
-		submittedAt: "2026-07-30T09:12:33.123Z",
-		noticeSnapshot: SNAPSHOT,
+		printConfirmationHTML: "<!doctype html><html><body>Potvrdenie</body></html>",
+		parcelSlipHTML: "<!doctype html><html><body>ODS-2026-000042</body></html>",
 	},
 };
+
+/** The published provider pack is still V1; validate the unchanged base separately. */
+function v1Projection(body: Record<string, unknown>): Record<string, unknown> {
+	const { experienceVersion, customerStatement, customerOrderItems, returnMethod, ...base } = body;
+	void experienceVersion;
+	void customerStatement;
+	void customerOrderItems;
+	void returnMethod;
+	return base;
+}
 
 function jsonResponse(status: number, body: unknown): Response {
 	return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -150,18 +147,22 @@ describe("submitWithdrawalToPayload — the wire contract", () => {
 		expect(body).not.toHaveProperty("noticeSnapshot");
 	});
 
-	it("sends a body the vendored contract accepts, byte for byte", async () => {
-		// Asserted against the schema Payload published, not against a list written here.
-		// A hand-kept allowlist is a second copy of the rules, and a second copy is what
-		// let three mismatches through a green suite.
+	it("keeps the V1 base compatible while adding the four exact V2 fields", async () => {
 		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
 		await submitWithdrawalToPayload(SUBMISSION);
 
 		const sentBytes = lastRequest().init.body as string;
+		const sent = JSON.parse(sentBytes) as Record<string, unknown>;
 		const violations = contractValidator
-			.validate(JSON.parse(sentBytes))
+			.validate(v1Projection(sent))
 			.map((v) => `${v.path} [${v.keyword}] ${v.message}`);
 		expect(violations).toEqual([]);
+		expect(sent).toMatchObject({
+			experienceVersion: "returns-v2",
+			customerStatement: "Odstupujem od zmluvy k objednávke ORD-1042 v celom rozsahu.",
+			customerOrderItems: [{ name: "Strešný box Northline", quantity: 1 }],
+			returnMethod: "merchantPickup",
+		});
 	});
 
 	it("sends exactly the keys on Payload's allowlist and nothing else", async () => {
@@ -174,12 +175,16 @@ describe("submitWithdrawalToPayload — the wire contract", () => {
 		expect(Object.keys(body).sort()).toEqual([
 			"contract",
 			"customer",
+			"customerOrderItems",
+			"customerStatement",
+			"experienceVersion",
 			"items",
 			"legalNoticeVersion",
 			"locale",
 			"market",
 			"note",
 			"privacyNoticeVersion",
+			"returnMethod",
 			"scope",
 			"source",
 			"submissionId",
@@ -220,27 +225,24 @@ describe("submitWithdrawalToPayload — the wire contract", () => {
 });
 
 describe("submitWithdrawalToPayload — the response is authoritative", () => {
-	it("returns Payload's id, number, timestamp and stored snapshot", async () => {
+	it("returns only Payload's customer-safe V2 number and immutable artifacts", async () => {
 		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
 		const result = await submitWithdrawalToPayload(SUBMISSION);
 		expect(result.status).toBe("ok");
 		if (result.status !== "ok") return;
-		expect(result.value.id).toBe("018f1000-0000-7000-8000-000000000001");
 		expect(result.value.submissionNumber).toBe("ODS-2026-000042");
-		expect(result.value.submittedAt).toBe("2026-07-30T09:12:33.123Z");
-		expect(result.value.noticeSnapshot).toEqual(SNAPSHOT);
 		expect(result.value.duplicate).toBe(false);
-		expect(result.value.emailDelivery).toBeNull();
+		expect(result.value.printConfirmationHTML).toContain("Potvrdenie");
+		expect(result.value.parcelSlipHTML).toContain("ODS-2026-000042");
 	});
 
-	it("treats a 200 as the idempotent replay, preserving the ORIGINAL time and snapshot", async () => {
+	it("treats a 200 as the idempotent replay with the original artifacts", async () => {
 		const original = {
 			...ACCEPTED_BODY,
 			duplicate: true,
 			submission: {
 				...ACCEPTED_BODY.submission,
-				submittedAt: "2026-07-30T08:00:00.000Z",
-				noticeSnapshot: { ...SNAPSHOT, note: "pôvodná poznámka" },
+				printConfirmationHTML: "<html><body>pôvodné potvrdenie</body></html>",
 			},
 		};
 		fetchMock.mockResolvedValue(jsonResponse(200, original));
@@ -249,117 +251,73 @@ describe("submitWithdrawalToPayload — the response is authoritative", () => {
 		expect(result.status).toBe("ok");
 		if (result.status !== "ok") return;
 		expect(result.value.duplicate).toBe(true);
-		expect(result.value.submittedAt).toBe("2026-07-30T08:00:00.000Z");
-		expect(result.value.noticeSnapshot.note).toBe("pôvodná poznámka");
+		expect(result.value.printConfirmationHTML).toContain("pôvodné potvrdenie");
 	});
 
-	it("reads delivery status when present, and leaves it null when absent", async () => {
+	it("accepts a null parcel slip without inventing one", async () => {
 		fetchMock.mockResolvedValue(
 			jsonResponse(201, {
 				...ACCEPTED_BODY,
-				submission: {
-					...ACCEPTED_BODY.submission,
-					emailDelivery: {
-						customerStatus: "sent",
-						customerSentAt: "2026-07-30T12:00:01.000Z",
-						customerAttemptCount: 1,
-						customerLastAttemptAt: "2026-07-30T12:00:00.500Z",
-						internalStatus: "failed",
-						internalSentAt: null,
-						internalAttemptCount: 2,
-						internalLastAttemptAt: "2026-07-30T12:00:02.000Z",
-					},
-				},
+				submission: { ...ACCEPTED_BODY.submission, parcelSlipHTML: null },
 			}),
 		);
-		const sent = await submitWithdrawalToPayload(SUBMISSION);
-		expect(sent.status === "ok" && sent.value.emailDelivery).toEqual({
-			customerStatus: "sent",
-			customerSentAt: "2026-07-30T12:00:01.000Z",
-			customerAttemptCount: 1,
-			customerLastAttemptAt: "2026-07-30T12:00:00.500Z",
-			internalStatus: "failed",
-			internalSentAt: null,
-			internalAttemptCount: 2,
-			internalLastAttemptAt: "2026-07-30T12:00:02.000Z",
-		});
-
-		fetchMock.mockResolvedValue(jsonResponse(201, ACCEPTED_BODY));
-		const absent = await submitWithdrawalToPayload(SUBMISSION);
-		// Absent means "not known". It must never be read as "failed".
-		expect(absent.status === "ok" && absent.value.emailDelivery).toBeNull();
-	});
-
-	it("keeps an `unknown` delivery status instead of discarding the whole object", async () => {
-		// Contract 1.1.0 added `unknown` — an SMTP attempt with an ambiguous outcome. The
-		// parser used to return null for the entire delivery object when it met a status it
-		// did not recognise, which downgraded a CONFIRMED-sent customer e-mail to
-		// "unreported" and hid the one case the contract says needs reconciliation.
-		fetchMock.mockResolvedValue(
-			jsonResponse(201, {
-				...ACCEPTED_BODY,
-				submission: {
-					...ACCEPTED_BODY.submission,
-					emailDelivery: {
-						customerStatus: "sent",
-						customerSentAt: "2026-07-30T12:00:01.000Z",
-						customerAttemptCount: 1,
-						customerLastAttemptAt: "2026-07-30T12:00:00.500Z",
-						internalStatus: "unknown",
-						internalSentAt: null,
-						internalAttemptCount: 1,
-						internalLastAttemptAt: "2026-07-30T12:00:02.000Z",
-					},
-				},
-			}),
-		);
-
 		const result = await submitWithdrawalToPayload(SUBMISSION);
-		expect(result.status).toBe("ok");
-		if (result.status !== "ok") return;
-		expect(result.value.emailDelivery?.customerStatus).toBe("sent");
-		expect(result.value.emailDelivery?.internalStatus).toBe("unknown");
+		expect(result.status === "ok" && result.value.parcelSlipHTML).toBeNull();
 	});
 
-	it("still refuses a delivery status that is not in the contract at all", async () => {
+	it.each([
+		[201, { ...ACCEPTED_BODY, duplicate: undefined }],
+		[201, { ...ACCEPTED_BODY, duplicate: "false" }],
+		[201, { ...ACCEPTED_BODY, duplicate: true }],
+		[200, { ...ACCEPTED_BODY, duplicate: false }],
+	])("rejects an acknowledgement whose duplicate marker disagrees with HTTP %s", async (status, body) => {
+		fetchMock.mockResolvedValue(jsonResponse(status, body));
+		expect((await submitWithdrawalToPayload(SUBMISSION)).status).toBe("unavailable");
+	});
+
+	it("rejects an unexpected successful status and the old V1 acknowledgement shape", async () => {
+		fetchMock.mockResolvedValue(jsonResponse(202, ACCEPTED_BODY));
+		expect((await submitWithdrawalToPayload(SUBMISSION)).status).toBe("unavailable");
+
+		fetchMock.mockResolvedValue(
+			jsonResponse(201, {
+				ok: true,
+				duplicate: false,
+				submission: { submissionNumber: "ODS-2026-000042", noticeSnapshot: {} },
+			}),
+		);
+		expect((await submitWithdrawalToPayload(SUBMISSION)).status).toBe("unavailable");
+	});
+
+	it("drops any extra internal fields from the customer result", async () => {
 		fetchMock.mockResolvedValue(
 			jsonResponse(201, {
 				...ACCEPTED_BODY,
 				submission: {
 					...ACCEPTED_BODY.submission,
-					emailDelivery: { customerStatus: "teleported", internalStatus: "sent" },
+					id: "internal-id",
+					emailDelivery: { customerStatus: "sent" },
 				},
 			}),
 		);
 		const result = await submitWithdrawalToPayload(SUBMISSION);
-		expect(result.status === "ok" && result.value.emailDelivery).toBeNull();
+		expect(result.status).toBe("ok");
+		if (result.status !== "ok") return;
+		expect(result.value).not.toHaveProperty("id");
+		expect(result.value).not.toHaveProperty("emailDelivery");
 	});
 
-	it("degrades missing attempt metadata to null rather than to zero", async () => {
-		// Zero attempts and "nobody told us" are different facts, and an operator reading
-		// the admin needs them to stay different.
-		fetchMock.mockResolvedValue(
-			jsonResponse(201, {
-				...ACCEPTED_BODY,
-				submission: {
-					...ACCEPTED_BODY.submission,
-					emailDelivery: { customerStatus: "pending", internalStatus: "pending" },
-				},
-			}),
-		);
-		const result = await submitWithdrawalToPayload(SUBMISSION);
-		expect(result.status === "ok" && result.value.emailDelivery?.customerAttemptCount).toBeNull();
-		expect(result.status === "ok" && result.value.emailDelivery?.customerSentAt).toBeNull();
-	});
-
-	it("refuses a success whose snapshot is missing or malformed", async () => {
-		// A receipt with nothing behind it would be worse than an error.
+	it("refuses missing, malformed, empty or oversized customer artifacts", async () => {
 		for (const submission of [
-			{ ...ACCEPTED_BODY.submission, noticeSnapshot: undefined },
-			{ ...ACCEPTED_BODY.submission, noticeSnapshot: {} },
-			{ ...ACCEPTED_BODY.submission, id: undefined },
+			{ ...ACCEPTED_BODY.submission, printConfirmationHTML: undefined },
+			{ ...ACCEPTED_BODY.submission, parcelSlipHTML: undefined },
+			{ ...ACCEPTED_BODY.submission, submissionNumber: "not-an-ods" },
+			{ ...ACCEPTED_BODY.submission, printConfirmationHTML: "" },
+			{ ...ACCEPTED_BODY.submission, printConfirmationHTML: "x".repeat(1_000_001) },
+			{ ...ACCEPTED_BODY.submission, parcelSlipHTML: "" },
+			{ ...ACCEPTED_BODY.submission, parcelSlipHTML: "x".repeat(200_001) },
 		]) {
-			fetchMock.mockResolvedValue(jsonResponse(200, { ...ACCEPTED_BODY, submission }));
+			fetchMock.mockResolvedValue(jsonResponse(201, { ...ACCEPTED_BODY, submission }));
 			expect((await submitWithdrawalToPayload(SUBMISSION)).status).toBe("unavailable");
 		}
 	});
@@ -386,8 +344,11 @@ describe("submitWithdrawalToPayload — outcome classification", () => {
 		[401, "STALE_TIMESTAMP"],
 		[401, "INVALID_SIGNATURE"],
 		[409, "SUBMISSION_ID_CONFLICT"],
+		[409, "WITHDRAWAL_EXPERIENCE_REQUIRED"],
+		[409, "WITHDRAWAL_EXPERIENCE_UNAVAILABLE"],
 		[413, "BODY_TOO_LARGE"],
 		[503, "FORMS_AUTH_UNAVAILABLE"],
+		[503, "WITHDRAWAL_CONFIRMATION_PENDING"],
 	])("maps HTTP %s %s to a rejected outcome carrying the code", async (status, code) => {
 		fetchMock.mockResolvedValue(jsonResponse(status, { ok: false, error: { code, message: "…" } }));
 		expect(await submitWithdrawalToPayload(SUBMISSION)).toEqual({

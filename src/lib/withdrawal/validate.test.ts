@@ -103,10 +103,13 @@ describe("validateWithdrawal — malformed input", () => {
 		expect(codes(input({ email: "jana(at)example.sk" }))).toEqual(["customerEmail:invalid"]);
 		expect(codes(input({ email: "jana@example" }))).toEqual(["customerEmail:invalid"]);
 		expect(codes(input({ email: "jana @example.sk" }))).toEqual(["customerEmail:invalid"]);
+		expect(codes(input({ email: "a..b@example.sk" }))).toEqual(["customerEmail:invalid"]);
+		expect(codes(input({ email: "a@-example.sk" }))).toEqual(["customerEmail:invalid"]);
+		expect(codes(input({ email: "ěščř@example.sk" }))).toEqual(["customerEmail:invalid"]);
 	});
 
-	it("accepts the shapes a strict pattern would wrongly reject", () => {
-		for (const email of ["j.n+odstupenie@sub.example.co.uk", "ěščř@example.sk", "a@b.cd"]) {
+	it("accepts the valid forms allowed by the provider pattern", () => {
+		for (const email of ["j.n+odstupenie@sub.example.co.uk", "a@b.cd"]) {
 			expect(validateWithdrawal(input({ email })).ok, email).toBe(true);
 		}
 	});
@@ -167,8 +170,8 @@ describe("validateWithdrawal — normalisation", () => {
 		expect(result.ok && result.value.name).toBe("Jana Nováková");
 	});
 
-	it("strips control characters rather than rejecting the notice", () => {
-		const result = validateWithdrawal(input({ name: "Jana\u0000 Nováková\u0007" }));
+	it("strips C0 and C1 control characters rather than sending a backend-rejected notice", () => {
+		const result = validateWithdrawal(input({ name: "Jana\u0000 Nováková\u0007\u0085" }));
 		expect(result.ok && result.value.name).toBe("Jana Nováková");
 	});
 

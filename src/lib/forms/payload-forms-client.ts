@@ -3,11 +3,8 @@ import { randomUUID } from "crypto";
 import {
 	formsTimestampSeconds,
 	WITHDRAWAL_LIMITS,
-	type EmailDeliveryState,
-	type OrderMatchStatus,
-	type PayloadNoticeSnapshot,
-	type WithdrawalAccepted,
 	type WithdrawalSubmission,
+	type WithdrawalV2Accepted,
 } from "../withdrawal/contract";
 import { missingFormsSettings, readFormsConnection } from "./env";
 import { signFormsRequest } from "./signature";
@@ -40,9 +37,9 @@ import { signFormsRequest } from "./signature";
  *   200 → already existed    `{ ok: true, duplicate: true,  submission: {…} }`
  *   4xx/5xx → `{ ok: false, error: { code, message } }`
  *
- * `submission` carries `id`, `submissionId`, `submissionNumber`, `submittedAt` and the
- * canonical `noticeSnapshot`. All of them are server-owned; the storefront never
- * invents them and never reconstructs the snapshot.
+ * For `returns-v2`, `submission` carries only the customer-safe ODS number and the
+ * immutable A4/slip HTML artifacts rendered by Payload. Internal ids, delivery state
+ * and audit snapshots never cross this customer boundary.
  */
 
 /** Payload's documented error codes. Anything else is treated as unknown. */
@@ -61,6 +58,9 @@ export const FORMS_ERROR_CODES = [
 	"SUBMISSION_ID_CONFLICT",
 	"SUBMISSION_TARGET_MISMATCH",
 	"DELIVERY_STATUS_REGRESSION",
+	"WITHDRAWAL_EXPERIENCE_REQUIRED",
+	"WITHDRAWAL_EXPERIENCE_UNAVAILABLE",
+	"WITHDRAWAL_CONFIRMATION_PENDING",
 	"BODY_TOO_LARGE",
 	"UNSUPPORTED_MEDIA_TYPE",
 	"FORMS_INTERNAL_ERROR",
@@ -93,132 +93,32 @@ function logForms(level: "error" | "warn", event: string, detail: Record<string,
 	else console.warn(line, body);
 }
 
-function isOrderMatchStatus(value: unknown): value is OrderMatchStatus {
-	return (
-		value === "pending" ||
-		value === "matched" ||
-		value === "notFound" ||
-		value === "emailMismatch" ||
-		value === "manualReview"
-	);
+const SUBMISSION_NUMBER_PATTERN = /^ODS-\d{4}-\d{6}$/;
+
+function isRequiredArtifact(value: unknown, maxLength: number): value is string {
+	return typeof value === "string" && value.length > 0 && value.length <= maxLength;
 }
 
-function isDeliveryStatus(value: unknown): value is EmailDeliveryState["customerStatus"] {
-	// `unknown` arrived with contract 1.1.0 and is a real state, not a parse failure: an
-	// SMTP attempt whose outcome was ambiguous. Omitting it here used to make the whole
-	// delivery object null, which reported a CONFIRMED-sent customer e-mail as unreported
-	// and hid the very case the contract flags as needing operator reconciliation.
-	return value === "pending" || value === "sent" || value === "failed" || value === "unknown";
-}
-
-function optionalIsoString(value: unknown): string | null {
-	return typeof value === "string" && value.length > 0 ? value : null;
-}
-
-function optionalCount(value: unknown): number | null {
-	return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
-}
-
-function parseDelivery(value: unknown): EmailDeliveryState | null {
-	if (typeof value !== "object" || value === null) return null;
-	const record = value as Record<string, unknown>;
-	// Absent must mean "not known", never "failed" — reporting an unsent confirmation as
-	// failed would be its own lie. The two statuses are the load-bearing part; the six
-	// attempt fields degrade to null individually rather than taking the object with them.
-	if (!isDeliveryStatus(record.customerStatus) || !isDeliveryStatus(record.internalStatus)) return null;
-	return {
-		customerStatus: record.customerStatus,
-		customerSentAt: optionalIsoString(record.customerSentAt),
-		customerAttemptCount: optionalCount(record.customerAttemptCount),
-		customerLastAttemptAt: optionalIsoString(record.customerLastAttemptAt),
-		internalStatus: record.internalStatus,
-		internalSentAt: optionalIsoString(record.internalSentAt),
-		internalAttemptCount: optionalCount(record.internalAttemptCount),
-		internalLastAttemptAt: optionalIsoString(record.internalLastAttemptAt),
-	};
-}
-
-/** The stored snapshot is untrusted input like any other response field. */
-function parseSnapshot(value: unknown): PayloadNoticeSnapshot | null {
-	if (typeof value !== "object" || value === null) return null;
-	const snapshot = value as Record<string, unknown>;
-
-	const customer = snapshot.customer as Record<string, unknown> | undefined;
-	const contract = snapshot.contract as Record<string, unknown> | undefined;
-
-	if (typeof customer?.name !== "string" || typeof customer?.email !== "string") return null;
-	if (typeof contract?.orderNumber !== "string") return null;
-	if (snapshot.scope !== "wholeOrder" && snapshot.scope !== "selectedItems") return null;
-
-	const items = Array.isArray(snapshot.items)
-		? snapshot.items.flatMap((entry) => {
-				if (typeof entry !== "object" || entry === null) return [];
-				const item = entry as Record<string, unknown>;
-				if (typeof item.productName !== "string" || typeof item.quantity !== "number") return [];
-				return [
-					{
-						orderLineId: typeof item.orderLineId === "string" ? item.orderLineId : null,
-						productName: item.productName,
-						sku: typeof item.sku === "string" ? item.sku : null,
-						quantity: item.quantity,
-					},
-				];
-			})
-		: [];
-
-	return {
-		schemaVersion: typeof snapshot.schemaVersion === "number" ? snapshot.schemaVersion : 1,
-		source: snapshot.source === "account" ? "account" : "guest",
-		market: typeof snapshot.market === "string" ? snapshot.market : "",
-		locale: typeof snapshot.locale === "string" ? snapshot.locale : "",
-		customer: {
-			name: customer.name,
-			email: customer.email,
-			// Only what the server stored. The receipt renders the phone from here and
-			// nowhere else, so a value the customer typed but Payload did not keep never
-			// appears on a document that claims to be the record.
-			phone: typeof customer.phone === "string" && customer.phone.length > 0 ? customer.phone : null,
-		},
-		contract: { orderNumber: contract.orderNumber },
-		scope: snapshot.scope,
-		items,
-		note: typeof snapshot.note === "string" ? snapshot.note : null,
-		legalNoticeVersion: typeof snapshot.legalNoticeVersion === "string" ? snapshot.legalNoticeVersion : "",
-		privacyNoticeVersion:
-			typeof snapshot.privacyNoticeVersion === "string" ? snapshot.privacyNoticeVersion : "",
-	};
-}
-
-function parseAccepted(body: unknown, duplicateFallback: boolean): WithdrawalAccepted | null {
+function parseAccepted(body: unknown, expectedDuplicate: boolean): WithdrawalV2Accepted | null {
 	if (typeof body !== "object" || body === null) return null;
 	const envelope = body as Record<string, unknown>;
 	if (envelope.ok !== true) return null;
+	if (typeof envelope.duplicate !== "boolean" || envelope.duplicate !== expectedDuplicate) return null;
 
 	const raw = envelope.submission;
 	if (typeof raw !== "object" || raw === null) return null;
 	const submission = raw as Record<string, unknown>;
 
-	const { id, submissionId, submissionNumber, submittedAt } = submission;
-
-	if (typeof id !== "string" || id.length === 0) return null;
-	if (typeof submissionId !== "string" || submissionId.length === 0) return null;
-	if (typeof submissionNumber !== "string" || submissionNumber.length === 0) return null;
-	if (typeof submittedAt !== "string" || Number.isNaN(Date.parse(submittedAt))) return null;
-
-	const noticeSnapshot = parseSnapshot(submission.noticeSnapshot);
-	if (!noticeSnapshot) return null;
+	const { submissionNumber, printConfirmationHTML, parcelSlipHTML } = submission;
+	if (typeof submissionNumber !== "string" || !SUBMISSION_NUMBER_PATTERN.test(submissionNumber)) return null;
+	if (!isRequiredArtifact(printConfirmationHTML, 1_000_000)) return null;
+	if (parcelSlipHTML !== null && !isRequiredArtifact(parcelSlipHTML, 200_000)) return null;
 
 	return {
-		id,
-		submissionId,
 		submissionNumber,
-		submittedAt,
-		noticeSnapshot,
-		orderMatchStatus: isOrderMatchStatus(submission.orderMatchStatus)
-			? submission.orderMatchStatus
-			: "pending",
-		duplicate: typeof envelope.duplicate === "boolean" ? envelope.duplicate : duplicateFallback,
-		emailDelivery: parseDelivery(submission.emailDelivery),
+		duplicate: envelope.duplicate,
+		printConfirmationHTML,
+		parcelSlipHTML,
 	};
 }
 
@@ -233,7 +133,7 @@ function parseAccepted(body: unknown, duplicateFallback: boolean): WithdrawalAcc
  */
 export async function submitWithdrawalToPayload(
 	submission: WithdrawalSubmission,
-): Promise<FormsOutcome<WithdrawalAccepted>> {
+): Promise<FormsOutcome<WithdrawalV2Accepted>> {
 	const connection = readFormsConnection();
 	if (!connection) {
 		const missing = missingFormsSettings();
@@ -312,8 +212,16 @@ export async function submitWithdrawalToPayload(
 	}
 
 	if (response.ok) {
-		// 200 means the record already existed; 201 means it was created now. Payload
-		// also says so in `duplicate`, but the status code is the fallback.
+		if (response.status !== 200 && response.status !== 201) {
+			logForms("error", "contract-violation", {
+				submissionId: submission.submissionId,
+				httpStatus: response.status,
+			});
+			return { status: "unavailable", reason: "unexpected successful HTTP status" };
+		}
+		// 200 means the record already existed; 201 means it was created now. Requiring
+		// `duplicate` to agree prevents a malformed acknowledgement from changing the
+		// customer's understanding of whether this was a replay.
 		const accepted = parseAccepted(body, response.status === 200);
 		if (!accepted) {
 			logForms("error", "contract-violation", {
