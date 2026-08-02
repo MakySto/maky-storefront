@@ -18,33 +18,43 @@
  * argue with.
  */
 
-export const WITHDRAWAL_CONTRACT_VERSION = 1;
+export const WITHDRAWAL_CONTRACT_VERSION = 2;
 
-/** V1 is SK-only. Other markets fall through to the route's not-launched behaviour. */
+/** V2 is SK-only. Other markets fall through to the route's not-launched behaviour. */
 export const WITHDRAWAL_MARKET = "SK";
 export const WITHDRAWAL_LOCALE = "sk";
 
 export type WithdrawalSource = "guest" | "account";
 export type WithdrawalScope = "wholeOrder" | "selectedItems";
+export type WithdrawalReturnMethod = "merchantPickup";
+
+export interface WithdrawalCustomerOrderItem {
+	readonly name: string;
+	readonly quantity: number;
+}
 
 /**
- * How the CMS matched the submission to a real order. Advisory only.
- *
- * None of these values may block a submission. A customer who mistypes an order
- * number, ordered under a different e-mail, or is withdrawing before delivery still
- * gave a legally effective notice; the mismatch is an internal review state, not a
- * rejection. The storefront never computes this — the server owns it.
+ * The exact declaration shown above the final button and signed in the V2 raw body.
+ * Keep this pure and shared by the client preview and server submission so the CMS
+ * persists exactly what the customer saw.
  */
-export type OrderMatchStatus = "pending" | "matched" | "notFound" | "emailMismatch" | "manualReview";
+export function withdrawalCustomerStatement(orderNumber: string, scope: WithdrawalScope): string {
+	const normalizedOrderNumber = orderNumber
+		.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+	const range = scope === "wholeOrder" ? "v celom rozsahu" : "v rozsahu uvedených položiek";
+	return `Odstupujem od zmluvy k objednávke ${normalizedOrderNumber} ${range}.`;
+}
 
 export interface WithdrawalItem {
 	/** Saleor order line id, or `null` when the customer described the item by hand. */
 	readonly orderLineId: string | null;
 	readonly productName: string;
 	/**
-	 * Approved as always-`null` for V1. The order query's variant selection does not
-	 * request `sku` and changing a Saleor GraphQL document needs sign-off (CLAUDE.md
-	 * §10). `orderLineId` plus `productName` identify the item.
+	 * Optional for manually entered items. Account lines keep it `null` because the
+	 * current Saleor order query does not request `sku`; `orderLineId` plus
+	 * `productName` identify those items.
 	 */
 	readonly sku: string | null;
 	readonly quantity: number;
@@ -53,12 +63,11 @@ export interface WithdrawalItem {
 /**
  * The request body, exactly.
  *
- * Every key here is on Payload's allowlist and nothing else is — the allowlist itself
- * lives in `src/lib/forms/__fixtures__/forms-backend-v1/withdrawal.schema.json`, vendored
- * from the Payload repository, and the tests validate against that file rather than
- * against this interface. Note what is still absent: `noticeSnapshot`, `submittedAt`,
- * `submissionNumber` and `emailDelivery`, all of which the server builds and all of which
- * the endpoint rejects in a create request.
+ * Every key here is on Payload's allowlist and nothing else is. The vendored provider
+ * pack remains the immutable V1 base schema; the V2 conformance test validates that base
+ * projection and then pins the four V2 additions exactly. Note what is still absent:
+ * `noticeSnapshot`, `submittedAt`, `submissionNumber` and `emailDelivery`, all of which
+ * the server builds and all of which the endpoint rejects in a create request.
  *
  * `customer.phone` was absent too, until contract revision `1.1.0` made it optional and
  * nullable. It is sent as an explicit `null` rather than omitted, so the body has one
@@ -67,6 +76,11 @@ export interface WithdrawalItem {
  */
 export interface WithdrawalSubmission {
 	readonly submissionId: string;
+	readonly experienceVersion: "returns-v2";
+	readonly customerStatement: string;
+	/** Customer-safe order summary. Populated only for a verified whole order. */
+	readonly customerOrderItems: readonly WithdrawalCustomerOrderItem[];
+	readonly returnMethod: WithdrawalReturnMethod;
 	readonly source: WithdrawalSource;
 	readonly market: typeof WITHDRAWAL_MARKET;
 	readonly locale: typeof WITHDRAWAL_LOCALE;
@@ -90,81 +104,15 @@ export interface WithdrawalSubmission {
 	readonly privacyNoticeVersion: string;
 }
 
-/**
- * The canonical snapshot, built and stored by Payload from the normalised submission.
- *
- * Structured rather than prose. The storefront renders a human-readable notice *from*
- * this — deterministically, as a pure function of what was stored — instead of keeping
- * its own copy of the text. That is what makes the receipt, the record and the
- * confirmation e-mail incapable of drifting apart.
- */
-export interface PayloadNoticeSnapshot {
-	readonly schemaVersion: number;
-	readonly source: WithdrawalSource;
-	readonly market: string;
-	readonly locale: string;
-	readonly customer: {
-		readonly name: string;
-		readonly email: string;
-		/** Present from contract 1.1.0. `null` when the customer gave none. */
-		readonly phone: string | null;
-	};
-	readonly contract: { readonly orderNumber: string };
-	readonly scope: WithdrawalScope;
-	readonly items: readonly WithdrawalItem[];
-	readonly note: string | null;
-	readonly legalNoticeVersion: string;
-	readonly privacyNoticeVersion: string;
-}
-
-/**
- * The four states Payload reports, per `manifest.deliveryContract.statuses`.
- *
- * `unknown` is the one worth understanding. It does not mean "failed" — it means an SMTP
- * attempt returned an ambiguous outcome (a timeout, typically) and nobody yet knows
- * whether the message went out. The manifest flags it `unknownRequiresReconciliation`:
- * an operator has to check the provider's log before anything is retried, because
- * resending a message that was in fact delivered is its own defect. Rendering it as
- * "failed" would tell a customer their confirmation did not arrive when the honest answer
- * is that we do not know yet.
- */
-export type EmailDeliveryStatus = "pending" | "sent" | "failed" | "unknown";
-
-/**
- * Delivery state, when the endpoint reports it.
- *
- * Optional at the call site on purpose: absent must mean "not known", never "failed" —
- * telling a customer their confirmation failed when it is merely unreported would be its
- * own small lie.
- *
- * The eight fields are exactly `manifest.deliveryContract.publicAcknowledgementFields`.
- * The attempt metadata is nullable rather than absent so a consumer has to decide what to
- * do about "not reported", instead of reading `undefined` as zero.
- */
-export interface EmailDeliveryState {
-	readonly customerStatus: EmailDeliveryStatus;
-	readonly customerSentAt: string | null;
-	readonly customerAttemptCount: number | null;
-	readonly customerLastAttemptAt: string | null;
-	readonly internalStatus: EmailDeliveryStatus;
-	readonly internalSentAt: string | null;
-	readonly internalAttemptCount: number | null;
-	readonly internalLastAttemptAt: string | null;
-}
-
-/** What the server returns once the record is durable. */
-export interface WithdrawalAccepted {
-	/** Payload record id. Distinct from `submissionId`, and the key the delivery seam uses. */
-	readonly id: string;
-	readonly submissionId: string;
+/** Customer-safe V2 acknowledgement returned once the immutable artifacts are ready. */
+export interface WithdrawalV2Accepted {
 	readonly submissionNumber: string;
-	/** ISO 8601, generated by the server — never by the browser, never by us. */
-	readonly submittedAt: string;
-	readonly noticeSnapshot: PayloadNoticeSnapshot;
-	readonly orderMatchStatus: OrderMatchStatus;
 	/** True when this submissionId already existed and the original was returned. */
 	readonly duplicate: boolean;
-	readonly emailDelivery: EmailDeliveryState | null;
+	/** Complete A4 receipt rendered and escaped by the versioned CMS renderer. */
+	readonly printConfirmationHTML: string;
+	/** Minimal print-ready parcel slip; null only when no slip artifact exists. */
+	readonly parcelSlipHTML: string | null;
 }
 
 /**
@@ -187,6 +135,7 @@ export const WITHDRAWAL_LIMITS = {
 	phoneCodePoints: 32,
 	orderNumber: 128,
 	note: 2_000,
+	customerStatement: 2_000,
 	productName: 300,
 	items: 100,
 	quantityPerItem: 999,
@@ -205,22 +154,10 @@ export function formsTimestampSeconds(nowMs: number = Date.now()): string {
  *
  * ## Deploy gate
  *
- * The flag exists so "the form works" cannot be mistaken for "the wording is signed off".
- * Those are different claims and only a human can make the second one.
- *
- * **Approved by Marek on 2026-07-30.** Recorded precisely, because the approval is not
- * what the flag originally anticipated: there is no separate reviewed legal-content
- * artifact, and there may never be one. What was approved is the Slovak wording as it
- * stands in this branch — the model form at `/sk/odstupenie-od-zmluvy/vzorovy-formular`,
- * the explanatory copy on the route, the field labels, and the notice
- * `renderNoticeFromSnapshot` produces. The owner read it and signed it off. That is the
- * decision the flag was built to carry.
- *
- * Two items were raised during review and are NOT resolved by this approval; they are
- * copy questions for a later pass, not blockers on the function:
- * the statutory model form still asks for a postal address and an IBAN that the online
- * function deliberately does not require, and the „30 dní pre registrovaných" claim is
- * inherited rather than verified.
+ * The flag records that the currently versioned Slovak declaration may be served. The
+ * 2026-08-02 authorization to activate storefront V2 is operational approval, not a
+ * claim of final Outlook/Gmail visual acceptance. The §15(1)(g) checkout/VOP evidence,
+ * RBAC and real-client visual evidence remain separate release gates.
  *
  * `isWithdrawalFormServable()` below is what actually enforces this on the request path.
  */
@@ -229,23 +166,17 @@ export const LEGAL_COPY_APPROVED = true;
 /**
  * Versions stamped onto every stored record, permanently.
  *
- * They lose their `-DRAFT` suffix here for the same reason the flag flipped, and they had
- * to move together: a record stamped `-DRAFT` while the copy is approved is a
- * contradiction inside the evidence, and these strings are the only thing that lets a
- * notice be replayed against the text that was actually shown when it was given.
- *
- * `legal` stays at v1 — the declaration's wording is unchanged since it was written.
- * `privacy` is at v2: v1 was the draft that added the optional phone field, and this is
- * the approved form of the same statement.
+ * These match the published SK/sk V2 CMS bundle. They identify the immutable copy shown
+ * with the submitted declaration and must not be changed independently of that bundle.
  */
-export const LEGAL_NOTICE_VERSION = "withdrawal-sk-2026-07-30-v1";
-export const PRIVACY_NOTICE_VERSION = "privacy-sk-2026-07-30-v2";
+export const LEGAL_NOTICE_VERSION = "withdrawal-sk-v2";
+export const PRIVACY_NOTICE_VERSION = "privacy-sk-v1";
 
 export function assertLegalCopyApprovedForProduction(): void {
 	if (!LEGAL_COPY_APPROVED) {
 		throw new Error(
-			"Withdrawal legal copy is still a draft. Supply the approved Slovak legal-content " +
-				"artifact, set LEGAL_COPY_APPROVED and bump the notice versions before deploying.",
+			"Withdrawal legal copy is not enabled for production. Approve the versioned Slovak " +
+				"declaration, set LEGAL_COPY_APPROVED and publish the matching CMS bundle first.",
 		);
 	}
 }
@@ -253,26 +184,21 @@ export function assertLegalCopyApprovedForProduction(): void {
 /**
  * The other precondition, and the one the copy approval does not cover.
  *
- * `POST /api/forms/withdrawal` does not exist in production yet: the Payload Forms
- * release is a draft PR and its migration `20260730_111111_forms_backend_v1` has never
- * been applied. Until it is, a submitted notice fails at the transport — honestly, the UI
- * says it was not recorded and points at the e-mail and postal routes, but a customer
- * exercising a statutory right should not meet that at all.
+ * The production Payload endpoint and published SK/sk V2 bundle are live. This flag is
+ * the storefront-side activation interlock: it remains off until backend readiness has
+ * succeeded, and is switched on only for the storefront release that speaks V2.
  *
  * Approving the copy and standing the backend up are different claims, so they get
- * different flags. Before, the copy flag was the only thing between a customer and a
- * broken legal form; the moment it flipped, the sole remaining protection was somebody
- * remembering not to deploy this branch. Every other guarantee in this feature that was
- * documented rather than enforced turned out to be false when checked, so this one is
- * enforced.
+ * different flags. Keeping both conditions executable prevents a production build from
+ * exposing the form before its matching backend experience is ready.
  *
  * It is an ENVIRONMENT flag, not a source constant, and read at call time. A constant
  * keyed off `NODE_ENV` would have made the form unreachable in every production-mode
  * build — staging and the CLAUDE.md §13 spare-port verification build included — so the
  * signed live matrix this flag's own release gate demands could not have been run without
  * first shipping a code change to disable the gate. Set `WITHDRAWAL_BACKEND_LIVE=true` in
- * the environment once the Forms release is live and the migration is applied; it is a
- * sequencing interlock, not an opinion about the feature.
+ * the environment only after backend readiness succeeds; it is a sequencing interlock,
+ * not a claim about final visual acceptance.
  */
 export function isWithdrawalBackendLive(): boolean {
 	return process.env.WITHDRAWAL_BACKEND_LIVE === "true";
@@ -300,5 +226,5 @@ export function isWithdrawalFormServable(): boolean {
 export function withdrawalBlockReason(): string | null {
 	if (isWithdrawalFormServable()) return null;
 	if (!LEGAL_COPY_APPROVED) return "LEGAL_COPY_APPROVED is false";
-	return 'WITHDRAWAL_BACKEND_LIVE is not "true" — the Payload Forms endpoint is not deployed';
+	return 'WITHDRAWAL_BACKEND_LIVE is not "true" — storefront V2 activation is disabled';
 }

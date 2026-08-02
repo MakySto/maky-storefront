@@ -73,7 +73,20 @@ async function bodyFor(
 }
 
 function violationsFor(body: unknown): string[] {
-	return validator.validate(body).map((v) => `${v.path} [${v.keyword}] ${v.message}`);
+	if (typeof body !== "object" || body === null || Array.isArray(body)) {
+		return validator.validate(body).map((v) => `${v.path} [${v.keyword}] ${v.message}`);
+	}
+	// The provider has not yet published a V2 pack. Keep its V1 schema immutable and use
+	// it to verify the unchanged base; focused tests below pin the four additive V2 fields.
+	const { experienceVersion, customerStatement, customerOrderItems, returnMethod, ...base } = body as Record<
+		string,
+		unknown
+	>;
+	void experienceVersion;
+	void customerStatement;
+	void customerOrderItems;
+	void returnMethod;
+	return validator.validate(base).map((v) => `${v.path} [${v.keyword}] ${v.message}`);
 }
 
 describe("the validator is right — checked against the provider's own examples", () => {
@@ -113,6 +126,33 @@ describe("the validator is right — checked against the provider's own examples
 });
 
 describe("what the storefront actually sends validates against the contract", () => {
+	it("adds exactly the required V2 customer experience fields", async () => {
+		const body = await bodyFor();
+		expect(Object.keys(body).sort()).toEqual([
+			"contract",
+			"customer",
+			"customerOrderItems",
+			"customerStatement",
+			"experienceVersion",
+			"items",
+			"legalNoticeVersion",
+			"locale",
+			"market",
+			"note",
+			"privacyNoticeVersion",
+			"returnMethod",
+			"scope",
+			"source",
+			"submissionId",
+		]);
+		expect(body).toMatchObject({
+			experienceVersion: "returns-v2",
+			customerStatement: "Odstupujem od zmluvy k objednávke ORD-1042 v celom rozsahu.",
+			customerOrderItems: [],
+			returnMethod: "merchantPickup",
+		});
+	});
+
 	it("guest, whole order, no phone", async () => {
 		expect(violationsFor(await bodyFor())).toEqual([]);
 	});

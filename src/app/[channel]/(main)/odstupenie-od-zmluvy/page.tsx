@@ -174,9 +174,34 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 				{companyInfo.email} alebo zaslaním vyplneného <a href={modelFormHref}>vzorového formulára</a> e-mailom
 				či poštou na adresu {companyInfo.returnAddress}. Po prijatí oznámenia vám potvrdíme jeho prijatie.
 			</p>
+
+			<h2>Zvoz tovaru zabezpečíme my</h2>
 			<p>
-				Tovar nám zašlite najneskôr do 14 dní od odstúpenia. Vrátenie platby prebehne po splnení podmienok
-				uvedených vo Všeobecných obchodných podmienkach.
+				Tovar zatiaľ neposielajte. Ozveme sa vám e-mailom s presnou cenou zvozu a navrhneme termín
+				vyzdvihnutia.
+			</p>
+			<p>
+				Náklady na spätnú prepravu znášate vy. Presnú cenu vám oznámime vopred. Zvoz objednáme až po vašom
+				výslovnom súhlase.
+			</p>
+			<p>Ak potrebujete zabezpečiť dopravu vlastným spôsobom, kontaktujte nás pred odoslaním tovaru.</p>
+			<p>K tovaru priložte číslo podania, ktoré dostanete po odoslaní odstúpenia.</p>
+
+			<h2>Adresa na vrátenie tovaru</h2>
+			<p>Ak sa s nami dohodnete na odoslaní tovaru vlastnou dopravou, použite túto adresu:</p>
+			<address>
+				{companyInfo.legalName}
+				<br />
+				Stará Vajnorská 11
+				<br />
+				831 04 Bratislava
+			</address>
+
+			<h2>Vrátenie platieb</h2>
+			<p>
+				Platby v rozsahu vášho odstúpenia vám vrátime najneskôr do 14 dní odo dňa, keď nám bolo doručené vaše
+				oznámenie o odstúpení. Vrátime ich rovnakým spôsobom, akým ste platili, ak sa spolu bez ďalších
+				poplatkov nedohodneme inak.
 			</p>
 		</LegalPage>
 	);

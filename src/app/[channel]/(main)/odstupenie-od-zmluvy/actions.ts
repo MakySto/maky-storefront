@@ -12,7 +12,6 @@ import {
 	WITHDRAWAL_MARKET,
 	isWithdrawalFormServable,
 } from "@/lib/withdrawal/contract";
-import { renderNoticeFromSnapshot } from "@/lib/withdrawal/notice";
 import { submitWithdrawal } from "@/lib/withdrawal/submit";
 import { type WithdrawalField } from "@/lib/withdrawal/validate";
 
@@ -26,16 +25,10 @@ import { type WithdrawalField } from "@/lib/withdrawal/validate";
  * the whole path is server-only, so no credential can be reachable from the bundle.
  */
 
-/** Whether the customer's confirmation e-mail went out. `unknown` is not `failed`. */
-export type CustomerEmailState = "sent" | "failed" | "unknown";
-
 export interface WithdrawalReceipt {
 	readonly submissionNumber: string;
-	readonly submittedAt: string;
-	/** Rendered from the snapshot Payload stored — never rebuilt from the form input. */
-	readonly notice: string;
-	readonly customerEmail: CustomerEmailState;
-	readonly orderNumber: string;
+	readonly printConfirmationHTML: string;
+	readonly parcelSlipHTML: string | null;
 	/** True when this was a retry and the original record was returned. */
 	readonly duplicate: boolean;
 }
@@ -52,6 +45,7 @@ export type WithdrawalFormState =
 			readonly focus: WithdrawalField;
 	  }
 	| { readonly status: "blocked"; readonly retryAfterSeconds: number }
+	| { readonly status: "confirmationPending" }
 	| { readonly status: "failed"; readonly kind: FailureKind }
 	| { readonly status: "received"; readonly receipt: WithdrawalReceipt };
 
@@ -135,7 +129,7 @@ function clientIp(headerBag: Headers): string {
 
 function readItems(
 	formData: FormData,
-): { orderLineId: string | null; productName: string; quantity: number }[] {
+): { orderLineId: string | null; productName: string; sku: string | null; quantity: number }[] {
 	const raw = formData.get("items");
 	if (typeof raw !== "string" || raw.length === 0) return [];
 	if (raw.length > WITHDRAWAL_LIMITS.bodyBytes) return [];
@@ -143,11 +137,12 @@ function readItems(
 	try {
 		const parsed: unknown = JSON.parse(raw);
 		if (!Array.isArray(parsed)) return [];
-		return parsed.slice(0, WITHDRAWAL_LIMITS.items).map((entry) => {
+		return parsed.map((entry) => {
 			const record = (typeof entry === "object" && entry !== null ? entry : {}) as Record<string, unknown>;
 			return {
 				orderLineId: typeof record.orderLineId === "string" ? record.orderLineId : null,
 				productName: typeof record.productName === "string" ? record.productName : "",
+				sku: typeof record.sku === "string" ? record.sku : null,
 				quantity: Number(record.quantity) || 0,
 			};
 		});
@@ -207,6 +202,7 @@ export async function submitWithdrawalAction(
 	// Account mode. The session decides, not the form: a signed-out visitor who posts
 	// an order id gets nothing, and a signed-in one only ever gets their own order back.
 	let verifiedOrder: { saleorOrderId: string | null; saleorCustomerId: string | null } | undefined;
+	let customerOrderItems: readonly { name: string; quantity: number }[] = [];
 	let orderNumber = String(formData.get("orderNumber") ?? "");
 	let items = claimedItems;
 
@@ -220,11 +216,13 @@ export async function submitWithdrawalAction(
 		});
 		if (verified) {
 			verifiedOrder = { saleorOrderId: verified.saleorOrderId, saleorCustomerId: null };
+			customerOrderItems = verified.customerOrderItems;
 			// The server's own view of the order wins over anything that was posted.
 			orderNumber = verified.orderNumber;
 			items = verified.lines.map((line) => ({
 				orderLineId: line.id,
 				productName: line.productName,
+				sku: null,
 				quantity: line.quantity,
 			}));
 		}
@@ -244,7 +242,7 @@ export async function submitWithdrawalAction(
 			items,
 			note: formData.get("note"),
 		},
-		{ persist: submitWithdrawalToPayload, verifiedOrder },
+		{ persist: submitWithdrawalToPayload, verifiedOrder, customerOrderItems },
 	);
 
 	if (outcome.status === "invalid") {
@@ -257,13 +255,16 @@ export async function submitWithdrawalAction(
 	}
 
 	if (outcome.status === "notReceived") {
-		// No record exists. Say so — a success page here would be the worst possible
-		// outcome, because the customer would stop pursuing a right they still have.
+		// Validation/configuration or a definitive refusal happened before persistence.
 		console.error(
 			"[withdrawal] not-received",
 			JSON.stringify({ reason: outcome.reason, code: outcome.code, detail: outcome.detail }),
 		);
 		return { status: "failed", kind: failureKindFor(outcome.code) };
+	}
+
+	if (outcome.status === "confirmationPending") {
+		return { status: "confirmationPending" };
 	}
 
 	const { accepted } = outcome;
@@ -272,23 +273,8 @@ export async function submitWithdrawalAction(
 		status: "received",
 		receipt: {
 			submissionNumber: accepted.submissionNumber,
-			submittedAt: accepted.submittedAt,
-			// The authoritative snapshot, rendered. Not a second copy of the notice.
-			notice: renderNoticeFromSnapshot(accepted.noticeSnapshot),
-			// Only a definitive `failed` is reported as failed. `pending` means the attempt
-			// has not finished and `unknown` means it finished ambiguously — the contract
-			// requires an operator to reconcile that against the provider's log before
-			// anyone concludes anything. Both are "we do not know yet", and saying
-			// otherwise would tell a customer their confirmation did not arrive when it
-			// may well have.
-			customerEmail: !accepted.emailDelivery
-				? "unknown"
-				: accepted.emailDelivery.customerStatus === "sent"
-					? "sent"
-					: accepted.emailDelivery.customerStatus === "failed"
-						? "failed"
-						: "unknown",
-			orderNumber: accepted.noticeSnapshot.contract.orderNumber,
+			printConfirmationHTML: accepted.printConfirmationHTML,
+			parcelSlipHTML: accepted.parcelSlipHTML,
 			duplicate: accepted.duplicate,
 		},
 	};
