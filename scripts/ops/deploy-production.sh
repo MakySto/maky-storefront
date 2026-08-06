@@ -56,6 +56,7 @@ DOWNTIME=0
 AVAIL_MEM_MB="?"
 PREV_BUILD_ID="none"
 PREV_SHA="unknown"
+MARKET_LINES_BEFORE=0   # [market-state] lines in the PM2 log before this boot
 BUILD_LOG="/tmp/maky-deploy-$(date -u +%Y%m%d-%H%M%S).log"
 
 c_red=$'\033[31m'; c_yel=$'\033[33m'; c_grn=$'\033[32m'; c_dim=$'\033[2m'; c_off=$'\033[0m'
@@ -294,9 +295,13 @@ preflight() {
 
 	[[ -z "${NEXT_OUTPUT:-}" ]] || die "NEXT_OUTPUT='$NEXT_OUTPUT' is set — production runs in normal mode (CLAUDE.md §13.6); unset it"
 
+	# Every tool any check below depends on. A check whose tool is missing must
+	# stop the deploy here, not evaporate silently later and let the summary line
+	# claim it passed — which is exactly what `command -v xmllint && …` did to the
+	# sitemap validity check for as long as it existed.
 	local cmd
-	for cmd in pnpm pm2 curl git flock awk; do
-		command -v "$cmd" >/dev/null || die "$cmd not found in PATH"
+	for cmd in pnpm pm2 curl git flock awk find sed python3; do
+		command -v "$cmd" >/dev/null || die "$cmd not found in PATH — a deploy check depends on it"
 	done
 	pm2 describe "$PM2_APP" >/dev/null 2>&1 || die "PM2 knows no app called '$PM2_APP'"
 
@@ -304,10 +309,21 @@ preflight() {
 	# public/ and src/lib/routing.generated.ts. That list decides which paths
 	# the proxy passes through, so a stale one 404s the logo sitewide.
 	if [[ "${SKIP_TESTS:-0}" != "1" ]]; then
-		pnpm vitest run >/dev/null 2>&1 || die "the test suite fails — fix it or set SKIP_TESTS=1 to override deliberately"
+		pnpm vitest run >"${BUILD_LOG}.tests" 2>&1 \
+			|| die "the test suite fails — see ${BUILD_LOG}.tests (SKIP_TESTS=1 overrides, but not the routing tests)"
 		info "test suite green"
 	else
-		warn "SKIP_TESTS=1 — the public-asset drift check did not run"
+		# SKIP_TESTS does NOT cover these four. They are the only checks that decide
+		# an HTTP status: routing-generated pins the asset list the proxy passes
+		# through, route-policy pins that no market root segment can be swallowed by
+		# the existence gate, and the two proxy suites pin the statuses themselves.
+		# Skipping them to save two minutes is how a live legal page becomes a 404.
+		warn "SKIP_TESTS=1 — only the routing tests will run"
+		pnpm vitest run src/lib/routing-generated.test.ts src/lib/route-policy.test.ts \
+			src/proxy.test.ts src/proxy.gate.test.ts src/lib/route-existence.test.ts \
+			>"${BUILD_LOG}.tests" 2>&1 \
+			|| die "the routing tests fail — SKIP_TESTS does not cover these; see ${BUILD_LOG}.tests"
+		info "routing tests green"
 	fi
 
 	ensure_sudo
@@ -402,6 +418,10 @@ write_meta() {
 
 start() {
 	step "start"
+	# Baseline for check_market_state: PM2 does not truncate the log between
+	# deploys, so without this the read-back could confirm the previous boot's
+	# market set and never notice.
+	MARKET_LINES_BEFORE=$(pm2 logs "$PM2_APP" --nostream --lines 1000 2>/dev/null | grep -c '\[market-state\] live=' || true)
 	pm2 start "$PM2_APP" >/dev/null
 	wait_ready || die "$PM2_APP did not answer on $LOCAL_URL$SMOKE_PATH within ${READY_TIMEOUT_S}s"
 	info "responding on $LOCAL_URL$SMOKE_PATH"
@@ -455,7 +475,11 @@ gate_routing() {
 	while IFS= read -r path; do assets+=("$path"); done < <(
 		find "$APP_DIR/public" -type f -printf '/%P\n' | sort
 	)
-	assets+=(/robots.txt /sitemap.xml /icon.png /apple-icon.png /opengraph-image.png /twitter-image.png)
+	# An empty `find` would make the loop below iterate over nothing and still
+	# print a reassuring count. Same defect shape as the sitemap check.
+	(( ${#assets[@]} > 0 )) || die "no files found under $APP_DIR/public — the static-asset check would pass vacuously"
+
+	assets+=(/robots.txt /sitemap.xml /icon.png /apple-icon.png /opengraph-image.png /twitter-image.png /favicon.ico)
 
 	for path in "${assets[@]}"; do
 		code=$(http_code "$LOCAL_URL$path")
@@ -475,10 +499,23 @@ gate_routing() {
 	# from a complete one without a floor to compare against.
 	body=$(new_tmp)
 	curl -fsS --max-time 25 "$LOCAL_URL/sitemap.xml" -o "$body" || die "/sitemap.xml did not respond"
-	command -v xmllint >/dev/null && { xmllint --noout "$body" || die "/sitemap.xml is not well-formed XML"; }
-	count=$(grep -c '<loc>' "$body" || true)
+
+	# This used to read:
+	#     command -v xmllint >/dev/null && { xmllint --noout "$body" || die ... }
+	# xmllint is not installed on this box, so the `&&` short-circuited and the
+	# whole validity check evaporated — while the summary line below went on
+	# printing "well-formed". A check that quietly passes when its tool is absent
+	# is worse than no check: it manufactures confidence. python3 is stdlib here
+	# and is asserted in preflight.
+	#
+	# Counting <loc> as ELEMENTS rather than grepping lines also stops the floor
+	# depending on how the XML happens to be wrapped.
+	count=$(python3 -c 'import sys, xml.etree.ElementTree as ET
+ns = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+print(len(ET.parse(sys.argv[1]).getroot().findall(f".//{ns}loc")))' "$body" 2>&1) \
+		|| die "/sitemap.xml is not well-formed XML: $count"
 	(( count >= MIN_SITEMAP_URLS )) || die "/sitemap.xml lists $count URLs, expected at least $MIN_SITEMAP_URLS"
-	info "sitemap: $count URLs, well-formed"
+	info "sitemap: parsed as XML, $count <loc> elements"
 
 	# Client-side navigation. The proxy matcher also fires for RSC and prefetch
 	# requests, so a change there can break in-app navigation while every plain
@@ -533,7 +570,18 @@ market_state_from_env() {
 }
 
 check_market_state() {
-	local line got unknown want
+	local line got unknown want after
+
+	# The log is not truncated between deploys, so the newest [market-state] line
+	# may well be the PREVIOUS boot's — in which case this check would happily
+	# confirm the market set of the build we just replaced. Count them before
+	# `pm2 start` and require the count to have grown.
+	after=$(pm2 logs "$PM2_APP" --nostream --lines 1000 2>/dev/null | grep -c '\[market-state\] live=' || true)
+	if (( after <= ${MARKET_LINES_BEFORE:-0} )); then
+		err "no NEW [market-state] line since pm2 start — the line below is from the previous boot"
+		return 1
+	fi
+
 	line=$(pm2 logs "$PM2_APP" --nostream --lines 400 2>/dev/null |
 		grep -o '\[market-state\] live=[^ ]* preview=[^ ]* unknown=[^ ]*' | tail -1)
 
@@ -542,6 +590,18 @@ check_market_state() {
 		return 1
 	fi
 	info "$line"
+
+	# Same read-back for the existence gate. Whether it is armed, and for which
+	# markets and families, is the single most consequential runtime setting on
+	# this artifact — it must be visible in the deploy output, not inferred.
+	local gate_line
+	gate_line=$(pm2 logs "$PM2_APP" --nostream --lines 400 2>/dev/null |
+		grep -o '\[route-existence\] gate=[^ ]* markets=[^ ]* families=[^ ]*' | tail -1)
+	if [[ -z "$gate_line" ]]; then
+		err "no [route-existence] line — cannot confirm whether the existence gate is armed"
+		return 1
+	fi
+	info "$gate_line"
 
 	unknown=$(sed -n 's/.*unknown=\([^ ]*\).*/\1/p' <<<"$line")
 	if [[ -n "$unknown" ]]; then
