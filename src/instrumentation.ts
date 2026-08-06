@@ -25,6 +25,16 @@ export async function register(): Promise<void> {
 		`[market-state] live=${live.join(",")} preview=${preview.join(",")} unknown=${unknown.join(",")}`,
 	);
 
+	// The 404 gate decides HTTP statuses from an upstream lookup, so which markets
+	// and families it is armed for has to be visible at a glance rather than
+	// reconstructed from three env vars during an incident.
+	const { describeGate } = await import("./lib/route-existence");
+	const gate = describeGate();
+	console.log(
+		`[route-existence] gate=${gate.enabled ? "on" : "off"} markets=${gate.markets.join(",")} ` +
+			`families=${gate.families.join(",")}`,
+	);
+
 	if (unknown.length > 0) {
 		console.error(
 			`[market-state] MAKY_LIVE_MARKETS contains ${unknown.length} name(s) that are not markets: ` +

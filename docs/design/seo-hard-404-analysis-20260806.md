@@ -10,14 +10,26 @@
 > | market state, `live` / `preview` | **DONE** |
 > | sitemap follows live markets, fails loud | **DONE** |
 > | empty-category `noindex` (§F.4) | **DONE** |
-> | **data semantics, §F.0** | **NOT DONE** |
-> | **route classifier (§F.1 step 8–9)** | **NOT DONE** |
-> | **localized market-aware 404** | **NOT DONE** |
-> | **hard-404 gate (§F.2)** | **NOT DONE** |
+> | data semantics, §F.0 | **DONE** |
+> | route classifier (§F.1 step 8–9) | **DONE** |
+> | localized market-aware 404 | **DONE** (in-app `notFound()`; see the caveat below) |
+> | hard-404 gate (§F.2) | **BUILT, SHIPS OFF** |
 >
-> `/sk/neexistujuci-produkt` still returns **HTTP 200 + noindex**. The gate must
-> not be enabled until the data semantics land — see §D.2 for why that ordering
-> is a safety condition and not a preference.
+> With the gate armed on a production build, `/sk/neexistujuci-produkt` returns a
+> real **HTTP 404** — as do a missing category, collection and Saleor page,
+> identically for GET and HEAD and for Chrome, Googlebot and bingbot. It stays
+> inert until `ROUTE_EXISTENCE_GATE=on` plus an explicit market and family list.
+>
+> **A third instance of the same constraint, found by running it.** The gate first
+> rewrote to a market-aware 404 page under `[channel]`. The verdict header said
+> `x-maky-gate: product:absent`, the rewrite carried `status: 404`, and the
+> response came back **HTTP 200** — because that route is partially prerendered
+> (`◐`) and a PPR route takes its status from its own prerender entry
+> (`app-page.js:1112`), overriding the rewrite. The target has to be a fully
+> static route, so it is `/_not-found`. The cost is the body: a gate 404 renders
+> the English global page, while an in-app `notFound()` still gets the localized
+> market one. Recovering it needs a fully static per-market 404 — a follow-up, and
+> the status is the part a crawler acts on.
 >
 > **Correction, 2026-08-06.** An earlier revision of §F.2 specified a loopback to
 > an internal Route Handler sharing the page's full `"use cache"` resolver, and

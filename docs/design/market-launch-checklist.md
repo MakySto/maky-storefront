@@ -151,16 +151,16 @@ Read this before assuming anything downstream is safe.
 | empty-category `noindex` | **DONE** | `cd301c5` |
 | preview markets direct-access only | **DONE** | |
 | durable + validated live-market config | **DONE** | |
-| **data semantics** (`found`/`not-found`/`upstream-error`) | **NOT DONE** | prerequisite for the gate |
-| **route classifier + curated market policy** | **NOT DONE** | |
-| **localized market-aware 404** | **NOT DONE** | |
-| **hard-404 gate** | **NOT DONE** | ships OFF, activated separately |
+| data semantics (`found`/`not-found`/`upstream-error`) | **DONE** | prerequisite for the gate |
+| route classifier + curated market policy | **DONE** | |
+| `/de/kontakt` and the other sk-only pages → real 404 | **DONE** | no upstream call |
+| localized market-aware 404 | **DONE** | in-app `notFound()`; gate 404s use the global one |
+| **hard-404 gate** | **BUILT, SHIPS OFF** | activated per market and family |
 
-**`/sk/neexistujuci-produkt` still returns HTTP 200 + `noindex`.** Nothing on this
-branch changes that yet. The soft-404 that started this work is still there; what
-has changed is the surface it applies to, and the fact that turning it into a real
-404 is now a matter of finishing the remaining four rows rather than redesigning
-anything.
+**`/sk/neexistujuci-produkt` returns a real HTTP 404 once the gate is armed** —
+verified on a production build. It ships inert: `ROUTE_EXISTENCE_GATE` is unset,
+so today the behaviour is unchanged. Turning it on is a separate, staged decision
+per market and per family.
 
 ### Still to write
 
@@ -189,12 +189,24 @@ So the sequence is not negotiable:
 
 ```
 matcher fix  ──▶  market state  ──▶  data semantics  ──▶  route classifier
-   DONE              DONE              NOT DONE            NOT DONE
-                                            │
-                                            ▼
-                             404 gate  ──▶  flip markets to live
-                             NOT DONE
+   DONE              DONE               DONE                 DONE
+                                                               │
+                                                               ▼
+                                    404 gate  ──▶  flip markets to live
+                                  BUILT, OFF          checklist below
 ```
+
+Arming the gate:
+
+```bash
+ROUTE_EXISTENCE_GATE=on
+ROUTE_EXISTENCE_MARKETS=sk
+ROUTE_EXISTENCE_FAMILIES=product
+```
+
+An empty market or family list means **none**, never "all". Every response the
+gate looks at carries `x-maky-gate: <family>:<verdict>`, so a canary can be read
+straight off a live request.
 
 Code and content can run in parallel. They have to meet in that order.
 

@@ -11,7 +11,7 @@ import { proxy } from "./proxy";
 
 const req = (path: string) => new NextRequest(new URL(`https://maky.store${path}`));
 
-const statusOf = (path: string) => proxy(req(path)).status;
+const statusOf = async (path: string) => (await proxy(req(path))).status;
 
 describe("invalid first segment", () => {
 	const junk = [
@@ -27,46 +27,46 @@ describe("invalid first segment", () => {
 	];
 
 	for (const path of junk) {
-		it(`404s ${path}`, () => {
-			expect(statusOf(path)).toBe(404);
+		it(`404s ${path}`, async () => {
+			expect(await statusOf(path)).toBe(404);
 		});
 	}
 
-	it("marks the 404 noindex for good measure", () => {
-		expect(proxy(req("/admin/categories/stresne-nosice")).headers.get("x-robots-tag")).toBe("noindex");
+	it("marks the 404 noindex for good measure", async () => {
+		expect((await proxy(req("/admin/categories/stresne-nosice"))).headers.get("x-robots-tag")).toBe("noindex");
 	});
 
-	it("does not redirect junk anywhere — no generic /:invalid/categories/:slug rescue", () => {
-		const res = proxy(req("/wishlist/categories/autochladnicky"));
+	it("does not redirect junk anywhere — no generic /:invalid/categories/:slug rescue", async () => {
+		const res = await proxy(req("/wishlist/categories/autochladnicky"));
 		expect(res.headers.get("location")).toBeNull();
 	});
 });
 
 describe("legitimate traffic still passes", () => {
-	it("rewrites a valid market instead of 404ing it", () => {
-		const res = proxy(req("/sk/categories/tazne-zariadenia"));
+	it("rewrites a valid market instead of 404ing it", async () => {
+		const res = await proxy(req("/sk/categories/tazne-zariadenia"));
 		expect(res.status).not.toBe(404);
 		expect(res.headers.get("x-market")).toBe("sk");
 	});
 
-	it("keeps every configured market working", () => {
+	it("keeps every configured market working", async () => {
 		for (const market of ["sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"]) {
-			expect(statusOf(`/${market}`), market).not.toBe(404);
+			expect(await statusOf(`/${market}`), market).not.toBe(404);
 		}
 	});
 
-	it("leaves the market-less checkout routes alone", () => {
-		expect(statusOf("/checkout")).not.toBe(404);
-		expect(statusOf("/checkout/complete")).not.toBe(404);
+	it("leaves the market-less checkout routes alone", async () => {
+		expect(await statusOf("/checkout")).not.toBe(404);
+		expect(await statusOf("/checkout/complete")).not.toBe(404);
 	});
 
-	it("does not touch reserved infrastructure prefixes", () => {
+	it("does not touch reserved infrastructure prefixes", async () => {
 		for (const path of ["/api/revalidate", "/_next/whatever", "/.well-known/acme-challenge/token"]) {
-			expect(statusOf(path), path).not.toBe(404);
+			expect(await statusOf(path), path).not.toBe(404);
 		}
 	});
 
-	it("passes static assets and root metadata routes straight through", () => {
+	it("passes static assets and root metadata routes straight through", async () => {
 		// These used to be safe because the matcher skipped every dotted path. It
 		// no longer does, so they have to survive the gate on their own.
 		for (const path of [
@@ -84,7 +84,7 @@ describe("legitimate traffic still passes", () => {
 			"/twitter-image.png",
 			"/favicon.ico",
 		]) {
-			const res = proxy(req(path));
+			const res = await proxy(req(path));
 			expect(res.status, path).not.toBe(404);
 			expect(res.headers.get("location"), path).toBeNull();
 			expect(res.headers.get("x-middleware-rewrite"), path).toBeNull();
@@ -113,45 +113,45 @@ describe("dotted first segment", () => {
 	];
 
 	for (const path of junk) {
-		it(`404s ${path}`, () => {
-			expect(statusOf(path)).toBe(404);
+		it(`404s ${path}`, async () => {
+			expect(await statusOf(path)).toBe(404);
 		});
 	}
 
-	it("marks them noindex", () => {
-		expect(proxy(req("/admin.php")).headers.get("x-robots-tag")).toBe("noindex");
+	it("marks them noindex", async () => {
+		expect((await proxy(req("/admin.php"))).headers.get("x-robots-tag")).toBe("noindex");
 	});
 
-	it("still rewrites a dotted slug UNDER a valid market instead of 404ing it", () => {
+	it("still rewrites a dotted slug UNDER a valid market instead of 404ing it", async () => {
 		// A dot below the market prefix is a product slug, not a bogus market. It
 		// used to bypass the proxy entirely, so `[channel]` received "sk" instead
 		// of "sk-eur" and the Saleor lookup missed for the wrong reason.
-		const res = proxy(req("/sk/some.dotted-slug"));
+		const res = await proxy(req("/sk/some.dotted-slug"));
 		expect(res.status).not.toBe(404);
 		expect(res.headers.get("x-channel")).toBe("sk-eur");
 	});
 
-	it("keeps client-side navigation working — RSC suffixes are not junk", () => {
+	it("keeps client-side navigation working — RSC suffixes are not junk", async () => {
 		for (const path of ["/sk/categories/stresne-boxy.rsc", "/sk/stresny-box.rsc"]) {
-			const res = proxy(req(path));
+			const res = await proxy(req(path));
 			expect(res.status, path).not.toBe(404);
 			expect(res.headers.get("x-channel"), path).toBe("sk-eur");
 		}
 	});
 
-	it("still 301s a raw Saleor slug to its friendly market", () => {
-		const res = proxy(req("/sk-eur/categories/stresne-boxy"));
+	it("still 301s a raw Saleor slug to its friendly market", async () => {
+		const res = await proxy(req("/sk-eur/categories/stresne-boxy"));
 		expect(res.status).toBe(301);
 		expect(res.headers.get("location")).toContain("/sk/categories/stresne-boxy");
 	});
 
-	it("still 308s a retired product URL", () => {
-		const res = proxy(req("/sk/products/stresny-box-thule-motion-3-l-titan-glossy-639701"));
+	it("still 308s a retired product URL", async () => {
+		const res = await proxy(req("/sk/products/stresny-box-thule-motion-3-l-titan-glossy-639701"));
 		expect(res.status).toBe(308);
 	});
 
-	it("still redirects the bare root to a market", () => {
-		expect(proxy(req("/")).status).toBe(307);
+	it("still redirects the bare root to a market", async () => {
+		expect((await proxy(req("/"))).status).toBe(307);
 	});
 });
 
@@ -174,36 +174,36 @@ describe("a route that exists, but not in this market", () => {
 		"poradna",
 	];
 
-	it("404s the Slovak-only pages under every other market", () => {
+	it("404s the Slovak-only pages under every other market", async () => {
 		for (const segment of SK_ONLY) {
 			for (const market of ["de", "cz", "fr", "us", "ca"]) {
-				expect(statusOf(`/${market}/${segment}`), `/${market}/${segment}`).toBe(404);
+				expect(await statusOf(`/${market}/${segment}`), `/${market}/${segment}`).toBe(404);
 			}
 		}
 	});
 
-	it("marks them noindex", () => {
-		expect(proxy(req("/de/kontakt")).headers.get("x-robots-tag")).toBe("noindex");
+	it("marks them noindex", async () => {
+		expect((await proxy(req("/de/kontakt"))).headers.get("x-robots-tag")).toBe("noindex");
 	});
 
-	it("leaves them alone on sk", () => {
+	it("leaves them alone on sk", async () => {
 		for (const segment of SK_ONLY) {
-			const res = proxy(req(`/sk/${segment}`));
+			const res = await proxy(req(`/sk/${segment}`));
 			expect(res.status, `/sk/${segment}`).not.toBe(404);
 			expect(res.headers.get("x-channel"), `/sk/${segment}`).toBe("sk-eur");
 		}
 	});
 
-	it("does not touch routes that exist everywhere", () => {
+	it("does not touch routes that exist everywhere", async () => {
 		for (const segment of ["products", "categories/stresne-boxy", "cart", "search"]) {
-			expect(statusOf(`/de/${segment}`), `/de/${segment}`).not.toBe(404);
+			expect(await statusOf(`/de/${segment}`), `/de/${segment}`).not.toBe(404);
 		}
 	});
 
-	it("does not mistake a product slug for a missing route", () => {
+	it("does not mistake a product slug for a missing route", async () => {
 		// A slug that is not a declared route belongs to the existence gate, which
 		// is not enabled yet — it must pass through, not 404 on a static guess.
-		const res = proxy(req("/de/stresny-box-thule-motion-3"));
+		const res = await proxy(req("/de/stresny-box-thule-motion-3"));
 		expect(res.status).not.toBe(404);
 		expect(res.headers.get("x-channel")).toBe("de-eur");
 	});
@@ -220,30 +220,30 @@ describe("preview markets are not indexable", () => {
 	const ENV = "MAKY_LIVE_MARKETS";
 	afterEach(() => delete process.env[ENV]);
 
-	const robotsFor = (path: string) => proxy(req(path)).headers.get("x-robots-tag");
+	const robotsFor = async (path: string) => (await proxy(req(path))).headers.get("x-robots-tag");
 
-	it("does not mark the live market", () => {
-		expect(robotsFor("/sk")).toBeNull();
-		expect(robotsFor("/sk/categories/stresne-boxy")).toBeNull();
+	it("does not mark the live market", async () => {
+		expect(await robotsFor("/sk")).toBeNull();
+		expect(await robotsFor("/sk/categories/stresne-boxy")).toBeNull();
 	});
 
-	it("marks every other market, on every route under it", () => {
+	it("marks every other market, on every route under it", async () => {
 		for (const market of ["cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"]) {
 			for (const path of ["", "/products", "/categories/stresne-boxy", "/some-product"]) {
-				expect(robotsFor(`/${market}${path}`), `/${market}${path}`).toBe("noindex, nofollow");
+				expect(await robotsFor(`/${market}${path}`), `/${market}${path}`).toBe("noindex, nofollow");
 			}
 		}
 	});
 
-	it("follows the env override without a rebuild", () => {
+	it("follows the env override without a rebuild", async () => {
 		process.env[ENV] = "sk,cz";
-		expect(robotsFor("/cz")).toBeNull();
-		expect(robotsFor("/de")).toBe("noindex, nofollow");
+		expect(await robotsFor("/cz")).toBeNull();
+		expect(await robotsFor("/de")).toBe("noindex, nofollow");
 	});
 
-	it("keeps the channel rewrite intact for a preview market", () => {
+	it("keeps the channel rewrite intact for a preview market", async () => {
 		// Preview means "not indexable", not "broken". The market has to work.
-		const res = proxy(req("/de/categories/stresne-boxy"));
+		const res = await proxy(req("/de/categories/stresne-boxy"));
 		expect(res.status).not.toBe(404);
 		expect(res.headers.get("x-channel")).toBe("de-eur");
 		expect(res.headers.get("x-market")).toBe("de");
@@ -260,46 +260,46 @@ describe("root detection only ever chooses a live market", () => {
 	const ENV = "MAKY_LIVE_MARKETS";
 	afterEach(() => delete process.env[ENV]);
 
-	const rootWith = (headers: Record<string, string>, cookie?: string) => {
+	const rootWith = async (headers: Record<string, string>, cookie?: string) => {
 		const r = new NextRequest(new URL("https://maky.store/"), { headers: new Headers(headers) });
 		if (cookie) r.cookies.set("maky-market", cookie);
 		return proxy(r);
 	};
 	const target = (res: Response) => new URL(res.headers.get("location") ?? "https://x/").pathname;
 
-	it("ignores a geo header pointing at a preview market", () => {
-		expect(target(rootWith({ "CF-IPCountry": "DE" }))).toBe("/sk");
-		expect(target(rootWith({ "CF-IPCountry": "FR" }))).toBe("/sk");
+	it("ignores a geo header pointing at a preview market", async () => {
+		expect(target(await rootWith({ "CF-IPCountry": "DE" }))).toBe("/sk");
+		expect(target(await rootWith({ "CF-IPCountry": "FR" }))).toBe("/sk");
 	});
 
-	it("ignores an Accept-Language pointing at a preview market", () => {
-		expect(target(rootWith({ "Accept-Language": "de-DE,de;q=0.9" }))).toBe("/sk");
-		expect(target(rootWith({ "Accept-Language": "cs-CZ,cs;q=0.9" }))).toBe("/sk");
+	it("ignores an Accept-Language pointing at a preview market", async () => {
+		expect(target(await rootWith({ "Accept-Language": "de-DE,de;q=0.9" }))).toBe("/sk");
+		expect(target(await rootWith({ "Accept-Language": "cs-CZ,cs;q=0.9" }))).toBe("/sk");
 	});
 
-	it("ignores a cookie pointing at a preview market", () => {
+	it("ignores a cookie pointing at a preview market", async () => {
 		// One QA visit to /de must not pin that browser to it.
-		expect(target(rootWith({}, "de"))).toBe("/sk");
+		expect(target(await rootWith({}, "de"))).toBe("/sk");
 	});
 
-	it("honours all three once the market is live", () => {
+	it("honours all three once the market is live", async () => {
 		process.env[ENV] = "sk,de";
-		expect(target(rootWith({ "CF-IPCountry": "DE" }))).toBe("/de");
-		expect(target(rootWith({ "Accept-Language": "de-DE,de;q=0.9" }))).toBe("/de");
-		expect(target(rootWith({}, "de"))).toBe("/de");
+		expect(target(await rootWith({ "CF-IPCountry": "DE" }))).toBe("/de");
+		expect(target(await rootWith({ "Accept-Language": "de-DE,de;q=0.9" }))).toBe("/de");
+		expect(target(await rootWith({}, "de"))).toBe("/de");
 	});
 
-	it("still prefers the live market a visitor actually chose", () => {
+	it("still prefers the live market a visitor actually chose", async () => {
 		process.env[ENV] = "sk,cz";
-		expect(target(rootWith({ "CF-IPCountry": "DE" }, "cz"))).toBe("/cz");
+		expect(target(await rootWith({ "CF-IPCountry": "DE" }, "cz"))).toBe("/cz");
 	});
 
-	it("does not persist a preview market as a year-long cookie", () => {
+	it("does not persist a preview market as a year-long cookie", async () => {
 		// It is read outside the proxy too — the checkout locale fallback uses it.
-		const preview = proxy(req("/de/categories/stresne-boxy"));
+		const preview = await proxy(req("/de/categories/stresne-boxy"));
 		expect(preview.cookies.get("maky-market")).toBeUndefined();
 
-		const live = proxy(req("/sk/categories/stresne-boxy"));
+		const live = await proxy(req("/sk/categories/stresne-boxy"));
 		expect(live.cookies.get("maky-market")?.value).toBe("sk");
 	});
 });

@@ -13,6 +13,13 @@ import { resolveLegacyProductSlug } from "./lib/product-redirects";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/routing.generated";
 import { isMarketLive, liveMarkets, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
 import { isRouteMissingInMarket } from "./lib/route-policy";
+import {
+	classifyRoute,
+	gateEnabledFor,
+	isGateEnabled,
+	lookupExistence,
+	normalizePathname,
+} from "./lib/route-existence";
 
 /**
  * First path segments that are legitimately not a market.
@@ -81,7 +88,15 @@ function detectMarket(request: NextRequest): string {
 	return isMarketLive(DEFAULT_MARKET) ? DEFAULT_MARKET : (liveMarkets()[0] ?? DEFAULT_MARKET);
 }
 
-export function proxy(request: NextRequest) {
+/**
+ * Note on the `x-channel` / `x-locale` / `x-market` / `x-currency` headers below:
+ * they are set on the RESPONSE, and nothing in the app reads an `x-*` header off
+ * the REQUEST (verified: the only request-header reads are the revalidate secret
+ * and the rate limiter's forwarded-for). So there is no spoofing vector to strip.
+ * If a component ever starts reading one, it must be stripped from the incoming
+ * request first.
+ */
+export async function proxy(request: NextRequest) {
 	const { pathname } = request.nextUrl;
 	const segments = pathname.split("/").filter(Boolean);
 	const first = segments[0];
@@ -159,6 +174,65 @@ export function proxy(request: NextRequest) {
 		});
 	}
 
+	// RESOURCE EXISTENCE GATE -> real 404 for a product, collection, category or
+	// Saleor page that the authority says is not there.
+	//
+	// This is the only layer that can decide it. Under cacheComponents the status
+	// line is committed before any page component's lookup resolves, and the
+	// compiler enforces that — see docs/design/seo-hard-404-analysis-20260806.md.
+	// The Next docs prescribe the same remedy by name.
+	//
+	// Ships OFF and stays off until ROUTE_EXISTENCE_GATE=on plus an explicit
+	// market and family list. `absent` is the ONLY verdict that 404s; a timeout,
+	// a non-200, malformed JSON, GraphQL errors, an open breaker or a saturated
+	// concurrency limit all return `unknown` and fall through to exactly today's
+	// behaviour. See src/lib/route-existence.ts for why that asymmetry is the
+	// whole safety argument.
+	//
+	// `x-maky-gate` is attached to every gated response, not just the 404s. During
+	// the canary rollout the question is not only "did anything 404" but "is the
+	// gate even looking at this URL, and what did it conclude" — and a header is
+	// the only way to ask that of a live request without turning on debug logging.
+	let gateVerdict: string | null = null;
+
+	if (first && FRIENDLY_SLUGS.has(first) && isGateEnabled()) {
+		const decision = classifyRoute(first, normalizePathname(pathname).split("/").filter(Boolean));
+
+		if (!decision) {
+			gateVerdict = "unclassified";
+		} else if (!gateEnabledFor(first, decision.family)) {
+			gateVerdict = `${decision.family}:not-armed`;
+		} else {
+			const verdict = await lookupExistence(decision.family, decision.slug, decision.channel);
+			gateVerdict = `${decision.family}:${verdict}`;
+
+			if (verdict === "absent") {
+				const url = request.nextUrl.clone();
+				// `/_not-found`, and it has to be.
+				//
+				// A market-aware target under `[channel]` was tried first and measured:
+				// the gate reported `x-maky-gate: product:absent`, rewrote there with
+				// `status: 404`, and the response came back HTTP 200. That route is
+				// partially prerendered (◐), and a PPR route takes its status from its
+				// own prerender entry — app-page.js:1112 — which overrides the
+				// rewrite's. `/_not-found` is fully static (○), so the rewrite status
+				// stands. Same constraint that put this decision in the proxy at all,
+				// arriving from a third direction.
+				//
+				// The cost is the body: a gate 404 renders the English global page
+				// rather than the localized market one. An in-app notFound() still gets
+				// the localized boundary. Recovering it needs a fully static per-market
+				// 404, which is a follow-up — the status is the part that matters to a
+				// crawler.
+				url.pathname = "/_not-found";
+				return NextResponse.rewrite(url, {
+					status: 404,
+					headers: { "x-robots-tag": "noindex", "x-maky-gate": gateVerdict },
+				});
+			}
+		}
+	}
+
 	// REWRITE friendly slug -> Saleor channel slug (URL stays /sk/...)
 	if (first && FRIENDLY_SLUGS.has(first)) {
 		const config = CHANNEL_MAP[first];
@@ -167,6 +241,7 @@ export function proxy(request: NextRequest) {
 		url.pathname = "/" + config.saleorSlug + (rest ? "/" + rest : "");
 
 		const res = NextResponse.rewrite(url);
+		if (gateVerdict) res.headers.set("x-maky-gate", gateVerdict);
 		res.headers.set("x-channel", config.saleorSlug);
 		res.headers.set("x-locale", config.locale);
 		res.headers.set("x-market", first);
