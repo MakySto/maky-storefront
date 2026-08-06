@@ -58,6 +58,25 @@ export const generateMetadata = async (props: PageProps, parent: ResolvingMetada
 
 	const plainDescription = parseEditorJSToText(category.description);
 
+	// A category that exists but holds nothing in THIS channel.
+	//
+	// `category(slug:)` takes no channel argument — categories are global in
+	// Saleor, only their products are per channel — so every category resolves in
+	// every market and renders an empty listing at HTTP 200 with a self-canonical.
+	// Twelve of the thirty are currently in that state and four of them sit in the
+	// main navigation, so 404 is the wrong answer: it would 404 a URL the site
+	// links to from every page. `noindex` with no canonical is the right one, and
+	// it reverts on its own the moment the channel gets stock — no deploy.
+	if ((category.products?.totalCount ?? 0) === 0) {
+		return {
+			title: `${category.name} | ${category.seoTitle || (await parent).title?.absolute}`,
+			description: category.seoDescription || plainDescription || category.seoTitle || category.name,
+			robots: { index: false, follow: true, googleBot: { index: false, follow: true } },
+			// No canonical, deliberately: a self-canonical nominates the URL, which
+			// is the opposite of what noindex is here to say.
+		};
+	}
+
 	return {
 		title: `${category.name} | ${category.seoTitle || (await parent).title?.absolute}`,
 		description: category.seoDescription || plainDescription || category.seoTitle || category.name,
