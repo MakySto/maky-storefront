@@ -35,7 +35,17 @@ function FlagImg({ code, size = 20 }: { code: string; size?: number }) {
 	);
 }
 
-export function HeaderMarketControls() {
+/**
+ * @param markets the LIVE markets, supplied by the server at request time.
+ *
+ * The table above stays complete on purpose — it is what labels the button, so
+ * browsing a preview market still reads "CS / CZK" rather than falling back to
+ * Slovensko. Only the list you can *switch into* is filtered. Offering all twelve
+ * put a customer one click from an unfinished storefront with no catalogue and no
+ * working payment; a preview market is reachable by typing its URL, and that is
+ * the whole of its contract.
+ */
+export function HeaderMarketControls({ markets }: { markets: readonly string[] }) {
 	const t = useTranslations("nav");
 	const router = useRouter();
 	const params = useParams<{ channel: string }>();
@@ -45,6 +55,10 @@ export function HeaderMarketControls() {
 
 	const currentFriendly = REVERSE_MAP[params.channel] || "sk";
 	const currentMarket = MARKETS.find((m) => m.slug === currentFriendly) || MARKETS[0];
+	const options = MARKETS.filter((m) => markets.includes(m.slug));
+	// One live market is the launch state, not an edge case. A dropdown that opens
+	// onto a single entry is worse than no dropdown.
+	const canSwitch = options.length > 1;
 
 	useEffect(() => {
 		function handleClickOutside(e: MouseEvent) {
@@ -70,30 +84,32 @@ export function HeaderMarketControls() {
 			<div className="flex items-center gap-1">
 				<button
 					type="button"
-					onClick={() => setIsOpen(!isOpen)}
+					onClick={() => canSwitch && setIsOpen(!isOpen)}
 					aria-label={t("language")}
-					aria-expanded={isOpen}
+					aria-expanded={canSwitch ? isOpen : undefined}
+					aria-disabled={canSwitch ? undefined : true}
 					className="border-sand-300/80 hover:border-copper-500 inline-flex h-9 items-center gap-1.5 rounded-xs border bg-white/60 px-2.5 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 				>
 					<GlobeIcon className="h-3.5 w-3.5" aria-hidden />
 					<span>{currentMarket.lang}</span>
-					<ChevronDownIcon className="h-3 w-3 opacity-50" aria-hidden />
+					{canSwitch && <ChevronDownIcon className="h-3 w-3 opacity-50" aria-hidden />}
 				</button>
 
 				<button
 					type="button"
-					onClick={() => setIsOpen(!isOpen)}
+					onClick={() => canSwitch && setIsOpen(!isOpen)}
 					aria-label={t("currency")}
+					aria-disabled={canSwitch ? undefined : true}
 					className="border-sand-300/80 hover:border-copper-500 inline-flex h-9 items-center gap-1.5 rounded-xs border bg-white/60 px-2.5 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
 				>
 					<span>{currentMarket.currency}</span>
-					<ChevronDownIcon className="h-3 w-3 opacity-50" aria-hidden />
+					{canSwitch && <ChevronDownIcon className="h-3 w-3 opacity-50" aria-hidden />}
 				</button>
 			</div>
 
-			{isOpen && (
+			{isOpen && canSwitch && (
 				<div className="border-sand-300 absolute top-full right-0 z-[var(--z-dropdown)] mt-2 w-72 rounded-md border bg-white py-1 shadow-lg">
-					{MARKETS.map((market) => (
+					{options.map((market) => (
 						<button
 							key={market.slug}
 							type="button"
