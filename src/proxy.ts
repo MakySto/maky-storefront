@@ -85,7 +85,59 @@ function detectMarket(request: NextRequest): string {
 	// DEFAULT_MARKET is `sk`, which is in the default live set. If somebody ever
 	// takes it out of MAKY_LIVE_MARKETS, fall back to whatever is live rather
 	// than redirecting the root at a noindex storefront.
-	return isMarketLive(DEFAULT_MARKET) ? DEFAULT_MARKET : (liveMarkets()[0] ?? DEFAULT_MARKET);
+	return isMarketLive(DEFAULT_MARKET) ? DEFAULT_MARKET : liveMarkets()[0] ?? DEFAULT_MARKET;
+}
+
+/**
+ * Rewrite a friendly market slug onto its Saleor channel slug.
+ *
+ * Extracted so that the fail-open path below returns the *same* response the
+ * success path does, rather than a second implementation that can drift from it.
+ * Every market URL that this file does not claim for a redirect or a 404 ends up
+ * here, and so does any request whose handling threw.
+ */
+function marketRewrite(request: NextRequest, market: string, gateVerdict: string | null): NextResponse {
+	const config = CHANNEL_MAP[market];
+	const rest = request.nextUrl.pathname.split("/").filter(Boolean).slice(1).join("/");
+	const url = request.nextUrl.clone();
+	url.pathname = "/" + config.saleorSlug + (rest ? "/" + rest : "");
+
+	const res = NextResponse.rewrite(url);
+	if (gateVerdict) res.headers.set("x-maky-gate", gateVerdict);
+	res.headers.set("x-channel", config.saleorSlug);
+	res.headers.set("x-locale", config.locale);
+	res.headers.set("x-market", market);
+	res.headers.set("x-currency", config.currency);
+
+	// A market that is not live yet must not be indexed — and this is the only
+	// layer that can decide it per request.
+	//
+	// It started life in (main)/layout.tsx as `robots` metadata. That does not
+	// work: generateMetadata has no request-time input, so under cacheComponents
+	// it is evaluated once and baked into the prerendered shell. Measured
+	// 2026-08-06 on a production build — with MAKY_LIVE_MARKETS="sk,cz" the
+	// sitemap picked cz up on the next request while /cz went on serving the
+	// `noindex` from build time. Same reason the 404 status has to live here.
+	//
+	// X-Robots-Tag is equivalent to the meta tag for Google and applies to every
+	// response under the market, RSC payloads included.
+	if (!isMarketLive(market)) {
+		res.headers.set("x-robots-tag", PREVIEW_MARKET_ROBOTS_HEADER);
+	}
+	// Only a LIVE market becomes sticky. The cookie is a year-long persistent
+	// preference, and it is read outside this file too — the checkout locale
+	// fallback in src/checkout/lib/server/resolve-fallback-locale.ts uses it.
+	// One QA visit to /de must not pin a browser to an unfinished market for a
+	// year, nor quietly switch a real customer's checkout language. Navigating
+	// inside a preview market still works: the market comes from the URL.
+	if (isMarketLive(market)) {
+		res.cookies.set(COOKIE_NAME, market, {
+			path: "/",
+			maxAge: COOKIE_MAX_AGE,
+			sameSite: "lax",
+		});
+	}
+	return res;
 }
 
 /**
@@ -96,7 +148,7 @@ function detectMarket(request: NextRequest): string {
  * If a component ever starts reading one, it must be stripped from the incoming
  * request first.
  */
-export async function proxy(request: NextRequest) {
+async function route(request: NextRequest) {
 	const { pathname } = request.nextUrl;
 	const segments = pathname.split("/").filter(Boolean);
 	const first = segments[0];
@@ -235,47 +287,7 @@ export async function proxy(request: NextRequest) {
 
 	// REWRITE friendly slug -> Saleor channel slug (URL stays /sk/...)
 	if (first && FRIENDLY_SLUGS.has(first)) {
-		const config = CHANNEL_MAP[first];
-		const rest = segments.slice(1).join("/");
-		const url = request.nextUrl.clone();
-		url.pathname = "/" + config.saleorSlug + (rest ? "/" + rest : "");
-
-		const res = NextResponse.rewrite(url);
-		if (gateVerdict) res.headers.set("x-maky-gate", gateVerdict);
-		res.headers.set("x-channel", config.saleorSlug);
-		res.headers.set("x-locale", config.locale);
-		res.headers.set("x-market", first);
-		res.headers.set("x-currency", config.currency);
-
-		// A market that is not live yet must not be indexed — and this is the only
-		// layer that can decide it per request.
-		//
-		// It started life in (main)/layout.tsx as `robots` metadata. That does not
-		// work: generateMetadata has no request-time input, so under cacheComponents
-		// it is evaluated once and baked into the prerendered shell. Measured
-		// 2026-08-06 on a production build — with MAKY_LIVE_MARKETS="sk,cz" the
-		// sitemap picked cz up on the next request while /cz went on serving the
-		// `noindex` from build time. Same reason the 404 status has to live here.
-		//
-		// X-Robots-Tag is equivalent to the meta tag for Google and applies to every
-		// response under the market, RSC payloads included.
-		if (!isMarketLive(first)) {
-			res.headers.set("x-robots-tag", PREVIEW_MARKET_ROBOTS_HEADER);
-		}
-		// Only a LIVE market becomes sticky. The cookie is a year-long persistent
-		// preference, and it is read outside this file too — the checkout locale
-		// fallback in src/checkout/lib/server/resolve-fallback-locale.ts uses it.
-		// One QA visit to /de must not pin a browser to an unfinished market for a
-		// year, nor quietly switch a real customer's checkout language. Navigating
-		// inside a preview market still works: the market comes from the URL.
-		if (isMarketLive(first)) {
-			res.cookies.set(COOKIE_NAME, first, {
-				path: "/",
-				maxAge: COOKIE_MAX_AGE,
-				sameSite: "lax",
-			});
-		}
-		return res;
+		return marketRewrite(request, first, gateVerdict);
 	}
 
 	// INVALID FIRST SEGMENT -> real 404.
@@ -302,6 +314,58 @@ export async function proxy(request: NextRequest) {
 	}
 
 	return NextResponse.next();
+}
+
+/**
+ * The response to fall back to when our own code throws.
+ *
+ * NOT `NextResponse.next()`. That emits `x-middleware-next: 1` and leaves the URL
+ * untouched, so the app matches `[channel] = "sk"` instead of `"sk-eur"`: an empty
+ * catalogue, Slovak copy under every market, no preview `noindex`, and — because
+ * the legal pages test `REVERSE_MAP[channel] !== "sk"` — all seven statutory pages
+ * calling notFound() on the Slovak market. A blanket next() would turn one thrown
+ * exception into a worse outage than the exception. So a market URL still gets its
+ * channel rewrite; next() is right only for a path with no market prefix.
+ */
+function failOpen(request: NextRequest): NextResponse {
+	try {
+		const first = request.nextUrl.pathname.split("/").filter(Boolean)[0];
+		return first && FRIENDLY_SLUGS.has(first) ? marketRewrite(request, first, "error") : NextResponse.next();
+	} catch {
+		// Rebuilding the rewrite is itself what broke. Nothing left to try.
+		return NextResponse.next();
+	}
+}
+
+/**
+ * Fail open on any exception, and say so in the log.
+ *
+ * The gate below was designed to fail open on what *Saleor* does — a timeout, a
+ * 5xx, malformed JSON. It was not designed to fail open on what *this file* does,
+ * and the proxy runs before every page: an exception here is a site-wide 500, not
+ * a degraded page. `classifyRoute` calling `decodeURIComponent` on an attacker-
+ * supplied segment was the first instance (`/sk/%E0%A4%A` → URIError → 500); it is
+ * guarded at source too, but a guard only covers the throw site somebody thought
+ * of. This covers the ones nobody did.
+ *
+ * `await route(...)` — the await is load-bearing. Returning the promise unawaited
+ * would let a rejection escape the try block entirely.
+ */
+export async function proxy(request: NextRequest) {
+	try {
+		return await route(request);
+	} catch (error) {
+		console.error(
+			`[proxy] ${JSON.stringify({
+				event: "fail-open",
+				pathname: request.nextUrl.pathname,
+				gate: isGateEnabled(),
+				name: error instanceof Error ? error.name : typeof error,
+				message: error instanceof Error ? error.message : String(error),
+			})}`,
+		);
+		return failOpen(request);
+	}
 }
 
 export const config = {

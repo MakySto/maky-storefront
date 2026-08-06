@@ -75,7 +75,11 @@ export function gateEnabledFor(market: string, family: RouteFamily): boolean {
 	return markets.includes(market) && families.includes(family);
 }
 
-export function describeGate(): { enabled: boolean; markets: readonly string[]; families: readonly string[] } {
+export function describeGate(): {
+	enabled: boolean;
+	markets: readonly string[];
+	families: readonly string[];
+} {
 	return {
 		enabled: isGateEnabled(),
 		markets: envList("ROUTE_EXISTENCE_MARKETS").filter((m) => FRIENDLY_SLUGS.has(m)),
@@ -296,11 +300,32 @@ export function normalizePathname(pathname: string): string {
 }
 
 /**
+ * `decodeURIComponent` that cannot take the site down.
+ *
+ * A malformed percent-escape — `/sk/%E0%A4%A`, `/sk/%zz`, a bare `/sk/%` — makes
+ * the built-in throw URIError. This runs inside the proxy, which runs before every
+ * page, so an uncaught throw here is a site-wide 500 handed to anyone who can type
+ * a URL. Returning undefined instead makes `classifyRoute` return null, and a path
+ * the gate cannot classify simply renders as it does today.
+ *
+ * The proxy also wraps itself in try/catch, so this is the inner of two layers.
+ * Both are wanted: this one keeps a known-bad input on the normal code path, the
+ * outer one catches the throw sites nobody has thought of yet.
+ */
+function safeDecode(segment: string): string | undefined {
+	try {
+		return decodeURIComponent(segment);
+	} catch {
+		return undefined;
+	}
+}
+
+/**
  * Which resource, if any, a market-relative path is asking for.
  *
  * Returns null for anything the gate must not touch: a declared static route, a
- * path with the wrong shape, an unknown market. Silence is the safe answer —
- * a path this cannot classify simply renders as it does today.
+ * path with the wrong shape, an unknown market, an undecodable slug. Silence is
+ * the safe answer — a path this cannot classify simply renders as it does today.
  */
 export function classifyRoute(market: string, segments: readonly string[]): GateDecision | null {
 	const config = CHANNEL_MAP[market];
@@ -312,9 +337,9 @@ export function classifyRoute(market: string, segments: readonly string[]): Gate
 	// /{market}/{slug} — but only when the segment is not a real route. This is
 	// the check that stops the gate asking Saleor about "poradna".
 	if (rest.length === 1) {
-		return isMarketRootSegment(rest[0])
-			? null
-			: { family: "product", slug: decodeURIComponent(rest[0]), channel: config.saleorSlug };
+		if (isMarketRootSegment(rest[0])) return null;
+		const slug = safeDecode(rest[0]);
+		return slug === undefined ? null : { family: "product", slug, channel: config.saleorSlug };
 	}
 
 	if (rest.length !== 2) return null;
@@ -327,6 +352,8 @@ export function classifyRoute(market: string, segments: readonly string[]): Gate
 				: rest[0] === "pages"
 					? "saleor-page"
 					: null;
+	if (!family) return null;
 
-	return family ? { family, slug: decodeURIComponent(rest[1]), channel: config.saleorSlug } : null;
+	const slug = safeDecode(rest[1]);
+	return slug === undefined ? null : { family, slug, channel: config.saleorSlug };
 }
