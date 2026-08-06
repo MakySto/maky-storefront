@@ -85,6 +85,35 @@ export function liveMarkets(): readonly string[] {
 	return Object.keys(CHANNEL_MAP).filter((m) => known.includes(m));
 }
 
+/**
+ * The resolved split, plus anything in the override that is not a market.
+ *
+ * Exists so the state can be reported rather than inferred. `src/instrumentation.ts`
+ * prints it once at boot and `scripts/ops/deploy-production.sh` reads that line
+ * back, which is what turns a typo from a quiet warning into a visible deploy
+ * failure — without giving a typo the power to take the site down, since
+ * `liveMarkets()` still degrades safely at runtime.
+ */
+export function describeMarketState(): {
+	live: readonly string[];
+	preview: readonly string[];
+	unknown: readonly string[];
+} {
+	const live = liveMarkets();
+	const preview = Object.keys(CHANNEL_MAP).filter((m) => !live.includes(m));
+
+	const raw = process.env[ENV_VAR];
+	const unknown = raw
+		? raw
+				.split(",")
+				.map((s) => s.trim().toLowerCase())
+				.filter(Boolean)
+				.filter((m) => !FRIENDLY_SLUGS.has(m))
+		: [];
+
+	return { live, preview, unknown };
+}
+
 /** `live` or `preview` for a friendly market slug (`sk`, `de`, …). */
 export function marketState(market: string): MarketState {
 	return liveMarkets().includes(market) ? "live" : "preview";

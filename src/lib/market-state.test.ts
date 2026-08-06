@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { CHANNEL_MAP } from "./channel-map";
 import {
+	describeMarketState,
 	isChannelLive,
 	isMarketLive,
 	liveMarkets,
@@ -135,5 +137,24 @@ describe("hreflang follows the live set", () => {
 		process.env[ENV] = "sk,cz";
 		const meta = buildAlternatesMetadata("sk-eur", "/products");
 		expect(Object.keys(meta.alternates.languages ?? {})).toEqual(["sk", "cs", "x-default"]);
+	});
+});
+
+describe("describeMarketState", () => {
+	it("reports the split the boot line prints", () => {
+		const { live, preview, unknown } = describeMarketState();
+		expect(live).toEqual(["sk"]);
+		expect(preview).toEqual(["cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"]);
+		expect(unknown).toEqual([]);
+		// Every market is in exactly one of the two sets.
+		expect([...live, ...preview].sort()).toEqual(Object.keys(CHANNEL_MAP).sort());
+	});
+
+	it("surfaces unknown names instead of swallowing them", () => {
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		process.env[ENV] = "sk,gb,xx";
+		const { live, unknown } = describeMarketState();
+		expect(live).toEqual(["sk"]);
+		expect(unknown).toEqual(["gb", "xx"]);
 	});
 });

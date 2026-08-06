@@ -195,3 +195,57 @@ describe("preview markets are not indexable", () => {
 		expect(res.headers.get("x-market")).toBe("de");
 	});
 });
+
+/**
+ * A preview market is a direct-access QA surface, not a destination we send
+ * people to. Without this, a visitor from Germany opening https://maky.store/
+ * would land in an unfinished storefront the moment that channel exists in
+ * Saleor — no catalogue, no translated legal pages, no working payment.
+ */
+describe("root detection only ever chooses a live market", () => {
+	const ENV = "MAKY_LIVE_MARKETS";
+	afterEach(() => delete process.env[ENV]);
+
+	const rootWith = (headers: Record<string, string>, cookie?: string) => {
+		const r = new NextRequest(new URL("https://maky.store/"), { headers: new Headers(headers) });
+		if (cookie) r.cookies.set("maky-market", cookie);
+		return proxy(r);
+	};
+	const target = (res: Response) => new URL(res.headers.get("location") ?? "https://x/").pathname;
+
+	it("ignores a geo header pointing at a preview market", () => {
+		expect(target(rootWith({ "CF-IPCountry": "DE" }))).toBe("/sk");
+		expect(target(rootWith({ "CF-IPCountry": "FR" }))).toBe("/sk");
+	});
+
+	it("ignores an Accept-Language pointing at a preview market", () => {
+		expect(target(rootWith({ "Accept-Language": "de-DE,de;q=0.9" }))).toBe("/sk");
+		expect(target(rootWith({ "Accept-Language": "cs-CZ,cs;q=0.9" }))).toBe("/sk");
+	});
+
+	it("ignores a cookie pointing at a preview market", () => {
+		// One QA visit to /de must not pin that browser to it.
+		expect(target(rootWith({}, "de"))).toBe("/sk");
+	});
+
+	it("honours all three once the market is live", () => {
+		process.env[ENV] = "sk,de";
+		expect(target(rootWith({ "CF-IPCountry": "DE" }))).toBe("/de");
+		expect(target(rootWith({ "Accept-Language": "de-DE,de;q=0.9" }))).toBe("/de");
+		expect(target(rootWith({}, "de"))).toBe("/de");
+	});
+
+	it("still prefers the live market a visitor actually chose", () => {
+		process.env[ENV] = "sk,cz";
+		expect(target(rootWith({ "CF-IPCountry": "DE" }, "cz"))).toBe("/cz");
+	});
+
+	it("does not persist a preview market as a year-long cookie", () => {
+		// It is read outside the proxy too — the checkout locale fallback uses it.
+		const preview = proxy(req("/de/categories/stresne-boxy"));
+		expect(preview.cookies.get("maky-market")).toBeUndefined();
+
+		const live = proxy(req("/sk/categories/stresne-boxy"));
+		expect(live.cookies.get("maky-market")?.value).toBe("sk");
+	});
+});

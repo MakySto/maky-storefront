@@ -331,6 +331,9 @@ Restore a snapshot first (CLAUDE.md §13.3), or set ALLOW_NO_BASELINE=1 for a on
 
 	info "deploying $(git rev-parse --short HEAD) ($(git rev-parse --abbrev-ref HEAD)) — $(git log -1 --format=%s)"
 	info "currently serving BUILD_ID $PREV_BUILD_ID from $PREV_SHA"
+	# Printed here so a --dry-run shows it too. Confirmed against the running
+	# process after the gate, by check_market_state.
+	info "indexable markets requested by .env: $(market_state_from_env)"
 	ps -eo pid,comm,rss --sort=-rss | head -5
 }
 
@@ -438,6 +441,51 @@ verify_external() {
 	return 0
 }
 
+# Which markets came up indexable, read back from the process rather than assumed.
+#
+# MAKY_LIVE_MARKETS decides who Google may index. A misreading of it is invisible
+# from the outside — the site is up either way — so the app prints its resolved
+# split at boot (src/instrumentation.ts) and this compares that line with what
+# .env asked for. A post-deploy check, not a rollback gate: the artifact is fine,
+# the configuration is what is wrong, and exit 75 says exactly that.
+market_state_from_env() {
+	local envfile="$APP_DIR/.env"
+	if [[ -f "$envfile" ]] && grep -q '^MAKY_LIVE_MARKETS=' "$envfile"; then
+		grep '^MAKY_LIVE_MARKETS=' "$envfile" | tail -1 |
+			sed -e 's/^MAKY_LIVE_MARKETS=//' -e 's/^["'\'']//' -e 's/["'\'']$//' |
+			tr 'A-Z' 'a-z' | tr -d ' ' | tr ',' '\n' | grep -v '^$' | sort -u | paste -sd, -
+	else
+		printf 'sk'   # the built-in default in src/lib/market-state.ts
+	fi
+}
+
+check_market_state() {
+	local line got unknown want
+	line=$(pm2 logs "$PM2_APP" --nostream --lines 400 2>/dev/null |
+		grep -o '\[market-state\] live=[^ ]* preview=[^ ]* unknown=[^ ]*' | tail -1)
+
+	if [[ -z "$line" ]]; then
+		err "no [market-state] line in the PM2 log — cannot confirm which markets are indexable"
+		return 1
+	fi
+	info "$line"
+
+	unknown=$(sed -n 's/.*unknown=\([^ ]*\).*/\1/p' <<<"$line")
+	if [[ -n "$unknown" ]]; then
+		err "MAKY_LIVE_MARKETS names something that is not a market: ${unknown} — it was ignored, fix $APP_DIR/.env"
+		return 1
+	fi
+
+	got=$(sed -n 's/.*live=\([^ ]*\).*/\1/p' <<<"$line" | tr ',' '\n' | grep -v '^$' | sort -u | paste -sd, -)
+	want=$(market_state_from_env)
+	if [[ "$got" != "$want" ]]; then
+		err "indexable markets in use ($got) do not match $APP_DIR/.env ($want)"
+		return 1
+	fi
+
+	info "indexable markets confirmed: ${got:-none}"
+}
+
 write_deploy_log() {
 	step "record"
 	local snap_name="none"
@@ -517,6 +565,7 @@ start
 gate_local
 
 soft "external verification" verify_external
+soft "market state"         check_market_state
 soft "deployment log"       write_deploy_log
 soft "snapshot pruning"     prune
 

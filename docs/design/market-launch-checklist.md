@@ -30,15 +30,28 @@ Default is `sk` alone. Everything else is `preview` until you say otherwise.
 
 ## 2. Flipping a market
 
-No rebuild. Set the env var and restart:
+The value lives in **`/opt/storefront/.env`**, not in a one-off shell export — it has
+to survive a deploy, a reboot, a `pm2 resurrect` and a rollback. Edit it there:
 
 ```bash
-MAKY_LIVE_MARKETS="sk,cz"
+MAKY_LIVE_MARKETS=sk,cz
 ```
 
 ```bash
 pm2 restart maky-storefront --update-env
 ```
+
+The app prints its resolved split once at boot, and the deploy script reads that
+line back and compares it with `.env`:
+
+```
+[market-state] live=sk,cz preview=de,at,pl,hu,it,fr,es,ro,us,ca unknown=
+```
+
+A name that is not a market shows up in `unknown=` and fails the deploy's
+post-gate check (exit 75 — the build stays live, the configuration is what is
+wrong). It does not abort the boot: a typo in an env var should not be able to
+take the site down, and `liveMarkets()` already degrades safely.
 
 Deliberately **not** a `NEXT_PUBLIC_` variable — those are inlined at build time,
 which is the rebuild this is designed to avoid.

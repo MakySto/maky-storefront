@@ -11,7 +11,7 @@ import {
 } from "./lib/channel-map";
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/public-assets.generated";
-import { isMarketLive, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
+import { isMarketLive, liveMarkets, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
 
 /**
  * First path segments that are legitimately not a market.
@@ -29,16 +29,32 @@ const RESERVED_FIRST_SEGMENTS = new Set(["checkout", "api", "_next", ".well-know
 
 /**
  * Detect the best market for a visitor based on cookie, geo, or language.
+ *
+ * ── Every source is filtered through `isMarketLive` ──────────────────────────
+ *
+ * A preview market is a direct-access QA surface, not a destination we send
+ * people to. Without this filter a visitor from Germany opening
+ * `https://maky.store/` would be redirected into `/de` the moment that channel
+ * exists in Saleor — an unfinished storefront with no catalogue, no translated
+ * legal pages and no working payment, chosen for them automatically.
+ *
+ * That covers all three inputs, including the cookie: visiting `/de` directly
+ * persists `maky-market=de`, so without the filter one QA visit would pin that
+ * browser to the preview market for a year.
+ *
+ * Reaching `/de` by typing it stays fully supported — see the rewrite branch,
+ * which serves it with `X-Robots-Tag: noindex`.
  */
 function detectMarket(request: NextRequest): string {
 	// Priority 1: Persisted cookie
 	const cookie = request.cookies.get(COOKIE_NAME)?.value;
-	if (cookie && FRIENDLY_SLUGS.has(cookie)) return cookie;
+	if (cookie && FRIENDLY_SLUGS.has(cookie) && isMarketLive(cookie)) return cookie;
 
 	// Priority 2: Cloudflare geo header
 	const cfCountry = request.headers.get("CF-IPCountry");
-	if (cfCountry && COUNTRY_TO_MARKET[cfCountry]) {
-		return COUNTRY_TO_MARKET[cfCountry];
+	const geoMarket = cfCountry ? COUNTRY_TO_MARKET[cfCountry] : undefined;
+	if (geoMarket && isMarketLive(geoMarket)) {
+		return geoMarket;
 	}
 
 	// Priority 3: Accept-Language
@@ -55,10 +71,13 @@ function detectMarket(request: NextRequest): string {
 		ro: "ro",
 	};
 	for (const [lang, market] of Object.entries(langMap)) {
-		if (acceptLang.toLowerCase().includes(lang)) return market;
+		if (acceptLang.toLowerCase().includes(lang) && isMarketLive(market)) return market;
 	}
 
-	return DEFAULT_MARKET;
+	// DEFAULT_MARKET is `sk`, which is in the default live set. If somebody ever
+	// takes it out of MAKY_LIVE_MARKETS, fall back to whatever is live rather
+	// than redirecting the root at a noindex storefront.
+	return isMarketLive(DEFAULT_MARKET) ? DEFAULT_MARKET : (liveMarkets()[0] ?? DEFAULT_MARKET);
 }
 
 export function proxy(request: NextRequest) {
@@ -147,11 +166,19 @@ export function proxy(request: NextRequest) {
 		if (!isMarketLive(first)) {
 			res.headers.set("x-robots-tag", PREVIEW_MARKET_ROBOTS_HEADER);
 		}
-		res.cookies.set(COOKIE_NAME, first, {
-			path: "/",
-			maxAge: COOKIE_MAX_AGE,
-			sameSite: "lax",
-		});
+		// Only a LIVE market becomes sticky. The cookie is a year-long persistent
+		// preference, and it is read outside this file too — the checkout locale
+		// fallback in src/checkout/lib/server/resolve-fallback-locale.ts uses it.
+		// One QA visit to /de must not pin a browser to an unfinished market for a
+		// year, nor quietly switch a real customer's checkout language. Navigating
+		// inside a preview market still works: the market comes from the URL.
+		if (isMarketLive(first)) {
+			res.cookies.set(COOKIE_NAME, first, {
+				path: "/",
+				maxAge: COOKIE_MAX_AGE,
+				sameSite: "lax",
+			});
+		}
 		return res;
 	}
 
