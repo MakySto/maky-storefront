@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { proxy } from "./proxy";
 
 /**
@@ -152,5 +152,46 @@ describe("dotted first segment", () => {
 
 	it("still redirects the bare root to a market", () => {
 		expect(proxy(req("/")).status).toBe(307);
+	});
+});
+
+/**
+ * The `noindex` for a market that is not live lives here rather than in
+ * generateMetadata, because metadata is baked into the prerendered shell under
+ * cacheComponents and therefore cannot follow an env var. Measured 2026-08-06 on
+ * a production build: with MAKY_LIVE_MARKETS="sk,cz" the sitemap picked cz up on
+ * the next request while /cz kept serving the noindex from build time.
+ */
+describe("preview markets are not indexable", () => {
+	const ENV = "MAKY_LIVE_MARKETS";
+	afterEach(() => delete process.env[ENV]);
+
+	const robotsFor = (path: string) => proxy(req(path)).headers.get("x-robots-tag");
+
+	it("does not mark the live market", () => {
+		expect(robotsFor("/sk")).toBeNull();
+		expect(robotsFor("/sk/categories/stresne-boxy")).toBeNull();
+	});
+
+	it("marks every other market, on every route under it", () => {
+		for (const market of ["cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"]) {
+			for (const path of ["", "/products", "/categories/stresne-boxy", "/some-product"]) {
+				expect(robotsFor(`/${market}${path}`), `/${market}${path}`).toBe("noindex, nofollow");
+			}
+		}
+	});
+
+	it("follows the env override without a rebuild", () => {
+		process.env[ENV] = "sk,cz";
+		expect(robotsFor("/cz")).toBeNull();
+		expect(robotsFor("/de")).toBe("noindex, nofollow");
+	});
+
+	it("keeps the channel rewrite intact for a preview market", () => {
+		// Preview means "not indexable", not "broken". The market has to work.
+		const res = proxy(req("/de/categories/stresne-boxy"));
+		expect(res.status).not.toBe(404);
+		expect(res.headers.get("x-channel")).toBe("de-eur");
+		expect(res.headers.get("x-market")).toBe("de");
 	});
 });

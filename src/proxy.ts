@@ -11,6 +11,7 @@ import {
 } from "./lib/channel-map";
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/public-assets.generated";
+import { isMarketLive, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
 
 /**
  * First path segments that are legitimately not a market.
@@ -130,6 +131,22 @@ export function proxy(request: NextRequest) {
 		res.headers.set("x-locale", config.locale);
 		res.headers.set("x-market", first);
 		res.headers.set("x-currency", config.currency);
+
+		// A market that is not live yet must not be indexed — and this is the only
+		// layer that can decide it per request.
+		//
+		// It started life in (main)/layout.tsx as `robots` metadata. That does not
+		// work: generateMetadata has no request-time input, so under cacheComponents
+		// it is evaluated once and baked into the prerendered shell. Measured
+		// 2026-08-06 on a production build — with MAKY_LIVE_MARKETS="sk,cz" the
+		// sitemap picked cz up on the next request while /cz went on serving the
+		// `noindex` from build time. Same reason the 404 status has to live here.
+		//
+		// X-Robots-Tag is equivalent to the meta tag for Google and applies to every
+		// response under the market, RSC payloads included.
+		if (!isMarketLive(first)) {
+			res.headers.set("x-robots-tag", PREVIEW_MARKET_ROBOTS_HEADER);
+		}
 		res.cookies.set(COOKIE_NAME, first, {
 			path: "/",
 			maxAge: COOKIE_MAX_AGE,

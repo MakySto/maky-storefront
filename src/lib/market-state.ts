@@ -101,19 +101,37 @@ export function isChannelLive(saleorSlug: string): boolean {
 }
 
 /**
- * Metadata for any page under a market that is not live yet.
+ * `X-Robots-Tag` for every response under a market that is not live yet.
+ *
+ * A response header rather than `robots` metadata, and that is not a style
+ * choice. `generateMetadata` has no request-time input, so under cacheComponents
+ * it is evaluated once and baked into the prerendered shell — measured
+ * 2026-08-06: with `MAKY_LIVE_MARKETS="sk,cz"` the sitemap picked cz up on the
+ * next request while `/cz` went on serving the `noindex` from build time. Set in
+ * `src/proxy.ts`, which is the only layer that sees the request.
  *
  * `nofollow` as well as `noindex`, on purpose: a preview market renders the same
- * navigation as the live one, so following it would spend crawl budget on twelve
- * duplicates of every category. Merge this at the layout level and every route
- * under the market inherits it — pages that need their own robots value still
- * override it.
+ * navigation as a live one, so following it would spend crawl budget on twelve
+ * duplicates of every category.
  */
-export const PREVIEW_MARKET_ROBOTS = {
-	index: false,
-	follow: false,
-	googleBot: { index: false, follow: false },
-} as const;
+export const PREVIEW_MARKET_ROBOTS_HEADER = "noindex, nofollow";
+
+/**
+ * ── What follows the env var immediately, and what waits for a deploy ──────────
+ *
+ *   instant   the `noindex` header (proxy, per request)
+ *   instant   the sitemap (a dynamic route, re-read per request)
+ *   at build  hreflang, because it is emitted from `generateMetadata` and baked
+ *             into the prerendered shell
+ *
+ * The asymmetry is safe in the direction that matters. PROMOTING a market with
+ * the env var protects nothing and reveals nothing prematurely: it stops sending
+ * `noindex` and starts listing the market in the sitemap, while hreflang simply
+ * stays quiet until the next deploy — a missing annotation, never a wrong one.
+ * DEMOTING is instant for the header and the sitemap, but a hreflang cluster
+ * baked while the market was live would keep naming it until the next deploy, so
+ * a demotion should be followed by one.
+ */
 
 /** Test seam. Resets the once-only warning so a test can assert on it. */
 export function resetMarketStateWarningForTests(): void {

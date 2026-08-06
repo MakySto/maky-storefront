@@ -6,7 +6,6 @@ import { CartProvider, CartDrawerWrapper } from "@/ui/components/cart";
 import { brandConfig } from "@/config/brand";
 import { Logo } from "@/ui/components/shared/logo";
 import { getLocaleFromChannel, LOCALE_MAP } from "@/config/locale";
-import { isChannelLive, PREVIEW_MARKET_ROBOTS } from "@/lib/market-state";
 
 /**
  * Dynamic metadata per channel — hreflang, canonical, OG locale.
@@ -28,14 +27,16 @@ export async function generateMetadata({
 		openGraph: {
 			locale: localeConfig?.ogLocale,
 		},
-		// A market that is not live yet is reachable but must not be indexed, and
-		// this is the one place that covers every route under it. Metadata merges
-		// per field, so a page that sets its own `robots` still wins; a page that
-		// does not — every category, every product, every legal page — inherits.
+		// NOTE: the `noindex` for a market that is not live yet is NOT set here.
+		// It is an `X-Robots-Tag` response header from src/proxy.ts.
 		//
-		// Without it, switching a channel on in Saleor immediately publishes an
-		// empty storefront carrying Slovak copy under a foreign hreflang.
-		...(isChannelLive(channel) ? {} : { robots: PREVIEW_MARKET_ROBOTS }),
+		// It was here first, and it did not work. generateMetadata has no
+		// request-time input, so under cacheComponents it is evaluated once and
+		// baked into the prerendered shell — measured 2026-08-06: with
+		// MAKY_LIVE_MARKETS="sk,cz" the sitemap picked cz up immediately (it is a
+		// dynamic route) while /cz kept serving the `noindex` baked at build time.
+		// A market state that can only change at build time is not a market state.
+		//
 		// Canonical + hreflang are page-specific and set per page (the homepage
 		// owns the market canonical). A layout-level canonical with path="" would
 		// wrongly mark every page as a duplicate of the market homepage.
