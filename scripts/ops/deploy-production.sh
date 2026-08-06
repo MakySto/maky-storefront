@@ -36,6 +36,9 @@ MIN_FREE_DISK_MB="${MIN_FREE_DISK_MB:-10240}"
 READY_TIMEOUT_S="${READY_TIMEOUT_S:-120}"
 RESTORE_TIMEOUT_S="${RESTORE_TIMEOUT_S:-60}"
 MIN_ASSET_BYTES="${MIN_ASSET_BYTES:-1000}"
+# A floor, not an assertion of the exact count: the catalogue grows. 481 URLs on
+# 2026-08-06 with one live market. Raise it as markets go live.
+MIN_SITEMAP_URLS="${MIN_SITEMAP_URLS:-400}"
 EXTERNAL_RETRIES="${EXTERNAL_RETRIES:-3}"
 EXTERNAL_RETRY_SLEEP_S="${EXTERNAL_RETRY_SLEEP_S:-5}"
 
@@ -297,6 +300,16 @@ preflight() {
 	done
 	pm2 describe "$PM2_APP" >/dev/null 2>&1 || die "PM2 knows no app called '$PM2_APP'"
 
+	# Cheap and worth it: about two seconds, and it is what catches a drift between
+	# public/ and src/lib/routing.generated.ts. That list decides which paths
+	# the proxy passes through, so a stale one 404s the logo sitewide.
+	if [[ "${SKIP_TESTS:-0}" != "1" ]]; then
+		pnpm vitest run >/dev/null 2>&1 || die "the test suite fails — fix it or set SKIP_TESTS=1 to override deliberately"
+		info "test suite green"
+	else
+		warn "SKIP_TESTS=1 — the public-asset drift check did not run"
+	fi
+
 	ensure_sudo
 	[[ -d "$ROLLBACK_DIR" ]] || { info "creating $ROLLBACK_DIR"; sudo mkdir -p "$ROLLBACK_DIR"; }
 
@@ -418,10 +431,70 @@ gate_local() {
 	require_local "$LOCAL_URL$SMOKE_PATH"
 	require_local "$LOCAL_URL$css"
 
+	gate_routing
+
 	CSS_PATH="$css"
 	DOWNTIME=$(( $(date +%s) - DOWN_FROM ))
 	COMMITTED=1
 	info "local gate passed — downtime ${DOWNTIME}s. From here the new build stays."
+}
+
+# Routing behaviour the artifact is responsible for. Part of the rollback gate:
+# a build that 404s its own logo, or stops 404ing junk, is a bad build.
+#
+# The dotted-path checks exist because the matcher used to exclude every path
+# containing a dot, so /admin.php answered 200 with `index, follow` and a
+# self-canonical. Re-introducing that exclusion is a one-character mistake and
+# nothing else in this script would notice.
+gate_routing() {
+	local path code body count
+
+	# Static assets and root metadata routes. Generated list, so this follows
+	# public/ rather than a list somebody has to remember to update.
+	local assets=()
+	while IFS= read -r path; do assets+=("$path"); done < <(
+		find "$APP_DIR/public" -type f -printf '/%P\n' | sort
+	)
+	assets+=(/robots.txt /sitemap.xml /icon.png /apple-icon.png /opengraph-image.png /twitter-image.png)
+
+	for path in "${assets[@]}"; do
+		code=$(http_code "$LOCAL_URL$path")
+		[[ "$code" == "200" ]] || die "static asset $path answered $code — the matcher change has broken public/"
+	done
+	info "static assets and metadata routes: ${#assets[@]} × 200"
+
+	# Junk must 404, including the dotted first segments that used to bypass the proxy.
+	for path in /admin.php /wp-login.php /index.php /does.not.exist /does.not.exist/categories/x /wishlist; do
+		code=$(http_code "$LOCAL_URL$path")
+		[[ "$code" == "404" ]] || die "$path answered $code, expected 404 — the invalid-first-segment gate is open"
+	done
+	info "bogus paths (dotted and plain): 404"
+
+	# Sitemap: reachable, parses, and not suspiciously short. A truncated sitemap
+	# reads to Google as "the missing URLs are gone", and is indistinguishable
+	# from a complete one without a floor to compare against.
+	body=$(new_tmp)
+	curl -fsS --max-time 25 "$LOCAL_URL/sitemap.xml" -o "$body" || die "/sitemap.xml did not respond"
+	command -v xmllint >/dev/null && { xmllint --noout "$body" || die "/sitemap.xml is not well-formed XML"; }
+	count=$(grep -c '<loc>' "$body" || true)
+	(( count >= MIN_SITEMAP_URLS )) || die "/sitemap.xml lists $count URLs, expected at least $MIN_SITEMAP_URLS"
+	info "sitemap: $count URLs, well-formed"
+
+	# Client-side navigation. The proxy matcher also fires for RSC and prefetch
+	# requests, so a change there can break in-app navigation while every plain
+	# page load still looks fine.
+	for path in "$SMOKE_PATH" "$SMOKE_PATH/products"; do
+		code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 -H 'RSC: 1' "$LOCAL_URL$path" 2>/dev/null || echo 000)
+		[[ "$code" == "200" ]] || die "RSC navigation to $path answered $code — client-side routing is broken"
+	done
+	info "RSC navigation: 200"
+
+	# The pages a customer actually needs.
+	for path in "$SMOKE_PATH/products" /checkout; do
+		code=$(http_code "$LOCAL_URL$path")
+		[[ "$code" == "200" ]] || die "$path answered $code"
+	done
+	info "listing and checkout: 200"
 }
 
 # Post-commit. Failures are reported, never rolled back.

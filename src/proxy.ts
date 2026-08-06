@@ -10,8 +10,9 @@ import {
 	COOKIE_MAX_AGE,
 } from "./lib/channel-map";
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
-import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/public-assets.generated";
+import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/routing.generated";
 import { isMarketLive, liveMarkets, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
+import { isRouteMissingInMarket } from "./lib/route-policy";
 
 /**
  * First path segments that are legitimately not a market.
@@ -136,6 +137,26 @@ export function proxy(request: NextRequest) {
 		const url = request.nextUrl.clone();
 		url.pathname = "/" + first + "/" + resolveLegacyProductSlug(segments[2]);
 		return NextResponse.redirect(url, 308);
+	}
+
+	// A ROUTE THAT EXISTS, BUT NOT IN THIS MARKET -> real 404.
+	//
+	// The seven Slovak legal pages and the two CMS pages are `sk` only: each calls
+	// notFound() for another channel. But `export const metadata` on them has no
+	// such branch, so /de/kontakt answered HTTP 200 with a fully indexable Slovak
+	// <head> over a 404-ed body. Selling into Germany on Slovak terms is a
+	// compliance problem before it is an SEO one.
+	//
+	// Decided from the route policy, so it costs no upstream call and ships ahead
+	// of the resource-existence gate. A market gains these the moment it has its
+	// own translated set — see docs/design/market-launch-checklist.md.
+	if (first && FRIENDLY_SLUGS.has(first) && segments[1] && isRouteMissingInMarket(first, segments[1])) {
+		const url = request.nextUrl.clone();
+		url.pathname = "/_not-found";
+		return NextResponse.rewrite(url, {
+			status: 404,
+			headers: { "x-robots-tag": "noindex" },
+		});
 	}
 
 	// REWRITE friendly slug -> Saleor channel slug (URL stays /sk/...)

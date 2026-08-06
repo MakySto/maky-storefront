@@ -156,6 +156,60 @@ describe("dotted first segment", () => {
 });
 
 /**
+ * The seven Slovak legal pages and the two CMS pages exist only for `sk` — each
+ * calls notFound() for another channel — but `export const metadata` on them has
+ * no such branch, so /de/kontakt answered HTTP 200 with a fully indexable Slovak
+ * <head> over a 404-ed body.
+ */
+describe("a route that exists, but not in this market", () => {
+	const SK_ONLY = [
+		"kontakt",
+		"obchodne-podmienky",
+		"odstupenie-od-zmluvy",
+		"reklamacie-a-vratenie",
+		"ochrana-osobnych-udajov",
+		"cookies",
+		"doprava-a-platba",
+		"o-nas",
+		"poradna",
+	];
+
+	it("404s the Slovak-only pages under every other market", () => {
+		for (const segment of SK_ONLY) {
+			for (const market of ["de", "cz", "fr", "us", "ca"]) {
+				expect(statusOf(`/${market}/${segment}`), `/${market}/${segment}`).toBe(404);
+			}
+		}
+	});
+
+	it("marks them noindex", () => {
+		expect(proxy(req("/de/kontakt")).headers.get("x-robots-tag")).toBe("noindex");
+	});
+
+	it("leaves them alone on sk", () => {
+		for (const segment of SK_ONLY) {
+			const res = proxy(req(`/sk/${segment}`));
+			expect(res.status, `/sk/${segment}`).not.toBe(404);
+			expect(res.headers.get("x-channel"), `/sk/${segment}`).toBe("sk-eur");
+		}
+	});
+
+	it("does not touch routes that exist everywhere", () => {
+		for (const segment of ["products", "categories/stresne-boxy", "cart", "search"]) {
+			expect(statusOf(`/de/${segment}`), `/de/${segment}`).not.toBe(404);
+		}
+	});
+
+	it("does not mistake a product slug for a missing route", () => {
+		// A slug that is not a declared route belongs to the existence gate, which
+		// is not enabled yet — it must pass through, not 404 on a static guess.
+		const res = proxy(req("/de/stresny-box-thule-motion-3"));
+		expect(res.status).not.toBe(404);
+		expect(res.headers.get("x-channel")).toBe("de-eur");
+	});
+});
+
+/**
  * The `noindex` for a market that is not live lives here rather than in
  * generateMetadata, because metadata is baked into the prerendered shell under
  * cacheComponents and therefore cannot follow an env var. Measured 2026-08-06 on

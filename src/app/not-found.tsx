@@ -1,10 +1,18 @@
 import Link from "next/link";
-import { Search, Home } from "lucide-react";
+import { Home } from "lucide-react";
 
 /**
- * Global 404 page.
+ * The 404 body for requests with NO market context.
  *
- * Shown when a route doesn't exist.
+ * Reached through the proxy's rewrite for an invalid first segment — /wishlist,
+ * /admin.php, /does.not.exist. English is correct here precisely because there is
+ * no market to localize to; routes that DO have one render
+ * `[channel]/(main)/not-found.tsx` instead.
+ *
+ * The "Browse Products" link that used to sit here pointed at `/products`, which
+ * this very proxy 404s — `products` is not a market. A 404 page whose own link
+ * 404s is a poor apology, and there is no market-neutral catalogue URL to replace
+ * it with, so it is gone rather than guessed.
  */
 export default function NotFound() {
 	const buttonBase =
@@ -27,18 +35,10 @@ export default function NotFound() {
 				</p>
 
 				{/* Actions */}
-				<div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+				<div className="flex justify-center">
 					<Link href="/" className={`${buttonBase} hover:bg-primary/90 bg-primary text-primary-foreground`}>
 						<Home className="h-4 w-4" />
 						Go Home
-					</Link>
-
-					<Link
-						href="/products"
-						className={`${buttonBase} border border-input bg-background hover:bg-accent hover:text-accent-foreground`}
-					>
-						<Search className="h-4 w-4" />
-						Browse Products
 					</Link>
 				</div>
 			</div>
