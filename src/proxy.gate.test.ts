@@ -10,8 +10,14 @@ import { proxy } from "./proxy";
  *
  * src/proxy.test.ts runs every one of its cases with the gate off, which is the
  * shipping configuration — but it meant the gate's integration into the proxy had
- * no coverage at all, and that is where the status codes are decided. The URIError
- * that made `/sk/%E0%A4%A` a 500 lived there and no unit test could have seen it.
+ * no coverage at all, and that is where the status codes are decided.
+ *
+ * These call `proxy()` directly, so they see inputs Next's own URL handling would
+ * reject before the proxy ever runs. That is a feature for the malformed-URL cases
+ * below — they pin that `classifyRoute` cannot throw whatever it is handed — but
+ * it means a green run here is NOT evidence about the status a real server
+ * returns. The acceptance run against `next build` + `next start` is; see
+ * docs/design/seo-hard-404-analysis-20260806.md.
  *
  * Two rules for everything below:
  *
@@ -184,9 +190,12 @@ describe("the flags decide whether a lookup happens at all", () => {
 	});
 });
 
-describe("a malformed URL must not 500", () => {
-	// `decodeURIComponent` throws URIError on these. The proxy runs before every
-	// page, so an uncaught throw is a site-wide 500 for anyone who can type a URL.
+describe("classifyRoute cannot be made to throw", () => {
+	// Bare `decodeURIComponent` throws URIError on these. On a real server they
+	// never arrive — nginx answers 400 and Next rejects the URL before the proxy
+	// runs — so this is not the site-wide 500 it was reported to be. It is pinned
+	// anyway: that they are unreachable is a property of nginx and of Next's URL
+	// handling, not of this file.
 	const malformed = ["/sk/%E0%A4%A", "/sk/%zz", "/sk/%", "/sk/categories/%E0%A4%A", "/sk/collections/%"];
 
 	for (const path of malformed) {

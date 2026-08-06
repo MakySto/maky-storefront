@@ -343,10 +343,20 @@ function failOpen(request: NextRequest): NextResponse {
  * The gate below was designed to fail open on what *Saleor* does — a timeout, a
  * 5xx, malformed JSON. It was not designed to fail open on what *this file* does,
  * and the proxy runs before every page: an exception here is a site-wide 500, not
- * a degraded page. `classifyRoute` calling `decodeURIComponent` on an attacker-
- * supplied segment was the first instance (`/sk/%E0%A4%A` → URIError → 500); it is
- * guarded at source too, but a guard only covers the throw site somebody thought
- * of. This covers the ones nobody did.
+ * a degraded page.
+ *
+ * `classifyRoute` calling bare `decodeURIComponent` on an attacker-supplied
+ * segment was the throw site that prompted this. Measured before believing it:
+ * a singly-malformed `/sk/%E0%A4%A` never reaches us at all — nginx answers 400
+ * and Next rejects the URL before the proxy runs — so that particular input was
+ * never the 500 it was reported to be. A DOUBLE-encoded `/sk/%25E0%25A4%25A` does
+ * arrive, and decodes cleanly, so it did not throw either. The guard stays because
+ * "no input reaches it today" is a property of nginx and of Next's URL handling,
+ * not of this file, and neither is ours to depend on.
+ *
+ * That is also the argument for this wrapper. A guard only covers the throw site
+ * somebody thought of, and the one somebody thought of turned out not to be the
+ * live one. This covers the ones nobody has found yet.
  *
  * `await route(...)` — the await is load-bearing. Returning the promise unawaited
  * would let a rejection escape the try block entirely.
