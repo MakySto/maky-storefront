@@ -126,25 +126,36 @@ and one good reason not to.
 
 ---
 
-## 4. Which parts are code and which are content
+## 4. Ground truth — what is actually built
 
-**Code — done, on `fix/seo-hard-404-v1`:**
+Read this before assuming anything downstream is safe.
 
-- market state, and the env override
-- sitemap follows the live markets, and fails loudly instead of silently short
-- hreflang emits live markets only, and nothing below two of them
-- a category empty in this channel is `noindex` with no canonical, and reverts
-  on its own when stock arrives
-- the dotted-path hole in the proxy matcher is closed
+| | state | notes |
+|---|---|---|
+| dotted-path matcher fix | **DONE** | `5e85cff` |
+| market state (`live` / `preview`) | **DONE** | `cd301c5`, `eb8d031` |
+| sitemap follows live markets, fails loud | **DONE** | `cd301c5` |
+| empty-category `noindex` | **DONE** | `cd301c5` |
+| preview markets direct-access only | **DONE** | |
+| durable + validated live-market config | **DONE** | |
+| **data semantics** (`found`/`not-found`/`upstream-error`) | **NOT DONE** | prerequisite for the gate |
+| **route classifier + curated market policy** | **NOT DONE** | |
+| **localized market-aware 404** | **NOT DONE** | |
+| **hard-404 gate** | **NOT DONE** | ships OFF, activated separately |
 
-**Code — next, not yet written:**
+**`/sk/neexistujuci-produkt` still returns HTTP 200 + `noindex`.** Nothing on this
+branch changes that yet. The soft-404 that started this work is still there; what
+has changed is the surface it applies to, and the fact that turning it into a real
+404 is now a matter of finishing the remaining four rows rather than redesigning
+anything.
 
-- the resource-existence gate (real 404s), §5
+### Still to write
+
 - navigation filtered by per-channel product count
-- `public/llms.txt` still says Slovakia is the only stocked market; it is prose,
-  so it is a content edit, but it is in the repo rather than the CMS
+- `public/llms.txt` still says Slovakia is the only stocked market — prose, so a
+  content edit, but it lives in the repo rather than the CMS
 
-**Content — yours:**
+### Content — yours
 
 - translations, product data, prices, channel listings
 - localized legal pages in Payload
@@ -164,8 +175,12 @@ takes months to clear, not days.
 So the sequence is not negotiable:
 
 ```
-matcher fix  ──▶  data semantics  ──▶  404 gate  ──▶  flip markets to live
-   (done)           (done)              (next)
+matcher fix  ──▶  market state  ──▶  data semantics  ──▶  route classifier
+   DONE              DONE              NOT DONE            NOT DONE
+                                            │
+                                            ▼
+                             404 gate  ──▶  flip markets to live
+                             NOT DONE
 ```
 
 Code and content can run in parallel. They have to meet in that order.

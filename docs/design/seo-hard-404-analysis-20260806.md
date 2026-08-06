@@ -1,7 +1,30 @@
 # True HTTP 404 — analysis and recommended architecture
 
-**Status:** analysis only. No implementation, no patch, no deploy. Stop gate at the end.
 **Date:** 2026-08-06 · **Author:** Claude (read-only analysis + off-production proof-of-concept)
+
+> **Implementation status — read this before trusting anything downstream.**
+>
+> | | state |
+> |---|---|
+> | dotted-path matcher fix (§F.3) | **DONE** |
+> | market state, `live` / `preview` | **DONE** |
+> | sitemap follows live markets, fails loud | **DONE** |
+> | empty-category `noindex` (§F.4) | **DONE** |
+> | **data semantics, §F.0** | **NOT DONE** |
+> | **route classifier (§F.1 step 8–9)** | **NOT DONE** |
+> | **localized market-aware 404** | **NOT DONE** |
+> | **hard-404 gate (§F.2)** | **NOT DONE** |
+>
+> `/sk/neexistujuci-produkt` still returns **HTTP 200 + noindex**. The gate must
+> not be enabled until the data semantics land — see §D.2 for why that ordering
+> is a safety condition and not a preference.
+>
+> **Correction, 2026-08-06.** An earlier revision of §F.2 specified a loopback to
+> an internal Route Handler sharing the page's full `"use cache"` resolver, and
+> quoted the *minimal* query's latency alongside a "zero extra upstream requests"
+> claim that belongs to the *full* one. Those are two different designs and the
+> numbers are not interchangeable. §F.2 now specifies the minimal direct query,
+> and §E.2's measurement is labelled with the design it actually measured.
 
 ---
 
@@ -330,10 +353,16 @@ Two mechanisms were confirmed that the option depends on:
 - **Module state survives across requests.** After 9 requests the gate reported
   `x-probe-lookups: 3`, `x-probe-cache-size: 3` — one lookup per distinct `(channel, slug)`. PM2 fork mode
   with a single instance means one coherent cache; there is no multi-process problem to solve.
-- **The gate and the render share one `use cache` entry.** The server log shows exactly **3**
+- **The gate and the render can share one `use cache` entry.** The server log shows exactly **3**
   `[zprobe] UPSTREAM` lines for 3 distinct keys, although both the loopback handler *and* the page render
-  called the resolver for each. **A cold gate therefore costs zero extra upstream requests** — it prefetches
-  what the render was going to fetch anyway. This is what satisfies invariant #25 and §9 simultaneously.
+  called the resolver for each — so a cold gate costs zero extra upstream requests in that design.
+
+  ⚠️ **Scope of this measurement.** The probe called a *shared full* resolver through a loopback Route
+  Handler. It proves the mechanism exists; it does **not** license the "zero extra requests" claim for the
+  minimal-query design in §F.2, which necessarily issues its own small request. The two numbers quoted in
+  §F.6 (~27 ms) belong to the minimal query, not to this probe. v1 ships the minimal query and accepts one
+  extra request per cold key; the shared-resolver variant needs its own PoC on the real full product
+  document before it is considered again.
 
 ### E.3 Option C — dynamically refreshed route manifest: **REJECTED**
 
@@ -397,7 +426,7 @@ to an optional warm-up.**
 | future products, no rebuild | n/a | ✅ 60–120 s, or instant with webhook | ❌ depends on refresh owner |
 | all 12 markets | n/a | ✅ derived from `CHANNEL_MAP`, verified `/fr` vs `/sk` | ⚠️ 12× the manifest |
 | upstream outage | n/a | ✅ fails open, passes through | ❌ stale false 404 |
-| extra upstream requests | n/a | **0** (shared `use cache` entry) | 0 steady-state |
+| extra upstream requests | n/a | **1 per cold key** (minimal query, v1) | 0 steady-state |
 | cold TTFB | n/a | +200 ms via current client, **+27 ms** via a lean keep-alive fetch | 0 |
 | warm TTFB | n/a | **+0 ms** (1.9 ms vs 2.5 ms baseline) | 0 |
 | cache invalidation | n/a | TTL + existing `cacheTag`/webhook | bespoke |
@@ -476,19 +505,44 @@ ten migrated slugs during the Saleor-convergence window.
 
 ### F.2 — Gate mechanics
 
+**v1 asks the minimal question directly.** Not a loopback into the app.
+
 ```
-key      `${saleorChannel}:${routeType}:${slug}`
-front    process-local LRU, positive TTL 300 s, negative TTL 60 s, bounded size
-miss     loopback GET  /api/route-existence?type=&slug=&channel=
-             → calls the SAME "use cache" resolver the render will use
-             → the render then gets a cache HIT: zero extra upstream requests
-timeout  500 ms  →  pass through (fail open)
-verdict  404 ONLY on `not-found` from a healthy upstream.
-         upstream-error, timeout, loopback failure, unknown → pass through to today's behaviour
-headers  strip every client-supplied `x-maky-*` before setting our own
-switch   ROUTE_EXISTENCE_GATE=off  →  full bypass, no redeploy
-404 body rewrite to a MARKET-AWARE not-found, not the current English `/_not-found`
+key       `${saleorChannel}:${routeType}:${slug}`, from the NORMALIZED pathname
+          (the matcher also fires for .rsc / .json / .segment.rsc — see below)
+front     process-local LRU, positive TTL 300 s, negative TTL 60 s, bounded size
+miss      one bare fetch, single attempt, AbortSignal.timeout(300–500 ms):
+              product     { product(slug:$s, channel:$c) { id } }
+              collection  { collection(slug:$s, channel:$c) { id } }
+              category    { category(slug:$s) { id } }        ← global, see F.4
+single-flight   concurrent misses on one key share one in-flight request
+concurrency     bounded, so a dictionary scan cannot fan out to Saleor
+breaker         a run of failures short-circuits to pass-through
+verdict   404 ONLY on an authoritative null from a healthy upstream.
+          upstream-error, timeout, breaker-open, unknown → pass through
+headers   strip every client-supplied `x-maky-*` before setting our own
+flags     ROUTE_EXISTENCE_GATE (global kill switch) + per-market + per-family,
+          all default OFF
+404 body  rewrite to a MARKET-AWARE not-found, not the English `/_not-found`
 ```
+
+Why the minimal query rather than the shared full resolver measured in §E.2:
+
+- the status decision needs **existence**, nothing else; the full product document
+  is far more than the question requires
+- it avoids a publicly reachable internal endpoint, the secret that would have to
+  protect it, and a loopback hop on the critical routing path
+- it does not depend on `"use cache"` sharing behaviour surviving a future
+  refactor — the LRU stays a performance cache, never a correctness dependency
+- category cannot share the page's resolver anyway: the page asks for a paginated,
+  filtered product connection keyed on query parameters, so there is nothing to
+  share
+
+The cost is honest and small: **one extra minimal request per cold key**, i.e. at
+most one per active slug per five minutes per process. The shared-full-resolver
+variant remains on the table for a later revision, but only against a PoC on the
+real full product query (request count, cold/warm p50/p95, timeout and outage
+behaviour, cache-sharing proof) — not against the synthetic probe in §E.2.
 
 **Fail-open is the whole safety argument.** A hard 404 must require positive proof of absence from a healthy
 authority. Everything else degrades to exactly today's behaviour, which is survivable.
@@ -638,8 +692,11 @@ As F.0. Adds unit tests for each arm of the union and a regression test that an 
 Enumerates market-root static segments from `src/app/`, plus the classifier for
 product / category / collection / saleor-page / other.
 
-**C4 — the gate** (`src/proxy.ts`, new `src/app/api/route-existence/route.ts`, new `src/lib/route-existence.ts`)
-LRU, loopback, fail-open, `x-maky-*` stripping, `ROUTE_EXISTENCE_GATE` kill switch, per-family flags.
+**C4 — the gate** (`src/proxy.ts`, new `src/lib/route-existence.ts`) — ships **OFF**
+Minimal direct query, bare `fetch`, single attempt, 300–500 ms timeout. LRU with single-flight, bounded
+concurrency and a circuit breaker. Fail-open on anything but a healthy authoritative null. `x-maky-*`
+stripping. Global kill switch plus per-market and per-family flags, all default OFF. No internal HTTP
+endpoint, so nothing new to authenticate or rate-limit.
 
 **C5 — localized 404 + legacy redirect registry skeleton**
 Add `(main)/not-found.tsx` (Slovak, market-aware links — the current global `not-found.tsx` is hardcoded
