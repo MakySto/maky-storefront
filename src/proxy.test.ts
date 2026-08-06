@@ -66,6 +66,79 @@ describe("legitimate traffic still passes", () => {
 		}
 	});
 
+	it("passes static assets and root metadata routes straight through", () => {
+		// These used to be safe because the matcher skipped every dotted path. It
+		// no longer does, so they have to survive the gate on their own.
+		for (const path of [
+			"/logo.svg",
+			"/logo-dark.svg",
+			"/logo-deer.webp",
+			"/favicon-32x32.png",
+			"/site.webmanifest",
+			"/llms.txt",
+			"/robots.txt",
+			"/sitemap.xml",
+			"/icon.png",
+			"/apple-icon.png",
+			"/opengraph-image.png",
+			"/twitter-image.png",
+			"/favicon.ico",
+		]) {
+			const res = proxy(req(path));
+			expect(res.status, path).not.toBe(404);
+			expect(res.headers.get("location"), path).toBeNull();
+			expect(res.headers.get("x-middleware-rewrite"), path).toBeNull();
+		}
+	});
+});
+
+/**
+ * The matcher used to exclude `.*\..*` — every path containing a dot anywhere —
+ * so none of these ever reached the gate. They answered HTTP 200 with
+ * `index, follow` and a self-canonical, and the rendered page emitted twelve more
+ * crawlable links under the bogus prefix. Verified live on production
+ * 2026-08-06 before the fix. On a domain migrated off WooCommerce this pointed
+ * straight at the legacy /*.php inventory.
+ */
+describe("dotted first segment", () => {
+	const junk = [
+		"/does.not.exist",
+		"/does.not.exist/categories/stresne-boxy",
+		"/admin.php",
+		"/wp-login.php",
+		"/index.php",
+		"/wp-content/uploads/2023/01/foo.jpg",
+		"/sitemap_index.xml",
+		"/wp-sitemap.xml",
+	];
+
+	for (const path of junk) {
+		it(`404s ${path}`, () => {
+			expect(statusOf(path)).toBe(404);
+		});
+	}
+
+	it("marks them noindex", () => {
+		expect(proxy(req("/admin.php")).headers.get("x-robots-tag")).toBe("noindex");
+	});
+
+	it("still rewrites a dotted slug UNDER a valid market instead of 404ing it", () => {
+		// A dot below the market prefix is a product slug, not a bogus market. It
+		// used to bypass the proxy entirely, so `[channel]` received "sk" instead
+		// of "sk-eur" and the Saleor lookup missed for the wrong reason.
+		const res = proxy(req("/sk/some.dotted-slug"));
+		expect(res.status).not.toBe(404);
+		expect(res.headers.get("x-channel")).toBe("sk-eur");
+	});
+
+	it("keeps client-side navigation working — RSC suffixes are not junk", () => {
+		for (const path of ["/sk/categories/stresne-boxy.rsc", "/sk/stresny-box.rsc"]) {
+			const res = proxy(req(path));
+			expect(res.status, path).not.toBe(404);
+			expect(res.headers.get("x-channel"), path).toBe("sk-eur");
+		}
+	});
+
 	it("still 301s a raw Saleor slug to its friendly market", () => {
 		const res = proxy(req("/sk-eur/categories/stresne-boxy"));
 		expect(res.status).toBe(301);

@@ -10,17 +10,19 @@ import {
 	COOKIE_MAX_AGE,
 } from "./lib/channel-map";
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
+import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/public-assets.generated";
 
 /**
  * First path segments that are legitimately not a market.
  *
  * Enumerated from `src/app/`, not from memory: `/checkout` and `/checkout/complete`
- * are the only real market-less pages. `api` and `_next` are already excluded by the
- * matcher below, and so is anything containing a dot — which covers /robots.txt,
- * /sitemap.xml, /llms.txt, the icons and /.well-known/acme-challenge/*. They are
- * repeated here so that a future edit to the matcher cannot silently 404 them.
- * Certbot uses the dns-cloudflare and nginx authenticators, not webroot, so the ACME
- * path does not depend on this app — but it costs nothing to keep it safe.
+ * are the only real market-less pages. `api` and `_next` are also excluded by the
+ * matcher below; they are repeated here so that a future edit to the matcher cannot
+ * silently 404 them. Certbot uses the dns-cloudflare and nginx authenticators, not
+ * webroot, so the ACME path does not depend on this app — but it costs nothing to
+ * keep it safe.
+ *
+ * What is NOT in this list any more: "anything containing a dot". See the matcher.
  */
 const RESERVED_FIRST_SEGMENTS = new Set(["checkout", "api", "_next", ".well-known"]);
 
@@ -62,6 +64,19 @@ export function proxy(request: NextRequest) {
 	const { pathname } = request.nextUrl;
 	const segments = pathname.split("/").filter(Boolean);
 	const first = segments[0];
+
+	// STATIC ASSETS AND ROOT METADATA ROUTES -> hands off.
+	//
+	// The matcher used to exclude every path containing a dot, which is how these
+	// were kept safe. It also let /admin.php, /wp-login.php and /does.not.exist
+	// skip the gate below and answer 200 + index,follow with a self-canonical, on a
+	// domain whose entire legacy inventory is WordPress .php URLs. The matcher no
+	// longer does that, so the real files have to be recognised here instead —
+	// from a generated list, because /logo.svg is indistinguishable from a bogus
+	// market prefix by shape alone.
+	if (PUBLIC_ASSET_PATHS.has(pathname) || METADATA_ROUTE_PATHS.has(pathname)) {
+		return NextResponse.next();
+	}
 
 	// ROOT: geo-detect -> redirect to /xx
 	if (pathname === "/") {
@@ -150,7 +165,16 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-	matcher: [
-		"/((?!api|_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|opengraph-image.png|twitter-image.png|.*\\..*).*)",
-	],
+	// Only `api` and `_next` are excluded here. The previous pattern also carried
+	// `.*\..*`, i.e. every path containing a dot anywhere — which meant the proxy
+	// never ran for /admin.php, /wp-login.php, /index.php or /does.not.exist. Those
+	// answered HTTP 200 with `index, follow` and a self-canonical, and the rendered
+	// page emitted twelve more crawlable links under the same bogus prefix. It was
+	// the same generator the invalid-first-segment gate was written to kill, still
+	// open for dotted segments, on a domain migrated off WooCommerce.
+	//
+	// Static files and root metadata routes are now recognised inside `proxy()`
+	// from a generated list instead. That costs one Set lookup on requests that
+	// used to skip the proxy entirely, and buys a gate with no hole in it.
+	matcher: ["/((?!api/|_next/).*)"],
 };
