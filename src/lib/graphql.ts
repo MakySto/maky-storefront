@@ -336,10 +336,36 @@ async function executeGraphQL<Result, Variables>(
 		return httpError(response.status, `HTTP ${response.status}: ${response.statusText}\n${body}`);
 	}
 
-	const body = (await response.json()) as GraphQLResponse<Result>;
+	// Parsing is guarded because a 2xx does not promise JSON. An nginx or
+	// Cloudflare error page, or a truncated body, raises SyntaxError here — and
+	// this function has no outer try, so it used to propagate through every
+	// caller (none of which catch) and surface at src/app/error.tsx AFTER the
+	// shell had flushed: HTTP 200 with an error body, and the one failure mode
+	// that was neither `{ok:false}` nor `null`. `executeRawGraphQL` has always
+	// handled it; the two executors had divergent contracts for the same failure.
+	let body: GraphQLResponse<Result>;
+	try {
+		body = (await response.json()) as GraphQLResponse<Result>;
+	} catch (error) {
+		return networkError(
+			`invalid JSON in a ${response.status} response: ${error instanceof Error ? error.message : "unknown"}`,
+			error,
+		);
+	}
+
+	if (body == null || typeof body !== "object") {
+		return graphqlError([`response body was ${body === null ? "null" : typeof body}, not a GraphQL response`]);
+	}
 
 	if ("errors" in body) {
 		return graphqlError(body.errors.map((e) => e.message));
+	}
+
+	// `{"data": null}` with no `errors` key is a contract violation, not an
+	// answer. It used to return `{ok:true, data:null}` and callers would then
+	// dereference it — `result.data.product` — and throw a TypeError.
+	if (body.data == null) {
+		return graphqlError(["response carried neither data nor errors"]);
 	}
 
 	return success(body.data);

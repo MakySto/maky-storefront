@@ -3,6 +3,7 @@ import { getBaseUrl } from "@/lib/seo/config";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { liveMarkets } from "@/lib/market-state";
 import { executePublicGraphQL } from "@/lib/graphql";
+import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
 import { SitemapProductsDocument, SitemapCategoriesDocument } from "@/gql/graphql";
 
 /**
@@ -60,7 +61,13 @@ async function fetchProductPage(channel: string, after: string | null) {
 		variables: { channel, first: PAGE_SIZE, after },
 		revalidate,
 	});
-	return result.ok ? result.data.products ?? null : null;
+	if (!result.ok) {
+		// Distinguished only for the log line: both arms are fatal here, because a
+		// sitemap that is short is worse than one that is missing.
+		logUpstreamError("sitemap-products", upstreamError(result), { channel, after: after ?? "start" });
+		return null;
+	}
+	return result.data.products ?? null;
 }
 
 /**
@@ -110,8 +117,12 @@ async function fetchStockedCategorySlugs(channel: string): Promise<string[]> {
 		variables: { channel, first: 100 },
 		revalidate,
 	});
-	if (!result.ok || !result.data.categories) {
-		throw new SitemapIncompleteError(`${channel}: categories did not resolve`);
+	if (!result.ok) {
+		logUpstreamError("sitemap-categories", upstreamError(result), { channel });
+		throw new SitemapIncompleteError(`${channel}: categories did not resolve — ${result.error.message}`);
+	}
+	if (!result.data.categories) {
+		throw new SitemapIncompleteError(`${channel}: categories connection was absent`);
 	}
 
 	// Categories exist globally in Saleor but hold products per channel, so an

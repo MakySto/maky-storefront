@@ -2,8 +2,22 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { type ResolvingMetadata, type Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { ProductListByCollectionDocument, ProductOrderField, OrderDirection } from "@/gql/graphql";
+import {
+	ProductListByCollectionDocument,
+	ProductOrderField,
+	OrderDirection,
+	type ProductListByCollectionQuery,
+} from "@/gql/graphql";
 import { executePublicGraphQL } from "@/lib/graphql";
+import {
+	catchUpstreamError,
+	logUpstreamError,
+	refuseToCacheUpstreamError,
+	toOutcome,
+	upstreamError,
+	type AuthoritativeOutcome,
+	type ResourceOutcome,
+} from "@/lib/saleor/resource-outcome";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { getPaginatedListVariables } from "@/lib/utils";
 import { parseEditorJSToText } from "@/lib/editorjs";
@@ -12,7 +26,12 @@ import { marketHref } from "@/lib/channel-map";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import { CollectionPageClient } from "./client";
 
-async function getCollectionData(slug: string, channel: string) {
+type Collection = NonNullable<ProductListByCollectionQuery["collection"]>;
+
+async function getCollectionOutcomeCached(
+	slug: string,
+	channel: string,
+): Promise<AuthoritativeOutcome<Collection>> {
 	"use cache";
 	applyCacheProfile(CACHE_PROFILES.collections, slug);
 
@@ -21,12 +40,17 @@ async function getCollectionData(slug: string, channel: string) {
 		revalidate: 300,
 	});
 
-	if (!result.ok) {
-		console.error(`[getCollectionData] Failed to fetch collection ${slug}:`, result.error.message);
-		return null;
-	}
+	// Throws on a fault, so the entry is never cached: an outage must not be
+	// remembered as "this collection does not exist" for up to an hour.
+	return refuseToCacheUpstreamError(toOutcome(result, (data) => data.collection));
+}
 
-	return result.data.collection;
+/** `found` | `not-found` | `upstream-error`, shared by the page and its metadata. */
+async function getCollectionOutcome(
+	slug: string,
+	channel: string,
+): Promise<ResourceOutcome<Collection>> {
+	return catchUpstreamError(() => getCollectionOutcomeCached(slug, channel));
 }
 
 type PageProps = {
@@ -43,11 +67,18 @@ type PageProps = {
 
 export const generateMetadata = async (props: PageProps, parent: ResolvingMetadata): Promise<Metadata> => {
 	const params = await props.params;
-	const collection = await getCollectionData(params.slug, params.channel);
+	const outcome = await getCollectionOutcome(params.slug, params.channel);
 
-	if (!collection) {
+	if (outcome.status === "upstream-error") {
+		// Could not verify. `noindex`, and no "not found" title — that would be a
+		// claim we cannot support. This route emits no canonical on any branch.
+		return { robots: { index: false, follow: false, googleBot: { index: false, follow: false } } };
+	}
+
+	if (outcome.status === "not-found") {
 		// Streaming/PPR can't set a 404 status after the shell is flushed, so the
-		// noindex robots meta is the only crawler-visible not-found signal here.
+		// noindex robots meta is the only crawler-visible not-found signal here
+		// until the proxy gate lands.
 		const t = await getTranslations("pages");
 		return {
 			title: t("notFound"),
@@ -55,6 +86,7 @@ export const generateMetadata = async (props: PageProps, parent: ResolvingMetada
 		};
 	}
 
+	const collection = outcome.resource;
 	const plainDescription = parseEditorJSToText(collection.description);
 
 	return {
@@ -84,12 +116,19 @@ async function CollectionContent({
 	searchParams: PageProps["searchParams"];
 }) {
 	const params = await paramsPromise;
-	const collection = await getCollectionData(params.slug, params.channel);
+	const outcome = await getCollectionOutcome(params.slug, params.channel);
 
-	if (!collection) {
+	// A fault is not an absence.
+	if (outcome.status === "upstream-error") {
+		logUpstreamError("collection", outcome, { slug: params.slug, channel: params.channel });
+		throw new Error(`collection lookup failed for ${params.slug}: ${outcome.message}`);
+	}
+
+	if (outcome.status === "not-found") {
 		notFound();
 	}
 
+	const collection = outcome.resource;
 	const plainDescription = parseEditorJSToText(collection.description);
 
 	const breadcrumbs = [
@@ -139,7 +178,17 @@ async function CollectionProducts({
 		revalidate: 300,
 	});
 
-	const products = result.ok ? result.data.collection?.products : null;
+	// Nested Suspense, below a hero that already proved the collection exists.
+	// A transport failure here is an error, not an absence.
+	if (!result.ok) {
+		logUpstreamError("collection-products", upstreamError(result), {
+			slug: params.slug,
+			channel: params.channel,
+		});
+		throw new Error(`collection product list failed for ${params.slug}: ${result.error.message}`);
+	}
+
+	const products = result.data.collection?.products;
 	if (!products) {
 		notFound();
 	}

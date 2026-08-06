@@ -85,4 +85,12 @@ export interface SearchResult<T = SearchProduct> {
 	queryTimeMs?: number;
 	/** Provider-specific metadata */
 	meta?: Record<string, unknown>;
+	/**
+	 * The search backend could not answer.
+	 *
+	 * Distinct from an empty `products`: "we found nothing" and "we could not
+	 * look" are different answers, and a Saleor outage used to be shown to the
+	 * visitor as the former, with no error surface and no log line.
+	 */
+	unavailable?: boolean;
 }

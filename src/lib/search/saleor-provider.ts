@@ -6,6 +6,7 @@
  */
 
 import { executePublicGraphQL } from "@/lib/graphql";
+import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
 import { SearchProductsDocument, OrderDirection, ProductOrderField } from "@/gql/graphql";
 import type { SearchProduct, SearchResult, SearchPagination } from "./types";
 import { localeConfig } from "@/config/locale";
@@ -47,11 +48,16 @@ export async function searchProducts(options: SearchOptions): Promise<SearchResu
 		revalidate: 60,
 	});
 
-	if (!result.ok || !result.data.products) {
-		return {
-			products: [],
-			pagination: { totalCount: 0 },
-		};
+	// A Saleor outage used to be presented to the visitor as "your search found
+	// nothing", with no error surface and no log line. Zero results and a broken
+	// upstream are different answers; the caller now gets to tell them apart.
+	if (!result.ok) {
+		logUpstreamError("search", upstreamError(result), { channel });
+		return { products: [], pagination: { totalCount: 0 }, unavailable: true };
+	}
+
+	if (!result.data.products) {
+		return { products: [], pagination: { totalCount: 0 } };
 	}
 
 	const products = result.data.products;

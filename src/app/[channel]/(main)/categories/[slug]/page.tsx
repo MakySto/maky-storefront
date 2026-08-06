@@ -2,8 +2,17 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { type ResolvingMetadata, type Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { ProductListByCategoryDocument } from "@/gql/graphql";
+import { ProductListByCategoryDocument, type ProductListByCategoryQuery } from "@/gql/graphql";
 import { executePublicGraphQL } from "@/lib/graphql";
+import {
+	catchUpstreamError,
+	logUpstreamError,
+	refuseToCacheUpstreamError,
+	toOutcome,
+	upstreamError,
+	type AuthoritativeOutcome,
+	type ResourceOutcome,
+} from "@/lib/saleor/resource-outcome";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { getPaginatedListVariables } from "@/lib/utils";
 import { parseEditorJSToText } from "@/lib/editorjs";
@@ -13,7 +22,12 @@ import { buildCanonicalUrl } from "@/lib/seo/hreflang";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import { CategoryPageClient } from "./client";
 
-async function getCategoryData(slug: string, channel: string) {
+type Category = NonNullable<ProductListByCategoryQuery["category"]>;
+
+async function getCategoryOutcomeCached(
+	slug: string,
+	channel: string,
+): Promise<AuthoritativeOutcome<Category>> {
 	"use cache";
 	applyCacheProfile(CACHE_PROFILES.categories, slug);
 
@@ -22,12 +36,14 @@ async function getCategoryData(slug: string, channel: string) {
 		revalidate: 300,
 	});
 
-	if (!result.ok) {
-		console.error(`[getCategoryData] Failed to fetch category ${slug}:`, result.error.message);
-		return null;
-	}
+	// Throws on a fault, so the entry is never cached: an outage must not be
+	// remembered as "this category does not exist" for up to an hour.
+	return refuseToCacheUpstreamError(toOutcome(result, (data) => data.category));
+}
 
-	return result.data.category;
+/** `found` | `not-found` | `upstream-error`, shared by the page and its metadata. */
+async function getCategoryOutcome(slug: string, channel: string): Promise<ResourceOutcome<Category>> {
+	return catchUpstreamError(() => getCategoryOutcomeCached(slug, channel));
 }
 
 type PageProps = {
@@ -44,17 +60,26 @@ type PageProps = {
 
 export const generateMetadata = async (props: PageProps, parent: ResolvingMetadata): Promise<Metadata> => {
 	const params = await props.params;
-	const category = await getCategoryData(params.slug, params.channel);
+	const outcome = await getCategoryOutcome(params.slug, params.channel);
 
-	if (!category) {
+	if (outcome.status === "upstream-error") {
+		// Could not verify. `noindex`, no canonical, and no "not found" title —
+		// that would be a claim we cannot support.
+		return { robots: { index: false, follow: false, googleBot: { index: false, follow: false } } };
+	}
+
+	if (outcome.status === "not-found") {
 		// Streaming/PPR can't set a 404 status after the shell is flushed, so the
-		// noindex robots meta is the only crawler-visible not-found signal here.
+		// noindex robots meta is the only crawler-visible not-found signal here
+		// until the proxy gate lands.
 		const t = await getTranslations("pages");
 		return {
 			title: t("notFound"),
 			robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
 		};
 	}
+
+	const category = outcome.resource;
 
 	const plainDescription = parseEditorJSToText(category.description);
 
@@ -111,15 +136,23 @@ async function CategoryContent({
 	searchParams: PageProps["searchParams"];
 }) {
 	const params = await paramsPromise;
-	const [category, t] = await Promise.all([
-		getCategoryData(params.slug, params.channel),
+	const [outcome, t] = await Promise.all([
+		getCategoryOutcome(params.slug, params.channel),
 		getTranslations("plp"),
 	]);
 
-	if (!category) {
+	// A fault is not an absence. notFound() here would claim a live category is
+	// gone every time Saleor hiccups.
+	if (outcome.status === "upstream-error") {
+		logUpstreamError("category", outcome, { slug: params.slug, channel: params.channel });
+		throw new Error(`category lookup failed for ${params.slug}: ${outcome.message}`);
+	}
+
+	if (outcome.status === "not-found") {
 		notFound();
 	}
 
+	const category = outcome.resource;
 	const plainDescription = parseEditorJSToText(category.description);
 
 	const breadcrumbs = [
@@ -166,7 +199,19 @@ async function CategoryProducts({
 		revalidate: 300,
 	});
 
-	const products = result.ok ? result.data.category?.products : null;
+	// This runs in a NESTED Suspense, after CategoryHero has already streamed —
+	// so the outer lookup has just proved the category exists. Calling notFound()
+	// on a transport failure here painted 404 content underneath a hero for a
+	// category that is demonstrably there. An error is an error.
+	if (!result.ok) {
+		logUpstreamError("category-products", upstreamError(result), {
+			slug: params.slug,
+			channel: params.channel,
+		});
+		throw new Error(`category product list failed for ${params.slug}: ${result.error.message}`);
+	}
+
+	const products = result.data.category?.products;
 	if (!products) {
 		notFound();
 	}

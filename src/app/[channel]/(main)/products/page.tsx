@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
 import { ProductListPaginatedDocument } from "@/gql/graphql";
 import { executePublicGraphQL } from "@/lib/graphql";
+import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
 import { getPaginatedListVariables } from "@/lib/utils";
 import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
 import { marketHref } from "@/lib/channel-map";
@@ -93,8 +93,16 @@ async function ProductsContent({
 		revalidate: 300,
 	});
 
-	if (!result.ok || !result.data.products) {
-		notFound();
+	// /{market}/products always exists — it is the market's main listing. A
+	// Saleor outage here used to render 404 content over a page that cannot be
+	// missing; the right answer is an error, never an absence.
+	if (!result.ok) {
+		logUpstreamError("product-list", upstreamError(result), { channel: params.channel });
+		throw new Error(`product listing failed for ${params.channel}: ${result.error.message}`);
+	}
+
+	if (!result.data.products) {
+		throw new Error(`product listing returned no connection for ${params.channel}`);
 	}
 
 	const products = result.data.products;
