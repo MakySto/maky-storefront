@@ -237,6 +237,33 @@ Do NOT change the following without explicit approval:
 Do NOT copy XStore code or assets. XStore is a layout/UX reference only.
 Do NOT add new dependencies solely for styling without approval.
 
+## 10.1 The repository is a public fork — a leaked secret can never be unleaked
+
+`MakySto/maky-storefront` is **public**, because it is a **fork of `saleor/storefront`** and a fork
+of a public repo is created public. Nobody chose this; it was never noticed. Audited clean
+2026-08-07 (gitleaks over all 299 commits and all 34 refs: no credential has ever been committed).
+
+The rule that follows is absolute, and it is stronger here than for an ordinary public repo:
+
+**Never let a credential reach a commit. If one ever does, the only remedy is to REVOKE AND ROTATE
+it — immediately, before anything else.**
+
+Deleting the branch does not help. Rewriting history does not help. Deleting our fork does not
+help. Making the repo private does not help, and in any case GitHub will not let a fork be made
+private at all. In a fork network a commit pushed to any repo in the network stays reachable by its
+SHA from every other repo in that network, permanently. The object lives in the network, not in our
+copy of it.
+
+Practical consequences:
+
+- `.env` is gitignored and has never been tracked. Keep it that way. Real values belong in
+  `/opt/storefront/.env`, never in a file git can see, and never in a doc or a commit message.
+- Secret **names** in code and tests are fine — values are not. Test fixtures must be obvious
+  fakes (`"rotated-secret"`), never a real value "just for the test".
+- Going private is a migration, not a toggle: a new private repo, push the content, repoint the
+  remote and the deploy path, delete the fork. Treat it as a planned operation, never as a fix for
+  a leak that already happened.
+
 ## 11. Validation requirements
 
 For UI changes:
