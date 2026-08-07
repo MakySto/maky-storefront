@@ -108,6 +108,56 @@ describe("parsePagesResponse — required fields", () => {
 	});
 });
 
+describe("parsePagesResponse — market-first candidate selection", () => {
+	it("rejects unknown market enum values at page and block level", () => {
+		expect(parsePagesResponse(published({ markets: ["XX"] }), "SK").status).toBe("invalid");
+		expect(parsePagesResponse(published({ markets: ["SK", "XX"] }), "SK").status).toBe("invalid");
+		expect(
+			parsePagesResponse(
+				published({
+					layout: [{ blockType: "richText", content: lexical, markets: ["XX"] }],
+				}),
+				"SK",
+			).status,
+		).toBe("invalid");
+	});
+
+	it("returns an authoritative page mismatch before validating excluded content", () => {
+		const result = parsePagesResponse(
+			published({
+				markets: ["CZ"],
+				layout: [{ blockType: "futureThing", markets: ["CZ"] }],
+			}),
+			"SK",
+		);
+
+		expect(result).toEqual({
+			status: "market-mismatch",
+			documentId: "019fb008-504b-779e-ad3f-1ff353267c88",
+			slug: "o-nas",
+			markets: ["CZ"],
+		});
+	});
+
+	it("filters block markets before validating the market-specific candidate", () => {
+		const response = published({
+			markets: ["SK", "CZ"],
+			layout: [
+				{ id: "visible", blockType: "richText", content: lexical, markets: ["SK"] },
+				{ id: "hidden", blockType: "futureThing", markets: ["CZ"] },
+			],
+		});
+
+		const sk = parsePagesResponse(response, "SK");
+		expect(sk.status).toBe("ok");
+		if (sk.status === "ok") expect(sk.page.layout.map((block) => block.id)).toEqual(["visible"]);
+
+		const cz = parsePagesResponse(response, "CZ");
+		expect(cz.status).toBe("invalid");
+		if (cz.status === "invalid") expect(cz.violation.blockType).toBe("futureThing");
+	});
+});
+
 describe("parsePagesResponse — an unsupported block rejects the whole document", () => {
 	it("refuses the document rather than rendering the supported blocks around the gap", () => {
 		// The behaviour this replaces returned status "ok" with the bannerGrid marked
@@ -205,14 +255,66 @@ describe("parsePagesResponse — an unrenderable Lexical node rejects the docume
 		expect(result.violation.nodeType).toBe("upload");
 	});
 
-	it("accepts an inert marker node — skipping a separator loses no content", () => {
+	it("refuses a bare marker node — v2 removed the inert exception", () => {
+		// Previously accepted on the grounds that skipping a separator loses nothing. The
+		// v2 contract forbids assuming a node is inert because it has no known text field,
+		// and `horizontalrule` is outside its allowlist regardless.
 		const result = parsePagesResponse(withNode({ type: "horizontalrule", version: 1 }));
-		expect(result.status).toBe("ok");
+		expect(result.status).toBe("invalid");
+		if (result.status !== "invalid") return;
+		expect(result.violation.nodeType).toBe("horizontalrule");
+	});
+
+	it("refuses a text node carrying a format bit the contract does not define", () => {
+		// Bit 32 is not one of the five. Dropping it would render emphasised text as plain
+		// text — a quiet misrepresentation of what was published, and unlike a rejection it
+		// leaves no trace. The contract is explicit: „nesmie sa potichu zahodiť".
+		const result = parsePagesResponse(
+			published({
+				layout: [
+					{
+						blockType: "richText",
+						markets: null,
+						content: {
+							root: {
+								type: "root",
+								children: [{ type: "paragraph", children: [{ type: "text", text: "Ahoj", format: 32 }] }],
+							},
+						},
+					},
+				],
+			}),
+		);
+		expect(result.status).toBe("invalid");
+		if (result.status !== "invalid") return;
+		expect(result.violation.reason).toContain("format");
+	});
+
+	it("still accepts every bit the contract does define, and plain text", () => {
+		for (const format of [0, 1, 2, 4, 8, 16, 31]) {
+			const result = parsePagesResponse(
+				published({
+					layout: [
+						{
+							blockType: "richText",
+							markets: null,
+							content: {
+								root: {
+									type: "root",
+									children: [{ type: "paragraph", children: [{ type: "text", text: "Ahoj", format }] }],
+								},
+							},
+						},
+					],
+				}),
+			);
+			expect(result.status, `format ${format}`).toBe("ok");
+		}
 	});
 
 	it("accepts the node types the renderer handles", () => {
 		const result = parsePagesResponse(
-			withNode({ type: "link", fields: { url: "https://maky.store" }, children: [] }),
+			withNode({ type: "link", fields: { linkType: "custom", url: "https://maky.store" }, children: [] }),
 		);
 		expect(result.status).toBe("ok");
 	});
@@ -224,21 +326,71 @@ describe("parsePagesResponse — meta", () => {
 		expect(result.status).toBe("ok");
 		if (result.status !== "ok") return;
 		expect(result.page.meta).toEqual({ title: null, description: null, image: null });
+		expect(result.warnings).toEqual([]);
 	});
 
-	it("reads a populated absolute image url", () => {
-		const result = parsePagesResponse(
-			published({ meta: { title: "T", image: { url: "https://cms-media.maky.store/a.png" } } }),
-		);
+	it("treats null or missing meta.image as an ordinary omission", () => {
+		for (const meta of [null, {}, { image: null }]) {
+			const result = parsePagesResponse(published({ meta }));
+			expect(result.status).toBe("ok");
+			if (result.status !== "ok") continue;
+			expect(result.page.meta.image).toBeNull();
+			expect(result.warnings).toEqual([]);
+		}
+	});
+
+	it("reads a fully populated image from the approved media origin", () => {
+		const image = {
+			id: "019fb008-media",
+			alt: "OG náhľad",
+			url: "https://cms-media.maky.store/media/pages/o-nas-og.png",
+			mimeType: "image/png",
+			width: 1200,
+			height: 630,
+		};
+		const result = parsePagesResponse(published({ meta: { title: "T", image } }));
 		expect(result.status).toBe("ok");
 		if (result.status !== "ok") return;
-		expect(result.page.meta.image).toBe("https://cms-media.maky.store/a.png");
+		expect(result.page.meta.image).toBe(image.url);
+		expect(result.warnings).toEqual([]);
 	});
 
-	it("ignores an unpopulated image relationship", () => {
+	it("omits and reports an unpopulated depth=1 image relationship", () => {
 		const result = parsePagesResponse(published({ meta: { image: "019fb008" } }));
 		expect(result.status).toBe("ok");
 		if (result.status !== "ok") return;
 		expect(result.page.meta.image).toBeNull();
+		expect(result.warnings).toEqual([
+			expect.objectContaining({ code: "meta-image-omitted", reason: expect.stringContaining("meta.image") }),
+		]);
+	});
+
+	it("omits and reports malformed or off-origin populated SEO images", () => {
+		const base = {
+			id: "019fb008-media",
+			alt: "OG náhľad",
+			url: "https://cms-media.maky.store/media/pages/o-nas-og.png",
+			mimeType: "image/png",
+		};
+		for (const image of [
+			{ ...base, url: "https://" },
+			{ ...base, url: "https://images.example.com/media/o-nas.png" },
+			{ ...base, url: "https://cms-media.maky.store/private/o-nas.png" },
+			{ ...base, width: -1 },
+		]) {
+			const result = parsePagesResponse(published({ meta: { image } }));
+			expect(result.status).toBe("ok");
+			if (result.status !== "ok") continue;
+			expect(result.page.meta.image).toBeNull();
+			expect(result.warnings).toEqual([
+				expect.objectContaining({
+					code: "meta-image-omitted",
+					reason: expect.stringContaining("meta.image"),
+				}),
+			]);
+		}
+
+		// The optional image may degrade; a malformed meta wrapper is still a contract break.
+		expect(parsePagesResponse(published({ meta: "not-an-object" })).status).toBe("invalid");
 	});
 });

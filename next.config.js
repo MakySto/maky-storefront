@@ -1,6 +1,9 @@
 import createNextIntlPlugin from "next-intl/plugin";
 
+import { CMS_MEDIA_BASE_URL } from "./src/config/cms-media.js";
+
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+const cmsMediaBaseUrl = new URL(CMS_MEDIA_BASE_URL);
 
 /** @type {import('next').NextConfig} */
 const config = {
@@ -27,7 +30,34 @@ const config = {
 				hostname: "*.media.saleor.cloud",
 			},
 			{
-				// Allow all hostnames in development (restrict in production)
+				// Payload public media CDN — the runtime parser enforces the same origin.
+				protocol: cmsMediaBaseUrl.protocol.slice(0, -1),
+				hostname: cmsMediaBaseUrl.hostname,
+				port: cmsMediaBaseUrl.port,
+				pathname: `${cmsMediaBaseUrl.pathname}**`,
+			},
+			{
+				// Every product image on the live site comes from here — 284 of them on a
+				// single crawl of /sk, /sk/products and one category. Saleor is SELF-HOSTED,
+				// so the two *.saleor.cloud patterns above match nothing in this deployment
+				// and provide no cover for it.
+				protocol: "https",
+				hostname: "cdn.maky.store",
+			},
+			{
+				// Saleor's on-demand thumbnail endpoint, the fallback when no generated
+				// thumbnail exists yet.
+				protocol: "https",
+				hostname: "api.maky.store",
+			},
+			{
+				// Kept deliberately. Narrowing this is a good idea and NOT this commit's job:
+				// it is CLAUDE.md §10 deployment configuration, it needs its own approval, and
+				// it needs an acceptance step that a homepage smoke test cannot give you.
+				// Removing it here returned HTTP 400 '"url" parameter is not allowed' for
+				// every cdn.maky.store image on a real production build — 142 broken images on
+				// one PLP — while /logo-deer.webp kept working, so the homepage looked fine.
+				// `next dev` cannot see this; only `next start` can.
 				hostname: "*",
 			},
 		],

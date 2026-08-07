@@ -1,0 +1,165 @@
+{
+  "docs": [
+    {
+      "id": "018f0000-0000-7000-8000-000000000004",
+      "title": "Gallery fixture",
+      "slug": "fixture-gallery",
+      "summary": "Sanitizovaný Gallery block s minimálnymi dvoma populovanými media objektmi.",
+      "layout": [
+        {
+          "items": [
+            {
+              "media": {
+                "id": "018f1000-0000-7000-8000-000000000104",
+                "alt": "Strešný box na vozidle",
+                "caption": "Prvý contract gallery obrázok",
+                "prefix": "provider-v2",
+                "updatedAt": "2026-07-30T10:00:00.000Z",
+                "createdAt": "2026-07-30T09:00:00.000Z",
+                "url": "https://cms-media.maky.store/media/provider-v2/gallery-box.webp",
+                "thumbnailURL": "https://cms-media.maky.store/media/provider-v2/gallery-box-400x300.webp",
+                "filename": "gallery-box.webp",
+                "mimeType": "image/webp",
+                "filesize": 275000,
+                "width": 2400,
+                "height": 1600,
+                "focalX": 50,
+                "focalY": 50,
+                "sizes": {
+                  "thumbnail": {
+                    "url": "https://cms-media.maky.store/media/provider-v2/gallery-box-400x300.webp",
+                    "width": 400,
+                    "height": 300,
+                    "mimeType": "image/webp",
+                    "filesize": 27000,
+                    "filename": "gallery-box-400x300.webp"
+                  },
+                  "card": {
+                    "url": "https://cms-media.maky.store/media/provider-v2/gallery-box-960x720.webp",
+                    "width": 960,
+                    "height": 720,
+                    "mimeType": "image/webp",
+                    "filesize": 82000,
+                    "filename": "gallery-box-960x720.webp"
+                  },
+                  "content": {
+                    "url": "https://cms-media.maky.store/media/provider-v2/gallery-box-1600x1067.webp",
+                    "width": 1600,
+                    "height": 1067,
+                    "mimeType": "image/webp",
+                    "filesize": 160000,
+                    "filename": "gallery-box-1600x1067.webp"
+                  },
+                  "hero": {
+                    "url": "https://cms-media.maky.store/media/provider-v2/gallery-box-2400x1600.webp",
+                    "width": 2400,
+                    "height": 1600,
+                    "mimeType": "image/webp",
+                    "filesize": 275000,
+                    "filename": "gallery-box-2400x1600.webp"
+                  },
+                  "og": {
+                    "url": "https://cms-media.maky.store/media/provider-v2/gallery-box-1200x630.webp",
+                    "width": 1200,
+                    "height": 630,
+                    "mimeType": "image/webp",
+                    "filesize": 96000,
+                    "filename": "gallery-box-1200x630.webp"
+                  }
+                }
+              },
+              "caption": "Strešný box",
+              "id": "c00000000000000000000041"
+            },
+            {
+              "media": {
+                "id": "018f1000-0000-7000-8000-000000000105",
+                "alt": "Nosič bicyklov na vozidle",
+                "caption": "Druhý contract gallery obrázok",
+                "prefix": "provider-v2",
+                "updatedAt": "2026-07-30T10:00:00.000Z",
+                "createdAt": "2026-07-30T09:00:00.000Z",
+                "url": "https://cms-media.maky.store/media/provider-v2/gallery-bikes.webp",
+                "thumbnailURL": "https://cms-media.maky.store/media/provider-v2/gallery-bikes-400x300.webp",
+                "filename": "gallery-bikes.webp",
+                "mimeType": "image/webp",
+                "filesize": 298000,
+                "width": 2400,
+                "height": 1600,
+                "focalX": 52,
+                "focalY": 48,
+                "sizes": {
+                  "thumbnail": {
+                    "url": "https://cms-media.maky.store/media/provider-v2/gallery-bikes-400x300.webp",
+                    "width": 400,
+                    "height": 300,
+                    "mimeType": "image/webp",
+                    "filesize": 30000,
+                    "filename": "gallery-bikes-400x300.webp"
+                  },
+                  "card": {
+                    "url": "https://cms-media.maky.store/media/provider-v2/gallery-bikes-960x720.webp",
+                    "width": 960,
+                    "height": 720,
+                    "mimeType": "image/webp",
+                    "filesize": 88000,
+                    "filename": "gallery-bikes-960x720.webp"
+                  },
+                  "content": {
+                    "url": "https://cms-media.maky.store/media/provider-v2/gallery-bikes-1600x1067.webp",
+                    "width": 1600,
+                    "height": 1067,
+                    "mimeType": "image/webp",
+                    "filesize": 174000,
+                    "filename": "gallery-bikes-1600x1067.webp"
+                  },
+                  "hero": {
+                    "url": "https://cms-media.maky.store/media/provider-v2/gallery-bikes-2400x1600.webp",
+                    "width": 2400,
+                    "height": 1600,
+                    "mimeType": "image/webp",
+                    "filesize": 298000,
+                    "filename": "gallery-bikes-2400x1600.webp"
+                  },
+                  "og": {
+                    "url": "https://cms-media.maky.store/media/provider-v2/gallery-bikes-1200x630.webp",
+                    "width": 1200,
+                    "height": 630,
+                    "mimeType": "image/webp",
+                    "filesize": 103000,
+                    "filename": "gallery-bikes-1200x630.webp"
+                  }
+                }
+              },
+              "caption": "Nosič bicyklov",
+              "id": "c00000000000000000000042"
+            }
+          ],
+          "anchorId": "galeria",
+          "markets": ["SK"],
+          "id": "b00000000000000000000004",
+          "blockName": null,
+          "blockType": "gallery"
+        }
+      ],
+      "markets": ["SK"],
+      "meta": {
+        "title": "Gallery fixture",
+        "description": "Provider V2 contract fixture pre Gallery block.",
+        "image": null
+      },
+      "updatedAt": "2026-07-30T10:00:00.000Z",
+      "createdAt": "2026-07-30T09:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

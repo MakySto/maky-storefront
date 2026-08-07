@@ -12,3 +12,8 @@ src/styles/brand.css
 # them changes their bytes and breaks the checksums — which is exactly what the
 # pre-commit hook did on the first attempt at vendoring them.
 src/lib/cms/__fixtures__/provider-v1/
+
+# Vendored CMS provider contract pack v2 (seven blocks). Same rule: authored by
+# MakySto/maky-cms, copied verbatim, digests recorded in manifest.json and re-verified
+# by provider-v2-conformance.test.ts. Reformatting changes the bytes and breaks them.
+src/lib/cms/__fixtures__/provider-v2/

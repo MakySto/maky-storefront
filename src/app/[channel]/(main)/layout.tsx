@@ -27,6 +27,16 @@ export async function generateMetadata({
 		openGraph: {
 			locale: localeConfig?.ogLocale,
 		},
+		// NOTE: the `noindex` for a market that is not live yet is NOT set here.
+		// It is an `X-Robots-Tag` response header from src/proxy.ts.
+		//
+		// It was here first, and it did not work. generateMetadata has no
+		// request-time input, so under cacheComponents it is evaluated once and
+		// baked into the prerendered shell — measured 2026-08-06: with
+		// MAKY_LIVE_MARKETS="sk,cz" the sitemap picked cz up immediately (it is a
+		// dynamic route) while /cz kept serving the `noindex` baked at build time.
+		// A market state that can only change at build time is not a market state.
+		//
 		// Canonical + hreflang are page-specific and set per page (the homepage
 		// owns the market canonical). A layout-level canonical with path="" would
 		// wrongly mark every page as a duplicate of the market homepage.

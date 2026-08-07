@@ -1,10 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Search, Home, ArrowLeft } from "lucide-react";
+import { marketHref } from "@/lib/channel-map";
 
 export default function ProductNotFound() {
+	// Market-aware links. They used to be `/products` and `/`: the first is not a
+	// route at all — the proxy 404s it, because `products` is not a market — and
+	// the second bounces through the root geo redirect. A 404 page whose own links
+	// 404 is a poor apology.
+	const params = useParams<{ channel: string }>();
+	const channel = params?.channel ?? "";
 	const t = useTranslations("product");
 	const tCommon = useTranslations("common");
 
@@ -24,7 +32,7 @@ export default function ProductNotFound() {
 
 				<div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
 					<Link
-						href="/products"
+						href={marketHref(channel, "/products")}
 						className={`${buttonBase} bg-action-primary text-action-primary-text hover:bg-action-primary-hover`}
 					>
 						<Search className="h-4 w-4" />
@@ -32,7 +40,7 @@ export default function ProductNotFound() {
 					</Link>
 
 					<Link
-						href="/"
+						href={marketHref(channel)}
 						className={`${buttonBase} border-border-default bg-surface-primary text-text-primary hover:bg-surface-muted border`}
 					>
 						<Home className="h-4 w-4" />

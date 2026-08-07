@@ -1,0 +1,107 @@
+{
+  "docs": [
+    {
+      "id": "018f0000-0000-7000-8000-000000000012",
+      "title": "Unsupported Lexical sentinel",
+      "slug": "fixture-unsupported-lexical",
+      "summary": "Obsahový neznámy Lexical node medzi podporovanými odsekmi.",
+      "layout": [
+        {
+          "content": {
+            "root": {
+              "type": "root",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "format": "start",
+                  "indent": 0,
+                  "version": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Podporovaný text pred neznámym node.",
+                      "format": 0,
+                      "detail": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "version": 1
+                    }
+                  ],
+                  "direction": null,
+                  "textStyle": "",
+                  "textFormat": 0
+                },
+                {
+                  "type": "futureDisclosure",
+                  "version": 1,
+                  "fields": {
+                    "title": "Dôležité upozornenie",
+                    "severity": "legal"
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Tento obsahový node sa nesmie preskočiť bez odmietnutia celého candidate.",
+                      "format": 0,
+                      "detail": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "version": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "format": "start",
+                  "indent": 0,
+                  "version": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Podporovaný text za neznámym node.",
+                      "format": 0,
+                      "detail": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "version": 1
+                    }
+                  ],
+                  "direction": null,
+                  "textStyle": "",
+                  "textFormat": 0
+                }
+              ],
+              "direction": null,
+              "format": "",
+              "indent": 0,
+              "version": 1
+            }
+          },
+          "anchorId": null,
+          "markets": ["SK"],
+          "id": "b00000000000000000000121",
+          "blockName": null,
+          "blockType": "richText"
+        }
+      ],
+      "markets": ["SK"],
+      "meta": {
+        "title": "Unsupported Lexical sentinel",
+        "description": "Celý candidate musí byť odmietnutý.",
+        "image": null
+      },
+      "updatedAt": "2026-07-30T10:00:00.000Z",
+      "createdAt": "2026-07-30T09:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

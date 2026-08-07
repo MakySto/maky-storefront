@@ -1,0 +1,140 @@
+{
+  "docs": [
+    {
+      "id": "018f0000-0000-7000-8000-000000000007",
+      "title": "Media text fixture",
+      "slug": "fixture-media-text",
+      "summary": "Sanitizovaný dvojstĺpcový MediaText block.",
+      "layout": [
+        {
+          "heading": "Pripravení na cestu",
+          "content": {
+            "root": {
+              "type": "root",
+              "children": [
+                {
+                  "type": "paragraph",
+                  "format": "start",
+                  "indent": 0,
+                  "version": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Správna montáž a kontrola uchytenia sú súčasťou bezpečnej prípravy.",
+                      "format": 0,
+                      "detail": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "version": 1
+                    }
+                  ],
+                  "direction": null,
+                  "textStyle": "",
+                  "textFormat": 0
+                }
+              ],
+              "direction": null,
+              "format": "",
+              "indent": 0,
+              "version": 1
+            }
+          },
+          "media": {
+            "id": "018f1000-0000-7000-8000-000000000107",
+            "alt": "Kontrola uchytenia výbavy",
+            "caption": "Sanitizované contract médium",
+            "prefix": "provider-v2",
+            "updatedAt": "2026-07-30T10:00:00.000Z",
+            "createdAt": "2026-07-30T09:00:00.000Z",
+            "url": "https://cms-media.maky.store/media/provider-v2/media-text-check.webp",
+            "thumbnailURL": "https://cms-media.maky.store/media/provider-v2/media-text-check-400x300.webp",
+            "filename": "media-text-check.webp",
+            "mimeType": "image/webp",
+            "filesize": 268000,
+            "width": 2400,
+            "height": 1600,
+            "focalX": 55,
+            "focalY": 48,
+            "sizes": {
+              "thumbnail": {
+                "url": "https://cms-media.maky.store/media/provider-v2/media-text-check-400x300.webp",
+                "width": 400,
+                "height": 300,
+                "mimeType": "image/webp",
+                "filesize": 27000,
+                "filename": "media-text-check-400x300.webp"
+              },
+              "card": {
+                "url": "https://cms-media.maky.store/media/provider-v2/media-text-check-960x720.webp",
+                "width": 960,
+                "height": 720,
+                "mimeType": "image/webp",
+                "filesize": 80000,
+                "filename": "media-text-check-960x720.webp"
+              },
+              "content": {
+                "url": "https://cms-media.maky.store/media/provider-v2/media-text-check-1600x1067.webp",
+                "width": 1600,
+                "height": 1067,
+                "mimeType": "image/webp",
+                "filesize": 156000,
+                "filename": "media-text-check-1600x1067.webp"
+              },
+              "hero": {
+                "url": "https://cms-media.maky.store/media/provider-v2/media-text-check-2400x1600.webp",
+                "width": 2400,
+                "height": 1600,
+                "mimeType": "image/webp",
+                "filesize": 268000,
+                "filename": "media-text-check-2400x1600.webp"
+              },
+              "og": {
+                "url": "https://cms-media.maky.store/media/provider-v2/media-text-check-1200x630.webp",
+                "width": 1200,
+                "height": 630,
+                "mimeType": "image/webp",
+                "filesize": 93000,
+                "filename": "media-text-check-1200x630.webp"
+              }
+            }
+          },
+          "mediaPosition": "right",
+          "links": [
+            {
+              "type": "custom",
+              "newTab": false,
+              "reference": null,
+              "url": "https://maky.store/sk/poradna",
+              "label": "Prejsť do poradne",
+              "appearance": "secondary",
+              "id": "a00000000000000000000071"
+            }
+          ],
+          "anchorId": "kontrola",
+          "markets": ["SK"],
+          "id": "b00000000000000000000007",
+          "blockName": "Kontrola pred cestou",
+          "blockType": "mediaText"
+        }
+      ],
+      "markets": ["SK"],
+      "meta": {
+        "title": "Media text fixture",
+        "description": "Provider V2 contract fixture pre MediaText block.",
+        "image": null
+      },
+      "updatedAt": "2026-07-30T10:00:00.000Z",
+      "createdAt": "2026-07-30T09:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

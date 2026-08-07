@@ -15,11 +15,7 @@
  * because the editor can emit them and a missing case would silently drop half a
  * page: heading (h2–h4), list, listitem, link.
  */
-
-/**
- * Lexical text-format bitmask. Unknown bits are ignored rather than fatal — a
- * future editor feature must not blank out a paragraph.
- */
+/** Lexical text-format bitmask admitted by the V2 consumer contract. */
 export const TEXT_FORMAT = {
 	bold: 1,
 	italic: 2,
@@ -62,6 +58,10 @@ export function isLexicalDocument(value: unknown): value is LexicalDocument {
 	);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 /** Children of an element node; `[]` for leaves and for anything malformed. */
 export function nodeChildren(node: LexicalNode): LexicalNode[] {
 	const raw = node.children;
@@ -91,37 +91,21 @@ export const RENDERABLE_NODE_TYPES: ReadonlySet<string> = new Set([
 	"autolink",
 ]);
 
-/**
- * Whether skipping this node would lose published content.
- *
- * Text is the obvious case. But an `upload` node carries an image and no text at all,
- * so a plain "does it have text" test would let a published photograph vanish in
- * silence — the exact failure this policy exists to prevent. A node therefore also
- * counts as content-bearing when it carries any of the payload shapes Payload uses to
- * embed content: children, a `fields` object, or a relationship.
- *
- * What stays inert is a bare marker such as `{ type: "horizontalrule", version: 1 }`.
- * Skipping one of those loses a separator, not content, and it is logged either way.
- *
- * Known limit: a future node could hold text in a field this function does not look at,
- * and would then be judged inert. There is no way to recognise content in a shape
- * nobody has described yet; the structured log is what makes that case findable.
- */
-function isContentBearing(node: LexicalNode): boolean {
-	if (typeof node.text === "string" && node.text.trim().length > 0) return true;
+const ELEMENT_FORMATS: ReadonlySet<unknown> = new Set([
+	"",
+	"left",
+	"start",
+	"center",
+	"right",
+	"end",
+	"justify",
+]);
 
-	const children = nodeChildren(node);
-	if (children.length > 0) return true;
-
-	if (typeof node.fields === "object" && node.fields !== null) return true;
-	if (typeof node.relationTo === "string" && node.relationTo.length > 0) return true;
-	if (node.value !== undefined && node.value !== null) return true;
-
-	return false;
-}
+const HEADING_TAGS: ReadonlySet<unknown> = new Set(["h2", "h3", "h4"]);
+const LIST_TYPES: ReadonlySet<unknown> = new Set(["bullet", "number"]);
 
 /**
- * Find the first node the storefront cannot render without losing content.
+ * Find the first node outside the contract's allowlist.
  *
  * Returns the offending node's type, or `null` when the whole tree is renderable.
  *
@@ -129,10 +113,30 @@ function isContentBearing(node: LexicalNode): boolean {
  * unrenderable node mid-render leaves only two bad options — throw, or drop it and
  * serve a page missing a paragraph nobody will notice. Discovering it here means the
  * whole CMS candidate can be rejected while the previous good render is still intact.
+ *
+ * ## Any unknown type, not just an obviously content-bearing one
+ *
+ * This used to ask a second question — does the node LOOK like it carries content? — and
+ * let a bare marker such as `{ type: "horizontalrule", version: 1 }` through on the
+ * grounds that skipping a separator loses nothing. The v2 contract removes that
+ * judgement, in `unsupported-content-policy.md`:
+ *
+ *   „Neznámy node sa nesmie automaticky považovať za inertný len preto, že nemá známe
+ *   textové pole."
+ *
+ * The old rule required guessing, from a shape nobody has described yet, whether content
+ * lives in a field this function does not read. It got `horizontalrule` right and would
+ * have got a future `callout` with its text under an unread key wrong — silently, which is
+ * the one failure mode this whole layer exists to prevent. `horizontalrule` is itself
+ * outside the v2 allowlist now, so the case that motivated the exception no longer needs
+ * it.
+ *
+ * Safe to tighten because it was checked first: the live `o-nas` document contains only
+ * `root`, `paragraph` and `text`.
  */
 export function findUnrenderableNode(document: LexicalDocument): string | null {
 	const walk = (node: LexicalNode): string | null => {
-		if (!RENDERABLE_NODE_TYPES.has(node.type) && isContentBearing(node)) return node.type;
+		if (!RENDERABLE_NODE_TYPES.has(node.type)) return node.type;
 
 		for (const child of nodeChildren(node)) {
 			const found = walk(child);
@@ -142,6 +146,230 @@ export function findUnrenderableNode(document: LexicalDocument): string | null {
 		return null;
 	};
 
+	return walk(document.root);
+}
+
+/** Every bit the contract defines. Anything outside this mask is not ours to interpret. */
+const KNOWN_FORMAT_BITS =
+	TEXT_FORMAT.bold |
+	TEXT_FORMAT.italic |
+	TEXT_FORMAT.strikethrough |
+	TEXT_FORMAT.underline |
+	TEXT_FORMAT.code;
+
+export type LexicalValidation =
+	| { readonly ok: true }
+	| { readonly ok: false; readonly reason: string; readonly nodeType: string | null };
+
+type LexicalFailure = Extract<LexicalValidation, { readonly ok: false }>;
+
+/**
+ * Validate the complete Lexical tree before any element is rendered.
+ *
+ * The allowlist alone is insufficient. A known node with malformed children, a heading
+ * outside h2–h4, a list whose enum is unknown, or a link with a malformed relationship
+ * wrapper would otherwise pass validation and be silently coerced or truncated by the
+ * defensive renderer. V2 explicitly requires node types, required fields, enums, format
+ * bits, URL protocols and relationship targets to be checked recursively.
+ */
+export function validateLexicalDocument(document: LexicalDocument): LexicalValidation {
+	const fail = (reason: string, nodeType: string | null = null): LexicalFailure => ({
+		ok: false,
+		reason,
+		nodeType,
+	});
+
+	const validateElementFormat = (node: LexicalNode, path: string): LexicalValidation | null => {
+		if (node.format === undefined || node.format === null) return null;
+		if (!ELEMENT_FORMATS.has(node.format)) {
+			return fail(`${path}.format is outside the supported alignment enum`, node.type);
+		}
+		return null;
+	};
+
+	const validateChildren = (
+		node: LexicalNode,
+		path: string,
+	): { readonly ok: true; readonly children: readonly LexicalNode[] } | LexicalFailure => {
+		if (!Array.isArray(node.children)) {
+			return fail(`${path}.children is not an array`, node.type);
+		}
+		const children: LexicalNode[] = [];
+		for (const [index, child] of node.children.entries()) {
+			if (!isLexicalNode(child)) {
+				return fail(`${path}.children[${index}] is not a Lexical node`, node.type);
+			}
+			children.push(child);
+		}
+		return { ok: true, children };
+	};
+
+	const validateLink = (node: LexicalNode, path: string): LexicalValidation | null => {
+		if (!isRecord(node.fields)) return fail(`${path}.fields is not an object`, node.type);
+
+		const { linkType, newTab } = node.fields;
+		if (newTab !== undefined && newTab !== null && typeof newTab !== "boolean") {
+			return fail(`${path}.fields.newTab is not a boolean`, node.type);
+		}
+
+		if (linkType === "custom") {
+			if (classifyLinkUrl(node.fields.url).kind === "invalid") {
+				return fail(`${path}.fields.url is not an allowed link destination`, node.type);
+			}
+			return null;
+		}
+
+		if (linkType !== "internal") {
+			return fail(`${path}.fields.linkType is not custom or internal`, node.type);
+		}
+
+		const doc = node.fields.doc;
+		// A deleted or inaccessible target is an explicit degrade in V2: keep the words
+		// and emit no guessed route.
+		if (doc === undefined || doc === null) return null;
+		if (!isRecord(doc)) {
+			return fail(`${path}.fields.doc is a malformed relationship wrapper`, node.type);
+		}
+
+		const relationTo = doc.relationTo;
+		if (relationTo !== "pages" && relationTo !== "posts") {
+			return fail(`${path}.fields.doc.relationTo is unsupported`, node.type);
+		}
+
+		const target = doc.value;
+		if (target === undefined || target === null) return null;
+		if (!isRecord(target)) {
+			return fail(`${path}.fields.doc.value is not a populated relationship target`, node.type);
+		}
+		if (readRelationshipSlug(target.slug) === null) {
+			return fail(`${path}.fields.doc.value.slug is missing`, node.type);
+		}
+		return null;
+	};
+
+	const walk = (
+		node: LexicalNode,
+		path: string,
+		documentRoot: boolean,
+		parentType: string | null,
+	): LexicalValidation => {
+		if (!RENDERABLE_NODE_TYPES.has(node.type)) {
+			return fail(`${path} has unsupported node type ${node.type}`, node.type);
+		}
+		if (node.type === "root" && !documentRoot) {
+			return fail(`${path} contains a nested root node`, node.type);
+		}
+
+		switch (node.type) {
+			case "text": {
+				if (typeof node.text !== "string") return fail(`${path}.text is not a string`, node.type);
+				if (node.children !== undefined && node.children !== null) {
+					return fail(`${path} text unexpectedly carries children`, node.type);
+				}
+				if (
+					typeof node.format !== "number" ||
+					!Number.isInteger(node.format) ||
+					node.format < 0 ||
+					node.format > KNOWN_FORMAT_BITS ||
+					(node.format & ~KNOWN_FORMAT_BITS) !== 0
+				) {
+					return fail(`${path}.format is not a supported text-format bitmask`, node.type);
+				}
+				return { ok: true };
+			}
+
+			case "linebreak":
+				if (node.children !== undefined && node.children !== null) {
+					return fail(`${path} linebreak unexpectedly carries children`, node.type);
+				}
+				return { ok: true };
+
+			case "heading":
+				if (!HEADING_TAGS.has(node.tag)) {
+					return fail(`${path}.tag is not h2, h3 or h4`, node.type);
+				}
+				break;
+
+			case "list": {
+				if (!LIST_TYPES.has(node.listType)) {
+					return fail(`${path}.listType is not bullet or number`, node.type);
+				}
+				const expectedTag = node.listType === "number" ? "ol" : "ul";
+				if (node.tag !== expectedTag) {
+					return fail(`${path}.tag does not match listType`, node.type);
+				}
+				if (typeof node.start !== "number" || !Number.isInteger(node.start) || node.start < 1) {
+					return fail(`${path}.start is not a positive integer`, node.type);
+				}
+				break;
+			}
+
+			case "listitem":
+				if (parentType !== "list") {
+					return fail(`${path} listitem is not a direct child of a list`, node.type);
+				}
+				if (typeof node.value !== "number" || !Number.isInteger(node.value) || node.value < 1) {
+					return fail(`${path}.value is not a positive integer`, node.type);
+				}
+				if (node.checked !== undefined && node.checked !== null) {
+					return fail(`${path}.checked is unsupported outside checklist content`, node.type);
+				}
+				break;
+
+			case "link":
+			case "autolink": {
+				const linkFailure = validateLink(node, path);
+				if (linkFailure) return linkFailure;
+				break;
+			}
+		}
+
+		const formatFailure = validateElementFormat(node, path);
+		if (formatFailure) return formatFailure;
+
+		const children = validateChildren(node, path);
+		if (!children.ok) return children;
+		if (node.type === "list" && children.children.some((child) => child.type !== "listitem")) {
+			return fail(`${path}.children contains a non-listitem node`, node.type);
+		}
+		for (const [index, child] of children.children.entries()) {
+			const childResult = walk(child, `${path}.children[${index}]`, false, node.type);
+			if (!childResult.ok) return childResult;
+		}
+		return { ok: true };
+	};
+
+	return walk(document.root, "root", true, null);
+}
+
+/**
+ * Find the first `text` node carrying a format bit the contract does not define.
+ *
+ * Returns the offending bitmask, or `null`. Deliberately a rejection rather than a
+ * silent drop, which is the v2 contract's explicit instruction:
+ *
+ *   „Neznámy bit znamená contract violation kandidáta; nesmie sa potichu zahodiť."
+ *
+ * The v1 comment argued the other way — ignore unknown bits so a future editor feature
+ * cannot blank out a paragraph — and that reasoning was sound for the failure it feared.
+ * It is the wrong trade here. Dropping a bit does not blank a paragraph; it renders the
+ * paragraph without the emphasis the editor applied, which is a quiet misrepresentation of
+ * published content. A rejected candidate is visible and recoverable; a subscript silently
+ * rendered as plain text is neither.
+ *
+ * Bit 0 — no formatting — is the overwhelmingly common case and passes trivially.
+ */
+export function findUnsupportedTextFormat(document: LexicalDocument): number | null {
+	const walk = (node: LexicalNode): number | null => {
+		if (node.type === "text" && typeof node.format === "number" && Number.isInteger(node.format)) {
+			if ((node.format & ~KNOWN_FORMAT_BITS) !== 0) return node.format;
+		}
+		for (const child of nodeChildren(node)) {
+			const found = walk(child);
+			if (found !== null) return found;
+		}
+		return null;
+	};
 	return walk(document.root);
 }
 
@@ -204,6 +432,15 @@ export function alignmentClass(node: LexicalNode): string | undefined {
 }
 
 const SAFE_PROTOCOLS = new Set(["http:", "https:", "mailto:"]);
+const ABSOLUTE_SCHEME = /^[a-z][a-z\d+.-]*:/iu;
+const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/u;
+const RAW_WHITESPACE = /\s/u;
+const RELATIVE_URL_BASE = "https://cms-link.invalid/";
+
+export type LinkUrlClassification =
+	| { readonly kind: "href"; readonly url: string }
+	| { readonly kind: "inert-relative"; readonly url: string }
+	| { readonly kind: "invalid" };
 
 /**
  * Validate a URL destined for an `href`.
@@ -218,27 +455,63 @@ const SAFE_PROTOCOLS = new Set(["http:", "https:", "mailto:"]);
  * both normalise to the `javascript:` protocol and get rejected.
  */
 export function safeLinkUrl(raw: unknown): string | null {
-	if (typeof raw !== "string") return null;
+	const classified = classifyLinkUrl(raw);
+	return classified.kind === "href" ? classified.url : null;
+}
+
+/**
+ * Separate an emit-safe href from a harmless local reference and an unsafe value.
+ *
+ * Payload's free-form URL field can contain root-relative routes and same-page anchors.
+ * M.2 has no contract for translating either across market prefixes, so they keep their
+ * label but emit no href. This is deliberately narrower than treating every parse failure
+ * as harmless: script/data schemes, protocol-relative URLs and malformed values still
+ * reject the candidate before render.
+ */
+export function classifyLinkUrl(raw: unknown): LinkUrlClassification {
+	if (typeof raw !== "string") return { kind: "invalid" };
 
 	const trimmed = raw.trim();
-	if (trimmed.length === 0) return null;
+	if (trimmed.length === 0 || CONTROL_CHARACTERS.test(trimmed)) return { kind: "invalid" };
 
-	// Same-page anchors and root-relative paths carry no scheme to abuse.
-	// `//host` is protocol-relative, not relative — it falls through to URL parsing,
-	// which rejects it for having no base.
-	if (trimmed.startsWith("#")) return trimmed;
-	if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed;
+	if (ABSOLUTE_SCHEME.test(trimmed)) {
+		try {
+			const parsed = new URL(trimmed);
+			return SAFE_PROTOCOLS.has(parsed.protocol) ? { kind: "href", url: trimmed } : { kind: "invalid" };
+		} catch {
+			return { kind: "invalid" };
+		}
+	}
+
+	// Scheme-relative and backslash-normalised URLs could escape the current origin if
+	// somebody later made this branch clickable. Raw whitespace and a colon in the first
+	// path segment are malformed URI references, not harmless local destinations.
+	if (trimmed.startsWith("//") || trimmed.includes("\\") || RAW_WHITESPACE.test(trimmed)) {
+		return { kind: "invalid" };
+	}
+	const firstDelimiter = trimmed.search(/[/?#]/u);
+	const colon = trimmed.indexOf(":");
+	if (colon >= 0 && (firstDelimiter === -1 || colon < firstDelimiter)) return { kind: "invalid" };
 
 	try {
-		const parsed = new URL(trimmed);
-		return SAFE_PROTOCOLS.has(parsed.protocol) ? trimmed : null;
+		const parsed = new URL(trimmed, RELATIVE_URL_BASE);
+		return parsed.origin === new URL(RELATIVE_URL_BASE).origin
+			? { kind: "inert-relative", url: trimmed }
+			: { kind: "invalid" };
 	} catch {
-		return null;
+		return { kind: "invalid" };
 	}
 }
 
+/** A populated relationship slug is already canonical; never repair whitespace silently. */
+export function readRelationshipSlug(raw: unknown): string | null {
+	if (typeof raw !== "string") return null;
+	const trimmed = raw.trim();
+	return trimmed.length > 0 && trimmed === raw ? raw : null;
+}
+
 /** Which Payload collection an internal link points at. */
-export type LinkTargetCollection = "pages" | "posts" | "brands";
+export type LinkTargetCollection = "pages" | "posts";
 
 export interface LexicalLink {
 	/** External/custom link: an already-validated href. */
@@ -246,9 +519,17 @@ export interface LexicalLink {
 	/** Internal link: the referenced collection plus that document's slug. */
 	readonly internal: { collection: LinkTargetCollection; slug: string } | null;
 	readonly newTab: boolean;
+	/** A safe local reference retained as text because M.2 cannot derive its market route. */
+	readonly degradation?: { readonly kind: "relative-url"; readonly value: string };
 }
 
-const LINK_COLLECTIONS = new Set<string>(["pages", "posts", "brands"]);
+/**
+ * The collections this consumer contract understands. `brands` is deliberately absent:
+ * the Payload editor offers it, the Page V2 consumer contract does not, and the contract
+ * states that an unknown `relationTo` is a violation rather than something to degrade.
+ * {@link findUnsupportedLinkTarget} enforces that before anything renders.
+ */
+const LINK_COLLECTIONS = new Set<string>(["pages", "posts"]);
 
 /**
  * Read a `link` / `autolink` node's destination.
@@ -269,18 +550,16 @@ export function readLink(node: LexicalNode): LexicalLink {
 		if (typeof doc === "object" && doc !== null) {
 			const relationTo = (doc as { relationTo?: unknown }).relationTo;
 			const value = (doc as { value?: unknown }).value;
-			if (
-				typeof relationTo === "string" &&
-				LINK_COLLECTIONS.has(relationTo) &&
-				typeof value === "object" &&
-				value !== null &&
-				typeof (value as { slug?: unknown }).slug === "string"
-			) {
+			const slug =
+				typeof value === "object" && value !== null
+					? readRelationshipSlug((value as { slug?: unknown }).slug)
+					: null;
+			if (typeof relationTo === "string" && LINK_COLLECTIONS.has(relationTo) && slug !== null) {
 				return {
 					url: null,
 					internal: {
 						collection: relationTo as LinkTargetCollection,
-						slug: (value as { slug: string }).slug,
+						slug,
 					},
 					newTab,
 				};
@@ -289,5 +568,62 @@ export function readLink(node: LexicalNode): LexicalLink {
 		return { url: null, internal: null, newTab };
 	}
 
-	return { url: safeLinkUrl(fields.url), internal: null, newTab };
+	const classified = classifyLinkUrl(fields.url);
+	if (classified.kind === "inert-relative") {
+		return {
+			url: null,
+			internal: null,
+			newTab,
+			degradation: { kind: "relative-url", value: classified.url },
+		};
+	}
+	return { url: classified.kind === "href" ? classified.url : null, internal: null, newTab };
+}
+
+/**
+ * The first link in `document` whose destination the contract does not allow, or `null`.
+ *
+ * Two cases, both contract violations rather than degrades:
+ *
+ *   custom url the storefront refuses   `javascript:`, `data:`, a protocol-relative or
+ *                                       backslash-authority path — {@link safeLinkUrl}
+ *                                       decides, and this reuses that exact decision so
+ *                                       the two can never disagree.
+ *   `relationTo` outside the contract   `brands` is the named example.
+ *
+ * The distinction against a degrade is the relationship *target*, not the relationship:
+ * „Podporovaný Page/Post link s `null` alebo chýbajúcim relationship targetom nesmie
+ * vytvoriť odhadovanú route" — that one still renders as inert text, because the editor
+ * pointed at a collection this contract knows and the document is simply gone. A link to
+ * a collection the contract never agreed to is a different fact: it means the provider
+ * and this consumer disagree about what a link can be, and the candidate is rejected.
+ */
+export function findUnsupportedLinkTarget(document: LexicalDocument): string | null {
+	const walk = (node: LexicalNode): string | null => {
+		if (node.type === "link" || node.type === "autolink") {
+			const fields =
+				typeof node.fields === "object" && node.fields !== null
+					? (node.fields as Record<string, unknown>)
+					: {};
+			if (fields.linkType === "internal") {
+				const doc = fields.doc;
+				const relationTo =
+					typeof doc === "object" && doc !== null ? (doc as { relationTo?: unknown }).relationTo : undefined;
+				if (typeof relationTo === "string" && !LINK_COLLECTIONS.has(relationTo)) {
+					return `relationTo ${relationTo}`;
+				}
+			} else if (fields.url !== undefined && fields.url !== null) {
+				const classified = classifyLinkUrl(fields.url);
+				if (classified.kind === "invalid") {
+					return `url ${typeof fields.url === "string" ? fields.url : typeof fields.url}`;
+				}
+			}
+		}
+		for (const child of nodeChildren(node)) {
+			const found = walk(child);
+			if (found !== null) return found;
+		}
+		return null;
+	};
+	return walk(document.root);
 }

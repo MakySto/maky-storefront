@@ -1,0 +1,109 @@
+{
+  "docs": [
+    {
+      "id": "018f0000-0000-7000-8000-000000000001",
+      "title": "Hero fixture",
+      "slug": "fixture-hero",
+      "summary": "Sanitizovaný Hero block s populovaným verejným médiom a externým linkom.",
+      "layout": [
+        {
+          "heading": "Výbava na každú cestu",
+          "subheading": "Praktické riešenia pre bezpečnú a pohodlnú prepravu.",
+          "media": {
+            "id": "018f1000-0000-7000-8000-000000000101",
+            "alt": "Auto na horskej ceste",
+            "caption": "Ilustračné contract médium",
+            "prefix": "provider-v2",
+            "updatedAt": "2026-07-30T10:00:00.000Z",
+            "createdAt": "2026-07-30T09:00:00.000Z",
+            "url": "https://cms-media.maky.store/media/provider-v2/hero-road.webp",
+            "thumbnailURL": "https://cms-media.maky.store/media/provider-v2/hero-road-400x300.webp",
+            "filename": "hero-road.webp",
+            "mimeType": "image/webp",
+            "filesize": 284000,
+            "width": 2400,
+            "height": 1600,
+            "focalX": 50,
+            "focalY": 46,
+            "sizes": {
+              "thumbnail": {
+                "url": "https://cms-media.maky.store/media/provider-v2/hero-road-400x300.webp",
+                "width": 400,
+                "height": 300,
+                "mimeType": "image/webp",
+                "filesize": 28000,
+                "filename": "hero-road-400x300.webp"
+              },
+              "card": {
+                "url": "https://cms-media.maky.store/media/provider-v2/hero-road-960x720.webp",
+                "width": 960,
+                "height": 720,
+                "mimeType": "image/webp",
+                "filesize": 84000,
+                "filename": "hero-road-960x720.webp"
+              },
+              "content": {
+                "url": "https://cms-media.maky.store/media/provider-v2/hero-road-1600x1067.webp",
+                "width": 1600,
+                "height": 1067,
+                "mimeType": "image/webp",
+                "filesize": 166000,
+                "filename": "hero-road-1600x1067.webp"
+              },
+              "hero": {
+                "url": "https://cms-media.maky.store/media/provider-v2/hero-road-2400x1600.webp",
+                "width": 2400,
+                "height": 1600,
+                "mimeType": "image/webp",
+                "filesize": 284000,
+                "filename": "hero-road-2400x1600.webp"
+              },
+              "og": {
+                "url": "https://cms-media.maky.store/media/provider-v2/hero-road-1200x630.webp",
+                "width": 1200,
+                "height": 630,
+                "mimeType": "image/webp",
+                "filesize": 99000,
+                "filename": "hero-road-1200x630.webp"
+              }
+            }
+          },
+          "links": [
+            {
+              "type": "custom",
+              "newTab": false,
+              "reference": null,
+              "url": "https://example.com/vehicle-fit-guide",
+              "label": "Externý sprievodca kompatibilitou",
+              "appearance": "primary",
+              "id": "a00000000000000000000001"
+            }
+          ],
+          "anchorId": "uvod",
+          "markets": ["SK"],
+          "id": "b00000000000000000000001",
+          "blockName": "Úvodný hero",
+          "blockType": "hero"
+        }
+      ],
+      "markets": ["SK"],
+      "meta": {
+        "title": "Hero fixture",
+        "description": "Provider V2 contract fixture pre Hero block.",
+        "image": null
+      },
+      "updatedAt": "2026-07-30T10:00:00.000Z",
+      "createdAt": "2026-07-30T09:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

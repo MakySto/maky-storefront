@@ -1,7 +1,7 @@
 import "server-only";
 import { cmsCollectionTag, cmsPageTag } from "./cache-tags";
 import { readCmsConnection } from "./env";
-import { type PayloadLocale } from "./markets";
+import { type MarketCode, type PayloadLocale } from "./markets";
 import { parsePagesResponse, type CmsPage } from "./page-schema";
 
 /**
@@ -29,12 +29,19 @@ export type CmsPageOutcome =
 	| { readonly status: "found"; readonly page: CmsPage }
 	/** The CMS answered authoritatively: no such published page. Do not use a fallback. */
 	| { readonly status: "not-found" }
+	/** A published candidate exists, but the requested market is authoritatively excluded. */
+	| { readonly status: "market-mismatch"; readonly documentId: string; readonly markets: readonly string[] }
 	/** Upstream fault or contract break. Render the code fallback. */
 	| { readonly status: "error"; readonly reason: string };
 
 function logCmsError(event: string, detail: Record<string, unknown>): void {
 	// Structured single line, no secrets — only status codes, slugs and reasons.
 	console.error(`[cms] ${event}`, JSON.stringify(detail));
+}
+
+function logCmsWarning(event: string, detail: Record<string, unknown>): void {
+	// Structured single line for accepted content whose optional presentation degraded.
+	console.warn(`[cms] ${event}`, JSON.stringify(detail));
 }
 
 /**
@@ -81,13 +88,18 @@ function logCmsServed(detail: Record<string, unknown>): void {
  *     ?where[slug][equals]={slug}
  *     &where[_status][equals]=published
  *     &locale={locale}
+ *     &fallback-locale=none
  *     &depth=1
  *     &limit=1
  *
  * `depth=1` populates upload and relationship fields one level deep, which is
  * enough for media URLs and for the slug of an internally linked document.
  */
-export async function fetchCmsPage(slug: string, locale: PayloadLocale): Promise<CmsPageOutcome> {
+export async function fetchCmsPage(
+	slug: string,
+	locale: PayloadLocale,
+	market?: MarketCode,
+): Promise<CmsPageOutcome> {
 	const pageTag = cmsPageTag(slug);
 	const collectionTag = cmsCollectionTag("pages");
 	if (!pageTag || !collectionTag) {
@@ -107,6 +119,12 @@ export async function fetchCmsPage(slug: string, locale: PayloadLocale): Promise
 	url.searchParams.set("where[slug][equals]", slug);
 	url.searchParams.set("where[_status][equals]", "published");
 	url.searchParams.set("locale", locale);
+	// Without this Payload falls back to another locale when the requested one has no
+	// translation, so a market with no Slovak copy would quietly be served someone else's
+	// language instead of an authoritative "not here". Invisible on the SK-only pilot,
+	// which is exactly why it survived to here; the v2 contract names it in the canonical
+	// request and M.2's whole point is proving the reader is not hard-wired to one page.
+	url.searchParams.set("fallback-locale", "none");
 	url.searchParams.set("depth", "1");
 	url.searchParams.set("limit", "1");
 
@@ -155,7 +173,7 @@ export async function fetchCmsPage(slug: string, locale: PayloadLocale): Promise
 		return { status: "error", reason: "malformed json" };
 	}
 
-	const parsed = parsePagesResponse(body);
+	const parsed = parsePagesResponse(body, market);
 
 	if (parsed.status === "invalid") {
 		// One line, carrying everything needed to find the offending document in Payload:
@@ -176,6 +194,47 @@ export async function fetchCmsPage(slug: string, locale: PayloadLocale): Promise
 	if (parsed.status === "empty") {
 		logCmsServed({ slug, locale, outcome: "not-found" });
 		return { status: "not-found" };
+	}
+
+	const parsedSlug = parsed.status === "ok" ? parsed.page.slug : parsed.slug;
+	const parsedDocumentId = parsed.status === "ok" ? parsed.page.id : parsed.documentId;
+	if (parsedSlug !== slug) {
+		logCmsError("contract-violation", {
+			slug,
+			locale,
+			reason: "response carried a different slug than the one requested",
+			documentId: parsedDocumentId,
+			documentSlug: parsedSlug,
+			blockType: null,
+			nodeType: null,
+		});
+		return { status: "error", reason: `slug mismatch: asked for ${slug}, got ${parsedSlug}` };
+	}
+
+	if (parsed.status === "market-mismatch") {
+		logCmsServed({
+			slug,
+			locale,
+			market,
+			outcome: "market-mismatch",
+			documentId: parsed.documentId,
+			markets: parsed.markets,
+		});
+		return {
+			status: "market-mismatch",
+			documentId: parsed.documentId,
+			markets: parsed.markets,
+		};
+	}
+
+	for (const warning of parsed.warnings) {
+		logCmsWarning("content-degraded", {
+			slug,
+			locale,
+			documentId: parsed.page.id,
+			code: warning.code,
+			reason: warning.reason,
+		});
 	}
 
 	logCmsServed({

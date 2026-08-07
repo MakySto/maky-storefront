@@ -237,6 +237,33 @@ Do NOT change the following without explicit approval:
 Do NOT copy XStore code or assets. XStore is a layout/UX reference only.
 Do NOT add new dependencies solely for styling without approval.
 
+## 10.1 The repository is a public fork — a leaked secret can never be unleaked
+
+`MakySto/maky-storefront` is **public**, because it is a **fork of `saleor/storefront`** and a fork
+of a public repo is created public. Nobody chose this; it was never noticed. Audited clean
+2026-08-07 (gitleaks over all 299 commits and all 34 refs: no credential has ever been committed).
+
+The rule that follows is absolute, and it is stronger here than for an ordinary public repo:
+
+**Never let a credential reach a commit. If one ever does, the only remedy is to REVOKE AND ROTATE
+it — immediately, before anything else.**
+
+Deleting the branch does not help. Rewriting history does not help. Deleting our fork does not
+help. Making the repo private does not help, and in any case GitHub will not let a fork be made
+private at all. In a fork network a commit pushed to any repo in the network stays reachable by its
+SHA from every other repo in that network, permanently. The object lives in the network, not in our
+copy of it.
+
+Practical consequences:
+
+- `.env` is gitignored and has never been tracked. Keep it that way. Real values belong in
+  `/opt/storefront/.env`, never in a file git can see, and never in a doc or a commit message.
+- Secret **names** in code and tests are fine — values are not. Test fixtures must be obvious
+  fakes (`"rotated-secret"`), never a real value "just for the test".
+- Going private is a migration, not a toggle: a new private repo, push the content, repoint the
+  remote and the deploy path, delete the fork. Treat it as a planned operation, never as a fix for
+  a leak that already happened.
+
 ## 11. Validation requirements
 
 For UI changes:
@@ -292,19 +319,211 @@ Ground truth captured by `docs/design/storefront-analysis-20260621.md`:
 Production `maky.store` is served by **PM2** process `maky-storefront` (`npm start` =
 `next start -p 3000`, cwd `/opt/storefront`), proxied by nginx
 (`/etc/nginx/conf.d/storefront.conf` → `proxy_pass 127.0.0.1:3000`). It serves the
-on-disk `.next` build. (`maky-smtp-app` is a separate PM2 process — never touch it.)
+on-disk `.next` build. `maky-smtp-app` is a **separate** PM2 process on the same box and
+carries transactional e-mail — never stop, restart or include it in a deploy.
 
-- **NEVER run `next build` / `npm run build` in `/opt/storefront` while the PM2
-  `maky-storefront` process is running.** `next build` replaces the hashed CSS/JS chunks
-  on disk; the live `next start` keeps serving HTML (and re-writes ISR cache under
-  `.next/server/app/*.html`) referencing the **old, now-deleted** chunk hashes → global
-  404/500 on `/_next/static/*.css` → unstyled site. This caused a CSS-down incident on
-  2026-06-21.
-- **Safe build/deploy procedure:** `pm2 stop maky-storefront` → `rm -rf .next` →
-  `npm run build` → verify on a spare port (`next start -p 3032`: page actually styled,
-  CSS 200, no stale-chunk 404) → `pm2 start maky-storefront` → verify `:3000` **and**
-  `https://maky.store/sk`.
-- **Rollback:** `git checkout feat/phase0-setup` → `rm -rf .next` → `npm run build` →
-  `pm2 restart maky-storefront` restores the last known-good (pre-token-bridge) state.
-- For local validation that only needs a build artifact, build in a **separate
-  clone/worktree**, never the live deploy dir.
+### 13.1 The one rule
+
+**NEVER run `pnpm build` / `next build` in `/opt/storefront` while the PM2
+`maky-storefront` process is running** — not to deploy, and not "just to measure
+something". The build replaces the hashed chunks on disk while the live `next start`
+keeps serving HTML that references the old, now-deleted hashes. Every `/_next/static/*`
+request 404s, so the site answers **HTTP 200 and renders unstyled**. Confirmed twice:
+2026-06-21, and again 2026-08-01 when an agent ran a build to measure peak memory.
+
+This is not a memory problem and no amount of RAM fixes it — `pnpm build` peaks at
+~988 MB on a 15 GiB box. The failure is about _replacing files under a running server_.
+
+It is also invisible to every uptime check that only looks at status codes. An external
+monitor on `/sk` must use a **keyword check**, not HTTP 200.
+
+### 13.2 Production deploy — run the script, not the steps
+
+```bash
+cd /opt/storefront
+./scripts/ops/deploy-production.sh -m "why this is going out"
+```
+
+Manual deploys are forbidden. The script exists because the order of the steps is what
+makes them safe, and five steps in the wrong order is exactly what an agent or a tired
+human gets wrong at 23:00. What it does:
+
+```
+lock        flock — Claude, Codex and a human share this box; two deploys must not race
+preflight   memory, disk, clean tree, current BUILD_ID + its sha, NEXT_OUTPUT unset,
+            sudo, PM2 app
+stop        maky-storefront only — never maky-smtp-app
+snapshot    sudo mv -T .next → rollbacks/.next.rollback-<prev-sha>-<prev-BUILD_ID>-<UTC>
+build       pnpm build, output teed to a log file
+metadata    write .next/MAKY_DEPLOY_META (git sha, build id, timestamp)
+start       pm2 start maky-storefront, wait for the port to answer
+─────────── the commit point ────────────────────────────────────────────────────
+gate        127.0.0.1:3000 — page, CSS chunk on disk, CSS chunk over HTTP
+verify      nginx via --resolve, then the public URL — retried, warn only
+log         append a block to /opt/DEPLOYMENTS.log
+prune       keep the newest 2 snapshots plus any pinned with a sidecar .keep
+```
+
+**Everything before the gate rolls back on failure. Nothing after it does.** Once the
+artifact is serving correctly on `127.0.0.1:3000`, it stays — a failed log write, a
+pruning error or a network blip on the public check is a post-deploy problem, not a
+reason to throw away a verified build. The script exits `75` in that case and says so.
+
+Only the artifact's own behaviour is in the rollback gate. If nginx or public DNS is
+broken, swapping the build back does not fix it, so those checks report and do not
+revert. Exit codes: `0` deployed, `1` failed and rolled back, `70` internal state error,
+`71` the deploy failed **and** the restore failed (site may be down), `75` deployed but a
+post-deploy step failed.
+
+Budget 2–5 minutes of planned downtime. That is the accepted cost until the scratch
+worktree swap (§13.8) is proven.
+
+Rehearse with `--dry-run` first: it runs preflight, prints the plan and touches nothing.
+
+Two deliberate omissions. There is **no `--allow-dirty`**: a deploy from an uncommitted
+tree would write a `git_sha` into `MAKY_DEPLOY_META` that does not describe what was
+built, which defeats the point of recording it. Commit first, even for a hotfix. And
+preflight demands ~10 GB of free memory — the build itself peaks under 1 GB, so this is
+really an interlock against deploying while an agent is holding several gigabytes. Override
+it per-run (`MIN_FREE_MEM_MB=6144 ./scripts/ops/deploy-production.sh`) rather than lowering
+the default, until a real cgroup `memory.peak` has been measured across a few deploys.
+
+**Snapshotting by `mv` also gives the build a cold `.next/cache`.** That is load-bearing,
+not hygiene: on the CMS pilot cutover a warm `fetch-cache` baked a pre-cleanup CMS
+document into the build and shipped a duplicated company block. Content changes in the
+CMS must precede the build, and the build must not inherit the old fetch cache.
+
+### 13.3 Snapshots and rollback — never `cp -al`
+
+`/opt/storefront-rollbacks/` is `root:root`, so every move into or out of it needs
+`sudo mv`. Deliberate: an agent working in `/opt/storefront` cannot delete the rollbacks
+by accident.
+
+- **Out (deploy):** `sudo mv -T .next /opt/storefront-rollbacks/.next.rollback-<prev-sha>-<prev-BUILD_ID>-<UTC>`
+- **Back, automatic** (the deploy just failed): `sudo mv -T <snapshot> .next`. That
+  snapshot is the artifact this run displaced seconds ago, nothing else refers to it, and
+  `mv` is instant. The script does this itself.
+- **Back, manual** (restoring an older, pinned build): `sudo cp -a <snapshot> .next`, so
+  the snapshot survives and can be used again.
+- Always `-T` on `mv`. Without it, if the target directory already exists, `mv` puts
+  `.next` **inside** it instead of failing — which corrupts the snapshot and breaks the
+  automatic restore that depends on it. The snapshot name also carries a UTC timestamp so
+  a repeat deploy of the same sha cannot collide in the first place.
+- The snapshot is named after the **commit the snapshotted build came from**, read from
+  its `MAKY_DEPLOY_META` — not from `git HEAD`, which is the commit about to be built. A
+  build with no metadata is named `unknown`, which is honest; during an incident people
+  read directory names, not the files inside them.
+- **Never `cp -al`.** Hardlinks share the inode, and `next start` rewrites ISR cache
+  under `.next/server/app/*.html` with `O_TRUNC` — it modifies the existing inode rather
+  than replacing the file, so the live server silently mutates the snapshot. Static
+  chunks under `.next/static/` are never rewritten after a build, so a hardlinked
+  snapshot is not useless — but it stops being _immutable_, which is its whole point.
+
+Manual rollback to a known-good build — seconds, no rebuild:
+
+```bash
+ls /opt/storefront-rollbacks/                  # what is available
+cat /opt/storefront-rollbacks/<pick>/MAKY_DEPLOY_META   # which sha it was built from
+pm2 stop maky-storefront
+cd /opt/storefront
+rm -rf .next                                   # only now: the snapshot is safe
+sudo cp -a /opt/storefront-rollbacks/<pick> .next
+sudo chown -R ubuntu:ubuntu .next              # PM2 runs as ubuntu and writes ISR cache
+git checkout <git_sha from MAKY_DEPLOY_META>   # keep the tree in sync with the artifact
+pm2 start maky-storefront
+```
+
+**Do not rebuild from a branch during an incident** — slow, and the result is unverified
+at the worst possible moment. Restore the artifact, then diagnose.
+
+Keep at most 2 snapshots. A snapshot that must never be pruned gets a **sidecar** marker
+next to it, not a file inside it:
+
+```bash
+sudo touch /opt/storefront-rollbacks/.next.rollback-b6b633da-JAODjLtaigo1DL9m6h614.keep
+```
+
+The marker must stay outside the directory because a restore moves the snapshot's
+contents back into the live tree. A `.keep` stored inside would ride along, and the next
+deploy would move it into the new snapshot — silently pinning the wrong build and letting
+the one you meant to protect be pruned.
+
+### 13.4 When the build fails
+
+- **Never start PM2 over a partial `.next`.** A build killed halfway leaves an
+  unservable tree; starting it turns a failed deploy into an outage.
+- `rm -rf .next` is **forbidden before the snapshot exists** — that is what leaves you
+  with no fast rollback. After a _failed_ build it is exactly right: delete the partial
+  artifact, restore the snapshot, then work out why the build failed.
+- `pm2 restart maky-storefront` is a valid recovery **only after a build that finished**
+  (`.next/BUILD_ID` exists and the smoke test passes). It is the fix for the unstyled-site
+  symptom in §13.1. After an interrupted build it starts the broken tree — roll back
+  instead.
+
+### 13.5 Smoke test — HTTP 200 is not the test
+
+The failure mode this catches returns 200. The page must be _styled_, and the stylesheet
+must be one this build actually contains. Run this against `127.0.0.1:3000` — that is the
+rollback gate. The same checks against nginx and the public URL come after the commit
+point and only warn (§13.2).
+
+```bash
+HTML=$(mktemp)
+curl -fsS http://127.0.0.1:3000/sk -o "$HTML"
+CSS=$(grep -oE '/_next/static/[^"]+\.css' "$HTML" | head -1)
+test -n "$CSS" || { echo "FAIL: no CSS chunk in the served HTML"; exit 1; }
+test -f ".next/${CSS#/_next/}" || { echo "FAIL: served CSS is not in this build"; exit 1; }
+curl -sS -o /dev/null -w '%{http_code} %{size_download}\n' "http://127.0.0.1:3000$CSS"
+curl -sS -o /dev/null -w '%{http_code} %{size_download}\n' "https://maky.store$CSS"
+rm -f "$HTML"
+```
+
+Both must be `200` with a non-trivial byte count — a 200 serving an empty file is still a
+broken site. Check the chunk **locally and through nginx**: they fail independently.
+
+Two traps that have already produced wrong runbooks:
+
+- **The path is `/_next/static/chunks/*.css`, not `/_next/static/css/*.css`.** Next 16
+  with Turbopack emits stylesheets next to the JS chunks. A pattern anchored on
+  `/_next/static/css/` matches nothing on a perfectly healthy page — verified against
+  live production on 2026-08-01 — so it would fail every smoke test and trigger a
+  needless rollback.
+- **Guard against an empty variable.** `curl "$URL$CSS"` with an empty `$CSS` fetches the
+  homepage and returns 200, so the test passes while proving nothing.
+- **Probe sudo with `sudo -n true`, never `sudo -v`.** `-v` validates credentials, and
+  that asks for a password even under `NOPASSWD` — the rule exempts running commands, not
+  authenticating. `ubuntu` on this box has `NOPASSWD` from cloud-init, so `sudo -n true`
+  succeeds while `sudo -n -v` answers "a password is required". A `-v` probe therefore
+  blocks the deploy on a box where sudo was never a problem, which is how the first run of
+  this script died (2026-08-01).
+
+Finish with a look in a real browser. Automated checks cannot see a colourless button
+(§4.2).
+
+### 13.6 Never set `NEXT_OUTPUT` for a production deploy
+
+`next.config.js` selects the output mode from `NEXT_OUTPUT`; unset means normal mode,
+which is what production runs. PM2 starts `/usr/bin/npm start -- -p 3000` = `next start`,
+which reads `.next` directly.
+
+Setting `NEXT_OUTPUT=standalone` produces `.next/standalone/server.js`, which that PM2
+command never launches — you get a build that looks fine and serves nothing new. The
+variable is legitimate for the **Dockerfile**; the ban is on the production PM2 deploy
+path only. Any runbook telling you to build standalone and copy `public` and
+`.next/static` into `.next/standalone/` is stale — it does not describe this box.
+
+### 13.7 Local validation
+
+For a build artifact that only needs to be inspected, build in a **separate
+worktree or clone** and never in the live deploy directory. Nothing about §13.1 changes
+because the intent is "just checking".
+
+### 13.8 Open, not approved: scratch worktree swap
+
+Building in a scratch worktree and swapping the directory would cut the downtime from
+minutes to seconds. It is **not approved** — `.next/required-server-files.json` records
+an absolute path to the project root, and whether a moved build tolerates that has not
+been tested. Prove it off production first: build in worktree A, create worktree B at the
+same sha, move A's `.next` into B, serve B on a spare port, and check homepage, CSS, a
+PLP, a PDP and a CMS page. Until that passes, stop–build–start with planned downtime is
+the procedure.

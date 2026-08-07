@@ -62,17 +62,26 @@ describe("LexicalContent — nodes the editor can produce", () => {
 		);
 	});
 
-	it("renders both list flavours", () => {
-		const items = [
-			{ type: "listitem", children: [text("jedna")] },
-			{ type: "listitem", children: [text("dva")] },
+	it("renders both list flavours and preserves ordered numbering", () => {
+		const bulletItems = [
+			{ type: "listitem", value: 1, children: [text("jedna")] },
+			{ type: "listitem", value: 2, children: [text("dva")] },
 		];
-		expect(render({ children: [{ type: "list", listType: "bullet", children: items }] })).toBe(
-			"<ul><li>jedna</li><li>dva</li></ul>",
-		);
-		expect(render({ children: [{ type: "list", listType: "number", children: items }] })).toBe(
-			"<ol><li>jedna</li><li>dva</li></ol>",
-		);
+		expect(
+			render({
+				children: [{ type: "list", listType: "bullet", tag: "ul", start: 1, children: bulletItems }],
+			}),
+		).toBe("<ul><li>jedna</li><li>dva</li></ul>");
+
+		const numberedItems = [
+			{ type: "listitem", value: 5, children: [text("päť")] },
+			{ type: "listitem", value: 7, children: [text("sedem")] },
+		];
+		expect(
+			render({
+				children: [{ type: "list", listType: "number", tag: "ol", start: 5, children: numberedItems }],
+			}),
+		).toBe(`<ol start="5"><li value="5">päť</li><li value="7">sedem</li></ol>`);
 	});
 
 	it("renders combined text formats", () => {
@@ -143,6 +152,50 @@ describe("LexicalContent — safety", () => {
 		});
 		expect(html).toContain('target="_blank"');
 		expect(html).toContain('rel="noopener noreferrer"');
+	});
+
+	it("keeps a root-relative URL as text and logs the degradation", () => {
+		const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const html = render({
+			children: [
+				paragraph({
+					type: "link",
+					fields: { url: "/kontakt", linkType: "custom" },
+					children: [text("Kontakt")],
+				}),
+			],
+		});
+
+		expect(html).toBe("<p>Kontakt</p>");
+		expect(html).not.toContain("href");
+		expect(spy).toHaveBeenCalledWith("[cms] link-url-rendered-as-text", JSON.stringify({ url: "/kontakt" }));
+		spy.mockRestore();
+	});
+
+	it("keeps populated Page/Post targets without a route as text and logs them", () => {
+		const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+		for (const collection of ["pages", "posts"] as const) {
+			const html = render({
+				children: [
+					paragraph({
+						type: "link",
+						fields: {
+							linkType: "internal",
+							doc: { relationTo: collection, value: { slug: "future" } },
+						},
+						children: [text(collection)],
+					}),
+				],
+			});
+
+			expect(html).toBe(`<p>${collection}</p>`);
+			expect(html).not.toContain("href");
+			expect(spy).toHaveBeenCalledWith(
+				"[cms] link-target-has-no-route",
+				JSON.stringify({ collection, slug: "future" }),
+			);
+		}
+		spy.mockRestore();
 	});
 });
 
@@ -221,7 +274,7 @@ describe("LexicalContent — resilience", () => {
 	});
 
 	it("logs an internal link to a collection with no storefront route and keeps the text", () => {
-		const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
 		const html = render({
 			children: [
 				paragraph({

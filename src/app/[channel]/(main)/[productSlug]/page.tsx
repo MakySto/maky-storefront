@@ -7,6 +7,14 @@ import xss from "xss";
 
 import { getTranslations } from "next-intl/server";
 import { executePublicGraphQL } from "@/lib/graphql";
+import {
+	catchUpstreamError,
+	logUpstreamError,
+	refuseToCacheUpstreamError,
+	toOutcome,
+	type AuthoritativeOutcome,
+	type ResourceOutcome,
+} from "@/lib/saleor/resource-outcome";
 import { ProductDetailsDocument, type ProductDetailsQuery } from "@/gql/graphql";
 import { buildPageMetadata, buildProductJsonLd } from "@/lib/seo";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
@@ -31,7 +39,9 @@ const MANUFACTURER_REF = "cfm:attribute:manufacturer";
 // Cached Data Fetching
 // ============================================================================
 
-async function fetchProduct(slug: string, channel: string) {
+type Product = NonNullable<ProductDetailsQuery["product"]>;
+
+async function fetchProductOutcome(slug: string, channel: string): Promise<ResourceOutcome<Product>> {
 	const result = await executePublicGraphQL(ProductDetailsDocument, {
 		variables: {
 			slug: decodeURIComponent(slug),
@@ -40,29 +50,45 @@ async function fetchProduct(slug: string, channel: string) {
 		revalidate: 300,
 	});
 
-	if (!result.ok) {
-		console.error(`[getProductData] Failed to fetch product ${slug} for ${channel}:`, result.error.message);
-		return null;
-	}
-
-	return result.data.product;
+	return toOutcome(result, (data) => data.product);
 }
 
-async function getProductData(slug: string, channel: string) {
+/**
+ * The cached half. Ends in `refuseToCacheUpstreamError`, which throws on a fault
+ * so Next never stores it — an outage must not be remembered as an absence for
+ * the length of a `cacheLife("minutes")` entry.
+ */
+async function getProductOutcomeCached(
+	slug: string,
+	channel: string,
+): Promise<AuthoritativeOutcome<Product>> {
 	"use cache";
 	applyCacheProfile(CACHE_PROFILES.products, slug);
 
-	const product = await fetchProduct(slug, channel);
-	if (product) {
-		return product;
+	const outcome = await fetchProductOutcome(slug, channel);
+	if (outcome.status !== "not-found") {
+		return refuseToCacheUpstreamError(outcome);
 	}
 
 	// Migration shim: a product whose Saleor slug has not been updated to the
 	// SKU-last form yet is still reachable at its canonical new URL. Only fires
-	// on a miss, and only for the ten explicitly mapped slugs, so it disappears
-	// on its own once Saleor has converged. See `previousProductSlug`.
+	// on an AUTHORITATIVE miss — a fault has already thrown above, so a blip can
+	// no longer send us down this path — and only for the ten explicitly mapped
+	// slugs, so it disappears on its own once Saleor has converged.
 	const previous = previousProductSlug(slug);
-	return previous ? await fetchProduct(previous, channel) : null;
+	if (!previous) {
+		return refuseToCacheUpstreamError(outcome);
+	}
+
+	return refuseToCacheUpstreamError(await fetchProductOutcome(previous, channel));
+}
+
+/** `found` | `not-found` | `upstream-error`, shared by the page and its metadata. */
+export async function getProductOutcome(
+	slug: string,
+	channel: string,
+): Promise<ResourceOutcome<Product>> {
+	return catchUpstreamError(() => getProductOutcomeCached(slug, channel));
 }
 
 // ============================================================================
@@ -73,17 +99,28 @@ export async function generateMetadata(props: {
 	params: Promise<{ productSlug: string; channel: string }>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const product = await getProductData(params.productSlug, params.channel);
+	const outcome = await getProductOutcome(params.productSlug, params.channel);
 
-	if (!product) {
+	if (outcome.status === "upstream-error") {
+		// We could not find out whether this product exists. `noindex` and NO
+		// canonical — nominating a URL we failed to verify is how a transient
+		// fault turns into an indexed page — but deliberately no "not found"
+		// title either, because that would be a claim we cannot support.
+		return { robots: { index: false, follow: false, googleBot: { index: false, follow: false } } };
+	}
+
+	if (outcome.status === "not-found") {
 		// Streaming/PPR can't set a 404 status after the shell is flushed, so the
-		// noindex robots meta is the only crawler-visible not-found signal here.
+		// noindex robots meta is the only crawler-visible not-found signal here
+		// until the proxy gate lands.
 		const t = await getTranslations("product");
 		return {
 			title: t("notFoundTitle"),
 			robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
 		};
 	}
+
+	const product = outcome.resource;
 
 	const description = product.seoDescription || product.name;
 	const ogImage = product.media?.[0]?.url || product.thumbnail?.url;
@@ -139,12 +176,22 @@ async function ProductContent({
 }) {
 	const [params, searchParams] = await Promise.all([paramsPromise, searchParamsPromise]);
 
-	const product = await getProductData(params.productSlug, params.channel);
+	const outcome = await getProductOutcome(params.productSlug, params.channel);
 
-	if (!product) {
+	// An upstream fault is NOT an absence. Throwing hands it to the error
+	// boundary; calling notFound() here would tell the world a live, buyable
+	// product is gone every time Saleor hiccups — and once the proxy gate is
+	// enabled, that would be a real 404 rather than a soft one.
+	if (outcome.status === "upstream-error") {
+		logUpstreamError("product", outcome, { slug: params.productSlug, channel: params.channel });
+		throw new Error(`product lookup failed for ${params.productSlug}: ${outcome.message}`);
+	}
+
+	if (outcome.status === "not-found") {
 		notFound();
 	}
 
+	const product = outcome.resource;
 	const variants = product.variants || [];
 	const selectedVariantId = searchParams.variant || (variants.length === 1 ? variants[0].id : undefined);
 	const selectedVariant = variants.find((v) => v.id === selectedVariantId);

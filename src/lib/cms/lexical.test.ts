@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
 	alignmentClass,
+	classifyLinkUrl,
 	findUnrenderableNode,
 	headingTag,
 	listTag,
@@ -9,6 +10,7 @@ import {
 	RENDERABLE_NODE_TYPES,
 	safeLinkUrl,
 	textFormats,
+	validateLexicalDocument,
 	type LexicalDocument,
 } from "./lexical";
 
@@ -20,9 +22,20 @@ describe("safeLinkUrl", () => {
 		expect(safeLinkUrl("mailto:info@maky.store")).toBe("mailto:info@maky.store");
 	});
 
-	it("allows same-page anchors and root-relative paths", () => {
-		expect(safeLinkUrl("#kontakt")).toBe("#kontakt");
-		expect(safeLinkUrl("/sk/obchodne-podmienky")).toBe("/sk/obchodne-podmienky");
+	it("does not emit relative and same-page URLs as hrefs", () => {
+		expect(safeLinkUrl("#kontakt")).toBeNull();
+		expect(safeLinkUrl("/sk/obchodne-podmienky")).toBeNull();
+	});
+
+	it("distinguishes harmless local references from unsafe destinations", () => {
+		expect(classifyLinkUrl("/kontakt")).toEqual({ kind: "inert-relative", url: "/kontakt" });
+		expect(classifyLinkUrl("kontakt")).toEqual({ kind: "inert-relative", url: "kontakt" });
+		expect(classifyLinkUrl("./kontakt")).toEqual({ kind: "inert-relative", url: "./kontakt" });
+		expect(classifyLinkUrl("?tab=kontakt")).toEqual({ kind: "inert-relative", url: "?tab=kontakt" });
+		expect(classifyLinkUrl("#sekcia")).toEqual({ kind: "inert-relative", url: "#sekcia" });
+		expect(classifyLinkUrl("javascript:alert(1)")).toEqual({ kind: "invalid" });
+		expect(classifyLinkUrl("//evil.example")).toEqual({ kind: "invalid" });
+		expect(classifyLinkUrl("/\\evil.example")).toEqual({ kind: "invalid" });
 	});
 
 	it("rejects script-bearing schemes", () => {
@@ -46,6 +59,17 @@ describe("safeLinkUrl", () => {
 
 	it("rejects protocol-relative URLs rather than guessing a scheme", () => {
 		expect(safeLinkUrl("//evil.example")).toBeNull();
+		// The WHATWG parser treats a backslash like a slash after a leading `/` for special
+		// schemes, so `/\evil.example` resolves to https://evil.example/ — an off-site link
+		// that reads as an internal path. Only the `//` spelling used to be caught.
+		expect(safeLinkUrl("/\\evil.example")).toBeNull();
+		expect(safeLinkUrl("/\\/evil.example")).toBeNull();
+	});
+
+	it("does not treat internal routes as custom URLs", () => {
+		expect(safeLinkUrl("/kontakt")).toBeNull();
+		expect(safeLinkUrl("/sk/poradna")).toBeNull();
+		expect(safeLinkUrl("#sekcia")).toBeNull();
 	});
 
 	it("rejects non-strings and blanks", () => {
@@ -156,6 +180,17 @@ describe("readLink", () => {
 		).toEqual({ url: null, internal: { collection: "pages", slug: "kontakt" }, newTab: true });
 	});
 
+	it("does not repair whitespace in a populated relationship slug", () => {
+		for (const slug of ["   ", " kontakt "]) {
+			expect(
+				readLink({
+					type: "link",
+					fields: { linkType: "internal", doc: { relationTo: "pages", value: { slug } } },
+				}),
+			).toEqual({ url: null, internal: null, newTab: false });
+		}
+	});
+
 	it("gives up on an unpopulated relationship rather than emitting a broken href", () => {
 		expect(readLink({ type: "link", fields: { linkType: "internal", doc: "019fb008-504b-779e" } })).toEqual({
 			url: null,
@@ -175,6 +210,190 @@ describe("readLink", () => {
 
 	it("survives a missing fields object", () => {
 		expect(readLink({ type: "autolink" })).toEqual({ url: null, internal: null, newTab: false });
+	});
+});
+
+describe("validateLexicalDocument", () => {
+	function documentWith(...children: unknown[]): LexicalDocument {
+		return { root: { type: "root", format: "", children } } as unknown as LexicalDocument;
+	}
+
+	const text = { type: "text", text: "Obsah", format: 0 };
+
+	it("accepts a complete canonical tree and a registered internal Page target", () => {
+		const result = validateLexicalDocument(
+			documentWith({
+				type: "paragraph",
+				format: "start",
+				children: [
+					text,
+					{
+						type: "link",
+						fields: {
+							linkType: "internal",
+							doc: { relationTo: "pages", value: { slug: "kontakt" } },
+						},
+						children: [text],
+					},
+				],
+			}),
+		);
+
+		expect(result).toEqual({ ok: true });
+	});
+
+	it("rejects malformed children, nested roots and missing required fields", () => {
+		const cases: Array<[string, LexicalDocument]> = [
+			["non-node child", documentWith({})],
+			["nested root", documentWith({ type: "root", children: [] })],
+			["element without children", documentWith({ type: "paragraph" })],
+			["text without text", documentWith({ type: "text", format: 0 })],
+			[
+				"text carrying hidden children",
+				documentWith({
+					type: "text",
+					text: "Viditeľné",
+					format: 0,
+					children: [{ type: "futureDisclosure", children: [] }],
+				}),
+			],
+		];
+
+		for (const [label, candidate] of cases) {
+			expect(validateLexicalDocument(candidate).ok, label).toBe(false);
+		}
+	});
+
+	it("rejects heading, list and alignment enum coercions", () => {
+		for (const candidate of [
+			{ type: "heading", tag: "h1", children: [text] },
+			{ type: "heading", tag: "h5", children: [text] },
+			{ type: "heading", children: [text] },
+			{ type: "list", listType: "ordered", tag: "ol", start: 1, children: [] },
+			{ type: "list", listType: "number", tag: "ul", start: 1, children: [] },
+			{ type: "paragraph", format: "future", children: [text] },
+		]) {
+			expect(validateLexicalDocument(documentWith(candidate)).ok).toBe(false);
+		}
+	});
+
+	it("validates list numbering and direct listitem structure", () => {
+		const valid = documentWith({
+			type: "list",
+			listType: "number",
+			tag: "ol",
+			start: 5,
+			children: [
+				{ type: "listitem", value: 5, checked: null, children: [text] },
+				{ type: "listitem", value: 7, checked: null, children: [text] },
+			],
+		});
+		expect(validateLexicalDocument(valid)).toEqual({ ok: true });
+
+		const invalid = [
+			documentWith({ type: "list", listType: "number", tag: "ol", children: [] }),
+			documentWith({ type: "list", listType: "number", tag: "ol", start: 0, children: [] }),
+			documentWith({ type: "list", listType: "number", tag: "ol", start: 1.5, children: [] }),
+			documentWith({ type: "list", listType: "number", tag: "ol", start: 1, children: [text] }),
+			documentWith({ type: "listitem", value: 1, children: [text] }),
+			documentWith({
+				type: "list",
+				listType: "bullet",
+				tag: "ul",
+				start: 1,
+				children: [{ type: "listitem", children: [text] }],
+			}),
+			documentWith({
+				type: "list",
+				listType: "bullet",
+				tag: "ul",
+				start: 1,
+				children: [{ type: "listitem", value: 0, children: [text] }],
+			}),
+			documentWith({
+				type: "list",
+				listType: "bullet",
+				tag: "ul",
+				start: 1,
+				children: [{ type: "listitem", value: 1.5, children: [text] }],
+			}),
+			documentWith({
+				type: "list",
+				listType: "bullet",
+				tag: "ul",
+				start: 1,
+				children: [{ type: "listitem", value: 1, checked: true, children: [text] }],
+			}),
+		];
+
+		for (const candidate of invalid) {
+			expect(validateLexicalDocument(candidate).ok).toBe(false);
+		}
+	});
+
+	it("requires an integer non-negative text format using only known bits", () => {
+		for (const format of ["bold", 1.5, Number.POSITIVE_INFINITY, -1, 32, 2 ** 32, Number.MAX_SAFE_INTEGER]) {
+			const result = validateLexicalDocument(documentWith({ type: "text", text: "Obsah", format }));
+			expect(result.ok, String(format)).toBe(false);
+		}
+	});
+
+	it("rejects malformed and unsafe links", () => {
+		const cases = [
+			{ type: "link", fields: { linkType: "custom", url: "javascript:alert(1)" }, children: [text] },
+			{ type: "link", fields: { linkType: "custom", url: "//evil.example" }, children: [text] },
+			{ type: "link", fields: { linkType: "internal", doc: "id" }, children: [text] },
+			{
+				type: "link",
+				fields: { linkType: "internal", doc: { relationTo: 42, value: { slug: "kontakt" } } },
+				children: [text],
+			},
+			{
+				type: "link",
+				fields: { linkType: "internal", doc: { relationTo: "pages", value: { slug: "   " } } },
+				children: [text],
+			},
+			{
+				type: "link",
+				fields: { linkType: "internal", doc: { relationTo: "pages", value: { slug: " kontakt " } } },
+				children: [text],
+			},
+		];
+
+		for (const candidate of cases) {
+			expect(validateLexicalDocument(documentWith(candidate)).ok).toBe(false);
+		}
+	});
+
+	it("keeps supported unroutable targets and harmless local URLs valid for text degradation", () => {
+		const candidates = [
+			{
+				type: "link",
+				fields: { linkType: "internal", doc: { relationTo: "pages", value: { slug: "future" } } },
+				children: [text],
+			},
+			{
+				type: "link",
+				fields: { linkType: "internal", doc: { relationTo: "posts", value: { slug: "article" } } },
+				children: [text],
+			},
+			{ type: "link", fields: { linkType: "custom", url: "/kontakt" }, children: [text] },
+			{ type: "link", fields: { linkType: "custom", url: "#sekcia" }, children: [text] },
+			{ type: "link", fields: { linkType: "custom", url: "../kontakt" }, children: [text] },
+		];
+
+		for (const candidate of candidates) {
+			expect(validateLexicalDocument(documentWith(candidate))).toEqual({ ok: true });
+		}
+	});
+
+	it("also allows a null or missing supported relationship target to degrade", () => {
+		for (const doc of [undefined, null, { relationTo: "pages", value: null }]) {
+			const result = validateLexicalDocument(
+				documentWith({ type: "link", fields: { linkType: "internal", doc }, children: [text] }),
+			);
+			expect(result).toEqual({ ok: true });
+		}
 	});
 });
 
@@ -241,14 +460,29 @@ describe("findUnrenderableNode", () => {
 		expect(findUnrenderableNode(doc({ type: "block", fields: { blockType: "cta" } }))).toBe("block");
 	});
 
-	it("lets an inert marker node through — a separator is not content", () => {
-		expect(findUnrenderableNode(doc({ type: "horizontalrule", version: 1 }))).toBeNull();
-		expect(findUnrenderableNode(doc({ type: "tab", version: 1 }))).toBeNull();
+	it("refuses a bare marker node too — v2 removed the inert exception", () => {
+		// This used to pass. The old rule asked whether a node LOOKED like it carried
+		// content and let a separator through; the v2 contract forbids that judgement
+		// outright: „Neznámy node sa nesmie automaticky považovať za inertný len preto, že
+		// nemá známe textové pole." `horizontalrule` is itself outside the v2 allowlist now.
+		expect(findUnrenderableNode(doc({ type: "horizontalrule", version: 1 }))).toBe("horizontalrule");
+		expect(findUnrenderableNode(doc({ type: "tab", version: 1 }))).toBe("tab");
 	});
 
-	it("treats whitespace-only text as not content", () => {
-		// Otherwise an indentation artefact would take a whole page down.
-		expect(findUnrenderableNode(doc({ type: "someFutureNode", text: "   " }))).toBeNull();
+	it("refuses an unknown node whose only text is whitespace", () => {
+		// The old rule read this as an indentation artefact and let it through. The type is
+		// what decides now, not a guess about where the content might be hiding — the
+		// failure that guess protects against is a page taken down by a stray node, and the
+		// failure it causes is published content rendered as if it were not there.
+		expect(findUnrenderableNode(doc({ type: "someFutureNode", text: "   " }))).toBe("someFutureNode");
+	});
+
+	it("still accepts every node on the contract's allowlist", () => {
+		// The tightening must not have narrowed the allowlist itself.
+		for (const type of ["paragraph", "heading", "quote", "list", "listitem", "link", "autolink"]) {
+			expect(findUnrenderableNode(doc({ type, children: [{ type: "text", text: "x" }] })), type).toBeNull();
+		}
+		expect(findUnrenderableNode(doc({ type: "linebreak" }))).toBeNull();
 	});
 
 	it("reports the FIRST offender, so the log names one thing to fix", () => {

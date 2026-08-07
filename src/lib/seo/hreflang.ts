@@ -7,12 +7,8 @@
 
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import { LOCALE_MAP } from "@/config/locale";
+import { liveMarkets } from "@/lib/market-state";
 import { getBaseUrl } from "./config";
-
-/**
- * All 12 markets (Wave 1 + Wave 2).
- */
-const ALL_MARKETS = ["sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"] as const;
 
 type HreflangEntry = {
 	hreflang: string;
@@ -42,7 +38,20 @@ export function buildHreflangAlternates(path: string = ""): HreflangEntry[] {
 	const base = getBaseUrl();
 	const normalizedPath = path && !path.startsWith("/") ? `/${path}` : path;
 
-	const alternates: HreflangEntry[] = ALL_MARKETS.map((market) => {
+	// Only markets that are actually indexable. This used to list all twelve
+	// unconditionally, which pointed the cluster at eleven `noindex` storefronts
+	// with no catalogue — and hreflang annotations that are not reciprocated get
+	// the WHOLE cluster ignored, not just the bad entry, so it was working against
+	// the one market that is real.
+	const markets = liveMarkets();
+
+	// A cluster of one says nothing: hreflang describes alternates, and a page has
+	// no alternate to itself. Emitting `x-default` alone is worse than emitting
+	// nothing, because it invites a crawler to treat a single-market site as an
+	// international one. As markets go live this starts producing tags on its own.
+	if (markets.length < 2) return [];
+
+	const alternates: HreflangEntry[] = markets.map((market) => {
 		const config = CHANNEL_MAP[market];
 		const localeConfig = LOCALE_MAP[config.locale];
 
@@ -64,10 +73,12 @@ export function buildHreflangAlternates(path: string = ""): HreflangEntry[] {
 		};
 	});
 
-	// x-default → primary market (sk)
+	// x-default → the first live market, not a hardcoded `sk`. If sk is ever taken
+	// out of the live set, an x-default pointing at a noindex page would be the
+	// single worst entry in the cluster.
 	alternates.push({
 		hreflang: "x-default",
-		url: `${base}/sk${normalizedPath}`,
+		url: `${base}/${markets[0]}${normalizedPath}`,
 	});
 
 	return alternates;
@@ -96,7 +107,7 @@ export function buildCanonicalUrl(market: string, path: string = ""): string {
 export function buildAlternatesMetadata(
 	channelSlug: string,
 	path: string = "",
-): { alternates: { canonical: string; languages: Record<string, string> } } {
+): { alternates: { canonical: string; languages?: Record<string, string> } } {
 	const market = REVERSE_MAP[channelSlug] || channelSlug;
 	const hreflangs = buildHreflangAlternates(path);
 
@@ -108,7 +119,10 @@ export function buildAlternatesMetadata(
 	return {
 		alternates: {
 			canonical: buildCanonicalUrl(market, path),
-			languages,
+			// Omitted rather than emitted empty while fewer than two markets are
+			// live — `languages: {}` is a shape Next is free to render as an empty
+			// annotation, and there is nothing to say yet.
+			...(hreflangs.length > 0 ? { languages } : {}),
 		},
 	};
 }

@@ -1,0 +1,96 @@
+{
+  "id": "storefront-cms-pages",
+  "version": 2,
+  "status": "candidate",
+  "providerRelease": "20260718T113448Z-91dc302982a1",
+  "providerCommit": "91dc302982a103e1cfa6b0d456f5293ec905d275",
+  "packCaptureBase": "5c8b1b97f2a90bf879c1d4c7e611aa3aff915529",
+  "payloadVersion": "3.86.0",
+  "restContract": "page-rest-contract.md",
+  "depthContract": "depth-and-relationships.md",
+  "lexicalContract": "lexical-richtext-contract.md",
+  "depth": 1,
+  "source": "sanitized-synthetic-from-provider-schema",
+  "routeTemplate": "/{channel}/{slug}",
+  "supportedBlocks": [
+    "hero",
+    "richText",
+    "image",
+    "gallery",
+    "cta",
+    "faq",
+    "mediaText"
+  ],
+  "supportedMarkets": [
+    "SK",
+    "CZ",
+    "PL",
+    "HU",
+    "RO",
+    "AT",
+    "DE",
+    "IT",
+    "FR",
+    "ES",
+    "US",
+    "CA"
+  ],
+  "mediaSizes": [
+    "thumbnail",
+    "card",
+    "content",
+    "hero",
+    "og"
+  ],
+  "previewSupported": false,
+  "scenarios": {
+    "hero": "fixtures/rest/page-hero.sk.published.depth-1.json",
+    "richText": "fixtures/rest/page-rich-text.sk.published.depth-1.json",
+    "image": "fixtures/rest/page-image.sk.published.depth-1.json",
+    "gallery": "fixtures/rest/page-gallery.sk.published.depth-1.json",
+    "cta": "fixtures/rest/page-cta.sk.published.depth-1.json",
+    "faq": "fixtures/rest/page-faq.sk.published.depth-1.json",
+    "mediaText": "fixtures/rest/page-media-text.sk.published.depth-1.json",
+    "realisticMultiBlock": "fixtures/rest/page-multi-block.sk.published.depth-1.json",
+    "perBlockMarketFiltering": "fixtures/rest/page-block-markets.sk.published.depth-1.json",
+    "pageLevelMarketMismatch": "fixtures/rest/page-market-mismatch.sk.published.depth-1.json",
+    "unsupportedBlockBetweenSupportedBlocks": "fixtures/rest/page-unsupported-block-between-supported.sk.json",
+    "unsupportedContentBearingLexicalNode": "fixtures/rest/page-unsupported-lexical-node.sk.json",
+    "internalPageLink": "fixtures/rest/page-links.sk.published.depth-1.json",
+    "internalPostLink": "fixtures/rest/page-links.sk.published.depth-1.json",
+    "customExternalLink": "fixtures/rest/page-hero.sk.published.depth-1.json",
+    "missingOrNullRelationship": "fixtures/rest/page-null-relationships.sk.published.depth-1.json",
+    "mediaWithAllExpectedSizes": "fixtures/rest/page-image.sk.published.depth-1.json"
+  },
+  "expectations": {
+    "marketSKVisibleBlockIds": [
+      "b00000000000000000000091",
+      "b00000000000000000000092",
+      "b00000000000000000000093",
+      "b00000000000000000000095"
+    ],
+    "marketSKExcludedBlockIds": [
+      "b00000000000000000000094"
+    ],
+    "pageMarketMismatch": "reject-candidate-for-SK",
+    "unsupportedBlock": "reject-complete-candidate",
+    "unsupportedLexicalNode": "reject-complete-candidate",
+    "missingOrNullRelationship": "do-not-derive-route"
+  },
+  "fixtures": {
+    "fixtures/rest/page-block-markets.sk.published.depth-1.json": "sha256:9561f1996c18069102569e2580d983574a9f66c9760f4071816b1d7f74eccc12",
+    "fixtures/rest/page-cta.sk.published.depth-1.json": "sha256:928d7814d0336ac60fe52d6cf3d66b6c84ac1a73e8805ce52628fba7fba77df1",
+    "fixtures/rest/page-faq.sk.published.depth-1.json": "sha256:24ebecf6d00e00465ff0f2ce3918af807ea100bb77331c597f028d806d6c0e5d",
+    "fixtures/rest/page-gallery.sk.published.depth-1.json": "sha256:12ef56d20b00a315b2d5e9aa5e372298588925f2b1133dccfc443ae36948c6e9",
+    "fixtures/rest/page-hero.sk.published.depth-1.json": "sha256:0822c39d9badf0a14848490910dbb20c72d77ec43afcdb8da7da6cfb29497b50",
+    "fixtures/rest/page-image.sk.published.depth-1.json": "sha256:6a1365fcd997e99f6065c14fb8c7c79a8eb2961d869f2daab0fb943fa42477cc",
+    "fixtures/rest/page-links.sk.published.depth-1.json": "sha256:1dc742e9aef7bf5f0580315dbe92bef0dd00ea4ef081304f4507107c843dc2b6",
+    "fixtures/rest/page-market-mismatch.sk.published.depth-1.json": "sha256:3ebe71dd34239816a352329c65bddc749443f307cf266f62a80f4f7bb0e266f0",
+    "fixtures/rest/page-media-text.sk.published.depth-1.json": "sha256:c9793d6cb4d370b57e31efb513f53885acb1b16f77a6a22149729c1a1ac42e85",
+    "fixtures/rest/page-multi-block.sk.published.depth-1.json": "sha256:84437b2af3a06918b60f14c316cc52207ae92032c078e233190e693f2198778d",
+    "fixtures/rest/page-null-relationships.sk.published.depth-1.json": "sha256:216cccbe2efdb763ec09aa656421e25576ffe4b5d783796598cdaa42fd987a95",
+    "fixtures/rest/page-rich-text.sk.published.depth-1.json": "sha256:c34bfc1911e33a44fd4333a930270a5b6ce9e63fabcda58b149a6d97d917d416",
+    "fixtures/rest/page-unsupported-block-between-supported.sk.json": "sha256:909bf34184184f368348f8ddc48cec3bff14c873f48189324ba76f992b7b68e5",
+    "fixtures/rest/page-unsupported-lexical-node.sk.json": "sha256:cbb9c01dcbf145709d2f1514313927fd380eb687c3a7f2c5228bb75d410a6c76"
+  }
+}

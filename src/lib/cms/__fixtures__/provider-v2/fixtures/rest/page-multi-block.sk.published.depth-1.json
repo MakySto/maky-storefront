@@ -1,0 +1,173 @@
+{
+  "docs": [
+    {
+      "id": "018f0000-0000-7000-8000-000000000008",
+      "title": "Sprievodca výberom výbavy",
+      "slug": "fixture-multi-block",
+      "summary": "Realistická sanitizovaná stránka z viacerých podporovaných blokov.",
+      "layout": [
+        {
+          "heading": "Výbava, ktorá sedí vášmu autu",
+          "subheading": "Začnite kompatibilitou a spôsobom použitia.",
+          "media": null,
+          "links": [
+            {
+              "type": "custom",
+              "newTab": false,
+              "reference": null,
+              "url": "https://maky.store/sk/kontakt",
+              "label": "Pomôcť s výberom",
+              "appearance": "primary",
+              "id": "a00000000000000000000081"
+            }
+          ],
+          "anchorId": "uvod",
+          "markets": [],
+          "id": "b00000000000000000000081",
+          "blockName": "Úvod",
+          "blockType": "hero"
+        },
+        {
+          "content": {
+            "root": {
+              "type": "root",
+              "children": [
+                {
+                  "type": "heading",
+                  "tag": "h2",
+                  "format": "",
+                  "indent": 0,
+                  "version": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Tri kroky pred objednávkou",
+                      "format": 0,
+                      "detail": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "version": 1
+                    }
+                  ],
+                  "direction": null
+                },
+                {
+                  "type": "paragraph",
+                  "format": "start",
+                  "indent": 0,
+                  "version": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "Overte vozidlo, nosnosť a rozmery prepravovaného nákladu.",
+                      "format": 0,
+                      "detail": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "version": 1
+                    }
+                  ],
+                  "direction": null,
+                  "textStyle": "",
+                  "textFormat": 0
+                }
+              ],
+              "direction": null,
+              "format": "",
+              "indent": 0,
+              "version": 1
+            }
+          },
+          "anchorId": "postup",
+          "markets": ["SK"],
+          "id": "b00000000000000000000082",
+          "blockName": null,
+          "blockType": "richText"
+        },
+        {
+          "heading": "Časté otázky pred nákupom",
+          "items": [
+            {
+              "question": "Čo ak si nie som istý modelom?",
+              "answer": {
+                "root": {
+                  "type": "root",
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "format": "start",
+                      "indent": 0,
+                      "version": 1,
+                      "children": [
+                        {
+                          "type": "text",
+                          "text": "Pošlite nám VIN alebo presné údaje o vozidle.",
+                          "format": 0,
+                          "detail": 0,
+                          "mode": "normal",
+                          "style": "",
+                          "version": 1
+                        }
+                      ],
+                      "direction": null,
+                      "textStyle": "",
+                      "textFormat": 0
+                    }
+                  ],
+                  "direction": null,
+                  "format": "",
+                  "indent": 0,
+                  "version": 1
+                }
+              },
+              "id": "c00000000000000000000081"
+            }
+          ],
+          "anchorId": "otazky",
+          "markets": null,
+          "id": "b00000000000000000000083",
+          "blockName": null,
+          "blockType": "faq"
+        },
+        {
+          "heading": "Sme pripravení pomôcť",
+          "text": "Odpovieme na otázky ku kompatibilite a montáži.",
+          "links": [
+            {
+              "type": "custom",
+              "newTab": false,
+              "reference": null,
+              "url": "https://maky.store/sk/kontakt",
+              "label": "Napísať otázku",
+              "appearance": "primary",
+              "id": "a00000000000000000000082"
+            }
+          ],
+          "anchorId": "pomoc",
+          "markets": ["SK"],
+          "id": "b00000000000000000000084",
+          "blockName": "Záverečná výzva",
+          "blockType": "cta"
+        }
+      ],
+      "markets": ["SK"],
+      "meta": {
+        "title": "Sprievodca výberom výbavy",
+        "description": "Realistická Provider V2 multi-block contract fixture.",
+        "image": null
+      },
+      "updatedAt": "2026-07-30T10:00:00.000Z",
+      "createdAt": "2026-07-30T09:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

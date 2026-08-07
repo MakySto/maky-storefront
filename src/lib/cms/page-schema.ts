@@ -1,4 +1,21 @@
-import { findUnrenderableNode, isLexicalDocument, type LexicalDocument } from "./lexical";
+import { parseBlock, readBlockMarkets, readMedia, type CmsBlock, type CmsBlockWarning } from "./blocks";
+import { isMarketCode, isVisibleInMarket, type MarketCode } from "./markets";
+
+// Re-exported so consumers keep importing the page contract from one place; the block
+// shapes live in `blocks.ts` because seven of them would bury the envelope logic here.
+export type {
+	CmsBlock,
+	CmsBlockLink,
+	CmsBlockWarning,
+	CmsMedia,
+	CmsCtaBlock,
+	CmsFaqBlock,
+	CmsGalleryBlock,
+	CmsHeroBlock,
+	CmsImageBlock,
+	CmsMediaTextBlock,
+	CmsRichTextBlock,
+} from "./blocks";
 
 /**
  * Runtime validation of the Payload `/api/pages` response.
@@ -9,13 +26,14 @@ import { findUnrenderableNode, isLexicalDocument, type LexicalDocument } from ".
  * arrived over the wire. A published page is untrusted input like any other HTTP
  * response, so it is validated structurally at this boundary.
  *
- * Three outcomes, which must never collapse into one branch:
+ * Four outcomes, which must never collapse into one branch:
  *
  *   `ok`      — a published document to render
  *   `empty`   — the CMS answered authoritatively that nothing matches (`docs: []`)
+ *   `market-mismatch` — a valid envelope excludes the requested market
  *   `invalid` — the response did not match the contract; treat as an upstream fault
  *
- * `empty` means the page does not exist and must NOT resurrect a stale fallback.
+ * `empty` and `market-mismatch` are authoritative absences and must NOT resurrect a stale fallback.
  * `invalid` means we cannot trust what we got and must fall back.
  *
  * ## All-or-nothing
@@ -30,6 +48,15 @@ import { findUnrenderableNode, isLexicalDocument, type LexicalDocument } from ".
  * copy is a worse-looking failure and a far better one: it is noticed. The cost is
  * real and worth stating — adding a block type in Payload takes this route back to its
  * code fallback until the storefront learns to render it.
+ *
+ * This does not turn optional presentation metadata into page availability. A supported
+ * Page/Post link whose destination has no consumer route and a harmless relative URL keep
+ * their visible label without an `href`; an unusable optional `meta.image` is omitted. A
+ * structurally valid optional hero upload whose MIME is outside the provider image contract
+ * is omitted too. Each degradation is logged. Unknown relationship collections, malformed
+ * wrappers, unsafe URL schemes and unsupported required media remain hard failures. In other
+ * words, the words stay all-or-nothing; only a destination or optional preview that cannot be
+ * emitted safely may disappear.
  *
  * ## All-or-nothing is about CONTENT, not about key sets
  *
@@ -61,21 +88,6 @@ export interface CmsSeoMeta {
 	readonly image: string | null;
 }
 
-interface CmsBlockCommon {
-	readonly id: string | null;
-	readonly anchorId: string | null;
-	readonly blockName: string | null;
-	readonly markets: readonly string[] | null;
-}
-
-export interface CmsRichTextBlock extends CmsBlockCommon {
-	readonly blockType: "richText";
-	readonly content: LexicalDocument;
-}
-
-/** V1 renders `richText` and nothing else. An unknown type rejects the document. */
-export type CmsBlock = CmsRichTextBlock;
-
 export interface CmsPage {
 	readonly id: string;
 	readonly title: string;
@@ -105,9 +117,22 @@ export interface CmsContractViolation {
 	readonly nodeType: string | null;
 }
 
+export type CmsParseWarning =
+	| CmsBlockWarning
+	| {
+			readonly code: "meta-image-omitted";
+			readonly reason: string;
+	  };
+
 export type CmsPageParse =
-	| { readonly status: "ok"; readonly page: CmsPage }
+	| { readonly status: "ok"; readonly page: CmsPage; readonly warnings: readonly CmsParseWarning[] }
 	| { readonly status: "empty" }
+	| {
+			readonly status: "market-mismatch";
+			readonly documentId: string;
+			readonly slug: string;
+			readonly markets: readonly string[];
+	  }
 	| { readonly status: "invalid"; readonly violation: CmsContractViolation };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -118,83 +143,50 @@ function optionalString(value: unknown): string | null {
 	return typeof value === "string" && value.length > 0 ? value : null;
 }
 
-/** `null` (all markets) or an array of strings. Anything else is a contract break. */
+/** `null`/`[]` means all markets; every entry must be a provider market enum. */
 function parseMarkets(value: unknown): { ok: true; markets: readonly string[] | null } | { ok: false } {
 	if (value === null || value === undefined) return { ok: true, markets: null };
-	if (!Array.isArray(value)) return { ok: false };
-	if (!value.every((entry) => typeof entry === "string")) return { ok: false };
-	return { ok: true, markets: value as readonly string[] };
+	if (!Array.isArray(value) || !value.every(isMarketCode)) return { ok: false };
+	return { ok: true, markets: value };
 }
 
-function parseMeta(value: unknown): CmsSeoMeta {
-	if (!isRecord(value)) return { title: null, description: null, image: null };
+type MetaResult =
+	| { readonly ok: true; readonly meta: CmsSeoMeta; readonly warnings: readonly CmsParseWarning[] }
+	| { readonly ok: false; readonly reason: string };
 
-	// `image` is an upload relationship: an id string at depth 0, a populated object
-	// at depth >= 1. Only a populated absolute URL is usable in OG metadata.
+function parseMeta(value: unknown): MetaResult {
+	if (value === undefined || value === null) {
+		return { ok: true, meta: { title: null, description: null, image: null }, warnings: [] };
+	}
+	if (!isRecord(value)) return { ok: false, reason: "docs[0].meta is not an object" };
+
 	let image: string | null = null;
-	const rawImage = value.image;
-	if (isRecord(rawImage)) {
-		const url = optionalString(rawImage.url);
-		if (url && /^https?:\/\//.test(url)) image = url;
-	}
-
-	return {
-		title: optionalString(value.title),
-		description: optionalString(value.description),
-		image,
-	};
-}
-
-type BlockFailure = { ok: false; reason: string; blockType?: string; nodeType?: string };
-
-function parseBlock(value: unknown, index: number): { ok: true; block: CmsBlock } | BlockFailure {
-	if (!isRecord(value)) return { ok: false, reason: `layout[${index}] is not an object` };
-
-	const blockType = value.blockType;
-	if (typeof blockType !== "string" || blockType.length === 0) {
-		return { ok: false, reason: `layout[${index}] has no blockType` };
-	}
-
-	const markets = parseMarkets(value.markets);
-	if (!markets.ok) return { ok: false, reason: `layout[${index}].markets is not null or string[]` };
-
-	// An unsupported block type rejects the document. Rendering the rest would show a
-	// page the editor never published and never gets told about.
-	if (blockType !== "richText") {
-		return { ok: false, reason: `layout[${index}] has unsupported blockType ${blockType}`, blockType };
-	}
-
-	// A known block type with a malformed payload is a contract break too — we would be
-	// silently dropping content we claim to render.
-	if (!isLexicalDocument(value.content)) {
-		return { ok: false, reason: `layout[${index}] richText content is not a Lexical document` };
-	}
-
-	// The Lexical tree is validated here, not in the renderer, so an unrenderable node
-	// can still reject the whole candidate while the previous good render stands.
-	const unrenderable = findUnrenderableNode(value.content);
-	if (unrenderable) {
-		return {
-			ok: false,
-			reason: `layout[${index}] richText contains unrenderable node ${unrenderable}`,
-			nodeType: unrenderable,
-		};
+	const warnings: CmsParseWarning[] = [];
+	if (value.image !== undefined && value.image !== null) {
+		const parsedImage = readMedia(value.image);
+		if (parsedImage.kind !== "ok") {
+			const why = parsedImage.kind === "unusable" ? parsedImage.why : "is absent";
+			warnings.push({
+				code: "meta-image-omitted",
+				reason: `docs[0].meta.image ${why}`,
+			});
+		} else {
+			image = parsedImage.media.url;
+		}
 	}
 
 	return {
 		ok: true,
-		block: {
-			id: optionalString(value.id),
-			anchorId: optionalString(value.anchorId),
-			blockName: optionalString(value.blockName),
-			markets: markets.markets,
-			blockType: "richText",
-			content: value.content,
+		meta: {
+			title: optionalString(value.title),
+			description: optionalString(value.description),
+			image,
 		},
+		warnings,
 	};
 }
 
-export function parsePagesResponse(raw: unknown): CmsPageParse {
+export function parsePagesResponse(raw: unknown, market?: MarketCode): CmsPageParse {
 	/** Identifying fields are filled in as soon as they are known and trusted. */
 	let documentId: string | null = null;
 	let documentSlug: string | null = null;
@@ -239,16 +231,39 @@ export function parsePagesResponse(raw: unknown): CmsPageParse {
 	if (!Array.isArray(doc.layout)) return invalid("docs[0].layout is not an array");
 
 	const markets = parseMarkets(doc.markets);
-	if (!markets.ok) return invalid("docs[0].markets is not null or string[]");
+	if (!markets.ok) return invalid("docs[0].markets contains an unsupported market");
+
+	// Page visibility is authoritative and precedes all block validation. A CZ-only
+	// document cannot become an indexable SK bootstrap merely because its CZ content uses
+	// a block this storefront does not understand.
+	if (market && !isVisibleInMarket(markets.markets, market)) {
+		return {
+			status: "market-mismatch",
+			documentId: id,
+			slug,
+			markets: markets.markets ?? [],
+		};
+	}
 
 	const layout: CmsBlock[] = [];
+	const warnings: CmsParseWarning[] = [];
 	for (const [index, entry] of doc.layout.entries()) {
+		// Filter each block before validating its content, as required by V2. We still
+		// validate the markets field itself, because an unknown market is an enum break.
+		const visibility = readBlockMarkets(entry, index);
+		if (!visibility.ok) return invalid(visibility.reason);
+		if (market && !isVisibleInMarket(visibility.markets, market)) continue;
+
 		const parsed = parseBlock(entry, index);
 		if (!parsed.ok) {
 			return invalid(parsed.reason, { blockType: parsed.blockType, nodeType: parsed.nodeType });
 		}
 		layout.push(parsed.block);
+		if (parsed.warnings) warnings.push(...parsed.warnings);
 	}
+
+	const meta = parseMeta(doc.meta);
+	if (!meta.ok) return invalid(meta.reason);
 
 	return {
 		status: "ok",
@@ -259,8 +274,9 @@ export function parsePagesResponse(raw: unknown): CmsPageParse {
 			summary: optionalString(doc.summary),
 			layout,
 			markets: markets.markets,
-			meta: parseMeta(doc.meta),
+			meta: meta.meta,
 			updatedAt: optionalString(doc.updatedAt),
 		},
+		warnings: [...warnings, ...meta.warnings],
 	};
 }
