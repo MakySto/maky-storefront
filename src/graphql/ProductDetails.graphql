@@ -1,11 +1,18 @@
-query ProductDetails($slug: String!, $channel: String!) {
-	product(slug: $slug, channel: $channel) {
+query ProductDetails($slug: String!, $channel: String!, $lang: LanguageCodeEnum!) {
+	product(slug: $slug, channel: $channel, slugLanguageCode: $lang) {
 		id
 		name
 		slug
 		description
 		seoTitle
 		seoDescription
+		translation(languageCode: $lang) {
+			name
+			slug
+			description
+			seoTitle
+			seoDescription
+		}
 		thumbnail(size: 1024, format: WEBP) {
 			url
 			alt
@@ -19,15 +26,25 @@ query ProductDetails($slug: String!, $channel: String!) {
 			id
 			name
 			slug
+			translation(languageCode: $lang) {
+				name
+				slug
+			}
 		}
 		rating
 		attributes {
 			values {
 				name
+				translation(languageCode: $lang) {
+					name
+				}
 			}
 			attribute {
 				name
 				slug
+				translation(languageCode: $lang) {
+					name
+				}
 				# Stable CFM key ("cfm:attribute:max_load") — units are mapped on
 				# this, never on the display name, which is translatable.
 				externalReference

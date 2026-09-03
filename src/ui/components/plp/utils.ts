@@ -2,7 +2,7 @@ import type { ProductListItemFragment } from "@/gql/graphql";
 import type { ProductCardData } from "./product-card";
 import { getColorHex, isColorAttribute, isSizeAttribute } from "@/lib/colors";
 import { sortSizes } from "@/lib/sizes";
-import { localeConfig } from "@/config/locale";
+import { getLocaleConfigByLocale, getLocaleFromChannel, localeConfig } from "@/config/locale";
 import { hasDiscountInPriceRange } from "@/lib/pricing";
 import { productHref } from "@/lib/product-url";
 import { formatAttributeValue } from "@/lib/product-attributes";
@@ -93,7 +93,12 @@ function extractSizesFromVariants(variants: ProductListItemFragment["variants"])
 /**
  * Transform Saleor product data to ProductCard format
  */
-export function transformToProductCard(product: ProductListItemFragment, channel: string): ProductCardData {
+export function transformToProductCard(
+	product: ProductListItemFragment,
+	channel: string,
+	locale: string = getLocaleFromChannel(channel),
+): ProductCardData {
+	const localeConfig = getLocaleConfigByLocale(locale);
 	const startPrice = product.pricing?.priceRange?.start?.gross;
 	const undiscountedStartPrice = product.pricing?.priceRangeUndiscounted?.start?.gross;
 
@@ -120,7 +125,7 @@ export function transformToProductCard(product: ProductListItemFragment, channel
 		// `category.name`, so every card in "Strešné boxy" claimed the brand
 		// was "Strešné boxy".
 		brand: attributeValue(product.attributes, MANUFACTURER_REF),
-		note: buildNote(product.attributes, localeConfig.default),
+		note: buildNote(product.attributes, locale),
 		sku: soleVariant?.sku ?? null,
 		variantId: soleVariant?.id ?? null,
 		quantityAvailable: soleVariant?.quantityAvailable ?? null,

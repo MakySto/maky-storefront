@@ -4,6 +4,7 @@ query ProductListPaginated(
 	$last: Int
 	$before: String
 	$channel: String!
+	$lang: LanguageCodeEnum!
 	$sortBy: ProductOrder
 	$filter: ProductFilterInput
 ) {

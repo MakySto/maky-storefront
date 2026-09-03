@@ -21,29 +21,39 @@ import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { buildCanonicalUrl } from "@/lib/seo/hreflang";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import { CategoryPageClient } from "./client";
+import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
+import {
+	resolveExactLocaleCategory,
+	resolveExactLocaleProducts,
+} from "@/lib/saleor/exact-locale";
 
 type Category = NonNullable<ProductListByCategoryQuery["category"]>;
 
 async function getCategoryOutcomeCached(
 	slug: string,
 	channel: string,
+	locale: string,
 ): Promise<AuthoritativeOutcome<Category>> {
 	"use cache";
-	applyCacheProfile(CACHE_PROFILES.categories, slug);
+	applyCacheProfile(CACHE_PROFILES.categories, { channel, locale, slug });
+	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
 	const result = await executePublicGraphQL(ProductListByCategoryDocument, {
-		variables: { slug, channel, first: 1 },
+		variables: { slug, channel, lang, first: 1 },
 		revalidate: 300,
 	});
 
 	// Throws on a fault, so the entry is never cached: an outage must not be
 	// remembered as "this category does not exist" for up to an hour.
-	return refuseToCacheUpstreamError(toOutcome(result, (data) => data.category));
+	return refuseToCacheUpstreamError(
+		toOutcome(result, (data) => resolveExactLocaleCategory(data.category, locale)),
+	);
 }
 
 /** `found` | `not-found` | `upstream-error`, shared by the page and its metadata. */
 async function getCategoryOutcome(slug: string, channel: string): Promise<ResourceOutcome<Category>> {
-	return catchUpstreamError(() => getCategoryOutcomeCached(slug, channel));
+	const locale = getLocaleFromChannel(channel);
+	return catchUpstreamError(() => getCategoryOutcomeCached(slug, channel, locale));
 }
 
 type PageProps = {
@@ -114,7 +124,7 @@ export const generateMetadata = async (props: PageProps, parent: ResolvingMetada
 		alternates: {
 			canonical: buildCanonicalUrl(
 				REVERSE_MAP[params.channel] || params.channel,
-				`/categories/${params.slug}`,
+				`/categories/${category.slug}`,
 			),
 		},
 	};
@@ -157,7 +167,7 @@ async function CategoryContent({
 
 	const breadcrumbs = [
 		{ label: t("home"), href: marketHref(params.channel) },
-		{ label: category.name, href: marketHref(params.channel, `/categories/${params.slug}`) },
+		{ label: category.name, href: marketHref(params.channel, `/categories/${category.slug}`) },
 	];
 
 	return (
@@ -187,11 +197,14 @@ async function CategoryProducts({
 	const paginationVariables = getPaginatedListVariables({ params: searchParams });
 	const sortBy = buildSortVariables(searchParams.sort);
 	const filter = buildFilterVariables({ priceRange: searchParams.price });
+	const locale = getLocaleFromChannel(params.channel);
+	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
 	const result = await executePublicGraphQL(ProductListByCategoryDocument, {
 		variables: {
 			slug: params.slug,
 			channel: params.channel,
+			lang,
 			...paginationVariables,
 			sortBy,
 			filter,
@@ -211,18 +224,24 @@ async function CategoryProducts({
 		throw new Error(`category product list failed for ${params.slug}: ${result.error.message}`);
 	}
 
-	const products = result.data.category?.products;
+	const category = resolveExactLocaleCategory(result.data.category, locale);
+	const products = category?.products;
 	if (!products) {
 		notFound();
 	}
 
-	const productCards = products.edges.map((e) => transformToProductCard(e.node, params.channel));
+	const localized = resolveExactLocaleProducts(
+		products.edges.map((edge) => edge.node),
+		locale,
+	);
+	const productCards = localized.products.map((product) =>
+		transformToProductCard(product, params.channel, locale),
+	);
 
 	return (
 		<CategoryPageClient
 			products={productCards}
 			pageInfo={products.pageInfo}
-			totalCount={products.totalCount ?? productCards.length}
 		/>
 	);
 }

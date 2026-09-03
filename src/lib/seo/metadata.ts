@@ -129,16 +129,18 @@ export function truncateText(text: string, maxLength: number): string {
  */
 export function buildPageMetadata(options: {
 	title: string;
+	/** Preserve an accepted product SEO title; fallback names keep legacy trim. */
+	titleSource?: "seo" | "fallback";
 	description?: string;
 	image?: string | null;
 	url?: string;
 	/** Additional OpenGraph properties */
 	openGraph?: Record<string, string>;
 }): Metadata {
-	const { title, description, image, url, openGraph: extraOg } = options;
+	const { title, titleSource = "fallback", description, image, url, openGraph: extraOg } = options;
 
 	// Truncate for optimal display
-	const truncatedTitle = truncateText(title, 60);
+	const renderedTitle = titleSource === "seo" ? title : truncateText(title, 60);
 	const truncatedDescription = description ? truncateText(description, 155) : undefined;
 
 	// The channel (main) layout defines a plain string title, which resets
@@ -146,9 +148,12 @@ export function buildPageMetadata(options: {
 	// applied here. Saleor seoTitle content may already include the site name,
 	// so only append when it is missing. OG/Twitter titles stay unbranded
 	// (og:site_name carries the brand).
-	const brandedTitle = truncatedTitle.endsWith(seoConfig.siteName)
-		? truncatedTitle
-		: formatPageTitle(truncatedTitle);
+	const brandedCandidate = formatPageTitle(renderedTitle);
+	const brandedTitle = renderedTitle.endsWith(seoConfig.siteName)
+		? renderedTitle
+		: titleSource === "seo" && brandedCandidate.length > 65
+			? renderedTitle
+			: brandedCandidate;
 
 	return {
 		title: brandedTitle,
@@ -165,7 +170,7 @@ export function buildPageMetadata(options: {
 		...(seoConfig.enableOpenGraph && {
 			openGraph: {
 				type: "website",
-				title: truncatedTitle,
+				title: renderedTitle,
 				description: truncatedDescription,
 				url,
 				images: image
@@ -186,7 +191,7 @@ export function buildPageMetadata(options: {
 		...(seoConfig.enableTwitterCards && {
 			twitter: {
 				card: "summary_large_image",
-				title: truncatedTitle,
+				title: renderedTitle,
 				description: truncatedDescription,
 				images: image ? [image] : undefined,
 			},

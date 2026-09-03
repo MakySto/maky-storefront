@@ -12,7 +12,6 @@ interface CollectionPageClientProps {
 		startCursor?: string | null;
 		endCursor?: string | null;
 	};
-	totalCount?: number;
 }
 
 function PaginationSkeleton() {

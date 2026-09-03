@@ -7,15 +7,22 @@ import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { ProductList } from "@/ui/components/product-list";
 import { HeroSection, CategoryGrid, WhyMaky, BrandsStrip, NewsletterCTA } from "@/ui/components/homepage";
 import { getTranslations } from "next-intl/server";
+import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
+import { resolveExactLocaleCollection, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
 
 async function getFeaturedProducts(channel: string) {
 	"use cache";
-	applyCacheProfile(CACHE_PROFILES.collections, "featured-products");
+	const locale = getLocaleFromChannel(channel);
+	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
+	const slugLang = getLocaleConfigByLocale("sk-SK").graphqlLanguageCode;
+	applyCacheProfile(CACHE_PROFILES.collections, { channel, locale, slug: "featured-products" });
 
 	const result = await executePublicGraphQL(ProductListByCollectionDocument, {
 		variables: {
 			slug: "featured-products",
 			channel,
+			lang,
+			slugLang,
 			first: 12,
 			sortBy: { field: ProductOrderField.Collection, direction: OrderDirection.Asc },
 		},
@@ -27,7 +34,12 @@ async function getFeaturedProducts(channel: string) {
 		return [];
 	}
 
-	return result.data.collection?.products?.edges.map(({ node }) => node) ?? [];
+	const collection = resolveExactLocaleCollection(result.data.collection, locale);
+	if (!collection?.products) return [];
+	return resolveExactLocaleProducts(
+		collection.products.edges.map(({ node }) => node),
+		locale,
+	).products;
 }
 
 export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {

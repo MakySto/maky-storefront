@@ -2,6 +2,7 @@ fragment VariantDetails on ProductVariant {
 	id
 	name
 	sku
+	sourceSku: metafield(key: "cfm_source_sku")
 	quantityAvailable
 	# CFM publishes availability here, not on the product.
 	metafield(key: "cfm_availability_mode")
@@ -9,20 +10,32 @@ fragment VariantDetails on ProductVariant {
 		values {
 			name
 			value
+			translation(languageCode: $lang) {
+				name
+			}
 		}
 		attribute {
 			name
 			slug
+			translation(languageCode: $lang) {
+				name
+			}
 		}
 	}
 	nonSelectionAttributes: attributes(variantSelection: NOT_VARIANT_SELECTION) {
 		values {
 			name
 			value
+			translation(languageCode: $lang) {
+				name
+			}
 		}
 		attribute {
 			name
 			slug
+			translation(languageCode: $lang) {
+				name
+			}
 		}
 	}
 	media {

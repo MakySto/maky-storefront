@@ -9,7 +9,8 @@ import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
 import { SearchProductsDocument, OrderDirection, ProductOrderField } from "@/gql/graphql";
 import type { SearchProduct, SearchResult, SearchPagination } from "./types";
-import { localeConfig } from "@/config/locale";
+import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
+import { resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
 
 interface SearchOptions {
 	query: string;
@@ -28,6 +29,8 @@ interface SearchOptions {
  */
 export async function searchProducts(options: SearchOptions): Promise<SearchResult> {
 	const { query, channel, limit = 20, cursor, direction = "forward", sortBy = "relevance" } = options;
+	const locale = getLocaleFromChannel(channel);
+	const localeConfig = getLocaleConfigByLocale(locale);
 
 	const { field, order } = mapSortToSaleor(sortBy);
 
@@ -38,6 +41,7 @@ export async function searchProducts(options: SearchOptions): Promise<SearchResu
 		variables: {
 			search: query,
 			channel,
+			lang: localeConfig.graphqlLanguageCode,
 			sortBy: field,
 			sortDirection: order,
 			first: isBackward ? undefined : limit,
@@ -61,9 +65,13 @@ export async function searchProducts(options: SearchOptions): Promise<SearchResu
 	}
 
 	const products = result.data.products;
+	const localized = resolveExactLocaleProducts(
+		products.edges.map(({ node }) => node),
+		locale,
+	);
 
 	// Transform to common SearchProduct format
-	const searchProducts: SearchProduct[] = products.edges.map(({ node }) => ({
+	const searchProducts: SearchProduct[] = localized.products.map((node) => ({
 		id: node.id,
 		name: node.name,
 		slug: node.slug,
@@ -75,7 +83,8 @@ export async function searchProducts(options: SearchOptions): Promise<SearchResu
 	}));
 
 	const pagination: SearchPagination = {
-		totalCount: products.totalCount ?? 0,
+		totalCount: localized.dropped > 0 ? searchProducts.length : (products.totalCount ?? 0),
+		totalCountIsEstimate: localized.dropped > 0,
 		hasNextPage: products.pageInfo.hasNextPage,
 		hasPreviousPage: products.pageInfo.hasPreviousPage,
 		nextCursor: products.pageInfo.endCursor ?? undefined,

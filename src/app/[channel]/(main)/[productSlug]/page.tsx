@@ -2,8 +2,6 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
 import { ErrorBoundary } from "react-error-boundary";
-import edjsHTML from "editorjs-html";
-import xss from "xss";
 
 import { getTranslations } from "next-intl/server";
 import { executePublicGraphQL } from "@/lib/graphql";
@@ -30,7 +28,9 @@ import {
 	VariantSectionSkeleton,
 	VariantSectionError,
 } from "@/ui/components/pdp";
-import { getLocaleFromChannel } from "@/config/locale";
+import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
+import { parseEditorJSToHtml } from "@/lib/editorjs";
+import { isSourceLocale, resolveExactLocaleProduct } from "@/lib/saleor/exact-locale";
 
 /** CFM's manufacturer attribute, keyed on externalReference — see product-attributes.ts. */
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
@@ -41,16 +41,22 @@ const MANUFACTURER_REF = "cfm:attribute:manufacturer";
 
 type Product = NonNullable<ProductDetailsQuery["product"]>;
 
-async function fetchProductOutcome(slug: string, channel: string): Promise<ResourceOutcome<Product>> {
+async function fetchProductOutcome(
+	slug: string,
+	channel: string,
+	locale: string,
+): Promise<ResourceOutcome<Product>> {
+	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 	const result = await executePublicGraphQL(ProductDetailsDocument, {
 		variables: {
 			slug: decodeURIComponent(slug),
 			channel,
+			lang,
 		},
 		revalidate: 300,
 	});
 
-	return toOutcome(result, (data) => data.product);
+	return toOutcome(result, (data) => resolveExactLocaleProduct(data.product, locale));
 }
 
 /**
@@ -61,11 +67,12 @@ async function fetchProductOutcome(slug: string, channel: string): Promise<Resou
 async function getProductOutcomeCached(
 	slug: string,
 	channel: string,
+	locale: string,
 ): Promise<AuthoritativeOutcome<Product>> {
 	"use cache";
-	applyCacheProfile(CACHE_PROFILES.products, slug);
+	applyCacheProfile(CACHE_PROFILES.products, { channel, locale, slug });
 
-	const outcome = await fetchProductOutcome(slug, channel);
+	const outcome = await fetchProductOutcome(slug, channel, locale);
 	if (outcome.status !== "not-found") {
 		return refuseToCacheUpstreamError(outcome);
 	}
@@ -80,7 +87,7 @@ async function getProductOutcomeCached(
 		return refuseToCacheUpstreamError(outcome);
 	}
 
-	return refuseToCacheUpstreamError(await fetchProductOutcome(previous, channel));
+	return refuseToCacheUpstreamError(await fetchProductOutcome(previous, channel, locale));
 }
 
 /** `found` | `not-found` | `upstream-error`, shared by the page and its metadata. */
@@ -88,7 +95,8 @@ export async function getProductOutcome(
 	slug: string,
 	channel: string,
 ): Promise<ResourceOutcome<Product>> {
-	return catchUpstreamError(() => getProductOutcomeCached(slug, channel));
+	const locale = getLocaleFromChannel(channel);
+	return catchUpstreamError(() => getProductOutcomeCached(slug, channel, locale));
 }
 
 // ============================================================================
@@ -121,6 +129,10 @@ export async function generateMetadata(props: {
 	}
 
 	const product = outcome.resource;
+	const locale = getLocaleFromChannel(params.channel);
+	const hasExplicitSeoTitle = isSourceLocale(locale)
+		? Boolean(product.seoTitle?.trim())
+		: Boolean(product.translation?.seoTitle?.trim());
 
 	const description = product.seoDescription || product.name;
 	const ogImage = product.media?.[0]?.url || product.thumbnail?.url;
@@ -129,9 +141,10 @@ export async function generateMetadata(props: {
 
 	return buildPageMetadata({
 		title: product.seoTitle || product.name,
+		titleSource: hasExplicitSeoTitle ? "seo" : "fallback",
 		description,
 		image: ogImage,
-		url: productHref(params.channel, params.productSlug),
+		url: productHref(params.channel, product.slug),
 		openGraph:
 			priceAmount && priceCurrency
 				? {
@@ -148,8 +161,6 @@ export async function generateMetadata(props: {
 // ============================================================================
 // Page Component
 // ============================================================================
-
-const parser = edjsHTML();
 
 /**
  * Sync page shell with dedicated Suspense boundary.
@@ -196,7 +207,7 @@ async function ProductContent({
 	const selectedVariantId = searchParams.variant || (variants.length === 1 ? variants[0].id : undefined);
 	const selectedVariant = variants.find((v) => v.id === selectedVariantId);
 
-	const descriptionHtml = parseDescription(product.description);
+	const descriptionHtml = parseEditorJSToHtml(product.description);
 	const images = getGalleryImages(product, selectedVariant);
 	const productAttributes = extractProductAttributes(product);
 	const careInstructions = extractCareInstructions(product);
@@ -225,10 +236,11 @@ async function ProductContent({
 		// missed. Absent attribute → no `brand` key, which is better than a wrong one.
 		brand: product.attributes?.find((a) => a.attribute.externalReference === MANUFACTURER_REF)?.values[0]
 			?.name,
-		// The requested slug, not product.slug: they are the same once Saleor has
-		// converged, and while it has not, this is the URL the canonical tag
-		// advertises — the two must never disagree.
-		url: productHref(params.channel, params.productSlug),
+		// Use the exact-locale slug resolved by the storefront boundary, matching
+		// the canonical URL advertised for this localized product.
+		url: productHref(params.channel, product.slug),
+		sku: product.variants?.[0]?.sourceSku || product.variants?.[0]?.sku,
+		mpn: product.variants?.[0]?.sourceSku || product.variants?.[0]?.sku,
 		priceRange: product.pricing?.priceRange?.start?.gross
 			? {
 					lowPrice: product.pricing.priceRange.start.gross.amount,
@@ -339,17 +351,6 @@ function ProductPageSkeleton() {
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-function parseDescription(description: string | null | undefined): string[] | null {
-	if (!description) return null;
-
-	try {
-		const parsed = parser.parse(JSON.parse(description));
-		return parsed.map((html: string) => xss(html));
-	} catch {
-		return [xss(`<p>${description}</p>`)];
-	}
-}
 
 /**
  * Attributes for the specifications table.

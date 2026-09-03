@@ -13,7 +13,6 @@ interface CategoryPageClientProps {
 		startCursor?: string | null;
 		endCursor?: string | null;
 	};
-	totalCount?: number;
 }
 
 function PaginationSkeleton() {

@@ -2,6 +2,13 @@ fragment ProductListItem on Product {
 	id
 	name
 	slug
+	translation(languageCode: $lang) {
+		name
+		slug
+		description
+		seoTitle
+		seoDescription
+	}
 	created
 	# Saleor's own review score. Null across the whole catalogue today — there is
 	# no review system — so the card renders stars only when it is populated.
@@ -9,11 +16,18 @@ fragment ProductListItem on Product {
 	attributes {
 		attribute {
 			name
+			slug
 			externalReference
 			unit
+			translation(languageCode: $lang) {
+				name
+			}
 		}
 		values {
 			name
+			translation(languageCode: $lang) {
+				name
+			}
 		}
 	}
 	pricing {
@@ -50,6 +64,10 @@ fragment ProductListItem on Product {
 		id
 		name
 		slug
+		translation(languageCode: $lang) {
+			name
+			slug
+		}
 	}
 	thumbnail(size: 1024, format: WEBP) {
 		url
@@ -67,10 +85,16 @@ fragment ProductListItem on Product {
 			attribute {
 				slug
 				name
+				translation(languageCode: $lang) {
+					name
+				}
 			}
 			values {
 				name
 				value
+				translation(languageCode: $lang) {
+					name
+				}
 			}
 		}
 	}

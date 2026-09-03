@@ -12,7 +12,6 @@ interface ProductsPageClientProps {
 		startCursor?: string | null;
 		endCursor?: string | null;
 	};
-	totalCount?: number;
 	/** Categories resolved from URL slugs (server-side) for active filter display */
 	resolvedCategories?: Array<{ slug: string; id: string; name: string }>;
 }

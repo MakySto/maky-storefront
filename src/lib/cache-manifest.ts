@@ -22,40 +22,46 @@ interface CacheProfile {
 	readonly pathPattern: string | null;
 }
 
+export interface CacheIdentity {
+	channel: string;
+	locale: string;
+	slug?: string;
+}
+
 const profiles = {
 	products: {
 		id: "products",
 		label: "Product Pages",
 		cacheProfile: "minutes",
-		tagPattern: "product:{slug}",
+		tagPattern: "product:{channel}:{locale}:{slug}",
 		pathPattern: "/{channel}/{slug}",
 	},
 	categories: {
 		id: "categories",
 		label: "Category Pages",
 		cacheProfile: "minutes",
-		tagPattern: "category:{slug}",
+		tagPattern: "category:{channel}:{locale}:{slug}",
 		pathPattern: "/{channel}/categories/{slug}",
 	},
 	collections: {
 		id: "collections",
 		label: "Collection Pages",
 		cacheProfile: "minutes",
-		tagPattern: "collection:{slug}",
+		tagPattern: "collection:{channel}:{locale}:{slug}",
 		pathPattern: "/{channel}/collections/{slug}",
 	},
 	navigation: {
 		id: "navigation",
 		label: "Navigation Menus",
 		cacheProfile: "hours",
-		tagPattern: "navigation",
+		tagPattern: "navigation:{channel}:{locale}",
 		pathPattern: null,
 	},
 	footerMenu: {
 		id: "footer-menu",
 		label: "Footer Menu",
 		cacheProfile: "hours",
-		tagPattern: "footer-menu",
+		tagPattern: "footer-menu:{channel}:{locale}",
 		pathPattern: null,
 	},
 	channels: {
@@ -81,23 +87,26 @@ export const CACHE_PROFILES = profiles;
  * type, so we cast through `string`. This is safe because CacheLifeProfile
  * only contains valid Next.js built-in profile names.
  */
-export function applyCacheProfile(profile: CacheProfile, slug?: string) {
+export function applyCacheProfile(profile: CacheProfile, identity: CacheIdentity) {
 	(cacheLife as (p: string) => void)(profile.cacheProfile);
-	cacheTag(slug ? profile.tagPattern.replace("{slug}", slug) : profile.tagPattern);
+	cacheTag(buildTag(profile, identity));
 }
 
 // ============================================================================
 // Tag / path builders — used by the revalidation endpoint
 // ============================================================================
 
-export function buildTag(profile: CacheProfile, slug?: string): string {
-	return slug ? profile.tagPattern.replace("{slug}", slug) : profile.tagPattern;
+export function buildTag(profile: CacheProfile, identity: CacheIdentity): string {
+	return profile.tagPattern
+		.replace("{channel}", identity.channel)
+		.replace("{locale}", identity.locale)
+		.replace("{slug}", identity.slug ?? "");
 }
 
-export function buildPath(profile: CacheProfile, channel: string, slug?: string): string | null {
+export function buildPath(profile: CacheProfile, identity: CacheIdentity): string | null {
 	if (!profile.pathPattern) return null;
-	let path = profile.pathPattern.replace("{channel}", channel);
-	if (slug) path = path.replace("{slug}", slug);
+	let path = profile.pathPattern.replace("{channel}", identity.channel);
+	if (identity.slug) path = path.replace("{slug}", identity.slug);
 	return path;
 }
 

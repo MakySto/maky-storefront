@@ -25,24 +25,33 @@ import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
 import { marketHref } from "@/lib/channel-map";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import { CollectionPageClient } from "./client";
+import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
+import {
+	resolveExactLocaleCollection,
+	resolveExactLocaleProducts,
+} from "@/lib/saleor/exact-locale";
 
 type Collection = NonNullable<ProductListByCollectionQuery["collection"]>;
 
 async function getCollectionOutcomeCached(
 	slug: string,
 	channel: string,
+	locale: string,
 ): Promise<AuthoritativeOutcome<Collection>> {
 	"use cache";
-	applyCacheProfile(CACHE_PROFILES.collections, slug);
+	applyCacheProfile(CACHE_PROFILES.collections, { channel, locale, slug });
+	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
 	const result = await executePublicGraphQL(ProductListByCollectionDocument, {
-		variables: { slug, channel, first: 1 },
+		variables: { slug, channel, lang, slugLang: lang, first: 1 },
 		revalidate: 300,
 	});
 
 	// Throws on a fault, so the entry is never cached: an outage must not be
 	// remembered as "this collection does not exist" for up to an hour.
-	return refuseToCacheUpstreamError(toOutcome(result, (data) => data.collection));
+	return refuseToCacheUpstreamError(
+		toOutcome(result, (data) => resolveExactLocaleCollection(data.collection, locale)),
+	);
 }
 
 /** `found` | `not-found` | `upstream-error`, shared by the page and its metadata. */
@@ -50,7 +59,8 @@ async function getCollectionOutcome(
 	slug: string,
 	channel: string,
 ): Promise<ResourceOutcome<Collection>> {
-	return catchUpstreamError(() => getCollectionOutcomeCached(slug, channel));
+	const locale = getLocaleFromChannel(channel);
+	return catchUpstreamError(() => getCollectionOutcomeCached(slug, channel, locale));
 }
 
 type PageProps = {
@@ -116,7 +126,10 @@ async function CollectionContent({
 	searchParams: PageProps["searchParams"];
 }) {
 	const params = await paramsPromise;
-	const outcome = await getCollectionOutcome(params.slug, params.channel);
+	const [outcome, t] = await Promise.all([
+		getCollectionOutcome(params.slug, params.channel),
+		getTranslations("plp"),
+	]);
 
 	// A fault is not an absence.
 	if (outcome.status === "upstream-error") {
@@ -132,8 +145,8 @@ async function CollectionContent({
 	const plainDescription = parseEditorJSToText(collection.description);
 
 	const breadcrumbs = [
-		{ label: "Home", href: marketHref(params.channel) },
-		{ label: collection.name, href: marketHref(params.channel, `/collections/${params.slug}`) },
+		{ label: t("home"), href: marketHref(params.channel) },
+		{ label: collection.name, href: marketHref(params.channel, `/collections/${collection.slug}`) },
 	];
 
 	return (
@@ -166,11 +179,15 @@ async function CollectionProducts({
 		direction: OrderDirection.Asc,
 	};
 	const filter = buildFilterVariables({ priceRange: searchParams.price });
+	const locale = getLocaleFromChannel(params.channel);
+	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
 	const result = await executePublicGraphQL(ProductListByCollectionDocument, {
 		variables: {
 			slug: params.slug,
 			channel: params.channel,
+			lang,
+			slugLang: lang,
 			...paginationVariables,
 			sortBy,
 			filter,
@@ -188,18 +205,24 @@ async function CollectionProducts({
 		throw new Error(`collection product list failed for ${params.slug}: ${result.error.message}`);
 	}
 
-	const products = result.data.collection?.products;
+	const collection = resolveExactLocaleCollection(result.data.collection, locale);
+	const products = collection?.products;
 	if (!products) {
 		notFound();
 	}
 
-	const productCards = products.edges.map((e) => transformToProductCard(e.node, params.channel));
+	const localized = resolveExactLocaleProducts(
+		products.edges.map((edge) => edge.node),
+		locale,
+	);
+	const productCards = localized.products.map((product) =>
+		transformToProductCard(product, params.channel, locale),
+	);
 
 	return (
 		<CollectionPageClient
 			products={productCards}
 			pageInfo={products.pageInfo}
-			totalCount={products.totalCount ?? productCards.length}
 		/>
 	);
 }

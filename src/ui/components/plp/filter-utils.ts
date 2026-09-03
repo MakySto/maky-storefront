@@ -5,9 +5,8 @@
  * - categories: via ProductFilterInput.categories (requires IDs)
  * - price: via ProductFilterInput.price range
  *
- * Client-side filters (handled here):
- * - colors: Saleor doesn't support attribute filtering without IDs
- * - sizes: Same as colors
+ * Attribute filters are server-side too: Saleor accepts AttributeInput keyed by
+ * attribute slug, so vehicle/discovery filters never need dashboard IDs.
  *
  * Note: Server-only functions (like resolveCategorySlugsToIds) are in filter-utils.server.ts
  */
@@ -27,6 +26,19 @@ export interface CategoryOption {
 	slug: string;
 	count: number;
 }
+
+export const STOREFRONT_ATTRIBUTE_SLUGS = [
+	"vehicle-make",
+	"vehicle-model",
+	"vehicle-generation",
+	"year-from",
+	"year-to",
+	"roof-type",
+	"bar-family",
+	"bar-color",
+] as const;
+
+export type StorefrontAttributeSlug = (typeof STOREFRONT_ATTRIBUTE_SLUGS)[number];
 
 // ============================================================================
 // Static Price Ranges (for server-side filtering)
@@ -52,6 +64,8 @@ export const STATIC_PRICE_RANGES_WITH_COUNT = STATIC_PRICE_RANGES.map((r) => ({ 
 export function buildFilterVariables(params: {
 	priceRange?: string | null;
 	categoryIds?: string[];
+	attributeFilters?: Partial<Record<StorefrontAttributeSlug, readonly string[]>>;
+	attributeRanges?: Partial<Record<"year-from" | "year-to", { gte?: number; lte?: number }>>;
 }): ProductFilterInput | undefined {
 	const filter: ProductFilterInput = {};
 	let hasFilter = false;
@@ -66,6 +80,22 @@ export function buildFilterVariables(params: {
 		const min = parseFloat(minStr) || 0;
 		const max = maxStr ? parseFloat(maxStr) : undefined;
 		filter.price = { gte: min, ...(max && { lte: max }) };
+		hasFilter = true;
+	}
+
+	const attributes: NonNullable<ProductFilterInput["attributes"]> = [];
+	for (const slug of STOREFRONT_ATTRIBUTE_SLUGS) {
+		const values = params.attributeFilters?.[slug]?.filter(Boolean);
+		if (values?.length) attributes.push({ slug, values: [...values] });
+	}
+	for (const slug of ["year-from", "year-to"] as const) {
+		const range = params.attributeRanges?.[slug];
+		if (range && (range.gte !== undefined || range.lte !== undefined)) {
+			attributes.push({ slug, valuesRange: range });
+		}
+	}
+	if (attributes.length > 0) {
+		filter.attributes = attributes;
 		hasFilter = true;
 	}
 

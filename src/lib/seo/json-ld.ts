@@ -29,6 +29,7 @@ export function buildProductJsonLd(options: {
 	description?: string;
 	images?: string[];
 	sku?: string | null;
+	mpn?: string | null;
 	brand?: string | null;
 	url?: string;
 	/** Single variant pricing */
@@ -54,6 +55,7 @@ export function buildProductJsonLd(options: {
 		description,
 		images,
 		sku,
+		mpn,
 		brand,
 		url,
 		price,
@@ -64,45 +66,47 @@ export function buildProductJsonLd(options: {
 
 	const baseUrl = getBaseUrl();
 	const fullUrl = url ? `${baseUrl}${url}` : undefined;
+	const availability = inStock
+		? ("https://schema.org/InStock" as const)
+		: ("https://schema.org/OutOfStock" as const);
+	const offers = price
+		? {
+				"@type": "Offer" as const,
+				url: fullUrl,
+				availability,
+				priceCurrency: price.currency,
+				price: price.amount,
+				seller: {
+					"@type": "Organization" as const,
+					name: seoConfig.organizationName,
+				},
+			}
+		: priceRange
+			? {
+					"@type": "AggregateOffer" as const,
+					url: fullUrl,
+					availability,
+					priceCurrency: priceRange.currency,
+					lowPrice: priceRange.lowPrice,
+					highPrice: priceRange.highPrice,
+					offerCount: variantCount,
+					seller: {
+						"@type": "Organization" as const,
+						name: seoConfig.organizationName,
+					},
+				}
+			: undefined;
 
 	return {
 		"@context": "https://schema.org",
 		"@type": "Product",
 		name,
 		description: description || name,
-		image: images && images.length > 0 ? images : undefined,
+		...(images && images.length > 0 ? { image: images } : {}),
 		...(sku && { sku }),
-		brand: {
-			"@type": "Brand",
-			name: brand || seoConfig.defaultBrand,
-		},
-		offers: price
-			? {
-					"@type": "Offer",
-					url: fullUrl,
-					availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-					priceCurrency: price.currency,
-					price: price.amount,
-					seller: {
-						"@type": "Organization",
-						name: seoConfig.organizationName,
-					},
-				}
-			: priceRange
-				? {
-						"@type": "AggregateOffer",
-						url: fullUrl,
-						availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-						priceCurrency: priceRange.currency,
-						lowPrice: priceRange.lowPrice,
-						highPrice: priceRange.highPrice,
-						offerCount: variantCount,
-						seller: {
-							"@type": "Organization",
-							name: seoConfig.organizationName,
-						},
-					}
-				: undefined,
+		...(mpn && { mpn }),
+		...(brand && { brand: { "@type": "Brand" as const, name: brand } }),
+		...(offers ? { offers } : {}),
 	};
 }
 

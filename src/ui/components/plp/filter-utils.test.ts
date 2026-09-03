@@ -71,6 +71,36 @@ describe("buildFilterVariables", () => {
 		const result = buildFilterVariables({ categoryIds: [] });
 		expect(result).toBeUndefined();
 	});
+
+	it("builds discovery filters by stable attribute slug without dashboard IDs", () => {
+		expect(
+			buildFilterVariables({
+				attributeFilters: {
+					"vehicle-make": ["skoda"],
+					"vehicle-model": ["octavia"],
+					"vehicle-generation": ["octavia-iii-5e"],
+					"roof-type": ["fixed-point"],
+					"bar-family": ["silenzio"],
+					"bar-color": ["silver"],
+				},
+				attributeRanges: {
+					"year-from": { lte: 2018 },
+					"year-to": { gte: 2018 },
+				},
+			}),
+		).toEqual({
+			attributes: [
+				{ slug: "vehicle-make", values: ["skoda"] },
+				{ slug: "vehicle-model", values: ["octavia"] },
+				{ slug: "vehicle-generation", values: ["octavia-iii-5e"] },
+				{ slug: "roof-type", values: ["fixed-point"] },
+				{ slug: "bar-family", values: ["silenzio"] },
+				{ slug: "bar-color", values: ["silver"] },
+				{ slug: "year-from", valuesRange: { lte: 2018 } },
+				{ slug: "year-to", valuesRange: { gte: 2018 } },
+			],
+		});
+	});
 });
 
 // =============================================================================

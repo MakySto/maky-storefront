@@ -100,6 +100,7 @@ async function SearchContent({
 				<div>
 					<h1 className="text-2xl font-semibold">Results for &quot;{query}&quot;</h1>
 					<p className="mt-1 text-sm text-muted-foreground">
+						{pagination.totalCountIsEstimate ? "≥ " : ""}
 						{pagination.totalCount} {pagination.totalCount === 1 ? "product" : "products"} found
 					</p>
 				</div>

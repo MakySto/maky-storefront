@@ -57,6 +57,8 @@ export interface SearchPagination {
 	hasPreviousPage?: boolean;
 	nextCursor?: string;
 	prevCursor?: string;
+	/** Saleor counted rows before exact-locale filtering on the loaded page. */
+	totalCountIsEstimate?: boolean;
 }
 
 /**

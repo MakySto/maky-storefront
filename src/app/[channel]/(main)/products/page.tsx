@@ -10,6 +10,8 @@ import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/fi
 import { resolveCategorySlugsToIds } from "@/ui/components/plp/filter-utils.server";
 import { ProductsPageClient } from "./products-client";
 import { brandConfig } from "@/config/brand";
+import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
+import { resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
 
 export const metadata = {
 	title: "Products",
@@ -72,10 +74,12 @@ async function ProductsContent({
 
 	const paginationVariables = getPaginatedListVariables({ params: searchParams });
 	const sortBy = buildSortVariables(searchParams.sort);
+	const locale = getLocaleFromChannel(params.channel);
+	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
 	// Parse category slugs from URL and resolve to IDs for server-side filtering
 	const categorySlugs = searchParams.categories?.split(",").filter(Boolean) || [];
-	const categoryMap = await resolveCategorySlugsToIds(categorySlugs);
+	const categoryMap = await resolveCategorySlugsToIds(categorySlugs, locale);
 	const categoryIds = Array.from(categoryMap.values()).map((c) => c.id);
 
 	const filter = buildFilterVariables({
@@ -87,6 +91,7 @@ async function ProductsContent({
 		variables: {
 			...paginationVariables,
 			channel: params.channel,
+			lang,
 			sortBy,
 			filter,
 		},
@@ -106,7 +111,13 @@ async function ProductsContent({
 	}
 
 	const products = result.data.products;
-	const productCards = products.edges.map((e) => transformToProductCard(e.node, params.channel));
+	const localized = resolveExactLocaleProducts(
+		products.edges.map((edge) => edge.node),
+		locale,
+	);
+	const productCards = localized.products.map((product) =>
+		transformToProductCard(product, params.channel, locale),
+	);
 
 	// Build resolved categories array for the client (for active filter display)
 	const resolvedCategories = categorySlugs
@@ -120,7 +131,6 @@ async function ProductsContent({
 		<ProductsPageClient
 			products={productCards}
 			pageInfo={products.pageInfo}
-			totalCount={products.totalCount ?? productCards.length}
 			resolvedCategories={resolvedCategories}
 		/>
 	);

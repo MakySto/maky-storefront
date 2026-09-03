@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { DefaultChannelSlug } from "@/app/config";
 import { CACHE_PROFILES, buildTag, buildPath } from "@/lib/cache-manifest";
 import { extractBearerToken, verifySecret, verifyWebhookSignature } from "@/lib/api-auth";
+import { getLocaleFromChannel } from "@/config/locale";
 
 /**
  * Webhook endpoint for cache invalidation.
@@ -86,15 +87,17 @@ function parseWebhookPayload(payload: unknown): {
 function revalidateProfile(
 	profile: (typeof CACHE_PROFILES)[keyof typeof CACHE_PROFILES],
 	channel: string,
+	locale: string,
 	slug: string,
 	tags: string[],
 	paths: string[],
 ) {
-	const tag = buildTag(profile, slug);
+	const identity = { channel, locale, slug };
+	const tag = buildTag(profile, identity);
 	revalidateTag(tag, profile.cacheProfile);
 	tags.push(tag);
 
-	const path = buildPath(profile, channel, slug);
+	const path = buildPath(profile, identity);
 	if (path) {
 		revalidatePath(path);
 		paths.push(path);
@@ -135,11 +138,19 @@ export async function POST(request: NextRequest) {
 		}
 		const revalidatedPaths: string[] = [];
 		const revalidatedTags: string[] = [];
+		const targetLocale = getLocaleFromChannel(targetChannel);
 
 		switch (type) {
 			case "product":
 				if (slug) {
-					revalidateProfile(CACHE_PROFILES.products, targetChannel, slug, revalidatedTags, revalidatedPaths);
+					revalidateProfile(
+						CACHE_PROFILES.products,
+						targetChannel,
+						targetLocale,
+						slug,
+						revalidatedTags,
+						revalidatedPaths,
+					);
 				}
 				revalidatePath(`/${targetChannel}/products`);
 				revalidatedPaths.push(`/${targetChannel}/products`);
@@ -148,6 +159,7 @@ export async function POST(request: NextRequest) {
 					revalidateProfile(
 						CACHE_PROFILES.categories,
 						targetChannel,
+						targetLocale,
 						categorySlug,
 						revalidatedTags,
 						revalidatedPaths,
@@ -160,6 +172,7 @@ export async function POST(request: NextRequest) {
 					revalidateProfile(
 						CACHE_PROFILES.categories,
 						targetChannel,
+						targetLocale,
 						slug,
 						revalidatedTags,
 						revalidatedPaths,
@@ -172,6 +185,7 @@ export async function POST(request: NextRequest) {
 					revalidateProfile(
 						CACHE_PROFILES.collections,
 						targetChannel,
+						targetLocale,
 						slug,
 						revalidatedTags,
 						revalidatedPaths,
@@ -227,9 +241,16 @@ export async function GET(request: NextRequest) {
 	const path = searchParams.get("path");
 	const tag = searchParams.get("tag");
 	const all = searchParams.get("all");
+	const resource = searchParams.get("resource");
+	const channel = searchParams.get("channel");
+	const locale = searchParams.get("locale");
+	const slug = searchParams.get("slug");
 
-	if (!path && !tag && !all) {
-		return Response.json({ error: "Provide path, tag, and/or all parameter" }, { status: 400 });
+	if (!path && !tag && !all && !resource) {
+		return Response.json(
+			{ error: "Provide resource identity, path, tag, and/or all parameter" },
+			{ status: 400 },
+		);
 	}
 
 	const revalidatedPaths: string[] = [];
@@ -239,7 +260,7 @@ export async function GET(request: NextRequest) {
 		revalidatePath("/", "layout");
 		revalidatedPaths.push("/ (all routes)");
 
-		const fixedTagProfiles = Object.values(CACHE_PROFILES).filter((p) => !p.tagPattern.includes("{slug}"));
+		const fixedTagProfiles = Object.values(CACHE_PROFILES).filter((p) => !p.tagPattern.includes("{"));
 		for (const p of fixedTagProfiles) {
 			revalidateTag(p.tagPattern, p.cacheProfile);
 			revalidatedTags.push(p.tagPattern);
@@ -256,6 +277,25 @@ export async function GET(request: NextRequest) {
 			"Also revalidated fixed tags:",
 			fixedTagProfiles.map((p) => p.tagPattern).join(", "),
 		);
+	}
+
+	if (resource) {
+		const profiles = {
+			product: CACHE_PROFILES.products,
+			category: CACHE_PROFILES.categories,
+			collection: CACHE_PROFILES.collections,
+		} as const;
+		const profile = profiles[resource as keyof typeof profiles];
+		if (!profile || !channel || !locale || !slug) {
+			return Response.json(
+				{ error: "resource requires product|category|collection plus channel, locale, and slug" },
+				{ status: 400 },
+			);
+		}
+		if (getLocaleFromChannel(channel) !== locale) {
+			return Response.json({ error: "locale does not belong to channel" }, { status: 400 });
+		}
+		revalidateProfile(profile, channel, locale, slug, revalidatedTags, revalidatedPaths);
 	}
 
 	if (path) {
