@@ -31,6 +31,7 @@ import {
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { parseEditorJSToHtml } from "@/lib/editorjs";
 import { isSourceLocale, resolveExactLocaleProduct } from "@/lib/saleor/exact-locale";
+import { lookupBySlug } from "@/lib/saleor/slug-lookup";
 
 /** CFM's manufacturer attribute, keyed on externalReference — see product-attributes.ts. */
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
@@ -47,14 +48,20 @@ async function fetchProductOutcome(
 	locale: string,
 ): Promise<ResourceOutcome<Product>> {
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
-	const result = await executePublicGraphQL(ProductDetailsDocument, {
-		variables: {
-			slug: decodeURIComponent(slug),
-			channel,
-			lang,
-		},
-		revalidate: 300,
-	});
+	const result = await lookupBySlug(
+		locale,
+		(data: ProductDetailsQuery) => data.product,
+		(slugLang) =>
+			executePublicGraphQL(ProductDetailsDocument, {
+				variables: {
+					slug: decodeURIComponent(slug),
+					channel,
+					lang,
+					slugLang,
+				},
+				revalidate: 300,
+			}),
+	);
 
 	return toOutcome(result, (data) => resolveExactLocaleProduct(data.product, locale));
 }
@@ -91,10 +98,7 @@ async function getProductOutcomeCached(
 }
 
 /** `found` | `not-found` | `upstream-error`, shared by the page and its metadata. */
-export async function getProductOutcome(
-	slug: string,
-	channel: string,
-): Promise<ResourceOutcome<Product>> {
+export async function getProductOutcome(slug: string, channel: string): Promise<ResourceOutcome<Product>> {
 	const locale = getLocaleFromChannel(channel);
 	return catchUpstreamError(() => getProductOutcomeCached(slug, channel, locale));
 }

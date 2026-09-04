@@ -22,10 +22,8 @@ import { buildCanonicalUrl } from "@/lib/seo/hreflang";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import { CategoryPageClient } from "./client";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
-import {
-	resolveExactLocaleCategory,
-	resolveExactLocaleProducts,
-} from "@/lib/saleor/exact-locale";
+import { resolveExactLocaleCategory, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
+import { lookupBySlug } from "@/lib/saleor/slug-lookup";
 
 type Category = NonNullable<ProductListByCategoryQuery["category"]>;
 
@@ -38,10 +36,15 @@ async function getCategoryOutcomeCached(
 	applyCacheProfile(CACHE_PROFILES.categories, { channel, locale, slug });
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
-	const result = await executePublicGraphQL(ProductListByCategoryDocument, {
-		variables: { slug, channel, lang, first: 1 },
-		revalidate: 300,
-	});
+	const result = await lookupBySlug(
+		locale,
+		(data: ProductListByCategoryQuery) => data.category,
+		(slugLang) =>
+			executePublicGraphQL(ProductListByCategoryDocument, {
+				variables: { slug, channel, lang, slugLang, first: 1 },
+				revalidate: 300,
+			}),
+	);
 
 	// Throws on a fault, so the entry is never cached: an outage must not be
 	// remembered as "this category does not exist" for up to an hour.
@@ -200,17 +203,23 @@ async function CategoryProducts({
 	const locale = getLocaleFromChannel(params.channel);
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
-	const result = await executePublicGraphQL(ProductListByCategoryDocument, {
-		variables: {
-			slug: params.slug,
-			channel: params.channel,
-			lang,
-			...paginationVariables,
-			sortBy,
-			filter,
-		},
-		revalidate: 300,
-	});
+	const result = await lookupBySlug(
+		locale,
+		(data: ProductListByCategoryQuery) => data.category,
+		(slugLang) =>
+			executePublicGraphQL(ProductListByCategoryDocument, {
+				variables: {
+					slug: params.slug,
+					channel: params.channel,
+					lang,
+					slugLang,
+					...paginationVariables,
+					sortBy,
+					filter,
+				},
+				revalidate: 300,
+			}),
+	);
 
 	// This runs in a NESTED Suspense, after CategoryHero has already streamed —
 	// so the outer lookup has just proved the category exists. Calling notFound()
@@ -238,12 +247,7 @@ async function CategoryProducts({
 		transformToProductCard(product, params.channel, locale),
 	);
 
-	return (
-		<CategoryPageClient
-			products={productCards}
-			pageInfo={products.pageInfo}
-		/>
-	);
+	return <CategoryPageClient products={productCards} pageInfo={products.pageInfo} />;
 }
 
 function PageSkeleton() {

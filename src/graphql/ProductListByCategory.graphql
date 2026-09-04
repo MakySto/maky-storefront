@@ -2,12 +2,13 @@ query ProductListByCategory(
 	$slug: String!
 	$channel: String!
 	$lang: LanguageCodeEnum!
+	$slugLang: LanguageCodeEnum
 	$first: Int
 	$after: String
 	$sortBy: ProductOrder
 	$filter: ProductFilterInput
 ) {
-	category(slug: $slug, slugLanguageCode: $lang) {
+	category(slug: $slug, slugLanguageCode: $slugLang) {
 		id
 		name
 		slug

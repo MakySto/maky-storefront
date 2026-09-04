@@ -1,6 +1,11 @@
 import { Suspense } from "react";
 import { type Metadata } from "next";
-import { ProductListByCollectionDocument, ProductOrderField, OrderDirection } from "@/gql/graphql";
+import {
+	ProductListByCollectionDocument,
+	type ProductListByCollectionQuery,
+	ProductOrderField,
+	OrderDirection,
+} from "@/gql/graphql";
 import { buildAlternatesMetadata } from "@/lib/seo/hreflang";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
@@ -9,25 +14,30 @@ import { HeroSection, CategoryGrid, WhyMaky, BrandsStrip, NewsletterCTA } from "
 import { getTranslations } from "next-intl/server";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleCollection, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
+import { lookupBySlug } from "@/lib/saleor/slug-lookup";
 
 async function getFeaturedProducts(channel: string) {
 	"use cache";
 	const locale = getLocaleFromChannel(channel);
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
-	const slugLang = getLocaleConfigByLocale("sk-SK").graphqlLanguageCode;
 	applyCacheProfile(CACHE_PROFILES.collections, { channel, locale, slug: "featured-products" });
 
-	const result = await executePublicGraphQL(ProductListByCollectionDocument, {
-		variables: {
-			slug: "featured-products",
-			channel,
-			lang,
-			slugLang,
-			first: 12,
-			sortBy: { field: ProductOrderField.Collection, direction: OrderDirection.Asc },
-		},
-		revalidate: 300,
-	});
+	const result = await lookupBySlug(
+		locale,
+		(data: ProductListByCollectionQuery) => data.collection,
+		(slugLang) =>
+			executePublicGraphQL(ProductListByCollectionDocument, {
+				variables: {
+					slug: "featured-products",
+					channel,
+					lang,
+					slugLang,
+					first: 12,
+					sortBy: { field: ProductOrderField.Collection, direction: OrderDirection.Asc },
+				},
+				revalidate: 300,
+			}),
+	);
 
 	if (!result.ok) {
 		console.warn(`[Homepage] Failed to fetch featured products for ${channel}:`, result.error.message);

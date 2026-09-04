@@ -26,10 +26,8 @@ import { marketHref } from "@/lib/channel-map";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import { CollectionPageClient } from "./client";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
-import {
-	resolveExactLocaleCollection,
-	resolveExactLocaleProducts,
-} from "@/lib/saleor/exact-locale";
+import { resolveExactLocaleCollection, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
+import { lookupBySlug } from "@/lib/saleor/slug-lookup";
 
 type Collection = NonNullable<ProductListByCollectionQuery["collection"]>;
 
@@ -42,10 +40,15 @@ async function getCollectionOutcomeCached(
 	applyCacheProfile(CACHE_PROFILES.collections, { channel, locale, slug });
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
-	const result = await executePublicGraphQL(ProductListByCollectionDocument, {
-		variables: { slug, channel, lang, slugLang: lang, first: 1 },
-		revalidate: 300,
-	});
+	const result = await lookupBySlug(
+		locale,
+		(data: ProductListByCollectionQuery) => data.collection,
+		(slugLang) =>
+			executePublicGraphQL(ProductListByCollectionDocument, {
+				variables: { slug, channel, lang, slugLang, first: 1 },
+				revalidate: 300,
+			}),
+	);
 
 	// Throws on a fault, so the entry is never cached: an outage must not be
 	// remembered as "this collection does not exist" for up to an hour.
@@ -55,10 +58,7 @@ async function getCollectionOutcomeCached(
 }
 
 /** `found` | `not-found` | `upstream-error`, shared by the page and its metadata. */
-async function getCollectionOutcome(
-	slug: string,
-	channel: string,
-): Promise<ResourceOutcome<Collection>> {
+async function getCollectionOutcome(slug: string, channel: string): Promise<ResourceOutcome<Collection>> {
 	const locale = getLocaleFromChannel(channel);
 	return catchUpstreamError(() => getCollectionOutcomeCached(slug, channel, locale));
 }
@@ -182,18 +182,23 @@ async function CollectionProducts({
 	const locale = getLocaleFromChannel(params.channel);
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
-	const result = await executePublicGraphQL(ProductListByCollectionDocument, {
-		variables: {
-			slug: params.slug,
-			channel: params.channel,
-			lang,
-			slugLang: lang,
-			...paginationVariables,
-			sortBy,
-			filter,
-		},
-		revalidate: 300,
-	});
+	const result = await lookupBySlug(
+		locale,
+		(data: ProductListByCollectionQuery) => data.collection,
+		(slugLang) =>
+			executePublicGraphQL(ProductListByCollectionDocument, {
+				variables: {
+					slug: params.slug,
+					channel: params.channel,
+					lang,
+					slugLang,
+					...paginationVariables,
+					sortBy,
+					filter,
+				},
+				revalidate: 300,
+			}),
+	);
 
 	// Nested Suspense, below a hero that already proved the collection exists.
 	// A transport failure here is an error, not an absence.
@@ -219,12 +224,7 @@ async function CollectionProducts({
 		transformToProductCard(product, params.channel, locale),
 	);
 
-	return (
-		<CollectionPageClient
-			products={productCards}
-			pageInfo={products.pageInfo}
-		/>
-	);
+	return <CollectionPageClient products={productCards} pageInfo={products.pageInfo} />;
 }
 
 function PageSkeleton() {
@@ -247,10 +247,10 @@ function ProductsGridSkeleton() {
 			<div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
 				{Array.from({ length: 6 }).map((_, i) => (
 					<div key={i} className="animate-pulse">
-						<div className="mb-4 aspect-[3/4] rounded-xl bg-muted" />
+						<div className="bg-muted mb-4 aspect-[3/4] rounded-xl" />
 						<div className="space-y-1.5">
-							<div className="h-4 w-3/4 rounded bg-muted" />
-							<div className="h-4 w-1/2 rounded bg-muted" />
+							<div className="bg-muted h-4 w-3/4 rounded" />
+							<div className="bg-muted h-4 w-1/2 rounded" />
 						</div>
 					</div>
 				))}

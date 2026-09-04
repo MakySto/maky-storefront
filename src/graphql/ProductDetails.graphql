@@ -1,5 +1,10 @@
-query ProductDetails($slug: String!, $channel: String!, $lang: LanguageCodeEnum!) {
-	product(slug: $slug, channel: $channel, slugLanguageCode: $lang) {
+query ProductDetails(
+	$slug: String!
+	$channel: String!
+	$lang: LanguageCodeEnum!
+	$slugLang: LanguageCodeEnum
+) {
+	product(slug: $slug, channel: $channel, slugLanguageCode: $slugLang) {
 		id
 		name
 		slug

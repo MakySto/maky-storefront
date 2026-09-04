@@ -2,7 +2,7 @@ query ProductListByCollection(
 	$slug: String!
 	$channel: String!
 	$lang: LanguageCodeEnum!
-	$slugLang: LanguageCodeEnum!
+	$slugLang: LanguageCodeEnum
 	$first: Int
 	$after: String
 	$sortBy: ProductOrder
