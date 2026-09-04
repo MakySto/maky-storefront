@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import {
 	FilterBar,
 	ListingEmptyState,
+	listingResultCount,
 	ProductGrid,
 	useProductFilters,
 	type ProductCardData,
@@ -65,10 +66,17 @@ export function ProductsPageClient({
 		enableCategoryFilter: true,
 	});
 
+	const resultCount = listingResultCount({
+		totalCount,
+		renderedCount: filteredProducts.length,
+		localeDropped,
+		hasClientSideFilters: selectedColors.length > 0 || selectedSizes.length > 0,
+	});
+
 	return (
 		<>
 			<FilterBar
-				resultCount={filteredProducts.length}
+				resultCount={resultCount}
 				sortValue={sortValue}
 				onSortChange={handleSortChange}
 				categoryOptions={categoryOptions}

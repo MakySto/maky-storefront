@@ -3,6 +3,7 @@ export { PageHeader } from "./page-header";
 export { ProductCard, type ProductCardData } from "./product-card";
 export { ProductGrid } from "./product-grid";
 export { ListingEmptyState } from "./listing-empty-state";
+export { listingResultCount } from "./listing-result-count";
 export {
 	FilterBar,
 	type SortOption,
