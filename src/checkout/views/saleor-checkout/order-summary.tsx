@@ -28,6 +28,16 @@ interface OrderSummaryData {
 	currency: string;
 	subtotal: number;
 	shipping: number;
+	/**
+	 * VAT CONTAINED IN `total`, never added to it — Saleor's `TaxedMoney.tax`, the
+	 * difference the server itself computed between net and gross. Every other amount
+	 * in this summary is `gross`, so this is the "z toho DPH" figure and nothing else.
+	 *
+	 * It is read, never derived. A rate applied in the browser would be a second
+	 * opinion on a number that goes on a tax document: it would disagree with the
+	 * invoice the moment an order mixes rates, carries a discount, or ships to a
+	 * market on destination VAT — and the storefront would be the one that is wrong.
+	 */
 	tax: number;
 	discount: number;
 	total: number;
@@ -133,7 +143,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 		return null;
 	}
 
-	const { lines, currency, subtotal, shipping, discount, total } = data;
+	const { lines, currency, subtotal, shipping, tax, discount, total } = data;
 	const itemCount = lines.reduce((acc, line) => acc + line.quantity, 0);
 
 	const formatMoney = (amount: number) => {
@@ -298,6 +308,24 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 								{formatMoney(total)}
 							</data>
 						</div>
+
+						{/*
+						 * VAT belongs UNDER the total, not in the list above it. Every row in that
+						 * dl is an addend; the tax is already inside the gross figures, so a row up
+						 * there would invite the reader to add it to the total a second time.
+						 *
+						 * Hidden at zero rather than shown as 0,00: until a delivery address is
+						 * known Saleor has nothing to compute the tax against, and "z toho DPH
+						 * 0,00 €" under a VAT-inclusive total is a false statement, not an empty
+						 * one. It is also how a market that carries no EU VAT renders — no branch
+						 * on the market, and no VAT policy decided here.
+						 */}
+						{tax > 0 && (
+							<p className="text-muted-foreground mt-1 flex justify-between text-xs tabular-nums">
+								<span>{t("summary.vatIncluded")}</span>
+								<data value={tax}>{formatMoney(tax)}</data>
+							</p>
+						)}
 					</section>
 
 					{/* Trust */}

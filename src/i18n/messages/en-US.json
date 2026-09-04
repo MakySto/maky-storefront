@@ -193,6 +193,7 @@
 			"productFallback": "Product",
 			"discount": "Discount",
 			"total": "Total",
+			"vatIncluded": "of which VAT",
 			"contact": "Contact",
 			"shipTo": "Ship to",
 			"method": "Shipping",

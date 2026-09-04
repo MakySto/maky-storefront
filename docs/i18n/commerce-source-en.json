@@ -86,8 +86,8 @@
 			},
 			"icuPlural": true,
 			"callSites": [
-				"src/checkout/views/saleor-checkout/order-summary.tsx:203",
-				"src/checkout/views/saleor-checkout/order-summary.tsx:220",
+				"src/checkout/views/saleor-checkout/order-summary.tsx:213",
+				"src/checkout/views/saleor-checkout/order-summary.tsx:230",
 				"src/ui/components/cart/cart-button.tsx:33",
 				"src/ui/components/cart/cart-drawer.tsx:149"
 			],
@@ -156,7 +156,7 @@
 			"kind": "visible",
 			"maxLength": 16,
 			"callSites": [
-				"src/checkout/views/saleor-checkout/order-summary.tsx:283",
+				"src/checkout/views/saleor-checkout/order-summary.tsx:293",
 				"src/ui/components/cart/cart-drawer.tsx:314"
 			],
 			"usageCount": 2,
@@ -197,7 +197,7 @@
 			"kind": "visible",
 			"maxLength": 16,
 			"callSites": [
-				"src/checkout/views/saleor-checkout/order-summary.tsx:279",
+				"src/checkout/views/saleor-checkout/order-summary.tsx:289",
 				"src/ui/components/cart/cart-drawer.tsx:310"
 			],
 			"usageCount": 2,
@@ -678,7 +678,7 @@
 			"maxLength": 20,
 			"callSites": [
 				"src/checkout/views/saleor-checkout/checkout-header.tsx:86",
-				"src/checkout/views/saleor-checkout/order-summary.tsx:308",
+				"src/checkout/views/saleor-checkout/order-summary.tsx:336",
 				"src/ui/components/cart/cart-drawer.tsx:346"
 			],
 			"usageCount": 3,
@@ -2209,7 +2209,7 @@
 			"context": "Discount line label in the order-summary amounts list; only shown when a discount applies.",
 			"kind": "visible",
 			"maxLength": 16,
-			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:288"],
+			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:298"],
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
@@ -2218,7 +2218,7 @@
 			"context": "Mobile collapsible order-summary toggle label while the summary is expanded.",
 			"kind": "cta",
 			"maxLength": 32,
-			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:201"],
+			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:211"],
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
@@ -2237,7 +2237,7 @@
 			"source": "Product",
 			"context": "Fallback product name for an order-summary line item whose variant/product name is missing; also used as the image alt fallback.",
 			"kind": "visible",
-			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:125"],
+			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:135"],
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
@@ -2257,7 +2257,7 @@
 			"context": "Mobile collapsible order-summary toggle label while the summary is collapsed.",
 			"kind": "cta",
 			"maxLength": 32,
-			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:201"],
+			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:211"],
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
@@ -2265,7 +2265,7 @@
 			"source": "Order summary",
 			"context": "Desktop order-summary card heading (h2), always visible on md+ screens on every checkout step and on the order confirmation.",
 			"kind": "title",
-			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:219"],
+			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:229"],
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
@@ -2274,7 +2274,17 @@
 			"context": "Grand-total label at the bottom of the order-summary amounts section (existing cart.total 'Celkom' wording differs, so this is a separate key).",
 			"kind": "visible",
 			"maxLength": 16,
-			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:296"],
+			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:306"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.summary.vatIncluded": {
+			"source": "of which VAT",
+			"context": "Sub-line directly under the order-summary grand total, naming the VAT already CONTAINED in that total \u2014 not an amount added to it. Rendered from Saleor's server-computed TaxedMoney.tax (checkout.totalPrice.tax / order.total.tax); the storefront never derives it from a rate. Hidden entirely when the figure is zero. Translate as \"of which\", never in a way that reads as an addend, and use the market's statutory VAT term (SK: DPH).",
+			"kind": "visible",
+			"maxLength": 20,
+			"legallySensitive": true,
+			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:325"],
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
