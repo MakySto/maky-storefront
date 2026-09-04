@@ -91,10 +91,7 @@ async function getProductOutcomeCached(
 }
 
 /** `found` | `not-found` | `upstream-error`, shared by the page and its metadata. */
-export async function getProductOutcome(
-	slug: string,
-	channel: string,
-): Promise<ResourceOutcome<Product>> {
+export async function getProductOutcome(slug: string, channel: string): Promise<ResourceOutcome<Product>> {
 	const locale = getLocaleFromChannel(channel);
 	return catchUpstreamError(() => getProductOutcomeCached(slug, channel, locale));
 }
@@ -250,6 +247,13 @@ async function ProductContent({
 				}
 			: null,
 		inStock: product.variants?.some((v) => v.quantityAvailable) ?? false,
+		// The CFM-owned availability fact, taken from the first variant that
+		// publishes one — it is a product-level decision that Saleor happens to
+		// carry on the variant. Without it the offer said InStock, derived from a
+		// `quantityAvailable` of 50 that is a configuration cap rather than stock,
+		// on a catalogue that holds none. `sale_to_order` makes it BackOrder, which
+		// is what the badge beside the price already tells the customer.
+		availabilityMode: product.variants?.find((v) => v.metafield)?.metafield,
 		variantCount: product.variants?.length ?? 0,
 	});
 

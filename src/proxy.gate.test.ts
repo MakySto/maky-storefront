@@ -322,3 +322,66 @@ describe("category and collection families", () => {
 		expect(varsOfCall(mock).c).toBe("sk-eur");
 	});
 });
+
+/**
+ * The configuration the Slovak rollout actually prescribes, exercised as one:
+ *
+ *   ROUTE_EXISTENCE_GATE=on
+ *   ROUTE_EXISTENCE_MARKETS=sk
+ *   ROUTE_EXISTENCE_FAMILIES=product,category
+ *
+ * Every case above arms exactly one family, which proves each path in isolation
+ * and proves nothing about the pair. With 9 192 products going public behind
+ * /sk/{slug} and their categories behind /sk/categories/{slug}, the pair is what
+ * gets deployed — and the two routes take different questions upstream (one
+ * channel-scoped, one global), so "both armed" is worth one test of its own.
+ */
+describe("the sk product + category rollout configuration", () => {
+	const armed = () => arm({ markets: "sk", families: "product,category" });
+
+	it("404s an absent product and an absent category in the same configuration", async () => {
+		armed();
+		upstream((vars) => (vars.c ? saleor({ data: { product: null } }) : saleor({ data: { category: null } })));
+
+		const missingProduct = await proxy(req("/sk/nosic-ktory-neexistuje"));
+		expect(missingProduct.status).toBe(404);
+		expect(missingProduct.headers.get("x-maky-gate")).toBe("product:absent");
+
+		const missingCategory = await proxy(req("/sk/categories/kategoria-ktora-neexistuje"));
+		expect(missingCategory.status).toBe(404);
+		expect(missingCategory.headers.get("x-maky-gate")).toBe("category:absent");
+	});
+
+	it("lets a live product and a live category through", async () => {
+		armed();
+		upstream((vars) => (vars.c ? exists() : saleor({ data: { category: { id: "c1" } } })));
+
+		const product = await proxy(req("/sk/nosic-bicyklov-thule-proride"));
+		expect(product.status).toBe(200);
+		expect(product.headers.get("x-maky-gate")).toBe("product:exists");
+
+		const category = await proxy(req("/sk/categories/stresne-boxy"));
+		expect(category.status).toBe(200);
+		expect(category.headers.get("x-maky-gate")).toBe("category:exists");
+	});
+
+	it("does not arm the families that were left out of the list", async () => {
+		armed();
+		const mock = upstream(() => saleor({ data: { collection: null } }));
+
+		const res = await proxy(req("/sk/collections/zimna-kolekcia"));
+		expect(res.headers.get("x-maky-gate")).toBe("collection:not-armed");
+		// Not merely the same verdict — no lookup happened at all.
+		expect(mock).toHaveBeenCalledTimes(0);
+	});
+
+	it("does not follow the Slovak rollout into another market", async () => {
+		armed();
+		const mock = upstream(absent);
+
+		const res = await proxy(req("/cz/nosic-ktory-neexistuje"));
+		expect(res.status).not.toBe(404);
+		expect(res.headers.get("x-maky-gate")).toBe("product:not-armed");
+		expect(mock).toHaveBeenCalledTimes(0);
+	});
+});

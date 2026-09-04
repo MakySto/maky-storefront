@@ -28,9 +28,6 @@ const SK_LEGAL_MARKET = "sk";
 /** Saleor's `products` is a cursor connection; 100 is a comfortable page. */
 const PAGE_SIZE = 100;
 
-/** Backstop against an unbounded loop if the API ever misreports `hasNextPage`. */
-const MAX_PAGES = 20;
-
 const SK_ONLY_PATHS = [
 	"/obchodne-podmienky",
 	"/reklamacie-a-vratenie",
@@ -80,18 +77,37 @@ async function fetchProductPage(channel: string, after: string | null) {
  */
 class SitemapIncompleteError extends Error {}
 
+/**
+ * Every product slug in one channel, paginated to the end of the connection.
+ *
+ * There is deliberately NO page ceiling. There used to be one — MAX_PAGES = 20,
+ * sized against a 458-product catalogue — and it was a truncation waiting for a
+ * bigger catalogue to arrive. 9 192 Slovak products at 100 a page is 92, so the
+ * cap would have thrown on every single build the moment they were published.
+ *
+ * What replaces it is a guard on the thing the cap was actually defending
+ * against: a connection that never terminates. `hasNextPage` ends the loop; a
+ * cursor that repeats or fails to advance ends it with an error. Those are the
+ * only two ways out, and the second one is loud on purpose — see
+ * `SitemapIncompleteError` for why a short sitemap is worse than no sitemap.
+ */
 async function fetchProductSlugs(channel: string): Promise<ProductEntry[]> {
 	const out: ProductEntry[] = [];
 	let after: string | null = null;
+	// Every cursor already followed. Saleor's are opaque, so the only thing that
+	// can be said about one is whether it has been seen before — which is exactly
+	// the question. A repeat means the connection is cycling, and without this the
+	// loop would spin forever building an ever-growing array.
+	const seen = new Set<string>();
 
-	for (let page = 0; page < MAX_PAGES; page++) {
+	for (let page = 1; ; page++) {
 		const connection = await fetchProductPage(channel, after);
 		// `null` here is any failure at all — transport, HTTP, GraphQL — because
 		// fetchProductPage collapses them. Previously this `break` returned
 		// whatever had been collected so far: one blip on page 3 of 5 silently
 		// dropped ~200 products with no error anywhere.
 		if (!connection) {
-			throw new SitemapIncompleteError(`${channel}: product page ${page + 1} did not resolve`);
+			throw new SitemapIncompleteError(`${channel}: product page ${page} did not resolve`);
 		}
 
 		for (const edge of connection.edges) {
@@ -101,15 +117,25 @@ async function fetchProductSlugs(channel: string): Promise<ProductEntry[]> {
 		}
 
 		if (!connection.pageInfo.hasNextPage) return out;
-		after = connection.pageInfo.endCursor ?? null;
-		if (!after) {
+
+		const next: string | null = connection.pageInfo.endCursor ?? null;
+		if (!next) {
 			throw new SitemapIncompleteError(`${channel}: hasNextPage with no cursor`);
 		}
-	}
+		if (next === after) {
+			throw new SitemapIncompleteError(
+				`${channel}: cursor did not advance past ${next} on page ${page} (${out.length} products so far)`,
+			);
+		}
+		if (seen.has(next)) {
+			throw new SitemapIncompleteError(
+				`${channel}: cursor ${next} repeated on page ${page} (${out.length} products so far)`,
+			);
+		}
 
-	// Ran out of pages with more still to come. 458 products at 100 a page is 5;
-	// hitting 20 means either the catalogue grew tenfold or hasNextPage is lying.
-	throw new SitemapIncompleteError(`${channel}: more than ${MAX_PAGES} pages`);
+		seen.add(next);
+		after = next;
+	}
 }
 
 async function fetchStockedCategorySlugs(channel: string): Promise<string[]> {

@@ -8,11 +8,11 @@ market goes from "we know the slug" to "Google may index it".
 
 ## 1. The three facts, kept separate
 
-| | Where it lives | Question it answers |
-|---|---|---|
-| **routable** | `src/lib/channel-map.ts` | Do we recognise `/de` as a URL prefix? |
-| **live / preview** | `src/lib/market-state.ts` | May a crawler index it? |
-| **sellable** | Saleor + Stripe + shipping config | Can someone actually buy? |
+|                    | Where it lives                    | Question it answers                    |
+| ------------------ | --------------------------------- | -------------------------------------- |
+| **routable**       | `src/lib/channel-map.ts`          | Do we recognise `/de` as a URL prefix? |
+| **live / preview** | `src/lib/market-state.ts`         | May a crawler index it?                |
+| **sellable**       | Saleor + Stripe + shipping config | Can someone actually buy?              |
 
 They used to be one fact, which is why twelve markets currently answer
 `index, follow` with a self-canonical while eleven have no catalogue.
@@ -76,11 +76,11 @@ curl -s https://maky.store/sitemap.xml | grep -c '/cz'
 
 ### What follows the env var immediately, and what waits for a deploy
 
-| | when |
-|---|---|
-| the `noindex` header | **instant** — decided in the proxy, per request |
-| the sitemap | **instant** — a dynamic route, re-read per request |
-| hreflang | **at the next build** |
+|                      | when                                               |
+| -------------------- | -------------------------------------------------- |
+| the `noindex` header | **instant** — decided in the proxy, per request    |
+| the sitemap          | **instant** — a dynamic route, re-read per request |
+| hreflang             | **at the next build**                              |
 
 hreflang is emitted from `generateMetadata`, which under `cacheComponents` has no
 request-time input and is baked into the prerendered shell. This was measured, not
@@ -115,7 +115,7 @@ A market goes `live` when every line is true. It is a checklist, not a date.
 
 - [ ] catalogue is not empty in that channel
 - [ ] product names and descriptions translated (a Slovak name under
-      `hreflang="de-DE"` is not thin content, it is *wrong* content, and Google
+      `hreflang="de-DE"` is not thin content, it is _wrong_ content, and Google
       applies that judgement to the whole domain, not the page)
 - [ ] category names translated
 - [ ] **the UI message file is complete.** Measured on `a5e5ff3`, unrelated to
@@ -143,19 +143,19 @@ and one good reason not to.
 
 Read this before assuming anything downstream is safe.
 
-| | state | notes |
-|---|---|---|
-| dotted-path matcher fix | **DONE** | `5e85cff` |
-| market state (`live` / `preview`) | **DONE** | `cd301c5`, `eb8d031` |
-| sitemap follows live markets, fails loud | **DONE** | `cd301c5` |
-| empty-category `noindex` | **DONE** | `cd301c5` |
-| preview markets direct-access only | **DONE** | |
-| durable + validated live-market config | **DONE** | |
-| data semantics (`found`/`not-found`/`upstream-error`) | **DONE** | prerequisite for the gate |
-| route classifier + curated market policy | **DONE** | |
-| `/de/kontakt` and the other sk-only pages → real 404 | **DONE** | no upstream call |
-| localized market-aware 404 | **DONE** | in-app `notFound()`; gate 404s use the global one |
-| **hard-404 gate** | **BUILT, SHIPS OFF** | activated per market and family |
+|                                                       | state                | notes                                             |
+| ----------------------------------------------------- | -------------------- | ------------------------------------------------- |
+| dotted-path matcher fix                               | **DONE**             | `5e85cff`                                         |
+| market state (`live` / `preview`)                     | **DONE**             | `cd301c5`, `eb8d031`                              |
+| sitemap follows live markets, fails loud              | **DONE**             | `cd301c5`                                         |
+| empty-category `noindex`                              | **DONE**             | `cd301c5`                                         |
+| preview markets direct-access only                    | **DONE**             |                                                   |
+| durable + validated live-market config                | **DONE**             |                                                   |
+| data semantics (`found`/`not-found`/`upstream-error`) | **DONE**             | prerequisite for the gate                         |
+| route classifier + curated market policy              | **DONE**             |                                                   |
+| `/de/kontakt` and the other sk-only pages → real 404  | **DONE**             | no upstream call                                  |
+| localized market-aware 404                            | **DONE**             | in-app `notFound()`; gate 404s use the global one |
+| **hard-404 gate**                                     | **BUILT, SHIPS OFF** | activated per market and family                   |
 
 **`/sk/neexistujuci-produkt` returns a real HTTP 404 once the gate is armed** —
 verified on a production build. It ships inert: `ROUTE_EXISTENCE_GATE` is unset,
@@ -201,12 +201,19 @@ Arming the gate:
 ```bash
 ROUTE_EXISTENCE_GATE=on
 ROUTE_EXISTENCE_MARKETS=sk
-ROUTE_EXISTENCE_FAMILIES=product
+ROUTE_EXISTENCE_FAMILIES=product,category
 ```
 
 An empty market or family list means **none**, never "all". Every response the
 gate looks at carries `x-maky-gate: <family>:<verdict>`, so a canary can be read
 straight off a live request.
+
+`product,category` rather than `product` alone: those are the two families the
+Slovak catalogue routes to — `/sk/{slug}` and `/sk/categories/{slug}`. Arming
+products by themselves leaves every mistyped category answering HTTP 200 with a
+full navigation on it, which is the shape that got junk indexed to begin with.
+The three variables are also documented in `.env.example` now; they used to live
+only in code comments, which is defect 3 of the STOP report.
 
 Code and content can run in parallel. They have to meet in that order.
 

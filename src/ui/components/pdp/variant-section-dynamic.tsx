@@ -42,6 +42,12 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 	const selectedVariantID = variantParam || (variants.length === 1 ? variants[0].id : undefined);
 	const selectedVariant = variants.find(({ id }) => id === selectedVariantID);
 
+	// CFM's availability mode, from the first variant that publishes one. It
+	// describes how the product is SOURCED — sale-to-order, from the supplier —
+	// so every variant carries the same value and any of them answers for the
+	// product. Saleor just has nowhere else to hang it.
+	const productAvailabilityMode = variants.find(({ metafield }) => metafield)?.metafield;
+
 	// Determine add-to-cart button state
 	const isAddToCartDisabled = !selectedVariantID || !selectedVariant?.quantityAvailable;
 	const disabledReason = !selectedVariantID
@@ -162,7 +168,14 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 					</span>
 				)}
 				<AvailabilityBadge
-					mode={selectedVariant?.metafield}
+					// Falls back to the product's mode so a multi-variant product answers
+					// before anything is picked. It used to render NOTHING until the
+					// customer chose a variant, and a blank where availability belongs
+					// reads as "in stock" — on a catalogue that holds none.
+					mode={selectedVariant?.metafield ?? productAvailabilityMode}
+					// Still the SELECTED variant's, and undefined when there is no
+					// selection: unknown, which resolveAvailability treats as unknown
+					// rather than as zero. A hard zero on a chosen variant still wins.
 					quantityAvailable={selectedVariant?.quantityAvailable}
 					className="text-xs"
 				/>
