@@ -15,7 +15,7 @@ import {
 	useCarousel,
 	type CarouselApi,
 } from "@/ui/components/ui/carousel";
-import { ImageLightbox, type LightboxImage } from "@/ui/components/ui/image-lightbox";
+import { ImageLightbox, imageKey, type LightboxImage } from "@/ui/components/ui/image-lightbox";
 import { ImageCarouselEmpty } from "@/ui/components/ui/image-carousel-empty";
 
 export type { LightboxImage as ImageCarouselImage };
@@ -40,6 +40,7 @@ interface ImageCarouselProps {
 function getAlt(image: LightboxImage, productName: string, index: number) {
 	return image.alt?.trim() || `${productName} – ${index + 1}`;
 }
+
 
 export function ImageCarousel({
 	images,
@@ -95,7 +96,7 @@ export function ImageCarousel({
 					<div className="border-border-default relative w-full overflow-hidden rounded-lg border bg-white">
 						<CarouselContent className="ml-0">
 							{images.map((image, index) => (
-								<CarouselItem key={`img-${image.url}-${index}`} className="pl-0">
+								<CarouselItem key={`img-${imageKey(image, index)}`} className="pl-0">
 									<button
 										type="button"
 										className={cn(
@@ -161,7 +162,7 @@ export function ImageCarousel({
 						{images.map((image, index) => (
 							<button
 								type="button"
-								key={`thumb-${image.url}-${index}`}
+								key={`thumb-${imageKey(image, index)}`}
 								onClick={() => scrollToImage(index)}
 								aria-label={getAlt(image, productName, index)}
 								aria-current={selectedIndex === index ? "true" : undefined}

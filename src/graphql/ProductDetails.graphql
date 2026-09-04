@@ -23,6 +23,7 @@ query ProductDetails(
 			alt
 		}
 		media {
+			id
 			url(size: 1024, format: WEBP)
 			alt
 			type

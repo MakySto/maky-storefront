@@ -7,6 +7,11 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface LightboxImage {
+	/**
+	 * Saleor's ProductMedia id. Optional because the thumbnail fallback is a
+	 * rendition rather than a media row.
+	 */
+	id?: string | null;
 	url: string;
 	alt?: string | null;
 }
@@ -19,6 +24,11 @@ interface ImageLightboxProps {
 	closeLabel: string;
 	previousLabel?: string;
 	nextLabel?: string;
+}
+
+/** Saleor's media id where there is one; see the note in image-carousel.tsx. */
+export function imageKey(image: LightboxImage, index: number) {
+	return image.id ?? `${image.url}-${index}`;
 }
 
 function getAlt(image: LightboxImage, productName: string, index: number) {
@@ -188,7 +198,7 @@ export function ImageLightbox({
 						<div className="scrollbar-hide flex max-w-full gap-1.5 overflow-x-auto rounded-xl border border-white/8 bg-black/30 p-1.5 shadow-lg backdrop-blur-md">
 							{images.map((img, index) => (
 								<button
-									key={`lb-${img.url}-${index}`}
+									key={`lb-${imageKey(img, index)}`}
 									type="button"
 									onClick={() => setCurrentIndex(index)}
 									aria-label={getAlt(img, productName, index)}

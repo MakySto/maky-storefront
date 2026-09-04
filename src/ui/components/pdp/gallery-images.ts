@@ -1,10 +1,12 @@
 export type GalleryMedia = {
+	/** Saleor's ProductMedia id — stable across reordering and re-import. */
+	id?: string | null;
 	url: string;
 	alt?: string | null;
 	type?: string | null;
 };
 
-export type GalleryImage = { url: string; alt: string | null | undefined };
+export type GalleryImage = { id?: string | null; url: string; alt: string | null | undefined };
 
 type GalleryProduct = {
 	media?: readonly GalleryMedia[] | null;
@@ -15,7 +17,9 @@ type GalleryProduct = {
 type GalleryVariant = { media?: readonly GalleryMedia[] | null } | null | undefined;
 
 const images = (media: readonly GalleryMedia[] | null | undefined): GalleryImage[] =>
-	(media ?? []).filter((item) => item.type === "IMAGE").map((item) => ({ url: item.url, alt: item.alt }));
+	(media ?? [])
+		.filter((item) => item.type === "IMAGE")
+		.map((item) => ({ id: item.id, url: item.url, alt: item.alt }));
 
 /**
  * The PDP gallery, in the order Saleor holds the media — primary first.
@@ -47,6 +51,7 @@ export function getGalleryImages(product: GalleryProduct, selectedVariant: Galle
 	}
 
 	if (product.thumbnail) {
+		// The thumbnail is a rendition, not a media row, so it has no media id.
 		return [{ url: product.thumbnail.url, alt: product.thumbnail.alt }];
 	}
 

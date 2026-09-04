@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { getGalleryImages, type GalleryMedia } from "./gallery-images";
 
 const image = (id: number): GalleryMedia => ({
+	id: `TWVkaWE6${id}`,
 	url: `https://cdn.example/${id}.jpg`,
 	alt: `Obrázok ${id}`,
 	type: "IMAGE",
@@ -53,7 +54,7 @@ describe("getGalleryImages", () => {
 
 		const gallery = getGalleryImages({ media, variants: [variant, {}] }, variant);
 
-		expect(gallery).toEqual([{ url: media[2].url, alt: media[2].alt }]);
+		expect(gallery).toEqual([{ id: media[2].id, url: media[2].url, alt: media[2].alt }]);
 	});
 
 	it("drops non-image media", () => {
@@ -73,5 +74,29 @@ describe("getGalleryImages", () => {
 
 	it("returns nothing when the product has no imagery", () => {
 		expect(getGalleryImages({ media: [], variants: [{}] }, null)).toEqual([]);
+	});
+});
+
+describe("stable media identity", () => {
+	it("carries Saleor's media id through to the gallery", () => {
+		// The carousel keys on this instead of url+index, and it is the key the
+		// localized-ALT contract with CFM is specified against. Saleor's `url` is
+		// a size-parameterised rendition, not an identity.
+		const media = [image(1), image(2), image(3)];
+
+		const gallery = getGalleryImages({ media, variants: [{}] }, null);
+
+		expect(gallery.map((row) => row.id)).toEqual(["TWVkaWE61", "TWVkaWE62", "TWVkaWE63"]);
+	});
+
+	it("leaves the thumbnail fallback without a media id", () => {
+		// The thumbnail is a rendition, not a media row — inventing an id for it
+		// would put a key in the contract that CFM can never match.
+		const gallery = getGalleryImages(
+			{ media: [], thumbnail: { url: "https://cdn.example/t.jpg", alt: "t" }, variants: [{}] },
+			null,
+		);
+
+		expect(gallery[0].id).toBeUndefined();
 	});
 });

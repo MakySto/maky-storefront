@@ -147,3 +147,20 @@ describe("exact-locale taxonomy and menu boundaries", () => {
 		expect(items).toEqual([]);
 	});
 });
+
+describe("media ALT and the source locale", () => {
+	it("leaves Saleor's own ALT untouched on the source locale", () => {
+		// `localizedMedia` sits AFTER the `isSourceLocale` early return, so it
+		// never runs for sk-SK. Slovak pages therefore keep whatever ALT Saleor
+		// holds — the rewrite is a foreign-locale measure, not a global one.
+		const product = resolveExactLocaleProduct(translatedProduct(), "sk-SK");
+
+		expect(product?.media?.map((item) => item.alt)).toEqual(["Slovenský alt", "Slovenský alt 2"]);
+	});
+
+	it("does not leak source-language ALT onto a foreign route", () => {
+		const product = resolveExactLocaleProduct(translatedProduct(), "de-DE");
+
+		expect(product?.media?.map((item) => item.alt)).not.toContain("Slovenský alt");
+	});
+});
