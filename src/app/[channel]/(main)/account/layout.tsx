@@ -8,6 +8,10 @@ import { getCurrentUser } from "./get-current-user";
 
 export const metadata = {
 	title: "My Account",
+	// Applies to the whole /account subtree — overview, orders, addresses and
+	// settings — none of which override `robots`. See the cart page for why this
+	// is noindex rather than a robots.txt Disallow.
+	robots: { index: false, follow: true },
 };
 
 export default function AccountLayout({ children }: { children: ReactNode }) {

@@ -14,6 +14,14 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "cart" });
 	return {
 		title: t("yourCart"),
+		// noindex, follow — not a robots.txt Disallow. Three of the five Disallow
+		// entries in robots.ts are market-less legacy ("/cart" never matches
+		// "/sk/cart"), and the comment there records why they must not simply be
+		// re-added with a market wildcard: Google already holds junk URLs, and a
+		// URL a crawler is forbidden to fetch can never be re-crawled, so it can
+		// never be dropped either. `follow: true` keeps the links out of here
+		// crawlable.
+		robots: { index: false, follow: true },
 	};
 }
 
