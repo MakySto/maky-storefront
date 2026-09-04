@@ -69,6 +69,85 @@ describe("the gate ships off", () => {
 	});
 });
 
+/**
+ * The Slovak rollout set: `sk` × {product, category}.
+ *
+ * These are the two families the 9 192-product catalogue routes to — /sk/{slug}
+ * and /sk/categories/{slug} — and the pair is a deliberate unit. Arming products
+ * alone leaves every mistyped category answering HTTP 200 with a full navigation
+ * on it, which is the shape that got junk indexed in the first place.
+ *
+ * Nothing here turns the gate on. It ships inert and is armed from the
+ * environment; this only pins that the configuration the runbook prescribes is
+ * the configuration the code honours, and that arming Slovakia arms nobody else.
+ */
+describe("the sk product + category rollout set", () => {
+	function arm(markets: string, families: string) {
+		process.env.ROUTE_EXISTENCE_GATE = "on";
+		process.env.ROUTE_EXISTENCE_MARKETS = markets;
+		process.env.ROUTE_EXISTENCE_FAMILIES = families;
+	}
+
+	it("arms both Slovak families from one family list", () => {
+		arm("sk", "product,category");
+
+		expect(gateEnabledFor("sk", "product")).toBe(true);
+		expect(gateEnabledFor("sk", "category")).toBe(true);
+		expect(describeGate()).toEqual({ enabled: true, markets: ["sk"], families: ["product", "category"] });
+	});
+
+	it("leaves the families nobody asked for alone", () => {
+		arm("sk", "product,category");
+
+		expect(gateEnabledFor("sk", "collection")).toBe(false);
+		expect(gateEnabledFor("sk", "saleor-page")).toBe(false);
+	});
+
+	it("does not leak into another market", () => {
+		arm("sk", "product,category");
+
+		for (const market of ["cz", "de", "pl", "us"]) {
+			expect(gateEnabledFor(market, "product"), market).toBe(false);
+			expect(gateEnabledFor(market, "category"), market).toBe(false);
+		}
+	});
+
+	it("classifies both Slovak shapes to the family that was armed", () => {
+		// The URLs the gate will actually see. /sk/{slug} is the canonical product
+		// form — /sk/products/{slug} has 308'd to it since 62657e7.
+		expect(classifyRoute("sk", ["sk", "nosic-bicyklov-thule-proride"])).toEqual({
+			family: "product",
+			slug: "nosic-bicyklov-thule-proride",
+			channel: "sk-eur",
+		});
+		expect(classifyRoute("sk", ["sk", "categories", "stresne-boxy"])).toEqual({
+			family: "category",
+			slug: "stresne-boxy",
+			channel: "sk-eur",
+		});
+	});
+
+	it("404s only on positive proof of absence, for either family", async () => {
+		arm("sk", "product,category");
+
+		for (const family of ["product", "category"] as const) {
+			resetRouteExistenceStateForTests();
+			vi.stubGlobal(
+				"fetch",
+				vi.fn(async () => saleor({ data: { [family]: null } })),
+			);
+			await expect(lookupExistence(family, "nie-je-tu", "sk-eur"), family).resolves.toBe("absent");
+
+			resetRouteExistenceStateForTests();
+			vi.stubGlobal(
+				"fetch",
+				vi.fn(async () => saleor({ errors: [{ message: "boom" }] })),
+			);
+			await expect(lookupExistence(family, "nie-je-tu", "sk-eur"), family).resolves.toBe("unknown");
+		}
+	});
+});
+
 describe("classification", () => {
 	it("treats a bare market-relative slug as a product", () => {
 		expect(classifyRoute("sk", ["sk", "stresny-box-thule"])).toEqual({
@@ -122,12 +201,18 @@ describe("path normalization", () => {
 
 describe("verdicts", () => {
 	it("calls an explicit null absent", async () => {
-		vi.stubGlobal("fetch", vi.fn(async () => saleor({ data: { product: null } })));
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => saleor({ data: { product: null } })),
+		);
 		await expect(lookupExistence("product", "missing", "sk-eur")).resolves.toBe("absent");
 	});
 
 	it("calls a returned id exists", async () => {
-		vi.stubGlobal("fetch", vi.fn(async () => saleor({ data: { product: { id: "p1" } } })));
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => saleor({ data: { product: { id: "p1" } } })),
+		);
 		await expect(lookupExistence("product", "real", "sk-eur")).resolves.toBe("exists");
 	});
 
@@ -208,7 +293,10 @@ describe("cache and load shedding", () => {
 	});
 
 	it("expires a negative sooner than a positive", async () => {
-		vi.stubGlobal("fetch", vi.fn(async () => saleor({ data: { product: null } })));
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => saleor({ data: { product: null } })),
+		);
 		const t0 = 1_000_000;
 		await lookupExistence("product", "gone", "sk-eur", t0);
 

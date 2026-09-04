@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import sk from "@/i18n/messages/sk-SK.json";
 import { resolveAvailability } from "./availability-badge";
 
 /**
@@ -53,5 +54,50 @@ describe("resolveAvailability", () => {
 			key: "onDemand",
 			tone: "info",
 		});
+	});
+});
+
+/**
+ * The resolver returns a message KEY; the customer reads a STRING. Asserting the
+ * key alone leaves the sentence on the page untested, and the sentence is the
+ * part that either is or is not a promise the business can keep.
+ *
+ * These are dropship items ordered from the supplier on demand, so the Slovak
+ * copy states the lead time rather than implying a shelf.
+ */
+describe("the Slovak sentence a sale-to-order product shows", () => {
+	const ON_DEMAND_SK = "Na objednávku, dodanie 5–10 pracovných dní";
+
+	/** Every shape CFM can hand a sale-to-order product. */
+	const saleToOrderInputs = [
+		{ mode: "sale_to_order" },
+		{ mode: "sale_to_order", quantityAvailable: 50 },
+		{ mode: "sale_to_order", quantityAvailable: 1 },
+		{ mode: "sale_to_order", quantityAvailable: null },
+		{ mode: "sale_to_order", quantityAvailable: undefined },
+	];
+
+	it("names the order and the delivery window", () => {
+		expect(sk.common.onDemand).toBe(ON_DEMAND_SK);
+
+		for (const input of saleToOrderInputs) {
+			const resolved = resolveAvailability(input);
+			expect(resolved, JSON.stringify(input)).not.toBeNull();
+			expect(sk.common[resolved!.key], JSON.stringify(input)).toBe(ON_DEMAND_SK);
+		}
+	});
+
+	it("never says Skladom and never says Posledné kusy", () => {
+		// Both strings exist in the bundle and both would be lies here: `inStock` is
+		// only reachable from a stock count nobody keeps, and `lowStock` is an
+		// urgency line invented from Saleor's synthetic cap of 50.
+		expect(sk.common.inStock).toBe("Skladom");
+		expect(sk.product.lowStock).toBe("Posledné kusy");
+
+		for (const input of saleToOrderInputs) {
+			const rendered = sk.common[resolveAvailability(input)!.key];
+			expect(rendered, JSON.stringify(input)).not.toBe(sk.common.inStock);
+			expect(rendered, JSON.stringify(input)).not.toBe(sk.product.lowStock);
+		}
 	});
 });

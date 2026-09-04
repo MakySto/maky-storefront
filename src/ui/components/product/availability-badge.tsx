@@ -14,6 +14,12 @@ import { cn } from "@/lib/utils";
  * When the metadata is absent the component renders NOTHING. Silence is the
  * only honest output for an unknown availability — a guess here is a promise to
  * the customer.
+ *
+ * The `onDemand` copy carries the lead time, not just the mode ("Na objednávku,
+ * dodanie 5–10 pracovných dní"). These are dropship items and the wait is the
+ * fact the customer needs before they buy, so it belongs in the badge rather
+ * than further down the page. The structured-data half of the same claim is
+ * `buildProductJsonLd`, which emits schema.org/BackOrder for this mode.
  */
 
 export const AVAILABILITY_METADATA_KEY = "cfm_availability_mode";
