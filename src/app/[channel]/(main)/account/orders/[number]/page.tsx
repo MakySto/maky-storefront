@@ -135,6 +135,24 @@ export default async function OrderDetailPage({ params }: Props) {
 					</div>
 
 					<OrderTimeline order={order} />
+
+					{/* Shortcut into the ONE withdrawal process, not a second one. It carries
+					    no order data in the URL: the form lists the signed-in customer's own
+					    orders server-side, so there is nothing to pass and nothing to leak
+					    into history, referrers or a shared link. */}
+					<div className="rounded-xl border p-5">
+						<h2 className="text-sm font-semibold">Odstúpenie od zmluvy</h2>
+						<p className="text-muted-foreground mt-1 text-[13px]">
+							Od tejto objednávky môžete odstúpiť do 14 dní od prevzatia tovaru, pri objednávkach z účtu do 30
+							dní. Odstúpiť môžete od celej objednávky alebo len od vybraných položiek.
+						</p>
+						<LinkWithChannel
+							href="/odstupenie-od-zmluvy"
+							className="border-border-default bg-surface-primary text-text-primary hover:bg-surface-muted focus-visible:ring-focus-ring mt-3 inline-flex min-h-11 items-center rounded-md border px-4 text-sm font-medium focus-visible:ring-2 focus-visible:outline-none"
+						>
+							Odstúpiť od zmluvy
+						</LinkWithChannel>
+					</div>
 				</div>
 
 				<div className="space-y-4">

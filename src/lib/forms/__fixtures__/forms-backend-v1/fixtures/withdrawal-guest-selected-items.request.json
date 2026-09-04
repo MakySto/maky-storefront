@@ -1,0 +1,28 @@
+{
+  "submissionId": "018f0000-0000-7000-8000-000000000003",
+  "source": "guest",
+  "market": "SK",
+  "locale": "sk",
+  "customer": {
+    "name": "Meno zákazníka",
+    "email": "customer@example.com",
+    "phone": "+421 901 730 066"
+  },
+  "contract": {
+    "orderNumber": "ORDER-10001",
+    "saleorOrderId": null,
+    "saleorCustomerId": null
+  },
+  "scope": "selectedItems",
+  "items": [
+    {
+      "orderLineId": null,
+      "productName": "Názov položky",
+      "sku": null,
+      "quantity": 1
+    }
+  ],
+  "note": null,
+  "legalNoticeVersion": "withdrawal-notice-version",
+  "privacyNoticeVersion": "privacy-notice-version"
+}

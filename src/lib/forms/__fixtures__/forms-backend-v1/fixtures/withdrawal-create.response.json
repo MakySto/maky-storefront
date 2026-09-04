@@ -1,0 +1,46 @@
+{
+  "ok": true,
+  "duplicate": false,
+  "submission": {
+    "id": "018f1000-0000-7000-8000-000000000001",
+    "submissionId": "018f0000-0000-7000-8000-000000000003",
+    "submissionNumber": "ODS-2026-000001",
+    "submittedAt": "2026-07-30T12:00:00.000Z",
+    "noticeSnapshot": {
+      "schemaVersion": 1,
+      "source": "guest",
+      "market": "SK",
+      "locale": "sk",
+      "customer": {
+        "name": "Meno zákazníka",
+        "email": "customer@example.com",
+        "phone": "+421 901 730 066"
+      },
+      "contract": {
+        "orderNumber": "ORDER-10001"
+      },
+      "scope": "selectedItems",
+      "items": [
+        {
+          "orderLineId": null,
+          "productName": "Názov položky",
+          "quantity": 1,
+          "sku": null
+        }
+      ],
+      "note": null,
+      "legalNoticeVersion": "withdrawal-notice-version",
+      "privacyNoticeVersion": "privacy-notice-version"
+    },
+    "emailDelivery": {
+      "customerStatus": "sent",
+      "customerSentAt": "2026-07-30T12:00:01.000Z",
+      "customerAttemptCount": 1,
+      "customerLastAttemptAt": "2026-07-30T12:00:00.500Z",
+      "internalStatus": "sent",
+      "internalSentAt": "2026-07-30T12:00:01.500Z",
+      "internalAttemptCount": 1,
+      "internalLastAttemptAt": "2026-07-30T12:00:00.500Z"
+    }
+  }
+}

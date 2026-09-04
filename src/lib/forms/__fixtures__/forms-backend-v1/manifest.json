@@ -1,0 +1,102 @@
+{
+  "id": "forms-backend-v1",
+  "version": 1,
+  "revision": "1.1.0",
+  "status": "candidate",
+  "payloadVersion": "3.86.0",
+  "hashAlgorithm": "sha256",
+  "schema": "withdrawal.schema.json",
+  "endpoints": {
+    "withdrawalCreate": "POST /api/forms/withdrawal",
+    "contactCreate": "POST /api/forms/contact",
+    "withdrawalDeliveryPatch": "PATCH /api/forms/withdrawal/:id/email-delivery",
+    "contactDeliveryPatch": "PATCH /api/forms/contact/:id/email-delivery",
+    "withdrawalDeliveryRetry": "POST /api/forms/withdrawal/:id/email-delivery/retry"
+  },
+  "canonical": {
+    "withdrawalRequestPhoneNull": "fixtures/withdrawal-guest-whole-order.request.json",
+    "withdrawalRequestPhoneValue": "fixtures/withdrawal-guest-selected-items.request.json",
+    "withdrawalRequestAccountPhoneValue": "fixtures/withdrawal-account-phone-value.request.json",
+    "contactRequest": "fixtures/contact-guest.request.json",
+    "withdrawalCreateResponse": "fixtures/withdrawal-create.response.json",
+    "withdrawalDuplicateResponse": "fixtures/withdrawal-duplicate.response.json"
+  },
+  "phoneScenarios": {
+    "missingNormalizesToNull": "fixtures/withdrawal-guest-phone-missing.request.json",
+    "nullNormalizesToNull": "fixtures/withdrawal-guest-whole-order.request.json",
+    "emptyNormalizesToNull": "fixtures/withdrawal-guest-phone-empty.request.json",
+    "surroundingWhitespaceIsTrimmed": "fixtures/withdrawal-guest-phone-trimmed.request.json",
+    "surroundingWhitespaceAtNormalizedMaximumIsAccepted": "fixtures/withdrawal-guest-phone-trimmed-max.request.json",
+    "nonAsciiIsAccepted": "fixtures/withdrawal-guest-phone-non-ascii.request.json",
+    "controlCharacterIsRejected": "fixtures/withdrawal-guest-phone-control.invalid.request.json",
+    "thirtyThreeCharactersAreRejected": "fixtures/withdrawal-guest-phone-too-long.invalid.request.json"
+  },
+  "operationalFixtures": {
+    "retryCustomer": "fixtures/withdrawal-email-retry-customer.request.json",
+    "retryInternal": "fixtures/withdrawal-email-retry-internal.request.json",
+    "retryPendingUnattempted": "fixtures/withdrawal-email-retry-pending-unattempted.request.json",
+    "reconcileAccepted": "fixtures/withdrawal-email-reconciliation-accepted.request.json",
+    "reconcileNotAccepted": "fixtures/withdrawal-email-reconciliation-not-accepted.request.json"
+  },
+  "deliveryContract": {
+    "statuses": ["pending", "sent", "failed", "unknown"],
+    "retryPolicy": {
+      "attemptCountMustEqualExpected": true,
+      "expectedAttemptCount": {
+        "minimum": 0,
+        "maximum": 1000000
+      },
+      "allowedStoredStates": [
+        {
+          "status": "failed"
+        },
+        {
+          "status": "pending",
+          "attemptCount": 0,
+          "purpose": "recover-after-create-commit-before-initial-attempt-reservation"
+        }
+      ]
+    },
+    "reconciliationPolicy": {
+      "attemptCountMustEqualExpected": true,
+      "expectedAttemptCount": {
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "requiredStoredStatus": "unknown"
+    },
+    "unknownRequiresReconciliation": true,
+    "publicAcknowledgementFields": [
+      "customerStatus",
+      "customerSentAt",
+      "customerAttemptCount",
+      "customerLastAttemptAt",
+      "internalStatus",
+      "internalSentAt",
+      "internalAttemptCount",
+      "internalLastAttemptAt"
+    ]
+  },
+  "artifacts": {
+    "README.md": "sha256:294257da224fb1588c1f52a33532673744cc9512bb6c5bf3e67963f49df19843",
+    "fixtures/contact-guest.request.json": "sha256:e6d24d8d966ff6b8f587ed3f16d77c016bb3a497e563130c3f2bcbe989cc95b9",
+    "fixtures/withdrawal-account-phone-value.request.json": "sha256:c8eb5ea3200b09feec9d6467cc0e097d47461da9c4e3fbef755eb089db5c88bf",
+    "fixtures/withdrawal-create.response.json": "sha256:36567f347e366dc6a3e577bed33cd2d18b474515e719f90d37b7f87671d6cda5",
+    "fixtures/withdrawal-duplicate.response.json": "sha256:81ac0c7cde0360c34d7e0755deaf2c18ad0fee2343227b0173124814995abd12",
+    "fixtures/withdrawal-email-reconciliation-accepted.request.json": "sha256:0078092833d7363926ab00e2a00abe6fa47cd1ddc3638704c9dba84f3935b490",
+    "fixtures/withdrawal-email-reconciliation-not-accepted.request.json": "sha256:603045f9c671dd5a60f6751dca4abe2473c5d7bdca86fef09dd11f36c464f88a",
+    "fixtures/withdrawal-email-retry-customer.request.json": "sha256:8de236c11db181f83646fe0478a56abf32caed6d836a2ec061619f6b9b123e10",
+    "fixtures/withdrawal-email-retry-internal.request.json": "sha256:aa0e5f118d42b9ad83467b4b90d42703acdb652df241f2bd94c3db1b5452b8c0",
+    "fixtures/withdrawal-email-retry-pending-unattempted.request.json": "sha256:9aeb49283cc91cb3c02e5aeaac41f9136e6aff218545da0ae744c0a5fcbcb7f6",
+    "fixtures/withdrawal-guest-phone-control.invalid.request.json": "sha256:0f3d5a597e15cecf176947fe27d4e41dcdc0c9567386ba702e0ad2eecc50bfe6",
+    "fixtures/withdrawal-guest-phone-empty.request.json": "sha256:736702fc2803b7e36dde9cf170fdad2b2333bbb97204ca635cd8788712da973b",
+    "fixtures/withdrawal-guest-phone-missing.request.json": "sha256:5440458f35343d91de193b9c7d159a1b91c92343f24e88eaa3d9fc55083a8cc4",
+    "fixtures/withdrawal-guest-phone-non-ascii.request.json": "sha256:6f41455c02064624157d0ce535fecae0f9c94678abab85764159bc8d1a72edfc",
+    "fixtures/withdrawal-guest-phone-too-long.invalid.request.json": "sha256:8f7bcf76c84f86e4628876303f7b7db2634abbf4b6e9ea5caabefab2a41c5386",
+    "fixtures/withdrawal-guest-phone-trimmed-max.request.json": "sha256:299a9d81ee5b6c84971e321f52309630fb06f8e07bc72b561d3a83c38597eff9",
+    "fixtures/withdrawal-guest-phone-trimmed.request.json": "sha256:279102c569f59be7d188a8272291c810a78fc0daced7b38a3be2267094d5571a",
+    "fixtures/withdrawal-guest-selected-items.request.json": "sha256:42e53eba003c906d0128d9df5c818b6a57f67bf796585ae572bae27d396d939d",
+    "fixtures/withdrawal-guest-whole-order.request.json": "sha256:c5045f861a1fa03ba915724ceb1654a35dd438f5febff460559e89003193b1fe",
+    "withdrawal.schema.json": "sha256:ee5b708d129de40b4de9410919c71c698c3f4476aee4acb7945be9dea4ef07c2"
+  }
+}

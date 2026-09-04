@@ -17,3 +17,10 @@ src/lib/cms/__fixtures__/provider-v1/
 # MakySto/maky-cms, copied verbatim, digests recorded in manifest.json and re-verified
 # by provider-v2-conformance.test.ts. Reformatting changes the bytes and breaks them.
 src/lib/cms/__fixtures__/provider-v2/
+
+# Vendored Payload Forms contract pack. Authored by MakySto/maky-cms and copied in
+# verbatim; manifest.json records a SHA-256 for every file beside it, and
+# contract-conformance.test.ts recomputes all of them on every run. Reformatting
+# changes the bytes and breaks the digests — which is exactly what this hook did to
+# thirteen vendored CMS fixtures on the first attempt at the same pattern.
+src/lib/forms/__fixtures__/forms-backend-v1/

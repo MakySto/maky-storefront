@@ -7,7 +7,7 @@ import { LegalPage } from "@/ui/components/legal/legal-page";
 export const metadata: Metadata = {
 	title: formatPageTitle("Reklamácie a vrátenie tovaru"),
 	description:
-		"Ako vrátiť tovar (14 dní, 30 dní pre registrovaných zákazníkov) a ako uplatniť reklamáciu v MAKY.STORE — postup, lehoty a kontakt.",
+		"Ako vrátiť tovar (14 dní, 30 dní pre registrovaných zákazníkov), dohodnúť zvoz a uplatniť reklamáciu v MAKY.STORE.",
 };
 
 export default async function Page(props: { params: Promise<{ channel: string }> }) {
@@ -17,22 +17,27 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 		<LegalPage title="Reklamácie a vrátenie tovaru">
 			<h3>Vrátenie tovaru (odstúpenie od zmluvy)</h3>
 			<p>
-				Tovar môžete ako spotrebiteľ vrátiť bez uvedenia dôvodu do 14 dní od prevzatia. Registrovaným
-				zákazníkom, ktorí objednávku vytvorili po prihlásení do svojho zákazníckeho účtu, poskytujeme
-				predĺženú lehotu na vrátenie 30 dní.
+				Ako spotrebiteľ môžete od zmluvy odstúpiť bez uvedenia dôvodu do 14 dní od prevzatia tovaru.
+				Registrovaným zákazníkom, ktorí objednávku vytvorili po prihlásení do svojho zákazníckeho účtu,
+				poskytujeme predĺženú lehotu 30 dní.
 			</p>
 			<p>
-				Odstúpenie od zmluvy môžete uplatniť vyplnením vzorového formulára na stránke „Odstúpenie od zmluvy“,
-				e-mailom na info@maky.store alebo písomne na adresu Stará Vajnorská 11, 831 04 Bratislava.
+				Odstúpenie od zmluvy môžete uplatniť online na stránke „Odstúpenie od zmluvy“, e-mailom na
+				info@maky.store alebo písomne na adresu Stará Vajnorská 11, 831 04 Bratislava.
 			</p>
 			<p>
-				Tovar pošlite späť najneskôr do 14 dní od odstúpenia od zmluvy. Náklady na spätné zaslanie tovaru
-				znáša zákazník.
+				Tovar zatiaľ neposielajte. Ozveme sa vám e-mailom s presnou cenou zvozu a navrhneme termín
+				vyzdvihnutia. Náklady na spätnú prepravu znášate vy; presnú cenu vám oznámime vopred a zvoz objednáme
+				až po vašom výslovnom súhlase.
 			</p>
 			<p>
-				Peniaze vrátime rovnakým spôsobom, akým bola objednávka zaplatená, najneskôr do 14 dní od doručenia
-				oznámenia o odstúpení. Platbu môžeme zadržať, kým nám nebude tovar doručený alebo kým zákazník
-				nepreukáže jeho odoslanie.
+				Ak potrebujete zabezpečiť dopravu vlastným spôsobom, kontaktujte nás pred odoslaním tovaru. Po dohode
+				použite adresu MAKY.STORE s. r. o., Stará Vajnorská 11, 831 04 Bratislava.
+			</p>
+			<p>
+				Platby v rozsahu vášho odstúpenia vám vrátime najneskôr do 14 dní odo dňa, keď nám bolo doručené vaše
+				oznámenie o odstúpení. Vrátime ich rovnakým spôsobom, akým ste platili, ak sa spolu bez ďalších
+				poplatkov nedohodneme inak.
 			</p>
 			<p>
 				Niektorý tovar vrátiť nemožno — napríklad tovar vyrobený na mieru. Podrobnosti nájdete vo Všeobecných
