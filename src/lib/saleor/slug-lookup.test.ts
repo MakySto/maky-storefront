@@ -123,12 +123,17 @@ describe("lookupBySlug", () => {
 			expect(result.ok).toBe(false);
 		});
 
-		it("treats a data-less success as a fault, not a miss", async () => {
-			const run = vi.fn(async () => ({ ok: true, data: null }) as unknown as GraphQLResult<Data>);
+		it("hands a data-less success straight back, unretried", async () => {
+			// `{ok:true, data:null}` is a contract violation, not an answer.
+			// `toOutcome` turns it into an upstream error; asking again would only
+			// risk converting it into an absence on the second attempt.
+			const dataless = { ok: true, data: null } as unknown as GraphQLResult<Data>;
+			const run = vi.fn(async () => dataless);
 
 			const result = await lookupBySlug("de-DE", pick, run);
 
 			expect(run).toHaveBeenCalledTimes(1);
+			expect(result).toBe(dataless);
 		});
 	});
 });

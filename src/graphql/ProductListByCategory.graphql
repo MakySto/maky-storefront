@@ -5,6 +5,8 @@ query ProductListByCategory(
 	$slugLang: LanguageCodeEnum
 	$first: Int
 	$after: String
+	$last: Int
+	$before: String
 	$sortBy: ProductOrder
 	$filter: ProductFilterInput
 ) {
@@ -26,7 +28,15 @@ query ProductListByCategory(
 			url
 			alt
 		}
-		products(first: $first, after: $after, channel: $channel, sortBy: $sortBy, filter: $filter) {
+		products(
+			first: $first
+			after: $after
+			last: $last
+			before: $before
+			channel: $channel
+			sortBy: $sortBy
+			filter: $filter
+		) {
 			edges {
 				node {
 					...ProductListItem
