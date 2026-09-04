@@ -1,12 +1,19 @@
 "use client";
 
 import { Suspense } from "react";
-import { useTranslations } from "next-intl";
-import { FilterBar, ProductGrid, useProductFilters, type ProductCardData } from "@/ui/components/plp";
+import {
+	FilterBar,
+	ListingEmptyState,
+	ProductGrid,
+	useProductFilters,
+	type ProductCardData,
+} from "@/ui/components/plp";
 import { Pagination } from "@/ui/components/pagination";
 
 interface CategoryPageClientProps {
 	products: ProductCardData[];
+	totalCount: number;
+	localeDropped: number;
 	pageInfo: {
 		hasNextPage: boolean;
 		hasPreviousPage: boolean;
@@ -18,14 +25,18 @@ interface CategoryPageClientProps {
 function PaginationSkeleton() {
 	return (
 		<nav className="flex items-center justify-center gap-x-4 px-4 pt-12">
-			<span className="h-10 w-24 animate-pulse rounded-sm bg-surface-muted" />
-			<span className="h-10 w-24 animate-pulse rounded-sm bg-surface-muted" />
+			<span className="bg-surface-muted h-10 w-24 animate-pulse rounded-sm" />
+			<span className="bg-surface-muted h-10 w-24 animate-pulse rounded-sm" />
 		</nav>
 	);
 }
 
-export function CategoryPageClient({ products, pageInfo }: CategoryPageClientProps) {
-	const t = useTranslations("plp");
+export function CategoryPageClient({
+	products,
+	totalCount,
+	localeDropped,
+	pageInfo,
+}: CategoryPageClientProps) {
 	const {
 		filteredProducts,
 		colorOptions,
@@ -68,15 +79,12 @@ export function CategoryPageClient({ products, pageInfo }: CategoryPageClientPro
 					{filteredProducts.length > 0 ? (
 						<ProductGrid products={filteredProducts} />
 					) : (
-						<div className="py-12 text-center">
-							<p className="text-lg text-text-secondary">{t("noProductsMatch")}</p>
-							<button
-								onClick={handleClearFilters}
-								className="mt-4 text-sm font-medium text-text-primary underline underline-offset-4"
-							>
-								{t("clearAllFilters")}
-							</button>
-						</div>
+						<ListingEmptyState
+							totalCount={totalCount}
+							localeDropped={localeDropped}
+							hasActiveFilters={activeFilters.length > 0}
+							onClearFilters={handleClearFilters}
+						/>
 					)}
 					<Suspense fallback={<PaginationSkeleton />}>
 						<Pagination pageInfo={pageInfo} />

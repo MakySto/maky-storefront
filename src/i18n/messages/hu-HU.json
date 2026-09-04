@@ -449,6 +449,8 @@
 	"plp": {
 		"productCount": "{count, plural, one {# termék} other {# termék}}",
 		"noProductsMatch": "Nincs a szűrőknek megfelelő termék.",
+		"listingEmpty": "Itt még nincsenek termékek.",
+		"listingUntranslated": "Ennek a kínálatnak a termékei ezen a nyelven még nem érhetők el.",
 		"clearAllFilters": "Összes szűrő törlése",
 		"clearAll": "Összes törlése",
 		"sort": "Rendezés",

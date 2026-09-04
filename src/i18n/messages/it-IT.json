@@ -449,6 +449,8 @@
 	"plp": {
 		"productCount": "{count, plural, one {# prodotto} other {# prodotti}}",
 		"noProductsMatch": "Nessun prodotto corrisponde ai filtri.",
+		"listingEmpty": "Qui non ci sono ancora prodotti.",
+		"listingUntranslated": "I prodotti di questa selezione non sono ancora disponibili in questa lingua.",
 		"clearAllFilters": "Cancella tutti i filtri",
 		"clearAll": "Cancella tutto",
 		"sort": "Ordina",

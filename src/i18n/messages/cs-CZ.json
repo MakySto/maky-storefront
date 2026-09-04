@@ -449,6 +449,8 @@
 	"plp": {
 		"productCount": "{count, plural, one {# produkt} few {# produkty} other {# produktů}}",
 		"noProductsMatch": "Žádné produkty neodpovídají filtrům.",
+		"listingEmpty": "Zatím zde nejsou žádné produkty.",
+		"listingUntranslated": "Produkty z této nabídky zatím nejsou dostupné v tomto jazyce.",
 		"clearAllFilters": "Zrušit všechny filtry",
 		"clearAll": "Zrušit vše",
 		"sort": "Řadit",

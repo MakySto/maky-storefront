@@ -130,6 +130,8 @@ async function ProductsContent({
 	return (
 		<ProductsPageClient
 			products={productCards}
+			totalCount={products.totalCount ?? 0}
+			localeDropped={localized.dropped}
 			pageInfo={products.pageInfo}
 			resolvedCategories={resolvedCategories}
 		/>

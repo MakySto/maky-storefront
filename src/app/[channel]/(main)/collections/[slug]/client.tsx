@@ -1,11 +1,19 @@
 "use client";
 
 import { Suspense } from "react";
-import { FilterBar, ProductGrid, useProductFilters, type ProductCardData } from "@/ui/components/plp";
+import {
+	FilterBar,
+	ListingEmptyState,
+	ProductGrid,
+	useProductFilters,
+	type ProductCardData,
+} from "@/ui/components/plp";
 import { Pagination } from "@/ui/components/pagination";
 
 interface CollectionPageClientProps {
 	products: ProductCardData[];
+	totalCount: number;
+	localeDropped: number;
 	pageInfo: {
 		hasNextPage: boolean;
 		hasPreviousPage: boolean;
@@ -23,7 +31,12 @@ function PaginationSkeleton() {
 	);
 }
 
-export function CollectionPageClient({ products, pageInfo }: CollectionPageClientProps) {
+export function CollectionPageClient({
+	products,
+	totalCount,
+	localeDropped,
+	pageInfo,
+}: CollectionPageClientProps) {
 	const {
 		filteredProducts,
 		colorOptions,
@@ -66,15 +79,12 @@ export function CollectionPageClient({ products, pageInfo }: CollectionPageClien
 					{filteredProducts.length > 0 ? (
 						<ProductGrid products={filteredProducts} />
 					) : (
-						<div className="py-12 text-center">
-							<p className="text-lg text-muted-foreground">No products match your filters.</p>
-							<button
-								onClick={handleClearFilters}
-								className="mt-4 text-sm font-medium text-foreground underline underline-offset-4"
-							>
-								Clear all filters
-							</button>
-						</div>
+						<ListingEmptyState
+							totalCount={totalCount}
+							localeDropped={localeDropped}
+							hasActiveFilters={activeFilters.length > 0}
+							onClearFilters={handleClearFilters}
+						/>
 					)}
 					<Suspense fallback={<PaginationSkeleton />}>
 						<Pagination pageInfo={pageInfo} />

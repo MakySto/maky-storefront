@@ -206,6 +206,8 @@
 	"plp": {
 		"productCount": "{count, plural, one {# product} other {# products}}",
 		"noProductsMatch": "No products match your filters.",
+		"listingEmpty": "There are no products here yet.",
+		"listingUntranslated": "The products in this listing are not available in this language yet.",
 		"clearAllFilters": "Clear all filters",
 		"clearAll": "Clear all",
 		"sort": "Sort",

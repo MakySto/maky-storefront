@@ -450,6 +450,8 @@
 	"plp": {
 		"productCount": "{count, plural, one {# produkt} few {# produkty} other {# produktov}}",
 		"noProductsMatch": "Žiadne produkty nezodpovedajú filtrom.",
+		"listingEmpty": "Zatiaľ tu nie sú žiadne produkty.",
+		"listingUntranslated": "Produkty z tejto ponuky zatiaľ nie sú dostupné v tomto jazyku.",
 		"clearAllFilters": "Zrušiť všetky filtre",
 		"clearAll": "Zrušiť všetko",
 		"sort": "Zoradiť",

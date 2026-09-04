@@ -224,7 +224,14 @@ async function CollectionProducts({
 		transformToProductCard(product, params.channel, locale),
 	);
 
-	return <CollectionPageClient products={productCards} pageInfo={products.pageInfo} />;
+	return (
+		<CollectionPageClient
+			products={productCards}
+			totalCount={products.totalCount ?? 0}
+			localeDropped={localized.dropped}
+			pageInfo={products.pageInfo}
+		/>
+	);
 }
 
 function PageSkeleton() {

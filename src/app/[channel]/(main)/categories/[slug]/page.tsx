@@ -247,7 +247,14 @@ async function CategoryProducts({
 		transformToProductCard(product, params.channel, locale),
 	);
 
-	return <CategoryPageClient products={productCards} pageInfo={products.pageInfo} />;
+	return (
+		<CategoryPageClient
+			products={productCards}
+			totalCount={products.totalCount ?? 0}
+			localeDropped={localized.dropped}
+			pageInfo={products.pageInfo}
+		/>
+	);
 }
 
 function PageSkeleton() {

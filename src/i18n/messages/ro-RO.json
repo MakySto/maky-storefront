@@ -449,6 +449,8 @@
 	"plp": {
 		"productCount": "{count, plural, one {# produs} few {# produse} other {# produse}}",
 		"noProductsMatch": "Niciun produs nu corespunde filtrelor.",
+		"listingEmpty": "Aici nu există încă produse.",
+		"listingUntranslated": "Produsele din această selecție nu sunt încă disponibile în această limbă.",
 		"clearAllFilters": "Șterge toate filtrele",
 		"clearAll": "Șterge tot",
 		"sort": "Sortare",
