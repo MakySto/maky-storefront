@@ -8,14 +8,14 @@ prvého behu **reálnej** cesty a formát reportu podľa §10.
 
 ## 1. Stav
 
-|                        |                                                                                               |
-| ---------------------- | --------------------------------------------------------------------------------------------- |
-| vetva                  | `claude/sf-b-vehicles-continue-4f53aa`                                                        |
-| základ                 | `27b7088` = **nasadené A** (`MAKY_DEPLOY_META`, BUILD_ID `EeqdrEsFOEh2OMnTDHF03`)             |
-| obsah                  | 11 commitov B (`a4d78cb..667c986`) cherry-picknutých na `27b7088` + 1 nový commit + tento doc |
-| `claude/sf-b-vehicles` | **nedotknutá** na `667c986` (vysadená v inom worktree; force push zakázaný)                   |
-| nasadené               | **nič** — branch-only                                                                         |
-| worktree               | `/opt/storefront/.claude/worktrees/sf-b-vehicles-continue-4f53aa`                             |
+|                        |                                                                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| vetva                  | `claude/sf-b-vehicles-continue-4f53aa`                                                                                |
+| základ                 | `27b7088` = **nasadené A** (`MAKY_DEPLOY_META`, BUILD_ID `EeqdrEsFOEh2OMnTDHF03`)                                     |
+| obsah                  | 11 commitov B (`a4d78cb..667c986`) cherry-picknutých na `27b7088` + 2 nové commity kódu (`b1e0395`, `bdb792b`) + docs |
+| `claude/sf-b-vehicles` | **nedotknutá** na `667c986` (vysadená v inom worktree; force push zakázaný)                                           |
+| nasadené               | **nič** — branch-only                                                                                                 |
+| worktree               | `/opt/storefront/.claude/worktrees/sf-b-vehicles-continue-4f53aa`                                                     |
 
 Rebase bol presne taký, ako bol zmeraný: jediný konflikt `.env.example` (nechané oboje),
 12 i18n katalógov sa zlúčilo automaticky. Overené po rebase:
@@ -26,7 +26,7 @@ Rebase bol presne taký, ako bol zmeraný: jediný konflikt `.env.example` (nech
   a konfigurátor ju prevzal — vidno na screenshotoch;
 - `pnpm generate:all` bežal proti živej **3.23.31**; `tsc` 0.
 
-## 2. Čo sa zmenilo v kóde (jeden commit)
+## 2. Čo sa zmenilo v kóde (dva commity)
 
 **`src/lib/fitment/cart-actions.ts`** volá `addVariantToCart` z
 `src/ui/components/plp/actions.ts` (A). Zmazané: `countLine()`, `addListingItemToCart`,
@@ -48,11 +48,24 @@ rejected / iné             → cart-rejected     („Zostavu sa nepodarilo prid
 `unconfirmed` sa **nikdy** nestane `ok` ani `cart-rejected` — `checkoutLinesAdd` nie je
 idempotentná a `cart-rejected` by pozývalo na druhý klik.
 
+Druhý commit `bdb792b` (z adverzárnej revízie): **pred-mutačné** zlyhanie
+`verifyPurchasable` (katalóg sa nedal opýtať, nič sa neposlalo) už **nie je**
+`lookup-failed` — bola to tá istá veta „skontrolujte košík" pre stav, kde sa košík
+preukázateľne nezmenil a druhý klik je bezpečný. Je to nový dôvod:
+
+```
+verifyPurchasable → lookup-failed  → catalogue-unavailable  („Dostupnosť zostavy sa teraz nepodarilo overiť. Skúste to prosím znova.")
+```
+
+`configurator.errorCatalogueUnavailable` pridaný do všetkých 12 katalógov (166 B kľúčov,
+0 drift). Akcia navyše sama odmietne `productKind !== roof-rack-set` (`not-verified`) —
+offer vrstva to filtruje, ale akcia je POST endpoint.
+
 **`src/ui/components/vehicle/configurator-results.tsx`**: `next/image` →
 `ResilientProductImage`; typ `AddSetFailure` sa importuje z `cart-result.ts`.
 
 Testy: `cart-result.test.ts` (8, čistý mapper, vyčerpávajúco cez celý union) a
-`cart-actions.composition.test.ts` (15, mocky provider/garage/offers/plp-actions,
+`cart-actions.composition.test.ts` (16, mocky provider/garage/offers/plp-actions,
 **iba syntetické identity**): hand-off je volaný raz s `{channel, variantId, quantity: 1}`,
 `unconfirmed → lookup-failed` aj na zloženej úrovni, každá brána pred košíkom zastaví
 volanie. Pôvodný `cart-actions.test.ts` (demo interlock nad reálnou fixture, bez mockov)
@@ -79,6 +92,11 @@ Dočasný harness (vitest, in-memory cookie jar namiesto `next/headers`, po behu
 
 Vznikol **jeden anonymný checkout** s jedným riadkom (id `Q2hlY2tvdXQ6OWFhZWU2MTMtZDk3OC00YWQ0LTk1ZGQtMGY0ZjFlNDc0ODA3`).
 **Objednávka nevznikla.** Žiadny iný Saleor zápis.
+
+Známy zvyšok nepresnosti (vedome ponechaný): A-ovský klasifikátor dáva `INSUFFICIENT_STOCK`
+do `unavailable`, takže vypredanie zistené až mutáciou znie „už nie je v ponuke", kým to
+isté zistené o krok skôr znie „Vypredané". Bez zmeny A-ovského kódu (§10) sa to rozlíšiť
+nedá; na sale-to-order katalógu bez skladu je to prakticky nedosiahnuteľné.
 
 Dve poctivé poznámky:
 
@@ -121,6 +139,11 @@ Nálezy z prehliadača:
 
 - **React #418 (hydration mismatch)** na každej stránke — **aj na živej produkcii
   `maky.store/sk`** (a #419 na PLP). Nie je z B. Patrí A; nezasahoval som.
+- Adverzárna revízia (5 šošoviek + 2 refutéri na nález) našla okrem `lookup-failed`
+  dvojznačnosti iba pre-existujúce veci: en-CA parita (známe, §6.8 predchádzajúceho
+  handoffu) a komentár pri `addListingItemToCart` v A-ovskom `plp/actions.ts`, ktorý
+  tvrdí, že ho B ešte volá — už nevolá, wrapper je bez volajúceho. **Súbor A, nechal som
+  ho** (§10); follow-up pre A: zmazať wrapper aj komentár.
 - Na 360 px karta v garáži skracuje názov na „Škoda O…", lebo o šírku súperí chip
   „Aktívne vozidlo" a ikona odstránenia. Čitateľné, ale kozmetika B na neskôr
   (`garage-list.tsx`).
@@ -128,20 +151,23 @@ Nálezy z prehliadača:
   nemajú fotku, takže komponent sa nenamountoval. Renderuje sa iba v reálnej ceste, ktorá
   v prehliadači bez CFM snapshotu neexistuje.
 
-## 5. Brány (nad `b1e0395`, kód; doc commit brány nemení)
+## 5. Brány (nad `bdb792b`, posledný commit kódu; docs commit nad ním brány nemení)
 
 ```
 tsc          0
 lint         0 errors, 6 warnings — všetky mimo B (checkout hooky, generované gql, header)
 i18n:check   OK (12 locales)
-test:run     91 súborov, 1376 testov, 0 fail
-build        exit 0, BUILD_ID hYuxanKs3zJHTJxMT6Mjk
+test:run     91 súborov, 1377 testov, 0 fail
+build        exit 0, BUILD_ID Bbd5sHP4XHnOGV56SpX1E (lokálny, nenasadený)
 ```
+
+Prehliadač zo §4 bol zopakovaný nad týmto buildom (desktop + 360 px, rovnaký scenár,
+rovnaký výsledok).
 
 ## 6. Report (§10)
 
 ```
-HEAD / remote                    b1e0395 + docs (ls-remote po pushi, viď git)
+HEAD / remote                    kód bdb792b, docs commit nad ním = tip vetvy (over cez git ls-remote)
 GUEST_GARAGE_FUNCTIONAL         = YES  [FIXTURE]  (prehliadač, prod build, desktop + 360)
 CONFIGURATOR_FUNCTIONAL         = YES  [FIXTURE]  (prehliadač, prod build, desktop + 360)
 PRODUCT_APPLICATIONS_FUNCTIONAL = YES  [FIXTURE]  (testy; PDP integrácia je B3.4, v prehliadači neoverené)
