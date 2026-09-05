@@ -199,6 +199,7 @@
 			"productFallback": "Termék",
 			"discount": "Kedvezmény",
 			"total": "Fizetendő összeg",
+			"vatIncluded": "ebből áfa",
 			"contact": "Kapcsolat",
 			"shipTo": "Szállítás ide",
 			"method": "Szállítás",

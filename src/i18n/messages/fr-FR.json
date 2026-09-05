@@ -199,6 +199,7 @@
 			"productFallback": "Produit",
 			"discount": "Remise",
 			"total": "Montant total",
+			"vatIncluded": "dont TVA",
 			"contact": "Contact",
 			"shipTo": "Livrer à",
 			"method": "Livraison",

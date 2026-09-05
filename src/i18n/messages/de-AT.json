@@ -199,6 +199,7 @@
 			"productFallback": "Produkt",
 			"discount": "Rabatt",
 			"total": "Gesamtbetrag",
+			"vatIncluded": "davon MwSt.",
 			"contact": "Kontakt",
 			"shipTo": "Lieferung an",
 			"method": "Versand",

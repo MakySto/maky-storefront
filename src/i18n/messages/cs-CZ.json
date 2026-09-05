@@ -199,6 +199,7 @@
 			"productFallback": "Produkt",
 			"discount": "Sleva",
 			"total": "Celková cena",
+			"vatIncluded": "z toho DPH",
 			"contact": "Kontakt",
 			"shipTo": "Doručit na",
 			"method": "Doprava",

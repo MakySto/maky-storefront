@@ -199,6 +199,7 @@
 			"productFallback": "Produs",
 			"discount": "Reducere",
 			"total": "Total de plată",
+			"vatIncluded": "din care TVA",
 			"contact": "Contact",
 			"shipTo": "Livrare la",
 			"method": "Livrare",
