@@ -177,7 +177,6 @@
 		"bodyCoupe": "Coupé",
 		"bodyConvertible": "Cabrio",
 		"bodyPickup": "Pick-up",
-		"fixtureNotice": "Dati di prova — non si tratta di compatibilità verificata.",
 		"conditionTorqueCheck": "Dopo i primi 100 km serra i piedini alla coppia prescritta.",
 		"conditionRailSpacing": "Prima del montaggio misura la distanza tra i railing.",
 		"conditionPanoramicRoof": "Con il tetto panoramico la portata è ridotta.",
@@ -204,7 +203,11 @@
 			"chooseDoors": "Quante porte ha il tuo veicolo?",
 			"roofTypeHelp": "Il tipo di tetto determina quali piedini sono compatibili con il veicolo.",
 			"summary": "{make} {model} {generation}, {year}"
-		}
+		},
+		"verdictQualified": "Compatibile con condizioni",
+		"verdictQualifiedDetail": "Questo set è verificato per il tuo veicolo, ma è legato a una condizione di montaggio che al momento non riusciamo a indicarti in modo comprensibile.",
+		"conditionsIncomplete": "{count, plural, one {Questo set è soggetto a # condizione che non possiamo ancora indicare nella tua lingua.} other {Questo set è soggetto a # condizioni che non possiamo ancora indicare nella tua lingua.}}",
+		"demoNotice": "Anteprima di prova. Si tratta di dati simulati, non di un'offerta reale né di una compatibilità verificata."
 	},
 	"cart": {
 		"yourCart": "Il tuo carrello",
@@ -634,6 +637,25 @@
 		"facetAero": "aero",
 		"facetSquare": "quadrato",
 		"facetAluminium": "alluminio",
-		"facetSteel": "acciaio"
+		"facetSteel": "acciaio",
+		"yourVehicle": "Il tuo veicolo",
+		"noVerifiedSet": "Per questo veicolo non abbiamo un set verificato",
+		"noVerifiedSetDetail": "Alcuni dati esistono, ma non sono ancora verificati. Non significa che non ci sia nulla di compatibile con il tuo veicolo.",
+		"noOffersDetail": "Prova a cambiare veicolo oppure chiedici informazioni sul set.",
+		"cardVerifiedFit": "Verificato per il tuo veicolo",
+		"cardQualifiedFit": "Verificato con condizioni",
+		"cardConditionsIncomplete": "Questo set è soggetto a una condizione di montaggio che non possiamo ancora indicarti nella tua lingua. Prima del montaggio contattaci.",
+		"priceUnavailable": "Prezzo non disponibile",
+		"demoBadge": "Demo",
+		"demoNoPurchase": "Nella demo non si può acquistare",
+		"demoPlaceholder": "Anteprima di prova",
+		"errorSimulation": "Questa è un'anteprima di prova, l'acquisto non è possibile.",
+		"errorProviderUnavailable": "La verifica della compatibilità non è momentaneamente disponibile. Riprova più tardi.",
+		"errorVehicleChanged": "Il veicolo selezionato è cambiato. Verifica di nuovo la compatibilità.",
+		"errorNotVerified": "Per il veicolo attualmente selezionato questo set non è verificato.",
+		"errorNotAvailable": "Questo set non è più a catalogo.",
+		"errorCartRejected": "Non è stato possibile aggiungere il set al carrello.",
+		"errorLookupFailed": "Non possiamo confermare se il set è stato aggiunto. Controlla il carrello.",
+		"errorGeneric": "Non è stato possibile aggiungere il set al carrello."
 	}
 }

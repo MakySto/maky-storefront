@@ -177,7 +177,6 @@
 		"bodyCoupe": "Kupé",
 		"bodyConvertible": "Kabriolet",
 		"bodyPickup": "Pick-up",
-		"fixtureNotice": "Testovacie údaje — nejde o overenú kompatibilitu.",
 		"conditionTorqueCheck": "Po prvých 100 km dotiahnite pätky predpísaným momentom.",
 		"conditionRailSpacing": "Pred montážou odmerajte rozstup pozdĺžnikov.",
 		"conditionPanoramicRoof": "Pri panoramatickej streche je nosnosť znížená.",
@@ -204,7 +203,11 @@
 			"chooseDoors": "Koľko dverí má vaše vozidlo?",
 			"roofTypeHelp": "Typ strechy rozhoduje o tom, ktoré pätky na vozidlo pasujú.",
 			"summary": "{make} {model} {generation}, {year}"
-		}
+		},
+		"verdictQualified": "Pasuje s podmienkami",
+		"verdictQualifiedDetail": "Táto zostava je pre vaše vozidlo overená, ale viaže sa na montážnu podmienku, ktorú vám teraz nevieme zrozumiteľne uviesť.",
+		"conditionsIncomplete": "{count, plural, one {K tejto zostave sa viaže # podmienka, ktorú zatiaľ nevieme uviesť vo vašom jazyku.} few {K tejto zostave sa viažu # podmienky, ktoré zatiaľ nevieme uviesť vo vašom jazyku.} other {K tejto zostave sa viaže # podmienok, ktoré zatiaľ nevieme uviesť vo vašom jazyku.}}",
+		"demoNotice": "Testovacia ukážka. Ide o simulované údaje, nie o skutočnú ponuku ani o overenú kompatibilitu."
 	},
 	"cart": {
 		"yourCart": "Váš košík",
@@ -634,6 +637,25 @@
 		"facetAero": "aero",
 		"facetSquare": "štvorhranný",
 		"facetAluminium": "hliník",
-		"facetSteel": "oceľ"
+		"facetSteel": "oceľ",
+		"yourVehicle": "Vaše vozidlo",
+		"noVerifiedSet": "Pre toto vozidlo nemáme overenú zostavu",
+		"noVerifiedSetDetail": "Nejaké záznamy existujú, ale zatiaľ nie sú overené. Neznamená to, že na vaše vozidlo nič nepasuje.",
+		"noOffersDetail": "Skúste zmeniť vozidlo alebo sa na zostavu spýtajte nás.",
+		"cardVerifiedFit": "Overené pre vaše vozidlo",
+		"cardQualifiedFit": "Overené s podmienkami",
+		"cardConditionsIncomplete": "K tejto zostave sa viaže podmienka montáže, ktorú vám zatiaľ nevieme uviesť vo vašom jazyku. Pred montážou nás prosím kontaktujte.",
+		"priceUnavailable": "Cena nie je dostupná",
+		"demoBadge": "Ukážka",
+		"demoNoPurchase": "V ukážke sa nedá nakupovať",
+		"demoPlaceholder": "Testovacia ukážka",
+		"errorSimulation": "Toto je testovacia ukážka, nákup nie je možný.",
+		"errorProviderUnavailable": "Overenie kompatibility je teraz nedostupné. Skúste to prosím neskôr.",
+		"errorVehicleChanged": "Zmenilo sa vybrané vozidlo. Overte prosím kompatibilitu znova.",
+		"errorNotVerified": "Pre aktuálne vybrané vozidlo nie je táto zostava overená.",
+		"errorNotAvailable": "Táto zostava už nie je v ponuke.",
+		"errorCartRejected": "Zostavu sa nepodarilo pridať do košíka.",
+		"errorLookupFailed": "Nevieme potvrdiť, či sa zostava pridala. Skontrolujte prosím košík.",
+		"errorGeneric": "Zostavu sa nepodarilo pridať do košíka."
 	}
 }

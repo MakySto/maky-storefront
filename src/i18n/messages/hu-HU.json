@@ -177,7 +177,6 @@
 		"bodyCoupe": "Kupé",
 		"bodyConvertible": "Kabrió",
 		"bodyPickup": "Pick-up",
-		"fixtureNotice": "Tesztadatok — ez nem ellenőrzött kompatibilitás.",
 		"conditionTorqueCheck": "Az első 100 km után húzza meg a talpakat az előírt nyomatékkal.",
 		"conditionRailSpacing": "Szerelés előtt mérje meg a tetősínek távolságát.",
 		"conditionPanoramicRoof": "Panorámatető esetén a terhelhetőség kisebb.",
@@ -204,7 +203,11 @@
 			"chooseDoors": "Hány ajtós a járműve?",
 			"roofTypeHelp": "A tetőtípus dönti el, hogy mely talpak illenek a járműre.",
 			"summary": "{make} {model} {generation}, {year}"
-		}
+		},
+		"verdictQualified": "Feltételekkel illik az Ön járművére",
+		"verdictQualifiedDetail": "Ezt a szettet ellenőriztük az Ön járművéhez, de tartozik hozzá egy szerelési feltétel, amelyet most nem tudunk érthetően megfogalmazni.",
+		"conditionsIncomplete": "{count, plural, one {Ehhez a szetthez # szerelési feltétel tartozik, amelyet egyelőre nem tudunk megjeleníteni az Ön nyelvén.} other {Ehhez a szetthez # szerelési feltétel tartozik, amelyeket egyelőre nem tudunk megjeleníteni az Ön nyelvén.}}",
+		"demoNotice": "Tesztbemutató. Szimulált adatok — nem valós ajánlat és nem ellenőrzött kompatibilitás."
 	},
 	"cart": {
 		"yourCart": "Az Ön kosara",
@@ -634,6 +637,25 @@
 		"facetAero": "aero",
 		"facetSquare": "négyszögletű",
 		"facetAluminium": "alumínium",
-		"facetSteel": "acél"
+		"facetSteel": "acél",
+		"yourVehicle": "Az Ön járműve",
+		"noVerifiedSet": "Ehhez a járműhöz nincs ellenőrzött szettünk",
+		"noVerifiedSetDetail": "Vannak adataink, de egyelőre nincsenek ellenőrizve. Ez nem azt jelenti, hogy semmi nem illik az Ön járművére.",
+		"noOffersDetail": "Próbáljon másik járművet választani, vagy kérdezzen minket a szettről.",
+		"cardVerifiedFit": "Ellenőrizve az Ön járművéhez",
+		"cardQualifiedFit": "Ellenőrizve, feltételekkel",
+		"cardConditionsIncomplete": "Ehhez a szetthez szerelési feltétel tartozik, amelyet egyelőre nem tudunk megjeleníteni az Ön nyelvén. Szerelés előtt kérjük, vegye fel velünk a kapcsolatot.",
+		"priceUnavailable": "Az ár nem érhető el",
+		"demoBadge": "Bemutató",
+		"demoNoPurchase": "A bemutatóban nem lehet vásárolni",
+		"demoPlaceholder": "Tesztbemutató",
+		"errorSimulation": "Ez egy tesztbemutató, vásárlásra nincs lehetőség.",
+		"errorProviderUnavailable": "A kompatibilitás ellenőrzése jelenleg nem érhető el. Kérjük, próbálja meg később.",
+		"errorVehicleChanged": "A kiválasztott jármű megváltozott. Kérjük, ellenőrizze újra a kompatibilitást.",
+		"errorNotVerified": "Ez a szett nincs ellenőrizve a jelenleg kiválasztott járműhöz.",
+		"errorNotAvailable": "Ez a szett már nem szerepel a kínálatunkban.",
+		"errorCartRejected": "A szettet nem sikerült kosárba helyezni.",
+		"errorLookupFailed": "Nem tudjuk megerősíteni, hogy a szett bekerült-e a kosárba. Kérjük, ellenőrizze a kosarat.",
+		"errorGeneric": "A szettet nem sikerült kosárba helyezni."
 	}
 }
