@@ -1,5 +1,9 @@
 # Vlákno B — pokračovanie (handoff pre nové Claude Code vlákno)
 
+> **Nadväzujúci stav (po rebase na nasadené A, hand-off na typovaný add-to-cart, prvý beh
+> reálnej cesty): `docs/design/lane-b-handoff-20260906.md`.** Sekcie §5 a §6 tu ostávajú
+> platné; §1 a §8 krok 5–6 sú splnené.
+
 Vytvorené 2026-09-05. Vlož celý tento dokument ako prvú správu do nového vlákna.
 Odpovedaj po slovensky.
 
