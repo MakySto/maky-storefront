@@ -122,10 +122,42 @@ export function readBackVerdict(input: {
 }
 
 /**
- * How long to keep asking before admitting we do not know, in milliseconds.
+ * How long to wait between read-backs, in milliseconds.
  *
  * Bounded on purpose. Saleor may commit the lost write after we have stopped
  * looking, and no schedule can rule that out — so the deadline exists to end
  * the *waiting*, never to convert the uncertainty into a verdict.
  */
 export const READ_BACK_DELAYS_MS: readonly number[] = [250, 750];
+
+/**
+ * The wall-clock ceiling on the whole read-back, in milliseconds.
+ *
+ * Counting attempts is not enough to bound this. A read-back is `CheckoutFind`,
+ * a *query*, so it keeps the transport's retry budget: three attempts with
+ * exponential backoff, up to ~7 s inside a single read while Saleor is
+ * unreachable — and every request also waits on a process-wide queue of three
+ * with a 200 ms floor. Three attempts could therefore run past twenty seconds
+ * with a shopper watching a spinner.
+ *
+ * So the schedule above says how patient to be, and this says when to stop
+ * regardless. Whichever runs out first ends the waiting; neither ends it with a
+ * verdict.
+ */
+export const READ_BACK_BUDGET_MS = 2_500;
+
+/**
+ * Whether there is time for another read after waiting `delayMs`.
+ *
+ * Pure, so the budget rule is testable without a clock: callers pass the
+ * elapsed time rather than reading one.
+ */
+export function hasTimeForAnotherRead(input: {
+	elapsedMs: number;
+	delayMs: number | undefined;
+	budgetMs?: number;
+}): boolean {
+	const { elapsedMs, delayMs, budgetMs = READ_BACK_BUDGET_MS } = input;
+	if (delayMs === undefined) return false; // the schedule is spent
+	return elapsedMs + delayMs < budgetMs;
+}

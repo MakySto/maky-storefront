@@ -8,6 +8,7 @@ import * as Checkout from "@/lib/checkout";
 import { QUANTITY_FALLBACK_MAX } from "@/ui/components/ui/quantity-stepper";
 import {
 	classifyCheckoutErrors,
+	hasTimeForAnotherRead,
 	readBackVerdict,
 	READ_BACK_DELAYS_MS,
 	type AddToCartResult,
@@ -38,6 +39,21 @@ export async function addVariantToCart(input: {
 		return { status: "rejected", reason: "invalid", message: "channel and variantId are required" };
 	}
 
+	// Decode ONCE, and here, where a failure is still unambiguously a refusal.
+	// `variantId` arrives from a hidden input, so it is attacker-shaped: on a
+	// malformed escape `decodeURIComponent` throws `URIError`. That used to happen
+	// twice, both times in the wrong place — inside the checkout block, where it
+	// was reported as "could not create a checkout", and inside the post-send
+	// block at the mutation's argument list, where it was routed into `reconcile`
+	// and so described as a request that might be in flight. Nothing had been sent
+	// in either case.
+	let decodedVariantId: string;
+	try {
+		decodedVariantId = decodeURIComponent(variantId);
+	} catch {
+		return { status: "rejected", reason: "invalid", message: "variantId is not a valid identifier" };
+	}
+
 	// Quantity is user-controlled on both call sites. Clamp rather than trust.
 	const ceiling =
 		Number.isFinite(input.maxQuantity) && (input.maxQuantity ?? 0) > 0
@@ -61,7 +77,7 @@ export async function addVariantToCart(input: {
 		checkoutId = checkout.id;
 		// Recorded so an unclear result can be settled by READING rather than by
 		// sending the write again.
-		quantityBefore = quantityOfVariant(checkout, variantId);
+		quantityBefore = quantityOfVariant(checkout, decodedVariantId);
 	} catch (error) {
 		// Still before the mutation, so nothing can have been written.
 		return {
@@ -75,14 +91,14 @@ export async function addVariantToCart(input: {
 	// have reached Saleor.
 	try {
 		const result = await executeAuthenticatedGraphQL(CheckoutAddLineDocument, {
-			variables: { id: checkoutId, productVariantId: decodeURIComponent(variantId), quantity },
+			variables: { id: checkoutId, productVariantId: decodedVariantId, quantity },
 			cache: "no-cache",
 		});
 
 		if (!result.ok) {
 			console.error("[cart] add-to-cart transport failure:", result.error.message);
 			revalidatePath("/cart");
-			return reconcile(checkoutId, variantId, quantityBefore, quantity, result.error.message);
+			return reconcile(checkoutId, decodedVariantId, quantityBefore, quantity, result.error.message);
 		}
 
 		const payload = result.data.checkoutLinesAdd;
@@ -111,7 +127,7 @@ export async function addVariantToCart(input: {
 		revalidatePath("/cart");
 		return reconcile(
 			checkoutId,
-			variantId,
+			decodedVariantId,
 			quantityBefore,
 			quantity,
 			error instanceof Error ? error.message : "unknown error",
@@ -121,10 +137,10 @@ export async function addVariantToCart(input: {
 
 type LinesHolder = { lines?: readonly { quantity: number; variant?: { id?: string } | null }[] | null };
 
+/** `variantId` must already be decoded — see the note in `addVariantToCart`. */
 function quantityOfVariant(checkout: LinesHolder | null | undefined, variantId: string): number {
-	const decoded = decodeURIComponent(variantId);
 	return (checkout?.lines ?? [])
-		.filter((line) => line.variant?.id === decoded)
+		.filter((line) => line.variant?.id === variantId)
 		.reduce((total, line) => total + line.quantity, 0);
 }
 
@@ -153,6 +169,8 @@ async function reconcile(
 	quantityRequested: number,
 	message: string,
 ): Promise<AddToCartResult> {
+	const startedAt = Date.now();
+
 	for (let attempt = 0; ; attempt++) {
 		const after = await readQuantity(checkoutId, variantId);
 		const verdict = readBackVerdict({ before: quantityBefore, requested: quantityRequested, after });
@@ -168,9 +186,16 @@ async function reconcile(
 		if (verdict === "partial") return { status: "unconfirmed", message };
 
 		// `unchanged` or `unreadable`. Neither is a failed write. Ask again while
-		// the budget lasts, then stop asking — and say so honestly.
-		if (attempt >= READ_BACK_DELAYS_MS.length) return { status: "unconfirmed", message };
-		await sleep(READ_BACK_DELAYS_MS[attempt]);
+		// both budgets last, then stop asking — and say so honestly.
+		//
+		// `noUncheckedIndexedAccess` is off, so this reads as `number` while at
+		// runtime it becomes `undefined` once the schedule is spent. That is exactly
+		// the case `hasTimeForAnotherRead` refuses, which is what ends the loop.
+		const delayMs = READ_BACK_DELAYS_MS[attempt];
+		if (!hasTimeForAnotherRead({ elapsedMs: Date.now() - startedAt, delayMs })) {
+			return { status: "unconfirmed", message };
+		}
+		await sleep(delayMs);
 	}
 }
 

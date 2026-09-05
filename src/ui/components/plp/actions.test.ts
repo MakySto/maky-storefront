@@ -15,7 +15,7 @@ vi.mock("@/lib/checkout", () => ({ findOrCreate, find, getIdFromCookies, saveIdT
 vi.mock("next/cache", () => ({ revalidatePath }));
 
 import { addVariantToCart } from "./actions";
-import { READ_BACK_DELAYS_MS } from "./add-to-cart-result";
+import { READ_BACK_BUDGET_MS, READ_BACK_DELAYS_MS } from "./add-to-cart-result";
 
 /**
  * Saleor is mocked entirely and deliberately: this asserts how the action reads
@@ -134,6 +134,20 @@ describe("addVariantToCart", () => {
 		expect(executeAuthenticatedGraphQL).not.toHaveBeenCalled();
 	});
 
+	it("rejects a malformed variant id cleanly, without reaching Saleor", async () => {
+		// `variantId` comes from a hidden input, so it is attacker-shaped, and
+		// `decodeURIComponent("%")` throws. The decode used to happen twice in the
+		// wrong places: once inside the checkout block, where it was reported as
+		// "could not create a checkout", and once in the mutation's argument list
+		// inside the post-send block, where it was routed into `reconcile` and so
+		// described as a request that might be in flight. Nothing had been sent.
+		const result = await settle(addVariantToCart({ ...input, variantId: "%" }));
+
+		expect(result).toMatchObject({ status: "rejected", reason: "invalid" });
+		expect(executeAuthenticatedGraphQL).not.toHaveBeenCalled();
+		expect(findOrCreate).not.toHaveBeenCalled();
+	});
+
 	it("rejects a missing variant without touching Saleor", async () => {
 		expect(await addVariantToCart({ ...input, variantId: "" })).toMatchObject({
 			status: "rejected",
@@ -216,6 +230,24 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 
 		expect(result.status).toBe("unconfirmed");
 		expect(find).toHaveBeenCalledTimes(READ_BACK_DELAYS_MS.length + 1);
+	});
+
+	it("stops re-reading once the wall clock is spent, not just the attempt count", async () => {
+		// A read-back is a query, so it keeps the transport's own retry budget and a
+		// single one can take seconds against an unwell Saleor. Bounding attempts
+		// alone would leave a shopper waiting far longer than the schedule suggests.
+		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
+		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		find.mockImplementation(async () => {
+			// Each read burns the entire allowance on its own.
+			vi.advanceTimersByTime(READ_BACK_BUDGET_MS);
+			return { ...CHECKOUT, lines: [] };
+		});
+
+		const result = await settle(addVariantToCart(input));
+
+		expect(result.status).toBe("unconfirmed");
+		expect(find).toHaveBeenCalledTimes(1);
 	});
 
 	it("counts from the quantity that was already in the cart", async () => {

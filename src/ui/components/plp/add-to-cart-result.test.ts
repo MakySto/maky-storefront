@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { classifyCheckoutErrors, READ_BACK_DELAYS_MS, readBackVerdict } from "./add-to-cart-result";
+import {
+	classifyCheckoutErrors,
+	hasTimeForAnotherRead,
+	READ_BACK_BUDGET_MS,
+	READ_BACK_DELAYS_MS,
+	readBackVerdict,
+} from "./add-to-cart-result";
 
 /**
  * `checkoutLinesAdd` answers HTTP 200 with a populated `errors` array when it
@@ -103,11 +109,47 @@ describe("readBackVerdict", () => {
 		expect(readBackVerdict({ before: 0, requested: 1, after: null })).toBe("unreadable");
 	});
 
-	it("keeps the retry budget bounded and non-empty", () => {
+	it("keeps the retry schedule bounded and non-empty", () => {
 		// Bounded so a server action cannot hang; non-empty so a late commit has at
 		// least one chance to be seen after the first read.
 		expect(READ_BACK_DELAYS_MS.length).toBeGreaterThan(0);
-		expect(READ_BACK_DELAYS_MS.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(3000);
 		expect(READ_BACK_DELAYS_MS.every((ms) => ms > 0)).toBe(true);
+		expect(READ_BACK_DELAYS_MS.reduce((a, b) => a + b, 0)).toBeLessThan(READ_BACK_BUDGET_MS);
+	});
+});
+
+/**
+ * The second bound, and the one that actually binds when Saleor is unwell.
+ *
+ * Counting attempts does not limit this: a read-back is a *query*, so it keeps
+ * the transport's own retry budget — three attempts with exponential backoff,
+ * up to ~7 s inside one read — on top of a process-wide request queue. Three
+ * attempts could run past twenty seconds with a shopper watching a spinner.
+ */
+describe("hasTimeForAnotherRead", () => {
+	it("allows another read while the budget comfortably covers the wait", () => {
+		expect(hasTimeForAnotherRead({ elapsedMs: 0, delayMs: 250, budgetMs: 2500 })).toBe(true);
+	});
+
+	it("refuses when the wait would reach the deadline", () => {
+		expect(hasTimeForAnotherRead({ elapsedMs: 2000, delayMs: 500, budgetMs: 2500 })).toBe(false);
+	});
+
+	it("refuses once a single slow read has already spent the budget", () => {
+		// One `CheckoutFind` against an unreachable Saleor can burn the whole
+		// allowance on its own. Piling more reads on top helps nobody.
+		expect(hasTimeForAnotherRead({ elapsedMs: 7000, delayMs: 250, budgetMs: 2500 })).toBe(false);
+	});
+
+	it("refuses when the schedule itself is spent", () => {
+		// Past the end of the array. `noUncheckedIndexedAccess` is off, so the
+		// caller's type says `number` while the value is `undefined` — which is
+		// precisely why this arm exists.
+		expect(hasTimeForAnotherRead({ elapsedMs: 0, delayMs: undefined, budgetMs: 2500 })).toBe(false);
+	});
+
+	it("defaults to the shipped budget", () => {
+		expect(hasTimeForAnotherRead({ elapsedMs: READ_BACK_BUDGET_MS, delayMs: 1 })).toBe(false);
+		expect(hasTimeForAnotherRead({ elapsedMs: 0, delayMs: 1 })).toBe(true);
 	});
 });
