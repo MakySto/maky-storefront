@@ -144,10 +144,13 @@ async function ProductsContent({
 	);
 
 	// Build resolved categories array for the client (for active filter display)
+	// A category with no name for this locale still filters — it just gets no
+	// chip, because the only name available would be Slovak. See
+	// resolveCategorySlugsToIds.
 	const resolvedCategories = categorySlugs
 		.map((slug) => {
 			const cat = categoryMap.get(slug);
-			return cat ? { slug, id: cat.id, name: cat.name } : null;
+			return cat && cat.name ? { slug, id: cat.id, name: cat.name } : null;
 		})
 		.filter(Boolean) as { slug: string; id: string; name: string }[];
 
