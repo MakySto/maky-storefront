@@ -1,8 +1,11 @@
 # Category slugs with a per-channel product count, so the sitemap can leave out
-# the empty ones. Twelve of the thirty categories on this catalogue currently
-# hold no products, including four that sit in the main navigation.
-query SitemapCategories($channel: String!, $first: Int!) {
-	categories(first: $first) {
+# the empty ones. Eleven of the thirty categories on this catalogue currently
+# hold no products in sk-eur, `stresne-nosice` among them.
+#
+# Paginated for the same reason the product query is: a fixed `first` with no
+# `pageInfo` cannot even tell that it truncated.
+query SitemapCategories($channel: String!, $first: Int!, $after: String) {
+	categories(first: $first, after: $after) {
 		edges {
 			node {
 				slug
@@ -10,6 +13,10 @@ query SitemapCategories($channel: String!, $first: Int!) {
 					totalCount
 				}
 			}
+		}
+		pageInfo {
+			hasNextPage
+			endCursor
 		}
 	}
 }

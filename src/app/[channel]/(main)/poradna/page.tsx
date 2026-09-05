@@ -17,11 +17,12 @@ import { PoradnaBootstrap } from "@/ui/components/cms/poradna-bootstrap";
  * matcher, so this folder takes precedence — but that is worth stating, because the
  * catch-all is untouched and would silently take the URL back if this route were removed.
  *
- * ## Not in the navigation or the sitemap yet
+ * ## In the sitemap; still not in the navigation
  *
- * Deliberately. Until a real `poradna` document is published in Payload, a nav link or a
- * sitemap entry would advertise a page whose only content is its own fallback. The
- * cutover step that publishes the document is where those belong.
+ * The condition this note originally set — "until a real `poradna` document is published
+ * in Payload" — is met: /sk/poradna serves that document, so it is in SK_ONLY_PATHS. It
+ * had been live, HTTP 200 and `index, follow`, while orphaned from the sitemap. A nav
+ * link is a separate, editorial decision and is still outstanding.
  *
  * No `CompanyDetails` here: CLAUDE.md §9 puts the statutory identifiers on `/kontakt`,
  * `/obchodne-podmienky` and `/reklamacie-a-vratenie`, and Poradňa is not one of them.

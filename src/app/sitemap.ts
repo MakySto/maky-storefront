@@ -19,9 +19,9 @@ import { SitemapProductsDocument, SitemapCategoriesDocument } from "@/gql/graphq
  */
 
 /**
- * The market whose Slovak legal pages exist. The seven routes below call
- * notFound() for every other channel, so they belong to `sk` alone until each
- * market has its own translated set.
+ * The market whose Slovak-only static routes exist. They call notFound() for
+ * every other channel, so they belong to `sk` alone until each market has its
+ * own translated set.
  */
 const SK_LEGAL_MARKET = "sk";
 
@@ -37,6 +37,12 @@ const SK_ONLY_PATHS = [
 	"/doprava-a-platba",
 	"/kontakt",
 	"/o-nas",
+	// Held back until the Payload document existed, per the note in
+	// poradna/page.tsx: a sitemap entry for a page serving only its own fallback
+	// advertises nothing. That document is published — /sk/poradna answers 200
+	// with "Ako vybrať strešný nosič" — so the condition it named is met, and the
+	// page was otherwise live, indexable and orphaned from the sitemap.
+	"/poradna",
 ];
 
 /** Re-read the catalogue at most hourly; a sitemap is not a live view. */
@@ -47,24 +53,9 @@ interface ProductEntry {
 	updatedAt: string | null;
 }
 
-/**
- * One page of the connection. Split out on purpose: with the cursor as a
- * parameter TypeScript has a declared type for it, whereas reassigning a local
- * cursor from the query result inside the loop makes the result's own inference
- * circular (TS7022).
- */
-async function fetchProductPage(channel: string, after: string | null) {
-	const result = await executePublicGraphQL(SitemapProductsDocument, {
-		variables: { channel, first: PAGE_SIZE, after },
-		revalidate,
-	});
-	if (!result.ok) {
-		// Distinguished only for the log line: both arms are fatal here, because a
-		// sitemap that is short is worse than one that is missing.
-		logUpstreamError("sitemap-products", upstreamError(result), { channel, after: after ?? "start" });
-		return null;
-	}
-	return result.data.products ?? null;
+interface Page<T> {
+	edges: readonly { node: T }[];
+	pageInfo: { hasNextPage: boolean; endCursor?: string | null };
 }
 
 /**
@@ -78,7 +69,7 @@ async function fetchProductPage(channel: string, after: string | null) {
 class SitemapIncompleteError extends Error {}
 
 /**
- * Every product slug in one channel, paginated to the end of the connection.
+ * Walk a Saleor cursor connection to its end, or fail loudly.
  *
  * There is deliberately NO page ceiling. There used to be one — MAX_PAGES = 20,
  * sized against a 458-product catalogue — and it was a truncation waiting for a
@@ -88,11 +79,20 @@ class SitemapIncompleteError extends Error {}
  * What replaces it is a guard on the thing the cap was actually defending
  * against: a connection that never terminates. `hasNextPage` ends the loop; a
  * cursor that repeats or fails to advance ends it with an error. Those are the
- * only two ways out, and the second one is loud on purpose — see
- * `SitemapIncompleteError` for why a short sitemap is worse than no sitemap.
+ * only two ways out, and the second one is loud on purpose.
+ *
+ * Shared by products and categories because the guarantee has to be the same for
+ * both. It previously was not: the product walk had all of this and the category
+ * walk was a bare `first: 100` with no `pageInfo` selected at all, so it could
+ * not even detect that it had truncated. Thirty categories exist today, so that
+ * was latent rather than live — which is precisely the shape of the product cap
+ * it replaced.
  */
-async function fetchProductSlugs(channel: string): Promise<ProductEntry[]> {
-	const out: ProductEntry[] = [];
+async function collectConnection<T>(
+	label: string,
+	fetchPage: (after: string | null) => Promise<Page<T> | null>,
+): Promise<T[]> {
+	const out: T[] = [];
 	let after: string | null = null;
 	// Every cursor already followed. Saleor's are opaque, so the only thing that
 	// can be said about one is whether it has been seen before — which is exactly
@@ -101,35 +101,31 @@ async function fetchProductSlugs(channel: string): Promise<ProductEntry[]> {
 	const seen = new Set<string>();
 
 	for (let page = 1; ; page++) {
-		const connection = await fetchProductPage(channel, after);
+		const connection = await fetchPage(after);
 		// `null` here is any failure at all — transport, HTTP, GraphQL — because
-		// fetchProductPage collapses them. Previously this `break` returned
-		// whatever had been collected so far: one blip on page 3 of 5 silently
-		// dropped ~200 products with no error anywhere.
+		// the fetchers collapse them. Previously this `break` returned whatever had
+		// been collected so far: one blip on page 3 of 5 silently dropped ~200
+		// products with no error anywhere.
 		if (!connection) {
-			throw new SitemapIncompleteError(`${channel}: product page ${page} did not resolve`);
+			throw new SitemapIncompleteError(`${label} page ${page} did not resolve`);
 		}
 
-		for (const edge of connection.edges) {
-			if (edge.node.slug) {
-				out.push({ slug: edge.node.slug, updatedAt: edge.node.updatedAt ?? null });
-			}
-		}
+		for (const edge of connection.edges) out.push(edge.node);
 
 		if (!connection.pageInfo.hasNextPage) return out;
 
 		const next: string | null = connection.pageInfo.endCursor ?? null;
 		if (!next) {
-			throw new SitemapIncompleteError(`${channel}: hasNextPage with no cursor`);
+			throw new SitemapIncompleteError(`${label}: hasNextPage with no cursor`);
 		}
 		if (next === after) {
 			throw new SitemapIncompleteError(
-				`${channel}: cursor did not advance past ${next} on page ${page} (${out.length} products so far)`,
+				`${label}: cursor did not advance past ${next} on page ${page} (${out.length} so far)`,
 			);
 		}
 		if (seen.has(next)) {
 			throw new SitemapIncompleteError(
-				`${channel}: cursor ${next} repeated on page ${page} (${out.length} products so far)`,
+				`${label}: cursor ${next} repeated on page ${page} (${out.length} so far)`,
 			);
 		}
 
@@ -138,25 +134,49 @@ async function fetchProductSlugs(channel: string): Promise<ProductEntry[]> {
 	}
 }
 
-async function fetchStockedCategorySlugs(channel: string): Promise<string[]> {
-	const result = await executePublicGraphQL(SitemapCategoriesDocument, {
-		variables: { channel, first: 100 },
-		revalidate,
+/** Every product slug in one channel, paginated to the end of the connection. */
+async function fetchProductSlugs(channel: string): Promise<ProductEntry[]> {
+	const nodes = await collectConnection(`${channel}: product`, async (after) => {
+		const result = await executePublicGraphQL(SitemapProductsDocument, {
+			variables: { channel, first: PAGE_SIZE, after },
+			revalidate,
+		});
+		if (!result.ok) {
+			logUpstreamError("sitemap-products", upstreamError(result), {
+				channel,
+				after: after ?? "start",
+			});
+			return null;
+		}
+		return result.data.products ?? null;
 	});
-	if (!result.ok) {
-		logUpstreamError("sitemap-categories", upstreamError(result), { channel });
-		throw new SitemapIncompleteError(`${channel}: categories did not resolve — ${result.error.message}`);
-	}
-	if (!result.data.categories) {
-		throw new SitemapIncompleteError(`${channel}: categories connection was absent`);
-	}
+
+	return nodes
+		.filter((node) => Boolean(node.slug))
+		.map((node) => ({ slug: node.slug, updatedAt: node.updatedAt ?? null }));
+}
+
+async function fetchStockedCategorySlugs(channel: string): Promise<string[]> {
+	const nodes = await collectConnection(`${channel}: category`, async (after) => {
+		const result = await executePublicGraphQL(SitemapCategoriesDocument, {
+			variables: { channel, first: PAGE_SIZE, after },
+			revalidate,
+		});
+		if (!result.ok) {
+			logUpstreamError("sitemap-categories", upstreamError(result), {
+				channel,
+				after: after ?? "start",
+			});
+			return null;
+		}
+		return result.data.categories ?? null;
+	});
 
 	// Categories exist globally in Saleor but hold products per channel, so an
 	// empty one is real everywhere and stocked nowhere. Listing it would advertise
-	// an empty page; twelve of the thirty are currently in that state.
-	return result.data.categories.edges
-		.filter((edge) => (edge.node.products?.totalCount ?? 0) > 0)
-		.map((edge) => edge.node.slug);
+	// an empty page; on the live Slovak catalogue eleven of the thirty are in that
+	// state, including `stresne-nosice`, which sits first in the main navigation.
+	return nodes.filter((node) => (node.products?.totalCount ?? 0) > 0).map((node) => node.slug);
 }
 
 /**

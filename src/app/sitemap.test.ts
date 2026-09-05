@@ -71,15 +71,19 @@ const categoriesResult = {
 				{ node: { slug: "nosice-bicyklov", products: { totalCount: 1_204 } } },
 				{ node: { slug: "prazdna-kategoria", products: { totalCount: 0 } } },
 			],
+			pageInfo: { hasNextPage: false, endCursor: "offset:2" },
 		},
 	},
 };
 
 /** Serve products from `pages`, categories from the fixture above. */
-function serve(pages: (after: string | null | undefined) => unknown) {
+function serve(
+	pages: (after: string | null | undefined) => unknown,
+	categories: (after: string | null | undefined) => unknown = () => categoriesResult,
+) {
 	executePublicGraphQL.mockImplementation((document: unknown, options: { variables: Variables }) => {
 		if (document === SitemapProductsDocument) return Promise.resolve(pages(options.variables.after));
-		if (document === SitemapCategoriesDocument) return Promise.resolve(categoriesResult);
+		if (document === SitemapCategoriesDocument) return Promise.resolve(categories(options.variables.after));
 		throw new Error("the sitemap asked for a document this test does not serve");
 	});
 }
@@ -199,5 +203,86 @@ describe("a connection that cannot end", () => {
 
 		await expect(sitemap()).rejects.toThrow(/product page 4 did not resolve/);
 		vi.restoreAllMocks();
+	});
+});
+
+/**
+ * The category walk used to be a bare `first: 100` with no `pageInfo` selected
+ * at all, so it could not detect its own truncation — the exact failure S1
+ * removed from the product walk and left here. Thirty categories exist today,
+ * so it was latent; a bare cap is only ever latent until the catalogue grows.
+ */
+describe("categories are walked to the end too", () => {
+	it("follows the category cursor past the first page", async () => {
+		const CATEGORY_COUNT = 250;
+		serve(
+			(after) => productPage(after, 0),
+			(after) => {
+				const start = offsetOf(after);
+				const end = Math.min(start + PAGE_SIZE, CATEGORY_COUNT);
+				return {
+					ok: true as const,
+					data: {
+						categories: {
+							edges: Array.from({ length: end - start }, (_, i) => ({
+								node: { slug: `kategoria-${start + i + 1}`, products: { totalCount: 3 } },
+							})),
+							pageInfo: { hasNextPage: end < CATEGORY_COUNT, endCursor: `offset:${end}` },
+						},
+					},
+				};
+			},
+		);
+
+		const entries = await sitemap();
+		const categoryUrls = entries.filter((entry) => entry.url.includes("/categories/"));
+
+		expect(categoryUrls).toHaveLength(CATEGORY_COUNT);
+		expect(categoryUrls.at(-1)?.url).toBe(`${BASE}/sk/categories/kategoria-250`);
+	});
+
+	it("throws rather than truncating when a category page fails mid-walk", async () => {
+		serve(
+			(after) => productPage(after, 0),
+			(after) =>
+				offsetOf(after) === 0
+					? {
+							ok: true as const,
+							data: {
+								categories: {
+									edges: [{ node: { slug: "nosice-bicyklov", products: { totalCount: 4 } } }],
+									pageInfo: { hasNextPage: true, endCursor: "offset:100" },
+								},
+							},
+						}
+					: { ok: false as const, error: { type: "network", message: "socket hang up" } },
+		);
+
+		await expect(sitemap()).rejects.toThrow(/category page 2 did not resolve/);
+	});
+
+	it("throws when the category cursor cycles back to a position it already served", async () => {
+		// The cursor has to CYCLE, not stall: a cursor that repeats the one it was
+		// just given trips the "did not advance" guard first. This alternates
+		// 100 → 200 → 100, which advances every step and still never terminates.
+		const cycle: Record<string, string> = {
+			"": "offset:100",
+			"offset:100": "offset:200",
+			"offset:200": "offset:100",
+		};
+		serve(
+			(after) => productPage(after, 0),
+			(after) => ({
+				ok: true as const,
+				data: {
+					categories: {
+						edges: [{ node: { slug: "nosice-bicyklov", products: { totalCount: 4 } } }],
+						pageInfo: { hasNextPage: true, endCursor: cycle[after ?? ""] },
+					},
+				},
+			}),
+		);
+
+		await expect(sitemap()).rejects.toThrow(/cursor offset:100 repeated/);
 	});
 });
