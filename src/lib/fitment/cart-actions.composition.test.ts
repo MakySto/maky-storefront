@@ -47,6 +47,14 @@ const PROVISIONAL_SET: FitmentProductRef = {
 	productKind: "roof-rack-set",
 };
 
+/** Verified for the vehicle, but not a roof-rack set. The offer list would never show it. */
+const VERIFIED_BOX: FitmentProductRef = {
+	externalReference: "test:product:box-c",
+	saleorProductId: "test-product-box-c",
+	saleorVariantId: "test-variant-box-c",
+	productKind: "roof-box",
+};
+
 const VEHICLE: VehicleSelection = { makeId: "make-1", modelId: "model-1", generationId: "gen-1", year: 2020 };
 
 /** Non-demo: no `demoCatalogue`. Not stale: a very long `staleAfterDays`. */
@@ -80,7 +88,7 @@ const DATASET: FitmentDataset = {
 			qualifiers: {},
 			conditions: [],
 			verificationStatus: "verified",
-			products: [SET],
+			products: [SET, VERIFIED_BOX],
 		},
 		{
 			applicationId: "app-provisional",
@@ -196,6 +204,14 @@ describe("nothing reaches the cart unless every gate passes", () => {
 		expect(addVariantToCart).not.toHaveBeenCalled();
 	});
 
+	it("refuses a verified product of the wrong kind, even when called directly", async () => {
+		await expect(addConfiguredSetToCart(input(VERIFIED_BOX))).resolves.toEqual({
+			ok: false,
+			reason: "not-verified",
+		});
+		expect(addVariantToCart).not.toHaveBeenCalled();
+	});
+
 	it("refuses a product the dataset has no row for", async () => {
 		await expect(
 			addConfiguredSetToCart({
@@ -211,7 +227,8 @@ describe("nothing reaches the cart unless every gate passes", () => {
 		["not-published", "not-available"],
 		["variant-missing", "not-available"],
 		["identity-mismatch", "not-available"],
-		["lookup-failed", "lookup-failed"],
+		// Nothing was sent, so this is NOT "check your cart" — it is "try again".
+		["lookup-failed", "catalogue-unavailable"],
 	] as const)("stops when the catalogue check says %s", async (catalogueReason, expected) => {
 		verifyPurchasable.mockResolvedValue({ ok: false, reason: catalogueReason });
 

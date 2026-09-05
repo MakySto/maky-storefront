@@ -58,6 +58,7 @@ const FAILURE_KEY: Record<AddSetFailure, string> = {
 	"not-verified": "errorNotVerified",
 	"not-available": "errorNotAvailable",
 	"out-of-stock": "__common.outOfStock",
+	"catalogue-unavailable": "errorCatalogueUnavailable",
 	"cart-rejected": "errorCartRejected",
 	"lookup-failed": "errorLookupFailed",
 	"invalid-input": "errorGeneric",

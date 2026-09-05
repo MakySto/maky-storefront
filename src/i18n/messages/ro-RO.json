@@ -656,6 +656,7 @@
 		"errorNotAvailable": "Acest set nu mai este în ofertă.",
 		"errorCartRejected": "Setul nu a putut fi adăugat în coș.",
 		"errorLookupFailed": "Nu putem confirma dacă setul a fost adăugat. Vă rugăm să verificați coșul.",
+		"errorCatalogueUnavailable": "Nu am putut verifica disponibilitatea setului în acest moment. Vă rugăm să încercați din nou.",
 		"errorGeneric": "Setul nu a putut fi adăugat în coș."
 	}
 }

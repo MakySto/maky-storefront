@@ -656,6 +656,7 @@
 		"errorNotAvailable": "Questo set non è più a catalogo.",
 		"errorCartRejected": "Non è stato possibile aggiungere il set al carrello.",
 		"errorLookupFailed": "Non possiamo confermare se il set è stato aggiunto. Controlla il carrello.",
+		"errorCatalogueUnavailable": "Al momento non è stato possibile verificare la disponibilità del set. Riprova.",
 		"errorGeneric": "Non è stato possibile aggiungere il set al carrello."
 	}
 }

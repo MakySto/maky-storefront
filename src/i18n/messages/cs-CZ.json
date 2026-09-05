@@ -656,6 +656,7 @@
 		"errorNotAvailable": "Tato sestava už není v nabídce.",
 		"errorCartRejected": "Sestavu se nepodařilo přidat do košíku.",
 		"errorLookupFailed": "Nedokážeme potvrdit, jestli se sestava přidala. Zkontrolujte prosím košík.",
+		"errorCatalogueUnavailable": "Dostupnost sestavy se teď nepodařilo ověřit. Zkuste to prosím znovu.",
 		"errorGeneric": "Sestavu se nepodařilo přidat do košíku."
 	}
 }

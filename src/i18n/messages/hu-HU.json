@@ -656,6 +656,7 @@
 		"errorNotAvailable": "Ez a szett már nem szerepel a kínálatunkban.",
 		"errorCartRejected": "A szettet nem sikerült kosárba helyezni.",
 		"errorLookupFailed": "Nem tudjuk megerősíteni, hogy a szett bekerült-e a kosárba. Kérjük, ellenőrizze a kosarat.",
+		"errorCatalogueUnavailable": "A szett elérhetőségét most nem sikerült ellenőrizni. Kérjük, próbálja újra.",
 		"errorGeneric": "A szettet nem sikerült kosárba helyezni."
 	}
 }

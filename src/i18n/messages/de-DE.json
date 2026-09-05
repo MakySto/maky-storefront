@@ -656,6 +656,7 @@
 		"errorNotAvailable": "Dieses Set ist nicht mehr im Angebot.",
 		"errorCartRejected": "Das Set konnte nicht in den Warenkorb gelegt werden.",
 		"errorLookupFailed": "Wir können nicht bestätigen, ob das Set hinzugefügt wurde. Bitte prüfen Sie Ihren Warenkorb.",
+		"errorCatalogueUnavailable": "Die Verfügbarkeit des Sets konnte gerade nicht geprüft werden. Bitte versuchen Sie es noch einmal.",
 		"errorGeneric": "Das Set konnte nicht in den Warenkorb gelegt werden."
 	}
 }

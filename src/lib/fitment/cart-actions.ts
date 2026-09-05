@@ -28,6 +28,7 @@
 import { addVariantToCart } from "@/ui/components/plp/actions";
 import { getLocaleFromChannel } from "@/config/locale";
 import { readActiveSelection } from "@/lib/garage/state";
+import { CONFIGURATOR_PRODUCT_KIND } from "./contract";
 import { loadFitmentDataset } from "./provider";
 import { isDemoDataset, verifyPurchasable } from "./offers";
 import { resolveFitment } from "./resolve";
@@ -77,6 +78,10 @@ export async function addConfiguredSetToCart(input: {
 		.find((p) => p.saleorProductId === saleorProductId && p.saleorVariantId === saleorVariantId);
 	if (!ref) return { ok: false, reason: "not-verified" };
 
+	// The offer list already refuses the wrong kind, but this is a POST endpoint and a
+	// disabled button is not a control: a verified roof box is still not a roof-rack set.
+	if (ref.productKind !== CONFIGURATOR_PRODUCT_KIND) return { ok: false, reason: "not-verified" };
+
 	const locale = getLocaleFromChannel(channel);
 	const check = await verifyPurchasable(
 		saleorProductId,
@@ -86,7 +91,13 @@ export async function addConfiguredSetToCart(input: {
 		ref.externalReference,
 	);
 	if (!check.ok) {
-		return { ok: false, reason: check.reason === "lookup-failed" ? "lookup-failed" : "not-available" };
+		// A catalogue that could not be asked is NOT the same as a mutation whose answer was
+		// lost. Nothing has been sent yet, so this one is safe to retry and says so;
+		// `lookup-failed` is reserved for the post-mutation "check your cart" case below.
+		return {
+			ok: false,
+			reason: check.reason === "lookup-failed" ? "catalogue-unavailable" : "not-available",
+		};
 	}
 	if (check.availability === "out-of-stock") return { ok: false, reason: "out-of-stock" };
 

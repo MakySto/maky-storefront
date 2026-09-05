@@ -29,9 +29,17 @@ export type AddSetFailure =
 	| "not-available"
 	/** The catalogue answered, and it is out of stock. */
 	| "out-of-stock"
+	/**
+	 * The catalogue could not be asked BEFORE anything was sent. Nothing reached the cart,
+	 * so this is safe to retry — which is exactly why it is not `lookup-failed`.
+	 */
+	| "catalogue-unavailable"
 	/** Saleor answered the mutation and refused the line. Safe to try again. */
 	| "cart-rejected"
-	/** The outcome is genuinely unknown. The shopper is told to check the cart. */
+	/**
+	 * The mutation was sent and its outcome is genuinely unknown. The shopper is told to
+	 * check the cart, and nothing invites a second click.
+	 */
 	| "lookup-failed"
 	| "invalid-input";
 

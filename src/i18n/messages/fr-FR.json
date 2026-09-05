@@ -656,6 +656,7 @@
 		"errorNotAvailable": "Cet ensemble n'est plus au catalogue.",
 		"errorCartRejected": "L'ensemble n'a pas pu être ajouté au panier.",
 		"errorLookupFailed": "Nous ne pouvons pas confirmer si l'ensemble a bien été ajouté. Merci de vérifier votre panier.",
+		"errorCatalogueUnavailable": "Impossible de vérifier la disponibilité de l'ensemble pour le moment. Merci de réessayer.",
 		"errorGeneric": "L'ensemble n'a pas pu être ajouté au panier."
 	}
 }

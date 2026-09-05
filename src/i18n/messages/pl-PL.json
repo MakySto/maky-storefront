@@ -656,6 +656,7 @@
 		"errorNotAvailable": "Tego zestawu nie ma już w ofercie.",
 		"errorCartRejected": "Nie udało się dodać zestawu do koszyka.",
 		"errorLookupFailed": "Nie możemy potwierdzić, czy zestaw został dodany. Sprawdź, proszę, koszyk.",
+		"errorCatalogueUnavailable": "Nie udało się teraz sprawdzić dostępności zestawu. Spróbuj ponownie.",
 		"errorGeneric": "Nie udało się dodać zestawu do koszyka."
 	}
 }

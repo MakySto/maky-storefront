@@ -656,6 +656,7 @@
 		"errorNotAvailable": "Táto zostava už nie je v ponuke.",
 		"errorCartRejected": "Zostavu sa nepodarilo pridať do košíka.",
 		"errorLookupFailed": "Nevieme potvrdiť, či sa zostava pridala. Skontrolujte prosím košík.",
+		"errorCatalogueUnavailable": "Dostupnosť zostavy sa teraz nepodarilo overiť. Skúste to prosím znova.",
 		"errorGeneric": "Zostavu sa nepodarilo pridať do košíka."
 	}
 }
