@@ -24,7 +24,7 @@ export interface ProductCardData {
 	brand?: string | null;
 	/** One-line distinguishing fact — volume, capacity, load. */
 	note?: string | null;
-	sku?: string | null;
+	productCode?: string | null;
 	/** Set only when the product has exactly one variant. */
 	variantId?: string | null;
 	quantityAvailable?: number | null;
@@ -166,9 +166,12 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 
 			{/* SKU, then availability on its own line beneath it */}
 			<div className="mt-1.5 space-y-1 text-center">
-				{product.sku && (
+				{product.productCode && (
 					<p className="text-text-tertiary truncate text-xs tabular-nums">
-						{tProduct("sku")}: <span className="font-medium">{product.sku.toUpperCase()}</span>
+						{/* Not upper-cased. These codes are case-sensitive supplier codes —
+						    `.toUpperCase()` here turned 34 of the 417 real ones into strings
+						    the supplier does not use, e.g. `g3K9042` and `PZ-GP001bag`. */}
+						{tProduct("sku")}: <span className="font-medium">{product.productCode}</span>
 					</p>
 				)}
 				<AvailabilityBadge

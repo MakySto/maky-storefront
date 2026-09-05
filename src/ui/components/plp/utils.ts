@@ -1,5 +1,6 @@
 import type { ProductListItemFragment } from "@/gql/graphql";
 import type { ProductCardData } from "./product-card";
+import { publicProductCode } from "@/lib/product-code";
 import { getColorHex, isColorAttribute, isSizeAttribute } from "@/lib/colors";
 import { sortSizes } from "@/lib/sizes";
 import { getLocaleConfigByLocale, getLocaleFromChannel, localeConfig } from "@/config/locale";
@@ -126,7 +127,10 @@ export function transformToProductCard(
 		// was "Strešné boxy".
 		brand: attributeValue(product.attributes, MANUFACTURER_REF),
 		note: buildNote(product.attributes, locale),
-		sku: soleVariant?.sku ?? null,
+		// The declared short code, not `variant.sku`. The SKU is the integration
+		// identity and carries a CFM-internal suffix on the bundle products, which
+		// the card printed verbatim under a "SKU:" label.
+		productCode: publicProductCode(soleVariant),
 		variantId: soleVariant?.id ?? null,
 		quantityAvailable: soleVariant?.quantityAvailable ?? null,
 		availabilityMode: soleVariant?.metafield ?? null,

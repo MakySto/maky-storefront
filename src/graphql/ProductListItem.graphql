@@ -76,6 +76,10 @@ fragment ProductListItem on Product {
 	variants {
 		id
 		sku
+		# The customer-visible product code. `sku` is the integration identity and
+		# carries a CFM-internal suffix on the bundle products, so the card used to
+		# print that suffix under a "SKU:" label. See src/lib/product-code.ts.
+		name
 		quantityAvailable
 		# Availability is CFM-owned and published on the VARIANT, not the product
 		# (verified live: 100/100 variants carry it, 0/100 products do). Reading

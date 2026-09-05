@@ -1,3 +1,4 @@
+import { publicProductCode } from "@/lib/product-code";
 import { formatMoney, formatMoneyRange } from "@/lib/utils";
 import { getDiscountInfo } from "@/lib/pricing";
 import { type ProductDetailsQuery } from "@/gql/graphql";
@@ -92,7 +93,10 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 		(a) => a.attribute.externalReference === MANUFACTURER_REF,
 	)?.values[0]?.name;
 
-	const sku = selectedVariant?.sku ?? variants[0]?.sku ?? null;
+	// The declared short code, never `variant.sku` — on the roof-rack bundles the
+	// SKU is that code with a CFM-internal suffix appended, and this line used to
+	// print the whole thing under a "SKU:" label.
+	const productCode = publicProductCode(selectedVariant ?? variants[0]);
 
 	// Server action for adding to cart. `useActionState` shape, so <CartForm> can
 	// render what actually happened instead of the outcome reaching a log only.
@@ -143,9 +147,9 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 			    Availability comes from CFM metadata, never from quantityAvailable. */}
 			<div className="order-3 mt-1 flex flex-wrap items-center gap-x-4 gap-y-1.5">
 				{manufacturer && <span className="text-text-primary text-sm font-medium">{manufacturer}</span>}
-				{sku && (
+				{productCode && (
 					<span className="text-text-tertiary text-xs">
-						{tProduct("sku")}: <span className="font-medium tabular-nums">{sku}</span>
+						{tProduct("sku")}: <span className="font-medium tabular-nums">{productCode}</span>
 					</span>
 				)}
 				<AvailabilityBadge
