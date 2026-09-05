@@ -1,4 +1,4 @@
-import xss, { type IWhiteList } from "xss";
+import xss, { safeAttrValue as defaultSafeAttrValue, type IWhiteList } from "xss";
 interface EditorJSBlock {
 	type: string;
 	data: Record<string, unknown>;
@@ -21,8 +21,21 @@ const INLINE_TAGS: IWhiteList = {
 	strong: [],
 };
 
+/**
+ * The one class this renderer is allowed to emit.
+ *
+ * A wide table has to be able to scroll inside its own box, or it widens the
+ * page and the whole document pans sideways on a phone. That needs a container
+ * element, and the container needs a hook to style — so `div` carries `class`,
+ * and `safeAttrValue` below rejects every value except this exact one. Nothing
+ * from Saleor can reach that attribute in any case: cell text is sanitized with
+ * INLINE_TAGS first, which has neither `div` nor any `class`.
+ */
+export const TABLE_SCROLL_CLASS = "maky-prose-scroll";
+
 const BLOCK_TAGS: IWhiteList = {
 	...INLINE_TAGS,
+	div: ["class"],
 	blockquote: [],
 	figcaption: [],
 	figure: [],
@@ -57,6 +70,13 @@ const sanitizeBlock = (value: string): string =>
 		whiteList: BLOCK_TAGS,
 		stripIgnoreTag: true,
 		stripIgnoreTagBody: ["script", "style", "iframe", "object", "embed"],
+		safeAttrValue(tag, name, value, cssFilter) {
+			// `class` exists for exactly one purpose here. Anything else is dropped
+			// rather than passed through, so widening the whitelist to allow the
+			// scroll container cannot become a general styling channel.
+			if (name === "class") return value === TABLE_SCROLL_CLASS ? value : "";
+			return defaultSafeAttrValue(tag, name, value, cssFilter);
+		},
 	});
 
 const positiveDimension = (value: unknown, fallback: number): number =>
@@ -111,9 +131,13 @@ function renderBlock(block: EditorJSBlock): string | null {
 				const cell = withHeadings && index === 0 ? "th" : "td";
 				return `<tr>${row.map((value) => `<${cell}>${sanitizeInline(value)}</${cell}>`).join("")}</tr>`;
 			});
-			return withHeadings
+			const table = withHeadings
 				? `<table><thead>${renderedRows[0]}</thead><tbody>${renderedRows.slice(1).join("")}</tbody></table>`
 				: `<table><tbody>${renderedRows.join("")}</tbody></table>`;
+			// Wrapped so the table scrolls in its own box instead of widening the
+			// page. A specification table is exactly the block most likely to be
+			// wider than a phone.
+			return `<div class="${TABLE_SCROLL_CLASS}">${table}</div>`;
 		}
 		case "image": {
 			const file = data.file && typeof data.file === "object" ? (data.file as Record<string, unknown>) : {};
@@ -186,7 +210,10 @@ export function parseEditorJSToText(content: string | null | undefined): string 
 		return xss(content, { whiteList: {}, stripIgnoreTag: true }) || null;
 	}
 
-	const html = parsed.blocks.map(renderBlock).filter((block): block is string => Boolean(block)).join(" ");
+	const html = parsed.blocks
+		.map(renderBlock)
+		.filter((block): block is string => Boolean(block))
+		.join(" ");
 	const text = xss(html, {
 		whiteList: {},
 		stripIgnoreTag: true,

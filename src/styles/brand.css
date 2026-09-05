@@ -566,3 +566,22 @@
     }
   }
 }
+
+/*
+ * Wide product content scrolls in its own box.
+ *
+ * `parseEditorJSToHtml` wraps every rendered table in `.maky-prose-scroll`. The
+ * table itself needs `max-content`, because @tailwindcss/typography sets
+ * `width: 100%` on prose tables — which makes a wide table squash rather than
+ * overflow, so the container would have nothing to scroll.
+ */
+@layer base {
+	.maky-prose-scroll {
+		overflow-x: auto;
+		max-width: 100%;
+	}
+
+	.maky-prose-scroll > table {
+		min-width: max-content;
+	}
+}
