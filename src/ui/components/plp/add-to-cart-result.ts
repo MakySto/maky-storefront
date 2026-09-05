@@ -82,3 +82,50 @@ export function classifyCheckoutErrors(errors: readonly CheckoutErrorLike[]): Ad
 	if (code === "NOT_FOUND") return { status: "rejected", reason: "not-found", message };
 	return { status: "rejected", reason: "rejected", message };
 }
+
+/**
+ * What one read of the checkout says about a write whose response was lost.
+ *
+ * `unchanged` is deliberately NOT called "rejected". A read that comes back
+ * unchanged is a statement about *this instant*, not about the future: the
+ * mutation whose response we lost may still be in flight at Saleor, and a
+ * timeout is precisely the case where it most likely arrived. Naming that
+ * moment "nothing was added" invites a second click, and `checkoutLinesAdd` is
+ * not idempotent — the same call three times takes a line from 1 to 3.
+ */
+export type ReadBackVerdict =
+	/** At least the requested quantity is now on the line. The write landed. */
+	| "landed"
+	/** The line moved, but not by what we asked for. Somebody else, or a clamp. */
+	| "partial"
+	/** Nothing has moved yet. Not evidence that nothing ever will. */
+	| "unchanged"
+	/** The read itself failed, so we learned nothing at all. */
+	| "unreadable";
+
+/**
+ * Read one observation of the cart. Pure, so the rule is testable without a
+ * server action, a checkout, or a clock.
+ *
+ * `after: null` means the read failed — which is not a failed write.
+ */
+export function readBackVerdict(input: {
+	before: number;
+	requested: number;
+	after: number | null;
+}): ReadBackVerdict {
+	const { before, requested, after } = input;
+	if (after === null) return "unreadable";
+	if (after >= before + requested) return "landed";
+	if (after === before) return "unchanged";
+	return "partial";
+}
+
+/**
+ * How long to keep asking before admitting we do not know, in milliseconds.
+ *
+ * Bounded on purpose. Saleor may commit the lost write after we have stopped
+ * looking, and no schedule can rule that out — so the deadline exists to end
+ * the *waiting*, never to convert the uncertainty into a verdict.
+ */
+export const READ_BACK_DELAYS_MS: readonly number[] = [250, 750];

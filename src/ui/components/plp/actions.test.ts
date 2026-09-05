@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { executeAuthenticatedGraphQL, findOrCreate, find, getIdFromCookies, saveIdToCookie, revalidatePath } =
 	vi.hoisted(() => ({
@@ -15,6 +15,7 @@ vi.mock("@/lib/checkout", () => ({ findOrCreate, find, getIdFromCookies, saveIdT
 vi.mock("next/cache", () => ({ revalidatePath }));
 
 import { addVariantToCart } from "./actions";
+import { READ_BACK_DELAYS_MS } from "./add-to-cart-result";
 
 /**
  * Saleor is mocked entirely and deliberately: this asserts how the action reads
@@ -24,13 +25,26 @@ const ok = (payload: unknown) => ({ ok: true as const, data: { checkoutLinesAdd:
 const CHECKOUT = { id: "Q2hlY2tvdXQ6MQ==" };
 const input = { channel: "sk-eur", variantId: "UHJvZHVjdFZhcmlhbnQ6MQ==", quantity: 1 };
 
+/**
+ * `reconcile` sleeps between read-backs. Fake timers keep the suite fast and,
+ * more usefully, let a test place a late commit *between* two reads.
+ */
 beforeEach(() => {
+	vi.useFakeTimers();
 	vi.clearAllMocks();
 	getIdFromCookies.mockResolvedValue(null);
 	findOrCreate.mockResolvedValue(CHECKOUT);
 	find.mockResolvedValue(null);
 	saveIdToCookie.mockResolvedValue(undefined);
 });
+
+afterEach(() => vi.useRealTimers());
+
+/** Run the action to completion, driving every pending sleep. */
+const settle = async <T>(promise: Promise<T>): Promise<T> => {
+	await vi.runAllTimersAsync();
+	return promise;
+};
 
 describe("addVariantToCart", () => {
 	it("confirms an add only when Saleor returned a checkout and no errors", async () => {
@@ -68,7 +82,7 @@ describe("addVariantToCart", () => {
 			error: { type: "network", message: "socket hang up", isRetryable: true },
 		});
 
-		await expect(addVariantToCart(input)).resolves.toEqual({
+		await expect(settle(addVariantToCart(input))).resolves.toEqual({
 			status: "unconfirmed",
 			message: "socket hang up",
 		});
@@ -77,7 +91,7 @@ describe("addVariantToCart", () => {
 	it("calls a thrown transport error unconfirmed too", async () => {
 		executeAuthenticatedGraphQL.mockRejectedValue(new Error("aborted"));
 
-		expect((await addVariantToCart(input)).status).toBe("unconfirmed");
+		expect((await settle(addVariantToCart(input))).status).toBe("unconfirmed");
 	});
 
 	it("treats neither-checkout-nor-error as unconfirmed, not success", async () => {
@@ -97,7 +111,7 @@ describe("addVariantToCart", () => {
 			error: { type: "network", message: "timeout", isRetryable: true },
 		});
 
-		await addVariantToCart(input);
+		await settle(addVariantToCart(input));
 
 		expect(executeAuthenticatedGraphQL).toHaveBeenCalledTimes(1);
 	});
@@ -143,7 +157,7 @@ describe("addVariantToCart", () => {
 			error: { type: "network", message: "timeout" },
 		});
 
-		await addVariantToCart(input);
+		await settle(addVariantToCart(input));
 
 		expect(revalidatePath).toHaveBeenCalledWith("/cart");
 	});
@@ -161,17 +175,47 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
 		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 1)] });
 
-		await expect(addVariantToCart(input)).resolves.toEqual({ status: "added" });
+		await expect(settle(addVariantToCart(input))).resolves.toEqual({ status: "added" });
 	});
 
-	it("says nothing was added when the read shows it did not land", async () => {
+	it("NEVER calls an unchanged read-back a failure", async () => {
+		// The defect this block exists for. A read that comes back unchanged
+		// describes this instant, not the future: the mutation whose response was
+		// lost may still be in flight. Calling it "nothing was added" invites a
+		// second click, and `checkoutLinesAdd` is not idempotent.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
 		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
 		find.mockResolvedValue({ ...CHECKOUT, lines: [] });
 
-		const result = await addVariantToCart(input);
+		const result = await settle(addVariantToCart(input));
 
-		expect(result).toMatchObject({ status: "rejected" });
+		expect(result).toMatchObject({ status: "unconfirmed" });
+	});
+
+	it("catches a write that commits AFTER the first read said nothing had changed", async () => {
+		// The late commit, exactly as reported: the mutation is sent, the response
+		// times out, the first read still shows the old quantity, and only then does
+		// Saleor finish the write. One read would have called this a failure.
+		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
+		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		find
+			.mockResolvedValueOnce({ ...CHECKOUT, lines: [] })
+			.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 1)] });
+
+		await expect(settle(addVariantToCart(input))).resolves.toEqual({ status: "added" });
+	});
+
+	it("gives up asking after a bounded number of reads, and stays unconfirmed", async () => {
+		// Bounded, so a server action cannot hang; unconfirmed, because the deadline
+		// ends the waiting and must not be read as a verdict.
+		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
+		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		find.mockResolvedValue({ ...CHECKOUT, lines: [] });
+
+		const result = await settle(addVariantToCart(input));
+
+		expect(result.status).toBe("unconfirmed");
+		expect(find).toHaveBeenCalledTimes(READ_BACK_DELAYS_MS.length + 1);
 	});
 
 	it("counts from the quantity that was already in the cart", async () => {
@@ -180,7 +224,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 2)] });
 		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 3)] });
 
-		await expect(addVariantToCart(input)).resolves.toEqual({ status: "added" });
+		await expect(settle(addVariantToCart(input))).resolves.toEqual({ status: "added" });
 	});
 
 	it("does not turn a concurrent change into an error", async () => {
@@ -191,7 +235,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 2)] });
 		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 5)] });
 
-		await expect(addVariantToCart(input)).resolves.toEqual({ status: "added" });
+		await expect(settle(addVariantToCart(input))).resolves.toEqual({ status: "added" });
 	});
 
 	it("stays unconfirmed when the line moved by LESS than was asked for", async () => {
@@ -201,14 +245,31 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 2)] });
 		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 3)] });
 
-		expect((await addVariantToCart({ ...input, quantity: 4 })).status).toBe("unconfirmed");
+		const result = await settle(addVariantToCart({ ...input, quantity: 4 }));
+
+		expect(result.status).toBe("unconfirmed");
+		// A moved line answers the question; asking again cannot disentangle a
+		// stock clamp from another tab, so it stops on the first read.
+		expect(find).toHaveBeenCalledTimes(1);
 	});
 
 	it("stays unconfirmed when the read itself fails", async () => {
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
 		find.mockRejectedValue(new Error("also down"));
 
-		expect((await addVariantToCart(input)).status).toBe("unconfirmed");
+		const result = await settle(addVariantToCart(input));
+
+		expect(result.status).toBe("unconfirmed");
+	});
+
+	it("treats a checkout that reads back as missing as unknown, not as failure", async () => {
+		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
+		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		find.mockResolvedValue(null);
+
+		const result = await settle(addVariantToCart(input));
+
+		expect(result.status).toBe("unconfirmed");
 	});
 
 	it("NEVER sends the mutation again while reconciling", async () => {
@@ -216,8 +277,9 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
 		find.mockResolvedValue({ ...CHECKOUT, lines: [] });
 
-		await addVariantToCart(input);
+		await settle(addVariantToCart(input));
 
+		// Not once per read-back: exactly once, for the whole click.
 		expect(executeAuthenticatedGraphQL).toHaveBeenCalledTimes(1);
 	});
 });

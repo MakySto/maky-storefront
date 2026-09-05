@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyCheckoutErrors } from "./add-to-cart-result";
+import { classifyCheckoutErrors, READ_BACK_DELAYS_MS, readBackVerdict } from "./add-to-cart-result";
 
 /**
  * `checkoutLinesAdd` answers HTTP 200 with a populated `errors` array when it
@@ -62,5 +62,52 @@ describe("classifyCheckoutErrors", () => {
 		expect(classifyCheckoutErrors([{ code: "INSUFFICIENT_STOCK", message: "  " }])?.message).toBe(
 			"INSUFFICIENT_STOCK",
 		);
+	});
+});
+
+/**
+ * The rule that decides whether a lost response may be called a failure.
+ *
+ * It may not. Every arm here exists so that "unchanged" can never again be
+ * spelled "rejected": the write we lost the answer to may still be in flight,
+ * and `checkoutLinesAdd` is not idempotent, so a customer told "nothing was
+ * added" clicks again and ends up with two.
+ */
+describe("readBackVerdict", () => {
+	it("calls it landed when the full requested quantity is there", () => {
+		expect(readBackVerdict({ before: 0, requested: 1, after: 1 })).toBe("landed");
+	});
+
+	it("counts from what was already in the cart, not from zero", () => {
+		expect(readBackVerdict({ before: 2, requested: 1, after: 3 })).toBe("landed");
+		expect(readBackVerdict({ before: 2, requested: 1, after: 2 })).toBe("unchanged");
+	});
+
+	it("does not punish a concurrent write for overshooting", () => {
+		// Another tab added some too. What this customer asked for is in the cart,
+		// which is the question being answered.
+		expect(readBackVerdict({ before: 2, requested: 1, after: 9 })).toBe("landed");
+	});
+
+	it("calls a partial move partial, not landed and not failed", () => {
+		expect(readBackVerdict({ before: 2, requested: 4, after: 3 })).toBe("partial");
+	});
+
+	it("calls an unchanged read unchanged — never a rejection", () => {
+		// A read describes this instant. It is not a statement about the future,
+		// and this type has no arm that would let it become one.
+		expect(readBackVerdict({ before: 0, requested: 1, after: 0 })).toBe("unchanged");
+	});
+
+	it("calls a failed read unreadable, which is not a failed write", () => {
+		expect(readBackVerdict({ before: 0, requested: 1, after: null })).toBe("unreadable");
+	});
+
+	it("keeps the retry budget bounded and non-empty", () => {
+		// Bounded so a server action cannot hang; non-empty so a late commit has at
+		// least one chance to be seen after the first read.
+		expect(READ_BACK_DELAYS_MS.length).toBeGreaterThan(0);
+		expect(READ_BACK_DELAYS_MS.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(3000);
+		expect(READ_BACK_DELAYS_MS.every((ms) => ms > 0)).toBe(true);
 	});
 });

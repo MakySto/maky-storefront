@@ -6,7 +6,12 @@ import { CheckoutAddLineDocument } from "@/gql/graphql";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
 import * as Checkout from "@/lib/checkout";
 import { QUANTITY_FALLBACK_MAX } from "@/ui/components/ui/quantity-stepper";
-import { classifyCheckoutErrors, type AddToCartResult } from "./add-to-cart-result";
+import {
+	classifyCheckoutErrors,
+	readBackVerdict,
+	READ_BACK_DELAYS_MS,
+	type AddToCartResult,
+} from "./add-to-cart-result";
 
 /**
  * Put one variant in the cart and say what actually happened.
@@ -128,11 +133,18 @@ function quantityOfVariant(checkout: LinesHolder | null | undefined, variantId: 
  *
  * `checkoutLinesAdd` is not idempotent — verified against live Saleor, the same
  * call three times takes a line from quantity 1 to 3 — so a lost response must
- * never be resolved by sending it again. The checkout itself is the authority on
+ * never be resolved by sending it again. The checkout is the authority on
  * whether the line landed, and reading is free of consequence.
  *
- * Only when the read ALSO fails does this stay `unconfirmed`, which is the
- * honest answer: we asked and we still do not know.
+ * This asks a bounded number of times rather than once. A single immediate read
+ * is a statement about one instant: the mutation whose response we lost may
+ * still be in flight, and a timeout is exactly the case where it most likely
+ * did arrive. So an unchanged read is not evidence of a failed write, and this
+ * function can no longer answer `rejected` at all.
+ *
+ * `rejected` in this action is reserved for the two cases that really do carry
+ * it: a documented refusal from Saleor, and a failure *before* the mutation was
+ * sent. Everything from here on is `added` or `unconfirmed`.
  */
 async function reconcile(
 	checkoutId: string,
@@ -141,30 +153,38 @@ async function reconcile(
 	quantityRequested: number,
 	message: string,
 ): Promise<AddToCartResult> {
-	try {
-		const checkout = await Checkout.find(checkoutId);
-		if (!checkout) return { status: "unconfirmed", message };
+	for (let attempt = 0; ; attempt++) {
+		const after = await readQuantity(checkoutId, variantId);
+		const verdict = readBackVerdict({ before: quantityBefore, requested: quantityRequested, after });
 
-		const after = quantityOfVariant(checkout, variantId);
-		if (after >= quantityBefore + quantityRequested) {
+		if (verdict === "landed") {
 			console.warn("[cart] transport failed but the line landed; reporting success:", message);
 			return { status: "added" };
 		}
-		if (after === quantityBefore) {
-			// Authoritative: nothing was written, so the customer can safely retry.
-			return {
-				status: "rejected",
-				reason: "rejected",
-				message: "the request did not reach the checkout — nothing was added",
-			};
-		}
-		// Landed partially, or somebody else changed the cart in between. Do not
-		// guess, and above all do not add more.
-		return { status: "unconfirmed", message };
-	} catch {
-		return { status: "unconfirmed", message };
+
+		// Something moved, but not what we asked for: a stock clamp, or another
+		// tab. Asking again cannot disentangle those, and guessing is how a
+		// customer gets the item twice.
+		if (verdict === "partial") return { status: "unconfirmed", message };
+
+		// `unchanged` or `unreadable`. Neither is a failed write. Ask again while
+		// the budget lasts, then stop asking — and say so honestly.
+		if (attempt >= READ_BACK_DELAYS_MS.length) return { status: "unconfirmed", message };
+		await sleep(READ_BACK_DELAYS_MS[attempt]);
 	}
 }
+
+/** One read of the line's quantity. `null` means the read itself failed. */
+async function readQuantity(checkoutId: string, variantId: string): Promise<number | null> {
+	try {
+		const checkout = await Checkout.find(checkoutId);
+		return checkout ? quantityOfVariant(checkout, variantId) : null;
+	} catch {
+		return null;
+	}
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /** `useActionState` signature, so a form can render the outcome. */
 export async function addListingItemToCartAction(
