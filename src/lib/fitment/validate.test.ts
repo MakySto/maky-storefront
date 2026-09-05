@@ -27,10 +27,17 @@ describe("the committed fixture", () => {
 	});
 
 	it("names an instance that is deliberately not a real one", () => {
-		// A demo dataset must not claim to belong to the live Saleor instance, or a
-		// mis-set provider mode could let its synthetic ids be looked up for real.
-		expect(validateFitmentDataset(valid()).ok).toBe(true);
-		expect(validateFitmentDataset(valid(), { expectedSaleorInstance: "api.maky.store" }).ok).toBe(false);
+		// A demo dataset must not claim to belong to the live Saleor instance — its ids
+		// are synthetic and must never be looked up for real.
+		const result = validateFitmentDataset(valid());
+		expect(result.ok && result.dataset.saleorInstance).not.toBe("api.maky.store");
+	});
+
+	it("is NOT rejected by the instance check, which only guards real datasets", () => {
+		// Regression: applying the instance guard to demo data rejected the whole
+		// dataset, so the demo silently disabled itself — with a green build and a green
+		// test suite, because nothing passed the expected instance in.
+		expect(validateFitmentDataset(valid(), { expectedSaleorInstance: "api.maky.store" }).ok).toBe(true);
 	});
 
 	it("carries its own catalogue, so it never needs a live product lookup", () => {
@@ -49,8 +56,13 @@ describe("the committed fixture", () => {
 });
 
 describe("rejections that would otherwise be silent", () => {
-	it("refuses a dataset built for a different Saleor instance", () => {
-		const result = validateFitmentDataset(valid(), { expectedSaleorInstance: "staging.example.test" });
+	it("refuses a REAL dataset built for a different Saleor instance", () => {
+		// Real, i.e. no demoCatalogue: its ids WILL be looked up against Saleor, so an id
+		// minted on staging would resolve here and point at a different product entirely.
+		const real = valid();
+		delete real.demoCatalogue;
+		real.saleorInstance = "staging.example.test";
+		const result = validateFitmentDataset(real, { expectedSaleorInstance: "api.maky.store" });
 		expect(result.ok).toBe(false);
 		expect(!result.ok && result.errors.join(" ")).toContain("instance-bound");
 	});
