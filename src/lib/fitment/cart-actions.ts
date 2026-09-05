@@ -4,53 +4,34 @@
  * Adding a configured set to the cart.
  *
  * This does NOT reimplement the cart. It re-establishes everything the client is not
- * allowed to assert, hands off to the existing `addListingItemToCart` — which owns
- * `Checkout.findOrCreate`, the `checkoutLinesAdd` mutation and the checkout cookie
- * (CLAUDE.md §10) — and then checks that the line actually arrived.
+ * allowed to assert, then hands off to the shared `addVariantToCart` — which owns
+ * `Checkout.findOrCreate`, the `checkoutLinesAdd` mutation, the checkout cookie and the
+ * settling of an unclear result (CLAUDE.md §10) — and translates its typed answer into
+ * this feature's vocabulary.
  *
- * Four things the first version got wrong, all of which ended in `{ ok: true }`:
+ * Three things the first version got wrong, all of which ended in `{ ok: true }`:
  *
  *   1. It never re-read the active vehicle, so a set verified for the car the shopper
  *      had ten minutes ago could be added for the car they have now.
  *   2. It never re-checked fitment at all — the client's word was the only evidence.
  *   3. It did not know about demo mode, so a simulated set could reach a real cart.
- *   4. `addListingItemToCart` returns void and swallows every failure into
- *      `console.error`, so awaiting it and returning `{ ok: true }` reported success for
- *      a Saleor domain rejection — insufficient stock, variant not in channel — exactly
- *      as loudly as for a real success.
  *
- * (4) is fixed here without touching shared checkout code: the checkout is READ back
- * afterwards and the line is confirmed present. That is a post-condition, not a guess.
+ * A fourth lived in the shared action rather than here: it returned void and swallowed
+ * a Saleor domain rejection into `console.error`. This file used to compensate by
+ * counting the line in the checkout before and after the call. That work-around is
+ * gone. The shared action now inspects `checkoutLinesAdd.errors`, settles a lost
+ * response by READING under a deadline, and never repeats an unconfirmed write — so
+ * what remains here is exactly this feature's business: the vehicle, the fitment and
+ * the exact variant.
  */
 
-import * as Checkout from "@/lib/checkout";
-import { addListingItemToCart } from "@/ui/components/plp/actions";
+import { addVariantToCart } from "@/ui/components/plp/actions";
 import { getLocaleFromChannel } from "@/config/locale";
+import { readActiveSelection } from "@/lib/garage/state";
 import { loadFitmentDataset } from "./provider";
 import { isDemoDataset, verifyPurchasable } from "./offers";
 import { resolveFitment } from "./resolve";
-import { readActiveSelection } from "@/lib/garage/state";
-
-export type AddSetFailure =
-	/** Demo data. A simulated set may never reach a real cart. */
-	| "simulation"
-	/** No fitment provider, or it could not be reached. */
-	| "provider-unavailable"
-	/** The active vehicle changed, or there is none. Re-verify before buying. */
-	| "vehicle-changed"
-	/** This set is not verified for the current vehicle. */
-	| "not-verified"
-	/** The product/variant is not published or not in this channel. */
-	| "not-available"
-	/** The catalogue answered, and it is out of stock. */
-	| "out-of-stock"
-	/** The cart mutation did not produce the line. */
-	| "cart-rejected"
-	/** Something upstream failed; the outcome is genuinely unknown. */
-	| "lookup-failed"
-	| "invalid-input";
-
-export type AddSetResult = { ok: true } | { ok: false; reason: AddSetFailure };
+import { toAddSetResult, type AddSetResult } from "./cart-result";
 
 /**
  * Add a configured set.
@@ -109,44 +90,9 @@ export async function addConfiguredSetToCart(input: {
 	}
 	if (check.availability === "out-of-stock") return { ok: false, reason: "out-of-stock" };
 
-	// --- post-condition: count the line before, and require it to have grown ---
-	const before = await countLine(channel, saleorVariantId);
-
-	const formData = new FormData();
-	formData.set("channel", channel);
-	formData.set("variantId", saleorVariantId);
-	formData.set("quantity", "1");
-	await addListingItemToCart(formData);
-
-	const after = await countLine(channel, saleorVariantId);
-	if (after === null) {
-		// The checkout could not be read back. The add may or may not have happened, and
-		// claiming either would be a guess. Deliberately no retry: a blind retry on an
-		// uncertain transport is how a customer ends up with two of something.
-		return { ok: false, reason: "lookup-failed" };
-	}
-	if (before !== null && after <= before) return { ok: false, reason: "cart-rejected" };
-	if (before === null && after === 0) return { ok: false, reason: "cart-rejected" };
-
-	return { ok: true };
-}
-
-/**
- * Quantity of one variant in the current checkout, or null when it cannot be read.
- *
- * Null is deliberately distinct from 0: "no cart yet" and "could not ask" lead to
- * different honest answers above.
- */
-async function countLine(channel: string, saleorVariantId: string): Promise<number | null> {
-	try {
-		const checkoutId = await Checkout.getIdFromCookies(channel);
-		if (!checkoutId) return 0;
-		const checkout = await Checkout.find(checkoutId);
-		if (!checkout) return null;
-		return checkout.lines
-			.filter((line) => line.variant?.id === saleorVariantId)
-			.reduce((total, line) => total + line.quantity, 0);
-	} catch {
-		return null;
-	}
+	// Hand-off. Quantity is fixed at one: a set is one variant and the configurator has
+	// no quantity control. Whatever comes back is reported as it is — including the
+	// answer "we do not know", which the shared action may give and this one must not
+	// paper over.
+	return toAddSetResult(await addVariantToCart({ channel, variantId: saleorVariantId, quantity: 1 }));
 }

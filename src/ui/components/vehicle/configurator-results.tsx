@@ -20,13 +20,14 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import Image from "next/image";
 import { Info, Loader2, ShoppingCart } from "lucide-react";
 
 import { Button } from "@/ui/components/ui/button";
+import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { formatPrice } from "@/config/locale";
-import { addConfiguredSetToCart, type AddSetFailure } from "@/lib/fitment/cart-actions";
+import { addConfiguredSetToCart } from "@/lib/fitment/cart-actions";
+import { type AddSetFailure } from "@/lib/fitment/cart-result";
 import { type FitmentOffer } from "@/lib/fitment/offers";
 
 export type ResultCard = {
@@ -117,8 +118,11 @@ export function ConfiguratorResults({
 						className="border-border-default flex flex-col overflow-hidden rounded-lg border"
 					>
 						{offer.thumbnailUrl ? (
+							// Saleor 3.23 prepares media asynchronously, so a freshly imported
+							// thumbnail can answer 503 for a moment. The shared component shows a
+							// placeholder and retries once; a bare <Image> would leave a broken card.
 							<div className="bg-surface-muted relative aspect-4/3">
-								<Image
+								<ResilientProductImage
 									src={offer.thumbnailUrl}
 									alt={offer.thumbnailAlt ?? offer.name}
 									fill
