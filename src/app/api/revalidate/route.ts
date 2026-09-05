@@ -1,9 +1,10 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { NextRequest } from "next/server";
-import { DefaultChannelSlug } from "@/app/config";
 import { CACHE_PROFILES, buildTag, buildPath } from "@/lib/cache-manifest";
 import { extractBearerToken, verifySecret, verifyWebhookSignature } from "@/lib/api-auth";
 import { getLocaleFromChannel } from "@/config/locale";
+import { CHANNEL_MAP } from "@/lib/channel-map";
+import { parseWebhookPayload } from "@/lib/saleor/webhook-payload";
 
 /**
  * Webhook endpoint for cache invalidation.
@@ -20,69 +21,18 @@ import { getLocaleFromChannel } from "@/config/locale";
  */
 
 // ============================================================================
-// Webhook payload parsing
-// ============================================================================
-
-function parseWebhookPayload(payload: unknown): {
-	type: "product" | "category" | "collection" | "unknown";
-	slug?: string;
-	channel?: string;
-	categorySlug?: string;
-} {
-	if (!payload || typeof payload !== "object") {
-		return { type: "unknown" };
-	}
-
-	const data = payload as Record<string, unknown>;
-
-	if (data.product && typeof data.product === "object") {
-		const product = data.product as Record<string, unknown>;
-		const category = product.category as Record<string, unknown> | undefined;
-		return {
-			type: "product",
-			slug: product.slug as string | undefined,
-			channel: (product.channel as Record<string, unknown>)?.slug as string | undefined,
-			categorySlug: category?.slug as string | undefined,
-		};
-	}
-
-	if (data.productVariant && typeof data.productVariant === "object") {
-		const variant = data.productVariant as Record<string, unknown>;
-		const product = variant.product as Record<string, unknown> | undefined;
-		if (product) {
-			const category = product.category as Record<string, unknown> | undefined;
-			return {
-				type: "product",
-				slug: product.slug as string | undefined,
-				channel: (product.channel as Record<string, unknown>)?.slug as string | undefined,
-				categorySlug: category?.slug as string | undefined,
-			};
-		}
-	}
-
-	if (data.category && typeof data.category === "object") {
-		const category = data.category as Record<string, unknown>;
-		return {
-			type: "category",
-			slug: category.slug as string | undefined,
-		};
-	}
-
-	if (data.collection && typeof data.collection === "object") {
-		const collection = data.collection as Record<string, unknown>;
-		return {
-			type: "collection",
-			slug: collection.slug as string | undefined,
-			channel: (collection.channel as Record<string, unknown>)?.slug as string | undefined,
-		};
-	}
-
-	return { type: "unknown" };
-}
-
-// ============================================================================
 // Revalidation helper — keeps the switch cases DRY
 // ============================================================================
+
+/**
+ * Expire NOW, rather than "revalidate soon".
+ *
+ * The named profiles (`minutes`, `hours`, `days`) are stale-while-revalidate:
+ * after a purge the next request is still served the old entry while the new one
+ * is fetched behind it. That is right for ordinary drift and wrong for a
+ * publication event — "this product now exists" must not be eventually true.
+ */
+const IMMEDIATE = { expire: 0 } as const;
 
 function revalidateProfile(
 	profile: (typeof CACHE_PROFILES)[keyof typeof CACHE_PROFILES],
@@ -94,7 +44,7 @@ function revalidateProfile(
 ) {
 	const identity = { channel, locale, slug };
 	const tag = buildTag(profile, identity);
-	revalidateTag(tag, profile.cacheProfile);
+	revalidateTag(tag, IMMEDIATE);
 	tags.push(tag);
 
 	const path = buildPath(profile, identity);
@@ -102,6 +52,20 @@ function revalidateProfile(
 		revalidatePath(path);
 		paths.push(path);
 	}
+}
+
+/**
+ * Every Saleor channel, or just the one the event named.
+ *
+ * Cache keys carry channel AND locale (`product:{channel}:{locale}:{slug}`), and
+ * a Saleor product payload carries no channel at all — so falling back to
+ * `DefaultChannelSlug` purged one market out of twelve and left the other eleven
+ * serving the old entry until it expired on its own. A product event is not
+ * channel-specific; the fan-out has to match the key.
+ */
+function targetChannels(named: string | undefined): string[] {
+	if (named) return [named];
+	return Object.values(CHANNEL_MAP).map((config) => config.saleorSlug);
 }
 
 // ============================================================================
@@ -127,82 +91,101 @@ export async function POST(request: NextRequest) {
 			console.log("[Revalidate] Raw payload:", JSON.stringify(payload, null, 2));
 		}
 
-		const { type, slug, channel, categorySlug } = parseWebhookPayload(payload);
+		const resource = parseWebhookPayload(payload);
+		const { kind, slug, previousSlug, categorySlug, unnamedProduct } = resource;
 
-		const targetChannel = channel || DefaultChannelSlug;
-		if (!targetChannel) {
-			return Response.json(
-				{ error: "Channel not specified in webhook and NEXT_PUBLIC_DEFAULT_CHANNEL not set" },
-				{ status: 400 },
-			);
-		}
 		const revalidatedPaths: string[] = [];
 		const revalidatedTags: string[] = [];
-		const targetLocale = getLocaleFromChannel(targetChannel);
 
-		switch (type) {
-			case "product":
-				if (slug) {
-					revalidateProfile(
-						CACHE_PROFILES.products,
-						targetChannel,
-						targetLocale,
-						slug,
-						revalidatedTags,
-						revalidatedPaths,
-					);
-				}
-				revalidatePath(`/${targetChannel}/products`);
-				revalidatedPaths.push(`/${targetChannel}/products`);
+		for (const channel of targetChannels(resource.channel)) {
+			const locale = getLocaleFromChannel(channel);
 
-				if (categorySlug) {
-					revalidateProfile(
-						CACHE_PROFILES.categories,
-						targetChannel,
-						targetLocale,
-						categorySlug,
-						revalidatedTags,
-						revalidatedPaths,
-					);
-				}
-				break;
+			// A rename has to purge BOTH slugs. Only the new one was ever purged, so
+			// the old URL kept serving the live product — indexable, and competing
+			// with the URL that replaced it.
+			const slugs = [slug, previousSlug].filter((value): value is string => Boolean(value));
 
-			case "category":
-				if (slug) {
-					revalidateProfile(
-						CACHE_PROFILES.categories,
-						targetChannel,
-						targetLocale,
-						slug,
-						revalidatedTags,
-						revalidatedPaths,
-					);
-				}
-				break;
+			switch (kind) {
+				case "product":
+					for (const value of slugs) {
+						revalidateProfile(
+							CACHE_PROFILES.products,
+							channel,
+							locale,
+							value,
+							revalidatedTags,
+							revalidatedPaths,
+						);
+					}
+					revalidatePath(`/${channel}/products`);
+					revalidatedPaths.push(`/${channel}/products`);
+					if (categorySlug) {
+						revalidateProfile(
+							CACHE_PROFILES.categories,
+							channel,
+							locale,
+							categorySlug,
+							revalidatedTags,
+							revalidatedPaths,
+						);
+					}
+					break;
 
-			case "collection":
-				if (slug) {
-					revalidateProfile(
-						CACHE_PROFILES.collections,
-						targetChannel,
-						targetLocale,
-						slug,
-						revalidatedTags,
-						revalidatedPaths,
-					);
-				}
-				break;
+				case "category":
+					for (const value of slugs) {
+						revalidateProfile(
+							CACHE_PROFILES.categories,
+							channel,
+							locale,
+							value,
+							revalidatedTags,
+							revalidatedPaths,
+						);
+					}
+					revalidatePath(`/${channel}/products`);
+					revalidatedPaths.push(`/${channel}/products`);
+					break;
 
-			default:
-				revalidatePath(`/${targetChannel}/products`);
-				revalidatedPaths.push(`/${targetChannel}/products`);
+				case "collection":
+					for (const value of slugs) {
+						revalidateProfile(
+							CACHE_PROFILES.collections,
+							channel,
+							locale,
+							value,
+							revalidatedTags,
+							revalidatedPaths,
+						);
+					}
+					break;
+
+				default:
+					revalidatePath(`/${channel}/products`);
+					revalidatedPaths.push(`/${channel}/products`);
+			}
+
+			// The homepage carries listing modules built from the same catalogue.
+			revalidatePath(`/${channel}`);
+			revalidatedPaths.push(`/${channel}`);
+		}
+
+		// Publishing, unpublishing or renaming changes which URLs exist, so the
+		// sitemap is stale too — and it is the one surface a crawler reads first.
+		revalidatePath("/sitemap.xml");
+		revalidatedPaths.push("/sitemap.xml");
+
+		if (unnamedProduct) {
+			console.warn(
+				"[Revalidate] product event carried no slug — listing and sitemap refreshed, but no " +
+					"detail page could be targeted. Add `product { slug }` to the webhook subscription.",
+			);
 		}
 
 		const sanitizedSlug = slug?.replace(/[\r\n]/g, "") ?? "";
 		const sanitizedPaths = revalidatedPaths.map((s) => s.replace(/[\r\n]/g, ""));
 		const sanitizedTags = revalidatedTags.map((s) => s.replace(/[\r\n]/g, ""));
 		console.log("[Revalidate] Success:", {
-			type,
+			type: kind,
 			slug: sanitizedSlug,
 			paths: sanitizedPaths,
 			tags: sanitizedTags,
