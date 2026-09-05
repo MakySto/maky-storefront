@@ -152,6 +152,27 @@ answer and this helper would suppress it.
 
 ---
 
+## 4b. Checkout lookup — `@/lib/checkout`
+
+```ts
+lookup(checkoutId: string, options?: { signal?: AbortSignal; retry?: boolean }):
+  Promise<{ status: "found"; checkout: T } | { status: "not-found" } | { status: "upstream-error"; reason: string }>
+
+findOrCreate({ channel, checkoutId }):
+  Promise<{ status: "ready"; checkout: T; created: boolean } | { status: "unavailable"; reason: string }>
+```
+
+`find()` still exists and still returns `T | null`, but it is for surfaces that only
+DISPLAY. **Anything that may write — replace a cookie, create a replacement, clear a
+session — must use `lookup`.** Collapsing "Saleor says this is gone" into "we could not
+ask" is what made a few seconds of downtime take a shopper's basket away.
+
+`not-found` is a claim and only a definitive reply earns it. Measured against live
+Saleor: a well-formed but missing id answers `data.checkout: null` (that is
+`not-found`); a malformed id answers with GraphQL errors (that is `upstream-error`).
+
+The three `AddToCartResult` statuses are unchanged.
+
 ## 5. Stability
 
 Everything listed is already exported today, so B can adopt it without waiting for A.
