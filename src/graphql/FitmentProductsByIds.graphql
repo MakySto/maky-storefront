@@ -1,15 +1,23 @@
 # Candidate roof-rack sets, resolved from fitment ids to a real, purchasable offer.
 #
-# Deliberately keyed on `ids:` rather than `externalReference:`. The live Saleor API has
-# no bulk filter by externalReference — neither ProductWhereInput nor ProductFilterInput
-# exposes it, only the singular product(externalReference:) lookup — so a list of CFM
-# references could only be resolved one round trip at a time. That is why the fitment
-# contract carries saleorProductId.
+# Keyed on `ids:` rather than `externalReference:`. The live Saleor API has no bulk
+# filter by externalReference — neither ProductWhereInput nor ProductFilterInput exposes
+# it, only the singular product(externalReference:) lookup — so a list of CFM references
+# could only be resolved one round trip at a time. That is why the fitment contract
+# carries saleorProductId.
 #
-# `slugLanguageCode` is deliberately NOT sent. It matches only a translated slug and does
-# not fall back to the base slug, and there are no product translations in this instance
-# yet, so sending it returns null for everything.
-query FitmentProductsByIds($ids: [ID!]!, $channel: String!, $first: Int!) {
+# `externalReference` is selected so the caller can VERIFY that the product which came
+# back is the one the fitment row meant, rather than trusting the row's own copy of it.
+#
+# `metafield(key: "cfm_availability_mode")` is the catalogue's availability fact. This
+# catalogue is sale-to-order: trackInventory is false and `quantityAvailable` answers a
+# synthetic cap (50 for every variant, confirmed live), so it may only be used to detect
+# a hard zero — never to make a positive stock claim.
+#
+# `translation` is applied to the RETURNED fields only; the lookup stays by id, so this
+# cannot repeat the `slugLanguageCode` failure where a translated-slug argument matches
+# nothing and returns null for the whole catalogue.
+query FitmentProductsByIds($ids: [ID!]!, $channel: String!, $first: Int!, $lang: LanguageCodeEnum!) {
 	products(first: $first, channel: $channel, filter: { ids: $ids }) {
 		totalCount
 		edges {
@@ -17,7 +25,12 @@ query FitmentProductsByIds($ids: [ID!]!, $channel: String!, $first: Int!) {
 				id
 				name
 				slug
+				externalReference
 				isAvailableForPurchase
+				metafield(key: "cfm_availability_mode")
+				translation(languageCode: $lang) {
+					name
+				}
 				thumbnail(size: 512, format: WEBP) {
 					url
 					alt
@@ -25,15 +38,8 @@ query FitmentProductsByIds($ids: [ID!]!, $channel: String!, $first: Int!) {
 				category {
 					name
 					slug
-				}
-				pricing {
-					priceRange {
-						start {
-							gross {
-								amount
-								currency
-							}
-						}
+					translation(languageCode: $lang) {
+						name
 					}
 				}
 				variants {

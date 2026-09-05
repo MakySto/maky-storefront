@@ -66,7 +66,7 @@ async function GarageContent({ channel }: { channel: string }) {
 
 	return (
 		<div className="mt-6 space-y-6">
-			{status.isFixture && <FixtureNotice channel={channel} />}
+			{status.isFixture && <DemoNotice channel={channel} />}
 
 			{garage.repaired && <Notice title={t("recovered")} />}
 
@@ -127,9 +127,9 @@ async function GarageContent({ channel }: { channel: string }) {
 	);
 }
 
-async function FixtureNotice({ channel }: { channel: string }) {
+async function DemoNotice({ channel }: { channel: string }) {
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "fitment" });
-	return <Notice title={t("fixtureNotice")} />;
+	return <Notice title={t("demoNotice")} />;
 }
 
 /**

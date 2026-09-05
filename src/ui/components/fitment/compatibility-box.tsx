@@ -2,7 +2,8 @@ import { getTranslations } from "next-intl/server";
 import { AlertTriangle, Check, CircleHelp, Globe, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { type FitmentCondition, type FitmentResult, type FitmentVerdict } from "@/lib/fitment/contract";
+import { type FitmentResult, type FitmentVerdict } from "@/lib/fitment/contract";
+import { renderConditions } from "@/lib/fitment/conditions";
 import {
 	CONDITION_LABEL_KEY,
 	TONE_CLASSES,
@@ -33,8 +34,10 @@ type Props = {
 	vehicleLabel: string | null;
 	/** Rendered under the verdict — the "choose a vehicle" affordance. */
 	action?: React.ReactNode;
-	/** True when the answer came from committed test data rather than CFM. */
-	isFixture?: boolean;
+	/** True when the answer came from demo data rather than a real provider. */
+	isDemo?: boolean;
+	/** Locale, for source-authored condition text. */
+	locale: string;
 	className?: string;
 };
 
@@ -49,10 +52,19 @@ const VERDICT_ICON: Record<FitmentVerdict, typeof Check> = {
 	NO_VEHICLE_SELECTED: CircleHelp,
 };
 
-export async function CompatibilityBox({ result, vehicleLabel, action, isFixture, className }: Props) {
+export async function CompatibilityBox({ result, vehicleLabel, action, isDemo, locale, className }: Props) {
 	const t = await getTranslations("fitment");
-	const tone = toneForVerdict(result.verdict);
-	const Icon = VERDICT_ICON[result.verdict];
+
+	// Conditions are resolved BEFORE the tone is chosen: a verified fit carrying a
+	// condition we cannot state in this locale is a qualified fit, and it must not
+	// present as an unconditional green one.
+	const conditions = renderConditions(result.conditions, locale, (code) => {
+		const key = CONDITION_LABEL_KEY[code];
+		return key ? t(key) : null;
+	});
+	const qualified = result.verdict === "VERIFIED_FIT" && conditions.unresolvedCount > 0;
+	const tone = qualified ? "unconfirmed" : toneForVerdict(result.verdict);
+	const Icon = qualified ? CircleHelp : VERDICT_ICON[result.verdict];
 
 	// Every detail string that mentions a vehicle takes {vehicle}. With no vehicle
 	// resolved we must not print an empty gap, so the generic prompt is used instead.
@@ -73,55 +85,35 @@ export async function CompatibilityBox({ result, vehicleLabel, action, isFixture
 			<div className="flex items-start gap-3">
 				<Icon className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
 				<div className="min-w-0 flex-1">
-					<p className="text-sm font-semibold">{t(VERDICT_LABEL_KEY[result.verdict])}</p>
-					<p className="mt-1 text-sm opacity-90">{detail}</p>
+					<p className="text-sm font-semibold">
+						{qualified ? t("verdictQualified") : t(VERDICT_LABEL_KEY[result.verdict])}
+					</p>
+					<p className="mt-1 text-sm opacity-90">{qualified ? t("verdictQualifiedDetail") : detail}</p>
 
-					{result.conditions.length > 0 && (
-						<ConditionList conditions={result.conditions} title={t("conditionsTitle")} labelFor={t} />
+					{conditions.resolved.length > 0 && (
+						<div className="mt-3">
+							<p className="text-xs font-semibold tracking-wide uppercase opacity-80">
+								{t("conditionsTitle")}
+							</p>
+							<ul className="mt-1 list-disc space-y-1 pl-4 text-sm opacity-90">
+								{conditions.resolved.map((condition) => (
+									<li key={`${condition.code}-${condition.text}`}>{condition.text}</li>
+								))}
+							</ul>
+						</div>
 					)}
 
-					{isFixture && <p className="mt-2 text-xs font-medium opacity-80">{t("fixtureNotice")}</p>}
+					{conditions.unresolvedCount > 0 && (
+						<p className="mt-2 text-sm font-medium opacity-90">
+							{t("conditionsIncomplete", { count: conditions.unresolvedCount })}
+						</p>
+					)}
+
+					{isDemo && <p className="mt-2 text-xs font-medium opacity-80">{t("demoNotice")}</p>}
 
 					{action && <div className="mt-3">{action}</div>}
 				</div>
 			</div>
-		</div>
-	);
-}
-
-/**
- * Mounting conditions.
- *
- * A condition with neither source copy for this locale nor a known code is DROPPED
- * rather than rendered in Slovak on a German page. Silence is the honest fallback: an
- * untranslated mounting instruction is worse than none, because it looks authoritative.
- */
-function ConditionList({
-	conditions,
-	title,
-	labelFor,
-}: {
-	conditions: FitmentCondition[];
-	title: string;
-	labelFor: (key: string) => string;
-}) {
-	const rendered = conditions
-		.map((condition) => {
-			const known = CONDITION_LABEL_KEY[condition.code];
-			return known ? labelFor(known) : null;
-		})
-		.filter((text): text is string => Boolean(text));
-
-	if (rendered.length === 0) return null;
-
-	return (
-		<div className="mt-3">
-			<p className="text-xs font-semibold tracking-wide uppercase opacity-80">{title}</p>
-			<ul className="mt-1 list-disc space-y-1 pl-4 text-sm opacity-90">
-				{rendered.map((text) => (
-					<li key={text}>{text}</li>
-				))}
-			</ul>
 		</div>
 	);
 }

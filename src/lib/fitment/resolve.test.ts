@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { type FitmentDataset, type VehicleSelection } from "./contract";
 import {
+	candidateProductRefs,
 	collectApplicationsForProduct,
-	collectFittingProducts,
 	isDatasetStale,
+	resolveCandidates,
 	resolveFitment,
+	resolveVehicleOutcome,
 } from "./resolve";
 
 /**
@@ -30,7 +32,10 @@ function dataset(overrides: Partial<FitmentDataset> = {}): FitmentDataset {
 		source: { system: "test" },
 		saleorInstance: "api.example.test",
 		validity: { validUntil: null, staleAfterDays: 30 },
-		coverage: { completeForMakeIds: ["skoda"] },
+		coverage: {
+			scope: { programId: "test-roof-racks", productKinds: ["roof-rack-set"] },
+			completeForMakeIds: ["skoda"],
+		},
 		makes: [
 			{ id: "skoda", name: "Škoda" },
 			{ id: "bmw", name: "BMW" },
@@ -71,6 +76,7 @@ function dataset(overrides: Partial<FitmentDataset> = {}): FitmentDataset {
 						externalReference: "cfm:product:A",
 						saleorProductId: "P1",
 						saleorVariantId: "V1",
+						productKind: "roof-rack-set",
 					},
 				],
 			},
@@ -247,29 +253,124 @@ describe("product scoping", () => {
 	});
 });
 
-describe("candidate collection for the configurator", () => {
-	it("returns candidate ids for a fitting selection", () => {
-		const { saleorProductIds, saleorVariantIds } = collectFittingProducts(dataset(), octaviaFlush, {
-			now: NOW,
+describe("per-identity resolution — the bug that hid working sets", () => {
+	/**
+	 * v1 resolved the whole vehicle in one pass, so rows belonging to DIFFERENT products
+	 * were merged. One explicitly-negative row for set B turned the entire vehicle into
+	 * AMBIGUOUS and offered nothing — including set A, which fits.
+	 */
+	function twoSets(): FitmentDataset {
+		const d = dataset();
+		d.applications.push({
+			applicationId: "a2",
+			generationId: "octavia-4",
+			yearFrom: 2020,
+			yearTo: null,
+			qualifiers: { roofTypes: ["flush-rails"] },
+			conditions: [],
+			verificationStatus: "verified",
+			negative: true,
+			products: [
+				{
+					externalReference: "cfm:product:B",
+					saleorProductId: "P2",
+					saleorVariantId: "V2",
+					productKind: "roof-rack-set",
+				},
+			],
 		});
-		expect(saleorProductIds).toEqual(["P1"]);
-		expect(saleorVariantIds).toEqual(["V1"]);
+		return d;
+	}
+
+	it("offers A when A fits and B does not", () => {
+		const outcome = resolveVehicleOutcome(twoSets(), octaviaFlush, { now: NOW });
+		expect(outcome.verified.map((o) => o.ref.saleorProductId)).toEqual(["P1"]);
+		expect(outcome.rejected.map((o) => o.ref.saleorProductId)).toEqual(["P2"]);
+		expect(outcome.unanswerable).toBe(false);
 	});
 
-	it("returns nothing for a no-fit selection", () => {
+	it("does not collapse the vehicle to AMBIGUOUS because one set disagrees", () => {
+		const outcome = resolveVehicleOutcome(twoSets(), octaviaFlush, { now: NOW });
+		expect(outcome.verified).toHaveLength(1);
+	});
+
+	it("one year-hold set does not block another verified set", () => {
 		const d = dataset();
-		d.applications[0]!.negative = true;
-		expect(collectFittingProducts(d, octaviaFlush, { now: NOW }).saleorProductIds).toEqual([]);
+		d.applications.push({
+			applicationId: "a3",
+			generationId: "octavia-4",
+			yearFrom: 2020,
+			yearTo: null,
+			qualifiers: { roofTypes: ["flush-rails"] },
+			conditions: [],
+			verificationStatus: "year-hold",
+			products: [
+				{
+					externalReference: "cfm:product:C",
+					saleorProductId: "P3",
+					saleorVariantId: "V3",
+					productKind: "roof-rack-set",
+				},
+			],
+		});
+		const outcome = resolveVehicleOutcome(d, octaviaFlush, { now: NOW });
+		expect(outcome.verified.map((o) => o.ref.saleorProductId)).toEqual(["P1"]);
+		expect(outcome.unconfirmed.map((o) => o.ref.saleorProductId)).toEqual(["P3"]);
 	});
 
-	it("returns nothing when the provider is unavailable", () => {
-		expect(collectFittingProducts(null, octaviaFlush, { now: NOW }).saleorProductIds).toEqual([]);
-	});
-
-	it("de-duplicates ids shared by several applications", () => {
+	it("never offers an unverified set", () => {
 		const d = dataset();
-		d.applications.push({ ...d.applications[0]!, applicationId: "a3" });
-		expect(collectFittingProducts(d, octaviaFlush, { now: NOW }).saleorProductIds).toEqual(["P1"]);
+		d.applications[0]!.verificationStatus = "provisional";
+		const outcome = resolveVehicleOutcome(d, octaviaFlush, { now: NOW });
+		expect(outcome.verified).toEqual([]);
+		expect(outcome.unconfirmed).toHaveLength(1);
+	});
+});
+
+describe("kind filtering — a roof box is not a roof rack", () => {
+	function withBox(): FitmentDataset {
+		const d = dataset();
+		d.applications[0]!.products.push({
+			externalReference: "cfm:product:BOX",
+			saleorProductId: "P-BOX",
+			saleorVariantId: "V-BOX",
+			productKind: "roof-box",
+		});
+		return d;
+	}
+
+	it("excludes a roof box from the configurator's candidates", () => {
+		const refs = candidateProductRefs(withBox(), octaviaFlush);
+		expect(refs.map((r) => r.saleorProductId)).toEqual(["P1"]);
+	});
+
+	it("excludes it even though its application row is verified and matches", () => {
+		const outcome = resolveVehicleOutcome(withBox(), octaviaFlush, { now: NOW });
+		expect(outcome.verified.map((o) => o.ref.saleorProductId)).not.toContain("P-BOX");
+	});
+
+	it("can still be asked about a different kind explicitly", () => {
+		const refs = candidateProductRefs(withBox(), octaviaFlush, "roof-box");
+		expect(refs.map((r) => r.saleorProductId)).toEqual(["P-BOX"]);
+	});
+});
+
+describe("vehicle-level conditions stay vehicle-level", () => {
+	it("reports a provider outage as unanswerable rather than as a no-fit list", () => {
+		const outcome = resolveVehicleOutcome(null, octaviaFlush, { now: NOW });
+		expect(outcome.unanswerable).toBe(true);
+		expect(outcome.unanswerableVerdict).toBe("PROVIDER_UNAVAILABLE");
+		expect(outcome.rejected).toEqual([]);
+	});
+
+	it("reports no vehicle as unanswerable, not as nothing fitting", () => {
+		const outcome = resolveVehicleOutcome(dataset(), null, { now: NOW });
+		expect(outcome.unanswerable).toBe(true);
+		expect(outcome.unanswerableVerdict).toBe("NO_VEHICLE_SELECTED");
+	});
+
+	it("resolves every candidate independently", () => {
+		expect(resolveCandidates(dataset(), octaviaFlush, { now: NOW })).toHaveLength(1);
 	});
 });
 

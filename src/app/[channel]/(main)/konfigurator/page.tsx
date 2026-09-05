@@ -5,32 +5,34 @@ import { getTranslations } from "next-intl/server";
 
 import { getLocaleFromChannel } from "@/config/locale";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
-import { collectFittingProducts, resolveFitment } from "@/lib/fitment/resolve";
-import { resolveFitmentOffers, uniqueProductRefs } from "@/lib/fitment/offers";
+import { resolveVehicleOutcome } from "@/lib/fitment/resolve";
+import { isDemoDataset, resolveFitmentOffers } from "@/lib/fitment/offers";
+import { renderConditions } from "@/lib/fitment/conditions";
 import { readGarage } from "@/lib/garage/state";
-import { CompatibilityBox } from "@/ui/components/fitment/compatibility-box";
-import { ConfiguratorResults } from "@/ui/components/vehicle/configurator-results";
+import { ConfiguratorResults, type ResultCard } from "@/ui/components/vehicle/configurator-results";
 import { VehicleSelectorLauncher } from "@/ui/components/vehicle/vehicle-selector-launcher";
+import { VehicleSummary } from "@/ui/components/vehicle/vehicle-summary";
+import {
+	BODY_LABEL_KEY,
+	CONDITION_LABEL_KEY,
+	ROOF_LABEL_KEY,
+} from "@/ui/components/fitment/verdict-presentation";
 import { cn } from "@/lib/utils";
 
 /**
  * Roof-rack configurator, v1.
  *
- * It picks an EXISTING complete set — one Saleor product with one existing variant. It
- * does not assemble a bill of materials, mint a virtual SKU, or add several cart lines:
- * the underlying add-to-cart mutation adds exactly one line per call, and multi-line
- * assembly would need sequential calls with no per-line success signal to roll back on.
+ * It offers ONLY complete roof-rack sets that are verified for the exact vehicle
+ * selection and purchasable in this channel. Everything else — an unconfirmed row, a
+ * disputed year, a roof box that a fitment row happens to point at — is excluded from
+ * the offer and explained instead.
  *
- * `noindex`: the results depend on one visitor's saved car, so there is no stable page
- * for a crawler to index.
+ * `noindex`: the results depend on one visitor's saved car.
  */
 export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {
 	const { channel } = await props.params;
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "configurator" });
-	return {
-		title: t("title"),
-		robots: { index: false, follow: false },
-	};
+	return { title: t("title"), robots: { index: false, follow: false } };
 }
 
 export default async function Page(props: { params: Promise<{ channel: string }> }) {
@@ -43,7 +45,6 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 				<h1 className="text-text-primary text-2xl font-bold sm:text-3xl">{t("title")}</h1>
 				<p className="text-text-secondary mt-2 max-w-prose text-sm">{t("description")}</p>
 			</header>
-
 			<Suspense fallback={<ConfiguratorSkeleton />}>
 				<ConfiguratorContent channel={channel} />
 			</Suspense>
@@ -52,52 +53,63 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 }
 
 async function ConfiguratorContent({ channel }: { channel: string }) {
-	// Explicit opt-out: this subtree reads the garage cookie. See the note in
-	// garage/page.tsx — an incidental cookies() call is not a contract.
+	// Explicit opt-out: this subtree reads the garage cookie. Relying on an incidental
+	// cookies() call would work today and break the moment it moves behind a boundary.
 	await connection();
 
 	const locale = getLocaleFromChannel(channel);
 	const t = await getTranslations({ locale, namespace: "configurator" });
+	const tf = await getTranslations({ locale, namespace: "fitment" });
 
-	const { dataset, status } = await loadFitmentDataset();
+	const { dataset } = await loadFitmentDataset();
 	const garage = await readGarage(dataset);
 	const active = garage.active && !garage.active.unresolved ? garage.active : null;
-	const selection = active?.selection ?? null;
+	const isDemo = isDemoDataset(dataset);
 
-	const vehicleLabel = active
-		? [active.makeName, active.modelName, active.generationName].filter(Boolean).join(" ") +
-			`, ${active.stored.y}`
-		: null;
-
-	const result = resolveFitment(dataset, selection);
-
-	// No car yet: say so and offer the selector. Nothing is looked up, so no empty
-	// result list can be mistaken for "nothing fits".
-	if (!selection) {
+	if (!active) {
 		return (
 			<div className="mt-6 space-y-4">
-				<CompatibilityBox
-					result={result}
-					vehicleLabel={null}
-					isFixture={status.isFixture}
-					action={<VehicleSelectorLauncher variant="inline" />}
-				/>
-				<p className="text-text-tertiary text-sm">{t("selectVehicleFirstHint")}</p>
+				<Notice title={t("selectVehicleFirst")} detail={t("selectVehicleFirstHint")} />
+				<VehicleSelectorLauncher variant="inline" />
 			</div>
 		);
 	}
 
-	const { result: fitResult } = collectFittingProducts(dataset, selection);
-	const refs = uniqueProductRefs(fitResult.matched);
-	const offers = await resolveFitmentOffers(refs, channel);
+	const qualifierLabels = [
+		active.stored.b ? tf(BODY_LABEL_KEY[active.stored.b]) : null,
+		active.stored.r ? tf(ROOF_LABEL_KEY[active.stored.r]) : null,
+	].filter((v): v is string => Boolean(v));
+
+	const outcome = resolveVehicleOutcome(dataset, active.selection);
+
+	// Only verified sets become an offer. An unconfirmed or disputed row is explained
+	// below, never listed with a buy button.
+	const verifiedRefs = outcome.verified.map((o) => o.ref);
+	const offers = await resolveFitmentOffers(verifiedRefs, channel, locale, { dataset });
+
+	const cards: ResultCard[] = offers.offers.map((offer) => {
+		const match = outcome.verified.find((o) => o.ref.saleorProductId === offer.saleorProductId);
+		const conditions = renderConditions(match?.result.conditions ?? [], locale, (code) => {
+			const key = CONDITION_LABEL_KEY[code];
+			return key ? tf(key) : null;
+		});
+		return {
+			offer,
+			conditions: conditions.resolved.map((c) => c.text),
+			unresolvedConditions: conditions.unresolvedCount,
+		};
+	});
 
 	return (
 		<div className="mt-6 space-y-6">
-			<CompatibilityBox
-				result={fitResult}
-				vehicleLabel={vehicleLabel}
-				isFixture={status.isFixture}
-				action={<VehicleSelectorLauncher variant="inline" vehicleLabel={vehicleLabel} />}
+			<VehicleSummary
+				channel={channel}
+				makeName={active.makeName}
+				modelName={active.modelName}
+				generationName={active.generationName}
+				year={active.stored.y}
+				qualifiers={qualifierLabels}
+				isDemo={isDemo}
 			/>
 
 			<div>
@@ -107,20 +119,55 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 				</p>
 			</div>
 
-			{offers.lookupFailed && offers.offers.length === 0 ? (
-				<Notice title={t("lookupFailed")} />
-			) : offers.purchasableCount === 0 && offers.compatibleCount > 0 ? (
-				// The distinction that matters most on this page today: compatible sets
-				// exist, but none is on sale in this channel. That is NOT "nothing fits
-				// your car" — nordrive-stresne-nosice currently has zero public products.
-				<Notice title={t("compatibleNotPurchasable")} detail={t("compatibleNotPurchasableDetail")} />
-			) : offers.offers.length === 0 ? (
-				<Notice title={t("noOffers")} />
-			) : (
-				<ConfiguratorResults channel={channel} locale={locale} offers={offers.offers} />
-			)}
+			{cards.length > 0 && <ConfiguratorResults channel={channel} locale={locale} cards={cards} />}
+
+			<EmptyExplanation
+				t={t}
+				hasOffers={cards.length > 0}
+				unanswerable={outcome.unanswerable}
+				verifiedCount={outcome.verified.length}
+				unconfirmedCount={outcome.unconfirmed.length}
+				compatibleCount={offers.compatibleCount}
+				lookupFailed={offers.lookupFailed}
+			/>
 		</div>
 	);
+}
+
+/**
+ * What to say when there is nothing to show — five different situations that the first
+ * version collapsed into one, including saying "this product does not fit" over an empty
+ * list on a page where no product had been chosen.
+ */
+function EmptyExplanation({
+	t,
+	hasOffers,
+	unanswerable,
+	verifiedCount,
+	unconfirmedCount,
+	compatibleCount,
+	lookupFailed,
+}: {
+	t: (key: string) => string;
+	hasOffers: boolean;
+	unanswerable: boolean;
+	verifiedCount: number;
+	unconfirmedCount: number;
+	compatibleCount: number;
+	lookupFailed: boolean;
+}) {
+	if (hasOffers) return null;
+	if (unanswerable) return <Notice title={t("lookupFailed")} />;
+	if (lookupFailed) return <Notice title={t("lookupFailed")} />;
+	// Verified sets exist for this car, but none is on sale in this channel.
+	if (verifiedCount > 0 && compatibleCount > 0) {
+		return <Notice title={t("compatibleNotPurchasable")} detail={t("compatibleNotPurchasableDetail")} />;
+	}
+	// Rows exist but none is trustworthy enough to offer. Not the same as "nothing fits".
+	if (unconfirmedCount > 0) {
+		return <Notice title={t("noVerifiedSet")} detail={t("noVerifiedSetDetail")} />;
+	}
+	return <Notice title={t("noOffers")} detail={t("noOffersDetail")} />;
 }
 
 function Notice({ title, detail, className }: { title: string; detail?: string; className?: string }) {
