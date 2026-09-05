@@ -219,8 +219,11 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
 	try {
 		return await fetch(url, { ...init, signal: controller.signal });
 	} finally {
+		// Only the timeout is released here. The caller link stays attached on
+		// purpose: `fetch` resolves when the HEADERS arrive, and the body is read
+		// later by the caller. Detaching now would leave that read — and its
+		// socket — unabortable, which is the hole this is closing.
 		clearTimeout(timeoutId);
-		caller?.removeEventListener("abort", onCallerAbort);
 	}
 }
 
@@ -229,6 +232,26 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
 // ============================================================================
 
 type FetchResult = GraphQLSuccess<Response> | GraphQLFailure;
+
+/**
+ * `cookies()` outside a request scope. Next raises this when a route is being
+ * prerendered, and it happens BEFORE any request is built — which is the only
+ * reason an unauthenticated fallback is safe.
+ */
+function isDynamicServerError(error: unknown): boolean {
+	return (
+		error instanceof Error &&
+		((error as Error & { digest?: string }).digest === "DYNAMIC_SERVER_USAGE" ||
+			error.message?.includes("cookies") ||
+			error.message?.includes("Dynamic server usage"))
+	);
+}
+
+/** The auth client, or a throw that `isDynamicServerError` can classify. */
+async function getServerAuthClientSafely() {
+	const { getServerAuthClient } = await import("@/lib/auth/server");
+	return await getServerAuthClient();
+}
 
 /**
  * Reject as soon as `signal` aborts, rather than waiting for `promise`.
@@ -276,21 +299,28 @@ async function fetchWithRetry(
 			let response: Response;
 
 			if (withAuth) {
+				// The fallback belongs to OBTAINING the client, never to the request.
+				//
+				// This try used to wrap the `fetchWithAuth` call as well, so any
+				// rejection from the request itself whose message merely mentioned
+				// "cookies" was answered by re-sending the identical body through
+				// `fetchWithTimeout`. For `checkoutLinesAdd` — which is not
+				// idempotent — that is a second line in the customer's basket, from
+				// the one place in this file that exists to stop exactly that.
+				//
+				// Getting the client is strictly before anything is sent, so falling
+				// back there is safe. Everything after it must propagate.
+				let client: Awaited<ReturnType<typeof getServerAuthClientSafely>> | null;
 				try {
-					const { getServerAuthClient } = await import("@/lib/auth/server");
-					response = await (await getServerAuthClient()).fetchWithAuth(url, input);
+					client = await getServerAuthClientSafely();
 				} catch (authError) {
-					const isDynamicServerError =
-						authError instanceof Error &&
-						((authError as Error & { digest?: string }).digest === "DYNAMIC_SERVER_USAGE" ||
-							authError.message?.includes("cookies") ||
-							authError.message?.includes("Dynamic server usage"));
-					if (isDynamicServerError) {
-						response = await fetchWithTimeout(url, input, timeoutMs);
-					} else {
-						throw authError;
-					}
+					if (!isDynamicServerError(authError)) throw authError;
+					client = null;
 				}
+
+				response = client
+					? await client.fetchWithAuth(url, input)
+					: await fetchWithTimeout(url, input, timeoutMs);
 			} else {
 				response = await fetchWithTimeout(url, input, timeoutMs);
 			}
@@ -310,7 +340,11 @@ async function fetchWithRetry(
 
 			return success(response);
 		} catch (error) {
-			const isTimeout = error instanceof Error && error.name === "AbortError";
+			// undici rejects with the abort REASON verbatim, so a deadline that
+			// aborts with `AbortSignal.timeout` surfaces as TimeoutError, not
+			// AbortError. Matching only the latter silently reclassified it.
+			const isTimeout =
+				error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
 			// The caller has stopped waiting. Retrying would put another request on
 			// the wire for an answer nobody will read.
 			if (input.signal?.aborted) {
