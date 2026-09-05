@@ -1,22 +1,46 @@
 import { Suspense } from "react";
+import { type Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { ProductListPaginatedDocument } from "@/gql/graphql";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
 import { getPaginatedListVariables } from "@/lib/utils";
 import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
-import { marketHref } from "@/lib/channel-map";
+import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import { resolveCategorySlugsToIds } from "@/ui/components/plp/filter-utils.server";
 import { ProductsPageClient } from "./products-client";
 import { brandConfig } from "@/config/brand";
+import { buildCanonicalUrl } from "@/lib/seo/hreflang";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
 
-export const metadata = {
-	title: "Products",
-	description: `All products at ${brandConfig.siteName}`,
-};
+/**
+ * The market's main listing had a static English metadata block — it served
+ * `<title>Products</title>` on /sk/products, on a Slovak-first storefront, with
+ * no brand suffix and no canonical.
+ *
+ * The suffix has to be appended by hand: `(main)/layout.tsx` sets
+ * `title: { absolute: siteName }`, which terminates template inheritance, so a
+ * `title.template` never reaches a page under [channel]. The canonical points at
+ * the bare path, dropping ?sort= and the filter params, which otherwise make
+ * every toolbar permutation a separate indexable URL competing with the clean
+ * one — the same reasoning, and the same helper, as the category listing.
+ *
+ * The visible heading already used these two keys; only the metadata was English.
+ */
+export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {
+	const { channel } = await props.params;
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "plp" });
+
+	return {
+		title: `${t("allProducts")} | ${brandConfig.siteName}`,
+		description: t("allProductsDescription"),
+		alternates: {
+			canonical: buildCanonicalUrl(REVERSE_MAP[channel] || channel, "/products"),
+		},
+	};
+}
 
 type PageProps = {
 	params: Promise<{ channel: string }>;

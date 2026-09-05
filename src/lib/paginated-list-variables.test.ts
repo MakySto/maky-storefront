@@ -56,3 +56,29 @@ describe("paginated list documents", () => {
 		}
 	});
 });
+
+/**
+ * The other half of the same mismatch class: the shared <Pagination> emits
+ * `direction=prev`, and a consumer that recognises a different spelling does not
+ * fail — it silently paginates the wrong way.
+ *
+ * /sk/search accepted only "backward", so a Previous click fell through to
+ * "forward" and was executed as `first: N, after: startCursor`, answering
+ * HTTP 200 with the wrong products.
+ */
+describe("the direction vocabulary the Pagination component emits", () => {
+	const parse = (raw: string | undefined) => (raw === "backward" || raw === "prev" ? "backward" : "forward");
+
+	it("reads the component's own 'prev' as backward", () => {
+		expect(parse("prev")).toBe("backward");
+	});
+
+	it("still honours the older 'backward' spelling", () => {
+		expect(parse("backward")).toBe("backward");
+	});
+
+	it("treats 'next' and an absent param as forward", () => {
+		expect(parse("next")).toBe("forward");
+		expect(parse(undefined)).toBe("forward");
+	});
+});

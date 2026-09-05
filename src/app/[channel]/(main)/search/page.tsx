@@ -69,7 +69,15 @@ async function SearchContent({
 
 	// Parse pagination
 	const cursor = Array.isArray(searchParams.cursor) ? searchParams.cursor[0] : searchParams.cursor;
-	const direction = searchParams.direction === "backward" ? "backward" : "forward";
+	// The shared <Pagination> emits "prev"/"next" (pagination.tsx:38-42) and this
+	// route only ever recognised "backward". A Previous click therefore fell
+	// through to "forward" and was run as `first: N, after: startCursor` — so it
+	// answered HTTP 200 with the WRONG products rather than failing. "backward" is
+	// still accepted for any link already in the wild.
+	const directionParam = Array.isArray(searchParams.direction)
+		? searchParams.direction[0]
+		: searchParams.direction;
+	const direction = directionParam === "backward" || directionParam === "prev" ? "backward" : "forward";
 
 	// Parse sort
 	const sortParam = Array.isArray(searchParams.sort) ? searchParams.sort[0] : searchParams.sort;
@@ -99,7 +107,7 @@ async function SearchContent({
 			<div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
 					<h1 className="text-2xl font-semibold">Results for &quot;{query}&quot;</h1>
-					<p className="mt-1 text-sm text-muted-foreground">
+					<p className="text-muted-foreground mt-1 text-sm">
 						{pagination.totalCountIsEstimate ? "≥ " : ""}
 						{pagination.totalCount} {pagination.totalCount === 1 ? "product" : "products"} found
 					</p>
@@ -133,19 +141,19 @@ function SearchSkeleton() {
 	return (
 		<div className="animate-skeleton-delayed opacity-0">
 			<div className="mb-8">
-				<div className="h-8 w-64 animate-pulse rounded bg-muted" />
-				<div className="mt-2 h-4 w-32 animate-pulse rounded bg-muted" />
+				<div className="bg-muted h-8 w-64 animate-pulse rounded" />
+				<div className="bg-muted mt-2 h-4 w-32 animate-pulse rounded" />
 			</div>
 			{/* Matches SearchResults: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 */}
 			<div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
 				{Array.from({ length: 6 }).map((_, i) => (
-					<div key={i} className="animate-pulse overflow-hidden rounded-lg border border-border bg-card">
+					<div key={i} className="border-border bg-card animate-pulse overflow-hidden rounded-lg border">
 						{/* Matches SearchResultCard: aspect-square image + p-4 content */}
-						<div className="aspect-square bg-muted" />
+						<div className="bg-muted aspect-square" />
 						<div className="p-4">
-							<div className="mb-1 h-3 w-16 rounded bg-muted" />
-							<div className="h-4 w-3/4 rounded bg-muted" />
-							<div className="mt-2 h-4 w-20 rounded bg-muted" />
+							<div className="bg-muted mb-1 h-3 w-16 rounded" />
+							<div className="bg-muted h-4 w-3/4 rounded" />
+							<div className="bg-muted mt-2 h-4 w-20 rounded" />
 						</div>
 					</div>
 				))}
@@ -157,24 +165,24 @@ function SearchSkeleton() {
 function EmptyState({ query, channel }: { query: string; channel: string }) {
 	return (
 		<div className="flex flex-col items-center justify-center py-16 text-center">
-			<div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-				<SearchIcon className="h-8 w-8 text-muted-foreground" />
+			<div className="bg-muted mb-6 flex h-16 w-16 items-center justify-center rounded-full">
+				<SearchIcon className="text-muted-foreground h-8 w-8" />
 			</div>
 			<h1 className="text-2xl font-semibold">No results for &quot;{query}&quot;</h1>
-			<p className="mt-2 max-w-md text-muted-foreground">
+			<p className="text-muted-foreground mt-2 max-w-md">
 				We couldn&apos;t find any products matching your search. Try a different term or browse our
 				categories.
 			</p>
 			<div className="mt-8 flex flex-col gap-3 sm:flex-row">
 				<Link
 					href={marketHref(channel, "/products")}
-					className="hover:bg-primary/90 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors"
+					className="hover:bg-primary/90 bg-primary text-primary-foreground inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-medium transition-colors"
 				>
 					Browse All Products
 				</Link>
 				<Link
 					href={marketHref(channel)}
-					className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+					className="border-border bg-background text-foreground hover:bg-muted inline-flex items-center justify-center rounded-lg border px-6 py-3 text-sm font-medium transition-colors"
 				>
 					Go to Homepage
 				</Link>
