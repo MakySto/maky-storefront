@@ -177,7 +177,6 @@
 		"bodyCoupe": "Cupé",
 		"bodyConvertible": "Descapotable",
 		"bodyPickup": "Pick-up",
-		"fixtureNotice": "Datos de prueba: no se trata de una compatibilidad verificada.",
 		"conditionTorqueCheck": "Después de los primeros 100 km, apriete los pies de montaje con el par prescrito.",
 		"conditionRailSpacing": "Antes del montaje, mida la distancia entre los raíles longitudinales.",
 		"conditionPanoramicRoof": "Con techo panorámico, la capacidad de carga es menor.",
@@ -204,7 +203,11 @@
 			"chooseDoors": "¿Cuántas puertas tiene su vehículo?",
 			"roofTypeHelp": "El tipo de techo determina qué pies de montaje encajan en el vehículo.",
 			"summary": "{make} {model} {generation}, {year}"
-		}
+		},
+		"verdictQualified": "Compatible con condiciones",
+		"verdictQualifiedDetail": "Este conjunto está verificado para su vehículo, pero está sujeto a una condición de montaje que ahora no podemos indicarle de forma comprensible.",
+		"conditionsIncomplete": "{count, plural, one {Este conjunto está sujeto a # condición que todavía no podemos indicarle en su idioma.} other {Este conjunto está sujeto a # condiciones que todavía no podemos indicarle en su idioma.}}",
+		"demoNotice": "Demostración de prueba. Son datos simulados, no una oferta real ni una compatibilidad verificada."
 	},
 	"cart": {
 		"yourCart": "Tu carrito",
@@ -623,6 +626,25 @@
 		"facetAero": "aero",
 		"facetSquare": "cuadrado",
 		"facetAluminium": "aluminio",
-		"facetSteel": "acero"
+		"facetSteel": "acero",
+		"yourVehicle": "Su vehículo",
+		"noVerifiedSet": "No tenemos ningún conjunto verificado para este vehículo",
+		"noVerifiedSetDetail": "Existen algunos registros, pero todavía no están verificados. Esto no significa que no haya nada que encaje en su vehículo.",
+		"noOffersDetail": "Pruebe a cambiar de vehículo o consúltenos sobre el conjunto.",
+		"cardVerifiedFit": "Verificado para su vehículo",
+		"cardQualifiedFit": "Verificado con condiciones",
+		"cardConditionsIncomplete": "Este conjunto está sujeto a una condición de montaje que todavía no podemos indicarle en su idioma. Póngase en contacto con nosotros antes del montaje, por favor.",
+		"priceUnavailable": "Precio no disponible",
+		"demoBadge": "Demostración",
+		"demoNoPurchase": "En la demostración no se puede comprar",
+		"demoPlaceholder": "Demostración de prueba",
+		"errorSimulation": "Esto es una demostración de prueba; no se puede comprar.",
+		"errorProviderUnavailable": "La comprobación de compatibilidad no está disponible en este momento. Inténtelo más tarde, por favor.",
+		"errorVehicleChanged": "Ha cambiado el vehículo seleccionado. Verifique la compatibilidad de nuevo, por favor.",
+		"errorNotVerified": "Este conjunto no está verificado para el vehículo seleccionado actualmente.",
+		"errorNotAvailable": "Este conjunto ya no está en el catálogo.",
+		"errorCartRejected": "No se ha podido añadir el conjunto a la cesta.",
+		"errorLookupFailed": "No podemos confirmar si el conjunto se ha añadido. Compruebe la cesta, por favor.",
+		"errorGeneric": "No se ha podido añadir el conjunto a la cesta."
 	}
 }

@@ -177,7 +177,6 @@
 		"bodyCoupe": "Coupe",
 		"bodyConvertible": "Convertible",
 		"bodyPickup": "Pickup",
-		"fixtureNotice": "Test data — this is not a verified fit.",
 		"conditionTorqueCheck": "Retighten the mounting feet to the specified torque after the first 60 miles (100 km).",
 		"conditionRailSpacing": "Measure the spacing between the roof rails before installation.",
 		"conditionPanoramicRoof": "Load capacity is reduced on vehicles with a panoramic roof.",
@@ -204,7 +203,11 @@
 			"chooseDoors": "How many doors does your vehicle have?",
 			"roofTypeHelp": "The roof type determines which mounting feet fit your vehicle.",
 			"summary": "{make} {model} {generation}, {year}"
-		}
+		},
+		"verdictQualified": "Fits with conditions",
+		"verdictQualifiedDetail": "This set is verified for your vehicle, but it comes with an installation requirement we can't spell out for you right now.",
+		"conditionsIncomplete": "{count, plural, one {This set comes with # installation requirement that we can't show in your language yet.} other {This set comes with # installation requirements that we can't show in your language yet.}}",
+		"demoNotice": "Test preview. This is simulated data — not a real offer and not a verified fit."
 	},
 	"cart": {
 		"yourCart": "Your cart",
@@ -624,6 +627,25 @@
 		"facetAero": "aero",
 		"facetSquare": "square",
 		"facetAluminium": "aluminum",
-		"facetSteel": "steel"
+		"facetSteel": "steel",
+		"yourVehicle": "Your vehicle",
+		"noVerifiedSet": "We don't have a verified set for this vehicle",
+		"noVerifiedSetDetail": "Some records exist, but they aren't verified yet. That doesn't mean nothing fits your vehicle.",
+		"noOffersDetail": "Try a different vehicle, or ask us about a set.",
+		"cardVerifiedFit": "Verified for your vehicle",
+		"cardQualifiedFit": "Verified, with conditions",
+		"cardConditionsIncomplete": "This set comes with an installation requirement we can't show in your language yet. Please contact us before installation.",
+		"priceUnavailable": "Price unavailable",
+		"demoBadge": "Demo",
+		"demoNoPurchase": "Buying is disabled in the demo",
+		"demoPlaceholder": "Test preview",
+		"errorSimulation": "This is a test preview — you can't make a purchase here.",
+		"errorProviderUnavailable": "Fitment checking is unavailable right now. Please try again later.",
+		"errorVehicleChanged": "Your selected vehicle has changed. Please verify fitment again.",
+		"errorNotVerified": "This set isn't verified for the vehicle you have selected.",
+		"errorNotAvailable": "This set is no longer available.",
+		"errorCartRejected": "We couldn't add the set to your cart.",
+		"errorLookupFailed": "We can't confirm whether the set was added. Please check your cart.",
+		"errorGeneric": "We couldn't add the set to your cart."
 	}
 }

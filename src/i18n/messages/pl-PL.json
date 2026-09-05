@@ -177,7 +177,6 @@
 		"bodyCoupe": "Coupé",
 		"bodyConvertible": "Kabriolet",
 		"bodyPickup": "Pick-up",
-		"fixtureNotice": "Dane testowe — to nie jest potwierdzona kompatybilność.",
 		"conditionTorqueCheck": "Po pierwszych 100 km dokręć stopy zalecanym momentem.",
 		"conditionRailSpacing": "Przed montażem zmierz rozstaw relingów.",
 		"conditionPanoramicRoof": "Przy dachu panoramicznym dopuszczalne obciążenie jest niższe.",
@@ -204,7 +203,11 @@
 			"chooseDoors": "Ile drzwi ma Twój pojazd?",
 			"roofTypeHelp": "Typ dachu decyduje o tym, które stopy pasują do pojazdu.",
 			"summary": "{make} {model} {generation}, {year}"
-		}
+		},
+		"verdictQualified": "Pasuje z warunkami montażu",
+		"verdictQualifiedDetail": "Ten zestaw jest potwierdzony dla Twojego pojazdu, ale obowiązuje przy nim warunek montażu, którego nie umiemy Ci teraz zrozumiale przedstawić.",
+		"conditionsIncomplete": "{count, plural, one {Z tym zestawem wiąże się # warunek, którego nie umiemy jeszcze podać w Twoim języku.} few {Z tym zestawem wiążą się # warunki, których nie umiemy jeszcze podać w Twoim języku.} many {Z tym zestawem wiąże się # warunków, których nie umiemy jeszcze podać w Twoim języku.} other {Z tym zestawem wiąże się # warunku, którego nie umiemy jeszcze podać w Twoim języku.}}",
+		"demoNotice": "Testowa wersja demonstracyjna. To są dane symulowane, a nie prawdziwa oferta ani potwierdzona kompatybilność."
 	},
 	"cart": {
 		"yourCart": "Twój koszyk",
@@ -623,6 +626,25 @@
 		"facetAero": "aero",
 		"facetSquare": "kwadratowy",
 		"facetAluminium": "aluminium",
-		"facetSteel": "stal"
+		"facetSteel": "stal",
+		"yourVehicle": "Twój pojazd",
+		"noVerifiedSet": "Do tego pojazdu nie mamy potwierdzonego zestawu",
+		"noVerifiedSetDetail": "Jakieś wpisy istnieją, ale nie są jeszcze potwierdzone. Nie oznacza to, że do Twojego pojazdu nic nie pasuje.",
+		"noOffersDetail": "Spróbuj zmienić pojazd albo zapytaj nas o zestaw.",
+		"cardVerifiedFit": "Potwierdzone dla Twojego pojazdu",
+		"cardQualifiedFit": "Potwierdzone z warunkami montażu",
+		"cardConditionsIncomplete": "Z tym zestawem wiąże się warunek montażu, którego nie umiemy Ci jeszcze podać w Twoim języku. Przed montażem skontaktuj się z nami.",
+		"priceUnavailable": "Cena niedostępna",
+		"demoBadge": "Demo",
+		"demoNoPurchase": "W wersji demonstracyjnej nie można kupować",
+		"demoPlaceholder": "Testowa wersja demonstracyjna",
+		"errorSimulation": "To jest testowa wersja demonstracyjna, zakup nie jest możliwy.",
+		"errorProviderUnavailable": "Sprawdzanie kompatybilności jest teraz niedostępne. Spróbuj ponownie później.",
+		"errorVehicleChanged": "Zmienił się wybrany pojazd. Sprawdź kompatybilność jeszcze raz.",
+		"errorNotVerified": "Dla aktualnie wybranego pojazdu ten zestaw nie jest potwierdzony.",
+		"errorNotAvailable": "Tego zestawu nie ma już w ofercie.",
+		"errorCartRejected": "Nie udało się dodać zestawu do koszyka.",
+		"errorLookupFailed": "Nie możemy potwierdzić, czy zestaw został dodany. Sprawdź, proszę, koszyk.",
+		"errorGeneric": "Nie udało się dodać zestawu do koszyka."
 	}
 }

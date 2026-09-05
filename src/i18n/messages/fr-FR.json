@@ -177,7 +177,6 @@
 		"bodyCoupe": "Coupé",
 		"bodyConvertible": "Cabriolet",
 		"bodyPickup": "Pick-up",
-		"fixtureNotice": "Données de test — il ne s'agit pas d'une compatibilité vérifiée.",
 		"conditionTorqueCheck": "Après les 100 premiers kilomètres, resserrez les pieds au couple prescrit.",
 		"conditionRailSpacing": "Avant le montage, mesurez l'écartement des rails de toit.",
 		"conditionPanoramicRoof": "Avec un toit panoramique, la charge admissible est réduite.",
@@ -204,7 +203,11 @@
 			"chooseDoors": "Combien de portes a votre véhicule ?",
 			"roofTypeHelp": "Le type de toit détermine quels pieds conviennent à votre véhicule.",
 			"summary": "{make} {model} {generation}, {year}"
-		}
+		},
+		"verdictQualified": "Compatible sous conditions",
+		"verdictQualifiedDetail": "Cet ensemble est vérifié pour votre véhicule, mais il est soumis à une condition de montage que nous ne pouvons pas vous formuler clairement pour le moment.",
+		"conditionsIncomplete": "{count, plural, one {Cet ensemble est soumis à # condition que nous ne pouvons pas encore vous indiquer dans votre langue.} other {Cet ensemble est soumis à # conditions que nous ne pouvons pas encore vous indiquer dans votre langue.}}",
+		"demoNotice": "Démonstration de test. Il s'agit de données simulées, pas d'une offre réelle ni d'une compatibilité vérifiée."
 	},
 	"cart": {
 		"yourCart": "Votre panier",
@@ -623,6 +626,25 @@
 		"facetAero": "aéro",
 		"facetSquare": "carré",
 		"facetAluminium": "aluminium",
-		"facetSteel": "acier"
+		"facetSteel": "acier",
+		"yourVehicle": "Votre véhicule",
+		"noVerifiedSet": "Nous n'avons pas d'ensemble vérifié pour ce véhicule",
+		"noVerifiedSetDetail": "Des enregistrements existent, mais ils ne sont pas encore vérifiés. Cela ne veut pas dire que rien ne convient à votre véhicule.",
+		"noOffersDetail": "Essayez de changer de véhicule ou demandez-nous quel ensemble convient.",
+		"cardVerifiedFit": "Vérifié pour votre véhicule",
+		"cardQualifiedFit": "Vérifié sous conditions",
+		"cardConditionsIncomplete": "Cet ensemble est soumis à une condition de montage que nous ne pouvons pas encore vous indiquer dans votre langue. Merci de nous contacter avant le montage.",
+		"priceUnavailable": "Prix non disponible",
+		"demoBadge": "Démo",
+		"demoNoPurchase": "Achat impossible en démonstration",
+		"demoPlaceholder": "Démonstration de test",
+		"errorSimulation": "Ceci est une démonstration de test, l'achat n'est pas possible.",
+		"errorProviderUnavailable": "La vérification de compatibilité est momentanément indisponible. Merci de réessayer plus tard.",
+		"errorVehicleChanged": "Le véhicule sélectionné a changé. Merci de vérifier à nouveau la compatibilité.",
+		"errorNotVerified": "Cet ensemble n'est pas vérifié pour le véhicule actuellement sélectionné.",
+		"errorNotAvailable": "Cet ensemble n'est plus au catalogue.",
+		"errorCartRejected": "L'ensemble n'a pas pu être ajouté au panier.",
+		"errorLookupFailed": "Nous ne pouvons pas confirmer si l'ensemble a bien été ajouté. Merci de vérifier votre panier.",
+		"errorGeneric": "L'ensemble n'a pas pu être ajouté au panier."
 	}
 }
