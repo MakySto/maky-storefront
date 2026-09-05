@@ -74,46 +74,105 @@ platí pre riadok 262 vo variantovej vetve.
 
 ---
 
-## 2. OPRAVA A3 §2 — vyššie rozlíšenie neexistuje, cieľ 1600/2400 px je nedosiahnuteľný
+## 2. OPRAVA A3 §2 — a oprava môjho vlastného prvého záveru
 
-A3 navrhuje ~1600 px pre galériu a 2400–2560 px pre lightbox. Zmeral som, čo Saleor
-skutočne vráti (stiahnuté a prečítané hlavičky, nie čísla z URL):
+A3 navrhuje ~1600 px pre galériu a 2400–2560 px pre lightbox, a odporúča test kvality
+`q=75` vs `q≈85`. **Zmeral som celý reťazec — stiahnuté súbory, dekódované pixely,
+odhad JPEG kvality a porovnanie cez `sharp`, nie čísla z URL.** Výsledok vyvracia A3
+aj moju vlastnú prvú hypotézu, že problém je v kompresii.
 
-```
-size:1024 → cdn.maky.store/..._thumbnail_.webp    dekóduje 1000×1000    12,5 KB
-size:2048 → TEN ISTÝ súbor                        dekóduje 1000×1000    12,5 KB
-size:4096 → api.maky.store/thumbnail/<id>/4096/   dekóduje 1000×1000    12,5 KB
-url (bez size) → ..._thumbnail_4.jpg              dekóduje 1000×1000    33,8 KB
-```
-
-Tri závery, všetky proti A3:
-
-1. **Originál je 1000×1000. Žiadna zmena vo frontende nepridá detail.** Cieľ 2400 px na
-   týchto dátach neexistuje. Nehlás „zvýšili sme rozlíšenie", keď si len zväčšil číslo v URL.
-2. **Žiadať `size:4096` je aktívne škodlivé.** Vráti rovnakých 1000×1000 pixelov, ale
-   **z `api.maky.store`, teda z originu namiesto CDN.** Presunulo by to obrazovú prevádzku
-   zo CDN na Saleor. `size:2048` vracia ten istý CDN súbor ako `1024`, čiže je zbytočné.
-3. **Reálny zisk pri 1000×1000 je kompresia, nie rozmer.** WebP variant má 12,5 KB, JPEG
-   33,8 KB pri rovnakých pixeloch — takže priestor na vernejší obraz existuje, ale ide o
-   kvalitu, nie o veľkosť. Tu má zmysel test `q=75` vs `q≈85`.
-
-**Čo teda naozaj zadaj:** správne `sizes` podľa skutočnej šírky kontajnera, oddelený
-thumbnail/galéria/lightbox zdroj (aby sa dal využiť, keď lepšie originály prídu), lazy
-načítanie mimo hero, a **konkrétny dátový dopyt na CFM**: chýbajú originály nad 1000 px.
-
-### Druhá vec, ktorú A3 podceňuje: ALT
-
-Všetkých **6 médií tohto produktu má identický ALT**, navyše s duplicitou „Cx Black Cx":
+### 2.1 Rozlíšenie: strop je 1000×1000
 
 ```
-Strešný nosič Nordrive Cx Black Cx pre Chevrolet Niva (1998–2015)   ×6
+size:1024 / 2048 / 4096 / url (bez size)   →  všetko dekóduje 1000×1000
 ```
 
-To nie je frontend chyba a neopravuj to generovaním. Packshot, montážna fotka, diagram a
-detail majú byť rozlíšené — to je dátová požiadavka na CFM (rola/caption per médium).
-Frontend má iba **zachovať media ID a per-médium ALT**, čo `59c32a1` už robí.
+Vyššie rozlíšenie neexistuje. Cieľ 2400 px je na týchto dátach nedosiahnuteľný.
+**Nehlás „zvýšili sme rozlíšenie", keď si len zväčšil číslo v URL.**
 
----
+### 2.2 Varianty existujú — a je ich viac, než sa zdalo
+
+Saleor drží pre jedno médium niekoľko odvodených súborov:
+
+```
+_thumbnail_2.jpg   256×256     4,7 KB   JPEG q≈65
+_thumbnail_.webp   1000×1000  12,5 KB   WebP      ← toto stránka používa
+_thumbnail_4.jpg   1000×1000  33,8 KB   JPEG q≈65 ← „originál", ktorý Saleor dostal
+```
+
+**Oprava mojho skoršieho tvrdenia:** napísal som, že `size:4096` sa servíruje z
+`api.maky.store` namiesto CDN. To bol **artefakt prvého dotazu** — Saleor thumbnail
+generuje on-demand, prvé volanie vráti origin URL a po vygenerovaní je súbor na CDN.
+Pri druhom meraní `size:4096` vracia CDN. **Nie je to trvalá vlastnosť a nie je to
+dôvod nežiadať väčšie veľkosti** — dôvod je jednoducho ten, že väčšie pixely neexistujú.
+
+### 2.3 Kompresia NIE JE problém — a toto je hlavný záver
+
+Porovnal som WebP (12,5 KB), ktorý stránka používa, proti JPEG (33,8 KB), teda proti
+najmenej komprimovanému, čo pre toto médium existuje:
+
+```
+PSNR                 42,97 dB     (>40 = vizuálne prakticky nerozoznateľné)
+priemerná odchýlka    1,81 / 255
+vzorky nad 8/255      1,15 %
+edge energy (detail)  JPEG 54,00   vs   WebP 53,95
+```
+
+**Edge energy je zhodná na dve desatiny promile.** WebP nestratil ostrosť — je 2,7×
+menší pri prakticky nezmenenom detaile. Prechod na JPEG variant by pridal ~9 % bajtov
+(13 860 B vs 12 702 B cez `/_next/image`) a **žiadny detail**.
+
+Zároveň: **produkcia dnes prijme iba `q=75`.** Každá iná hodnota vracia **HTTP 400**,
+lebo Next 16 vyžaduje `images.qualities` a tá v `next.config.js` nie je. Takže test
+„75 vs 85" sa bez zmeny konfigurácie ani nedá spustiť — a podľa meraní vyššie by aj tak
+nič nezískal.
+
+### 2.4 Skutočná príčina mäkkého dojmu: kompozícia, nie kodek
+
+Zmeral som, koľko z tej štvorcovej plochy zaberá samotný výrobok (bounding box po
+orezaní bielej):
+
+```
+médium        rámec        produkt        využitie rámca
+…IzNjc=    1000×1000     820×487            40 %
+…IzNjg=    1000×1000    1000×433            43 %
+…IzNjk=    1000×1000    1000×659            66 %
+…IzNzA=    1000×1000     871×335            29 %
+…IzNzE=    1000×1000     931×460            43 %
+…IzNzI=    1000×1000     619×514            32 %
+```
+
+Strešný nosič je široký plochý predmet vo **štvorcovom** rámci, takže 34–71 % plochy je
+biela. Vertikálne má produkt iba **335–659 px**. Galéria ten štvorec navyše vkladá do
+`aspect-[4/3]` boxu s `object-contain p-2`, čiže **letterboxuje druhýkrát** — štvorec
+zaberie 75 % šírky kontajnera a produkt z toho ešte len svoju časť.
+
+V lightboxe je `sizes="100vw"`, ale zdroj má 1000 px, takže pri 2× DPR sa obraz
+**zväčšuje nad svoje rozlíšenie**. To je presne ten mäkký dojem.
+
+### 2.5 Čo teda zadaj
+
+Na frontende (reálne zisky, žiadne sľuby o rozlíšení):
+
+- **`sizes` podľa skutočnej šírky kontajnera.** Dnes je `50vw`, no galéria je polovica
+  `max-w-7xl`, teda ~640 px, nie 960 px pri FHD. Prehliadač si pýta väčší kandidát, než
+  vie využiť.
+- **Neletterboxovať dvakrát.** Zváž pomer strán galérie bližší obsahu, prípadne render
+  podľa skutočného bounding boxu. Orezanie ale mení kompozíciu — nerob to naslepo a
+  nikdy neorezávaj montážne detaily.
+- **V lightboxe nezväčšuj nad zdroj.** Strop zoomu na skutočné rozlíšenie je pravdivejší
+  než rozmazaný upscale.
+- Oddelený thumbnail/galéria/lightbox zdroj **ponechaj** — má zmysel, keď lepšie
+  originály prídu. Dnes ale žiadny zisk neprinesie.
+- **Nezvyšuj `q` plošne** a `images.qualities` dopĺňaj len ak preukážeš prínos. Podľa
+  meraní ho nemá.
+
+Na CFM (bez toho sa detail nezlepší):
+
+- originály nad 1000 px;
+- **tesnejší orez** — 29 % využitia rámca je horší problém než kodek;
+- roly médií a ALT per médium (dnes má 6 médií jeden identický ALT s duplicitou
+  „Cx Black Cx").
 
 ## 3. POTVRDENÉ A3 §3 — a je to jediný skutočný P0 v tejto vlne
 
