@@ -41,7 +41,6 @@ function getAlt(image: LightboxImage, productName: string, index: number) {
 	return image.alt?.trim() || `${productName} – ${index + 1}`;
 }
 
-
 export function ImageCarousel({
 	images,
 	productName,
@@ -111,7 +110,20 @@ export function ImageCarousel({
 											alt={getAlt(image, productName, index)}
 											fill
 											className="object-contain p-2"
-											sizes="(max-width: 768px) 100vw, 50vw"
+											// Breaks at 1024, where the PDP grid actually becomes two
+											// columns — not at 768. The old string switched to 50vw at
+											// 769px while the layout stayed single-column to 1023px, so
+											// on a tablet the gallery painted ~852 CSS px and asked the
+											// browser for ~450. That under-fetch is a visibly soft image,
+											// and it is the half of the "blurry gallery" report that the
+											// frontend can actually fix.
+											//
+											// 596px is the real column, not "half of max-w-7xl": the grid
+											// is 1.1fr to 1fr, inside lg:px-8 (64px) with xl:gap-20 (80px),
+											// so (1280 - 64 - 80) * 1.1/2.1 = 595.05. 52vw generously covers
+											// the 1024-1279 band (473-607px actual) — over-declaring costs
+											// bytes, under-declaring costs sharpness.
+											sizes="(min-width: 1280px) 596px, (min-width: 1024px) 52vw, 100vw"
 											priority={index === 0}
 											// `priority` only emits the preload link and drops
 											// `loading="lazy"` — in Next 16 it does NOT imply a priority

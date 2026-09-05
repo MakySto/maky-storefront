@@ -186,7 +186,15 @@ export function ImageLightbox({
 							alt={getAlt(image, productName, currentIndex)}
 							fill
 							className="object-contain p-4 sm:p-6 md:p-8"
-							sizes="100vw"
+							// The stage is height-bound, so it never paints 100vw — and every
+							// source in this catalogue is 1000x1000, which is the largest honest
+							// declaration there is. Note what this does NOT fix: Next passes
+							// `withoutEnlargement` to sharp, so w=1080, w=2048 and w=3840 already
+							// return the same 1000x1000 bytes. Asking for 3840 was never an
+							// upscale and never cost bandwidth; it cost a separate cache entry and
+							// a separate AVIF encode per candidate, and it advertised a 1000px
+							// file to the browser as 3840w.
+							sizes="(min-width: 1024px) 1000px, 100vw"
 							priority
 						/>
 					</div>
