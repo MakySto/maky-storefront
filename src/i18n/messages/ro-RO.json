@@ -619,6 +619,10 @@
 		"propertyMaxLoad": "Capacitate de încărcare",
 		"propertyLockable": "Cu încuietoare",
 		"valueYes": "Da",
-		"valueNo": "Nu"
+		"valueNo": "Nu",
+		"facetAero": "aero",
+		"facetSquare": "pătrat",
+		"facetAluminium": "aluminiu",
+		"facetSteel": "oțel"
 	}
 }

@@ -619,6 +619,10 @@
 		"propertyMaxLoad": "Capacidad de carga",
 		"propertyLockable": "Con cerradura",
 		"valueYes": "Sí",
-		"valueNo": "No"
+		"valueNo": "No",
+		"facetAero": "aero",
+		"facetSquare": "cuadrado",
+		"facetAluminium": "aluminio",
+		"facetSteel": "acero"
 	}
 }

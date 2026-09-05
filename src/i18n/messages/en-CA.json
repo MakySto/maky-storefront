@@ -376,6 +376,10 @@
 		"propertyMaxLoad": "Load capacity",
 		"propertyLockable": "Lockable",
 		"valueYes": "Yes",
-		"valueNo": "No"
+		"valueNo": "No",
+		"facetAero": "aero",
+		"facetSquare": "square",
+		"facetAluminium": "aluminum",
+		"facetSteel": "steel"
 	}
 }

@@ -619,6 +619,10 @@
 		"propertyMaxLoad": "Terhelhetőség",
 		"propertyLockable": "Zárható",
 		"valueYes": "Igen",
-		"valueNo": "Nem"
+		"valueNo": "Nem",
+		"facetAero": "aero",
+		"facetSquare": "négyszögletű",
+		"facetAluminium": "alumínium",
+		"facetSteel": "acél"
 	}
 }
