@@ -1,8 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import type { SearchProduct } from "@/lib/search";
 import { localeConfig } from "@/config/locale";
 import { productHref } from "@/lib/product-url";
+import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
 interface SearchResultsProps {
 	products: SearchProduct[];
@@ -51,7 +51,7 @@ function SearchResultCard({
 			{/* Image */}
 			<div className="bg-muted relative aspect-square overflow-hidden">
 				{product.thumbnailUrl ? (
-					<Image
+					<ResilientProductImage
 						src={product.thumbnailUrl}
 						alt={product.thumbnailAlt || product.name}
 						fill

@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useFormStatus } from "react-dom";
 import { useTranslations } from "next-intl";
 
 import { Badge } from "@/ui/components/ui/badge";
 import { Button } from "@/ui/components/ui/button";
 import { QuantityStepper } from "@/ui/components/ui/quantity-stepper";
+import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
 import { StarRating } from "@/ui/components/product/star-rating";
 import { cn } from "@/lib/utils";
@@ -117,7 +117,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 				className="border-border-subtle relative mt-2 block aspect-square overflow-hidden rounded-md border bg-white"
 			>
 				{hasImage ? (
-					<Image
+					<ResilientProductImage
 						src={product.image}
 						alt={product.imageAlt || product.name}
 						fill

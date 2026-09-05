@@ -1,10 +1,10 @@
-import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { type OrderDetailsFragment } from "@/gql/graphql";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { formatDate, formatMoney } from "@/lib/utils";
 import { orderStatusStyle, defaultStatusStyle, customerStatusLabel } from "./order-status-config";
 import { accountRoutes } from "./routes";
+import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
 type Props = {
 	order: OrderDetailsFragment;
@@ -30,9 +30,9 @@ export function OrderRow({ order }: Props) {
 				{thumbnails.map((thumb, i) => (
 					<div
 						key={i}
-						className="bg-secondary/40 h-12 w-12 shrink-0 overflow-hidden rounded-lg border-2 border-background"
+						className="bg-secondary/40 border-background h-12 w-12 shrink-0 overflow-hidden rounded-lg border-2"
 					>
-						<Image
+						<ResilientProductImage
 							src={thumb.url}
 							alt={thumb.alt ?? ""}
 							width={96}
@@ -42,7 +42,7 @@ export function OrderRow({ order }: Props) {
 					</div>
 				))}
 				{thumbnails.length === 0 && (
-					<div className="flex h-12 w-12 items-center justify-center rounded-lg bg-secondary text-xs text-muted-foreground">
+					<div className="bg-secondary text-muted-foreground flex h-12 w-12 items-center justify-center rounded-lg text-xs">
 						#
 					</div>
 				)}
@@ -50,7 +50,7 @@ export function OrderRow({ order }: Props) {
 
 			<div className="min-w-0 flex-1">
 				<p className="text-sm font-semibold">ORD-{order.number}</p>
-				<p className="text-[13px] text-muted-foreground">
+				<p className="text-muted-foreground text-[13px]">
 					<time dateTime={order.created}>{formatDate(new Date(order.created))}</time>
 					{" · "}
 					{itemCount} {itemCount === 1 ? "item" : "items"}
@@ -65,7 +65,7 @@ export function OrderRow({ order }: Props) {
 				<span className="text-sm font-semibold tabular-nums">
 					{formatMoney(order.total.gross.amount, order.total.gross.currency)}
 				</span>
-				<ArrowRight className="h-4 w-4 text-muted-foreground" />
+				<ArrowRight className="text-muted-foreground h-4 w-4" />
 			</div>
 		</LinkWithChannel>
 	);

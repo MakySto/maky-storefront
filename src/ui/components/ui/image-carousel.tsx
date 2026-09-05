@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { ZoomIn } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
@@ -17,6 +16,7 @@ import {
 } from "@/ui/components/ui/carousel";
 import { ImageLightbox, type LightboxImage } from "@/ui/components/ui/image-lightbox";
 import { ImageCarouselEmpty } from "@/ui/components/ui/image-carousel-empty";
+import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
 export type { LightboxImage as ImageCarouselImage };
 
@@ -105,7 +105,7 @@ export function ImageCarousel({
 										onClick={() => setLightboxOpen(true)}
 										aria-label={getAlt(image, productName, index)}
 									>
-										<Image
+										<ResilientProductImage
 											src={image.url}
 											alt={getAlt(image, productName, index)}
 											fill
@@ -173,7 +173,7 @@ export function ImageCarousel({
 										: "border-border-default opacity-60 hover:opacity-100",
 								)}
 							>
-								<Image
+								<ResilientProductImage
 									src={image.url}
 									alt={getAlt(image, productName, index)}
 									fill
