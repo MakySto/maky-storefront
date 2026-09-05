@@ -48,7 +48,18 @@ interface CartLine {
 				};
 			} | null;
 		} | null;
-		attributes?: Array<{
+		/**
+		 * The attributes that distinguish the CHOSEN variant — colour, size — and
+		 * nothing else. `CheckoutFind` aliases the two Saleor lists as
+		 * `selectionAttributes` and `nonSelectionAttributes`; this used to be
+		 * declared as `attributes`, which the query never returns, so it was always
+		 * `undefined` and the whole block below was dead. It was optional, and
+		 * `lines` is passed as a variable rather than an object literal, so excess
+		 * property checking never ran and TypeScript said nothing.
+		 *
+		 * Required, not optional, precisely so that mismatch cannot recur silently.
+		 */
+		selectionAttributes: Array<{
 			attribute: {
 				name?: string | null;
 				slug?: string | null;
@@ -61,46 +72,10 @@ interface CartLine {
 	};
 }
 
-import { getColorHex, isColorAttribute } from "@/lib/colors";
+import { getVariantDetails } from "./variant-details";
 import { marketHref } from "@/lib/channel-map";
 import { productHref } from "@/lib/product-url";
 import { buildCheckoutPath } from "@/session-bridge";
-
-interface VariantAttribute {
-	name: string;
-	value: string;
-	colorHex?: string;
-	isColor: boolean;
-}
-
-function getVariantDetails(variant: CartLine["variant"]): VariantAttribute[] {
-	const attributes = variant.attributes || [];
-	const result: VariantAttribute[] = [];
-
-	for (const attr of attributes) {
-		const slug = attr.attribute.slug || "";
-		const name = attr.attribute.name || slug;
-		const value = attr.values[0];
-
-		if (!value?.name) continue;
-
-		const isColor = isColorAttribute(slug);
-
-		result.push({
-			name,
-			value: value.name,
-			colorHex: isColor ? getColorHex(value) : undefined,
-			isColor,
-		});
-	}
-
-	// Sort: color first, then others
-	return result.sort((a, b) => {
-		if (a.isColor && !b.isColor) return -1;
-		if (!a.isColor && b.isColor) return 1;
-		return 0;
-	});
-}
 
 interface CartDrawerProps {
 	checkoutId: string | null;
