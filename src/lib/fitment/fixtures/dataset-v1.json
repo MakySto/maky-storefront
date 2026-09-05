@@ -1,0 +1,218 @@
+{
+	"schemaVersion": "1.0.0",
+	"datasetVersion": "fixture-2026-09-04-a",
+	"datasetHash": "fixture-no-hash-this-is-not-a-cfm-export",
+	"generatedAt": "2026-09-01T00:00:00.000Z",
+	"source": {
+		"system": "fixture",
+		"note": "HAND-WRITTEN TEST DATA. Not a CFM export. The vehicle tree and every application row are invented to exercise the contract. The saleorProductId/saleorVariantId values ARE real public products in this Saleor instance, chosen so the purchase path can be exercised end to end — they are stand-ins for complete roof-rack sets, not a claim that those products fit those cars."
+	},
+	"saleorInstance": "api.maky.store",
+	"validity": {
+		"validUntil": null,
+		"staleAfterDays": 3650
+	},
+	"coverage": {
+		"completeForMakeIds": ["skoda"],
+		"note": "Only Skoda is declared complete, so an absent Skoda row yields NO_FIT while an absent VW or BMW row yields UNKNOWN. Both branches are exercised."
+	},
+	"makes": [
+		{ "id": "skoda", "name": "Škoda" },
+		{ "id": "vw", "name": "Volkswagen" },
+		{ "id": "bmw", "name": "BMW" }
+	],
+	"models": [
+		{ "id": "skoda-octavia", "makeId": "skoda", "name": "Octavia" },
+		{ "id": "skoda-kodiaq", "makeId": "skoda", "name": "Kodiaq" },
+		{ "id": "vw-golf", "makeId": "vw", "name": "Golf" },
+		{ "id": "vw-tiguan", "makeId": "vw", "name": "Tiguan" },
+		{ "id": "bmw-3", "makeId": "bmw", "name": "Rad 3" }
+	],
+	"generations": [
+		{
+			"id": "skoda-octavia-4",
+			"modelId": "skoda-octavia",
+			"name": "IV (NX)",
+			"productionYearFrom": 2020,
+			"productionYearTo": null,
+			"qualifiers": {
+				"roofTypes": ["naked-roof", "flush-rails"],
+				"bodyTypes": ["hatchback", "estate"],
+				"doors": [5]
+			}
+		},
+		{
+			"id": "skoda-kodiaq-1",
+			"modelId": "skoda-kodiaq",
+			"name": "I (NS7)",
+			"productionYearFrom": 2016,
+			"productionYearTo": 2024,
+			"qualifiers": { "roofTypes": ["raised-rails"], "bodyTypes": ["suv"], "doors": [5] }
+		},
+		{
+			"id": "vw-golf-8",
+			"modelId": "vw-golf",
+			"name": "VIII (CD)",
+			"productionYearFrom": 2019,
+			"productionYearTo": null,
+			"qualifiers": {
+				"roofTypes": ["naked-roof", "fixpoint"],
+				"bodyTypes": ["hatchback", "estate"],
+				"doors": [5]
+			}
+		},
+		{
+			"id": "vw-tiguan-2",
+			"modelId": "vw-tiguan",
+			"name": "II (AD1)",
+			"productionYearFrom": 2016,
+			"productionYearTo": 2024,
+			"qualifiers": { "roofTypes": ["raised-rails", "flush-rails"], "bodyTypes": ["suv"], "doors": [5] }
+		},
+		{
+			"id": "bmw-3-g20",
+			"modelId": "bmw-3",
+			"name": "G20",
+			"productionYearFrom": 2018,
+			"productionYearTo": null,
+			"qualifiers": {
+				"roofTypes": ["naked-roof", "flush-rails"],
+				"bodyTypes": ["saloon", "estate"],
+				"doors": [4, 5]
+			}
+		}
+	],
+	"applications": [
+		{
+			"applicationId": "app-octavia4-estate-flush",
+			"generationId": "skoda-octavia-4",
+			"yearFrom": 2020,
+			"yearTo": null,
+			"qualifiers": { "roofTypes": ["flush-rails"], "bodyTypes": ["estate"] },
+			"conditions": [
+				{
+					"code": "torque-check-after-100km",
+					"text": {
+						"sk-SK": "Po prvých 100 km dotiahnite pätky predpísaným momentom.",
+						"cs-CZ": "Po prvních 100 km dotáhněte patky předepsaným momentem.",
+						"de-DE": "Nach den ersten 100 km die Füße mit dem vorgeschriebenen Drehmoment nachziehen."
+					}
+				}
+			],
+			"verificationStatus": "verified",
+			"products": [
+				{
+					"externalReference": "cfm:product:CFMP-FIXTURE-SET-OCTAVIA4-FLUSH",
+					"saleorProductId": "UHJvZHVjdDo0MzE=",
+					"saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDMx",
+					"completeSet": { "includes": ["bars", "feet", "fitting-kit"] },
+					"facets": { "barShape": "aero", "barMaterial": "aluminium", "maxLoadKg": 75, "lockable": true }
+				},
+				{
+					"externalReference": "cfm:product:CFMP-FIXTURE-SET-OCTAVIA4-FLUSH-STEEL",
+					"saleorProductId": "UHJvZHVjdDoyODg=",
+					"saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6Mjg4",
+					"completeSet": { "includes": ["bars", "feet", "fitting-kit"] },
+					"facets": { "barShape": "square", "barMaterial": "steel", "maxLoadKg": 60, "lockable": false }
+				}
+			]
+		},
+		{
+			"applicationId": "app-octavia4-hatch-naked-negative",
+			"generationId": "skoda-octavia-4",
+			"yearFrom": 2020,
+			"yearTo": null,
+			"qualifiers": { "roofTypes": ["naked-roof"], "bodyTypes": ["hatchback"] },
+			"conditions": [],
+			"verificationStatus": "verified",
+			"negative": true,
+			"products": [
+				{
+					"externalReference": "cfm:product:CFMP-FIXTURE-SET-OCTAVIA4-FLUSH",
+					"saleorProductId": "UHJvZHVjdDo0MzE=",
+					"saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDMx"
+				}
+			]
+		},
+		{
+			"applicationId": "app-kodiaq1-raised-provisional",
+			"generationId": "skoda-kodiaq-1",
+			"yearFrom": 2016,
+			"yearTo": 2024,
+			"qualifiers": { "roofTypes": ["raised-rails"] },
+			"conditions": [
+				{
+					"code": "rail-spacing-measure",
+					"text": { "sk-SK": "Pred montážou odmerajte rozstup pozdĺžnikov." }
+				}
+			],
+			"verificationStatus": "provisional",
+			"products": [
+				{
+					"externalReference": "cfm:product:CFMP-FIXTURE-SET-KODIAQ-RAISED",
+					"saleorProductId": "UHJvZHVjdDoxMDQ=",
+					"saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MTA0",
+					"completeSet": { "includes": ["bars", "feet"] },
+					"facets": { "barShape": "square", "barMaterial": "steel", "maxLoadKg": 75, "lockable": false }
+				}
+			]
+		},
+		{
+			"applicationId": "app-golf8-fixpoint-yearhold",
+			"generationId": "vw-golf-8",
+			"yearFrom": 2019,
+			"yearTo": null,
+			"qualifiers": { "roofTypes": ["fixpoint"] },
+			"conditions": [],
+			"verificationStatus": "year-hold",
+			"products": [
+				{
+					"externalReference": "cfm:product:CFMP-FIXTURE-SET-GOLF8-FIXPOINT",
+					"saleorProductId": "UHJvZHVjdDoxMDM=",
+					"saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MTAz",
+					"completeSet": { "includes": ["bars", "feet", "fitting-kit"] },
+					"facets": { "barShape": "aero", "barMaterial": "aluminium", "maxLoadKg": 75, "lockable": true }
+				}
+			]
+		},
+		{
+			"applicationId": "app-tiguan2-conflict-a",
+			"generationId": "vw-tiguan-2",
+			"yearFrom": 2016,
+			"yearTo": 2024,
+			"qualifiers": { "roofTypes": ["raised-rails"] },
+			"conditions": [],
+			"verificationStatus": "conflict",
+			"products": [
+				{
+					"externalReference": "cfm:product:CFMP-FIXTURE-SET-TIGUAN-RAISED",
+					"saleorProductId": "UHJvZHVjdDoyMTU=",
+					"saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MjE1"
+				}
+			]
+		},
+		{
+			"applicationId": "app-bmw-g20-nooffer",
+			"generationId": "bmw-3-g20",
+			"yearFrom": 2018,
+			"yearTo": null,
+			"qualifiers": { "roofTypes": ["flush-rails"], "bodyTypes": ["estate"] },
+			"conditions": [
+				{
+					"code": "panoramic-roof-limit",
+					"text": { "sk-SK": "Pri panoramatickej streche je nosnosť znížená." }
+				}
+			],
+			"verificationStatus": "verified",
+			"products": [
+				{
+					"externalReference": "cfm:product:CFMP-FIXTURE-SET-G20-NOT-PUBLISHED",
+					"saleorProductId": "UHJvZHVjdDo5OTk5OQ==",
+					"saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6OTk5OTk=",
+					"completeSet": { "includes": ["bars", "feet", "fitting-kit"] },
+					"facets": { "barShape": "aero", "barMaterial": "aluminium", "maxLoadKg": 75, "lockable": true }
+				}
+			]
+		}
+	]
+}

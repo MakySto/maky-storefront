@@ -1,0 +1,55 @@
+# Candidate roof-rack sets, resolved from fitment ids to a real, purchasable offer.
+#
+# Deliberately keyed on `ids:` rather than `externalReference:`. The live Saleor API has
+# no bulk filter by externalReference — neither ProductWhereInput nor ProductFilterInput
+# exposes it, only the singular product(externalReference:) lookup — so a list of CFM
+# references could only be resolved one round trip at a time. That is why the fitment
+# contract carries saleorProductId.
+#
+# `slugLanguageCode` is deliberately NOT sent. It matches only a translated slug and does
+# not fall back to the base slug, and there are no product translations in this instance
+# yet, so sending it returns null for everything.
+query FitmentProductsByIds($ids: [ID!]!, $channel: String!, $first: Int!) {
+	products(first: $first, channel: $channel, filter: { ids: $ids }) {
+		totalCount
+		edges {
+			node {
+				id
+				name
+				slug
+				isAvailableForPurchase
+				thumbnail(size: 512, format: WEBP) {
+					url
+					alt
+				}
+				category {
+					name
+					slug
+				}
+				pricing {
+					priceRange {
+						start {
+							gross {
+								amount
+								currency
+							}
+						}
+					}
+				}
+				variants {
+					id
+					name
+					quantityAvailable
+					pricing {
+						price {
+							gross {
+								amount
+								currency
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
