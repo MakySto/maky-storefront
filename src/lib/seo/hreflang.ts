@@ -6,7 +6,6 @@
  */
 
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
-import { LOCALE_MAP } from "@/config/locale";
 import { liveMarkets } from "@/lib/market-state";
 import { getBaseUrl } from "./config";
 
@@ -51,27 +50,22 @@ export function buildHreflangAlternates(path: string = ""): HreflangEntry[] {
 	// international one. As markets go live this starts producing tags on its own.
 	if (markets.length < 2) return [];
 
-	const alternates: HreflangEntry[] = markets.map((market) => {
-		const config = CHANNEL_MAP[market];
-		const localeConfig = LOCALE_MAP[config.locale];
-
-		// Use full locale for markets sharing a language (de-AT, en-US, en-CA)
-		let hreflang: string;
-		if (market === "at") {
-			hreflang = "de-AT";
-		} else if (market === "us") {
-			hreflang = "en-US";
-		} else if (market === "ca") {
-			hreflang = "en-CA";
-		} else {
-			hreflang = localeConfig.htmlLang;
-		}
-
-		return {
-			hreflang,
-			url: `${base}/${market}${normalizedPath}`,
-		};
-	});
+	const alternates: HreflangEntry[] = markets.map((market) => ({
+		// The MARKET's locale, not its language. `LOCALE_MAP[...].htmlLang` is a bare
+		// language for all twelve — "de" for both Germany and Austria, "en" for both
+		// the US and Canada — so it was patched with a hardcoded list of the three
+		// markets that happened to collide today. That produced a real asymmetry:
+		// Germany was annotated as generic "de" while Austria got "de-AT", though
+		// they are separate storefronts on separate channels with their own pricing.
+		//
+		// `CHANNEL_MAP[market].locale` is already language-REGION for all twelve, so
+		// taking it from the market's own identity is both correct and closed: a
+		// thirteenth market that shares a language needs no new branch here. Under
+		// the old rule it would silently have emitted a duplicate bare language, and
+		// a cluster with two pages claiming the same hreflang is ignored wholesale.
+		hreflang: CHANNEL_MAP[market].locale,
+		url: `${base}/${market}${normalizedPath}`,
+	}));
 
 	// x-default → the first live market, not a hardcoded `sk`. If sk is ever taken
 	// out of the live set, an x-default pointing at a noindex page would be the
