@@ -47,7 +47,22 @@ async function CartContent({ params: paramsPromise }: { params: Promise<{ channe
 	const params = await paramsPromise;
 	const t = await getTranslations({ locale: getLocaleFromChannel(params.channel), namespace: "cart" });
 	const checkoutId = await Checkout.getIdFromCookies(params.channel);
-	const checkout = await Checkout.find(checkoutId);
+	const lookup = await Checkout.lookup(checkoutId);
+
+	// An outage is not an empty cart. This used to collapse the two, so a few
+	// seconds of Saleor being unreachable told the shopper their basket was empty
+	// — a statement about their data that we had no basis to make.
+	if (lookup.status === "upstream-error") {
+		return (
+			<div className="mt-12">
+				<p role="status" className="my-12 text-sm text-neutral-500">
+					{t("loadFailed")}
+				</p>
+			</div>
+		);
+	}
+
+	const checkout = lookup.status === "found" ? lookup.checkout : null;
 
 	if (!checkout || checkout.lines.length < 1) {
 		return (

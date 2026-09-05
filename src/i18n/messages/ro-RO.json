@@ -149,6 +149,7 @@
 		"remove": "Elimină",
 		"items": "{count, plural, one {# articol} few {# articole} other {# de articole}}",
 		"emptyCartHint": "Nu ați adăugat încă niciun produs în coș.",
+		"loadFailed": "Coșul nu a putut fi încărcat. Încercați din nou în câteva momente.",
 		"startShopping": "Începe cumpărăturile",
 		"shippingAtCheckout": "Se calculează la finalizarea comenzii",
 		"decreaseQuantity": "Scade cantitatea",

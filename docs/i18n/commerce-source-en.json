@@ -114,6 +114,15 @@
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
+		"cart.loadFailed": {
+			"source": "We couldn't load your cart. Please try again in a moment.",
+			"context": "Shown in the cart drawer and on the full cart page when the checkout could not be READ from Saleor. Must not be phrased as an empty cart: the basket still exists, we just could not reach it.",
+			"kind": "error",
+			"maxLength": 90,
+			"callSites": ["src/ui/components/cart/cart-drawer.tsx", "src/app/[channel]/(main)/cart/page.tsx"],
+			"usageCount": 2,
+			"runtimeStatus": "production"
+		},
 		"cart.remove": {
 			"source": "Remove",
 			"context": "Remove-line text button on cart drawer line items.",

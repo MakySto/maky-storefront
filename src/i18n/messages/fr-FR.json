@@ -149,6 +149,7 @@
 		"remove": "Supprimer",
 		"items": "{count, plural, one {# article} many {# articles} other {# articles}}",
 		"emptyCartHint": "Vous n'avez encore rien ajouté à votre panier.",
+		"loadFailed": "Impossible de charger votre panier. Réessayez dans un instant.",
 		"startShopping": "Commencer mes achats",
 		"shippingAtCheckout": "Calculée lors de la commande",
 		"decreaseQuantity": "Diminuer la quantité",

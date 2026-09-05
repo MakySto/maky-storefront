@@ -112,9 +112,14 @@ interface CartDrawerProps {
 		};
 	} | null;
 	channel: string;
+	/**
+	 * The checkout could not be READ. Distinct from an empty cart: the basket may
+	 * well exist, so the drawer must not say it is empty.
+	 */
+	loadFailed?: boolean;
 }
 
-export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawerProps) {
+export function CartDrawer({ checkoutId, lines, totalPrice, channel, loadFailed }: CartDrawerProps) {
 	const t = useTranslations("cart");
 	const tCheckoutCommon = useTranslations("checkout.common");
 	const tCommon = useTranslations("common");
@@ -154,7 +159,19 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 
 				{/* Cart Items */}
 				<div className="flex-1 overflow-y-auto">
-					{lines.length === 0 ? (
+					{loadFailed ? (
+						/* Not the empty state. We could not read the checkout, which says
+						   nothing about whether the shopper has one — and no "start
+						   shopping" call to action, because there may be nothing to start. */
+						<div className="flex h-full flex-col items-center justify-center px-6 text-center">
+							<div className="bg-secondary mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+								<RotateCcw className="text-muted-foreground h-8 w-8" />
+							</div>
+							<p role="status" className="text-muted-foreground text-sm">
+								{t("loadFailed")}
+							</p>
+						</div>
+					) : lines.length === 0 ? (
 						<div className="flex h-full flex-col items-center justify-center px-6 text-center">
 							<div className="bg-secondary mb-4 flex h-16 w-16 items-center justify-center rounded-full">
 								<ShoppingBag className="text-muted-foreground h-8 w-8" />

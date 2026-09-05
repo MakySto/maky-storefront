@@ -22,6 +22,9 @@ import { READ_BACK_BUDGET_MS, READ_BACK_DELAYS_MS } from "./add-to-cart-result";
  * an answer, and running it for real would write a line to a live checkout.
  */
 const ok = (payload: unknown) => ({ ok: true as const, data: { checkoutLinesAdd: payload } });
+/** `findOrCreate` answers a tri-state now; these build its two arms. */
+const ready = (checkout: unknown, created = true) => ({ status: "ready" as const, checkout, created });
+const unavailable = (reason: string) => ({ status: "unavailable" as const, reason });
 const CHECKOUT = { id: "Q2hlY2tvdXQ6MQ==" };
 const input = { channel: "sk-eur", variantId: "UHJvZHVjdFZhcmlhbnQ6MQ==", quantity: 1 };
 
@@ -33,7 +36,7 @@ beforeEach(() => {
 	vi.useFakeTimers();
 	vi.clearAllMocks();
 	getIdFromCookies.mockResolvedValue(null);
-	findOrCreate.mockResolvedValue(CHECKOUT);
+	findOrCreate.mockResolvedValue(ready(CHECKOUT));
 	find.mockResolvedValue(null);
 	saveIdToCookie.mockResolvedValue(undefined);
 });
@@ -117,13 +120,49 @@ describe("addVariantToCart", () => {
 	});
 
 	it("fails cleanly, and attempts nothing, when the checkout cannot be made", async () => {
-		findOrCreate.mockResolvedValue(null);
+		findOrCreate.mockResolvedValue(unavailable("could not create a checkout"));
 
 		await expect(addVariantToCart(input)).resolves.toEqual({
 			status: "rejected",
 			reason: "checkout",
 			message: "could not create a checkout",
 		});
+		expect(executeAuthenticatedGraphQL).not.toHaveBeenCalled();
+	});
+
+	it("does not write a cookie when it reused the checkout the shopper already had", async () => {
+		// Re-writing the same id would be harmless, but "only write when we created
+		// something" is the rule that keeps an existing identity from being
+		// overwritten by a path that did not mean to.
+		findOrCreate.mockResolvedValue(ready(CHECKOUT, false));
+		executeAuthenticatedGraphQL.mockResolvedValue(ok({ checkout: CHECKOUT, errors: [] }));
+
+		await settle(addVariantToCart(input));
+
+		expect(saveIdToCookie).not.toHaveBeenCalled();
+	});
+
+	it("writes the cookie only for a checkout it actually created", async () => {
+		findOrCreate.mockResolvedValue(ready(CHECKOUT, true));
+		executeAuthenticatedGraphQL.mockResolvedValue(ok({ checkout: CHECKOUT, errors: [] }));
+
+		await settle(addVariantToCart(input));
+
+		expect(saveIdToCookie).toHaveBeenCalledWith("sk-eur", CHECKOUT.id);
+	});
+
+	it("keeps the shopper's cart when Saleor is unreachable, instead of minting a new one", async () => {
+		// The defect this exists for: a lookup failure used to be indistinguishable
+		// from "this checkout does not exist", so a few seconds of Saleor being down
+		// issued a replacement checkout and overwrote the cookie. The basket was not
+		// deleted — the pointer to it was, which from the shopper's side is the same
+		// thing.
+		findOrCreate.mockResolvedValue(unavailable("Request timed out"));
+
+		const result = await settle(addVariantToCart(input));
+
+		expect(result).toMatchObject({ status: "rejected", reason: "checkout" });
+		expect(saveIdToCookie).not.toHaveBeenCalled();
 		expect(executeAuthenticatedGraphQL).not.toHaveBeenCalled();
 	});
 
@@ -192,7 +231,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 
 	it("reports success when the read shows the line did land", async () => {
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
-		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [] }));
 		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 1)] });
 
 		await expect(settle(addVariantToCart(input))).resolves.toEqual({ status: "added" });
@@ -204,7 +243,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		// lost may still be in flight. Calling it "nothing was added" invites a
 		// second click, and `checkoutLinesAdd` is not idempotent.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
-		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [] }));
 		find.mockResolvedValue({ ...CHECKOUT, lines: [] });
 
 		const result = await settle(addVariantToCart(input));
@@ -217,7 +256,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		// times out, the first read still shows the old quantity, and only then does
 		// Saleor finish the write. One read would have called this a failure.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
-		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [] }));
 		find
 			.mockResolvedValueOnce({ ...CHECKOUT, lines: [] })
 			.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 1)] });
@@ -229,7 +268,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		// Bounded, so a server action cannot hang; unconfirmed, because the deadline
 		// ends the waiting and must not be read as a verdict.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
-		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [] }));
 		find.mockResolvedValue({ ...CHECKOUT, lines: [] });
 
 		const result = await settle(addVariantToCart(input));
@@ -243,7 +282,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		// single one can take seconds against an unwell Saleor. Bounding attempts
 		// alone would leave a shopper waiting far longer than the schedule suggests.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
-		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [] }));
 		find.mockImplementation(async () => {
 			// Each read burns the entire allowance on its own.
 			vi.advanceTimersByTime(READ_BACK_BUDGET_MS);
@@ -259,7 +298,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 	it("counts from the quantity that was already in the cart", async () => {
 		// The customer already had two. Landing means three, not one.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
-		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 2)] });
+		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [line(input.variantId, 2)] }));
 		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 3)] });
 
 		await expect(settle(addVariantToCart(input))).resolves.toEqual({ status: "added" });
@@ -270,7 +309,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		// the question being answered — over-shoot is somebody else's write, not a
 		// reason to tell this customer their add failed.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
-		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 2)] });
+		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [line(input.variantId, 2)] }));
 		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 5)] });
 
 		await expect(settle(addVariantToCart(input))).resolves.toEqual({ status: "added" });
@@ -280,7 +319,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		// Partially applied, or changed underneath us. Do not guess, and above all
 		// do not add more.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
-		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 2)] });
+		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [line(input.variantId, 2)] }));
 		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 3)] });
 
 		const result = await settle(addVariantToCart({ ...input, quantity: 4 }));
@@ -302,7 +341,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 
 	it("treats a checkout that reads back as missing as unknown, not as failure", async () => {
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
-		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [] }));
 		find.mockResolvedValue(null);
 
 		const result = await settle(addVariantToCart(input));
@@ -312,7 +351,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 
 	it("NEVER sends the mutation again while reconciling", async () => {
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
-		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [] }));
 		find.mockResolvedValue({ ...CHECKOUT, lines: [] });
 
 		await settle(addVariantToCart(input));

@@ -1,5 +1,10 @@
 import { cookies } from "next/headers";
-import { CheckoutCreateDocument, CheckoutFindDocument } from "@/gql/graphql";
+import {
+	CheckoutCreateDocument,
+	CheckoutFindDocument,
+	type CheckoutCreateMutation,
+	type CheckoutFindQuery,
+} from "@/gql/graphql";
 import { checkoutGraphqlLocaleVariables, resolveCheckoutLocale } from "@/lib/checkout-locale";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
 import { checkoutIdCookieName } from "@/session-bridge";
@@ -106,9 +111,37 @@ export async function clearCheckoutCookieByValue(checkoutId: string) {
 	}
 }
 
-export async function find(checkoutId: string) {
+/**
+ * Why a checkout lookup did not return a checkout.
+ *
+ * `null` used to mean both "Saleor says this checkout does not exist" and "we
+ * could not ask" — and `findOrCreate` treated the second as the first, so a few
+ * seconds of Saleor being unreachable made the storefront issue a NEW checkout
+ * and overwrite the cookie. The customer's basket was not deleted; the pointer
+ * to it was. From their side it is the same thing.
+ *
+ * `not-found` is a claim, and only a definitive answer earns it: Saleor replied,
+ * and the checkout is not there. A timeout, a 5xx, a transport failure or a
+ * GraphQL error are all `upstream-error` — we learned nothing.
+ *
+ * `checkout-session-loader.tsx` has always drawn this distinction (`loadState`
+ * "error" vs "not_found", and it clears the cookie only for the latter). This
+ * brings the cart path to the same standard.
+ */
+export type CheckoutLookup<T> =
+	| { status: "found"; checkout: T }
+	| { status: "not-found" }
+	| { status: "upstream-error"; reason: string };
+
+/**
+ * Ask Saleor about a checkout, and say honestly which of the three answers came
+ * back. Callers that may WRITE — replace a cookie, create a replacement, clear a
+ * session — must use this rather than `find`.
+ */
+export async function lookup(checkoutId: string): Promise<CheckoutLookup<FoundCheckout>> {
 	if (!checkoutId) {
-		return null;
+		// No pointer at all is not an outage; there is genuinely nothing to find.
+		return { status: "not-found" };
 	}
 
 	const result = await executeAuthenticatedGraphQL(CheckoutFindDocument, {
@@ -116,23 +149,81 @@ export async function find(checkoutId: string) {
 		cache: "no-cache",
 	});
 
-	// Return null on error or if checkout not found
-	return result.ok ? result.data.checkout : null;
-}
-
-export async function findOrCreate({ channel, checkoutId }: { checkoutId?: string; channel: string }) {
-	if (!checkoutId) {
-		const result = await create({ channel });
-		return result.ok ? result.data.checkoutCreate?.checkout : null;
+	if (!result.ok) {
+		return { status: "upstream-error", reason: result.error.message };
 	}
 
-	const checkout = await find(checkoutId);
-	if (checkout) {
-		return checkout;
+	return result.data.checkout ? { status: "found", checkout: result.data.checkout } : { status: "not-found" };
+}
+
+/** The checkout exactly as `CheckoutFind` returns it. */
+export type FoundCheckout = NonNullable<CheckoutFindQuery["checkout"]>;
+
+/**
+ * The checkout as `CheckoutCreate` returns it — a genuinely different shape:
+ * the create mutation does not select the variant attribute lists. Keeping the
+ * union honest is better than widening one to the other, because callers that
+ * need attributes must not silently receive a checkout that has none.
+ */
+export type CreatedCheckout = NonNullable<NonNullable<CheckoutCreateMutation["checkoutCreate"]>["checkout"]>;
+
+/**
+ * Read-only convenience wrapper: the checkout, or `null` for any reason.
+ *
+ * Kept for surfaces that only DISPLAY — they cannot destroy anything, so
+ * collapsing the two failures is survivable there. It must not be used on a
+ * write or session path; `lookup` exists because that collapse is exactly the
+ * defect.
+ */
+export async function find(checkoutId: string) {
+	const result = await lookup(checkoutId);
+	return result.status === "found" ? result.checkout : null;
+}
+
+/** What `findOrCreate` settled on, and whether a new checkout was issued. */
+export type EnsuredCheckout<T> =
+	| { status: "ready"; checkout: T; created: boolean }
+	| { status: "unavailable"; reason: string };
+
+/**
+ * The existing checkout when there is one, a new one only when we KNOW there is
+ * not.
+ *
+ * The `upstream-error` arm is the point of this function: it returns
+ * `unavailable` rather than quietly minting a replacement. Nothing is written,
+ * the cookie keeps pointing at the basket the customer still has, and the caller
+ * reports a clean failure — which is honest, because nothing was attempted.
+ */
+export async function findOrCreate({
+	channel,
+	checkoutId,
+}: {
+	checkoutId?: string;
+	channel: string;
+}): Promise<EnsuredCheckout<FoundCheckout | CreatedCheckout>> {
+	if (checkoutId) {
+		const existing = await lookup(checkoutId);
+		if (existing.status === "found") {
+			return { status: "ready", checkout: existing.checkout, created: false };
+		}
+		if (existing.status === "upstream-error") {
+			// Do NOT create a replacement. We do not know that the old one is gone.
+			return { status: "unavailable", reason: existing.reason };
+		}
+		// `not-found`: Saleor answered, so a new checkout is the right response.
 	}
 
 	const result = await create({ channel });
-	return result.ok ? result.data.checkoutCreate?.checkout : null;
+	if (!result.ok) {
+		return { status: "unavailable", reason: result.error.message };
+	}
+
+	const created = result.data.checkoutCreate?.checkout;
+	if (!created) {
+		return { status: "unavailable", reason: "checkoutCreate returned no checkout" };
+	}
+
+	return { status: "ready", checkout: created, created: true };
 }
 
 // The checkout is born with the market's language (central market config, krok 2): the

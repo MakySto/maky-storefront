@@ -149,6 +149,7 @@
 		"remove": "Odstrániť",
 		"items": "{count, plural, one {# položka} few {# položky} other {# položiek}}",
 		"emptyCartHint": "Zatiaľ ste si do košíka nič nepridali.",
+		"loadFailed": "Košík sa nepodarilo načítať. Skúste to prosím o chvíľu.",
 		"startShopping": "Začať nakupovať",
 		"shippingAtCheckout": "Vypočíta sa v pokladni",
 		"decreaseQuantity": "Znížiť množstvo",

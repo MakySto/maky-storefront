@@ -149,6 +149,7 @@
 		"remove": "Entfernen",
 		"items": "{count, plural, one {# Artikel} other {# Artikel}}",
 		"emptyCartHint": "Sie haben noch nichts in den Warenkorb gelegt.",
+		"loadFailed": "Der Warenkorb konnte nicht geladen werden. Bitte versuchen Sie es gleich erneut.",
 		"startShopping": "Einkauf starten",
 		"shippingAtCheckout": "Wird an der Kasse berechnet",
 		"decreaseQuantity": "Menge verringern",

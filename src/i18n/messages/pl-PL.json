@@ -149,6 +149,7 @@
 		"remove": "Usuń",
 		"items": "{count, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}}",
 		"emptyCartHint": "Nie masz jeszcze żadnych produktów w koszyku.",
+		"loadFailed": "Nie udało się wczytać koszyka. Spróbuj ponownie za chwilę.",
 		"startShopping": "Rozpocznij zakupy",
 		"shippingAtCheckout": "Obliczana podczas składania zamówienia",
 		"decreaseQuantity": "Zmniejsz ilość",

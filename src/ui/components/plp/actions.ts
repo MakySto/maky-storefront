@@ -69,18 +69,27 @@ export async function addVariantToCart(input: {
 	let checkoutId: string;
 	let quantityBefore = 0;
 	try {
-		const checkout = await Checkout.findOrCreate({
+		const ensured = await Checkout.findOrCreate({
 			checkoutId: await Checkout.getIdFromCookies(channel),
 			channel,
 		});
-		if (!checkout) {
-			return { status: "rejected", reason: "checkout", message: "could not create a checkout" };
+		if (ensured.status === "unavailable") {
+			// Nothing was attempted, so this really is a clean refusal — and,
+			// crucially, no replacement checkout was minted and the cookie still
+			// points at whatever basket the customer already had.
+			return { status: "rejected", reason: "checkout", message: ensured.reason };
 		}
-		await Checkout.saveIdToCookie(channel, checkout.id);
-		checkoutId = checkout.id;
+
+		// Only a NEW checkout earns a cookie write. Re-writing the same id would be
+		// harmless, but "only write when we created something" is the rule that
+		// keeps an existing identity from being overwritten by accident.
+		if (ensured.created) {
+			await Checkout.saveIdToCookie(channel, ensured.checkout.id);
+		}
+		checkoutId = ensured.checkout.id;
 		// Recorded so an unclear result can be settled by READING rather than by
 		// sending the write again.
-		quantityBefore = quantityOfVariant(checkout, decodedVariantId);
+		quantityBefore = quantityOfVariant(ensured.checkout, decodedVariantId);
 	} catch (error) {
 		// Still before the mutation, so nothing can have been written.
 		return {

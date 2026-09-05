@@ -149,6 +149,7 @@
 		"remove": "Rimuovi",
 		"items": "{count, plural, one {# articolo} other {# articoli}}",
 		"emptyCartHint": "Non hai ancora aggiunto prodotti al carrello.",
+		"loadFailed": "Non è stato possibile caricare il carrello. Riprova tra un momento.",
 		"startShopping": "Inizia gli acquisti",
 		"shippingAtCheckout": "Calcolata alla cassa",
 		"decreaseQuantity": "Riduci quantità",

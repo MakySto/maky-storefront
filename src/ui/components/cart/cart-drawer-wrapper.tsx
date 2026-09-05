@@ -7,7 +7,8 @@ interface CartDrawerWrapperProps {
 
 export async function CartDrawerWrapper({ channel }: CartDrawerWrapperProps) {
 	const checkoutId = await Checkout.getIdFromCookies(channel);
-	const checkout = checkoutId ? await Checkout.find(checkoutId) : null;
+	const lookup = await Checkout.lookup(checkoutId);
+	const checkout = lookup.status === "found" ? lookup.checkout : null;
 
 	return (
 		<CartDrawer
@@ -15,6 +16,9 @@ export async function CartDrawerWrapper({ channel }: CartDrawerWrapperProps) {
 			lines={checkout?.lines ?? []}
 			totalPrice={checkout?.totalPrice ?? null}
 			channel={channel}
+			// An empty drawer and an unreachable one are different statements. Only
+			// one of them is about the shopper's basket.
+			loadFailed={lookup.status === "upstream-error"}
 		/>
 	);
 }
