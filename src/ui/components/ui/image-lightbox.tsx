@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
 export interface LightboxImage {
 	/**
@@ -181,7 +181,7 @@ export function ImageLightbox({
 						className="relative h-full w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl"
 						onClick={(e) => e.stopPropagation()}
 					>
-						<Image
+						<ResilientProductImage
 							src={image.url}
 							alt={getAlt(image, productName, currentIndex)}
 							fill
@@ -218,7 +218,7 @@ export function ImageLightbox({
 											: "border-white/10 opacity-60 hover:opacity-90",
 									)}
 								>
-									<Image
+									<ResilientProductImage
 										src={img.url}
 										alt={getAlt(img, productName, index)}
 										fill

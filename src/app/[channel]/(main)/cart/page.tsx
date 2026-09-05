@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { type Metadata } from "next";
-import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { CheckoutLink } from "./checkout-link";
 import { DeleteLineButton } from "./delete-line-button";
@@ -9,6 +8,7 @@ import { compareAtLineTotal } from "@/lib/pricing";
 import { formatMoney, getHrefForVariant } from "@/lib/utils";
 import { getLocaleFromChannel } from "@/config/locale";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
+import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
 export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {
 	const { channel } = await props.params;
@@ -117,7 +117,7 @@ async function CartContent({ params: paramsPromise }: { params: Promise<{ channe
 					<li key={item.id} className="flex py-4">
 						<div className="aspect-square h-24 w-24 shrink-0 overflow-hidden rounded-md border bg-neutral-50 sm:h-32 sm:w-32">
 							{item.variant?.product?.thumbnail?.url && (
-								<Image
+								<ResilientProductImage
 									src={item.variant.product.thumbnail.url}
 									alt={item.variant.product.thumbnail.alt ?? ""}
 									width={200}

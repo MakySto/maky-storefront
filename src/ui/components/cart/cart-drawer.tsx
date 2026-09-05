@@ -2,7 +2,6 @@
 
 import { useTransition } from "react";
 import { useTranslations } from "next-intl";
-import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, RotateCcw } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
@@ -12,6 +11,7 @@ import { deleteCartLine, updateCartLineQuantity } from "./actions";
 import { formatMoney } from "@/lib/utils";
 import { localeConfig } from "@/config/locale";
 import { compareAtLineTotal } from "@/lib/pricing";
+import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
 interface CartLine {
 	id: string;
@@ -183,7 +183,7 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel, loadFailed 
 												className="group bg-secondary relative h-24 w-20 shrink-0 overflow-hidden rounded-lg"
 											>
 												{line.variant.product.thumbnail?.url && (
-													<Image
+													<ResilientProductImage
 														src={line.variant.product.thumbnail.url}
 														alt={line.variant.product.thumbnail.alt ?? line.variant.product.name}
 														fill

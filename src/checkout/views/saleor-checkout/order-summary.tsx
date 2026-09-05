@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, type FC } from "react";
-import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Tag, ShieldCheck, ChevronDown, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type CheckoutFragment, type OrderFragment } from "@/checkout/graphql";
 import { localeConfig } from "@/config/locale";
 import { useLocale } from "@/providers/locale-provider";
+import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
 // ============================================================================
 // Types
@@ -180,7 +180,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 									)}
 								>
 									{line.imageUrl ? (
-										<Image
+										<ResilientProductImage
 											src={line.imageUrl}
 											alt={line.imageAlt || line.name}
 											width={32}
@@ -245,7 +245,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 										</span>
 										<div className="border-border bg-secondary h-14 w-14 overflow-hidden rounded-lg border">
 											{line.imageUrl ? (
-												<Image
+												<ResilientProductImage
 													src={line.imageUrl}
 													alt={line.imageAlt || line.name}
 													width={56}

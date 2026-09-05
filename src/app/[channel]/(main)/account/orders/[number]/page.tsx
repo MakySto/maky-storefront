@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import { MapPin, CreditCard } from "lucide-react";
 import { OrderByNumberDocument } from "@/gql/graphql";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
@@ -9,6 +8,7 @@ import { productPath } from "@/lib/product-url";
 import { OrderTimeline } from "@/ui/components/account/order-timeline";
 import { OrderStatusBadge } from "@/ui/components/account/order-status-badge";
 import { type AddressDetailsFragment } from "@/gql/graphql";
+import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
 type Props = {
 	params: Promise<{ number: string }>;
@@ -69,7 +69,7 @@ export default async function OrderDetailPage({ params }: Props) {
 									<div key={line.id} className="flex items-center gap-4 px-5 py-4">
 										{product.thumbnail && (
 											<div className="bg-secondary/30 h-16 w-16 shrink-0 overflow-hidden rounded-lg border">
-												<Image
+												<ResilientProductImage
 													src={product.thumbnail.url}
 													alt={product.thumbnail.alt ?? ""}
 													width={128}
