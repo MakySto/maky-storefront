@@ -1,10 +1,6 @@
-import { revalidatePath } from "next/cache";
-
 import { formatMoney, formatMoneyRange } from "@/lib/utils";
 import { getDiscountInfo } from "@/lib/pricing";
-import { CheckoutAddLineDocument, type ProductDetailsQuery } from "@/gql/graphql";
-import { executeAuthenticatedGraphQL } from "@/lib/graphql";
-import * as Checkout from "@/lib/checkout";
+import { type ProductDetailsQuery } from "@/gql/graphql";
 
 import { getTranslations } from "next-intl/server";
 import { AddToCart } from "./add-to-cart";
@@ -13,6 +9,7 @@ import { StickyBar } from "./sticky-bar";
 import { PurchaseTrust } from "./purchase-trust";
 import { Badge } from "@/ui/components/ui/badge";
 import { QUANTITY_FALLBACK_MAX } from "@/ui/components/ui/quantity-stepper";
+import { addVariantToCart } from "@/ui/components/plp/actions";
 import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
 
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
@@ -110,39 +107,20 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 		const ceiling = maxQuantity ?? QUANTITY_FALLBACK_MAX;
 		const quantity = Number.isFinite(parsed) ? Math.min(Math.max(Math.trunc(parsed), 1), ceiling) : 1;
 
-		try {
-			const checkout = await Checkout.findOrCreate({
-				checkoutId: await Checkout.getIdFromCookies(channel),
-				channel: channel,
-			});
+		// One shared implementation with the listing card's action: it is the only
+		// place that inspects `checkoutLinesAdd.errors`, so a domain rejection —
+		// out of stock, not purchasable in this channel — stops reading as success.
+		const outcome = await addVariantToCart({
+			channel,
+			variantId: selectedVariantID,
+			quantity,
+			maxQuantity,
+		});
 
-			if (!checkout) {
-				// Log error server-side, UI will show via ErrorBoundary if needed
-				console.error("Add to cart: Failed to create checkout");
-				return;
-			}
-
-			await Checkout.saveIdToCookie(channel, checkout.id);
-
-			const addResult = await executeAuthenticatedGraphQL(CheckoutAddLineDocument, {
-				variables: {
-					id: checkout.id,
-					productVariantId: decodeURIComponent(selectedVariantID),
-					quantity,
-				},
-				cache: "no-cache",
-			});
-
-			if (!addResult.ok) {
-				console.error("Add to cart failed:", addResult.error.message);
-				return;
-			}
-
-			revalidatePath("/cart");
-		} catch (error) {
-			// Log error server-side - the UI feedback comes from cart drawer/badge update
-			// For explicit error UI, would need useActionState (separate enhancement)
-			console.error("Add to cart failed:", error);
+		if (outcome.status !== "added") {
+			// The PDP form has nowhere to render this yet; logging it is still
+			// strictly better than the previous silent success.
+			console.error(`[pdp] add to cart ${outcome.status}:`, outcome.message);
 		}
 	}
 
