@@ -18,12 +18,17 @@
  */
 
 import {
+	CONFIGURATOR_PRODUCT_KIND,
 	type FitmentApplication,
 	type FitmentCondition,
+	type FitmentCoverageLevel,
 	type FitmentDataset,
+	type FitmentProductRef,
 	type FitmentQualifiers,
 	type FitmentResult,
 	type FitmentVerdict,
+	isInconclusiveVerdict,
+	type ProductKind,
 	type VehicleSelection,
 } from "./contract";
 
@@ -223,29 +228,118 @@ export function resolveFitment(
 }
 
 /**
- * Every product reference that fits the selection, de-duplicated by variant and in a
- * stable order. This is the configurator's candidate list BEFORE Saleor is consulted —
- * these are compatibility candidates, not an offer. Whether any of them can actually be
- * bought in this channel is decided later, against Saleor, by the server.
+ * Every product the dataset has any application row for, restricted to one kind.
+ *
+ * This is the candidate set, not an answer. Kind-filtering happens HERE rather than
+ * after resolution so that a roof box can never reach the offer list even if a row
+ * mistakenly points at one.
  */
-export function collectFittingProducts(
+export function candidateProductRefs(
 	dataset: FitmentDataset | null,
 	selection: VehicleSelection | null,
-	options: { now?: number } = {},
-): { result: FitmentResult; saleorProductIds: string[]; saleorVariantIds: string[] } {
-	const result = resolveFitment(dataset, selection, { now: options.now });
-	if (result.verdict !== "VERIFIED_FIT" && result.verdict !== "UNKNOWN") {
-		return { result, saleorProductIds: [], saleorVariantIds: [] };
-	}
-	const productIds: string[] = [];
-	const variantIds: string[] = [];
-	for (const application of result.matched) {
-		for (const product of application.products) {
-			if (!productIds.includes(product.saleorProductId)) productIds.push(product.saleorProductId);
-			if (!variantIds.includes(product.saleorVariantId)) variantIds.push(product.saleorVariantId);
+	kind: ProductKind = CONFIGURATOR_PRODUCT_KIND,
+): FitmentProductRef[] {
+	if (!dataset || !selection) return [];
+	const seen = new Set<string>();
+	const refs: FitmentProductRef[] = [];
+	for (const application of dataset.applications) {
+		if (application.generationId !== selection.generationId) continue;
+		for (const ref of application.products) {
+			if (ref.productKind !== kind) continue;
+			if (seen.has(ref.saleorProductId)) continue;
+			seen.add(ref.saleorProductId);
+			refs.push(ref);
 		}
 	}
-	return { result, saleorProductIds: productIds, saleorVariantIds: variantIds };
+	return refs;
+}
+
+export type ProductOutcome = {
+	ref: FitmentProductRef;
+	result: FitmentResult;
+};
+
+/**
+ * Resolve EVERY candidate independently, then report them together.
+ *
+ * The independence is the point, and it is what the first version got wrong. Resolving
+ * the whole vehicle in one pass merged rows belonging to different products, so one set
+ * with a disputed year, or one explicitly-negative row for a DIFFERENT set, collapsed
+ * the entire vehicle to AMBIGUOUS and offered nothing. "Set A fits, set B does not" has
+ * an obvious right answer — offer A — and it is only reachable by asking about A and B
+ * separately.
+ */
+export function resolveCandidates(
+	dataset: FitmentDataset | null,
+	selection: VehicleSelection | null,
+	options: { kind?: ProductKind; now?: number } = {},
+): ProductOutcome[] {
+	const refs = candidateProductRefs(dataset, selection, options.kind ?? CONFIGURATOR_PRODUCT_KIND);
+	return refs.map((ref) => ({
+		ref,
+		result: resolveFitment(dataset, selection, {
+			saleorProductId: ref.saleorProductId,
+			now: options.now,
+		}),
+	}));
+}
+
+export type VehicleOutcome = {
+	/** Only these may be offered. Never UNKNOWN, STALE, AMBIGUOUS or a provider outage. */
+	verified: ProductOutcome[];
+	/** Resolved but not offerable — kept so the UI can explain rather than stay silent. */
+	unconfirmed: ProductOutcome[];
+	/** Positively ruled out for this exact selection. */
+	rejected: ProductOutcome[];
+	/** True when the dataset could not answer at all (outage, stale, no vehicle). */
+	unanswerable: boolean;
+	/** The reason, when unanswerable. */
+	unanswerableVerdict: FitmentVerdict | null;
+	/** Whether the dataset claims complete coverage of its scope for this make. */
+	coverage: FitmentCoverageLevel;
+};
+
+/**
+ * The page-level answer: what do we know about THIS VEHICLE, across all candidate sets.
+ *
+ * Deliberately not a single verdict. A page that says "verified" before any set is
+ * chosen is claiming something it has not established, and a page that says "this
+ * product does not fit" over an empty list is answering a question nobody asked.
+ */
+export function resolveVehicleOutcome(
+	dataset: FitmentDataset | null,
+	selection: VehicleSelection | null,
+	options: { kind?: ProductKind; now?: number } = {},
+): VehicleOutcome {
+	const base = resolveFitment(dataset, selection, { now: options.now });
+	const empty: VehicleOutcome = {
+		verified: [],
+		unconfirmed: [],
+		rejected: [],
+		unanswerable: true,
+		unanswerableVerdict: base.verdict,
+		coverage: base.coverage,
+	};
+
+	// A missing dataset, a missing vehicle or a stale dataset are conditions of the
+	// whole lookup, not properties of any one set.
+	if (
+		base.verdict === "PROVIDER_UNAVAILABLE" ||
+		base.verdict === "NO_VEHICLE_SELECTED" ||
+		base.verdict === "STALE"
+	) {
+		return empty;
+	}
+
+	const outcomes = resolveCandidates(dataset, selection, options);
+	return {
+		verified: outcomes.filter((o) => o.result.verdict === "VERIFIED_FIT"),
+		unconfirmed: outcomes.filter((o) => isInconclusiveVerdict(o.result.verdict)),
+		rejected: outcomes.filter((o) => o.result.verdict === "NO_FIT"),
+		unanswerable: false,
+		unanswerableVerdict: null,
+		coverage: base.coverage,
+	};
 }
 
 /**

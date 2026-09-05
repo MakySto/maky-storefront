@@ -27,10 +27,58 @@
  */
 
 /** Bump on any breaking change to the shapes below. Providers must match exactly. */
-export const FITMENT_SCHEMA_VERSION = "1.0.0";
+export const FITMENT_SCHEMA_VERSION = "2.0.0";
 
 /** Prefix of the stable CFM integration identity. */
 export const CFM_EXTERNAL_REFERENCE_PREFIX = "cfm:product:";
+
+// ---------------------------------------------------------------------------
+// What kind of product this is
+// ---------------------------------------------------------------------------
+
+/**
+ * The product's kind, as classified by the source — NOT inferred by the storefront.
+ *
+ * This exists because the first version of this module got it wrong in a way that no
+ * type could catch: a roof BOX and a ski CARRIER were offered as "complete roof rack
+ * sets" simply because a fitment row pointed at them and carried a `completeSet` field.
+ * The presence of `completeSet.includes` is not evidence that a product is a roof rack,
+ * and neither is its name, its photograph, its category or the word SET inside an
+ * external reference.
+ *
+ * Only `roof-rack-set` may enter the configurator's offer. Boxes, carriers, kits and
+ * spares remain perfectly sellable products in the ordinary catalogue — they are simply
+ * not answers to "which roof rack fits my car", and they must never inherit a set's
+ * compatibility badge.
+ */
+export const PRODUCT_KINDS = [
+	"roof-rack-set",
+	"roof-box",
+	"ski-carrier",
+	"bike-carrier",
+	"fitting-kit",
+	"spare-part",
+	"accessory",
+] as const;
+export type ProductKind = (typeof PRODUCT_KINDS)[number];
+
+/** The only kind this wave's configurator offers. */
+export const CONFIGURATOR_PRODUCT_KIND: ProductKind = "roof-rack-set";
+
+/**
+ * The slice of the catalogue a dataset speaks for.
+ *
+ * Coverage claims are meaningless without it. "Complete for Škoda" inside a Nordrive
+ * roof-rack program means "we know every Nordrive roof-rack set for that make" — it
+ * does NOT license the sentence "nothing fits your Škoda", which would also deny every
+ * roof box, every carrier and every product from every other brand.
+ */
+export type FitmentScope = {
+	/** e.g. "nordrive-roof-racks". Free-form, owned by the source. */
+	programId: string;
+	/** The kinds this dataset makes any claim about at all. */
+	productKinds: ProductKind[];
+};
 
 // ---------------------------------------------------------------------------
 // Qualifiers
@@ -153,17 +201,30 @@ export type FitmentProductRef = {
 	/** The exact variant that is purchasable. Never inferred from the product. */
 	saleorVariantId: string;
 	/**
-	 * Present when this reference is a complete roof-rack set. `includes` are stable
-	 * component codes (bars / feet / kit), rendered through i18n — the storefront does
-	 * not author set contents.
+	 * What this product IS, per the source. Required: the configurator refuses to offer
+	 * anything it cannot classify, because the failure mode of guessing is offering a
+	 * roof box as a roof rack.
+	 */
+	productKind: ProductKind;
+	/**
+	 * Real contents of THIS set, from the source. Never a template.
+	 *
+	 * Not every roof-rack system needs a fitting kit — a fixpoint system may ship
+	 * without one — so "bars + feet + kit" must not be pasted onto every set. An absent
+	 * `completeSet` on a `roof-rack-set` means the contents are unknown, and unknown
+	 * contents are not printed.
 	 */
 	completeSet?: {
 		includes: string[];
 	};
 	/**
 	 * Normalized, comparable properties for configurator filtering and comparison.
-	 * These come from the CFM index, NOT from Saleor attributes: 39 of the 79 Saleor
-	 * attributes are PLAIN_TEXT and cannot be filtered by value.
+	 * Sourced from the CFM index rather than Saleor attributes — the vehicle attribute
+	 * slugs the PLP filter whitelists do not exist in this Saleor instance at all.
+	 *
+	 * Anything absent is simply not rendered. A load rating in particular is a safety
+	 * number and is never defaulted, inferred from a sibling product, or carried over
+	 * from another set.
 	 */
 	facets?: Record<string, string | number | boolean>;
 };
@@ -199,10 +260,37 @@ export type FitmentApplication = {
  * is the correct default for a partial index.
  */
 export type FitmentCoverage = {
-	/** Make ids for which the source guarantees every application row is present. */
+	/** The catalogue slice every claim below is scoped to. */
+	scope: FitmentScope;
+	/**
+	 * Make ids for which the source guarantees every application row **within `scope`**
+	 * is present. Absence of a row for such a make means "no set in this program fits",
+	 * never "nothing fits".
+	 */
 	completeForMakeIds: string[];
 	/** Free-text provenance note shown in diagnostics, never to a customer. */
 	note?: string;
+};
+
+/**
+ * A self-contained catalogue for DEMO datasets only.
+ *
+ * Its existence is the fix for the worst defect in v1: a demo dataset used to name real
+ * Saleor product ids, so the storefront fetched a real roof box and dressed it in an
+ * invented "complete roof rack set" badge with an invented load rating and an invented
+ * compatibility claim. A demo dataset now brings its own commerce data and its own
+ * synthetic ids, and the offer layer refuses to consult Saleor for it at all.
+ */
+export type DemoCatalogueEntry = {
+	saleorProductId: string;
+	saleorVariantId: string;
+	name: string;
+	categoryName?: string;
+	price?: { amount: number; currency: string };
+	/** Mirrors `cfm_availability_mode`, so demo and real take the same code path. */
+	availabilityMode?: string;
+	/** Only a hard zero is meaningful; see `resolveAvailability`. */
+	quantityAvailable?: number;
 };
 
 export type FitmentDataset = {
@@ -229,6 +317,8 @@ export type FitmentDataset = {
 		staleAfterDays: number;
 	};
 	coverage: FitmentCoverage;
+	/** Present only on demo datasets. Its presence is what marks one. */
+	demoCatalogue?: DemoCatalogueEntry[];
 	makes: VehicleMake[];
 	models: VehicleModel[];
 	generations: VehicleGeneration[];

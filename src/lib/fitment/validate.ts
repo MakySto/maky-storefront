@@ -19,6 +19,7 @@
 import {
 	BODY_TYPES,
 	FITMENT_SCHEMA_VERSION,
+	PRODUCT_KINDS,
 	ROOF_TYPES,
 	VERIFICATION_STATUSES,
 	type FitmentDataset,
@@ -133,6 +134,11 @@ export function validateFitmentDataset(raw: unknown, options: ValidateOptions = 
 
 	if (!isRecord(raw.coverage) || !Array.isArray(raw.coverage.completeForMakeIds)) {
 		errors.push("coverage.completeForMakeIds is missing");
+	} else if (!isRecord(raw.coverage.scope) || !isNonEmptyString(raw.coverage.scope.programId)) {
+		// Without a scope, "complete for Skoda" would license the sentence "nothing fits
+		// your Skoda" — which also denies every roof box, every carrier and every other
+		// brand in the shop.
+		errors.push("coverage.scope.programId is required — a coverage claim needs a scope");
 	}
 
 	const makes = Array.isArray(raw.makes) ? raw.makes : null;
@@ -249,6 +255,44 @@ export function validateFitmentDataset(raw: unknown, options: ValidateOptions = 
 			}
 			if (!isNonEmptyString(product.saleorVariantId)) {
 				errors.push(`${productPath}: saleorVariantId is required — the variant is never inferred`);
+			}
+			// Unclassified products are refused rather than guessed at. Guessing is how a
+			// roof box came to be offered as a roof rack.
+			if (!PRODUCT_KINDS.includes(product.productKind as never)) {
+				errors.push(`${productPath}: productKind is required and must be one of ${PRODUCT_KINDS.join(", ")}`);
+			}
+			if (product.completeSet !== undefined) {
+				const set = product.completeSet;
+				if (!isRecord(set) || !Array.isArray(set.includes) || set.includes.length === 0) {
+					errors.push(`${productPath}.completeSet.includes must be a non-empty array when present`);
+				}
+			}
+		}
+	}
+
+	if (errors.length > 0) return { ok: false, errors };
+
+	// A demo dataset must be self-contained: every product it references has to exist in
+	// its own catalogue, so it can never fall through to a live product lookup.
+	if (raw.demoCatalogue !== undefined) {
+		if (!Array.isArray(raw.demoCatalogue)) {
+			errors.push("demoCatalogue must be an array when present");
+		} else {
+			const known = new Set(
+				raw.demoCatalogue
+					.filter((e): e is Record<string, unknown> => isRecord(e))
+					.map((e) => String(e.saleorProductId)),
+			);
+			for (const application of applications!) {
+				for (const product of (application as { products: Record<string, unknown>[] }).products) {
+					if (!known.has(String(product.saleorProductId))) {
+						warnings.push(
+							`demo dataset references ${String(
+								product.saleorProductId,
+							)}, which is not in demoCatalogue — it will render as having no public offer`,
+						);
+					}
+				}
 			}
 		}
 	}

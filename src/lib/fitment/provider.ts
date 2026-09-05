@@ -21,6 +21,8 @@ import "server-only";
  * either — surfaces receive resolved answers and the slice of the tree they render.
  */
 
+import { cache } from "react";
+
 import { validateFitmentDataset } from "./validate";
 import { type FitmentDataset } from "./contract";
 import fixtureDataset from "./fixtures/dataset-v1.json";
@@ -59,7 +61,10 @@ function statusFor(
 ): FitmentProviderStatus {
 	return {
 		mode,
-		isFixture: mode === "fixture" || dataset?.source.system === "fixture",
+		// Demo-ness is a property of the DATA, not only of the mode. A dataset served over
+		// HTTP that declares itself a fixture, or that carries its own demo catalogue, is
+		// still demo data and must never be reported as REAL_DATA.
+		isFixture: mode === "fixture" || dataset?.source.system === "fixture" || Boolean(dataset?.demoCatalogue),
 		unavailableReason,
 		datasetVersion: dataset?.datasetVersion ?? null,
 		generatedAt: dataset?.generatedAt ?? null,
@@ -101,9 +106,14 @@ async function loadHttp(): Promise<FitmentLoad> {
 		const response = await fetch(url, {
 			headers: token ? { authorization: `Bearer ${token}` } : undefined,
 			signal: AbortSignal.timeout(Number.isFinite(timeoutMs) ? timeoutMs : DEFAULT_TIMEOUT_MS),
-			// The dataset is versioned upstream; caching is handled by the caller's
-			// "use cache" boundary so that a request cannot be made per page view.
-			cache: "no-store",
+			// Shared across requests. The dataset is a versioned document, not per-visitor
+			// data, and it is large: the selector alone asks for it once per step, so
+			// `no-store` here meant re-downloading the whole index on every click.
+			//
+			// Nothing customer-specific is ever in this response — the vehicle lives in a
+			// cookie and is resolved against the dataset afterwards — so it is safe to
+			// share. Freshness comes from the upstream `datasetVersion`, not from this TTL.
+			next: { revalidate: datasetRevalidateSeconds(), tags: ["fitment-dataset"] },
 		});
 		if (!response.ok) {
 			return { dataset: null, status: statusFor("http", null, `http-${response.status}`) };
@@ -126,15 +136,24 @@ async function loadHttp(): Promise<FitmentLoad> {
 	}
 }
 
+function datasetRevalidateSeconds(): number {
+	const raw = Number(process.env.MAKY_FITMENT_REVALIDATE_SECONDS ?? 300);
+	return Number.isFinite(raw) && raw > 0 ? raw : 300;
+}
+
 /**
  * Load the active dataset. Never throws: a failure here must degrade the compatibility
  * UI, not take down a product page that is otherwise perfectly able to sell something.
+ *
+ * Wrapped in React `cache()` so that the several places which need it during one render
+ * — the page, the compatibility box, the selector — share a single load instead of
+ * validating the whole index once each.
  */
-export async function loadFitmentDataset(): Promise<FitmentLoad> {
+export const loadFitmentDataset = cache(async function loadFitmentDataset(): Promise<FitmentLoad> {
 	const mode = resolveProviderMode();
 	if (mode === "disabled") {
 		return { dataset: null, status: statusFor("disabled", null, "provider-disabled") };
 	}
 	if (mode === "fixture") return loadFixture();
 	return loadHttp();
-}
+});

@@ -23,11 +23,28 @@ describe("the committed fixture", () => {
 	it("declares itself as fixture data, not a CFM export", () => {
 		const result = validateFitmentDataset(valid());
 		expect(result.ok && result.dataset.source.system).toBe("fixture");
-		expect(result.ok && result.dataset.datasetVersion.startsWith("fixture-")).toBe(true);
+		expect(result.ok && result.dataset.datasetVersion.startsWith("demo-")).toBe(true);
 	});
 
-	it("matches the Saleor instance it names", () => {
-		expect(validateFitmentDataset(valid(), { expectedSaleorInstance: "api.maky.store" }).ok).toBe(true);
+	it("names an instance that is deliberately not a real one", () => {
+		// A demo dataset must not claim to belong to the live Saleor instance, or a
+		// mis-set provider mode could let its synthetic ids be looked up for real.
+		expect(validateFitmentDataset(valid()).ok).toBe(true);
+		expect(validateFitmentDataset(valid(), { expectedSaleorInstance: "api.maky.store" }).ok).toBe(false);
+	});
+
+	it("carries its own catalogue, so it never needs a live product lookup", () => {
+		const result = validateFitmentDataset(valid());
+		expect(result.ok && Array.isArray(result.dataset.demoCatalogue)).toBe(true);
+	});
+
+	it("classifies every product it references", () => {
+		const result = validateFitmentDataset(valid());
+		const kinds = result.ok
+			? result.dataset.applications.flatMap((a) => a.products.map((p) => p.productKind))
+			: [];
+		expect(kinds.length).toBeGreaterThan(0);
+		expect(kinds.every(Boolean)).toBe(true);
 	});
 });
 
@@ -38,14 +55,46 @@ describe("rejections that would otherwise be silent", () => {
 		expect(!result.ok && result.errors.join(" ")).toContain("instance-bound");
 	});
 
+	it("refuses an unclassified product — guessing is how a roof box became a roof rack", () => {
+		const d = valid();
+		// @ts-expect-error deliberately malformed
+		delete d.applications[0].products[0].productKind;
+		const result = validateFitmentDataset(d);
+		expect(result.ok).toBe(false);
+		expect(!result.ok && result.errors.join(" ")).toContain("productKind is required");
+	});
+
+	it("refuses an unknown product kind rather than passing it through", () => {
+		const d = valid();
+		// @ts-expect-error deliberately malformed
+		d.applications[0].products[0].productKind = "hovercraft";
+		expect(validateFitmentDataset(d).ok).toBe(false);
+	});
+
+	it("refuses a coverage claim with no scope", () => {
+		const d = valid();
+		// @ts-expect-error deliberately malformed
+		delete d.coverage.scope;
+		const result = validateFitmentDataset(d);
+		expect(result.ok).toBe(false);
+		expect(!result.ok && result.errors.join(" ")).toContain("needs a scope");
+	});
+
+	it("refuses an empty completeSet.includes — unknown contents are not printed", () => {
+		const d = valid();
+		// @ts-expect-error deliberately malformed
+		d.applications[0].products[0].completeSet = { includes: [] };
+		expect(validateFitmentDataset(d).ok).toBe(false);
+	});
+
 	it("refuses an unsupported schema major", () => {
-		const result = validateFitmentDataset({ ...valid(), schemaVersion: "2.0.0" });
+		const result = validateFitmentDataset({ ...valid(), schemaVersion: "3.0.0" });
 		expect(result.ok).toBe(false);
 		expect(!result.ok && result.errors.join(" ")).toContain("not supported");
 	});
 
 	it("accepts a newer minor of the same major", () => {
-		expect(validateFitmentDataset({ ...valid(), schemaVersion: "1.4.0" }).ok).toBe(true);
+		expect(validateFitmentDataset({ ...valid(), schemaVersion: "2.4.0" }).ok).toBe(true);
 	});
 });
 

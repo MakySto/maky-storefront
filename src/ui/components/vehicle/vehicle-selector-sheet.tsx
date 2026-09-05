@@ -214,7 +214,7 @@ export function VehicleSelectorSheet({ children, open, onOpenChange }: Props) {
 
 				{step?.isFixture && (
 					<p className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed border-b border-current/20 px-4 py-2 text-xs">
-						{t("fixtureNotice")}
+						{t("demoNotice")}
 					</p>
 				)}
 

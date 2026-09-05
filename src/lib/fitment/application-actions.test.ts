@@ -5,7 +5,7 @@ import { uniqueProductRefs } from "./offers";
 import { type FitmentApplication } from "./contract";
 
 const ORIGINAL = process.env.MAKY_FITMENT_PROVIDER;
-const OCTAVIA_SET = "UHJvZHVjdDo0MzE=";
+const OCTAVIA_SET = "demo-product-aero-flush";
 
 beforeEach(() => {
 	process.env.MAKY_FITMENT_PROVIDER = "fixture";
@@ -26,11 +26,11 @@ describe("the vehicles a product is made for", () => {
 	it("never lists a negative row as an application", async () => {
 		// The fixture has an explicit NO-FIT row for the same product.
 		const page = await listProductApplications(OCTAVIA_SET);
-		expect(page.rows.some((r) => r.applicationId === "app-octavia4-hatch-naked-negative")).toBe(false);
+		expect(page.rows.some((r) => r.applicationId === "app-octavia4-estate-flush-negative")).toBe(false);
 	});
 
 	it("marks an unverified row so it cannot read as confirmed", async () => {
-		const page = await listProductApplications("UHJvZHVjdDoxMDQ=");
+		const page = await listProductApplications("demo-product-raised");
 		expect(page.rows.every((r) => r.verified)).toBe(false);
 	});
 
@@ -65,6 +65,7 @@ describe("candidate de-duplication", () => {
 		externalReference: `cfm:product:${id}`,
 		saleorProductId: id,
 		saleorVariantId: variant,
+		productKind: "roof-rack-set" as const,
 	});
 	const app = (products: ReturnType<typeof ref>[]): FitmentApplication => ({
 		applicationId: "a",
