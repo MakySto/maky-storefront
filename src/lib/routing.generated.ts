@@ -54,6 +54,8 @@ export const MARKET_ROOT_SEGMENTS: ReadonlySet<string> = new Set([
 	"collections",
 	"cookies",
 	"doprava-a-platba",
+	"garage",
+	"konfigurator",
 	"kontakt",
 	"login",
 	"o-nas",
