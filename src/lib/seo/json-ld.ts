@@ -1,4 +1,4 @@
-import { type WithContext, type Product } from "schema-dts";
+import { type WithContext, type Product, type ProductGroup } from "schema-dts";
 import { seoConfig, getBaseUrl } from "./config";
 
 /**
@@ -6,6 +6,22 @@ import { seoConfig, getBaseUrl } from "./config";
  * plain string because it arrives as one, straight off a Saleor metafield.
  */
 const SALE_TO_ORDER = "sale_to_order";
+
+export interface JsonLdVariant {
+	sku?: string | null;
+	name?: string | null;
+	price?: { amount: number; currency: string } | null;
+	inStock?: boolean;
+	availabilityMode?: string | null;
+}
+
+/** Schema.org availability, from the same facts the visible badge uses. */
+function availabilityOf(inStock: boolean, availabilityMode?: string | null) {
+	if (!inStock) return "https://schema.org/OutOfStock" as const;
+	return availabilityMode === SALE_TO_ORDER
+		? ("https://schema.org/BackOrder" as const)
+		: ("https://schema.org/InStock" as const);
+}
 
 /**
  * Product JSON-LD structured data builder
@@ -71,7 +87,15 @@ export function buildProductJsonLd(options: {
 	 */
 	availabilityMode?: string | null;
 	variantCount?: number;
-}): WithContext<Product> | null {
+	/**
+	 * One entry per purchasable variant, when the page knows them.
+	 *
+	 * Supplying these is what lets a multi-variant product be described as a
+	 * `ProductGroup` whose members each carry their own SKU, price and
+	 * availability, instead of one blurred price band.
+	 */
+	variants?: readonly JsonLdVariant[];
+}): WithContext<Product> | WithContext<ProductGroup> | null {
 	if (!seoConfig.enableJsonLd) {
 		return null;
 	}
@@ -89,29 +113,78 @@ export function buildProductJsonLd(options: {
 		inStock = true,
 		availabilityMode,
 		variantCount,
+		variants,
 	} = options;
 
 	const baseUrl = getBaseUrl();
 	const fullUrl = url ? `${baseUrl}${url}` : undefined;
-	const availability = !inStock
-		? ("https://schema.org/OutOfStock" as const)
-		: availabilityMode === SALE_TO_ORDER
-			? ("https://schema.org/BackOrder" as const)
-			: ("https://schema.org/InStock" as const);
-	const offers = price
+	const availability = availabilityOf(inStock, availabilityMode);
+
+	const seller = { "@type": "Organization" as const, name: seoConfig.organizationName };
+
+	const base = {
+		"@context": "https://schema.org" as const,
+		name,
+		description: description || name,
+		...(images && images.length > 0 ? { image: images } : {}),
+		...(brand && { brand: { "@type": "Brand" as const, name: brand } }),
+	};
+
+	// A product with a real choice of variants is a ProductGroup, and each member
+	// carries its OWN sku, price and availability.
+	//
+	// This used to be one `AggregateOffer` with a low/high band, which is not a
+	// description of variants — and because the PDP passes `priceRange` and never
+	// `price`, EVERY product got that treatment, including the single-variant ones
+	// that are the entire live catalogue. A band from 299 to 299 with
+	// `offerCount: 1` says less than the price does, and hides the SKU that
+	// identifies what is actually being sold.
+	const purchasable = (variants ?? []).filter((variant) => variant.price);
+	if (purchasable.length > 1) {
+		return {
+			...base,
+			"@type": "ProductGroup",
+			...(sku ? { productGroupID: sku } : {}),
+			hasVariant: purchasable.map((variant) => ({
+				"@type": "Product" as const,
+				name: variant.name || name,
+				...(variant.sku ? { sku: variant.sku, mpn: variant.sku } : {}),
+				offers: {
+					"@type": "Offer" as const,
+					url: fullUrl,
+					availability: availabilityOf(
+						variant.inStock ?? inStock,
+						variant.availabilityMode ?? availabilityMode,
+					),
+					priceCurrency: variant.price!.currency,
+					price: variant.price!.amount,
+					seller,
+				},
+			})),
+		} satisfies WithContext<ProductGroup>;
+	}
+
+	// One variant, or none we can price: an exact Offer.
+	const only = purchasable[0];
+	const exact = only?.price ?? price ?? null;
+	// The variant carries the availability facts when it has them — the top-level
+	// values are the fallback for a caller that knows no variants, not an override.
+	const offerAvailability = only
+		? availabilityOf(only.inStock ?? inStock, only.availabilityMode ?? availabilityMode)
+		: availability;
+	const offers = exact
 		? {
 				"@type": "Offer" as const,
 				url: fullUrl,
-				availability,
-				priceCurrency: price.currency,
-				price: price.amount,
-				seller: {
-					"@type": "Organization" as const,
-					name: seoConfig.organizationName,
-				},
+				availability: offerAvailability,
+				priceCurrency: exact.currency,
+				price: exact.amount,
+				seller,
 			}
 		: priceRange
 			? {
+					// Kept only for a product whose variants are unknown to the caller.
+					// A single-variant product must never reach this arm.
 					"@type": "AggregateOffer" as const,
 					url: fullUrl,
 					availability,
@@ -119,24 +192,21 @@ export function buildProductJsonLd(options: {
 					lowPrice: priceRange.lowPrice,
 					highPrice: priceRange.highPrice,
 					offerCount: variantCount,
-					seller: {
-						"@type": "Organization" as const,
-						name: seoConfig.organizationName,
-					},
+					seller,
 				}
 			: undefined;
 
+	// The variant's own SKU wins: it identifies what is actually being sold.
+	const resolvedSku = only?.sku ?? sku ?? undefined;
+	const resolvedMpn = only?.sku ?? mpn ?? undefined;
+
 	return {
-		"@context": "https://schema.org",
+		...base,
 		"@type": "Product",
-		name,
-		description: description || name,
-		...(images && images.length > 0 ? { image: images } : {}),
-		...(sku && { sku }),
-		...(mpn && { mpn }),
-		...(brand && { brand: { "@type": "Brand" as const, name: brand } }),
+		...(resolvedSku ? { sku: resolvedSku } : {}),
+		...(resolvedMpn ? { mpn: resolvedMpn } : {}),
 		...(offers ? { offers } : {}),
-	};
+	} satisfies WithContext<Product>;
 }
 
 /**

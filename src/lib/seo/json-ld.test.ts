@@ -98,3 +98,87 @@ describe("product JSON-LD availability", () => {
 		}
 	});
 });
+
+describe("offers describe what is actually sold", () => {
+	const single = {
+		name: "Strešný box Nordrive 430",
+		url: "/sk/stresny-box-nordrive-430-shiny-black-n60012",
+		priceRange: { lowPrice: 299, highPrice: 299, currency: "EUR" },
+		variantCount: 1,
+		variants: [
+			{
+				sku: "N60012",
+				price: { amount: 299, currency: "EUR" },
+				inStock: true,
+				availabilityMode: "sale_to_order",
+			},
+		],
+	};
+
+	it("gives a single-variant product an exact Offer, not a price band", () => {
+		// Every live product is single-variant, and the PDP passes only
+		// `priceRange` — so every PDP was emitting an AggregateOffer whose low and
+		// high were the same number, with offerCount 1.
+		const jsonLd = buildProductJsonLd(single) as unknown as Record<string, never>;
+
+		expect(jsonLd["@type"]).toBe("Product");
+		expect(jsonLd.offers).toMatchObject({ "@type": "Offer", price: 299, priceCurrency: "EUR" });
+	});
+
+	it("takes the SKU from the variant that carries the price", () => {
+		expect((buildProductJsonLd(single) as unknown as Record<string, never>).sku).toBe("N60012");
+	});
+
+	it("keeps BackOrder for a sale-to-order variant", () => {
+		const offers = (buildProductJsonLd(single) as unknown as Record<string, never>).offers as Record<
+			string,
+			string
+		>;
+		expect(offers.availability).toBe("https://schema.org/BackOrder");
+	});
+
+	it("describes a multi-variant product as a ProductGroup", () => {
+		const jsonLd = buildProductJsonLd({
+			...single,
+			priceRange: { lowPrice: 299, highPrice: 349, currency: "EUR" },
+			variantCount: 2,
+			variants: [
+				{ sku: "N60012", price: { amount: 299, currency: "EUR" }, inStock: true },
+				{ sku: "N60013", price: { amount: 349, currency: "EUR" }, inStock: false },
+			],
+		}) as unknown as Record<string, never>;
+
+		expect(jsonLd["@type"]).toBe("ProductGroup");
+		const members = jsonLd.hasVariant as unknown as Record<string, never>[];
+		expect(members).toHaveLength(2);
+		expect(members[0]).toMatchObject({ sku: "N60012" });
+		expect((members[1].offers as unknown as Record<string, unknown>).availability).toBe(
+			"https://schema.org/OutOfStock",
+		);
+	});
+
+	it("gives each member its own price rather than a shared band", () => {
+		const jsonLd = buildProductJsonLd({
+			...single,
+			variants: [
+				{ sku: "A", price: { amount: 10, currency: "EUR" } },
+				{ sku: "B", price: { amount: 20, currency: "EUR" } },
+			],
+		}) as unknown as Record<string, never>;
+		const prices = (jsonLd.hasVariant as unknown as Record<string, never>[]).map(
+			(m) => (m.offers as unknown as Record<string, number>).price,
+		);
+		expect(prices).toEqual([10, 20]);
+	});
+
+	it("still falls back to a band when the caller knows no variants", () => {
+		// The listing card and anything else without variant detail keeps working.
+		const jsonLd = buildProductJsonLd({
+			name: "x",
+			priceRange: { lowPrice: 10, highPrice: 40, currency: "EUR" },
+			variantCount: 3,
+		}) as unknown as Record<string, never>;
+
+		expect((jsonLd.offers as unknown as Record<string, string>)["@type"]).toBe("AggregateOffer");
+	});
+});

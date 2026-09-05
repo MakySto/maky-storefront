@@ -182,7 +182,7 @@ async function fetchStockedCategorySlugs(channel: string): Promise<string[]> {
 /**
  * One market's entries. Throws if the catalogue could not be read in full.
  */
-async function marketEntries(market: string, now: Date): Promise<MetadataRoute.Sitemap> {
+async function marketEntries(market: string): Promise<MetadataRoute.Sitemap> {
 	const base = getBaseUrl();
 	const channel = CHANNEL_MAP[market].saleorSlug;
 
@@ -191,15 +191,21 @@ async function marketEntries(market: string, now: Date): Promise<MetadataRoute.S
 		fetchStockedCategorySlugs(channel),
 	]);
 
+	// No `lastModified` on these. It is a claim about when the content last
+	// changed, and the only timestamp available here is the moment this file ran —
+	// which would mark every URL as freshly modified on every build and export,
+	// including the ones nobody has touched in months. Google treats a lastmod it
+	// finds unreliable as noise for the whole site, so omitting it is strictly
+	// better than asserting the build time. Products keep theirs because Saleor
+	// gives a real one.
 	const entries: MetadataRoute.Sitemap = [
-		{ url: `${base}/${market}`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
-		{ url: `${base}/${market}/products`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+		{ url: `${base}/${market}`, changeFrequency: "daily", priority: 1.0 },
+		{ url: `${base}/${market}/products`, changeFrequency: "daily", priority: 0.8 },
 	];
 
 	for (const slug of categories) {
 		entries.push({
 			url: `${base}/${market}/categories/${slug}`,
-			lastModified: now,
 			changeFrequency: "weekly",
 			priority: 0.7,
 		});
@@ -210,7 +216,8 @@ async function marketEntries(market: string, now: Date): Promise<MetadataRoute.S
 			// Root-level product URL. /{market}/products/{slug} has 308'd here since
 			// 62657e7 and the canonical points at this form.
 			url: `${base}/${market}/${product.slug}`,
-			lastModified: product.updatedAt ? new Date(product.updatedAt) : now,
+			// Saleor's own timestamp, or nothing — never the build time.
+			...(product.updatedAt ? { lastModified: new Date(product.updatedAt) } : {}),
 			changeFrequency: "weekly",
 			priority: 0.6,
 		});
@@ -223,7 +230,6 @@ async function marketEntries(market: string, now: Date): Promise<MetadataRoute.S
 		for (const path of SK_ONLY_PATHS) {
 			entries.push({
 				url: `${base}/${market}${path}`,
-				lastModified: now,
 				changeFrequency: "monthly",
 				priority: 0.3,
 			});
@@ -248,10 +254,9 @@ async function marketEntries(market: string, now: Date): Promise<MetadataRoute.S
  * silent deindexing signal is not.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-	const now = new Date();
 	const markets = liveMarkets();
 
-	const perMarket = await Promise.all(markets.map((market) => marketEntries(market, now)));
+	const perMarket = await Promise.all(markets.map((market) => marketEntries(market)));
 
 	return perMarket.flat();
 }

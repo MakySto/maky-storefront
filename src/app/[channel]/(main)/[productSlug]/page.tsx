@@ -253,6 +253,20 @@ async function ProductContent({
 					currency: product.pricing.priceRange.start.gross.currency,
 				}
 			: null,
+		// The real variants, so a single-variant product gets its EXACT price and
+		// SKU in an Offer instead of a 299-to-299 AggregateOffer band, and a
+		// multi-variant one becomes a ProductGroup whose members each carry their
+		// own. Every product in the live catalogue is single-variant today, so this
+		// is the arm that actually renders.
+		variants: (product.variants ?? []).map((v) => ({
+			sku: v.sourceSku || v.sku,
+			name: v.name,
+			price: v.pricing?.price?.gross
+				? { amount: v.pricing.price.gross.amount, currency: v.pricing.price.gross.currency }
+				: null,
+			inStock: Boolean(v.quantityAvailable),
+			availabilityMode: v.metafield,
+		})),
 		inStock: product.variants?.some((v) => v.quantityAvailable) ?? false,
 		// The CFM-owned availability fact, taken from the first variant that
 		// publishes one — it is a product-level decision that Saleor happens to
