@@ -243,8 +243,10 @@ async function ProductContent({
 		// Use the exact-locale slug resolved by the storefront boundary, matching
 		// the canonical URL advertised for this localized product.
 		url: productHref(params.channel, product.slug),
+		// `sku` only. An `mpn` used to be emitted from the same value, which made
+		// MAKY's internal composite identifier a claim about the manufacturer's part
+		// number — it is not one, in any reading.
 		sku: product.variants?.[0]?.sourceSku || product.variants?.[0]?.sku,
-		mpn: product.variants?.[0]?.sourceSku || product.variants?.[0]?.sku,
 		priceRange: product.pricing?.priceRange?.start?.gross
 			? {
 					lowPrice: product.pricing.priceRange.start.gross.amount,

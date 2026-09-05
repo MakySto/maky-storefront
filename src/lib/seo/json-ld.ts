@@ -51,7 +51,6 @@ export function buildProductJsonLd(options: {
 	description?: string;
 	images?: string[];
 	sku?: string | null;
-	mpn?: string | null;
 	brand?: string | null;
 	url?: string;
 	/** Single variant pricing */
@@ -105,7 +104,6 @@ export function buildProductJsonLd(options: {
 		description,
 		images,
 		sku,
-		mpn,
 		brand,
 		url,
 		price,
@@ -148,7 +146,7 @@ export function buildProductJsonLd(options: {
 			hasVariant: purchasable.map((variant) => ({
 				"@type": "Product" as const,
 				name: variant.name || name,
-				...(variant.sku ? { sku: variant.sku, mpn: variant.sku } : {}),
+				...(variant.sku ? { sku: variant.sku } : {}),
 				offers: {
 					"@type": "Offer" as const,
 					url: fullUrl,
@@ -198,13 +196,11 @@ export function buildProductJsonLd(options: {
 
 	// The variant's own SKU wins: it identifies what is actually being sold.
 	const resolvedSku = only?.sku ?? sku ?? undefined;
-	const resolvedMpn = only?.sku ?? mpn ?? undefined;
 
 	return {
 		...base,
 		"@type": "Product",
 		...(resolvedSku ? { sku: resolvedSku } : {}),
-		...(resolvedMpn ? { mpn: resolvedMpn } : {}),
 		...(offers ? { offers } : {}),
 	} satisfies WithContext<Product>;
 }

@@ -9,13 +9,23 @@ describe("product JSON-LD truthfulness", () => {
 		expect(data).not.toHaveProperty("image");
 	});
 
-	it("emits known brand, source SKU and MPN", () => {
-		const data = buildProductJsonLd({ name: "Nosič", brand: "Nordrive", sku: "N15011", mpn: "N15011" });
+	it("emits known brand and SKU", () => {
+		const data = buildProductJsonLd({ name: "Nosič", brand: "Nordrive", sku: "N15011" });
 		expect(data).toMatchObject({
 			brand: { "@type": "Brand", name: "Nordrive" },
 			sku: "N15011",
-			mpn: "N15011",
 		});
+	});
+
+	it("never claims a manufacturer part number", () => {
+		// `sku` is the seller's identifier and may be anything the shop uses. `mpn`
+		// is a claim about the MANUFACTURER's part number, and nothing in this
+		// catalogue supplies one: the value previously emitted was MAKY's internal
+		// composite — four Nordrive component codes joined to a CFM suffix — which
+		// is not a part number for the assembly being sold.
+		expect(buildProductJsonLd({ name: "Nosič", sku: "N21048|N20003|CFMP-B-NOR-57acce" })).not.toHaveProperty(
+			"mpn",
+		);
 	});
 });
 
