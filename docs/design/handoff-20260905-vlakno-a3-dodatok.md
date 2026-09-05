@@ -150,6 +150,74 @@ zaberie 75 % šírky kontajnera a produkt z toho ešte len svoju časť.
 V lightboxe je `sizes="100vw"`, ale zdroj má 1000 px, takže pri 2× DPR sa obraz
 **zväčšuje nad svoje rozlíšenie**. To je presne ten mäkký dojem.
 
+### 2.6 Koľkokrát sa obrázok komprimuje a čo to stojí
+
+Reťazec má **tri lossy priechody**, nie jeden:
+
+```
+1.  niečo vyrobilo 1000×1000 JPEG q≈65      (CFM alebo dodávateľ — zvonku nerozlíšiteľné)
+2.  Saleor thumbnail  → WebP 12,5 KB
+3.  Next /_next/image → WebP 12,4 KB        (áno, Next komprimuje ZNOVU)
+```
+
+Zmerané, čo každý priechod stojí (PSNR proti najmenej komprimovanému, čo existuje):
+
+```
+Saleor WebP                       42,97 dB     edge 53,95
+Next výstup (čo prehliadač dekóduje) 42,55 dB  edge 53,91
+Next samotný priechod (WebP → WebP)  51,27 dB  ← prakticky bezstratový
+```
+
+**Next síce komprimuje druhýkrát, ale stojí to takmer nič.** Hlavný krok je Saleorov
+WebP, a ani ten nestratil detail (edge energy nezmenená).
+
+Jeden lacný zisk sa však našiel: keby Next dostal ako zdroj **JPEG namiesto Saleorovho
+WebP**, výsledok je **45,68 dB** namiesto 42,55 dB — o 3,1 dB bližšie k originálu za
+**+1,1 KB** (13,5 vs 12,4 KB). Odstráni to jeden z troch priechodov. Malé, ale reálne.
+
+### 2.7 AVIF sa neservíruje vôbec — a CFM derivatives sú nevyužité
+
+`next.config.js` **nemá `images.formats`**, takže platí default `['image/webp']`.
+Overené proti produkcii:
+
+```
+Accept: image/avif,image/webp,*   →  image/webp   12 702 B
+Accept: image/webp,*             →  image/webp   12 702 B
+Accept: image/*                  →  image/jpeg   19 464 B
+```
+
+**Ani keď prehliadač AVIF výslovne ponúkne, dostane WebP.**
+
+Zároveň: storefront berie obrázky zo **Saleorových thumbnailov**
+(`cdn.maky.store/thumbnails/products/…_thumbnail_.webp`), nie z CFM tabuľky
+`mediaderivative`. Tých ~8 834 AVIF/WebP derivátov (320/640/960, profil `tazar_v1`)
+**storefront dnes nepoužíva vôbec.** Buď ich zapojiť — sú predgenerované, obišli by
+Next optimizer aj tretí priechod — alebo prestať generovať. Poznámka: ich strop je
+960 px, takže pre lightbox by aj tak nestačili.
+
+### 2.8 Zhoršilo kvalitu CFM? — poctivá odpoveď: zo storefrontu sa to nedá určiť
+
+Zmeral som iba to, čo drží Saleor. Čo dostal na vstupe, odtiaľto nevidno. Dve fakty,
+ktoré k tomu treba priložiť:
+
+```
+Nordrive strešné nosiče — 17 médií z 3 produktov:  VŠETKY presne 1000×1000 JPEG
+                                                    0,026–0,061 B/px
+iné produkty (Amos) v tom istom Saleore:           1400×1400 PNG, až 692 KB
+                                                    540×540, 800×533 …
+```
+
+Saleor teda **nenormalizuje** — iné produkty majú 1400×1400 a stokrát väčšie súbory.
+Ale celá Nordrive sada je **na pixel rovnaká 1000×1000 JPEG**, čo je podpis
+normalizačného kroku niekde pred Saleorom. Či ten krok dostal väčší originál, alebo mu
+dodávateľ dal rovno 1000×1000, **vie povedať iba CFM** — v admine je pri asset vidno
+zdrojový rozmer (screenshot ukazuje `png 768x768`, `jpeg 1024x768`, `png 900x675`,
+`png 1400x1400`, čiže vstupy sa líšia).
+
+**Konkrétna otázka na CFM:** aký bol zdrojový rozmer a formát pre Nordrive assety, ktoré
+skončili ako 1000×1000 JPEG? Ak bol väčší, normalizácia stratila detail a dá sa to
+prenastaviť. Ak nie, obrázky sú také, aké prišli, a lepšie sa dá len tesnejším orezom.
+
 ### 2.5 Čo teda zadaj
 
 Na frontende (reálne zisky, žiadne sľuby o rozlíšení):
