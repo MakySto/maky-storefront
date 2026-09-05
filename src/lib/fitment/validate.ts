@@ -110,7 +110,13 @@ export function validateFitmentDataset(raw: unknown, options: ValidateOptions = 
 		errors.push("generatedAt is not a parsable date");
 	}
 
+	// A demo dataset deliberately names an instance that does not exist, because its ids
+	// are synthetic and are never looked up against Saleor. Applying the instance check
+	// to it would reject it — which is exactly what happened: the demo silently switched
+	// itself off while the build and the whole test suite stayed green.
+	const isDemoPayload = Array.isArray(raw.demoCatalogue);
 	if (
+		!isDemoPayload &&
 		options.expectedSaleorInstance &&
 		isNonEmptyString(raw.saleorInstance) &&
 		raw.saleorInstance !== options.expectedSaleorInstance
