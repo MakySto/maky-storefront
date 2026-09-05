@@ -145,6 +145,7 @@
 		"shipping": "Dostawa",
 		"total": "Razem",
 		"checkout": "Przejdź do kasy",
+		"viewCart": "Zobacz koszyk",
 		"remove": "Usuń",
 		"items": "{count, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}}",
 		"emptyCartHint": "Nie masz jeszcze żadnych produktów w koszyku.",

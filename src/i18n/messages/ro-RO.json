@@ -145,6 +145,7 @@
 		"shipping": "Livrare",
 		"total": "Total",
 		"checkout": "Finalizează comanda",
+		"viewCart": "Vezi coșul",
 		"remove": "Elimină",
 		"items": "{count, plural, one {# articol} few {# articole} other {# de articole}}",
 		"emptyCartHint": "Nu ați adăugat încă niciun produs în coș.",

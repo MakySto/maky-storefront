@@ -145,6 +145,7 @@
 		"shipping": "Doprava",
 		"total": "Celkem",
 		"checkout": "Přejít k pokladně",
+		"viewCart": "Zobrazit celý košík",
 		"remove": "Odstranit",
 		"items": "{count, plural, one {# položka} few {# položky} other {# položek}}",
 		"emptyCartHint": "Zatím jste do košíku nic nepřidali.",

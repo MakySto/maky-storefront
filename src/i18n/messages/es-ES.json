@@ -145,6 +145,7 @@
 		"shipping": "Envío",
 		"total": "Total",
 		"checkout": "Ir a la caja",
+		"viewCart": "Ver la cesta",
 		"remove": "Eliminar",
 		"items": "{count, plural, one {# artículo} other {# artículos}}",
 		"emptyCartHint": "Todavía no has añadido ningún producto al carrito.",

@@ -145,6 +145,7 @@
 		"shipping": "Versand",
 		"total": "Gesamt",
 		"checkout": "Zur Kasse",
+		"viewCart": "Warenkorb ansehen",
 		"remove": "Entfernen",
 		"items": "{count, plural, one {# Artikel} other {# Artikel}}",
 		"emptyCartHint": "Sie haben noch nichts in den Warenkorb gelegt.",

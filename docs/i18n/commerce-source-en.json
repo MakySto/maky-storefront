@@ -15,6 +15,15 @@
 			"usageCount": 2,
 			"runtimeStatus": "production"
 		},
+		"cart.viewCart": {
+			"source": "View cart",
+			"context": "Secondary CTA in the cart drawer footer, between the checkout CTA and 'continue shopping' — opens the full cart page at /{market}/cart.",
+			"kind": "cta",
+			"maxLength": 30,
+			"callSites": ["src/ui/components/cart/cart-drawer.tsx"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
 		"cart.continueShopping": {
 			"source": "Continue shopping",
 			"context": "Secondary CTA in the empty cart, on the full cart page, and on the order confirmation — returns to the market storefront.",

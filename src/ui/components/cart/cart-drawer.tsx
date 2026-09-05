@@ -325,13 +325,32 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel }: CartDrawe
 								<span>{t("checkout")}</span>
 								<ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" />
 							</Link>
+							{/* The full cart page had no route into it from anywhere in the UI:
+							    the header icon opens this drawer, and the drawer offered only
+							    checkout and /products. That matters more than a missing link,
+							    because an unconfirmed add tells the shopper to go and check
+							    their cart — and there was no way to get there.
+
+							    `marketHref`, not a bare "/cart": the channel prop is the Saleor
+							    slug (sk-eur) and the public route is /sk/cart. A market-less
+							    /cart is a different URL, and robots.txt disallows it. */}
 							<Link
-								href={marketHref(channel, "/products")}
+								href={marketHref(channel, "/cart")}
 								onClick={closeCart}
 								className="border-border hover:bg-accent hover:text-accent-foreground inline-flex h-12 w-full items-center justify-center rounded-md border bg-transparent text-base font-medium transition-colors"
 							>
-								{t("continueShopping")}
+								{t("viewCart")}
 							</Link>
+							{/* Closes the drawer and leaves the shopper where they are. It used
+							    to navigate to /products, which takes someone off the product
+							    they were reading in order to "continue shopping". */}
+							<button
+								type="button"
+								onClick={closeCart}
+								className="text-muted-foreground hover:text-foreground inline-flex h-10 w-full items-center justify-center rounded-md text-sm font-medium transition-colors"
+							>
+								{t("continueShopping")}
+							</button>
 						</div>
 
 						{/* Trust Signals */}

@@ -145,6 +145,7 @@
 		"shipping": "Szállítás",
 		"total": "Összesen",
 		"checkout": "Tovább a pénztárhoz",
+		"viewCart": "Kosár megtekintése",
 		"remove": "Eltávolítás",
 		"items": "{count, plural, one {# tétel} other {# tétel}}",
 		"emptyCartHint": "Még nem tett terméket a kosarába.",

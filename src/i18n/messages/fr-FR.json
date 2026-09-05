@@ -145,6 +145,7 @@
 		"shipping": "Livraison",
 		"total": "Total",
 		"checkout": "Passer à la caisse",
+		"viewCart": "Voir le panier",
 		"remove": "Supprimer",
 		"items": "{count, plural, one {# article} many {# articles} other {# articles}}",
 		"emptyCartHint": "Vous n'avez encore rien ajouté à votre panier.",
