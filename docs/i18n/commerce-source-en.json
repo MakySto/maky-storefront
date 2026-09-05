@@ -247,13 +247,13 @@
 		},
 		"cart.variantLabel": {
 			"source": "Variant: {variant}",
-			"context": "Variant-name line under the product name on each full-cart-page line item, shown only when the variant has a real name.",
+			"context": "Variant-name line under the product name on a cart line — on the full cart page and in the drawer — shown only when the variant has a real name. The drawer used to render it unlabelled, so the two surfaces described the same line differently.",
 			"kind": "visible",
 			"placeholders": {
 				"variant": "variant name from Saleor backend data"
 			},
-			"callSites": ["src/app/[channel]/(main)/cart/page.tsx:92"],
-			"usageCount": 1,
+			"callSites": ["src/app/[channel]/(main)/cart/page.tsx", "src/ui/components/cart/cart-drawer.tsx"],
+			"usageCount": 2,
 			"runtimeStatus": "production"
 		},
 		"cart.addedToCart": {

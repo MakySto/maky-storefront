@@ -115,3 +115,30 @@ export function hasDiscountInPriceRange(
 
 	return hasStartDiscount || hasStopDiscount;
 }
+
+/**
+ * The struck-through "was" total for one cart line, or `null` when there is no
+ * discount to show.
+ *
+ * Shared because the drawer and the full cart page were describing the same
+ * line differently: the drawer showed a compare-at price and the page showed
+ * none. Nobody can see that today — 0 of 417 live variants have
+ * `priceUndiscounted > price` — which is exactly when a disagreement about a
+ * PRICE gets locked in, because the first discount configured is what reveals it.
+ *
+ * Note what this is: the unit undiscounted price times quantity, computed here.
+ * It is not a line total returned by Saleor, and it will not reflect a
+ * line-level voucher. Two surfaces computing the same number is still better
+ * than two surfaces computing different ones.
+ */
+export function compareAtLineTotal(input: {
+	price?: number | null;
+	priceUndiscounted?: number | null;
+	currency?: string | null;
+	quantity: number;
+}): { amount: number; currency: string } | null {
+	const { price, priceUndiscounted, currency, quantity } = input;
+	if (!hasDiscount(price, priceUndiscounted) || !currency) return null;
+	if (!Number.isFinite(quantity) || quantity < 1) return null;
+	return { amount: (priceUndiscounted as number) * quantity, currency };
+}

@@ -11,7 +11,7 @@ import { useCart } from "./cart-context";
 import { deleteCartLine, updateCartLineQuantity } from "./actions";
 import { formatMoney } from "@/lib/utils";
 import { localeConfig } from "@/config/locale";
-import { hasDiscount } from "@/lib/pricing";
+import { compareAtLineTotal } from "@/lib/pricing";
 
 interface CartLine {
 	id: string;
@@ -33,6 +33,7 @@ interface CartLine {
 				url: string;
 				alt?: string | null;
 			} | null;
+			category?: { name: string } | null;
 		};
 		pricing?: {
 			price?: {
@@ -165,10 +166,12 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel, loadFailed 
 						<ul className="divide-border divide-y">
 							{lines.map((line) => {
 								const variantAttributes = getVariantDetails(line.variant);
-								const isDiscounted = hasDiscount(
-									line.variant.pricing?.price?.gross.amount,
-									line.variant.pricing?.priceUndiscounted?.gross.amount,
-								);
+								const compareAt = compareAtLineTotal({
+									price: line.variant.pricing?.price?.gross.amount,
+									priceUndiscounted: line.variant.pricing?.priceUndiscounted?.gross.amount,
+									currency: line.variant.pricing?.priceUndiscounted?.gross.currency,
+									quantity: line.quantity,
+								});
 
 								return (
 									<li key={line.id} className="px-6 py-4">
@@ -200,6 +203,15 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel, loadFailed 
 														>
 															{line.variant.product.name}
 														</Link>
+														{/* The full cart page has always shown the category here. The two
+														    surfaces described the same line differently, which is the kind of
+														    difference a shopper notices only when it matters. Already in
+														    `CheckoutFind`, so no query change. */}
+														{line.variant.product.category?.name && (
+															<p className="text-muted-foreground mt-0.5 text-xs">
+																{line.variant.product.category.name}
+															</p>
+														)}
 														{/* Variant attributes: Color swatch + values separated by | */}
 														{variantAttributes.length > 0 ? (
 															<div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5 text-xs">
@@ -222,7 +234,11 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel, loadFailed 
 																))}
 															</div>
 														) : line.variant.name && line.variant.name !== line.variant.id ? (
-															<p className="text-muted-foreground mt-1 text-xs">{line.variant.name}</p>
+															// Labelled, like the full cart page. An unlabelled code under a
+															// product name reads as part of the name.
+															<p className="text-muted-foreground mt-1 text-xs">
+																{t("variantLabel", { variant: line.variant.name })}
+															</p>
 														) : null}
 													</div>
 													<Button
@@ -269,12 +285,9 @@ export function CartDrawer({ checkoutId, lines, totalPrice, channel, loadFailed 
 														<span className="text-sm font-medium">
 															{formatMoney(line.totalPrice.gross.amount, line.totalPrice.gross.currency)}
 														</span>
-														{isDiscounted && line.variant.pricing?.priceUndiscounted && (
+														{compareAt && (
 															<span className="text-muted-foreground block text-xs line-through">
-																{formatMoney(
-																	line.variant.pricing.priceUndiscounted.gross.amount * line.quantity,
-																	line.variant.pricing.priceUndiscounted.gross.currency,
-																)}
+																{formatMoney(compareAt.amount, compareAt.currency)}
 															</span>
 														)}
 													</div>

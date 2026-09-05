@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { CheckoutLink } from "./checkout-link";
 import { DeleteLineButton } from "./delete-line-button";
 import * as Checkout from "@/lib/checkout";
+import { compareAtLineTotal } from "@/lib/pricing";
 import { formatMoney, getHrefForVariant } from "@/lib/utils";
 import { getLocaleFromChannel } from "@/config/locale";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
@@ -36,6 +37,33 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 				<CartContent params={props.params} />
 			</Suspense>
 		</section>
+	);
+}
+
+/**
+ * A line's total, with the pre-discount total struck through above it when
+ * there is one.
+ *
+ * The drawer has always shown this and the page never did, so the two surfaces
+ * described the same line differently. `compareAtLineTotal` is shared so they
+ * cannot drift apart again.
+ */
+function CartLinePrice({
+	total,
+	compareAt,
+}: {
+	total: { amount: number; currency: string };
+	compareAt: { amount: number; currency: string } | null;
+}) {
+	return (
+		<div className="text-right">
+			{compareAt && (
+				<p className="text-xs text-neutral-500 line-through">
+					{formatMoney(compareAt.amount, compareAt.currency)}
+				</p>
+			)}
+			<p className="font-semibold text-neutral-900">{formatMoney(total.amount, total.currency)}</p>
+		</div>
 	);
 }
 
@@ -116,9 +144,15 @@ async function CartContent({ params: paramsPromise }: { params: Promise<{ channe
 										</p>
 									)}
 								</div>
-								<p className="text-right font-semibold text-neutral-900">
-									{formatMoney(item.totalPrice.gross.amount, item.totalPrice.gross.currency)}
-								</p>
+								<CartLinePrice
+									total={item.totalPrice.gross}
+									compareAt={compareAtLineTotal({
+										price: item.variant.pricing?.price?.gross.amount,
+										priceUndiscounted: item.variant.pricing?.priceUndiscounted?.gross.amount,
+										currency: item.variant.pricing?.priceUndiscounted?.gross.currency,
+										quantity: item.quantity,
+									})}
+								/>
 							</div>
 							<div className="flex justify-between">
 								<div className="text-sm font-bold">{t("quantityLabel", { quantity: item.quantity })}</div>
