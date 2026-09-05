@@ -630,6 +630,10 @@
 		"propertyMaxLoad": "Charge maximale",
 		"propertyLockable": "Verrouillable",
 		"valueYes": "Oui",
-		"valueNo": "Non"
+		"valueNo": "Non",
+		"facetAero": "aéro",
+		"facetSquare": "carré",
+		"facetAluminium": "aluminium",
+		"facetSteel": "acier"
 	}
 }

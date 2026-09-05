@@ -150,16 +150,33 @@ export function ConfiguratorResults({
 	);
 }
 
+/**
+ * Known facet VALUES are translated, not printed raw.
+ *
+ * The provider supplies stable codes; "aluminium" and "square" are English on a Slovak
+ * page, which reads as an unfinished translation rather than as data. A code we do not
+ * recognise is still shown as supplied — dropping it would hide a real product property
+ * — but naming it is the provider's job.
+ */
+const FACET_VALUE_KEY: Record<string, string> = {
+	aero: "facetAero",
+	square: "facetSquare",
+	aluminium: "facetAluminium",
+	steel: "facetSteel",
+};
+
 /** Only properties the data actually carries. Nothing is inferred or defaulted. */
 function Properties({ facets }: { facets: Record<string, string | number | boolean> | null }) {
 	const t = useTranslations("configurator");
 	if (!facets) return null;
 
+	const facetLabel = (raw: string) => (FACET_VALUE_KEY[raw] ? t(FACET_VALUE_KEY[raw]) : raw);
+
 	const rows: { label: string; value: string }[] = [];
 	if (typeof facets.barShape === "string")
-		rows.push({ label: t("propertyBarShape"), value: facets.barShape });
+		rows.push({ label: t("propertyBarShape"), value: facetLabel(facets.barShape) });
 	if (typeof facets.barMaterial === "string")
-		rows.push({ label: t("propertyBarMaterial"), value: facets.barMaterial });
+		rows.push({ label: t("propertyBarMaterial"), value: facetLabel(facets.barMaterial) });
 	if (typeof facets.maxLoadKg === "number")
 		rows.push({ label: t("propertyMaxLoad"), value: `${facets.maxLoadKg} kg` });
 	if (typeof facets.lockable === "boolean")

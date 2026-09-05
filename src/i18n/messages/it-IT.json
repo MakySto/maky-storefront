@@ -630,6 +630,10 @@
 		"propertyMaxLoad": "Portata",
 		"propertyLockable": "Con serratura",
 		"valueYes": "Sì",
-		"valueNo": "No"
+		"valueNo": "No",
+		"facetAero": "aero",
+		"facetSquare": "quadrato",
+		"facetAluminium": "alluminio",
+		"facetSteel": "acciaio"
 	}
 }

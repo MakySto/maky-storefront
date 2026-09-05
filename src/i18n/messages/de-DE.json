@@ -630,6 +630,10 @@
 		"propertyMaxLoad": "Traglast",
 		"propertyLockable": "Abschließbar",
 		"valueYes": "Ja",
-		"valueNo": "Nein"
+		"valueNo": "Nein",
+		"facetAero": "Aero",
+		"facetSquare": "Vierkant",
+		"facetAluminium": "Aluminium",
+		"facetSteel": "Stahl"
 	}
 }

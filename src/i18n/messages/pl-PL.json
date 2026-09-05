@@ -630,6 +630,10 @@
 		"propertyMaxLoad": "Nośność",
 		"propertyLockable": "Zamykane na klucz",
 		"valueYes": "Tak",
-		"valueNo": "Nie"
+		"valueNo": "Nie",
+		"facetAero": "aero",
+		"facetSquare": "kwadratowy",
+		"facetAluminium": "aluminium",
+		"facetSteel": "stal"
 	}
 }

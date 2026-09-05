@@ -630,6 +630,10 @@
 		"propertyMaxLoad": "Nosnosť",
 		"propertyLockable": "Uzamykateľné",
 		"valueYes": "Áno",
-		"valueNo": "Nie"
+		"valueNo": "Nie",
+		"facetAero": "aero",
+		"facetSquare": "štvorhranný",
+		"facetAluminium": "hliník",
+		"facetSteel": "oceľ"
 	}
 }
