@@ -13,7 +13,8 @@ import { StarRating } from "@/ui/components/product/star-rating";
 import { cn } from "@/lib/utils";
 import { marketHref } from "@/lib/channel-map";
 import { useLocale } from "@/providers/locale-provider";
-import { addListingItemToCart } from "./actions";
+import { addListingItemToCartAction } from "./actions";
+import { CartForm } from "./cart-form";
 
 export interface ProductCardData {
 	id: string;
@@ -195,13 +196,15 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 				<p className="text-text-tertiary mt-0.5 text-center text-[0.6875rem]">{tProduct("priceWithVat")}</p>
 
 				{canAddDirectly ? (
-					<form action={addListingItemToCart} className="mt-2 flex items-stretch gap-2">
-						<input type="hidden" name="channel" value={product.channel} />
-						<input type="hidden" name="variantId" value={product.variantId ?? ""} />
-						<input type="hidden" name="maxQuantity" value={product.quantityAvailable ?? ""} />
-						<QuantityStepper name="quantity" max={product.quantityAvailable ?? undefined} compact />
-						<AddButton />
-					</form>
+					<CartForm action={addListingItemToCartAction} className="mt-2">
+						<div className="flex items-stretch gap-2">
+							<input type="hidden" name="channel" value={product.channel} />
+							<input type="hidden" name="variantId" value={product.variantId ?? ""} />
+							<input type="hidden" name="maxQuantity" value={product.quantityAvailable ?? ""} />
+							<QuantityStepper name="quantity" max={product.quantityAvailable ?? undefined} compact />
+							<AddButton />
+						</div>
+					</CartForm>
 				) : (
 					// Button is a plain <button> in this codebase — no asChild slot — so
 					// the link carries the styling itself.

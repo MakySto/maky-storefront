@@ -212,13 +212,23 @@ async function fetchWithRetry(
 	withAuth: boolean,
 	operationName: string,
 	variablesForLog?: string,
+	/**
+	 * Retry budget for THIS request. Zero means one wire attempt and no more.
+	 *
+	 * A retry is only safe when replaying the request cannot change anything, and
+	 * that is a property of the operation, not of the transport — see
+	 * `retriesFor()`.
+	 */
+	retryBudget?: number,
 ): Promise<FetchResult> {
 	const url = process.env.NEXT_PUBLIC_SALEOR_API_URL;
 	if (!url) {
 		return networkError("Missing NEXT_PUBLIC_SALEOR_API_URL env variable");
 	}
 
-	const { maxRetries, delayMs, timeoutMs } = getRetryConfig();
+	const config = getRetryConfig();
+	const { delayMs, timeoutMs } = config;
+	const maxRetries = retryBudget ?? config.maxRetries;
 
 	for (let attempt = 0; attempt <= maxRetries; attempt++) {
 		try {
@@ -284,10 +294,41 @@ async function fetchWithRetry(
 // GraphQL Execution
 // ============================================================================
 
+/**
+ * How many times this operation may be put on the wire again.
+ *
+ * Queries retry: asking twice cannot change anything. **Mutations do not**,
+ * because a replay is not a repeat of the question but a repeat of the WRITE —
+ * and `fetchWithRetry` retries on a timeout, which is exactly the case where the
+ * request most likely did reach Saleor.
+ *
+ * Measured against live Saleor on 2026-09-05, sending the same
+ * `checkoutLinesAdd` three times on one checkout:
+ *
+ *     quantity 1 → 2 → 3
+ *
+ * So with the default budget of three retries, one add-to-cart click whose
+ * response was lost could put four of an item in a customer's basket. The same
+ * argument applies to every payment and order mutation in the checkout.
+ *
+ * A caller with a genuinely idempotent mutation can opt back in with
+ * `retry: true`; nothing in this repo currently needs to.
+ */
+function retriesFor(operationSource: string, explicit: boolean | undefined): number | undefined {
+	if (explicit === true) return undefined; // the configured default
+	if (explicit === false) return 0;
+	return /^\s*mutation\b/m.test(operationSource) ? 0 : undefined;
+}
+
 type GraphQLOptions<Variables> = {
 	headers?: HeadersInit;
 	cache?: RequestCache;
 	revalidate?: number;
+	/**
+	 * Override the retry decision. Mutations default to no retries; queries to
+	 * the configured budget. See `retriesFor()`.
+	 */
+	retry?: boolean;
 } & (Variables extends Record<string, never> ? { variables?: never } : { variables: Variables });
 
 type GraphQLResponse<T> = { data: T } | { errors: readonly { message: string }[] };
@@ -299,7 +340,7 @@ async function executeGraphQL<Result, Variables>(
 	operation: TypedDocumentString<Result, Variables>,
 	options: GraphQLOptions<Variables> & { withAuth: boolean },
 ): Promise<GraphQLResult<Result>> {
-	const { variables, headers, cache, revalidate, withAuth } = options;
+	const { variables, headers, cache, revalidate, withAuth, retry } = options;
 
 	const operationName = operation.toString().match(/(?:query|mutation)\s+(\w+)/)?.[1] || "UnknownOperation";
 	const variablesForLog = variables ? formatVariablesForLog(variables) : undefined;
@@ -322,7 +363,7 @@ async function executeGraphQL<Result, Variables>(
 	};
 
 	const fetchResult = await requestQueue.enqueue(() =>
-		fetchWithRetry(input, withAuth, operationName, variablesForLog),
+		fetchWithRetry(input, withAuth, operationName, variablesForLog, retriesFor(operation.toString(), retry)),
 	);
 
 	if (!fetchResult.ok) {
@@ -354,7 +395,9 @@ async function executeGraphQL<Result, Variables>(
 	}
 
 	if (body == null || typeof body !== "object") {
-		return graphqlError([`response body was ${body === null ? "null" : typeof body}, not a GraphQL response`]);
+		return graphqlError([
+			`response body was ${body === null ? "null" : typeof body}, not a GraphQL response`,
+		]);
 	}
 
 	if ("errors" in body) {

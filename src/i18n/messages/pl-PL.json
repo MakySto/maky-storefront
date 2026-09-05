@@ -133,6 +133,12 @@
 	},
 	"cart": {
 		"yourCart": "Twój koszyk",
+		"addedToCart": "Dodano do koszyka.",
+		"addUnavailable": "Ten produkt nie jest obecnie dostępny do zamówienia.",
+		"addInvalid": "Sprawdź wybraną ilość.",
+		"addNotFound": "Nie znaleziono produktu.",
+		"addFailed": "Nie udało się dodać produktu do koszyka.",
+		"addUnconfirmed": "Nie możemy potwierdzić, czy produkt został dodany. Sprawdź koszyk.",
 		"emptyCart": "Twój koszyk jest pusty",
 		"continueShopping": "Kontynuuj zakupy",
 		"subtotal": "Suma częściowa",

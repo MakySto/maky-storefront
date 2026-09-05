@@ -1,16 +1,17 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const { executeAuthenticatedGraphQL, findOrCreate, getIdFromCookies, saveIdToCookie, revalidatePath } =
+const { executeAuthenticatedGraphQL, findOrCreate, find, getIdFromCookies, saveIdToCookie, revalidatePath } =
 	vi.hoisted(() => ({
 		executeAuthenticatedGraphQL: vi.fn(),
 		findOrCreate: vi.fn(),
+		find: vi.fn(),
 		getIdFromCookies: vi.fn(),
 		saveIdToCookie: vi.fn(),
 		revalidatePath: vi.fn(),
 	}));
 
 vi.mock("@/lib/graphql", () => ({ executeAuthenticatedGraphQL }));
-vi.mock("@/lib/checkout", () => ({ findOrCreate, getIdFromCookies, saveIdToCookie }));
+vi.mock("@/lib/checkout", () => ({ findOrCreate, find, getIdFromCookies, saveIdToCookie }));
 vi.mock("next/cache", () => ({ revalidatePath }));
 
 import { addVariantToCart } from "./actions";
@@ -27,6 +28,7 @@ beforeEach(() => {
 	vi.clearAllMocks();
 	getIdFromCookies.mockResolvedValue(null);
 	findOrCreate.mockResolvedValue(CHECKOUT);
+	find.mockResolvedValue(null);
 	saveIdToCookie.mockResolvedValue(undefined);
 });
 
@@ -84,7 +86,12 @@ describe("addVariantToCart", () => {
 		expect((await addVariantToCart(input)).status).toBe("unconfirmed");
 	});
 
-	it("sends the mutation exactly once — no automatic retry", async () => {
+	it("calls the transport once — the WIRE count is asserted in graphql-retry.test.ts", async () => {
+		// This only proves the action does not loop. It says nothing about HTTP
+		// attempts, because `fetchWithRetry` sits underneath and used to replay a
+		// mutation up to three more times. That is measured against a mocked fetch
+		// in src/lib/graphql-retry.test.ts, which is where the duplicate-line risk
+		// actually lives.
 		executeAuthenticatedGraphQL.mockResolvedValue({
 			ok: false,
 			error: { type: "network", message: "timeout", isRetryable: true },
@@ -139,5 +146,78 @@ describe("addVariantToCart", () => {
 		await addVariantToCart(input);
 
 		expect(revalidatePath).toHaveBeenCalledWith("/cart");
+	});
+});
+
+describe("an unclear result is settled by reading, never by re-sending", () => {
+	const line = (variantId: string, quantity: number) => ({
+		quantity,
+		variant: { id: variantId },
+	});
+	const timeout = { ok: false, error: { type: "network", message: "socket hang up" } };
+
+	it("reports success when the read shows the line did land", async () => {
+		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
+		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 1)] });
+
+		await expect(addVariantToCart(input)).resolves.toEqual({ status: "added" });
+	});
+
+	it("says nothing was added when the read shows it did not land", async () => {
+		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
+		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		find.mockResolvedValue({ ...CHECKOUT, lines: [] });
+
+		const result = await addVariantToCart(input);
+
+		expect(result).toMatchObject({ status: "rejected" });
+	});
+
+	it("counts from the quantity that was already in the cart", async () => {
+		// The customer already had two. Landing means three, not one.
+		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
+		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 2)] });
+		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 3)] });
+
+		await expect(addVariantToCart(input)).resolves.toEqual({ status: "added" });
+	});
+
+	it("does not turn a concurrent change into an error", async () => {
+		// Another tab added some too. What was asked for is in the cart, which is
+		// the question being answered — over-shoot is somebody else's write, not a
+		// reason to tell this customer their add failed.
+		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
+		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 2)] });
+		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 5)] });
+
+		await expect(addVariantToCart(input)).resolves.toEqual({ status: "added" });
+	});
+
+	it("stays unconfirmed when the line moved by LESS than was asked for", async () => {
+		// Partially applied, or changed underneath us. Do not guess, and above all
+		// do not add more.
+		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
+		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 2)] });
+		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 3)] });
+
+		expect((await addVariantToCart({ ...input, quantity: 4 })).status).toBe("unconfirmed");
+	});
+
+	it("stays unconfirmed when the read itself fails", async () => {
+		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
+		find.mockRejectedValue(new Error("also down"));
+
+		expect((await addVariantToCart(input)).status).toBe("unconfirmed");
+	});
+
+	it("NEVER sends the mutation again while reconciling", async () => {
+		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
+		findOrCreate.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		find.mockResolvedValue({ ...CHECKOUT, lines: [] });
+
+		await addVariantToCart(input);
+
+		expect(executeAuthenticatedGraphQL).toHaveBeenCalledTimes(1);
 	});
 });

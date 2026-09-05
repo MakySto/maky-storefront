@@ -133,6 +133,12 @@
 	},
 	"cart": {
 		"yourCart": "Your cart",
+		"addedToCart": "Added to cart.",
+		"addUnavailable": "This product is not available to order right now.",
+		"addInvalid": "Please check the quantity you selected.",
+		"addNotFound": "Product not found.",
+		"addFailed": "The product could not be added to your cart.",
+		"addUnconfirmed": "We can't confirm whether the product was added. Please check your cart.",
 		"emptyCart": "Your cart is empty",
 		"continueShopping": "Continue shopping",
 		"subtotal": "Subtotal",

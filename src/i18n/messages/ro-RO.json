@@ -133,6 +133,12 @@
 	},
 	"cart": {
 		"yourCart": "Coșul dvs.",
+		"addedToCart": "Adăugat în coș.",
+		"addUnavailable": "Acest produs nu este disponibil pentru comandă momentan.",
+		"addInvalid": "Verificați cantitatea selectată.",
+		"addNotFound": "Produsul nu a fost găsit.",
+		"addFailed": "Produsul nu a putut fi adăugat în coș.",
+		"addUnconfirmed": "Nu putem confirma dacă produsul a fost adăugat. Verificați coșul.",
 		"emptyCart": "Coșul este gol",
 		"continueShopping": "Continuă cumpărăturile",
 		"subtotal": "Subtotal",

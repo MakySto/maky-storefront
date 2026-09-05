@@ -133,6 +133,12 @@
 	},
 	"cart": {
 		"yourCart": "Ihr Warenkorb",
+		"addedToCart": "Zum Warenkorb hinzugefügt.",
+		"addUnavailable": "Dieses Produkt ist derzeit nicht bestellbar.",
+		"addInvalid": "Bitte prüfen Sie die gewählte Menge.",
+		"addNotFound": "Produkt wurde nicht gefunden.",
+		"addFailed": "Das Produkt konnte nicht in den Warenkorb gelegt werden.",
+		"addUnconfirmed": "Wir können nicht bestätigen, ob das Produkt hinzugefügt wurde. Bitte prüfen Sie den Warenkorb.",
 		"emptyCart": "Ihr Warenkorb ist leer",
 		"continueShopping": "Weiter einkaufen",
 		"subtotal": "Zwischensumme",

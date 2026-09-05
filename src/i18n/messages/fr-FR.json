@@ -133,6 +133,12 @@
 	},
 	"cart": {
 		"yourCart": "Votre panier",
+		"addedToCart": "Ajouté au panier.",
+		"addUnavailable": "Ce produit n'est actuellement pas disponible à la commande.",
+		"addInvalid": "Veuillez vérifier la quantité choisie.",
+		"addNotFound": "Produit introuvable.",
+		"addFailed": "Impossible d'ajouter le produit au panier.",
+		"addUnconfirmed": "Nous ne pouvons pas confirmer l'ajout du produit. Veuillez vérifier votre panier.",
 		"emptyCart": "Votre panier est vide",
 		"continueShopping": "Continuer mes achats",
 		"subtotal": "Sous-total",

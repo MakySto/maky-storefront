@@ -133,6 +133,12 @@
 	},
 	"cart": {
 		"yourCart": "Váš košík",
+		"addedToCart": "Přidáno do košíku.",
+		"addUnavailable": "Tento produkt momentálně není dostupný k objednání.",
+		"addInvalid": "Zkontrolujte prosím zvolené množství.",
+		"addNotFound": "Produkt se nepodařilo najít.",
+		"addFailed": "Produkt se nepodařilo přidat do košíku.",
+		"addUnconfirmed": "Nevíme, zda se produkt přidal. Zkontrolujte prosím košík.",
 		"emptyCart": "Váš košík je prázdný",
 		"continueShopping": "Pokračovat v nákupu",
 		"subtotal": "Mezisoučet",

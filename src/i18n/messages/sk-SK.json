@@ -133,6 +133,12 @@
 	},
 	"cart": {
 		"yourCart": "Váš košík",
+		"addedToCart": "Pridané do košíka.",
+		"addUnavailable": "Tento produkt momentálne nie je dostupný na objednanie.",
+		"addInvalid": "Skontrolujte prosím zvolené množstvo.",
+		"addNotFound": "Produkt sa nepodarilo nájsť.",
+		"addFailed": "Produkt sa nepodarilo pridať do košíka.",
+		"addUnconfirmed": "Nevieme potvrdiť, či sa produkt pridal. Skontrolujte prosím košík.",
 		"emptyCart": "Váš košík je prázdny",
 		"continueShopping": "Pokračovať v nákupe",
 		"subtotal": "Medzisúčet",

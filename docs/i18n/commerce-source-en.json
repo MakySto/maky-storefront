@@ -238,6 +238,60 @@
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
+		"cart.addedToCart": {
+			"source": "Added to cart.",
+			"context": "Confirmation shown under the add-to-cart button on the listing card and the PDP once Saleor has actually returned the checkout.",
+			"kind": "status",
+			"maxLength": 40,
+			"callSites": ["src/ui/components/plp/cart-form.tsx:58"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"cart.addUnavailable": {
+			"source": "This product is not available to order right now.",
+			"context": "Add-to-cart refused because the variant is out of stock, unpublished, not purchasable, or absent from this channel. Saleor answered — this is not a network failure.",
+			"kind": "error",
+			"maxLength": 90,
+			"callSites": ["src/ui/components/plp/cart-form.tsx:74"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"cart.addInvalid": {
+			"source": "Please check the quantity you selected.",
+			"context": "Add-to-cart refused because the request itself was wrong: zero quantity, over the per-line limit, or a bad field.",
+			"kind": "error",
+			"maxLength": 70,
+			"callSites": ["src/ui/components/plp/cart-form.tsx:76"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"cart.addNotFound": {
+			"source": "Product not found.",
+			"context": "Add-to-cart refused because Saleor does not know this variant or checkout.",
+			"kind": "error",
+			"maxLength": 60,
+			"callSites": ["src/ui/components/plp/cart-form.tsx:78"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"cart.addFailed": {
+			"source": "The product could not be added to your cart.",
+			"context": "Add-to-cart refused for a reason the storefront does not model, or the checkout could not be created.",
+			"kind": "error",
+			"maxLength": 70,
+			"callSites": ["src/ui/components/plp/cart-form.tsx:79"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"cart.addUnconfirmed": {
+			"source": "We can't confirm whether the product was added. Please check your cart.",
+			"context": "Neither success nor failure: the write may have landed. Deliberately NOT an error and deliberately not an invitation to retry — checkoutLinesAdd is not idempotent, so a second attempt adds the item again.",
+			"kind": "status",
+			"maxLength": 110,
+			"callSites": ["src/ui/components/plp/cart-form.tsx:67"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
 		"cart.yourCart": {
 			"source": "Your cart",
 			"context": "Cart drawer heading next to the bag icon (SheetTitle); also reused as the cart-page context.",

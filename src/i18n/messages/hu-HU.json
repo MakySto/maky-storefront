@@ -133,6 +133,12 @@
 	},
 	"cart": {
 		"yourCart": "Az Ön kosara",
+		"addedToCart": "Kosárba téve.",
+		"addUnavailable": "Ez a termék jelenleg nem rendelhető.",
+		"addInvalid": "Kérjük, ellenőrizze a megadott mennyiséget.",
+		"addNotFound": "A termék nem található.",
+		"addFailed": "A terméket nem sikerült a kosárba tenni.",
+		"addUnconfirmed": "Nem tudjuk megerősíteni, hogy a termék bekerült-e. Kérjük, ellenőrizze a kosarat.",
 		"emptyCart": "A kosara üres",
 		"continueShopping": "Vásárlás folytatása",
 		"subtotal": "Részösszeg",

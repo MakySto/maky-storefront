@@ -10,6 +10,8 @@ import { PurchaseTrust } from "./purchase-trust";
 import { Badge } from "@/ui/components/ui/badge";
 import { QUANTITY_FALLBACK_MAX } from "@/ui/components/ui/quantity-stepper";
 import { addVariantToCart } from "@/ui/components/plp/actions";
+import type { AddToCartResult } from "@/ui/components/plp/add-to-cart-result";
+import { CartForm } from "@/ui/components/plp/cart-form";
 import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
 
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
@@ -92,13 +94,15 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 
 	const sku = selectedVariant?.sku ?? variants[0]?.sku ?? null;
 
-	// Server action for adding to cart
-	async function addToCart(formData: FormData) {
+	// Server action for adding to cart. `useActionState` shape, so <CartForm> can
+	// render what actually happened instead of the outcome reaching a log only.
+	async function addToCart(_previous: AddToCartResult | null, formData: FormData): Promise<AddToCartResult> {
 		"use server";
 
 		if (!selectedVariantID) {
-			// Silently return - button should be disabled if no variant selected
-			return;
+			// The button is disabled without a selection; this is the tampered-form
+			// path, not something a customer reaches.
+			return { status: "rejected", reason: "invalid", message: "no variant selected" };
 		}
 
 		// The form is the only source of quantity, and it is user-controlled, so
@@ -118,10 +122,9 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 		});
 
 		if (outcome.status !== "added") {
-			// The PDP form has nowhere to render this yet; logging it is still
-			// strictly better than the previous silent success.
 			console.error(`[pdp] add to cart ${outcome.status}:`, outcome.message);
 		}
+		return outcome;
 	}
 
 	return (
@@ -160,7 +163,7 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 			</div>
 
 			{/* Rest of variant section - order:4 so it appears BELOW the meta row */}
-			<form action={addToCart} className="order-4 mt-5 space-y-6">
+			<CartForm action={addToCart} className="order-4 mt-5 space-y-6">
 				{/* Variant Selectors */}
 				<VariantSelectionSection
 					variants={variants}
@@ -181,7 +184,7 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 
 				{/* Sticky Add to Cart Bar (Mobile) */}
 				<StickyBar productName={product.name} price={price} show={!isAddToCartDisabled} />
-			</form>
+			</CartForm>
 
 			{/* Purchase confidence - order:5, outside the form (nothing submittable). */}
 			<div className="order-5 mt-6">
