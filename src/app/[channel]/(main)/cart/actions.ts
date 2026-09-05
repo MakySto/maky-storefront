@@ -1,16 +1,21 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
+import {
+	revalidateStorefrontBrowsePath,
+	revalidateStorefrontChrome,
+} from "@/lib/auth/revalidate-storefront-chrome";
 import { CheckoutDeleteLinesDocument } from "@/gql/graphql";
 import * as Checkout from "@/lib/checkout";
 
 type deleteLineFromCheckoutArgs = {
 	lineId: string;
 	checkoutId: string;
+	/** Saleor slug. Required: the paths to invalidate are market-prefixed. */
+	channel: string;
 };
 
-export const deleteLineFromCheckout = async ({ lineId, checkoutId }: deleteLineFromCheckoutArgs) => {
+export const deleteLineFromCheckout = async ({ lineId, checkoutId, channel }: deleteLineFromCheckoutArgs) => {
 	const result = await executeAuthenticatedGraphQL(CheckoutDeleteLinesDocument, {
 		variables: {
 			checkoutId,
@@ -27,5 +32,10 @@ export const deleteLineFromCheckout = async ({ lineId, checkoutId }: deleteLineF
 		}
 	}
 
-	revalidatePath("/cart");
+	// Was `revalidatePath("/cart")`, which has never matched anything: the cart
+	// lives at `/sk/cart`, rewritten by the proxy to `/sk-eur/cart`, so a
+	// market-less `/cart` is a different and non-existent route. Removing a line
+	// left this very page serving its cached copy.
+	revalidateStorefrontBrowsePath(channel, "/cart");
+	revalidateStorefrontChrome(channel);
 };

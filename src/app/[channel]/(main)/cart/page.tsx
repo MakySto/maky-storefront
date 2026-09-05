@@ -107,7 +107,7 @@ async function CartContent({ params: paramsPromise }: { params: Promise<{ channe
 							</div>
 							<div className="flex justify-between">
 								<div className="text-sm font-bold">{t("quantityLabel", { quantity: item.quantity })}</div>
-								<DeleteLineButton checkoutId={checkoutId} lineId={item.id} />
+								<DeleteLineButton channel={params.channel} checkoutId={checkoutId} lineId={item.id} />
 							</div>
 						</div>
 					</li>

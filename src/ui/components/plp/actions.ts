@@ -1,6 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import {
+	revalidateStorefrontBrowsePath,
+	revalidateStorefrontChrome,
+} from "@/lib/auth/revalidate-storefront-chrome";
 
 import { CheckoutAddLineDocument } from "@/gql/graphql";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
@@ -97,13 +100,13 @@ export async function addVariantToCart(input: {
 
 		if (!result.ok) {
 			console.error("[cart] add-to-cart transport failure:", result.error.message);
-			revalidatePath("/cart");
+			revalidateCart(channel);
 			return reconcile(checkoutId, decodedVariantId, quantityBefore, quantity, result.error.message);
 		}
 
 		const payload = result.data.checkoutLinesAdd;
 		if (!payload) {
-			revalidatePath("/cart");
+			revalidateCart(channel);
 			return { status: "unconfirmed", message: "the mutation returned no payload" };
 		}
 
@@ -116,15 +119,15 @@ export async function addVariantToCart(input: {
 		// Saleor reports success by returning the checkout. No checkout and no
 		// errors is a contract violation, not a confirmation.
 		if (!payload.checkout) {
-			revalidatePath("/cart");
+			revalidateCart(channel);
 			return { status: "unconfirmed", message: "the mutation reported neither a checkout nor an error" };
 		}
 
-		revalidatePath("/cart");
+		revalidateCart(channel);
 		return { status: "added" };
 	} catch (error) {
 		console.error("[cart] add-to-cart failed after sending:", error);
-		revalidatePath("/cart");
+		revalidateCart(channel);
 		return reconcile(
 			checkoutId,
 			decodedVariantId,
@@ -133,6 +136,20 @@ export async function addVariantToCart(input: {
 			error instanceof Error ? error.message : "unknown error",
 		);
 	}
+}
+
+/**
+ * Invalidate the cart page and the chrome carrying its badge.
+ *
+ * This was `revalidatePath("/cart")`, which has never matched anything: the
+ * cart lives at `/sk/cart`, which the proxy rewrites to `/sk-eur/cart`, so a
+ * market-less `/cart` is a different and non-existent route. It matters more
+ * now than it did — an `unconfirmed` add tells the shopper to go and look at
+ * their cart, and until this fix that page could answer from cache.
+ */
+function revalidateCart(channel: string) {
+	revalidateStorefrontBrowsePath(channel, "/cart");
+	revalidateStorefrontChrome(channel);
 }
 
 type LinesHolder = { lines?: readonly { quantity: number; variant?: { id?: string } | null }[] | null };

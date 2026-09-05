@@ -1,11 +1,18 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
+import {
+	revalidateStorefrontBrowsePath,
+	revalidateStorefrontChrome,
+} from "@/lib/auth/revalidate-storefront-chrome";
 import { CheckoutDeleteLinesDocument, CheckoutLinesUpdateDocument } from "@/gql/graphql";
 import * as Checkout from "@/lib/checkout";
 
-export async function deleteCartLine(checkoutId: string, lineId: string) {
+/**
+ * `channel` is the Saleor slug, and it is required because the paths these
+ * mutations invalidate are market-prefixed. See `revalidateCart`.
+ */
+export async function deleteCartLine(channel: string, checkoutId: string, lineId: string) {
 	const result = await executeAuthenticatedGraphQL(CheckoutDeleteLinesDocument, {
 		variables: {
 			checkoutId,
@@ -22,13 +29,17 @@ export async function deleteCartLine(checkoutId: string, lineId: string) {
 		}
 	}
 
-	revalidatePath("/cart");
-	revalidatePath("/");
+	revalidateCart(channel);
 }
 
-export async function updateCartLineQuantity(checkoutId: string, lineId: string, quantity: number) {
+export async function updateCartLineQuantity(
+	channel: string,
+	checkoutId: string,
+	lineId: string,
+	quantity: number,
+) {
 	if (quantity < 1) {
-		return deleteCartLine(checkoutId, lineId);
+		return deleteCartLine(channel, checkoutId, lineId);
 	}
 
 	await executeAuthenticatedGraphQL(CheckoutLinesUpdateDocument, {
@@ -39,6 +50,19 @@ export async function updateCartLineQuantity(checkoutId: string, lineId: string,
 		cache: "no-cache",
 	});
 
-	revalidatePath("/cart");
-	revalidatePath("/");
+	revalidateCart(channel);
+}
+
+/**
+ * Invalidate the cart page and the chrome that shows its badge.
+ *
+ * This used to be `revalidatePath("/cart")` plus `revalidatePath("/")`, and
+ * neither has ever matched anything. The cart lives at `/sk/cart`, which the
+ * proxy rewrites to `/sk-eur/cart` — a market-less `/cart` is a different,
+ * non-existent route, so every line removal and quantity change left the cart
+ * page serving its cached copy.
+ */
+function revalidateCart(channel: string) {
+	revalidateStorefrontBrowsePath(channel, "/cart");
+	revalidateStorefrontChrome(channel);
 }

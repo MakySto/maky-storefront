@@ -173,7 +173,13 @@ describe("addVariantToCart", () => {
 
 		await settle(addVariantToCart(input));
 
-		expect(revalidatePath).toHaveBeenCalledWith("/cart");
+		// The MARKET path, not "/cart". The cart lives at /sk/cart, which the proxy
+		// rewrites to /sk-eur/cart, so the market-less path this used to pass
+		// matched no route at all and the page kept serving its cached copy — right
+		// when an unconfirmed add has just told the shopper to go and look at it.
+		expect(revalidatePath).toHaveBeenCalledWith("/sk/cart");
+		expect(revalidatePath).toHaveBeenCalledWith("/sk-eur/cart");
+		expect(revalidatePath).not.toHaveBeenCalledWith("/cart");
 	});
 });
 
