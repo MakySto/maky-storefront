@@ -20,6 +20,38 @@ const config = {
 		// (max 3 concurrent requests + 200ms delay between requests)
 	},
 	images: {
+		// Next's default is `['image/webp']`, so AVIF was never served — a browser
+		// that explicitly offered `image/avif` still got WebP. Listing it first lets
+		// content negotiation pick it when the browser actually asks.
+		//
+		// Measured on the six media of the reference Nordrive PDP, at the parameters
+		// `image-optimizer` really uses (it encodes AVIF at `quality - 20`, effort 3):
+		//
+		//     w=640    webp 44 692 B  ->  avif 30 912 B   -31 %
+		//     w=1080   webp 82 966 B  ->  avif 57 226 B   -31 %
+		//     PSNR vs the unencoded resize: webp 48.87 dB, avif 45.05 dB
+		//
+		// Both sit well above the ~40 dB indistinguishable threshold, so this is a
+		// transfer-size change and not a visible one. Comparing the two at the SAME
+		// nominal quality is what misleads: at q=75 for both, AVIF is 12 % LARGER,
+		// because the scales are not the same. Next's own compensation is what makes
+		// this a win, which is why `qualities` must stay at the default `[75]` —
+		// widening it would also move the AVIF target and was measured to gain
+		// nothing for WebP.
+		//
+		// Cost: AVIF encoding is 1.5x (w=640) to 4x (w=1080) slower than WebP. That is
+		// paid once per image and width, then cached, so it lands on first request
+		// rather than on shoppers generally.
+		//
+		// Old browsers need no entry here. When Accept matches neither format,
+		// `image-optimizer` falls through to the upstream type — and because Saleor's
+		// thumbnails are themselves WebP, that branch is skipped and it serves JPEG.
+		// So the pre-WebP fallback is JPEG today and stays JPEG.
+		//
+		// Failure is safe: if an encode throws or exceeds the 7 s sharp timeout,
+		// `image-optimizer` serves the upstream file unchanged rather than erroring,
+		// so the worst case is a WebP where an AVIF was wanted.
+		formats: ["image/avif", "image/webp"],
 		remotePatterns: [
 			{
 				// Saleor Cloud CDN
