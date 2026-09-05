@@ -132,11 +132,17 @@ class RequestQueue {
 		this.minDelayMs = minDelayMs;
 	}
 
-	async enqueue<T>(fn: () => Promise<T>): Promise<T> {
+	async enqueue<T>(fn: () => Promise<T>, signal?: AbortSignal): Promise<T> {
 		await this.waitForSlot();
 		this.activeRequests++;
 
 		try {
+			// Waiting for a slot is unbounded, so a job can outlive the deadline it was
+			// queued under. Starting it here would send a request after the caller had
+			// given up — which is exactly the "it went out later anyway" failure.
+			if (signal?.aborted) {
+				throw signal.reason instanceof Error ? signal.reason : new DOMException("Aborted", "AbortError");
+			}
 			const [result] = await Promise.all([fn(), sleep(this.minDelayMs)]);
 			return result;
 		} finally {
@@ -194,10 +200,27 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
 	const controller = new AbortController();
 	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+	// Compose rather than replace. A caller deadline used to be discarded here, so
+	// the only thing that could stop a request was this transport's own 15 s
+	// ceiling — far too long for a read-back a shopper is waiting on.
+	//
+	// Composed by hand rather than with `AbortSignal.any`, which Node 24 has but
+	// the configured TS lib does not describe. Doing it explicitly also makes the
+	// listener removal below visible, and an un-removed abort listener on a
+	// long-lived caller signal is a leak.
+	const caller = init.signal;
+	const onCallerAbort = () => controller.abort(caller?.reason);
+	if (caller?.aborted) {
+		controller.abort(caller.reason);
+	} else {
+		caller?.addEventListener("abort", onCallerAbort, { once: true });
+	}
+
 	try {
 		return await fetch(url, { ...init, signal: controller.signal });
 	} finally {
 		clearTimeout(timeoutId);
+		caller?.removeEventListener("abort", onCallerAbort);
 	}
 }
 
@@ -206,6 +229,24 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
 // ============================================================================
 
 type FetchResult = GraphQLSuccess<Response> | GraphQLFailure;
+
+/**
+ * Reject as soon as `signal` aborts, rather than waiting for `promise`.
+ *
+ * This does not cancel the underlying read — nothing can, once the body stream
+ * is in flight — but it stops the CALLER waiting past its deadline, and the
+ * response is discarded rather than acted on. Used only for the body read; the
+ * request itself is genuinely aborted through `AbortSignal`.
+ */
+function withSignal<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+	if (!signal) return promise;
+	if (signal.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));
+	return new Promise<T>((resolve, reject) => {
+		const onAbort = () => reject(new DOMException("Aborted", "AbortError"));
+		signal.addEventListener("abort", onAbort, { once: true });
+		promise.then(resolve, reject).finally(() => signal.removeEventListener("abort", onAbort));
+	});
+}
 
 async function fetchWithRetry(
 	input: RequestInit,
@@ -270,6 +311,11 @@ async function fetchWithRetry(
 			return success(response);
 		} catch (error) {
 			const isTimeout = error instanceof Error && error.name === "AbortError";
+			// The caller has stopped waiting. Retrying would put another request on
+			// the wire for an answer nobody will read.
+			if (input.signal?.aborted) {
+				return networkError(`${operationName}: deadline exceeded`, error);
+			}
 			if (attempt < maxRetries) {
 				const errorType = isTimeout ? `Timeout (>${timeoutMs}ms)` : "Network error";
 				console.warn(
@@ -329,6 +375,13 @@ type GraphQLOptions<Variables> = {
 	 * the configured budget. See `retriesFor()`.
 	 */
 	retry?: boolean;
+	/**
+	 * A caller deadline. Honoured on BOTH transport paths — it reaches the
+	 * authenticated one because the auth SDK spreads `RequestInit` into its own
+	 * `fetch` — and it also covers waiting for a queue slot and reading the
+	 * response body, which are the two places a "timeout" used not to reach.
+	 */
+	signal?: AbortSignal;
 } & (Variables extends Record<string, never> ? { variables?: never } : { variables: Variables });
 
 type GraphQLResponse<T> = { data: T } | { errors: readonly { message: string }[] };
@@ -340,7 +393,7 @@ async function executeGraphQL<Result, Variables>(
 	operation: TypedDocumentString<Result, Variables>,
 	options: GraphQLOptions<Variables> & { withAuth: boolean },
 ): Promise<GraphQLResult<Result>> {
-	const { variables, headers, cache, revalidate, withAuth, retry } = options;
+	const { variables, headers, cache, revalidate, withAuth, retry, signal } = options;
 
 	const operationName = operation.toString().match(/(?:query|mutation)\s+(\w+)/)?.[1] || "UnknownOperation";
 	const variablesForLog = variables ? formatVariablesForLog(variables) : undefined;
@@ -360,11 +413,26 @@ async function executeGraphQL<Result, Variables>(
 		}),
 		cache,
 		next: { revalidate },
+		signal,
 	};
 
-	const fetchResult = await requestQueue.enqueue(() =>
-		fetchWithRetry(input, withAuth, operationName, variablesForLog, retriesFor(operation.toString(), retry)),
-	);
+	let fetchResult: FetchResult;
+	try {
+		fetchResult = await requestQueue.enqueue(
+			() =>
+				fetchWithRetry(
+					input,
+					withAuth,
+					operationName,
+					variablesForLog,
+					retriesFor(operation.toString(), retry),
+				),
+			signal,
+		);
+	} catch (error) {
+		// The queue refused to start an expired job, or the fetch aborted.
+		return networkError(`${operationName}: deadline exceeded`, error);
+	}
 
 	if (!fetchResult.ok) {
 		return fetchResult;
@@ -386,7 +454,10 @@ async function executeGraphQL<Result, Variables>(
 	// handled it; the two executors had divergent contracts for the same failure.
 	let body: GraphQLResponse<Result>;
 	try {
-		body = (await response.json()) as GraphQLResponse<Result>;
+		// Reading the body is a second, unbounded wait — a server can answer headers
+		// promptly and then stall the stream. It sits outside `fetchWithRetry`, so it
+		// used to be covered by no timeout at all.
+		body = (await withSignal(response.json(), signal)) as GraphQLResponse<Result>;
 	} catch (error) {
 		return networkError(
 			`invalid JSON in a ${response.status} response: ${error instanceof Error ? error.message : "unknown"}`,

@@ -138,7 +138,16 @@ export type CheckoutLookup<T> =
  * back. Callers that may WRITE — replace a cookie, create a replacement, clear a
  * session — must use this rather than `find`.
  */
-export async function lookup(checkoutId: string): Promise<CheckoutLookup<FoundCheckout>> {
+export async function lookup(
+	checkoutId: string,
+	/**
+	 * `signal` bounds the whole call — queue wait, auth path, response and body.
+	 * `retry: false` matters when a caller is holding a deadline: this is a query,
+	 * so it otherwise keeps the transport's three attempts with exponential
+	 * backoff, and a single lookup can then outlast the budget on its own.
+	 */
+	options?: { signal?: AbortSignal; retry?: boolean },
+): Promise<CheckoutLookup<FoundCheckout>> {
 	if (!checkoutId) {
 		// No pointer at all is not an outage; there is genuinely nothing to find.
 		return { status: "not-found" };
@@ -147,6 +156,7 @@ export async function lookup(checkoutId: string): Promise<CheckoutLookup<FoundCh
 	const result = await executeAuthenticatedGraphQL(CheckoutFindDocument, {
 		variables: { id: checkoutId },
 		cache: "no-cache",
+		...options,
 	});
 
 	if (!result.ok) {

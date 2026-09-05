@@ -1,17 +1,25 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { executeAuthenticatedGraphQL, findOrCreate, find, getIdFromCookies, saveIdToCookie, revalidatePath } =
-	vi.hoisted(() => ({
-		executeAuthenticatedGraphQL: vi.fn(),
-		findOrCreate: vi.fn(),
-		find: vi.fn(),
-		getIdFromCookies: vi.fn(),
-		saveIdToCookie: vi.fn(),
-		revalidatePath: vi.fn(),
-	}));
+const {
+	executeAuthenticatedGraphQL,
+	findOrCreate,
+	find,
+	lookup,
+	getIdFromCookies,
+	saveIdToCookie,
+	revalidatePath,
+} = vi.hoisted(() => ({
+	executeAuthenticatedGraphQL: vi.fn(),
+	findOrCreate: vi.fn(),
+	find: vi.fn(),
+	lookup: vi.fn(),
+	getIdFromCookies: vi.fn(),
+	saveIdToCookie: vi.fn(),
+	revalidatePath: vi.fn(),
+}));
 
 vi.mock("@/lib/graphql", () => ({ executeAuthenticatedGraphQL }));
-vi.mock("@/lib/checkout", () => ({ findOrCreate, find, getIdFromCookies, saveIdToCookie }));
+vi.mock("@/lib/checkout", () => ({ findOrCreate, find, lookup, getIdFromCookies, saveIdToCookie }));
 vi.mock("next/cache", () => ({ revalidatePath }));
 
 import { addVariantToCart } from "./actions";
@@ -25,6 +33,9 @@ const ok = (payload: unknown) => ({ ok: true as const, data: { checkoutLinesAdd:
 /** `findOrCreate` answers a tri-state now; these build its two arms. */
 const ready = (checkout: unknown, created = true) => ({ status: "ready" as const, checkout, created });
 const unavailable = (reason: string) => ({ status: "unavailable" as const, reason });
+/** `lookup` answers a tri-state; the read-back consumes it. */
+const found = (checkout: unknown) => ({ status: "found" as const, checkout });
+const notFound = { status: "not-found" as const };
 const CHECKOUT = { id: "Q2hlY2tvdXQ6MQ==" };
 const input = { channel: "sk-eur", variantId: "UHJvZHVjdFZhcmlhbnQ6MQ==", quantity: 1 };
 
@@ -38,6 +49,7 @@ beforeEach(() => {
 	getIdFromCookies.mockResolvedValue(null);
 	findOrCreate.mockResolvedValue(ready(CHECKOUT));
 	find.mockResolvedValue(null);
+	lookup.mockResolvedValue(notFound);
 	saveIdToCookie.mockResolvedValue(undefined);
 });
 
@@ -232,7 +244,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 	it("reports success when the read shows the line did land", async () => {
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
 		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [] }));
-		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 1)] });
+		lookup.mockResolvedValue(found({ ...CHECKOUT, lines: [line(input.variantId, 1)] }));
 
 		await expect(settle(addVariantToCart(input))).resolves.toEqual({ status: "added" });
 	});
@@ -244,7 +256,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		// second click, and `checkoutLinesAdd` is not idempotent.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
 		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [] }));
-		find.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		lookup.mockResolvedValue(found({ ...CHECKOUT, lines: [] }));
 
 		const result = await settle(addVariantToCart(input));
 
@@ -257,9 +269,9 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		// Saleor finish the write. One read would have called this a failure.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
 		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [] }));
-		find
-			.mockResolvedValueOnce({ ...CHECKOUT, lines: [] })
-			.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 1)] });
+		lookup
+			.mockResolvedValueOnce(found({ ...CHECKOUT, lines: [] }))
+			.mockResolvedValue(found({ ...CHECKOUT, lines: [line(input.variantId, 1)] }));
 
 		await expect(settle(addVariantToCart(input))).resolves.toEqual({ status: "added" });
 	});
@@ -269,12 +281,12 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		// ends the waiting and must not be read as a verdict.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
 		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [] }));
-		find.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		lookup.mockResolvedValue(found({ ...CHECKOUT, lines: [] }));
 
 		const result = await settle(addVariantToCart(input));
 
 		expect(result.status).toBe("unconfirmed");
-		expect(find).toHaveBeenCalledTimes(READ_BACK_DELAYS_MS.length + 1);
+		expect(lookup).toHaveBeenCalledTimes(READ_BACK_DELAYS_MS.length + 1);
 	});
 
 	it("stops re-reading once the wall clock is spent, not just the attempt count", async () => {
@@ -283,23 +295,23 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		// alone would leave a shopper waiting far longer than the schedule suggests.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
 		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [] }));
-		find.mockImplementation(async () => {
+		lookup.mockImplementation(async () => {
 			// Each read burns the entire allowance on its own.
 			vi.advanceTimersByTime(READ_BACK_BUDGET_MS);
-			return { ...CHECKOUT, lines: [] };
+			return found({ ...CHECKOUT, lines: [] });
 		});
 
 		const result = await settle(addVariantToCart(input));
 
 		expect(result.status).toBe("unconfirmed");
-		expect(find).toHaveBeenCalledTimes(1);
+		expect(lookup).toHaveBeenCalledTimes(1);
 	});
 
 	it("counts from the quantity that was already in the cart", async () => {
 		// The customer already had two. Landing means three, not one.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
 		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [line(input.variantId, 2)] }));
-		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 3)] });
+		lookup.mockResolvedValue(found({ ...CHECKOUT, lines: [line(input.variantId, 3)] }));
 
 		await expect(settle(addVariantToCart(input))).resolves.toEqual({ status: "added" });
 	});
@@ -310,7 +322,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		// reason to tell this customer their add failed.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
 		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [line(input.variantId, 2)] }));
-		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 5)] });
+		lookup.mockResolvedValue(found({ ...CHECKOUT, lines: [line(input.variantId, 5)] }));
 
 		await expect(settle(addVariantToCart(input))).resolves.toEqual({ status: "added" });
 	});
@@ -320,19 +332,19 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 		// do not add more.
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
 		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [line(input.variantId, 2)] }));
-		find.mockResolvedValue({ ...CHECKOUT, lines: [line(input.variantId, 3)] });
+		lookup.mockResolvedValue(found({ ...CHECKOUT, lines: [line(input.variantId, 3)] }));
 
 		const result = await settle(addVariantToCart({ ...input, quantity: 4 }));
 
 		expect(result.status).toBe("unconfirmed");
 		// A moved line answers the question; asking again cannot disentangle a
 		// stock clamp from another tab, so it stops on the first read.
-		expect(find).toHaveBeenCalledTimes(1);
+		expect(lookup).toHaveBeenCalledTimes(1);
 	});
 
 	it("stays unconfirmed when the read itself fails", async () => {
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
-		find.mockRejectedValue(new Error("also down"));
+		lookup.mockRejectedValue(new Error("also down"));
 
 		const result = await settle(addVariantToCart(input));
 
@@ -342,7 +354,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 	it("treats a checkout that reads back as missing as unknown, not as failure", async () => {
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
 		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [] }));
-		find.mockResolvedValue(null);
+		lookup.mockResolvedValue(notFound);
 
 		const result = await settle(addVariantToCart(input));
 
@@ -352,7 +364,7 @@ describe("an unclear result is settled by reading, never by re-sending", () => {
 	it("NEVER sends the mutation again while reconciling", async () => {
 		executeAuthenticatedGraphQL.mockResolvedValue(timeout);
 		findOrCreate.mockResolvedValue(ready({ ...CHECKOUT, lines: [] }));
-		find.mockResolvedValue({ ...CHECKOUT, lines: [] });
+		lookup.mockResolvedValue(found({ ...CHECKOUT, lines: [] }));
 
 		await settle(addVariantToCart(input));
 

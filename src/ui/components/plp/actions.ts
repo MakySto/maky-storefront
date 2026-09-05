@@ -12,6 +12,7 @@ import { QUANTITY_FALLBACK_MAX } from "@/ui/components/ui/quantity-stepper";
 import {
 	classifyCheckoutErrors,
 	hasTimeForAnotherRead,
+	READ_BACK_BUDGET_MS,
 	readBackVerdict,
 	READ_BACK_DELAYS_MS,
 	type AddToCartResult,
@@ -196,9 +197,37 @@ async function reconcile(
 	message: string,
 ): Promise<AddToCartResult> {
 	const startedAt = Date.now();
+	// One deadline for the WHOLE phase, enforced by aborting the request rather
+	// than by checking a clock after it returns. The previous version awaited the
+	// read first and only then looked at the time, so a read that never came back
+	// meant the deadline was never reached at all.
+	const deadline = new AbortController();
+	const expiry = setTimeout(() => deadline.abort(), READ_BACK_BUDGET_MS);
+
+	try {
+		return await settleByReading(checkoutId, variantId, quantityBefore, quantityRequested, message, {
+			startedAt,
+			signal: deadline.signal,
+		});
+	} finally {
+		clearTimeout(expiry);
+		// Nothing may go out under this deadline once the phase is over.
+		deadline.abort();
+	}
+}
+
+async function settleByReading(
+	checkoutId: string,
+	variantId: string,
+	quantityBefore: number,
+	quantityRequested: number,
+	message: string,
+	phase: { startedAt: number; signal: AbortSignal },
+): Promise<AddToCartResult> {
+	const { startedAt, signal } = phase;
 
 	for (let attempt = 0; ; attempt++) {
-		const after = await readQuantity(checkoutId, variantId);
+		const after = await readQuantity(checkoutId, variantId, signal);
 		const verdict = readBackVerdict({ before: quantityBefore, requested: quantityRequested, after });
 
 		if (verdict === "landed") {
@@ -221,21 +250,47 @@ async function reconcile(
 		if (!hasTimeForAnotherRead({ elapsedMs: Date.now() - startedAt, delayMs })) {
 			return { status: "unconfirmed", message };
 		}
-		await sleep(delayMs);
+		// Abortable, so the deadline ends the phase rather than being noticed one
+		// sleep later. Without this the answer is still correct — the next read
+		// would abort immediately — but the shopper waits out the remaining delay.
+		await sleep(delayMs, signal);
+		if (signal.aborted) return { status: "unconfirmed", message };
 	}
 }
 
-/** One read of the line's quantity. `null` means the read itself failed. */
-async function readQuantity(checkoutId: string, variantId: string): Promise<number | null> {
+/**
+ * One read of the line's quantity. `null` means we did not learn anything —
+ * the read failed, was refused, or ran out of time.
+ *
+ * `retry: false` is load-bearing. This is a query, so it would otherwise keep
+ * the transport's three attempts with exponential backoff, and one read could
+ * then consume the entire read-back budget by itself.
+ */
+async function readQuantity(
+	checkoutId: string,
+	variantId: string,
+	signal: AbortSignal,
+): Promise<number | null> {
 	try {
-		const checkout = await Checkout.find(checkoutId);
-		return checkout ? quantityOfVariant(checkout, variantId) : null;
+		const result = await Checkout.lookup(checkoutId, { signal, retry: false });
+		return result.status === "found" ? quantityOfVariant(result.checkout, variantId) : null;
 	} catch {
 		return null;
 	}
 }
 
-const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+/** Resolves after `ms`, or as soon as `signal` aborts. Never rejects. */
+const sleep = (ms: number, signal?: AbortSignal) =>
+	new Promise<void>((resolve) => {
+		if (signal?.aborted) return resolve();
+		const timer = setTimeout(done, ms);
+		function done() {
+			clearTimeout(timer);
+			signal?.removeEventListener("abort", done);
+			resolve();
+		}
+		signal?.addEventListener("abort", done, { once: true });
+	});
 
 /** `useActionState` signature, so a form can render the outcome. */
 export async function addListingItemToCartAction(
