@@ -11,6 +11,10 @@ import { executePublicGraphQL } from "@/lib/graphql";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { ProductList } from "@/ui/components/product-list";
 import { HeroSection, CategoryGrid, WhyMaky, BrandsStrip, NewsletterCTA } from "@/ui/components/homepage";
+import {
+	ActiveVehicleLauncher,
+	ActiveVehicleLauncherSkeleton,
+} from "@/ui/components/vehicle/active-vehicle-launcher";
 import { getTranslations } from "next-intl/server";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleCollection, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
@@ -61,7 +65,15 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 export default function Page(props: { params: Promise<{ channel: string }> }) {
 	return (
 		<>
-			<HeroSection />
+			{/* The hero CTA is request-time (it names the saved car), the rest of the hero
+			    is not. Its own boundary keeps the static shell for everything else. */}
+			<HeroSection
+				vehicleAction={
+					<Suspense fallback={<ActiveVehicleLauncherSkeleton variant="hero" />}>
+						<ActiveVehicleLauncher variant="hero" />
+					</Suspense>
+				}
+			/>
 			<CategoryGrid />
 
 			{/* Featured Products — the whole section (heading included) renders only when the

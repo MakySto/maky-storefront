@@ -4,7 +4,10 @@ import { liveMarkets } from "@/lib/market-state";
 import { AllCategoriesTrigger } from "./all-categories-trigger";
 import { HeaderMarketControls } from "./header-market-controls";
 import { HeaderPrimaryNav } from "./header-primary-nav";
-import { VehicleSelectorTrigger } from "./vehicle-selector-trigger";
+import {
+	ActiveVehicleLauncher,
+	ActiveVehicleLauncherSkeleton,
+} from "@/ui/components/vehicle/active-vehicle-launcher";
 
 /**
  * The live set has to be read per request, not per build.
@@ -45,7 +48,12 @@ export async function HeaderNavRow({ channel }: { channel: string }) {
 				<Suspense fallback={<MarketControlsSkeleton />}>
 					<LiveMarketControls />
 				</Suspense>
-				<VehicleSelectorTrigger />
+				{/* Its own boundary, not the market controls': the vehicle label needs the
+				    garage cookie AND the fitment dataset, so it can be the slower of the
+				    two, and one fallback for both would hold the market switcher back. */}
+				<Suspense fallback={<ActiveVehicleLauncherSkeleton variant="header" />}>
+					<ActiveVehicleLauncher variant="header" />
+				</Suspense>
 			</div>
 		</div>
 	);

@@ -1,23 +1,25 @@
 "use client";
 
 /**
- * The drop-in that makes the existing dead vehicle buttons work.
+ * The button that opens the one vehicle selector.
  *
- * `src/ui/components/header/vehicle-selector-trigger.tsx` and the homepage hero both
- * render a car-shaped button with no `onClick` — two visual stubs, no reachable selector
- * on any viewport. This component is the same button wired to the shared sheet.
+ * The header and the homepage hero each used to render a car-shaped button with no
+ * `onClick` — two visual stubs, and no reachable selector on any viewport. This is that
+ * button, wired to the shared sheet.
  *
- * Lane A owns the header and the hero, so this file does NOT edit either. It is a
- * one-line swap:
+ * Both stubs are gone: `header-nav-row.tsx` and `hero-section.tsx` now mount this,
+ * through the server-side `ActiveVehicleLauncher` which supplies the saved car's name.
  *
- *     header-nav-row.tsx:48
- *       - <VehicleSelectorTrigger />
- *       + <VehicleSelectorLauncher variant="header" vehicleLabel={label} />
- *
- * The `header` variant reproduces the existing button's classes EXACTLY, so the swap is
+ * The `header` variant reproduces the replaced button's classes EXACTLY, so that swap is
  * visually a no-op. Those classes use raw `forest-*` primitives rather than semantic
  * tokens, which CLAUDE.md §4 forbids — preserved deliberately rather than silently
- * restyling someone else's header; it is reported instead.
+ * restyling the header in the same commit that wires it up; it is reported instead.
+ *
+ * `compact` exists because `header` hides its label below `xl`, which is right in a
+ * desktop nav row and wrong everywhere else: the nav row itself is `lg:hidden`'s
+ * mirror image (`hidden lg:block`), so below 1024px there was NO vehicle selector at
+ * all — not in the header, not in the menu. `compact` is the same button with the
+ * label kept and allowed to shrink, for the mobile/tablet search row.
  *
  * The header keeps `nav.selectVehicle` ("Vybrať vozidlo"), which CLAUDE.md §5 mandates
  * for that CTA, while the hero keeps `fitment.selectVehicle` ("Vyberte vaše vozidlo").
@@ -32,7 +34,7 @@ import { SheetTrigger } from "@/ui/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { VehicleSelectorSheet } from "./vehicle-selector-sheet";
 
-type Variant = "header" | "hero" | "inline";
+type Variant = "header" | "hero" | "compact" | "inline";
 
 type Props = {
 	variant?: Variant;
@@ -46,7 +48,8 @@ export function VehicleSelectorLauncher({ variant = "inline", vehicleLabel, clas
 	const tNav = useTranslations("nav");
 	const tFitment = useTranslations("fitment");
 
-	const fallback = variant === "header" ? tNav("selectVehicle") : tFitment("selectVehicle");
+	const fallback =
+		variant === "header" || variant === "compact" ? tNav("selectVehicle") : tFitment("selectVehicle");
 	const label = vehicleLabel?.trim() || fallback;
 
 	return (
