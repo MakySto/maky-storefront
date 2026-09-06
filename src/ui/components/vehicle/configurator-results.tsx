@@ -29,6 +29,7 @@ import { formatPrice } from "@/config/locale";
 import { addConfiguredSetToCart } from "@/lib/fitment/cart-actions";
 import { type AddSetFailure } from "@/lib/fitment/cart-result";
 import { type FitmentOffer } from "@/lib/fitment/offers";
+import { presentCardFailure } from "./configurator-card-state";
 
 export type ResultCard = {
 	offer: FitmentOffer;
@@ -49,19 +50,6 @@ const FACET_VALUE_KEY: Record<string, string> = {
 	square: "facetSquare",
 	aluminium: "facetAluminium",
 	steel: "facetSteel",
-};
-
-const FAILURE_KEY: Record<AddSetFailure, string> = {
-	simulation: "errorSimulation",
-	"provider-unavailable": "errorProviderUnavailable",
-	"vehicle-changed": "errorVehicleChanged",
-	"not-verified": "errorNotVerified",
-	"not-available": "errorNotAvailable",
-	"out-of-stock": "__common.outOfStock",
-	"catalogue-unavailable": "errorCatalogueUnavailable",
-	"cart-rejected": "errorCartRejected",
-	"lookup-failed": "errorLookupFailed",
-	"invalid-input": "errorGeneric",
 };
 
 export function ConfiguratorResults({
@@ -117,7 +105,12 @@ export function ConfiguratorResults({
 		<ul className="grid gap-4 sm:grid-cols-2">
 			{cards.map(({ offer, conditions, unresolvedConditions }) => {
 				const outOfStock = offer.availability === "out-of-stock";
-				const failure = errors[offer.saleorVariantId];
+				const failure = presentCardFailure(errors[offer.saleorVariantId]);
+				const message = failure
+					? failure.messageKey.startsWith("__common.")
+						? tc(failure.messageKey.slice("__common.".length))
+						: t(failure.messageKey)
+					: null;
 				const includes = (offer.completeSetIncludes ?? [])
 					.map((part) => (INCLUDES_KEY[part] ? t(INCLUDES_KEY[part]) : null))
 					.filter((v): v is string => Boolean(v));
@@ -215,21 +208,19 @@ export function ConfiguratorResults({
 									<p className="text-status-info text-sm">{tc("onDemand")}</p>
 								)}
 
-								{failure === "lookup-failed" ? (
+								{failure?.tone === "status" ? (
 									// Deliberately not an error, and not red: we do not know that it
 									// failed, and a refusal-looking message invites a second click on a
 									// mutation that is not idempotent. Same presentation as the listing's
 									// cart form for the same outcome.
 									<p role="status" className="text-text-secondary flex items-start gap-1.5 text-sm">
 										<HelpCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-										{t(FAILURE_KEY[failure])}
+										{message}
 									</p>
 								) : (
 									failure && (
 										<p role="alert" className="text-fitment-no-fit text-sm">
-											{FAILURE_KEY[failure].startsWith("__common.")
-												? tc(FAILURE_KEY[failure].slice("__common.".length))
-												: t(FAILURE_KEY[failure])}
+											{message}
 										</p>
 									)
 								)}
@@ -239,6 +230,32 @@ export function ConfiguratorResults({
 										<Button type="button" variant="outline-solid" disabled className="flex-1">
 											{t("demoNoPurchase")}
 										</Button>
+									) : failure?.primaryAction === "check-cart" ? (
+										// The add may well have landed. The control now under the cursor
+										// takes the shopper to look, rather than sending the same
+										// non-idempotent mutation a second time. Adding again stays
+										// available as a separate, differently-labelled decision made
+										// AFTER looking, and no timer re-enables anything.
+										<>
+											<LinkWithChannel
+												href="/cart"
+												className="bg-action-primary text-action-primary-text hover:bg-action-primary-hover inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium transition-colors"
+											>
+												<ShoppingCart className="h-4 w-4" aria-hidden="true" />
+												{t("checkCart")}
+											</LinkWithChannel>
+											<Button
+												type="button"
+												variant="outline-solid"
+												disabled={pending || outOfStock}
+												onClick={() => add(offer)}
+											>
+												{busyId === offer.saleorVariantId && pending && (
+													<Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+												)}
+												{t("addAgain")}
+											</Button>
+										</>
 									) : (
 										<Button
 											type="button"
