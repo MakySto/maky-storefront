@@ -14,6 +14,12 @@ import { brandConfig } from "@/config/brand";
 import { buildCanonicalUrl } from "@/lib/seo/hreflang";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
+import {
+	isVehicleFilterRequested,
+	resolveVehicleListingFilter,
+	vehicleFilterIds,
+} from "@/lib/fitment/plp-vehicle-filter";
+import { VehicleListingFilter } from "@/ui/components/fitment/vehicle-listing-filter";
 
 /**
  * The market's main listing had a static English metadata block — it served
@@ -52,6 +58,7 @@ type PageProps = {
 		colors?: string;
 		sizes?: string;
 		categories?: string;
+		vehicle?: string;
 	}>;
 };
 
@@ -106,9 +113,14 @@ async function ProductsContent({
 	const categoryMap = await resolveCategorySlugsToIds(categorySlugs, locale);
 	const categoryIds = Array.from(categoryMap.values()).map((c) => c.id);
 
+	// Resolved on every request, not only when ?vehicle=1 is present: the control has to
+	// be offerable, and `requested` decides only whether the ids are applied.
+	const vehicleFilter = await resolveVehicleListingFilter(isVehicleFilterRequested(searchParams.vehicle));
+
 	const filter = buildFilterVariables({
 		priceRange: searchParams.price,
 		categoryIds,
+		vehicleProductIds: vehicleFilterIds(vehicleFilter),
 	});
 
 	const result = await executePublicGraphQL(ProductListPaginatedDocument, {
@@ -155,13 +167,23 @@ async function ProductsContent({
 		.filter(Boolean) as { slug: string; id: string; name: string }[];
 
 	return (
-		<ProductsPageClient
-			products={productCards}
-			totalCount={products.totalCount ?? 0}
-			localeDropped={localized.dropped}
-			pageInfo={products.pageInfo}
-			resolvedCategories={resolvedCategories}
-		/>
+		<>
+			<div className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+				<VehicleListingFilter
+					channel={params.channel}
+					filter={vehicleFilter}
+					basePath="/products"
+					searchParams={searchParams}
+				/>
+			</div>
+			<ProductsPageClient
+				products={productCards}
+				totalCount={products.totalCount ?? 0}
+				localeDropped={localized.dropped}
+				pageInfo={products.pageInfo}
+				resolvedCategories={resolvedCategories}
+			/>
+		</>
 	);
 }
 

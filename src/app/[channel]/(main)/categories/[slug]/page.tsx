@@ -20,6 +20,12 @@ import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { buildCanonicalUrl } from "@/lib/seo/hreflang";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
+import {
+	isVehicleFilterRequested,
+	resolveVehicleListingFilter,
+	vehicleFilterIds,
+} from "@/lib/fitment/plp-vehicle-filter";
+import { VehicleListingFilter } from "@/ui/components/fitment/vehicle-listing-filter";
 import { CategoryPageClient } from "./client";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleCategory, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
@@ -68,6 +74,7 @@ type PageProps = {
 		price?: string;
 		colors?: string;
 		sizes?: string;
+		vehicle?: string;
 	}>;
 };
 
@@ -199,7 +206,11 @@ async function CategoryProducts({
 
 	const paginationVariables = getPaginatedListVariables({ params: searchParams });
 	const sortBy = buildSortVariables(searchParams.sort);
-	const filter = buildFilterVariables({ priceRange: searchParams.price });
+	const vehicleFilter = await resolveVehicleListingFilter(isVehicleFilterRequested(searchParams.vehicle));
+	const filter = buildFilterVariables({
+		priceRange: searchParams.price,
+		vehicleProductIds: vehicleFilterIds(vehicleFilter),
+	});
 	const locale = getLocaleFromChannel(params.channel);
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
@@ -248,12 +259,22 @@ async function CategoryProducts({
 	);
 
 	return (
-		<CategoryPageClient
-			products={productCards}
-			totalCount={products.totalCount ?? 0}
-			localeDropped={localized.dropped}
-			pageInfo={products.pageInfo}
-		/>
+		<>
+			<div className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+				<VehicleListingFilter
+					channel={params.channel}
+					filter={vehicleFilter}
+					basePath={`/categories/${params.slug}`}
+					searchParams={searchParams}
+				/>
+			</div>
+			<CategoryPageClient
+				products={productCards}
+				totalCount={products.totalCount ?? 0}
+				localeDropped={localized.dropped}
+				pageInfo={products.pageInfo}
+			/>
+		</>
 	);
 }
 
