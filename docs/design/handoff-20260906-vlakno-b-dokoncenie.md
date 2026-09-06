@@ -25,7 +25,7 @@ dokázaná na troch skutočných produktoch. Chýba **iba** fitment snapshot z C
 
 |                  |                                                                                                                                             |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| vetva B (platná) | `claude/sf-b-vehicles-continue-4f53aa` @ `2ec3dc4`, lokál == remote                                                                         |
+| vetva B (platná) | `claude/sf-b-vehicles-continue-4f53aa`, posledný commit kódu `37f5306`, nad ním iba docs; tip over cez `git ls-remote`                      |
 | základ           | `27b7088` = **produkcia** (branch `claude/sf-a-rc-20260905`, BUILD_ID `EeqdrEsFOEh2OMnTDHF03`)                                              |
 | obsah            | 11 pôvodných commitov B + **4 commity kódu** (`b1e0395`, `bdb792b`, `d0896be`, `37f5306`) + docs                                            |
 | stará vetva B    | `claude/sf-b-vehicles` @ `667c986` — **prekonaná**, história prepísaná rebase-om; nechaj ju tak (force push zakázaný), Marek ju môže zmazať |
@@ -357,7 +357,8 @@ vetiev, do /opt/storefront ani do produkcie nesiahaj.
 
 ## Prvý krok — prečítaj si handoff
 
-Vetva claude/sf-b-vehicles-continue-4f53aa @ 2ec3dc4 (over cez git ls-remote).
+Vetva claude/sf-b-vehicles-continue-4f53aa — tip over cez git ls-remote (posledný
+commit KÓDU je 37f5306; nad ním sú iba docs commity).
 Worktree /opt/storefront/.claude/worktrees/sf-b-vehicles-continue-4f53aa
 (má .env, node_modules, src/gql aj .next; ak vytváraš nový worktree, potrebuješ
 pnpm install --frozen-lockfile a pnpm generate:all).
