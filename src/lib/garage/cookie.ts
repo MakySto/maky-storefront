@@ -32,7 +32,18 @@ export const GARAGE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 /** v1 stores three. A limit the UI enforces visibly, never by silently dropping. */
 export const GARAGE_MAX_VEHICLES = 3;
 
-export const GARAGE_PAYLOAD_VERSION = 1;
+export const GARAGE_PAYLOAD_VERSION = 2;
+
+/**
+ * Versions a stored cookie may be written in and still be read.
+ *
+ * v1 → v2 added the optional month of manufacture. Nothing was removed and nothing
+ * changed meaning, so a v1 garage migrates by being re-stamped: the shopper keeps their
+ * cars instead of finding the garage empty for a reason no page can explain. There are no
+ * real users of this feature yet, but every browser that has tested it holds a v1 cookie
+ * — including the ones this work is verified in.
+ */
+export const SUPPORTED_PAYLOAD_VERSIONS = [1, 2] as const;
 
 /**
  * Stored per vehicle. IDENTIFIERS AND QUALIFIERS ONLY.
@@ -47,10 +58,32 @@ export type StoredVehicle = {
 	/** modelId */ m: string;
 	/** generationId */ g: string;
 	/** application year */ y: number;
-	/** roofType */ r?: RoofType;
+	/** roofType — ABSENT when the shopper could not confirm it. Never inferred. */ r?: RoofType;
 	/** bodyType */ b?: BodyType;
 	/** doors */ d?: number;
+	/**
+	 * Month of MANUFACTURE, 1-12. Optional and must stay optional: not every supplier
+	 * states months, and a window that gave only a year cannot be narrowed by one.
+	 * Absent means "not asked" or "asked and not known" — both are the same instruction
+	 * to the resolver, which is to leave the boundary unresolved.
+	 *
+	 * It is NOT the month of first registration. Those differ, often across a year end.
+	 */
+	mo?: number;
 };
+
+/**
+ * What is deliberately NOT in here, and why it must stay out:
+ *
+ *   - No `compatible` flag, ever. Compatibility is re-derived against the CURRENT dataset
+ *     on every use. A stored yes would survive CFM withdrawing the row that justified it,
+ *     and the shopper would go on being told a rack fits after we stopped believing it.
+ *   - No database keys. The ids here are the dataset's own public identities (`veh:mk:…`,
+ *     `veh:md:…`, `veh:gn:…`), which survive a CFM rebuild; a local primary key would
+ *     name a different car after one.
+ *   - No VIN, plate or translated label. The first two are personal data for no gain; a
+ *     label would be stale copy in the wrong language the moment the market changes.
+ */
 
 export type GaragePayload = {
 	/** payload version */ v: number;
@@ -84,6 +117,7 @@ export function toVehicleSelection(vehicle: StoredVehicle): VehicleSelection {
 		...(vehicle.r ? { roofType: vehicle.r } : {}),
 		...(vehicle.b ? { bodyType: vehicle.b } : {}),
 		...(vehicle.d !== undefined ? { doors: vehicle.d } : {}),
+		...(vehicle.mo !== undefined ? { manufactureMonth: vehicle.mo } : {}),
 	};
 }
 
@@ -96,13 +130,21 @@ export function fromVehicleSelection(selection: VehicleSelection): StoredVehicle
 		...(selection.roofType ? { r: selection.roofType } : {}),
 		...(selection.bodyType ? { b: selection.bodyType } : {}),
 		...(selection.doors !== undefined ? { d: selection.doors } : {}),
+		...(selection.manufactureMonth !== undefined ? { mo: selection.manufactureMonth } : {}),
 	};
 }
 
 /** Two vehicles are the same car when every identifying answer matches. */
 export function sameVehicle(a: StoredVehicle, b: StoredVehicle): boolean {
 	return (
-		a.k === b.k && a.m === b.m && a.g === b.g && a.y === b.y && a.r === b.r && a.b === b.b && a.d === b.d
+		a.k === b.k &&
+		a.m === b.m &&
+		a.g === b.g &&
+		a.y === b.y &&
+		a.r === b.r &&
+		a.b === b.b &&
+		a.d === b.d &&
+		a.mo === b.mo
 	);
 }
 
@@ -116,7 +158,30 @@ function isStoredVehicle(value: unknown): value is StoredVehicle {
 	if (v.r !== undefined && typeof v.r !== "string") return false;
 	if (v.b !== undefined && typeof v.b !== "string") return false;
 	if (v.d !== undefined && (typeof v.d !== "number" || !Number.isInteger(v.d))) return false;
+	// The month is validated in `stripInvalidMonth` instead of here, so that a bad month
+	// costs the month rather than the whole car.
 	return true;
+}
+
+/** 1-12, or nothing. */
+function isMonth(value: unknown): value is number {
+	return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 12;
+}
+
+/**
+ * Remove a month that is not a month, and keep the car.
+ *
+ * Dropping the whole vehicle over a bad optional field would be harsher than the mistake:
+ * a car with no month is a state the resolver already handles correctly (the boundary
+ * stays unresolved, the verdict is NEEDS_DETAIL), whereas a missing car is a garage the
+ * shopper has to rebuild.
+ */
+function stripInvalidMonth(value: unknown): unknown {
+	if (typeof value !== "object" || value === null) return value;
+	const v = value as Record<string, unknown>;
+	if (v.mo === undefined || isMonth(v.mo)) return v;
+	const { mo: _dropped, ...rest } = v;
+	return rest;
 }
 
 /**
@@ -129,10 +194,12 @@ function isStoredVehicle(value: unknown): value is StoredVehicle {
 export function normalizePayload(raw: unknown): GaragePayload | null {
 	if (typeof raw !== "object" || raw === null) return null;
 	const value = raw as Record<string, unknown>;
-	if (value.v !== GARAGE_PAYLOAD_VERSION) return null;
+	// A v1 payload is read and RE-STAMPED as v2. v2 only added an optional field, so
+	// every v1 vehicle is already a valid v2 vehicle — the shopper keeps their cars.
+	if (typeof value.v !== "number" || !SUPPORTED_PAYLOAD_VERSIONS.includes(value.v as 1 | 2)) return null;
 	if (!Array.isArray(value.c)) return null;
 
-	const vehicles = value.c.filter(isStoredVehicle).slice(0, GARAGE_MAX_VEHICLES);
+	const vehicles = value.c.map(stripInvalidMonth).filter(isStoredVehicle).slice(0, GARAGE_MAX_VEHICLES);
 	// An over-long or partly corrupt list is truncated rather than rejected: losing a
 	// third car is a smaller harm than losing the whole garage, and the shopper can see
 	// what survived.
@@ -188,12 +255,11 @@ export function decodeGarageCookie(
 		return { ok: false, reason: "malformed" };
 	}
 
-	if (
-		typeof parsed === "object" &&
-		parsed !== null &&
-		(parsed as { v?: unknown }).v !== GARAGE_PAYLOAD_VERSION
-	) {
-		return { ok: false, reason: "unsupported-version" };
+	if (typeof parsed === "object" && parsed !== null) {
+		const version = (parsed as { v?: unknown }).v;
+		if (typeof version !== "number" || !SUPPORTED_PAYLOAD_VERSIONS.includes(version as 1 | 2)) {
+			return { ok: false, reason: "unsupported-version" };
+		}
 	}
 
 	const payload = normalizePayload(parsed);

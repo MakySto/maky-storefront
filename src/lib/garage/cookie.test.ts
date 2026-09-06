@@ -211,3 +211,97 @@ describe("byte budget — measured, not assumed", () => {
 		expect(perVehicle * 12).toBeLessThan(4096);
 	});
 });
+
+describe("payload v2 — the optional month, and v1 cars that must survive it", () => {
+	const v1Vehicle = { k: "mk", m: "md", g: "gn", y: 2019, r: "raised-rails", b: "suv", d: 5 };
+
+	it("reads a v1 payload and re-stamps it as v2", () => {
+		// There are no real users of the garage yet, but every browser this feature has
+		// been tested in holds a v1 cookie — including the ones the next verification
+		// pass runs in. Finding the garage empty, for a reason no page can explain, is
+		// the wrong way to learn that the payload version moved.
+		const payload = normalizePayload({ v: 1, a: 0, c: [v1Vehicle] });
+		expect(payload).not.toBeNull();
+		expect(payload!.v).toBe(2);
+		expect(payload!.c).toHaveLength(1);
+		expect(payload!.c[0]!.k).toBe("mk");
+	});
+
+	it("round-trips a v1 cookie through decode", () => {
+		const encoded = encodeGarageCookie({ v: 1, a: 0, c: [v1Vehicle] } as never, null);
+		const result = decodeGarageCookie(encoded, { secret: null, requireSignature: false });
+		expect(result.ok).toBe(true);
+		expect(result.ok && result.payload.v).toBe(2);
+		expect(result.ok && result.payload.c[0]!.g).toBe("gn");
+	});
+
+	it("still refuses a version it has never written", () => {
+		const encoded = encodeGarageCookie({ v: 99, a: 0, c: [v1Vehicle] } as never, null);
+		expect(decodeGarageCookie(encoded, { secret: null, requireSignature: false })).toEqual({
+			ok: false,
+			reason: "unsupported-version",
+		});
+	});
+
+	it("carries an optional month both ways", () => {
+		const selection = { makeId: "mk", modelId: "md", generationId: "gn", year: 2019, manufactureMonth: 3 };
+		const stored = fromVehicleSelection(selection);
+		expect(stored.mo).toBe(3);
+		expect(toVehicleSelection(stored).manufactureMonth).toBe(3);
+	});
+
+	it("stores no month when none was given — optional means optional", () => {
+		// Not every supplier states months. A vehicle without one is an ordinary vehicle,
+		// not an incomplete one.
+		const stored = fromVehicleSelection({ makeId: "mk", modelId: "md", generationId: "gn", year: 2019 });
+		expect(stored.mo).toBeUndefined();
+		expect(toVehicleSelection(stored)).not.toHaveProperty("manufactureMonth");
+	});
+
+	it("drops an impossible month but KEEPS the car", () => {
+		const payload = normalizePayload({ v: 2, a: 0, c: [{ ...v1Vehicle, mo: 13 }] });
+		expect(payload!.c).toHaveLength(1);
+		expect(payload!.c[0]!.mo).toBeUndefined();
+	});
+
+	it("treats two cars differing only by month as different cars", () => {
+		const a = fromVehicleSelection({ makeId: "k", modelId: "m", generationId: "g", year: 2019 });
+		const b = fromVehicleSelection({
+			makeId: "k",
+			modelId: "m",
+			generationId: "g",
+			year: 2019,
+			manufactureMonth: 6,
+		});
+		expect(sameVehicle(a, b)).toBe(false);
+	});
+
+	it("never stores a compatibility verdict", () => {
+		// Compatibility is re-derived against the CURRENT dataset on every use. A stored
+		// yes would outlive the row that justified it, and the shopper would go on being
+		// told a rack fits after we had stopped believing it.
+		const stored = fromVehicleSelection({
+			makeId: "mk",
+			modelId: "md",
+			generationId: "gn",
+			year: 2019,
+			roofType: "raised-rails",
+		});
+		expect(Object.keys(stored).sort()).toEqual(["g", "k", "m", "r", "y"]);
+		expect(JSON.stringify(stored)).not.toMatch(/compatib|verified|fits/i);
+	});
+
+	it("stores the dataset's own public identities, never a local key", () => {
+		// `veh:mk:…` survives a CFM rebuild; a database primary key names a different car
+		// after one.
+		const stored = fromVehicleSelection({
+			makeId: "veh:mk:3eeeea01-ae52-4405-9aa4-0ad3743f3824",
+			modelId: "veh:md:61ac245d-bef2-422e-923c-28691365b373",
+			generationId: "veh:gn:0000",
+			year: 2019,
+		});
+		expect(stored.k.startsWith("veh:")).toBe(true);
+		expect(stored.m.startsWith("veh:")).toBe(true);
+		expect(stored.g.startsWith("veh:")).toBe(true);
+	});
+});

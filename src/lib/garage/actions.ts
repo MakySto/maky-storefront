@@ -160,6 +160,21 @@ async function validateSelection(
 	if (doors === "invalid") return { ok: false, error: "invalid-qualifier" };
 	if (doors !== undefined) normalized.doors = doors;
 
+	// The month of MANUFACTURE, when the shopper gave one. Optional by contract and it
+	// must stay optional — not every supplier states months, and a window that gave only
+	// a year cannot be narrowed by one. It was being dropped here, which made the whole
+	// month step decorative: the shopper answered and nothing downstream ever saw it.
+	if (selection.manufactureMonth !== undefined) {
+		if (
+			!Number.isInteger(selection.manufactureMonth) ||
+			selection.manufactureMonth < 1 ||
+			selection.manufactureMonth > 12
+		) {
+			return { ok: false, error: "invalid-qualifier" };
+		}
+		normalized.manufactureMonth = selection.manufactureMonth;
+	}
+
 	return { ok: true, selection: normalized };
 }
 
