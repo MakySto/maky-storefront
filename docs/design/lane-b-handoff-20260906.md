@@ -8,14 +8,14 @@ prvého behu **reálnej** cesty a formát reportu podľa §10.
 
 ## 1. Stav
 
-|                        |                                                                                                                                  |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| vetva                  | `claude/sf-b-vehicles-continue-4f53aa`                                                                                           |
-| základ                 | `27b7088` = **nasadené A** (`MAKY_DEPLOY_META`, BUILD_ID `EeqdrEsFOEh2OMnTDHF03`)                                                |
-| obsah                  | 11 commitov B (`a4d78cb..667c986`) cherry-picknutých na `27b7088` + 3 nové commity kódu (`b1e0395`, `bdb792b`, `d0896be`) + docs |
-| `claude/sf-b-vehicles` | **nedotknutá** na `667c986` (vysadená v inom worktree; force push zakázaný)                                                      |
-| nasadené               | **nič** — branch-only                                                                                                            |
-| worktree               | `/opt/storefront/.claude/worktrees/sf-b-vehicles-continue-4f53aa`                                                                |
+|                        |                                                                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| vetva                  | `claude/sf-b-vehicles-continue-4f53aa`                                                                                                      |
+| základ                 | `27b7088` = **nasadené A** (`MAKY_DEPLOY_META`, BUILD_ID `EeqdrEsFOEh2OMnTDHF03`)                                                           |
+| obsah                  | 11 commitov B (`a4d78cb..667c986`) cherry-picknutých na `27b7088` + 4 nové commity kódu (`b1e0395`, `bdb792b`, `d0896be`, `37f5306`) + docs |
+| `claude/sf-b-vehicles` | **nedotknutá** na `667c986` (vysadená v inom worktree; force push zakázaný)                                                                 |
+| nasadené               | **nič** — branch-only                                                                                                                       |
+| worktree               | `/opt/storefront/.claude/worktrees/sf-b-vehicles-continue-4f53aa`                                                                           |
 
 Rebase bol presne taký, ako bol zmeraný: jediný konflikt `.env.example` (nechané oboje),
 12 i18n katalógov sa zlúčilo automaticky. Overené po rebase:
@@ -26,7 +26,7 @@ Rebase bol presne taký, ako bol zmeraný: jediný konflikt `.env.example` (nech
   a konfigurátor ju prevzal — vidno na screenshotoch;
 - `pnpm generate:all` bežal proti živej **3.23.31**; `tsc` 0.
 
-## 2. Čo sa zmenilo v kóde (tri commity)
+## 2. Čo sa zmenilo v kóde (štyri commity)
 
 **`src/lib/fitment/cart-actions.ts`** volá `addVariantToCart` z
 `src/ui/components/plp/actions.ts` (A). Zmazané: `countLine()`, `addListingItemToCart`,
@@ -81,7 +81,7 @@ Testy: `cart-result.test.ts` (8, čistý mapper, vyčerpávajúco cez celý unio
 volanie. Pôvodný `cart-actions.test.ts` (demo interlock nad reálnou fixture, bez mockov)
 sa zmenil iba v `d0896be`: „reálne vyzerajúce" ID je teraz nemožné `Product:99999999`.
 
-Štvrtý commit (revízia, UI): `lookup-failed` (= `unconfirmed`) sa v karte renderuje ako
+Štvrtý commit `37f5306` (revízia, UI): `lookup-failed` (= `unconfirmed`) sa v karte renderuje ako
 neutrálny `role="status"` s ikonou otáznika, nie ako červený `role="alert"` — rovnako
 ako A-ovský `CartForm` pre ten istý stav; červená „chyba" pozývala na druhý klik. A
 klientský `startTransition` má `try/catch`: výnimka z volania server action (sieť, starý
@@ -174,14 +174,14 @@ Nálezy z prehliadača:
   nemajú fotku, takže komponent sa nenamountoval. Renderuje sa iba v reálnej ceste, ktorá
   v prehliadači bez CFM snapshotu neexistuje.
 
-## 5. Brány (nad `d0896be`, posledný commit kódu; docs commit nad ním brány nemení)
+## 5. Brány (nad `37f5306`, posledný commit kódu; docs commit nad ním brány nemení)
 
 ```
 tsc          0
 lint         0 errors, 6 warnings — všetky mimo B (checkout hooky, generované gql, header)
 i18n:check   OK (12 locales)
 test:run     92 súborov, 1391 testov, 0 fail
-build        exit 0, BUILD_ID v2yigOtlx3Ap2J2Cgjw2b (lokálny, nenasadený)
+build        exit 0, BUILD_ID aoD3z_gdlzK_44bGDzSJe (lokálny, nenasadený)
 ```
 
 Prehliadač zo §4 bol zopakovaný nad týmto buildom (desktop + 360 px, rovnaký scenár,
@@ -190,7 +190,7 @@ rovnaký výsledok).
 ## 6. Report (§10)
 
 ```
-HEAD / remote                    kód d0896be, docs commit nad ním = tip vetvy (over cez git ls-remote)
+HEAD / remote                    kód 37f5306, docs commit nad ním = tip vetvy (over cez git ls-remote)
 GUEST_GARAGE_FUNCTIONAL         = YES  [FIXTURE]  (prehliadač, prod build, desktop + 360)
 CONFIGURATOR_FUNCTIONAL         = YES  [FIXTURE]  (prehliadač, prod build, desktop + 360)
 PRODUCT_APPLICATIONS_FUNCTIONAL = YES  [FIXTURE]  (testy; PDP integrácia je B3.4, v prehliadači neoverené)
