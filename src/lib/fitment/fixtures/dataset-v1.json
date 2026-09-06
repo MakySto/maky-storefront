@@ -15,9 +15,13 @@
 	"coverage": {
 		"scope": {
 			"programId": "demo-roof-racks",
-			"productKinds": ["roof-rack-set"]
+			"productKinds": [
+				"roof-rack-set"
+			]
 		},
-		"completeForMakeIds": ["skoda"],
+		"completeForMakeIds": [
+			"skoda"
+		],
 		"note": "Complete only for Skoda, and only for demo roof-rack sets. Absence of a Skoda row therefore means 'no set in THIS program fits' — never 'nothing in the shop fits'."
 	},
 	"demoCatalogue": [
@@ -87,6 +91,17 @@
 				"currency": "EUR"
 			},
 			"availabilityMode": "sale_to_order"
+		},
+		{
+			"saleorProductId": "demo-product-manufacturer",
+			"saleorVariantId": "demo-variant-manufacturer",
+			"name": "DEMO-SET-MANUFACTURER",
+			"categoryName": "DEMO",
+			"price": {
+				"amount": 179.9,
+				"currency": "EUR"
+			},
+			"availabilityMode": "sale_to_order"
 		}
 	],
 	"makes": [
@@ -138,9 +153,17 @@
 			"productionYearFrom": 2020,
 			"productionYearTo": null,
 			"qualifiers": {
-				"roofTypes": ["naked-roof", "flush-rails"],
-				"bodyTypes": ["hatchback", "estate"],
-				"doors": [5]
+				"roofTypes": [
+					"naked-roof",
+					"flush-rails"
+				],
+				"bodyTypes": [
+					"hatchback",
+					"estate"
+				],
+				"doors": [
+					5
+				]
 			}
 		},
 		{
@@ -150,9 +173,15 @@
 			"productionYearFrom": 2016,
 			"productionYearTo": 2024,
 			"qualifiers": {
-				"roofTypes": ["raised-rails"],
-				"bodyTypes": ["suv"],
-				"doors": [5]
+				"roofTypes": [
+					"raised-rails"
+				],
+				"bodyTypes": [
+					"suv"
+				],
+				"doors": [
+					5
+				]
 			}
 		},
 		{
@@ -162,9 +191,17 @@
 			"productionYearFrom": 2019,
 			"productionYearTo": null,
 			"qualifiers": {
-				"roofTypes": ["naked-roof", "fixpoint"],
-				"bodyTypes": ["hatchback", "estate"],
-				"doors": [5]
+				"roofTypes": [
+					"naked-roof",
+					"fixpoint"
+				],
+				"bodyTypes": [
+					"hatchback",
+					"estate"
+				],
+				"doors": [
+					5
+				]
 			}
 		},
 		{
@@ -174,9 +211,16 @@
 			"productionYearFrom": 2016,
 			"productionYearTo": 2024,
 			"qualifiers": {
-				"roofTypes": ["raised-rails", "flush-rails"],
-				"bodyTypes": ["suv"],
-				"doors": [5]
+				"roofTypes": [
+					"raised-rails",
+					"flush-rails"
+				],
+				"bodyTypes": [
+					"suv"
+				],
+				"doors": [
+					5
+				]
 			}
 		},
 		{
@@ -186,9 +230,18 @@
 			"productionYearFrom": 2018,
 			"productionYearTo": null,
 			"qualifiers": {
-				"roofTypes": ["naked-roof", "flush-rails"],
-				"bodyTypes": ["saloon", "estate"],
-				"doors": [4, 5]
+				"roofTypes": [
+					"naked-roof",
+					"flush-rails"
+				],
+				"bodyTypes": [
+					"saloon",
+					"estate"
+				],
+				"doors": [
+					4,
+					5
+				]
 			}
 		}
 	],
@@ -197,8 +250,12 @@
 			"applicationId": "app-octavia4-estate-flush-aero",
 			"generationId": "skoda-octavia-4",
 			"qualifiers": {
-				"roofTypes": ["flush-rails"],
-				"bodyTypes": ["estate"]
+				"roofTypes": [
+					"flush-rails"
+				],
+				"bodyTypes": [
+					"estate"
+				]
 			},
 			"conditions": [
 				{
@@ -218,7 +275,11 @@
 					"saleorVariantId": "demo-variant-aero-flush",
 					"productKind": "roof-rack-set",
 					"completeSet": {
-						"includes": ["bars", "feet", "fitting-kit"]
+						"includes": [
+							"bars",
+							"feet",
+							"fitting-kit"
+						]
 					},
 					"facets": {
 						"barShape": "aero",
@@ -252,8 +313,12 @@
 			"applicationId": "app-octavia4-estate-flush-steel",
 			"generationId": "skoda-octavia-4",
 			"qualifiers": {
-				"roofTypes": ["flush-rails"],
-				"bodyTypes": ["estate"]
+				"roofTypes": [
+					"flush-rails"
+				],
+				"bodyTypes": [
+					"estate"
+				]
 			},
 			"conditions": [
 				{
@@ -271,7 +336,10 @@
 					"saleorVariantId": "demo-variant-square-flush",
 					"productKind": "roof-rack-set",
 					"completeSet": {
-						"includes": ["bars", "feet"]
+						"includes": [
+							"bars",
+							"feet"
+						]
 					},
 					"facets": {
 						"barShape": "square",
@@ -305,8 +373,12 @@
 			"applicationId": "app-octavia4-estate-flush-yearhold",
 			"generationId": "skoda-octavia-4",
 			"qualifiers": {
-				"roofTypes": ["flush-rails"],
-				"bodyTypes": ["estate"]
+				"roofTypes": [
+					"flush-rails"
+				],
+				"bodyTypes": [
+					"estate"
+				]
 			},
 			"conditions": [],
 			"products": [
@@ -316,7 +388,11 @@
 					"saleorVariantId": "demo-variant-fixpoint",
 					"productKind": "roof-rack-set",
 					"completeSet": {
-						"includes": ["bars", "feet", "fitting-kit"]
+						"includes": [
+							"bars",
+							"feet",
+							"fitting-kit"
+						]
 					},
 					"facets": {
 						"barShape": "aero",
@@ -331,7 +407,9 @@
 					"verification": "not-independently-verified",
 					"eligibility": {
 						"sellable": false,
-						"reasons": ["qa_hold"]
+						"reasons": [
+							"qa_hold"
+						]
 					}
 				}
 			],
@@ -349,8 +427,12 @@
 			"applicationId": "app-octavia4-estate-flush-negative",
 			"generationId": "skoda-octavia-4",
 			"qualifiers": {
-				"roofTypes": ["flush-rails"],
-				"bodyTypes": ["estate"]
+				"roofTypes": [
+					"flush-rails"
+				],
+				"bodyTypes": [
+					"estate"
+				]
 			},
 			"conditions": [],
 			"negative": true,
@@ -361,7 +443,10 @@
 					"saleorVariantId": "demo-variant-raised",
 					"productKind": "roof-rack-set",
 					"completeSet": {
-						"includes": ["bars", "feet"]
+						"includes": [
+							"bars",
+							"feet"
+						]
 					},
 					"facets": {
 						"barShape": "square",
@@ -394,8 +479,12 @@
 			"applicationId": "app-octavia4-estate-flush-outofstock",
 			"generationId": "skoda-octavia-4",
 			"qualifiers": {
-				"roofTypes": ["flush-rails"],
-				"bodyTypes": ["estate"]
+				"roofTypes": [
+					"flush-rails"
+				],
+				"bodyTypes": [
+					"estate"
+				]
 			},
 			"conditions": [
 				{
@@ -409,7 +498,10 @@
 					"saleorVariantId": "demo-variant-outofstock",
 					"productKind": "roof-rack-set",
 					"completeSet": {
-						"includes": ["bars", "feet"]
+						"includes": [
+							"bars",
+							"feet"
+						]
 					},
 					"facets": {
 						"barShape": "square",
@@ -442,8 +534,12 @@
 			"applicationId": "app-octavia4-estate-flush-box",
 			"generationId": "skoda-octavia-4",
 			"qualifiers": {
-				"roofTypes": ["flush-rails"],
-				"bodyTypes": ["estate"]
+				"roofTypes": [
+					"flush-rails"
+				],
+				"bodyTypes": [
+					"estate"
+				]
 			},
 			"conditions": [],
 			"products": [
@@ -481,7 +577,9 @@
 			"applicationId": "app-kodiaq1-raised-provisional",
 			"generationId": "skoda-kodiaq-1",
 			"qualifiers": {
-				"roofTypes": ["raised-rails"]
+				"roofTypes": [
+					"raised-rails"
+				]
 			},
 			"conditions": [
 				{
@@ -498,7 +596,10 @@
 					"saleorVariantId": "demo-variant-raised",
 					"productKind": "roof-rack-set",
 					"completeSet": {
-						"includes": ["bars", "feet"]
+						"includes": [
+							"bars",
+							"feet"
+						]
 					},
 					"facets": {
 						"barShape": "square",
@@ -513,7 +614,9 @@
 					"verification": "not-independently-verified",
 					"eligibility": {
 						"sellable": false,
-						"reasons": ["qa_unreviewed"]
+						"reasons": [
+							"qa_unreviewed"
+						]
 					}
 				}
 			],
@@ -533,7 +636,9 @@
 			"applicationId": "app-golf8-fixpoint-yearhold",
 			"generationId": "vw-golf-8",
 			"qualifiers": {
-				"roofTypes": ["fixpoint"]
+				"roofTypes": [
+					"fixpoint"
+				]
 			},
 			"conditions": [],
 			"products": [
@@ -543,7 +648,11 @@
 					"saleorVariantId": "demo-variant-fixpoint",
 					"productKind": "roof-rack-set",
 					"completeSet": {
-						"includes": ["bars", "feet", "fitting-kit"]
+						"includes": [
+							"bars",
+							"feet",
+							"fitting-kit"
+						]
 					},
 					"facets": {
 						"barShape": "aero",
@@ -558,7 +667,9 @@
 					"verification": "not-independently-verified",
 					"eligibility": {
 						"sellable": false,
-						"reasons": ["qa_hold"]
+						"reasons": [
+							"qa_hold"
+						]
 					}
 				}
 			],
@@ -576,7 +687,9 @@
 			"applicationId": "app-tiguan2-conflict",
 			"generationId": "vw-tiguan-2",
 			"qualifiers": {
-				"roofTypes": ["raised-rails"]
+				"roofTypes": [
+					"raised-rails"
+				]
 			},
 			"conditions": [],
 			"products": [
@@ -586,7 +699,10 @@
 					"saleorVariantId": "demo-variant-raised",
 					"productKind": "roof-rack-set",
 					"completeSet": {
-						"includes": ["bars", "feet"]
+						"includes": [
+							"bars",
+							"feet"
+						]
 					},
 					"evidence": {
 						"kind": "derived",
@@ -596,7 +712,9 @@
 					"verification": "not-independently-verified",
 					"eligibility": {
 						"sellable": false,
-						"reasons": ["qa_conflict"]
+						"reasons": [
+							"qa_conflict"
+						]
 					}
 				}
 			],
@@ -616,8 +734,12 @@
 			"applicationId": "app-bmw-g20-not-published",
 			"generationId": "bmw-3-g20",
 			"qualifiers": {
-				"roofTypes": ["flush-rails"],
-				"bodyTypes": ["estate"]
+				"roofTypes": [
+					"flush-rails"
+				],
+				"bodyTypes": [
+					"estate"
+				]
 			},
 			"conditions": [
 				{
@@ -634,7 +756,11 @@
 					"saleorVariantId": "demo-variant-not-in-catalogue",
 					"productKind": "roof-rack-set",
 					"completeSet": {
-						"includes": ["bars", "feet", "fitting-kit"]
+						"includes": [
+							"bars",
+							"feet",
+							"fitting-kit"
+						]
 					},
 					"facets": {
 						"barShape": "aero",
@@ -656,6 +782,59 @@
 			"window": {
 				"from": {
 					"year": 2018
+				},
+				"to": null,
+				"startPrecision": "year",
+				"endPrecision": "open",
+				"reconciledToGeneration": false
+			}
+		},
+		{
+			"applicationId": "app-octavia4-estate-flush-manufacturer",
+			"generationId": "skoda-octavia-4",
+			"qualifiers": {
+				"roofTypes": [
+					"flush-rails"
+				],
+				"bodyTypes": [
+					"estate"
+				]
+			},
+			"conditions": [],
+			"products": [
+				{
+					"externalReference": "demo:product:manufacturer-flush",
+					"saleorProductId": "demo-product-manufacturer",
+					"saleorVariantId": "demo-variant-manufacturer",
+					"productKind": "roof-rack-set",
+					"completeSet": {
+						"includes": [
+							"bars",
+							"feet",
+							"fitting-kit"
+						]
+					},
+					"facets": {
+						"barShape": "square",
+						"barMaterial": "steel",
+						"maxLoadKg": 75,
+						"lockable": false
+					},
+					"evidence": {
+						"kind": "manufacturer-application",
+						"supplier": "Nordrive"
+					},
+					"qaStatus": "accepted",
+					"verification": "not-independently-verified",
+					"eligibility": {
+						"sellable": true,
+						"reasons": []
+					}
+				}
+			],
+			"window": {
+				"from": {
+					"year": 2020
 				},
 				"to": null,
 				"startPrecision": "year",
