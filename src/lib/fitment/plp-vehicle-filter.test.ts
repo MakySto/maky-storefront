@@ -29,6 +29,7 @@ vi.mock("./provider", () => ({ loadFitmentDataset }));
 vi.mock("@/lib/garage/state", () => ({ readGarage }));
 
 import {
+	isSaleorProductId,
 	isVehicleFilterRequested,
 	NO_PRODUCTS_SENTINEL_ID,
 	resolveVehicleListingFilter,
@@ -43,6 +44,9 @@ const SELECTION: VehicleSelection = {
 	generationId: "gen-1",
 	year: 2022,
 };
+
+/** A real-shaped Saleor product global id, base64 of `Product:<pk>`. */
+const gid = (pk: number) => Buffer.from(`Product:${pk}`, "utf8").toString("base64");
 
 function dataset(productIds: string[], overrides: Partial<FitmentDataset> = {}): FitmentDataset {
 	return {
@@ -115,7 +119,7 @@ beforeEach(() => {
 
 describe("what narrows the listing, and what must not", () => {
 	it("never narrows when the filter was not requested", async () => {
-		loadFitmentDataset.mockResolvedValue({ dataset: dataset(["P1"]) });
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1)]) });
 		readGarage.mockResolvedValue(garageWith(SELECTION));
 
 		const filter = await resolveVehicleListingFilter(false);
@@ -124,7 +128,7 @@ describe("what narrows the listing, and what must not", () => {
 	});
 
 	it("offers the control without applying it, so it is reachable without editing a URL", async () => {
-		loadFitmentDataset.mockResolvedValue({ dataset: dataset(["P1"]) });
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1)]) });
 		readGarage.mockResolvedValue(garageWith(SELECTION));
 
 		const filter = await resolveVehicleListingFilter(false);
@@ -132,15 +136,15 @@ describe("what narrows the listing, and what must not", () => {
 	});
 
 	it("narrows to every verified id when asked", async () => {
-		loadFitmentDataset.mockResolvedValue({ dataset: dataset(["P1", "P2"]) });
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1), gid(2)]) });
 		readGarage.mockResolvedValue(garageWith(SELECTION));
 
 		const filter = await resolveVehicleListingFilter(true);
-		expect(filter).toMatchObject({ state: "active", productIds: ["P1", "P2"] });
+		expect(filter).toMatchObject({ state: "active", productIds: [gid(1), gid(2)] });
 	});
 
 	it("does not narrow when there is no usable saved car", async () => {
-		loadFitmentDataset.mockResolvedValue({ dataset: dataset(["P1"]) });
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1)]) });
 		readGarage.mockResolvedValue(garageWith(null));
 
 		const filter = await resolveVehicleListingFilter(true);
@@ -150,7 +154,7 @@ describe("what narrows the listing, and what must not", () => {
 
 	it("does not narrow when the dataset cannot answer — not knowing is not 'nothing fits'", async () => {
 		// Stale: past `validUntil`. resolveVehicleOutcome reports this as unanswerable.
-		const stale = dataset(["P1"], {
+		const stale = dataset([gid(1)], {
 			validity: { validUntil: "2020-01-01T00:00:00.000Z", staleAfterDays: 30 },
 		});
 		loadFitmentDataset.mockResolvedValue({ dataset: stale });
@@ -198,9 +202,64 @@ describe("the empty result — the one that returned the whole catalogue", () =>
 	});
 });
 
+describe("what must never reach the listing query", () => {
+	it("recognises a Saleor product global id, and only that", () => {
+		expect(isSaleorProductId(gid(481))).toBe(true);
+		// The fixture provider's own ids — deliberately not real, which is what stops a
+		// demo dataset borrowing a real product's photograph and price.
+		expect(isSaleorProductId("demo-product-aero-flush")).toBe(false);
+		expect(isSaleorProductId("")).toBe(false);
+		// Base64 of something that is not a product.
+		expect(isSaleorProductId(Buffer.from("Category:1", "utf8").toString("base64"))).toBe(false);
+		// Decodes to the right shape but is not the canonical encoding.
+		expect(isSaleorProductId("UHJvZHVjdDo0ODE")).toBe(false);
+	});
+
+	it("drops a malformed id rather than letting Saleor fail the whole listing", async () => {
+		// Live: a bad entry in `filter: { ids }` answers "Invalid ID specified." for the
+		// WHOLE query, and /{market}/products throws on a failed listing — correctly,
+		// since that page cannot be missing. One bad row from CFM would take it down.
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1), "not-an-id"]) });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+		const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		const filter = await resolveVehicleListingFilter(true);
+		expect(filter).toMatchObject({ state: "active", productIds: [gid(1)] });
+		expect(spy).toHaveBeenCalled();
+		spy.mockRestore();
+	});
+
+	it("reports empty when every candidate id is malformed", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset(["nope", "also-nope"]) });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+		const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		expect(await resolveVehicleListingFilter(true)).toMatchObject({ state: "empty" });
+		spy.mockRestore();
+	});
+
+	it("never narrows a listing of real products with a DEMO dataset", async () => {
+		// A demo dataset carries its own catalogue and names nothing real, so it cannot
+		// verify a real product for anybody. Sending its ids would be sending junk.
+		const demo = dataset([gid(1)]);
+		demo.demoCatalogue = [
+			{
+				saleorProductId: gid(1),
+				saleorVariantId: `${gid(1)}-v`,
+				name: "Demo set",
+				price: { amount: 1, currency: "EUR" },
+			},
+		];
+		loadFitmentDataset.mockResolvedValue({ dataset: demo });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		expect(await resolveVehicleListingFilter(true)).toMatchObject({ state: "empty", isDemo: true });
+	});
+});
+
 describe("the candidate set is never truncated", () => {
 	it("passes more than a Saleor page of ids straight through", async () => {
-		const many = Array.from({ length: 250 }, (_, i) => `P${i}`);
+		const many = Array.from({ length: 250 }, (_, i) => gid(i + 1));
 		loadFitmentDataset.mockResolvedValue({ dataset: dataset(many) });
 		readGarage.mockResolvedValue(garageWith(SELECTION));
 
@@ -211,12 +270,12 @@ describe("the candidate set is never truncated", () => {
 	});
 
 	it("de-duplicates a product verified through several application rows", async () => {
-		const d = dataset(["P1"]);
+		const d = dataset([gid(1)]);
 		d.applications.push({ ...d.applications[0]!, applicationId: "a-dup" });
 		loadFitmentDataset.mockResolvedValue({ dataset: d });
 		readGarage.mockResolvedValue(garageWith(SELECTION));
 
-		expect(vehicleFilterIds(await resolveVehicleListingFilter(true))).toEqual(["P1"]);
+		expect(vehicleFilterIds(await resolveVehicleListingFilter(true))).toEqual([gid(1)]);
 	});
 });
 

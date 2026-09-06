@@ -52,6 +52,31 @@ export const VEHICLE_FILTER_VALUE = "1";
  */
 export const NO_PRODUCTS_SENTINEL_ID = "UHJvZHVjdDotMQ==";
 
+/**
+ * Is this string shaped like a Saleor product global id?
+ *
+ * The listing query is not forgiving. A malformed entry in `filter: { ids }` makes Saleor
+ * answer `{"ids": [{"message": "Invalid ID specified."}]}` for the WHOLE query, and
+ * `/{market}/products` treats a failed listing as an error and throws — correctly, since
+ * that page cannot be missing. So one bad id from the fitment provider would take the
+ * market's main listing down, and the configurator's own path only survives it because a
+ * failed batch there degrades to "we could not load the offer".
+ *
+ * Externally-supplied identifiers are validated before they reach a query that can fail a
+ * page. Anything that is not a base64 `Product:<pk>` is dropped and logged rather than
+ * forwarded.
+ */
+export function isSaleorProductId(id: string): boolean {
+	try {
+		const decoded = Buffer.from(id, "base64").toString("utf8");
+		// Re-encoding must round-trip: `Buffer.from` accepts almost anything as base64
+		// and silently discards what it cannot read.
+		return /^Product:.+$/.test(decoded) && Buffer.from(decoded, "utf8").toString("base64") === id;
+	} catch {
+		return false;
+	}
+}
+
 export type VehicleListingFilter =
 	/** No compatibility data on this deployment. The listing shows nothing about vehicles. */
 	| { state: "unavailable" }
@@ -108,8 +133,22 @@ export async function resolveVehicleListingFilter(requested: boolean): Promise<V
 			return { state: "unanswerable", vehicleLabel, verdict: outcome.unanswerableVerdict };
 		}
 
+		// A demo dataset names nothing real — its ids belong to its own catalogue, which
+		// is exactly what stops it borrowing a real product's photograph and price. So it
+		// can never narrow a listing of real products to anything, and saying "nothing is
+		// verified for this car" is both true and the only safe answer.
+		if (isDemo) return { state: "empty", vehicleLabel, isDemo };
+
 		// De-duplicated: one product can be verified through several application rows.
-		const productIds = [...new Set(outcome.verified.map((o) => o.ref.saleorProductId))];
+		const candidates = [...new Set(outcome.verified.map((o) => o.ref.saleorProductId))];
+		const productIds = candidates.filter(isSaleorProductId);
+		if (productIds.length < candidates.length) {
+			console.error(
+				`[fitment] dropped ${
+					candidates.length - productIds.length
+				} malformed Saleor product id(s) from the listing filter`,
+			);
+		}
 		if (productIds.length === 0) return { state: "empty", vehicleLabel, isDemo };
 
 		return { state: "active", vehicleLabel, productIds, isDemo };

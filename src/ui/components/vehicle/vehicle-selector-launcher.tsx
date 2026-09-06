@@ -78,6 +78,11 @@ export function VehicleSelectorLauncher({
 							"border-forest-200 bg-forest-50 text-forest-700 hover:border-forest-300 hover:bg-forest-100 inline-flex h-10 items-center gap-2 rounded-sm border px-3 text-sm font-medium transition-colors",
 						variant === "hero" &&
 							"bg-action-primary text-action-primary-text hover:bg-action-primary-hover inline-flex h-12 items-center gap-2 rounded-md px-6 text-base font-semibold transition-colors",
+						// `h-11` matches the search field it sits beside, and `whitespace-nowrap`
+						// because at 360px the label wrapped inside a fixed-height button and spilled
+						// out of it.
+						variant === "compact" &&
+							"border-forest-200 bg-forest-50 text-forest-700 hover:border-forest-300 hover:bg-forest-100 inline-flex h-11 min-w-0 items-center gap-2 rounded-sm border px-3 text-sm font-medium whitespace-nowrap transition-colors",
 						variant === "inline" &&
 							"border-border-default text-text-primary hover:bg-surface-muted inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors",
 						"focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden",
@@ -89,13 +94,21 @@ export function VehicleSelectorLauncher({
 						className={cn(
 							"truncate",
 							// The header is tight below xl; the label is hidden there, exactly as
-							// the original trigger did, so the icon alone stands in.
-							variant === "header" ? "hidden max-w-[10rem] xl:inline" : "max-w-[16rem]",
+							// the original trigger did, so the icon alone stands in. `compact` keeps
+							// it and lets it shrink instead — it shares a 360px row with the search
+							// field, where an unlabelled car icon is a guess.
+							variant === "header" && "hidden max-w-[10rem] xl:inline",
+							variant === "compact" && "max-w-[8.5rem]",
+							variant !== "header" && variant !== "compact" && "max-w-[16rem]",
 						)}
 					>
 						{label}
 					</span>
-					{variant !== "hero" && (
+					{/* The chevron says "a menu drops from here", which is not what happens, and
+					    on a 360px row shared with the search it costs width the label needs. Kept
+					    where the replaced trigger had it; dropped where it is both wrong and
+					    expensive. */}
+					{variant !== "hero" && variant !== "compact" && (
 						<ChevronDownIcon className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden="true" />
 					)}
 				</button>
