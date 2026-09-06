@@ -1,5 +1,9 @@
 # Vlákno B — odovzdanie (2026-09-05, po B2 oprave)
 
+> **Historický dokument (stav po B2 oprave, 2026-09-05 ráno).** Aktuálny stav je v
+> `lane-b-handoff-20260906.md`; „spätné čítanie košíka" v §2/§5/§7 nižšie už neplatí — cart
+> ide cez typovaný `addVariantToCart` vlákna A. Uzavreté rozhodnutia a §6 pre CFM platia.
+
 Vetva: `claude/sf-b-vehicles`, odbočená z Legal `a4d78cb`. S1 nemergované. Branch-only,
 nič nasadené, produkcia nedotknutá.
 

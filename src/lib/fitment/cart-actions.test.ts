@@ -38,11 +38,13 @@ describe("demo data can never reach a real cart", () => {
 
 	it("refuses even when handed a real-looking Saleor id", async () => {
 		// A caller cannot escape the demo interlock by naming a real product: the mode is
-		// decided by the DATASET, never by the request.
+		// decided by the DATASET, never by the request. The ids have Saleor's global-id
+		// shape (base64 of `Product:99999999` / `ProductVariant:99999999`) but name nothing
+		// that exists, so even a weakened interlock could not reach a real product here.
 		const result = await addConfiguredSetToCart({
 			channel: "sk-eur",
-			saleorProductId: "UHJvZHVjdDo0MzE=",
-			saleorVariantId: "UHJvZHVjdFZhcmlhbnQ6NDMx",
+			saleorProductId: "UHJvZHVjdDo5OTk5OTk5OQ==",
+			saleorVariantId: "UHJvZHVjdFZhcmlhbnQ6OTk5OTk5OTk=",
 		});
 		expect(result).toEqual({ ok: false, reason: "simulation" });
 	});

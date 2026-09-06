@@ -14,6 +14,14 @@
 # synthetic cap (50 for every variant, confirmed live), so it may only be used to detect
 # a hard zero — never to make a positive stock claim.
 #
+# It is selected on the VARIANT first and on the product second. CFM publishes it on the
+# ProductVariant — measured live 2026-09-06: the pre-existing catalogue carries it on
+# 100/100 variants and 0/100 products, and the Nordrive roof-rack sets published that
+# night carry it on both. Reading only the product node would have resolved every
+# older product to "unknown" and silently dropped the "Na objednávku" line, with a
+# green build and a green suite. The consumer prefers the variant value and falls back
+# to the product's; see `availabilityFrom` in offers.ts.
+#
 # `translation` is applied to the RETURNED fields only; the lookup stays by id, so this
 # cannot repeat the `slugLanguageCode` failure where a translated-slug argument matches
 # nothing and returns null for the whole catalogue.
@@ -46,6 +54,7 @@ query FitmentProductsByIds($ids: [ID!]!, $channel: String!, $first: Int!, $lang:
 					id
 					name
 					quantityAvailable
+					metafield(key: "cfm_availability_mode")
 					pricing {
 						price {
 							gross {

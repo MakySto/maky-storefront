@@ -145,10 +145,22 @@ export function isDemoDataset(dataset: FitmentDataset | null): boolean {
 	return Boolean(dataset?.demoCatalogue);
 }
 
-function availabilityFrom(
-	mode: string | null | undefined,
+/**
+ * The availability fact for ONE variant.
+ *
+ * CFM publishes `cfm_availability_mode` on the ProductVariant (100/100 variants, 0/100
+ * products in the pre-existing catalogue, measured live); the Nordrive sets published on
+ * 2026-09-05 carry it on the product as well. The variant's value is therefore the
+ * source, and the product's is a fallback — never the other way round. The first version
+ * read only the product node, which made every older product resolve to "unknown" and
+ * quietly dropped the "Na objednávku" line while the PLP and PDP still showed it.
+ */
+export function availabilityFrom(
+	variantMode: string | null | undefined,
+	productMode: string | null | undefined,
 	quantity: number | null | undefined,
 ): OfferAvailability {
+	const mode = variantMode ?? productMode;
 	const resolved = resolveAvailability({ mode, quantityAvailable: quantity ?? undefined });
 	if (!resolved) return "unknown";
 	return resolved.key === "outOfStock" ? "out-of-stock" : "on-demand";
@@ -186,7 +198,7 @@ function demoOffers(dataset: FitmentDataset, refs: FitmentProductRef[]): Fitment
 			thumbnailAlt: null,
 			categoryName: entry.categoryName ?? null,
 			price: entry.price ?? null,
-			availability: availabilityFrom(entry.availabilityMode, entry.quantityAvailable),
+			availability: availabilityFrom(entry.availabilityMode, null, entry.quantityAvailable),
 			completeSetIncludes: ref.completeSet?.includes ?? null,
 			facets: ref.facets ?? null,
 			isDemo: true,
@@ -296,7 +308,7 @@ export async function resolveFitmentOffers(
 					thumbnailAlt: node.thumbnail?.alt ?? null,
 					categoryName: node.category?.translation?.name ?? node.category?.name ?? null,
 					price: gross ? { amount: gross.amount, currency: gross.currency } : null,
-					availability: availabilityFrom(node.metafield, variant.quantityAvailable),
+					availability: availabilityFrom(variant.metafield, node.metafield, variant.quantityAvailable),
 					completeSetIncludes: ref.completeSet?.includes ?? null,
 					facets: ref.facets ?? null,
 					isDemo: false,
@@ -370,7 +382,7 @@ export async function verifyPurchasable(
 		const gross = variant.pricing?.price?.gross ?? null;
 		return {
 			ok: true,
-			availability: availabilityFrom(node.metafield, variant.quantityAvailable),
+			availability: availabilityFrom(variant.metafield, node.metafield, variant.quantityAvailable),
 			price: gross ? { amount: gross.amount, currency: gross.currency } : null,
 		};
 	} catch (error) {
