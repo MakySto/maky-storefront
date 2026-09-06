@@ -19,6 +19,7 @@ import { cookies } from "next/headers";
 
 import { type VehicleSelection } from "@/lib/fitment/contract";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
+import { resolveQualifier, resolveRoofAnswer, roofOptionsFor } from "./selection";
 import { resolveGarageMode } from "./config";
 import {
 	encodeGarageCookie,
@@ -89,10 +90,12 @@ async function writeGarage(payload: GaragePayload): Promise<boolean> {
  *   - A qualifier the generation VARIES in must be answered. Accepting a Golf without
  *     knowing whether it has a naked roof or fixpoints stores a car we cannot answer
  *     questions about, and the resolver would have to call it AMBIGUOUS forever.
- *   - A qualifier with exactly one possible value is filled in here rather than asked.
- *     That is not guessing: a generation offered only with raised rails has raised
- *     rails. Asking anyway is a question with one answer, and the instruction not to
- *     auto-select is about AMBIGUITY, which this is not.
+ *   - `bodyType` and `doors` with exactly one possible value are filled in rather than
+ *     asked. That is not guessing: they are properties of the generation the shopper has
+ *     already chosen.
+ *   - `roofType` is the exception, and it used to be handled by the rule above. It must
+ *     never be filled in: our record of the roofs a generation came with describes what
+ *     CFM mapped, not what is bolted to the shopper's car. See `selection.ts`.
  */
 async function validateSelection(
 	selection: VehicleSelection,
@@ -129,7 +132,23 @@ async function validateSelection(
 		year: selection.year,
 	};
 
-	const roof = resolveQualifier(q.roofTypes, selection.roofType);
+	// The roof is the one qualifier that is NEVER settled by having a single value.
+	//
+	// `resolveQualifier` below fills a single-valued qualifier in, which is right for a
+	// property of the generation the shopper already chose — a generation sold only as an
+	// estate IS an estate. It is wrong for the roof, and measurably so: with
+	// `q.roofTypes = ["raised-rails"]` and no answer it returned "raised-rails", so a
+	// vehicle was stored carrying a roof type nobody had confirmed, and every surface
+	// downstream then reported a verified fit on it. That is not a missing question, it
+	// is an answer we made up on the shopper's behalf, about the part that decides
+	// whether the feet attach to their car at all.
+	//
+	// Unanswered now stores nothing. The resolver reports that it cannot confirm, which
+	// is true, and the shopper is asked rather than told.
+	// The SAME list the selector offered. Validating against the generation's list alone
+	// would refuse a roof that only an application knows about — a roof the shopper was
+	// shown and legitimately picked.
+	const roof = resolveRoofAnswer(roofOptionsFor(dataset, generation), selection.roofType);
 	if (roof === "invalid") return { ok: false, error: "invalid-qualifier" };
 	if (roof !== undefined) normalized.roofType = roof;
 
@@ -148,17 +167,6 @@ async function validateSelection(
  * One qualifier: `"invalid"` to refuse, `undefined` to omit, or the value to store.
  * A generation that does not constrain the qualifier at all stores nothing for it.
  */
-function resolveQualifier<T>(available: T[] | undefined, answer: T | undefined): T | "invalid" | undefined {
-	if (!available || available.length === 0) return undefined;
-	if (available.length === 1) {
-		const only = available[0]!;
-		if (answer !== undefined && answer !== only) return "invalid";
-		return only;
-	}
-	if (answer === undefined || !available.includes(answer)) return "invalid";
-	return answer;
-}
-
 /**
  * Save a vehicle and make it active.
  *
