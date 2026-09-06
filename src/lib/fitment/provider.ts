@@ -24,7 +24,7 @@ import "server-only";
 import { cache } from "react";
 
 import { validateFitmentDataset } from "./validate";
-import { type FitmentDataset } from "./contract";
+import { isSimulatedDataset, type FitmentDataset } from "./contract";
 import fixtureDataset from "./fixtures/dataset-v1.json";
 
 export type FitmentProviderMode = "disabled" | "fixture" | "http";
@@ -64,7 +64,7 @@ function statusFor(
 		// Demo-ness is a property of the DATA, not only of the mode. A dataset served over
 		// HTTP that declares itself a fixture, or that carries its own demo catalogue, is
 		// still demo data and must never be reported as REAL_DATA.
-		isFixture: mode === "fixture" || dataset?.source.system === "fixture" || Boolean(dataset?.demoCatalogue),
+		isFixture: mode === "fixture" || isSimulatedDataset(dataset),
 		unavailableReason,
 		datasetVersion: dataset?.datasetVersion ?? null,
 		generatedAt: dataset?.generatedAt ?? null,
@@ -84,6 +84,10 @@ function expectedSaleorInstance(): string | undefined {
 function loadFixture(): FitmentLoad {
 	const validation = validateFitmentDataset(fixtureDataset, {
 		expectedSaleorInstance: expectedSaleorInstance(),
+		// The committed demo is the one dataset that may carry the explicit non-hash
+		// sentinel, because it is a code artefact rather than a delivery: swapping it
+		// requires a commit, not a response body.
+		allowUnhashedFixture: true,
 	});
 	if (!validation.ok) {
 		// A broken committed fixture is a build-time mistake, but it must still not be
@@ -118,9 +122,20 @@ async function loadHttp(): Promise<FitmentLoad> {
 		if (!response.ok) {
 			return { dataset: null, status: statusFor("http", null, `http-${response.status}`) };
 		}
-		const body: unknown = await response.json();
+		// Text, not `.json()`. The exact bytes are needed twice over: the semantic
+		// `datasetHash` is only reproducible against CFM's Python when every number is
+		// re-emitted from its original source token, and the transport checksum is by
+		// definition a fact about the bytes and cannot be recovered from a parsed object.
+		const text = await response.text();
+		let body: unknown;
+		try {
+			body = JSON.parse(text);
+		} catch {
+			return { dataset: null, status: statusFor("http", null, "payload-not-json") };
+		}
 		const validation = validateFitmentDataset(body, {
 			expectedSaleorInstance: expectedSaleorInstance(),
+			rawText: text,
 		});
 		if (!validation.ok) {
 			console.error("[fitment] provider payload failed validation:", validation.errors);

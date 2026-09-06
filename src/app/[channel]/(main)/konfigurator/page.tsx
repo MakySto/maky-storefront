@@ -97,6 +97,12 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 			offer,
 			conditions: conditions.resolved.map((c) => c.text),
 			unresolvedConditions: conditions.unresolvedCount,
+			// Offerable is two verdicts, not one, and the card has to be able to tell them
+			// apart to state the fit truthfully. The supplier comes from THIS row's own
+			// evidence — a product reachable through several applications is judged by its
+			// worst row, and the sentence must name that row's source, not a constant.
+			verdict: match?.result.verdict ?? "MANUFACTURER_FIT",
+			supplier: match?.result.product?.evidence.supplier ?? null,
 		};
 	});
 

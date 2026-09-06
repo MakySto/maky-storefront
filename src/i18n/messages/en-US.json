@@ -660,6 +660,8 @@
 		"noOffersDetail": "Try a different vehicle, or ask us about a set.",
 		"cardVerifiedFit": "Verified for your vehicle",
 		"cardQualifiedFit": "Verified, with conditions",
+		"cardManufacturerFit": "Compatible according to {supplier}'s application data",
+		"cardManufacturerQualifiedFit": "Compatible according to {supplier}'s application data — with mounting conditions",
 		"cardConditionsIncomplete": "This set comes with an installation requirement we can't show in your language yet. Please contact us before installation.",
 		"priceUnavailable": "Price unavailable",
 		"demoBadge": "Demo",

@@ -29,7 +29,8 @@ import { formatPrice } from "@/config/locale";
 import { addConfiguredSetToCart } from "@/lib/fitment/cart-actions";
 import { type AddSetFailure } from "@/lib/fitment/cart-result";
 import { type FitmentOffer } from "@/lib/fitment/offers";
-import { presentCardFailure } from "./configurator-card-state";
+import { type FitmentVerdict } from "@/lib/fitment/contract";
+import { fitStatementFor, presentCardFailure } from "./configurator-card-state";
 
 export type ResultCard = {
 	offer: FitmentOffer;
@@ -37,6 +38,13 @@ export type ResultCard = {
 	conditions: string[];
 	/** Conditions that exist but could not be stated in this locale. */
 	unresolvedConditions: number;
+	/**
+	 * The verdict THIS set earned. Offerable covers two of them, and they are not the
+	 * same claim: only VERIFIED_FIT may be called verified.
+	 */
+	verdict: FitmentVerdict;
+	/** Whose application data this fit rests on, when the verdict is the manufacturer's. */
+	supplier: string | null;
 };
 
 const INCLUDES_KEY: Record<string, string> = {
@@ -65,6 +73,7 @@ export function ConfiguratorResults({
 	// Availability wording already exists in `common` and is used by the PDP badge —
 	// reused rather than duplicated, so the two surfaces cannot drift apart.
 	const tc = useTranslations("common");
+	const tf = useTranslations("fitment");
 	const router = useRouter();
 	const [pending, startTransition] = useTransition();
 	const [busyId, setBusyId] = useState<string | null>(null);
@@ -103,8 +112,12 @@ export function ConfiguratorResults({
 
 	return (
 		<ul className="grid gap-4 sm:grid-cols-2">
-			{cards.map(({ offer, conditions, unresolvedConditions }) => {
+			{cards.map(({ offer, conditions, unresolvedConditions, verdict, supplier }) => {
 				const outOfStock = offer.availability === "out-of-stock";
+				// Whose word this set's fit rests on. An unnamed supplier degrades to the
+				// same fallback CompatibilityBox uses, never to silence and never to
+				// "verified".
+				const statement = fitStatementFor(verdict, supplier, unresolvedConditions > 0);
 				const failure = presentCardFailure(errors[offer.saleorVariantId]);
 				const message = failure
 					? failure.messageKey.startsWith("__common.")
@@ -159,7 +172,14 @@ export function ConfiguratorResults({
 								{offer.categoryName && <p className="text-text-tertiary text-xs">{offer.categoryName}</p>}
 							</div>
 
-							{/* The fit statement belongs to THIS set, not to the page. */}
+							{/*
+							  The fit statement belongs to THIS set, not to the page — and it must
+							  say whose word it is. Both sentences here used to begin "Overené",
+							  for every offerable card. Since MANUFACTURER_FIT became offerable
+							  that claimed a check nobody performed: the manufacturer listing a
+							  part for a car is the manufacturer's statement, not our
+							  verification. Only VERIFIED_FIT earns the word.
+							*/}
 							<p
 								className={
 									unresolvedConditions > 0
@@ -167,7 +187,9 @@ export function ConfiguratorResults({
 										: "text-fitment-fits text-sm font-medium"
 								}
 							>
-								{unresolvedConditions > 0 ? t("cardQualifiedFit") : t("cardVerifiedFit")}
+								{statement.supplier === undefined
+									? t(statement.key)
+									: t(statement.key, { supplier: statement.supplier ?? tf("supplierFallback") })}
 							</p>
 
 							{includes.length > 0 && (

@@ -660,6 +660,8 @@
 		"noOffersDetail": "Próbáljon másik járművet választani, vagy kérdezzen minket a szettről.",
 		"cardVerifiedFit": "Ellenőrizve az Ön járművéhez",
 		"cardQualifiedFit": "Ellenőrizve, feltételekkel",
+		"cardManufacturerFit": "Kompatibilis a(z) {supplier} alkalmazási adatai szerint",
+		"cardManufacturerQualifiedFit": "Kompatibilis a(z) {supplier} alkalmazási adatai szerint — szerelési feltételekkel",
 		"cardConditionsIncomplete": "Ehhez a szetthez szerelési feltétel tartozik, amelyet egyelőre nem tudunk megjeleníteni az Ön nyelvén. Szerelés előtt kérjük, vegye fel velünk a kapcsolatot.",
 		"priceUnavailable": "Az ár nem érhető el",
 		"demoBadge": "Bemutató",

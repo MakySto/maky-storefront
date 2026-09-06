@@ -1,11 +1,11 @@
 {
 	"schemaVersion": "3.0.0",
-	"datasetVersion": "3.0.0-pilot-20260906",
-	"datasetHash": "bca2997617ae0cf9a594fae8bf6539a504069e66ac4a310761d91519e34ee5e4",
+	"datasetVersion": "3.0.0-pilot-20260906-excerpt-2app",
+	"datasetHash": "e52b3527418ac04c0da22c0a9642c9af9eccb5bd47a32782dc996f7e881fceba",
 	"generatedAt": "2026-09-06T18:54:02.832539+00:00",
 	"source": {
 		"system": "cfm",
-		"note": "ProductRoofFit application windows, reconciled once at import. Evidence is the manufacturer's application list; nothing here is independently verified."
+		"note": "TWO-APPLICATION EXCERPT of CFM pilot 3.0.0-pilot-20260906, kept in-tree so the contract is tested against real rows. Not the pilot: it carries its own datasetVersion and its own datasetHash, and no accounting block. ProductRoofFit application windows, reconciled once at import. Evidence is the manufacturer's application list; nothing here is independently verified."
 	},
 	"saleorInstance": "api.maky.store",
 	"validity": { "validUntil": null, "staleAfterDays": 30 },

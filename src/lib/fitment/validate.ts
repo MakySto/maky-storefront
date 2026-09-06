@@ -26,7 +26,9 @@ import {
 	VERIFICATION_LEVELS,
 	WINDOW_PRECISIONS,
 	type FitmentDataset,
+	type FitmentWindow,
 } from "./contract";
+import { datasetHashFromText, datasetHashFromValue } from "./dataset-hash";
 
 /**
  * An application window, and the four ways it can contradict itself.
@@ -208,7 +210,31 @@ function validateQualifiers(raw: unknown, path: string, errors: string[]): void 
 export type ValidateOptions = {
 	/** The Saleor instance this build talks to. Mismatch is fatal — see file header. */
 	expectedSaleorInstance?: string;
+	/**
+	 * The exact text the dataset arrived as, when it arrived as text.
+	 *
+	 * Supplying it is what makes the recomputed `datasetHash` byte-accurate against CFM's
+	 * Python: numbers are re-emitted from their original source token, so a
+	 * `confidence: 1.0` stays `1.0` instead of becoming `1`. Without it the hash is taken
+	 * over the parsed value, which is correct only for a document that has no
+	 * whole-valued float in it.
+	 */
+	rawText?: string;
+	/**
+	 * Permit the committed demo fixture's explicit non-hash sentinel.
+	 *
+	 * Deliberately keyed on HOW the dataset got here, not on what it calls itself. A
+	 * payload that arrives over HTTP is untrusted no matter which `source.system` it
+	 * declares, so it never gets this — otherwise the escape hatch would be openable by
+	 * the very input it is meant to check.
+	 */
+	allowUnhashedFixture?: boolean;
 };
+
+/** The one value that may stand in place of a real hash, and only for a local import. */
+const UNHASHED_FIXTURE_SENTINEL = "demo-no-hash-this-is-not-a-cfm-export";
+
+const SHA256_HEX = /^[0-9a-f]{64}$/;
 
 export function validateFitmentDataset(raw: unknown, options: ValidateOptions = {}): ValidationResult {
 	const errors: string[] = [];
@@ -235,6 +261,39 @@ export function validateFitmentDataset(raw: unknown, options: ValidateOptions = 
 
 	if (isNonEmptyString(raw.generatedAt) && !Number.isFinite(Date.parse(raw.generatedAt))) {
 		errors.push("generatedAt is not a parsable date");
+	}
+
+	// The hash is RECOMPUTED, not merely present.
+	//
+	// Checking `datasetHash` for non-emptiness was not a check at all: a payload carrying
+	// an invented hash, or the hash of an entirely different document, passed exactly like
+	// a correct one — and that is not hypothetical, the committed two-application excerpt
+	// was carrying the hash of the full 77-product pilot. A mismatch rejects the whole
+	// dataset rather than warning: half a dataset is not a smaller dataset, and a document
+	// that is not the one CFM counted cannot have its accounting trusted either.
+	if (isNonEmptyString(raw.datasetHash)) {
+		if (raw.datasetHash === UNHASHED_FIXTURE_SENTINEL) {
+			if (!options.allowUnhashedFixture) {
+				errors.push(
+					`datasetHash "${UNHASHED_FIXTURE_SENTINEL}" is accepted only for the committed fixture, ` +
+						"never for a delivered dataset",
+				);
+			}
+		} else if (!SHA256_HEX.test(raw.datasetHash)) {
+			errors.push("datasetHash must be 64 lower-case hex characters (SHA-256)");
+		} else {
+			try {
+				const computed = options.rawText ? datasetHashFromText(options.rawText) : datasetHashFromValue(raw);
+				if (computed !== raw.datasetHash) {
+					errors.push(
+						`datasetHash mismatch: declared ${raw.datasetHash}, recomputed ${computed} ` +
+							"(canonical JSON, sorted keys, compact separators, datasetHash and generatedAt removed)",
+					);
+				}
+			} catch (error) {
+				errors.push(`datasetHash could not be recomputed: ${String(error)}`);
+			}
+		}
 	}
 
 	// A demo dataset deliberately names an instance that does not exist, because its ids
@@ -427,24 +486,33 @@ export function validateFitmentDataset(raw: unknown, options: ValidateOptions = 
 	const generationById = new Map(
 		generations!.map((g) => [(g as { id: string }).id, g as Record<string, unknown>]),
 	);
+	//
+	// This read `app.yearFrom` and `app.yearTo` until now — the schema-2 pair that 3.0.0
+	// replaced with `window`. Both were `undefined`, `as number` made that `NaN`, and
+	// every comparison against `NaN` is false, so the warning could not fire for any
+	// dataset at all. It is the window's own year fields that carry the answer.
 	for (const application of applications!) {
-		const app = application as Record<string, unknown>;
-		const generation = generationById.get(app.generationId as string);
+		const app = application as unknown as {
+			applicationId: string;
+			generationId: string;
+			window: FitmentWindow;
+		};
+		const generation = generationById.get(app.generationId);
 		if (!generation) continue;
 		const productionFrom = generation.productionYearFrom as number;
 		const productionTo = generation.productionYearTo as number | null;
-		if ((app.yearFrom as number) < productionFrom) {
+		const windowFrom = app.window?.from?.year;
+		const windowTo = app.window?.to?.year ?? null;
+		if (typeof windowFrom === "number" && windowFrom < productionFrom) {
 			warnings.push(
-				`applications[${String(app.applicationId)}]: yearFrom ${String(
-					app.yearFrom,
-				)} precedes generation production start ${productionFrom}`,
+				`applications[${app.applicationId}]: window.from.year ${windowFrom} ` +
+					`precedes generation production start ${productionFrom}`,
 			);
 		}
-		if (productionTo !== null && app.yearTo !== null && (app.yearTo as number) > productionTo) {
+		if (productionTo !== null && typeof windowTo === "number" && windowTo > productionTo) {
 			warnings.push(
-				`applications[${String(app.applicationId)}]: yearTo ${String(
-					app.yearTo,
-				)} exceeds generation production end ${productionTo}`,
+				`applications[${app.applicationId}]: window.to.year ${windowTo} ` +
+					`exceeds generation production end ${productionTo}`,
 			);
 		}
 	}

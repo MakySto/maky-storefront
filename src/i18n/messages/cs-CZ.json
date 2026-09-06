@@ -660,6 +660,8 @@
 		"noOffersDetail": "Zkuste změnit vozidlo nebo se nás na sestavu zeptejte.",
 		"cardVerifiedFit": "Ověřeno pro vaše vozidlo",
 		"cardQualifiedFit": "Ověřeno s podmínkami",
+		"cardManufacturerFit": "Kompatibilní podle aplikačních údajů {supplier}",
+		"cardManufacturerQualifiedFit": "Kompatibilní podle aplikačních údajů {supplier} — s podmínkami montáže",
 		"cardConditionsIncomplete": "K této sestavě se váže podmínka montáže, kterou vám zatím nedokážeme uvést ve vašem jazyce. Před montáží nás prosím kontaktujte.",
 		"priceUnavailable": "Cena není dostupná",
 		"demoBadge": "Ukázka",

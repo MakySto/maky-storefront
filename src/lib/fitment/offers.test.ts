@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { loadFitmentDataset } from "./provider";
 import { isDemoDataset, resolveFitmentOffers } from "./offers";
 import { resolveVehicleOutcome } from "./resolve";
-import { type VehicleSelection } from "./contract";
+import { type FitmentDataset, type VehicleSelection } from "./contract";
+import fixtureDataset from "./fixtures/dataset-v1.json";
 
 /**
  * The offer layer is where a compatibility answer becomes a thing with a price and a buy
@@ -159,5 +160,39 @@ describe("nothing to offer", () => {
 		const offers = await resolveFitmentOffers([], "sk-eur", "sk-SK", { dataset });
 		expect(offers.offers).toEqual([]);
 		expect(offers.lookupFailed).toBe(false);
+	});
+});
+
+describe("a dataset that is a simulation must not be sellable — either way of being one", () => {
+	function base(): FitmentDataset {
+		return {
+			...(JSON.parse(JSON.stringify(fixtureDataset)) as FitmentDataset),
+		};
+	}
+
+	it("treats a demoCatalogue payload as simulated (the case already covered)", () => {
+		expect(isDemoDataset(base())).toBe(true);
+	});
+
+	it("treats source.system 'fixture' as simulated even with NO demoCatalogue", () => {
+		// The hole: `provider.ts` already understood this when deciding what to DISPLAY,
+		// while the offer layer and the cart understood only `demoCatalogue` when deciding
+		// what to SELL. An HTTP payload declaring itself a fixture and carrying no demo
+		// catalogue was therefore offered and sold as real stock.
+		const d = base();
+		delete (d as { demoCatalogue?: unknown }).demoCatalogue;
+		d.source = { system: "fixture" };
+		expect(isDemoDataset(d)).toBe(true);
+	});
+
+	it("still treats a real CFM dataset as sellable", () => {
+		const d = base();
+		delete (d as { demoCatalogue?: unknown }).demoCatalogue;
+		d.source = { system: "cfm" };
+		expect(isDemoDataset(d)).toBe(false);
+	});
+
+	it("says nothing about a dataset that is not there", () => {
+		expect(isDemoDataset(null)).toBe(false);
 	});
 });

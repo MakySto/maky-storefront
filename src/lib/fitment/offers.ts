@@ -35,6 +35,7 @@ import { resolveAvailability, AVAILABILITY_METADATA_KEY } from "@/ui/components/
 import { getLocaleConfigByLocale } from "@/config/locale";
 import {
 	CONFIGURATOR_PRODUCT_KIND,
+	isSimulatedDataset,
 	type FitmentApplication,
 	type FitmentDataset,
 	type FitmentProductRef,
@@ -144,9 +145,16 @@ export function uniqueProductRefs(applications: FitmentApplication[]): FitmentPr
 	return refs;
 }
 
-/** A dataset that brings its own catalogue is a demo dataset, and is served from it. */
+/**
+ * A dataset that must never produce a real sale.
+ *
+ * Delegates to the one predicate in `contract.ts`. The name is kept because six call
+ * sites use it; what changed is that "demo" no longer means only "carries a
+ * demoCatalogue" — a payload that declares `source.system: "fixture"` is simulated too,
+ * and used to reach the cart as if it were real.
+ */
 export function isDemoDataset(dataset: FitmentDataset | null): boolean {
-	return Boolean(dataset?.demoCatalogue);
+	return isSimulatedDataset(dataset);
 }
 
 /**

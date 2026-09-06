@@ -660,6 +660,8 @@
 		"noOffersDetail": "Încercați să schimbați vehiculul sau întrebați-ne despre set.",
 		"cardVerifiedFit": "Verificat pentru vehiculul dumneavoastră",
 		"cardQualifiedFit": "Verificat, cu condiții de montaj",
+		"cardManufacturerFit": "Compatibil conform datelor de aplicare {supplier}",
+		"cardManufacturerQualifiedFit": "Compatibil conform datelor de aplicare {supplier} — cu condiții de montaj",
 		"cardConditionsIncomplete": "Acestui set i se aplică o condiție de montaj pe care deocamdată nu v-o putem prezenta în limba dumneavoastră. Vă rugăm să ne contactați înainte de montaj.",
 		"priceUnavailable": "Prețul nu este disponibil",
 		"demoBadge": "Demo",

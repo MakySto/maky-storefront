@@ -660,6 +660,8 @@
 		"noOffersDetail": "Prova a cambiare veicolo oppure chiedici informazioni sul set.",
 		"cardVerifiedFit": "Verificato per il tuo veicolo",
 		"cardQualifiedFit": "Verificato con condizioni",
+		"cardManufacturerFit": "Compatibile secondo i dati di applicazione di {supplier}",
+		"cardManufacturerQualifiedFit": "Compatibile secondo i dati di applicazione di {supplier} — con condizioni di montaggio",
 		"cardConditionsIncomplete": "Questo set è soggetto a una condizione di montaggio che non possiamo ancora indicarti nella tua lingua. Prima del montaggio contattaci.",
 		"priceUnavailable": "Prezzo non disponibile",
 		"demoBadge": "Demo",

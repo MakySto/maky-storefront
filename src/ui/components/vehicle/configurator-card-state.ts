@@ -61,3 +61,53 @@ export function presentCardFailure(failure: AddSetFailure | undefined): CardFail
 		? { messageKey: MESSAGE_KEY[failure], tone: "status", primaryAction: "check-cart" }
 		: { messageKey: MESSAGE_KEY[failure], tone: "alert", primaryAction: "add" };
 }
+
+/**
+ * What a result card is allowed to SAY about the fit it is offering.
+ *
+ * Pure, and separate from the component, for the same reason as the failure mapping
+ * above: this is a truthfulness decision, not a layout one, and it was wrong.
+ *
+ * Two verdicts reach a card, because `isFitmentOfferable` admits two. They are not the
+ * same claim and must not share a sentence:
+ *
+ *   - `VERIFIED_FIT` — checked against the vehicle. "Overené" is earned.
+ *   - `MANUFACTURER_FIT` — the manufacturer lists this part for this car. That is the
+ *     manufacturer's word, and the card must name whose word it is. `CompatibilityBox`
+ *     has said this correctly since 3.0.0; the configurator went on saying "Overené pre
+ *     vaše vozidlo" for every offerable card, including these.
+ *
+ * The mounting-condition branch is included deliberately. "Overené s podmienkami" is the
+ * same false claim with a qualifier bolted on, so it needs its own manufacturer variant
+ * rather than being allowed to fall through.
+ */
+export type FitStatement =
+	| {
+			/** i18n key in the `configurator` namespace. */
+			key: string;
+			/**
+			 * The supplier name to interpolate, or `null` when the row named none — in which case
+			 * the caller substitutes `fitment.supplierFallback`, the same vague-but-never-false
+			 * word CompatibilityBox already falls back to. Reusing it keeps one sentence shape
+			 * instead of inventing a second one that would drift.
+			 */
+			supplier: string | null;
+	  }
+	| {
+			key: string;
+			supplier?: undefined;
+	  };
+
+export function fitStatementFor(
+	verdict: string,
+	supplier: string | null | undefined,
+	hasUnresolvedConditions: boolean,
+): FitStatement {
+	if (verdict === "MANUFACTURER_FIT") {
+		return {
+			key: hasUnresolvedConditions ? "cardManufacturerQualifiedFit" : "cardManufacturerFit",
+			supplier: supplier?.trim() || null,
+		};
+	}
+	return { key: hasUnresolvedConditions ? "cardQualifiedFit" : "cardVerifiedFit" };
+}

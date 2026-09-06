@@ -423,7 +423,14 @@ export type DemoCatalogueEntry = {
 export type FitmentDataset = {
 	schemaVersion: string;
 	datasetVersion: string;
-	/** Content hash of the payload, for change detection and cache keying. */
+	/**
+	 * SHA-256 of the canonical form of this document — sorted keys, compact separators,
+	 * with `datasetHash` and `generatedAt` themselves removed. It is RECOMPUTED on
+	 * arrival (`dataset-hash.ts`); a mismatch rejects the dataset.
+	 *
+	 * This is the SEMANTIC hash. The SHA-256 of the delivered file's exact bytes is a
+	 * different number, and a different job.
+	 */
 	datasetHash: string;
 	/** ISO-8601. Drives staleness. */
 	generatedAt: string;
@@ -618,4 +625,27 @@ export function matchWindow(window: FitmentWindow, year: number, month?: number)
 	// "out" already returned; anything unresolved on either side keeps the whole window
 	// unresolved. A definite "in" needs both ends to be definite.
 	return start === "needs-detail" || end === "needs-detail" ? "needs-detail" : "in";
+}
+
+/**
+ * Is this dataset a simulation rather than a statement about real stock?
+ *
+ * Two independent ways of being one, and both must be honoured at every gate:
+ *
+ *   - it brings its own `demoCatalogue`, so its ids name nothing in Saleor; or
+ *   - it declares `source.system: "fixture"`, i.e. the producer itself says this is
+ *     test data.
+ *
+ * Only the first was checked before, and the gap was reachable: `provider.ts` already
+ * understood the second when deciding what to *display*, while the offer layer and the
+ * cart understood only the first when deciding what to *sell*. A payload delivered over
+ * HTTP declaring `system: "fixture"` and carrying no demo catalogue was therefore
+ * offered and sold as real. One predicate, used by both, is the fix — a second copy of
+ * this rule is how the two drifted apart in the first place.
+ */
+export function isSimulatedDataset(
+	dataset: Pick<FitmentDataset, "source" | "demoCatalogue"> | null,
+): boolean {
+	if (!dataset) return false;
+	return Boolean(dataset.demoCatalogue) || dataset.source?.system === "fixture";
 }
