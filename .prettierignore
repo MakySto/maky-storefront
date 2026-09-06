@@ -24,3 +24,11 @@ src/lib/cms/__fixtures__/provider-v2/
 # changes the bytes and breaks the digests — which is exactly what this hook did to
 # thirteen vendored CMS fixtures on the first attempt at the same pattern.
 src/lib/forms/__fixtures__/forms-backend-v1/
+
+# CFM fitment datasets delivered verbatim. A dataset carries two hashes: the SEMANTIC
+# datasetHash, which is computed over a canonical form and so survives reformatting, and
+# the TRANSPORT SHA-256 of the exact delivered bytes, which does not. Prettier ran over
+# pilot-sample.json on its first commit and changed three lines; that one happened to be
+# harmless because only the semantic hash is recorded for it. The real pilot, whose exact
+# bytes CFM reports and we verify, would be silently broken by the same edit.
+src/lib/fitment/fixtures/
