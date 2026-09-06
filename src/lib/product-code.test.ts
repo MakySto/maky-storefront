@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { publicProductCode } from "./product-code";
+import { publicProductCode, publicSku } from "./product-code";
 
 /**
  * Measured against the whole public sk-eur catalogue on 2026-09-05: 417
@@ -79,5 +79,46 @@ describe("publicProductCode", () => {
 		// 417 real codes into strings the supplier does not use.
 		expect(publicProductCode({ name: "g3K9042" })).toBe("g3K9042");
 		expect(publicProductCode({ name: "PZ-GP001bag" })).toBe("PZ-GP001bag");
+	});
+});
+
+/**
+ * `publicSku` is the same rule applied to structured data. It exists because the
+ * PDP's JSON-LD used `sourceSku || sku` and therefore leaked the internal
+ * identifier to Google on 94 of 100 sampled pages once the catalogue grew from
+ * 417 to 9,606 products — while the visible page, already routed through
+ * `publicProductCode`, stayed correct.
+ */
+describe("publicSku", () => {
+	it("prefers the code CFM declares public", () => {
+		expect(publicSku({ name: "N21048|N20003", sourceSku: "THU-909400" })).toBe("THU-909400");
+	});
+
+	it("falls back to the variant name, never to the raw SKU", () => {
+		// The exact shape that leaked: no `sourceSku`, and a raw `sku` carrying the
+		// marker. The name is the only admissible source, and `sku` is not read.
+		expect(publicSku({ name: "N21059|N20003|N15424|N15424", sourceSku: null })).toBe(
+			"N21059|N20003|N15424|N15424",
+		);
+	});
+
+	it("refuses a declared code that carries the internal marker", () => {
+		// CFM setting the metafield does not make the value publishable.
+		expect(publicSku({ name: "N15031", sourceSku: "CFMP-B-NOR-7580c97859183e-000000" })).toBe("N15031");
+		expect(publicSku({ name: null, sourceSku: "cfmp-b-nor-7580c97859183e-000000" })).toBeNull();
+	});
+
+	it("accepts a declared code that publicProductCode's shape rule would reject", () => {
+		// A manufacturer part number may carry punctuation this catalogue has not
+		// seen, or no digit at all. CFM declaring it public is the stronger claim;
+		// only the marker is disqualifying.
+		expect(publicSku({ name: "N15031", sourceSku: "THULE SQUARE BAR" })).toBe("THULE SQUARE BAR");
+	});
+
+	it("is silent rather than wrong when there is no admissible source", () => {
+		expect(publicSku({ name: "Black", sourceSku: null })).toBeNull();
+		expect(publicSku(null)).toBeNull();
+		expect(publicSku(undefined)).toBeNull();
+		expect(publicSku({ name: "  ", sourceSku: "   " })).toBeNull();
 	});
 });

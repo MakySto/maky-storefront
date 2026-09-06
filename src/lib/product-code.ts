@@ -37,6 +37,17 @@ const CODE_SHAPE = /^[A-Za-z0-9|/.-]+$/;
 /** The internal marker that must never reach a customer, in any casing. */
 const INTERNAL_MARKER = /CFMP-/i;
 
+/**
+ * Whether a value carries MAKY's internal identifier.
+ *
+ * Exported so the SEO boundary can refuse it outright rather than trusting every
+ * caller to have used `publicSku`. The leak this module exists to prevent
+ * happened precisely because one caller did not.
+ */
+export function carriesInternalMarker(value: string | null | undefined): boolean {
+	return typeof value === "string" && INTERNAL_MARKER.test(value);
+}
+
 const MIN_LENGTH = 3;
 const MAX_LENGTH = 40;
 
@@ -74,4 +85,38 @@ export function publicProductCode(
 	// Saleor names a single unnamed variant after its own id on some shapes.
 	if (variant?.id && name === variant.id) return null;
 	return isPublicCode(name) ? name : null;
+}
+
+/**
+ * The product code for structured data, or `null` to emit no `sku` key.
+ *
+ * Structured data is a customer-facing surface — Google reads it, Merchant
+ * Center ingests it, and it is quoted back in search results — so the rule from
+ * `publicProductCode` applies to it unchanged: the internal identifier must
+ * never appear.
+ *
+ * It nearly did not matter. When this module was written the catalogue held 417
+ * products and only three carried an internal suffix, so the PDP's
+ * `sourceSku || sku` fallback leaked on 0.7% of pages and nobody saw it. On
+ * 2026-09-06 the Nordrive cohort was published and the catalogue became 9,606
+ * products; `cfm_source_sku` is unset across all of them, so the fallback fired
+ * on 94% of a 100-page sample and put strings like
+ * `…|CFMP-B-NOR-ee62cfb3856e3d-000000` into the `sku` Google was reading. The
+ * visible page was correct the whole time, because it already came through
+ * `publicProductCode`. Only the JSON-LD bypassed it.
+ *
+ * `sourceSku` still wins when CFM sets it — it is the code CFM DECLARES as
+ * public, which is a stronger claim than a variant name that merely looks like
+ * one. It is checked for the internal marker rather than run through
+ * `isPublicCode`, because a manufacturer's own part number may legitimately
+ * carry punctuation this catalogue has not seen; what it may never carry is the
+ * marker. Raw `variant.sku` is not a fallback at any point — being the fallback
+ * is what made it a leak.
+ */
+export function publicSku(
+	variant: { name?: string | null; id?: string | null; sourceSku?: string | null } | null | undefined,
+): string | null {
+	const declared = variant?.sourceSku?.trim();
+	if (declared && !INTERNAL_MARKER.test(declared)) return declared;
+	return publicProductCode(variant);
 }

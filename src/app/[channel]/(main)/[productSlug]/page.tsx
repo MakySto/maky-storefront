@@ -32,6 +32,7 @@ import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { parseEditorJSToHtml } from "@/lib/editorjs";
 import { isSourceLocale, resolveExactLocaleProduct } from "@/lib/saleor/exact-locale";
 import { lookupBySlug } from "@/lib/saleor/slug-lookup";
+import { publicSku } from "@/lib/product-code";
 
 /** CFM's manufacturer attribute, keyed on externalReference — see product-attributes.ts. */
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
@@ -246,7 +247,13 @@ async function ProductContent({
 		// `sku` only. An `mpn` used to be emitted from the same value, which made
 		// MAKY's internal composite identifier a claim about the manufacturer's part
 		// number — it is not one, in any reading.
-		sku: product.variants?.[0]?.sourceSku || product.variants?.[0]?.sku,
+		//
+		// Through `publicSku`, never `sourceSku || sku`. That fallback reached raw
+		// `variant.sku` whenever CFM had not set `cfm_source_sku` — which is the
+		// whole catalogue — and so published the internal identifier to Google on
+		// 94% of pages once the Nordrive cohort went live. The visible code has
+		// always been correct; only this path bypassed the module that makes it so.
+		sku: publicSku(product.variants?.[0]) ?? undefined,
 		priceRange: product.pricing?.priceRange?.start?.gross
 			? {
 					lowPrice: product.pricing.priceRange.start.gross.amount,
@@ -261,7 +268,7 @@ async function ProductContent({
 		// own. Every product in the live catalogue is single-variant today, so this
 		// is the arm that actually renders.
 		variants: (product.variants ?? []).map((v) => ({
-			sku: v.sourceSku || v.sku,
+			sku: publicSku(v),
 			name: v.name,
 			price: v.pricing?.price?.gross
 				? { amount: v.pricing.price.gross.amount, currency: v.pricing.price.gross.currency }

@@ -192,3 +192,46 @@ describe("offers describe what is actually sold", () => {
 		expect((jsonLd.offers as unknown as Record<string, string>)["@type"]).toBe("AggregateOffer");
 	});
 });
+
+/**
+ * The builder's own defence. Callers are meant to pass a value already resolved
+ * by `publicSku`, but the PDP shipped `sourceSku || sku` for months and put the
+ * internal identifier into the `sku` Google reads on 94% of pages. A module whose
+ * entire job is deciding what gets published must not depend on every caller
+ * remembering — so it refuses the marker itself, in all three sku-bearing fields.
+ */
+describe("buildProductJsonLd — internal identifiers never publish", () => {
+	const leaked = "N21059|N20003|N15424|N15424|CFMP-B-NOR-72670303068409-000000";
+	const priced = { amount: 299, currency: "EUR" };
+	const skuOf = (data: ReturnType<typeof buildProductJsonLd>) => (data as { sku?: string }).sku;
+
+	it("omits sku entirely rather than publishing the marker", () => {
+		const data = buildProductJsonLd({ name: "Strešný nosič", sku: leaked, price: priced });
+		expect(data).not.toHaveProperty("sku");
+		expect(JSON.stringify(data)).not.toContain("CFMP-");
+	});
+
+	it("prefers a clean fallback over a leaking variant sku", () => {
+		const data = buildProductJsonLd({
+			name: "Strešný nosič",
+			sku: "N21059",
+			price: priced,
+			variants: [{ sku: leaked, name: "v", price: priced, inStock: true }],
+		});
+		expect(skuOf(data)).toBe("N21059");
+	});
+
+	it("strips it from productGroupID and every member of a ProductGroup", () => {
+		const data = buildProductJsonLd({
+			name: "Strešný nosič",
+			sku: leaked,
+			variants: [
+				{ sku: "A|CFMP-B-NOR-aaa-000000", name: "A", price: priced, inStock: true },
+				{ sku: "B|CFMP-B-NOR-bbb-000000", name: "B", price: priced, inStock: true },
+			],
+		});
+		expect(data).toHaveProperty("@type", "ProductGroup");
+		expect(data).not.toHaveProperty("productGroupID");
+		expect(JSON.stringify(data)).not.toContain("CFMP-");
+	});
+});

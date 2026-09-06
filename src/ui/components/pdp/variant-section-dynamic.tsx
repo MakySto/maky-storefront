@@ -26,6 +26,56 @@ interface VariantSectionDynamicProps {
 }
 
 /**
+ * Narrow Saleor variants to exactly what the client component declares.
+ *
+ * `product.variants` comes straight off the GraphQL query, so it also carries
+ * `sku`, `sourceSku`, `media` and `metafield`. VariantSelectionSection is a
+ * client component, so anything handed to it is serialized verbatim into the RSC
+ * flight payload and shipped inside the HTML — and `sku` on this catalogue is
+ * `<code>|CFMP-<internal>`, the identifier that must never reach a customer. It
+ * was the third copy of that string on every PDP, next to the two in the JSON-LD,
+ * readable in view-source by anyone.
+ *
+ * TypeScript could not catch it. Excess-property checking applies to object
+ * literals, and the array was passed as a variable, so the extra fields went
+ * through silently against a prop type that declares exactly these six.
+ *
+ * Exported so a test can pin it: the leak is invisible in the rendered page, so
+ * nothing else would notice this quietly widening again.
+ */
+export function variantsForSelection<
+	T extends {
+		id: string;
+		name: string;
+		quantityAvailable?: number | null;
+		selectionAttributes: VariantAttributes;
+		nonSelectionAttributes?: VariantAttributes;
+		pricing?: VariantPricing;
+	},
+>(variants: readonly T[]) {
+	return variants.map(
+		({ id, name, quantityAvailable, selectionAttributes, nonSelectionAttributes, pricing }) => ({
+			id,
+			name,
+			quantityAvailable,
+			selectionAttributes,
+			nonSelectionAttributes,
+			pricing,
+		}),
+	);
+}
+
+type VariantAttributes = Array<{
+	attribute: { slug?: string | null; name?: string | null };
+	values: Array<{ name?: string | null; value?: string | null }>;
+}>;
+
+type VariantPricing = {
+	price?: { gross: { amount: number; currency: string } } | null;
+	priceUndiscounted?: { gross: { amount: number; currency: string } } | null;
+} | null;
+
+/**
  * Dynamic variant section for PDP.
  *
  * With Cache Components enabled, this component streams at request time
@@ -37,6 +87,8 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 	const tCommon = await getTranslations("common");
 	const tProduct = await getTranslations("product");
 	const variants = product.variants || [];
+
+	const variantsForClient = variantsForSelection(variants);
 
 	// Auto-select variant: use URL param, or auto-select if only one variant exists
 	const selectedVariantID = variantParam || (variants.length === 1 ? variants[0].id : undefined);
@@ -170,7 +222,7 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 			<CartForm action={addToCart} className="order-4 mt-5 space-y-6">
 				{/* Variant Selectors */}
 				<VariantSelectionSection
-					variants={variants}
+					variants={variantsForClient}
 					selectedVariantId={selectedVariantID}
 					productSlug={product.slug}
 					channel={channel}

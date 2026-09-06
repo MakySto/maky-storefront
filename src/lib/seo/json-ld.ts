@@ -1,5 +1,19 @@
 import { type WithContext, type Product, type ProductGroup } from "schema-dts";
+import { carriesInternalMarker } from "@/lib/product-code";
 import { seoConfig, getBaseUrl } from "./config";
+
+/**
+ * Whether a SKU may be published in structured data.
+ *
+ * Callers are expected to pass a value already resolved by `publicSku`. This is
+ * the backstop for when one does not, which is not hypothetical: the PDP shipped
+ * `sourceSku || sku` for months and put MAKY's internal identifier into the
+ * `sku` Google reads on 94% of pages. A builder whose whole job is what gets
+ * published should not depend on every caller remembering.
+ */
+function publishableSku(value: string | null | undefined): value is string {
+	return Boolean(value) && !carriesInternalMarker(value);
+}
 
 /**
  * The one `cfm_availability_mode` value this catalogue publishes. Compared as a
@@ -36,7 +50,7 @@ function availabilityOf(inStock: boolean, availabilityMode?: string | null) {
  *   name: product.name,
  *   description: product.seoDescription,
  *   images: product.media?.map(m => m.url),
- *   sku: variant?.sku,
+ *   sku: publicSku(variant),
  *   brand: product.brand,
  *   url: `/products/${product.slug}`,
  *   price: { amount: 29.99, currency: "USD" },
@@ -142,11 +156,11 @@ export function buildProductJsonLd(options: {
 		return {
 			...base,
 			"@type": "ProductGroup",
-			...(sku ? { productGroupID: sku } : {}),
+			...(publishableSku(sku) ? { productGroupID: sku } : {}),
 			hasVariant: purchasable.map((variant) => ({
 				"@type": "Product" as const,
 				name: variant.name || name,
-				...(variant.sku ? { sku: variant.sku } : {}),
+				...(publishableSku(variant.sku) ? { sku: variant.sku } : {}),
 				offers: {
 					"@type": "Offer" as const,
 					url: fullUrl,
@@ -195,7 +209,7 @@ export function buildProductJsonLd(options: {
 			: undefined;
 
 	// The variant's own SKU wins: it identifies what is actually being sold.
-	const resolvedSku = only?.sku ?? sku ?? undefined;
+	const resolvedSku = [only?.sku, sku].find(publishableSku) ?? undefined;
 
 	return {
 		...base,
