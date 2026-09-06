@@ -29,9 +29,9 @@ describe("the vehicles a product is made for", () => {
 		expect(page.rows.some((r) => r.applicationId === "app-octavia4-estate-flush-negative")).toBe(false);
 	});
 
-	it("marks an unverified row so it cannot read as confirmed", async () => {
+	it("marks a row the source did not accept so it cannot read as confirmed", async () => {
 		const page = await listProductApplications("demo-product-raised");
-		expect(page.rows.every((r) => r.verified)).toBe(false);
+		expect(page.rows.every((r) => r.accepted)).toBe(false);
 	});
 
 	it("filters by what a shopper would actually type", async () => {
@@ -66,15 +66,23 @@ describe("candidate de-duplication", () => {
 		saleorProductId: id,
 		saleorVariantId: variant,
 		productKind: "roof-rack-set" as const,
+		evidence: { kind: "manufacturer-application" as const, supplier: "test" },
+		qaStatus: "accepted" as const,
+		verification: "cfm-verified" as const,
+		eligibility: { sellable: true, reasons: [] },
 	});
 	const app = (products: ReturnType<typeof ref>[]): FitmentApplication => ({
 		applicationId: "a",
 		generationId: "g",
-		yearFrom: 2020,
-		yearTo: null,
+		window: {
+			from: { year: 2020 },
+			to: null,
+			startPrecision: "year",
+			endPrecision: "open",
+			reconciledToGeneration: false,
+		},
 		qualifiers: {},
 		conditions: [],
-		verificationStatus: "verified",
 		products,
 	});
 

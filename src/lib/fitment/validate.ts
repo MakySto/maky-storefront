@@ -18,12 +18,145 @@
 
 import {
 	BODY_TYPES,
-	FITMENT_SCHEMA_VERSION,
+	EVIDENCE_KINDS,
 	PRODUCT_KINDS,
+	QA_STATUSES,
 	ROOF_TYPES,
-	VERIFICATION_STATUSES,
+	SUPPORTED_SCHEMA_VERSIONS,
+	VERIFICATION_LEVELS,
+	WINDOW_PRECISIONS,
 	type FitmentDataset,
 } from "./contract";
+
+/**
+ * An application window, and the four ways it can contradict itself.
+ *
+ * The contradictions matter more than the shapes. A window that says
+ * `startPrecision: "month"` with no month is a window whose exporter lost the value and
+ * did not notice; one that says `"year"` WITH a month is a window whose precision claim
+ * cannot be trusted, and trusting it either way would decide somebody's purchase on a
+ * boundary. Both are rejected rather than reconciled here.
+ */
+function validateWindow(raw: unknown, path: string, errors: string[]): void {
+	if (!isRecord(raw)) {
+		errors.push(`${path}: window is required`);
+		return;
+	}
+
+	const boundary = (value: unknown, side: string): { year: number; month?: number } | null => {
+		if (!isRecord(value) || typeof value.year !== "number" || !Number.isInteger(value.year)) {
+			errors.push(`${path}.${side}: year must be an integer`);
+			return null;
+		}
+		if (value.month !== undefined) {
+			if (!Number.isInteger(value.month) || (value.month as number) < 1 || (value.month as number) > 12) {
+				errors.push(`${path}.${side}.month: must be an integer 1-12, or absent for unknown`);
+				return null;
+			}
+		}
+		return { year: value.year, month: value.month as number | undefined };
+	};
+
+	for (const key of ["startPrecision", "endPrecision"] as const) {
+		if (!WINDOW_PRECISIONS.includes(raw[key] as never)) {
+			errors.push(`${path}.${key}: must be one of ${WINDOW_PRECISIONS.join(", ")}`);
+		}
+	}
+	if (typeof raw.reconciledToGeneration !== "boolean") {
+		errors.push(`${path}.reconciledToGeneration: must be a boolean`);
+	}
+
+	const from = boundary(raw.from, "from");
+	if (raw.to !== null && !isRecord(raw.to)) {
+		errors.push(`${path}.to: must be an object or null`);
+		return;
+	}
+	const to = raw.to === null ? null : boundary(raw.to, "to");
+
+	// An open end and a stated end are two different facts and must agree.
+	if (raw.to === null && raw.endPrecision !== "open") {
+		errors.push(`${path}: to is null but endPrecision is "${String(raw.endPrecision)}" — expected "open"`);
+	}
+	if (raw.to !== null && raw.endPrecision === "open") {
+		errors.push(`${path}: endPrecision is "open" but to is present`);
+	}
+
+	// Precision must describe the value that is actually there.
+	if (from) {
+		if (raw.startPrecision === "month" && from.month === undefined) {
+			errors.push(`${path}: startPrecision is "month" but from.month is absent`);
+		}
+		if (raw.startPrecision === "year" && from.month !== undefined) {
+			errors.push(`${path}: startPrecision is "year" but from.month is present`);
+		}
+	}
+	if (to) {
+		if (raw.endPrecision === "month" && to.month === undefined) {
+			errors.push(`${path}: endPrecision is "month" but to.month is absent`);
+		}
+		if (raw.endPrecision === "year" && to.month !== undefined) {
+			errors.push(`${path}: endPrecision is "year" but to.month is present`);
+		}
+	}
+
+	if (from && to) {
+		const a = from.year * 12 + (from.month ?? 1);
+		const b = to.year * 12 + (to.month ?? 12);
+		if (b < a) errors.push(`${path}: window ends before it starts`);
+	}
+}
+
+/**
+ * The per-product evidence block.
+ *
+ * `eligibility.sellable` is the source's own decision and the storefront does not
+ * second-guess it — but its ABSENCE is never read as permission, which is why the field
+ * is required rather than defaulted to true.
+ */
+function validateProductEvidence(product: Record<string, unknown>, path: string, errors: string[]): void {
+	const evidence = product.evidence;
+	if (!isRecord(evidence)) {
+		errors.push(`${path}.evidence: is required`);
+	} else {
+		if (!EVIDENCE_KINDS.includes(evidence.kind as never)) {
+			errors.push(`${path}.evidence.kind: must be one of ${EVIDENCE_KINDS.join(", ")}`);
+		}
+		if (
+			evidence.confidence !== undefined &&
+			(typeof evidence.confidence !== "number" || evidence.confidence < 0 || evidence.confidence > 1)
+		) {
+			errors.push(`${path}.evidence.confidence: must be a number between 0 and 1`);
+		}
+	}
+
+	if (!QA_STATUSES.includes(product.qaStatus as never)) {
+		errors.push(`${path}.qaStatus: must be one of ${QA_STATUSES.join(", ")}`);
+	}
+	if (!VERIFICATION_LEVELS.includes(product.verification as never)) {
+		errors.push(`${path}.verification: must be one of ${VERIFICATION_LEVELS.join(", ")}`);
+	}
+
+	const eligibility = product.eligibility;
+	if (!isRecord(eligibility)) {
+		errors.push(`${path}.eligibility: is required — an absent decision is not permission`);
+		return;
+	}
+	if (typeof eligibility.sellable !== "boolean") {
+		errors.push(`${path}.eligibility.sellable: must be a boolean`);
+	}
+	if (!Array.isArray(eligibility.reasons) || eligibility.reasons.some((r) => typeof r !== "string")) {
+		errors.push(`${path}.eligibility.reasons: must be an array of strings`);
+	}
+	// A refusal without a reason cannot be diagnosed, and a permission with one reads as
+	// a refusal somebody forgot to act on.
+	if (
+		eligibility.sellable === false &&
+		Array.isArray(eligibility.reasons) &&
+		eligibility.reasons.length === 0
+	) {
+		errors.push(`${path}.eligibility: sellable is false but no reason is given`);
+	}
+}
 
 export type ValidationResult =
 	| { ok: true; dataset: FitmentDataset; warnings: string[] }
@@ -35,11 +168,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isNonEmptyString(value: unknown): value is string {
 	return typeof value === "string" && value.length > 0;
-}
-
-function majorOf(version: string): string | null {
-	const match = /^(\d+)\./.exec(version);
-	return match ? match[1]! : null;
 }
 
 /** An empty array on a qualifier is a data error: it reads as "no value fits". */
@@ -88,18 +216,17 @@ export function validateFitmentDataset(raw: unknown, options: ValidateOptions = 
 
 	if (!isRecord(raw)) return { ok: false, errors: ["dataset is not an object"] };
 
+	// Exact match, not "any compatible major". Accepting `2.1` because it looked close
+	// enough is precisely how a dataset carrying month boundaries would have been read as
+	// a dataset without them: every unknown field ignored, every decision still made from
+	// years, and nothing anywhere reporting a problem.
 	if (!isNonEmptyString(raw.schemaVersion)) {
 		errors.push("schemaVersion is missing");
-	} else {
-		const expected = majorOf(FITMENT_SCHEMA_VERSION);
-		const actual = majorOf(raw.schemaVersion);
-		if (actual === null) {
-			errors.push(`schemaVersion "${raw.schemaVersion}" is not semver-like`);
-		} else if (actual !== expected) {
-			errors.push(`schemaVersion major ${actual} is not supported by this build (expects ${expected}.x)`);
-		} else if (raw.schemaVersion !== FITMENT_SCHEMA_VERSION) {
-			warnings.push(`schemaVersion ${raw.schemaVersion} differs from ${FITMENT_SCHEMA_VERSION}`);
-		}
+	} else if (!SUPPORTED_SCHEMA_VERSIONS.includes(raw.schemaVersion)) {
+		errors.push(
+			`schemaVersion "${raw.schemaVersion}" is not supported by this build ` +
+				`(supported: ${SUPPORTED_SCHEMA_VERSIONS.join(", ")})`,
+		);
 	}
 
 	for (const key of ["datasetVersion", "datasetHash", "generatedAt", "saleorInstance"]) {
@@ -215,20 +342,7 @@ export function validateFitmentDataset(raw: unknown, options: ValidateOptions = 
 		if (!isNonEmptyString(application.generationId) || !generationIds.has(application.generationId)) {
 			errors.push(`${path}: unknown generationId "${String(application.generationId)}"`);
 		}
-		if (typeof application.yearFrom !== "number") errors.push(`${path}: yearFrom must be a number`);
-		if (application.yearTo !== null && typeof application.yearTo !== "number") {
-			errors.push(`${path}: yearTo must be a number or null`);
-		}
-		if (
-			typeof application.yearFrom === "number" &&
-			typeof application.yearTo === "number" &&
-			application.yearTo < application.yearFrom
-		) {
-			errors.push(`${path}: yearTo is before yearFrom`);
-		}
-		if (!VERIFICATION_STATUSES.includes(application.verificationStatus as never)) {
-			errors.push(`${path}: unknown verificationStatus "${String(application.verificationStatus)}"`);
-		}
+		validateWindow(application.window, `${path}.window`, errors);
 		validateQualifiers(application.qualifiers, `${path}.qualifiers`, errors);
 
 		if (!Array.isArray(application.conditions)) {
@@ -266,6 +380,9 @@ export function validateFitmentDataset(raw: unknown, options: ValidateOptions = 
 			// roof box came to be offered as a roof rack.
 			if (!PRODUCT_KINDS.includes(product.productKind as never)) {
 				errors.push(`${productPath}: productKind is required and must be one of ${PRODUCT_KINDS.join(", ")}`);
+			}
+			validateProductEvidence(product, productPath, errors);
+			{
 			}
 			if (product.completeSet !== undefined) {
 				const set = product.completeSet;

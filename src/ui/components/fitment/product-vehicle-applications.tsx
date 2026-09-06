@@ -117,7 +117,7 @@ export function ProductVehicleApplications({ saleorProductId, initial }: Props) 
 										<td className="text-text-primary py-2 pr-3">{row.makeName}</td>
 										<td className="text-text-primary py-2 pr-3">
 											{row.modelName} <span className="text-text-tertiary">{row.generationName}</span>
-											{!row.verified && (
+											{!row.accepted && (
 												<span className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed ml-2 rounded px-1.5 py-0.5 text-xs">
 													{t("applicationsProvisional")}
 												</span>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import fixture from "./fixtures/dataset-v1.json";
+import { windowOf } from "./fixtures/build";
 import { validateFitmentDataset } from "./validate";
 
 /**
@@ -99,14 +100,20 @@ describe("rejections that would otherwise be silent", () => {
 		expect(validateFitmentDataset(d).ok).toBe(false);
 	});
 
-	it("refuses an unsupported schema major", () => {
-		const result = validateFitmentDataset({ ...valid(), schemaVersion: "3.0.0" });
+	it("refuses a different major", () => {
+		const result = validateFitmentDataset({ ...valid(), schemaVersion: "2.0.0" });
 		expect(result.ok).toBe(false);
 		expect(!result.ok && result.errors.join(" ")).toContain("not supported");
 	});
 
-	it("accepts a newer minor of the same major", () => {
-		expect(validateFitmentDataset({ ...valid(), schemaVersion: "2.4.0" }).ok).toBe(true);
+	it("refuses a newer MINOR of the same major — this is the whole point of 3.0.0", () => {
+		// The gate used to accept any `2.x`. A dataset carrying month boundaries would
+		// then have been read by a build that ignores them: every unknown field dropped,
+		// every decision still made from years, and nothing reporting a problem. An
+		// unreadable dataset must be refused, not partially understood.
+		const result = validateFitmentDataset({ ...valid(), schemaVersion: "3.1.0" });
+		expect(result.ok).toBe(false);
+		expect(!result.ok && result.errors.join(" ")).toContain("not supported");
 	});
 });
 
@@ -152,12 +159,9 @@ describe("referential integrity", () => {
 		expect(validateFitmentDataset(d).ok).toBe(false);
 	});
 
-	it("refuses a reversed year window", () => {
+	it("refuses a reversed window", () => {
 		const d = valid();
-		// @ts-expect-error deliberately malformed
-		d.applications[0].yearFrom = 2030;
-		// @ts-expect-error deliberately malformed
-		d.applications[0].yearTo = 2020;
+		(d.applications as { window: unknown }[])[0]!.window = windowOf([2030], [2020]);
 		expect(validateFitmentDataset(d).ok).toBe(false);
 	});
 });

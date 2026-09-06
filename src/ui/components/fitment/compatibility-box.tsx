@@ -43,6 +43,8 @@ type Props = {
 
 const VERDICT_ICON: Record<FitmentVerdict, typeof Check> = {
 	VERIFIED_FIT: Check,
+	MANUFACTURER_FIT: Check,
+	NEEDS_DETAIL: CircleHelp,
 	NO_FIT: X,
 	UNKNOWN: CircleHelp,
 	AMBIGUOUS: CircleHelp,
@@ -62,18 +64,28 @@ export async function CompatibilityBox({ result, vehicleLabel, action, isDemo, l
 		const key = CONDITION_LABEL_KEY[code];
 		return key ? t(key) : null;
 	});
-	const qualified = result.verdict === "VERIFIED_FIT" && conditions.unresolvedCount > 0;
+	const qualified =
+		(result.verdict === "VERIFIED_FIT" || result.verdict === "MANUFACTURER_FIT") &&
+		conditions.unresolvedCount > 0;
 	const tone = qualified ? "unconfirmed" : toneForVerdict(result.verdict);
 	const Icon = qualified ? CircleHelp : VERDICT_ICON[result.verdict];
 
 	// Every detail string that mentions a vehicle takes {vehicle}. With no vehicle
 	// resolved we must not print an empty gap, so the generic prompt is used instead.
 	const detailKey = VERDICT_DETAIL_KEY[result.verdict];
-	const needsVehicle = detailKey !== "verdictSelectVehicleDetail" && detailKey !== "verdictUniversalDetail";
+	const needsVehicle =
+		detailKey !== "verdictSelectVehicleDetail" &&
+		detailKey !== "verdictUniversalDetail" &&
+		detailKey !== "verdictNeedsDetailDetail";
+	// Whose word this is, named. The supplier comes from the row's own evidence rather
+	// than from a constant, so a second brand's data cannot arrive one day still
+	// attributed to the first. An unnamed source degrades to "the manufacturer" — vague,
+	// and true — instead of printing a gap.
+	const supplier = result.product?.evidence.supplier?.trim() || t("supplierFallback");
 	const detail =
 		needsVehicle && !vehicleLabel
 			? t("verdictSelectVehicleDetail")
-			: t(detailKey, { vehicle: vehicleLabel ?? "" });
+			: t(detailKey, { vehicle: vehicleLabel ?? "", supplier });
 
 	return (
 		<div

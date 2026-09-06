@@ -76,17 +76,25 @@ function dataset(productIds: string[], overrides: Partial<FitmentDataset> = {}):
 		applications: productIds.map((id, index) => ({
 			applicationId: `a${index}`,
 			generationId: "gen-1",
-			yearFrom: 2018,
-			yearTo: null,
+			window: {
+				from: { year: 2018 },
+				to: null,
+				startPrecision: "year",
+				endPrecision: "open",
+				reconciledToGeneration: false,
+			},
 			qualifiers: {},
 			conditions: [],
-			verificationStatus: "verified" as const,
 			products: [
 				{
 					externalReference: `test:product:${id}`,
 					saleorProductId: id,
 					saleorVariantId: `${id}-v`,
 					productKind: "roof-rack-set" as const,
+					evidence: { kind: "manufacturer-application" as const, supplier: "test" },
+					qaStatus: "accepted" as const,
+					verification: "cfm-verified" as const,
+					eligibility: { sellable: true, reasons: [] },
 				},
 			],
 		})),

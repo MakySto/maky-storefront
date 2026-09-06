@@ -18,8 +18,14 @@ export type ApplicationRow = {
 	bodyTypes: string[] | null;
 	doors: number[] | null;
 	conditionCodes: string[];
-	/** False for provisional / year-hold / conflict rows, which must not read as verified. */
-	verified: boolean;
+	/**
+	 * The SOURCE accepted this row for this product. False for held, unreviewed,
+	 * conflicting or rejected rows, which must not read as confirmed.
+	 *
+	 * It is not a claim that anybody checked the car: nothing in the catalogue is
+	 * `cfm-verified` today, and this list must not imply that it is.
+	 */
+	accepted: boolean;
 };
 
 export type ApplicationPage = {

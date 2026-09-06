@@ -34,6 +34,10 @@ const REF: FitmentProductRef = {
 	saleorProductId: "test-product-set-a",
 	saleorVariantId: "test-variant-set-a",
 	productKind: "roof-rack-set",
+	evidence: { kind: "manufacturer-application", supplier: "test" },
+	qaStatus: "accepted",
+	verification: "cfm-verified",
+	eligibility: { sellable: true, reasons: [] },
 };
 
 /**
@@ -267,6 +271,10 @@ describe("batching — more candidates than one Saleor page", () => {
 		saleorProductId: `test-product-set-${i}`,
 		saleorVariantId: `test-variant-set-${i}`,
 		productKind: "roof-rack-set",
+		evidence: { kind: "manufacturer-application", supplier: "test" },
+		qaStatus: "accepted",
+		verification: "cfm-verified",
+		eligibility: { sellable: true, reasons: [] },
 	}));
 
 	const nodeFor = (ref: FitmentProductRef) =>

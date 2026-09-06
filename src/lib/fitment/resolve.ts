@@ -19,6 +19,10 @@
 
 import {
 	CONFIGURATOR_PRODUCT_KIND,
+	isFitmentOfferable,
+	matchWindow,
+	type QaStatus,
+	type WindowMatch,
 	type FitmentApplication,
 	type FitmentCondition,
 	type FitmentCoverageLevel,
@@ -38,6 +42,9 @@ function emptyResult(verdict: FitmentVerdict, reason: string, dataset: FitmentDa
 	return {
 		verdict,
 		coverage: "partial",
+		// No product judged, so no evidence to carry. Every caller must treat a null
+		// here as "not offerable" rather than as "no objection".
+		product: null,
 		matched: [],
 		conditions: [],
 		dataset: dataset
@@ -62,11 +69,16 @@ export function isDatasetStale(dataset: FitmentDataset, now: number): boolean {
 	return now - generated > dataset.validity.staleAfterDays * DAY_MS;
 }
 
-/** Application year windows are half-open at the top only when `yearTo` is null. */
-function yearMatches(application: FitmentApplication, year: number): boolean {
-	if (year < application.yearFrom) return false;
-	if (application.yearTo !== null && year > application.yearTo) return false;
-	return true;
+/**
+ * Does the customer's vehicle fall inside this application's window?
+ *
+ * Delegates to `matchWindow`, which is where the inclusive boundaries and the
+ * three-valued answer live. The third value is the reason this is not a boolean any
+ * more: on a boundary year of a month-precise window, the year alone does not decide,
+ * and the honest move is to ask for the month rather than round it either way.
+ */
+function windowMatches(application: FitmentApplication, selection: VehicleSelection): WindowMatch {
+	return matchWindow(application.window, selection.year, selection.manufactureMonth);
 }
 
 type QualifierMatch = "match" | "miss" | "undecidable";
@@ -152,9 +164,16 @@ export function resolveFitment(
 	const positives: FitmentApplication[] = [];
 	const negatives: FitmentApplication[] = [];
 	let undecidable = false;
+	/** A window that only the manufacture month can settle. */
+	let needsMonth = false;
 
 	for (const application of relevant) {
-		if (!yearMatches(application, selection.year)) continue;
+		const window = windowMatches(application, selection);
+		if (window === "out") continue;
+		if (window === "needs-detail") {
+			needsMonth = true;
+			continue;
+		}
 		const qualifier = matchQualifiers(application.qualifiers, selection);
 		if (qualifier === "miss") continue;
 		if (qualifier === "undecidable") {
@@ -171,44 +190,80 @@ export function resolveFitment(
 	}
 
 	if (positives.length > 0) {
-		if (positives.some((a) => a.verificationStatus === "conflict")) {
-			return { ...emptyResult("AMBIGUOUS", "conflicting-row", dataset), coverage };
-		}
-		// `provisional` and `year-hold` are usable data but they are not a promise.
-		// They must never be promoted to a green badge, no matter how many rows agree.
-		const unverified = positives.filter((a) => a.verificationStatus !== "verified");
-		if (unverified.length > 0) {
+		const conditions = dedupeConditions(positives);
+		const provenance = {
+			datasetVersion: dataset.datasetVersion,
+			generatedAt: dataset.generatedAt,
+			schemaVersion: dataset.schemaVersion,
+		};
+
+		// Without a named product there is no evidence block to judge, and a
+		// vehicle-level "something fits" claim is not one this feature makes. The
+		// per-product callers below are where an offer can come from.
+		if (!options.saleorProductId) {
 			return {
 				verdict: "UNKNOWN",
 				coverage,
+				product: null,
 				matched: positives,
-				conditions: dedupeConditions(positives),
-				dataset: {
-					datasetVersion: dataset.datasetVersion,
-					generatedAt: dataset.generatedAt,
-					schemaVersion: dataset.schemaVersion,
-				},
-				reason: `unverified-rows:${unverified[0]!.verificationStatus}`,
+				conditions,
+				dataset: provenance,
+				reason: "no-product-named",
 			};
 		}
-		return {
-			verdict: "VERIFIED_FIT",
-			coverage,
-			matched: positives,
-			conditions: dedupeConditions(positives),
-			dataset: {
-				datasetVersion: dataset.datasetVersion,
-				generatedAt: dataset.generatedAt,
-				schemaVersion: dataset.schemaVersion,
-			},
-			reason: "verified",
+
+		const refs = positives
+			.map((a) => a.products.find((p) => p.saleorProductId === options.saleorProductId))
+			.filter((r): r is NonNullable<typeof r> => Boolean(r));
+
+		// Evidence lives on the PRODUCT, so a row disputed for this product is disputed
+		// here even when the application around it is clean and carries other products
+		// that are not.
+		const worst = pickWorstRef(refs);
+		if (!worst) {
+			return { ...emptyResult("UNKNOWN", "product-ref-missing", dataset), coverage };
+		}
+		const product = {
+			evidence: worst.evidence,
+			qaStatus: worst.qaStatus,
+			verification: worst.verification,
+			eligibility: worst.eligibility,
 		};
+		const result = (verdict: FitmentVerdict, reason: string): FitmentResult => ({
+			verdict,
+			coverage,
+			product,
+			matched: positives,
+			conditions,
+			dataset: provenance,
+			reason,
+		});
+
+		if (worst.qaStatus === "conflict") return result("AMBIGUOUS", "qa-conflict");
+		// `hold`, `unreviewed` and `rejected` are all "we cannot stand behind this",
+		// which is not the same as "it does not fit" — the shopper is told we cannot
+		// confirm it, never that their car is wrong.
+		if (worst.qaStatus !== "accepted") return result("UNKNOWN", `qa-${worst.qaStatus}`);
+		if (worst.verification === "cfm-verified") return result("VERIFIED_FIT", "cfm-verified");
+		// The manufacturer's own application list, and nothing more. Offerable, and it
+		// must say exactly that. A `derived` row is NOT the manufacturer's word and does
+		// not get to borrow the phrase.
+		if (worst.evidence.kind === "manufacturer-application") {
+			return result("MANUFACTURER_FIT", "manufacturer-declared");
+		}
+		return result("UNKNOWN", `unverified-evidence:${worst.evidence.kind}`);
 	}
 
 	// An unanswered qualifier outranks an absent row: we should ask the question before
 	// concluding anything, including "no".
 	if (undecidable) {
 		return { ...emptyResult("AMBIGUOUS", "qualifier-not-answered", dataset), coverage };
+	}
+
+	// A window we could have matched if the shopper had told us their month. Asked for
+	// before absence is interpreted, and never rounded into a yes or a no.
+	if (needsMonth) {
+		return { ...emptyResult("NEEDS_DETAIL", "manufacture-month-required", dataset), coverage };
 	}
 
 	if (negatives.length > 0) {
@@ -225,6 +280,35 @@ export function resolveFitment(
 	}
 
 	return { ...emptyResult("UNKNOWN", "absent-under-partial-coverage", dataset), coverage };
+}
+
+/**
+ * The least favourable of a product's rows across the matching applications.
+ *
+ * One product can be reachable through several application rows for the same vehicle,
+ * and they need not agree. Taking the best of them would let a clean row launder a
+ * disputed one — exactly the laundering that moving evidence onto the product was
+ * meant to stop, reintroduced one level up.
+ */
+const QA_ORDER: Record<QaStatus, number> = {
+	conflict: 0,
+	rejected: 1,
+	hold: 2,
+	unreviewed: 3,
+	accepted: 4,
+};
+
+function pickWorstRef(refs: FitmentProductRef[]): FitmentProductRef | null {
+	let worst: FitmentProductRef | null = null;
+	for (const ref of refs) {
+		if (!worst) {
+			worst = ref;
+			continue;
+		}
+		if (QA_ORDER[ref.qaStatus] < QA_ORDER[worst.qaStatus]) worst = ref;
+		else if (QA_ORDER[ref.qaStatus] === QA_ORDER[worst.qaStatus] && !ref.eligibility.sellable) worst = ref;
+	}
+	return worst;
 }
 
 /**
@@ -333,8 +417,22 @@ export function resolveVehicleOutcome(
 
 	const outcomes = resolveCandidates(dataset, selection, options);
 	return {
-		verified: outcomes.filter((o) => o.result.verdict === "VERIFIED_FIT"),
-		unconfirmed: outcomes.filter((o) => isInconclusiveVerdict(o.result.verdict)),
+		// One gate, shared with the cart, the PDP and the listing filter. A set reaches
+		// this list only if the verdict is a fit AND the source will stand behind selling
+		// this product for it — a `hold` inside an otherwise clean application stops here.
+		verified: outcomes.filter((o) =>
+			isFitmentOfferable({ verdict: o.result.verdict, eligibility: o.result.product?.eligibility }),
+		),
+		// Resolved but not offerable: the inconclusive verdicts, plus anything that reads
+		// as a fit yet is not sellable. The second half used to be impossible; now a
+		// disputed product can match perfectly and still be refused, and the shopper is
+		// owed an explanation rather than silence.
+		unconfirmed: outcomes.filter(
+			(o) =>
+				isInconclusiveVerdict(o.result.verdict) ||
+				(o.result.verdict !== "NO_FIT" &&
+					!isFitmentOfferable({ verdict: o.result.verdict, eligibility: o.result.product?.eligibility })),
+		),
 		rejected: outcomes.filter((o) => o.result.verdict === "NO_FIT"),
 		unanswerable: false,
 		unanswerableVerdict: null,

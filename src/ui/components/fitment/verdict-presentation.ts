@@ -6,10 +6,16 @@ import { type BodyType, type FitmentVerdict, type RoofType } from "@/lib/fitment
  * The colour family is `fitment-*` (`src/styles/brand.css:208-216`), which was defined
  * for exactly these states and — until now — had never been used by any component.
  *
- * The mapping is deliberately lossy in one direction only: five distinct verdicts share
- * the amber "unconfirmed" treatment, because to a shopper they mean the same thing
- * ("we cannot tell you yet"). Only VERIFIED_FIT is green and only NO_FIT is red, so no
- * amount of missing data can ever render as either a promise or a refusal.
+ * The mapping is deliberately lossy in one direction only: the verdicts that mean "we
+ * cannot tell you yet" share the amber treatment, because to a shopper they mean the
+ * same thing. Only a fit is green and only NO_FIT is red, so no amount of missing data
+ * can ever render as either a promise or a refusal.
+ *
+ * MANUFACTURER_FIT is green, and that is deliberate: it IS a fit, on the manufacturer's
+ * own application data, and it is offerable. What separates it from VERIFIED_FIT is the
+ * sentence, not the colour — it says whose word it is. Painting it amber would tell a
+ * shopper we are unsure when we are not; painting it identically to VERIFIED_FIT would
+ * claim a check nobody has done.
  *
  * The fitment tokens have no `-border` variant, unlike `status-*`, so borders here are
  * `border-current` at low opacity rather than a borrowed token from another family.
@@ -19,13 +25,15 @@ export type VerdictTone = "fits" | "no-fit" | "unconfirmed" | "universal";
 export function toneForVerdict(verdict: FitmentVerdict): VerdictTone {
 	switch (verdict) {
 		case "VERIFIED_FIT":
+		case "MANUFACTURER_FIT":
 			return "fits";
 		case "NO_FIT":
 			return "no-fit";
 		case "UNIVERSAL":
 			return "universal";
 		default:
-			// UNKNOWN, AMBIGUOUS, STALE, PROVIDER_UNAVAILABLE, NO_VEHICLE_SELECTED.
+			// UNKNOWN, AMBIGUOUS, STALE, PROVIDER_UNAVAILABLE, NEEDS_DETAIL,
+			// NO_VEHICLE_SELECTED.
 			return "unconfirmed";
 	}
 }
@@ -40,6 +48,8 @@ export const TONE_CLASSES: Record<VerdictTone, string> = {
 /** i18n key for the short badge label. */
 export const VERDICT_LABEL_KEY: Record<FitmentVerdict, string> = {
 	VERIFIED_FIT: "verdictVerified",
+	MANUFACTURER_FIT: "verdictManufacturer",
+	NEEDS_DETAIL: "verdictNeedsDetail",
 	NO_FIT: "verdictNoFit",
 	UNKNOWN: "verdictUnknown",
 	AMBIGUOUS: "verdictAmbiguous",
@@ -52,6 +62,8 @@ export const VERDICT_LABEL_KEY: Record<FitmentVerdict, string> = {
 /** i18n key for the sentence under the badge. */
 export const VERDICT_DETAIL_KEY: Record<FitmentVerdict, string> = {
 	VERIFIED_FIT: "verdictVerifiedDetail",
+	MANUFACTURER_FIT: "verdictManufacturerDetail",
+	NEEDS_DETAIL: "verdictNeedsDetailDetail",
 	NO_FIT: "verdictNoFitDetail",
 	UNKNOWN: "verdictUnknownDetail",
 	AMBIGUOUS: "verdictAmbiguousDetail",

@@ -31,6 +31,7 @@ vi.mock("./offers", async (importOriginal) => ({
 }));
 vi.mock("@/ui/components/plp/actions", () => ({ addVariantToCart }));
 
+import { windowOf } from "./fixtures/build";
 import { addConfiguredSetToCart } from "./cart-actions";
 
 const SET: FitmentProductRef = {
@@ -38,6 +39,10 @@ const SET: FitmentProductRef = {
 	saleorProductId: "test-product-set-a",
 	saleorVariantId: "test-variant-set-a",
 	productKind: "roof-rack-set",
+	evidence: { kind: "manufacturer-application", supplier: "test" },
+	qaStatus: "accepted",
+	verification: "cfm-verified",
+	eligibility: { sellable: true, reasons: [] },
 };
 
 const PROVISIONAL_SET: FitmentProductRef = {
@@ -45,6 +50,10 @@ const PROVISIONAL_SET: FitmentProductRef = {
 	saleorProductId: "test-product-set-b",
 	saleorVariantId: "test-variant-set-b",
 	productKind: "roof-rack-set",
+	evidence: { kind: "manufacturer-application", supplier: "test" },
+	qaStatus: "unreviewed",
+	verification: "not-independently-verified",
+	eligibility: { sellable: false, reasons: ["qa_unreviewed"] },
 };
 
 /** Verified for the vehicle, but not a roof-rack set. The offer list would never show it. */
@@ -53,6 +62,10 @@ const VERIFIED_BOX: FitmentProductRef = {
 	saleorProductId: "test-product-box-c",
 	saleorVariantId: "test-variant-box-c",
 	productKind: "roof-box",
+	evidence: { kind: "manufacturer-application", supplier: "test" },
+	qaStatus: "accepted",
+	verification: "cfm-verified",
+	eligibility: { sellable: true, reasons: [] },
 };
 
 const VEHICLE: VehicleSelection = { makeId: "make-1", modelId: "model-1", generationId: "gen-1", year: 2020 };
@@ -83,21 +96,29 @@ const DATASET: FitmentDataset = {
 		{
 			applicationId: "app-verified",
 			generationId: "gen-1",
-			yearFrom: 2015,
-			yearTo: null,
+			window: {
+				from: { year: 2015 },
+				to: null,
+				startPrecision: "year",
+				endPrecision: "open",
+				reconciledToGeneration: false,
+			},
 			qualifiers: {},
 			conditions: [],
-			verificationStatus: "verified",
 			products: [SET, VERIFIED_BOX],
 		},
 		{
 			applicationId: "app-provisional",
 			generationId: "gen-1",
-			yearFrom: 2015,
-			yearTo: null,
+			window: {
+				from: { year: 2015 },
+				to: null,
+				startPrecision: "year",
+				endPrecision: "open",
+				reconciledToGeneration: false,
+			},
 			qualifiers: {},
 			conditions: [],
-			verificationStatus: "provisional",
 			products: [PROVISIONAL_SET],
 		},
 	],
@@ -188,7 +209,7 @@ describe("nothing reaches the cart unless every gate passes", () => {
 		expect(addVariantToCart).not.toHaveBeenCalled();
 	});
 
-	it("refuses a set whose only row is provisional", async () => {
+	it("refuses a set the source has not accepted", async () => {
 		await expect(addConfiguredSetToCart(input(PROVISIONAL_SET))).resolves.toEqual({
 			ok: false,
 			reason: "not-verified",
@@ -312,11 +333,15 @@ describe("every verdict that is not a verified fit", () => {
 					{
 						applicationId: "app-negative",
 						generationId: "gen-1",
-						yearFrom: 2015,
-						yearTo: null,
+						window: {
+							from: { year: 2015 },
+							to: null,
+							startPrecision: "year",
+							endPrecision: "open",
+							reconciledToGeneration: false,
+						},
 						qualifiers: {},
 						conditions: [],
-						verificationStatus: "verified" as const,
 						negative: true,
 						products: [SET],
 					},
@@ -341,11 +366,15 @@ describe("every verdict that is not a verified fit", () => {
 					{
 						applicationId: "app-negative-only",
 						generationId: "gen-1",
-						yearFrom: 2015,
-						yearTo: null,
+						window: {
+							from: { year: 2015 },
+							to: null,
+							startPrecision: "year",
+							endPrecision: "open",
+							reconciledToGeneration: false,
+						},
 						qualifiers: {},
 						conditions: [],
-						verificationStatus: "verified" as const,
 						negative: true,
 						products: [SET],
 					},
@@ -366,7 +395,7 @@ describe("every verdict that is not a verified fit", () => {
 		loadFitmentDataset.mockResolvedValue({
 			dataset: {
 				...DATASET,
-				applications: DATASET.applications.map((a) => ({ ...a, yearFrom: 2030, yearTo: null })),
+				applications: DATASET.applications.map((a) => ({ ...a, window: windowOf([2030], null) })),
 			},
 			status: {},
 		});

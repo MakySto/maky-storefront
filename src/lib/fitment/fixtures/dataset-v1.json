@@ -1,5 +1,5 @@
 {
-	"schemaVersion": "2.0.0",
+	"schemaVersion": "3.0.0",
 	"datasetVersion": "demo-2026-09-05-a",
 	"datasetHash": "demo-no-hash-this-is-not-a-cfm-export",
 	"generatedAt": "2026-09-05T00:00:00.000Z",
@@ -196,8 +196,6 @@
 		{
 			"applicationId": "app-octavia4-estate-flush-aero",
 			"generationId": "skoda-octavia-4",
-			"yearFrom": 2020,
-			"yearTo": null,
 			"qualifiers": {
 				"roofTypes": ["flush-rails"],
 				"bodyTypes": ["estate"]
@@ -213,7 +211,6 @@
 					}
 				}
 			],
-			"verificationStatus": "verified",
 			"products": [
 				{
 					"externalReference": "demo:product:aero-flush",
@@ -228,15 +225,32 @@
 						"barMaterial": "aluminium",
 						"maxLoadKg": 75,
 						"lockable": true
+					},
+					"evidence": {
+						"kind": "manual-verification",
+						"supplier": "demo"
+					},
+					"qaStatus": "accepted",
+					"verification": "cfm-verified",
+					"eligibility": {
+						"sellable": true,
+						"reasons": []
 					}
 				}
-			]
+			],
+			"window": {
+				"from": {
+					"year": 2020
+				},
+				"to": null,
+				"startPrecision": "year",
+				"endPrecision": "open",
+				"reconciledToGeneration": false
+			}
 		},
 		{
 			"applicationId": "app-octavia4-estate-flush-steel",
 			"generationId": "skoda-octavia-4",
-			"yearFrom": 2020,
-			"yearTo": null,
 			"qualifiers": {
 				"roofTypes": ["flush-rails"],
 				"bodyTypes": ["estate"]
@@ -250,7 +264,6 @@
 					}
 				}
 			],
-			"verificationStatus": "verified",
 			"products": [
 				{
 					"externalReference": "demo:product:square-flush",
@@ -265,21 +278,37 @@
 						"barMaterial": "steel",
 						"maxLoadKg": 60,
 						"lockable": false
+					},
+					"evidence": {
+						"kind": "manual-verification",
+						"supplier": "demo"
+					},
+					"qaStatus": "accepted",
+					"verification": "cfm-verified",
+					"eligibility": {
+						"sellable": true,
+						"reasons": []
 					}
 				}
-			]
+			],
+			"window": {
+				"from": {
+					"year": 2020
+				},
+				"to": null,
+				"startPrecision": "year",
+				"endPrecision": "open",
+				"reconciledToGeneration": false
+			}
 		},
 		{
 			"applicationId": "app-octavia4-estate-flush-yearhold",
 			"generationId": "skoda-octavia-4",
-			"yearFrom": 2020,
-			"yearTo": null,
 			"qualifiers": {
 				"roofTypes": ["flush-rails"],
 				"bodyTypes": ["estate"]
 			},
 			"conditions": [],
-			"verificationStatus": "year-hold",
 			"products": [
 				{
 					"externalReference": "demo:product:fixpoint",
@@ -293,21 +322,37 @@
 						"barShape": "aero",
 						"barMaterial": "aluminium",
 						"lockable": true
+					},
+					"evidence": {
+						"kind": "derived",
+						"supplier": "demo"
+					},
+					"qaStatus": "hold",
+					"verification": "not-independently-verified",
+					"eligibility": {
+						"sellable": false,
+						"reasons": ["qa_hold"]
 					}
 				}
-			]
+			],
+			"window": {
+				"from": {
+					"year": 2020
+				},
+				"to": null,
+				"startPrecision": "year",
+				"endPrecision": "open",
+				"reconciledToGeneration": false
+			}
 		},
 		{
 			"applicationId": "app-octavia4-estate-flush-negative",
 			"generationId": "skoda-octavia-4",
-			"yearFrom": 2020,
-			"yearTo": null,
 			"qualifiers": {
 				"roofTypes": ["flush-rails"],
 				"bodyTypes": ["estate"]
 			},
 			"conditions": [],
-			"verificationStatus": "verified",
 			"negative": true,
 			"products": [
 				{
@@ -322,15 +367,32 @@
 						"barShape": "square",
 						"barMaterial": "steel",
 						"maxLoadKg": 75
+					},
+					"evidence": {
+						"kind": "manual-verification",
+						"supplier": "demo"
+					},
+					"qaStatus": "accepted",
+					"verification": "cfm-verified",
+					"eligibility": {
+						"sellable": true,
+						"reasons": []
 					}
 				}
-			]
+			],
+			"window": {
+				"from": {
+					"year": 2020
+				},
+				"to": null,
+				"startPrecision": "year",
+				"endPrecision": "open",
+				"reconciledToGeneration": false
+			}
 		},
 		{
 			"applicationId": "app-octavia4-estate-flush-outofstock",
 			"generationId": "skoda-octavia-4",
-			"yearFrom": 2020,
-			"yearTo": null,
 			"qualifiers": {
 				"roofTypes": ["flush-rails"],
 				"bodyTypes": ["estate"]
@@ -340,7 +402,6 @@
 					"code": "unknown-code-with-no-translation-anywhere"
 				}
 			],
-			"verificationStatus": "verified",
 			"products": [
 				{
 					"externalReference": "demo:product:outofstock",
@@ -354,21 +415,37 @@
 						"barShape": "square",
 						"barMaterial": "steel",
 						"maxLoadKg": 60
+					},
+					"evidence": {
+						"kind": "manual-verification",
+						"supplier": "demo"
+					},
+					"qaStatus": "accepted",
+					"verification": "cfm-verified",
+					"eligibility": {
+						"sellable": true,
+						"reasons": []
 					}
 				}
-			]
+			],
+			"window": {
+				"from": {
+					"year": 2020
+				},
+				"to": null,
+				"startPrecision": "year",
+				"endPrecision": "open",
+				"reconciledToGeneration": false
+			}
 		},
 		{
 			"applicationId": "app-octavia4-estate-flush-box",
 			"generationId": "skoda-octavia-4",
-			"yearFrom": 2020,
-			"yearTo": null,
 			"qualifiers": {
 				"roofTypes": ["flush-rails"],
 				"bodyTypes": ["estate"]
 			},
 			"conditions": [],
-			"verificationStatus": "verified",
 			"products": [
 				{
 					"externalReference": "demo:product:box",
@@ -377,15 +454,32 @@
 					"productKind": "roof-box",
 					"facets": {
 						"volumeLitres": 420
+					},
+					"evidence": {
+						"kind": "manual-verification",
+						"supplier": "demo"
+					},
+					"qaStatus": "accepted",
+					"verification": "cfm-verified",
+					"eligibility": {
+						"sellable": true,
+						"reasons": []
 					}
 				}
-			]
+			],
+			"window": {
+				"from": {
+					"year": 2020
+				},
+				"to": null,
+				"startPrecision": "year",
+				"endPrecision": "open",
+				"reconciledToGeneration": false
+			}
 		},
 		{
 			"applicationId": "app-kodiaq1-raised-provisional",
 			"generationId": "skoda-kodiaq-1",
-			"yearFrom": 2016,
-			"yearTo": 2024,
 			"qualifiers": {
 				"roofTypes": ["raised-rails"]
 			},
@@ -397,7 +491,6 @@
 					}
 				}
 			],
-			"verificationStatus": "provisional",
 			"products": [
 				{
 					"externalReference": "demo:product:raised",
@@ -411,20 +504,38 @@
 						"barShape": "square",
 						"barMaterial": "steel",
 						"maxLoadKg": 75
+					},
+					"evidence": {
+						"kind": "derived",
+						"supplier": "demo"
+					},
+					"qaStatus": "unreviewed",
+					"verification": "not-independently-verified",
+					"eligibility": {
+						"sellable": false,
+						"reasons": ["qa_unreviewed"]
 					}
 				}
-			]
+			],
+			"window": {
+				"from": {
+					"year": 2016
+				},
+				"to": {
+					"year": 2024
+				},
+				"startPrecision": "year",
+				"endPrecision": "year",
+				"reconciledToGeneration": false
+			}
 		},
 		{
 			"applicationId": "app-golf8-fixpoint-yearhold",
 			"generationId": "vw-golf-8",
-			"yearFrom": 2019,
-			"yearTo": null,
 			"qualifiers": {
 				"roofTypes": ["fixpoint"]
 			},
 			"conditions": [],
-			"verificationStatus": "year-hold",
 			"products": [
 				{
 					"externalReference": "demo:product:fixpoint",
@@ -438,20 +549,36 @@
 						"barShape": "aero",
 						"barMaterial": "aluminium",
 						"lockable": true
+					},
+					"evidence": {
+						"kind": "derived",
+						"supplier": "demo"
+					},
+					"qaStatus": "hold",
+					"verification": "not-independently-verified",
+					"eligibility": {
+						"sellable": false,
+						"reasons": ["qa_hold"]
 					}
 				}
-			]
+			],
+			"window": {
+				"from": {
+					"year": 2019
+				},
+				"to": null,
+				"startPrecision": "year",
+				"endPrecision": "open",
+				"reconciledToGeneration": false
+			}
 		},
 		{
 			"applicationId": "app-tiguan2-conflict",
 			"generationId": "vw-tiguan-2",
-			"yearFrom": 2016,
-			"yearTo": 2024,
 			"qualifiers": {
 				"roofTypes": ["raised-rails"]
 			},
 			"conditions": [],
-			"verificationStatus": "conflict",
 			"products": [
 				{
 					"externalReference": "demo:product:raised",
@@ -460,15 +587,34 @@
 					"productKind": "roof-rack-set",
 					"completeSet": {
 						"includes": ["bars", "feet"]
+					},
+					"evidence": {
+						"kind": "derived",
+						"supplier": "demo"
+					},
+					"qaStatus": "conflict",
+					"verification": "not-independently-verified",
+					"eligibility": {
+						"sellable": false,
+						"reasons": ["qa_conflict"]
 					}
 				}
-			]
+			],
+			"window": {
+				"from": {
+					"year": 2016
+				},
+				"to": {
+					"year": 2024
+				},
+				"startPrecision": "year",
+				"endPrecision": "year",
+				"reconciledToGeneration": false
+			}
 		},
 		{
 			"applicationId": "app-bmw-g20-not-published",
 			"generationId": "bmw-3-g20",
-			"yearFrom": 2018,
-			"yearTo": null,
 			"qualifiers": {
 				"roofTypes": ["flush-rails"],
 				"bodyTypes": ["estate"]
@@ -481,7 +627,6 @@
 					}
 				}
 			],
-			"verificationStatus": "verified",
 			"products": [
 				{
 					"externalReference": "demo:product:not-in-catalogue",
@@ -495,9 +640,28 @@
 						"barShape": "aero",
 						"barMaterial": "aluminium",
 						"maxLoadKg": 75
+					},
+					"evidence": {
+						"kind": "manual-verification",
+						"supplier": "demo"
+					},
+					"qaStatus": "accepted",
+					"verification": "cfm-verified",
+					"eligibility": {
+						"sellable": true,
+						"reasons": []
 					}
 				}
-			]
+			],
+			"window": {
+				"from": {
+					"year": 2018
+				},
+				"to": null,
+				"startPrecision": "year",
+				"endPrecision": "open",
+				"reconciledToGeneration": false
+			}
 		}
 	]
 }

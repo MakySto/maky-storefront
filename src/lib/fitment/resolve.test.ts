@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { type FitmentDataset, type VehicleSelection } from "./contract";
+import { windowOf, withEvidence } from "./fixtures/build";
 import {
 	candidateProductRefs,
 	collectApplicationsForProduct,
@@ -67,17 +68,25 @@ function dataset(overrides: Partial<FitmentDataset> = {}): FitmentDataset {
 			{
 				applicationId: "a1",
 				generationId: "octavia-4",
-				yearFrom: 2020,
-				yearTo: null,
+				window: {
+					from: { year: 2020 },
+					to: null,
+					startPrecision: "year",
+					endPrecision: "open",
+					reconciledToGeneration: false,
+				},
 				qualifiers: { roofTypes: ["flush-rails"] },
 				conditions: [{ code: "torque" }],
-				verificationStatus: "verified",
 				products: [
 					{
 						externalReference: "cfm:product:A",
 						saleorProductId: "P1",
 						saleorVariantId: "V1",
 						productKind: "roof-rack-set",
+						evidence: { kind: "manufacturer-application", supplier: "test" },
+						qaStatus: "accepted",
+						verification: "cfm-verified",
+						eligibility: { sellable: true, reasons: [] },
 					},
 				],
 			},
@@ -95,8 +104,18 @@ const octaviaFlush: VehicleSelection = {
 };
 
 describe("saying yes", () => {
-	it("confirms a verified row that covers the whole selection", () => {
+	it("makes no fit claim when no product is named — evidence lives on the product", () => {
+		// Schema 3.0.0 moved evidence onto the product, so there is nobody to vouch for a
+		// vehicle-level "something fits". Callers name a product; this path only exists to
+		// report the conditions of the lookup itself.
 		const result = resolveFitment(dataset(), octaviaFlush, { now: NOW });
+		expect(result.verdict).toBe("UNKNOWN");
+		expect(result.reason).toBe("no-product-named");
+		expect(result.product).toBeNull();
+	});
+
+	it("confirms a verified row that covers the whole selection", () => {
+		const result = resolveFitment(dataset(), octaviaFlush, { saleorProductId: "P1", now: NOW });
 		expect(result.verdict).toBe("VERIFIED_FIT");
 		expect(result.matched).toHaveLength(1);
 		expect(result.conditions.map((c) => c.code)).toEqual(["torque"]);
@@ -111,18 +130,46 @@ describe("saying yes", () => {
 		});
 	});
 
-	it("refuses to promote a provisional row to a fit", () => {
+	it("refuses to promote an unreviewed row to a fit", () => {
 		const d = dataset();
-		d.applications[0]!.verificationStatus = "provisional";
-		expect(resolveFitment(d, octaviaFlush, { now: NOW }).verdict).toBe("UNKNOWN");
+		Object.assign(
+			d.applications[0]!.products[0]!,
+			withEvidence("derived", "unreviewed", "not-independently-verified"),
+		);
+		const r = resolveFitment(d, octaviaFlush, { saleorProductId: "P1", now: NOW });
+		expect(r.verdict).toBe("UNKNOWN");
+		expect(r.reason).toBe("qa-unreviewed");
 	});
 
-	it("refuses to promote a year-hold row, no matter how well it matches", () => {
+	it("refuses to promote a held row, no matter how well it matches", () => {
 		const d = dataset();
-		d.applications[0]!.verificationStatus = "year-hold";
-		const result = resolveFitment(d, octaviaFlush, { now: NOW });
+		Object.assign(
+			d.applications[0]!.products[0]!,
+			withEvidence("derived", "hold", "not-independently-verified"),
+		);
+		const result = resolveFitment(d, octaviaFlush, { saleorProductId: "P1", now: NOW });
 		expect(result.verdict).toBe("UNKNOWN");
-		expect(result.reason).toBe("unverified-rows:year-hold");
+		expect(result.reason).toBe("qa-hold");
+	});
+
+	it("the manufacturer's own application list is a fit, and says whose word it is", () => {
+		const d = dataset();
+		Object.assign(
+			d.applications[0]!.products[0]!,
+			withEvidence("manufacturer-application", "accepted", "not-independently-verified"),
+		);
+		const r = resolveFitment(d, octaviaFlush, { saleorProductId: "P1", now: NOW });
+		expect(r.verdict).toBe("MANUFACTURER_FIT");
+		expect(r.product?.verification).toBe("not-independently-verified");
+	});
+
+	it("a DERIVED row does not get to borrow the manufacturer's word", () => {
+		const d = dataset();
+		Object.assign(
+			d.applications[0]!.products[0]!,
+			withEvidence("derived", "accepted", "not-independently-verified"),
+		);
+		expect(resolveFitment(d, octaviaFlush, { saleorProductId: "P1", now: NOW }).verdict).toBe("UNKNOWN");
 	});
 });
 
@@ -182,8 +229,11 @@ describe("ambiguity", () => {
 
 	it("reports a conflict row as ambiguous rather than picking a side", () => {
 		const d = dataset();
-		d.applications[0]!.verificationStatus = "conflict";
-		expect(resolveFitment(d, octaviaFlush, { now: NOW }).verdict).toBe("AMBIGUOUS");
+		Object.assign(
+			d.applications[0]!.products[0]!,
+			withEvidence("derived", "conflict", "not-independently-verified"),
+		);
+		expect(resolveFitment(d, octaviaFlush, { saleorProductId: "P1", now: NOW }).verdict).toBe("AMBIGUOUS");
 	});
 
 	it("an unanswered qualifier outranks an absent row, even under complete coverage", () => {
@@ -196,25 +246,27 @@ describe("ambiguity", () => {
 describe("year windows", () => {
 	it("excludes a year before the application window", () => {
 		const d = dataset();
-		d.applications[0]!.yearFrom = 2023;
+		d.applications[0]!.window = windowOf([2023], null);
 		expect(resolveFitment(d, octaviaFlush, { now: NOW }).verdict).toBe("NO_FIT");
 	});
 
 	it("excludes a year after a closed application window", () => {
 		const d = dataset();
-		d.applications[0]!.yearTo = 2021;
+		d.applications[0]!.window = windowOf([2020], [2021]);
 		expect(resolveFitment(d, octaviaFlush, { now: NOW }).verdict).toBe("NO_FIT");
 	});
 
 	it("treats a null yearTo as open-ended", () => {
 		const d = dataset();
-		expect(resolveFitment(d, { ...octaviaFlush, year: 2099 }, { now: NOW }).verdict).toBe("VERIFIED_FIT");
+		expect(
+			resolveFitment(d, { ...octaviaFlush, year: 2099 }, { saleorProductId: "P1", now: NOW }).verdict,
+		).toBe("VERIFIED_FIT");
 	});
 
 	it("does not let generation production years widen an application window", () => {
 		// The generation runs 2020-, the application only 2023-. 2021 must not fit.
 		const d = dataset();
-		d.applications[0]!.yearFrom = 2023;
+		d.applications[0]!.window = windowOf([2023], null);
 		expect(resolveFitment(d, { ...octaviaFlush, year: 2021 }, { now: NOW }).verdict).not.toBe("VERIFIED_FIT");
 	});
 });
@@ -304,11 +356,15 @@ describe("per-identity resolution — the bug that hid working sets", () => {
 		d.applications.push({
 			applicationId: "a2",
 			generationId: "octavia-4",
-			yearFrom: 2020,
-			yearTo: null,
+			window: {
+				from: { year: 2020 },
+				to: null,
+				startPrecision: "year",
+				endPrecision: "open",
+				reconciledToGeneration: false,
+			},
 			qualifiers: { roofTypes: ["flush-rails"] },
 			conditions: [],
-			verificationStatus: "verified",
 			negative: true,
 			products: [
 				{
@@ -316,6 +372,10 @@ describe("per-identity resolution — the bug that hid working sets", () => {
 					saleorProductId: "P2",
 					saleorVariantId: "V2",
 					productKind: "roof-rack-set",
+					evidence: { kind: "manufacturer-application", supplier: "test" },
+					qaStatus: "accepted",
+					verification: "cfm-verified",
+					eligibility: { sellable: true, reasons: [] },
 				},
 			],
 		});
@@ -334,22 +394,32 @@ describe("per-identity resolution — the bug that hid working sets", () => {
 		expect(outcome.verified).toHaveLength(1);
 	});
 
-	it("one year-hold set does not block another verified set", () => {
+	it("one held set does not block another verified set", () => {
 		const d = dataset();
 		d.applications.push({
 			applicationId: "a3",
 			generationId: "octavia-4",
-			yearFrom: 2020,
-			yearTo: null,
+			window: {
+				from: { year: 2020 },
+				to: null,
+				startPrecision: "year",
+				endPrecision: "open",
+				reconciledToGeneration: false,
+			},
 			qualifiers: { roofTypes: ["flush-rails"] },
 			conditions: [],
-			verificationStatus: "year-hold",
 			products: [
 				{
 					externalReference: "cfm:product:C",
 					saleorProductId: "P3",
 					saleorVariantId: "V3",
 					productKind: "roof-rack-set",
+					// Held for THIS product only. P1 in the application above is untouched,
+					// and the whole point is that it stays offerable.
+					evidence: { kind: "manufacturer-application", supplier: "test" },
+					qaStatus: "hold",
+					verification: "not-independently-verified",
+					eligibility: { sellable: false, reasons: ["known_mapping_suspect"] },
 				},
 			],
 		});
@@ -358,9 +428,12 @@ describe("per-identity resolution — the bug that hid working sets", () => {
 		expect(outcome.unconfirmed.map((o) => o.ref.saleorProductId)).toEqual(["P3"]);
 	});
 
-	it("never offers an unverified set", () => {
+	it("never offers a set the source has not accepted", () => {
 		const d = dataset();
-		d.applications[0]!.verificationStatus = "provisional";
+		Object.assign(
+			d.applications[0]!.products[0]!,
+			withEvidence("derived", "unreviewed", "not-independently-verified"),
+		);
 		const outcome = resolveVehicleOutcome(d, octaviaFlush, { now: NOW });
 		expect(outcome.verified).toEqual([]);
 		expect(outcome.unconfirmed).toHaveLength(1);
@@ -375,6 +448,10 @@ describe("kind filtering — a roof box is not a roof rack", () => {
 			saleorProductId: "P-BOX",
 			saleorVariantId: "V-BOX",
 			productKind: "roof-box",
+			evidence: { kind: "manufacturer-application", supplier: "test" },
+			qaStatus: "accepted",
+			verification: "cfm-verified",
+			eligibility: { sellable: true, reasons: [] },
 		});
 		return d;
 	}

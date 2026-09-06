@@ -13,7 +13,7 @@
 
 import { loadFitmentDataset } from "./provider";
 import { collectApplicationsForProduct } from "./resolve";
-import { type FitmentApplication } from "./contract";
+import { type FitmentApplication, type FitmentProductRef } from "./contract";
 import {
 	APPLICATIONS_PAGE_SIZE,
 	EMPTY_APPLICATION_PAGE,
@@ -24,19 +24,25 @@ import {
 function toRow(
 	application: FitmentApplication,
 	names: { make: string; model: string; generation: string },
+	/** This product's own row inside the application. Status is never the group's. */
+	ref: FitmentProductRef | undefined,
 ): ApplicationRow {
 	return {
 		applicationId: application.applicationId,
 		makeName: names.make,
 		modelName: names.model,
 		generationName: names.generation,
-		yearFrom: application.yearFrom,
-		yearTo: application.yearTo,
+		// Years only. This list answers "which cars is this for?", where a month would be
+		// noise; the month matters where it decides a purchase, and that is the resolver.
+		yearFrom: application.window.from.year,
+		yearTo: application.window.to?.year ?? null,
 		roofTypes: application.qualifiers.roofTypes ?? null,
 		bodyTypes: application.qualifiers.bodyTypes ?? null,
 		doors: application.qualifiers.doors ?? null,
 		conditionCodes: application.conditions.map((c) => c.code),
-		verified: application.verificationStatus === "verified",
+		// "The source accepted this row." Not "somebody checked the car" — nothing in the
+		// catalogue is `cfm-verified` yet, and the list must not imply otherwise.
+		accepted: ref?.qaStatus === "accepted",
 	};
 }
 
@@ -59,7 +65,13 @@ export async function listProductApplications(
 		// A row whose vehicle cannot be named is dropped rather than shown as blanks —
 		// an unlabelled row tells the shopper nothing and looks like a defect.
 		if (!generation || !model || !make) continue;
-		rows.push(toRow(application, { make: make.name, model: model.name, generation: generation.name }));
+		rows.push(
+			toRow(
+				application,
+				{ make: make.name, model: model.name, generation: generation.name },
+				application.products.find((p) => p.saleorProductId === saleorProductId),
+			),
+		);
 	}
 
 	const needle = options.query?.trim().toLowerCase();

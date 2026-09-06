@@ -28,7 +28,7 @@
 import { addVariantToCart } from "@/ui/components/plp/actions";
 import { getLocaleFromChannel } from "@/config/locale";
 import { readActiveSelection } from "@/lib/garage/state";
-import { CONFIGURATOR_PRODUCT_KIND } from "./contract";
+import { CONFIGURATOR_PRODUCT_KIND, isFitmentOfferable } from "./contract";
 import { loadFitmentDataset } from "./provider";
 import { isDemoDataset, verifyPurchasable } from "./offers";
 import { resolveFitment } from "./resolve";
@@ -63,9 +63,11 @@ export async function addConfiguredSetToCart(input: {
 	if (!selection) return { ok: false, reason: "vehicle-changed" };
 
 	// Fitment is re-established against the CURRENT dataset and the CURRENT vehicle,
-	// scoped to this exact product. Only a verified fit may be bought.
+	// scoped to this exact product. The same gate the configurator used to decide whether
+	// to show a button decides here whether the write happens — one function, so a
+	// disagreement between them is not expressible.
 	const fitment = resolveFitment(dataset, selection, { saleorProductId });
-	if (fitment.verdict !== "VERIFIED_FIT") {
+	if (!isFitmentOfferable({ verdict: fitment.verdict, eligibility: fitment.product?.eligibility })) {
 		return {
 			ok: false,
 			reason: fitment.verdict === "PROVIDER_UNAVAILABLE" ? "provider-unavailable" : "not-verified",
