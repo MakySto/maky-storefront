@@ -253,3 +253,136 @@ describe("nothing reaches the cart unless every gate passes", () => {
 		expect(addVariantToCart).not.toHaveBeenCalled();
 	});
 });
+
+/**
+ * The verdicts that are not VERIFIED_FIT.
+ *
+ * Only one of the eight lets a set into the cart, and the interesting property is that
+ * the other seven are refused for two DIFFERENT reasons: a provider that could not answer
+ * is `provider-unavailable` ("try again"), while a dataset that answered something short
+ * of a verified fit is `not-verified` ("we cannot confirm this one"). A shopper told to
+ * try again when the answer will never change is being sent in a circle; a shopper told
+ * "we cannot confirm this" during a five-second outage is being told something false.
+ *
+ * Each case below reaches its verdict through the real resolver, from a dataset shaped to
+ * produce it — not by stubbing a verdict, which would prove only that the mapping table
+ * is internally consistent with itself.
+ */
+describe("every verdict that is not a verified fit", () => {
+	it("STALE — an expired dataset may not authorise a purchase", async () => {
+		loadFitmentDataset.mockResolvedValue({
+			dataset: {
+				...DATASET,
+				// Generated long ago, and `staleAfterDays` has run out. The rows still
+				// say "verified"; the dataset is no longer entitled to say so.
+				generatedAt: "2020-01-01T00:00:00.000Z",
+				validity: { validUntil: null, staleAfterDays: 30 },
+			},
+			status: {},
+		});
+
+		await expect(addConfiguredSetToCart(input(SET))).resolves.toEqual({
+			ok: false,
+			reason: "not-verified",
+		});
+		expect(addVariantToCart).not.toHaveBeenCalled();
+	});
+
+	it("STALE by an explicit expiry date, not only by age", async () => {
+		loadFitmentDataset.mockResolvedValue({
+			dataset: {
+				...DATASET,
+				validity: { validUntil: "2020-01-01T00:00:00.000Z", staleAfterDays: 36_500 },
+			},
+			status: {},
+		});
+
+		await expect(addConfiguredSetToCart(input(SET))).resolves.toEqual({
+			ok: false,
+			reason: "not-verified",
+		});
+	});
+
+	it("AMBIGUOUS — a source that both affirms and denies has not been resolved upstream", async () => {
+		loadFitmentDataset.mockResolvedValue({
+			dataset: {
+				...DATASET,
+				applications: [
+					...DATASET.applications,
+					{
+						applicationId: "app-negative",
+						generationId: "gen-1",
+						yearFrom: 2015,
+						yearTo: null,
+						qualifiers: {},
+						conditions: [],
+						verificationStatus: "verified" as const,
+						negative: true,
+						products: [SET],
+					},
+				],
+			},
+			status: {},
+		});
+
+		// Picking the affirming half would be presenting a coin flip as a fact.
+		await expect(addConfiguredSetToCart(input(SET))).resolves.toEqual({
+			ok: false,
+			reason: "not-verified",
+		});
+		expect(addVariantToCart).not.toHaveBeenCalled();
+	});
+
+	it("NO_FIT — an explicit negative row stops the sale", async () => {
+		loadFitmentDataset.mockResolvedValue({
+			dataset: {
+				...DATASET,
+				applications: [
+					{
+						applicationId: "app-negative-only",
+						generationId: "gen-1",
+						yearFrom: 2015,
+						yearTo: null,
+						qualifiers: {},
+						conditions: [],
+						verificationStatus: "verified" as const,
+						negative: true,
+						products: [SET],
+					},
+				],
+			},
+			status: {},
+		});
+
+		await expect(addConfiguredSetToCart(input(SET))).resolves.toEqual({
+			ok: false,
+			reason: "not-verified",
+		});
+		expect(addVariantToCart).not.toHaveBeenCalled();
+	});
+
+	it("UNKNOWN from an absent row under partial coverage is a refusal, never a NO_FIT claim", async () => {
+		// The dataset simply says nothing about this vehicle's year.
+		loadFitmentDataset.mockResolvedValue({
+			dataset: {
+				...DATASET,
+				applications: DATASET.applications.map((a) => ({ ...a, yearFrom: 2030, yearTo: null })),
+			},
+			status: {},
+		});
+
+		await expect(addConfiguredSetToCart(input(SET))).resolves.toEqual({
+			ok: false,
+			reason: "not-verified",
+		});
+	});
+
+	it("PROVIDER_UNAVAILABLE is 'try again', and is the ONLY verdict that is", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: null, status: {} });
+
+		await expect(addConfiguredSetToCart(input(SET))).resolves.toEqual({
+			ok: false,
+			reason: "provider-unavailable",
+		});
+	});
+});

@@ -29,6 +29,7 @@ import "server-only";
  */
 
 import { executePublicGraphQL } from "@/lib/graphql";
+import { resolveExactLocaleProduct } from "@/lib/saleor/exact-locale";
 import { FitmentProductsByIdsDocument } from "@/gql/graphql";
 import { resolveAvailability, AVAILABILITY_METADATA_KEY } from "@/ui/components/product/availability-badge";
 import { getLocaleConfigByLocale } from "@/config/locale";
@@ -73,6 +74,8 @@ export type OfferRejection =
 	| "variant-missing"
 	| "identity-mismatch"
 	| "wrong-kind"
+	/** Real, purchasable, and fits — but has no complete translation for this market. */
+	| "not-localized"
 	| "lookup-failed";
 
 export type FitmentOffers = {
@@ -94,6 +97,7 @@ const NO_REJECTIONS: Record<OfferRejection, number> = {
 	"variant-missing": 0,
 	"identity-mismatch": 0,
 	"wrong-kind": 0,
+	"not-localized": 0,
 	"lookup-failed": 0,
 };
 
@@ -296,17 +300,33 @@ export async function resolveFitmentOffers(
 					continue;
 				}
 
+				// The localization boundary, in the one place Lane A puts it: immediately
+				// after the fetch, never in the components. A does not prefer a
+				// translation, it REFUSES a product without a complete one — the `??`
+				// that used to stand here is precisely what that policy forbids, and it
+				// would have printed a Slovak product name on a German page. Slug is the
+				// single deliberate exception (a URL, not visible content).
+				const localized = resolveExactLocaleProduct(node, locale);
+				if (!localized) {
+					// Sold here, fits, and we simply cannot describe it in this language.
+					// A distinct bucket because it is neither "does not fit" nor "not
+					// published" — collapsing it into either would misreport a translation
+					// gap as a catalogue fact.
+					rejected["not-localized"] += 1;
+					continue;
+				}
+
 				const gross = variant.pricing?.price?.gross ?? null;
 				found.set(node.id, {
 					saleorProductId: node.id,
 					saleorVariantId: variant.id,
 					externalReference: ref.externalReference,
 					productKind: ref.productKind,
-					name: node.translation?.name ?? node.name,
-					slug: node.slug,
-					thumbnailUrl: node.thumbnail?.url ?? null,
-					thumbnailAlt: node.thumbnail?.alt ?? null,
-					categoryName: node.category?.translation?.name ?? node.category?.name ?? null,
+					name: localized.name,
+					slug: localized.slug,
+					thumbnailUrl: localized.thumbnail?.url ?? null,
+					thumbnailAlt: localized.thumbnail?.alt ?? null,
+					categoryName: localized.category?.name ?? null,
 					price: gross ? { amount: gross.amount, currency: gross.currency } : null,
 					availability: availabilityFrom(variant.metafield, node.metafield, variant.quantityAvailable),
 					completeSetIncludes: ref.completeSet?.includes ?? null,

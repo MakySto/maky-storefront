@@ -25,6 +25,16 @@
 # `translation` is applied to the RETURNED fields only; the lookup stays by id, so this
 # cannot repeat the `slugLanguageCode` failure where a translated-slug argument matches
 # nothing and returns null for the whole catalogue.
+#
+# The translation projection mirrors `ProductListItem` field for field — name, slug,
+# description, seoTitle, seoDescription, the category, and the variant's selection
+# attributes. That is not decoration: `resolveExactLocaleProduct` REFUSES a product whose
+# translation lacks `description` or `seoDescription`, and refuses again if any attribute
+# translation is incomplete. Selecting only `translation { name }`, as this query did,
+# would make the localization boundary reject every single foreign offer — a green build,
+# a green suite, and an empty configurator on every market except Slovak. Mirroring the
+# listing fragment also means the offer list and the listing make the SAME judgement about
+# the same product, instead of one offering what the other drops.
 query FitmentProductsByIds($ids: [ID!]!, $channel: String!, $first: Int!, $lang: LanguageCodeEnum!) {
 	products(first: $first, channel: $channel, filter: { ids: $ids }) {
 		totalCount
@@ -38,16 +48,39 @@ query FitmentProductsByIds($ids: [ID!]!, $channel: String!, $first: Int!, $lang:
 				metafield(key: "cfm_availability_mode")
 				translation(languageCode: $lang) {
 					name
+					slug
+					description
+					seoTitle
+					seoDescription
+				}
+				attributes {
+					attribute {
+						name
+						slug
+						externalReference
+						unit
+						translation(languageCode: $lang) {
+							name
+						}
+					}
+					values {
+						name
+						translation(languageCode: $lang) {
+							name
+						}
+					}
 				}
 				thumbnail(size: 512, format: WEBP) {
 					url
 					alt
 				}
 				category {
+					id
 					name
 					slug
 					translation(languageCode: $lang) {
 						name
+						slug
 					}
 				}
 				variants {
@@ -60,6 +93,22 @@ query FitmentProductsByIds($ids: [ID!]!, $channel: String!, $first: Int!, $lang:
 							gross {
 								amount
 								currency
+							}
+						}
+					}
+					selectionAttributes: attributes(variantSelection: VARIANT_SELECTION) {
+						attribute {
+							slug
+							name
+							translation(languageCode: $lang) {
+								name
+							}
+						}
+						values {
+							name
+							value
+							translation(languageCode: $lang) {
+								name
 							}
 						}
 					}
