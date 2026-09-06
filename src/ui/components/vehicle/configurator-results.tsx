@@ -20,7 +20,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Info, Loader2, ShoppingCart } from "lucide-react";
+import { HelpCircle, Info, Loader2, ShoppingCart } from "lucide-react";
 
 import { Button } from "@/ui/components/ui/button";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
@@ -90,17 +90,26 @@ export function ConfiguratorResults({
 			return next;
 		});
 		startTransition(async () => {
-			const result = await addConfiguredSetToCart({
-				channel,
-				saleorProductId: offer.saleorProductId,
-				saleorVariantId: offer.saleorVariantId,
-			});
-			setBusyId(null);
-			if (!result.ok) {
-				setErrors((current) => ({ ...current, [offer.saleorVariantId]: result.reason }));
-				return;
+			try {
+				const result = await addConfiguredSetToCart({
+					channel,
+					saleorProductId: offer.saleorProductId,
+					saleorVariantId: offer.saleorVariantId,
+				});
+				if (!result.ok) {
+					setErrors((current) => ({ ...current, [offer.saleorVariantId]: result.reason }));
+					return;
+				}
+				router.refresh();
+			} catch {
+				// The call itself failed — a dropped connection, a stale deployment. The
+				// request may or may not have reached the server, so this is the same
+				// "we do not know" as an unconfirmed add: say so here, rather than let it
+				// escape to the global error page, which invites a reload and a second click.
+				setErrors((current) => ({ ...current, [offer.saleorVariantId]: "lookup-failed" }));
+			} finally {
+				setBusyId(null);
 			}
-			router.refresh();
 		});
 	};
 
@@ -206,12 +215,23 @@ export function ConfiguratorResults({
 									<p className="text-status-info text-sm">{tc("onDemand")}</p>
 								)}
 
-								{failure && (
-									<p role="alert" className="text-fitment-no-fit text-sm">
-										{FAILURE_KEY[failure].startsWith("__common.")
-											? tc(FAILURE_KEY[failure].slice("__common.".length))
-											: t(FAILURE_KEY[failure])}
+								{failure === "lookup-failed" ? (
+									// Deliberately not an error, and not red: we do not know that it
+									// failed, and a refusal-looking message invites a second click on a
+									// mutation that is not idempotent. Same presentation as the listing's
+									// cart form for the same outcome.
+									<p role="status" className="text-text-secondary flex items-start gap-1.5 text-sm">
+										<HelpCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+										{t(FAILURE_KEY[failure])}
 									</p>
+								) : (
+									failure && (
+										<p role="alert" className="text-fitment-no-fit text-sm">
+											{FAILURE_KEY[failure].startsWith("__common.")
+												? tc(FAILURE_KEY[failure].slice("__common.".length))
+												: t(FAILURE_KEY[failure])}
+										</p>
+									)
 								)}
 
 								<div className="flex flex-wrap gap-2">

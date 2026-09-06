@@ -32,8 +32,8 @@ Rebase bol presne taký, ako bol zmeraný: jediný konflikt `.env.example` (nech
 `src/ui/components/plp/actions.ts` (A). Zmazané: `countLine()`, `addListingItemToCart`,
 FormData hop, import `@/lib/checkout`. Zachované v tomto poradí: validácia vstupu →
 provider → **serverový demo interlock** → re-read aktívneho vozidla → re-resolve fitmentu
-pre ten produkt → presný variant → `verifyPurchasable` s `externalReference` → out-of-stock
-→ hand-off s `quantity: 1`.
+pre ten produkt → presný variant → `productKind` (od `bdb792b`) → `verifyPurchasable`
+s `externalReference` → out-of-stock → hand-off s `quantity: 1`.
 
 **`src/lib/fitment/cart-result.ts`** (čistý modul, bez `"use server"`): typy
 `AddSetFailure` / `AddSetResult` a mapper `toAddSetResult`:
@@ -79,7 +79,14 @@ Testy: `cart-result.test.ts` (8, čistý mapper, vyčerpávajúco cez celý unio
 **iba syntetické identity**): hand-off je volaný raz s `{channel, variantId, quantity: 1}`,
 `unconfirmed → lookup-failed` aj na zloženej úrovni, každá brána pred košíkom zastaví
 volanie. Pôvodný `cart-actions.test.ts` (demo interlock nad reálnou fixture, bez mockov)
-je nezmenený.
+sa zmenil iba v `d0896be`: „reálne vyzerajúce" ID je teraz nemožné `Product:99999999`.
+
+Štvrtý commit (revízia, UI): `lookup-failed` (= `unconfirmed`) sa v karte renderuje ako
+neutrálny `role="status"` s ikonou otáznika, nie ako červený `role="alert"` — rovnako
+ako A-ovský `CartForm` pre ten istý stav; červená „chyba" pozývala na druhý klik. A
+klientský `startTransition` má `try/catch`: výnimka z volania server action (sieť, starý
+deploy) je tiež „nevieme", zobrazí sa ako `lookup-failed` namiesto globálnej chybovej
+stránky.
 
 ## 3. Reálna cesta — prvýkrát spustená
 
