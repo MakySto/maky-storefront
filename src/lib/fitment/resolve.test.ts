@@ -4,6 +4,7 @@ import { type FitmentDataset, type VehicleSelection } from "./contract";
 import {
 	candidateProductRefs,
 	collectApplicationsForProduct,
+	datasetSpeaksForProduct,
 	isDatasetStale,
 	resolveCandidates,
 	resolveFitment,
@@ -250,6 +251,45 @@ describe("product scoping", () => {
 		const d = dataset();
 		d.applications[0]!.negative = true;
 		expect(collectApplicationsForProduct(d, "P1")).toHaveLength(0);
+	});
+});
+
+describe("scope — the gate that stops NO_FIT escaping the programme", () => {
+	/**
+	 * The pairing is the point. Inside a make the dataset claims completely,
+	 * `resolveFitment` is ENTITLED to turn an absent row into NO_FIT — see the test
+	 * above, where "P-other" is correctly ruled out. That entitlement is safe for a roof
+	 * rack in the programme and a flat lie about a snow chain, a roof box or a pair of
+	 * work boots, none of which this dataset has ever heard of.
+	 *
+	 * So the surfaces ask this first. If it answers false they show nothing at all.
+	 */
+	it("recognises a product the dataset has rows for", () => {
+		expect(datasetSpeaksForProduct(dataset(), "P1")).toBe(true);
+	});
+
+	it("does not speak for a product outside the programme, even under complete coverage", () => {
+		const d = dataset();
+		// The verdict machinery WOULD answer, and it would answer "does not fit".
+		expect(resolveFitment(d, octaviaFlush, { saleorProductId: "P-snow-chain", now: NOW }).verdict).toBe(
+			"NO_FIT",
+		);
+		// Which is exactly why nothing is allowed to ask it about that product.
+		expect(datasetSpeaksForProduct(d, "P-snow-chain")).toBe(false);
+	});
+
+	it("still speaks for a product it only rules out", () => {
+		// A negative row is knowledge. Hiding the box would drop the one warning that
+		// matters most — unlike collectApplicationsForProduct, which lists what a
+		// product FITS and rightly excludes negatives.
+		const d = dataset();
+		d.applications[0]!.negative = true;
+		expect(datasetSpeaksForProduct(d, "P1")).toBe(true);
+		expect(collectApplicationsForProduct(d, "P1")).toHaveLength(0);
+	});
+
+	it("speaks for nothing when the provider is unavailable", () => {
+		expect(datasetSpeaksForProduct(null, "P1")).toBe(false);
 	});
 });
 

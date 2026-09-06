@@ -116,6 +116,7 @@
 	"fitment": {
 		"selectVehicle": "Válassza ki járművét",
 		"changeVehicle": "Jármű módosítása",
+		"showCompatible": "Kompatibilis termékek megtekintése",
 		"myGarage": "Garázsam",
 		"addVehicle": "Jármű hozzáadása",
 		"removeVehicle": "Jármű eltávolítása",

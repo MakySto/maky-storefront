@@ -3,6 +3,7 @@ import { formatMoney, formatMoneyRange } from "@/lib/utils";
 import { getDiscountInfo } from "@/lib/pricing";
 import { type ProductDetailsQuery } from "@/gql/graphql";
 
+import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { AddToCart } from "./add-to-cart";
 import { VariantSelectionSection } from "./variant-selection";
@@ -14,6 +15,7 @@ import { addVariantToCart } from "@/ui/components/plp/actions";
 import type { AddToCartResult } from "@/ui/components/plp/add-to-cart-result";
 import { CartForm } from "@/ui/components/plp/cart-form";
 import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
+import { PdpCompatibility } from "@/ui/components/fitment/pdp-compatibility";
 
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
 
@@ -166,8 +168,18 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 				/>
 			</div>
 
-			{/* Rest of variant section - order:4 so it appears BELOW the meta row */}
-			<CartForm action={addToCart} className="order-4 mt-5 space-y-6">
+			{/* Compatibility - order:4, immediately above the purchase CTA (CLAUDE.md §8)
+			    and deliberately OUTSIDE the form below: the box carries a button, and
+			    `ui/button.tsx` sets no default `type`, so a submit here would add to the
+			    cart while the shopper thought they were changing their car. Its own
+			    Suspense boundary because it may have to reach the fitment provider over
+			    HTTP, and an add-to-cart button must never wait on that. */}
+			<Suspense fallback={null}>
+				<PdpCompatibility channel={channel} saleorProductId={product.id} className="order-4 mt-5" />
+			</Suspense>
+
+			{/* Rest of variant section - order:5 so it appears BELOW the meta row */}
+			<CartForm action={addToCart} className="order-5 mt-5 space-y-6">
 				{/* Variant Selectors */}
 				<VariantSelectionSection
 					variants={variants}
@@ -190,8 +202,8 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 				<StickyBar productName={product.name} price={price} show={!isAddToCartDisabled} />
 			</CartForm>
 
-			{/* Purchase confidence - order:5, outside the form (nothing submittable). */}
-			<div className="order-5 mt-6">
+			{/* Purchase confidence - order:6, outside the form (nothing submittable). */}
+			<div className="order-6 mt-6">
 				<PurchaseTrust channel={channel} />
 			</div>
 		</>

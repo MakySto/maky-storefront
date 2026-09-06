@@ -21,6 +21,7 @@ import { previousProductSlug } from "@/lib/product-redirects";
 import { productHref } from "@/lib/product-url";
 import { Breadcrumbs } from "@/ui/components/breadcrumbs";
 import { getGalleryImages } from "@/ui/components/pdp/gallery-images";
+import { PdpVehicleApplications } from "@/ui/components/fitment/pdp-vehicle-applications";
 import {
 	ProductGallery,
 	ProductSpecs,
@@ -344,6 +345,16 @@ async function ProductContent({
 					careInstructions={careInstructions}
 					locale={getLocaleFromChannel(params.channel)}
 				/>
+
+				{/* Which cars this product is documented to fit — answerable with no
+				    vehicle selected, which is when most shoppers ask it. Its own
+				    boundary: it reads the fitment provider, and nothing above it may
+				    wait on that. */}
+				<div className="mt-10">
+					<Suspense fallback={null}>
+						<PdpVehicleApplications saleorProductId={product.id} />
+					</Suspense>
+				</div>
 			</main>
 		</div>
 	);

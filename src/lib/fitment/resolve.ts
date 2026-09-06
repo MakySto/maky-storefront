@@ -343,6 +343,30 @@ export function resolveVehicleOutcome(
 }
 
 /**
+ * Does this dataset speak for this product AT ALL?
+ *
+ * The gate every surface must pass before it shows a compatibility answer, and it is
+ * about the DATASET, never about the product's name, slug, category or Saleor product
+ * type. A snow chain, a roof box or a work boot has no row here, and the honest thing to
+ * say about it is nothing — the feature stays silent rather than answering a question it
+ * was never given data for.
+ *
+ * Without this gate `coverage.completeForMakeIds` becomes actively dangerous: inside a
+ * complete make, `resolveFitment` is entitled to turn an absent row into NO_FIT, which
+ * is correct for a roof-rack set in the programme and a flat lie about every product
+ * outside it. `FitmentScope` says so in as many words — "complete for Škoda" inside a
+ * Nordrive roof-rack programme does not license the sentence "nothing fits your Škoda".
+ *
+ * Negative rows count. A product the source explicitly rules out for some vehicle is
+ * still a product the source knows about, and hiding the box would drop the one warning
+ * that matters most.
+ */
+export function datasetSpeaksForProduct(dataset: FitmentDataset | null, saleorProductId: string): boolean {
+	if (!dataset) return false;
+	return dataset.applications.some((a) => a.products.some((p) => p.saleorProductId === saleorProductId));
+}
+
+/**
  * The vehicles a given product is documented to fit — the PDP's "which cars is this
  * for?" question, which is asked with NO vehicle selected and must be answerable then.
  */

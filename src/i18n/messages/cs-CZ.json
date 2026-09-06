@@ -116,6 +116,7 @@
 	"fitment": {
 		"selectVehicle": "Vyberte vaše vozidlo",
 		"changeVehicle": "Změnit vozidlo",
+		"showCompatible": "Zobrazit kompatibilní produkty",
 		"myGarage": "Moje garáž",
 		"addVehicle": "Přidat vozidlo",
 		"removeVehicle": "Odstranit vozidlo",

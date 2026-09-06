@@ -116,6 +116,7 @@
 	"fitment": {
 		"selectVehicle": "Wybierz swój pojazd",
 		"changeVehicle": "Zmień pojazd",
+		"showCompatible": "Pokaż pasujące produkty",
 		"myGarage": "Mój garaż",
 		"addVehicle": "Dodaj pojazd",
 		"removeVehicle": "Usuń pojazd",

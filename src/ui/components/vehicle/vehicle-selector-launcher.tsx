@@ -40,17 +40,29 @@ type Props = {
 	variant?: Variant;
 	/** Resolved active-vehicle label. Null renders the generic "choose a vehicle" copy. */
 	vehicleLabel?: string | null;
+	/**
+	 * Overrides both of the above. For surfaces that already name the car right next to
+	 * the button — the PDP's compatibility box says "verified for <car>" — where
+	 * repeating it on the button says nothing and "choose a vehicle" is the wrong verb
+	 * for what the click actually does.
+	 */
+	label?: string;
 	className?: string;
 };
 
-export function VehicleSelectorLauncher({ variant = "inline", vehicleLabel, className }: Props) {
+export function VehicleSelectorLauncher({
+	variant = "inline",
+	vehicleLabel,
+	label: labelOverride,
+	className,
+}: Props) {
 	const [open, setOpen] = useState(false);
 	const tNav = useTranslations("nav");
 	const tFitment = useTranslations("fitment");
 
 	const fallback =
 		variant === "header" || variant === "compact" ? tNav("selectVehicle") : tFitment("selectVehicle");
-	const label = vehicleLabel?.trim() || fallback;
+	const label = labelOverride?.trim() || vehicleLabel?.trim() || fallback;
 
 	return (
 		<VehicleSelectorSheet open={open} onOpenChange={setOpen}>
