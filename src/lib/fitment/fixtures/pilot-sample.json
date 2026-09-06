@@ -1,0 +1,131 @@
+{
+	"schemaVersion": "3.0.0",
+	"datasetVersion": "3.0.0-pilot-20260906",
+	"datasetHash": "bca2997617ae0cf9a594fae8bf6539a504069e66ac4a310761d91519e34ee5e4",
+	"generatedAt": "2026-09-06T18:54:02.832539+00:00",
+	"source": {
+		"system": "cfm",
+		"note": "ProductRoofFit application windows, reconciled once at import. Evidence is the manufacturer's application list; nothing here is independently verified."
+	},
+	"saleorInstance": "api.maky.store",
+	"validity": { "validUntil": null, "staleAfterDays": 30 },
+	"coverage": {
+		"scope": { "programId": "nordrive-roof-racks", "productKinds": ["roof-rack-set"] },
+		"completeForMakeIds": []
+	},
+	"makes": [
+		{ "id": "veh:mk:3eeeea01-ae52-4405-9aa4-0ad3743f3824", "name": "ALFA ROMEO" },
+		{ "id": "veh:mk:a94a0388-ca51-4c2b-a0ff-ff26464bcfab", "name": "SUBARU" }
+	],
+	"models": [
+		{
+			"id": "veh:md:61ac245d-bef2-422e-923c-28691365b373",
+			"name": "Giulia",
+			"makeId": "veh:mk:3eeeea01-ae52-4405-9aa4-0ad3743f3824"
+		},
+		{
+			"id": "veh:md:3a4efb6f-7476-481c-8cbd-4bb80e562450",
+			"name": "Legacy Kombi",
+			"makeId": "veh:mk:a94a0388-ca51-4c2b-a0ff-ff26464bcfab"
+		}
+	],
+	"generations": [
+		{
+			"id": "veh:gn:8cf6a796-a52e-4b72-878f-ebccd52a151e",
+			"name": "952",
+			"modelId": "veh:md:61ac245d-bef2-422e-923c-28691365b373",
+			"productionYearFrom": 2016,
+			"productionYearTo": null,
+			"qualifiers": { "roofTypes": ["naked-roof"], "bodyTypes": ["saloon"] }
+		},
+		{
+			"id": "veh:gn:7860f324-9fb5-4369-a759-11c05af7c0b4",
+			"name": "BP",
+			"modelId": "veh:md:3a4efb6f-7476-481c-8cbd-4bb80e562450",
+			"productionYearFrom": 2003,
+			"productionYearTo": 2009,
+			"qualifiers": { "roofTypes": ["raised-rails"], "bodyTypes": ["estate"] }
+		}
+	],
+	"applications": [
+		{
+			"applicationId": "app:6e3420140cb41affc8fc9f8c",
+			"generationId": "veh:gn:8cf6a796-a52e-4b72-878f-ebccd52a151e",
+			"window": {
+				"from": { "year": 2019, "month": 12 },
+				"to": null,
+				"startPrecision": "month",
+				"endPrecision": "open",
+				"reconciledToGeneration": false,
+				"sourceWindow": "12/19>"
+			},
+			"qualifiers": { "roofTypes": ["naked-roof"], "bodyTypes": ["saloon"] },
+			"conditions": [],
+			"negative": false,
+			"products": [
+				{
+					"externalReference": "cfm:product:CFMP-B-NOR-144cf079ed5468-000000",
+					"saleorProductId": "UHJvZHVjdDo1OTM=",
+					"saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NTkz",
+					"productKind": "roof-rack-set",
+					"evidence": {
+						"kind": "manufacturer-application",
+						"supplier": "nordrive",
+						"sourceRef": "N21199|N20003|N15407",
+						"sourceWindow": "12/19>",
+						"confidence": 0.95
+					},
+					"qaStatus": "accepted",
+					"verification": "not-independently-verified",
+					"eligibility": { "sellable": true, "reasons": [] },
+					"completeSet": { "includes": ["fitting-kit", "feet", "bars"] },
+					"facets": {
+						"maxLoadKg": 75,
+						"barMaterial": "aluminium",
+						"barColour": "silver",
+						"barLengthCm": 104
+					}
+				}
+			]
+		},
+		{
+			"applicationId": "app:bd5977f1d72440888facc36e",
+			"generationId": "veh:gn:7860f324-9fb5-4369-a759-11c05af7c0b4",
+			"window": {
+				"from": { "year": 2003 },
+				"to": { "year": 2003, "month": 4 },
+				"startPrecision": "year",
+				"endPrecision": "month",
+				"reconciledToGeneration": true,
+				"sourceWindow": "01/99>04/03"
+			},
+			"qualifiers": { "roofTypes": ["raised-rails"], "bodyTypes": ["estate"] },
+			"conditions": [],
+			"negative": false,
+			"products": [
+				{
+					"externalReference": "cfm:product:CFMP-B-NOR-4c3acb7bbdaf62-000000",
+					"saleorProductId": "UHJvZHVjdDo4NDcy",
+					"saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6ODQ3Mg==",
+					"productKind": "roof-rack-set",
+					"evidence": {
+						"kind": "manufacturer-application",
+						"supplier": "nordrive",
+						"sourceRef": "N15095",
+						"sourceWindow": "01/99>04/03",
+						"confidence": 0.9
+					},
+					"qaStatus": "hold",
+					"verification": "not-independently-verified",
+					"eligibility": { "sellable": false, "reasons": ["known_mapping_suspect"] },
+					"facets": {
+						"maxLoadKg": 100,
+						"barMaterial": "aluminium",
+						"barColour": "silver",
+						"barLengthCm": 120
+					}
+				}
+			]
+		}
+	]
+}
