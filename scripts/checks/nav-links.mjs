@@ -12,6 +12,11 @@
 // with a "Stránka nenájdená" body and `noindex`. Every status-code monitor on earth
 // calls that healthy. So this check reads the title and the robots meta, not the status.
 //
+// Since category URLs moved to the root (`/sk/stresne-nosice`), it also asks three
+// questions that only a live system can answer: does the canonical name the new URL,
+// does the retired `/categories/` URL still 308, and — the one nothing else can see —
+// has a PRODUCT been given a category's slug, which the proxy would silently shadow.
+//
 // The catalogue side is checked too: a tile pointing at a real but empty category is
 // the "empty section" CLAUDE.md §6 forbids, and the page marks itself `noindex` while
 // it holds nothing — so the link is a dead end even though every URL resolves.
@@ -75,7 +80,7 @@ async function saleorCount(slug) {
 }
 
 async function livePage(slug) {
-	const url = `${BASE}/${MARKET}/categories/${slug}`;
+	const url = `${BASE}/${MARKET}/${slug}`;
 	const res = await fetch(url);
 	const html = await res.text();
 	return {
@@ -83,7 +88,36 @@ async function livePage(slug) {
 		status: res.status,
 		title: (html.match(/<title>([^<]*)<\/title>/) || [, ""])[1],
 		robots: (html.match(/<meta name="robots" content="([^"]*)"/) || [, ""])[1],
+		canonical: (html.match(/<link rel="canonical" href="([^"]*)"/) || [, ""])[1],
 	};
+}
+
+/** The retired `/categories/<slug>` URL must 308 to the root one, not serve it. */
+async function legacyRedirect(slug) {
+	const res = await fetch(`${BASE}/${MARKET}/categories/${slug}`, { redirect: "manual" });
+	return { status: res.status, location: res.headers.get("location") || "" };
+}
+
+/**
+ * Does a PRODUCT hold this category's slug?
+ *
+ * Category URLs are root-level, so they share a namespace with 9,577 product slugs,
+ * and `src/proxy.ts` resolves the collision in the category's favour. Nothing in
+ * Saleor prevents the collision being created, and neither side would fail: the
+ * category would render and the product would silently lose its canonical URL. Only
+ * Saleor knows the product slugs, so only a live check can ask this.
+ */
+async function productWithSlug(slug) {
+	const res = await fetch(API, {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({
+			query: `query($slug:String!,$channel:String!){product(slug:$slug,channel:$channel){id name}}`,
+			variables: { slug, channel: CHANNEL },
+		}),
+	});
+	if (!res.ok) throw new Error(`Saleor returned ${res.status}`);
+	return (await res.json())?.data?.product ?? null;
 }
 
 const rows = [];
@@ -112,8 +146,28 @@ for (const category of surfaced) {
 		// the body while still answering 200.
 		if (/nen[aá]jden|not found/i.test(page.title)) problems.push(`soft-404: title "${page.title}"`);
 		if (/noindex/i.test(page.robots)) problems.push(`robots: ${page.robots}`);
+		if (page.canonical && !page.canonical.endsWith(`/${MARKET}/${category.slug}`)) {
+			problems.push(`canonical points elsewhere: ${page.canonical}`);
+		}
 	} catch (err) {
 		problems.push(`live fetch failed: ${err.message}`);
+	}
+
+	try {
+		const legacy = await legacyRedirect(category.slug);
+		if (legacy.status !== 308) problems.push(`retired /categories/ URL answers ${legacy.status}, not 308`);
+		else if (!legacy.location.endsWith(`/${MARKET}/${category.slug}`)) {
+			problems.push(`retired URL redirects to ${legacy.location}`);
+		}
+	} catch (err) {
+		problems.push(`legacy redirect check failed: ${err.message}`);
+	}
+
+	try {
+		const clash = await productWithSlug(category.slug);
+		if (clash) problems.push(`a PRODUCT holds this slug and is shadowed by the category: ${clash.name}`);
+	} catch (err) {
+		problems.push(`collision check failed: ${err.message}`);
 	}
 
 	if (problems.length > 0) failed += 1;
@@ -143,7 +197,7 @@ if (withheld.length > 0) {
 
 console.log(
 	failed === 0
-		? `\nall ${surfaced.length} surfaced categories resolve, hold products and are indexable`
+		? `\nall ${surfaced.length} surfaced categories resolve at the root, hold products, are indexable,\nredirect their retired URL and collide with no product slug`
 		: `\n${failed} of ${surfaced.length} surfaced categories are broken`,
 );
 process.exit(failed === 0 ? 0 : 1);

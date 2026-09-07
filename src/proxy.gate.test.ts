@@ -196,7 +196,7 @@ describe("classifyRoute cannot be made to throw", () => {
 	// runs — so this is not the site-wide 500 it was reported to be. It is pinned
 	// anyway: that they are unreachable is a property of nginx and of Next's URL
 	// handling, not of this file.
-	const malformed = ["/sk/%E0%A4%A", "/sk/%zz", "/sk/%", "/sk/categories/%E0%A4%A", "/sk/collections/%"];
+	const malformed = ["/sk/%E0%A4%A", "/sk/%zz", "/sk/%", "/sk/collections/%E0%A4%A", "/sk/collections/%"];
 
 	for (const path of malformed) {
 		it(`serves ${path} without throwing`, async () => {
@@ -301,15 +301,43 @@ describe("RSC and prefetch suffixes are one logical lookup", () => {
 });
 
 describe("category and collection families", () => {
-	it("404s an absent category and asks the GLOBAL, channel-less question", async () => {
+	// The slug is one from src/config/categories.ts on purpose, and it has to be.
+	// Category URLs are root-level now, so the root is shared with 9,577 product
+	// slugs and the catalogue is what tells the two apart. That means "an absent
+	// category" is no longer any unknown slug — it is a slug we still ship in the
+	// nav or the grid that Saleor no longer has, which is the case actually worth
+	// 404ing. An unknown root slug is a product question; see the test below it.
+	it("404s a catalogue category Saleor no longer has, asking the GLOBAL, channel-less question", async () => {
 		arm({ families: "category" });
 		const mock = upstream(() => saleor({ data: { category: null } }));
-		const res = await proxy(req("/sk/categories/neexistujuca-kategoria"));
+		const res = await proxy(req("/sk/snehove-retaze"));
 
 		expect(res.status).toBe(404);
 		expect(res.headers.get("x-maky-gate")).toBe("category:absent");
 		// A category empty in THIS channel is a merchandising state, not a 404.
 		expect(varsOfCall(mock).c).toBeUndefined();
+	});
+
+	it("treats an unknown root slug as a product, not a category", async () => {
+		arm({ families: "category" });
+		const mock = upstream(() => saleor({ data: { category: null } }));
+		const res = await proxy(req("/sk/nieco-co-nikto-nepozna"));
+
+		// product is not armed here, so no lookup and no 404 — but the point is the
+		// FAMILY: ask Saleor `category(slug:)` about a product slug and it answers
+		// "absent" truthfully, which would 404 the whole catalogue the day the gate
+		// is armed for categories.
+		expect(res.headers.get("x-maky-gate")).toBe("product:not-armed");
+		expect(mock).not.toHaveBeenCalled();
+	});
+
+	it("does not let the gate see a retired /categories/ URL at all — it redirects first", async () => {
+		arm({ families: "category" });
+		const mock = upstream(() => saleor({ data: { category: null } }));
+		const res = await proxy(req("/sk/categories/stresne-boxy"));
+
+		expect(res.status).toBe(308);
+		expect(mock).not.toHaveBeenCalled();
 	});
 
 	it("404s an absent collection, channel-scoped", async () => {
@@ -332,9 +360,10 @@ describe("category and collection families", () => {
  *
  * Every case above arms exactly one family, which proves each path in isolation
  * and proves nothing about the pair. With 9 192 products going public behind
- * /sk/{slug} and their categories behind /sk/categories/{slug}, the pair is what
- * gets deployed — and the two routes take different questions upstream (one
- * channel-scoped, one global), so "both armed" is worth one test of its own.
+ * /sk/{slug} and their categories now behind /sk/{slug} as well, the pair is what
+ * gets deployed — and the two share a namespace while taking different questions
+ * upstream (one channel-scoped, one global), so "both armed" is worth one test of
+ * its own.
  */
 describe("the sk product + category rollout configuration", () => {
 	const armed = () => arm({ markets: "sk", families: "product,category" });
@@ -347,7 +376,7 @@ describe("the sk product + category rollout configuration", () => {
 		expect(missingProduct.status).toBe(404);
 		expect(missingProduct.headers.get("x-maky-gate")).toBe("product:absent");
 
-		const missingCategory = await proxy(req("/sk/categories/kategoria-ktora-neexistuje"));
+		const missingCategory = await proxy(req("/sk/snehove-retaze"));
 		expect(missingCategory.status).toBe(404);
 		expect(missingCategory.headers.get("x-maky-gate")).toBe("category:absent");
 	});
@@ -360,7 +389,7 @@ describe("the sk product + category rollout configuration", () => {
 		expect(product.status).toBe(200);
 		expect(product.headers.get("x-maky-gate")).toBe("product:exists");
 
-		const category = await proxy(req("/sk/categories/stresne-boxy"));
+		const category = await proxy(req("/sk/stresne-boxy"));
 		expect(category.status).toBe(200);
 		expect(category.headers.get("x-maky-gate")).toBe("category:exists");
 	});

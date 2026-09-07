@@ -139,9 +139,13 @@ describe("the whole catalogue, or an error", () => {
 
 		expect(urls).toContain(`${BASE}/sk`);
 		expect(urls).toContain(`${BASE}/sk/products`);
-		expect(urls).toContain(`${BASE}/sk/categories/nosice-bicyklov`);
+		// A catalogue category is root-level; a non-catalogue one keeps /categories/.
+		expect(urls).toContain(`${BASE}/sk/nosice-bicyklov`);
 		expect(urls, "an empty category is thin content, not a canonical URL").not.toContain(
-			`${BASE}/sk/categories/prazdna-kategoria`,
+			`${BASE}/sk/prazdna-kategoria`,
+		);
+		expect(urls, "the retired /categories/ shape is a 308, never a canonical URL").not.toContain(
+			`${BASE}/sk/categories/nosice-bicyklov`,
 		);
 		expect(urls).toContain(`${BASE}/sk/kontakt`);
 	});
@@ -235,7 +239,11 @@ describe("categories are walked to the end too", () => {
 		);
 
 		const entries = await sitemap();
-		const categoryUrls = entries.filter((entry) => entry.url.includes("/categories/"));
+		// `kategoria-N` is not in src/config/categories.ts, so these keep the
+		// `/categories/` shape — which is the point of the split, and worth pinning:
+		// only a catalogue category gets a root URL, and the sitemap says the same
+		// thing the breadcrumbs and the proxy do, because all three call categoryUrl().
+		const categoryUrls = entries.filter((entry) => entry.url.startsWith(`${BASE}/sk/categories/kategoria-`));
 
 		expect(categoryUrls).toHaveLength(CATEGORY_COUNT);
 		expect(categoryUrls.at(-1)?.url).toBe(`${BASE}/sk/categories/kategoria-250`);

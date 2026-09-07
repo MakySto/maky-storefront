@@ -10,6 +10,7 @@ import {
 	COOKIE_MAX_AGE,
 } from "./lib/channel-map";
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
+import { CATEGORY_ROUTE_PREFIX, isCategorySlug } from "./config/categories";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/routing.generated";
 import { isMarketLive, liveMarkets, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
 import { isRouteMissingInMarket } from "./lib/route-policy";
@@ -96,9 +97,20 @@ function detectMarket(request: NextRequest): string {
  * Every market URL that this file does not claim for a redirect or a 404 ends up
  * here, and so does any request whose handling threw.
  */
-function marketRewrite(request: NextRequest, market: string, gateVerdict: string | null): NextResponse {
+function marketRewrite(
+	request: NextRequest,
+	market: string,
+	gateVerdict: string | null,
+	/**
+	 * Path after the market to serve INSTEAD of the one that was requested, with no
+	 * leading slash. Only the root-level category URLs use it: the public URL is
+	 * `/sk/stresne-nosice`, the page file lives at `categories/[slug]`, and this is
+	 * what bridges the two without moving the file or changing the visible URL.
+	 */
+	internalRest?: string,
+): NextResponse {
 	const config = CHANNEL_MAP[market];
-	const rest = request.nextUrl.pathname.split("/").filter(Boolean).slice(1).join("/");
+	const rest = internalRest ?? request.nextUrl.pathname.split("/").filter(Boolean).slice(1).join("/");
 	const url = request.nextUrl.clone();
 	url.pathname = "/" + config.saleorSlug + (rest ? "/" + rest : "");
 
@@ -206,6 +218,32 @@ async function route(request: NextRequest) {
 		return NextResponse.redirect(url, 308);
 	}
 
+	// RETIRED CATEGORY URL: /{market}/categories/{slug} -> /{market}/{slug}
+	//
+	// Same edge, same reason as the products redirect above: under PPR a redirect()
+	// from the route file comes back 200, because the shell is flushed before it can
+	// set a status. Proven once already by that migration; not re-litigated here.
+	//
+	// ONLY for a slug in src/config/categories.ts, and that condition is load-bearing.
+	// Saleor holds 30 categories and the catalogue names 8; the other 22 keep this URL
+	// as their real one, because the root namespace is resolved from a build-time set
+	// and would soft-404 them. Redirecting every /categories/ URL would send
+	// `/sk/prislusenstvo-k-stresnym-boxom` to a page that does not exist — turning a
+	// working listing into a 404 for the sake of a tidier path.
+	//
+	// Only the DETAIL url redirects; `/{market}/categories` has no page either way.
+	if (
+		first &&
+		FRIENDLY_SLUGS.has(first) &&
+		segments.length === 3 &&
+		segments[1] === CATEGORY_ROUTE_PREFIX &&
+		isCategorySlug(segments[2])
+	) {
+		const url = request.nextUrl.clone();
+		url.pathname = "/" + first + "/" + segments[2];
+		return NextResponse.redirect(url, 308);
+	}
+
 	// A ROUTE THAT EXISTS, BUT NOT IN THIS MARKET -> real 404.
 	//
 	// The seven Slovak legal pages and the two CMS pages are `sk` only: each calls
@@ -286,8 +324,33 @@ async function route(request: NextRequest) {
 	}
 
 	// REWRITE friendly slug -> Saleor channel slug (URL stays /sk/...)
+	//
+	// A root-level category is carried onto its route file in the same hop. The root
+	// is a namespace shared with product slugs, and this set is what tells them apart
+	// without an upstream call on every request: `/sk/stresne-nosice` is a category,
+	// `/sk/stresny-nosic-nordrive-...` falls through to `[productSlug]`.
+	//
+	// A category slug wins over a product with the same slug. That case does not exist
+	// (0 of 9,587 product slugs collide) and `pnpm check:nav` fails if it ever does —
+	// but the precedence has to be decided somewhere, and shadowing a product is the
+	// recoverable direction: the product keeps a working URL under `/{market}/products/`,
+	// while a shadowed category would have no URL at all.
 	if (first && FRIENDLY_SLUGS.has(first)) {
-		return marketRewrite(request, first, gateVerdict);
+		// Decided on the NORMALIZED path and rewritten with the raw one.
+		//
+		// Client-side navigation asks for `/sk/stresne-boxy.rsc` and
+		// `/sk/stresne-boxy/_segments/<id>.segment.rsc`. Matching the raw segment
+		// against the catalogue misses both — `"stresne-boxy.rsc"` is not a category
+		// slug — so the category would fall through to `[productSlug]` and every
+		// in-app link into a category would break while the first, full-page load
+		// looked perfect. The suffix has to survive into the rewrite, though, or Next
+		// gets a document request where it asked for a flight response.
+		const normalized = normalizePathname(pathname).split("/").filter(Boolean);
+		const internalRest =
+			normalized.length === 2 && isCategorySlug(normalized[1])
+				? CATEGORY_ROUTE_PREFIX + "/" + segments.slice(1).join("/")
+				: undefined;
+		return marketRewrite(request, first, gateVerdict, internalRest);
 	}
 
 	// INVALID FIRST SEGMENT -> real 404.

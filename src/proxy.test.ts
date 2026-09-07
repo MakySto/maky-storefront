@@ -33,7 +33,9 @@ describe("invalid first segment", () => {
 	}
 
 	it("marks the 404 noindex for good measure", async () => {
-		expect((await proxy(req("/admin/categories/stresne-nosice"))).headers.get("x-robots-tag")).toBe("noindex");
+		expect((await proxy(req("/admin/categories/stresne-nosice"))).headers.get("x-robots-tag")).toBe(
+			"noindex",
+		);
 	});
 
 	it("does not redirect junk anywhere — no generic /:invalid/categories/:slug rescue", async () => {
@@ -44,7 +46,7 @@ describe("invalid first segment", () => {
 
 describe("legitimate traffic still passes", () => {
 	it("rewrites a valid market instead of 404ing it", async () => {
-		const res = await proxy(req("/sk/categories/tazne-zariadenia"));
+		const res = await proxy(req("/sk/tazne-zariadenia"));
 		expect(res.status).not.toBe(404);
 		expect(res.headers.get("x-market")).toBe("sk");
 	});
@@ -132,7 +134,7 @@ describe("dotted first segment", () => {
 	});
 
 	it("keeps client-side navigation working — RSC suffixes are not junk", async () => {
-		for (const path of ["/sk/categories/stresne-boxy.rsc", "/sk/stresny-box.rsc"]) {
+		for (const path of ["/sk/stresne-boxy.rsc", "/sk/stresny-box.rsc"]) {
 			const res = await proxy(req(path));
 			expect(res.status, path).not.toBe(404);
 			expect(res.headers.get("x-channel"), path).toBe("sk-eur");
@@ -140,9 +142,51 @@ describe("dotted first segment", () => {
 	});
 
 	it("still 301s a raw Saleor slug to its friendly market", async () => {
-		const res = await proxy(req("/sk-eur/categories/stresne-boxy"));
+		const res = await proxy(req("/sk-eur/stresne-boxy"));
 		expect(res.status).toBe(301);
-		expect(res.headers.get("location")).toContain("/sk/categories/stresne-boxy");
+		expect(res.headers.get("location")).toContain("/sk/stresne-boxy");
+	});
+
+	it("308s a retired category URL to the root", async () => {
+		const res = await proxy(req("/sk/categories/stresne-boxy"));
+		expect(res.status).toBe(308);
+		expect(res.headers.get("location")).toContain("/sk/stresne-boxy");
+	});
+
+	it("leaves a NON-catalogue category on its /categories/ URL", async () => {
+		// Saleor holds 30 categories; src/config/categories.ts names 8. The root
+		// namespace is resolved from that build-time set with no upstream call, so a
+		// slug it does not know soft-404s at the root. Redirecting this one would turn
+		// a working accessory listing into a 404 for the sake of a tidier path — and
+		// the sitemap and every product breadcrumb would follow it there.
+		const res = await proxy(req("/sk/categories/prislusenstvo-k-stresnym-boxom"));
+		expect(res.status).not.toBe(308);
+		expect(res.headers.get("x-channel")).toBe("sk-eur");
+		expect(res.headers.get("x-middleware-rewrite")).toContain(
+			"/sk-eur/categories/prislusenstvo-k-stresnym-boxom",
+		);
+	});
+
+	it("carries a root category onto its route file, keeping the public URL", async () => {
+		const res = await proxy(req("/sk/stresne-boxy"));
+		expect(res.status).not.toBe(404);
+		expect(res.headers.get("x-channel")).toBe("sk-eur");
+		expect(res.headers.get("x-middleware-rewrite")).toContain("/sk-eur/categories/stresne-boxy");
+	});
+
+	it("carries the RSC suffix into the category rewrite", async () => {
+		// The decision is made on the normalized path, the rewrite keeps the raw one.
+		// Match the raw segment against the catalogue and "stresne-boxy.rsc" is not a
+		// category, so every in-app navigation into a category would fall through to
+		// the product route while the first full-page load looked perfect.
+		const res = await proxy(req("/sk/stresne-boxy.rsc"));
+		expect(res.headers.get("x-middleware-rewrite")).toContain("/sk-eur/categories/stresne-boxy.rsc");
+	});
+
+	it("does not claim a root slug that is not a category", async () => {
+		const res = await proxy(req("/sk/stresny-box-thule-motion-3"));
+		expect(res.headers.get("x-middleware-rewrite")).toContain("/sk-eur/stresny-box-thule-motion-3");
+		expect(res.headers.get("x-middleware-rewrite")).not.toContain("/categories/");
 	});
 
 	it("still 308s a retired product URL", async () => {
@@ -195,7 +239,7 @@ describe("a route that exists, but not in this market", () => {
 	});
 
 	it("does not touch routes that exist everywhere", async () => {
-		for (const segment of ["products", "categories/stresne-boxy", "cart", "search"]) {
+		for (const segment of ["products", "stresne-boxy", "cart", "search"]) {
 			expect(await statusOf(`/de/${segment}`), `/de/${segment}`).not.toBe(404);
 		}
 	});
@@ -224,12 +268,12 @@ describe("preview markets are not indexable", () => {
 
 	it("does not mark the live market", async () => {
 		expect(await robotsFor("/sk")).toBeNull();
-		expect(await robotsFor("/sk/categories/stresne-boxy")).toBeNull();
+		expect(await robotsFor("/sk/stresne-boxy")).toBeNull();
 	});
 
 	it("marks every other market, on every route under it", async () => {
 		for (const market of ["cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"]) {
-			for (const path of ["", "/products", "/categories/stresne-boxy", "/some-product"]) {
+			for (const path of ["", "/products", "/stresne-boxy", "/some-product"]) {
 				expect(await robotsFor(`/${market}${path}`), `/${market}${path}`).toBe("noindex, nofollow");
 			}
 		}
@@ -243,7 +287,7 @@ describe("preview markets are not indexable", () => {
 
 	it("keeps the channel rewrite intact for a preview market", async () => {
 		// Preview means "not indexable", not "broken". The market has to work.
-		const res = await proxy(req("/de/categories/stresne-boxy"));
+		const res = await proxy(req("/de/stresne-boxy"));
 		expect(res.status).not.toBe(404);
 		expect(res.headers.get("x-channel")).toBe("de-eur");
 		expect(res.headers.get("x-market")).toBe("de");
@@ -296,10 +340,10 @@ describe("root detection only ever chooses a live market", () => {
 
 	it("does not persist a preview market as a year-long cookie", async () => {
 		// It is read outside the proxy too — the checkout locale fallback uses it.
-		const preview = await proxy(req("/de/categories/stresne-boxy"));
+		const preview = await proxy(req("/de/stresne-boxy"));
 		expect(preview.cookies.get("maky-market")).toBeUndefined();
 
-		const live = await proxy(req("/sk/categories/stresne-boxy"));
+		const live = await proxy(req("/sk/stresne-boxy"));
 		expect(live.cookies.get("maky-market")?.value).toBe("sk");
 	});
 });

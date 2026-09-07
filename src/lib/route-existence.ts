@@ -1,4 +1,5 @@
 import { CHANNEL_MAP, FRIENDLY_SLUGS } from "./channel-map";
+import { isCategorySlug } from "@/config/categories";
 import { previousProductSlug } from "./product-redirects";
 import { isMarketRootSegment } from "./route-policy";
 
@@ -336,10 +337,19 @@ export function classifyRoute(market: string, segments: readonly string[]): Gate
 
 	// /{market}/{slug} — but only when the segment is not a real route. This is
 	// the check that stops the gate asking Saleor about "poradna".
+	//
+	// The root is shared between products and categories since category URLs lost
+	// their `/categories/` segment, so this has to tell them apart BEFORE deciding
+	// which family to ask Saleor about. Get it wrong and the gate looks up
+	// `product(slug: "stresne-nosice")`, is told "absent" — truthfully, there is no
+	// such product — and 404s every category on the site the day the gate is armed.
+	// The gate is off today, which is exactly why this would have been found late.
 	if (rest.length === 1) {
 		if (isMarketRootSegment(rest[0])) return null;
 		const slug = safeDecode(rest[0]);
-		return slug === undefined ? null : { family: "product", slug, channel: config.saleorSlug };
+		if (slug === undefined) return null;
+		const family: RouteFamily = isCategorySlug(slug) ? "category" : "product";
+		return { family, slug, channel: config.saleorSlug };
 	}
 
 	if (rest.length !== 2) return null;

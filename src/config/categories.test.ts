@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { STOREFRONT_CATEGORIES, categoriesFor, categoryHref } from "@/config/categories";
 import { HEADER_PRIMARY_NAV } from "@/ui/components/header/header.config";
+import { MARKET_ROOT_SEGMENTS } from "@/lib/routing.generated";
 
 const LOCALES = [
 	"cs-CZ",
@@ -73,10 +74,31 @@ describe("storefront category catalogue", () => {
 	});
 
 	it("builds the header nav from the catalogue, not from hand-written hrefs", () => {
-		const navHrefs = HEADER_PRIMARY_NAV.filter((item) => item.href.startsWith("/categories/")).map(
+		const categoryHrefs = new Set(STOREFRONT_CATEGORIES.map(categoryHref));
+		const navHrefs = HEADER_PRIMARY_NAV.filter((item) => categoryHrefs.has(item.href)).map(
 			(item) => item.href,
 		);
 		expect(navHrefs).toEqual(categoriesFor("nav").map(categoryHref));
+	});
+
+	it("puts category URLs at the root, with no /categories/ segment", () => {
+		for (const category of STOREFRONT_CATEGORIES) {
+			expect(categoryHref(category)).toBe(`/${category.slug}`);
+		}
+		expect(HEADER_PRIMARY_NAV.some((item) => item.href.includes("/categories/"))).toBe(false);
+	});
+
+	/**
+	 * The root is a namespace shared with product slugs, and the proxy resolves it
+	 * from this set alone — no upstream call. A category slug that collides with a
+	 * real route segment would be shadowed by that route and unreachable, with
+	 * nothing failing anywhere. `pnpm check:nav` covers the other half of the
+	 * namespace, the 9,577 product slugs, which only Saleor knows.
+	 */
+	it("has no category slug that collides with a market root segment", () => {
+		for (const category of STOREFRONT_CATEGORIES) {
+			expect(MARKET_ROOT_SEGMENTS.has(category.slug), `${category.slug} is also a route`).toBe(false);
+		}
 	});
 
 	/**

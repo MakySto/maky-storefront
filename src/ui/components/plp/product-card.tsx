@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { categoryUrl } from "@/config/categories";
 import { useFormStatus } from "react-dom";
 import { useTranslations } from "next-intl";
 
@@ -150,7 +151,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 						    from the plain text around it, and on a phone there is no hover
 						    and no cursor to reveal it. */}
 						<Link
-							href={marketHref(product.channel, `/categories/${product.category.slug}`)}
+							href={marketHref(product.channel, categoryUrl(product.category.slug))}
 							className="text-text-tertiary hover:text-text-primary decoration-border-strong hover:decoration-text-primary underline underline-offset-2 transition-colors"
 						>
 							{product.category.name}

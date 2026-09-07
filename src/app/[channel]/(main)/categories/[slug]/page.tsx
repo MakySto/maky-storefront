@@ -125,10 +125,7 @@ export const generateMetadata = async (props: PageProps, parent: ResolvingMetada
 		// Slovak and the other markets' category pages are unverified — matching what
 		// the PDP does rather than asserting pages that may not resolve.
 		alternates: {
-			canonical: buildCanonicalUrl(
-				REVERSE_MAP[params.channel] || params.channel,
-				`/categories/${category.slug}`,
-			),
+			canonical: buildCanonicalUrl(REVERSE_MAP[params.channel] || params.channel, `/${category.slug}`),
 		},
 	};
 };
@@ -170,7 +167,7 @@ async function CategoryContent({
 
 	const breadcrumbs = [
 		{ label: t("home"), href: marketHref(params.channel) },
-		{ label: category.name, href: marketHref(params.channel, `/categories/${category.slug}`) },
+		{ label: category.name, href: marketHref(params.channel, `/${category.slug}`) },
 	];
 
 	return (
