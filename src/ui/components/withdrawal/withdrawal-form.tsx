@@ -624,17 +624,21 @@ export function WithdrawalForm({
 				className="border-border-default bg-surface-muted space-y-2 rounded-md border p-4 text-sm"
 			>
 				<h3 id={id("pickup-heading")} className="text-text-primary font-semibold">
-					Zvoz tovaru zabezpečíme my
+					Ako nám tovar vrátite
 				</h3>
 				<p>
-					Tovar zatiaľ neposielajte. Ozveme sa vám e-mailom s presnou cenou zvozu a navrhneme termín
-					vyzdvihnutia.
-				</p>
-				<p>
-					Náklady na spätnú prepravu znášate vy. Presnú cenu vám oznámime vopred. Zvoz objednáme až po vašom
+					Môžete použiť vlastného dopravcu alebo nás požiadať o ponuku na vyzdvihnutie. Cenu nami
+					zabezpečovaného zvozu a navrhovaný termín vám pošleme vopred. Platený zvoz objednáme až po vašom
 					výslovnom súhlase.
 				</p>
-				<p>Ak potrebujete zabezpečiť dopravu vlastným spôsobom, kontaktujte nás pred odoslaním tovaru.</p>
+				<p>
+					Vrátenie vlastným dopravcom nepodlieha nášmu predchádzajúcemu schváleniu. Ak sme vám neponúkli
+					vyzdvihnutie, tovar odošlite alebo odovzdajte najneskôr do 14 dní od odstúpenia.
+				</p>
+				<p>
+					Priame náklady na spätnú prepravu pri odstúpení bez uvedenia dôvodu znášate vy, ak sme vás o tom
+					riadne informovali pred nákupom.
+				</p>
 			</section>
 
 			<section aria-labelledby={id("statement-heading")} className="space-y-2">

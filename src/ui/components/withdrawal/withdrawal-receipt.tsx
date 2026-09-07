@@ -56,7 +56,8 @@ export function WithdrawalReceiptPanel({ receipt }: { receipt: WithdrawalReceipt
 				Číslo podania: <strong className="text-text-primary">{receipt.submissionNumber}</strong>
 			</p>
 			<p className="text-text-secondary mt-2 text-sm">
-				Tovar zatiaľ neposielajte. Presnú cenu zvozu a návrh termínu vyzdvihnutia vám pošleme e-mailom; zvoz
+				Ak sme vám neponúkli vyzdvihnutie, tovar odošlite alebo odovzdajte do 14 dní od odstúpenia. Ak chcete,
+				aby sme zvoz zabezpečili my, napíšte nám — cenu a návrh termínu vám pošleme vopred a platený zvoz
 				objednáme až po vašom výslovnom súhlase.
 			</p>
 

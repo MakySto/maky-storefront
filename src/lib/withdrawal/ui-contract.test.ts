@@ -24,9 +24,10 @@ describe("Returns V2 storefront copy", () => {
 		);
 	});
 
-	it("shows merchant pickup as the primary flow and keeps own transport conditional", () => {
+	it("offers merchant pickup without making it a precondition of returning the goods", () => {
 		const form = source("src/ui/components/withdrawal/withdrawal-form.tsx");
 		const page = source("src/app/[channel]/(main)/odstupenie-od-zmluvy/page.tsx");
+		const returnsPage = source("src/app/[channel]/(main)/reklamacie-a-vratenie/page.tsx");
 		const rendered = `${form} ${page}`;
 
 		expect(form).toContain("withdrawalCustomerStatement(statementOrderNumber, scope)");
@@ -35,17 +36,22 @@ describe("Returns V2 storefront copy", () => {
 		expect(source("src/app/[channel]/(main)/odstupenie-od-zmluvy/actions.ts")).not.toContain(
 			"parsed.slice(0, WITHDRAWAL_LIMITS.items)",
 		);
-		expect(rendered).toContain("Zvoz tovaru zabezpečíme my");
+
+		// Pickup is still offered, and a PAID pickup still needs an explicit yes.
 		expect(rendered).toContain(
-			"Tovar zatiaľ neposielajte. Ozveme sa vám e-mailom s presnou cenou zvozu a navrhneme termín vyzdvihnutia.",
+			"Môžete si vybrať vlastného dopravcu alebo nás požiadať o ponuku na vyzdvihnutie.",
 		);
-		expect(rendered).toContain("Zvoz objednáme až po vašom výslovnom súhlase.");
-		expect(rendered).toContain(
-			"Ak potrebujete zabezpečiť dopravu vlastným spôsobom, kontaktujte nás pred odoslaním tovaru.",
-		);
-		expect(page).toContain(
-			"Ak sa s nami dohodnete na odoslaní tovaru vlastnou dopravou, použite túto adresu:",
-		);
+		expect(rendered).toContain("Platený zvoz objednáme až po vašom výslovnom súhlase.");
+
+		// …but it is an offer, not a gate. Own transport needs no approval from us.
+		expect(rendered).toContain("Vrátenie vlastným dopravcom nepodlieha nášmu predchádzajúcemu schváleniu.");
+		expect(returnsPage).toContain("Vlastnú dopravu nemusíme vopred schvaľovať.");
+
+		// The sentence this replaces told the customer to hold the goods until we got in
+		// touch. That reads as a precondition on a statutory right the trader cannot gate,
+		// and it also started the customer's own 14-day return clock without saying so.
+		// Its absence is the point of this test, so assert on it directly.
+		expect(`${rendered} ${returnsPage}`).not.toContain("Tovar zatiaľ neposielajte");
 	});
 
 	it("pins the refund meaning and excludes forbidden first-confirmation promises", () => {
@@ -54,12 +60,9 @@ describe("Returns V2 storefront copy", () => {
 		const receipt = source("src/ui/components/withdrawal/withdrawal-receipt.tsx");
 		const customerCopy = `${page} ${returnsPage} ${receipt}`;
 
-		expect(page).toContain(
-			"Platby v rozsahu vášho odstúpenia vám vrátime najneskôr do 14 dní odo dňa, keď nám bolo doručené vaše oznámenie o odstúpení.",
-		);
-		expect(page).toContain(
-			"Vrátime ich rovnakým spôsobom, akým ste platili, ak sa spolu bez ďalších poplatkov nedohodneme inak.",
-		);
+		expect(page).toContain("Platby v rozsahu odstúpenia vám vrátime do");
+		expect(page).toContain("14 dní od doručenia oznámenia");
+		expect(page).toContain("Peniaze vraciame rovnakým spôsobom, akým ste platili.");
 		expect(customerCopy).not.toMatch(/(?:8|13|21)\s*€/);
 		expect(customerCopy).not.toMatch(/odrátame|odpočítame|automatick(?:y|é)\s+zadrž/i);
 	});
