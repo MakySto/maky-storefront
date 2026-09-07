@@ -25,6 +25,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Check, ChevronLeft, Loader2 } from "lucide-react";
 
 import { Button } from "@/ui/components/ui/button";
+import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetCloseButton } from "@/ui/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { type BodyType, type RoofType, type VehicleSelection } from "@/lib/fitment/contract";
@@ -420,6 +421,24 @@ export function VehicleSelectorSheet({ children, open, onOpenChange }: Props) {
 						)}
 						{t("selector.confirm")}
 					</Button>
+					{/*
+					 * The only way into the garage from anywhere but the configurator page.
+					 *
+					 * `/{market}/garage` has always worked and every car on it has a working
+					 * delete button, but nothing outside `VehicleSummary` — which renders on
+					 * `/{market}/konfigurator` only — ever linked to it. So a shopper who
+					 * filled the three slots was told to "remove some first" by a message
+					 * that offered no way to do it, and the owner of the shop could not find
+					 * the page either. The header opens this sheet, so one link here makes
+					 * the garage reachable from the header as well.
+					 */}
+					<LinkWithChannel
+						href="/garage"
+						onClick={() => onOpenChange(false)}
+						className="text-text-secondary hover:text-text-primary mt-3 block text-center text-sm underline underline-offset-4"
+					>
+						{t("myGarage")}
+					</LinkWithChannel>
 				</div>
 			</SheetContent>
 		</Sheet>
