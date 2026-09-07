@@ -28,6 +28,24 @@ import {
 } from "./selector-plan";
 import { type SelectorQualifiers, type SelectorStep, EMPTY_STEP } from "./selector-types";
 
+/**
+ * Alphabetical, by the Slovak collation.
+ *
+ * The dataset arrives in CFM's own order, which is neither alphabetical nor meaningful to
+ * a shopper. With the six-make pilot that did not matter; the full export has 62 makes and
+ * the list opened on PORSCHE, BMW, FORTHING, FORD, NISSAN, JAECOO — someone looking for
+ * ŠKODA has to read all of it. Models are sorted for the same reason, and with the same
+ * collator: `localeCompare` under `sk` is what puts Š next to S instead of after Z, which
+ * plain code-point order would do to half this catalogue.
+ *
+ * Years are already sorted, newest first, in `yearsForModel`.
+ */
+const COLLATOR = new Intl.Collator("sk", { sensitivity: "base", numeric: true });
+
+function byName<T extends { name: string }>(items: T[]): T[] {
+	return [...items].sort((a, b) => COLLATOR.compare(a.name, b.name));
+}
+
 export async function loadSelectorStep(input: {
 	makeId?: string;
 	modelId?: string;
@@ -38,7 +56,7 @@ export async function loadSelectorStep(input: {
 	const { dataset, status } = await loadFitmentDataset();
 	if (!dataset) return { ...EMPTY_STEP, isFixture: status.isFixture };
 
-	const makes = dataset.makes.map((m) => ({ id: m.id, name: m.name }));
+	const makes = byName(dataset.makes.map((m) => ({ id: m.id, name: m.name })));
 	const base = {
 		makes,
 		isFixture: status.isFixture,
@@ -54,7 +72,9 @@ export async function loadSelectorStep(input: {
 	const make = input.makeId ? dataset.makes.find((m) => m.id === input.makeId) : undefined;
 	if (!make) return base;
 
-	const models = dataset.models.filter((m) => m.makeId === make.id).map((m) => ({ id: m.id, name: m.name }));
+	const models = byName(
+		dataset.models.filter((m) => m.makeId === make.id).map((m) => ({ id: m.id, name: m.name })),
+	);
 
 	const model = input.modelId ? dataset.models.find((m) => m.id === input.modelId) : undefined;
 	// A stale modelId under a freshly chosen make must not leak through as a valid step.

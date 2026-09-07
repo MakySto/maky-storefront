@@ -154,3 +154,22 @@ describe("when there is no dataset", () => {
 		expect(step.makes).toEqual([]);
 	});
 });
+
+describe("the lists a shopper reads are ordered", () => {
+	it("returns makes and models alphabetically, with Slovak collation", async () => {
+		// Not cosmetic at this size. The dataset arrives in CFM's order, and the full
+		// export has 62 makes: the sheet opened on PORSCHE, BMW, FORTHING, FORD, NISSAN.
+		// The pilot had six, which is why this only shows up with real data. `sk`
+		// collation is the second half — code-point order files Š after Z.
+		const step = await loadSelectorStep({});
+		const names = step.makes.map((m) => m.name);
+		const collator = new Intl.Collator("sk", { sensitivity: "base", numeric: true });
+		expect(names).toEqual([...names].sort((a, b) => collator.compare(a, b)));
+
+		const first = step.makes[0];
+		if (!first) return;
+		const withModels = await loadSelectorStep({ makeId: first.id });
+		const models = (withModels.models ?? []).map((m) => m.name);
+		expect(models).toEqual([...models].sort((a, b) => collator.compare(a, b)));
+	});
+});
