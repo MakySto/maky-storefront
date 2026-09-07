@@ -9,7 +9,7 @@ import "server-only";
  * `totalCount: 0` rather than an error, so that route fails silently and looks like an
  * empty catalogue.
  *
- * Three properties this has to keep, and each was a way to lie to a shopper:
+ * Four properties this has to keep, and each was a way to lie to a shopper:
  *
  *   - **The candidate set is never truncated.** `first: 100` is Saleor's page-size cap,
  *     not a filter cap: measured live against api.maky.store, `filter: { ids }` with 250
@@ -26,12 +26,25 @@ import "server-only";
  *   - **It only ever narrows on request.** A saved car must not quietly empty a listing
  *     of snow chains, and the fitment programme covers exactly one product kind. The
  *     filter is off unless the URL says `?vehicle=1`.
+ *
+ *   - **It only answers for a shelf the programme assessed.** Requiring `?vehicle=1` was
+ *     not enough, because the control that sets it was offered on every listing. Measured
+ *     on production 2026-09-07 with a saved ŠKODA Octavia Combi NX: roof boxes 101 → 0,
+ *     bike carriers 188 → 0, ski carriers 26 → 0, roof tents 9 → 0, car fridges 7 → 0,
+ *     each headed "Zobrazujeme iba produkty overené pre ŠKODA Octavia Combi NX" — and
+ *     with no softening line, because a non-empty id list means the state is `active`,
+ *     not `empty`. Those listings were intersected with roof RACK ids. `FitmentScope` in
+ *     the contract already forbade exactly this: coverage of one kind "does NOT license
+ *     the sentence 'nothing fits your Škoda', which would also deny every roof box".
+ *     A listing whose kind the dataset does not cover is now `out-of-scope`: not
+ *     narrowed, and not spoken about.
  */
 
-import { CONFIGURATOR_PRODUCT_KIND, type FitmentVerdict } from "./contract";
+import { CONFIGURATOR_PRODUCT_KIND, type FitmentDataset, type FitmentVerdict } from "./contract";
 import { loadFitmentDataset } from "./provider";
 import { resolveVehicleOutcome } from "./resolve";
 import { isDemoDataset } from "./offers";
+import { categoryFitmentKind } from "@/config/categories";
 import { vehicleDisplayName } from "../garage/label";
 import { readGarage } from "../garage/state";
 
@@ -82,6 +95,8 @@ export type VehicleListingFilter =
 	| { state: "unavailable" }
 	/** A dataset, but no usable saved car. The listing is NOT narrowed. */
 	| { state: "no-vehicle"; requested: boolean }
+	/** This listing holds a kind the programme never assessed. Say nothing, narrow nothing. */
+	| { state: "out-of-scope" }
 	/** A saved car, and the filter is available but not applied. */
 	| { state: "offered"; vehicleLabel: string | null }
 	/** Requested, but the dataset cannot answer for THIS car. The listing is NOT narrowed. */
@@ -115,10 +130,42 @@ export function isVehicleFilterRequested(value: string | string[] | undefined): 
  * Never throws: a listing is a page that sells things, and it must not go down because
  * the compatibility provider did.
  */
-export async function resolveVehicleListingFilter(requested: boolean): Promise<VehicleListingFilter> {
+/**
+ * Which shelf the shopper is standing in front of.
+ *
+ * `categorySlug` absent means the listing is not one category — `/{market}/products` and
+ * collections. Those are left as they were: the whole catalogue really does contain the
+ * verified sets, so narrowing it is a true statement.
+ */
+export type VehicleListingScope = { categorySlug?: string };
+
+/**
+ * Does the programme make any claim about the shelf this listing is showing?
+ *
+ * Both halves have to agree. The category says what is on the shelf; the dataset says
+ * which kinds it speaks for. The filter may only narrow where they meet — which is why
+ * this reads `coverage.scope.productKinds` rather than comparing against
+ * `CONFIGURATOR_PRODUCT_KIND`: if CFM ever ships roof boxes, the boxes listing starts
+ * working with no storefront change, and if it stops shipping racks, the rack listing
+ * stops claiming.
+ */
+function coversThisListing(dataset: FitmentDataset, scope: VehicleListingScope): boolean {
+	if (!scope.categorySlug) return true;
+	const kind = categoryFitmentKind(scope.categorySlug);
+	return kind !== null && dataset.coverage.scope.productKinds.includes(kind);
+}
+
+export async function resolveVehicleListingFilter(
+	requested: boolean,
+	scope: VehicleListingScope = {},
+): Promise<VehicleListingFilter> {
 	try {
 		const { dataset } = await loadFitmentDataset();
 		if (!dataset) return { state: "unavailable" };
+
+		// Before the garage, before `requested`: on a shelf we never assessed there is no
+		// question to ask, so there is nothing to offer and nothing to explain either.
+		if (!coversThisListing(dataset, scope)) return { state: "out-of-scope" };
 
 		const garage = await readGarage(dataset);
 		const active = garage.active && !garage.active.unresolved ? garage.active : null;

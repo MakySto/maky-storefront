@@ -204,7 +204,9 @@ async function CategoryProducts({
 
 	const paginationVariables = getPaginatedListVariables({ params: searchParams });
 	const sortBy = buildSortVariables(searchParams.sort);
-	const vehicleFilter = await resolveVehicleListingFilter(isVehicleFilterRequested(searchParams.vehicle));
+	const vehicleFilter = await resolveVehicleListingFilter(isVehicleFilterRequested(searchParams.vehicle), {
+		categorySlug: params.slug,
+	});
 	const filter = buildFilterVariables({
 		priceRange: searchParams.price,
 		vehicleProductIds: vehicleFilterIds(vehicleFilter),

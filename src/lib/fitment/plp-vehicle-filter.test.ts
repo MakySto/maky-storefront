@@ -309,3 +309,89 @@ describe("the URL contract", () => {
 		expect(vehicleFilterHref("/categories/boxy", { vehicle: "1" }, false)).toBe("/categories/boxy");
 	});
 });
+
+/**
+ * The scope defect, reproduced on production 2026-09-07 before a line was changed.
+ *
+ * With a saved ŠKODA Octavia Combi NX (2024), `?vehicle=1` emptied FIVE listings that
+ * the fitment programme has never assessed, and headed each one with a claim:
+ *
+ *   /sk/stresne-boxy?vehicle=1      101 → 0   "Zobrazujeme iba produkty overené pre …"
+ *   /sk/nosice-bicyklov?vehicle=1   188 → 0   "Zobrazujeme iba produkty overené pre …"
+ *   /sk/nosice-lyzi?vehicle=1        26 → 0   "Zobrazujeme iba produkty overené pre …"
+ *   /sk/stresne-stany?vehicle=1       9 → 0   "Zobrazujeme iba produkty overené pre …"
+ *   /sk/autochladnicky?vehicle=1      7 → 0   "Zobrazujeme iba produkty overené pre …"
+ *
+ * The control narrowed correctly: /sk/stresne-nosice 9 163 → 9.
+ *
+ * The cause is that the filter resolves `CONFIGURATOR_PRODUCT_KIND` — `roof-rack-set` —
+ * whatever listing it runs on, so a roof box listing was intersected with a set of roof
+ * RACK ids. The intersection is empty by construction, and because the ids themselves
+ * are non-empty the state is `active`, not `empty`: the shopper gets the confident
+ * headline with NO "this does not mean nothing fits" line under it. Measured — the
+ * explainer was absent on all five pages.
+ *
+ * A car fridge is the clearest case. It does not touch the roof, so there is no sense in
+ * which it could be "verified for" a car, and no sense in which its absence is news.
+ *
+ * The rule these tests fix: the programme covers ONE product kind, so a listing whose
+ * kind it does not cover must not be narrowed and must not be described as verified.
+ */
+describe("the listing's own scope — a filter must not answer for a category it never assessed", () => {
+	it("does not narrow a category the programme does not cover", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1), gid(2)]) });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		const filter = await resolveVehicleListingFilter(true, { categorySlug: "stresne-boxy" });
+
+		// Not `active`: those ids are roof racks and would empty this listing.
+		expect(filter.state).toBe("out-of-scope");
+		// Not `empty` either — that state still claims the listing was narrowed.
+		expect(vehicleFilterIds(filter)).toBeUndefined();
+	});
+
+	it("still narrows the category the programme does cover", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1), gid(2)]) });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		const filter = await resolveVehicleListingFilter(true, { categorySlug: "stresne-nosice" });
+		expect(filter).toMatchObject({ state: "active", productIds: [gid(1), gid(2)] });
+	});
+
+	it("does not even offer the control on a category it cannot answer for", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1)]) });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		// An offer to "show only what is verified for your car" that can only lead to an
+		// empty listing is the invitation to the dead end, not a feature.
+		const filter = await resolveVehicleListingFilter(false, { categorySlug: "autochladnicky" });
+		expect(filter.state).toBe("out-of-scope");
+	});
+
+	it("leaves an unscoped listing alone — the whole catalogue does hold roof racks", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1)]) });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		// `/{market}/products` lists everything, so verified sets really are in it and
+		// the claim is true there. No scope means no reason to withhold.
+		const filter = await resolveVehicleListingFilter(true, {});
+		expect(filter).toMatchObject({ state: "active", productIds: [gid(1)] });
+	});
+
+	it("honours the dataset's declared coverage, not a hardcoded kind", async () => {
+		// A dataset that covers roof BOXES instead. Nothing about the storefront changed,
+		// so the roof rack listing must now be the one left alone.
+		const boxes = dataset([gid(1)], {
+			coverage: {
+				scope: { programId: "test-boxes", productKinds: ["roof-box"] },
+				completeForMakeIds: [],
+			},
+		});
+		loadFitmentDataset.mockResolvedValue({ dataset: boxes });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		expect((await resolveVehicleListingFilter(true, { categorySlug: "stresne-nosice" })).state).toBe(
+			"out-of-scope",
+		);
+	});
+});

@@ -46,6 +46,12 @@ export async function VehicleListingFilter({
 	// Nothing to say when the deployment has no compatibility data at all.
 	if (filter.state === "unavailable") return null;
 
+	// Nothing to say on a shelf the programme never assessed either. The control's whole
+	// job is to report what it is doing to THIS list; on a roof box listing it is doing
+	// nothing, and offering it would only lead to an empty page under a claim we cannot
+	// make. Silence is the truthful render, not a smaller banner.
+	if (filter.state === "out-of-scope") return null;
+
 	const locale = getLocaleFromChannel(channel);
 	const t = await getTranslations({ locale, namespace: "fitment" });
 
