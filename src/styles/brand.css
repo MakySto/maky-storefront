@@ -585,3 +585,58 @@
 		min-width: max-content;
 	}
 }
+
+/* ──────────────────────────────────────────────────────────────
+   Layer 5 — Animations
+   ──────────────────────────────────────────────────────────────
+   Restored, not invented. Commit 467d9ef ("design tokens OKLCH +
+   2-row header") deleted `--animate-skeleton-delayed`, its `-long`
+   variant and `--animate-cart-badge-pop` from globals.css, and
+   `@keyframes skeleton-fade-in` from this file, in one commit on
+   2026-03-21. The Tailwind 3→4 migration the day before had ported
+   them correctly; this was collateral damage from the token rewrite.
+
+   Nothing failed. Tailwind v4 emits no rule for an undefined
+   `--animate-*`, so the build stayed green and every affected element
+   simply kept the `opacity-0` that the animation was supposed to lift:
+   13 skeletons across 12 files, invisible for five and a half months,
+   plus the cart badge that quietly stopped popping. Only reading the
+   built stylesheet finds this — see CLAUDE.md §11.
+
+   Values are the originals, recovered from 776c793's globals.css.
+   `--skeleton-delay` is deliberately NOT reintroduced: it was declared
+   but never referenced, and an unreferenced token is how the drift
+   started. The delay lives in the shorthand, where it is used.
+   ────────────────────────────────────────────────────────────── */
+
+@theme {
+	/* Invisible for 250ms, then fades in over 200ms, and stays (`forwards`).
+	   A load that finishes inside the delay never shows a skeleton at all. */
+	--animate-skeleton-delayed: skeleton-fade-in 0.2s ease-in 0.25s forwards;
+
+	/* Route-level loading screens wait longer before admitting they are waiting. */
+	--animate-skeleton-delayed-long: skeleton-fade-in 0.2s ease-in 0.4s forwards;
+
+	--animate-cart-badge-pop: cart-badge-pop 0.3s ease-out;
+
+	@keyframes skeleton-fade-in {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	@keyframes cart-badge-pop {
+		0% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.4);
+		}
+		100% {
+			transform: scale(1);
+		}
+	}
+}

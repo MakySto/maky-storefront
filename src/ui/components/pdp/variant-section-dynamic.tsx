@@ -259,26 +259,33 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 export function VariantSectionSkeleton() {
 	return (
 		<>
-			{/* Category skeleton - order:1, delayed visibility */}
-			<div className="animate-skeleton-delayed bg-muted order-1 h-4 w-20 animate-pulse rounded opacity-0" />
+			{/* Category skeleton - order:1, delayed visibility.
+			    The delay and the shimmer sit on different elements on purpose: both
+			    are `animation`, so on one element the later rule in the generated
+			    sheet silently wins and the other is simply lost. */}
+			<div className="animate-skeleton-delayed order-1 opacity-0">
+				<div className="bg-muted h-4 w-20 animate-pulse rounded" />
+			</div>
 
 			{/* Variant section skeleton - order:3, delayed visibility */}
-			<div className="animate-skeleton-delayed order-3 mt-4 animate-pulse space-y-6 opacity-0">
-				{/* Variant selector skeleton */}
-				<div className="space-y-4">
-					<div className="bg-muted h-4 w-16 rounded" />
-					<div className="flex gap-2">
-						<div className="bg-muted h-10 w-16 rounded" />
-						<div className="bg-muted h-10 w-16 rounded" />
-						<div className="bg-muted h-10 w-16 rounded" />
+			<div className="animate-skeleton-delayed order-3 mt-4 opacity-0">
+				<div className="animate-pulse space-y-6">
+					{/* Variant selector skeleton */}
+					<div className="space-y-4">
+						<div className="bg-muted h-4 w-16 rounded" />
+						<div className="flex gap-2">
+							<div className="bg-muted h-10 w-16 rounded" />
+							<div className="bg-muted h-10 w-16 rounded" />
+							<div className="bg-muted h-10 w-16 rounded" />
+						</div>
 					</div>
+
+					{/* Price skeleton */}
+					<div className="bg-muted h-8 w-24 rounded" />
+
+					{/* Add to cart button skeleton */}
+					<div className="bg-muted h-12 w-full rounded" />
 				</div>
-
-				{/* Price skeleton */}
-				<div className="bg-muted h-8 w-24 rounded" />
-
-				{/* Add to cart button skeleton */}
-				<div className="bg-muted h-12 w-full rounded" />
 			</div>
 		</>
 	);
