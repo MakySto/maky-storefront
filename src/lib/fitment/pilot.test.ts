@@ -1,126 +1,169 @@
 import { describe, expect, it } from "vitest";
 
-import sample from "./fixtures/pilot-sample.json";
+import pilot from "./fixtures/pilot-3.0.0-20260906.2.json";
 import { isFitmentOfferable, type VehicleSelection } from "./contract";
 import { resolveFitment } from "./resolve";
-import { validateFitmentDataset } from "./validate";
 
 /**
- * CFM's real 3.0.0 pilot, two applications of it, copied verbatim.
+ * CFM's real 3.0.0 pilot, read the way a shopper's answers reach it.
  *
- * Two different things are checked here, and the second is the one that matters. That a
- * file passes the validator proves its SHAPE. That the resolver answers correctly on it
- * proves its MEANING — and a dataset can be perfectly well-formed while being read with
- * the wrong semantics, which is exactly what schema 2.1 would have allowed.
+ * Shape is checked next door in `pilot-conformance.test.ts`. What is checked HERE is
+ * MEANING, and it is the half that matters: a dataset can be perfectly well-formed while
+ * being read with the wrong semantics, which is exactly what schema 2.1 would have
+ * allowed — every month silently dropped and every decision still made from years.
  *
- * The two rows were chosen because they are the awkward ones:
+ * These rows were chosen because they are the awkward ones, and all three are real:
  *
- *   - Giulia 952, `12/19>` — month-precise start, open end, accepted and sellable. The
- *     boundary year is 2019, and 2019 is where a shopper's year alone is not enough.
- *   - Legacy BP, `01/99>04/03` reconciled to `{2003} .. 04/2003` — the start lost its
- *     month at import and the end kept one, so 2003 is undecidable from ONE side only.
- *     It is also a known-suspect mapping, held and not sellable.
+ *   - Tourneo Courier V769, `11/23>` — month-precise start, open end. 2023 is the
+ *     boundary year, and it is where a shopper's year alone cannot answer.
+ *   - A6 Avant 4B, `08/94>02/05` reconciled to `{1998} .. 02/2005` — the start lost its
+ *     month to the generation clamp and the end kept one, so 2005 is undecidable from
+ *     ONE side only. `reconciledToGeneration: true` is what marks that clamp.
+ *   - H-1 Van TQ, `10/97>01/08` clamped to `{2008} .. 01/2008` — a known-suspect
+ *     mapping. All six of its products are held and none may be sold, however well the
+ *     vehicle matches.
  *
- * The identities are real: all 77 products in the full pilot were confirmed present,
- * published and reference-matched in `sk-eur` on 2026-09-06. Nothing here is invented,
- * and nothing here is a compatibility claim of ours — it is CFM's, quoted.
+ * Nothing here is a compatibility claim of ours. It is CFM's, quoted, and every identity
+ * was confirmed present, published and reference-matched in `sk-eur` (67/67 on
+ * 2026-09-07). The evidence on every product in this pilot is `manufacturer-application`
+ * with `not-independently-verified`, so the honest verdict is MANUFACTURER_FIT — never
+ * "verified", which is the whole of B0.3.
  */
 
-const dataset = sample as unknown as Parameters<typeof resolveFitment>[0];
+const dataset = pilot as unknown as Parameters<typeof resolveFitment>[0];
 
-const giulia = (year: number, manufactureMonth?: number): VehicleSelection => ({
-	makeId: "veh:mk:3eeeea01-ae52-4405-9aa4-0ad3743f3824",
-	modelId: "veh:md:61ac245d-bef2-422e-923c-28691365b373",
-	generationId: "veh:gn:8cf6a796-a52e-4b72-878f-ebccd52a151e",
+/** Tourneo Courier V769 — month-precise start, open end. */
+const courier = (year: number, manufactureMonth?: number): VehicleSelection => ({
+	makeId: "veh:mk:0bd541b6-a9d0-4557-9d72-0e01961cdc55",
+	modelId: "veh:md:f7b7403d-1bb8-463f-a9bb-be3b78f6cb8e",
+	generationId: "veh:gn:00becc7f-8589-4395-89d3-2102dd34d51c",
 	year,
 	manufactureMonth,
-	roofType: "naked-roof",
-	bodyType: "saloon",
+	roofType: "raised-rails",
+	bodyType: "mpv",
 });
 
-const legacy = (year: number, manufactureMonth?: number): VehicleSelection => ({
-	makeId: "veh:mk:a94a0388-ca51-4c2b-a0ff-ff26464bcfab",
-	modelId: "veh:md:3a4efb6f-7476-481c-8cbd-4bb80e562450",
-	generationId: "veh:gn:7860f324-9fb5-4369-a759-11c05af7c0b4",
+/** A6 Avant 4B — start clamped to the generation, end month-precise. */
+const a6 = (year: number, manufactureMonth?: number): VehicleSelection => ({
+	makeId: "veh:mk:8f572ed9-e52a-4ca5-8a8d-f5c99c9ad32c",
+	modelId: "veh:md:d7f5602c-c7b2-4ba5-80c0-b3a02222ebb1",
+	generationId: "veh:gn:125d8150-98d1-4e23-8420-dc04b8a0a289",
 	year,
 	manufactureMonth,
 	roofType: "raised-rails",
 	bodyType: "estate",
 });
 
-const GIULIA_SET = "UHJvZHVjdDo1OTM=";
-const LEGACY_SET = "UHJvZHVjdDo4NDcy";
-
-describe("shape", () => {
-	it("passes the 3.0.0 validator against this build's Saleor instance", () => {
-		const result = validateFitmentDataset(sample, { expectedSaleorInstance: "api.maky.store" });
-		expect(result.ok).toBe(true);
-		expect(result.ok && result.warnings).toEqual([]);
-	});
-
-	it("is refused against a different Saleor instance — the ids are instance-bound", () => {
-		const result = validateFitmentDataset(sample, { expectedSaleorInstance: "staging.example" });
-		expect(result.ok).toBe(false);
-	});
-
-	it("claims no complete coverage, so absence can never become NO_FIT", () => {
-		expect(sample.coverage.completeForMakeIds).toEqual([]);
-	});
+/** H-1 Van TQ — a held mapping. */
+const h1 = (year: number, manufactureMonth?: number): VehicleSelection => ({
+	makeId: "veh:mk:f1c04661-be53-447b-b6aa-81fac10756ec",
+	modelId: "veh:md:0f4cc205-de4b-4b9c-bef2-9ea34aaf7ae8",
+	generationId: "veh:gn:26acdc13-ba24-4ee5-9537-12a3910723fb",
+	year,
+	manufactureMonth,
+	roofType: "raised-rails",
+	bodyType: "van",
 });
 
-describe("meaning — the manufacturer's word, on a real row", () => {
-	it("offers an inner year without asking for a month", () => {
-		const r = resolveFitment(dataset, giulia(2022), { saleorProductId: GIULIA_SET });
-		expect(r.verdict).toBe("MANUFACTURER_FIT");
-		expect(isFitmentOfferable({ verdict: r.verdict, eligibility: r.product?.eligibility })).toBe(true);
-		expect(r.product?.verification).toBe("not-independently-verified");
-		expect(r.product?.evidence.supplier).toBe("nordrive");
+const COURIER_SET = "UHJvZHVjdDozNzMw";
+const A6_SET = "UHJvZHVjdDo5NDU=";
+const H1_SET = "UHJvZHVjdDo0MDI0";
+
+describe("an open-ended window, month-precise at the start", () => {
+	it("offers a later year without ever asking for a month", () => {
+		// 2025 is past the boundary from every direction. Asking for a month here would
+		// be collecting an answer that cannot change the outcome.
+		const result = resolveFitment(dataset, courier(2025), { saleorProductId: COURIER_SET });
+		expect(result.verdict).toBe("MANUFACTURER_FIT");
+		expect(isFitmentOfferable({ verdict: result.verdict, eligibility: result.product?.eligibility })).toBe(
+			true,
+		);
 	});
 
 	it("asks for the month on the boundary year, and answers once it has it", () => {
-		expect(resolveFitment(dataset, giulia(2019), { saleorProductId: GIULIA_SET }).verdict).toBe(
-			"NEEDS_DETAIL",
-		);
-		expect(resolveFitment(dataset, giulia(2019, 12), { saleorProductId: GIULIA_SET }).verdict).toBe(
+		const unknownMonth = resolveFitment(dataset, courier(2023), { saleorProductId: COURIER_SET });
+		expect(unknownMonth.verdict).toBe("NEEDS_DETAIL");
+
+		// The window opens in November, so November is in and October is not.
+		expect(resolveFitment(dataset, courier(2023, 11), { saleorProductId: COURIER_SET }).verdict).toBe(
 			"MANUFACTURER_FIT",
 		);
-		// A car built one month before the window opens is not a fit, and saying so needs
-		// the month — which is the whole reason the question is asked.
-		expect(resolveFitment(dataset, giulia(2019, 11), { saleorProductId: GIULIA_SET }).verdict).not.toBe(
-			"MANUFACTURER_FIT",
+		expect(resolveFitment(dataset, courier(2023, 10), { saleorProductId: COURIER_SET }).verdict).toBe(
+			"UNKNOWN",
 		);
 	});
 
 	it("never claims a fit before the window opens", () => {
-		const r = resolveFitment(dataset, giulia(2018), { saleorProductId: GIULIA_SET });
-		expect(isFitmentOfferable({ verdict: r.verdict, eligibility: r.product?.eligibility })).toBe(false);
-		// And it is UNKNOWN, not NO_FIT: this dataset claims no complete coverage.
-		expect(r.verdict).toBe("UNKNOWN");
+		expect(resolveFitment(dataset, courier(2022), { saleorProductId: COURIER_SET }).verdict).not.toBe(
+			"MANUFACTURER_FIT",
+		);
 	});
 });
 
-describe("meaning — the held row", () => {
-	it("is never offerable, however well it matches", () => {
-		const r = resolveFitment(dataset, legacy(2003, 4), { saleorProductId: LEGACY_SET });
-		expect(r.product?.eligibility.sellable).toBe(false);
-		expect(r.product?.eligibility.reasons).toEqual(["known_mapping_suspect"]);
-		expect(isFitmentOfferable({ verdict: r.verdict, eligibility: r.product?.eligibility })).toBe(false);
+describe("a window clamped at one end only", () => {
+	it("needs no month at the clamped start — the source admitted it does not know one", () => {
+		// `reconciledToGeneration: true`, `startPrecision: "year"`. The whole of 1998 is
+		// inside the window, so a month cannot move the answer and is not asked for.
+		const result = resolveFitment(dataset, a6(1998), { saleorProductId: A6_SET });
+		expect(result.verdict).toBe("MANUFACTURER_FIT");
+	});
+
+	it("still needs one at the month-precise end", () => {
+		expect(resolveFitment(dataset, a6(2005), { saleorProductId: A6_SET }).verdict).toBe("NEEDS_DETAIL");
+		expect(resolveFitment(dataset, a6(2005, 2), { saleorProductId: A6_SET }).verdict).toBe(
+			"MANUFACTURER_FIT",
+		);
+		expect(resolveFitment(dataset, a6(2005, 3), { saleorProductId: A6_SET }).verdict).toBe("UNKNOWN");
+	});
+});
+
+describe("a held mapping", () => {
+	it("is never offerable, however well the vehicle matches", () => {
+		const result = resolveFitment(dataset, h1(2008, 1), { saleorProductId: H1_SET });
+		expect(isFitmentOfferable({ verdict: result.verdict, eligibility: result.product?.eligibility })).toBe(
+			false,
+		);
+		expect(result.product?.eligibility.sellable).toBe(false);
+		expect(result.product?.eligibility.reasons).toContain("known_mapping_suspect");
 	});
 
 	it("reads as 'we cannot confirm this', not as 'your car is wrong'", () => {
-		// The source disputes the mapping. That is our uncertainty, not a fact about the
-		// customer's vehicle, and the shopper must never be told otherwise.
-		const r = resolveFitment(dataset, legacy(2003, 4), { saleorProductId: LEGACY_SET });
-		expect(r.verdict).toBe("UNKNOWN");
-		expect(r.verdict).not.toBe("NO_FIT");
+		// The distinction is the point: a hold is OUR uncertainty about a mapping, not a
+		// fact about the shopper's vehicle. NO_FIT would be a claim we cannot make.
+		const result = resolveFitment(dataset, h1(2008, 1), { saleorProductId: H1_SET });
+		expect(result.verdict).not.toBe("NO_FIT");
+		expect(result.verdict).toBe("UNKNOWN");
 	});
 
 	it("still asks for the month it needs, even on a row it will refuse anyway", () => {
-		// The start lost its month to reconciliation and the end kept one, so 2003 is
-		// undecidable from one side. The question comes before the refusal, because the
-		// refusal is about the mapping and the question is about the car.
-		expect(resolveFitment(dataset, legacy(2003), { saleorProductId: LEGACY_SET }).verdict).toBe(
-			"NEEDS_DETAIL",
-		);
+		// The question comes before the refusal: answering it is how we learn whether the
+		// row was even relevant.
+		expect(resolveFitment(dataset, h1(2008), { saleorProductId: H1_SET }).verdict).toBe("NEEDS_DETAIL");
+	});
+});
+
+describe("the whole pilot is the manufacturer's word, and says so", () => {
+	it("never yields VERIFIED_FIT for any row in it", () => {
+		// Every product here is `manufacturer-application` / `not-independently-verified`.
+		// Before B0.3 the configurator rendered "Overené pre vaše vozidlo" for every
+		// offerable card — which is all of them — so the wrong claim was not an edge case,
+		// it was the entire real catalogue.
+		const products = (pilot as { applications: { products: { verification: string }[] }[] }).applications
+			.flatMap((a) => a.products)
+			.map((p) => p.verification);
+		expect(products.every((v) => v === "not-independently-verified")).toBe(true);
+
+		for (const [selection, id] of [
+			[courier(2025), COURIER_SET],
+			[a6(1998), A6_SET],
+		] as const) {
+			expect(resolveFitment(dataset, selection, { saleorProductId: id }).verdict).not.toBe("VERIFIED_FIT");
+		}
+	});
+
+	it("names the supplier that stands behind each row", () => {
+		const result = resolveFitment(dataset, courier(2025), { saleorProductId: COURIER_SET });
+		expect(result.product?.evidence.kind).toBe("manufacturer-application");
+		expect(result.product?.evidence.supplier).toBeTruthy();
 	});
 });

@@ -96,19 +96,22 @@ describe("the committed fixtures", () => {
 	// value and there is no source text to preserve. That is only safe while they contain
 	// no whole-valued float. This asserts it, rather than assuming it — the demo fixture
 	// DOES contain `139.0` prices, which is precisely why it may not carry a real hash.
-	it("pilot-sample hashes identically by value and by text", () => {
-		const text = readFileSync("src/lib/fitment/fixtures/pilot-sample.json", "utf8");
+	//
+	// The two-application excerpt this used to guard is gone: it existed only because the
+	// full pilot was not available, and it carried bca2997617ae0cf9…, the hash of the
+	// 77-product pilot it was cut from, under that pilot's own datasetVersion. The real
+	// pilot is now committed and checked in `pilot-conformance.test.ts`, hashes and all.
+	it("the delivered pilot hashes identically by value and by text", () => {
+		const text = readFileSync("src/lib/fitment/fixtures/pilot-3.0.0-20260906.2.json", "utf8");
 		expect(datasetHashFromValue(JSON.parse(text))).toBe(datasetHashFromText(text));
 	});
 
-	it("pilot-sample declares its OWN hash, not the full pilot's", () => {
-		const text = readFileSync("src/lib/fitment/fixtures/pilot-sample.json", "utf8");
-		const declared = (JSON.parse(text) as { datasetHash: string; datasetVersion: string }).datasetHash;
+	it("the delivered pilot's declared hash is the one recomputed from it", () => {
+		const text = readFileSync("src/lib/fitment/fixtures/pilot-3.0.0-20260906.2.json", "utf8");
+		const declared = (JSON.parse(text) as { datasetHash: string }).datasetHash;
 		expect(declared).toBe(datasetHashFromText(text));
-		// The excerpt shipped carrying bca2997617ae0cf9…, the hash of the 77-product
-		// pilot it was cut from, under that pilot's own datasetVersion. Two documents
-		// claiming one identity is the failure this whole gate exists to catch.
+		// Two documents claiming one identity is the failure this whole gate exists to
+		// catch, and the superseded pilot is the document that must never come back.
 		expect(declared).not.toBe("bca2997617ae0cf9a594fae8bf6539a504069e66ac4a310761d91519e34ee5e4");
-		expect((JSON.parse(text) as { datasetVersion: string }).datasetVersion).not.toBe("3.0.0-pilot-20260906");
 	});
 });
