@@ -146,3 +146,79 @@ describe("the HTTP provider answers, or says why not", () => {
 		expect(status.unavailableReason).toBe("missing-MAKY_FITMENT_URL");
 	});
 });
+
+/**
+ * The memo exists because Next's data cache does not hold this payload.
+ *
+ * `next: { revalidate }` is the intended cache and it works for a small dataset. The real
+ * CFM export is 7.9 MB and Next refuses any entry over 2 MB — the fetch still succeeds, so
+ * nothing looks broken and every gate stays green while the caching silently stops
+ * happening. Measured on a production build against the live URL: three PDP renders, three
+ * full 8 MB downloads. These tests are what keep that from coming back.
+ */
+describe("the dataset is fetched once, not once per render", () => {
+	async function freshModule() {
+		vi.resetModules();
+		return import("./provider");
+	}
+
+	it("serves the second caller from memory", async () => {
+		const spy = vi.fn(async () => new Response(delivered(), { status: 200 }));
+		vi.stubGlobal("fetch", spy);
+
+		const { loadFitmentDataset } = await freshModule();
+		const first = await loadFitmentDataset();
+		const second = await loadFitmentDataset();
+
+		expect(first.dataset).not.toBeNull();
+		expect(second.dataset).toBe(first.dataset);
+		expect(spy).toHaveBeenCalledTimes(1);
+	});
+
+	it("collapses concurrent cold callers into one fetch", async () => {
+		// The failure this prevents is a cold start under load: without an in-flight
+		// entry, ten simultaneous requests are ten simultaneous 8 MB downloads.
+		const spy = vi.fn(async () => new Response(delivered(), { status: 200 }));
+		vi.stubGlobal("fetch", spy);
+
+		const { loadFitmentDataset } = await freshModule();
+		const all = await Promise.all(Array.from({ length: 5 }, () => loadFitmentDataset()));
+
+		expect(spy).toHaveBeenCalledTimes(1);
+		for (const load of all) expect(load.dataset).toBe(all[0].dataset);
+	});
+
+	it("does not hold a failure for the full success TTL", async () => {
+		// A broken upstream must not be cached for five minutes, or recovery waits it
+		// out. It must not be retried on every request either, or an outage becomes a
+		// thundering herd. 30 s is the compromise, and it is not the success TTL.
+		process.env.MAKY_FITMENT_REVALIDATE_SECONDS = "3600";
+		const spy = vi.fn(async () => new Response("nope", { status: 500 }));
+		vi.stubGlobal("fetch", spy);
+
+		const { loadFitmentDataset, __resetFitmentMemo } = await freshModule();
+		const first = await loadFitmentDataset();
+		expect(first.dataset).toBeNull();
+		expect(spy).toHaveBeenCalledTimes(1);
+
+		// Still inside the negative window: no second request.
+		await loadFitmentDataset();
+		expect(spy).toHaveBeenCalledTimes(1);
+
+		__resetFitmentMemo();
+		await loadFitmentDataset();
+		expect(spy).toHaveBeenCalledTimes(2);
+	});
+
+	it("does not serve one URL's dataset for another", async () => {
+		const spy = vi.fn(async () => new Response(delivered(), { status: 200 }));
+		vi.stubGlobal("fetch", spy);
+
+		const { loadFitmentDataset } = await freshModule();
+		await loadFitmentDataset();
+		process.env.MAKY_FITMENT_URL = "https://carfitmanager.test/other.json";
+		await loadFitmentDataset();
+
+		expect(spy).toHaveBeenCalledTimes(2);
+	});
+});

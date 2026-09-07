@@ -98,11 +98,63 @@ function loadFixture(): FitmentLoad {
 	return { dataset: validation.dataset, status: statusFor("fixture", validation.dataset, null) };
 }
 
+/**
+ * In-process memo for the HTTP dataset, because Next's data cache will not hold it.
+ *
+ * `next: { revalidate }` below is the intended cache and it works — for a small payload.
+ * The full CFM export is 7.9 MB, and Next refuses to store any entry over 2 MB:
+ *
+ *     Failed to set Next.js data cache … items over 2MB can not be cached (10637357 bytes)
+ *
+ * The fetch still succeeds, so nothing looks broken: the page renders, the resolver
+ * answers, the tests pass. What silently stops happening is the caching. Measured on a
+ * production build against the live CFM URL — three PDP renders, three full downloads.
+ * At 9,577 product pages that is a lot of someone else's bandwidth per crawl.
+ *
+ * The pilot was 60 KB and cached correctly, which is exactly why this only appears with
+ * the real dataset.
+ *
+ * Two entries, not one value: `inflight` collapses a cold start's concurrent requests
+ * into a single download rather than one per request. Failures are held for a much
+ * shorter window than successes — long enough to stop a thundering herd against a broken
+ * upstream, short enough that recovery does not wait out the full TTL.
+ *
+ * The `revalidate` hint is left in place: it costs nothing, and it is still the mechanism
+ * if CFM ever serves a payload small enough for Next to hold.
+ */
+const NEGATIVE_TTL_MS = 30_000;
+let memo: { key: string; load: FitmentLoad; expiresAt: number } | null = null;
+let inflight: { key: string; promise: Promise<FitmentLoad> } | null = null;
+
+/** Exported for tests only — there is no other way to observe a module-level memo. */
+export function __resetFitmentMemo(): void {
+	memo = null;
+	inflight = null;
+}
+
 async function loadHttp(): Promise<FitmentLoad> {
 	const url = process.env.MAKY_FITMENT_URL?.trim();
 	if (!url) {
 		return { dataset: null, status: statusFor("http", null, "missing-MAKY_FITMENT_URL") };
 	}
+
+	// Keyed by URL so that swapping MAKY_FITMENT_URL is not served a stale dataset.
+	const key = url;
+	const now = Date.now();
+	if (memo && memo.key === key && memo.expiresAt > now) return memo.load;
+	if (inflight && inflight.key === key) return inflight.promise;
+
+	const promise = fetchHttp(url).then((load) => {
+		const ttlMs = load.dataset ? datasetRevalidateSeconds() * 1000 : NEGATIVE_TTL_MS;
+		memo = { key, load, expiresAt: Date.now() + ttlMs };
+		inflight = null;
+		return load;
+	});
+	inflight = { key, promise };
+	return promise;
+}
+
+async function fetchHttp(url: string): Promise<FitmentLoad> {
 	const timeoutMs = Number(process.env.MAKY_FITMENT_TIMEOUT_MS ?? DEFAULT_TIMEOUT_MS);
 	const token = process.env.MAKY_FITMENT_TOKEN?.trim();
 
