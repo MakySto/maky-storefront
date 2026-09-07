@@ -8,7 +8,7 @@ import {
 import { CheckoutAddLineDocument } from "@/gql/graphql";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
 import * as Checkout from "@/lib/checkout";
-import { QUANTITY_FALLBACK_MAX } from "@/ui/components/ui/quantity-stepper";
+import { clampQuantity } from "@/ui/components/ui/quantity-limits";
 import {
 	classifyCheckoutErrors,
 	hasTimeForAnotherRead,
@@ -58,14 +58,10 @@ export async function addVariantToCart(input: {
 		return { status: "rejected", reason: "invalid", message: "variantId is not a valid identifier" };
 	}
 
-	// Quantity is user-controlled on both call sites. Clamp rather than trust.
-	const ceiling =
-		Number.isFinite(input.maxQuantity) && (input.maxQuantity ?? 0) > 0
-			? (input.maxQuantity as number)
-			: QUANTITY_FALLBACK_MAX;
-	const quantity = Number.isFinite(input.quantity)
-		? Math.min(Math.max(Math.trunc(input.quantity), 1), ceiling)
-		: 1;
+	// Quantity is user-controlled on both call sites. Clamp rather than trust — and the
+	// clamp itself is guaranteed to return a positive integer, because the previous one
+	// could return NaN and did: see `quantity-limits.ts`.
+	const quantity = clampQuantity(input.quantity, input.maxQuantity);
 
 	let checkoutId: string;
 	let quantityBefore = 0;

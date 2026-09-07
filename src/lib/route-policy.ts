@@ -70,6 +70,13 @@ export const ROUTE_POLICY: readonly MarketRoutePolicy[] = [
 	{ segment: "login", kind: "private", markets: "all", indexable: false },
 	{ segment: "orders", kind: "private", markets: "all", indexable: false },
 	{ segment: "signup", kind: "private", markets: "all", indexable: false },
+	// The garage and the configurator both render one visitor's saved vehicle, so there
+	// is no stable page for a crawler and both carry `robots: noindex` of their own.
+	// They exist in every market because the feature is not market-specific; note that
+	// the SEGMENTS are Slovak words, so localised route slugs are still an open question
+	// for whoever owns URL shape.
+	{ segment: "garage", kind: "private", markets: "all", indexable: false },
+	{ segment: "konfigurator", kind: "private", markets: "all", indexable: false },
 ];
 
 const BY_SEGMENT: ReadonlyMap<string, MarketRoutePolicy> = new Map(

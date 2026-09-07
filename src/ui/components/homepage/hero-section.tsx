@@ -1,11 +1,21 @@
 "use client";
 
+import { type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 
-export function HeroSection() {
+/**
+ * `vehicleAction` is a slot, not a button.
+ *
+ * The hero used to render its own amber car button with no `onClick` — a stub, and the
+ * wrong colour besides: CLAUDE.md §4 reserves amber for promotions and gives the purchase
+ * and primary actions the action tokens. The real launcher has to resolve the saved
+ * vehicle on the server, so it is passed in from the page rather than imported here, and
+ * it is EMPTY when the vehicle feature cannot act (no dataset, or no garage). An absent
+ * CTA is honest; a CTA that opens an empty selector is not.
+ */
+export function HeroSection({ vehicleAction }: { vehicleAction?: ReactNode }) {
 	const t = useTranslations("nav");
 	const th = useTranslations("home");
-	const tf = useTranslations("fitment");
 
 	return (
 		<section className="relative overflow-hidden bg-gray-900 text-white">
@@ -25,13 +35,7 @@ export function HeroSection() {
 					<p className="mt-6 text-lg leading-8 text-gray-300">{th("heroSubtitle")}</p>
 
 					<div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-						<button
-							type="button"
-							className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-6 py-3.5 text-sm font-semibold text-gray-900 shadow-sm transition hover:bg-amber-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
-						>
-							<CarIcon />
-							{tf("selectVehicle")}
-						</button>
+						{vehicleAction}
 						<a
 							href="#categories"
 							className="inline-flex items-center gap-1 text-sm font-medium text-gray-300 transition hover:text-white"
@@ -44,14 +48,6 @@ export function HeroSection() {
 			</div>
 			<div className="absolute inset-0 -z-10 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
 		</section>
-	);
-}
-
-function CarIcon() {
-	return (
-		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
-			<path d="M6.5 3c-1.051 0-2.093.04-3.125.117A1.49 1.49 0 002 4.607V10.5h-.5a.5.5 0 00-.5.5v2a2 2 0 002 2h1a2 2 0 002-2h8a2 2 0 002 2h1a2 2 0 002-2v-2a.5.5 0 00-.5-.5H18V4.607a1.49 1.49 0 00-1.375-1.49A44.07 44.07 0 0013.5 3h-7zM5 13a1 1 0 11-2 0 1 1 0 012 0zm10 0a1 1 0 11-2 0 1 1 0 012 0zM4.5 5a.5.5 0 01.5-.5h10a.5.5 0 01.5.5v4a.5.5 0 01-.5.5H5a.5.5 0 01-.5-.5V5z" />
-		</svg>
 	);
 }
 

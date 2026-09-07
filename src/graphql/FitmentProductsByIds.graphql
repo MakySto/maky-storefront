@@ -1,0 +1,119 @@
+# Candidate roof-rack sets, resolved from fitment ids to a real, purchasable offer.
+#
+# Keyed on `ids:` rather than `externalReference:`. The live Saleor API has no bulk
+# filter by externalReference — neither ProductWhereInput nor ProductFilterInput exposes
+# it, only the singular product(externalReference:) lookup — so a list of CFM references
+# could only be resolved one round trip at a time. That is why the fitment contract
+# carries saleorProductId.
+#
+# `externalReference` is selected so the caller can VERIFY that the product which came
+# back is the one the fitment row meant, rather than trusting the row's own copy of it.
+#
+# `metafield(key: "cfm_availability_mode")` is the catalogue's availability fact. This
+# catalogue is sale-to-order: trackInventory is false and `quantityAvailable` answers a
+# synthetic cap (50 for every variant, confirmed live), so it may only be used to detect
+# a hard zero — never to make a positive stock claim.
+#
+# It is selected on the VARIANT first and on the product second. CFM publishes it on the
+# ProductVariant — measured live 2026-09-06: the pre-existing catalogue carries it on
+# 100/100 variants and 0/100 products, and the Nordrive roof-rack sets published that
+# night carry it on both. Reading only the product node would have resolved every
+# older product to "unknown" and silently dropped the "Na objednávku" line, with a
+# green build and a green suite. The consumer prefers the variant value and falls back
+# to the product's; see `availabilityFrom` in offers.ts.
+#
+# `translation` is applied to the RETURNED fields only; the lookup stays by id, so this
+# cannot repeat the `slugLanguageCode` failure where a translated-slug argument matches
+# nothing and returns null for the whole catalogue.
+#
+# The translation projection mirrors `ProductListItem` field for field — name, slug,
+# description, seoTitle, seoDescription, the category, and the variant's selection
+# attributes. That is not decoration: `resolveExactLocaleProduct` REFUSES a product whose
+# translation lacks `description` or `seoDescription`, and refuses again if any attribute
+# translation is incomplete. Selecting only `translation { name }`, as this query did,
+# would make the localization boundary reject every single foreign offer — a green build,
+# a green suite, and an empty configurator on every market except Slovak. Mirroring the
+# listing fragment also means the offer list and the listing make the SAME judgement about
+# the same product, instead of one offering what the other drops.
+query FitmentProductsByIds($ids: [ID!]!, $channel: String!, $first: Int!, $lang: LanguageCodeEnum!) {
+	products(first: $first, channel: $channel, filter: { ids: $ids }) {
+		totalCount
+		edges {
+			node {
+				id
+				name
+				slug
+				externalReference
+				isAvailableForPurchase
+				metafield(key: "cfm_availability_mode")
+				translation(languageCode: $lang) {
+					name
+					slug
+					description
+					seoTitle
+					seoDescription
+				}
+				attributes {
+					attribute {
+						name
+						slug
+						externalReference
+						unit
+						translation(languageCode: $lang) {
+							name
+						}
+					}
+					values {
+						name
+						translation(languageCode: $lang) {
+							name
+						}
+					}
+				}
+				thumbnail(size: 512, format: WEBP) {
+					url
+					alt
+				}
+				category {
+					id
+					name
+					slug
+					translation(languageCode: $lang) {
+						name
+						slug
+					}
+				}
+				variants {
+					id
+					name
+					quantityAvailable
+					metafield(key: "cfm_availability_mode")
+					pricing {
+						price {
+							gross {
+								amount
+								currency
+							}
+						}
+					}
+					selectionAttributes: attributes(variantSelection: VARIANT_SELECTION) {
+						attribute {
+							slug
+							name
+							translation(languageCode: $lang) {
+								name
+							}
+						}
+						values {
+							name
+							value
+							translation(languageCode: $lang) {
+								name
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

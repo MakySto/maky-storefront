@@ -64,11 +64,29 @@ export const STATIC_PRICE_RANGES_WITH_COUNT = STATIC_PRICE_RANGES.map((r) => ({ 
 export function buildFilterVariables(params: {
 	priceRange?: string | null;
 	categoryIds?: string[];
+	/**
+	 * Saleor product ids the active vehicle is VERIFIED for, from the fitment dataset.
+	 * See `@/lib/fitment/plp-vehicle-filter`, which owns the rules; two of them are
+	 * enforced there and cannot be enforced here:
+	 *
+	 *   - the list is complete, never truncated to a page size — `filter: { ids }` takes
+	 *     250 ids and pages correctly (measured live), so `first: 100` caps the page and
+	 *     not the candidate set;
+	 *   - an EMPTY list must never arrive. `filter: { ids: [] }` returns the whole
+	 *     catalogue, not nothing, so a caller with no verified products must skip the
+	 *     query rather than pass `[]` here.
+	 */
+	vehicleProductIds?: string[];
 	attributeFilters?: Partial<Record<StorefrontAttributeSlug, readonly string[]>>;
 	attributeRanges?: Partial<Record<"year-from" | "year-to", { gte?: number; lte?: number }>>;
 }): ProductFilterInput | undefined {
 	const filter: ProductFilterInput = {};
 	let hasFilter = false;
+
+	if (params.vehicleProductIds?.length) {
+		filter.ids = params.vehicleProductIds;
+		hasFilter = true;
+	}
 
 	if (params.categoryIds?.length) {
 		filter.categories = params.categoryIds;

@@ -24,6 +24,12 @@ import { parseEditorJSToText } from "@/lib/editorjs";
 import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
 import { marketHref } from "@/lib/channel-map";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
+import {
+	isVehicleFilterRequested,
+	resolveVehicleListingFilter,
+	vehicleFilterIds,
+} from "@/lib/fitment/plp-vehicle-filter";
+import { VehicleListingFilter } from "@/ui/components/fitment/vehicle-listing-filter";
 import { CollectionPageClient } from "./client";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleCollection, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
@@ -72,6 +78,7 @@ type PageProps = {
 		price?: string;
 		colors?: string;
 		sizes?: string;
+		vehicle?: string;
 	}>;
 };
 
@@ -178,7 +185,11 @@ async function CollectionProducts({
 		field: ProductOrderField.Collection,
 		direction: OrderDirection.Asc,
 	};
-	const filter = buildFilterVariables({ priceRange: searchParams.price });
+	const vehicleFilter = await resolveVehicleListingFilter(isVehicleFilterRequested(searchParams.vehicle));
+	const filter = buildFilterVariables({
+		priceRange: searchParams.price,
+		vehicleProductIds: vehicleFilterIds(vehicleFilter),
+	});
 	const locale = getLocaleFromChannel(params.channel);
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
@@ -225,12 +236,22 @@ async function CollectionProducts({
 	);
 
 	return (
-		<CollectionPageClient
-			products={productCards}
-			totalCount={products.totalCount ?? 0}
-			localeDropped={localized.dropped}
-			pageInfo={products.pageInfo}
-		/>
+		<>
+			<div className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+				<VehicleListingFilter
+					channel={params.channel}
+					filter={vehicleFilter}
+					basePath={`/collections/${params.slug}`}
+					searchParams={searchParams}
+				/>
+			</div>
+			<CollectionPageClient
+				products={productCards}
+				totalCount={products.totalCount ?? 0}
+				localeDropped={localized.dropped}
+				pageInfo={products.pageInfo}
+			/>
+		</>
 	);
 }
 

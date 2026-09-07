@@ -1,0 +1,2361 @@
+{
+ "schemaVersion": "3.0.0",
+ "datasetVersion": "3.0.0-pilot-20260906.2",
+ "generatedAt": "2026-09-06T20:36:37.579890+00:00",
+ "source": {
+  "system": "cfm",
+  "note": "ProductRoofFit application windows, reconciled once at import. Evidence is the manufacturer's application list; nothing here is independently verified.",
+  "publicIdMap": "PUBLIC_VEHICLE_IDS.json"
+ },
+ "saleorInstance": "api.maky.store",
+ "validity": {
+  "validUntil": null,
+  "staleAfterDays": 30
+ },
+ "coverage": {
+  "scope": {
+   "programId": "nordrive-roof-racks",
+   "productKinds": [
+    "roof-rack-set"
+   ]
+  },
+  "completeForMakeIds": []
+ },
+ "accounting": {
+  "manifest_rows": 9192,
+  "products_exported": 67,
+  "products_exported_sellable": 61,
+  "products_held": 6,
+  "product_application_references": 67,
+  "fits_refused": {},
+  "fits_refused_total": 0,
+  "manifest_rows_not_in_file": 9125,
+  "pilot": true,
+  "pilot_rows_trimmed": 9125
+ },
+ "makes": [
+  {
+   "id": "veh:mk:0569257e-8630-4d82-81aa-63f25364f5bb",
+   "name": "BMW"
+  },
+  {
+   "id": "veh:mk:0bd541b6-a9d0-4557-9d72-0e01961cdc55",
+   "name": "FORD"
+  },
+  {
+   "id": "veh:mk:4be60395-5a56-488a-ae2f-10cfe7154649",
+   "name": "TOYOTA"
+  },
+  {
+   "id": "veh:mk:8f572ed9-e52a-4ca5-8a8d-f5c99c9ad32c",
+   "name": "AUDI"
+  },
+  {
+   "id": "veh:mk:edd9943c-a77a-4372-bc3e-3b703cd8a4f2",
+   "name": "KIA"
+  },
+  {
+   "id": "veh:mk:f1c04661-be53-447b-b6aa-81fac10756ec",
+   "name": "HYUNDAI"
+  }
+ ],
+ "models": [
+  {
+   "id": "veh:md:0f4cc205-de4b-4b9c-bef2-9ea34aaf7ae8",
+   "name": "H-1 Van",
+   "makeId": "veh:mk:f1c04661-be53-447b-b6aa-81fac10756ec"
+  },
+  {
+   "id": "veh:md:22ccb1c4-8d35-4cdf-aff7-9dfbbfec1646",
+   "name": "S-Max",
+   "makeId": "veh:mk:0bd541b6-a9d0-4557-9d72-0e01961cdc55"
+  },
+  {
+   "id": "veh:md:aae91cc5-c88d-4145-a00e-08582c3e5b97",
+   "name": "X5",
+   "makeId": "veh:mk:0569257e-8630-4d82-81aa-63f25364f5bb"
+  },
+  {
+   "id": "veh:md:b23580e9-c65d-42bf-853c-e7911eb8216f",
+   "name": "Sorento",
+   "makeId": "veh:mk:edd9943c-a77a-4372-bc3e-3b703cd8a4f2"
+  },
+  {
+   "id": "veh:md:cd53f51b-d8e4-47ec-aec6-8169f83bbd5a",
+   "name": "Auris Touring Sports",
+   "makeId": "veh:mk:4be60395-5a56-488a-ae2f-10cfe7154649"
+  },
+  {
+   "id": "veh:md:d7f5602c-c7b2-4ba5-80c0-b3a02222ebb1",
+   "name": "A6 Avant",
+   "makeId": "veh:mk:8f572ed9-e52a-4ca5-8a8d-f5c99c9ad32c"
+  },
+  {
+   "id": "veh:md:f7b7403d-1bb8-463f-a9bb-be3b78f6cb8e",
+   "name": "Tourneo Courier",
+   "makeId": "veh:mk:0bd541b6-a9d0-4557-9d72-0e01961cdc55"
+  }
+ ],
+ "generations": [
+  {
+   "id": "veh:gn:0001eec7-06c7-4cbc-a7e2-0c84e9f4ac87",
+   "name": "XM",
+   "modelId": "veh:md:b23580e9-c65d-42bf-853c-e7911eb8216f",
+   "productionYearFrom": 2009,
+   "productionYearTo": 2015,
+   "qualifiers": {
+    "roofTypes": [
+     "raised-rails"
+    ],
+    "bodyTypes": [
+     "suv"
+    ]
+   }
+  },
+  {
+   "id": "veh:gn:00167344-049c-4fe6-819e-a84c5340ece5",
+   "name": "MK2",
+   "modelId": "veh:md:22ccb1c4-8d35-4cdf-aff7-9dfbbfec1646",
+   "productionYearFrom": 2015,
+   "productionYearTo": 2023,
+   "qualifiers": {
+    "roofTypes": [
+     "flush-rails",
+     "naked-roof"
+    ],
+    "bodyTypes": [
+     "mpv"
+    ]
+   }
+  },
+  {
+   "id": "veh:gn:00af3b93-d546-489c-a45a-b38fafac5be2",
+   "name": "E180",
+   "modelId": "veh:md:cd53f51b-d8e4-47ec-aec6-8169f83bbd5a",
+   "productionYearFrom": 2013,
+   "productionYearTo": 2019,
+   "qualifiers": {
+    "roofTypes": [
+     "flush-rails"
+    ],
+    "bodyTypes": [
+     "estate"
+    ]
+   }
+  },
+  {
+   "id": "veh:gn:00becc7f-8589-4395-89d3-2102dd34d51c",
+   "name": "V769",
+   "modelId": "veh:md:f7b7403d-1bb8-463f-a9bb-be3b78f6cb8e",
+   "productionYearFrom": 2023,
+   "productionYearTo": null,
+   "qualifiers": {
+    "roofTypes": [
+     "raised-rails"
+    ],
+    "bodyTypes": [
+     "mpv"
+    ]
+   }
+  },
+  {
+   "id": "veh:gn:081cac81-ba81-4b30-bba3-53dddadb4e33",
+   "name": "E53",
+   "modelId": "veh:md:aae91cc5-c88d-4145-a00e-08582c3e5b97",
+   "productionYearFrom": 1999,
+   "productionYearTo": 2006,
+   "qualifiers": {
+    "roofTypes": [
+     "naked-roof",
+     "raised-rails"
+    ],
+    "bodyTypes": [
+     "suv"
+    ]
+   }
+  },
+  {
+   "id": "veh:gn:125d8150-98d1-4e23-8420-dc04b8a0a289",
+   "name": "4B",
+   "modelId": "veh:md:d7f5602c-c7b2-4ba5-80c0-b3a02222ebb1",
+   "productionYearFrom": 1998,
+   "productionYearTo": 2005,
+   "qualifiers": {
+    "roofTypes": [
+     "raised-rails"
+    ],
+    "bodyTypes": [
+     "estate"
+    ]
+   }
+  },
+  {
+   "id": "veh:gn:26acdc13-ba24-4ee5-9537-12a3910723fb",
+   "name": "TQ",
+   "modelId": "veh:md:0f4cc205-de4b-4b9c-bef2-9ea34aaf7ae8",
+   "productionYearFrom": 2008,
+   "productionYearTo": 2021,
+   "qualifiers": {
+    "roofTypes": [
+     "raised-rails"
+    ],
+    "bodyTypes": [
+     "van"
+    ]
+   }
+  }
+ ],
+ "applications": [
+  {
+   "applicationId": "app:10b7ccb9d7f21d07a82eb145",
+   "generationId": "veh:gn:00af3b93-d546-489c-a45a-b38fafac5be2",
+   "window": {
+    "endPrecision": "month",
+    "from": {
+     "month": 10,
+     "year": 2013
+    },
+    "reconciledToGeneration": false,
+    "sourceWindow": "10/13>03/19",
+    "startPrecision": "month",
+    "to": {
+     "month": 3,
+     "year": 2019
+    }
+   },
+   "qualifiers": {
+    "roofTypes": [
+     "flush-rails"
+    ],
+    "bodyTypes": [
+     "estate"
+    ]
+   },
+   "conditions": [],
+   "negative": false,
+   "products": [
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-2394d38b5a3887-000000",
+     "saleorProductId": "UHJvZHVjdDo4NjYw",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6ODY2MA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15064",
+      "sourceWindow": "10/13>03/19"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 90,
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 108
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-24fd9e99ebd8db-000000",
+     "saleorProductId": "UHJvZHVjdDo4NjU5",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6ODY1OQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15099",
+      "sourceWindow": "10/13>03/19"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 108
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-6c5d4169bb9814-000000",
+     "saleorProductId": "UHJvZHVjdDo4NjYx",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6ODY2MQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15049",
+      "sourceWindow": "10/13>03/19"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "steel",
+      "barColour": "black",
+      "barLengthCm": 108
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-7201e0065f9e8d-000000",
+     "saleorProductId": "UHJvZHVjdDo4NjU2",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6ODY1Ng==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21410|N20004|N15401",
+      "sourceWindow": "10/13>03/19"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 74
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-7829026436f865-000000",
+     "saleorProductId": "UHJvZHVjdDo4NjYy",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6ODY2Mg==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21410|N15015",
+      "sourceWindow": "10/13>03/19"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "aerodynamic",
+      "barMaterial": "aluminium",
+      "barColour": "silver"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-7889d30cfabc88-000000",
+     "saleorProductId": "UHJvZHVjdDo4NjYz",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6ODY2Mw==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21410|N15014",
+      "sourceWindow": "10/13>03/19"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "aerodynamic",
+      "barMaterial": "steel",
+      "barColour": "black",
+      "barLengthCm": 111
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-c56c43d166c007-000000",
+     "saleorProductId": "UHJvZHVjdDo4NjU3",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6ODY1Nw==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21410|N20004|N15421",
+      "sourceWindow": "10/13>03/19"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 74
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-c9073b39250e71-000000",
+     "saleorProductId": "UHJvZHVjdDo4NjU4",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6ODY1OA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15104",
+      "sourceWindow": "10/13>03/19"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 108
+     }
+    }
+   ]
+  },
+  {
+   "applicationId": "app:458b804f7d05b569bca6ead6",
+   "generationId": "veh:gn:00167344-049c-4fe6-819e-a84c5340ece5",
+   "window": {
+    "endPrecision": "month",
+    "from": {
+     "month": 10,
+     "year": 2015
+    },
+    "reconciledToGeneration": false,
+    "sourceWindow": "10/15>09/23",
+    "startPrecision": "month",
+    "to": {
+     "month": 9,
+     "year": 2023
+    }
+   },
+   "qualifiers": {
+    "roofTypes": [
+     "naked-roof"
+    ],
+    "bodyTypes": [
+     "mpv"
+    ]
+   },
+   "conditions": [],
+   "negative": false,
+   "products": [
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-10467019b3d920-000000",
+     "saleorProductId": "UHJvZHVjdDozNzAw",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcwMA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21186|N20001|N15087",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "wing",
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 140
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-1f9fec721ca22b-000000",
+     "saleorProductId": "UHJvZHVjdDozNzA1",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcwNQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21186|N20002|N15082",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "wing",
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 140
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-29eb5857d0c668-000000",
+     "saleorProductId": "UHJvZHVjdDozNzA3",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcwNw==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21186|N20002|N15022",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "tubular",
+      "barMaterial": "steel",
+      "barColour": "black",
+      "barLengthCm": 140
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-31f6c967fe2831-000000",
+     "saleorProductId": "UHJvZHVjdDozNzAz",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcwMw==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21186|N20001|N15022",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "tubular",
+      "barMaterial": "steel",
+      "barColour": "black",
+      "barLengthCm": 140
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-45732d4d72e53c-000000",
+     "saleorProductId": "UHJvZHVjdDozNzA2",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcwNg==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21186|N20002|N15077",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "aerodynamic",
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 140
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-4ce8629663ca93-000000",
+     "saleorProductId": "UHJvZHVjdDozNjk4",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzY5OA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21186|N20003|N15411|N15410",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barMaterial": "aluminium",
+      "barColour": "silver"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-75c0fff1a961f1-000000",
+     "saleorProductId": "UHJvZHVjdDozNzAx",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcwMQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21186|N20001|N15082",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "wing",
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 140
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-bec495f3e2fc4c-000000",
+     "saleorProductId": "UHJvZHVjdDozNjk5",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzY5OQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21186|N20003|N15431|N15430",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barMaterial": "aluminium",
+      "barColour": "black"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-dda2381ebdbf0a-000000",
+     "saleorProductId": "UHJvZHVjdDozNzAy",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcwMg==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21186|N20001|N15077",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "aerodynamic",
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 140
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-de4e32fb26c334-000000",
+     "saleorProductId": "UHJvZHVjdDozNzA0",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcwNA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21186|N20002|N15087",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "wing",
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 140
+     }
+    }
+   ]
+  },
+  {
+   "applicationId": "app:64d4a0a275334210bffda5c0",
+   "generationId": "veh:gn:0001eec7-06c7-4cbc-a7e2-0c84e9f4ac87",
+   "window": {
+    "endPrecision": "month",
+    "from": {
+     "month": 11,
+     "year": 2009
+    },
+    "reconciledToGeneration": false,
+    "sourceWindow": "11/09>01/15",
+    "startPrecision": "month",
+    "to": {
+     "month": 1,
+     "year": 2015
+    }
+   },
+   "qualifiers": {
+    "roofTypes": [
+     "raised-rails"
+    ],
+    "bodyTypes": [
+     "suv"
+    ]
+   },
+   "conditions": [],
+   "negative": false,
+   "products": [
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-08a2d2caeecda4-000000",
+     "saleorProductId": "UHJvZHVjdDo0NzMx",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDczMQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15041",
+      "sourceWindow": "11/09>01/15"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 90,
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 127
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-112cc17ad17b6f-000000",
+     "saleorProductId": "UHJvZHVjdDo0NzM0",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDczNA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15012",
+      "sourceWindow": "11/09>01/15"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "steel",
+      "barColour": "black"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-5bab612d5e43f6-000000",
+     "saleorProductId": "UHJvZHVjdDo0NzMy",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDczMg==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15031",
+      "sourceWindow": "11/09>01/15"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "steel",
+      "barColour": "black",
+      "barLengthCm": 127
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-6336bf13540537-000000",
+     "saleorProductId": "UHJvZHVjdDo0NzMz",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDczMw==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15013",
+      "sourceWindow": "11/09>01/15"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "silver"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-655c91e96262ad-000000",
+     "saleorProductId": "UHJvZHVjdDo0NzMw",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDczMA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15046",
+      "sourceWindow": "11/09>01/15"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 90,
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 127
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-78d0ba552e1951-000000",
+     "saleorProductId": "UHJvZHVjdDo0NzI4",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDcyOA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15096",
+      "sourceWindow": "11/09>01/15"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 128
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-dc38832922a508-000000",
+     "saleorProductId": "UHJvZHVjdDo0NzI5",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDcyOQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15091",
+      "sourceWindow": "11/09>01/15"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 128
+     }
+    }
+   ]
+  },
+  {
+   "applicationId": "app:67a20ee97bb3466c2bc37f3d",
+   "generationId": "veh:gn:125d8150-98d1-4e23-8420-dc04b8a0a289",
+   "window": {
+    "endPrecision": "month",
+    "from": {
+     "year": 1998
+    },
+    "reconciledToGeneration": true,
+    "sourceWindow": "08/94>02/05",
+    "startPrecision": "year",
+    "to": {
+     "month": 2,
+     "year": 2005
+    }
+   },
+   "qualifiers": {
+    "roofTypes": [
+     "raised-rails"
+    ],
+    "bodyTypes": [
+     "estate"
+    ]
+   },
+   "conditions": [],
+   "negative": false,
+   "products": [
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-57c7b9c12cfc7a-000000",
+     "saleorProductId": "UHJvZHVjdDo5NDU=",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6OTQ1",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15095",
+      "sourceWindow": "08/94>02/05"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 120
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-808946b864da98-000000",
+     "saleorProductId": "UHJvZHVjdDo5NDg=",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6OTQ4",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15040",
+      "sourceWindow": "08/94>02/05"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 90,
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 120
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-822bf76d47ad84-000000",
+     "saleorProductId": "UHJvZHVjdDo5NDk=",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6OTQ5",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15030",
+      "sourceWindow": "08/94>02/05"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "steel",
+      "barColour": "black",
+      "barLengthCm": 120
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-aa49f055be47f8-000000",
+     "saleorProductId": "UHJvZHVjdDo5NTE=",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6OTUx",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15010",
+      "sourceWindow": "08/94>02/05"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "steel",
+      "barColour": "black"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-f526778390fbf3-000000",
+     "saleorProductId": "UHJvZHVjdDo5NTA=",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6OTUw",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15011",
+      "sourceWindow": "08/94>02/05"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "silver"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-f674b32d20f6da-000000",
+     "saleorProductId": "UHJvZHVjdDo5NDY=",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6OTQ2",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15090",
+      "sourceWindow": "08/94>02/05"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 120
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-ff1e1b6de2eb39-000000",
+     "saleorProductId": "UHJvZHVjdDo5NDc=",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6OTQ3",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15045",
+      "sourceWindow": "08/94>02/05"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 90,
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 120
+     }
+    }
+   ]
+  },
+  {
+   "applicationId": "app:6b10c028d262a78c3609fb19",
+   "generationId": "veh:gn:081cac81-ba81-4b30-bba3-53dddadb4e33",
+   "window": {
+    "endPrecision": "month",
+    "from": {
+     "month": 5,
+     "year": 2000
+    },
+    "reconciledToGeneration": false,
+    "sourceWindow": "05/00>02/07",
+    "startPrecision": "month",
+    "to": {
+     "month": 2,
+     "year": 2007
+    }
+   },
+   "qualifiers": {
+    "roofTypes": [
+     "naked-roof"
+    ],
+    "bodyTypes": [
+     "suv"
+    ]
+   },
+   "conditions": [],
+   "negative": false,
+   "products": [
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-5195fde7c0373b-000000",
+     "saleorProductId": "UHJvZHVjdDoxNjc0",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MTY3NA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21034|N20001|N15021",
+      "sourceWindow": "05/00>02/07"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "tubular",
+      "barMaterial": "steel",
+      "barColour": "black",
+      "barLengthCm": 127
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-62cbf19acd0ac2-000000",
+     "saleorProductId": "UHJvZHVjdDoxNjc3",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MTY3Nw==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21034|N20002|N15076",
+      "sourceWindow": "05/00>02/07"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "aerodynamic",
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 127
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-693979eee66ddb-000000",
+     "saleorProductId": "UHJvZHVjdDoxNjc1",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MTY3NQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21034|N20002|N15086",
+      "sourceWindow": "05/00>02/07"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "wing",
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 128
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-773ce28053393b-000000",
+     "saleorProductId": "UHJvZHVjdDoxNjY5",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MTY2OQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21034|N20003|N15428|N15427",
+      "sourceWindow": "05/00>02/07"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barMaterial": "aluminium",
+      "barColour": "black"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-7dcf65786be122-000000",
+     "saleorProductId": "UHJvZHVjdDoxNjc4",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MTY3OA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21034|N20002|N15071",
+      "sourceWindow": "05/00>02/07"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "aerodynamic",
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 127
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-8a155d7ccba9c5-000000",
+     "saleorProductId": "UHJvZHVjdDoxNjcy",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MTY3Mg==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21034|N20001|N15076",
+      "sourceWindow": "05/00>02/07"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "aerodynamic",
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 127
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-a309bef3ba724a-000000",
+     "saleorProductId": "UHJvZHVjdDoxNjY4",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MTY2OA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21034|N20003|N15408|N15407",
+      "sourceWindow": "05/00>02/07"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barMaterial": "aluminium",
+      "barColour": "silver"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-a9435871b77eb4-000000",
+     "saleorProductId": "UHJvZHVjdDoxNjcz",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MTY3Mw==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21034|N20001|N15071",
+      "sourceWindow": "05/00>02/07"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "aerodynamic",
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 127
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-ba30d622bb741a-000000",
+     "saleorProductId": "UHJvZHVjdDoxNjc5",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MTY3OQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21034|N20002|N15021",
+      "sourceWindow": "05/00>02/07"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "tubular",
+      "barMaterial": "steel",
+      "barColour": "black",
+      "barLengthCm": 127
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-bb5d84076a0e9f-000000",
+     "saleorProductId": "UHJvZHVjdDoxNjcw",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MTY3MA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21034|N20001|N15086",
+      "sourceWindow": "05/00>02/07"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "wing",
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 128
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-ef537035184660-000000",
+     "saleorProductId": "UHJvZHVjdDoxNjcx",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MTY3MQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21034|N20001|N15081",
+      "sourceWindow": "05/00>02/07"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "wing",
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 128
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-f9e9d3413911ad-000000",
+     "saleorProductId": "UHJvZHVjdDoxNjc2",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MTY3Ng==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21034|N20002|N15081",
+      "sourceWindow": "05/00>02/07"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "wing",
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 128
+     }
+    }
+   ]
+  },
+  {
+   "applicationId": "app:94380e4ee88d55c48c9ffa77",
+   "generationId": "veh:gn:00becc7f-8589-4395-89d3-2102dd34d51c",
+   "window": {
+    "endPrecision": "open",
+    "from": {
+     "month": 11,
+     "year": 2023
+    },
+    "reconciledToGeneration": false,
+    "sourceWindow": "11/23>",
+    "startPrecision": "month",
+    "to": null
+   },
+   "qualifiers": {
+    "roofTypes": [
+     "raised-rails"
+    ],
+    "bodyTypes": [
+     "mpv"
+    ]
+   },
+   "conditions": [],
+   "negative": false,
+   "products": [
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-090e6dfd115cf2-000000",
+     "saleorProductId": "UHJvZHVjdDozNzMw",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzczMA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15097",
+      "sourceWindow": "11/23>"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 140
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-0fadbfb347e703-000000",
+     "saleorProductId": "UHJvZHVjdDozNzI5",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcyOQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21400|N20004|N15225|N15224",
+      "sourceWindow": "11/23>"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barShape": "wing",
+      "barMaterial": "aluminium",
+      "barColour": "black"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-5d713a77a34b36-000000",
+     "saleorProductId": "UHJvZHVjdDozNzMx",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzczMQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15092",
+      "sourceWindow": "11/23>"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 140
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-62cbda76bdd2c4-000000",
+     "saleorProductId": "UHJvZHVjdDozNzM0",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzczNA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15013",
+      "sourceWindow": "11/23>"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "silver"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-730e5d51347889-000000",
+     "saleorProductId": "UHJvZHVjdDozNzMz",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzczMw==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15032",
+      "sourceWindow": "11/23>"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "steel",
+      "barColour": "black",
+      "barLengthCm": 140
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-7c5cffc72053d5-000000",
+     "saleorProductId": "UHJvZHVjdDozNzM1",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzczNQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15012",
+      "sourceWindow": "11/23>"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "steel",
+      "barColour": "black"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-b05a0de0bf6edb-000000",
+     "saleorProductId": "UHJvZHVjdDozNzI4",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcyOA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21400|N20004|N15205|N15204",
+      "sourceWindow": "11/23>"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barShape": "wing",
+      "barMaterial": "aluminium",
+      "barColour": "silver"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-f1c51108d88115-000000",
+     "saleorProductId": "UHJvZHVjdDozNzMy",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzczMg==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15047",
+      "sourceWindow": "11/23>"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 90,
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 140
+     }
+    }
+   ]
+  },
+  {
+   "applicationId": "app:b3dd604c31e30590180365f5",
+   "generationId": "veh:gn:00167344-049c-4fe6-819e-a84c5340ece5",
+   "window": {
+    "endPrecision": "month",
+    "from": {
+     "month": 10,
+     "year": 2015
+    },
+    "reconciledToGeneration": false,
+    "sourceWindow": "10/15>09/23",
+    "startPrecision": "month",
+    "to": {
+     "month": 9,
+     "year": 2023
+    }
+   },
+   "qualifiers": {
+    "roofTypes": [
+     "flush-rails"
+    ],
+    "bodyTypes": [
+     "mpv"
+    ]
+   },
+   "conditions": [],
+   "negative": false,
+   "products": [
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-28a092fd49e276-000000",
+     "saleorProductId": "UHJvZHVjdDozNzEx",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcxMQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15101",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 128
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-5278107d884dc0-000000",
+     "saleorProductId": "UHJvZHVjdDozNzE2",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcxNg==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21413|N15016",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "aerodynamic",
+      "barMaterial": "steel",
+      "barColour": "black",
+      "barLengthCm": 136
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-5b9b51ae8de006-000000",
+     "saleorProductId": "UHJvZHVjdDozNzA5",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcwOQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21413|N20004|N15226|N15225",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "wing",
+      "barMaterial": "aluminium",
+      "barColour": "black"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-b078c588dd84d5-000000",
+     "saleorProductId": "UHJvZHVjdDozNzE1",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcxNQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21413|N15017",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "aerodynamic",
+      "barMaterial": "aluminium",
+      "barColour": "silver"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-bc62e7a29d29e2-000000",
+     "saleorProductId": "UHJvZHVjdDozNzEw",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcxMA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15106",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 128
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-c94aee267f566c-000000",
+     "saleorProductId": "UHJvZHVjdDozNzE0",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcxNA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15051",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "steel",
+      "barColour": "black",
+      "barLengthCm": 127
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-d5848193482a64-000000",
+     "saleorProductId": "UHJvZHVjdDozNzEz",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcxMw==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15061",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 90,
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 127
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-f2129d0d049f95-000000",
+     "saleorProductId": "UHJvZHVjdDozNzA4",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcwOA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N21413|N20004|N15206|N15205",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "completeSet": {
+      "includes": [
+       "fitting-kit",
+       "feet",
+       "bars"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 75,
+      "barShape": "wing",
+      "barMaterial": "aluminium",
+      "barColour": "silver"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-f53b6c519ef14d-000000",
+     "saleorProductId": "UHJvZHVjdDozNzEy",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6MzcxMg==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.95,
+      "sourceRef": "N15066",
+      "sourceWindow": "10/15>09/23"
+     },
+     "qaStatus": "accepted",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": true,
+      "reasons": []
+     },
+     "facets": {
+      "maxLoadKg": 90,
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 127
+     }
+    }
+   ]
+  },
+  {
+   "applicationId": "app:f9a1f32da941e0674712be71",
+   "generationId": "veh:gn:26acdc13-ba24-4ee5-9537-12a3910723fb",
+   "window": {
+    "endPrecision": "month",
+    "from": {
+     "year": 2008
+    },
+    "reconciledToGeneration": true,
+    "sourceWindow": "10/97>01/08",
+    "startPrecision": "year",
+    "to": {
+     "month": 1,
+     "year": 2008
+    }
+   },
+   "qualifiers": {
+    "roofTypes": [
+     "raised-rails"
+    ],
+    "bodyTypes": [
+     "van"
+    ]
+   },
+   "conditions": [],
+   "negative": false,
+   "products": [
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-1a513ef9d4bad0-000000",
+     "saleorProductId": "UHJvZHVjdDo0MDI0",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDAyNA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.9,
+      "sourceRef": "N15011",
+      "sourceWindow": "10/97>01/08"
+     },
+     "qaStatus": "hold",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": false,
+      "reasons": [
+       "known_mapping_suspect"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "silver"
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-5af8889ea47166-000000",
+     "saleorProductId": "UHJvZHVjdDo0MDIw",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDAyMA==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.9,
+      "sourceRef": "N15094",
+      "sourceWindow": "10/97>01/08"
+     },
+     "qaStatus": "hold",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": false,
+      "reasons": [
+       "known_mapping_suspect"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 108
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-89bf8a08f2beab-000000",
+     "saleorProductId": "UHJvZHVjdDo0MDIz",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDAyMw==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.9,
+      "sourceRef": "N15029",
+      "sourceWindow": "10/97>01/08"
+     },
+     "qaStatus": "hold",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": false,
+      "reasons": [
+       "known_mapping_suspect"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "steel",
+      "barColour": "black",
+      "barLengthCm": 108
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-d5dd16824660f8-000000",
+     "saleorProductId": "UHJvZHVjdDo0MDIx",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDAyMQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.9,
+      "sourceRef": "N15089",
+      "sourceWindow": "10/97>01/08"
+     },
+     "qaStatus": "hold",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": false,
+      "reasons": [
+       "known_mapping_suspect"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "aluminium",
+      "barColour": "black",
+      "barLengthCm": 108
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-e717d58a316176-000000",
+     "saleorProductId": "UHJvZHVjdDo0MDIy",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDAyMg==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.9,
+      "sourceRef": "N15044",
+      "sourceWindow": "10/97>01/08"
+     },
+     "qaStatus": "hold",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": false,
+      "reasons": [
+       "known_mapping_suspect"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 90,
+      "barMaterial": "aluminium",
+      "barColour": "silver",
+      "barLengthCm": 108
+     }
+    },
+    {
+     "externalReference": "cfm:product:CFMP-B-NOR-fb1c93c6fa41fd-000000",
+     "saleorProductId": "UHJvZHVjdDo0MDI1",
+     "saleorVariantId": "UHJvZHVjdFZhcmlhbnQ6NDAyNQ==",
+     "productKind": "roof-rack-set",
+     "evidence": {
+      "kind": "manufacturer-application",
+      "supplier": "nordrive",
+      "confidence": 0.9,
+      "sourceRef": "N15010",
+      "sourceWindow": "10/97>01/08"
+     },
+     "qaStatus": "hold",
+     "verification": "not-independently-verified",
+     "eligibility": {
+      "sellable": false,
+      "reasons": [
+       "known_mapping_suspect"
+      ]
+     },
+     "facets": {
+      "maxLoadKg": 100,
+      "barMaterial": "steel",
+      "barColour": "black"
+     }
+    }
+   ]
+  }
+ ],
+ "datasetHash": "5ab7b2d447afda3d1528408e95896191c251539414f805fbac54937baad27fb5"
+}

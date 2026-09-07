@@ -1,0 +1,297 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://maky.store/schemas/fitment-3.0.0.json",
+	"title": "MAKY.STORE fitment snapshot 3.0.0",
+	"description": "Machine-readable form of the storefront's validator (src/lib/fitment/validate.ts). Authoritative behaviour is the validator; this file exists so CFM can fail its own export before shipping it. Anything rejected here is rejected there.",
+	"type": "object",
+	"required": [
+		"schemaVersion",
+		"datasetVersion",
+		"datasetHash",
+		"generatedAt",
+		"source",
+		"saleorInstance",
+		"validity",
+		"coverage",
+		"makes",
+		"models",
+		"generations",
+		"applications"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "3.0.0",
+			"description": "Exact match. The storefront refuses every other value, including 3.1.0."
+		},
+		"datasetVersion": { "type": "string", "minLength": 1 },
+		"datasetHash": { "type": "string", "minLength": 1 },
+		"generatedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "Must parse as a date. Drives staleness with validity.staleAfterDays."
+		},
+		"source": {
+			"type": "object",
+			"required": ["system"],
+			"properties": {
+				"system": {
+					"type": "string",
+					"not": { "const": "fixture" },
+					"description": "\"fixture\" marks the dataset as demo and nothing in it can be sold."
+				},
+				"note": { "type": "string" },
+				"publicIdMap": { "type": "string" }
+			}
+		},
+		"saleorInstance": {
+			"const": "api.maky.store",
+			"description": "Compared against the host of NEXT_PUBLIC_SALEOR_API_URL. Ids are instance-bound."
+		},
+		"demoCatalogue": {
+			"description": "MUST BE ABSENT on a real dataset. Its presence marks the whole file as demo.",
+			"not": {}
+		},
+		"validity": {
+			"type": "object",
+			"required": ["validUntil", "staleAfterDays"],
+			"properties": {
+				"validUntil": { "type": ["string", "null"] },
+				"staleAfterDays": { "type": "number", "exclusiveMinimum": 0 }
+			}
+		},
+		"coverage": {
+			"type": "object",
+			"required": ["scope", "completeForMakeIds"],
+			"properties": {
+				"scope": {
+					"type": "object",
+					"required": ["programId", "productKinds"],
+					"properties": {
+						"programId": { "type": "string", "minLength": 1 },
+						"productKinds": { "type": "array", "items": { "$ref": "#/$defs/productKind" } }
+					}
+				},
+				"completeForMakeIds": {
+					"type": "array",
+					"items": { "type": "string" },
+					"description": "The ONLY thing that lets an absent row mean NO_FIT. Empty on a pilot, and on any partial export."
+				},
+				"note": { "type": "string" }
+			}
+		},
+		"accounting": {
+			"type": "object",
+			"description": "Free-form export bookkeeping. Ignored by the storefront."
+		},
+		"makes": { "type": "array", "items": { "$ref": "#/$defs/make" } },
+		"models": { "type": "array", "items": { "$ref": "#/$defs/model" } },
+		"generations": { "type": "array", "items": { "$ref": "#/$defs/generation" } },
+		"applications": { "type": "array", "items": { "$ref": "#/$defs/application" } }
+	},
+	"$defs": {
+		"productKind": {
+			"enum": [
+				"roof-rack-set",
+				"roof-box",
+				"ski-carrier",
+				"bike-carrier",
+				"fitting-kit",
+				"spare-part",
+				"accessory"
+			]
+		},
+		"roofType": {
+			"enum": ["naked-roof", "raised-rails", "flush-rails", "fixpoint", "rain-gutter", "t-track"]
+		},
+		"bodyType": {
+			"enum": ["hatchback", "estate", "saloon", "suv", "mpv", "van", "coupe", "convertible", "pickup"]
+		},
+		"qualifiers": {
+			"type": "object",
+			"description": "An ABSENT key means the qualifier does not matter. An EMPTY ARRAY is a data error and is rejected — it reads as 'no value fits'.",
+			"properties": {
+				"roofTypes": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/roofType" } },
+				"bodyTypes": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/bodyType" } },
+				"doors": { "type": "array", "minItems": 1, "items": { "type": "integer" } }
+			}
+		},
+		"make": {
+			"type": "object",
+			"required": ["id", "name"],
+			"properties": {
+				"id": { "type": "string", "minLength": 1 },
+				"name": { "type": "string", "minLength": 1 }
+			}
+		},
+		"model": {
+			"type": "object",
+			"required": ["id", "makeId", "name"],
+			"properties": {
+				"id": { "type": "string" },
+				"makeId": { "type": "string" },
+				"name": { "type": "string" }
+			}
+		},
+		"generation": {
+			"type": "object",
+			"required": ["id", "modelId", "name", "productionYearFrom", "productionYearTo", "qualifiers"],
+			"properties": {
+				"id": { "type": "string" },
+				"modelId": { "type": "string" },
+				"name": { "type": "string" },
+				"productionYearFrom": { "type": "integer" },
+				"productionYearTo": { "type": ["integer", "null"] },
+				"qualifiers": {
+					"$ref": "#/$defs/qualifiers",
+					"description": "Drives which questions the selector asks. A generation offered in two roof types must list both; the shopper is never guessed at."
+				}
+			}
+		},
+		"yearMonth": {
+			"type": "object",
+			"required": ["year"],
+			"properties": {
+				"year": { "type": "integer" },
+				"month": {
+					"type": "integer",
+					"minimum": 1,
+					"maximum": 12,
+					"description": "ABSENT = unknown. Not January, not December, and never filled in to make a comparison easier."
+				}
+			}
+		},
+		"window": {
+			"type": "object",
+			"required": ["from", "to", "startPrecision", "endPrecision", "reconciledToGeneration"],
+			"properties": {
+				"from": { "$ref": "#/$defs/yearMonth" },
+				"to": { "oneOf": [{ "$ref": "#/$defs/yearMonth" }, { "type": "null" }] },
+				"startPrecision": { "enum": ["month", "year"] },
+				"endPrecision": { "enum": ["month", "year", "open"] },
+				"reconciledToGeneration": { "type": "boolean" },
+				"sourceWindow": { "type": "string" }
+			},
+			"allOf": [
+				{
+					"description": "An open end and a stated end must agree.",
+					"if": { "properties": { "endPrecision": { "const": "open" } }, "required": ["endPrecision"] },
+					"then": { "properties": { "to": { "type": "null" } } },
+					"else": { "properties": { "to": { "type": "object" } } }
+				},
+				{
+					"description": "Precision must describe the value that is actually there.",
+					"if": { "properties": { "startPrecision": { "const": "month" } }, "required": ["startPrecision"] },
+					"then": { "properties": { "from": { "required": ["month"] } } },
+					"else": { "properties": { "from": { "not": { "required": ["month"] } } } }
+				},
+				{
+					"if": { "properties": { "endPrecision": { "const": "month" } }, "required": ["endPrecision"] },
+					"then": { "properties": { "to": { "required": ["month"] } } }
+				},
+				{
+					"if": { "properties": { "endPrecision": { "const": "year" } }, "required": ["endPrecision"] },
+					"then": { "properties": { "to": { "not": { "required": ["month"] } } } }
+				}
+			]
+		},
+		"evidence": {
+			"type": "object",
+			"required": ["kind"],
+			"properties": {
+				"kind": {
+					"enum": ["manufacturer-application", "manual-verification", "derived"],
+					"description": "Only manufacturer-application may be presented to a shopper as the manufacturer's word."
+				},
+				"supplier": { "type": "string" },
+				"sourceRef": { "type": "string" },
+				"sourceWindow": { "type": "string" },
+				"confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+			}
+		},
+		"eligibility": {
+			"type": "object",
+			"required": ["sellable", "reasons"],
+			"description": "Required. An absent decision is read as refusal, never as permission.",
+			"properties": {
+				"sellable": { "type": "boolean" },
+				"reasons": { "type": "array", "items": { "type": "string" } }
+			},
+			"if": { "properties": { "sellable": { "const": false } }, "required": ["sellable"] },
+			"then": {
+				"properties": { "reasons": { "minItems": 1 } },
+				"description": "A refusal without a reason cannot be diagnosed."
+			}
+		},
+		"productRef": {
+			"type": "object",
+			"required": [
+				"externalReference",
+				"saleorProductId",
+				"saleorVariantId",
+				"productKind",
+				"evidence",
+				"qaStatus",
+				"verification",
+				"eligibility"
+			],
+			"properties": {
+				"externalReference": {
+					"type": "string",
+					"minLength": 1,
+					"description": "Verified against what Saleor returns. A mismatch drops the row."
+				},
+				"saleorProductId": {
+					"type": "string",
+					"minLength": 1,
+					"description": "base64 \"Product:<pk>\". Required: Saleor has no bulk filter by externalReference."
+				},
+				"saleorVariantId": {
+					"type": "string",
+					"minLength": 1,
+					"description": "The exact purchasable variant. Never inferred from the product."
+				},
+				"productKind": { "$ref": "#/$defs/productKind" },
+				"evidence": { "$ref": "#/$defs/evidence" },
+				"qaStatus": { "enum": ["accepted", "unreviewed", "hold", "conflict", "rejected"] },
+				"verification": { "enum": ["not-independently-verified", "cfm-verified"] },
+				"eligibility": { "$ref": "#/$defs/eligibility" },
+				"completeSet": {
+					"type": "object",
+					"required": ["includes"],
+					"properties": { "includes": { "type": "array", "minItems": 1, "items": { "type": "string" } } },
+					"description": "Only where the components document more than one part. Absent means unknown, and unknown contents are not printed."
+				},
+				"facets": {
+					"type": "object",
+					"description": "Normalised properties. Safety numbers such as maxLoadKg are never defaulted or inherited from a sibling."
+				}
+			}
+		},
+		"application": {
+			"type": "object",
+			"required": ["applicationId", "generationId", "window", "qualifiers", "conditions", "products"],
+			"properties": {
+				"applicationId": { "type": "string", "minLength": 1 },
+				"generationId": { "type": "string", "minLength": 1 },
+				"window": { "$ref": "#/$defs/window" },
+				"qualifiers": { "$ref": "#/$defs/qualifiers" },
+				"conditions": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"required": ["code"],
+						"properties": {
+							"code": { "type": "string", "minLength": 1 },
+							"text": { "type": "object", "additionalProperties": { "type": "string" } }
+						}
+					}
+				},
+				"negative": {
+					"type": "boolean",
+					"description": "true = the source explicitly says it does NOT fit. The only thing besides complete coverage that produces NO_FIT."
+				},
+				"products": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/productRef" } }
+			}
+		}
+	}
+}

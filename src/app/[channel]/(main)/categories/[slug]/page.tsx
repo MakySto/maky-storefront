@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { categoryUrl } from "@/config/categories";
 import { notFound } from "next/navigation";
 import { type ResolvingMetadata, type Metadata } from "next";
 import { getTranslations } from "next-intl/server";
@@ -20,6 +21,12 @@ import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { buildCanonicalUrl } from "@/lib/seo/hreflang";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
+import {
+	isVehicleFilterRequested,
+	resolveVehicleListingFilter,
+	vehicleFilterIds,
+} from "@/lib/fitment/plp-vehicle-filter";
+import { VehicleListingFilter } from "@/ui/components/fitment/vehicle-listing-filter";
 import { CategoryPageClient } from "./client";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleCategory, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
@@ -68,6 +75,7 @@ type PageProps = {
 		price?: string;
 		colors?: string;
 		sizes?: string;
+		vehicle?: string;
 	}>;
 };
 
@@ -196,7 +204,11 @@ async function CategoryProducts({
 
 	const paginationVariables = getPaginatedListVariables({ params: searchParams });
 	const sortBy = buildSortVariables(searchParams.sort);
-	const filter = buildFilterVariables({ priceRange: searchParams.price });
+	const vehicleFilter = await resolveVehicleListingFilter(isVehicleFilterRequested(searchParams.vehicle));
+	const filter = buildFilterVariables({
+		priceRange: searchParams.price,
+		vehicleProductIds: vehicleFilterIds(vehicleFilter),
+	});
 	const locale = getLocaleFromChannel(params.channel);
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
@@ -245,12 +257,27 @@ async function CategoryProducts({
 	);
 
 	return (
-		<CategoryPageClient
-			products={productCards}
-			totalCount={products.totalCount ?? 0}
-			localeDropped={localized.dropped}
-			pageInfo={products.pageInfo}
-		/>
+		<>
+			<div className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+				<VehicleListingFilter
+					channel={params.channel}
+					filter={vehicleFilter}
+					// categoryUrl(), not a hand-built `/categories/…`: a catalogue category now
+					// lives at the root, and this path is what every vehicle-filter link is
+					// built from. Hard-coding the retired shape would make each filter click a
+					// 308 hop, and would reintroduce exactly the two-places-one-slug drift the
+					// catalogue was created to end.
+					basePath={categoryUrl(params.slug)}
+					searchParams={searchParams}
+				/>
+			</div>
+			<CategoryPageClient
+				products={productCards}
+				totalCount={products.totalCount ?? 0}
+				localeDropped={localized.dropped}
+				pageInfo={products.pageInfo}
+			/>
+		</>
 	);
 }
 
