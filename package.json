@@ -21,7 +21,7 @@
 		"test:run": "vitest run",
 		"knip": "knip",
 		"prepare": "husky install",
-		"i18n:check": "node scripts/i18n/check-commerce-i18n.mjs && node scripts/i18n/check-locale-matrix.mjs",
+		"i18n:check": "node scripts/i18n/check-commerce-i18n.mjs && node scripts/i18n/check-locale-matrix.mjs && node scripts/i18n/check-message-parity.mjs",
 		"check:css": "node scripts/checks/css-utilities.mjs",
 		"check:nav": "node scripts/checks/nav-links.mjs",
 		"check:published": "node scripts/checks/published-content.mjs",
