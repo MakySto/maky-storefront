@@ -1,7 +1,7 @@
 # Slovenské stránky — otvorené položky pred publikovaním
 
-Stav k 2026-09-07. Vetva `claude/maky-store-slovak-pages-8df66b`, tip `8c78e3c`,
-základ = produkčný commit `3b0843f`. **Nenasadené.**
+Stav k 2026-09-07. Vetva `claude/maky-store-slovak-pages-8df66b`, základ = produkčný
+commit `3b0843f`. **Nenasadené.** Obsahuje aj českú verziu (§ D).
 
 Texty z balíka sú zapracované. Tento súbor je jediný zoznam údajov, ktoré som
 **nemohol overiť** z kódu ani z konfigurácie a ktoré preto nie sú vymyslené —
@@ -156,3 +156,69 @@ stránka je staticky generovaná, takže vetvenie podľa `WITHDRAWAL_BACKEND_LIV
 sa do nej zapieklo v čase buildu a mohlo by odporovať samotnej stránke odstúpenia,
 ktorá sa renderuje pri každej požiadavke. Nové znenie je pravdivé v oboch stavoch.
 Po zapnutí funkcie sa dá vrátiť pôvodné znenie.
+
+---
+
+## D. Čeština — čo treba rozhodnúť pred spustením trhu CZ
+
+Sedem právnych stránok je preložených a na `/cz/*` sa reálne renderujú. **Nič z toho
+nie je indexovateľné** — `/cz` je preview trh a proxy mu posiela
+`X-Robots-Tag: noindex, nofollow`. Trh spúšťate vy pridaním `cz` do `MAKY_LIVE_MARKETS`.
+
+Než to urobíte:
+
+### D1. Kanál `cz-czk` má 0 produktov
+
+`sk-eur` má 9 577 produktov, `cz-czk` má **0**. Spustený český trh by bol obchod bez
+tovaru s kompletnými obchodnými podmienkami. Toto je jediný dôvod, prečo som trh
+nezapol.
+
+### D2. Online odstúpenie na `/cz` NEEXISTUJE — zámerne
+
+Kontrakt Returns V2 má `market: "SK"` a `locale: "sk"` ako literálové typy, takže
+Payload podanie z iného trhu odmietne. Formulár sa preto na `/cz` nezobrazí ani keď
+je `WITHDRAWAL_BACKEND_LIVE=true` (overené). Česká stránka namiesto toho ponúka e-mail
+a poštu, čo zákon dovoľuje.
+
+**Ak má mať český zákazník online formulár, musí sa rozšíriť kontrakt na strane
+Payloadu** — storefront to sám neurobí.
+
+### D3. `/cz/o-nas` je 404
+
+Táto stránka ide z Payloadu a `cmsPageRoute` je natvrdo len pre `sk`. Český text
+existuje, ale patrí do CMS, nie do kódu — inak vzniknú dva zdroje pravdy. Treba
+publikovať český dokument v Payloade a rozšíriť `cmsPageRoute`.
+
+### D4. Čo som v českom texte zmenil oproti dodanému prekladu
+
+Dodaný preklad ponechal dve vety zo slovenskej verzie, ktoré by na `/cz` neboli
+pravdivé. Opravil som ich podľa **overenej konfigurácie** (`CHANNEL_MAP`), nie podľa
+odhadu:
+
+| Dodaný preklad                                                  | Na `/cz`                                                    | Prečo                                                           |
+| --------------------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------- |
+| „Ve slovenské jazykové verzi se smlouva uzavírá ve slovenštině" | „V české jazykové verzi se smlouva uzavírá v češtině"       | Českému zákazníkovi to inak nehovorí nič o jeho vlastnej zmluve |
+| „Při nákupu ve slovenské verzi se cena uvádí v eurech"          | „Při nákupu v české verzi se cena uvádí v českých korunách" | `CHANNEL_MAP.cz.currency === "CZK"`                             |
+
+Doplnil som tiež vetu, že českému spotrebiteľovi zostávajú zachované kogentné predpisy
+ČR, a do GDPR stránky kontakt na ÚOOÚ ČR popri slovenskom úrade.
+
+### D5. Čo treba potvrdiť právne
+
+- **Orgán dozoru a ARS.** Texty uvádzajú SOI (sme slovenský predajca). Pre českého
+  spotrebiteľa je dozorným orgánom ČOI. Doplnil som len neutrálnu vetu, že sa môže
+  obrátiť aj na subjekt vo svojej krajine. **Overiť u právnika.**
+- **12-mesačné predĺženie po oprave od 31. 7. 2026** je slovenská novela. České právo
+  má vlastný režim. Text hovorí, že sa riadi slovenským právom a že kogentné české
+  predpisy zostávajú — či to stačí, je právna otázka.
+- **Doprava.** Kanál `cz-czk` má pásma „CE 0-5kg / 5-15kg / 15-30kg", teda strop 30 kg
+  a bez mena dopravcu. Český text preto **neobsahuje** hranicu 35 kg — tá je slovenská.
+  Treba potvrdiť, ktorí dopravcovia doručujú do ČR a od akej hmotnosti je doprava na
+  vyžiadanie.
+
+### D6. Ďalšie jazyky
+
+Pridanie trhu je **jedna zmena** v `src/lib/legal/locale.ts` — `route-policy.ts` si
+zoznam trhov odvodí sám. Musia však existovať obe jazykové telá v každom module
+`src/ui/content/legal/*`, inak to test zachytí. Preklad sám o sebe nestačí: text musí
+hovoriť pravdu o mene, dopravcoch a dozorných orgánoch daného trhu.
