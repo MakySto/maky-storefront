@@ -26,8 +26,8 @@ describe("Returns V2 storefront copy", () => {
 
 	it("offers merchant pickup without making it a precondition of returning the goods", () => {
 		const form = source("src/ui/components/withdrawal/withdrawal-form.tsx");
-		const page = source("src/app/[channel]/(main)/odstupenie-od-zmluvy/page.tsx");
-		const returnsPage = source("src/app/[channel]/(main)/reklamacie-a-vratenie/page.tsx");
+		const page = source("src/ui/content/legal/odstupenie-od-zmluvy.tsx");
+		const returnsPage = source("src/ui/content/legal/reklamacie-a-vratenie.tsx");
 		const rendered = `${form} ${page}`;
 
 		expect(form).toContain("withdrawalCustomerStatement(statementOrderNumber, scope)");
@@ -55,8 +55,8 @@ describe("Returns V2 storefront copy", () => {
 	});
 
 	it("pins the refund meaning and excludes forbidden first-confirmation promises", () => {
-		const page = source("src/app/[channel]/(main)/odstupenie-od-zmluvy/page.tsx");
-		const returnsPage = source("src/app/[channel]/(main)/reklamacie-a-vratenie/page.tsx");
+		const page = source("src/ui/content/legal/odstupenie-od-zmluvy.tsx");
+		const returnsPage = source("src/ui/content/legal/reklamacie-a-vratenie.tsx");
 		const receipt = source("src/ui/components/withdrawal/withdrawal-receipt.tsx");
 		const customerCopy = `${page} ${returnsPage} ${receipt}`;
 

@@ -17,15 +17,38 @@ const BANNED = [
 	"neplatiteľ",
 ];
 
-const LEGAL_SURFACES = [
-	"src/app/[channel]/(main)/kontakt/page.tsx",
-	"src/app/[channel]/(main)/obchodne-podmienky/page.tsx",
-	"src/app/[channel]/(main)/reklamacie-a-vratenie/page.tsx",
-	"src/app/[channel]/(main)/odstupenie-od-zmluvy/page.tsx",
-	"src/app/[channel]/(main)/ochrana-osobnych-udajov/page.tsx",
-	"src/app/[channel]/(main)/o-nas/page.tsx",
-	"src/config/company.ts",
+/**
+ * Every file that can put a VAT claim in front of a customer.
+ *
+ * A glob, not a list, because the copy moved once already: it used to live inline in the
+ * route files and now lives in `src/ui/content/legal/` so a second language could share
+ * the route. A fixed list would have gone on passing while pointing at files that no
+ * longer contain any prose — the assertions would still be green and would be checking
+ * nothing. Resolving the surfaces at run time means new pages and new languages are
+ * covered the moment they exist, which is the only way this guard survives a refactor.
+ */
+const LEGAL_SLUGS = [
+	"kontakt",
+	"obchodne-podmienky",
+	"reklamacie-a-vratenie",
+	"odstupenie-od-zmluvy",
+	"ochrana-osobnych-udajov",
+	"o-nas",
+	"doprava-a-platba",
+	"cookies",
 ];
+
+function legalSurfaces(): string[] {
+	const routes = LEGAL_SLUGS.map((slug) => `src/app/[channel]/(main)/${slug}/page.tsx`);
+	const contentDir = path.join(process.cwd(), "src/ui/content/legal");
+	const content = fs.existsSync(contentDir)
+		? fs
+				.readdirSync(contentDir)
+				.filter((f) => f.endsWith(".tsx"))
+				.map((f) => `src/ui/content/legal/${f}`)
+		: [];
+	return [...routes, ...content, "src/ui/components/legal/o-nas-static.tsx", "src/config/company.ts"];
+}
 
 const read = (rel: string) => {
 	const abs = path.join(process.cwd(), rel);
@@ -48,7 +71,7 @@ describe("company identity", () => {
 });
 
 describe("legal surfaces", () => {
-	for (const rel of LEGAL_SURFACES) {
+	for (const rel of legalSurfaces()) {
 		it(`${rel} claims no non-VAT-payer status`, () => {
 			const src = read(rel);
 			if (src === null) return; // page not present in this build of the app
@@ -59,7 +82,10 @@ describe("legal surfaces", () => {
 	}
 
 	it("the terms of sale identify the seller with the VAT number", () => {
-		const src = read("src/app/[channel]/(main)/obchodne-podmienky/page.tsx");
+		const src = legalSurfaces()
+			.map(read)
+			.filter((s): s is string => s !== null)
+			.join("\n");
 		expect(src).toContain("companyInfo.icDph");
 		// Either wording is fine; what must never pass is a negated one, hence the
 		// lookbehind. `BANNED` above catches the known negations, this catches the
@@ -67,8 +93,13 @@ describe("legal surfaces", () => {
 		expect(src).toMatch(/(?<!nie )je platiteľom (?:DPH|dane z pridanej hodnoty)/);
 	});
 
-	it("the contact page identifies the seller with the VAT number", () => {
-		const src = read("src/app/[channel]/(main)/kontakt/page.tsx");
-		expect(src).toContain("companyInfo.icDph");
+	it("every language that states VAT payer status states it affirmatively", () => {
+		const src = legalSurfaces()
+			.map(read)
+			.filter((s): s is string => s !== null)
+			.join("\n");
+		// Czech spells it "plátcem"; a negated Czech form must fail here too.
+		expect(src).not.toMatch(/n(?:e|ie)ní plátcem/i);
+		expect(src).not.toMatch(/nie je platiteľom/i);
 	});
 });

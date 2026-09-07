@@ -206,7 +206,8 @@ describe("dotted first segment", () => {
  * <head> over a 404-ed body.
  */
 describe("a route that exists, but not in this market", () => {
-	const SK_ONLY = [
+	/** Static legal copy, approved in Slovak and Czech. */
+	const LEGAL_PAGES = [
 		"kontakt",
 		"obchodne-podmienky",
 		"odstupenie-od-zmluvy",
@@ -214,15 +215,29 @@ describe("a route that exists, but not in this market", () => {
 		"ochrana-osobnych-udajov",
 		"cookies",
 		"doprava-a-platba",
-		"o-nas",
-		"poradna",
 	];
 
-	it("404s the Slovak-only pages under every other market", async () => {
+	/** CMS-backed; `cmsPageRoute` still hard-gates on the Slovak market. */
+	const CMS_PAGES = ["o-nas", "poradna"];
+
+	const SK_ONLY = [...LEGAL_PAGES, ...CMS_PAGES];
+
+	it("404s these pages in a market with no approved copy", async () => {
 		for (const segment of SK_ONLY) {
-			for (const market of ["de", "cz", "fr", "us", "ca"]) {
+			for (const market of ["de", "fr", "us", "ca"]) {
 				expect(await statusOf(`/${market}/${segment}`), `/${market}/${segment}`).toBe(404);
 			}
+		}
+	});
+
+	it("serves the legal pages on cz, but not the CMS ones", async () => {
+		// Czech copy is approved, so the proxy must let these through — the gate and
+		// `legalLocaleFor` are two halves of one decision and used to be able to disagree.
+		for (const segment of LEGAL_PAGES) {
+			expect(await statusOf(`/cz/${segment}`), `/cz/${segment}`).not.toBe(404);
+		}
+		for (const segment of CMS_PAGES) {
+			expect(await statusOf(`/cz/${segment}`), `/cz/${segment}`).toBe(404);
 		}
 	});
 

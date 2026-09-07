@@ -46,7 +46,8 @@ describe("policy covers the route tree", () => {
 });
 
 describe("market scoping", () => {
-	const SK_ONLY = [
+	/** Static legal copy, approved in Slovak and Czech. */
+	const LEGAL_PAGES = [
 		"cookies",
 		"doprava-a-platba",
 		"kontakt",
@@ -54,14 +55,39 @@ describe("market scoping", () => {
 		"ochrana-osobnych-udajov",
 		"odstupenie-od-zmluvy",
 		"reklamacie-a-vratenie",
-		"o-nas",
-		"poradna",
 	];
 
-	it("keeps the Slovak legal and CMS pages on sk", () => {
-		for (const segment of SK_ONLY) {
+	/** CMS-backed, and `cmsPageRoute` still hard-gates on the Slovak market. */
+	const CMS_PAGES = ["o-nas", "poradna"];
+
+	/** Markets with no approved copy of any kind. */
+	const NO_COPY = ["de", "fr", "us"];
+
+	it("serves the legal pages in every market whose copy is approved", () => {
+		for (const segment of LEGAL_PAGES) {
+			for (const market of ["sk", "cz"]) {
+				expect(marketHasRoute(market, segment), `${market}/${segment}`).toBe(true);
+				expect(isRouteMissingInMarket(market, segment), `${market}/${segment}`).toBe(false);
+			}
+		}
+	});
+
+	it("still 404s the legal pages in a market with no approved copy", () => {
+		// The original bug: /de/kontakt answered 200 with an indexable Slovak <head>
+		// over a 404-ed body. Selling into Germany on Slovak terms is a compliance
+		// problem before it is an SEO one, and adding Czech must not have reopened it.
+		for (const segment of LEGAL_PAGES) {
+			for (const market of NO_COPY) {
+				expect(marketHasRoute(market, segment), `${market}/${segment}`).toBe(false);
+				expect(isRouteMissingInMarket(market, segment), `${market}/${segment}`).toBe(true);
+			}
+		}
+	});
+
+	it("keeps the CMS pages on sk, because Payload has no translated document", () => {
+		for (const segment of CMS_PAGES) {
 			expect(marketHasRoute("sk", segment), `sk/${segment}`).toBe(true);
-			for (const market of ["de", "cz", "fr", "us"]) {
+			for (const market of ["cz", ...NO_COPY]) {
 				expect(marketHasRoute(market, segment), `${market}/${segment}`).toBe(false);
 				expect(isRouteMissingInMarket(market, segment), `${market}/${segment}`).toBe(true);
 			}

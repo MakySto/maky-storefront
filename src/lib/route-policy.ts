@@ -1,3 +1,4 @@
+import { marketsWithLegalCopy } from "./legal/locale";
 import { MARKET_ROOT_SEGMENTS } from "./routing.generated";
 
 /**
@@ -35,22 +36,35 @@ export interface MarketRoutePolicy {
 }
 
 /**
- * The seven Slovak legal pages plus the two CMS pages exist only for `sk` — every
- * one calls `notFound()` for another channel, and the CMS factory hard-gates on
- * the Slovak market. Until each market has its own translated set, serving Slovak
- * terms under `/de` is a compliance problem before it is an SEO one.
+ * Which markets the seven static legal pages exist in.
+ *
+ * Derived from the legal-copy map rather than restated, because these are two halves of
+ * one decision and they used to be able to disagree. `legalLocaleFor` decides whether the
+ * PAGE renders; this list decides whether the proxy 404s before the page is ever reached.
+ * Set only one of them and you get either an indexable Slovak `<head>` over a 404-ed body
+ * (the original bug) or a translated page the proxy refuses to serve — which is what
+ * happened the first time the Czech copy landed.
+ *
+ * Adding a market is therefore a single edit, in `lib/legal/locale.ts`.
+ */
+const LEGAL_COPY_MARKETS = marketsWithLegalCopy();
+
+/**
+ * The two CMS pages are still `sk` only: `cmsPageRoute` hard-gates on the Slovak market
+ * and Payload holds no translated document. A market gains these when the CMS does, not
+ * when its legal copy lands.
  */
 const SK_ONLY = ["sk"] as const;
 
 export const ROUTE_POLICY: readonly MarketRoutePolicy[] = [
-	// --- Slovak-only static pages -----------------------------------------------
-	{ segment: "cookies", kind: "static", markets: SK_ONLY, indexable: true },
-	{ segment: "doprava-a-platba", kind: "static", markets: SK_ONLY, indexable: true },
-	{ segment: "kontakt", kind: "static", markets: SK_ONLY, indexable: true },
-	{ segment: "obchodne-podmienky", kind: "static", markets: SK_ONLY, indexable: true },
-	{ segment: "ochrana-osobnych-udajov", kind: "static", markets: SK_ONLY, indexable: true },
-	{ segment: "odstupenie-od-zmluvy", kind: "static", markets: SK_ONLY, indexable: true },
-	{ segment: "reklamacie-a-vratenie", kind: "static", markets: SK_ONLY, indexable: true },
+	// --- Static legal pages (every market with approved copy) -----------------------------------------------
+	{ segment: "cookies", kind: "static", markets: LEGAL_COPY_MARKETS, indexable: true },
+	{ segment: "doprava-a-platba", kind: "static", markets: LEGAL_COPY_MARKETS, indexable: true },
+	{ segment: "kontakt", kind: "static", markets: LEGAL_COPY_MARKETS, indexable: true },
+	{ segment: "obchodne-podmienky", kind: "static", markets: LEGAL_COPY_MARKETS, indexable: true },
+	{ segment: "ochrana-osobnych-udajov", kind: "static", markets: LEGAL_COPY_MARKETS, indexable: true },
+	{ segment: "odstupenie-od-zmluvy", kind: "static", markets: LEGAL_COPY_MARKETS, indexable: true },
+	{ segment: "reklamacie-a-vratenie", kind: "static", markets: LEGAL_COPY_MARKETS, indexable: true },
 
 	// --- Slovak-only CMS pages ---------------------------------------------------
 	{ segment: "o-nas", kind: "cms", markets: SK_ONLY, indexable: true },
