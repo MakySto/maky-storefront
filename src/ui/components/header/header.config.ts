@@ -1,15 +1,26 @@
 /**
  * Header navigation config.
- * Keys map to nav namespace in locale JSON files.
- * Hrefs will be prefixed with /[channel] at render time.
+ *
+ * Category slugs are NOT written here — they come from `@/config/categories`, the
+ * single source of truth, so the menu and the homepage grid can no longer point the
+ * same category at two different slugs (they did: `nosice-lyzi` here, `nosice-lyz`
+ * on the homepage, and only one of them exists).
+ *
+ * Keys map to the `nav` namespace in the locale JSON files.
+ * Hrefs are prefixed with /[channel] at render time.
  * TODO: When localized slugs are ready, these hrefs will use slug resolver.
  */
-export const HEADER_PRIMARY_NAV = [
-  { key: "roofRacks", href: "/categories/stresne-nosice" },
-  { key: "roofBoxes", href: "/categories/stresne-boxy" },
-  { key: "bikeCarriers", href: "/categories/nosice-bicyklov" },
-  { key: "skiCarriers", href: "/categories/nosice-lyzi" },
-  { key: "advice", href: "/poradna" },
-] as const;
+import { categoriesFor, categoryHref } from "@/config/categories";
 
-export type NavItem = (typeof HEADER_PRIMARY_NAV)[number];
+export interface NavItem {
+	readonly key: string;
+	readonly href: string;
+}
+
+export const HEADER_PRIMARY_NAV: readonly NavItem[] = [
+	...categoriesFor("nav").map((category) => ({
+		key: category.key,
+		href: categoryHref(category),
+	})),
+	{ key: "advice", href: "/poradna" },
+];
