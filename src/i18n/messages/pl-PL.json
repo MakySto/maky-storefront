@@ -48,6 +48,7 @@
 		"snowChains": "Łańcuchy śniegowe",
 		"carFridges": "Lodówki samochodowe",
 		"towBars": "Haki holownicze",
+		"roofTents": "Namioty dachowe",
 		"brands": "Marki",
 		"sale": "Wyprzedaż",
 		"newArrivals": "Nowości",
@@ -501,6 +502,9 @@
 		"marketingDesc": "Umożliwiają spersonalizowane reklamy w sieciach Google i Meta."
 	},
 	"home": {
+		"heroTitle": "Bagażniki dachowe, boxy i bagażniki rowerowe",
+		"heroSubtitle": "Kompletne zestawy do Twojego auta — belki, stopy i kit montażowy w jednej paczce.",
+		"metaDescription": "Bagażniki dachowe, boxy, bagażniki rowerowe i narciarskie. Kompletne zestawy do Twojego auta — belki, stopy i kit montażowy. Pomożemy w wyborze.",
 		"featuredTitle": "Polecane produkty"
 	}
 }

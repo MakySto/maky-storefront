@@ -48,6 +48,7 @@
 		"snowChains": "Hóláncok",
 		"carFridges": "Autós hűtőboxok",
 		"towBars": "Vonóhorgok",
+		"roofTents": "Tetősátrak",
 		"brands": "Márkák",
 		"sale": "Akció",
 		"newArrivals": "Újdonságok",
@@ -501,6 +502,9 @@
 		"marketingDesc": "Személyre szabott hirdetéseket tesznek lehetővé a Google és Meta hálózatokban."
 	},
 	"home": {
+		"heroTitle": "Tetőcsomagtartók, tetőboxok és kerékpártartók",
+		"heroSubtitle": "Komplett szettek az autójához – rudak, talpak és a szerelőkészlet egy csomagban.",
+		"metaDescription": "Tetőcsomagtartók, tetőboxok, kerékpár- és síléctartók. Komplett szettek az autójához – rudak, talpak és szerelőkészlet. Segítünk a választásban.",
 		"featuredTitle": "Kiemelt termékek"
 	}
 }

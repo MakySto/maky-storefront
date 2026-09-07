@@ -48,6 +48,7 @@
 		"snowChains": "Lanțuri de zăpadă",
 		"carFridges": "Frigidere auto",
 		"towBars": "Cârlige de remorcare",
+		"roofTents": "Corturi de plafon",
 		"brands": "Mărci",
 		"sale": "Reduceri",
 		"newArrivals": "Noutăți",
@@ -501,6 +502,9 @@
 		"marketingDesc": "Permit publicitate personalizată în rețelele Google și Meta."
 	},
 	"home": {
+		"heroTitle": "Bare de plafon, cutii portbagaj și suporturi de biciclete",
+		"heroSubtitle": "Seturi complete pentru mașina ta — bare, picioare și kitul de montaj într-un singur pachet.",
+		"metaDescription": "Bare de plafon, cutii portbagaj, suporturi de biciclete și schiuri. Seturi complete pentru mașina ta — bare, picioare și kit de montaj. Te ajutăm să alegi.",
 		"featuredTitle": "Produse recomandate"
 	}
 }

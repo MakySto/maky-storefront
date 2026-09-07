@@ -48,6 +48,7 @@
 		"snowChains": "Catene da neve",
 		"carFridges": "Frigoriferi per auto",
 		"towBars": "Ganci traino",
+		"roofTents": "Tende da tetto",
 		"brands": "Marchi",
 		"sale": "Saldi",
 		"newArrivals": "Novità",
@@ -501,6 +502,9 @@
 		"marketingDesc": "Consentono pubblicità personalizzata nei circuiti Google e Meta."
 	},
 	"home": {
+		"heroTitle": "Barre portatutto, box da tetto e portabici",
+		"heroSubtitle": "Kit completi per la tua auto: barre, piedi e kit di montaggio in un unico pacco.",
+		"metaDescription": "Barre portatutto, box da tetto, portabici e portasci. Kit completi per la tua auto: barre, piedi e kit di montaggio. Ti aiutiamo a scegliere.",
 		"featuredTitle": "Prodotti in evidenza"
 	}
 }

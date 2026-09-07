@@ -48,6 +48,7 @@
 		"snowChains": "Snow chains",
 		"carFridges": "Car fridges",
 		"towBars": "Tow bars",
+		"roofTents": "Roof tents",
 		"brands": "Brands",
 		"sale": "Sale",
 		"newArrivals": "New arrivals",
@@ -501,6 +502,9 @@
 		"marketingDesc": "Enable personalised ads across Google and Meta networks."
 	},
 	"home": {
+		"heroTitle": "Roof racks, roof boxes and bike carriers",
+		"heroSubtitle": "Complete kits for your car — bars, feet and the fitting kit in one package.",
+		"metaDescription": "Roof racks, roof boxes, bike and ski carriers. Complete kits for your car — bars, feet and the fitting kit. We help you choose the right one.",
 		"featuredTitle": "Featured products"
 	}
 }

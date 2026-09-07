@@ -7,6 +7,7 @@ import {
 	OrderDirection,
 } from "@/gql/graphql";
 import { buildAlternatesMetadata } from "@/lib/seo/hreflang";
+import { formatPageTitle } from "@/config/brand";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { ProductList } from "@/ui/components/product-list";
@@ -54,8 +55,23 @@ async function getFeaturedProducts(channel: string) {
 
 export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {
 	const { channel } = await props.params;
+	const t = await getTranslations("home");
+
+	// `absolute`, because the (main) layout pins the bare site name as the title of
+	// every page that does not set its own. That is right for the rest of the site
+	// and wrong here: the homepage is the one page whose title has to say what the
+	// shop sells, and "MAKY.STORE" says nothing. It mirrors the H1 on purpose.
+	//
+	// og:title and twitter:title are NOT set here — Next fills them from the
+	// resolved title and description, which is how the current (wrong) values got
+	// there in the first place.
+	//
 	// Homepage owns the market canonical (/{market}) + hreflang alternates.
-	return buildAlternatesMetadata(channel);
+	return {
+		title: { absolute: formatPageTitle(t("heroTitle")) },
+		description: t("metaDescription"),
+		...buildAlternatesMetadata(channel),
+	};
 }
 
 export default function Page(props: { params: Promise<{ channel: string }> }) {

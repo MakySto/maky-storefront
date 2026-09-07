@@ -7,9 +7,13 @@ export const brandConfig = {
 	copyrightHolder: "MAKY.STORE",
 	organizationName: "MAKY.STORE",
 	defaultBrand: "MAKY.STORE",
-	tagline: "Strešné nosiče, ťažné zariadenia a príslušenstvo pre vaše auto",
+	// CLAUDE.md §6: no towbars and no electrical kits on consumer-facing copy until
+	// the business model and the installation partner are confirmed — and neither
+	// category holds a single product in sk-eur today. "10 európskych trhov" was
+	// founder framing for a site that serves one live market.
+	tagline: "Strešné nosiče, strešné boxy a príslušenstvo pre vaše auto",
 	description:
-		"MAKY.STORE — automobilový aftermarket e-shop. Strešné boxy, nosiče bicyklov, ťažné zariadenia, elektrické sady. 10 európskych trhov.",
+		"Strešné nosiče, strešné boxy, nosiče bicyklov a lyží pre vaše auto. Kompletné zostavy vrátane montážneho kitu.",
 	logoAriaLabel: "MAKY.STORE",
 	titleTemplate: "%s | MAKY.STORE",
 	social: {

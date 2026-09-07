@@ -48,6 +48,7 @@
 		"snowChains": "Snehové reťaze",
 		"carFridges": "Autochladničky",
 		"towBars": "Ťažné zariadenia",
+		"roofTents": "Strešné stany",
 		"brands": "Značky",
 		"sale": "Výpredaj",
 		"newArrivals": "Novinky",
@@ -501,6 +502,9 @@
 		"marketingDesc": "Umožňujú personalizovanú reklamu v sieťach Google a Meta."
 	},
 	"home": {
+		"heroTitle": "Strešné nosiče, boxy a nosiče bicyklov",
+		"heroSubtitle": "Kompletné zostavy pre vaše auto — tyče, pätky aj montážny kit v jednom balení.",
+		"metaDescription": "Strešné nosiče, strešné boxy, nosiče bicyklov a lyží. Kompletné zostavy pre vaše auto — tyče, pätky aj montážny kit. Poradíme s výberom.",
 		"featuredTitle": "Odporúčané produkty"
 	}
 }

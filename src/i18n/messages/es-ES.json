@@ -48,6 +48,7 @@
 		"snowChains": "Cadenas de nieve",
 		"carFridges": "Neveras de coche",
 		"towBars": "Enganches de remolque",
+		"roofTents": "Tiendas de techo",
 		"brands": "Marcas",
 		"sale": "Rebajas",
 		"newArrivals": "Novedades",
@@ -501,6 +502,9 @@
 		"marketingDesc": "Permiten publicidad personalizada en las redes de Google y Meta."
 	},
 	"home": {
+		"heroTitle": "Barras de techo, cofres y portabicicletas",
+		"heroSubtitle": "Kits completos para tu coche: barras, soportes y kit de montaje en un solo paquete.",
+		"metaDescription": "Barras de techo, cofres, portabicicletas y portaesquís. Kits completos para tu coche: barras, soportes y kit de montaje. Te ayudamos a elegir.",
 		"featuredTitle": "Productos destacados"
 	}
 }

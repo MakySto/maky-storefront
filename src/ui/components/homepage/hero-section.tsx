@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 
 export function HeroSection() {
 	const t = useTranslations("nav");
-	const tc = useTranslations("common");
+	const th = useTranslations("home");
 	const tf = useTranslations("fitment");
 
 	return (
@@ -12,14 +12,17 @@ export function HeroSection() {
 			<div className="mx-auto max-w-7xl px-6 py-20 sm:py-28 lg:px-8 lg:py-32">
 				<div className="max-w-2xl">
 					<p className="text-sm font-semibold tracking-widest text-amber-400 uppercase">MAKY.STORE</p>
+					{/* Real copy from the `home` namespace, not three nav labels glued together.
+					    The old line read "Strešné nosiče, Strešné boxy, Ťažné zariadenia" —
+					    capitalised mid-sentence because they are menu labels, and it promised
+					    towbars, which CLAUDE.md §6 keeps off the homepage and which hold zero
+					    products in sk-eur. The subtitle below was a hardcoded two-way fork on
+					    `common.country === "Slovensko"`, so nine of the twelve locales were
+					    served English regardless of their own language. */}
 					<h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-						{t("roofRacks")}, {t("roofBoxes")}, {t("towBars")}
+						{th("heroTitle")}
 					</h1>
-					<p className="mt-6 text-lg leading-8 text-gray-300">
-						{tc("country") === "Slovensko"
-							? "Strešné nosiče, boxy a ťažné zariadenia presne pre vaše auto"
-							: "Roof racks, boxes and towbars — a precise fit for your car"}
-					</p>
+					<p className="mt-6 text-lg leading-8 text-gray-300">{th("heroSubtitle")}</p>
 
 					<div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
 						<button

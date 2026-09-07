@@ -48,6 +48,7 @@
 		"snowChains": "Sněhové řetězy",
 		"carFridges": "Autoledničky",
 		"towBars": "Tažná zařízení",
+		"roofTents": "Střešní stany",
 		"brands": "Značky",
 		"sale": "Výprodej",
 		"newArrivals": "Novinky",
@@ -501,6 +502,9 @@
 		"marketingDesc": "Umožňují personalizovanou reklamu v sítích Google a Meta."
 	},
 	"home": {
+		"heroTitle": "Střešní nosiče, boxy a nosiče kol",
+		"heroSubtitle": "Kompletní sady pro vaše auto — tyče, patky i montážní kit v jednom balení.",
+		"metaDescription": "Střešní nosiče, střešní boxy, nosiče kol a lyží. Kompletní sady pro vaše auto — tyče, patky i montážní kit. Poradíme s výběrem.",
 		"featuredTitle": "Doporučené produkty"
 	}
 }

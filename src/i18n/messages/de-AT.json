@@ -48,6 +48,7 @@
 		"snowChains": "Schneeketten",
 		"carFridges": "Autokühlboxen",
 		"towBars": "Anhängerkupplungen",
+		"roofTents": "Dachzelte",
 		"brands": "Marken",
 		"sale": "Sale",
 		"newArrivals": "Neuheiten",
@@ -501,6 +502,9 @@
 		"marketingDesc": "Ermöglichen personalisierte Werbung in Google- und Meta-Netzwerken."
 	},
 	"home": {
+		"heroTitle": "Dachträger, Dachboxen und Fahrradträger",
+		"heroSubtitle": "Komplettsätze für Ihr Auto — Träger, Füße und Montagekit in einem Paket.",
+		"metaDescription": "Dachträger, Dachboxen, Fahrrad- und Skiträger. Komplettsätze für Ihr Auto — Träger, Füße und Montagekit. Wir beraten Sie bei der Auswahl.",
 		"featuredTitle": "Empfohlene Produkte"
 	}
 }

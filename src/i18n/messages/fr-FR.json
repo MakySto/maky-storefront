@@ -48,6 +48,7 @@
 		"snowChains": "Chaînes à neige",
 		"carFridges": "Glacières de voiture",
 		"towBars": "Attelages de remorque",
+		"roofTents": "Tentes de toit",
 		"brands": "Marques",
 		"sale": "Soldes",
 		"newArrivals": "Nouveautés",
@@ -501,6 +502,9 @@
 		"marketingDesc": "Permettent une publicité personnalisée sur les réseaux Google et Meta."
 	},
 	"home": {
+		"heroTitle": "Barres de toit, coffres et porte-vélos",
+		"heroSubtitle": "Kits complets pour votre voiture : barres, pieds et kit de fixation en un seul colis.",
+		"metaDescription": "Barres de toit, coffres, porte-vélos et porte-skis. Kits complets pour votre voiture : barres, pieds et kit de fixation. Nous vous aidons à choisir.",
 		"featuredTitle": "Produits en vedette"
 	}
 }
