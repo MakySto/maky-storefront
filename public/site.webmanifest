@@ -1,19 +1,30 @@
 {
-	"name": "Paper",
-	"short_name": "Paper",
+	"name": "MAKY.STORE",
+	"short_name": "MAKY",
+	"description": "Strešné nosiče, strešné boxy, nosiče bicyklov a lyží pre vaše auto.",
+	"lang": "sk",
+	"start_url": "/",
+	"display": "standalone",
+	"theme_color": "#fefcf9",
+	"background_color": "#fefcf9",
 	"icons": [
 		{
 			"src": "/android-chrome-192x192.png",
 			"sizes": "192x192",
-			"type": "image/png"
+			"type": "image/png",
+			"purpose": "any"
 		},
 		{
 			"src": "/android-chrome-512x512.png",
 			"sizes": "512x512",
-			"type": "image/png"
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/android-chrome-maskable-512x512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "maskable"
 		}
-	],
-	"theme_color": "#FAF9F7",
-	"background_color": "#FAF9F7",
-	"display": "standalone"
+	]
 }
