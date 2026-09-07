@@ -306,7 +306,162 @@ checkout` a presmerovanie výstupu do súboru boli zamietnuté. **Neuzatváraj z
 
 ---
 
-## 8. Hranice
+## 8. Ako si postaviť pracovnú kópiu a spustiť to
+
+**Nikdy nepracuj priamo v `/opt/storefront`** — to je živý deploy. Vlastný worktree:
+
+```bash
+cd /opt/storefront
+git worktree add /home/ubuntu/wt-konfigurator -b <moja-vetva> 3b0843f
+cd /home/ubuntu/wt-konfigurator
+pnpm install --frozen-lockfile
+NEXT_PUBLIC_SALEOR_API_URL=https://api.maky.store/graphql/ pnpm generate:all
+```
+
+`node_modules` sa **nekopírujú** (`cp -al` rozbije natívne moduly) a `src/gql/` je
+gitignorované a generované — bez codegenu padnú testy proti zastaraným typom.
+
+**Build potrebuje štyri premenné.** Bez `NEXT_PUBLIC_DEFAULT_CHANNEL` spadne na
+`/[channel]/cart`:
+
+```bash
+NEXT_PUBLIC_SALEOR_API_URL=https://api.maky.store/graphql/ \
+NEXT_PUBLIC_DEFAULT_CHANNEL=sk-eur \
+NEXT_PUBLIC_STOREFRONT_URL=https://maky.store \
+MAKY_LIVE_MARKETS=sk \
+pnpm build
+```
+
+**Spustenie so zapnutým fitmentom** (bez toho je funkcia potichu vypnutá a nič neuvidíš):
+
+```bash
+NEXT_PUBLIC_SALEOR_API_URL=https://api.maky.store/graphql/ \
+NEXT_PUBLIC_DEFAULT_CHANNEL=sk-eur \
+NEXT_PUBLIC_STOREFRONT_URL=https://maky.store \
+MAKY_LIVE_MARKETS=sk \
+MAKY_FITMENT_PROVIDER=http \
+MAKY_FITMENT_URL=https://carfitmanager.com/media/fitment/maky_roof_fitment_3.0.0-full-20260907.2.json \
+MAKY_FITMENT_TIMEOUT_MS=20000 \
+MAKY_GARAGE_COOKIE_SECRET=local-only-not-a-real-secret-0000000000 \
+npx next start -p 3311
+```
+
+`pnpm dev` v tomto strome **nehydratuje** — overuj cez `next build` + `next start`.
+Pred ďalším buildom zastav server na tom porte (build vymieňa chunky pod ním).
+
+**Produkčný `.env` už tie premenné obsahuje** — `MAKY_FITMENT_PROVIDER`,
+`MAKY_FITMENT_URL`, `MAKY_FITMENT_REVALIDATE_SECONDS` a `MAKY_GARAGE_COOKIE_SECRET`
+(64 hex znakov, vygenerovaný na stroji 2026-09-07, záloha `.env.backup-20260907T191201Z`).
+**Do commitu nesmie ísť ani jeden z nich.**
+
+---
+
+## 9. Deploy — celá sekvencia, nie len názov skriptu
+
+Manuálne deploye sú zakázané; poradie krokov je to, čo ich robí bezpečnými.
+
+```bash
+# 1. uvoľni vetvu — dva worktree ju nemôžu držať naraz
+cd /home/ubuntu/wt-konfigurator && git switch --detach <sha>
+
+# 2. produkcia si ju vyzuje (tento tvar príkazu klasifikátorom prejde)
+cd /opt/storefront && git fetch origin <vetva> && git checkout <vetva>
+
+# 3. codegen LEN ak sa zmenili GraphQL dokumenty
+git diff --stat <stary-sha> <novy-sha> -- '*.graphql'
+NEXT_PUBLIC_SALEOR_API_URL=https://api.maky.store/graphql/ pnpm generate:all
+
+# 4. nanečisto, potom naostro
+cd /opt/storefront && MIN_FREE_MEM_MB=8192 ./scripts/ops/deploy-production.sh --dry-run
+cd /opt/storefront && MIN_FREE_MEM_MB=8192 ./scripts/ops/deploy-production.sh -m "dôvod"
+```
+
+Odstávka 60–90 s. Do brány na `127.0.0.1:3000` sa všetko vracia späť; po nej už nič.
+Po deployi vždy `pnpm check:published`, `pnpm check:nav` a **pohľad do prehliadača** —
+automatické kontroly nevidia bezfarebné tlačidlo.
+
+Rollback bez rebuildu: `ls -a /opt/storefront-rollbacks/` (všetky začínajú bodkou),
+`sudo cp -a <snapshot> .next`, `sudo chown -R ubuntu:ubuntu .next`, `pm2 start`.
+
+---
+
+## 10. Vetvy — čo je čím
+
+| vetva                                                   | stav                                   |
+| ------------------------------------------------------- | -------------------------------------- |
+| `feat/fitment-full-dataset-v1 @ 3b0843f`                | **PRODUKCIA.** Obsahuje všetko nižšie. |
+| `fix/site-identity-v1 @ f8ffeba`                        | pohltená produkciou, netreba           |
+| `fix/category-root-urls-v1 @ 2c25831`                   | pohltená produkciou, netreba           |
+| `claude/vlakno-b-selektor-datasethash-0387f6 @ 2139f1a` | zlúčená do produkcie                   |
+| `claude/sf-a-jsonld-sku-fix @ 54eb8f5`                  | staršie vlákno A, pohltené             |
+| `docs/handoff-20260907-konfigurator-garaz`              | tento dokument                         |
+
+**Odbočuj z `3b0843f`**, nie z niektorej staršej.
+
+Staršie handoffy, ktoré ostávajú platné pre detail a **tento dokument ich nezdvojuje**:
+
+- `docs/design/handoff-20260907-vlakno-b-pilot-prijaty.md` (na vetve B) — ako vzniklo B0,
+  prečo je poradie `značka → model → ROK`, a jedenásť vlastných pascí.
+- `docs/design/fitment-full-dataset-20260907.md` — prijatie plného snapshotu.
+- `docs/design/category-root-urls-20260907.md` — prečo root URL dostalo 8 z 30 kategórií.
+
+---
+
+## 11. Čo príde hneď za týmto blokom (aby si to nezablokoval)
+
+CFM postavilo nad tým istým datasetom **`CatalogPage`: 1 504 stránok, z toho 1 475
+odvodených vozidlových** (62 značiek + 557 modelov + 856 generácií), všetky v stave
+**`draft`**, s vlastnými slugmi a cestami tvaru:
+
+```
+/stresne-nosice/skoda/octavia-combi/nx
+```
+
+Visia na root URL kategórie, ktoré vzniklo v `3b0843f`. **Routy pre ne v storefronte
+neexistujú** — dnes je taká adresa 404.
+
+Otvorené a **nerozhodnuté**:
+
+- **Schéma 3.1.0.** CFM ju navrhlo (slugy ako povinné pole) a vendorovalo, ale súčasná
+  3.0.0 schéma pinuje `schemaVersion` ako `const` — takže bump by dnešný validátor
+  **odmietol**. Slugy sú pritom pod 3.0.0 platné, lebo `additionalProperties` je otvorené.
+  Kontrakt vlastní storefront, nie CFM.
+- **Publikovať 1 475 stránok naraz?** Tri generácie nemajú ani jednu predajnú zostavu
+  (Hyundai H-1 Van TQ, Peugeot 306 Break 7, Subaru Legacy Kombi BP) a 26 produktov je
+  zadržaných. Prázdne kategórie sa dnes zámerne držia mimo sitemapy a dostávajú `noindex` —
+  to isté pravidlo musí platiť aj tu.
+- **Kanonická adresa.** `/sk/categories/stresne-nosice` už 308-uje na `/sk/stresne-nosice`,
+  takže root je jediný kandidát. Nezavádzaj tretí tvar.
+
+**Nerob to v tomto bloku.** Je to uvedené preto, aby si dnešné rozhodnutia neurobil tak,
+že to zajtra zablokujú.
+
+---
+
+## 12. Ďalšie pasce, ktoré nie sú v §7
+
+1. **Vitest tu beží v `node` prostredí a zbiera iba `*.test.ts` — žiadny DOM.** Logiku
+   preto píš do čistých modulov (`selector-plan.ts`, `configurator-card-state.ts`,
+   `garage/selection.ts` sú vzory) a UI overuj v prehliadači. Test na React komponent tu
+   nespustíš.
+2. **`resolveFitment` bez `saleorProductId` vráti `no-product-named`**, nie verdikt. Nie je
+   to chyba, je to odmietnutie odpovedať na zle položenú otázku.
+3. **Fixture Kodiaq je zámerne `unreviewed` / `sellable:false`.** „Nemáme overenú zostavu"
+   je tam správna odpoveď, nie regresia.
+4. **Po uložení auta sa tlačidlo v hlavičke premenuje na názov vozidla.** Prehliadačový
+   skript, ktorý hľadá „Vybrať vozidlo", potom nič nenájde — medzi behmi maž CDP profil.
+5. **Python `str.replace` na zdrojáku ticho neurobí nič** pri nezhode odsadenia. Po každom
+   textovom patchi over grepom, že zmena naozaj v súbore je.
+6. **`add-to-cart` z konfigurátora UŽ FUNGUJE.** Staršie handoffy tvrdia, že nikdy
+   nefungoval (`"use client"` konštanta čítaná z `"use server"` → `NaN` → Saleor hlásil
+   „was not provided"). Overené na `3b0843f`: `src/lib/fitment/cart-actions.ts:110` posiela
+   `quantity: 1` natvrdo. **To varovanie je zastarané, neprenášaj ho ďalej.**
+7. **BROWSER UAT vlákna A nikdy neprebehol** — 31-bodový checklist existuje a je stále
+   neuzavretý. Nie je to blocker tohto bloku, ale nikto ho neodškrtol.
+
+---
+
+## 13. Hranice
 
 **Povolené:** kód, testy, build vo worktree, commit, push, read-only dopyty na produkciu a
 Saleor, prehliadačové overovanie.
@@ -317,7 +472,7 @@ providera, zásah do `maky-smtp-app`, force-push, mazanie vetiev, publikácia pr
 
 ---
 
-## 9. Čo v tomto vlákne vyvrátilo staršie tvrdenia
+## 14. Čo v tomto vlákne vyvrátilo staršie tvrdenia
 
 - „Worktree session nemôže deployovať" — **nepravda**, dnes deployovala trikrát.
 - „Codegen treba po každom prepnutí vetvy" — len keď sa zmenili GraphQL dokumenty.
