@@ -9,7 +9,10 @@ import { cn } from "@/lib/utils";
  * Ceiling used when the catalogue reports no usable availability number.
  * Not a stock claim — just a sane upper bound for a text field.
  */
-export const QUANTITY_FALLBACK_MAX = 99;
+// Defined in a directive-free module so a server action can read it too; see
+// `quantity-limits.ts` for what went wrong when it lived here.
+export { QUANTITY_FALLBACK_MAX } from "./quantity-limits";
+import { QUANTITY_FALLBACK_MAX } from "./quantity-limits";
 
 export interface QuantityStepperProps {
 	/** Controlled value. Omit for an uncontrolled stepper seeded from `defaultValue`. */

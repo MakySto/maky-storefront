@@ -10,7 +10,7 @@ import { VariantSelectionSection } from "./variant-selection";
 import { StickyBar } from "./sticky-bar";
 import { PurchaseTrust } from "./purchase-trust";
 import { Badge } from "@/ui/components/ui/badge";
-import { QUANTITY_FALLBACK_MAX } from "@/ui/components/ui/quantity-stepper";
+import { QUANTITY_FALLBACK_MAX } from "@/ui/components/ui/quantity-limits";
 import { addVariantToCart } from "@/ui/components/plp/actions";
 import type { AddToCartResult } from "@/ui/components/plp/add-to-cart-result";
 import { CartForm } from "@/ui/components/plp/cart-form";
