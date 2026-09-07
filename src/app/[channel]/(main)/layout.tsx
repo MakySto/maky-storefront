@@ -24,8 +24,20 @@ export async function generateMetadata({
 		// site name itself ("MAKY.STORE | MAKY.STORE" on the homepage).
 		title: { absolute: brandConfig.siteName },
 		description: brandConfig.description,
+		// The whole object, not just the locale.
+		//
+		// Next replaces `openGraph` wholesale at the deepest segment that declares it;
+		// it does not merge field by field. This one declared `locale` alone, so it
+		// silently dropped `type`, `siteName` AND `images` from the root metadata, and
+		// it also blocked the `opengraph-image.png` file convention from filling the
+		// gap. Measured on production 2026-09-07: every page except a product PDP —
+		// which sets its own — shipped og:title, og:description and og:locale and no
+		// og:image at all. The share card existed as a file that nothing pointed at.
 		openGraph: {
+			type: "website",
+			siteName: brandConfig.siteName,
 			locale: localeConfig?.ogLocale,
+			images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: brandConfig.siteName }],
 		},
 		// NOTE: the `noindex` for a market that is not live yet is NOT set here.
 		// It is an `X-Robots-Tag` response header from src/proxy.ts.
