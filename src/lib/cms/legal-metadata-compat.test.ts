@@ -75,7 +75,7 @@ const CMS_PAGE_FIELDS = ["id", "layout", "markets", "meta", "slug", "summary", "
  * the two bodies differing at all.
  */
 const CMS_ONLY_PHRASE = "kompatibilitu a zrozumiteľné informácie";
-const BOOTSTRAP_ONLY_PHRASE = "strešné boxy, nosiče bicyklov";
+const BOOTSTRAP_ONLY_PHRASE = "obyčajnému dobrému víkendu";
 
 interface WirePage {
 	docs: Record<string, unknown>[];

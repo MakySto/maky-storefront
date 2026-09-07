@@ -61,7 +61,10 @@ describe("legal surfaces", () => {
 	it("the terms of sale identify the seller with the VAT number", () => {
 		const src = read("src/app/[channel]/(main)/obchodne-podmienky/page.tsx");
 		expect(src).toContain("companyInfo.icDph");
-		expect(src).toContain("je platiteľom dane z pridanej hodnoty");
+		// Either wording is fine; what must never pass is a negated one, hence the
+		// lookbehind. `BANNED` above catches the known negations, this catches the
+		// affirmative claim actually being present.
+		expect(src).toMatch(/(?<!nie )je platiteľom (?:DPH|dane z pridanej hodnoty)/);
 	});
 
 	it("the contact page identifies the seller with the VAT number", () => {

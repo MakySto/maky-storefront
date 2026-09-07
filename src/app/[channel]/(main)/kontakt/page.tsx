@@ -1,14 +1,15 @@
 import { type Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { REVERSE_MAP } from "@/lib/channel-map";
-import { companyInfo } from "@/config/company";
+import { REVERSE_MAP, marketHref } from "@/lib/channel-map";
+import { companyInfo, companyPhoneHref } from "@/config/company";
 import { formatPageTitle } from "@/config/brand";
 import { LegalPage } from "@/ui/components/legal/legal-page";
 
 export const metadata: Metadata = {
 	title: formatPageTitle("Kontakt"),
 	description:
-		"Kontaktné a fakturačné údaje MAKY.STORE s. r. o. — e-mail, telefón, sídlo, IČO a orgán dozoru.",
+		"Potrebujete poradiť s výberom alebo objednávkou? Kontaktujte MAKY.STORE. Nájdete tu e-mail, telefón, fakturačné údaje aj adresu na vrátenie tovaru.",
 };
 
 export default async function Page(props: { params: Promise<{ channel: string }> }) {
@@ -16,63 +17,72 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	if (REVERSE_MAP[channel] !== "sk") notFound();
 	return (
 		<LegalPage title="Kontakt">
-			<h3>Prevádzkovateľ internetového obchodu</h3>
 			<p>
-				<strong>MAKY.STORE s. r. o.</strong>
+				Potrebujete poradiť s výberom, overiť vhodnosť príslušenstva alebo sa opýtať na objednávku? Napíšte
+				nám alebo zavolajte.
+			</p>
+			<p>
+				<strong>E-mail:</strong> <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>
 				<br />
-				Lermontovova 911/3
+				<strong>Telefón:</strong> <a href={companyPhoneHref}>{companyInfo.phone}</a>
+			</p>
+			<p>
+				Na správy odpovedáme počas pracovných dní. Pri otázke k objednávke nám pomôže jej číslo. Ak vyberáte
+				príslušenstvo na auto, uveďte značku, model, rok výroby a pri strešných nosičoch aj typ strechy.
+				Fotografia často uľahčí overenie.
+			</p>
+
+			<h2>Vrátenie tovaru a reklamácie</h2>
+			<p>Zásielky s vráteným alebo reklamovaným tovarom posielajte na adresu:</p>
+			<p>
+				<strong>{companyInfo.legalName}</strong>
 				<br />
-				811 05 Bratislava-Staré Mesto
+				Stará Vajnorská 11
 				<br />
-				Slovenská republika
+				831 04 Bratislava
+				<br />
+				{companyInfo.country}
+			</p>
+			<p>
+				Táto adresa sa líši od sídla spoločnosti. Pri vrátení tovaru postupujte podľa stránky{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Odstúpenie od zmluvy</Link>. Pri vadnom
+				alebo poškodenom výrobku nájdete postup v časti{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reklamácie a vrátenie tovaru</Link>.
+			</p>
+
+			<h2>Prevádzkovateľ a fakturačné údaje</h2>
+			<p>
+				<strong>{companyInfo.legalName}</strong>
+				<br />
+				{companyInfo.street}
+				<br />
+				{companyInfo.city}
+				<br />
+				{companyInfo.country}
 			</p>
 			<p>
 				<strong>IČO:</strong> {companyInfo.ico}
 				<br />
 				<strong>DIČ:</strong> {companyInfo.dic}
 				<br />
-				<strong>IČ DPH:</strong> {companyInfo.icDph} (platiteľ DPH od {companyInfo.vatEffectiveFrom})
-				<br />
-				<strong>Právna forma:</strong> spoločnosť s ručením obmedzeným
-				<br />
-				<strong>Zápis v registri:</strong> Obchodný register Mestského súdu Bratislava III, oddiel: Sro,
-				vložka č. 200804/B
-				<br />
-				<strong>Konateľ:</strong> Marek Kysucký
-			</p>
-			<h3>Adresa na vrátenie tovaru a reklamácie</h3>
-			<p>
-				Stará Vajnorská 11, 831 04 Bratislava
-				<br />
-				(Tovar pri vrátení alebo reklamácii zasielajte na túto adresu, nie na sídlo spoločnosti.)
-			</p>
-			<h3>Zákaznícka podpora</h3>
-			<p>
-				<strong>E-mail:</strong> info@maky.store
-				<br />
-				<strong>Telefón:</strong> +421 901 730 066
+				<strong>IČ DPH:</strong> {companyInfo.icDph}
 			</p>
 			<p>
-				Na otázky odpovedáme spravidla počas pracovných dní. Pri otázke k objednávke nám, prosím, uveďte číslo
-				objednávky — pomôže nám to vybaviť vašu požiadavku rýchlejšie.
+				Spoločnosť je platiteľom DPH a je zapísaná v Obchodnom registri Mestského súdu Bratislava III, oddiel
+				Sro, vložka č. 200804/B.
 			</p>
-			<h3>Fakturačné údaje</h3>
+
+			<h2>Orgán dozoru</h2>
 			<p>
-				MAKY.STORE s. r. o.
+				{companyInfo.supervisoryAuthority.name.replace(" (SOI)", "")}
 				<br />
-				Lermontovova 911/3, 811 05 Bratislava-Staré Mesto, Slovenská republika
+				{companyInfo.supervisoryAuthority.department}
 				<br />
-				IČO: {companyInfo.ico}, DIČ: {companyInfo.dic}, IČ DPH: {companyInfo.icDph}
-			</p>
-			<h3>Orgán dozoru</h3>
-			<p>
-				Slovenská obchodná inšpekcia (SOI)
+				Bajkalská 21/A, P. O. BOX č. 5
 				<br />
-				Inšpektorát SOI pre Bratislavský kraj
+				820 07 Bratislava
 				<br />
-				Bajkalská 21/A, P. O. BOX č. 5, 820 07 Bratislava
-				<br />
-				<a href="https://www.soi.sk" target="_blank" rel="noopener noreferrer">
+				<a href={companyInfo.supervisoryAuthority.url} rel="noopener noreferrer" target="_blank">
 					www.soi.sk
 				</a>
 			</p>

@@ -27,7 +27,7 @@ const route = cmsPageRoute({
 	slug: "o-nas",
 	staticTitle: "O nás",
 	staticDescription:
-		"MAKY.STORE — slovenský e-shop s auto-moto príslušenstvom: strešné nosiče, strešné boxy, nosiče bicyklov a lyží, snehové reťaze, ťažné zariadenia a ďalšie vybavenie pre auto a cestovanie.",
+		"MAKY.STORE je slovenský obchod s výbavou pre auto a cesty. Strešné nosiče, boxy, nosiče bicyklov aj pomoc s výberom správneho príslušenstva.",
 	Bootstrap: ONasStaticContent,
 	Shell: LegalPage,
 	Footer: CompanyDetails as () => ReactNode,
