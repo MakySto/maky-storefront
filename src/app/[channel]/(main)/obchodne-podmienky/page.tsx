@@ -123,7 +123,8 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 			<p>
 				Tovar doručujeme prostredníctvom <strong>FedEx a Slovenskej pošty</strong>. Dostupné služby závisia od
 				obsahu objednávky, rozmerov a hmotnosti zásielky a adresy doručenia. Pre konkrétnu objednávku sa v
-				pokladni zobrazujú dostupné spôsoby a ceny dopravy.
+				pokladni zobrazujú dostupné spôsoby a ceny dopravy. Pri zásielkach nad 35 kg sa doprava dojednáva
+				individuálne na základe vašej žiadosti; cenu oznámime pred uzavretím zmluvy.
 			</p>
 			<p>
 				Informáciu o dodaní poskytneme pred uzavretím zmluvy. Tovar dodáme bez zbytočného odkladu, najneskôr

@@ -12,32 +12,19 @@ publikovanie.
 
 ## A. Blokuje publikovanie
 
-### A1. „FedEx a Slovenská pošta" — nepotvrdené v Saleore
+### A1. Doprava — VYRIEŠENÉ 2026-09-07 (Marek)
 
-Texty na `/sk/doprava-a-platba` a v bode 5 VOP tvrdia, že doručujeme cez **FedEx
-a Slovenskú poštu**. Saleor pre kanál `sk-eur` ponúka 4 metódy a **ani jedna
-nemenuje dopravcu**:
+„FedEx a Slovenská pošta" je **správne**; do Saleoru sa to doplní 8. 9. 2026. Texty
+zostávajú bez zmeny.
 
-| Metóda           | Hmotnostné pásmo |
-| ---------------- | ---------------- |
-| Kuriér Slovensko | 0–5 kg           |
-| Kuriér Slovensko | 5–15 kg          |
-| Kuriér Slovensko | 15–30 kg         |
-| Kuriér Slovensko | 30–45 kg         |
+Doplnené podľa upresnenia: **nad 35 kg sa doprava dojednáva individuálne na
+vyžiadanie.** Je to teraz na `/sk/doprava-a-platba` aj v bode 5 VOP.
 
-Zároveň `CLAUDE.md` §9 hovorí „Shipping is via FedEx" — teda len FedEx, bez pošty.
-Balík teda pridáva dopravcu, ktorý nie je ani v konfigurácii, ani v doterajšom
-pravidle.
-
-**Potrebujem rozhodnutie:** ktorí dopravcovia sa reálne používajú? Ak je to len
-FedEx, treba z textov vypustiť Slovenskú poštu (2 miesta). Ak sú obaja, treba
-aktualizovať `CLAUDE.md` §9. Uvádzať dopravcu, ktorého zákazník v pokladni
-nedostane, je klamlivá informácia.
-
-**Vedľajšie zistenie:** nad 45 kg neexistuje žiadna metóda. Objednávka nad toto
-pásmo v pokladni nezobrazí dopravu. Text s tým počíta („Ak sa pre vašu adresu
-nezobrazí žiadna možnosť doručenia, kontaktujte nás"), ale pri strešných boxoch
-to môže byť bežné, nie výnimočné.
+⚠️ **Zvyšný nesúlad:** Saleor má pre `sk-eur` pásmo „Kuriér Slovensko – 30-45kg",
+ktoré objednávku od 35 do 45 kg pustí cez pokladňu automaticky — teda inak, než
+hovorí text. Buď to pásmo zmeniť na 30–35 kg, alebo text preformulovať. Text je
+zatiaľ napísaný opatrne („nemusí pokladňa ponúknuť automaticky"), takže neklame
+ani v jednom prípade, ale mal by sa zosúladiť.
 
 ### A2. Online odstúpenie — pripravenosť Payloadu sa zo storefrontu overiť nedá
 

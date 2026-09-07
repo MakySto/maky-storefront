@@ -29,6 +29,10 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 				dopravy môže líšiť od menších balíkov.
 			</p>
 			<p>
+				<strong>Pri zásielkach nad 35 kg dojednávame dopravu individuálne.</strong> Takúto objednávku nemusí
+				pokladňa ponúknuť automaticky — napíšte nám pred objednaním a pripravíme vám ponuku dopravy.
+			</p>
+			<p>
 				Ak sa pre vašu adresu nezobrazí žiadna možnosť doručenia,{" "}
 				<Link href={marketHref(channel, "/kontakt")}>kontaktujte nás</Link>. Overíme, či vieme dopravu
 				zabezpečiť.
