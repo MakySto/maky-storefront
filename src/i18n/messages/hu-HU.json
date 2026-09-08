@@ -143,7 +143,7 @@
 		"verdictVerified": "Ellenőrzött kompatibilitás",
 		"verdictVerifiedDetail": "Ezt a szettet ellenőriztük a következő járműhöz: {vehicle}.",
 		"verdictManufacturer": "A gyártó adatai szerint kompatibilis",
-		"verdictManufacturerDetail": "A(z) {supplier} alkalmazási adatai szerint ez a termék illik a következőhöz: {vehicle}. Függetlenül nem ellenőriztük.",
+		"verdictManufacturerDetail": "A(z) {supplier} alkalmazási adatai szerint ez a termék illeszkedik erre: {vehicle}.",
 		"verdictNeedsDetail": "Még egy adatra van szükségünk",
 		"verdictNeedsDetailDetail": "Az Ön járműve annak az időszaknak a határán van, amelyre a termék készült. Adja meg a gyártás hónapját, és pontos választ adunk.",
 		"supplierFallback": "a gyártó",

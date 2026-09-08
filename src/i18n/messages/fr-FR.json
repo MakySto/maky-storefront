@@ -143,7 +143,7 @@
 		"verdictVerified": "Compatibilité vérifiée",
 		"verdictVerifiedDetail": "Cet ensemble est vérifié pour {vehicle}.",
 		"verdictManufacturer": "Compatible selon le fabricant",
-		"verdictManufacturerDetail": "D'après les données d'application de {supplier}, ce produit convient à {vehicle}. Nous ne l'avons pas vérifié de façon indépendante.",
+		"verdictManufacturerDetail": "Selon les données d’application {supplier}, ce produit convient à {vehicle}.",
 		"verdictNeedsDetail": "Il nous manque une information",
 		"verdictNeedsDetailDetail": "Votre véhicule se situe à la limite de la période prévue pour ce produit. Indiquez le mois de fabrication et nous vous donnerons une réponse exacte.",
 		"supplierFallback": "le fabricant",

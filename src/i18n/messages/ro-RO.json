@@ -143,7 +143,7 @@
 		"verdictVerified": "Compatibilitate verificată",
 		"verdictVerifiedDetail": "Acest set este verificat pentru {vehicle}.",
 		"verdictManufacturer": "Compatibil conform datelor producătorului",
-		"verdictManufacturerDetail": "Conform datelor de aplicare {supplier}, acest produs se potrivește pe {vehicle}. Nu l-am verificat independent.",
+		"verdictManufacturerDetail": "Conform datelor de aplicare {supplier}, acest produs se potrivește pe {vehicle}.",
 		"verdictNeedsDetail": "Ne mai trebuie o informație",
 		"verdictNeedsDetailDetail": "Vehiculul dumneavoastră se află la limita perioadei pentru care este destinat produsul. Indicați luna de fabricație și vă dăm un răspuns exact.",
 		"supplierFallback": "producătorului",

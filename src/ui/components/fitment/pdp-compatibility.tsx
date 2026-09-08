@@ -75,21 +75,33 @@ async function renderCompatibility({
 
 	const result = resolveFitment(dataset, active?.selection ?? null, { saleorProductId });
 
-	const action =
-		result.verdict === "NO_FIT" ? (
-			<LinkWithChannel
-				href="/konfigurator"
-				className="border-border-default text-text-primary hover:bg-surface-muted inline-flex h-10 items-center rounded-md border px-3 text-sm font-medium transition-colors"
-			>
-				{t("showCompatible")}
-			</LinkWithChannel>
-		) : (
-			<VehicleSelectorLauncher
-				variant="inline"
-				label={vehicleLabel ? t("changeVehicle") : undefined}
-				vehicleLabel={vehicleLabel}
-			/>
-		);
+	// "Show me what DOES fit" belongs on both dead ends, not just the flat no.
+	//
+	// UNKNOWN is the commoner of the two and had no way forward at all: the dataset is
+	// not complete for any make (`coverage.completeForMakeIds` is empty), so a missing
+	// row means we have not assessed this pairing — NOT that it fails. The copy says so
+	// carefully and then left the shopper holding it. `/konfigurator` answers the
+	// question they actually have, which is what to buy for their car.
+	//
+	// Only with a vehicle resolved: without one the sentence would be about nobody's car,
+	// and the selector is the right next step instead. `NO_VEHICLE_SELECTED` is its own
+	// verdict, so this is belt and braces rather than a reachable branch.
+	const deadEnd = result.verdict === "NO_FIT" || (result.verdict === "UNKNOWN" && active !== null);
+
+	const action = deadEnd ? (
+		<LinkWithChannel
+			href="/konfigurator"
+			className="border-border-default text-text-primary hover:bg-surface-muted inline-flex h-10 items-center rounded-md border px-3 text-sm font-medium transition-colors"
+		>
+			{t("showCompatible")}
+		</LinkWithChannel>
+	) : (
+		<VehicleSelectorLauncher
+			variant="inline"
+			label={vehicleLabel ? t("changeVehicle") : undefined}
+			vehicleLabel={vehicleLabel}
+		/>
+	);
 
 	return (
 		<CompatibilityBox
