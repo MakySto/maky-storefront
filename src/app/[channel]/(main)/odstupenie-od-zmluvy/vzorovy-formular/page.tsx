@@ -254,15 +254,15 @@ function GermanBody({ channel }: { channel: string }) {
 				folgenden Waren:
 			</p>
 			<ul>
-				<li>Waren: ................................................................................</li>
-				<li>Bestellnummer oder andere Angaben zum Vertrag: ....................................</li>
+				<li>Waren: ........................</li>
+				<li>Bestellnummer oder andere Angaben zum Vertrag: ........................</li>
 				<li>Umfang – gesamte Bestellung oder einzelne Artikel mit Stückzahl: ..................</li>
-				<li>Bestellt am / erhalten am (*): ....................................................</li>
-				<li>Name des/der Verbraucher(s): ......................................................</li>
-				<li>Anschrift des/der Verbraucher(s): .................................................</li>
+				<li>Bestellt am / erhalten am (*): ........................</li>
+				<li>Name des/der Verbraucher(s): ........................</li>
+				<li>Anschrift des/der Verbraucher(s): ........................</li>
 				<li>E-Mail-Adresse für die Bestätigung (auf Papier freiwillig): .......................</li>
-				<li>Datum: ............................................................................</li>
-				<li>Unterschrift des/der Verbraucher(s) – nur auf Papier: .............................</li>
+				<li>Datum: ........................</li>
+				<li>Unterschrift des/der Verbraucher(s) – nur auf Papier: ........................</li>
 			</ul>
 			<p>(*) Unzutreffendes streichen.</p>
 			<p>
