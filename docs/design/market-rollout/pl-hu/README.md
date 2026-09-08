@@ -109,6 +109,23 @@ Dodané podklady **vedome neuzavreli**, ktoré publikované ustanovenie transpon
 povinnosť online funkcie a od kedy. Neznamená to, že v Poľsku e-mail vždy stačí. Je to
 konkrétna otázka pre M/R pred povolením predaja, nie pre prekladové vlákno.
 
+### ⚠️ Zapnutie funkcie si vyžiada REBUILD, nie iba reštart PM2
+
+Nameral som to pri negatívnom teste. Keď sa buildne s vypnutým `WITHDRAWAL_BACKEND_LIVE`
+a potom sa proces spustí so zapnutým:
+
+| `/sk/odstupenie-od-zmluvy`  | výsledok                                                      |
+| --------------------------- | ------------------------------------------------------------- |
+| telo stránky                | formulár **sa vykreslí** (routa je dynamická, `connection()`) |
+| `<meta name="description">` | stále znenie **`withoutForm`** — o formulári mlčí             |
+
+Metadáta sa pod `cacheComponents` zapekajú do prerenderovaného shellu v čase buildu,
+takže za env premennou ísť nevedia — presne to, čo o `noindex` hovorí komentár
+v `proxy.test.ts`. Nie je to regresia tohto vlákna a **PL/HU sa to netýka** (tam sú oba
+stavy konzistentné: formulár sa nevykreslí a metadáta ho ani nesľubujú). Je to však
+pasca pre R: po zapnutí prepínača treba znovu buildnúť, inak bude SERP popis tvrdiť opak
+toho, čo stránka robí.
+
 ❌ **Nikdy neposielaj PL/HU ako `market: "SK"`.** Vyrobilo by to právny záznam
 s nepravdivým trhom. Dnes to nehrozí — bránu som overil pri oboch stavoch prepínača
 (§ „Čo bolo overené“ v odovzdávke).
