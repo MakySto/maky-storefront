@@ -176,6 +176,7 @@
 		"yearFromOnly": "od {from}",
 		"labelYear": "Rok",
 		"labelRoofType": "Typ střechy",
+		"roofUnconfirmed": "Typ střechy nepotvrzen",
 		"labelDoors": "Počet dveří",
 		"roofNakedRoof": "Holá střecha",
 		"roofRaisedRails": "Podélníky nad střechou",

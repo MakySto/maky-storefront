@@ -32,6 +32,12 @@ type Props = {
 	result: FitmentResult;
 	/** Resolved label of the active vehicle, e.g. "Škoda Octavia IV (NX), 2022". */
 	vehicleLabel: string | null;
+	/**
+	 * The configuration the verdict is about — roof type, and the month if the shopper
+	 * gave one. Rendered under the answer so the claim can be checked against the car it
+	 * was made for, which the verdict sentence alone does not allow.
+	 */
+	vehicleDetail?: string | null;
 	/** Rendered under the verdict — the "choose a vehicle" affordance. */
 	action?: React.ReactNode;
 	/** True when the answer came from demo data rather than a real provider. */
@@ -54,7 +60,15 @@ const VERDICT_ICON: Record<FitmentVerdict, typeof Check> = {
 	NO_VEHICLE_SELECTED: CircleHelp,
 };
 
-export async function CompatibilityBox({ result, vehicleLabel, action, isDemo, locale, className }: Props) {
+export async function CompatibilityBox({
+	result,
+	vehicleLabel,
+	vehicleDetail,
+	action,
+	isDemo,
+	locale,
+	className,
+}: Props) {
 	const t = await getTranslations("fitment");
 
 	// Conditions are resolved BEFORE the tone is chosen: a verified fit carrying a
@@ -101,6 +115,8 @@ export async function CompatibilityBox({ result, vehicleLabel, action, isDemo, l
 						{qualified ? t("verdictQualified") : t(VERDICT_LABEL_KEY[result.verdict])}
 					</p>
 					<p className="mt-1 text-sm opacity-90">{qualified ? t("verdictQualifiedDetail") : detail}</p>
+
+					{vehicleDetail && <p className="mt-1 text-xs opacity-75">{vehicleDetail}</p>}
 
 					{conditions.resolved.length > 0 && (
 						<div className="mt-3">

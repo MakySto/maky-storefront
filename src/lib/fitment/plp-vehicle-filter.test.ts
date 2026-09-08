@@ -140,7 +140,10 @@ describe("what narrows the listing, and what must not", () => {
 		readGarage.mockResolvedValue(garageWith(SELECTION));
 
 		const filter = await resolveVehicleListingFilter(false);
-		expect(filter).toMatchObject({ state: "offered", vehicleLabel: "Make Model Gen" });
+		// The YEAR is part of the label on purpose: this banner claims a result for a
+		// car, and "Make Model Gen" is the same string for a 2018 and a 2024 vehicle,
+		// which are different generations taking different racks.
+		expect(filter).toMatchObject({ state: "offered", vehicleLabel: "Make Model Gen · 2022" });
 	});
 
 	it("narrows to every verified id when asked", async () => {

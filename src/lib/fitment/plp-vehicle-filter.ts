@@ -45,7 +45,7 @@ import { loadFitmentDataset } from "./provider";
 import { resolveVehicleOutcome } from "./resolve";
 import { isDemoDataset } from "./offers";
 import { categoryFitmentKind } from "@/config/categories";
-import { vehicleDisplayName } from "../garage/label";
+import { vehicleShortLabel } from "../garage/label";
 import { readGarage } from "../garage/state";
 
 /** The URL contract. One param, one value — an explicit, linkable, clearable state. */
@@ -171,7 +171,9 @@ export async function resolveVehicleListingFilter(
 		const active = garage.active && !garage.active.unresolved ? garage.active : null;
 		if (!active) return { state: "no-vehicle", requested };
 
-		const vehicleLabel = vehicleDisplayName(active);
+		// Short form: the banner claims a result FOR a car, so it must name which one —
+		// a 2018 and a 2024 Octavia are different generations with different racks.
+		const vehicleLabel = vehicleShortLabel({ ...active, year: active.stored.y });
 		if (!requested) return { state: "offered", vehicleLabel };
 
 		const isDemo = isDemoDataset(dataset);

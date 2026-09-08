@@ -176,6 +176,7 @@
 		"yearFromOnly": "{from} –",
 		"labelYear": "Évjárat",
 		"labelRoofType": "Tetőtípus",
+		"roofUnconfirmed": "A tetőtípus nincs megerősítve",
 		"labelDoors": "Ajtók száma",
 		"roofNakedRoof": "Sima tető",
 		"roofRaisedRails": "Nyitott tetősín",

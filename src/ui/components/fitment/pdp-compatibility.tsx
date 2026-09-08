@@ -5,9 +5,10 @@ import { getLocaleFromChannel } from "@/config/locale";
 import { isDemoDataset } from "@/lib/fitment/offers";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { datasetSpeaksForProduct, resolveFitment } from "@/lib/fitment/resolve";
-import { vehicleDisplayName } from "@/lib/garage/label";
+import { joinVehicleDetail, vehicleDetailParts, vehicleShortLabel } from "@/lib/garage/label";
 import { readGarage } from "@/lib/garage/state";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
+import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import { VehicleSelectorLauncher } from "@/ui/components/vehicle/vehicle-selector-launcher";
 import { CompatibilityBox } from "./compatibility-box";
 
@@ -71,7 +72,7 @@ async function renderCompatibility({
 
 	const garage = await readGarage(dataset);
 	const active = garage.active && !garage.active.unresolved ? garage.active : null;
-	const vehicleLabel = vehicleDisplayName(active);
+	const vehicleLabel = vehicleShortLabel(active ? { ...active, year: active.stored.y } : null);
 
 	const result = resolveFitment(dataset, active?.selection ?? null, { saleorProductId });
 
@@ -103,10 +104,24 @@ async function renderCompatibility({
 		/>
 	);
 
+	// The configuration the answer is about. The roof decides which feet fit, so an
+	// unconfirmed one is stated as unconfirmed rather than left blank — a shopper cannot
+	// check an assumption nobody showed them.
+	const detail = vehicleDetailParts(active ? { ...active, ...active.selection } : null);
+	const vehicleDetail = active
+		? joinVehicleDetail([
+				detail.roofType ? t(ROOF_LABEL_KEY[detail.roofType]) : t("roofUnconfirmed"),
+				detail.month
+					? new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(2000, detail.month - 1))
+					: null,
+			])
+		: null;
+
 	return (
 		<CompatibilityBox
 			result={result}
 			vehicleLabel={vehicleLabel}
+			vehicleDetail={vehicleDetail}
 			isDemo={isDemoDataset(dataset)}
 			locale={locale}
 			action={action}

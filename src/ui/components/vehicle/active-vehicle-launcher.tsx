@@ -2,7 +2,7 @@ import { connection } from "next/server";
 
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { readGarage } from "@/lib/garage/state";
-import { vehicleDisplayName } from "@/lib/garage/label";
+import { vehicleShortLabel } from "@/lib/garage/label";
 import { cn } from "@/lib/utils";
 import { VehicleSelectorLauncher } from "./vehicle-selector-launcher";
 
@@ -47,7 +47,9 @@ export async function ActiveVehicleLauncher({
 	return (
 		<VehicleSelectorLauncher
 			variant={variant}
-			vehicleLabel={vehicleDisplayName(garage.active)}
+			vehicleLabel={vehicleShortLabel(
+				garage.active ? { ...garage.active, year: garage.active.stored.y } : null,
+			)}
 			className={className}
 		/>
 	);

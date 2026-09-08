@@ -21,6 +21,7 @@ import { Car, Loader2, Plus } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { saveActiveVehicle } from "@/lib/garage/actions";
 import { GARAGE_MAX_VEHICLES } from "@/lib/garage/cookie";
+import { joinVehicleDetail } from "@/lib/garage/label";
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import { type RoofType } from "@/lib/fitment/contract";
 
@@ -38,7 +39,11 @@ export function InUseVehicle({
 	const t = useTranslations("garage");
 	const tf = useTranslations("fitment");
 	// Roof labels live in the fitment namespace, resolved the same way `GarageList` does.
-	const details = [String(year), roofType ? tf(ROOF_LABEL_KEY[roofType]) : null].filter(Boolean).join(" · ");
+	// Shared joiner, so this card and the garage list below it cannot drift apart.
+	const details = joinVehicleDetail([
+		String(year),
+		roofType ? tf(ROOF_LABEL_KEY[roofType]) : tf("roofUnconfirmed"),
+	]);
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
 	const [pending, startTransition] = useTransition();
@@ -65,8 +70,9 @@ export function InUseVehicle({
 				<Car className="text-text-tertiary h-5 w-5 shrink-0" aria-hidden="true" />
 				<div className="min-w-0 flex-1">
 					<p className="text-text-tertiary text-xs font-medium tracking-wide uppercase">{t("inUse")}</p>
-					<p className="text-text-primary truncate text-sm font-semibold">{label ?? t("unresolved")}</p>
-					{details && <p className="text-text-secondary truncate text-sm">{details}</p>}
+					{/* Same reason as `vehicle-summary`: the roof state must stay readable at 360 px. */}
+					<p className="text-text-primary text-sm font-semibold break-words">{label ?? t("unresolved")}</p>
+					{details && <p className="text-text-secondary text-sm break-words">{details}</p>}
 				</div>
 				{/*
 				 * Hidden at the limit rather than shown failing: the button would only ever

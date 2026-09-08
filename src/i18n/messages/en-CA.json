@@ -176,6 +176,7 @@
 		"yearFromOnly": "from {from}",
 		"labelYear": "Year",
 		"labelRoofType": "Roof type",
+		"roofUnconfirmed": "Roof type not confirmed",
 		"labelDoors": "Doors",
 		"roofNakedRoof": "Bare roof",
 		"roofRaisedRails": "Raised roof rails",

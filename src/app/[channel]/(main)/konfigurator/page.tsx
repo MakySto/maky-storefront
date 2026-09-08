@@ -75,9 +75,12 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 		);
 	}
 
+	// The roof is never omitted. Leaving it out when it is unknown reads as "no roof
+	// requirement" on a page whose whole subject is which feet fit — the shopper has to
+	// be able to see that the answer was computed WITHOUT it.
 	const qualifierLabels = [
 		active.stored.b ? tf(BODY_LABEL_KEY[active.stored.b]) : null,
-		active.stored.r ? tf(ROOF_LABEL_KEY[active.stored.r]) : null,
+		active.stored.r ? tf(ROOF_LABEL_KEY[active.stored.r]) : tf("roofUnconfirmed"),
 	].filter((v): v is string => Boolean(v));
 
 	const outcome = resolveVehicleOutcome(dataset, active.selection);

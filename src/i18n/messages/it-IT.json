@@ -176,6 +176,7 @@
 		"yearFromOnly": "dal {from}",
 		"labelYear": "Anno",
 		"labelRoofType": "Tipo di tetto",
+		"roofUnconfirmed": "Tipo di tetto non confermato",
 		"labelDoors": "Numero di porte",
 		"roofNakedRoof": "Tetto liscio",
 		"roofRaisedRails": "Railing rialzati",

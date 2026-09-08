@@ -176,6 +176,7 @@
 		"yearFromOnly": "ab {from}",
 		"labelYear": "Baujahr",
 		"labelRoofType": "Dachtyp",
+		"roofUnconfirmed": "Dachtyp nicht bestätigt",
 		"labelDoors": "Anzahl der Türen",
 		"roofNakedRoof": "Glattdach (ohne Reling)",
 		"roofRaisedRails": "Hochreling (mit Spalt)",

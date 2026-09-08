@@ -79,10 +79,11 @@ export function GarageList({
 								</>
 							) : (
 								<>
-									<p className="text-text-primary truncate text-sm font-medium">{label}</p>
+									{/* Wraps: a saved car the shopper is choosing between must be readable in full. */}
+									<p className="text-text-primary text-sm font-medium break-words">{label}</p>
 									<p className="text-text-tertiary text-sm">
 										{vehicle.year}
-										{vehicle.roofType && ` · ${tf(ROOF_LABEL_KEY[vehicle.roofType])}`}
+										{` · ${vehicle.roofType ? tf(ROOF_LABEL_KEY[vehicle.roofType]) : tf("roofUnconfirmed")}`}
 									</p>
 								</>
 							)}

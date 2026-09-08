@@ -53,8 +53,14 @@ export async function VehicleSummary({
 				<Car className="text-text-tertiary h-5 w-5 shrink-0" aria-hidden="true" />
 				<div className="min-w-0 flex-1">
 					<p className="text-text-tertiary text-xs font-medium tracking-wide uppercase">{t("yourVehicle")}</p>
-					<p className="text-text-primary truncate text-sm font-semibold">{label || "—"}</p>
-					{details && <p className="text-text-secondary truncate text-sm">{details}</p>}
+					{/*
+					 * Wraps rather than truncates. This is the FULL form, on the page whose
+					 * whole subject is this vehicle, and at 360 px `truncate` cut it to
+					 * "Typ strechy nepotvrd…" — hiding exactly the fact the shopper has to
+					 * check. The header button may truncate; this may not.
+					 */}
+					<p className="text-text-primary text-sm font-semibold break-words">{label || "—"}</p>
+					{details && <p className="text-text-secondary text-sm break-words">{details}</p>}
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
 					<VehicleSelectorLauncher variant="inline" vehicleLabel={label || null} />
