@@ -2,6 +2,7 @@ import Link from "next/link";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
+import { SLOVAKIA_HU, SLOVAKIA_PL } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
@@ -232,4 +233,111 @@ export function De({ channel }: { channel: string }) {
 
 export function DeAt({ channel }: { channel: string }) {
 	return <German channel={channel} market={AUSTRIA} />;
+}
+
+export function Pl({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Potrzebują Państwo pomocy w wyborze, chcą sprawdzić dopasowanie akcesoriów albo zapytać o zamówienie?
+				Prosimy napisać do nas lub zadzwonić.
+			</p>
+			<p>
+				<strong>E-mail:</strong> <Mail />
+				<br />
+				<strong>Telefon:</strong> <Phone />
+			</p>
+			<p>
+				Na wiadomości odpowiadamy w dni robocze. Przy pytaniach o zamówienie pomocny będzie jego numer. Przy
+				wyborze akcesoriów samochodowych prosimy podać markę, model i rok produkcji auta, a przy bagażnikach
+				dachowych także rodzaj dachu. Zdjęcie często ułatwia sprawdzenie dopasowania.
+			</p>
+
+			<h2>Zwroty i reklamacje</h2>
+			<p>Zwracane lub reklamowane produkty prosimy wysyłać na adres:</p>
+			<ReturnAddress country={SLOVAKIA_PL} />
+			<p>
+				To inny adres niż siedziba spółki. Zasady zwrotu bez podania przyczyny opisujemy na stronie{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Odstąpienie od umowy</Link>. W przypadku
+				wadliwego lub uszkodzonego produktu prosimy zapoznać się ze stroną{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reklamacje i zwroty</Link>.
+			</p>
+
+			<h2>Sprzedawca i dane do faktury</h2>
+			<SeatAddress country={SLOVAKIA_PL} />
+			<p>
+				<strong>Numer identyfikacyjny przedsiębiorstwa (IČO):</strong> {companyInfo.ico}
+				<br />
+				<strong>Słowacki numer identyfikacji podatkowej (DIČ):</strong> {companyInfo.dic}
+				<br />
+				<strong>Numer VAT UE:</strong> {companyInfo.icDph}
+			</p>
+			<p>
+				Spółka jest zarejestrowana jako podatnik VAT na Słowacji. Jest wpisana do rejestru handlowego Sądu
+				Miejskiego Bratislava III (Mestský súd Bratislava III), dział Sro, numer wpisu 200804/B.
+			</p>
+
+			<h2>Organ nadzoru w kraju sprzedawcy</h2>
+			<SupervisoryAuthority country={SLOVAKIA_PL} gloss="Słowacka Inspekcja Handlowa" />
+			<p>
+				Informacje o pozasądowym rozwiązywaniu sporów i pomocy w zakupach transgranicznych znajdują się w{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Regulaminie sklepu</Link>.
+			</p>
+		</>
+	);
+}
+
+export function Hu({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Termékkel kapcsolatban kérdezné, ellenőrizné egy tartozék megfelelőségét, vagy segítségre van szüksége
+				a rendeléséhez? Írjon nekünk, vagy hívjon fel minket.
+			</p>
+			<p>
+				<strong>E-mail:</strong> <Mail />
+				<br />
+				<strong>Telefon:</strong> <Phone />
+			</p>
+			<p>
+				Az üzenetekre munkanapjainkon válaszolunk. Rendeléssel kapcsolatos kérdésnél segít, ha megadja a
+				rendelési számot. Autós kiegészítő kiválasztásához kérjük, írja meg az autó márkáját, modelljét és
+				gyártási évét, tetőcsomagtartó esetén pedig a tető típusát is. Egy fénykép is megkönnyítheti az
+				ellenőrzést.
+			</p>
+
+			<h2>Visszaküldés és reklamáció</h2>
+			<p>A visszaküldött vagy reklamációval érintett termékeket erre a címre kérjük:</p>
+			<ReturnAddress country={SLOVAKIA_HU} />
+			<p>
+				Ez a cím nem azonos a cég székhelyével. Az indokolás nélküli visszaküldésről az{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Elállási jog</Link> oldalon olvashat. Hibás
+				vagy sérült termék esetén a{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reklamáció és visszaküldés</Link> oldal
+				segít az ügyintézésben.
+			</p>
+
+			<h2>Az eladó és a számlázási adatok</h2>
+			<SeatAddress country={SLOVAKIA_HU} />
+			<p>
+				<strong>Cégazonosító szám (IČO):</strong> {companyInfo.ico}
+				<br />
+				<strong>Szlovák adóazonosító szám (DIČ):</strong> {companyInfo.dic}
+				<br />
+				<strong>Közösségi adószám:</strong> {companyInfo.icDph}
+			</p>
+			<p>
+				A társaság Szlovákiában nyilvántartott áfaalany. A Mestský súd Bratislava III által vezetett
+				cégjegyzékben szerepel, Sro részleg, 200804/B bejegyzési szám alatt.
+			</p>
+
+			<h2>Az eladó székhelye szerinti felügyelet</h2>
+			<SupervisoryAuthority country={SLOVAKIA_HU} gloss="Szlovák Kereskedelmi Felügyelet" />
+			<p>
+				A peren kívüli vitarendezésről és a határon átnyúló vásárlásokhoz igénybe vehető segítségről az{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Általános szerződési feltételekben</Link>{" "}
+				talál további információt.
+			</p>
+		</>
+	);
 }

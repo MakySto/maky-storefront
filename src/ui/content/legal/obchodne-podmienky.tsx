@@ -2,38 +2,60 @@ import Link from "next/link";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
+import { SLOVAKIA_HU, SLOVAKIA_PL } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
 
 const RETURN_ADDRESS = `${companyInfo.legalName}, ${companyInfo.returnAddress}, Slovenská republika`;
 const RETURN_ADDRESS_DE = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_DE}`;
+const RETURN_ADDRESS_PL = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_PL}`;
+const RETURN_ADDRESS_HU = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_HU}`;
 
-function Adr({ lang }: { lang: "sk" | "cs" | "de" }) {
+/**
+ * The Slovak ADR body, which stays the seller's ADR body in every market.
+ *
+ * A local scheme is added alongside it in the market bodies, never instead of it: the
+ * trader's own ADR entity does not change because the buyer lives elsewhere.
+ *
+ * The three translated fragments are records rather than nested ternaries. With five
+ * languages a chain of `?:` stops being readable, and — more to the point — a record
+ * makes it impossible to change what `sk`, `cs` or `de` already render while adding a
+ * language, which a rewritten ternary very easily does.
+ */
+function Adr({ lang }: { lang: "sk" | "cs" | "de" | "pl" | "hu" }) {
+	const alternative = {
+		sk: "alternatívne",
+		cs: "alternativní",
+		de: "alternative",
+		pl: "alternatywne",
+		hu: "alternatív",
+	}[lang];
+	const or = { sk: "alebo", cs: "nebo", de: "oder", pl: "lub", hu: "vagy" }[lang];
+	const linkText = {
+		sk: "Informácie a postup podania na stránke SOI",
+		cs: "Informace a postup podání na stránce SOI",
+		de: "Informationen zum Verfahren bei der SOI",
+		pl: "Informacje i tryb złożenia wniosku na stronie SOI",
+		hu: "Tájékoztatás az eljárásról és a beadványról a SOI oldalán",
+	}[lang];
+
 	return (
 		<p>
-			<strong>
-				Slovenská obchodná inšpekcia —{" "}
-				{lang === "sk" ? "alternatívne" : lang === "cs" ? "alternativní" : "alternative"} riešenie sporov
-			</strong>
+			<strong>Slovenská obchodná inšpekcia — {alternative} riešenie sporov</strong>
 			<br />
 			Ústredný inšpektorát, Odbor pre medzinárodné vzťahy a alternatívne riešenie spotrebiteľských sporov
 			<br />
 			Bajkalská 21/A, p. p. 29, 827 99 Bratislava 27
 			<br />
-			E-mail: <a href="mailto:ars@soi.sk">ars@soi.sk</a>{" "}
-			{lang === "sk" ? "alebo" : lang === "cs" ? "nebo" : "oder"} <a href="mailto:adr@soi.sk">adr@soi.sk</a>
+			E-mail: <a href="mailto:ars@soi.sk">ars@soi.sk</a> {or} <a href="mailto:adr@soi.sk">adr@soi.sk</a>
 			<br />
 			<a
 				href="https://www.soi.sk/alternativne-riesenie-spotrebitelskych-sporov"
 				rel="noopener noreferrer"
 				target="_blank"
 			>
-				{lang === "sk"
-					? "Informácie a postup podania na stránke SOI"
-					: lang === "cs"
-						? "Informace a postup podání na stránce SOI"
-						: "Informationen zum Verfahren bei der SOI"}
+				{linkText}
 			</a>
 		</p>
 	);
@@ -1293,4 +1315,933 @@ export function De({ channel }: { channel: string }) {
 
 export function DeAt({ channel }: { channel: string }) {
 	return <German channel={channel} market={AUSTRIA} />;
+}
+
+export function Pl({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Regulamin określa zasady zakupu towarów w sklepie internetowym MAKY.STORE. Do zamówienia stosuje się
+				wersję obowiązującą w chwili zawarcia umowy.
+			</p>
+			<p>
+				<strong>
+					Jesteśmy słowackim sprzedawcą. Wybór prawa słowackiego nie pozbawia konsumenta ochrony wynikającej z
+					bezwzględnie obowiązujących przepisów państwa jego zwykłego pobytu.
+				</strong>{" "}
+				W odniesieniu do konsumentów mieszkających w Polsce zachowujemy tę ochronę zgodnie z art. 6
+				rozporządzenia Rzym I.
+			</p>
+
+			<h2>1. Sprzedawca i dane kontaktowe</h2>
+			<p>
+				<strong>{companyInfo.legalName}</strong>
+				<br />
+				Siedziba: {companyInfo.street}, {companyInfo.city}, {SLOVAKIA_PL}
+				<br />
+				Numer identyfikacyjny przedsiębiorstwa (IČO): {companyInfo.ico}
+				<br />
+				Słowacki numer identyfikacji podatkowej (DIČ): {companyInfo.dic}
+				<br />
+				Numer identyfikacyjny VAT: {companyInfo.icDph}
+			</p>
+			<p>
+				Spółka jest zarejestrowanym podatnikiem VAT na Słowacji. Jest wpisana do rejestru handlowego
+				prowadzonego przez Mestský súd Bratislava III, dział Sro, numer wpisu 200804/B.
+			</p>
+			<p>
+				E-mail: <Mail />
+				<br />
+				Telefon: <Phone />
+			</p>
+			<p>
+				<strong>Adres do zwrotów, reklamacji i związanej z nimi korespondencji:</strong> {RETURN_ADDRESS_PL}.
+			</p>
+			<p>
+				Określenia „my” i „sprzedawca” oznaczają {companyInfo.legalName}, a „Państwo” i „kupujący” — osobę
+				dokonującą zakupu.
+			</p>
+			<p>
+				Konsumentem jest osoba fizyczna zawierająca umowę w celu niezwiązanym z jej działalnością gospodarczą
+				lub zawodową. O statusie kupującego decydują rzeczywisty cel zakupu i właściwe przepisy, a nie samo
+				podanie danych do faktury. Nie wyłączamy praw, które właściwe przepisy przyznają osobie fizycznej
+				prowadzącej działalność gospodarczą przy zakupie niemającym dla niej charakteru zawodowego, w
+				szczególności w zakresie objętym art. 7aa polskiej ustawy o prawach konsumenta.
+			</p>
+
+			<h2>2. Zamówienie i zawarcie umowy</h2>
+			<p>
+				Zakupu można dokonać bez rejestracji. Należy dodać wybrane produkty do koszyka, podać dane kontaktowe,
+				dane do faktury i adres dostawy oraz wybrać jedną z dostępnych metod dostawy i płatności.
+			</p>
+			<p>
+				Przed złożeniem wiążącego zamówienia można sprawdzić i poprawić jego zawartość oraz podane dane.
+				Pokazujemy łączną kwotę do zapłaty, w tym koszty dostawy i ewentualnych dodatkowych usług, o których
+				wcześniej poinformowaliśmy.
+			</p>
+			<p>
+				Kliknięcie przycisku <strong>„Zamówienie z obowiązkiem zapłaty”</strong> lub przycisku z innym równie
+				jednoznacznym oznaczeniem oznacza złożenie zamówienia z obowiązkiem zapłaty.
+			</p>
+			<p>
+				Umowa sprzedaży zostaje zawarta, gdy otrzymają Państwo naszą wiadomość e-mail potwierdzającą przyjęcie
+				zamówienia. Wiadomość zawiera podsumowanie zamówienia, uzgodnione warunki i regulamin na trwałym
+				nośniku. Samo powiadomienie o płatności wysłane przez operatora płatności nie jest potwierdzeniem
+				przyjęcia zamówienia przez sprzedawcę.
+			</p>
+			<p>
+				W polskiej wersji sklepu umowę zawieramy <strong>w języku polskim</strong>. Dane umowy przechowujemy w
+				celu realizacji zamówienia i wykonania obowiązków prawnych. Potwierdzenie zamówienia i załączone
+				dokumenty można zapisać. Kopię informacji dotyczących własnego zamówienia mogą Państwo uzyskać,
+				kontaktując się z nami e-mailem.
+			</p>
+			<p>
+				Koszty połączenia z internetem lub rozmowy telefonicznej wynikają z umowy z Państwa operatorem. Nie
+				pobieramy dodatkowej opłaty za zawarcie umowy na odległość.
+			</p>
+
+			<h2>3. Produkty i ich przeznaczenie</h2>
+			<p>
+				Właściwości, zawartość zestawu, przeznaczenie i ograniczenia podajemy przy danym produkcie. W
+				przypadku zestawów montażowych znaczenie ma również konkretna konfiguracja pojazdu i skład zestawu.
+			</p>
+			<p>
+				W razie wątpliwości co do dopasowania produktu prosimy o kontakt przed zakupem. Zalecenie to nie
+				ogranicza naszej odpowiedzialności za prawidłowe informacje o produkcie ani za zgodność dostarczonego
+				towaru z umową.
+			</p>
+			<p>
+				Oznaczenie <strong>„Na zamówienie”</strong> oznacza, że sprowadzamy produkt od dostawcy. Samo w sobie
+				nie oznacza wykonania według indywidualnej specyfikacji ani wyłączenia prawa odstąpienia od umowy.
+			</p>
+
+			<h2>4. Ceny i płatność</h2>
+			<p>
+				Ceny prezentowane konsumentom są cenami końcowymi, obejmującymi należny VAT i inne podatki. Koszty
+				dostawy podajemy oddzielnie. Przed złożeniem wiążącego zamówienia widzą Państwo wszystkie te kwoty
+				oraz łączną cenę. Nie dodajemy płatnych usług bez wyraźnej zgody.
+			</p>
+			<p>
+				Ceny w polskiej wersji sklepu podajemy w <strong>złotych polskich (PLN)</strong>. Obowiązuje cena
+				potwierdzona przy zawarciu umowy. Późniejsza zmiana ceny w sklepie nie zmienia ceny już zawartej
+				umowy.
+			</p>
+			<p>
+				Zamówienia z dostawą do Polski opłaca się <strong>z góry za pośrednictwem Stripe</strong>. Dostępne
+				metody płatności są widoczne podczas składania zamówienia.{" "}
+				<strong>Nie oferujemy płatności za pobraniem.</strong> Zamówienie wysyłamy po otrzymaniu płatności, z
+				uwzględnieniem podanej dostępności produktów. Pełne dane karty przetwarza operator płatności; nie
+				przechowujemy numeru karty ani kodu zabezpieczającego i nie mamy do nich dostępu.
+			</p>
+			<p>
+				Jeżeli nie możemy przyjąć zamówienia, a płatność została już otrzymana, zwracamy ją bez zbędnej
+				zwłoki. Po zawarciu umowy sama zmiana ceny lub dostępności u naszego dostawcy nie uprawnia nas do
+				jednostronnej zmiany uzgodnionych warunków.
+			</p>
+
+			<h2>5. Dostawa i odbiór przesyłki</h2>
+			<p>
+				Współpracujemy z <strong>FedEx i Slovenská pošta (Pocztą Słowacką)</strong>. Dostępne sposoby dostawy
+				zależą od zawartości zamówienia, wymiarów i masy przesyłki oraz adresu doręczenia. Konkretne
+				możliwości i koszty pokazujemy podczas składania zamówienia.
+			</p>
+			<p>
+				O warunkach dostawy informujemy przed zawarciem umowy. Jeżeli nie uzgodnimy innego terminu,
+				dostarczamy towar bez zbędnej zwłoki, najpóźniej w ciągu <strong>30 dni od zawarcia umowy</strong>.
+				Uzgodniony indywidualnie termin ma pierwszeństwo przed tą ogólną zasadą.
+			</p>
+			<p>
+				W razie niedotrzymania uzgodnionego terminu mogą Państwo wyznaczyć odpowiedni dodatkowy termin
+				dostawy, a po jego bezskutecznym upływie odstąpić od umowy. Dodatkowy termin nie jest konieczny w
+				szczególności wtedy, gdy odmawiamy dostawy albo terminowa dostawa miała istotne znaczenie ze względu
+				na okoliczności lub Państwa wyraźną informację przekazaną przed zawarciem umowy.
+			</p>
+			<p>
+				Przy dostawie przez przewoźnika oferowanego przez nas ryzyko przypadkowej utraty lub uszkodzenia
+				towaru przechodzi na konsumenta dopiero przy odbiorze przez niego lub wskazaną przez niego osobę inną
+				niż przewoźnik. Ustawowy wyjątek dotyczy samodzielnego wyboru przewoźnika, którego nie oferowaliśmy.
+				Przejście własności następuje zgodnie z właściwymi przepisami słowackiego kodeksu cywilnego z chwilą
+				dostarczenia towaru konsumentowi.
+			</p>
+			<p>
+				W miarę możliwości prosimy sprawdzić przesyłkę i udokumentować widoczne uszkodzenia. Brak zdjęcia lub
+				protokołu przewoźnika nie powoduje sam w sobie utraty ustawowych praw z tytułu wad. Obowiązują
+				właściwe ustawowe terminy dochodzenia roszczeń.
+			</p>
+
+			<h2>6. Odstąpienie od umowy bez podania przyczyny</h2>
+
+			<h3>Termin i jego początek</h3>
+			<p>
+				Konsument może co do zasady odstąpić od umowy zawartej na odległość w ciągu{" "}
+				<strong>14 dni od otrzymania towaru</strong>, bez podania przyczyny. Dla zamówień złożonych po
+				zalogowaniu na konto klienta wydłużamy ten termin do <strong>30 dni</strong>. Jest to dodatkowe
+				uprawnienie MAKY.STORE; stosuje się do niego ten sam sposób zwrotu i poniższe warunki, bez
+				ograniczania praw ustawowych.
+			</p>
+			<p>
+				Dnia otrzymania towaru nie wlicza się do terminu. Przy jednej umowie obejmującej kilka towarów
+				dostarczanych oddzielnie liczy się odbiór ostatniego towaru. Przy towarze dostarczanym partiami lub w
+				częściach — odbiór ostatniej partii lub części. Przy regularnym dostarczaniu towarów przez oznaczony
+				czas — odbiór pierwszej dostawy. Towar może odebrać również wskazana przez Państwa osoba inna niż
+				przewoźnik.
+			</p>
+			<p>
+				Odstąpienie można zgłosić jeszcze przed dostawą albo ograniczyć do wybranych produktów. Jeżeli nie
+				przekażemy wymaganego pouczenia, ustawowy termin przedłuża się zgodnie z prawem, zasadniczo o
+				maksymalnie 12 miesięcy po upływie zwykłego terminu. Jeżeli w tym czasie uzupełnimy pouczenie,
+				ustawowy termin 14 dni biegnie od jego otrzymania.
+			</p>
+
+			<h3>Jak złożyć oświadczenie</h3>
+			<p>
+				Jednoznaczne oświadczenie można wysłać e-mailem na <Mail /> lub pocztą na adres {RETURN_ADDRESS_PL}.
+				Na stronie <Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Odstąpienie od umowy</Link>{" "}
+				opisujemy dostępne sposoby zgłoszenia i udostępniamy wzór formularza.
+			</p>
+			<p>
+				Korzystanie ze wzoru jest dobrowolne. Oświadczenie powinno pozwalać ustalić, kto odstępuje od umowy,
+				którego zakupu i jakich produktów dotyczy. Nie wymagamy przyczyny ani wcześniejszej zgody sprzedawcy.
+			</p>
+			<p>
+				W tej wersji podglądowej sklepu formularz do wysłania oświadczenia online nie jest jeszcze
+				uruchomiony. Mogą Państwo skorzystać z e-maila lub poczty. Samo wyświetlenie tej strony nie oznacza
+				przyjęcia oświadczenia.
+			</p>
+			<p>
+				Do zachowania terminu wystarczy wysłać oświadczenie najpóźniej ostatniego dnia terminu. Towar nie musi
+				do tego dnia do nas dotrzeć.
+			</p>
+
+			<h3>Odesłanie towaru i odbiór przez przewoźnika</h3>
+			<p>
+				Jeżeli nie zaproponowaliśmy odbioru towaru, należy odesłać go lub nam przekazać bez zbędnej zwłoki,
+				najpóźniej <strong>14 dni od złożenia oświadczenia o odstąpieniu</strong>, na adres{" "}
+				{companyInfo.returnAddress}, {SLOVAKIA_PL}. Termin jest zachowany, jeżeli towar zostanie wysłany przed
+				jego upływem. Gdy zaproponowaliśmy odbiór, przygotowują Państwo towar zgodnie z ustaleniami.
+			</p>
+			<p>
+				Mogą Państwo wybrać własnego przewoźnika bez naszej uprzedniej zgody lub poprosić nas o wycenę
+				odbioru. Cenę i proponowany przebieg podajemy wcześniej. Płatny odbiór zamawiamy dopiero po wyraźnym
+				zaakceptowaniu ceny. Samo zapytanie o wycenę nie jest zleceniem odbioru ani przyjęciem płatnej oferty.
+			</p>
+			<p>
+				Bezpośrednie koszty zwrotu ponoszą Państwo, jeżeli prawidłowo poinformowaliśmy o nich przed zawarciem
+				umowy. Gdy ze względu na charakter towaru nie można odesłać go zwykłą przesyłką pocztową, przed
+				zakupem przekazujemy również informację o kosztach takiego zwrotu. Jeżeli nie spełnimy tego obowiązku
+				lub zobowiążemy się ponieść koszty, nie obciążamy nimi Państwa. Późniejsza oferta odbioru nie
+				zastępuje brakującej informacji przed zakupem.
+			</p>
+			<p>
+				Prosimy odesłać akcesoria należące do produktu i zabezpieczyć towar na czas transportu. Oryginalne
+				opakowanie, oryginał faktury ani numer sprawy nadany przez nas nie są ogólnymi warunkami skutecznego
+				odstąpienia.
+			</p>
+
+			<h3>Zwrot płatności</h3>
+			<p>
+				Płatności objęte odstąpieniem zwracamy bez zbędnej zwłoki, najpóźniej{" "}
+				<strong>14 dni od otrzymania oświadczenia</strong>. Przy odstąpieniu od całej umowy zwracamy także
+				pierwotne koszty dostawy, nie więcej jednak niż koszt najtańszej zwykłej dostawy oferowanej dla danego
+				zamówienia. Nie musimy zwracać dopłaty za droższą dostawę wybraną wyraźnie przez Państwa.
+			</p>
+			<p>
+				Przy częściowym odstąpieniu zwracamy odpowiednie kwoty. Nie doliczamy z tego powodu dodatkowych
+				kosztów dostawy ani innych opłat z mocą wsteczną.
+			</p>
+			<p>
+				Zwrot następuje tą samą metodą płatności, chyba że wyraźnie zgodzą się Państwo na inną, która nie
+				wiąże się z dodatkowymi kosztami. Nie muszą Państwo przyjmować bonu zamiast zwrotu pieniędzy.
+			</p>
+			<p>
+				Jeżeli nie zaproponowaliśmy odbioru, możemy wstrzymać zwrot do chwili otrzymania towaru lub dowodu
+				jego odesłania — w zależności od tego, co nastąpi wcześniej. Jeżeli zaproponowaliśmy odbiór, nie
+				korzystamy z tego prawa wstrzymania.
+			</p>
+
+			<h3>Zmniejszenie wartości i wyjątki</h3>
+			<p>
+				Mogą Państwo odpowiadać za zmniejszenie wartości towaru wynikające z obchodzenia się z nim w sposób
+				wykraczający poza to, co konieczne do stwierdzenia jego charakteru, cech i działania. Warunkiem jest
+				prawidłowe pouczenie o odstąpieniu. Samo otwarcie opakowania lub rozsądne sprawdzenie produktu nie
+				pozbawia tego prawa.
+			</p>
+			<p>
+				Nie pobieramy ryczałtowej opłaty za zwrot, rozpakowanie ani jego obsługę. Ewentualne roszczenie o
+				zmniejszenie wartości uzasadniamy konkretnymi okolicznościami. Nie potrącamy jednostronnie roszczeń
+				wynikających z odstąpienia z Państwa roszczeniem o zwrot płatności.
+			</p>
+			<p>
+				Prawo odstąpienia nie przysługuje w szczególności przy towarach rzeczywiście wykonanych według
+				indywidualnej specyfikacji lub służących zaspokojeniu zindywidualizowanych potrzeb. Ustawowy wyjątek
+				może dotyczyć także zapieczętowanych towarów, których po otwarciu nie można zwrócić ze względów
+				ochrony zdrowia lub higieny. Wyjątek stosujemy tylko po spełnieniu ustawowych warunków.
+			</p>
+			<p>
+				<strong>
+					Zwykły produkt sprowadzany od dostawcy lub standardowy zestaw dobrany do konkretnego samochodu nie
+					staje się przez to produktem wykonanym na indywidualne zamówienie.
+				</strong>
+			</p>
+
+			<h2>7. Zgodność towaru z umową i reklamacje</h2>
+
+			<h3>Odpowiedzialność ustawowa</h3>
+			<p>
+				Poniższe zasady opisują ochronę wynikającą z uzgodnionego prawa słowackiego. Nie ograniczają
+				bezwzględnie obowiązujących polskich przepisów, w szczególności o niezgodności towaru z umową,
+				terminach i rozpatrywaniu reklamacji. Korzystniejsze uprawnienia pozostają zachowane.
+			</p>
+			<p>
+				Przy sprzedaży konsumenckiej odpowiadamy za wady istniejące w chwili dostarczenia, które ujawnią się w
+				ciągu <strong>dwóch lat od dostarczenia</strong>. W odniesieniu do towarów z elementami cyfrowymi, gdy
+				uzgodniono ciągłe dostarczanie treści lub usług cyfrowych, odpowiedzialność za ich zgodność obejmuje
+				uzgodniony okres, nie krótszy niż dwa lata od dostarczenia. Obowiązki dotyczące niezbędnych
+				aktualizacji wynikają z właściwych przepisów. Dłuższy okres przydatności zadeklarowany dla towaru lub
+				inne ustawowe podstawy ochrony nie są ograniczane samym wskazaniem dwóch lat.
+			</p>
+			<p>
+				Dla umów zawartych od <strong>31 lipca 2026 r.</strong> po pierwszym usunięciu wady przez naprawę
+				okres odpowiedzialności zgodnie z prawem słowackim wydłuża się jednorazowo o{" "}
+				<strong>12 miesięcy</strong>, niezależnie od liczby kolejnych napraw. Do starszych umów stosuje się
+				przepisy właściwe dla chwili ich zawarcia. Pozostają zachowane ustawowe zasady zawieszenia,
+				rozpoczęcia na nowo i przedłużenia terminów.
+			</p>
+			<p>
+				Jeżeli wada ujawni się w odpowiednim okresie odpowiedzialności, domniemywa się według tych zasad, że
+				istniała już przy dostarczeniu, chyba że zostanie wykazane coś innego lub domniemanie jest niezgodne z
+				charakterem towaru albo wady.
+			</p>
+			<p>
+				Odpowiadamy również za wadliwy montaż wykonany przez nas lub na naszą odpowiedzialność oraz za montaż
+				wykonany przez kupującego, jeżeli nieprawidłowość wynika z wad dostarczonej instrukcji. Zwykłe zużycie
+				odpowiadające charakterowi produktu lub uszkodzenie spowodowane przez kupującego nie jest samo w sobie
+				wadą, za którą odpowiadamy. Każdy przypadek oceniamy według jego okoliczności i prawa.
+			</p>
+
+			<h3>Zgłoszenie reklamacji i odpowiedź</h3>
+			<p>
+				Prosimy zgłosić wadę możliwie szybko po jej wykryciu, na przykład e-mailem na <Mail /> lub pisemnie na
+				adres {companyInfo.returnAddress}, {SLOVAKIA_PL}. Inne ustawowo dopuszczalne sposoby zgłoszenia
+				pozostają dostępne. Nie uzależniamy ustawowych praw polskiego konsumenta od natychmiastowego zbadania
+				towaru ani od dodatkowego, dwumiesięcznego terminu zgłoszenia.
+			</p>
+			<p>
+				Prosimy opisać produkt, wadę i moment jej ujawnienia oraz przekazać dane pozwalające powiązać
+				zgłoszenie z zakupem. Numer zamówienia, zdjęcia lub film ułatwiają obsługę, ale nie są jedynymi
+				dopuszczalnymi dowodami. Nie wymagamy oryginalnego opakowania ani wyłącznie oryginału faktury.
+			</p>
+			<p>
+				Niezwłocznie przekazujemy pisemne potwierdzenie zgłoszenia wady i informację o terminie jej usunięcia.{" "}
+				<strong>Na reklamację konsumenta odpowiadamy w ciągu 14 dni od jej otrzymania</strong>, chyba że
+				przepis szczególny stanowi inaczej. Odpowiedź przekazujemy na papierze lub innym trwałym nośniku. W
+				przypadkach objętych art. 7a polskiej ustawy o prawach konsumenta brak odpowiedzi w terminie oznacza
+				uznanie reklamacji. Termin odpowiedzi nie jest tym samym co termin naprawy lub wymiany.
+			</p>
+
+			<h3>Naprawa lub wymiana</h3>
+			<p>
+				Co do zasady mogą Państwo żądać naprawy albo wymiany. Wybrany sposób może zostać zastąpiony drugim
+				albo, w przypadkach przewidzianych prawem, odmówiony, jeśli jest niemożliwy lub powodowałby
+				niewspółmierne koszty. Przyczynę wyjaśniamy. Przed usunięciem wady informujemy o możliwości wyboru
+				oraz odpowiednim przedłużeniu okresu odpowiedzialności po naprawie.
+			</p>
+			<p>
+				Naprawę lub wymianę wykonujemy bezpłatnie, w rozsądnym czasie i bez nadmiernych niedogodności. Według
+				stosowanych tu zasad słowackich termin nie powinien przekroczyć{" "}
+				<strong>30 dni od zgłoszenia wady</strong>, chyba że dłuższy termin uzasadnia obiektywna przyczyna, na
+				którą nie mamy wpływu i którą musimy wykazać. Nie pozwala to odraczać naprawy, jeżeli okoliczności lub
+				bezwzględnie obowiązujące przepisy wymagają szybszego działania.
+			</p>
+			<p>
+				Ponosimy niezbędne koszty odbioru i ponownego dostarczenia naprawionego lub wymienionego towaru.
+				Jeżeli konieczny jest demontaż prawidłowo zamontowanego produktu i jego ponowny montaż, wykonujemy te
+				czynności albo uzgadniamy ich wykonanie na nasz koszt i ryzyko zgodnie z prawem. Nie żądamy opłaty za
+				zwykłe korzystanie z produktu przed wymianą.
+			</p>
+
+			<h3>Obniżenie ceny lub odstąpienie z powodu niezgodności</h3>
+			<p>
+				W ustawowo określonych przypadkach mogą Państwo żądać obniżenia ceny lub odstąpić od umowy z powodu
+				niezgodności towaru z umową. Dotyczy to w szczególności braku prawidłowej naprawy lub wymiany, odmowy
+				doprowadzenia towaru do zgodności, niewykonania obowiązków związanych z odbiorem, demontażem lub
+				montażem, ponownego wystąpienia wady, istotnej niezgodności albo sytuacji, gdy z okoliczności wynika,
+				że nie nastąpi terminowe i prawidłowe rozwiązanie problemu.
+			</p>
+			<p>
+				Obniżka odpowiada różnicy wartości towaru zgodnego i niezgodnego z umową. Niezgodność nieistotna co do
+				zasady nie uprawnia do odstąpienia z tej przyczyny. W zakresie polskiej ustawy o prawach konsumenta
+				domniemywa się, że niezgodność jest istotna. Okoliczności przypisywane kupującemu oceniamy według
+				prawa; samo przyczynienie się do problemu nie oznacza automatycznej utraty wszystkich praw.
+			</p>
+			<p>
+				Jeżeli zamówienie obejmuje kilka produktów, odstąpienie z powodu wady dotyczy zasadniczo produktu
+				wadliwego. Może objąć także inne produkty, jeżeli nie można rozsądnie oczekiwać ich zatrzymania bez
+				produktu wadliwego.
+			</p>
+			<p>
+				Przy uzasadnionym odstąpieniu z powodu wady ponosimy koszty zwrotu. Cenę zwracamy w ciągu{" "}
+				<strong>14 dni od otrzymania towaru lub dowodu jego odesłania</strong>, w zależności od tego, co
+				nastąpi wcześniej. Korzystamy z pierwotnej metody płatności, chyba że wyraźnie uzgodnimy inne
+				bezpłatne rozwiązanie. Nie pobieramy rekompensaty za zwykłe korzystanie z produktu ani normalne
+				zużycie do chwili takiego odstąpienia.
+			</p>
+
+			<h3>Odmowa uznania reklamacji i gwarancja</h3>
+			<p>
+				Jeżeli odmawiamy odpowiedzialności, pisemnie podajemy uzasadnienie. Jeżeli opinia biegłego lub
+				specjalistyczna opinia odpowiednio akredytowanej osoby następnie wykaże naszą odpowiedzialność, mogą
+				Państwo ponownie zgłosić wadę; w zakresie właściwych przepisów słowackich nie możemy ponownie odmówić
+				tak wykazanej odpowiedzialności. Zwrot celowo poniesionych kosztów podlega prawu. Nie są to jedyne
+				dopuszczalne dowody; inne uprawnienia pozostają zachowane.
+			</p>
+			<p>
+				Gwarancja producenta lub sprzedawcy może przyznawać dodatkowe prawa. Nie zastępuje ustawowej
+				odpowiedzialności za niezgodność towaru z umową. Jej okres i warunki nie ograniczają ustawowych
+				roszczeń wobec nas ani ewentualnych roszczeń odszkodowawczych.
+			</p>
+
+			<h2>8. Skargi i pozasądowe rozwiązywanie sporów</h2>
+			<p>
+				Jeżeli nie są Państwo zadowoleni ze sposobu rozpatrzenia reklamacji lub uważają, że naruszyliśmy
+				Państwa prawa, prosimy napisać na <Mail />, wskazując żądanie rozwiązania problemu.
+			</p>
+			<p>
+				Gdy odmówimy uwzględnienia takiego żądania lub nie odpowiemy w ciągu <strong>30 dni</strong>, mogą
+				Państwo zwrócić się do właściwego podmiotu alternatywnego rozwiązywania sporów zgodnie z
+				obowiązującymi zasadami. Dla sporów wynikających z zakupu towarów od słowackiego sprzedawcy takim
+				podmiotem może być Slovenská obchodná inšpekcia (SOI). Inne właściwe podmioty są wskazane w wykazie
+				słowackiego Ministerstwa Gospodarki. Ta ścieżka nie zmienia wcześniejszego, 14-dniowego terminu
+				odpowiedzi na reklamację konsumenta wynikającego z polskich przepisów.
+			</p>
+			<Adr lang="pl" />
+			<p>
+				Postępowanie prowadzone przez SOI jest dla konsumenta bezpłatne. Wypełniamy ustawowe obowiązki
+				współpracy. Postępowanie nie ogranicza prawa do sądu.
+			</p>
+			<p>
+				Przy zakupie transgranicznym od słowackiego sprzedawcy mogą Państwo skorzystać z bezpłatnego wsparcia{" "}
+				<a href="https://konsument.gov.pl/" rel="noopener noreferrer" target="_blank">
+					Europejskiego Centrum Konsumenckiego w Polsce
+				</a>
+				. Centrum pomaga w polubownym rozwiązaniu sporu; nie jest sądem ani organem wydającym wiążące
+				rozstrzygnięcie. Nie deklarujemy uczestnictwa w dowolnym polskim systemie ADR ani jego właściwości
+				wyłącznie na podstawie miejsca zamieszkania kupującego.
+			</p>
+
+			<h2>9. Dane osobowe</h2>
+			<p>
+				Cele i zasady przetwarzania danych opisujemy w{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Polityce prywatności</Link>. Informacje o
+				technologiach przechowywania danych i zgodach znajdują się na stronie{" "}
+				<Link href={marketHref(channel, "/cookies")}>Pliki cookies i ustawienia prywatności</Link>.
+			</p>
+			<p>
+				Zakup, reklamacja ani odstąpienie od umowy nie wymagają zgody na marketing lub opcjonalne pliki
+				cookies.
+			</p>
+
+			<h2>10. Postanowienia końcowe</h2>
+			<p>
+				Stosuje się prawo Republiki Słowackiej, w szczególności słowacki kodeks cywilny, ustawę nr 108/2024 Z.
+				z. o ochronie konsumentów i ustawę nr 22/2004 Z. z. o handlu elektronicznym.{" "}
+				<strong>
+					Wybór ten nie pozbawia konsumenta ochrony bezwzględnie obowiązujących przepisów państwa jego
+					zwykłego pobytu, zgodnie z art. 6 rozporządzenia Rzym I.
+				</strong>{" "}
+				Nie ustanawia też wyłącznej właściwości sądów w Bratysławie. Właściwość sądu wynika z przepisów.
+			</p>
+			<p>
+				Organem nadzoru w miejscu siedziby sprzedawcy jest{" "}
+				<strong>
+					Slovenská obchodná inšpekcia, {companyInfo.supervisoryAuthority.department}, Bajkalská 21/A, P. O.
+					BOX č. 5, 820 07 Bratislava, {SLOVAKIA_PL}
+				</strong>
+				. Uprawnienia innych właściwych organów pozostają zachowane.
+			</p>
+			<p>
+				Zmiany regulaminu dotyczą umów zawieranych po wejściu zmian w życie. Wcześniejsze umowy podlegają
+				właściwej dla nich wersji i bezwzględnie obowiązującym przepisom. Żadne postanowienie nie ogranicza
+				praw, których konsumenta nie można pozbawić.
+			</p>
+		</>
+	);
+}
+
+export function Hu({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Ezek a feltételek a MAKY.STORE webáruházban történő termékvásárlásra vonatkoznak. Rendelésére a
+				szerződés megkötésekor hatályos változat irányadó.
+			</p>
+			<p>
+				<strong>
+					Szlovák eladóként működünk. A szlovák jog választása nem fosztja meg Önt a szokásos tartózkodási
+					helye szerinti állam kötelező fogyasztóvédelmi szabályainak védelmétől.
+				</strong>{" "}
+				A Magyarországon élő fogyasztók e védelmét a Róma I. rendelet 6. cikkének megfelelően megőrizzük.
+			</p>
+
+			<h2>1. Az eladó és az elérhetőségek</h2>
+			<p>
+				<strong>{companyInfo.legalName}</strong>
+				<br />
+				Székhely: {companyInfo.street}, {companyInfo.city}, {SLOVAKIA_HU}
+				<br />
+				Cégazonosító szám (IČO): {companyInfo.ico}
+				<br />
+				Szlovák adóazonosító szám (DIČ): {companyInfo.dic}
+				<br />
+				Közösségi adószám: {companyInfo.icDph}
+			</p>
+			<p>
+				A társaság Szlovákiában nyilvántartott áfaalany. A Mestský súd Bratislava III által vezetett
+				cégjegyzékben szerepel, Sro részleg, 200804/B bejegyzési szám alatt.
+			</p>
+			<p>
+				E-mail: <Mail />
+				<br />
+				Telefon: <Phone />
+			</p>
+			<p>
+				<strong>Visszaküldési, reklamációs és kapcsolódó levelezési cím:</strong> {RETURN_ADDRESS_HU}.
+			</p>
+			<p>
+				A „mi” és az „eladó” megjelölés a {companyInfo.legalName}-t, az „Ön” és a „vásárló” a vevőt jelenti.
+			</p>
+			<p>
+				Fogyasztó az a természetes személy, aki a szakmája, önálló foglalkozása vagy üzleti tevékenysége körén
+				kívül köt szerződést. Az egyes jogok szempontjából a vásárlás tényleges célja és az alkalmazandó
+				jogszabály számít. A külön törvényben meghatározott jogosulti körök — így a kötelező jótállásra
+				vonatkozó szabályok szerint adott esetben védelemben részesülő mikro-, kis- és középvállalkozások —
+				jogait ez a meghatározás nem zárja ki.
+			</p>
+
+			<h2>2. Megrendelés és szerződéskötés</h2>
+			<p>
+				Regisztráció nélkül is vásárolhat. Tegye a kiválasztott termékeket a kosárba, adja meg
+				kapcsolattartási, számlázási és szállítási adatait, majd válasszon a felkínált szállítási és fizetési
+				módok közül.
+			</p>
+			<p>
+				A megrendelés véglegesítése előtt ellenőrizheti és javíthatja a termékeket és az adatokat. Megmutatjuk
+				a teljes fizetendő összeget, a szállítással és minden előzetesen közölt további díjjal együtt.
+			</p>
+			<p>
+				A <strong>„Fizetési kötelezettséggel járó megrendelés”</strong> vagy más, e kötelezettséget ugyanolyan
+				egyértelműen jelző gomb használatával fizetési kötelezettséggel járó megrendelést ad le.
+			</p>
+			<p>
+				Az adásvételi szerződés akkor jön létre, amikor megérkezik Önhöz a megrendelés elfogadását tartalmazó
+				e-mailünk. Ebben szerepel a rendelés összefoglalója, a megállapodott feltételek és az ÁSZF tartós
+				adathordozón. A fizetési szolgáltató külön fizetési értesítése önmagában nem jelenti a megrendelés
+				eladó általi elfogadását.
+			</p>
+			<p>
+				A magyar nyelvű webáruházban a szerződést <strong>magyar nyelven</strong> kötjük. A szerződés adatait
+				a vásárlás teljesítéséhez és jogi kötelezettségeinkhez őrizzük meg. A rendelés visszaigazolását és a
+				hozzá csatolt dokumentumokat elmentheti. Saját rendelésének adatairól e-mailben másolatot kérhet.
+			</p>
+			<p>
+				Az internetkapcsolat és a telefonhívás díja az Ön szolgáltatójával kötött szerződésétől függ. A
+				távollévők közötti szerződéskötésért külön kommunikációs díjat nem számítunk fel.
+			</p>
+
+			<h2>3. Termékek és rendeltetésszerű használat</h2>
+			<p>
+				A jellemzőket, a csomag tartalmát, a rendeltetést és az esetleges korlátozásokat az adott terméknél
+				ismertetjük. Szerelőkészleteknél az autó konkrét konfigurációja és a készlet összetétele is lényeges.
+			</p>
+			<p>
+				Ha bizonytalan a termék megfelelőségében, kérjük, vásárlás előtt kérdezzen tőlünk. Ez az ajánlás nem
+				csökkenti felelősségünket a helyes termékinformációért vagy a szerződésszerű teljesítésért.
+			</p>
+			<p>
+				A <strong>„Rendelésre”</strong> jelzés azt jelenti, hogy a terméket a beszállítótól szerezzük be.
+				Önmagában nem jelent egyedi gyártást, és nem zárja ki az elállási jogot.
+			</p>
+
+			<h2>4. Árak és fizetés</h2>
+			<p>
+				A fogyasztóknak feltüntetett árak végleges árak, és tartalmazzák az alkalmazandó áfát és egyéb adókat.
+				A szállítás díját külön tüntetjük fel. A teljes összeget és összetevőit a kötelező érvényű megrendelés
+				előtt látja. Fizetős kiegészítő szolgáltatást nem adunk hozzá kifejezett hozzájárulás nélkül.
+			</p>
+			<p>
+				A magyarországi árakat <strong>magyar forintban (HUF)</strong> tüntetjük fel. A szerződéskötéskor
+				visszaigazolt ár érvényes. A webáruház későbbi árváltozása a már megkötött szerződés árát nem
+				módosítja.
+			</p>
+			<p>
+				A magyarországi címre szóló rendeléseket <strong>előre, a Stripe rendszerén keresztül</strong> kell
+				kifizetni. Az adott rendeléshez elérhető fizetési módokat a rendelési folyamat mutatja.{" "}
+				<strong>Utánvétes fizetést nem kínálunk.</strong> A rendelést a fizetés beérkezése után, a megadott
+				termékelérhetőség szerint adjuk fel. A teljes kártyaadatokat a fizetési szolgáltató kezeli; a
+				kártyaszámot és a biztonsági kódot nem tároljuk, és azokhoz nem férünk hozzá.
+			</p>
+			<p>
+				Ha a rendelést nem tudjuk elfogadni, de a fizetés már megtörtént, a kapott összeget késedelem nélkül
+				visszatérítjük. A szerződéskötés után a beszállítónk árának vagy készletének változása önmagában nem
+				jogosít fel a megállapodott feltételek egyoldalú módosítására.
+			</p>
+
+			<h2>5. Szállítás és a csomag átvétele</h2>
+			<p>
+				Szállítási partnereink a <strong>FedEx és a Slovenská pošta (Szlovák Posta)</strong>. A választható
+				szállítási módok a rendelés tartalmától, a csomag méretétől és tömegétől, valamint a kézbesítési
+				címtől függenek. Az adott rendeléshez elérhető lehetőségeket és díjakat a rendelési folyamatban
+				mutatjuk meg.
+			</p>
+			<p>
+				A szállítás feltételeiről a szerződéskötés előtt tájékoztatjuk. Eltérő megállapodás hiányában
+				indokolatlan késedelem nélkül, legkésőbb a szerződés megkötésétől számított{" "}
+				<strong>30 napon belül</strong> szállítunk. A konkrétan megállapodott szállítási határidő elsőbbséget
+				élvez.
+			</p>
+			<p>
+				Ha nem teljesítünk a megállapodott időben, megfelelő póthatáridőt szabhat, és annak eredménytelen
+				elteltével elállhat. Nem szükséges póthatáridő különösen akkor, ha a szállítást megtagadjuk, vagy a
+				határidő betartása a körülmények miatt alapvető fontosságú volt, illetve Ön erre a szerződéskötés
+				előtt kifejezetten felhívta a figyelmünket.
+			</p>
+			<p>
+				Az általunk kínált fuvarozóval történő kézbesítésnél az elveszés vagy sérülés kockázata csak akkor
+				száll át a fogyasztóra, amikor ő vagy az általa megjelölt, a fuvarozótól eltérő személy átveszi az
+				árut. Jogszabályi kivétel vonatkozik az Ön által önállóan megbízott, általunk nem kínált fuvarozóra. A
+				tulajdonjog a szlovák polgári törvénykönyv irányadó szabályai szerint a fogyasztónak történő
+				kézbesítéssel száll át.
+			</p>
+			<p>
+				Lehetőség szerint átvételkor vizsgálja meg a csomagot, és dokumentálja a látható sérülést. A fuvarozó
+				jegyzőkönyvének vagy a fényképnek a hiánya önmagában nem zárja ki a törvényes igényeket. A hibák
+				bejelentésére és az igények érvényesítésére a jogszabályi határidők vonatkoznak.
+			</p>
+
+			<h2>6. Indokolás nélküli elállás</h2>
+
+			<h3>Határidő és annak kezdete</h3>
+			<p>
+				Fogyasztóként a távollévők között kötött szerződéstől főszabály szerint a termék átvételétől számított{" "}
+				<strong>14 napon belül</strong>, indokolás nélkül elállhat. Ha a rendelést a vásárlói fiókjába
+				bejelentkezve adta le, a határidőt <strong>30 napra</strong> hosszabbítjuk meg. Ez a MAKY.STORE
+				többletkedvezménye; ugyanaz a visszaküldési eljárás és az alábbi feltételek érvényesek rá, törvényes
+				jogai sérelme nélkül.
+			</p>
+			<p>
+				Az átvétel napja nem számít bele a határidőbe. Az Ön által megjelölt, a fuvarozótól eltérő személy
+				átvétele is irányadó lehet. Egy rendelésben vásárolt, külön kézbesített termékeknél az utolsó termék,
+				több tételből vagy darabból álló terméknél az utolsó tétel vagy darab átvétele számít. Meghatározott
+				időn át tartó rendszeres termékszállításnál az első kézbesítés az irányadó.
+			</p>
+			<p>
+				Az elállás a kézbesítés előtt is közölhető, illetve egyes termékekre korlátozható. A szükséges
+				tájékoztatás hiányában a törvényes határidő a vonatkozó szabályok szerint, főszabály szerint további
+				12 hónappal meghosszabbodik. Ha ezen idő alatt a tájékoztatást pótoljuk, a 14 napos törvényes határidő
+				a pótlólagos tájékoztatás kézhezvételétől számítandó.
+			</p>
+
+			<h3>Az elállási nyilatkozat közlése</h3>
+			<p>
+				Egyértelmű nyilatkozatát elküldheti az <Mail /> e-mail-címre vagy postán a {RETURN_ADDRESS_HU} címre.
+				Az <Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Elállási jog</Link> oldalon további
+				tájékoztatást és nyilatkozatmintát talál.
+			</p>
+			<p>
+				A minta használata önkéntes. A nyilatkozatból legyen azonosítható a nyilatkozó, az érintett vásárlás
+				és a termékek köre. Indokolás és előzetes engedélyünk nem szükséges.
+			</p>
+			<p>
+				A webáruház jelenlegi előnézeti változatában az online elállási funkció még nem aktív. Nyilatkozatát
+				e-mailben vagy postán küldheti el. Az oldal megnyitása önmagában nem minősül elállási nyilatkozatnak.
+			</p>
+			<p>A határidő megtartásához elegendő a nyilatkozatot legkésőbb a határidő utolsó napján elküldeni.</p>
+
+			<h3>Visszaküldés és elszállítás</h3>
+			<p>
+				Ha nem ajánlottuk fel az elszállítást, a terméket az elállási nyilatkozat után késedelem nélkül,
+				legkésőbb <strong>14 napon belül</strong> küldje vissza vagy adja át a {companyInfo.returnAddress},{" "}
+				{SLOVAKIA_HU} címen. A határidőn belüli feladás elegendő. Felajánlott elszállításnál a terméket a
+				megállapodás szerint kell előkészíteni.
+			</p>
+			<p>
+				Saját fuvarozó igénybevételéhez nem kell engedélyt kérnie. Tőlünk is kérhet elszállítási árajánlatot;
+				az árat és a javasolt folyamatot előre közöljük. Fizetős szállítást csak az ár kifejezett elfogadása
+				után rendelünk meg. Az érdeklődés önmagában nem szállítási megrendelés és nem fizetős ajánlat
+				elfogadása.
+			</p>
+			<p>
+				A közvetlen visszaküldési költséget Ön viseli, amennyiben arról a szerződéskötés előtt megfelelő
+				tájékoztatást kapott. Ha a termék szokásos postai úton nem küldhető vissza, az ilyen visszaszállítás
+				költségéről is előzetesen tájékoztatjuk. Ha az előzetes tájékoztatási kötelezettséget nem
+				teljesítettük, vagy a költséget magunkra vállaltuk, azt nem kell viselnie. A későbbi elszállítási
+				ajánlat a hiányzó előzetes tájékoztatást nem pótolja.
+			</p>
+			<p>
+				Kérjük, a tartozékokat is küldje vissza, és a terméket a szállításhoz megfelelően csomagolja be. Az
+				eredeti csomagolás, az eredeti számla vagy a nálunk kapott ügyszám nem általános feltétele a hatályos
+				elállásnak.
+			</p>
+
+			<h3>Visszatérítés</h3>
+			<p>
+				Az elállással érintett összegeket a nyilatkozat beérkezésétől számított{" "}
+				<strong>14 napon belül</strong> visszatérítjük. Teljes elállásnál az eredeti szállítási díjat is
+				visszafizetjük, legfeljebb az adott rendeléshez kínált legolcsóbb szokásos szállítás költségéig. Az Ön
+				által kifejezetten választott drágább szállítás felárát nem kell megtérítenünk.
+			</p>
+			<p>
+				Részleges elállásnál az érintett összegeket térítjük vissza. Emiatt nem számolunk el utólagos
+				szállítási vagy más többletdíjat.
+			</p>
+			<p>
+				Az eredeti fizetési módot használjuk, kivéve, ha kifejezetten más, Önnek díjmentes megoldásban
+				állapodunk meg. Pénz-visszatérítés helyett utalványt nem köteles elfogadni.
+			</p>
+			<p>
+				Ha nem ajánlottuk fel az elszállítást, a visszatérítést a termék vagy az elküldést igazoló bizonylat
+				átvételéig visszatarthatjuk, a korábbi eseményt figyelembe véve. Ha felajánlottuk az elszállítást, nem
+				élünk ezzel a visszatartási joggal.
+			</p>
+
+			<h3>Értékcsökkenés és kivételek</h3>
+			<p>
+				Felelhet a termék olyan értékcsökkenéséért, amely a jelleg, a tulajdonságok és a működés
+				megállapításához szükséges mértéket meghaladó használatból ered. Ennek feltétele a megfelelő elállási
+				tájékoztatás. A csomagolás felbontása vagy a szükséges vizsgálat önmagában nem jelenti az elállási jog
+				elvesztését.
+			</p>
+			<p>
+				Átalányjellegű visszaküldési, kicsomagolási vagy ügyintézési díjat nem számítunk fel. Az
+				értékcsökkenési igényt konkrétan megindokoljuk. Az elállásból eredő követelésünket nem számítjuk be
+				egyoldalúan az Ön visszatérítési igényébe.
+			</p>
+			<p>
+				Elállás különösen a valóban egyedi utasítás alapján gyártott vagy egyértelműen személyre szabott
+				terméknél zárható ki. Kivétel vonatkozhat az olyan lezárt termékre is, amely egészségvédelmi vagy
+				higiéniai okból a kézbesítés utáni felbontást követően nem küldhető vissza. Kivételt csak a
+				jogszabályi feltételek fennállásakor alkalmazunk.
+			</p>
+			<p>
+				<strong>
+					Egy szokásos, beszállítótól beszerzett termék vagy a konkrét autóhoz kiválasztott standard készlet
+					önmagában nem egyedi gyártású termék.
+				</strong>
+			</p>
+
+			<h2>7. Hibás teljesítés, szavatosság és jótállás</h2>
+
+			<h3>Az eladó törvényes felelőssége</h3>
+			<p>
+				Az alábbiak a választott szlovák jog szerinti jogokat ismertetik. A Róma I. rendelet 6. cikke alapján
+				alkalmazandó, eltérést nem engedő magyar fogyasztóvédelmi előírások — különösen a kellékszavatosság és
+				a kötelező jótállás szabályai — továbbra is érvényesek. Az itt ismertetett kedvezőbb jogokat ezek nem
+				rövidítik le.
+			</p>
+			<p>
+				Fogyasztói vásárlásnál a kézbesítéskor fennálló, a kézbesítéstől számított{" "}
+				<strong>két éven belül</strong> jelentkező hibákért felelünk. Digitális elemeket tartalmazó terméknél,
+				folyamatos digitális tartalom vagy szolgáltatás biztosítására vonatkozó megállapodás esetén, annak
+				szerződésszerűségéért a megállapodott időszakban, de legalább a kézbesítéstől számított két évig
+				felelünk. A szükséges frissítési kötelezettségekre az irányadó jogszabályok vonatkoznak.
+			</p>
+			<p>
+				A <strong>2026. július 31-étől kötött szerződéseknél</strong> a hiba első kijavítását követően a
+				felelősségi idő a szlovák jog alapján egyszer, <strong>12 hónappal</strong> meghosszabbodik,
+				függetlenül a későbbi javítások számától. Korábbi szerződésnél a megkötésekor alkalmazandó szabályok
+				irányadók. A határidők nyugvására, újrakezdődésére és hosszabbítására vonatkozó törvényes szabályok
+				érvényben maradnak.
+			</p>
+			<p>
+				Az irányadó felelősségi időn belül felismert hibáról e szlovák szabályok alapján vélelmezni kell, hogy
+				már a kézbesítéskor fennállt, kivéve, ha az ellenkezőjét bizonyítják, vagy a vélelem a termék vagy a
+				hiba jellegével összeegyeztethetetlen.
+			</p>
+			<p>
+				Felelünk a szerződés részeként általunk vagy a mi felelősségünkre végzett hibás szerelésért, továbbá
+				az Ön által végzett hibás szerelésért is, ha azt az általunk adott útmutató hiányossága okozta. A
+				terméknek megfelelő természetes elhasználódás vagy az Ön által okozott sérülés önmagában nem általunk
+				viselendő hiba. Az egyedi körülmények és a jogszabályok alapján járunk el.
+			</p>
+
+			<h3>Hiba bejelentése és nyilvántartása</h3>
+			<p>
+				A hibát kérjük, felfedezése után mielőbb jelezze, például az <Mail /> e-mail-címen vagy a{" "}
+				{companyInfo.returnAddress}, {SLOVAKIA_HU} postacímen. Más jogszerű közlési módokat sem zárunk ki.
+			</p>
+			<p>
+				A magyar kellékszavatossági szabályok szerint a felfedezéstől számított két hónapon belüli hibaközlést
+				késedelem nélkülinek kell tekinteni. Ez nem önálló, minden jogot megszüntető kéthónapos határidő. A
+				közlésre, az igény érvényesítésére és a késedelem következményeire a vonatkozó jogszabályok irányadók.
+			</p>
+			<p>
+				Írja le a terméket, a hibát és észlelésének idejét, és adjon meg a vásárlást azonosító adatot. A
+				rendelési szám, fénykép vagy videó segíthet, de nem kizárólagos bizonyíték. Eredeti csomagolást vagy
+				kizárólag eredeti számlát nem követelünk.
+			</p>
+			<p>
+				A hibabejelentésről késedelem nélkül írásos igazolást adunk, feltüntetve a hiba megszüntetésének
+				határidejét. Az alkalmazandó magyar szabályok szerinti jegyzőkönyvezési és válaszadási
+				kötelezettségeket is teljesítjük.
+			</p>
+			<p>
+				A vonatkozó magyar szavatossági és jótállási eljárási szabályok szerint az igényről jegyzőkönyvet
+				veszünk fel, és annak másolatát haladéktalanul átadjuk. Ha a teljesíthetőségről a bejelentéskor nem
+				tudunk nyilatkozni, álláspontunkról főszabály szerint <strong>8 napon belül</strong> igazolható módon
+				értesítjük; javítószolgálat bevonásakor annak jogszabály szerinti értesítése után haladéktalanul
+				tájékoztatjuk. Törekszünk a javítás vagy csere <strong>15 napon belüli</strong> elvégzésére. Ha ennél
+				hosszabb idő szükséges, tájékoztatjuk a várható időtartamról. A 15 napos törekvési kötelezettség nem
+				azonos minden esetre szóló, feltétlen javítási határidővel.
+			</p>
+
+			<h3>Kijavítás vagy kicserélés</h3>
+			<p>
+				Elsősorban kijavítást vagy kicserélést kérhet. A választott megoldás elutasítható, ha lehetetlen vagy
+				a másik megoldással összevetve aránytalan költséget jelentene. Döntésünket megindokoljuk. A kijavítás
+				előtt tájékoztatjuk a választási jogról és a felelősségi idő alkalmazandó meghosszabbításáról.
+			</p>
+			<p>
+				A kijavítás vagy kicserélés ingyenes, észszerű időn belül és jelentős kényelmetlenség nélkül történik.
+				A szlovák alap szerint a határidő <strong>30 napnál nem lehet hosszabb a hiba bejelentésétől</strong>,
+				kivéve, ha tőlünk független objektív ok hosszabb határidőt indokol; ezt igazolnunk kell. Ez nem
+				jogosít fel az indokoltan korábbi teljesítés elhalasztására, és nem írja felül a kötelező magyar
+				jótállás szerinti csere- vagy visszatérítési határidőket.
+			</p>
+			<p>
+				A visszavétel és a javított vagy új termék kiszállításának szükséges költségét mi fizetjük. Ha a
+				megfelelően beépített terméket ki kell szerelni, majd visszaszerelni, ezt elvégezzük, vagy
+				megállapodunk annak a mi költségünkre és kockázatunkra történő elvégzéséről. A csere előtti rendes
+				használatért használati díjat nem kérünk.
+			</p>
+
+			<h3>Árleszállítás és a szerződés megszüntetése</h3>
+			<p>
+				Törvényi feltételek mellett megfelelő árleszállítást vagy a szerződés hibás teljesítés miatti
+				megszüntetését kérheti. Ilyen lehet különösen a kijavítás vagy csere elmaradása vagy megtagadása, a
+				visszavételi és szerelési kötelezettségek megsértése, ismételt hiba, súlyos hiba vagy olyan körülmény,
+				amelyből nyilvánvaló, hogy nem lesz megfelelő és határidőben történő rendezés.
+			</p>
+			<p>
+				Az árleszállítás a hibátlan és hibás termék értéke közötti különbséghez igazodik. Jelentéktelen hiba
+				főszabály szerint nem teszi lehetővé a szerződés megszüntetését; a jelentéktelenséget az eladónak kell
+				bizonyítania. A vásárlónak felróható körülményt az irányadó jog szerint értékeljük. A közrehatás
+				önmagában nem vezet automatikusan minden igény elvesztéséhez.
+			</p>
+			<p>
+				Több termékből álló rendelésnél a megszüntetés főszabály szerint a hibás terméket érinti. Más
+				termékekre is kiterjedhet, ha azok megtartása a hibás termék nélkül észszerűen nem várható el Öntől.
+			</p>
+			<p>
+				Megalapozott, hibás teljesítés miatti megszüntetésnél a visszaküldést mi fizetjük. A vételárat{" "}
+				<strong>14 napon belül</strong> visszatérítjük a termék vagy az elküldést igazoló bizonylat
+				átvételétől, a korábbi esemény szerint. Az eredeti fizetési módot használjuk, hacsak Ön kifejezetten
+				nem fogad el más, díjmentes megoldást. Az addigi szokásos használatért vagy természetes
+				elhasználódásért nem kérünk térítést.
+			</p>
+
+			<h3>A reklamáció elutasítása</h3>
+			<p>
+				Az elutasítást írásban indokoljuk. Ha később szakértői vélemény vagy megfelelően akkreditált személy
+				szakvéleménye megállapítja felelősségünket, ismét érvényesítheti az igényt. Az így bizonyított
+				felelősséget a vonatkozó szlovák szabályok szerint nem utasíthatjuk el újból. A célszerűen felmerült
+				költségek megtérítésére a jogszabályok irányadók. Más megengedett bizonyítékok és további jogok is
+				érvényesíthetők.
+			</p>
+
+			<h3>Termékszavatosság, kötelező és önkéntes jótállás</h3>
+			<p>
+				A kellékszavatosság az eladó hibás teljesítésért fennálló törvényes felelőssége. A magyar jog szerint
+				alkalmazandó termékszavatosság ettől különböző, a gyártóval szemben érvényesíthető jog. A jótállás
+				pedig jogszabályból vagy külön vállalásból eredhet. Ezeket a lehetőségeket nem tekintjük egymás
+				helyettesítőinek.
+			</p>
+			<p>
+				Ha az új termék az alkalmazandó magyar rendelkezések szerint a kötelező jótállás körébe tartozik, a{" "}
+				<strong>151/2003. (IX. 22.) Korm. rendelet</strong> és a termékköröket meghatározó{" "}
+				<strong>10/2024. (VI. 28.) IM rendelet</strong> szerint járunk el. A jótállási idő{" "}
+				<strong>10 000 forinttól 250 000 forintig két év, 250 000 forint felett három év</strong>. A termékkör
+				és az ár egyaránt számít. Nem állítjuk, hogy minden autós tartozék automatikusan kötelező jótállás alá
+				esik.
+			</p>
+			<p>
+				Az érintett termékhez az előírt magyar nyelvű tájékoztatást, és amikor a jogszabály megköveteli,
+				jótállási jegyet adunk. A dokumentum hiánya nem zárja ki a jogszabály alapján fennálló jogokat, ha a
+				vásárlás megfelelően igazolható. A kötelező jótállás javítási idő alatti hosszabbítására, valamint a
+				kötelező cserére és visszatérítésre vonatkozó szabályai megmaradnak; az általános harmincnapos
+				feltétel ezek alól nem ad felmentést.
+			</p>
+			<p>
+				Az önkéntes gyártói vagy eladói jótállás további jogokat adhat. Annak ideje és feltételei nem
+				korlátozzák a törvényes igényeket. Az esetleges kártérítési jogok is megmaradnak.
+			</p>
+
+			<h2>8. Panasz és peren kívüli vitarendezés</h2>
+			<p>
+				Ha nem elégedett az ügyintézéssel, vagy úgy véli, hogy jogait megsértettük, írjon az <Mail /> címre,
+				és kérje a probléma rendezését.
+			</p>
+			<p>
+				Ha a rendezési kérelmet elutasítjuk, vagy <strong>30 napon belül</strong> nem válaszolunk, a vonatkozó
+				szabályok szerint az illetékes alternatív vitarendezési szervhez fordulhat. Szlovák eladótól történő
+				termékvásárlásnál ilyen szerv lehet a Slovenská obchodná inšpekcia (SOI). A további szlovák szervek
+				jegyzékét a Szlovák Gazdasági Minisztérium vezeti. Ez nem írja felül az egyes panaszokra vagy
+				igényekre alkalmazandó rövidebb törvényi határidőket.
+			</p>
+			<Adr lang="hu" />
+			<p>
+				A SOI eljárása a fogyasztónak díjmentes. A ránk vonatkozó együttműködési kötelezettséget teljesítjük.
+				A vitarendezés a bírósághoz fordulás jogát nem korlátozza.
+			</p>
+			<p>
+				Magyarországról történő, határon átnyúló vásárlásnál az{" "}
+				<a href="https://nkfh.gov.hu/europai-fogyasztoi-kozpont" rel="noopener noreferrer" target="_blank">
+					Európai Fogyasztói Központ Magyarország
+				</a>{" "}
+				ingyenes segítségét kérheti. A központ a békés megoldás elérésében segít; nem bíróság, és nem hoz
+				kötelező döntést.
+			</p>
+			<p>
+				A magyar békéltető testülethez fordulás törvényes lehetőségét sem zárjuk ki, ha az adott ügyben
+				fennáll annak hatásköre és illetékessége. Nem állítjuk, hogy valamelyik magyar testület kizárólag a
+				vásárló lakóhelye alapján minden, velünk kapcsolatos ügyben automatikusan illetékes.
+			</p>
+
+			<h2>9. Személyes adatok</h2>
+			<p>
+				Az adatkezelés céljait és szabályait az{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Adatkezelési tájékoztató</Link>{" "}
+				ismerteti. A böngészőben használt technológiákról és a választási lehetőségekről a{" "}
+				<Link href={marketHref(channel, "/cookies")}>Sütik és adatvédelmi beállítások</Link> oldalon olvashat.
+			</p>
+			<p>
+				A vásárlás, reklamáció vagy elállás nem igényel marketinghez vagy opcionális sütikhez adott
+				hozzájárulást.
+			</p>
+
+			<h2>10. Záró rendelkezések</h2>
+			<p>
+				A szerződésre a Szlovák Köztársaság joga irányadó, különösen a szlovák polgári törvénykönyv, a
+				108/2024 Z. z. fogyasztóvédelmi törvény és a 22/2004 Z. z. elektronikus kereskedelmi törvény.{" "}
+				<strong>
+					A jogválasztás nem fosztja meg Önt a szokásos tartózkodási helye szerinti állam kötelező szabályai
+					által biztosított védelemtől a Róma I. rendelet 6. cikke szerint.
+				</strong>{" "}
+				Kizárólagos pozsonyi bírósági illetékességet sem állapít meg. A jogszabályi joghatósági és
+				illetékességi szabályok irányadók.
+			</p>
+			<p>
+				Az eladó székhelye szerinti felügyelet a{" "}
+				<strong>
+					Slovenská obchodná inšpekcia, {companyInfo.supervisoryAuthority.department}, Bajkalská 21/A, P. O.
+					BOX č. 5, 820 07 Bratislava, {SLOVAKIA_HU}
+				</strong>
+				. Más illetékes szervek jogköreit nem korlátozzuk.
+			</p>
+			<p>
+				A feltételek módosítása a hatálybalépésük után kötött szerződésekre vonatkozik. A korábbi
+				szerződésekre az azokhoz tartozó változat és a kötelező jogszabályok érvényesek. Egyetlen rendelkezés
+				sem korlátoz olyan jogot, amely a fogyasztót kötelezően megilleti.
+			</p>
+		</>
+	);
 }

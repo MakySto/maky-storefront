@@ -3,6 +3,7 @@ import { type ReactNode } from "react";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
+import { SLOVAKIA_HU, SLOVAKIA_PL } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
@@ -482,4 +483,305 @@ export function De(props: WithdrawalBodyProps) {
 
 export function DeAt(props: WithdrawalBodyProps) {
 	return <German {...props} market={AUSTRIA} />;
+}
+
+export function Pl({ channel, form, modelFormHref }: WithdrawalBodyProps) {
+	return (
+		<>
+			<p>
+				Produkt nie odpowiada Państwa potrzebom albo zmienili Państwo zdanie? Jako konsument mogą Państwo co
+				do zasady odstąpić od zakupu internetowego{" "}
+				<strong>bez podania przyczyny w ciągu 14 dni od otrzymania towaru</strong>.
+			</p>
+			<p>
+				Dla zamówień złożonych po zalogowaniu się na konto klienta wydłużamy termin do <strong>30 dni</strong>
+				. To dodatkowa korzyść MAKY.STORE. Obowiązują ten sam tryb zwrotu i opisane poniżej warunki, bez
+				ograniczania praw ustawowych.
+			</p>
+			<p>
+				Odstąpienie można złożyć przed dostawą, w odniesieniu do całego zamówienia lub tylko jego części. Do
+				złożenia oświadczenia nie jest potrzebne konto klienta ani nasza wcześniejsza zgoda.
+			</p>
+
+			{form ?? (
+				<>
+					<h2>Odstąpienie online</h2>
+					<p>
+						Funkcja składania odstąpienia online nie jest jeszcze aktywna w tej wersji podglądowej sklepu.
+						Oświadczenie dotyczące już zawartej umowy można wysłać na <Mail />, pocztą albo innym prawnie
+						dopuszczalnym sposobem. Jeżeli biegnie termin, nie należy czekać na uruchomienie funkcji.
+					</p>
+				</>
+			)}
+
+			<h2>Odstąpienie e-mailem lub pocztą</h2>
+			<p>
+				Jednoznaczne oświadczenie prosimy wysłać na <Mail /> albo na adres{" "}
+				<strong>
+					{companyInfo.legalName}, {companyInfo.returnAddress}, {SLOVAKIA_PL}
+				</strong>
+				. Telefon kontaktowy: <Phone />.
+			</p>
+			<p>
+				Można skorzystać ze <Link href={modelFormHref}>wzoru formularza odstąpienia</Link>, ale nie jest to
+				obowiązkowe. Z oświadczenia powinno wynikać, kto odstępuje od umowy, jakiego zakupu dotyczy
+				oświadczenie i jakie produkty obejmuje.
+			</p>
+
+			<h2>Jak liczymy termin</h2>
+			<p>
+				Termin zaczyna biec następnego dnia po otrzymaniu towaru przez Państwa lub wskazaną przez Państwa
+				osobę inną niż przewoźnik. Jeżeli produkty z jednego zamówienia dostarczane są osobno, liczy się
+				otrzymanie ostatniego z nich. Przy towarze dostarczanym w częściach decyduje otrzymanie ostatniej
+				części.
+			</p>
+			<p>
+				Wystarczy wysłać oświadczenie najpóźniej ostatniego dnia właściwego terminu.{" "}
+				<strong>Sam towar nie musi do tego dnia dotrzeć do nas.</strong> Zachowane pozostają ustawowe zasady
+				obliczania i przedłużania terminów, w tym przy nieprzekazaniu wymaganej informacji o prawie
+				odstąpienia.
+			</p>
+
+			<h2>Jak odesłać towar</h2>
+			<p>
+				Mogą Państwo skorzystać z własnego przewoźnika albo poprosić nas o wycenę odbioru. Cenę i proponowany
+				termin podamy wcześniej. Płatny odbiór zlecimy dopiero po wyraźnej zgodzie.
+			</p>
+			<p>
+				<strong>Wysyłka wybranym przez Państwa przewoźnikiem nie wymaga naszej uprzedniej akceptacji.</strong>{" "}
+				Jeżeli nie zaoferowaliśmy odbioru, prosimy odesłać lub przekazać towar niezwłocznie, najpóźniej w
+				ciągu <strong>14 dni od odstąpienia</strong>, na adres:
+			</p>
+			<ReturnAddress country={SLOVAKIA_PL} />
+			<p>
+				Wystarczy nadać przesyłkę przed upływem terminu. Jeżeli zaoferowaliśmy odbiór, prosimy przygotować
+				przesyłkę zgodnie z uzgodnieniami.
+			</p>
+			<p>
+				Samo pytanie o wycenę nie jest zleceniem odbioru ani naszą ofertą odebrania towaru. Dlatego nie należy
+				odkładać odesłania wyłącznie z powodu zapytania, dopóki nie zaoferujemy odbioru.
+			</p>
+			<p>
+				Prosimy bezpiecznie zapakować towar i dołączyć akcesoria należące do zwracanej pozycji. Oryginalne
+				opakowanie może ułatwić pakowanie, <strong>ale nie jest ogólnym warunkiem odstąpienia</strong>. Warto
+				dołączyć numer zamówienia lub zgłoszenia.
+			</p>
+
+			<h2>Kto ponosi koszty zwrotu</h2>
+			<p>
+				Przy odstąpieniu bez podania przyczyny ponoszą Państwo bezpośrednie koszty zwrotu, jeżeli prawidłowo
+				poinformowaliśmy o tym przed zawarciem umowy. Przy towarze, którego ze względu na charakter lub
+				rozmiary nie można zwyczajnie odesłać pocztą, przed zakupem musimy przekazać także informację o
+				kosztach jego zwrotu. Jeżeli nie dopełnimy tej informacji, nie muszą Państwo ponosić tych kosztów.
+			</p>
+			<p>
+				Wycena odbioru zamówiona dopiero po zakupie nie zastępuje informacji, którą należało przekazać przed
+				zamówieniem.
+			</p>
+			<p>
+				Przy zwrocie z powodu wady, za którą odpowiadamy, obowiązują inne zasady pokrycia kosztów. Opisujemy
+				je na stronie <Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reklamacje i zwroty</Link>.
+			</p>
+
+			<h2>Kiedy zwracamy pieniądze</h2>
+			<p>
+				Płatności objęte odstąpieniem zwracamy niezwłocznie, nie później niż w ciągu{" "}
+				<strong>14 dni od otrzymania oświadczenia</strong>. Przy odstąpieniu od całego zamówienia zwracamy
+				także pierwotny koszt dostawy, do wysokości najtańszego zwykłego sposobu dostawy oferowanego dla tego
+				zamówienia. Nie musimy zwracać dopłaty za wybraną droższą dostawę.
+			</p>
+			<p>
+				Przy odstąpieniu od części zamówienia zwracamy odpowiednią część płatności. Nie doliczamy z tego
+				powodu wstecznie kosztów dostawy ani innych opłat.
+			</p>
+			<p>
+				Pieniądze zwracamy tym samym sposobem, którym zapłacono. Inny sposób wymaga wyraźnego uzgodnienia i
+				nie może powodować dodatkowych kosztów dla Państwa. Do zwrotu na pierwotnie używaną kartę nie
+				potrzebujemy numeru IBAN.
+			</p>
+			<p>
+				Jeżeli nie zaoferowaliśmy odbioru, możemy wstrzymać zwrot pieniędzy do otrzymania towaru lub
+				przedstawienia dowodu jego odesłania — w zależności od tego, co nastąpi wcześniej. Jeżeli
+				zaoferowaliśmy odbiór, nie korzystamy z tej możliwości.
+			</p>
+
+			<h2>W jakim stanie można zwrócić produkt</h2>
+			<p>
+				Towar można obejrzeć i sprawdzić w zakresie potrzebnym do ustalenia jego charakteru, cech i działania,
+				podobnie jak w sklepie stacjonarnym. Za zmniejszenie wartości wynikające z korzystania wykraczającego
+				poza ten zakres mogą Państwo odpowiadać, pod warunkiem prawidłowego poinformowania o prawie
+				odstąpienia.
+			</p>
+			<p>
+				Nie pobieramy ryczałtowej opłaty za rozpakowanie ani przyjęcie zwrotu. Ewentualne zmniejszenie
+				wartości oceniamy na podstawie rzeczywistego stanu produktu i wyjaśniamy jego podstawę. Nie potrącamy
+				takiego roszczenia jednostronnie z Państwa należności wynikających z odstąpienia.
+			</p>
+
+			<h2>Kiedy obowiązuje wyjątek</h2>
+			<p>
+				Prawo odstąpienia nie przysługuje w szczególności przy towarze rzeczywiście wykonanym według
+				indywidualnej specyfikacji lub wyraźnie dostosowanym do osobistych potrzeb. Wyjątek może również
+				dotyczyć zapieczętowanych produktów, których po naruszeniu opakowania nie można zwrócić ze względów
+				ochrony zdrowia lub higieny.
+			</p>
+			<p>
+				<strong>
+					Zwykły produkt „Na zamówienie” ani standardowy zestaw dobrany do samochodu nie stają się tylko z
+					tego powodu towarem wykonanym na indywidualne zamówienie.
+				</strong>{" "}
+				Wyjątek stosujemy wyłącznie wtedy, gdy spełnione są jego ustawowe przesłanki. Szczegóły znajdują się w{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Regulaminie sklepu</Link>.
+			</p>
+		</>
+	);
+}
+
+export function Hu({ channel, form, modelFormHref }: WithdrawalBodyProps) {
+	return (
+		<>
+			<p>
+				Mégsem illik a terveibe a termék, vagy meggondolta magát? Fogyasztóként az online vásárlástól
+				főszabály szerint a termék átvételétől számított{" "}
+				<strong>14 napon belül, indokolás nélkül elállhat</strong>.
+			</p>
+			<p>
+				Ha a rendelést a vásárlói fiókjába bejelentkezve adta le, a határidőt <strong>30 napra</strong>{" "}
+				hosszabbítjuk meg. Erre ugyanaz a visszaküldési folyamat és az alábbi feltételek vonatkoznak. A
+				hosszabb határidő nem korlátozza törvényes jogait.
+			</p>
+			<p>
+				Az elállást a kézbesítés előtt is közölheti, és egyes termékekre is korlátozhatja. Ehhez nem kell
+				vásárlói fiók vagy előzetes hozzájárulásunk.
+			</p>
+
+			{form ?? (
+				<>
+					<h2>Online elállás</h2>
+					<p>
+						A webáruház jelenlegi előnézeti változatában az online elállási funkció még nem aktív.
+						Nyilatkozatát e-mailben vagy postán is elküldheti az alábbi elérhetőségekre. Az oldal megnyitása
+						önmagában nem jelenti az elállási nyilatkozat benyújtását.
+					</p>
+				</>
+			)}
+
+			<h2>Elállás e-mailben vagy postán</h2>
+			<p>
+				Egyértelmű nyilatkozatát az <Mail /> címre vagy postán a{" "}
+				<strong>
+					{companyInfo.legalName}, {companyInfo.returnAddress}, {SLOVAKIA_HU}
+				</strong>{" "}
+				címre küldheti. Telefonon a <Phone /> számon ér el minket.
+			</p>
+			<p>
+				Használhatja a <Link href={modelFormHref}>nyomtatható elállási nyilatkozatmintát</Link>, de ez nem
+				kötelező. A nyilatkozatból derüljön ki, ki áll el, melyik vásárlásról van szó, és milyen termékekre
+				vonatkozik.
+			</p>
+
+			<h2>Mikor kezdődik a határidő</h2>
+			<p>
+				A törvényes 14 napos határidő a termék Ön vagy az Ön által megjelölt, a fuvarozótól eltérő személy
+				általi átvételéhez kapcsolódik. Az átvétel napja nem számít bele. Egy rendelésben vásárolt, külön
+				kézbesített termékeknél az utolsó termék átvétele számít. Több tételből vagy darabból álló terméknél
+				az utolsó tétel vagy darab átvétele irányadó.
+			</p>
+			<p>
+				A határidő megtartásához elegendő az elállási nyilatkozatot legkésőbb az utolsó napon elküldeni.{" "}
+				<strong>A terméknek eddig a napig még nem kell visszaérkeznie hozzánk.</strong> A határidő számítására
+				és a hiányos tájékoztatás miatti meghosszabbítására vonatkozó törvényi szabályok változatlanul
+				érvényesek.
+			</p>
+
+			<h2>Hogyan küldje vissza a terméket</h2>
+			<p>
+				Választhat saját fuvarozót, vagy árajánlatot kérhet tőlünk az elszállításra. Az árat és a javasolt
+				folyamatot előre közöljük. Fizetős elszállítást csak az Ön kifejezett hozzájárulása után rendelünk
+				meg.
+			</p>
+			<p>
+				<strong>A saját fuvarozóval történő visszaküldéshez nem szükséges előzetes engedélyünk.</strong> Ha
+				nem ajánlottuk fel az elszállítást, a terméket késedelem nélkül, legkésőbb az elállási nyilatkozattól
+				számított <strong>14 napon belül</strong> küldje vissza vagy adja át az alábbi címen:
+			</p>
+			<ReturnAddress country={SLOVAKIA_HU} />
+			<p>
+				A határidő megtartottnak minősül, ha a terméket annak lejárta előtt feladja. Ha felajánlottuk az
+				elszállítást, a csomagot a megállapodás szerint készítse elő.
+			</p>
+			<p>
+				Az elszállítás díjára vonatkozó érdeklődés önmagában nem megrendelés. Kizárólag az árajánlatra várva
+				ne mulassza el a visszaküldési határidőt, ha még nem ajánlottuk fel a termék elszállítását.
+			</p>
+			<p>
+				A terméket szállításra alkalmasan csomagolja be, és küldje vissza a hozzá tartozó tartozékokat is. Az
+				eredeti csomagolás segíthet, de <strong>nem általános feltétele az elállásnak</strong>. Lehetőség
+				szerint tüntesse fel a rendelési számot vagy az ügyszámot.
+			</p>
+
+			<h2>A visszaküldés költsége</h2>
+			<p>
+				Indokolás nélküli elállás esetén a visszaküldés közvetlen költségét Ön viseli, ha erről a
+				szerződéskötés előtt megfelelően tájékoztattuk. Ha a termék jellege vagy mérete miatt szokásos postai
+				úton nem küldhető vissza, annak visszaszállítási költségéről is előzetesen tájékoztatnunk kell. Ha ezt
+				az előzetes tájékoztatási kötelezettséget nem teljesítettük, ezt a költséget nem kell viselnie.
+			</p>
+			<p>A vásárlás után kért elszállítási ajánlat nem helyettesíti a szerződéskötés előtti tájékoztatást.</p>
+			<p>
+				Ha a terméket olyan hiba miatt küldi vissza, amelyért mi felelünk, a{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reklamáció és visszaküldés</Link> oldalon
+				leírtak irányadók. Ilyenkor más költségviselési szabályok érvényesek.
+			</p>
+
+			<h2>Mikor kapja vissza a pénzét</h2>
+			<p>
+				Az elállással érintett összegeket késedelem nélkül, legkésőbb a nyilatkozat beérkezésétől számított{" "}
+				<strong>14 napon belül</strong> visszatérítjük. Teljes elállásnál az eredeti szállítás költségét is
+				visszafizetjük, legfeljebb az adott rendeléshez kínált legolcsóbb szokásos szállítás díjáig. Az Ön
+				által kifejezetten választott drágább szállítás felárát nem vagyunk kötelesek visszatéríteni.
+			</p>
+			<p>
+				Részleges elállásnál az érintett összegeket térítjük vissza. Emiatt nem számítunk fel utólag további
+				szállítási vagy egyéb díjakat.
+			</p>
+			<p>
+				Az eredeti fizetési módot használjuk. Más megoldásban kifejezetten megállapodhatunk, ha az Önnek nem
+				jár többletköltséggel. Az eredeti bankkártyára történő visszatérítéshez nem kérünk IBAN-számot.
+			</p>
+			<p>
+				Ha nem ajánlottuk fel az elszállítást, a visszatérítést addig visszatarthatjuk, amíg a terméket vagy a
+				feladást igazoló bizonylatot meg nem kapjuk, a korábbi időpontot figyelembe véve. Ha felajánlottuk az
+				elszállítást, ezzel a visszatartási joggal nem élünk.
+			</p>
+
+			<h2>Milyen állapotban küldhető vissza a termék</h2>
+			<p>
+				A terméket olyan mértékben vizsgálhatja meg, amennyire a jellegének, tulajdonságainak és működésének
+				megállapításához szükséges — ahogyan azt egy üzletben is megtehetné. Az ezt meghaladó használatból
+				eredő értékcsökkenésért felelhet, ha az elállási jogról megfelelően tájékoztattuk.
+			</p>
+			<p>
+				A csomagolás felbontásáért vagy a visszaküldés ügyintézéséért nem kérünk átalánydíjat. Az
+				értékcsökkenést a tényleges állapot alapján vizsgáljuk, és az esetleges igényt megindokoljuk. Az ilyen
+				követelést nem számítjuk be egyoldalúan az elállásból eredő visszatérítési igényébe.
+			</p>
+
+			<h2>Mikor van kivétel</h2>
+			<p>
+				Az elállási jog különösen az Ön egyedi utasításai szerint gyártott vagy egyértelműen személyre szabott
+				termékeknél lehet kizárt. Jogszabályi kivétel vonatkozhat olyan lezárt csomagolású termékre is, amely
+				egészségvédelmi vagy higiéniai okból a kézbesítés utáni felbontást követően nem küldhető vissza.
+			</p>
+			<p>
+				<strong>
+					Egy „Rendelésre” elérhető szokásos termék vagy az autójához kiválasztott standard készlet önmagában
+					nem egyedi gyártású termék.
+				</strong>{" "}
+				Kivételt csak a törvényi feltételek teljesülésekor alkalmazunk. További részletek az{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Általános szerződési feltételekben</Link>{" "}
+				találhatók.
+			</p>
+		</>
+	);
 }

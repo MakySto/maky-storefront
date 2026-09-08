@@ -3,6 +3,7 @@ import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { PrivacySettingsLink } from "@/ui/components/privacy-settings-link";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
+import { SLOVAKIA_HU, SLOVAKIA_PL } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 
@@ -24,12 +25,14 @@ const SETTINGS_BUTTON_CLASS =
 const NECESSARY = [
 	{
 		name: "maky-market",
-		life: { sk: "1 rok", cs: "1 rok", de: "1 Jahr" },
-		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie" },
+		life: { sk: "1 rok", cs: "1 rok", de: "1 Jahr", pl: "1 rok", hu: "1 év" },
+		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie", pl: "Cookie", hu: "Süti" },
 		purpose: {
 			sk: "Pamätá si jazykovú a trhovú verziu obchodu, ktorú ste otvorili.",
 			cs: "Pamatuje si jazykovou a tržní verzi obchodu, kterou jste otevřeli.",
 			de: "Merkt sich die Sprach- und Marktversion des Shops, die Sie geöffnet haben.",
+			pl: "Zapamiętuje otwartą wersję językową i rynkową sklepu.",
+			hu: "Megjegyzi a megnyitott nyelvi és piaci változatot.",
 		},
 	},
 	{
@@ -38,12 +41,16 @@ const NECESSARY = [
 			sk: "Do zatvorenia prehliadača",
 			cs: "Do zavření prohlížeče",
 			de: "Bis zum Schließen des Browsers",
+			pl: "Do zamknięcia przeglądarki",
+			hu: "A böngésző bezárásáig",
 		},
-		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie" },
+		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie", pl: "Cookie", hu: "Süti" },
 		purpose: {
 			sk: "Spája váš prehliadač s obsahom košíka a s rozpracovanou objednávkou.",
 			cs: "Spojuje váš prohlížeč s obsahem košíku a s rozpracovanou objednávkou.",
 			de: "Verbindet Ihren Browser mit dem Inhalt des Warenkorbs und einer laufenden Bestellung.",
+			pl: "Łączy przeglądarkę z zawartością koszyka i rozpoczętym zamówieniem.",
+			hu: "Összekapcsolja a böngészőt a kosár tartalmával és a megkezdett rendeléssel.",
 		},
 	},
 	{
@@ -52,12 +59,16 @@ const NECESSARY = [
 			sk: "Prístupový 15 minút, obnovovací 7 dní",
 			cs: "Přístupový 15 minut, obnovovací 7 dní",
 			de: "Zugriff 15 Minuten, Erneuerung 7 Tage",
+			pl: "Token dostępu 15 minut, token odświeżający 7 dni",
+			hu: "Hozzáférési token 15 perc, megújító token 7 nap",
 		},
-		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie" },
+		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie", pl: "Cookie", hu: "Süti" },
 		purpose: {
 			sk: "Udržiavajú vaše prihlásenie. Ukladajú sa až po prihlásení do účtu.",
 			cs: "Udržují vaše přihlášení. Ukládají se až po přihlášení k účtu.",
 			de: "Halten Ihre Anmeldung aufrecht. Sie werden erst nach der Anmeldung gesetzt.",
+			pl: "Utrzymują zalogowanie. Są ustawiane dopiero po zalogowaniu do konta.",
+			hu: "Fenntartják a bejelentkezést. Csak a fiókba való belépés után jönnek létre.",
 		},
 	},
 	{
@@ -66,16 +77,22 @@ const NECESSARY = [
 			sk: "Do vymazania údajov webu v prehliadači",
 			cs: "Do vymazání údajů webu v prohlížeči",
 			de: "Bis zum Löschen der Website-Daten im Browser",
+			pl: "Do usunięcia danych strony w przeglądarce",
+			hu: "A webhely adatainak böngészőből való törléséig",
 		},
 		kind: {
 			sk: "Miestne úložisko (localStorage)",
 			cs: "Místní úložiště (localStorage)",
 			de: "Lokaler Speicher (localStorage)",
+			pl: "Pamięć lokalna (localStorage)",
+			hu: "Helyi tároló (localStorage)",
 		},
 		purpose: {
 			sk: "Uchováva vašu voľbu súkromia, aby sme sa nepýtali pri každej návšteve.",
 			cs: "Uchovává vaši volbu soukromí, abychom se neptali při každé návštěvě.",
 			de: "Bewahrt Ihre Datenschutzauswahl, damit wir nicht bei jedem Besuch erneut fragen.",
+			pl: "Zachowuje Państwa wybór dotyczący prywatności, aby nie pytać przy każdej wizycie.",
+			hu: "Megőrzi az adatvédelmi választását, hogy ne kelljen minden látogatáskor rákérdeznünk.",
 		},
 	},
 ] as const;
@@ -84,9 +101,11 @@ const TABLE_HEADS = {
 	sk: ["Názov", "Typ", "Účel", "Platnosť"],
 	cs: ["Název", "Typ", "Účel", "Platnost"],
 	de: ["Name", "Art", "Zweck", "Speicherdauer"],
+	pl: ["Nazwa", "Rodzaj", "Cel", "Okres"],
+	hu: ["Név", "Típus", "Cél", "Időtartam"],
 } as const;
 
-function InventoryTable({ lang }: { lang: "sk" | "cs" | "de" }) {
+function InventoryTable({ lang }: { lang: "sk" | "cs" | "de" | "pl" | "hu" }) {
 	return (
 		<div className="overflow-x-auto">
 			<table>
@@ -510,4 +529,245 @@ export function De({ channel }: { channel: string }) {
 
 export function DeAt({ channel }: { channel: string }) {
 	return <German channel={channel} market={AUSTRIA} />;
+}
+
+export function Pl({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Cookies i podobne technologie pomagają obsługiwać sklep oraz — zależnie od Państwa wyboru — dodatkowe
+				funkcje. <strong>Można odmówić opcjonalnej analityki i marketingu, a mimo to dokonać zakupu.</strong>
+			</p>
+
+			<h2>Czym są cookies i podobne technologie</h2>
+			<p>
+				Cookies to niewielkie informacje zapisywane przez stronę w przeglądarce. Pozwalają na przykład
+				zachować zawartość koszyka lub sesję logowania. Niektóre są usuwane po zakończeniu sesji, inne
+				pozostają do końca ustalonego okresu.
+			</p>
+			<p>
+				Strona może korzystać także z pamięci lokalnej przeglądarki, na przykład <strong>localStorage</strong>
+				, lub innych podobnych rozwiązań. O wymaganej zgodzie decyduje rzeczywisty cel i sposób działania, nie
+				sama nazwa technologii. Informacje na tej stronie nie dotyczą więc wyłącznie klasycznych plików
+				cookies.
+			</p>
+
+			<h2>Funkcje niezbędne</h2>
+			<p>
+				Bez odrębnej zgody korzystamy z technologii ściśle koniecznych do dostarczenia wyraźnie zamówionej
+				usługi, na przykład działania koszyka, logowania, płatności lub zapisania wyboru prywatności.
+				Ograniczamy je do zakresu faktycznie niezbędnego do danej funkcji.
+			</p>
+			<p>
+				Nie każde narzędzie pomiarowe ani każda usługa tego samego dostawcy jest automatycznie niezbędna. Przy
+				zapisywaniu informacji w urządzeniu i uzyskiwaniu do nich dostępu uwzględniamy w szczególności zasady
+				zgody i wyjątki określone w{" "}
+				<strong>art. 399 ustawy z 12 lipca 2024 r. — Prawo komunikacji elektronicznej</strong>.
+			</p>
+
+			<h2>Analityka i marketing</h2>
+			<p>
+				<strong>Opcjonalna analityka</strong> służy ocenie ruchu i korzystania ze sklepu.{" "}
+				<strong>Technologie marketingowe</strong> mogą służyć pomiarowi skuteczności reklam, tworzeniu grup
+				odbiorców i dostosowaniu reklam.
+			</p>
+			<p>
+				Korzystamy z Google Tag Manager i powiązanych narzędzi pomiarowych Google. Przed dokonaniem wyboru
+				strona przekazuje ustawienia Consent Mode z wartością <strong>„denied”</strong> dla opcjonalnych celów
+				analitycznych i reklamowych. Po wyrażeniu zgody odpowiednie ustawienia zmieniają się na „granted”, a
+				po jej wycofaniu ponownie na „denied”.{" "}
+				<strong>Załadowanie skryptu i zgoda na zapis lub odczyt danych to różne czynności</strong>; samo
+				ustawienie „denied” nie oznacza, że żadne żądanie sieciowe nie zostanie wysłane.
+			</p>
+			<p>
+				Do pomiaru ruchu korzystamy również z <strong>Cloudflare Web Analytics</strong>. W obecnym rozwiązaniu
+				skrypt ładuje się także przed udzieleniem zgody. Usługa nie wykorzystuje cookies do tego pomiaru. Brak
+				cookies sam w sobie nie oznacza jednak braku przetwarzania danych osobowych ani automatycznego
+				zwolnienia każdej technologii z zasad zgody. Cele i podstawy przetwarzania opisujemy także w{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Polityce prywatności</Link>.
+			</p>
+			<p>
+				Samo przeglądanie strony, zamknięcie banera lub dokonanie zakupu nie jest zgodą. Opcjonalne kategorie
+				nie są domyślnie zaznaczone.
+			</p>
+
+			<h2>Ustawienia prywatności</h2>
+			<p>
+				Mogą Państwo zaakceptować wszystkie opcjonalne cele, odrzucić je wszystkie lub wybrać tylko określone.
+				Funkcje niezbędne pozostają aktywne, ponieważ bez nich zamówiona usługa nie może działać.
+			</p>
+			<p>
+				<PrivacySettingsLink label="Otwórz ustawienia prywatności" className={SETTINGS_BUTTON_CLASS} />
+			</p>
+			<p>
+				Wybór można później zmienić przez <strong>„Ustawienia prywatności”</strong> w stopce. Wycofanie zgody
+				dotyczy dalszego wykorzystywania opcjonalnych technologii. Nie oznacza automatycznego usunięcia
+				wszystkich danych, które niezależny usługodawca przetworzył wcześniej; w ich odniesieniu przysługują
+				prawa opisane w polityce prywatności.
+			</p>
+			<p>
+				Ustawienia dotyczą konkretnej przeglądarki i urządzenia. Na innym urządzeniu lub po usunięciu danych
+				strony może być potrzebny ponowny wybór. Zmiana dokumentu sama w sobie nie stanowi zgody na nowy cel
+				przetwarzania.
+			</p>
+
+			<h2>Dane przechowywane w przeglądarce</h2>
+			<InventoryTable lang="pl" />
+			<p>
+				W nazwach cookies logowania może występować prefiks identyfikujący adres usługi; tabela podaje ich
+				rozpoznawalne końcówki.
+			</p>
+			<p>
+				Tabela opisuje wymienione mechanizmy samego sklepu. Narzędzia Google i Cloudflare są opisane powyżej.
+				Informacje o konkretnych usługach i ich celach znajdują się również w{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Polityce prywatności</Link>. Pytania o
+				wykorzystywane technologie można przesłać na <Mail />.
+			</p>
+
+			<h2>Ustawienia przeglądarki</h2>
+			<p>
+				Cookies można także usuwać lub blokować w przeglądarce. Zablokowanie niezbędnych cookies może
+				uniemożliwić działanie koszyka, logowania lub płatności.{" "}
+				<strong>
+					Odrzucenie opcjonalnej analityki i reklam w naszych ustawieniach nie uniemożliwia zakupu.
+				</strong>
+			</p>
+			<p>
+				Usunięcie cookies nie zawsze usuwa dane z innych rodzajów pamięci. Można nimi zarządzać w ustawieniach
+				danych witryn w przeglądarce.
+			</p>
+
+			<h2>Kontakt</h2>
+			<p>
+				Stronę prowadzi <strong>{companyInfo.legalName}</strong>, {companyInfo.street}, {companyInfo.city},{" "}
+				{SLOVAKIA_PL}, IČO {companyInfo.ico}. Pytania prosimy kierować na <Mail />.
+			</p>
+			<p>
+				Prawa dotyczące danych osobowych, odbiorców danych i właściwe organy opisujemy w{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Polityce prywatności</Link>.
+			</p>
+		</>
+	);
+}
+
+export function Hu({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Sütiket és hasonló technológiákat használunk a webáruház működéséhez, illetve az Ön választásától
+				függően további célokra.{" "}
+				<strong>Az opcionális elemzést és marketinget elutasíthatja, és ettől még vásárolhat.</strong>
+			</p>
+
+			<h2>Mik azok a sütik és hasonló technológiák</h2>
+			<p>
+				A sütik kis adatcsomagok, amelyeket a weboldal a böngészőben tárol. Például a kosár tartalmát vagy a
+				bejelentkezést segítenek megőrizni. Egy részük a munkamenet végén törlődik, mások meghatározott ideig
+				maradnak meg.
+			</p>
+			<p>
+				A weboldal a böngésző helyi tárhelyét, például <strong>localStorage</strong>-ot, vagy más hasonló
+				megoldást is használhat. A hozzájárulás szempontjából a tényleges cél és működés számít, nem csupán a
+				technológia neve. Ez a tájékoztató ezért nem kizárólag a hagyományos sütikre vonatkozik.
+			</p>
+
+			<h2>Feltétlenül szükséges működés</h2>
+			<p>
+				Külön hozzájárulás nélkül használjuk az Ön által kifejezetten kért szolgáltatáshoz feltétlenül
+				szükséges technológiákat. Ilyen lehet a kosár, a bejelentkezés, a fizetés vagy az adatvédelmi
+				választás megőrzése. A használatot a funkcióhoz valóban szükséges mértékre korlátozzuk.
+			</p>
+			<p>
+				Nem minden mérés és nem minden, azonos szolgáltatótól származó eszköz szükséges automatikusan. Az
+				eszközön történő tárolásnál és az információkhoz való hozzáférésnél figyelembe vesszük különösen az{" "}
+				<strong>elektronikus hírközlésről szóló 2003. évi C. törvény 155. § (4) bekezdését</strong>, valamint
+				az alkalmazandó hozzájárulási és kivételi szabályokat.
+			</p>
+
+			<h2>Elemzés és marketing</h2>
+			<p>
+				Az <strong>opcionális elemzés</strong> a forgalom és a webáruház használatának megértését szolgálja. A{" "}
+				<strong>marketingtechnológiák</strong> a reklámok eredményességének mérésére, célközönségek
+				kialakítására vagy a hirdetések személyre szabására használhatók.
+			</p>
+			<p>
+				Google Tag Managert és kapcsolódó Google mérési eszközöket használunk. A választás előtt a weboldal az
+				opcionális elemzési és reklámcélokra <strong>„denied”</strong> értékű Consent Mode beállításokat
+				továbbít. Hozzájárulás után az érintett beállítás „granted”, visszavonás után ismét „denied” lesz.{" "}
+				<strong>
+					A szkript betöltése és a böngészőben történő tárolás vagy olvasás engedélyezése nem ugyanaz
+				</strong>
+				; a „denied” beállítás önmagában nem jelenti azt, hogy semmilyen hálózati kérés nem történik.
+			</p>
+			<p>
+				A forgalom mérésére <strong>Cloudflare Web Analytics</strong> szolgáltatást is használunk. A jelenlegi
+				megoldásban a szkript a hozzájárulás megadása előtt is betöltődik. A szolgáltatás ehhez a méréshez nem
+				használ sütiket. A sütik hiánya önmagában azonban nem bizonyítja a személyes adatok kezelésének
+				hiányát, és nem jelent minden technológiára általános hozzájárulási kivételt. A célokat és jogalapokat
+				az <Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Adatkezelési tájékoztató</Link> is
+				ismerteti.
+			</p>
+			<p>
+				A tovább böngészés, a tájékoztató bezárása vagy a vásárlás nem minősül hozzájárulásnak. Az opcionális
+				kategóriák nincsenek előre bejelölve.
+			</p>
+
+			<h2>Adatvédelmi beállítások</h2>
+			<p>
+				Elfogadhatja az összes opcionális célt, elutasíthatja mindet, vagy csak a kiválasztottakat
+				engedélyezheti. A szükséges funkciók aktívak maradnak, mert a kért szolgáltatás nélkülük nem működhet.
+			</p>
+			<p>
+				<PrivacySettingsLink label="Adatvédelmi beállítások megnyitása" className={SETTINGS_BUTTON_CLASS} />
+			</p>
+			<p>
+				Választását a láblécben található <strong>„Adatvédelmi beállítások”</strong> segítségével később is
+				módosíthatja. A visszavonás az opcionális technológiák további használatára vonatkozik. Nem törli
+				automatikusan mindazokat az adatokat, amelyeket egy önálló szolgáltató korábban kezelt; ezekre az
+				adatkezelési tájékoztatóban ismertetett jogok érvényesek.
+			</p>
+			<p>
+				A választás az adott böngészőre és eszközre vonatkozik. Másik eszközön vagy a webhelyadatok törlése
+				után ismét szükség lehet a beállításra. A dokumentum változása önmagában nem jelent hozzájárulást új
+				adatkezelési célhoz.
+			</p>
+
+			<h2>Tárolás a böngészőben</h2>
+			<InventoryTable lang="hu" />
+			<p>
+				A bejelentkezési sütik neve a szolgáltatás címét azonosító előtagot is tartalmazhat; a táblázat a
+				felismerhető névvégződéseket mutatja.
+			</p>
+			<p>
+				A táblázat a webáruház felsorolt saját tárolási megoldásait mutatja. A Google és Cloudflare eszközeit
+				fent ismertetjük. Az egyes szolgáltatásokról és célokról az{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Adatkezelési tájékoztatóban</Link> is
+				olvashat. Kérdését az <Mail /> címre küldheti.
+			</p>
+
+			<h2>Böngészőbeállítások</h2>
+			<p>
+				A sütiket a böngészőben is törölheti vagy blokkolhatja. A szükséges sütik tiltása miatt a kosár, a
+				bejelentkezés vagy a fizetés hibásan működhet.{" "}
+				<strong>
+					Az opcionális elemzés és reklám elutasítása a mi beállításainkban nem akadályozza a vásárlást.
+				</strong>
+			</p>
+			<p>
+				A sütik törlése nem minden esetben törli a más tárhelyeken tárolt adatokat. Ezeket a böngésző
+				webhelyadatokra vonatkozó beállításaiban kezelheti.
+			</p>
+
+			<h2>Kapcsolat</h2>
+			<p>
+				A weboldal üzemeltetője a <strong>{companyInfo.legalName}</strong>, {companyInfo.street},{" "}
+				{companyInfo.city}, {SLOVAKIA_HU}, IČO {companyInfo.ico}. Kérdését az <Mail /> címre várjuk.
+			</p>
+			<p>
+				A személyes adatokhoz kapcsolódó jogokat, az adatcímzetteket és az illetékes felügyeleteket az{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Adatkezelési tájékoztató</Link>{" "}
+				ismerteti.
+			</p>
+		</>
+	);
 }

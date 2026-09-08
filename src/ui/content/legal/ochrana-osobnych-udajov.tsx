@@ -2,6 +2,7 @@ import Link from "next/link";
 import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
+import { SLOVAKIA_HU, SLOVAKIA_PL } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 
@@ -24,8 +25,16 @@ const RECIPIENTS = [
 			sk: "Katalóg, košík, objednávky a zákaznícky účet. Vlastná inštancia.",
 			cs: "Katalog, košík, objednávky a zákaznický účet. Vlastní instance.",
 			de: "Katalog, Warenkorb, Bestellungen und Kundenkonto. Eigene Instanz.",
+			pl: "Katalog, koszyk, zamówienia i konto klienta. Instancja własna.",
+			hu: "Katalógus, kosár, rendelések és vásárlói fiók. Saját példány.",
 		},
-		basis: { sk: "Nevyhnutné pre zmluvu", cs: "Nezbytné pro smlouvu", de: "Für den Vertrag erforderlich" },
+		basis: {
+			sk: "Nevyhnutné pre zmluvu",
+			cs: "Nezbytné pro smlouvu",
+			de: "Für den Vertrag erforderlich",
+			pl: "Niezbędne do wykonania umowy",
+			hu: "A szerződés teljesítéséhez szükséges",
+		},
 	},
 	{
 		service: "Payload CMS (cms.maky.store)",
@@ -33,11 +42,15 @@ const RECIPIENTS = [
 			sk: "Redakčný obsah, záznam o odstúpení od zmluvy a jeho potvrdenie. Vlastná inštancia.",
 			cs: "Redakční obsah, záznam o odstoupení od smlouvy a jeho potvrzení. Vlastní instance.",
 			de: "Redaktionelle Inhalte, Aufzeichnung des Widerrufs und dessen Bestätigung. Eigene Instanz.",
+			pl: "Treści redakcyjne, zapis oświadczenia o odstąpieniu i jego potwierdzenie. Instancja własna.",
+			hu: "Szerkesztői tartalom, az elállási nyilatkozat rögzítése és visszaigazolása. Saját példány.",
 		},
 		basis: {
 			sk: "Zmluva a zákonná povinnosť",
 			cs: "Smlouva a zákonná povinnost",
 			de: "Vertrag und rechtliche Verpflichtung",
+			pl: "Umowa i obowiązek prawny",
+			hu: "Szerződés és jogi kötelezettség",
 		},
 	},
 	{
@@ -46,8 +59,16 @@ const RECIPIENTS = [
 			sk: "Spracovanie online platby, vrátenie platby a kontrola podvodov.",
 			cs: "Zpracování online platby, vrácení platby a kontrola podvodů.",
 			de: "Abwicklung der Online-Zahlung, Erstattungen und Betrugsprüfung.",
+			pl: "Obsługa płatności online, zwrotów płatności i kontrola nadużyć.",
+			hu: "Az online fizetés, a visszatérítések lebonyolítása és csalásellenőrzés.",
 		},
-		basis: { sk: "Nevyhnutné pre zmluvu", cs: "Nezbytné pro smlouvu", de: "Für den Vertrag erforderlich" },
+		basis: {
+			sk: "Nevyhnutné pre zmluvu",
+			cs: "Nezbytné pro smlouvu",
+			de: "Für den Vertrag erforderlich",
+			pl: "Niezbędne do wykonania umowy",
+			hu: "A szerződés teljesítéséhez szükséges",
+		},
 	},
 	{
 		service: "FedEx, Slovenská pošta",
@@ -55,8 +76,16 @@ const RECIPIENTS = [
 			sk: "Doručenie zásielky a kontaktovanie príjemcu.",
 			cs: "Doručení zásilky a kontaktování příjemce.",
 			de: "Zustellung der Sendung und Kontakt zum Empfänger.",
+			pl: "Doręczenie przesyłki i kontakt z odbiorcą.",
+			hu: "A küldemény kézbesítése és a címzett elérése.",
 		},
-		basis: { sk: "Nevyhnutné pre zmluvu", cs: "Nezbytné pro smlouvu", de: "Für den Vertrag erforderlich" },
+		basis: {
+			sk: "Nevyhnutné pre zmluvu",
+			cs: "Nezbytné pro smlouvu",
+			de: "Für den Vertrag erforderlich",
+			pl: "Niezbędne do wykonania umowy",
+			hu: "A szerződés teljesítéséhez szükséges",
+		},
 	},
 	{
 		service: "Cloudflare",
@@ -64,8 +93,16 @@ const RECIPIENTS = [
 			sk: "Doručovanie a ochrana webu; Cloudflare Web Analytics meria návštevnosť bez cookies.",
 			cs: "Doručování a ochrana webu; Cloudflare Web Analytics měří návštěvnost bez cookies.",
 			de: "Auslieferung und Schutz der Website; Cloudflare Web Analytics misst Zugriffe ohne Cookies.",
+			pl: "Dostarczanie i ochrona strony; Cloudflare Web Analytics mierzy ruch bez cookies.",
+			hu: "A webhely kiszolgálása és védelme; a Cloudflare Web Analytics sütik nélkül méri a forgalmat.",
 		},
-		basis: { sk: "Oprávnený záujem", cs: "Oprávněný zájem", de: "Berechtigtes Interesse" },
+		basis: {
+			sk: "Oprávnený záujem",
+			cs: "Oprávněný zájem",
+			de: "Berechtigtes Interesse",
+			pl: "Prawnie uzasadniony interes",
+			hu: "Jogos érdek",
+		},
 	},
 	{
 		service: "Google (Tag Manager, Analytics)",
@@ -73,8 +110,16 @@ const RECIPIENTS = [
 			sk: "Voliteľná analytika a meranie reklamy. Bez súhlasu neukladá ani nečíta údaje v prehliadači.",
 			cs: "Volitelná analytika a měření reklamy. Bez souhlasu neukládá ani nečte údaje v prohlížeči.",
 			de: "Optionale Analyse und Werbemessung. Ohne Einwilligung werden im Browser weder Daten gespeichert noch gelesen.",
+			pl: "Opcjonalna analityka i pomiar reklam, z przekazywaniem ustawień zgody przez Consent Mode.",
+			hu: "Opcionális analitika és hirdetésmérés, a hozzájárulási beállítások Consent Mode általi továbbításával.",
 		},
-		basis: { sk: "Súhlas", cs: "Souhlas", de: "Einwilligung" },
+		basis: {
+			sk: "Súhlas",
+			cs: "Souhlas",
+			de: "Einwilligung",
+			pl: "Zgoda w zakresie opcjonalnych celów",
+			hu: "Hozzájárulás az opcionális célokhoz",
+		},
 	},
 ] as const;
 
@@ -82,9 +127,11 @@ const HEADS = {
 	sk: ["Služba", "Na čo ju používame", "Právny základ"],
 	cs: ["Služba", "K čemu ji používáme", "Právní základ"],
 	de: ["Dienst", "Wofür wir ihn nutzen", "Rechtsgrundlage"],
+	pl: ["Usługa", "Do czego jej używamy", "Podstawa prawna"],
+	hu: ["Szolgáltatás", "Mire használjuk", "Jogalap"],
 } as const;
 
-function RecipientsTable({ lang }: { lang: "sk" | "cs" | "de" }) {
+function RecipientsTable({ lang }: { lang: "sk" | "cs" | "de" | "pl" | "hu" }) {
 	return (
 		<div className="overflow-x-auto">
 			<table>
@@ -109,7 +156,7 @@ function RecipientsTable({ lang }: { lang: "sk" | "cs" | "de" }) {
 	);
 }
 
-function DpaAuthority({ lang }: { lang: "sk" | "cs" }) {
+function DpaAuthority({ lang }: { lang: "sk" | "cs" | "pl" | "hu" }) {
 	return (
 		<p>
 			<strong>Úrad na ochranu osobných údajov Slovenskej republiky</strong>
@@ -866,4 +913,491 @@ export function De({ channel }: { channel: string }) {
 
 export function DeAt({ channel }: { channel: string }) {
 	return <German channel={channel} market={AUSTRIA} />;
+}
+
+export function Pl({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Podczas zakupów i korzystania ze strony powierzają nam Państwo dane osobowe. Tutaj wyjaśniamy, jakie
+				dane wykorzystujemy, do czego są potrzebne, komu je przekazujemy i jak można skorzystać ze swoich
+				praw.
+			</p>
+
+			<h2>1. Kto odpowiada za przetwarzanie danych</h2>
+			<p>
+				Administratorem danych jest <strong>{companyInfo.legalName}</strong>, {companyInfo.street},{" "}
+				{companyInfo.city}, {SLOVAKIA_PL}, numer identyfikacyjny przedsiębiorstwa (IČO) {companyInfo.ico}.
+			</p>
+			<p>
+				W sprawach ochrony danych prosimy pisać na <Mail /> lub na adres siedziby.
+			</p>
+
+			<h2>2. Jakie dane wykorzystujemy i w jakim celu</h2>
+
+			<h3>Zamówienia, dostawa i obsługa klienta</h3>
+			<p>
+				Przetwarzamy imię i nazwisko, dane kontaktowe, adres do faktury i dostawy, informacje o zamówieniu i
+				płatności oraz związaną z nimi korespondencję. Przy zakupach firmowych również przekazane dane
+				przedsiębiorstwa. W pytaniach o dopasowanie akcesoriów mogą pojawić się dane samochodu lub zdjęcia,
+				które nam Państwo przesyłają.
+			</p>
+			<p>
+				Dane są potrzebne do przygotowania i wykonania umowy: przyjęcia zamówienia, płatności, dostawy,
+				odpowiedzi na pytania i obsługi zakupu. Podstawą jest <strong>art. 6 ust. 1 lit. b RODO</strong>. Przy
+				kontakcie z osobą reprezentującą klienta firmowego podstawą może być prawnie uzasadniony interes w
+				obsłudze relacji handlowej zgodnie z <strong>art. 6 ust. 1 lit. f RODO</strong>.
+			</p>
+			<p>
+				Nie przechowujemy pełnego numeru karty ani kodu zabezpieczającego i nie mamy do nich dostępu. Płatność
+				przetwarza Stripe. Otrzymujemy informacje potrzebne do przypisania, sprawdzenia lub zwrotu płatności.
+			</p>
+
+			<h3>Faktury i obowiązki prawne</h3>
+			<p>
+				Dane identyfikacyjne, zamówień i płatności wykorzystujemy w księgowości, do rozliczeń podatkowych i
+				wykonania obowiązków wobec właściwych organów. Podstawą jest{" "}
+				<strong>obowiązek prawny — art. 6 ust. 1 lit. c RODO</strong>.
+			</p>
+
+			<h3>Reklamacje, odstąpienia i wykonywanie praw</h3>
+			<p>
+				Przetwarzamy dane identyfikacyjne i kontaktowe, informacje o zakupie i produkcie, treść zgłoszenia,
+				potrzebne dowody oraz przebieg jego obsługi. W zakresie niezbędnym do udokumentowania sprawy
+				zachowujemy również dane dotyczące złożenia i otrzymania zgłoszenia oraz wysłania potwierdzenia.
+			</p>
+			<p>
+				Podstawą jest wykonanie obowiązków prawnych zgodnie z <strong>art. 6 ust. 1 lit. c RODO</strong>,
+				obsługa umowy, a w razie potrzeby ustalenie, dochodzenie lub obrona roszczeń w ramach prawnie
+				uzasadnionego interesu zgodnie z <strong>art. 6 ust. 1 lit. f RODO</strong>. Przyjęcie reklamacji lub
+				odstąpienia nie wymaga zgody marketingowej ani dodatkowej zgody na przetwarzanie danych koniecznych do
+				rozpatrzenia sprawy.
+			</p>
+
+			<h3>Konto klienta</h3>
+			<p>
+				Po utworzeniu konta przetwarzamy dane potrzebne do zarządzania nim, logowania i wyświetlania zamówień.
+				Podstawą jest wykonanie zamówionej usługi zgodnie z <strong>art. 6 ust. 1 lit. b RODO</strong>. Konto
+				nie jest warunkiem zakupu ani złożenia oświadczenia o odstąpieniu.
+			</p>
+
+			<h3>Wiadomości i oferty</h3>
+			<p>
+				Po zapisaniu się do newslettera wykorzystujemy adres e-mail i informacje o udzielonej zgodzie do
+				wysyłki wiadomości. Podstawą jest <strong>zgoda — art. 6 ust. 1 lit. a RODO</strong>. Jest dobrowolna
+				i można ją w każdej chwili wycofać przez link w wiadomości lub pisząc na <Mail />.
+			</p>
+
+			<h3>Bezpieczeństwo strony i ochrona roszczeń</h3>
+			<p>
+				W niezbędnym zakresie przetwarzamy techniczne dzienniki dostępu i błędów, informacje służące
+				zapobieganiu nadużyciom i oszustwom oraz dokumenty potrzebne do ochrony roszczeń. Podstawą jest{" "}
+				<strong>prawnie uzasadniony interes — art. 6 ust. 1 lit. f RODO</strong>, związany z bezpieczeństwem
+				działania i ochroną praw. Bierzemy pod uwagę proporcjonalność oraz wpływ na prywatność.
+			</p>
+			<p>
+				Nie traktujemy tej podstawy jako ogólnego zezwolenia na śledzenie reklamowe. Informacje o opcjonalnej
+				analityce i marketingu są na stronie{" "}
+				<Link href={marketHref(channel, "/cookies")}>Pliki cookies i ustawienia prywatności</Link>.
+			</p>
+
+			<h2>3. Skąd pochodzą dane i które są wymagane</h2>
+			<p>
+				Dane otrzymujemy przede wszystkim od Państwa, na przykład przy zakupie, zakładaniu konta, w formularzu
+				lub korespondencji. Operator płatności przekazuje informacje o jej wyniku, a przewoźnik może przekazać
+				informacje o doręczeniu. Dane techniczne powstają podczas korzystania ze strony.
+			</p>
+			<p>
+				Dane oznaczone jako wymagane są potrzebne do zawarcia i wykonania umowy. Bez adresu dostawy nie możemy
+				na przykład doręczyć przesyłki. W formularzach wymagamy danych odpowiednich do ich celu. Nie trzeba
+				podawać informacji dobrowolnych ani zgadzać się na marketing.
+			</p>
+
+			<h2>4. Komu przekazujemy dane</h2>
+			<p>
+				Nie każdy usługodawca otrzymuje automatycznie Państwa dane. Zależy to od usług wykorzystywanych przy
+				konkretnym zamówieniu i podczas korzystania ze strony.
+			</p>
+			<p>
+				Przy wysyłce współpracujemy z <strong>FedEx i Slovenská pošta (Pocztą Słowacką)</strong>. Wybrany
+				przewoźnik otrzymuje informacje potrzebne do transportu i kontaktu z odbiorcą. Płatności obsługuje{" "}
+				<strong>Stripe</strong>. W niezbędnym zakresie dostęp mogą mieć także dostawcy usług technicznych,
+				poczty elektronicznej, księgowości lub pomocy prawnej. Dane przekazujemy organom, gdy wymaga tego
+				prawo.
+			</p>
+			<p>
+				Zależnie od usługi odbiorcy działają jako podmioty przetwarzające na nasze zlecenie lub jako odrębni
+				administratorzy. Poniższa tabela opisuje wykorzystywane systemy, usługi i cele. Nasze własne
+				instalacje oprogramowania nie są odrębnymi zewnętrznymi administratorami tylko dlatego, że mają własną
+				nazwę.
+			</p>
+			<RecipientsTable lang="pl" />
+			<p>
+				O informacje dotyczące konkretnych odbiorców danych mogą Państwo wystąpić na <Mail />.
+			</p>
+
+			<h2>5. Przekazywanie danych poza Europejski Obszar Gospodarczy</h2>
+			<p>
+				Przy niektórych usługach dane mogą być udostępniane odbiorcom poza Europejskim Obszarem Gospodarczym.
+				Takie przekazanie wymaga odpowiedniej podstawy prawnej, na przykład obowiązującej decyzji
+				stwierdzającej odpowiedni stopień ochrony lub standardowych klauzul umownych wraz z dodatkowymi
+				zabezpieczeniami, gdy są potrzebne.
+			</p>
+			<p>
+				Samo przechowywanie danych na serwerze w Unii Europejskiej nie wyklucza dostępu z innego państwa.
+				Informacje o zabezpieczeniach zastosowanych do konkretnego przekazania i sposobie uzyskania ich kopii
+				udostępniamy pod adresem <Mail />, z odpowiednią ochroną informacji poufnych.
+			</p>
+
+			<h2>6. Jak długo przechowujemy dane</h2>
+			<p>
+				Okres przechowywania zależy od celu i obowiązków prawnych; nie wszystkie dane są przechowywane równie
+				długo.
+			</p>
+			<p>
+				<strong>Zamówienia i związaną z nimi korespondencję</strong> zachowujemy w trakcie obsługi, a później
+				w zakresie potrzebnym do wykonania obowiązków prawnych, reklamacji oraz ustalenia, dochodzenia lub
+				obrony roszczeń. Uwzględniamy właściwe terminy przedawnienia, ich ewentualne zawieszenie lub
+				przerwanie oraz czas trwania postępowania. Niezbędne dokumenty mogą pozostać do prawomocnego
+				zakończenia sporu.
+			</p>
+			<p>
+				<strong>Dokumenty księgowe</strong> przechowujemy zgodnie z obowiązującym nas prawem słowackim, co do
+				zasady przez dziesięć lat po zakończeniu roku, którego dotyczą. Nie oznacza to przechowywania
+				wszystkich danych technicznych lub marketingowych przez dziesięć lat.
+			</p>
+			<p>
+				<strong>Reklamacje i odstąpienia</strong> zachowujemy podczas obsługi, a następnie zgodnie z
+				powyższymi kryteriami, w zakresie potrzebnym do wykazania wykonania obowiązków i ochrony roszczeń.
+			</p>
+			<p>
+				<strong>Dane konta</strong> wykorzystujemy przez czas jego istnienia. Po zamknięciu usuwamy dane,
+				które nie są już potrzebne do prowadzenia konta, lub ograniczamy ich przetwarzanie. Informacje
+				wymagane do rozliczeń i ochrony roszczeń mogą być przechowywane oddzielnie.
+			</p>
+			<p>
+				<strong>Adres e-mail do newslettera</strong> wykorzystujemy do wycofania zgody lub rezygnacji z
+				subskrypcji. Potrzebny dowód udzielenia i wycofania zgody oraz rezygnacji możemy zachować, aby wykazać
+				zgodność działania z prawem i respektować Państwa decyzję — nie w celu dalszej wysyłki reklam.
+			</p>
+			<p>
+				<strong>Dzienniki techniczne, dane analityczne i pliki cookies</strong> mają okresy związane z
+				konkretną usługą i celem. Okresy przechowywania danych w przeglądarce przedstawiamy na stronie{" "}
+				<Link href={marketHref(channel, "/cookies")}>Pliki cookies i ustawienia prywatności</Link>. Przy
+				konkretnym incydencie bezpieczeństwa potrzebne dowody mogą być zachowane dłużej, aby go wyjaśnić i
+				chronić związane z nim roszczenia.
+			</p>
+
+			<h2>7. Państwa prawa</h2>
+			<p>
+				Na warunkach określonych w RODO mają Państwo prawo do{" "}
+				<strong>dostępu, sprostowania, usunięcia lub ograniczenia przetwarzania</strong> danych. W przypadku
+				zautomatyzowanego przetwarzania na podstawie zgody lub umowy może przysługiwać także{" "}
+				<strong>prawo do przenoszenia danych</strong>.
+			</p>
+			<p>
+				Przy przetwarzaniu na podstawie prawnie uzasadnionego interesu mogą Państwo wnieść{" "}
+				<strong>sprzeciw z przyczyn związanych ze szczególną sytuacją</strong>. Wobec marketingu
+				bezpośredniego sprzeciw można wnieść w każdej chwili; zaprzestaniemy przetwarzania danych w tym celu.
+			</p>
+			<p>
+				Zgodę można wycofać równie łatwo, jak ją udzielono. Nie wpływa to na zgodność z prawem wcześniejszego
+				przetwarzania. Ustawienia cookies można zmienić przez <strong>„Ustawienia prywatności”</strong> w
+				stopce, a z newslettera wypisać się przez link w wiadomości lub kontakt z nami. Są to odrębne decyzje.
+			</p>
+			<p>
+				Wniosek prosimy wysłać na <Mail />. Przy uzasadnionych wątpliwościach dotyczących tożsamości możemy
+				poprosić o odpowiednie dodatkowe informacje. Nie wymagamy automatycznie kopii dokumentu tożsamości.
+			</p>
+			<p>
+				O podjętych działaniach informujemy bez zbędnej zwłoki, najpóźniej w ciągu <strong>miesiąca</strong>.
+				Przy szczególnie skomplikowanych lub licznych wnioskach termin może zostać przedłużony o kolejne dwa
+				miesiące. O przedłużeniu i jego przyczynach informujemy w pierwszym miesiącu. Jeżeli nie możemy
+				spełnić żądania, wyjaśniamy przyczynę. Prawo do usunięcia danych nie oznacza na przykład konieczności
+				usunięcia dokumentu, który musimy zachować na podstawie prawa.
+			</p>
+
+			<h2>8. Skarga do organu nadzorczego</h2>
+			<p>
+				Mogą Państwo złożyć skargę do właściwego organu, zwłaszcza w państwie zwykłego pobytu, pracy lub
+				domniemanego naruszenia RODO. Nie muszą Państwo kierować skargi wyłącznie na Słowację.
+			</p>
+			<p>
+				W Polsce organem jest <strong>Prezes Urzędu Ochrony Danych Osobowych</strong>, ul. Stanisława
+				Moniuszki 1A, 00-014 Warszawa. Informacje o składaniu skarg i aktualne dane kontaktowe są na{" "}
+				<a href="https://uodo.gov.pl/" rel="noopener noreferrer" target="_blank">
+					uodo.gov.pl
+				</a>
+				.
+			</p>
+			<p>Słowacki organ ochrony danych:</p>
+			<DpaAuthority lang="pl" />
+
+			<h2>9. Zautomatyzowane podejmowanie decyzji</h2>
+			<p>
+				Przy przyjmowaniu zamówień, rozpatrywaniu reklamacji i odstąpień nie stosujemy wyłącznie
+				zautomatyzowanego podejmowania decyzji ani profilowania wywołującego skutki prawne lub podobnie
+				istotnie wpływającego na Państwa sytuację. W tych sprawach decyzje podejmuje człowiek.
+			</p>
+			<p>
+				Operator płatności automatycznie ocenia ryzyko oszustwa i może odmówić płatności albo wymagać
+				dodatkowego uwierzytelnienia. Jest to element obsługi płatności, odrębny od przyjęcia zamówienia przez
+				nas. Jeżeli płatność nie powiedzie się, prosimy o kontakt na <Mail />, aby ustalić dalszy sposób
+				postępowania.
+			</p>
+
+			<h2>10. Zmiany informacji</h2>
+			<p>
+				Aktualizujemy ten dokument, gdy zmienia się sposób przetwarzania lub wykorzystywane usługi. Jeżeli
+				zmiana wymaga nowej zgody, sama aktualizacja dokumentu jej nie zastępuje.
+			</p>
+		</>
+	);
+}
+
+export function Hu({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Vásárláskor és a weboldal használatakor személyes adatokat bíz ránk. Itt elmagyarázzuk, mely adatokat
+				használjuk, miért van rájuk szükségünk, kinek továbbítjuk őket, és hogyan gyakorolhatja jogait.
+			</p>
+
+			<h2>1. Ki felel az adatkezelésért</h2>
+			<p>
+				Az adatkezelő a <strong>{companyInfo.legalName}</strong>, {companyInfo.street}, {companyInfo.city},{" "}
+				{SLOVAKIA_HU}, cégazonosító szám (IČO): {companyInfo.ico}.
+			</p>
+			<p>
+				Adatvédelmi kérdéssel az <Mail /> e-mail-címen vagy a székhelyünkre küldött levélben kereshet minket.
+			</p>
+
+			<h2>2. Milyen adatokat és milyen célból használunk</h2>
+
+			<h3>Rendelések, szállítás és ügyfélszolgálat</h3>
+			<p>
+				Kezeljük a nevet, az elérhetőségeket, a számlázási és szállítási címet, a rendelési és fizetési
+				adatokat, valamint a kapcsolódó levelezést. Céges vásárlásnál a megadott vállalkozási adatokat is. Ha
+				egy tartozék megfelelőségéről érdeklődik, az Ön által elküldött járműadatokat és fényképeket is
+				felhasználhatjuk a válaszhoz.
+			</p>
+			<p>
+				Az adatok a szerződés előkészítéséhez és teljesítéséhez szükségesek: a rendeléshez, a fizetéshez, a
+				kézbesítéshez és a vásárlással kapcsolatos segítségnyújtáshoz. A jogalap a{" "}
+				<strong>GDPR 6. cikk (1) bekezdés b) pontja</strong>. Céges ügyfél kapcsolattartójával való
+				kommunikációnál a jogalap lehet az üzleti kapcsolat kezeléséhez fűződő jogos érdek a{" "}
+				<strong>GDPR 6. cikk (1) bekezdés f) pontja</strong> alapján.
+			</p>
+			<p>
+				A teljes bankkártyaszámot és a biztonsági kódot nem tároljuk, és azokhoz nem férünk hozzá. A fizetést
+				a Stripe kezeli. Mi a fizetés rendeléshez kapcsolásához, ellenőrzéséhez vagy visszatérítéséhez
+				szükséges információkat kapjuk meg.
+			</p>
+
+			<h3>Számlák és jogi kötelezettségek</h3>
+			<p>
+				Az azonosító, rendelési és fizetési adatokat könyvelésre, adózási kötelezettségekre és az illetékes
+				szervekkel szembeni jogi kötelezettségek teljesítésére használjuk. Jogalap a{" "}
+				<strong>jogi kötelezettség teljesítése, a GDPR 6. cikk (1) bekezdés c) pontja</strong>.
+			</p>
+
+			<h3>Reklamációk, elállások és joggyakorlás</h3>
+			<p>
+				Kezeljük az azonosító és kapcsolattartási adatokat, a vásárlás és termék adatait, a bejelentés
+				tartalmát, a szükséges bizonyítékokat és az ügyintézés menetét. Az ügy igazolásához szükséges
+				mértékben megőrizzük a közlésre, annak beérkezésére és a visszaigazolás elküldésére vonatkozó adatokat
+				is.
+			</p>
+			<p>
+				A jogalap a jogszabályi kötelezettségek teljesítése a{" "}
+				<strong>GDPR 6. cikk (1) bekezdés c) pontja</strong> szerint, a szerződés teljesítése, szükség esetén
+				pedig jogi igények előterjesztése, érvényesítése vagy védelme a{" "}
+				<strong>GDPR 6. cikk (1) bekezdés f) pontja</strong> szerinti jogos érdek alapján. A reklamáció vagy
+				elállás befogadásához nem szükséges marketinghozzájárulás, és a szükséges adatkezeléshez külön
+				hozzájárulást sem kérünk.
+			</p>
+
+			<h3>Vásárlói fiók</h3>
+			<p>
+				Fiók létrehozásakor az annak kezeléséhez, a bejelentkezéshez és a rendelések megjelenítéséhez
+				szükséges adatokat használjuk. Jogalap a kért szolgáltatás teljesítése a{" "}
+				<strong>GDPR 6. cikk (1) bekezdés b) pontja</strong> szerint. A fiók nem feltétele a vásárlásnak vagy
+				az elállás közlésének.
+			</p>
+
+			<h3>Hírek és ajánlatok</h3>
+			<p>
+				Hírlevél-feliratkozáskor e-mail-címét és a hozzájárulás adatait a hírlevél elküldésére használjuk.
+				Jogalap az <strong>Ön hozzájárulása, a GDPR 6. cikk (1) bekezdés a) pontja</strong>. A hozzájárulás
+				önkéntes, és a levélben szereplő leiratkozási hivatkozással vagy az <Mail /> címre írt üzenettel
+				bármikor visszavonható.
+			</p>
+
+			<h3>A weboldal biztonsága és a jogi igények védelme</h3>
+			<p>
+				Szükséges mértékben technikai hozzáférési és hibanaplókat, visszaélés- és csalásmegelőzési adatokat,
+				valamint a jogi igényekhez kapcsolódó bizonyítékokat kezelünk. A jogalap a biztonságos működéshez és
+				jogaink védelméhez fűződő <strong>jogos érdek a GDPR 6. cikk (1) bekezdés f) pontja alapján</strong>.
+				Ennek során figyelembe vesszük az arányosságot és az Ön magánszférájára gyakorolt hatást.
+			</p>
+			<p>
+				Ezt a jogalapot nem tekintjük általános engedélynek reklámcélú követésre. Az opcionális elemzésről és
+				marketingről a <Link href={marketHref(channel, "/cookies")}>Sütik és adatvédelmi beállítások</Link>{" "}
+				oldalon tájékoztatunk.
+			</p>
+
+			<h2>3. Honnan származnak az adatok, és mi kötelező</h2>
+			<p>
+				Az adatokat főként Öntől kapjuk: vásárláskor, fióknyitáskor, űrlapon vagy a velünk folytatott
+				kommunikáció során. A fizetés eredményéről a fizetési szolgáltató, a kézbesítésről adott esetben a
+				szállító tájékoztat. A technikai adatok a weboldal használata során keletkeznek.
+			</p>
+			<p>
+				A kötelezőként jelölt rendelési adatokra a szerződés megkötéséhez és teljesítéséhez van szükségünk.
+				Szállítási cím nélkül például nem tudjuk kézbesíteni a csomagot. Az űrlapokon csak a célnak megfelelő
+				adatokat kérjük kötelezően. Önkéntes adat megadására vagy marketinghozzájárulásra nem köteles.
+			</p>
+
+			<h2>4. Kinek adunk át adatokat</h2>
+			<p>
+				Nem minden szolgáltató kapja meg automatikusan az Ön adatait. Az adatátadás attól függ, mely
+				szolgáltatást használjuk a konkrét rendelés vagy a weboldal működtetése során.
+			</p>
+			<p>
+				A szállításban a <strong>FedEx és a Slovenská pošta (Szlovák Posta)</strong> működik közre. A
+				kiválasztott szállító a kézbesítéshez és a címzett eléréséhez szükséges adatokat kapja meg. A
+				fizetéseket a <strong>Stripe</strong> kezeli. Szükséges mértékben technikai, e-mailes, könyvelési vagy
+				jogi szolgáltatók is hozzáférhetnek adatokhoz. Hatóságnak akkor továbbítunk adatot, ha azt jogszabály
+				írja elő.
+			</p>
+			<p>
+				A szolgáltatás jellegétől függően a címzettek adatfeldolgozóként vagy önálló adatkezelőként járnak el.
+				Az alábbi táblázat a használt rendszereket, szolgáltatásokat és célokat ismerteti. Saját
+				szoftvertelepítéseink pusztán elnevezésük miatt nem válnak külön külső adatkezelővé.
+			</p>
+			<RecipientsTable lang="hu" />
+			<p>
+				A konkrét adatcímzettekről az <Mail /> címen kérhet tájékoztatást.
+			</p>
+
+			<h2>5. Adattovábbítás az Európai Gazdasági Térségen kívülre</h2>
+			<p>
+				Egyes szolgáltatásoknál az adatok az Európai Gazdasági Térségen kívüli címzettek számára is
+				hozzáférhetővé válhatnak. Ehhez megfelelő jogalap szükséges, például hatályos megfelelőségi határozat,
+				vagy az Európai Bizottság által elfogadott adattovábbítási szerződéses kikötések (SCC) szükség esetén
+				további védelmi intézkedésekkel együtt.
+			</p>
+			<p>
+				Az EU-ban működő szerveren való tárolás önmagában nem zárja ki a más országból történő hozzáférést. A
+				konkrét továbbításhoz alkalmazott garanciákról és azok másolatának elérhetőségéről az <Mail /> címen
+				adunk tájékoztatást, a bizalmas adatok megfelelő védelmével.
+			</p>
+
+			<h2>6. Meddig őrizzük meg az adatokat</h2>
+			<p>
+				Az adatmegőrzés időtartamát a cél és a jogi kötelezettségek határozzák meg. Nem minden adatot őrzünk
+				meg ugyanannyi ideig.
+			</p>
+			<p>
+				<strong>A rendeléseket és kapcsolódó levelezést</strong> az ügyintézés alatt, majd a jogi
+				kötelezettségek, reklamációk és jogi igények miatt szükséges mértékben tartjuk meg. Figyelembe vesszük
+				az elévülési időket, azok nyugvását vagy megszakítását, valamint az eljárás időtartamát. Szükséges
+				dokumentumot a jogvita jogerős lezárásáig is megőrizhetünk.
+			</p>
+			<p>
+				<strong>A számviteli bizonylatokat</strong> a ránk vonatkozó szlovák számviteli jog szerint főszabály
+				szerint az érintett év végét követő tíz évig őrizzük meg. Ez nem jelenti valamennyi technikai vagy
+				marketingadat tízéves tárolását.
+			</p>
+			<p>
+				<strong>A reklamációk és elállások adatait</strong> az ügyintézés alatt, majd a fenti szempontok
+				szerint addig őrizzük, ameddig a kötelezettségek teljesítésének igazolása vagy a jogi igények védelme
+				szükségessé teszi.
+			</p>
+			<p>
+				<strong>A fiókadatokat</strong> a fiók fennállása alatt használjuk. Megszüntetése után a fiókhoz már
+				nem szükséges adatokat töröljük vagy kezelésüket korlátozzuk. A könyvelési vagy jogi igényekhez
+				szükséges adatok elkülönítve megmaradhatnak.
+			</p>
+			<p>
+				<strong>A hírlevélhez használt e-mail-címet</strong> a hozzájárulás visszavonásáig vagy leiratkozásig
+				használjuk. A hozzájárulás, annak visszavonása és a leiratkozás szükséges bizonyítékát megtarthatjuk,
+				hogy igazoljuk a jogszerűséget és tiszteletben tartsuk a döntését — nem további reklámküldés céljából.
+			</p>
+			<p>
+				<strong>Technikai naplók, elemzési adatok és sütik</strong> esetében a szolgáltatáshoz és célhoz
+				igazodó időtartamok érvényesek. A böngészőben történő tárolás időtartamát a{" "}
+				<Link href={marketHref(channel, "/cookies")}>Sütik és adatvédelmi beállítások</Link> oldalon
+				ismertetjük. Konkrét biztonsági eseménynél a tisztázáshoz és a jogi igényekhez szükséges
+				bizonyítékokat hosszabb ideig is megőrizhetjük.
+			</p>
+
+			<h2>7. Az Ön jogai</h2>
+			<p>
+				A GDPR feltételei szerint kérheti az adatokhoz való{" "}
+				<strong>hozzáférést, helyesbítést, törlést vagy az adatkezelés korlátozását</strong>. Hozzájáruláson
+				vagy szerződésen alapuló automatizált adatkezelésnél <strong>adathordozhatósági jog</strong> is
+				megilletheti.
+			</p>
+			<p>
+				Jogos érdeken alapuló adatkezelés ellen a saját helyzetével kapcsolatos okból{" "}
+				<strong>tiltakozhat</strong>. Közvetlen üzletszerzés ellen bármikor tiltakozhat; az adatokat e célból
+				ezt követően nem használjuk.
+			</p>
+			<p>
+				A hozzájárulás ugyanolyan egyszerűen visszavonható, mint ahogyan megadta. Ez a korábbi adatkezelés
+				jogszerűségét nem érinti. A sütiknél a láblécben található <strong>„Adatvédelmi beállítások”</strong>{" "}
+				lehetőséget használhatja; a hírlevélről a levélben szereplő hivatkozással vagy üzenetben iratkozhat
+				le. A két választás egymástól független.
+			</p>
+			<p>
+				Kérelmét az <Mail /> címre küldje. Személyazonosságával kapcsolatos észszerű kétség esetén arányos
+				kiegészítő adatot kérhetünk. Személyazonosító okmány másolatát nem kérjük automatikusan.
+			</p>
+			<p>
+				Az intézkedésekről indokolatlan késedelem nélkül, legkésőbb <strong>egy hónapon belül</strong>{" "}
+				tájékoztatjuk. Összetett vagy nagyszámú kérelem esetén ez további két hónappal meghosszabbítható. A
+				hosszabbításról és annak okáról az első hónapban tájékoztatást adunk. Ha a kérelmet nem
+				teljesíthetjük, megindokoljuk. A törléshez való jog például nem kötelez olyan bizonylat törlésére,
+				amelyet jogszabály szerint meg kell őriznünk.
+			</p>
+
+			<h2>8. Panasz a felügyeleti hatóságnál</h2>
+			<p>
+				Panaszt tehet az illetékes felügyeleti hatóságnál, különösen a szokásos tartózkodási helye, a
+				munkahelye vagy a feltételezett jogsértés helye szerinti tagállamban. Nem kell kizárólag szlovák
+				hatósághoz fordulnia.
+			</p>
+			<p>
+				Magyarországon a <strong>Nemzeti Adatvédelmi és Információszabadság Hatóság (NAIH)</strong> érhető el:
+				1055 Budapest, Falk Miksa utca 9–11.; postacím: 1363 Budapest, Pf. 9. Az aktuális elérhetőségek és a
+				panasztétel részletei a{" "}
+				<a href="https://www.naih.hu/" rel="noopener noreferrer" target="_blank">
+					naih.hu
+				</a>{" "}
+				oldalon találhatók.
+			</p>
+			<p>A szlovák adatvédelmi hatóság:</p>
+			<DpaAuthority lang="hu" />
+
+			<h2>9. Automatizált döntéshozatal</h2>
+			<p>
+				Rendelések elfogadásakor, reklamációk és elállások elbírálásakor nem alkalmazunk kizárólag
+				automatizált döntést vagy profilalkotást, amely Önre joghatással vagy hasonlóan jelentős hatással
+				járna. Ezekben az ügyekben ember dönt.
+			</p>
+			<p>
+				A fizetési szolgáltató automatikusan értékeli a csalás kockázatát, és ennek alapján elutasíthatja a
+				fizetést vagy további azonosítást kérhet. Ez a fizetési szolgáltatás része, nem a mi
+				rendeléselfogadási döntésünk. Sikertelen fizetésnél írjon az <Mail /> címre, hogy egyeztethessük a
+				továbbiakat.
+			</p>
+
+			<h2>10. A tájékoztató változásai</h2>
+			<p>
+				A tájékoztatót az adatkezelés vagy a használt szolgáltatások változásakor frissítjük. Ha új
+				hozzájárulás szükséges, azt a dokumentum módosítása önmagában nem helyettesíti.
+			</p>
+		</>
+	);
 }

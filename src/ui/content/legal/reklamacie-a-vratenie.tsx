@@ -2,6 +2,7 @@ import Link from "next/link";
 import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
+import { SLOVAKIA_HU, SLOVAKIA_PL } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 
@@ -502,4 +503,360 @@ export function De({ channel }: { channel: string }) {
 
 export function DeAt({ channel }: { channel: string }) {
 	return <German channel={channel} market={AUSTRIA} />;
+}
+
+export function Pl({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Chcą Państwo zwrócić produkt albo nie działa on tak, jak powinien?{" "}
+				<strong>Zwrot bez podania przyczyny i reklamacja z powodu wady to dwa różne tryby.</strong> Różnią się
+				między innymi zasadami ponoszenia kosztów odesłania towaru.
+			</p>
+
+			<h2>Chcę zwrócić towar bez podania przyczyny</h2>
+			<p>
+				Jako konsument mogą Państwo co do zasady odstąpić od umowy w ciągu{" "}
+				<strong>14 dni od otrzymania towaru</strong>. Dla zamówień złożonych po zalogowaniu się na konto
+				klienta wydłużamy ten termin do <strong>30 dni</strong>. Jest to dodatkowe uprawnienie MAKY.STORE, a
+				nie warunek korzystania z praw ustawowych.
+			</p>
+			<p>
+				Odstąpienie można złożyć także przed dostawą, w odniesieniu do całego zamówienia lub wybranych
+				pozycji. Nie trzeba podawać powodu ani czekać na naszą zgodę.
+			</p>
+			<p>
+				Jednoznaczne oświadczenie można wysłać na <Mail />, pocztą na podany niżej adres albo innym sposobem
+				wskazanym na stronie{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Odstąpienie od umowy</Link>.
+			</p>
+
+			<h3>Transport zwrotny</h3>
+			<p>
+				Mogą Państwo wybrać własnego przewoźnika albo poprosić nas o wycenę odbioru przesyłki. Cenę i
+				proponowany sposób odbioru podamy wcześniej. Płatny odbiór zlecimy dopiero po wyraźnej zgodzie na
+				cenę. <strong>Pytanie o wycenę nie jest zleceniem odbioru.</strong> Własna wysyłka nie wymaga naszej
+				wcześniejszej akceptacji.
+			</p>
+			<p>
+				Jeżeli nie zaoferowaliśmy odbioru, towar należy odesłać lub przekazać nam w ciągu{" "}
+				<strong>14 dni od odstąpienia od umowy</strong>. Wystarczy nadać przesyłkę w tym terminie. Jeżeli
+				zaoferowaliśmy odbiór, prosimy przygotować towar zgodnie z uzgodnieniami.
+			</p>
+			<p>
+				Przy odstąpieniu bez podania przyczyny ponoszą Państwo bezpośrednie koszty zwrotu, o ile prawidłowo
+				poinformowaliśmy o tym przed zakupem. Przy towarze, którego nie można zwyczajnie odesłać pocztą, przed
+				zakupem trzeba otrzymać także informację o kosztach zwrotu.{" "}
+				<strong>Przy uzasadnionej reklamacji z powodu wady niezbędne koszty ponosimy my.</strong>
+			</p>
+
+			<h3>Zwrot pieniędzy</h3>
+			<p>
+				Płatności objęte odstąpieniem zwracamy nie później niż w ciągu{" "}
+				<strong>14 dni od otrzymania oświadczenia</strong>. Przy odstąpieniu od całego zamówienia zwracamy
+				również pierwotny koszt dostawy, najwyżej do wysokości najtańszej zwykłej dostawy, którą oferowaliśmy
+				dla tego zamówienia.
+			</p>
+			<p>
+				Zwrot następuje tym samym sposobem płatności, chyba że wyraźnie uzgodnimy inny, bez dodatkowych
+				kosztów dla Państwa. Jeżeli nie zaoferowaliśmy odbioru, możemy wstrzymać zwrot do otrzymania towaru
+				lub dowodu jego odesłania — w zależności od tego, co nastąpi wcześniej. Jeżeli zaoferowaliśmy odbiór,
+				nie korzystamy z tego prawa wstrzymania.
+			</p>
+			<p>
+				Szczegóły i wyjątki opisujemy na stronie{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Odstąpienie od umowy</Link>.
+			</p>
+
+			<h2>Chcę zareklamować wadliwy produkt</h2>
+			<p>
+				Prosimy napisać na <Mail />. Należy wskazać produkt, opisać wadę i podać, kiedy została zauważona.
+				Numer zamówienia lub inna informacja o zakupie ułatwią jego odnalezienie.
+			</p>
+			<p>
+				Zdjęcie lub krótki film mogą pomóc, ale <strong>nie są warunkiem przyjęcia reklamacji</strong>. Nie
+				wymagamy oryginalnego opakowania ani wyłącznie oryginału faktury. Zakup można wykazać także w inny
+				odpowiedni sposób.
+			</p>
+			<p>
+				Reklamację można złożyć również pisemnie. Przy dużym produkcie uzgodnimy sposób jego udostępnienia lub
+				transportu. Nie należy odkładać zgłoszenia wady tylko dlatego, że nie ustalono jeszcze odbioru.
+			</p>
+
+			<h3>Za co odpowiadamy</h3>
+			<p>
+				Odpowiadamy za wady i niezgodność towaru z umową. Według słowackiego prawa przyjętego w naszym
+				regulaminie odpowiadamy przy sprzedaży konsumenckiej za wady istniejące przy dostawie, które ujawnią
+				się w ciągu <strong>dwóch lat od dostarczenia towaru</strong>. W tym okresie stosuje się domniemanie,
+				że ujawniona wada istniała przy dostawie, chyba że zostanie wykazane inaczej lub domniemanie nie daje
+				się pogodzić z charakterem towaru albo wady.
+			</p>
+			<p>
+				Dla umów zawartych od <strong>31 lipca 2026 r.</strong> słowacki okres odpowiedzialności po pierwszym
+				usunięciu wady przez naprawę wydłuża się jednorazowo o <strong>12 miesięcy</strong>, niezależnie od
+				liczby dalszych napraw. O prawie wyboru między naprawą a wymianą i o tym przedłużeniu informujemy
+				przed usunięciem wady. Do starszych umów stosuje się przepisy właściwe w chwili ich zawarcia.
+			</p>
+			<p>
+				Nie ogranicza to bezwzględnie obowiązujących polskich praw konsumenta, w szczególności wynikających z
+				przepisów o niezgodności towaru z umową. Dwuletni okres ujawnienia niezgodności nie oznacza
+				automatycznie, że z jego upływem wygasają wszystkie roszczenia. Jeżeli ustalony termin przydatności
+				towaru do użycia jest dłuższy, uwzględniamy właściwe przepisy o dłuższej odpowiedzialności.
+			</p>
+			<p>
+				Wadę warto zgłosić możliwie szybko. Nie uzależniamy Państwa obowiązkowej ochrony konsumenckiej od
+				natychmiastowego sprawdzenia przesyłki ani od dodatkowego, dwumiesięcznego terminu zgłoszenia
+				przeniesionego ze słowackich warunków.
+			</p>
+			<p>
+				Ewentualna gwarancja producenta jest dodatkową podstawą uprawnień. Nie zastępuje ani nie ogranicza
+				roszczeń wobec nas z tytułu niezgodności towaru z umową.
+			</p>
+
+			<h3>Jak rozpatrujemy reklamację</h3>
+			<p>
+				Niezwłocznie przekazujemy pisemne potwierdzenie zgłoszenia wady, wskazując termin jej usunięcia.{" "}
+				<strong>Na reklamację konsumenta odpowiadamy w ciągu 14 dni od jej otrzymania</strong>, na papierze
+				lub innym trwałym nośniku, na przykład e-mailem. Jeżeli ma zastosowanie art. 7a polskiej ustawy o
+				prawach konsumenta, brak odpowiedzi w tym terminie oznacza uznanie reklamacji. Samo potwierdzenie
+				otrzymania zgłoszenia nie zastępuje odpowiedzi na zgłoszone żądanie.
+			</p>
+			<p>
+				Co do zasady mogą Państwo wybrać <strong>naprawę albo wymianę</strong>. Wybrany sposób może być
+				niedostępny, jeżeli jest niemożliwy lub wiąże się z niewspółmiernymi kosztami w porównaniu z drugim.
+				Wyjaśnimy przyczynę takiej decyzji.
+			</p>
+			<p>
+				Naprawę lub wymianę zapewniamy bezpłatnie, w rozsądnym czasie i bez nadmiernych niedogodności. W
+				ramach słowackiego trybu opisanego w regulaminie termin usunięcia wady co do zasady nie przekracza{" "}
+				<strong>30 dni od zgłoszenia</strong>, chyba że dłuższy termin uzasadnia obiektywna przyczyna, na
+				którą nie mamy wpływu i którą potrafimy wykazać. Nie daje nam to prawa do odraczania naprawy wymaganej
+				wcześniej przez okoliczności ani do ograniczania obowiązkowych praw konsumenta.{" "}
+				<strong>Termin odpowiedzi na reklamację i termin naprawy to dwie różne rzeczy.</strong>
+			</p>
+			<p>
+				Na warunkach określonych prawem przysługuje także{" "}
+				<strong>obniżenie ceny albo odstąpienie od umowy z powodu niezgodności towaru z umową</strong>, na
+				przykład gdy wada pozostaje mimo naprawy lub wymiany, nie zapewniamy właściwej naprawy albo
+				niezgodność jest istotna. Szczegóły znajdują się w{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Regulaminie sklepu</Link>.
+			</p>
+			<p>
+				Odmowę odpowiedzialności uzasadniamy pisemnie. Jeżeli później opinia rzeczoznawcy lub odpowiednio
+				akredytowanej osoby wykaże naszą odpowiedzialność, reklamację można zgłosić ponownie. Rozliczenie
+				celowych kosztów następuje według właściwych przepisów. Nie wyklucza to innych dopuszczalnych dowodów
+				ani pozostałych uprawnień.
+			</p>
+
+			<h3>Kto płaci za transport przy reklamacji</h3>
+			<p>
+				Przy naprawie lub wymianie towaru z wadą, za którą odpowiadamy, ponosimy niezbędne koszty jego
+				odebrania i ponownego dostarczenia. Jeżeli konieczny jest demontaż prawidłowo zamontowanego produktu i
+				późniejszy montaż, zapewnimy te czynności lub ich rozliczenie zgodnie z prawem.
+			</p>
+
+			<h2>Adres do odesłania towaru</h2>
+			<ReturnAddress country={SLOVAKIA_PL} />
+			<p>
+				Warto dołączyć numer zamówienia lub zgłoszenia. Ułatwi to przyporządkowanie przesyłki, ale brak numeru
+				sam w sobie nie pozbawia Państwa praw.
+			</p>
+			<p>
+				Nie wiedzą Państwo, który tryb wybrać? Prosimy o{" "}
+				<Link href={marketHref(channel, "/kontakt")}>kontakt</Link> i krótki opis sprawy.
+			</p>
+		</>
+	);
+}
+
+export function Hu({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Visszaküldene egy terméket, vagy hibát észlelt? Itt találja a megfelelő ügyintézési módot.{" "}
+				<strong>
+					Az indokolás nélküli elállás és a hibás termékkel kapcsolatos reklamáció két külön eljárás.
+				</strong>{" "}
+				A visszaszállítás költségeire is eltérő szabályok vonatkoznak.
+			</p>
+
+			<h2>Indokolás nélkül szeretném visszaküldeni a terméket</h2>
+			<p>
+				Fogyasztóként az online vásárlástól főszabály szerint a termék átvételétől számított{" "}
+				<strong>14 napon belül</strong> elállhat. Ha a rendelést a vásárlói fiókjába bejelentkezve adta le,
+				ezt a határidőt <strong>30 napra</strong> hosszabbítjuk meg. A feltételeket és a kivételeket az{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Elállási jog</Link> oldalon ismertetjük.
+			</p>
+			<p>
+				Az elállást a kézbesítés előtt is közölheti, és az egyes termékekre is korlátozhatja. Ehhez nem kell
+				vásárlói fiók vagy előzetes engedélyünk, és indokolást sem kérünk.
+			</p>
+			<p>
+				Egyértelműen jelezze, hogy az egész vásárlástól vagy annak egy részétől el kíván állni. Írhat az{" "}
+				<Mail /> címre, vagy használhatja az{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Elállási jog</Link> oldalon ismertetett
+				lehetőségeket.
+			</p>
+
+			<h3>Visszaszállítás</h3>
+			<p>
+				Saját fuvarozót választhat, vagy árajánlatot kérhet tőlünk a termék elszállítására. Fizetős
+				elszállítást csak az ár kifejezett elfogadása után rendelünk meg.{" "}
+				<strong>Az árajánlat kérése önmagában nem elszállítási megrendelés.</strong>
+			</p>
+			<p>
+				Ha nem ajánlottuk fel az elszállítást, az elállási nyilatkozattól számított{" "}
+				<strong>14 napon belül</strong> küldje vissza vagy adja át nekünk a terméket. A határidőn belüli
+				feladás elegendő. Ha felajánlottuk az elszállítást, a terméket a megállapodásnak megfelelően készítse
+				elő.
+			</p>
+			<p>
+				Indokolás nélküli elállásnál a visszaküldés közvetlen költségét Ön viseli, ha erről a vásárlás előtt
+				megfelelően tájékoztattuk. A szokásos postai úton nem visszaküldhető termékek visszaszállítási
+				költségéről is előzetesen kell tájékoztatást adni.{" "}
+				<strong>
+					Megalapozott, általunk viselendő hibával kapcsolatos reklamációnál viszont a szükséges költségeket
+					mi álljuk.
+				</strong>
+			</p>
+
+			<h3>Visszatérítés</h3>
+			<p>
+				Az elállással érintett összegeket a nyilatkozat beérkezésétől számított{" "}
+				<strong>14 napon belül</strong> visszatérítjük. Teljes elállás esetén az eredeti szállítás díját is
+				megtérítjük, legfeljebb az adott rendeléshez kínált legolcsóbb szokásos szállítás költségéig.
+			</p>
+			<p>
+				A visszatérítést az eredeti fizetési móddal teljesítjük, kivéve, ha kifejezetten más, Önnek díjmentes
+				megoldásban állapodunk meg.
+			</p>
+			<p>
+				Ha nem ajánlottuk fel az elszállítást, a visszatérítést a termék vagy a feladást igazoló bizonylat
+				átvételéig visszatarthatjuk, attól függően, melyik történik korábban. Ha felajánlottuk az
+				elszállítást, erre a visszatartási jogra nem hivatkozunk.
+			</p>
+			<p>
+				További részletek az <Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Elállási jog</Link>{" "}
+				oldalon találhatók.
+			</p>
+
+			<h2>Hibás terméket szeretnék reklamálni</h2>
+			<p>
+				Írjon az <Mail /> címre. Nevezze meg a terméket, írja le a hibát és azt, mikor észlelte. A rendelési
+				szám vagy a vásárlást azonosító más adat segíti az ügyintézést.
+			</p>
+			<p>
+				Egy fénykép vagy rövid videó hasznos lehet, de{" "}
+				<strong>nem feltétele a reklamáció befogadásának</strong>. Eredeti csomagolást vagy kizárólag eredeti
+				számlát sem követelünk; a vásárlás más megfelelő módon is igazolható.
+			</p>
+			<p>
+				A hibát írásban is bejelentheti. Nagyméretű terméknél külön egyeztetjük annak rendelkezésre bocsátását
+				vagy szállítását. A bejelentéssel ne várjon az elszállítás megszervezéséig.
+			</p>
+
+			<h3>Milyen felelősséget vállalunk</h3>
+			<p>
+				Önt megilletik a hibás teljesítésből eredő törvényes jogok. Az ÁSZF-ben választott szlovák jog szerint
+				fogyasztói vásárlásnál a kézbesítéskor fennálló, a kézbesítéstől számított{" "}
+				<strong>két éven belül</strong> jelentkező hibákért felelünk. Az irányadó felelősségi időn belül
+				jelentkező hibáról e szabályok szerint vélelmezni kell, hogy már a kézbesítéskor fennállt, kivéve, ha
+				az ellenkezőjét bizonyítják, vagy a vélelem a termék, illetve a hiba jellegével összeegyeztethetetlen.
+			</p>
+			<p>
+				A <strong>2026. július 31-étől kötött szerződéseknél</strong> az első kijavítást követően ez az idő a
+				szlovák jog alapján egyszer, <strong>12 hónappal</strong> meghosszabbodik. A kijavítás előtt
+				tájékoztatjuk a javítás és a csere közötti választásról, valamint az alkalmazandó hosszabbításról.
+				Régebbi szerződéseknél a megkötésükkor irányadó szabályok érvényesek.
+			</p>
+			<p>
+				A Róma I. rendelet 6. cikke alapján alkalmazandó kötelező magyar fogyasztóvédelmi rendelkezések,
+				köztük a kellékszavatosság és az esetleges kötelező jótállás szabályai, változatlanul védik Önt. A
+				fent ismertetett kedvezőbb jogokat ezek nem rövidítik le.
+			</p>
+			<p>
+				Kérjük, a hibát a felfedezése után mielőbb jelezze. A magyar kellékszavatossági szabályok szerint a
+				felfedezéstől számított két hónapon belüli közlés késedelem nélkülinek minősül. Ez nem azt jelenti,
+				hogy két hónap elteltével automatikusan megszűnik minden igény. Az irányadó határidők és a késedelmes
+				közlés jogkövetkezményei a jogszabályokból következnek.
+			</p>
+
+			<h3>Kellékszavatosság és jótállás</h3>
+			<p>
+				A <strong>kellékszavatosság</strong> az eladó hibás teljesítésért fennálló törvényes felelőssége. A{" "}
+				<strong>jótállás</strong> ettől különböző, jogszabályon vagy külön vállaláson alapuló kötelezettség.
+				Egy gyártói jótállás nem helyettesíti és nem korlátozza az eladóval szemben érvényesíthető törvényes
+				jogokat.
+			</p>
+			<p>
+				Ha a termék az alkalmazandó magyar szabályok szerint kötelező jótállás alá tartozó új tartós
+				fogyasztási cikk, akkor a 151/2003. (IX. 22.) Korm. rendelet alapján a jótállás a{" "}
+				<strong>10 000–250 000 forintos eladási ársávban két év, 250 000 forint felett három év</strong>. A
+				besorolást a termékkör és az eladási ár együtt határozza meg; ez nem jelenti azt, hogy minden autós
+				tartozék automatikusan ugyanabba a körbe tartozik. Az érintett termékhez az előírt tájékoztatást és
+				dokumentumokat biztosítjuk. Az alkalmazandó kötelező jótállási és javítási szabályokat nem írják felül
+				a lent ismertetett általános ügyintézési feltételek.
+			</p>
+
+			<h3>A reklamáció kezelése</h3>
+			<p>
+				A hibabejelentésről késedelem nélkül írásos visszaigazolást adunk, és tájékoztatjuk a hiba
+				megszüntetésének határidejéről.
+			</p>
+			<p>
+				A vonatkozó magyar szavatossági és jótállási eljárási szabályok szerint az igényről jegyzőkönyvet
+				veszünk fel, és annak másolatát haladéktalanul átadjuk. Ha a teljesíthetőségről a bejelentéskor nem
+				tudunk nyilatkozni, álláspontunkról főszabály szerint <strong>8 napon belül</strong> igazolható módon
+				értesítjük; javítószolgálat bevonásakor annak jogszabály szerinti értesítése után haladéktalanul
+				tájékoztatjuk. Törekszünk a javítás vagy csere <strong>15 napon belüli</strong> elvégzésére. Ha ennél
+				hosszabb idő szükséges, tájékoztatjuk a várható időtartamról. A 15 napos törekvési kötelezettség nem
+				azonos minden esetre szóló, feltétlen javítási határidővel.
+			</p>
+			<p>
+				Elsősorban <strong>kijavítást vagy kicserélést</strong> kérhet. A választott megoldás kizárható, ha
+				lehetetlen, vagy a másik megoldáshoz képest aránytalan többletköltséget okozna. Ennek okát
+				megindokoljuk.
+			</p>
+			<p>
+				A hibát díjmentesen, észszerű időn belül és jelentős kényelmetlenség nélkül rendezzük. A szlovák alap
+				szerint a határidő főszabály szerint legfeljebb <strong>30 nap a hibabejelentéstől</strong>, kivéve,
+				ha tőlünk független, igazolható objektív ok hosszabb határidőt indokol. Ez nem korlátozza az
+				alkalmazandó magyar előírások szerinti gyorsabb intézkedést, kötelező cserét vagy visszatérítést. A
+				válaszadási, a javítási és a pénz-visszatérítési határidő nem azonos.
+			</p>
+			<p>
+				Törvényi feltételek mellett{" "}
+				<strong>árleszállítást vagy a szerződés hibás teljesítés miatti megszüntetését</strong> is kérheti,
+				például ha a megfelelő kijavítás vagy csere elmarad, a hiba ismét jelentkezik, vagy olyan súlyos, hogy
+				azonnali más jogorvoslat indokolt. Jelentéktelen hiba önmagában nem alapozza meg a szerződés
+				megszüntetését. A részletes szabályok az{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>ÁSZF-ben</Link> szerepelnek.
+			</p>
+			<p>
+				Ha a felelősséget elutasítjuk, írásban megindokoljuk. Ha később szakértői vélemény vagy megfelelően
+				akkreditált személy szakvéleménye bizonyítja a felelősségünket, a hibát újból bejelentheti. Az
+				indokolt költségek megtérítésére a jogszabályok irányadók. Más megengedett bizonyítékok és további
+				jogok is érvényesíthetők.
+			</p>
+
+			<h3>Ki fizeti a reklamációhoz kapcsolódó szállítást</h3>
+			<p>
+				Az általunk viselendő hiba javításánál vagy a termék cseréjénél mi álljuk a visszavétel és az
+				újraküldés szükséges költségeit. Ha egy megfelelően beépített termék eltávolítása és visszaszerelése
+				szükséges, ezeket elvégezzük vagy a jogszabályok szerint megtérítjük a szükséges költségeket.
+			</p>
+
+			<h2>Visszaküldési cím</h2>
+			<ReturnAddress country={SLOVAKIA_HU} />
+			<p>
+				Lehetőség szerint mellékelje a rendelési számot vagy az ügyszámot. Ez segít az azonosításban, de
+				hiánya nem szünteti meg a jogait.
+			</p>
+			<p>
+				Nem biztos benne, melyik eljárás vonatkozik az ügyére?{" "}
+				<Link href={marketHref(channel, "/kontakt")}>Írjon nekünk</Link>, és röviden mondja el, miben
+				segíthetünk.
+			</p>
+		</>
+	);
 }

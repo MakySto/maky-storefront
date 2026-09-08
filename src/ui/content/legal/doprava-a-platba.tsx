@@ -235,3 +235,147 @@ export function De({ channel }: { channel: string }) {
 export function DeAt({ channel }: { channel: string }) {
 	return <German channel={channel} market={AUSTRIA} />;
 }
+
+export function Pl({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Zamówienia wysyłamy ze Słowacji za pośrednictwem{" "}
+				<strong>FedEx i Slovenská pošta (Poczty Słowackiej)</strong>. Dostępne sposoby dostawy do Polski oraz
+				ich cenę zobaczą Państwo podczas składania zamówienia, przed jego wiążącym zatwierdzeniem.
+			</p>
+
+			<h2>Jak dostarczamy zamówienia</h2>
+			<p>
+				Możliwości dostawy zależą od adresu, wymiarów i masy przesyłki. Nie każdy przewoźnik i nie każda
+				usługa są dostępne dla każdego produktu. Dlatego dostawa większych produktów, na przykład boksu
+				dachowego, może różnić się od dostawy małej paczki.
+			</p>
+			<p>
+				Jeżeli dla podanego adresu i zawartości koszyka nie pojawi się żadna opcja dostawy, prosimy o{" "}
+				<Link href={marketHref(channel, "/kontakt")}>kontakt</Link>. Sprawdzimy, czy możemy zorganizować
+				odpowiedni transport.
+			</p>
+
+			<h2>Ile kosztuje dostawa</h2>
+			<p>
+				Koszt zależy od zamówionych produktów i miejsca dostawy.{" "}
+				<strong>Łączną cenę towaru i dostawy poznają Państwo przed zatwierdzeniem zamówienia.</strong> Nie
+				dodajemy płatnych usług bez Państwa zgody.
+			</p>
+
+			<h2>Kiedy zamówienie dotrze</h2>
+			<p>
+				Termin zależy od dostępności produktów i wybranego sposobu dostawy. Towar oznaczony jako{" "}
+				<strong>„Na zamówienie”</strong> sprowadzamy od dostawcy. To oznaczenie nie oznacza, że produkt jest
+				już w naszym magazynie.
+			</p>
+			<p>
+				Informację o dostawie przekazujemy przed zawarciem umowy. Jeżeli później pojawi się przeszkoda,
+				skontaktujemy się z Państwem i zaproponujemy dalsze postępowanie. Nie ogranicza to Państwa praw w
+				razie niedotrzymania uzgodnionego terminu.
+			</p>
+			<p>
+				Potrzebują Państwo wyposażenia na konkretny dzień? Warto napisać do nas przed zakupem. Sprawdzimy
+				możliwości dostawy, aby ułatwić planowanie.
+			</p>
+
+			<h2>Jak można zapłacić</h2>
+			<p>
+				Za zamówienia z dostawą do Polski płacą Państwo <strong>z góry, przez Stripe</strong>. Dostępne metody
+				płatności pojawiają się podczas składania zamówienia.{" "}
+				<strong>Nie oferujemy płatności za pobraniem.</strong> Zamówienie wysyłamy po otrzymaniu płatności i
+				zgodnie z podaną dostępnością towaru.
+			</p>
+			<p>
+				Ceny w polskiej wersji sklepu są podawane w <strong>złotych polskich (PLN)</strong>.
+			</p>
+			<p>
+				Nie przechowujemy pełnego numeru karty ani jej kodu zabezpieczającego i nie mamy do nich dostępu. Dane
+				te przetwarza dostawca usługi płatniczej.
+			</p>
+
+			<h2>Przy odbiorze przesyłki</h2>
+			<p>
+				Warto sprawdzić opakowanie i sfotografować widoczne uszkodzenia. Jeżeli uszkodzony jest również towar
+				albo czegoś brakuje, prosimy napisać na <Mail />.
+			</p>
+			<p>
+				Zdjęcia i protokół przewoźnika mogą pomóc wyjaśnić sprawę. Ich brak sam w sobie nie oznacza jednak
+				utraty prawa do reklamacji.
+			</p>
+		</>
+	);
+}
+
+export function Hu({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				A csomagok szállításában a <strong>FedEx és a Slovenská pošta (Szlovák Posta)</strong> a partnerünk. A
+				magyarországi címére és az adott rendelésre elérhető szállítási módokat és díjakat még a kötelező
+				érvényű megrendelés elküldése előtt megmutatjuk.
+			</p>
+
+			<h2>Hogyan szállítunk</h2>
+			<p>
+				A szállítási lehetőségek a kézbesítési címtől, valamint a csomag méretétől és tömegétől függenek. Nem
+				minden fuvarozó és szállítási mód alkalmas minden termékhez. Nagyobb termékeknél, például tetőboxoknál
+				ezért eltérhetnek a lehetőségek a kis csomagokhoz képest.
+			</p>
+			<p>
+				Ha a kosár tartalmához és a megadott címhez nem jelenik meg szállítási mód,{" "}
+				<Link href={marketHref(channel, "/kontakt")}>lépjen kapcsolatba velünk</Link>. Ellenőrizzük, tudunk-e
+				megfelelő szállítást biztosítani.
+			</p>
+
+			<h2>Mennyibe kerül a szállítás</h2>
+			<p>
+				A szállítás díja a rendelt termékektől és a kézbesítési címtől függ.{" "}
+				<strong>A termékek és a szállítás teljes összegét a megrendelés véglegesítése előtt látja.</strong>{" "}
+				Fizetős kiegészítő szolgáltatást nem rendelünk meg az Ön hozzájárulása nélkül.
+			</p>
+
+			<h2>Mikor érkezik meg a rendelés</h2>
+			<p>
+				A kézbesítés ideje a termék elérhetőségétől és a választott szállítási módtól függ. A{" "}
+				<strong>„Rendelésre”</strong> jelzéssel ellátott termékeket a beszállítótól szerezzük be. Ez a jelzés
+				nem azt jelenti, hogy a termék már a saját raktárunkban van.
+			</p>
+			<p>
+				A szállítás feltételeiről a szerződéskötés előtt tájékoztatjuk. Ha később késedelem merül fel,
+				felvesszük Önnel a kapcsolatot, és egyeztetjük a továbbiakat. A megállapodott szállítási határidő
+				elmulasztásából eredő jogait ez nem érinti.
+			</p>
+			<p>
+				Meghatározott időpontra van szüksége a felszerelésre? Kérjük, rendelés előtt írjon nekünk. Megnézzük a
+				lehetőségeket, hogy tervezni tudjon.
+			</p>
+
+			<h2>Hogyan fizethet</h2>
+			<p>
+				A magyarországi címre szóló rendeléseket <strong>előre, a Stripe rendszerén keresztül</strong> kell
+				kifizetni. Az elérhető fizetési módokat a rendelési folyamatban látja.{" "}
+				<strong>Utánvétes fizetést nem kínálunk.</strong> A rendelést a fizetés beérkezése után, a
+				feltüntetett termékelérhetőségnek megfelelően adjuk fel.
+			</p>
+			<p>
+				A magyarországi árakat <strong>magyar forintban (HUF)</strong> tüntetjük fel.
+			</p>
+			<p>
+				A teljes bankkártyaszámot és a kártya biztonsági kódját nem tároljuk, és azokhoz nem férünk hozzá.
+				Ezeket az adatokat a fizetési szolgáltató kezeli.
+			</p>
+
+			<h2>A csomag átvételekor</h2>
+			<p>
+				Lehetőség szerint ellenőrizze a csomagolást, és fényképezze le a látható szállítási sérüléseket. Ha a
+				termék is sérült, vagy valami hiányzik, írjon az <Mail /> címre.
+			</p>
+			<p>
+				A fényképek és a fuvarozó kárjegyzőkönyve segíthetik a tisztázást. Hiányuk azonban önmagában nem
+				fosztja meg Önt a hibás teljesítésből eredő jogaitól.
+			</p>
+		</>
+	);
+}
