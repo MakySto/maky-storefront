@@ -39,8 +39,8 @@ DE a AT verzia sú v balíku **bajtovo identické**, preto je tu jedna.
 | DE — § 356a ods. 4 BGB            | čas **prijatia**  |
 
 Implementácia má dnes iba `submittedAt`, ktorý generuje Payload pri uložení záznamu. To
-je čas zápisu — blíži sa prijatiu, ale nie je s ním totožný, a slovenskému textu
-zodpovedá presne.
+je **čas zápisu** — nie je totožný ani s prijatím, ani s odoslaním. Ktorú z tých udalostí
+dostatočne zastupuje, je otázka pre teba; prekladové vlákno to nevyhlasuje za vyriešené.
 
 **Nepremenúvaj existujúce pole a nevyrábaj druhý čas v storefronte** — hodinám klienta sa
 veriť nedá. Je to serverová zmena kontraktu a vlastní ju R.

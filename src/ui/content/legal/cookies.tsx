@@ -411,8 +411,16 @@ function German({ channel, market }: { channel: string; market: GermanMarket }) 
 			</p>
 			<p>
 				Diese optionalen Technologien aktivieren wir erst, nachdem Sie dem jeweiligen Zweck zugestimmt haben.
-				Ohne Einwilligung bleiben sie deaktiviert. Das bloße Weitersurfen, das Schließen des Hinweises oder
-				ein Einkauf gelten nicht als Zustimmung.
+				Bis dahin sind Analyse- und Werbezwecke im <strong>Google Tag Manager</strong> auf{" "}
+				<strong>„denied“</strong> gesetzt — die Website sendet diesen Hinweis, bevor eine Messung startet. Mit
+				Ihrer Einwilligung wird daraus „granted“, mit einem Widerruf wieder „denied“. Das bloße Weitersurfen,
+				das Schließen des Hinweises oder ein Einkauf gelten nicht als Zustimmung.
+			</p>
+			<p>
+				Zur Reichweitenmessung setzen wir außerdem <strong>Cloudflare Web Analytics</strong> ein. Der Dienst{" "}
+				<strong>speichert keine Cookies</strong>, bildet keine Besucherkennung und verknüpft keine Daten über
+				Websites hinweg; deshalb läuft er auch ohne Einwilligung. Ausgewertet wird nur die Zahl der
+				Seitenaufrufe insgesamt.
 			</p>
 			<p>
 				Ein Dienst verarbeitet nicht schon deshalb keine personenbezogenen Daten, weil er keine Cookies setzt.
@@ -451,11 +459,20 @@ function German({ channel, market }: { channel: string; market: GermanMarket }) 
 				Speicherdauer. Bei Diensten, die personenbezogene Daten verarbeiten, finden Sie weitere Angaben in der{" "}
 				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Anbieterübersicht</Link>.
 			</p>
+			<h3>Unbedingt erforderlich — ohne Einwilligung</h3>
 			<InventoryTable lang="de" />
 			<p>
-				Optionale Analyse- und Marketingtechnologien werden ohne Ihre Einwilligung nicht geladen und speichern
-				ohne sie nichts in Ihrem Browser. Eine aktuelle Aufstellung stellen wir Ihnen auf Anfrage unter{" "}
-				<Mail /> zur Verfügung.
+				Alle aufgeführten Einträge setzt unsere Website selbst (maky.store). Bei der Zahlung übergibt Sie der
+				Bestellprozess an Stripe, das für Abwicklung und Sicherheit der Zahlung eigene Daten nach seinen
+				eigenen Bestimmungen speichert.
+			</p>
+			<h3>Optional — erst nach Ihrer Einwilligung</h3>
+			<p>
+				Nach einer Einwilligung in Analyse oder Marketing kann der Google Tag Manager Messwerkzeuge von Google
+				starten, die eigene Cookies in Ihrem Browser speichern. Namen und Speicherdauer legt Google je nach
+				Messkonfiguration fest; üblich sind Laufzeiten von Monaten bis Jahren. Ohne Einwilligung werden sie
+				nicht gespeichert. Eine aktuelle Aufstellung stellen wir Ihnen auf Anfrage unter <Mail /> zur
+				Verfügung.
 			</p>
 
 			<h2>Einstellungen im Browser</h2>

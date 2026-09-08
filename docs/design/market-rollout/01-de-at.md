@@ -36,10 +36,24 @@ Toto je hlavná pasca tohto vlákna a dodaný balík na ňu správne upozorňuje
 - **Terminológia.** DE = _Widerrufsrecht_. AT = _Rücktrittsrecht_. Balík ponecháva
   tlačidlá jednotné („Vertrag widerrufen" / „Widerruf bestätigen") a v AT to vysvetľuje.
   Zachovaj to — tlačidlá sú viazané na kontrakt, nadpisy na jazyk krajiny.
-- **Dátumy účinnosti.** Balík tvrdí, že rakúske novely majú inú účinnosť než slovenská
-  (uvádza 27. 9. a 1. 10. 2026) a preto AT verziu **neoznačuje za totožnú s DE**.
-  **Neunifikuj to.** Ak si dátum nevieš overiť, nechaj znenie z balíka a daj to do
-  otvorených položiek.
+- **Dátumy účinnosti — overené, už to nie je otvorená položka.** Rakúske novely majú inú
+  účinnosť než nemecké aj než slovenská. **Neunifikuj to.** Overené v oficiálnom RIS
+  2026-09-08:
+
+  | Predpis                                                                                                                                                   | Účinnosť        | Vzťahuje sa na zmluvy   |
+  | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----------------------- |
+  | **FAGG § 20 ods. 6** — informačné povinnosti (§ 3 Z 16–20, § 4 ods. 1, § 8 ods. 1, prílohy II a III)                                                      | **27. 9. 2026** | uzavreté po 26. 9. 2026 |
+  | **FAGG § 20 ods. 5** — online funkcia odstúpenia **§ 13a**, §§ 18a–18d, príloha I                                                                         | **1. 10. 2026** | uzavreté po 30. 9. 2026 |
+  | **VGG § 29 ods. 4** — Warenreparaturrichtlinie-Umsetzungsgesetz, BGBl. I Nr. 60/2026 (§ 6 ods. 2 Z 5, § 10 ods. 2a, § 12 ods. 2a, § 13 ods. 1a a 2, § 31) | **1. 10. 2026** | uzavreté po 30. 9. 2026 |
+
+  Zdroje: `ris.bka.gv.at` — FAGG `Gesetzesnummer=20008847&Paragraf=20`, VGG
+  `Gesetzesnummer=20011654&Paragraf=29`. Nemecký § 356a BGB je účinný od 19. 6. 2026 —
+  **nepriraďuj rakúskej novele nemecký dátum** len podľa transpozičnej lehoty smernice.
+
+  ⚠️ Neskoršia rakúska účinnosť **nie je** dôvod, prečo by slovenský predajca mohol na AT
+  predávať bez dokončenia príslušných povinností. Voľba slovenského práva zostáva
+  východiskom a kogentné rakúske pravidlá sa ňou nevypínajú.
+
 - **ePrivacy pre cookies.** Balík uvádza **§ 25 TDDDG** pre DE a **§ 165 ods. 3
   TKG 2021** pre AT. Sú to rôzne predpisy — neprenášaj jeden do druhého.
 - **Úrad na ochranu údajov.** DE je federálne členité — balík správne odkazuje na
@@ -64,8 +78,10 @@ z tohto stroja nedostupný.)_
 
 ⚠️ **Skoršie znenie tohto odseku bolo nesprávne** a tvrdilo, že `submittedAt` „**je** čas
 prijatia, len sa nepravdivo opisuje". Nie je. `submittedAt` generuje Payload pri
-**uložení záznamu** — to je čas zápisu. Blíži sa prijatiu, ale nie je s ním totožný, a
-slovenskému § 20a ods. 5 zákona 108/2024, ktorý žiada čas **odoslania**, zodpovedá presne.
+**uložení záznamu** — to je čas zápisu. Blíži sa prijatiu, ale nie je s ním totožný.
+Slovenský § 20a ods. 5 zákona 108/2024 žiada čas **odoslania**, čo je zase iná udalosť;
+či ju čas zápisu dostatočne zastupuje, je otázka pre Returns V2, nie pre prekladové
+vlákno. Slovenské znenie teda nechávame tak, ako je schválené.
 
 Takže:
 

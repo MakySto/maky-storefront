@@ -580,7 +580,10 @@ export function Cs({ channel }: { channel: string }) {
  * - `PRIVACY_PROVIDERS_AND_TRANSFERS` → `RecipientsTable`, which is read off `.env`
  *   and the code that talks to each service. Contracting legal entities and per-transfer
  *   safeguards are deliberately still absent — those are contract facts this file cannot
- *   check, and Art. 15(2) GDPR lets us point at a request route instead of guessing.
+ *   check. Art. 13(1)(f) GDPR expressly allows naming "the means by which to obtain a
+ *   copy" of the transfer safeguards rather than reproducing them, which is what the
+ *   contact route does. (The note above `RECIPIENTS` cites Art. 15(2) for the same idea;
+ *   that predates this thread and belongs to the owner of the shared surfaces.)
  * - `AUTOMATED_DECISION_MAKING` → the truthful statement that there is none. The
  *   storefront runs no profiling or automated decision with legal effect; Stripe's own
  *   fraud checks are the payment provider's processing, described as such.
@@ -640,9 +643,10 @@ function German({ channel, market }: { channel: string; market: GermanMarket }) 
 			<h3>Reklamationen, Widerrufe und die Ausübung Ihrer Rechte</h3>
 			<p>
 				Wir verarbeiten Ihre Identifikations- und Kontaktdaten, Angaben zur Bestellung und zum Artikel, den
-				Inhalt Ihrer Mitteilung, erforderliche Nachweise und den Bearbeitungsverlauf. Bei einem
-				Online-Widerruf erfassen wir auch Datum und Uhrzeit des Versands und des Eingangs, die Vorgangsnummer
-				sowie Angaben, mit denen sich die Übermittlung der Bestätigung nachweisen lässt.
+				Inhalt Ihrer Mitteilung, erforderliche Nachweise und den Bearbeitungsverlauf. Erklären Sie den
+				Widerruf über eine Online-Funktion, erfassen wir zusätzlich den dokumentierten Zeitpunkt der
+				Erklärung, die Vorgangsnummer sowie Angaben, mit denen sich die Übermittlung der Bestätigung
+				nachweisen lässt.
 			</p>
 			<p>
 				Die Verarbeitung dient der Erfüllung gesetzlicher Pflichten nach{" "}
@@ -716,10 +720,8 @@ function German({ channel, market }: { channel: string; market: GermanMarket }) 
 			</p>
 			<RecipientsTable lang="de" />
 			<p>
-				Die vertraglich handelnden Gesellschaften der einzelnen Anbieter und die jeweiligen Garantien für eine
-				Übermittlung nennen wir Ihnen auf Anfrage unter <Mail />. Wir führen sie hier nicht auf, weil wir sie
-				an dieser Stelle nicht laufend verlässlich aktuell halten können und eine überholte Angabe schlechter
-				wäre als ein verbindlicher Auskunftsweg.
+				Welche Gesellschaft den jeweiligen Dienst erbringt, in welcher Rolle und mit welchen Garantien bei
+				einer Übermittlung, teilen wir Ihnen auf Anfrage unter <Mail /> mit.
 			</p>
 
 			<h2>5. Übermittlungen außerhalb des Europäischen Wirtschaftsraums</h2>
