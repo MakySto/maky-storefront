@@ -64,14 +64,26 @@ prijatia — ale slovenský text ho volá „čas odoslania". Čiže:
 veriť). Opíš existujúci údaj pravdivo. Ak DE/AT vyžaduje **oba** časy, je to zmena
 kontraktu na strane Payloadu — nahlás ju, nerieš.
 
-## 5. Formulár odstúpenia na `/de` a `/at` NEBUDE
+## 5. Formulár odstúpenia — dočasne nie, ale je to blokátor spustenia
 
-Kontrakt je zamknutý na `market: "SK"` (§ 6 univerzálneho zadania). Balík má
-`[[WITHDRAWAL_ONLINE_SECTION]]` a `[[WITHDRAWAL_TERMS_FUNCTION]]` — na týchto trhoch
-sa **nevyplnia formulárom**. Text musí ponúknuť e-mail, poštu a telefón, a nesmie
-sľubovať online funkciu.
+Kontrakt Returns V2 je zamknutý na `market: "SK"` (§ 6 univerzálneho zadania), takže
+podanie z `/de` alebo `/at` by Payload odmietol. **Tvoje vlákno formulár nezapína.**
 
-❌ Nepodávaj DE/AT ako `market: "SK"`.
+⚠️ **Nie je to však prijateľný konečný stav pre DE.** Nemecký **§ 356a BGB** online
+funkciu odstúpenia priamo predpokladá a upravuje aj obsah potvrdenia. Kým ju backend
+nevie prijať, **DE sa nedá spustiť do predaja** — nie je to len chýbajúca vymoženosť.
+
+Rozšírenie kontraktu vlastní vlákno **Returns V2** (`06-returns-v2.md`). Ty naň
+**nečakáš**:
+
+- dodaj nemecké texty formulára, potvrdení a chybových stavov z balíka, aby boli
+  pripravené na zapojenie;
+- značky `[[WITHDRAWAL_ONLINE_SECTION]]` a `[[WITHDRAWAL_TERMS_FUNCTION]]` **nevymaž
+  aj s okolitými vetami** — okolie nesmie sľubovať funkciu, ktorá zatiaľ nebeží;
+- do odovzdávky napíš, že DE čaká na Returns V2, a označ to ako blokátor **predaja**,
+  nie obsahu.
+
+❌ Nikdy nepodávaj DE/AT ako `market: "SK"`.
 
 ## 6. `/o-nas`
 
