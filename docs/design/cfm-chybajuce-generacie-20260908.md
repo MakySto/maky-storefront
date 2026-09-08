@@ -1,8 +1,14 @@
 # CFM — chybové hlásenie: chýbajúce generácie vozidiel v exporte 3.0.0-full-20260907.2
 
-**Nájdené 2026-09-08 Marekom pri kontrole konfigurátora. Ide o dieru v dátach, nie o chybu
-storefrontu — nižšie je dôkaz, prečo.** Dokument je písaný tak, aby sa dal preposlať CFM
-bez ďalšieho vysvetľovania.
+**Nájdené 2026-09-08 Marekom pri kontrole konfigurátora. Doložené je, že chýba vo
+VÝSTUPNOM EXPORTE, a že to nespôsobuje storefront.** Dokument je písaný tak, aby sa dal
+preposlať CFM bez ďalšieho vysvetľovania.
+
+> ⚠️ **Čo tento dokument NEtvrdí.** Neurčuje príčinu. Chýbajúca generácia v exporte
+> nedokazuje, že chýba aj v primárnej databáze CFM — rovnako dobre to môže byť
+> nespárovaný dodávateľský názov, chýbajúca produktová väzba, stav kontroly alebo
+> podmienka exportéra. Podozrenie na názov `Rav4 (also with sunroof) - flush` v §4 je
+> hypotéza na overenie, **nie potvrdená príčina**. Rozlíšiť tieto možnosti je prvá úloha.
 
 ---
 
@@ -72,12 +78,31 @@ prípad; ostatné treba overiť, netvrdíme o nich chybu.
 
 ## 4. Čo od CFM potrebujeme
 
-1. **Doplniť RAV4 XA50** (od 03/2019, otvorené obdobie) do stromu vozidiel a pripojiť naň
-   riadok 1401 s typom strechy `flush-rails`.
-2. **Zistiť, prečo riadok vypadol.** Podozrenie je na názve modelu: list ho volá
-   `Rav4 (also with sunroof) - flush`, čo sa nemusí spárovať s modelom `RAV4`. Ak importér
-   zahodí riadok, ktorý sa nepodarí spárovať s existujúcim vozidlom, **musí to hlásiť**,
-   nie ticho preskočiť — inak sa rovnaká diera zopakuje pri každom novom liste.
+1. **Dohľadať, kde presne sa riadok 1401 stratil**, a podľa toho ho sprístupniť: pôvodný
+   súbor → parsovaný riadok → dodávateľský odkaz → kanonické vozidlo/generácia → strešný
+   profil → produktová zostava → export. Ak generácia v CFM existuje, ide o mapovanie
+   alebo väzbu; ak nie, treba ju doplniť s doloženou identitou a obdobím.
+
+   ⚠️ **Akceptačným kritériom je správna generácia a správna aplikácia — nie vynútený
+   otvorený koniec.** Skorší text tohto dokumentu žiadal `productionYearTo = null`; to
+   bolo prekročenie zadania. Toyota už predstavila **šiestu generáciu RAV4** a v roku 2026
+   ju uvádza na európsky trh, takže otvorený dodávateľský zápis `03/19>` z listu z marca
+   2026 sám osebe **nedokazuje kompatibilitu s novou generáciou**. Piata generácia môže
+   mať uzavretý koniec a to je správny výsledok, ak tak znejú podklady. Novšia generácia
+   nededí kompatibilitu predchodcu — vozidlo bez potvrdenej zostavy smie zostať bez
+   kladného výsledku; nesmie dostať starší nosič len preto, aby konfigurátor niečo
+   ukázal.
+
+2. **Nespárovaný riadok musí byť hlásený, nie ticho zahodený.** Toto je trvalá oprava:
+   bez nej sa rovnaká diera zopakuje pri každom novom liste a nájde sa opäť náhodou.
+   Cieľom nie je „nula nespárovaných riadkov za každú cenu", ale **nula nevysvetlených
+   strát** — nejednoznačný riadok je v poriadku zadržať, nie je v poriadku ho potichu
+   stratiť ani nasilu pripojiť k podobnému vozidlu.
+
+   Poznámky o streche (`flush railing`, `also with sunroof`) nesmú zaniknúť ako
+   bezvýznamný text — ich význam musí zostať dohľadateľný v mapovaní alebo v podmienkach
+   aplikácie, a nesmie sa z nich urobiť širšie tvrdenie, než podklad dovoľuje.
+
 3. **Priložiť k ďalšiemu exportu počet nespárovaných riadkov.** Ak by ho mal export
    z 2026-09-07 nenulový, vysvetľuje to celý tento nález.
 4. Prejsť 92 kandidátov z §3.
@@ -93,9 +118,19 @@ console.log(d.generations.filter(g=>g.modelId===mo.id)
   .map(g=>`${g.name} ${g.productionYearFrom}-${g.productionYearTo??"dosiaľ"}`))'
 ```
 
-Očakávaný výsledok: v zozname pribudne generácia s `productionYearTo = null`. Potom
-`pnpm check:fitment` a v prehliadači ŠKODA→TOYOTA→RAV4: rozsah rokov musí siahať po
-aktuálny rok.
+Očakávaný výsledok: pribudne generácia zodpovedajúca zápisu `03/19>` s obdobím, aké
+skutočne vyplýva z podkladov — **nie nutne s otvoreným koncom**. Potom `pnpm check:fitment`
+a v prehliadači TOYOTA → RAV4: rozsah rokov musí pokrývať vozidlá, pre ktoré máme
+aplikačný riadok.
+
+⚠️ **Rok 2027, ktorý dnes selektor pri otvorených generáciách ponúka, je dôsledok pravidla
+„aktuálny rok + 1", nie dôkaz výrobného obdobia ani kompatibility.** Toto pravidlo sa
+nemení a nesmie sa použiť ako obchádzka chýbajúcej RAV4.
+
+Kódy `N15085` a `N15080` slúžia len ako vyhľadávacia pomôcka v poli `evidence.sourceRef`.
+Ich opakovaný výskyt **neidentifikuje zostavu pre RAV4** — priečniky sú zdieľané naprieč
+vozidlami. Väzbu treba overiť na produkt, variant a zloženie zostavy; nosič sa nepripája
+k autu podľa zhodného kódu priečnikov.
 
 ## 6. Čo NErobiť v storefronte
 

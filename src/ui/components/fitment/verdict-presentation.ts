@@ -24,6 +24,12 @@ export type VerdictTone = "fits" | "no-fit" | "unconfirmed" | "universal";
 
 export function toneForVerdict(verdict: FitmentVerdict): VerdictTone {
 	switch (verdict) {
+		// Both positive, on purpose — see the verdict list in `contract.ts`. Manufacturer
+		// application data is what the trade sells roof racks on, and with zero
+		// `cfm-verified` rows today (measured, 9,163 of 9,163) demoting it would paint the
+		// whole catalogue as unconfirmed for no one's benefit. The distinction lives in
+		// the words — "Kompatibilné podľa údajov výrobcu", the supplier named, never
+		// "overené" — and later in a badge only `VERIFIED_FIT` can earn.
 		case "VERIFIED_FIT":
 		case "MANUFACTURER_FIT":
 			return "fits";

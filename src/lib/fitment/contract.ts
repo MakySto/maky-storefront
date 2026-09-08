@@ -467,7 +467,29 @@ export type FitmentDataset = {
  * The complete set of answers the UI may render. Deliberately includes the two
  * "not a compatibility answer at all" states so no surface has to invent them.
  *
- * Only VERIFIED_FIT may render as a positive/green state.
+ * ## Which of these may look positive
+ *
+ * `VERIFIED_FIT` and `MANUFACTURER_FIT` both may. Nothing else may — an uncertain,
+ * conflicting, stale or unavailable answer never gets a positive presentation, and
+ * removing a disclaimer sentence from the manufacturer copy did not change that.
+ *
+ * This rule used to read "only VERIFIED_FIT may render as a positive/green state", which
+ * contradicted the line a few rows below saying `MANUFACTURER_FIT` is offerable and must
+ * say so in as many words. Measured 2026-09-08 against the live dataset, the
+ * contradiction was not academic: all 9,163 product rows are
+ * `not-independently-verified`, so enforcing the old wording would have recoloured the
+ * ENTIRE catalogue as unconfirmed while nothing gained the stronger state — the
+ * manufacturer's application list is what the whole trade sells roof racks on.
+ * Marek's decision, 2026-09-08: manufacturer data keeps its calm positive presentation.
+ *
+ * What stays reserved for `VERIFIED_FIT` is the WORD and the future badge. The copy
+ * separates them already — "Kompatibilné podľa údajov výrobcu" with the supplier named,
+ * versus "Overená kompatibilita" — and an "OVERENÉ CFM" badge may be added once CFM
+ * ships rows that have earned it. Until then it would render zero times, so it is not
+ * built yet, and no fake verified row may be created on production to demonstrate it.
+ *
+ * This is a presentation rule. It does not touch `VerificationLevel`, the resolver's
+ * evidence conditions, or what any row is allowed to claim about itself.
  */
 export const FITMENT_VERDICTS = [
 	"VERIFIED_FIT",
