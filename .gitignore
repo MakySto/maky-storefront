@@ -33,6 +33,23 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# Every other .env variant — backups above all.
+#
+# `.gitignore` covered the exact name `.env` and `.env*.local`, and nothing else. A
+# backup of the production env taken during the fitment rollout
+# (`.env.backup-20260907T191201Z`, holding the real Saleor token, the garage cookie
+# secret and the Stripe keys) therefore sat in the working tree matched by no rule at
+# all, one `git add -A` away from a commit.
+#
+# This repository is a PUBLIC fork of `saleor/storefront` (CLAUDE.md §10.1). A commit
+# pushed anywhere in a fork network stays reachable by its SHA from every repo in that
+# network, permanently — deleting the branch, rewriting history or making the repo
+# private do not undo it. The only remedy would be to revoke and rotate every key.
+#
+# `.env.example` is tracked on purpose and stays tracked.
+.env.*
+!.env.example
+
 # vercel
 .vercel
 
