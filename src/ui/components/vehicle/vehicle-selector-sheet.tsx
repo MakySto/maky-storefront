@@ -20,7 +20,7 @@
  */
 
 import { useCallback, useState, useTransition, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Check, ChevronLeft, Loader2 } from "lucide-react";
 
@@ -34,6 +34,8 @@ import { type MonthAnswer, type RoofAnswer, type SelectorStep } from "@/lib/fitm
 import { type GenerationCandidate } from "@/lib/fitment/selector-plan";
 import { chooseVehicle } from "@/lib/garage/actions";
 import { GARAGE_MAX_VEHICLES } from "@/lib/garage/cookie";
+import { vehicleConfirmDestination } from "@/lib/garage/confirm-destination";
+import { REVERSE_MAP } from "@/lib/channel-map";
 
 type Draft = {
 	makeId?: string;
@@ -93,6 +95,8 @@ export function VehicleSelectorSheet({ children, open, onOpenChange }: Props) {
 	const tg = useTranslations("garage");
 	const locale = useLocale();
 	const router = useRouter();
+	const pathname = usePathname();
+	const { channel } = useParams<{ channel?: string }>();
 	const [draft, setDraft] = useState<Draft>({});
 	const [step, setStep] = useState<SelectorStep | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -229,6 +233,20 @@ export function VehicleSelectorSheet({ children, open, onOpenChange }: Props) {
 			if (result.ok) {
 				setDraft({});
 				onOpenChange(false);
+
+				// From the homepage, confirming used to close the sheet and do nothing
+				// else — the hero asks for the car and the answer never arrives. Every
+				// other surface already answers in place, and pushing a shopper off a
+				// cart or a checkout because they picked a car would be worse than not
+				// helping, so `vehicleConfirmDestination` navigates from the market root
+				// and nowhere else.
+				const destination = vehicleConfirmDestination(pathname);
+				if (destination) {
+					const friendly = channel ? REVERSE_MAP[channel] ?? channel : null;
+					router.push(friendly ? `/${friendly}${destination}` : destination);
+					return;
+				}
+
 				// The active vehicle changes what several server-rendered surfaces say.
 				router.refresh();
 				return;
