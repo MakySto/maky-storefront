@@ -125,11 +125,80 @@ A market goes `live` when every line is true. It is a checklist, not a date.
       build. Harmless while `ca` is `preview`; a blocker before it goes live.
       Re-run the parity script in CLAUDE.md §11 before flipping any market.
 - [ ] the seven legal pages exist for that market — VOP, reklamácie, odstúpenie,
-      ochrana údajov, cookies, doprava a platba, kontakt. Today they are Slovak
-      only and `notFound()` for every other channel. Selling into DE on Slovak
-      terms is a compliance problem before it is an SEO one.
+      ochrana údajov, cookies, doprava a platba, kontakt. Slovak and Czech are
+      done; every other market still `notFound()`s, by policy, and selling into
+      DE on Slovak terms is a compliance problem before it is an SEO one. Adding
+      a market means adding it to `src/lib/legal/locale.ts` — `route-policy.ts`
+      derives its market list from there, so the page and the proxy cannot
+      disagree. Read "Translation is not the unit of work" below first.
+- [ ] **the legal pages are DEPLOYED before the env var flips.** Setting
+      `MAKY_LIVE_MARKETS` on a build that does not carry that market's copy makes
+      the market indexable while its statutory pages 404 — worse than leaving it
+      in `preview`, because those pages must be permanently accessible.
 - [ ] navigation links only categories that hold products in that channel
 - [ ] the 404 gate is live (see §5) — see the warning below
+
+### Translation is not the unit of work — the legal spine is
+
+Added 2026-09-08, when the question "is one English translation enough?" came up.
+
+The seven legal pages are not prose that happens to be in Slovak. They are an
+argument built on **EU consumer law**: the 14-day withdrawal right (Directive
+2011/83/EU, here zákon 108/2024), two-year conformity liability (Directive
+2019/771), GDPR, and a named ADR body. Translating that text does not make it true
+somewhere else — it only makes it readable somewhere else.
+
+So markets fall into two groups, and they cost completely different amounts.
+
+**Group 1 — same spine, different language.** `de at pl hu it fr es ro`, plus `cz`,
+which is done. The seller stays Slovak, the directives are the same, and Rome I
+Art. 6 keeps the consumer's own mandatory rules in play either way. What actually
+changes per market:
+
+- the language;
+- the currency — already read from `CHANNEL_MAP`, never written into prose;
+- the **local supervisory authority and ADR entity**, and the local **DPA** for the
+  GDPR page. SOI and ÚOOÚ SR stay as the seller's own bodies; the consumer's are
+  added;
+- local formalities worth checking per country (DE/AT `Widerrufsbelehrung` wording
+  is the usual example).
+
+This is a translation job with a legal review on top, and the code already supports
+it: one entry in `src/lib/legal/locale.ts`, one body per module in
+`src/ui/content/legal/`, and `route-policy.ts` follows on its own.
+
+**Group 2 — different spine.** `us` and `ca`. These are the ONLY English markets —
+`gb-gbp` was removed on 2026-07-20 — and they are both outside the EU/EEA, which
+makes English the language where the current text applies _least_. A translation
+would state things that are simply untrue for those buyers:
+
+| The text says                  | In US / CA                                                                                                             |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| 14 days to withdraw, by law    | No US federal online equivalent; the FTC Cooling-Off Rule is 3 days and off-premises only. Canada: provincial, varies  |
+| Two-year liability for defects | US: state implied warranties (UCC) + Magnuson-Moss. Canada: provincial consumer protection acts                        |
+| GDPR, complain to ÚOOÚ SR      | US: state privacy law (CCPA/CPRA and successors). Canada: PIPEDA and provincial equivalents                            |
+| SOI supervises us; ADR via SOI | No standing over a sale into the US or Canada                                                                          |
+| Prices are final, VAT included | False. US sales tax is destination-based and added at checkout; Canada has GST/HST/PST/QST                             |
+| (silent on customs)            | A cross-border parcel can arrive with a duty bill the buyer never agreed to — a consumer-law problem in both countries |
+
+Two more that are the seller's problem rather than the page's: **economic-nexus
+sales-tax registration** in US states, and **GST/HST registration for non-resident
+vendors** selling into Canada. Both are questions for the accountant before the
+first order, not after.
+
+Quebec deserves its own line: the Charter of the French Language means an English
+document may not be sufficient for a Quebec consumer, so `ca` may need French even
+though its locale says `en-CA`.
+
+**Therefore:** US and CA pages must be **written to US and Canadian law**, not
+translated from this set. That is a lawyer's job with a different starting document.
+On language alone one English text is enough — `en-US` and `en-CA` differ only in
+spelling conventions, which is not worth a second translation — but language was
+never the reason those two markets are hard.
+
+**Recommended order:** finish Group 1 first. It reuses everything and each market is
+cheap. Open Group 2 only when someone has decided that selling into North America is
+worth its own legal work.
 
 ### Order
 
