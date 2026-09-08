@@ -1,5 +1,22 @@
 # Vstupný bod pre nové vlákno — PL/HU
 
+> **⚠️ PREKONANÉ 8. 9. 2026 večer — PL/HU je hotové a je v kóde.**
+>
+> Tento dokument bol napísaný, keď na stroji nebol žiadny PL/HU podklad, a jeho § 0
+> („balík neexistuje“, „prelož zo slovenčiny a urob si právnu rešerš sám“) preto už
+> neplatí. Marek následne nahral
+> `TEXTY_PL_SPOLU.md` a `TEXTY_HU_SPOLU.md` do `/home/ubuntu/maky-podklady/` —
+> kompletné poľské a maďarské znenie ôsmich stránok vrátane národného právneho
+> prieskumu (art. 7a/7aa `ustawa o prawach konsumenta`, art. 399 PKE, UODO, ECK Polska;
+> `151/2003`, `10/2024`, § 155 ods. 4 Eht., NAIH, ECC Magyarország, békéltető testület).
+>
+> Implementované z nich. **Nový vstupný bod je `pl-hu/README.md`** v tomto priečinku;
+> ten hovorí aj to, ktoré dve časti ohláseného ZIP-u na stroj nikdy neprišli a musel som
+> ich zložiť sám.
+>
+> Zvyšok dokumentu (§ 1 stav, § 4 technické zapojenie, § 5 strážcovia, § 9 validácia,
+> § 10 štyri stavy) ostáva vecne správny a bol podľa neho odvedený aj tento beh.
+
 Píše sa 8. 9. 2026 večer, po dokončení DE/AT. **Toto je jediný súbor, ktorý nové vlákno
 potrebuje prečítať ako prvý.** Ostatné si nájde odtiaľto.
 
