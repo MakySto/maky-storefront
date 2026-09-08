@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
+import { AUSTRIA, GERMANY, type GermanMarket } from "./german-market";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 
@@ -134,4 +135,103 @@ export function Cs({ channel }: { channel: string }) {
 			</p>
 		</>
 	);
+}
+
+/**
+ * The German body, shared by both German-speaking markets.
+ *
+ * Two things about this page are worth not losing to a later tidy-up.
+ *
+ * **The 35 kg threshold is absent on purpose.** It is a Slovak operational fact tied to
+ * the `sk-eur` weight bands, it does not agree with its own 30–45 kg band, and nobody
+ * has checked what the German and Austrian services actually do above it. Carrying it
+ * across would have been a fabricated promise (`docs/design/market-rollout/01-de-at.md` §3).
+ *
+ * **Payment is stated as prepayment, and cash on delivery is ruled out.** That is the
+ * 2026-09-08 business decision for every market outside Slovakia. The delivered German
+ * copy named Stripe but said neither, so both sentences are added here rather than
+ * silently implied. Note what the wording deliberately does NOT say: nothing about
+ * same-day or immediate dispatch. It ties dispatch to payment arriving AND to the
+ * stated availability, because "Auf Bestellung" items are procured from a supplier.
+ */
+function German({ channel, market }: { channel: string; market: GermanMarket }) {
+	return (
+		<>
+			<p>
+				Für den Versand arbeiten wir mit <strong>FedEx und Slovenská pošta (Slowakische Post)</strong>{" "}
+				zusammen. Welche Versandarten für Ihre Bestellung nach {market.countryName} verfügbar sind und was sie
+				kosten, sehen Sie im Bestellprozess, bevor Sie die Bestellung verbindlich abschicken.
+			</p>
+
+			<h2>So liefern wir</h2>
+			<p>
+				Die Versandmöglichkeiten hängen von der Lieferadresse sowie von Größe und Gewicht der Sendung ab.
+				Nicht jeder Versanddienstleister und nicht jede Versandart eignen sich für jedes Produkt. Für größere
+				Artikel, etwa Dachboxen, können deshalb andere Versandmöglichkeiten gelten als für kleine Pakete.
+			</p>
+			<p>
+				Wird für Ihren Warenkorb und Ihre Lieferadresse keine Versandart angezeigt,{" "}
+				<Link href={marketHref(channel, "/kontakt")}>kontaktieren Sie uns</Link>. Wir prüfen, ob wir eine
+				passende Lieferung anbieten können.
+			</p>
+
+			<h2>Was der Versand kostet</h2>
+			<p>
+				Die Versandkosten richten sich nach den bestellten Artikeln und der Lieferadresse.{" "}
+				<strong>
+					Den Gesamtbetrag für Ware und Versand sehen Sie vor dem verbindlichen Bestellabschluss.
+				</strong>{" "}
+				Kostenpflichtige Zusatzleistungen buchen wir nicht ohne Ihre Zustimmung.
+			</p>
+
+			<h2>Wann Ihre Bestellung ankommt</h2>
+			<p>
+				Der Liefertermin hängt von der Verfügbarkeit der Artikel und der gewählten Versandart ab. Produkte mit
+				dem Hinweis „Auf Bestellung“ beschaffen wir beim Lieferanten. Der Hinweis bedeutet nicht, dass die
+				Ware bereits bei uns auf Lager ist.
+			</p>
+			<p>
+				Wir informieren Sie vor Vertragsabschluss über die Lieferung. Sollte später eine Verzögerung
+				auftreten, melden wir uns und besprechen das weitere Vorgehen mit Ihnen. Ihre Rechte bei
+				Nichteinhaltung eines vereinbarten Liefertermins bleiben bestehen.
+			</p>
+			<p>
+				Sie benötigen die Ausrüstung bis zu einem bestimmten Datum? Schreiben Sie uns bitte vor der
+				Bestellung. Wir prüfen die Liefermöglichkeiten, damit Sie planen können.
+			</p>
+
+			<h2>So können Sie bezahlen</h2>
+			<p>
+				Bestellungen mit Lieferung nach {market.countryName} bezahlen Sie im Voraus über{" "}
+				<strong>Stripe</strong>. Die verfügbaren Zahlungsarten sehen Sie im Bestellprozess. Eine Zahlung per
+				Nachnahme bieten wir nicht an. Wir versenden Ihre Bestellung nach Eingang der Zahlung und entsprechend
+				der angegebenen Warenverfügbarkeit.
+			</p>
+			<p>
+				Die Preise für {market.countryName} werden in <strong>Euro (EUR)</strong> angegeben.
+			</p>
+			<p>
+				Wir speichern weder die vollständige Kartennummer noch den Sicherheitscode Ihrer Zahlungskarte und
+				haben darauf keinen Zugriff. Diese Daten verarbeitet der Zahlungsdienstleister.
+			</p>
+
+			<h2>Wenn die Sendung ankommt</h2>
+			<p>
+				Prüfen Sie nach Möglichkeit die Verpackung und fotografieren Sie sichtbare Transportschäden. Ist auch
+				die Ware beschädigt oder fehlt etwas, schreiben Sie uns an <Mail />.
+			</p>
+			<p>
+				Fotos und ein Schadensvermerk des Versanddienstleisters helfen bei der Klärung. Fehlen diese
+				Unterlagen, verlieren Sie dadurch allein keine gesetzlichen Mängelrechte.
+			</p>
+		</>
+	);
+}
+
+export function De({ channel }: { channel: string }) {
+	return <German channel={channel} market={GERMANY} />;
+}
+
+export function DeAt({ channel }: { channel: string }) {
+	return <German channel={channel} market={AUSTRIA} />;
 }

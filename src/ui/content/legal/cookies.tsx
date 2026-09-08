@@ -2,6 +2,7 @@ import Link from "next/link";
 import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { PrivacySettingsLink } from "@/ui/components/privacy-settings-link";
+import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 
@@ -23,20 +24,26 @@ const SETTINGS_BUTTON_CLASS =
 const NECESSARY = [
 	{
 		name: "maky-market",
-		life: { sk: "1 rok", cs: "1 rok" },
-		kind: { sk: "Cookie", cs: "Cookie" },
+		life: { sk: "1 rok", cs: "1 rok", de: "1 Jahr" },
+		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie" },
 		purpose: {
 			sk: "Pamätá si jazykovú a trhovú verziu obchodu, ktorú ste otvorili.",
 			cs: "Pamatuje si jazykovou a tržní verzi obchodu, kterou jste otevřeli.",
+			de: "Merkt sich die Sprach- und Marktversion des Shops, die Sie geöffnet haben.",
 		},
 	},
 	{
 		name: "checkoutId-<kanál>",
-		life: { sk: "Do zatvorenia prehliadača", cs: "Do zavření prohlížeče" },
-		kind: { sk: "Cookie", cs: "Cookie" },
+		life: {
+			sk: "Do zatvorenia prehliadača",
+			cs: "Do zavření prohlížeče",
+			de: "Bis zum Schließen des Browsers",
+		},
+		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie" },
 		purpose: {
 			sk: "Spája váš prehliadač s obsahom košíka a s rozpracovanou objednávkou.",
 			cs: "Spojuje váš prohlížeč s obsahem košíku a s rozpracovanou objednávkou.",
+			de: "Verbindet Ihren Browser mit dem Inhalt des Warenkorbs und einer laufenden Bestellung.",
 		},
 	},
 	{
@@ -44,11 +51,13 @@ const NECESSARY = [
 		life: {
 			sk: "Prístupový 15 minút, obnovovací 7 dní",
 			cs: "Přístupový 15 minut, obnovovací 7 dní",
+			de: "Zugriff 15 Minuten, Erneuerung 7 Tage",
 		},
-		kind: { sk: "Cookie", cs: "Cookie" },
+		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie" },
 		purpose: {
 			sk: "Udržiavajú vaše prihlásenie. Ukladajú sa až po prihlásení do účtu.",
 			cs: "Udržují vaše přihlášení. Ukládají se až po přihlášení k účtu.",
+			de: "Halten Ihre Anmeldung aufrecht. Sie werden erst nach der Anmeldung gesetzt.",
 		},
 	},
 	{
@@ -56,11 +65,17 @@ const NECESSARY = [
 		life: {
 			sk: "Do vymazania údajov webu v prehliadači",
 			cs: "Do vymazání údajů webu v prohlížeči",
+			de: "Bis zum Löschen der Website-Daten im Browser",
 		},
-		kind: { sk: "Miestne úložisko (localStorage)", cs: "Místní úložiště (localStorage)" },
+		kind: {
+			sk: "Miestne úložisko (localStorage)",
+			cs: "Místní úložiště (localStorage)",
+			de: "Lokaler Speicher (localStorage)",
+		},
 		purpose: {
 			sk: "Uchováva vašu voľbu súkromia, aby sme sa nepýtali pri každej návšteve.",
 			cs: "Uchovává vaši volbu soukromí, abychom se neptali při každé návštěvě.",
+			de: "Bewahrt Ihre Datenschutzauswahl, damit wir nicht bei jedem Besuch erneut fragen.",
 		},
 	},
 ] as const;
@@ -68,9 +83,10 @@ const NECESSARY = [
 const TABLE_HEADS = {
 	sk: ["Názov", "Typ", "Účel", "Platnosť"],
 	cs: ["Název", "Typ", "Účel", "Platnost"],
+	de: ["Name", "Art", "Zweck", "Speicherdauer"],
 } as const;
 
-function InventoryTable({ lang }: { lang: "sk" | "cs" }) {
+function InventoryTable({ lang }: { lang: "sk" | "cs" | "de" }) {
 	return (
 		<div className="overflow-x-auto">
 			<table>
@@ -335,4 +351,146 @@ export function Cs({ channel }: { channel: string }) {
 			</p>
 		</>
 	);
+}
+
+/**
+ * The German body, shared by both German-speaking markets.
+ *
+ * The ePrivacy statute is the one genuinely divergent fact on this page and comes from
+ * `market.ePrivacyStatute`: § 25 TDDDG in Germany, § 165(3) TKG 2021 in Austria. They
+ * are different laws in different acts — do not "harmonise" them.
+ *
+ * `COOKIE_SETTINGS_BUTTON` renders the real `PrivacySettingsLink`, which opens the
+ * existing consent manager. The package was explicit that this must be the working
+ * control and not a decorative link, since the page promises the reader can change their
+ * mind here. `COOKIE_INVENTORY` renders `InventoryTable`, read off the code that
+ * actually writes each entry rather than off a vendor template.
+ */
+function German({ channel, market }: { channel: string; market: GermanMarket }) {
+	return (
+		<>
+			<p>
+				Wir verwenden Cookies und ähnliche Technologien für den Betrieb des Onlineshops und — je nach Ihrer
+				Entscheidung — für weitere Zwecke.{" "}
+				<strong>
+					Optionale Analyse- und Marketingtechnologien können Sie ablehnen und trotzdem einkaufen.
+				</strong>
+			</p>
+
+			<h2>Was Cookies und ähnliche Technologien sind</h2>
+			<p>
+				Cookies sind kleine Datensätze, die eine Website in Ihrem Browser speichert. Sie können zum Beispiel
+				den Warenkorb oder eine Anmeldung aufrechterhalten. Einige werden am Ende der Sitzung gelöscht, andere
+				bleiben bis zum Ablauf ihrer festgelegten Speicherdauer bestehen.
+			</p>
+			<p>
+				Eine Website kann auch den lokalen Browserspeicher, etwa <strong>localStorage</strong>, oder
+				vergleichbare Technologien verwenden. Ob eine Einwilligung erforderlich ist, richtet sich nicht nur
+				nach der technischen Bezeichnung, sondern nach dem tatsächlichen Zweck. Diese Hinweise gelten deshalb
+				nicht ausschließlich für klassische Cookies.
+			</p>
+
+			<h2>Unbedingt erforderliche Funktionen</h2>
+			<p>
+				Technologien, die für einen von Ihnen ausdrücklich angeforderten Dienst unbedingt erforderlich sind,
+				setzen wir ohne gesonderte Einwilligung ein. Dazu können beispielsweise Warenkorb, Anmeldung,
+				Zahlungsabwicklung oder das Speichern Ihrer Datenschutzauswahl gehören.
+			</p>
+			<p>
+				Wir beschränken den Einsatz auf das für die jeweilige Funktion tatsächlich Notwendige. Nicht jede
+				Messung und nicht jeder Dienst desselben Anbieters ist automatisch erforderlich. Für den Zugriff auf
+				Endgeräte und das Speichern von Informationen beachten wir insbesondere die Einwilligungsregeln und
+				gesetzlichen Ausnahmen des {market.ePrivacyStatute}.
+			</p>
+
+			<h2>Analyse und Marketing</h2>
+			<p>
+				<strong>Optionale Analyse</strong> hilft, Besuche und die Nutzung des Shops auszuwerten.{" "}
+				<strong>Marketingtechnologien</strong> können der Erfolgsmessung von Werbung, der Bildung von
+				Werbezielgruppen oder der Anpassung von Anzeigen dienen.
+			</p>
+			<p>
+				Diese optionalen Technologien aktivieren wir erst, nachdem Sie dem jeweiligen Zweck zugestimmt haben.
+				Ohne Einwilligung bleiben sie deaktiviert. Das bloße Weitersurfen, das Schließen des Hinweises oder
+				ein Einkauf gelten nicht als Zustimmung.
+			</p>
+			<p>
+				Ein Dienst verarbeitet nicht schon deshalb keine personenbezogenen Daten, weil er keine Cookies setzt.
+				Über Zwecke, Rechtsgrundlagen und Anbieter weiterer technischer Dienste informieren wir auch in
+				unseren <Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Datenschutzhinweisen</Link>.
+			</p>
+
+			<h2>Ihre Auswahl</h2>
+			<p>
+				In den Datenschutzeinstellungen können Sie <strong>allen optionalen Zwecken zustimmen</strong>,{" "}
+				<strong>alle optionalen Zwecke ablehnen</strong> oder <strong>nur ausgewählte Zwecke erlauben</strong>
+				. Optionale Kategorien sind nicht vorausgewählt. Unbedingt erforderliche Funktionen bleiben aktiv,
+				weil der jeweilige angeforderte Dienst ohne sie nicht bereitgestellt werden kann.
+			</p>
+			<p>
+				<PrivacySettingsLink label="Datenschutzeinstellungen öffnen" className={SETTINGS_BUTTON_CLASS} />
+			</p>
+			<p>
+				Ihre Entscheidung können Sie jederzeit über <strong>„Datenschutzeinstellungen“</strong> im Seitenfuß
+				ändern. Ein Widerruf gilt für die weitere Nutzung der betreffenden optionalen Technologien. Wir
+				stoppen deren weitere Aktivierung und entfernen die entsprechenden vom Shop verwalteten optionalen
+				Cookies, soweit dies technisch möglich ist. Der Widerruf löscht nicht automatisch sämtliche Daten, die
+				ein eigenständig verantwortlicher Anbieter bereits verarbeitet hat. Für diese Daten gelten die
+				jeweiligen Rechte nach der DSGVO.
+			</p>
+			<p>
+				Die Auswahl bezieht sich auf den verwendeten Browser und das Gerät. Auf einem anderen Gerät oder nach
+				dem Löschen des Browserspeichers kann eine neue Auswahl erforderlich sein. Wir fragen auch dann erneut
+				nach, wenn die gespeicherte Einwilligung abläuft oder sich die einwilligungspflichtigen Zwecke
+				wesentlich ändern.
+			</p>
+
+			<h2>Übersicht der eingesetzten Technologien</h2>
+			<p>
+				Die Übersicht nennt die Technologie oder den Speicher, den Anbieter, den Zweck, die Kategorie und die
+				Speicherdauer. Bei Diensten, die personenbezogene Daten verarbeiten, finden Sie weitere Angaben in der{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Anbieterübersicht</Link>.
+			</p>
+			<InventoryTable lang="de" />
+			<p>
+				Optionale Analyse- und Marketingtechnologien werden ohne Ihre Einwilligung nicht geladen und speichern
+				ohne sie nichts in Ihrem Browser. Eine aktuelle Aufstellung stellen wir Ihnen auf Anfrage unter{" "}
+				<Mail /> zur Verfügung.
+			</p>
+
+			<h2>Einstellungen im Browser</h2>
+			<p>
+				Sie können Cookies auch direkt in Ihrem Browser löschen oder blockieren. Werden dabei unbedingt
+				erforderliche Cookies blockiert, funktionieren Warenkorb, Anmeldung oder Zahlung möglicherweise nicht
+				richtig.{" "}
+				<strong>
+					Das Ablehnen optionaler Analyse und Werbung in unserer Auswahl verhindert einen Einkauf hingegen
+					nicht.
+				</strong>
+			</p>
+			<p>
+				Beim Löschen von Cookies werden andere lokale Speicher nicht unbedingt mitgelöscht. Diese können Sie
+				über die Website-Daten Ihres Browsers verwalten.
+			</p>
+
+			<h2>Kontakt und weitere Informationen</h2>
+			<p>
+				Betreiber ist <strong>{companyInfo.legalName}</strong>, {companyInfo.street}, {companyInfo.city},{" "}
+				{SLOVAKIA_DE}, Unternehmensidentifikationsnummer (IČO) {companyInfo.ico}. Fragen senden Sie bitte an{" "}
+				<Mail />.
+			</p>
+			<p>
+				Informationen über Ihre Rechte, Datenempfänger und zuständige Datenschutzaufsichtsbehörden finden Sie
+				in unseren <Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Datenschutzhinweisen</Link>.
+			</p>
+		</>
+	);
+}
+
+export function De({ channel }: { channel: string }) {
+	return <German channel={channel} market={GERMANY} />;
+}
+
+export function DeAt({ channel }: { channel: string }) {
+	return <German channel={channel} market={AUSTRIA} />;
 }

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { type ReactNode } from "react";
-import { companyInfo } from "@/config/company";
+import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
+import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
+const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
 
 export interface WithdrawalBodyProps {
 	readonly channel: string;
@@ -12,7 +14,7 @@ export interface WithdrawalBodyProps {
 	readonly modelFormHref: string;
 }
 
-function ReturnAddress() {
+function ReturnAddress({ country = "Slovenská republika" }: { country?: string }) {
 	return (
 		<address>
 			{companyInfo.legalName}
@@ -21,7 +23,7 @@ function ReturnAddress() {
 			<br />
 			831 04 Bratislava
 			<br />
-			Slovenská republika
+			{country}
 		</address>
 	);
 }
@@ -287,4 +289,197 @@ export function Cs({ channel, form, modelFormHref }: WithdrawalBodyProps) {
 			</p>
 		</>
 	);
+}
+
+/**
+ * The German body, shared by both German-speaking markets.
+ *
+ * ## What happens where the online function would go
+ *
+ * `form` is `null` for `de` and `at` and will stay that way until Returns V2 accepts
+ * those markets: the contract pins `market: "SK"` / `locale: "sk"` as literal types, so
+ * a notice submitted from `/de` would be rejected by the endpoint that stores it. See
+ * `servesOnlineFunction()` in the route.
+ *
+ * The delivered copy carried a `WITHDRAWAL_ONLINE_SECTION` slot with three
+ * variants; this renders the `previewNotActivated` one. It is rendered rather than
+ * dropped on purpose. Deleting the slot and leaving the surrounding sentences would
+ * have left a page that reads as though an online function exists, and the section
+ * heading above it already promises one. An honest "not activated here yet, use these
+ * routes instead" is the only variant that is true today.
+ *
+ * ⚠️ For Germany this is a SALES blocker, not a missing convenience: § 356a BGB (in
+ * force since 2026-06-19) presupposes an online withdrawal function. The market must
+ * not be opened to paid consumer sales while this branch is the one rendering.
+ */
+function German({ channel, form, modelFormHref, market }: WithdrawalBodyProps & { market: GermanMarket }) {
+	return (
+		<>
+			<p>
+				Der Artikel passt nicht zu Ihren Plänen oder Sie haben es sich anders überlegt? Als Verbraucher können
+				Sie Ihren Online-Kauf grundsätzlich{" "}
+				<strong>innerhalb von 14 Tagen nach Erhalt der Ware ohne Angabe von Gründen widerrufen</strong>.
+				{market.terminologyNote ? ` ${market.terminologyNote}` : ""}
+			</p>
+			<p>
+				Für Bestellungen, die Sie nach der Anmeldung in Ihrem Kundenkonto aufgegeben haben, verlängern wir die
+				Frist auf <strong>30 Tage</strong>. Es gelten derselbe Rückgabeablauf und dieselben nachstehend
+				beschriebenen Bedingungen. Die verlängerte Frist schränkt Ihre gesetzlichen Rechte nicht ein.
+			</p>
+			<p>
+				Sie können den Widerruf auch vor der Lieferung erklären oder auf einzelne Artikel beschränken. Ein
+				Kundenkonto oder unsere vorherige Zustimmung benötigen Sie dafür nicht.
+			</p>
+
+			{form ?? (
+				<>
+					<h2>Online-Funktion in dieser Vorschau noch nicht aktiviert</h2>
+					<p>
+						Diese Länderversion wird derzeit vorbereitet. Die Online-Funktion ist hier noch nicht
+						freigeschaltet. Eine bereits bestehende Bestellung können Sie weiterhin per E-Mail an <Mail />{" "}
+						oder auf einem anderen gesetzlich zulässigen Weg widerrufen. Ihre gesetzlichen Rechte bleiben
+						davon unberührt.
+					</p>
+				</>
+			)}
+
+			<h2>{form ? "Widerruf per E-Mail oder Post" : "So erklären Sie den Widerruf"}</h2>
+			<p>
+				{form ? "Die Online-Funktion ist nicht der einzige Weg. Senden Sie" : "Senden Sie"} eine eindeutige
+				Erklärung an <Mail /> oder an{" "}
+				<strong>
+					{companyInfo.legalName}, {companyInfo.returnAddress}, {SLOVAKIA_DE}
+				</strong>
+				. Sie erreichen uns auch telefonisch unter <Phone />.
+			</p>
+			<p>
+				Sie können unser <Link href={modelFormHref}>Muster-Widerrufsformular zum Ausdrucken</Link> verwenden,
+				müssen dies aber nicht. Aus Ihrer Erklärung muss hervorgehen, wer den Widerruf erklärt, auf welchen
+				Kauf er sich bezieht und welche Ware er umfasst.
+			</p>
+
+			<h2>Wann die Frist beginnt</h2>
+			<p>
+				Die gesetzliche Widerrufsfrist beträgt 14 Tage ab dem Tag, an dem Sie oder eine von Ihnen benannte
+				Person, die nicht der Beförderer ist, die Ware erhalten haben. Für die Berechnung der Frist wird der
+				Tag des Erhalts nicht mitgezählt. Bei mehreren Artikeln einer einheitlichen Bestellung, die getrennt
+				geliefert werden, ist der Erhalt des letzten Artikels maßgeblich. Bei einer Lieferung in mehreren
+				Teilsendungen oder Stücken zählt der Erhalt der letzten Teilsendung oder des letzten Stücks.
+			</p>
+			<p>
+				Zur Wahrung der Frist genügt es, die Widerrufserklärung spätestens am letzten Tag der maßgeblichen
+				Frist abzusenden. <strong>Die Ware muss bis dahin noch nicht bei uns eingetroffen sein.</strong>{" "}
+				Gesetzliche Regeln zur Fristberechnung und eine gesetzliche Verlängerung bei unvollständiger Belehrung
+				bleiben unberührt.
+			</p>
+
+			<h2>So senden Sie die Ware zurück</h2>
+			<p>
+				Sie können einen eigenen Versanddienstleister beauftragen oder bei uns ein Angebot für eine Abholung
+				anfragen. Preis und vorgeschlagenen Ablauf teilen wir Ihnen vorab mit. Eine kostenpflichtige Abholung
+				beauftragen wir erst nach Ihrer ausdrücklichen Zustimmung.
+			</p>
+			<p>
+				<strong>
+					Eine Rücksendung mit einem selbst gewählten Versanddienstleister müssen wir nicht vorher genehmigen.
+				</strong>{" "}
+				Haben wir Ihnen keine Abholung angeboten, senden Sie die Ware unverzüglich, spätestens innerhalb von{" "}
+				<strong>14 Tagen ab Ihrer Widerrufserklärung</strong>, an folgende Anschrift zurück oder übergeben Sie
+				sie dort:
+			</p>
+			<ReturnAddress country={SLOVAKIA_DE} />
+			<p>
+				Die Frist ist gewahrt, wenn Sie die Ware vor ihrem Ablauf absenden. Haben wir eine Abholung angeboten,
+				bereiten Sie die Sendung entsprechend der Vereinbarung vor.
+			</p>
+			<p>
+				Eine bloße Anfrage nach dem Preis einer Abholung ist noch kein Abholauftrag. Warten Sie deshalb nicht
+				allein wegen einer solchen Anfrage mit der Rücksendung, solange wir Ihnen noch keine Abholung
+				angeboten haben.
+			</p>
+			<p>
+				Verpacken Sie die Ware so, dass sie beim Transport geschützt ist, und senden Sie das zugehörige
+				Zubehör mit zurück. Die Originalverpackung kann dabei hilfreich sein,{" "}
+				<strong>ist aber keine allgemeine Voraussetzung für den Widerruf</strong>. Legen Sie nach Möglichkeit
+				die Bestellnummer oder die Vorgangsnummer bei.
+			</p>
+
+			<h2>Kosten der Rücksendung</h2>
+			<p>
+				Bei einem Widerruf ohne Angabe von Gründen tragen Sie die unmittelbaren Rücksendekosten, sofern wir
+				Sie vor Vertragsabschluss ordnungsgemäß darüber informiert haben. Kann ein Artikel aufgrund seiner Art
+				oder Größe nicht auf dem normalen Postweg zurückgesendet werden, müssen wir Ihnen vor dem Kauf auch
+				die Kosten seiner Rücksendung mitteilen. Haben wir diese Informationspflicht nicht erfüllt, müssen Sie
+				diese Kosten nicht tragen.
+			</p>
+			<p>Ein erst nach dem Kauf angefragtes Abholangebot ersetzt die vorvertragliche Information nicht.</p>
+			<p>
+				Senden Sie ein Produkt wegen eines Mangels zurück, für den wir verantwortlich sind, beachten Sie bitte{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reklamationen und Rücksendungen</Link>. In
+				diesem Fall gelten andere Regeln zur Kostenübernahme.
+			</p>
+
+			<h2>Wann Sie Ihr Geld zurückerhalten</h2>
+			<p>
+				Wir erstatten die vom Widerruf erfassten Zahlungen unverzüglich, spätestens innerhalb von{" "}
+				<strong>14 Tagen nach Eingang Ihrer Widerrufserklärung</strong>. Bei einem vollständigen Widerruf
+				erstatten wir auch die ursprünglichen Lieferkosten bis zur Höhe der günstigsten von uns für diese
+				Bestellung angebotenen Standardlieferung. Den Aufpreis für eine von Ihnen ausdrücklich gewählte
+				teurere Lieferung müssen wir nicht erstatten.
+			</p>
+			<p>
+				Bei einem teilweisen Widerruf erstatten wir die entsprechenden Beträge. Wir berechnen Ihnen deshalb
+				nicht nachträglich zusätzliche Versandkosten oder andere Gebühren.
+			</p>
+			<p>
+				Die Erstattung erfolgt mit demselben Zahlungsmittel wie beim Kauf. Eine andere Lösung können wir
+				ausdrücklich vereinbaren, wenn Ihnen dadurch keine zusätzlichen Kosten entstehen. Für eine Rückzahlung
+				auf die ursprünglich verwendete Zahlungskarte benötigen wir keine IBAN.
+			</p>
+			<p>
+				Haben wir Ihnen keine Abholung angeboten, dürfen wir die Erstattung zurückhalten, bis wir die Ware
+				erhalten haben oder Sie ihre Absendung nachgewiesen haben — je nachdem, was früher eintritt. Haben wir
+				die Abholung angeboten, machen wir von diesem Zurückbehaltungsrecht keinen Gebrauch.
+			</p>
+
+			<h2>In welchem Zustand Sie die Ware zurückgeben können</h2>
+			<p>
+				Sie dürfen die Ware so prüfen, wie es nötig ist, um ihre Beschaffenheit, Eigenschaften und
+				Funktionsweise festzustellen — vergleichbar mit einer Prüfung im Geschäft. Für einen Wertverlust durch
+				einen darüber hinausgehenden Umgang können Sie verantwortlich sein, sofern wir Sie ordnungsgemäß über
+				das Widerrufsrecht informiert haben.
+			</p>
+			<p>
+				Wir verlangen keine pauschale Gebühr für das Öffnen der Verpackung oder die Bearbeitung einer
+				Rückgabe. Einen möglichen Wertverlust beurteilen wir anhand des tatsächlichen Zustands und erläutern
+				Ihnen einen entsprechenden Anspruch. Wir rechnen einen solchen Anspruch nicht einseitig gegen Ihren
+				Erstattungsanspruch aus dem Widerruf auf.
+			</p>
+
+			<h2>Wann eine Ausnahme gilt</h2>
+			<p>
+				Das Widerrufsrecht besteht insbesondere nicht bei Waren, die tatsächlich nach Ihren individuellen
+				Vorgaben angefertigt werden oder eindeutig auf Ihre persönlichen Bedürfnisse zugeschnitten sind. Eine
+				gesetzliche Ausnahme kann auch für versiegelte Waren gelten, die aus Gründen des Gesundheitsschutzes
+				oder der Hygiene nicht zur Rückgabe geeignet sind, wenn ihre Versiegelung nach der Lieferung entfernt
+				wurde.
+			</p>
+			<p>
+				<strong>
+					Ein normaler Artikel mit dem Hinweis „Auf Bestellung“ oder ein Standardset, das passend zu einem
+					Fahrzeug ausgewählt wird, ist allein deshalb keine Sonderanfertigung.
+				</strong>{" "}
+				Eine Ausnahme wenden wir nur an, wenn ihre gesetzlichen Voraussetzungen erfüllt sind. Weitere
+				Informationen stehen in unseren <Link href={marketHref(channel, "/obchodne-podmienky")}>AGB</Link>.
+			</p>
+		</>
+	);
+}
+
+export function De(props: WithdrawalBodyProps) {
+	return <German {...props} market={GERMANY} />;
+}
+
+export function DeAt(props: WithdrawalBodyProps) {
+	return <German {...props} market={AUSTRIA} />;
 }

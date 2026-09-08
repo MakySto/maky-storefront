@@ -1,12 +1,19 @@
 import Link from "next/link";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
+import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
 
-/** Shared by both languages — an address is not translated, and SOI's name is its name. */
-function ReturnAddress() {
+/**
+ * Shared by every language — an address is not translated, and SOI's name is its name.
+ *
+ * The country line is the exception, and it is the only one: it is prose, not part of
+ * the postal address as the Slovak post office would read it. It takes a default so the
+ * Slovak and Czech bodies render exactly what they rendered before German arrived.
+ */
+function ReturnAddress({ country = "Slovenská republika" }: { country?: string }) {
 	return (
 		<p>
 			<strong>{companyInfo.legalName}</strong>
@@ -15,12 +22,12 @@ function ReturnAddress() {
 			<br />
 			831 04 Bratislava
 			<br />
-			Slovenská republika
+			{country}
 		</p>
 	);
 }
 
-function SeatAddress() {
+function SeatAddress({ country = "Slovenská republika" }: { country?: string }) {
 	return (
 		<p>
 			<strong>{companyInfo.legalName}</strong>
@@ -29,21 +36,31 @@ function SeatAddress() {
 			<br />
 			{companyInfo.city}
 			<br />
-			Slovenská republika
+			{country}
 		</p>
 	);
 }
 
-function SupervisoryAuthority() {
+function SupervisoryAuthority({
+	gloss,
+	country = "Slovenská republika",
+}: {
+	/** A translation of the authority's name, appended to it rather than replacing it. */
+	gloss?: string;
+	country?: string;
+}) {
 	return (
 		<p>
 			Slovenská obchodná inšpekcia
+			{gloss ? ` — ${gloss}` : ""}
 			<br />
 			{companyInfo.supervisoryAuthority.department}
 			<br />
 			Bajkalská 21/A, P. O. BOX č. 5
 			<br />
 			820 07 Bratislava
+			<br />
+			{country}
 			<br />
 			<a href={companyInfo.supervisoryAuthority.url} rel="noopener noreferrer" target="_blank">
 				www.soi.sk
@@ -146,4 +163,73 @@ export function Cs({ channel }: { channel: string }) {
 			<SupervisoryAuthority />
 		</>
 	);
+}
+
+/**
+ * The German body, shared by both German-speaking markets.
+ *
+ * Only the name of the right to withdraw differs on this page, and it differs twice —
+ * in the link text. Everything else is one text, which is why `de` and `deAt` share a
+ * component rather than duplicating four hundred words of identical German.
+ */
+function German({ channel, market }: { channel: string; market: GermanMarket }) {
+	return (
+		<>
+			<p>
+				Sie haben eine Frage zu einem Produkt, möchten die Eignung eines Zubehörteils prüfen oder brauchen
+				Hilfe mit Ihrer Bestellung? Schreiben Sie uns oder rufen Sie an.
+			</p>
+			<p>
+				<strong>E-Mail:</strong> <Mail />
+				<br />
+				<strong>Telefon:</strong> <Phone />
+			</p>
+			<p>
+				Wir beantworten Nachrichten an unseren Arbeitstagen. Bei Fragen zu einer Bestellung hilft uns die
+				Bestellnummer. Wenn Sie Zubehör für Ihr Auto suchen, nennen Sie bitte Marke, Modell und Baujahr, bei
+				Dachträgern auch die Dachart. Ein Foto kann die Prüfung erleichtern.
+			</p>
+
+			<h2>Rücksendungen und Reklamationen</h2>
+			<p>Zurückgesendete oder reklamierte Ware schicken Sie bitte an:</p>
+			<ReturnAddress country={SLOVAKIA_DE} />
+			<p>
+				Diese Anschrift unterscheidet sich von unserem Firmensitz. Informationen zur Rückgabe ohne Angabe von
+				Gründen finden Sie unter{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>{market.withdrawalTerm}</Link>. Bei einem
+				mangelhaften oder beschädigten Produkt hilft Ihnen die Seite{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reklamationen und Rücksendungen</Link>.
+			</p>
+
+			<h2>Anbieter und Rechnungsangaben</h2>
+			<SeatAddress country={SLOVAKIA_DE} />
+			<p>
+				<strong>Unternehmensidentifikationsnummer (IČO):</strong> {companyInfo.ico}
+				<br />
+				<strong>Slowakische Steuernummer (DIČ):</strong> {companyInfo.dic}
+				<br />
+				<strong>Umsatzsteuer-Identifikationsnummer:</strong> {companyInfo.icDph}
+			</p>
+			<p>
+				Die Gesellschaft ist in der Slowakei umsatzsteuerlich registriert. Sie ist im Handelsregister des
+				Stadtgerichts Bratislava III (Mestský súd Bratislava III), Abteilung Sro, unter der Eintragsnummer
+				200804/B eingetragen.
+			</p>
+
+			<h2>Aufsicht am Sitz des Unternehmens</h2>
+			<SupervisoryAuthority country={SLOVAKIA_DE} gloss="Slowakische Handelsinspektion" />
+			<p>
+				Informationen zur außergerichtlichen Streitbeilegung und zur Unterstützung bei grenzüberschreitenden
+				Käufen finden Sie in unseren <Link href={marketHref(channel, "/obchodne-podmienky")}>AGB</Link>.
+			</p>
+		</>
+	);
+}
+
+export function De({ channel }: { channel: string }) {
+	return <German channel={channel} market={GERMANY} />;
+}
+
+export function DeAt({ channel }: { channel: string }) {
+	return <German channel={channel} market={AUSTRIA} />;
 }

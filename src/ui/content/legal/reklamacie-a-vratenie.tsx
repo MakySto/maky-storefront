@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
+import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 
-function ReturnAddress() {
+function ReturnAddress({ country = "Slovenská republika" }: { country?: string }) {
 	return (
 		<p>
 			<strong>{companyInfo.legalName}</strong>
@@ -13,7 +14,7 @@ function ReturnAddress() {
 			<br />
 			831 04 Bratislava
 			<br />
-			Slovenská republika
+			{country}
 		</p>
 	);
 }
@@ -305,4 +306,200 @@ export function Cs({ channel }: { channel: string }) {
 			</p>
 		</>
 	);
+}
+
+/**
+ * The German body, shared by both German-speaking markets.
+ *
+ * Only two things vary: the local name of the right to withdraw, and the sentence
+ * naming the mandatory consumer-protection rules that survive the choice of Slovak law.
+ * Austria names the VGG and the KSchG specifically; Germany refers to Mängelrechte and
+ * Verjährung. Those are not stylistic variants and must not be merged.
+ *
+ * The 30-day return window and the 12-month extension after a first repair are described
+ * throughout as consequences of the AGREED SLOVAK LAW, not as local German or Austrian
+ * entitlements — because that is what they are. Austria's own repair-extension rules
+ * (BGBl. I Nr. 60/2026) take effect 2026-10-01, which is why this text does not claim
+ * them as already-applicable Austrian law.
+ */
+function German({ channel, market }: { channel: string; market: GermanMarket }) {
+	const withdrawalLink = (
+		<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>{market.withdrawalTerm}</Link>
+	);
+
+	return (
+		<>
+			<p>
+				Sie möchten einen Artikel zurückgeben oder haben einen Mangel entdeckt? Hier finden Sie den passenden
+				Ablauf.{" "}
+				<strong>
+					Eine Rückgabe ohne Angabe von Gründen und eine Reklamation wegen eines Mangels sind zwei
+					unterschiedliche Vorgänge.
+				</strong>{" "}
+				Insbesondere bei den Rücksendekosten gelten unterschiedliche Regeln.
+			</p>
+
+			<h2>Ich möchte Ware ohne Angabe von Gründen zurückgeben</h2>
+			<p>
+				Als Verbraucher können Sie Ihren Online-Kauf grundsätzlich innerhalb von{" "}
+				<strong>14 Tagen nach Erhalt der Ware</strong> widerrufen. Für Bestellungen, die Sie nach der
+				Anmeldung in Ihrem Kundenkonto aufgegeben haben, verlängern wir diese Frist auf{" "}
+				<strong>30 Tage</strong>. Die Voraussetzungen und Ausnahmen erläutern wir auf der Seite{" "}
+				{withdrawalLink}.
+			</p>
+			<p>
+				Sie können den Widerruf auch vor der Lieferung erklären oder auf einzelne Artikel beschränken. Dafür
+				brauchen Sie weder ein Kundenkonto noch unsere vorherige Genehmigung. Eine Begründung ist nicht
+				erforderlich.
+			</p>
+			<p>
+				Teilen Sie uns eindeutig mit, dass Sie den Kauf ganz oder teilweise widerrufen möchten. Schreiben Sie
+				an <Mail /> oder nutzen Sie die auf der Seite {withdrawalLink} beschriebenen Wege.
+			</p>
+
+			<h3>Rücktransport</h3>
+			<p>
+				Sie können einen eigenen Versanddienstleister wählen oder bei uns ein Angebot für eine Abholung
+				anfragen. Eine kostenpflichtige Abholung beauftragen wir erst, nachdem Sie dem Preis ausdrücklich
+				zugestimmt haben. <strong>Eine Anfrage nach einem Angebot ist noch kein Abholauftrag.</strong>
+			</p>
+			<p>
+				Wenn wir Ihnen keine Abholung angeboten haben, senden Sie die Ware spätestens{" "}
+				<strong>14 Tage nach Ihrer Widerrufserklärung</strong> zurück oder übergeben Sie sie uns. Es genügt,
+				die Sendung innerhalb dieser Frist abzuschicken. Wenn wir eine Abholung angeboten haben, bereiten Sie
+				die Ware wie vereinbart vor.
+			</p>
+			<p>
+				Bei einem Widerruf tragen Sie die unmittelbaren Rücksendekosten, sofern wir Sie vor dem Kauf
+				ordnungsgemäß darüber informiert haben. Bei nicht normal per Post versendbarer Ware müssen Sie vor dem
+				Kauf auch über die Kosten der Rücksendung informiert werden.{" "}
+				<strong>
+					Bei einer berechtigten Reklamation wegen eines Mangels tragen dagegen wir die erforderlichen Kosten.
+				</strong>
+			</p>
+
+			<h3>Erstattung</h3>
+			<p>
+				Wir erstatten die vom Widerruf erfassten Zahlungen innerhalb von{" "}
+				<strong>14 Tagen nach Eingang Ihrer Erklärung</strong>. Bei einem vollständigen Widerruf erstatten wir
+				auch die ursprünglichen Lieferkosten, höchstens jedoch die Kosten der günstigsten Standardlieferung,
+				die wir für diese Bestellung angeboten haben.
+			</p>
+			<p>
+				Die Erstattung erfolgt mit demselben Zahlungsmittel, das Sie beim Kauf verwendet haben, sofern wir
+				nicht ausdrücklich eine andere, für Sie kostenfreie Lösung vereinbaren.
+			</p>
+			<p>
+				Haben wir keine Abholung angeboten, dürfen wir die Erstattung zurückhalten, bis die Ware bei uns
+				eingegangen ist oder Sie ihre Absendung nachgewiesen haben — je nachdem, was früher eintritt. Haben
+				wir die Abholung angeboten, berufen wir uns nicht auf dieses Zurückbehaltungsrecht.
+			</p>
+			<p>Weitere Informationen finden Sie unter {withdrawalLink}.</p>
+
+			<h2>Ich möchte einen mangelhaften Artikel reklamieren</h2>
+			<p>
+				Schreiben Sie an <Mail />. Nennen Sie den Artikel, beschreiben Sie den Mangel und teilen Sie uns mit,
+				wann Sie ihn bemerkt haben. Die Bestellnummer oder eine andere Angabe zum Kauf hilft uns bei der
+				Zuordnung.
+			</p>
+			<p>
+				Ein Foto oder ein kurzes Video kann helfen, ist aber{" "}
+				<strong>keine Voraussetzung für die Annahme einer Reklamation</strong>. Auch die Originalverpackung
+				oder ausschließlich die Originalrechnung verlangen wir nicht. Sie können den Kauf auf andere geeignete
+				Weise nachweisen.
+			</p>
+			<p>
+				Sie können einen Mangel auch schriftlich melden. Bei sperrigen Artikeln stimmen wir die Bereitstellung
+				oder den Transport mit Ihnen ab. Warten Sie mit der Meldung nicht, bis eine Abholung vereinbart ist.
+			</p>
+
+			<h3>Wofür wir haften</h3>
+			<p>
+				Es gelten Ihre gesetzlichen Mängelrechte. Nach dem in unseren AGB vereinbarten slowakischen Recht
+				haften wir bei Verbraucherkäufen für Mängel, die bei Lieferung vorhanden waren und sich innerhalb von{" "}
+				<strong>zwei Jahren ab Lieferung</strong> zeigen. Zeigt sich der Mangel innerhalb der maßgeblichen
+				Haftungsdauer, wird nach diesen Regeln vermutet, dass er bereits bei Lieferung vorhanden war, sofern
+				nicht das Gegenteil nachgewiesen wird oder die Vermutung mit der Art der Ware oder des Mangels
+				unvereinbar ist.
+			</p>
+			<p>
+				Bei ab dem <strong>31. Juli 2026</strong> geschlossenen Verträgen verlängert sich diese Haftungsdauer
+				nach der ersten Mangelbeseitigung durch Reparatur einmalig um <strong>zwölf Monate</strong>. Vor der
+				Mangelbeseitigung informieren wir Sie über die Wahl zwischen Reparatur und Ersatzlieferung und die
+				einschlägige Verlängerung. Für ältere Verträge gelten die zum Vertragsabschluss anwendbaren
+				Bestimmungen.
+			</p>
+			<p>{market.mandatoryLawSentence}</p>
+			<p>
+				Bitte melden Sie einen Mangel möglichst bald nach seiner Entdeckung. Die gesetzlichen Fristen bleiben
+				maßgeblich. Ihre zwingenden Verbraucherrechte machen wir nicht von einer sofortigen Prüfung der Ware
+				oder einer zusätzlichen Mängelanzeige innerhalb von zwei Monaten abhängig.
+			</p>
+			<p>
+				Eine Herstellergarantie kann weitere Rechte gewähren. Sie ersetzt oder beschränkt Ihre gesetzlichen
+				Ansprüche gegen uns nicht.
+			</p>
+
+			<h3>Wie wir die Reklamation bearbeiten</h3>
+			<p>
+				Sie erhalten unverzüglich eine schriftliche Bestätigung Ihrer Mängelanzeige. Darin nennen wir auch die
+				Frist für die Mangelbeseitigung.
+			</p>
+			<p>
+				Zunächst können Sie grundsätzlich zwischen <strong>Reparatur und Ersatzlieferung</strong> wählen. Die
+				gewählte Lösung kann ausgeschlossen sein, wenn sie unmöglich ist oder im Vergleich zur anderen Lösung
+				unverhältnismäßige Kosten verursachen würde. Den Grund erläutern wir Ihnen.
+			</p>
+			<p>
+				Wir sorgen für eine kostenfreie Abhilfe innerhalb angemessener Frist und ohne erhebliche
+				Unannehmlichkeiten für Sie. Für unser Verfahren gilt nach den zugrunde gelegten slowakischen Regeln:
+				grundsätzlich höchstens <strong>30 Tage ab der Mängelanzeige</strong>, es sei denn, ein von uns nicht
+				beeinflussbarer objektiver Grund rechtfertigt eine längere Frist. Einen solchen Grund müssen wir
+				nachweisen. Rechte auf eine schnellere Abhilfe nach zwingendem Verbraucherrecht bleiben unberührt.
+			</p>
+			<p>
+				Unter den gesetzlichen Voraussetzungen können Sie außerdem eine{" "}
+				<strong>Preisminderung oder die Auflösung des Kaufvertrags wegen des Mangels</strong> verlangen — etwa
+				wenn eine ordnungsgemäße Abhilfe ausbleibt, derselbe Mangel trotz Reparatur oder Ersatzlieferung
+				erneut auftritt oder der Mangel besonders schwerwiegend ist. Bei einem nur unerheblichen Mangel
+				besteht dieses Recht auf Vertragsauflösung nicht. Einzelheiten stehen in unseren{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>AGB</Link>.
+			</p>
+			<p>
+				Lehnen wir die Haftung für einen Mangel ab, begründen wir dies schriftlich. Belegt später ein
+				Gutachten oder eine fachliche Stellungnahme einer akkreditierten Person unsere Verantwortung, können
+				Sie den Mangel erneut geltend machen. Die Erstattung zweckmäßig aufgewendeter Kosten richtet sich nach
+				den anwendbaren gesetzlichen Regeln. Dies sind nicht die einzigen zulässigen Beweismittel; Ihre
+				weiteren Rechte bleiben bestehen.
+			</p>
+
+			<h3>Wer den Transport bei einer Reklamation bezahlt</h3>
+			<p>
+				Bei Reparatur oder Ersatzlieferung für einen von uns zu verantwortenden Mangel tragen wir die
+				erforderlichen Kosten der Rücknahme und der erneuten Lieferung. Sind für die Abhilfe der Ausbau einer
+				ordnungsgemäß eingebauten Ware und ein anschließender Einbau erforderlich, übernehmen wir diese
+				Arbeiten oder erstatten die notwendigen Kosten nach den gesetzlichen Regeln.
+			</p>
+
+			<h2>Anschrift für Rücksendungen</h2>
+			<ReturnAddress country={SLOVAKIA_DE} />
+			<p>
+				Legen Sie nach Möglichkeit die Bestellnummer oder die Vorgangsnummer bei. Das erleichtert die
+				Zuordnung. Fehlt die Nummer, entfallen Ihre Rechte dadurch nicht.
+			</p>
+			<p>
+				Sie sind unsicher, welcher Ablauf zu Ihrem Anliegen passt?{" "}
+				<Link href={marketHref(channel, "/kontakt")}>Kontaktieren Sie uns</Link> und schildern Sie kurz, was
+				Sie klären möchten.
+			</p>
+		</>
+	);
+}
+
+export function De({ channel }: { channel: string }) {
+	return <German channel={channel} market={GERMANY} />;
+}
+
+export function DeAt({ channel }: { channel: string }) {
+	return <German channel={channel} market={AUSTRIA} />;
 }

@@ -1,25 +1,28 @@
 import Link from "next/link";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
+import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
 
 const RETURN_ADDRESS = `${companyInfo.legalName}, ${companyInfo.returnAddress}, Slovenská republika`;
+const RETURN_ADDRESS_DE = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_DE}`;
 
-function Adr({ lang }: { lang: "sk" | "cs" }) {
+function Adr({ lang }: { lang: "sk" | "cs" | "de" }) {
 	return (
 		<p>
 			<strong>
-				Slovenská obchodná inšpekcia — {lang === "sk" ? "alternatívne" : "alternativní"} riešenie sporov
+				Slovenská obchodná inšpekcia —{" "}
+				{lang === "sk" ? "alternatívne" : lang === "cs" ? "alternativní" : "alternative"} riešenie sporov
 			</strong>
 			<br />
 			Ústredný inšpektorát, Odbor pre medzinárodné vzťahy a alternatívne riešenie spotrebiteľských sporov
 			<br />
 			Bajkalská 21/A, p. p. 29, 827 99 Bratislava 27
 			<br />
-			E-mail: <a href="mailto:ars@soi.sk">ars@soi.sk</a> {lang === "sk" ? "alebo" : "nebo"}{" "}
-			<a href="mailto:adr@soi.sk">adr@soi.sk</a>
+			E-mail: <a href="mailto:ars@soi.sk">ars@soi.sk</a>{" "}
+			{lang === "sk" ? "alebo" : lang === "cs" ? "nebo" : "oder"} <a href="mailto:adr@soi.sk">adr@soi.sk</a>
 			<br />
 			<a
 				href="https://www.soi.sk/alternativne-riesenie-spotrebitelskych-sporov"
@@ -28,7 +31,9 @@ function Adr({ lang }: { lang: "sk" | "cs" }) {
 			>
 				{lang === "sk"
 					? "Informácie a postup podania na stránke SOI"
-					: "Informace a postup podání na stránce SOI"}
+					: lang === "cs"
+						? "Informace a postup podání na stránce SOI"
+						: "Informationen zum Verfahren bei der SOI"}
 			</a>
 		</p>
 	);
@@ -797,4 +802,495 @@ export function Cs({ channel }: { channel: string }) {
 			</p>
 		</>
 	);
+}
+
+/**
+ * The German body, shared by both German-speaking markets.
+ *
+ * Three things here are deliberate and should survive a later edit.
+ *
+ * **§ 4 states prepayment and rules out cash on delivery.** That is the 2026-09-08
+ * decision for every market outside Slovakia, and it is stated in the terms as well as
+ * on the shipping page because it is a term of the contract, not just an FYI.
+ *
+ * **The `WITHDRAWAL_TERMS_FUNCTION` slot renders its `previewNotActivated` variant.**
+ * Returns V2 accepts `market: "SK"` only, so there is no online function on these
+ * markets yet. The clause therefore describes the e-mail and postal routes and says the
+ * preview is not an order surface for new consumer contracts. The `active` wording,
+ * which describes the function and where to find it, belongs to the release that turns
+ * the function on — writing it now would put a promise into terms that customers accept.
+ *
+ * **Everything about deadlines and the 12-month post-repair extension is attributed to
+ * the agreed Slovak law**, not offered as local German or Austrian entitlement, with the
+ * Art. 6 Rome I carve-out stated per market via `market.mandatoryLawSentence`.
+ */
+function German({ channel, market }: { channel: string; market: GermanMarket }) {
+	return (
+		<>
+			<p>
+				Diese Bedingungen gelten für den Kauf von Waren im Onlineshop MAKY.STORE. Für Ihre Bestellung ist die
+				bei Vertragsabschluss geltende Fassung maßgeblich.
+			</p>
+			<p>
+				<strong>
+					Wir sind ein slowakischer Verkäufer. Die nachfolgende Wahl slowakischen Rechts nimmt Ihnen nicht den
+					Schutz zwingender Verbraucherschutzbestimmungen an Ihrem gewöhnlichen Aufenthaltsort.
+				</strong>{" "}
+				Für Verbraucher mit gewöhnlichem Aufenthalt in {market.countryName} bleiben diese Schutzvorschriften
+				unter den Voraussetzungen von Artikel 6 der Rom-I-Verordnung uneingeschränkt anwendbar.
+			</p>
+
+			<h2>1. Ihr Vertragspartner</h2>
+			<p>
+				<strong>{companyInfo.legalName}</strong>
+				<br />
+				Firmensitz: {companyInfo.street}, {companyInfo.city}, {SLOVAKIA_DE}
+				<br />
+				Unternehmensidentifikationsnummer (IČO): {companyInfo.ico}
+				<br />
+				Slowakische Steuernummer (DIČ): {companyInfo.dic}
+				<br />
+				Umsatzsteuer-Identifikationsnummer: {companyInfo.icDph}
+			</p>
+			<p>
+				Die Gesellschaft ist in der Slowakei umsatzsteuerlich registriert und im Handelsregister des
+				Stadtgerichts Bratislava III (Mestský súd Bratislava III), Abteilung Sro, unter der Eintragsnummer
+				200804/B eingetragen.
+			</p>
+			<p>
+				E-Mail: <Mail />
+				<br />
+				Telefon: <Phone />
+			</p>
+			<p>
+				<strong>Anschrift für Rücksendungen, Reklamationen und damit zusammenhängende Mitteilungen:</strong>{" "}
+				{RETURN_ADDRESS_DE}.
+			</p>
+			<p>Mit „wir“ ist in diesen Bedingungen der Verkäufer gemeint, mit „Sie“ der Käufer.</p>
+			<p>
+				Verbraucher ist eine natürliche Person, die den Vertrag zu einem Zweck abschließt, der nicht ihrer
+				gewerblichen oder beruflichen Tätigkeit zuzurechnen ist. Entscheidend sind die tatsächliche Stellung
+				des Käufers und der Zweck des Kaufs. Die nachfolgend ausdrücklich für Verbraucher beschriebenen
+				gesetzlichen Rechte richten sich danach.
+			</p>
+
+			<h2>2. Bestellung und Vertragsschluss</h2>
+			<p>
+				Sie können auch ohne Registrierung bestellen. Legen Sie die gewünschten Artikel in den Warenkorb,
+				geben Sie Ihre Kontakt-, Rechnungs- und Lieferdaten ein und wählen Sie eine der angebotenen Versand-
+				und Zahlungsarten.
+			</p>
+			<p>
+				Vor dem verbindlichen Abschluss können Sie die Artikel und Ihre Angaben prüfen und korrigieren. Wir
+				zeigen Ihnen den Gesamtbetrag einschließlich Versand und etwaiger weiterer, zuvor mitgeteilter Kosten.
+			</p>
+			<p>
+				Mit einem Klick auf <strong>„Zahlungspflichtig bestellen“</strong> oder eine ebenso eindeutige
+				Schaltfläche geben Sie eine zahlungspflichtige Bestellung ab.
+			</p>
+			<p>
+				Der Kaufvertrag kommt zustande, wenn Ihnen unsere Bestätigung der Annahme Ihrer Bestellung per E-Mail
+				zugeht. Sie enthält die Bestellübersicht, die vereinbarten Bedingungen und diese AGB auf einem
+				dauerhaften Datenträger. Eine gesonderte Zahlungsmitteilung des Zahlungsdienstleisters ist für sich
+				genommen keine Annahmebestätigung des Verkäufers.
+			</p>
+			<p>
+				Für Bestellungen in der deutschen Sprachversion schließen wir den Vertrag in{" "}
+				<strong>deutscher Sprache</strong>. Wir speichern die Vertragsdaten zur Abwicklung des Kaufs und zur
+				Erfüllung gesetzlicher Pflichten. Sie können die Bestellbestätigung und die beigefügten Dokumente
+				speichern. Eine Kopie der Angaben zu Ihrer eigenen Bestellung erhalten Sie auf Anfrage per E-Mail.
+			</p>
+			<p>
+				Für die Kommunikation nutzen Sie Ihren Internet- oder Telefonanschluss zu den Bedingungen Ihres
+				Anbieters. Für den Vertragsschluss im Fernabsatz berechnen wir keine besondere Kommunikationsgebühr.
+			</p>
+
+			<h2>3. Produkte und bestimmungsgemäße Verwendung</h2>
+			<p>
+				Eigenschaften, Lieferumfang, Verwendungszweck und mögliche Einschränkungen finden Sie beim jeweiligen
+				Produkt. Bei Montagesets sind auch die Fahrzeugkonfiguration und die Zusammensetzung des konkreten
+				Sets wichtig.
+			</p>
+			<p>
+				Sie sind unsicher, ob ein Artikel geeignet ist? Fragen Sie uns bitte vor der Bestellung. Diese
+				Empfehlung schränkt unsere Verantwortung für richtige Produktangaben und für die vertragsgemäße
+				Beschaffenheit der gelieferten Ware nicht ein.
+			</p>
+			<p>
+				Der Hinweis <strong>„Auf Bestellung“</strong> bedeutet, dass wir den Artikel beim Lieferanten
+				beschaffen. Er bedeutet für sich genommen weder eine individuelle Anfertigung noch den Ausschluss des
+				gesetzlichen Widerrufsrechts.
+			</p>
+
+			<h2>4. Preise und Zahlung</h2>
+			<p>
+				Die für Verbraucher angezeigten Preise sind Endpreise einschließlich der anwendbaren Umsatzsteuer und
+				sonstiger Steuern. Versandkosten werden gesondert ausgewiesen. Sie sehen diese zusammen mit dem
+				Gesamtbetrag, bevor Sie die Bestellung verbindlich abschicken. Kostenpflichtige Zusatzleistungen fügen
+				wir nicht ohne Ihre ausdrückliche Zustimmung hinzu.
+			</p>
+			<p>
+				Die Preise für {market.countryName} werden in <strong>Euro (EUR)</strong> angegeben. Maßgeblich ist
+				der bei Vertragsschluss bestätigte Preis. Eine spätere Preisänderung im Shop ändert den Preis eines
+				bereits geschlossenen Vertrags nicht.
+			</p>
+			<p>
+				Bestellungen mit Lieferung nach {market.countryName} bezahlen Sie im Voraus über{" "}
+				<strong>Stripe</strong>. Die verfügbaren Zahlungsarten sehen Sie im Bestellprozess. Eine Zahlung per
+				Nachnahme bieten wir nicht an. Wir versenden Ihre Bestellung nach Eingang der Zahlung und entsprechend
+				der angegebenen Warenverfügbarkeit. Vollständige Kartendaten verarbeitet der Zahlungsdienstleister;
+				wir speichern diese nicht und haben darauf keinen Zugriff.
+			</p>
+			<p>
+				Können wir eine Bestellung nicht annehmen, obwohl bereits eine Zahlung eingegangen ist, erstatten wir
+				den erhaltenen Betrag unverzüglich. Nach Vertragsschluss dürfen wir die vereinbarten Bedingungen nicht
+				allein deshalb einseitig ändern, weil unser Lieferant seine Preise oder die Verfügbarkeit geändert
+				hat.
+			</p>
+
+			<h2>5. Lieferung und Annahme der Sendung</h2>
+			<p>
+				Für den Versand arbeiten wir mit <strong>FedEx und Slovenská pošta (Slowakische Post)</strong>{" "}
+				zusammen. Verfügbare Versandarten hängen vom Inhalt der Bestellung, von Abmessungen und Gewicht der
+				Sendung sowie von der Lieferadresse ab. Die für Ihre konkrete Bestellung verfügbaren Möglichkeiten und
+				Kosten sehen Sie im Bestellprozess.
+			</p>
+			<p>
+				Wir informieren Sie vor Vertragsabschluss über die Lieferung. Soweit wir keinen anderen Termin
+				vereinbaren, liefern wir ohne unnötige Verzögerung, spätestens innerhalb von{" "}
+				<strong>30 Tagen nach Vertragsschluss</strong>. Ein konkret vereinbarter Liefertermin geht dieser
+				allgemeinen Regel vor.
+			</p>
+			<p>
+				Halten wir den vereinbarten Termin nicht ein, können Sie uns eine angemessene zusätzliche Lieferfrist
+				setzen und nach deren erfolglosem Ablauf vom Vertrag zurücktreten. Eine zusätzliche Frist ist
+				insbesondere nicht erforderlich, wenn wir die Lieferung verweigern oder wenn eine rechtzeitige
+				Lieferung aufgrund der Umstände wesentlich war oder Sie uns vor Vertragsschluss ausdrücklich auf diese
+				Bedeutung hingewiesen haben.
+			</p>
+			<p>
+				Bei einer Lieferung durch einen von uns angebotenen Versanddienstleister geht die Gefahr des
+				zufälligen Verlusts oder der Beschädigung erst auf Sie als Verbraucher über, wenn Sie oder eine von
+				Ihnen benannte Person die Ware erhalten. Eine gesetzliche Ausnahme gilt, wenn Sie selbst einen
+				Beförderer beauftragen, den wir Ihnen nicht angeboten haben. Das Eigentum geht nach den anwendbaren
+				Regeln des slowakischen Bürgerlichen Gesetzbuchs mit der Lieferung auf den Verbraucher über.
+			</p>
+			<p>
+				Prüfen Sie die Sendung nach Möglichkeit bei der Annahme und dokumentieren Sie sichtbare Schäden. Ein
+				fehlender Schadensvermerk des Beförderers oder ein fehlendes Foto schließen Ihre gesetzlichen
+				Mängelrechte nicht automatisch aus. Es gelten die gesetzlichen Fristen für die Geltendmachung von
+				Mängeln.
+			</p>
+
+			<h2>6. Widerruf ohne Angabe von Gründen</h2>
+			<h3>Frist und Fristbeginn</h3>
+			<p>
+				Verbraucher können einen im Fernabsatz geschlossenen Kauf grundsätzlich innerhalb von{" "}
+				<strong>14 Tagen nach Erhalt der Ware</strong> ohne Angabe von Gründen widerrufen. Für Kunden, die
+				ihre Bestellung nach der Anmeldung in ihrem Kundenkonto aufgegeben haben, verlängern wir die Frist auf{" "}
+				<strong>30 Tage</strong>. Für diese Verlängerung gelten derselbe Rückgabeablauf und dieselben
+				nachfolgenden Bedingungen; Ihre gesetzlichen Rechte bleiben unberührt.
+				{market.terminologyNote ? ` ${market.terminologyNote}` : ""}
+			</p>
+			<p>
+				Die Frist beginnt am Tag nach dem Erhalt durch Sie oder eine von Ihnen benannte Person, die nicht der
+				Beförderer ist. Werden mehrere Waren einer einheitlichen Bestellung getrennt geliefert, zählt der
+				Erhalt der letzten Ware. Bei einer Lieferung in mehreren Teilsendungen oder Stücken zählt der Erhalt
+				der letzten Teilsendung oder des letzten Stücks. Bei einer vereinbarten regelmäßigen Warenlieferung
+				über einen festgelegten Zeitraum zählt die erste Lieferung.
+			</p>
+			<p>
+				Sie können den Widerruf auch vor der Lieferung erklären oder auf einzelne Artikel beschränken.
+				Gesetzliche Regeln zur Verlängerung der Frist bei fehlender Belehrung bleiben bestehen. Fehlt die
+				vorgeschriebene Belehrung, verlängert sich die gesetzliche Frist nach den einschlägigen Vorschriften
+				um bis zu zwölf Monate über die reguläre Frist hinaus. Holen wir die Belehrung in dieser Zeit nach,
+				beginnt mit ihrem Zugang die gesetzliche 14-tägige Frist.
+			</p>
+
+			<h3>So erklären Sie den Widerruf</h3>
+			<p>
+				Sie können uns eine eindeutige Erklärung per E-Mail an <Mail /> oder per Post an {RETURN_ADDRESS_DE}{" "}
+				übermitteln. Auf der Seite{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>{market.withdrawalTerm}</Link> finden Sie
+				weitere Informationen und ein Musterformular.
+			</p>
+			<p>
+				Die Nutzung des Musterformulars ist freiwillig. Ihre Erklärung muss erkennen lassen, wer widerruft,
+				auf welchen Vertrag sie sich bezieht und welche Artikel sie umfasst. Eine Begründung und unsere
+				vorherige Genehmigung sind nicht erforderlich.
+			</p>
+			<p>
+				Die Online-Funktion dieser Ländervorschau ist noch nicht aktiviert. Hinweise zu den verfügbaren Wegen
+				finden Sie auf der Seite{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>{market.withdrawalTerm}</Link>. Die Vorschau
+				darf nicht als fertige Bestelloberfläche für neue Verbraucherverträge verwendet werden.
+			</p>
+			<p>Zur Wahrung der Frist genügt es, die Erklärung spätestens am letzten Tag der Frist abzusenden.</p>
+
+			<h3>Rücksendung und Abholung</h3>
+			<p>
+				Haben wir Ihnen keine Abholung angeboten, senden Sie die Ware spätestens innerhalb von{" "}
+				<strong>14 Tagen nach Ihrer Widerrufserklärung</strong> an {companyInfo.returnAddress}, {SLOVAKIA_DE},
+				zurück oder übergeben Sie sie dort. Das rechtzeitige Absenden genügt. Haben wir eine Abholung
+				angeboten, erfolgt die Bereitstellung nach der entsprechenden Vereinbarung.
+			</p>
+			<p>
+				Sie dürfen einen eigenen Versanddienstleister beauftragen, ohne zuvor unsere Genehmigung einzuholen.
+				Alternativ können Sie ein Angebot für eine Abholung anfragen. Den Preis und den vorgeschlagenen Ablauf
+				teilen wir Ihnen vorab mit. Eine kostenpflichtige Abholung beauftragen wir erst nach Ihrer
+				ausdrücklichen Zustimmung. Die bloße Anfrage nach einem Angebot ist weder ein Abholauftrag noch die
+				Annahme eines kostenpflichtigen Angebots.
+			</p>
+			<p>
+				Die unmittelbaren Rücksendekosten tragen Sie, sofern wir Sie darüber vor Vertragsabschluss
+				ordnungsgemäß informiert haben. Kann die Ware aufgrund ihrer Beschaffenheit nicht auf dem normalen
+				Postweg zurückgesendet werden, erhalten Sie vor Vertragsschluss auch die Information über die
+				Rücksendekosten. Haben wir diese Informationspflicht nicht erfüllt oder übernehmen wir die Kosten
+				selbst, müssen Sie diese nicht tragen. Ein späteres Abholangebot ersetzt eine fehlende vorvertragliche
+				Information nicht.
+			</p>
+			<p>
+				Senden Sie das zur Ware gehörende Zubehör mit zurück und verpacken Sie die Ware transportsicher.
+				Originalverpackung, Originalrechnung und eine von uns vergebene Vorgangsnummer sind keine allgemeinen
+				Voraussetzungen für einen wirksamen Widerruf.
+			</p>
+
+			<h3>Erstattung</h3>
+			<p>
+				Wir erstatten die vom Widerruf erfassten Zahlungen innerhalb von{" "}
+				<strong>14 Tagen nach Eingang Ihrer Erklärung</strong>. Bei einem vollständigen Widerruf erstatten wir
+				auch die ursprünglichen Lieferkosten, höchstens jedoch die Kosten der günstigsten Standardlieferung,
+				die wir für diese Bestellung angeboten haben. Einen Aufpreis für eine von Ihnen ausdrücklich gewählte
+				teurere Lieferung müssen wir nicht erstatten.
+			</p>
+			<p>
+				Bei einem teilweisen Widerruf erfolgt die Erstattung im entsprechenden Umfang. Wir berechnen Ihnen
+				wegen des teilweisen Widerrufs nicht nachträglich zusätzliche Versand-, Liefer- oder sonstige
+				Gebühren.
+			</p>
+			<p>
+				Wir verwenden dasselbe Zahlungsmittel wie beim Kauf, sofern Sie nicht ausdrücklich einer anderen, für
+				Sie kostenfreien Lösung zustimmen. Einen Einkaufsgutschein müssen Sie nicht anstelle einer
+				Geldrückzahlung akzeptieren.
+			</p>
+			<p>
+				Haben wir keine Abholung angeboten, dürfen wir die Erstattung zurückhalten, bis wir die Ware erhalten
+				haben oder Sie ihre Absendung nachgewiesen haben — je nachdem, was früher eintritt. Haben wir eine
+				Abholung angeboten, gilt dieses Zurückbehaltungsrecht nicht.
+			</p>
+
+			<h3>Wertverlust und Ausnahmen</h3>
+			<p>
+				Sie können für einen Wertverlust verantwortlich sein, der auf einen Umgang mit der Ware zurückzuführen
+				ist, der zur Prüfung ihrer Beschaffenheit, Eigenschaften und Funktionsweise nicht notwendig war.
+				Voraussetzung ist eine ordnungsgemäße Belehrung über das Widerrufsrecht. Das Öffnen der Verpackung
+				oder eine angemessene Prüfung führen für sich genommen nicht zum Verlust dieses Rechts.
+			</p>
+			<p>
+				Wir berechnen keine pauschale Rückgabe- oder Auspackgebühr. Einen Anspruch wegen eines Wertverlusts
+				müssen wir konkret begründen. Wir rechnen aus dem Widerruf entstandene Forderungen nicht einseitig
+				gegen Ihre Erstattungsansprüche auf.
+			</p>
+			<p>
+				Kein Widerrufsrecht besteht insbesondere bei Waren, die tatsächlich nach Ihren individuellen Vorgaben
+				angefertigt oder eindeutig auf Ihre persönlichen Bedürfnisse zugeschnitten werden. Eine gesetzliche
+				Ausnahme kann auch für versiegelte Waren gelten, die aus Gesundheits- oder Hygienegründen nicht zur
+				Rückgabe geeignet sind, wenn die Versiegelung nach der Lieferung entfernt wurde. Wir wenden eine
+				Ausnahme nur an, wenn ihre gesetzlichen Voraussetzungen erfüllt sind.
+			</p>
+			<p>
+				<strong>
+					Ein normaler Artikel, den wir beim Lieferanten bestellen, oder ein Standardset für ein bestimmtes
+					Fahrzeug ist allein deshalb keine individuelle Anfertigung.
+				</strong>
+			</p>
+
+			<h2>7. Gesetzliche Mängelrechte und Reklamationen</h2>
+			<h3>Gesetzliche Haftung</h3>
+			<p>
+				Die folgenden Regeln beschreiben die Rechte aus dem vereinbarten slowakischen Recht.{" "}
+				{market.mandatoryLawSentence}
+			</p>
+			<p>
+				Bei Verbraucherkäufen haften wir für Mängel, die bei Lieferung vorhanden waren und sich innerhalb von{" "}
+				<strong>zwei Jahren ab Lieferung</strong> zeigen. Bei Waren mit digitalen Elementen und einer
+				vereinbarten fortlaufenden Bereitstellung digitaler Inhalte oder Dienste haften wir für deren
+				Vertragsmäßigkeit während des gesamten vereinbarten Zeitraums, mindestens jedoch zwei Jahre ab
+				Lieferung. Die Pflichten zur Bereitstellung notwendiger Aktualisierungen richten sich nach den
+				anwendbaren gesetzlichen Bestimmungen.
+			</p>
+			<p>
+				Bei ab dem <strong>31. Juli 2026</strong> geschlossenen Verträgen verlängert sich die Haftungsdauer
+				nach der ersten Mangelbeseitigung durch Reparatur nach slowakischem Recht einmalig um{" "}
+				<strong>zwölf Monate</strong>, unabhängig von der Zahl späterer Reparaturen. Für ältere Verträge
+				gelten die bei ihrem Abschluss anwendbaren Vorschriften. Gesetzliche Regeln zur Hemmung, zum Neubeginn
+				und zur Verlängerung von Fristen bleiben unberührt.
+			</p>
+			<p>
+				Zeigt sich ein Mangel innerhalb der maßgeblichen Haftungsdauer, wird nach den slowakischen Regeln
+				vermutet, dass er bereits bei Lieferung vorhanden war, sofern nicht das Gegenteil nachgewiesen wird
+				oder die Vermutung mit der Art der Ware oder des Mangels unvereinbar ist.
+			</p>
+			<p>
+				Wir haften auch für eine fehlerhafte Montage, die wir als Teil des Vertrags vorgenommen oder
+				veranlasst haben, und für eine fehlerhafte Montage durch den Kunden, wenn sie auf Mängeln der von uns
+				bereitgestellten Anleitung beruht. Ein der Ware entsprechender normaler Verschleiß oder ein vom Kunden
+				verursachter Schaden ist für sich genommen kein von uns zu vertretender Mangel. Jeder Fall wird nach
+				seinen tatsächlichen Umständen und den gesetzlichen Regeln beurteilt.
+			</p>
+
+			<h3>Einen Mangel melden</h3>
+			<p>
+				Bitte melden Sie einen Mangel möglichst bald nach seiner Entdeckung, zum Beispiel per E-Mail an{" "}
+				<Mail /> oder schriftlich an {companyInfo.returnAddress}, {SLOVAKIA_DE}. Auch andere gesetzlich
+				zulässige Wege bleiben möglich. Ihre zwingenden Verbraucherrechte machen wir nicht von einer
+				sofortigen Warenprüfung oder einer zusätzlichen Mängelanzeige innerhalb von zwei Monaten abhängig. Es
+				gelten die maßgeblichen gesetzlichen Fristen.
+			</p>
+			<p>
+				Beschreiben Sie den Artikel, den Mangel und den Zeitpunkt, an dem er aufgetreten ist. Eine Angabe, mit
+				der wir den Kauf zuordnen können, hilft uns. Bestellnummer, Fotos oder Videos erleichtern die
+				Bearbeitung, sind aber nicht die einzig zulässigen Nachweise. Originalverpackung und ausschließlich
+				die Originalrechnung verlangen wir nicht.
+			</p>
+			<p>
+				Sie erhalten unverzüglich eine schriftliche Bestätigung der Mängelanzeige. Darin nennen wir die Frist
+				für die Mangelbeseitigung.
+			</p>
+
+			<h3>Reparatur oder Ersatzlieferung</h3>
+			<p>
+				Grundsätzlich können Sie zwischen Reparatur und Ersatzlieferung wählen. Die gewählte Abhilfe darf
+				abgelehnt werden, wenn sie unmöglich oder im Vergleich zur anderen Abhilfe mit unverhältnismäßigen
+				Kosten verbunden ist. Über Ihre Wahlmöglichkeit und die einschlägige Verlängerung der Haftungsdauer
+				nach einer Reparatur informieren wir Sie vor der Abhilfe.
+			</p>
+			<p>
+				Die Reparatur oder Ersatzlieferung erfolgt kostenlos, innerhalb angemessener Zeit und ohne erhebliche
+				Unannehmlichkeiten für Sie. Nach den hier zugrunde gelegten slowakischen Regeln darf die Frist{" "}
+				<strong>30 Tage ab der Mängelanzeige</strong> nicht überschreiten, es sei denn, ein objektiver, von
+				uns nicht beeinflussbarer Grund rechtfertigt eine längere Frist. Einen solchen Grund müssen wir
+				nachweisen. Diese Regel erlaubt uns nicht, eine nach den Umständen gebotene frühere Abhilfe
+				hinauszuschieben oder weitergehende zwingende Rechte einzuschränken.
+			</p>
+			<p>
+				Wir tragen die notwendigen Kosten der Rücknahme und der Lieferung der reparierten oder neuen Ware.
+				Müssen ordnungsgemäß eingebaute Waren zur Abhilfe ausgebaut und anschließend wieder eingebaut werden,
+				übernehmen wir die erforderlichen Arbeiten oder vereinbaren, dass Sie diese auf unsere Kosten und
+				unser Risiko veranlassen. Für die gewöhnliche Nutzung vor einer Ersatzlieferung verlangen wir keine
+				Nutzungsentschädigung.
+			</p>
+
+			<h3>Preisminderung oder Vertragsauflösung wegen eines Mangels</h3>
+			<p>
+				Unter den gesetzlichen Voraussetzungen können Sie eine angemessene Preisminderung oder die Auflösung
+				des Vertrags wegen des Mangels verlangen. Dies kommt insbesondere in Betracht, wenn die Abhilfe
+				ausbleibt oder verweigert wird, gesetzliche Pflichten bei Rücknahme, Aus- oder Einbau nicht erfüllt
+				werden, ein Mangel trotz Reparatur oder Ersatzlieferung erneut auftritt, der Mangel besonders
+				schwerwiegend ist oder erkennbar keine ordnungsgemäße und rechtzeitige Abhilfe erfolgen wird. Die
+				Umstände des Einzelfalls sind maßgeblich.
+			</p>
+			<p>
+				Die Minderung richtet sich nach dem Wertunterschied zwischen mangelhafter und mangelfreier Ware. Ein
+				nur geringfügiger Mangel berechtigt grundsätzlich nicht zur Auflösung des Vertrags; die
+				Geringfügigkeit ist vom Verkäufer nachzuweisen. Ob ein vom Kunden verursachter Umstand einen Anspruch
+				ausschließt, beurteilt sich nach den anwendbaren gesetzlichen Voraussetzungen. Eine bloße
+				Mitverursachung führt nicht nach diesen AGB pauschal zum Verlust sämtlicher Rechte.
+			</p>
+			<p>
+				Umfasst die Bestellung mehrere Artikel, betrifft die Vertragsauflösung grundsätzlich den mangelhaften
+				Artikel. Sie kann weitere Artikel erfassen, wenn Ihnen nicht vernünftigerweise zugemutet werden kann,
+				diese ohne den mangelhaften Artikel zu behalten.
+			</p>
+			<p>
+				Bei einer berechtigten Vertragsauflösung wegen eines Mangels tragen wir die Rücksendekosten. Den
+				Kaufpreis erstatten wir innerhalb von{" "}
+				<strong>14 Tagen ab Rückerhalt oder ab dem Nachweis der Absendung</strong>, je nachdem, was früher
+				eintritt. Wir verwenden dasselbe Zahlungsmittel, sofern Sie nicht ausdrücklich einer anderen, für Sie
+				kostenfreien Lösung zustimmen. Für die gewöhnliche Nutzung oder Abnutzung bis zu dieser
+				Vertragsauflösung verlangen wir keine Entschädigung.
+			</p>
+
+			<h3>Ablehnung einer Reklamation und Herstellergarantie</h3>
+			<p>
+				Lehnen wir die Haftung ab, teilen wir Ihnen die Gründe schriftlich mit. Ergibt sich anschließend aus
+				einem Sachverständigengutachten oder der fachlichen Stellungnahme einer entsprechend akkreditierten
+				Person unsere Verantwortung, können Sie den Mangel erneut geltend machen; nach den einschlägigen
+				slowakischen Regeln können wir diese so nachgewiesene Verantwortung nicht erneut ablehnen. Die
+				Erstattung notwendiger Aufwendungen richtet sich nach dem Gesetz. Andere zulässige Beweismittel und
+				Ihre weiteren Rechte bleiben unberührt.
+			</p>
+			<p>
+				Eine Garantie des Herstellers oder Verkäufers kann zusätzliche Rechte gewähren. Ihre Laufzeit und
+				Bedingungen beschränken die gesetzlichen Mängelrechte nicht. Etwaige Schadensersatzansprüche bleiben
+				ebenfalls bestehen.
+			</p>
+
+			<h2>8. Beschwerden und außergerichtliche Streitbeilegung</h2>
+			<p>
+				Sind Sie mit der Bearbeitung Ihrer Reklamation nicht zufrieden oder sehen Sie Ihre Rechte verletzt,
+				schreiben Sie uns an <Mail /> und bitten Sie um Abhilfe.
+			</p>
+			<p>
+				Lehnen wir die Abhilfe ab oder antworten wir innerhalb von <strong>30 Tagen</strong> nicht, können Sie
+				sich nach den anwendbaren Regeln an eine zuständige Stelle zur alternativen Beilegung von
+				Verbraucherstreitigkeiten wenden. Für Streitigkeiten aus Warenkäufen gehört dazu die Slowakische
+				Handelsinspektion (SOI). Weitere zuständige Stellen führt das Wirtschaftsministerium der Slowakischen
+				Republik in seinem Verzeichnis.
+			</p>
+			<Adr lang="de" />
+			<p>
+				Das von der SOI durchgeführte Verfahren ist für Verbraucher kostenlos. Soweit für uns eine gesetzliche
+				Pflicht zur Mitwirkung besteht, erfüllen wir diese. Das Verfahren beschränkt Ihr Recht, ein Gericht
+				anzurufen, nicht.
+			</p>
+			<p>{market.consumerCentre}</p>
+
+			<h2>9. Personenbezogene Daten</h2>
+			<p>
+				Wie und zu welchen Zwecken wir personenbezogene Daten verarbeiten, erläutern wir in unseren{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Datenschutzhinweisen</Link>.
+				Informationen über Cookies und ähnliche Technologien finden Sie unter{" "}
+				<Link href={marketHref(channel, "/cookies")}>Cookie-Einstellungen und Hinweise</Link>.
+			</p>
+			<p>
+				Weder Kauf noch Reklamation oder Widerruf setzen eine Einwilligung in Marketing oder optionale Cookies
+				voraus.
+			</p>
+
+			<h2>10. Schlussbestimmungen</h2>
+			<p>
+				Es gilt das Recht der Slowakischen Republik, insbesondere das slowakische Bürgerliche Gesetzbuch sowie
+				die Gesetze Nr. 108/2024 Z. z. über Verbraucherschutz und Nr. 22/2004 Z. z. über elektronischen
+				Geschäftsverkehr.{" "}
+				<strong>
+					Diese Rechtswahl entzieht Ihnen nicht den Schutz zwingender Vorschriften des Staates Ihres
+					gewöhnlichen Aufenthalts, soweit Artikel 6 der Rom-I-Verordnung diesen Schutz vorsieht.
+				</strong>{" "}
+				Sie begründet auch keinen ausschließlichen Gerichtsstand in Bratislava. Die gesetzlichen
+				Zuständigkeitsregeln bleiben unberührt.
+			</p>
+			<p>
+				Aufsichtsbehörde am Sitz des Verkäufers ist die{" "}
+				<strong>
+					Slovenská obchodná inšpekcia, {companyInfo.supervisoryAuthority.department},{" "}
+					{companyInfo.supervisoryAuthority.address}, {SLOVAKIA_DE}
+				</strong>
+				. Befugnisse anderer gesetzlich zuständiger Stellen bleiben unberührt.
+			</p>
+			<p>
+				Änderungen dieser Bedingungen gelten für Verträge, die nach ihrem Inkrafttreten geschlossen werden.
+				Bereits geschlossene Verträge richten sich weiterhin nach der dafür maßgeblichen Fassung und
+				zwingendem Recht. Keine Regelung dieser AGB schränkt Rechte ein, die Verbrauchern zwingend zustehen.
+			</p>
+		</>
+	);
+}
+
+export function De({ channel }: { channel: string }) {
+	return <German channel={channel} market={GERMANY} />;
+}
+
+export function DeAt({ channel }: { channel: string }) {
+	return <German channel={channel} market={AUSTRIA} />;
 }

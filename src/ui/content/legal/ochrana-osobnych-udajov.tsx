@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
+import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 
@@ -22,57 +23,68 @@ const RECIPIENTS = [
 		purpose: {
 			sk: "Katalóg, košík, objednávky a zákaznícky účet. Vlastná inštancia.",
 			cs: "Katalog, košík, objednávky a zákaznický účet. Vlastní instance.",
+			de: "Katalog, Warenkorb, Bestellungen und Kundenkonto. Eigene Instanz.",
 		},
-		basis: { sk: "Nevyhnutné pre zmluvu", cs: "Nezbytné pro smlouvu" },
+		basis: { sk: "Nevyhnutné pre zmluvu", cs: "Nezbytné pro smlouvu", de: "Für den Vertrag erforderlich" },
 	},
 	{
 		service: "Payload CMS (cms.maky.store)",
 		purpose: {
 			sk: "Redakčný obsah, záznam o odstúpení od zmluvy a jeho potvrdenie. Vlastná inštancia.",
 			cs: "Redakční obsah, záznam o odstoupení od smlouvy a jeho potvrzení. Vlastní instance.",
+			de: "Redaktionelle Inhalte, Aufzeichnung des Widerrufs und dessen Bestätigung. Eigene Instanz.",
 		},
-		basis: { sk: "Zmluva a zákonná povinnosť", cs: "Smlouva a zákonná povinnost" },
+		basis: {
+			sk: "Zmluva a zákonná povinnosť",
+			cs: "Smlouva a zákonná povinnost",
+			de: "Vertrag und rechtliche Verpflichtung",
+		},
 	},
 	{
 		service: "Stripe",
 		purpose: {
 			sk: "Spracovanie online platby, vrátenie platby a kontrola podvodov.",
 			cs: "Zpracování online platby, vrácení platby a kontrola podvodů.",
+			de: "Abwicklung der Online-Zahlung, Erstattungen und Betrugsprüfung.",
 		},
-		basis: { sk: "Nevyhnutné pre zmluvu", cs: "Nezbytné pro smlouvu" },
+		basis: { sk: "Nevyhnutné pre zmluvu", cs: "Nezbytné pro smlouvu", de: "Für den Vertrag erforderlich" },
 	},
 	{
 		service: "FedEx, Slovenská pošta",
 		purpose: {
 			sk: "Doručenie zásielky a kontaktovanie príjemcu.",
 			cs: "Doručení zásilky a kontaktování příjemce.",
+			de: "Zustellung der Sendung und Kontakt zum Empfänger.",
 		},
-		basis: { sk: "Nevyhnutné pre zmluvu", cs: "Nezbytné pro smlouvu" },
+		basis: { sk: "Nevyhnutné pre zmluvu", cs: "Nezbytné pro smlouvu", de: "Für den Vertrag erforderlich" },
 	},
 	{
 		service: "Cloudflare",
 		purpose: {
 			sk: "Doručovanie a ochrana webu; Cloudflare Web Analytics meria návštevnosť bez cookies.",
 			cs: "Doručování a ochrana webu; Cloudflare Web Analytics měří návštěvnost bez cookies.",
+			de: "Auslieferung und Schutz der Website; Cloudflare Web Analytics misst Zugriffe ohne Cookies.",
 		},
-		basis: { sk: "Oprávnený záujem", cs: "Oprávněný zájem" },
+		basis: { sk: "Oprávnený záujem", cs: "Oprávněný zájem", de: "Berechtigtes Interesse" },
 	},
 	{
 		service: "Google (Tag Manager, Analytics)",
 		purpose: {
 			sk: "Voliteľná analytika a meranie reklamy. Bez súhlasu neukladá ani nečíta údaje v prehliadači.",
 			cs: "Volitelná analytika a měření reklamy. Bez souhlasu neukládá ani nečte údaje v prohlížeči.",
+			de: "Optionale Analyse und Werbemessung. Ohne Einwilligung werden im Browser weder Daten gespeichert noch gelesen.",
 		},
-		basis: { sk: "Súhlas", cs: "Souhlas" },
+		basis: { sk: "Súhlas", cs: "Souhlas", de: "Einwilligung" },
 	},
 ] as const;
 
 const HEADS = {
 	sk: ["Služba", "Na čo ju používame", "Právny základ"],
 	cs: ["Služba", "K čemu ji používáme", "Právní základ"],
+	de: ["Dienst", "Wofür wir ihn nutzen", "Rechtsgrundlage"],
 } as const;
 
-function RecipientsTable({ lang }: { lang: "sk" | "cs" }) {
+function RecipientsTable({ lang }: { lang: "sk" | "cs" | "de" }) {
 	return (
 		<div className="overflow-x-auto">
 			<table>
@@ -557,4 +569,299 @@ export function Cs({ channel }: { channel: string }) {
 			</p>
 		</>
 	);
+}
+
+/**
+ * The German body, shared by both German-speaking markets.
+ *
+ * The two slots this page carried in the delivered copy are filled from what the
+ * repository can actually verify, not from the package's placeholders:
+ *
+ * - `PRIVACY_PROVIDERS_AND_TRANSFERS` → `RecipientsTable`, which is read off `.env`
+ *   and the code that talks to each service. Contracting legal entities and per-transfer
+ *   safeguards are deliberately still absent — those are contract facts this file cannot
+ *   check, and Art. 15(2) GDPR lets us point at a request route instead of guessing.
+ * - `AUTOMATED_DECISION_MAKING` → the truthful statement that there is none. The
+ *   storefront runs no profiling or automated decision with legal effect; Stripe's own
+ *   fraud checks are the payment provider's processing, described as such.
+ *
+ * The supervisory-authority section differs per market and comes from
+ * `market.dataProtectionAuthority`: Germany is federal, so it points at the Länder
+ * overview rather than naming the BfDI as if it were competent for a private shop;
+ * Austria has one DSB. The Slovak authority stays as the seller's own.
+ */
+function German({ channel, market }: { channel: string; market: GermanMarket }) {
+	return (
+		<>
+			<p>
+				Bei einem Einkauf und beim Besuch unserer Website vertrauen Sie uns personenbezogene Daten an. Hier
+				erfahren Sie, welche Daten wir verwenden, wofür wir sie benötigen, an wen wir sie weitergeben und wie
+				Sie Ihre Rechte ausüben können.
+			</p>
+
+			<h2>1. Wer für die Verarbeitung verantwortlich ist</h2>
+			<p>
+				Verantwortlicher ist <strong>{companyInfo.legalName}</strong>, {companyInfo.street},{" "}
+				{companyInfo.city}, {SLOVAKIA_DE}, Unternehmensidentifikationsnummer (IČO) {companyInfo.ico}.
+			</p>
+			<p>
+				Bei Fragen zum Datenschutz schreiben Sie an <Mail /> oder an unseren Firmensitz.
+			</p>
+
+			<h2>2. Welche Daten wir zu welchen Zwecken verwenden</h2>
+			<h3>Bestellungen, Lieferung und Kundenservice</h3>
+			<p>
+				Wir verarbeiten Ihren Namen, Kontaktdaten, Rechnungs- und Lieferadresse, Angaben zur Bestellung und
+				Zahlung sowie die dazugehörige Kommunikation. Bei Firmenbestellungen gehören dazu auch die angegebenen
+				Unternehmensdaten. Fragen Sie nach der Eignung von Zubehör, können wir auch die von Ihnen
+				übermittelten Fahrzeugangaben oder Fotos verarbeiten.
+			</p>
+			<p>
+				Diese Daten benötigen wir zur Vorbereitung und Erfüllung des Vertrags: zur Annahme der Bestellung, zur
+				Zahlungsabwicklung, zur Lieferung und zur Beantwortung Ihrer Fragen zum Kauf. Rechtsgrundlage ist{" "}
+				<strong>Artikel 6 Absatz 1 Buchstabe b DSGVO</strong>. Bei der Kommunikation mit einer Kontaktperson
+				eines Firmenkunden kann unser berechtigtes Interesse an der Abwicklung der Geschäftsbeziehung nach{" "}
+				<strong>Artikel 6 Absatz 1 Buchstabe f DSGVO</strong> die Grundlage sein.
+			</p>
+			<p>
+				Vollständige Kartennummern und Kartenprüfnummern speichern wir nicht und haben darauf keinen Zugriff.
+				Stripe verarbeitet die Zahlung. Wir erhalten die Angaben, die wir benötigen, um die Zahlung
+				zuzuordnen, zu überprüfen oder gegebenenfalls zu erstatten.
+			</p>
+
+			<h3>Rechnungen und gesetzliche Pflichten</h3>
+			<p>
+				Identifikations-, Bestell- und Zahlungsdaten verwenden wir auch für unsere Buchhaltung, für
+				steuerliche Pflichten und zur Erfüllung gesetzlicher Pflichten gegenüber zuständigen Behörden.
+				Grundlage ist die{" "}
+				<strong>Erfüllung einer rechtlichen Verpflichtung nach Artikel 6 Absatz 1 Buchstabe c DSGVO</strong>.
+			</p>
+
+			<h3>Reklamationen, Widerrufe und die Ausübung Ihrer Rechte</h3>
+			<p>
+				Wir verarbeiten Ihre Identifikations- und Kontaktdaten, Angaben zur Bestellung und zum Artikel, den
+				Inhalt Ihrer Mitteilung, erforderliche Nachweise und den Bearbeitungsverlauf. Bei einem
+				Online-Widerruf erfassen wir auch Datum und Uhrzeit des Versands und des Eingangs, die Vorgangsnummer
+				sowie Angaben, mit denen sich die Übermittlung der Bestätigung nachweisen lässt.
+			</p>
+			<p>
+				Die Verarbeitung dient der Erfüllung gesetzlicher Pflichten nach{" "}
+				<strong>Artikel 6 Absatz 1 Buchstabe c DSGVO</strong>, der jeweiligen Vertragsabwicklung und bei
+				Bedarf der Geltendmachung oder Verteidigung von Rechtsansprüchen aufgrund von{" "}
+				<strong>Artikel 6 Absatz 1 Buchstabe f DSGVO</strong>. Für die Annahme einer Reklamation oder eines
+				Widerrufs benötigen wir weder eine Marketingeinwilligung noch eine gesonderte Einwilligung zur
+				Verarbeitung der hierfür erforderlichen Daten.
+			</p>
+
+			<h3>Kundenkonto</h3>
+			<p>
+				Wenn Sie ein Konto erstellen, verarbeiten wir die Angaben, die für dessen Verwaltung, die Anmeldung
+				und die Anzeige Ihrer Bestellungen notwendig sind. Grundlage ist die Erbringung der von Ihnen
+				angeforderten Leistung nach <strong>Artikel 6 Absatz 1 Buchstabe b DSGVO</strong>. Ein Konto ist weder
+				für einen Einkauf noch für das Absenden eines Widerrufs erforderlich.
+			</p>
+
+			<h3>Neuigkeiten und Angebote</h3>
+			<p>
+				Melden Sie sich für unseren Newsletter an, verwenden wir Ihre E-Mail-Adresse und Angaben zu Ihrer
+				Einwilligung für den Versand. Grundlage ist Ihre{" "}
+				<strong>Einwilligung nach Artikel 6 Absatz 1 Buchstabe a DSGVO</strong>. Sie ist freiwillig und kann
+				jederzeit über den Abmeldelink in der Nachricht oder per E-Mail an <Mail /> widerrufen werden.
+			</p>
+
+			<h3>Sicherheit der Website und Schutz von Rechtsansprüchen</h3>
+			<p>
+				Soweit erforderlich, verarbeiten wir technische Zugriffs- und Fehlerprotokolle, Angaben zur
+				Verhinderung von Missbrauch und Betrug sowie Nachweise im Zusammenhang mit Rechtsansprüchen. Grundlage
+				ist unser <strong>berechtigtes Interesse nach Artikel 6 Absatz 1 Buchstabe f DSGVO</strong> am
+				sicheren Betrieb und am Schutz unserer Rechte. Dabei prüfen wir die Verhältnismäßigkeit und die
+				Auswirkungen auf Ihre Privatsphäre.
+			</p>
+			<p>
+				Diese Grundlage verstehen wir nicht als allgemeine Erlaubnis für Werbetracking. Hinweise zu optionaler
+				Analyse und Marketingtechnologien finden Sie unter{" "}
+				<Link href={marketHref(channel, "/cookies")}>Cookies</Link>.
+			</p>
+
+			<h2>3. Woher die Daten stammen und welche Angaben erforderlich sind</h2>
+			<p>
+				Die Daten erhalten wir überwiegend von Ihnen, etwa bei einer Bestellung, der Kontoerstellung, dem
+				Ausfüllen eines Formulars oder Ihrer Kontaktaufnahme. Angaben zum Zahlungsergebnis erhalten wir
+				gegebenenfalls vom Zahlungsdienstleister, Angaben zur Zustellung vom Versanddienstleister. Technische
+				Daten entstehen bei der Nutzung der Website. Einzelheiten zu den jeweiligen Diensten finden Sie unten.
+			</p>
+			<p>
+				Als erforderlich gekennzeichnete Bestellangaben benötigen wir für den Abschluss und die Erfüllung des
+				Vertrags. Ohne Lieferadresse können wir beispielsweise keine Lieferung veranlassen. In Formularen
+				verlangen wir nur Angaben, die dem jeweiligen Zweck angemessen sind. Freiwillige Angaben und eine
+				Einwilligung in Marketing müssen Sie nicht erteilen.
+			</p>
+
+			<h2>4. An wen wir Daten weitergeben</h2>
+			<p>
+				Nicht jeder Dienstleister erhält automatisch Ihre Daten. Entscheidend ist, welche Leistung für Ihre
+				Bestellung oder beim Betrieb der Website tatsächlich genutzt wird.
+			</p>
+			<p>
+				Für den Versand arbeiten wir mit <strong>FedEx und Slovenská pošta (Slowakische Post)</strong>{" "}
+				zusammen. Der eingesetzte Versanddienstleister erhält die Daten, die für Transport und
+				Empfängerkontakt erforderlich sind. Zahlungen werden über <strong>Stripe</strong> abgewickelt. Im
+				erforderlichen Umfang können außerdem Anbieter für den technischen Betrieb, E-Mail-Dienste,
+				Buchhaltung oder rechtliche Beratung Zugriff erhalten. Eine Weitergabe an Behörden erfolgt, soweit
+				eine gesetzliche Pflicht besteht.
+			</p>
+			<p>
+				Je nach Leistung handeln Empfänger als unsere Auftragsverarbeiter oder als eigenständige
+				Verantwortliche. Die konkreten Dienste und Zwecke finden Sie in dieser Übersicht:
+			</p>
+			<RecipientsTable lang="de" />
+			<p>
+				Die vertraglich handelnden Gesellschaften der einzelnen Anbieter und die jeweiligen Garantien für eine
+				Übermittlung nennen wir Ihnen auf Anfrage unter <Mail />. Wir führen sie hier nicht auf, weil wir sie
+				an dieser Stelle nicht laufend verlässlich aktuell halten können und eine überholte Angabe schlechter
+				wäre als ein verbindlicher Auskunftsweg.
+			</p>
+
+			<h2>5. Übermittlungen außerhalb des Europäischen Wirtschaftsraums</h2>
+			<p>
+				Bei einzelnen Diensten können Daten auch Empfängern außerhalb des Europäischen Wirtschaftsraums
+				zugänglich werden. Dafür muss eine geeignete rechtliche Grundlage bestehen, etwa ein geltender
+				Angemessenheitsbeschluss oder Standardvertragsklauseln in Verbindung mit gegebenenfalls erforderlichen
+				zusätzlichen Schutzmaßnahmen.
+			</p>
+			<p>
+				Eine Speicherung auf einem Server in der EU schließt einen Zugriff aus einem anderen Land nicht
+				automatisch aus. Informationen zu den verwendeten Garantien und dazu, wie Sie eine Kopie erhalten
+				können, bekommen Sie unter <Mail />. Vertrauliche Angaben schützen wir dabei angemessen.
+			</p>
+
+			<h2>6. Wie lange wir Daten aufbewahren</h2>
+			<p>
+				Nicht alle Daten werden gleich lange gespeichert. Maßgeblich sind der jeweilige Zweck und die
+				gesetzlichen Pflichten.
+			</p>
+			<p>
+				<strong>Bestellungen und dazugehörige Kommunikation</strong> bewahren wir während der Abwicklung und
+				anschließend in dem Umfang auf, der für gesetzliche Pflichten, Reklamationen und die Geltendmachung
+				oder Verteidigung von Ansprüchen erforderlich ist. Bei Rechtsansprüchen berücksichtigen wir die
+				geltenden Verjährungsfristen, eine mögliche Hemmung oder Unterbrechung und die Dauer eines Verfahrens.
+				Erforderliche Unterlagen können bis zum rechtskräftigen Abschluss eines Rechtsstreits aufbewahrt
+				werden.
+			</p>
+			<p>
+				<strong>Buchhaltungsunterlagen</strong> bewahren wir nach dem für uns geltenden slowakischen
+				Rechnungslegungsrecht grundsätzlich zehn Jahre nach Ablauf des Jahres auf, auf das sie sich beziehen.
+				Das bedeutet nicht, dass wir auch sämtliche technischen Daten oder Marketingdaten zehn Jahre lang
+				speichern.
+			</p>
+			<p>
+				<strong>Reklamationen und Widerrufe</strong> speichern wir während der Bearbeitung und anschließend
+				nach den oben genannten Kriterien, soweit dies zum Nachweis der Erfüllung unserer Pflichten oder zum
+				Schutz von Rechtsansprüchen notwendig ist.
+			</p>
+			<p>
+				<strong>Kontodaten</strong> verwenden wir während des Bestehens Ihres Kundenkontos. Nach dessen
+				Schließung löschen wir Daten, die hierfür nicht mehr benötigt werden, oder schränken ihre Verarbeitung
+				ein. Für die Buchhaltung oder den Schutz von Ansprüchen erforderliche Angaben können getrennt weiter
+				aufbewahrt werden.
+			</p>
+			<p>
+				<strong>Ihre E-Mail-Adresse für den Newsletter</strong> verwenden wir bis zum Widerruf Ihrer
+				Einwilligung oder bis zur Abmeldung. Einen erforderlichen Nachweis über Erteilung und Widerruf der
+				Einwilligung sowie die Abmeldung können wir weiter aufbewahren, um die Rechtmäßigkeit zu belegen und
+				Ihre Entscheidung zu respektieren — nicht, um weitere Werbung zu versenden.
+			</p>
+			<p>
+				<strong>Technische Protokolle, Analysedaten und Cookies</strong> unterliegen den dienst- und
+				zweckbezogenen Fristen in der <Link href={marketHref(channel, "/cookies")}>Cookie-Übersicht</Link>.
+				Bei einem konkreten Sicherheitsvorfall können erforderliche Nachweise für dessen Aufklärung und die
+				Wahrung damit zusammenhängender Ansprüche länger aufbewahrt werden.
+			</p>
+
+			<h2>7. Ihre Rechte</h2>
+			<p>
+				Unter den Voraussetzungen der DSGVO können Sie <strong>Auskunft</strong>,{" "}
+				<strong>Berichtigung</strong>, <strong>Löschung</strong> oder eine{" "}
+				<strong>Einschränkung der Verarbeitung</strong> verlangen. Bei automatisierter Verarbeitung auf
+				Grundlage einer Einwilligung oder eines Vertrags kann Ihnen auch das{" "}
+				<strong>Recht auf Datenübertragbarkeit</strong> zustehen.
+			</p>
+			<p>
+				Verarbeiten wir Daten aufgrund berechtigter Interessen, können Sie aus Gründen, die sich aus Ihrer
+				besonderen Situation ergeben, <strong>Widerspruch</strong> einlegen. Gegen die Verarbeitung für
+				Direktwerbung können Sie jederzeit widersprechen. Wir verwenden Ihre Daten dann nicht mehr für diesen
+				Zweck.
+			</p>
+			<p>
+				Eine Einwilligung können Sie so einfach widerrufen, wie Sie sie erteilt haben. Die Rechtmäßigkeit der
+				Verarbeitung bis zum Widerruf bleibt davon unberührt. Für Cookies nutzen Sie{" "}
+				<strong>„Datenschutzeinstellungen“</strong> im Seitenfuß. Vom Newsletter melden Sie sich über den Link
+				in der E-Mail ab oder schreiben uns. Dies sind zwei voneinander unabhängige Entscheidungen.
+			</p>
+			<p>
+				Senden Sie Ihre Anfrage an <Mail />. Bei begründeten Zweifeln an Ihrer Identität dürfen wir um
+				angemessene zusätzliche Angaben bitten. Eine Kopie eines Ausweisdokuments verlangen wir nicht
+				automatisch.
+			</p>
+			<p>
+				Wir informieren Sie unverzüglich, spätestens innerhalb <strong>eines Monats</strong>, über die
+				ergriffenen Maßnahmen. Bei begründet komplexen oder zahlreichen Anfragen kann diese Frist um zwei
+				weitere Monate verlängert werden. Darüber und über die Gründe informieren wir Sie innerhalb des ersten
+				Monats. Können wir Ihrer Anfrage nicht entsprechen, erläutern wir den Grund. Ein Löschungsanspruch
+				verpflichtet uns beispielsweise nicht zur Löschung eines Belegs, den wir gesetzlich aufbewahren
+				müssen.
+			</p>
+
+			<h2>8. Beschwerde bei einer Datenschutzaufsichtsbehörde</h2>
+			<p>
+				Sie können sich bei einer zuständigen Aufsichtsbehörde beschweren, insbesondere in dem Mitgliedstaat
+				Ihres gewöhnlichen Aufenthalts, Ihres Arbeitsplatzes oder des Orts des mutmaßlichen Verstoßes gegen
+				die DSGVO. Sie müssen sich hierfür nicht ausschließlich an eine slowakische Behörde wenden.
+			</p>
+			<p>{market.dataProtectionAuthority}</p>
+			<p>Die Datenschutzaufsichtsbehörde in der Slowakei ist:</p>
+			<p>
+				<strong>Úrad na ochranu osobných údajov Slovenskej republiky</strong>
+				<br />
+				Galvaniho Business Centrum II
+				<br />
+				Galvaniho 7/B
+				<br />
+				821 04 Bratislava, {SLOVAKIA_DE}
+				<br />
+				<a href="https://dataprotection.gov.sk/sk/" rel="noopener noreferrer" target="_blank">
+					dataprotection.gov.sk
+				</a>
+			</p>
+
+			<h2>9. Automatisierte Entscheidungen</h2>
+			<p>
+				Wir treffen keine ausschließlich auf einer automatisierten Verarbeitung beruhenden Entscheidungen, die
+				Ihnen gegenüber rechtliche Wirkung entfalten oder Sie in ähnlicher Weise erheblich beeinträchtigen.
+				Wir betreiben kein Profiling zu diesem Zweck. Eine Bestellung wird weder automatisch abgelehnt noch
+				automatisch bewertet.
+			</p>
+			<p>
+				Bei der Zahlungsabwicklung führt <strong>Stripe</strong> als Zahlungsdienstleister eigene Prüfungen
+				zur Betrugsvermeidung durch. Das ist eine Verarbeitung dieses Anbieters im Rahmen seiner eigenen
+				Pflichten. Wird eine Zahlung dabei nicht ausgeführt, können Sie uns unter <Mail /> kontaktieren; wir
+				sehen uns den Vorgang an und suchen gemeinsam eine Lösung.
+			</p>
+
+			<h2>10. Änderungen dieser Hinweise</h2>
+			<p>
+				Wir aktualisieren diese Hinweise, wenn sich die Verarbeitung oder die eingesetzten Dienste ändern. Ist
+				eine neue Einwilligung erforderlich, wird sie nicht allein durch eine Änderung dieses Dokuments
+				ersetzt.
+			</p>
+		</>
+	);
+}
+
+export function De({ channel }: { channel: string }) {
+	return <German channel={channel} market={GERMANY} />;
+}
+
+export function DeAt({ channel }: { channel: string }) {
+	return <German channel={channel} market={AUSTRIA} />;
 }
