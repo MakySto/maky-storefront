@@ -100,3 +100,18 @@ MAKY_GARAGE_COOKIE_SECRET=<≥32 znakov>     ← bez neho je garáž vypnutá a 
 Otvorené, mimo tohto bloku: 1 475 vozidlových stránok z CFM je `draft` a ich cesty
 (`/stresne-nosice/skoda/octavia-combi/nx`) potrebujú routy, ktoré ešte neexistujú — root
 kategórie z predošlého bloku je ich predpoklad, nie ony samy.
+
+---
+
+## 6. Známa diera v tomto snapshote (doplnené 2026-09-08)
+
+Snapshot **neobsahuje niektoré súčasné generácie vozidiel**. Potvrdený prípad je
+TOYOTA RAV4: aplikačný list má riadok `03/19>` (generácia XA50), export ho nemá, takže
+konfigurátor ponúka pre RAV4 iba roky 2000 – 2018.
+
+Nie je to chyba storefrontu — formát `03/19>` sa inde parsuje správne (BMW X7 G07,
+TOYOTA Corolla Kombi E21) a selektor pri otvorených generáciách roky až po dnešok
+zobrazuje. Chýba samotné vozidlo v strome.
+
+Podrobné hlásenie pre CFM aj s rozsahom (92 kandidátskych modelov) a spôsobom overenia
+opravy: `docs/design/cfm-chybajuce-generacie-20260908.md`.
