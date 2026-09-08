@@ -22,9 +22,10 @@
  * their order history because they picked a car is a worse failure than not helping
  * them, and it is the kind of failure that only shows up in a real session.
  *
- * So this navigates from the market root and nowhere else. That is exactly the case that
- * is broken, it cannot interrupt a task, and any route added later inherits "stay",
- * which is today's behaviour and the safe direction to be wrong in.
+ * So this navigates from the market root and nowhere else — and "market root" means a
+ * segment that is a market in `CHANNEL_MAP`, not just a path with one segment. That is
+ * exactly the case that is broken, it cannot interrupt a task, and any route added later
+ * inherits "stay", which is today's behaviour and the safe direction to be wrong in.
  *
  * The destination is `/konfigurator` rather than a filtered category listing: it is a
  * reserved root segment, so nothing here has to know a category slug — which
@@ -33,6 +34,8 @@
  * it, and when there are none it explains which of five situations applies instead of
  * showing an empty list.
  */
+
+import { FRIENDLY_SLUGS } from "@/lib/channel-map";
 
 /** Reserved for the market segment itself: `/sk` is one segment, `/sk/anything` is two. */
 const MARKET_ROOT_SEGMENT_COUNT = 1;
@@ -46,5 +49,45 @@ const MARKET_ROOT_SEGMENT_COUNT = 1;
  */
 export function vehicleConfirmDestination(pathname: string): string | null {
 	const segments = pathname.split("/").filter(Boolean);
-	return segments.length === MARKET_ROOT_SEGMENT_COUNT ? "/konfigurator" : null;
+	if (segments.length !== MARKET_ROOT_SEGMENT_COUNT) return null;
+	// The segment has to BE a market, not merely be alone. Counting segments was the
+	// first version of this and it was wrong in the one way that mattered: `/checkout`
+	// is a real single-segment route (`src/app/checkout/page.tsx`, outside `[channel]`),
+	// so changing your car while paying would have pushed you out of the checkout —
+	// exactly the failure this function exists to avoid. `/sk/cart` has two segments and
+	// passed its test, which is how the hole survived it.
+	return FRIENDLY_SLUGS.has(segments[0]!) ? "/konfigurator" : null;
+}
+
+/**
+ * Search params a change of vehicle invalidates, dropped when the shopper stays put.
+ *
+ * A cursor is a position in ONE ordered result set. Change the car with `?vehicle=1` on
+ * and the set becomes a different one, so continuing from a row that belonged to the old
+ * set is meaningless — the same reasoning `vehicleFilterHref` already applies when the
+ * filter itself is toggled, and there is no principled reason for the two to differ.
+ *
+ * Honest limit of what was tested: on 2026-09-08 this was reproduced only as far as the
+ * URL — the stale cursor DOES survive a vehicle change — and no false-empty page could
+ * be produced from it. Measured against live Saleor, an ALFA ROMEO Giulietta (11 sets)
+ * and a ŠKODA Octavia Combi NX (9 sets) each rendered every one of their products behind
+ * a deep cursor from a FIAT Panda page, so Saleor appears to ignore an `after` it cannot
+ * place. This is therefore a correctness fix, not a repair of a defect anyone has seen,
+ * and it is worth making because that tolerance is Saleor's to withdraw and because a
+ * different sort order need not behave the same way.
+ */
+const PAGINATION_PARAMS = ["cursor", "direction"] as const;
+
+/**
+ * The query string with pagination removed, or `null` when there was none to remove.
+ *
+ * `null` rather than an unchanged string so the caller can tell "nothing to do" from
+ * "navigate to this", and re-render in place instead of pushing an identical URL.
+ */
+export function searchWithoutPagination(search: string): string | null {
+	const params = new URLSearchParams(search);
+	if (!PAGINATION_PARAMS.some((param) => params.has(param))) return null;
+	for (const param of PAGINATION_PARAMS) params.delete(param);
+	const query = params.toString();
+	return query ? `?${query}` : "";
 }

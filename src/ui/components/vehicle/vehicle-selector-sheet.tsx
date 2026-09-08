@@ -25,6 +25,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Check, ChevronLeft, Loader2 } from "lucide-react";
 
 import { Button } from "@/ui/components/ui/button";
+import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetCloseButton } from "@/ui/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -34,7 +35,7 @@ import { type MonthAnswer, type RoofAnswer, type SelectorStep } from "@/lib/fitm
 import { type GenerationCandidate } from "@/lib/fitment/selector-plan";
 import { chooseVehicle } from "@/lib/garage/actions";
 import { GARAGE_MAX_VEHICLES } from "@/lib/garage/cookie";
-import { vehicleConfirmDestination } from "@/lib/garage/confirm-destination";
+import { searchWithoutPagination, vehicleConfirmDestination } from "@/lib/garage/confirm-destination";
 import { REVERSE_MAP } from "@/lib/channel-map";
 
 type Draft = {
@@ -68,14 +69,9 @@ type Props = {
 	onOpenChange: (open: boolean) => void;
 };
 
-const ROOF_LABEL_KEYS: Record<RoofType, string> = {
-	"naked-roof": "roofNakedRoof",
-	"raised-rails": "roofRaisedRails",
-	"flush-rails": "roofFlushRails",
-	fixpoint: "roofFixpoint",
-	"rain-gutter": "roofRainGutter",
-	"t-track": "roofTTrack",
-};
+// One map, imported — this file used to carry a byte-identical copy of it, which is two
+// places for six roof names to drift apart.
+const ROOF_LABEL_KEYS = ROOF_LABEL_KEY;
 
 const BODY_LABEL_KEYS: Record<BodyType, string> = {
 	hatchback: "bodyHatchback",
@@ -244,6 +240,16 @@ export function VehicleSelectorSheet({ children, open, onOpenChange }: Props) {
 				if (destination) {
 					const friendly = channel ? REVERSE_MAP[channel] ?? channel : null;
 					router.push(friendly ? `/${friendly}${destination}` : destination);
+					return;
+				}
+
+				// Staying put, but a listing's pagination belonged to the OLD car's result
+				// set. Read at click time rather than through `useSearchParams`, which
+				// would put a Suspense requirement on a component the header mounts on
+				// every page.
+				const nextSearch = searchWithoutPagination(window.location.search);
+				if (nextSearch !== null) {
+					router.replace(`${pathname}${nextSearch}`);
 					return;
 				}
 
