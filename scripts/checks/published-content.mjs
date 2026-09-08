@@ -16,6 +16,7 @@
 //
 // Exit 0 = every invariant held across the sample. Exit 1 = at least one did not.
 // Exit 2 = the check could not run (no sitemap, no products), which is not a pass.
+import { readFileSync } from "node:fs";
 import process from "node:process";
 
 const args = process.argv.slice(2);
@@ -31,6 +32,31 @@ const CONCURRENCY = 8;
 // MAKY's internal identifier. It is allowed to exist in Saleor; it may never be published.
 const INTERNAL_MARKER = /CFMP-/i;
 
+/**
+ * Root URLs that are NOT products.
+ *
+ * The static half is the legal and service pages. The other half is the catalogue
+ * categories, which moved to the root in `3b0843f` (`/sk/stresne-nosice`) and are in the
+ * sitemap like everything else — so a sample that happened to land on one reported five
+ * broken invariants at once for a page that is perfectly healthy and simply is not a
+ * product. Measured 2026-09-07 on `/sk/nosice-lyzi`: no Product structured data, no sku,
+ * no offer, no price, no availability. All correct for a category. `pnpm check:nav` was
+ * green on the same page at the same moment, including its slug-collision test.
+ *
+ * That noise is worth removing rather than tolerating: a gate that cries wolf on a
+ * healthy page is one nobody reads on the day it is right.
+ *
+ * The slugs are parsed out of `src/config/categories.ts` rather than typed again here —
+ * the same approach `nav-links.mjs` takes, and for the same reason. A category added
+ * there must not need a second edit in a checking script that would silently rot.
+ */
+const CATEGORY_SOURCE = readFileSync(new URL("../../src/config/categories.ts", import.meta.url), "utf8");
+const CATEGORY_SLUGS = [...CATEGORY_SOURCE.matchAll(/\{\s*slug:\s*"([a-z0-9-]+)",\s*key:/g)].map((m) => m[1]);
+if (CATEGORY_SLUGS.length === 0) {
+	console.error("could not read any category out of src/config/categories.ts");
+	process.exit(2);
+}
+
 const NON_PRODUCT = new Set([
 	"products",
 	"kontakt",
@@ -43,6 +69,7 @@ const NON_PRODUCT = new Set([
 	"ochrana-osobnych-udajov",
 	"cookies",
 	"doprava-a-platba",
+	...CATEGORY_SLUGS,
 ]);
 
 const fail = (msg) => {
