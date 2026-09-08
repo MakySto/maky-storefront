@@ -8,13 +8,24 @@
  * a PDF would mean a new dependency, and a text file is the more accessible artefact
  * anyway — it opens everywhere, reflows, and a screen reader can read it.
  */
-export function ModelFormActions({ text }: { text: string }) {
+export function ModelFormActions({
+	text,
+	fileName = "vzorovy-formular-odstupenie-od-zmluvy.txt",
+	printLabel = "Vytlačiť formulár",
+	downloadLabel = "Stiahnuť formulár (.txt)",
+}: {
+	text: string;
+	/** Download filename. Defaults to the Slovak one so existing callers are unchanged. */
+	fileName?: string;
+	printLabel?: string;
+	downloadLabel?: string;
+}) {
 	function download() {
 		const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
 		const url = URL.createObjectURL(blob);
 		const anchor = document.createElement("a");
 		anchor.href = url;
-		anchor.download = "vzorovy-formular-odstupenie-od-zmluvy.txt";
+		anchor.download = fileName;
 		document.body.appendChild(anchor);
 		anchor.click();
 		anchor.remove();
@@ -27,10 +38,10 @@ export function ModelFormActions({ text }: { text: string }) {
 	return (
 		<div className="not-prose mb-6 flex flex-wrap gap-3 print:hidden">
 			<button type="button" onClick={() => window.print()} className={buttonClass}>
-				Vytlačiť formulár
+				{printLabel}
 			</button>
 			<button type="button" onClick={download} className={buttonClass}>
-				Stiahnuť formulár (.txt)
+				{downloadLabel}
 			</button>
 		</div>
 	);
