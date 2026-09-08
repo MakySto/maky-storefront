@@ -11,7 +11,7 @@ import { isWithdrawalFormServable, withdrawalBlockReason } from "@/lib/withdrawa
 import { normalizeWithdrawalPhone } from "@/lib/withdrawal/validate";
 import { legalLocaleFor } from "@/lib/legal/locale";
 import { LegalPage } from "@/ui/components/legal/legal-page";
-import { Cs, De, DeAt, Sk } from "@/ui/content/legal/odstupenie-od-zmluvy";
+import { Cs, De, DeAt, Hu, Pl, Sk } from "@/ui/content/legal/odstupenie-od-zmluvy";
 import { WithdrawalForm } from "@/ui/components/withdrawal/withdrawal-form";
 import { getCurrentUser, type AccountUser } from "../account/get-current-user";
 import { submitWithdrawalAction } from "./actions";
@@ -75,6 +75,23 @@ const META = {
 			"Ihr Rücktrittsrecht beim Online-Kauf bei MAKY.STORE: Online-Funktion, Fristen, Erklärung, Rücksendung und Erstattung. Mit Muster-Widerrufsformular.",
 		withoutForm:
 			"Ihr Rücktrittsrecht beim Online-Kauf bei MAKY.STORE: Fristen, Erklärung, Rücksendung und Erstattung. Mit Muster-Widerrufsformular.",
+	},
+	// Only `withoutForm` is ever served for these two today, for the same reason as
+	// de/deAt: `servesOnlineFunction` keeps the online function on `sk`. Both are kept so
+	// that switching it on is a one-line change in the contract rather than a copy task.
+	pl: {
+		title: "Odstąpienie od umowy i zwrot towaru",
+		withForm:
+			"Prawo odstąpienia od umowy w MAKY.STORE: formularz online, 14 dni, wydłużony termin dla zakupów po zalogowaniu, zwrot towaru i koszt przesyłki.",
+		withoutForm:
+			"Prawo odstąpienia od umowy w MAKY.STORE: 14 dni, wydłużony termin dla zakupów po zalogowaniu, zwrot towaru, koszt przesyłki i formularz.",
+	},
+	hu: {
+		title: "Elállási jog és visszaküldés",
+		withForm:
+			"Az online vásárlástól való elállás feltételei: online elállási funkció, 14 nap, bejelentkezve leadott rendelésnél 30 nap, visszaküldés és visszatérítés.",
+		withoutForm:
+			"Az online vásárlástól való elállás feltételei: 14 nap, bejelentkezve leadott rendelésnél 30 nap, visszaküldés, visszatérítés és nyilatkozatminta.",
 	},
 } as const;
 
@@ -190,7 +207,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	const alternatives = { email: companyInfo.email, postalAddress: companyInfo.returnAddress };
 	const modelFormHref = marketHref(channel, `${PATH}/vzorovy-formular`);
 
-	const BODIES = { sk: Sk, cs: Cs, de: De, deAt: DeAt } as const;
+	const BODIES = { sk: Sk, cs: Cs, de: De, deAt: DeAt, pl: Pl, hu: Hu } as const;
 	const Body = BODIES[locale];
 	const form = formServable ? (
 		<section aria-labelledby="online-withdrawal" className="not-prose my-10">

@@ -31,7 +31,7 @@ import { REVERSE_MAP } from "@/lib/channel-map";
  * The customer-facing locales are untouched: `CHANNEL_MAP` still says `de-DE` and
  * `de-AT`. This name is internal.
  */
-export const LEGAL_LOCALES = ["sk", "cs", "de", "deAt"] as const;
+export const LEGAL_LOCALES = ["sk", "cs", "de", "deAt", "pl", "hu"] as const;
 
 export type LegalLocale = (typeof LEGAL_LOCALES)[number];
 
@@ -41,6 +41,8 @@ const APPROVED_COPY: Readonly<Record<string, LegalLocale>> = {
 	cz: "cs",
 	de: "de",
 	at: "deAt",
+	pl: "pl",
+	hu: "hu",
 };
 
 /**
@@ -55,6 +57,8 @@ export const LEGAL_BODY_NAMES: Readonly<Record<LegalLocale, string>> = {
 	cs: "Cs",
 	de: "De",
 	deAt: "DeAt",
+	pl: "Pl",
+	hu: "Hu",
 };
 
 /**

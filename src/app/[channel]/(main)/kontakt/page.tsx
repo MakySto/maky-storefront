@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, De, DeAt, Sk } from "@/ui/content/legal/kontakt";
+import { Cs, De, DeAt, Hu, Pl, Sk } from "@/ui/content/legal/kontakt";
 
 const route = legalRoute({
 	path: "/kontakt",
@@ -27,6 +27,18 @@ const route = legalRoute({
 			description:
 				"Fragen zu Produkten, Fahrzeugkompatibilität oder Ihrer Bestellung? Hier finden Sie unsere Kontaktdaten, Unternehmensangaben und Rücksendeadresse.",
 			Body: DeAt,
+		},
+		pl: {
+			title: "Kontakt",
+			description:
+				"Pytania o produkt, dopasowanie akcesoriów lub zamówienie? Dane kontaktowe MAKY.STORE, informacje o sprzedawcy i adres do zwrotów.",
+			Body: Pl,
+		},
+		hu: {
+			title: "Kapcsolat",
+			description:
+				"Kérdése van egy termékről, az autójához való illeszkedésről vagy a rendeléséről? Itt találja elérhetőségeinket, cégadatainkat és a visszaküldési címet.",
+			Body: Hu,
 		},
 	},
 });

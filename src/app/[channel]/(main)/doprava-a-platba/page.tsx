@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, De, DeAt, Sk } from "@/ui/content/legal/doprava-a-platba";
+import { Cs, De, DeAt, Hu, Pl, Sk } from "@/ui/content/legal/doprava-a-platba";
 
 const route = legalRoute({
 	path: "/doprava-a-platba",
@@ -27,6 +27,18 @@ const route = legalRoute({
 			description:
 				"Informationen zu Versand nach Österreich, Lieferzeiten, Versandkosten und Online-Zahlung bei MAKY.STORE. Verfügbare Optionen sehen Sie vor dem Kauf.",
 			Body: DeAt,
+		},
+		pl: {
+			title: "Dostawa i płatności – Polska",
+			description:
+				"Dostawa do Polski przez FedEx i Slovenská pošta, koszty wysyłki, dostępność towaru oraz płatność z góry przez Stripe. Bez pobrania.",
+			Body: Pl,
+		},
+		hu: {
+			title: "Szállítás és fizetés – Magyarország",
+			description:
+				"Szállítás Magyarországra, szállítási díjak, várható kézbesítés és előre fizetés a Stripe rendszerén keresztül. Ismerje meg a rendelés feltételeit.",
+			Body: Hu,
 		},
 	},
 });

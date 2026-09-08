@@ -60,11 +60,18 @@ describe("market scoping", () => {
 	/** CMS-backed, and `cmsPageRoute` still hard-gates on the Slovak market. */
 	const CMS_PAGES = ["o-nas", "poradna"];
 
-	/** Markets with no approved copy of any kind. */
-	const NO_COPY = ["pl", "fr", "us"];
+	/**
+	 * Markets with no approved copy of any kind.
+	 *
+	 * `it` replaced `pl` when Polish copy landed. This list has to keep naming markets
+	 * that genuinely have no copy — the moment one of them gains a language, move it to
+	 * `WITH_COPY` and put a still-uncovered market here. Deleting the entry instead would
+	 * leave a green test that checks nothing.
+	 */
+	const NO_COPY = ["it", "fr", "us"];
 
 	/** Markets whose legal copy a human has approved. */
-	const WITH_COPY = ["sk", "cz", "de", "at"];
+	const WITH_COPY = ["sk", "cz", "de", "at", "pl", "hu"];
 
 	it("serves the legal pages in every market whose copy is approved", () => {
 		for (const segment of LEGAL_PAGES) {

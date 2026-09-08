@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, De, DeAt, Sk } from "@/ui/content/legal/reklamacie-a-vratenie";
+import { Cs, De, DeAt, Hu, Pl, Sk } from "@/ui/content/legal/reklamacie-a-vratenie";
 
 const route = legalRoute({
 	path: "/reklamacie-a-vratenie",
@@ -27,6 +27,18 @@ const route = legalRoute({
 			description:
 				"Artikel zurückgeben oder einen Mangel reklamieren: So erreichen Sie uns. Informationen zu Rücktransport, Erstattung und Ihren gesetzlichen Rechten.",
 			Body: DeAt,
+		},
+		pl: {
+			title: "Reklamacje i zwroty",
+			description:
+				"Jak zwrócić zakup lub zgłosić wadliwy produkt w MAKY.STORE. Terminy, koszty transportu, zwrot pieniędzy i prawa przy niezgodności towaru z umową.",
+			Body: Pl,
+		},
+		hu: {
+			title: "Reklamáció és visszaküldés",
+			description:
+				"Terméket küldene vissza, vagy hibát észlelt? Az elállás, a reklamáció, a szavatosság és a visszaszállítás menete a MAKY.STORE-nál.",
+			Body: Hu,
 		},
 	},
 });

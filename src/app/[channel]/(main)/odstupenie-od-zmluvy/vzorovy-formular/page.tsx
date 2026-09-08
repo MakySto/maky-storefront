@@ -66,6 +66,22 @@ const COPY = {
 		printLabel: "Formular drucken",
 		downloadLabel: "Formular herunterladen (.txt)",
 	},
+	pl: {
+		title: "Wzór formularza odstąpienia od umowy",
+		description:
+			"Wzór formularza odstąpienia od umowy do wydrukowania lub pobrania. Skorzystanie z niego jest dobrowolne — wystarczy każde jednoznaczne oświadczenie.",
+		fileName: "wzor-formularza-odstapienia-od-umowy.txt",
+		printLabel: "Wydrukuj formularz",
+		downloadLabel: "Pobierz formularz (.txt)",
+	},
+	hu: {
+		title: "Elállási nyilatkozatminta",
+		description:
+			"Nyomtatható vagy letölthető elállási nyilatkozatminta. Használata önkéntes — bármely egyértelmű nyilatkozat megfelel.",
+		fileName: "elallasi-nyilatkozatminta.txt",
+		printLabel: "Nyilatkozat nyomtatása",
+		downloadLabel: "Nyilatkozat letöltése (.txt)",
+	},
 } as const satisfies Record<LegalLocale, unknown>;
 
 /** The plain-text copy offered for download, so print and download cannot drift. */
@@ -160,11 +176,130 @@ const GERMAN_TEXT = [
 	"Eine IBAN und eine Begründung sind für den Widerruf nicht erforderlich. Für eine Erstattung auf die ursprünglich verwendete Zahlungskarte benötigen wir keine Bankverbindung.",
 ].join("\n");
 
+/**
+ * The Polish text.
+ *
+ * The statutory core is the model form in Annex 2 to the Polish consumer-rights act
+ * (ustawa z 30 maja 2014 r. o prawach konsumenta), which is itself the Polish language
+ * version of Annex I(B) to Directive 2011/83/EU. The additional fields — order number,
+ * scope, e-mail for the acknowledgement — and the two closing sentences follow the
+ * reviewed German form in this same file, because they describe MAKY's process rather
+ * than the statute, and that process is the same in every market.
+ *
+ * ⚠️ Unlike the Slovak, Czech and German texts this one was NOT taken from a delivered
+ * `formulare/` file: the PL/HU package reached the machine as the two page-copy Markdown
+ * documents only, and those link to this route without containing it. Flagged in the
+ * handoff so a reviewer knows which strings on this page a translator has not seen.
+ */
+const POLISH_TEXT = [
+	"WZÓR FORMULARZA ODSTĄPIENIA OD UMOWY",
+	"",
+	"Formularz ten należy wypełnić i odesłać tylko w przypadku chęci odstąpienia od umowy.",
+	"Skorzystanie z niego jest dobrowolne. Można też przesłać inne jednoznaczne oświadczenie.",
+	"",
+	"Adresat:",
+	companyInfo.legalName,
+	"Stará Vajnorská 11",
+	"831 04 Bratislava",
+	"Słowacja",
+	`E-mail: ${companyInfo.email}`,
+	"",
+	"Ja/My (*) niniejszym informuję/informujemy (*) o moim/naszym odstąpieniu od umowy sprzedaży następujących rzeczy:",
+	"",
+	"................................................................................................",
+	"................................................................................................",
+	"",
+	"Numer zamówienia lub inne dane umowy:",
+	"................................................................................................",
+	"",
+	"Zakres — całe zamówienie albo poszczególne pozycje z liczbą sztuk:",
+	"................................................................................................",
+	"................................................................................................",
+	"",
+	"Data zawarcia umowy (*) / odbioru (*):",
+	"................................................................................................",
+	"",
+	"Imię i nazwisko konsumenta(-ów):",
+	"................................................................................................",
+	"",
+	"Adres konsumenta(-ów):",
+	"................................................................................................",
+	"................................................................................................",
+	"",
+	"Adres e-mail do potwierdzenia (przy oświadczeniu papierowym dobrowolny):",
+	"................................................................................................",
+	"",
+	"Data:",
+	"................................................................................................",
+	"",
+	"Podpis konsumenta(-ów) — tylko jeżeli formularz jest przesyłany w wersji papierowej:",
+	"................................................................................................",
+	"",
+	"(*) Niepotrzebne skreślić.",
+	"",
+	"Numer IBAN ani podanie przyczyny nie są potrzebne do odstąpienia od umowy. Do zwrotu na pierwotnie użytą kartę płatniczą nie potrzebujemy danych bankowych.",
+].join("\n");
+
+/**
+ * The Hungarian text.
+ *
+ * Statutory core: the nyilatkozatminta in Annex 2 to 45/2014. (II. 26.) Korm. rendelet.
+ * The same additions as the Polish text above, and the same caveat about provenance.
+ */
+const HUNGARIAN_TEXT = [
+	"ELÁLLÁSI NYILATKOZATMINTA",
+	"",
+	"Csak a szerződéstől való elállási szándék esetén töltse ki és juttassa vissza.",
+	"Használata önkéntes. Bármely más egyértelmű nyilatkozatot is elküldhet.",
+	"",
+	"Címzett:",
+	companyInfo.legalName,
+	"Stará Vajnorská 11",
+	"831 04 Bratislava",
+	"Szlovákia",
+	`E-mail: ${companyInfo.email}`,
+	"",
+	"Alulírott/ak kijelentem/kijelentjük, hogy gyakorlom/gyakoroljuk elállási jogomat/jogunkat az alábbi termék/ek adásvételére irányuló szerződés tekintetében:",
+	"",
+	"................................................................................................",
+	"................................................................................................",
+	"",
+	"Rendelési szám vagy a szerződés egyéb azonosítója:",
+	"................................................................................................",
+	"",
+	"Terjedelem — a teljes rendelés vagy az egyes tételek darabszámmal:",
+	"................................................................................................",
+	"................................................................................................",
+	"",
+	"Szerződéskötés időpontja / átvétel időpontja:",
+	"................................................................................................",
+	"",
+	"A fogyasztó(k) neve:",
+	"................................................................................................",
+	"",
+	"A fogyasztó(k) címe:",
+	"................................................................................................",
+	"................................................................................................",
+	"",
+	"E-mail-cím a visszaigazoláshoz (papíron tett nyilatkozatnál önkéntes):",
+	"................................................................................................",
+	"",
+	"Kelt:",
+	"................................................................................................",
+	"",
+	"A fogyasztó(k) aláírása — kizárólag papíron tett nyilatkozat esetén:",
+	"................................................................................................",
+	"",
+	"Az elálláshoz nem szükséges IBAN-szám és indokolás. Az eredetileg használt bankkártyára történő visszatérítéshez nem kérünk bankszámlaadatot.",
+].join("\n");
+
 const TEXT: Record<LegalLocale, string> = {
 	sk: SLOVAK_TEXT,
 	cs: CZECH_TEXT,
 	de: GERMAN_TEXT,
 	deAt: GERMAN_TEXT,
+	pl: POLISH_TEXT,
+	hu: HUNGARIAN_TEXT,
 };
 
 export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {
@@ -273,13 +408,92 @@ function GermanBody({ channel }: { channel: string }) {
 	);
 }
 
+function PolishBody({ channel }: { channel: string }) {
+	return (
+		<>
+			<p className="print:hidden">
+				Ten formularz można wydrukować lub pobrać. Skorzystanie z niego jest dobrowolne — wystarczy każde inne
+				jednoznaczne oświadczenie. Dostępne sposoby zgłoszenia opisujemy na stronie{" "}
+				<a href={marketHref(channel, "/odstupenie-od-zmluvy")}>Odstąpienie od umowy</a>.
+			</p>
+			<p>Formularz ten należy wypełnić i odesłać tylko w przypadku chęci odstąpienia od umowy.</p>
+			<p>
+				Adresat: {companyInfo.legalName}, {companyInfo.returnAddress}, Słowacja, e-mail: {companyInfo.email}
+			</p>
+			<p>
+				Ja/My (*) niniejszym informuję/informujemy (*) o moim/naszym odstąpieniu od umowy sprzedaży
+				następujących rzeczy:
+			</p>
+			<ul>
+				<li>Rzeczy: ........................</li>
+				<li>Numer zamówienia lub inne dane umowy: ........................</li>
+				<li>Zakres — całe zamówienie albo poszczególne pozycje z liczbą sztuk: ..................</li>
+				<li>Data zawarcia umowy (*) / odbioru (*): ........................</li>
+				<li>Imię i nazwisko konsumenta(-ów): ........................</li>
+				<li>Adres konsumenta(-ów): ........................</li>
+				<li>Adres e-mail do potwierdzenia (na papierze dobrowolny): .......................</li>
+				<li>Data: ........................</li>
+				<li>Podpis konsumenta(-ów) — tylko na papierze: ........................</li>
+			</ul>
+			<p>(*) Niepotrzebne skreślić.</p>
+			<p>
+				Numer IBAN ani podanie przyczyny nie są potrzebne do odstąpienia od umowy. Do zwrotu na pierwotnie
+				użytą kartę płatniczą nie potrzebujemy danych bankowych.
+			</p>
+		</>
+	);
+}
+
+function HungarianBody({ channel }: { channel: string }) {
+	return (
+		<>
+			<p className="print:hidden">
+				Ezt a nyilatkozatmintát kinyomtathatja vagy letöltheti. Használata önkéntes — bármely más egyértelmű
+				nyilatkozat is megfelel. A választható módokat az{" "}
+				<a href={marketHref(channel, "/odstupenie-od-zmluvy")}>Elállási jog</a> oldalon ismertetjük.
+			</p>
+			<p>Csak a szerződéstől való elállási szándék esetén töltse ki és juttassa vissza.</p>
+			<p>
+				Címzett: {companyInfo.legalName}, {companyInfo.returnAddress}, Szlovákia, e-mail: {companyInfo.email}
+			</p>
+			<p>
+				Alulírott/ak kijelentem/kijelentjük, hogy gyakorlom/gyakoroljuk elállási jogomat/jogunkat az alábbi
+				termék/ek adásvételére irányuló szerződés tekintetében:
+			</p>
+			<ul>
+				<li>Termék(ek): ........................</li>
+				<li>Rendelési szám vagy a szerződés egyéb azonosítója: ........................</li>
+				<li>Terjedelem — a teljes rendelés vagy az egyes tételek darabszámmal: ..................</li>
+				<li>Szerződéskötés időpontja / átvétel időpontja: ........................</li>
+				<li>A fogyasztó(k) neve: ........................</li>
+				<li>A fogyasztó(k) címe: ........................</li>
+				<li>E-mail-cím a visszaigazoláshoz (papíron önkéntes): .......................</li>
+				<li>Kelt: ........................</li>
+				<li>A fogyasztó(k) aláírása — kizárólag papíron: ........................</li>
+			</ul>
+			<p>
+				Az elálláshoz nem szükséges IBAN-szám és indokolás. Az eredetileg használt bankkártyára történő
+				visszatérítéshez nem kérünk bankszámlaadatot.
+			</p>
+		</>
+	);
+}
+
 export default async function Page(props: { params: Promise<{ channel: string }> }) {
 	const { channel } = await props.params;
 	const locale = legalLocaleFor(channel);
 	if (!locale) notFound();
 
 	const copy = COPY[locale];
-	const Body = locale === "sk" ? SlovakBody : locale === "cs" ? CzechBody : GermanBody;
+	const BODIES = {
+		sk: SlovakBody,
+		cs: CzechBody,
+		de: GermanBody,
+		deAt: GermanBody,
+		pl: PolishBody,
+		hu: HungarianBody,
+	} as const satisfies Record<LegalLocale, unknown>;
+	const Body = BODIES[locale];
 
 	return (
 		<LegalPage title={copy.title}>

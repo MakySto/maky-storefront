@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, De, DeAt, Sk } from "@/ui/content/legal/cookies";
+import { Cs, De, DeAt, Hu, Pl, Sk } from "@/ui/content/legal/cookies";
 
 const route = legalRoute({
 	path: "/cookies",
@@ -27,6 +27,18 @@ const route = legalRoute({
 			description:
 				"Informationen über Cookies und ähnliche Technologien bei MAKY.STORE. Optionale Zwecke auswählen, ablehnen oder Ihre Datenschutzeinstellungen ändern.",
 			Body: DeAt,
+		},
+		pl: {
+			title: "Pliki cookies i ustawienia prywatności",
+			description:
+				"Informacje o cookies, pamięci przeglądarki i zgodach w MAKY.STORE. Jak zaakceptować, odrzucić lub zmienić opcjonalne ustawienia.",
+			Body: Pl,
+		},
+		hu: {
+			title: "Sütik és adatvédelmi beállítások",
+			description:
+				"Tájékoztató a MAKY.STORE sütijeiről, böngészőtárhelyéről és hozzájárulásairól. Az opcionális elemzés és marketing beállítása vagy elutasítása.",
+			Body: Hu,
 		},
 	},
 });

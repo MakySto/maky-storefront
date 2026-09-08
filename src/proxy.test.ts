@@ -224,18 +224,20 @@ describe("a route that exists, but not in this market", () => {
 
 	it("404s these pages in a market with no approved copy", async () => {
 		for (const segment of SK_ONLY) {
-			for (const market of ["pl", "fr", "us", "ca"]) {
+			for (const market of ["it", "fr", "us", "ca"]) {
 				expect(await statusOf(`/${market}/${segment}`), `/${market}/${segment}`).toBe(404);
 			}
 		}
 	});
 
 	it("serves the legal pages on every market with approved copy, but not the CMS ones", async () => {
-		// Copy is approved for cz, de and at, so the proxy must let these through — the
-		// gate and `legalLocaleFor` are two halves of one decision and used to be able to
-		// disagree. The CMS pages stay sk-only until Payload holds a translated document,
-		// which is a separate decision from the legal copy landing.
-		for (const market of ["cz", "de", "at"]) {
+		// Copy is approved for cz, de, at, pl and hu, so the proxy must let these through
+		// — the gate and `legalLocaleFor` are two halves of one decision and used to be
+		// able to disagree. The CMS pages stay sk-only until Payload holds a translated
+		// document, which is a separate decision from the legal copy landing; that is why
+		// /pl/o-nas and /hu/o-nas are expected to 404 here even though the seven static
+		// pages do not.
+		for (const market of ["cz", "de", "at", "pl", "hu"]) {
 			for (const segment of LEGAL_PAGES) {
 				expect(await statusOf(`/${market}/${segment}`), `/${market}/${segment}`).not.toBe(404);
 			}
@@ -246,7 +248,7 @@ describe("a route that exists, but not in this market", () => {
 	});
 
 	it("marks them noindex", async () => {
-		expect((await proxy(req("/pl/kontakt"))).headers.get("x-robots-tag")).toBe("noindex");
+		expect((await proxy(req("/it/kontakt"))).headers.get("x-robots-tag")).toBe("noindex");
 	});
 
 	it("leaves them alone on sk", async () => {

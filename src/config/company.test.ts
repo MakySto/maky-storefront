@@ -24,6 +24,22 @@ const BANNED = [
 	"nicht umsatzsteuerpflichtig",
 	"keine Umsatzsteuer ausgewiesen",
 	"Kleinunternehmer",
+	// Polish. The copy states the affirmative — "zarejestrowanym podatnikiem VAT na
+	// Słowacji" — and the failure mode is the same negation-as-reassurance that shipped
+	// in Slovak. "Zwolnienie podmiotowe" is the art. 113 small-business VAT exemption;
+	// claiming it on pages that price with VAT would be the same contradiction.
+	"nie jest podatnikiem VAT",
+	"nie jesteśmy podatnikiem VAT",
+	"niezarejestrowany podatnik VAT",
+	"zwolniony z VAT",
+	"zwolnienie podmiotowe",
+	// Hungarian. "Alanyi adómentes" is the equivalent small-business exemption, and
+	// "nem áfaalany" the direct negation of the affirmative claim the copy makes.
+	"nem áfaalany",
+	"nem vagyunk áfaalany",
+	"nem alanya az áfának",
+	"alanyi adómentes",
+	"áfamentes",
 ];
 
 /**
@@ -115,5 +131,15 @@ describe("legal surfaces", () => {
 		// pattern rather than another entry in BANNED.
 		expect(src).not.toMatch(/(?:nicht|kein[e]?)\s+(?:in der Slowakei\s+)?umsatzsteuerlich/i);
 		expect(src).not.toMatch(/keine\s+Umsatzsteuer-Identifikationsnummer/i);
+		// Polish inserts the negation before the noun phrase, so the German pattern above
+		// does not reach it: "nie jest zarejestrowana jako podatnik VAT".
+		expect(src).not.toMatch(
+			/nie\s+(?:jest|jesteśmy|są)\s+(?:zarejestrowan\w+\s+)?(?:jako\s+)?podatnik\w*\s+VAT/i,
+		);
+		expect(src).not.toMatch(/nie\s+jest\s+zarejestrowan\w+\s+(?:jako\s+)?podatnik/i);
+		// Hungarian negates with a preceding "nem" and agglutinates the rest, so it too
+		// needs its own pattern rather than another BANNED entry.
+		expect(src).not.toMatch(/nem\s+(?:nyilvántartott\s+)?áfaalany/i);
+		expect(src).not.toMatch(/nem\s+(?:vagyunk|minősül)\s+áfaalany/i);
 	});
 });

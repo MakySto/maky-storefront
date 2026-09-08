@@ -22,7 +22,7 @@ const CONTENT = [
 
 describe("which markets have approved legal copy", () => {
 	it("maps only markets a human has signed off, not every channel with a locale", () => {
-		expect(marketsWithLegalCopy()).toEqual(["sk", "cz", "de", "at"]);
+		expect(marketsWithLegalCopy()).toEqual(["sk", "cz", "de", "at", "pl", "hu"]);
 		// There are far more channels than there is approved copy. That gap is the point:
 		// a market must not inherit a warranty clause just because a locale string exists.
 		expect(Object.keys(CHANNEL_MAP).length).toBeGreaterThan(marketsWithLegalCopy().length);
@@ -44,8 +44,21 @@ describe("which markets have approved legal copy", () => {
 		expect(legalLocaleFor("de-eur")).not.toBe(legalLocaleFor("at-eur"));
 	});
 
+	it("gives Poland and Hungary their own copy, sharing no body with each other", () => {
+		// Different languages, different national law, and — unlike de/deAt — not one
+		// syllable of shared prose. They share the company, not the text.
+		expect(legalLocaleFor("pl-pln")).toBe("pl");
+		expect(legalLocaleFor("hu-huf")).toBe("hu");
+		expect(legalLocaleFor("pl-pln")).not.toBe(legalLocaleFor("hu-huf"));
+	});
+
 	it("returns null for a market with no approved copy, and for nonsense", () => {
-		expect(legalLocaleFor("pl-pln")).toBeNull();
+		// `it` stands in for "a market we have not written copy for". It used to be `pl`,
+		// which stopped testing anything the moment Polish copy landed — the same way `de`
+		// stopped when German did. Whoever adds Italian must move this fixture again
+		// rather than delete the assertion, or the test goes on passing while checking
+		// nothing.
+		expect(legalLocaleFor("it-eur")).toBeNull();
 		expect(legalLocaleFor("us-usd")).toBeNull();
 		expect(legalLocaleFor("")).toBeNull();
 		expect(legalLocaleFor("../etc/passwd")).toBeNull();
@@ -69,8 +82,10 @@ describe("every legal page exists in every approved language", () => {
 			const src = source(`src/ui/content/legal/${page}.tsx`);
 			// `href="/sk/..."` in a Czech body would silently send the reader to the Slovak
 			// page. Nothing else in the stack would notice. The delivered German copy
-			// arrived with `/de/...` and `/at/...` written out, so those belong here too.
-			expect(src).not.toMatch(/href="\/(sk|cz|de|at)\//);
+			// arrived with `/de/...` and `/at/...` written out, and the Polish and Hungarian
+			// documents likewise print `/pl/...` and `/hu/...` as their reference URLs, so
+			// every approved market belongs in this pattern.
+			expect(src).not.toMatch(/href="\/(sk|cz|de|at|pl|hu)\//);
 		});
 	}
 });
