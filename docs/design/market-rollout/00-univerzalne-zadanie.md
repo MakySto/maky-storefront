@@ -10,16 +10,21 @@ sa rôznych súborov obsahu a jedného zdieľaného zoznamu (§ 3.1), ktorý sa 
 
 ## 1. Kde teraz stojíme
 
-|                      |                                                          |
-| -------------------- | -------------------------------------------------------- |
-| **Produkcia**        | `3b0843f`, BUILD_ID `HYtxP2Z7BIpVY8eLK5fR0`              |
-| **Vetva so SK + CS** | `claude/maky-store-slovak-pages-8df66b` — **nenasadená** |
-| **Živé trhy**        | iba `sk` (`MAKY_LIVE_MARKETS` nenastavené → default)     |
-| **Hotové jazyky**    | `sk`, `cs`                                               |
+|                   |                                                                    |
+| ----------------- | ------------------------------------------------------------------ |
+| **Produkcia**     | `578c33b`, BUILD_ID `buJZ-9DFbOKS9s5akP4-n` (2026-09-08 14:36 UTC) |
+| **Živé trhy**     | iba `sk` (`MAKY_LIVE_MARKETS` nenastavené → default)               |
+| **Hotové jazyky** | `sk`, `cs` (nasadené) · `de`, `deAt` (vo vetve, nenasadené)        |
 
-⚠️ **Vetva so SK/CS ešte nie je v produkcii.** Tvoje vlákno na nej stavia. Over si
-`git ls-remote`, či medzitým nebola nasadená alebo posunutá — nespoliehaj sa na toto
-číslo.
+**SK aj CS sú od 2026-09-08 v produkcii**, spolu s prácou konfigurátora a garáže —
+`88d9d86` je predkom `578c33b`. Integrácia tých dvoch línií už nie je potrebná.
+
+⚠️ **Toto číslo over, nedôveruj mu.** Produkcia sa 8. 9. posunula trikrát
+(`3b0843f` → `88d9d86` → `578c33b`). Vždy `cat /opt/storefront/.next/MAKY_DEPLOY_META`,
+nikdy nie `git branch`, a `git ls-remote` na stav vetiev.
+
+⚠️ Ak niekde nájdeš `c03625c` alebo `d78ee36` ako „koniec vetvy SK/CS": tie SHA sú
+**osirené rebasom**. Obsah je v produkcii, identifikátory nie. Nemerge-uj ich.
 
 ⚠️ **Nikdy neprepisuj slovenské ani české texty.** Sú schválené. Ak v nich nájdeš
 chybu, nahlás ju — neopravuj ju v svojom vlákne, lebo dve vlákna by si sadli do
@@ -210,7 +215,11 @@ Rozšírenie kontraktu je vec vlastníka Payloadu, nie tvojho vlákna.
 „čas odoslania". To bolo unáhlené — **slovenský § 20a ods. 5 zákona 108/2024 žiada
 dátum a čas ODOSLANIA**. Slovenské znenie je teda správne pre SK.
 
-Nemecký **§ 356a ods. 3 BGB** hovorí o **prijatí**. Dva trhy, dve rôzne udalosti.
+Nemecký **§ 356a ods. 4 BGB** žiada, aby potvrdenie obsahovalo obsah vyhlásenia
+**a dátum a čas jeho prijatia** („das Datum und die Uhrzeit ihres Eingangs"). Ods. 3 je
+niečo iné — potvrdzovací krok, teda tlačidlo „Widerruf bestätigen". Dva trhy, dve rôzne
+udalosti. (Overené na dejure.org/gesetze/BGB/356a.html, 2026-09-08;
+gesetze-im-internet.de bol z tohto stroja nedostupný.)
 
 Overený stav implementácie: `submittedAt` generuje **Payload pri ukladaní záznamu**.
 To nie je ani jedna z tých dvoch udalostí presne — je to čas zápisu, ktorý sa času

@@ -31,7 +31,8 @@ odstúpenia priamo predpokladá, takže pre `/de` je to blokátor spustenia.
 3. **Časové údaje.** Dve krajiny, dve rôzne udalosti:
 
    - **SK § 20a ods. 5** zákona 108/2024 — dátum a čas **odoslania**,
-   - **DE § 356a ods. 3 BGB** — **prijatie**.
+   - **DE § 356a ods. 4 BGB** — **prijatie** („Datum und Uhrzeit ihres Eingangs“).
+     Ods. 3 je potvrdzovací krok („Widerruf bestätigen“), nie obsah potvrdenia.
 
    Dnes Payload generuje `submittedAt` **pri ukladaní záznamu**, čo nie je presne ani
    jedno. Navrhni malý serverový kontrakt, ktorý rozlíši udalosti, ktoré systém naozaj

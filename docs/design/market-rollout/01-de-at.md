@@ -2,27 +2,32 @@
 
 Najprv `00-univerzalne-zadanie.md`. Tento súbor iba dopĺňa.
 
-| trh | kanál    | mena | locale | jazykový kód v mape             |
-| --- | -------- | ---- | ------ | ------------------------------- |
-| de  | `de-eur` | EUR  | de-DE  | `de`                            |
-| at  | `at-eur` | EUR  | de-AT  | `de` **alebo** `deAt` — viď § 1 |
+| trh | kanál    | mena | locale | jazykový kód v mape |
+| --- | -------- | ---- | ------ | ------------------- |
+| de  | `de-eur` | EUR  | de-DE  | `de`                |
+| at  | `at-eur` | EUR  | de-AT  | `deAt`              |
 
-## 1. Jeden jazyk, dva trhy — a jedno rozhodnutie navyše
+## 1. Jeden jazyk, dva trhy — rozhodnuté: variant B
 
 Dodaný balík volí **spoločnú nemčinu s vykaním „Sie"**, nie dva umelé preklady. To je
 rozumné. Väčšina viet je zhodná.
 
 Lenže mapa `APPROVED_COPY` priraďuje **trh → jazyk**, a telá dostávajú iba `channel`.
-Máš dve možnosti a musíš si vybrať vedome:
+Boli dve možnosti:
 
 - **A — jeden jazyk `de`, rozdiely vetvené vnútri tela podľa `channel`.** Menej
   súborov, ale vetvenie sa ľahko prehliadne a testy parity jazykov ho nevidia.
 - **B — dva jazyky `de` a `deAt` so zdieľanými fragmentmi.** Viac kódu, ale rozdiel
   je viditeľný v type a test ho vynúti.
 
-**Odporúčam B**, práve preto, že rozdiely tu nie sú kozmetické (§ 2). Spoločné odseky
-vytiahni do zdieľaných komponentov v tom istom module, ako to robí `kontakt.tsx` pre
-adresy.
+✅ **Implementované ako B** (2026-09-08), práve preto, že rozdiely tu nie sú kozmetické
+(§ 2). Zákaznícke locale sa nemenia — `CHANNEL_MAP` naďalej hovorí `de-DE` a `de-AT`;
+`deAt` je interný názov právneho textu.
+
+Všetko, čím sa tie dva trhy naozaj líšia, je v **jednom objekte**:
+`src/ui/content/legal/german-market.tsx` (`GERMANY` / `AUSTRIA`). Recenzent tak vidí celý
+rozdiel na jednom mieste namiesto diffovania siedmich párov tiel. Zdieľané odseky sú
+v komponente `German` v každom module, ako to robí `kontakt.tsx` pre adresy.
 
 ## 2. DE a AT nie sú právne totožné
 
@@ -49,20 +54,29 @@ zadania). Ak metódy nemenujú dopravcu, netvrď „FedEx a Slovenská pošta" b
 hoci balík to tak uvádza a **je to tvoj skutočný dopravca podľa CLAUDE.md §9**, over,
 či pre DE/AT platí to isté.
 
-## 4. Časový údaj v potvrdení — over, nepremenúvaj
+## 4. Časový údaj v potvrdení — dva trhy, dve rôzne udalosti
 
-Balík upozorňuje, že **§ 356a BGB** vyžaduje v potvrdení samotnú deklaráciu **a čas jej
-prijatia**.
+**§ 356a ods. 4 BGB** žiada, aby potvrdenie obsahovalo obsah vyhlásenia **a dátum a čas
+jeho prijatia** („das Datum und die Uhrzeit ihres Eingangs"). Ods. 3 je niečo iné —
+potvrdzovací krok, teda tlačidlo „Widerruf bestätigen".
+_(Overené na `dejure.org/gesetze/BGB/356a.html`, 2026-09-08; `gesetze-im-internet.de` je
+z tohto stroja nedostupný.)_
 
-Overil som stav: `submittedAt` **generuje Payload pri uložení**, takže to **je** čas
-prijatia — ale slovenský text ho volá „čas odoslania". Čiže:
+⚠️ **Skoršie znenie tohto odseku bolo nesprávne** a tvrdilo, že `submittedAt` „**je** čas
+prijatia, len sa nepravdivo opisuje". Nie je. `submittedAt` generuje Payload pri
+**uložení záznamu** — to je čas zápisu. Blíži sa prijatiu, ale nie je s ním totožný, a
+slovenskému § 20a ods. 5 zákona 108/2024, ktorý žiada čas **odoslania**, zodpovedá presne.
 
-- ✅ údaj existuje a má správny význam,
-- ❌ opisuje sa nepravdivo.
+Takže:
 
-**Nepremenúvaj pole ani nevyrábaj druhý čas v storefronte** (hodinám klienta sa nedá
-veriť). Opíš existujúci údaj pravdivo. Ak DE/AT vyžaduje **oba** časy, je to zmena
-kontraktu na strane Payloadu — nahlás ju, nerieš.
+- ✅ slovenské znenie je pre SK správne — **neprepisuj ho**,
+- ❌ pre DE chýba samostatný, dôveryhodný čas **prijatia**.
+
+**Nepremenúvaj existujúce pole a nevyrábaj druhý čas v storefronte** — hodinám klienta sa
+veriť nedá. Je to serverová zmena kontraktu a vlastní ju vlákno **Returns V2**. Nemecké
+znenie oboch údajov je pripravené v `src/lib/withdrawal/copy-de.ts`
+(`submissionTimeLabel`, `receivedTimeLabel`) a v e-mailových šablónach v
+`docs/design/market-rollout/de-at/`.
 
 ## 5. Formulár odstúpenia — dočasne nie, ale je to blokátor spustenia
 
