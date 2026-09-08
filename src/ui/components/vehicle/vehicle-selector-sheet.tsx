@@ -32,7 +32,7 @@ import { type BodyType, type RoofType, type VehicleSelection } from "@/lib/fitme
 import { loadSelectorStep } from "@/lib/fitment/selector-actions";
 import { type MonthAnswer, type RoofAnswer, type SelectorStep } from "@/lib/fitment/selector-types";
 import { type GenerationCandidate } from "@/lib/fitment/selector-plan";
-import { saveVehicle } from "@/lib/garage/actions";
+import { chooseVehicle } from "@/lib/garage/actions";
 import { GARAGE_MAX_VEHICLES } from "@/lib/garage/cookie";
 
 type Draft = {
@@ -222,7 +222,10 @@ export function VehicleSelectorSheet({ children, open, onOpenChange }: Props) {
 			...(draft.monthAnswer?.kind === "month" ? { manufactureMonth: draft.monthAnswer.month } : {}),
 		};
 		startSaving(async () => {
-			const result = await saveVehicle(selection);
+			// USE, not save. Confirming a car is a shopping choice, not a request to keep
+			// it — so it can never be refused for a full garage. Saving is its own button
+			// on `/{market}/garage`.
+			const result = await chooseVehicle(selection);
 			if (result.ok) {
 				setDraft({});
 				onOpenChange(false);

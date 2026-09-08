@@ -32,18 +32,19 @@ export const GARAGE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 /** v1 stores three. A limit the UI enforces visibly, never by silently dropping. */
 export const GARAGE_MAX_VEHICLES = 3;
 
-export const GARAGE_PAYLOAD_VERSION = 2;
+export const GARAGE_PAYLOAD_VERSION = 3;
 
 /**
  * Versions a stored cookie may be written in and still be read.
  *
- * v1 → v2 added the optional month of manufacture. Nothing was removed and nothing
- * changed meaning, so a v1 garage migrates by being re-stamped: the shopper keeps their
- * cars instead of finding the garage empty for a reason no page can explain. There are no
- * real users of this feature yet, but every browser that has tested it holds a v1 cookie
- * — including the ones this work is verified in.
+ * v1 → v2 added the optional month of manufacture. v2 → v3 added `u`, the vehicle in
+ * USE. Nothing was removed and nothing changed meaning at either step, so an older
+ * garage migrates by being re-stamped: the shopper keeps their cars instead of finding
+ * the garage empty for a reason no page can explain. There are no real users of this
+ * feature yet, but every browser that has tested it holds an older cookie — including
+ * the ones this work is verified in.
  */
-export const SUPPORTED_PAYLOAD_VERSIONS = [1, 2] as const;
+export const SUPPORTED_PAYLOAD_VERSIONS = [1, 2, 3] as const;
 
 /**
  * Stored per vehicle. IDENTIFIERS AND QUALIFIERS ONLY.
@@ -88,7 +89,24 @@ export type StoredVehicle = {
 export type GaragePayload = {
 	/** payload version */ v: number;
 	/** active index into `c` */ a: number;
-	/** vehicles */ c: StoredVehicle[];
+	/** SAVED vehicles — only ever what the shopper asked to keep */ c: StoredVehicle[];
+	/**
+	 * The vehicle in USE, when it is not one of the saved ones.
+	 *
+	 * Choosing a car and keeping a car are different intentions, and merging them is what
+	 * filled the garage without anyone asking: every "Potvrdiť vozidlo" wrote to `c`, so
+	 * trying a fourth car hit the three-vehicle limit and was refused outright — the
+	 * shopper could not even LOOK at it. Marek hit exactly that.
+	 *
+	 * So `u` holds the car currently being shopped for. It persists like any other cookie
+	 * field, which is why a one-car shopper never has to save anything: the site remembers
+	 * their car across visits regardless. `c` is now a deliberate list for people who want
+	 * to switch between several, and the limit can no longer block a selection.
+	 *
+	 * Invariant, enforced in `normalizePayload`: if `u` is also in `c` it is dropped and
+	 * `a` points at the saved copy instead. One car is never in both places.
+	 */
+	u?: StoredVehicle;
 	/**
 	 * The dataset version the ids were chosen against. Not a signature and not trusted —
 	 * it is the hint that lets a read re-check ids after CFM ships a new dataset and ask
@@ -196,7 +214,7 @@ export function normalizePayload(raw: unknown): GaragePayload | null {
 	const value = raw as Record<string, unknown>;
 	// A v1 payload is read and RE-STAMPED as v2. v2 only added an optional field, so
 	// every v1 vehicle is already a valid v2 vehicle — the shopper keeps their cars.
-	if (typeof value.v !== "number" || !SUPPORTED_PAYLOAD_VERSIONS.includes(value.v as 1 | 2)) return null;
+	if (typeof value.v !== "number" || !SUPPORTED_PAYLOAD_VERSIONS.includes(value.v as 1 | 2 | 3)) return null;
 	if (!Array.isArray(value.c)) return null;
 
 	const vehicles = value.c.map(stripInvalidMonth).filter(isStoredVehicle).slice(0, GARAGE_MAX_VEHICLES);
@@ -208,10 +226,18 @@ export function normalizePayload(raw: unknown): GaragePayload | null {
 			? value.a
 			: 0;
 
+	// The car in use, if it is not already saved. A `u` that duplicates a saved car is
+	// not an error — it is what happens when the shopper re-picks a car they already
+	// keep — so it collapses onto the saved copy rather than being stored twice.
+	const rawInUse = stripInvalidMonth(value.u);
+	const inUse = isStoredVehicle(rawInUse) ? rawInUse : null;
+	const savedIndex = inUse ? vehicles.findIndex((v) => sameVehicle(v, inUse)) : -1;
+
 	return {
 		v: GARAGE_PAYLOAD_VERSION,
-		a: vehicles.length === 0 ? 0 : active,
+		a: vehicles.length === 0 ? 0 : savedIndex >= 0 ? savedIndex : active,
 		c: vehicles,
+		...(inUse && savedIndex === -1 ? { u: inUse } : {}),
 		...(typeof value.dv === "string" ? { dv: value.dv } : {}),
 	};
 }
@@ -257,7 +283,7 @@ export function decodeGarageCookie(
 
 	if (typeof parsed === "object" && parsed !== null) {
 		const version = (parsed as { v?: unknown }).v;
-		if (typeof version !== "number" || !SUPPORTED_PAYLOAD_VERSIONS.includes(version as 1 | 2)) {
+		if (typeof version !== "number" || !SUPPORTED_PAYLOAD_VERSIONS.includes(version as 1 | 2 | 3)) {
 			return { ok: false, reason: "unsupported-version" };
 		}
 	}

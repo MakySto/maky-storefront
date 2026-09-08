@@ -183,12 +183,25 @@ async function validateSelection(
  * A generation that does not constrain the qualifier at all stores nothing for it.
  */
 /**
- * Save a vehicle and make it active.
+ * Choose a vehicle to shop with: make it active WITHOUT adding it to the garage.
  *
- * Re-selecting a car already in the garage promotes it instead of storing a duplicate —
- * a shopper switching between two cars would otherwise fill three slots with two cars.
+ * Named `chooseVehicle`, not `useVehicle`: a `use*` export is read as a React hook by
+ * `react-hooks/rules-of-hooks`, and this is a server action called from a callback.
+ *
+ * This is what "Potvrdiť vozidlo" calls, and the split is the whole point. Choosing a car
+ * to shop with and keeping a car are different intentions; merging them meant every
+ * selection wrote to the saved list, so a shopper trying a fourth car hit the
+ * three-vehicle limit and was refused — they could not even look at it. Marek hit that,
+ * and could not find the garage to clear it either.
+ *
+ * It therefore CANNOT fail on the limit: the limit governs how many cars are kept, and
+ * this keeps none. Nothing is lost by not saving — `u` lives in the same year-long
+ * cookie, so a one-car shopper's car is remembered across visits with no button pressed.
+ *
+ * Re-selecting a car that IS saved activates the saved copy instead of shadowing it, so
+ * one car is never in two places.
  */
-export async function saveVehicle(selection: VehicleSelection): Promise<GarageActionResult> {
+export async function chooseVehicle(selection: VehicleSelection): Promise<GarageActionResult> {
 	const mode = resolveGarageMode();
 	if (mode.kind === "disabled") return { ok: false, error: "garage-disabled" };
 
@@ -199,29 +212,57 @@ export async function saveVehicle(selection: VehicleSelection): Promise<GarageAc
 	const stored = fromVehicleSelection(validation.selection);
 	const existing = payload.c.findIndex((v) => sameVehicle(v, stored));
 
-	let vehicles = payload.c;
-	let activeIndex: number;
-
-	if (existing >= 0) {
-		activeIndex = existing;
-	} else {
-		// The limit is enforced by refusing, not by evicting. Silently dropping the
-		// oldest car would lose data the shopper entered by hand, without telling them.
-		if (vehicles.length >= GARAGE_MAX_VEHICLES) return { ok: false, error: "limit-reached" };
-		vehicles = [...vehicles, stored];
-		activeIndex = vehicles.length - 1;
-	}
-
 	const { dataset } = await loadFitmentDataset();
-	const next: GaragePayload = {
-		v: payload.v,
-		a: activeIndex,
-		c: vehicles,
-		...(dataset ? { dv: dataset.datasetVersion } : {}),
-	};
+	const next: GaragePayload =
+		existing >= 0
+			? { v: payload.v, a: existing, c: payload.c, ...(dataset ? { dv: dataset.datasetVersion } : {}) }
+			: {
+					v: payload.v,
+					a: payload.a,
+					c: payload.c,
+					u: stored,
+					...(dataset ? { dv: dataset.datasetVersion } : {}),
+				};
 
 	if (!(await writeGarage(next))) return { ok: false, error: "write-failed" };
-	return { ok: true, activeIndex, count: vehicles.length };
+	return { ok: true, activeIndex: existing >= 0 ? existing : -1, count: payload.c.length };
+}
+
+/**
+ * Keep the vehicle currently in use — the explicit half of the split above.
+ *
+ * Takes no argument on purpose: the car being saved is the one on screen, and passing a
+ * selection from the client would let the two disagree. Failing on the limit is correct
+ * here and only here, because this is the request to KEEP a car.
+ */
+export async function saveActiveVehicle(): Promise<GarageActionResult> {
+	const mode = resolveGarageMode();
+	if (mode.kind === "disabled") return { ok: false, error: "garage-disabled" };
+
+	const { payload } = await readGaragePayload();
+	const stored = payload.u;
+	// Already saved, or nothing in use: the shopper's intent is already satisfied.
+	if (!stored) return { ok: true, activeIndex: payload.a, count: payload.c.length };
+
+	const existing = payload.c.findIndex((v) => sameVehicle(v, stored));
+	if (existing >= 0) {
+		const next: GaragePayload = { ...payload, a: existing, u: undefined };
+		delete next.u;
+		if (!(await writeGarage(next))) return { ok: false, error: "write-failed" };
+		return { ok: true, activeIndex: existing, count: payload.c.length };
+	}
+
+	if (payload.c.length >= GARAGE_MAX_VEHICLES) return { ok: false, error: "limit-reached" };
+
+	const vehicles = [...payload.c, stored];
+	const next: GaragePayload = {
+		v: payload.v,
+		a: vehicles.length - 1,
+		c: vehicles,
+		...(payload.dv ? { dv: payload.dv } : {}),
+	};
+	if (!(await writeGarage(next))) return { ok: false, error: "write-failed" };
+	return { ok: true, activeIndex: vehicles.length - 1, count: vehicles.length };
 }
 
 export async function removeVehicle(index: number): Promise<GarageActionResult> {
@@ -252,7 +293,10 @@ export async function setActiveVehicle(index: number): Promise<GarageActionResul
 	if (!Number.isInteger(index) || index < 0 || index >= payload.c.length) {
 		return { ok: false, error: "not-found" };
 	}
+	// Picking a saved car stops using the unsaved one — otherwise `u` would keep winning
+	// in `readGarage` and the click would appear to do nothing.
 	const next: GaragePayload = { ...payload, a: index };
+	delete next.u;
 	if (!(await writeGarage(next))) return { ok: false, error: "write-failed" };
 	return { ok: true, activeIndex: index, count: payload.c.length };
 }

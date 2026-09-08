@@ -7,6 +7,7 @@ import {
 	GARAGE_COOKIE_MAX_AGE,
 	GARAGE_COOKIE_NAME,
 	GARAGE_MAX_VEHICLES,
+	GARAGE_PAYLOAD_VERSION,
 	type GaragePayload,
 	normalizePayload,
 	sameVehicle,
@@ -212,17 +213,17 @@ describe("byte budget — measured, not assumed", () => {
 	});
 });
 
-describe("payload v2 — the optional month, and v1 cars that must survive it", () => {
+describe("payload versions — older cars must survive every bump", () => {
 	const v1Vehicle = { k: "mk", m: "md", g: "gn", y: 2019, r: "raised-rails", b: "suv", d: 5 };
 
-	it("reads a v1 payload and re-stamps it as v2", () => {
+	it("reads a v1 payload and re-stamps it as the current version", () => {
 		// There are no real users of the garage yet, but every browser this feature has
 		// been tested in holds a v1 cookie — including the ones the next verification
 		// pass runs in. Finding the garage empty, for a reason no page can explain, is
 		// the wrong way to learn that the payload version moved.
 		const payload = normalizePayload({ v: 1, a: 0, c: [v1Vehicle] });
 		expect(payload).not.toBeNull();
-		expect(payload!.v).toBe(2);
+		expect(payload!.v).toBe(GARAGE_PAYLOAD_VERSION);
 		expect(payload!.c).toHaveLength(1);
 		expect(payload!.c[0]!.k).toBe("mk");
 	});
@@ -231,7 +232,7 @@ describe("payload v2 — the optional month, and v1 cars that must survive it", 
 		const encoded = encodeGarageCookie({ v: 1, a: 0, c: [v1Vehicle] } as never, null);
 		const result = decodeGarageCookie(encoded, { secret: null, requireSignature: false });
 		expect(result.ok).toBe(true);
-		expect(result.ok && result.payload.v).toBe(2);
+		expect(result.ok && result.payload.v).toBe(GARAGE_PAYLOAD_VERSION);
 		expect(result.ok && result.payload.c[0]!.g).toBe("gn");
 	});
 
@@ -303,5 +304,52 @@ describe("payload v2 — the optional month, and v1 cars that must survive it", 
 		expect(stored.k.startsWith("veh:")).toBe(true);
 		expect(stored.m.startsWith("veh:")).toBe(true);
 		expect(stored.g.startsWith("veh:")).toBe(true);
+	});
+});
+
+/**
+ * The use/save split, at the payload layer.
+ *
+ * `u` is the car being shopped with; `c` is the list the shopper asked to keep. Before
+ * the split they were the same field, so every "Potvrdiť vozidlo" wrote to `c` and a
+ * fourth car was refused outright — the shopper could not even look at it.
+ *
+ * The invariant worth a test is that a car is never in both places: `u` only means
+ * "in use AND not saved", so every reader can take `u ?? c[a]` and be right.
+ */
+describe("the vehicle in use", () => {
+	const car = { k: "mk", m: "md", g: "gn", y: 2019 };
+
+	it("keeps an unsaved car in use alongside an empty saved list", () => {
+		const p = normalizePayload({ v: 3, a: 0, c: [], u: car });
+		expect(p!.u).toEqual(car);
+		expect(p!.c).toEqual([]);
+	});
+
+	it("collapses a car that is also saved onto the saved copy, and points `a` at it", () => {
+		const other = { k: "mk", m: "md", g: "other", y: 2019 };
+		const p = normalizePayload({ v: 3, a: 0, c: [other, car], u: car });
+		// Not stored twice, and the active index moved to the saved one.
+		expect(p!.u).toBeUndefined();
+		expect(p!.a).toBe(1);
+	});
+
+	it("drops a malformed car in use without touching the saved ones", () => {
+		const p = normalizePayload({ v: 3, a: 0, c: [car], u: { k: "", m: "md", g: "gn", y: 2019 } });
+		expect(p!.u).toBeUndefined();
+		expect(p!.c).toHaveLength(1);
+	});
+
+	it("survives a round trip through the cookie", () => {
+		const encoded = encodeGarageCookie({ v: GARAGE_PAYLOAD_VERSION, a: 0, c: [], u: car }, SECRET);
+		const result = decodeGarageCookie(encoded, { secret: SECRET, requireSignature: true });
+		expect(result.ok && result.payload.u).toEqual(car);
+	});
+
+	it("reads a v2 cookie, which has no car in use, unchanged", () => {
+		const p = normalizePayload({ v: 2, a: 0, c: [car] });
+		expect(p!.u).toBeUndefined();
+		expect(p!.c).toHaveLength(1);
+		expect(p!.v).toBe(GARAGE_PAYLOAD_VERSION);
 	});
 });

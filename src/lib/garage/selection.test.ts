@@ -8,8 +8,8 @@ import { anApplication } from "@/lib/fitment/fixtures/build";
  *
  * The selector was known to drop a single-valued qualifier as "no need to ask". Measured
  * against the resolver DIRECTLY that reads as AMBIGUOUS — the configurator offers nothing.
- * But the running app does not go selector → resolver; it goes selector → saveVehicle →
- * cookie → resolver, and `saveVehicle` filled the missing roof in. So the real behaviour
+ * But the running app does not go selector → resolver; it goes selector → chooseVehicle →
+ * cookie → resolver, and `chooseVehicle` filled the missing roof in. So the real behaviour
  * was not silence, it was a verified-fit claim resting on a roof type nobody confirmed.
  */
 describe("the roof type is never invented", () => {

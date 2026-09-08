@@ -48,9 +48,19 @@ export type ResolvedVehicle = {
 
 export type GarageState = {
 	status: GarageStatus;
+	/** The SAVED vehicles. The car in use is not in here unless it was saved. */
 	vehicles: ResolvedVehicle[];
+	/** Index into `vehicles`, or -1 when the active car is in use but not saved. */
 	activeIndex: number;
 	active: ResolvedVehicle | null;
+	/**
+	 * Is the active car one of the saved ones?
+	 *
+	 * `false` means the shopper is using a car they have not asked to keep, which is the
+	 * normal state after picking one: the garage offers to save it, and nothing else
+	 * changes. Every other surface treats the active car identically either way.
+	 */
+	activeIsSaved: boolean;
 	/** True when the payload was readable but had to be repaired. */
 	repaired: boolean;
 	signed: boolean;
@@ -61,6 +71,7 @@ export const EMPTY_GARAGE_STATE: GarageState = {
 	vehicles: [],
 	activeIndex: 0,
 	active: null,
+	activeIsSaved: false,
 	repaired: false,
 	signed: false,
 };
@@ -132,13 +143,24 @@ export async function readGarage(dataset: FitmentDataset | null): Promise<Garage
 		...labelsFor(dataset, stored),
 	}));
 
-	const activeIndex = vehicles.length === 0 ? 0 : Math.min(payload.a, vehicles.length - 1);
+	// The car in use but not saved. `normalizePayload` guarantees it is not also in `c`,
+	// so exactly one of these two branches produces the active vehicle.
+	const inUse: ResolvedVehicle | null = payload.u
+		? { stored: payload.u, selection: toVehicleSelection(payload.u), ...labelsFor(dataset, payload.u) }
+		: null;
+
+	const savedIndex = vehicles.length === 0 ? 0 : Math.min(payload.a, vehicles.length - 1);
+	const activeIndex = inUse ? -1 : savedIndex;
+	const active = inUse ?? vehicles[savedIndex] ?? null;
 
 	return {
-		status: vehicles.length === 0 && status === "ok" ? "absent" : status,
+		// A shopper using a car has a garage worth reading even with nothing saved in it,
+		// so "absent" now means no active car AND no saved car — not merely an empty list.
+		status: vehicles.length === 0 && !inUse && status === "ok" ? "absent" : status,
 		vehicles,
 		activeIndex,
-		active: vehicles[activeIndex] ?? null,
+		active,
+		activeIsSaved: active !== null && inUse === null,
 		repaired: status === "recovered",
 		signed,
 	};

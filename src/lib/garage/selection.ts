@@ -2,7 +2,7 @@ import { type FitmentDataset, type VehicleSelection } from "@/lib/fitment/contra
 import { roofChoicesFor } from "@/lib/fitment/selector-plan";
 
 /**
- * Normalising a vehicle selection against the dataset — the pure half of `saveVehicle`.
+ * Normalising a vehicle selection against the dataset — the pure half of `chooseVehicle`.
  *
  * Separate from `actions.ts` because that module is `"use server"` and may export nothing
  * but async functions, and because the rule below is worth testing directly. It is a rule

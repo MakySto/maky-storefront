@@ -8,6 +8,7 @@ import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { readGarage } from "@/lib/garage/state";
 import { GARAGE_MAX_VEHICLES } from "@/lib/garage/cookie";
 import { GarageList } from "@/ui/components/vehicle/garage-list";
+import { InUseVehicle } from "@/ui/components/vehicle/in-use-vehicle";
 import { VehicleSelectorLauncher } from "@/ui/components/vehicle/vehicle-selector-launcher";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { cn } from "@/lib/utils";
@@ -72,6 +73,26 @@ async function GarageContent({ channel }: { channel: string }) {
 
 			{!dataset && <Notice title={t("unavailable")} detail={t("unavailableDetail")} />}
 
+			{/*
+			 * The car in use but not saved, above the saved list. Selecting a vehicle no
+			 * longer writes to the garage, so without this card the shopper would have no
+			 * way to keep one — and no sign of which car the site is currently using.
+			 */}
+			{!garage.activeIsSaved && garage.active && (
+				<InUseVehicle
+					label={
+						garage.active.unresolved
+							? null
+							: [garage.active.makeName, garage.active.modelName, garage.active.generationName]
+									.filter(Boolean)
+									.join(" ")
+					}
+					year={garage.active.stored.y}
+					roofType={garage.active.stored.r ?? null}
+					atLimit={garage.vehicles.length >= GARAGE_MAX_VEHICLES}
+				/>
+			)}
+
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<p className="text-text-tertiary text-sm">
 					{t("savedCount", { count: garage.vehicles.length, max: GARAGE_MAX_VEHICLES })}
@@ -81,7 +102,14 @@ async function GarageContent({ channel }: { channel: string }) {
 				)}
 			</div>
 
-			{garage.vehicles.length === 0 ? (
+			{/*
+			 * The empty state is about the SAVED list, but it reads as "you have no
+			 * vehicle" — which contradicts the card above it and the vehicle named in the
+			 * header. With a car in use the invitation is already on that card, so this
+			 * block would only tell the shopper something untrue about their own screen.
+			 * A first-time visitor — nothing saved AND nothing in use — still sees it.
+			 */}
+			{garage.vehicles.length === 0 && !garage.active ? (
 				<div className="border-border-default rounded-lg border border-dashed p-8 text-center">
 					<p className="text-text-primary text-sm font-medium">{t("empty")}</p>
 					<p className="text-text-tertiary mt-1 text-sm">{t("emptyHint")}</p>
