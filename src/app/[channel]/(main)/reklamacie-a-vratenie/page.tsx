@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, Sk } from "@/ui/content/legal/reklamacie-a-vratenie";
+import { Cs, De, DeAt, Sk } from "@/ui/content/legal/reklamacie-a-vratenie";
 
 const route = legalRoute({
 	path: "/reklamacie-a-vratenie",
@@ -15,6 +15,18 @@ const route = legalRoute({
 			description:
 				"Chcete vrátit objednávku nebo reklamovat vadný výrobek? Zde najdete postup, lhůty, adresu pro zaslání a informace o vrácení peněz.",
 			Body: Cs,
+		},
+		de: {
+			title: "Reklamationen und Rücksendungen",
+			description:
+				"Artikel zurückgeben oder einen Mangel reklamieren: So erreichen Sie uns. Informationen zu Rücktransport, Erstattung und Ihren gesetzlichen Rechten.",
+			Body: De,
+		},
+		deAt: {
+			title: "Reklamationen und Rücksendungen",
+			description:
+				"Artikel zurückgeben oder einen Mangel reklamieren: So erreichen Sie uns. Informationen zu Rücktransport, Erstattung und Ihren gesetzlichen Rechten.",
+			Body: DeAt,
 		},
 	},
 });

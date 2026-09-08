@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, Sk } from "@/ui/content/legal/cookies";
+import { Cs, De, DeAt, Sk } from "@/ui/content/legal/cookies";
 
 const route = legalRoute({
 	path: "/cookies",
@@ -15,6 +15,18 @@ const route = legalRoute({
 			description:
 				"Co jsou cookies a podobné technologie, k čemu je MAKY.STORE používá a jak si můžete nastavit nebo odvolat souhlas s analytikou a marketingem.",
 			Body: Cs,
+		},
+		de: {
+			title: "Cookies und Datenschutzeinstellungen",
+			description:
+				"Informationen über Cookies und ähnliche Technologien bei MAKY.STORE. Optionale Zwecke auswählen, ablehnen oder Ihre Datenschutzeinstellungen ändern.",
+			Body: De,
+		},
+		deAt: {
+			title: "Cookies und Datenschutzeinstellungen",
+			description:
+				"Informationen über Cookies und ähnliche Technologien bei MAKY.STORE. Optionale Zwecke auswählen, ablehnen oder Ihre Datenschutzeinstellungen ändern.",
+			Body: DeAt,
 		},
 	},
 });

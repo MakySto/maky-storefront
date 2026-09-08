@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, Sk } from "@/ui/content/legal/obchodne-podmienky";
+import { Cs, De, DeAt, Sk } from "@/ui/content/legal/obchodne-podmienky";
 
 const route = legalRoute({
 	path: "/obchodne-podmienky",
@@ -15,6 +15,18 @@ const route = legalRoute({
 			description:
 				"Obchodní podmínky MAKY.STORE: objednávka, platba, doručení, odstoupení od smlouvy, odpovědnost za vady a řešení spotřebitelských sporů.",
 			Body: Cs,
+		},
+		de: {
+			title: "Allgemeine Geschäftsbedingungen",
+			description:
+				"Die AGB von MAKY.STORE für Bestellungen aus Deutschland: Vertragsschluss, Zahlung, Lieferung, Widerruf und gesetzliche Mängelrechte.",
+			Body: De,
+		},
+		deAt: {
+			title: "Allgemeine Geschäftsbedingungen",
+			description:
+				"Die AGB von MAKY.STORE für Bestellungen aus Österreich: Vertragsschluss, Zahlung, Lieferung, Widerruf und gesetzliche Mängelrechte.",
+			Body: DeAt,
 		},
 	},
 });

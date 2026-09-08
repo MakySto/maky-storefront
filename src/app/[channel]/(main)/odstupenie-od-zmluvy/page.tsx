@@ -11,7 +11,7 @@ import { isWithdrawalFormServable, withdrawalBlockReason } from "@/lib/withdrawa
 import { normalizeWithdrawalPhone } from "@/lib/withdrawal/validate";
 import { legalLocaleFor } from "@/lib/legal/locale";
 import { LegalPage } from "@/ui/components/legal/legal-page";
-import { Cs, Sk } from "@/ui/content/legal/odstupenie-od-zmluvy";
+import { Cs, De, DeAt, Sk } from "@/ui/content/legal/odstupenie-od-zmluvy";
 import { WithdrawalForm } from "@/ui/components/withdrawal/withdrawal-form";
 import { getCurrentUser, type AccountUser } from "../account/get-current-user";
 import { submitWithdrawalAction } from "./actions";
@@ -57,6 +57,24 @@ const META = {
 			"Vrácení nákupu bez uvedení důvodu: online formulář, lhůty, zpětná doprava a vrácení peněz. Odstoupení můžete poslat i e-mailem nebo poštou.",
 		withoutForm:
 			"Vrácení nákupu bez uvedení důvodu: lhůty, zpětná doprava a vrácení peněz. Odstoupení můžete poslat e-mailem nebo poštou.",
+	},
+	// Germany and Austria name the right differently — Widerrufsrecht vs Rücktrittsrecht
+	// — and the <h1> follows the local term. Only the `withoutForm` description is ever
+	// served today (see `servesOnlineFunction`), but both are kept so that turning the
+	// function on for these markets is a one-line change in the contract, not a copy task.
+	de: {
+		title: "Widerrufsrecht",
+		withForm:
+			"So erklären Sie den Widerruf Ihres Kaufs bei MAKY.STORE: Online-Funktion, Fristen, Rücksendung, Erstattung und Muster-Widerrufsformular.",
+		withoutForm:
+			"So erklären Sie den Widerruf Ihres Kaufs bei MAKY.STORE. Informationen zu Fristen, Rücksendung, Erstattung und zum Muster-Widerrufsformular.",
+	},
+	deAt: {
+		title: "Rücktrittsrecht",
+		withForm:
+			"Ihr Rücktrittsrecht beim Online-Kauf bei MAKY.STORE: Online-Funktion, Fristen, Erklärung, Rücksendung und Erstattung. Mit Muster-Widerrufsformular.",
+		withoutForm:
+			"Ihr Rücktrittsrecht beim Online-Kauf bei MAKY.STORE: Fristen, Erklärung, Rücksendung und Erstattung. Mit Muster-Widerrufsformular.",
 	},
 } as const;
 
@@ -172,7 +190,8 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	const alternatives = { email: companyInfo.email, postalAddress: companyInfo.returnAddress };
 	const modelFormHref = marketHref(channel, `${PATH}/vzorovy-formular`);
 
-	const Body = locale === "sk" ? Sk : Cs;
+	const BODIES = { sk: Sk, cs: Cs, de: De, deAt: DeAt } as const;
+	const Body = BODIES[locale];
 	const form = formServable ? (
 		<section aria-labelledby="online-withdrawal" className="not-prose my-10">
 			<h2 id="online-withdrawal" className="text-text-primary text-xl font-semibold">

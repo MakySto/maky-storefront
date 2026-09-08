@@ -277,8 +277,11 @@ describe("earlier rules still win over the gate", () => {
 	});
 
 	it("404s a market-scoped route from policy, without a lookup", async () => {
+		// `pl` has no approved legal copy. This used to say `/de/kontakt`, which stopped
+		// testing the rule the moment German copy landed — the point is that policy
+		// answers before the gate ever asks upstream, not that any one market is empty.
 		const mock = upstream(exists);
-		const res = await proxy(req("/de/kontakt"));
+		const res = await proxy(req("/pl/kontakt"));
 
 		expect(res.status).toBe(404);
 		expect(mock).not.toHaveBeenCalled();

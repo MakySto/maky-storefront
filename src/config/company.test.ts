@@ -15,6 +15,15 @@ const BANNED = [
 	"nie je platiteľom dane z pridanej hodnoty",
 	"Platiteľ DPH:</strong> nie",
 	"neplatiteľ",
+	// German (DE + AT). The German copy states the affirmative — "in der Slowakei
+	// umsatzsteuerlich registriert" — and the failure mode to guard is the same one
+	// that shipped in Slovak: a negation that reads as reassurance. `Kleinunternehmer`
+	// is the § 19 UStG small-business exemption; claiming it on a page that also prices
+	// with VAT would be the exact contradiction this file exists to prevent.
+	"nicht umsatzsteuerlich registriert",
+	"nicht umsatzsteuerpflichtig",
+	"keine Umsatzsteuer ausgewiesen",
+	"Kleinunternehmer",
 ];
 
 /**
@@ -101,5 +110,10 @@ describe("legal surfaces", () => {
 		// Czech spells it "plátcem"; a negated Czech form must fail here too.
 		expect(src).not.toMatch(/n(?:e|ie)ní plátcem/i);
 		expect(src).not.toMatch(/nie je platiteľom/i);
+		// German negates by inserting `nicht`/`kein` around the registration claim, so
+		// the wording differs from the Slovak and Czech forms above and needs its own
+		// pattern rather than another entry in BANNED.
+		expect(src).not.toMatch(/(?:nicht|kein[e]?)\s+(?:in der Slowakei\s+)?umsatzsteuerlich/i);
+		expect(src).not.toMatch(/keine\s+Umsatzsteuer-Identifikationsnummer/i);
 	});
 });

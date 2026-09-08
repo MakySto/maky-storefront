@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { CHANNEL_MAP } from "@/lib/channel-map";
-import { LEGAL_LOCALES, legalLocaleFor, marketsWithLegalCopy } from "./locale";
+import { LEGAL_BODY_NAMES, LEGAL_LOCALES, legalLocaleFor, marketsWithLegalCopy } from "./locale";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const source = (rel: string) => readFileSync(join(root, rel), "utf8");
@@ -22,7 +22,7 @@ const CONTENT = [
 
 describe("which markets have approved legal copy", () => {
 	it("maps only markets a human has signed off, not every channel with a locale", () => {
-		expect(marketsWithLegalCopy()).toEqual(["sk", "cz"]);
+		expect(marketsWithLegalCopy()).toEqual(["sk", "cz", "de", "at"]);
 		// There are far more channels than there is approved copy. That gap is the point:
 		// a market must not inherit a warranty clause just because a locale string exists.
 		expect(Object.keys(CHANNEL_MAP).length).toBeGreaterThan(marketsWithLegalCopy().length);
@@ -33,9 +33,20 @@ describe("which markets have approved legal copy", () => {
 		expect(legalLocaleFor("cz-czk")).toBe("cs");
 	});
 
+	it("gives Germany and Austria separate legal copy, not one shared German entry", () => {
+		// Same language, different law. Austria calls a withdrawal a Rücktritt, runs
+		// cookie consent off § 165(3) TKG 2021 rather than § 25 TDDDG, and has its own
+		// data-protection authority. Collapsing these into one entry would push those
+		// differences into a `channel` branch inside the bodies, where no type and no
+		// test can reach them.
+		expect(legalLocaleFor("de-eur")).toBe("de");
+		expect(legalLocaleFor("at-eur")).toBe("deAt");
+		expect(legalLocaleFor("de-eur")).not.toBe(legalLocaleFor("at-eur"));
+	});
+
 	it("returns null for a market with no approved copy, and for nonsense", () => {
-		expect(legalLocaleFor("de-eur")).toBeNull();
 		expect(legalLocaleFor("pl-pln")).toBeNull();
+		expect(legalLocaleFor("us-usd")).toBeNull();
 		expect(legalLocaleFor("")).toBeNull();
 		expect(legalLocaleFor("../etc/passwd")).toBeNull();
 	});
@@ -49,7 +60,7 @@ describe("every legal page exists in every approved language", () => {
 			// language in the map but not a body would 500 at request time, because the
 			// factory indexes `copy[locale]` — this is what catches that at build time.
 			for (const locale of LEGAL_LOCALES) {
-				const name = locale === "sk" ? "Sk" : "Cs";
+				const name = LEGAL_BODY_NAMES[locale];
 				expect(src, `${page} is missing the ${name} body`).toMatch(new RegExp(`export function ${name}\\b`));
 			}
 		});
@@ -57,8 +68,9 @@ describe("every legal page exists in every approved language", () => {
 		it(`${page} routes internal links through marketHref, not a hardcoded market`, () => {
 			const src = source(`src/ui/content/legal/${page}.tsx`);
 			// `href="/sk/..."` in a Czech body would silently send the reader to the Slovak
-			// page. Nothing else in the stack would notice.
-			expect(src).not.toMatch(/href="\/(sk|cz)\//);
+			// page. Nothing else in the stack would notice. The delivered German copy
+			// arrived with `/de/...` and `/at/...` written out, so those belong here too.
+			expect(src).not.toMatch(/href="\/(sk|cz|de|at)\//);
 		});
 	}
 });

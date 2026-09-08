@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, Sk } from "@/ui/content/legal/kontakt";
+import { Cs, De, DeAt, Sk } from "@/ui/content/legal/kontakt";
 
 const route = legalRoute({
 	path: "/kontakt",
@@ -15,6 +15,18 @@ const route = legalRoute({
 			description:
 				"Potřebujete poradit s výběrem nebo objednávkou? Kontaktujte MAKY.STORE. Najdete zde e-mail, telefon, fakturační údaje i adresu pro vrácení zboží.",
 			Body: Cs,
+		},
+		de: {
+			title: "Kontakt",
+			description:
+				"Fragen zu Produkten, Fahrzeugkompatibilität oder Ihrer Bestellung? Hier finden Sie unsere Kontaktdaten, Unternehmensangaben und Rücksendeadresse.",
+			Body: De,
+		},
+		deAt: {
+			title: "Kontakt",
+			description:
+				"Fragen zu Produkten, Fahrzeugkompatibilität oder Ihrer Bestellung? Hier finden Sie unsere Kontaktdaten, Unternehmensangaben und Rücksendeadresse.",
+			Body: DeAt,
 		},
 	},
 });

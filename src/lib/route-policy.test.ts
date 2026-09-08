@@ -61,11 +61,14 @@ describe("market scoping", () => {
 	const CMS_PAGES = ["o-nas", "poradna"];
 
 	/** Markets with no approved copy of any kind. */
-	const NO_COPY = ["de", "fr", "us"];
+	const NO_COPY = ["pl", "fr", "us"];
+
+	/** Markets whose legal copy a human has approved. */
+	const WITH_COPY = ["sk", "cz", "de", "at"];
 
 	it("serves the legal pages in every market whose copy is approved", () => {
 		for (const segment of LEGAL_PAGES) {
-			for (const market of ["sk", "cz"]) {
+			for (const market of WITH_COPY) {
 				expect(marketHasRoute(market, segment), `${market}/${segment}`).toBe(true);
 				expect(isRouteMissingInMarket(market, segment), `${market}/${segment}`).toBe(false);
 			}
@@ -87,7 +90,7 @@ describe("market scoping", () => {
 	it("keeps the CMS pages on sk, because Payload has no translated document", () => {
 		for (const segment of CMS_PAGES) {
 			expect(marketHasRoute("sk", segment), `sk/${segment}`).toBe(true);
-			for (const market of ["cz", ...NO_COPY]) {
+			for (const market of [...WITH_COPY.filter((m) => m !== "sk"), ...NO_COPY]) {
 				expect(marketHasRoute(market, segment), `${market}/${segment}`).toBe(false);
 				expect(isRouteMissingInMarket(market, segment), `${market}/${segment}`).toBe(true);
 			}

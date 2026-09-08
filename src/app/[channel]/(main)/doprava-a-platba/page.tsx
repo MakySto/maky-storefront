@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, Sk } from "@/ui/content/legal/doprava-a-platba";
+import { Cs, De, DeAt, Sk } from "@/ui/content/legal/doprava-a-platba";
 
 const route = legalRoute({
 	path: "/doprava-a-platba",
@@ -15,6 +15,18 @@ const route = legalRoute({
 			description:
 				"Zboží doručujeme přes FedEx a Slovenskou poštu. Přečtěte si informace o ceně dopravy, dodání objednávky a online platbě přes Stripe.",
 			Body: Cs,
+		},
+		de: {
+			title: "Versand und Zahlung – Deutschland",
+			description:
+				"Informationen zu Versand nach Deutschland, Lieferzeiten, Versandkosten und Online-Zahlung bei MAKY.STORE. Verfügbare Optionen sehen Sie vor dem Kauf.",
+			Body: De,
+		},
+		deAt: {
+			title: "Versand und Zahlung – Österreich",
+			description:
+				"Informationen zu Versand nach Österreich, Lieferzeiten, Versandkosten und Online-Zahlung bei MAKY.STORE. Verfügbare Optionen sehen Sie vor dem Kauf.",
+			Body: DeAt,
 		},
 	},
 });
