@@ -167,38 +167,59 @@ This is a translation job with a legal review on top, and the code already suppo
 it: one entry in `src/lib/legal/locale.ts`, one body per module in
 `src/ui/content/legal/`, and `route-policy.ts` follows on its own.
 
-**Group 2 — different spine.** `us` and `ca`. These are the ONLY English markets —
-`gb-gbp` was removed on 2026-07-20 — and they are both outside the EU/EEA, which
-makes English the language where the current text applies _least_. A translation
-would state things that are simply untrue for those buyers:
+**Group 2 — same seller, different surroundings.** `us` and `ca`. These are the only
+English markets — `gb-gbp` was removed on 2026-07-20 — and both sit outside the EEA.
 
-| The text says                  | In US / CA                                                                                                             |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| 14 days to withdraw, by law    | No US federal online equivalent; the FTC Cooling-Off Rule is 3 days and off-premises only. Canada: provincial, varies  |
-| Two-year liability for defects | US: state implied warranties (UCC) + Magnuson-Moss. Canada: provincial consumer protection acts                        |
-| GDPR, complain to ÚOOÚ SR      | US: state privacy law (CCPA/CPRA and successors). Canada: PIPEDA and provincial equivalents                            |
-| SOI supervises us; ADR via SOI | No standing over a sale into the US or Canada                                                                          |
-| Prices are final, VAT included | False. US sales tax is destination-based and added at checkout; Canada has GST/HST/PST/QST                             |
-| (silent on customs)            | A cross-border parcel can arrive with a duty bill the buyer never agreed to — a consumer-law problem in both countries |
+**Corrected 2026-09-08.** An earlier version of this section said these markets need
+their pages written from scratch to US and Canadian law, and put GDPR in a table of
+things that "would be false" there. That was wrong, and wrong in a way that would have
+cost real money in lawyer time for a small company.
 
-Two more that are the seller's problem rather than the page's: **economic-nexus
-sales-tax registration** in US states, and **GST/HST registration for non-resident
-vendors** selling into Canada. Both are questions for the accountant before the
-first order, not after.
+What is actually true: MAKY processes personal data in the context of its Slovak
+establishment, and GDPR Art. 3(1) attaches to the controller, not to where the customer
+lives — EDPB Guidelines 3/2018 give the case of an EU company whose customers are all
+outside the EU. So the privacy page keeps its Slovak base; local rules are added on top,
+not swapped in.
 
-Quebec deserves its own line: the Charter of the French Language means an English
-document may not be sufficient for a Quebec consumer, so `ca` may need French even
-though its locale says `en-CA`.
+The right model is a shared Slovak base plus verified market additions:
 
-**Therefore:** US and CA pages must be **written to US and Canadian law**, not
-translated from this set. That is a lawyer's job with a different starting document.
-On language alone one English text is enough — `en-US` and `en-CA` differ only in
-spelling conventions, which is not worth a second translation — but language was
-never the reason those two markets are hard.
+| Layer            | What it holds                                                              |
+| ---------------- | -------------------------------------------------------------------------- |
+| Shared MAKY base | Slovak seller, ordering, support, agreed rules and benefits                |
+| Language version | The translation itself                                                     |
+| Market additions | Real currency, carriers, tax and import costs, local mandatory information |
 
-**Recommended order:** finish Group 1 first. It reuses everything and each market is
-cheap. Open Group 2 only when someone has decided that selling into North America is
-worth its own legal work.
+One trading policy, translated — not twelve shops drifting apart.
+
+What genuinely differs for US/CA, and must be checked rather than assumed:
+
+- **Sales tax and registration.** Not automatic from the first order. California's
+  threshold is $500,000 a year, and that is one state's example, not a US-wide limit.
+  Canada turns on whether the seller carries on business there, with a distinct regime
+  for goods posted directly from abroad. Evaluate the model, watch the numbers.
+- **Slovak VAT on export.** Export outside the EU can be exempt when the conditions are
+  met, so "prices include VAT" must not be copied across from the EU markets.
+- **Customs and import charges.** Who is importer of record, what the buyer pays at
+  checkout versus at import. "Any further costs are borne by the customer" is not a
+  disclosure.
+- **ADR.** Act 391/2015 § 1(2) covers consumers resident in SK or another EU member
+  state, so ADR access must not be promised to a US or Canadian buyer. SOI remains the
+  seller's supervisory authority — that is a separate sentence and it stays.
+- **Statutory right versus our own promise.** A 14- or 30-day return may be offered
+  anywhere. It must be described as MAKY's commitment, not as local law — and it must
+  not be quietly withdrawn either.
+- **Quebec.** The Charter of the French Language reaches consumer contracts, so `en-CA`
+  may not be sufficient for Quebec.
+
+**Recommended order:** finish Group 1 first — it reuses everything and each market is
+cheap. English last, because it is the one that needs its own research, not because it
+needs its own law firm.
+
+**Working rule for any of this.** Verify the specific rule in an official source, say
+how it applies to MAKY's model, and propose the wording or the change. Where doubt
+remains, bound it precisely and propose the smallest safe next step. "This is a legal
+question, send it to a lawyer" is not a delivered result; paid advice is a tool for one
+unresolved point, not a gate in front of writing.
 
 ### Order
 

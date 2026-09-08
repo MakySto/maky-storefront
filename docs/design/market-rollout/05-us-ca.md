@@ -1,61 +1,82 @@
-# Vlákno 5 — `us` (USA) a `ca` (Kanada) — INÁ ÚLOHA NEŽ OSTATNÉ
+# Vlákno 5 — `us` (USA) a `ca` (Kanada)
 
-Najprv `00-univerzalne-zadanie.md`. Ale pozor: **toto vlákno nie je preklad.**
+Najprv `00-univerzalne-zadanie.md`. **Angličtina je posledná etapa**, nie preto, že je
+právne nemožná, ale preto, že trhy EÚ sú lacnejšie a rýchlejšie.
 
-| trh | kanál    | mena    | locale |
-| --- | -------- | ------- | ------ |
-| us  | `us-usd` | **USD** | en-US  |
-| ca  | `ca-cad` | **CAD** | en-CA  |
+| trh | kanál    | mena | locale |
+| --- | -------- | ---- | ------ |
+| us  | `us-usd` | USD  | en-US  |
+| ca  | `ca-cad` | CAD  | en-CA  |
 
-## 1. Prečo je toto vlákno iné
+## 1. Cieľ
 
-Sú to **jediné anglické trhy** (`gb-gbp` bol zrušený 20. 7. 2026) a **oba sú mimo
-EHP**. Sedem stránok je pritom argument postavený na práve EÚ. Preklad z nich urobí
-text čitateľný v USA a Kanade — nie pravdivý.
+**Použiteľná anglická verzia všetkých ôsmich stránok** pre slovenského predajcu:
+spoločný základ MAKY + konkrétne overené trhové doplnky. Implementovateľný obsah,
+nie zadanie pre právnika.
 
-Čo by bolo nepravdivé:
+**Jeden anglický text stačí.** `en-US` a `en-CA` sa líšia pravopisom; druhý preklad
+kvôli _color/colour_ nemá zmysel. Rozdiely, ktoré význam majú, riešiš doplnkami
+podľa trhu — rovnako ako mena.
 
-| Text hovorí                    | V USA / Kanade                                                                                                |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| 14 dní na odstúpenie zo zákona | Federálny online ekvivalent neexistuje; FTC Cooling-Off Rule sú 3 dni a len mimo prevádzky. Kanada: provinčne |
-| Dvojročná zodpovednosť za vady | USA: štátne implied warranties (UCC) + Magnuson-Moss. Kanada: provinčné zákony                                |
-| GDPR, sťažnosť na ÚOOÚ SR      | USA: štátne zákony (CCPA/CPRA…). Kanada: PIPEDA                                                               |
-| Dozor a ARS cez SOI            | Bez právomoci voči predaju do USA/Kanady                                                                      |
-| „Ceny sú konečné vrátane DPH"  | **Nepravda.** Sales tax sa v USA pripočítava v pokladni podľa štátu a PSČ                                     |
-| (o clách mlčí)                 | Zásielka môže doraziť s colným účtom, s ktorým zákazník nesúhlasil                                            |
+## 2. Čo NEROBIŤ — opravy môjho skoršieho zadania
 
-## 2. Jazyk verzus právo
+Predchádzajúca verzia tohto súboru tvrdila, že päť právnych stránok treba zahodiť
+a napísať nanovo. **To bolo príliš kategorické a v jednej veci vecne nesprávne.**
 
-**Jeden anglický text ako jazyk stačí** — `en-US` a `en-CA` sa líšia len pravopisom.
-Druhý preklad kvôli _color/colour_ nemá zmysel.
+**GDPR sa nevypína.** MAKY spracúva údaje v kontexte svojej slovenskej prevádzky, a
+čl. 3 ods. 1 GDPR sa viaže na prevádzkovateľa, nie na pobyt zákazníka. EDPB to
+výslovne vysvetľuje aj na príklade európskej firmy, ktorej zákazníci sú výlučne mimo
+EÚ. Stránku ochrany údajov teda **neprepisuješ na „americké GDPR"** — ponecháš
+slovenský základ a preveríš, čo treba doplniť (PIPEDA, štátne zákony USA). Miestne
+pravidlá GDPR dopĺňajú, nenahrádzajú.
+→ EDPB Guidelines 3/2018, čl. 3 ods. 1.
 
-**Ale právne sú to dva rôzne dokumenty**, a ani jeden nevzniká prekladom z EÚ textu.
-Kanada je navyše provinčne členitá a **Quebec** má Chartu francúzskeho jazyka — takže
-`en-CA` nemusí na Kanadu stačiť a môže byť potrebná francúzština.
+**Benefit nie je to isté čo zákonný nárok.** To, že americký zákon nepredpisuje
+14 dní, neznamená, že ich nesmieš dať. Schválené výhody MAKY (14 dní, 30 dní pre
+prihlásených) **zachovaj** — ale opíš ich ako záväzok MAKY, nie ako miestny zákon.
+Rovnako nevyrob z „24 mesiacov" konečný limit tam, kde miestne právo chráni dlhšie
+(Quebec nemá všeobecnú pevnú dvojročnú hranicu).
 
-## 3. Čo toto vlákno má naozaj urobiť
+**Daňová registrácia nie je automatická.** Neplatí, že prvá objednávka vyžaduje
+registráciu. Kalifornia má prah 500 000 USD ročne — a to je **príklad jedného štátu**,
+nie limit USA. Kanada rozlišuje, či subjekt „carries on business in Canada", a má
+osobitný režim pre tovar posielaný priamo zo zahraničia poštou či kuriérom.
+Úloha znie: **vyhodnotiť skutočný model a sledovať predaje**, nie preventívne
+registrovať.
 
-**Nezačínaj písaním stránok.** Najprv:
+## 3. Čo naozaj treba vyriešiť pred predajom
 
-1. Zisti od Mareka, či sa do USA/Kanady **skutočne ide predávať**. Ak nie, vlákno
-   končí zápisom zistení.
-2. Ak áno, priprav **zadanie pre právnika** — nie hotový text. Konkrétne, ktoré
-   z ôsmich stránok potrebujú úplne nové znenie (VOP, reklamácie, odstúpenie,
-   ochrana údajov, cookies) a ktoré vystačia s prekladom (kontakt, doprava, o nás).
-3. Over prevádzkové predpoklady, ktoré sú nezávislé od textu:
-   - má `us-usd` / `ca-cad` produkty, dopravu a Stripe?
-   - kto je **importer of record** pri zásielke zo SK?
-   - **economic-nexus** registrácia k sales tax v štátoch USA a **GST/HST pre
-     nerezidenta** v Kanade — otázka na účtovníka **pred prvou objednávkou**.
+Nie je to právnická práca, je to prevádzková:
 
-## 4. Čo neurobiť
+1. **Clo a dovozné náklady.** Čo platí zákazník v pokladni, čo môže platiť pri dovoze,
+   kto rieši colné konanie. Veta „ostatné náklady znáša zákazník" **nestačí** ako
+   splnenie informačnej povinnosti. Over konkrétny variant s dopravcom — úloha
+   colného zástupcu, platiteľa a _importer of record_ nie sú to isté.
+2. **DPH pri vývoze.** Vývoz mimo EÚ môže byť oslobodený od slovenskej DPH pri
+   splnení podmienok. **Nekopíruj „ceny vrátane DPH"** do US/CA bez overenia — na
+   rozdiel od trhov EÚ tu to nie je automaticky pravda.
+3. **Spätná doprava.** Nesľubuj zvoz z USA či Kanady, kým ho nemáš. Rovnaká filozofia
+   pomoci, ale reálny rozsah služby.
+4. **ARS.** Zákon 391/2015 § 1 ods. 2 vymedzuje spotrebiteľa s pobytom v SR alebo inom
+   členskom štáte EÚ. **Nesľubuj zákazníkovi z US/CA prístup k slovenskému ARS.**
+   SOI však zostáva orgánom dohľadu nad predajcom — to je iná veta, nevypúšťaj ju.
+5. **Sortiment.** Pre prvú etapu vyber produkty s overenou vhodnosťou pre cieľový trh.
+   Európsky názov modelu nie je dôkaz vhodnosti. Neistota pri jednom výrobku
+   **obmedzí len jeho predaj**, nie celé stránky.
 
-❌ Nepreložiť EÚ text do angličtiny a nasadiť ho.
-❌ Nepridať `us`/`ca` do `APPROVED_COPY`, kým neexistuje text napísaný pre ich právo.
-❌ Netvrdiť, že „ceny sú konečné vrátane DPH".
+## 4. Quebec
 
-## 5. Čo odovzdať
+Charta francúzskeho jazyka sa na spotrebiteľské zmluvy vzťahuje. Dve možnosti,
+predlož obe Marekovi, nerozhoduj sám:
 
-Zadanie pre právnika, zoznam overených prevádzkových prekážok a odporúčanie, či
-a kedy trh otvárať. Kód sa v tomto vlákne meniť nemusí vôbec — a ak sa nemení, je to
-správny výsledok, nie zlyhanie.
+- francúzsky kanadský doplnok (jazykové podklady vieš vziať z vlákna IT/FR — ale
+  **francúzske právo z toho neber**, je to iná jurisdikcia), alebo
+- neskoršia etapa pre Quebec s reálnym obmedzením doručenia.
+
+## 5. Odovzdanie
+
+Osem stránok × 2 trhy, obsahová matica (spoločné / trhový údaj / miestne záväzné
+pravidlo / prevádzkový dôkaz), a krátky zoznam vecí na **obchodné** rozhodnutie.
+Pri každom právnom tvrdení zdroj a dátum kontroly.
+
+Nie je to právne osvedčenie všetkých štátov a provincií a netvári sa tak.

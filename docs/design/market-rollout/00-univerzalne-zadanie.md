@@ -43,6 +43,28 @@ overí a odovzdá vetvu.
 Trh zostane **preview** — proxy mu posiela `X-Robots-Tag: noindex, nofollow`, takže
 Google nič neuvidí. To je zámer, nie nedorobok.
 
+### 2.1 Ako pracovať s právnou neistotou
+
+Toto je malá firma, nie korporát s právnym oddelením. Preto:
+
+> **Over konkrétne pravidlo v oficiálnom zdroji, vysvetli, ako sa vzťahuje na model
+> MAKY, a navrhni znenie alebo zmenu. Ak zostáva neistota, presne ju ohranič a navrhni
+> najmenší bezpečný ďalší krok. Nezastavuj nesúvisiace práce.**
+
+❌ „Toto je právna otázka, pošli to právnikovi" **nie je odovzdaný výsledok.** Platená
+konzultácia je nástroj na jednu konkrétnu spornú vec, nie vstupná brána pred písanie.
+
+Rozlišuj tri veci, ktoré sa ľahko zlejú:
+
+|                            |                                    |
+| -------------------------- | ---------------------------------- |
+| **zákonný nárok**          | čo prikazuje právo                 |
+| **účinok zvoleného práva** | čo platí z voľby slovenského práva |
+| **záväzok MAKY**           | čo dávame navyše, lebo chceme      |
+
+30-dňová lehota pre prihlásených je **záväzok MAKY**. Smie sa poskytnúť kdekoľvek.
+Nesmie sa opísať ako miestny zákon a nesmie sa potichu znížiť.
+
 ---
 
 ## 3. Ako sa pridáva jazyk — presné súbory
@@ -62,8 +84,13 @@ const APPROVED_COPY: Readonly<Record<string, LegalLocale>> = { sk: "sk", cz: "cs
 `src/lib/route-policy.ts` si zoznam trhov odvodí sám (`marketsWithLegalCopy()`), takže
 proxy a stránka nemôžu nesúhlasiť.
 
-⚠️ Toto je **jediný súbor, o ktorý sa vlákna delia.** Konflikt je triviálny (pridanie
-riadku), ale ráta s ním — rebasuj pred odovzdaním.
+⚠️ **Vlákna sa delia o viac než tento súbor.** Okrem `locale.ts` sa ich dotýkajú aj
+`src/lib/route-policy.test.ts`, `src/proxy.test.ts` a `src/config/company.test.ts`
+(negácia tvrdenia o DPH vo svojom jazyku). Všetko sú to malé prídavky, ale kolidujú.
+
+**Vlastníkom týchto spoločných plôch je integračné vlákno** (§ 12.1). Ty vo svojej
+vetve urobíš zmenu, ktorú potrebuješ, a v odovzdávke ju vypíšeš. Integrátor zlučuje.
+Rebasuj pred odovzdaním a nerieš cudzie jazyky.
 
 ⚠️ Mapa je **opt-in a nie je odvodená z `CHANNEL_MAP[...].locale`.** To, že trh má
 preklad rozhrania, nie je dôvod servírovať mu záručné podmienky.
@@ -165,6 +192,13 @@ navyše k prevádzkovej poistke.
 **Tvoje vlákno formulár na svojom trhu NEZAPÍNA.** Stránka sa servíruje ďalej (je to
 zákonná informačná povinnosť), formulár nie. Text musí ponúknuť e-mail a poštu.
 
+⚠️ **„Formulár nebude" je dočasný stav, nie cieľ.** Je to ochrana pred tlačidlom, ktoré
+nevie vyrobiť záznam — nie právna výnimka. Nemecký § 356a BGB online funkciu odstúpenia
+priamo predpokladá, takže pre DE je to blokátor spustenia, nie prijateľný koniec.
+
+Rozšírenie kontraktu vlastní **samostatné vlákno Returns V2** (§ 12.1). Tvoje vlákno
+naň **nečaká** — dodá jazykové texty formulára a potvrdení, aby boli pripravené.
+
 ❌ **Nikdy neposielaj cudzí trh ako `market: "SK"`.** Vyrobilo by to právny záznam
 s nepravdivým trhom.
 
@@ -172,15 +206,25 @@ Rozšírenie kontraktu je vec vlastníka Payloadu, nie tvojho vlákna.
 
 ### 6.1 Nález, ktorý sa týka všetkých trhov
 
-`submittedAt` **generuje Payload v okamihu, keď záznam ukladá** — je to teda čas
-**prijatia**, nie čas odoslania zákazníkom. Slovenský text pritom hovorí „dátum a čas
-jeho **odoslania**".
+**Opravené 2026-09-08.** Skôr som napísal, že slovenský text je nesprávny, lebo hovorí
+„čas odoslania". To bolo unáhlené — **slovenský § 20a ods. 5 zákona 108/2024 žiada
+dátum a čas ODOSLANIA**. Slovenské znenie je teda správne pre SK.
 
-Storefront dôveryhodný čas odoslania ani vyrobiť nevie (hodiny klienta). Správne
-riešenie je **opísať existujúci údaj pravdivo**, nie premenovať ho. Ak tvoj trh
-vyžaduje oba časy, je to zmena kontraktu na strane Payloadu — nahlás ju, nerieš ju
-v storefronte. Nahlás to aj vtedy, ak sa ťa to netýka; oprava SK/CS textu je vlastná
-úloha (§ 1).
+Nemecký **§ 356a ods. 3 BGB** hovorí o **prijatí**. Dva trhy, dve rôzne udalosti.
+
+Overený stav implementácie: `submittedAt` generuje **Payload pri ukladaní záznamu**.
+To nie je ani jedna z tých dvoch udalostí presne — je to čas zápisu, ktorý sa času
+prijatia blíži, ale nie je s ním totožný.
+
+Čo z toho plynie pre teba:
+
+- **nepremenúvaj pole** a nevyrábaj druhý čas v storefronte (hodinám klienta sa veriť
+  nedá),
+- **neprepisuj slovenské poučenie** na „prijatie" — bolo by to nesprávne pre SK,
+- ak tvoj trh vyžaduje inú udalosť, **zapíš to ako závislosť** na vlákno Returns V2.
+
+Malý serverový kontrakt, ktorý rozlíši dokončenie podania, prijatie a uloženie,
+vlastní Returns V2. Preklady naň nečakajú.
 
 ---
 
@@ -315,7 +359,21 @@ ktorý už živý nie je.
 
 ---
 
-## 12. Čo odovzdať
+## 12. Vlastníctvo a odovzdanie
+
+### 12.1 Kto čo vlastní
+
+| Vlákno            | Vlastní                                                                                |
+| ----------------- | -------------------------------------------------------------------------------------- |
+| **Integračné**    | `locale.ts`, `route-policy.ts`, spoločné testy, `cmsPageRoute`, výsledná release vetva |
+| **Returns V2**    | Rozšírenie kontraktu na viac trhov, uloženie, potvrdenia, chybové stavy, časové údaje  |
+| **Jazykové (4×)** | Vlastné telá, metadáta, jazykové testy — izolované                                     |
+| **US/CA**         | Anglická verzia, posledná v poradí                                                     |
+
+Integrátor **nekontroluje každú vetu**. Vlastní miesta, kde by si agenti inak
+prepisovali prácu.
+
+### 12.2 Čo odovzdať
 
 Vetvu `claude/trh-<t1>-<t2>-*`, pushnutú, **nenasadenú**, plus správu rozdelenú na:
 
