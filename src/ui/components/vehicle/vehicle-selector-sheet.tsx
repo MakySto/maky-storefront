@@ -553,12 +553,22 @@ function RoofConfirmation({
 						onClick={() => onAnswer({ kind: "confirmed", roofType: single })}
 					/>
 				) : (
+					/*
+					 * Every option gets its picture, not only the single-type case.
+					 *
+					 * The illustration used to render in the `single` branch alone, so a
+					 * generation that stocks several roof types — precisely the case where
+					 * the shopper cannot tell them apart and the question actually matters
+					 * — offered six words and nothing to look at. "Does your car look like
+					 * this?" is unanswerable without a "this".
+					 */
 					roofTypes.map((roof) => (
 						<RoofChoice
 							key={roof}
 							label={t(ROOF_LABEL_KEYS[roof])}
 							active={selectedKey === roof}
 							onClick={() => onAnswer({ kind: "confirmed", roofType: roof })}
+							illustration={<RoofIllustration roofType={roof} className="h-12" />}
 						/>
 					))
 				)}
@@ -594,7 +604,18 @@ function RoofConfirmation({
 	);
 }
 
-function RoofChoice({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function RoofChoice({
+	label,
+	active,
+	onClick,
+	illustration,
+}: {
+	label: string;
+	active: boolean;
+	onClick: () => void;
+	/** Shown above the label. Absent for "Iný typ" and "Neviem rozpoznať", which depict nothing. */
+	illustration?: React.ReactNode;
+}) {
 	return (
 		<button
 			type="button"
@@ -605,6 +626,7 @@ function RoofChoice({ label, active, onClick }: { label: string; active: boolean
 				active && "border-action-primary bg-surface-muted font-medium",
 			)}
 		>
+			{illustration}
 			{label}
 		</button>
 	);
@@ -616,10 +638,27 @@ function RoofChoice({ label, active, onClick }: { label: string; active: boolean
  * The question is "does your car look like this?", so it needs a picture. A line drawing
  * is honest about being schematic, carries no brand, needs no asset pipeline and no
  * network request, and is legible in both themes because it inherits `currentColor`.
+ *
+ * **It is a placeholder for photographs.** Marek's judgement of the drawings is "čudné
+ * čiary", and he is right that a line at 3 px cannot show the difference between a rail
+ * you can pass a hand under and one you cannot. Replacing them needs licensed photos of
+ * each of the six types, which do not exist in this repository — the exact list and the
+ * evidence each one has to show is in
+ * `docs/design/podklady-fotografie-striech-20260908.md`.
+ *
+ * When they arrive, this is the ONLY component to change: both call sites render it, so
+ * a photograph with this drawing as the fallback lights up the whole step at once. A
+ * photograph is of the TYPE, never of the shopper's model, and the copy around it must
+ * keep saying so.
  */
-function RoofIllustration({ roofType }: { roofType: RoofType }) {
+function RoofIllustration({ roofType, className }: { roofType: RoofType; className?: string }) {
 	return (
-		<svg viewBox="0 0 160 60" className="text-text-secondary h-16 w-full" role="img" aria-hidden="true">
+		<svg
+			viewBox="0 0 160 60"
+			className={cn("text-text-secondary h-16 w-full", className)}
+			role="img"
+			aria-hidden="true"
+		>
 			{/* Car silhouette, shared by every variant. */}
 			<path
 				d="M18 46 L30 30 Q34 25 42 25 L108 25 Q118 25 124 31 L142 46"
