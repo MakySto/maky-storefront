@@ -1,0 +1,36 @@
+Betreff: Eingangsbestätigung Ihres Widerrufs – {{receipt_id}}
+
+Guten Tag,
+
+wir bestätigen den Eingang Ihrer Widerrufserklärung bei MAKY.STORE s. r. o.
+
+Vorgangsnummer: {{receipt_id}}
+Datum und Uhrzeit des Versands: {{submitted_at_local_with_timezone}}
+Datum und Uhrzeit des Eingangs: {{received_at_local_with_timezone}}
+
+IHRE ERKLÄRUNG
+{{notice_verbatim}}
+
+ANGABEN AUS IHRER MITTEILUNG
+Vor- und Nachname: {{customer_name}}
+E-Mail-Adresse für die Bestätigung: {{confirmation_email}}
+Bestellnummer oder andere Vertragsangaben: {{contract_reference}}
+Umfang des Widerrufs: {{scope_human_readable}}
+{{items_if_applicable}}
+{{optional_message_if_provided}}
+
+SO GEHT ES WEITER
+{{return_instructions_for_actual_collection_state}}
+
+Die vom Widerruf erfassten Zahlungen erstatten wir nach den gesetzlichen und vertraglichen Bedingungen. Für eine Erstattung auf die ursprünglich verwendete Zahlungskarte benötigen wir keine IBAN. Diese Bestätigung dokumentiert den Eingang Ihrer Erklärung. Sie bedeutet nicht, dass bereits eine Abholung oder Erstattung erfolgt ist.
+
+Bitte bewahren Sie die Bestätigung auf. Wenn Sie uns schreiben, nennen Sie bitte die Vorgangsnummer.
+
+Freundliche Grüße
+MAKY.STORE
+info@maky.store | +421 901 730 066
+
+MAKY.STORE s. r. o.
+Firmensitz: Lermontovova 911/3, 811 05 Bratislava-Staré Mesto, Slowakei
+Unternehmensidentifikationsnummer (IČO): 57 704 627
+Rücksendeadresse: Stará Vajnorská 11, 831 04 Bratislava, Slowakei

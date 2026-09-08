@@ -1,0 +1,18 @@
+Betreff: Neue Widerrufserklärung – {{receipt_id}}
+
+Eine neue Widerrufserklärung ist eingegangen.
+
+Vorgangsnummer: {{receipt_id}}
+Versandzeitpunkt: {{submitted_at_local_with_timezone}}
+Eingangszeitpunkt: {{received_at_local_with_timezone}}
+Vom Kunden angegebene Vertragsreferenz: {{contract_reference}}
+Umfang: {{scope_human_readable}}
+Interesse an einem Preisangebot für die Abholung: {{pickup_interest_human_readable}}
+Status der Bestätigung an den Kunden: {{confirmation_delivery_status}}
+
+Öffnen Sie den Vorgang im vorhandenen geschützten Administrationsbereich:
+{{authenticated_admin_record_link}}
+
+Prüfen Sie die Zuordnung zu Kunde und Bestellung, die ursprünglichen Vertragsbedingungen, Fristen und vorvertraglichen Informationen zu Rücksendekosten. Bearbeiten Sie die Erklärung auch dann, wenn eine manuelle Zuordnung erforderlich ist. Ein automatisches Zuordnungsergebnis ist keine rechtliche Entscheidung über die Wirksamkeit des Widerrufs.
+
+Ein Abholangebot des Verkäufers kann das Recht beeinflussen, die Erstattung bis zur Rückgabe zurückzuhalten. Eine bloße Preisanfrage ist davon zu unterscheiden. Ziehen Sie Abholkosten oder einen behaupteten Wertverlust nicht pauschal von der Erstattung ab. Eine öffentliche Formulareingabe berechtigt allein weder zur Änderung des Erstattungsempfängers noch zu unumkehrbaren Bestelländerungen.
