@@ -82,7 +82,7 @@ const META = {
 	pl: {
 		title: "Odstąpienie od umowy i zwrot towaru",
 		withForm:
-			"Prawo odstąpienia od umowy w MAKY.STORE: formularz online, 14 dni, wydłużony termin dla zakupów po zalogowaniu, zwrot towaru i koszt przesyłki.",
+			"Odstąpienie od umowy w MAKY.STORE: formularz online, terminy, zwrot towaru, koszty przesyłki, zwrot pieniędzy i wzór oświadczenia.",
 		withoutForm:
 			"Prawo odstąpienia od umowy w MAKY.STORE: 14 dni, wydłużony termin dla zakupów po zalogowaniu, zwrot towaru, koszt przesyłki i formularz.",
 	},

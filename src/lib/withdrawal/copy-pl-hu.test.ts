@@ -53,6 +53,52 @@ describe("Polish and Hungarian withdrawal copy is complete", () => {
 		expect(WITHDRAWAL_COPY_HU.submitButton).toBe("Elállás megerősítése");
 	});
 
+	it("does not promise a second time the contract cannot evidence", () => {
+		// The first draft of both files told the customer the acknowledgement would carry
+		// the time of SENDING *and* the time of RECEIPT. Only one of those exists: Payload
+		// generates `submittedAt` when it writes the record. Hungarian law asks for the
+		// sending time specifically — 45/2014 § 22(1c), "a megküldés napját és időpontját"
+		// — and the delivered Polish export names sending alone too.
+		//
+		// `receivedTimeLabel` stays as a dormant label, so this guards the SENTENCE the
+		// customer reads, not the field. If R ever mints a real receipt event, this test
+		// is the place to record that it became true.
+		expect(WITHDRAWAL_COPY_PL.acceptedBody).toContain("godziną jego wysłania");
+		expect(WITHDRAWAL_COPY_PL.acceptedBody).not.toMatch(/otrzymani|odbioru|doręczeni/i);
+		expect(WITHDRAWAL_COPY_HU.acceptedBody).toContain("elküldés napjával és időpontjával");
+		expect(WITHDRAWAL_COPY_HU.acceptedBody).not.toMatch(/beérkezés|átvétel/i);
+	});
+
+	it("does not send the customer to a case-status view that does not exist", () => {
+		// The first draft said to check "stan sprawy" / "az ügy állapotát". There is no
+		// customer-facing status page in this storefront, so that pointed at nothing. The
+		// approved wording keeps the three things that ARE true: check your mail, a retry
+		// reuses the same identifier so no duplicate record is created, and e-mail works.
+		for (const [name, copy] of [
+			["pl", WITHDRAWAL_COPY_PL],
+			["hu", WITHDRAWAL_COPY_HU],
+		] as const) {
+			expect(copy.unknownBody, `${name} points at a case-status view`).not.toMatch(
+				/stan sprawy|stanu sprawy|ügy állapot/i,
+			);
+			expect(copy.unknownBody, `${name} drops the idempotency reassurance`).toMatch(
+				/identyfikatora|azonosítót/,
+			);
+			expect(copy.unknownBody, `${name} drops the e-mail fallback`).toContain("info@maky.store");
+		}
+	});
+
+	it("keeps the Polish strings identical to the delivered editorial export", () => {
+		// `copy-pl.ts` is `data/ui.pl-PL.json` verbatim, not a paraphrase of it. Pinning a
+		// few load-bearing values here means a future "small wording improvement" has to
+		// be a deliberate decision to diverge from the approved export.
+		expect(WITHDRAWAL_COPY_PL.submitButton).toBe("Potwierdź odstąpienie od umowy");
+		expect(WITHDRAWAL_COPY_PL.entryLabel).toBe("Odstąp od umowy");
+		expect(WITHDRAWAL_COPY_PL.formTitle).toBe("Odstąpienie od umowy online");
+		expect(WITHDRAWAL_COPY_PL.acceptedTitle).toBe("Otrzymaliśmy oświadczenie o odstąpieniu");
+		expect(WITHDRAWAL_COPY_PL.receiptNumberLabel).toBe("Numer zgłoszenia");
+	});
+
 	it("carries a receipt-time label as well as a submission-time one", () => {
 		// The backend has only `submittedAt` today, which is close to receipt but is not
 		// the same event. Both labels exist so the distinction is not lost when Returns V2

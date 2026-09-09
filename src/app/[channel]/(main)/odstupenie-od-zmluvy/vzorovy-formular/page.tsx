@@ -69,9 +69,9 @@ const COPY = {
 	pl: {
 		title: "Wzór formularza odstąpienia od umowy",
 		description:
-			"Wzór formularza odstąpienia od umowy do wydrukowania lub pobrania. Skorzystanie z niego jest dobrowolne — wystarczy każde jednoznaczne oświadczenie.",
-		fileName: "wzor-formularza-odstapienia-od-umowy.txt",
-		printLabel: "Wydrukuj formularz",
+			"Dobrowolny wzór oświadczenia o odstąpieniu od umowy do wydrukowania lub pobrania. Można także złożyć inne jednoznaczne oświadczenie.",
+		fileName: "formularz-odstapienia-od-umowy.txt",
+		printLabel: "Drukuj formularz",
 		downloadLabel: "Pobierz formularz (.txt)",
 	},
 	hu: {

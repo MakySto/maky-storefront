@@ -26,14 +26,30 @@ import { type WithdrawalCopy } from "./copy-de";
  * for `hu`, not merely a missing convenience. Whether it blocks opening the market is
  * M's and R's call, not this file's — but it should not be discovered late.
  *
- * ## Provenance
+ * ## Provenance — read this before treating the strings as approved
  *
- * ⚠️ Apart from the two statutory control labels, these strings did NOT come from a
- * delivered `data/ui.*.json`. The PL/HU package arrived on this machine as the two
- * page-copy Markdown documents only. The rest is translated from the reviewed Slovak form
- * copy and the German file, and no Hungarian speaker has reviewed it. Flagged in the
- * handoff: a complete draft that still needs a native-speaker pass before the form goes
- * live.
+ * The two control labels are statutory and exact (see above). **Everything else in this
+ * file is still my own drafting**, because no `data/ui.hu-HU.json` has reached this
+ * machine: the Polish export was recovered from a later package, the Hungarian one was
+ * not. Searched the whole box, including every delivered bundle — the only Hungarian
+ * artefact present is a legal-differences note marked "len-historia".
+ *
+ * So this file is NOT in the same state as `copy-pl.ts`, which is now the delivered
+ * export verbatim. Two defects that the Polish export proved were real have been fixed
+ * here by hand, to the same semantics:
+ *
+ * 1. `acceptedBody` promised the time of sending AND of receipt. Only sending is
+ *    evidenced, and it is also what the statute asks for — 45/2014 § 22(1c) says "a
+ *    megküldés napját és időpontját", the day and time of SENDING. The package
+ *    deliberately does not adopt the German "Eingang" here. `receivedTimeLabel` stays as
+ *    a dormant label and must NOT be filled with a copy of `submittedAt`, which is the
+ *    time of the database write — a third event again.
+ * 2. `unknownBody` told the customer to check "az ügy állapotát". No customer-facing
+ *    case-status view exists, so it pointed at nothing.
+ *
+ * ⚠️ When `data/ui.hu-HU.json` arrives, replace this object from it wholesale the way
+ * `copy-pl.ts` was replaced, and do not assume the wording below survived. Nothing here
+ * is wired, so that swap costs nothing.
  *
  * ## What the owner of Returns V2 needs to know before using this
  *
@@ -89,7 +105,7 @@ export const WITHDRAWAL_COPY_HU: WithdrawalCopy = {
 	submitting: "A nyilatkozat küldése folyamatban…",
 	acceptedTitle: "Elállási nyilatkozatát megkaptuk",
 	acceptedBody:
-		"A megadott e-mail-címre elküldjük a visszaigazolást a nyilatkozat szövegével, valamint az elküldés és a beérkezés időpontjával. A további teendőkről tájékoztatjuk.",
+		"A visszaigazolást a nyilatkozat szövegével, valamint az elküldés napjával és időpontjával a megadott e-mail-címre küldjük el. A további teendőkről tájékoztatjuk.",
 	receiptNumberLabel: "Ügyszám",
 	submissionTimeLabel: "Az elküldés dátuma és időpontja",
 	receivedTimeLabel: "A beérkezés dátuma és időpontja",
@@ -101,7 +117,7 @@ export const WITHDRAWAL_COPY_HU: WithdrawalCopy = {
 		"Próbálja meg újra, vagy küldje el nyilatkozatát az info@maky.store címre. A beírt adatok megmaradnak az űrlapon.",
 	unknownTitle: "A küldés eredményét nem sikerült megerősíteni",
 	unknownBody:
-		"Nem tudtuk megbízhatóan megállapítani, hogy nyilatkozata beérkezett-e. Kérjük, ellenőrizze a visszaigazoló e-mailt vagy az ügy állapotát. Ismételt küldésnél ugyanazt az azonosítót használjuk, hogy ne jöjjön létre kettős ügy. Elállását az info@maky.store címre is elküldheti.",
+		"Nem tudjuk megbízhatóan megállapítani, hogy a nyilatkozat beérkezett-e. Kérjük, ellenőrizze a postaládáját. Ismételt küldésnél ugyanazt az azonosítót használjuk, hogy ne jöjjön létre kettős ügy. Nyilatkozatát az info@maky.store címre is elküldheti.",
 	rateLimit:
 		"A küldés átmenetileg korlátozott. Próbálja meg később, vagy küldje el nyilatkozatát az info@maky.store címre.",
 	unavailable:

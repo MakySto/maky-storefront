@@ -291,8 +291,8 @@ export function Hu({ channel }: { channel: string }) {
 	return (
 		<>
 			<p>
-				Termékkel kapcsolatban kérdezné, ellenőrizné egy tartozék megfelelőségét, vagy segítségre van szüksége
-				a rendeléséhez? Írjon nekünk, vagy hívjon fel minket.
+				Kérdése van egy termékkel kapcsolatban, szeretné ellenőrizni egy tartozék kompatibilitását, vagy
+				segítségre van szüksége a rendeléséhez? Írjon nekünk, vagy hívjon fel minket.
 			</p>
 			<p>
 				<strong>E-mail:</strong> <Mail />

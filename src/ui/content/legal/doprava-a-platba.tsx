@@ -312,9 +312,10 @@ export function Hu({ channel }: { channel: string }) {
 	return (
 		<>
 			<p>
-				A csomagok szállításában a <strong>FedEx és a Slovenská pošta (Szlovák Posta)</strong> a partnerünk. A
-				magyarországi címére és az adott rendelésre elérhető szállítási módokat és díjakat még a kötelező
-				érvényű megrendelés elküldése előtt megmutatjuk.
+				A rendeléseket <strong>Szlovákiából</strong> adjuk fel, a{" "}
+				<strong>FedEx és a Slovenská pošta (Szlovák Posta)</strong> közreműködésével. A magyarországi címére
+				és az adott rendelésre elérhető szállítási módokat és díjakat még a kötelező érvényű megrendelés
+				elküldése előtt megmutatjuk.
 			</p>
 
 			<h2>Hogyan szállítunk</h2>
