@@ -30,6 +30,7 @@ const route = legalRoute({
 		},
 		pl: {
 			title: "Regulamin sklepu – Polska",
+			heading: "Regulamin sklepu",
 			description:
 				"Zasady zakupów w MAKY.STORE: zamówienie, płatność, dostawa, odstąpienie od umowy, reklamacje i prawa konsumenta.",
 			Body: Pl,

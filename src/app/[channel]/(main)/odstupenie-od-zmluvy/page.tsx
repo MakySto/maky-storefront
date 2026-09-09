@@ -9,7 +9,7 @@ import { newSubmissionId } from "@/lib/forms/payload-forms-client";
 import { loadOwnedOrders, type OwnedOrder } from "@/lib/withdrawal/account-orders";
 import { isWithdrawalFormServable, withdrawalBlockReason } from "@/lib/withdrawal/contract";
 import { normalizeWithdrawalPhone } from "@/lib/withdrawal/validate";
-import { legalLocaleFor } from "@/lib/legal/locale";
+import { legalLocaleFor, type LegalLocale } from "@/lib/legal/locale";
 import { LegalPage } from "@/ui/components/legal/legal-page";
 import { Cs, De, DeAt, Hu, Pl, Sk } from "@/ui/content/legal/odstupenie-od-zmluvy";
 import { WithdrawalForm } from "@/ui/components/withdrawal/withdrawal-form";
@@ -43,7 +43,24 @@ import { submitWithdrawalAction } from "./actions";
 
 const PATH = "/odstupenie-od-zmluvy";
 
-const META = {
+/**
+ * Titles and the two descriptions, per approved legal language.
+ *
+ * Annotated rather than `as const` because `heading` is optional: under `as const` each
+ * entry narrows to its own literal shape, so reading `META[locale].heading` fails on the
+ * locales that do not set one. The annotation makes the optionality part of the type
+ * instead of an accident of which entries happen to carry the key.
+ */
+interface WithdrawalMeta {
+	/** The `<title>`. */
+	readonly title: string;
+	/** The `<h1>`, when the delivered copy distinguishes it from the title. */
+	readonly heading?: string;
+	readonly withForm: string;
+	readonly withoutForm: string;
+}
+
+const META: Readonly<Record<LegalLocale, WithdrawalMeta>> = {
 	sk: {
 		title: "Odstúpenie od zmluvy",
 		withForm:
@@ -81,6 +98,7 @@ const META = {
 	// that switching it on is a one-line change in the contract rather than a copy task.
 	pl: {
 		title: "Odstąpienie od umowy i zwrot towaru",
+		heading: "Odstąpienie od umowy",
 		withForm:
 			"Odstąpienie od umowy w MAKY.STORE: formularz online, terminy, zwrot towaru, koszty przesyłki, zwrot pieniędzy i wzór oświadczenia.",
 		withoutForm:
@@ -88,12 +106,13 @@ const META = {
 	},
 	hu: {
 		title: "Elállási jog és visszaküldés",
+		heading: "Elállási jog",
 		withForm:
 			"Az online vásárlástól való elállás feltételei: online elállási funkció, 14 nap, bejelentkezve leadott rendelésnél 30 nap, visszaküldés és visszatérítés.",
 		withoutForm:
 			"Az online vásárlástól való elállás feltételei: 14 nap, bejelentkezve leadott rendelésnél 30 nap, visszaküldés, visszatérítés és nyilatkozatminta.",
 	},
-} as const;
+};
 
 /**
  * Whether the online function is served for this market.
@@ -237,7 +256,9 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	// is built here rather than inside the body — a Czech body must never be handed a
 	// Slovak form to place.
 	return (
-		<LegalPage title={META[locale].title}>
+		// Same rule as `legalRoute`: the <h1> is the heading when the delivered copy
+		// distinguishes it from the <title>, and the title otherwise.
+		<LegalPage title={META[locale].heading ?? META[locale].title}>
 			<Body channel={channel} form={form} modelFormHref={modelFormHref} />
 		</LegalPage>
 	);

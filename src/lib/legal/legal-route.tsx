@@ -20,7 +20,25 @@ import { legalLocaleFor, type LegalLocale } from "./locale";
  * would send a Czech reader to the Slovak page, and nothing would catch it.
  */
 export interface LegalCopy {
+	/**
+	 * The `<title>`, and the `<h1>` when `heading` is absent.
+	 *
+	 * These started as one string because for Slovak and Czech they genuinely are one.
+	 * They are not always: the delivered market packages give an `<h1>` and an SEO title
+	 * separately, and several pages differ — Polish shipping is `Dostawa i płatności` on
+	 * the page and `Dostawa i płatności – Polska` in the tab, because the market
+	 * qualifier earns its place in a search result and is noise above the text.
+	 */
 	readonly title: string;
+	/**
+	 * The `<h1>`, when it differs from the `<title>`. Optional on purpose.
+	 *
+	 * Omitting it keeps the previous behaviour exactly — `heading ?? title` — so every
+	 * page that had one string still renders that one string, and no existing market's
+	 * output moves. Set it only where the delivered copy really does distinguish the two;
+	 * inventing a third wording for a page would be worse than having one.
+	 */
+	readonly heading?: string;
 	readonly description: string;
 	readonly Body: (props: { channel: string }) => ReactNode;
 }
@@ -60,7 +78,7 @@ export function legalRoute({ path, copy }: LegalRouteOptions) {
 
 			const { Body } = resolved;
 			return (
-				<LegalPage title={resolved.title}>
+				<LegalPage title={resolved.heading ?? resolved.title}>
 					<Body channel={channel} />
 				</LegalPage>
 			);

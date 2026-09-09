@@ -30,12 +30,14 @@ const route = legalRoute({
 		},
 		pl: {
 			title: "Dostawa i płatności – Polska",
+			heading: "Dostawa i płatności",
 			description:
 				"Dostawa do Polski przez FedEx i Slovenská pošta, koszty wysyłki, dostępność towaru oraz płatność z góry przez Stripe. Bez pobrania.",
 			Body: Pl,
 		},
 		hu: {
 			title: "Szállítás és fizetés – Magyarország",
+			heading: "Szállítás és fizetés",
 			description:
 				"Szállítás Magyarországra, szállítási díjak, várható kézbesítés és előre fizetés a Stripe rendszerén keresztül. Ismerje meg a rendelés feltételeit.",
 			Body: Hu,
