@@ -10,9 +10,15 @@
  * a Slovak default, so adding a language here cannot change what Slovak or Czech renders.
  *
  * `SLOVAKIA_DE` lives in `german-market.tsx` instead, next to the rest of the German
- * market profile. These six have no profile object — Polish, Hungarian, Italian, French,
- * Spanish and Romanian share nothing with each other beyond the company itself, so a
- * profile would be a layer with one inhabitant apiece.
+ * market profile. These seven have no profile object — Polish, Hungarian, Italian, French,
+ * Spanish, Romanian and English share nothing with each other beyond the company itself,
+ * so a profile would be a layer with one inhabitant apiece.
+ *
+ * `SLOVAKIA_EN` serves both English markets, and that is not an oversight. The country is
+ * called `Slovakia` in American and Canadian English alike; giving `us` and `ca` separate
+ * constants holding the same seven letters would imply a difference that does not exist.
+ * Where the two markets genuinely differ — tax identifiers, carriers, consumer statutes —
+ * they have separate bodies saying separate things.
  */
 
 export const SLOVAKIA_PL = "Słowacja";
@@ -21,3 +27,4 @@ export const SLOVAKIA_IT = "Slovacchia";
 export const SLOVAKIA_FR = "Slovaquie";
 export const SLOVAKIA_ES = "Eslovaquia";
 export const SLOVAKIA_RO = "Slovacia";
+export const SLOVAKIA_EN = "Slovakia";

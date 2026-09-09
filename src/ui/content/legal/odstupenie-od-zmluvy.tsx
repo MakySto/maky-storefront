@@ -3,7 +3,15 @@ import { type ReactNode } from "react";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_ES, SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL, SLOVAKIA_RO } from "./slovakia";
+import {
+	SLOVAKIA_EN,
+	SLOVAKIA_ES,
+	SLOVAKIA_FR,
+	SLOVAKIA_HU,
+	SLOVAKIA_IT,
+	SLOVAKIA_PL,
+	SLOVAKIA_RO,
+} from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
@@ -1399,5 +1407,230 @@ export function Ro({ channel, form, modelFormHref }: WithdrawalBodyProps) {
 				<Link href={marketHref(channel, "/obchodne-podmienky")}>Termenii și condițiile de vânzare</Link>.
 			</p>
 		</>
+	);
+}
+
+/**
+ * The shared half of the two English cancellation pages.
+ *
+ * The differing parts are props, and the last of them is the one that matters. "Other
+ * cancellation rights" is a different section of law in each market: in the United States
+ * the point is that the FTC's three-day Cooling-Off Rule does *not* reach purchases made
+ * entirely online, so the reader is not left believing in a federal right they do not
+ * have; in Canada the point is the opposite in shape — mandatory provincial and
+ * territorial rights genuinely do arise independently of this policy, and Québec's
+ * statutory cancellation can put reasonable return costs on the merchant.
+ *
+ * Neither statement is true of the other country, so neither is written once and shared.
+ */
+function EnglishWithdrawal({
+	channel,
+	form,
+	modelFormHref,
+	market,
+	cancelling,
+	otherRights,
+}: WithdrawalBodyProps & {
+	/** How the market is named in prose: `the United States`, `Canada`. */
+	market: string;
+	/** `canceling` in US spelling, `cancelling` in Canadian. */
+	cancelling: string;
+	/** The market's own mandatory-cancellation-rights section. See the note above. */
+	otherRights: ReactNode;
+}) {
+	return (
+		<>
+			<p>
+				Changed your mind about a purchase? For consumer orders, we give you{" "}
+				<strong>14 calendar days from delivery</strong> to tell us you wish to cancel without giving a reason.
+				If you placed the order while signed in to your customer account, you have <strong>30 days</strong>.
+			</p>
+			<p>
+				This is protection provided in our store terms and the agreed Slovak framework, not a statement that
+				every online purchase in {market} carries a national statutory 14-day cooling-off period. The same
+				procedure applies during our 30-day extension. More protective mandatory rights are not reduced.
+			</p>
+			<p>
+				You can give notice before delivery and can cancel all or part of an order. You do not need to create
+				an account, log in again or obtain our prior approval.
+			</p>
+
+			{form ?? (
+				<>
+					<h2>Online cancellation</h2>
+					<p>
+						The online cancellation form is not yet active in this preview of the store. You can send your
+						notice by email or by mail using the details below. Do not wait for the online form if a deadline
+						is approaching. Opening this page does not send a notice.
+					</p>
+				</>
+			)}
+
+			<h2>Give notice by email or mail</h2>
+			<p>
+				Send a clear statement to <Mail /> or to{" "}
+				<strong>
+					{companyInfo.legalName}, {companyInfo.returnAddress}, {SLOVAKIA_EN}
+				</strong>
+				. You can reach us with questions on <Phone />.
+			</p>
+			<p>
+				You may use our <Link href={modelFormHref}>printable cancellation form</Link>, but it is optional.
+				Tell us who is {cancelling}, which purchase is involved and whether the notice covers the whole order
+				or named items and quantities. You do not have to give a reason or your bank account details just to
+				cancel.
+			</p>
+
+			<h2>When the period starts</h2>
+			<p>
+				The delivery day itself is not counted. For one contract covering goods delivered separately, count
+				from delivery of the last item. For an item delivered in parts, count from the last part. For regular
+				deliveries over an agreed period, count from the first delivery. Delivery to a person you nominate,
+				other than the carrier, counts as delivery to you.
+			</p>
+			<p>
+				Send your notice by the last day of the applicable period.{" "}
+				<strong>The goods do not have to reach Slovakia by that day.</strong> If mandatory law extends a
+				cancellation period because required information was not provided, that longer period remains
+				available.
+			</p>
+
+			<h2>Send the items back</h2>
+			<p>
+				For routine change-of-mind returns from {market}, arrange the return with your own carrier.{" "}
+				<strong>We do not currently offer routine pickup or a prepaid return label.</strong> No prior return
+				authorization is required.
+			</p>
+			<p>
+				Unless we have separately offered to collect the goods, send or hand them back without undue delay and
+				within <strong>14 days after your cancellation notice</strong>. Sending them before the deadline is
+				sufficient. Keep evidence of dispatch.
+			</p>
+			<ReturnAddress country={SLOVAKIA_EN} />
+			<p>
+				Pack the goods securely and include the accessories supplied with the returned item. Original
+				packaging can help protect it, but is not a general condition of cancellation. Include your order
+				reference where possible.
+			</p>
+			<p>
+				A request for help with shipping is not a collection booking or an offer by us to collect. Do not miss
+				the return deadline simply while waiting for advice. If we separately offer collection, follow the
+				arrangement we confirm; paid collection is never ordered without your express acceptance of its price.
+			</p>
+
+			<h2>Who pays return shipping</h2>
+			<p>
+				For a change-of-mind return, you bear the direct return costs if we properly told you about them
+				before purchase. For goods that cannot normally be returned by post, the required information about
+				those costs must also be provided before you buy. If that information was not properly provided, or we
+				agreed to pay, we do not charge you those costs.
+			</p>
+			<p>
+				Return shipping to Slovakia can be significant for bulky items. A quote requested after purchase does
+				not replace information that should have been given before purchase. This policy does not set a flat
+				return fee or a handling charge.
+			</p>
+			<p>
+				For defects, incorrect goods or other grounds that require us to pay, different cost rules apply. See{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Returns and product support</Link>.
+			</p>
+
+			<h2>Your refund</h2>
+			<p>
+				We refund the amounts due without undue delay and, under this policy, no later than{" "}
+				<strong>14 days after receiving your notice</strong>. If you cancel the entire order, this includes
+				original delivery up to the price of the least expensive standard delivery we offered for that order.
+				The extra cost of a more expensive option you expressly selected need not be refunded.
+			</p>
+			<p>
+				For a partial return, we refund the relevant amounts. We do not retrospectively add shipping charges
+				or a penalty because you returned part of an order. Import costs already included in the price are not
+				a new cancellation fee.
+			</p>
+			<p>
+				We use the original payment method unless you expressly agree to a different method that costs you
+				nothing. You do not have to accept store credit instead of a refund. We do not need an IBAN to refund
+				the original card.
+			</p>
+			<p>
+				Unless we offered collection, we may hold the refund until we receive the goods or evidence of
+				dispatch, whichever happens first. If we offered collection, we do not use that hold. Any earlier
+				refund or different procedure required by mandatory law takes priority.
+			</p>
+
+			<h2>Condition of returned goods</h2>
+			<p>
+				You may inspect the goods as needed to establish their nature, characteristics and operation, much as
+				you would in a shop. You may be responsible for a reduction in value caused by handling beyond that,
+				subject to the applicable information requirements and law. Opening the package or reasonably
+				inspecting the product does not by itself remove the right to cancel.
+			</p>
+			<p>
+				There is no flat restocking, unpacking or processing fee. Any claim for diminished value must be based
+				on the actual condition and explained. We do not unilaterally deduct such a claim from the refund due
+				under our agreed cancellation terms.
+			</p>
+
+			<h2>Exceptions</h2>
+			<p>
+				The change-of-mind right may not apply to goods genuinely made to your individual specifications or
+				clearly personalized for you. An exception can also apply to sealed goods that are unsuitable for
+				return for health or hygiene reasons once unsealed. We apply exceptions only where their conditions
+				are met and without reducing mandatory rights.
+			</p>
+			<p>
+				<strong>
+					A normal “Available to order” item or a standard rack kit selected to fit your vehicle is not
+					made-to-order in this sense just because we source or assemble that standard combination.
+				</strong>{" "}
+				An exception for changing your mind does not remove remedies for a defect.
+			</p>
+
+			<h2>Other cancellation rights</h2>
+			{otherRights}
+			<p>
+				Our <Link href={marketHref(channel, "/obchodne-podmienky")}>Terms of sale</Link> give the full
+				contractual framework. For a product problem, contact us even after the change-of-mind period has
+				ended.
+			</p>
+		</>
+	);
+}
+
+export function Us(props: WithdrawalBodyProps) {
+	return (
+		<EnglishWithdrawal
+			{...props}
+			market="the United States"
+			cancelling="canceling"
+			otherRights={
+				<p>
+					This store policy is not the FTC’s three-day Cooling-Off Rule, which does not cover purchases made
+					entirely online. Other applicable rights remain available, including rights relating to delayed
+					shipment, defective goods and misleading practices. A cancellation because we fail to ship as
+					required is not treated as a customer-funded change-of-mind return.
+				</p>
+			}
+		/>
+	);
+}
+
+export function Ca(props: WithdrawalBodyProps) {
+	return (
+		<EnglishWithdrawal
+			{...props}
+			market="Canada"
+			cancelling="cancelling"
+			otherRights={
+				<p>
+					Mandatory Canadian cancellation rights can arise independently of this policy, including when
+					legally required information or a contract copy is missing, goods are not delivered on time, or the
+					seller engages in an unfair practice. Conditions and deadlines depend on the applicable provincial
+					or territorial law. In Québec, statutory cancellation of a distance contract for non-compliance can
+					require the merchant to pay reasonable return costs. Our ordinary change-of-mind cost rule does not
+					override that protection.
+				</p>
+			}
+		/>
 	);
 }

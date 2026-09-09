@@ -1,8 +1,17 @@
 import Link from "next/link";
+import { type ReactNode } from "react";
 import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_ES, SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL, SLOVAKIA_RO } from "./slovakia";
+import {
+	SLOVAKIA_EN,
+	SLOVAKIA_ES,
+	SLOVAKIA_FR,
+	SLOVAKIA_HU,
+	SLOVAKIA_IT,
+	SLOVAKIA_PL,
+	SLOVAKIA_RO,
+} from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 
@@ -1459,5 +1468,207 @@ export function Ro({ channel }: { channel: string }) {
 				și descrie pe scurt situația.
 			</p>
 		</>
+	);
+}
+
+/**
+ * The shared half of the two English returns pages.
+ *
+ * Four things differ between the United States and Canada, and each is a prop:
+ *
+ * - the verb. American English cancels with one `l`, Canadian English with two. The
+ *   delivered copy is consistent about this, and so is this component — the word is never
+ *   written literally in the shared prose, it always comes from `cancelling`.
+ * - which country's cooling-off period we are *not* claiming to be.
+ * - where the goods are shipped back from.
+ * - the statutory-rights paragraph. That is the substantive one: US state express and
+ *   implied warranties, versus Canadian provincial and territorial legal warranties and
+ *   Québec's reasonable-durability rule. They are different laws and get different text.
+ */
+function EnglishClaims({
+	channel,
+	market,
+	cancelling,
+	notCoolingOff,
+	statutoryRights,
+}: {
+	channel: string;
+	/** How the market is named in prose: `the United States`, `Canada`. */
+	market: string;
+	/** `canceling` in US spelling, `cancelling` in Canadian. */
+	cancelling: string;
+	/** The cooling-off regime this policy must not be mistaken for. */
+	notCoolingOff: string;
+	/** The market's own mandatory-rights paragraph. See the note above. */
+	statutoryRights: ReactNode;
+}) {
+	return (
+		<>
+			<p>
+				Changed your plans, or is something wrong with the product?{" "}
+				<strong>
+					A change-of-mind return and a claim about a defective, damaged or incorrect item are different
+					processes.
+				</strong>{" "}
+				Different rules apply to the shipping costs too.
+			</p>
+
+			<h2>Returning an item because you changed your mind</h2>
+			<p>
+				For consumer purchases, MAKY.STORE provides <strong>14 calendar days from delivery</strong> to tell us
+				that you are {cancelling} the purchase without giving a reason. If you placed the order while signed
+				in to your customer account, the period is <strong>30 days</strong>. The same return procedure applies
+				to that extension.
+			</p>
+			<p>
+				We provide this protection under our store terms and the agreed Slovak framework. We do not describe
+				it as {notCoolingOff} for all online shopping. Any mandatory rights that give you more protection
+				remain available.
+			</p>
+			<p>
+				You can cancel before delivery or return selected items. You do not need an account at the time of
+				cancellation, a reason or our prior approval. Send a clear notice to <Mail />, identifying the
+				purchase and the items concerned. The full procedure and exceptions are on{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Cancellations and returns</Link>.
+			</p>
+
+			<h3>Return shipping</h3>
+			<p>
+				For routine change-of-mind returns from {market},{" "}
+				<strong>you arrange shipping to Slovakia with a carrier of your choice</strong>. We do not currently
+				offer routine pickup or a prepaid return label. Send the goods within 14 days after notifying us of
+				cancellation; dispatching them within that period is enough.
+			</p>
+			<p>
+				You pay the direct return-shipping costs where we properly informed you of them before purchase. For
+				goods that cannot normally be returned by post, the required cost information must also be given
+				before purchase. We do not use a later quote to replace missing pre-purchase information. If we agreed
+				to bear the cost or applicable law makes it ours, we do not charge it to you.
+			</p>
+
+			<h3>Refunds</h3>
+			<p>
+				Under our change-of-mind policy, we refund the amounts due within{" "}
+				<strong>14 days after receiving your cancellation notice</strong>, subject to the permitted hold until
+				we receive the goods or evidence that you sent them, whichever comes first. If we have separately
+				offered to collect the goods, we do not use that hold.
+			</p>
+			<p>
+				For a cancellation of the whole order, we also refund the original delivery charge up to the least
+				expensive standard delivery option offered for that order. We use the original payment method unless
+				you expressly agree to another no-cost method. There is no flat restocking fee. These rules do not
+				delay a refund required sooner under another applicable right.
+			</p>
+
+			<h2>Reporting a defective, damaged or incorrect item</h2>
+			<p>
+				Email <Mail />. Tell us which product is affected, what is wrong and when you noticed it. Include the
+				order number or other details that let us identify the purchase.
+			</p>
+			<p>
+				A photo or short video is helpful but <strong>is not a condition for accepting the report</strong>.
+				Original packaging or only an original invoice is not required; other suitable evidence of purchase
+				can be used. You can also write to us by mail. Do not delay reporting the problem while shipping
+				arrangements are being discussed.
+			</p>
+
+			<h3>Our responsibility as seller</h3>
+			<p>
+				Our Terms of sale retain the Slovak seller-responsibility framework: defects present at delivery that
+				appear within two years, with the applicable presumptions and other protections. For contracts entered
+				into on or after <strong>July 31, 2026</strong>, that Slovak period is extended once by{" "}
+				<strong>12 months after the first repair that remedies a defect</strong>. Older contracts follow the
+				rules applicable when they were made.
+			</p>
+			{statutoryRights}
+			<p>
+				A manufacturer’s commercial warranty is additional and may have its own geographical scope. It does
+				not replace your rights against us. We do not assume that a warranty offered for a European product
+				includes service in North America.
+			</p>
+
+			<h3>How we handle a claim</h3>
+			<p>
+				We acknowledge the report in writing without delay and explain the proposed remedy and timing. Under
+				the agreed framework, you can generally choose repair or replacement, unless the chosen remedy is
+				impossible or disproportionate compared with the other. We explain any limitation.
+			</p>
+			<p>
+				We provide the required remedy without charge, within a reasonable time and without significant
+				inconvenience. The Slovak procedure normally sets a period of no more than 30 days from the report,
+				unless an objective reason beyond our control justifies a longer period and we can demonstrate it. We
+				do not use this rule or its exception to override a more protective mandatory local requirement.
+			</p>
+			<p>
+				A price reduction or cancellation for a defect may be available in the circumstances set by law, for
+				example where an appropriate repair or replacement is not provided, the defect persists or it is
+				sufficiently serious. This is not the same as the 14/30-day change-of-mind policy. Details are in our{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Terms of sale</Link>.
+			</p>
+			<p>
+				If we reject responsibility, we explain why in writing. You may provide further evidence and pursue
+				other remedies available under the law.
+			</p>
+
+			<h3>Shipping costs for a valid product claim</h3>
+			<p>
+				<strong>
+					When we are responsible for the defect, we bear the necessary costs of the remedy, including the
+					required return and replacement shipping.
+				</strong>{" "}
+				Contact us to coordinate an appropriate method, especially for a bulky product. The absence of routine
+				change-of-mind pickup does not transfer these costs to you or remove your right to a remedy. Necessary
+				removal and reinstallation are dealt with as required by law.
+			</p>
+
+			<h2>Return address</h2>
+			<ReturnAddress country={SLOVAKIA_EN} />
+			<p>
+				Include the order or case reference where possible; this helps us match the package but is not, on its
+				own, a condition of your rights. For customs paperwork, ask your carrier what it needs and provide an
+				accurate description. We can supply purchase details; a customs question should not delay your
+				cancellation notice.
+			</p>
+		</>
+	);
+}
+
+export function Us({ channel }: { channel: string }) {
+	return (
+		<EnglishClaims
+			channel={channel}
+			market="the United States"
+			cancelling="canceling"
+			notCoolingOff="a general US federal cooling-off period"
+			statutoryRights={
+				<p>
+					Applicable US law may give you express or implied warranty rights, including rights relating to
+					merchantability or fitness for a particular purpose. Those rights and the time allowed to enforce
+					them vary by state. We do not sell to consumers under a blanket “as is” disclaimer or make a
+					manufacturer your only route to a remedy. The two-year period in our Slovak framework does not cap a
+					longer mandatory US right.
+				</p>
+			}
+		/>
+	);
+}
+
+export function Ca({ channel }: { channel: string }) {
+	return (
+		<EnglishClaims
+			channel={channel}
+			market="Canada"
+			cancelling="cancelling"
+			notCoolingOff="a general Canadian cooling-off period"
+			statutoryRights={
+				<p>
+					Your Canadian rights may also include provincial or territorial legal warranties and conditions
+					relating to quality, fitness and reasonable durability. In Québec, for example, goods must be fit
+					for their ordinary use and last a reasonable time having regard to their price, contract terms and
+					conditions of use. A manufacturer’s warranty expiring does not by itself end those rights. The
+					two-year period in our Slovak framework does not cap a longer mandatory Canadian right.
+				</p>
+			}
+		/>
 	);
 }

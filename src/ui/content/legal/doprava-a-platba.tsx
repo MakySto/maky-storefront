@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { type ReactNode } from "react";
 import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, type GermanMarket } from "./german-market";
@@ -674,5 +675,149 @@ export function Ro({ channel }: { channel: string }) {
 				înseamnă, prin ea însăși, pierderea drepturilor pentru un produs neconform.
 			</p>
 		</>
+	);
+}
+
+/**
+ * The shared half of the two English shipping pages.
+ *
+ * Most of this page is one text for both markets: the carriers, the customs undertaking
+ * and the damage advice do not change at the border. Two things do, and they are props
+ * rather than branches — the currency, and the paragraph about when we must ship.
+ *
+ * That second one is a real legal delta, not a wording preference. The United States has
+ * the FTC Mail, Internet, or Telephone Order Merchandise Rule with its default 30-day
+ * shipment period and its notify-or-refund duty; Canada has provincial and territorial
+ * cancellation rights attached to late delivery and missing contract information. Writing
+ * one paragraph that gestured at both would state neither correctly, so the section is a
+ * slot and each market fills it with its own text.
+ */
+function EnglishShipping({
+	channel,
+	market,
+	currency,
+	deliveryTerms,
+}: {
+	channel: string;
+	/** How the market is named in prose: `the United States`, `Canada`. */
+	market: string;
+	/** The currency sentence's noun phrase, e.g. `US dollars (USD)`. */
+	currency: string;
+	/** The market's own shipment-timing paragraph. See the note above. */
+	deliveryTerms: ReactNode;
+}) {
+	return (
+		<>
+			<p>
+				We ship <strong>from Slovakia through FedEx and Slovenská pošta, the Slovak postal service</strong>.
+				The services available for your address and the products in your cart are shown before you confirm
+				your order.
+			</p>
+
+			<h2>Delivery options</h2>
+			<p>
+				Availability depends on the destination, product, package dimensions and weight. Not every carrier or
+				service is suitable for every item. A roof box, for example, may need a different service from a small
+				package. This page does not promise delivery of every product to every address.
+			</p>
+			<p>
+				If checkout shows no suitable option, <Link href={marketHref(channel, "/kontakt")}>contact us</Link>.
+				We will check whether delivery can be arranged. Do not select a different destination simply to get
+				past checkout.
+			</p>
+
+			<h2>Shipping price and import costs</h2>
+			<p>
+				<strong>
+					We arrange customs clearance and cover the import duties, import taxes and clearance charges for the
+					delivery we offer to {market}. These costs are included in our quoted price, not collected from you
+					unexpectedly at the door.
+				</strong>{" "}
+				The final total, including delivery and any applicable sales taxes, is shown before you place a
+				binding order.
+			</p>
+			<p>
+				If a carrier nevertheless asks you to pay an import charge covered by that price, send us the notice
+				at <Mail /> so we can resolve it. We do not pass an undisclosed import bill on to you. We may ask for
+				information needed to complete clearance, but a request for information is not a request for an extra
+				payment.
+			</p>
+
+			<h2>Availability and delivery time</h2>
+			<p>
+				Items marked <strong>“Available to order”</strong> are sourced from a supplier. That label does not
+				mean the product is already in our own warehouse. We ship after payment has been received and
+				according to the stated availability.
+			</p>
+			{deliveryTerms}
+			<p>
+				Need your equipment for a particular trip? Write to us before buying so we can check the delivery
+				options. We do not promise an arrival date that has not been confirmed.
+			</p>
+
+			<h2>Payment</h2>
+			<p>
+				Orders delivered to {market} are{" "}
+				<strong>paid in advance through our Stripe payment integration</strong>, using a payment method
+				offered at checkout. <strong>Cash on delivery is not available.</strong> Prices in this market are
+				shown in <strong>{currency}</strong>. We show the amount and currency you will pay before
+				confirmation.
+			</p>
+			<p>
+				Stripe processes payment details. We do not store or have access to your full card number or security
+				code. A payment-provider notification is not, by itself, our acceptance of an order.
+			</p>
+
+			<h2>When the package arrives</h2>
+			<p>
+				Check the packaging where practical and take photos of visible shipping damage. If an item is damaged,
+				incorrect or missing, contact <Mail />. Photos and a carrier’s damage report can help us investigate,
+				but their absence does not automatically remove your rights.
+			</p>
+			<p>
+				The arrangements for a return shipment are different from those for your original delivery. See{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Cancellations and returns</Link> and{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Returns and product support</Link>.
+			</p>
+		</>
+	);
+}
+
+export function Us({ channel }: { channel: string }) {
+	return (
+		<EnglishShipping
+			channel={channel}
+			market="the United States"
+			currency="US dollars (USD)"
+			deliveryTerms={
+				<p>
+					For US orders, we follow the applicable Mail, Internet, or Telephone Order Merchandise Rule. We must
+					have a reasonable basis for the shipment time we give you. If no shipment time is stated, the rule
+					generally uses 30 days from receipt of a properly completed order. If we cannot ship on time, we
+					notify you and offer the choice required by the rule: agree to a delay or cancel for a prompt
+					refund. We do not treat the words “available to order” as permission to keep your payment
+					indefinitely. A shipping deadline and a delivery date are not the same thing.
+				</p>
+			}
+		/>
+	);
+}
+
+export function Ca({ channel }: { channel: string }) {
+	return (
+		<EnglishShipping
+			channel={channel}
+			market="Canada"
+			currency="Canadian dollars (CAD)"
+			deliveryTerms={
+				<p>
+					We give you the delivery terms before you buy and contact you if a delay arises. We do not treat the
+					words “available to order” as permission to keep your payment indefinitely. Applicable provincial or
+					territorial cancellation and refund rights remain available, including rights arising from late
+					delivery or missing contract information. Our Terms of sale explain this separately from a
+					change-of-mind return.
+				</p>
+			}
+		/>
 	);
 }

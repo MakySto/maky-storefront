@@ -2,7 +2,15 @@ import Link from "next/link";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_ES, SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL, SLOVAKIA_RO } from "./slovakia";
+import {
+	SLOVAKIA_EN,
+	SLOVAKIA_ES,
+	SLOVAKIA_FR,
+	SLOVAKIA_HU,
+	SLOVAKIA_IT,
+	SLOVAKIA_PL,
+	SLOVAKIA_RO,
+} from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
@@ -558,5 +566,105 @@ export function Ro({ channel }: { channel: string }) {
 				Competențele altor autorități prevăzute de lege rămân neafectate.
 			</p>
 		</>
+	);
+}
+
+/**
+ * The shared half of the two English contact pages.
+ *
+ * `Us` and `Ca` differ in exactly one sentence — which national tax registration these
+ * Slovak identifiers are *not* — plus the market name in the returns paragraph. Everything
+ * else is the same English, so it is written once here rather than copied and left to
+ * drift. This is the shape the package asked for: shared English sentences are legitimate,
+ * and the difference that matters is stated where it matters.
+ */
+function EnglishContact({
+	channel,
+	market,
+	notTaxIds,
+}: {
+	channel: string;
+	/** How the market is named in prose: `the United States`, `Canada`. */
+	market: string;
+	/** The local registrations these Slovak numbers must not be mistaken for. */
+	notTaxIds: string;
+}) {
+	return (
+		<>
+			<p>
+				Need help choosing an accessory, checking a fit or following up on an order? Send us a message or give
+				us a call.
+			</p>
+			<p>
+				<strong>Email:</strong> <Mail />
+				<br />
+				<strong>Phone:</strong> <Phone />
+			</p>
+			<p>
+				We reply during our business days in Slovakia. For an order question, include your order number if you
+				have it. For vehicle accessories, tell us the make, model, model year and body style; for roof racks,
+				include the roof type. A photo can help. Tell us which market the vehicle was sold in so we can check
+				the correct version.
+			</p>
+
+			<h2>Returns and product problems</h2>
+			<p>Our return address is in Slovakia:</p>
+			<ReturnAddress country={SLOVAKIA_EN} />
+			<p>
+				This is different from our registered office. For a change-of-mind return, see{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Cancellations and returns</Link>. For a
+				defective, damaged or incorrect item, see{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Returns and product support</Link>.
+			</p>
+			<p>
+				We do not currently offer routine pickup or a prepaid return label for change-of-mind returns from{" "}
+				{market}. You may use your own carrier. This does not prevent you from returning an eligible purchase
+				or making a claim about a defective product. If the product is defective, contact us so we can arrange
+				the appropriate remedy and address the necessary shipping costs.
+			</p>
+
+			<h2>Seller and company details</h2>
+			<SeatAddress country={SLOVAKIA_EN} />
+			<p>
+				<strong>Slovak company identification number (IČO):</strong> {companyInfo.ico}
+				<br />
+				<strong>Slovak tax identification number (DIČ):</strong> {companyInfo.dic}
+				<br />
+				<strong>Slovak VAT identification number:</strong> {companyInfo.icDph}
+			</p>
+			<p>
+				We are registered for VAT in Slovakia. The company is entered in the Commercial Register maintained by
+				Mestský súd Bratislava III, section Sro, entry 200804/B. These are Slovak identifiers; they are not{" "}
+				{notTaxIds}.
+			</p>
+
+			<h2>Oversight in the seller’s home country</h2>
+			<SupervisoryAuthority country={SLOVAKIA_EN} gloss="Slovak Trade Inspection" />
+			<p>
+				Our <Link href={marketHref(channel, "/obchodne-podmienky")}>Terms of sale</Link> explain complaints
+				and dispute resolution. The Slovak authority is not the only authority you may contact where other
+				consumer-protection rules apply.
+			</p>
+		</>
+	);
+}
+
+export function Us({ channel }: { channel: string }) {
+	return (
+		<EnglishContact
+			channel={channel}
+			market="the United States"
+			notTaxIds="a US employer identification number or state sales-tax registration"
+		/>
+	);
+}
+
+export function Ca({ channel }: { channel: string }) {
+	return (
+		<EnglishContact
+			channel={channel}
+			market="Canada"
+			notTaxIds="a Canadian business number or GST/HST registration"
+		/>
 	);
 }

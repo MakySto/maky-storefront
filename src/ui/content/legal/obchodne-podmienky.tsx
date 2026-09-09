@@ -1,8 +1,17 @@
 import Link from "next/link";
+import { type ReactNode } from "react";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_ES, SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL, SLOVAKIA_RO } from "./slovakia";
+import {
+	SLOVAKIA_EN,
+	SLOVAKIA_ES,
+	SLOVAKIA_FR,
+	SLOVAKIA_HU,
+	SLOVAKIA_IT,
+	SLOVAKIA_PL,
+	SLOVAKIA_RO,
+} from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
@@ -15,6 +24,7 @@ const RETURN_ADDRESS_IT = `${companyInfo.legalName}, ${companyInfo.returnAddress
 const RETURN_ADDRESS_FR = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_FR}`;
 const RETURN_ADDRESS_ES = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_ES}`;
 const RETURN_ADDRESS_RO = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_RO}`;
+const RETURN_ADDRESS_EN = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_EN}`;
 
 /**
  * The Slovak ADR body, which stays the seller's ADR body in every market.
@@ -3915,5 +3925,555 @@ export function Ro({ channel }: { channel: string }) {
 				comenzii tale la <Mail />.
 			</p>
 		</>
+	);
+}
+
+/**
+ * The shared half of the two English terms of sale.
+ *
+ * This is the longest page in the set and the two markets agree on almost all of it —
+ * the seller, the ordering flow, the customs undertaking, the 14/30-day benefit, the
+ * Slovak conformity framework. Seven things differ, and each is a prop rather than a
+ * branch inside the prose, so the compiler can see that both markets supply all seven.
+ *
+ * Three of them are substantive law and could not be shared without saying something
+ * false in one country:
+ *
+ * - **§5 shipment timing.** The FTC Mail, Internet, or Telephone Order Merchandise Rule
+ *   and its default 30-day period bind us in the United States. Canada has no such single
+ *   federal rule; it has provincial and territorial rights attached to late delivery.
+ * - **§6 other cancellation rights.** In the US the necessary statement is a negative —
+ *   the FTC's three-day Cooling-Off Rule does *not* reach purchases made entirely online,
+ *   and a reader must not be left believing otherwise. In Canada it is a positive —
+ *   mandatory provincial rights genuinely do arise, and Québec's statutory cancellation
+ *   can put reasonable return costs on the merchant.
+ * - **§7 statutory warranties.** State express and implied warranties, versus provincial
+ *   and territorial legal warranties and Québec's reasonable-durability rule.
+ *
+ * The remaining four are the market's name, its currency, which regulator a buyer may
+ * approach, and two words of spelling. Canadian English keeps the `u` in `enquiries`,
+ * and the delivered copy is consistent about it; that is why the word is a prop and never
+ * written literally in the shared text.
+ */
+function EnglishTerms({
+	channel,
+	market,
+	storeName,
+	currency,
+	enquiries,
+	deliveryTerms,
+	otherCancellationRights,
+	statutoryWarranties,
+	regulators,
+	lawScope,
+}: {
+	channel: string;
+	/** How the market is named in prose: `the United States`, `Canada`. */
+	market: string;
+	/** How the storefront names itself in §2: `The US English store`. */
+	storeName: string;
+	/** The currency noun phrase, e.g. `US dollars (USD)`. */
+	currency: string;
+	/** `inquiries` in US spelling, `enquiries` in Canadian. */
+	enquiries: string;
+	/** §5 — the market's shipment-timing paragraph. */
+	deliveryTerms: ReactNode;
+	/** §6 — the market's mandatory-cancellation-rights paragraph. */
+	otherCancellationRights: ReactNode;
+	/** §7 — the market's own mandatory warranty rights. */
+	statutoryWarranties: ReactNode;
+	/** §9 — which authority a buyer in this market may approach. */
+	regulators: ReactNode;
+	/** §10 — the rights a choice of Slovak law does not disclaim. */
+	lawScope: string;
+}) {
+	return (
+		<>
+			<p>
+				These terms apply to purchases of goods from MAKY.STORE. The version supplied when your contract is
+				made applies to that purchase. We are a seller established in Slovakia, not a local North American
+				store or warehouse.
+			</p>
+			<p>
+				<strong>
+					Slovak law governs our sales contracts, subject to the protections below. Nothing in these terms
+					removes rights that applicable law does not allow you to waive.
+				</strong>{" "}
+				A choice of Slovak law does not exclude mandatory protections that apply to your purchase in your
+				state, province or territory.
+			</p>
+
+			<h2>1. Seller and contact details</h2>
+			<p>
+				<strong>{companyInfo.legalName}</strong>
+				<br />
+				{companyInfo.street}
+				<br />
+				{companyInfo.city}
+				<br />
+				{SLOVAKIA_EN}
+			</p>
+			<p>
+				Company identification number (IČO): <strong>{companyInfo.ico}</strong>
+				<br />
+				Slovak tax identification number (DIČ): <strong>{companyInfo.dic}</strong>
+				<br />
+				Slovak VAT identification number: <strong>{companyInfo.icDph}</strong>
+				<br />
+				Commercial Register: Mestský súd Bratislava III, section Sro, entry <strong>200804/B</strong>. We are
+				registered for VAT in Slovakia.
+			</p>
+			<p>
+				Email: <Mail />
+				<br />
+				Phone: <Phone />
+			</p>
+			<p>
+				<strong>Returns, product claims and related correspondence:</strong> {RETURN_ADDRESS_EN}. Do not send
+				a return to the registered office instead.
+			</p>
+			<p>
+				“We” means {companyInfo.legalName}; “you” means the buyer. Consumer protections apply according to the
+				actual circumstances and applicable law, not merely whether you entered an invoice address. These
+				consumer terms do not remove any rights that the law also gives other eligible buyers.
+			</p>
+
+			<h2>2. Ordering and formation of the contract</h2>
+			<p>
+				You can buy without creating an account. Add products to your cart, enter the details needed for the
+				purchase and delivery, and choose from the available delivery and payment methods. Before sending the
+				order, you can review and correct the items, quantities and information.
+			</p>
+			<p>
+				We show the total amount, currency, delivery charges and applicable taxes before you commit. A button
+				marked <strong>“Place order and pay”</strong>, or equally clear wording, sends an order with an
+				obligation to pay. We do not add paid extras without your express agreement.
+			</p>
+			<p>
+				The sales contract is formed when you receive our email accepting the order. A payment confirmation
+				issued only by the payment provider is not our acceptance. Our acceptance email includes the order
+				summary, agreed terms and a copy of these terms that you can keep. If we cannot accept an order after
+				receiving a payment, we return that payment promptly.
+			</p>
+			<p>
+				{storeName} provides the contract information in English, without overriding any applicable
+				requirement to provide information or a contract in another language. We store the information needed
+				to fulfill the order and meet legal obligations. You can save the confirmation and documents, or
+				request information about your own order by email.
+			</p>
+			<p>
+				Your internet or phone provider’s normal charges may apply. We do not charge an additional fee merely
+				for concluding a distance contract.
+			</p>
+
+			<h2>3. Products, fit and availability</h2>
+			<p>
+				The product page describes the characteristics, included parts, intended use and relevant limitations.
+				For a fitting kit, the exact vehicle configuration and kit contents matter. Vehicles sold in different
+				markets can differ even when their model names match. Check the make, model year, body, roof and
+				mounting system, along with the product and vehicle load limits.
+			</p>
+			<p>
+				Please ask us before buying if compatibility is uncertain. That advice does not transfer our
+				responsibility for accurate information or a product’s conformity to you. Do not infer approval for
+				road use or regional certification simply from the availability of a translated page.
+			</p>
+			<p>
+				<strong>“Available to order” means we source a standard item from a supplier.</strong> It is not a
+				statement that the item is in our own stock, made to your individual specifications or excluded from
+				returns.
+			</p>
+
+			<h2>4. Prices, payment and imports</h2>
+			<p>
+				Prices in this market use <strong>{currency}</strong>. The order review shows the final product price,
+				delivery charge, applicable sales taxes and total. The agreed price applies to the contract; a later
+				price change does not change an existing order.
+			</p>
+			<p>
+				<strong>
+					We arrange customs clearance and cover the import duties, import taxes and clearance charges for the
+					delivery we offer to {market}. These costs are included in our quoted price, not collected from you
+					unexpectedly at the door.
+				</strong>{" "}
+				The final total, including delivery and any applicable sales taxes, is shown before you place a
+				binding order.
+			</p>
+			<p>
+				If a carrier nevertheless asks you to pay an import charge covered by that price, send us the notice
+				at <Mail /> so we can resolve it. We do not pass an undisclosed import bill on to you. We may ask for
+				information needed to complete clearance, but a request for information is not a request for an extra
+				payment.
+			</p>
+			<p>
+				Orders for {market} are <strong>paid in advance through Stripe</strong> using an eligible method
+				offered at checkout. <strong>We do not offer cash on delivery.</strong> Where local rules restrict
+				advance-payment methods, only permitted methods are offered. Payment does not waive a cancellation,
+				refund or card-dispute right available under applicable law.
+			</p>
+			<p>
+				We do not store or have access to the full card number or security code. Stripe handles those details.
+				If a payment has been received for an order we cannot accept, we refund it promptly. After a contract
+				is formed, a change in our supplier’s price or availability does not entitle us to rewrite your agreed
+				terms unilaterally.
+			</p>
+
+			<h2>5. Delivery and transit risk</h2>
+			<p>
+				We ship from Slovakia through <strong>FedEx and Slovenská pošta</strong>. Delivery services depend on
+				the address, items, package size and weight. The options and charges offered for your order appear
+				before confirmation. We do not promise that every item can be delivered to every destination.
+			</p>
+			<p>
+				We provide the delivery terms before the contract is made. Under our Slovak framework, unless another
+				delivery period is agreed, we deliver without unnecessary delay and no later than 30 days after the
+				contract is made. This does not replace a more favorable mandatory deadline or a specific delivery
+				commitment.
+			</p>
+			{deliveryTerms}
+			<p>
+				If an agreed delivery deadline is missed, you may give us an appropriate additional period and cancel
+				if we do not deliver within it. No additional period is needed where the applicable law allows
+				immediate cancellation, including where we refuse delivery or timely delivery was essential and that
+				was clear before the contract was made. We return payments as required; the cancellation rules for a
+				delay are not limited to the change-of-mind return process below.
+			</p>
+			<p>
+				For a carrier we offer, risk of accidental loss or damage passes when you, or a person you designate
+				other than the carrier, receives the goods. The statutory exception for an independent carrier you
+				select that we did not offer remains subject to applicable law. Ownership passes on delivery under the
+				applicable Slovak rules, without displacing mandatory local rights.
+			</p>
+			<p>
+				Check the package where practical. Photos and a carrier’s damage report can help, but their absence
+				does not automatically cancel a valid product claim.
+			</p>
+
+			<h2>6. Changing your mind: cancellation and returns</h2>
+
+			<h3>The 14-day period and our 30-day benefit</h3>
+			<p>
+				We offer consumers <strong>14 calendar days after receiving the goods</strong> to cancel without
+				giving a reason. For an order placed <strong>while signed in to your customer account</strong>, we
+				extend that period to <strong>30 days</strong>, with the same return procedure and protections. You do
+				not need an account when sending the cancellation.
+			</p>
+			<p>
+				For these markets, this is the protection provided through our agreed seller framework and policy; it
+				is not a claim that every US or Canadian online purchase has a federal 14-day cooling-off period.
+				Separate mandatory cancellation rights are preserved.
+			</p>
+			<p>
+				The day of receipt is not counted. For several goods in one contract delivered separately, the period
+				starts from the last delivery; for one product delivered in parts, from the last part. For regular
+				deliveries over an agreed period, the first delivery is relevant. Receipt by your designated person,
+				other than the carrier, counts as receipt.
+			</p>
+			<p>
+				You may cancel before delivery or cancel only selected products and quantities. Rules on extension
+				where required cancellation information was not supplied remain applicable. Under the Slovak
+				framework, a missing required notice can extend the statutory period by up to 12 months after the
+				normal period; if the information is supplied during that extension, the statutory 14-day period runs
+				from its receipt.
+			</p>
+
+			<h3>How to send notice</h3>
+			<p>
+				Email a clear notice to <Mail />, or mail it to our return address above. You may use the{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy/vzorovy-formular")}>
+					optional cancellation form
+				</Link>
+				, but an equally clear statement is sufficient. Identify yourself, the purchase and the goods
+				concerned. No reason, prior authorization or compulsory bank-account number is required.
+			</p>
+			<p>
+				The online cancellation form is not yet active in this preview. You can send a clear notice by email
+				or by mail. Viewing a page does not submit a notice, and you should not wait for online activation if
+				a deadline is approaching.
+			</p>
+			<p>
+				For our 14/30-day cancellation process, send the notice by the last day; the goods do not have to
+				reach us by that day. A phone or order number can help with identification, but we do not make an
+				assigned case number a condition of exercising the right.
+			</p>
+
+			<h3>Returning the goods and paying for transport</h3>
+			<p>
+				Unless we have specifically offered to collect the goods, send or hand them back without unnecessary
+				delay and no later than <strong>14 days after communicating cancellation</strong>. Sending them before
+				the deadline is sufficient. Use our return address in Slovakia.
+			</p>
+			<p>
+				<strong>
+					Routine pickup and prepaid return labels are not currently offered for change-of-mind returns from{" "}
+					{market}.
+				</strong>{" "}
+				Choose your own carrier; you do not need our prior authorization. We can provide the information
+				needed to identify a returned purchase and avoid an unnecessary customs problem. A request for packing
+				or customs guidance is not a request for permission to cancel.
+			</p>
+			<p>
+				You pay the direct cost of a change-of-mind return{" "}
+				<strong>only if we properly informed you before purchase</strong>. For goods that cannot normally be
+				returned by post, the required information includes the return cost. A price quotation obtained after
+				purchase does not replace that information. We do not shift the cost to you if we failed to provide
+				required information or agreed to bear it. Different rules apply to a defective product or another
+				mandatory cancellation remedy.
+			</p>
+			<p>
+				Secure the goods for transport and return the included accessories. Original packaging can be useful
+				but is not a blanket condition of return. We do not require the original invoice as the only proof of
+				purchase.
+			</p>
+			<p>
+				If we separately and expressly offer collection in a particular case, the arrangements for that actual
+				offer apply. Do not miss a deadline merely because you asked whether collection might be possible.
+			</p>
+
+			<h3>Refunds</h3>
+			<p>
+				For cancellation under this process, we refund the relevant payments without unnecessary delay and
+				within <strong>14 days after receiving your notice</strong>. For a full cancellation, that includes
+				original delivery up to the least expensive standard service we offered for the order; we need not
+				refund an extra charge for a more expensive service you selected.
+			</p>
+			<p>
+				The import charges included in the price you paid us are not automatically treated as a non-refundable
+				penalty. We calculate the refund in accordance with the cancellation and applicable law. We do not
+				make you recover our import payments yourself as a condition of refunding what we owe you.
+			</p>
+			<p>
+				For a partial cancellation, we refund the relevant amount and do not retroactively add delivery fees
+				or other penalties. We use the original payment method unless you expressly agree to another no-cost
+				method. You do not have to accept a voucher instead of money. No IBAN is needed to refund the original
+				card.
+			</p>
+			<p>
+				Unless we offered to collect the goods, we may hold the refund until we receive them or you supply
+				evidence of return shipment, whichever happens first. If we offered collection, we do not rely on that
+				hold. A mandatory local refund rule that does not allow the same hold takes priority.
+			</p>
+
+			<h3>Condition and exceptions</h3>
+			<p>
+				You may inspect and handle the goods as reasonably needed to establish their nature, characteristics
+				and functioning. Where the conditions of our framework and applicable law allow it, you may be
+				responsible for diminished value caused by more extensive use. We explain any claim with reference to
+				the actual condition; we do not impose a fixed restocking, opening or processing fee or unilaterally
+				offset a diminished-value claim against your cancellation refund.
+			</p>
+			<p>
+				An exception can apply to genuinely customized goods made to your specifications or to sealed goods
+				that cannot be returned for health or hygiene reasons after unsealing, only where its legal conditions
+				are met.{" "}
+				<strong>
+					A standard item sourced to order or a standard kit matched to a car is not automatically customized.
+				</strong>{" "}
+				Exceptions do not remove remedies for defective goods.
+			</p>
+			{otherCancellationRights}
+
+			<h2>7. Product conformity, defects and warranties</h2>
+			<p>
+				We remain responsible for the goods we sell. Under the agreed Slovak consumer framework,
+				responsibility covers defects existing on delivery that become apparent within{" "}
+				<strong>two years after delivery</strong>. A defect appearing within the relevant liability period is
+				presumed to have existed on delivery unless the contrary is shown or the presumption conflicts with
+				the nature of the goods or defect. Longer mandatory protections remain available.
+			</p>
+			<p>
+				For contracts made on or after <strong>July 31, 2026</strong>, the Slovak liability period is extended
+				once by <strong>12 months after the first repair that remedies a defect</strong>, regardless of
+				further repairs. Earlier contracts follow the rules then applicable. Applicable rules on suspension,
+				renewal and extension of time limits remain intact.
+			</p>
+			<p>
+				For goods with digital elements, any agreed continuing supply of digital content or services and
+				required updates is governed by the applicable conformity rules; the Slovak continuous-supply period
+				is not shorter than two years. We are also responsible for installation performed by us or on our
+				responsibility and for installation problems caused by defective instructions we supplied.
+			</p>
+			{statutoryWarranties}
+			<p>
+				Notify us at <Mail />, describe the issue and identify the purchase. Photos may help but are not
+				required in every case, and a prompt inspection or a two-month notification rule imported from
+				Slovakia does not override a mandatory local right. We give written acknowledgment and information
+				about the remedy. You can make a claim without an account.
+			</p>
+			<p>
+				Under our framework you may request <strong>repair or replacement</strong>, unless a requested option
+				is impossible or disproportionate compared with the other. The remedy must be free, within a
+				reasonable period and without significant inconvenience. Our Slovak process normally provides a remedy
+				within 30 days after notification, unless an objectively justified reason outside our control permits
+				longer. This is not permission to exceed a shorter mandatory deadline or delay a remedy that the
+				circumstances require sooner.
+			</p>
+			<p>
+				Where the conditions are met, you may request a price reduction or end the contract for
+				non-conformity, for example if the proper remedy is refused, fails, is not completed or the defect is
+				sufficiently serious. A minor defect does not by itself justify ending the contract under the Slovak
+				framework. Any additional mandatory local remedy remains available.
+			</p>
+			<p>
+				We bear necessary return and re-delivery costs for a defect for which we are responsible. Required
+				removal and reinstallation of a correctly installed product are handled as the law requires. The
+				routine no-pickup policy for a change-of-mind return does not transfer these costs to you.
+			</p>
+			<p>
+				If we reject responsibility, we explain why in writing. You may provide other admissible evidence and
+				pursue the remedies available to you. The treatment of expert evidence and reasonable costs follows
+				applicable rules.
+			</p>
+			<p>
+				A manufacturer’s warranty is additional, not a substitute for our obligations. Its terms and
+				territorial scope must be checked for the particular product. These terms do not exclude implied
+				warranties, restrict a manufacturer’s obligations or replace any product-specific written warranty
+				information that must be available before sale.
+			</p>
+
+			<h2>8. Privacy and optional technologies</h2>
+			<p>
+				We use the information needed to take and fulfill orders, handle {enquiries} and meet legal
+				obligations. Details, purposes, recipients, retention and rights are in our{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Privacy policy</Link>.
+			</p>
+			<p>
+				Optional marketing consent is not a condition of purchase, cancellation or a product claim. Our{" "}
+				<Link href={marketHref(channel, "/cookies")}>Cookies and privacy</Link> page explains the technologies
+				used and how to change your choices. Declining optional analytics or marketing does not prevent a
+				purchase.
+			</p>
+
+			<h2>9. Complaints and dispute resolution</h2>
+			<p>
+				Please contact us at <Mail /> so we can try to resolve the matter. This does not make prior contact a
+				condition where the law allows another remedy, and does not suspend a legal deadline automatically.
+			</p>
+			<p>
+				For matters within its statutory scope, you can use the Slovak alternative-dispute-resolution process
+				after a request for remedy is rejected or remains unanswered for more than 30 days. The Slovak Trade
+				Inspection provides information at{" "}
+				<a href={companyInfo.supervisoryAuthority.url} rel="noopener noreferrer" target="_blank">
+					soi.sk
+				</a>
+				. Statutory admissibility, scope, time limits and exceptions apply; naming an authority does not
+				guarantee it can hear every cross-border claim.
+			</p>
+			{regulators}
+			<p>
+				Nothing here requires mandatory arbitration, waives a right to bring a claim or limits you to the
+				courts of Bratislava where applicable law allows another competent court. Payment disputes and
+				chargeback rights available under the law are not waived.
+			</p>
+
+			<h2>10. Applicable law and changes</h2>
+			<p>
+				The contract is governed by Slovak law, with applicable mandatory consumer protections preserved. More
+				favorable contractual commitments above remain binding. A general reference to Slovak law is not a
+				disclaimer of {lawScope}.
+			</p>
+			<p>
+				Changes to these terms apply to contracts made after the change takes effect, not retroactively to an
+				accepted order. Keep the terms supplied with your purchase. Statutory rights that cannot be waived
+				prevail over any inconsistent wording.
+			</p>
+		</>
+	);
+}
+
+export function Us({ channel }: { channel: string }) {
+	return (
+		<EnglishTerms
+			channel={channel}
+			market="the United States"
+			storeName="The US English store"
+			currency="US dollars (USD)"
+			enquiries="inquiries"
+			deliveryTerms={
+				<p>
+					For US orders, we follow the applicable Mail, Internet, or Telephone Order Merchandise Rule. We must
+					have a reasonable basis for the shipment time we give you. If no shipment time is stated, the rule
+					generally uses 30 days from receipt of a properly completed order. If we cannot ship on time, we
+					notify you and offer the choice required by the rule: agree to a delay or cancel for a prompt
+					refund. We do not treat the words “available to order” as permission to keep your payment
+					indefinitely. A shipping deadline and a delivery date are not the same thing.
+				</p>
+			}
+			otherCancellationRights={
+				<p>
+					This store policy is not the FTC’s three-day Cooling-Off Rule, which does not cover purchases made
+					entirely online. Other applicable rights remain available, including rights relating to delayed
+					shipment, defective goods and misleading practices. A cancellation because we fail to ship as
+					required is not treated as a customer-funded change-of-mind return.
+				</p>
+			}
+			statutoryWarranties={
+				<p>
+					Applicable US law may give you express or implied warranty rights, including rights relating to
+					merchantability or fitness for a particular purpose. Those rights and the time allowed to enforce
+					them vary by state. We do not sell to consumers under a blanket “as is” disclaimer or make a
+					manufacturer your only route to a remedy. The two-year period in our Slovak framework does not cap a
+					longer mandatory US right.
+				</p>
+			}
+			regulators={
+				<p>
+					You may also contact the competent consumer-protection authority in your state, or report a consumer
+					issue to the Federal Trade Commission. A regulator receiving a report is not necessarily an
+					individual mediator or a court. We do not claim membership in a foreign mediation scheme that has
+					not been established.
+				</p>
+			}
+			lawScope="US federal or state rights"
+		/>
+	);
+}
+
+export function Ca({ channel }: { channel: string }) {
+	return (
+		<EnglishTerms
+			channel={channel}
+			market="Canada"
+			storeName="The Canadian English store"
+			currency="Canadian dollars (CAD)"
+			enquiries="enquiries"
+			deliveryTerms={
+				<p>
+					We give you the delivery terms before you buy and contact you if a delay arises. We do not treat the
+					words “available to order” as permission to keep your payment indefinitely. Applicable provincial or
+					territorial cancellation and refund rights remain available, including rights arising from late
+					delivery or missing contract information. Our Terms of sale explain this separately from a
+					change-of-mind return.
+				</p>
+			}
+			otherCancellationRights={
+				<p>
+					Mandatory Canadian cancellation rights can arise independently of this policy, including when
+					legally required information or a contract copy is missing, goods are not delivered on time, or the
+					seller engages in an unfair practice. Conditions and deadlines depend on the applicable provincial
+					or territorial law. In Québec, statutory cancellation of a distance contract for non-compliance can
+					require the merchant to pay reasonable return costs. Our ordinary change-of-mind cost rule does not
+					override that protection.
+				</p>
+			}
+			statutoryWarranties={
+				<p>
+					Your Canadian rights may also include provincial or territorial legal warranties and conditions
+					relating to quality, fitness and reasonable durability. In Québec, for example, goods must be fit
+					for their ordinary use and last a reasonable time having regard to their price, contract terms and
+					conditions of use. A manufacturer’s warranty expiring does not by itself end those rights. The
+					two-year period in our Slovak framework does not cap a longer mandatory Canadian right.
+				</p>
+			}
+			regulators={
+				<p>
+					You may also contact the competent consumer-protection authority in your province or territory,
+					including the Office de la protection du consommateur in Québec. A regulator receiving a report is
+					not necessarily an individual mediator or a court. We do not claim membership in a foreign mediation
+					scheme that has not been established.
+				</p>
+			}
+			lawScope="Canadian federal, provincial or territorial rights"
+		/>
 	);
 }

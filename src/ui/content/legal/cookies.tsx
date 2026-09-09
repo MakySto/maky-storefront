@@ -1,9 +1,18 @@
 import Link from "next/link";
+import { type ReactNode } from "react";
 import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { PrivacySettingsLink } from "@/ui/components/privacy-settings-link";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_ES, SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL, SLOVAKIA_RO } from "./slovakia";
+import {
+	SLOVAKIA_EN,
+	SLOVAKIA_ES,
+	SLOVAKIA_FR,
+	SLOVAKIA_HU,
+	SLOVAKIA_IT,
+	SLOVAKIA_PL,
+	SLOVAKIA_RO,
+} from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 
@@ -35,6 +44,7 @@ const NECESSARY = [
 			fr: "1 an",
 			es: "Un año",
 			ro: "Un an",
+			en: "Up to 1 year",
 		},
 		kind: {
 			sk: "Cookie",
@@ -46,6 +56,7 @@ const NECESSARY = [
 			fr: "Cookie",
 			es: "Cookie",
 			ro: "Cookie",
+			en: "Cookie",
 		},
 		purpose: {
 			sk: "Pamätá si jazykovú a trhovú verziu obchodu, ktorú ste otvorili.",
@@ -57,6 +68,7 @@ const NECESSARY = [
 			fr: "Mémorise le marché et la langue de la boutique que vous avez ouverte.",
 			es: "Recordar el mercado elegido.",
 			ro: "Păstrează piața selectată.",
+			en: "Remember the selected market.",
 		},
 	},
 	{
@@ -71,6 +83,7 @@ const NECESSARY = [
 			fr: "Session du navigateur ; sa restauration dépend du navigateur",
 			es: "Sesión del navegador; su restauración puede conservarla",
 			ro: "Sesiunea browserului; restaurarea sesiunii îl poate păstra",
+			en: "Session; browser session-restoration settings can affect when it is removed",
 		},
 		kind: {
 			sk: "Cookie",
@@ -82,6 +95,7 @@ const NECESSARY = [
 			fr: "Cookie",
 			es: "Cookie",
 			ro: "Cookie",
+			en: "Cookie",
 		},
 		purpose: {
 			sk: "Spája váš prehliadač s obsahom košíka a s rozpracovanou objednávkou.",
@@ -93,6 +107,7 @@ const NECESSARY = [
 			fr: "Associe le panier à la session d’achat du canal.",
 			es: "Asociar la cesta al canal de venta.",
 			ro: "Leagă coșul de canalul de vânzare.",
+			en: "Connect the browser to the cart in the selected market.",
 		},
 	},
 	{
@@ -107,6 +122,7 @@ const NECESSARY = [
 			fr: "Jeton d’accès : 15 minutes ; jeton de renouvellement : 7 jours",
 			es: "Token de acceso: 15 minutos; token de renovación: siete días",
 			ro: "Token de acces: 15 minute; token de reînnoire: șapte zile",
+			en: "Access token: up to 15 minutes; refresh token: up to 7 days",
 		},
 		kind: {
 			sk: "Cookie",
@@ -118,6 +134,7 @@ const NECESSARY = [
 			fr: "Cookie",
 			es: "Cookie",
 			ro: "Cookie",
+			en: "Cookie",
 		},
 		purpose: {
 			sk: "Udržiavajú vaše prihlásenie. Ukladajú sa až po prihlásení do účtu.",
@@ -129,6 +146,7 @@ const NECESSARY = [
 			fr: "Maintiennent votre connexion. Ils sont posés seulement après la connexion au compte.",
 			es: "Mantener el acceso autenticado y renovar la sesión.",
 			ro: "Menține accesul autentificat și reînnoiește sesiunea.",
+			en: "Maintain an authenticated customer session and renew it.",
 		},
 	},
 	{
@@ -143,6 +161,7 @@ const NECESSARY = [
 			fr: "Jusqu’à la suppression des données du navigateur ou au remplacement du choix",
 			es: "Hasta que se sustituye la elección o se borran los datos del sitio",
 			ro: "Până la înlocuirea alegerii sau ștergerea datelor site-ului",
+			en: "Until replaced by a later choice or removed with site data",
 		},
 		kind: {
 			sk: "Miestne úložisko (localStorage)",
@@ -154,6 +173,7 @@ const NECESSARY = [
 			fr: "Stockage local (localStorage)",
 			es: "Almacenamiento local (localStorage)",
 			ro: "Stocare locală (localStorage)",
+			en: "Local storage (localStorage)",
 		},
 		purpose: {
 			sk: "Uchováva vašu voľbu súkromia, aby sme sa nepýtali pri každej návšteve.",
@@ -165,6 +185,7 @@ const NECESSARY = [
 			fr: "Conserve votre choix de confidentialité, pour ne pas le redemander à chaque visite.",
 			es: "Guardar la elección de privacidad.",
 			ro: "Păstrează alegerea de confidențialitate.",
+			en: "Remember privacy choices.",
 		},
 	},
 ] as const;
@@ -179,9 +200,14 @@ const TABLE_HEADS = {
 	fr: ["Nom", "Type", "Finalité", "Durée prévue"],
 	es: ["Nombre o patrón", "Tipo", "Finalidad", "Duración"],
 	ro: ["Nume sau model", "Tip", "Scop", "Durată"],
+	en: ["Name or pattern", "Type", "Purpose", "Duration"],
 } as const;
 
-function InventoryTable({ lang }: { lang: "sk" | "cs" | "de" | "pl" | "hu" | "it" | "fr" | "es" | "ro" }) {
+function InventoryTable({
+	lang,
+}: {
+	lang: "sk" | "cs" | "de" | "pl" | "hu" | "it" | "fr" | "es" | "ro" | "en";
+}) {
 	return (
 		<div className="overflow-x-auto">
 			<table>
@@ -1304,5 +1330,175 @@ export function Ro({ channel }: { channel: string }) {
 				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Politica de confidențialitate</Link>.
 			</p>
 		</>
+	);
+}
+
+/**
+ * The shared half of the two English cookie notices.
+ *
+ * One paragraph differs, and it is the one that matters: what a *second* legal regime
+ * demands on top of the consent question. In the United States that is the state opt-out
+ * of sale, sharing or targeted advertising, plus Global Privacy Control where it is
+ * legally required — none of which is a Canadian concept. In Canada it is meaningful
+ * consent under PIPEDA and the provincial laws, which is not a US concept either. So
+ * `localRule` is a slot rather than a shared sentence hedged to cover both.
+ *
+ * The footer label is a prop for a different reason — see the note on `settingsLabel`.
+ */
+function EnglishCookies({
+	channel,
+	settingsLabel,
+	localRule,
+}: {
+	channel: string;
+	/**
+	 * The label of the footer control this page tells the reader to go back to.
+	 *
+	 * It is read off the message catalogues (`footer.privacySettings` in `en-US.json` and
+	 * `en-CA.json`, both `Privacy settings`) rather than taken from the delivered copy,
+	 * which named two different controls — `Privacy choices` for the US and `Privacy
+	 * preferences` for Canada — neither of which the footer renders. A page that tells you
+	 * to press a button by a name that is not on the button is the same defect as the
+	 * `data-maky-component="privacy-settings"` marker this section replaces: it reads
+	 * fine and does not work. A prop keeps it honest if the catalogues ever diverge.
+	 */
+	settingsLabel: string;
+	/** The market's own second-regime paragraph. See the note above. */
+	localRule: ReactNode;
+}) {
+	return (
+		<>
+			<p>
+				Cookies and similar technologies help the store work and, depending on your choices, support optional
+				functions.{" "}
+				<strong>You can decline optional analytics and marketing and still make a purchase.</strong>
+			</p>
+
+			<h2>What these technologies do</h2>
+			<p>
+				Cookies are small pieces of information stored in your browser. They can remember a cart or sign-in
+				session. Some expire at the end of a session and others after a stated period. The website also uses
+				similar storage, including <strong>localStorage</strong>.
+			</p>
+			<p>
+				The rules depend on the real purpose and behavior of a technology, not just its name. “Cookieless”
+				does not automatically mean that no personal information is processed or that no consent or opt-out
+				requirement can apply.
+			</p>
+
+			<h2>Necessary functions</h2>
+			<p>
+				We use technologies genuinely needed for a service you request, such as a shopping cart, sign-in,
+				payment and remembering your privacy choice. We limit their use to what is necessary for that purpose.
+				A provider’s optional measurement tool does not become necessary simply because the same provider also
+				offers a necessary service.
+			</p>
+
+			<h2>Analytics and marketing</h2>
+			<p>
+				Optional analytics helps measure use of the store. Marketing technologies can measure advertisements,
+				support audience selection and tailor advertising, depending on their configuration and your choices.
+			</p>
+			<p>
+				The store uses <strong>Google Tag Manager and related Google measurement tools</strong>. Before you
+				choose, Consent Mode is set to <strong>“denied”</strong> for optional analytics and advertising
+				purposes. After consent, the relevant settings change to “granted”; withdrawing consent returns them
+				to “denied”. Loading a script and allowing storage or access are different actions. “Denied” does not
+				mean that no network request is sent.
+			</p>
+			<p>
+				<strong>Cloudflare Web Analytics</strong> is also used to measure traffic. In the described
+				implementation, its script loads before a consent choice. This measurement does not use cookies. Its
+				lack of cookies does not settle every privacy or consent question; the purposes, recipients and legal
+				framework are explained in the{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Privacy policy</Link>.
+			</p>
+			<p>
+				Browsing, closing a banner or placing an order is not consent to optional purposes. Optional
+				categories are not selected by default.
+			</p>
+
+			<h2>Your choices</h2>
+			<p>
+				You can accept all optional categories, reject them or choose individual categories. Necessary
+				functions remain available because they are needed to provide the requested service.
+			</p>
+			<p className="not-prose">
+				<PrivacySettingsLink label="Open privacy preferences" className={SETTINGS_BUTTON_CLASS} />
+			</p>
+			<p>
+				You can return to <strong>“{settingsLabel}”</strong> in the footer to change your selection.
+				Withdrawing consent affects future optional use. It does not automatically erase every record an
+				independent provider previously processed; your rights regarding those records are described in the
+				privacy policy.
+			</p>
+			<p>
+				Choices are stored for this browser and device. A different browser or deletion of site data may
+				require another choice. A website-document update is not your consent to a new purpose.
+			</p>
+			{localRule}
+
+			<h2>Storage used by the store</h2>
+			<InventoryTable lang="en" />
+			<p>
+				Authentication-cookie names can include a prefix identifying the service; the table shows their
+				recognizable endings. This is the store’s listed storage inventory, not a claim to list every
+				identifier set by every third party. Google and Cloudflare services are described above. Contact{" "}
+				<Mail /> with questions about a technology or its use.
+			</p>
+
+			<h2>Browser controls</h2>
+			<p>
+				Your browser can remove or block cookies and other site data. Blocking necessary storage can interrupt
+				your cart, sign-in or payment.{" "}
+				<strong>
+					Rejecting optional analytics and advertising through our controls does not prevent a purchase.
+				</strong>{" "}
+				Deleting cookies does not always remove localStorage; use your browser’s site-data controls for the
+				storage concerned.
+			</p>
+
+			<h2>Contact</h2>
+			<p>
+				This website is operated by <strong>{companyInfo.legalName}</strong>, {companyInfo.street},{" "}
+				{companyInfo.city}, {SLOVAKIA_EN}, IČO {companyInfo.ico}. Write to <Mail />. Our{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Privacy policy</Link> explains
+				personal-information rights and the relevant authorities.
+			</p>
+		</>
+	);
+}
+
+export function Us({ channel }: { channel: string }) {
+	return (
+		<EnglishCookies
+			channel={channel}
+			settingsLabel="Privacy settings"
+			localRule={
+				<p>
+					Where an applicable US state law requires a separate opt-out of sale, sharing or targeted
+					advertising, that right is not reduced to a cookie-consent question. Browser preference signals,
+					including Global Privacy Control where legally required, and any required dedicated opt-out control
+					must be handled under the relevant rules. This notice does not claim that every browser’s general
+					“Do Not Track” setting is the same signal or has the same effect.
+				</p>
+			}
+		/>
+	);
+}
+
+export function Ca({ channel }: { channel: string }) {
+	return (
+		<EnglishCookies
+			channel={channel}
+			settingsLabel="Privacy settings"
+			localRule={
+				<p>
+					Canadian consent requirements remain applicable where relevant. Consent must be meaningful, optional
+					purposes must remain a real choice, and withdrawal is handled subject to lawful limits explained in
+					the privacy policy.
+				</p>
+			}
+		/>
 	);
 }

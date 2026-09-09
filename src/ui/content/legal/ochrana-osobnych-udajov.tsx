@@ -1,8 +1,17 @@
 import Link from "next/link";
+import { type ReactNode } from "react";
 import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_ES, SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL, SLOVAKIA_RO } from "./slovakia";
+import {
+	SLOVAKIA_EN,
+	SLOVAKIA_ES,
+	SLOVAKIA_FR,
+	SLOVAKIA_HU,
+	SLOVAKIA_IT,
+	SLOVAKIA_PL,
+	SLOVAKIA_RO,
+} from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 
@@ -31,6 +40,7 @@ const RECIPIENTS = [
 			fr: "Catalogue, panier, commandes et compte ; données nécessaires au fonctionnement du service",
 			es: "Catálogo, cesta, pedidos y cuenta de cliente en nuestra instalación de comercio electrónico.",
 			ro: "Catalog, coș, comenzi și contul de client în propria noastră instalare de comerț electronic.",
+			en: "Catalog, cart, orders and customer accounts in our own installation.",
 		},
 		basis: {
 			sk: "Nevyhnutné pre zmluvu",
@@ -54,6 +64,7 @@ const RECIPIENTS = [
 			fr: "Contenus du site ; demandes et confirmations dans les procédures effectivement prises en charge",
 			es: "Contenido y gestión de los formularios y comunicaciones que estén efectivamente habilitados.",
 			ro: "Conținutul și gestionarea formularelor și comunicărilor care sunt efectiv activate.",
+			en: "Website content and the forms or case records actually enabled in our own installation.",
 		},
 		basis: {
 			sk: "Zmluva a zákonná povinnosť",
@@ -77,6 +88,7 @@ const RECIPIENTS = [
 			fr: "Paiement, remboursement et prévention de la fraude ; données nécessaires à la transaction",
 			es: "Pagos, reembolsos y controles de seguridad de las operaciones.",
 			ro: "Plăți, rambursări și verificări de securitate ale operațiunilor.",
+			en: "Payment processing, payment status, refunds and the provider’s fraud-prevention checks.",
 		},
 		basis: {
 			sk: "Nevyhnutné pre zmluvu",
@@ -100,6 +112,7 @@ const RECIPIENTS = [
 			fr: "Livraison, suivi opérationnel du transport et coordonnées du destinataire",
 			es: "Transporte y entrega, según el servicio elegido.",
 			ro: "Transportul și livrarea, în funcție de serviciul ales.",
+			en: "Shipping, delivery, customs information and contact with the recipient for the selected service.",
 		},
 		basis: {
 			sk: "Nevyhnutné pre zmluvu",
@@ -123,6 +136,7 @@ const RECIPIENTS = [
 			fr: "Diffusion et sécurité du site ; Web Analytics présenté dans la page cookies",
 			es: "Entrega y protección de la web; Web Analytics para la medición descrita en la página de cookies.",
 			ro: "Livrarea și protejarea site-ului; Web Analytics pentru măsurarea descrisă în pagina de cookie-uri.",
+			en: "Website delivery and security; Web Analytics as described on the cookies page.",
 		},
 		basis: {
 			sk: "Oprávnený záujem",
@@ -146,6 +160,7 @@ const RECIPIENTS = [
 			fr: "Gestion des balises et, selon vos choix, mesure et finalités publicitaires",
 			es: "Gestión de etiquetas, medición y funciones de marketing según su configuración y las preferencias aplicables.",
 			ro: "Administrarea etichetelor, măsurare și funcții de marketing în funcție de configurare și preferințele aplicabile.",
+			en: "Tag management and, according to configuration and choices, measurement and advertising purposes.",
 		},
 		basis: {
 			sk: "Súhlas",
@@ -173,12 +188,17 @@ const HEADS = {
 	// languages would be writing legal text nobody approved.
 	es: ["Sistema o servicio", "Para qué se utiliza"],
 	ro: ["Sistem sau serviciu", "Pentru ce îl folosim"],
+	// English joins the two-column set for the same reason: the delivered US and Canadian
+	// tables list systems and purposes, and the paragraph under them says so — "this table
+	// identifies systems and purposes, not a legal basis or contracted legal entity for
+	// every row".
+	en: ["System or service", "Purpose"],
 } as const;
 
 /** The languages whose delivered recipients table carries a legal-basis column. */
 const BASIS_LANGS = ["sk", "cs", "de", "pl", "hu", "it", "fr"] as const;
 type BasisLang = (typeof BASIS_LANGS)[number];
-type RecipientLang = BasisLang | "es" | "ro";
+type RecipientLang = BasisLang | "es" | "ro" | "en";
 
 const hasBasisColumn = (lang: RecipientLang): lang is BasisLang =>
 	(BASIS_LANGS as readonly string[]).includes(lang);
@@ -2395,5 +2415,385 @@ export function Ro({ channel }: { channel: string }) {
 				privind datele aferente cumpărăturii tale.
 			</p>
 		</>
+	);
+}
+
+/**
+ * The shared half of the two English privacy notices.
+ *
+ * The GDPR half of this page is genuinely one text: we process in Slovakia, so the bases,
+ * purposes, recipients and retention periods are the same whichever side of the border
+ * the parcel goes to. What differs is the *second* legal regime layered on top, and there
+ * the two markets have nothing in common — US state privacy statutes with their coverage
+ * thresholds, opt-out rights and "sale or sharing" definitions, versus PIPEDA and the
+ * provincial laws with their meaningful-consent requirement and 30-day access period.
+ *
+ * So `localRights` and `localAuthorities` are slots, and they are not the same length:
+ * the delivered US copy runs to three paragraphs there and the Canadian to one. A prop
+ * typed as `ReactNode` lets each market say what its own law requires without the other
+ * inheriting a sentence that is false about it.
+ *
+ * Note what is deliberately NOT here. The package does not decide whether any particular
+ * state statute covers MAKY, and neither does this page: the copy says the rights depend
+ * on "the state law that applies and whether its coverage conditions are met". Settling
+ * that is M's item, and writing a confident "we never sell or share" here would have
+ * pre-empted it with an unverified claim.
+ */
+function EnglishPrivacy({
+	channel,
+	market,
+	crossBorder,
+	localRights,
+	localAuthorities,
+}: {
+	channel: string;
+	/** How the market is named in prose: `the United States`, `Canada`. */
+	market: string;
+	/** §5 — the closing sentence about rights not being waived by a foreign seller. */
+	crossBorder: ReactNode;
+	/** §7 — the market's own privacy-rights regime. See the note above. */
+	localRights: ReactNode;
+	/** §8 — the regulators competent in this market. */
+	localAuthorities: ReactNode;
+}) {
+	return (
+		<>
+			<p>
+				When you shop or contact us, you share personal information with us. This notice explains what we use,
+				why we use it, who receives it and how you can exercise your rights.
+			</p>
+			<p>
+				We operate from Slovakia. The EU General Data Protection Regulation (GDPR) applies to processing in
+				the context of our establishment; it does not cease to apply simply because your delivery address is
+				outside the European Economic Area. Applicable local privacy laws may provide additional protection.
+			</p>
+
+			<h2>1. Who is responsible</h2>
+			<p>
+				The data controller is <strong>{companyInfo.legalName}</strong>, {companyInfo.street},{" "}
+				{companyInfo.city}, {SLOVAKIA_EN}, IČO <strong>{companyInfo.ico}</strong>.
+			</p>
+			<p>
+				For privacy questions or requests, write to <Mail /> or to our registered office. Describe your
+				request without sending a full payment-card number or other information we do not need.
+			</p>
+
+			<h2>2. Information we use and why</h2>
+
+			<h3>Orders, delivery and customer support</h3>
+			<p>
+				We use your name, contact details, billing and delivery address, order and payment information and
+				related correspondence. Business orders may include business details. Product-fit questions may
+				include vehicle information or photos you choose to send us.
+			</p>
+			<p>
+				This lets us prepare and perform the contract, process payment, deliver the goods and respond to
+				questions. The GDPR basis is <strong>Article 6(1)(b)</strong>. For contact with a person representing
+				a business customer, our legitimate interest in managing the business relationship may apply under{" "}
+				<strong>Article 6(1)(f)</strong>.
+			</p>
+			<p>
+				For a cross-border shipment we also use the information genuinely needed for customs clearance and
+				delivery. A carrier or customs authority may require additional information. We ask only for what is
+				relevant and explain a request when needed.
+			</p>
+			<p>
+				We do not store or have access to your full card number or security code. Stripe processes those
+				details. We receive payment status and other information needed to reconcile, check or refund a
+				payment.
+			</p>
+
+			<h3>Accounting and legal obligations</h3>
+			<p>
+				We use identifying, transaction and invoice information for accounting, taxes and obligations to
+				competent authorities. The GDPR basis is <strong>legal obligation, Article 6(1)(c)</strong>.
+			</p>
+
+			<h3>Product claims, cancellations and rights requests</h3>
+			<p>
+				We use your contact details, purchase information, notice or claim, relevant evidence and the history
+				of its handling. Where needed, we retain records of submission, acknowledgment and confirmation
+				delivery. Processing is based on legal obligations, contract performance and, where necessary, our
+				legitimate interest in establishing, exercising or defending claims under{" "}
+				<strong>Articles 6(1)(c), (b) and (f)</strong>.
+			</p>
+			<p>
+				We do not require marketing consent or a separate consent checkbox for information that must be
+				processed to handle a cancellation or product claim.
+			</p>
+
+			<h3>Customer accounts</h3>
+			<p>
+				Account details are used to provide account access, sign-in and order history. The GDPR basis is the
+				requested service under <strong>Article 6(1)(b)</strong>. You can purchase or send a cancellation
+				notice without an account.
+			</p>
+
+			<h3>Newsletters and offers</h3>
+			<p>
+				When you choose to subscribe, we use your email and consent record for the newsletter. The GDPR basis
+				is <strong>consent, Article 6(1)(a)</strong>. You can unsubscribe using the message’s link or by
+				emailing us. We keep only the information needed to respect the withdrawal and any necessary record of
+				consent; subscribing is not a condition of purchase.
+			</p>
+
+			<h3>Security and protection of claims</h3>
+			<p>
+				We use proportionate technical access and error logs, security information and records needed to
+				prevent abuse or protect legal claims. The basis is our{" "}
+				<strong>legitimate interest, Article 6(1)(f)</strong>, balanced against your rights. This is not
+				blanket permission for advertising tracking.
+			</p>
+			<p>
+				Optional analytics, marketing and browser-storage technologies are described on our{" "}
+				<Link href={marketHref(channel, "/cookies")}>Cookies and privacy</Link> page. Their use must also
+				satisfy the applicable consent or opt-out rules.
+			</p>
+
+			<h2>3. Where information comes from and what is required</h2>
+			<p>
+				Most information comes from you when ordering, opening an account, submitting a form or corresponding
+				with us. The payment provider supplies payment information, and the carrier supplies relevant delivery
+				or clearance information. Technical information is generated when you use the website.
+			</p>
+			<p>
+				Required fields are limited to the information needed for the relevant purpose. Without a usable
+				delivery address, for example, we cannot ship an order. You need not complete optional fields or agree
+				to optional marketing. If you provide information about someone else receiving an order, make sure
+				they know it is being shared for delivery.
+			</p>
+
+			<h2>4. Who receives information</h2>
+			<p>
+				A provider does not automatically receive every customer’s information. The recipient depends on the
+				service used, the order and the website functions involved. The selected carrier receives the details
+				needed to transport and deliver the package, including relevant customs information. Stripe processes
+				payment information.
+			</p>
+			<p>
+				Technical hosting and service providers, email providers, accounting advisers and, where necessary,
+				legal advisers may access relevant information. Authorities receive it where legally required.
+				Providers may act as processors on our instructions or as independent controllers for their own
+				purposes, depending on their actual role.
+			</p>
+			<RecipientsTable lang="en" />
+			<p>
+				This table identifies systems and purposes, not a legal basis or contracted legal entity for every
+				row. Our own Saleor and Payload installations do not become separate outside controllers just because
+				the software has a name. Contact us for further information about specific recipients and the
+				safeguards used.
+			</p>
+
+			<h2>5. Cross-border processing</h2>
+			<p>
+				We process information in Slovakia and use services that may involve processing in other countries.
+				Delivering to {market} necessarily involves relevant information being used by the carrier and, where
+				required, customs authorities there. Those authorities may have powers under their own laws.
+			</p>
+			<p>
+				For transfers from the EEA to a third country, we use the applicable GDPR mechanism, such as an
+				adequacy decision covering the actual recipient or appropriate safeguards including standard
+				contractual clauses, together with any required additional measures. We do not assume that every
+				service of a large provider is covered by one certification or mechanism.
+			</p>
+			{crossBorder}
+
+			<h2>6. How long we keep it</h2>
+			<p>
+				We keep order information for fulfillment and then as needed for legal obligations and claims. Slovak
+				accounting documents are generally retained for{" "}
+				<strong>10 years after the relevant accounting year</strong>, according to the applicable category and
+				rules. That does not mean every optional message or browser identifier is kept for ten years.
+			</p>
+			<p>
+				We keep cancellation and product-claim records for handling and the applicable legal, evidence and
+				limitation periods. An account is retained while the service is active, subject to deletion requests
+				and information that must be kept independently for an order or legal obligation.
+			</p>
+			<p>
+				Newsletter information is used until you unsubscribe, with limited records retained where needed to
+				demonstrate consent or respect your preference. Security logs are kept for a proportionate period
+				based on their purpose and the need to investigate an incident. Browser-storage periods appear on the
+				cookies page.
+			</p>
+			<p>
+				A legal duty, ongoing dispute or valid preservation requirement may justify keeping specific
+				information longer. We do not retain unrelated information indefinitely just because one record is
+				needed.
+			</p>
+
+			<h2>7. Your privacy rights</h2>
+			<p>
+				Under the GDPR, subject to its conditions, you may request access, correction, deletion, restriction
+				and portability of your personal information. You may object to processing based on legitimate
+				interests for reasons related to your situation. For direct marketing, you can object at any time, and
+				we stop processing for that purpose.
+			</p>
+			<p>
+				Where processing relies on consent, you can withdraw it without affecting the lawfulness of earlier
+				processing. Deletion is not absolute: an invoice or evidence required by law may need to be retained.
+				We explain an applicable exception rather than ignoring the request.
+			</p>
+			<p>
+				Write to <Mail />. We may request proportionate information to verify identity, not unnecessary
+				documents. GDPR requests are ordinarily answered within one month; a permitted extension for
+				complexity or volume requires notice and reasons within that first month. A different or shorter local
+				deadline is applied where required.
+			</p>
+			{localRights}
+
+			<h2>8. Complaints and supervisory authorities</h2>
+			<p>
+				Please contact us so we can address a privacy concern. You can also complain to a competent
+				supervisory authority without first obtaining our permission.
+			</p>
+			{localAuthorities}
+			<p>
+				Which authority can handle a particular complaint depends on its jurisdiction and the law involved.
+				Naming it does not suggest that it has certified MAKY.STORE.
+			</p>
+
+			<h2>9. Automated decisions and payment checks</h2>
+			<p>
+				In the store’s described order process, we do not ourselves make decisions based solely on automated
+				processing that produce legal or similarly significant effects for you, or profile you for that
+				purpose. This does not mean that no technical or security check is automated.
+			</p>
+			<p>
+				Stripe performs its own payment and fraud-prevention checks as a payment provider. If a payment is
+				declined or another automated outcome appears wrong, contact us and we will review what we can access
+				and help identify the next step. We do not claim to control every independent decision of the payment
+				provider.
+			</p>
+
+			<h2>10. Changes to this notice</h2>
+			<p>
+				We update this notice when processing or services change. A change to this document is not, by itself,
+				consent to a new purpose. Where new information or a new choice is required, it must be provided
+				through the appropriate process.
+			</p>
+		</>
+	);
+}
+
+const SLOVAK_DPA = (
+	<>
+		The Slovak authority is <strong>Úrad na ochranu osobných údajov Slovenskej republiky</strong>; its
+		official website is{" "}
+		<a href="https://dataprotection.gov.sk" rel="noopener noreferrer" target="_blank">
+			dataprotection.gov.sk
+		</a>
+		.
+	</>
+);
+
+export function Us({ channel }: { channel: string }) {
+	return (
+		<EnglishPrivacy
+			channel={channel}
+			market="the United States"
+			crossBorder={
+				<p>
+					You can contact <Mail /> for information about the relevant transfer and, where applicable, a copy
+					of the safeguards, with confidential information appropriately protected. Your applicable privacy
+					rights are not waived by purchasing from a seller outside the United States.
+				</p>
+			}
+			localRights={
+				<>
+					<p>
+						Depending on the state law that applies and whether its coverage conditions are met, you may have
+						additional rights to access, correct, delete or obtain a copy of personal information; opt out of
+						its sale, sharing for cross-context behavioral advertising or targeted advertising; and appeal a
+						decision on a request. California law also provides rights relating to certain uses of sensitive
+						personal information where applicable. These rights have statutory conditions and exceptions; we
+						do not suggest that every state law applies identically.
+					</p>
+					<p>
+						Send a privacy request to <Mail />. Tell us the right you want to exercise; you do not need to
+						know a legal provision. We verify requests only as reasonably necessary, allow an authorized agent
+						where required and explain any refusal and applicable appeal route. Exercising a privacy right
+						does not mean you lose the ability to shop or face unlawful discrimination.
+					</p>
+					<p>
+						Advertising-related transfers can have a legal meaning of “sale” or “sharing” even where no one
+						pays for the data. We therefore do not describe all third-party marketing tools as outside those
+						rules merely because they are called analytics. Where an applicable law requires an opt-out link
+						or recognition of a browser preference signal, those requirements apply in addition to ordinary
+						cookie choices.
+					</p>
+				</>
+			}
+			localAuthorities={
+				<p>
+					{SLOVAK_DPA} In the United States, you may contact your state’s attorney general or other competent
+					privacy regulator. California residents can find information from the California Privacy Protection
+					Agency at{" "}
+					<a href="https://cppa.ca.gov" rel="noopener noreferrer" target="_blank">
+						cppa.ca.gov
+					</a>{" "}
+					and the Attorney General at{" "}
+					<a href="https://oag.ca.gov/privacy/ccpa" rel="noopener noreferrer" target="_blank">
+						oag.ca.gov/privacy/ccpa
+					</a>
+					. The Federal Trade Commission also accepts reports within its remit at{" "}
+					<a href="https://reportfraud.ftc.gov" rel="noopener noreferrer" target="_blank">
+						ReportFraud.ftc.gov
+					</a>
+					.
+				</p>
+			}
+		/>
+	);
+}
+
+export function Ca({ channel }: { channel: string }) {
+	return (
+		<EnglishPrivacy
+			channel={channel}
+			market="Canada"
+			crossBorder={
+				<p>
+					You can contact <Mail /> for information about the relevant transfer and, where applicable, a copy
+					of the safeguards, with confidential information appropriately protected. Where Canadian rules
+					apply, we remain accountable as required for information handled by service providers and explain
+					the cross-border processing; a foreign address is not a waiver of your privacy rights.
+				</p>
+			}
+			localRights={
+				<>
+					<p>
+						Canadian privacy rules may apply alongside the GDPR, including PIPEDA and applicable provincial
+						laws. Where consent is required, we seek meaningful consent appropriate to the purpose and
+						sensitivity of the information. A GDPR basis in this notice does not, by itself, replace a consent
+						requirement under Canadian law.
+					</p>
+					<p>
+						You can ask what personal information we hold about you, how it has been used or disclosed,
+						request access and challenge its accuracy, subject to the rules and exceptions that apply. You may
+						withdraw consent where applicable, with an explanation of any legal restriction or effect on a
+						service that genuinely needs the information. You do not have to agree to optional advertising to
+						receive the service you ordered. We apply the response period required by the relevant law; for
+						access requests under PIPEDA, the ordinary period is 30 days, subject to its permitted extensions
+						and notice requirements.
+					</p>
+				</>
+			}
+			localAuthorities={
+				<p>
+					{SLOVAK_DPA} In Canada, the Office of the Privacy Commissioner of Canada provides information and
+					handles matters within its mandate at{" "}
+					<a href="https://www.priv.gc.ca" rel="noopener noreferrer" target="_blank">
+						priv.gc.ca
+					</a>
+					. A provincial privacy authority may be competent instead of, or alongside, the federal
+					Commissioner; in Québec this includes the Commission d’accès à l’information at{" "}
+					<a href="https://www.cai.gouv.qc.ca" rel="noopener noreferrer" target="_blank">
+						cai.gouv.qc.ca
+					</a>
+					.
+				</p>
+			}
+		/>
 	);
 }
