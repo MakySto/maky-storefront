@@ -36,10 +36,10 @@ import { type WithdrawalCopy } from "./copy-de";
  *
  * ## What the owner of Returns V2 needs to know before using this
  *
- * The three points in `copy-it.ts` apply unchanged, including the one that matters most:
- * `acceptedBody` promises the date and time of sending and nothing else, because that is
- * the only time this system can evidence. `receivedTimeLabel` stays dormant until R has a
- * real receipt event — it must never be filled with a copy of `submittedAt`.
+ * The three points in `copy-it.ts` apply unchanged, including the one about time:
+ * `acceptedBody` promises the date and time of SENDING and nothing else. The storefront
+ * itself prints no time — both time labels are dormant — so making that promise true is a
+ * matter of what Payload renders into the acknowledgement, not of adding a field here.
  *
  * One French addition: the 30-day cap on bringing a product back into conformity
  * (L217-10) belongs to the defect remedy, not to withdrawal. Do not let it migrate into

@@ -5,17 +5,18 @@ live legal notice was submitted and no production configuration was touched.
 
 ## 1. Exactly what this is
 
-|         |                                                                               |
-| ------- | ----------------------------------------------------------------------------- |
-| Branch  | `claude/maky-store-it-fr-impl-f1125b`                                         |
-| Base    | `c9af777` — head of `claude/maky-store-pl-hu-impl-8dd394`                     |
-| HEAD    | `f064716`                                                                     |
-| Commits | `3aac356`, `f68f10e`, `c39d152`, `f064716`                                    |
-| Package | `MAKY_STORE_IT_FR_preklad_a_implementacia_2026-09-09.zip`, SHA256 `0d22eae2…` |
+|                         |                                                                               |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| Branch                  | `claude/maky-store-it-fr-impl-f1125b`                                         |
+| Base                    | `c9af777` — head of `claude/maky-store-pl-hu-impl-8dd394`                     |
+| Last implementation SHA | `f064716` — the last commit that changes shipped code                         |
+| Handoff commit          | `6c90255` — this document and the source for M and R; no code                 |
+| Commits                 | `3aac356`, `f68f10e`, `c39d152`, `f064716`, `6c90255`                         |
+| Package                 | `MAKY_STORE_IT_FR_preklad_a_implementacia_2026-09-09.zip`, SHA256 `0d22eae2…` |
 
 **Why this base, and not the one the prompt named.** The prompt gave PL/HU `74a3709` as a
 reference and told me to check the remote. `git ls-remote` put that branch at `c9af777`
-(four commits further on), and the worktree I was handed started at `578c33b`
+(one commit further on — a docs commit), and the worktree I was handed started at `578c33b`
 (`release/sk-cs-legal-20260908`). `578c33b` turns out to be an **ancestor** of `c9af777`,
 so PL/HU already contains the whole SK/CS release plus DE/AT, PL/HU and the `legalRoute`
 `heading` change. Taking `c9af777` therefore adds work rather than discarding any: my
@@ -112,9 +113,25 @@ still pins `market: "SK"` / `locale: "sk"` as literal types.
 - No new API field, enum or endpoint was invented from the Slovak file names.
 - `privacyHref` and the whole `formExtras` block are in the delivered JSON but not in
   `WithdrawalCopy`. They are recorded here rather than bolted onto a shared type.
-- `receivedTimeLabel` exists and stays **dormant**. It must not be filled with a copy of
-  `submittedAt`: that value is the database write, which is neither sending nor receipt.
-  `acceptedBody` promises the sending time only, and a test pins that.
+- **Timestamps: what this branch actually does is nothing, and that is the whole point.**
+  An earlier draft of this section asserted that `submittedAt` "is the database write,
+  which is neither sending nor receipt". That overclaimed — this repository cannot see
+  what Payload sets it from, so the correct statement is that the storefront does not
+  know and does not use it. Checked before writing this: `WithdrawalV2Accepted` carries
+  no timestamp at all (`submissionNumber`, `duplicate`, `printConfirmationHTML`,
+  `parcelSlipHTML`), `withdrawal-form.tsx` renders no time, and the only clock in the
+  submit path is `formsTimestampSeconds()`, which is the HMAC replay window and not a
+  business time. `submissionTimeLabel` and `receivedTimeLabel` are therefore both
+  dormant labels for a UI that does not exist yet, in every language including Slovak.
+- What R owns is one concrete thing, not a research task: the acknowledgement is rendered
+  by Payload from the stored snapshot, and `acceptedBody` promises it will carry the date
+  and time the notice was **sent**. Both statutes ask for that specific time. So when a
+  market is wired, confirm the value Payload prints is the sending time and not something
+  materially later, and label it accordingly. In normal operation the gap is sub-second
+  and of no practical consequence; it only bites at a boundary, such as a notice sent just
+  before midnight on the last day of the period. Do not mint a second timestamp in the
+  storefront and do not fill `receivedTimeLabel` by copying another field — those are the
+  two things that would turn a non-issue into a false statement.
 - `unknownBody` points at no case-status view, because none exists.
 - The four shipping states in `formulare/pokyny-podla-zvozu.*.json` (`self_shipping`,
   `quote_requested_only`, `collection_offered`, `not_specified`) are editorial. Mapping them
