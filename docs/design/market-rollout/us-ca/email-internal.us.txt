@@ -1,0 +1,21 @@
+Subject: Cancellation notice received — {{receipt_id}}
+
+Reference: {{receipt_id}}
+Date and time sent: {{submitted_at_local_with_timezone}}
+Purchase: {{contract_reference}}
+Scope: {{scope_human_readable}}
+Return-pickup interest, if supplied: {{pickup_interest_human_readable}}
+Confirmation delivery: {{confirmation_delivery_status}}
+Authorized staff record: {{authenticated_admin_record_link}}
+
+Use the existing Returns record and the customer’s canonical notice.
+A question about shipping is not an order for pickup. Routine change-of-mind
+pickup is not offered for this market. Keep defective-product transport separate.
+Check the actual case before giving shipping instructions. No payment, refund
+or transport booking is authorized by this notification.
+
+Check the customer and order match, original contract terms, deadlines and
+pre-contract return-cost information. A notice may require manual matching;
+a failed automated match is not a legal decision on its validity. Do not
+redirect a refund, deduct an unagreed pickup charge or make an irreversible
+order change merely because this notice was submitted.

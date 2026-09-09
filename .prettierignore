@@ -32,3 +32,11 @@ src/lib/forms/__fixtures__/forms-backend-v1/
 # harmless because only the semantic hash is recorded for it. The real pilot, whose exact
 # bytes CFM reports and we verify, would be silently broken by the same edit.
 src/lib/fitment/fixtures/
+
+# Delivered market-package artefacts handed to R and M verbatim: the shipping-state
+# variants and any other JSON copied straight out of a language bundle. Their bytes are
+# what the bundle's MANIFEST.json records a SHA-256 for, so anyone cross-checking a
+# handover file against the ZIP compares the delivered bytes — and prettier reformatting
+# them here would make that check fail for no reason. The prose handoffs beside them are
+# ours and stay formatted.
+docs/design/market-rollout/*/shipping-states.*.json

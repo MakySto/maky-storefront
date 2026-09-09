@@ -1,0 +1,39 @@
+Subject: We have received your cancellation notice — {{receipt_id}}
+
+Hello,
+
+We have received your cancellation notice for your MAKY.STORE purchase.
+
+Reference: {{receipt_id}}
+Date and time sent: {{submitted_at_local_with_timezone}}
+
+YOUR NOTICE
+{{notice_verbatim}}
+
+Name: {{customer_name}}
+Confirmation email: {{confirmation_email}}
+Order number or other purchase details: {{contract_reference}}
+Scope: {{scope_human_readable}}
+{{items_if_applicable}}
+{{optional_message_if_provided}}
+
+RETURN ARRANGEMENTS
+{{return_instructions_for_actual_collection_state}}
+
+This acknowledgment records your notice. It does not mean a pickup has been
+booked, a refund has already been paid or a product claim has been decided.
+Routine pickup for a change-of-mind return is not offered for this market.
+Any separate collection offer is identified in the instructions above.
+Your statutory rights and the agreed cancellation policy remain unchanged.
+
+Payments are refunded according to the applicable law and agreed terms.
+We do not need an IBAN to refund the original payment card.
+
+Keep this message and your notice. For a question about this purchase,
+reply to this email and include the reference if you have it.
+
+MAKY.STORE s. r. o.
+info@maky.store | +421 901 730 066
+Registered office: Lermontovova 911/3, 811 05 Bratislava-Staré Mesto, Slovakia
+Company identification number (IČO): 57704627
+Return address: Stará Vajnorská 11, 831 04 Bratislava, Slovakia
