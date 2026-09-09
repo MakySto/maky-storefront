@@ -2937,8 +2937,12 @@ export function Fr({ channel }: { channel: string }) {
 			 *
 			 * A <blockquote> because the source marks it as one and `prose` already sets it
 			 * apart from the surrounding text; the box has to READ as a distinct notice.
+			 * The generated quotation marks are suppressed, though: `prose` decorates
+			 * blockquote paragraphs with “ ”, which would present a statutory information
+			 * box as if we were quoting somebody. It is our own statement of the reader's
+			 * rights, not a citation.
 			 */}
-			<blockquote>
+			<blockquote className="[&>p]:before:content-none [&>p]:after:content-none">
 				<p>
 					<strong>
 						La garantie légale de conformité s’exerce contre le vendeur, indépendamment d’une éventuelle
