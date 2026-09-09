@@ -40,6 +40,24 @@ const BANNED = [
 	"nem alanya az áfának",
 	"alanyi adómentes",
 	"áfamentes",
+	// Italian. The copy states the affirmative — "registrata ai fini IVA in Slovacchia" —
+	// so the failure mode is its negation. "Regime forfettario" is the Italian
+	// small-business flat-rate regime, the counterpart of Kleinunternehmer and zwolnienie
+	// podmiotowe; claiming it on pages that price with VAT is the same contradiction.
+	"non è soggetto a IVA",
+	"non siamo soggetti a IVA",
+	"non è registrata ai fini IVA",
+	"regime forfettario",
+	"esente da IVA",
+	// French. Affirmative in the copy is "assujettie à la TVA en Slovaquie". "Franchise en
+	// base de TVA" is the equivalent small-business exemption. Both genders of the
+	// negation are listed because the subject is "la société".
+	"non assujetti à la TVA",
+	"non assujettie à la TVA",
+	"ne sommes pas assujettis à la TVA",
+	"franchise en base de TVA",
+	"exonéré de TVA",
+	"exonérée de TVA",
 ];
 
 /**
