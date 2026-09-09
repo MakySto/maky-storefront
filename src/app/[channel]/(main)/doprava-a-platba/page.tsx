@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, De, DeAt, Fr, Hu, It, Pl, Sk } from "@/ui/content/legal/doprava-a-platba";
+import { Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk } from "@/ui/content/legal/doprava-a-platba";
 
 const route = legalRoute({
 	path: "/doprava-a-platba",
@@ -55,6 +55,20 @@ const route = legalRoute({
 			description:
 				"Livraison en France depuis la Slovaquie avec FedEx et Slovenská pošta : frais, disponibilité, délais et paiement anticipé par Stripe, sans contre-remboursement.",
 			Body: Fr,
+		},
+		es: {
+			title: "Envíos y pagos — España",
+			heading: "Envíos y pagos",
+			description:
+				"Envíos desde Eslovaquia a España con FedEx y Slovenská pošta. Consulta costes, disponibilidad y pago anticipado mediante Stripe, sin contrarreembolso.",
+			Body: Es,
+		},
+		ro: {
+			title: "Livrare și plată — România",
+			heading: "Livrare și plată",
+			description:
+				"Livrare din Slovacia în România prin FedEx și Slovenská pošta. Informații despre costuri, disponibilitate și plata în avans prin Stripe, fără ramburs.",
+			Body: Ro,
 		},
 	},
 });

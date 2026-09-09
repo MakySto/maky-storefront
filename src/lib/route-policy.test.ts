@@ -63,20 +63,22 @@ describe("market scoping", () => {
 	/**
 	 * Markets with no approved copy of any kind.
 	 *
-	 * The relay so far: `de` → `pl` → `it`/`fr` → `es`/`ro`. This list has to keep naming
-	 * markets that genuinely have no copy — the moment one of them gains a language, move
-	 * it to `WITH_COPY` and put a still-uncovered market here. Deleting the entry instead
-	 * would leave a green test that checks nothing.
+	 * The relay is now over: `de` → `pl` → `it`/`fr` → `es`/`ro` → `us`/`ca`, and `us` and
+	 * `ca` are the LAST two uncovered markets in `CHANNEL_MAP`. There is nowhere to move
+	 * this fixture next.
 	 *
-	 * `ca` is the only uncovered market NOT listed here; it appears in the equivalent
-	 * fixture in `proxy.test.ts` instead. When English copy lands, both files run out of
-	 * candidates at once — that is the point at which this fixture stops being movable and
-	 * the assertion has to be rethought rather than quietly dropped.
+	 * So whoever lands English copy cannot do what the last four threads did. Deleting the
+	 * list leaves five green tests asserting nothing over an empty loop; adding a market
+	 * that does have copy inverts what they check. The assertion has to be rethought — the
+	 * obvious shape is a synthetic channel wired into a test-only map, which tests the
+	 * mechanism ("a market absent from `APPROVED_COPY` 404s") instead of borrowing whichever
+	 * real market happens to be untranslated this month. That is a design decision for that
+	 * thread, and it must not be settled by quietly emptying this array.
 	 */
-	const NO_COPY = ["es", "ro", "us"];
+	const NO_COPY = ["us", "ca"];
 
 	/** Markets whose legal copy a human has approved. */
-	const WITH_COPY = ["sk", "cz", "de", "at", "pl", "hu", "it", "fr"];
+	const WITH_COPY = ["sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro"];
 
 	it("serves the legal pages in every market whose copy is approved", () => {
 		for (const segment of LEGAL_PAGES) {

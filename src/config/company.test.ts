@@ -58,6 +58,28 @@ const BANNED = [
 	"franchise en base de TVA",
 	"exonéré de TVA",
 	"exonérée de TVA",
+	// Spanish. The copy states the affirmative — "registrada a efectos del IVA en
+	// Eslovaquia" — so the failure mode is its negation. Spain's small-business exemption
+	// is the "régimen de franquicia" of art. 163 quinvicies LIVA, the counterpart of
+	// Kleinunternehmer, zwolnienie podmiotowe and regime forfettario; claiming it on pages
+	// that price with VAT is the same contradiction. "Recargo de equivalencia" is
+	// deliberately NOT listed: it is a special retail regime, not an exemption, so banning
+	// it would ban a phrase that is not the false claim this file guards against.
+	"no está sujeta a IVA",
+	"no estamos sujetos a IVA",
+	"no está registrada a efectos del IVA",
+	"régimen de franquicia",
+	"exenta de IVA",
+	// Romanian. The copy states the affirmative — "înregistrată în scopuri de TVA în
+	// Slovacia". "Regimul special de scutire pentru întreprinderile mici" is the art. 310
+	// Cod fiscal small-business exemption, and "neplătitor de TVA" is how it is written on
+	// a Romanian invoice — the direct negation, and the phrase most likely to be pasted in
+	// by mistake.
+	"nu este înregistrată în scopuri de TVA",
+	"nu suntem plătitori de TVA",
+	"neplătitor de TVA",
+	"scutire pentru întreprinderile mici",
+	"scutit de TVA",
 ];
 
 /**

@@ -22,7 +22,7 @@ const CONTENT = [
 
 describe("which markets have approved legal copy", () => {
 	it("maps only markets a human has signed off, not every channel with a locale", () => {
-		expect(marketsWithLegalCopy()).toEqual(["sk", "cz", "de", "at", "pl", "hu", "it", "fr"]);
+		expect(marketsWithLegalCopy()).toEqual(["sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro"]);
 		// There are far more channels than there is approved copy. That gap is the point:
 		// a market must not inherit a warranty clause just because a locale string exists.
 		expect(Object.keys(CHANNEL_MAP).length).toBeGreaterThan(marketsWithLegalCopy().length);
@@ -53,12 +53,16 @@ describe("which markets have approved legal copy", () => {
 	});
 
 	it("returns null for a market with no approved copy, and for nonsense", () => {
-		// `es` stands in for "a market we have not written copy for". It used to be `pl`,
-		// then `it`, each of which stopped testing anything the moment that language landed
-		// — the same way `de` stopped when German did. Whoever adds Spanish must move this
-		// fixture again rather than delete the assertion, or the test goes on passing while
-		// checking nothing.
-		expect(legalLocaleFor("es-eur")).toBeNull();
+		// `ca-cad` stands in for "a market we have not written copy for". It used to be
+		// `pl`, then `it`, then `es`, each of which stopped testing anything the moment that
+		// language landed — the same way `de` stopped when German did.
+		//
+		// `us-usd` is on the next line and is the ONLY other uncovered market left, so this
+		// pair cannot be replaced again: whoever lands English has to rethink the assertion
+		// rather than move it (see `route-policy.test.ts`). Note the order — `ca-cad` first,
+		// because putting Canada on the `us-usd` line would silently make this a duplicate
+		// of it rather than a second case.
+		expect(legalLocaleFor("ca-cad")).toBeNull();
 		expect(legalLocaleFor("us-usd")).toBeNull();
 		expect(legalLocaleFor("")).toBeNull();
 		expect(legalLocaleFor("../etc/passwd")).toBeNull();
@@ -83,9 +87,10 @@ describe("every legal page exists in every approved language", () => {
 			// `href="/sk/..."` in a Czech body would silently send the reader to the Slovak
 			// page. Nothing else in the stack would notice. The delivered German copy
 			// arrived with `/de/...` and `/at/...` written out, and the Polish and Hungarian
-			// documents likewise print `/pl/...` and `/hu/...` as their reference URLs, so
-			// every approved market belongs in this pattern.
-			expect(src).not.toMatch(/href="\/(sk|cz|de|at|pl|hu|it|fr)\//);
+			// documents likewise print `/pl/...` and `/hu/...` as their reference URLs — as do
+			// the Spanish and Romanian ones with `/es/...` and `/ro/...` — so every approved
+			// market belongs in this pattern.
+			expect(src).not.toMatch(/href="\/(sk|cz|de|at|pl|hu|it|fr|es|ro)\//);
 		});
 	}
 });

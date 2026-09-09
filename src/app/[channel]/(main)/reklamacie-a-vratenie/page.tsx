@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, De, DeAt, Fr, Hu, It, Pl, Sk } from "@/ui/content/legal/reklamacie-a-vratenie";
+import { Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk } from "@/ui/content/legal/reklamacie-a-vratenie";
 
 const route = legalRoute({
 	path: "/reklamacie-a-vratenie",
@@ -53,6 +53,20 @@ const route = legalRoute({
 			description:
 				"Retour d’un achat ou produit défectueux : démarches auprès de MAKY.STORE, délais, remboursement, frais de transport et adresse de retour en Slovaquie.",
 			Body: Fr,
+		},
+		es: {
+			title: "Reclamaciones, garantía legal y devoluciones",
+			heading: "Reclamaciones y devoluciones",
+			description:
+				"Cómo devolver una compra o reclamar por un producto defectuoso en MAKY.STORE: plazos, garantía legal, transporte, dirección de envío y reembolsos.",
+			Body: Es,
+		},
+		ro: {
+			title: "Reclamații, garanție legală și retururi",
+			heading: "Reclamații și retururi",
+			description:
+				"Cum returnezi o cumpărătură sau reclami un produs defect la MAKY.STORE: termene, garanție legală, costuri de transport, adresă și rambursare.",
+			Body: Ro,
 		},
 	},
 });

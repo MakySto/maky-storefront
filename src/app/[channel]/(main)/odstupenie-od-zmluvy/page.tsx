@@ -11,7 +11,7 @@ import { isWithdrawalFormServable, withdrawalBlockReason } from "@/lib/withdrawa
 import { normalizeWithdrawalPhone } from "@/lib/withdrawal/validate";
 import { legalLocaleFor, type LegalLocale } from "@/lib/legal/locale";
 import { LegalPage } from "@/ui/components/legal/legal-page";
-import { Cs, De, DeAt, Fr, Hu, It, Pl, Sk } from "@/ui/content/legal/odstupenie-od-zmluvy";
+import { Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk } from "@/ui/content/legal/odstupenie-od-zmluvy";
 import { WithdrawalForm } from "@/ui/components/withdrawal/withdrawal-form";
 import { getCurrentUser, type AccountUser } from "../account/get-current-user";
 import { submitWithdrawalAction } from "./actions";
@@ -150,6 +150,41 @@ const META: Readonly<Record<LegalLocale, WithdrawalMeta>> = {
 		withoutForm:
 			"Rétractation chez MAKY.STORE : délai de 14 jours, porté à 30 pour les achats en étant connecté, retour, frais, remboursement et formulaire à imprimer.",
 	},
+
+	// Spain and Romania, and the two are NOT in the same position on the online function.
+	//
+	// Romania has transposed it and it is in force: OUG 18/2026 art. II inserts art. 11^1
+	// into OUG 34/2014, effective 19 June 2026 — the same date as Italy and France. So
+	// `ro` sits with them: the preview state is a gap for R and M to close before the
+	// market serves real purchases, not a lawful permanent substitute.
+	//
+	// For Spain the delivered package does NOT establish the same thing, and says so. It
+	// verified Directive (EU) 2023/2673 (art. 11bis, applicable 19 June 2026) as published
+	// in the BOE, which is the EU text appearing in a Spanish official journal — not a
+	// Spanish transposing instrument. That is a limit of what was checked, not a finding
+	// that e-mail suffices in Spain indefinitely. It is an open question for M, recorded in
+	// the handoff, and it is deliberately not answered in either direction here.
+	//
+	// Only `withoutForm` is reachable for either market today (`servesOnlineFunction`),
+	// and both descriptions are the delivered `withdrawalMetadata` pair, so activation is
+	// never held up by copy and the served description never claims a function the market
+	// does not have.
+	es: {
+		title: "Derecho de desistimiento y devolución",
+		heading: "Derecho de desistimiento",
+		withForm:
+			"Desistimiento en MAKY.STORE: función online, plazos de 14 o 30 días según la compra, devolución, gastos, reembolso y formulario para imprimir.",
+		withoutForm:
+			"Desistimiento en MAKY.STORE: 14 días, 30 para pedidos realizados tras iniciar sesión, devolución, gastos, reembolso y formulario para imprimir.",
+	},
+	ro: {
+		title: "Dreptul de retragere și returnarea produselor",
+		heading: "Dreptul de retragere",
+		withForm:
+			"Retragerea din cumpărăturile MAKY.STORE: funcție online, 14 sau 30 de zile potrivit cumpărăturii, retur, costuri, rambursare și formular de imprimat.",
+		withoutForm:
+			"Retragerea din cumpărăturile MAKY.STORE: 14 zile, 30 pentru comenzi plasate după autentificare, retur, costuri, rambursare și formular de tipărit.",
+	},
 };
 
 /**
@@ -264,7 +299,18 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	const alternatives = { email: companyInfo.email, postalAddress: companyInfo.returnAddress };
 	const modelFormHref = marketHref(channel, `${PATH}/vzorovy-formular`);
 
-	const BODIES = { sk: Sk, cs: Cs, de: De, deAt: DeAt, pl: Pl, hu: Hu, it: It, fr: Fr } as const;
+	const BODIES = {
+		sk: Sk,
+		cs: Cs,
+		de: De,
+		deAt: DeAt,
+		pl: Pl,
+		hu: Hu,
+		it: It,
+		fr: Fr,
+		es: Es,
+		ro: Ro,
+	} as const;
 	const Body = BODIES[locale];
 	const form = formServable ? (
 		<section aria-labelledby="online-withdrawal" className="not-prose my-10">

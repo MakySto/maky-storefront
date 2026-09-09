@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, De, DeAt, Fr, Hu, It, Pl, Sk } from "@/ui/content/legal/kontakt";
+import { Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk } from "@/ui/content/legal/kontakt";
 
 const route = legalRoute({
 	path: "/kontakt",
@@ -53,6 +53,20 @@ const route = legalRoute({
 			description:
 				"Une question sur un produit ou une commande ? Contactez MAKY.STORE. Retrouvez nos coordonnées, les informations sur la société et l’adresse de retour.",
 			Body: Fr,
+		},
+		es: {
+			title: "Contacto y atención al cliente",
+			heading: "Contacto",
+			description:
+				"¿Necesitas ayuda para elegir un accesorio o consultar un pedido? Contacta con MAKY.STORE. Aquí tienes nuestros datos y la dirección para devoluciones.",
+			Body: Es,
+		},
+		ro: {
+			title: "Contact și asistență",
+			heading: "Contact",
+			description:
+				"Ai nevoie de ajutor pentru un produs sau o comandă? Contactează MAKY.STORE. Aici găsești datele firmei și adresa pentru retururi și reclamații.",
+			Body: Ro,
 		},
 	},
 });

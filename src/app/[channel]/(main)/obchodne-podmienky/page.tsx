@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, De, DeAt, Fr, Hu, It, Pl, Sk } from "@/ui/content/legal/obchodne-podmienky";
+import { Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk } from "@/ui/content/legal/obchodne-podmienky";
 
 const route = legalRoute({
 	path: "/obchodne-podmienky",
@@ -52,6 +52,18 @@ const route = legalRoute({
 			description:
 				"Les conditions d’achat MAKY.STORE : commande, prix, paiement, livraison, rétractation, garanties, réclamations et règlement des litiges.",
 			Body: Fr,
+		},
+		es: {
+			title: "Condiciones de venta",
+			description:
+				"Condiciones de compra en MAKY.STORE: pedidos, pagos, entrega, desistimiento, devoluciones y garantía legal. Vendedor establecido en Eslovaquia.",
+			Body: Es,
+		},
+		ro: {
+			title: "Termeni și condiții de vânzare",
+			description:
+				"Condițiile cumpărăturilor MAKY.STORE: comenzi, plată, livrare, retragere, retururi și garanție legală. Vânzător stabilit în Slovacia.",
+			Body: Ro,
 		},
 	},
 });

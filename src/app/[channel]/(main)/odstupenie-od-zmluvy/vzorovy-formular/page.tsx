@@ -98,6 +98,22 @@ const COPY = {
 		printLabel: "Imprimer le formulaire",
 		downloadLabel: "Télécharger le formulaire (.txt)",
 	},
+	es: {
+		title: "Modelo de formulario de desistimiento",
+		description:
+			"Modelo voluntario de desistimiento para imprimir o descargar. Puedes enviar también otra declaración inequívoca.",
+		fileName: "formulario-de-desistimiento.txt",
+		printLabel: "Imprimir el formulario",
+		downloadLabel: "Descargar el formulario (.txt)",
+	},
+	ro: {
+		title: "Formular-tip de retragere",
+		description:
+			"Formular-tip opțional de retragere, de imprimat sau descărcat. Poți trimite și o altă declarație neechivocă.",
+		fileName: "formular-de-retragere.txt",
+		printLabel: "Imprimă formularul",
+		downloadLabel: "Descarcă formularul (.txt)",
+	},
 } as const satisfies Record<LegalLocale, unknown>;
 
 /** The plain-text copy offered for download, so print and download cannot drift. */
@@ -425,6 +441,119 @@ const FRENCH_TEXT = [
 	"Aucune donnée bancaire n’est nécessaire pour rembourser sur la carte initiale.",
 ].join("\n");
 
+/**
+ * The Spanish text, from `formulare/vzor-odstupenia.es-ES.txt`.
+ *
+ * The last paragraph is not boilerplate and must not be trimmed: it states that neither
+ * an IBAN nor a reason is a condition of withdrawing. The delivered form asks for a
+ * postal address and marks the confirmation e-mail optional on paper — that is the
+ * statutory model's shape, and it is deliberately not "improved" here.
+ */
+const SPANISH_TEXT = [
+	"MODELO DE FORMULARIO DE DESISTIMIENTO",
+	"",
+	"Completa y envía este formulario solo si deseas desistir del contrato.",
+	"Su uso es voluntario. También puedes enviar otra declaración inequívoca.",
+	"",
+	"A la atención de:",
+	companyInfo.legalName,
+	"Stará Vajnorská 11",
+	"831 04 Bratislava",
+	"Eslovaquia",
+	`Correo electrónico: ${companyInfo.email}`,
+	"",
+	"Por la presente comunico/comunicamos (*) que desisto de mi/desistimos de nuestro (*) contrato de compraventa de los siguientes bienes:",
+	"",
+	"................................................................",
+	"................................................................",
+	"",
+	"Número de pedido u otros datos que identifiquen la compra:",
+	"................................................................",
+	"",
+	"Alcance: todo el pedido o los productos concretos con sus cantidades:",
+	"................................................................",
+	"................................................................",
+	"",
+	"Pedido el / recibido el (*):",
+	"................................................................",
+	"",
+	"Nombre del consumidor o de los consumidores:",
+	"................................................................",
+	"",
+	"Domicilio del consumidor o de los consumidores:",
+	"................................................................",
+	"................................................................",
+	"",
+	"Correo para la confirmación (opcional en una declaración en papel):",
+	"................................................................",
+	"",
+	"Fecha:",
+	"................................................................",
+	"",
+	"Firma del consumidor o de los consumidores, solo si se presenta en papel:",
+	"................................................................",
+	"",
+	"(*) Tacha lo que no corresponda.",
+	"",
+	"No necesitas indicar un IBAN ni explicar el motivo para desistir. Para un reembolso a la tarjeta utilizada originalmente no pedimos datos bancarios.",
+].join("\n");
+
+/**
+ * The Romanian text, from `formulare/vzor-odstupenia.ro-RO.txt`.
+ *
+ * Comma-below `ș`/`ț` throughout, never cedilla `ş`/`ţ`. They are different code points,
+ * only the comma-below pair is correct Romanian, and nothing in the build would notice
+ * the wrong one. The delivered package is clean; this file has to stay that way.
+ */
+const ROMANIAN_TEXT = [
+	"FORMULAR-TIP DE RETRAGERE",
+	"",
+	"Completează și trimite formularul numai dacă dorești să te retragi din contract.",
+	"Folosirea este opțională. Poți transmite și o altă declarație neechivocă.",
+	"",
+	"Către:",
+	companyInfo.legalName,
+	"Stará Vajnorská 11",
+	"831 04 Bratislava",
+	"Slovacia",
+	`E-mail: ${companyInfo.email}`,
+	"",
+	"Vă informez/Vă informăm (*) prin prezenta cu privire la retragerea mea/noastră (*) din contractul de vânzare referitor la următoarele produse:",
+	"",
+	"................................................................",
+	"................................................................",
+	"",
+	"Numărul comenzii sau alte date care identifică cumpărătura:",
+	"................................................................",
+	"",
+	"Obiectul retragerii: întreaga comandă sau produsele individuale și cantitățile:",
+	"................................................................",
+	"................................................................",
+	"",
+	"Comandate la data / primite la data (*):",
+	"................................................................",
+	"",
+	"Numele consumatorului sau al consumatorilor:",
+	"................................................................",
+	"",
+	"Adresa consumatorului sau a consumatorilor:",
+	"................................................................",
+	"................................................................",
+	"",
+	"E-mail pentru confirmare (opțional pentru declarația pe hârtie):",
+	"................................................................",
+	"",
+	"Data:",
+	"................................................................",
+	"",
+	"Semnătura consumatorului sau a consumatorilor, numai pentru declarația pe hârtie:",
+	"................................................................",
+	"",
+	"(*) Șterge mențiunea care nu corespunde.",
+	"",
+	"Nu ai nevoie de IBAN și nu trebuie să indici un motiv pentru retragere. Nu cerem date bancare pentru rambursarea pe cardul folosit inițial.",
+].join("\n");
+
 const TEXT: Record<LegalLocale, string> = {
 	sk: SLOVAK_TEXT,
 	cs: CZECH_TEXT,
@@ -434,6 +563,8 @@ const TEXT: Record<LegalLocale, string> = {
 	hu: HUNGARIAN_TEXT,
 	it: ITALIAN_TEXT,
 	fr: FRENCH_TEXT,
+	es: SPANISH_TEXT,
+	ro: ROMANIAN_TEXT,
 };
 
 export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {
@@ -685,6 +816,79 @@ function FrenchBody({ channel }: { channel: string }) {
 	);
 }
 
+function SpanishBody({ channel }: { channel: string }) {
+	return (
+		<>
+			<p className="print:hidden">
+				Puedes imprimir o descargar este formulario. Su uso es voluntario — basta cualquier otra declaración
+				inequívoca. Las vías disponibles se explican en la página{" "}
+				<a href={marketHref(channel, "/odstupenie-od-zmluvy")}>Derecho de desistimiento</a>.
+			</p>
+			<p>Completa y envía este formulario solo si deseas desistir del contrato.</p>
+			<p>
+				A la atención de: {companyInfo.legalName}, {companyInfo.returnAddress}, Eslovaquia, correo
+				electrónico: {companyInfo.email}
+			</p>
+			<p>
+				Por la presente comunico/comunicamos mi/nuestra decisión de desistir del contrato de compraventa de
+				los siguientes bienes:
+			</p>
+			<ul>
+				<li>Productos: ........................</li>
+				<li>Número de pedido u otros datos que identifiquen la compra: ........................</li>
+				<li>Alcance: todo el pedido o los productos concretos con sus cantidades: ..................</li>
+				<li>Pedido el / recibido el: ........................</li>
+				<li>Nombre del consumidor o de los consumidores: ........................</li>
+				<li>Domicilio del consumidor o de los consumidores: ........................</li>
+				<li>Correo para la confirmación (opcional en papel): .......................</li>
+				<li>Fecha: ........................</li>
+				<li>Firma del consumidor o de los consumidores — solo en papel: ........................</li>
+			</ul>
+			<p>
+				No necesitas indicar un IBAN ni explicar el motivo para desistir. Para un reembolso a la tarjeta
+				utilizada originalmente no pedimos datos bancarios.
+			</p>
+		</>
+	);
+}
+
+function RomanianBody({ channel }: { channel: string }) {
+	return (
+		<>
+			<p className="print:hidden">
+				Poți imprima sau descărca acest formular. Folosirea lui este opțională — este suficientă orice altă
+				declarație neechivocă. Modalitățile disponibile sunt explicate în pagina{" "}
+				<a href={marketHref(channel, "/odstupenie-od-zmluvy")}>Dreptul de retragere</a>.
+			</p>
+			<p>Completează și trimite formularul numai dacă dorești să te retragi din contract.</p>
+			<p>
+				Către: {companyInfo.legalName}, {companyInfo.returnAddress}, Slovacia, e-mail: {companyInfo.email}
+			</p>
+			<p>
+				Vă informez/Vă informăm prin prezenta cu privire la retragerea mea/noastră din contractul de vânzare
+				referitor la următoarele produse:
+			</p>
+			<ul>
+				<li>Produse: ........................</li>
+				<li>Numărul comenzii sau alte date care identifică cumpărătura: ........................</li>
+				<li>
+					Obiectul retragerii: întreaga comandă sau produsele individuale și cantitățile: ..................
+				</li>
+				<li>Comandate la data / primite la data: ........................</li>
+				<li>Numele consumatorului sau al consumatorilor: ........................</li>
+				<li>Adresa consumatorului sau a consumatorilor: ........................</li>
+				<li>E-mail pentru confirmare (opțional pe hârtie): .......................</li>
+				<li>Data: ........................</li>
+				<li>Semnătura consumatorului sau a consumatorilor — numai pe hârtie: ........................</li>
+			</ul>
+			<p>
+				Nu ai nevoie de IBAN și nu trebuie să indici un motiv pentru retragere. Nu cerem date bancare pentru
+				rambursarea pe cardul folosit inițial.
+			</p>
+		</>
+	);
+}
+
 export default async function Page(props: { params: Promise<{ channel: string }> }) {
 	const { channel } = await props.params;
 	const locale = legalLocaleFor(channel);
@@ -700,6 +904,8 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 		hu: HungarianBody,
 		it: ItalianBody,
 		fr: FrenchBody,
+		es: SpanishBody,
+		ro: RomanianBody,
 	} as const satisfies Record<LegalLocale, unknown>;
 	const Body = BODIES[locale];
 
