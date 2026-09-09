@@ -30,8 +30,37 @@ import { REVERSE_MAP } from "@/lib/channel-map";
  *
  * The customer-facing locales are untouched: `CHANNEL_MAP` still says `de-DE` and
  * `de-AT`. This name is internal.
+ *
+ * ## Why `enUs` and `enCa` are two entries for the same reason
+ *
+ * The same argument, in English. Most of the delivered US and Canadian prose is word for
+ * word identical — the seller, the carriers, the customs undertaking, the 14/30-day
+ * benefit — and that is fine. What differs is law, and it differs in both directions: the
+ * FTC Mail, Internet, or Telephone Order Merchandise Rule and its 30-day default shipment
+ * period bind us in one country and not the other; the FTC three-day Cooling-Off Rule does
+ * NOT reach purchases made entirely online, which is a sentence the US page must carry and
+ * the Canadian page must not; and Canada's mandatory provincial and territorial rights,
+ * including Quebec's reasonable-durability rule and its statutory distance-contract
+ * cancellation, have no US counterpart. Currency differs too — USD one side, CAD the other.
+ *
+ * One `en` entry branching on `channel` inside the bodies would put all of that somewhere
+ * no type and no test can see it. Two entries make each difference a value the compiler
+ * tracks, exactly as for Germany and Austria.
  */
-export const LEGAL_LOCALES = ["sk", "cs", "de", "deAt", "pl", "hu", "it", "fr", "es", "ro"] as const;
+export const LEGAL_LOCALES = [
+	"sk",
+	"cs",
+	"de",
+	"deAt",
+	"pl",
+	"hu",
+	"it",
+	"fr",
+	"es",
+	"ro",
+	"enUs",
+	"enCa",
+] as const;
 
 export type LegalLocale = (typeof LEGAL_LOCALES)[number];
 
@@ -47,6 +76,8 @@ const APPROVED_COPY: Readonly<Record<string, LegalLocale>> = {
 	fr: "fr",
 	es: "es",
 	ro: "ro",
+	us: "enUs",
+	ca: "enCa",
 };
 
 /**
@@ -67,6 +98,8 @@ export const LEGAL_BODY_NAMES: Readonly<Record<LegalLocale, string>> = {
 	fr: "Fr",
 	es: "Es",
 	ro: "Ro",
+	enUs: "Us",
+	enCa: "Ca",
 };
 
 /**

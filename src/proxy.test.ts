@@ -1,5 +1,11 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it } from "vitest";
+import {
+	UNCOVERED_MARKET,
+	mockUncoveredMarket,
+	restoreChannelMap,
+} from "./lib/legal/uncovered-market.testkit";
+import { CHANNEL_MAP } from "./lib/channel-map";
 import { proxy } from "./proxy";
 
 /**
@@ -205,6 +211,10 @@ describe("dotted first segment", () => {
  * no such branch, so /de/kontakt answered HTTP 200 with a fully indexable Slovak
  * <head> over a 404-ed body.
  */
+// The two cases below mock `@/lib/channel-map` and re-import the proxy; without this the
+// mocked module graph leaks into every later file in the run.
+afterEach(() => restoreChannelMap());
+
 describe("a route that exists, but not in this market", () => {
 	/** Static legal copy, approved in Slovak, Czech and German (DE + AT). */
 	const LEGAL_PAGES = [
@@ -223,13 +233,38 @@ describe("a route that exists, but not in this market", () => {
 	const SK_ONLY = [...LEGAL_PAGES, ...CMS_PAGES];
 
 	it("404s these pages in a market with no approved copy", async () => {
+		// This fixture used to borrow a real untranslated market — es/ro, before that it/fr,
+		// pl, de — and `us`/`ca` were the last pair left. It now synthesises one instead, so
+		// it tests the mechanism rather than whichever language is late this month. See
+		// `lib/legal/uncovered-market.testkit.ts`.
+		//
+		// The proxy has to be re-imported under the mock: the gate reads `FRIENDLY_SLUGS`,
+		// which `channel-map.ts` derives at load time, and the `proxy` imported at the top
+		// of this file closed over the real one.
+		mockUncoveredMarket();
+		const { proxy: freshProxy } = await import("./proxy");
+		const freshStatus = async (path: string) =>
+			(await freshProxy(new NextRequest(new URL(`https://maky.store${path}`)))).status;
+
+		// The gate only fires for a market the proxy recognises. Without this the test
+		// would still pass — through the invalid-first-segment gate, which is a different
+		// rule tested elsewhere — while proving nothing about an uncovered market.
+		expect(await freshStatus(`/${UNCOVERED_MARKET}`), "synthetic market must be routable").not.toBe(404);
+
 		for (const segment of SK_ONLY) {
-			// Moved from es/ro when Spanish and Romanian copy landed; before that from it/fr,
-			// pl and de. `us` and `ca` are the last two markets in `CHANNEL_MAP` with no
-			// approved copy, so this fixture cannot move again — see the note in
-			// `route-policy.test.ts`. An emptied list passes vacuously.
-			for (const market of ["us", "ca"]) {
-				expect(await statusOf(`/${market}/${segment}`), `/${market}/${segment}`).toBe(404);
+			expect(await freshStatus(`/${UNCOVERED_MARKET}/${segment}`), `/${UNCOVERED_MARKET}/${segment}`).toBe(
+				404,
+			);
+		}
+	});
+
+	it("serves the legal pages in all twelve real markets", async () => {
+		// The positive half. Every market in `CHANNEL_MAP` now has approved copy, so a
+		// regression that 404s everything would show up here rather than hiding behind the
+		// synthetic case above.
+		for (const market of Object.keys(CHANNEL_MAP)) {
+			for (const segment of LEGAL_PAGES) {
+				expect(await statusOf(`/${market}/${segment}`), `/${market}/${segment}`).not.toBe(404);
 			}
 		}
 	});
@@ -252,12 +287,18 @@ describe("a route that exists, but not in this market", () => {
 	});
 
 	it("marks them noindex", async () => {
-		// `us` for the same reason as above — it moved off `es` when Spanish copy landed. It
-		// also has to be a market with no copy for this to test anything: a market that HAS
-		// copy is a real page, and would carry the preview market's "noindex, nofollow"
+		// It has to be a market with no copy for this to test anything. A market that HAS
+		// copy is a real page and would carry the preview market's "noindex, nofollow"
 		// instead — a different header set by a different rule, which would make this pass
-		// while checking something else.
-		expect((await proxy(req("/us/kontakt"))).headers.get("x-robots-tag")).toBe("noindex");
+		// while checking something else. That distinction is asserted below, not assumed.
+		mockUncoveredMarket();
+		const { proxy: freshProxy } = await import("./proxy");
+		const headerFor = async (path: string) =>
+			(await freshProxy(new NextRequest(new URL(`https://maky.store${path}`)))).headers.get("x-robots-tag");
+
+		expect(await headerFor(`/${UNCOVERED_MARKET}/kontakt`)).toBe("noindex");
+		// The covered market's page is the other rule, and it is a different string.
+		expect(await headerFor("/us/kontakt")).toBe("noindex, nofollow");
 	});
 
 	it("leaves them alone on sk", async () => {

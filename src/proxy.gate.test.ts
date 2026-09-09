@@ -1,5 +1,10 @@
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	UNCOVERED_MARKET,
+	mockUncoveredMarket,
+	restoreChannelMap,
+} from "./lib/legal/uncovered-market.testkit";
 import { LEGACY_PRODUCT_SLUG_REDIRECTS } from "./lib/product-redirects";
 import { resetRouteExistenceStateForTests, routeExistenceStats } from "./lib/route-existence";
 import { MARKET_ROOT_SEGMENTS } from "./lib/routing.generated";
@@ -80,6 +85,9 @@ afterEach(() => {
 	for (const key of ENV_KEYS) delete process.env[key];
 	vi.unstubAllGlobals();
 	vi.restoreAllMocks();
+	// One case below mocks `@/lib/channel-map` and re-imports the proxy. Resetting the
+	// module graph here keeps that from leaking into the rest of the run.
+	restoreChannelMap();
 });
 
 describe("an absent resource becomes a real 404", () => {
@@ -277,16 +285,28 @@ describe("earlier rules still win over the gate", () => {
 	});
 
 	it("404s a market-scoped route from policy, without a lookup", async () => {
-		// `us` has no approved legal copy. This said `/de/kontakt` until German landed,
-		// `/pl/kontakt` until Polish did, `/it/kontakt` until Italian did and `/es/kontakt`
-		// until Spanish did — the point is that policy answers before the gate ever asks
-		// upstream, not that any one market is empty. `us` and `ca` are the last markets
-		// without copy, so when English arrives this cannot simply move again; see
-		// `route-policy.test.ts`. Do not delete the assertion.
+		// The point is that policy answers before the gate ever asks upstream, not that any
+		// one market is empty. This said `/de/kontakt` until German landed, then `/pl/`,
+		// `/it/`, `/es/` and finally `/us/` — and English was the last uncovered market, so
+		// the borrowing had to stop. It now uses a synthetic market; see
+		// `lib/legal/uncovered-market.testkit.ts`. Do not delete the assertion.
+		mockUncoveredMarket();
+		const { proxy: freshProxy } = await import("./proxy");
+		const mock = upstream(exists);
+		const res = await freshProxy(req(`/${UNCOVERED_MARKET}/kontakt`));
+
+		expect(res.status).toBe(404);
+		expect(mock).not.toHaveBeenCalled();
+	});
+
+	it("does not 404 that route in a market that does have copy", async () => {
+		// The control. Without it the case above would still pass if the policy 404-ed
+		// every market, or if the synthetic market were failing at the invalid-first-segment
+		// gate instead of the policy one.
 		const mock = upstream(exists);
 		const res = await proxy(req("/us/kontakt"));
 
-		expect(res.status).toBe(404);
+		expect(res.status).not.toBe(404);
 		expect(mock).not.toHaveBeenCalled();
 	});
 });

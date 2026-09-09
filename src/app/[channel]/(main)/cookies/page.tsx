@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk } from "@/ui/content/legal/cookies";
+import { Ca, Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk, Us } from "@/ui/content/legal/cookies";
 
 const route = legalRoute({
 	path: "/cookies",
@@ -67,6 +67,20 @@ const route = legalRoute({
 			description:
 				"Cookie-uri, stocarea în browser și preferințele de confidențialitate MAKY.STORE. Poți refuza analiza și marketingul opționale și poți cumpăra în continuare.",
 			Body: Ro,
+		},
+		enUs: {
+			title: "Cookies and privacy preferences",
+			heading: "Cookies and privacy",
+			description:
+				"Cookies, browser storage and measurement at MAKY.STORE: purposes, duration and choices. Decline optional analytics or marketing without blocking your purchase.",
+			Body: Us,
+		},
+		enCa: {
+			title: "Cookies and privacy preferences",
+			heading: "Cookies and privacy",
+			description:
+				"Cookies, browser storage and measurement at MAKY.STORE: purposes, duration and choices. Decline optional analytics or marketing without blocking your purchase.",
+			Body: Ca,
 		},
 	},
 });

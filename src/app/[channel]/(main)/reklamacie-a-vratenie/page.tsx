@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk } from "@/ui/content/legal/reklamacie-a-vratenie";
+import { Ca, Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk, Us } from "@/ui/content/legal/reklamacie-a-vratenie";
 
 const route = legalRoute({
 	path: "/reklamacie-a-vratenie",
@@ -67,6 +67,20 @@ const route = legalRoute({
 			description:
 				"Cum returnezi o cumpărătură sau reclami un produs defect la MAKY.STORE: termene, garanție legală, costuri de transport, adresă și rambursare.",
 			Body: Ro,
+		},
+		enUs: {
+			title: "Returns, defective items and product support",
+			heading: "Returns and product support",
+			description:
+				"How to return a purchase or report a defective item to MAKY.STORE. Find the deadlines, shipping responsibilities, refund process and Slovak return address.",
+			Body: Us,
+		},
+		enCa: {
+			title: "Returns, defective items and product support",
+			heading: "Returns and product support",
+			description:
+				"How to return a purchase or report a defective item to MAKY.STORE. Find the deadlines, shipping responsibilities, refund process and Slovak return address.",
+			Body: Ca,
 		},
 	},
 });

@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk } from "@/ui/content/legal/doprava-a-platba";
+import { Ca, Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk, Us } from "@/ui/content/legal/doprava-a-platba";
 
 const route = legalRoute({
 	path: "/doprava-a-platba",
@@ -69,6 +69,20 @@ const route = legalRoute({
 			description:
 				"Livrare din Slovacia în România prin FedEx și Slovenská pošta. Informații despre costuri, disponibilitate și plata în avans prin Stripe, fără ramburs.",
 			Body: Ro,
+		},
+		enUs: {
+			title: "Shipping and payment — United States",
+			heading: "Shipping and payment",
+			description:
+				"Shipping from Slovakia to the US: delivery options, import costs, availability and advance payment through Stripe. No cash on delivery.",
+			Body: Us,
+		},
+		enCa: {
+			title: "Shipping and payment — Canada",
+			heading: "Shipping and payment",
+			description:
+				"Shipping from Slovakia to Canada: delivery options, import costs, availability and advance payment through Stripe. No cash on delivery.",
+			Body: Ca,
 		},
 	},
 });

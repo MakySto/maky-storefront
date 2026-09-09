@@ -80,6 +80,26 @@ const BANNED = [
 	"neplătitor de TVA",
 	"scutire pentru întreprinderile mici",
 	"scutit de TVA",
+	// English (US + CA). The copy states the affirmative — "We are registered for VAT in
+	// Slovakia" — so the failure mode is its negation, and English is the language most
+	// likely to acquire one by accident: it is the one a non-Slovak reader of this repo
+	// writes in, and "we don't charge VAT" is a plausible-sounding thing to add to a page
+	// about selling into North America. It would be false. The seller is VAT-registered in
+	// Slovakia regardless of where the parcel goes, and both English pages price with VAT.
+	//
+	// Hyphenated and unhyphenated spellings are both listed because both are ordinary
+	// English and `toContain` is a literal substring match. The North American sales-tax
+	// wording is deliberately NOT banned: "applicable sales taxes" is an affirmative
+	// statement the delivered copy makes, and whether any given state or province imposes
+	// one is K's question, not a claim about the seller's VAT status.
+	"not registered for VAT",
+	"not VAT registered",
+	"not VAT-registered",
+	"no VAT is charged",
+	"do not charge VAT",
+	"exempt from VAT",
+	"VAT exempt",
+	"VAT-exempt",
 ];
 
 /**

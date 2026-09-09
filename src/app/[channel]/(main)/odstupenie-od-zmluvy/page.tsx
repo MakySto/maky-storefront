@@ -11,7 +11,7 @@ import { isWithdrawalFormServable, withdrawalBlockReason } from "@/lib/withdrawa
 import { normalizeWithdrawalPhone } from "@/lib/withdrawal/validate";
 import { legalLocaleFor, type LegalLocale } from "@/lib/legal/locale";
 import { LegalPage } from "@/ui/components/legal/legal-page";
-import { Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk } from "@/ui/content/legal/odstupenie-od-zmluvy";
+import { Ca, Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk, Us } from "@/ui/content/legal/odstupenie-od-zmluvy";
 import { WithdrawalForm } from "@/ui/components/withdrawal/withdrawal-form";
 import { getCurrentUser, type AccountUser } from "../account/get-current-user";
 import { submitWithdrawalAction } from "./actions";
@@ -185,6 +185,36 @@ const META: Readonly<Record<LegalLocale, WithdrawalMeta>> = {
 		withoutForm:
 			"Retragerea din cumpărăturile MAKY.STORE: 14 zile, 30 pentru comenzi plasate după autentificare, retur, costuri, rambursare și formular de tipărit.",
 	},
+	// The United States and Canada. Neither has an online-withdrawal duty of the European
+	// kind, and that is the point worth recording rather than a gap to close: `withForm` is
+	// unreachable for both today because `servesOnlineFunction` keeps the online function on
+	// `sk`, and the delivered copy never claims otherwise.
+	//
+	// What each market must NOT say is the asymmetry. The US page has to state that the
+	// FTC three-day Cooling-Off Rule does not cover purchases made entirely online, so a
+	// reader does not credit a federal right they do not have. The Canadian page has to
+	// state the opposite shape — mandatory provincial and territorial cancellation rights
+	// genuinely do arise independently of our policy, and Quebec's statutory distance-
+	// contract cancellation can put reasonable return costs on the merchant. Those live in
+	// the bodies; both descriptions here are the delivered `withdrawalMetadata` pair, which
+	// is identical for the two markets because it describes our 14/30-day benefit and that
+	// benefit really is the same on both sides of the border.
+	enUs: {
+		title: "Cancel a purchase or return items",
+		heading: "Cancellations and returns",
+		withForm:
+			"Cancel a MAKY.STORE purchase online. Read our 14/30-day policy, return-shipping rules and refunds, or use the optional printable form.",
+		withoutForm:
+			"MAKY.STORE cancellations and returns: 14 days, or 30 for orders placed while signed in. Return shipping, refunds and an optional printable form.",
+	},
+	enCa: {
+		title: "Cancel a purchase or return items",
+		heading: "Cancellations and returns",
+		withForm:
+			"Cancel a MAKY.STORE purchase online. Read our 14/30-day policy, return-shipping rules and refunds, or use the optional printable form.",
+		withoutForm:
+			"MAKY.STORE cancellations and returns: 14 days, or 30 for orders placed while signed in. Return shipping, refunds and an optional printable form.",
+	},
 };
 
 /**
@@ -310,6 +340,8 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 		fr: Fr,
 		es: Es,
 		ro: Ro,
+		enUs: Us,
+		enCa: Ca,
 	} as const;
 	const Body = BODIES[locale];
 	const form = formServable ? (

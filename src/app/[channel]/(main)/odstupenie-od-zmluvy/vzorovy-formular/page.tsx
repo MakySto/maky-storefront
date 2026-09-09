@@ -114,6 +114,22 @@ const COPY = {
 		printLabel: "Imprimă formularul",
 		downloadLabel: "Descarcă formularul (.txt)",
 	},
+	enUs: {
+		title: "Optional cancellation form",
+		description:
+			"Optional purchase-cancellation form to print or download. You may also send another clear notice by email or mail.",
+		fileName: "cancellation-form-us.txt",
+		printLabel: "Print form",
+		downloadLabel: "Download form (.txt)",
+	},
+	enCa: {
+		title: "Optional cancellation form",
+		description:
+			"Optional purchase-cancellation form to print or download. You may also send another clear notice by email or mail.",
+		fileName: "cancellation-form-ca.txt",
+		printLabel: "Print form",
+		downloadLabel: "Download form (.txt)",
+	},
 } as const satisfies Record<LegalLocale, unknown>;
 
 /** The plain-text copy offered for download, so print and download cannot drift. */
@@ -554,6 +570,75 @@ const ROMANIAN_TEXT = [
 	"Nu ai nevoie de IBAN și nu trebuie să indici un motiv pentru retragere. Nu cerem date bancare pentru rambursarea pe cardul folosit inițial.",
 ].join("\n");
 
+/**
+ * The English printable form, from `formulare/vzor-odstupenia.en-{US,CA}.txt`.
+ *
+ * A function rather than two constants because the two delivered files differ on exactly
+ * one line out of forty-nine — which market routine change-of-mind pickup is not offered
+ * from. Transcribing the other forty-eight twice is how the two copies drift apart later,
+ * and a printable legal form is the last place that should happen.
+ *
+ * The line breaks are the delivered ones. This text is downloaded as a `.txt` and printed,
+ * so it is hard-wrapped in the file rather than reflowed by a viewport, and re-wrapping it
+ * here would silently change what a consumer puts in an envelope.
+ */
+function englishText(market: string): string {
+	return [
+		"OPTIONAL CANCELLATION FORM",
+		"",
+		"Use this form only if you wish to cancel a purchase. It is optional;",
+		"you may send another clear notice instead. It is not a refund receipt.",
+		"",
+		"To:",
+		companyInfo.legalName,
+		"Stará Vajnorská 11",
+		"831 04 Bratislava",
+		"Slovakia",
+		`Email: ${companyInfo.email}`,
+		"",
+		"I/We hereby cancel the contract for the following goods:",
+		"......................................................................",
+		"......................................................................",
+		"",
+		"Order number or other details identifying the purchase:",
+		"......................................................................",
+		"",
+		"Scope: whole order, or the selected items and quantities:",
+		"......................................................................",
+		"......................................................................",
+		"",
+		"Ordered on / received on:",
+		"......................................................................",
+		"",
+		"Name of consumer(s):",
+		"......................................................................",
+		"",
+		"Address of consumer(s):",
+		"......................................................................",
+		"......................................................................",
+		"",
+		"Email for confirmation (optional for a paper notice):",
+		"......................................................................",
+		"",
+		"Date:",
+		"......................................................................",
+		"",
+		"Signature of consumer(s), only when sent on paper:",
+		"......................................................................",
+		"",
+		"No reason or IBAN is required to cancel. We do not need bank-account",
+		"details to refund the original payment card. A purchase can be identified",
+		"by other suitable information if the order number is unavailable.",
+		"",
+		`Routine change-of-mind return pickup from ${market} is not offered.`,
+		"This does not limit a remedy for a defective product. Read the return",
+		"instructions separately; sending this form does not book transport.",
+	].join("\n");
+}
+
+const US_TEXT = englishText("the United States");
+const CA_TEXT = englishText("Canada");
+
 const TEXT: Record<LegalLocale, string> = {
 	sk: SLOVAK_TEXT,
 	cs: CZECH_TEXT,
@@ -565,6 +650,8 @@ const TEXT: Record<LegalLocale, string> = {
 	fr: FRENCH_TEXT,
 	es: SPANISH_TEXT,
 	ro: ROMANIAN_TEXT,
+	enUs: US_TEXT,
+	enCa: CA_TEXT,
 };
 
 export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {
@@ -889,6 +976,60 @@ function RomanianBody({ channel }: { channel: string }) {
 	);
 }
 
+/**
+ * The on-page English form, mirroring `englishText` for a reader who does not print.
+ *
+ * One component for both markets, parametrised on the same single line that differs in
+ * the printable text. The closing paragraph is the delivered wording and it is doing real
+ * work: it says the absence of routine pickup does not limit a remedy for a defective
+ * product, and that sending this form does not book transport — two things a reader could
+ * otherwise reasonably assume.
+ */
+function EnglishBody({ channel, market }: { channel: string; market: string }) {
+	return (
+		<>
+			<p className="print:hidden">
+				You can print or download this form. Using it is optional — any other clear notice will do. The
+				available routes are explained on{" "}
+				<a href={marketHref(channel, "/odstupenie-od-zmluvy")}>Cancellations and returns</a>.
+			</p>
+			<p>Use this form only if you wish to cancel a purchase. It is not a refund receipt.</p>
+			<p>
+				To: {companyInfo.legalName}, {companyInfo.returnAddress}, Slovakia, email: {companyInfo.email}
+			</p>
+			<p>I/We hereby cancel the contract for the following goods:</p>
+			<ul>
+				<li>Goods: ........................</li>
+				<li>Order number or other details identifying the purchase: ........................</li>
+				<li>Scope: whole order, or the selected items and quantities: ..................</li>
+				<li>Ordered on / received on: ........................</li>
+				<li>Name of consumer(s): ........................</li>
+				<li>Address of consumer(s): ........................</li>
+				<li>Email for confirmation (optional on paper): .......................</li>
+				<li>Date: ........................</li>
+				<li>Signature of consumer(s) — only when sent on paper: ........................</li>
+			</ul>
+			<p>
+				No reason or IBAN is required to cancel. We do not need bank-account details to refund the original
+				payment card. A purchase can be identified by other suitable information if the order number is
+				unavailable.
+			</p>
+			<p>
+				Routine change-of-mind return pickup from {market} is not offered. This does not limit a remedy for a
+				defective product. Read the return instructions separately; sending this form does not book transport.
+			</p>
+		</>
+	);
+}
+
+function UsBody({ channel }: { channel: string }) {
+	return <EnglishBody channel={channel} market="the United States" />;
+}
+
+function CaBody({ channel }: { channel: string }) {
+	return <EnglishBody channel={channel} market="Canada" />;
+}
+
 export default async function Page(props: { params: Promise<{ channel: string }> }) {
 	const { channel } = await props.params;
 	const locale = legalLocaleFor(channel);
@@ -906,6 +1047,8 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 		fr: FrenchBody,
 		es: SpanishBody,
 		ro: RomanianBody,
+		enUs: UsBody,
+		enCa: CaBody,
 	} as const satisfies Record<LegalLocale, unknown>;
 	const Body = BODIES[locale];
 

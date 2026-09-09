@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { CHANNEL_MAP } from "./channel-map";
+import { UNCOVERED_MARKET, mockUncoveredMarket, restoreChannelMap } from "./legal/uncovered-market.testkit";
 import { MARKET_ROOT_SEGMENTS } from "./routing.generated";
 import {
 	ROUTE_POLICY,
@@ -45,6 +46,8 @@ describe("policy covers the route tree", () => {
 	});
 });
 
+afterEach(() => restoreChannelMap());
+
 describe("market scoping", () => {
 	/** Static legal copy, approved in Slovak and Czech. */
 	const LEGAL_PAGES = [
@@ -61,24 +64,26 @@ describe("market scoping", () => {
 	const CMS_PAGES = ["o-nas", "poradna"];
 
 	/**
-	 * Markets with no approved copy of any kind.
+	 * A market with no approved copy of any kind — now synthetic, because there is no
+	 * longer a real one.
 	 *
-	 * The relay is now over: `de` → `pl` → `it`/`fr` → `es`/`ro` → `us`/`ca`, and `us` and
-	 * `ca` are the LAST two uncovered markets in `CHANNEL_MAP`. There is nowhere to move
-	 * this fixture next.
+	 * The relay ended here: `de` → `pl` → `it`/`fr` → `es`/`ro` → `us`/`ca`, and English
+	 * was the last uncovered pair in `CHANNEL_MAP`. Rather than empty the array — which
+	 * would leave these tests looping over nothing and passing vacuously — the fixture now
+	 * synthesises a market that is a real channel but has no entry in `APPROVED_COPY`.
+	 * See `legal/uncovered-market.testkit.ts` for why the other three options are worse.
 	 *
-	 * So whoever lands English copy cannot do what the last four threads did. Deleting the
-	 * list leaves five green tests asserting nothing over an empty loop; adding a market
-	 * that does have copy inverts what they check. The assertion has to be rethought — the
-	 * obvious shape is a synthetic channel wired into a test-only map, which tests the
-	 * mechanism ("a market absent from `APPROVED_COPY` 404s") instead of borrowing whichever
-	 * real market happens to be untranslated this month. That is a design decision for that
-	 * thread, and it must not be settled by quietly emptying this array.
+	 * The mock is what makes the assertion mean what it says. `route-policy.ts` never
+	 * consults `CHANNEL_MAP` — `marketHasRoute` just asks whether the string is in the
+	 * policy's market list — so any nonsense string would already return `false` here and
+	 * the test would pass without proving anything about a *market*. Mocking the channel
+	 * map makes `zz` a genuine market that simply has no copy, which is the case this is
+	 * supposed to be about.
 	 */
-	const NO_COPY = ["us", "ca"];
+	const NO_COPY = [UNCOVERED_MARKET];
 
-	/** Markets whose legal copy a human has approved. */
-	const WITH_COPY = ["sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro"];
+	/** Markets whose legal copy a human has approved — all twelve, as of English. */
+	const WITH_COPY = ["sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"];
 
 	it("serves the legal pages in every market whose copy is approved", () => {
 		for (const segment of LEGAL_PAGES) {
@@ -89,14 +94,35 @@ describe("market scoping", () => {
 		}
 	});
 
-	it("still 404s the legal pages in a market with no approved copy", () => {
+	it("still 404s the legal pages in a market with no approved copy", async () => {
 		// The original bug: /de/kontakt answered 200 with an indexable Slovak <head>
 		// over a 404-ed body. Selling into Germany on Slovak terms is a compliance
 		// problem before it is an SEO one, and adding Czech must not have reopened it.
+		//
+		// Re-imported under the mock, because `LEGAL_COPY_MARKETS` is read from
+		// `marketsWithLegalCopy()` once when `route-policy.ts` loads. The statically
+		// imported copy at the top of this file was built before the mock existed.
+		mockUncoveredMarket();
+		const policy = await import("./route-policy");
+		const { marketsWithLegalCopy } = await import("./legal/locale");
+		expect(marketsWithLegalCopy(), "fixture is only meaningful for an uncovered market").not.toContain(
+			UNCOVERED_MARKET,
+		);
 		for (const segment of LEGAL_PAGES) {
 			for (const market of NO_COPY) {
-				expect(marketHasRoute(market, segment), `${market}/${segment}`).toBe(false);
-				expect(isRouteMissingInMarket(market, segment), `${market}/${segment}`).toBe(true);
+				expect(policy.marketHasRoute(market, segment), `${market}/${segment}`).toBe(false);
+				expect(policy.isRouteMissingInMarket(market, segment), `${market}/${segment}`).toBe(true);
+			}
+		}
+	});
+
+	it("serves those same pages in every market that does have copy", () => {
+		// The positive half, stated against the twelve real markets rather than the nine
+		// this used to name. If the negative case above ever started passing because the
+		// policy 404s everything, this fails.
+		for (const segment of LEGAL_PAGES) {
+			for (const market of Object.keys(CHANNEL_MAP)) {
+				expect(marketHasRoute(market, segment), `${market}/${segment}`).toBe(true);
 			}
 		}
 	});
@@ -104,7 +130,7 @@ describe("market scoping", () => {
 	it("keeps the CMS pages on sk, because Payload has no translated document", () => {
 		for (const segment of CMS_PAGES) {
 			expect(marketHasRoute("sk", segment), `sk/${segment}`).toBe(true);
-			for (const market of [...WITH_COPY.filter((m) => m !== "sk"), ...NO_COPY]) {
+			for (const market of WITH_COPY.filter((m) => m !== "sk")) {
 				expect(marketHasRoute(market, segment), `${market}/${segment}`).toBe(false);
 				expect(isRouteMissingInMarket(market, segment), `${market}/${segment}`).toBe(true);
 			}

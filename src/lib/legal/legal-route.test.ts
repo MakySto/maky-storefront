@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { LEGAL_BODY_NAMES, LEGAL_LOCALES, legalLocaleFor, marketsWithLegalCopy } from "./locale";
+import { UNCOVERED_CHANNEL, mockUncoveredMarket, restoreChannelMap } from "./uncovered-market.testkit";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const source = (rel: string) => readFileSync(join(root, rel), "utf8");
@@ -20,12 +21,36 @@ const CONTENT = [
 	"cookies",
 ];
 
+afterEach(() => restoreChannelMap());
+
 describe("which markets have approved legal copy", () => {
 	it("maps only markets a human has signed off, not every channel with a locale", () => {
-		expect(marketsWithLegalCopy()).toEqual(["sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro"]);
-		// There are far more channels than there is approved copy. That gap is the point:
-		// a market must not inherit a warranty clause just because a locale string exists.
-		expect(Object.keys(CHANNEL_MAP).length).toBeGreaterThan(marketsWithLegalCopy().length);
+		expect(marketsWithLegalCopy()).toEqual([
+			"sk",
+			"cz",
+			"de",
+			"at",
+			"pl",
+			"hu",
+			"it",
+			"fr",
+			"es",
+			"ro",
+			"us",
+			"ca",
+		]);
+		// Every one of the twelve, positively. The list above is order-sensitive and would
+		// catch a market dropped from the middle; this catches the whole thing being
+		// replaced by something that merely has the right length.
+		for (const market of Object.keys(CHANNEL_MAP)) {
+			expect(marketsWithLegalCopy(), market).toContain(market);
+		}
+		// Every configured channel now has approved copy — English was the last pair. The
+		// gap this line used to assert (more channels than copy) has closed, and the
+		// assertion it protected moved to `uncovered-market.testkit.ts`: the check is now
+		// that a market ABSENT from the map still 404s, tested on a synthetic market
+		// rather than on whichever real one happened to be untranslated.
+		expect(marketsWithLegalCopy()).toHaveLength(Object.keys(CHANNEL_MAP).length);
 	});
 
 	it("resolves the Saleor slug, which is what the route params carry", () => {
@@ -52,20 +77,34 @@ describe("which markets have approved legal copy", () => {
 		expect(legalLocaleFor("pl-pln")).not.toBe(legalLocaleFor("hu-huf"));
 	});
 
-	it("returns null for a market with no approved copy, and for nonsense", () => {
-		// `ca-cad` stands in for "a market we have not written copy for". It used to be
-		// `pl`, then `it`, then `es`, each of which stopped testing anything the moment that
-		// language landed — the same way `de` stopped when German did.
-		//
-		// `us-usd` is on the next line and is the ONLY other uncovered market left, so this
-		// pair cannot be replaced again: whoever lands English has to rethink the assertion
-		// rather than move it (see `route-policy.test.ts`). Note the order — `ca-cad` first,
-		// because putting Canada on the `us-usd` line would silently make this a duplicate
-		// of it rather than a second case.
-		expect(legalLocaleFor("ca-cad")).toBeNull();
-		expect(legalLocaleFor("us-usd")).toBeNull();
+	it("returns null for a channel that is not a market at all", () => {
+		// One of the two failure modes: the channel is not in `REVERSE_MAP`, so there is no
+		// market to look up. `gb-gbp` is deliberately plausible — it was a real channel until
+		// the en-GB market was removed on 2026-07-20 — because a stale link or an old sitemap
+		// entry is how this is actually reached, not by someone typing `../etc/passwd`.
+		expect(legalLocaleFor("gb-gbp")).toBeNull();
 		expect(legalLocaleFor("")).toBeNull();
 		expect(legalLocaleFor("../etc/passwd")).toBeNull();
+	});
+
+	it("returns null for a real channel that has no approved copy", async () => {
+		// The other failure mode, and the one that used to be tested by borrowing whichever
+		// market was untranslated that month. `us-usd` and `ca-cad` were the last two, so
+		// this now uses a synthetic market instead — see `uncovered-market.testkit.ts` for
+		// why the alternatives (empty the list, point it at a covered market, add a fake to
+		// the real `CHANNEL_MAP`) are all worse.
+		//
+		// The distinction from the case above is not cosmetic: this channel RESOLVES to a
+		// market, gets past `REVERSE_MAP`, and is stopped by `APPROVED_COPY` alone. Deleting
+		// the second lookup would leave that branch untested.
+		mockUncoveredMarket();
+		const { legalLocaleFor: freshly, marketsWithLegalCopy: freshList } = await import("./locale");
+		expect(freshly(UNCOVERED_CHANNEL)).toBeNull();
+		// ...and it is genuinely a known channel, or the test would be re-running the case
+		// above under a longer name.
+		const { REVERSE_MAP } = await import("@/lib/channel-map");
+		expect(REVERSE_MAP[UNCOVERED_CHANNEL]).toBe("zz");
+		expect(freshList()).not.toContain("zz");
 	});
 });
 

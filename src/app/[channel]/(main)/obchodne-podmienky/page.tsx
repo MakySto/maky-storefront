@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk } from "@/ui/content/legal/obchodne-podmienky";
+import { Ca, Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk, Us } from "@/ui/content/legal/obchodne-podmienky";
 
 const route = legalRoute({
 	path: "/obchodne-podmienky",
@@ -64,6 +64,18 @@ const route = legalRoute({
 			description:
 				"Condițiile cumpărăturilor MAKY.STORE: comenzi, plată, livrare, retragere, retururi și garanție legală. Vânzător stabilit în Slovacia.",
 			Body: Ro,
+		},
+		enUs: {
+			title: "Terms of sale",
+			description:
+				"MAKY.STORE terms for the United States: ordering, payment, delivery, cancellations, returns, product remedies and your consumer rights.",
+			Body: Us,
+		},
+		enCa: {
+			title: "Terms of sale",
+			description:
+				"MAKY.STORE terms for Canada: ordering, payment, delivery, cancellations, returns, product remedies and your consumer rights.",
+			Body: Ca,
 		},
 	},
 });

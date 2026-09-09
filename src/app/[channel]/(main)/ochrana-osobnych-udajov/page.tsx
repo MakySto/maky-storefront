@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk } from "@/ui/content/legal/ochrana-osobnych-udajov";
+import { Ca, Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk, Us } from "@/ui/content/legal/ochrana-osobnych-udajov";
 
 const route = legalRoute({
 	path: "/ochrana-osobnych-udajov",
@@ -65,6 +65,20 @@ const route = legalRoute({
 			description:
 				"Cum prelucrează MAKY.STORE datele personale: cumpărături, plată, livrare, cont, reclamații, destinatari, păstrare și drepturile tale.",
 			Body: Ro,
+		},
+		enUs: {
+			title: "Privacy policy and personal information",
+			heading: "Privacy policy",
+			description:
+				"How MAKY.STORE uses personal information for orders, payments, delivery, accounts and support: purposes, recipients, retention and your privacy rights.",
+			Body: Us,
+		},
+		enCa: {
+			title: "Privacy policy and personal information",
+			heading: "Privacy policy",
+			description:
+				"How MAKY.STORE uses personal information for orders, payments, delivery, accounts and support: purposes, recipients, retention and your privacy rights.",
+			Body: Ca,
 		},
 	},
 });
