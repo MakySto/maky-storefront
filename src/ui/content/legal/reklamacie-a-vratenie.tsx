@@ -2,7 +2,7 @@ import Link from "next/link";
 import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_HU, SLOVAKIA_PL } from "./slovakia";
+import { SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 
@@ -856,6 +856,307 @@ export function Hu({ channel }: { channel: string }) {
 				Nem biztos benne, melyik eljárás vonatkozik az ügyére?{" "}
 				<Link href={marketHref(channel, "/kontakt")}>Írjon nekünk</Link>, és röviden mondja el, miben
 				segíthetünk.
+			</p>
+		</>
+	);
+}
+
+export function It({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Vuoi restituire un prodotto o hai riscontrato un difetto?{" "}
+				<strong>
+					Il recesso senza motivazione e il reclamo per un prodotto difettoso sono due procedure diverse
+				</strong>
+				, anche per quanto riguarda i costi del trasporto.
+			</p>
+
+			<h2>Voglio restituire un acquisto senza indicare il motivo</h2>
+			<p>
+				Come consumatore, puoi normalmente recedere da un acquisto online entro{" "}
+				<strong>14 giorni dalla consegna</strong>. Per gli ordini effettuati dopo aver eseguito l’accesso al
+				tuo account, estendiamo questo termine a <strong>30 giorni</strong>. Le condizioni e le eccezioni sono
+				nella pagina <Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Diritto di recesso</Link>.
+			</p>
+			<p>
+				Puoi comunicarci il recesso anche prima della consegna o limitarlo ad alcuni prodotti. Per esercitarlo
+				non servono un account, la nostra autorizzazione preventiva o una motivazione.
+			</p>
+			<p>
+				Comunica chiaramente la volontà di recedere dall’intero acquisto o da una sua parte a <Mail />, oppure
+				utilizza le modalità descritte nella pagina sul recesso.
+			</p>
+
+			<h3>Trasporto del reso</h3>
+			<p>
+				Puoi scegliere un tuo corriere oppure chiederci un preventivo per il ritiro. Un ritiro a pagamento
+				viene ordinato soltanto dopo la tua esplicita accettazione del prezzo.{" "}
+				<strong>Chiedere un preventivo non equivale a ordinare il ritiro.</strong>
+			</p>
+			<p>
+				Se non abbiamo offerto di ritirare il prodotto, spediscilo o consegnacelo entro{" "}
+				<strong>14 giorni dalla comunicazione del recesso</strong>. È sufficiente spedirlo entro il termine.
+				Se abbiamo offerto il ritiro, prepara il prodotto secondo gli accordi.
+			</p>
+			<p>
+				In caso di recesso senza motivazione, sostieni i costi diretti della restituzione se ne sei stato
+				correttamente informato prima dell’acquisto. Anche il costo del reso di un prodotto non restituibile
+				normalmente per posta deve essere comunicato in anticipo.{" "}
+				<strong>
+					Per un difetto di cui siamo responsabili, i costi necessari sono invece a nostro carico.
+				</strong>
+			</p>
+
+			<h3>Rimborso</h3>
+			<p>
+				Rimborsiamo gli importi interessati dal recesso entro{" "}
+				<strong>14 giorni dalla ricezione della comunicazione</strong>. Se recedi dall’intero ordine,
+				rimborsiamo anche la consegna iniziale, fino al costo della modalità standard meno costosa offerta per
+				quell’ordine.
+			</p>
+			<p>
+				Utilizziamo il metodo di pagamento originario, salvo un diverso accordo espresso che non comporti
+				costi per te. Se non abbiamo offerto il ritiro, possiamo attendere la ricezione del prodotto oppure
+				della prova di spedizione, a seconda di quale avvenga prima. Se abbiamo offerto il ritiro, non ci
+				avvaliamo di questa sospensione del rimborso.
+			</p>
+
+			<h2>Voglio segnalare un prodotto difettoso</h2>
+			<p>
+				Scrivi a <Mail />, indicando il prodotto, il difetto, quando si è manifestato e un riferimento che ci
+				permetta di identificare l’acquisto.
+			</p>
+			<p>
+				Una foto o un breve video possono aiutare, ma{" "}
+				<strong>non sono una condizione per ricevere il reclamo</strong>. Non richiediamo l’imballaggio
+				originale o esclusivamente l’originale della fattura: l’acquisto può essere provato anche in altro
+				modo adeguato. Puoi segnalare il difetto anche per iscritto o con le altre modalità consentite dalla
+				legge. Per un articolo voluminoso concorderemo come metterlo a disposizione; non rimandare la
+				segnalazione perché il trasporto non è ancora definito.
+			</p>
+
+			<h3>Responsabilità per difetti e garanzie</h3>
+			<p>
+				Secondo la disciplina slovacca richiamata nelle nostre condizioni, rispondiamo dei difetti presenti
+				alla consegna che si manifestano entro <strong>due anni</strong>. Nel relativo periodo si presume che
+				il difetto esistesse già alla consegna, salvo prova contraria o incompatibilità con la natura del
+				prodotto o del difetto.
+			</p>
+			<p>
+				Per i contratti conclusi dal <strong>31 luglio 2026</strong>, dopo la prima riparazione il periodo di
+				responsabilità previsto dal diritto slovacco si prolunga, una sola volta, di <strong>12 mesi</strong>.
+				Informiamo del diritto di scegliere tra riparazione e sostituzione e della proroga prima
+				dell’intervento. Per i contratti precedenti valgono le disposizioni applicabili alla loro conclusione.
+			</p>
+			<p>
+				Queste condizioni non riducono la <strong>garanzia legale di conformità</strong> e gli altri diritti
+				inderogabili applicabili al consumatore residente in Italia. Il periodo in cui il difetto deve
+				manifestarsi e il termine per far valere un diritto non sono la stessa cosa. Non facciamo dipendere
+				tali diritti da un controllo immediato del pacco o da un ulteriore termine di denuncia di due mesi
+				importato dalle condizioni slovacche.
+			</p>
+			<p>
+				Una garanzia commerciale del produttore offre eventuali diritti aggiuntivi; non sostituisce quelli
+				verso di noi.
+			</p>
+
+			<h3>Come gestiamo il reclamo</h3>
+			<p>
+				Forniamo senza ritardo una conferma scritta della segnalazione, indicando il termine per porre rimedio
+				al difetto. Puoi scegliere tra <strong>riparazione e sostituzione</strong>, salvo che la soluzione
+				scelta sia impossibile o sproporzionata rispetto all’altra; in tal caso spieghiamo il motivo.
+			</p>
+			<p>
+				Il rimedio è gratuito, avviene entro un tempo ragionevole e senza notevoli inconvenienti. La
+				disciplina slovacca di base prevede normalmente un massimo di{" "}
+				<strong>30 giorni dalla segnalazione</strong>, salvo un motivo oggettivo dimostrabile e indipendente
+				dalla nostra volontà. Questa eccezione non consente di rinviare un rimedio che le circostanze e i
+				diritti inderogabili applicabili richiedono prima.
+			</p>
+			<p>
+				Nei casi previsti dalla legge puoi chiedere una{" "}
+				<strong>riduzione del prezzo o la risoluzione per difetto di conformità</strong>, ad esempio se il
+				rimedio non viene eseguito correttamente, il difetto persiste oppure è sufficientemente grave. Un
+				difetto lieve non giustifica da solo la risoluzione. Le{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Condizioni generali di vendita</Link>{" "}
+				descrivono i dettagli.
+			</p>
+			<p>
+				Se rifiutiamo la responsabilità, ne motiviamo per iscritto le ragioni. Puoi ripresentare il reclamo se
+				una successiva valutazione tecnica dimostra la nostra responsabilità; restano ammessi gli altri mezzi
+				di prova e i diritti al rimborso delle spese necessarie secondo la legge.
+			</p>
+
+			<h3>Chi paga il trasporto</h3>
+			<p>
+				Quando rispondiamo del difetto, sosteniamo le spese necessarie di ritiro e riconsegna. Se occorre
+				rimuovere un prodotto correttamente installato e reinstallarlo, provvediamo a tali operazioni o al
+				rimborso dei relativi costi secondo la legge.
+			</p>
+
+			<h2>Indirizzo per la restituzione</h2>
+			<ReturnAddress country={SLOVAKIA_IT} />
+			<p>
+				Aggiungi, se possibile, il numero dell’ordine o del reclamo: ci aiuta a identificare il pacco, ma la
+				sua assenza non ti priva dei tuoi diritti.
+			</p>
+			<p>
+				Non sai quale procedura scegliere? <Link href={marketHref(channel, "/kontakt")}>Contattaci</Link> e
+				descrivici il problema.
+			</p>
+		</>
+	);
+}
+
+export function Fr({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Vous souhaitez retourner un produit ou avez constaté un défaut ?{" "}
+				<strong>
+					La rétractation sans motif et la réclamation pour un produit défectueux sont deux démarches
+					différentes.
+				</strong>{" "}
+				Les règles relatives aux frais de transport diffèrent également.
+			</p>
+
+			<h2>Je souhaite retourner un achat sans donner de motif</h2>
+			<p>
+				En tant que consommateur, vous pouvez en principe vous rétracter d’un achat en ligne dans les{" "}
+				<strong>14 jours suivant la réception</strong>. Pour une commande passée en étant connecté à votre
+				compte client, nous portons ce délai à <strong>30 jours</strong>. Les conditions et exceptions
+				figurent sur la page{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Droit de rétractation</Link>.
+			</p>
+			<p>
+				Vous pouvez vous rétracter avant la livraison ou seulement pour certains produits. Aucun compte
+				client, accord préalable de notre part ou motif n’est nécessaire pour exercer ce droit.
+			</p>
+			<p>
+				Indiquez clairement votre volonté de vous rétracter de tout ou partie de l’achat à <Mail />, ou
+				utilisez les possibilités présentées sur la page consacrée à la rétractation.
+			</p>
+
+			<h3>Transport du retour</h3>
+			<p>
+				Vous pouvez choisir votre transporteur ou nous demander un devis d’enlèvement. Nous ne commandons un
+				enlèvement payant qu’après votre acceptation expresse du prix.{" "}
+				<strong>Une demande de devis n’est pas une commande d’enlèvement.</strong>
+			</p>
+			<p>
+				Si nous n’avons pas proposé de reprendre le produit, renvoyez-le ou remettez-le-nous dans les{" "}
+				<strong>14 jours suivant votre déclaration de rétractation</strong>. Une expédition dans ce délai
+				suffit. Si nous avons proposé l’enlèvement, préparez le produit selon les modalités convenues.
+			</p>
+			<p>
+				En cas de rétractation sans motif, les frais directs de retour sont à votre charge si vous en avez été
+				correctement informé avant l’achat. Pour un produit qui ne peut pas être retourné normalement par la
+				poste, le coût du retour doit également être indiqué à l’avance.{" "}
+				<strong>
+					Les frais nécessaires liés à un défaut dont nous répondons sont, en revanche, à notre charge.
+				</strong>
+			</p>
+
+			<h3>Remboursement</h3>
+			<p>
+				Nous remboursons les sommes concernées dans les{" "}
+				<strong>14 jours suivant la réception de votre déclaration</strong>. En cas de rétractation totale,
+				cela comprend les frais de livraison initiaux, dans la limite du mode standard le moins cher proposé
+				pour cette commande.
+			</p>
+			<p>
+				Le remboursement utilise le moyen de paiement initial, sauf accord exprès pour une autre solution sans
+				frais pour vous. Si nous n’avons pas proposé l’enlèvement, nous pouvons différer le remboursement
+				jusqu’à la réception du produit ou de la preuve de son expédition, selon le premier de ces événements.
+				Nous n’utilisons pas cette faculté lorsque nous avons proposé de reprendre le produit.
+			</p>
+
+			<h2>Je souhaite signaler un produit défectueux</h2>
+			<p>
+				Écrivez à <Mail />. Précisez le produit, le défaut, la date à laquelle il est apparu et une référence
+				permettant d’identifier l’achat.
+			</p>
+			<p>
+				Une photo ou une courte vidéo peut aider, mais{" "}
+				<strong>n’est pas une condition de réception de la réclamation</strong>. Nous n’exigeons pas
+				l’emballage d’origine ni exclusivement l’original de la facture : tout moyen adapté de prouver l’achat
+				peut être utilisé. Vous pouvez aussi signaler le défaut par écrit ou par une autre voie admise par la
+				loi. Pour un produit volumineux, nous conviendrons des modalités de mise à disposition ; n’attendez
+				pas que le transport soit organisé pour signaler le défaut.
+			</p>
+
+			<h3>Vos garanties</h3>
+			<p>
+				Le droit slovaque choisi dans nos conditions prévoit notre responsabilité pour les défauts présents à
+				la livraison qui apparaissent dans les <strong>deux ans</strong>. Pendant la période applicable, leur
+				présence à la livraison est présumée, sauf preuve contraire ou incompatibilité avec la nature du
+				produit ou du défaut.
+			</p>
+			<p>
+				Pour les contrats conclus à compter du <strong>31 juillet 2026</strong>, la première réparation
+				prolonge, une seule fois, cette période de responsabilité slovaque de <strong>12 mois</strong>. Nous
+				vous informons du choix entre réparation et remplacement ainsi que de cette prolongation avant
+				l’intervention. Les contrats antérieurs restent soumis aux dispositions applicables lors de leur
+				conclusion.
+			</p>
+			<p>
+				Cela ne limite ni la <strong>garantie légale de conformité</strong> ni la{" "}
+				<strong>garantie des vices cachés</strong> applicables en France. Les règles françaises de
+				prolongation, de suspension et de renouvellement des délais restent préservées. La garantie
+				commerciale éventuelle du fabricant s’y ajoute ; elle ne remplace pas les droits que vous pouvez
+				exercer à notre égard.
+			</p>
+			<p>
+				Signalez le défaut dès que possible. Nous ne subordonnons pas vos droits impératifs à une inspection
+				immédiate du colis ni à un délai supplémentaire de deux mois repris des conditions slovaques.
+			</p>
+
+			<h3>Traitement de la réclamation</h3>
+			<p>
+				Nous vous remettons sans retard une confirmation écrite du signalement et indiquons le délai de
+				traitement. Vous pouvez en principe choisir la <strong>réparation ou le remplacement</strong>, sauf
+				impossibilité ou coût disproportionné par rapport à l’autre solution. Nous expliquons toute décision
+				de ce type.
+			</p>
+			<p>
+				Lorsque la garantie légale française de conformité s’applique, la mise en conformité doit intervenir
+				dans un délai raisonnable <strong>ne dépassant pas 30 jours après votre demande</strong>, sans frais
+				et sans inconvénient majeur. Nous ne lui opposons pas l’exception générale de délai prévue par le
+				droit slovaque.
+			</p>
+			<p>
+				Une <strong>réduction du prix ou la résolution de la vente pour défaut</strong> peut être demandée
+				dans les cas prévus par la loi, notamment en cas de refus de mise en conformité, de dépassement du
+				délai, d’inconvénient majeur ou de défaut persistant. Un défaut suffisamment grave peut justifier
+				immédiatement cette solution. Un défaut mineur ne permet pas, à lui seul, de résoudre la vente.
+			</p>
+			<p>
+				Pour les détails, notamment les délais de garantie et les vices cachés, consultez les{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Conditions générales de vente</Link>.
+			</p>
+			<p>
+				Si nous refusons notre responsabilité, nous motivons cette décision par écrit. Un avis technique
+				ultérieur peut permettre de présenter à nouveau la réclamation. Cela n’exclut ni les autres moyens de
+				preuve admis ni le remboursement des frais nécessaires dans les conditions légales.
+			</p>
+
+			<h3>Qui paie le transport</h3>
+			<p>
+				Pour un défaut dont nous répondons, les frais nécessaires de reprise et de réexpédition sont à notre
+				charge. Si la solution exige le démontage puis la réinstallation d’un produit correctement installé,
+				nous les prenons en charge conformément à la loi.
+			</p>
+
+			<h2>Adresse de retour</h2>
+			<ReturnAddress country={SLOVAKIA_FR} />
+			<p>
+				Joindre le numéro de commande ou de dossier facilite l’identification du colis, mais son absence ne
+				vous fait pas perdre vos droits.
+			</p>
+			<p>
+				Vous hésitez sur la démarche ? <Link href={marketHref(channel, "/kontakt")}>Contactez-nous</Link> en
+				décrivant votre situation.
 			</p>
 		</>
 	);

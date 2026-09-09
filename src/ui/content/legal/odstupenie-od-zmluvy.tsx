@@ -3,7 +3,7 @@ import { type ReactNode } from "react";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_HU, SLOVAKIA_PL } from "./slovakia";
+import { SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
@@ -781,6 +781,322 @@ export function Hu({ channel, form, modelFormHref }: WithdrawalBodyProps) {
 				Kivételt csak a törvényi feltételek teljesülésekor alkalmazunk. További részletek az{" "}
 				<Link href={marketHref(channel, "/obchodne-podmienky")}>Általános szerződési feltételekben</Link>{" "}
 				találhatók.
+			</p>
+		</>
+	);
+}
+
+export function It({ channel, form, modelFormHref }: WithdrawalBodyProps) {
+	return (
+		<>
+			<p>
+				Hai cambiato idea o il prodotto non è più adatto ai tuoi programmi? Come consumatore, puoi normalmente
+				recedere dall’acquisto online{" "}
+				<strong>entro 14 giorni dalla consegna, senza indicarne il motivo</strong>.
+			</p>
+			<p>
+				Per gli ordini effettuati dopo l’accesso al tuo account, estendiamo il termine a{" "}
+				<strong>30 giorni</strong>. Si applicano la stessa procedura di restituzione e le condizioni descritte
+				qui, senza ridurre i tuoi diritti di legge. Puoi recedere anche prima della consegna o limitatamente
+				ad alcuni prodotti. Per comunicarlo non serve accedere a un account né ottenere la nostra
+				autorizzazione.
+			</p>
+
+			{form ?? (
+				<>
+					<h2>Recesso online</h2>
+					<p>
+						In questa versione di anteprima del negozio, la funzione di recesso online non è ancora attiva.
+						Puoi inviare la dichiarazione tramite e-mail o posta ai recapiti qui sotto, o con un’altra
+						modalità ammessa dalla legge. Se un termine è in corso, non aspettare l’attivazione della
+						funzione. Aprire questa pagina non equivale a inviare una dichiarazione.
+					</p>
+				</>
+			)}
+
+			<h2>Recesso tramite e-mail o posta</h2>
+			<p>
+				Invia una dichiarazione inequivocabile a <Mail /> oppure a{" "}
+				<strong>
+					{companyInfo.legalName}, {companyInfo.returnAddress}, {SLOVAKIA_IT}
+				</strong>
+				. Per assistenza puoi chiamare il <Phone />.
+			</p>
+			<p>
+				Puoi usare il <Link href={modelFormHref}>modulo di recesso da stampare</Link>, ma non è obbligatorio.
+				La dichiarazione deve permettere di capire chi recede, a quale acquisto si riferisce e quali prodotti
+				riguarda. Il numero d’ordine aiuta; in sua assenza puoi fornire altri dati utili a identificare il
+				contratto.
+			</p>
+
+			<h2>Da quando decorre il termine</h2>
+			<p>
+				Il termine inizia dalla consegna del prodotto a te o a un terzo da te indicato, diverso dal corriere.
+				Il giorno della consegna non si conta. Per più prodotti acquistati con un solo contratto e consegnati
+				separatamente, conta l’ultimo prodotto; per un prodotto consegnato in più lotti o pezzi, l’ultimo
+				lotto o pezzo. Per forniture regolari durante un periodo definito, conta la prima consegna.
+			</p>
+			<p>
+				<strong>
+					È sufficiente inviare la dichiarazione entro l’ultimo giorno: il prodotto non deve già essere
+					tornato da noi.
+				</strong>{" "}
+				Restano ferme le regole legali per il calcolo dei termini. Se non forniamo l’informativa richiesta, il
+				termine legale si prolunga secondo la legge, normalmente fino a 12 mesi dopo il termine iniziale. Se
+				rimediamo all’omissione durante tale periodo, i 14 giorni decorrono dalla ricezione dell’informativa.
+			</p>
+
+			<h2>Come restituire il prodotto</h2>
+			<p>
+				Puoi scegliere un tuo corriere oppure chiederci un preventivo per il ritiro. Comunichiamo in anticipo
+				il prezzo e le modalità proposte. Ordiniamo un servizio a pagamento solo dopo la tua esplicita
+				accettazione.
+			</p>
+			<p>
+				<strong>Per restituire con un tuo corriere non serve la nostra autorizzazione.</strong> Se non abbiamo
+				offerto il ritiro, restituisci il prodotto senza ritardo e comunque entro{" "}
+				<strong>14 giorni dalla comunicazione del recesso</strong> a:
+			</p>
+			<ReturnAddress country={SLOVAKIA_IT} />
+			<p>
+				Basta spedire entro il termine. Se abbiamo offerto il ritiro, prepara il prodotto secondo gli accordi.
+				La sola richiesta di un preventivo non è né un ordine di trasporto né un’offerta di ritiro da parte
+				nostra: non attendere un preventivo rischiando di perdere il termine se il ritiro non è stato offerto.
+			</p>
+			<p>
+				Proteggi il prodotto per il trasporto e restituisci gli accessori che ne fanno parte. L’imballaggio
+				originale può essere utile, ma <strong>non è una condizione generale per il recesso</strong>. Il
+				numero d’ordine o di pratica facilita l’identificazione, senza essere l’unico modo consentito di
+				provare l’acquisto.
+			</p>
+
+			<h2>Chi sostiene le spese</h2>
+			<p>
+				Nel recesso senza motivazione, i costi diretti della restituzione sono a tuo carico se te ne abbiamo
+				correttamente informato prima della conclusione del contratto. Per un prodotto che, per natura o
+				dimensioni, non può essere normalmente restituito per posta, dobbiamo indicare in anticipo anche il
+				costo di tale restituzione.
+			</p>
+			<p>
+				Se non abbiamo fornito l’informazione dovuta, oppure abbiamo accettato di sostenere il costo, non te
+				lo addebitiamo. Un preventivo richiesto dopo l’acquisto non sostituisce l’informazione che doveva
+				essere fornita prima.
+			</p>
+			<p>
+				Per un reso dovuto a un difetto di cui siamo responsabili si applicano regole diverse: consulta{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reclami e resi</Link>.
+			</p>
+
+			<h2>Quando rimborsiamo</h2>
+			<p>
+				Rimborsiamo le somme interessate dal recesso senza ritardo, entro{" "}
+				<strong>14 giorni dalla ricezione della dichiarazione</strong>. Per il recesso totale rimborsiamo
+				anche la consegna iniziale, fino al prezzo della modalità standard meno costosa offerta per
+				quell’ordine. Non siamo tenuti a rimborsare il supplemento per una consegna più costosa scelta
+				espressamente.
+			</p>
+			<p>
+				In caso di recesso parziale rimborsiamo gli importi corrispondenti. Non aggiungiamo retroattivamente
+				costi di spedizione o altre commissioni per questo motivo.
+			</p>
+			<p>
+				Utilizziamo lo stesso metodo di pagamento dell’acquisto. Una soluzione diversa richiede il tuo accordo
+				espresso e non deve comportare costi. Non sei obbligato ad accettare un buono. Per rimborsare sulla
+				carta utilizzata originariamente <strong>non serve un IBAN</strong>.
+			</p>
+			<p>
+				Se non abbiamo offerto il ritiro, possiamo sospendere il rimborso fino a quando riceviamo il prodotto
+				oppure la prova della spedizione, a seconda di quale evento avvenga prima. Se abbiamo offerto di
+				ritirare il prodotto, non utilizziamo questa facoltà.
+			</p>
+
+			<h2>In quali condizioni può essere restituito</h2>
+			<p>
+				Puoi esaminare il prodotto e provarlo nella misura necessaria a verificarne natura, caratteristiche e
+				funzionamento, come faresti in negozio. Puoi essere responsabile di una diminuzione di valore dovuta a
+				un uso ulteriore, a condizione che tu sia stato correttamente informato del diritto di recesso.
+			</p>
+			<p>
+				Non applichiamo una commissione forfettaria per l’apertura della confezione, la gestione o
+				l’accettazione del reso. Un’eventuale diminuzione di valore viene valutata in concreto e motivata. Non
+				la compensiamo unilateralmente con le somme che ti sono dovute in seguito al recesso.
+			</p>
+
+			<h2>Quando si applica un’eccezione</h2>
+			<p>
+				Il diritto può essere escluso, in particolare, per beni realmente realizzati su specifiche individuali
+				o chiaramente personalizzati. Un’altra eccezione può riguardare beni sigillati che, una volta aperti,
+				non possono essere restituiti per motivi igienici o di tutela della salute. Applichiamo un’eccezione
+				soltanto quando ne ricorrono i presupposti legali.
+			</p>
+			<p>
+				<strong>
+					Un normale prodotto «Su ordinazione» o un kit standard scelto per un’auto non diventano, per questo
+					solo motivo, prodotti personalizzati.
+				</strong>{" "}
+				Per i dettagli consulta le{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Condizioni generali di vendita</Link>.
+			</p>
+		</>
+	);
+}
+
+export function Fr({ channel, form, modelFormHref }: WithdrawalBodyProps) {
+	return (
+		<>
+			<p>
+				Vous avez changé d’avis ou le produit ne correspond plus à vos projets ? En tant que consommateur,
+				vous pouvez en principe vous rétracter d’un achat en ligne{" "}
+				<strong>dans les 14 jours suivant sa réception, sans donner de motif</strong>.
+			</p>
+			<p>
+				Pour une commande passée en étant connecté à votre compte client, nous portons ce délai à{" "}
+				<strong>30 jours</strong>. La même procédure de retour et les conditions ci-dessous s’appliquent, sans
+				restreindre vos droits légaux. Vous pouvez vous rétracter avant la livraison ou pour certains produits
+				seulement. Aucun compte ni accord préalable de notre part n’est nécessaire pour le déclarer.
+			</p>
+
+			{form ?? (
+				<>
+					<h2>Rétractation en ligne</h2>
+					<p>
+						Dans cette version de prévisualisation de la boutique, la fonction de rétractation en ligne n’est
+						pas encore active. Vous pouvez transmettre votre déclaration par e-mail, par courrier aux
+						coordonnées ci-dessous ou par une autre voie légalement admise. Si un délai est en cours,
+						n’attendez pas l’activation de la fonction. La consultation de cette page ne constitue pas un
+						envoi de déclaration.
+					</p>
+				</>
+			)}
+
+			<h2>Rétractation par e-mail ou courrier</h2>
+			<p>
+				Adressez une déclaration claire de votre décision à <Mail /> ou à{" "}
+				<strong>
+					{companyInfo.legalName}, {companyInfo.returnAddress}, {SLOVAKIA_FR}
+				</strong>
+				. Pour obtenir de l’aide, vous pouvez appeler le <Phone />.
+			</p>
+			<p>
+				Vous pouvez utiliser le <Link href={modelFormHref}>formulaire de rétractation à imprimer</Link>, mais
+				ce n’est pas obligatoire. La déclaration doit permettre d’identifier la personne qui se rétracte,
+				l’achat et les produits concernés. Le numéro de commande est utile ; à défaut, d’autres informations
+				permettant d’identifier le contrat conviennent.
+			</p>
+
+			<h2>Point de départ du délai</h2>
+			<p>
+				Le délai court à partir de la réception du produit par vous-même ou par un tiers que vous avez
+				désigné, autre que le transporteur. Le jour de réception n’est pas compté. Pour plusieurs produits
+				d’un même contrat livrés séparément, on retient la réception du dernier produit ; pour un produit
+				livré en lots ou en pièces, celle du dernier lot ou de la dernière pièce. Pour des livraisons
+				régulières pendant une période définie, on retient la première livraison.
+			</p>
+			<p>
+				<strong>
+					Il suffit d’envoyer votre déclaration au plus tard le dernier jour : le produit ne doit pas déjà
+					nous être parvenu.
+				</strong>{" "}
+				Les règles légales de calcul des délais restent applicables. Si nous n’avons pas fourni les
+				informations obligatoires, le délai légal est prolongé conformément à la loi, normalement jusqu’à 12
+				mois après le délai initial. Si nous fournissons ces informations pendant cette période, le délai de
+				14 jours court à compter de leur réception.
+			</p>
+
+			<h2>Comment retourner le produit</h2>
+			<p>
+				Vous pouvez choisir votre transporteur ou nous demander un devis d’enlèvement. Nous indiquons le prix
+				et les modalités proposées à l’avance. Nous ne commandons un service payant qu’après votre acceptation
+				expresse.
+			</p>
+			<p>
+				<strong>
+					Un retour par votre propre transporteur ne nécessite pas notre autorisation préalable.
+				</strong>{" "}
+				Si nous n’avons pas proposé de reprendre le produit, renvoyez-le sans retard et au plus tard{" "}
+				<strong>14 jours après votre déclaration de rétractation</strong>, à :
+			</p>
+			<ReturnAddress country={SLOVAKIA_FR} />
+			<p>
+				Une expédition dans le délai suffit. Si nous avons proposé l’enlèvement, préparez le produit selon les
+				modalités convenues. Une simple demande de devis n’est ni une commande de transport ni une offre de
+				reprise de notre part : ne laissez pas passer le délai en attendant un devis si nous n’avons pas
+				proposé l’enlèvement.
+			</p>
+			<p>
+				Protégez le produit pour le transport et joignez les accessoires faisant partie de l’article retourné.
+				L’emballage d’origine peut être pratique, mais{" "}
+				<strong>n’est pas une condition générale d’exercice du droit de rétractation</strong>. Le numéro de
+				commande ou de dossier facilite l’identification, sans être le seul moyen admis de prouver l’achat.
+			</p>
+
+			<h2>Qui paie les frais de retour</h2>
+			<p>
+				Les frais directs de retour sont à votre charge en cas de rétractation sans motif si nous vous en
+				avons correctement informé avant la conclusion du contrat. Pour un produit qui, par sa nature ou ses
+				dimensions, ne peut pas être renvoyé normalement par la poste, son coût de retour doit également être
+				indiqué avant l’achat.
+			</p>
+			<p>
+				Si nous n’avons pas fourni l’information obligatoire ou avons accepté de prendre le coût en charge,
+				nous ne vous le facturons pas. Un devis demandé après l’achat ne remplace pas l’information qui devait
+				être communiquée avant la commande.
+			</p>
+			<p>
+				Les règles sont différentes pour un produit présentant un défaut dont nous répondons. Consultez{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Réclamations et retours</Link>.
+			</p>
+
+			<h2>Quand nous remboursons</h2>
+			<p>
+				Nous remboursons les sommes concernées sans retard et au plus tard{" "}
+				<strong>14 jours après réception de votre déclaration</strong>. En cas de rétractation totale, les
+				frais de livraison initiaux sont aussi remboursés, dans la limite du mode standard le moins cher
+				proposé pour cette commande. Le supplément correspondant à une livraison plus coûteuse expressément
+				choisie n’a pas à être remboursé.
+			</p>
+			<p>
+				En cas de rétractation partielle, nous remboursons les sommes correspondantes. Nous n’ajoutons pas
+				rétroactivement de frais de livraison ou d’autres frais pour ce motif.
+			</p>
+			<p>
+				Le remboursement utilise le moyen de paiement initial. Un autre moyen suppose votre accord exprès et
+				ne doit occasionner aucun frais. Vous n’êtes pas tenu d’accepter un avoir. Pour rembourser sur la
+				carte utilisée lors de l’achat, <strong>nous n’avons pas besoin d’IBAN</strong>.
+			</p>
+			<p>
+				Si nous n’avons pas proposé l’enlèvement, nous pouvons différer le remboursement jusqu’à réception du
+				produit ou de la preuve de son expédition, selon le premier de ces événements. Si nous avons proposé
+				de reprendre le produit, nous ne nous prévalons pas de cette faculté.
+			</p>
+
+			<h2>Dans quel état retourner le produit</h2>
+			<p>
+				Vous pouvez examiner et essayer le produit dans la mesure nécessaire pour en vérifier la nature, les
+				caractéristiques et le fonctionnement, comme en magasin. Vous pouvez répondre d’une dépréciation
+				résultant de manipulations allant au-delà, à condition d’avoir reçu l’information obligatoire sur la
+				rétractation.
+			</p>
+			<p>
+				Nous ne facturons pas de forfait pour l’ouverture de l’emballage, le traitement ou l’acceptation d’un
+				retour. Toute dépréciation éventuelle est évaluée concrètement et motivée. Nous ne compensons pas
+				unilatéralement cette créance avec les sommes qui vous sont dues au titre de la rétractation.
+			</p>
+
+			<h2>Dans quels cas existe-t-il une exception</h2>
+			<p>
+				Une exception peut notamment concerner un produit réellement fabriqué selon des spécifications
+				individuelles ou nettement personnalisé. Elle peut aussi concerner un bien scellé qui ne peut être
+				renvoyé pour des raisons d’hygiène ou de protection de la santé après ouverture. Nous n’appliquons une
+				exception que lorsque ses conditions légales sont réunies.
+			</p>
+			<p>
+				<strong>
+					Un produit ordinaire «Sur commande» ou un kit standard sélectionné pour un véhicule ne devient pas,
+					pour cette seule raison, un produit personnalisé.
+				</strong>{" "}
+				Les détails figurent dans les{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Conditions générales de vente</Link>.
 			</p>
 		</>
 	);

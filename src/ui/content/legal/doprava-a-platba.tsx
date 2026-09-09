@@ -380,3 +380,152 @@ export function Hu({ channel }: { channel: string }) {
 		</>
 	);
 }
+
+export function It({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Spediamo gli ordini dalla Slovacchia con <strong>FedEx e Slovenská pošta (Poste slovacche)</strong>.
+				Le modalità disponibili per il tuo indirizzo in Italia e il relativo costo sono indicati durante
+				l’ordine, prima della conferma che comporta l’obbligo di pagamento.
+			</p>
+
+			<h2>Come consegniamo gli ordini</h2>
+			<p>
+				Le possibilità di consegna dipendono dall’indirizzo, dalle dimensioni e dal peso del pacco. Non tutti
+				i corrieri o servizi sono disponibili per ogni prodotto. Per gli articoli voluminosi, come un box da
+				tetto, le opzioni possono quindi essere diverse da quelle di un piccolo pacco.
+			</p>
+			<p>
+				Se non compare una modalità di consegna per il tuo indirizzo e il contenuto del carrello,{" "}
+				<Link href={marketHref(channel, "/kontakt")}>contattaci</Link>. Verificheremo se possiamo organizzare
+				un trasporto adatto.
+			</p>
+
+			<h2>Quanto costa la spedizione</h2>
+			<p>
+				Il costo dipende dai prodotti e dalla destinazione.{" "}
+				<strong>
+					Il totale dei prodotti e della spedizione è visibile prima della conferma dell’ordine.
+				</strong>{" "}
+				Non aggiungiamo servizi a pagamento senza il tuo consenso.
+			</p>
+
+			<h2>Quando arriva l’ordine</h2>
+			<p>
+				I tempi dipendono dalla disponibilità dei prodotti e dalla modalità di consegna scelta. Gli articoli
+				indicati come <strong>«Su ordinazione»</strong> vengono procurati dal fornitore: questa dicitura non
+				significa che siano già presenti nel nostro magazzino.
+			</p>
+			<p>
+				Comunichiamo le condizioni di consegna prima della conclusione del contratto. Se in seguito si
+				presenta un impedimento, ti contattiamo per concordare come procedere. Restano salvi i tuoi diritti in
+				caso di mancato rispetto del termine concordato.
+			</p>
+			<p>
+				Ti serve l’attrezzatura per una data precisa? Scrivici prima di acquistare: verificheremo le
+				possibilità di consegna per aiutarti a organizzarti.
+			</p>
+
+			<h2>Come pagare</h2>
+			<p>
+				Gli ordini con consegna in Italia si pagano <strong>in anticipo tramite Stripe</strong>. I metodi
+				disponibili sono mostrati durante l’ordine.{" "}
+				<strong>Non offriamo il pagamento in contrassegno.</strong> Spediamo dopo aver ricevuto il pagamento,
+				nel rispetto della disponibilità indicata per i prodotti.
+			</p>
+			<p>
+				I prezzi nella versione italiana del negozio sono espressi in <strong>euro (EUR)</strong>.
+			</p>
+			<p>
+				Non conserviamo il numero completo della carta né il codice di sicurezza e non possiamo accedervi.
+				Questi dati vengono trattati dal prestatore del servizio di pagamento.
+			</p>
+
+			<h2>Alla consegna</h2>
+			<p>
+				È utile controllare l’imballaggio e fotografare eventuali danni visibili. Se anche il prodotto è
+				danneggiato o manca qualcosa, scrivi a <Mail />.
+			</p>
+			<p>
+				Le fotografie e il verbale del corriere possono aiutare a chiarire l’accaduto. La loro assenza, da
+				sola, non comporta la perdita dei diritti relativi a un prodotto difettoso.
+			</p>
+		</>
+	);
+}
+
+export function Fr({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Nous expédions les commandes depuis la Slovaquie avec{" "}
+				<strong>FedEx et Slovenská pošta (la Poste slovaque)</strong>. Les modes de livraison disponibles pour
+				votre adresse en France et leurs tarifs sont indiqués pendant la commande, avant sa validation avec
+				obligation de paiement.
+			</p>
+
+			<h2>Comment nous livrons</h2>
+			<p>
+				Les possibilités de livraison dépendent de l’adresse, des dimensions et du poids du colis. Chaque
+				transporteur ou service ne convient pas à tous les produits. Pour un article volumineux, comme un
+				coffre de toit, les options peuvent donc différer de celles proposées pour un petit colis.
+			</p>
+			<p>
+				Si aucun mode de livraison n’apparaît pour votre adresse et le contenu de votre panier,{" "}
+				<Link href={marketHref(channel, "/kontakt")}>contactez-nous</Link>. Nous vérifierons s’il est possible
+				d’organiser un transport adapté.
+			</p>
+
+			<h2>Combien coûte la livraison</h2>
+			<p>
+				Le tarif dépend des produits commandés et de leur destination.{" "}
+				<strong>
+					Le prix total des produits et de la livraison est indiqué avant la validation de la commande.
+				</strong>{" "}
+				Nous n’ajoutons aucun service payant sans votre accord.
+			</p>
+
+			<h2>Quand arrive la commande</h2>
+			<p>
+				Le délai dépend de la disponibilité des produits et du mode de livraison choisi. Les articles portant
+				la mention <strong>«Sur commande»</strong> sont approvisionnés auprès du fournisseur. Cette mention ne
+				signifie pas qu’ils sont déjà dans notre stock.
+			</p>
+			<p>
+				Nous indiquons les conditions de livraison avant la conclusion du contrat. Si un obstacle survient
+				ensuite, nous vous contactons pour convenir de la suite. Vos droits en cas de non-respect du délai
+				convenu restent inchangés.
+			</p>
+			<p>
+				Vous avez besoin de votre équipement pour une date précise ? Écrivez-nous avant d’acheter. Nous
+				vérifierons les possibilités de livraison pour vous aider à préparer votre départ.
+			</p>
+
+			<h2>Comment payer</h2>
+			<p>
+				Les commandes à destination de la France sont réglées{" "}
+				<strong>à l’avance, par l’intermédiaire de Stripe</strong>. Les moyens de paiement disponibles sont
+				affichés pendant la commande. <strong>Nous ne proposons pas de paiement contre remboursement.</strong>{" "}
+				L’expédition intervient après réception du paiement, selon la disponibilité annoncée des produits.
+			</p>
+			<p>
+				Les prix de la version française de la boutique sont exprimés en <strong>euros (EUR)</strong>.
+			</p>
+			<p>
+				Nous ne conservons pas le numéro complet de votre carte ni son cryptogramme et n’y avons pas accès.
+				Ces données sont traitées par le prestataire de paiement.
+			</p>
+
+			<h2>À la réception</h2>
+			<p>
+				Dans la mesure du possible, vérifiez l’emballage et photographiez les dommages visibles. Si le produit
+				est également endommagé ou qu’un élément manque, écrivez à <Mail />.
+			</p>
+			<p>
+				Les photos et le constat du transporteur peuvent faciliter le traitement du dossier. Leur absence ne
+				vous prive pas, à elle seule, de vos droits en cas de défaut du produit.
+			</p>
+		</>
+	);
+}

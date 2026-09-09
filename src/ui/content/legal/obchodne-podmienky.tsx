@@ -2,7 +2,7 @@ import Link from "next/link";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_HU, SLOVAKIA_PL } from "./slovakia";
+import { SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
@@ -11,6 +11,8 @@ const RETURN_ADDRESS = `${companyInfo.legalName}, ${companyInfo.returnAddress}, 
 const RETURN_ADDRESS_DE = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_DE}`;
 const RETURN_ADDRESS_PL = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_PL}`;
 const RETURN_ADDRESS_HU = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_HU}`;
+const RETURN_ADDRESS_IT = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_IT}`;
+const RETURN_ADDRESS_FR = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_FR}`;
 
 /**
  * The Slovak ADR body, which stays the seller's ADR body in every market.
@@ -23,30 +25,43 @@ const RETURN_ADDRESS_HU = `${companyInfo.legalName}, ${companyInfo.returnAddress
  * makes it impossible to change what `sk`, `cs` or `de` already render while adding a
  * language, which a rewritten ternary very easily does.
  */
-function Adr({ lang }: { lang: "sk" | "cs" | "de" | "pl" | "hu" }) {
+function Adr({ lang, country }: { lang: "sk" | "cs" | "de" | "pl" | "hu" | "it" | "fr"; country?: string }) {
 	const alternative = {
 		sk: "alternatívne",
 		cs: "alternativní",
 		de: "alternative",
 		pl: "alternatywne",
 		hu: "alternatív",
+		it: "risoluzione alternativa delle controversie",
+		fr: "règlement extrajudiciaire des litiges",
 	}[lang];
-	const or = { sk: "alebo", cs: "nebo", de: "oder", pl: "lub", hu: "vagy" }[lang];
+	const or = { sk: "alebo", cs: "nebo", de: "oder", pl: "lub", hu: "vagy", it: "oppure", fr: "ou" }[lang];
 	const linkText = {
 		sk: "Informácie a postup podania na stránke SOI",
 		cs: "Informace a postup podání na stránce SOI",
 		de: "Informationen zum Verfahren bei der SOI",
 		pl: "Informacje i tryb złożenia wniosku na stronie SOI",
 		hu: "Tájékoztatás az eljárásról és a beadványról a SOI oldalán",
+		it: "Informazioni e procedura SOI",
+		fr: "Informations et procédure SOI",
 	}[lang];
+
+	// `alternative` is a bare adjective in the five original languages and reads as a
+	// whole phrase in Italian and French, so the heading is assembled per language rather
+	// than by gluing one word in front of a shared noun.
+	const heading =
+		lang === "it" || lang === "fr"
+			? `Slovenská obchodná inšpekcia — ${alternative}`
+			: `Slovenská obchodná inšpekcia — ${alternative} riešenie sporov`;
 
 	return (
 		<p>
-			<strong>Slovenská obchodná inšpekcia — {alternative} riešenie sporov</strong>
+			<strong>{heading}</strong>
 			<br />
 			Ústredný inšpektorát, Odbor pre medzinárodné vzťahy a alternatívne riešenie spotrebiteľských sporov
 			<br />
 			Bajkalská 21/A, p. p. 29, 827 99 Bratislava 27
+			{country ? `, ${country}` : ""}
 			<br />
 			E-mail: <a href="mailto:ars@soi.sk">ars@soi.sk</a> {or} <a href="mailto:adr@soi.sk">adr@soi.sk</a>
 			<br />
@@ -2241,6 +2256,851 @@ export function Hu({ channel }: { channel: string }) {
 				A feltételek módosítása a hatálybalépésük után kötött szerződésekre vonatkozik. A korábbi
 				szerződésekre az azokhoz tartozó változat és a kötelező jogszabályok érvényesek. Egyetlen rendelkezés
 				sem korlátoz olyan jogot, amely a fogyasztót kötelezően megilleti.
+			</p>
+		</>
+	);
+}
+
+export function It({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Queste condizioni regolano l’acquisto di prodotti nel negozio online MAKY.STORE. All’ordine si applica
+				la versione in vigore al momento della conclusione del contratto.
+			</p>
+			<p>
+				<strong>
+					Siamo un venditore slovacco. La scelta della legge slovacca non priva il consumatore della
+					protezione delle norme inderogabili del paese in cui risiede abitualmente
+				</strong>
+				, alle condizioni dell’articolo 6 del regolamento Roma I. Per i consumatori residenti in Italia
+				restano quindi salvi i diritti inderogabili applicabili.
+			</p>
+
+			<h2>1. Venditore e contatti</h2>
+			<p>
+				<strong>{companyInfo.legalName}</strong>
+				<br />
+				Sede: {companyInfo.street}, {companyInfo.city}, {SLOVAKIA_IT}
+				<br />
+				Numero identificativo dell’impresa (IČO): <strong>{companyInfo.ico}</strong>
+				<br />
+				Codice fiscale slovacco (DIČ): <strong>{companyInfo.dic}</strong>
+				<br />
+				Numero IVA: <strong>{companyInfo.icDph}</strong>
+			</p>
+			<p>
+				La società è registrata ai fini IVA in Slovacchia ed è iscritta nel registro delle imprese tenuto dal
+				Mestský súd Bratislava III, sezione Sro, numero 200804/B.
+			</p>
+			<p>
+				E-mail: <Mail />
+				<br />
+				Telefono: <Phone />
+			</p>
+			<p>
+				<strong>Indirizzo per resi, reclami e relativa corrispondenza:</strong> {RETURN_ADDRESS_IT}.
+			</p>
+			<p>
+				«Noi» e «venditore» indicano {companyInfo.legalName}; «acquirente» indica chi effettua l’acquisto. È
+				consumatore la persona fisica che agisce per finalità estranee alla propria attività imprenditoriale o
+				professionale. Lo status dipende dalla finalità effettiva dell’acquisto e dalla legge, non soltanto
+				dalla compilazione dei dati di fatturazione.
+			</p>
+
+			<h2>2. Ordine e conclusione del contratto</h2>
+			<p>
+				Puoi acquistare senza registrarti. Aggiungi i prodotti al carrello, compila i dati di contatto,
+				fatturazione e consegna e scegli tra le modalità di trasporto e pagamento disponibili.
+			</p>
+			<p>
+				Prima di inviare l’ordine vincolante puoi verificare e correggere i prodotti e i dati inseriti.
+				Mostriamo il totale da pagare, incluse la spedizione e le eventuali prestazioni aggiuntive comunicate
+				in anticipo. Il pulsante <strong>«Ordine con obbligo di pagare»</strong>, o un’altra dicitura
+				altrettanto chiara, identifica l’invio di un ordine che comporta l’obbligo di pagamento.
+			</p>
+			<p>
+				Il contratto si conclude quando ricevi la nostra e-mail che conferma l’accettazione dell’ordine. Essa
+				contiene il riepilogo, le condizioni concordate e le condizioni di vendita su un supporto durevole.
+				Una comunicazione del prestatore di pagamento relativa al pagamento non costituisce, da sola,
+				accettazione dell’ordine da parte nostra.
+			</p>
+			<p>
+				Nella versione italiana del negozio il contratto è concluso <strong>in italiano</strong>. Conserviamo
+				i dati contrattuali per eseguire l’ordine e adempiere agli obblighi legali. Puoi salvare la conferma e
+				i documenti ricevuti e richiedere una copia dei dati del tuo ordine via e-mail. Non applichiamo un
+				costo aggiuntivo per concludere il contratto a distanza; i costi di connessione o chiamata dipendono
+				dal tuo operatore.
+			</p>
+
+			<h2>3. Prodotti e impiego</h2>
+			<p>
+				Le caratteristiche, il contenuto della confezione, l’impiego previsto e le limitazioni sono indicati
+				nella scheda del prodotto. Per un kit di montaggio contano anche la configurazione del veicolo e i
+				componenti inclusi.
+			</p>
+			<p>
+				Se hai dubbi sulla compatibilità, contattaci prima dell’acquisto. Questo consiglio non limita la
+				nostra responsabilità per informazioni corrette e per la conformità dei prodotti consegnati.
+			</p>
+			<p>
+				<strong>«Su ordinazione»</strong> significa che procuriamo il prodotto dal fornitore. Non significa,
+				di per sé, che il prodotto sia personalizzato o escluso dal diritto di recesso.
+			</p>
+
+			<h2>4. Prezzi e pagamento</h2>
+			<p>
+				I prezzi destinati ai consumatori sono finali e comprendono l’IVA dovuta e le altre imposte. La
+				spedizione viene indicata separatamente. Prima dell’ordine vincolante sono visibili tutti gli importi
+				e il totale. Non aggiungiamo prestazioni a pagamento senza un consenso espresso.
+			</p>
+			<p>
+				Nella versione italiana i prezzi sono espressi in <strong>euro (EUR)</strong>. Vale il prezzo
+				concordato al momento della conclusione del contratto; una successiva variazione nel negozio non
+				modifica un contratto già concluso.
+			</p>
+			<p>
+				Gli ordini per l’Italia si pagano <strong>in anticipo tramite Stripe</strong>, con i metodi
+				disponibili durante l’ordine. <strong>Non offriamo il contrassegno.</strong> Spediamo dopo la
+				ricezione del pagamento, secondo la disponibilità comunicata. I dati completi della carta sono
+				trattati dal prestatore di pagamento: non conserviamo né possiamo consultare il numero completo o il
+				codice di sicurezza.
+			</p>
+			<p>
+				Se non possiamo accettare l’ordine ma abbiamo già ricevuto il pagamento, lo restituiamo senza ritardo.
+				Dopo la conclusione del contratto, una variazione del prezzo o della disponibilità presso il nostro
+				fornitore non ci autorizza, da sola, a cambiare unilateralmente quanto concordato.
+			</p>
+
+			<h2>5. Consegna e ricezione</h2>
+			<p>
+				Spediamo dalla Slovacchia con <strong>FedEx e Slovenská pošta (Poste slovacche)</strong>. Le opzioni
+				dipendono dai prodotti, dal peso e dalle dimensioni del pacco e dall’indirizzo. Modalità e costi
+				disponibili sono indicati durante l’ordine.
+			</p>
+			<p>
+				Comunichiamo le condizioni di consegna prima della conclusione del contratto. Salvo un diverso termine
+				concordato, consegniamo senza ritardo e comunque entro{" "}
+				<strong>30 giorni dalla conclusione del contratto</strong>. Prevale un termine specificamente
+				concordato.
+			</p>
+			<p>
+				Se non rispettiamo il termine, puoi assegnarci un ulteriore periodo adeguato e, se la consegna non
+				avviene, risolvere il contratto. Il termine supplementare non è necessario, in particolare, se
+				rifiutiamo la consegna o se la puntualità era essenziale per le circostanze o per una tua indicazione
+				espressa comunicata prima dell’acquisto.
+			</p>
+			<p>
+				Quando utilizzi un corriere da noi proposto, il rischio di perdita o danneggiamento passa a te
+				soltanto con la ricezione da parte tua o del terzo designato, diverso dal corriere. Resta l’eccezione
+				legale per un corriere da te incaricato e non proposto da noi. Il trasferimento della proprietà
+				avviene secondo il codice civile slovacco con la consegna al consumatore.
+			</p>
+			<p>
+				È utile controllare il pacco e documentare i danni visibili. L’assenza di fotografie o del verbale del
+				corriere non fa perdere, da sola, i diritti di legge. Restano applicabili i termini legali per farli
+				valere.
+			</p>
+
+			<h2>6. Recesso senza motivazione</h2>
+
+			<h3>Termine e decorrenza</h3>
+			<p>
+				Il consumatore può normalmente recedere entro <strong>14 giorni dalla consegna</strong>, senza
+				indicare il motivo. Per gli ordini effettuati dopo l’accesso all’account estendiamo il termine a{" "}
+				<strong>30 giorni</strong>, come beneficio MAKY.STORE con la stessa procedura e le condizioni qui
+				descritte, senza limitare i diritti legali.
+			</p>
+			<p>
+				Non si conta il giorno della consegna. Per più prodotti di un solo contratto consegnati separatamente,
+				conta l’ultimo; per un prodotto consegnato in lotti o pezzi, l’ultimo lotto o pezzo; per forniture
+				regolari durante un periodo definito, la prima consegna. La ricezione può avvenire tramite un terzo
+				designato, diverso dal corriere.
+			</p>
+			<p>
+				Puoi recedere prima della consegna o per alcuni prodotti soltanto. Se non forniamo l’informativa
+				obbligatoria, il termine legale si prolunga secondo la legge, normalmente fino a 12 mesi dopo il
+				termine originario. Se l’informativa viene fornita durante tale periodo, i 14 giorni decorrono dalla
+				sua ricezione.
+			</p>
+
+			<h3>Dichiarazione</h3>
+			<p>
+				Invia una dichiarazione inequivocabile a <Mail /> o all’indirizzo per i resi indicato nella sezione 1.
+				La pagina <Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Diritto di recesso</Link> spiega
+				le modalità disponibili e offre un{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy/vzorovy-formular")}>
+					modulo facoltativo da stampare
+				</Link>
+				.
+			</p>
+			<p>
+				La dichiarazione deve permettere di identificare chi recede, il contratto e i prodotti interessati.
+				Non richiediamo un motivo, un account o una precedente autorizzazione. È sufficiente inviarla entro
+				l’ultimo giorno del termine; non occorre che anche il prodotto arrivi entro tale giorno.
+			</p>
+			<p>
+				In questa versione di anteprima la funzione di recesso online non è ancora attiva. Puoi utilizzare
+				e-mail, posta o un’altra modalità legalmente ammessa. Non aspettare l’attivazione se sta decorrendo un
+				termine. Consultare la pagina non costituisce invio della dichiarazione.
+			</p>
+
+			<h3>Restituzione e costi</h3>
+			<p>
+				Se non abbiamo offerto il ritiro, restituisci il prodotto senza ritardo e al massimo entro{" "}
+				<strong>14 giorni dalla comunicazione del recesso</strong>, a {RETURN_ADDRESS_IT}. Basta spedirlo
+				entro il termine. Se abbiamo offerto il ritiro, prepara il prodotto come concordato.
+			</p>
+			<p>
+				Puoi utilizzare un tuo corriere senza autorizzazione preventiva oppure chiedere un preventivo.
+				Comunichiamo prezzo e modalità in anticipo e ordiniamo un ritiro a pagamento solo dopo l’accettazione
+				espressa. Una richiesta di prezzo non costituisce né un ordine né una nostra offerta di ritiro.
+			</p>
+			<p>
+				I costi diretti della restituzione sono a tuo carico se ne sei stato correttamente informato prima
+				dell’acquisto. Per i beni non restituibili normalmente per posta forniamo prima dell’acquisto anche il
+				costo del reso. Se manca l’informazione dovuta, o ci siamo impegnati a sostenere il costo, non te lo
+				addebitiamo. Un preventivo successivo all’acquisto non sostituisce questa informazione.
+			</p>
+			<p>
+				Restituisci gli accessori del prodotto e proteggilo per il trasporto. Imballaggio originale, originale
+				della fattura e numero di pratica assegnato da noi non sono condizioni generali di validità del
+				recesso.
+			</p>
+
+			<h3>Rimborso</h3>
+			<p>
+				Rimborsiamo senza ritardo, entro <strong>14 giorni dalla ricezione della dichiarazione</strong>. Per
+				il recesso totale includiamo il costo della consegna iniziale fino alla modalità standard meno costosa
+				proposta per l’ordine, non l’eventuale maggior costo scelto espressamente.
+			</p>
+			<p>
+				Per il recesso parziale rimborsiamo gli importi pertinenti senza applicare retroattivamente spedizioni
+				o commissioni aggiuntive. Il rimborso utilizza lo stesso metodo di pagamento, salvo un accordo
+				espresso diverso e gratuito per te. Non devi accettare un buono in sostituzione del denaro.
+			</p>
+			<p>
+				Se non abbiamo offerto il ritiro, possiamo sospendere il rimborso fino alla ricezione del prodotto o
+				della prova di spedizione, a seconda di quale avvenga prima. Se abbiamo offerto il ritiro, non ci
+				avvaliamo di questa facoltà.
+			</p>
+
+			<h3>Diminuzione di valore ed eccezioni</h3>
+			<p>
+				Puoi essere responsabile della diminuzione di valore causata da manipolazioni ulteriori rispetto a
+				quelle necessarie per accertare natura, caratteristiche e funzionamento, se hai ricevuto l’informativa
+				richiesta. Aprire la confezione o esaminare ragionevolmente il prodotto non elimina il diritto.
+			</p>
+			<p>
+				Non applichiamo una tariffa forfettaria di reso, apertura o gestione. Motiviamo un’eventuale
+				diminuzione di valore in base alle circostanze concrete e non la compensiamo unilateralmente con i
+				tuoi crediti derivanti dal recesso.
+			</p>
+			<p>
+				Le eccezioni possono riguardare beni realmente realizzati su specifiche individuali o chiaramente
+				personalizzati e, alle condizioni di legge, beni sigillati non restituibili per motivi igienici o
+				sanitari dopo l’apertura.{" "}
+				<strong>
+					Un normale articolo procurato dal fornitore o un kit standard abbinato a un’auto non è per questo un
+					bene personalizzato.
+				</strong>
+			</p>
+
+			<h2>7. Conformità dei prodotti e reclami</h2>
+
+			<h3>Responsabilità legale</h3>
+			<p>
+				Secondo la legge slovacca scelta, rispondiamo dei difetti esistenti alla consegna che si manifestano
+				entro <strong>due anni</strong>. Per beni con elementi digitali con fornitura continuativa concordata,
+				la responsabilità per tali elementi copre il periodo concordato, almeno due anni dalla consegna; gli
+				obblighi di aggiornamento seguono la legge applicabile.
+			</p>
+			<p>
+				Per i contratti dal <strong>31 luglio 2026</strong>, dopo la prima riparazione il periodo di
+				responsabilità slovacco aumenta una sola volta di <strong>12 mesi</strong>, indipendentemente dalle
+				riparazioni successive. Per i contratti precedenti valgono le norme allora applicabili. Restano ferme
+				le regole di sospensione, rinnovo e proroga dei termini.
+			</p>
+			<p>
+				Un difetto manifestatosi nel periodo applicabile si presume già presente alla consegna, salvo prova
+				contraria o incompatibilità con la natura del bene o del difetto. Rispondiamo anche di
+				un’installazione errata eseguita da noi o sotto la nostra responsabilità e di errori del cliente
+				dovuti a istruzioni carenti. La normale usura e un danno causato dal cliente non costituiscono
+				automaticamente un difetto imputabile al venditore; ogni caso va valutato.
+			</p>
+			<p>
+				Questa disciplina non riduce la garanzia legale di conformità italiana e gli altri diritti
+				inderogabili. In particolare, la durata di due anni per la manifestazione del difetto non va confusa
+				con il termine dell’azione: per i difetti non dolosamente occultati, la disciplina italiana prevede{" "}
+				<strong>26 mesi dalla consegna</strong>, ferme le regole applicabili al caso e i diritti più
+				favorevoli qui riconosciuti. Non introduciamo un’ulteriore decadenza di due mesi dalla scoperta per
+				esercitare i diritti inderogabili italiani.
+			</p>
+
+			<h3>Segnalazione e rimedi</h3>
+			<p>
+				Segnala il difetto appena possibile a <Mail />, per iscritto all’indirizzo per i resi o con un’altra
+				modalità legalmente ammessa. Descrivi prodotto, difetto, data di manifestazione e un riferimento
+				d’acquisto. Foto, video e numero d’ordine aiutano ma non sono gli unici mezzi di prova. Non
+				richiediamo imballaggio originale o esclusivamente l’originale della fattura.
+			</p>
+			<p>
+				Confermiamo senza ritardo per iscritto la segnalazione e il termine del rimedio. Puoi scegliere{" "}
+				<strong>riparazione o sostituzione</strong>, salvo impossibilità o costi sproporzionati rispetto
+				all’altra soluzione. Prima dell’intervento informiamo del diritto di scelta e della proroga
+				pertinente.
+			</p>
+			<p>
+				Riparazione o sostituzione sono gratuite, entro un termine ragionevole e senza notevoli inconvenienti.
+				Secondo la disciplina slovacca di base, il termine è normalmente entro{" "}
+				<strong>30 giorni dalla segnalazione</strong>, salvo un motivo oggettivo dimostrabile fuori dal nostro
+				controllo. Ciò non limita l’obbligo di un rimedio più rapido se richiesto dalle circostanze e dalle
+				norme inderogabili applicabili.
+			</p>
+			<p>
+				Sosteniamo le spese necessarie di ritiro e riconsegna, nonché la rimozione e reinstallazione quando
+				richieste per un prodotto correttamente installato. Non chiediamo un pagamento per l’uso normale
+				precedente alla sostituzione.
+			</p>
+			<p>
+				Hai diritto alla riduzione del prezzo o alla risoluzione nei casi previsti dalla legge: rimedio non
+				eseguito o rifiutato, obblighi di ritiro o installazione non rispettati, difetto persistente,
+				sufficientemente grave o non destinato a essere risolto correttamente e in tempo. Una riduzione
+				corrisponde alla differenza di valore. Un difetto lieve non giustifica da solo la risoluzione; spetta
+				al venditore provarne la lieve entità. Restano le conseguenze legalmente previste quando il danno è
+				imputabile al cliente, senza ridurre diritti inderogabili.
+			</p>
+			<p>
+				In un ordine con più prodotti, la risoluzione riguarda quelli difettosi e può estendersi agli altri se
+				non è ragionevole pretendere che li conservi senza quelli difettosi. La restituzione per difetto è a
+				nostre spese. Rimborsiamo il prezzo entro{" "}
+				<strong>14 giorni dal ricevimento del prodotto o dalla prova della spedizione</strong>, secondo
+				l’evento anteriore, senza pregiudicare termini inderogabili più favorevoli. Usiamo il metodo
+				originario salvo diverso accordo espresso e gratuito. Non addebitiamo l’uso normale o l’usura
+				precedente alla risoluzione.
+			</p>
+
+			<h3>Rifiuto del reclamo e garanzia commerciale</h3>
+			<p>
+				Motiviamo per iscritto l’eventuale rifiuto. Se una successiva perizia o valutazione tecnica
+				qualificata prova la nostra responsabilità, puoi ripresentare il reclamo; nella procedura slovacca
+				descritta non possiamo nuovamente negare la responsabilità così dimostrata. Restano ammessi altri
+				mezzi di prova e il rimborso delle spese necessarie secondo la legge.
+			</p>
+			<p>
+				Un’eventuale garanzia commerciale di produttore o venditore aggiunge diritti, senza limitare quelli
+				legali. Resta salvo l’eventuale diritto al risarcimento del danno.
+			</p>
+
+			<h2>8. Richieste di rimedio e controversie</h2>
+			<p>
+				Se non sei soddisfatto della gestione di un reclamo o ritieni violati i tuoi diritti, scrivi a{" "}
+				<Mail /> chiedendo un rimedio.
+			</p>
+			<p>
+				Se rifiutiamo la richiesta o non rispondiamo entro <strong>30 giorni</strong>, puoi avviare la
+				procedura slovacca di risoluzione alternativa presso un organismo competente dell’elenco del Ministero
+				dell’economia slovacco. Per le controversie sull’acquisto di beni, uno di questi è:
+			</p>
+			<Adr lang="it" country={SLOVAKIA_IT} />
+			<p>
+				La procedura SOI per il consumatore è gratuita. Per assistenza su un acquisto transfrontaliero puoi
+				contattare il <strong>Centro Europeo Consumatori Italia</strong>, ad esempio tramite l’
+				<a href="https://www.euroconsumatori.org/it" rel="noopener noreferrer" target="_blank">
+					ufficio di Bolzano
+				</a>
+				. Tale assistenza non implica che MAKY.STORE aderisca a un determinato organismo italiano di
+				mediazione né sostituisce l’accesso al giudice.
+			</p>
+			<p>
+				Restano salve le altre procedure legalmente disponibili e la competenza giurisdizionale prevista dalla
+				legge. Queste condizioni non impongono al consumatore di rivolgersi esclusivamente a un giudice
+				slovacco.
+			</p>
+
+			<h2>9. Dati personali</h2>
+			<p>
+				L’
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Informativa sulla privacy</Link> descrive
+				finalità e regole del trattamento. La pagina{" "}
+				<Link href={marketHref(channel, "/cookies")}>Cookie e preferenze</Link> spiega le tecnologie del sito.
+			</p>
+			<p>Acquisto, reclamo e recesso non richiedono il consenso al marketing o ai cookie facoltativi.</p>
+
+			<h2>10. Disposizioni finali</h2>
+			<p>
+				Si applica il diritto slovacco, in particolare il codice civile e le leggi n. 108/2024 sulla tutela
+				del consumatore e n. 22/2004 sul commercio elettronico, senza privare il consumatore della protezione
+				inderogabile del paese di residenza abituale alle condizioni dell’articolo 6 del regolamento Roma I.
+			</p>
+			<p>
+				L’autorità di vigilanza nel paese del venditore è la{" "}
+				<strong>
+					Slovenská obchodná inšpekcia, {companyInfo.supervisoryAuthority.department}, Bajkalská 21/A, P. O.
+					BOX č. 5, 820 07 Bratislava, {SLOVAKIA_IT}
+				</strong>
+				. Le attribuzioni delle altre autorità competenti restano ferme.
+			</p>
+			<p>
+				Le modifiche valgono per i contratti conclusi dopo la loro entrata in vigore. Quelli già conclusi
+				restano regolati dalla versione pertinente e dalle norme vincolanti. Nessuna disposizione limita i
+				diritti inderogabili del consumatore.
+			</p>
+		</>
+	);
+}
+
+export function Fr({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Les présentes conditions régissent l’achat de produits sur MAKY.STORE. La version applicable est celle
+				en vigueur lors de la conclusion du contrat.
+			</p>
+			<p>
+				<strong>
+					Nous sommes un vendeur slovaque. Le choix du droit slovaque ne prive pas le consommateur de la
+					protection des dispositions impératives de son pays de résidence habituelle
+				</strong>
+				, dans les conditions de l’article 6 du règlement Rome I. Les droits impératifs applicables au
+				consommateur résidant en France sont préservés.
+			</p>
+
+			<h2>1. Vendeur et coordonnées</h2>
+			<p>
+				<strong>{companyInfo.legalName}</strong>
+				<br />
+				Siège : {companyInfo.street}, {companyInfo.city}, {SLOVAKIA_FR}
+				<br />
+				Numéro d’identification de l’entreprise (IČO) : <strong>{companyInfo.ico}</strong>
+				<br />
+				Numéro fiscal slovaque (DIČ) : <strong>{companyInfo.dic}</strong>
+				<br />
+				Numéro de TVA intracommunautaire : <strong>{companyInfo.icDph}</strong>
+			</p>
+			<p>
+				La société est assujettie à la TVA en Slovaquie et inscrite au registre du commerce tenu par le
+				Mestský súd Bratislava III, section Sro, numéro 200804/B.
+			</p>
+			<p>
+				E-mail : <Mail />
+				<br />
+				Téléphone : <Phone />
+			</p>
+			<p>
+				<strong>Adresse pour les retours, réclamations et courriers associés :</strong> {RETURN_ADDRESS_FR}.
+			</p>
+			<p>
+				«Nous» et «vendeur» désignent {companyInfo.legalName} ; «acheteur» désigne la personne qui achète. Un
+				consommateur est une personne physique agissant à des fins étrangères à son activité professionnelle.
+				Cette qualité dépend de la finalité réelle de l’achat et des règles applicables, et non de la seule
+				présence de données professionnelles sur la facture.
+			</p>
+
+			<h2>2. Commande et conclusion du contrat</h2>
+			<p>
+				L’achat est possible sans inscription. Ajoutez les produits au panier, renseignez vos coordonnées, les
+				données de facturation et l’adresse de livraison, puis choisissez parmi les modes de livraison et de
+				paiement proposés.
+			</p>
+			<p>
+				Avant l’envoi de la commande engageante, vous pouvez vérifier et corriger son contenu et vos données.
+				Nous affichons le total à payer, livraison et services supplémentaires préalablement annoncés compris.
+				Le bouton <strong>«Commande avec obligation de paiement»</strong>, ou une formulation aussi explicite,
+				signale qu’en validant vous vous engagez à payer.
+			</p>
+			<p>
+				Le contrat est conclu lorsque vous recevez notre e-mail confirmant l’acceptation de la commande. Il
+				comporte son récapitulatif, les conditions convenues et les conditions de vente sur un support
+				durable. Une notification de paiement émise par le prestataire de paiement ne constitue pas, à elle
+				seule, notre acceptation de la commande.
+			</p>
+			<p>
+				Dans la version française de la boutique, le contrat est conclu <strong>en français</strong>. Nous
+				conservons les données contractuelles pour exécuter la commande et respecter nos obligations légales.
+				Vous pouvez enregistrer la confirmation et les documents reçus et demander une copie des informations
+				relatives à votre commande par e-mail. Nous ne facturons pas de supplément pour conclure à distance ;
+				les frais de connexion ou d’appel relèvent de votre opérateur.
+			</p>
+
+			<h2>3. Produits et utilisation</h2>
+			<p>
+				Les caractéristiques, le contenu du colis, l’usage prévu et les limites d’utilisation figurent sur la
+				fiche produit. Pour les kits de montage, la configuration du véhicule et les pièces incluses comptent
+				également.
+			</p>
+			<p>
+				En cas de doute sur la compatibilité, contactez-nous avant d’acheter. Ce conseil ne limite pas notre
+				responsabilité quant à l’exactitude des informations et à la conformité des produits livrés.
+			</p>
+			<p>
+				La mention <strong>«Sur commande»</strong> signifie que nous approvisionnons le produit auprès d’un
+				fournisseur. Elle n’en fait pas, à elle seule, un produit personnalisé exclu du droit de rétractation.
+			</p>
+
+			<h2>4. Prix et paiement</h2>
+			<p>
+				Les prix destinés aux consommateurs sont des prix finaux comprenant la TVA due et les autres taxes.
+				Les frais de livraison sont indiqués séparément. Tous ces montants et le total apparaissent avant la
+				commande engageante. Aucun service payant n’est ajouté sans accord exprès.
+			</p>
+			<p>
+				Les prix de la version française sont exprimés en <strong>euros (EUR)</strong>. Le prix convenu à la
+				conclusion du contrat s’applique ; une modification ultérieure sur le site ne change pas le prix d’un
+				contrat déjà conclu.
+			</p>
+			<p>
+				Les commandes pour la France sont payées <strong>à l’avance par Stripe</strong>, avec les moyens
+				proposés pendant la commande. <strong>Le paiement contre remboursement n’est pas disponible.</strong>{" "}
+				L’expédition intervient après réception du paiement, selon la disponibilité annoncée. Le numéro
+				complet de carte et le cryptogramme sont traités par le prestataire de paiement ; nous ne les
+				conservons pas et n’y avons pas accès.
+			</p>
+			<p>
+				Si nous ne pouvons pas accepter la commande alors que le paiement a été reçu, nous le remboursons sans
+				retard. Après conclusion du contrat, une modification du prix ou de la disponibilité chez notre
+				fournisseur ne permet pas, à elle seule, de modifier unilatéralement les conditions convenues.
+			</p>
+
+			<h2>5. Livraison et réception</h2>
+			<p>
+				Nous expédions depuis la Slovaquie avec <strong>FedEx et Slovenská pošta (la Poste slovaque)</strong>.
+				Les options dépendent des produits, des dimensions et du poids du colis et de l’adresse. Les
+				possibilités et tarifs sont affichés pendant la commande.
+			</p>
+			<p>
+				Les conditions de livraison sont communiquées avant la conclusion du contrat. Sauf autre délai
+				convenu, nous livrons sans retard et au plus tard{" "}
+				<strong>30 jours après la conclusion du contrat</strong>. Le délai spécifiquement convenu prévaut.
+			</p>
+			<p>
+				En cas de dépassement, vous pouvez nous accorder un délai supplémentaire approprié et, à défaut de
+				livraison, résoudre le contrat. Ce délai supplémentaire n’est notamment pas nécessaire si nous
+				refusons de livrer ou si la livraison à la date prévue était essentielle au regard des circonstances
+				ou d’une demande expresse portée à notre connaissance avant l’achat.
+			</p>
+			<p>
+				Avec un transporteur que nous proposons, le risque de perte ou de dommage ne vous est transféré qu’à
+				la réception par vous-même ou le tiers désigné, autre que le transporteur. L’exception légale
+				concernant un transporteur choisi par vous et non proposé par nous reste applicable. Selon le code
+				civil slovaque, la propriété est transférée lors de la livraison au consommateur.
+			</p>
+			<p>
+				Il est utile de vérifier le colis et de documenter les dommages visibles. L’absence de photos ou de
+				constat du transporteur ne supprime pas, à elle seule, les droits légaux. Les délais légaux de recours
+				demeurent applicables.
+			</p>
+
+			<h2>6. Rétractation sans motif</h2>
+
+			<h3>Délai et point de départ</h3>
+			<p>
+				Le consommateur peut en principe se rétracter dans les <strong>14 jours suivant la réception</strong>,
+				sans motif. Pour les commandes passées en étant connecté au compte client, nous portons ce délai à{" "}
+				<strong>30 jours</strong>. Cet avantage MAKY.STORE suit la même procédure et les conditions
+				ci-dessous, sans limiter les droits légaux.
+			</p>
+			<p>
+				Le jour de réception n’est pas compté. Pour plusieurs produits d’un même contrat livrés séparément, on
+				retient le dernier ; pour une livraison en lots ou pièces, le dernier lot ou la dernière pièce ; pour
+				des livraisons régulières pendant une période définie, la première réception. Le produit peut être
+				reçu par un tiers désigné autre que le transporteur.
+			</p>
+			<p>
+				La rétractation peut intervenir avant livraison ou pour certains produits seulement. Si les
+				informations obligatoires n’ont pas été fournies, le délai légal est prolongé selon la loi,
+				normalement jusqu’à 12 mois après le délai initial. Si elles sont communiquées pendant cette période,
+				le délai de 14 jours court dès leur réception.
+			</p>
+
+			<h3>Déclaration</h3>
+			<p>
+				Adressez une déclaration claire à <Mail /> ou à l’adresse de retour de la section 1. La page{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Droit de rétractation</Link> présente les
+				modalités disponibles et un{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy/vzorovy-formular")}>
+					formulaire facultatif à imprimer
+				</Link>
+				.
+			</p>
+			<p>
+				La déclaration doit identifier la personne, le contrat et les produits concernés. Aucun motif, compte
+				client ou accord préalable n’est requis. Son envoi avant la fin du délai suffit ; le produit ne doit
+				pas déjà être arrivé chez nous.
+			</p>
+			<p>
+				Dans cette version de prévisualisation, la fonction de rétractation en ligne n’est pas encore active.
+				Vous pouvez utiliser l’e-mail, le courrier ou une autre voie légalement admise. N’attendez pas
+				l’activation si un délai court. La consultation de la page ne constitue pas un envoi de déclaration.
+			</p>
+
+			<h3>Retour et frais</h3>
+			<p>
+				Si nous n’avons pas proposé de reprendre le produit, retournez-le sans retard et au plus tard{" "}
+				<strong>14 jours après votre déclaration</strong>, à {RETURN_ADDRESS_FR}. Une expédition dans le délai
+				suffit. Si nous avons proposé l’enlèvement, préparez le produit selon les modalités convenues.
+			</p>
+			<p>
+				Vous pouvez utiliser votre transporteur sans autorisation préalable ou demander un devis. Prix et
+				modalités sont annoncés à l’avance ; nous commandons un enlèvement payant seulement après votre
+				acceptation expresse. Une demande de prix ne constitue ni une commande de transport ni une offre de
+				reprise de notre part.
+			</p>
+			<p>
+				Les frais directs de retour sont à votre charge si nous vous en avons correctement informé avant
+				l’achat. Le coût du retour des biens ne pouvant être renvoyés normalement par la poste est également
+				communiqué avant l’achat. Sans l’information requise, ou si nous avons accepté de les supporter, nous
+				ne vous facturons pas ces frais. Un devis après l’achat ne remplace pas cette information.
+			</p>
+			<p>
+				Joignez les accessoires du produit et protégez-le pour le transport. L’emballage d’origine, l’original
+				de la facture ou un numéro de dossier attribué par nous ne sont pas des conditions générales de
+				validité de la rétractation.
+			</p>
+
+			<h3>Remboursement</h3>
+			<p>
+				Nous remboursons sans retard et au plus tard{" "}
+				<strong>14 jours après réception de votre déclaration</strong>. Pour une rétractation totale, les
+				frais de livraison initiaux sont inclus dans la limite de la livraison standard la moins chère
+				proposée pour la commande, sans le supplément d’une option plus coûteuse expressément choisie.
+			</p>
+			<p>
+				En cas de rétractation partielle, nous remboursons les sommes correspondantes sans ajouter
+				rétroactivement de frais de livraison ou de traitement. Le moyen de paiement initial est utilisé, sauf
+				accord exprès pour une solution différente sans frais. Vous n’êtes pas tenu d’accepter un avoir.
+			</p>
+			<p>
+				Si nous n’avons pas proposé l’enlèvement, le remboursement peut être différé jusqu’à réception du
+				produit ou de la preuve d’expédition, selon le premier événement. Nous n’exerçons pas cette faculté
+				lorsque nous avons proposé de reprendre le produit.
+			</p>
+
+			<h3>Dépréciation et exceptions</h3>
+			<p>
+				Une manipulation dépassant ce qui est nécessaire pour établir la nature, les caractéristiques et le
+				fonctionnement du produit peut engager votre responsabilité pour sa dépréciation, si l’information
+				obligatoire sur la rétractation a été fournie. Ouvrir l’emballage ou examiner raisonnablement le
+				produit ne supprime pas ce droit.
+			</p>
+			<p>
+				Aucun forfait de retour, de déballage ou de traitement n’est facturé. Une dépréciation éventuelle est
+				justifiée par les circonstances concrètes ; nous ne la compensons pas unilatéralement avec les sommes
+				qui vous sont dues au titre de la rétractation.
+			</p>
+			<p>
+				Les exceptions peuvent notamment concerner un bien réellement fabriqué selon des spécifications
+				individuelles ou nettement personnalisé et, aux conditions légales, un bien scellé non retournable
+				pour des raisons d’hygiène ou de santé après ouverture.{" "}
+				<strong>
+					Un produit ordinaire approvisionné chez un fournisseur ou un kit standard adapté à un véhicule n’est
+					pas, pour cela seul, personnalisé.
+				</strong>
+			</p>
+
+			<h2>7. Conformité, garanties et réclamations</h2>
+
+			<h3>Protection issue du droit slovaque choisi</h3>
+			<p>
+				Nous répondons des défauts présents à la livraison qui apparaissent dans les <strong>deux ans</strong>
+				. Pour un produit comportant des éléments numériques fournis en continu selon le contrat, la
+				responsabilité pour ces éléments couvre la période convenue, au moins deux ans après la livraison. Les
+				obligations de mise à jour nécessaires suivent la loi applicable.
+			</p>
+			<p>
+				Pour les contrats conclus à compter du <strong>31 juillet 2026</strong>, la première réparation
+				prolonge une seule fois la période de responsabilité slovaque de <strong>12 mois</strong>, quel que
+				soit le nombre de réparations ultérieures. Les contrats antérieurs suivent les règles alors
+				applicables. Les prolongations, suspensions ou nouveaux délais prévus par les règles impératives
+				françaises restent préservés ; les durées ne s’additionnent pas automatiquement sans examen de leurs
+				conditions.
+			</p>
+			<p>
+				Un défaut apparu pendant la période applicable est présumé avoir existé à la livraison, sauf preuve
+				contraire ou incompatibilité avec la nature du produit ou du défaut. Nous répondons aussi d’une
+				installation incorrecte réalisée par nous ou sous notre responsabilité, ou d’une erreur du client due
+				à des instructions insuffisantes. Une usure normale ou un dommage causé par le client ne constitue pas
+				automatiquement un défaut imputable au vendeur ; chaque cas doit être apprécié.
+			</p>
+
+			<h3>Vos garanties légales en France</h3>
+			{/*
+			 * The statutory-guarantee information box.
+			 *
+			 * ⚠️ This is the delivered EDITORIAL box, in MAKY's own words. It is NOT a verbatim
+			 * reproduction of the model in Annexe A to article D211-2 of the code de la
+			 * consommation, and covering the same ground is not the same thing as formal
+			 * conformity with the prescribed model. Closing that — picking the model that fits
+			 * the goods actually sold, and settling the box's formal shape — is an open item
+			 * owned by M before the terms are published for real selling. See
+			 * `interne/PRAVNE_ROZDIELY_A_ZDROJE.md` § FR3 and the IT/FR handoff.
+			 *
+			 * A <blockquote> because the source marks it as one and `prose` already sets it
+			 * apart from the surrounding text; the box has to READ as a distinct notice.
+			 */}
+			<blockquote>
+				<p>
+					<strong>
+						La garantie légale de conformité s’exerce contre le vendeur, indépendamment d’une éventuelle
+						garantie commerciale.
+					</strong>{" "}
+					Pour un bien neuf, un défaut apparaissant pendant les deux années suivant la délivrance relève de
+					cette protection ; vous devez établir le défaut, sans devoir prouver à quelle date il est né pendant
+					la période de présomption applicable. Pour un contenu ou service numérique fourni en continu au-delà
+					de deux ans, la protection liée à cette fourniture couvre la période contractuelle concernée. Les
+					mises à jour nécessaires à la conformité restent dues selon la loi.
+				</p>
+				<p>
+					Vous pouvez demander la réparation ou le remplacement, sous réserve des impossibilités et
+					disproportions prévues par la loi. La solution doit être gratuite, sans inconvénient majeur et
+					intervenir dans un délai raisonnable qui ne dépasse pas{" "}
+					<strong>30 jours à compter de votre demande</strong>.
+				</p>
+				<p>
+					Une réparation au titre de cette garantie ouvre une prolongation de <strong>six mois</strong>.
+					Lorsque vous avez choisi la réparation mais que le vendeur ne l’effectue pas et remplace le produit
+					à la place, un nouveau délai de garantie court dès la délivrance du bien de remplacement.
+					L’immobilisation du produit pour sa remise en état ou son remplacement suspend le délai restant dans
+					les conditions légales.
+				</p>
+				<p>
+					Vous pouvez conserver le produit avec une réduction de prix ou le rendre contre remboursement
+					lorsque les conditions légales sont réunies : refus de mise en conformité, délai dépassé,
+					inconvénient majeur ou défaut qui persiste malgré une tentative. Un défaut assez grave peut
+					justifier immédiatement ce choix. Un défaut mineur ne permet pas à lui seul la résolution.
+				</p>
+				<p>
+					Les articles L. 217-1 à L. 217-32 du code de la consommation régissent cette protection. Une
+					obstruction de mauvaise foi à sa mise en œuvre peut donner lieu aux sanctions civiles prévues à
+					l’article L. 241-5, dont le plafond légal peut atteindre 300 000 euros ou 10 % du chiffre d’affaires
+					annuel moyen selon les conditions du texte.
+				</p>
+				<p>
+					La <strong>garantie des vices cachés</strong> des articles 1641 à 1649 du code civil reste également
+					disponible. L’action s’exerce dans les deux ans à compter de la découverte du vice, sous réserve des
+					autres règles de délai applicables. Elle permet, selon les conditions légales, de demander le
+					remboursement contre restitution ou une réduction du prix en conservant le bien.
+				</p>
+			</blockquote>
+			<p>
+				Les droits plus favorables résultant du droit slovaque choisi ne sont pas supprimés par ce rappel des
+				garanties françaises. Une durée de garantie ne signifie pas que tous les recours expirent
+				automatiquement à son terme.
+			</p>
+
+			<h3>Signalement et mise en conformité</h3>
+			<p>
+				Signalez le défaut dès que possible à <Mail />, par écrit à notre adresse de retour ou par une autre
+				voie admise. Indiquez le produit, le défaut, son apparition et un élément permettant d’identifier
+				l’achat. Photos, vidéos et numéro de commande sont utiles, sans être les seuls moyens de preuve. Nous
+				n’exigeons ni emballage d’origine ni exclusivement l’original de la facture. Nous ne subordonnons pas
+				vos droits impératifs français à un délai de signalement de deux mois repris du droit slovaque.
+			</p>
+			<p>
+				Nous confirmons sans retard par écrit le signalement et le délai de traitement. Avant l’intervention,
+				nous vous informons du choix entre réparation et remplacement ainsi que de la prolongation pertinente.
+				Toute impossibilité ou disproportion invoquée est expliquée.
+			</p>
+			<p>
+				La réparation ou le remplacement sont gratuits, sans inconvénient majeur.{" "}
+				<strong>
+					Nous n’opposons pas une exception générale de délai issue du droit slovaque au maximum de 30 jours
+					applicable à la mise en conformité française.
+				</strong>{" "}
+				Les frais nécessaires de reprise, de réexpédition, de démontage et de réinstallation d’un produit
+				correctement installé sont à notre charge. Nous ne facturons pas l’usage normal avant remplacement.
+			</p>
+			<p>
+				La réduction de prix correspond à la perte de valeur du produit. Les cas de résolution ou de réduction
+				prévus par la loi comprennent notamment le remède refusé ou non exécuté, les obligations de reprise ou
+				d’installation non respectées, le défaut persistant ou assez grave et l’absence manifeste de solution
+				correcte dans le délai. Le caractère mineur du défaut doit être démontré par le vendeur. Les
+				conséquences légales d’un dommage imputable au client s’apprécient sans réduire ses droits impératifs.
+			</p>
+			<p>
+				Pour un ensemble de produits, la résolution concerne le produit défectueux et peut s’étendre aux
+				autres lorsqu’il n’est pas raisonnable de vous demander de les conserver sans lui. Le retour pour
+				défaut est à notre charge. Nous remboursons le prix dans les{" "}
+				<strong>14 jours après réception du produit ou de la preuve d’expédition</strong>, selon le premier
+				événement, sans préjudice d’un délai impératif plus favorable. Nous utilisons le paiement initial sauf
+				accord exprès pour un autre moyen gratuit. L’usage normal ou l’usure avant cette résolution ne donne
+				pas lieu à facturation.
+			</p>
+
+			<h3>Refus et garantie commerciale</h3>
+			<p>
+				Tout refus de responsabilité est motivé par écrit. Si une expertise ou une évaluation technique
+				qualifiée établit ensuite notre responsabilité, vous pouvez présenter à nouveau la réclamation ; dans
+				la procédure slovaque décrite, nous ne pouvons plus refuser la responsabilité ainsi démontrée.
+				D’autres preuves restent admises et les frais nécessaires sont remboursés dans les conditions légales.
+			</p>
+			<p>
+				Une garantie commerciale du fabricant ou du vendeur apporte des droits supplémentaires sans
+				restreindre les droits légaux. Une demande d’indemnisation d’un préjudice reste possible selon la loi.
+			</p>
+
+			<h2>8. Demande de solution et règlement des litiges</h2>
+			<p>
+				Si le traitement d’une réclamation ne vous satisfait pas ou si vous estimez vos droits méconnus,
+				demandez-nous une solution à <Mail />.
+			</p>
+			<p>
+				En cas de refus ou d’absence de réponse sous <strong>30 jours</strong>, la procédure slovaque de
+				règlement extrajudiciaire permet de saisir un organisme compétent figurant sur la liste du ministère
+				slovaque de l’Économie. Pour les litiges relatifs à l’achat de biens, l’un de ces organismes est :
+			</p>
+			<Adr lang="fr" country={SLOVAKIA_FR} />
+			<p>
+				La procédure SOI est gratuite pour le consommateur. Pour un achat transfrontalier, un consommateur
+				résidant en France peut aussi demander l’assistance gratuite du{" "}
+				<a
+					href="https://www.europe-consommateurs.eu/question-reclamation/"
+					rel="noopener noreferrer"
+					target="_blank"
+				>
+					Centre Européen des Consommateurs France
+				</a>
+				. Ce centre accompagne les consommateurs ; il ne doit pas être confondu avec un médiateur de la
+				consommation désigné par le vendeur. Sa saisine ne suspend pas, à elle seule, les délais de recours.
+			</p>
+			<p>
+				Ces informations ne limitent pas les autres voies de règlement légalement ouvertes, notamment les
+				droits impératifs en matière de médiation, ni votre droit de saisir un tribunal compétent. Elles
+				n’imposent pas de recourir exclusivement à un tribunal slovaque et ne déclarent pas une affiliation de
+				MAKY.STORE à un médiateur français déterminé.
+			</p>
+
+			<h2>9. Données personnelles</h2>
+			<p>
+				La <Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Politique de confidentialité</Link>{" "}
+				présente les finalités et règles de traitement. La page{" "}
+				<Link href={marketHref(channel, "/cookies")}>Cookies et préférences</Link> explique les technologies
+				utilisées.
+			</p>
+			<p>
+				L’achat, la réclamation ou la rétractation ne sont pas subordonnés à l’acceptation du marketing ou des
+				cookies facultatifs.
+			</p>
+
+			<h2>10. Dispositions finales</h2>
+			<p>
+				Les relations relèvent du droit slovaque, notamment du code civil et des lois n° 108/2024 sur la
+				protection du consommateur et n° 22/2004 sur le commerce électronique. Ce choix ne prive pas le
+				consommateur de la protection impérative de son pays de résidence habituelle dans les conditions de
+				l’article 6 du règlement Rome I.
+			</p>
+			<p>
+				L’autorité de contrôle dans le pays du vendeur est la{" "}
+				<strong>
+					Slovenská obchodná inšpekcia, {companyInfo.supervisoryAuthority.department}, Bajkalská 21/A, P. O.
+					BOX č. 5, 820 07 Bratislava, {SLOVAKIA_FR}
+				</strong>
+				. Les attributions des autres autorités compétentes sont préservées.
+			</p>
+			<p>
+				Une modification de ces conditions s’applique aux contrats conclus après son entrée en vigueur. Les
+				contrats existants restent soumis à la version pertinente et aux règles impératives. Aucune
+				disposition ne limite les droits impérativement reconnus au consommateur.
 			</p>
 		</>
 	);

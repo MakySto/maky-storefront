@@ -3,7 +3,7 @@ import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { PrivacySettingsLink } from "@/ui/components/privacy-settings-link";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_HU, SLOVAKIA_PL } from "./slovakia";
+import { SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 
@@ -25,14 +25,16 @@ const SETTINGS_BUTTON_CLASS =
 const NECESSARY = [
 	{
 		name: "maky-market",
-		life: { sk: "1 rok", cs: "1 rok", de: "1 Jahr", pl: "1 rok", hu: "1 év" },
-		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie", pl: "Cookie", hu: "Süti" },
+		life: { sk: "1 rok", cs: "1 rok", de: "1 Jahr", pl: "1 rok", hu: "1 év", it: "1 anno", fr: "1 an" },
+		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie", pl: "Cookie", hu: "Süti", it: "Cookie", fr: "Cookie" },
 		purpose: {
 			sk: "Pamätá si jazykovú a trhovú verziu obchodu, ktorú ste otvorili.",
 			cs: "Pamatuje si jazykovou a tržní verzi obchodu, kterou jste otevřeli.",
 			de: "Merkt sich die Sprach- und Marktversion des Shops, die Sie geöffnet haben.",
 			pl: "Zapamiętuje otwartą wersję językową i rynkową sklepu.",
 			hu: "Megjegyzi a megnyitott nyelvi és piaci változatot.",
+			it: "Ricorda il mercato e la lingua del negozio che hai aperto.",
+			fr: "Mémorise le marché et la langue de la boutique que vous avez ouverte.",
 		},
 	},
 	{
@@ -43,14 +45,18 @@ const NECESSARY = [
 			de: "Bis zum Schließen des Browsers",
 			pl: "Do zamknięcia przeglądarki",
 			hu: "A böngésző bezárásáig",
+			it: "Sessione del browser; il ripristino di una sessione dipende dal browser",
+			fr: "Session du navigateur ; sa restauration dépend du navigateur",
 		},
-		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie", pl: "Cookie", hu: "Süti" },
+		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie", pl: "Cookie", hu: "Süti", it: "Cookie", fr: "Cookie" },
 		purpose: {
 			sk: "Spája váš prehliadač s obsahom košíka a s rozpracovanou objednávkou.",
 			cs: "Spojuje váš prohlížeč s obsahem košíku a s rozpracovanou objednávkou.",
 			de: "Verbindet Ihren Browser mit dem Inhalt des Warenkorbs und einer laufenden Bestellung.",
 			pl: "Łączy przeglądarkę z zawartością koszyka i rozpoczętym zamówieniem.",
 			hu: "Összekapcsolja a böngészőt a kosár tartalmával és a megkezdett rendeléssel.",
+			it: "Associa il carrello alla sessione di acquisto nel canale.",
+			fr: "Associe le panier à la session d’achat du canal.",
 		},
 	},
 	{
@@ -61,14 +67,18 @@ const NECESSARY = [
 			de: "Zugriff 15 Minuten, Erneuerung 7 Tage",
 			pl: "Token dostępu 15 minut, token odświeżający 7 dni",
 			hu: "Hozzáférési token 15 perc, megújító token 7 nap",
+			it: "Token di accesso: 15 minuti; token di rinnovo: 7 giorni",
+			fr: "Jeton d’accès : 15 minutes ; jeton de renouvellement : 7 jours",
 		},
-		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie", pl: "Cookie", hu: "Süti" },
+		kind: { sk: "Cookie", cs: "Cookie", de: "Cookie", pl: "Cookie", hu: "Süti", it: "Cookie", fr: "Cookie" },
 		purpose: {
 			sk: "Udržiavajú vaše prihlásenie. Ukladajú sa až po prihlásení do účtu.",
 			cs: "Udržují vaše přihlášení. Ukládají se až po přihlášení k účtu.",
 			de: "Halten Ihre Anmeldung aufrecht. Sie werden erst nach der Anmeldung gesetzt.",
 			pl: "Utrzymują zalogowanie. Są ustawiane dopiero po zalogowaniu do konta.",
 			hu: "Fenntartják a bejelentkezést. Csak a fiókba való belépés után jönnek létre.",
+			it: "Mantengono l’accesso. Vengono impostati solo dopo l’accesso all’account.",
+			fr: "Maintiennent votre connexion. Ils sont posés seulement après la connexion au compte.",
 		},
 	},
 	{
@@ -79,6 +89,8 @@ const NECESSARY = [
 			de: "Bis zum Löschen der Website-Daten im Browser",
 			pl: "Do usunięcia danych strony w przeglądarce",
 			hu: "A webhely adatainak böngészőből való törléséig",
+			it: "Fino alla cancellazione dei dati del browser o alla sostituzione della scelta",
+			fr: "Jusqu’à la suppression des données du navigateur ou au remplacement du choix",
 		},
 		kind: {
 			sk: "Miestne úložisko (localStorage)",
@@ -86,6 +98,8 @@ const NECESSARY = [
 			de: "Lokaler Speicher (localStorage)",
 			pl: "Pamięć lokalna (localStorage)",
 			hu: "Helyi tároló (localStorage)",
+			it: "Memoria locale (localStorage)",
+			fr: "Stockage local (localStorage)",
 		},
 		purpose: {
 			sk: "Uchováva vašu voľbu súkromia, aby sme sa nepýtali pri každej návšteve.",
@@ -93,6 +107,8 @@ const NECESSARY = [
 			de: "Bewahrt Ihre Datenschutzauswahl, damit wir nicht bei jedem Besuch erneut fragen.",
 			pl: "Zachowuje Państwa wybór dotyczący prywatności, aby nie pytać przy każdej wizycie.",
 			hu: "Megőrzi az adatvédelmi választását, hogy ne kelljen minden látogatáskor rákérdeznünk.",
+			it: "Conserva la tua scelta sulla privacy, per non chiedertela a ogni visita.",
+			fr: "Conserve votre choix de confidentialité, pour ne pas le redemander à chaque visite.",
 		},
 	},
 ] as const;
@@ -103,9 +119,11 @@ const TABLE_HEADS = {
 	de: ["Name", "Art", "Zweck", "Speicherdauer"],
 	pl: ["Nazwa", "Rodzaj", "Cel", "Okres"],
 	hu: ["Név", "Típus", "Cél", "Időtartam"],
+	it: ["Nome", "Tipo", "Finalità", "Durata prevista"],
+	fr: ["Nom", "Type", "Finalité", "Durée prévue"],
 } as const;
 
-function InventoryTable({ lang }: { lang: "sk" | "cs" | "de" | "pl" | "hu" }) {
+function InventoryTable({ lang }: { lang: "sk" | "cs" | "de" | "pl" | "hu" | "it" | "fr" }) {
 	return (
 		<div className="overflow-x-auto">
 			<table>
@@ -767,6 +785,247 @@ export function Hu({ channel }: { channel: string }) {
 				A személyes adatokhoz kapcsolódó jogokat, az adatcímzetteket és az illetékes felügyeleteket az{" "}
 				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Adatkezelési tájékoztató</Link>{" "}
 				ismerteti.
+			</p>
+		</>
+	);
+}
+
+export function It({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Cookie e tecnologie simili permettono di utilizzare il negozio e, secondo le tue scelte, funzioni
+				aggiuntive.{" "}
+				<strong>Puoi rifiutare analisi e marketing facoltativi e continuare ad acquistare.</strong>
+			</p>
+
+			<h2>Che cosa sono</h2>
+			<p>
+				I cookie sono piccole informazioni salvate dal sito nel browser, ad esempio per mantenere il carrello
+				o la sessione di accesso. Alcuni terminano con la sessione, altri restano per il periodo previsto.
+			</p>
+			<p>
+				Il sito può usare anche la memoria locale del browser, come <strong>localStorage</strong>, o
+				tecnologie simili. Il nome dello strumento non determina da solo se occorre il consenso: contano
+				finalità e funzionamento. Questa pagina non riguarda quindi soltanto i cookie tradizionali.
+			</p>
+
+			<h2>Funzioni strettamente necessarie</h2>
+			<p>
+				Senza un consenso separato utilizziamo le tecnologie strettamente necessarie per un servizio
+				espressamente richiesto, come il carrello, l’accesso, il pagamento o la memorizzazione della scelta
+				sulla privacy, nei limiti di ciò che serve effettivamente.
+			</p>
+			<p>
+				Non ogni misurazione o servizio dello stesso fornitore è automaticamente necessario. Per
+				l’archiviazione e l’accesso alle informazioni sul dispositivo consideriamo l’
+				<strong>articolo 122 del Codice in materia di protezione dei dati personali</strong> e le indicazioni
+				del Garante. L’eventuale esenzione deve corrispondere al concreto utilizzo dello strumento.
+			</p>
+
+			<h2>Analisi e marketing</h2>
+			<p>
+				L’analisi facoltativa aiuta a comprendere l’uso del negozio. Gli strumenti di marketing possono
+				misurare le campagne, creare pubblici e personalizzare la pubblicità.
+			</p>
+			<p>
+				Utilizziamo Google Tag Manager e strumenti di misurazione Google collegati. Prima della scelta, il
+				sito imposta Consent Mode su <strong>«denied»</strong> per le finalità facoltative di analisi e
+				pubblicità. Dopo il consenso le relative impostazioni passano a «granted» e tornano a «denied» in caso
+				di revoca.{" "}
+				<strong>
+					Caricare uno script e consentire la scrittura o lettura dei dati sono operazioni diverse:
+				</strong>{" "}
+				«denied» non garantisce, da solo, l’assenza di ogni richiesta di rete.
+			</p>
+			<p>
+				Utilizziamo anche <strong>Cloudflare Web Analytics</strong>. Nella configurazione descritta, lo script
+				viene caricato anche prima del consenso e il servizio non usa cookie per tale misurazione. L’assenza
+				di cookie non dimostra, da sola, l’assenza di dati personali o un’esenzione automatica dalle regole
+				applicabili. L’
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Informativa sulla privacy</Link> descrive
+				anche finalità e basi del trattamento.
+			</p>
+			<p>
+				Visitare il sito, scorrere una pagina, chiudere il banner o acquistare non equivale ad acconsentire.
+				Le categorie facoltative non sono preselezionate.
+			</p>
+
+			<h2>Le tue preferenze</h2>
+			<p>
+				Puoi accettare tutte le finalità facoltative, rifiutarle tutte o scegliere singole categorie. Le
+				funzioni necessarie restano attive perché servono a erogare il servizio richiesto.
+			</p>
+			<p className="not-prose">
+				<PrivacySettingsLink label="Apri le preferenze sulla privacy" className={SETTINGS_BUTTON_CLASS} />
+			</p>
+			<p>
+				Puoi modificare la scelta in seguito attraverso <strong>«Preferenze sulla privacy»</strong> nel piè di
+				pagina. La revoca riguarda l’ulteriore impiego delle tecnologie facoltative; non cancella
+				automaticamente tutti i dati già trattati da un prestatore autonomo. Per questi dati valgono i diritti
+				descritti nell’informativa.
+			</p>
+			<p>
+				La scelta è relativa al browser e al dispositivo. Su un altro dispositivo o dopo la cancellazione dei
+				dati del sito potresti doverla ripetere. Un aggiornamento di questo documento non costituisce consenso
+				a una nuova finalità.
+			</p>
+
+			<h2>Dati memorizzati nel browser</h2>
+			<InventoryTable lang="it" />
+			<p>
+				I cookie di autenticazione possono avere un prefisso riferito all’indirizzo del servizio; la tabella
+				mostra le parti riconoscibili dei nomi. La tabella riguarda questi meccanismi del negozio, non
+				costituisce un inventario completo di ogni tecnologia di terzi. I servizi Google e Cloudflare sono
+				descritti sopra. Per altre informazioni scrivi a <Mail />.
+			</p>
+
+			<h2>Impostazioni del browser</h2>
+			<p>
+				Puoi cancellare o bloccare cookie anche dal browser. Bloccare quelli necessari può impedire carrello,
+				accesso o pagamento.{" "}
+				<strong>
+					Rifiutare analisi e pubblicità facoltative nelle nostre preferenze non impedisce di acquistare.
+				</strong>
+			</p>
+			<p>
+				Cancellare i cookie non rimuove necessariamente le altre memorie: puoi gestirle nelle impostazioni dei
+				dati dei siti del browser.
+			</p>
+
+			<h2>Contatti</h2>
+			<p>
+				Il sito è gestito da <strong>{companyInfo.legalName}</strong>, {companyInfo.street},{" "}
+				{companyInfo.city}, {SLOVAKIA_IT}, IČO {companyInfo.ico}. Per domande: <Mail />.
+			</p>
+			<p>
+				Diritti, destinatari e autorità competenti sono descritti nell’
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Informativa sulla privacy</Link>.
+			</p>
+		</>
+	);
+}
+
+export function Fr({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Les cookies et technologies similaires permettent le fonctionnement du magasin et, selon votre choix,
+				des usages supplémentaires.{" "}
+				<strong>
+					Vous pouvez refuser la mesure et le marketing facultatifs tout en continuant à acheter.
+				</strong>
+			</p>
+
+			<h2>De quoi s’agit-il ?</h2>
+			<p>
+				Les cookies sont de petites informations enregistrées dans le navigateur, par exemple pour conserver
+				le panier ou la connexion au compte. Certains prennent fin avec la session, d’autres subsistent
+				pendant la durée prévue.
+			</p>
+			<p>
+				Le site peut aussi utiliser le stockage local du navigateur, comme <strong>localStorage</strong>, et
+				d’autres technologies. Leur nom ne détermine pas à lui seul si un consentement est nécessaire : la
+				finalité et le fonctionnement comptent. Cette page ne concerne donc pas uniquement les cookies
+				classiques.
+			</p>
+
+			<h2>Fonctions strictement nécessaires</h2>
+			<p>
+				Sans consentement distinct, nous utilisons les technologies strictement nécessaires au service
+				expressément demandé, comme le panier, l’authentification, le paiement ou la conservation du choix de
+				confidentialité, dans la limite des besoins réels.
+			</p>
+			<p>
+				Tout outil de mesure ou service d’un même fournisseur n’est pas automatiquement nécessaire. Pour le
+				stockage et l’accès aux informations du terminal, nous tenons compte de l’
+				<strong>article 82 de la loi Informatique et Libertés</strong> et des règles de la CNIL. Une
+				éventuelle exemption doit correspondre à l’usage réel du dispositif.
+			</p>
+
+			<h2>Mesure et marketing</h2>
+			<p>
+				La mesure facultative aide à comprendre la fréquentation et l’utilisation de la boutique. Les
+				technologies marketing peuvent mesurer les campagnes, constituer des audiences ou adapter les
+				publicités.
+			</p>
+			<p>
+				Nous utilisons Google Tag Manager et des outils Google associés. Avant votre choix, le site transmet
+				les paramètres Consent Mode <strong>«denied»</strong> pour les finalités facultatives de mesure et de
+				publicité. Après accord, les paramètres concernés passent à «granted» et reviennent à «denied» en cas
+				de retrait.{" "}
+				<strong>
+					Charger un script et autoriser l’écriture ou la lecture de données sont deux opérations différentes
+					:
+				</strong>{" "}
+				la valeur «denied» ne prouve pas à elle seule l’absence de toute requête réseau.
+			</p>
+			<p>
+				Nous utilisons également <strong>Cloudflare Web Analytics</strong>. Dans la configuration décrite, le
+				script se charge avant le consentement et ce service n’utilise pas de cookies pour cette mesure.
+				L’absence de cookie ne démontre pas, à elle seule, l’absence de traitement de données personnelles ni
+				une exemption automatique des règles applicables. Les finalités et bases de traitement sont aussi
+				présentées dans la{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Politique de confidentialité</Link>.
+			</p>
+			<p>
+				Naviguer sur le site, faire défiler une page, fermer le bandeau ou acheter ne vaut pas consentement.
+				Les catégories facultatives ne sont pas présélectionnées.
+			</p>
+
+			<h2>Vos préférences</h2>
+			<p>
+				Vous pouvez tout accepter, tout refuser pour les finalités facultatives ou choisir certaines
+				catégories. Les fonctions nécessaires restent actives pour fournir le service demandé.
+			</p>
+			<p className="not-prose">
+				<PrivacySettingsLink
+					label="Ouvrir les paramètres de confidentialité"
+					className={SETTINGS_BUTTON_CLASS}
+				/>
+			</p>
+			<p>
+				Vous pouvez ensuite modifier votre choix via <strong>«Paramètres de confidentialité»</strong> dans le
+				pied de page. Le retrait s’applique aux utilisations futures des technologies facultatives. Il ne
+				supprime pas automatiquement toutes les données déjà traitées par un prestataire autonome ; les droits
+				décrits dans la politique de confidentialité restent applicables.
+			</p>
+			<p>
+				Le choix concerne votre navigateur et votre appareil. Sur un autre appareil ou après suppression des
+				données du site, il peut être nécessaire de le renouveler. Une modification de ce document ne vaut pas
+				accord pour une nouvelle finalité.
+			</p>
+
+			<h2>Informations conservées dans le navigateur</h2>
+			<InventoryTable lang="fr" />
+			<p>
+				Les cookies d’authentification peuvent comporter un préfixe lié à l’adresse du service ; la table
+				indique les parties reconnaissables. Elle décrit ces mécanismes de la boutique, sans constituer un
+				inventaire exhaustif des technologies de tiers. Les services Google et Cloudflare sont présentés plus
+				haut. Pour toute autre information, écrivez à <Mail />.
+			</p>
+
+			<h2>Paramètres du navigateur</h2>
+			<p>
+				Vous pouvez aussi supprimer ou bloquer les cookies dans le navigateur. Le blocage des cookies
+				nécessaires peut empêcher le panier, la connexion ou le paiement de fonctionner.{" "}
+				<strong>
+					Refuser les mesures et publicités facultatives dans nos paramètres n’empêche pas l’achat.
+				</strong>
+			</p>
+			<p>
+				Supprimer les cookies ne supprime pas forcément les autres espaces de stockage. Vous pouvez les gérer
+				dans les paramètres de données des sites de votre navigateur.
+			</p>
+
+			<h2>Contact</h2>
+			<p>
+				Le site est exploité par <strong>{companyInfo.legalName}</strong>, {companyInfo.street},{" "}
+				{companyInfo.city}, {SLOVAKIA_FR}, IČO {companyInfo.ico}. Questions : <Mail />.
+			</p>
+			<p>
+				Les droits, destinataires et autorités compétentes sont présentés dans la{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Politique de confidentialité</Link>.
 			</p>
 		</>
 	);

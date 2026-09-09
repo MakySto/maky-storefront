@@ -2,7 +2,7 @@ import Link from "next/link";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_HU, SLOVAKIA_PL } from "./slovakia";
+import { SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
@@ -337,6 +337,114 @@ export function Hu({ channel }: { channel: string }) {
 				A peren kívüli vitarendezésről és a határon átnyúló vásárlásokhoz igénybe vehető segítségről az{" "}
 				<Link href={marketHref(channel, "/obchodne-podmienky")}>Általános szerződési feltételekben</Link>{" "}
 				talál további információt.
+			</p>
+		</>
+	);
+}
+
+export function It({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Hai una domanda su un prodotto, vuoi verificare se un accessorio è adatto alla tua auto o ti serve
+				aiuto con un ordine? Scrivici o chiamaci.
+			</p>
+			<p>
+				<strong>E-mail:</strong> <Mail />
+				<br />
+				<strong>Telefono:</strong> <Phone />
+			</p>
+			<p>
+				Rispondiamo ai messaggi nei nostri giorni lavorativi. Per una domanda su un ordine, indicane il
+				numero. Per scegliere un accessorio, comunicaci marca, modello e anno di produzione dell’auto; per le
+				barre portatutto, anche il tipo di tetto. Una foto può aiutarci a verificare la compatibilità.
+			</p>
+
+			<h2>Resi e reclami</h2>
+			<p>Invia i prodotti da restituire o oggetto di un reclamo a:</p>
+			<ReturnAddress country={SLOVAKIA_IT} />
+			<p>
+				Questo indirizzo è diverso dalla sede legale. Per restituire un acquisto senza indicarne il motivo,
+				consulta il <Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Diritto di recesso</Link>. Per
+				un prodotto difettoso o danneggiato, consulta{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reclami e resi</Link>.
+			</p>
+
+			<h2>Venditore e dati per la fatturazione</h2>
+			<SeatAddress country={SLOVAKIA_IT} />
+			<p>
+				<strong>Numero identificativo dell’impresa (IČO):</strong> {companyInfo.ico}
+				<br />
+				<strong>Codice fiscale slovacco (DIČ):</strong> {companyInfo.dic}
+				<br />
+				<strong>Numero di identificazione IVA:</strong> {companyInfo.icDph}
+			</p>
+			<p>
+				La società è registrata ai fini IVA in Slovacchia. È iscritta nel registro delle imprese tenuto dal
+				Mestský súd Bratislava III, sezione Sro, numero 200804/B.
+			</p>
+
+			<h2>Autorità di vigilanza nel paese del venditore</h2>
+			<SupervisoryAuthority country={SLOVAKIA_IT} gloss="Ispettorato slovacco del commercio" />
+			<p>
+				Le informazioni sulla risoluzione extragiudiziale delle controversie e sull’assistenza per gli
+				acquisti transfrontalieri sono nelle{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Condizioni generali di vendita</Link>. Restano
+				ferme le competenze delle altre autorità previste dalla legge.
+			</p>
+		</>
+	);
+}
+
+export function Fr({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Vous avez une question sur un produit, souhaitez vérifier la compatibilité d’un accessoire ou avez
+				besoin d’aide pour une commande ? Écrivez-nous ou appelez-nous.
+			</p>
+			<p>
+				<strong>E-mail :</strong> <Mail />
+				<br />
+				<strong>Téléphone :</strong> <Phone />
+			</p>
+			<p>
+				Nous répondons aux messages pendant nos jours ouvrés. Pour une question sur une commande, indiquez son
+				numéro. Pour le choix d’un accessoire, précisez la marque, le modèle et l’année de fabrication du
+				véhicule ; pour les barres de toit, ajoutez le type de toit. Une photo peut faciliter la vérification.
+			</p>
+
+			<h2>Retours et réclamations</h2>
+			<p>Veuillez envoyer les produits retournés ou faisant l’objet d’une réclamation à :</p>
+			<ReturnAddress country={SLOVAKIA_FR} />
+			<p>
+				Cette adresse est différente de notre siège social. Pour retourner un achat sans avoir à donner de
+				motif, consultez le{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Droit de rétractation</Link>. Pour un
+				produit défectueux ou endommagé, consultez{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Réclamations et retours</Link>.
+			</p>
+
+			<h2>Vendeur et informations de facturation</h2>
+			<SeatAddress country={SLOVAKIA_FR} />
+			<p>
+				<strong>Numéro d’identification de l’entreprise (IČO) :</strong> {companyInfo.ico}
+				<br />
+				<strong>Numéro fiscal slovaque (DIČ) :</strong> {companyInfo.dic}
+				<br />
+				<strong>Numéro de TVA intracommunautaire :</strong> {companyInfo.icDph}
+			</p>
+			<p>
+				La société est assujettie à la TVA en Slovaquie. Elle est inscrite au registre du commerce tenu par le
+				Mestský súd Bratislava III, section Sro, sous le numéro 200804/B.
+			</p>
+
+			<h2>Autorité de contrôle dans le pays du vendeur</h2>
+			<SupervisoryAuthority country={SLOVAKIA_FR} gloss="Inspection slovaque du commerce" />
+			<p>
+				Les <Link href={marketHref(channel, "/obchodne-podmienky")}>Conditions générales de vente</Link>{" "}
+				présentent les voies de règlement extrajudiciaire et l’assistance pour les achats transfrontaliers.
+				Les compétences des autres autorités prévues par la loi restent inchangées.
 			</p>
 		</>
 	);
