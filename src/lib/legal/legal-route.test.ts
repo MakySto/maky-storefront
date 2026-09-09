@@ -22,7 +22,7 @@ const CONTENT = [
 
 describe("which markets have approved legal copy", () => {
 	it("maps only markets a human has signed off, not every channel with a locale", () => {
-		expect(marketsWithLegalCopy()).toEqual(["sk", "cz", "de", "at", "pl", "hu"]);
+		expect(marketsWithLegalCopy()).toEqual(["sk", "cz", "de", "at", "pl", "hu", "it", "fr"]);
 		// There are far more channels than there is approved copy. That gap is the point:
 		// a market must not inherit a warranty clause just because a locale string exists.
 		expect(Object.keys(CHANNEL_MAP).length).toBeGreaterThan(marketsWithLegalCopy().length);
@@ -53,12 +53,12 @@ describe("which markets have approved legal copy", () => {
 	});
 
 	it("returns null for a market with no approved copy, and for nonsense", () => {
-		// `it` stands in for "a market we have not written copy for". It used to be `pl`,
-		// which stopped testing anything the moment Polish copy landed — the same way `de`
-		// stopped when German did. Whoever adds Italian must move this fixture again
-		// rather than delete the assertion, or the test goes on passing while checking
-		// nothing.
-		expect(legalLocaleFor("it-eur")).toBeNull();
+		// `es` stands in for "a market we have not written copy for". It used to be `pl`,
+		// then `it`, each of which stopped testing anything the moment that language landed
+		// — the same way `de` stopped when German did. Whoever adds Spanish must move this
+		// fixture again rather than delete the assertion, or the test goes on passing while
+		// checking nothing.
+		expect(legalLocaleFor("es-eur")).toBeNull();
 		expect(legalLocaleFor("us-usd")).toBeNull();
 		expect(legalLocaleFor("")).toBeNull();
 		expect(legalLocaleFor("../etc/passwd")).toBeNull();
@@ -85,7 +85,7 @@ describe("every legal page exists in every approved language", () => {
 			// arrived with `/de/...` and `/at/...` written out, and the Polish and Hungarian
 			// documents likewise print `/pl/...` and `/hu/...` as their reference URLs, so
 			// every approved market belongs in this pattern.
-			expect(src).not.toMatch(/href="\/(sk|cz|de|at|pl|hu)\//);
+			expect(src).not.toMatch(/href="\/(sk|cz|de|at|pl|hu|it|fr)\//);
 		});
 	}
 });
@@ -121,25 +121,55 @@ describe("the <h1> and the <title> may differ, and only where the copy says so",
 		}
 	});
 
-	it("gives a heading only to the pages whose delivered h1 really differs", () => {
-		// From the delivered PL/HU copy: Polish and Hungarian shipping, Polish terms and
-		// both withdrawal pages carry a market qualifier or a longer phrase in the tab
-		// that does not belong above the text. Everything else is genuinely one string.
-		const shipping = source("src/app/[channel]/(main)/doprava-a-platba/page.tsx");
-		expect(shipping).toContain('heading: "Dostawa i płatności"');
-		expect(shipping).toContain('heading: "Szállítás és fizetés"');
-		expect(shipping).toContain('title: "Dostawa i płatności – Polska"');
+	it("gives a heading only where the delivered h1 really differs from the title", () => {
+		// The subject here is the (page, locale) pair, not the page. It began as a per-page
+		// check because under PL/HU the two happened to coincide — Polish and Hungarian
+		// shipping, Polish terms and both withdrawal pages carried a market qualifier or a
+		// longer phrase in the tab, and kontakt and cookies were one string in every
+		// language then approved. Italian and French broke that coincidence: their delivered
+		// copy distinguishes `Contatti` / `Contatti e assistenza` and `Cookies et
+		// préférences` / `Cookies et préférences de confidentialité`. Asserting per page
+		// would now mean either deleting the guard or refusing the delivered copy, so it
+		// asserts per locale entry instead — which is what it always meant.
+		const headingOf = (rel: string, locale: string) => {
+			const block = new RegExp(`\\n(\\t+)${locale}: \\{[\\s\\S]*?\\n\\1\\},`).exec(source(rel))?.[0] ?? "";
+			expect(block, `${rel} has no ${locale} entry`).not.toBe("");
+			return /\bheading: "([^"]+)"/.exec(block)?.[1] ?? null;
+		};
 
-		const terms = source("src/app/[channel]/(main)/obchodne-podmienky/page.tsx");
-		expect(terms).toContain('heading: "Regulamin sklepu"');
+		const shipping = "src/app/[channel]/(main)/doprava-a-platba/page.tsx";
+		expect(headingOf(shipping, "pl")).toBe("Dostawa i płatności");
+		expect(headingOf(shipping, "hu")).toBe("Szállítás és fizetés");
+		expect(source(shipping)).toContain('title: "Dostawa i płatności – Polska"');
+		expect(headingOf(shipping, "it")).toBe("Spedizione e pagamento");
+		expect(headingOf(shipping, "fr")).toBe("Livraison et paiement");
 
-		const withdrawal = source("src/app/[channel]/(main)/odstupenie-od-zmluvy/page.tsx");
-		expect(withdrawal).toContain('heading: "Odstąpienie od umowy"');
-		expect(withdrawal).toContain('heading: "Elállási jog"');
+		const terms = "src/app/[channel]/(main)/obchodne-podmienky/page.tsx";
+		expect(headingOf(terms, "pl")).toBe("Regulamin sklepu");
+		// Italian and French terms ARE one string, so they must not invent a second.
+		expect(headingOf(terms, "it")).toBeNull();
+		expect(headingOf(terms, "fr")).toBeNull();
 
-		// Pages where the two are the same must NOT invent a third wording.
-		expect(source("src/app/[channel]/(main)/kontakt/page.tsx")).not.toMatch(/\bheading:/);
-		expect(source("src/app/[channel]/(main)/cookies/page.tsx")).not.toMatch(/\bheading:/);
+		const withdrawal = "src/app/[channel]/(main)/odstupenie-od-zmluvy/page.tsx";
+		expect(headingOf(withdrawal, "pl")).toBe("Odstąpienie od umowy");
+		expect(headingOf(withdrawal, "hu")).toBe("Elállási jog");
+		expect(headingOf(withdrawal, "it")).toBe("Diritto di recesso");
+		expect(headingOf(withdrawal, "fr")).toBe("Droit de rétractation");
+
+		// Locales where the two are the same must NOT invent a third wording.
+		for (const rel of [
+			"src/app/[channel]/(main)/kontakt/page.tsx",
+			"src/app/[channel]/(main)/cookies/page.tsx",
+		]) {
+			for (const locale of ["pl", "hu"]) {
+				expect(headingOf(rel, locale), `${rel} gave ${locale} a heading`).toBeNull();
+			}
+		}
+		expect(headingOf("src/app/[channel]/(main)/kontakt/page.tsx", "it")).toBe("Contatti");
+		expect(headingOf("src/app/[channel]/(main)/cookies/page.tsx", "fr")).toBe("Cookies et préférences");
+
+		expect(headingOf("src/app/[channel]/(main)/ochrana-osobnych-udajov/page.tsx", "it")).toBeNull();
+		expect(headingOf("src/app/[channel]/(main)/ochrana-osobnych-udajov/page.tsx", "fr")).toBeNull();
 	});
 
 	it("renders the h1 from heading and keeps the title for SEO", () => {

@@ -11,7 +11,7 @@ import { isWithdrawalFormServable, withdrawalBlockReason } from "@/lib/withdrawa
 import { normalizeWithdrawalPhone } from "@/lib/withdrawal/validate";
 import { legalLocaleFor, type LegalLocale } from "@/lib/legal/locale";
 import { LegalPage } from "@/ui/components/legal/legal-page";
-import { Cs, De, DeAt, Hu, Pl, Sk } from "@/ui/content/legal/odstupenie-od-zmluvy";
+import { Cs, De, DeAt, Fr, Hu, It, Pl, Sk } from "@/ui/content/legal/odstupenie-od-zmluvy";
 import { WithdrawalForm } from "@/ui/components/withdrawal/withdrawal-form";
 import { getCurrentUser, type AccountUser } from "../account/get-current-user";
 import { submitWithdrawalAction } from "./actions";
@@ -121,6 +121,34 @@ const META: Readonly<Record<LegalLocale, WithdrawalMeta>> = {
 			"Az online vásárlástól való elállás feltételei: online elállási funkció, 14 nap, bejelentkezve leadott rendelésnél 30 nap, visszaküldés és visszatérítés.",
 		withoutForm:
 			"Az online vásárlástól való elállás feltételei: 14 nap, bejelentkezve leadott rendelésnél 30 nap, visszaküldés, visszatérítés és nyilatkozatminta.",
+	},
+
+	// Same again for it/fr, and here the two descriptions are the delivered
+	// `withdrawalMetadata.withForm` / `.withoutForm` pair rather than something written
+	// here — the package supplies both states precisely so that switching the function on
+	// is not held up by copy, and so that the served description never claims an online
+	// function the market does not have. Only `withoutForm` is reachable today.
+	//
+	// Both markets transposed the online-withdrawal duty with effect from 19 June 2026
+	// (Italy: art. 54-bis Codice del consumo via D.lgs. 209/2025; France: art. D221-5 via
+	// décret 2026-3). The preview state is therefore a gap to be closed by R and M before
+	// these markets serve real purchases — not a lawful permanent substitute for the
+	// function, and not something noindex resolves.
+	it: {
+		title: "Diritto di recesso e restituzione",
+		heading: "Diritto di recesso",
+		withForm:
+			"Recesso dagli acquisti MAKY.STORE: funzione online, termini di 14 o 30 giorni secondo l’acquisto, reso, costi, rimborso e modulo facoltativo.",
+		withoutForm:
+			"Recesso dagli acquisti MAKY.STORE: 14 giorni, 30 per ordini effettuati dopo l’accesso, restituzione, rimborso e modulo facoltativo da stampare.",
+	},
+	fr: {
+		title: "Droit de rétractation et retour",
+		heading: "Droit de rétractation",
+		withForm:
+			"Rétractation chez MAKY.STORE : fonction en ligne, délais de 14 ou 30 jours selon l’achat, retour, frais, remboursement et formulaire facultatif.",
+		withoutForm:
+			"Rétractation chez MAKY.STORE : délai de 14 jours, porté à 30 pour les achats en étant connecté, retour, frais, remboursement et formulaire à imprimer.",
 	},
 };
 
@@ -236,7 +264,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	const alternatives = { email: companyInfo.email, postalAddress: companyInfo.returnAddress };
 	const modelFormHref = marketHref(channel, `${PATH}/vzorovy-formular`);
 
-	const BODIES = { sk: Sk, cs: Cs, de: De, deAt: DeAt, pl: Pl, hu: Hu } as const;
+	const BODIES = { sk: Sk, cs: Cs, de: De, deAt: DeAt, pl: Pl, hu: Hu, it: It, fr: Fr } as const;
 	const Body = BODIES[locale];
 	const form = formServable ? (
 		<section aria-labelledby="online-withdrawal" className="not-prose my-10">

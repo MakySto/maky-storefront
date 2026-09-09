@@ -63,15 +63,20 @@ describe("market scoping", () => {
 	/**
 	 * Markets with no approved copy of any kind.
 	 *
-	 * `it` replaced `pl` when Polish copy landed. This list has to keep naming markets
-	 * that genuinely have no copy — the moment one of them gains a language, move it to
-	 * `WITH_COPY` and put a still-uncovered market here. Deleting the entry instead would
-	 * leave a green test that checks nothing.
+	 * The relay so far: `de` → `pl` → `it`/`fr` → `es`/`ro`. This list has to keep naming
+	 * markets that genuinely have no copy — the moment one of them gains a language, move
+	 * it to `WITH_COPY` and put a still-uncovered market here. Deleting the entry instead
+	 * would leave a green test that checks nothing.
+	 *
+	 * `ca` is the only uncovered market NOT listed here; it appears in the equivalent
+	 * fixture in `proxy.test.ts` instead. When English copy lands, both files run out of
+	 * candidates at once — that is the point at which this fixture stops being movable and
+	 * the assertion has to be rethought rather than quietly dropped.
 	 */
-	const NO_COPY = ["it", "fr", "us"];
+	const NO_COPY = ["es", "ro", "us"];
 
 	/** Markets whose legal copy a human has approved. */
-	const WITH_COPY = ["sk", "cz", "de", "at", "pl", "hu"];
+	const WITH_COPY = ["sk", "cz", "de", "at", "pl", "hu", "it", "fr"];
 
 	it("serves the legal pages in every market whose copy is approved", () => {
 		for (const segment of LEGAL_PAGES) {

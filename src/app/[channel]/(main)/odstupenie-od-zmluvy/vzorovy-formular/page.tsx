@@ -82,6 +82,22 @@ const COPY = {
 		printLabel: "Nyilatkozat nyomtatása",
 		downloadLabel: "Nyilatkozat letöltése (.txt)",
 	},
+	it: {
+		title: "Modulo di recesso",
+		description:
+			"Modulo facoltativo di recesso da stampare o scaricare. Puoi inviare anche un’altra dichiarazione inequivocabile.",
+		fileName: "modulo-di-recesso.txt",
+		printLabel: "Stampa il modulo",
+		downloadLabel: "Scarica il modulo (.txt)",
+	},
+	fr: {
+		title: "Formulaire de rétractation",
+		description:
+			"Formulaire facultatif de rétractation à imprimer ou télécharger. Vous pouvez aussi transmettre une autre déclaration claire.",
+		fileName: "formulaire-de-retractation.txt",
+		printLabel: "Imprimer le formulaire",
+		downloadLabel: "Télécharger le formulaire (.txt)",
+	},
 } as const satisfies Record<LegalLocale, unknown>;
 
 /** The plain-text copy offered for download, so print and download cannot drift. */
@@ -293,6 +309,122 @@ const HUNGARIAN_TEXT = [
 	"Az elálláshoz nem szükséges IBAN-szám és indokolás. Az eredetileg használt bankkártyára történő visszatérítéshez nem kérünk bankszámlaadatot.",
 ].join("\n");
 
+/**
+ * The Italian text.
+ *
+ * Transcribed from the delivered `formulare/vzor-odstupenia.it-IT.txt` — unlike the
+ * Polish and Hungarian texts above, which had to be built from the reviewed German form
+ * because the PL/HU package contained no `formulare/` directory. A translator has seen
+ * every line of this one.
+ *
+ * The statutory core is the model in Annex I(B) to Directive 2011/83/EU as transposed in
+ * the Codice del consumo. The closing two sentences describe MAKY's process rather than
+ * the statute, and must not be trimmed as boilerplate: they are what tells the reader
+ * that neither a reason nor an IBAN is a condition of withdrawing.
+ */
+const ITALIAN_TEXT = [
+	"MODULO DI RECESSO",
+	"",
+	"Compila e invia questo modulo solo se intendi recedere dal contratto.",
+	"Il suo uso è facoltativo: puoi inviare anche un’altra dichiarazione inequivocabile.",
+	"",
+	"Destinatario:",
+	companyInfo.legalName,
+	"Stará Vajnorská 11",
+	"831 04 Bratislava, Slovacchia",
+	`E-mail: ${companyInfo.email}`,
+	"",
+	"Con la presente comunico/comunichiamo la decisione di recedere dal contratto",
+	"di acquisto dei prodotti indicati di seguito:",
+	"................................................................................",
+	"................................................................................",
+	"",
+	"Numero d’ordine o altri riferimenti del contratto:",
+	"................................................................................",
+	"",
+	"Ambito: intero ordine oppure singoli prodotti con le quantità:",
+	"................................................................................",
+	"................................................................................",
+	"",
+	"Data dell’ordine / data di ricezione (cancellare la voce non pertinente):",
+	"................................................................................",
+	"",
+	"Nome e cognome del consumatore o dei consumatori:",
+	"................................................................................",
+	"",
+	"Indirizzo del consumatore o dei consumatori:",
+	"................................................................................",
+	"................................................................................",
+	"",
+	"E-mail per la conferma (facoltativa per una dichiarazione su carta):",
+	"................................................................................",
+	"",
+	"Data:",
+	"................................................................................",
+	"",
+	"Firma del consumatore o dei consumatori — solo se il modulo è inviato su carta:",
+	"................................................................................",
+	"",
+	"Il motivo del recesso e l’IBAN non sono richiesti per recedere.",
+	"Non servono dati bancari per rimborsare sulla carta usata originariamente.",
+].join("\n");
+
+/**
+ * The French text, from the delivered `formulare/vzor-odstupenia.fr-FR.txt`.
+ *
+ * Statutory core: the model form in Annexe to article R221-1 of the code de la
+ * consommation, itself the French version of Annex I(B) to Directive 2011/83/EU. Note
+ * that it says *rétractation* throughout: this is the consumer's withdrawal right, not
+ * *résolution* (the remedy for a defect) and not *résiliation* (terminating a continuing
+ * contract). Those three are distinct in French law and must not be swapped for variety.
+ */
+const FRENCH_TEXT = [
+	"FORMULAIRE DE RÉTRACTATION",
+	"",
+	"À remplir et envoyer uniquement si vous souhaitez vous rétracter du contrat.",
+	"Son utilisation est facultative : une autre déclaration claire convient aussi.",
+	"",
+	"Destinataire :",
+	companyInfo.legalName,
+	"Stará Vajnorská 11",
+	"831 04 Bratislava, Slovaquie",
+	`E-mail : ${companyInfo.email}`,
+	"",
+	"Je/Nous vous informe/informons de ma/notre décision de me/nous rétracter",
+	"du contrat d’achat concernant les produits indiqués ci-dessous :",
+	"................................................................................",
+	"................................................................................",
+	"",
+	"Numéro de commande ou autres références du contrat :",
+	"................................................................................",
+	"",
+	"Portée : toute la commande ou certains produits avec leurs quantités :",
+	"................................................................................",
+	"................................................................................",
+	"",
+	"Date de commande / date de réception (rayer la mention inutile) :",
+	"................................................................................",
+	"",
+	"Prénom et nom du ou des consommateurs :",
+	"................................................................................",
+	"",
+	"Adresse du ou des consommateurs :",
+	"................................................................................",
+	"................................................................................",
+	"",
+	"E-mail pour la confirmation (facultatif pour une déclaration sur papier) :",
+	"................................................................................",
+	"",
+	"Date :",
+	"................................................................................",
+	"",
+	"Signature du ou des consommateurs — uniquement pour un envoi sur papier :",
+	"................................................................................",
+	"",
+	"Aucun motif ni IBAN n’est requis pour exercer la rétractation.",
+	"Aucune donnée bancaire n’est nécessaire pour rembourser sur la carte initiale.",
+].join("\n");
+
 const TEXT: Record<LegalLocale, string> = {
 	sk: SLOVAK_TEXT,
 	cs: CZECH_TEXT,
@@ -300,6 +432,8 @@ const TEXT: Record<LegalLocale, string> = {
 	deAt: GERMAN_TEXT,
 	pl: POLISH_TEXT,
 	hu: HUNGARIAN_TEXT,
+	it: ITALIAN_TEXT,
+	fr: FRENCH_TEXT,
 };
 
 export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {
@@ -479,6 +613,78 @@ function HungarianBody({ channel }: { channel: string }) {
 	);
 }
 
+function ItalianBody({ channel }: { channel: string }) {
+	return (
+		<>
+			<p className="print:hidden">
+				Puoi stampare o scaricare questo modulo. Il suo uso è facoltativo — è sufficiente qualsiasi altra
+				dichiarazione inequivocabile. Le modalità disponibili sono descritte nella pagina{" "}
+				<a href={marketHref(channel, "/odstupenie-od-zmluvy")}>Diritto di recesso</a>.
+			</p>
+			<p>Compila e invia questo modulo solo se intendi recedere dal contratto.</p>
+			<p>
+				Destinatario: {companyInfo.legalName}, {companyInfo.returnAddress}, Slovacchia, e-mail:{" "}
+				{companyInfo.email}
+			</p>
+			<p>
+				Con la presente comunico/comunichiamo la decisione di recedere dal contratto di acquisto dei prodotti
+				indicati di seguito:
+			</p>
+			<ul>
+				<li>Prodotti: ........................</li>
+				<li>Numero d’ordine o altri riferimenti del contratto: ........................</li>
+				<li>Ambito: intero ordine oppure singoli prodotti con le quantità: ..................</li>
+				<li>Data dell’ordine / data di ricezione: ........................</li>
+				<li>Nome e cognome del consumatore o dei consumatori: ........................</li>
+				<li>Indirizzo del consumatore o dei consumatori: ........................</li>
+				<li>E-mail per la conferma (facoltativa su carta): .......................</li>
+				<li>Data: ........................</li>
+				<li>Firma del consumatore o dei consumatori — solo su carta: ........................</li>
+			</ul>
+			<p>
+				Il motivo del recesso e l’IBAN non sono richiesti per recedere. Non servono dati bancari per
+				rimborsare sulla carta usata originariamente.
+			</p>
+		</>
+	);
+}
+
+function FrenchBody({ channel }: { channel: string }) {
+	return (
+		<>
+			<p className="print:hidden">
+				Vous pouvez imprimer ou télécharger ce formulaire. Son utilisation est facultative — une autre
+				déclaration claire convient aussi. Les voies disponibles sont présentées sur la page{" "}
+				<a href={marketHref(channel, "/odstupenie-od-zmluvy")}>Droit de rétractation</a>.
+			</p>
+			<p>À remplir et envoyer uniquement si vous souhaitez vous rétracter du contrat.</p>
+			<p>
+				Destinataire : {companyInfo.legalName}, {companyInfo.returnAddress}, Slovaquie, e-mail :{" "}
+				{companyInfo.email}
+			</p>
+			<p>
+				Je/Nous vous informe/informons de ma/notre décision de me/nous rétracter du contrat d’achat concernant
+				les produits indiqués ci-dessous :
+			</p>
+			<ul>
+				<li>Produits : ........................</li>
+				<li>Numéro de commande ou autres références du contrat : ........................</li>
+				<li>Portée : toute la commande ou certains produits avec leurs quantités : ..................</li>
+				<li>Date de commande / date de réception : ........................</li>
+				<li>Prénom et nom du ou des consommateurs : ........................</li>
+				<li>Adresse du ou des consommateurs : ........................</li>
+				<li>E-mail pour la confirmation (facultatif sur papier) : .......................</li>
+				<li>Date : ........................</li>
+				<li>Signature du ou des consommateurs — uniquement sur papier : ........................</li>
+			</ul>
+			<p>
+				Aucun motif ni IBAN n’est requis pour exercer la rétractation. Aucune donnée bancaire n’est nécessaire
+				pour rembourser sur la carte initiale.
+			</p>
+		</>
+	);
+}
+
 export default async function Page(props: { params: Promise<{ channel: string }> }) {
 	const { channel } = await props.params;
 	const locale = legalLocaleFor(channel);
@@ -492,6 +698,8 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 		deAt: GermanBody,
 		pl: PolishBody,
 		hu: HungarianBody,
+		it: ItalianBody,
+		fr: FrenchBody,
 	} as const satisfies Record<LegalLocale, unknown>;
 	const Body = BODIES[locale];
 

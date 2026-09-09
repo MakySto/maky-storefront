@@ -224,20 +224,22 @@ describe("a route that exists, but not in this market", () => {
 
 	it("404s these pages in a market with no approved copy", async () => {
 		for (const segment of SK_ONLY) {
-			for (const market of ["it", "fr", "us", "ca"]) {
+			// Moved from it/fr when Italian and French copy landed; before that from de, then
+			// pl. Move it again rather than delete it — an emptied list passes vacuously.
+			for (const market of ["es", "ro", "us", "ca"]) {
 				expect(await statusOf(`/${market}/${segment}`), `/${market}/${segment}`).toBe(404);
 			}
 		}
 	});
 
 	it("serves the legal pages on every market with approved copy, but not the CMS ones", async () => {
-		// Copy is approved for cz, de, at, pl and hu, so the proxy must let these through
-		// — the gate and `legalLocaleFor` are two halves of one decision and used to be
-		// able to disagree. The CMS pages stay sk-only until Payload holds a translated
-		// document, which is a separate decision from the legal copy landing; that is why
-		// /pl/o-nas and /hu/o-nas are expected to 404 here even though the seven static
-		// pages do not.
-		for (const market of ["cz", "de", "at", "pl", "hu"]) {
+		// Copy is approved for cz, de, at, pl, hu, it and fr, so the proxy must let these
+		// through — the gate and `legalLocaleFor` are two halves of one decision and used
+		// to be able to disagree. The CMS pages stay sk-only until Payload holds a
+		// translated document, which is a separate decision from the legal copy landing;
+		// that is why /it/o-nas and /fr/o-nas are expected to 404 here even though the
+		// seven static pages do not.
+		for (const market of ["cz", "de", "at", "pl", "hu", "it", "fr"]) {
 			for (const segment of LEGAL_PAGES) {
 				expect(await statusOf(`/${market}/${segment}`), `/${market}/${segment}`).not.toBe(404);
 			}
@@ -248,7 +250,11 @@ describe("a route that exists, but not in this market", () => {
 	});
 
 	it("marks them noindex", async () => {
-		expect((await proxy(req("/it/kontakt"))).headers.get("x-robots-tag")).toBe("noindex");
+		// `es` for the same reason as above. It also has to be a market with no copy for
+		// this to test anything: a market that HAS copy is a real page, and would carry the
+		// preview market's "noindex, nofollow" instead — a different header set by a
+		// different rule, which would make this pass while checking something else.
+		expect((await proxy(req("/es/kontakt"))).headers.get("x-robots-tag")).toBe("noindex");
 	});
 
 	it("leaves them alone on sk", async () => {

@@ -1,5 +1,5 @@
 import { legalRoute } from "@/lib/legal/legal-route";
-import { Cs, De, DeAt, Hu, Pl, Sk } from "@/ui/content/legal/doprava-a-platba";
+import { Cs, De, DeAt, Fr, Hu, It, Pl, Sk } from "@/ui/content/legal/doprava-a-platba";
 
 const route = legalRoute({
 	path: "/doprava-a-platba",
@@ -41,6 +41,20 @@ const route = legalRoute({
 			description:
 				"Szállítás Magyarországra, szállítási díjak, várható kézbesítés és előre fizetés a Stripe rendszerén keresztül. Ismerje meg a rendelés feltételeit.",
 			Body: Hu,
+		},
+		it: {
+			title: "Spedizione e pagamento in Italia",
+			heading: "Spedizione e pagamento",
+			description:
+				"Spediamo in Italia dalla Slovacchia con FedEx e Slovenská pošta. Informazioni su consegna, costi, disponibilità e pagamento anticipato tramite Stripe.",
+			Body: It,
+		},
+		fr: {
+			title: "Livraison et paiement en France",
+			heading: "Livraison et paiement",
+			description:
+				"Livraison en France depuis la Slovaquie avec FedEx et Slovenská pošta : frais, disponibilité, délais et paiement anticipé par Stripe, sans contre-remboursement.",
+			Body: Fr,
 		},
 	},
 });
