@@ -3,7 +3,7 @@ import { type ReactNode } from "react";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL } from "./slovakia";
+import { SLOVAKIA_ES, SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL, SLOVAKIA_RO } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
@@ -1097,6 +1097,306 @@ export function Fr({ channel, form, modelFormHref }: WithdrawalBodyProps) {
 				</strong>{" "}
 				Les détails figurent dans les{" "}
 				<Link href={marketHref(channel, "/obchodne-podmienky")}>Conditions générales de vente</Link>.
+			</p>
+		</>
+	);
+}
+
+export function Es({ channel, form, modelFormHref }: WithdrawalBodyProps) {
+	return (
+		<>
+			<p>
+				¿Has cambiado de idea o el producto ya no encaja en tus planes? Como consumidor, puedes desistir de
+				una compra online normalmente en un plazo de{" "}
+				<strong>14 días naturales desde la recepción del producto, sin indicar el motivo</strong>.
+			</p>
+			<p>
+				Si realizaste el pedido después de iniciar sesión en tu cuenta, ampliamos ese plazo a{" "}
+				<strong>30 días</strong>. Aplicamos el mismo procedimiento de devolución y las condiciones que se
+				explican aquí, sin reducir tus derechos legales. No necesitas una cuenta para comunicar el
+				desistimiento.
+			</p>
+			<p>
+				Puedes desistir antes de la entrega y hacerlo de todo el pedido o solo de determinados productos. No
+				tienes que esperar a que lo autoricemos.
+			</p>
+
+			{form ?? (
+				<>
+					<h2>Desistimiento online</h2>
+					<p>
+						En esta versión de vista previa de la tienda, la función de desistimiento online todavía no está
+						activa. Puedes enviar tu declaración por e-mail o por correo postal a los datos indicados a
+						continuación, o por otra vía legalmente admitida. Si tienes un plazo en curso, no esperes a que se
+						active. Abrir esta página no equivale a presentar una declaración.
+					</p>
+				</>
+			)}
+
+			<h2>Comunicarlo por e-mail o por correo postal</h2>
+			<p>
+				Envía una declaración inequívoca a <Mail /> o a{" "}
+				<strong>
+					{companyInfo.legalName}, {companyInfo.returnAddress}, {SLOVAKIA_ES}
+				</strong>
+				. También puedes contactarnos en el <Phone />.
+			</p>
+			<p>
+				Puedes usar el <Link href={modelFormHref}>modelo de formulario de desistimiento</Link>, pero no es
+				obligatorio. La declaración debe permitir saber quién desiste, a qué compra se refiere y qué productos
+				comprende. No pedimos un motivo, consentimiento publicitario ni un IBAN como condición para ejercer el
+				derecho.
+			</p>
+
+			<h2>Cuándo empieza el plazo</h2>
+			<p>
+				El cómputo comienza el día siguiente a la recepción por ti o por una persona designada por ti,
+				distinta del transportista. Si una misma compra se entrega en varios envíos, cuenta la recepción del
+				último producto; si el producto llega por lotes o piezas, la del último lote o pieza. En entregas
+				periódicas durante un periodo determinado, cuenta la primera entrega.
+			</p>
+			<p>
+				Para cumplir el plazo basta con enviar la declaración antes de que termine.{" "}
+				<strong>El producto no tiene que haber llegado de vuelta dentro de ese mismo plazo.</strong> Se
+				mantienen las reglas legales de cómputo y de ampliación por falta de información: cuando no se
+				facilita la información exigida, el plazo legal puede prolongarse hasta doce meses después del
+				vencimiento inicial. Si se facilita durante ese periodo, dispones de los 14 días legales desde su
+				recepción.
+			</p>
+
+			<h2>Cómo devolver el producto</h2>
+			<p>
+				Puedes elegir tu transportista sin autorización previa o pedirnos un presupuesto de recogida.
+				Indicamos el coste y las condiciones antes de contratar; una recogida de pago solo se encarga tras tu
+				aceptación expresa.
+			</p>
+			<p>
+				Si no hemos ofrecido recoger el producto, envíalo o entrégalo sin demora indebida y, como máximo,
+				dentro de los <strong>14 días siguientes a la comunicación del desistimiento</strong>, a:
+			</p>
+			<ReturnAddress country={SLOVAKIA_ES} />
+			<p>
+				Es suficiente enviarlo antes del vencimiento. Si hemos ofrecido recogerlo, prepáralo según lo
+				acordado. La simple solicitud de presupuesto no es una oferta de recogida por nuestra parte ni
+				suspende el plazo para enviarlo.
+			</p>
+			<p>
+				Protege bien el producto e incluye los accesorios que le correspondan. El embalaje original puede
+				facilitar el transporte, pero <strong>no es una condición general para desistir</strong>. El número de
+				pedido ayuda a identificar la devolución; tampoco es obligatorio utilizar exclusivamente la factura
+				original.
+			</p>
+
+			<h2>Quién paga la devolución</h2>
+			<p>
+				Asumes los costes directos de devolución si te informamos debidamente de ello antes de contratar. Si
+				el producto, por su naturaleza o dimensiones, no puede devolverse normalmente por correo, debemos
+				informar también antes de la compra de su coste de devolución. Si omitimos la información exigida, no
+				te repercutimos esos costes.
+			</p>
+			<p>
+				Un presupuesto solicitado después de comprar no sustituye esa información previa. Las devoluciones por
+				un defecto del que respondemos se rigen por otras reglas, explicadas en{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reclamaciones y devoluciones</Link>.
+			</p>
+
+			<h2>Cuándo devolvemos el dinero</h2>
+			<p>
+				Reembolsamos los pagos afectados sin demora indebida y, como máximo, dentro de los{" "}
+				<strong>14 días siguientes a la recepción de la declaración</strong>. Si desistes de todo el pedido,
+				devolvemos también el envío inicial hasta el coste del servicio ordinario más económico ofrecido para
+				ese pedido. No tenemos que devolver el suplemento de una entrega más cara que hayas elegido
+				expresamente.
+			</p>
+			<p>
+				Si desistes solo de una parte, devolvemos las cantidades correspondientes. No añadimos
+				retroactivamente gastos de envío ni otras tarifas por ese motivo.
+			</p>
+			<p>
+				El reembolso se hace por el mismo medio de pago, salvo que acuerdes expresamente otro sin gastos para
+				ti. No tienes que aceptar un vale en lugar del dinero. Para devolver el pago a la tarjeta utilizada no
+				necesitamos tu IBAN.
+			</p>
+			<p>
+				Si no ofrecimos recoger el producto, podemos retener el reembolso hasta recibirlo o hasta que
+				acredites su envío, lo que ocurra primero. Si ofrecimos recogerlo, no aplicamos esa retención.
+			</p>
+
+			<h2>En qué estado puedes devolverlo</h2>
+			<p>
+				Puedes examinar y probar el producto en la medida necesaria para comprobar su naturaleza,
+				características y funcionamiento, como harías en una tienda. Si lo manipulas más de lo necesario y
+				pierde valor, podrías responder por esa disminución, siempre que te hayamos informado debidamente del
+				derecho de desistimiento.
+			</p>
+			<p>
+				No cobramos una tarifa fija por abrir el embalaje, tramitar la devolución o reponer el producto. Una
+				posible disminución de valor se valora según el estado real y se explica. No compensamos
+				unilateralmente esa reclamación con tu derecho al reembolso derivado del desistimiento.
+			</p>
+
+			<h2>Excepciones</h2>
+			<p>
+				El derecho puede quedar excluido, en particular, en productos realmente fabricados según
+				especificaciones individuales o claramente personalizados. También puede existir una excepción para
+				productos precintados que, por razones de salud o higiene, no sean aptos para devolución tras retirar
+				el precinto, siempre que concurran los requisitos legales.
+			</p>
+			<p>
+				<strong>
+					Un artículo «Bajo pedido» o un conjunto estándar seleccionado para tu coche no se convierte por ello
+					en un producto personalizado.
+				</strong>{" "}
+				Las excepciones se aplican solo cuando se cumplen sus condiciones. Encontrarás más información en las{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Condiciones generales de venta</Link>.
+			</p>
+		</>
+	);
+}
+
+export function Ro({ channel, form, modelFormHref }: WithdrawalBodyProps) {
+	return (
+		<>
+			<p>
+				Te-ai răzgândit sau produsul nu se mai potrivește planurilor tale? Ca persoană care cumpără în
+				calitate de consumator, te poți retrage dintr-o cumpărătură online, de regulă, în{" "}
+				<strong>14 zile de la primirea produsului, fără să indici un motiv</strong>.
+			</p>
+			<p>
+				Dacă ai plasat comanda după autentificarea în contul de client, prelungim termenul la{" "}
+				<strong>30 de zile</strong>. Se aplică aceeași procedură și condițiile descrise aici, fără a limita
+				drepturile legale. Nu ai nevoie de cont pentru a comunica retragerea.
+			</p>
+			<p>
+				Poți anunța retragerea înainte de livrare și o poți limita la o parte dintre produse. Nu trebuie să
+				aștepți aprobarea noastră.
+			</p>
+
+			{form ?? (
+				<>
+					<h2>Retragere online</h2>
+					<p>
+						În această versiune de previzualizare a magazinului, funcția de retragere online nu este încă
+						activă. Poți trimite declarația prin e-mail sau prin poștă la datele de mai jos ori prin altă
+						modalitate permisă de lege. Dacă ai un termen în curs, nu aștepta activarea funcției. Deschiderea
+						acestei pagini nu înseamnă trimiterea unei declarații.
+					</p>
+				</>
+			)}
+
+			<h2>Retragere prin e-mail sau prin poștă</h2>
+			<p>
+				Trimite o declarație neechivocă la <Mail /> sau la{" "}
+				<strong>
+					{companyInfo.legalName}, {companyInfo.returnAddress}, {SLOVAKIA_RO}
+				</strong>
+				. Ne poți contacta și la <Phone />.
+			</p>
+			<p>
+				Poți utiliza <Link href={modelFormHref}>formularul de retragere pentru tipărire</Link>, dar folosirea
+				lui este opțională. Declarația trebuie să permită identificarea persoanei care se retrage, a
+				cumpărăturii și a produselor vizate. Nu cerem un motiv, acord de marketing sau IBAN ca o condiție
+				pentru exercitarea dreptului.
+			</p>
+
+			<h2>De când se calculează termenul</h2>
+			<p>
+				Termenul începe să curgă din ziua următoare primirii produsului de către tine sau de către persoana
+				indicată de tine, alta decât transportatorul. La produse din aceeași comandă livrate separat, contează
+				ultimul produs primit; la un produs livrat în loturi sau piese, ultimul lot ori ultima piesă. Pentru
+				livrări periodice pe o perioadă determinată, contează prima livrare.
+			</p>
+			<p>
+				Este suficient să trimiți declarația înainte de expirarea termenului.{" "}
+				<strong>Produsul nu trebuie să ajungă înapoi până la aceeași dată.</strong> Se aplică în continuare
+				regulile legale de calcul și de prelungire pentru lipsa informării: termenul legal poate fi prelungit
+				până la douăsprezece luni după expirarea termenului inițial. Dacă informarea necesară este comunicată
+				în acel interval, cele 14 zile legale curg de la primirea ei.
+			</p>
+
+			<h2>Cum trimiți produsul înapoi</h2>
+			<p>
+				Poți alege propriul transportator fără aprobarea noastră prealabilă sau poți cere o ofertă pentru
+				ridicare. Comunicăm prețul și condițiile înainte; un transport contra cost este comandat numai după
+				acceptarea ta expresă.
+			</p>
+			<p>
+				Dacă nu am oferit ridicarea produsului, trimite-l sau predă-ni-l fără întârziere nejustificată, în cel
+				mult <strong>14 zile de la comunicarea retragerii</strong>, la:
+			</p>
+			<ReturnAddress country={SLOVAKIA_RO} />
+			<p>
+				Termenul este respectat dacă expediezi înainte de expirarea lui. Dacă am oferit ridicarea, pregătește
+				coletul conform înțelegerii. O simplă cerere de preț nu reprezintă o ofertă de ridicare din partea
+				noastră și nu suspendă termenul de expediere.
+			</p>
+			<p>
+				Ambalează produsul în siguranță și include accesoriile care îi aparțin. Ambalajul original poate fi
+				util, dar <strong>nu este o condiție generală a retragerii</strong>. Numărul comenzii ajută la
+				identificare. Nu cerem exclusiv factura originală.
+			</p>
+
+			<h2>Cine suportă costul returului</h2>
+			<p>
+				Suporți costurile directe de returnare dacă te-am informat corespunzător înainte de încheierea
+				contractului. Pentru un produs care, prin natura sau dimensiunile sale, nu poate fi returnat în mod
+				normal prin poștă, trebuie comunicat înainte de cumpărare și costul returnării. Dacă omitem informarea
+				obligatorie, nu îți cerem să suporți acele costuri.
+			</p>
+			<p>
+				O ofertă solicitată după cumpărare nu înlocuiește informarea precontractuală. Pentru un retur cauzat
+				de un defect de care răspundem se aplică alte reguli, descrise în{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reclamații și retururi</Link>.
+			</p>
+
+			<h2>Când restituim banii</h2>
+			<p>
+				Rambursăm plățile vizate fără întârziere nejustificată, în cel mult{" "}
+				<strong>14 zile de la primirea declarației</strong>. La retragerea din întreaga comandă, restituim și
+				costul livrării inițiale, în limita celei mai ieftine metode standard pe care am oferit-o pentru acea
+				comandă. Nu suntem obligați să restituim suplimentul pentru o livrare mai scumpă pe care ai ales-o
+				expres.
+			</p>
+			<p>
+				La retragerea parțială, restituim sumele corespunzătoare. Nu adăugăm retroactiv costuri de transport
+				sau alte taxe din acest motiv.
+			</p>
+			<p>
+				Folosim aceeași metodă de plată, cu excepția unui acord expres pentru o altă metodă fără costuri
+				pentru tine. Nu trebuie să accepți un voucher în locul banilor. Pentru restituirea pe cardul folosit
+				inițial nu avem nevoie de IBAN.
+			</p>
+			<p>
+				Dacă nu am oferit ridicarea, putem amâna rambursarea până primim produsul sau dovada expedierii lui,
+				oricare intervine prima. Dacă am oferit ridicarea, nu aplicăm această amânare.
+			</p>
+
+			<h2>În ce stare poți returna produsul</h2>
+			<p>
+				Poți examina și testa produsul în măsura necesară pentru a-i stabili natura, caracteristicile și
+				funcționarea, ca într-un magazin. Dacă îl folosești mai mult decât este necesar și îi diminuezi
+				valoarea, poți răspunde pentru acea diminuare, cu condiția să fi fost informat corespunzător despre
+				retragere.
+			</p>
+			<p>
+				Nu percepem o taxă fixă pentru desigilare, procesarea returului sau readucerea produsului în stoc. O
+				eventuală diminuare a valorii se evaluează pe baza stării reale și se explică. Nu o compensăm
+				unilateral cu dreptul tău la restituirea sumelor rezultate din retragere.
+			</p>
+
+			<h2>Când se aplică o excepție</h2>
+			<p>
+				Dreptul poate fi exclus, în special, pentru produse realizate efectiv după specificații individuale
+				sau clar personalizate. O excepție poate exista și pentru bunuri sigilate care nu pot fi returnate din
+				motive de sănătate sau igienă după desigilare, dacă sunt îndeplinite condițiile legale.
+			</p>
+			<p>
+				<strong>
+					Un produs „La comandă” sau un set standard ales pentru mașina ta nu devine, doar din acest motiv, un
+					produs personalizat.
+				</strong>{" "}
+				Aplicăm excepțiile numai când sunt îndeplinite cerințele lor. Detaliile sunt în{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Termenii și condițiile de vânzare</Link>.
 			</p>
 		</>
 	);

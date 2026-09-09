@@ -529,3 +529,150 @@ export function Fr({ channel }: { channel: string }) {
 		</>
 	);
 }
+
+export function Es({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Enviamos los pedidos{" "}
+				<strong>desde Eslovaquia mediante FedEx y Slovenská pošta, el servicio postal eslovaco</strong>. Antes
+				de confirmar el pedido con obligación de pago, verás las opciones de entrega disponibles para tu
+				dirección y su precio.
+			</p>
+
+			<h2>Cómo enviamos los pedidos</h2>
+			<p>
+				Las opciones dependen de la dirección de entrega y del tamaño y peso del paquete. No todos los
+				transportistas ni todos sus servicios están disponibles para cada producto. Por ejemplo, el transporte
+				de un cofre de techo puede ser distinto del de un paquete pequeño.
+			</p>
+			<p>
+				Si no aparece ninguna opción para tu dirección y los productos del carrito,{" "}
+				<Link href={marketHref(channel, "/kontakt")}>contacta con nosotros</Link>. Comprobaremos si podemos
+				organizar un transporte adecuado. Esta página no promete la disponibilidad de todos los servicios en
+				cualquier destino.
+			</p>
+
+			<h2>Cuánto cuesta el envío</h2>
+			<p>
+				El coste depende de los productos y del destino.{" "}
+				<strong>Conocerás el importe total de los productos y del envío antes de confirmar el pedido.</strong>{" "}
+				No añadimos servicios de pago sin tu consentimiento expreso.
+			</p>
+
+			<h2>Cuándo llegará</h2>
+			<p>
+				El plazo depende de la disponibilidad de los productos y del servicio de transporte. Los artículos
+				marcados <strong>«Bajo pedido»</strong> se solicitan al proveedor: esa indicación no significa que ya
+				estén en nuestro almacén.
+			</p>
+			<p>
+				Te informamos de las condiciones de entrega antes de contratar. Si después surge un problema, nos
+				pondremos en contacto contigo y te propondremos cómo continuar. Esto no limita tus derechos si
+				incumplimos el plazo acordado.
+			</p>
+			<p>
+				¿Necesitas el equipo para una fecha concreta? Escríbenos antes de comprar. Revisaremos las
+				posibilidades de entrega para que puedas planificar.
+			</p>
+
+			<h2>Cómo pagar</h2>
+			<p>
+				Los pedidos con entrega en España se pagan <strong>por adelantado mediante Stripe</strong>, utilizando
+				uno de los métodos que se muestran al tramitar el pedido.{" "}
+				<strong>No ofrecemos pago contrarreembolso.</strong> Enviamos una vez recibido el pago y de acuerdo
+				con la disponibilidad indicada.
+			</p>
+			<p>
+				Los precios de la versión española se muestran en <strong>euros (EUR)</strong>.
+			</p>
+			<p>
+				No almacenamos el número completo de tu tarjeta ni su código de seguridad, ni tenemos acceso a ellos.
+				Los procesa el proveedor del servicio de pago.
+			</p>
+
+			<h2>Al recibir el paquete</h2>
+			<p>
+				Recomendamos revisar el embalaje y fotografiar los daños visibles. Si el producto también está dañado
+				o falta algo, escribe a <Mail />.
+			</p>
+			<p>
+				Las fotografías y el parte del transportista pueden ayudar a aclarar lo ocurrido. Su ausencia, por sí
+				sola, no te priva de los derechos que correspondan por un producto defectuoso.
+			</p>
+		</>
+	);
+}
+
+export function Ro({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Expediem comenzile{" "}
+				<strong>din Slovacia, prin FedEx și Slovenská pošta, serviciul poștal slovac</strong>. Metodele
+				disponibile pentru adresa și comanda ta, împreună cu prețul lor, sunt afișate înainte de trimiterea
+				comenzii cu obligație de plată.
+			</p>
+
+			<h2>Cum livrăm</h2>
+			<p>
+				Opțiunile depind de adresa de livrare, dimensiunile și greutatea coletului. Nu orice transportator sau
+				serviciu poate fi folosit pentru fiecare produs. De exemplu, livrarea unei cutii portbagaj poate
+				diferi de cea a unui colet mic.
+			</p>
+			<p>
+				Dacă nu apare o metodă de livrare pentru adresa și produsele din coș,{" "}
+				<Link href={marketHref(channel, "/kontakt")}>contactează-ne</Link>. Vom verifica dacă putem organiza
+				un transport potrivit. Prezentarea unui transportator pe această pagină nu înseamnă că toate
+				serviciile lui sunt disponibile la orice adresă.
+			</p>
+
+			<h2>Cât costă livrarea</h2>
+			<p>
+				Costul depinde de produsele comandate și de destinație.{" "}
+				<strong>Vezi suma totală pentru produse și transport înainte de confirmarea comenzii.</strong> Nu
+				adăugăm servicii contra cost fără acordul tău expres.
+			</p>
+
+			<h2>Când ajunge comanda</h2>
+			<p>
+				Termenul depinde de disponibilitatea produselor și de metoda de livrare. Produsele marcate{" "}
+				<strong>„La comandă”</strong> sunt procurate de la furnizor. Această mențiune nu înseamnă că produsul
+				se află deja în depozitul nostru.
+			</p>
+			<p>
+				Îți comunicăm condițiile de livrare înainte de încheierea contractului. Dacă ulterior intervine o
+				problemă, te contactăm și îți propunem pașii următori. Drepturile tale în cazul nerespectării
+				termenului convenit rămân valabile.
+			</p>
+			<p>
+				Ai nevoie de echipament până la o anumită dată? Scrie-ne înainte de a comanda. Verificăm
+				posibilitățile de livrare, ca să îți poți face planurile.
+			</p>
+
+			<h2>Cum poți plăti</h2>
+			<p>
+				Comenzile cu livrare în România se achită <strong>în avans, prin Stripe</strong>, folosind una dintre
+				metodele afișate la finalizarea comenzii. <strong>Nu oferim plata ramburs.</strong> Expediem după
+				primirea plății și în funcție de disponibilitatea comunicată a produselor.
+			</p>
+			<p>
+				Prețurile din versiunea pentru România sunt afișate în <strong>lei românești (RON)</strong>.
+			</p>
+			<p>
+				Nu stocăm și nu avem acces la numărul complet al cardului sau la codul lui de securitate. Aceste date
+				sunt prelucrate de furnizorul serviciului de plată.
+			</p>
+
+			<h2>La primirea coletului</h2>
+			<p>
+				Îți recomandăm să verifici ambalajul și să fotografiezi deteriorările vizibile. Dacă și produsul este
+				deteriorat sau lipsește ceva, scrie la <Mail />.
+			</p>
+			<p>
+				Fotografiile și documentul întocmit de transportator pot ajuta la clarificarea situației. Lipsa lor nu
+				înseamnă, prin ea însăși, pierderea drepturilor pentru un produs neconform.
+			</p>
+		</>
+	);
+}

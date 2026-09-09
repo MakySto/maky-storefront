@@ -2,7 +2,7 @@ import Link from "next/link";
 import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL } from "./slovakia";
+import { SLOVAKIA_ES, SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL, SLOVAKIA_RO } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 
@@ -1157,6 +1157,306 @@ export function Fr({ channel }: { channel: string }) {
 			<p>
 				Vous hésitez sur la démarche ? <Link href={marketHref(channel, "/kontakt")}>Contactez-nous</Link> en
 				décrivant votre situation.
+			</p>
+		</>
+	);
+}
+
+export function Es({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				¿Quieres devolver un producto o has detectado un defecto?{" "}
+				<strong>
+					El desistimiento sin indicar el motivo y la reclamación por un producto defectuoso son dos
+					procedimientos distintos.
+				</strong>{" "}
+				También cambian las reglas sobre quién paga el transporte.
+			</p>
+
+			<h2>Quiero devolver un producto sin indicar el motivo</h2>
+			<p>
+				Como consumidor, puedes desistir normalmente en un plazo de{" "}
+				<strong>14 días naturales desde la recepción del producto</strong>. Si realizaste el pedido después de
+				iniciar sesión en tu cuenta, ampliamos el plazo a <strong>30 días</strong>. Las condiciones y
+				excepciones figuran en el{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Derecho de desistimiento</Link>.
+			</p>
+			<p>
+				Puedes comunicarlo antes de recibir la compra y limitarlo a determinados productos. No necesitas una
+				cuenta para hacerlo ni nuestra autorización previa, y no tienes que justificar tu decisión.
+			</p>
+			<p>
+				Comunícanos de forma inequívoca qué compra o productos quieres devolver. Puedes escribir a <Mail /> o
+				utilizar las vías explicadas en la página de desistimiento.
+			</p>
+
+			<h3>Transporte de devolución</h3>
+			<p>
+				Puedes elegir tu propio transportista o pedirnos un presupuesto de recogida. Solo contratamos una
+				recogida de pago cuando aceptas expresamente su precio.{" "}
+				<strong>
+					Pedir un presupuesto no equivale a contratar la recogida ni, por sí solo, a que nosotros la hayamos
+					ofrecido.
+				</strong>
+			</p>
+			<p>
+				Si no hemos ofrecido recoger el producto, envíalo o entrégalo en un plazo de{" "}
+				<strong>14 días desde que comunicas el desistimiento</strong>. Basta con enviarlo antes de que venza
+				el plazo. Si hemos ofrecido la recogida, prepara el paquete según lo acordado.
+			</p>
+			<p>
+				Los costes directos de la devolución sin motivo corren de tu cuenta si te informamos debidamente antes
+				de comprar. Cuando el producto no puede devolverse normalmente por correo, también debemos informar
+				antes de la compra de ese coste.{" "}
+				<strong>
+					En una reclamación por un defecto del que respondemos, los gastos necesarios nos corresponden a
+					nosotros.
+				</strong>
+			</p>
+
+			<h3>Reembolso</h3>
+			<p>
+				Devolvemos las cantidades afectadas por el desistimiento dentro de los{" "}
+				<strong>14 días siguientes a la recepción de tu comunicación</strong>. Si desistes de todo el pedido,
+				incluimos el envío inicial, hasta el coste del servicio ordinario más económico que ofrecíamos para
+				ese pedido.
+			</p>
+			<p>
+				Usamos el mismo medio de pago, salvo acuerdo expreso sobre otro que no te genere gastos. Si no hemos
+				ofrecido recoger el producto, podemos esperar a recibirlo o a que acredites su envío, lo que ocurra
+				primero. Si ofrecimos la recogida, no aplicamos esa retención.
+			</p>
+
+			<h2>Quiero reclamar por un producto defectuoso</h2>
+			<p>
+				Escribe a <Mail />. Identifica el producto, describe el defecto y cuándo lo detectaste, e indica el
+				número de pedido u otro dato que permita localizar la compra.
+			</p>
+			<p>
+				Una foto o un vídeo breve puede ayudar, pero{" "}
+				<strong>no es una condición para recibir la reclamación</strong>. Tampoco exigimos el embalaje
+				original ni exclusivamente la factura original: puedes acreditar la compra por otros medios adecuados.
+			</p>
+			<p>
+				También puedes reclamar por escrito. Si el producto es voluminoso, acordaremos cómo ponerlo a nuestra
+				disposición o transportarlo. No retrases la comunicación del defecto mientras esperas una recogida.
+			</p>
+
+			<h3>Garantía legal y plazos</h3>
+			<p>
+				Para los bienes nuevos comprados por consumidores a los que se aplica la protección imperativa
+				española, respondemos por las faltas de conformidad existentes en la entrega que se manifiesten
+				durante <strong>tres años desde la entrega</strong>. No limitamos esa protección a los dos años del
+				régimen general eslovaco.
+			</p>
+			<p>
+				La reclamación de los remedios por falta de conformidad tiene un plazo de prescripción distinto:
+				conforme al régimen español,{" "}
+				<strong>cinco años desde que se manifiesta la falta de conformidad</strong>. No significa que todos
+				los defectos que aparezcan durante cinco años estén cubiertos automáticamente.
+			</p>
+			<p>
+				Durante los dos primeros años se presume, salvo prueba en contrario y con las excepciones legales, que
+				la falta de conformidad ya existía en la entrega. Se mantienen las reglas de suspensión de plazos
+				durante la reparación o sustitución y los derechos adicionales del régimen eslovaco descritos en las{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Condiciones generales</Link>.
+			</p>
+			<p>
+				Comunícanos el problema cuanto antes. No condicionamos la protección imperativa española a un plazo
+				adicional de dos meses importado de las condiciones eslovacas.
+			</p>
+			<p>Una garantía comercial del fabricante es adicional: no sustituye nuestros deberes como vendedor.</p>
+
+			<h3>Cómo resolvemos la reclamación</h3>
+			<p>
+				Te facilitamos sin demora una confirmación escrita y la información sobre el plazo de solución. Puedes
+				solicitar <strong>reparación o sustitución</strong>, salvo que la opción elegida resulte imposible o
+				desproporcionada frente a la otra. Te explicaremos cualquier limitación.
+			</p>
+			<p>
+				La solución debe ser gratuita, realizarse en un plazo razonable y no causarte inconvenientes
+				importantes. Conforme al régimen eslovaco descrito en nuestras condiciones, normalmente no superará{" "}
+				<strong>30 días desde la comunicación del defecto</strong>, salvo una causa objetiva ajena a nuestro
+				control que podamos acreditar. Esa excepción no permite incumplir la exigencia española de un plazo
+				razonable ni restringir un derecho obligatorio más favorable.
+			</p>
+			<p>
+				En los casos previstos legalmente puedes pedir{" "}
+				<strong>una reducción del precio o la resolución del contrato por falta de conformidad</strong>: por
+				ejemplo, cuando no se realiza la solución debida, el defecto persiste o es suficientemente grave. Esto
+				no es el desistimiento de 14 días. Una falta leve no justifica por sí sola la resolución.
+			</p>
+			<p>
+				Si rechazamos la responsabilidad, te daremos una explicación escrita. Puedes aportar otros medios de
+				prueba admisibles y volver a reclamar; los informes periciales y sus costes se tratan conforme a las
+				reglas aplicables.
+			</p>
+
+			<h3>Quién paga el transporte</h3>
+			<p>
+				Cuando respondemos por el defecto, asumimos los costes necesarios de recogida y nueva entrega. Si la
+				solución requiere desmontar y volver a instalar un producto correctamente instalado, nos encargamos o
+				asumimos los costes que correspondan legalmente.
+			</p>
+
+			<h2>Dirección para enviar el producto</h2>
+			<ReturnAddress country={SLOVAKIA_ES} />
+			<p>
+				Incluir el número de pedido o de reclamación facilita la identificación, pero su ausencia no elimina
+				tus derechos. Si no sabes qué procedimiento corresponde,{" "}
+				<Link href={marketHref(channel, "/kontakt")}>escríbenos</Link> y cuéntanos qué ocurre.
+			</p>
+		</>
+	);
+}
+
+export function Ro({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Vrei să returnezi un produs sau ai observat un defect?{" "}
+				<strong>
+					Retragerea fără indicarea motivului și reclamația privind un produs neconform sunt proceduri
+					diferite.
+				</strong>{" "}
+				Și regulile privind costul transportului sunt diferite.
+			</p>
+
+			<h2>Vreau să returnez produsul fără să indic un motiv</h2>
+			<p>
+				Ca persoană care cumpără în calitate de consumator, te poți retrage, de regulă, în{" "}
+				<strong>14 zile de la primirea produsului</strong>. Dacă ai plasat comanda după autentificarea în
+				contul de client, prelungim termenul la <strong>30 de zile</strong>. Condițiile și excepțiile sunt
+				explicate în pagina{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Dreptul de retragere</Link>.
+			</p>
+			<p>
+				Poți anunța retragerea înainte de livrare și o poți limita la anumite produse. Nu ai nevoie de cont
+				sau de aprobarea noastră prealabilă și nu trebuie să explici motivul.
+			</p>
+			<p>
+				Trimite o declarație clară din care să reiasă la ce cumpărătură și produse se referă retragerea. Poți
+				scrie la <Mail /> sau folosi modalitățile descrise în pagina de retragere.
+			</p>
+
+			<h3>Transportul de retur</h3>
+			<p>
+				Poți alege propriul transportator sau ne poți solicita o ofertă pentru ridicarea coletului. Comandăm o
+				ridicare contra cost numai după ce accepți expres prețul.{" "}
+				<strong>
+					Solicitarea unei oferte nu este o comandă de transport și nici, prin ea însăși, o ofertă de ridicare
+					din partea noastră.
+				</strong>
+			</p>
+			<p>
+				Dacă nu ne-am oferit să ridicăm produsul, trimite-l sau predă-ni-l în{" "}
+				<strong>14 zile de la comunicarea retragerii</strong>. Este suficient să îl expediezi înainte de
+				expirarea termenului. Dacă am oferit ridicarea, pregătește coletul conform înțelegerii.
+			</p>
+			<p>
+				La retragerea fără motiv suporți costurile directe de retur dacă ai fost informat corespunzător
+				înainte de cumpărare. Pentru produsele care nu pot fi returnate în mod normal prin poștă, trebuie
+				comunicat înainte de cumpărare și costul returului.{" "}
+				<strong>
+					Costurile necesare pentru remedierea unei neconformități de care răspundem sunt suportate de noi.
+				</strong>
+			</p>
+
+			<h3>Restituirea banilor</h3>
+			<p>
+				Restituim plățile vizate în <strong>14 zile de la primirea declarației de retragere</strong>. La
+				retragerea din întreaga comandă, rambursăm și livrarea inițială, în limita celei mai ieftine metode
+				standard oferite pentru acea comandă.
+			</p>
+			<p>
+				Folosim aceeași metodă de plată, cu excepția unui acord expres pentru o altă metodă fără costuri
+				pentru tine. Dacă nu am oferit ridicarea, putem aștepta până primim produsul sau dovada expedierii,
+				oricare intervine prima. Dacă am oferit ridicarea, nu aplicăm această amânare.
+			</p>
+
+			<h2>Vreau să reclam un produs defect</h2>
+			<p>
+				Scrie la <Mail />. Indică produsul, descrie defectul și când l-ai observat și adaugă numărul comenzii
+				sau alte informații care permit identificarea cumpărăturii.
+			</p>
+			<p>
+				O fotografie sau un scurt videoclip poate ajuta, dar{" "}
+				<strong>nu este o condiție pentru primirea reclamației</strong>. Nu cerem ambalajul original sau
+				exclusiv factura originală; cumpărarea poate fi dovedită și prin alte mijloace adecvate.
+			</p>
+			<p>
+				Poți formula reclamația și în scris. Pentru un produs voluminos, stabilim cum ni-l pui la dispoziție
+				sau cum îl transportăm. Nu amâna anunțarea defectului pentru că ridicarea nu a fost încă stabilită.
+			</p>
+
+			<h3>Garanția legală de conformitate</h3>
+			<p>
+				Răspundem pentru neconformitățile existente la livrare care se constată în{" "}
+				<strong>doi ani de la livrare</strong>, fără a limita cazurile în care legea oferă o protecție mai
+				lungă. Se păstrează drepturile privind viciile ascunse care fac produsul impropriu utilizării în
+				durata medie de utilizare, în condițiile legii.
+			</p>
+			<p>
+				Conform regimului slovac convenit, defectul constatat în perioada de răspundere se prezumă existent la
+				livrare, dacă nu se dovedește contrariul sau dacă prezumția este incompatibilă cu natura bunului ori a
+				defectului. Regula românească privind prezumția privind existența neconformității la livrare nu reduce
+				drepturile mai favorabile prevăzute în condițiile noastre.
+			</p>
+			<p>
+				Pentru contractele încheiate de la <strong>31 iulie 2026</strong>, perioada de răspundere prevăzută de
+				dreptul slovac se prelungește o singură dată cu{" "}
+				<strong>12 luni după prima remediere prin reparație</strong>. Celelalte reguli legale privind
+				prelungirea sau reluarea termenelor rămân aplicabile. Detaliile sunt în{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Termenii și condițiile de vânzare</Link>.
+			</p>
+			<p>
+				Anunță-ne cât mai curând după ce descoperi defectul. Nu condiționăm protecția obligatorie românească
+				de un termen suplimentar de două luni preluat din dreptul slovac. Garanția comercială a producătorului
+				este suplimentară și nu înlocuiește răspunderea noastră legală.
+			</p>
+
+			<h3>Cum rezolvăm reclamația</h3>
+			<p>
+				Îți oferim fără întârziere o confirmare scrisă și informațiile privind remedierea. Poți solicita{" "}
+				<strong>repararea sau înlocuirea</strong>, în condițiile legii. O opțiune poate fi exclusă dacă este
+				imposibilă sau disproporționată față de cealaltă; îți explicăm motivul.
+			</p>
+			<p>
+				Repararea sau înlocuirea se face gratuit și fără inconveniente semnificative, într-un termen rezonabil
+				de <strong>cel mult 15 zile calendaristice de la informarea noastră despre neconformitate</strong>.
+				Stabilim termenul de comun acord, în scris, ținând cont de produs și de defect. Nu invocăm termenul
+				general slovac de 30 de zile sau excepția lui pentru a depăși limita românească.
+			</p>
+			<p>
+				Dacă neconformitatea este constatată la scurt timp după livrare, în cel mult{" "}
+				<strong>30 de zile calendaristice</strong>, beneficiezi de înlocuirea bunului potrivit regulii
+				speciale românești. Nu este vorba despre termenul de retragere fără motiv.
+			</p>
+			<p>
+				În situațiile prevăzute legal poți cere{" "}
+				<strong>reducerea prețului sau încetarea contractului pentru neconformitate</strong>, de exemplu dacă
+				remedierea corespunzătoare nu are loc, defectul persistă ori este suficient de grav. O neconformitate
+				minoră nu justifică, singură, încetarea contractului.
+			</p>
+			<p>
+				Dacă respingem răspunderea, motivăm în scris. Poți prezenta alte dovezi admisibile și formula din nou
+				reclamația. Regimul expertizelor și al cheltuielilor necesare este cel prevăzut de lege.
+			</p>
+
+			<h3>Cine plătește transportul</h3>
+			<p>
+				Când răspundem pentru neconformitate, suportăm costurile necesare preluării și noii livrări. Dacă
+				remedierea presupune demontarea și remontarea unui produs instalat corect, le asigurăm sau suportăm
+				costurile potrivit legii.
+			</p>
+
+			<h2>Adresa de retur</h2>
+			<ReturnAddress country={SLOVAKIA_RO} />
+			<p>
+				Numărul comenzii sau al reclamației ajută la identificare, dar lipsa lui nu îți anulează drepturile.
+				Dacă nu știi ce procedură se potrivește, <Link href={marketHref(channel, "/kontakt")}>scrie-ne</Link>{" "}
+				și descrie pe scurt situația.
 			</p>
 		</>
 	);

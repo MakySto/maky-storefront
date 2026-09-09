@@ -2,7 +2,7 @@ import Link from "next/link";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL } from "./slovakia";
+import { SLOVAKIA_ES, SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL, SLOVAKIA_RO } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
@@ -13,6 +13,8 @@ const RETURN_ADDRESS_PL = `${companyInfo.legalName}, ${companyInfo.returnAddress
 const RETURN_ADDRESS_HU = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_HU}`;
 const RETURN_ADDRESS_IT = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_IT}`;
 const RETURN_ADDRESS_FR = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_FR}`;
+const RETURN_ADDRESS_ES = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_ES}`;
+const RETURN_ADDRESS_RO = `${companyInfo.legalName}, ${companyInfo.returnAddress}, ${SLOVAKIA_RO}`;
 
 /**
  * The Slovak ADR body, which stays the seller's ADR body in every market.
@@ -25,7 +27,13 @@ const RETURN_ADDRESS_FR = `${companyInfo.legalName}, ${companyInfo.returnAddress
  * makes it impossible to change what `sk`, `cs` or `de` already render while adding a
  * language, which a rewritten ternary very easily does.
  */
-function Adr({ lang, country }: { lang: "sk" | "cs" | "de" | "pl" | "hu" | "it" | "fr"; country?: string }) {
+function Adr({
+	lang,
+	country,
+}: {
+	lang: "sk" | "cs" | "de" | "pl" | "hu" | "it" | "fr" | "es" | "ro";
+	country?: string;
+}) {
 	const alternative = {
 		sk: "alternatívne",
 		cs: "alternativní",
@@ -34,8 +42,20 @@ function Adr({ lang, country }: { lang: "sk" | "cs" | "de" | "pl" | "hu" | "it" 
 		hu: "alternatív",
 		it: "risoluzione alternativa delle controversie",
 		fr: "règlement extrajudiciaire des litiges",
+		es: "resolución alternativa de conflictos",
+		ro: "soluționarea alternativă a litigiilor",
 	}[lang];
-	const or = { sk: "alebo", cs: "nebo", de: "oder", pl: "lub", hu: "vagy", it: "oppure", fr: "ou" }[lang];
+	const or = {
+		sk: "alebo",
+		cs: "nebo",
+		de: "oder",
+		pl: "lub",
+		hu: "vagy",
+		it: "oppure",
+		fr: "ou",
+		es: "o",
+		ro: "sau",
+	}[lang];
 	const linkText = {
 		sk: "Informácie a postup podania na stránke SOI",
 		cs: "Informace a postup podání na stránce SOI",
@@ -44,13 +64,15 @@ function Adr({ lang, country }: { lang: "sk" | "cs" | "de" | "pl" | "hu" | "it" 
 		hu: "Tájékoztatás az eljárásról és a beadványról a SOI oldalán",
 		it: "Informazioni e procedura SOI",
 		fr: "Informations et procédure SOI",
+		es: "Información oficial de SOI",
+		ro: "Informațiile oficiale SOI",
 	}[lang];
 
 	// `alternative` is a bare adjective in the five original languages and reads as a
-	// whole phrase in Italian and French, so the heading is assembled per language rather
-	// than by gluing one word in front of a shared noun.
+	// whole phrase in Italian, French, Spanish and Romanian, so the heading is assembled
+	// per language rather than by gluing one word in front of a shared noun.
 	const heading =
-		lang === "it" || lang === "fr"
+		lang === "it" || lang === "fr" || lang === "es" || lang === "ro"
 			? `Slovenská obchodná inšpekcia — ${alternative}`
 			: `Slovenská obchodná inšpekcia — ${alternative} riešenie sporov`;
 
@@ -3105,6 +3127,792 @@ export function Fr({ channel }: { channel: string }) {
 				Une modification de ces conditions s’applique aux contrats conclus après son entrée en vigueur. Les
 				contrats existants restent soumis à la version pertinente et aux règles impératives. Aucune
 				disposition ne limite les droits impérativement reconnus au consommateur.
+			</p>
+		</>
+	);
+}
+
+export function Es({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Estas condiciones regulan las compras de productos en MAKY.STORE. A cada contrato se aplica la versión
+				vigente en el momento de su celebración.
+			</p>
+			<p>
+				<strong>
+					Somos un vendedor eslovaco. La elección de la legislación eslovaca no te priva de la protección de
+					las normas imperativas del país de tu residencia habitual
+				</strong>
+				, conforme al artículo 6 del Reglamento Roma I. Para los consumidores residentes en España, mantenemos
+				esa protección y los beneficios adicionales que se indican a continuación.
+			</p>
+
+			<h2>1. Vendedor y contacto</h2>
+			<p>
+				<strong>{companyInfo.legalName}</strong>
+				<br />
+				Domicilio social: {companyInfo.street}, {companyInfo.city}, {SLOVAKIA_ES}
+				<br />
+				Número de identificación de empresa eslovaco (IČO): <strong>{companyInfo.ico}</strong>
+				<br />
+				Identificación fiscal eslovaca (DIČ): <strong>{companyInfo.dic}</strong>
+				<br />
+				Número de IVA: <strong>{companyInfo.icDph}</strong>
+			</p>
+			<p>
+				La sociedad está registrada a efectos de IVA en Eslovaquia e inscrita en el registro mercantil del
+				Mestský súd Bratislava III, sección Sro, inscripción 200804/B.
+			</p>
+			<p>
+				Correo electrónico: <Mail />
+				<br />
+				Teléfono: <Phone />
+			</p>
+			<p>
+				<strong>Dirección para devoluciones, reclamaciones y la correspondencia relacionada:</strong>{" "}
+				{RETURN_ADDRESS_ES}. No es la misma dirección que el domicilio social.
+			</p>
+			<p>
+				«Nosotros» o «vendedor» se refiere a {companyInfo.legalName}. «Tú» o «comprador» se refiere a quien
+				realiza la compra. La condición de consumidor depende del propósito real de la operación y de la ley
+				aplicable, no simplemente de que se indiquen datos fiscales. Los derechos reservados a consumidores se
+				aplican a quienes tengan esa condición legal.
+			</p>
+
+			<h2>2. Pedido y celebración del contrato</h2>
+			<p>
+				Puedes comprar sin crear una cuenta. Añade los productos a la cesta, introduce los datos de contacto,
+				facturación y entrega, y elige entre las opciones de transporte y pago disponibles.
+			</p>
+			<p>
+				Antes de enviar el pedido vinculante puedes comprobar y corregir los productos y los datos. Mostramos
+				el importe total, incluidos los impuestos, el transporte y cualquier servicio adicional elegido
+				expresamente. El botón <strong>«Pedido con obligación de pago»</strong>, u otro texto igualmente
+				inequívoco, indica que el pedido conlleva una obligación de pago.
+			</p>
+			<p>
+				El contrato se celebra cuando recibes nuestro correo de aceptación del pedido. Ese mensaje incluye el
+				resumen de la compra y las condiciones acordadas en un soporte duradero que puedes guardar. Una
+				notificación de pago del proveedor de pagos no equivale por sí sola a nuestra aceptación del pedido.
+			</p>
+			<p>
+				En la versión española celebramos el contrato <strong>en español</strong>. Conservamos los datos
+				necesarios para tramitarlo y cumplir nuestras obligaciones. Puedes guardar la confirmación y los
+				documentos adjuntos o solicitar por correo una copia de la información de tu pedido.
+			</p>
+			<p>
+				Los gastos de conexión a internet o de una llamada dependen de tu operador. No cobramos una tarifa
+				adicional por celebrar el contrato a distancia.
+			</p>
+
+			<h2>3. Productos y compatibilidad</h2>
+			<p>
+				La ficha de cada producto describe sus características, contenido, uso previsto y limitaciones. En un
+				conjunto de montaje también importan la configuración concreta del vehículo y las piezas que lo
+				componen.
+			</p>
+			<p>
+				Si tienes dudas sobre la compatibilidad, consúltanos antes de comprar. Esta recomendación no limita
+				nuestra responsabilidad por la información que facilitamos ni por la conformidad del producto
+				entregado.
+			</p>
+			<p>
+				<strong>«Bajo pedido»</strong> significa que obtenemos el producto del proveedor; no significa
+				necesariamente que esté en nuestro almacén. Tampoco convierte un artículo estándar o un conjunto para
+				un coche determinado en un producto personalizado excluido del desistimiento.
+			</p>
+
+			<h2>4. Precios y pago</h2>
+			<p>
+				Los precios para consumidores son finales e incluyen el IVA y los demás impuestos que correspondan. El
+				transporte se muestra por separado y se incluye en el total antes de confirmar el pedido. No añadimos
+				servicios de pago sin tu consentimiento expreso.
+			</p>
+			<p>
+				Los precios de la versión española se expresan en <strong>euros (EUR)</strong>. La cantidad acordada
+				al celebrar el contrato no cambia por una modificación posterior de nuestros precios.
+			</p>
+			<p>
+				Los pedidos con entrega en España se pagan <strong>por adelantado a través de Stripe</strong>. Las
+				modalidades disponibles aparecen durante la compra.{" "}
+				<strong>No ofrecemos pago contra reembolso.</strong> Enviamos el pedido una vez recibido el pago,
+				teniendo en cuenta la disponibilidad indicada de los productos.
+			</p>
+			<p>
+				No almacenamos el número completo de tu tarjeta ni su código de seguridad y no tenemos acceso a ellos.
+				Los trata el proveedor de pagos. Recibimos la información necesaria para identificar y gestionar el
+				pago o su devolución.
+			</p>
+			<p>
+				Si no podemos aceptar un pedido ya pagado, devolvemos el importe sin demora indebida. Una vez
+				celebrado el contrato, un cambio del precio o de la disponibilidad de nuestro proveedor no nos permite
+				modificar unilateralmente lo acordado.
+			</p>
+
+			<h2>5. Entrega y recepción</h2>
+			<p>
+				Enviamos <strong>desde Eslovaquia</strong>, con{" "}
+				<strong>FedEx y Slovenská pošta (Correos de Eslovaquia)</strong>. Las opciones dependen del destino,
+				los productos, el peso y las dimensiones. Los servicios concretos, sus costes y las condiciones de
+				entrega se muestran antes de comprar.
+			</p>
+			<p>
+				Salvo que acordemos otro plazo, entregamos sin demora indebida y, como máximo, en{" "}
+				<strong>30 días desde la celebración del contrato</strong>. Si no cumplimos el plazo, puedes
+				concedernos un plazo adicional adecuado y resolver el contrato si también lo incumplimos. No es
+				necesario concederlo cuando nos negamos a entregar o cuando la entrega puntual era esencial por las
+				circunstancias o por lo que nos comunicaste antes de contratar.
+			</p>
+			<p>
+				Cuando utilizas un transportista ofrecido por nosotros, el riesgo de pérdida o daño pasa al consumidor
+				al recibir el producto él mismo o una persona designada distinta del transportista. Se mantiene la
+				excepción legal cuando el consumidor encarga por su cuenta un transportista que no ofrecíamos. La
+				transmisión de la propiedad se rige por el derecho eslovaco aplicable y se produce con la entrega al
+				consumidor.
+			</p>
+			<p>
+				Conviene revisar el embalaje y documentar los daños visibles.{" "}
+				<strong>
+					No tener fotos o un parte del transportista no elimina por sí solo tus derechos por un producto
+					defectuoso.
+				</strong>{" "}
+				Puedes consultar los detalles prácticos en{" "}
+				<Link href={marketHref(channel, "/doprava-a-platba")}>Envío y pago</Link>.
+			</p>
+
+			<h2>6. Desistimiento sin indicar un motivo</h2>
+
+			<h3>Plazo y ejercicio</h3>
+			<p>
+				Como consumidor, por regla general puedes desistir de una compra a distancia en{" "}
+				<strong>14 días desde la recepción</strong>. Si realizaste el pedido tras iniciar sesión en tu cuenta
+				de cliente, ampliamos ese plazo a <strong>30 días</strong>. Es un beneficio de MAKY.STORE sujeto al
+				mismo procedimiento y condiciones de devolución, sin reducir los derechos legales. No necesitas
+				iniciar sesión para ejercerlo.
+			</p>
+			<p>
+				El día de la recepción no se cuenta. Si un mismo contrato incluye varios productos entregados por
+				separado, cuenta la recepción del último. Para entregas por lotes o piezas, cuenta el último lote o
+				pieza; para entregas periódicas durante un tiempo determinado, la primera entrega. También puede
+				recibirlos la persona que hayas designado, distinta del transportista.
+			</p>
+			<p>
+				Puedes comunicar el desistimiento antes de la entrega o limitarlo a determinados productos. Si no
+				facilitamos la información obligatoria, el plazo legal se amplía en los términos de la ley,
+				generalmente hasta 12 meses después del plazo inicial. Si facilitamos la información durante esa
+				ampliación, dispones de 14 días desde su recepción.
+			</p>
+			<p>
+				Envía una declaración inequívoca a <Mail /> o a nuestra dirección de devoluciones. En{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Derecho de desistimiento</Link> explicamos
+				las opciones y ofrecemos un{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy/vzorovy-formular")}>modelo de formulario</Link>
+				. Su uso es voluntario. Debe poder identificarse quién desiste, la compra y los productos afectados;
+				no exigimos un motivo ni autorización previa.
+			</p>
+			<p>
+				En esta versión de vista previa, la función de desistimiento online aún no está activada. Puedes
+				utilizar el correo electrónico, el correo postal u otro medio admitido por la ley. No esperes a su
+				activación si está transcurriendo un plazo. Consultar la página no equivale a enviar la declaración.
+			</p>
+			<p>
+				Basta con enviar la declaración antes de que venza el plazo. El producto no tiene que haber llegado ya
+				a nuestro almacén.
+			</p>
+
+			<h3>Devolución y transporte</h3>
+			<p>
+				Si no nos hemos ofrecido a recogerlo, devuelve el producto sin demora indebida y, como máximo, en{" "}
+				<strong>14 días desde la comunicación del desistimiento</strong>, a {RETURN_ADDRESS_ES}. Es suficiente
+				enviarlo antes de que termine el plazo. Si ofrecemos la recogida, prepáralo según lo acordado.
+			</p>
+			<p>
+				Puedes elegir tu propio transportista sin autorización previa o pedirnos un presupuesto de recogida.{" "}
+				<strong>
+					Una solicitud de presupuesto no es una orden de transporte ni, por sí misma, una oferta de recogida
+					nuestra.
+				</strong>{" "}
+				Solo contratamos una recogida de pago después de que aceptes expresamente el precio.
+			</p>
+			<p>
+				Asumes los costes directos de devolución si te informamos correctamente antes del contrato. Para
+				productos que no puedan devolverse normalmente por correo también debemos informar antes de comprar
+				del coste de devolución. Si incumplimos esa información o asumimos el coste, no te lo cobramos. Un
+				presupuesto solicitado después de comprar no sustituye la información previa.
+			</p>
+			<p>
+				Devuelve los accesorios incluidos y protege el producto durante el transporte. El embalaje original,
+				la factura original o un número de expediente asignado por nosotros no son condiciones generales para
+				ejercer el derecho.
+			</p>
+
+			<h3>Reembolso</h3>
+			<p>
+				Devolvemos las cantidades afectadas sin demora indebida y, como máximo, en{" "}
+				<strong>14 días desde que recibimos tu declaración</strong>. Si desistes de toda la compra, también
+				devolvemos el coste inicial de entrega hasta el importe del envío ordinario más económico ofrecido
+				para ese pedido. No estamos obligados a reembolsar el suplemento de una entrega más cara que elegiste
+				expresamente.
+			</p>
+			<p>
+				En un desistimiento parcial devolvemos las cantidades correspondientes sin añadir retroactivamente
+				gastos de envío u otras tasas. Utilizamos el mismo medio de pago, salvo acuerdo expreso sobre otro
+				medio sin coste para ti. No tienes que aceptar un vale en lugar del dinero.
+			</p>
+			<p>
+				Si no ofrecimos la recogida, podemos retener el reembolso hasta recibir el producto o una prueba de su
+				envío, lo que ocurra primero. Si ofrecimos recogerlo, no utilizamos esa retención.
+			</p>
+
+			<h3>Estado del producto y excepciones</h3>
+			<p>
+				Solo puedes responder por la pérdida de valor debida a una manipulación superior a la necesaria para
+				comprobar la naturaleza, características y funcionamiento, siempre que hayamos informado correctamente
+				del desistimiento. Abrir el embalaje o examinar razonablemente el producto no elimina ese derecho.
+			</p>
+			<p>
+				No cobramos una tarifa fija por devolver, desembalar o gestionar la devolución. Justificamos cualquier
+				pérdida de valor con las circunstancias reales y no compensamos unilateralmente esa reclamación con tu
+				derecho al reembolso.
+			</p>
+			<p>
+				Las excepciones legales incluyen, en particular, productos realmente fabricados según especificaciones
+				individuales y determinados productos precintados no aptos para devolución por salud o higiene una vez
+				desprecintados. Solo aplicamos la excepción si concurren sus requisitos.{" "}
+				<strong>
+					Un producto estándar «Bajo pedido» o un kit estándar compatible con un vehículo no es, solo por eso,
+					un producto personalizado.
+				</strong>
+			</p>
+
+			<h2>7. Garantía legal y productos no conformes</h2>
+
+			<h3>Duración y prueba</h3>
+			<p>
+				Para los bienes nuevos vendidos a consumidores residentes en España, respetamos la responsabilidad por
+				faltas de conformidad existentes en la entrega que se manifiesten en{" "}
+				<strong>tres años desde la entrega</strong>, conforme al texto refundido de la Ley General para la
+				Defensa de los Consumidores y Usuarios. El plazo eslovaco general de dos años no reduce ese mínimo
+				español.
+			</p>
+			<p>
+				Durante los <strong>dos primeros años</strong>, se presume que la falta manifestada ya existía al
+				entregar el bien, salvo prueba en contrario o incompatibilidad de la presunción con la naturaleza del
+				bien o de la falta. La acción para exigir responsabilidad prescribe, por regla general, a los{" "}
+				<strong>cinco años desde que se manifiesta la falta</strong>; no debe confundirse con los tres años
+				para su manifestación.
+			</p>
+			<p>
+				Se mantienen las reglas aplicables sobre suspensión de los plazos durante la puesta en conformidad y
+				sobre faltas del mismo origen que reaparezcan tras ella. En bienes con elementos digitales, también
+				respetamos las obligaciones de actualización y los plazos propios del suministro continuo que
+				corresponda.
+			</p>
+			<p>
+				El régimen eslovaco pactado ofrece además, para contratos celebrados desde el{" "}
+				<strong>31 de julio de 2026</strong>, una ampliación única de{" "}
+				<strong>12 meses después de la primera reparación</strong> del plazo de responsabilidad previsto en
+				ese régimen. Esta regla no recorta la protección española ni sustituye sus reglas sobre cómputo,
+				suspensión y otros derechos más favorables. Las garantías comerciales del fabricante son adicionales y
+				no sustituyen tu reclamación frente a nosotros.
+			</p>
+
+			<h3>Cómo reclamar y obtener una solución</h3>
+			<p>
+				Comunica el problema a <Mail />, indicando el producto, el defecto, cuándo lo detectaste y datos que
+				identifiquen la compra. Confirmamos la recepción por escrito sin demora e indicamos el procedimiento.
+				Las fotos o vídeos pueden ayudar, pero no son un requisito de admisión. Tampoco exigimos
+				exclusivamente la factura original. No imponemos un plazo adicional de dos meses, tomado del régimen
+				eslovaco, que recorte la protección obligatoria española.
+			</p>
+			<p>
+				Puedes elegir <strong>reparación o sustitución</strong>, salvo que la opción sea imposible o suponga
+				costes desproporcionados frente a la alternativa. Explicaremos una eventual negativa. La solución es
+				gratuita, se lleva a cabo en un plazo razonable y no debe ocasionarte inconvenientes importantes.
+			</p>
+			<p>
+				En el procedimiento eslovaco recogido en estas condiciones, el plazo indicado para subsanar el defecto
+				normalmente no supera 30 días desde la comunicación, salvo causa objetiva demostrable ajena a
+				nosotros.{" "}
+				<strong>
+					Esa regla no permite retrasar una solución que deba ser más rápida por las circunstancias ni reducir
+					los derechos españoles.
+				</strong>
+			</p>
+			<p>
+				Pones el producto a nuestra disposición y asumimos los costes necesarios de transporte, mano de obra y
+				materiales. Si el bien se instaló correctamente antes de detectarse el problema, la reparación o
+				sustitución incluye la retirada y reinstalación necesarias o sus costes. No cobramos por el uso normal
+				anterior de un producto sustituido.
+			</p>
+			<p>
+				En los supuestos legales puedes exigir{" "}
+				<strong>reducción del precio o resolución del contrato por falta de conformidad</strong>: por ejemplo,
+				cuando rechazamos la solución, esta no se realiza correctamente, la falta persiste o es
+				suficientemente grave. Una falta leve no da lugar por sí sola a la resolución; nos corresponde
+				acreditar su escasa importancia cuando proceda. Para una compra de varios productos se aplican las
+				reglas sobre los bienes afectados y aquellos que no sea razonable conservar por separado.
+			</p>
+			<p>
+				En caso de resolución por falta de conformidad, la devolución corre a nuestro cargo. Reembolsamos lo
+				debido sin demora indebida, respetando el plazo legal y su cómputo; en la resolución de una
+				compraventa de bienes, el plazo de reembolso se cuenta desde su recepción o desde la prueba de
+				devolución, según corresponda. Usamos el medio de pago original salvo acuerdo expreso sobre otro sin
+				coste. Este procedimiento no es un desistimiento sin motivo.
+			</p>
+			<p>
+				Si rechazamos nuestra responsabilidad, lo explicamos por escrito. Puedes aportar pruebas admisibles,
+				incluida una valoración pericial, y volver a reclamar. La compensación de gastos necesarios se rige
+				por la legislación aplicable, sin excluir otros medios de prueba o derechos. Consulta también{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reclamaciones y devoluciones</Link>.
+			</p>
+
+			<h2>8. Reclamaciones y resolución extrajudicial</h2>
+			<p>
+				Primero puedes pedirnos una solución en <Mail />. Si rechazamos la solicitud de reparación del
+				conflicto o no respondemos en los 30 días previstos para esta vía eslovaca, puedes acudir a la entidad
+				de resolución alternativa competente.{" "}
+				<strong>No es un plazo adicional para reparar un producto.</strong>
+			</p>
+			<p>
+				Para los litigios de consumo comprendidos en su competencia, la entidad eslovaca es{" "}
+				<strong>Slovenská obchodná inšpekcia (SOI)</strong>. La vía es gratuita; sus requisitos y posibles
+				causas de inadmisión figuran en la información oficial enlazada abajo.
+			</p>
+			<Adr lang="es" country={SLOVAKIA_ES} />
+			<p>
+				Si resides en España, el{" "}
+				<a href="https://portal-cec.consumo.gob.es/es" rel="noopener noreferrer" target="_blank">
+					Centro Europeo del Consumidor en España
+				</a>{" "}
+				puede orientarte y ayudarte en un conflicto transfronterizo con un vendedor de otro Estado de la UE.
+				Su asistencia no equivale a una decisión judicial o arbitral vinculante ni supone por sí sola la
+				suspensión de los plazos. No afirmamos estar adheridos a un sistema arbitral español determinado.
+			</p>
+			<p>
+				Se mantienen las demás vías legalmente disponibles y el derecho a acudir a los tribunales competentes.
+			</p>
+
+			<h2>9. Protección de datos</h2>
+			<p>
+				Tratamos los datos necesarios para gestionar la compra y cumplir nuestras obligaciones. Los fines,
+				bases jurídicas, destinatarios y derechos se explican en la{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Política de privacidad</Link>. La
+				información sobre el almacenamiento en el navegador está en{" "}
+				<Link href={marketHref(channel, "/cookies")}>Cookies y privacidad</Link>.
+			</p>
+			<p>
+				Comprar, reclamar o desistir no obliga a aceptar publicidad ni a consentir tratamientos opcionales.
+				Los datos necesarios para tramitar una reclamación o un desistimiento no requieren un consentimiento
+				comercial adicional.
+			</p>
+
+			<h2>10. Legislación y versiones</h2>
+			<p>
+				El contrato se rige por la legislación eslovaca, respetando la protección imperativa que corresponda
+				al consumidor en su país de residencia habitual. Ninguna cláusula restringe los derechos que no pueden
+				excluirse por contrato.
+			</p>
+			<p>
+				No imponemos a los consumidores la competencia exclusiva de los tribunales de Bratislava. Se mantienen
+				las reglas aplicables sobre jurisdicción y las facultades de las autoridades competentes.
+			</p>
+			<p>
+				Las modificaciones de estas condiciones se aplican a contratos celebrados después de su entrada en
+				vigor. No cambian retroactivamente un contrato ya celebrado. Puedes solicitar la versión aplicable a
+				tu pedido en <Mail />.
+			</p>
+		</>
+	);
+}
+
+export function Ro({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Acești termeni reglementează cumpărăturile de produse din magazinul MAKY.STORE. Pentru fiecare
+				contract se aplică versiunea în vigoare la încheierea sa.
+			</p>
+			<p>
+				<strong>
+					Suntem un vânzător slovac. Alegerea dreptului slovac nu te privează de protecția normelor imperative
+					din țara în care ai reședința obișnuită
+				</strong>
+				, potrivit articolului 6 din Regulamentul Roma I. Pentru consumatorii din România păstrăm această
+				protecție și beneficiile suplimentare descrise mai jos.
+			</p>
+
+			<h2>1. Vânzătorul și datele de contact</h2>
+			<p>
+				<strong>{companyInfo.legalName}</strong>
+				<br />
+				Sediul social: {companyInfo.street}, {companyInfo.city}, {SLOVAKIA_RO}
+				<br />
+				Număr slovac de identificare a societății (IČO): <strong>{companyInfo.ico}</strong>
+				<br />
+				Cod fiscal slovac (DIČ): <strong>{companyInfo.dic}</strong>
+				<br />
+				Cod de TVA: <strong>{companyInfo.icDph}</strong>
+			</p>
+			<p>
+				Societatea este înregistrată în scopuri de TVA în Slovacia și în registrul comerțului ținut de Mestský
+				súd Bratislava III, secțiunea Sro, număr de înregistrare 200804/B.
+			</p>
+			<p>
+				E-mail: <Mail />
+				<br />
+				Telefon: <Phone />
+			</p>
+			<p>
+				<strong>Adresa pentru retururi, reclamații și corespondența aferentă:</strong> {RETURN_ADDRESS_RO}.
+				Aceasta diferă de sediul social.
+			</p>
+			<p>
+				„Noi” sau „vânzătorul” înseamnă {companyInfo.legalName}, iar „tu” sau „cumpărătorul” este persoana
+				care cumpără. Calitatea de consumator depinde de scopul real al cumpărăturii și de normele aplicabile,
+				nu doar de completarea unor date de facturare. Drepturile rezervate consumatorilor se aplică
+				persoanelor care au această calitate potrivit legii.
+			</p>
+
+			<h2>2. Comanda și încheierea contractului</h2>
+			<p>
+				Poți cumpăra fără cont. Adaugă produsele în coș, completează datele de contact, facturare și livrare
+				și alege dintre metodele de transport și plată disponibile.
+			</p>
+			<p>
+				Înainte de trimiterea comenzii obligatorii poți verifica și corecta conținutul și datele. Afișăm
+				totalul de plată, inclusiv taxele, transportul și serviciile suplimentare acceptate expres. Butonul{" "}
+				<strong>„Comandă cu obligație de plată”</strong>, sau o formulare la fel de clară, arată că trimiterea
+				comenzii presupune plata.
+			</p>
+			<p>
+				Contractul se încheie când primești mesajul nostru de acceptare a comenzii. Acesta include sumarul
+				cumpărăturii și condițiile convenite pe un suport durabil pe care îl poți salva. Simpla notificare a
+				plății de la procesator nu înseamnă acceptarea comenzii de către vânzător.
+			</p>
+			<p>
+				În versiunea românească încheiem contractul <strong>în limba română</strong>. Păstrăm datele necesare
+				executării contractului și îndeplinirii obligațiilor legale. Poți salva confirmarea și documentele
+				primite sau solicita prin e-mail o copie a informațiilor despre propria comandă.
+			</p>
+			<p>
+				Costul accesului la internet sau al apelului telefonic depinde de operatorul tău. Nu percepem o taxă
+				suplimentară pentru încheierea contractului la distanță.
+			</p>
+
+			<h2>3. Produsele și compatibilitatea</h2>
+			<p>
+				Caracteristicile, conținutul, utilizarea prevăzută și limitările sunt descrise în pagina fiecărui
+				produs. Pentru un set de montaj contează configurația exactă a mașinii și piesele incluse.
+			</p>
+			<p>
+				Dacă ai nelămuriri privind compatibilitatea, întreabă-ne înainte să cumperi. Recomandarea nu limitează
+				răspunderea noastră pentru informațiile oferite sau pentru conformitatea produsului livrat.
+			</p>
+			<p>
+				Mențiunea <strong>„La comandă”</strong> înseamnă că procurăm produsul de la furnizor; nu confirmă
+				prezența sa în depozitul nostru. Un articol standard sau un set standard pentru o anumită mașină nu
+				devine astfel un produs personalizat exclus de la retragere.
+			</p>
+
+			<h2>4. Prețurile și plata</h2>
+			<p>
+				Prețurile pentru consumatori sunt finale și includ TVA și celelalte taxe datorate. Costul
+				transportului este afișat separat și inclus în total înainte de comandă. Nu adăugăm servicii cu plată
+				fără acordul tău expres.
+			</p>
+			<p>
+				În versiunea românească afișăm prețurile în <strong>lei românești (RON)</strong>. O modificare
+				ulterioară a prețului din magazin nu schimbă prețul unui contract deja încheiat.
+			</p>
+			<p>
+				Comenzile livrate în România se achită <strong>în avans, prin Stripe</strong>. Metodele disponibile
+				apar în timpul cumpărăturii. <strong>Nu oferim plata ramburs.</strong> Expediem după primirea plății,
+				în funcție de disponibilitatea indicată a produselor.
+			</p>
+			<p>
+				Nu stocăm numărul complet al cardului sau codul de securitate și nu avem acces la ele. Aceste date
+				sunt prelucrate de furnizorul de plăți. Primim informațiile necesare identificării, verificării și,
+				după caz, restituirii plății.
+			</p>
+			<p>
+				Dacă nu putem accepta o comandă deja plătită, restituim suma fără întârzieri nejustificate. După
+				încheierea contractului, schimbarea prețului sau a disponibilității la furnizor nu ne permite să
+				modificăm unilateral ceea ce am convenit.
+			</p>
+
+			<h2>5. Livrarea și primirea coletului</h2>
+			<p>
+				Expediem <strong>din Slovacia</strong>, prin <strong>FedEx și Slovenská pošta (Poșta Slovacă)</strong>
+				. Metodele disponibile depind de destinație, produse, greutatea și dimensiunile coletului. Opțiunile,
+				costurile și condițiile de livrare sunt comunicate înainte de cumpărare.
+			</p>
+			<p>
+				Dacă nu convenim alt termen, livrăm fără întârzieri nejustificate, în cel mult{" "}
+				<strong>30 de zile de la încheierea contractului</strong>. Dacă nu respectăm termenul, ne poți acorda
+				un termen suplimentar adecvat, iar dacă nici acesta nu este respectat poți înceta contractul. Termenul
+				suplimentar nu este necesar, în special, dacă refuzăm livrarea sau dacă livrarea la timp era esențială
+				prin împrejurări ori prin informația pe care ne-ai dat-o înainte de încheierea contractului.
+			</p>
+			<p>
+				Când alegi un transportator oferit de noi, riscul pierderii sau deteriorării trece la consumator când
+				acesta sau persoana desemnată, alta decât transportatorul, intră în posesia produsului. Rămâne
+				aplicabilă excepția legală pentru transportatorul ales independent și care nu a fost oferit de noi.
+				Transferul proprietății se produce potrivit dreptului slovac aplicabil, la livrarea către consumator.
+			</p>
+			<p>
+				Este util să verifici ambalajul și să documentezi deteriorările vizibile.{" "}
+				<strong>
+					Lipsa fotografiilor sau a procesului-verbal al transportatorului nu anulează, prin ea însăși,
+					drepturile pentru un produs neconform.
+				</strong>{" "}
+				Detaliile practice sunt în{" "}
+				<Link href={marketHref(channel, "/doprava-a-platba")}>Livrare și plată</Link>.
+			</p>
+
+			<h2>6. Retragerea fără indicarea unui motiv</h2>
+
+			<h3>Termenul și transmiterea declarației</h3>
+			<p>
+				În calitate de consumator te poți retrage, de regulă, din cumpărarea la distanță în{" "}
+				<strong>14 zile de la primirea produsului</strong>. Pentru comenzile plasate după autentificarea în
+				contul de client, prelungim termenul la <strong>30 de zile</strong>. Este un beneficiu MAKY.STORE cu
+				aceeași procedură și aceleași condiții de retur, fără restrângerea drepturilor legale. Nu trebuie să
+				fii autentificat pentru a te retrage.
+			</p>
+			<p>
+				Ziua primirii nu intră în calcul. Pentru mai multe produse dintr-un singur contract, livrate separat,
+				contează primirea ultimului. Pentru un produs livrat în loturi sau piese, contează ultimul lot ori
+				ultima piesă; pentru livrări periodice pe o durată determinată, prima livrare. Produsul poate fi
+				primit și de persoana desemnată de tine, alta decât transportatorul.
+			</p>
+			<p>
+				Poți comunica retragerea înainte de livrare sau numai pentru anumite produse. Dacă nu oferim
+				informațiile obligatorii, termenul legal se prelungește conform legii, în principiu cu până la 12 luni
+				după termenul inițial. Dacă oferim informația în acea perioadă, ai 14 zile de la primirea ei.
+			</p>
+			<p>
+				Trimite o declarație neechivocă la <Mail /> sau la adresa de retur. Pagina{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Dreptul de retragere</Link> explică
+				modalitățile disponibile și oferă un{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy/vzorovy-formular")}>formular-tip</Link>.
+				Folosirea lui este opțională. Trebuie să putem identifica persoana, cumpărătura și produsele vizate;
+				nu cerem motiv sau aprobare prealabilă.
+			</p>
+			<p>
+				În această versiune de previzualizare, funcția de retragere online nu este încă activată. Poți folosi
+				e-mailul, poșta sau alt mijloc admis de lege. Nu aștepta activarea dacă un termen este în curs.
+				Vizitarea paginii nu înseamnă trimiterea declarației.
+			</p>
+			<p>
+				Este suficient să trimiți declarația înainte de expirarea termenului. Produsul nu trebuie să fi ajuns
+				deja la noi.
+			</p>
+
+			<h3>Returul și transportul</h3>
+			<p>
+				Dacă nu ne-am oferit să ridicăm produsul, trimite-l sau predă-ni-l fără întârziere, în cel mult{" "}
+				<strong>14 zile de la comunicarea retragerii</strong>, la {RETURN_ADDRESS_RO}. Expedierea înainte de
+				termen este suficientă. Dacă am oferit ridicarea, pregătește coletul conform înțelegerii.
+			</p>
+			<p>
+				Poți alege propriul transportator fără aprobarea noastră sau cere o ofertă de ridicare.{" "}
+				<strong>
+					Solicitarea unui preț nu este o comandă de transport și nici o ofertă de ridicare din partea
+					noastră.
+				</strong>{" "}
+				Comandăm o ridicare contra cost numai după acceptarea expresă a prețului.
+			</p>
+			<p>
+				Suporți costurile directe ale returului dacă ai fost informat corespunzător înainte de contract.
+				Pentru un produs care nu poate fi returnat în mod normal prin poștă, trebuie comunicat înainte de
+				cumpărare și costul returului. Dacă nu îndeplinim această obligație ori ne asumăm costul, nu îl
+				plătești tu. Oferta cerută după cumpărare nu înlocuiește informația precontractuală.
+			</p>
+			<p>
+				Include accesoriile produsului și protejează-l la transport. Ambalajul original, factura originală sau
+				un număr de caz atribuit de noi nu sunt condiții generale pentru o retragere valabilă.
+			</p>
+
+			<h3>Restituirea plăților</h3>
+			<p>
+				Restituim sumele vizate fără întârzieri nejustificate, în cel mult{" "}
+				<strong>14 zile de la primirea declarației</strong>. La retragerea din întreaga comandă restituim și
+				livrarea inițială, în limita celei mai ieftine metode standard oferite pentru acea comandă. Nu trebuie
+				să restituim suplimentul pentru o livrare mai scumpă aleasă expres.
+			</p>
+			<p>
+				La retragerea parțială restituim sumele corespunzătoare, fără să adăugăm retroactiv taxe de transport
+				sau alte costuri. Folosim aceeași metodă de plată, exceptând un acord expres pentru altă metodă fără
+				costuri pentru tine. Nu trebuie să accepți un voucher în locul banilor.
+			</p>
+			<p>
+				Dacă nu am oferit ridicarea, putem amâna rambursarea până primim produsul sau dovada expedierii,
+				oricare intervine prima. Dacă am oferit ridicarea, nu invocăm această amânare.
+			</p>
+
+			<h3>Starea produsului și excepțiile</h3>
+			<p>
+				Poți răspunde numai pentru diminuarea valorii rezultată din manipulări care depășesc ceea ce este
+				necesar pentru stabilirea naturii, caracteristicilor și funcționării, cu condiția informării corecte
+				despre retragere. Deschiderea ambalajului sau verificarea rezonabilă nu elimină dreptul.
+			</p>
+			<p>
+				Nu percepem o taxă fixă pentru retur, desigilare sau procesare. Justificăm eventuala diminuare prin
+				starea reală a produsului și nu compensăm unilateral această pretenție cu dreptul tău la rambursare.
+			</p>
+			<p>
+				Excepțiile legale pot privi, în special, bunuri realizate efectiv după specificații individuale sau
+				anumite produse sigilate care nu pot fi returnate din motive de sănătate ori igienă după desigilare.
+				Aplicăm excepția numai dacă sunt îndeplinite condițiile ei.{" "}
+				<strong>
+					Un produs standard „La comandă” sau un kit standard pentru o mașină nu devine, doar astfel, un bun
+					personalizat.
+				</strong>
+			</p>
+
+			<h2>7. Garanția legală și reclamațiile</h2>
+
+			<h3>Durata răspunderii</h3>
+			<p>
+				Răspundem pentru neconformitățile existente la livrare care sunt constatate în{" "}
+				<strong>doi ani de la livrare</strong>, potrivit normelor aplicabile vânzărilor către consumatori.
+				Pentru bunurile cu elemente digitale respectăm și cerințele de actualizare și regulile privind
+				furnizarea continuă. Rămân valabile drepturile privind viciile ascunse care fac produsul impropriu
+				utilizării în durata medie de utilizare, în condițiile legii.
+			</p>
+			<p>
+				În regimul slovac convenit, un defect constatat în perioada de răspundere se prezumă existent la
+				livrare, dacă nu se dovedește contrariul sau dacă prezumția nu este compatibilă cu natura produsului
+				ori a defectului. Nu folosim o regulă românească mai puțin favorabilă privind sarcina probei pentru a
+				reduce acest drept.
+			</p>
+			<p>
+				Pentru contractele încheiate de la <strong>31 iulie 2026</strong>, perioada de răspundere prevăzută de
+				dreptul slovac se prelungește o singură dată cu{" "}
+				<strong>12 luni după prima remediere prin reparație</strong>. Păstrăm și regulile aplicabile privind
+				prelungirea termenului cu timpul de nefuncționare și reluarea termenului pentru un bun înlocuit.
+				Regimurile nu sunt prezentate ca o renunțare la protecția românească.
+			</p>
+			<p>
+				O garanție comercială oferită de producător este suplimentară; nu înlocuiește răspunderea noastră
+				legală și nu te obligă să renunți la o reclamație împotriva vânzătorului.
+			</p>
+
+			<h3>Sesizarea și remediile</h3>
+			<p>
+				Scrie la <Mail />, indicând produsul, defectul, momentul observării și informații care permit
+				identificarea cumpărăturii. Confirmăm sesizarea în scris fără întârziere. Fotografii, videoclipuri sau
+				o factură pot ajuta, dar nu impunem fotografii ori exclusiv factura originală ca cerință de primire.
+			</p>
+			<p>
+				Anunță problema cât mai curând. Nu transferăm în această procedură un termen suplimentar slovac de
+				două luni care ar restrânge drepturile obligatorii românești.
+			</p>
+			<p>
+				Poți alege <strong>repararea sau înlocuirea</strong>, cu excepția cazului în care opțiunea este
+				imposibilă ori implică costuri disproporționate față de cealaltă, în condițiile legii. Îți explicăm
+				eventuala limitare. Remedierea este gratuită și fără inconveniente semnificative.
+			</p>
+			<p>
+				Repararea sau înlocuirea se realizează într-un termen rezonabil de{" "}
+				<strong>
+					cel mult 15 zile calendaristice din momentul în care ne-ai informat despre neconformitate
+				</strong>
+				, stabilit de comun acord, în scris, în funcție de natura produsului și de defect.{" "}
+				<strong>
+					Termenul general slovac de 30 de zile și excepția acestuia nu sunt folosite pentru a depăși limita
+					românească.
+				</strong>
+			</p>
+			<p>
+				Pentru o neconformitate constatată la scurt timp după livrare, în cel mult{" "}
+				<strong>30 de zile calendaristice</strong>, beneficiezi de înlocuirea bunului conform regulii speciale
+				din legislația românească. Acest drept este diferit de retragerea fără motiv.
+			</p>
+			<p>
+				Ne pui produsul la dispoziție, iar noi suportăm costurile necesare de transport, manoperă și
+				materiale. Dacă a fost instalat corect înainte de constatarea neconformității, repararea sau
+				înlocuirea include demontarea și remontarea necesare ori suportarea costurilor. Nu cerem plata pentru
+				utilizarea normală a bunului înainte de înlocuire.
+			</p>
+			<p>
+				Poți obține <strong>reducerea prețului sau încetarea contractului pentru neconformitate</strong> în
+				cazurile prevăzute de lege: de exemplu, când remedierea este refuzată, nu este realizată
+				corespunzător, problema persistă sau este suficient de gravă. O neconformitate minoră nu justifică
+				singură încetarea contractului; sarcina dovedirii caracterului minor ne revine când legea o prevede.
+				Pentru mai multe produse se păstrează regulile privind bunurile afectate și cele pe care nu este
+				rezonabil să le păstrezi separat.
+			</p>
+			<p>
+				La încetarea contractului pentru neconformitate, produsul este returnat pe cheltuiala noastră, iar
+				prețul se restituie la primirea bunului sau a dovezii returnării, potrivit legii. Folosim metoda
+				inițială de plată, dacă nu accepți expres altă metodă fără costuri. Nu aplicăm regulile returului fără
+				motiv pentru a transfera asupra ta costul remedierii unui defect de care răspundem.
+			</p>
+			<p>
+				Dacă respingem răspunderea, motivăm în scris. Poți prezenta alte dovezi admisibile, inclusiv
+				expertize, și poți sesiza din nou problema. Restituirea cheltuielilor necesare se face conform
+				normelor aplicabile, fără excluderea altor dovezi ori remedii. Pașii practici sunt în{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reclamații și retururi</Link>.
+			</p>
+
+			<h2>8. Reclamații și soluționarea alternativă a litigiilor</h2>
+			<p>
+				Poți cere mai întâi o soluție la <Mail />. Dacă respingem cererea de soluționare a diferendului sau nu
+				răspundem în cele 30 de zile prevăzute pentru această cale slovacă, te poți adresa entității
+				competente de soluționare alternativă.{" "}
+				<strong>Acesta nu este un termen suplimentar de reparare a produsului.</strong>
+			</p>
+			<p>
+				Pentru litigiile din competența sa, entitatea slovacă este{" "}
+				<strong>Slovenská obchodná inšpekcia (SOI)</strong>. Procedura este gratuită; condițiile și posibilele
+				motive de refuz al examinării sunt prezentate în informațiile oficiale de mai jos.
+			</p>
+			<Adr lang="ro" country={SLOVAKIA_RO} />
+			<p>
+				Dacă locuiești în România,{" "}
+				<a href="https://eccromania.ro/" rel="noopener noreferrer" target="_blank">
+					Centrul European al Consumatorilor din România — ECC Romania
+				</a>{" "}
+				poate oferi informații și sprijin pentru un litigiu transfrontalier cu un vânzător din alt stat al UE.
+				Asistența sa nu reprezintă o hotărâre judecătorească sau arbitrală obligatorie și nu suspendă automat
+				termenele. Nu pretindem o afiliere MAKY la o anumită schemă românească de arbitraj sau mediere.
+			</p>
+			<p>
+				Aceste opțiuni nu exclud alte căi prevăzute de lege, sesizarea autorităților competente ori accesul la
+				instanță.
+			</p>
+
+			<h2>9. Datele personale</h2>
+			<p>
+				Prelucrăm datele necesare cumpărăturii și obligațiilor noastre. Scopurile, temeiurile, destinatarii și
+				drepturile sunt explicate în{" "}
+				<Link href={marketHref(channel, "/ochrana-osobnych-udajov")}>Politica de confidențialitate</Link>, iar
+				tehnologiile din browser în{" "}
+				<Link href={marketHref(channel, "/cookies")}>Cookie-uri și confidențialitate</Link>.
+			</p>
+			<p>
+				Cumpărarea, reclamația și retragerea nu sunt condiționate de acceptarea publicității sau a
+				prelucrărilor opționale. Nu cerem un consimțământ comercial suplimentar pentru datele necesare
+				soluționării unei reclamații ori retrageri.
+			</p>
+
+			<h2>10. Legea aplicabilă și versiunile condițiilor</h2>
+			<p>
+				Contractul este guvernat de dreptul slovac, cu păstrarea protecției imperative aplicabile
+				consumatorului în țara reședinței sale obișnuite. Nicio prevedere nu limitează drepturile care nu pot
+				fi înlăturate prin contract.
+			</p>
+			<p>
+				Nu impunem consumatorilor competența exclusivă a instanțelor din Bratislava. Se păstrează regulile
+				aplicabile privind instanțele și competențele autorităților.
+			</p>
+			<p>
+				Modificările acestor termeni se aplică unor contracte încheiate după intrarea lor în vigoare. Nu
+				schimbă retroactiv condițiile unei cumpărături deja încheiate. Poți solicita versiunea aplicabilă
+				comenzii tale la <Mail />.
 			</p>
 		</>
 	);

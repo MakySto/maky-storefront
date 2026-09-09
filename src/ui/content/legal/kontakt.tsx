@@ -2,7 +2,7 @@ import Link from "next/link";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL } from "./slovakia";
+import { SLOVAKIA_ES, SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL, SLOVAKIA_RO } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 const Phone = () => <a href={companyPhoneHref}>{companyInfo.phone}</a>;
@@ -445,6 +445,117 @@ export function Fr({ channel }: { channel: string }) {
 				Les <Link href={marketHref(channel, "/obchodne-podmienky")}>Conditions générales de vente</Link>{" "}
 				présentent les voies de règlement extrajudiciaire et l’assistance pour les achats transfrontaliers.
 				Les compétences des autres autorités prévues par la loi restent inchangées.
+			</p>
+		</>
+	);
+}
+
+export function Es({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				¿Tienes una duda sobre un producto, quieres comprobar si un accesorio encaja en tu coche o necesitas
+				ayuda con un pedido? Escríbenos o llámanos.
+			</p>
+			<p>
+				<strong>E-mail:</strong> <Mail />
+				<br />
+				<strong>Teléfono:</strong> <Phone />
+			</p>
+			<p>
+				Respondemos durante nuestros días laborables. Si consultas por un pedido, indica su número. Para
+				elegir un accesorio, dinos la marca, el modelo y el año del coche; si buscas barras de techo, también
+				el tipo de techo. Una foto puede ayudarnos a comprobar la compatibilidad.
+			</p>
+
+			<h2>Devoluciones y reclamaciones</h2>
+			<p>Envía los productos que devuelvas o sobre los que presentes una reclamación a:</p>
+			<ReturnAddress country={SLOVAKIA_ES} />
+			<p>
+				Esta dirección es distinta de nuestro domicilio social. Para devolver una compra sin indicar el
+				motivo, consulta el{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Derecho de desistimiento</Link>. Si el
+				producto es defectuoso o está dañado, encontrarás el procedimiento en{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reclamaciones y devoluciones</Link>.
+			</p>
+
+			<h2>Vendedor y datos de facturación</h2>
+			<SeatAddress country={SLOVAKIA_ES} />
+			<p>
+				<strong>Número de identificación de la empresa (IČO):</strong> {companyInfo.ico}
+				<br />
+				<strong>Número de identificación fiscal eslovaco (DIČ):</strong> {companyInfo.dic}
+				<br />
+				<strong>Número de identificación a efectos del IVA:</strong> {companyInfo.icDph}
+			</p>
+			<p>
+				La sociedad está registrada a efectos del IVA en Eslovaquia. Figura en el registro mercantil del
+				Mestský súd Bratislava III, sección Sro, inscripción 200804/B. Estos son identificadores eslovacos, no
+				un NIF español.
+			</p>
+
+			<h2>Autoridad de supervisión en el país del vendedor</h2>
+			<SupervisoryAuthority country={SLOVAKIA_ES} gloss="Inspección Comercial Eslovaca" />
+			<p>
+				En las <Link href={marketHref(channel, "/obchodne-podmienky")}>Condiciones generales de venta</Link>{" "}
+				explicamos las vías de resolución extrajudicial de conflictos y de ayuda en compras transfronterizas.
+				La supervisión en Eslovaquia no excluye las competencias de otras autoridades que correspondan
+				legalmente.
+			</p>
+		</>
+	);
+}
+
+export function Ro({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Ai o întrebare despre un produs, vrei să verifici compatibilitatea unui accesoriu cu mașina ta sau ai
+				nevoie de ajutor cu o comandă? Scrie-ne sau sună-ne.
+			</p>
+			<p>
+				<strong>E-mail:</strong> <Mail />
+				<br />
+				<strong>Telefon:</strong> <Phone />
+			</p>
+			<p>
+				Răspundem în zilele noastre lucrătoare. Pentru întrebări despre o comandă, ne ajută numărul ei. Dacă
+				alegi un accesoriu auto, spune-ne marca, modelul și anul mașinii, iar pentru bare transversale, și
+				tipul plafonului. O fotografie poate ușura verificarea compatibilității.
+			</p>
+
+			<h2>Retururi și reclamații</h2>
+			<p>Produsele returnate sau cele pentru care formulezi o reclamație se trimit la:</p>
+			<ReturnAddress country={SLOVAKIA_RO} />
+			<p>
+				Această adresă diferă de sediul social. Pentru un retur fără indicarea motivului, consultă{" "}
+				<Link href={marketHref(channel, "/odstupenie-od-zmluvy")}>Dreptul de retragere</Link>. Pentru un
+				produs defect sau deteriorat, găsești pașii în pagina{" "}
+				<Link href={marketHref(channel, "/reklamacie-a-vratenie")}>Reclamații și retururi</Link>.
+			</p>
+
+			<h2>Vânzătorul și datele de facturare</h2>
+			<SeatAddress country={SLOVAKIA_RO} />
+			<p>
+				<strong>Număr de identificare a societății (IČO):</strong> {companyInfo.ico}
+				<br />
+				<strong>Număr de identificare fiscală slovac (DIČ):</strong> {companyInfo.dic}
+				<br />
+				<strong>Cod de înregistrare în scopuri de TVA:</strong> {companyInfo.icDph}
+			</p>
+			<p>
+				Societatea este înregistrată în scopuri de TVA în Slovacia și figurează în registrul comerțului ținut
+				de Mestský súd Bratislava III, secțiunea Sro, numărul 200804/B. Datele de mai sus sunt identificatori
+				slovaci, nu un CUI românesc.
+			</p>
+
+			<h2>Autoritatea de supraveghere din țara vânzătorului</h2>
+			<SupervisoryAuthority country={SLOVAKIA_RO} gloss="Inspecția Comercială Slovacă" />
+			<p>
+				Informațiile despre soluționarea alternativă a litigiilor și sprijinul pentru cumpărături
+				transfrontaliere sunt în{" "}
+				<Link href={marketHref(channel, "/obchodne-podmienky")}>Termenii și condițiile de vânzare</Link>.
+				Competențele altor autorități prevăzute de lege rămân neafectate.
 			</p>
 		</>
 	);

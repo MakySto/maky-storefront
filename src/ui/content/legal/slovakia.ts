@@ -10,12 +10,14 @@
  * a Slovak default, so adding a language here cannot change what Slovak or Czech renders.
  *
  * `SLOVAKIA_DE` lives in `german-market.tsx` instead, next to the rest of the German
- * market profile. These four have no profile object — Polish, Hungarian, Italian and
- * French share nothing with each other beyond the company itself, so a profile would be
- * a layer with one inhabitant apiece.
+ * market profile. These six have no profile object — Polish, Hungarian, Italian, French,
+ * Spanish and Romanian share nothing with each other beyond the company itself, so a
+ * profile would be a layer with one inhabitant apiece.
  */
 
 export const SLOVAKIA_PL = "Słowacja";
 export const SLOVAKIA_HU = "Szlovákia";
 export const SLOVAKIA_IT = "Slovacchia";
 export const SLOVAKIA_FR = "Slovaquie";
+export const SLOVAKIA_ES = "Eslovaquia";
+export const SLOVAKIA_RO = "Slovacia";

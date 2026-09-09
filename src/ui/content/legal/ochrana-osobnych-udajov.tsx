@@ -2,7 +2,7 @@ import Link from "next/link";
 import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { AUSTRIA, GERMANY, SLOVAKIA_DE, type GermanMarket } from "./german-market";
-import { SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL } from "./slovakia";
+import { SLOVAKIA_ES, SLOVAKIA_FR, SLOVAKIA_HU, SLOVAKIA_IT, SLOVAKIA_PL, SLOVAKIA_RO } from "./slovakia";
 
 const Mail = () => <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>;
 
@@ -29,6 +29,8 @@ const RECIPIENTS = [
 			hu: "Katalógus, kosár, rendelések és vásárlói fiók. Saját példány.",
 			it: "Sistema del negozio per catalogo, carrello, ordini e account; dati necessari al servizio",
 			fr: "Catalogue, panier, commandes et compte ; données nécessaires au fonctionnement du service",
+			es: "Catálogo, cesta, pedidos y cuenta de cliente en nuestra instalación de comercio electrónico.",
+			ro: "Catalog, coș, comenzi și contul de client în propria noastră instalare de comerț electronic.",
 		},
 		basis: {
 			sk: "Nevyhnutné pre zmluvu",
@@ -50,6 +52,8 @@ const RECIPIENTS = [
 			hu: "Szerkesztői tartalom, az elállási nyilatkozat rögzítése és visszaigazolása. Saját példány.",
 			it: "Contenuti del sito; richieste e conferme nei processi effettivamente supportati",
 			fr: "Contenus du site ; demandes et confirmations dans les procédures effectivement prises en charge",
+			es: "Contenido y gestión de los formularios y comunicaciones que estén efectivamente habilitados.",
+			ro: "Conținutul și gestionarea formularelor și comunicărilor care sunt efectiv activate.",
 		},
 		basis: {
 			sk: "Zmluva a zákonná povinnosť",
@@ -71,6 +75,8 @@ const RECIPIENTS = [
 			hu: "Az online fizetés, a visszatérítések lebonyolítása és csalásellenőrzés.",
 			it: "Pagamenti, rimborsi e prevenzione delle frodi; informazioni necessarie alla transazione",
 			fr: "Paiement, remboursement et prévention de la fraude ; données nécessaires à la transaction",
+			es: "Pagos, reembolsos y controles de seguridad de las operaciones.",
+			ro: "Plăți, rambursări și verificări de securitate ale operațiunilor.",
 		},
 		basis: {
 			sk: "Nevyhnutné pre zmluvu",
@@ -92,6 +98,8 @@ const RECIPIENTS = [
 			hu: "A küldemény kézbesítése és a címzett elérése.",
 			it: "Consegna, comunicazioni sul trasporto e recapiti del destinatario",
 			fr: "Livraison, suivi opérationnel du transport et coordonnées du destinataire",
+			es: "Transporte y entrega, según el servicio elegido.",
+			ro: "Transportul și livrarea, în funcție de serviciul ales.",
 		},
 		basis: {
 			sk: "Nevyhnutné pre zmluvu",
@@ -113,6 +121,8 @@ const RECIPIENTS = [
 			hu: "A webhely kiszolgálása és védelme; a Cloudflare Web Analytics sütik nélkül méri a forgalmat.",
 			it: "Erogazione e sicurezza del sito; servizio Web Analytics descritto nella pagina cookie",
 			fr: "Diffusion et sécurité du site ; Web Analytics présenté dans la page cookies",
+			es: "Entrega y protección de la web; Web Analytics para la medición descrita en la página de cookies.",
+			ro: "Livrarea și protejarea site-ului; Web Analytics pentru măsurarea descrisă în pagina de cookie-uri.",
 		},
 		basis: {
 			sk: "Oprávnený záujem",
@@ -134,6 +144,8 @@ const RECIPIENTS = [
 			hu: "Opcionális analitika és hirdetésmérés, a hozzájárulási beállítások Consent Mode általi továbbításával.",
 			it: "Gestione dei tag e, secondo le scelte, misurazione e finalità pubblicitarie",
 			fr: "Gestion des balises et, selon vos choix, mesure et finalités publicitaires",
+			es: "Gestión de etiquetas, medición y funciones de marketing según su configuración y las preferencias aplicables.",
+			ro: "Administrarea etichetelor, măsurare și funcții de marketing în funcție de configurare și preferințele aplicabile.",
 		},
 		basis: {
 			sk: "Súhlas",
@@ -155,9 +167,28 @@ const HEADS = {
 	hu: ["Szolgáltatás", "Mire használjuk", "Jogalap"],
 	it: ["Sistema o servizio", "Finalità e ambito", "Base pertinente"],
 	fr: ["Système ou service", "Finalité et périmètre", "Base pertinente"],
+	// Two columns, not three. The delivered Spanish and Romanian tables list systems and
+	// purposes only, and their prose says so explicitly — the table identifies services,
+	// not a legal entity and basis per row. Inventing a basis column to match the older
+	// languages would be writing legal text nobody approved.
+	es: ["Sistema o servicio", "Para qué se utiliza"],
+	ro: ["Sistem sau serviciu", "Pentru ce îl folosim"],
 } as const;
 
-function RecipientsTable({ lang }: { lang: "sk" | "cs" | "de" | "pl" | "hu" | "it" | "fr" }) {
+/** The languages whose delivered recipients table carries a legal-basis column. */
+const BASIS_LANGS = ["sk", "cs", "de", "pl", "hu", "it", "fr"] as const;
+type BasisLang = (typeof BASIS_LANGS)[number];
+type RecipientLang = BasisLang | "es" | "ro";
+
+const hasBasisColumn = (lang: RecipientLang): lang is BasisLang =>
+	(BASIS_LANGS as readonly string[]).includes(lang);
+
+function RecipientsTable({ lang }: { lang: RecipientLang }) {
+	// The cell is emitted only where the language actually has one, so the seven older
+	// tables render exactly the three columns they always did and the two new ones render
+	// the two their copy supplies. A `<td>` more than there are `<th>` would be an invalid
+	// table that no type and no build would complain about.
+	const withBasis = hasBasisColumn(lang);
 	return (
 		<div className="overflow-x-auto">
 			<table>
@@ -173,7 +204,7 @@ function RecipientsTable({ lang }: { lang: "sk" | "cs" | "de" | "pl" | "hu" | "i
 						<tr key={row.service}>
 							<td>{row.service}</td>
 							<td>{row.purpose[lang]}</td>
-							<td>{row.basis[lang]}</td>
+							{withBasis ? <td>{row.basis[lang]}</td> : null}
 						</tr>
 					))}
 				</tbody>
@@ -186,7 +217,7 @@ function DpaAuthority({
 	lang,
 	country,
 }: {
-	lang: "sk" | "cs" | "pl" | "hu" | "it" | "fr";
+	lang: "sk" | "cs" | "pl" | "hu" | "it" | "fr" | "es" | "ro";
 	country?: string;
 }) {
 	return (
@@ -1903,6 +1934,465 @@ export function Fr({ channel }: { channel: string }) {
 			<p>
 				Nous actualisons cette politique lorsque les traitements ou les services changent. Une modification du
 				document ne remplace pas un nouveau consentement lorsqu’il est nécessaire.
+			</p>
+		</>
+	);
+}
+
+export function Es({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Al comprar o utilizar esta web nos facilitas datos personales. Aquí explicamos qué datos tratamos,
+				para qué los necesitamos, con quién los compartimos y cómo ejercer tus derechos.
+			</p>
+
+			<h2>1. Responsable del tratamiento</h2>
+			<p>
+				El responsable es <strong>{companyInfo.legalName}</strong>, {companyInfo.street}, {companyInfo.city},{" "}
+				{SLOVAKIA_ES}, número de identificación de empresa (IČO) <strong>{companyInfo.ico}</strong>.
+			</p>
+			<p>
+				Para cuestiones de protección de datos escribe a <Mail /> o a nuestro domicilio social.
+			</p>
+
+			<h2>2. Datos, fines y bases jurídicas</h2>
+
+			<h3>Pedidos, entrega y atención al cliente</h3>
+			<p>
+				Tratamos el nombre, los datos de contacto, las direcciones de facturación y entrega, los productos
+				comprados, la información sobre el pedido y el pago y la correspondencia relacionada. En compras
+				empresariales también tratamos los datos de empresa facilitados. Para consultar la compatibilidad de
+				un accesorio puedes enviarnos datos del vehículo o fotografías.
+			</p>
+			<p>
+				Utilizamos estos datos para preparar y ejecutar el contrato: tramitar el pedido, el pago, la entrega y
+				las consultas. La base es la{" "}
+				<strong>
+					ejecución del contrato o las medidas precontractuales solicitadas — artículo 6.1.b del RGPD
+				</strong>
+				. Para relacionarnos con la persona que representa a un cliente empresarial puede ser aplicable el
+				interés legítimo en gestionar esa relación, conforme al <strong>artículo 6.1.f</strong>.
+			</p>
+			<p>
+				Stripe procesa el pago. No almacenamos el número completo de la tarjeta ni su código de seguridad y no
+				tenemos acceso a ellos. Recibimos los datos necesarios para identificar, comprobar o reembolsar una
+				operación.
+			</p>
+
+			<h3>Contabilidad y obligaciones legales</h3>
+			<p>
+				Utilizamos los datos de identificación, del pedido y del pago para llevar la contabilidad, cumplir las
+				obligaciones tributarias y atender a las autoridades competentes. La base es el{" "}
+				<strong>cumplimiento de obligaciones legales — artículo 6.1.c del RGPD</strong>.
+			</p>
+
+			<h3>Reclamaciones, desistimiento y ejercicio de derechos</h3>
+			<p>
+				Tratamos los datos de contacto, de la compra y del producto, el contenido de la comunicación, las
+				pruebas necesarias y las actuaciones realizadas. En lo necesario para documentar el asunto conservamos
+				también la información sobre la presentación de la comunicación y su confirmación.
+			</p>
+			<p>
+				La base es el cumplimiento de obligaciones legales, la gestión del contrato y, cuando corresponda, el
+				interés legítimo en formular, ejercer o defender reclamaciones, conforme a los{" "}
+				<strong>artículos 6.1.c, 6.1.b y 6.1.f del RGPD</strong>. Tramitar una reclamación o un desistimiento
+				no depende de que aceptes publicidad ni exige un consentimiento adicional para utilizar los datos
+				necesarios.
+			</p>
+
+			<h3>Cuenta de cliente</h3>
+			<p>
+				Si creas una cuenta, tratamos los datos necesarios para administrarla, permitir el acceso y mostrar
+				tus pedidos. La base es la prestación del servicio solicitado, conforme al{" "}
+				<strong>artículo 6.1.b del RGPD</strong>. La cuenta no es un requisito para comprar o desistir.
+			</p>
+
+			<h3>Boletín y comunicaciones comerciales</h3>
+			<p>
+				Si te suscribes al boletín, utilizamos tu correo y la información sobre tu consentimiento para
+				enviarte las comunicaciones solicitadas. La base es el{" "}
+				<strong>consentimiento — artículo 6.1.a del RGPD</strong>. Es voluntario y puedes retirarlo mediante
+				el enlace de baja del mensaje o escribiendo a <Mail />.
+			</p>
+
+			<h3>Seguridad y protección de derechos</h3>
+			<p>
+				Tratamos, en la medida necesaria, registros técnicos de acceso y errores, información para prevenir
+				abusos o fraude y documentos para proteger nuestros derechos. La base es el{" "}
+				<strong>interés legítimo — artículo 6.1.f del RGPD</strong> en la seguridad y la defensa de
+				reclamaciones, teniendo en cuenta la proporcionalidad y tu privacidad.
+			</p>
+			<p>
+				Esa base no es una autorización general para el seguimiento publicitario. La analítica opcional, la
+				publicidad y las tecnologías del navegador se explican en{" "}
+				<Link href={marketHref(channel, "/cookies")}>Cookies y privacidad</Link>.
+			</p>
+
+			<h2>3. Origen de los datos y datos necesarios</h2>
+			<p>
+				Recibimos los datos principalmente de ti, al comprar, crear una cuenta, utilizar un formulario o
+				escribirnos. El proveedor de pagos informa del resultado de la operación y el transportista puede
+				comunicar el estado de la entrega. Los datos técnicos se generan al utilizar la web.
+			</p>
+			<p>
+				Los datos marcados como necesarios responden al fin de cada trámite. Por ejemplo, necesitamos una
+				dirección para entregar un pedido. No tienes que facilitar datos opcionales ni consentir publicidad
+				para utilizar nuestros servicios principales.
+			</p>
+
+			<h2>4. Destinatarios y servicios utilizados</h2>
+			<p>
+				No todos los proveedores reciben datos en todas las visitas o pedidos. Depende de los servicios que
+				utilices y de lo necesario para cada operación.
+			</p>
+			<p>
+				El transportista elegido, <strong>FedEx o Slovenská pošta</strong>, recibe los datos necesarios para
+				el envío y el contacto con el destinatario. <strong>Stripe</strong> procesa el pago. También pueden
+				acceder a los datos, cuando sea necesario, proveedores técnicos, de correo electrónico, contabilidad o
+				asesoramiento jurídico. Comunicamos datos a las autoridades cuando lo exige la ley.
+			</p>
+			<p>
+				Los proveedores actúan como encargados del tratamiento o como responsables independientes según el
+				servicio y su función. La siguiente tabla identifica sistemas, servicios y finalidades, no una lista
+				de entidades jurídicas diferentes para cada programa que usamos.
+			</p>
+			<RecipientsTable lang="es" />
+			<p>
+				Nuestras propias instalaciones de Saleor y Payload no son terceros independientes solo por tener un
+				nombre. Puedes pedir información sobre los destinatarios concretos y su función en <Mail />.
+			</p>
+
+			<h2>5. Transferencias fuera del Espacio Económico Europeo</h2>
+			<p>
+				Algunos proveedores pueden tratar datos fuera del Espacio Económico Europeo o permitir su acceso desde
+				otros países. El mecanismo aplicable depende del destinatario, del servicio y del destino real.
+			</p>
+			<p>
+				Cuando existe una transferencia, aplicamos las condiciones del capítulo V del RGPD: por ejemplo, una
+				decisión de adecuación aplicable al destinatario o garantías adecuadas como las cláusulas
+				contractuales tipo, con las medidas adicionales que correspondan. No afirmamos que todos los servicios
+				o destinatarios estén cubiertos por el mismo mecanismo.
+			</p>
+			<p>
+				Para conocer las garantías de una transferencia concreta o solicitar información sobre cómo obtener
+				una copia, escribe a <Mail />.
+			</p>
+
+			<h2>6. Conservación de los datos</h2>
+			<p>
+				Conservamos los datos durante el tiempo necesario para su finalidad y las obligaciones aplicables, no
+				todos durante un único plazo.
+			</p>
+			<p>
+				Los pedidos se conservan durante su gestión y, posteriormente, según las obligaciones legales y los
+				plazos relevantes para reclamaciones. Los documentos contables sujetos a la normativa eslovaca se
+				conservan, por regla general,{" "}
+				<strong>diez años desde el final del ejercicio al que corresponden</strong>; esto no significa que
+				todos los datos de navegación se guarden diez años.
+			</p>
+			<p>
+				Los expedientes de reclamación o desistimiento se conservan para tramitar y acreditar el asunto
+				durante los plazos aplicables. Los datos de cuenta se mantienen mientras se presta ese servicio y,
+				después, solo en la medida necesaria para otras obligaciones o derechos.
+			</p>
+			<p>
+				Para el boletín, conservamos los datos hasta la retirada del consentimiento o el cese de la finalidad,
+				sin perjuicio de la información mínima necesaria para acreditar el consentimiento o respetar la baja.
+				Los registros técnicos tienen una conservación proporcionada a la seguridad y al diagnóstico. Las
+				duraciones del almacenamiento en el navegador se indican en la página de cookies.
+			</p>
+
+			<h2>7. Tus derechos</h2>
+			<p>
+				En las condiciones del RGPD, puedes solicitar acceso, rectificación, supresión o limitación del
+				tratamiento. Puedes obtener la portabilidad cuando el tratamiento automatizado se base en
+				consentimiento o contrato y se cumplan sus requisitos.
+			</p>
+			<p>
+				Puedes oponerte, por tu situación particular, a tratamientos basados en interés legítimo.{" "}
+				<strong>Para el marketing directo, puedes oponerte en cualquier momento</strong>, incluido el
+				perfilado relacionado. Dejaremos de tratar los datos para ese fin.
+			</p>
+			<p>
+				Puedes retirar el consentimiento en cualquier momento sin afectar a la licitud del tratamiento
+				anterior. Retirarlo no exige cancelar una compra ni renunciar a una reclamación. Algunos datos pueden
+				seguir siendo necesarios por obligaciones legales u otra base válida.
+			</p>
+			<p>
+				Escribe a <Mail />. Respondemos normalmente en <strong>un mes</strong>. Si la complejidad o el número
+				de solicitudes lo requiere, el plazo puede ampliarse hasta dos meses adicionales; te informaremos
+				dentro del primer mes y explicaremos el motivo. Si existen dudas razonables sobre tu identidad,
+				podemos pedir la información proporcionada y necesaria para comprobarla, no documentación excesiva por
+				sistema.
+			</p>
+
+			<h2>8. Autoridades de protección de datos</h2>
+			<p>
+				Puedes reclamar ante una autoridad de control, en particular la de tu residencia habitual, trabajo o
+				lugar de la posible infracción. En España puedes acudir a la{" "}
+				<strong>Agencia Española de Protección de Datos — AEPD</strong>, a través de su{" "}
+				<a href="https://www.aepd.es/" rel="noopener noreferrer" target="_blank">
+					sitio oficial
+				</a>
+				.
+			</p>
+			<p>
+				Por nuestro establecimiento en Eslovaquia también puedes acudir al{" "}
+				<strong>Úrad na ochranu osobných údajov Slovenskej republiky</strong>, según las reglas de
+				competencia. No tienes que limitarte a una autoridad únicamente porque el vendedor esté en otro Estado
+				de la UE.
+			</p>
+			<DpaAuthority country={SLOVAKIA_ES} lang="es" />
+
+			<h2>9. Decisiones automatizadas</h2>
+			<p>
+				No utilizamos, para decidir por nuestra cuenta sobre tus pedidos, reclamaciones o desistimientos,
+				decisiones basadas únicamente en tratamiento automatizado que produzcan efectos jurídicos o te afecten
+				de modo similar y significativo.
+			</p>
+			<p>
+				Stripe realiza sus propios controles de prevención del fraude en la gestión de pagos. Esa actividad
+				del proveedor es distinta de nuestra tramitación del pedido. Si una operación no se completa, contacta
+				con <Mail /> para que revisemos la situación y busquemos una solución.
+			</p>
+
+			<h2>10. Cambios en esta información</h2>
+			<p>
+				Actualizamos esta política cuando cambian los tratamientos o servicios. Una modificación del documento
+				no sustituye un consentimiento nuevo cuando sea necesario. Puedes escribirnos para aclarar el
+				tratamiento relacionado con tu compra.
+			</p>
+		</>
+	);
+}
+
+export function Ro({ channel }: { channel: string }) {
+	return (
+		<>
+			<p>
+				Când cumperi sau folosești site-ul, ne încredințezi date personale. Aici explicăm ce date folosim, de
+				ce avem nevoie de ele, cui le transmitem și cum îți poți exercita drepturile.
+			</p>
+
+			<h2>1. Operatorul de date</h2>
+			<p>
+				Operatorul este <strong>{companyInfo.legalName}</strong>, {companyInfo.street}, {companyInfo.city},{" "}
+				{SLOVAKIA_RO}, număr de identificare a societății (IČO) <strong>{companyInfo.ico}</strong>.
+			</p>
+			<p>
+				Pentru întrebări privind datele personale, scrie la <Mail /> sau la sediul social.
+			</p>
+
+			<h2>2. Datele, scopurile și temeiurile prelucrării</h2>
+
+			<h3>Comenzi, livrare și asistență</h3>
+			<p>
+				Folosim numele, datele de contact, adresele de facturare și livrare, produsele comandate, informațiile
+				despre comandă și plată și corespondența aferentă. La cumpărături pentru firme folosim și datele de
+				firmă furnizate. În întrebările despre compatibilitatea accesoriilor ne poți trimite date despre
+				mașină sau fotografii.
+			</p>
+			<p>
+				Datele sunt necesare pregătirii și executării contractului: comandă, plată, livrare și răspunsuri la
+				solicitări. Temeiul este{" "}
+				<strong>
+					executarea contractului sau demersurile precontractuale solicitate — articolul 6 alineatul (1)
+					litera (b) din RGPD
+				</strong>
+				. Pentru relația cu reprezentantul unui client comercial poate fi aplicabil interesul legitim de a
+				gestiona relația, conform <strong>articolului 6 alineatul (1) litera (f)</strong>.
+			</p>
+			<p>
+				Plata este procesată de Stripe. Nu stocăm numărul complet al cardului ori codul său de securitate și
+				nu avem acces la ele. Primim informațiile necesare identificării, verificării sau restituirii plății.
+			</p>
+
+			<h3>Contabilitate și obligații legale</h3>
+			<p>
+				Datele de identificare, comandă și plată sunt folosite pentru contabilitate, obligații fiscale și
+				comunicarea obligatorie cu autoritățile. Temeiul este{" "}
+				<strong>obligația legală — articolul 6 alineatul (1) litera (c) din RGPD</strong>.
+			</p>
+
+			<h3>Reclamații, retrageri și exercitarea drepturilor</h3>
+			<p>
+				Prelucrăm datele de contact, cumpărătură și produs, conținutul sesizării, dovezile necesare și etapele
+				soluționării. În măsura necesară documentării, păstrăm și informații despre transmiterea sesizării și
+				confirmarea ei.
+			</p>
+			<p>
+				Temeiurile sunt îndeplinirea obligațiilor legale, gestionarea contractului și, după caz, interesul
+				legitim de a constata, exercita ori apăra un drept, conform{" "}
+				<strong>articolului 6 alineatul (1) literele (c), (b) și (f)</strong>. Reclamația sau retragerea nu
+				depinde de acordul pentru marketing și nu cere un consimțământ suplimentar pentru datele necesare
+				soluționării.
+			</p>
+
+			<h3>Contul de client</h3>
+			<p>
+				Dacă îți creezi un cont, folosim datele necesare administrării, autentificării și afișării comenzilor.
+				Temeiul este furnizarea serviciului solicitat, potrivit{" "}
+				<strong>articolului 6 alineatul (1) litera (b)</strong>. Contul nu este obligatoriu pentru cumpărare
+				sau retragere.
+			</p>
+
+			<h3>Newsletter și comunicări comerciale</h3>
+			<p>
+				Dacă te abonezi, utilizăm adresa de e-mail și informațiile despre consimțământ pentru mesajele
+				solicitate. Temeiul este <strong>consimțământul — articolul 6 alineatul (1) litera (a)</strong>. Este
+				opțional și îl poți retrage prin linkul de dezabonare din mesaj sau la <Mail />.
+			</p>
+
+			<h3>Securitate și apărarea drepturilor</h3>
+			<p>
+				În măsura necesară folosim jurnale tehnice de acces și erori, informații pentru prevenirea abuzului
+				ori fraudei și documente necesare apărării drepturilor. Temeiul este{" "}
+				<strong>interesul legitim — articolul 6 alineatul (1) litera (f)</strong> privind securitatea și
+				apărarea pretențiilor, ținând cont de proporționalitate și de viața privată.
+			</p>
+			<p>
+				Acest temei nu este o permisiune generală pentru urmărire publicitară. Analiza opțională, marketingul
+				și tehnologiile browserului sunt explicate în{" "}
+				<Link href={marketHref(channel, "/cookies")}>Cookie-uri și confidențialitate</Link>.
+			</p>
+
+			<h2>3. De unde provin datele și care sunt necesare</h2>
+			<p>
+				Datele provin în principal de la tine: cumpărături, cont, formulare sau corespondență. Furnizorul de
+				plăți comunică rezultatul operațiunii, iar transportatorul poate comunica starea livrării. Datele
+				tehnice apar în timpul folosirii site-ului.
+			</p>
+			<p>
+				Câmpurile obligatorii corespund scopului procedurii. De exemplu, fără o adresă nu putem livra coletul.
+				Nu trebuie să completezi câmpurile opționale sau să accepți publicitatea pentru serviciile de bază.
+			</p>
+
+			<h2>4. Destinatarii și serviciile utilizate</h2>
+			<p>
+				Nu toți furnizorii primesc automat date la fiecare vizită sau comandă. Depinde de serviciile folosite
+				și de ceea ce este necesar pentru operațiunea respectivă.
+			</p>
+			<p>
+				Transportatorul ales, <strong>FedEx sau Slovenská pošta</strong>, primește datele necesare livrării și
+				contactării destinatarului. <strong>Stripe</strong> procesează plata. În măsura necesară pot avea
+				acces furnizori tehnici, de e-mail, contabilitate sau asistență juridică. Transmitem date
+				autorităților când legea o impune.
+			</p>
+			<p>
+				În funcție de serviciu, destinatarii sunt persoane împuternicite de noi sau operatori independenți.
+				Tabelul identifică sisteme, servicii și scopuri; numele unui program nu înseamnă că există automat o
+				entitate juridică externă cu acel nume.
+			</p>
+			<RecipientsTable lang="ro" />
+			<p>
+				Instalările proprii Saleor și Payload nu sunt operatori externi independenți doar pentru că au
+				denumiri separate. Poți cere informații despre destinatarii concreți și rolul lor la <Mail />.
+			</p>
+
+			<h2>5. Transferuri în afara Spațiului Economic European</h2>
+			<p>
+				Unii furnizori pot prelucra date în afara Spațiului Economic European sau permite accesul din alte
+				țări. Mecanismul aplicabil depinde de destinatar, serviciu și destinația reală.
+			</p>
+			<p>
+				Pentru transferuri respectăm capitolul V din RGPD: de exemplu, o decizie de adecvare aplicabilă
+				destinatarului sau garanții adecvate, cum sunt clauzele contractuale standard, împreună cu măsurile
+				suplimentare necesare. Nu susținem că toate serviciile sau toate entitățile sunt acoperite de același
+				mecanism.
+			</p>
+			<p>
+				Pentru informații despre garanțiile unui transfer concret și despre obținerea unei copii, scrie la{" "}
+				<Mail />.
+			</p>
+
+			<h2>6. Cât timp păstrăm datele</h2>
+			<p>
+				Păstrăm datele atât cât este necesar scopului și obligațiilor aplicabile, nu toate pentru o singură
+				perioadă.
+			</p>
+			<p>
+				Datele comenzilor sunt păstrate pentru gestionarea lor și apoi potrivit obligațiilor legale și
+				termenelor relevante pentru eventuale pretenții. Documentele contabile supuse legislației slovace se
+				păstrează, de regulă, <strong>zece ani de la sfârșitul exercițiului la care se referă</strong>.
+				Aceasta nu înseamnă că păstrăm toate datele de navigare zece ani.
+			</p>
+			<p>
+				Datele reclamațiilor și retragerilor sunt păstrate pentru soluționare și dovadă, în limitele
+				termenelor aplicabile. Datele contului sunt păstrate pe durata serviciului și, ulterior, numai în
+				măsura în care există alte obligații sau drepturi care justifică păstrarea.
+			</p>
+			<p>
+				Datele newsletterului sunt păstrate până la retragerea consimțământului ori încetarea scopului, fără a
+				exclude dovada minimă necesară a consimțământului sau a dezabonării. Jurnalele tehnice au o durată
+				proporțională cu securitatea și diagnosticarea. Perioadele de stocare în browser sunt descrise în
+				pagina de cookie-uri.
+			</p>
+
+			<h2>7. Drepturile tale</h2>
+			<p>
+				În condițiile RGPD poți solicita acces, rectificare, ștergere sau restricționarea prelucrării. Poți
+				beneficia de portabilitate dacă prelucrarea automatizată se bazează pe consimțământ sau contract și
+				sunt îndeplinite condițiile legale.
+			</p>
+			<p>
+				Te poți opune, din motive legate de situația ta particulară, prelucrărilor bazate pe interes legitim.{" "}
+				<strong>Te poți opune în orice moment marketingului direct</strong>, inclusiv profilării legate de
+				acesta; vom înceta folosirea datelor în acel scop.
+			</p>
+			<p>
+				Poți retrage consimțământul oricând, fără să afectezi legalitatea prelucrării anterioare. Nu trebuie
+				să anulezi o cumpărătură sau să renunți la o reclamație pentru aceasta. Unele date pot rămâne necesare
+				unei obligații legale ori altui temei valabil.
+			</p>
+			<p>
+				Trimite solicitarea la <Mail />. Răspundem, de regulă, în <strong>o lună</strong>. Complexitatea sau
+				numărul solicitărilor poate justifica o prelungire cu până la două luni suplimentare; te informăm în
+				prima lună și explicăm motivul. Dacă avem îndoieli rezonabile privind identitatea, cerem doar
+				informațiile proporționale și necesare verificării, nu documente excesive în mod automat.
+			</p>
+
+			<h2>8. Autoritățile de protecție a datelor</h2>
+			<p>
+				Poți depune o plângere la o autoritate de supraveghere, în special în țara reședinței obișnuite, a
+				locului de muncă sau a presupusei încălcări. În România te poți adresa{" "}
+				<strong>
+					Autorității Naționale de Supraveghere a Prelucrării Datelor cu Caracter Personal — ANSPDCP
+				</strong>
+				, prin{" "}
+				<a
+					href="https://www.dataprotection.ro/?page=contact&lang=ro"
+					rel="noopener noreferrer"
+					target="_blank"
+				>
+					datele sale oficiale de contact
+				</a>
+				.
+			</p>
+			<p>
+				Având în vedere sediul nostru în Slovacia, poate fi competent și{" "}
+				<strong>Úrad na ochranu osobných údajov Slovenskej republiky</strong>, potrivit regulilor aplicabile.
+				Nu ești obligat să alegi numai o autoritate pentru că vânzătorul este stabilit în alt stat UE.
+			</p>
+			<DpaAuthority country={SLOVAKIA_RO} lang="ro" />
+
+			<h2>9. Decizii automatizate</h2>
+			<p>
+				Nu luăm, în nume propriu, decizii bazate exclusiv pe prelucrare automatizată care să producă efecte
+				juridice ori efecte similare semnificative asupra ta în gestionarea comenzilor, reclamațiilor sau
+				retragerilor.
+			</p>
+			<p>
+				Stripe face propriile verificări de prevenire a fraudei în procesarea plăților. Această activitate
+				este distinctă de gestionarea comenzii de către noi. Dacă plata nu se finalizează, scrie la <Mail />;
+				verificăm situația și căutăm o soluție.
+			</p>
+
+			<h2>10. Actualizarea politicii</h2>
+			<p>
+				Actualizăm informația când se schimbă prelucrările sau serviciile. Modificarea acestui document nu
+				înlocuiește un consimțământ nou atunci când el este necesar. Ne poți contacta pentru clarificări
+				privind datele aferente cumpărăturii tale.
 			</p>
 		</>
 	);
