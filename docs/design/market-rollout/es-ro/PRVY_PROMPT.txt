@@ -1,0 +1,155 @@
+Pokračujeme v MAKY.STORE (Next.js / Saleor). Toto je nové implementačné vlákno ES/RO.
+GO je len na branch-only implementáciu pripraveného obsahu a testy. NIE JE to GO na merge,
+deployment, zapnutie predaja alebo indexácie, živé platby, refundácie, zásielky, reálne
+právne podanie ani platený audit. Pracuj sekvenčne vo vlastnom worktree, nezasahuj do
+cudzej rozpracovanej práce. Žiadny nový CMS, paralelný Returns ani URL migrácia.
+
+── ZAČNI TÝMTO ─────────────────────────────────────────────────────────────────────
+1. docs/design/market-rollout/es-ro/ZADANIE.md      — rozsah, vlastníctvo, brány
+2. docs/design/market-rollout/00-univerzalne-zadanie.md
+3. docs/design/market-rollout/04-es-ro.md           — staršie poznámky; § 5 je zastaraný,
+   ZADANIE.md ho opravuje
+4. docs/design/market-rollout/HANDOFF-20260909-it-fr.md — REFERENČNÁ IMPLEMENTÁCIA.
+   IT/FR je hotové a pushnuté; rob to isté, len pre ďalšie dva jazyky.
+
+── BALÍK ZATIAĽ NEEXISTUJE — TOTO JE HLAVNÝ ROZDIEL OPROTI IT/FR ───────────────────
+Na stroji je (overené 9. 9. 2026) iba PL/HU a IT/FR. Žiadny ES/RO balík.
+
+NAJPRV nájdi a over skutočnú cestu uploadu; nepredpokladaj /home/ubuntu/maky-podklady/
+ani konkrétny dátumový podpriečinok. Over SHA256 a manifest, bezpečne rozbaľ do NOVÉHO
+priečinka (path traversal), spusti dodaný validátor. Originálny ZIP ani manifest neupravuj.
+
+AK BALÍK NIE JE: NEPREKLADAJ. Neimprovizuj zo slovenčiny, z IT/FR ani strojovým prekladom.
+Zastav sa, povedz to rovno a ponúkni, čo sa dá urobiť bez textov — napríklad prípravný
+commit pre M alebo len analýzu. Vymyslený právny text je horší než žiadny trh.
+Neúplný balík je chyba dodávky, nie zadanie na doplnenie.
+
+── ZÁKLAD VETVY ────────────────────────────────────────────────────────────────────
+IT/FR skončilo na claude/maky-store-it-fr-impl-f1125b @ 8f84ed0 (pushnuté na GitHub),
+základ c9af777. To je REFERENCIA, nie automaticky tvoj základ.
+Over aktuálny remote (git ls-remote origin) a najnovší M handoff. Vezmi najnovší
+integračný základ; zachovaj cudzie commity. Staré SK/CS/garážové SHA znova nepripájaj.
+Žiadny reset, žiadny force-push. Ak integrácia ešte nie je pripravená, pokračuj
+samostatnými obsahovými modulmi a handoffom.
+POZOR: `git reset --hard` v tomto prostredí blokuje klasifikátor; `git merge --ff-only`
+prejde a je sémanticky to isté.
+
+── ČO JE UŽ HOTOVÉ, NEROB TO ZNOVA ────────────────────────────────────────────────
+* legalRoute MÁ voliteľné `heading` (commit 12e30e3): <h1> = heading ?? title,
+  <title> = title, suffix "| MAKY.STORE" pridáva formatPageTitle. Rovnaké pravidlo je aj
+  v samostatnej withdrawal route (jej META je anotovaná, NIE as const).
+  NEPÍŠ druhý helper a nemeň existujúce H1/SEO ôsmich hotových jazykov vedľajším efektom.
+* `metaTitle` v dodaných balíkoch UŽ OBSAHUJE " | MAKY.STORE". formatPageTitle ho pridáva,
+  takže ho pred odovzdaním ODSTRIHNI, inak je značka dvakrát. Over na všetkých URL.
+* Zdieľané komponenty (adresa, sídlo, SOI, tabuľka príjemcov, inventár úložiska, ADR blok)
+  UŽ majú voliteľný `country` a per-jazyk záznamy. ROZŠÍR ich o dva jazyky, needituj
+  existujúce hodnoty a nedefinuj druhú konfiguráciu predajcu.
+* Tlačiteľný vzor odstúpenia JE deviata routa a JE servovaný pre každý schválený trh.
+  (04-es-ro.md § 5 tvrdí opak — je zastaraný. Nezapína sa ONLINE formulár, nie vzor.)
+
+── PASCA, KTORÚ INAK NÁJDEŠ NESKORO ───────────────────────────────────────────────
+`es` a `ro` sú DNES negatívne fixtúry „trh bez schváleného textu". Rola išla
+de → pl → it/fr → es/ro. Po pridaní ES/RO ju musia prevziať `us` a `ca`.
+Assertion NEZMAŽ — inak testy ostanú zelené a nebudú kontrolovať nič.
+Presné miesta (stav k 8f84ed0):
+  src/lib/route-policy.test.ts:76       NO_COPY = ["es", "ro", "us"]  → ["us", "ca"]
+  src/proxy.test.ts:229                 ["es", "ro", "us", "ca"]      → ["us", "ca"]
+  src/proxy.test.ts:257                 /es/kontakt (noindex)         → /us/kontakt
+  src/proxy.gate.test.ts:286            /es/kontakt                   → /us/kontakt
+  src/lib/legal/legal-route.test.ts:61  legalLocaleFor("es-eur")      → "ca-cad"
+    ⚠️ NIE na "us-usd" — ten je o riadok nižšie a vznikol by duplikát.
+Zoznamy „všetkých trhov" (proxy.test.ts:55, :302, market-state, garage) nechaj tak.
+
+⚠️ ES/RO je POSLEDNÝ pár, po ktorom fixtúra ešte má kam ísť. Po US/CA nezostane žiadny
+nepokrytý trh a assertion sa bude musieť premyslieť, nie potichu zmazať. Napíš to do
+handoffu pre US/CA vlákno.
+
+── OBSAH A ROZSAH ─────────────────────────────────────────────────────────────────
+Over proti aktuálnemu CHANNEL_MAP; ak nesedí, mapu potichu nemeníš:
+  es → es-eur / EUR  / es-ES / ES
+  ro → ro-ron / RON  / ro-RO / RO
+⚠️ ŠPANIELSKO JE EUROVÉ, RUMUNSKO NIE JE. V jednom vlákne máš obe situácie. Vetu o mene
+neprenášaj z jedného tela do druhého — čítaj ju z CHANNEL_MAP. Presne tento typ chyby sa
+už raz stal pri češtine. Žiadne HUF/PLN, žiadna dobierka, žiadne plošné 35 kg.
+
+8 hlavných stránok na jazyk. Sedem je statických právnych; O nás patrí do existujúceho
+CMS (M). Tlačiteľný vzor je DEVIATA routa, nie náhrada O nás.
+Dve samostatné prózy a exporty Es/Ro — nie zdieľaný komponent ako german-market.
+Firemné údaje, adresy a existujúce tabuľkové komponenty ZDIEĽAJ. Interné odkazy cez
+marketHref (test zakazuje natvrdo písané /es/… a /ro/…; rozšír ten regex o es|ro).
+Žiadne nové jazykové route slugy. VOP aj privacy majú po 10 sekcií — neskracuj.
+LEGAL_LOCALES pôjde z 8 na 10; `Record<LegalLocale, …>` si vyžiada koherentný commit.
+
+── RETURNS V2 ─────────────────────────────────────────────────────────────────────
+Kontrakt je stále SK/sk (market: "SK", locale: "sk" ako literálové typy, returnMethod
+merchantPickup). Dodané ui.* a component-copy.* sú REDAKČNÉ, nie wire schéma ani Payload
+import. Formulárové texty dodaj ako PREPARED a NEZAPOJENÉ, so strážcom podľa vzoru
+src/lib/withdrawal/copy-it-fr.test.ts. Nepridávaj nové API polia ani enumy zo slovenských
+názvov redakčných súborov. Globálny WITHDRAWAL_BACKEND_LIVE cudziu locale nezapína.
+
+⚠️ ČASY — overený stav, neopakuj chybu z IT/FR handoffu: storefront NETLAČÍ ŽIADNY ČAS.
+WithdrawalV2Accepted nenesie timestamp, withdrawal-form.tsx nerenderuje čas, a
+formsTimestampSeconds() je HMAC replay okno, nie obchodný čas. submissionTimeLabel aj
+receivedTimeLabel sú dormantné vo VŠETKÝCH jazykoch vrátane sk. Čo znamená submittedAt
+vidí len Payload — z tohto repa to netvrď. Nevyrábaj druhý timestamp a nevypĺňaj
+receivedTimeLabel kópiou iného poľa.
+
+── ŠPANIELSKE A RUMUNSKÉ ŠPECIFIKÁ ────────────────────────────────────────────────
+⚠️ NEPREDPOKLADAJ, že ES a RO majú rovnakú povinnosť online odstúpenia ako IT a FR.
+Pre IT/FR bola doložená účinnosť od 19. 6. 2026 (čl. 54-bis Codice del consumo cez
+D.lgs. 209/2025; čl. D221-5 cez décret 2026-3). Pre ES a RO taký dôkaz NEMÁME. Zisti to
+z primárnych zdrojov dodaných v balíku; ak balík mlčí, je to otvorená položka pre M —
+nie tvrdenie v jednom ani druhom smere.
+
+* Rumunská diakritika: správne sú ș/ț (comma-below, U+0219/U+021B), NIE ş/ţ (cedilla,
+  U+015F/U+0163). Existujúci ro-RO.json je čistý (400 správnych, 0 cedíl) — drž ten
+  štandard. Kontrola:
+    python3 -c 'import sys;s=open(sys.argv[1],encoding="utf-8").read();print("cedilla:",sum(s.count(c) for c in "şţŞŢ"))' <súbor>
+* Španielske autonómne spoločenstvá majú vlastné spotrebiteľské orgány popri celoštátnych.
+  Ak preklad uvádza len jeden, je to otvorená položka pre M — zapíš ju, nedopĺňaj.
+* Orgány ochrany údajov: AEPD (ES) a ANSPDCP (RO) musia prísť z prekladu, nevymýšľaj ich
+  adresy ani kontakty.
+* Nevymýšľaj členstvo MAKY v žiadnom španielskom ani rumunskom mediačnom orgáne.
+  SOI zostáva ADR orgánom predajcu; miestne cesty sa pridávajú vedľa, nie namiesto.
+* company.test.ts: doplň španielsku a rumunskú negáciu tvrdenia o DPH do zoznamu BANNED.
+  IT/FR tam už sú ako vzor (regime forfettario, franchise en base de TVA). Nájdi miestny
+  ekvivalent oslobodenia pre malé podniky. Falzifikuj to — vlož negáciu a over, že padne.
+
+── TESTY A DÔKAZ ──────────────────────────────────────────────────────────────────
+typecheck, lint, testy, parita kľúčov a premenných (nie identická próza medzi jazykmi),
+minimálny reálny build a URL matica. Na staging len schválený env allowlist — bez Stripe,
+bez HMAC, bez živých podaní. Voľný port, vlastné PID a worktree si uprac.
+Produkčné PM2, .env, Saleor, Stripe a trhové flagy NEMENÍŠ. Build nikdy v /opt/storefront.
+
+Matica: 8 statických rout × práve podporované právne trhy. S ôsmimi doterajšími + ES/RO
+to je 80 statických URL. O nás/CMS reportuj zvlášť, plus aspoň jeden nepodporovaný trh
+ako negatívna kontrola. Regresia proti skutočnému základu: 8 doterajších trhov × 8 rout
+= 64 výstupov musí byť ZHODNÝCH (IT/FR malo 48/48).
+Negatívny dôkaz rob cez submit-capability, NIE počtom <form> — v hlavičke a pätičke sú
+dva vyhľadávacie formuláre aj bez odstúpenia. Pri WITHDRAWAL_BACKEND_LIVE=true musí
+zostať: sk = 3 formy / 1 submit, ostatné trhy 2 / 0.
+360 aj 1280 px, tlač/TXT, H1/title/canonical/lang/noindex a viditeľný text proti
+skutočnému základu. Screenshoty si sám otvor — nespoliehaj sa, že sa na ne pozrie niekto iný.
+
+Praktické pasce z IT/FR, ktoré ti ušetria kolo:
+* `pnpm build` v čerstvom worktree padne na prebuild codegene (chýba
+  NEXT_PUBLIC_SALEOR_API_URL). Buď `npx next build` (preskočí hook, ak src/gql existuje),
+  alebo nastav tri VEREJNÉ premenné z .env.example:
+    NEXT_PUBLIC_SALEOR_API_URL=https://api.maky.store/graphql/
+    NEXT_PUBLIC_DEFAULT_CHANNEL=sk-eur
+    NEXT_PUBLIC_STOREFRONT_URL=https://maky.store
+  Bez DEFAULT_CHANNEL padne build na EmptyGenerateStaticParamsError pri /[channel]/cart.
+* Turbopack padne na SYMLINKNUTOM node_modules („points out of the filesystem root").
+  Na baseline worktree použi cp -al (hardlinky).
+* `next start -H 127.0.0.1` = redirect loop; bez -H funguje. PID ber z `ss -ltnp`,
+  nikdy `pkill -f` (matchne tvoj vlastný shell).
+* Návratový kód backgroundovaného príkazu NIE JE výsledok buildu. Čítaj log.
+
+── ODOVZDANIE ─────────────────────────────────────────────────────────────────────
+Presný base, HEAD, vetva a commity; odlíš posledný implementačný SHA od dokumentačného.
+Zdrojové súbory a odchýlky; vykonané VS nevykonané testy; závislosti s vlastníkom (M/R/K).
+Oddelene a nezlučovať: CONTENT_PREPARED, CONTENT_REVIEWED, ROUTE_READY, CMS_PUBLISHED,
+BACKEND_READY, DEPLOYED, SELLABLE, INDEXABLE. Noindex nie je blokácia nákupu. Nič z toho
+neodvodzuj z počtu offline kontrol. Nevymýšľaj produkčný SHA ani BUILD_ID — čítaj
+/opt/storefront/.next/MAKY_DEPLOY_META. Lokálne logy nie sú GitHub CI.
+Push až po kontrole, že neodovzdávaš tajomstvá, .env ani osobné údaje (repo je verejný fork).
