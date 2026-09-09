@@ -1,0 +1,35 @@
+Oggetto: Conferma della ricezione del recesso — {{receipt_id}}
+
+Buongiorno,
+
+MAKY.STORE s. r. o. conferma la ricezione della tua dichiarazione di recesso dal contratto.
+
+Numero della pratica: {{receipt_id}}
+Data e ora di invio della dichiarazione: {{submitted_at_local_with_timezone}}
+
+LA TUA DICHIARAZIONE
+{{notice_verbatim}}
+
+DATI DELLA RICHIESTA
+Nome e cognome: {{customer_name}}
+E-mail per la conferma: {{confirmation_email}}
+Ordine o contratto: {{contract_reference}}
+Ambito del recesso: {{scope_human_readable}}
+{{items_if_applicable}}
+{{optional_message_if_provided}}
+
+COME PROCEDERE
+{{return_instructions_for_actual_collection_state}}
+
+Rimborsiamo le somme interessate secondo la legge e il contratto. Per il rimborso sulla carta originaria non serve un IBAN. Questa conferma documenta la ricezione della dichiarazione: non significa che il ritiro o il rimborso siano già avvenuti.
+
+Conserva il messaggio e indica il numero della pratica quando ci contatti.
+
+Un cordiale saluto,
+MAKY.STORE
+info@maky.store | +421 901 730 066
+
+MAKY.STORE s. r. o.
+Sede: Lermontovova 911/3, 811 05 Bratislava-Staré Mesto, Slovacchia
+IČO: 57 704 627
+Indirizzo per resi: Stará Vajnorská 11, 831 04 Bratislava, Slovacchia

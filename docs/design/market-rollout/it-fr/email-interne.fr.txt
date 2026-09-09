@@ -1,0 +1,17 @@
+Objet : Nouvelle déclaration de rétractation — {{receipt_id}}
+
+Une nouvelle déclaration de rétractation a été reçue.
+
+Identifiant du dossier : {{receipt_id}}
+Date et heure d’envoi : {{submitted_at_local_with_timezone}}
+Référence d’achat indiquée par le client : {{contract_reference}}
+Portée : {{scope_human_readable}}
+Demande de devis d’enlèvement : {{pickup_interest_human_readable}}
+État de l’envoi de la confirmation au client : {{confirmation_delivery_status}}
+
+La déclaration est disponible dans le panneau sécurisé existant :
+{{authenticated_admin_record_link}}
+
+Vérifier le lien entre client et commande, la version du contrat, les délais et l’information sur les coûts de retour donnée avant l’achat. Une recherche manuelle de la commande ne remet pas en cause la réception et le traitement de la déclaration. Un rapprochement automatique n’est pas une appréciation juridique de la rétractation.
+
+Une offre de reprise peut exclure la possibilité de différer le remboursement jusqu’au retour du produit. Ne pas appliquer de retenue automatique pour enlèvement ou dépréciation. Le formulaire public n’autorise pas à modifier le bénéficiaire du remboursement ni à effectuer une modification irréversible de la commande.

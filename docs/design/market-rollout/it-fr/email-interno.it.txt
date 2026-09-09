@@ -1,0 +1,17 @@
+Oggetto: Nuova dichiarazione di recesso — {{receipt_id}}
+
+È stata ricevuta una nuova dichiarazione di recesso.
+
+Identificativo della pratica: {{receipt_id}}
+Data e ora di invio: {{submitted_at_local_with_timezone}}
+Riferimento d’acquisto fornito dal cliente: {{contract_reference}}
+Ambito: {{scope_human_readable}}
+Richiesta di preventivo per il ritiro: {{pickup_interest_human_readable}}
+Stato dell’invio della conferma al cliente: {{confirmation_delivery_status}}
+
+La richiesta è disponibile nel pannello protetto esistente:
+{{authenticated_admin_record_link}}
+
+Verificare l’associazione tra cliente e ordine, la versione del contratto, i termini e le informazioni sulle spese di restituzione fornite prima dell’acquisto. La necessità di identificare manualmente l’ordine non annulla la ricezione né la gestione della dichiarazione. Un’associazione automatica non è una valutazione giuridica del recesso.
+
+Un’offerta di ritiro può escludere la sospensione del rimborso fino alla ricezione del prodotto. Non applicare trattenute automatiche per ritiro o diminuzione di valore. Il modulo pubblico non autorizza a modificare il destinatario del rimborso né a eseguire modifiche irreversibili dell’ordine.

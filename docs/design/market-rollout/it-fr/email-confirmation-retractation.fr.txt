@@ -1,0 +1,35 @@
+Objet : Confirmation de réception de la rétractation — {{receipt_id}}
+
+Bonjour,
+
+MAKY.STORE s. r. o. confirme la réception de votre déclaration de rétractation du contrat.
+
+Numéro de dossier : {{receipt_id}}
+Date et heure d’envoi de la déclaration : {{submitted_at_local_with_timezone}}
+
+VOTRE DÉCLARATION
+{{notice_verbatim}}
+
+INFORMATIONS TRANSMISES
+Prénom et nom : {{customer_name}}
+E-mail pour la confirmation : {{confirmation_email}}
+Commande ou contrat : {{contract_reference}}
+Portée de la rétractation : {{scope_human_readable}}
+{{items_if_applicable}}
+{{optional_message_if_provided}}
+
+PROCHAINES ÉTAPES
+{{return_instructions_for_actual_collection_state}}
+
+Les sommes concernées seront remboursées selon la loi et le contrat. Nous n’avons pas besoin d’IBAN pour un remboursement sur la carte utilisée lors de l’achat. Cette confirmation atteste la réception de votre déclaration ; elle ne signifie pas que l’enlèvement ou le remboursement a déjà eu lieu.
+
+Conservez ce message et indiquez le numéro de dossier lorsque vous nous contactez.
+
+Cordialement,
+MAKY.STORE
+info@maky.store | +421 901 730 066
+
+MAKY.STORE s. r. o.
+Siège : Lermontovova 911/3, 811 05 Bratislava-Staré Mesto, Slovaquie
+IČO : 57 704 627
+Adresse de retour : Stará Vajnorská 11, 831 04 Bratislava, Slovaquie
