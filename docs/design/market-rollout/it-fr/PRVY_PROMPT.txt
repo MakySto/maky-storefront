@@ -1,0 +1,103 @@
+Pokračujeme v MAKY.STORE (Next.js / Saleor). Toto je nové implementačné vlákno IT/FR.
+
+GO je len na branch-only implementáciu pripraveného obsahu a testy. NIE JE to GO na
+deployment, zapnutie predaja alebo indexácie, živé platby, refundácie, zásielky, reálne
+právne podanie ani platený audit. Pracuj sekvenčne vo vlastnom worktree, nezasahuj do
+cudzej rozpracovanej práce. Žiadny nový CMS, paralelný Returns ani URL migrácia.
+
+── ZAČNI TÝMTO ─────────────────────────────────────────────────────────────────────
+1. Prečítaj v repozitári:  docs/design/market-rollout/it-fr/PREFLIGHT.md
+   Je to hotový preflight z PL/HU vlákna: overený balík, validátor, pasce a čo je už
+   pripravené. Šetrí ti prvé kolo. Potom docs/design/market-rollout/it-fr/ZADANIE.md.
+2. Balík je už na stroji aj rozbalený — over si to sám, nepredpokladaj:
+   ZIP     /home/ubuntu/maky-podklady/MAKY_STORE_IT_FR_preklad_a_implementacia_2026-09-09.zip
+   SHA256  0d22eae28112f03a496b750039a53f23a6682fbb7d8f1f6f3c9d662588e4a581
+   rozbalené /home/ubuntu/maky-podklady/2026-09-09/rozbalene-it-fr/MAKY_STORE_IT_FR/
+3. Spusti z koreňa balíka:  python3 scripts/validate_bundle.py
+   a potom              :  python3 scripts/validate_bundle.py --verify-manifest
+   Očakávané: 328 passed / 0 failed / 0 warnings, manifest 84/84. Ak sedí, neopakuj to.
+   Originálny ZIP ani manifest neupravuj.
+4. Prečítaj HANDOFF_PRE_CLAUDE_CODE_IT_FR.md, README_PRE_CLAUDE_CODE.md a potom
+   interne/PRAVNE_ROZDIELY_A_ZDROJE.md, interne/HANDOFF_RETURNS_V2.md,
+   interne/OTVORENE_POLOZKY_M_R_K.md, interne/QA_A_AKCEPTACIA.md.
+   TEXTY_IT_SPOLU.md a TEXTY_FR_SPOLU.md NESTAČIA — načítaj aj data/, formulare/, pages/.
+
+── ZÁKLAD VETVY ────────────────────────────────────────────────────────────────────
+PL/HU skončilo na claude/maky-store-pl-hu-impl-8dd394 @ 74a3709, základ 9fee37a.
+To je REFERENCIA, nie automaticky tvoj základ. Over aktuálny remote (git ls-remote origin) a najnovší M handoff. Zachovaj nové commity a opravy PL/HU.
+Staré SK/CS/garážové SHA znova nepripájaj. Ak integrácia ešte nie je pripravená,
+pokračuj samostatnými obsahovými modulmi a handoffom — nie deštruktívnym resetom
+ani force-pushom.
+
+── ČO JE UŽ HOTOVÉ, NEROB TO ZNOVA ────────────────────────────────────────────────
+* legalRoute už MÁ voliteľné heading (commit 12e30e3): <h1> = heading ?? title,
+  <title> = title, suffix "| MAKY.STORE" pridáva formatPageTitle — do title ho
+  neposielaj. Rovnaké pravidlo je aj v samostatnej withdrawal route (jej META je
+  anotovaná, NIE as const — pod as const sa položka zúži a .heading padne).
+  Handoff balíka hovorí „ak už M zmenu urobil, používaj ju“. Urobená je.
+  NEPÍŠ druhý helper a nemeň existujúce SK/CS/DE/AT/PL/HU H1 ani SEO vedľajším efektom.
+* pages.it-IT.json a pages.fr-FR.json nesú h1 a metaTitle oddelene — mapuj priamo.
+
+── PASCA, KTORÚ INAK NÁJDEŠ NESKORO ───────────────────────────────────────────────
+`it` je DNES negatívna fixtúra „trh bez schváleného textu“ (rola šla de → pl → it),
+`fr` je v tom istom zozname. Po pridaní IT/FR musí rolu prevziať iný SKUTOČNE
+nepokrytý trh. Assertion NEZMAŽ — inak testy ostanú zelené a nebudú kontrolovať nič.
+Presné miesta:
+  src/lib/route-policy.test.ts:71      NO_COPY = ["it", "fr", "us"]
+  src/proxy.test.ts:227                ["it", "fr", "us", "ca"]
+  src/proxy.test.ts:251                /it/kontakt  (noindex)
+  src/proxy.gate.test.ts:285           /it/kontakt  (policy odpovie pred gate)
+  src/lib/legal/legal-route.test.ts:61 legalLocaleFor("it-eur") === null
+Zoznamy „všetkých trhov“ (proxy.test.ts:55, :296, market-state, garage) nechaj tak —
+tam it/fr patria. Nepredpokladaj, že náhradou je navždy es.
+
+── OBSAH A ROZSAH ─────────────────────────────────────────────────────────────────
+Overená mapa: it → it-eur / EUR / it-IT, fr → fr-eur / EUR / fr-FR. Over proti
+aktuálnemu CHANNEL_MAP; ak nesedí, mapu potichu nemeníš.
+8 hlavných stránok na jazyk. Sedem je statických právnych; O nás patrí do existujúceho
+CMS (M). Tlačiteľný vzor je DEVIATA routa, nie náhrada O nás.
+Dve samostatné prózy a exporty It/Fr — nie zdieľaný komponent ako german-market.
+Firemné údaje, adresy a existujúce tabuľkové komponenty ZDIEĽAJ, druhú konfiguráciu
+predajcu nedefinuj. Interné odkazy cez marketHref. Žiadne nové jazykové route slugy,
+žiadne HUF/PLN, dobierka ani 35 kg. VOP aj privacy majú po 10 sekcií — neskracuj.
+
+── RETURNS V2 ─────────────────────────────────────────────────────────────────────
+Na referenčnom SHA prijíma len SK/sk (market: "SK", locale: "sk" ako literálové typy,
+returnMethod merchantPickup). Dodané ui.* a component-copy.* sú REDAKČNÉ, nie wire
+schéma ani Payload import. Formulárové texty dodaj ako PREPARED a nezapojené.
+Nepridávaj nové API polia ani enumy zo slovenských názvov redakčných súborov.
+Zachovaj oddelené stavy previewNotActivated / active / temporarilyUnavailable — telo,
+VOP, navigácia aj metadáta musia odrážať tú istú reálnu capability. Výpadkový text
+nesmie tvrdiť, že funkcia nikdy nebola spustená. dormant receivedTimeLabel smie
+existovať, ale NEVYPĹŇAJ ho odvodenou kópiou submittedAt a nesľubuj neexistujúci
+verejný „stav prípadu“ — presne tieto dve chyby sme práve opravovali v PL/HU.
+Globálny WITHDRAWAL_BACKEND_LIVE cudziu locale nezapína. Prepnutie navyše vyžaduje
+rebuild (metadáta sa pod cacheComponents zapekajú) — over s R/M.
+
+── FRANCÚZSKE ŠPECIFIKÁ, KTORÉ BALÍK OZNAČUJE ZA NEUZAVRETÉ ───────────────────────
+Formálna zhoda garančného boxu s D211-2 / Annexe A a doloženie skutočne príslušnej ADR
+cesty vrátane povinných kontaktov sú INTEGRAČNÉ POLOŽKY, nie hotová certifikácia.
+NEVYMÝŠĽAJ členstvo MAKY vo francúzskej mediácii. Nezamieňaj rétractation / résolution
+/ résiliation. Francúzsky 30-dňový limit nápravy neprepisuj slovenskou výnimkou.
+IT aj FR majú miestne pravidlá online odstúpenia použiteľné od júna 2026; preview stav
+nie je právna náhrada funkcie.
+
+── TESTY A DÔKAZ ──────────────────────────────────────────────────────────────────
+typecheck, lint, testy, parita kľúčov a premenných (nie identická próza medzi jazykmi),
+minimálny reálny build a URL matica. Na staging len schválený env allowlist — bez
+Stripe, bez HMAC, bez živých podaní. Voľný port, vlastné PID a worktree si uprac.
+Produkčné PM2, .env, Saleor, Stripe a trhové flagy NEMENÍŠ. Build nikdy v /opt/storefront.
+Matica: 8 statických rout × práve podporované právne trhy (so šiestimi doterajšími +
+IT/FR = 64 statických URL), O nás/CMS zvlášť, plus aspoň jeden nepodporovaný trh.
+Negatívny dôkaz rob cez submit-capability, NIE počtom <form> — v hlavičke a pätičke sú
+dva vyhľadávacie formuláre aj bez odstúpenia. Pri WITHDRAWAL_BACKEND_LIVE=true musí
+zostať: sk = 3 formy / 1 submit, ostatné trhy 2 / 0.
+360 aj 1280 px, tlač/TXT, H1/title/canonical/lang/noindex a viditeľný text proti
+skutočnému základu. Screenshoty si sám otvor.
+
+── ODOVZDANIE ─────────────────────────────────────────────────────────────────────
+Presný base, HEAD, vetva a commity; zdrojové súbory a odchýlky; vykonané VS nevykonané
+testy; závislosti s vlastníkom (M / R / K). Oddelene a nezlučovať:
+CONTENT_PREPARED, CONTENT_REVIEWED, ROUTE_READY, CMS_PUBLISHED, BACKEND_READY,
+DEPLOYED, SELLABLE, INDEXABLE. Noindex nie je blokácia nákupu. Nič z toho neodvodzuj
+z počtu offline kontrol. Nevymýšľaj produkčný SHA ani BUILD_ID — čítaj MAKY_DEPLOY_META.
