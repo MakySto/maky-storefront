@@ -77,8 +77,16 @@ const META: Readonly<Record<LegalLocale, WithdrawalMeta>> = {
 	},
 	// Germany and Austria name the right differently — Widerrufsrecht vs Rücktrittsrecht
 	// — and the <h1> follows the local term. Only the `withoutForm` description is ever
-	// served today (see `servesOnlineFunction`), but both are kept so that turning the
-	// function on for these markets is a one-line change in the contract, not a copy task.
+	// served today (see `servesOnlineFunction`); `withForm` is kept so that the copy is
+	// not what holds the activation up.
+	//
+	// ⚠️ Activation is NOT a one-line change, and an earlier version of this comment said
+	// it was. Serving the form to a market needs, at minimum: Returns V2 accepting that
+	// market and locale (the contract pins `market: "SK"` as a literal type), a receipt
+	// that states something true about the times it names, the runtime gate, the
+	// preview/active/outage prose and the metadata moving together, and M's release
+	// approval. The delivered package puts it plainly: a static preview state is not a
+	// lawful permanent substitute for the function.
 	de: {
 		title: "Widerrufsrecht",
 		withForm:
@@ -94,8 +102,10 @@ const META: Readonly<Record<LegalLocale, WithdrawalMeta>> = {
 			"Ihr Rücktrittsrecht beim Online-Kauf bei MAKY.STORE: Fristen, Erklärung, Rücksendung und Erstattung. Mit Muster-Widerrufsformular.",
 	},
 	// Only `withoutForm` is ever served for these two today, for the same reason as
-	// de/deAt: `servesOnlineFunction` keeps the online function on `sk`. Both are kept so
-	// that switching it on is a one-line change in the contract rather than a copy task.
+	// de/deAt: `servesOnlineFunction` keeps the online function on `sk`. See the note
+	// above on what activation actually costs — for Hungary it is a sales question rather
+	// than a convenience one, because 45/2014 § 22 has required the function since
+	// 2026-06-19.
 	pl: {
 		title: "Odstąpienie od umowy i zwrot towaru",
 		heading: "Odstąpienie od umowy",

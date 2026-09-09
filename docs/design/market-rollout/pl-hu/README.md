@@ -5,40 +5,51 @@ lebo to vlastní niekto iný.
 
 ---
 
-## ⚠️ Najprv: čo z ohláseného balíka na stroj naozaj prišlo
+## Najprv: pôvod obsahu, a čo z balíka na stroj kedy prišlo
 
-Zadanie sľubovalo ZIP `MAKY_STORE_PL_HU_preklad_a_implementacia_2026-09-08.zip` so 60
-súbormi — `interne/`, `formulare/`, `data/*.json`, `scripts/validate_bundle.py`,
-`HANDOFF_PRE_CLAUDE_CODE_PL_HU.md`. **Ten ZIP na stroji nie je** a nikdy tam nebol;
-`/home/ubuntu/maky-podklady/2026-09-08/` obsahuje iba starší handoff ZIP a rozbalené
-`DE_AT/`. Overené `find`-om cez `/home/ubuntu`, `/tmp` aj `/opt`.
+**Balík existuje a vždy existoval.** Pri prvom preflighte 8. 9. večer nebol na tomto
+stroji — `find` cez `/home/ubuntu`, `/tmp` a `/opt` vtedy našiel iba
+`TEXTY_PL_SPOLU.md` a `TEXTY_HU_SPOLU.md`. To bol správny zdroj ôsmich stránok na trh
+a implementovalo sa z neho; nebola to však náhrada za `formulare/`, `data/` a `interne/`.
+Tvrdenie „balík neexistuje“ bolo pozorovanie o stroji, nie o balíku, a už neplatí.
 
-Čo Marek nahral (a čo v poslednej vete promptu aj sám označil za zdroj prekladov):
+**9. 9. dorazila poľská časť.** Prišla ako nemenné vstupy v `reference/` IT/FR balíka
+(`/home/ubuntu/maky-podklady/2026-09-09/rozbalene-it-fr/MAKY_STORE_IT_FR/reference/`):
+`ui.pl-PL.json`, `component-copy.pl-PL.json` a oba poľské e-maily. Podľa nich sa
+`copy-pl.ts` prepísal **doslovne** — 21 z 38 reťazcov sa predtým líšilo — a doladili sa
+poľské metadáta modelového formulára a routy odstúpenia. Dva z tých rozdielov boli vecné
+chyby, nie synonymá; sú opísané v `HANDOFF_RETURNS_V2.md` § 2 a zastrážené testom.
 
-| Súbor                                          | Veľkosť  | Čo obsahuje                         |
-| ---------------------------------------------- | -------- | ----------------------------------- |
-| `/home/ubuntu/maky-podklady/TEXTY_PL_SPOLU.md` | 63 741 B | 8 poľských stránok, H1 + SEO + telá |
-| `/home/ubuntu/maky-podklady/TEXTY_HU_SPOLU.md` | 70 925 B | 8 maďarských stránok, to isté       |
+**Čo na stroj stále neprišlo:**
 
-To je **vecné jadro balíka** a stačilo na celý obsah siedmich statických stránok aj na
-O nás. Preto som nič neblokoval a implementoval som z toho.
+| Chýba                                                | Dôsledok pre kód                                              |
+| ---------------------------------------------------- | ------------------------------------------------------------- |
+| `MAKY_PL_HU_REVIEW_A_OPRAVA_2026-09-09.zip`          | nečítal som `README_REVIEW.md` ani `EDITORIAL_OVERRIDES.json` |
+| pôvodný PL/HU ZIP (SHA256 `1305692b…`)               | žiadny súbor na stroji ten hash nemá                          |
+| `ui.hu-HU.json`, `component-copy.hu-HU.json`         | `copy-hu.ts` je naďalej moje znenie                           |
+| maďarské e-maily                                     | HU e-maily neexistujú                                         |
+| `formulare/vzor-odstupenia.{pl-PL,hu-HU}.{txt,html}` | vzory som skladal zo zákonných príloh                         |
+| `formulare/pokyny-podla-zvozu.{pl-PL,hu-HU}.json`    | štyri stavy vratkovej dopravy nemám                           |
 
-**Čo z toho nevyplynulo a čo som teda musel zložiť sám** (a čo treba dať prečítať
-rodenému hovoriacemu, kým sa zapne predaj):
+Overil som to hashom a hľadaním cez celý stroj, nie predpokladom o ceste.
 
-1. **Telá tlačiteľného vzoru odstúpenia** (`vzorovy-formular`). Dodané dokumenty naň
-   odkazujú, ale neobsahujú ho. Zložené zo zákonných vzorov — príloha č. 2 k poľskej
-   `ustawa o prawach konsumenta` a 2. melléklet k `45/2014. (II. 26.) Korm. rendelet` —
-   plus tie isté procesné polia a dve záverečné vety, ktoré už nesie recenzovaný nemecký
-   vzor.
-2. **Texty formulára Returns V2** (`src/lib/withdrawal/copy-pl.ts`, `copy-hu.ts`).
-   Preložené zo schválenej slovenčiny a z nemčiny. Výnimkou sú dve maďarské označenia
-   ovládacích prvkov, ktoré predpisuje § 22 — tie nie sú prekladateľskou voľbou.
+### Poctivý pôvod toho, čo som skladal sám
 
-Nič z toho **nie je** dôvod nenasadiť obsah; je to dôvod na jazykovú revíziu pred
-spustením online funkcie.
+Dve časti vznikli predtým, než dorazila poľská časť balíka, a **nie sú prekladom hotovej
+prílohy**:
 
----
+1. **Telá tlačiteľného vzoru odstúpenia.** Zložené zo zákonných vzorov — príloha č. 2
+   k poľskej `ustawa o prawach konsumenta` a 2. melléklet k `45/2014. (II. 26.) Korm.
+rendelet` — plus procesné polia a dve záverečné vety recenzovaného nemeckého vzoru.
+   Sedem chránených prvkov (dobrovoľnosť, identifikácia nákupu, rozsah/položky/počty,
+   dátum, podpis iba na papieri, nepovinný dôvod, IBAN) je overených v TXT aj
+   v renderovanom tele, PL aj HU. Keď dorazí `formulare/vzor-odstupenia.*`, porovnaj
+   a zosúlaď; do tej doby to nie je dôvod stránku nedržať — informačná povinnosť platí.
+2. **`copy-hu.ts`.** Poľský náprotivok je už dodaný export; maďarský nie.
+
+**Toto nie je zadanie objednať platenú revíziu rodeným hovoriacim.** Je to poznámka
+o pôvode: kde dodaný text existuje, má prednosť pred mojím, a pri výmene sa nič nezapína,
+lebo nič z toho nie je zapojené.
 
 ## Pre integračné vlákno (M) — `/o-nas`
 
@@ -68,6 +79,26 @@ választásban.`
 `/<trh>/kontakt` v oboch súboroch nahraď `/pl/kontakt`, resp. `/hu/kontakt` — rovnako ako
 pri DE/AT.
 
+### H1 vs SEO titulok — hotové, v samostatnom commite
+
+`legalRoute` niesol jeden reťazec pre `<title>` aj `<h1>`, lebo pre slovenčinu a češtinu
+to naozaj jeden reťazec je. Dodané balíky ich dávajú oddelene a niekoľko stránok sa líši
+(poľská doprava je `Dostawa i płatności` nad textom a `Dostawa i płatności – Polska`
+v karte prehliadača).
+
+`LegalCopy` má preto voliteľné `heading`; `<h1>` je `heading ?? title`, `<title>` sa
+nemení. Je to **výstupne neutrálne z konštrukcie**, nie z kontroly: sk, cs, de a deAt
+`heading` nemajú a test to drží. `heading` je nastavené len tam, kde sa dodaná kópia
+naozaj líši; kde je rovnaká, tretie znenie sa nevymýšľa.
+
+Rovnaké pravidlo dostala aj samostatná routa odstúpenia — jej `META` je teraz anotovaná
+namiesto `as const`, lebo pod `as const` sa každá položka zúži na vlastný literálový tvar
+a čítanie `META[locale].heading` padne na jazykoch, ktoré ho nemajú.
+
+Je to samostatný commit, lebo sa dotýka zdieľanej továrne a nie je na ňom nič PL/HU.
+`pages.pl-PL.json` na stroj neprišiel, takže hodnoty pochádzajú z riadkov `# H1`
+a `**SEO title:**` v dodaných agregátoch, ktoré nesú oboje.
+
 ### A ešte jedna vec pre M, ktorá nie je moja
 
 `src/app/layout.tsx:22` nastavuje `<html lang>` natvrdo na
@@ -87,6 +118,10 @@ každej stránky. To je plocha M, nie prekladového vlákna.
 
 Texty sú v kóde ako `src/lib/withdrawal/copy-pl.ts` a `copy-hu.ts` — typované, kompletné,
 **nič ich neimportuje**. `copy-pl-hu.test.ts` to stráži.
+
+**Celé odovzdanie pre teba je v `HANDOFF_RETURNS_V2.md`** v tomto priečinku: mapovanie
+source → target, zachované premenné oboch e-mailových šablón, čo ešte nie je zapojené
+a čo na stroj neprišlo.
 
 ⚠️ Reťazce formulára sú stále **priamo v JSX** vo `withdrawal-form.tsx`; zapojenie druhého
 jazyka začína ich vytiahnutím do mapy. To je plocha R, preto som to neurobil.

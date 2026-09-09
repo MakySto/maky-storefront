@@ -11,8 +11,9 @@
 > `151/2003`, `10/2024`, § 155 ods. 4 Eht., NAIH, ECC Magyarország, békéltető testület).
 >
 > Implementované z nich. **Nový vstupný bod je `pl-hu/README.md`** v tomto priečinku;
-> ten hovorí aj to, ktoré dve časti ohláseného ZIP-u na stroj nikdy neprišli a musel som
-> ich zložiť sám.
+> ten vedie presnú evidenciu toho, ktorá časť balíka na stroj kedy prišla. Poľská časť
+> (`ui.pl-PL.json`, `component-copy.pl-PL.json`, oba e-maily) dorazila 9. 9. a `copy-pl.ts`
+> je podľa nej prepísaný doslovne; maďarská časť zatiaľ nie.
 >
 > Zvyšok dokumentu (§ 1 stav, § 4 technické zapojenie, § 5 strážcovia, § 9 validácia,
 > § 10 štyri stavy) ostáva vecne správny a bol podľa neho odvedený aj tento beh.
