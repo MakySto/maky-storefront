@@ -1,0 +1,17 @@
+Asunto: Nueva declaración de desistimiento — {{receipt_id}}
+
+Se ha recibido una nueva declaración de desistimiento.
+
+Referencia: {{receipt_id}}
+Fecha y hora de envío: {{submitted_at_local_with_timezone}}
+Referencia de compra indicada por el cliente: {{contract_reference}}
+Alcance: {{scope_human_readable}}
+Solicitud de presupuesto de recogida: {{pickup_interest_human_readable}}
+Estado del envío de la confirmación al cliente: {{confirmation_delivery_status}}
+
+La comunicación está disponible en el panel protegido existente:
+{{authenticated_admin_record_link}}
+
+Comprueba la relación entre cliente y pedido, la versión del contrato, los plazos y la información sobre los costes de devolución facilitada antes de comprar. Tener que identificar manualmente el pedido no anula la recepción ni la tramitación de la declaración. La asociación automática no es una valoración jurídica del desistimiento.
+
+Haber ofrecido la recogida puede excluir la retención del reembolso hasta recibir el producto. No apliques deducciones automáticas por recogida o pérdida de valor. El formulario público no autoriza a cambiar el destinatario del reembolso ni a ejecutar cambios irreversibles en el pedido.

@@ -1,0 +1,35 @@
+Subiect: Confirmarea retragerii — {{receipt_id}}
+
+Bună ziua,
+
+MAKY.STORE s. r. o. confirmă primirea declarației tale de retragere din contract.
+
+Număr de înregistrare: {{receipt_id}}
+Data și ora transmiterii declarației: {{submitted_at_local_with_timezone}}
+
+DECLARAȚIA TA
+{{notice_verbatim}}
+
+DATELE COMUNICĂRII
+Nume și prenume: {{customer_name}}
+E-mail pentru confirmare: {{confirmation_email}}
+Comandă sau contract: {{contract_reference}}
+Obiectul retragerii: {{scope_human_readable}}
+{{items_if_applicable}}
+{{optional_message_if_provided}}
+
+PAȘII URMĂTORI
+{{return_instructions_for_actual_collection_state}}
+
+Restituim sumele corespunzătoare potrivit legii și contractului. Nu avem nevoie de IBAN pentru rambursarea pe cardul folosit inițial. Această confirmare atestă primirea declarației; nu înseamnă că ridicarea ori rambursarea a fost deja efectuată.
+
+Păstrează mesajul și indică numărul de înregistrare când ne contactezi.
+
+Cu bine,
+MAKY.STORE
+info@maky.store | +421 901 730 066
+
+MAKY.STORE s. r. o.
+Sediu: Lermontovova 911/3, 811 05 Bratislava-Staré Mesto, Slovacia
+IČO: 57704627
+Retururi: Stará Vajnorská 11, 831 04 Bratislava, Slovacia

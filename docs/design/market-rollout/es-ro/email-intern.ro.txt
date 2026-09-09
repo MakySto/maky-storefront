@@ -1,0 +1,17 @@
+Subiect: Declarație nouă de retragere — {{receipt_id}}
+
+A fost primită o nouă declarație de retragere.
+
+Număr de înregistrare: {{receipt_id}}
+Data și ora transmiterii: {{submitted_at_local_with_timezone}}
+Referința cumpărăturii indicată de client: {{contract_reference}}
+Obiectul retragerii: {{scope_human_readable}}
+Solicitare de ofertă pentru ridicare: {{pickup_interest_human_readable}}
+Starea trimiterii confirmării către client: {{confirmation_delivery_status}}
+
+Comunicarea este disponibilă în panoul protejat existent:
+{{authenticated_admin_record_link}}
+
+Verifică asocierea dintre client și comandă, versiunea contractului, termenele și informația despre costul returului oferită înainte de cumpărare. Necesitatea identificării manuale a comenzii nu anulează primirea și gestionarea declarației. Asocierea automată nu reprezintă evaluarea juridică a retragerii.
+
+O ofertă de ridicare poate exclude amânarea rambursării până la primirea produsului. Nu aplica rețineri automate pentru transport sau diminuarea valorii. Formularul public nu autorizează schimbarea beneficiarului rambursării ori modificări ireversibile ale comenzii.

@@ -1,0 +1,35 @@
+Asunto: Confirmación de tu desistimiento — {{receipt_id}}
+
+Hola:
+
+MAKY.STORE s. r. o. confirma la recepción de tu declaración de desistimiento del contrato.
+
+Número de referencia: {{receipt_id}}
+Fecha y hora de envío de la declaración: {{submitted_at_local_with_timezone}}
+
+TU DECLARACIÓN
+{{notice_verbatim}}
+
+DATOS DE LA COMUNICACIÓN
+Nombre y apellidos: {{customer_name}}
+Correo para la confirmación: {{confirmation_email}}
+Pedido o contrato: {{contract_reference}}
+Alcance del desistimiento: {{scope_human_readable}}
+{{items_if_applicable}}
+{{optional_message_if_provided}}
+
+CÓMO CONTINUAR
+{{return_instructions_for_actual_collection_state}}
+
+Reembolsamos las cantidades correspondientes conforme a la ley y al contrato. Para devolver el dinero a la tarjeta original no necesitamos un IBAN. Esta confirmación acredita la recepción de la declaración; no significa que la recogida o el reembolso ya se hayan realizado.
+
+Guarda este mensaje e indica el número de referencia cuando nos contactes.
+
+Un saludo,
+MAKY.STORE
+info@maky.store | +421 901 730 066
+
+MAKY.STORE s. r. o.
+Domicilio: Lermontovova 911/3, 811 05 Bratislava-Staré Mesto, Eslovaquia
+IČO: 57704627
+Devoluciones: Stará Vajnorská 11, 831 04 Bratislava, Eslovaquia
