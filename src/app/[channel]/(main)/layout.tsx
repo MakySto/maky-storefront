@@ -68,7 +68,7 @@ export async function generateMetadata({
  */
 function HeaderSkeleton() {
 	return (
-		<header className="sticky top-0 z-[var(--z-header)] bg-white/80 backdrop-blur-xl">
+		<header className="sticky top-0 z-[var(--z-header)] bg-white/80 backdrop-blur-xl print:hidden">
 			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 				<div className="flex h-16 items-center gap-2 sm:gap-4">
 					{/* hamburger — mobile and tablet only */}
@@ -108,7 +108,7 @@ function HeaderSkeleton() {
  */
 function FooterSkeleton() {
 	return (
-		<footer className="animate-skeleton-delayed bg-foreground text-background opacity-0">
+		<footer className="animate-skeleton-delayed bg-foreground text-background opacity-0 print:hidden">
 			<div className="mx-auto max-w-7xl px-4 pt-12 pb-24 sm:px-6 sm:pb-12 lg:px-8 lg:py-16">
 				<div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:gap-12">
 					<div className="col-span-2 md:col-span-1">

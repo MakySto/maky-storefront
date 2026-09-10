@@ -67,7 +67,7 @@ export async function Footer({ channel }: { channel: string }) {
 	const { support, company, showPrivacyPolicy, showTerms } = footerLegalLinks(channel);
 
 	return (
-		<footer className="bg-gray-900 text-gray-300">
+		<footer className="bg-gray-900 text-gray-300 print:hidden">
 			<div className="mx-auto max-w-7xl px-4 pt-12 pb-24 sm:px-6 sm:pb-12 lg:px-8 lg:py-16">
 				<div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:gap-12">
 					<div className="col-span-2 md:col-span-1">

@@ -4,3 +4,53 @@
 
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/typography";
+/* ── Print ─────────────────────────────────────────────────────────────────────
+   The statutory model withdrawal form is meant to be printed and posted, and
+   `ModelFormActions` calls `window.print()` on the whole document. Without any
+   print rules that sheet carried the navigation, the footer and — if the visitor
+   had not answered it yet — the cookie bar across the top of a legal document.
+
+   The site chrome carries `print:hidden` on its own root (header, footer, and
+   both Suspense skeletons, since a print can happen before they resolve). What
+   is left here is what a utility class cannot express.
+
+   Note the chrome is hidden by class and NOT by a bare `header`/`footer`
+   selector: `/garage` and `/konfigurator` both use a semantic `<header>` for
+   real page content, and an element selector would delete it from the page. */
+@media print {
+	/* Overlays. Both the cookie bar and the cart drawer are `role="dialog"`, and
+	   the drawer is portalled to the end of <body> where no ancestor class can
+	   reach it. Neither belongs on paper. */
+	[role="dialog"],
+	[data-radix-popper-content-wrapper] {
+		display: none !important;
+	}
+
+	/* The layout column is `min-h-dvh` so the footer sits at the bottom of short
+	   pages. With the footer gone, that only reserves an empty viewport's worth of
+	   paper. */
+	.min-h-dvh {
+		min-height: 0 !important;
+	}
+
+	/* `position: sticky` resolves against the page box when printing and can pin
+	   an element to every sheet. Nothing on these pages needs to stick. */
+	.sticky,
+	.fixed {
+		position: static !important;
+	}
+
+	/* Keep the prose column at full width — its `max-w-3xl` is a reading measure
+	   for a screen, and on paper it would waste a third of the sheet. */
+	.prose {
+		max-width: none !important;
+	}
+
+	/* Don't split the form across sheets in the middle of a line. */
+	p,
+	li,
+	blockquote {
+		orphans: 3;
+		widows: 3;
+	}
+}

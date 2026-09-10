@@ -102,7 +102,7 @@ export function CookieConsent() {
 		<div
 			role="dialog"
 			aria-label={t("manageTitle")}
-			className="border-sand-300 fixed inset-x-0 bottom-0 z-[var(--z-consent)] border-t bg-white/95 shadow-[0_-4px_24px_rgba(0,0,0,0.07)] backdrop-blur-sm"
+			className="border-sand-300 fixed inset-x-0 bottom-0 z-[var(--z-consent)] border-t bg-white/95 shadow-[0_-4px_24px_rgba(0,0,0,0.07)] backdrop-blur-sm print:hidden"
 		>
 			<div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
 				{!showSettings ? (
