@@ -99,20 +99,20 @@ describe("hreflang follows the live set", () => {
 		// A cluster of one describes no alternate. It used to list all twelve
 		// unconditionally, pointing at eleven empty, noindex storefronts — and a
 		// non-reciprocated annotation gets the whole cluster ignored.
-		expect(buildHreflangAlternates("/products")).toEqual([]);
+		expect(buildHreflangAlternates("/kontakt")).toEqual([]);
 	});
 
 	it("emits the live markets and an x-default once there are two", () => {
 		process.env[ENV] = "sk,cz";
-		const entries = buildHreflangAlternates("/products");
+		const entries = buildHreflangAlternates("/kontakt");
 		// The market's locale, not its language: `htmlLang` is bare ("sk", "cs") for
 		// all twelve, which made Germany and Austria — and the US and Canada — claim
 		// the same annotation until a hardcoded list patched them one at a time.
 		expect(entries.map((e) => e.hreflang)).toEqual(["sk-SK", "cs-CZ", "x-default"]);
 		expect(entries.map((e) => e.url)).toEqual([
-			`${BASE}/sk/products`,
-			`${BASE}/cz/products`,
-			`${BASE}/sk/products`,
+			`${BASE}/sk/kontakt`,
+			`${BASE}/cz/kontakt`,
+			`${BASE}/sk/kontakt`,
 		]);
 	});
 
@@ -134,14 +134,14 @@ describe("hreflang follows the live set", () => {
 	});
 
 	it("omits `languages` entirely rather than emitting an empty map", () => {
-		const meta = buildAlternatesMetadata("sk-eur", "/products");
-		expect(meta.alternates.canonical).toBe(`${BASE}/sk/products`);
+		const meta = buildAlternatesMetadata("sk-eur", "/kontakt");
+		expect(meta.alternates.canonical).toBe(`${BASE}/sk/kontakt`);
 		expect(meta.alternates.languages).toBeUndefined();
 	});
 
 	it("carries `languages` once a second market is live", () => {
 		process.env[ENV] = "sk,cz";
-		const meta = buildAlternatesMetadata("sk-eur", "/products");
+		const meta = buildAlternatesMetadata("sk-eur", "/kontakt");
 		expect(Object.keys(meta.alternates.languages ?? {})).toEqual(["sk-SK", "cs-CZ", "x-default"]);
 	});
 });

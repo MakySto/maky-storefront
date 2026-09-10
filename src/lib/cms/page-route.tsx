@@ -7,6 +7,7 @@ import { fetchCmsPage, type CmsPageOutcome } from "@/lib/cms/client";
 import { marketForChannel, payloadLocaleForChannel, type MarketCode } from "@/lib/cms/markets";
 import { marketHasRoute } from "@/lib/route-policy";
 import { buildPageMetadata } from "@/lib/seo";
+import { buildLanguageAlternates } from "@/lib/seo/hreflang";
 import { CmsBlocks } from "@/ui/components/cms/cms-blocks";
 
 /**
@@ -145,7 +146,7 @@ export function cmsPageRoute(config: CmsRouteConfig): CmsRoute {
 
 		const page = outcome.status === "found" ? outcome.page : null;
 
-		return buildPageMetadata({
+		const metadata = buildPageMetadata({
 			// CMS meta first, then the document's own title/summary, then this market's
 			// static copy. Never another market's.
 			title: page?.meta.title ?? page?.title ?? marketCopy?.staticTitle ?? "",
@@ -155,6 +156,18 @@ export function cmsPageRoute(config: CmsRouteConfig): CmsRoute {
 			// letting it supply a canonical would let a content edit change indexing.
 			url: marketHref(channel, `/${slug}`),
 		});
+
+		// Alternates come from `route-policy.ts`, which is where a market is recorded as
+		// having this CMS route at all — and it is only opened there once P has evidenced
+		// a published document. So the cluster stays reciprocal without this function
+		// asking Payload about eleven other markets on every render, which is the cost
+		// the brief rules out. Today `o-nas` is `sk` alone, so it emits nothing.
+		//
+		// Only `languages` is added; the canonical `buildPageMetadata` already produced
+		// stays exactly as it was.
+		const languages = buildLanguageAlternates(`/${slug}`);
+		if (!languages) return metadata;
+		return { ...metadata, alternates: { ...metadata.alternates, languages } };
 	}
 
 	async function Page({ params }: { params: Promise<{ channel: string }> }): Promise<ReactNode> {

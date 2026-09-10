@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { type ReactNode } from "react";
 import { formatPageTitle } from "@/config/brand";
 import { marketHref } from "@/lib/channel-map";
+import { buildLanguageAlternates } from "@/lib/seo/hreflang";
 import { LegalPage } from "@/ui/components/legal/legal-page";
 import { legalLocaleFor, type LegalLocale } from "./locale";
 
@@ -65,10 +66,20 @@ export function legalRoute({ path, copy }: LegalRouteOptions) {
 			// 404 acquires a canonical and an indexable title.
 			if (!resolved) return { robots: { index: false, follow: false } };
 
+			// Canonical AND alternates. This used to set the canonical alone, so the seven
+			// static legal pages — which exist in every market with approved copy, and are
+			// genuine translations of one another — were the clearest hreflang cluster on
+			// the site and the only one not annotated. `buildAlternatesMetadata` filters to
+			// markets that are both live and actually have the route, so the cluster stays
+			// reciprocal; below two live markets it emits the canonical alone, exactly as
+			// before.
+			const languages = buildLanguageAlternates(path);
 			return {
 				title: formatPageTitle(resolved.title),
 				description: resolved.description,
-				alternates: { canonical: marketHref(channel, path) },
+				// The canonical is unchanged — still relative, still `marketHref`. Only the
+				// language annotations are new.
+				alternates: { canonical: marketHref(channel, path), ...(languages && { languages }) },
 			};
 		},
 

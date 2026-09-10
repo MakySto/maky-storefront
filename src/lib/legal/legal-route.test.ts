@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { LEGAL_BODY_NAMES, LEGAL_LOCALES, legalLocaleFor, marketsWithLegalCopy } from "./locale";
@@ -245,5 +245,70 @@ describe("the online withdrawal function is locked to the market its contract na
 		// is not even a 404 — it is HTTP 200 serving the English not-found page.
 		expect(page).toContain("const locale = legalLocaleFor(channel); if (!locale) notFound();");
 		expect(page).not.toMatch(/if \(!formServable\) notFound\(\)/);
+	});
+});
+
+/**
+ * hreflang on the static legal pages.
+ *
+ * These seven pages are the clearest translation cluster the site has — the same page,
+ * approved in every market's own language — and they were the only cluster with no
+ * language annotation at all. The helper existed and the homepage used it; the legal
+ * routes set a canonical and stopped there.
+ *
+ * The live-market set is read from the environment per call, so each case re-imports.
+ */
+describe("legalRoute — language alternates", () => {
+	async function metadataFor(liveMarkets: string, channel: string) {
+		vi.resetModules();
+		vi.stubEnv("MAKY_LIVE_MARKETS", liveMarkets);
+		const { legalRoute } = await import("./legal-route");
+		const route = legalRoute({
+			path: "/kontakt",
+			copy: Object.fromEntries(
+				LEGAL_LOCALES.map((locale) => [
+					locale,
+					{ title: `Title ${locale}`, description: `Description ${locale}`, Body: () => null },
+				]),
+			) as never,
+		});
+		return route.generateMetadata({ params: Promise.resolve({ channel }) });
+	}
+
+	afterEach(() => vi.unstubAllEnvs());
+
+	it("emits nothing while only one market is live", async () => {
+		const meta = await metadataFor("sk", "sk-eur");
+		expect(meta.alternates?.languages).toBeUndefined();
+		// …and the canonical is untouched, still relative
+		expect(meta.alternates?.canonical).toBe("/sk/kontakt");
+	});
+
+	it("annotates every live market once there are two", async () => {
+		const meta = await metadataFor("sk,cz,de", "sk-eur");
+		const languages = meta.alternates?.languages as Record<string, string>;
+		// Absolute, as hreflang requires — the base comes from the storefront URL, which
+		// differs between a test run and production, so the shape is what is asserted.
+		expect(Object.keys(languages).sort()).toEqual(["cs-CZ", "de-DE", "sk-SK", "x-default"]);
+		expect(languages["sk-SK"]).toMatch(/^https?:\/\/[^/]+\/sk\/kontakt$/);
+		expect(languages["cs-CZ"]).toMatch(/^https?:\/\/[^/]+\/cz\/kontakt$/);
+		expect(languages["de-DE"]).toMatch(/^https?:\/\/[^/]+\/de\/kontakt$/);
+		expect(languages["x-default"]).toBe(languages["sk-SK"]);
+	});
+
+	it("is reciprocal — every market in the cluster names the same set", async () => {
+		const fromSk = await metadataFor("sk,cz,de", "sk-eur");
+		const fromDe = await metadataFor("sk,cz,de", "de-eur");
+		expect(fromDe.alternates?.languages).toEqual(fromSk.alternates?.languages);
+	});
+
+	it("still 404s a market with no approved copy, with no canonical to nominate", async () => {
+		vi.resetModules();
+		vi.stubEnv("MAKY_LIVE_MARKETS", "sk,cz");
+		const { legalRoute } = await import("./legal-route");
+		const route = legalRoute({ path: "/kontakt", copy: {} as never });
+		const meta = await route.generateMetadata({ params: Promise.resolve({ channel: "sk-eur" }) });
+		expect(meta.robots).toEqual({ index: false, follow: false });
+		expect(meta.alternates).toBeUndefined();
 	});
 });

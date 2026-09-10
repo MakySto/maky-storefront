@@ -10,6 +10,7 @@ import { loadOwnedOrders, type OwnedOrder } from "@/lib/withdrawal/account-order
 import { isWithdrawalFormServable, withdrawalBlockReason } from "@/lib/withdrawal/contract";
 import { normalizeWithdrawalPhone } from "@/lib/withdrawal/validate";
 import { legalLocaleFor, type LegalLocale } from "@/lib/legal/locale";
+import { buildLanguageAlternates } from "@/lib/seo/hreflang";
 import { LegalPage } from "@/ui/components/legal/legal-page";
 import { Ca, Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk, Us } from "@/ui/content/legal/odstupenie-od-zmluvy";
 import { WithdrawalForm } from "@/ui/components/withdrawal/withdrawal-form";
@@ -240,13 +241,19 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 	if (!locale) return { robots: { index: false, follow: false } };
 
 	const meta = META[locale];
+	const languages = buildLanguageAlternates(PATH);
 	return {
 		title: formatPageTitle(meta.title),
 		// The interlock DOES show here, because this makes a claim about the page's
 		// contents. Promising an online form on a page currently serving only the postal
 		// and e-mail routes would be a false statement in the SERP.
 		description: servesOnlineFunction(channel) ? meta.withForm : meta.withoutForm,
-		alternates: { canonical: marketHref(channel, PATH) },
+		// Language alternates as well as the canonical. Like `vzorovy-formular`, this
+		// route builds its own metadata instead of going through `legalRoute`, so it did
+		// not pick the wiring up for free. The description above differs per market by
+		// design — whether the online function is served — but the pages are still
+		// translations of one another, which is what hreflang annotates.
+		alternates: { canonical: marketHref(channel, PATH), ...(languages && { languages }) },
 	};
 }
 

@@ -4,6 +4,7 @@ import { formatPageTitle } from "@/config/brand";
 import { companyInfo } from "@/config/company";
 import { marketHref } from "@/lib/channel-map";
 import { legalLocaleFor, type LegalLocale } from "@/lib/legal/locale";
+import { buildLanguageAlternates } from "@/lib/seo/hreflang";
 import { LegalPage } from "@/ui/components/legal/legal-page";
 import { ModelFormActions } from "@/ui/components/withdrawal/model-form-actions";
 
@@ -662,10 +663,18 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 	// acquires a canonical and an indexable title.
 	if (!locale) return { robots: { index: false, follow: false } };
 
+	// This route builds its own metadata rather than going through `legalRoute`, so it
+	// needs the language alternates wiring too — it is a real translated page in every
+	// market with approved copy, and it was the one static legal URL emitting a canonical
+	// with no cluster. The path is the sub-route; eligibility follows its parent segment.
+	const languages = buildLanguageAlternates("/odstupenie-od-zmluvy/vzorovy-formular");
 	return {
 		title: formatPageTitle(COPY[locale].title),
 		description: COPY[locale].description,
-		alternates: { canonical: marketHref(channel, "/odstupenie-od-zmluvy/vzorovy-formular") },
+		alternates: {
+			canonical: marketHref(channel, "/odstupenie-od-zmluvy/vzorovy-formular"),
+			...(languages && { languages }),
+		},
 	};
 }
 

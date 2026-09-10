@@ -6,6 +6,7 @@ vi.mock("@/lib/graphql", () => ({ executePublicGraphQL }));
 
 import { SitemapCategoriesDocument, SitemapProductsDocument } from "@/gql/graphql";
 import sitemap from "./sitemap";
+import { marketHasRoute, ROUTE_POLICY } from "@/lib/route-policy";
 
 /**
  * The sitemap must enumerate the WHOLE catalogue or fail.
@@ -292,5 +293,93 @@ describe("categories are walked to the end too", () => {
 		);
 
 		await expect(sitemap()).rejects.toThrow(/cursor offset:100 repeated/);
+	});
+});
+
+/**
+ * The static entries are derived, not listed.
+ *
+ * `SK_ONLY_PATHS` was a hand-written table guarded by `market === "sk"`, with a comment
+ * saying those routes "call notFound() for any other channel". Seven of the eight had
+ * since gained approved copy in all twelve markets, so the table and the application
+ * disagreed — silently, because only `sk` is live and nothing else was ever generated.
+ * It would have surfaced as eleven sitemaps missing their legal pages on the first
+ * foreign launch.
+ */
+describe("sitemap — static paths follow route-policy", () => {
+	const SUBROUTES: Record<string, string[]> = {
+		"odstupenie-od-zmluvy": ["/odstupenie-od-zmluvy/vzorovy-formular"],
+	};
+
+	/** Mirrors `staticPathsFor` in sitemap.ts. */
+	function derived(market: string): string[] {
+		const out: string[] = [];
+		for (const policy of ROUTE_POLICY) {
+			if (policy.kind !== "static" && policy.kind !== "cms") continue;
+			if (!policy.indexable) continue;
+			if (!marketHasRoute(market, policy.segment)) continue;
+			out.push(`/${policy.segment}`, ...(SUBROUTES[policy.segment] ?? []));
+		}
+		return out;
+	}
+
+	// Exactly what the removed constant listed, so today's SK sitemap is unchanged.
+	const OLD_SK_ONLY_PATHS = [
+		"/obchodne-podmienky",
+		"/reklamacie-a-vratenie",
+		"/odstupenie-od-zmluvy",
+		"/ochrana-osobnych-udajov",
+		"/cookies",
+		"/doprava-a-platba",
+		"/kontakt",
+		"/o-nas",
+		"/poradna",
+	];
+
+	it("still produces every path the hand-written SK table produced", () => {
+		const sk = derived("sk");
+		for (const path of OLD_SK_ONLY_PATHS) {
+			expect(sk, `sk lost ${path}`).toContain(path);
+		}
+	});
+
+	it("adds the printable model form, which the old table omitted", () => {
+		// It is indexable, it exists in every market with approved copy, and it was
+		// missing from the sitemap entirely.
+		expect(derived("sk")).toContain("/odstupenie-od-zmluvy/vzorovy-formular");
+	});
+
+	it("gives the other markets their seven legal pages", () => {
+		for (const market of ["cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"]) {
+			const paths = derived(market);
+			for (const path of [
+				"/kontakt",
+				"/doprava-a-platba",
+				"/reklamacie-a-vratenie",
+				"/odstupenie-od-zmluvy",
+				"/obchodne-podmienky",
+				"/ochrana-osobnych-udajov",
+				"/cookies",
+			]) {
+				expect(paths, `${market} is missing ${path}`).toContain(path);
+			}
+		}
+	});
+
+	it("keeps the CMS pages to the markets route-policy actually lists", () => {
+		expect(derived("sk")).toContain("/o-nas");
+		for (const market of ["cz", "de", "us", "ca"]) {
+			expect(derived(market), `${market} must not advertise an unpublished /o-nas`).not.toContain("/o-nas");
+			expect(derived(market)).not.toContain("/poradna");
+		}
+	});
+
+	it("never advertises a private or non-indexable route", () => {
+		for (const market of ["sk", "de", "us"]) {
+			const paths = derived(market);
+			for (const forbidden of ["/search", "/cart", "/account", "/login", "/garage", "/konfigurator"]) {
+				expect(paths, `${market} advertises ${forbidden}`).not.toContain(forbidden);
+			}
+		}
 	});
 });

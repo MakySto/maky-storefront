@@ -3,6 +3,7 @@ import { categoryUrl } from "@/config/categories";
 import { getBaseUrl } from "@/lib/seo/config";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { liveMarkets } from "@/lib/market-state";
+import { marketHasRoute, ROUTE_POLICY } from "@/lib/route-policy";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
 import { SitemapProductsDocument, SitemapCategoriesDocument } from "@/gql/graphql";
@@ -20,31 +21,46 @@ import { SitemapProductsDocument, SitemapCategoriesDocument } from "@/gql/graphq
  */
 
 /**
- * The market whose Slovak-only static routes exist. They call notFound() for
- * every other channel, so they belong to `sk` alone until each market has its
- * own translated set.
+ * The static, indexable routes a given market actually has.
+ *
+ * This used to be `SK_LEGAL_MARKET` plus a hand-written `SK_ONLY_PATHS`, with a comment
+ * explaining that those routes "call notFound() for any other channel". That stopped
+ * being true: seven of the eight now exist in all twelve markets with approved copy, so
+ * the table said `sk` while the application said otherwise, and the disagreement would
+ * have shipped straight into the first foreign launch as eleven sitemaps missing their
+ * legal pages.
+ *
+ * `route-policy.ts` is the same table the proxy 404s on, the footer links from and
+ * hreflang annotates, so deriving from it is what keeps the four in step. `indexable`
+ * is honoured too — `/search`, `/cart` and the garage are routes but not sitemap
+ * entries.
+ *
+ * `/o-nas` and `/poradna` follow along on their own: they are `cms` routes and
+ * `route-policy` lists them for `sk` alone until Payload holds a translated document,
+ * which is the one place that decision is recorded.
+ *
+ * Sub-routes are deliberately NOT derived. `MARKET_ROOT_SEGMENTS` only knows the first
+ * segment, so `/odstupenie-od-zmluvy/vzorovy-formular` has to be named; it is listed
+ * against its parent so it can never outlive it.
  */
-const SK_LEGAL_MARKET = "sk";
+const STATIC_SUBROUTES: Readonly<Record<string, readonly string[]>> = {
+	"odstupenie-od-zmluvy": ["/odstupenie-od-zmluvy/vzorovy-formular"],
+};
+
+function staticPathsFor(market: string): readonly string[] {
+	const paths: string[] = [];
+	for (const policy of ROUTE_POLICY) {
+		if (policy.kind !== "static" && policy.kind !== "cms") continue;
+		if (!policy.indexable) continue;
+		if (!marketHasRoute(market, policy.segment)) continue;
+		paths.push(`/${policy.segment}`);
+		paths.push(...(STATIC_SUBROUTES[policy.segment] ?? []));
+	}
+	return paths;
+}
 
 /** Saleor's `products` is a cursor connection; 100 is a comfortable page. */
 const PAGE_SIZE = 100;
-
-const SK_ONLY_PATHS = [
-	"/obchodne-podmienky",
-	"/reklamacie-a-vratenie",
-	"/odstupenie-od-zmluvy",
-	"/ochrana-osobnych-udajov",
-	"/cookies",
-	"/doprava-a-platba",
-	"/kontakt",
-	"/o-nas",
-	// Held back until the Payload document existed, per the note in
-	// poradna/page.tsx: a sitemap entry for a page serving only its own fallback
-	// advertises nothing. That document is published — /sk/poradna answers 200
-	// with "Ako vybrať strešný nosič" — so the condition it named is met, and the
-	// page was otherwise live, indexable and orphaned from the sitemap.
-	"/poradna",
-];
 
 /** Re-read the catalogue at most hourly; a sitemap is not a live view. */
 export const revalidate = 3600;
@@ -224,17 +240,13 @@ async function marketEntries(market: string): Promise<MetadataRoute.Sitemap> {
 		});
 	}
 
-	// Slovak-only by construction: these routes call notFound() for any other
-	// channel. They join a market's sitemap when that market has its own
-	// translated legal pages, which is a launch-checklist item, not a code one.
-	if (market === SK_LEGAL_MARKET) {
-		for (const path of SK_ONLY_PATHS) {
-			entries.push({
-				url: `${base}/${market}${path}`,
-				changeFrequency: "monthly",
-				priority: 0.3,
-			});
-		}
+	// Whatever static and CMS routes this market actually has, per route-policy.
+	for (const path of staticPathsFor(market)) {
+		entries.push({
+			url: `${base}/${market}${path}`,
+			changeFrequency: "monthly",
+			priority: 0.3,
+		});
 	}
 
 	return entries;
