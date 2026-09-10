@@ -589,7 +589,9 @@
 		"previousPage": "Precedente",
 		"nextPage": "Successivo",
 		"pagination": "Impaginazione",
-		"allProductsDescription": "La gamma completa di accessori per la tua auto."
+		"allProductsDescription": "La gamma completa di accessori per la tua auto.",
+		"relevance": "Rilevanza",
+		"sortByName": "Nome"
 	},
 	"cookieConsent": {
 		"title": "Teniamo alla tua privacy",

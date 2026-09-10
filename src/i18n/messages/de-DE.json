@@ -589,7 +589,9 @@
 		"previousPage": "Zurück",
 		"nextPage": "Weiter",
 		"pagination": "Seitennavigation",
-		"allProductsDescription": "Das komplette Zubehörsortiment für Ihr Auto."
+		"allProductsDescription": "Das komplette Zubehörsortiment für Ihr Auto.",
+		"relevance": "Relevanz",
+		"sortByName": "Name"
 	},
 	"cookieConsent": {
 		"title": "Ihre Privatsphäre ist uns wichtig",

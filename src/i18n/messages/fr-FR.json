@@ -589,7 +589,9 @@
 		"previousPage": "Précédent",
 		"nextPage": "Suivant",
 		"pagination": "Pagination",
-		"allProductsDescription": "La gamme complète d’accessoires pour votre voiture."
+		"allProductsDescription": "La gamme complète d’accessoires pour votre voiture.",
+		"relevance": "Pertinence",
+		"sortByName": "Nom"
 	},
 	"cookieConsent": {
 		"title": "Votre vie privée nous tient à cœur",

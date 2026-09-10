@@ -589,7 +589,9 @@
 		"previousPage": "Előző",
 		"nextPage": "Következő",
 		"pagination": "Lapozás",
-		"allProductsDescription": "A teljes autós kiegészítő kínálat."
+		"allProductsDescription": "A teljes autós kiegészítő kínálat.",
+		"relevance": "Relevancia",
+		"sortByName": "Név"
 	},
 	"cookieConsent": {
 		"title": "Fontos számunkra az adatvédelme",

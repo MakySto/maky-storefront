@@ -10,22 +10,26 @@ import {
 } from "@/ui/components/ui/dropdown-menu";
 import { Button } from "@/ui/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
+import { useTranslations } from "next-intl";
 
+// Labels are message keys, not text. `plp` already carried four of the five for the
+// listing's own sort control; only `relevance` and `sortByName` were new.
 const SORT_OPTIONS = [
-	{ value: "relevance", label: "Relevance" },
-	{ value: "price-asc", label: "Price: Low to High" },
-	{ value: "price-desc", label: "Price: High to Low" },
-	{ value: "name", label: "Name" },
-	{ value: "newest", label: "Newest" },
+	{ value: "relevance", key: "relevance" },
+	{ value: "price-asc", key: "priceLowToHigh" },
+	{ value: "price-desc", key: "priceHighToLow" },
+	{ value: "name", key: "sortByName" },
+	{ value: "newest", key: "newest" },
 ] as const;
 
 export function SearchSort() {
+	const t = useTranslations("plp");
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
 	const currentSort = searchParams.get("sort") || "relevance";
-	const currentLabel = SORT_OPTIONS.find((o) => o.value === currentSort)?.label || "Relevance";
+	const currentLabel = t(SORT_OPTIONS.find((o) => o.value === currentSort)?.key ?? "relevance");
 
 	const handleSortChange = (value: string) => {
 		const params = new URLSearchParams(searchParams.toString());
@@ -53,7 +57,7 @@ export function SearchSort() {
 				<DropdownMenuRadioGroup value={currentSort} onValueChange={handleSortChange}>
 					{SORT_OPTIONS.map((option) => (
 						<DropdownMenuRadioItem key={option.value} value={option.value}>
-							{option.label}
+							{t(option.key)}
 						</DropdownMenuRadioItem>
 					))}
 				</DropdownMenuRadioGroup>

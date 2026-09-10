@@ -589,7 +589,9 @@
 		"previousPage": "Poprzednia",
 		"nextPage": "Następna",
 		"pagination": "Paginacja",
-		"allProductsDescription": "Pełna oferta akcesoriów do Twojego auta."
+		"allProductsDescription": "Pełna oferta akcesoriów do Twojego auta.",
+		"relevance": "Trafność",
+		"sortByName": "Nazwa"
 	},
 	"cookieConsent": {
 		"title": "Zależy nam na Twojej prywatności",

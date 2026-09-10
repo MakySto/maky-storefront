@@ -589,7 +589,9 @@
 		"previousPage": "Anterior",
 		"nextPage": "Siguiente",
 		"pagination": "Paginación",
-		"allProductsDescription": "La gama completa de accesorios para su coche."
+		"allProductsDescription": "La gama completa de accesorios para su coche.",
+		"relevance": "Relevancia",
+		"sortByName": "Nombre"
 	},
 	"cookieConsent": {
 		"title": "Nos importa tu privacidad",

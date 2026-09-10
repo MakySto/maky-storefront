@@ -589,7 +589,9 @@
 		"previousPage": "Předchozí",
 		"nextPage": "Další",
 		"pagination": "Stránkování",
-		"allProductsDescription": "Kompletní nabídka příslušenství pro vaše auto."
+		"allProductsDescription": "Kompletní nabídka příslušenství pro vaše auto.",
+		"relevance": "Relevance",
+		"sortByName": "Název"
 	},
 	"cookieConsent": {
 		"title": "Záleží nám na vašem soukromí",

@@ -589,7 +589,9 @@
 		"previousPage": "Previous",
 		"nextPage": "Next",
 		"pagination": "Pagination",
-		"allProductsDescription": "The complete range of accessories for your car."
+		"allProductsDescription": "The complete range of accessories for your car.",
+		"relevance": "Relevance",
+		"sortByName": "Name"
 	},
 	"cookieConsent": {
 		"title": "We value your privacy",

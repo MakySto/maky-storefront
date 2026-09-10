@@ -589,7 +589,9 @@
 		"previousPage": "Anterior",
 		"nextPage": "Următor",
 		"pagination": "Paginare",
-		"allProductsDescription": "Gama completă de accesorii pentru mașina ta."
+		"allProductsDescription": "Gama completă de accesorii pentru mașina ta.",
+		"relevance": "Relevanță",
+		"sortByName": "Nume"
 	},
 	"cookieConsent": {
 		"title": "Ne pasă de confidențialitatea ta",

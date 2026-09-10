@@ -589,7 +589,9 @@
 		"previousPage": "Predchádzajúce",
 		"nextPage": "Ďalšie",
 		"pagination": "Stránkovanie",
-		"allProductsDescription": "Kompletná ponuka príslušenstva pre vaše auto."
+		"allProductsDescription": "Kompletná ponuka príslušenstva pre vaše auto.",
+		"relevance": "Relevancia",
+		"sortByName": "Názov"
 	},
 	"cookieConsent": {
 		"title": "Záleží nám na vašom súkromí",
