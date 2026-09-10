@@ -944,7 +944,7 @@ export function It({ channel }: { channel: string }) {
 				<PrivacySettingsLink label="Apri le preferenze sulla privacy" className={SETTINGS_BUTTON_CLASS} />
 			</p>
 			<p>
-				Puoi modificare la scelta in seguito attraverso <strong>«Preferenze sulla privacy»</strong> nel piè di
+				Puoi modificare la scelta in seguito attraverso <strong>«Impostazioni privacy»</strong> nel piè di
 				pagina. La revoca riguarda l’ulteriore impiego delle tecnologie facoltative; non cancella
 				automaticamente tutti i dati già trattati da un prestatore autonomo. Per questi dati valgono i diritti
 				descritti nell’informativa.
@@ -1183,7 +1183,7 @@ export function Es({ channel }: { channel: string }) {
 				<PrivacySettingsLink label="Abrir preferencias de privacidad" className={SETTINGS_BUTTON_CLASS} />
 			</p>
 			<p>
-				Puedes cambiar la elección desde <strong>«Preferencias de privacidad»</strong> en el pie de página.
+				Puedes cambiar la elección desde <strong>«Configuración de privacidad»</strong> en el pie de página.
 				Retirar el consentimiento afecta al uso posterior de las tecnologías opcionales; no supone borrar
 				automáticamente todos los datos tratados antes por un proveedor independiente. Para esos datos puedes
 				ejercer los derechos de la política de privacidad.
@@ -1294,7 +1294,7 @@ export function Ro({ channel }: { channel: string }) {
 				/>
 			</p>
 			<p>
-				Poți schimba alegerea din <strong>„Preferințe de confidențialitate”</strong> în subsolul paginii.
+				Poți schimba alegerea din <strong>„Setări de confidențialitate”</strong> în subsolul paginii.
 				Retragerea acordului privește folosirea viitoare a tehnologiilor opționale; nu șterge automat toate
 				datele prelucrate anterior de un furnizor independent. Pentru acele date ai drepturile din politica de
 				confidențialitate.
