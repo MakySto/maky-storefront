@@ -707,5 +707,38 @@
 	"cms": {
 		"unavailableTitle": "Strona jest chwilowo niedostępna",
 		"unavailableBody": "Nie udało się wczytać treści. Spróbuj ponownie za chwilę."
+	},
+	"search": {
+		"resultsFor": "Wyniki dla „{query}”",
+		"noResultsFor": "Brak wyników dla „{query}”",
+		"noResultsHelp": "Nie znaleźliśmy produktów pasujących do wyszukiwania. Spróbuj innego hasła lub przejrzyj nasze kategorie.",
+		"browseAll": "Przeglądaj wszystkie produkty"
+	},
+	"account": {
+		"welcomeBack": "Witamy ponownie",
+		"enterPassword": "Wpisz hasło",
+		"passwordUpdated": "Hasło zostało zmienione",
+		"redirecting": "Przekierowujemy Cię do sklepu…",
+		"setNewPassword": "Ustaw nowe hasło",
+		"minEightChars": "Co najmniej 8 znaków…",
+		"confirmPassword": "Potwierdź hasło",
+		"accountCreated": "Konto zostało utworzone",
+		"verifyEmail": "Sprawdź swoją skrzynkę e-mail, aby potwierdzić konto.",
+		"createAccount": "Utwórz konto",
+		"firstName": "Imię",
+		"lastName": "Nazwisko",
+		"reenterPassword": "Wpisz hasło ponownie",
+		"passwordsDoNotMatch": "Hasła nie są zgodne",
+		"overview": "Oto przegląd aktywności Twojego konta.",
+		"recentOrders": "Ostatnie zamówienia",
+		"defaultAddress": "Adres domyślny",
+		"addresses": "Adresy",
+		"manageAddresses": "Zarządzaj zapisanymi adresami",
+		"settings": "Ustawienia",
+		"manageSettings": "Zarządzaj ustawieniami konta",
+		"email": "E-mail",
+		"variantsUnavailable": "Nie udało się wczytać opcji produktu.",
+		"openMenu": "Otwórz menu",
+		"primaryNavigation": "Nawigacja główna"
 	}
 }

@@ -707,5 +707,38 @@
 	"cms": {
 		"unavailableTitle": "Az oldal átmenetileg nem érhető el",
 		"unavailableBody": "A tartalmat nem sikerült betölteni. Kérjük, próbálja meg később."
+	},
+	"search": {
+		"resultsFor": "Találatok erre: „{query}”",
+		"noResultsFor": "Nincs találat erre: „{query}”",
+		"noResultsHelp": "Nem találtunk a keresésnek megfelelő terméket. Próbáljon meg más kifejezést, vagy böngésszen a kategóriáink között.",
+		"browseAll": "Összes termék böngészése"
+	},
+	"account": {
+		"welcomeBack": "Üdvözöljük újra",
+		"enterPassword": "Adja meg a jelszót",
+		"passwordUpdated": "A jelszó megváltozott",
+		"redirecting": "Átirányítjuk az áruházba…",
+		"setNewPassword": "Új jelszó beállítása",
+		"minEightChars": "Legalább 8 karakter…",
+		"confirmPassword": "Erősítse meg a jelszót",
+		"accountCreated": "A fiók létrejött",
+		"verifyEmail": "Ellenőrizze e-mailjeit a fiók megerősítéséhez.",
+		"createAccount": "Fiók létrehozása",
+		"firstName": "Keresztnév",
+		"lastName": "Vezetéknév",
+		"reenterPassword": "Adja meg újra a jelszót",
+		"passwordsDoNotMatch": "A jelszavak nem egyeznek",
+		"overview": "Itt látható fiókja tevékenységének áttekintése.",
+		"recentOrders": "Legutóbbi rendelések",
+		"defaultAddress": "Alapértelmezett cím",
+		"addresses": "Címek",
+		"manageAddresses": "Kezelje mentett címeit",
+		"settings": "Beállítások",
+		"manageSettings": "Kezelje fiókja beállításait",
+		"email": "E-mail",
+		"variantsUnavailable": "A termék beállításait nem sikerült betölteni.",
+		"openMenu": "Menü megnyitása",
+		"primaryNavigation": "Fő navigáció"
 	}
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
@@ -16,6 +17,7 @@ export function LoginMode() {
 	const router = useRouter();
 	const params = useParams<{ channel: string }>();
 	const { signIn } = useSaleorAuthContext();
+	const t = useTranslations("account");
 
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -117,7 +119,7 @@ export function LoginMode() {
 		<div className="mx-auto my-16 w-full max-w-md">
 			<div className="border-border bg-card rounded-lg border p-8 shadow-sm">
 				<div className="mb-6 text-center">
-					<h1 className="text-2xl font-semibold">Welcome Back</h1>
+					<h1 className="text-2xl font-semibold">{t("welcomeBack")}</h1>
 					<p className="text-muted-foreground mt-2 text-sm">
 						Don&apos;t have an account?{" "}
 						<Link
@@ -174,7 +176,7 @@ export function LoginMode() {
 							<Input
 								id="password"
 								type={showPassword ? "text" : "password"}
-								placeholder="Enter your password"
+								placeholder={t("enterPassword")}
 								autoComplete="current-password"
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}

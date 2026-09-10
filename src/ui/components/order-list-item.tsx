@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { getTranslations } from "next-intl/server";
 import { LinkWithChannel } from "../atoms/link-with-channel";
 import { formatDate, formatMoney, getHrefForVariant } from "@/lib/utils";
 import { type OrderDetailsFragment } from "@/gql/graphql";
@@ -8,7 +9,10 @@ type Props = {
 	order: OrderDetailsFragment;
 };
 
-export const OrderListItem = ({ order }: Props) => {
+export const OrderListItem = async ({ order }: Props) => {
+	const tNav = await getTranslations("nav");
+	const tProduct = await getTranslations("product");
+	const tPlp = await getTranslations("plp");
 	return (
 		<li className="bg-white">
 			<div className="flex flex-col gap-2 border bg-neutral-200/20 px-6 py-4 md:grid md:grid-cols-4 md:gap-8">
@@ -46,9 +50,13 @@ export const OrderListItem = ({ order }: Props) => {
 						<table className="w-full text-sm text-neutral-500">
 							<thead className="sr-only">
 								<tr>
-									<td>product</td>
-									<td className="max-md:hidden">quantity and unit price</td>
-									<td>price</td>
+									{/* Screen-reader-only column headers. They were English on a
+									    Slovak-first storefront — invisible on screen, and read
+									    aloud on every order to exactly the visitors who depend
+									    on them most. */}
+									<td>{tNav("products")}</td>
+									<td className="max-md:hidden">{tProduct("quantity")}</td>
+									<td>{tPlp("price")}</td>
 								</tr>
 							</thead>
 							<tbody className="md:divide-y">

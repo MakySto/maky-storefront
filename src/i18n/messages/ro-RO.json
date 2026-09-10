@@ -707,5 +707,38 @@
 	"cms": {
 		"unavailableTitle": "Pagină temporar indisponibilă",
 		"unavailableBody": "Conținutul nu a putut fi încărcat. Încercați din nou în câteva momente."
+	},
+	"search": {
+		"resultsFor": "Rezultate pentru „{query}”",
+		"noResultsFor": "Niciun rezultat pentru „{query}”",
+		"noResultsHelp": "Nu am găsit produse care să corespundă căutării dumneavoastră. Încercați alt termen sau răsfoiți categoriile noastre.",
+		"browseAll": "Vezi toate produsele"
+	},
+	"account": {
+		"welcomeBack": "Bine ați revenit",
+		"enterPassword": "Introduceți parola",
+		"passwordUpdated": "Parola a fost modificată",
+		"redirecting": "Vă redirecționăm către magazin…",
+		"setNewPassword": "Setați o parolă nouă",
+		"minEightChars": "Cel puțin 8 caractere…",
+		"confirmPassword": "Confirmați parola",
+		"accountCreated": "Contul a fost creat",
+		"verifyEmail": "Verificați-vă e-mailul pentru a confirma contul.",
+		"createAccount": "Creați un cont",
+		"firstName": "Prenume",
+		"lastName": "Nume",
+		"reenterPassword": "Introduceți parola din nou",
+		"passwordsDoNotMatch": "Parolele nu coincid",
+		"overview": "Iată o prezentare a activității contului dumneavoastră.",
+		"recentOrders": "Comenzi recente",
+		"defaultAddress": "Adresă implicită",
+		"addresses": "Adrese",
+		"manageAddresses": "Gestionați adresele salvate",
+		"settings": "Setări",
+		"manageSettings": "Gestionați setările contului",
+		"email": "E-mail",
+		"variantsUnavailable": "Opțiunile produsului nu au putut fi încărcate.",
+		"openMenu": "Deschideți meniul",
+		"primaryNavigation": "Navigare principală"
 	}
 }

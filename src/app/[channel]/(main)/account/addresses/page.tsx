@@ -1,9 +1,12 @@
+import { getTranslations } from "next-intl/server";
 import { AccountAddressCard } from "@/ui/components/account/address-card";
 import { AddressFormDialog } from "@/ui/components/account/address-form-dialog";
 import { DeleteAddressButton, SetDefaultAddressButton } from "@/ui/components/account/address-actions";
 import { getCurrentUser } from "../get-current-user";
 
 export default async function AddressesPage() {
+	const t = await getTranslations("account");
+	const tCheckout = await getTranslations("checkout.addressForm");
 	const user = await getCurrentUser();
 	if (!user) return null;
 
@@ -15,15 +18,15 @@ export default async function AddressesPage() {
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-semibold tracking-tight">Addresses</h1>
-					<p className="mt-1 text-sm text-muted-foreground">Manage your saved addresses</p>
+					<h1 className="text-2xl font-semibold tracking-tight">{t("addresses")}</h1>
+					<p className="text-muted-foreground mt-1 text-sm">{t("manageAddresses")}</p>
 				</div>
 				<AddressFormDialog />
 			</div>
 
 			{addresses.length === 0 ? (
 				<div className="rounded-lg border border-dashed p-8 text-center">
-					<p className="text-muted-foreground">No saved addresses yet.</p>
+					<p className="text-muted-foreground">{tCheckout("noSavedAddressesYet")}</p>
 					<div className="mt-4">
 						<AddressFormDialog />
 					</div>

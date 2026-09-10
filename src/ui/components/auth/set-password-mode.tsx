@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Lock, Eye, EyeOff, CheckCircle } from "lucide-react";
@@ -15,6 +16,7 @@ type Props = {
 };
 
 export function SetPasswordMode({ email, token }: Props) {
+	const t = useTranslations("account");
 	const router = useRouter();
 	const params = useParams<{ channel: string }>();
 
@@ -86,16 +88,16 @@ export function SetPasswordMode({ email, token }: Props) {
 	if (success) {
 		return (
 			<div className="mx-auto my-16 w-full max-w-md">
-				<div className="rounded-lg border border-border bg-card p-8 shadow-sm">
+				<div className="border-border bg-card rounded-lg border p-8 shadow-sm">
 					<div className="flex flex-col items-center gap-4 text-center">
 						<div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
 							<CheckCircle className="h-8 w-8 text-green-600" />
 						</div>
-						<h1 className="text-2xl font-semibold">Password Updated!</h1>
+						<h1 className="text-2xl font-semibold">{t("passwordUpdated")}</h1>
 						<p className="text-muted-foreground">
 							Your password has been successfully reset. You are now signed in.
 						</p>
-						<p className="text-sm text-muted-foreground">Redirecting you to the store…</p>
+						<p className="text-muted-foreground text-sm">{t("redirecting")}</p>
 					</div>
 				</div>
 			</div>
@@ -104,17 +106,17 @@ export function SetPasswordMode({ email, token }: Props) {
 
 	return (
 		<div className="mx-auto my-16 w-full max-w-md">
-			<div className="rounded-lg border border-border bg-card p-8 shadow-sm">
+			<div className="border-border bg-card rounded-lg border p-8 shadow-sm">
 				<div className="mb-6 text-center">
-					<h1 className="text-2xl font-semibold">Set New Password</h1>
-					<p className="mt-2 text-sm text-muted-foreground">
+					<h1 className="text-2xl font-semibold">{t("setNewPassword")}</h1>
+					<p className="text-muted-foreground mt-2 text-sm">
 						Enter a new password for <span className="font-medium">{email}</span>
 					</p>
 				</div>
 
 				<form onSubmit={handleSubmit} className="space-y-4">
 					{error && (
-						<div role="alert" className="bg-destructive/10 rounded-md p-3 text-sm text-destructive">
+						<div role="alert" className="bg-destructive/10 text-destructive rounded-md p-3 text-sm">
 							{error}
 						</div>
 					)}
@@ -124,22 +126,22 @@ export function SetPasswordMode({ email, token }: Props) {
 							New Password
 						</Label>
 						<div className="relative">
-							<Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 							<Input
 								id="password"
 								type={showPassword ? "text" : "password"}
-								placeholder="At least 8 characters…"
+								placeholder={t("minEightChars")}
 								autoComplete="new-password"
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
-								className="h-12 pl-10 pr-10"
+								className="h-12 pr-10 pl-10"
 								required
 							/>
 							<button
 								type="button"
 								onClick={() => setShowPassword(!showPassword)}
 								aria-label={showPassword ? "Hide password" : "Show password"}
-								className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+								className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
 							>
 								{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
 							</button>
@@ -151,22 +153,22 @@ export function SetPasswordMode({ email, token }: Props) {
 							Confirm Password
 						</Label>
 						<div className="relative">
-							<Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 							<Input
 								id="confirmPassword"
 								type={showConfirmPassword ? "text" : "password"}
-								placeholder="Confirm your password"
+								placeholder={t("confirmPassword")}
 								autoComplete="new-password"
 								value={confirmPassword}
 								onChange={(e) => setConfirmPassword(e.target.value)}
-								className="h-12 pl-10 pr-10"
+								className="h-12 pr-10 pl-10"
 								required
 							/>
 							<button
 								type="button"
 								onClick={() => setShowConfirmPassword(!showConfirmPassword)}
 								aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-								className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+								className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
 							>
 								{showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
 							</button>
@@ -180,7 +182,7 @@ export function SetPasswordMode({ email, token }: Props) {
 					<div className="text-center">
 						<Link
 							href={marketHref(params.channel, "/login")}
-							className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground hover:no-underline"
+							className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-2 hover:no-underline"
 						>
 							Back to Sign In
 						</Link>

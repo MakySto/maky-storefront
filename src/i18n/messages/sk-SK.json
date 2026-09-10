@@ -707,5 +707,38 @@
 	"cms": {
 		"unavailableTitle": "Stránka je dočasne nedostupná",
 		"unavailableBody": "Obsah sa nepodarilo načítať. Skúste to prosím o chvíľu."
+	},
+	"search": {
+		"resultsFor": "Výsledky pre „{query}“",
+		"noResultsFor": "Žiadne výsledky pre „{query}“",
+		"noResultsHelp": "Nenašli sme žiadne produkty zodpovedajúce vášmu hľadaniu. Skúste iný výraz alebo prejdite naše kategórie.",
+		"browseAll": "Prehliadať všetky produkty"
+	},
+	"account": {
+		"welcomeBack": "Vitajte späť",
+		"enterPassword": "Zadajte heslo",
+		"passwordUpdated": "Heslo bolo zmenené",
+		"redirecting": "Presmerúvame vás do obchodu…",
+		"setNewPassword": "Nastaviť nové heslo",
+		"minEightChars": "Aspoň 8 znakov…",
+		"confirmPassword": "Potvrďte heslo",
+		"accountCreated": "Účet bol vytvorený",
+		"verifyEmail": "Skontrolujte si e-mail a potvrďte svoj účet.",
+		"createAccount": "Vytvoriť účet",
+		"firstName": "Meno",
+		"lastName": "Priezvisko",
+		"reenterPassword": "Zadajte heslo znova",
+		"passwordsDoNotMatch": "Heslá sa nezhodujú",
+		"overview": "Tu je prehľad aktivity vášho účtu.",
+		"recentOrders": "Nedávne objednávky",
+		"defaultAddress": "Predvolená adresa",
+		"addresses": "Adresy",
+		"manageAddresses": "Spravujte svoje uložené adresy",
+		"settings": "Nastavenia",
+		"manageSettings": "Spravujte nastavenia svojho účtu",
+		"email": "E-mail",
+		"variantsUnavailable": "Možnosti produktu sa nepodarilo načítať.",
+		"openMenu": "Otvoriť menu",
+		"primaryNavigation": "Hlavná navigácia"
 	}
 }

@@ -707,5 +707,38 @@
 	"cms": {
 		"unavailableTitle": "Page temporarily unavailable",
 		"unavailableBody": "The content could not be loaded. Please try again shortly."
+	},
+	"search": {
+		"resultsFor": "Results for “{query}”",
+		"noResultsFor": "No results for “{query}”",
+		"noResultsHelp": "We couldn’t find any products matching your search. Try a different term or browse our categories.",
+		"browseAll": "Browse all products"
+	},
+	"account": {
+		"welcomeBack": "Welcome back",
+		"enterPassword": "Enter your password",
+		"passwordUpdated": "Password updated",
+		"redirecting": "Redirecting you to the store…",
+		"setNewPassword": "Set a new password",
+		"minEightChars": "At least 8 characters…",
+		"confirmPassword": "Confirm your password",
+		"accountCreated": "Account created",
+		"verifyEmail": "Please check your email to verify your account.",
+		"createAccount": "Create an account",
+		"firstName": "First name",
+		"lastName": "Last name",
+		"reenterPassword": "Re-enter your password",
+		"passwordsDoNotMatch": "Passwords do not match",
+		"overview": "Here is an overview of your account activity.",
+		"recentOrders": "Recent orders",
+		"defaultAddress": "Default address",
+		"addresses": "Addresses",
+		"manageAddresses": "Manage your saved addresses",
+		"settings": "Settings",
+		"manageSettings": "Manage your account settings",
+		"email": "Email",
+		"variantsUnavailable": "Unable to load product options.",
+		"openMenu": "Open menu",
+		"primaryNavigation": "Primary navigation"
 	}
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
@@ -11,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { marketHref } from "@/lib/channel-map";
 
 export function SignUpForm() {
+	const t = useTranslations("account");
 	const params = useParams<{ channel: string }>();
 
 	const [firstName, setFirstName] = useState("");
@@ -89,7 +91,7 @@ export function SignUpForm() {
 	if (success) {
 		return (
 			<div className="mx-auto mt-16 w-full max-w-md">
-				<div className="rounded-lg border border-border bg-card p-8 shadow-sm">
+				<div className="border-border bg-card rounded-lg border p-8 shadow-sm">
 					<div className="text-center">
 						<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
 							<svg
@@ -102,11 +104,11 @@ export function SignUpForm() {
 								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
 							</svg>
 						</div>
-						<h2 className="text-xl font-semibold">Account Created!</h2>
-						<p className="mt-2 text-muted-foreground">Please check your email to verify your account.</p>
+						<h2 className="text-xl font-semibold">{t("accountCreated")}</h2>
+						<p className="text-muted-foreground mt-2">{t("verifyEmail")}</p>
 						<Link
 							href={marketHref(params.channel, "/login")}
-							className="mt-6 inline-block text-sm font-medium text-foreground underline underline-offset-2 hover:no-underline"
+							className="text-foreground mt-6 inline-block text-sm font-medium underline underline-offset-2 hover:no-underline"
 						>
 							Go to Sign In
 						</Link>
@@ -118,14 +120,14 @@ export function SignUpForm() {
 
 	return (
 		<div className="mx-auto mt-16 w-full max-w-md">
-			<div className="rounded-lg border border-border bg-card p-8 shadow-sm">
+			<div className="border-border bg-card rounded-lg border p-8 shadow-sm">
 				<div className="mb-6 text-center">
-					<h1 className="text-2xl font-semibold">Create an Account</h1>
-					<p className="mt-2 text-sm text-muted-foreground">
+					<h1 className="text-2xl font-semibold">{t("createAccount")}</h1>
+					<p className="text-muted-foreground mt-2 text-sm">
 						Already have an account?{" "}
 						<Link
 							href={marketHref(params.channel, "/login")}
-							className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
+							className="text-foreground font-medium underline underline-offset-2 hover:no-underline"
 						>
 							Sign in
 						</Link>
@@ -134,7 +136,7 @@ export function SignUpForm() {
 
 				<form onSubmit={handleSubmit} className="space-y-4">
 					{error && (
-						<div role="alert" className="bg-destructive/10 rounded-md p-3 text-sm text-destructive">
+						<div role="alert" className="bg-destructive/10 text-destructive rounded-md p-3 text-sm">
 							{error}
 						</div>
 					)}
@@ -146,11 +148,11 @@ export function SignUpForm() {
 								First name
 							</Label>
 							<div className="relative">
-								<User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+								<User className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 								<Input
 									id="firstName"
 									type="text"
-									placeholder="First name"
+									placeholder={t("firstName")}
 									autoComplete="given-name"
 									value={firstName}
 									onChange={(e) => setFirstName(e.target.value)}
@@ -165,7 +167,7 @@ export function SignUpForm() {
 							<Input
 								id="lastName"
 								type="text"
-								placeholder="Last name"
+								placeholder={t("lastName")}
 								autoComplete="family-name"
 								value={lastName}
 								onChange={(e) => setLastName(e.target.value)}
@@ -180,7 +182,7 @@ export function SignUpForm() {
 							Email address
 						</Label>
 						<div className="relative">
-							<Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 							<Input
 								id="email"
 								type="email"
@@ -201,15 +203,15 @@ export function SignUpForm() {
 							Password
 						</Label>
 						<div className="relative">
-							<Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 							<Input
 								id="password"
 								type={showPassword ? "text" : "password"}
-								placeholder="Minimum 8 characters…"
+								placeholder={t("minEightChars")}
 								autoComplete="new-password"
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
-								className="h-12 pl-10 pr-10"
+								className="h-12 pr-10 pl-10"
 								required
 								minLength={8}
 							/>
@@ -217,7 +219,7 @@ export function SignUpForm() {
 								type="button"
 								onClick={() => setShowPassword(!showPassword)}
 								aria-label={showPassword ? "Hide password" : "Show password"}
-								className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+								className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
 							>
 								{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
 							</button>
@@ -230,11 +232,11 @@ export function SignUpForm() {
 							Confirm password
 						</Label>
 						<div className="relative">
-							<Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 							<Input
 								id="confirmPassword"
 								type={showPassword ? "text" : "password"}
-								placeholder="Re-enter your password"
+								placeholder={t("reenterPassword")}
 								autoComplete="new-password"
 								value={confirmPassword}
 								onChange={(e) => setConfirmPassword(e.target.value)}
@@ -246,7 +248,7 @@ export function SignUpForm() {
 							/>
 						</div>
 						{confirmPassword && password !== confirmPassword && (
-							<p className="text-sm text-destructive">Passwords do not match</p>
+							<p className="text-destructive text-sm">{t("passwordsDoNotMatch")}</p>
 						)}
 					</div>
 
@@ -254,7 +256,7 @@ export function SignUpForm() {
 						{isSubmitting ? "Creating account…" : "Create Account"}
 					</Button>
 
-					<p className="text-center text-xs text-muted-foreground">
+					<p className="text-muted-foreground text-center text-xs">
 						By creating an account, you agree to our{" "}
 						<Link href="#" className="underline hover:no-underline">
 							Terms of Service

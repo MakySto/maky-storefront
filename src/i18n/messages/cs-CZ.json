@@ -707,5 +707,38 @@
 	"cms": {
 		"unavailableTitle": "Stránka je dočasně nedostupná",
 		"unavailableBody": "Obsah se nepodařilo načíst. Zkuste to prosím za chvíli."
+	},
+	"search": {
+		"resultsFor": "Výsledky pro „{query}“",
+		"noResultsFor": "Žádné výsledky pro „{query}“",
+		"noResultsHelp": "Nenašli jsme žádné produkty odpovídající vašemu hledání. Zkuste jiný výraz nebo si projděte naše kategorie.",
+		"browseAll": "Procházet všechny produkty"
+	},
+	"account": {
+		"welcomeBack": "Vítejte zpět",
+		"enterPassword": "Zadejte heslo",
+		"passwordUpdated": "Heslo bylo změněno",
+		"redirecting": "Přesměrováváme vás do obchodu…",
+		"setNewPassword": "Nastavit nové heslo",
+		"minEightChars": "Alespoň 8 znaků…",
+		"confirmPassword": "Potvrďte heslo",
+		"accountCreated": "Účet byl vytvořen",
+		"verifyEmail": "Zkontrolujte si e-mail a potvrďte svůj účet.",
+		"createAccount": "Vytvořit účet",
+		"firstName": "Jméno",
+		"lastName": "Příjmení",
+		"reenterPassword": "Zadejte heslo znovu",
+		"passwordsDoNotMatch": "Hesla se neshodují",
+		"overview": "Zde je přehled aktivity vašeho účtu.",
+		"recentOrders": "Nedávné objednávky",
+		"defaultAddress": "Výchozí adresa",
+		"addresses": "Adresy",
+		"manageAddresses": "Spravujte své uložené adresy",
+		"settings": "Nastavení",
+		"manageSettings": "Spravujte nastavení svého účtu",
+		"email": "E-mail",
+		"variantsUnavailable": "Možnosti produktu se nepodařilo načíst.",
+		"openMenu": "Otevřít menu",
+		"primaryNavigation": "Hlavní navigace"
 	}
 }

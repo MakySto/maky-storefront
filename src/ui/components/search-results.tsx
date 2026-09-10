@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import type { SearchProduct } from "@/lib/search";
 import { localeConfig } from "@/config/locale";
@@ -29,7 +30,7 @@ export function SearchResults({ products, channel }: SearchResultsProps) {
 	);
 }
 
-function SearchResultCard({
+async function SearchResultCard({
 	product,
 	channel,
 	priority,
@@ -38,6 +39,7 @@ function SearchResultCard({
 	channel: string;
 	priority?: boolean;
 }) {
+	const t = await getTranslations("product");
 	const formattedPrice = new Intl.NumberFormat(localeConfig.default, {
 		style: "currency",
 		currency: product.currency,
@@ -60,7 +62,9 @@ function SearchResultCard({
 						priority={priority}
 					/>
 				) : (
-					<div className="text-muted-foreground flex h-full items-center justify-center">No image</div>
+					<div className="text-muted-foreground flex h-full items-center justify-center">
+						{t("noImageAvailable")}
+					</div>
 				)}
 			</div>
 

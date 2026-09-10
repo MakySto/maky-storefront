@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { searchProducts } from "@/lib/search";
@@ -49,6 +50,8 @@ async function SearchContent({
 	params: Promise<{ channel: string }>;
 }) {
 	const [searchParams, params] = await Promise.all([searchParamsPromise, paramsPromise]);
+	const t = await getTranslations("search");
+	const tPlp = await getTranslations("plp");
 
 	// Extract and validate query
 	const queryParam = searchParams.query;
@@ -106,10 +109,13 @@ async function SearchContent({
 			{/* Header with count and sort */}
 			<div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<h1 className="text-2xl font-semibold">Results for &quot;{query}&quot;</h1>
+					<h1 className="text-2xl font-semibold">{t("resultsFor", { query })}</h1>
 					<p className="text-muted-foreground mt-1 text-sm">
 						{pagination.totalCountIsEstimate ? "≥ " : ""}
-						{pagination.totalCount} {pagination.totalCount === 1 ? "product" : "products"} found
+						{/* `plp.productCount` already carries each locale's plural rules — Slovak,
+						    Czech, Polish and Romanian all need a `few` form that an English
+						    `count === 1 ? "product" : "products"` cannot express. */}
+						{tPlp("productCount", { count: pagination.totalCount })}
 					</p>
 				</div>
 				<SearchSort />
@@ -162,29 +168,28 @@ function SearchSkeleton() {
 	);
 }
 
-function EmptyState({ query, channel }: { query: string; channel: string }) {
+async function EmptyState({ query, channel }: { query: string; channel: string }) {
+	const t = await getTranslations("search");
+	const tPages = await getTranslations("pages");
 	return (
 		<div className="flex flex-col items-center justify-center py-16 text-center">
 			<div className="bg-muted mb-6 flex h-16 w-16 items-center justify-center rounded-full">
 				<SearchIcon className="text-muted-foreground h-8 w-8" />
 			</div>
-			<h1 className="text-2xl font-semibold">No results for &quot;{query}&quot;</h1>
-			<p className="text-muted-foreground mt-2 max-w-md">
-				We couldn&apos;t find any products matching your search. Try a different term or browse our
-				categories.
-			</p>
+			<h1 className="text-2xl font-semibold">{t("noResultsFor", { query })}</h1>
+			<p className="text-muted-foreground mt-2 max-w-md">{t("noResultsHelp")}</p>
 			<div className="mt-8 flex flex-col gap-3 sm:flex-row">
 				<Link
 					href={marketHref(channel, "/products")}
 					className="hover:bg-primary/90 bg-primary text-primary-foreground inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-medium transition-colors"
 				>
-					Browse All Products
+					{t("browseAll")}
 				</Link>
 				<Link
 					href={marketHref(channel)}
 					className="border-border bg-background text-foreground hover:bg-muted inline-flex items-center justify-center rounded-lg border px-6 py-3 text-sm font-medium transition-colors"
 				>
-					Go to Homepage
+					{tPages("backToHome")}
 				</Link>
 			</div>
 		</div>

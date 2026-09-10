@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Mail, Calendar } from "lucide-react";
 import { EditNameForm } from "@/ui/components/account/edit-name-form";
 import { ChangePasswordForm } from "@/ui/components/account/change-password-form";
@@ -5,6 +6,7 @@ import { DeleteAccountSection } from "@/ui/components/account/delete-account-sec
 import { getCurrentUser } from "../get-current-user";
 
 export default async function AccountSettingsPage() {
+	const t = await getTranslations("account");
 	const user = await getCurrentUser();
 	if (!user) return null;
 
@@ -16,17 +18,17 @@ export default async function AccountSettingsPage() {
 	return (
 		<div className="space-y-8">
 			<div>
-				<h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-				<p className="mt-1 text-sm text-muted-foreground">Manage your account settings</p>
+				<h1 className="text-2xl font-semibold tracking-tight">{t("settings")}</h1>
+				<p className="text-muted-foreground mt-1 text-sm">{t("manageSettings")}</p>
 			</div>
 
 			<div className="divide-y rounded-lg border">
 				<div className="p-4 sm:p-6">
 					<div className="flex items-center justify-between">
 						<div>
-							<p className="text-sm text-muted-foreground">Email</p>
+							<p className="text-muted-foreground text-sm">{t("email")}</p>
 							<div className="flex items-center gap-2">
-								<Mail className="h-4 w-4 text-muted-foreground" />
+								<Mail className="text-muted-foreground h-4 w-4" />
 								<p className="font-medium">{user.email}</p>
 							</div>
 						</div>
@@ -42,7 +44,7 @@ export default async function AccountSettingsPage() {
 				</div>
 
 				<div className="p-4 sm:p-6">
-					<div className="flex items-center gap-2 text-sm text-muted-foreground">
+					<div className="text-muted-foreground flex items-center gap-2 text-sm">
 						<Calendar className="h-4 w-4" />
 						<span>Member since {memberSince}</span>
 					</div>
