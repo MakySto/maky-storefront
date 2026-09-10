@@ -2,7 +2,7 @@ import "server-only";
 import { REVERSE_MAP } from "@/lib/channel-map";
 import { fetchCmsPage } from "@/lib/cms/client";
 import { marketForChannel, payloadLocaleForChannel } from "@/lib/cms/markets";
-import { marketHasRoute, routePolicyFor } from "@/lib/route-policy";
+import { isMarketRootSegment, marketHasRoute, routePolicyFor } from "@/lib/route-policy";
 
 /**
  * Whether a CMS-backed route should be advertised in navigation right now.
@@ -49,4 +49,37 @@ export async function cmsRouteAvailable(channel: string, slug: string): Promise<
 /** Whether `segment` is a CMS-backed route, and so needs the check above. */
 export function isCmsRoute(segment: string): boolean {
 	return routePolicyFor(segment)?.kind === "cms";
+}
+
+/**
+ * Filter a set of navigation links to the ones this market may actually show.
+ *
+ * One rule for the header and the footer, because they had two and they disagreed.
+ * Task A taught the footer to hide a legal route a market does not have; the header
+ * kept linking `/poradna` in all twelve markets while eleven of them answer 404 — a
+ * dead link in the primary navigation of every page, on every market but Slovakia.
+ *
+ * A link is dropped only when this module is entitled to an opinion:
+ *
+ *   not a market-root segment  the category links (`/stresne-nosice`) are root
+ *                              product-catalogue URLs, not entries in `route-policy`.
+ *                              They are kept untouched — asking `marketHasRoute` about
+ *                              them would answer "no" for every one and empty the menu.
+ *   a static route             `marketHasRoute` decides.
+ *   a CMS route                `marketHasRoute` first, then whether a document is
+ *                              actually published — see `cmsRouteAvailable`.
+ */
+export async function visibleNavLinks<T extends { readonly href: string }>(
+	channel: string,
+	links: readonly T[],
+): Promise<T[]> {
+	const decisions = await Promise.all(
+		links.map(async (link) => {
+			const segment = link.href.replace(/^\//, "").split("/")[0] ?? "";
+			if (!isMarketRootSegment(segment)) return true;
+			if (!marketHasRoute(REVERSE_MAP[channel] ?? "", segment)) return false;
+			return isCmsRoute(segment) ? cmsRouteAvailable(channel, segment) : true;
+		}),
+	);
+	return links.filter((_, index) => decisions[index]);
 }

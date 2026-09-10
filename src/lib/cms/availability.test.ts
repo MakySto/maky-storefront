@@ -85,3 +85,75 @@ describe("isCmsRoute", () => {
 		expect(isCmsRoute("not-a-route")).toBe(false);
 	});
 });
+
+/**
+ * The shared navigation rule.
+ *
+ * The header and footer each had their own idea of which links a market may show, and
+ * they disagreed: task A taught the footer to drop a route a market does not have,
+ * while the header went on linking `/poradna` in all twelve markets, eleven of which
+ * answer 404 — a dead link in the primary navigation of every page.
+ *
+ * The trap in fixing it is the category links. `/stresne-nosice` is a root catalogue
+ * URL, not an entry in `route-policy`, so asking `marketHasRoute` about it answers
+ * "no" — and a naive filter empties the entire menu.
+ */
+describe("visibleNavLinks", () => {
+	const NAV = [
+		{ key: "roofRacks", href: "/stresne-nosice" },
+		{ key: "bikeCarriers", href: "/nosice-bicyklov" },
+		{ key: "advice", href: "/poradna" },
+	] as const;
+
+	it("keeps the category links, which are not route-policy segments", async () => {
+		marketHasRoute.mockReturnValue(false);
+		const { visibleNavLinks } = await subject();
+		const kept = (await visibleNavLinks("de-eur", NAV)).map((l) => l.href);
+		expect(kept).toContain("/stresne-nosice");
+		expect(kept).toContain("/nosice-bicyklov");
+		expect(fetchCmsPage, "a category link must never trigger a CMS read").not.toHaveBeenCalled();
+	});
+
+	it("drops a CMS route the market does not have", async () => {
+		marketHasRoute.mockImplementation((_m: string, segment: string) => segment !== "poradna");
+		const { visibleNavLinks } = await subject();
+		expect((await visibleNavLinks("de-eur", NAV)).map((l) => l.href)).not.toContain("/poradna");
+	});
+
+	it("keeps a CMS route the market has and the CMS has published", async () => {
+		marketHasRoute.mockReturnValue(true);
+		fetchCmsPage.mockResolvedValue({ status: "found", page: {} });
+		const { visibleNavLinks } = await subject();
+		expect((await visibleNavLinks("sk-eur", NAV)).map((l) => l.href)).toContain("/poradna");
+	});
+
+	it("drops a CMS route whose document has been unpublished", async () => {
+		marketHasRoute.mockReturnValue(true);
+		fetchCmsPage.mockResolvedValue({ status: "not-found" });
+		const { visibleNavLinks } = await subject();
+		expect((await visibleNavLinks("sk-eur", NAV)).map((l) => l.href)).not.toContain("/poradna");
+	});
+
+	// The gate matters most for STATIC routes. For a CMS route `cmsRouteAvailable`
+	// checks the market again itself, so dropping the gate here changes nothing —
+	// which is exactly why a falsification run that only exercised `/poradna` stayed
+	// green while the gate was removed. This is the case that actually holds it.
+	it("drops a static route the market does not have", async () => {
+		marketHasRoute.mockReturnValue(false);
+		const { visibleNavLinks } = await subject();
+		const kept = await visibleNavLinks("de-eur", [
+			{ key: "aboutUs", href: "/o-nas" },
+			{ key: "contact", href: "/kontakt" },
+		]);
+		expect(kept).toHaveLength(0);
+		expect(fetchCmsPage, "the market gate must short-circuit before the CMS").not.toHaveBeenCalled();
+	});
+
+	it("keeps a static route the market has, without asking the CMS", async () => {
+		marketHasRoute.mockReturnValue(true);
+		const { visibleNavLinks } = await subject();
+		const kept = await visibleNavLinks("de-eur", [{ key: "contact", href: "/kontakt" }]);
+		expect(kept).toHaveLength(1);
+		expect(fetchCmsPage).not.toHaveBeenCalled();
+	});
+});

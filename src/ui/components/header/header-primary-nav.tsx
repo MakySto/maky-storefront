@@ -1,14 +1,19 @@
 import { getTranslations } from "next-intl/server";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { HEADER_PRIMARY_NAV } from "./header.config";
+import { visibleNavLinks } from "@/lib/cms/availability";
 
-export async function HeaderPrimaryNav({}: { channel: string }) {
+export async function HeaderPrimaryNav({ channel }: { channel: string }) {
 	const t = await getTranslations("nav");
 	const tAccount = await getTranslations("account");
+	// `channel` used to be destructured away, which is how `/poradna` came to be linked
+	// in twelve markets and to exist in one. The category links are untouched — they are
+	// root catalogue URLs, not routes this policy knows about.
+	const items = await visibleNavLinks(channel, HEADER_PRIMARY_NAV);
 
 	return (
 		<nav aria-label={tAccount("primaryNavigation")} className="hidden items-center gap-0.5 lg:flex">
-			{HEADER_PRIMARY_NAV.map((item) => (
+			{items.map((item) => (
 				<LinkWithChannel
 					key={item.key}
 					href={item.href}

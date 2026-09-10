@@ -5,7 +5,7 @@ import { CopyrightText } from "./copyright-text";
 import { Logo } from "./shared/logo";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { marketHasRoute } from "@/lib/route-policy";
-import { cmsRouteAvailable, isCmsRoute } from "@/lib/cms/availability";
+import { visibleNavLinks } from "@/lib/cms/availability";
 import { PrivacySettingsLink } from "./privacy-settings-link";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 
@@ -65,36 +65,15 @@ export function footerLegalLinks(channel: string) {
 	};
 }
 
-/**
- * Drop CMS-backed links whose document is not published for this market.
- *
- * `footerLegalLinks` answers the static half — does the application offer this route
- * here. A CMS route needs the other half too, because an editor unpublishing `/o-nas`
- * must not leave the footer advertising it. Only CMS routes are asked, and only after
- * the static gate has already said yes, so a market that does not offer the route costs
- * nothing. See `cms/availability.ts` for why an outage does NOT remove the link.
- */
-type FooterLink = { readonly key: string; readonly href: string };
-
-async function withCmsAvailability(channel: string, links: readonly FooterLink[]): Promise<FooterLink[]> {
-	const decisions = await Promise.all(
-		links.map(async (link) => {
-			const segment = segmentOf(link.href);
-			if (!isCmsRoute(segment)) return true;
-			return cmsRouteAvailable(channel, segment);
-		}),
-	);
-	return links.filter((_, index) => decisions[index]);
-}
-
 export async function Footer({ channel }: { channel: string }) {
 	const t = await getTranslations("footer");
 	const tc = await getTranslations("common");
 	const links = footerLegalLinks(channel);
 	const { showPrivacyPolicy, showTerms } = links;
+	// The same rule the header uses, so the two cannot drift apart again.
 	const [support, company] = await Promise.all([
-		withCmsAvailability(channel, links.support),
-		withCmsAvailability(channel, links.company),
+		visibleNavLinks(channel, links.support),
+		visibleNavLinks(channel, links.company),
 	]);
 
 	return (
