@@ -1,13 +1,26 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement, type ReactElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToReadableStream, renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 // `client.ts` and `env.ts` import "server-only", which throws outside a react-server
 // graph. Same stub as `to-typed-document.test.ts`.
 vi.mock("server-only", () => ({}));
+
+// `CompanyDetails` reads its four labels from the message catalogue, so rendering the
+// route now goes through `getTranslations`. There is no request context in a unit test,
+// so it is mocked — but mocked against the REAL sk-SK catalogue rather than a stub,
+// because these tests compare rendered markup and a placeholder would make the
+// comparison a comparison of placeholders.
+vi.mock("next-intl/server", () => ({
+	getTranslations: async (namespace: string) => {
+		const file = join(dirname(fileURLToPath(import.meta.url)), "../../i18n/messages/sk-SK.json");
+		const messages = JSON.parse(readFileSync(file, "utf8")) as Record<string, Record<string, string>>;
+		return (key: string) => messages[namespace]?.[key] ?? `${namespace}.${key}`;
+	},
+}));
 
 import { CmsBlocks } from "@/ui/components/cms/cms-blocks";
 import { isVisibleInMarket, marketForChannel, payloadLocaleForChannel } from "./markets";
@@ -341,9 +354,20 @@ describe("legalMetadata — the route serves the CMS document, not the bootstrap
 		};
 	}
 
+	/**
+	 * `renderToStaticMarkup` is the synchronous renderer and cannot render an async
+	 * component at all — it throws "a component suspended while responding to
+	 * synchronous input" no matter how fast the promise settles. `CompanyDetails` awaits
+	 * its labels, so the route is rendered through the streaming renderer instead. Both
+	 * sides of every comparison below go through this same function, so the equality and
+	 * inequality assertions are unaffected.
+	 */
 	async function renderRoute(): Promise<string> {
 		const { default: Page } = await routeModule();
-		return renderToStaticMarkup(await Page({ params: Promise.resolve({ channel: "sk-eur" }) }));
+		const element = await Page({ params: Promise.resolve({ channel: "sk-eur" }) });
+		const stream = await renderToReadableStream(element);
+		await stream.allReady;
+		return new Response(stream).text();
 	}
 
 	it("reaches the CMS and reports found, with no contract violation logged", async () => {

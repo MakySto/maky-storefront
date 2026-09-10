@@ -29,10 +29,17 @@ import { PoradnaBootstrap } from "@/ui/components/cms/poradna-bootstrap";
  */
 const route = cmsPageRoute({
 	slug: "poradna",
-	staticTitle: "Poradňa",
-	staticDescription:
-		"Poradňa MAKY.STORE — praktické rady k výberu strešných nosičov, boxov, nosičov bicyklov a ďalšieho auto-moto príslušenstva.",
-	Bootstrap: PoradnaBootstrap,
+	// SK only, and deliberately not widened alongside `o-nas`: the two share this
+	// factory, so opening one must not quietly open the other. `route-policy.ts` is
+	// where that decision is recorded, and it still lists `poradna` as `sk`.
+	copy: {
+		SK: {
+			staticTitle: "Poradňa",
+			staticDescription:
+				"Poradňa MAKY.STORE — praktické rady k výberu strešných nosičov, boxov, nosičov bicyklov a ďalšieho auto-moto príslušenstva.",
+			Bootstrap: PoradnaBootstrap,
+		},
+	},
 	Shell: LegalPage,
 });
 

@@ -697,5 +697,15 @@
 		"errorLookupFailed": "Nous ne pouvons pas confirmer si l'ensemble a bien été ajouté. Merci de vérifier votre panier.",
 		"errorCatalogueUnavailable": "Impossible de vérifier la disponibilité de l'ensemble pour le moment. Merci de réessayer.",
 		"errorGeneric": "L'ensemble n'a pas pu être ajouté au panier."
+	},
+	"company": {
+		"operatedBy": "Vendeur :",
+		"companyId": "Numéro d’identification de l’entreprise (IČO) :",
+		"email": "E-mail :",
+		"phone": "Téléphone :"
+	},
+	"cms": {
+		"unavailableTitle": "Page temporairement indisponible",
+		"unavailableBody": "Le contenu n’a pas pu être chargé. Veuillez réessayer dans un instant."
 	}
 }

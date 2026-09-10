@@ -697,5 +697,15 @@
 		"errorLookupFailed": "Nevieme potvrdiť, či sa zostava pridala. Skontrolujte prosím košík.",
 		"errorCatalogueUnavailable": "Dostupnosť zostavy sa teraz nepodarilo overiť. Skúste to prosím znova.",
 		"errorGeneric": "Zostavu sa nepodarilo pridať do košíka."
+	},
+	"company": {
+		"operatedBy": "Internetový obchod prevádzkuje:",
+		"companyId": "IČO:",
+		"email": "E-mail:",
+		"phone": "Telefón:"
+	},
+	"cms": {
+		"unavailableTitle": "Stránka je dočasne nedostupná",
+		"unavailableBody": "Obsah sa nepodarilo načítať. Skúste to prosím o chvíľu."
 	}
 }

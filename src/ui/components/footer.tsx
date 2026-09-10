@@ -5,15 +5,19 @@ import { CopyrightText } from "./copyright-text";
 import { Logo } from "./shared/logo";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { marketHasRoute } from "@/lib/route-policy";
+import { cmsRouteAvailable, isCmsRoute } from "@/lib/cms/availability";
 import { PrivacySettingsLink } from "./privacy-settings-link";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 
 // Which of these a market actually has is `route-policy.ts`'s answer, not a second
 // list kept in step by hand: `marketHasRoute` is the same question the proxy asks
 // before it 404s, so a link can never point at a route the proxy would refuse.
-// Every market with approved legal copy gets the seven static pages; `/o-nas` is a
-// CMS page and follows the CMS, which is why it drops out on its own until Payload
-// holds a translated document.
+// Every market with approved legal copy gets the seven static pages. `/o-nas` is a
+// CMS page and needs BOTH halves: `marketHasRoute` says the application offers the
+// route, and `cmsRouteAvailable` says an editor has actually published a document for
+// this market right now. This comment used to claim the link "follows the CMS" while
+// the code read only the static table, so an unpublish changed the page and left the
+// navigation advertising it.
 //
 // This is deliberately NOT driven by `MAKY_LIVE_MARKETS` or the indexing flag.
 // Whether a market sells yet, and whether Google may index it, say nothing about
@@ -61,10 +65,37 @@ export function footerLegalLinks(channel: string) {
 	};
 }
 
+/**
+ * Drop CMS-backed links whose document is not published for this market.
+ *
+ * `footerLegalLinks` answers the static half — does the application offer this route
+ * here. A CMS route needs the other half too, because an editor unpublishing `/o-nas`
+ * must not leave the footer advertising it. Only CMS routes are asked, and only after
+ * the static gate has already said yes, so a market that does not offer the route costs
+ * nothing. See `cms/availability.ts` for why an outage does NOT remove the link.
+ */
+type FooterLink = { readonly key: string; readonly href: string };
+
+async function withCmsAvailability(channel: string, links: readonly FooterLink[]): Promise<FooterLink[]> {
+	const decisions = await Promise.all(
+		links.map(async (link) => {
+			const segment = segmentOf(link.href);
+			if (!isCmsRoute(segment)) return true;
+			return cmsRouteAvailable(channel, segment);
+		}),
+	);
+	return links.filter((_, index) => decisions[index]);
+}
+
 export async function Footer({ channel }: { channel: string }) {
 	const t = await getTranslations("footer");
 	const tc = await getTranslations("common");
-	const { support, company, showPrivacyPolicy, showTerms } = footerLegalLinks(channel);
+	const links = footerLegalLinks(channel);
+	const { showPrivacyPolicy, showTerms } = links;
+	const [support, company] = await Promise.all([
+		withCmsAvailability(channel, links.support),
+		withCmsAvailability(channel, links.company),
+	]);
 
 	return (
 		<footer className="bg-gray-900 text-gray-300 print:hidden">

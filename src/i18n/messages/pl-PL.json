@@ -697,5 +697,15 @@
 		"errorLookupFailed": "Nie możemy potwierdzić, czy zestaw został dodany. Sprawdź, proszę, koszyk.",
 		"errorCatalogueUnavailable": "Nie udało się teraz sprawdzić dostępności zestawu. Spróbuj ponownie.",
 		"errorGeneric": "Nie udało się dodać zestawu do koszyka."
+	},
+	"company": {
+		"operatedBy": "Sprzedawca:",
+		"companyId": "Numer identyfikacyjny przedsiębiorstwa (IČO):",
+		"email": "E-mail:",
+		"phone": "Telefon:"
+	},
+	"cms": {
+		"unavailableTitle": "Strona jest chwilowo niedostępna",
+		"unavailableBody": "Nie udało się wczytać treści. Spróbuj ponownie za chwilę."
 	}
 }

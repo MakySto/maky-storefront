@@ -697,5 +697,15 @@
 		"errorLookupFailed": "We can't confirm whether the set was added. Please check your cart.",
 		"errorCatalogueUnavailable": "We couldn't check this set's availability just now. Please try again.",
 		"errorGeneric": "We couldn't add the set to your cart."
+	},
+	"company": {
+		"operatedBy": "Seller:",
+		"companyId": "Slovak company identification number (IČO):",
+		"email": "Email:",
+		"phone": "Phone:"
+	},
+	"cms": {
+		"unavailableTitle": "Page temporarily unavailable",
+		"unavailableBody": "The content could not be loaded. Please try again shortly."
 	}
 }

@@ -697,5 +697,15 @@
 		"errorLookupFailed": "Wir können nicht bestätigen, ob das Set hinzugefügt wurde. Bitte prüfen Sie Ihren Warenkorb.",
 		"errorCatalogueUnavailable": "Die Verfügbarkeit des Sets konnte gerade nicht geprüft werden. Bitte versuchen Sie es noch einmal.",
 		"errorGeneric": "Das Set konnte nicht in den Warenkorb gelegt werden."
+	},
+	"company": {
+		"operatedBy": "Anbieter:",
+		"companyId": "Unternehmensidentifikationsnummer (IČO):",
+		"email": "E-Mail:",
+		"phone": "Telefon:"
+	},
+	"cms": {
+		"unavailableTitle": "Seite vorübergehend nicht verfügbar",
+		"unavailableBody": "Der Inhalt konnte nicht geladen werden. Bitte versuchen Sie es in Kürze erneut."
 	}
 }

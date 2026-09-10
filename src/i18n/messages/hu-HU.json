@@ -697,5 +697,15 @@
 		"errorLookupFailed": "Nem tudjuk megerősíteni, hogy a szett bekerült-e a kosárba. Kérjük, ellenőrizze a kosarat.",
 		"errorCatalogueUnavailable": "A szett elérhetőségét most nem sikerült ellenőrizni. Kérjük, próbálja újra.",
 		"errorGeneric": "A szettet nem sikerült kosárba helyezni."
+	},
+	"company": {
+		"operatedBy": "Az eladó:",
+		"companyId": "Cégazonosító szám (IČO):",
+		"email": "E-mail:",
+		"phone": "Telefon:"
+	},
+	"cms": {
+		"unavailableTitle": "Az oldal átmenetileg nem érhető el",
+		"unavailableBody": "A tartalmat nem sikerült betölteni. Kérjük, próbálja meg később."
 	}
 }

@@ -697,5 +697,15 @@
 		"errorLookupFailed": "No podemos confirmar si el conjunto se ha añadido. Compruebe la cesta, por favor.",
 		"errorCatalogueUnavailable": "No hemos podido comprobar la disponibilidad del conjunto en este momento. Inténtelo de nuevo, por favor.",
 		"errorGeneric": "No se ha podido añadir el conjunto a la cesta."
+	},
+	"company": {
+		"operatedBy": "Vendedor:",
+		"companyId": "Número de identificación de la empresa (IČO):",
+		"email": "E-mail:",
+		"phone": "Teléfono:"
+	},
+	"cms": {
+		"unavailableTitle": "Página temporalmente no disponible",
+		"unavailableBody": "No se ha podido cargar el contenido. Inténtalo de nuevo en unos momentos."
 	}
 }

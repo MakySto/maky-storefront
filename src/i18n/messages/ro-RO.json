@@ -697,5 +697,15 @@
 		"errorLookupFailed": "Nu putem confirma dacă setul a fost adăugat. Vă rugăm să verificați coșul.",
 		"errorCatalogueUnavailable": "Nu am putut verifica disponibilitatea setului în acest moment. Vă rugăm să încercați din nou.",
 		"errorGeneric": "Setul nu a putut fi adăugat în coș."
+	},
+	"company": {
+		"operatedBy": "Vânzătorul:",
+		"companyId": "Număr de identificare a societății (IČO):",
+		"email": "E-mail:",
+		"phone": "Telefon:"
+	},
+	"cms": {
+		"unavailableTitle": "Pagină temporar indisponibilă",
+		"unavailableBody": "Conținutul nu a putut fi încărcat. Încercați din nou în câteva momente."
 	}
 }

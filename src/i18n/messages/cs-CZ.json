@@ -697,5 +697,15 @@
 		"errorLookupFailed": "Nedokážeme potvrdit, jestli se sestava přidala. Zkontrolujte prosím košík.",
 		"errorCatalogueUnavailable": "Dostupnost sestavy se teď nepodařilo ověřit. Zkuste to prosím znovu.",
 		"errorGeneric": "Sestavu se nepodařilo přidat do košíku."
+	},
+	"company": {
+		"operatedBy": "Provozovatel:",
+		"companyId": "IČO:",
+		"email": "E-mail:",
+		"phone": "Telefon:"
+	},
+	"cms": {
+		"unavailableTitle": "Stránka je dočasně nedostupná",
+		"unavailableBody": "Obsah se nepodařilo načíst. Zkuste to prosím za chvíli."
 	}
 }

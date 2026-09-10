@@ -25,10 +25,19 @@ import { ONasStaticContent } from "@/ui/components/legal/o-nas-static";
  */
 const route = cmsPageRoute({
 	slug: "o-nas",
-	staticTitle: "O nás",
-	staticDescription:
-		"MAKY.STORE je slovenský obchod s výbavou pre auto a cesty. Strešné nosiče, boxy, nosiče bicyklov aj pomoc s výberom správneho príslušenstva.",
-	Bootstrap: ONasStaticContent,
+	// Per market, so that opening a second market cannot serve Slovak copy under a
+	// foreign URL. SK is the only market with an in-code bootstrap, because it is the
+	// only one whose fallback prose was written and approved; a market that gains a
+	// Payload document but no bootstrap shows the localised unavailable state on an
+	// upstream fault, which is the honest answer rather than someone else's language.
+	copy: {
+		SK: {
+			staticTitle: "O nás",
+			staticDescription:
+				"MAKY.STORE je slovenský obchod s výbavou pre auto a cesty. Strešné nosiče, boxy, nosiče bicyklov aj pomoc s výberom správneho príslušenstva.",
+			Bootstrap: ONasStaticContent,
+		},
+	},
 	Shell: LegalPage,
 	Footer: CompanyDetails as () => ReactNode,
 });
