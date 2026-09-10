@@ -4,11 +4,22 @@ import { LinkWithChannel } from "../atoms/link-with-channel";
 import { CopyrightText } from "./copyright-text";
 import { Logo } from "./shared/logo";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
+import { marketHasRoute } from "@/lib/route-policy";
 import { PrivacySettingsLink } from "./privacy-settings-link";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 
-// Legal/content pages are SK-only and SK-channel-gated, so these links render
-// only on the SK market (otherwise they would 404 on /de, /pl, … — CLAUDE.md §6).
+// Which of these a market actually has is `route-policy.ts`'s answer, not a second
+// list kept in step by hand: `marketHasRoute` is the same question the proxy asks
+// before it 404s, so a link can never point at a route the proxy would refuse.
+// Every market with approved legal copy gets the seven static pages; `/o-nas` is a
+// CMS page and follows the CMS, which is why it drops out on its own until Payload
+// holds a translated document.
+//
+// This is deliberately NOT driven by `MAKY_LIVE_MARKETS` or the indexing flag.
+// Whether a market sells yet, and whether Google may index it, say nothing about
+// whether the visitor may reach the mandatory information — `/kontakt` and
+// `/obchodne-podmienky` must be reachable from every page (zákon 22/2004,
+// Directive 2000/31/EC Art. 5, and CLAUDE.md §9).
 const LEGAL_SUPPORT = [
 	{ key: "contact", href: "/kontakt" },
 	{ key: "shippingAndPayment", href: "/doprava-a-platba" },
@@ -25,10 +36,35 @@ const LEGAL_COMPANY = [
 
 const linkClass = "text-sm text-gray-400 transition-colors hover:text-gray-200";
 
+/** `/kontakt` → `kontakt`, the shape `route-policy` keys on. */
+const segmentOf = (href: string) => href.slice(1);
+
+/**
+ * Which legal links this market may show, given only the route policy.
+ *
+ * Exported and pure so it can be asserted per market: the component itself is an
+ * async server component and this repo's tests run in `node` with no DOM, so the
+ * decision has to be reachable without rendering. `footer.test.ts` is what stops
+ * this quietly going back to hiding every legal link outside `sk`.
+ */
+export function footerLegalLinks(channel: string) {
+	// An unrecognised channel yields "", which no policy lists — so it renders no
+	// legal link rather than one that would 404.
+	const market = REVERSE_MAP[channel] ?? "";
+	const has = (href: string) => marketHasRoute(market, segmentOf(href));
+
+	return {
+		support: LEGAL_SUPPORT.filter((link) => has(link.href)),
+		company: LEGAL_COMPANY.filter((link) => has(link.href)),
+		showPrivacyPolicy: has("/ochrana-osobnych-udajov"),
+		showTerms: has("/obchodne-podmienky"),
+	};
+}
+
 export async function Footer({ channel }: { channel: string }) {
 	const t = await getTranslations("footer");
 	const tc = await getTranslations("common");
-	const isSk = REVERSE_MAP[channel] === "sk";
+	const { support, company, showPrivacyPolicy, showTerms } = footerLegalLinks(channel);
 
 	return (
 		<footer className="bg-gray-900 text-gray-300">
@@ -47,34 +83,34 @@ export async function Footer({ channel }: { channel: string }) {
 						</a>
 					</div>
 
-					{isSk && (
-						<>
-							<div>
-								<h2 className="mb-4 text-sm font-medium text-gray-200">{t("support")}</h2>
-								<ul className="space-y-3">
-									{LEGAL_SUPPORT.map((link) => (
-										<li key={link.href}>
-											<LinkWithChannel href={link.href} prefetch={false} className={linkClass}>
-												{t(link.key)}
-											</LinkWithChannel>
-										</li>
-									))}
-								</ul>
-							</div>
+					{support.length > 0 && (
+						<div>
+							<h2 className="mb-4 text-sm font-medium text-gray-200">{t("support")}</h2>
+							<ul className="space-y-3">
+								{support.map((link) => (
+									<li key={link.href}>
+										<LinkWithChannel href={link.href} prefetch={false} className={linkClass}>
+											{t(link.key)}
+										</LinkWithChannel>
+									</li>
+								))}
+							</ul>
+						</div>
+					)}
 
-							<div>
-								<h2 className="mb-4 text-sm font-medium text-gray-200">{t("company")}</h2>
-								<ul className="space-y-3">
-									{LEGAL_COMPANY.map((link) => (
-										<li key={link.href}>
-											<LinkWithChannel href={link.href} prefetch={false} className={linkClass}>
-												{t(link.key)}
-											</LinkWithChannel>
-										</li>
-									))}
-								</ul>
-							</div>
-						</>
+					{company.length > 0 && (
+						<div>
+							<h2 className="mb-4 text-sm font-medium text-gray-200">{t("company")}</h2>
+							<ul className="space-y-3">
+								{company.map((link) => (
+									<li key={link.href}>
+										<LinkWithChannel href={link.href} prefetch={false} className={linkClass}>
+											{t(link.key)}
+										</LinkWithChannel>
+									</li>
+								))}
+							</ul>
+						</div>
 					)}
 				</div>
 
@@ -92,23 +128,23 @@ export async function Footer({ channel }: { channel: string }) {
 							<CopyrightText />
 						</p>
 						<div className="flex items-center gap-6">
-							{isSk && (
-								<>
-									<LinkWithChannel
-										href="/ochrana-osobnych-udajov"
-										prefetch={false}
-										className="text-xs text-gray-400 transition-colors hover:text-gray-300"
-									>
-										{t("privacyPolicy")}
-									</LinkWithChannel>
-									<LinkWithChannel
-										href="/obchodne-podmienky"
-										prefetch={false}
-										className="text-xs text-gray-400 transition-colors hover:text-gray-300"
-									>
-										{t("termsOfService")}
-									</LinkWithChannel>
-								</>
+							{showPrivacyPolicy && (
+								<LinkWithChannel
+									href="/ochrana-osobnych-udajov"
+									prefetch={false}
+									className="text-xs text-gray-400 transition-colors hover:text-gray-300"
+								>
+									{t("privacyPolicy")}
+								</LinkWithChannel>
+							)}
+							{showTerms && (
+								<LinkWithChannel
+									href="/obchodne-podmienky"
+									prefetch={false}
+									className="text-xs text-gray-400 transition-colors hover:text-gray-300"
+								>
+									{t("termsOfService")}
+								</LinkWithChannel>
 							)}
 							<PrivacySettingsLink label={t("privacySettings")} />
 						</div>
