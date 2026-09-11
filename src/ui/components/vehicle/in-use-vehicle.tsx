@@ -68,7 +68,13 @@ export function InUseVehicle({
 		<div className="border-action-primary bg-surface-muted rounded-lg border p-4">
 			<div className="flex flex-wrap items-center gap-x-4 gap-y-3">
 				<Car className="text-text-tertiary h-5 w-5 shrink-0" aria-hidden="true" />
-				<div className="min-w-0 flex-1">
+				{/*
+				 * `min-w-0` let this column shrink to nothing, so at 360 px the wide save
+				 * button kept its place on the row and "Volkswagen Golf VIII (CD)" broke
+				 * mid-word — "Volkswage / n Golf VIII". A floor makes `flex-wrap` do its
+				 * job and move the button to its own line instead of squeezing the name.
+				 */}
+				<div className="min-w-[11rem] flex-1">
 					<p className="text-text-tertiary text-xs font-medium tracking-wide uppercase">{t("inUse")}</p>
 					{/* Same reason as `vehicle-summary`: the roof state must stay readable at 360 px. */}
 					<p className="text-text-primary text-sm font-semibold break-words">{label ?? t("unresolved")}</p>

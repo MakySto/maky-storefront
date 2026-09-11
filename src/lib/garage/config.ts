@@ -3,8 +3,12 @@ import "server-only";
 /**
  * How the garage decides whether it may store anything.
  *
- * `MAKY_GARAGE_COOKIE_SECRET` is not set in production today. That is a deploy step, not
- * a bug to be coded around, and the shape of the fallback matters more than it looks:
+ * `MAKY_GARAGE_COOKIE_SECRET` IS set in production as of 2026-09-11 — the sentence here
+ * used to say it was not, which was true when it was written and has been stale since the
+ * secret was deployed. Checked without reading the value: the key is present in
+ * `/opt/storefront/.env`, and the live `/sk/garage` renders the ordinary enabled state
+ * ("Uložené 0 z 3"), not the unconfigured one. Setting it remains a deploy step, not a bug
+ * to be coded around, and the shape of the fallback matters more than it looks:
  *
  *   - Silently writing UNSIGNED cookies in production would mean the one environment
  *     nobody tests by hand is the one running the untested code path. Refused.
@@ -12,6 +16,13 @@ import "server-only";
  *     failure mode the withdrawal form already hit once: a feature that is "done" for
  *     months and reaches nobody. So `disabled` is REPORTED, not just returned, and every
  *     garage surface renders a visible unconfigured state instead of an empty one.
+ *
+ * KNOWN GAP (walkthrough, 2026-09-11): the CONFIGURATOR does not honour that last promise.
+ * With the secret absent, `next start` reports NODE_ENV=production, so the garage is
+ * disabled — and "Potvrdiť vozidlo" then does nothing at all: no cookie, no error, the
+ * sheet stays open and the page keeps saying "Najprv vyberte vozidlo". The server logs the
+ * warning once; the customer sees a dead button. Not reachable in production while the
+ * secret is set, but it is exactly the silent-failure shape this comment argues against.
  *
  * The dev fallback keys off NODE_ENV, which is a weak signal — the same weak signal that
  * caused trouble elsewhere in this codebase. It is acceptable here only because of what
