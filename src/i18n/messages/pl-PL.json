@@ -742,5 +742,52 @@
 		"variantsUnavailable": "Nie udało się wczytać opcji produktu.",
 		"openMenu": "Otwórz menu",
 		"primaryNavigation": "Nawigacja główna"
+	},
+	"contact": {
+		"heading": "Napisz do nas",
+		"intro": "Odpowiadamy w dni robocze. Jeśli pytasz o zamówienie, podaj jego numer.",
+		"name": "Imię i nazwisko",
+		"email": "E-mail",
+		"phone": "Telefon (opcjonalnie)",
+		"order": "Numer zamówienia (opcjonalnie)",
+		"message": "Twoja wiadomość",
+		"send": "Wyślij wiadomość",
+		"sending": "Wysyłanie…",
+		"received": "Otrzymaliśmy Twoją wiadomość.",
+		"reference": "Numer zgłoszenia: {number}",
+		"alreadyReceived": "Tę wiadomość już mieliśmy — nie wysłaliśmy jej drugi raz.",
+		"emailNote": "Potwierdzenie wysyłamy e-mailem. Jeśli nie dotrze, wiadomość i tak mamy — wystarczy podać numer zgłoszenia.",
+		"errorTitle": "Nie udało się wysłać wiadomości",
+		"unavailable": "Spróbuj ponownie za chwilę. Jeśli już wysyłałeś, wiadomość może być zapisana — nie zakładaj nowej, spróbuj ponownie.",
+		"conflict": "To zgłoszenie już istnieje z inną treścią. Rozpocznij nową wiadomość.",
+		"tooLarge": "Wiadomość jest za długa. Skróć ją.",
+		"notConfigured": "Formularz jest teraz niedostępny. Napisz do nas e-mailem.",
+		"blocked": "Zbyt wiele prób. Spróbuj ponownie za {seconds} s.",
+		"fixErrors": "Sprawdź zaznaczone pola.",
+		"err": {
+			"name:required": "Podaj imię i nazwisko.",
+			"name:tooLong": "Imię jest za długie.",
+			"email:required": "Podaj e-mail.",
+			"email:invalid": "Podaj prawidłowy e-mail.",
+			"email:tooLong": "E-mail jest za długi.",
+			"phone:tooLong": "Numer telefonu jest za długi.",
+			"topic:required": "Wybierz temat.",
+			"topic:invalid": "Wybierz temat.",
+			"order:tooLong": "Numer zamówienia jest za długi.",
+			"message:required": "Napisz wiadomość.",
+			"message:tooLong": "Wiadomość jest za długa."
+		},
+		"topics": {
+			"productAdvice": "Doradztwo produktowe",
+			"orderStatus": "Status zamówienia",
+			"shipping": "Dostawa",
+			"returns": "Zwroty i reklamacje",
+			"complaint": "Skarga",
+			"payment": "Płatność",
+			"account": "Konto",
+			"businessCooperation": "Współpraca handlowa",
+			"other": "Inne"
+		},
+		"topic": "Czego dotyczy wiadomość"
 	}
 }

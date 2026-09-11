@@ -742,5 +742,52 @@
 		"variantsUnavailable": "Unable to load product options.",
 		"openMenu": "Open menu",
 		"primaryNavigation": "Primary navigation"
+	},
+	"contact": {
+		"heading": "Write to us",
+		"intro": "We reply on business days. If your question is about an order, please include its number.",
+		"name": "Full name",
+		"email": "Email",
+		"phone": "Phone (optional)",
+		"order": "Order number (optional)",
+		"message": "Your message",
+		"send": "Send message",
+		"sending": "Sending…",
+		"received": "We have received your message.",
+		"reference": "Reference: {number}",
+		"alreadyReceived": "We already had this message — we did not send it twice.",
+		"emailNote": "We send a confirmation by email. If it does not arrive, we still have your message — just quote the reference.",
+		"errorTitle": "The message could not be sent",
+		"unavailable": "Please try again shortly. If you already sent it, the message may be saved — do not start a new one, just try again.",
+		"conflict": "This reference already exists with different content. Please start a new message.",
+		"tooLarge": "The message is too long. Please shorten it.",
+		"notConfigured": "The form is unavailable right now. Please email us instead.",
+		"blocked": "Too many attempts. Please try again in {seconds} s.",
+		"fixErrors": "Please check the highlighted fields.",
+		"err": {
+			"name:required": "Enter your full name.",
+			"name:tooLong": "The name is too long.",
+			"email:required": "Enter your email.",
+			"email:invalid": "Enter a valid email.",
+			"email:tooLong": "The email is too long.",
+			"phone:tooLong": "The phone number is too long.",
+			"topic:required": "Choose a subject.",
+			"topic:invalid": "Choose a subject.",
+			"order:tooLong": "The order number is too long.",
+			"message:required": "Write a message.",
+			"message:tooLong": "The message is too long."
+		},
+		"topics": {
+			"productAdvice": "Product advice",
+			"orderStatus": "Order status",
+			"shipping": "Shipping",
+			"returns": "Returns and complaints",
+			"complaint": "Complaint",
+			"payment": "Payment",
+			"account": "Account",
+			"businessCooperation": "Business cooperation",
+			"other": "Other"
+		},
+		"topic": "What is this about"
 	}
 }

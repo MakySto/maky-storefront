@@ -742,5 +742,52 @@
 		"variantsUnavailable": "Non è stato possibile caricare le opzioni del prodotto.",
 		"openMenu": "Apri il menu",
 		"primaryNavigation": "Navigazione principale"
+	},
+	"contact": {
+		"heading": "Scrivici",
+		"intro": "Rispondiamo nei giorni lavorativi. Per domande su un ordine, indica il numero.",
+		"name": "Nome e cognome",
+		"email": "E-mail",
+		"phone": "Telefono (facoltativo)",
+		"order": "Numero d’ordine (facoltativo)",
+		"message": "Il tuo messaggio",
+		"send": "Invia messaggio",
+		"sending": "Invio…",
+		"received": "Abbiamo ricevuto il tuo messaggio.",
+		"reference": "Numero pratica: {number}",
+		"alreadyReceived": "Avevamo già questo messaggio — non l’abbiamo inviato una seconda volta.",
+		"emailNote": "La conferma arriva via e-mail. Se non dovesse arrivare, il messaggio è comunque registrato — basta indicare il numero pratica.",
+		"errorTitle": "Non è stato possibile inviare il messaggio",
+		"unavailable": "Riprova tra poco. Se hai già inviato, il messaggio potrebbe essere salvato — non crearne uno nuovo, riprova.",
+		"conflict": "Questa pratica esiste già con un contenuto diverso. Inizia un nuovo messaggio.",
+		"tooLarge": "Il messaggio è troppo lungo. Accorcialo.",
+		"notConfigured": "Il modulo non è disponibile al momento. Scrivici per e-mail.",
+		"blocked": "Troppi tentativi. Riprova tra {seconds} s.",
+		"fixErrors": "Controlla i campi evidenziati.",
+		"err": {
+			"name:required": "Inserisci nome e cognome.",
+			"name:tooLong": "Il nome è troppo lungo.",
+			"email:required": "Inserisci l’e-mail.",
+			"email:invalid": "Inserisci un’e-mail valida.",
+			"email:tooLong": "L’e-mail è troppo lunga.",
+			"phone:tooLong": "Il telefono è troppo lungo.",
+			"topic:required": "Scegli un oggetto.",
+			"topic:invalid": "Scegli un oggetto.",
+			"order:tooLong": "Il numero d’ordine è troppo lungo.",
+			"message:required": "Scrivi un messaggio.",
+			"message:tooLong": "Il messaggio è troppo lungo."
+		},
+		"topics": {
+			"productAdvice": "Consulenza sul prodotto",
+			"orderStatus": "Stato dell’ordine",
+			"shipping": "Spedizione",
+			"returns": "Resi e reclami",
+			"complaint": "Reclamo",
+			"payment": "Pagamento",
+			"account": "Account",
+			"businessCooperation": "Collaborazione commerciale",
+			"other": "Altro"
+		},
+		"topic": "Oggetto del messaggio"
 	}
 }

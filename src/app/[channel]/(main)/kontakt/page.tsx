@@ -1,8 +1,12 @@
 import { legalRoute } from "@/lib/legal/legal-route";
+import { ContactSection } from "@/ui/components/contact/contact-section";
 import { Ca, Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk, Us } from "@/ui/content/legal/kontakt";
 
 const route = legalRoute({
 	path: "/kontakt",
+	// The form, where it is switched on. The approved contact copy above it is
+	// untouched and is served in every market whether the form is offered or not.
+	After: ContactSection,
 	copy: {
 		sk: {
 			title: "Kontakt",

@@ -742,5 +742,52 @@
 		"variantsUnavailable": "A termék beállításait nem sikerült betölteni.",
 		"openMenu": "Menü megnyitása",
 		"primaryNavigation": "Fő navigáció"
+	},
+	"contact": {
+		"heading": "Írjon nekünk",
+		"intro": "Munkanapokon válaszolunk. Rendeléssel kapcsolatos kérdésnél adja meg a rendelés számát.",
+		"name": "Név",
+		"email": "E-mail",
+		"phone": "Telefon (nem kötelező)",
+		"order": "Rendelésszám (nem kötelező)",
+		"message": "Az Ön üzenete",
+		"send": "Üzenet küldése",
+		"sending": "Küldés…",
+		"received": "Megkaptuk az üzenetét.",
+		"reference": "Ügyszám: {number}",
+		"alreadyReceived": "Ez az üzenet már megvolt — nem küldtük el másodszor.",
+		"emailNote": "A visszaigazolást e-mailben küldjük. Ha nem érkezik meg, az üzenet akkor is megvan — elég megadnia az ügyszámot.",
+		"errorTitle": "Az üzenetet nem sikerült elküldeni",
+		"unavailable": "Kérjük, próbálja meg később. Ha már küldött, az üzenet lehet, hogy mentve van — ne hozzon létre újat, próbálja újra.",
+		"conflict": "Ez az ügyszám már létezik más tartalommal. Kérjük, kezdjen új üzenetet.",
+		"tooLarge": "Az üzenet túl hosszú. Kérjük, rövidítse le.",
+		"notConfigured": "Az űrlap jelenleg nem érhető el. Kérjük, írjon nekünk e-mailben.",
+		"blocked": "Túl sok próbálkozás. Próbálja újra {seconds} másodperc múlva.",
+		"fixErrors": "Kérjük, ellenőrizze a megjelölt mezőket.",
+		"err": {
+			"name:required": "Adja meg a nevét.",
+			"name:tooLong": "A név túl hosszú.",
+			"email:required": "Adja meg az e-mail címét.",
+			"email:invalid": "Adjon meg érvényes e-mail címet.",
+			"email:tooLong": "Az e-mail cím túl hosszú.",
+			"phone:tooLong": "A telefonszám túl hosszú.",
+			"topic:required": "Válasszon témát.",
+			"topic:invalid": "Válasszon témát.",
+			"order:tooLong": "A rendelésszám túl hosszú.",
+			"message:required": "Írjon üzenetet.",
+			"message:tooLong": "Az üzenet túl hosszú."
+		},
+		"topics": {
+			"productAdvice": "Termék-tanácsadás",
+			"orderStatus": "Rendelés állapota",
+			"shipping": "Szállítás",
+			"returns": "Visszaküldés és reklamáció",
+			"complaint": "Panasz",
+			"payment": "Fizetés",
+			"account": "Fiók",
+			"businessCooperation": "Üzleti együttműködés",
+			"other": "Egyéb"
+		},
+		"topic": "Miről szól az üzenet"
 	}
 }

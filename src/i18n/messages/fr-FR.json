@@ -742,5 +742,52 @@
 		"variantsUnavailable": "Impossible de charger les options du produit.",
 		"openMenu": "Ouvrir le menu",
 		"primaryNavigation": "Navigation principale"
+	},
+	"contact": {
+		"heading": "Écrivez-nous",
+		"intro": "Nous répondons les jours ouvrés. Pour une question sur une commande, indiquez son numéro.",
+		"name": "Nom et prénom",
+		"email": "E-mail",
+		"phone": "Téléphone (facultatif)",
+		"order": "Numéro de commande (facultatif)",
+		"message": "Votre message",
+		"send": "Envoyer le message",
+		"sending": "Envoi…",
+		"received": "Nous avons bien reçu votre message.",
+		"reference": "Numéro de dossier : {number}",
+		"alreadyReceived": "Nous avions déjà ce message — il n’a pas été envoyé une seconde fois.",
+		"emailNote": "La confirmation arrive par e-mail. Si elle n’arrive pas, votre message est tout de même enregistré — indiquez simplement le numéro de dossier.",
+		"errorTitle": "L’envoi du message a échoué",
+		"unavailable": "Veuillez réessayer dans un instant. Si vous avez déjà envoyé, le message est peut-être enregistré — n’en créez pas un nouveau, réessayez.",
+		"conflict": "Ce dossier existe déjà avec un contenu différent. Veuillez commencer un nouveau message.",
+		"tooLarge": "Le message est trop long. Veuillez le raccourcir.",
+		"notConfigured": "Le formulaire est indisponible pour le moment. Écrivez-nous par e-mail.",
+		"blocked": "Trop de tentatives. Réessayez dans {seconds} s.",
+		"fixErrors": "Veuillez vérifier les champs signalés.",
+		"err": {
+			"name:required": "Indiquez vos nom et prénom.",
+			"name:tooLong": "Le nom est trop long.",
+			"email:required": "Indiquez votre e-mail.",
+			"email:invalid": "Indiquez un e-mail valide.",
+			"email:tooLong": "L’e-mail est trop long.",
+			"phone:tooLong": "Le téléphone est trop long.",
+			"topic:required": "Choisissez un objet.",
+			"topic:invalid": "Choisissez un objet.",
+			"order:tooLong": "Le numéro de commande est trop long.",
+			"message:required": "Écrivez un message.",
+			"message:tooLong": "Le message est trop long."
+		},
+		"topics": {
+			"productAdvice": "Conseil produit",
+			"orderStatus": "Suivi de commande",
+			"shipping": "Livraison",
+			"returns": "Retours et réclamations",
+			"complaint": "Réclamation",
+			"payment": "Paiement",
+			"account": "Compte",
+			"businessCooperation": "Partenariat commercial",
+			"other": "Autre"
+		},
+		"topic": "Objet du message"
 	}
 }

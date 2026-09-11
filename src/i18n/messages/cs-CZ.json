@@ -742,5 +742,52 @@
 		"variantsUnavailable": "Možnosti produktu se nepodařilo načíst.",
 		"openMenu": "Otevřít menu",
 		"primaryNavigation": "Hlavní navigace"
+	},
+	"contact": {
+		"heading": "Napište nám",
+		"intro": "Odpovídáme v pracovní dny. Ptáte-li se na objednávku, uveďte její číslo.",
+		"name": "Jméno a příjmení",
+		"email": "E-mail",
+		"phone": "Telefon (nepovinné)",
+		"order": "Číslo objednávky (nepovinné)",
+		"message": "Vaše zpráva",
+		"send": "Odeslat zprávu",
+		"sending": "Odesílám…",
+		"received": "Vaši zprávu jsme přijali.",
+		"reference": "Číslo podání: {number}",
+		"alreadyReceived": "Tuto zprávu jsme už měli — neodeslali jsme ji podruhé.",
+		"emailNote": "Potvrzení posíláme e-mailem. Pokud nedorazí, zprávu máme i tak — stačí uvést číslo podání.",
+		"errorTitle": "Zprávu se nepodařilo odeslat",
+		"unavailable": "Zkuste to prosím za chvíli. Pokud jste už odesílali, zpráva může být uložena — nezakládejte novou, zkuste to znovu.",
+		"conflict": "Toto podání už existuje s jiným obsahem. Začněte prosím novou zprávu.",
+		"tooLarge": "Zpráva je příliš dlouhá. Zkraťte ji prosím.",
+		"notConfigured": "Formulář teď není dostupný. Napište nám prosím e-mailem.",
+		"blocked": "Příliš mnoho pokusů. Zkuste to znovu za {seconds} s.",
+		"fixErrors": "Zkontrolujte prosím označená pole.",
+		"err": {
+			"name:required": "Zadejte jméno a příjmení.",
+			"name:tooLong": "Jméno je příliš dlouhé.",
+			"email:required": "Zadejte e-mail.",
+			"email:invalid": "Zadejte platný e-mail.",
+			"email:tooLong": "E-mail je příliš dlouhý.",
+			"phone:tooLong": "Telefon je příliš dlouhý.",
+			"topic:required": "Vyberte téma.",
+			"topic:invalid": "Vyberte téma.",
+			"order:tooLong": "Číslo objednávky je příliš dlouhé.",
+			"message:required": "Napište zprávu.",
+			"message:tooLong": "Zpráva je příliš dlouhá."
+		},
+		"topics": {
+			"productAdvice": "Poradenství k produktu",
+			"orderStatus": "Stav objednávky",
+			"shipping": "Doprava",
+			"returns": "Vrácení a reklamace",
+			"complaint": "Stížnost",
+			"payment": "Platba",
+			"account": "Účet",
+			"businessCooperation": "Obchodní spolupráce",
+			"other": "Jiné"
+		},
+		"topic": "Čeho se zpráva týká"
 	}
 }

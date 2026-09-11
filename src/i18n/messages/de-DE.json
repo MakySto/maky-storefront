@@ -742,5 +742,52 @@
 		"variantsUnavailable": "Die Produktoptionen konnten nicht geladen werden.",
 		"openMenu": "Menü öffnen",
 		"primaryNavigation": "Hauptnavigation"
+	},
+	"contact": {
+		"heading": "Schreiben Sie uns",
+		"intro": "Wir antworten an Werktagen. Bei Fragen zu einer Bestellung geben Sie bitte die Bestellnummer an.",
+		"name": "Vor- und Nachname",
+		"email": "E-Mail",
+		"phone": "Telefon (optional)",
+		"order": "Bestellnummer (optional)",
+		"message": "Ihre Nachricht",
+		"send": "Nachricht senden",
+		"sending": "Wird gesendet…",
+		"received": "Wir haben Ihre Nachricht erhalten.",
+		"reference": "Vorgangsnummer: {number}",
+		"alreadyReceived": "Diese Nachricht lag uns bereits vor — wir haben sie kein zweites Mal gesendet.",
+		"emailNote": "Die Bestätigung senden wir per E-Mail. Sollte sie ausbleiben, liegt uns Ihre Nachricht dennoch vor — nennen Sie einfach die Vorgangsnummer.",
+		"errorTitle": "Die Nachricht konnte nicht gesendet werden",
+		"unavailable": "Bitte versuchen Sie es in Kürze erneut. Falls Sie bereits gesendet haben, ist die Nachricht möglicherweise gespeichert — legen Sie keine neue an, versuchen Sie es erneut.",
+		"conflict": "Dieser Vorgang existiert bereits mit anderem Inhalt. Bitte beginnen Sie eine neue Nachricht.",
+		"tooLarge": "Die Nachricht ist zu lang. Bitte kürzen Sie sie.",
+		"notConfigured": "Das Formular ist derzeit nicht verfügbar. Bitte schreiben Sie uns per E-Mail.",
+		"blocked": "Zu viele Versuche. Bitte in {seconds} s erneut versuchen.",
+		"fixErrors": "Bitte prüfen Sie die markierten Felder.",
+		"err": {
+			"name:required": "Bitte geben Sie Ihren Namen an.",
+			"name:tooLong": "Der Name ist zu lang.",
+			"email:required": "Bitte geben Sie eine E-Mail-Adresse an.",
+			"email:invalid": "Bitte geben Sie eine gültige E-Mail-Adresse an.",
+			"email:tooLong": "Die E-Mail-Adresse ist zu lang.",
+			"phone:tooLong": "Die Telefonnummer ist zu lang.",
+			"topic:required": "Bitte wählen Sie ein Thema.",
+			"topic:invalid": "Bitte wählen Sie ein Thema.",
+			"order:tooLong": "Die Bestellnummer ist zu lang.",
+			"message:required": "Bitte schreiben Sie eine Nachricht.",
+			"message:tooLong": "Die Nachricht ist zu lang."
+		},
+		"topics": {
+			"productAdvice": "Produktberatung",
+			"orderStatus": "Bestellstatus",
+			"shipping": "Versand",
+			"returns": "Rücksendung und Reklamation",
+			"complaint": "Beschwerde",
+			"payment": "Zahlung",
+			"account": "Konto",
+			"businessCooperation": "Geschäftliche Zusammenarbeit",
+			"other": "Sonstiges"
+		},
+		"topic": "Worum geht es?"
 	}
 }

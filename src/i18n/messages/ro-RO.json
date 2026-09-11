@@ -742,5 +742,52 @@
 		"variantsUnavailable": "Opțiunile produsului nu au putut fi încărcate.",
 		"openMenu": "Deschideți meniul",
 		"primaryNavigation": "Navigare principală"
+	},
+	"contact": {
+		"heading": "Scrieți-ne",
+		"intro": "Răspundem în zilele lucrătoare. Pentru întrebări despre o comandă, indicați numărul acesteia.",
+		"name": "Nume și prenume",
+		"email": "E-mail",
+		"phone": "Telefon (opțional)",
+		"order": "Numărul comenzii (opțional)",
+		"message": "Mesajul dumneavoastră",
+		"send": "Trimiteți mesajul",
+		"sending": "Se trimite…",
+		"received": "Am primit mesajul dumneavoastră.",
+		"reference": "Număr de înregistrare: {number}",
+		"alreadyReceived": "Aveam deja acest mesaj — nu l-am trimis a doua oară.",
+		"emailNote": "Confirmarea se trimite prin e-mail. Dacă nu ajunge, mesajul este oricum înregistrat — este suficient să indicați numărul de înregistrare.",
+		"errorTitle": "Mesajul nu a putut fi trimis",
+		"unavailable": "Încercați din nou în câteva momente. Dacă ați trimis deja, mesajul poate fi salvat — nu creați unul nou, încercați din nou.",
+		"conflict": "Această înregistrare există deja cu alt conținut. Începeți un mesaj nou.",
+		"tooLarge": "Mesajul este prea lung. Vă rugăm să îl scurtați.",
+		"notConfigured": "Formularul nu este disponibil acum. Scrieți-ne prin e-mail.",
+		"blocked": "Prea multe încercări. Încercați din nou peste {seconds} s.",
+		"fixErrors": "Verificați câmpurile marcate.",
+		"err": {
+			"name:required": "Introduceți numele și prenumele.",
+			"name:tooLong": "Numele este prea lung.",
+			"email:required": "Introduceți e-mailul.",
+			"email:invalid": "Introduceți un e-mail valid.",
+			"email:tooLong": "E-mailul este prea lung.",
+			"phone:tooLong": "Numărul de telefon este prea lung.",
+			"topic:required": "Alegeți un subiect.",
+			"topic:invalid": "Alegeți un subiect.",
+			"order:tooLong": "Numărul comenzii este prea lung.",
+			"message:required": "Scrieți un mesaj.",
+			"message:tooLong": "Mesajul este prea lung."
+		},
+		"topics": {
+			"productAdvice": "Consiliere despre produs",
+			"orderStatus": "Starea comenzii",
+			"shipping": "Livrare",
+			"returns": "Retururi și reclamații",
+			"complaint": "Reclamație",
+			"payment": "Plată",
+			"account": "Cont",
+			"businessCooperation": "Colaborare comercială",
+			"other": "Altele"
+		},
+		"topic": "Subiectul mesajului"
 	}
 }

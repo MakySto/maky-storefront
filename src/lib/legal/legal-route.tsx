@@ -49,9 +49,18 @@ export interface LegalRouteOptions {
 	readonly path: string;
 	/** One entry per language this page is approved in. */
 	readonly copy: Readonly<Record<LegalLocale, LegalCopy>>;
+	/**
+	 * Rendered after the approved body, inside the prose column.
+	 *
+	 * For an interactive section that is not part of the statutory disclosure — today
+	 * only `/kontakt`'s form. It is a separate slot rather than part of `Body` because
+	 * the body is approved copy and the form is not: they are versioned, reviewed and
+	 * switched on independently, and a market can have one without the other.
+	 */
+	readonly After?: (props: { channel: string }) => ReactNode;
 }
 
-export function legalRoute({ path, copy }: LegalRouteOptions) {
+export function legalRoute({ path, copy, After }: LegalRouteOptions) {
 	async function resolve(params: Promise<{ channel: string }>) {
 		const { channel } = await params;
 		const locale = legalLocaleFor(channel);
@@ -91,6 +100,7 @@ export function legalRoute({ path, copy }: LegalRouteOptions) {
 			return (
 				<LegalPage title={resolved.heading ?? resolved.title}>
 					<Body channel={channel} />
+					{After ? <After channel={channel} /> : null}
 				</LegalPage>
 			);
 		},

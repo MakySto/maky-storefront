@@ -742,5 +742,52 @@
 		"variantsUnavailable": "No se han podido cargar las opciones del producto.",
 		"openMenu": "Abrir el menú",
 		"primaryNavigation": "Navegación principal"
+	},
+	"contact": {
+		"heading": "Escríbenos",
+		"intro": "Respondemos en días laborables. Si preguntas por un pedido, indica su número.",
+		"name": "Nombre y apellidos",
+		"email": "Correo electrónico",
+		"phone": "Teléfono (opcional)",
+		"order": "Número de pedido (opcional)",
+		"message": "Tu mensaje",
+		"send": "Enviar mensaje",
+		"sending": "Enviando…",
+		"received": "Hemos recibido tu mensaje.",
+		"reference": "Número de solicitud: {number}",
+		"alreadyReceived": "Ya teníamos este mensaje — no lo hemos enviado por segunda vez.",
+		"emailNote": "La confirmación se envía por correo electrónico. Si no llega, el mensaje lo tenemos igualmente — basta con indicar el número de solicitud.",
+		"errorTitle": "No se ha podido enviar el mensaje",
+		"unavailable": "Inténtalo de nuevo en unos momentos. Si ya lo has enviado, puede estar guardado — no crees uno nuevo, vuelve a intentarlo.",
+		"conflict": "Esta solicitud ya existe con otro contenido. Empieza un mensaje nuevo.",
+		"tooLarge": "El mensaje es demasiado largo. Acórtalo.",
+		"notConfigured": "El formulario no está disponible ahora. Escríbenos por correo electrónico.",
+		"blocked": "Demasiados intentos. Vuelve a intentarlo en {seconds} s.",
+		"fixErrors": "Revisa los campos marcados.",
+		"err": {
+			"name:required": "Indica tu nombre y apellidos.",
+			"name:tooLong": "El nombre es demasiado largo.",
+			"email:required": "Indica tu correo electrónico.",
+			"email:invalid": "Indica un correo electrónico válido.",
+			"email:tooLong": "El correo electrónico es demasiado largo.",
+			"phone:tooLong": "El teléfono es demasiado largo.",
+			"topic:required": "Elige un asunto.",
+			"topic:invalid": "Elige un asunto.",
+			"order:tooLong": "El número de pedido es demasiado largo.",
+			"message:required": "Escribe un mensaje.",
+			"message:tooLong": "El mensaje es demasiado largo."
+		},
+		"topics": {
+			"productAdvice": "Asesoramiento sobre producto",
+			"orderStatus": "Estado del pedido",
+			"shipping": "Envío",
+			"returns": "Devoluciones y reclamaciones",
+			"complaint": "Reclamación",
+			"payment": "Pago",
+			"account": "Cuenta",
+			"businessCooperation": "Colaboración comercial",
+			"other": "Otro"
+		},
+		"topic": "Asunto del mensaje"
 	}
 }

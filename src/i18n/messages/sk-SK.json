@@ -742,5 +742,52 @@
 		"variantsUnavailable": "Možnosti produktu sa nepodarilo načítať.",
 		"openMenu": "Otvoriť menu",
 		"primaryNavigation": "Hlavná navigácia"
+	},
+	"contact": {
+		"heading": "Napíšte nám",
+		"intro": "Odpovedáme počas pracovných dní. Ak sa pýtate na objednávku, uveďte jej číslo.",
+		"name": "Meno a priezvisko",
+		"email": "E-mail",
+		"phone": "Telefón (nepovinné)",
+		"order": "Číslo objednávky (nepovinné)",
+		"message": "Vaša správa",
+		"send": "Odoslať správu",
+		"sending": "Odosielam…",
+		"received": "Vašu správu sme prijali.",
+		"reference": "Číslo podania: {number}",
+		"alreadyReceived": "Túto správu sme už mali — neodoslali sme ju druhýkrát.",
+		"emailNote": "Potvrdenie posielame e-mailom. Ak nepríde, správu máme aj tak — stačí uviesť číslo podania.",
+		"errorTitle": "Správu sa nepodarilo odoslať",
+		"unavailable": "Skúste to prosím o chvíľu. Ak ste už odosielali, môže byť správa uložená — nezakladajte novú, skúste znova.",
+		"conflict": "Toto podanie už existuje s iným obsahom. Začnite prosím novú správu.",
+		"tooLarge": "Správa je príliš dlhá. Skráťte ju prosím.",
+		"notConfigured": "Formulár teraz nie je dostupný. Napíšte nám prosím e-mailom.",
+		"blocked": "Príliš veľa pokusov. Skúste to znova o {seconds} s.",
+		"fixErrors": "Skontrolujte prosím vyznačené polia.",
+		"err": {
+			"name:required": "Zadajte meno a priezvisko.",
+			"name:tooLong": "Meno je príliš dlhé.",
+			"email:required": "Zadajte e-mail.",
+			"email:invalid": "Zadajte platný e-mail.",
+			"email:tooLong": "E-mail je príliš dlhý.",
+			"phone:tooLong": "Telefón je príliš dlhý.",
+			"topic:required": "Vyberte tému.",
+			"topic:invalid": "Vyberte tému.",
+			"order:tooLong": "Číslo objednávky je príliš dlhé.",
+			"message:required": "Napíšte správu.",
+			"message:tooLong": "Správa je príliš dlhá."
+		},
+		"topics": {
+			"productAdvice": "Poradenstvo k produktu",
+			"orderStatus": "Stav objednávky",
+			"shipping": "Doprava",
+			"returns": "Vrátenie a reklamácia",
+			"complaint": "Sťažnosť",
+			"payment": "Platba",
+			"account": "Účet",
+			"businessCooperation": "Obchodná spolupráca",
+			"other": "Iné"
+		},
+		"topic": "Čoho sa správa týka"
 	}
 }
