@@ -200,3 +200,52 @@ describe("visibleNavLinks", () => {
 		expect(fetchCmsPage).not.toHaveBeenCalled();
 	});
 });
+
+/**
+ * hreflang for a CMS route.
+ *
+ * `buildLanguageAlternates` derives alternates from `route-policy` alone, which
+ * answers "does this market support the route" and not "does it serve one". A market
+ * that supports `/o-nas` with nothing published would have been annotated as the
+ * translation of a page that 404s — and a non-reciprocal entry gets the whole cluster
+ * discarded, not just the bad one.
+ */
+describe("cmsLanguageAlternates", () => {
+	async function alternatesFor(
+		live: string,
+		routeMarkets: readonly string[],
+		publishedIn: readonly string[],
+	) {
+		vi.resetModules();
+		vi.stubEnv("MAKY_LIVE_MARKETS", live);
+		marketHasRoute.mockImplementation((market: string) => routeMarkets.includes(market));
+		fetchCmsPage.mockImplementation(async (_slug: string, _locale: string, market: string) =>
+			publishedIn.includes(market.toLowerCase()) ? foundWithBody() : { status: "not-found" },
+		);
+		const { cmsLanguageAlternates } = await subject();
+		return cmsLanguageAlternates("o-nas");
+	}
+
+	afterEach(() => vi.unstubAllEnvs());
+
+	it("says nothing while only one market serves the page", async () => {
+		expect(await alternatesFor("sk,cz,de", ["sk"], ["sk"])).toBeUndefined();
+	});
+
+	it("annotates the markets that actually serve it", async () => {
+		const languages = await alternatesFor("sk,cz,de", ["sk", "cz", "de"], ["sk", "cz", "de"]);
+		expect(Object.keys(languages ?? {}).sort()).toEqual(["cs-CZ", "de-DE", "sk-SK", "x-default"]);
+	});
+
+	it("leaves out a market that supports the route but has published nothing", async () => {
+		// `de` is live and supports the route; Payload holds no German document.
+		const languages = await alternatesFor("sk,cz,de", ["sk", "cz", "de"], ["sk", "cz"]);
+		expect(Object.keys(languages ?? {}).sort()).toEqual(["cs-CZ", "sk-SK", "x-default"]);
+	});
+
+	it("never asks about a market the route policy excludes", async () => {
+		await alternatesFor("sk,cz,de", ["sk"], ["sk"]);
+		const asked = fetchCmsPage.mock.calls.map((c: unknown[]) => c[2]);
+		expect(asked).toEqual(["SK"]);
+	});
+});

@@ -1,9 +1,11 @@
 import "server-only";
-import { REVERSE_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import { fetchCmsPage } from "@/lib/cms/client";
 import { marketForChannel, payloadLocaleForChannel } from "@/lib/cms/markets";
 import { isContentReady } from "@/lib/cms/content-readiness";
+import { liveMarkets } from "@/lib/market-state";
 import { isMarketRootSegment, marketHasRoute, routePolicyFor } from "@/lib/route-policy";
+import { languageAlternatesFor } from "@/lib/seo/hreflang";
 
 /**
  * Whether a CMS-backed route should be advertised in navigation right now.
@@ -87,4 +89,43 @@ export async function visibleNavLinks<T extends { readonly href: string }>(
 		}),
 	);
 	return links.filter((_, index) => decisions[index]);
+}
+
+/**
+ * The live markets that have this CMS route AND a published, content-ready document.
+ *
+ * Route support and publication are different questions, and `route-policy.ts` only
+ * answers the first. A market can support `/o-nas`, be live, and have nothing
+ * published — or have a document with no body for it. Neither is an hreflang alternate
+ * or a sitemap entry, and until now both were.
+ *
+ * ## Why this is affordable
+ *
+ * It asks only about markets the static policy already allows, and only for CMS
+ * routes. Today `o-nas` is `sk` alone, so it is one question. When more markets open
+ * it is one question per market — but `fetchCmsPage` is keyed by (slug, locale) in the
+ * Data Cache, so the twelve markets collapse to at most ten reads, all cache hits
+ * after the first, all carrying the `cms:page:<slug>` tag that the publish webhook
+ * already invalidates. That is the existing cached read, not a second availability
+ * table and not twelve uncached requests per page.
+ */
+export async function publishedCmsMarkets(slug: string): Promise<readonly string[]> {
+	const candidates = liveMarkets().filter((market) => marketHasRoute(market, slug));
+	const available = await Promise.all(
+		candidates.map(async (market) => {
+			const channel = CHANNEL_MAP[market]?.saleorSlug;
+			return channel && (await cmsRouteAvailable(channel, slug)) ? market : null;
+		}),
+	);
+	return available.filter((market): market is string => market !== null);
+}
+
+/**
+ * `hreflang` map for a CMS route, filtered to markets that really serve it.
+ *
+ * Reuses `languageAlternatesFor` so the URL shape, the locale mapping and the
+ * "a cluster of one says nothing" rule are the same ones the static routes use.
+ */
+export async function cmsLanguageAlternates(slug: string): Promise<Record<string, string> | undefined> {
+	return languageAlternatesFor(await publishedCmsMarkets(slug), `/${slug}`);
 }

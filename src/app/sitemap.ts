@@ -4,6 +4,7 @@ import { getBaseUrl } from "@/lib/seo/config";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { liveMarkets } from "@/lib/market-state";
 import { marketHasRoute, ROUTE_POLICY } from "@/lib/route-policy";
+import { cmsRouteAvailable } from "@/lib/cms/availability";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
 import { SitemapProductsDocument, SitemapCategoriesDocument } from "@/gql/graphql";
@@ -47,12 +48,27 @@ const STATIC_SUBROUTES: Readonly<Record<string, readonly string[]>> = {
 	"odstupenie-od-zmluvy": ["/odstupenie-od-zmluvy/vzorovy-formular"],
 };
 
-function staticPathsFor(market: string): readonly string[] {
+/**
+ * Exported for the test, which used to keep its own copy of this logic. A mirror can
+ * agree with a stale version of the thing it mirrors, which is how the CMS-availability
+ * step was added without a single test noticing.
+ */
+export async function staticPathsFor(market: string): Promise<readonly string[]> {
 	const paths: string[] = [];
+	const channel = CHANNEL_MAP[market]?.saleorSlug;
 	for (const policy of ROUTE_POLICY) {
 		if (policy.kind !== "static" && policy.kind !== "cms") continue;
 		if (!policy.indexable) continue;
 		if (!marketHasRoute(market, policy.segment)) continue;
+		// A CMS route needs the second half too. Supporting `/o-nas` says nothing about
+		// whether a document is published for this market, or whether the one that is
+		// published carries a body for it — and a sitemap entry for either is an
+		// invitation to crawl a 404. This is the same cached read the page and the
+		// navigation perform, tagged `cms:page:<slug>`, so an unpublish reaches all
+		// three at once.
+		if (policy.kind === "cms") {
+			if (!channel || !(await cmsRouteAvailable(channel, policy.segment))) continue;
+		}
 		paths.push(`/${policy.segment}`);
 		paths.push(...(STATIC_SUBROUTES[policy.segment] ?? []));
 	}
@@ -241,7 +257,7 @@ async function marketEntries(market: string): Promise<MetadataRoute.Sitemap> {
 	}
 
 	// Whatever static and CMS routes this market actually has, per route-policy.
-	for (const path of staticPathsFor(market)) {
+	for (const path of await staticPathsFor(market)) {
 		entries.push({
 			url: `${base}/${market}${path}`,
 			changeFrequency: "monthly",

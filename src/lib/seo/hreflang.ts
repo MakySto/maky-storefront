@@ -65,6 +65,30 @@ function eligibleMarkets(normalizedPath: string): readonly string[] {
  *   //   { hreflang: "x-default", url: "https://maky.store/sk/products" },
  *   // ]
  */
+/**
+ * The entries for an explicit market list.
+ *
+ * Split out so a caller that computes eligibility for itself — the CMS routes, which
+ * must ask whether a document is actually published in each market — reuses the same
+ * URL shape, locale mapping, `x-default` choice and the "a cluster of one says
+ * nothing" rule instead of assembling a second, subtly different cluster.
+ */
+export function hreflangEntriesFor(markets: readonly string[], path: string = ""): HreflangEntry[] {
+	const base = getBaseUrl();
+	const normalizedPath = path && !path.startsWith("/") ? `/${path}` : path;
+	return entriesFor(markets, base, normalizedPath);
+}
+
+/** `hreflang` map for an explicit market list, or `undefined` when there is nothing to say. */
+export function languageAlternatesFor(
+	markets: readonly string[],
+	path: string = "",
+): Record<string, string> | undefined {
+	const entries = hreflangEntriesFor(markets, path);
+	if (entries.length === 0) return undefined;
+	return Object.fromEntries(entries.map((entry) => [entry.hreflang, entry.url]));
+}
+
 export function buildHreflangAlternates(path: string = ""): HreflangEntry[] {
 	const base = getBaseUrl();
 	const normalizedPath = path && !path.startsWith("/") ? `/${path}` : path;
@@ -78,8 +102,10 @@ export function buildHreflangAlternates(path: string = ""): HreflangEntry[] {
 	// this helper stopped being the homepage's alone. `/sk/o-nas` is a real page and
 	// `/cz/o-nas` is a 404; annotating them as translations of each other is the same
 	// non-reciprocal defect in a new place.
-	const markets = eligibleMarkets(normalizedPath);
+	return entriesFor(eligibleMarkets(normalizedPath), base, normalizedPath);
+}
 
+function entriesFor(markets: readonly string[], base: string, normalizedPath: string): HreflangEntry[] {
 	// A cluster of one says nothing: hreflang describes alternates, and a page has
 	// no alternate to itself. Emitting `x-default` alone is worse than emitting
 	// nothing, because it invites a crawler to treat a single-market site as an

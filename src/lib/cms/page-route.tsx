@@ -8,7 +8,7 @@ import { marketForChannel, payloadLocaleForChannel, type MarketCode } from "@/li
 import { isContentReady } from "@/lib/cms/content-readiness";
 import { marketHasRoute } from "@/lib/route-policy";
 import { buildPageMetadata } from "@/lib/seo";
-import { buildLanguageAlternates } from "@/lib/seo/hreflang";
+import { cmsLanguageAlternates } from "@/lib/cms/availability";
 import { CmsBlocks } from "@/ui/components/cms/cms-blocks";
 
 /**
@@ -164,15 +164,16 @@ export function cmsPageRoute(config: CmsRouteConfig): CmsRoute {
 			url: marketHref(channel, `/${slug}`),
 		});
 
-		// Alternates come from `route-policy.ts`, which is where a market is recorded as
-		// having this CMS route at all — and it is only opened there once P has evidenced
-		// a published document. So the cluster stays reciprocal without this function
-		// asking Payload about eleven other markets on every render, which is the cost
-		// the brief rules out. Today `o-nas` is `sk` alone, so it emits nothing.
+		// Alternates are the markets that support this route AND actually serve it right
+		// now. Route support alone is not enough: a market can be live, support `/o-nas`
+		// and have nothing published — or a document with no body for it — and an
+		// hreflang entry pointing at that 404 gets the WHOLE cluster discarded, not just
+		// the bad entry. `publishedCmsMarkets` asks only the markets the static policy
+		// already allows, through the same cached read the page performs.
 		//
 		// Only `languages` is added; the canonical `buildPageMetadata` already produced
 		// stays exactly as it was.
-		const languages = buildLanguageAlternates(`/${slug}`);
+		const languages = await cmsLanguageAlternates(slug);
 		if (!languages) return metadata;
 		return { ...metadata, alternates: { ...metadata.alternates, languages } };
 	}

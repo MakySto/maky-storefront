@@ -6,7 +6,7 @@ vi.mock("@/lib/graphql", () => ({ executePublicGraphQL }));
 
 import { SitemapCategoriesDocument, SitemapProductsDocument } from "@/gql/graphql";
 import sitemap from "./sitemap";
-import { marketHasRoute, ROUTE_POLICY } from "@/lib/route-policy";
+import { REVERSE_MAP } from "@/lib/channel-map";
 
 /**
  * The sitemap must enumerate the WHOLE catalogue or fail.
@@ -152,7 +152,7 @@ describe("the whole catalogue, or an error", () => {
 	});
 });
 
-describe("a connection that cannot end", () => {
+describe("a connection that cannot end", async () => {
 	it("throws when the cursor stops advancing", async () => {
 		// The API pins `endCursor` at the page it just served. Without a guard this
 		// asks for the same page forever and the array grows until the process dies.
@@ -217,7 +217,7 @@ describe("a connection that cannot end", () => {
  * removed from the product walk and left here. Thirty categories exist today,
  * so it was latent; a bare cap is only ever latent until the catalogue grows.
  */
-describe("categories are walked to the end too", () => {
+describe("categories are walked to the end too", async () => {
 	it("follows the category cursor past the first page", async () => {
 		const CATEGORY_COUNT = 250;
 		serve(
@@ -306,21 +306,21 @@ describe("categories are walked to the end too", () => {
  * It would have surfaced as eleven sitemaps missing their legal pages on the first
  * foreign launch.
  */
-describe("sitemap — static paths follow route-policy", () => {
-	const SUBROUTES: Record<string, string[]> = {
-		"odstupenie-od-zmluvy": ["/odstupenie-od-zmluvy/vzorovy-formular"],
-	};
+describe("sitemap — static paths follow route-policy", async () => {
+	// The real function, not a copy of it. A CMS route now also has to be PUBLISHED, so
+	// the availability read is stubbed: `published` holds the markets whose CMS document
+	// exists, and each case sets it.
+	const published = new Set<string>();
 
-	/** Mirrors `staticPathsFor` in sitemap.ts. */
-	function derived(market: string): string[] {
-		const out: string[] = [];
-		for (const policy of ROUTE_POLICY) {
-			if (policy.kind !== "static" && policy.kind !== "cms") continue;
-			if (!policy.indexable) continue;
-			if (!marketHasRoute(market, policy.segment)) continue;
-			out.push(`/${policy.segment}`, ...(SUBROUTES[policy.segment] ?? []));
-		}
-		return out;
+	async function derived(market: string, cmsMarkets: readonly string[] = ["sk"]): Promise<string[]> {
+		published.clear();
+		for (const m of cmsMarkets) published.add(m);
+		vi.resetModules();
+		vi.doMock("@/lib/cms/availability", () => ({
+			cmsRouteAvailable: async (channel: string) => published.has(REVERSE_MAP[channel] ?? ""),
+		}));
+		const { staticPathsFor } = await import("./sitemap");
+		return [...(await staticPathsFor(market))];
 	}
 
 	// Exactly what the removed constant listed, so today's SK sitemap is unchanged.
@@ -336,22 +336,22 @@ describe("sitemap — static paths follow route-policy", () => {
 		"/poradna",
 	];
 
-	it("still produces every path the hand-written SK table produced", () => {
-		const sk = derived("sk");
+	it("still produces every path the hand-written SK table produced", async () => {
+		const sk = await derived("sk");
 		for (const path of OLD_SK_ONLY_PATHS) {
 			expect(sk, `sk lost ${path}`).toContain(path);
 		}
 	});
 
-	it("adds the printable model form, which the old table omitted", () => {
+	it("adds the printable model form, which the old table omitted", async () => {
 		// It is indexable, it exists in every market with approved copy, and it was
 		// missing from the sitemap entirely.
-		expect(derived("sk")).toContain("/odstupenie-od-zmluvy/vzorovy-formular");
+		expect(await derived("sk")).toContain("/odstupenie-od-zmluvy/vzorovy-formular");
 	});
 
-	it("gives the other markets their seven legal pages", () => {
+	it("gives the other markets their seven legal pages", async () => {
 		for (const market of ["cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"]) {
-			const paths = derived(market);
+			const paths = await derived(market);
 			for (const path of [
 				"/kontakt",
 				"/doprava-a-platba",
@@ -366,20 +366,64 @@ describe("sitemap — static paths follow route-policy", () => {
 		}
 	});
 
-	it("keeps the CMS pages to the markets route-policy actually lists", () => {
-		expect(derived("sk")).toContain("/o-nas");
+	it("keeps the CMS pages to the markets route-policy actually lists", async () => {
+		expect(await derived("sk")).toContain("/o-nas");
 		for (const market of ["cz", "de", "us", "ca"]) {
-			expect(derived(market), `${market} must not advertise an unpublished /o-nas`).not.toContain("/o-nas");
-			expect(derived(market)).not.toContain("/poradna");
+			expect(await derived(market), `${market} must not advertise an unpublished /o-nas`).not.toContain(
+				"/o-nas",
+			);
+			expect(await derived(market)).not.toContain("/poradna");
 		}
 	});
 
-	it("never advertises a private or non-indexable route", () => {
+	it("never advertises a private or non-indexable route", async () => {
 		for (const market of ["sk", "de", "us"]) {
-			const paths = derived(market);
+			const paths = await derived(market);
 			for (const forbidden of ["/search", "/cart", "/account", "/login", "/garage", "/konfigurator"]) {
 				expect(paths, `${market} advertises ${forbidden}`).not.toContain(forbidden);
 			}
 		}
+	});
+});
+
+/**
+ * The sitemap follows publication, not only route support.
+ *
+ * `staticPathsFor` read `route-policy` alone, so a CMS page that had been unpublished —
+ * or published with no body for the market — stayed in the sitemap while the navigation
+ * correctly dropped it. The two disagreed, and the sitemap was the one inviting a
+ * crawler to a 404.
+ */
+describe("sitemap — CMS entries follow the CMS", () => {
+	const published = new Set<string>();
+
+	async function pathsFor(market: string, cmsMarkets: readonly string[]): Promise<string[]> {
+		published.clear();
+		for (const m of cmsMarkets) published.add(m);
+		vi.resetModules();
+		vi.doMock("@/lib/cms/availability", () => ({
+			cmsRouteAvailable: async (channel: string) => published.has(REVERSE_MAP[channel] ?? ""),
+		}));
+		const { staticPathsFor } = await import("./sitemap");
+		return [...(await staticPathsFor(market))];
+	}
+
+	it("lists /o-nas while it is published", async () => {
+		expect(await pathsFor("sk", ["sk"])).toContain("/o-nas");
+	});
+
+	it("drops /o-nas once it is unpublished, even though the route still exists", async () => {
+		const paths = await pathsFor("sk", []);
+		expect(paths).not.toContain("/o-nas");
+		expect(paths).not.toContain("/poradna");
+		// …and the static legal pages are untouched: they are not CMS routes.
+		expect(paths).toContain("/kontakt");
+		expect(paths).toContain("/obchodne-podmienky");
+	});
+
+	it("never asks the CMS about a market that does not support the route", async () => {
+		// `de` has no CMS route in policy, so availability must not even be consulted —
+		// and the German sitemap must not gain /o-nas just because sk published one.
+		expect(await pathsFor("de", ["sk", "de"])).not.toContain("/o-nas");
 	});
 });
