@@ -1,0 +1,7 @@
+{
+  "ok": false,
+  "error": {
+    "code": "SUBMISSION_ID_CONFLICT",
+    "message": "This submission ID is already associated with different content."
+  }
+}

@@ -30,10 +30,10 @@ const PACK = join(fileURLToPath(new URL(".", import.meta.url)), "__fixtures__/fo
  * failure is how one is hidden, so it appears in `PROVENANCE.md` too, where the provider
  * commit that produced it is written down next to it.
  */
-const MANIFEST_SHA256 = "0ed6e45be585cb4ad27950befd4a8eba7b5f83004767f05bcf0962b90b901632";
+const MANIFEST_SHA256 = "26bec26b7fb493af1d11da68a983fff9c1abccbfaf3ce73fdc56ba35c879cd93";
 
-const CONTRACT_REVISION = "1.1.0";
-const PROVIDER_COMMIT = "459146a894e344b8261921e5c4c39879a0407839";
+const CONTRACT_REVISION = "1.3.0";
+const PROVIDER_COMMIT = "f2b8163ce9aa148007f1e1026e0858eadc4db370";
 
 interface Manifest {
 	id: string;
@@ -87,8 +87,8 @@ describe("forms contract pack — integrity", () => {
 		expect(provenance).toContain(CONTRACT_REVISION);
 	});
 
-	it("lists twenty artifacts", () => {
-		expect(Object.keys(manifest.artifacts)).toHaveLength(20);
+	it("lists thirty-eight artifacts", () => {
+		expect(Object.keys(manifest.artifacts)).toHaveLength(38);
 	});
 
 	it.each(Object.entries(manifest.artifacts))("%s matches its recorded digest", (relativePath, expected) => {

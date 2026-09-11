@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contact-create.response.schema.json",
+  "title": "MAKY Forms Backend V1 contact create acknowledgement",
+  "description": "Exact public success envelope for a new (HTTP 201) or idempotent duplicate (HTTP 200) POST /api/forms/contact response.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ok", "duplicate", "submission"],
+  "properties": {
+    "ok": { "const": true },
+    "duplicate": { "type": "boolean" },
+    "submission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "submissionId", "submissionNumber", "submittedAt", "emailDelivery"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "submissionId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "submissionNumber": {
+          "type": "string",
+          "pattern": "^KON-[0-9]{4}-[0-9]{6}$"
+        },
+        "submittedAt": { "type": "string", "format": "date-time" },
+        "emailDelivery": { "$ref": "#/$defs/publicEmailDelivery" }
+      }
+    }
+  },
+  "$defs": {
+    "nullableDateTime": {
+      "oneOf": [{ "type": "null" }, { "type": "string", "format": "date-time" }]
+    },
+    "publicEmailDelivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "customerStatus",
+        "customerSentAt",
+        "customerAttemptCount",
+        "customerLastAttemptAt",
+        "internalStatus",
+        "internalSentAt",
+        "internalAttemptCount",
+        "internalLastAttemptAt"
+      ],
+      "properties": {
+        "customerStatus": { "enum": ["pending", "sent", "failed", "unknown"] },
+        "customerSentAt": { "$ref": "#/$defs/nullableDateTime" },
+        "customerAttemptCount": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "customerLastAttemptAt": { "$ref": "#/$defs/nullableDateTime" },
+        "internalStatus": { "enum": ["pending", "sent", "failed", "unknown"] },
+        "internalSentAt": { "$ref": "#/$defs/nullableDateTime" },
+        "internalAttemptCount": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "internalLastAttemptAt": { "$ref": "#/$defs/nullableDateTime" }
+      }
+    }
+  }
+}

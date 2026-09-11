@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "pairs": [
+    { "market": "SK", "locale": "sk" },
+    { "market": "CZ", "locale": "cs" },
+    { "market": "PL", "locale": "pl" },
+    { "market": "HU", "locale": "hu" },
+    { "market": "RO", "locale": "ro" },
+    { "market": "AT", "locale": "de" },
+    { "market": "DE", "locale": "de" },
+    { "market": "IT", "locale": "it" },
+    { "market": "FR", "locale": "fr" },
+    { "market": "ES", "locale": "es" },
+    { "market": "US", "locale": "en" },
+    { "market": "CA", "locale": "en" }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "duplicate": false,
+  "submission": {
+    "id": "018f1000-0000-7000-8000-000000000002",
+    "submissionId": "018f0000-0000-7000-8000-000000000002",
+    "submissionNumber": "KON-2026-000001",
+    "submittedAt": "2026-07-30T12:00:00.000Z",
+    "emailDelivery": {
+      "customerStatus": "pending",
+      "customerSentAt": null,
+      "customerAttemptCount": 0,
+      "customerLastAttemptAt": null,
+      "internalStatus": "pending",
+      "internalSentAt": null,
+      "internalAttemptCount": 0,
+      "internalLastAttemptAt": null
+    }
+  }
+}

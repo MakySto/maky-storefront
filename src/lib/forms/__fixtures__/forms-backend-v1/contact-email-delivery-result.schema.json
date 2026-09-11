@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contact-email-delivery-result.schema.json",
+  "title": "MAKY Contact email V1 internal delivery result",
+  "description": "Internal non-HTTP result used to persist independent customer/internal outcomes. It is never returned as the public Contact create envelope.",
+  "type": "object",
+  "additionalProperties": false,
+  "minProperties": 1,
+  "properties": {
+    "customer": { "$ref": "#/$defs/customerResult" },
+    "internal": { "$ref": "#/$defs/internalResult" }
+  },
+  "$defs": {
+    "providerMessageId": {
+      "type": ["string", "null"],
+      "maxLength": 128,
+      "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+    },
+    "sent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "providerMessageId"],
+      "properties": {
+        "status": { "const": "sent" },
+        "providerMessageId": { "$ref": "#/$defs/providerMessageId" }
+      }
+    },
+    "modeMismatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "code", "providerMessageId"],
+      "properties": {
+        "status": { "const": "failed" },
+        "code": { "const": "CONTACT_EMAIL_DELIVERY_MODE_MISMATCH" },
+        "providerMessageId": { "type": "null" }
+      }
+    },
+    "invalidPersistedData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "code", "providerMessageId"],
+      "properties": {
+        "status": { "const": "failed" },
+        "code": { "const": "CONTACT_EMAIL_INVALID_PERSISTED_DATA" },
+        "providerMessageId": { "type": "null" }
+      }
+    },
+    "customerFailed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "code", "providerMessageId"],
+      "properties": {
+        "status": { "const": "failed" },
+        "code": { "const": "CONTACT_EMAIL_CUSTOMER_SEND_FAILED" },
+        "providerMessageId": { "type": "null" }
+      }
+    },
+    "customerUnknown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "code", "providerMessageId"],
+      "properties": {
+        "status": { "const": "unknown" },
+        "code": { "const": "CONTACT_EMAIL_CUSTOMER_SEND_UNKNOWN" },
+        "providerMessageId": { "type": "null" }
+      }
+    },
+    "internalFailed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "code", "providerMessageId"],
+      "properties": {
+        "status": { "const": "failed" },
+        "code": { "const": "CONTACT_EMAIL_INTERNAL_SEND_FAILED" },
+        "providerMessageId": { "type": "null" }
+      }
+    },
+    "internalUnknown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "code", "providerMessageId"],
+      "properties": {
+        "status": { "const": "unknown" },
+        "code": { "const": "CONTACT_EMAIL_INTERNAL_SEND_UNKNOWN" },
+        "providerMessageId": { "type": "null" }
+      }
+    },
+    "customerResult": {
+      "oneOf": [
+        { "$ref": "#/$defs/sent" },
+        { "$ref": "#/$defs/modeMismatch" },
+        { "$ref": "#/$defs/invalidPersistedData" },
+        { "$ref": "#/$defs/customerFailed" },
+        { "$ref": "#/$defs/customerUnknown" }
+      ]
+    },
+    "internalResult": {
+      "oneOf": [
+        { "$ref": "#/$defs/sent" },
+        { "$ref": "#/$defs/modeMismatch" },
+        { "$ref": "#/$defs/invalidPersistedData" },
+        { "$ref": "#/$defs/internalFailed" },
+        { "$ref": "#/$defs/internalUnknown" }
+      ]
+    }
+  }
+}

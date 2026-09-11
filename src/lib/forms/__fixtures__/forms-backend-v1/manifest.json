@@ -1,25 +1,113 @@
 {
   "id": "forms-backend-v1",
   "version": 1,
-  "revision": "1.1.0",
+  "revision": "1.3.0",
   "status": "candidate",
   "payloadVersion": "3.86.0",
   "hashAlgorithm": "sha256",
   "schema": "withdrawal.schema.json",
+  "schemas": {
+    "withdrawalRequest": "withdrawal.schema.json",
+    "contactRequest": "contact.schema.json",
+    "contactCreateResponse": "contact-create.response.schema.json",
+    "formsErrorResponse": "forms-error.response.schema.json",
+    "contactEmailDeliveryOperation": "contact-email-delivery-operation.schema.json",
+    "contactEmailArtifacts": "contact-email-artifacts.schema.json",
+    "contactEmailDeliveryResult": "contact-email-delivery-result.schema.json"
+  },
   "endpoints": {
     "withdrawalCreate": "POST /api/forms/withdrawal",
     "contactCreate": "POST /api/forms/contact",
     "withdrawalDeliveryPatch": "PATCH /api/forms/withdrawal/:id/email-delivery",
     "contactDeliveryPatch": "PATCH /api/forms/contact/:id/email-delivery",
-    "withdrawalDeliveryRetry": "POST /api/forms/withdrawal/:id/email-delivery/retry"
+    "withdrawalDeliveryRetry": "POST /api/forms/withdrawal/:id/email-delivery/retry",
+    "contactDeliveryRetry": "POST /api/forms/contact/:id/email-delivery/retry"
   },
   "canonical": {
     "withdrawalRequestPhoneNull": "fixtures/withdrawal-guest-whole-order.request.json",
     "withdrawalRequestPhoneValue": "fixtures/withdrawal-guest-selected-items.request.json",
     "withdrawalRequestAccountPhoneValue": "fixtures/withdrawal-account-phone-value.request.json",
     "contactRequest": "fixtures/contact-guest.request.json",
+    "contactGuestRequest": "fixtures/contact-guest.request.json",
+    "contactAccountRequest": "fixtures/contact-account.request.json",
+    "contactCreatePendingResponse": "fixtures/contact-create-pending.response.json",
+    "contactDuplicatePendingResponse": "fixtures/contact-duplicate-pending.response.json",
+    "contactConflictResponse": "fixtures/contact-conflict.response.json",
+    "contactInvalidResponse": "fixtures/contact-invalid.response.json",
+    "contactMarketLocales": "fixtures/contact-market-locales.json",
     "withdrawalCreateResponse": "fixtures/withdrawal-create.response.json",
-    "withdrawalDuplicateResponse": "fixtures/withdrawal-duplicate.response.json"
+    "withdrawalDuplicateResponse": "fixtures/withdrawal-duplicate.response.json",
+    "contactEmailRetryCustomer": "fixtures/contact-email-retry-customer.request.json",
+    "contactEmailRetryInternal": "fixtures/contact-email-retry-internal.request.json",
+    "contactEmailRetryPendingUnattempted": "fixtures/contact-email-retry-pending-unattempted.request.json",
+    "contactEmailReconciliationAccepted": "fixtures/contact-email-reconciliation-accepted.request.json",
+    "contactEmailReconciliationNotAccepted": "fixtures/contact-email-reconciliation-not-accepted.request.json",
+    "contactEmailModeMismatchResult": "fixtures/contact-email-mode-mismatch.result.json"
+  },
+  "contactContract": {
+    "endpoint": "POST /api/forms/contact",
+    "requestSchema": "contact.schema.json",
+    "createResponseSchema": "contact-create.response.schema.json",
+    "errorResponseSchema": "forms-error.response.schema.json",
+    "requestHeaders": [
+      "Content-Type",
+      "X-Maky-Forms-Timestamp",
+      "X-Maky-Forms-Submission-Id",
+      "X-Maky-Forms-Signature"
+    ],
+    "maxBodyBytes": 65536,
+    "timestampSkewSeconds": 300,
+    "sourceValues": ["guest", "account"],
+    "topicValues": [
+      "productAdvice",
+      "orderStatus",
+      "shipping",
+      "returns",
+      "complaint",
+      "payment",
+      "account",
+      "businessCooperation",
+      "other"
+    ],
+    "marketLocaleFixture": "fixtures/contact-market-locales.json",
+    "successCases": [
+      {
+        "name": "create",
+        "httpStatus": 201,
+        "duplicate": false,
+        "fixture": "fixtures/contact-create-pending.response.json"
+      },
+      {
+        "name": "idempotentDuplicate",
+        "httpStatus": 200,
+        "duplicate": true,
+        "fixture": "fixtures/contact-duplicate-pending.response.json"
+      }
+    ],
+    "errorCases": [
+      {
+        "name": "submissionIdConflict",
+        "httpStatus": 409,
+        "code": "SUBMISSION_ID_CONFLICT",
+        "fixture": "fixtures/contact-conflict.response.json"
+      },
+      {
+        "name": "invalidMarketLocale",
+        "httpStatus": 400,
+        "code": "INVALID_REQUEST",
+        "fixture": "fixtures/contact-invalid.response.json"
+      }
+    ],
+    "signatureVector": {
+      "algorithm": "hmac-sha256",
+      "timestamp": "1785412800",
+      "testSecretUtf8": "forms-backend-v1-contact-test-secret",
+      "rawBodyFixture": "fixtures/contact-guest.request.json",
+      "rawBodyIncludesTrailingLF": true,
+      "rawBodySha256": "e6d24d8d966ff6b8f587ed3f16d77c016bb3a497e563130c3f2bcbe989cc95b9",
+      "preimage": "timestamp + '.' + exact rawBody bytes",
+      "expectedSignature": "5cfa4095a9fbfa72cacd7812b2cb89cf5373b3853dd70d42c89986c470ac6f07"
+    }
   },
   "phoneScenarios": {
     "missingNormalizesToNull": "fixtures/withdrawal-guest-phone-missing.request.json",
@@ -36,7 +124,13 @@
     "retryInternal": "fixtures/withdrawal-email-retry-internal.request.json",
     "retryPendingUnattempted": "fixtures/withdrawal-email-retry-pending-unattempted.request.json",
     "reconcileAccepted": "fixtures/withdrawal-email-reconciliation-accepted.request.json",
-    "reconcileNotAccepted": "fixtures/withdrawal-email-reconciliation-not-accepted.request.json"
+    "reconcileNotAccepted": "fixtures/withdrawal-email-reconciliation-not-accepted.request.json",
+    "contactRetryCustomer": "fixtures/contact-email-retry-customer.request.json",
+    "contactRetryInternal": "fixtures/contact-email-retry-internal.request.json",
+    "contactRetryPendingUnattempted": "fixtures/contact-email-retry-pending-unattempted.request.json",
+    "contactReconcileAccepted": "fixtures/contact-email-reconciliation-accepted.request.json",
+    "contactReconcileNotAccepted": "fixtures/contact-email-reconciliation-not-accepted.request.json",
+    "contactModeMismatchResult": "fixtures/contact-email-mode-mismatch.result.json"
   },
   "deliveryContract": {
     "statuses": ["pending", "sent", "failed", "unknown"],
@@ -78,8 +172,25 @@
     ]
   },
   "artifacts": {
-    "README.md": "sha256:294257da224fb1588c1f52a33532673744cc9512bb6c5bf3e67963f49df19843",
+    "README.md": "sha256:26678170659db95695c3d4db7b5967c083bb4824a8639c9bc246e469c587129b",
+    "contact-create.response.schema.json": "sha256:e6e47407527490bd162c9d8aac4a86f372ba8f37928d281c679bfbbd91c57546",
+    "contact-email-artifacts.schema.json": "sha256:016c789c3700b2156ab72817dc8abe617e079f932fea6f4304dd6af8dcb80d4e",
+    "contact-email-delivery-operation.schema.json": "sha256:e73ece9ce12db8ab1f6a810e6f887d2dffc41dfc4c09cfca56872ee530d403db",
+    "contact-email-delivery-result.schema.json": "sha256:30236f7e502ce66b617423505925c94d69674a9bcd065a0d3a32b1a2c299df06",
+    "contact.schema.json": "sha256:aaea83a904cf0cf2237e8c17b82286df354c5612f4125a2d791db1f9b2e649ad",
+    "fixtures/contact-account.request.json": "sha256:e3c8d026ee260e791541e92d6d99416797a8635a2e7f40cc4dc7a5db72f2b8b0",
+    "fixtures/contact-conflict.response.json": "sha256:1e69658ae0f189d036c6d801fd8083fd64575e60c1bfe0b7131f2f563d2a55d4",
+    "fixtures/contact-create-pending.response.json": "sha256:262b784b73050ee11112fdf2cc659f1d10f39bb019954def44f07f11c134b87a",
+    "fixtures/contact-duplicate-pending.response.json": "sha256:bc20ce1ac5b6a42e5b9ed1b1355fd2b759276d026ed2431f803f407ef9fdcff5",
+    "fixtures/contact-email-mode-mismatch.result.json": "sha256:1b8ac0af4dd6d50eaa9800aa3646a528beac88e5bac05a5bd4334f0cfbe656bc",
+    "fixtures/contact-email-reconciliation-accepted.request.json": "sha256:29f7dc9788e1cadd728b8f94182d073083c350804b47313e155917867e91d0ea",
+    "fixtures/contact-email-reconciliation-not-accepted.request.json": "sha256:f9e4e33e166b95b69b00a3bfd1495b0002d6f7a30374ff14147edfa02ff7b3e7",
+    "fixtures/contact-email-retry-customer.request.json": "sha256:a092bec3718e9bd9eff3f4ac2332f7b0b22dbec601000d9e6d24b640b2017444",
+    "fixtures/contact-email-retry-internal.request.json": "sha256:c9d9b5d53245bb61d497033f9158950b76698685fc4b926f8b4d10fe1bc04e07",
+    "fixtures/contact-email-retry-pending-unattempted.request.json": "sha256:1f8c171077ae4a27c26c49a45580c3a08e9415b108217874ff9b7600e3d0d13f",
     "fixtures/contact-guest.request.json": "sha256:e6d24d8d966ff6b8f587ed3f16d77c016bb3a497e563130c3f2bcbe989cc95b9",
+    "fixtures/contact-invalid.response.json": "sha256:3471d39aebca406e9f2e30eba52bfd2b988a45b8786247856ad0d9c7878a26f0",
+    "fixtures/contact-market-locales.json": "sha256:8175711155c6261b99ba1ac5705ea98d4a8f6e74ad624dc0154125f303a0010e",
     "fixtures/withdrawal-account-phone-value.request.json": "sha256:c8eb5ea3200b09feec9d6467cc0e097d47461da9c4e3fbef755eb089db5c88bf",
     "fixtures/withdrawal-create.response.json": "sha256:36567f347e366dc6a3e577bed33cd2d18b474515e719f90d37b7f87671d6cda5",
     "fixtures/withdrawal-duplicate.response.json": "sha256:81ac0c7cde0360c34d7e0755deaf2c18ad0fee2343227b0173124814995abd12",
@@ -97,6 +208,141 @@
     "fixtures/withdrawal-guest-phone-trimmed.request.json": "sha256:279102c569f59be7d188a8272291c810a78fc0daced7b38a3be2267094d5571a",
     "fixtures/withdrawal-guest-selected-items.request.json": "sha256:42e53eba003c906d0128d9df5c818b6a57f67bf796585ae572bae27d396d939d",
     "fixtures/withdrawal-guest-whole-order.request.json": "sha256:c5045f861a1fa03ba915724ceb1654a35dd438f5febff460559e89003193b1fe",
+    "forms-error.response.schema.json": "sha256:cf024af21c5b2d5368e599248a9dfcde7ebeb974432abbbd5d4fc78fb28e92bd",
     "withdrawal.schema.json": "sha256:ee5b708d129de40b4de9410919c71c698c3f4476aee4acb7945be9dea4ef07c2"
+  },
+  "contactEmailDeliveryContract": {
+    "runtimeMode": {
+      "environment": "CONTACT_EMAIL_DELIVERY_MODE",
+      "values": ["off", "sink", "live"],
+      "safeDefault": "off",
+      "persistedField": "emailDeliveryMode",
+      "persistedValues": ["sink", "live"],
+      "sinkAllowedSMTPHosts": ["127.0.0.1", "::1", "localhost"],
+      "sinkPreservesCanonicalEnvelope": true,
+      "liveRequiresEnvironment": "CONTACT_EMAIL_LIVE_GO_ID",
+      "liveApprovedServerURL": "https://cms.maky.store"
+    },
+    "deliveryProfiles": {
+      "capture-only-v1": {
+        "emailRendererVersion": null,
+        "emailDeliveryMode": null,
+        "emailArtifacts": "absent-or-null",
+        "automaticSMTP": false,
+        "retryAllowed": false
+      },
+      "contact-email-v1": {
+        "emailRendererVersion": "contact-email-v1",
+        "emailDeliveryMode": ["sink", "live"],
+        "emailArtifacts": "write-once-before-smtp",
+        "automaticSMTP": true,
+        "retryAllowed": true
+      }
+    },
+    "legacyBackfillDeliveryProfile": "capture-only-v1",
+    "identityFieldsWriteOnce": ["deliveryProfile", "emailRendererVersion", "emailDeliveryMode"],
+    "artifactContract": {
+      "field": "emailArtifacts",
+      "schema": "contact-email-artifacts.schema.json",
+      "writeOnce": true,
+      "hashAlgorithm": "sha256",
+      "hashEncoding": "lowercase-hex",
+      "contentHashFields": [
+        "customerTextSha256",
+        "customerHTMLSha256",
+        "internalTextSha256",
+        "internalHTMLSha256"
+      ],
+      "documentHashField": "documentSha256",
+      "envelopeHashFields": ["customerEnvelopeSha256", "internalEnvelopeSha256"],
+      "deterministicMessageIdFromSubmissionId": true,
+      "renderedLocales": ["sk", "cs", "pl", "hu", "ro", "de", "it", "fr", "es", "en"],
+      "marketProfiles": ["SK", "CZ", "PL", "HU", "RO", "AT", "DE", "IT", "FR", "ES", "US", "CA"],
+      "sharedLocalePairs": [
+        ["DE", "AT"],
+        ["US", "CA"]
+      ],
+      "slovakFallbackOutsideSK": false
+    },
+    "attemptProtocol": {
+      "persistArtifactsBeforeSMTP": true,
+      "reservationStatus": "unknown",
+      "persistReservationBeforeSMTP": true,
+      "incrementAttemptCountBeforeSMTP": true,
+      "serverOwnedReservationToken": "lastAttemptId",
+      "persistedRereadBeforeSMTP": true,
+      "customerAndInternalIndependent": true,
+      "unknownAutoRetry": false
+    },
+    "retry": {
+      "endpoint": "POST /api/forms/contact/:id/email-delivery/retry",
+      "requestSchema": "contact-email-delivery-operation.schema.json#/$defs/retry",
+      "fixtures": [
+        "fixtures/contact-email-retry-customer.request.json",
+        "fixtures/contact-email-retry-internal.request.json",
+        "fixtures/contact-email-retry-pending-unattempted.request.json"
+      ],
+      "allowedStoredStates": [
+        {
+          "status": "failed"
+        },
+        {
+          "status": "pending",
+          "attemptCount": 0
+        }
+      ],
+      "unknownRequiresReconciliation": true
+    },
+    "reconciliation": {
+      "endpoint": "PATCH /api/forms/contact/:id/email-delivery",
+      "requestSchema": "contact-email-delivery-operation.schema.json#/$defs/reconciliation",
+      "fixtures": [
+        "fixtures/contact-email-reconciliation-accepted.request.json",
+        "fixtures/contact-email-reconciliation-not-accepted.request.json"
+      ],
+      "requiredStoredStatus": "unknown",
+      "notAcceptedErrorCode": "CONTACT_EMAIL_RECONCILED_NOT_SENT"
+    },
+    "modeMismatch": {
+      "code": "CONTACT_EMAIL_DELIVERY_MODE_MISMATCH",
+      "smtpAttempted": false,
+      "resultSchema": "contact-email-delivery-result.schema.json",
+      "fixture": "fixtures/contact-email-mode-mismatch.result.json",
+      "duplicateCreateBehavior": "return-existing-state-without-reservation",
+      "retryHttpError": "EMAIL_DELIVERY_NOT_RETRYABLE",
+      "rendererDefenseInDepth": true
+    },
+    "fixedDeliveryErrorCodes": [
+      "CONTACT_EMAIL_DELIVERY_MODE_MISMATCH",
+      "CONTACT_EMAIL_INVALID_PERSISTED_DATA",
+      "CONTACT_EMAIL_CUSTOMER_SEND_FAILED",
+      "CONTACT_EMAIL_CUSTOMER_SEND_UNKNOWN",
+      "CONTACT_EMAIL_INTERNAL_SEND_FAILED",
+      "CONTACT_EMAIL_INTERNAL_SEND_UNKNOWN",
+      "CONTACT_EMAIL_RECONCILED_NOT_SENT"
+    ],
+    "publicCreateResponse": {
+      "schema": "contact-create.response.schema.json",
+      "shapeUnchangedSinceRevision": "1.2.0",
+      "internalFieldsExcluded": [
+        "deliveryProfile",
+        "emailRendererVersion",
+        "emailDeliveryMode",
+        "emailArtifacts",
+        "lastAttemptId",
+        "providerMessageId",
+        "lastError"
+      ],
+      "emailDeliveryFields": [
+        "customerStatus",
+        "customerSentAt",
+        "customerAttemptCount",
+        "customerLastAttemptAt",
+        "internalStatus",
+        "internalSentAt",
+        "internalAttemptCount",
+        "internalLastAttemptAt"
+      ]
+    }
   }
 }

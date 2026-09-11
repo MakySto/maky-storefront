@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contact-email-artifacts.schema.json",
+  "title": "MAKY Contact email V1 write-once artifacts",
+  "description": "Strict structural contract for persisted customer/internal rendered bytes, immutable routing and SHA-256 bindings. Runtime cryptographic validation remains normative.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "customerEnvelopeSha256",
+    "customerHTML",
+    "customerHTMLSha256",
+    "customerMessageId",
+    "customerReplyTo",
+    "customerSubject",
+    "customerTemplateVersion",
+    "customerText",
+    "customerTextSha256",
+    "customerTo",
+    "deliveryMode",
+    "deliveryProfile",
+    "documentSha256",
+    "emailRendererVersion",
+    "fromAddress",
+    "fromName",
+    "internalEnvelopeSha256",
+    "internalHTML",
+    "internalHTMLSha256",
+    "internalMessageId",
+    "internalReplyTo",
+    "internalSubject",
+    "internalTemplateVersion",
+    "internalText",
+    "internalTextSha256",
+    "internalTo",
+    "market",
+    "marketProfileVersion",
+    "preparedAt",
+    "renderedLocale",
+    "schemaVersion"
+  ],
+  "properties": {
+    "customerEnvelopeSha256": { "$ref": "#/$defs/sha256" },
+    "customerHTML": { "type": "string", "minLength": 1, "maxLength": 200000 },
+    "customerHTMLSha256": { "$ref": "#/$defs/sha256" },
+    "customerMessageId": {
+      "type": "string",
+      "pattern": "^<maky-contact-customer-[0-9a-f]{64}@mail\\.maky\\.store>$"
+    },
+    "customerReplyTo": { "$ref": "#/$defs/email" },
+    "customerSubject": { "$ref": "#/$defs/header" },
+    "customerTemplateVersion": {
+      "type": "string",
+      "pattern": "^contact-customer-(sk|cs|pl|hu|ro|de|it|fr|es|en)-v1$"
+    },
+    "customerText": { "type": "string", "minLength": 1, "maxLength": 100000 },
+    "customerTextSha256": { "$ref": "#/$defs/sha256" },
+    "customerTo": { "$ref": "#/$defs/email" },
+    "deliveryMode": { "enum": ["sink", "live"] },
+    "deliveryProfile": { "const": "contact-email-v1" },
+    "documentSha256": { "$ref": "#/$defs/sha256" },
+    "emailRendererVersion": { "const": "contact-email-v1" },
+    "fromAddress": { "$ref": "#/$defs/email" },
+    "fromName": { "$ref": "#/$defs/header100" },
+    "internalEnvelopeSha256": { "$ref": "#/$defs/sha256" },
+    "internalHTML": { "type": "string", "minLength": 1, "maxLength": 200000 },
+    "internalHTMLSha256": { "$ref": "#/$defs/sha256" },
+    "internalMessageId": {
+      "type": "string",
+      "pattern": "^<maky-contact-internal-[0-9a-f]{64}@mail\\.maky\\.store>$"
+    },
+    "internalReplyTo": { "$ref": "#/$defs/email" },
+    "internalSubject": { "$ref": "#/$defs/header" },
+    "internalTemplateVersion": { "const": "contact-internal-en-v1" },
+    "internalText": { "type": "string", "minLength": 1, "maxLength": 100000 },
+    "internalTextSha256": { "$ref": "#/$defs/sha256" },
+    "internalTo": { "$ref": "#/$defs/email" },
+    "market": {
+      "enum": ["SK", "CZ", "PL", "HU", "RO", "AT", "DE", "IT", "FR", "ES", "US", "CA"]
+    },
+    "marketProfileVersion": { "const": "contact-market-profile-v1" },
+    "preparedAt": { "type": "string", "format": "date-time" },
+    "renderedLocale": { "enum": ["sk", "cs", "pl", "hu", "ro", "de", "it", "fr", "es", "en"] },
+    "schemaVersion": { "const": 1 }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "email": { "type": "string", "minLength": 3, "maxLength": 320 },
+    "header": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 320,
+      "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+    },
+    "header100": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+    }
+  },
+  "x-cryptographicSemantics": {
+    "normative": true,
+    "algorithm": "sha256",
+    "encoding": "utf8",
+    "contentBindings": {
+      "customerText": "customerTextSha256",
+      "customerHTML": "customerHTMLSha256",
+      "internalText": "internalTextSha256",
+      "internalHTML": "internalHTMLSha256"
+    },
+    "documentBinding": "documentSha256 includes the normalized immutable Contact document and deliveryMode",
+    "envelopeBindings": ["customerEnvelopeSha256", "internalEnvelopeSha256"],
+    "structuralRuntimeValidator": "src/forms/contactEmailV1.ts#validateContactEmailArtifacts",
+    "documentBoundRuntimeValidator": "src/forms/contactEmailV1.ts#persistedContactEmailV1Artifacts"
+  }
+}

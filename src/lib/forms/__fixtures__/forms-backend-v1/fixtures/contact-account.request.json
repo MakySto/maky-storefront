@@ -1,0 +1,19 @@
+{
+  "submissionId": "018f0000-0000-7000-8000-000000000012",
+  "source": "account",
+  "market": "SK",
+  "locale": "sk",
+  "customer": {
+    "name": "Meno zákazníka",
+    "email": "customer@example.com",
+    "phone": "+421 901 730 066"
+  },
+  "topic": "orderStatus",
+  "order": {
+    "orderNumber": "ORDER-10001",
+    "saleorOrderId": "saleor-order-id",
+    "saleorCustomerId": "saleor-customer-id"
+  },
+  "message": "Prosím o informáciu o stave objednávky.",
+  "privacyNoticeVersion": "privacy-notice-version"
+}

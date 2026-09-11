@@ -8,6 +8,13 @@ import {
 } from "../withdrawal/contract";
 import { missingFormsSettings, readFormsConnection } from "./env";
 import { signFormsRequest } from "./signature";
+import {
+	CONTACT_ENDPOINT,
+	CONTACT_LIMITS,
+	parseContactAccepted,
+	type ContactAccepted,
+	type ContactSubmission,
+} from "./contact-contract";
 
 /**
  * Server-side client for the Payload forms endpoints.
@@ -259,4 +266,126 @@ export async function submitWithdrawalToPayload(
 /** One id per form attempt, generated server-side when the page renders. */
 export function newSubmissionId(): string {
 	return randomUUID();
+}
+
+/**
+ * Persist a contact message.
+ *
+ * The same discipline as the withdrawal path above, and for the same reasons — one
+ * serialisation, signed and sent byte for byte; `submissionId` as the idempotency key
+ * so a retry after a timeout returns the original record rather than filing a second
+ * message; the provider's error CODE classified, never its operator-facing text.
+ *
+ * What differs is only the endpoint, the size limit and the acknowledgement shape.
+ * A `duplicate` flag that disagrees with the status line is a contract violation rather
+ * than a detail to smooth over: it would change what the customer is told about whether
+ * their message was already received.
+ */
+export async function submitContactToPayload(
+	submission: ContactSubmission,
+): Promise<FormsOutcome<ContactAccepted>> {
+	const connection = readFormsConnection();
+	if (!connection) {
+		const missing = missingFormsSettings();
+		logForms("error", "not-configured", { missing });
+		return { status: "notConfigured", missing };
+	}
+
+	// Serialise ONCE. These exact bytes are signed and these exact bytes are sent.
+	const rawBody = JSON.stringify(submission);
+
+	const byteLength = Buffer.byteLength(rawBody, "utf8");
+	if (byteLength > CONTACT_LIMITS.bodyBytes) {
+		logForms("error", "body-too-large", { submissionId: submission.submissionId, byteLength });
+		return { status: "rejected", httpStatus: 413, code: "BODY_TOO_LARGE" };
+	}
+
+	const timestamp = formsTimestampSeconds();
+	const signature = signFormsRequest(connection.hmacSecret, timestamp, rawBody);
+
+	let response: Response;
+	try {
+		response = await fetch(`${connection.baseUrl}${CONTACT_ENDPOINT}`, {
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+				accept: "application/json",
+				"CF-Access-Client-Id": connection.accessClientId,
+				"CF-Access-Client-Secret": connection.accessClientSecret,
+				"X-Maky-Forms-Timestamp": timestamp,
+				"X-Maky-Forms-Submission-Id": submission.submissionId,
+				"X-Maky-Forms-Signature": signature,
+			},
+			body: rawBody,
+			redirect: "manual",
+			signal: AbortSignal.timeout(connection.timeoutMs),
+			cache: "no-store",
+		});
+	} catch (error) {
+		const timedOut = error instanceof Error && error.name === "TimeoutError";
+		const reason = timedOut ? `timeout after ${connection.timeoutMs}ms` : "network error";
+		// A timeout says the ANSWER did not arrive. It does not say the record was not
+		// written, so nothing downstream may treat this as "nothing was stored" — the
+		// retry carries the same submissionId precisely because it might have been.
+		logForms("error", "fetch-failed", { submissionId: submission.submissionId, reason });
+		return { status: "unavailable", reason };
+	}
+
+	if (response.status >= 300 && response.status < 400) {
+		logForms("error", "upstream-status", {
+			submissionId: submission.submissionId,
+			httpStatus: response.status,
+		});
+		return { status: "unavailable", reason: `upstream HTTP ${response.status}` };
+	}
+
+	let text: string;
+	try {
+		text = await response.text();
+	} catch {
+		return { status: "unavailable", reason: "unreadable response body" };
+	}
+
+	let body: unknown;
+	try {
+		body = JSON.parse(text);
+	} catch {
+		logForms(response.ok ? "error" : "warn", "malformed-json", {
+			submissionId: submission.submissionId,
+			httpStatus: response.status,
+		});
+		return { status: "unavailable", reason: `upstream HTTP ${response.status}` };
+	}
+
+	if (response.ok) {
+		if (response.status !== 200 && response.status !== 201) {
+			logForms("error", "contract-violation", {
+				submissionId: submission.submissionId,
+				httpStatus: response.status,
+			});
+			return { status: "unavailable", reason: "unexpected successful HTTP status" };
+		}
+		const accepted = parseContactAccepted(body, response.status === 200);
+		if (!accepted) {
+			logForms("error", "contract-violation", {
+				submissionId: submission.submissionId,
+				httpStatus: response.status,
+			});
+			return { status: "unavailable", reason: "response did not match the forms contract" };
+		}
+		return { status: "ok", value: accepted };
+	}
+
+	const code = toErrorCode((body as { error?: { code?: unknown } } | null)?.error?.code);
+	logForms("error", "rejected", {
+		submissionId: submission.submissionId,
+		httpStatus: response.status,
+		code,
+	});
+
+	if (code === "FORMS_INTERNAL_ERROR" || (code === "UNKNOWN" && response.status >= 500)) {
+		return { status: "unavailable", reason: `upstream HTTP ${response.status}` };
+	}
+
+	return { status: "rejected", httpStatus: response.status, code };
 }

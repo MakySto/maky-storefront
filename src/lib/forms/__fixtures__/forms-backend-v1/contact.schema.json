@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contact.schema.json",
+  "title": "MAKY Forms Backend V1 contact create request",
+  "description": "Strict wire contract for POST /api/forms/contact. The x-* normalized-string keywords are normative and run after ECMAScript trim; standard JSON Schema validators that ignore them provide only a structural precheck.",
+  "x-normalizedStringSemantics": {
+    "normative": true,
+    "trimOperation": "ECMAScript String.prototype.trim",
+    "requiredMode": "trim-required",
+    "optionalMode": "trim-empty-to-null",
+    "supportedLengthUnits": ["utf16-code-units"]
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "submissionId",
+    "source",
+    "market",
+    "locale",
+    "customer",
+    "topic",
+    "message",
+    "privacyNoticeVersion"
+  ],
+  "properties": {
+    "submissionId": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "source": { "enum": ["guest", "account"] },
+    "market": {
+      "enum": ["SK", "CZ", "PL", "HU", "RO", "AT", "DE", "IT", "FR", "ES", "US", "CA"]
+    },
+    "locale": {
+      "enum": ["sk", "cs", "pl", "hu", "ro", "de", "it", "fr", "es", "en"]
+    },
+    "customer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "email"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "x-normalization": "trim-required",
+          "x-normalizedMinLength": 1,
+          "x-normalizedMaxLength": 200,
+          "x-normalizedLengthUnit": "utf16-code-units"
+        },
+        "email": {
+          "type": "string",
+          "x-normalization": "trim-required",
+          "x-normalizedMinLength": 1,
+          "x-normalizedMaxLength": 320,
+          "x-normalizedLengthUnit": "utf16-code-units",
+          "x-normalizedFormat": "maky-form-email-v1",
+          "x-normalizedPattern": "^(?!.*\\.\\.)[\\w!#$%&'*+/=?^`{|}~-](?:[\\w!#$%&'*+/=?^`{|}~.-]*[\\w!#$%&'*+/=?^`{|}~-])?@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\\.[a-z]{2,}$",
+          "x-normalizedPatternFlags": "i"
+        },
+        "phone": {
+          "description": "Optional and nullable. Surrounding whitespace is trimmed, blank maps to null, and the normalized value has at most 50 UTF-16 code units.",
+          "type": ["string", "null"],
+          "x-normalization": "trim-empty-to-null",
+          "x-normalizedMaxLength": 50,
+          "x-normalizedLengthUnit": "utf16-code-units"
+        }
+      }
+    },
+    "topic": {
+      "enum": [
+        "productAdvice",
+        "orderStatus",
+        "shipping",
+        "returns",
+        "complaint",
+        "payment",
+        "account",
+        "businessCooperation",
+        "other"
+      ]
+    },
+    "order": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "orderNumber": {
+          "type": ["string", "null"],
+          "x-normalization": "trim-empty-to-null",
+          "x-normalizedMaxLength": 128,
+          "x-normalizedLengthUnit": "utf16-code-units"
+        },
+        "saleorOrderId": {
+          "type": ["string", "null"],
+          "x-normalization": "trim-empty-to-null",
+          "x-normalizedMaxLength": 128,
+          "x-normalizedLengthUnit": "utf16-code-units"
+        },
+        "saleorCustomerId": {
+          "type": ["string", "null"],
+          "x-normalization": "trim-empty-to-null",
+          "x-normalizedMaxLength": 128,
+          "x-normalizedLengthUnit": "utf16-code-units"
+        }
+      }
+    },
+    "message": {
+      "type": "string",
+      "x-normalization": "trim-required",
+      "x-normalizedMinLength": 1,
+      "x-normalizedMaxLength": 10000,
+      "x-normalizedLengthUnit": "utf16-code-units"
+    },
+    "privacyNoticeVersion": {
+      "type": "string",
+      "x-normalization": "trim-required",
+      "x-normalizedMinLength": 1,
+      "x-normalizedMaxLength": 128,
+      "x-normalizedLengthUnit": "utf16-code-units"
+    }
+  },
+  "allOf": [
+    {
+      "oneOf": [
+        { "properties": { "market": { "const": "SK" }, "locale": { "const": "sk" } } },
+        { "properties": { "market": { "const": "CZ" }, "locale": { "const": "cs" } } },
+        { "properties": { "market": { "const": "PL" }, "locale": { "const": "pl" } } },
+        { "properties": { "market": { "const": "HU" }, "locale": { "const": "hu" } } },
+        { "properties": { "market": { "const": "RO" }, "locale": { "const": "ro" } } },
+        { "properties": { "market": { "const": "AT" }, "locale": { "const": "de" } } },
+        { "properties": { "market": { "const": "DE" }, "locale": { "const": "de" } } },
+        { "properties": { "market": { "const": "IT" }, "locale": { "const": "it" } } },
+        { "properties": { "market": { "const": "FR" }, "locale": { "const": "fr" } } },
+        { "properties": { "market": { "const": "ES" }, "locale": { "const": "es" } } },
+        { "properties": { "market": { "const": "US" }, "locale": { "const": "en" } } },
+        { "properties": { "market": { "const": "CA" }, "locale": { "const": "en" } } }
+      ]
+    }
+  ]
+}

@@ -7,16 +7,16 @@ the only storefront-authored thing in the directory.
 |                               |                                                                    |
 | ----------------------------- | ------------------------------------------------------------------ |
 | provider repository           | `MakySto/maky-cms`                                                 |
-| provider branch               | `codex/payload-provider-v2-forms-v1`                               |
-| provider commit               | `459146a894e344b8261921e5c4c39879a0407839`                         |
+| provider branch               | `codex/contact-provider-delivery`                                  |
+| provider commit               | `f2b8163ce9aa148007f1e1026e0858eadc4db370`                         |
 | contract                      | `forms-backend-v1`                                                 |
-| contract revision             | `1.1.0`                                                            |
+| contract revision             | `1.3.0`                                                            |
 | manifest status               | `candidate`                                                        |
-| manifest SHA-256              | `0ed6e45be585cb4ad27950befd4a8eba7b5f83004767f05bcf0962b90b901632` |
+| manifest SHA-256              | `26bec26b7fb493af1d11da68a983fff9c1abccbfaf3ce73fdc56ba35c879cd93` |
 | Payload version               | `3.86.0`                                                           |
 | migration (not yet applied)   | `20260730_111111_forms_backend_v1`                                 |
-| artifacts                     | 20, all digests verified on vendoring                              |
-| vendored on                   | 2026-07-30                                                         |
+| artifacts                     | 38, all digests verified on vendoring                              |
+| vendored on                   | 2026-09-11 (re-vendored at revision 1.3.0)                         |
 
 Source in the provider repository:
 

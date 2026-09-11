@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contact-email-delivery-operation.schema.json",
+  "title": "MAKY Forms Backend V1 Contact email operational request",
+  "description": "Strict signed request bodies for Contact retry POST and explicit reconciliation PATCH. The endpoint and method select the applicable branch.",
+  "oneOf": [{ "$ref": "#/$defs/retry" }, { "$ref": "#/$defs/reconciliation" }],
+  "$defs": {
+    "submissionId": {
+      "type": "string",
+      "pattern": "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$"
+    },
+    "channel": { "enum": ["customer", "internal"] },
+    "retry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formType", "submissionId", "channel", "expectedAttemptCount"],
+      "properties": {
+        "formType": { "const": "contact" },
+        "submissionId": { "$ref": "#/$defs/submissionId" },
+        "channel": { "$ref": "#/$defs/channel" },
+        "expectedAttemptCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      }
+    },
+    "reconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formType", "submissionId", "reconciliation"],
+      "properties": {
+        "formType": { "const": "contact" },
+        "submissionId": { "$ref": "#/$defs/submissionId" },
+        "reconciliation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["channel", "expectedAttemptCount", "outcome"],
+          "properties": {
+            "channel": { "$ref": "#/$defs/channel" },
+            "expectedAttemptCount": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "outcome": { "enum": ["accepted", "notAccepted"] },
+            "providerMessageId": {
+              "type": ["string", "null"],
+              "maxLength": 128,
+              "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]*$"
+            }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "outcome": { "const": "notAccepted" } } },
+              "then": { "properties": { "providerMessageId": { "type": "null" } } }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

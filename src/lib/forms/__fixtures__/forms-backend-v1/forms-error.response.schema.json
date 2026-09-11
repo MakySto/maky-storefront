@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forms-error.response.schema.json",
+  "title": "MAKY Forms Backend V1 error response",
+  "description": "Exact public error envelope emitted by the signed Forms Backend V1 custom endpoints. HTTP status remains out-of-band.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ok", "error"],
+  "properties": {
+    "ok": { "const": false },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "enum": [
+            "INVALID_CONTENT_LENGTH",
+            "INVALID_REQUEST_BODY",
+            "INVALID_REQUEST",
+            "INVALID_RECORD_ID",
+            "EMAIL_DELIVERY_ERROR_REQUIRED",
+            "MISSING_TIMESTAMP",
+            "INVALID_TIMESTAMP",
+            "STALE_TIMESTAMP",
+            "MISSING_SIGNATURE",
+            "INVALID_SIGNATURE",
+            "INVALID_SUBMISSION_ID_HEADER",
+            "FORM_NOT_FOUND",
+            "SUBMISSION_ID_CONFLICT",
+            "SUBMISSION_TARGET_MISMATCH",
+            "DELIVERY_STATUS_REGRESSION",
+            "DELIVERY_ATTEMPT_STATE_INVALID",
+            "BODY_TOO_LARGE",
+            "EMAIL_DELIVERY_ATTEMPT_MISMATCH",
+            "EMAIL_DELIVERY_ALREADY_SENT",
+            "EMAIL_DELIVERY_NOT_RETRYABLE",
+            "EMAIL_DELIVERY_RECONCILIATION_REQUIRED",
+            "EMAIL_DELIVERY_RECONCILIATION_NOT_ALLOWED",
+            "EMAIL_DELIVERY_ALREADY_ATTEMPTED",
+            "EMAIL_DELIVERY_ATTEMPT_LIMIT",
+            "UNSUPPORTED_MEDIA_TYPE",
+            "FORMS_INTERNAL_ERROR",
+            "EMAIL_DELIVERY_STATE_INVALID",
+            "FORMS_AUTH_UNAVAILABLE",
+            "WITHDRAWAL_CONFIRMATION_PENDING",
+            "WITHDRAWAL_EXPERIENCE_REQUIRED",
+            "WITHDRAWAL_EXPERIENCE_UNAVAILABLE"
+          ]
+        },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

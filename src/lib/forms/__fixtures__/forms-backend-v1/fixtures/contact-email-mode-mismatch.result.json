@@ -1,0 +1,12 @@
+{
+  "customer": {
+    "status": "failed",
+    "code": "CONTACT_EMAIL_DELIVERY_MODE_MISMATCH",
+    "providerMessageId": null
+  },
+  "internal": {
+    "status": "failed",
+    "code": "CONTACT_EMAIL_DELIVERY_MODE_MISMATCH",
+    "providerMessageId": null
+  }
+}

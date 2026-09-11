@@ -4,6 +4,8 @@ Tento dokument opisuje aktuálny wire a authorization kontrakt implementovaný v
 
 - `src/endpoints/forms.ts`
 - `src/forms/access.ts`
+- `src/forms/contactDeliveryMode.ts`
+- `src/forms/contactEmailV1.ts`
 - `src/forms/email.ts`
 - `src/forms/security.ts`
 - `src/forms/submissionNumber.ts`
@@ -14,10 +16,17 @@ Tento dokument opisuje aktuálny wire a authorization kontrakt implementovaný v
 - `src/migrations/20260730_111111_forms_backend_v1.ts`
 - `src/payload.config.ts`
 
-Contract status je `candidate`, stable contract revision je `1.1.0` a Payload
+Contract status je `candidate`, stable contract revision je `1.3.0` a Payload
 verzia je `3.86.0`. `manifest.json` je machine-readable autorita: uvádza
 canonical scenáre a SHA-256 presných bytes každého artefaktu v tomto adresári
 okrem manifestu samotného. SHA-256 manifestu sa lockuje v unit teste.
+
+Revision `1.3.0` nemení Forms Backend major verziu ani verejný Contact create
+wire z revision `1.2.0`. Dopĺňa durable Contact e-mail delivery: immutable
+profil/renderovací režim, write-once hashované artefakty, persisted-before-SMTP
+rezerváciu, Contact retry a explicitnú reconciliation. Legacy
+`fixtures/contact-guest.request.json`, Contact create schéma aj verejný
+acknowledgement zostávajú byte-for-byte nezmenené.
 
 Schválená seller identity a return copy sú source-controlled v
 `src/forms/seller.ts`. Dokument neobsahuje SMTP credentials, Cloudflare
@@ -44,7 +53,9 @@ Payload Forms V1:
 - zabezpečí databázovú idempotenciu,
 - nevolá Saleor,
 - po uložení nového withdrawal podania odošle cez Payload e-mailový adaptér
-  nezávislý customer a internal e-mail.
+  nezávislý customer a internal e-mail,
+- Contact e-mail odošle iba pre nový immutable `contact-email-v1` record v
+  explicitnom `sink` alebo `live` režime; bezpečný default `off` iba zachytí podanie.
 
 Payload je autoritatívny producent `submittedAt`, `submissionNumber`,
 `noticeSnapshot` a delivery stavu. Storefront tieto polia nikdy neposiela.
@@ -72,6 +83,7 @@ Payload používa default API prefix `/api`.
 | `PATCH` | `/api/forms/withdrawal/:id/email-delivery`       | delivery stav withdrawal záznamu                   |
 | `PATCH` | `/api/forms/contact/:id/email-delivery`          | delivery stav contact záznamu                      |
 | `POST`  | `/api/forms/withdrawal/:id/email-delivery/retry` | retry jednej definitívne zlyhanej e-mailovej vetvy |
+| `POST`  | `/api/forms/contact/:id/email-delivery/retry`    | retry jednej Contact e-mailovej vetvy              |
 
 `:id` je Payload record ID v canonical UUID tvare. Nie je to
 `submissionId` ani `submissionNumber`.
@@ -129,6 +141,13 @@ presne `1785412800.BODY`; bez newline alebo iného separatora navyše.
 `X-Maky-Forms-Submission-Id` sa normalizuje na lowercase a po overení podpisu
 sa musí rovnať normalizovanému `submissionId` v podpísanom body.
 
+`manifest.json.contactContract.signatureVector` je neprodukčný conformance
+vector. Používa timestamp `1785412800`, explicitne pomenovaný testovací secret a
+presné bytes `fixtures/contact-guest.request.json` vrátane koncového LF.
+Očakávaný podpis je
+`5cfa4095a9fbfa72cacd7812b2cb89cf5373b3853dd70d42c89986c470ac6f07`.
+Testovací secret nie je credential a nesmie sa použiť v žiadnom prostredí.
+
 ### Body size a media type
 
 - Maximálny raw body je `64 KiB`, presne `65 536` UTF-8 bytes.
@@ -155,6 +174,16 @@ crash recovery z `pending`/attempt `0`, obidva reconciliation outcomes a
 canonical create/duplicate response. Strict
 request schéma je `withdrawal.schema.json`.
 
+Contact requesty sú `fixtures/contact-guest.request.json` a
+`fixtures/contact-account.request.json`. Canonical acknowledgements sú
+`fixtures/contact-create-pending.response.json`,
+`fixtures/contact-duplicate-pending.response.json`,
+`fixtures/contact-conflict.response.json` a
+`fixtures/contact-invalid.response.json`. Presných 12 povolených dvojíc je v
+`fixtures/contact-market-locales.json`. Machine-readable schémy sú
+`contact.schema.json`, `contact-create.response.schema.json` a
+`forms-error.response.schema.json`.
+
 Každý canonical create request súbor predstavuje presný validný `rawBody`. Pri fixture-based
 signature teste sa podpisujú nezmenené bytes celého súboru vrátane jeho
 koncového LF a presne tie isté bytes sa odošlú. Produkčný caller môže použiť
@@ -164,7 +193,7 @@ produkčný parser musí odmietnuť.
 
 ### Normatívne normalizované string pravidlá
 
-`withdrawal.schema.json` je machine-readable autorita iba vtedy, keď consumer
+`withdrawal.schema.json` a `contact.schema.json` sú machine-readable autorita iba vtedy, keď consumer
 pred použitím štandardných JSON Schema assertions vykoná aj custom `x-*` keywords,
 ktoré sú označené ako normatívne. Draft 2020-12 validator, ktorý ich ignoruje,
 poskytuje iba structural precheck typov, required fields, enumov a raw patterns.
@@ -417,6 +446,19 @@ privacyNoticeVersion
 byť `null`, alebo povoľuje iba `orderNumber`, `saleorOrderId`,
 `saleorCustomerId`.
 
+Normatívna request schéma je `contact.schema.json`. Povinné sú
+`submissionId`, `source`, `market`, `locale`, `customer`, `topic`, `message` a
+`privacyNoticeVersion`; `order` môže chýbať, byť `null` alebo objekt. Povinné
+stringy sa normalizujú cez ECMAScript `trim()` a po normalizácii nesmú byť
+prázdne. Voliteľné stringy pri missing, `null`, empty alebo whitespace-only
+hodnote skončia ako `null`. Contact phone má po trim maximum 50 UTF-16 code
+units. Runtime Contact V1 naň neaplikuje withdrawal phone pattern ani E.164
+validáciu.
+
+Canonical guest request je legacy
+`fixtures/contact-guest.request.json`; account request s order kontextom je
+`fixtures/contact-account.request.json`.
+
 Topics:
 
 ```text
@@ -444,10 +486,15 @@ emailDelivery.customerStatus = pending
 emailDelivery.internalStatus = pending
 emailDelivery.customerAttemptCount = 0
 emailDelivery.internalAttemptCount = 0
+deliveryProfile = capture-only-v1 | contact-email-v1
+emailRendererVersion = null | contact-email-v1
+emailDeliveryMode = null | sink | live
 ```
 
 Contact nemá samostatný JSON snapshot field. Normalizované immutable contact
 fields v kolekcii sú autoritatívny obsah použitý pri idempotency porovnaní.
+`deliveryProfile`, `emailRendererVersion` a `emailDeliveryMode` sú server-owned,
+immutable a caller ich v create requeste nikdy neposiela.
 
 ### Nový záznam — `201`
 
@@ -477,8 +524,101 @@ fields v kolekcii sú autoritatívny obsah použitý pri idempotency porovnaní.
 Idempotentný duplicate vracia rovnaký shape s HTTP `200` a
 `duplicate: true`.
 
-Contact create v tejto verzii automaticky neposiela e-mail; response vracia
-aktuálny uložený delivery stav. Storefront nie je jeho bežný delivery actor.
+Pri safe-default režime `off` Contact create iba persistuje `capture-only-v1`
+record a vráti `pending`/attempt `0`; SMTP sa nevolá. V režime `sink` alebo
+`live` persistuje `contact-email-v1`, pripraví write-once artefakty a spustí
+durable customer/internal delivery. Response vždy vracia najlepší uložený stav.
+Storefront nie je delivery actor a nevolá operational retry ako súčasť bežného
+success flow.
+
+`contact-create.response.schema.json` uzatvára success envelope na presné keys
+`ok`, `duplicate` a `submission`; verejný `emailDelivery` má presne osem polí.
+Canonical nové pending acknowledgement je
+`fixtures/contact-create-pending.response.json`, duplicate je
+`fixtures/contact-duplicate-pending.response.json`. HTTP status je out-of-band:
+nový záznam používa `201`, duplicate `200`.
+
+Rovnaký submission ID s iným normalizovaným obsahom má HTTP `409` a canonical
+`fixtures/contact-conflict.response.json`. Neplatná market-locale dvojica má
+HTTP `400` a canonical `fixtures/contact-invalid.response.json`.
+
+## Payload-owned Contact e-mail delivery
+
+### Immutable profil a bezpečná runtime brána
+
+`CONTACT_EMAIL_DELIVERY_MODE` má presne hodnoty `off`, `sink`, `live`. Missing
+alebo empty hodnota znamená `off`; Contact e-mail sa nikdy nezapne implicitne.
+
+| Runtime režim | Uložený `deliveryProfile` | `emailRendererVersion` | Uložený `emailDeliveryMode` | SMTP                   |
+| ------------- | ------------------------- | ---------------------- | --------------------------- | ---------------------- |
+| `off`         | `capture-only-v1`         | `null`                 | `null`                      | nie                    |
+| `sink`        | `contact-email-v1`        | `contact-email-v1`     | `sink`                      | áno, iba loopback sink |
+| `live`        | `contact-email-v1`        | `contact-email-v1`     | `live`                      | áno, po explicitnom GO |
+
+Migrácia označí všetky existujúce Contact záznamy ako `capture-only-v1`.
+Takýto legacy record sa po deployi ani po zmene env nesmie automaticky odoslať
+a nie je retryable. `sink` povoľuje SMTP host iba `127.0.0.1`, `::1` alebo
+`localhost`; obálka zostáva kanonická, transport ju však doručuje len do
+izolovaného lokálneho sinku. `live` navyše vyžaduje neprázdny
+`CONTACT_EMAIL_LIVE_GO_ID` a schválený server origin `https://cms.maky.store`.
+
+Tri identity fields sú write-once. `contact-email-v1` vyžaduje konzistentnú
+trojicu renderer `contact-email-v1`, persisted mode `sink|live` a validné
+artefakty. `capture-only-v1` vyžaduje renderer/mode/artifacts `null` alebo
+absent. Nie je povolený upgrade starého recordu ani prepis `sink` na `live`.
+
+### Lokalizácia, obálky a write-once artefakty
+
+Customer acknowledgement má 10 explicitných templates pre
+`sk/cs/pl/hu/ro/de/it/fr/es/en`. Market routing má 12 explicitných profilov;
+DE/AT síce zdieľajú `de` a US/CA `en`, ale zostávajú samostatnými market
+rozhodnutiami. Na cudzom trhu neexistuje slovenský fallback.
+
+Každá submitted hodnota sa pred vložením do HTML escapuje a všetky e-mailové
+headery odmietajú C0/C1 control characters. Customer aj internal správa majú
+samostatný plaintext, HTML, subject, recipient/reply-to a deterministický
+channel-specific Message-ID odvodený zo `submissionId`.
+
+`emailArtifacts` sa môže zapísať presne raz serverovou object capability pred
+prvým SMTP pokusom. Obsahuje immutable `deliveryMode`, normalizovaný document
+SHA-256, SHA-256 customer/internal textu a HTML a SHA-256 oboch kanonických
+envelopes. Každý ďalší send používa výhradne validované persisted bytes, nie
+aktuálny template alebo znovu zostavené submitted dáta. Strict structural
+schéma je `contact-email-artifacts.schema.json`; self-consistency hashov overuje
+`validateContactEmailArtifacts` a väzbu na normalizovaný immutable Contact record
+pred každým sendom vynucuje `persistedContactEmailV1Artifacts`.
+
+### Persist-before-SMTP protokol
+
+Poradie initial aj retry delivery je:
+
+1. commitnúť Contact record; pri profile `contact-email-v1` zapísať a znovu
+   prečítať write-once artefakty,
+2. pod transaction-scoped advisory lockom nastaviť požadovaný kanál na
+   `unknown`, inkrementovať attempt count, zapísať serverový čas a nový
+   channel-specific `lastAttemptId`, potom rezerváciu commitnúť,
+3. samostatným persisted rereadom potvrdiť presný status/count/time/token a
+   immutable artefakty,
+4. až potom mimo DB transakcie skúsiť SMTP,
+5. výsledok finalizovať iba pri zhode `unknown`, count a reservation tokenu.
+
+Customer a internal kanál sú nezávislé; zlyhanie jedného nesmie potlačiť pokus
+druhého. Timeout alebo neklasifikovaný transportný výsledok zostáva `unknown`
+a nikdy sa automaticky neretryuje. Initial/duplicate recovery aj explicitný retry
+majú preflight gate: persisted mode musí byť totožný s aktívnym režimom, inak sa
+nevytvorí rezervácia ani SMTP pokus. Retry endpoint v takom prípade vráti verejnú
+chybu `EMAIL_DELIVERY_NOT_RETRYABLE`; duplicate create iba vráti existujúci stav.
+Renderer má navyše defense-in-depth guard: ak je napriek preflightu zavolaný s
+iným aktívnym režimom, každý požadovaný kanál dostane fixed interný kód
+`CONTACT_EMAIL_DELIVERY_MODE_MISMATCH` a SMTP sa vôbec nezavolá. Canonical interný
+výsledok je `fixtures/contact-email-mode-mismatch.result.json`; nejde o verejný
+HTTP response.
+
+Verejný Contact create response zostáva presne schema
+`contact-create.response.schema.json`: neodhaľuje profil, renderer, mode,
+artefakty, reservation token, provider ID ani fixed last-error. Jeho osem
+delivery polí môže po `sink|live` pokuse obsahovať aktuálny
+`pending|unknown|failed|sent` stav, ale JSON shape sa nemení.
 
 ## Human-readable submission numbers
 
@@ -628,7 +768,11 @@ zachováva ako server-only state. Po `sent` nemožno vetvu downgradovať. Stav
 `outcome` je `accepted` alebo `notAccepted`. `notAccepted` nesmie obsahovať
 provider ID, nastaví vetvu na `failed` a tým ju sprístupní retry. `accepted`
 nastaví `sent`. Obe vetvy sa reconciliujú nezávisle a request musí uviesť
-aktuálny `expectedAttemptCount`.
+aktuálny `expectedAttemptCount`. Contact používa ten istý PATCH endpoint s
+`formType: "contact"`; jeho `notAccepted` fixed last-error je
+`CONTACT_EMAIL_RECONCILED_NOT_SENT`. Canonical Contact requesty sú
+`fixtures/contact-email-reconciliation-accepted.request.json` a
+`fixtures/contact-email-reconciliation-not-accepted.request.json`.
 
 Signed PATCH operácie nad rovnakým `formType:id` sa serializujú v jednej
 PostgreSQL transakcii pomocou transaction-scoped advisory locku. Handler až pod
@@ -675,10 +819,12 @@ Verejný acknowledgement zostáva presne osem-poľový. Zámerne nevracia provid
 ID, last-error, reconciliation metadata ani server-only `customerLastAttemptId`
 alebo `internalLastAttemptId`.
 
-## Withdrawal e-mail retry
+## Withdrawal a Contact e-mail retry
 
 `POST /api/forms/withdrawal/:id/email-delivery/retry` je samostatný HMAC-signed
-operational resend endpoint. Canonical body:
+operational resend endpoint. Contact používa identický protocol na
+`POST /api/forms/contact/:id/email-delivery/retry` s `formType: "contact"`.
+Canonical withdrawal body:
 
 ```json
 {
@@ -687,6 +833,14 @@ operational resend endpoint. Canonical body:
   "channel": "customer",
   "expectedAttemptCount": 1
 }
+```
+
+Canonical Contact customer/internal a pending/count `0` recovery requesty sú:
+
+```text
+fixtures/contact-email-retry-customer.request.json
+fixtures/contact-email-retry-internal.request.json
+fixtures/contact-email-retry-pending-unattempted.request.json
 ```
 
 Endpoint retryuje presne jeden `customer` alebo `internal` kanál. Bežne je
@@ -714,7 +868,9 @@ Definitívne odmietnutie skončí `failed`; timeout/socket/nejasný výsledok zo
 zostáva už commitnutý `unknown`, aby caller neposlal správu naslepo znovu.
 Úspešná odpoveď používa rovnaký verejný osem-poľový delivery acknowledgement.
 Retry nikdy nemení immutable submission fields a duplicate create ho nikdy
-nespúšťa.
+nespúšťa, s výnimkou úzkej obnovy vlastného `contact-email-v1` pending/count
+`0` recordu v rovnakom aktívnom delivery mode. Capture-only Contact record nie
+je retryable.
 
 ## Idempotency a same-ID conflict
 
@@ -768,6 +924,9 @@ Vstup musí byť presne jedna z týchto dvojíc:
 
 Iná kombinácia je `400 INVALID_REQUEST` s message
 `locale does not match market.`.
+
+Machine-readable canonical poradie a hodnoty všetkých 12 párov sú
+hash-locknuté v `fixtures/contact-market-locales.json`.
 
 ## Field limits
 
@@ -824,6 +983,10 @@ Error envelope:
   }
 }
 ```
+
+`forms-error.response.schema.json` uzatvára envelope na presné top-level keys
+`ok`, `error` a presné vnorené keys `code`, `message`. HTTP status nie je
+súčasťou JSON body a zostáva definovaný endpointom a tabuľkou nižšie.
 
 Consumer má vetviť podľa HTTP statusu a `error.code`, nie podľa message textu.
 
@@ -921,10 +1084,13 @@ SMTP_USER
 SMTP_PASS
 SMTP_FROM_ADDRESS
 SMTP_FROM_NAME
+CONTACT_EMAIL_DELIVERY_MODE
+CONTACT_EMAIL_LIVE_GO_ID
 ```
 
-Adapter má `skipVerify: true`. Transport má `secure: false`, `requireTLS: true`,
-default port `587` a timeouty `dnsTimeout: 10000`,
+Adapter má `skipVerify: true`. Transport má `secure: false`; v `sink` režime používa
+`requireTLS: false`, prázdne auth a výhradne literal loopback host. V `off|live`
+režime zostáva `requireTLS: true`, default port `587` a timeouty `dnsTimeout: 10000`,
 `connectionTimeout: 10000`, `greetingTimeout: 10000`,
 `socketTimeout: 20000`. Locked sender decision aj adapter fallback sú:
 
@@ -938,6 +1104,12 @@ operatorom potvrdený ako verified sender. Source ani env prítomnosť však sam
 nedokazujú aktuálnu dostupnosť Postmark credentials; pred release zostáva
 provider/config acceptance gate. Tento branch neposiela externý testovací
 e-mail.
+
+Contact gate je od transport configu oddelená. `off` je bezpečný default.
+`sink` failne pri ne-loopback `SMTP_HOST`. `live` failne bez explicitného GO ID
+alebo mimo schváleného CMS originu. Persisted `emailDeliveryMode` sa pri každom
+send porovná s aktívnym režimom; env switch preto nikdy nereplayuje starú sink
+správu cez live transport ani naopak.
 
 Seller identity a return instructions už nie sú runtime env vstupy. Sú
 source-controlled v `src/forms/seller.ts`; env mená
@@ -980,6 +1152,12 @@ Pred produkčným release musí human-operated checkpoint potvrdiť:
     samostatne schválený e-mailový acceptance check neprejdú.
 15. Release handoff zaznamená migration name, proposed release SHA, rollback
     SHA, sender/domain verification a schválené recovery kroky.
+16. `CONTACT_EMAIL_DELIVERY_MODE` ostáva `off`, kým fresh/upgrade DB, sink E2E,
+    retry/reconciliation a recovery dôkazy nie sú zelené.
+17. `live` sa nastaví iba spolu s konkrétnym `CONTACT_EMAIL_LIVE_GO_ID`; samotný
+    deploy alebo prítomné SMTP credentials nie sú GO.
+18. Safe-default `off`, `sink` a `live` sú samostatné evidence stavy; lokálny
+    sink test sa nesmie reportovať ako provider staging ani produkčný send.
 
 Aktuálna implementácia podporuje iba jeden aktívny HMAC secret, nie overlap
 starého a nového. Rotácia preto musí byť koordinovaná medzi Payload a
@@ -1015,7 +1193,7 @@ Submission zostáva prijatý; storefront zachová success/proof s pôvodným
 `submissionNumber` a `submittedAt`. Nevytvárať druhý record a neopakovať create
 POST: duplicate e-mail neposiela a signed PATCH sám nič neodosiela.
 
-V1 má server-only signed operational retry endpoint; nie je to browser ani
+V1 má server-only signed operational retry endpoint pre oba form types; nie je to browser ani
 bežný storefront success-flow endpoint. Autorizovaný operator:
 
 1. načíta aktuálny delivery status a attempt count,
@@ -1052,8 +1230,9 @@ doručenie nie je garantované. Recovery log nesmie obsahovať notice body ani P
 - ďalšie autorstvo, právne zmeny alebo preklady seller/return copy,
 - Saleor ownership lookup,
 - storefront UI, rate limiting, honeypot a success page,
-- automatický contact e-mail,
 - verejný retry UI alebo automatický retry scheduler/worker,
+- zmena Contact templates, market recipientov alebo sender identity bez nového
+  versioned contract review,
 - CAPTCHA/third-party anti-abuse,
 - retention/delete automatizácia,
 - produkčná migrácia, SSM zmena, release alebo deploy.
