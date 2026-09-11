@@ -1,4 +1,5 @@
 import { type TypedDocumentString } from "../gql/graphql";
+import { saleorWriteDecision } from "@/lib/saleor/write-policy";
 
 // ============================================================================
 // Result Types - Explicit error handling without exceptions
@@ -11,7 +12,7 @@ import { type TypedDocumentString } from "../gql/graphql";
  * 3. graphql - Query/mutation syntax or validation errors
  * 4. validation - Saleor domain errors (e.g., "email already exists")
  */
-export type GraphQLErrorType = "network" | "http" | "graphql" | "validation";
+export type GraphQLErrorType = "network" | "http" | "graphql" | "validation" | "blocked";
 
 export interface GraphQLError {
 	type: GraphQLErrorType;
@@ -79,6 +80,17 @@ function graphqlError(messages: string[]): GraphQLFailure {
 	};
 }
 
+/**
+ * Refused locally, before the wire. Not retryable: retrying changes nothing while
+ * the policy holds. See `src/lib/saleor/write-policy.ts`.
+ */
+function blockedError(operationName: string, reason: string): GraphQLFailure {
+	return {
+		ok: false,
+		error: { type: "blocked", message: `${operationName}: ${reason}`, isRetryable: false },
+	};
+}
+
 function validationError(
 	errors: ReadonlyArray<{ field?: string | null; message: string; code?: string | null }>,
 ): GraphQLFailure {
@@ -114,6 +126,10 @@ export function getUserMessage(error: GraphQLError): string {
 			return "Something went wrong loading this page.";
 		case "validation":
 			return error.message || "Please check your input and try again.";
+		case "blocked":
+			// Unreachable for a customer: the deployed storefront is always allowed to
+			// write. This is what a developer session pointed at production sees.
+			return "This action is not available in this environment.";
 	}
 }
 
@@ -394,10 +410,14 @@ async function fetchWithRetry(
  * A caller with a genuinely idempotent mutation can opt back in with
  * `retry: true`; nothing in this repo currently needs to.
  */
+function isMutationSource(operationSource: string): boolean {
+	return /^\s*mutation\b/m.test(operationSource);
+}
+
 function retriesFor(operationSource: string, explicit: boolean | undefined): number | undefined {
 	if (explicit === true) return undefined; // the configured default
 	if (explicit === false) return 0;
-	return /^\s*mutation\b/m.test(operationSource) ? 0 : undefined;
+	return isMutationSource(operationSource) ? 0 : undefined;
 }
 
 type GraphQLOptions<Variables> = {
@@ -436,6 +456,15 @@ async function executeGraphQL<Result, Variables>(
 		console.log(
 			`[GraphQL] ${operationName} | cache: ${cache || "default"} | revalidate: ${revalidate || "none"}`,
 		);
+	}
+
+	// A write is refused here, before the request queue: a blocked mutation must not
+	// take a concurrency slot, and must never reach the wire. Reads are untouched.
+	if (isMutationSource(operation.toString())) {
+		const decision = saleorWriteDecision();
+		if (!decision.allowed) {
+			return blockedError(operationName, decision.reason);
+		}
 	}
 
 	const input = {
@@ -592,6 +621,15 @@ export async function executeRawGraphQL<T = unknown>(options: RawGraphQLOptions)
 
 	const { query, variables, headers } = options;
 	const operationName = query.match(/(?:query|mutation)\s+(\w+)/)?.[1] || "RawOperation";
+
+	// This executor has its own `fetch`, so it needs its own guard — the one in
+	// `executeGraphQL` does not cover it.
+	if (isMutationSource(query)) {
+		const decision = saleorWriteDecision();
+		if (!decision.allowed) {
+			return blockedError(operationName, decision.reason);
+		}
+	}
 
 	try {
 		const response = await fetch(url, {
