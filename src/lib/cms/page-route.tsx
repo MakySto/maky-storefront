@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { fetchCmsPage, type CmsPageOutcome } from "@/lib/cms/client";
 import { marketForChannel, payloadLocaleForChannel, type MarketCode } from "@/lib/cms/markets";
+import { isContentReady } from "@/lib/cms/content-readiness";
 import { marketHasRoute } from "@/lib/route-policy";
 import { buildPageMetadata } from "@/lib/seo";
 import { buildLanguageAlternates } from "@/lib/seo/hreflang";
@@ -131,8 +132,14 @@ export function cmsPageRoute(config: CmsRouteConfig): CmsRoute {
 		const market = marketForChannel(channel);
 		const outcome = await load(channel);
 
-		// The CMS answered "not here". Both are authoritative absences.
-		if (outcome.status === "not-found" || outcome.status === "market-mismatch") {
+		// The CMS answered "not here". All three are authoritative absences: the document
+		// is unpublished, excluded from this market, or published with no body for it.
+		// The third is the one that used to slip through as a success.
+		if (
+			outcome.status === "not-found" ||
+			outcome.status === "market-mismatch" ||
+			(outcome.status === "found" && !isContentReady(slug, outcome.page.layout))
+		) {
 			return unindexedMetadata();
 		}
 
@@ -190,6 +197,18 @@ export function cmsPageRoute(config: CmsRouteConfig): CmsRoute {
 			console.warn(
 				"[cms] page-filtered-by-market",
 				JSON.stringify({ slug, market, markets: outcome.markets, documentId: outcome.documentId }),
+			);
+			notFound();
+		}
+
+		// Published, allowed in this market, and carrying no body for it. An authoritative
+		// absence — NOT an outage, so it never reaches the bootstrap, and never borrows
+		// another market's text. Logged under its own name because the operator question
+		// ("is the CMS down?" vs "did someone forget the German paragraph?") is different.
+		if (outcome.status === "found" && !isContentReady(slug, outcome.page.layout)) {
+			console.error(
+				"[cms] content-not-ready",
+				JSON.stringify({ slug, channel, market, documentId: outcome.page.id }),
 			);
 			notFound();
 		}

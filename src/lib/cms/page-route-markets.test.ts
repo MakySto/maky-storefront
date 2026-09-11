@@ -52,16 +52,39 @@ const MARKETS = [
 
 const SHARED_MARKER = "SHARED-EVERY-MARKET";
 
-const hero = (heading: string, markets: string[] | null) => ({
-	heading,
-	subheading: null,
-	media: null,
-	links: [],
+/**
+ * A rich-text body block, the shape the real document uses.
+ *
+ * `richText` specifically, and not `hero`: the provider contract defines
+ * content-readiness as a surviving `richText` block with a non-empty Lexical body, so
+ * a fixture built from heroes would be content-not-ready and would not exercise what
+ * it claims to. It read as a convenient marker until the rule existed to disagree.
+ */
+const body = (marker: string, markets: string[] | null) => ({
+	id: `b${marker.replace(/[^a-z0-9]/gi, "").slice(0, 20)}`,
 	anchorId: null,
-	markets,
-	id: `b${heading.replace(/[^a-z0-9]/gi, "").slice(0, 20)}`,
 	blockName: null,
-	blockType: "hero",
+	markets,
+	blockType: "richText",
+	content: {
+		root: {
+			type: "root",
+			format: "",
+			indent: 0,
+			version: 1,
+			children: [
+				{
+					type: "paragraph",
+					format: "",
+					indent: 0,
+					version: 1,
+					children: [
+						{ type: "text", text: marker, format: 0, detail: 0, mode: "normal", style: "", version: 1 },
+					],
+				},
+			],
+		},
+	},
 });
 
 /** One document carrying a discriminating block for every market under test. */
@@ -72,7 +95,7 @@ const document = () => ({
 			title: "About us from the CMS",
 			slug: "o-nas",
 			summary: "CMS summary",
-			layout: [hero(SHARED_MARKER, null), ...MARKETS.map((m) => hero(m.marker, [m.code]))],
+			layout: [body(SHARED_MARKER, null), ...MARKETS.map((m) => body(m.marker, [m.code]))],
 			markets: MARKETS.map((m) => m.code),
 			meta: { title: "CMS meta title", description: "CMS meta description", image: null },
 			updatedAt: "2026-09-10T00:00:00.000Z",
@@ -269,5 +292,71 @@ describe("CMS consumer — metadata agrees with the page, branch for branch", ()
 		const { generateMetadata } = await route();
 		const meta = await generateMetadata({ params: Promise.resolve({ channel: "ca-cad" }) });
 		expect(meta.alternates?.canonical).toContain("/ca/o-nas");
+	});
+});
+
+/**
+ * The route's own behaviour on a content-not-ready document, using the provider's
+ * fixtures verbatim — a published page, allowed in this market, whose only body block
+ * belongs to the other market of a shared-locale pair.
+ *
+ * The contract forbids four separate things here, and each is asserted: it must not
+ * render as a finished page, must not be indexable, must not be mistaken for an
+ * outage, and must not be filled in with the Slovak bootstrap.
+ */
+describe("CMS consumer — content-not-ready is an absence, not a page", () => {
+	const NEGATIVE = [
+		["de-only-at-body.synthetic.json", "de-eur", "de-DE"],
+		["at-only-de-body.synthetic.json", "at-eur", "de-AT"],
+		["us-only-ca-body.synthetic.json", "us-usd", "en-US"],
+		["ca-only-us-body.synthetic.json", "ca-cad", "en-CA"],
+	] as const;
+
+	const fixtureBody = (name: string) =>
+		JSON.parse(
+			readFileSync(
+				join(
+					dirname(fileURLToPath(import.meta.url)),
+					"__fixtures__/provider-handoff-20260910/negative",
+					name,
+				),
+				"utf8",
+			),
+		) as unknown;
+
+	it.each(NEGATIVE)(
+		"%s: the page 404s rather than rendering an empty shell",
+		async (name, channel, locale) => {
+			stubCms(json(fixtureBody(name)));
+			expect(await render(channel, locale)).toBe("NOT_FOUND");
+		},
+	);
+
+	it.each(NEGATIVE)("%s: metadata is noindex with no canonical", async (name, channel) => {
+		stubCms(json(fixtureBody(name)));
+		const { generateMetadata } = await route();
+		const meta = await generateMetadata({ params: Promise.resolve({ channel }) });
+		expect(JSON.stringify(meta.robots ?? null)).toContain('"index":false');
+		expect(meta.alternates?.canonical).toBeUndefined();
+	});
+
+	it("is never rescued by the Slovak bootstrap, even on the Slovak-adjacent markets", async () => {
+		for (const [name, channel, locale] of NEGATIVE) {
+			stubCms(json(fixtureBody(name)));
+			const html = await render(channel, locale);
+			expect(html).toBe("NOT_FOUND");
+			expect(html).not.toContain("Internetový obchod prevádzkuje:");
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it("is distinguishable from an outage: different log, different branch", async () => {
+		const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		stubCms(json(fixtureBody("de-only-at-body.synthetic.json")));
+		await render("de-eur", "de-DE");
+		const lines = error.mock.calls.map((c) => String(c[0]));
+		expect(lines).toContain("[cms] content-not-ready");
+		expect(lines).not.toContain("[cms] unavailable-no-bootstrap");
+		expect(lines).not.toContain("[cms] page-unpublished");
 	});
 });

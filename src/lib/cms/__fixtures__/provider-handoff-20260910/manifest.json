@@ -1,0 +1,696 @@
+{
+  "schema": "maky.p-to-m-about-handoff/1.1.0",
+  "snapshotDate": "2026-09-10",
+  "classification": "provider-handoff-not-a-staging-capture",
+  "provider": {
+    "repository": "MakySto/maky-cms",
+    "approvedBranch": "codex/o-nas-12-markets",
+    "approvedBaseCommit": "8eb9400ccd2e959cb78a75884968e7d8e47e0df1",
+    "handoffBranch": "codex/o-nas-provider-handoff",
+    "providerHead": null,
+    "providerHeadNote": "Set out of band after the handoff commit; a commit cannot contain its own SHA."
+  },
+  "consumer": {
+    "repository": "MakySto/maky-storefront",
+    "referenceCommit": "2f8aed019f098122c88e8613ebfeac9e43309d9f",
+    "verifiedAgainstProviderStaging": false
+  },
+  "status": {
+    "CONTENT_READY": "YES",
+    "IMPORT_READY": "YES",
+    "CMS_EPHEMERAL_HTTP_VERIFIED": "YES",
+    "CMS_STAGING_PUBLISHED": "BLOCKED_ENV",
+    "CMS_PROVIDER_STAGING_VERIFIED": "NOT_RUN",
+    "STOREFRONT_STAGING_VERIFIED": "NOT_RUN",
+    "CMS_PUBLISHED_PRODUCTION": "NO",
+    "STOREFRONT_VERIFIED_PRODUCTION": "NO"
+  },
+  "blockers": [
+    {
+      "code": "NO_ISOLATED_SHARED_STAGING_PROVIDER",
+      "scope": [
+        "CMS_STAGING_PUBLISHED",
+        "CMS_PROVIDER_STAGING_VERIFIED",
+        "STOREFRONT_STAGING_VERIFIED"
+      ],
+      "detail": "No isolated staging Payload URL reachable by the storefront consumer was available or discovered. No URL has been invented."
+    }
+  ],
+  "document": {
+    "collection": "pages",
+    "id": "019fb008-504b-779e-ad3f-1ff353267c88",
+    "slug": "o-nas",
+    "existingDocumentRequired": true,
+    "createOrUpsertAllowed": false,
+    "contentSchema": "maky.about-content/1.0.0",
+    "approvedContentPath": "content/o-nas/2026-09-10/data/o-nas.markets.json",
+    "approvedContentSha256": "fccf530019d10f264395cbeefddfd7a91e992550c65a890bdaf48b642e16305a",
+    "approvedArchiveSha256": "f9bdc4ac92262560d282abe6b56b3304e03efa47e258b9b01461249823b556f0",
+    "marketCount": 12,
+    "payloadLocaleCount": 10,
+    "payloadLocales": ["sk", "cs", "de", "pl", "hu", "it", "fr", "es", "ro", "en"],
+    "sharedLocalePairs": {
+      "de": ["DE", "AT"],
+      "en": ["US", "CA"]
+    },
+    "layout": {
+      "shared": true,
+      "managedBlockCount": 12,
+      "blockType": "richText",
+      "oneMarketPerBlock": true,
+      "localizedField": "layout[].content",
+      "legacySkBlockId": "6a6a80ddb64969525d329160"
+    }
+  },
+  "publishedRead": {
+    "baseUrlEnv": "PAYLOAD_CMS_URL",
+    "stagingUrl": null,
+    "method": "GET",
+    "path": "/api/pages",
+    "query": {
+      "where[slug][equals]": "o-nas",
+      "where[_status][equals]": "published",
+      "locale": "PAYLOAD_LOCALE",
+      "fallback-locale": "none",
+      "depth": "1",
+      "limit": "1"
+    },
+    "headers": {
+      "Accept": "application/json",
+      "CF-Access-Client-Id": "CF_ACCESS_CLIENT_ID",
+      "CF-Access-Client-Secret": "CF_ACCESS_CLIENT_SECRET"
+    },
+    "payloadAuthorizationHeader": false,
+    "redirectMode": "manual",
+    "anonymousPayloadRead": true
+  },
+  "contentReadiness": {
+    "pageMarketMustMatch": true,
+    "marketFilteredSupportedBodyMustBeNonEmpty": true,
+    "emptyFilteredLayoutResult": "content-not-ready",
+    "eligibleForNavigationSeoSitemapHreflangWhenNotReady": false,
+    "slovakFallbackAllowed": false,
+    "upstreamOutageEquivalent": false
+  },
+  "stableBlocks": [
+    {
+      "market": "SK",
+      "id": "6a6a80ddb64969525d329160",
+      "blockName": "about-market:SK"
+    },
+    {
+      "market": "CZ",
+      "id": "c50cdf587322111ab210f9e1",
+      "blockName": "about-market:CZ"
+    },
+    {
+      "market": "DE",
+      "id": "32a22e596d0dadf9f919e714",
+      "blockName": "about-market:DE"
+    },
+    {
+      "market": "AT",
+      "id": "52d79c1ad4eb3c2f97d48c0b",
+      "blockName": "about-market:AT"
+    },
+    {
+      "market": "PL",
+      "id": "203f24141a156997066bd409",
+      "blockName": "about-market:PL"
+    },
+    {
+      "market": "HU",
+      "id": "d9f5ef3c84ba10054d093e30",
+      "blockName": "about-market:HU"
+    },
+    {
+      "market": "IT",
+      "id": "fcde4faaa436307b30263a83",
+      "blockName": "about-market:IT"
+    },
+    {
+      "market": "FR",
+      "id": "33f076fa46bc860a5621dd3f",
+      "blockName": "about-market:FR"
+    },
+    {
+      "market": "ES",
+      "id": "2958f3a834317924022b0bcc",
+      "blockName": "about-market:ES"
+    },
+    {
+      "market": "RO",
+      "id": "7d9211ccbbf1379a0591f08a",
+      "blockName": "about-market:RO"
+    },
+    {
+      "market": "US",
+      "id": "460afa20efb37f0179be1c7f",
+      "blockName": "about-market:US"
+    },
+    {
+      "market": "CA",
+      "id": "d3cddee695a16ea741749c71",
+      "blockName": "about-market:CA"
+    }
+  ],
+  "markets": [
+    {
+      "market": "SK",
+      "marketPathSegment": "sk",
+      "payloadLocale": "sk",
+      "locale": "sk-SK",
+      "channel": "sk-eur",
+      "route": "/sk/o-nas",
+      "blockId": "6a6a80ddb64969525d329160",
+      "h1": "O nás",
+      "navigationLabel": "O nás",
+      "seo": {
+        "title": "O nás | MAKY.STORE",
+        "description": "MAKY.STORE je slovenský obchod s výbavou pre auto a cesty. Strešné nosiče, boxy, nosiče bicyklov aj pomoc s výberom správneho príslušenstva."
+      },
+      "bodySha256": "b4f4fa547c96f981cadafc075497273c9f91e48e6cd1f230270f6cfd15dcf770",
+      "links": [
+        {
+          "label": "Kontaktujte nás",
+          "expectedHref": "/sk/kontakt",
+          "absoluteHref": "https://maky.store/sk/kontakt"
+        },
+        {
+          "label": "Kontakt",
+          "expectedHref": "/sk/kontakt",
+          "absoluteHref": "https://maky.store/sk/kontakt"
+        }
+      ]
+    },
+    {
+      "market": "CZ",
+      "marketPathSegment": "cz",
+      "payloadLocale": "cs",
+      "locale": "cs-CZ",
+      "channel": "cz-czk",
+      "route": "/cz/o-nas",
+      "blockId": "c50cdf587322111ab210f9e1",
+      "h1": "O nás",
+      "navigationLabel": "O nás",
+      "seo": {
+        "title": "O nás | MAKY.STORE",
+        "description": "MAKY.STORE je slovenský obchod s výbavou pro auto a cesty. Střešní nosiče, boxy, nosiče kol i pomoc s výběrem správného příslušenství."
+      },
+      "bodySha256": "be7801a47363cf0bd3de5112bf5652f178dea65941fc5142dbe00606ebbaac34",
+      "links": [
+        {
+          "label": "Kontaktujte nás",
+          "expectedHref": "/cz/kontakt",
+          "absoluteHref": "https://maky.store/cz/kontakt"
+        },
+        {
+          "label": "Kontakt",
+          "expectedHref": "/cz/kontakt",
+          "absoluteHref": "https://maky.store/cz/kontakt"
+        }
+      ]
+    },
+    {
+      "market": "DE",
+      "marketPathSegment": "de",
+      "payloadLocale": "de",
+      "locale": "de-DE",
+      "channel": "de-eur",
+      "route": "/de/o-nas",
+      "blockId": "32a22e596d0dadf9f919e714",
+      "h1": "Über uns",
+      "navigationLabel": "Über uns",
+      "seo": {
+        "title": "Über uns – Ausrüstung fürs Auto und Reisen | MAKY.STORE",
+        "description": "Dachträger, Dachboxen, Fahrradträger und Zubehör: Lernen Sie MAKY.STORE kennen. Wir helfen Ihnen, passende Ausrüstung für Ihr Auto und Ihre Reisen zu finden."
+      },
+      "bodySha256": "40790457c887af309674af057c38be347140257172050d5194ecba09613373d5",
+      "links": [
+        {
+          "label": "Kontaktieren Sie uns",
+          "expectedHref": "/de/kontakt",
+          "absoluteHref": "https://maky.store/de/kontakt"
+        },
+        {
+          "label": "Kontakt",
+          "expectedHref": "/de/kontakt",
+          "absoluteHref": "https://maky.store/de/kontakt"
+        }
+      ]
+    },
+    {
+      "market": "AT",
+      "marketPathSegment": "at",
+      "payloadLocale": "de",
+      "locale": "de-AT",
+      "channel": "at-eur",
+      "route": "/at/o-nas",
+      "blockId": "52d79c1ad4eb3c2f97d48c0b",
+      "h1": "Über uns",
+      "navigationLabel": "Über uns",
+      "seo": {
+        "title": "Über uns – Ausrüstung fürs Auto und Reisen | MAKY.STORE",
+        "description": "Dachträger, Dachboxen, Fahrradträger und Zubehör: Lernen Sie MAKY.STORE kennen. Wir helfen Ihnen, passende Ausrüstung für Ihr Auto und Ihre Reisen zu finden."
+      },
+      "bodySha256": "63443e75de73f951245ab3243b81b6fbae6764c04892307ce452db3668986db4",
+      "links": [
+        {
+          "label": "Kontaktieren Sie uns",
+          "expectedHref": "/at/kontakt",
+          "absoluteHref": "https://maky.store/at/kontakt"
+        },
+        {
+          "label": "Kontakt",
+          "expectedHref": "/at/kontakt",
+          "absoluteHref": "https://maky.store/at/kontakt"
+        }
+      ]
+    },
+    {
+      "market": "PL",
+      "marketPathSegment": "pl",
+      "payloadLocale": "pl",
+      "locale": "pl-PL",
+      "channel": "pl-pln",
+      "route": "/pl/o-nas",
+      "blockId": "203f24141a156997066bd409",
+      "h1": "O nas",
+      "navigationLabel": "O nas",
+      "seo": {
+        "title": "O nas – wyposażenie samochodu i podróży | MAKY.STORE",
+        "description": "Poznaj MAKY.STORE: bagażniki dachowe, boksy, uchwyty rowerowe i akcesoria. Pomagamy dobrać wyposażenie do samochodu i planów na podróż."
+      },
+      "bodySha256": "35e3e8619b7ad7073cb68540ab2940ef7d537517071ed264c9d3151115d9af29",
+      "links": [
+        {
+          "label": "Prosimy o kontakt",
+          "expectedHref": "/pl/kontakt",
+          "absoluteHref": "https://maky.store/pl/kontakt"
+        },
+        {
+          "label": "Kontakt",
+          "expectedHref": "/pl/kontakt",
+          "absoluteHref": "https://maky.store/pl/kontakt"
+        }
+      ]
+    },
+    {
+      "market": "HU",
+      "marketPathSegment": "hu",
+      "payloadLocale": "hu",
+      "locale": "hu-HU",
+      "channel": "hu-huf",
+      "route": "/hu/o-nas",
+      "blockId": "d9f5ef3c84ba10054d093e30",
+      "h1": "Rólunk",
+      "navigationLabel": "Rólunk",
+      "seo": {
+        "title": "Rólunk – felszerelés autóhoz és utazáshoz | MAKY.STORE",
+        "description": "Ismerje meg a MAKY.STORE-t: tetőcsomagtartók, tetőboxok, kerékpárszállítók és autós kiegészítők. Segítünk az autójához és útjaihoz illő választásban."
+      },
+      "bodySha256": "b2dbd9ccf01ca7c5fb7fa892be803984ee5bf7c003404700501fc2cbe70f0cb6",
+      "links": [
+        {
+          "label": "Lépjen kapcsolatba velünk",
+          "expectedHref": "/hu/kontakt",
+          "absoluteHref": "https://maky.store/hu/kontakt"
+        },
+        {
+          "label": "Kapcsolat",
+          "expectedHref": "/hu/kontakt",
+          "absoluteHref": "https://maky.store/hu/kontakt"
+        }
+      ]
+    },
+    {
+      "market": "IT",
+      "marketPathSegment": "it",
+      "payloadLocale": "it",
+      "locale": "it-IT",
+      "channel": "it-eur",
+      "route": "/it/o-nas",
+      "blockId": "fcde4faaa436307b30263a83",
+      "h1": "Chi siamo",
+      "navigationLabel": "Chi siamo",
+      "seo": {
+        "title": "Chi siamo: attrezzatura per auto e viaggi | MAKY.STORE",
+        "description": "Scopri MAKY.STORE: barre portatutto, box da tetto, portabici e accessori. Ti aiutiamo a scegliere l’attrezzatura adatta alla tua auto e ai tuoi viaggi."
+      },
+      "bodySha256": "cc882775f135c2ba871453cca64d4875617032987c14e995e68272af8d3f7ac3",
+      "links": [
+        {
+          "label": "Contattaci",
+          "expectedHref": "/it/kontakt",
+          "absoluteHref": "https://maky.store/it/kontakt"
+        },
+        {
+          "label": "Contatti",
+          "expectedHref": "/it/kontakt",
+          "absoluteHref": "https://maky.store/it/kontakt"
+        }
+      ]
+    },
+    {
+      "market": "FR",
+      "marketPathSegment": "fr",
+      "payloadLocale": "fr",
+      "locale": "fr-FR",
+      "channel": "fr-eur",
+      "route": "/fr/o-nas",
+      "blockId": "33f076fa46bc860a5621dd3f",
+      "h1": "À propos",
+      "navigationLabel": "À propos",
+      "seo": {
+        "title": "À propos : équipement auto et voyage | MAKY.STORE",
+        "description": "Découvrez MAKY.STORE : barres et coffres de toit, porte-vélos et accessoires. Nous vous aidons à choisir l’équipement adapté à votre voiture et à vos voyages."
+      },
+      "bodySha256": "9c2d835a41e409a1c3d2054ce37019d15a5eb5ba62adff164733dbd890d5a48c",
+      "links": [
+        {
+          "label": "Contactez-nous",
+          "expectedHref": "/fr/kontakt",
+          "absoluteHref": "https://maky.store/fr/kontakt"
+        },
+        {
+          "label": "Contact",
+          "expectedHref": "/fr/kontakt",
+          "absoluteHref": "https://maky.store/fr/kontakt"
+        }
+      ]
+    },
+    {
+      "market": "ES",
+      "marketPathSegment": "es",
+      "payloadLocale": "es",
+      "locale": "es-ES",
+      "channel": "es-eur",
+      "route": "/es/o-nas",
+      "blockId": "2958f3a834317924022b0bcc",
+      "h1": "Sobre nosotros",
+      "navigationLabel": "Sobre nosotros",
+      "seo": {
+        "title": "Sobre nosotros — equipamiento para el coche y los viajes | MAKY.STORE",
+        "description": "MAKY.STORE: barras y cofres de techo, portabicicletas y accesorios para viajar. Te ayudamos a elegir el equipo adecuado para tu coche y tus planes."
+      },
+      "bodySha256": "caf892655edd0df0938153693bbed64b736dd3192711524f6e9a546d2be917ad",
+      "links": [
+        {
+          "label": "Contacta con nosotros",
+          "expectedHref": "/es/kontakt",
+          "absoluteHref": "https://maky.store/es/kontakt"
+        },
+        {
+          "label": "Contacto",
+          "expectedHref": "/es/kontakt",
+          "absoluteHref": "https://maky.store/es/kontakt"
+        }
+      ]
+    },
+    {
+      "market": "RO",
+      "marketPathSegment": "ro",
+      "payloadLocale": "ro",
+      "locale": "ro-RO",
+      "channel": "ro-ron",
+      "route": "/ro/o-nas",
+      "blockId": "7d9211ccbbf1379a0591f08a",
+      "h1": "Despre noi",
+      "navigationLabel": "Despre noi",
+      "seo": {
+        "title": "Despre noi — echipamente pentru mașină și călătorii | MAKY.STORE",
+        "description": "MAKY.STORE: bare transversale, cutii portbagaj, suporturi pentru biciclete și accesorii de călătorie. Te ajutăm să alegi ce se potrivește mașinii tale."
+      },
+      "bodySha256": "df1101efadcd04a227ab38a43f4e0aada5621022d6692bbecbb7ea02784095f6",
+      "links": [
+        {
+          "label": "Contactează-ne",
+          "expectedHref": "/ro/kontakt",
+          "absoluteHref": "https://maky.store/ro/kontakt"
+        },
+        {
+          "label": "Contact",
+          "expectedHref": "/ro/kontakt",
+          "absoluteHref": "https://maky.store/ro/kontakt"
+        }
+      ]
+    },
+    {
+      "market": "US",
+      "marketPathSegment": "us",
+      "payloadLocale": "en",
+      "locale": "en-US",
+      "channel": "us-usd",
+      "route": "/us/o-nas",
+      "blockId": "460afa20efb37f0179be1c7f",
+      "h1": "About MAKY.STORE",
+      "navigationLabel": "About us",
+      "seo": {
+        "title": "About us — equipment for the road ahead | MAKY.STORE",
+        "description": "Meet MAKY.STORE: roof racks, cargo boxes, bike carriers and travel accessories. Thoughtful equipment choices, with practical help from our team in Slovakia."
+      },
+      "bodySha256": "a34a84f9c10a16f097ad08edc23d87e2c2cd8215fbc622792745073be63c6ecb",
+      "links": [
+        {
+          "label": "Shipping and payment",
+          "expectedHref": "/us/doprava-a-platba",
+          "absoluteHref": "https://maky.store/us/doprava-a-platba"
+        },
+        {
+          "label": "Contact us",
+          "expectedHref": "/us/kontakt",
+          "absoluteHref": "https://maky.store/us/kontakt"
+        }
+      ]
+    },
+    {
+      "market": "CA",
+      "marketPathSegment": "ca",
+      "payloadLocale": "en",
+      "locale": "en-CA",
+      "channel": "ca-cad",
+      "route": "/ca/o-nas",
+      "blockId": "d3cddee695a16ea741749c71",
+      "h1": "About MAKY.STORE",
+      "navigationLabel": "About us",
+      "seo": {
+        "title": "About us — equipment for the road ahead | MAKY.STORE",
+        "description": "Meet MAKY.STORE: roof racks, cargo boxes, bike carriers and travel accessories. Thoughtful equipment choices, with practical help from our team in Slovakia."
+      },
+      "bodySha256": "7e8f8a09384a7659f9325527cac912e05d019941a588698210187db7a8e57b39",
+      "links": [
+        {
+          "label": "Shipping and payment",
+          "expectedHref": "/ca/doprava-a-platba",
+          "absoluteHref": "https://maky.store/ca/doprava-a-platba"
+        },
+        {
+          "label": "Contact us",
+          "expectedHref": "/ca/kontakt",
+          "absoluteHref": "https://maky.store/ca/kontakt"
+        }
+      ]
+    }
+  ],
+  "negativeFixtures": [
+    {
+      "path": "fixtures/negative/de-only-at-body.synthetic.json",
+      "sha256": "4ce05679baf30828510d22065040fea4952f9a52b934a31005747a52b3c3e665",
+      "classification": "synthetic-not-http-capture",
+      "requestMarket": "DE",
+      "payloadLocale": "de",
+      "onlyBodyMarket": "AT",
+      "pageAllowed": true,
+      "expectedFilteredLayoutLength": 0,
+      "expectedReadiness": "content-not-ready",
+      "slovakFallbackAllowed": false
+    },
+    {
+      "path": "fixtures/negative/at-only-de-body.synthetic.json",
+      "sha256": "c6eca8076454ac6a9f6715919da81ceeee0dd868e2bd6084ca90e0705352e43b",
+      "classification": "synthetic-not-http-capture",
+      "requestMarket": "AT",
+      "payloadLocale": "de",
+      "onlyBodyMarket": "DE",
+      "pageAllowed": true,
+      "expectedFilteredLayoutLength": 0,
+      "expectedReadiness": "content-not-ready",
+      "slovakFallbackAllowed": false
+    },
+    {
+      "path": "fixtures/negative/us-only-ca-body.synthetic.json",
+      "sha256": "fd63c5f462b4ef68f0227d08d64e086bfee490dba4bfe11b5624bd0fb2aec27d",
+      "classification": "synthetic-not-http-capture",
+      "requestMarket": "US",
+      "payloadLocale": "en",
+      "onlyBodyMarket": "CA",
+      "pageAllowed": true,
+      "expectedFilteredLayoutLength": 0,
+      "expectedReadiness": "content-not-ready",
+      "slovakFallbackAllowed": false
+    },
+    {
+      "path": "fixtures/negative/ca-only-us-body.synthetic.json",
+      "sha256": "2c80bc72d8ad15aa1a4fc258ab9d5534c29d62bc34a0a13350be5000d8077d74",
+      "classification": "synthetic-not-http-capture",
+      "requestMarket": "CA",
+      "payloadLocale": "en",
+      "onlyBodyMarket": "US",
+      "pageAllowed": true,
+      "expectedFilteredLayoutLength": 0,
+      "expectedReadiness": "content-not-ready",
+      "slovakFallbackAllowed": false
+    }
+  ],
+  "disposableHttpHarness": {
+    "classification": "disposable-loopback-ci-not-provider-staging",
+    "status": "PASSED",
+    "ciRun": {
+      "runId": "34533368337",
+      "runAttempt": "1",
+      "url": "https://github.com/MakySto/maky-cms/actions/runs/34533368337",
+      "headSha": "7937da418fe59c287a0201d6e665173380ac453c",
+      "artifact": {
+        "id": "10174547032",
+        "name": "about-provider-http-34533368337-1",
+        "sizeBytes": 1360715,
+        "expiredAtVerification": false
+      },
+      "evidenceChecksums": {
+        "http-published/manifest.json": "sha256:d9493573386ff12c5bfe21316ba74dc8d2427ce5013ae719dc2fbcdc13503ca1",
+        "http-updated-de/manifest.json": "sha256:b6c42fc9c395ec7bab135b2f0742bee32f9dcaae1344401e4e9ce286200133b7",
+        "http-unpublished-de/manifest.json": "sha256:d4a8daafe6749df58458dc7b9f85844531d77775972289778a59d5f575de7242",
+        "http-republished-de/manifest.json": "sha256:e189624d8f3c257f91473a05dba0e1aa761cd31bf8c16715df166e33feac6c65",
+        "http-updated-en/manifest.json": "sha256:ab98ff451b2e0c95a1fe2b069f720b75b70bf28a9b92260bf4d8bb79f09c4bec",
+        "http-unpublished-en/manifest.json": "sha256:26faea5c82259620a6f52fe7ffb63f84b4b3396146978963306cdab409cab54c",
+        "http-republished/manifest.json": "sha256:5b459b54d84f46743c84086177a7f4a0405077dae99789f23d4fde2be24a2b32",
+        "revalidation-summary.json": "sha256:30a780fe1aa775f0de73e94002013f580b9ac74984e0f8b9f48af4f83400d150",
+        "fixture-cleanup.log": "sha256:390453e5351e685bf395e302a997664b99cfd99c1602b172781ccc7423cdb07a"
+      }
+    },
+    "workflow": ".github/workflows/about-provider-http-acceptance.yml",
+    "evidenceSchema": "maky.about-provider-http-evidence/1.1.0",
+    "evidenceKind": "disposable-loopback-http",
+    "environmentKind": "disposable-loopback-ci",
+    "database": {
+      "engine": "PostgreSQL 18",
+      "name": "payload_about_provider_test",
+      "freshPerRun": true,
+      "ownershipSentinelRequired": true
+    },
+    "ownedOrigins": {
+      "payload": "http://127.0.0.1:3101",
+      "revalidationSink": "http://127.0.0.1:3102"
+    },
+    "lifecycle": [
+      "publish",
+      "update-de",
+      "unpublish-de",
+      "restore-approved-draft-de",
+      "republish-de",
+      "update-en",
+      "unpublish-en",
+      "restore-approved-draft-en",
+      "republish-en"
+    ],
+    "expectedRevalidationEvents": 34,
+    "sharedLocaleCoverage": {
+      "de": ["DE", "AT"],
+      "en": ["US", "CA"]
+    },
+    "proves": [
+      "fresh-db-import-and-publish",
+      "anonymous-loopback-http-read-all-10-locales",
+      "exact-12-managed-market-blocks",
+      "de-and-en-provider-lifecycle",
+      "exact-revalidation-event-sequence",
+      "sentinel-owned-page-and-version-cleanup"
+    ],
+    "doesNotProve": [
+      "shared-provider-staging",
+      "storefront-consumer-e2e",
+      "cold-or-warm-storefront-cache",
+      "12-public-storefront-routes",
+      "navigation-footer-sitemap-hreflang",
+      "360-or-1280-visual-acceptance",
+      "production-publish-or-deploy"
+    ]
+  },
+  "lifecycleAcceptance": {
+    "notRun": true,
+    "sequence": [
+      "publish",
+      "cold-read-12-markets",
+      "warm-read-12-markets",
+      "update",
+      "unpublish",
+      "republish"
+    ],
+    "sharedLocaleCrossInvalidation": [
+      ["DE", "AT"],
+      ["US", "CA"]
+    ],
+    "revalidationEndpointEnv": "STOREFRONT_REVALIDATE_URL",
+    "revalidationSecretEnv": "STOREFRONT_REVALIDATE_SECRET"
+  },
+  "environmentVariableNames": [
+    "PAYLOAD_CMS_URL",
+    "CF_ACCESS_CLIENT_ID",
+    "CF_ACCESS_CLIENT_SECRET",
+    "PAYLOAD_SECRET",
+    "PAYLOAD_PUBLIC_SERVER_URL",
+    "PGHOST",
+    "PGCONNECT_HOST",
+    "PGPORT",
+    "PGUSER",
+    "PGPASSWORD",
+    "PGDATABASE",
+    "PGSSLROOTCERT",
+    "PGTLS_SERVERNAME",
+    "DB_POOL_MAX",
+    "PGAPPNAME",
+    "MAKY_ABOUT_IMPORT_WRITES_ENABLED",
+    "MAKY_ABOUT_IMPORT_TARGET",
+    "MAKY_ABOUT_IMPORT_REQUIRE_PG_TABLE_LOCK",
+    "MAKY_ABOUT_IMPORT_GO_ID",
+    "MAKY_ABOUT_IMPORT_POSTCOMMIT_REVALIDATION",
+    "ABOUT_PROVIDER_EVIDENCE_DIR",
+    "ABOUT_PROVIDER_REVALIDATION_LOG",
+    "PAYLOAD_CF_ACCESS_CLIENT_ID",
+    "PAYLOAD_CF_ACCESS_CLIENT_SECRET",
+    "GITHUB_SHA",
+    "GITHUB_REPOSITORY",
+    "GITHUB_REF",
+    "GITHUB_RUN_ID",
+    "GITHUB_RUN_ATTEMPT",
+    "STOREFRONT_REVALIDATE_URL",
+    "STOREFRONT_REVALIDATE_SECRET",
+    "SMTP_HOST",
+    "SMTP_PORT",
+    "SMTP_USER",
+    "SMTP_PASS",
+    "SMTP_FROM_ADDRESS",
+    "SMTP_FROM_NAME",
+    "S3_REGION",
+    "S3_BUCKET_PUBLIC",
+    "S3_BUCKET_PRIVATE",
+    "MEDIA_CDN_URL"
+  ],
+  "artifactChecksums": {
+    "README.md": "sha256:bd847c5aef85fe8d8d58dc91119c7b5ac6d3bbd4480130aed2667854dbdeb0a3",
+    ".github/workflows/about-provider-http-acceptance.yml": "sha256:a9b481f75e2179fc9d5bf91ee2454c17d989bb6057eba673ec16804c3be722c9",
+    "scripts/aboutProviderFixture.ts": "sha256:447d56f8a9a1271d6393ef1e9ea96b4ccbb6a83ad9060ac0889ea499d0536a89",
+    "scripts/aboutProviderWebhookSink.ts": "sha256:b8de1c210aacf568dab3bc458384722e669d3066fd65ef0df8d5fc2965b54419",
+    "scripts/verifyAboutProviderHTTP.ts": "sha256:761714d7c386fe5efa25f62d4897e37e0c61840cfd61c729cea83bfa210ada65",
+    "src/about/aboutProviderAcceptance.ts": "sha256:fb7e26e54484dbd57a203c1ceeba8149e2ce67df637854fa559c77c23b184ab0",
+    "tests/unit/aboutProviderAcceptance.unit.spec.ts": "sha256:ddaf4baeff7851370d279fc07e75c9efa0ff6301c5c729c920d0efb67edd2b16",
+    "content/o-nas/2026-09-10/data/o-nas.markets.json": "sha256:fccf530019d10f264395cbeefddfd7a91e992550c65a890bdaf48b642e16305a",
+    "content/o-nas/2026-09-10/data/company-labels.json": "sha256:a030062d24fdc5feca7501856e3ee2375b2be9e667013a919e4b88bb97235a51",
+    "content/o-nas/2026-09-10/data/en-market-variants.plan.json": "sha256:f9f12a7f1d850c95de91da67d21c91fade8b386aca0504d1a5d7153aaf0f7fbd",
+    "content/o-nas/2026-09-10/data/payload-locales.plan.json": "sha256:47452d45213aacec7ec376dd497a0a2a06c8a54934f13b36cb49942265d6a072",
+    "fixtures/negative/de-only-at-body.synthetic.json": "sha256:4ce05679baf30828510d22065040fea4952f9a52b934a31005747a52b3c3e665",
+    "fixtures/negative/at-only-de-body.synthetic.json": "sha256:c6eca8076454ac6a9f6715919da81ceeee0dd868e2bd6084ca90e0705352e43b",
+    "fixtures/negative/us-only-ca-body.synthetic.json": "sha256:fd63c5f462b4ef68f0227d08d64e086bfee490dba4bfe11b5624bd0fb2aec27d",
+    "fixtures/negative/ca-only-us-body.synthetic.json": "sha256:2c80bc72d8ad15aa1a4fc258ab9d5534c29d62bc34a0a13350be5000d8077d74"
+  }
+}

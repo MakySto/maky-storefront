@@ -1,0 +1,71 @@
+{
+  "docs": [
+    {
+      "id": "019fb008-504b-779e-ad3f-1ff353267c88",
+      "title": "About MAKY.STORE",
+      "slug": "o-nas",
+      "summary": "Meet MAKY.STORE: roof racks, cargo boxes, bike carriers and travel accessories. Thoughtful equipment choices, with practical help from our team in Slovakia.",
+      "layout": [
+        {
+          "id": "d3cddee695a16ea741749c71",
+          "anchorId": null,
+          "blockName": "about-market:CA",
+          "markets": ["CA"],
+          "blockType": "richText",
+          "content": {
+            "root": {
+              "type": "root",
+              "format": "",
+              "indent": 0,
+              "version": 1,
+              "children": [
+                {
+                  "type": "paragraph",
+                  "format": "",
+                  "indent": 0,
+                  "version": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "text": "A great trip starts well before the first turn. Sometimes it starts with working out where the bikes will go, how to make room for everyone’s bags, or whether a roof rack really fits your car.",
+                      "format": 0,
+                      "detail": 0,
+                      "mode": "normal",
+                      "style": "",
+                      "version": 1
+                    }
+                  ],
+                  "direction": null,
+                  "textStyle": "",
+                  "textFormat": 0
+                }
+              ],
+              "direction": null
+            }
+          }
+        }
+      ],
+      "markets": ["SK", "CZ", "DE", "AT", "PL", "HU", "IT", "FR", "ES", "RO", "US", "CA"],
+      "meta": {
+        "title": "About us — equipment for the road ahead | MAKY.STORE",
+        "description": "Meet MAKY.STORE: roof racks, cargo boxes, bike carriers and travel accessories. Thoughtful equipment choices, with practical help from our team in Slovakia.",
+        "image": null
+      },
+      "legalMetadata": {
+        "documentType": "editorial"
+      },
+      "updatedAt": "2026-09-10T00:00:00.000Z",
+      "createdAt": "2026-09-10T00:00:00.000Z",
+      "_status": "published"
+    }
+  ],
+  "hasNextPage": false,
+  "hasPrevPage": false,
+  "limit": 1,
+  "nextPage": null,
+  "page": 1,
+  "pagingCounter": 1,
+  "prevPage": null,
+  "totalDocs": 1,
+  "totalPages": 1
+}

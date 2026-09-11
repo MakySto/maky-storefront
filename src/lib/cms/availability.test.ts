@@ -20,6 +20,37 @@ vi.mock("@/lib/route-policy", async (importOriginal) => ({
 	marketHasRoute: (...args: unknown[]) => marketHasRoute(...args),
 }));
 
+/**
+ * A `found` outcome carrying a real body.
+ *
+ * `{ page: {} }` used to be enough, because availability only looked at the status.
+ * It now also asks whether the document has a body for this market, so a page stub
+ * with no layout is no longer a page — which is the point of the check.
+ */
+const foundWithBody = () => ({
+	status: "found",
+	page: {
+		id: "019fb008-504b-779e-ad3f-1ff353267c88",
+		slug: "o-nas",
+		layout: [
+			{
+				blockType: "richText",
+				id: "b1",
+				blockName: null,
+				markets: null,
+				content: {
+					root: {
+						type: "root",
+						children: [
+							{ type: "paragraph", children: [{ type: "text", text: "O nás", version: 1 }], version: 1 },
+						],
+					},
+				},
+			},
+		],
+	},
+});
+
 async function subject() {
 	return import("./availability");
 }
@@ -35,7 +66,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe("cmsRouteAvailable", () => {
 	it("published: the link is shown", async () => {
-		fetchCmsPage.mockResolvedValue({ status: "found", page: {} });
+		fetchCmsPage.mockResolvedValue(foundWithBody());
 		const { cmsRouteAvailable } = await subject();
 		expect(await cmsRouteAvailable("sk-eur", "o-nas")).toBe(true);
 	});
@@ -60,6 +91,18 @@ describe("cmsRouteAvailable", () => {
 		expect(await cmsRouteAvailable("sk-eur", "o-nas")).toBe(true);
 	});
 
+	// Published, allowed here, and carrying no body for this market. The provider
+	// contract says that is not a valid navigation, sitemap or hreflang target — so the
+	// link has to go, exactly as it would for an unpublish.
+	it("content-not-ready: the link disappears, like an unpublish and unlike an outage", async () => {
+		// A German request against a document whose only body block is Austrian: the page
+		// is allowed, and the market filter leaves nothing behind.
+		const notReady = { ...foundWithBody(), page: { ...foundWithBody().page, layout: [] } };
+		fetchCmsPage.mockResolvedValue(notReady);
+		const { cmsRouteAvailable } = await subject();
+		expect(await cmsRouteAvailable("de-eur", "o-nas")).toBe(false);
+	});
+
 	it("a market the policy does not offer never reaches the CMS at all", async () => {
 		marketHasRoute.mockReturnValue(false);
 		const { cmsRouteAvailable } = await subject();
@@ -68,7 +111,7 @@ describe("cmsRouteAvailable", () => {
 	});
 
 	it("asks the CMS with this market's own locale and market code", async () => {
-		fetchCmsPage.mockResolvedValue({ status: "found", page: {} });
+		fetchCmsPage.mockResolvedValue(foundWithBody());
 		const { cmsRouteAvailable } = await subject();
 		await cmsRouteAvailable("ca-cad", "o-nas");
 		expect(fetchCmsPage).toHaveBeenCalledWith("o-nas", "en", "CA");
@@ -122,7 +165,7 @@ describe("visibleNavLinks", () => {
 
 	it("keeps a CMS route the market has and the CMS has published", async () => {
 		marketHasRoute.mockReturnValue(true);
-		fetchCmsPage.mockResolvedValue({ status: "found", page: {} });
+		fetchCmsPage.mockResolvedValue(foundWithBody());
 		const { visibleNavLinks } = await subject();
 		expect((await visibleNavLinks("sk-eur", NAV)).map((l) => l.href)).toContain("/poradna");
 	});

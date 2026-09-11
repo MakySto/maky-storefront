@@ -2,6 +2,7 @@ import "server-only";
 import { REVERSE_MAP } from "@/lib/channel-map";
 import { fetchCmsPage } from "@/lib/cms/client";
 import { marketForChannel, payloadLocaleForChannel } from "@/lib/cms/markets";
+import { isContentReady } from "@/lib/cms/content-readiness";
 import { isMarketRootSegment, marketHasRoute, routePolicyFor } from "@/lib/route-policy";
 
 /**
@@ -43,7 +44,11 @@ export async function cmsRouteAvailable(channel: string, slug: string): Promise<
 	if (!locale || !market) return true;
 
 	const outcome = await fetchCmsPage(slug, locale, market);
-	return outcome.status !== "not-found" && outcome.status !== "market-mismatch";
+	if (outcome.status === "not-found" || outcome.status === "market-mismatch") return false;
+	// Published but with no body for this market is an authoritative absence too, and the
+	// contract is explicit that it is not a valid navigation, sitemap or hreflang target.
+	if (outcome.status === "found" && !isContentReady(slug, outcome.page.layout)) return false;
+	return true;
 }
 
 /** Whether `segment` is a CMS-backed route, and so needs the check above. */

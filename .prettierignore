@@ -40,3 +40,8 @@ src/lib/fitment/fixtures/
 # them here would make that check fail for no reason. The prose handoffs beside them are
 # ours and stay formatted.
 docs/design/market-rollout/*/shipping-states.*.json
+
+# P's provider handoff: the manifest records a SHA-256 per fixture, and the acceptance
+# test verifies them. Reformatting the JSON changes the bytes and breaks the checksum,
+# which would make a vendored artefact silently stop matching its source.
+src/lib/cms/__fixtures__/provider-handoff-20260910/
