@@ -1,12 +1,17 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { CheckoutAddLineDocument, ProductDetailsDocument, LanguageCodeEnum } from "@/gql/graphql";
 import { executePublicGraphQL, executeRawGraphQL } from "@/lib/graphql";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import {
 	SALEOR_WRITES_ENV,
 	decideSaleorWrites,
+	deployMarkerAuthorises,
 	isProductionSaleorEndpoint,
 	resetDeployedArtifactProbe,
 	saleorWriteDecision,
+	setDeployedArtifactOverride,
 } from "./write-policy";
 
 /**
@@ -117,10 +122,27 @@ describe("saleorWriteDecision reads the live environment", () => {
 		resetDeployedArtifactProbe();
 	});
 
-	it("refuses production from this test process, which is not a deployed artifact", () => {
+	it("refuses production when this process is not a deployed artifact", () => {
 		process.env.NEXT_PUBLIC_SALEOR_API_URL = PROD;
 		delete process.env[SALEOR_WRITES_ENV];
-		resetDeployedArtifactProbe();
+		setDeployedArtifactOverride(false);
+		expect(saleorWriteDecision().allowed).toBe(false);
+	});
+
+	it("allows production when this process IS a deployed artifact", () => {
+		// The deploy preflight runs the suite in /opt/storefront with the previous
+		// build's marker still present. Both states are pinned here, so neither this
+		// test nor the wire tests below depend on the directory the runner starts in.
+		process.env.NEXT_PUBLIC_SALEOR_API_URL = PROD;
+		delete process.env[SALEOR_WRITES_ENV];
+		setDeployedArtifactOverride(true);
+		expect(saleorWriteDecision()).toEqual({ allowed: true, because: "deployed-artifact" });
+	});
+
+	it("an explicit block still wins on a deployed artifact", () => {
+		process.env.NEXT_PUBLIC_SALEOR_API_URL = PROD;
+		process.env[SALEOR_WRITES_ENV] = "block";
+		setDeployedArtifactOverride(true);
 		expect(saleorWriteDecision().allowed).toBe(false);
 	});
 });
@@ -140,7 +162,7 @@ describe("a blocked write never reaches the wire", () => {
 	beforeEach(() => {
 		process.env.NEXT_PUBLIC_SALEOR_API_URL = PROD;
 		delete process.env[SALEOR_WRITES_ENV];
-		resetDeployedArtifactProbe();
+		setDeployedArtifactOverride(false); // never depend on the runner's cwd
 		fetchMock = vi.fn().mockResolvedValue(
 			new Response(JSON.stringify({ data: {} }), {
 				status: 200,
@@ -197,5 +219,77 @@ describe("a blocked write never reaches the wire", () => {
 		});
 
 		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+});
+
+/**
+ * The marker has to prove something, not merely exist.
+ *
+ * `existsSync` was the first implementation, and an empty file or one copied off
+ * the production box would have satisfied it — handing a scratch process
+ * production write authority. These run against real temporary directories, so
+ * they exercise the real filesystem logic without depending on the directory the
+ * test runner started in.
+ */
+describe("deployMarkerAuthorises", () => {
+	let root: string;
+
+	beforeEach(() => {
+		root = mkdtempSync(path.join(tmpdir(), "maky-marker-"));
+		mkdirSync(path.join(root, ".next"), { recursive: true });
+	});
+
+	afterEach(() => {
+		rmSync(root, { recursive: true, force: true });
+	});
+
+	const marker = (text: string) => writeFileSync(path.join(root, ".next", "MAKY_DEPLOY_META"), text);
+	const buildId = (text: string) => writeFileSync(path.join(root, ".next", "BUILD_ID"), text);
+
+	it("accepts a marker that matches the build beside it", () => {
+		marker("git_sha=abc\nbuild_id=REAL_BUILD_ID\nbuilt_at=2026-09-08T14:36:48Z\n");
+		buildId("REAL_BUILD_ID");
+		expect(deployMarkerAuthorises(root)).toBe(true);
+	});
+
+	it("tolerates a trailing newline on BUILD_ID", () => {
+		marker("build_id=REAL_BUILD_ID\n");
+		buildId("REAL_BUILD_ID\n");
+		expect(deployMarkerAuthorises(root)).toBe(true);
+	});
+
+	it("rejects an EMPTY marker", () => {
+		marker("");
+		buildId("REAL_BUILD_ID");
+		expect(deployMarkerAuthorises(root)).toBe(false);
+	});
+
+	it("rejects a marker with no build_id line", () => {
+		marker("git_sha=abc\nbuilt_by=someone\n");
+		buildId("REAL_BUILD_ID");
+		expect(deployMarkerAuthorises(root)).toBe(false);
+	});
+
+	it("rejects a marker with an empty build_id value", () => {
+		marker("build_id=\n");
+		buildId("REAL_BUILD_ID");
+		expect(deployMarkerAuthorises(root)).toBe(false);
+	});
+
+	it("rejects a FOREIGN marker — copied from the real box into another tree", () => {
+		// This is the case the path test could not see.
+		marker("git_sha=578c33b\nbuild_id=PRODUCTION_BUILD_ID\n");
+		buildId("SOME_OTHER_LOCAL_BUILD");
+		expect(deployMarkerAuthorises(root)).toBe(false);
+	});
+
+	it("rejects a marker with no build next to it at all", () => {
+		marker("build_id=REAL_BUILD_ID\n");
+		expect(deployMarkerAuthorises(root)).toBe(false);
+	});
+
+	it("rejects a directory with no marker", () => {
+		buildId("REAL_BUILD_ID");
+		expect(deployMarkerAuthorises(root)).toBe(false);
 	});
 });

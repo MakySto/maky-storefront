@@ -1,4 +1,5 @@
 import { type TypedDocumentString } from "../gql/graphql";
+import { isWriteOperation } from "@/lib/graphql-operation";
 import { saleorWriteDecision } from "@/lib/saleor/write-policy";
 
 // ============================================================================
@@ -410,14 +411,12 @@ async function fetchWithRetry(
  * A caller with a genuinely idempotent mutation can opt back in with
  * `retry: true`; nothing in this repo currently needs to.
  */
-function isMutationSource(operationSource: string): boolean {
-	return /^\s*mutation\b/m.test(operationSource);
-}
-
 function retriesFor(operationSource: string, explicit: boolean | undefined): number | undefined {
 	if (explicit === true) return undefined; // the configured default
 	if (explicit === false) return 0;
-	return isMutationSource(operationSource) ? 0 : undefined;
+	// Same classifier the write guard uses, so the two can never disagree about
+	// whether a document is a write. See `src/lib/graphql-operation.ts`.
+	return isWriteOperation(operationSource) ? 0 : undefined;
 }
 
 type GraphQLOptions<Variables> = {
@@ -460,7 +459,7 @@ async function executeGraphQL<Result, Variables>(
 
 	// A write is refused here, before the request queue: a blocked mutation must not
 	// take a concurrency slot, and must never reach the wire. Reads are untouched.
-	if (isMutationSource(operation.toString())) {
+	if (isWriteOperation(operation.toString())) {
 		const decision = saleorWriteDecision();
 		if (!decision.allowed) {
 			return blockedError(operationName, decision.reason);
@@ -624,7 +623,7 @@ export async function executeRawGraphQL<T = unknown>(options: RawGraphQLOptions)
 
 	// This executor has its own `fetch`, so it needs its own guard — the one in
 	// `executeGraphQL` does not cover it.
-	if (isMutationSource(query)) {
+	if (isWriteOperation(query)) {
 		const decision = saleorWriteDecision();
 		if (!decision.allowed) {
 			return blockedError(operationName, decision.reason);
