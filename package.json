@@ -25,6 +25,7 @@
 		"check:css": "node scripts/checks/css-utilities.mjs",
 		"check:nav": "node scripts/checks/nav-links.mjs",
 		"check:fitment": "node scripts/checks/fitment-dataset.mjs",
+		"check:catalog": "vitest run src/lib/catalog-content/whole-set.acceptance.test.ts",
 		"check:published": "node scripts/checks/published-content.mjs",
 		"generate:routing": "node scripts/generate-routing-constants.mjs"
 	},
