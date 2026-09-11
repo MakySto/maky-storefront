@@ -346,8 +346,14 @@ async function route(request: NextRequest) {
 		// looked perfect. The suffix has to survive into the rewrite, though, or Next
 		// gets a document request where it asked for a flight response.
 		const normalized = normalizePathname(pathname).split("/").filter(Boolean);
+		// `>= 2`, not `=== 2`: the vehicle category pages live BELOW a category slug
+		// (`/sk/stresne-nosice/bmw/...`) and are served by a catch-all inside the same
+		// internal `categories/[slug]` route. Adding a real `stresne-nosice/` directory
+		// instead would have made the slug a market-root segment, which
+		// `categories.test.ts` forbids outright — a category slug and a route segment
+		// must stay distinguishable, or `[productSlug]` cannot tell them apart.
 		const internalRest =
-			normalized.length === 2 && isCategorySlug(normalized[1])
+			normalized.length >= 2 && isCategorySlug(normalized[1])
 				? CATEGORY_ROUTE_PREFIX + "/" + segments.slice(1).join("/")
 				: undefined;
 		return marketRewrite(request, first, gateVerdict, internalRest);
