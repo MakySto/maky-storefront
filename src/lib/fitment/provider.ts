@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createExpiringMemo } from "@/lib/cache/expiring-memo";
+
 /**
  * Fitment provider resolution — where the dataset comes from, and what happens when
  * it does not come at all.
@@ -123,12 +125,18 @@ function loadFixture(): FitmentLoad {
  * if CFM ever serves a payload small enough for Next to hold.
  */
 const NEGATIVE_TTL_MS = 30_000;
-let memo: { key: string; load: FitmentLoad; expiresAt: number } | null = null;
+/**
+ * Expiry is scheduled rather than compared against `Date.now()` on each read. The clock
+ * read used to sit on the render path of every vehicle page, and under `cacheComponents`
+ * that is refused while a non-prerendered route builds its shell — a 500 on every preview
+ * market. See `src/lib/cache/expiring-memo.ts`.
+ */
+const memo = createExpiringMemo<FitmentLoad>();
 let inflight: { key: string; promise: Promise<FitmentLoad> } | null = null;
 
 /** Exported for tests only — there is no other way to observe a module-level memo. */
 export function __resetFitmentMemo(): void {
-	memo = null;
+	memo.clear();
 	inflight = null;
 }
 
@@ -140,13 +148,13 @@ async function loadHttp(): Promise<FitmentLoad> {
 
 	// Keyed by URL so that swapping MAKY_FITMENT_URL is not served a stale dataset.
 	const key = url;
-	const now = Date.now();
-	if (memo && memo.key === key && memo.expiresAt > now) return memo.load;
+	const hit = memo.get(key);
+	if (hit) return hit;
 	if (inflight && inflight.key === key) return inflight.promise;
 
 	const promise = fetchHttp(url).then((load) => {
 		const ttlMs = load.dataset ? datasetRevalidateSeconds() * 1000 : NEGATIVE_TTL_MS;
-		memo = { key, load, expiresAt: Date.now() + ttlMs };
+		memo.set(key, load, ttlMs);
 		inflight = null;
 		return load;
 	});

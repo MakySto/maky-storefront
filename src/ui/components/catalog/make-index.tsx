@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-import { REVERSE_MAP, marketHref } from "@/lib/channel-map";
+import { marketHref } from "@/lib/channel-map";
 import { isPubliclyVisible } from "@/lib/catalog-content/publication";
-import { catalogServesMarket, loadCatalogView } from "@/lib/catalog-content/resolve";
+import { catalogLanguageForChannel, loadCatalogView } from "@/lib/catalog-content/resolve";
 
 /**
  * The way into the vehicle tree from the category page.
@@ -21,18 +21,17 @@ import { catalogServesMarket, loadCatalogView } from "@/lib/catalog-content/reso
  * ## The gates
  *
  * `isPubliclyVisible` — the same gate the route itself applies, so this cannot link to a
- * page that answers not-found. `catalogServesMarket` — the snapshot's language must be
- * the market's, so the Slovak snapshot never furnishes a German page with Slovak links.
- * That second one is also why the copy below can be plain Slovak: this section only ever
- * renders on a market whose language the snapshot carries, and today that is `sk` alone.
+ * page that answers not-found. And the view is loaded for THIS market's language, so a
+ * German market gets the German artifact or none — never Slovak prose.
  *
  * The `urlPath` prefix check is what keeps a second assortment honest: these pages are
  * roof racks, and only the roof-rack category may advertise them.
  */
 export async function CatalogMakeIndex({ channel, slug }: { channel: string; slug: string }) {
-	const view = await loadCatalogView();
-	const market = REVERSE_MAP[channel] ?? channel;
-	if (!catalogServesMarket(view, market)) return null;
+	const language = catalogLanguageForChannel(channel);
+	if (!language) return null;
+
+	const view = await loadCatalogView(language);
 	if (!view.ready) return null;
 
 	const makes = view.tree.makes

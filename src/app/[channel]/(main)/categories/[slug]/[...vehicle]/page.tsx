@@ -12,9 +12,13 @@ import {
 	isPubliclyVisible,
 	visibilityOf,
 } from "@/lib/catalog-content/publication";
-import { loadCatalogView, resolveVehiclePath } from "@/lib/catalog-content/resolve";
+import {
+	catalogLanguageForChannel,
+	loadCatalogView,
+	resolveVehiclePath,
+} from "@/lib/catalog-content/resolve";
 import { splitContent } from "@/lib/catalog-content/text";
-import { type CatalogNode, ancestorsOf } from "@/lib/catalog-content/tree";
+import { type CatalogNode, type CatalogTree, ancestorsOf } from "@/lib/catalog-content/tree";
 import { resolveFitmentOffers, uniqueProductRefs } from "@/lib/fitment/offers";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { Breadcrumbs, type BreadcrumbItem } from "@/ui/components/breadcrumbs";
@@ -37,7 +41,12 @@ import { CatalogOfferList } from "@/ui/components/catalog/offer-list";
 type Params = { params: Promise<{ channel: string; slug: string; vehicle: string[] }> };
 
 async function resolve(channel: string, categorySlug: string, vehicle: string[]) {
-	const view = await loadCatalogView();
+	// This market's own language, so `/de/...` reads the German artifact and never the
+	// Slovak one. A market with no mapped language, or no artifact, resolves nothing.
+	const language = catalogLanguageForChannel(channel);
+	if (!language) return null;
+
+	const view = await loadCatalogView(language);
 	if (!view.ready) return null;
 	const node = resolveVehiclePath(view.tree, categorySlug, vehicle);
 	if (!node?.page) return null;
@@ -65,12 +74,15 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 	const resolved = await resolve(channel, slug, vehicle);
 	if (!resolved) return { robots: { index: false, follow: false } };
 
-	const { page, market } = resolved;
+	const { view, node, page, market } = resolved;
 	const canonical = buildCanonicalUrl(market, page.urlPath);
 	const indexable = indexabilityOf(page).indexable;
 
 	return {
-		title: page.metaTitle ?? page.h1,
+		// Never undefined: a page with no text in this language carries no metaTitle and no
+		// h1, and a document with no <title> at all is a defect in a browser tab and a
+		// screen reader long before it is one in a search result.
+		title: page.metaTitle ?? page.h1 ?? vehicleDisplayName(view.tree, node),
 		description: page.metaDescription,
 		alternates: { canonical },
 		// hreflang is deliberately absent: only `sk` exists, and an alternate must point
@@ -81,6 +93,27 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 function tileHref(channel: string, node: CatalogNode): string {
 	return marketHref(channel, node.urlPath);
+}
+
+/**
+ * A readable name for a vehicle, from the tree rather than the copy.
+ *
+ * Needed because a page with no text in a language has NOTHING from CFM: measured on the
+ * 2026-09-12 German artifact, `h1`, `metaTitle`, `metaDescription` and `navName` are all
+ * `null` on the four pages without German text. Rendered literally that is a heading of
+ * "F10" and — worse — no `<title>` element at all.
+ *
+ * The tree still knows the vehicle, so the chain is rebuilt from it: "BMW rad 5 F10".
+ * Brand and model names are proper nouns and identical in every language, so this needs no
+ * translation and invents nothing. It is deliberately NOT dressed up with a category word
+ * like "Dachträger": that word would have to come from somewhere, and guessing it is how a
+ * German page ends up with a Slovak noun in its title.
+ */
+function vehicleDisplayName(tree: CatalogTree, node: CatalogNode): string {
+	return [...ancestorsOf(tree, node), node]
+		.map((step) => step.name)
+		.filter(Boolean)
+		.join(" ");
 }
 
 function ChildTiles({ channel, nodes }: { channel: string; nodes: readonly CatalogNode[] }) {
@@ -137,7 +170,10 @@ async function Offers({
 	channel: string;
 	locale: string;
 }) {
-	const view = await loadCatalogView();
+	const language = catalogLanguageForChannel(channel);
+	if (!language) return null;
+
+	const view = await loadCatalogView(language);
 	if (!view.ready) return null;
 
 	const applications = view.tree.applicationsOf.get(vehicleId) ?? [];
@@ -207,7 +243,7 @@ export default async function Page({ params }: Params) {
 			) : null}
 
 			<h1 className="text-text-primary mt-4 text-2xl font-bold break-words sm:text-3xl">
-				{page.h1 ?? node.name}
+				{page.h1 ?? vehicleDisplayName(view.tree, node)}
 			</h1>
 
 			{/* Above the listing: the short lead. */}

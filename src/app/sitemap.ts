@@ -6,7 +6,7 @@ import { liveMarkets } from "@/lib/market-state";
 import { marketHasRoute, ROUTE_POLICY } from "@/lib/route-policy";
 import { cmsRouteAvailable } from "@/lib/cms/availability";
 import { indexabilityOf } from "@/lib/catalog-content/publication";
-import { catalogServesMarket, loadCatalogView } from "@/lib/catalog-content/resolve";
+import { catalogLanguageForMarket, loadCatalogView } from "@/lib/catalog-content/resolve";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
 import { SitemapProductsDocument, SitemapCategoriesDocument } from "@/gql/graphql";
@@ -235,18 +235,26 @@ async function fetchStockedCategorySlugs(channel: string): Promise<string[]> {
  * deployment serves. Throwing would take the whole sitemap — products included — down
  * with a feature that is simply switched off.
  *
- * ## Why the language has to match
+ * ## Which language, and why that is no longer the index gate
  *
- * The snapshot carries exactly one language. CFM published nine translations and said
- * explicitly that their existence is not permission to index them: that waits on a
- * locale-aware source, hreflang and a per-market sitemap policy. So a market is served
- * from this snapshot only when the snapshot's language IS that market's language —
- * `de-DE` takes a `de` snapshot and never an `sk` one. Until the loader is locale-aware
- * that means Slovak only, which is the intended state, not a limitation to work around.
+ * Each market reads its OWN language's artifact — `de-DE` reads `de`, never `sk`. The
+ * loader refuses a snapshot whose declared language is not the one asked for, so a
+ * misconfiguration yields no pages rather than Slovak prose under a German market.
+ *
+ * CFM said plainly that nine published translations are not permission to index them.
+ * That permission is not decided here and never was: this function only ever runs for a
+ * LIVE market, because `sitemap()` iterates `liveMarkets()`. A market stays `preview`
+ * until someone lists it — reachable, `noindex, nofollow` from the proxy, absent from the
+ * sitemap and from every hreflang cluster. So a translated catalogue can be loaded,
+ * served and checked on production long before a crawler is told about it, which is
+ * exactly the order CFM asked for.
  */
 async function catalogEntriesFor(market: string): Promise<MetadataRoute.Sitemap> {
-	const view = await loadCatalogView();
-	if (!view.ready || !catalogServesMarket(view, market)) return [];
+	const language = catalogLanguageForMarket(market);
+	if (!language) return [];
+
+	const view = await loadCatalogView(language);
+	if (!view.ready) return [];
 
 	const base = getBaseUrl();
 	const entries: MetadataRoute.Sitemap = [];

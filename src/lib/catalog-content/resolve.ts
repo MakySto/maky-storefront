@@ -1,13 +1,13 @@
 import "server-only";
 
 import { cache } from "react";
-import { CHANNEL_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { type CatalogContentStatus, loadCatalogContent } from "./snapshot";
 import { type CatalogNode, type CatalogTree, buildCatalogTree } from "./tree";
 
 /**
- * One assembled view of the catalogue, built once per request and shared.
+ * One assembled view of the catalogue, built once per request per language and shared.
  *
  * Building the tree walks 1 475 nodes and 1 102 applications. That is cheap once and
  * wasteful per component, so it is wrapped in React `cache()` and sits on top of the
@@ -17,8 +17,8 @@ export type CatalogView =
 	| { readonly ready: true; readonly tree: CatalogTree; readonly status: CatalogContentStatus }
 	| { readonly ready: false; readonly reason: string; readonly status: CatalogContentStatus };
 
-export const loadCatalogView = cache(async function loadCatalogView(): Promise<CatalogView> {
-	const [content, fitment] = await Promise.all([loadCatalogContent(), loadFitmentDataset()]);
+export const loadCatalogView = cache(async function loadCatalogView(language: string): Promise<CatalogView> {
+	const [content, fitment] = await Promise.all([loadCatalogContent(language), loadFitmentDataset()]);
 
 	if (!content.snapshot) {
 		return {
@@ -33,6 +33,29 @@ export const loadCatalogView = cache(async function loadCatalogView(): Promise<C
 	// rather than rendering an empty listing that looks like "nothing fits".
 	return { ready: true, tree: buildCatalogTree(content.snapshot, fitment.dataset), status: content.status };
 });
+
+/**
+ * Which catalogue language a market reads.
+ *
+ * The market's own locale, cut to its language: `sk` reads `sk-SK` → `sk`, `at` reads
+ * `de-AT` → `de`, `cz` reads `cs-CZ` → `cs`. Two markets sharing a language share an
+ * artifact, which is why `us` and `ca` both read `en` — CFM publishes one English text,
+ * not one per country.
+ *
+ * Returns `null` for a market nobody has mapped, and the caller then serves no pages.
+ * Guessing would be worse: it is the difference between "this market has no catalogue"
+ * and "this market has someone else's".
+ */
+export function catalogLanguageForMarket(market: string): string | null {
+	const locale = CHANNEL_MAP[market]?.locale;
+	if (!locale) return null;
+	return locale.split("-")[0]?.toLowerCase() || null;
+}
+
+/** Same, from the Saleor channel (`sk-eur`) rather than the market segment (`sk`). */
+export function catalogLanguageForChannel(channel: string): string | null {
+	return catalogLanguageForMarket(REVERSE_MAP[channel] ?? channel);
+}
 
 /**
  * `("stresne-nosice", ["bmw"])` -> `/stresne-nosice/bmw`.
@@ -56,6 +79,12 @@ export interface ResolvedCatalogPage {
  *
  * Lookup is by `urlPath` because that is what the visitor typed — which is a different
  * job from JOINING the two artifacts, where only `vehicleId` is allowed.
+ *
+ * ⚠️ Measured 2026-09-12 across all ten artifacts: `urlPath` and `slug` are BYTE-IDENTICAL
+ * in every language — only the prose is translated. So a German market serves German text
+ * at the Slovak path `/de/stresne-nosice/bmw`. That is fine for a preview market and is a
+ * real question before German is made live; it is CFM's to answer, not something to paper
+ * over here by inventing slugs the snapshot does not contain.
  */
 export function resolveVehiclePath(
 	tree: CatalogTree,
@@ -64,28 +93,4 @@ export function resolveVehiclePath(
 ): CatalogNode | null {
 	if (segments.length === 0 || segments.length > 3) return null;
 	return tree.byUrlPath.get(vehiclePathFromSegments(categorySlug, segments)) ?? null;
-}
-
-/**
- * May this market be served from the snapshot that is loaded?
- *
- * The snapshot carries exactly ONE language. CFM published nine translations on
- * 2026-09-12 and said plainly that their existence is not permission to index them:
- * that waits on a locale-aware loader, hreflang, and a per-market sitemap policy.
- *
- * So the rule is the narrow one — a market is served only when the snapshot's language
- * IS that market's language. A Slovak snapshot furnishes `sk` and nothing else; it does
- * not quietly become the German catalogue because German is live. Until the loader
- * becomes locale-aware that means Slovak only, which is the intended state.
- *
- * It lives here, beside the loader, because the sitemap and the pages must not answer
- * this differently: a sitemap advertising URLs the page declines to render is worse than
- * either behaviour on its own.
- *
- * `market` is the friendly slug (`sk`, `de`) — NOT `params.channel`, which is `sk-eur`.
- */
-export function catalogServesMarket(view: CatalogView, market: string): boolean {
-	if (!view.ready) return false;
-	const language = CHANNEL_MAP[market]?.locale.split("-")[0];
-	return Boolean(language) && view.status.language === language;
 }

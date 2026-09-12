@@ -529,17 +529,46 @@ describe("the vehicle pages", () => {
 	});
 
 	/**
-	 * CFM published nine translations and said their existence is not permission to
-	 * index them. A Slovak snapshot must not furnish a German market with URLs.
+	 * Each market reads its OWN language's artifact, and a market whose language has no
+	 * artifact gets no vehicle pages rather than somebody else's.
+	 *
+	 * This replaced a test that asserted the opposite shape — that one snapshot was
+	 * checked against one market's language. The loader is locale-aware now, so the
+	 * question moved: not "does this snapshot match" but "was the right one asked for".
 	 */
-	it("does not serve one market's snapshot to another market's language", async () => {
+	it("asks for each market's own language, and serves nothing when it is missing", async () => {
 		process.env.MAKY_LIVE_MARKETS = "sk,de";
 		serve((after) => productPage(after, 0));
-		loadCatalogView.mockResolvedValue(catalogView("sk", DELIVERY));
+		// Slovak has an artifact; German does not.
+		loadCatalogView.mockImplementation(async (language: string) =>
+			language === "sk"
+				? catalogView("sk", DELIVERY)
+				: { ready: false, reason: `no artifact for ${language}`, status: catalogStatus(null) },
+		);
 
 		const urls = vehicleUrls(await sitemap());
 		expect(urls.every((u) => u.startsWith(`${BASE}/sk/`))).toBe(true);
 		expect(urls.some((u) => u.startsWith(`${BASE}/de/`))).toBe(false);
+
+		// `de-DE` must have been asked for as `de`, never as `sk` or `de-DE`.
+		const asked = loadCatalogView.mock.calls.map((c: unknown[]) => c[0]);
+		expect(new Set(asked)).toEqual(new Set(["sk", "de"]));
+	});
+
+	/** Two markets on one language share one artifact: CFM publishes one English text. */
+	it("serves both English markets from the single en artifact", async () => {
+		process.env.MAKY_LIVE_MARKETS = "us,ca";
+		serve((after) => productPage(after, 0));
+		loadCatalogView.mockImplementation(async (language: string) =>
+			language === "en"
+				? catalogView("en", DELIVERY)
+				: { ready: false, reason: "none", status: catalogStatus(null) },
+		);
+
+		const urls = vehicleUrls(await sitemap());
+		expect(urls.some((u) => u.startsWith(`${BASE}/us/`))).toBe(true);
+		expect(urls.some((u) => u.startsWith(`${BASE}/ca/`))).toBe(true);
+		expect(new Set(loadCatalogView.mock.calls.map((c: unknown[]) => c[0]))).toEqual(new Set(["en"]));
 	});
 
 	/** A switched-off feature is not a truncated catalogue: the rest of the sitemap stands. */
