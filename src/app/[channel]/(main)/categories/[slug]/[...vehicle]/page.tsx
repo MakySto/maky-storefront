@@ -6,7 +6,12 @@ import Link from "next/link";
 import { getLocaleFromChannel } from "@/config/locale";
 import { REVERSE_MAP, marketHref } from "@/lib/channel-map";
 import { buildCanonicalUrl } from "@/lib/seo/hreflang";
-import { indexabilityOf, isCatalogPreviewEnabled, visibilityOf } from "@/lib/catalog-content/publication";
+import {
+	indexabilityOf,
+	isCatalogPreviewEnabled,
+	isPubliclyVisible,
+	visibilityOf,
+} from "@/lib/catalog-content/publication";
 import { loadCatalogView, resolveVehiclePath } from "@/lib/catalog-content/resolve";
 import { splitContent } from "@/lib/catalog-content/text";
 import { type CatalogNode, ancestorsOf } from "@/lib/catalog-content/tree";
@@ -152,13 +157,41 @@ export default async function Page({ params }: Params) {
 
 	const { view, node, page, locale, market, published } = resolved;
 	const { top, body } = splitContent(page);
-	const children = view.tree.childrenOf.get(node.vehicleId) ?? [];
+
+	/**
+	 * Never emit a link to a page this same application will refuse to serve.
+	 *
+	 * Before publication every page was `draft`, so nothing rendered and nothing could
+	 * link anywhere. The 2026-09-12 delivery published 1 474 and held one back, and that
+	 * one is a MODEL — `/stresne-nosice/lynk-co/01` — whose make above it and generation
+	 * below it are both published. Measured on the served HTML, it was linked from three
+	 * directions at once: the make page's tiles, the generation's breadcrumb, and the
+	 * inline copy of two published pages.
+	 *
+	 * Visibility, not indexability, is the right test here: a page kept out of the index
+	 * is still a page a visitor may follow. Only one that does not render is a dead link.
+	 */
+	const isLinkable = (urlPath: string): boolean => {
+		const target = view.tree.byUrlPath.get(urlPath);
+		// Unknown paths are left alone: this predicate exists to catch pages that are
+		// known AND withheld, not to police every href in the copy.
+		return !target?.page || isPubliclyVisible(target.page);
+	};
+
+	// Tiles for children a visitor can actually open. A tile onto a not-found body is a
+	// worse experience than one fewer tile.
+	const children = (view.tree.childrenOf.get(node.vehicleId) ?? []).filter(
+		(child) => !child.page || isPubliclyVisible(child.page),
+	);
 
 	const crumbs: BreadcrumbItem[] = [
 		{ label: "Strešné nosiče", href: marketHref(channel, `/${slug}`) },
 		...ancestorsOf(view.tree, node).map((ancestor) => ({
 			label: ancestor.name,
-			href: tileHref(channel, ancestor),
+			// An unpublished ancestor keeps its place in the trail and loses its link:
+			// dropping it would misdescribe where this page sits, and `BreadcrumbItem`
+			// already renders a hrefless crumb as plain text with no JSON-LD `item`.
+			...(ancestor.page && !isPubliclyVisible(ancestor.page) ? {} : { href: tileHref(channel, ancestor) }),
 		})),
 		{ label: node.name },
 	];
@@ -179,7 +212,7 @@ export default async function Page({ params }: Params) {
 
 			{/* Above the listing: the short lead. */}
 			<div className="mt-4">
-				<ContentBlocks blocks={top} market={market} id="top" />
+				<ContentBlocks blocks={top} market={market} id="top" linkable={isLinkable} />
 			</div>
 
 			<ChildTiles channel={channel} nodes={children} />
@@ -195,7 +228,7 @@ export default async function Page({ params }: Params) {
 			{/* Below the listing: the advice. Server-rendered, no interaction required. */}
 			{body.length > 0 ? (
 				<section className="border-border-default mt-10 border-t pt-8">
-					<ContentBlocks blocks={body} market={market} id="body" />
+					<ContentBlocks blocks={body} market={market} id="body" linkable={isLinkable} />
 				</section>
 			) : null}
 		</div>

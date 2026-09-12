@@ -197,6 +197,49 @@ describe.skipIf(!available)("the delivered catalogue content, end to end", () =>
 		expect(dangling).toEqual([]);
 	});
 
+	/**
+	 * The invariant the 2026-09-12 publication broke, and the reason it was worth finding.
+	 *
+	 * `links only to pages that exist` above tests EXISTENCE, and existence is not enough
+	 * once some pages are published and others are not. CFM held back one page — a MODEL,
+	 * `/stresne-nosice/lynk-co/01` — whose make above it and generation below it are both
+	 * published. Measured on the served HTML, it was reachable from three directions:
+	 * the make page's child tiles, the generation page's breadcrumb, and the inline copy
+	 * of two published pages. Each one is a link, inside published prose, onto a body that
+	 * says the page does not exist.
+	 *
+	 * This asserts the copy half. The route halves are fixed where they are rendered: the
+	 * tiles filter on visibility and an unpublished breadcrumb ancestor loses its href.
+	 *
+	 * It is stated as a COUNT of the known case rather than `toEqual([])`, so the day CFM
+	 * publishes that page this test fails and gets deleted, instead of passing quietly and
+	 * leaving the renderer suppressing links that no longer need suppressing.
+	 */
+	it("knows exactly which published copy points at a page that will not render", () => {
+		const f = fixture();
+		const visible = new Set(f.snapshot.pages.filter((p) => visibilityOf(p).visible).map((p) => p.urlPath));
+
+		const dangling: string[] = [];
+		for (const page of f.snapshot.pages) {
+			if (!visibilityOf(page).visible) continue;
+			for (const block of [...splitContent(page).top, ...splitContent(page).body]) {
+				const texts = block.type === "list" ? block.data.items : [block.data.text];
+				for (const text of texts) {
+					for (const node of parseInline(text)) {
+						if (node.kind === "link" && !visible.has(node.href)) {
+							dangling.push(`${page.urlPath} -> ${node.href}`);
+						}
+					}
+				}
+			}
+		}
+
+		expect(dangling.sort()).toEqual([
+			"/stresne-nosice/lynk-co -> /stresne-nosice/lynk-co/01",
+			"/stresne-nosice/lynk-co/01/2020-2024 -> /stresne-nosice/lynk-co/01",
+		]);
+	});
+
 	it("accepts every href the export contains, so no link is silently dropped", () => {
 		const f = fixture();
 		for (const page of f.snapshot.pages) {
