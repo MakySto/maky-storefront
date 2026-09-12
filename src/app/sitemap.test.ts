@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { executePublicGraphQL } = vi.hoisted(() => ({ executePublicGraphQL: vi.fn() }));
+const { executePublicGraphQL, loadCatalogView } = vi.hoisted(() => ({
+	executePublicGraphQL: vi.fn(),
+	loadCatalogView: vi.fn(),
+}));
 
 vi.mock("@/lib/graphql", () => ({ executePublicGraphQL }));
+vi.mock("@/lib/catalog-content/resolve", () => ({ loadCatalogView }));
 
 import { SitemapCategoriesDocument, SitemapProductsDocument } from "@/gql/graphql";
 import sitemap from "./sitemap";
@@ -103,6 +107,10 @@ beforeEach(() => {
 	// number of markets walked and with it every count below.
 	delete process.env.MAKY_LIVE_MARKETS;
 	executePublicGraphQL.mockReset();
+	// Default: no catalogue snapshot, which is what a deployment without
+	// MAKY_CATALOG_CONTENT_PATH serves. The vehicle-page tests opt in.
+	loadCatalogView.mockReset();
+	loadCatalogView.mockResolvedValue({ ready: false, reason: "no snapshot", status: catalogStatus(null) });
 });
 
 afterEach(() => {
@@ -425,5 +433,115 @@ describe("sitemap — CMS entries follow the CMS", () => {
 		// `de` has no CMS route in policy, so availability must not even be consulted —
 		// and the German sitemap must not gain /o-nas just because sk published one.
 		expect(await pathsFor("de", ["sk", "de"])).not.toContain("/o-nas");
+	});
+});
+
+/**
+ * The CFM vehicle pages.
+ *
+ * The gate that matters is not "is it indexable" — `indexable: true` is set on all 1 475
+ * pages CFM delivered, the one it deliberately held back included. The gate is `state`,
+ * plus editorial text. These fixtures are shaped after the real delivery so that the
+ * distinction is actually exercised rather than described.
+ */
+function catalogStatus(language: string | null) {
+	return {
+		mode: language ? ("file" as const) : ("disabled" as const),
+		unavailableReason: null,
+		language,
+		generatedAt: "2026-09-12T13:06:29.526422+00:00",
+		pageCount: 0,
+		sha256: null,
+	};
+}
+
+type FixturePage = {
+	urlPath: string;
+	state: "draft" | "published";
+	indexable: boolean;
+	hasEditorialText: boolean;
+};
+
+function catalogView(language: string, pages: readonly FixturePage[]) {
+	const byUrlPath = new Map(
+		pages.map((p) => [
+			p.urlPath,
+			{
+				vehicleId: `veh:${p.urlPath}`,
+				kind: "generation" as const,
+				name: p.urlPath,
+				urlPath: p.urlPath,
+				parentId: null,
+				page: { publicId: `pg:${p.urlPath}`, kind: "vehicle_generation" as const, ...p },
+			},
+		]),
+	);
+	return { ready: true as const, tree: { byUrlPath }, status: catalogStatus(language) };
+}
+
+/** The real delivery in miniature: published+text, published+no text, and the held-back draft. */
+const DELIVERY: readonly FixturePage[] = [
+	{ urlPath: "/stresne-nosice/bmw", state: "published", indexable: true, hasEditorialText: true },
+	{
+		urlPath: "/stresne-nosice/skoda/octavia-combi",
+		state: "published",
+		indexable: true,
+		hasEditorialText: true,
+	},
+	{ urlPath: "/stresne-nosice/thin", state: "published", indexable: true, hasEditorialText: false },
+	{ urlPath: "/stresne-nosice/lynk-co/01", state: "draft", indexable: true, hasEditorialText: false },
+	{ urlPath: "/stresne-nosice/noindex", state: "published", indexable: false, hasEditorialText: true },
+];
+
+describe("the vehicle pages", () => {
+	const vehicleUrls = (entries: Awaited<ReturnType<typeof sitemap>>) =>
+		entries.map((e) => e.url).filter((u) => u.includes("/stresne-nosice/"));
+
+	it("lists only pages that are published, indexable AND have text", async () => {
+		serve((after) => productPage(after, 0));
+		loadCatalogView.mockResolvedValue(catalogView("sk", DELIVERY));
+
+		expect(vehicleUrls(await sitemap())).toEqual([
+			`${BASE}/sk/stresne-nosice/bmw`,
+			`${BASE}/sk/stresne-nosice/skoda/octavia-combi`,
+		]);
+	});
+
+	/**
+	 * The trap CFM named explicitly. `indexable` is true on the draft page too, so a
+	 * sitemap that filtered on it would advertise a page with no Slovak text that the
+	 * route itself refuses to serve.
+	 */
+	it("never advertises the page CFM held back, though it is flagged indexable", async () => {
+		serve((after) => productPage(after, 0));
+		loadCatalogView.mockResolvedValue(catalogView("sk", DELIVERY));
+
+		const urls = await sitemap();
+		expect(urls.map((e) => e.url)).not.toContain(`${BASE}/sk/stresne-nosice/lynk-co/01`);
+	});
+
+	/**
+	 * CFM published nine translations and said their existence is not permission to
+	 * index them. A Slovak snapshot must not furnish a German market with URLs.
+	 */
+	it("does not serve one market's snapshot to another market's language", async () => {
+		process.env.MAKY_LIVE_MARKETS = "sk,de";
+		serve((after) => productPage(after, 0));
+		loadCatalogView.mockResolvedValue(catalogView("sk", DELIVERY));
+
+		const urls = vehicleUrls(await sitemap());
+		expect(urls.every((u) => u.startsWith(`${BASE}/sk/`))).toBe(true);
+		expect(urls.some((u) => u.startsWith(`${BASE}/de/`))).toBe(false);
+	});
+
+	/** A switched-off feature is not a truncated catalogue: the rest of the sitemap stands. */
+	it("yields nothing, and breaks nothing, when no snapshot is configured", async () => {
+		serve((after) => productPage(after, 3));
+		loadCatalogView.mockResolvedValue({ ready: false, reason: "off", status: catalogStatus(null) });
+
+		const entries = await sitemap();
+		expect(vehicleUrls(entries)).toEqual([]);
+		expect(entries.some((e) => e.url === `${BASE}/sk`)).toBe(true);
+		expect(entries.filter((e) => e.priority === PRODUCT_PRIORITY)).toHaveLength(3);
 	});
 });

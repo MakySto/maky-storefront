@@ -5,6 +5,8 @@ import { CHANNEL_MAP } from "@/lib/channel-map";
 import { liveMarkets } from "@/lib/market-state";
 import { marketHasRoute, ROUTE_POLICY } from "@/lib/route-policy";
 import { cmsRouteAvailable } from "@/lib/cms/availability";
+import { indexabilityOf } from "@/lib/catalog-content/publication";
+import { loadCatalogView } from "@/lib/catalog-content/resolve";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
 import { SitemapProductsDocument, SitemapCategoriesDocument } from "@/gql/graphql";
@@ -213,6 +215,60 @@ async function fetchStockedCategorySlugs(channel: string): Promise<string[]> {
 }
 
 /**
+ * The CFM vehicle pages — `/sk/stresne-nosice/bmw/x3/g01` and its 1 473 siblings.
+ *
+ * Three gates, and none of them is a re-implementation. The page decides whether it may
+ * be indexed in `indexabilityOf`, and the sitemap asks that same function, because a
+ * sitemap that computes indexability its own way is a second opinion waiting to disagree
+ * with the `robots` tag on the page it advertises.
+ *
+ * `indexabilityOf` requires `state === "published"`, an explicit `indexable: true`, AND
+ * editorial text. That last one is why the one page CFM deliberately held back cannot
+ * arrive here: `/stresne-nosice/lynk-co/01` is `indexable: true` like all 1 475 — the
+ * flag was never the gate — but it is `draft` and it has no text, so it fails twice.
+ *
+ * ## Why a missing snapshot yields nothing rather than throwing
+ *
+ * Unlike the Saleor walk above, which throws so a half-read catalogue can never look
+ * complete, an absent snapshot is not a truncation: with no snapshot the routes do not
+ * render either, so listing zero vehicle pages is an accurate description of what this
+ * deployment serves. Throwing would take the whole sitemap — products included — down
+ * with a feature that is simply switched off.
+ *
+ * ## Why the language has to match
+ *
+ * The snapshot carries exactly one language. CFM published nine translations and said
+ * explicitly that their existence is not permission to index them: that waits on a
+ * locale-aware source, hreflang and a per-market sitemap policy. So a market is served
+ * from this snapshot only when the snapshot's language IS that market's language —
+ * `de-DE` takes a `de` snapshot and never an `sk` one. Until the loader is locale-aware
+ * that means Slovak only, which is the intended state, not a limitation to work around.
+ */
+async function catalogEntriesFor(market: string): Promise<MetadataRoute.Sitemap> {
+	const view = await loadCatalogView();
+	if (!view.ready) return [];
+
+	const marketLanguage = CHANNEL_MAP[market]?.locale.split("-")[0];
+	if (!marketLanguage || view.status.language !== marketLanguage) return [];
+
+	const base = getBaseUrl();
+	const entries: MetadataRoute.Sitemap = [];
+	for (const node of view.tree.byUrlPath.values()) {
+		if (!node.page || !indexabilityOf(node.page).indexable) continue;
+		entries.push({
+			// `urlPath` is language-agnostic and already absolute: `/stresne-nosice/bmw`.
+			url: `${base}/${market}${node.page.urlPath}`,
+			// No `lastModified`: the snapshot carries one timestamp for the whole export,
+			// so using it would mark all 1 474 as changed together every time CFM
+			// re-exports anything. Same reasoning as the category entries above.
+			changeFrequency: "monthly",
+			priority: 0.5,
+		});
+	}
+	return entries;
+}
+
+/**
  * One market's entries. Throws if the catalogue could not be read in full.
  */
 async function marketEntries(market: string): Promise<MetadataRoute.Sitemap> {
@@ -255,6 +311,8 @@ async function marketEntries(market: string): Promise<MetadataRoute.Sitemap> {
 			priority: 0.6,
 		});
 	}
+
+	entries.push(...(await catalogEntriesFor(market)));
 
 	// Whatever static and CMS routes this market actually has, per route-policy.
 	for (const path of await staticPathsFor(market)) {
