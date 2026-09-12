@@ -3,30 +3,36 @@ import { type BlockDocument, type CatalogContentPage, type ContentBlock } from "
 /**
  * Which blocks go above the product listing, and which go below.
  *
- * ## The export does not contain the split
+ * ## The export ships the split — now
  *
- * The integration plan says `top`/`body` are "the split, materialised in the
- * export", and the artifact's own `reading` note describes them the same way. In
- * the 2026-09-11 export they are **empty on every one of the 1475 pages** —
- * measured, not inferred: `intro only: 1473`, `split only: 0`, `both: 0`. Only
- * `intro` carries text.
+ * It did not always. In the 2026-09-11 pre-publish export `top`/`body` were empty
+ * on every one of the 1475 pages, so a consumer that rendered them literally
+ * rendered 1473 blank pages and passed every build. The split had to be derived
+ * from `intro`, which the artifact itself calls the source of truth.
  *
- * So a consumer that renders `top` and `body` literally, as the plan's layout
- * section describes, renders 1473 blank pages and passes every build. The split
- * has to be derived here, from `intro`, which the artifact itself calls the source
- * of truth.
+ * The 2026-09-12 post-publish export DOES materialise them: measured non-empty on
+ * all 1474 pages that have text, empty only on the one that has none, in all ten
+ * languages. So the export path is the live path now and the derivation is what it
+ * always claimed to be — a fallback.
  *
- * ## Where the cut goes
+ * ## Why the export path never used to fire
  *
- * Before the first `header`, and from that header onwards. That is not a guess
- * about prose: every page with text has at least one header (measured: 0 without),
- * and the first one sits at index 1 on 1358 pages and index 2 on 115. So the lead
- * is one or two paragraphs — a short intro — and everything from the first heading
- * down is the advisory article. That is exactly the shape the layout wants.
+ * `top` and `body` are BARE ARRAYS of blocks; `intro` is a block document with a
+ * `.blocks` property. Reading `.blocks` off all three read `undefined` off the two
+ * arrays, so the export branch was unreachable and every page silently took the
+ * derivation. That was invisible while the arrays were empty and would have stayed
+ * invisible now, because the two agree — see below.
  *
- * If a future export DOES materialise `top`/`body`, they win: the derivation is a
- * fallback, not a second opinion. What must never happen is rendering `intro`
- * alongside `top`/`body`, because they are the same words twice.
+ * ## The derivation and the export agree, which is why this was safe to get wrong
+ *
+ * Measured on the 2026-09-12 SK export: deriving the cut at the first `header`
+ * reproduces the shipped `top`/`body` byte for byte on all 1475 pages, and
+ * `intro.blocks === top ++ body` on all 1475. So switching to the export changes no
+ * rendered output today. It is worth doing anyway: the agreement is CFM's to break,
+ * not ours to depend on, and `source` should say what actually happened.
+ *
+ * What must never happen is rendering `intro` alongside `top`/`body`, because they
+ * are the same words twice.
  */
 export interface SplitContent {
 	readonly top: readonly ContentBlock[];
@@ -35,12 +41,21 @@ export interface SplitContent {
 	readonly source: "export" | "derived" | "empty";
 }
 
+/** `intro` — a block document. */
 const blocksOf = (document: BlockDocument | null | undefined): readonly ContentBlock[] =>
 	Array.isArray(document?.blocks) ? document.blocks : [];
 
+/** `top`/`body` — bare arrays. Tolerates a block document too, so a shape change is not an outage. */
+const sectionOf = (
+	section: readonly ContentBlock[] | BlockDocument | null | undefined,
+): readonly ContentBlock[] => {
+	if (Array.isArray(section)) return section as readonly ContentBlock[];
+	return blocksOf(section as BlockDocument | null | undefined);
+};
+
 export function splitContent(page: CatalogContentPage): SplitContent {
-	const exportedTop = blocksOf(page.top);
-	const exportedBody = blocksOf(page.body);
+	const exportedTop = sectionOf(page.top);
+	const exportedBody = sectionOf(page.body);
 	if (exportedTop.length > 0 || exportedBody.length > 0) {
 		return { top: exportedTop, body: exportedBody, source: "export" };
 	}

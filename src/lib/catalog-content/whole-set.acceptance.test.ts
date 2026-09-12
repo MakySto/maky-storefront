@@ -31,17 +31,34 @@ const available = Boolean(
 	CONTENT_PATH && existsSync(CONTENT_PATH) && FITMENT_PATH && existsSync(FITMENT_PATH),
 );
 
-/** Verified 2026-09-11 against https://carfitmanager.com/media/fitment/ */
+/**
+ * The POST-PUBLISH delivery. Verified 2026-09-12 by downloading all ten artifacts and
+ * `SHA256SUMS_CONTENT_20260912` from https://carfitmanager.com/media/fitment/ and
+ * checking the DOWNLOADED BYTES against the published manifest — `sha256sum -c`, all OK.
+ * Every number below was measured here, not transcribed from a handoff.
+ *
+ * What changed from the 2026-09-11 pre-publish copy the consumer was built against:
+ * `state` went draft 1475 → published 1474 / draft 1; `hasEditorialText` 1473 → 1474
+ * (`/stresne-nosice/seat/ateca` got its text); `routeLanguage` is new; and `top`/`body`
+ * are materialised where they used to be empty.
+ */
 const DELIVERED = {
-	file: "maky_catalog_content_1.0.0-sk-20260911.json",
-	bytes: 9_681_675,
-	transport: "2833203a15256b699d3db3520a97f78bca90f475618cdca317b72ba40e5b98f0",
-	selfSha256: "e5285deec0656ea9776cc115457a57a6bab6a1a426470903534b833afaa64bfe",
+	file: "maky_catalog_content_1.0.0-sk-20260912.json",
+	bytes: 9_737_293,
+	transport: "5a8b9e48078935557cd57f43a7c40ddaf7878a8674015a3f9751986cb899acd5",
+	selfSha256: "b9aa9774bf93f3a86ec99445c7fc340f52d969be7803f4f9052c6d71c4230874",
 	language: "sk",
 	pages: 1475,
 	byKind: { vehicle_make: 62, vehicle_model: 557, vehicle_generation: 856 },
-	withEditorialText: 1473,
-	textless: ["/stresne-nosice/lynk-co/01", "/stresne-nosice/seat/ateca"],
+	withEditorialText: 1474,
+	published: 1474,
+	/**
+	 * CFM left this one `draft` on purpose: it has no Slovak editorial text, and
+	 * `--allow-empty` was not used. It is `indexable: true` like all 1475 — which is
+	 * exactly why `state`, not `indexable`, has to be the gate.
+	 */
+	draft: ["/stresne-nosice/lynk-co/01"],
+	textless: ["/stresne-nosice/lynk-co/01"],
 } as const;
 
 /**
@@ -122,16 +139,31 @@ describe.skipIf(!available)("the delivered catalogue content, end to end", () =>
 		expect(textless).toEqual([...DELIVERED.textless].sort());
 	});
 
-	it("derives a split for every page, because the export ships none", () => {
+	/**
+	 * The pre-publish export shipped no split and this asserted that all 1473 were
+	 * DERIVED. The post-publish export ships one, so the live path is now the export
+	 * — and the derivation, which used to be the only path, is the fallback.
+	 *
+	 * Both are checked against each other rather than one being trusted: the cut at
+	 * the first header reproduces the shipped split exactly, on every page. If CFM
+	 * ever changes where it cuts, that is a real content change and this says so
+	 * instead of quietly rendering something else.
+	 */
+	it("uses the split the export ships, and agrees with the derivation everywhere", () => {
 		const f = fixture();
-		let derived = 0;
+		let fromExport = 0;
 		for (const page of f.snapshot.pages) {
 			const split = splitContent(page);
-			if (split.source === "derived") derived++;
+			if (split.source === "export") fromExport++;
 			// intro is never rendered alongside the split: the split IS the intro, cut once.
 			expect(split.source === "export" && split.top.length + split.body.length === 0).toBe(false);
+
+			const blocks = page.intro?.blocks ?? [];
+			expect([...split.top, ...split.body], page.urlPath).toEqual([...blocks]);
+			const cut = blocks.findIndex((block) => block.type === "header");
+			expect(split.top, page.urlPath).toEqual(cut <= 0 ? [] : blocks.slice(0, cut));
 		}
-		expect(derived).toBe(DELIVERED.withEditorialText);
+		expect(fromExport).toBe(DELIVERED.withEditorialText);
 	});
 
 	it("contains only block types the renderer handles", () => {
@@ -180,26 +212,51 @@ describe.skipIf(!available)("the delivered catalogue content, end to end", () =>
 	});
 
 	/**
-	 * The state of the delivery, asserted rather than assumed. Everything is `draft`, so a
-	 * deploy of this f.snapshot publishes nothing — which is the intended order, not a fault.
+	 * The state of the delivery, asserted rather than assumed. CFM published 1474 and
+	 * deliberately held back the one page with no Slovak text.
 	 */
-	it("publishes nothing yet: every page is draft", () => {
+	it("publishes 1 474 and keeps the textless page back", () => {
 		const f = fixture();
 		const visible = f.snapshot.pages.filter((p) => visibilityOf(p).visible);
-		expect(visible).toHaveLength(0);
-		expect(new Set(f.snapshot.pages.map((p) => p.state))).toEqual(new Set(["draft"]));
+		expect(visible).toHaveLength(DELIVERED.published);
+		expect(new Set(f.snapshot.pages.map((p) => p.state))).toEqual(new Set(["draft", "published"]));
+
+		const held = f.snapshot.pages
+			.filter((p) => !visibilityOf(p).visible)
+			.map((p) => p.urlPath)
+			.sort();
+		expect(held).toEqual([...DELIVERED.draft].sort());
 	});
 
-	it("would index 1 473 of them once published, and never the two thin ones", () => {
+	/**
+	 * The trap CFM called out explicitly: `indexable` is `true` on all 1475, the draft
+	 * included. A consumer that filtered on `indexable` would publish a page with no
+	 * text. `state` is the gate; `indexable` only narrows what is already visible.
+	 */
+	it("indexes 1 474 and never the thin one, because state is the gate", () => {
 		const f = fixture();
-		const asPublished = f.snapshot.pages.map((p) => ({ ...p, state: "published" as const }));
-		const indexable = asPublished.filter((p) => indexabilityOf(p).indexable);
+		expect(f.snapshot.pages.every((p) => p.indexable === true)).toBe(true);
+
+		const indexable = f.snapshot.pages.filter((p) => indexabilityOf(p).indexable);
 		expect(indexable).toHaveLength(DELIVERED.withEditorialText);
 		for (const path of DELIVERED.textless) {
 			expect(
 				indexable.some((p) => p.urlPath === path),
 				path,
 			).toBe(false);
+		}
+	});
+
+	/**
+	 * `routeLanguage` is new in this export. In `sk` it is `sk` everywhere; in a
+	 * translated artifact it marks the pages that borrowed the Slovak route because
+	 * they have no text of their own. Asserted here so the field cannot appear, be
+	 * ignored, and then start meaning something.
+	 */
+	it("says which language each route came from", () => {
+		const f = fixture();
+		for (const page of f.snapshot.pages) {
+			expect(page.routeLanguage, page.urlPath).toBe(DELIVERED.language);
 		}
 	});
 });

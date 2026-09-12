@@ -15,11 +15,31 @@ const page = (over: Partial<CatalogContentPage>): CatalogContentPage => ({
 });
 
 describe("splitContent", () => {
+	/**
+	 * The shape the 2026-09-12 export actually ships: `top`/`body` are BARE ARRAYS
+	 * of blocks, not block documents. Typing them as documents read `.blocks` off an
+	 * array, got `undefined`, and sent every page down the derivation instead — which
+	 * no test caught, because the pre-publish export shipped them empty.
+	 */
 	it("uses the export's own split when it has one", () => {
 		const result = splitContent(
 			page({
-				top: { blocks: [para("lead")] },
-				body: { blocks: [head("H"), para("rest")] },
+				top: [para("lead")],
+				body: [head("H"), para("rest")],
+				intro: { blocks: [] },
+			}),
+		);
+		expect(result.source).toBe("export");
+		expect(result.top).toEqual([para("lead")]);
+		expect(result.body).toEqual([head("H"), para("rest")]);
+	});
+
+	/** Defensive only: if CFM ever wraps them, that is a shape change, not an outage. */
+	it("tolerates a block-document shape for top/body", () => {
+		const result = splitContent(
+			page({
+				top: { blocks: [para("lead")] } as never,
+				body: { blocks: [head("H"), para("rest")] } as never,
 				intro: { blocks: [] },
 			}),
 		);
@@ -29,15 +49,16 @@ describe("splitContent", () => {
 	});
 
 	/**
-	 * The case the 2026-09-11 export actually ships: top and body empty on all
-	 * 1475 pages, intro carrying everything. Rendering top/body literally, as the
-	 * integration plan describes, would produce 1473 blank pages.
+	 * The case the 2026-09-11 PRE-PUBLISH export shipped: top and body empty on all
+	 * 1475 pages, intro carrying everything. The 2026-09-12 export materialises the
+	 * split, so this is now the fallback rather than the live path — but it stays
+	 * covered, because it is what a textless or re-exported page still hits.
 	 */
 	it("derives the split from intro when the export did not materialise it", () => {
 		const result = splitContent(
 			page({
-				top: { blocks: [] },
-				body: { blocks: [] },
+				top: [],
+				body: [],
 				intro: { blocks: [para("lead"), head("H"), para("advice")] },
 			}),
 		);

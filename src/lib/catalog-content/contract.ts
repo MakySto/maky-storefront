@@ -1,13 +1,21 @@
 /**
  * The CFM catalogue-content snapshot, as the exporter actually writes it.
  *
- * Source of truth is `catalog-content-1.0.0.json` in `MakySto/CarFitManager-4`
- * (read at `794c431`). Measured against the real 9.68 MB artifact
- * `maky_catalog_content_1.0.0-sk-20260911.json` on 2026-09-11, not transcribed
- * from the handoff — two things in the prose did not survive that check and are
- * recorded where they matter: `top`/`body` are NOT materialised in this export
- * (see `text.ts`), and roof types live on the APPLICATION, not the product (see
- * the offer code).
+ * Source of truth is `catalog-content-schema-1.0.0.json`, published alongside the
+ * artifacts. Measured against the real 9.74 MB post-publish artifact
+ * `maky_catalog_content_1.0.0-sk-20260912.json` on 2026-09-12, not transcribed
+ * from a handoff.
+ *
+ * Two shapes in this file were got wrong against the pre-publish export and are
+ * fixed here, because the export that exposed them now carries data:
+ *
+ *   - `top` and `body` are BARE ARRAYS of blocks, not block documents. The schema
+ *     says so (`"type": "array", "items": {"$ref": "#/$defs/block"}`) and all 1475
+ *     pages agree. Typing them as `BlockDocument` read `.blocks` off an array,
+ *     got `undefined`, and silently fell through to the derivation in `text.ts`.
+ *     That was invisible while the pre-publish export shipped them empty.
+ *   - `top`/`body` ARE materialised now: non-empty on all 1474 pages that have
+ *     text, empty only on the one page that has none.
  *
  * Identity, stated once because it is the thing most easily got wrong:
  *
@@ -20,7 +28,7 @@
  * why CFM keeps a URL history at all.
  */
 
-/** `intro`, `top` and `body` are all EditorJS-shaped block documents. */
+/** `intro` is an EditorJS-shaped block document. `top`/`body` are bare arrays. */
 export interface BlockDocument {
 	readonly blocks: readonly ContentBlock[];
 }
@@ -55,14 +63,27 @@ export interface CatalogContentPage {
 	readonly slug?: string;
 	/** Language-agnostic path, no market prefix: `/stresne-nosice/bmw`. */
 	readonly urlPath: string;
+	/**
+	 * Which language's route this path came from. Added by the 2026-09-12 export.
+	 *
+	 * When a page has no text in the artifact's own language, CFM lends it the
+	 * Slovak route rather than inventing one, and says so here: `hasEditorialText`
+	 * is `false` and `routeLanguage` is `"sk"`. Measured on the 2026-09-12 set,
+	 * `routeLanguage !== language` holds on exactly the textless pages of each
+	 * language (de 4, en 5, hu 11, …) — it is not an export fault.
+	 */
+	readonly routeLanguage?: string;
 	readonly navName?: string;
 	readonly h1?: string;
 	readonly metaTitle?: string;
 	readonly metaDescription?: string;
 	readonly hasEditorialText: boolean;
+	/** The whole article, uncut. The artifact's own `reading` note calls this the source of truth. */
 	readonly intro?: BlockDocument | null;
-	readonly top?: BlockDocument | null;
-	readonly body?: BlockDocument | null;
+	/** Blocks ABOVE the product listing — a bare array, not a block document. */
+	readonly top?: readonly ContentBlock[] | null;
+	/** Blocks BELOW the product listing — a bare array, not a block document. */
+	readonly body?: readonly ContentBlock[] | null;
 }
 
 export interface CatalogContentSnapshot {
