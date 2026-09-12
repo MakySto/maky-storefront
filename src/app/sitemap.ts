@@ -6,7 +6,7 @@ import { liveMarkets } from "@/lib/market-state";
 import { marketHasRoute, ROUTE_POLICY } from "@/lib/route-policy";
 import { cmsRouteAvailable } from "@/lib/cms/availability";
 import { indexabilityOf } from "@/lib/catalog-content/publication";
-import { loadCatalogView } from "@/lib/catalog-content/resolve";
+import { catalogServesMarket, loadCatalogView } from "@/lib/catalog-content/resolve";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
 import { SitemapProductsDocument, SitemapCategoriesDocument } from "@/gql/graphql";
@@ -246,10 +246,7 @@ async function fetchStockedCategorySlugs(channel: string): Promise<string[]> {
  */
 async function catalogEntriesFor(market: string): Promise<MetadataRoute.Sitemap> {
 	const view = await loadCatalogView();
-	if (!view.ready) return [];
-
-	const marketLanguage = CHANNEL_MAP[market]?.locale.split("-")[0];
-	if (!marketLanguage || view.status.language !== marketLanguage) return [];
+	if (!view.ready || !catalogServesMarket(view, market)) return [];
 
 	const base = getBaseUrl();
 	const entries: MetadataRoute.Sitemap = [];

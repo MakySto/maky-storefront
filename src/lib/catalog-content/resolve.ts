@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { CHANNEL_MAP } from "@/lib/channel-map";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { type CatalogContentStatus, loadCatalogContent } from "./snapshot";
 import { type CatalogNode, type CatalogTree, buildCatalogTree } from "./tree";
@@ -63,4 +64,28 @@ export function resolveVehiclePath(
 ): CatalogNode | null {
 	if (segments.length === 0 || segments.length > 3) return null;
 	return tree.byUrlPath.get(vehiclePathFromSegments(categorySlug, segments)) ?? null;
+}
+
+/**
+ * May this market be served from the snapshot that is loaded?
+ *
+ * The snapshot carries exactly ONE language. CFM published nine translations on
+ * 2026-09-12 and said plainly that their existence is not permission to index them:
+ * that waits on a locale-aware loader, hreflang, and a per-market sitemap policy.
+ *
+ * So the rule is the narrow one — a market is served only when the snapshot's language
+ * IS that market's language. A Slovak snapshot furnishes `sk` and nothing else; it does
+ * not quietly become the German catalogue because German is live. Until the loader
+ * becomes locale-aware that means Slovak only, which is the intended state.
+ *
+ * It lives here, beside the loader, because the sitemap and the pages must not answer
+ * this differently: a sitemap advertising URLs the page declines to render is worse than
+ * either behaviour on its own.
+ *
+ * `market` is the friendly slug (`sk`, `de`) — NOT `params.channel`, which is `sk-eur`.
+ */
+export function catalogServesMarket(view: CatalogView, market: string): boolean {
+	if (!view.ready) return false;
+	const language = CHANNEL_MAP[market]?.locale.split("-")[0];
+	return Boolean(language) && view.status.language === language;
 }

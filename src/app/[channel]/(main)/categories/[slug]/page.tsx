@@ -27,6 +27,7 @@ import {
 	vehicleFilterIds,
 } from "@/lib/fitment/plp-vehicle-filter";
 import { VehicleListingFilter } from "@/ui/components/fitment/vehicle-listing-filter";
+import { CatalogMakeIndex } from "@/ui/components/catalog/make-index";
 import { CategoryPageClient } from "./client";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleCategory, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
@@ -188,6 +189,13 @@ async function CategoryContent({
 			/>
 			<Suspense fallback={<ProductsGridSkeleton />}>
 				<CategoryProducts params={paramsPromise} searchParams={searchParams} />
+			</Suspense>
+			{/* Below the listing, and in its own Suspense: reading the 9.7 MB catalogue
+			    snapshot must never hold up the products this page exists to show. It
+			    renders nothing at all for a category that has no vehicle pages, so the
+			    boundary has no fallback — there is nothing to reserve space for. */}
+			<Suspense fallback={null}>
+				<CatalogMakeIndex channel={params.channel} slug={params.slug} />
 			</Suspense>
 		</>
 	);

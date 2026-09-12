@@ -6,7 +6,15 @@ const { executePublicGraphQL, loadCatalogView } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/graphql", () => ({ executePublicGraphQL }));
-vi.mock("@/lib/catalog-content/resolve", () => ({ loadCatalogView }));
+/**
+ * Only the LOADER is mocked. `catalogServesMarket` stays real, because the
+ * language gate is one of the things under test here and a hand-written copy of it
+ * in this file could agree with a stale version of the rule it mirrors.
+ */
+vi.mock("@/lib/catalog-content/resolve", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@/lib/catalog-content/resolve")>()),
+	loadCatalogView,
+}));
 
 import { SitemapCategoriesDocument, SitemapProductsDocument } from "@/gql/graphql";
 import sitemap from "./sitemap";
