@@ -1,4 +1,8 @@
-# M-1 · prepnutie CFM vydania: kód hotový, nasadenie čaká na náhradné vydanie
+# M-1 · prepnutie CFM vydania: RELEASE-4 nasadené
+
+> **Stav 15. 9. 2026, 20:33 UTC: RELEASE-4 (`20260915.2`) je v produkcii** — `500068f`, BUILD_ID
+> `zMxoCHeXuF0A3BVkJVKUA`. Výsledok a overenie sú v §5. Oddiely §0–§4 sú pôvodný plán spred
+> nasadenia a ostávajú ako záznam.
 
 Napísané 15. 9. 2026 v M-vlákne. **Nič nie je nasadené.** Kód na prepnutie fitmentu a contentu,
 dátové 301 a fail-closed pin manifestu sú hotové a otestované. Vydanie CFM `20260915` sa
@@ -152,3 +156,46 @@ slovenskú cestu (`routeLanguage: "sk"`, `/stresne-nosice/…`) — cieľ brať 
 5. Deploy `.env` číta v builde aj za behu — meniť ho tesne pred skriptom, obe premenné naraz.
 6. Po checkoute inej vetvy v `/opt/storefront` spustiť codegen, inak preflight padá na starom `src/gql/`.
 7. Deploy exit `75` „market state" býva falošný poplach (závod s PM2 logom) — overiť priamo v logu.
+
+---
+
+## 5. REPORT B — RELEASE-4 (`20260915.2`) nasadené 15. 9. 2026
+
+|                   |                                                                                                      |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| Produkcia         | `500068f`, BUILD_ID `zMxoCHeXuF0A3BVkJVKUA`, build 2026-09-15T20:32:52Z, odstávka 76 s               |
+| Rollback          | `.next.rollback-a49cd0f-3AZ5yhr0JLAuKolHnikrF-20260915T203219Z` **a** `.env.backup-20260915T203135Z` |
+| `/opt/storefront` | detached HEAD na `500068f` — vetva je checkoutnutá vo worktree M-vlákna                              |
+| Deploy            | `MIN_FREE_MEM_MB=8192` pre tento beh (dostupných ~10,1–10,2 GB pri limite 10 240 MB)                 |
+
+**Vydanie.** Fitment `3.0.0-full-20260915.2`: 7 977 173 B, sha256 `6fddb7aa…`, datasetHash
+`af9e6750…`. Content `1.0.0-{lang}-20260915.2` × 10 v `/opt/storefront-artifacts/`, `sha256sum -c`
+proti `SHA256SUMS_CONTENT_20260915.2` 10/10 na mieste. `.env`: `MAKY_FITMENT_URL` na .2,
+`MAKY_CATALOG_CONTENT_PATH` s `{lang}`, `MAKY_CATALOG_CONTENT_SHA256SUMS` namiesto `_SHA256`.
+
+**Acceptance — opravená podľa CFM handoffu RELEASE-4.** Fitment: presne 20 produktov
+`hold → accepted`, `sellable false → true` (pk 4020–4025, 8472–8478, 9046–9052), held 26 → 6
+(ostáva pk 6935–6940), nič iné. Content: tri generácie `draft → published` v 10 jazykoch so SK
+textom; **navyše SK rodičia Golf Variant, H-1 Van a Legacy Kombi majú opravené `intro/top/body`**
+podľa novej ponuky (H1, navName, meta, cesta a stav bez zmeny). Pôvodné §3.1 to nepredpokladalo,
+preto STOP a potvrdenie; CFM handoff tieto zmeny uvádza. Cudzie rodičovské texty bez zmeny.
+
+**Overené po nasadení** (`maky.store` aj `127.0.0.1:3000`):
+
+- 301 jedným skokom: `/sk/…/legacy-kombi/bp` → `/sk/…/legacy-kombi/bh`, `/sk/…/h-1-van/tq` →
+  `/sk/…/h-1-van/a1`; `/es/bacas-de-techo/…/bp`, `/cz/stresni-nosice/…/tq` a
+  `/at/dachtraeger/…/bp` na požičanú SK cestu; Golf Alltrack BA5 = 200 bez presmerovania.
+- A1, BH, BA5: 200, SK H1, bez `noindex`; produkty 6/6, 7/7, 7/7 podľa Saleor slugov; PDP všetkých
+  20 = 200 s opraveným autom v H1.
+- Modelové stránky odkazujú na BH/A1/BA5 (dlaždica aj text), 0 odkazov na BP/TQ; Alltrack BA5
+  7 produktov.
+- sitemap 11 085 `<loc>`, vozidlových 1 475, BH/A1/BA5 áno, BP/TQ nie. `x-robots-tag`: sk bez,
+  cz/de `noindex, nofollow` — bez zmeny.
+- Gate skriptu: CSS, 21 statických súborov, bogus 404, RSC 200, listing a checkout 200;
+  `[market-state] live=sk`; PM2 bez reštartu, 0 zlyhaní validácie fitmentu v logu.
+- Pred nasadením: 145 cielených testov (acceptance 15 + 9 + 4, nič preskočené), `check:fitment` 9/9
+  voči servovanému URL, tsc/eslint/prettier 0, build 26 s a lokálny smoke; dry-run skriptu.
+
+**Otvorené, neblokuje:** slugy 20 produktov stále so starým autom (`…-tq-…`, `…-bp-…`,
+`…-golf-alltrack-ba5-…`); H1 nových stránok „(2013–2020)" bez medzier; React „resumable slots" na
+`categories/[slug]` (predexistujúce); lokalizované korene neroutované; ponuka ignoruje `sellable`.
