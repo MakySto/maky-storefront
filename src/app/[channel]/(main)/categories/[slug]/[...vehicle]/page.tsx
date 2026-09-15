@@ -210,9 +210,9 @@ export default async function Page({ params }: Params) {
 	 */
 	const isLinkable = (urlPath: string): boolean => {
 		// A retired page is a redirect, and the copy linking to it names the car that page used
-		// to describe — on 2026-09-15 the Legacy Kombi and H-1 Van model pages, in all ten
-		// languages, link to the BP and TQ generations CFM retired. Following the link would land
-		// somewhere the words do not describe, so the words stay and the anchor goes.
+		// to describe — the Legacy Kombi and H-1 Van model pages link to the BP and TQ generations
+		// CFM retired, in nine languages (RELEASE-4 corrected only the Slovak copy). Following the
+		// link would land somewhere the words do not describe, so the words stay and the anchor goes.
 		if (catalogRedirectTarget(market, urlPath)) return false;
 		const target = view.tree.byUrlPath.get(urlPath);
 		// Unknown paths are left alone: this predicate exists to catch pages that are

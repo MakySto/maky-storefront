@@ -1,66 +1,66 @@
 {
-	"release": "20260915",
-	"source": "CFM_CONTENT_DELIVERY_20260915_TEXTY1.md (1121 Legacy Kombi BP, 1348 H-1 Van TQ, with CatalogPageUrlHistory); ES root: CFM_CONTENT_DELIVERY_20260913_H1_REEXPORT.md",
+	"release": "20260915.2",
+	"source": "CFM_CONTENT_DELIVERY_20260915_RELEASE4.md (1121 Legacy Kombi BP -> BH, 1348 H-1 Van TQ -> A1, with CatalogPageUrlHistory); ES root: CFM_CONTENT_DELIVERY_20260913_H1_REEXPORT.md",
 	"exact": {
 		"sk": {
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van"
+			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1"
 		},
 		"cs": {
-			"/stresni-nosice/subaru/legacy-kombi/bp": "/stresni-nosice/subaru/legacy-kombi",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresni-nosice/subaru/legacy-kombi",
-			"/stresni-nosice/hyundai/h-1-van/tq": "/stresni-nosice/hyundai/h-1-van",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/stresni-nosice/hyundai/h-1-van"
+			"/stresni-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresni-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1"
 		},
 		"en": {
-			"/roof-racks/subaru/legacy-kombi/bp": "/roof-racks/subaru/legacy-kombi",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/roof-racks/subaru/legacy-kombi",
-			"/roof-racks/hyundai/h-1-van/tq": "/roof-racks/hyundai/h-1-van",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/roof-racks/hyundai/h-1-van"
+			"/roof-racks/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/roof-racks/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1"
 		},
 		"de": {
-			"/dachtraeger/subaru/legacy-kombi/bp": "/dachtraeger/subaru/legacy-kombi",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/dachtraeger/subaru/legacy-kombi",
-			"/dachtraeger/hyundai/h-1-van/tq": "/dachtraeger/hyundai/h-1-van",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/dachtraeger/hyundai/h-1-van"
+			"/dachtraeger/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/dachtraeger/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1"
 		},
 		"pl": {
-			"/bagazniki-dachowe/subaru/legacy-kombi/bp": "/bagazniki-dachowe/subaru/legacy-kombi",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/bagazniki-dachowe/subaru/legacy-kombi",
-			"/bagazniki-dachowe/hyundai/h-1-van/tq": "/bagazniki-dachowe/hyundai/h-1-van",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/bagazniki-dachowe/hyundai/h-1-van"
+			"/bagazniki-dachowe/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/bagazniki-dachowe/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1"
 		},
 		"hu": {
-			"/tetocsomagtartok/subaru/legacy-kombi/bp": "/tetocsomagtartok/subaru/legacy-kombi",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/tetocsomagtartok/subaru/legacy-kombi",
-			"/tetocsomagtartok/hyundai/h-1-van/tq": "/tetocsomagtartok/hyundai/h-1-van",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/tetocsomagtartok/hyundai/h-1-van"
+			"/tetocsomagtartok/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/tetocsomagtartok/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1"
 		},
 		"ro": {
-			"/bare-transversale/subaru/legacy-kombi/bp": "/bare-transversale/subaru/legacy-kombi",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/bare-transversale/subaru/legacy-kombi",
-			"/bare-transversale/hyundai/h-1-van/tq": "/bare-transversale/hyundai/h-1-van",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/bare-transversale/hyundai/h-1-van"
+			"/bare-transversale/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/bare-transversale/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1"
 		},
 		"fr": {
-			"/barres-de-toit/subaru/legacy-kombi/bp": "/barres-de-toit/subaru/legacy-kombi",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/barres-de-toit/subaru/legacy-kombi",
-			"/barres-de-toit/hyundai/h-1-van/tq": "/barres-de-toit/hyundai/h-1-van",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/barres-de-toit/hyundai/h-1-van"
+			"/barres-de-toit/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/barres-de-toit/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1"
 		},
 		"it": {
-			"/barre-portatutto/subaru/legacy-kombi/bp": "/barre-portatutto/subaru/legacy-kombi",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/barre-portatutto/subaru/legacy-kombi",
-			"/barre-portatutto/hyundai/h-1-van/tq": "/barre-portatutto/hyundai/h-1-van",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/barre-portatutto/hyundai/h-1-van"
+			"/barre-portatutto/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/barre-portatutto/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1"
 		},
 		"es": {
-			"/barras-de-techo/subaru/legacy-kombi/bp": "/barras-de-techo/subaru/legacy-kombi",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/barras-de-techo/subaru/legacy-kombi",
-			"/bacas-de-techo/subaru/legacy-kombi/bp": "/barras-de-techo/subaru/legacy-kombi",
-			"/barras-de-techo/hyundai/h-1-van/tq": "/barras-de-techo/hyundai/h-1-van",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/barras-de-techo/hyundai/h-1-van",
-			"/bacas-de-techo/hyundai/h-1-van/tq": "/barras-de-techo/hyundai/h-1-van"
+			"/barras-de-techo/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/bacas-de-techo/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
+			"/barras-de-techo/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
+			"/bacas-de-techo/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1"
 		}
 	},
 	"roots": {

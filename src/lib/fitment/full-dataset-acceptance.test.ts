@@ -31,18 +31,20 @@ const available = Boolean(PATH && existsSync(PATH));
 
 /**
  * Verified 2026-09-15 against https://carfitmanager.com/media/fitment/ — the downloaded
- * bytes checked with `sha256sum -c` against `SHA256SUMS_FULL_20260915`.
+ * bytes checked with `sha256sum -c` against `SHA256SUMS_FULL_20260915.2`.
  *
  * What changed from 20260907.2: VOZIDLA-2 moved 20 products onto the right generation
  * (Golf Variant BA5, Legacy Kombi BH, H-1 Van A1), which added three generations and removed
  * two (Legacy Kombi BP, H-1 Van TQ); seven generations had their production years corrected.
- * No other product moved.
+ * No other product moved. 20260915.2 (CFM RELEASE-4) then released exactly those 20 from
+ * `hold`: `qaStatus` accepted, `sellable` true, held 26 → 6. Measured field by field against
+ * 20260915: nothing else changed.
  */
 const DELIVERED = {
-	datasetVersion: "3.0.0-full-20260915",
-	bytes: 7_978_092,
-	transport: "a5abed72b18b105cba5d9aba61fe1a20f146ce06510247c2ce64c75d7adfa6cf",
-	semantic: "245dc59e6910deae49492d6c85a51db06b3a00568bf5bd69eba13bfddb096e8a",
+	datasetVersion: "3.0.0-full-20260915.2",
+	bytes: 7_977_173,
+	transport: "6fddb7aa56aa109f9ec6c59e59f8f0e514b2a2f01ba155f57c214239dab43fa6",
+	semantic: "af9e6750b5961da21225430f31558961123effc5963a90dfd680bbc5e771d499",
 	makes: 62,
 	models: 557,
 	generations: 857,
@@ -52,7 +54,7 @@ const DELIVERED = {
 	/** `manifest_rows − products_exported`: products deactivated in CFM and not exported. */
 	withdrawn: 29,
 	/** `accounting.products_held`: exported, but `qaStatus: hold` and not sellable. */
-	held: 26,
+	held: 6,
 } as const;
 
 type Snapshot = {

@@ -34,48 +34,39 @@ const available = Boolean(
 );
 
 /**
- * The 2026-09-15 delivery. Verified 2026-09-15 by downloading all thirteen files with
- * `SHA256SUMS_FULL_20260915` and `SHA256SUMS_CONTENT_20260915` from
+ * The 2026-09-15 RELEASE-4 delivery (`20260915.2`). Verified 2026-09-15 by downloading all
+ * thirteen files with `SHA256SUMS_FULL_20260915.2` and `SHA256SUMS_CONTENT_20260915.2` from
  * https://carfitmanager.com/media/fitment/ and checking the DOWNLOADED BYTES against the
  * published manifests — `sha256sum -c`, all OK. Every number below was measured here, not
  * transcribed from a handoff.
  *
  * What changed from 2026-09-12: VOZIDLA-2 moved 20 products onto the right cars, which
- * brought three new generation pages — all `draft`, all textless — and RETIRED two. Legacy
- * Kombi BP and H-1 Van TQ are still published in the export, with their text, but the
- * fitment tree no longer has their car; they answer through `redirects.json`. The other
- * 1 475 pages are unchanged, field for field.
+ * brought three new generation pages and RETIRED two. Legacy Kombi BP and H-1 Van TQ are
+ * still published in the export, with their text, but the fitment tree no longer has their
+ * car; they answer through `redirects.json`. RELEASE-4 published the three new pages with
+ * Slovak text and corrected the Slovak copy of their three model pages (Golf Variant, H-1 Van,
+ * Legacy Kombi) to point at them. Measured against 20260915: nothing else changed.
  *
- * The join numbers are against `maky_roof_fitment_3.0.0-full-20260915.json`.
+ * The join numbers are against `maky_roof_fitment_3.0.0-full-20260915.2.json`.
  */
 const DELIVERED = {
-	file: "maky_catalog_content_1.0.0-sk-20260915.json",
-	bytes: 9_738_836,
-	transport: "27852f7476eefef5bcbed2fb93c6f05dde2a3680941a6ab66e95d6d701c06607",
-	selfSha256: "114c529278bec7a55e879eae94ba4245635f134c01795150048b34f9673ffb8e",
+	file: "maky_catalog_content_1.0.0-sk-20260915.2.json",
+	bytes: 9_749_763,
+	transport: "c9ed37e2e47f4e1d802ce72b1177997fd0c571c063d9a92a82fe1346d163143d",
+	selfSha256: "ebfcf09339f8172f44a89f76d58f2a376c65a3b7fed0573c9c3bd79c4d904626",
 	language: "sk",
 	pages: 1478,
 	byKind: { vehicle_make: 62, vehicle_model: 557, vehicle_generation: 859 },
-	withEditorialText: 1474,
-	published: 1474,
+	withEditorialText: 1477,
+	published: 1477,
 	/**
 	 * CFM leaves a page `draft` while it has no Slovak editorial text; `--allow-empty` was not
-	 * used. `lynk-co/01` since 2026-09-12, and the three generations VOZIDLA-2 created, seeded
-	 * with nothing but their code as a heading. All four are `indexable: true` like every
-	 * page — which is exactly why `state`, not `indexable`, has to be the gate.
+	 * used. Only `lynk-co/01` is left since RELEASE-4 published the three generations VOZIDLA-2
+	 * created. It is `indexable: true` like every page — which is exactly why `state`, not
+	 * `indexable`, has to be the gate.
 	 */
-	draft: [
-		"/stresne-nosice/hyundai/h-1-van/a1",
-		"/stresne-nosice/lynk-co/01",
-		"/stresne-nosice/subaru/legacy-kombi/bh",
-		"/stresne-nosice/volkswagen/golf-variant/ba5",
-	],
-	textless: [
-		"/stresne-nosice/hyundai/h-1-van/a1",
-		"/stresne-nosice/lynk-co/01",
-		"/stresne-nosice/subaru/legacy-kombi/bh",
-		"/stresne-nosice/volkswagen/golf-variant/ba5",
-	],
+	draft: ["/stresne-nosice/lynk-co/01"],
+	textless: ["/stresne-nosice/lynk-co/01"],
 	/**
 	 * Published, with text, and without a car: their generation left the fitment tree when
 	 * its products turned out to fit a different one. Nothing renders them; the proxy
@@ -83,7 +74,7 @@ const DELIVERED = {
 	 */
 	retired: ["/stresne-nosice/hyundai/h-1-van/tq", "/stresne-nosice/subaru/legacy-kombi/bp"],
 	/** What the sitemap may list: visible, `indexable`, with text — and a node to render it. */
-	indexed: 1472,
+	indexed: 1475,
 } as const;
 
 /**
@@ -241,9 +232,9 @@ describe.skipIf(!available)("the delivered catalogue content, end to end", () =>
 	 *
 	 * Publication is not enough either since 2026-09-15: a RETIRED page is published and
 	 * still does not render, because its car left the tree. So "renders" here is the route's
-	 * own test — a node whose page is visible — and the Legacy Kombi and H-1 Van model pages
-	 * show up linking to the generations CFM retired. The renderer drops those anchors
-	 * because they are redirect sources; see `isLinkable` in the vehicle route.
+	 * own test — a node whose page is visible. RELEASE-4 corrected the Slovak copy that linked
+	 * to the retired BP and TQ generations; where copy still does, the renderer drops the
+	 * anchor because the target is a redirect source — see `isLinkable` in the vehicle route.
 	 *
 	 * This asserts the copy half. The route halves are fixed where they are rendered: the
 	 * tiles filter on visibility and an unpublished breadcrumb ancestor loses its href.
@@ -276,10 +267,8 @@ describe.skipIf(!available)("the delivered catalogue content, end to end", () =>
 		}
 
 		expect(dangling.sort()).toEqual([
-			"/stresne-nosice/hyundai/h-1-van -> /stresne-nosice/hyundai/h-1-van/tq",
 			"/stresne-nosice/lynk-co -> /stresne-nosice/lynk-co/01",
 			"/stresne-nosice/lynk-co/01/2020-2024 -> /stresne-nosice/lynk-co/01",
-			"/stresne-nosice/subaru/legacy-kombi -> /stresne-nosice/subaru/legacy-kombi/bp",
 		]);
 	});
 
@@ -298,10 +287,10 @@ describe.skipIf(!available)("the delivered catalogue content, end to end", () =>
 	});
 
 	/**
-	 * The state of the delivery, asserted rather than assumed. CFM published 1474 and
-	 * deliberately held back the pages with no Slovak text.
+	 * The state of the delivery, asserted rather than assumed. CFM published 1477 and
+	 * deliberately held back the one page with no Slovak text.
 	 */
-	it("publishes 1 474 and keeps the four textless pages back", () => {
+	it("publishes 1 477 and keeps the textless page back", () => {
 		const f = fixture();
 		const visible = f.snapshot.pages.filter((p) => visibilityOf(p).visible);
 		expect(visible).toHaveLength(DELIVERED.published);
@@ -321,7 +310,7 @@ describe.skipIf(!available)("the delivered catalogue content, end to end", () =>
 	 * sitemap narrows it once more, to what the tree can render, which keeps the retired
 	 * pages out.
 	 */
-	it("indexes 1 472 — never a thin page, never a retired one", () => {
+	it("indexes 1 475 — never a thin page, never a retired one", () => {
 		const f = fixture();
 		expect(f.snapshot.pages.every((p) => p.indexable === true)).toBe(true);
 

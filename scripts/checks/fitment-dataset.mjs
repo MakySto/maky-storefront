@@ -26,7 +26,7 @@ const argOf = (flag, fallback) => {
 	return i === -1 ? fallback : args[i + 1];
 };
 
-const DEFAULT_URL = "https://carfitmanager.com/media/fitment/maky_roof_fitment_3.0.0-full-20260915.json";
+const DEFAULT_URL = "https://carfitmanager.com/media/fitment/maky_roof_fitment_3.0.0-full-20260915.2.json";
 const file = argOf("--file", null);
 const url = argOf("--url", DEFAULT_URL);
 
