@@ -29,18 +29,30 @@ import { validateFitmentDataset } from "./validate";
 const PATH = process.env.MAKY_FITMENT_DATASET_PATH?.trim();
 const available = Boolean(PATH && existsSync(PATH));
 
-/** Verified 2026-09-07 against https://carfitmanager.com/media/fitment/ */
+/**
+ * Verified 2026-09-15 against https://carfitmanager.com/media/fitment/ — the downloaded
+ * bytes checked with `sha256sum -c` against `SHA256SUMS_FULL_20260915`.
+ *
+ * What changed from 20260907.2: VOZIDLA-2 moved 20 products onto the right generation
+ * (Golf Variant BA5, Legacy Kombi BH, H-1 Van A1), which added three generations and removed
+ * two (Legacy Kombi BP, H-1 Van TQ); seven generations had their production years corrected.
+ * No other product moved.
+ */
 const DELIVERED = {
-	datasetVersion: "3.0.0-full-20260907.2",
-	bytes: 7_977_643,
-	transport: "2939f0b23afea4010355a03d61ef762a6a670f12634ea8bf7fbfdd68b32af37c",
-	semantic: "347eef5024fc528860ce38590bee14619fd3242c060eb8c1ef716f5da5053bbe",
+	datasetVersion: "3.0.0-full-20260915",
+	bytes: 7_978_092,
+	transport: "a5abed72b18b105cba5d9aba61fe1a20f146ce06510247c2ce64c75d7adfa6cf",
+	semantic: "245dc59e6910deae49492d6c85a51db06b3a00568bf5bd69eba13bfddb096e8a",
 	makes: 62,
 	models: 557,
-	generations: 856,
+	generations: 857,
 	applications: 1102,
 	/** `accounting.products_exported`, and the number of distinct products the applications name. */
 	products: 9163,
+	/** `manifest_rows − products_exported`: products deactivated in CFM and not exported. */
+	withdrawn: 29,
+	/** `accounting.products_held`: exported, but `qaStatus: hold` and not sellable. */
+	held: 26,
 } as const;
 
 type Snapshot = {
@@ -130,8 +142,8 @@ describe.skipIf(!available)("the full CFM snapshot arrived intact", () => {
 		// (`ProductRoofFit.is_active` was checked, `Product.is_active` was not).
 		const { manifest_rows, products_exported, products_held } = d.snapshot.accounting;
 		expect(products_exported).toBe(DELIVERED.products);
-		expect(manifest_rows - products_exported).toBe(29);
-		expect(products_held).toBe(26);
+		expect(manifest_rows - products_exported).toBe(DELIVERED.withdrawn);
+		expect(products_held).toBe(DELIVERED.held);
 	});
 });
 

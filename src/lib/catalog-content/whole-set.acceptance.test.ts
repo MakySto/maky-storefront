@@ -23,42 +23,67 @@ import { ancestorsOf, buildCatalogTree } from "./tree";
  * make the skip harmless — running it later re-proves the same claim rather than whatever
  * CFM happens to be serving.
  *
- *     MAKY_CATALOG_CONTENT_PATH=… MAKY_FITMENT_DATASET_PATH=… pnpm vitest run whole-set
+ *     MAKY_CATALOG_CONTENT_PATH=…-{lang}-….json MAKY_FITMENT_DATASET_PATH=… pnpm check:catalog
+ *
+ * A `{lang}` family — how production is configured — is read here for its Slovak member.
  */
-const CONTENT_PATH = process.env.MAKY_CATALOG_CONTENT_PATH?.trim();
+const CONTENT_PATH = process.env.MAKY_CATALOG_CONTENT_PATH?.trim().split("{lang}").join("sk");
 const FITMENT_PATH = process.env.MAKY_FITMENT_DATASET_PATH?.trim();
 const available = Boolean(
 	CONTENT_PATH && existsSync(CONTENT_PATH) && FITMENT_PATH && existsSync(FITMENT_PATH),
 );
 
 /**
- * The POST-PUBLISH delivery. Verified 2026-09-12 by downloading all ten artifacts and
- * `SHA256SUMS_CONTENT_20260912` from https://carfitmanager.com/media/fitment/ and
- * checking the DOWNLOADED BYTES against the published manifest — `sha256sum -c`, all OK.
- * Every number below was measured here, not transcribed from a handoff.
+ * The 2026-09-15 delivery. Verified 2026-09-15 by downloading all thirteen files with
+ * `SHA256SUMS_FULL_20260915` and `SHA256SUMS_CONTENT_20260915` from
+ * https://carfitmanager.com/media/fitment/ and checking the DOWNLOADED BYTES against the
+ * published manifests — `sha256sum -c`, all OK. Every number below was measured here, not
+ * transcribed from a handoff.
  *
- * What changed from the 2026-09-11 pre-publish copy the consumer was built against:
- * `state` went draft 1475 → published 1474 / draft 1; `hasEditorialText` 1473 → 1474
- * (`/stresne-nosice/seat/ateca` got its text); `routeLanguage` is new; and `top`/`body`
- * are materialised where they used to be empty.
+ * What changed from 2026-09-12: VOZIDLA-2 moved 20 products onto the right cars, which
+ * brought three new generation pages — all `draft`, all textless — and RETIRED two. Legacy
+ * Kombi BP and H-1 Van TQ are still published in the export, with their text, but the
+ * fitment tree no longer has their car; they answer through `redirects.json`. The other
+ * 1 475 pages are unchanged, field for field.
+ *
+ * The join numbers are against `maky_roof_fitment_3.0.0-full-20260915.json`.
  */
 const DELIVERED = {
-	file: "maky_catalog_content_1.0.0-sk-20260912.json",
-	bytes: 9_737_293,
-	transport: "5a8b9e48078935557cd57f43a7c40ddaf7878a8674015a3f9751986cb899acd5",
-	selfSha256: "b9aa9774bf93f3a86ec99445c7fc340f52d969be7803f4f9052c6d71c4230874",
+	file: "maky_catalog_content_1.0.0-sk-20260915.json",
+	bytes: 9_738_836,
+	transport: "27852f7476eefef5bcbed2fb93c6f05dde2a3680941a6ab66e95d6d701c06607",
+	selfSha256: "114c529278bec7a55e879eae94ba4245635f134c01795150048b34f9673ffb8e",
 	language: "sk",
-	pages: 1475,
-	byKind: { vehicle_make: 62, vehicle_model: 557, vehicle_generation: 856 },
+	pages: 1478,
+	byKind: { vehicle_make: 62, vehicle_model: 557, vehicle_generation: 859 },
 	withEditorialText: 1474,
 	published: 1474,
 	/**
-	 * CFM left this one `draft` on purpose: it has no Slovak editorial text, and
-	 * `--allow-empty` was not used. It is `indexable: true` like all 1475 — which is
-	 * exactly why `state`, not `indexable`, has to be the gate.
+	 * CFM leaves a page `draft` while it has no Slovak editorial text; `--allow-empty` was not
+	 * used. `lynk-co/01` since 2026-09-12, and the three generations VOZIDLA-2 created, seeded
+	 * with nothing but their code as a heading. All four are `indexable: true` like every
+	 * page — which is exactly why `state`, not `indexable`, has to be the gate.
 	 */
-	draft: ["/stresne-nosice/lynk-co/01"],
-	textless: ["/stresne-nosice/lynk-co/01"],
+	draft: [
+		"/stresne-nosice/hyundai/h-1-van/a1",
+		"/stresne-nosice/lynk-co/01",
+		"/stresne-nosice/subaru/legacy-kombi/bh",
+		"/stresne-nosice/volkswagen/golf-variant/ba5",
+	],
+	textless: [
+		"/stresne-nosice/hyundai/h-1-van/a1",
+		"/stresne-nosice/lynk-co/01",
+		"/stresne-nosice/subaru/legacy-kombi/bh",
+		"/stresne-nosice/volkswagen/golf-variant/ba5",
+	],
+	/**
+	 * Published, with text, and without a car: their generation left the fitment tree when
+	 * its products turned out to fit a different one. Nothing renders them; the proxy
+	 * redirects them. Named so that a page cannot lose its node silently.
+	 */
+	retired: ["/stresne-nosice/hyundai/h-1-van/tq", "/stresne-nosice/subaru/legacy-kombi/bp"],
+	/** What the sitemap may list: visible, `indexable`, with text — and a node to render it. */
+	indexed: 1472,
 } as const;
 
 /**
@@ -99,12 +124,18 @@ describe.skipIf(!available)("the delivered catalogue content, end to end", () =>
 		expect(byKind).toEqual(DELIVERED.byKind);
 	});
 
-	it("joins to the fitment f.tree on vehicleId with no orphans on either side", () => {
+	it("joins to the fitment tree on vehicleId, leaving only the retired pages without a node", () => {
 		const f = fixture();
 		expect(f.tree.stats.pages).toBe(DELIVERED.pages);
-		expect(f.tree.stats.joined).toBe(DELIVERED.pages);
+		expect(f.tree.stats.joined).toBe(DELIVERED.pages - DELIVERED.retired.length);
 		expect(f.tree.stats.nodesWithoutPage).toBe(0);
-		expect(f.tree.stats.pagesWithoutNode).toBe(0);
+		expect(f.tree.stats.pagesWithoutNode).toBe(DELIVERED.retired.length);
+
+		const withoutNode = f.snapshot.pages
+			.filter((p) => !p.vehicleId || !f.tree.byVehicleId.has(p.vehicleId))
+			.map((p) => p.urlPath)
+			.sort();
+		expect(withoutNode).toEqual([...DELIVERED.retired].sort());
 	});
 
 	it("has a unique URL and a unique identity per page", () => {
@@ -208,25 +239,35 @@ describe.skipIf(!available)("the delivered catalogue content, end to end", () =>
 	 * of two published pages. Each one is a link, inside published prose, onto a body that
 	 * says the page does not exist.
 	 *
+	 * Publication is not enough either since 2026-09-15: a RETIRED page is published and
+	 * still does not render, because its car left the tree. So "renders" here is the route's
+	 * own test — a node whose page is visible — and the Legacy Kombi and H-1 Van model pages
+	 * show up linking to the generations CFM retired. The renderer drops those anchors
+	 * because they are redirect sources; see `isLinkable` in the vehicle route.
+	 *
 	 * This asserts the copy half. The route halves are fixed where they are rendered: the
 	 * tiles filter on visibility and an unpublished breadcrumb ancestor loses its href.
 	 *
-	 * It is stated as a COUNT of the known case rather than `toEqual([])`, so the day CFM
-	 * publishes that page this test fails and gets deleted, instead of passing quietly and
-	 * leaving the renderer suppressing links that no longer need suppressing.
+	 * It is stated as the exact known cases rather than `toEqual([])`, so the day CFM
+	 * publishes those pages or rewrites that copy this test fails and gets updated, instead
+	 * of passing quietly and leaving the renderer suppressing links that no longer need it.
 	 */
-	it("knows exactly which published copy points at a page that will not render", () => {
+	it("knows exactly which rendered copy points at a page that will not render", () => {
 		const f = fixture();
-		const visible = new Set(f.snapshot.pages.filter((p) => visibilityOf(p).visible).map((p) => p.urlPath));
+		const renders = new Set(
+			[...f.tree.byUrlPath.values()]
+				.filter((node) => node.page && visibilityOf(node.page).visible)
+				.map((node) => node.urlPath),
+		);
 
 		const dangling: string[] = [];
 		for (const page of f.snapshot.pages) {
-			if (!visibilityOf(page).visible) continue;
+			if (!renders.has(page.urlPath)) continue;
 			for (const block of [...splitContent(page).top, ...splitContent(page).body]) {
 				const texts = block.type === "list" ? block.data.items : [block.data.text];
 				for (const text of texts) {
 					for (const node of parseInline(text)) {
-						if (node.kind === "link" && !visible.has(node.href)) {
+						if (node.kind === "link" && !renders.has(node.href)) {
 							dangling.push(`${page.urlPath} -> ${node.href}`);
 						}
 					}
@@ -235,8 +276,10 @@ describe.skipIf(!available)("the delivered catalogue content, end to end", () =>
 		}
 
 		expect(dangling.sort()).toEqual([
+			"/stresne-nosice/hyundai/h-1-van -> /stresne-nosice/hyundai/h-1-van/tq",
 			"/stresne-nosice/lynk-co -> /stresne-nosice/lynk-co/01",
 			"/stresne-nosice/lynk-co/01/2020-2024 -> /stresne-nosice/lynk-co/01",
+			"/stresne-nosice/subaru/legacy-kombi -> /stresne-nosice/subaru/legacy-kombi/bp",
 		]);
 	});
 
@@ -256,9 +299,9 @@ describe.skipIf(!available)("the delivered catalogue content, end to end", () =>
 
 	/**
 	 * The state of the delivery, asserted rather than assumed. CFM published 1474 and
-	 * deliberately held back the one page with no Slovak text.
+	 * deliberately held back the pages with no Slovak text.
 	 */
-	it("publishes 1 474 and keeps the textless page back", () => {
+	it("publishes 1 474 and keeps the four textless pages back", () => {
 		const f = fixture();
 		const visible = f.snapshot.pages.filter((p) => visibilityOf(p).visible);
 		expect(visible).toHaveLength(DELIVERED.published);
@@ -272,21 +315,23 @@ describe.skipIf(!available)("the delivered catalogue content, end to end", () =>
 	});
 
 	/**
-	 * The trap CFM called out explicitly: `indexable` is `true` on all 1475, the draft
-	 * included. A consumer that filtered on `indexable` would publish a page with no
-	 * text. `state` is the gate; `indexable` only narrows what is already visible.
+	 * The trap CFM called out explicitly: `indexable` is `true` on every page, the drafts
+	 * included. A consumer that filtered on `indexable` would publish pages with no text.
+	 * `state` is the gate; `indexable` only narrows what is already visible — and the
+	 * sitemap narrows it once more, to what the tree can render, which keeps the retired
+	 * pages out.
 	 */
-	it("indexes 1 474 and never the thin one, because state is the gate", () => {
+	it("indexes 1 472 — never a thin page, never a retired one", () => {
 		const f = fixture();
 		expect(f.snapshot.pages.every((p) => p.indexable === true)).toBe(true);
 
-		const indexable = f.snapshot.pages.filter((p) => indexabilityOf(p).indexable);
-		expect(indexable).toHaveLength(DELIVERED.withEditorialText);
-		for (const path of DELIVERED.textless) {
-			expect(
-				indexable.some((p) => p.urlPath === path),
-				path,
-			).toBe(false);
+		// The walk `sitemap.ts` does: the tree's nodes, each asked `indexabilityOf`.
+		const indexed = [...f.tree.byUrlPath.values()]
+			.filter((node) => node.page && indexabilityOf(node.page).indexable)
+			.map((node) => node.urlPath);
+		expect(indexed).toHaveLength(DELIVERED.indexed);
+		for (const path of [...DELIVERED.textless, ...DELIVERED.retired]) {
+			expect(indexed.includes(path), path).toBe(false);
 		}
 	});
 

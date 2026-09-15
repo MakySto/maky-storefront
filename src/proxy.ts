@@ -10,6 +10,7 @@ import {
 	COOKIE_MAX_AGE,
 } from "./lib/channel-map";
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
+import { catalogRedirectTarget } from "./lib/catalog-content/redirects";
 import { CATEGORY_ROUTE_PREFIX, isCategorySlug } from "./config/categories";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/routing.generated";
 import { isMarketLive, liveMarkets, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
@@ -242,6 +243,26 @@ async function route(request: NextRequest) {
 		const url = request.nextUrl.clone();
 		url.pathname = "/" + first + "/" + segments[2];
 		return NextResponse.redirect(url, 308);
+	}
+
+	// RETIRED VEHICLE PAGE: /{market}/{catalogue path} -> the page that replaced it, 301.
+	//
+	// CFM retires a vehicle page when its car turns out to be a different car: the products
+	// move, the fitment tree drops the node, and the page stays in the content export with
+	// its text — so without this it answers 200 with the not-found body. Same edge, and the
+	// same PPR reason, as the two redirects above. 301 because CFM asked for 301.
+	//
+	// The table is data, keyed by CFM language: `lib/catalog-content/redirects.ts`. Decided
+	// on the NORMALIZED path, so an in-app `.rsc` navigation onto a retired page is sent to
+	// the plain replacement too, which the client router follows as a full navigation.
+	if (first && FRIENDLY_SLUGS.has(first) && segments.length >= 2) {
+		const rest = normalizePathname(pathname).split("/").filter(Boolean).slice(1);
+		const target = catalogRedirectTarget(first, "/" + rest.join("/"));
+		if (target) {
+			const url = request.nextUrl.clone();
+			url.pathname = "/" + first + target;
+			return NextResponse.redirect(url, 301);
+		}
 	}
 
 	// A ROUTE THAT EXISTS, BUT NOT IN THIS MARKET -> real 404.

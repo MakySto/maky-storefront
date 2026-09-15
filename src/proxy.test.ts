@@ -6,6 +6,8 @@ import {
 	restoreChannelMap,
 } from "./lib/legal/uncovered-market.testkit";
 import { CHANNEL_MAP } from "./lib/channel-map";
+import { catalogLanguageForMarket } from "./lib/catalog-content/language";
+import { CATALOG_REDIRECTS } from "./lib/catalog-content/redirects";
 import { proxy } from "./proxy";
 
 /**
@@ -416,5 +418,78 @@ describe("root detection only ever chooses a live market", () => {
 
 		const live = await proxy(req("/sk/stresne-boxy"));
 		expect(live.cookies.get("maky-market")?.value).toBe("sk");
+	});
+});
+
+/**
+ * CFM retires a vehicle page when its car turns out to be a different car. The page stays in
+ * the content export — published, with text, possibly indexed — while nothing renders it, so
+ * the proxy answers it with a 301. The table is data (`lib/catalog-content/redirects.json`);
+ * these walk all of it, in every market, so a release that re-targets pages changes none of
+ * them.
+ */
+describe("retired vehicle pages", () => {
+	const targetOf = (res: Response) => {
+		const location = res.headers.get("location");
+		return location ? new URL(location) : null;
+	};
+
+	const entries = Object.keys(CHANNEL_MAP).flatMap((market) =>
+		Object.entries(CATALOG_REDIRECTS.exact[catalogLanguageForMarket(market) ?? ""] ?? {}).map(
+			([from, to]) => ({ market, from, to }),
+		),
+	);
+
+	it("301s every retired path straight to its replacement, in every market reading its language", async () => {
+		expect(entries.length).toBeGreaterThan(0);
+		for (const { market, from, to } of entries) {
+			const res = await proxy(req(`/${market}${from}`));
+			expect(res.status, `/${market}${from}`).toBe(301);
+			expect(targetOf(res)?.pathname, `/${market}${from}`).toBe(`/${market}${to}`);
+		}
+	});
+
+	it("sends the client router's .rsc request to the plain page", async () => {
+		const [{ market, from, to }] = entries;
+		const res = await proxy(req(`/${market}${from}.rsc`));
+		expect(res.status).toBe(301);
+		expect(targetOf(res)?.pathname).toBe(`/${market}${to}`);
+	});
+
+	it("keeps the query string", async () => {
+		const [{ market, from }] = entries;
+		const res = await proxy(req(`/${market}${from}?utm_source=newsletter`));
+		expect(targetOf(res)?.search).toBe("?utm_source=newsletter");
+	});
+
+	it("moves a retired root, and everything below it, in one hop", async () => {
+		for (const market of Object.keys(CHANNEL_MAP)) {
+			const roots = CATALOG_REDIRECTS.roots[catalogLanguageForMarket(market) ?? ""] ?? {};
+			for (const [from, to] of Object.entries(roots)) {
+				const res = await proxy(req(`/${market}${from}/bmw/x3`));
+				expect(res.status, `/${market}${from}/bmw/x3`).toBe(301);
+				expect(targetOf(res)?.pathname).toBe(`/${market}${to}/bmw/x3`);
+			}
+		}
+	});
+
+	it("leaves the replacement pages, and the rest of the tree, to the category rewrite", async () => {
+		const slovak = entries.filter((entry) => entry.market === "sk").map((entry) => `/sk${entry.to}`);
+		for (const path of ["/sk/stresne-nosice/bmw/x3/g01", ...slovak]) {
+			const res = await proxy(req(path));
+			expect(res.status, path).not.toBe(301);
+			expect(res.headers.get("x-middleware-rewrite"), path).toContain("/sk-eur/categories/");
+		}
+	});
+
+	it("does not answer a path in a market whose language did not retire it", async () => {
+		const slovak = CATALOG_REDIRECTS.exact.sk ?? {};
+		const foreign = entries.find(
+			(entry) => catalogLanguageForMarket(entry.market) !== "sk" && !(entry.from in slovak),
+		);
+		expect(foreign, "the table needs a path only another language retired").toBeDefined();
+		const res = await proxy(req(`/sk${foreign!.from}`));
+		expect(res.status).not.toBe(301);
+		expect(res.headers.get("location")).toBeNull();
 	});
 });

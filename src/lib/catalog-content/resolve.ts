@@ -1,10 +1,13 @@
 import "server-only";
 
 import { cache } from "react";
-import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { type CatalogContentStatus, loadCatalogContent } from "./snapshot";
 import { type CatalogNode, type CatalogTree, buildCatalogTree } from "./tree";
+
+// The market → language mapping lives in `./language` so the proxy can use it without
+// `server-only`. Re-exported so the routes keep importing it from here.
+export { catalogLanguageForChannel, catalogLanguageForMarket } from "./language";
 
 /**
  * One assembled view of the catalogue, built once per request per language and shared.
@@ -28,34 +31,13 @@ export const loadCatalogView = cache(async function loadCatalogView(language: st
 		};
 	}
 
-	// A missing fitment dataset is NOT fatal: the editorial pages still exist and are
-	// still worth reading. What it costs is the tree and the offers, so the page says so
-	// rather than rendering an empty listing that looks like "nothing fits".
+	// A missing fitment dataset does not fail the view — it EMPTIES it. Every node in the
+	// tree comes from the fitment artifact (`tree.ts`), so without one no vehicle page
+	// resolves, no tile renders and the sitemap lists none: a probe on 2026-09-15 built a
+	// tree of zero nodes. Admitting content-only pages is not the remedy. A page CFM retired
+	// has exactly that shape, and it must answer through its redirect, not render.
 	return { ready: true, tree: buildCatalogTree(content.snapshot, fitment.dataset), status: content.status };
 });
-
-/**
- * Which catalogue language a market reads.
- *
- * The market's own locale, cut to its language: `sk` reads `sk-SK` → `sk`, `at` reads
- * `de-AT` → `de`, `cz` reads `cs-CZ` → `cs`. Two markets sharing a language share an
- * artifact, which is why `us` and `ca` both read `en` — CFM publishes one English text,
- * not one per country.
- *
- * Returns `null` for a market nobody has mapped, and the caller then serves no pages.
- * Guessing would be worse: it is the difference between "this market has no catalogue"
- * and "this market has someone else's".
- */
-export function catalogLanguageForMarket(market: string): string | null {
-	const locale = CHANNEL_MAP[market]?.locale;
-	if (!locale) return null;
-	return locale.split("-")[0]?.toLowerCase() || null;
-}
-
-/** Same, from the Saleor channel (`sk-eur`) rather than the market segment (`sk`). */
-export function catalogLanguageForChannel(channel: string): string | null {
-	return catalogLanguageForMarket(REVERSE_MAP[channel] ?? channel);
-}
 
 /**
  * `("stresne-nosice", ["bmw"])` -> `/stresne-nosice/bmw`.
@@ -80,11 +62,11 @@ export interface ResolvedCatalogPage {
  * Lookup is by `urlPath` because that is what the visitor typed — which is a different
  * job from JOINING the two artifacts, where only `vehicleId` is allowed.
  *
- * ⚠️ Measured 2026-09-12 across all ten artifacts: `urlPath` and `slug` are BYTE-IDENTICAL
- * in every language — only the prose is translated. So a German market serves German text
- * at the Slovak path `/de/stresne-nosice/bmw`. That is fine for a preview market and is a
- * real question before German is made live; it is CFM's to answer, not something to paper
- * over here by inventing slugs the snapshot does not contain.
+ * ⚠️ `urlPath` is localized per language — `/stresni-nosice/bmw` in `cs`, `/roof-racks/bmw`
+ * in `en`, measured on the 2026-09-15 artifacts — but the proxy carries only the Slovak
+ * category slug onto this route. A foreign market therefore resolves only the pages that
+ * borrowed the Slovak route. Routing the localized roots is separate work; inventing slugs
+ * the snapshot does not contain is not it.
  */
 export function resolveVehiclePath(
 	tree: CatalogTree,

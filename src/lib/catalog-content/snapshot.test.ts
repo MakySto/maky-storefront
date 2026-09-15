@@ -154,9 +154,58 @@ describe("integrity", () => {
 		expect(tampered.snapshot).toBeNull();
 		expect(tampered.status.unavailableReason).toContain("sha256 mismatch");
 	});
+
+	/**
+	 * The failure a manifest exists for is the one that does not announce itself. A family
+	 * pinned by a manifest that forgot a language, or by a manifest that is not on the box,
+	 * used to load that language with no check at all — while the loader's comment said it
+	 * refused.
+	 */
+	it("refuses a {lang} artifact the manifest does not list", async () => {
+		const sk = write("sk");
+		write("de");
+		const sums = join(dir, "SHA256SUMS_CONTENT_20260912");
+		writeFileSync(sums, `${sk.sha256}  ${sk.file.split("/").pop()}\n`);
+		process.env.MAKY_CATALOG_CONTENT_PATH = join(dir, "maky_catalog_content_1.0.0-{lang}-20260912.json");
+		process.env.MAKY_CATALOG_CONTENT_SHA256SUMS = sums;
+
+		expect((await loadCatalogContent("sk")).snapshot?.language).toBe("sk");
+
+		const unlisted = await loadCatalogContent("de");
+		expect(unlisted.snapshot).toBeNull();
+		expect(unlisted.status.unavailableReason).toContain("does not list");
+	});
+
+	it("refuses every language when the manifest cannot be read", async () => {
+		write("sk");
+		process.env.MAKY_CATALOG_CONTENT_PATH = join(dir, "maky_catalog_content_1.0.0-{lang}-20260912.json");
+		process.env.MAKY_CATALOG_CONTENT_SHA256SUMS = join(dir, "SHA256SUMS_CONTENT_not_on_the_box");
+
+		const load = await loadCatalogContent("sk");
+		expect(load.snapshot).toBeNull();
+		expect(load.status.unavailableReason).toContain("SHA256SUMS unreadable");
+	});
 });
 
 describe("the memo", () => {
+	/** Refusing is not remembering the refusal: a manifest that arrives late is read. */
+	it("picks up a manifest that was not on the box for the first request", async () => {
+		vi.useFakeTimers();
+		try {
+			const sk = write("sk");
+			const sums = join(dir, "SHA256SUMS_CONTENT_20260912");
+			process.env.MAKY_CATALOG_CONTENT_PATH = join(dir, "maky_catalog_content_1.0.0-{lang}-20260912.json");
+			process.env.MAKY_CATALOG_CONTENT_SHA256SUMS = sums;
+			expect((await loadCatalogContent("sk")).snapshot, "no manifest yet").toBeNull();
+
+			writeFileSync(sums, `${sk.sha256}  ${sk.file.split("/").pop()}\n`);
+			vi.advanceTimersByTime(16 * 60 * 1000);
+			expect((await loadCatalogContent("sk")).snapshot?.language, "manifest arrived").toBe("sk");
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it("keeps languages apart rather than serving whichever was asked for first", async () => {
 		write("sk");
 		write("de");

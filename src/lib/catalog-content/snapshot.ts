@@ -142,29 +142,54 @@ async function readBytes(from: Source): Promise<Buffer> {
 	return Buffer.from(await response.arrayBuffer());
 }
 
-/** CFM's manifest: `<64 hex>  <filename>` per line. Read once per process, per path. */
-async function expectedFromSums(location: string): Promise<string | null> {
+/**
+ * What CFM's manifest (`<64 hex>  <filename>` per line) says this artifact must hash to.
+ *
+ * `null` means no manifest is configured: an unpinned family, which is a choice. A manifest
+ * that IS configured but cannot vouch for the file — unreadable, or silent about it — is a
+ * pin that failed, and it refuses. It used to fall through to "nothing to check" and load
+ * the bytes anyway; the comment here said it refused, and a probe on 2026-09-15 said not.
+ *
+ * Remembered per path once read, and only then: a manifest that was not there for the first
+ * request is picked up by the next load instead of refusing until a restart.
+ */
+async function expectedFromSums(
+	location: string,
+): Promise<{ readonly sha256: string } | { readonly refused: string } | null> {
 	const sumsPath = process.env.MAKY_CATALOG_CONTENT_SHA256SUMS?.trim();
 	if (!sumsPath) return null;
 	if (!sums || sums.key !== sumsPath) {
-		const byFile = new Map<string, string>();
+		let text: string;
 		try {
-			const text = await readFile(sumsPath, "utf8");
-			for (const line of text.split("\n")) {
-				const match = /^([0-9a-f]{64})\s+\*?(.+?)\s*$/.exec(line);
-				if (match) byFile.set(match[2], match[1]);
-			}
-		} catch {
-			// An unreadable manifest must not silently become "nothing to check": leave the
-			// map empty and let the per-file lookup below refuse.
+			text = await readFile(sumsPath, "utf8");
+		} catch (error) {
+			return { refused: `SHA256SUMS unreadable: ${error instanceof Error ? error.message : "unknown"}` };
+		}
+		const byFile = new Map<string, string>();
+		for (const line of text.split("\n")) {
+			const match = /^([0-9a-f]{64})\s+\*?(.+?)\s*$/.exec(line);
+			if (match) byFile.set(match[2], match[1]);
 		}
 		sums = { key: sumsPath, byFile };
 	}
 	const basename = location.split("/").pop() ?? location;
-	return sums.byFile.get(basename) ?? null;
+	const sha256 = sums.byFile.get(basename);
+	return sha256 ? { sha256 } : { refused: `SHA256SUMS does not list ${basename}` };
 }
 
 async function loadOnce(from: Source, language: string): Promise<CatalogContentLoad> {
+	// A single hash can only describe a single artifact, so it applies to a fixed source.
+	// A family is pinned by CFM's own manifest instead — settled before the read, so a pin
+	// that already failed does not first pull ten megabytes.
+	let expected: string | undefined;
+	if (from.fixed) {
+		expected = process.env.MAKY_CATALOG_CONTENT_SHA256?.trim().toLowerCase();
+	} else {
+		const pin = await expectedFromSums(from.location);
+		if (pin && "refused" in pin) return unavailable(from.mode, pin.refused);
+		expected = pin?.sha256;
+	}
+
 	let bytes: Buffer;
 	try {
 		bytes = await readBytes(from);
@@ -173,11 +198,6 @@ async function loadOnce(from: Source, language: string): Promise<CatalogContentL
 	}
 
 	const sha256 = createHash("sha256").update(bytes).digest("hex");
-	// A single hash can only describe a single artifact, so it applies to a fixed source.
-	// A family is pinned by CFM's own manifest instead.
-	const expected = from.fixed
-		? process.env.MAKY_CATALOG_CONTENT_SHA256?.trim().toLowerCase()
-		: (await expectedFromSums(from.location)) ?? undefined;
 	if (expected && expected !== sha256) {
 		// A snapshot that is not the one the release pinned must not become the one being
 		// served. Refusing keeps the previous good memo in place.
