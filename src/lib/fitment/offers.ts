@@ -35,6 +35,7 @@ import { resolveAvailability, AVAILABILITY_METADATA_KEY } from "@/ui/components/
 import { getLocaleConfigByLocale } from "@/config/locale";
 import {
 	CONFIGURATOR_PRODUCT_KIND,
+	isFitmentRefSellable,
 	isSimulatedDataset,
 	type FitmentApplication,
 	type FitmentDataset,
@@ -75,6 +76,8 @@ export type OfferRejection =
 	| "variant-missing"
 	| "identity-mismatch"
 	| "wrong-kind"
+	/** Fits and may be published, but CFM does not stand behind selling it: held, or not `sellable`. */
+	| "not-sellable"
 	/** Real, purchasable, and fits — but has no complete translation for this market. */
 	| "not-localized"
 	| "lookup-failed";
@@ -98,6 +101,7 @@ const NO_REJECTIONS: Record<OfferRejection, number> = {
 	"variant-missing": 0,
 	"identity-mismatch": 0,
 	"wrong-kind": 0,
+	"not-sellable": 0,
 	"not-localized": 0,
 	"lookup-failed": 0,
 };
@@ -111,7 +115,7 @@ export const EMPTY_OFFERS: FitmentOffers = {
 	isDemo: false,
 };
 
-/** DE and AT share one Saleor language row; the mapping is the single source for that. */
+/** DE and AT share one Saleor language row, US and CA another; the mapping is the single source for that. */
 function languageFor(locale: string) {
 	return getLocaleConfigByLocale(locale).graphqlLanguageCode;
 }
@@ -244,10 +248,21 @@ export async function resolveFitmentOffers(
 
 	// Kind filtering happens before anything else: a roof box must not reach the
 	// configurator's offer even if a fitment row points at one.
+	//
+	// Then the source's own word on THIS product. The configurator arrives with refs that
+	// already passed `isFitmentOfferable`; a generation page lists what fits the whole
+	// generation and has no verdict to ask, so without this a product CFM holds back would
+	// be offered there as a compatible set. It is not asked about in Saleor at all.
 	const eligible = refs.filter((r) => {
-		if (r.productKind === kind) return true;
-		rejected["wrong-kind"] += 1;
-		return false;
+		if (r.productKind !== kind) {
+			rejected["wrong-kind"] += 1;
+			return false;
+		}
+		if (!isFitmentRefSellable(r)) {
+			rejected["not-sellable"] += 1;
+			return false;
+		}
+		return true;
 	});
 
 	if (isDemoDataset(options.dataset ?? null)) {
@@ -351,7 +366,10 @@ export async function resolveFitmentOffers(
 
 	// Anything asked for and not accounted for was simply not returned.
 	const accountedFor =
-		found.size + Object.values(rejected).reduce((a, b) => a + b, 0) - rejected["wrong-kind"];
+		found.size +
+		Object.values(rejected).reduce((a, b) => a + b, 0) -
+		rejected["wrong-kind"] -
+		rejected["not-sellable"];
 	if (accountedFor < eligible.length) rejected["not-published"] += eligible.length - accountedFor;
 
 	// Fitment order is the stable order: it comes from the dataset, not from whichever

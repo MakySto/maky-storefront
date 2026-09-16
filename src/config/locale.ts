@@ -23,7 +23,13 @@ export type LocaleConfig = {
 	locale: string;
 	/** HTML lang attribute (2-letter) */
 	htmlLang: string;
-	/** Saleor LanguageCodeEnum value */
+	/**
+	 * Saleor language of the editorial copy this market reads — the translation rows CFM
+	 * writes. One per LANGUAGE, not per market: `de-DE` and `de-AT` both read `DE`, `en-US`
+	 * and `en-CA` both read `EN`, because CFM publishes one German and one English
+	 * translation, never a copy per country. Asking for `EN_US` finds no row at all, and the
+	 * exact-locale boundary then refuses every product in that market.
+	 */
 	graphqlLanguageCode: LanguageCodeEnum;
 	/** Open Graph locale format */
 	ogLocale: string;
@@ -127,7 +133,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"en-US": {
 		locale: "en-US",
 		htmlLang: "en",
-		graphqlLanguageCode: LanguageCodeEnum.EnUs,
+		graphqlLanguageCode: LanguageCodeEnum.En,
 		ogLocale: "en_US",
 		fallbackCurrency: "USD",
 		stripeLocale: "en",
@@ -135,7 +141,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"en-CA": {
 		locale: "en-CA",
 		htmlLang: "en",
-		graphqlLanguageCode: LanguageCodeEnum.EnCa,
+		graphqlLanguageCode: LanguageCodeEnum.En,
 		ogLocale: "en_CA",
 		fallbackCurrency: "CAD",
 		stripeLocale: "en",

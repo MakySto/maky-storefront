@@ -580,6 +580,21 @@ export function isFitmentOfferable(input: {
 }
 
 /**
+ * The product half of `isFitmentOfferable`, for a surface with no verdict to ask.
+ *
+ * A vehicle category page lists what fits a whole generation rather than answering for
+ * one car, so there is no `FitmentVerdict` — but the source's decision about THIS product
+ * still binds: accepted review AND `sellable`. A product CFM holds back stays in the
+ * export and out of every offer.
+ */
+export function isFitmentRefSellable(ref: {
+	qaStatus: QaStatus;
+	eligibility?: FitmentEligibility | null;
+}): boolean {
+	return ref.qaStatus === "accepted" && ref.eligibility?.sellable === true;
+}
+
+/**
  * Whether a verdict means "we could not answer" as opposed to "the answer is no".
  * A provider outage, a partial index and an ambiguous selection are all NOT a no.
  */

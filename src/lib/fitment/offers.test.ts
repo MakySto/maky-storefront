@@ -1,9 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { loadFitmentDataset } from "./provider";
-import { isDemoDataset, resolveFitmentOffers } from "./offers";
+import { isDemoDataset, resolveFitmentOffers, uniqueProductRefs } from "./offers";
 import { resolveVehicleOutcome } from "./resolve";
-import { type FitmentDataset, type VehicleSelection } from "./contract";
+import {
+	CONFIGURATOR_PRODUCT_KIND,
+	isFitmentRefSellable,
+	type FitmentDataset,
+	type VehicleSelection,
+} from "./contract";
 import fixtureDataset from "./fixtures/dataset-v1.json";
 
 /**
@@ -194,5 +199,37 @@ describe("a dataset that is a simulation must not be sellable — either way of 
 
 	it("says nothing about a dataset that is not there", () => {
 		expect(isDemoDataset(null)).toBe(false);
+	});
+});
+
+/**
+ * A generation page has no vehicle verdict, so it hands the offer layer every product the
+ * applications name — including the ones CFM holds back. In RELEASE-4 that is six sets on
+ * Peugeot 306 Break 7, `qaStatus: hold`, `sellable: false`. They are not a compatible offer.
+ */
+describe("a product the source will not stand behind", () => {
+	it("is sellable only when review accepted it AND the source says so", () => {
+		const eligibility = (sellable: boolean) => ({ sellable, reasons: [] });
+		expect(isFitmentRefSellable({ qaStatus: "accepted", eligibility: eligibility(true) })).toBe(true);
+		expect(isFitmentRefSellable({ qaStatus: "accepted", eligibility: eligibility(false) })).toBe(false);
+		expect(isFitmentRefSellable({ qaStatus: "hold", eligibility: eligibility(true) })).toBe(false);
+		expect(isFitmentRefSellable({ qaStatus: "conflict", eligibility: eligibility(true) })).toBe(false);
+		expect(isFitmentRefSellable({ qaStatus: "accepted", eligibility: null })).toBe(false);
+	});
+
+	it("stays out of a generation page's offer and out of its compatible count", async () => {
+		const { dataset } = await loadFitmentDataset();
+		const refs = uniqueProductRefs(dataset!.applications).filter(
+			(r) => r.productKind === CONFIGURATOR_PRODUCT_KIND,
+		);
+		const withheld = refs.filter((r) => !isFitmentRefSellable(r));
+		expect(withheld.length, "the fixture needs a withheld set, or this proves nothing").toBeGreaterThan(0);
+
+		const offers = await resolveFitmentOffers(uniqueProductRefs(dataset!.applications), "sk-eur", "sk-SK", {
+			dataset,
+		});
+		const offered = offers.offers.map((o) => o.saleorProductId);
+		for (const ref of withheld) expect(offered, ref.saleorProductId).not.toContain(ref.saleorProductId);
+		expect(offers.rejected["not-sellable"]).toBe(withheld.length);
 	});
 });
