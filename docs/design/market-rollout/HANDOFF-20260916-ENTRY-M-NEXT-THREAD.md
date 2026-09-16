@@ -12,7 +12,57 @@ exact-locale, routable/indexable/sellable, revalidácia, platby). Záznam RELEAS
 
 ---
 
-## 1. Presný stav (zmerané 16. 9.)
+## 0. ⭐ GO-M-PATCH vykonaný — 16. 9. 2026 (vlákno `m-vlakno-storefront-continue`)
+
+**§1 nižšie je stav PRED týmto deployom.** Aktuálny stav:
+
+|                        |                                                                                                                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Produkcia              | **`be0f795`** (kód = `41cc44e`; diff sú iba 2 dokumenty), BUILD_ID **`SKH7DHo8A1X7cxZx1zsi0`**, build 2026-09-16T13:07:06Z                                        |
+| Odstávka               | 76 s, `deploy-production.sh` exit 0, lokálna brána prešla, bez `MIN_FREE_MEM_MB` override (11 910 MB)                                                             |
+| `/opt/storefront`      | detached HEAD na `be0f795`, čistý strom                                                                                                                           |
+| Rollback kódu          | `/opt/storefront-rollbacks/.next.rollback-500068f-zMxoCHeXuF0A3BVkJVKUA-20260916T130428Z` (+ `…a49cd0f…`, pin `…b6b633da…`); `…429bf71…` zmazaný pruningom        |
+| Revalidácia            | **ZAPNUTÁ** 13:10 UTC: `REVALIDATE_SECRET` (64 hex, vygenerovaný na stroji, nikdy nevypísaný) v `/opt/storefront/.env`, `pm2 restart maky-storefront` (1 reštart) |
+| Záloha `.env` pred tým | `/opt/storefront/.env.backup-20260916T131030Z` (600) — rollback revalidácie = vrátiť túto zálohu + `pm2 restart`                                                  |
+| `MAKY_LIVE_MARKETS`    | nezmenené (`sk`)                                                                                                                                                  |
+
+**Smoke (GET, `https://maky.store` aj `127.0.0.1:3000`, pred/po):**
+
+| kontrola                                           | pred (`500068f`)    | po (`be0f795`)                                                                                                           |
+| -------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `/sk/stresne-nosice/peugeot/306-break/7`           | 200, **6 zostáv**   | 200, **0** + „Pre toto vozidlo zatiaľ nemáme overenú zostavu." + „Nejaké záznamy existujú, ale zatiaľ nie sú overené."   |
+| `…/subaru/legacy-kombi/bh`, `…/hyundai/h-1-van/a1` | 7, 6                | 7, 6                                                                                                                     |
+| `…/volkswagen/golf-alltrack/ba5`                   | 200, 7, bez 301     | 200, 7, bez 301                                                                                                          |
+| BP → BH, TQ → A1 (sk, cz, es-root)                 | 301 jedným skokom   | 301 jedným skokom                                                                                                        |
+| sitemap `<loc>` / vozidlové / zahraničné           | 11 085 / 1 475 / 0  | 11 085 / 1 475 / 0                                                                                                       |
+| `x-robots-tag` cz, de, at, us, ca                  | `noindex, nofollow` | `noindex, nofollow`; sk bez                                                                                              |
+| `/us`, `/ca` hlavičky                              | —                   | `x-locale: en-US`/`en-CA`, `x-currency: USD`/`CAD`                                                                       |
+| SK homepage, PDP (BH Snap Alu), košík              | 200                 | 200                                                                                                                      |
+| build: `graphqlLanguageCode` pre en-US/en-CA       | `EnUs`/`EnCa`       | `En`/`En`; `not-sellable` v 4 server chunkoch                                                                            |
+| PM2 log od štartu                                  | —                   | 0× `provider payload failed validation`; varovania `window.to.year exceeds…` a React „resumable slots" sú predexistujúce |
+
+Filter **neodpublikoval** 6 held produktov (pk 6935–6940) v Saleore — to je CFM D8.
+
+**Revalidácia — overené po reštarte (lokálne aj cez verejnú URL):** GET `resource=product` a POST s presným
+CFM telom `{"product":{"slug":…,"channel":{"slug":"sk-eur"}}}`: bez hlavičky **401**, zlé tajomstvo **401**,
+správne **200** + `success: true` + tag `product:sk-eur:sk-SK:<slug>`; POST navyše cesty `/sk-eur/<slug>`,
+`/sk-eur/products`, `/sk-eur`, `/sitemap.xml`. Hlavička išla zo súboru 600 (`curl -H @súbor`), súbor zmazaný.
+Test purgol jeden SK produkt; PDP potom 200 s rovnakým H1.
+
+**Prenos tajomstva do CFM — jeden krok pre Mareka.** Tento stroj nemá SSH na CFM (v `~/.ssh/config` je iba
+`github.com`). Z vlastného počítača so SSH na oba stroje, hodnota sa nikde nezobrazí (vypíše sa iba dĺžka `64`):
+
+```bash
+ssh ubuntu@<storefront-host> "sed -n 's/^REVALIDATE_SECRET=//p' /opt/storefront/.env | tr -d '\n'" | ssh ubuntu@<cfm-host> 'umask 077 && mkdir -p ~/.config/cfm-saleor && chmod 700 ~/.config/cfm-saleor && cat > ~/.config/cfm-saleor/storefront-revalidate.secret && chmod 600 ~/.config/cfm-saleor/storefront-revalidate.secret && wc -c < ~/.config/cfm-saleor/storefront-revalidate.secret'
+```
+
+Potom v CFM: `STOREFRONT_REVALIDATE_URL=https://maky.store/api/revalidate`,
+`STOREFRONT_REVALIDATE_SECRET_FILE=/home/ubuntu/.config/cfm-saleor/storefront-revalidate.secret` (bez koncového
+nového riadku). Úspech = HTTP 200 + `success === true` + očakávaný tag, nie samotné 200.
+
+---
+
+## 1. Presný stav PRED GO-M-PATCH (zmerané 16. 9. ráno)
 
 |                         |                                                                                                                                               |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
