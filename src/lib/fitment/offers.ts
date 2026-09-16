@@ -33,6 +33,7 @@ import { resolveExactLocaleProduct } from "@/lib/saleor/exact-locale";
 import { FitmentProductsByIdsDocument } from "@/gql/graphql";
 import { resolveAvailability, AVAILABILITY_METADATA_KEY } from "@/ui/components/product/availability-badge";
 import { getLocaleConfigByLocale } from "@/config/locale";
+import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
 import {
 	CONFIGURATOR_PRODUCT_KIND,
 	isFitmentRefSellable,
@@ -281,11 +282,17 @@ export async function resolveFitmentOffers(
 	const found = new Map<string, FitmentOffer>();
 	let lookupFailed = false;
 
+	// The one name `/api/revalidate` expires for a product event in this channel. Without it
+	// this fetch was the only catalogue read nothing could purge: a withdrawn or repriced set
+	// stayed on every generation page for up to five minutes after the PDP had moved on.
+	const offerTag = buildTag(CACHE_PROFILES.fitmentOffers, { channel, locale });
+
 	for (const ids of batches) {
 		try {
 			const result = await executePublicGraphQL(FitmentProductsByIdsDocument, {
 				variables: { ids, channel, first: SALEOR_MAX_PAGE_SIZE, lang: languageFor(locale) },
 				revalidate: 300,
+				tags: [offerTag],
 			});
 			// Zero results and a broken upstream are different answers.
 			if (!result.ok) {

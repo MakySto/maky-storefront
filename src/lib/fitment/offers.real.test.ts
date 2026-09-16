@@ -155,6 +155,23 @@ describe("resolveFitmentOffers on a live-shaped answer", () => {
 		expect(options.variables).toMatchObject({ ids: [REF.saleorProductId], channel: "sk-eur" });
 	});
 
+	it("tags the read with its channel and locale, so /api/revalidate can expire it", async () => {
+		// The one catalogue read nothing could purge: a repriced or withdrawn set stayed on
+		// every generation page for up to five minutes after the PDP had moved on.
+		executePublicGraphQL.mockResolvedValue(
+			answer([node({ variantMeta: "sale_to_order", translation: FULL_TRANSLATION })]),
+		);
+
+		await resolveFitmentOffers([REF], "at-eur", "de-AT", { dataset: null });
+
+		const [, options] = executePublicGraphQL.mock.calls[0] as [
+			unknown,
+			{ tags?: string[]; revalidate?: number },
+		];
+		expect(options.tags).toEqual(["fitment-offers:at-eur:de-AT"]);
+		expect(options.revalidate).toBe(300);
+	});
+
 	it("rejects an identity the catalogue contradicts", async () => {
 		executePublicGraphQL.mockResolvedValue(
 			answer([node({ externalReference: "test:product:someone-else" })]),

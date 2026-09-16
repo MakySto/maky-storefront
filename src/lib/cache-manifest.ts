@@ -50,6 +50,22 @@ const profiles = {
 		tagPattern: "collection:{channel}:{locale}:{slug}",
 		pathPattern: "/{channel}/collections/{slug}",
 	},
+	/**
+	 * The compatible sets on a vehicle generation page and in the configurator.
+	 *
+	 * Not a `"use cache"` entry: the offer is fetched at request time with `revalidate: 300`,
+	 * so the tag rides on that fetch (`executePublicGraphQL({ tags })`). One tag per channel
+	 * and locale, deliberately not per product — the query asks for a whole generation's
+	 * sets by id, so the product slugs are not known until the answer arrives, and a price
+	 * change or a withdrawal must reach every generation page that lists the product.
+	 */
+	fitmentOffers: {
+		id: "fitment-offers",
+		label: "Vehicle Page Offers",
+		cacheProfile: "minutes",
+		tagPattern: "fitment-offers:{channel}:{locale}",
+		pathPattern: null,
+	},
 	navigation: {
 		id: "navigation",
 		label: "Navigation Menus",

@@ -424,6 +424,15 @@ type GraphQLOptions<Variables> = {
 	cache?: RequestCache;
 	revalidate?: number;
 	/**
+	 * Data-cache tags for this fetch, so `/api/revalidate` can expire it by name.
+	 *
+	 * Only for reads made OUTSIDE a `"use cache"` function — inside one, `cacheTag()` is
+	 * the tool. The vehicle-page offer is the case that needs it: it is fetched at request
+	 * time under `revalidate: 300`, and without a tag nothing could purge it, so a price
+	 * change or a withdrawal reached every other surface and stayed stale there.
+	 */
+	tags?: readonly string[];
+	/**
 	 * Override the retry decision. Mutations default to no retries; queries to
 	 * the configured budget. See `retriesFor()`.
 	 */
@@ -446,7 +455,7 @@ async function executeGraphQL<Result, Variables>(
 	operation: TypedDocumentString<Result, Variables>,
 	options: GraphQLOptions<Variables> & { withAuth: boolean },
 ): Promise<GraphQLResult<Result>> {
-	const { variables, headers, cache, revalidate, withAuth, retry, signal } = options;
+	const { variables, headers, cache, revalidate, tags, withAuth, retry, signal } = options;
 
 	const operationName = operation.toString().match(/(?:query|mutation)\s+(\w+)/)?.[1] || "UnknownOperation";
 	const variablesForLog = variables ? formatVariablesForLog(variables) : undefined;
@@ -474,7 +483,7 @@ async function executeGraphQL<Result, Variables>(
 			...(variables && { variables }),
 		}),
 		cache,
-		next: { revalidate },
+		next: { revalidate, ...(tags?.length ? { tags: [...tags] } : {}) },
 		signal,
 	};
 

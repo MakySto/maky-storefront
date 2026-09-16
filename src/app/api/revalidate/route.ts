@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { CACHE_PROFILES, buildTag, buildPath } from "@/lib/cache-manifest";
 import { extractBearerToken, verifySecret, verifyWebhookSignature } from "@/lib/api-auth";
 import { getLocaleFromChannel } from "@/config/locale";
-import { CHANNEL_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, SALEOR_SLUGS } from "@/lib/channel-map";
 import { parseWebhookPayload } from "@/lib/saleor/webhook-payload";
 
 /**
@@ -63,9 +63,29 @@ function revalidateProfile(
  * serving the old entry until it expired on its own. A product event is not
  * channel-specific; the fan-out has to match the key.
  */
-function targetChannels(named: string | undefined): string[] {
-	if (named) return [named];
+function targetChannels(named: string | undefined): string[] | null {
+	if (named) return isKnownChannel(named) ? [named] : null;
 	return Object.values(CHANNEL_MAP).map((config) => config.saleorSlug);
+}
+
+/**
+ * A channel this storefront serves, spelled the way Saleor spells it (`at-eur`, not `at`).
+ *
+ * Checked because the locale is DERIVED from it, and `getLocaleFromChannel` answers an
+ * unknown slug with the default locale rather than an error. So `{"channel": "xx"}` used to
+ * come back 200 with `success: true` and a tag like `product:xx:sk-SK:<slug>` — which purges
+ * nothing any page reads, and tells the caller the opposite. A typo must fail loudly, and it
+ * must never be quietly turned into a Slovak purge.
+ */
+function isKnownChannel(channel: string): boolean {
+	return SALEOR_SLUGS.has(channel);
+}
+
+/** The vehicle-page offer for one channel — see `CACHE_PROFILES.fitmentOffers`. */
+function revalidateOffers(channel: string, locale: string, tags: string[]) {
+	const tag = buildTag(CACHE_PROFILES.fitmentOffers, { channel, locale });
+	revalidateTag(tag, IMMEDIATE);
+	tags.push(tag);
 }
 
 // ============================================================================
@@ -97,7 +117,13 @@ export async function POST(request: NextRequest) {
 		const revalidatedPaths: string[] = [];
 		const revalidatedTags: string[] = [];
 
-		for (const channel of targetChannels(resource.channel)) {
+		const channels = targetChannels(resource.channel);
+		if (!channels) {
+			console.warn("[Revalidate] Unknown channel:", String(resource.channel).replace(/[\r\n]/g, ""));
+			return Response.json({ error: "Unknown channel" }, { status: 400 });
+		}
+
+		for (const channel of channels) {
 			const locale = getLocaleFromChannel(channel);
 
 			// A rename has to purge BOTH slugs. Only the new one was ever purged, so
@@ -129,6 +155,9 @@ export async function POST(request: NextRequest) {
 							revalidatedPaths,
 						);
 					}
+					// Price, publication and purchasability all show on the generation pages
+					// too, and those read the product outside any `"use cache"` entry.
+					revalidateOffers(channel, locale, revalidatedTags);
 					break;
 
 				case "category":
@@ -144,6 +173,10 @@ export async function POST(request: NextRequest) {
 					}
 					revalidatePath(`/${channel}/products`);
 					revalidatedPaths.push(`/${channel}/products`);
+					// The offer prints the category's name, and refuses a product whose
+					// category has no translation — so a category translation landing or
+					// changing decides what a generation page may list.
+					revalidateOffers(channel, locale, revalidatedTags);
 					break;
 
 				case "collection":
@@ -274,6 +307,11 @@ export async function GET(request: NextRequest) {
 				{ error: "resource requires product|category|collection plus channel, locale, and slug" },
 				{ status: 400 },
 			);
+		}
+		// Before the locale check, not after: an unknown channel resolves to the default
+		// locale, so `channel=xx&locale=sk-SK` used to pass it.
+		if (!isKnownChannel(channel)) {
+			return Response.json({ error: "Unknown channel" }, { status: 400 });
 		}
 		if (getLocaleFromChannel(channel) !== locale) {
 			return Response.json({ error: "locale does not belong to channel" }, { status: 400 });
