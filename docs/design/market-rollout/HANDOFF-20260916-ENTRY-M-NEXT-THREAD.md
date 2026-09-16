@@ -1,5 +1,8 @@
 # ⭐ VSTUPNÝ BOD — nové storefront M-vlákno (COMMERCE-2: malý deploy + integrácia)
 
+> **Aktualizované 16. 9. večer:** GO-M-PATCH je nasadený (§0 nižšie) a integračný kandidát M1–M6 je hotový a pushnutý.
+> Ďalšie vlákno začína v **`HANDOFF-20260916-M-integration-candidate.md`**; tento dokument ostáva ako záznam stroja a pascí.
+
 Napísané 16. 9. 2026 na konci vlákna `m-vlakno-2026-09-15`. **Úlohy nového vlákna** sú v dvoch
 zadaniach, ktoré Marek priloží: `MAKY_M_DEPLOY_A_INTEGRACIA_20260916.md` (GO-M-PATCH + M1–M6) a
 spoločný kontrakt CFM ↔ M. **Tento dokument ich neopakuje.** Obsahuje to, čo tam nie je: presný stav

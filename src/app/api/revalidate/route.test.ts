@@ -256,3 +256,30 @@ describe("sitemap shards (COMMERCE-2 M5)", () => {
 		);
 	});
 });
+
+describe("the exact answer CFM checks (HANDOFF-20260916-M-integration-candidate §4)", () => {
+	it("returns these paths and tags, in this order, for the AT product event with a category", async () => {
+		const response = await post({
+			product: { slug: "n60012", channel: { slug: "at-eur" }, category: { slug: "stresne-nosice" } },
+		});
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({
+			paths: [
+				"/at-eur/n60012",
+				"/at-eur/products",
+				"/at-eur/categories/stresne-nosice",
+				"/at-eur/categories/dachtraeger",
+				"/at-eur",
+				"/sitemap.xml",
+			],
+			tags: [
+				"product:at-eur:de-AT:n60012",
+				"category:at-eur:de-AT:stresne-nosice",
+				"fitment-offers:at-eur:de-AT",
+				"sitemap:at-eur",
+			],
+			success: true,
+		});
+	});
+});

@@ -1,5 +1,8 @@
 # M · COMMERCE-2 — storefront po kanáloch: čo je hotové, čo dodá CFM, čo treba schváliť
 
+> **Zastarané v častiach (16. 9. večer):** `41cc44e` je nasadený, revalidácia je zapnutá (§6 „nefunguje" už neplatí) a §9 body
+> 1–4 rieši integračný kandidát. Aktuálny stav: **`HANDOFF-20260916-M-integration-candidate.md`**.
+
 Napísané 16. 9. 2026 v existujúcom M-vlákne ako odpoveď na „MAKY.STORE — delta pre existujúce
 storefront M-vlákno" (16. 9.). Všetko označené „zmerané" som zmeral na tomto stroji: kód, testy,
 lokálny build a **read-only** dotazy do produkčného Saleoru bez tokenu. Do Saleoru, CFM, `.env` ani
