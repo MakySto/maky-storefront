@@ -272,6 +272,7 @@ async function ProductContent({
 		// 94% of pages once the Nordrive cohort went live. The visible code has
 		// always been correct; only this path bypassed the module that makes it so.
 		sku: publicSku(product.variants?.[0]) ?? undefined,
+		isPurchasable: product.isAvailableForPurchase === true,
 		priceRange: product.pricing?.priceRange?.start?.gross
 			? {
 					lowPrice: product.pricing.priceRange.start.gross.amount,

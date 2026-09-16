@@ -143,6 +143,7 @@ export function transformToProductCard(
 		hoverImage: null, // Would need additional media in fragment
 		href: productHref(channel, product.slug),
 		channel,
+		isPurchasable: product.isAvailableForPurchase === true,
 		badge: isSale ? "sale" : null,
 		colors,
 		sizes,

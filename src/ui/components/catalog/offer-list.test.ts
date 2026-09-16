@@ -19,7 +19,11 @@ import { describe, expect, it, vi } from "vitest";
  */
 
 const MESSAGES = join(dirname(fileURLToPath(import.meta.url)), "../../../i18n/messages");
-type Messages = { configurator: { resultsTitle: string }; common: { onOrder: string } };
+type Messages = {
+	configurator: { resultsTitle: string };
+	common: { onOrder: string };
+	cart: { addUnavailable: string };
+};
 const load = (locale: string): Messages =>
 	JSON.parse(readFileSync(join(MESSAGES, `${locale}.json`), "utf8")) as Messages;
 
@@ -49,6 +53,7 @@ const offer = (i: number, over: Partial<FitmentOffer> = {}): FitmentOffer => ({
 	availability: "on-demand",
 	completeSetIncludes: null,
 	facets: null,
+	isPurchasable: true,
 	isDemo: false,
 	...over,
 });
@@ -211,6 +216,25 @@ describe("no other market renders a Slovak sentence", () => {
 		expect(await text(three, "pl-PL")).toContain("|3 zestawy|");
 		expect(await text(SEVEN, "de-DE")).toContain("|7 Sets|");
 	});
+});
+
+describe("catalog-only availability", () => {
+	for (const locale of ["sk-SK", ...FOREIGN]) {
+		it(`${locale} shows the localized unavailable notice, never the on-order promise`, async () => {
+			const rendered = await text(
+				offers({
+					offers: [offer(0, { isPurchasable: false, availability: "on-demand" })],
+					compatibleCount: 1,
+					purchasableCount: 0,
+				}),
+				locale,
+			);
+			const own = load(locale);
+
+			expect(rendered).toContain(`|${own.cart.addUnavailable}|`);
+			expect(rendered).not.toContain(`|${own.common.onOrder}|`);
+		});
+	}
 });
 
 describe("formatOfferPrice", () => {

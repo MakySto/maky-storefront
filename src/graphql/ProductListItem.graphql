@@ -1,5 +1,6 @@
 fragment ProductListItem on Product {
 	id
+	isAvailableForPurchase
 	name
 	slug
 	translation(languageCode: $lang) {

@@ -41,6 +41,8 @@ export interface ProductCardData {
 	href: string;
 	/** Saleor channel slug — the add-to-cart action needs it in the form. */
 	channel: string;
+	/** Channel-level purchase switch; false is still a visible catalogue card. */
+	isPurchasable: boolean;
 	badge?: "sale" | "new" | null;
 	colors?: { name: string; hex: string }[];
 	sizes?: string[];
@@ -88,6 +90,7 @@ function AddButton() {
 export function ProductCard({ product, priority = false }: ProductCardProps) {
 	const tCommon = useTranslations("common");
 	const tProduct = useTranslations("product");
+	const tCart = useTranslations("cart");
 	const { locale } = useLocale();
 
 	const formatPrice = (amount: number, currency: string) =>
@@ -97,7 +100,8 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 		product.badge === "sale" ? tCommon("sale") : product.badge === "new" ? tCommon("new") : null;
 
 	// Only offer a direct add when there is genuinely nothing to choose.
-	const canAddDirectly = Boolean(product.variantId) && product.quantityAvailable !== 0;
+	const canAddDirectly =
+		product.isPurchasable && Boolean(product.variantId) && product.quantityAvailable !== 0;
 
 	// A product mid-import has no thumbnail yet. Show a quiet placeholder rather
 	// than the broken-image glyph, which reads as a fault in the shop.
@@ -175,11 +179,15 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 						{tProduct("sku")}: <span className="font-medium">{product.productCode}</span>
 					</p>
 				)}
-				<AvailabilityBadge
-					mode={product.availabilityMode}
-					quantityAvailable={product.quantityAvailable}
-					className="text-xs"
-				/>
+				{product.isPurchasable ? (
+					<AvailabilityBadge
+						mode={product.availabilityMode}
+						quantityAvailable={product.quantityAvailable}
+						className="text-xs"
+					/>
+				) : (
+					<p className="text-text-secondary text-xs">{tCart("addUnavailable")}</p>
+				)}
 			</div>
 
 			{/* Renders nothing until something actually populates Product.rating */}

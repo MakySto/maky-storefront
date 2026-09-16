@@ -88,7 +88,9 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 	const { variant: variantParam } = await searchParams;
 	const tCommon = await getTranslations("common");
 	const tProduct = await getTranslations("product");
+	const tCart = await getTranslations("cart");
 	const variants = product.variants || [];
+	const isPurchasable = product.isAvailableForPurchase === true;
 
 	const variantsForClient = variantsForSelection(variants);
 
@@ -103,12 +105,14 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 	const productAvailabilityMode = variants.find(({ metafield }) => metafield)?.metafield;
 
 	// Determine add-to-cart button state
-	const isAddToCartDisabled = !selectedVariantID || !selectedVariant?.quantityAvailable;
-	const disabledReason = !selectedVariantID
-		? ("no-selection" as const)
-		: !selectedVariant?.quantityAvailable
-			? ("out-of-stock" as const)
-			: undefined;
+	const isAddToCartDisabled = !isPurchasable || !selectedVariantID || !selectedVariant?.quantityAvailable;
+	const disabledReason = !isPurchasable
+		? ("unavailable" as const)
+		: !selectedVariantID
+			? ("no-selection" as const)
+			: !selectedVariant?.quantityAvailable
+				? ("out-of-stock" as const)
+				: undefined;
 
 	// Format prices
 	const price = selectedVariant?.pricing?.price?.gross
@@ -157,6 +161,13 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 	async function addToCart(_previous: AddToCartResult | null, formData: FormData): Promise<AddToCartResult> {
 		"use server";
 
+		if (!isPurchasable) {
+			return {
+				status: "rejected",
+				reason: "unavailable",
+				message: "product is not available for purchase in this market",
+			};
+		}
 		if (!selectedVariantID) {
 			// The button is disabled without a selection; this is the tampered-form
 			// path, not something a customer reaches.
@@ -206,18 +217,22 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 						{tProduct("sku")}: <span className="font-medium tabular-nums">{productCode}</span>
 					</span>
 				)}
-				<AvailabilityBadge
-					// Falls back to the product's mode so a multi-variant product answers
-					// before anything is picked. It used to render NOTHING until the
-					// customer chose a variant, and a blank where availability belongs
-					// reads as "in stock" — on a catalogue that holds none.
-					mode={selectedVariant?.metafield ?? productAvailabilityMode}
-					// Still the SELECTED variant's, and undefined when there is no
-					// selection: unknown, which resolveAvailability treats as unknown
-					// rather than as zero. A hard zero on a chosen variant still wins.
-					quantityAvailable={selectedVariant?.quantityAvailable}
-					className="text-xs"
-				/>
+				{isPurchasable ? (
+					<AvailabilityBadge
+						// Falls back to the product's mode so a multi-variant product answers
+						// before anything is picked. It used to render NOTHING until the
+						// customer chose a variant, and a blank where availability belongs
+						// reads as "in stock" — on a catalogue that holds none.
+						mode={selectedVariant?.metafield ?? productAvailabilityMode}
+						// Still the SELECTED variant's, and undefined when there is no
+						// selection: unknown, which resolveAvailability treats as unknown
+						// rather than as zero. A hard zero on a chosen variant still wins.
+						quantityAvailable={selectedVariant?.quantityAvailable}
+						className="text-xs"
+					/>
+				) : (
+					<span className="text-text-secondary text-xs">{tCart("addUnavailable")}</span>
+				)}
 			</div>
 
 			{/* Compatibility - order:4, immediately above the purchase CTA (CLAUDE.md §8)
@@ -251,13 +266,17 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 				/>
 
 				{/* Sticky Add to Cart Bar (Mobile) */}
-				<StickyBar productName={product.name} price={price} show={!isAddToCartDisabled} />
+				{isPurchasable ? (
+					<StickyBar productName={product.name} price={price} show={!isAddToCartDisabled} />
+				) : null}
 			</CartForm>
 
 			{/* Purchase confidence - order:6, outside the form (nothing submittable). */}
-			<div className="order-6 mt-6">
-				<PurchaseTrust channel={channel} />
-			</div>
+			{isPurchasable ? (
+				<div className="order-6 mt-6">
+					<PurchaseTrust channel={channel} />
+				</div>
+			) : null}
 		</>
 	);
 }

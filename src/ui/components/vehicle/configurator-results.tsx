@@ -74,12 +74,14 @@ export function ConfiguratorResults({
 	// reused rather than duplicated, so the two surfaces cannot drift apart.
 	const tc = useTranslations("common");
 	const tf = useTranslations("fitment");
+	const tCart = useTranslations("cart");
 	const router = useRouter();
 	const [pending, startTransition] = useTransition();
 	const [busyId, setBusyId] = useState<string | null>(null);
 	const [errors, setErrors] = useState<Record<string, AddSetFailure>>({});
 
 	const add = (offer: FitmentOffer) => {
+		if (offer.isPurchasable !== true || offer.isDemo) return;
 		setBusyId(offer.saleorVariantId);
 		setErrors((current) => {
 			const next = { ...current };
@@ -114,6 +116,7 @@ export function ConfiguratorResults({
 		<ul className="grid gap-4 sm:grid-cols-2">
 			{cards.map(({ offer, conditions, unresolvedConditions, verdict, supplier }) => {
 				const outOfStock = offer.availability === "out-of-stock";
+				const catalogOnly = offer.isPurchasable !== true;
 				// Whose word this set's fit rests on. An unnamed supplier degrades to the
 				// same fallback CompatibilityBox uses, never to silence and never to
 				// "verified".
@@ -226,7 +229,7 @@ export function ConfiguratorResults({
 									<p className="text-text-tertiary text-sm">{t("priceUnavailable")}</p>
 								)}
 
-								{offer.availability === "on-demand" && (
+								{offer.isPurchasable && offer.availability === "on-demand" && (
 									<p className="text-status-info text-sm">{tc("onDemand")}</p>
 								)}
 
@@ -251,6 +254,10 @@ export function ConfiguratorResults({
 									{offer.isDemo ? (
 										<Button type="button" variant="outline-solid" disabled className="flex-1">
 											{t("demoNoPurchase")}
+										</Button>
+									) : catalogOnly ? (
+										<Button type="button" variant="outline-solid" disabled className="flex-1">
+											{tCart("addUnavailable")}
 										</Button>
 									) : failure?.primaryAction === "check-cart" ? (
 										// The add may well have landed. The control now under the cursor

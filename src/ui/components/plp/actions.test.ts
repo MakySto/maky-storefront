@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
 	executeAuthenticatedGraphQL,
+	executePublicGraphQL,
 	findOrCreate,
 	find,
 	lookup,
@@ -10,6 +11,7 @@ const {
 	revalidatePath,
 } = vi.hoisted(() => ({
 	executeAuthenticatedGraphQL: vi.fn(),
+	executePublicGraphQL: vi.fn(),
 	findOrCreate: vi.fn(),
 	find: vi.fn(),
 	lookup: vi.fn(),
@@ -18,7 +20,7 @@ const {
 	revalidatePath: vi.fn(),
 }));
 
-vi.mock("@/lib/graphql", () => ({ executeAuthenticatedGraphQL }));
+vi.mock("@/lib/graphql", () => ({ executeAuthenticatedGraphQL, executePublicGraphQL }));
 vi.mock("@/lib/checkout", () => ({ findOrCreate, find, lookup, getIdFromCookies, saveIdToCookie }));
 vi.mock("next/cache", () => ({ revalidatePath }));
 
@@ -46,6 +48,10 @@ const input = { channel: "sk-eur", variantId: "UHJvZHVjdFZhcmlhbnQ6MQ==", quanti
 beforeEach(() => {
 	vi.useFakeTimers();
 	vi.clearAllMocks();
+	executePublicGraphQL.mockResolvedValue({
+		ok: true,
+		data: { productVariant: { product: { isAvailableForPurchase: true } } },
+	});
 	getIdFromCookies.mockResolvedValue(null);
 	findOrCreate.mockResolvedValue(ready(CHECKOUT));
 	find.mockResolvedValue(null);
@@ -62,6 +68,40 @@ const settle = async <T>(promise: Promise<T>): Promise<T> => {
 };
 
 describe("addVariantToCart", () => {
+	it("rejects a catalog-only product before creating or mutating a checkout", async () => {
+		executePublicGraphQL.mockResolvedValue({
+			ok: true,
+			data: { productVariant: { product: { isAvailableForPurchase: false } } },
+		});
+
+		await expect(addVariantToCart(input)).resolves.toEqual({
+			status: "rejected",
+			reason: "unavailable",
+			message: "product is not available for purchase in this market",
+		});
+		expect(findOrCreate).not.toHaveBeenCalled();
+		expect(getIdFromCookies).not.toHaveBeenCalled();
+		expect(saveIdToCookie).not.toHaveBeenCalled();
+		expect(executeAuthenticatedGraphQL).not.toHaveBeenCalled();
+	});
+
+	it("fails closed when purchasability cannot be read", async () => {
+		executePublicGraphQL.mockResolvedValue({
+			ok: false,
+			error: { type: "network", message: "catalog lookup timed out" },
+		});
+
+		await expect(addVariantToCart(input)).resolves.toEqual({
+			status: "rejected",
+			reason: "unavailable",
+			message: "product availability could not be verified",
+		});
+		expect(findOrCreate).not.toHaveBeenCalled();
+		expect(getIdFromCookies).not.toHaveBeenCalled();
+		expect(saveIdToCookie).not.toHaveBeenCalled();
+		expect(executeAuthenticatedGraphQL).not.toHaveBeenCalled();
+	});
+
 	it("confirms an add only when Saleor returned a checkout and no errors", async () => {
 		executeAuthenticatedGraphQL.mockResolvedValue(ok({ checkout: CHECKOUT, errors: [] }));
 

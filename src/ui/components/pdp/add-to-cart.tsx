@@ -12,7 +12,7 @@ interface AddToCartProps {
 	compareAtPrice?: string | null;
 	discountPercent?: number | null;
 	disabled?: boolean;
-	disabledReason?: "no-selection" | "out-of-stock";
+	disabledReason?: "no-selection" | "out-of-stock" | "unavailable";
 	/** Saleor-capped availability ceiling; undefined when unknown. */
 	maxQuantity?: number;
 }
@@ -22,15 +22,17 @@ function AddToCartButton({
 	disabledReason,
 }: {
 	disabled?: boolean;
-	disabledReason?: "no-selection" | "out-of-stock";
+	disabledReason?: "no-selection" | "out-of-stock" | "unavailable";
 }) {
 	const { pending } = useFormStatus();
 	const t = useTranslations("product");
 	const tCommon = useTranslations("common");
+	const tCart = useTranslations("cart");
 
 	const getButtonText = () => {
 		if (pending) return t("addingToCart");
 		if (!disabled) return tCommon("addToCart");
+		if (disabledReason === "unavailable") return tCart("addUnavailable");
 		if (disabledReason === "out-of-stock") return tCommon("outOfStock");
 		return t("selectOptions");
 	};
@@ -70,6 +72,7 @@ export function AddToCart({
 	maxQuantity,
 }: AddToCartProps) {
 	const t = useTranslations("product");
+	const tCart = useTranslations("cart");
 
 	return (
 		<div className="space-y-4">
@@ -89,6 +92,11 @@ export function AddToCart({
 					)}
 				</div>
 				<p className="text-text-tertiary mt-1 text-xs">{t("priceWithVat")}</p>
+				{disabledReason === "unavailable" ? (
+					<p role="status" className="text-text-secondary mt-2 text-sm">
+						{tCart("addUnavailable")}
+					</p>
+				) : null}
 			</div>
 
 			{/* Buy row: quantity + CTA. The stepper writes name="quantity" into the

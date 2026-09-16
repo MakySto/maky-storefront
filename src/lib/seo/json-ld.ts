@@ -79,6 +79,11 @@ export function buildProductJsonLd(options: {
 		currency: string;
 	} | null;
 	/**
+	 * Channel-level purchase switch. A hard false overrides stock and sale-to-order
+	 * metadata because an offer that cannot be bought is neither InStock nor BackOrder.
+	 */
+	isPurchasable?: boolean;
+	/**
 	 * Whether anything on this product is orderable at all. A hard no still wins
 	 * over `availabilityMode` below — nothing orderable is orderable-on-demand.
 	 */
@@ -123,6 +128,7 @@ export function buildProductJsonLd(options: {
 		price,
 		priceRange,
 		inStock = true,
+		isPurchasable = true,
 		availabilityMode,
 		variantCount,
 		variants,
@@ -130,7 +136,7 @@ export function buildProductJsonLd(options: {
 
 	const baseUrl = getBaseUrl();
 	const fullUrl = url ? `${baseUrl}${url}` : undefined;
-	const availability = availabilityOf(inStock, availabilityMode);
+	const availability = availabilityOf(isPurchasable && inStock, availabilityMode);
 
 	const seller = { "@type": "Organization" as const, name: seoConfig.organizationName };
 
@@ -165,7 +171,7 @@ export function buildProductJsonLd(options: {
 					"@type": "Offer" as const,
 					url: fullUrl,
 					availability: availabilityOf(
-						variant.inStock ?? inStock,
+						isPurchasable && (variant.inStock ?? inStock),
 						variant.availabilityMode ?? availabilityMode,
 					),
 					priceCurrency: variant.price!.currency,
@@ -182,7 +188,7 @@ export function buildProductJsonLd(options: {
 	// The variant carries the availability facts when it has them — the top-level
 	// values are the fallback for a caller that knows no variants, not an override.
 	const offerAvailability = only
-		? availabilityOf(only.inStock ?? inStock, only.availabilityMode ?? availabilityMode)
+		? availabilityOf(isPurchasable && (only.inStock ?? inStock), only.availabilityMode ?? availabilityMode)
 		: availability;
 	const offers = exact
 		? {

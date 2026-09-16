@@ -1,0 +1,9 @@
+query ProductVariantPurchasability($id: ID!, $channel: String!) {
+	productVariant(id: $id, channel: $channel) {
+		id
+		product {
+			id
+			isAvailableForPurchase
+		}
+	}
+}

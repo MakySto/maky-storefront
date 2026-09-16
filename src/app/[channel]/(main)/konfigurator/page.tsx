@@ -123,9 +123,7 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 
 			<div>
 				<h2 className="text-text-primary text-lg font-semibold">{t("resultsTitle")}</h2>
-				<p className="text-text-tertiary mt-1 text-sm">
-					{t("resultsCount", { count: offers.purchasableCount })}
-				</p>
+				<p className="text-text-tertiary mt-1 text-sm">{t("resultsCount", { count: cards.length })}</p>
 			</div>
 
 			{cards.length > 0 && <ConfiguratorResults channel={channel} locale={locale} cards={cards} />}
