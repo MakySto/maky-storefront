@@ -1,0 +1,69 @@
+{
+	"schema": "maky.commerce2.exact-locale-contract/1",
+	"source": "src/lib/saleor/exact-locale.ts",
+	"verifiedBy": "src/lib/saleor/exact-locale.contract.test.ts — every field below is deleted one at a time and the resolver's verdict is compared with this file",
+	"sourceLocale": "sk-SK",
+	"rule": "A foreign market renders only an exact translation in its editorial language. Nothing falls back to the Slovak base row: a missing required field means the resource does not exist in that market.",
+	"editorialLanguageByMarket": {
+		"sk": "SK (base row, not a translation)",
+		"cz": "CS",
+		"de": "DE",
+		"at": "DE",
+		"pl": "PL",
+		"hu": "HU",
+		"it": "IT",
+		"fr": "FR",
+		"es": "ES",
+		"ro": "RO",
+		"us": "EN",
+		"ca": "EN"
+	},
+	"resources": {
+		"product": {
+			"read": "translation(languageCode) on the product, its category, and every attribute and attribute value in the payload",
+			"requiredTranslationFields": ["name", "description", "seoDescription"],
+			"optionalTranslationFields": {
+				"seoTitle": "falls back to the TRANSLATED name — never to the Slovak seoTitle",
+				"slug": "falls back to the base slug; a URL, never visible copy (product slugs are not translated in COMMERCE-2)"
+			},
+			"alsoRequired": [
+				"category.translation.name — when the product has a category",
+				"attribute.translation.name — for every attribute the payload carries (product, variant selection and non-selection)",
+				"value.translation.name — for every value of those attributes"
+			],
+			"description": "EditorJS JSON string, as the base row",
+			"onMissing": "the product does not exist in that market: PDP not-found (soft-404 under PPR), dropped from listings, search and vehicle-page offers"
+		},
+		"category": {
+			"read": "translation(languageCode) on the category page query",
+			"requiredTranslationFields": ["name", "description", "seoTitle", "seoDescription"],
+			"optionalTranslationFields": {
+				"slug": "not used for routing — the storefront routes the segment in config/category-routes.ts and asks Saleor by base slug"
+			},
+			"onMissing": "the category page is not-found in that market; a product in that category is also refused (see product.alsoRequired)"
+		},
+		"collection": {
+			"read": "translation(languageCode) on the collection page query",
+			"requiredTranslationFields": ["name", "description", "seoTitle", "seoDescription"],
+			"optionalTranslationFields": { "slug": "falls back to the base slug" },
+			"onMissing": "the collection page is not-found in that market"
+		},
+		"menuItem": {
+			"read": "translation(languageCode) on the item and on what it links to",
+			"requiredTranslationFields": ["name"],
+			"alsoRequired": [
+				"category.translation.name — when the item links a category",
+				"collection.translation.name — when the item links a collection",
+				"page.translation.title — when the item links a page"
+			],
+			"onMissing": "the item is hidden in that market"
+		}
+	},
+	"price": "Per channel from the exact variant's pricing in that channel. Never converted, never borrowed from another channel sharing the language (AT and DE read one DE translation and keep their own prices).",
+	"readback": {
+		"schema": "maky.commerce2.l10n-readback/1",
+		"sample": "docs/contracts/commerce2/l10n-readback.sample.json",
+		"acceptance": "MAKY_L10N_READBACK_PATH=<file> node_modules/.bin/vitest run src/lib/saleor/exact-locale.contract.test.ts",
+		"privacy": "No tokens, no customer data, no admin-only fields. Only what the anonymous storefront query returns once a listing is public."
+	}
+}

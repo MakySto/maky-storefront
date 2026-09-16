@@ -1,0 +1,139 @@
+{
+	"schema": "maky.commerce2.l10n-readback/1",
+	"source": "SYNTHETIC sample — the shape CFM's authorized read-back is expected to take after hidden APPLY. Every identity here is invented.",
+	"entries": [
+		{
+			"channel": "at-eur",
+			"languageCode": "DE",
+			"product": {
+				"id": "UHJvZHVjdDo5OTk5OTk=",
+				"name": "Strešný nosič Testovací Set (SK base row)",
+				"slug": "stresny-nosic-testovaci-set",
+				"description": "{\"blocks\":[{\"type\":\"paragraph\",\"data\":{\"text\":\"SK\"}}]}",
+				"seoTitle": "SK SEO",
+				"seoDescription": "SK SEO popis",
+				"translation": {
+					"name": "Dachträger Testset",
+					"slug": null,
+					"description": "{\"blocks\":[{\"type\":\"paragraph\",\"data\":{\"text\":\"DE\"}}]}",
+					"seoTitle": null,
+					"seoDescription": "Dachträger Testset – Beschreibung"
+				},
+				"category": {
+					"id": "Q2F0ZWdvcnk6NQ==",
+					"name": "Nordrive strešné nosiče",
+					"slug": "nordrive-stresne-nosice",
+					"translation": { "name": "Nordrive Dachträger", "slug": "nordrive-dachtraeger" }
+				},
+				"attributes": [
+					{
+						"attribute": {
+							"name": "Nosnosť",
+							"slug": "nosnost",
+							"translation": { "name": "Traglast" },
+							"externalReference": "cfm:attribute:max_load",
+							"inputType": "NUMERIC",
+							"unit": null
+						},
+						"values": [{ "name": "75", "translation": { "name": "75" } }]
+					}
+				],
+				"variants": [
+					{
+						"id": "UHJvZHVjdFZhcmlhbnQ6OTk5OTk5",
+						"pricing": { "price": { "gross": { "amount": 262.99, "currency": "EUR" } } },
+						"selectionAttributes": [],
+						"nonSelectionAttributes": []
+					}
+				]
+			}
+		},
+		{
+			"channel": "de-eur",
+			"languageCode": "DE",
+			"product": {
+				"id": "UHJvZHVjdDo5OTk5OTk=",
+				"name": "Strešný nosič Testovací Set (SK base row)",
+				"slug": "stresny-nosic-testovaci-set",
+				"description": "{\"blocks\":[{\"type\":\"paragraph\",\"data\":{\"text\":\"SK\"}}]}",
+				"seoTitle": "SK SEO",
+				"seoDescription": "SK SEO popis",
+				"translation": {
+					"name": "Dachträger Testset",
+					"slug": null,
+					"description": "{\"blocks\":[{\"type\":\"paragraph\",\"data\":{\"text\":\"DE\"}}]}",
+					"seoTitle": "Dachträger Testset kaufen",
+					"seoDescription": "Dachträger Testset – Beschreibung"
+				},
+				"category": {
+					"id": "Q2F0ZWdvcnk6NQ==",
+					"name": "Nordrive strešné nosiče",
+					"slug": "nordrive-stresne-nosice",
+					"translation": { "name": "Nordrive Dachträger", "slug": "nordrive-dachtraeger" }
+				},
+				"attributes": [],
+				"variants": [
+					{
+						"id": "UHJvZHVjdFZhcmlhbnQ6OTk5OTk5",
+						"pricing": { "price": { "gross": { "amount": 259.99, "currency": "EUR" } } },
+						"selectionAttributes": [],
+						"nonSelectionAttributes": []
+					}
+				]
+			}
+		},
+		{
+			"channel": "us-usd",
+			"languageCode": "EN",
+			"product": {
+				"id": "UHJvZHVjdDo5OTk5OTk=",
+				"name": "Strešný nosič Testovací Set (SK base row)",
+				"slug": "stresny-nosic-testovaci-set",
+				"description": "{\"blocks\":[{\"type\":\"paragraph\",\"data\":{\"text\":\"SK\"}}]}",
+				"seoTitle": "SK SEO",
+				"seoDescription": "SK SEO popis",
+				"translation": {
+					"name": "Roof rack test set",
+					"slug": null,
+					"description": "{\"blocks\":[{\"type\":\"paragraph\",\"data\":{\"text\":\"EN\"}}]}",
+					"seoTitle": null,
+					"seoDescription": "Roof rack test set – description"
+				},
+				"category": {
+					"id": "Q2F0ZWdvcnk6NQ==",
+					"name": "Nordrive strešné nosiče",
+					"slug": "nordrive-stresne-nosice",
+					"translation": { "name": "Nordrive roof racks", "slug": "nordrive-roof-racks" }
+				},
+				"attributes": [],
+				"variants": [
+					{
+						"id": "UHJvZHVjdFZhcmlhbnQ6OTk5OTk5",
+						"pricing": { "price": { "gross": { "amount": 269.99, "currency": "USD" } } },
+						"selectionAttributes": [],
+						"nonSelectionAttributes": []
+					}
+				]
+			}
+		},
+		{
+			"channel": "cz-czk",
+			"languageCode": "CS",
+			"category": {
+				"id": "Q2F0ZWdvcnk6Mg==",
+				"name": "Strešné nosiče",
+				"slug": "stresne-nosice",
+				"description": "{\"blocks\":[]}",
+				"seoTitle": "Strešné nosiče",
+				"seoDescription": "SK",
+				"translation": {
+					"name": "Střešní nosiče",
+					"slug": "stresni-nosice",
+					"description": "{\"blocks\":[{\"type\":\"paragraph\",\"data\":{\"text\":\"CS\"}}]}",
+					"seoTitle": "Střešní nosiče",
+					"seoDescription": "Střešní nosiče pro vaše auto"
+				}
+			}
+		}
+	]
+}
