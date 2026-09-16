@@ -103,6 +103,12 @@ export function collectMetadataRoutes(appDir = join(root, "src", "app")) {
 	for (const entry of readdirSync(appDir)) {
 		const served = METADATA_CONVENTIONS[entry];
 		if (served) out.add(served);
+		// A route handler in a dotted folder serves at that name: `sitemap.xml/route.ts` is
+		// `/sitemap.xml`, the sitemap index since the metadata-route sitemap was split into shards.
+		const full = join(appDir, entry);
+		if (entry.includes(".") && statSync(full).isDirectory()) {
+			if (readdirSync(full).some((file) => /^route\.(ts|js)$/.test(file))) out.add("/" + entry);
+		}
 	}
 	return [...out].sort();
 }

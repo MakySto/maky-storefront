@@ -200,3 +200,43 @@ export function buildAlternatesMetadata(
 		},
 	};
 }
+
+/** One market's own URL for the same entity. The path differs by market: `/stresni-nosice/…` in `cz`. */
+export interface MarketCounterpart {
+	readonly market: string;
+	/** Market-relative, e.g. `/stresni-nosice/skoda/octavia-combi/nx`. */
+	readonly path: string;
+}
+
+/**
+ * hreflang for ONE entity — a vehicle page, a category, a product — from the markets where it
+ * demonstrably exists (COMMERCE-2 M5).
+ *
+ * The caller proves existence per market (published, translated, indexable) and passes only
+ * those; this keeps the cluster rules in one place: live markets only, in `CHANNEL_MAP` order,
+ * the current page must be one of them, the market's locale as the hreflang, and nothing at
+ * all for a cluster of one. An alternate that is not reciprocated gets the whole cluster
+ * ignored, which is why a market that is merely routable never appears — and why there is no
+ * shortcut that lists all twelve prefixes.
+ *
+ * Read per request: `liveMarkets()` is the runtime env, so on these dynamic routes a market
+ * joins the cluster with a restart. (The static routes' `buildHreflangAlternates` is baked
+ * into prerendered shells and follows only a rebuild — see `market-state.ts`.)
+ */
+export function counterpartAlternates(
+	current: string,
+	counterparts: readonly MarketCounterpart[],
+): Record<string, string> | undefined {
+	const base = getBaseUrl();
+	const live = liveMarkets();
+	const byMarket = new Map(counterparts.map((counterpart) => [counterpart.market, counterpart.path]));
+	const cluster = live.filter((market) => byMarket.has(market));
+	if (cluster.length < 2 || !cluster.includes(current)) return undefined;
+
+	const languages: Record<string, string> = {};
+	for (const market of cluster) {
+		languages[CHANNEL_MAP[market].locale] = `${base}/${market}${byMarket.get(market)}`;
+	}
+	languages["x-default"] = `${base}/${cluster[0]}${byMarket.get(cluster[0]!)}`;
+	return languages;
+}

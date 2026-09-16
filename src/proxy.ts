@@ -41,8 +41,12 @@ import {
  * keep it safe.
  *
  * What is NOT in this list any more: "anything containing a dot". See the matcher.
+ *
+ * `sitemaps` holds the sitemap shards the index at `/sitemap.xml` names
+ * (`/sitemaps/sk-products-1.xml`). Their route answers a real 404 for any name it does not
+ * serve, so reserving the segment opens nothing.
  */
-const RESERVED_FIRST_SEGMENTS = new Set(["checkout", "api", "_next", ".well-known"]);
+const RESERVED_FIRST_SEGMENTS = new Set(["checkout", "api", "_next", ".well-known", "sitemaps"]);
 
 /**
  * Detect the best market for a visitor based on cookie, geo, or language.

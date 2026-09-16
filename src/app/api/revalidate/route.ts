@@ -208,10 +208,18 @@ export async function POST(request: NextRequest) {
 			// The homepage carries listing modules built from the same catalogue.
 			revalidatePath(`/${channel}`);
 			revalidatedPaths.push(`/${channel}`);
+
+			// This channel's sitemap shards and the index entry counting them. The Saleor walk behind
+			// them is tagged per channel, so a Czech event re-reads the Czech catalogue only.
+			const sitemapTag = buildTag(CACHE_PROFILES.sitemap, { channel, locale });
+			revalidateTag(sitemapTag, IMMEDIATE);
+			revalidatedTags.push(sitemapTag);
 		}
 
 		// Publishing, unpublishing or renaming changes which URLs exist, so the
-		// sitemap is stale too — and it is the one surface a crawler reads first.
+		// sitemap is stale too — and it is the one surface a crawler reads first. The index and
+		// the shards are request-time routes over the tagged walk expired above; the path purge
+		// stays for any cached rendering of the index itself.
 		revalidatePath("/sitemap.xml");
 		revalidatedPaths.push("/sitemap.xml");
 

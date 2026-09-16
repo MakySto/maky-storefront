@@ -236,3 +236,23 @@ describe("category events and the localized roots (COMMERCE-2 M1)", () => {
 		]);
 	});
 });
+
+describe("sitemap shards (COMMERCE-2 M5)", () => {
+	it("expires only the event's channel's sitemap data, and keeps the index path", async () => {
+		const response = await post({ product: { slug: "n60012", channel: { slug: "at-eur" } } });
+		const body = (await response.json()) as { tags?: string[]; paths?: string[] };
+
+		expect(revalidateTag).toHaveBeenCalledWith("sitemap:at-eur", { expire: 0 });
+		expect(body.tags).toContain("sitemap:at-eur");
+		expect(taggedWith("sitemap:")).toHaveLength(1);
+		expect(body.paths).toContain("/sitemap.xml");
+	});
+
+	it("expires every channel's sitemap data when the event names no channel", async () => {
+		await post({ product: { slug: "n60012" } });
+
+		expect(new Set(taggedWith("sitemap:").map((call) => String(call[0])))).toEqual(
+			new Set(ALL_CHANNELS.map((channel) => `sitemap:${channel}`)),
+		);
+	});
+});

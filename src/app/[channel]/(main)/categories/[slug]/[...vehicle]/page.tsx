@@ -7,7 +7,8 @@ import { getTranslations } from "next-intl/server";
 import { categoryUrlFor } from "@/config/category-routes";
 import { getLocaleFromChannel } from "@/config/locale";
 import { REVERSE_MAP, marketHref } from "@/lib/channel-map";
-import { buildCanonicalUrl } from "@/lib/seo/hreflang";
+import { buildCanonicalUrl, counterpartAlternates, type MarketCounterpart } from "@/lib/seo/hreflang";
+import { liveMarkets } from "@/lib/market-state";
 import {
 	indexabilityOf,
 	isCatalogPreviewEnabled,
@@ -17,6 +18,7 @@ import {
 import { catalogRedirectTarget } from "@/lib/catalog-content/redirects";
 import {
 	catalogLanguageForChannel,
+	catalogLanguageForMarket,
 	loadCatalogView,
 	resolveVehiclePath,
 } from "@/lib/catalog-content/resolve";
@@ -87,11 +89,36 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 		// screen reader long before it is one in a search result.
 		title: page.metaTitle ?? page.h1 ?? vehicleDisplayName(view.tree, node),
 		description: page.metaDescription,
-		alternates: { canonical },
-		// hreflang is deliberately absent: only `sk` exists, and an alternate must point
-		// at a translation that has actually been published.
+		alternates: {
+			canonical,
+			// Only markets where this vehicle's page is published, indexable and has text in that
+			// market's language — and only when this page is itself one of them. See
+			// `vehicleCounterparts`; while `sk` is the only live market this is always empty.
+			...(indexable
+				? { languages: counterpartAlternates(market, await vehicleCounterparts(node.vehicleId)) }
+				: {}),
+		},
 		robots: indexable ? undefined : { index: false, follow: true },
 	};
+}
+
+/**
+ * The same vehicle's page in every LIVE market that can serve it indexably, joined on
+ * `vehicleId` — never on the URL, which is localized (`/stresni-nosice/…`) or, for the three
+ * borrowed RELEASE-4 pages, Slovak. A market whose artifact has no text for the vehicle, or
+ * holds the page back, is simply not a counterpart.
+ */
+async function vehicleCounterparts(vehicleId: string): Promise<MarketCounterpart[]> {
+	const counterparts: MarketCounterpart[] = [];
+	for (const market of liveMarkets()) {
+		const language = catalogLanguageForMarket(market);
+		if (!language) continue;
+		const view = await loadCatalogView(language);
+		if (!view.ready) continue;
+		const page = view.tree.byVehicleId.get(vehicleId)?.page;
+		if (page && indexabilityOf(page).indexable) counterparts.push({ market, path: page.urlPath });
+	}
+	return counterparts;
 }
 
 function tileHref(channel: string, node: CatalogNode): string {

@@ -17,7 +17,15 @@ vi.mock("@/lib/catalog-content/resolve", async (importOriginal) => ({
 }));
 
 import { SitemapCategoriesDocument, SitemapProductsDocument } from "@/gql/graphql";
-import sitemap from "./sitemap";
+import { resolveSitemap } from "next/dist/build/webpack/loaders/metadata/resolve-route-data";
+import sitemap, {
+	MAX_URLS_PER_SITEMAP,
+	planShards,
+	renderSitemapIndex,
+	renderUrlset,
+	sitemapShardEntries,
+	sitemapShards,
+} from "./sitemap";
 import { REVERSE_MAP } from "@/lib/channel-map";
 
 /**
@@ -580,5 +588,119 @@ describe("the vehicle pages", () => {
 		expect(vehicleUrls(entries)).toEqual([]);
 		expect(entries.some((e) => e.url === `${BASE}/sk`)).toBe(true);
 		expect(entries.filter((e) => e.priority === PRODUCT_PRIORITY)).toHaveLength(3);
+	});
+});
+
+/**
+ * COMMERCE-2 M5: one file may hold 50 000 URLs and 50 MB, and Google ignores a sitemap past
+ * either. `/sitemap.xml` is now an index over per-market shards of at most 40 000.
+ */
+describe("the sitemap index and its shards", () => {
+	it("cuts shards at 40 000, leaving room under Google's 50 000", () => {
+		expect(MAX_URLS_PER_SITEMAP).toBe(40_000);
+		expect(planShards("sk", "products", 0)).toEqual([]);
+		expect(planShards("sk", "products", 1).map((shard) => shard.urls)).toEqual([1]);
+		expect(planShards("sk", "products", 40_000).map((shard) => shard.urls)).toEqual([40_000]);
+		expect(planShards("sk", "products", 40_001).map((shard) => [shard.id, shard.urls])).toEqual([
+			["sk-products-1", 40_000],
+			["sk-products-2", 1],
+		]);
+	});
+
+	it("lists one shard per kind for today's Slovak catalogue, and nothing for a preview market", async () => {
+		process.env.MAKY_LIVE_MARKETS = "sk";
+		serve((after) => productPage(after));
+		loadCatalogView.mockResolvedValue(catalogView("sk", DELIVERY));
+
+		const shards = await sitemapShards();
+		expect(shards.map((shard) => shard.id)).toEqual(["sk-pages-1", "sk-products-1", "sk-vehicles-1"]);
+		expect(shards.find((shard) => shard.kind === "products")?.urls).toBe(CATALOGUE_SIZE);
+		expect(shards.some((shard) => shard.market !== "sk")).toBe(false);
+	});
+
+	it("splits a catalogue past the limit and loses nothing across the boundary", async () => {
+		const size = 85_000;
+		serve((after) => productPage(after, size));
+
+		const shards = (await sitemapShards()).filter((shard) => shard.kind === "products");
+		expect(shards.map((shard) => shard.urls)).toEqual([40_000, 40_000, 5_000]);
+
+		const urls: string[] = [];
+		for (const shard of shards)
+			urls.push(...((await sitemapShardEntries(shard.id)) ?? []).map((entry) => entry.url));
+		expect(urls).toHaveLength(size);
+		expect(new Set(urls).size).toBe(size);
+	});
+
+	it("serves exactly the URLs the single file used to list, as the union of its shards", async () => {
+		serve((after) => productPage(after));
+		loadCatalogView.mockResolvedValue(catalogView("sk", DELIVERY));
+
+		const union: string[] = [];
+		for (const shard of await sitemapShards()) {
+			union.push(...((await sitemapShardEntries(shard.id)) ?? []).map((entry) => entry.url));
+		}
+		expect(new Set(union)).toEqual(new Set((await sitemap()).map((entry) => entry.url)));
+		expect(union).toHaveLength((await sitemap()).length);
+	});
+
+	it("answers null — a 404 — for anything that is not a shard of a live market", async () => {
+		serve((after) => productPage(after, 3));
+		for (const id of [
+			"sk-products-2",
+			"sk-products-0",
+			"cz-products-1",
+			"sk-images-1",
+			"sk-products",
+			"../x",
+			"",
+		]) {
+			expect(await sitemapShardEntries(id), id).toBeNull();
+		}
+		expect(await sitemapShardEntries("sk-products-1")).toHaveLength(3);
+	});
+
+	it("writes a <urlset> byte for byte as Next's metadata route did", () => {
+		const entries = [
+			{ url: `${BASE}/sk`, changeFrequency: "daily" as const, priority: 1 },
+			{
+				url: `${BASE}/sk/produkt-1`,
+				lastModified: new Date("2026-09-01T08:00:00+00:00"),
+				changeFrequency: "weekly" as const,
+				priority: 0.6,
+			},
+			{ url: `${BASE}/sk/stresne-nosice/bmw`, changeFrequency: "monthly" as const, priority: 0.5 },
+		];
+		expect(renderUrlset(entries)).toBe(resolveSitemap(entries));
+	});
+
+	it("keeps a full shard of long URLs far under 50 MB", () => {
+		const url = `${BASE}/sk/${"x".repeat(200)}`;
+		const entries = Array.from({ length: MAX_URLS_PER_SITEMAP }, (_, i) => ({
+			url: `${url}-${i}`,
+			lastModified: new Date("2026-09-01T08:00:00Z"),
+			changeFrequency: "weekly" as const,
+			priority: 0.6,
+		}));
+		expect(Buffer.byteLength(renderUrlset(entries))).toBeLessThan(20 * 1024 * 1024);
+	});
+
+	it("names each shard by its absolute URL in the index", () => {
+		expect(renderSitemapIndex(planShards("sk", "pages", 5))).toBe(
+			'<?xml version="1.0" encoding="UTF-8"?>\n' +
+				'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+				`<sitemap>\n<loc>${BASE}/sitemaps/sk-pages-1.xml</loc>\n</sitemap>\n` +
+				"</sitemapindex>\n",
+		);
+	});
+
+	it("tags every Saleor read behind a shard with its channel", async () => {
+		process.env.MAKY_LIVE_MARKETS = "sk,cz";
+		serve((after) => productPage(after, 3));
+
+		await sitemapShards();
+		const tags = executePublicGraphQL.mock.calls.map((call) => (call[1] as { tags?: string[] }).tags);
+		expect(tags.every((value) => value?.length === 1)).toBe(true);
+		expect(new Set(tags.map((value) => value![0]))).toEqual(new Set(["sitemap:sk-eur", "sitemap:cz-czk"]));
 	});
 });

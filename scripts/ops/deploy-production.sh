@@ -510,10 +510,33 @@ gate_routing() {
 	#
 	# Counting <loc> as ELEMENTS rather than grepping lines also stops the floor
 	# depending on how the XML happens to be wrapped.
-	count=$(python3 -c 'import sys, xml.etree.ElementTree as ET
+	#
+	# Since COMMERCE-2 M5 /sitemap.xml is a <sitemapindex> over per-market shards
+	# (/sitemaps/sk-products-1.xml, …). The floor applies to the URLs the shards list, not to
+	# the handful of shard names in the index — counting those would fail every deploy — and
+	# every shard must answer and parse, or the index advertises a broken file. Shards are
+	# fetched from LOCAL_URL by path: the index names them absolutely, on the public host.
+	count=$(python3 - "$body" "$LOCAL_URL" <<'PY' 2>&1
+import sys, urllib.parse, urllib.request, xml.etree.ElementTree as ET
 ns = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
-print(len(ET.parse(sys.argv[1]).getroot().findall(f".//{ns}loc")))' "$body" 2>&1) \
-		|| die "/sitemap.xml is not well-formed XML: $count"
+root = ET.parse(sys.argv[1]).getroot()
+if root.tag == f"{ns}sitemapindex":
+    total = 0
+    shards = [loc.text.strip() for loc in root.findall(f"{ns}sitemap/{ns}loc")]
+    if not shards:
+        raise SystemExit("the index names no shard")
+    for shard in shards:
+        url = sys.argv[2] + urllib.parse.urlsplit(shard).path
+        with urllib.request.urlopen(url, timeout=60) as response:
+            if response.status != 200:
+                raise SystemExit(f"{url} answered {response.status}")
+            total += len(ET.fromstring(response.read()).findall(f".//{ns}loc"))
+    print(total)
+else:
+    print(len(root.findall(f".//{ns}loc")))
+PY
+	) || die "/sitemap.xml or one of its shards is broken: $count"
+	[[ "$count" =~ ^[0-9]+$ ]] || die "/sitemap.xml could not be counted: $count"
 	(( count >= MIN_SITEMAP_URLS )) || die "/sitemap.xml lists $count URLs, expected at least $MIN_SITEMAP_URLS"
 	info "sitemap: parsed as XML, $count <loc> elements"
 

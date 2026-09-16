@@ -17,9 +17,11 @@ import {
 import { ProductDetailsDocument, type ProductDetailsQuery } from "@/gql/graphql";
 import { buildPageMetadata, buildProductJsonLd } from "@/lib/seo";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
-import { marketHref } from "@/lib/channel-map";
+import { CHANNEL_MAP, REVERSE_MAP, marketHref } from "@/lib/channel-map";
+import { liveMarkets } from "@/lib/market-state";
+import { counterpartAlternates, type MarketCounterpart } from "@/lib/seo/hreflang";
 import { previousProductSlug } from "@/lib/product-redirects";
-import { productHref } from "@/lib/product-url";
+import { productHref, productPath } from "@/lib/product-url";
 import { Breadcrumbs } from "@/ui/components/breadcrumbs";
 import { getGalleryImages } from "@/ui/components/pdp/gallery-images";
 import { PdpVehicleApplications } from "@/ui/components/fitment/pdp-vehicle-applications";
@@ -146,7 +148,7 @@ export async function generateMetadata(props: {
 	const priceAmount = product.pricing?.priceRange?.start?.gross?.amount;
 	const priceCurrency = product.pricing?.priceRange?.start?.gross?.currency;
 
-	return buildPageMetadata({
+	const metadata = buildPageMetadata({
 		title: product.seoTitle || product.name,
 		titleSource: hasExplicitSeoTitle ? "seo" : "fallback",
 		description,
@@ -160,6 +162,20 @@ export async function generateMetadata(props: {
 					}
 				: undefined,
 	});
+
+	// hreflang only toward live markets where this product is published AND fully translated —
+	// the exact-locale boundary inside `getProductOutcome` decides the second. Asked of the
+	// other live markets only; with `sk` alone live this costs nothing and says nothing.
+	const market = REVERSE_MAP[params.channel] ?? params.channel;
+	const counterparts: MarketCounterpart[] = [{ market, path: productPath(product.slug) }];
+	for (const other of liveMarkets()) {
+		if (other === market) continue;
+		const found = await getProductOutcome(params.productSlug, CHANNEL_MAP[other]!.saleorSlug);
+		if (found.status === "found")
+			counterparts.push({ market: other, path: productPath(found.resource.slug) });
+	}
+	const languages = counterpartAlternates(market, counterparts);
+	return languages ? { ...metadata, alternates: { ...metadata.alternates, languages } } : metadata;
 }
 
 // NOTE: generateStaticParams is intentionally omitted for product pages.

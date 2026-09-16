@@ -148,3 +148,60 @@ describe("buildHreflangAlternates — page-level eligibility", () => {
 		);
 	});
 });
+
+/**
+ * COMMERCE-2 M5: entity-level hreflang — only markets where the SAME vehicle page, category or
+ * product demonstrably exists, each under its own URL.
+ */
+describe("counterpartAlternates", () => {
+	async function counterpart(markets: string) {
+		vi.resetModules();
+		vi.stubEnv("MAKY_LIVE_MARKETS", markets);
+		vi.stubEnv("NEXT_PUBLIC_STOREFRONT_URL", "https://maky.store");
+		return (await import("./hreflang")).counterpartAlternates;
+	}
+
+	const OCTAVIA = [
+		{ market: "sk", path: "/stresne-nosice/skoda/octavia-combi/nx" },
+		{ market: "cz", path: "/stresni-nosice/skoda/octavia-combi/nx" },
+		{ market: "at", path: "/dachtraeger/skoda/octavia-combi/nx" },
+	];
+
+	it("says nothing while Slovakia is the only live market, whatever exists elsewhere", async () => {
+		expect((await counterpart("sk"))("sk", OCTAVIA)).toBeUndefined();
+	});
+
+	it("pairs each live market with its own localized URL and its locale", async () => {
+		expect((await counterpart("sk,cz"))("sk", OCTAVIA)).toEqual({
+			"sk-SK": "https://maky.store/sk/stresne-nosice/skoda/octavia-combi/nx",
+			"cs-CZ": "https://maky.store/cz/stresni-nosice/skoda/octavia-combi/nx",
+			"x-default": "https://maky.store/sk/stresne-nosice/skoda/octavia-combi/nx",
+		});
+	});
+
+	it("never names a preview market, even where the page exists", async () => {
+		const languages = (await counterpart("sk,cz"))("cz", OCTAVIA);
+		expect(Object.keys(languages ?? {})).not.toContain("de-AT");
+	});
+
+	it("never names a live market where the entity does not exist", async () => {
+		const languages = (await counterpart("sk,cz,de"))("sk", OCTAVIA);
+		expect(Object.keys(languages ?? {})).toEqual(["sk-SK", "cs-CZ", "x-default"]);
+	});
+
+	it("emits nothing for a page that is not itself one of the counterparts", async () => {
+		expect((await counterpart("sk,cz,at"))("de", OCTAVIA)).toBeUndefined();
+	});
+
+	it("keeps the US and Canada apart although they share one English text", async () => {
+		const languages = (await counterpart("us,ca"))("us", [
+			{ market: "us", path: "/roof-racks/bmw" },
+			{ market: "ca", path: "/roof-racks/bmw" },
+		]);
+		expect(languages).toEqual({
+			"en-US": "https://maky.store/us/roof-racks/bmw",
+			"en-CA": "https://maky.store/ca/roof-racks/bmw",
+			"x-default": "https://maky.store/us/roof-racks/bmw",
+		});
+	});
+});

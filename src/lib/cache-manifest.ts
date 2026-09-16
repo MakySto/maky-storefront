@@ -66,6 +66,17 @@ const profiles = {
 		tagPattern: "fitment-offers:{channel}:{locale}",
 		pathPattern: null,
 	},
+	/**
+	 * Every Saleor read behind one channel's sitemap shards (`/sitemaps/{market}-*.xml`) and the
+	 * index. Per channel, so a Czech product event re-reads the Czech catalogue and not the Slovak.
+	 */
+	sitemap: {
+		id: "sitemap",
+		label: "Sitemap",
+		cacheProfile: "hours",
+		tagPattern: "sitemap:{channel}",
+		pathPattern: null,
+	},
 	navigation: {
 		id: "navigation",
 		label: "Navigation Menus",

@@ -78,16 +78,30 @@ const fail = (msg) => {
 };
 
 const sitemapUrl = `${BASE}/sitemap.xml`;
-let xml;
-try {
-	const res = await fetch(sitemapUrl);
-	if (!res.ok) fail(`sitemap ${sitemapUrl} returned ${res.status}`);
-	xml = await res.text();
-} catch (err) {
-	fail(`could not fetch ${sitemapUrl}: ${err.message}`);
+
+async function fetchXml(url) {
+	try {
+		const res = await fetch(url);
+		if (!res.ok) fail(`sitemap ${url} returned ${res.status}`);
+		return await res.text();
+	} catch (err) {
+		fail(`could not fetch ${url}: ${err.message}`);
+	}
 }
 
-const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+const locsOf = (xml) => [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+
+// `/sitemap.xml` is an index over per-market shards since COMMERCE-2 M5. Follow it, and read
+// each shard from BASE rather than from the absolute URL it names, so a local server is
+// checked against itself and not against production.
+const root = await fetchXml(sitemapUrl);
+let locs = locsOf(root);
+if (root.includes("<sitemapindex")) {
+	const shards = locs;
+	locs = [];
+	for (const shard of shards) locs.push(...locsOf(await fetchXml(`${BASE}${new URL(shard).pathname}`)));
+	console.log(`${sitemapUrl} is an index of ${shards.length} shards, ${locs.length} URLs`);
+}
 const products = locs.filter((u) => {
 	const m = /\/sk\/([a-z0-9-]+)$/.exec(u);
 	return m && !NON_PRODUCT.has(m[1]);

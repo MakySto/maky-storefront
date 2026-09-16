@@ -10,6 +10,30 @@ import { catalogLanguageForMarket, loadCatalogView } from "@/lib/catalog-content
 import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
 import { SitemapProductsDocument, SitemapCategoriesDocument } from "@/gql/graphql";
+import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
+
+/**
+ * ## A sitemap index and shards, not one file (COMMERCE-2 M5)
+ *
+ * This lived in `src/app/sitemap.ts` and produced one `/sitemap.xml` holding every URL of
+ * every live market. One file may carry at most 50 000 URLs and 50 MB, and Slovakia alone
+ * holds 11 085 today; the fifth market with a full catalogue would have crossed the limit,
+ * and Google ignores a sitemap over it entirely.
+ *
+ * So `/sitemap.xml` (`app/sitemap.xml/route.ts`) is now an index, and each live market gets
+ * shards by kind at `/sitemaps/{market}-{kind}-{part}.xml` (`app/sitemaps/[file]/route.ts`):
+ *
+ *   pages      the market home, the listing, stocked categories, static and CMS routes
+ *   products   every published product, 40 000 to a file
+ *   vehicles   the indexable CFM vehicle pages, 40 000 to a file
+ *
+ * 40 000, not 50 000: the limit is Google's, the reserve is ours — a shard read while the
+ * catalogue grows must not tip over it. Counts come from what is actually indexable, never
+ * from 9 157 × 12.
+ *
+ * Everything below — what is listed, the whole-catalogue-or-an-error walk, the language of
+ * the vehicle pages — is unchanged. Only the packaging moved.
+ */
 
 /**
  * The sitemap used to advertise 32 URLs: eleven market homepages, their
@@ -81,7 +105,18 @@ export async function staticPathsFor(market: string): Promise<readonly string[]>
 const PAGE_SIZE = 100;
 
 /** Re-read the catalogue at most hourly; a sitemap is not a live view. */
-export const revalidate = 3600;
+const REVALIDATE_SECONDS = 3600;
+
+/**
+ * Most URLs one shard may carry. Google's hard limit is 50 000 URLs and 50 MB uncompressed;
+ * a product entry serializes to about 250 bytes, so 40 000 is ~10 MB and well inside both.
+ */
+export const MAX_URLS_PER_SITEMAP = 40_000;
+
+/** The data-cache tag every Saleor read behind one channel's shards carries. */
+export function sitemapTag(channel: string): string {
+	return buildTag(CACHE_PROFILES.sitemap, { channel, locale: "" });
+}
 
 interface ProductEntry {
 	slug: string;
@@ -174,7 +209,8 @@ async function fetchProductSlugs(channel: string): Promise<ProductEntry[]> {
 	const nodes = await collectConnection(`${channel}: product`, async (after) => {
 		const result = await executePublicGraphQL(SitemapProductsDocument, {
 			variables: { channel, first: PAGE_SIZE, after },
-			revalidate,
+			revalidate: REVALIDATE_SECONDS,
+			tags: [sitemapTag(channel)],
 		});
 		if (!result.ok) {
 			logUpstreamError("sitemap-products", upstreamError(result), {
@@ -195,7 +231,8 @@ async function fetchStockedCategorySlugs(channel: string): Promise<string[]> {
 	const nodes = await collectConnection(`${channel}: category`, async (after) => {
 		const result = await executePublicGraphQL(SitemapCategoriesDocument, {
 			variables: { channel, first: PAGE_SIZE, after },
-			revalidate,
+			revalidate: REVALIDATE_SECONDS,
+			tags: [sitemapTag(channel)],
 		});
 		if (!result.ok) {
 			logUpstreamError("sitemap-categories", upstreamError(result), {
@@ -274,50 +311,32 @@ async function catalogEntriesFor(market: string): Promise<MetadataRoute.Sitemap>
 }
 
 /**
- * One market's entries. Throws if the catalogue could not be read in full.
+ * One market's navigational pages: home, listing, stocked categories, static and CMS routes.
+ *
+ * No `lastModified` on these. It is a claim about when the content last changed, and the
+ * only timestamp available here is the moment this file ran — which would mark every URL as
+ * freshly modified on every request, including the ones nobody has touched in months.
+ * Google treats a lastmod it finds unreliable as noise for the whole site, so omitting it is
+ * strictly better than asserting the build time. Products keep theirs because Saleor gives
+ * a real one.
  */
-async function marketEntries(market: string): Promise<MetadataRoute.Sitemap> {
+async function pageEntriesFor(market: string): Promise<MetadataRoute.Sitemap> {
 	const base = getBaseUrl();
 	const channel = CHANNEL_MAP[market].saleorSlug;
 
-	const [products, categories] = await Promise.all([
-		fetchProductSlugs(channel),
-		fetchStockedCategorySlugs(channel),
-	]);
-
-	// No `lastModified` on these. It is a claim about when the content last
-	// changed, and the only timestamp available here is the moment this file ran —
-	// which would mark every URL as freshly modified on every build and export,
-	// including the ones nobody has touched in months. Google treats a lastmod it
-	// finds unreliable as noise for the whole site, so omitting it is strictly
-	// better than asserting the build time. Products keep theirs because Saleor
-	// gives a real one.
 	const entries: MetadataRoute.Sitemap = [
 		{ url: `${base}/${market}`, changeFrequency: "daily", priority: 1.0 },
 		{ url: `${base}/${market}/products`, changeFrequency: "daily", priority: 0.8 },
 	];
 
-	for (const slug of categories) {
+	for (const slug of await fetchStockedCategorySlugs(channel)) {
 		entries.push({
+			// The market's canonical spelling: `/cz/stresni-nosice`, never the Slovak root abroad.
 			url: `${base}/${market}${categoryUrlFor(market, slug)}`,
 			changeFrequency: "weekly",
 			priority: 0.7,
 		});
 	}
-
-	for (const product of products) {
-		entries.push({
-			// Root-level product URL. /{market}/products/{slug} has 308'd here since
-			// 62657e7 and the canonical points at this form.
-			url: `${base}/${market}/${product.slug}`,
-			// Saleor's own timestamp, or nothing — never the build time.
-			...(product.updatedAt ? { lastModified: new Date(product.updatedAt) } : {}),
-			changeFrequency: "weekly",
-			priority: 0.6,
-		});
-	}
-
-	entries.push(...(await catalogEntriesFor(market)));
 
 	// Whatever static and CMS routes this market actually has, per route-policy.
 	for (const path of await staticPathsFor(market)) {
@@ -329,6 +348,154 @@ async function marketEntries(market: string): Promise<MetadataRoute.Sitemap> {
 	}
 
 	return entries;
+}
+
+/**
+ * One market's products, in the order Saleor returns them. Throws if truncated.
+ *
+ * Not re-sorted here: Saleor's order is deterministic for the same catalogue, the shards of
+ * one walk come from one cached answer, and a locale collation would only disagree with it.
+ */
+async function productEntriesFor(market: string): Promise<MetadataRoute.Sitemap> {
+	const base = getBaseUrl();
+	const channel = CHANNEL_MAP[market].saleorSlug;
+	const products = await fetchProductSlugs(channel);
+
+	return products.map((product) => ({
+		// Root-level product URL. /{market}/products/{slug} has 308'd here since
+		// 62657e7 and the canonical points at this form.
+		url: `${base}/${market}/${product.slug}`,
+		// Saleor's own timestamp, or nothing — never the build time.
+		...(product.updatedAt ? { lastModified: new Date(product.updatedAt) } : {}),
+		changeFrequency: "weekly" as const,
+		priority: 0.6,
+	}));
+}
+
+export type SitemapShardKind = "pages" | "products" | "vehicles";
+
+const SHARD_KINDS: readonly SitemapShardKind[] = ["pages", "products", "vehicles"];
+
+function entriesOf(market: string, kind: SitemapShardKind): Promise<MetadataRoute.Sitemap> {
+	switch (kind) {
+		case "pages":
+			return pageEntriesFor(market);
+		case "products":
+			return productEntriesFor(market);
+		case "vehicles":
+			return catalogEntriesFor(market);
+	}
+}
+
+export interface SitemapShard {
+	/** `sk-products-1` — served at `/sitemaps/sk-products-1.xml`. */
+	readonly id: string;
+	readonly market: string;
+	readonly kind: SitemapShardKind;
+	/** 1-based. */
+	readonly part: number;
+	readonly urls: number;
+}
+
+/** Split one market's entries of one kind into shards of at most `MAX_URLS_PER_SITEMAP`. */
+export function planShards(market: string, kind: SitemapShardKind, count: number): SitemapShard[] {
+	const shards: SitemapShard[] = [];
+	for (let part = 1; (part - 1) * MAX_URLS_PER_SITEMAP < count; part++) {
+		shards.push({
+			id: `${market}-${kind}-${part}`,
+			market,
+			kind,
+			part,
+			urls: Math.min(MAX_URLS_PER_SITEMAP, count - (part - 1) * MAX_URLS_PER_SITEMAP),
+		});
+	}
+	return shards;
+}
+
+/**
+ * Every shard of every LIVE market, in `CHANNEL_MAP` order. An empty kind has no shard: an
+ * index entry for an empty file is an invitation to fetch nothing.
+ *
+ * Throws if any market's catalogue could not be read in full — the index must not list a
+ * product shard computed from a truncated walk. See `sitemap()` below for why an error is
+ * the safer answer.
+ */
+export async function sitemapShards(): Promise<SitemapShard[]> {
+	const perMarket = await Promise.all(
+		liveMarkets().map(async (market) => {
+			const counts = await Promise.all(
+				SHARD_KINDS.map(async (kind) => (await entriesOf(market, kind)).length),
+			);
+			return SHARD_KINDS.flatMap((kind, index) => planShards(market, kind, counts[index]!));
+		}),
+	);
+	return perMarket.flat();
+}
+
+const SHARD_ID = /^([a-z]{2})-(pages|products|vehicles)-([1-9][0-9]*)$/;
+
+/**
+ * The entries of one shard, or `null` when no such shard exists — an unknown id, a market
+ * that is not live, or a part past the end. `null` is a 404, never an empty 200.
+ */
+export async function sitemapShardEntries(id: string): Promise<MetadataRoute.Sitemap | null> {
+	const match = SHARD_ID.exec(id);
+	if (!match) return null;
+	const [, market, kind, partText] = match as unknown as [string, string, SitemapShardKind, string];
+	if (!liveMarkets().includes(market)) return null;
+
+	const part = Number(partText);
+	const entries = await entriesOf(market, kind);
+	const slice = entries.slice((part - 1) * MAX_URLS_PER_SITEMAP, part * MAX_URLS_PER_SITEMAP);
+	return slice.length > 0 ? slice : null;
+}
+
+const escapeXml = (value: string): string =>
+	value.replace(/[&<>"']/g, (char) =>
+		char === "&"
+			? "&amp;"
+			: char === "<"
+				? "&lt;"
+				: char === ">"
+					? "&gt;"
+					: char === '"'
+						? "&quot;"
+						: "&apos;",
+	);
+
+/**
+ * A `<urlset>`, in exactly the shape Next's metadata route wrote it, so moving the Slovak
+ * entries into shards changes the packaging and not a byte of an entry. Escaped, which Next
+ * did not do; no URL listed today contains a character that changes.
+ */
+export function renderUrlset(entries: MetadataRoute.Sitemap): string {
+	let content = '<?xml version="1.0" encoding="UTF-8"?>\n';
+	content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+	for (const entry of entries) {
+		content += "<url>\n";
+		content += `<loc>${escapeXml(entry.url)}</loc>\n`;
+		if (entry.lastModified) {
+			const date = entry.lastModified instanceof Date ? entry.lastModified.toISOString() : entry.lastModified;
+			content += `<lastmod>${escapeXml(String(date))}</lastmod>\n`;
+		}
+		if (entry.changeFrequency) content += `<changefreq>${entry.changeFrequency}</changefreq>\n`;
+		if (typeof entry.priority === "number") content += `<priority>${entry.priority}</priority>\n`;
+		content += "</url>\n";
+	}
+	content += "</urlset>\n";
+	return content;
+}
+
+/** The `<sitemapindex>` naming each shard by its absolute URL. */
+export function renderSitemapIndex(shards: readonly SitemapShard[]): string {
+	const base = getBaseUrl();
+	let content = '<?xml version="1.0" encoding="UTF-8"?>\n';
+	content += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+	for (const shard of shards) {
+		content += `<sitemap>\n<loc>${escapeXml(`${base}/sitemaps/${shard.id}.xml`)}</loc>\n</sitemap>\n`;
+	}
+	content += "</sitemapindex>\n";
+	return content;
 }
 
 /**
@@ -346,9 +513,12 @@ async function marketEntries(market: string): Promise<MetadataRoute.Sitemap> {
  * silent deindexing signal is not.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-	const markets = liveMarkets();
-
-	const perMarket = await Promise.all(markets.map((market) => marketEntries(market)));
-
+	// The union of every shard: the same URLs the single file used to list. The routes
+	// serve it in shards; this is what the tests and the checks compare against.
+	const perMarket = await Promise.all(
+		liveMarkets().map(async (market) =>
+			(await Promise.all(SHARD_KINDS.map((kind) => entriesOf(market, kind)))).flat(),
+		),
+	);
 	return perMarket.flat();
 }

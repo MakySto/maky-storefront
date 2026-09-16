@@ -19,7 +19,9 @@ import { getPaginatedListVariables } from "@/lib/utils";
 import { parseEditorJSToText } from "@/lib/editorjs";
 import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
-import { buildCanonicalUrl } from "@/lib/seo/hreflang";
+import { buildCanonicalUrl, counterpartAlternates, type MarketCounterpart } from "@/lib/seo/hreflang";
+import { liveMarkets } from "@/lib/market-state";
+import { CHANNEL_MAP } from "@/lib/channel-map";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import {
 	isVehicleFilterRequested,
@@ -89,6 +91,17 @@ type PageProps = {
 const baseSlugOf = (params: { slug: string; channel: string }) =>
 	categoryBaseSlug(params.channel, params.slug);
 
+/** Live markets where this category is an indexable page: translated there, and stocked there. */
+async function categoryCounterparts(baseSlug: string): Promise<MarketCounterpart[]> {
+	const counterparts: MarketCounterpart[] = [];
+	for (const market of liveMarkets()) {
+		const outcome = await getCategoryOutcome(baseSlug, CHANNEL_MAP[market]!.saleorSlug);
+		if (outcome.status !== "found" || (outcome.resource.products?.totalCount ?? 0) === 0) continue;
+		counterparts.push({ market, path: categoryUrlFor(market, baseSlug) });
+	}
+	return counterparts;
+}
+
 export const generateMetadata = async (props: PageProps, parent: ResolvingMetadata): Promise<Metadata> => {
 	const params = await props.params;
 	const outcome = await getCategoryOutcome(baseSlugOf(params), params.channel);
@@ -151,6 +164,12 @@ export const generateMetadata = async (props: PageProps, parent: ResolvingMetada
 			canonical: buildCanonicalUrl(
 				REVERSE_MAP[params.channel] || params.channel,
 				categoryUrlFor(params.channel, baseSlugOf(params)),
+			),
+			// The same category, in each live market where it resolves in that market's language
+			// and holds products — the two conditions under which that page is indexable too.
+			languages: counterpartAlternates(
+				REVERSE_MAP[params.channel] || params.channel,
+				await categoryCounterparts(baseSlugOf(params)),
 			),
 		},
 	};
