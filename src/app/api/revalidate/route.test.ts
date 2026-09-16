@@ -206,3 +206,33 @@ describe("GET resource revalidation", () => {
 		expect(revalidateTag).not.toHaveBeenCalled();
 	});
 });
+
+describe("category events and the localized roots (COMMERCE-2 M1)", () => {
+	it("purges the base-slug cache entry and the localized page path, whichever spelling CFM sends", async () => {
+		for (const slug of ["stresne-nosice", "stresni-nosice"]) {
+			vi.clearAllMocks();
+			verifyWebhookSignature.mockReturnValue(true);
+			const response = await post({
+				product: { slug: "n60012", channel: { slug: "cz-czk" }, category: { slug } },
+			});
+			const body = (await response.json()) as { tags?: string[]; paths?: string[] };
+
+			expect(body.tags, slug).toContain("category:cz-czk:cs-CZ:stresne-nosice");
+			expect(body.tags, slug).not.toContain("category:cz-czk:cs-CZ:stresni-nosice");
+			expect(body.paths, slug).toContain("/cz-czk/categories/stresni-nosice");
+			expect(body.paths, slug).toContain("/cz-czk/categories/stresne-nosice");
+		}
+	});
+
+	it("leaves the Slovak category exactly as before", async () => {
+		const response = await post({
+			product: { slug: "n60012", channel: { slug: "sk-eur" }, category: { slug: "stresne-nosice" } },
+		});
+		const body = (await response.json()) as { tags?: string[]; paths?: string[] };
+
+		expect(body.tags).toContain("category:sk-eur:sk-SK:stresne-nosice");
+		expect(body.paths?.filter((path) => path.includes("/categories/"))).toEqual([
+			"/sk-eur/categories/stresne-nosice",
+		]);
+	});
+});

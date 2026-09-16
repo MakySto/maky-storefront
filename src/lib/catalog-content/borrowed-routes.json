@@ -1,0 +1,51 @@
+{
+	"release": "20260915.2",
+	"source": "maky_catalog_content_1.0.0-{lang}-20260915.2.json: foreign-language pages whose urlPath keeps the Slovak root /stresne-nosice (routeLanguage sk). Generated from the artifacts, checked by category-routes.acceptance.test.ts.",
+	"paths": {
+		"cs": [
+			"/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/volkswagen/golf-variant/ba5"
+		],
+		"de": [
+			"/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/volkswagen/golf-variant/ba5"
+		],
+		"pl": [
+			"/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/volkswagen/golf-variant/ba5"
+		],
+		"hu": [
+			"/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/volkswagen/golf-variant/ba5"
+		],
+		"it": [
+			"/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/volkswagen/golf-variant/ba5"
+		],
+		"fr": [
+			"/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/volkswagen/golf-variant/ba5"
+		],
+		"es": [
+			"/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/volkswagen/golf-variant/ba5"
+		],
+		"ro": [
+			"/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/volkswagen/golf-variant/ba5"
+		],
+		"en": [
+			"/stresne-nosice/hyundai/h-1-van/a1",
+			"/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/volkswagen/golf-variant/ba5"
+		]
+	}
+}

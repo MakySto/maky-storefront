@@ -1,5 +1,5 @@
 import { type MetadataRoute } from "next";
-import { categoryUrl } from "@/config/categories";
+import { categoryUrlFor } from "@/config/category-routes";
 import { getBaseUrl } from "@/lib/seo/config";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { liveMarkets } from "@/lib/market-state";
@@ -299,7 +299,7 @@ async function marketEntries(market: string): Promise<MetadataRoute.Sitemap> {
 
 	for (const slug of categories) {
 		entries.push({
-			url: `${base}/${market}${categoryUrl(slug)}`,
+			url: `${base}/${market}${categoryUrlFor(market, slug)}`,
 			changeFrequency: "weekly",
 			priority: 0.7,
 		});

@@ -62,11 +62,11 @@ export interface ResolvedCatalogPage {
  * Lookup is by `urlPath` because that is what the visitor typed — which is a different
  * job from JOINING the two artifacts, where only `vehicleId` is allowed.
  *
- * ⚠️ `urlPath` is localized per language — `/stresni-nosice/bmw` in `cs`, `/roof-racks/bmw`
- * in `en`, measured on the 2026-09-15 artifacts — but the proxy carries only the Slovak
- * category slug onto this route. A foreign market therefore resolves only the pages that
- * borrowed the Slovak route. Routing the localized roots is separate work; inventing slugs
- * the snapshot does not contain is not it.
+ * `urlPath` is localized per language — `/stresni-nosice/bmw` in `cs`, `/roof-racks/bmw` in
+ * `en` — and the proxy carries the segment the visitor used onto this route unchanged, so
+ * `categorySlug` here is `stresni-nosice` for `/cz/stresni-nosice/bmw` and `stresne-nosice` for
+ * the three pages a foreign artifact still publishes under the Slovak root. The lookup is
+ * literal on purpose; mapping a segment to a category is `config/category-routes.ts`'s job.
  */
 export function resolveVehiclePath(
 	tree: CatalogTree,

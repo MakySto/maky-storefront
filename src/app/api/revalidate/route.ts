@@ -4,6 +4,7 @@ import { CACHE_PROFILES, buildTag, buildPath } from "@/lib/cache-manifest";
 import { extractBearerToken, verifySecret, verifyWebhookSignature } from "@/lib/api-auth";
 import { getLocaleFromChannel } from "@/config/locale";
 import { CHANNEL_MAP, SALEOR_SLUGS } from "@/lib/channel-map";
+import { categoryBaseSlug, categorySegment } from "@/config/category-routes";
 import { parseWebhookPayload } from "@/lib/saleor/webhook-payload";
 
 /**
@@ -81,6 +82,27 @@ function isKnownChannel(channel: string): boolean {
 	return SALEOR_SLUGS.has(channel);
 }
 
+/**
+ * A category, however the event spells it.
+ *
+ * The cached category entry is keyed by the BASE slug (`category:cz-czk:cs-CZ:stresne-nosice`),
+ * while the page it renders lives at the market's own segment
+ * (`/cz-czk/categories/stresni-nosice`, served publicly as `/cz/stresni-nosice`). CFM may send
+ * either spelling, so both are resolved through `config/category-routes.ts` rather than trusted.
+ */
+function revalidateCategory(channel: string, locale: string, slug: string, tags: string[], paths: string[]) {
+	const base = categoryBaseSlug(channel, slug);
+	const segment = categorySegment(channel, base);
+	revalidateProfile(CACHE_PROFILES.categories, channel, locale, base, tags, paths);
+	if (segment !== base) {
+		const path = buildPath(CACHE_PROFILES.categories, { channel, locale, slug: segment });
+		if (path) {
+			revalidatePath(path);
+			paths.push(path);
+		}
+	}
+}
+
 /** The vehicle-page offer for one channel — see `CACHE_PROFILES.fitmentOffers`. */
 function revalidateOffers(channel: string, locale: string, tags: string[]) {
 	const tag = buildTag(CACHE_PROFILES.fitmentOffers, { channel, locale });
@@ -146,14 +168,7 @@ export async function POST(request: NextRequest) {
 					revalidatePath(`/${channel}/products`);
 					revalidatedPaths.push(`/${channel}/products`);
 					if (categorySlug) {
-						revalidateProfile(
-							CACHE_PROFILES.categories,
-							channel,
-							locale,
-							categorySlug,
-							revalidatedTags,
-							revalidatedPaths,
-						);
+						revalidateCategory(channel, locale, categorySlug, revalidatedTags, revalidatedPaths);
 					}
 					// Price, publication and purchasability all show on the generation pages
 					// too, and those read the product outside any `"use cache"` entry.
@@ -162,14 +177,7 @@ export async function POST(request: NextRequest) {
 
 				case "category":
 					for (const value of slugs) {
-						revalidateProfile(
-							CACHE_PROFILES.categories,
-							channel,
-							locale,
-							value,
-							revalidatedTags,
-							revalidatedPaths,
-						);
+						revalidateCategory(channel, locale, value, revalidatedTags, revalidatedPaths);
 					}
 					revalidatePath(`/${channel}/products`);
 					revalidatedPaths.push(`/${channel}/products`);

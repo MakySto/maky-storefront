@@ -149,6 +149,31 @@ describe("the sk product + category rollout set", () => {
 });
 
 describe("classification", () => {
+	it("asks Saleor about a localized root by its base slug, as a category", () => {
+		// `product(slug: "stresni-nosice")` and `category(slug: "stresni-nosice")` both answer null,
+		// so an armed gate would 404 the canonical category URL of every foreign market.
+		expect(classifyRoute("cz", ["cz", "stresni-nosice"])).toEqual({
+			family: "category",
+			slug: "stresne-nosice",
+			channel: "cz-czk",
+		});
+		expect(classifyRoute("us", ["us", "roof-racks"])).toEqual({
+			family: "category",
+			slug: "stresne-nosice",
+			channel: "us-usd",
+		});
+		expect(classifyRoute("cz", ["cz", "categories", "nordrive-stresni-nosice"])).toEqual({
+			family: "category",
+			slug: "nordrive-stresne-nosice",
+			channel: "cz-czk",
+		});
+	});
+
+	it("does not turn another language's spelling into a category", () => {
+		expect(classifyRoute("cz", ["cz", "dachtraeger"])?.family).toBe("product");
+		expect(classifyRoute("sk", ["sk", "stresni-nosice"])?.family).toBe("product");
+	});
+
 	it("treats a bare market-relative slug as a product", () => {
 		expect(classifyRoute("sk", ["sk", "stresny-box-thule"])).toEqual({
 			family: "product",

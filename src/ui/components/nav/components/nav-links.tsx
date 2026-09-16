@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { categoryUrl } from "@/config/categories";
+import { categoryUrlFor } from "@/config/category-routes";
 import { NavLink } from "./nav-link";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { MenuGetBySlugDocument } from "@/gql/graphql";
@@ -35,7 +35,7 @@ export const NavLinks = async ({ channel }: { channel: string }) => {
 			{items.map((item) => {
 				if (item.category) {
 					return (
-						<NavLink key={item.id} href={categoryUrl(item.category.slug)}>
+						<NavLink key={item.id} href={categoryUrlFor(channel, item.category.slug)}>
 							{item.category.name}
 						</NavLink>
 					);

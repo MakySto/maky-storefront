@@ -22,9 +22,9 @@ import { buildCatalogTree } from "./tree";
  *     MAKY_CATALOG_CONTENT_PATH=…/maky_catalog_content_1.0.0-{lang}-<date>.json \
  *     MAKY_FITMENT_DATASET_PATH=…/maky_roof_fitment_<version>.json pnpm check:catalog
  *
- * "Renders" is the vehicle route's own test: a node in the tree whose page is published. For a
- * foreign language that is the catalogue's answer and not yet the proxy's — the localized roots
- * (`/stresni-nosice`, `/roof-racks`, …) are not routed, so a correct target still 404s there.
+ * "Renders" is the vehicle route's own test: a node in the tree whose page is published. That
+ * the proxy routes each language's localized root (`/stresni-nosice`, `/roof-racks`, …) onto it is
+ * `category-routes.acceptance.test.ts`'s to prove.
  */
 const TEMPLATE = process.env.MAKY_CATALOG_CONTENT_PATH?.trim();
 const FITMENT_PATH = process.env.MAKY_FITMENT_DATASET_PATH?.trim();

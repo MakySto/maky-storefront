@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { categoryUrl } from "@/config/categories";
+import { categoryBaseSlug, categorySegment, categoryUrlFor } from "@/config/category-routes";
 import { notFound } from "next/navigation";
 import { type ResolvingMetadata, type Metadata } from "next";
 import { getTranslations } from "next-intl/server";
@@ -80,9 +80,18 @@ type PageProps = {
 	}>;
 };
 
+/**
+ * `params.slug` is the URL segment, which abroad is the localized one (`stresni-nosice`).
+ * Saleor, the cache tag and the fitment shelf all know the category by its base slug — see
+ * `config/category-routes.ts`. Every lookup goes through this, every link and canonical
+ * through `categoryUrlFor`.
+ */
+const baseSlugOf = (params: { slug: string; channel: string }) =>
+	categoryBaseSlug(params.channel, params.slug);
+
 export const generateMetadata = async (props: PageProps, parent: ResolvingMetadata): Promise<Metadata> => {
 	const params = await props.params;
-	const outcome = await getCategoryOutcome(params.slug, params.channel);
+	const outcome = await getCategoryOutcome(baseSlugOf(params), params.channel);
 
 	if (outcome.status === "upstream-error") {
 		// Could not verify. `noindex`, no canonical, and no "not found" title —
@@ -134,7 +143,15 @@ export const generateMetadata = async (props: PageProps, parent: ResolvingMetada
 		// Slovak and the other markets' category pages are unverified — matching what
 		// the PDP does rather than asserting pages that may not resolve.
 		alternates: {
-			canonical: buildCanonicalUrl(REVERSE_MAP[params.channel] || params.channel, `/${category.slug}`),
+			// `categoryUrlFor`, not `/${category.slug}`. That form pointed all 22 categories outside
+			// the catalogue — `nordrive-stresne-nosice` among them — at a root URL the proxy does not
+			// route: on maky.store 2026-09-16 the canonical of `/sk/categories/nordrive-stresne-nosice`
+			// was `/sk/nordrive-stresne-nosice`, which answers "Produkt nenájdený" with `noindex`. And
+			// abroad `category.slug` is whatever Saleor's translation says, not the URL routed here.
+			canonical: buildCanonicalUrl(
+				REVERSE_MAP[params.channel] || params.channel,
+				categoryUrlFor(params.channel, baseSlugOf(params)),
+			),
 		},
 	};
 };
@@ -155,8 +172,9 @@ async function CategoryContent({
 	searchParams: PageProps["searchParams"];
 }) {
 	const params = await paramsPromise;
+	const baseSlug = baseSlugOf(params);
 	const [outcome, t] = await Promise.all([
-		getCategoryOutcome(params.slug, params.channel),
+		getCategoryOutcome(baseSlug, params.channel),
 		getTranslations("plp"),
 	]);
 
@@ -176,7 +194,7 @@ async function CategoryContent({
 
 	const breadcrumbs = [
 		{ label: t("home"), href: marketHref(params.channel) },
-		{ label: category.name, href: marketHref(params.channel, `/${category.slug}`) },
+		{ label: category.name, href: marketHref(params.channel, categoryUrlFor(params.channel, baseSlug)) },
 	];
 
 	return (
@@ -195,7 +213,7 @@ async function CategoryContent({
 			    renders nothing at all for a category that has no vehicle pages, so the
 			    boundary has no fallback — there is nothing to reserve space for. */}
 			<Suspense fallback={null}>
-				<CatalogMakeIndex channel={params.channel} slug={params.slug} />
+				<CatalogMakeIndex channel={params.channel} slug={categorySegment(params.channel, baseSlug)} />
 			</Suspense>
 		</>
 	);
@@ -209,11 +227,12 @@ async function CategoryProducts({
 	searchParams: PageProps["searchParams"];
 }) {
 	const [params, searchParams] = await Promise.all([paramsPromise, searchParamsPromise]);
+	const baseSlug = baseSlugOf(params);
 
 	const paginationVariables = getPaginatedListVariables({ params: searchParams });
 	const sortBy = buildSortVariables(searchParams.sort);
 	const vehicleFilter = await resolveVehicleListingFilter(isVehicleFilterRequested(searchParams.vehicle), {
-		categorySlug: params.slug,
+		categorySlug: baseSlug,
 	});
 	const filter = buildFilterVariables({
 		priceRange: searchParams.price,
@@ -228,7 +247,7 @@ async function CategoryProducts({
 		(slugLang) =>
 			executePublicGraphQL(ProductListByCategoryDocument, {
 				variables: {
-					slug: params.slug,
+					slug: baseSlug,
 					channel: params.channel,
 					lang,
 					slugLang,
@@ -246,10 +265,10 @@ async function CategoryProducts({
 	// category that is demonstrably there. An error is an error.
 	if (!result.ok) {
 		logUpstreamError("category-products", upstreamError(result), {
-			slug: params.slug,
+			slug: baseSlug,
 			channel: params.channel,
 		});
-		throw new Error(`category product list failed for ${params.slug}: ${result.error.message}`);
+		throw new Error(`category product list failed for ${baseSlug}: ${result.error.message}`);
 	}
 
 	const category = resolveExactLocaleCategory(result.data.category, locale);
@@ -272,12 +291,12 @@ async function CategoryProducts({
 				<VehicleListingFilter
 					channel={params.channel}
 					filter={vehicleFilter}
-					// categoryUrl(), not a hand-built `/categories/…`: a catalogue category now
+					// categoryUrlFor(), not a hand-built `/categories/…`: a catalogue category now
 					// lives at the root, and this path is what every vehicle-filter link is
 					// built from. Hard-coding the retired shape would make each filter click a
 					// 308 hop, and would reintroduce exactly the two-places-one-slug drift the
 					// catalogue was created to end.
-					basePath={categoryUrl(params.slug)}
+					basePath={categoryUrlFor(params.channel, baseSlug)}
 					searchParams={searchParams}
 				/>
 			</div>

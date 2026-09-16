@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { marketHref } from "@/lib/channel-map";
-import { categoriesFor, categoryHref } from "@/config/categories";
+import { categoriesFor } from "@/config/categories";
+import { categoryUrlFor } from "@/config/category-routes";
 
 /**
  * Per-category art and tint. Keyed by the category key from `@/config/categories`,
@@ -44,7 +45,7 @@ export function CategoryGrid() {
 					return (
 						<Link
 							key={category.key}
-							href={marketHref(channel, categoryHref(category))}
+							href={marketHref(channel, categoryUrlFor(channel, category.slug))}
 							className="group flex flex-col items-center gap-3 rounded-xl border border-gray-100 bg-white p-6 text-center shadow-sm transition hover:border-gray-200 hover:shadow-md"
 						>
 							<div

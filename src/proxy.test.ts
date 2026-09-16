@@ -8,6 +8,8 @@ import {
 import { CHANNEL_MAP } from "./lib/channel-map";
 import { catalogLanguageForMarket } from "./lib/catalog-content/language";
 import { CATALOG_REDIRECTS } from "./lib/catalog-content/redirects";
+import { BORROWED_ROUTES } from "./lib/catalog-content/borrowed-routes";
+import { categoryRouteTable } from "./config/category-routes";
 import { proxy } from "./proxy";
 
 /**
@@ -491,5 +493,168 @@ describe("retired vehicle pages", () => {
 		const res = await proxy(req(`/sk${foreign!.from}`));
 		expect(res.status).not.toBe(301);
 		expect(res.headers.get("location")).toBeNull();
+	});
+});
+
+/**
+ * COMMERCE-2 M1: a foreign market's category root is localized (`/cz/stresni-nosice`), and
+ * Slovakia keeps `/sk/stresne-nosice`. Driven from the route table, so every market is walked:
+ * the root, a make, a model and a generation under it, the old Slovak spelling as a one-hop
+ * alias, the RELEASE-4 pages each foreign catalogue still publishes under the Slovak root, and
+ * the retired BP/TQ pages spelled either way.
+ */
+describe("localized category roots (COMMERCE-2 M1)", () => {
+	const roots = categoryRouteTable().filter((row) => row.placement === "root");
+	const foreign = roots.filter((row) => row.market !== "sk");
+	const location = (res: Response) => {
+		const value = res.headers.get("location");
+		return value ? new URL(value) : null;
+	};
+
+	it("covers all twelve markets", () => {
+		expect(roots.map((row) => row.market)).toEqual(Object.keys(CHANNEL_MAP));
+	});
+
+	it("carries the canonical root, and a make, model and generation below it, onto the category route", async () => {
+		for (const row of roots) {
+			for (const tail of ["", "/skoda", "/skoda/octavia-combi", "/skoda/octavia-combi/nx"]) {
+				const path = `/${row.market}/${row.segment}${tail}`;
+				const res = await proxy(req(path));
+				expect(res.status, path).not.toBe(301);
+				expect(res.headers.get("location"), path).toBeNull();
+				expect(res.headers.get("x-middleware-rewrite"), path).toContain(
+					`/${row.channel}/categories/${row.segment}${tail}`,
+				);
+			}
+		}
+	});
+
+	it("keeps the RSC suffix on the localized rewrite", async () => {
+		const res = await proxy(req("/cz/stresni-nosice/skoda.rsc"));
+		expect(res.headers.get("x-middleware-rewrite")).toContain("/cz-czk/categories/stresni-nosice/skoda.rsc");
+	});
+
+	it("301s the Slovak spelling abroad to the localized root, in one hop, query kept", async () => {
+		for (const row of foreign) {
+			for (const tail of ["", "/skoda", "/skoda/octavia-combi/nx"]) {
+				const path = `/${row.market}/stresne-nosice${tail}?utm_source=x`;
+				const res = await proxy(req(path));
+				expect(res.status, path).toBe(301);
+				expect(location(res)?.pathname, path).toBe(`/${row.market}/${row.segment}${tail}`);
+				expect(location(res)?.search, path).toBe("?utm_source=x");
+			}
+		}
+	});
+
+	it("sends an .rsc request on the Slovak spelling to the plain localized page", async () => {
+		const res = await proxy(req("/at/stresne-nosice/bmw.rsc"));
+		expect(res.status).toBe(301);
+		expect(location(res)?.pathname).toBe("/at/dachtraeger/bmw");
+	});
+
+	it("serves the borrowed RELEASE-4 pages where the foreign catalogue publishes them", async () => {
+		let checked = 0;
+		for (const row of foreign) {
+			const language = row.language;
+			for (const path of BORROWED_ROUTES.paths[language] ?? []) {
+				const url = `/${row.market}${path}`;
+				const res = await proxy(req(url));
+				expect(res.status, url).not.toBe(301);
+				expect(res.headers.get("x-middleware-rewrite"), url).toContain(`/${row.channel}/categories${path}`);
+				checked += 1;
+			}
+		}
+		expect(checked).toBe(11 * 3);
+	});
+
+	it("pulls the localized spelling of a borrowed page over to the Slovak root", async () => {
+		for (const row of foreign) {
+			for (const path of BORROWED_ROUTES.paths[row.language] ?? []) {
+				const localized = path.replace(/^\/stresne-nosice\//, `/${row.segment}/`);
+				const res = await proxy(req(`/${row.market}${localized}`));
+				expect(res.status, localized).toBe(301);
+				expect(location(res)?.pathname, localized).toBe(`/${row.market}${path}`);
+			}
+		}
+	});
+
+	it("still answers the retired BP and TQ pages, spelled either way, with their replacement directly", async () => {
+		for (const row of foreign) {
+			for (const [from, to] of [
+				["/stresne-nosice/subaru/legacy-kombi/bp", "/stresne-nosice/subaru/legacy-kombi/bh"],
+				[`/${row.segment}/subaru/legacy-kombi/bp`, "/stresne-nosice/subaru/legacy-kombi/bh"],
+				["/stresne-nosice/hyundai/h-1-van/tq", "/stresne-nosice/hyundai/h-1-van/a1"],
+				[`/${row.segment}/hyundai/h-1-van/tq`, "/stresne-nosice/hyundai/h-1-van/a1"],
+			]) {
+				const res = await proxy(req(`/${row.market}${from}`));
+				expect(res.status, `/${row.market}${from}`).toBe(301);
+				expect(location(res)?.pathname, `/${row.market}${from}`).toBe(`/${row.market}${to}`);
+			}
+		}
+	});
+
+	it("never sends anyone through two hops or round a loop", async () => {
+		const paths = foreign.flatMap((row) => [
+			`/${row.market}/stresne-nosice`,
+			`/${row.market}/stresne-nosice/subaru/legacy-kombi`,
+			`/${row.market}/stresne-nosice/subaru/legacy-kombi/bp`,
+			`/${row.market}/${row.segment}/subaru/legacy-kombi/bh`,
+			`/${row.market}/categories/stresne-nosice`,
+			`/${row.market}/categories/${row.segment}`,
+			`/${row.market}/categories/nordrive-stresne-nosice`,
+			...(row.market === "es" ? ["/es/bacas-de-techo/bmw/x3", "/es/bacas-de-techo"] : []),
+		]);
+		for (const path of paths) {
+			const first = await proxy(req(path));
+			const target = location(first);
+			if (!target) continue;
+			const second = await proxy(req(target.pathname));
+			expect([301, 302, 307, 308], `${path} -> ${target.pathname}`).not.toContain(second.status);
+		}
+	});
+
+	it("308s the retired /categories/ form straight to the canonical root of the market", async () => {
+		for (const row of roots) {
+			for (const spelling of new Set(["stresne-nosice", row.segment])) {
+				const path = `/${row.market}/categories/${spelling}`;
+				const res = await proxy(req(path));
+				expect(res.status, path).toBe(308);
+				expect(location(res)?.pathname, path).toBe(`/${row.market}/${row.segment}`);
+			}
+		}
+	});
+
+	it("moves the Nordrive listing to its localized spelling and leaves it under /categories/", async () => {
+		const listings = categoryRouteTable().filter((row) => row.placement === "listing");
+		for (const row of listings) {
+			const canonical = await proxy(req(row.path));
+			expect(canonical.headers.get("location"), row.path).toBeNull();
+			expect(canonical.headers.get("x-middleware-rewrite"), row.path).toContain(
+				`/${row.channel}/categories/${row.segment}`,
+			);
+			if (row.market === "sk") continue;
+			const alias = await proxy(req(`/${row.market}/categories/nordrive-stresne-nosice`));
+			expect(alias.status, row.path).toBe(301);
+			expect(location(alias)?.pathname, row.path).toBe(row.path);
+		}
+	});
+
+	it("does not treat another language's spelling as a category", async () => {
+		const res = await proxy(req("/cz/dachtraeger"));
+		expect(res.headers.get("location")).toBeNull();
+		expect(res.headers.get("x-middleware-rewrite")).toContain("/cz-czk/dachtraeger");
+		expect(res.headers.get("x-middleware-rewrite")).not.toContain("/categories/");
+	});
+
+	it("leaves Slovakia exactly as it was", async () => {
+		const root = await proxy(req("/sk/stresne-nosice/skoda/octavia-combi/nx"));
+		expect(root.headers.get("location")).toBeNull();
+		expect(root.headers.get("x-middleware-rewrite")).toContain(
+			"/sk-eur/categories/stresne-nosice/skoda/octavia-combi/nx",
+		);
+
+		const czechSpelling = await proxy(req("/sk/stresni-nosice"));
+		expect(czechSpelling.headers.get("location")).toBeNull();
+		expect(czechSpelling.headers.get("x-middleware-rewrite")).not.toContain("/categories/");
 	});
 });

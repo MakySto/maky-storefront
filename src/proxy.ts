@@ -12,6 +12,13 @@ import {
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
 import { catalogRedirectTarget } from "./lib/catalog-content/redirects";
 import { CATEGORY_ROUTE_PREFIX, isCategorySlug } from "./config/categories";
+import {
+	categoryBaseSlug,
+	categorySegment,
+	isLocalizedRootSegment,
+	mappedCategoryFor,
+} from "./config/category-routes";
+import { categoryAliasTarget, listingCategoryAliasTarget } from "./lib/catalog-content/category-aliases";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/routing.generated";
 import { isMarketLive, liveMarkets, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
 import { isRouteMissingInMarket } from "./lib/route-policy";
@@ -233,16 +240,26 @@ async function route(request: NextRequest) {
 	// working listing into a 404 for the sake of a tidier path.
 	//
 	// Only the DETAIL url redirects; `/{market}/categories` has no page either way.
-	if (
-		first &&
-		FRIENDLY_SLUGS.has(first) &&
-		segments.length === 3 &&
-		segments[1] === CATEGORY_ROUTE_PREFIX &&
-		isCategorySlug(segments[2])
-	) {
-		const url = request.nextUrl.clone();
-		url.pathname = "/" + first + "/" + segments[2];
-		return NextResponse.redirect(url, 308);
+	//
+	// Straight to the market's CANONICAL root, in one hop: `/cz/categories/stresne-nosice` goes
+	// to `/cz/stresni-nosice`, not to `/cz/stresne-nosice` and from there onwards. The Czech
+	// spelling under `/categories/` is accepted too, since it is what a link built from a
+	// translated Saleor slug would produce. Slovakia is unchanged: its segment is the slug.
+	if (first && FRIENDLY_SLUGS.has(first) && segments.length === 3 && segments[1] === CATEGORY_ROUTE_PREFIX) {
+		const mapped = mappedCategoryFor(first, segments[2]);
+		if (isCategorySlug(segments[2]) || mapped?.placement === "root") {
+			const url = request.nextUrl.clone();
+			url.pathname = "/" + first + "/" + categorySegment(first, categoryBaseSlug(first, segments[2]));
+			return NextResponse.redirect(url, 308);
+		}
+		// A listing category (not a root one) with a localized segment keeps `/categories/`,
+		// and only its spelling changes: `/cz/categories/nordrive-stresne-nosice` → the Czech one.
+		const listing = listingCategoryAliasTarget(first, segments[2]);
+		if (listing) {
+			const url = request.nextUrl.clone();
+			url.pathname = "/" + first + listing;
+			return NextResponse.redirect(url, 301);
+		}
 	}
 
 	// RETIRED VEHICLE PAGE: /{market}/{catalogue path} -> the page that replaced it, 301.
@@ -258,6 +275,28 @@ async function route(request: NextRequest) {
 	if (first && FRIENDLY_SLUGS.has(first) && segments.length >= 2) {
 		const rest = normalizePathname(pathname).split("/").filter(Boolean).slice(1);
 		const target = catalogRedirectTarget(first, "/" + rest.join("/"));
+		if (target) {
+			const url = request.nextUrl.clone();
+			url.pathname = "/" + first + target;
+			return NextResponse.redirect(url, 301);
+		}
+	}
+
+	// A CATEGORY URL SPELLED THE OTHER WAY: 301 to the market's canonical spelling.
+	//
+	// A foreign market's canonical root is localized (`/cz/stresni-nosice`, COMMERCE-2 M1) and
+	// every link the storefront built before that pointed at the Slovak one. Those keep working
+	// through this redirect, one hop, query kept. The exception is the handful of pages the
+	// catalogue itself still publishes under the Slovak root abroad — see
+	// `lib/catalog-content/category-aliases.ts` — which answer where they are and pull the
+	// localized spelling over to them instead.
+	//
+	// After the retired-page redirect on purpose: a retired path spelled either way is sent to
+	// its replacement directly rather than through the alias first. Same PPR reason as above
+	// for doing it here at all.
+	if (first && FRIENDLY_SLUGS.has(first) && segments.length >= 2) {
+		const rest = normalizePathname(pathname).split("/").filter(Boolean).slice(1);
+		const target = categoryAliasTarget(first, rest);
 		if (target) {
 			const url = request.nextUrl.clone();
 			url.pathname = "/" + first + target;
@@ -373,8 +412,14 @@ async function route(request: NextRequest) {
 		// instead would have made the slug a market-root segment, which
 		// `categories.test.ts` forbids outright — a category slug and a route segment
 		// must stay distinguishable, or `[productSlug]` cannot tell them apart.
+		//
+		// A foreign market's localized root (`/cz/stresni-nosice`) is carried the same way, with
+		// its own spelling kept in the internal path: the vehicle pages are looked up by the URL
+		// the catalogue publishes them under, and the page maps the segment back to the base slug
+		// for Saleor. Only the market's own spelling — `/cz/dachtraeger` is not a category here.
 		const internalRest =
-			normalized.length >= 2 && isCategorySlug(normalized[1])
+			normalized.length >= 2 &&
+			(isCategorySlug(normalized[1]) || isLocalizedRootSegment(first, normalized[1]))
 				? CATEGORY_ROUTE_PREFIX + "/" + segments.slice(1).join("/")
 				: undefined;
 		return marketRewrite(request, first, gateVerdict, internalRest);

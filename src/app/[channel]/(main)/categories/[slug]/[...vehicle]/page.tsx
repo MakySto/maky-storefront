@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { categoryUrlFor } from "@/config/category-routes";
 import { getLocaleFromChannel } from "@/config/locale";
 import { REVERSE_MAP, marketHref } from "@/lib/channel-map";
 import { buildCanonicalUrl } from "@/lib/seo/hreflang";
@@ -231,7 +232,10 @@ export default async function Page({ params }: Params) {
 	);
 
 	const crumbs: BreadcrumbItem[] = [
-		{ label: t("nav.roofRacks"), href: marketHref(channel, `/${slug}`) },
+		// The market's canonical root, not the segment this URL happened to use: a borrowed Slovak
+		// page abroad (`/cz/stresne-nosice/subaru/legacy-kombi/bh`) sits in the Czech tree, whose
+		// root is `/cz/stresni-nosice`.
+		{ label: t("nav.roofRacks"), href: marketHref(channel, categoryUrlFor(channel, slug)) },
 		...ancestorsOf(view.tree, node).map((ancestor) => ({
 			label: ancestor.name,
 			// An unpublished ancestor keeps its place in the trail and loses its link:

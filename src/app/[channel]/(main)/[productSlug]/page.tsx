@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { categoryUrl } from "@/config/categories";
+import { categoryUrlFor } from "@/config/category-routes";
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
 import { ErrorBoundary } from "react-error-boundary";
@@ -226,7 +226,7 @@ async function ProductContent({
 			? [
 					{
 						label: product.category.name,
-						href: marketHref(params.channel, categoryUrl(product.category.slug)),
+						href: marketHref(params.channel, categoryUrlFor(params.channel, product.category.slug)),
 					},
 				]
 			: []),
