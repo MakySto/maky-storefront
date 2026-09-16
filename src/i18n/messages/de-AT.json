@@ -700,6 +700,18 @@
 		"errorCatalogueUnavailable": "Die Verfügbarkeit des Sets konnte gerade nicht geprüft werden. Bitte versuchen Sie es noch einmal.",
 		"errorGeneric": "Das Set konnte nicht in den Warenkorb gelegt werden."
 	},
+	"catalog": {
+		"makeIndexTitle": "Dachträger nach Fahrzeug auswählen",
+		"makeIndexIntro": "Zu jedem Fahrzeug finden Sie den Dachtyp, passende Sets und die Montageanleitung.",
+		"offersLookupFailed": "Das Angebot konnte gerade nicht geladen werden. Bitte versuchen Sie es gleich noch einmal — das heißt nicht, dass auf Ihr Fahrzeug nichts passt.",
+		"noVerifiedSet": "Für dieses Fahrzeug haben wir noch kein geprüftes Set.",
+		"noVerifiedSetUnverified": "Es gibt zwar Einträge, sie sind aber noch nicht geprüft.",
+		"noVerifiedSetAskUs": "Das heißt nicht, dass nichts darauf passt — schreiben Sie uns, wir prüfen es.",
+		"offersCount": "{count, plural, one {# Set} other {# Sets}}",
+		"offersDemo": "Testvorschau. Es handelt sich um simulierte Daten, nicht um ein echtes Angebot und nicht um eine geprüfte Kompatibilität.",
+		"offersPartial": "Ein Teil des Angebots konnte nicht geladen werden, die Liste ist daher möglicherweise nicht vollständig.",
+		"previewNotice": "Vorschau einer unveröffentlichten Seite. Besucher sehen sie nicht."
+	},
 	"company": {
 		"operatedBy": "Anbieter:",
 		"companyId": "Unternehmensidentifikationsnummer (IČO):",

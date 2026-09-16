@@ -700,6 +700,18 @@
 		"errorCatalogueUnavailable": "Nu am putut verifica disponibilitatea setului în acest moment. Vă rugăm să încercați din nou.",
 		"errorGeneric": "Setul nu a putut fi adăugat în coș."
 	},
+	"catalog": {
+		"makeIndexTitle": "Alegeți barele de acoperiș după vehicul",
+		"makeIndexIntro": "Pentru fiecare vehicul găsiți tipul de acoperiș, seturile potrivite și instrucțiunile de montaj.",
+		"offersLookupFailed": "Oferta nu a putut fi încărcată acum. Încercați din nou peste puțin timp — asta nu înseamnă că nu se potrivește nimic pe vehiculul dumneavoastră.",
+		"noVerifiedSet": "Pentru acest vehicul nu avem încă un set verificat.",
+		"noVerifiedSetUnverified": "Există unele înregistrări, dar deocamdată nu sunt verificate.",
+		"noVerifiedSetAskUs": "Asta nu înseamnă că nu se potrivește nimic — scrieți-ne și vom verifica.",
+		"offersCount": "{count, plural, one {# set} few {# seturi} other {# de seturi}}",
+		"offersDemo": "Demonstrație de test. Sunt date simulate, nu o ofertă reală și nici o compatibilitate verificată.",
+		"offersPartial": "O parte din ofertă nu a putut fi încărcată, așa că lista poate fi incompletă.",
+		"previewNotice": "Previzualizarea unei pagini nepublicate. Nu este afișată vizitatorilor."
+	},
 	"company": {
 		"operatedBy": "Vânzătorul:",
 		"companyId": "Număr de identificare a societății (IČO):",

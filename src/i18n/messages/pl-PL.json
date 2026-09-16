@@ -700,6 +700,18 @@
 		"errorCatalogueUnavailable": "Nie udało się teraz sprawdzić dostępności zestawu. Spróbuj ponownie.",
 		"errorGeneric": "Nie udało się dodać zestawu do koszyka."
 	},
+	"catalog": {
+		"makeIndexTitle": "Wybierz bagażnik według pojazdu",
+		"makeIndexIntro": "Przy każdym pojeździe znajdziesz typ dachu, pasujące zestawy i instrukcję montażu.",
+		"offersLookupFailed": "Nie udało się teraz wczytać oferty. Spróbuj ponownie za chwilę — nie oznacza to, że do Twojego pojazdu nic nie pasuje.",
+		"noVerifiedSet": "Do tego pojazdu nie mamy jeszcze potwierdzonego zestawu.",
+		"noVerifiedSetUnverified": "Jakieś wpisy istnieją, ale nie są jeszcze potwierdzone.",
+		"noVerifiedSetAskUs": "Nie oznacza to, że nic do niego nie pasuje — napisz do nas, a sprawdzimy to.",
+		"offersCount": "{count, plural, one {# zestaw} few {# zestawy} many {# zestawów} other {# zestawu}}",
+		"offersDemo": "Testowa wersja demonstracyjna. To symulowane dane, a nie prawdziwa oferta ani potwierdzona kompatybilność.",
+		"offersPartial": "Nie udało się wczytać części oferty, dlatego lista może być niepełna.",
+		"previewNotice": "Podgląd nieopublikowanej strony. Odwiedzający jej nie widzą."
+	},
 	"company": {
 		"operatedBy": "Sprzedawca:",
 		"companyId": "Numer identyfikacyjny przedsiębiorstwa (IČO):",

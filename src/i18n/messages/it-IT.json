@@ -700,6 +700,18 @@
 		"errorCatalogueUnavailable": "Al momento non è stato possibile verificare la disponibilità del set. Riprova.",
 		"errorGeneric": "Non è stato possibile aggiungere il set al carrello."
 	},
+	"catalog": {
+		"makeIndexTitle": "Scegli il portapacchi in base al veicolo",
+		"makeIndexIntro": "Per ogni veicolo trovi il tipo di tetto, i set adatti e le istruzioni di montaggio.",
+		"offersLookupFailed": "Al momento non è stato possibile caricare l'offerta. Riprova tra poco: non significa che non ci sia nulla di compatibile con il tuo veicolo.",
+		"noVerifiedSet": "Per questo veicolo non abbiamo ancora un set verificato.",
+		"noVerifiedSetUnverified": "Alcuni dati esistono, ma non sono ancora verificati.",
+		"noVerifiedSetAskUs": "Non significa che non ci sia nulla di compatibile: scrivici e lo verificheremo.",
+		"offersCount": "{count, plural, one {# set} other {# set}}",
+		"offersDemo": "Anteprima di prova. Si tratta di dati simulati, non di un'offerta reale né di una compatibilità verificata.",
+		"offersPartial": "Non è stato possibile caricare parte dell'offerta, quindi l'elenco potrebbe essere incompleto.",
+		"previewNotice": "Anteprima di una pagina non pubblicata. Non è visibile ai visitatori."
+	},
 	"company": {
 		"operatedBy": "Venditore:",
 		"companyId": "Numero identificativo dell’impresa (IČO):",

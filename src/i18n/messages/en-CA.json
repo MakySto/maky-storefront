@@ -700,6 +700,18 @@
 		"errorCatalogueUnavailable": "We couldn't check this set's availability just now. Please try again.",
 		"errorGeneric": "We couldn't add the set to your cart."
 	},
+	"catalog": {
+		"makeIndexTitle": "Choose a roof rack by vehicle",
+		"makeIndexIntro": "For every vehicle you will find the roof type, suitable sets and installation instructions.",
+		"offersLookupFailed": "We couldn't load the available sets right now. Please try again in a moment — this doesn't mean nothing fits your vehicle.",
+		"noVerifiedSet": "We don't have a verified set for this vehicle yet.",
+		"noVerifiedSetUnverified": "Some records exist, but they aren't verified yet.",
+		"noVerifiedSetAskUs": "That doesn't mean nothing fits it — write to us and we will check.",
+		"offersCount": "{count, plural, one {# set} other {# sets}}",
+		"offersDemo": "Test preview. This is simulated data, not a real offer and not verified compatibility.",
+		"offersPartial": "Part of the offer could not be loaded, so the list may be incomplete.",
+		"previewNotice": "Preview of an unpublished page. It is not shown to visitors."
+	},
 	"company": {
 		"operatedBy": "Seller:",
 		"companyId": "Slovak company identification number (IČO):",

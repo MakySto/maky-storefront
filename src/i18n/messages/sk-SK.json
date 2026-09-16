@@ -700,6 +700,18 @@
 		"errorCatalogueUnavailable": "Dostupnosť zostavy sa teraz nepodarilo overiť. Skúste to prosím znova.",
 		"errorGeneric": "Zostavu sa nepodarilo pridať do košíka."
 	},
+	"catalog": {
+		"makeIndexTitle": "Vyberte nosič podľa vozidla",
+		"makeIndexIntro": "Pri každom vozidle nájdete typ strechy, vhodné zostavy a návod na montáž.",
+		"offersLookupFailed": "Ponuku sa teraz nepodarilo načítať. Skúste to prosím o chvíľu — nie je to informácia o tom, že na vaše vozidlo nič nepasuje.",
+		"noVerifiedSet": "Pre toto vozidlo zatiaľ nemáme overenú zostavu.",
+		"noVerifiedSetUnverified": "Nejaké záznamy existujú, ale zatiaľ nie sú overené.",
+		"noVerifiedSetAskUs": "Neznamená to, že naň nič nepasuje — napíšte nám a overíme to.",
+		"offersCount": "{count} zostáv",
+		"offersDemo": "Testovacia ukážka. Ide o simulované údaje, nie o skutočnú ponuku ani o overenú kompatibilitu.",
+		"offersPartial": "Časť ponuky sa nepodarilo načítať, zoznam preto nemusí byť úplný.",
+		"previewNotice": "Náhľad nepublikovanej stránky. Návštevníkom sa nezobrazuje."
+	},
 	"company": {
 		"operatedBy": "Internetový obchod prevádzkuje:",
 		"companyId": "IČO:",

@@ -700,6 +700,18 @@
 		"errorCatalogueUnavailable": "Impossible de vérifier la disponibilité de l'ensemble pour le moment. Merci de réessayer.",
 		"errorGeneric": "L'ensemble n'a pas pu être ajouté au panier."
 	},
+	"catalog": {
+		"makeIndexTitle": "Choisissez vos barres de toit selon votre véhicule",
+		"makeIndexIntro": "Pour chaque véhicule, vous trouverez le type de toit, les ensembles adaptés et la notice de montage.",
+		"offersLookupFailed": "L'offre n'a pas pu être chargée pour le moment. Veuillez réessayer dans un instant — cela ne veut pas dire que rien ne convient à votre véhicule.",
+		"noVerifiedSet": "Nous n'avons pas encore d'ensemble vérifié pour ce véhicule.",
+		"noVerifiedSetUnverified": "Des enregistrements existent, mais ils ne sont pas encore vérifiés.",
+		"noVerifiedSetAskUs": "Cela ne veut pas dire que rien ne lui convient — écrivez-nous et nous vérifierons.",
+		"offersCount": "{count, plural, one {# ensemble} other {# ensembles}}",
+		"offersDemo": "Démonstration de test. Il s'agit de données simulées, ni d'une offre réelle ni d'une compatibilité vérifiée.",
+		"offersPartial": "Une partie de l'offre n'a pas pu être chargée, la liste peut donc être incomplète.",
+		"previewNotice": "Aperçu d'une page non publiée. Elle n'est pas affichée aux visiteurs."
+	},
 	"company": {
 		"operatedBy": "Vendeur :",
 		"companyId": "Numéro d’identification de l’entreprise (IČO) :",

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
+import { getLocaleFromChannel } from "@/config/locale";
 import { marketHref } from "@/lib/channel-map";
 import { isPubliclyVisible } from "@/lib/catalog-content/publication";
 import { catalogLanguageForChannel, loadCatalogView } from "@/lib/catalog-content/resolve";
@@ -40,12 +42,12 @@ export async function CatalogMakeIndex({ channel, slug }: { channel: string; slu
 
 	if (makes.length === 0) return null;
 
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "catalog" });
+
 	return (
 		<section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-			<h2 className="text-text-primary text-xl font-bold sm:text-2xl">Vyberte nosič podľa vozidla</h2>
-			<p className="text-text-secondary mt-2 text-sm">
-				Pri každom vozidle nájdete typ strechy, vhodné zostavy a návod na montáž.
-			</p>
+			<h2 className="text-text-primary text-xl font-bold sm:text-2xl">{t("makeIndexTitle")}</h2>
+			<p className="text-text-secondary mt-2 text-sm">{t("makeIndexIntro")}</p>
 			<ul className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
 				{makes.map((make) => (
 					<li key={make.vehicleId}>

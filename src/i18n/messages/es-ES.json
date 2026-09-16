@@ -700,6 +700,18 @@
 		"errorCatalogueUnavailable": "No hemos podido comprobar la disponibilidad del conjunto en este momento. Inténtelo de nuevo, por favor.",
 		"errorGeneric": "No se ha podido añadir el conjunto a la cesta."
 	},
+	"catalog": {
+		"makeIndexTitle": "Elija las barras de techo según su vehículo",
+		"makeIndexIntro": "Para cada vehículo encontrará el tipo de techo, los conjuntos adecuados y las instrucciones de montaje.",
+		"offersLookupFailed": "Ahora no se ha podido cargar la oferta. Inténtelo de nuevo dentro de un momento; esto no significa que no haya nada que encaje en su vehículo.",
+		"noVerifiedSet": "Todavía no tenemos ningún conjunto verificado para este vehículo.",
+		"noVerifiedSetUnverified": "Existen algunos registros, pero todavía no están verificados.",
+		"noVerifiedSetAskUs": "Esto no significa que no haya nada que encaje; escríbanos y lo comprobaremos.",
+		"offersCount": "{count, plural, one {# conjunto} other {# conjuntos}}",
+		"offersDemo": "Demostración de prueba. Son datos simulados, no una oferta real ni una compatibilidad verificada.",
+		"offersPartial": "No se ha podido cargar parte de la oferta, por lo que la lista puede estar incompleta.",
+		"previewNotice": "Vista previa de una página no publicada. No se muestra a los visitantes."
+	},
 	"company": {
 		"operatedBy": "Vendedor:",
 		"companyId": "Número de identificación de la empresa (IČO):",

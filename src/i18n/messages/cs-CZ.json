@@ -700,6 +700,18 @@
 		"errorCatalogueUnavailable": "Dostupnost sestavy se teď nepodařilo ověřit. Zkuste to prosím znovu.",
 		"errorGeneric": "Sestavu se nepodařilo přidat do košíku."
 	},
+	"catalog": {
+		"makeIndexTitle": "Vyberte nosič podle vozidla",
+		"makeIndexIntro": "U každého vozidla najdete typ střechy, vhodné sestavy a návod k montáži.",
+		"offersLookupFailed": "Nabídku se teď nepodařilo načíst. Zkuste to prosím za chvíli — neznamená to, že na vaše vozidlo nic nepasuje.",
+		"noVerifiedSet": "Pro toto vozidlo zatím nemáme ověřenou sestavu.",
+		"noVerifiedSetUnverified": "Nějaké záznamy existují, ale zatím nejsou ověřené.",
+		"noVerifiedSetAskUs": "Neznamená to, že na něj nic nepasuje — napište nám a ověříme to.",
+		"offersCount": "{count, plural, one {# sestava} few {# sestavy} other {# sestav}}",
+		"offersDemo": "Testovací ukázka. Jde o simulovaná data, nikoli o skutečnou nabídku ani o ověřenou kompatibilitu.",
+		"offersPartial": "Část nabídky se nepodařilo načíst, seznam proto nemusí být úplný.",
+		"previewNotice": "Náhled nepublikované stránky. Návštěvníkům se nezobrazuje."
+	},
 	"company": {
 		"operatedBy": "Provozovatel:",
 		"companyId": "IČO:",

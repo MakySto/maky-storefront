@@ -1,6 +1,23 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { DEFAULT_LOCALE, formatPrice } from "@/config/locale";
 import { marketHref } from "@/lib/channel-map";
 import { type FitmentOffers } from "@/lib/fitment/offers";
+
+/**
+ * A set's price, in the market's own format — except in Slovakia, where it stays exactly
+ * what the live page has shown since the vehicle pages launched (`72.00 EUR`).
+ *
+ * The Slovak string is kept on purpose, not by oversight: the COMMERCE-2 brief forbids
+ * changing live Slovak copy as a side effect of localizing the other eleven markets, and
+ * `formatPrice` would turn it into `72,00 €`. Whether Slovakia should match the PDP is a
+ * decision for its own change. Elsewhere `toFixed` printed `1234.00 HUF`, which is not how
+ * any of those markets writes a price.
+ */
+export function formatOfferPrice(amount: number, currency: string, locale: string): string {
+	if (locale === DEFAULT_LOCALE) return `${amount.toFixed(2)} ${currency}`;
+	return formatPrice(amount, currency, locale);
+}
 
 /**
  * The products a generation page offers.
@@ -15,15 +32,28 @@ import { type FitmentOffers } from "@/lib/fitment/offers";
  * The middle case is the common one today and the easiest to get wrong: an empty list with
  * no explanation reads as "we checked and your car has nothing", which is a claim the data
  * does not support.
+ *
+ * Copy comes from the `catalog` namespace, plus the configurator and common keys that
+ * already said the same thing in all twelve languages. The Slovak values are the strings
+ * this component used to hard-code, unchanged.
  */
-export function CatalogOfferList({ offers, channel }: { offers: FitmentOffers; channel: string }) {
+export async function CatalogOfferList({
+	offers,
+	channel,
+	locale,
+}: {
+	offers: FitmentOffers;
+	channel: string;
+	locale: string;
+}) {
+	const t = await getTranslations({ locale });
+
 	if (offers.lookupFailed && offers.offers.length === 0) {
 		return (
 			<section className="mt-8">
-				<h2 className="text-text-primary text-lg font-semibold">Kompatibilné zostavy</h2>
+				<h2 className="text-text-primary text-lg font-semibold">{t("configurator.resultsTitle")}</h2>
 				<p className="bg-status-warning-bg text-status-warning border-status-warning-border mt-3 rounded-md border px-3 py-2 text-sm">
-					Ponuku sa teraz nepodarilo načítať. Skúste to prosím o chvíľu — nie je to informácia o tom, že na
-					vaše vozidlo nič nepasuje.
+					{t("catalog.offersLookupFailed")}
 				</p>
 			</section>
 		);
@@ -32,12 +62,12 @@ export function CatalogOfferList({ offers, channel }: { offers: FitmentOffers; c
 	if (offers.offers.length === 0) {
 		return (
 			<section className="mt-8">
-				<h2 className="text-text-primary text-lg font-semibold">Kompatibilné zostavy</h2>
+				<h2 className="text-text-primary text-lg font-semibold">{t("configurator.resultsTitle")}</h2>
 				<p className="text-text-secondary mt-3 text-sm">
-					Pre toto vozidlo zatiaľ nemáme overenú zostavu.{" "}
+					{t("catalog.noVerifiedSet")}{" "}
 					{offers.compatibleCount > 0
-						? "Nejaké záznamy existujú, ale zatiaľ nie sú overené."
-						: "Neznamená to, že naň nič nepasuje — napíšte nám a overíme to."}
+						? t("catalog.noVerifiedSetUnverified")
+						: t("catalog.noVerifiedSetAskUs")}
 				</p>
 			</section>
 		);
@@ -46,20 +76,20 @@ export function CatalogOfferList({ offers, channel }: { offers: FitmentOffers; c
 	return (
 		<section className="mt-8">
 			<div className="flex flex-wrap items-baseline justify-between gap-2">
-				<h2 className="text-text-primary text-lg font-semibold">Kompatibilné zostavy</h2>
-				<p className="text-text-tertiary text-sm">{offers.offers.length} zostáv</p>
+				<h2 className="text-text-primary text-lg font-semibold">{t("configurator.resultsTitle")}</h2>
+				<p className="text-text-tertiary text-sm">
+					{t("catalog.offersCount", { count: offers.offers.length })}
+				</p>
 			</div>
 
 			{offers.isDemo ? (
 				<p className="bg-status-warning-bg text-status-warning border-status-warning-border mt-3 rounded-md border px-3 py-2 text-sm">
-					Testovacia ukážka. Ide o simulované údaje, nie o skutočnú ponuku ani o overenú kompatibilitu.
+					{t("catalog.offersDemo")}
 				</p>
 			) : null}
 
 			{offers.lookupFailed ? (
-				<p className="text-text-tertiary mt-3 text-sm">
-					Časť ponuky sa nepodarilo načítať, zoznam preto nemusí byť úplný.
-				</p>
+				<p className="text-text-tertiary mt-3 text-sm">{t("catalog.offersPartial")}</p>
 			) : null}
 
 			<ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -72,12 +102,12 @@ export function CatalogOfferList({ offers, channel }: { offers: FitmentOffers; c
 							<span className="text-text-primary font-medium break-words">{offer.name}</span>
 							{offer.price ? (
 								<span className="text-price-regular mt-2 font-semibold">
-									{offer.price.amount.toFixed(2)} {offer.price.currency}
+									{formatOfferPrice(offer.price.amount, offer.price.currency, locale)}
 								</span>
 							) : null}
 							<span className="text-text-tertiary mt-1 text-sm">
-								{offer.availability === "on-demand" ? "Na objednávku" : null}
-								{offer.availability === "out-of-stock" ? "Momentálne nedostupné" : null}
+								{offer.availability === "on-demand" ? t("common.onOrder") : null}
+								{offer.availability === "out-of-stock" ? t("configurator.outOfStock") : null}
 							</span>
 						</Link>
 					</li>

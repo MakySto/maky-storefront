@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { type Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { getLocaleFromChannel } from "@/config/locale";
 import { REVERSE_MAP, marketHref } from "@/lib/channel-map";
@@ -141,10 +142,10 @@ function ChildTiles({ channel, nodes }: { channel: string; nodes: readonly Catal
 	);
 }
 
-function OfferSkeleton() {
+function OfferSkeleton({ title }: { title: string }) {
 	return (
 		<section className="mt-8">
-			<h2 className="text-text-primary text-lg font-semibold">Kompatibilné zostavy</h2>
+			<h2 className="text-text-primary text-lg font-semibold">{title}</h2>
 			<div className="bg-surface-muted mt-4 h-24 animate-pulse rounded-lg" />
 		</section>
 	);
@@ -184,7 +185,7 @@ async function Offers({
 	const offers = await resolveFitmentOffers(uniqueProductRefs([...applications]), channel, locale, {
 		dataset: fitment.dataset,
 	});
-	return <CatalogOfferList offers={offers} channel={channel} />;
+	return <CatalogOfferList offers={offers} channel={channel} locale={locale} />;
 }
 
 export default async function Page({ params }: Params) {
@@ -194,6 +195,9 @@ export default async function Page({ params }: Params) {
 
 	const { view, node, page, locale, market, published } = resolved;
 	const { top, body } = splitContent(page);
+	// Explicit locale, as `products/page.tsx` does: this shell is prerendered, and the
+	// market is known here from the channel, not from a request.
+	const t = await getTranslations({ locale });
 
 	/**
 	 * Never emit a link to a page this same application will refuse to serve.
@@ -227,7 +231,7 @@ export default async function Page({ params }: Params) {
 	);
 
 	const crumbs: BreadcrumbItem[] = [
-		{ label: "Strešné nosiče", href: marketHref(channel, `/${slug}`) },
+		{ label: t("nav.roofRacks"), href: marketHref(channel, `/${slug}`) },
 		...ancestorsOf(view.tree, node).map((ancestor) => ({
 			label: ancestor.name,
 			// An unpublished ancestor keeps its place in the trail and loses its link:
@@ -244,7 +248,7 @@ export default async function Page({ params }: Params) {
 
 			{!published ? (
 				<p className="bg-status-warning-bg text-status-warning border-status-warning-border mt-4 rounded-md border px-3 py-2 text-sm">
-					Náhľad nepublikovanej stránky. Návštevníkom sa nezobrazuje.
+					{t("catalog.previewNotice")}
 				</p>
 			) : null}
 
@@ -262,7 +266,7 @@ export default async function Page({ params }: Params) {
 			{/* Products only on a generation: the first level at which the fitment data
 			    makes a claim about a specific car. A make or model page is still browsing. */}
 			{node.kind === "generation" ? (
-				<Suspense fallback={<OfferSkeleton />}>
+				<Suspense fallback={<OfferSkeleton title={t("configurator.resultsTitle")} />}>
 					<Offers vehicleId={node.vehicleId} channel={channel} locale={locale} />
 				</Suspense>
 			) : null}
