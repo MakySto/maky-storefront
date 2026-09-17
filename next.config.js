@@ -1,5 +1,7 @@
+import { PHASE_PRODUCTION_BUILD } from "next/constants.js";
 import createNextIntlPlugin from "next-intl/plugin";
 
+import { main as guardLiveBuild } from "./scripts/ops/guard-live-build.mjs";
 import { CMS_MEDIA_BASE_URL } from "./src/config/cms-media.js";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
@@ -158,4 +160,25 @@ const config = {
 	},
 };
 
-export default withNextIntl(config);
+/**
+ * Resolve the config for Next. The injectable guard is for unit tests only;
+ * Next's default export always uses the real, hardcoded production guard.
+ *
+ * @param {string} phase
+ * @param {typeof guardLiveBuild} [runLiveBuildGuard]
+ * @returns {import("next").NextConfig}
+ */
+export function resolveNextConfig(phase, runLiveBuildGuard = guardLiveBuild) {
+	if (phase === PHASE_PRODUCTION_BUILD && runLiveBuildGuard() !== 0) {
+		throw new Error(
+			"Production build refused by the live storefront guard. Use scripts/ops/deploy-production.sh.",
+		);
+	}
+
+	return withNextIntl(config);
+}
+
+/** @param {string} phase */
+export default function nextConfig(phase) {
+	return resolveNextConfig(phase, guardLiveBuild);
+}

@@ -28,6 +28,8 @@ PUBLIC_HOST="${PUBLIC_HOST:-maky.store}"
 PUBLIC_URL="${PUBLIC_URL:-https://${PUBLIC_HOST}}"
 NGINX_LOCAL_IP="${NGINX_LOCAL_IP:-127.0.0.1}"
 SMOKE_PATH="${SMOKE_PATH:-/sk}"
+ASSET_GATE_CATEGORY_PATH="${ASSET_GATE_CATEGORY_PATH:-${SMOKE_PATH%/}/stresne-nosice}"
+ASSET_GATE_PDP_PATH="${ASSET_GATE_PDP_PATH:-}"
 DEPLOY_LOG="${DEPLOY_LOG:-/opt/DEPLOYMENTS.log}"
 LOCK_FILE="${LOCK_FILE:-/run/lock/maky-storefront-deploy.lock}"
 KEEP_SNAPSHOTS="${KEEP_SNAPSHOTS:-2}"
@@ -58,6 +60,8 @@ PREV_BUILD_ID="none"
 PREV_SHA="unknown"
 MARKET_LINES_BEFORE=0   # [market-state] lines in the PM2 log before this boot
 BUILD_LOG="/tmp/maky-deploy-$(date -u +%Y%m%d-%H%M%S).log"
+CSS_PATH=""
+declare -A CHECKED_BUILD_ASSETS=()
 
 c_red=$'\033[31m'; c_yel=$'\033[33m'; c_grn=$'\033[32m'; c_dim=$'\033[2m'; c_off=$'\033[0m'
 info() { printf '%s==>%s %s\n' "$c_grn" "$c_off" "$*"; }
@@ -235,6 +239,26 @@ require_local() {
 	local url="$1"; shift
 	fetch_ok "$url" "$@" || die "$url → ${LAST_FETCH_DETAIL:-unreachable}"
 }
+# Build chunks can legitimately be tiny. Require an exact nonzero byte match
+# between this build's file and the body served by the new local process.
+require_local_build_asset() {
+	local asset="$1" disk_asset="$2"
+	local out code served_size disk_size
+
+	disk_size=$(stat -c '%s' -- "$disk_asset")
+	(( disk_size > 0 )) || die "$asset is empty on disk ($disk_asset)"
+
+	out=$(curl -sS -o /dev/null -w '%{http_code} %{size_download}' --max-time 25 "$LOCAL_URL$asset" 2>/dev/null) \
+		|| out="000 0"
+	code="${out%% *}"
+	served_size="${out##* }"
+	[[ "$served_size" =~ ^[0-9]+$ ]] || die "$asset returned an invalid byte count: $served_size"
+	[[ "$code" == "200" ]] || die "$LOCAL_URL$asset → HTTP $code, ${served_size} B"
+	(( served_size == disk_size )) \
+		|| die "$asset size mismatch: served ${served_size} B, build has ${disk_size} B"
+
+	info "ok  $LOCAL_URL$asset  (${served_size} B, matches build)"
+}
 
 # Post-commit checks retry: one network blip must not be reported as a broken deploy.
 check_external() {
@@ -300,7 +324,7 @@ preflight() {
 	# claim it passed — which is exactly what `command -v xmllint && …` did to the
 	# sitemap validity check for as long as it existed.
 	local cmd
-	for cmd in pnpm pm2 curl git flock awk find sed python3; do
+	for cmd in pnpm pm2 curl git flock awk find sed stat python3; do
 		command -v "$cmd" >/dev/null || die "$cmd not found in PATH — a deploy check depends on it"
 	done
 	pm2 describe "$PM2_APP" >/dev/null 2>&1 || die "PM2 knows no app called '$PM2_APP'"
@@ -427,33 +451,164 @@ start() {
 	info "responding on $LOCAL_URL$SMOKE_PATH"
 }
 
+# Pick a real PDP from the just-built sitemap so the asset gate follows the
+# catalogue instead of pinning a product slug that can later be unpublished.
+discover_representative_pdp() {
+	if [[ -n "$ASSET_GATE_PDP_PATH" ]]; then
+		printf '%s' "$ASSET_GATE_PDP_PATH"
+		return 0
+	fi
+
+	local market="${SMOKE_PATH#/}"
+	market="${market%%/*}"
+	if [[ -z "$market" ]]; then
+		err "cannot derive a market from SMOKE_PATH='$SMOKE_PATH'"
+		return 1
+	fi
+
+	python3 - "$LOCAL_URL" "$market" <<'PY'
+import sys
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
+
+base_url = sys.argv[1].rstrip("/")
+market = sys.argv[2]
+namespace = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+
+
+def fetch_xml(value):
+    path = urllib.parse.urlsplit(value).path
+    if not path.startswith("/"):
+        raise SystemExit(f"unsafe sitemap path: {value}")
+    with urllib.request.urlopen(base_url + path, timeout=60) as response:
+        if response.status != 200:
+            raise SystemExit(f"{path} answered {response.status}")
+        return ET.fromstring(response.read())
+
+
+index = fetch_xml("/sitemap.xml")
+if index.tag != f"{namespace}sitemapindex":
+    raise SystemExit("/sitemap.xml is not a sitemap index; cannot select a representative PDP")
+
+product_shards = []
+for location in index.findall(f"{namespace}sitemap/{namespace}loc"):
+    if not location.text:
+        continue
+    value = location.text.strip()
+    path = urllib.parse.urlsplit(value).path
+    if f"/sitemaps/{market}-products-" in path:
+        product_shards.append(value)
+
+if not product_shards:
+    raise SystemExit(f"no product sitemap shard found for market {market}")
+
+for shard in product_shards:
+    document = fetch_xml(shard)
+    for location in document.findall(f"{namespace}url/{namespace}loc"):
+        if not location.text:
+            continue
+        path = urllib.parse.urlsplit(location.text.strip()).path
+        if path.startswith(f"/{market}/") and path != f"/{market}/products":
+            print(path)
+            raise SystemExit(0)
+
+raise SystemExit(f"product sitemap shards contain no PDP for market {market}")
+PY
+}
+
+# Fetch one representative HTML document, enumerate every CSS/JS chunk it
+# advertises, and prove each chunk belongs to this build and is served locally.
+gate_page_assets() {
+	local path="$1" label="$2"
+	local html html_size asset disk_asset
+	local css_count=0
+	local js_count=0
+	local -a assets=()
+
+	[[ "$path" == /* && "$path" != *".."* ]] || die "$label has an unsafe gate path: $path"
+
+	html=$(new_tmp)
+	curl -fsS --max-time 25 "$LOCAL_URL$path" -o "$html" || die "$label did not respond at $path"
+	html_size=$(stat -c '%s' -- "$html")
+	(( html_size >= MIN_ASSET_BYTES )) || die "$label at $path returned only ${html_size} B"
+	# `$RX(...)` is React's streamed error marker. A document can still answer 200
+	# while discarding server-rendered content and falling back to the client, so
+	# status and asset checks alone do not make it a healthy deployment.
+	if grep -qF '$RX(' "$html"; then
+		die "$label at $path contains a React streamed error marker (\$RX)"
+	fi
+
+	# Next 16 / Turbopack emits both styles and scripts under
+	# /_next/static/chunks/. Query strings and fragments are intentionally
+	# excluded: the on-disk lookup must name the exact immutable chunk.
+	mapfile -t assets < <(
+		grep -oE "/_next/static/[^\"'?#[:space:]<>]+\\.(css|js)" "$html" | sort -u
+	)
+	(( ${#assets[@]} > 0 )) || die "$label at $path references no CSS/JS chunks"
+
+	for asset in "${assets[@]}"; do
+		case "$asset" in
+			*.css)
+				css_count=$(( css_count + 1 ))
+				if [[ -z "$CSS_PATH" ]]; then
+					CSS_PATH="$asset"
+				fi
+				;;
+			*.js) js_count=$(( js_count + 1 )) ;;
+		esac
+
+		if [[ "$asset" != /_next/static/* || "$asset" == *"/../"* ]]; then
+			die "$label references an unsafe asset path: $asset"
+		fi
+		disk_asset="$APP_DIR/.next/${asset#/_next/}"
+		if [[ ! -f "$disk_asset" ]]; then
+			die "$label references $asset, but it is absent from this build ($disk_asset)"
+		fi
+		if [[ -z "${CHECKED_BUILD_ASSETS[$asset]+x}" ]]; then
+			require_local_build_asset "$asset" "$disk_asset"
+			CHECKED_BUILD_ASSETS["$asset"]=1
+		fi
+	done
+
+	(( css_count > 0 )) || die "$label at $path references no CSS chunk"
+	(( js_count > 0 )) || die "$label at $path references no JavaScript chunk"
+	info "$label assets: ${css_count} CSS + ${js_count} JS references verified ($path)"
+}
+
 # The rollback gate. Only things the artifact itself controls belong here: if nginx or
 # the public network is broken, swapping the build back does not fix it and would throw
 # away a verified artifact for nothing.
 gate_local() {
 	step "gate — local artifact"
-	local html css disk_css
-	html=$(new_tmp)
+	local pdp_path i
+	local -a page_paths page_labels
 
-	curl -fsS --max-time 25 "$LOCAL_URL$SMOKE_PATH" -o "$html" || die "local page did not respond"
+	if ! pdp_path=$(discover_representative_pdp); then
+		die "could not select a representative PDP from the local sitemap"
+	fi
+	[[ -n "$pdp_path" ]] || die "the representative PDP path is empty"
 
-	# Next 16 / Turbopack emits stylesheets under /_next/static/chunks/, NOT
-	# /_next/static/css/. Anchoring on the latter matches nothing on a healthy page —
-	# verified against live production, 2026-08-01.
-	css=$(grep -oE '/_next/static/[^"]+\.css' "$html" | head -1 || true)
-	[[ -n "$css" ]] || die "no CSS chunk referenced in the served HTML — the page would render unstyled"
+	page_paths=(
+		"$SMOKE_PATH"
+		"${SMOKE_PATH%/}/products"
+		"$ASSET_GATE_CATEGORY_PATH"
+		"$pdp_path"
+	)
+	page_labels=("homepage" "product listing" "category" "product detail")
 
-	# The chunk the server advertises must exist in the build we just made. This is the
-	# direct test for the stale-chunk failure in §13.1.
-	disk_css="$APP_DIR/.next/${css#/_next/}"
-	[[ -f "$disk_css" ]] || die "served CSS $css is not present in this build ($disk_css)"
-
-	require_local "$LOCAL_URL$SMOKE_PATH"
-	require_local "$LOCAL_URL$css"
+	CHECKED_BUILD_ASSETS=()
+	CSS_PATH=""
+	for i in "${!page_paths[@]}"; do
+		gate_page_assets "${page_paths[$i]}" "${page_labels[$i]}"
+	done
+	if (( ${#CHECKED_BUILD_ASSETS[@]} == 0 )); then
+		die "representative pages produced no unique build assets"
+	fi
+	info "build assets: ${#CHECKED_BUILD_ASSETS[@]} unique CSS/JS chunks verified on disk and over local HTTP"
 
 	gate_routing
 
-	CSS_PATH="$css"
 	DOWNTIME=$(( $(date +%s) - DOWN_FROM ))
 	COMMITTED=1
 	info "local gate passed — downtime ${DOWNTIME}s. From here the new build stays."
@@ -703,7 +858,7 @@ if (( DRY_RUN == 1 )); then
 	  pnpm build
 	  write $APP_DIR/.next/MAKY_DEPLOY_META
 	  pm2 start $PM2_APP
-	  gate (rollback if it fails):  $LOCAL_URL$SMOKE_PATH + its CSS chunk, on disk and over HTTP
+	  gate (rollback if it fails):  homepage/PLP/category/PDP + every referenced CSS/JS, on disk and over local HTTP
 	  verify (warn only):           nginx via --resolve, then $PUBLIC_URL
 	  append to $DEPLOY_LOG
 	  keep the newest $KEEP_SNAPSHOTS snapshots (plus any with a <snapshot>.keep sidecar)

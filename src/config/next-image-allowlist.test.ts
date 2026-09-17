@@ -3,9 +3,10 @@ import { type IncomingMessage } from "node:http";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { PHASE_PRODUCTION_BUILD } from "next/constants.js";
-import loadConfig from "next/dist/server/config.js";
+import { defaultConfig } from "next/dist/server/config-shared.js";
 import { ImageOptimizerCache } from "next/dist/server/image-optimizer.js";
 
+import { resolveNextConfig } from "../../next.config.js";
 import { CMS_MEDIA_BASE_URL } from "@/config/cms-media";
 import { readMedia } from "@/lib/cms/blocks";
 
@@ -31,13 +32,19 @@ const request = {
 
 let productionConfig: Parameters<typeof ImageOptimizerCache.validateParams>[2];
 
-beforeAll(async () => {
-	// The regression existed only in `next build` / `next start`. Force the config's own
-	// NODE_ENV branch to production before Next evaluates next.config.js.
+beforeAll(() => {
+	// Resolve the production branch without querying the real PM2 process. Next normally
+	// supplies these defaults after loading the config, so reproduce that merge here.
 	vi.stubEnv("NODE_ENV", "production");
-	productionConfig = (await loadConfig(PHASE_PRODUCTION_BUILD, process.cwd(), {
-		silent: true,
-	})) as Parameters<typeof ImageOptimizerCache.validateParams>[2];
+	const configured = resolveNextConfig(PHASE_PRODUCTION_BUILD, () => 0);
+	productionConfig = {
+		...defaultConfig,
+		...configured,
+		images: {
+			...defaultConfig.images,
+			...(configured.images ?? {}),
+		},
+	} as unknown as Parameters<typeof ImageOptimizerCache.validateParams>[2];
 });
 
 afterAll(() => {
