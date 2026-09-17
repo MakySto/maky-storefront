@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { getGalleryImages, type GalleryMedia } from "./gallery-images";
 
-const image = (id: number): GalleryMedia => ({
+const image = (id: number, sortOrder: number | null = id): GalleryMedia => ({
 	id: `TWVkaWE6${id}`,
 	url: `https://cdn.example/${id}.jpg`,
 	alt: `Obrázok ${id}`,
 	type: "IMAGE",
+	sortOrder,
 });
 
 describe("getGalleryImages", () => {
@@ -29,6 +30,20 @@ describe("getGalleryImages", () => {
 
 		expect(gallery.map((row) => row.url)).toEqual(media.map((row) => row.url));
 		expect(gallery.map((row) => row.alt)).toEqual(["Obrázok 1", "Obrázok 2", "Obrázok 3"]);
+	});
+
+	it("sorts by Saleor sortOrder and keeps equal or missing positions stable", () => {
+		const media = [image(5, null), image(3, 1), image(4, 1), image(2, 0), image(6, null)];
+
+		const gallery = getGalleryImages({ media, variants: [{}] }, null);
+
+		expect(gallery.map((row) => row.url)).toEqual([
+			image(2).url,
+			image(3).url,
+			image(4).url,
+			image(5).url,
+			image(6).url,
+		]);
 	});
 
 	it("never duplicates a thumbnail alongside the gallery", () => {

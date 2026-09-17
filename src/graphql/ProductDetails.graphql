@@ -24,7 +24,8 @@ query ProductDetails(
 		}
 		media {
 			id
-			url(size: 1024, format: WEBP)
+			url
+			sortOrder
 			alt
 			type
 		}

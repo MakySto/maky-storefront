@@ -42,37 +42,87 @@ export async function ProductSpecs({
 		.filter((row) => row.label && row.values.length > 0);
 
 	const outerDimensions = formatOuterDimensions(attributes, locale);
-	const hasDescription = Boolean(descriptionHtml && descriptionHtml.length > 0);
+	const hasDescription = Boolean(descriptionHtml?.length || careInstructions);
+	const hasTechnicalParameters = rows.length > 0 || Boolean(outerDimensions);
 
-	if (!hasDescription && rows.length === 0) return null;
+	if (!hasDescription && !hasTechnicalParameters) return null;
 
 	return (
-		<section className="border-border-subtle mt-14 border-t pt-12 lg:mt-20">
-			<div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
+		<section className="border-border-subtle mt-14 border-t pt-10 lg:mt-20 lg:pt-12">
+			<nav aria-label={t("productDetails")}>
+				<ul className="grid gap-3 sm:grid-cols-2">
+					{hasDescription && (
+						<li>
+							<a
+								href="#product-description"
+								className="border-border-default bg-surface-card text-text-primary hover:border-action-primary hover:bg-surface-muted focus-visible:ring-focus-ring flex min-h-14 items-center justify-between rounded-md border px-5 py-3 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none"
+							>
+								{t("description")}
+								<span aria-hidden className="text-text-tertiary text-lg leading-none">
+									↓
+								</span>
+							</a>
+						</li>
+					)}
+					{hasTechnicalParameters && (
+						<li>
+							<a
+								href="#technical-parameters"
+								className="border-border-default bg-surface-card text-text-primary hover:border-action-primary hover:bg-surface-muted focus-visible:ring-focus-ring flex min-h-14 items-center justify-between rounded-md border px-5 py-3 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none"
+							>
+								{t("technicalParameters")}
+								<span aria-hidden className="text-text-tertiary text-lg leading-none">
+									↓
+								</span>
+							</a>
+						</li>
+					)}
+				</ul>
+			</nav>
+
+			<div className="mt-6 space-y-6 lg:mt-8">
 				{hasDescription && (
-					<div>
-						<h2 className="text-text-primary mb-5 text-xl font-semibold tracking-tight">
+					<article
+						id="product-description"
+						aria-labelledby="product-description-heading"
+						className="border-border-subtle bg-surface-card scroll-mt-28 rounded-lg border p-5 sm:p-7 lg:p-9"
+					>
+						<h2
+							id="product-description-heading"
+							className="text-text-primary mb-6 text-2xl font-semibold tracking-tight"
+						>
 							{t("description")}
 						</h2>
-						<div className="prose prose-sm text-text-secondary prose-headings:text-text-primary prose-p:text-text-secondary prose-a:text-text-link prose-strong:text-text-primary max-w-none leading-relaxed">
-							{descriptionHtml?.map((html) => <div key={html} dangerouslySetInnerHTML={{ __html: html }} />)}
-						</div>
+						{descriptionHtml?.length ? (
+							<div className="prose text-text-secondary prose-headings:text-text-primary prose-p:text-text-secondary prose-a:text-text-link prose-strong:text-text-primary prose-li:text-text-secondary max-w-none leading-relaxed">
+								{descriptionHtml.map((html) => (
+									<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
+								))}
+							</div>
+						) : null}
 
 						{careInstructions && (
-							<div className="mt-8">
-								<h3 className="text-text-primary mb-2 text-sm font-semibold">{t("careInstructions")}</h3>
-								<p className="text-text-secondary text-sm leading-relaxed">{careInstructions}</p>
+							<div className="border-border-subtle bg-surface-muted mt-8 rounded-md border p-4 sm:p-5">
+								<h3 className="text-text-primary mb-2 font-semibold">{t("careInstructions")}</h3>
+								<p className="text-text-secondary leading-relaxed">{careInstructions}</p>
 							</div>
 						)}
-					</div>
+					</article>
 				)}
 
-				{rows.length > 0 && (
-					<div>
-						<h2 className="text-text-primary mb-5 text-xl font-semibold tracking-tight">
+				{hasTechnicalParameters && (
+					<section
+						id="technical-parameters"
+						aria-labelledby="technical-parameters-heading"
+						className="border-border-subtle bg-surface-card scroll-mt-28 rounded-lg border p-5 sm:p-7 lg:p-9"
+					>
+						<h2
+							id="technical-parameters-heading"
+							className="text-text-primary mb-6 text-2xl font-semibold tracking-tight"
+						>
 							{t("technicalParameters")}
 						</h2>
-						<dl className="text-sm">
+						<dl className="grid gap-x-10 text-sm sm:grid-cols-2">
 							{outerDimensions && (
 								<SpecRow label={t("outerDimensions")} values={[outerDimensions]} emphasised />
 							)}
@@ -80,7 +130,7 @@ export async function ProductSpecs({
 								<SpecRow key={row.label} label={row.label} values={row.values} />
 							))}
 						</dl>
-					</div>
+					</section>
 				)}
 			</div>
 		</section>
@@ -91,12 +141,14 @@ function SpecRow({ label, values, emphasised }: { label: string; values: string[
 	return (
 		<div
 			className={
-				"border-border-subtle flex items-baseline justify-between gap-6 border-b py-2.5 last:border-b-0" +
+				"border-border-subtle grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-5 border-b py-3.5" +
 				(emphasised ? " bg-surface-secondary -mx-3 rounded-sm px-3" : "")
 			}
 		>
-			<dt className="text-text-secondary">{label}</dt>
-			<dd className="text-text-primary text-right font-medium tabular-nums">{values.join(", ")}</dd>
+			<dt className="text-text-secondary break-words">{label}</dt>
+			<dd className="text-text-primary text-right font-medium break-words tabular-nums">
+				{values.join(", ")}
+			</dd>
 		</div>
 	);
 }

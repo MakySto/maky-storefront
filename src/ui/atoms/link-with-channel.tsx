@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { type ComponentProps } from "react";
-import { REVERSE_MAP } from "@/lib/channel-map";
+import { marketHref } from "@/lib/channel-map";
 
 export const LinkWithChannel = ({
 	href,
@@ -18,9 +18,5 @@ export const LinkWithChannel = ({
 		return <Link {...props} href={href} />;
 	}
 
-	// Convert Saleor slug (sk-eur) to friendly prefix (sk)
-	const friendly = REVERSE_MAP[channel] || channel;
-	const hrefWithChannel = `/${friendly}${href}`;
-
-	return <Link {...props} href={hrefWithChannel} />;
+	return <Link {...props} href={marketHref(channel, href)} />;
 };

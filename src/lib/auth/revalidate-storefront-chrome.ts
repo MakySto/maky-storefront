@@ -1,7 +1,7 @@
 import "server-only";
 
 import { revalidatePath } from "next/cache";
-import { REVERSE_MAP } from "@/lib/channel-map";
+import { REVERSE_MAP, marketHref } from "@/lib/channel-map";
 
 /**
  * MAKY adaptation of the upstream module (B.4.5): upstream iterates configured locales over
@@ -14,7 +14,7 @@ import { REVERSE_MAP } from "@/lib/channel-map";
 export function revalidateStorefrontBrowsePath(channel: string, suffix: string) {
 	const market = REVERSE_MAP[channel];
 	if (market) {
-		revalidatePath(`/${market}${suffix}`);
+		revalidatePath(marketHref(channel, suffix));
 	}
 	revalidatePath(`/${channel}${suffix}`);
 }

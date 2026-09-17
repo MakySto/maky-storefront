@@ -69,7 +69,13 @@ fragment ProductListItem on Product {
 			slug
 		}
 	}
-	thumbnail(size: 1024, format: WEBP) {
+	# Temporary high-quality escape hatch for legacy Menabo imports. Their source
+	# filenames were imported as `_thumbnail_4`, so Saleor's 1024/WEBP resolver
+	# serves a physical 128px file. ORIGINAL returns the real 900–1400px source;
+	# next/image still sends each browser only the requested display width. Once
+	# CFM reimports those media with neutral source names, this can return to a
+	# normal 1024px rendition.
+	thumbnail(size: 4096, format: ORIGINAL) {
 		url
 		alt
 	}

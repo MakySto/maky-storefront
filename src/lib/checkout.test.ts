@@ -8,7 +8,7 @@ const { executeAuthenticatedGraphQL, cookies } = vi.hoisted(() => ({
 vi.mock("@/lib/graphql", () => ({ executeAuthenticatedGraphQL }));
 vi.mock("next/headers", () => ({ cookies }));
 
-import { findOrCreate, lookup } from "./checkout";
+import { clearCheckoutCookieByValue, findOrCreate, lookup } from "./checkout";
 
 const CHECKOUT = { id: "Q2hlY2tvdXQ6MQ==", lines: [], totalPrice: {} };
 
@@ -21,6 +21,36 @@ const transportFailure = (message: string) => ({
 beforeEach(() => {
 	vi.clearAllMocks();
 	cookies.mockResolvedValue({ get: () => undefined, set: vi.fn(), delete: vi.fn(), getAll: () => [] });
+});
+
+describe("clearCheckoutCookieByValue", () => {
+	it("deletes only the cookie that still points at the completed checkout", async () => {
+		const deleteCookie = vi.fn();
+		cookies.mockResolvedValue({
+			getAll: () => [
+				{ name: "checkoutId-sk-eur", value: "new-checkout" },
+				{ name: "checkoutId-cz-czk", value: "completed-checkout" },
+			],
+			delete: deleteCookie,
+		});
+
+		await clearCheckoutCookieByValue("completed-checkout");
+
+		expect(deleteCookie).toHaveBeenCalledOnce();
+		expect(deleteCookie).toHaveBeenCalledWith("checkoutId-cz-czk");
+	});
+
+	it("keeps a newer cart when a delayed action finishes for the old checkout", async () => {
+		const deleteCookie = vi.fn();
+		cookies.mockResolvedValue({
+			getAll: () => [{ name: "checkoutId-sk-eur", value: "new-checkout" }],
+			delete: deleteCookie,
+		});
+
+		await clearCheckoutCookieByValue("old-checkout");
+
+		expect(deleteCookie).not.toHaveBeenCalled();
+	});
 });
 
 /**

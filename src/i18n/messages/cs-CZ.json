@@ -257,6 +257,7 @@
 		"items": "{count, plural, one {# položka} few {# položky} other {# položek}}",
 		"emptyCartHint": "Zatím jste do košíku nic nepřidali.",
 		"loadFailed": "Košík se nepodařilo načíst. Zkuste to prosím za chvíli.",
+		"updateFailed": "Košík se nepodařilo aktualizovat. Zkuste to znovu.",
 		"startShopping": "Začít nakupovat",
 		"shippingAtCheckout": "Vypočítá se v pokladně",
 		"decreaseQuantity": "Snížit množství",

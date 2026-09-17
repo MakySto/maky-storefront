@@ -4,6 +4,7 @@ export type GalleryMedia = {
 	url: string;
 	alt?: string | null;
 	type?: string | null;
+	sortOrder?: number | null;
 };
 
 export type GalleryImage = { id?: string | null; url: string; alt: string | null | undefined };
@@ -18,8 +19,20 @@ type GalleryVariant = { media?: readonly GalleryMedia[] | null } | null | undefi
 
 const images = (media: readonly GalleryMedia[] | null | undefined): GalleryImage[] =>
 	(media ?? [])
-		.filter((item) => item.type === "IMAGE")
-		.map((item) => ({ id: item.id, url: item.url, alt: item.alt }));
+		.map((item, index) => ({ item, index }))
+		.filter(({ item }) => item.type === "IMAGE")
+		.sort((a, b) => {
+			const aHasOrder = typeof a.item.sortOrder === "number";
+			const bHasOrder = typeof b.item.sortOrder === "number";
+
+			if (aHasOrder && bHasOrder) {
+				return a.item.sortOrder! - b.item.sortOrder! || a.index - b.index;
+			}
+			if (aHasOrder) return -1;
+			if (bHasOrder) return 1;
+			return a.index - b.index;
+		})
+		.map(({ item }) => ({ id: item.id, url: item.url, alt: item.alt }));
 
 /**
  * The PDP gallery, in the order Saleor holds the media — primary first.

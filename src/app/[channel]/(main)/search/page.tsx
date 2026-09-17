@@ -67,7 +67,7 @@ async function SearchContent({
 	}
 
 	if (Array.isArray(queryParam)) {
-		redirect(`/${params.channel}/search?query=${encodeURIComponent(query)}`);
+		redirect(marketHref(params.channel, `/search?query=${encodeURIComponent(query)}`));
 	}
 
 	// Parse pagination

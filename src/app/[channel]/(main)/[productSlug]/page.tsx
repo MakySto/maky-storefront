@@ -144,7 +144,7 @@ export async function generateMetadata(props: {
 		: Boolean(product.translation?.seoTitle?.trim());
 
 	const description = product.seoDescription || product.name;
-	const ogImage = product.media?.[0]?.url || product.thumbnail?.url;
+	const ogImage = getGalleryImages(product, null)[0]?.url || product.thumbnail?.url;
 	const priceAmount = product.pricing?.priceRange?.start?.gross?.amount;
 	const priceCurrency = product.pricing?.priceRange?.start?.gross?.currency;
 

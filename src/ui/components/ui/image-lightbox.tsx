@@ -31,7 +31,12 @@ export function imageKey(image: LightboxImage, index: number) {
 	return image.id ?? `${image.url}-${index}`;
 }
 
-function getAlt(image: LightboxImage, productName: string, index: number) {
+export function imageAlt(image: LightboxImage, productName: string, index: number) {
+	const explicitAlt = image.alt?.trim();
+	return explicitAlt || (index === 0 ? productName : "");
+}
+
+export function imageNavigationLabel(image: LightboxImage, productName: string, index: number) {
 	return image.alt?.trim() || `${productName} – ${index + 1}`;
 }
 
@@ -183,7 +188,7 @@ export function ImageLightbox({
 					>
 						<ResilientProductImage
 							src={image.url}
-							alt={getAlt(image, productName, currentIndex)}
+							alt={imageAlt(image, productName, currentIndex)}
 							fill
 							className="object-contain p-4 sm:p-6 md:p-8"
 							// The stage is height-bound, so it never paints 100vw — and every
@@ -209,7 +214,7 @@ export function ImageLightbox({
 									key={`lb-${imageKey(img, index)}`}
 									type="button"
 									onClick={() => setCurrentIndex(index)}
-									aria-label={getAlt(img, productName, index)}
+									aria-label={imageNavigationLabel(img, productName, index)}
 									aria-current={currentIndex === index ? "true" : undefined}
 									className={cn(
 										"relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border bg-white/90 transition-all sm:h-16 sm:w-16",
@@ -220,7 +225,7 @@ export function ImageLightbox({
 								>
 									<ResilientProductImage
 										src={img.url}
-										alt={getAlt(img, productName, index)}
+										alt=""
 										fill
 										className="object-contain p-1"
 										sizes="64px"

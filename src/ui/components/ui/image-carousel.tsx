@@ -14,7 +14,13 @@ import {
 	useCarousel,
 	type CarouselApi,
 } from "@/ui/components/ui/carousel";
-import { ImageLightbox, imageKey, type LightboxImage } from "@/ui/components/ui/image-lightbox";
+import {
+	ImageLightbox,
+	imageAlt,
+	imageKey,
+	imageNavigationLabel,
+	type LightboxImage,
+} from "@/ui/components/ui/image-lightbox";
 import { ImageCarouselEmpty } from "@/ui/components/ui/image-carousel-empty";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
@@ -35,10 +41,6 @@ interface ImageCarouselProps {
 	 * purchase summary beside it.
 	 */
 	aspectClassName?: string;
-}
-
-function getAlt(image: LightboxImage, productName: string, index: number) {
-	return image.alt?.trim() || `${productName} – ${index + 1}`;
 }
 
 export function ImageCarousel({
@@ -103,11 +105,11 @@ export function ImageCarousel({
 											aspectClassName,
 										)}
 										onClick={() => setLightboxOpen(true)}
-										aria-label={getAlt(image, productName, index)}
+										aria-label={imageNavigationLabel(image, productName, index)}
 									>
 										<ResilientProductImage
 											src={image.url}
-											alt={getAlt(image, productName, index)}
+											alt={imageAlt(image, productName, index)}
 											fill
 											className="object-contain p-2"
 											// Breaks at 1024, where the PDP grid actually becomes two
@@ -147,6 +149,7 @@ export function ImageCarousel({
 						{showArrows && images.length > 1 && (
 							<>
 								<CarouselPrevious
+									aria-label={tCommon("back")}
 									variant="ghost"
 									className={cn(
 										"border-border-default left-2 hidden border bg-white/90 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:bg-white md:flex",
@@ -154,6 +157,7 @@ export function ImageCarousel({
 									)}
 								/>
 								<CarouselNext
+									aria-label={tCommon("next")}
 									variant="ghost"
 									className={cn(
 										"border-border-default right-2 hidden border bg-white/90 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:bg-white md:flex",
@@ -176,7 +180,7 @@ export function ImageCarousel({
 								type="button"
 								key={`thumb-${imageKey(image, index)}`}
 								onClick={() => scrollToImage(index)}
-								aria-label={getAlt(image, productName, index)}
+								aria-label={imageNavigationLabel(image, productName, index)}
 								aria-current={selectedIndex === index ? "true" : undefined}
 								className={cn(
 									"relative flex h-20 w-20 flex-shrink-0 snap-start items-center justify-center overflow-hidden rounded-md border bg-white p-1 transition-all",
@@ -188,7 +192,7 @@ export function ImageCarousel({
 							>
 								<ResilientProductImage
 									src={image.url}
-									alt={getAlt(image, productName, index)}
+									alt=""
 									fill
 									className="object-contain p-1"
 									sizes="80px"
@@ -207,6 +211,8 @@ export function ImageCarousel({
 					initialIndex={selectedIndex}
 					onClose={() => setLightboxOpen(false)}
 					closeLabel={tCommon("close")}
+					previousLabel={tCommon("back")}
+					nextLabel={tCommon("next")}
 				/>
 			)}
 		</>

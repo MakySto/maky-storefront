@@ -1,5 +1,5 @@
 import * as Checkout from "@/lib/checkout";
-import { CartDrawer } from "./cart-drawer";
+import { CartDrawer } from "./cart-drawer-content";
 
 interface CartDrawerWrapperProps {
 	channel: string;
@@ -15,6 +15,8 @@ export async function CartDrawerWrapper({ channel }: CartDrawerWrapperProps) {
 			checkoutId={checkoutId || null}
 			lines={checkout?.lines ?? []}
 			totalPrice={checkout?.totalPrice ?? null}
+			subtotalPrice={checkout?.subtotalPrice ?? null}
+			shippingPrice={checkout?.shippingPrice ?? null}
 			channel={channel}
 			// An empty drawer and an unreachable one are different statements. Only
 			// one of them is about the shopper's basket.

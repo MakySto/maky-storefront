@@ -257,6 +257,7 @@
 		"items": "{count, plural, one {# item} other {# items}}",
 		"emptyCartHint": "Looks like you haven't added anything to your cart yet.",
 		"loadFailed": "We couldn't load your cart. Please try again in a moment.",
+		"updateFailed": "We couldn't update your cart. Please try again.",
 		"startShopping": "Start shopping",
 		"shippingAtCheckout": "Calculated at checkout",
 		"decreaseQuantity": "Decrease quantity",

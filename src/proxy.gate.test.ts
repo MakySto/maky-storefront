@@ -234,6 +234,12 @@ describe("real routes are never mistaken for products", () => {
 		it(`never asks Saleor about /sk/${segment}`, async () => {
 			const mock = upstream(absent);
 			const res = await proxy(req(`/sk/${segment}`));
+			if (segment === "cart") {
+				expect(res.status).toBe(308);
+				expect(res.headers.get("location")).toContain("/sk/kosik");
+				expect(mock).not.toHaveBeenCalled();
+				return;
+			}
 
 			expect(res.status).not.toBe(404);
 			expect(res.headers.get("x-maky-gate")).toBe("unclassified");

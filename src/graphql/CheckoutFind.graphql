@@ -12,6 +12,9 @@ query CheckoutFind($id: ID!) {
 				}
 			}
 			variant {
+				quantityAvailable
+				quantityLimitPerCustomer
+				trackInventory
 				product {
 					id
 					name
@@ -63,6 +66,18 @@ query CheckoutFind($id: ID!) {
 			}
 		}
 		totalPrice {
+			gross {
+				amount
+				currency
+			}
+		}
+		subtotalPrice {
+			gross {
+				amount
+				currency
+			}
+		}
+		shippingPrice {
 			gross {
 				amount
 				currency

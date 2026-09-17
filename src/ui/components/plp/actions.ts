@@ -148,7 +148,7 @@ export async function addVariantToCart(input: {
  * Invalidate the cart page and the chrome carrying its badge.
  *
  * This was `revalidatePath("/cart")`, which has never matched anything: the
- * cart lives at `/sk/cart`, which the proxy rewrites to `/sk-eur/cart`, so a
+ * cart lives at `/sk/kosik`, which the proxy rewrites to `/sk-eur/cart`, so a
  * market-less `/cart` is a different and non-existent route. It matters more
  * now than it did — an `unconfirmed` add tells the shopper to go and look at
  * their cart, and until this fix that page could answer from cache.

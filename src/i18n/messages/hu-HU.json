@@ -257,6 +257,7 @@
 		"items": "{count, plural, one {# tétel} other {# tétel}}",
 		"emptyCartHint": "Még nem tett terméket a kosarába.",
 		"loadFailed": "A kosarat nem sikerült betölteni. Kérjük, próbálja újra egy pillanat múlva.",
+		"updateFailed": "A kosarat nem sikerült frissíteni. Kérjük, próbálja újra.",
 		"startShopping": "Vásárlás megkezdése",
 		"shippingAtCheckout": "A pénztárnál számítjuk ki",
 		"decreaseQuantity": "Mennyiség csökkentése",

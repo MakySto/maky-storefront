@@ -1,27 +1,27 @@
 import { Suspense } from "react";
 import { type Metadata } from "next";
+import { ArrowLeft, RotateCcw, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { type CheckoutFindQuery } from "@/gql/graphql";
 import { CheckoutLink } from "./checkout-link";
-import { DeleteLineButton } from "./delete-line-button";
 import * as Checkout from "@/lib/checkout";
+import { getLocaleFromChannel, formatPrice } from "@/config/locale";
 import { compareAtLineTotal } from "@/lib/pricing";
-import { formatMoney, getHrefForVariant } from "@/lib/utils";
-import { getLocaleFromChannel } from "@/config/locale";
+import { getHrefForVariant } from "@/lib/utils";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
+import { CartLineActions } from "@/ui/components/cart/cart-line-actions";
+import { getVariantDetails } from "@/ui/components/cart/variant-details";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
+
+type CheckoutData = NonNullable<CheckoutFindQuery["checkout"]>;
+type CartLine = CheckoutData["lines"][number];
 
 export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {
 	const { channel } = await props.params;
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "cart" });
+
 	return {
 		title: t("yourCart"),
-		// noindex, follow — not a robots.txt Disallow. Three of the five Disallow
-		// entries in robots.ts are market-less legacy ("/cart" never matches
-		// "/sk/cart"), and the comment there records why they must not simply be
-		// re-added with a market wildcard: Google already holds junk URLs, and a
-		// URL a crawler is forbidden to fetch can never be re-crawled, so it can
-		// never be dropped either. `follow: true` keeps the links out of here
-		// crawlable.
 		robots: { index: false, follow: true },
 	};
 }
@@ -29,61 +29,141 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 export default async function Page(props: { params: Promise<{ channel: string }> }) {
 	const { channel } = await props.params;
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "cart" });
-	return (
-		<section className="mx-auto max-w-7xl p-8">
-			<h1 className="mt-8 text-3xl font-bold text-neutral-900">{t("yourCart")}</h1>
-			{/* Cart content is dynamic (reads cookies) - wrap in Suspense */}
-			<Suspense fallback={<CartSkeleton />}>
-				<CartContent params={props.params} />
-			</Suspense>
-		</section>
-	);
-}
 
-/**
- * A line's total, with the pre-discount total struck through above it when
- * there is one.
- *
- * The drawer has always shown this and the page never did, so the two surfaces
- * described the same line differently. `compareAtLineTotal` is shared so they
- * cannot drift apart again.
- */
-function CartLinePrice({
-	total,
-	compareAt,
-}: {
-	total: { amount: number; currency: string };
-	compareAt: { amount: number; currency: string } | null;
-}) {
 	return (
-		<div className="text-right">
-			{compareAt && (
-				<p className="text-xs text-neutral-500 line-through">
-					{formatMoney(compareAt.amount, compareAt.currency)}
-				</p>
-			)}
-			<p className="font-semibold text-neutral-900">{formatMoney(total.amount, total.currency)}</p>
+		<div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+			<h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{t("yourCart")}</h1>
+			<Suspense fallback={<CartSkeleton />}>
+				<CartContent channel={channel} />
+			</Suspense>
 		</div>
 	);
 }
 
-/**
- * Dynamic cart content - reads cookies at request time.
- * With Cache Components, this streams in after the static shell.
- */
-async function CartContent({ params: paramsPromise }: { params: Promise<{ channel: string }> }) {
-	const params = await paramsPromise;
-	const t = await getTranslations({ locale: getLocaleFromChannel(params.channel), namespace: "cart" });
-	const checkoutId = await Checkout.getIdFromCookies(params.channel);
+function CartLinePrice({ line, locale }: { line: CartLine; locale: string }) {
+	const compareAt = compareAtLineTotal({
+		price: line.variant.pricing?.price?.gross.amount,
+		priceUndiscounted: line.variant.pricing?.priceUndiscounted?.gross.amount,
+		currency: line.variant.pricing?.priceUndiscounted?.gross.currency,
+		quantity: line.quantity,
+	});
+
+	return (
+		<div className="shrink-0 text-right">
+			{compareAt ? (
+				<p className="text-muted-foreground text-xs line-through">
+					{formatPrice(compareAt.amount, compareAt.currency, locale)}
+				</p>
+			) : null}
+			<p className="font-semibold tabular-nums">
+				{formatPrice(line.totalPrice.gross.amount, line.totalPrice.gross.currency, locale)}
+			</p>
+		</div>
+	);
+}
+
+async function CartItem({
+	line,
+	checkoutId,
+	channel,
+	locale,
+}: {
+	line: CartLine;
+	checkoutId: string;
+	channel: string;
+	locale: string;
+}) {
+	const t = await getTranslations({ locale, namespace: "cart" });
+	const details = getVariantDetails(line.variant);
+
+	return (
+		<li className="border-border bg-card rounded-xl border p-4 shadow-xs sm:p-5">
+			<div className="flex gap-4 sm:gap-5">
+				<LinkWithChannel
+					href={getHrefForVariant({
+						productSlug: line.variant.product.slug,
+						variantId: line.variant.id,
+					})}
+					aria-label={line.variant.product.name}
+					className="border-border bg-background relative h-28 w-28 shrink-0 overflow-hidden rounded-xl border sm:h-36 sm:w-36"
+				>
+					{line.variant.product.thumbnail?.url ? (
+						<ResilientProductImage
+							src={line.variant.product.thumbnail.url}
+							alt={line.variant.product.thumbnail.alt?.trim() || line.variant.product.name}
+							fill
+							sizes="(min-width: 640px) 144px, 112px"
+							className="object-contain p-2"
+						/>
+					) : null}
+				</LinkWithChannel>
+
+				<div className="flex min-w-0 flex-1 flex-col">
+					<div className="flex items-start justify-between gap-4">
+						<div className="min-w-0">
+							<LinkWithChannel
+								href={getHrefForVariant({
+									productSlug: line.variant.product.slug,
+									variantId: line.variant.id,
+								})}
+								className="line-clamp-2 leading-6 font-semibold hover:underline"
+							>
+								{line.variant.product.name}
+							</LinkWithChannel>
+							{line.variant.product.category?.name ? (
+								<p className="text-muted-foreground mt-1 text-sm">{line.variant.product.category.name}</p>
+							) : null}
+							{details.length > 0 ? (
+								<p className="text-muted-foreground mt-1 line-clamp-2 text-sm break-words">
+									{details
+										.map((detail) => t("variantAttribute", { name: detail.name, value: detail.value }))
+										.join(" · ")}
+								</p>
+							) : line.variant.name && line.variant.name !== line.variant.id ? (
+								<p className="text-muted-foreground mt-1 line-clamp-2 text-sm break-all">
+									{t("variantLabel", { variant: line.variant.name })}
+								</p>
+							) : null}
+						</div>
+						<div className="hidden sm:block">
+							<CartLinePrice line={line} locale={locale} />
+						</div>
+					</div>
+				</div>
+			</div>
+			<div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+				<CartLineActions
+					channel={channel}
+					checkoutId={checkoutId}
+					lineId={line.id}
+					productName={line.variant.product.name}
+					quantity={line.quantity}
+					trackInventory={line.variant.trackInventory}
+					quantityAvailable={line.variant.quantityAvailable}
+					quantityLimitPerCustomer={line.variant.quantityLimitPerCustomer}
+				/>
+				<div className="sm:hidden">
+					<CartLinePrice line={line} locale={locale} />
+				</div>
+			</div>
+		</li>
+	);
+}
+
+async function CartContent({ channel }: { channel: string }) {
+	const locale = getLocaleFromChannel(channel);
+	const t = await getTranslations({ locale, namespace: "cart" });
+	const tCheckout = await getTranslations({ locale, namespace: "checkout.common" });
+	const checkoutId = await Checkout.getIdFromCookies(channel);
 	const lookup = await Checkout.lookup(checkoutId);
 
-	// An outage is not an empty cart. This used to collapse the two, so a few
-	// seconds of Saleor being unreachable told the shopper their basket was empty
-	// — a statement about their data that we had no basis to make.
 	if (lookup.status === "upstream-error") {
 		return (
-			<div className="mt-12">
-				<p role="status" className="my-12 text-sm text-neutral-500">
+			<div className="border-border bg-card mt-10 flex min-h-72 flex-col items-center justify-center rounded-2xl border px-6 text-center">
+				<div className="bg-secondary mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+					<RotateCcw className="text-muted-foreground h-7 w-7" aria-hidden />
+				</div>
+				<p role="status" className="text-muted-foreground max-w-md text-sm">
 					{t("loadFailed")}
 				</p>
 			</div>
@@ -91,14 +171,17 @@ async function CartContent({ params: paramsPromise }: { params: Promise<{ channe
 	}
 
 	const checkout = lookup.status === "found" ? lookup.checkout : null;
-
-	if (!checkout || checkout.lines.length < 1) {
+	if (!checkout || checkout.lines.length === 0) {
 		return (
-			<div className="mt-12">
-				<p className="my-12 text-sm text-neutral-500">{t("emptyCartHint")}</p>
+			<div className="border-border bg-card mt-10 flex min-h-80 flex-col items-center justify-center rounded-2xl border px-6 text-center">
+				<div className="bg-secondary mb-5 flex h-20 w-20 items-center justify-center rounded-full">
+					<ShoppingBag className="text-muted-foreground h-9 w-9" aria-hidden />
+				</div>
+				<h2 className="text-xl font-semibold">{t("emptyCart")}</h2>
+				<p className="text-muted-foreground mt-2 mb-7 max-w-sm text-sm">{t("emptyCartHint")}</p>
 				<LinkWithChannel
 					href="/products"
-					className="inline-block max-w-full rounded border border-transparent bg-neutral-900 px-6 py-3 text-center font-medium text-neutral-50 hover:bg-neutral-800 aria-disabled:cursor-not-allowed aria-disabled:bg-neutral-500 sm:px-16"
+					className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-12 items-center rounded-md px-6 font-semibold transition-colors"
 				>
 					{t("startShopping")}
 				</LinkWithChannel>
@@ -106,110 +189,87 @@ async function CartContent({ params: paramsPromise }: { params: Promise<{ channe
 		);
 	}
 
-	return (
-		<form className="mt-12">
-			<ul
-				data-testid="CartProductList"
-				role="list"
-				className="divide-y divide-neutral-200 border-t border-b border-neutral-200"
-			>
-				{checkout.lines.map((item) => (
-					<li key={item.id} className="flex py-4">
-						<div className="aspect-square h-24 w-24 shrink-0 overflow-hidden rounded-md border bg-neutral-50 sm:h-32 sm:w-32">
-							{item.variant?.product?.thumbnail?.url && (
-								<ResilientProductImage
-									src={item.variant.product.thumbnail.url}
-									alt={item.variant.product.thumbnail.alt ?? ""}
-									width={200}
-									height={200}
-									className="h-full w-full object-contain object-center"
-								/>
-							)}
-						</div>
-						<div className="relative flex flex-1 flex-col justify-between p-4 py-2">
-							<div className="flex justify-between justify-items-start gap-4">
-								<div>
-									<LinkWithChannel
-										href={getHrefForVariant({
-											productSlug: item.variant.product.slug,
-											variantId: item.variant.id,
-										})}
-									>
-										<h2 className="font-medium text-neutral-700">{item.variant?.product?.name}</h2>
-									</LinkWithChannel>
-									<p className="mt-1 text-sm text-neutral-500">{item.variant?.product?.category?.name}</p>
-									{item.variant.name !== item.variant.id && Boolean(item.variant.name) && (
-										<p className="mt-1 text-sm text-neutral-500">
-											{t("variantLabel", { variant: item.variant.name })}
-										</p>
-									)}
-								</div>
-								<CartLinePrice
-									total={item.totalPrice.gross}
-									compareAt={compareAtLineTotal({
-										price: item.variant.pricing?.price?.gross.amount,
-										priceUndiscounted: item.variant.pricing?.priceUndiscounted?.gross.amount,
-										currency: item.variant.pricing?.priceUndiscounted?.gross.currency,
-										quantity: item.quantity,
-									})}
-								/>
-							</div>
-							<div className="flex justify-between">
-								<div className="text-sm font-bold">{t("quantityLabel", { quantity: item.quantity })}</div>
-								<DeleteLineButton channel={params.channel} checkoutId={checkoutId} lineId={item.id} />
-							</div>
-						</div>
-					</li>
-				))}
-			</ul>
+	const itemCount = checkout.lines.reduce((sum, line) => sum + line.quantity, 0);
+	const currency = checkout.totalPrice.gross.currency;
+	const shipping = checkout.shippingPrice.gross.amount;
 
-			<div className="mt-12">
-				<div className="rounded border bg-neutral-50 px-4 py-2">
-					<div className="flex items-center justify-between gap-2 py-2">
-						<div>
-							<p className="font-semibold text-neutral-900">{t("total")}</p>
-							<p className="mt-1 text-sm text-neutral-500">{t("shippingNextStepNote")}</p>
+	return (
+		<div className="mt-3">
+			<p className="text-muted-foreground text-sm">{t("items", { count: itemCount })}</p>
+			<div className="mt-7 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+				<div>
+					<ul data-testid="CartProductList" role="list" className="space-y-4">
+						{checkout.lines.map((line) => (
+							<CartItem key={line.id} line={line} checkoutId={checkoutId} channel={channel} locale={locale} />
+						))}
+					</ul>
+					<LinkWithChannel
+						href="/products"
+						className="text-muted-foreground hover:text-foreground mt-6 inline-flex h-11 items-center gap-2 text-sm font-medium"
+					>
+						<ArrowLeft className="h-4 w-4" aria-hidden />
+						{t("continueShopping")}
+					</LinkWithChannel>
+				</div>
+
+				<aside className="border-border bg-card rounded-2xl border p-5 shadow-xs lg:sticky lg:top-28 lg:p-6">
+					<h2 className="text-xl font-semibold">{t("total")}</h2>
+					<div className="mt-5 space-y-3 text-sm">
+						<div className="flex items-center justify-between gap-4">
+							<span className="text-muted-foreground">{t("subtotal")}</span>
+							<span className="tabular-nums">
+								{formatPrice(
+									checkout.subtotalPrice.gross.amount,
+									checkout.subtotalPrice.gross.currency,
+									locale,
+								)}
+							</span>
 						</div>
-						<div className="font-medium text-neutral-900">
-							{formatMoney(checkout.totalPrice.gross.amount, checkout.totalPrice.gross.currency)}
+						<div className="flex items-start justify-between gap-4">
+							<span className="text-muted-foreground flex items-center gap-2">
+								<Truck className="h-4 w-4" aria-hidden />
+								{t("shipping")}
+							</span>
+							<span className="max-w-44 text-right" title={t("shippingNextStepNote")}>
+								{shipping > 0
+									? formatPrice(shipping, checkout.shippingPrice.gross.currency, locale)
+									: t("shippingAtCheckout")}
+							</span>
+						</div>
+						<div className="border-border flex items-center justify-between gap-4 border-t pt-4 text-lg font-semibold">
+							<span>{t("total")}</span>
+							<span className="tabular-nums">
+								{formatPrice(checkout.totalPrice.gross.amount, currency, locale)}
+							</span>
 						</div>
 					</div>
-				</div>
-				<div className="mt-10 text-center">
-					<CheckoutLink
-						checkoutId={checkoutId}
-						disabled={!checkout.lines.length}
-						className="w-full sm:w-1/3"
-					/>
-				</div>
+					<CheckoutLink checkoutId={checkoutId} className="mt-6 w-full" />
+					<p className="text-muted-foreground mt-4 flex items-center justify-center gap-2 text-xs">
+						<ShieldCheck className="h-4 w-4" aria-hidden />
+						{tCheckout("securePurchase")}
+					</p>
+				</aside>
 			</div>
-		</form>
+		</div>
 	);
 }
 
-/**
- * Skeleton fallback for cart - part of static shell.
- */
 function CartSkeleton() {
 	return (
-		<div className="mt-12 animate-pulse">
-			<div className="divide-y divide-neutral-200 border-t border-b border-neutral-200">
-				{[1, 2].map((i) => (
-					<div key={i} className="flex py-4">
-						<div className="h-24 w-24 rounded-md bg-neutral-200 sm:h-32 sm:w-32" />
-						<div className="flex-1 p-4 py-2">
-							<div className="h-5 w-48 rounded bg-neutral-200" />
-							<div className="mt-2 h-4 w-32 rounded bg-neutral-200" />
+		<div className="mt-10 animate-pulse lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
+			<div className="space-y-4">
+				{[1, 2].map((item) => (
+					<div key={item} className="border-border bg-card flex rounded-xl border p-4 sm:p-5">
+						<div className="bg-secondary h-28 w-28 shrink-0 rounded-xl sm:h-36 sm:w-36" />
+						<div className="flex-1 p-4">
+							<div className="bg-secondary h-5 w-2/3 rounded" />
+							<div className="bg-secondary mt-3 h-4 w-1/3 rounded" />
+							<div className="bg-secondary mt-8 h-11 w-40 rounded" />
 						</div>
 					</div>
 				))}
 			</div>
-			<div className="mt-12">
-				<div className="h-20 rounded bg-neutral-100" />
-				<div className="mt-10 flex justify-center">
-					<div className="h-12 w-48 rounded bg-neutral-200" />
-				</div>
-			</div>
+			<div className="border-border bg-card mt-8 h-72 rounded-2xl border lg:mt-0" />
 		</div>
 	);
 }

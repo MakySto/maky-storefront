@@ -18,7 +18,7 @@ export const CheckoutLink = ({ disabled, checkoutId, className = "" }: Props) =>
 			aria-disabled={disabled}
 			onClick={(e) => disabled && e.preventDefault()}
 			href={checkoutId ? buildCheckoutPath({ checkoutId }) : "/checkout"}
-			className={`inline-block max-w-full rounded border border-transparent bg-neutral-900 px-6 py-3 text-center font-medium text-neutral-50 hover:bg-neutral-800 aria-disabled:cursor-not-allowed aria-disabled:bg-neutral-500 sm:px-16 ${className}`}
+			className={`bg-primary text-primary-foreground hover:bg-primary/90 inline-flex min-h-12 max-w-full items-center justify-center rounded-md px-6 py-3 text-center font-semibold transition-colors aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 ${className}`}
 		>
 			{t("checkout")}
 		</a>

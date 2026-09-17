@@ -8,6 +8,8 @@ import {
 	DEFAULT_MARKET,
 	COOKIE_NAME,
 	COOKIE_MAX_AGE,
+	cartSegment,
+	marketHref,
 } from "./lib/channel-map";
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
 import { catalogRedirectTarget } from "./lib/catalog-content/redirects";
@@ -210,8 +212,35 @@ async function route(request: NextRequest) {
 		if (friendly) {
 			const rest = segments.slice(1).join("/");
 			const url = request.nextUrl.clone();
-			url.pathname = "/" + friendly + (rest ? "/" + rest : "");
+			url.pathname = marketHref(first, rest ? "/" + rest : "");
 			return NextResponse.redirect(url, 301);
+		}
+	}
+
+	// LOCALISED CART URL -> the shared internal `/cart` route.
+	//
+	// The physical App Router directory stays language-neutral while shoppers and
+	// search engines see their market's word. This runs before the existence gate;
+	// otherwise `/sk/kosik` is indistinguishable from a product slug and can 404.
+	//
+	// The decision uses the normalized pathname, while the rewrite keeps Next's
+	// `.rsc` and `/_segments/…segment.rsc` suffixes for client navigation.
+	if (first && FRIENDLY_SLUGS.has(first)) {
+		const normalized = normalizePathname(pathname).split("/").filter(Boolean);
+		const requested = normalized.length === 2 ? normalized[1] : undefined;
+		const canonical = cartSegment(first);
+
+		if (requested === "cart" && canonical !== "cart") {
+			const rawRest = segments.slice(1).join("/");
+			const url = request.nextUrl.clone();
+			url.pathname = marketHref(first, "/" + rawRest);
+			return NextResponse.redirect(url, 308);
+		}
+
+		if (requested === canonical && canonical !== "cart") {
+			const rawRest = segments.slice(1).join("/");
+			const internalRest = "cart" + rawRest.slice(canonical.length);
+			return marketRewrite(request, first, null, internalRest);
 		}
 	}
 

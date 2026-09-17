@@ -17,7 +17,7 @@
 		},
 		"cart.viewCart": {
 			"source": "View cart",
-			"context": "Secondary CTA in the cart drawer footer, between the checkout CTA and 'continue shopping' — opens the full cart page at /{market}/cart.",
+			"context": "Secondary CTA in the cart drawer footer, between the checkout CTA and 'continue shopping' — opens the full cart page at its localized /{market}/{cart-segment} URL.",
 			"kind": "cta",
 			"maxLength": 30,
 			"callSites": ["src/ui/components/cart/cart-drawer.tsx"],
@@ -123,6 +123,15 @@
 			"usageCount": 2,
 			"runtimeStatus": "production"
 		},
+		"cart.updateFailed": {
+			"source": "We couldn't update your cart. Please try again.",
+			"context": "Inline error under a cart line when changing its quantity or removing it fails. Keep the line visible so the shopper can retry.",
+			"kind": "error",
+			"maxLength": 70,
+			"callSites": ["src/ui/components/cart/cart-line-actions.tsx"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
 		"cart.remove": {
 			"source": "Remove",
 			"context": "Remove-line text button on cart drawer line items.",
@@ -149,7 +158,8 @@
 			"kind": "aria",
 			"callSites": ["src/app/[channel]/(main)/cart/delete-line-button.tsx:25"],
 			"usageCount": 1,
-			"runtimeStatus": "production"
+			"runtimeStatus": "dormant",
+			"dormantNote": "Superseded by the product-specific cart.removeItemAria label; retained for translation compatibility."
 		},
 		"cart.removing": {
 			"source": "Removing",
@@ -166,7 +176,8 @@
 			"kind": "aria",
 			"callSites": ["src/app/[channel]/(main)/cart/delete-line-button.tsx:25"],
 			"usageCount": 1,
-			"runtimeStatus": "production"
+			"runtimeStatus": "dormant",
+			"dormantNote": "The new icon control keeps the product-specific label while pending; retained for translation compatibility."
 		},
 		"cart.shipping": {
 			"source": "Shipping",

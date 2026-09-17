@@ -52,11 +52,53 @@ export const COOKIE_NAME = "maky-market";
 export const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 /**
+ * Public, market-localised root segments.
+ *
+ * The App Router directory remains `cart`, because that is the internal route
+ * shared by every Saleor channel. The proxy maps these customer-facing words
+ * back to it. Keeping the table beside CHANNEL_MAP makes URL generation and
+ * request routing use the same source of truth.
+ */
+export const CART_SEGMENT_BY_MARKET: Readonly<Record<string, string>> = {
+	sk: "kosik",
+	cz: "kosik",
+	de: "warenkorb",
+	at: "warenkorb",
+	pl: "koszyk",
+	hu: "kosar",
+	it: "carrello",
+	fr: "panier",
+	es: "carrito",
+	ro: "cos",
+	us: "cart",
+	ca: "cart",
+};
+
+/** The canonical public cart segment for a friendly market or Saleor channel. */
+export function cartSegment(channelOrMarket: string): string {
+	const market = REVERSE_MAP[channelOrMarket] || channelOrMarket;
+	return CART_SEGMENT_BY_MARKET[market] || "cart";
+}
+
+/**
+ * Localise a canonical internal storefront path for one market.
+ *
+ * Query strings and hashes are deliberately preserved. Only complete root
+ * segments are replaced, so a product slug such as `/cart-box` is untouched.
+ */
+export function localizeMarketPath(channelOrMarket: string, path: string): string {
+	if (!path) return "";
+	const replacement = cartSegment(channelOrMarket);
+	return path.replace(/^\/cart(?=$|[/?#]|\.(?:rsc|json)(?:$|[/?#]))/, `/${replacement}`);
+}
+
+/**
  * Convert Saleor channel slug to friendly market URL path.
  * marketHref("sk-eur", "/products") → "/sk/products"
  * marketHref("sk-eur") → "/sk"
  */
 export function marketHref(channel: string, path: string = ""): string {
 	const friendly = REVERSE_MAP[channel] || channel;
-	return `/${friendly}${path ? (path.startsWith("/") ? path : "/" + path) : ""}`;
+	const normalizedPath = path ? (path.startsWith("/") ? path : "/" + path) : "";
+	return `/${friendly}${localizeMarketPath(friendly, normalizedPath)}`;
 }

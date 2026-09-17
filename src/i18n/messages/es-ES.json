@@ -257,6 +257,7 @@
 		"items": "{count, plural, one {# artículo} other {# artículos}}",
 		"emptyCartHint": "Todavía no has añadido ningún producto al carrito.",
 		"loadFailed": "No hemos podido cargar la cesta. Inténtalo de nuevo en un momento.",
+		"updateFailed": "No hemos podido actualizar la cesta. Inténtalo de nuevo.",
 		"startShopping": "Empezar a comprar",
 		"shippingAtCheckout": "Se calcula al finalizar la compra",
 		"decreaseQuantity": "Reducir cantidad",

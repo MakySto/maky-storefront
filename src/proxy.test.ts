@@ -5,7 +5,7 @@ import {
 	mockUncoveredMarket,
 	restoreChannelMap,
 } from "./lib/legal/uncovered-market.testkit";
-import { CHANNEL_MAP } from "./lib/channel-map";
+import { CHANNEL_MAP, cartSegment, marketHref } from "./lib/channel-map";
 import { catalogLanguageForMarket } from "./lib/catalog-content/language";
 import { CATALOG_REDIRECTS } from "./lib/catalog-content/redirects";
 import { BORROWED_ROUTES } from "./lib/catalog-content/borrowed-routes";
@@ -22,6 +22,58 @@ import { proxy } from "./proxy";
 const req = (path: string) => new NextRequest(new URL(`https://maky.store${path}`));
 
 const statusOf = async (path: string) => (await proxy(req(path))).status;
+
+const CART_ROUTES = {
+	sk: "kosik",
+	cz: "kosik",
+	de: "warenkorb",
+	at: "warenkorb",
+	pl: "koszyk",
+	hu: "kosar",
+	it: "carrello",
+	fr: "panier",
+	es: "carrito",
+	ro: "cos",
+	us: "cart",
+	ca: "cart",
+} as const;
+
+describe("localised cart routes", () => {
+	it("builds canonical public cart links without touching partial segments", () => {
+		for (const [market, segment] of Object.entries(CART_ROUTES)) {
+			expect(cartSegment(CHANNEL_MAP[market]!.saleorSlug)).toBe(segment);
+			expect(marketHref(CHANNEL_MAP[market]!.saleorSlug, "/cart")).toBe(`/${market}/${segment}`);
+		}
+		expect(marketHref("sk-eur", "/cart.rsc?__flight__=1")).toBe("/sk/kosik.rsc?__flight__=1");
+		expect(marketHref("sk-eur", "/cart.json#fragment")).toBe("/sk/kosik.json#fragment");
+		expect(marketHref("sk-eur", "/cart-box")).toBe("/sk/cart-box");
+	});
+
+	for (const [market, segment] of Object.entries(CART_ROUTES)) {
+		it(`serves /${market}/${segment} and canonicalises legacy forms`, async () => {
+			const channel = CHANNEL_MAP[market]!.saleorSlug;
+			const canonical = await proxy(req(`/${market}/${segment}`));
+			expect(canonical.status).not.toBeGreaterThanOrEqual(300);
+			expect(canonical.headers.get("x-middleware-rewrite")).toContain(`/${channel}/cart`);
+			expect(canonical.headers.get("x-channel")).toBe(channel);
+
+			const raw = await proxy(req(`/${channel}/cart`));
+			expect(raw.status).toBe(301);
+			expect(raw.headers.get("location")).toContain(`/${market}/${segment}`);
+
+			if (segment !== "cart") {
+				const legacy = await proxy(req(`/${market}/cart?coupon=SAVE`));
+				expect(legacy.status).toBe(308);
+				expect(legacy.headers.get("location")).toContain(`/${market}/${segment}?coupon=SAVE`);
+			}
+		});
+	}
+
+	it("preserves Next's RSC suffix on the canonical rewrite", async () => {
+		const res = await proxy(req("/sk/kosik.rsc"));
+		expect(res.headers.get("x-middleware-rewrite")).toContain("/sk-eur/cart.rsc");
+	});
+});
 
 describe("invalid first segment", () => {
 	const junk = [

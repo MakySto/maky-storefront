@@ -251,6 +251,7 @@
 		"subtotal": "Subtotale",
 		"shipping": "Spedizione",
 		"total": "Totale",
+		"updateFailed": "Non è stato possibile aggiornare il carrello. Riprova.",
 		"checkout": "Vai alla cassa",
 		"viewCart": "Vedi il carrello",
 		"remove": "Rimuovi",
