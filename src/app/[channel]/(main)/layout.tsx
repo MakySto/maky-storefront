@@ -103,44 +103,6 @@ function HeaderSkeleton() {
 	);
 }
 
-/**
- * Footer skeleton that matches actual footer dimensions to prevent CLS.
- */
-function FooterSkeleton() {
-	return (
-		<footer className="animate-skeleton-delayed bg-foreground text-background opacity-0 print:hidden">
-			<div className="mx-auto max-w-7xl px-4 pt-12 pb-24 sm:px-6 sm:pb-12 lg:px-8 lg:py-16">
-				<div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:gap-12">
-					<div className="col-span-2 md:col-span-1">
-						<div className="mb-4 h-7 w-24 animate-pulse rounded bg-neutral-700" />
-						<div className="mt-4 space-y-2">
-							<div className="h-4 w-full max-w-xs animate-pulse rounded bg-neutral-700" />
-							<div className="h-4 w-3/4 max-w-xs animate-pulse rounded bg-neutral-700" />
-						</div>
-					</div>
-					{[1, 2, 3].map((i) => (
-						<div key={i} className="hidden md:block">
-							<div className="mb-4 h-4 w-20 animate-pulse rounded bg-neutral-700" />
-							<div className="space-y-3">
-								{[1, 2, 3, 4].map((j) => (
-									<div key={j} className="h-4 w-24 animate-pulse rounded bg-neutral-700" />
-								))}
-							</div>
-						</div>
-					))}
-				</div>
-				<div className="mt-12 flex items-center justify-between border-t border-neutral-800 pt-8">
-					<div className="h-3 w-32 animate-pulse rounded bg-neutral-700" />
-					<div className="flex gap-6">
-						<div className="h-3 w-20 animate-pulse rounded bg-neutral-700" />
-						<div className="h-3 w-24 animate-pulse rounded bg-neutral-700" />
-					</div>
-				</div>
-			</div>
-		</footer>
-	);
-}
-
 export default async function RootLayout(props: {
 	children: ReactNode;
 	params: Promise<{ channel: string }>;
@@ -161,9 +123,7 @@ export default async function RootLayout(props: {
 				<main className="flex-1">
 					<Suspense fallback={null}>{props.children}</Suspense>
 				</main>
-				<Suspense fallback={<FooterSkeleton />}>
-					<Footer channel={channel} />
-				</Suspense>
+				<Footer channel={channel} />
 			</div>
 			<Suspense fallback={null}>
 				<CartDrawerWrapper channel={channel} />

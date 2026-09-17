@@ -292,6 +292,7 @@ async function ProductContent({
 				? { amount: v.pricing.price.gross.amount, currency: v.pricing.price.gross.currency }
 				: null,
 			inStock: Boolean(v.quantityAvailable),
+			trackInventory: v.trackInventory,
 			availabilityMode: v.metafield,
 		})),
 		inStock: product.variants?.some((v) => v.quantityAvailable) ?? false,

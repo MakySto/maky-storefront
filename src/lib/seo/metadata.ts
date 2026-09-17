@@ -54,6 +54,11 @@ export const rootMetadata: Metadata = {
 	// Icons - with light/dark mode support
 	icons: {
 		icon: [
+			{
+				url: "/android-chrome-192x192.png",
+				sizes: "192x192",
+				type: "image/png",
+			},
 			{ url: "/favicon.ico", sizes: "32x32" },
 			// Light mode (dark icon on light tabs)
 			{

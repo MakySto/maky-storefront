@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
-import { LinkWithChannel } from "../atoms/link-with-channel";
 import { CopyrightText } from "./copyright-text";
 import { Logo } from "./shared/logo";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
@@ -99,9 +99,9 @@ export async function Footer({ channel }: { channel: string }) {
 							<ul className="space-y-3">
 								{support.map((link) => (
 									<li key={link.href}>
-										<LinkWithChannel href={link.href} prefetch={false} className={linkClass}>
+										<Link href={marketHref(channel, link.href)} prefetch={false} className={linkClass}>
 											{t(link.key)}
-										</LinkWithChannel>
+										</Link>
 									</li>
 								))}
 							</ul>
@@ -114,9 +114,9 @@ export async function Footer({ channel }: { channel: string }) {
 							<ul className="space-y-3">
 								{company.map((link) => (
 									<li key={link.href}>
-										<LinkWithChannel href={link.href} prefetch={false} className={linkClass}>
+										<Link href={marketHref(channel, link.href)} prefetch={false} className={linkClass}>
 											{t(link.key)}
-										</LinkWithChannel>
+										</Link>
 									</li>
 								))}
 							</ul>
@@ -135,26 +135,28 @@ export async function Footer({ channel }: { channel: string }) {
 				<div className="mt-12 border-t border-gray-800 pt-8">
 					<div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
 						<p className="text-xs text-gray-400">
-							<CopyrightText />
+							<Suspense fallback={<>© {companyInfo.legalName}</>}>
+								<CopyrightText />
+							</Suspense>
 						</p>
 						<div className="flex items-center gap-6">
 							{showPrivacyPolicy && (
-								<LinkWithChannel
-									href="/ochrana-osobnych-udajov"
+								<Link
+									href={marketHref(channel, "/ochrana-osobnych-udajov")}
 									prefetch={false}
 									className="text-xs text-gray-400 transition-colors hover:text-gray-300"
 								>
 									{t("privacyPolicy")}
-								</LinkWithChannel>
+								</Link>
 							)}
 							{showTerms && (
-								<LinkWithChannel
-									href="/obchodne-podmienky"
+								<Link
+									href={marketHref(channel, "/obchodne-podmienky")}
 									prefetch={false}
 									className="text-xs text-gray-400 transition-colors hover:text-gray-300"
 								>
 									{t("termsOfService")}
-								</LinkWithChannel>
+								</Link>
 							)}
 							<PrivacySettingsLink label={t("privacySettings")} />
 						</div>

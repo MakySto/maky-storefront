@@ -3,10 +3,9 @@ import sk from "@/i18n/messages/sk-SK.json";
 import { resolveAvailability } from "./availability-badge";
 
 /**
- * The whole point of this resolver is what it does NOT say. The catalogue is
- * sale-to-order with trackInventory=false, so Saleor answers `quantityAvailable`
- * with a synthetic cap (50 for every live variant) — a number that must never
- * become a stock promise.
+ * Untracked sale-to-order products receive a synthetic quantity cap, which must
+ * never become a stock promise. Tracked products are the inverse: their
+ * channel-aware quantity is the real warehouse fact.
  */
 describe("resolveAvailability", () => {
 	it("renders the CFM sale-to-order mode", () => {
@@ -33,6 +32,26 @@ describe("resolveAvailability", () => {
 		expect(resolveAvailability({ quantityAvailable: 999 })).toBeNull();
 	});
 
+	it("lets real tracked stock win over a stale sale-to-order mode", () => {
+		expect(
+			resolveAvailability({
+				mode: "sale_to_order",
+				trackInventory: true,
+				quantityAvailable: 3,
+			}),
+		).toEqual({ key: "inStock", tone: "success" });
+	});
+
+	it("keeps an untracked synthetic cap as sale-to-order", () => {
+		expect(
+			resolveAvailability({
+				mode: "sale_to_order",
+				trackInventory: false,
+				quantityAvailable: 50,
+			}),
+		).toEqual({ key: "onDemand", tone: "info" });
+	});
+
 	it("does report a hard zero as out of stock", () => {
 		expect(resolveAvailability({ quantityAvailable: 0 })).toEqual({ key: "outOfStock", tone: "muted" });
 	});
@@ -43,6 +62,12 @@ describe("resolveAvailability", () => {
 			key: "outOfStock",
 			tone: "muted",
 		});
+	});
+
+	it("reports a tracked zero as out of stock", () => {
+		expect(
+			resolveAvailability({ mode: "sale_to_order", trackInventory: true, quantityAvailable: 0 }),
+		).toEqual({ key: "outOfStock", tone: "muted" });
 	});
 
 	it("treats an unknown quantity as unknown, not as zero", () => {

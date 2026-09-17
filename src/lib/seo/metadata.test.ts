@@ -1,5 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { buildPageMetadata } from "./metadata";
+import { buildPageMetadata, rootMetadata } from "./metadata";
+
+describe("root favicon metadata", () => {
+	it("offers Google an explicitly sized square icon of at least 48 pixels", () => {
+		const iconEntries = (rootMetadata.icons as { icon: Array<{ sizes?: string }> }).icon;
+		const hasEligibleIcon = iconEntries.some(({ sizes }) => {
+			const dimensions = sizes?.match(/^(\d+)x(\d+)$/);
+			if (!dimensions) return false;
+
+			const width = Number(dimensions[1]);
+			const height = Number(dimensions[2]);
+			return width === height && width >= 48;
+		});
+
+		expect(iconEntries[0]).toMatchObject({
+			url: "/android-chrome-192x192.png",
+			sizes: "192x192",
+			type: "image/png",
+		});
+		expect(hasEligibleIcon).toBe(true);
+	});
+});
 
 describe("accepted product SEO title policy", () => {
 	it("keeps a 70-character SEO title byte-for-byte and omits the suffix", () => {

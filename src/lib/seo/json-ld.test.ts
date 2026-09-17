@@ -72,6 +72,37 @@ describe("product JSON-LD availability", () => {
 		expect(offer(data)).not.toMatchObject({ availability: "https://schema.org/InStock" });
 	});
 
+	it("declares InStock when tracked stock is positive, even if the mode is stale", () => {
+		const data = buildProductJsonLd({
+			name: "Nosič",
+			variants: [
+				{
+					sku: "M0001476",
+					price,
+					inStock: true,
+					trackInventory: true,
+					availabilityMode: "sale_to_order",
+				},
+			],
+		});
+		expect(offer(data)).toMatchObject({ availability: "https://schema.org/InStock" });
+	});
+
+	it("declares OutOfStock when a tracked variant reaches zero", () => {
+		const data = buildProductJsonLd({
+			name: "Nosič",
+			variants: [
+				{
+					price,
+					inStock: false,
+					trackInventory: true,
+					availabilityMode: "sale_to_order",
+				},
+			],
+		});
+		expect(offer(data)).toMatchObject({ availability: "https://schema.org/OutOfStock" });
+	});
+
 	it("never invents a quantity", () => {
 		// The 50 must not reappear as an inventoryLevel. Schema.org's term for
 		// "orderable, not held" carries the whole claim on its own.
@@ -120,6 +151,7 @@ describe("offers describe what is actually sold", () => {
 				sku: "N60012",
 				price: { amount: 299, currency: "EUR" },
 				inStock: true,
+				trackInventory: false,
 				availabilityMode: "sale_to_order",
 			},
 		],

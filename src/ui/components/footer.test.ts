@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { footerLegalLinks } from "./footer";
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
@@ -15,6 +16,12 @@ import { marketHasRoute } from "@/lib/route-policy";
  */
 
 const CHANNELS = Object.values(CHANNEL_MAP).map((c) => c.saleorSlug);
+
+const FOOTER_SOURCE = readFileSync(new URL("./footer.tsx", import.meta.url), "utf8");
+const MAIN_LAYOUT_SOURCE = readFileSync(
+	new URL("../../app/[channel]/(main)/layout.tsx", import.meta.url),
+	"utf8",
+);
 
 const hrefsOf = (channel: string) => {
 	const { support, company, showPrivacyPolicy, showTerms } = footerLegalLinks(channel);
@@ -93,5 +100,22 @@ describe("footer legal links", () => {
 		const { support, company } = footerLegalLinks("zz-zzz");
 		expect(support).toHaveLength(0);
 		expect(company).toHaveLength(0);
+	});
+});
+
+describe("footer partial-prerender boundary", () => {
+	it("resolves market links on the server instead of reading route params in a client component", () => {
+		expect(FOOTER_SOURCE).not.toMatch(/\b(?:LinkWithChannel|useParams)\b/);
+		expect(FOOTER_SOURCE).toMatch(/href=\{marketHref\(channel,\s*link\.href\)\}/);
+		expect(FOOTER_SOURCE).toMatch(/href=\{marketHref\(channel,\s*"\/obchodne-podmienky"\)\}/);
+	});
+
+	it("keeps the dynamic copyright boundary local instead of replaying the whole footer", () => {
+		expect(FOOTER_SOURCE).toMatch(
+			/<Suspense\b(?:(?!<\/Suspense>)[\s\S])*?<CopyrightText\s*\/>(?:(?!<\/Suspense>)[\s\S])*?<\/Suspense>/,
+		);
+		expect(MAIN_LAYOUT_SOURCE).toMatch(/<Footer\s+channel=\{channel\}\s*\/>/);
+		expect(MAIN_LAYOUT_SOURCE).not.toContain("FooterSkeleton");
+		expect(MAIN_LAYOUT_SOURCE).not.toMatch(/<Suspense\b(?:(?!<\/Suspense>)[\s\S])*?<Footer\b/);
 	});
 });

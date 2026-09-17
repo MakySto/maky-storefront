@@ -133,6 +133,7 @@ export function transformToProductCard(
 		productCode: publicProductCode(soleVariant),
 		variantId: soleVariant?.id ?? null,
 		quantityAvailable: soleVariant?.quantityAvailable ?? null,
+		trackInventory: soleVariant?.trackInventory ?? null,
 		availabilityMode: soleVariant?.metafield ?? null,
 		rating: product.rating ?? null,
 		price: startPrice?.amount ?? 0,

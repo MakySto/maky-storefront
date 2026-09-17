@@ -4,6 +4,10 @@ fragment VariantDetails on ProductVariant {
 	sku
 	sourceSku: metafield(key: "cfm_source_sku")
 	quantityAvailable
+	# Distinguishes real warehouse stock from Saleor's synthetic checkout cap when
+	# inventory tracking is disabled. A tracked positive quantity must win over a
+	# stale sale-to-order metafield.
+	trackInventory
 	# CFM publishes availability here, not on the product.
 	metafield(key: "cfm_availability_mode")
 	selectionAttributes: attributes(variantSelection: VARIANT_SELECTION) {

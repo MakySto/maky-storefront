@@ -273,7 +273,9 @@
 
   /* ── Layout ── */
   --page-max-width: 80rem;
-  --header-offset: 5rem;
+  /* The mobile header occupies three rows (120px). Keep anchor targets and
+     browser scroll restoration below it instead of underneath the sticky UI. */
+  --header-offset: 7.5rem;
   --section-y-sm: calc(var(--spacing) * 12);  /* 48px */
   --section-y-md: calc(var(--spacing) * 16);  /* 64px */
   --section-y-lg: calc(var(--spacing) * 20);  /* 80px */
@@ -445,6 +447,13 @@
   --action-disabled-bg:     var(--color-sand-200);
   --action-disabled-text:   var(--color-gray-400);
   --action-disabled-border: var(--color-sand-300);
+}
+
+@media (min-width: 64rem) {
+  :root {
+    /* Desktop header: 64px utility row + 48px navigation row. */
+    --header-offset: 7rem;
+  }
 }
 
 /* ──────────────────────────────────────────────────────────────

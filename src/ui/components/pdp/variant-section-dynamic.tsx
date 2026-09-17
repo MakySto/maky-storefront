@@ -197,13 +197,13 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 				)}
 			</div>
 
-			{/* Manufacturer · SKU · availability - order:3, directly under the h1.
-			    Availability comes from CFM metadata, never from quantityAvailable. */}
-			<div className="order-3 mt-1 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+			{/* Manufacturer · SKU · availability - order:3, directly under the h1. */}
+			<div className="order-3 mt-1 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5">
 				{manufacturer && <span className="text-text-primary text-sm font-medium">{manufacturer}</span>}
 				{productCode && (
-					<span className="text-text-tertiary text-xs">
-						{tProduct("sku")}: <span className="font-medium tabular-nums">{productCode}</span>
+					<span className="text-text-tertiary min-w-0 text-xs">
+						{tProduct("sku")}:{" "}
+						<span className="font-medium [overflow-wrap:anywhere] tabular-nums">{productCode}</span>
 					</span>
 				)}
 				<AvailabilityBadge
@@ -212,6 +212,9 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 					// customer chose a variant, and a blank where availability belongs
 					// reads as "in stock" — on a catalogue that holds none.
 					mode={selectedVariant?.metafield ?? productAvailabilityMode}
+					// A tracked positive quantity is real channel/warehouse stock and
+					// overrides a stale sale-to-order metafield.
+					trackInventory={selectedVariant?.trackInventory}
 					// Still the SELECTED variant's, and undefined when there is no
 					// selection: unknown, which resolveAvailability treats as unknown
 					// rather than as zero. A hard zero on a chosen variant still wins.

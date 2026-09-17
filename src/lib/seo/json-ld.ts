@@ -26,12 +26,16 @@ export interface JsonLdVariant {
 	name?: string | null;
 	price?: { amount: number; currency: string } | null;
 	inStock?: boolean;
+	trackInventory?: boolean | null;
 	availabilityMode?: string | null;
 }
 
 /** Schema.org availability, from the same facts the visible badge uses. */
-function availabilityOf(inStock: boolean, availabilityMode?: string | null) {
+function availabilityOf(inStock: boolean, availabilityMode?: string | null, trackInventory?: boolean | null) {
 	if (!inStock) return "https://schema.org/OutOfStock" as const;
+	// Real tracked stock wins over stale sourcing metadata, matching the badge.
+	if (trackInventory === true) return "https://schema.org/InStock" as const;
+
 	return availabilityMode === SALE_TO_ORDER
 		? ("https://schema.org/BackOrder" as const)
 		: ("https://schema.org/InStock" as const);
@@ -167,6 +171,7 @@ export function buildProductJsonLd(options: {
 					availability: availabilityOf(
 						variant.inStock ?? inStock,
 						variant.availabilityMode ?? availabilityMode,
+						variant.trackInventory,
 					),
 					priceCurrency: variant.price!.currency,
 					price: variant.price!.amount,
@@ -182,7 +187,7 @@ export function buildProductJsonLd(options: {
 	// The variant carries the availability facts when it has them — the top-level
 	// values are the fallback for a caller that knows no variants, not an override.
 	const offerAvailability = only
-		? availabilityOf(only.inStock ?? inStock, only.availabilityMode ?? availabilityMode)
+		? availabilityOf(only.inStock ?? inStock, only.availabilityMode ?? availabilityMode, only.trackInventory)
 		: availability;
 	const offers = exact
 		? {

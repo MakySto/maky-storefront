@@ -2,14 +2,13 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 /**
- * Availability, from CFM's public `cfm_availability_mode` metadata.
+ * Availability from Saleor inventory plus CFM's public
+ * `cfm_availability_mode` metadata.
  *
- * The catalogue is sale-to-order: `trackInventory` is false and no stock
- * records exist, so Saleor answers `quantityAvailable` with a synthetic
- * configuration cap (50 for every variant). Deriving "Skladom" from that number
- * would be a stock claim the business cannot honour, which is why availability
- * is a CFM-owned fact transported as metadata rather than something the
- * storefront infers.
+ * Untracked sale-to-order variants have no physical stock records, so Saleor
+ * answers `quantityAvailable` with a synthetic configuration cap (typically
+ * 50). Tracked variants are different: their positive quantity is reachable
+ * warehouse stock and must take precedence over a stale sale-to-order flag.
  *
  * When the metadata is absent the component renders NOTHING. Silence is the
  * only honest output for an unknown availability — a guess here is a promise to
@@ -29,17 +28,35 @@ export type AvailabilityMode = "sale_to_order";
 export type AvailabilityInput = {
 	/** Value of `metafield(key: "cfm_availability_mode")`. */
 	mode?: string | null;
+	/** Whether Saleor decrements real warehouse inventory for this variant. */
+	trackInventory?: boolean | null;
 	/**
-	 * Saleor's `quantityAvailable`. Used ONLY to detect a hard zero; it is
-	 * capped and synthetic otherwise, and must never produce a positive stock
-	 * claim or a "only N left" urgency line.
+	 * Saleor's channel-aware `quantityAvailable`. It is real stock only when
+	 * `trackInventory` is true; otherwise it may be a synthetic checkout cap.
 	 */
 	quantityAvailable?: number | null;
 };
 
-type Resolved = { key: "onDemand" | "outOfStock"; tone: "info" | "muted" } | null;
+type Resolved =
+	| { key: "inStock"; tone: "success" }
+	| { key: "onDemand"; tone: "info" }
+	| { key: "outOfStock"; tone: "muted" }
+	| null;
 
-export function resolveAvailability({ mode, quantityAvailable }: AvailabilityInput): Resolved {
+export function resolveAvailability({
+	mode,
+	trackInventory,
+	quantityAvailable,
+}: AvailabilityInput): Resolved {
+	// For tracked variants, Saleor's channel-aware quantity is the authoritative
+	// stock fact. This intentionally wins over stale CFM sourcing metadata.
+	if (trackInventory === true) {
+		if (typeof quantityAvailable !== "number") return null;
+		return quantityAvailable > 0 ? { key: "inStock", tone: "success" } : { key: "outOfStock", tone: "muted" };
+	}
+
+	// Preserve the hard-zero safeguard for older callers that do not yet carry
+	// trackInventory and for explicitly untracked variants.
 	if (quantityAvailable === 0) {
 		return { key: "outOfStock", tone: "muted" };
 	}
@@ -59,7 +76,11 @@ export function AvailabilityBadge({ className, ...input }: AvailabilityInput & {
 		<span
 			className={cn(
 				"inline-flex items-center gap-1.5 text-sm font-medium",
-				resolved.tone === "info" ? "text-status-info" : "text-text-tertiary",
+				resolved.tone === "success"
+					? "text-status-success"
+					: resolved.tone === "info"
+						? "text-status-info"
+						: "text-text-tertiary",
 				className,
 			)}
 		>
@@ -67,7 +88,11 @@ export function AvailabilityBadge({ className, ...input }: AvailabilityInput & {
 				aria-hidden
 				className={cn(
 					"h-1.5 w-1.5 rounded-full",
-					resolved.tone === "info" ? "bg-status-info" : "bg-text-tertiary",
+					resolved.tone === "success"
+						? "bg-status-success"
+						: resolved.tone === "info"
+							? "bg-status-info"
+							: "bg-text-tertiary",
 				)}
 			/>
 			{t(resolved.key)}

@@ -29,6 +29,7 @@ export interface ProductCardData {
 	/** Set only when the product has exactly one variant. */
 	variantId?: string | null;
 	quantityAvailable?: number | null;
+	trackInventory?: boolean | null;
 	availabilityMode?: string | null;
 	/** Saleor Product.rating — null across the catalogue today. */
 	rating?: number | null;
@@ -177,6 +178,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 				)}
 				<AvailabilityBadge
 					mode={product.availabilityMode}
+					trackInventory={product.trackInventory}
 					quantityAvailable={product.quantityAvailable}
 					className="text-xs"
 				/>
