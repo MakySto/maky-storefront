@@ -11,11 +11,11 @@ POTOM DOKONČI IBA CHÝBAJÚCE M ZAPOJENIE“). Do produkčného Saleoru ani CFM
 |                           |                                                                                                                                   |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | **Kontrakt v2 (pre CFM)** | commit **`bf7c5e9d6675084ec63a875337c4f836b2f45b00`** — pushnutý                                                                  |
-| **M zapojenie**           | commit **`5ce2f0bebf7448a53805b746f6653cb2281f1f1a`** — pushnutý, **NENASADENÝ** (deploy zablokovalo povolenie nástroja, §4)      |
+| **M zapojenie**           | commit **`5ce2f0bebf7448a53805b746f6653cb2281f1f1a`** — **NASADENÝ 18. 9. 21:34:39 UTC** (§4)                                     |
 | Vetvy                     | `claude/m-worktree-cfm-checkpoint-eba859` a fast-forward `claude/m-vlakno-storefront-continue-c6ad59` (predtým `c6bd62a`)         |
 | Základ                    | prod `ed7b153` (Codex `codex/frontend-recovery`, na GitHube predtým nebol) + merge `c6bd62a` (isAvailableForPurchase) = `2c48abf` |
-| Produkcia                 | **stále `ed7b153`, BUILD_ID `_tWCo4Vh0f4z6oIe5Yk7V`** — zdravá (`/sk` 200, CSS 200 / 124 KB, 18. 9. ~19:45 UTC)                   |
-| ⚠️ `/opt/storefront`      | **zdrojový strom je na `5ce2f0b` (detached)**, artefakt `.next` je `ed7b153` — pozri §4                                           |
+| Produkcia                 | **`5ce2f0b`, BUILD_ID `9V3nNb6LUVT3HT_mrvSxO`**, odstávka 135 s; predtým `ed7b153` / `_tWCo4Vh0f4z6oIe5Yk7V`                      |
+| `/opt/storefront`         | detached na `5ce2f0b` = artefakt (`MAKY_DEPLOY_META`)                                                                             |
 | Testy                     | vitest **2 241 passed / 34 skipped** (+34 nových), tsc 0, eslint 0 chýb, i18n parita 12 × 726, build 34 s                         |
 
 ## 1. Pre CFM — kontrakt v2 na vendorovanie
@@ -105,29 +105,29 @@ iba lokálne.
 - **DE a ostatné:** produkt bez seoTitle/slugu (napr. 235 post-bulk/pre-slug DE riadkov, Product:9164) v danom trhu neexistuje,
   kým CFM nedopíše.
 
-## 4. Nasadenie — čaká na povolenie (Marek)
+## 4. Nasadenie — NASADENÉ 18. 9. 2026 (GO Marek)
 
-Ostrý `deploy-production.sh` (aj následný návrat checkoutu) zablokoval klasifikátor oprávnení nástroja. Preflight a
-`--dry-run` nad `5ce2f0b` prešli (testy zelené, sudo, pamäť 11,3 GB, disk 86 GB, servíruje sa `_tWCo4Vh0f4z6oIe5Yk7V`).
-`/opt/storefront` je **už na `5ce2f0b`**, takže nasadenie je jeden príkaz:
+Poradie podľa GO: preflight (čistý `5ce2f0b`, beží `ed7b153` / `_tWCo4Vh0f4z6oIe5Yk7V`, žiadny súbežný deploy ani držiteľ
+zámku) → **read-back 4 regionálnych kategórií** (20:55 chýbali, 21:31:18 UTC kompletné; kontraktný test s
+`MAKY_L10N_READBACK_PATH` 31/31, predtým ako negatívna kontrola 4× „refused") → používané závislosti (menu 0 položiek,
+0 kolekcií, 0 viditeľných atribútov vo vzorke 100 z 9 157) → `scripts/ops/deploy-production.sh`, exit 0.
 
-```bash
-cd /opt/storefront && ./scripts/ops/deploy-production.sh -m "COMMERCE-2 exact-locale v2 + translated-slug wiring (5ce2f0b); SK unchanged"
-```
+|             |                                                                                                                                                                                   |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| nasadené    | `5ce2f0bebf7448a53805b746f6653cb2281f1f1a`, BUILD_ID **`9V3nNb6LUVT3HT_mrvSxO`**, built 21:32:57Z, záznam 21:34:39Z, odstávka 135 s                                               |
+| brána       | 31 CSS/JS chunkov na disku aj cez HTTP, 21 statických trás, sitemap 11 079 `<loc>`, nginx + verejná URL OK                                                                        |
+| rollback    | `/opt/storefront-rollbacks/.next.rollback-ed7b153-_tWCo4Vh0f4z6oIe5Yk7V-20260918T213223Z`                                                                                         |
+| artefakt    | všetky bundly mapujú `de-AT` → `DE_AT`, `en-CA` → `EN_CA`                                                                                                                         |
+| smoke       | 16 URL × 12 polí proti predeployovému baseline: **0 zmien**; `x-robots-tag: noindex, nofollow` na zahraničí; sitemap len `sk-*`; 0 verejných produktov v 11 zahraničných kanáloch |
+| revalidácia | bez tajomstva 401, `xx` 400, SK odpoveď bez zmeny, AT odpoveď + `product-miss:at-eur:de-AT`                                                                                       |
+| PM2         | `maky-storefront` od 21:32:57Z, `maky-smtp-app` nedotknutý; žiadne `failed validation`                                                                                            |
 
-Ak sa nasadzovať nemá, vrátiť strom k artefaktu:
-
-```bash
-cd /opt/storefront && git checkout codex/frontend-recovery
-```
-
-Po nasadení: `MAKY_DEPLOY_META` = `5ce2f0b…`; SK PDP/kategória/vozidlo/search 200 a zhodné s dneškom; POST revalidate bez
-tajomstva 401; `/at/<slug>` a `/ca/<slug>` not-found + noindex (0 produktov); PM2 log bez `failed validation`.
-Rollback = snapshot `ed7b153` (vznikne pri deployi).
+Strojovo čitateľný záznam pre grouped dráhu CFM: [`docs/contracts/commerce2/M_CATALOG_PATCH_DEPLOYED.json`](../../contracts/commerce2/M_CATALOG_PATCH_DEPLOYED.json).
+`MAKY_LIVE_MARKETS=sk`, Stripe, SMTP, doprava ani dane sa nemenili. **M_CANARY_EVIDENCE až po CFM grouped canary.**
 
 ## 5. Zahraničie: katalóg, nákup, indexovanie — poradie
 
-1. M deploy `5ce2f0b` (§4) → SHA/BUILD_ID z hosta pre CFM.
+1. ~~M deploy `5ce2f0b`~~ — hotové, `9V3nNb6LUVT3HT_mrvSxO` (§4).
 2. CFM: základné jazyky (5 polí), potom DE_AT/EN_CA vrátane 2 kategórií; grouped ceny/listingy v existujúcej dráhe.
 3. CFM grouped canary (viditeľný) → **M canary dôkaz** (verejné URL: PDP, listing, search, ponuka, hreflang, revalidácia).
 4. Nákup: listing publikovaný + doprava, dane a Stripe kanála overené (Stripe konfigurácia 12 kanálov stále čaká na Mareka,

@@ -1,0 +1,348 @@
+{
+	"schema": "maky.commerce2.m-catalog-patch-deployed/1",
+	"status": "DEPLOYED",
+	"summary": "M catalog patch (exact-locale contract v2 + translated-slug wiring) is live on the M host. Slovakia unchanged, only sk indexable, no foreign channel sells. Regional reading (AT → DE_AT, CA → EN_CA) is active; the four regional category rows passed the storefront's own contract test before activation.",
+	"deployed": {
+		"host": "maky.store — PM2 app maky-storefront (next start -p 3000 behind nginx) on ubuntu@ip-10-0-2-88",
+		"gitSha": "5ce2f0bebf7448a53805b746f6653cb2281f1f1a",
+		"buildId": "9V3nNb6LUVT3HT_mrvSxO",
+		"builtAt": "2026-09-18T21:32:57Z",
+		"recordedAt": "2026-09-18T21:34:39+00:00",
+		"downtimeSeconds": 135,
+		"procedure": "scripts/ops/deploy-production.sh, exit 0 (local gate + nginx + public URL verified)",
+		"previous": {
+			"gitSha": "ed7b1532b30fae2fb3013c70d1fa18853ec399b3",
+			"buildId": "_tWCo4Vh0f4z6oIe5Yk7V"
+		},
+		"rollbackSnapshot": "/opt/storefront-rollbacks/.next.rollback-ed7b153-_tWCo4Vh0f4z6oIe5Yk7V-20260918T213223Z"
+	},
+	"contract": {
+		"commit": "bf7c5e9d6675084ec63a875337c4f836b2f45b00",
+		"schema": "maky.commerce2.exact-locale-contract/2",
+		"blobs": {
+			"docs/contracts/commerce2/exact-locale-contract.json": "51e60be70550c6067154e309548884c1859c6263",
+			"docs/contracts/commerce2/l10n-readback.sample.json": "9785961e0a6808d8407056c8bf01335a38f0ee99",
+			"src/lib/saleor/exact-locale.ts": "34c80feeec314d144876099e58443ed2e3ef7123",
+			"src/lib/saleor/exact-locale.contract.test.ts": "ac9cdb5e1e0d30925322d557e0f40625121fbbe1",
+			"src/config/locale.ts": "6af83c5f677bc8d0ee11bf8d59fe84992134f277"
+		},
+		"languageCodeByMarket": {
+			"sk": null,
+			"cz": "CS",
+			"de": "DE",
+			"at": "DE_AT",
+			"pl": "PL",
+			"hu": "HU",
+			"it": "IT",
+			"fr": "FR",
+			"es": "ES",
+			"ro": "RO",
+			"us": "EN",
+			"ca": "EN_CA"
+		},
+		"productRequiredTranslationFields": ["name", "description", "seoTitle", "seoDescription", "slug"],
+		"deployedArtifactCheck": "every server and client bundle of BUILD_ID 9V3nNb6LUVT3HT_mrvSxO maps de-AT to LanguageCodeEnum.DeAt (\"DE_AT\") and en-CA to EnCa; no DE/EN mapping for them remains"
+	},
+	"regionalCategoryReadback": {
+		"readAt": "2026-09-18T21:31Z (anonymous production API)",
+		"storefrontContractTest": "MAKY_L10N_READBACK_PATH=<these 4 entries> vitest run src/lib/saleor/exact-locale.contract.test.ts → 31/31, real read-back not skipped",
+		"entries": [
+			{
+				"channel": "at-eur",
+				"languageCode": "DE_AT",
+				"category": "stresne-nosice",
+				"name": "Dachträger",
+				"slug": "dachtraeger",
+				"seoTitle": "MAKY.STORE",
+				"descriptionBlocks": 1,
+				"seoDescriptionPresent": true
+			},
+			{
+				"channel": "ca-cad",
+				"languageCode": "EN_CA",
+				"category": "stresne-nosice",
+				"name": "Roof racks",
+				"slug": "roof-racks",
+				"seoTitle": "MAKY.STORE",
+				"descriptionBlocks": 1,
+				"seoDescriptionPresent": true
+			},
+			{
+				"channel": "at-eur",
+				"languageCode": "DE_AT",
+				"category": "nordrive-stresne-nosice",
+				"name": "Nordrive Dachträger",
+				"slug": "nordrive-dachtraeger",
+				"seoTitle": "MAKY.STORE",
+				"descriptionBlocks": 1,
+				"seoDescriptionPresent": true
+			},
+			{
+				"channel": "ca-cad",
+				"languageCode": "EN_CA",
+				"category": "nordrive-stresne-nosice",
+				"name": "Nordrive roof racks",
+				"slug": "nordrive-roof-racks",
+				"seoTitle": "MAKY.STORE",
+				"descriptionBlocks": 1,
+				"seoDescriptionPresent": true
+			}
+		]
+	},
+	"usedDependencies": {
+		"categories": "stresne-nosice and nordrive-stresne-nosice in DE_AT and EN_CA — present, complete (above)",
+		"menus": "navbar and footer in at-eur and ca-cad: 0 items",
+		"collections": "0 in at-eur and ca-cad; featured-products does not exist in any channel",
+		"attributes": "cohort sample 100 of 9157 (all nordrive-stresne-nosice): 0 visible product or variant attributes; attributes(inCategory: nordrive-stresne-nosice) = 0",
+		"productRows": "DE_AT / EN_CA five-field product rows: not yet written — until then every AT / CA PDP is not-found by design (checked: /at/<base slug> = not-found, noindex)"
+	},
+	"production": {
+		"liveMarkets": ["sk"],
+		"makyLiveMarketsEnv": "sk (unchanged)",
+		"foreignRobots": "x-robots-tag: noindex, nofollow on every foreign URL checked (unchanged)",
+		"sitemapShards": [
+			"/sitemaps/sk-pages-1.xml",
+			"/sitemaps/sk-products-1.xml",
+			"/sitemaps/sk-vehicles-1.xml"
+		],
+		"sitemapUrlsAtGate": 11079,
+		"publicProductsByChannel": {
+			"sk-eur": 9571,
+			"cz-czk": 0,
+			"de-eur": 0,
+			"at-eur": 0,
+			"pl-pln": 0,
+			"hu-huf": 0,
+			"it-eur": 0,
+			"fr-eur": 0,
+			"es-eur": 0,
+			"ro-ron": 0,
+			"us-usd": 0,
+			"ca-cad": 0
+		},
+		"foreignPurchasing": "off — 0 public products in all 11 foreign channels; Stripe, SMTP, shipping and taxes untouched"
+	},
+	"smoke": {
+		"baselineAt": "2026-09-18T20:55:52.574Z",
+		"afterAt": "2026-09-18T21:35:35.651Z",
+		"urlsCompared": 16,
+		"fieldsCompared": [
+			"status",
+			"location",
+			"xRobots",
+			"title",
+			"canonical",
+			"robotsMeta",
+			"h1",
+			"hreflangCount",
+			"productLinks",
+			"offer(url,price,currency,availability)",
+			"cssChunk",
+			"cssStatus"
+		],
+		"changedFields": 0,
+		"pages": {
+			"/sk": {
+				"status": 200,
+				"xRobots": null,
+				"robotsMeta": "index, follow",
+				"title": "Strešné nosiče, boxy a nosiče bicyklov | MAKY.STORE",
+				"canonical": "https://maky.store/sk",
+				"offer": null,
+				"cssStatus": 200
+			},
+			"/sk/stresny-nosic-nordrive-helio-black-alfa-romeo-156-crosswagon-2004-2007-klasicke-lyziny": {
+				"status": 200,
+				"xRobots": null,
+				"robotsMeta": "index, follow",
+				"title": "Strešný nosič Helio Black Alfa Romeo 156 Crosswagon (2004–2007)",
+				"canonical": "https://maky.store/sk/stresny-nosic-nordrive-helio-black-alfa-romeo-156-crosswagon-2004-2007-klasicke-lyziny",
+				"offer": {
+					"url": "https://maky.store/sk/stresny-nosic-nordrive-helio-black-alfa-romeo-156-crosswagon-2004-2007-klasicke-lyziny",
+					"price": 77,
+					"currency": "EUR",
+					"availability": "https://schema.org/BackOrder"
+				},
+				"cssStatus": 200
+			},
+			"/sk/stresny-box-thule-motion-3-xxl-titan-glossy-639901": {
+				"status": 200,
+				"xRobots": null,
+				"robotsMeta": "index, follow",
+				"title": "Motion 3 XXL – ktorá veľkosť boxu sedí | MAKY.STORE",
+				"canonical": "https://maky.store/sk/stresny-box-thule-motion-3-xxl-titan-glossy-639901",
+				"offer": {
+					"url": "https://maky.store/sk/stresny-box-thule-motion-3-xxl-titan-glossy-639901",
+					"price": 999,
+					"currency": "EUR",
+					"availability": "https://schema.org/BackOrder"
+				},
+				"cssStatus": 200
+			},
+			"/sk/stresne-nosice": {
+				"status": 200,
+				"xRobots": null,
+				"robotsMeta": "index, follow",
+				"title": "Strešné nosiče | MAKY.STORE",
+				"canonical": "https://maky.store/sk/stresne-nosice",
+				"offer": null,
+				"cssStatus": 200
+			},
+			"/sk/stresne-nosice/alfa-romeo/156-crosswagon/156-crosswagon": {
+				"status": 200,
+				"xRobots": null,
+				"robotsMeta": null,
+				"title": "Strešný nosič na Alfa Romeo 156 Crosswagon (2004 – 2007) | MAKY.STORE",
+				"canonical": "https://maky.store/sk/stresne-nosice/alfa-romeo/156-crosswagon/156-crosswagon",
+				"offer": null,
+				"cssStatus": 200
+			},
+			"/sk/search?query=thule": {
+				"status": 200,
+				"xRobots": null,
+				"robotsMeta": "index, follow",
+				"title": "Search products",
+				"canonical": null,
+				"offer": null,
+				"cssStatus": 200
+			},
+			"/sk/products": {
+				"status": 200,
+				"xRobots": null,
+				"robotsMeta": "index, follow",
+				"title": "Všetky produkty | MAKY.STORE",
+				"canonical": "https://maky.store/sk/products",
+				"offer": null,
+				"cssStatus": 200
+			},
+			"/sk/kosik": {
+				"status": 200,
+				"xRobots": null,
+				"robotsMeta": "noindex, follow",
+				"title": "Váš košík",
+				"canonical": null,
+				"offer": null,
+				"cssStatus": 200
+			},
+			"/sk/categories/nordrive-stresne-nosice": {
+				"status": 200,
+				"xRobots": null,
+				"robotsMeta": "index, follow",
+				"title": "Nordrive strešné nosiče | MAKY.STORE",
+				"canonical": "https://maky.store/sk/categories/nordrive-stresne-nosice",
+				"offer": null,
+				"cssStatus": 200
+			},
+			"/at": {
+				"status": 200,
+				"xRobots": "noindex, nofollow",
+				"robotsMeta": "index, follow",
+				"title": "Dachträger, Dachboxen und Fahrradträger | MAKY.STORE",
+				"canonical": "https://maky.store/at",
+				"offer": null,
+				"cssStatus": 200
+			},
+			"/at/dachtraeger": {
+				"status": 200,
+				"xRobots": "noindex, nofollow",
+				"robotsMeta": "noindex, follow",
+				"title": "Dachträger | MAKY.STORE",
+				"canonical": null,
+				"offer": null,
+				"cssStatus": 200
+			},
+			"/ca/roof-racks": {
+				"status": 200,
+				"xRobots": "noindex, nofollow",
+				"robotsMeta": "noindex, follow",
+				"title": "Roof racks | MAKY.STORE",
+				"canonical": null,
+				"offer": null,
+				"cssStatus": 200
+			},
+			"/cz/stresni-nosice": {
+				"status": 200,
+				"xRobots": "noindex, nofollow",
+				"robotsMeta": "noindex, follow",
+				"title": "Střešní nosiče | MAKY.STORE",
+				"canonical": null,
+				"offer": null,
+				"cssStatus": 200
+			},
+			"/at/stresny-nosic-nordrive-helio-black-alfa-romeo-156-crosswagon-2004-2007-klasicke-lyziny": {
+				"status": 200,
+				"xRobots": "noindex, nofollow",
+				"robotsMeta": "noindex, nofollow",
+				"title": "Produkt nicht gefunden",
+				"canonical": null,
+				"offer": null,
+				"cssStatus": 200
+			},
+			"/cz/stresny-nosic-nordrive-helio-black-alfa-romeo-156-crosswagon-2004-2007-klasicke-lyziny": {
+				"status": 200,
+				"xRobots": "noindex, nofollow",
+				"robotsMeta": "noindex, nofollow",
+				"title": "Produkt nenalezen",
+				"canonical": null,
+				"offer": null,
+				"cssStatus": 200
+			},
+			"/cz/stresni-nosice/alfa-romeo/156-crosswagon/156-crosswagon": {
+				"status": 200,
+				"xRobots": "noindex, nofollow",
+				"robotsMeta": null,
+				"title": "Střešní nosiče pro vozy Alfa Romeo 156 Crosswagon (2004 – 2007) | MAKY.STORE",
+				"canonical": "https://maky.store/cz/stresni-nosice/alfa-romeo/156-crosswagon/156-crosswagon",
+				"offer": null,
+				"cssStatus": 200
+			}
+		},
+		"pm2": "maky-storefront online since 2026-09-18T21:32:57Z; maky-smtp-app not touched (online since 2026-09-11); no 'failed validation' after start"
+	},
+	"revalidation": {
+		"endpoint": "POST https://maky.store/api/revalidate (x-revalidate-secret or Authorization: Bearer) — unchanged request, product.slug = BASE slug + channel",
+		"checkedAt": "2026-09-18T21:36:23.905Z",
+		"results": {
+			"noSecret": {
+				"status": 401,
+				"pass": true,
+				"tags": null,
+				"error": "Unauthorized"
+			},
+			"unknownChannel": {
+				"status": 400,
+				"pass": true,
+				"tags": null,
+				"error": "Unknown channel"
+			},
+			"skProduct": {
+				"status": 200,
+				"pass": true,
+				"tags": [
+					"product:sk-eur:sk-SK:stresny-nosic-nordrive-helio-black-alfa-romeo-156-crosswagon-2004-2007-klasicke-lyziny",
+					"fitment-offers:sk-eur:sk-SK",
+					"sitemap:sk-eur"
+				],
+				"error": null
+			},
+			"atProductWithCategory": {
+				"status": 200,
+				"pass": true,
+				"tags": [
+					"product:at-eur:de-AT:stresny-nosic-nordrive-helio-black-alfa-romeo-156-crosswagon-2004-2007-klasicke-lyziny",
+					"category:at-eur:de-AT:nordrive-stresne-nosice",
+					"fitment-offers:at-eur:de-AT",
+					"product-miss:at-eur:de-AT",
+					"sitemap:at-eur"
+				],
+				"error": null
+			}
+		},
+		"note": "Slovak answer unchanged. A foreign answer adds product-miss:{channel}:{locale}, which expires a not-found cached under a translated slug before its row existed. CFM success criterion unchanged: 200 + success + product:<channel>:<locale>:<slug>."
+	},
+	"notYet": {
+		"M_CANARY_EVIDENCE": "only after the CFM grouped canary — real channels, regional rows and channel prices, no proxy",
+		"indexingAbroad": "not enabled; MAKY_LIVE_MARKETS stays sk until the catalogue is published and purchasable"
+	},
+	"handoff": "docs/design/market-rollout/HANDOFF-20260918-M-exact-locale-v2.md"
+}
