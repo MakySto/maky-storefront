@@ -52,6 +52,7 @@ type NodeOverrides = {
 	productMeta?: string | null;
 	variantMeta?: string | null;
 	quantityAvailable?: number;
+	isAvailableForPurchase?: boolean;
 	externalReference?: string;
 	variantId?: string;
 	id?: string;
@@ -75,7 +76,7 @@ function node(over: NodeOverrides = {}): ProductNode {
 		name: "Test set A",
 		slug: "test-set-a",
 		externalReference: over.externalReference ?? REF.externalReference,
-		isAvailableForPurchase: true,
+		isAvailableForPurchase: over.isAvailableForPurchase ?? true,
 		metafield: over.productMeta ?? null,
 		translation: over.translation ?? null,
 		attributes: over.attributes ?? [],
@@ -125,6 +126,30 @@ describe("availabilityFrom reads the variant first and the product second", () =
 });
 
 describe("resolveFitmentOffers on a live-shaped answer", () => {
+	it("keeps a fully localized catalog-only product visible without counting it as purchasable", async () => {
+		executePublicGraphQL.mockResolvedValue(
+			answer([
+				node({
+					isAvailableForPurchase: false,
+					variantMeta: "sale_to_order",
+					translation: FULL_TRANSLATION,
+				}),
+			]),
+		);
+
+		const result = await resolveFitmentOffers([REF], "de-eur", "de-DE", { dataset: null });
+
+		expect(result.offers).toHaveLength(1);
+		expect(result.offers[0]).toMatchObject({
+			name: "Testsatz A",
+			slug: "testsatz-a",
+			price: { amount: 100, currency: "EUR" },
+			isPurchasable: false,
+		});
+		expect(result.purchasableCount).toBe(0);
+		expect(result.rejected["not-published"]).toBe(0);
+	});
+
 	it("resolves 'on-demand' when the metafield is on the variant only", async () => {
 		executePublicGraphQL.mockResolvedValue(answer([node({ variantMeta: "sale_to_order" })]));
 
@@ -218,16 +243,21 @@ describe("localization at the data boundary — A refuses, it does not fall back
 		expect(result.rejected["not-localized"]).toBe(0);
 	});
 
-	it("drops a product whose translation is missing the description", async () => {
+	it("still drops a catalog-only product whose translation is missing the description", async () => {
 		executePublicGraphQL.mockResolvedValue(
-			answer([node({ translation: { ...FULL_TRANSLATION, description: null } })]),
+			answer([
+				node({
+					isAvailableForPurchase: false,
+					translation: { ...FULL_TRANSLATION, description: null },
+				}),
+			]),
 		);
 
 		const result = await resolveFitmentOffers([DE_REF], "de-eur", "de-DE", { dataset: null });
 
 		expect(result.offers).toHaveLength(0);
 		expect(result.rejected["not-localized"]).toBe(1);
-		// Not "does not fit" and not "not published". It is sold here and it fits.
+		// Not "does not fit" and not "not published". It is catalog-visible and it fits.
 		expect(result.rejected["not-published"]).toBe(0);
 		expect(result.compatibleCount).toBe(1);
 	});
@@ -358,5 +388,15 @@ describe("verifyPurchasable on a live-shaped answer", () => {
 		await expect(
 			verifyPurchasable(REF.saleorProductId, REF.saleorVariantId, "sk-eur", "sk-SK", REF.externalReference),
 		).resolves.toEqual({ ok: false, reason: "identity-mismatch" });
+	});
+
+	it("still refuses a catalog-only product at the final purchase check", async () => {
+		executePublicGraphQL.mockResolvedValue(
+			answer([node({ isAvailableForPurchase: false, translation: FULL_TRANSLATION })]),
+		);
+
+		await expect(
+			verifyPurchasable(REF.saleorProductId, REF.saleorVariantId, "de-eur", "de-DE", REF.externalReference),
+		).resolves.toEqual({ ok: false, reason: "not-published" });
 	});
 });

@@ -25,8 +25,9 @@ export function formatOfferPrice(amount: number, currency: string, locale: strin
  * Three outcomes are kept apart, because collapsing them is how a shop tells a customer
  * something untrue:
  *
- *   offers          products verified for this vehicle and buyable in this channel
- *   nothing yet     rows exist but none is a verified, purchasable set — NOT "nothing fits"
+ *   offers          published, localized products verified for this vehicle
+ *   catalog only    verified products whose purchase switch is off in this channel
+ *   nothing yet     rows exist but none is a verified, localized set — NOT "nothing fits"
  *   lookup failed   Saleor did not answer, so this says so instead of showing an empty shelf
  *
  * The middle case is the common one today and the easiest to get wrong: an empty list with
@@ -106,8 +107,13 @@ export async function CatalogOfferList({
 								</span>
 							) : null}
 							<span className="text-text-tertiary mt-1 text-sm">
-								{offer.availability === "on-demand" ? t("common.onOrder") : null}
-								{offer.availability === "out-of-stock" ? t("configurator.outOfStock") : null}
+								{!offer.isPurchasable
+									? t("cart.addUnavailable")
+									: offer.availability === "on-demand"
+										? t("common.onOrder")
+										: offer.availability === "out-of-stock"
+											? t("configurator.outOfStock")
+											: null}
 							</span>
 						</Link>
 					</li>

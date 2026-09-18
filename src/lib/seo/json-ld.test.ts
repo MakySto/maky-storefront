@@ -123,6 +123,17 @@ describe("product JSON-LD availability", () => {
 		expect(offer(data)).toMatchObject({ availability: "https://schema.org/OutOfStock" });
 	});
 
+	it("lets a disabled channel purchase switch win over stock and sale-to-order", () => {
+		const data = buildProductJsonLd({
+			name: "Nosič",
+			price,
+			isPurchasable: false,
+			inStock: true,
+			availabilityMode: "sale_to_order",
+		});
+		expect(offer(data)).toMatchObject({ availability: "https://schema.org/OutOfStock" });
+	});
+
 	it("leaves the pre-CFM behaviour alone when no mode is published", () => {
 		expect(offer(buildProductJsonLd({ name: "Nosič", price }))).toMatchObject({
 			availability: "https://schema.org/InStock",

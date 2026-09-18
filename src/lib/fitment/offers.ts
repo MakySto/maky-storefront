@@ -1,15 +1,17 @@
 import "server-only";
 
 /**
- * From "these sets fit your car" to "these sets are actually on sale here".
+ * From "these sets fit your car" to a truthful, localized channel catalogue.
  *
  * Order, and it is load-bearing:
  *
  *   1. Fitment answers compatibility PER PRODUCT and hands back only VERIFIED matches
  *      of the right kind.
  *   2. The catalogue is asked, anonymously and per channel, which of those are really
- *      published and purchasable.
- *   3. Only the intersection is offered, and the counts come from that intersection.
+ *      published. Purchasability is carried as a separate fact: a published catalogue
+ *      product may be visible in a market where checkout is not enabled for it.
+ *   3. Only the intersection is displayed; each row and the purchase count retain the
+ *      separate channel-level purchase decision.
  *
  * Four things this version does that the first one did not, each of which was a way to
  * show a customer something untrue:
@@ -64,6 +66,8 @@ export type FitmentOffer = {
 	availability: OfferAvailability;
 	completeSetIncludes: string[] | null;
 	facets: Record<string, string | number | boolean> | null;
+	/** False keeps the published offer visible but forbids every purchase control. */
+	isPurchasable: boolean;
 	/** True when this offer came from a demo catalogue and cannot be bought. */
 	isDemo: boolean;
 };
@@ -79,7 +83,7 @@ export type OfferRejection =
 	| "wrong-kind"
 	/** Fits and may be published, but CFM does not stand behind selling it: held, or not `sellable`. */
 	| "not-sellable"
-	/** Real, purchasable, and fits — but has no complete translation for this market. */
+	/** Real, published, and fits — but has no complete translation for this market. */
 	| "not-localized"
 	| "lookup-failed";
 
@@ -218,6 +222,7 @@ function demoOffers(dataset: FitmentDataset, refs: FitmentProductRef[]): Fitment
 			availability: availabilityFrom(entry.availabilityMode, null, entry.quantityAvailable),
 			completeSetIncludes: ref.completeSet?.includes ?? null,
 			facets: ref.facets ?? null,
+			isPurchasable: false,
 			isDemo: true,
 		});
 	}
@@ -225,7 +230,7 @@ function demoOffers(dataset: FitmentDataset, refs: FitmentProductRef[]): Fitment
 	return {
 		offers,
 		compatibleCount: refs.length,
-		purchasableCount: offers.length,
+		purchasableCount: 0,
 		rejected,
 		lookupFailed: false,
 		isDemo: true,
@@ -233,7 +238,7 @@ function demoOffers(dataset: FitmentDataset, refs: FitmentProductRef[]): Fitment
 }
 
 /**
- * Resolve verified, right-kind product references into purchasable offers.
+ * Resolve verified, right-kind product references into published, localized catalogue offers.
  *
  * Never throws: a catalogue outage degrades to "we could not load the offer", which is a
  * different message from "nothing fits" and from "these fit but are not sold here".
@@ -306,11 +311,6 @@ export async function resolveFitmentOffers(
 				const ref = byProductId.get(node.id);
 				if (!ref) continue;
 
-				if (!node.isAvailableForPurchase) {
-					rejected["not-published"] += 1;
-					continue;
-				}
-
 				// The external reference is VERIFIED against what came back, not copied
 				// from the fitment row. A row pointing at a valid-but-different product
 				// is exactly the failure that produced a roof box in the offer list.
@@ -361,6 +361,7 @@ export async function resolveFitmentOffers(
 					availability: availabilityFrom(variant.metafield, node.metafield, variant.quantityAvailable),
 					completeSetIncludes: ref.completeSet?.includes ?? null,
 					facets: ref.facets ?? null,
+					isPurchasable: node.isAvailableForPurchase === true,
 					isDemo: false,
 				});
 			}
@@ -388,7 +389,7 @@ export async function resolveFitmentOffers(
 	return {
 		offers,
 		compatibleCount: eligible.length,
-		purchasableCount: offers.length,
+		purchasableCount: offers.filter((offer) => offer.isPurchasable).length,
 		rejected,
 		lookupFailed,
 		isDemo: false,

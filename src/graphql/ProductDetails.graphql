@@ -6,6 +6,7 @@ query ProductDetails(
 ) {
 	product(slug: $slug, channel: $channel, slugLanguageCode: $slugLang) {
 		id
+		isAvailableForPurchase
 		name
 		slug
 		description

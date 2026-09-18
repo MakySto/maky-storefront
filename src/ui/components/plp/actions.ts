@@ -5,8 +5,8 @@ import {
 	revalidateStorefrontChrome,
 } from "@/lib/auth/revalidate-storefront-chrome";
 
-import { CheckoutAddLineDocument } from "@/gql/graphql";
-import { executeAuthenticatedGraphQL } from "@/lib/graphql";
+import { CheckoutAddLineDocument, ProductVariantPurchasabilityDocument } from "@/gql/graphql";
+import { executeAuthenticatedGraphQL, executePublicGraphQL } from "@/lib/graphql";
 import * as Checkout from "@/lib/checkout";
 import { clampQuantity } from "@/ui/components/ui/quantity-limits";
 import {
@@ -62,6 +62,38 @@ export async function addVariantToCart(input: {
 	// clamp itself is guaranteed to return a positive integer, because the previous one
 	// could return NaN and did: see `quantity-limits.ts`.
 	const quantity = clampQuantity(input.quantity, input.maxQuantity);
+	// Re-read the channel-level purchase switch immediately before touching a checkout.
+	// Hidden form fields and client payloads are attacker-controlled, and a stale PLP/PDP
+	// may outlive a catalogue change. Fail closed while the request is still a read: no
+	// checkout is created, no cookie is written and no mutation is attempted.
+	try {
+		const verification = await executePublicGraphQL(ProductVariantPurchasabilityDocument, {
+			variables: { id: decodedVariantId, channel },
+			cache: "no-store",
+		});
+		if (!verification.ok) {
+			console.error("[cart] purchasability lookup failed:", verification.error.message);
+			return {
+				status: "rejected",
+				reason: "unavailable",
+				message: "product availability could not be verified",
+			};
+		}
+		if (verification.data.productVariant?.product.isAvailableForPurchase !== true) {
+			return {
+				status: "rejected",
+				reason: "unavailable",
+				message: "product is not available for purchase in this market",
+			};
+		}
+	} catch (error) {
+		console.error("[cart] purchasability lookup threw:", error);
+		return {
+			status: "rejected",
+			reason: "unavailable",
+			message: "product availability could not be verified",
+		};
+	}
 
 	let checkoutId: string;
 	let quantityBefore = 0;
