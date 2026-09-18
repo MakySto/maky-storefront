@@ -33,6 +33,7 @@ import { CatalogMakeIndex } from "@/ui/components/catalog/make-index";
 import { CategoryPageClient } from "./client";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleCategory, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
+import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
 import { lookupBySlug } from "@/lib/saleor/slug-lookup";
 
 type Category = NonNullable<ProductListByCategoryQuery["category"]>;
@@ -218,6 +219,10 @@ async function CategoryContent({
 
 	return (
 		<>
+			{/* Own boundary: it asks the other live channels, and the listing must never wait. */}
+			<Suspense fallback={null}>
+				<CategorySwitchTargets baseSlug={baseSlug} />
+			</Suspense>
 			<CategoryHero
 				title={category.name}
 				description={plainDescription}
@@ -235,6 +240,18 @@ async function CategoryContent({
 				<CatalogMakeIndex channel={params.channel} slug={categorySegment(params.channel, baseSlug)} />
 			</Suspense>
 		</>
+	);
+}
+
+/**
+ * The same category at each live market's own localized root, for the header's market
+ * switcher — which used to keep this market's segment (`/cz/stresni-nosice` →
+ * `/de/stresni-nosice`, a path the German proxy does not route).
+ */
+async function CategorySwitchTargets({ baseSlug }: { baseSlug: string }) {
+	const counterparts = await categoryCounterparts(baseSlug);
+	return (
+		<MarketSwitchTargets paths={Object.fromEntries(counterparts.map(({ market, path }) => [market, path]))} />
 	);
 }
 

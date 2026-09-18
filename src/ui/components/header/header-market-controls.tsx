@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { GlobeIcon, ChevronDownIcon } from "lucide-react";
-import { REVERSE_MAP } from "@/lib/channel-map";
+import { REVERSE_MAP, marketSwitchHref } from "@/lib/channel-map";
+import { registeredMarketTarget } from "./market-switch-targets";
 
 const MARKETS = [
 	{ slug: "sk", code: "sk", label: "Slovensko", lang: "SK", currency: "EUR", symbol: "€" },
@@ -33,6 +34,30 @@ function FlagImg({ code, size = 20 }: { code: string; size?: number }) {
 			loading="lazy"
 		/>
 	);
+}
+
+/**
+ * Where choosing `target` takes the visitor from the current page.
+ *
+ * An entity page (product, category, vehicle) registers its counterparts: the same entity at
+ * the target market's own URL, or — when it does not exist there — the target's home. Any
+ * other page keeps its path, with the market's localized cart word swapped and the query kept.
+ * Exported for the test; reads `window.location` because that is where the registration was
+ * keyed, whatever the internal rewrite made of the path.
+ */
+export function switchTargetFor(
+	target: string,
+	currentMarket: string,
+	channel: string,
+	fallbackPath: string,
+) {
+	const here = typeof window === "undefined" ? fallbackPath : window.location.pathname;
+	const registered = registeredMarketTarget(here, target);
+	if (registered !== undefined) return registered === null ? `/${target}` : `/${target}${registered}`;
+
+	const search = typeof window === "undefined" ? "" : window.location.search;
+	const pathAfterMarket = here.replace(new RegExp(`^/(${currentMarket}|${channel})(?=/|$)`), "");
+	return marketSwitchHref(target, `${pathAfterMarket}${search}`);
 }
 
 /**
@@ -74,9 +99,7 @@ export function HeaderMarketControls({ markets }: { markets: readonly string[] }
 
 	function handleSelect(newSlug: string) {
 		setIsOpen(false);
-		const pathAfterMarket = pathname.replace(new RegExp(`^/(${currentFriendly}|${params.channel})/?`), "/");
-		const newPath = `/${newSlug}${pathAfterMarket === "/" ? "" : pathAfterMarket}`;
-		router.push(newPath);
+		router.push(switchTargetFor(newSlug, currentFriendly, params.channel, pathname));
 	}
 
 	return (

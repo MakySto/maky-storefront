@@ -334,8 +334,9 @@ export async function resolveFitmentOffers(
 				// after the fetch, never in the components. A does not prefer a
 				// translation, it REFUSES a product without a complete one — the `??`
 				// that used to stand here is precisely what that policy forbids, and it
-				// would have printed a Slovak product name on a German page. Slug is the
-				// single deliberate exception (a URL, not visible content).
+				// would have printed a Slovak product name on a German page. Since contract
+				// v2 there is no exception left: the translated slug is required too, and it
+				// is the market URL the offer links to.
 				const localized = resolveExactLocaleProduct(node, locale);
 				if (!localized) {
 					// Sold here, fits, and we simply cannot describe it in this language.

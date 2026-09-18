@@ -93,6 +93,22 @@ export function localizeMarketPath(channelOrMarket: string, path: string): strin
 }
 
 /**
+ * The same NON-entity page in another market — the market switcher's fallback when the page
+ * registered no counterparts (cart, search, account, legal).
+ *
+ * Only the market-localised root segment moves: each market's proxy accepts its own cart word
+ * and no other, so `/de/warenkorb` switched to Czechia must become `/cz/kosik`, not
+ * `/cz/warenkorb` — which the Czech proxy reads as a product slug. Query and hash are kept.
+ */
+export function marketSwitchHref(targetMarket: string, pathAfterMarket: string): string {
+	const cartWords = new Set(Object.values(CART_SEGMENT_BY_MARKET));
+	const internal = pathAfterMarket.replace(/^\/([^/?#]+)(?=$|[/?#])/, (whole, first: string) =>
+		cartWords.has(first) ? "/cart" : whole,
+	);
+	return marketHref(targetMarket, internal);
+}
+
+/**
  * Convert Saleor channel slug to friendly market URL path.
  * marketHref("sk-eur", "/products") → "/sk/products"
  * marketHref("sk-eur") → "/sk"

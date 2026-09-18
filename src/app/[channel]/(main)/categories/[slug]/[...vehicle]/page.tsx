@@ -29,6 +29,7 @@ import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { Breadcrumbs, type BreadcrumbItem } from "@/ui/components/breadcrumbs";
 import { ContentBlocks } from "@/ui/components/catalog/content-blocks";
 import { CatalogOfferList } from "@/ui/components/catalog/offer-list";
+import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
 
 /**
  * The vehicle category pages: `/sk/stresne-nosice/[make]/[model]/[generation]`.
@@ -119,6 +120,18 @@ async function vehicleCounterparts(vehicleId: string): Promise<MarketCounterpart
 		if (page && indexabilityOf(page).indexable) counterparts.push({ market, path: page.urlPath });
 	}
 	return counterparts;
+}
+
+/**
+ * The same vehicle's page in each live market — joined on vehicleId, never the localized URL —
+ * for the header's market switcher. A market without an indexable page for it sends the
+ * visitor to that market's home instead of to a path its proxy does not route.
+ */
+async function VehicleSwitchTargets({ vehicleId }: { vehicleId: string }) {
+	const counterparts = await vehicleCounterparts(vehicleId);
+	return (
+		<MarketSwitchTargets paths={Object.fromEntries(counterparts.map(({ market, path }) => [market, path]))} />
+	);
 }
 
 function tileHref(channel: string, node: CatalogNode): string {
@@ -275,6 +288,10 @@ export default async function Page({ params }: Params) {
 
 	return (
 		<div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+			{/* Own boundary: other markets' artifacts must never hold up this page. */}
+			<Suspense fallback={null}>
+				<VehicleSwitchTargets vehicleId={node.vehicleId} />
+			</Suspense>
 			<Breadcrumbs items={crumbs} />
 
 			{!published ? (

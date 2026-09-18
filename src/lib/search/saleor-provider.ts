@@ -80,10 +80,11 @@ export async function searchProducts(options: SearchOptions): Promise<SearchResu
 		price: node.pricing?.priceRange?.start?.gross.amount ?? 0,
 		currency: node.pricing?.priceRange?.start?.gross.currency ?? localeConfig.fallbackCurrency,
 		categoryName: node.category?.name,
+		isPurchasable: node.isAvailableForPurchase === true,
 	}));
 
 	const pagination: SearchPagination = {
-		totalCount: localized.dropped > 0 ? searchProducts.length : (products.totalCount ?? 0),
+		totalCount: localized.dropped > 0 ? searchProducts.length : products.totalCount ?? 0,
 		totalCountIsEstimate: localized.dropped > 0,
 		hasNextPage: products.pageInfo.hasNextPage,
 		hasPreviousPage: products.pageInfo.hasPreviousPage,

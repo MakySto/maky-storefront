@@ -277,9 +277,50 @@ describe("the exact answer CFM checks (HANDOFF-20260916-M-integration-candidate 
 				"product:at-eur:de-AT:n60012",
 				"category:at-eur:de-AT:stresne-nosice",
 				"fitment-offers:at-eur:de-AT",
+				"product-miss:at-eur:de-AT",
 				"sitemap:at-eur",
 			],
 			success: true,
 		});
+	});
+});
+
+describe("a product that exists only under its translated slug (exact-locale v2)", () => {
+	it("expires every cached miss in the foreign channel the product event names", async () => {
+		// `/at/<de-at-slug>` visited before the DE_AT row existed is cached as not-found under
+		// that slug — which CFM's event, naming the base slug, can never name.
+		await post({ product: { slug: "n60012", channel: { slug: "at-eur" } } });
+
+		expect(revalidateTag).toHaveBeenCalledWith("product-miss:at-eur:de-AT", { expire: 0 });
+	});
+
+	it("does the same for a category event — a product waiting on its category's translation was a miss", async () => {
+		await post({ category: { slug: "stresne-nosice" }, channel: "ca-cad" });
+
+		expect(revalidateTag).toHaveBeenCalledWith("product-miss:ca-cad:en-CA", { expire: 0 });
+	});
+
+	it("and for an event it cannot name, such as an attribute-value translation", async () => {
+		await post({ translation: { attributeValue: { name: "75" } } });
+
+		expect(revalidateTag).toHaveBeenCalledWith("product-miss:de-eur:de-DE", { expire: 0 });
+	});
+
+	it("purges the eleven foreign channels when the event names none, and never touches Slovakia", async () => {
+		await post({ product: { slug: "n60012" } });
+
+		const channels = taggedWith("product-miss:").map((call) => String(call[0]).split(":")[1]);
+		expect(new Set(channels)).toEqual(new Set(ALL_CHANNELS.filter((channel) => channel !== "sk-eur")));
+		expect(taggedWith("product-miss:sk-eur")).toHaveLength(0);
+	});
+
+	it("leaves the Slovak answer exactly as it was", async () => {
+		const response = await post({ product: { slug: "n60012", channel: { slug: "sk-eur" } } });
+
+		expect(((await response.json()) as { tags: string[] }).tags).toEqual([
+			"product:sk-eur:sk-SK:n60012",
+			"fitment-offers:sk-eur:sk-SK",
+			"sitemap:sk-eur",
+		]);
 	});
 });

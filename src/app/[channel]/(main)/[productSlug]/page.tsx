@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { categoryUrlFor } from "@/config/category-routes";
+import { cacheTag } from "next/cache";
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
 import { ErrorBoundary } from "react-error-boundary";
@@ -17,11 +18,11 @@ import {
 import { ProductDetailsDocument, type ProductDetailsQuery } from "@/gql/graphql";
 import { buildPageMetadata, buildProductJsonLd } from "@/lib/seo";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
-import { CHANNEL_MAP, REVERSE_MAP, marketHref } from "@/lib/channel-map";
-import { liveMarkets } from "@/lib/market-state";
-import { counterpartAlternates, type MarketCounterpart } from "@/lib/seo/hreflang";
+import { REVERSE_MAP, marketHref } from "@/lib/channel-map";
+import { counterpartAlternates } from "@/lib/seo/hreflang";
+import { productCounterparts } from "@/lib/seo/product-counterparts";
 import { previousProductSlug } from "@/lib/product-redirects";
-import { productHref, productPath } from "@/lib/product-url";
+import { productHref } from "@/lib/product-url";
 import { Breadcrumbs } from "@/ui/components/breadcrumbs";
 import { getGalleryImages } from "@/ui/components/pdp/gallery-images";
 import { PdpVehicleApplications } from "@/ui/components/fitment/pdp-vehicle-applications";
@@ -36,7 +37,9 @@ import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { parseEditorJSToHtml } from "@/lib/editorjs";
 import { isSourceLocale, resolveExactLocaleProduct } from "@/lib/saleor/exact-locale";
 import { lookupBySlug } from "@/lib/saleor/slug-lookup";
+import { productAnswerTags } from "@/lib/saleor/product-cache-tags";
 import { publicSku } from "@/lib/product-code";
+import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
 
 /** CFM's manufacturer attribute, keyed on externalReference — see product-attributes.ts. */
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
@@ -47,11 +50,19 @@ const MANUFACTURER_REF = "cfm:attribute:manufacturer";
 
 type Product = NonNullable<ProductDetailsQuery["product"]>;
 
+/**
+ * The product in the market's language, plus the one thing the exact-locale boundary
+ * overwrites and the page still needs: the BASE slug (`Product.slug`). Abroad `slug` is the
+ * translated slug — the market's URL — while every other market, the revalidation event and
+ * the cache key of the Slovak page know the product by its base slug.
+ */
+type LocalizedProduct = Product & { baseSlug: string };
+
 async function fetchProductOutcome(
 	slug: string,
 	channel: string,
 	locale: string,
-): Promise<ResourceOutcome<Product>> {
+): Promise<ResourceOutcome<LocalizedProduct>> {
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 	const result = await lookupBySlug(
 		locale,
@@ -64,11 +75,21 @@ async function fetchProductOutcome(
 					lang,
 					slugLang,
 				},
-				revalidate: 300,
+				// Slovakia keeps its 300 s fetch cache: its URL slug is the base slug, so the
+				// event's path purge (`/sk-eur/<slug>`) already expires this fetch with the
+				// entry. Abroad the URL is the translated slug, the event cannot name that path,
+				// and a fetch cached here outlived every tag purge by up to 300 s — measured:
+				// the entry re-ran and read the old answer back from the fetch cache. So abroad
+				// the `"use cache"` entry is the only cache, and its tags (see
+				// `product-cache-tags.ts`) are the whole invalidation story.
+				revalidate: isSourceLocale(locale) ? 300 : 0,
 			}),
 	);
 
-	return toOutcome(result, (data) => resolveExactLocaleProduct(data.product, locale));
+	return toOutcome(result, (data) => {
+		const localized = resolveExactLocaleProduct(data.product, locale);
+		return localized && data.product ? { ...localized, baseSlug: data.product.slug } : null;
+	});
 }
 
 /**
@@ -80,30 +101,40 @@ async function getProductOutcomeCached(
 	slug: string,
 	channel: string,
 	locale: string,
-): Promise<AuthoritativeOutcome<Product>> {
+): Promise<AuthoritativeOutcome<LocalizedProduct>> {
 	"use cache";
 	applyCacheProfile(CACHE_PROFILES.products, { channel, locale, slug });
 
-	const outcome = await fetchProductOutcome(slug, channel, locale);
-	if (outcome.status !== "not-found") {
-		return refuseToCacheUpstreamError(outcome);
-	}
+	let outcome = await fetchProductOutcome(slug, channel, locale);
 
 	// Migration shim: a product whose Saleor slug has not been updated to the
 	// SKU-last form yet is still reachable at its canonical new URL. Only fires
-	// on an AUTHORITATIVE miss — a fault has already thrown above, so a blip can
-	// no longer send us down this path — and only for the ten explicitly mapped
-	// slugs, so it disappears on its own once Saleor has converged.
-	const previous = previousProductSlug(slug);
-	if (!previous) {
-		return refuseToCacheUpstreamError(outcome);
+	// on an AUTHORITATIVE miss — a fault throws below without ever getting here,
+	// so a blip can no longer send us down this path — and only for the ten
+	// explicitly mapped slugs, so it disappears on its own once Saleor has converged.
+	if (outcome.status === "not-found") {
+		const previous = previousProductSlug(slug);
+		if (previous) outcome = await fetchProductOutcome(previous, channel, locale);
 	}
 
-	return refuseToCacheUpstreamError(await fetchProductOutcome(previous, channel, locale));
+	const answer = refuseToCacheUpstreamError(outcome);
+
+	// Abroad the URL slug is the translated one, and the events that must reach this entry
+	// name the base slug — see `product-cache-tags.ts`. No extra tags in Slovakia.
+	const extraTags = productAnswerTags(
+		{ channel, locale, slug },
+		answer.status === "found" ? { status: "found", baseSlug: answer.resource.baseSlug } : answer,
+	);
+	for (const tag of extraTags) cacheTag(tag);
+
+	return answer;
 }
 
 /** `found` | `not-found` | `upstream-error`, shared by the page and its metadata. */
-export async function getProductOutcome(slug: string, channel: string): Promise<ResourceOutcome<Product>> {
+export async function getProductOutcome(
+	slug: string,
+	channel: string,
+): Promise<ResourceOutcome<LocalizedProduct>> {
 	const locale = getLocaleFromChannel(channel);
 	return catchUpstreamError(() => getProductOutcomeCached(slug, channel, locale));
 }
@@ -167,14 +198,10 @@ export async function generateMetadata(props: {
 	// the exact-locale boundary inside `getProductOutcome` decides the second. Asked of the
 	// other live markets only; with `sk` alone live this costs nothing and says nothing.
 	const market = REVERSE_MAP[params.channel] ?? params.channel;
-	const counterparts: MarketCounterpart[] = [{ market, path: productPath(product.slug) }];
-	for (const other of liveMarkets()) {
-		if (other === market) continue;
-		const found = await getProductOutcome(params.productSlug, CHANNEL_MAP[other]!.saleorSlug);
-		if (found.status === "found")
-			counterparts.push({ market: other, path: productPath(found.resource.slug) });
-	}
-	const languages = counterpartAlternates(market, counterparts);
+	const languages = counterpartAlternates(
+		market,
+		await productCounterparts(product, params.channel, getProductOutcome),
+	);
 	return languages ? { ...metadata, alternates: { ...metadata.alternates, languages } } : metadata;
 }
 
@@ -316,6 +343,10 @@ async function ProductContent({
 
 	return (
 		<div className="bg-background flex min-h-screen flex-col">
+			{/* Own boundary: it asks the other live channels, and the product must never wait. */}
+			<Suspense fallback={null}>
+				<ProductSwitchTargets product={product} channel={params.channel} />
+			</Suspense>
 			{productJsonLd && (
 				<script
 					type="application/ld+json"
@@ -383,6 +414,17 @@ async function ProductContent({
 				</div>
 			</main>
 		</div>
+	);
+}
+
+/**
+ * Where this product lives in the other live markets, for the header's market switcher —
+ * the same set as its hreflang cluster, from the same cached lookups.
+ */
+async function ProductSwitchTargets({ product, channel }: { product: LocalizedProduct; channel: string }) {
+	const counterparts = await productCounterparts(product, channel, getProductOutcome);
+	return (
+		<MarketSwitchTargets paths={Object.fromEntries(counterparts.map(({ market, path }) => [market, path]))} />
 	);
 }
 

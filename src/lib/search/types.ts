@@ -30,6 +30,12 @@ export interface SearchProduct {
 	price: number;
 	currency: string;
 	categoryName?: string | null;
+	/**
+	 * The channel's purchase switch (Saleor `isAvailableForPurchase`). Required, so every
+	 * provider has to answer it: `false` is still a visible catalogue hit, shown as not
+	 * orderable — the same rule the listing card and the PDP follow.
+	 */
+	isPurchasable: boolean;
 	/** Optional: for highlighting matched text */
 	highlights?: {
 		name?: string;

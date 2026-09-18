@@ -36,6 +36,23 @@ const profiles = {
 		tagPattern: "product:{channel}:{locale}:{slug}",
 		pathPattern: "/{channel}/{slug}",
 	},
+	/**
+	 * An authoritative "this product does not exist here" answer in one FOREIGN channel.
+	 *
+	 * A PDP entry is keyed by the URL slug, and abroad that is the translated slug — which
+	 * CFM's event does not carry (it names the product by its base slug). So a visit to
+	 * `/de/<translated-slug>` made before the translation landed stays a cached not-found
+	 * until it expires, no matter how many correct events arrive. Every foreign miss also
+	 * carries this per-channel tag, and every product or category event in that channel
+	 * expires it. Slovakia is not tagged: its URL slug is the base slug the event names.
+	 */
+	productMisses: {
+		id: "product-misses",
+		label: "Product Not-Found Answers (foreign channels)",
+		cacheProfile: "minutes",
+		tagPattern: "product-miss:{channel}:{locale}",
+		pathPattern: null,
+	},
 	categories: {
 		id: "categories",
 		label: "Category Pages",

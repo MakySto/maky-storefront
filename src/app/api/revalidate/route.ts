@@ -6,6 +6,7 @@ import { getLocaleFromChannel } from "@/config/locale";
 import { CHANNEL_MAP, SALEOR_SLUGS } from "@/lib/channel-map";
 import { categoryBaseSlug, categorySegment } from "@/config/category-routes";
 import { parseWebhookPayload } from "@/lib/saleor/webhook-payload";
+import { productMissTagFor } from "@/lib/saleor/product-cache-tags";
 
 /**
  * Webhook endpoint for cache invalidation.
@@ -110,6 +111,20 @@ function revalidateOffers(channel: string, locale: string, tags: string[]) {
 	tags.push(tag);
 }
 
+/**
+ * Every cached "no such product" answer in one foreign channel — see
+ * `CACHE_PROFILES.productMisses`. The event names the product by its base slug, but a miss
+ * cached at `/de/<translated-slug>` before that translation existed has no base slug to be
+ * named by; this is the only way it hears that the translation, the listing or the category
+ * translation it was waiting for has landed. Nothing in Slovakia is tagged, so nothing there.
+ */
+function revalidateProductMisses(channel: string, locale: string, tags: string[]) {
+	const tag = productMissTagFor(channel, locale);
+	if (!tag) return;
+	revalidateTag(tag, IMMEDIATE);
+	tags.push(tag);
+}
+
 // ============================================================================
 // POST — Saleor webhook
 // ============================================================================
@@ -173,6 +188,7 @@ export async function POST(request: NextRequest) {
 					// Price, publication and purchasability all show on the generation pages
 					// too, and those read the product outside any `"use cache"` entry.
 					revalidateOffers(channel, locale, revalidatedTags);
+					revalidateProductMisses(channel, locale, revalidatedTags);
 					break;
 
 				case "category":
@@ -185,6 +201,9 @@ export async function POST(request: NextRequest) {
 					// category has no translation — so a category translation landing or
 					// changing decides what a generation page may list.
 					revalidateOffers(channel, locale, revalidatedTags);
+					// The same refusal decides whether a PDP exists: a product waiting only
+					// for its category's translation was cached as not-found.
+					revalidateProductMisses(channel, locale, revalidatedTags);
 					break;
 
 				case "collection":
@@ -203,6 +222,9 @@ export async function POST(request: NextRequest) {
 				default:
 					revalidatePath(`/${channel}/products`);
 					revalidatedPaths.push(`/${channel}/products`);
+					// An event we cannot name — an attribute or attribute-value translation,
+					// for instance — can still be the last field a product was missing.
+					revalidateProductMisses(channel, locale, revalidatedTags);
 			}
 
 			// The homepage carries listing modules built from the same catalogue.
