@@ -120,7 +120,7 @@ export const EMPTY_OFFERS: FitmentOffers = {
 	isDemo: false,
 };
 
-/** DE and AT share one Saleor language row, US and CA another; the mapping is the single source for that. */
+/** The market's exact-locale code (DE_AT in Austria, EN_CA in Canada, EN in the US); the locale map is the single source for it. */
 function languageFor(locale: string) {
 	return getLocaleConfigByLocale(locale).graphqlLanguageCode;
 }

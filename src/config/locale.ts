@@ -25,10 +25,15 @@ export type LocaleConfig = {
 	htmlLang: string;
 	/**
 	 * Saleor language of the editorial copy this market reads — the translation rows CFM
-	 * writes. One per LANGUAGE, not per market: `de-DE` and `de-AT` both read `DE`, `en-US`
-	 * and `en-CA` both read `EN`, because CFM publishes one German and one English
-	 * translation, never a copy per country. Asking for `EN_US` finds no row at all, and the
-	 * exact-locale boundary then refuses every product in that market.
+	 * writes, and the one `slugLanguageCode` a translated product URL is looked up in.
+	 *
+	 * COMMERCE-2 exact-locale contract v2 (`docs/contracts/commerce2/exact-locale-contract.json`):
+	 * eleven target codes for eleven foreign markets. Two of them are REGIONAL records —
+	 * Austria reads `DE_AT` and Canada `EN_CA`, each seeded once by CFM from the finished `DE`
+	 * / `EN` record and edited independently afterwards. The United States reads the plain
+	 * `EN`; there is no `EN_US` batch, so asking for it would find no row and the exact-locale
+	 * boundary would refuse every product in that market. Nothing falls back between codes:
+	 * an Austrian page never shows the `DE` row, and a German page never shows `DE_AT`.
 	 */
 	graphqlLanguageCode: LanguageCodeEnum;
 	/** Open Graph locale format */
@@ -77,7 +82,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"de-AT": {
 		locale: "de-AT",
 		htmlLang: "de",
-		graphqlLanguageCode: LanguageCodeEnum.De,
+		graphqlLanguageCode: LanguageCodeEnum.DeAt,
 		ogLocale: "de_AT",
 		fallbackCurrency: "EUR",
 		stripeLocale: "de",
@@ -141,7 +146,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"en-CA": {
 		locale: "en-CA",
 		htmlLang: "en",
-		graphqlLanguageCode: LanguageCodeEnum.En,
+		graphqlLanguageCode: LanguageCodeEnum.EnCa,
 		ogLocale: "en_CA",
 		fallbackCurrency: "CAD",
 		stripeLocale: "en",

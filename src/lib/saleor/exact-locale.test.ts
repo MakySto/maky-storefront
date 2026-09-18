@@ -71,7 +71,7 @@ describe("exact-locale product boundary", () => {
 		expect(product?.variants[0].nonSelectionAttributes[0].attribute.name).toBe("Befestigung");
 	});
 
-	it.each(["name", "description", "seoDescription"] as const)(
+	it.each(["name", "description", "seoTitle", "seoDescription", "slug"] as const)(
 		"fails closed when exact %s is missing",
 		(field) => {
 			const product = translatedProduct();
@@ -80,12 +80,10 @@ describe("exact-locale product boundary", () => {
 		},
 	);
 
-	it("falls back from a missing foreign SEO title only to the translated name", () => {
+	it("refuses a missing foreign SEO title instead of filling it from the name (contract v2)", () => {
 		const product = translatedProduct();
 		product.translation.seoTitle = "";
-		const localized = resolveExactLocaleProduct(product, "de-DE");
-		expect(localized?.seoTitle).toBe("Dachträger");
-		expect(localized?.seoTitle).not.toBe(product.seoTitle);
+		expect(resolveExactLocaleProduct(product, "de-DE")).toBeNull();
 	});
 
 	it("fails closed when one displayed attribute value has no exact translation", () => {
@@ -100,10 +98,10 @@ describe("exact-locale product boundary", () => {
 		expect(resolveExactLocaleProduct(product, "de-DE")).toBeNull();
 	});
 
-	it("keeps base slugs as URL-only fallback", () => {
+	it("refuses a missing translated slug instead of publishing the Slovak one abroad (contract v2)", () => {
 		const product = translatedProduct();
 		product.translation.slug = "";
-		expect(resolveExactLocaleProduct(product, "de-DE")?.slug).toBe("stresny-nosic");
+		expect(resolveExactLocaleProduct(product, "de-DE")).toBeNull();
 	});
 
 	it("filters incomplete cards and reports the honest loaded-page count", () => {

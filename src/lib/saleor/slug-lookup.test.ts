@@ -82,14 +82,24 @@ describe("lookupBySlug", () => {
 			expect(result.ok && result.data.product?.slug).toBe("dachbox-639901");
 		});
 
-		it("sends de-AT the German language code — one German row serves both", async () => {
-			const run = vi.fn(async (slugLang: LanguageCodeEnum | null) =>
-				slugLang === LanguageCodeEnum.De ? found("dachbox-639901") : missing,
+		it("sends de-AT its own DE_AT code, and en-CA EN_CA — never the row they were seeded from", async () => {
+			const atRun = vi.fn(async (slugLang: LanguageCodeEnum | null) =>
+				slugLang === LanguageCodeEnum.DeAt ? found("dachbox-639901") : missing,
 			);
+			const atResult = await lookupBySlug("de-AT", pick, atRun);
+			expect(atRun).toHaveBeenNthCalledWith(2, LanguageCodeEnum.DeAt);
+			expect(atResult.ok && atResult.data.product).toEqual({ id: "p1", slug: "dachbox-639901" });
 
-			await lookupBySlug("de-AT", pick, run);
+			const caRun = vi.fn(async (slugLang: LanguageCodeEnum | null) =>
+				slugLang === LanguageCodeEnum.EnCa ? found("roof-box-639901") : missing,
+			);
+			await lookupBySlug("en-CA", pick, caRun);
+			expect(caRun).toHaveBeenNthCalledWith(2, LanguageCodeEnum.EnCa);
 
-			expect(run).toHaveBeenNthCalledWith(2, LanguageCodeEnum.De);
+			// The United States has no regional record: plain EN.
+			const usRun = vi.fn(async () => missing);
+			await lookupBySlug("en-US", pick, usRun);
+			expect(usRun).toHaveBeenNthCalledWith(2, LanguageCodeEnum.En);
 		});
 
 		it("reports an authoritative miss when neither slug matches", async () => {

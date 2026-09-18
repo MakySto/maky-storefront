@@ -36,11 +36,12 @@ export type ConditionRendering = {
 /**
  * Locale fallback for source text.
  *
- * Exact match first. `de-AT` then falls back to `de-DE`, because they share one Saleor
- * translation row and a source that authors German once should not go unrendered in
- * Austria. It deliberately does NOT fall back to Slovak: a Slovak mounting instruction
- * on a German page is not a translation, it is an untranslated string that looks
- * authoritative.
+ * Exact match first. `de-AT` then falls back to `de-DE`: these are the fitment dataset's
+ * own condition texts, which the source authors in German once, and a mounting condition
+ * must not go unrendered in Austria. (Saleor product copy is a different matter — there
+ * Austria reads its own `DE_AT` record and never `DE`; see exact-locale contract v2.)
+ * It deliberately does NOT fall back to Slovak: a Slovak mounting instruction on a German
+ * page is not a translation, it is an untranslated string that looks authoritative.
  */
 export function pickConditionText(text: Record<string, string> | undefined, locale: string): string | null {
 	if (!text) return null;

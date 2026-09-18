@@ -1,14 +1,34 @@
 {
-	"schema": "maky.commerce2.exact-locale-contract/1",
-	"source": "src/lib/saleor/exact-locale.ts",
-	"verifiedBy": "src/lib/saleor/exact-locale.contract.test.ts — every field below is deleted one at a time and the resolver's verdict is compared with this file",
+	"schema": "maky.commerce2.exact-locale-contract/2",
+	"supersedes": "maky.commerce2.exact-locale-contract/1 (M commit 3b7b145): Austria read DE and Canada read EN; a product's seoTitle fell back to the translated name and its slug to the base slug. Both are gone in v2.",
+	"source": "src/config/locale.ts (market → languageCode) and src/lib/saleor/exact-locale.ts (required fields)",
+	"verifiedBy": "src/lib/saleor/exact-locale.contract.test.ts — the market matrix below is compared with the code, and every product field is deleted one at a time and the resolver's verdict compared with this file",
 	"sourceLocale": "sk-SK",
-	"rule": "A foreign market renders only an exact translation in its editorial language. Nothing falls back to the Slovak base row: a missing required field means the resource does not exist in that market.",
+	"rule": "A foreign market renders only an exact translation in its own languageCode. Nothing falls back to the Slovak base row, nothing falls back from a regional code to the code it was seeded from, and nothing falls back from one translated field to another: a missing required field means the resource does not exist in that market.",
+	"markets": {
+		"sk": {
+			"channel": "sk-eur",
+			"locale": "sk-SK",
+			"languageCode": null,
+			"reads": "the SK base row (Product.name, .slug, …), never a translation"
+		},
+		"cz": { "channel": "cz-czk", "locale": "cs-CZ", "languageCode": "CS" },
+		"de": { "channel": "de-eur", "locale": "de-DE", "languageCode": "DE" },
+		"at": { "channel": "at-eur", "locale": "de-AT", "languageCode": "DE_AT" },
+		"pl": { "channel": "pl-pln", "locale": "pl-PL", "languageCode": "PL" },
+		"hu": { "channel": "hu-huf", "locale": "hu-HU", "languageCode": "HU" },
+		"it": { "channel": "it-eur", "locale": "it-IT", "languageCode": "IT" },
+		"fr": { "channel": "fr-eur", "locale": "fr-FR", "languageCode": "FR" },
+		"es": { "channel": "es-eur", "locale": "es-ES", "languageCode": "ES" },
+		"ro": { "channel": "ro-ron", "locale": "ro-RO", "languageCode": "RO" },
+		"us": { "channel": "us-usd", "locale": "en-US", "languageCode": "EN" },
+		"ca": { "channel": "ca-cad", "locale": "en-CA", "languageCode": "EN_CA" }
+	},
 	"editorialLanguageByMarket": {
 		"sk": "SK (base row, not a translation)",
 		"cz": "CS",
 		"de": "DE",
-		"at": "DE",
+		"at": "DE_AT",
 		"pl": "PL",
 		"hu": "HU",
 		"it": "IT",
@@ -16,15 +36,36 @@
 		"es": "ES",
 		"ro": "RO",
 		"us": "EN",
-		"ca": "EN"
+		"ca": "EN_CA"
+	},
+	"targetLanguageCodes": ["CS", "DE", "DE_AT", "PL", "HU", "IT", "FR", "ES", "RO", "EN", "EN_CA"],
+	"sourceRenderLanguages": ["CS", "DE", "PL", "HU", "IT", "FR", "ES", "RO", "EN"],
+	"regionalLanguageCodes": {
+		"DE_AT": {
+			"markets": ["at"],
+			"seededFrom": "DE",
+			"rule": "Seeded ONCE from the complete five-field DE record, with origin and target kept in CFM's own evidence. Afterwards an independent record: a later DE export never overwrites a DE_AT field that differs from its seed. The storefront reads DE_AT alone — an Austrian page never shows the DE row."
+		},
+		"EN_CA": {
+			"markets": ["ca"],
+			"seededFrom": "EN",
+			"rule": "Seeded ONCE from the complete five-field EN record, same evidence and override rules as DE_AT. The storefront reads EN_CA alone — a Canadian page never shows the EN row."
+		}
+	},
+	"notTargets": {
+		"SK": "the base row; Slovakia is never a translation",
+		"EN_US": "the United States reads EN — there is no EN_US batch, and a query for it finds no row"
 	},
 	"resources": {
 		"product": {
 			"read": "translation(languageCode) on the product, its category, and every attribute and attribute value in the payload",
-			"requiredTranslationFields": ["name", "description", "seoDescription"],
-			"optionalTranslationFields": {
-				"seoTitle": "falls back to the TRANSLATED name — never to the Slovak seoTitle",
-				"slug": "falls back to the base slug; a URL, never visible copy (product slugs are not translated in COMMERCE-2)"
+			"requiredTranslationFields": ["name", "description", "seoTitle", "seoDescription", "slug"],
+			"optionalTranslationFields": {},
+			"slug": {
+				"pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+				"route": "/{market}/{slug} — the translated slug IS the product's public URL in that market",
+				"lookup": "product(slug, channel) as a base slug first, then product(slug, channel, slugLanguageCode: <the market's languageCode>)",
+				"unique": "one product per slug within one languageCode, or the translated lookup cannot answer"
 			},
 			"alsoRequired": [
 				"category.translation.name — when the product has a category",
@@ -32,7 +73,7 @@
 				"value.translation.name — for every value of those attributes"
 			],
 			"description": "EditorJS JSON string, as the base row",
-			"onMissing": "the product does not exist in that market: PDP not-found (soft-404 under PPR), dropped from listings, search and vehicle-page offers"
+			"onMissing": "the product does not exist in that market: PDP not-found (soft-404 under PPR), dropped from listings, search and vehicle-page offers, no hreflang counterpart, no market-switcher target"
 		},
 		"category": {
 			"read": "translation(languageCode) on the category page query",
@@ -59,11 +100,13 @@
 			"onMissing": "the item is hidden in that market"
 		}
 	},
-	"price": "Per channel from the exact variant's pricing in that channel. Never converted, never borrowed from another channel sharing the language (AT and DE read one DE translation and keep their own prices).",
+	"dependenciesOfARegionalCode": "Before a market reading DE_AT or EN_CA can show a product, the same code must carry: the product's five fields, the translation of its category (stresne-nosice and nordrive-stresne-nosice for the COMMERCE-2 cohort; four fields each for the category page) and every attribute/value the product payload carries. Measured 2026-09-18 on Product:9164: no visible attributes, and the navbar/footer menus are empty — so for the cohort the dependencies are the two categories.",
+	"price": "Per channel from the exact variant's pricing in that channel. Never converted, never borrowed from another channel: AT reads DE_AT and DE reads DE, and each keeps its own channel price.",
 	"readback": {
 		"schema": "maky.commerce2.l10n-readback/1",
 		"sample": "docs/contracts/commerce2/l10n-readback.sample.json",
 		"acceptance": "MAKY_L10N_READBACK_PATH=<file> node_modules/.bin/vitest run src/lib/saleor/exact-locale.contract.test.ts",
+		"checks": "the channel belongs to this storefront; languageCode is one of targetLanguageCodes AND the one this contract names for that channel; product and category pass the resolver; the variant's currency is the channel's",
 		"privacy": "No tokens, no customer data, no admin-only fields. Only what the anonymous storefront query returns once a listing is public."
 	}
 }

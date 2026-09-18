@@ -48,7 +48,7 @@ export const CHANNELS = {
 	"sk-eur": { currency: "EUR", languageCode: "SK" },
 	"cz-czk": { currency: "CZK", languageCode: "CS" },
 	"de-eur": { currency: "EUR", languageCode: "DE" },
-	"at-eur": { currency: "EUR", languageCode: "DE" },
+	"at-eur": { currency: "EUR", languageCode: "DE_AT" },
 	"pl-pln": { currency: "PLN", languageCode: "PL" },
 	"hu-huf": { currency: "HUF", languageCode: "HU" },
 	"it-eur": { currency: "EUR", languageCode: "IT" },
@@ -56,7 +56,7 @@ export const CHANNELS = {
 	"es-eur": { currency: "EUR", languageCode: "ES" },
 	"ro-ron": { currency: "RON", languageCode: "RO" },
 	"us-usd": { currency: "USD", languageCode: "EN" },
-	"ca-cad": { currency: "CAD", languageCode: "EN" },
+	"ca-cad": { currency: "CAD", languageCode: "EN_CA" },
 };
 
 const args = process.argv.slice(2);

@@ -30,11 +30,13 @@ type ProductLike = TranslatableNamed & {
 	attributes?: readonly ProductAttribute[] | null;
 	thumbnail?: { url: string; alt?: string | null } | null;
 	media?: readonly { url: string; alt?: string | null; type?: string | null }[] | null;
-	variants?: readonly {
-		media?: readonly { url: string; alt?: string | null; type?: string | null }[] | null;
-		selectionAttributes?: readonly ProductAttribute[] | null;
-		nonSelectionAttributes?: readonly ProductAttribute[] | null;
-	}[] | null;
+	variants?:
+		| readonly {
+				media?: readonly { url: string; alt?: string | null; type?: string | null }[] | null;
+				selectionAttributes?: readonly ProductAttribute[] | null;
+				nonSelectionAttributes?: readonly ProductAttribute[] | null;
+		  }[]
+		| null;
 };
 
 type CategoryLike = TranslatableNamed & {
@@ -54,6 +56,34 @@ type MenuItemLike = {
 
 const required = (value: string | null | undefined): value is string =>
 	typeof value === "string" && value.trim().length > 0;
+
+/**
+ * COMMERCE-2 exact-locale contract v2: every field a foreign product must carry in ITS
+ * market's own language code. Missing, null, empty or whitespace — any one of them and the
+ * product does not exist in that market. v1 let `seoTitle` fall back to the translated
+ * name and `slug` to the base slug; v2 requires both, because the translated slug IS the
+ * product's public URL abroad and the title is what a search engine lists.
+ *
+ * The Slovak market is not a translation and is not held to this: it reads the base row.
+ */
+export const PRODUCT_TRANSLATION_REQUIRED_FIELDS = [
+	"name",
+	"description",
+	"seoTitle",
+	"seoDescription",
+	"slug",
+] as const;
+
+/**
+ * A translated product slug is a URL path segment. Lower-case ASCII letters and digits in
+ * hyphen-separated runs — what CFM's writer produces (checked on the live CS/DE rows,
+ * 2026-09-18) and what a link can carry unencoded. Anything else is refused rather than
+ * percent-encoded into a URL nobody meant to publish.
+ */
+export const TRANSLATED_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+const validTranslatedSlug = (value: string | null | undefined): value is string =>
+	required(value) && TRANSLATED_SLUG_PATTERN.test(value);
 
 export function isSourceLocale(locale: string): boolean {
 	return locale === SOURCE_LOCALE;
@@ -110,10 +140,12 @@ function localizedMedia<T extends { url: string; alt?: string | null }>(
 /**
  * The only boundary allowed to expose Saleor product copy to a route.
  *
- * Foreign routes require one exact translation carrying every customer-facing
- * product field. Nothing in this function falls back to the Slovak base row.
- * Incomplete translated attributes make the product ineligible too, preventing
- * a translated heading above a Slovak specification table.
+ * Foreign routes require one exact translation — in the market's own language code, so
+ * `DE_AT` in Austria and `EN_CA` in Canada — carrying all five fields of
+ * `PRODUCT_TRANSLATION_REQUIRED_FIELDS`. Nothing in this function falls back to the Slovak
+ * base row, and nothing falls back from one translated field to another. Incomplete
+ * translated attributes make the product ineligible too, preventing a translated heading
+ * above a Slovak specification table.
  */
 export function resolveExactLocaleProduct<T extends ProductLike>(
 	product: T | null | undefined,
@@ -127,7 +159,9 @@ export function resolveExactLocaleProduct<T extends ProductLike>(
 		!translation ||
 		!required(translation.name) ||
 		!required(translation.description) ||
-		!required(translation.seoDescription)
+		!required(translation.seoTitle) ||
+		!required(translation.seoDescription) ||
+		!validTranslatedSlug(translation.slug)
 	) {
 		return null;
 	}
@@ -164,11 +198,9 @@ export function resolveExactLocaleProduct<T extends ProductLike>(
 	return {
 		...product,
 		name: localizedName,
-		slug: required(translation.slug) ? translation.slug : product.slug,
+		slug: translation.slug,
 		description: translation.description,
-		// A missing foreign SEO title may fall back only to the exact translated
-		// name. Falling through to product.seoTitle would leak Slovak copy.
-		seoTitle: required(translation.seoTitle) ? translation.seoTitle : localizedName,
+		seoTitle: translation.seoTitle,
 		seoDescription: translation.seoDescription,
 		category,
 		attributes: attributes as ProductAttribute[],
