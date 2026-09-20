@@ -1,0 +1,19 @@
+{
+	"schema": "maky.commerce2.market-slug-aliases-ready/1",
+	"status": "READY",
+	"git_sha": "55db628ff66b29d11999e720e0b8df579db2aefb",
+	"build_id": "ow3e-dxt969Y8fm2MKYYT",
+	"map_sha256": "1635f8143c774ca3fbb4a2797846a0edc8e7ce90e251ca4fa82aa1c67c89394e",
+	"entries_loaded": 100727,
+	"markets_loaded": 11,
+	"entries_discarded": 0,
+	"discard_reasons": {},
+	"redirects_active_before_swap": 0,
+	"canary_probe": {
+		"checked": 33,
+		"serving_current_url": 33,
+		"redirected": 0
+	},
+	"sk_unchanged": true,
+	"observed_at": "2026-09-20T12:24:27Z"
+}
