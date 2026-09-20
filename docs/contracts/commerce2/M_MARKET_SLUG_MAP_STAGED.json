@@ -1,0 +1,105 @@
+{
+	"schema": "maky.commerce2.market-slug-map-staged/1",
+	"status": "MAP_STAGED",
+	"map": {
+		"url": "https://carfitmanager.com/media/fitment/maky_market_slug_redirects_1.1.0-20260920.json",
+		"sha256": "99fc63cacc1b08034fcb55384dee04d3948fcf0515277102e12a1191ef6328b0",
+		"bytes": 33436100,
+		"checksum_source": "SHA256SUMS_MARKET_SLUG_MAP_20260920 (published separately from the handoff message; matches)",
+		"contract": "cfm.commerce2.market-slug-redirects/1",
+		"generator_version": "public_market_url_v2_flattened",
+		"generated_at": "2026-09-20T21:39:44.875787+00:00",
+		"staged_path": "/opt/storefront-artifacts/MARKET_SLUG_REDIRECTS_apply_1.1.0-20260920.json"
+	},
+	"parsed_by": "src/lib/market-slug-redirects.ts — the deployed consumer's own parser, not a re-implementation",
+	"entries_parsed": 100730,
+	"markets_parsed": 11,
+	"entries_discarded": 0,
+	"discard_reasons": {},
+	"per_market": {
+		"at": 9157,
+		"ca": 9157,
+		"cz": 9157,
+		"de": 9157,
+		"es": 9157,
+		"fr": 9157,
+		"hu": 9160,
+		"it": 9157,
+		"pl": 9157,
+		"ro": 9157,
+		"us": 9157
+	},
+	"independent_content_checks": {
+		"unique_cfm_product_id": 9157,
+		"missing_cfm_product_id": 0,
+		"malformed_new_slug": 0,
+		"self_redirects": 0,
+		"conflicting_old_slug": 0,
+		"chains_remaining": 0,
+		"targets_claimed_by_more_than_one_product": 0,
+		"cells_with_two_historical_urls": 3,
+		"both_historical_urls_reach_one_final": true
+	},
+	"active_map_unchanged": {
+		"sha256": "1635f8143c774ca3fbb4a2797846a0edc8e7ce90e251ca4fa82aa1c67c89394e",
+		"path": "/opt/storefront-artifacts/MARKET_SLUG_REDIRECTS_apply_20260920.json",
+		"env_changed": false,
+		"process_restarted": false,
+		"note": "The staged file is on disk and readable by the runtime user, but nothing reads it yet."
+	},
+	"canary_delta_against_the_live_catalogue": {
+		"cells": 33,
+		"unchanged": 30,
+		"moving": 3,
+		"moving_market": "hu",
+		"detail": "For 30 cells the V1 URL still resolves to the slug Saleor serves today, so activation is a no-op for them. The three HU cells move once more: today's live slug and the original V1 URL both map straight to the final slug, one hop each, no chain.",
+		"hu_final_slugs_present_in_saleor": false,
+		"hu_live_slugs_present_in_saleor": true,
+		"consequence": "Activating the map today would change nothing visible: the three HU finals do not exist yet, so the existence gate keeps the redirect dormant and the current HU URLs keep serving 200."
+	},
+	"non_canary_targets_sampled": {
+		"sampled": 12,
+		"already_in_saleor": 0,
+		"not_yet": 12
+	},
+	"unverifiable": [
+		{
+			"field": "self_sha256",
+			"value": "dd977a120c87b982882c95ceccab2d3da31df45749626716cd6ad4551393406e",
+			"note": "Not reproduced from the document by any obvious construction (entries alone, document minus the field, sorted keys, field blanked). M does not use it — the file is pinned by its own sha256, which matches the published SHA256SUMS byte for byte. Flagged, not treated as a fault."
+		}
+	],
+	"withdrawn_incompatible_version": {
+		"url": "https://carfitmanager.com/media/fitment/maky_market_slug_redirects_2.0.0-20260920.json",
+		"http_status": 404,
+		"confirmed": true
+	},
+	"waiting_for": "CFM to swap the three HU canary cells to their final slug; then M activates by .env + restart, verifies six historical URLs and reports MAP_READY.",
+	"foreign_noindex": "unchanged",
+	"foreign_purchase": "off",
+	"live_markets": "sk",
+	"observed_at": "2026-09-20T21:45:16Z",
+	"hu_cells": [
+		{
+			"cfm_pk": 56505,
+			"cfm_product_id": "CFMP-B-NOR-a51bec20924e7e-000000",
+			"v1_url_slug": "nordrive-helio-tetocsomagtarto-silver-audi-80-avant-19911995-nyitott-tetokorlat-cfmp-b-nor-a51bec20924e7e-000000",
+			"live_slug_today": "nordrive-helio-tetocsomagtarto-silver-audi-80-avant-1991-1995-nyitott-tetokorlat",
+			"final_slug": "nordrive-helio-silver-tetocsomagtarto-audi-80-avant-1991-1995-nyitott-tetokorlat"
+		},
+		{
+			"cfm_pk": 57657,
+			"cfm_product_id": "CFMP-B-NOR-997d876281c846-000000",
+			"v1_url_slug": "nordrive-snap-alu-tetocsomagtarto-silver-bmw-x2-u10-2024-integralt-tetokorlat-cfmp-b-nor-997d876281c846-000000",
+			"live_slug_today": "nordrive-snap-alu-tetocsomagtarto-silver-bmw-x2-u10-2024-integralt-tetokorlat",
+			"final_slug": "nordrive-snap-alu-silver-tetocsomagtarto-bmw-x2-u10-2024-integralt-tetokorlat"
+		},
+		{
+			"cfm_pk": 59421,
+			"cfm_product_id": "CFMP-B-NOR-9482056495260e-000000",
+			"v1_url_slug": "nordrive-silenzio-cx-tetocsomagtarto-black-fiat-multipla-19982010-rogzitesi-pontok-cfmp-b-nor-9482056495260e-000000",
+			"live_slug_today": "nordrive-silenzio-cx-tetocsomagtarto-black-fiat-multipla-1998-2010-rogzitesi-pontok",
+			"final_slug": "nordrive-silenzio-cx-black-tetocsomagtarto-fiat-multipla-1998-2010-rogzitesi-pontok"
+		}
+	]
+}
