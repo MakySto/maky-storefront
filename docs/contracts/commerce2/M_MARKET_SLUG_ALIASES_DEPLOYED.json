@@ -1,0 +1,101 @@
+{
+	"schema": "maky.commerce2.m-market-slug-aliases-deployed/1",
+	"status": "ALIAS_SUPPORT_DEPLOYED_AWAITING_MAP",
+	"summary": "M consumes cfm.commerce2.market-slug-redirects/1 and is deployed BEFORE any canary URL changes. No map has been delivered yet, so no redirect can fire: all 33 public canary URLs still serve themselves. Foreign markets stay noindex and unsellable; Slovakia is unchanged.",
+	"deployed": {
+		"host": "maky.store — PM2 maky-storefront on ubuntu@ip-10-0-2-88",
+		"gitSha": "55db628ff66b29d11999e720e0b8df579db2aefb",
+		"buildId": "ow3e-dxt969Y8fm2MKYYT",
+		"builtAt": "2026-09-20T10:06:15Z",
+		"recordedAt": "2026-09-20T10:07:57+00:00",
+		"downtimeSeconds": 135,
+		"previous": {
+			"gitSha": "5ce2f0bebf7448a53805b746f6653cb2281f1f1a",
+			"buildId": "9V3nNb6LUVT3HT_mrvSxO"
+		},
+		"rollbackSnapshot": "/opt/storefront-rollbacks/.next.rollback-5ce2f0b-9V3nNb6LUVT3HT_mrvSxO-20260920T100541Z",
+		"code": {
+			"consumer": "5ac471e0a1345491f46572f9ef1a368065935dc5",
+			"proxy": "1399fab05db61d6a96cd643ec3e06e9a7c92f363",
+			"sitemap": "fcbfdd31c5d5d29de3a085394dd3dfcd0d0f54e7"
+		}
+	},
+	"consumes": {
+		"schema": "cfm.commerce2.market-slug-redirects/1",
+		"fields": ["cfm_product_id", "language_code", "old_slug", "new_slug"],
+		"documentation": "docs/contracts/commerce2/market-slug-redirects.md",
+		"delivery": {
+			"file": "MAKY_MARKET_SLUG_REDIRECTS_PATH (a file beside the other artifacts, outside the git tree)",
+			"checksum": "MAKY_MARKET_SLUG_REDIRECTS_SHA256 — M verifies the delivered bytes and refuses the map on a mismatch",
+			"activation": "PM2 restart, no rebuild"
+		},
+		"languageToMarket": {
+			"CS": "cz",
+			"DE": "de",
+			"DE_AT": "at",
+			"PL": "pl",
+			"HU": "hu",
+			"IT": "it",
+			"FR": "fr",
+			"ES": "es",
+			"RO": "ro",
+			"EN": "us",
+			"EN_CA": "ca"
+		},
+		"identity": "map cfm_product_id ↔ Saleor externalReference (cfm:product: prefix and case ignored); 500/500 sampled cohort products carry one",
+		"rules": [
+			"no redirect until the new slug resolves in that market AND belongs to the same product — the old URL keeps serving until CFM swaps it",
+			"one permanent 301; chains flattened at load; cycles, over-long chains, ambiguous old slugs and cross-product chains dropped",
+			"the retired /{market}/products/{slug} form lands on the final URL in one hop",
+			"reserved market routes (cart word, search, products, localized category root, legal pages) are never treated as product slugs",
+			"Slovakia is untouched; SK and EN_US entries are dropped and counted"
+		]
+	},
+	"previewCanaryEvidence": {
+		"takenAt": "2026-09-20T10:12:01.433Z",
+		"combinations": 33,
+		"serving": "33/33 return 200 at their CURRENT url, canonical on themselves, x-robots-tag: noindex, nofollow, price in the channel currency (AT EUR, CA CAD)",
+		"redirects": 0,
+		"note": "These are today's OLD slugs. The same evidence will be re-taken on the NEW slugs, with the new CFM read-back, after the swap."
+	},
+	"localizedSitemap": {
+		"state": "deployed; only sk is live, so production still publishes 3 sk shards and 11 079 URLs",
+		"verifiedAgainstLiveSaleor": "local run of this build with MAKY_LIVE_MARKETS=sk,at against the real API: /sitemaps/at-products-1.xml carries exactly the 3 published canary products with their DE_AT slugs and no Slovak base slug; /sitemaps/at-pages-1.xml carries /at/dachtraeger and /at/categories/nordrive-dachtraeger; sk-products-1 unchanged at 9 571",
+		"rule": "a foreign shard lists only what that market can render — the exact-locale boundary decides, for products and for categories"
+	},
+	"production": {
+		"liveMarkets": ["sk"],
+		"foreignRobots": "x-robots-tag: noindex, nofollow on every foreign URL checked",
+		"publicProductsByChannel": {
+			"sk-eur": 9571,
+			"cz-czk": 3,
+			"de-eur": 3,
+			"at-eur": 3,
+			"pl-pln": 3,
+			"hu-huf": 3,
+			"it-eur": 3,
+			"fr-eur": 3,
+			"es-eur": 3,
+			"ro-ron": 3,
+			"us-usd": 3,
+			"ca-cad": 3
+		},
+		"foreignPurchasing": "off — the 3 canary products per foreign channel are visible, nothing else; Stripe, SMTP, shipping and taxes untouched",
+		"sitemapShards": [
+			"/sitemaps/sk-pages-1.xml",
+			"/sitemaps/sk-products-1.xml",
+			"/sitemaps/sk-vehicles-1.xml"
+		],
+		"smokeVsPreviousDeploy": "16 URLs x 12 fields: 6 differences, all on foreign category pages and all caused by CFM publishing the canary (the page stopped being empty, so it gained a canonical and its body meta says index) — the binding x-robots-tag noindex is unchanged"
+	},
+	"waitingFor": {
+		"map": "MARKET_SLUG_REDIRECTS with the REAL old slugs from today's Saleor — the 33 public canary combinations above must be covered if their slug changes",
+		"then": "M verifies sha256, points the env at the file, restarts, and announces readiness. Only then should CFM swap the canary slugs in Saleor."
+	},
+	"order": [
+		"production preview canary / noindex (done)",
+		"CFM full",
+		"indexing of all 12 markets",
+		"final revalidation"
+	]
+}
