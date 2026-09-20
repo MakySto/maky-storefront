@@ -150,6 +150,8 @@ function writeCache(key: string, verdict: "exists" | "absent", now: number): voi
 export function resetRouteExistenceStateForTests(): void {
 	cache.clear();
 	inFlight.clear();
+	identityCache.clear();
+	identityInFlight.clear();
 	concurrent = 0;
 	consecutiveFaults = 0;
 	breakerOpenUntil = 0;
@@ -281,6 +283,130 @@ export async function lookupExistence(
 		});
 
 	inFlight.set(key, pending);
+	return pending;
+}
+
+// --- the translated-slug question (PUBLIC_MARKET_URL_V2) -----------------------
+//
+// A market's product URL is its TRANSLATED slug, and `product(slug:)` alone matches only the
+// base row — so the question the redirect asks ("does the slug CFM allocated already serve
+// this product here?") needs `slugLanguageCode`, and it needs the identity back, not a
+// boolean: the answer may only move a visitor when the target is the SAME product the
+// redirect map names. Same transport, same breaker and the same fail-open rule as above; a
+// separate cache because the value is an identity rather than a verdict.
+
+export interface TranslatedProductAnswer {
+	readonly verdict: ExistenceVerdict;
+	/** Saleor's `externalReference` (`cfm:product:CFMP-…`), when the slug resolved. */
+	readonly externalReference: string | null;
+}
+
+const UNKNOWN_PRODUCT: TranslatedProductAnswer = { verdict: "unknown", externalReference: null };
+
+type IdentityEntry = { answer: TranslatedProductAnswer; expiresAt: number };
+
+const identityCache = new Map<string, IdentityEntry>();
+const identityInFlight = new Map<string, Promise<TranslatedProductAnswer>>();
+
+const TRANSLATED_PRODUCT_QUERY =
+	"query T($s:String!,$c:String!,$l:LanguageCodeEnum!){product(slug:$s,channel:$c,slugLanguageCode:$l){id externalReference}}";
+
+async function askTranslatedUpstream(
+	slug: string,
+	channel: string,
+	languageCode: string,
+): Promise<TranslatedProductAnswer> {
+	const endpoint = process.env.NEXT_PUBLIC_SALEOR_API_URL;
+	if (!endpoint) return UNKNOWN_PRODUCT;
+
+	try {
+		const response = await fetch(endpoint, {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				query: TRANSLATED_PRODUCT_QUERY,
+				variables: { s: slug, c: channel, l: languageCode },
+			}),
+			signal: AbortSignal.timeout(TIMEOUT_MS),
+			cache: "no-store",
+		});
+		if (!response.ok) return UNKNOWN_PRODUCT;
+
+		const body: unknown = await response.json();
+		if (typeof body !== "object" || body === null) return UNKNOWN_PRODUCT;
+		const payload = body as { data?: Record<string, unknown> | null; errors?: unknown };
+		if (payload.errors) return UNKNOWN_PRODUCT;
+		if (payload.data == null || !("product" in payload.data)) return UNKNOWN_PRODUCT;
+
+		const product = payload.data.product as { externalReference?: string | null } | null;
+		if (product == null) return { verdict: "absent", externalReference: null };
+		return { verdict: "exists", externalReference: product.externalReference ?? null };
+	} catch {
+		return UNKNOWN_PRODUCT;
+	}
+}
+
+/**
+ * Who, if anyone, owns `slug` in this market's own language.
+ *
+ * `exists` + the owner's identity, `absent`, or `unknown`. Only `exists` with a matching
+ * identity may produce a redirect; `absent` means the swap has not happened yet and the old
+ * URL must keep serving; `unknown` means we could not find out and nothing changes.
+ */
+export async function lookupTranslatedProduct(
+	slug: string,
+	channel: string,
+	languageCode: string,
+	now: number = Date.now(),
+): Promise<TranslatedProductAnswer> {
+	const key = `${channel}:${languageCode}:${slug}`;
+
+	const hit = identityCache.get(key);
+	if (hit && hit.expiresAt > now) {
+		identityCache.delete(key);
+		identityCache.set(key, hit);
+		return hit.answer;
+	}
+	if (hit) identityCache.delete(key);
+
+	if (breakerOpenUntil > now) return UNKNOWN_PRODUCT;
+
+	const existing = identityInFlight.get(key);
+	if (existing) return existing;
+	if (concurrent >= MAX_CONCURRENT) return UNKNOWN_PRODUCT;
+
+	concurrent += 1;
+	const pending = askTranslatedUpstream(slug, channel, languageCode)
+		.then((answer) => {
+			if (answer.verdict === "unknown") {
+				consecutiveFaults += 1;
+				if (consecutiveFaults >= BREAKER_THRESHOLD) {
+					breakerOpenUntil = Date.now() + BREAKER_COOLDOWN_MS;
+					consecutiveFaults = 0;
+					console.error(
+						`[route-existence] breaker open for ${BREAKER_COOLDOWN_MS}ms after ${BREAKER_THRESHOLD} faults`,
+					);
+				}
+				return answer;
+			}
+			consecutiveFaults = 0;
+			identityCache.set(key, {
+				answer,
+				expiresAt: Date.now() + (answer.verdict === "exists" ? POSITIVE_TTL_MS : NEGATIVE_TTL_MS),
+			});
+			while (identityCache.size > MAX_ENTRIES) {
+				const oldest = identityCache.keys().next();
+				if (oldest.done) break;
+				identityCache.delete(oldest.value);
+			}
+			return answer;
+		})
+		.finally(() => {
+			concurrent -= 1;
+			identityInFlight.delete(key);
+		});
+
+	identityInFlight.set(key, pending);
 	return pending;
 }
 

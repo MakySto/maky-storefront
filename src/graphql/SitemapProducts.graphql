@@ -1,12 +1,73 @@
-# Slugs only. The sitemap needs a URL and a date, not a product card, so this
-# deliberately does not reuse ProductListItem — 453 products through that
-# fragment would be a large query for two fields.
-query SitemapProducts($channel: String!, $first: Int!, $after: String) {
+# The sitemap needs a URL and a date, not a product card — so in Slovakia this stays two
+# fields. Abroad the URL is the TRANSLATED slug and the product only exists in that market
+# when its translation is complete, so `$localized` turns on exactly what
+# `resolveExactLocaleProduct` reads: the five product fields, the category's name and every
+# attribute the payload carries. Listing a URL the market renders as not-found is the defect
+# `project-indexable-url-generator` already cost this shop once.
+query SitemapProducts(
+	$channel: String!
+	$first: Int!
+	$after: String
+	$lang: LanguageCodeEnum!
+	$localized: Boolean!
+) {
 	products(channel: $channel, first: $first, after: $after) {
 		edges {
 			node {
+				name
 				slug
 				updatedAt
+				translation(languageCode: $lang) @include(if: $localized) {
+					name
+					slug
+					description
+					seoTitle
+					seoDescription
+				}
+				category @include(if: $localized) {
+					slug
+					translation(languageCode: $lang) {
+						name
+					}
+				}
+				attributes @include(if: $localized) {
+					attribute {
+						translation(languageCode: $lang) {
+							name
+						}
+					}
+					values {
+						translation(languageCode: $lang) {
+							name
+						}
+					}
+				}
+				variants @include(if: $localized) {
+					selectionAttributes: attributes(variantSelection: VARIANT_SELECTION) {
+						attribute {
+							translation(languageCode: $lang) {
+								name
+							}
+						}
+						values {
+							translation(languageCode: $lang) {
+								name
+							}
+						}
+					}
+					nonSelectionAttributes: attributes(variantSelection: NOT_VARIANT_SELECTION) {
+						attribute {
+							translation(languageCode: $lang) {
+								name
+							}
+						}
+						values {
+							translation(languageCode: $lang) {
+								name
+							}
+						}
+					}
+				}
 			}
 		}
 		pageInfo {

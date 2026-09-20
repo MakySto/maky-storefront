@@ -1,14 +1,33 @@
-# Category slugs with a per-channel product count, so the sitemap can leave out
-# the empty ones. Eleven of the thirty categories on this catalogue currently
-# hold no products in sk-eur, `stresne-nosice` among them.
+# Category slugs with a per-channel product count, so the sitemap can leave out the empty
+# ones. Eleven of the thirty categories on this catalogue currently hold no products in
+# sk-eur, `stresne-nosice` among them.
 #
-# Paginated for the same reason the product query is: a fixed `first` with no
-# `pageInfo` cannot even tell that it truncated.
-query SitemapCategories($channel: String!, $first: Int!, $after: String) {
+# Abroad the page also has to exist in the market's language: the exact-locale boundary
+# refuses a category whose translation lacks any of the four fields, and a sitemap that
+# listed it would advertise a not-found. `$localized` fetches exactly what that boundary
+# reads; Slovakia keeps the two-field query it had.
+#
+# Paginated for the same reason the product query is: a fixed `first` with no `pageInfo`
+# cannot even tell that it truncated.
+query SitemapCategories(
+	$channel: String!
+	$first: Int!
+	$after: String
+	$lang: LanguageCodeEnum!
+	$localized: Boolean!
+) {
 	categories(first: $first, after: $after) {
 		edges {
 			node {
+				name
 				slug
+				translation(languageCode: $lang) @include(if: $localized) {
+					name
+					slug
+					description
+					seoTitle
+					seoDescription
+				}
 				products(channel: $channel) {
 					totalCount
 				}

@@ -12,6 +12,8 @@ import {
 	marketHref,
 } from "./lib/channel-map";
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
+import { marketSlugRedirect, sameCfmProduct } from "./lib/market-slug-redirects";
+import { marketLanguageCode } from "./config/market-language";
 import { catalogRedirectTarget } from "./lib/catalog-content/redirects";
 import { CATEGORY_ROUTE_PREFIX, isCategorySlug } from "./config/categories";
 import {
@@ -29,6 +31,7 @@ import {
 	gateEnabledFor,
 	isGateEnabled,
 	lookupExistence,
+	lookupTranslatedProduct,
 	normalizePathname,
 } from "./lib/route-existence";
 
@@ -101,6 +104,32 @@ function detectMarket(request: NextRequest): string {
 	// takes it out of MAKY_LIVE_MARKETS, fall back to whatever is live rather
 	// than redirecting the root at a noindex storefront.
 	return isMarketLive(DEFAULT_MARKET) ? DEFAULT_MARKET : liveMarkets()[0] ?? DEFAULT_MARKET;
+}
+
+/**
+ * The market URL a retired product slug moved to — but only once it is really there.
+ *
+ * PUBLIC_MARKET_URL_V2: CFM owns the foreign market slug and publishes the old → new map.
+ * The storefront must have this support deployed BEFORE the swap, and must not move anyone
+ * before it: until CFM writes the new slug into Saleor, the OLD url is the one that serves the
+ * product, and a redirect would take a working page away. So the answer is only "yes" when
+ * the target resolves in that market's own language AND the product it resolves to is the one
+ * the map names — Saleor's `externalReference` against CFM's `cfm_product_id`. Anything else
+ * (absent, a different product, an upstream we could not reach) leaves the request alone.
+ *
+ * Returns the new slug, or null. One hop: the map is flattened when it is read.
+ */
+async function movedMarketSlug(market: string, slug: string): Promise<string | null> {
+	const alias = marketSlugRedirect(market, slug);
+	if (!alias) return null;
+
+	const language = marketLanguageCode(market);
+	const channel = CHANNEL_MAP[market]?.saleorSlug;
+	if (!language || !channel) return null;
+
+	const answer = await lookupTranslatedProduct(alias.newSlug, channel, language);
+	if (answer.verdict !== "exists") return null;
+	return sameCfmProduct(answer.externalReference, alias.cfmProductId) ? alias.newSlug : null;
 }
 
 /**
@@ -254,9 +283,13 @@ async function route(request: NextRequest) {
 	// Only the DETAIL url redirects; /{market}/products is the product listing
 	// and must keep rendering.
 	if (first && FRIENDLY_SLUGS.has(first) && segments.length === 3 && segments[1] === "products") {
+		const rootSlug = resolveLegacyProductSlug(segments[2]);
+		// If that slug has also been replaced in this market, go to the replacement directly.
+		// Two redirects for one click is the chain the contract forbids.
+		const moved = await movedMarketSlug(first, rootSlug);
 		const url = request.nextUrl.clone();
-		url.pathname = "/" + first + "/" + resolveLegacyProductSlug(segments[2]);
-		return NextResponse.redirect(url, 308);
+		url.pathname = "/" + first + "/" + (moved ?? rootSlug);
+		return NextResponse.redirect(url, moved ? 301 : 308);
 	}
 
 	// RETIRED CATEGORY URL: /{market}/categories/{slug} -> /{market}/{slug}
@@ -334,6 +367,34 @@ async function route(request: NextRequest) {
 			const url = request.nextUrl.clone();
 			url.pathname = "/" + first + target;
 			return NextResponse.redirect(url, 301);
+		}
+	}
+
+	// A MARKET SLUG CFM HAS REPLACED -> ONE permanent redirect, and not a moment early.
+	//
+	// The public URL of a foreign market's product is authored in CFM (PUBLIC_MARKET_URL_V2).
+	// When CFM allocates a new one it publishes old → new, and the old URL must keep working
+	// until the new slug is actually in Saleor — the swap is a separate step, and this
+	// storefront has to be ready before it, not after. `movedMarketSlug` is what enforces
+	// "ready, but not early": it redirects only when the new slug resolves in this market and
+	// belongs to the same CFM product.
+	//
+	// Whether a path is a product URL at all is `classifyRoute`'s answer, not a second set of
+	// rules here — so a localized category root, the cart word, `/products`, `/search` and the
+	// legal pages are excluded by the same logic the existence gate uses. Slovakia never
+	// enters: its slug is the base row and CFM sends no SK entries.
+	//
+	// Decided on the NORMALIZED path so an in-app `.rsc` navigation is sent to the plain
+	// replacement, which the client router then follows as a full navigation.
+	if (first && FRIENDLY_SLUGS.has(first) && first !== DEFAULT_MARKET) {
+		const decision = classifyRoute(first, normalizePathname(pathname).split("/").filter(Boolean));
+		if (decision?.family === "product") {
+			const moved = await movedMarketSlug(first, decision.slug);
+			if (moved) {
+				const url = request.nextUrl.clone();
+				url.pathname = "/" + first + "/" + moved;
+				return NextResponse.redirect(url, 301);
+			}
 		}
 	}
 

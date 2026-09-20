@@ -704,3 +704,126 @@ describe("the sitemap index and its shards", () => {
 		expect(new Set(tags.map((value) => value![0]))).toEqual(new Set(["sitemap:sk-eur", "sitemap:cz-czk"]));
 	});
 });
+
+/**
+ * A market's sitemap must list the URLs THAT market serves.
+ *
+ * Abroad the product URL is the translated slug CFM allocates (PUBLIC_MARKET_URL_V2) and the
+ * product exists there only if the exact-locale boundary accepts its translation. A sitemap
+ * built from the base slug would publish Slovak URLs to Austria and advertise pages that
+ * answer with the not-found body — the same class of defect as the indexable-URL generator.
+ */
+describe("a foreign market's sitemap is written in that market's own URLs", () => {
+	const DE_AT_DESCRIPTION = '{"blocks":[{"type":"paragraph","data":{"text":"DE_AT"}}]}';
+
+	/** One product node as the localized query returns it. */
+	const node = (slug: string, translated: Record<string, unknown> | null) => ({
+		node: {
+			name: "Strešný nosič (SK base row)",
+			slug,
+			updatedAt: "2026-09-18T00:00:00Z",
+			translation: translated,
+			category: { slug: "nordrive-stresne-nosice", translation: { name: "Nordrive Dachträger" } },
+			attributes: [],
+			variants: [{ selectionAttributes: [], nonSelectionAttributes: [] }],
+		},
+	});
+
+	const complete = (slug: string) => ({
+		name: "Dachträger",
+		slug,
+		description: DE_AT_DESCRIPTION,
+		seoTitle: "Dachträger kaufen",
+		seoDescription: "Dachträger – Beschreibung",
+	});
+
+	function serveAustria(products: unknown[], categoryTranslated = true) {
+		serve(
+			() => ({ ok: true, data: { products: { edges: products, pageInfo: { hasNextPage: false } } } }),
+			() => ({
+				ok: true,
+				data: {
+					categories: {
+						edges: [
+							{
+								node: {
+									name: "Strešné nosiče",
+									slug: "stresne-nosice",
+									products: { totalCount: 3 },
+									translation: categoryTranslated
+										? {
+												name: "Dachträger",
+												slug: "dachtraeger",
+												description: DE_AT_DESCRIPTION,
+												seoTitle: "Dachträger",
+												seoDescription: "Dachträger für Ihr Auto",
+											}
+										: null,
+								},
+							},
+						],
+						pageInfo: { hasNextPage: false },
+					},
+				},
+			}),
+		);
+	}
+
+	beforeEach(() => {
+		process.env.MAKY_LIVE_MARKETS = "at";
+	});
+
+	it("asks in the market's own language and publishes the translated slug", async () => {
+		serveAustria([node("stresny-nosic-sk", complete("dachtrager-neu"))]);
+
+		const urls = productUrls(await sitemap());
+
+		expect(urls).toEqual([`${BASE}/at/dachtrager-neu`]);
+		const variables = executePublicGraphQL.mock.calls.find(
+			(call) => call[0] === SitemapProductsDocument,
+		)![1] as { variables: Record<string, unknown> };
+		expect(variables.variables).toMatchObject({ channel: "at-eur", lang: "DE_AT", localized: true });
+	});
+
+	it("leaves out a product the market cannot render — the boundary decides, not the sitemap", async () => {
+		serveAustria([
+			node("stresny-nosic-sk", complete("dachtrager-neu")),
+			// Post-bulk, pre-slug: three fields written, no slug and no seoTitle.
+			node("stresny-nosic-zwei", { ...complete("dachtrager-zwei"), slug: null, seoTitle: "" }),
+			node("stresny-nosic-drei", null),
+		]);
+
+		expect(productUrls(await sitemap())).toEqual([`${BASE}/at/dachtrager-neu`]);
+	});
+
+	it("leaves out a category that has no page in this market, and localizes the one that has", async () => {
+		serveAustria([], true);
+		const withCategory = (await sitemap()).map((entry) => entry.url);
+		expect(withCategory).toContain(`${BASE}/at/dachtraeger`);
+		expect(withCategory).not.toContain(`${BASE}/at/stresne-nosice`);
+
+		executePublicGraphQL.mockReset();
+		serveAustria([], false);
+		const withoutCategory = (await sitemap()).map((entry) => entry.url);
+		expect(withoutCategory).not.toContain(`${BASE}/at/dachtraeger`);
+	});
+
+	it("keeps Slovakia on the base row, and does not ask for a translation there", async () => {
+		process.env.MAKY_LIVE_MARKETS = "sk";
+		serve(() => ({
+			ok: true,
+			data: {
+				products: {
+					edges: [{ node: { name: "Strešný nosič", slug: "stresny-nosic-sk", updatedAt: null } }],
+					pageInfo: { hasNextPage: false },
+				},
+			},
+		}));
+
+		expect(productUrls(await sitemap())).toEqual([`${BASE}/sk/stresny-nosic-sk`]);
+		const variables = executePublicGraphQL.mock.calls.find(
+			(call) => call[0] === SitemapProductsDocument,
+		)![1] as { variables: Record<string, unknown> };
+		expect(variables.variables).toMatchObject({ channel: "sk-eur", localized: false });
+	});
+});

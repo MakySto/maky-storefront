@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { LOCALE_MAP, getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { LanguageCodeEnum } from "@/gql/graphql";
+import { MARKET_LANGUAGE_CODE, marketLanguageCode } from "@/config/market-language";
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import {
 	PRODUCT_TRANSLATION_REQUIRED_FIELDS,
@@ -140,6 +141,25 @@ describe("the published market matrix is the one the queries use", () => {
 			if (market === "sk") expect(published).toMatch(/^SK/);
 			else expect(published, market).toBe(languageOf(market));
 		}
+	});
+
+	it("is the same matrix the proxy reads, which cannot import the generated enum", () => {
+		// `config/market-language.ts` exists so the middleware bundle stays free of
+		// `@/gql/graphql`. This is what stops the two from drifting.
+		for (const [market, config] of Object.entries(CHANNEL_MAP)) {
+			if (market === "sk") {
+				expect(MARKET_LANGUAGE_CODE[market], market).toBeUndefined();
+				continue;
+			}
+			expect(MARKET_LANGUAGE_CODE[market], market).toBe(languageOf(market));
+			expect(MARKET_LANGUAGE_CODE[market], market).toBe(CONTRACT.markets[market]!.languageCode);
+			expect(marketLanguageCode(config.saleorSlug), config.saleorSlug).toBeUndefined();
+		}
+		expect(Object.keys(MARKET_LANGUAGE_CODE).sort()).toEqual(
+			Object.keys(CHANNEL_MAP)
+				.filter((market) => market !== "sk")
+				.sort(),
+		);
 	});
 
 	it("reads DE_AT in Austria, EN_CA in Canada and plain EN in the United States", () => {

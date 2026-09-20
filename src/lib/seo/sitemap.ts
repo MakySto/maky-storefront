@@ -11,6 +11,12 @@ import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
 import { SitemapProductsDocument, SitemapCategoriesDocument } from "@/gql/graphql";
 import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
+import { getLocaleConfigByLocale } from "@/config/locale";
+import {
+	isSourceLocale,
+	resolveExactLocaleCategory,
+	resolveExactLocaleProduct,
+} from "@/lib/saleor/exact-locale";
 
 /**
  * ## A sitemap index and shards, not one file (COMMERCE-2 M5)
@@ -204,11 +210,22 @@ async function collectConnection<T>(
 	}
 }
 
-/** Every product slug in one channel, paginated to the end of the connection. */
-async function fetchProductSlugs(channel: string): Promise<ProductEntry[]> {
+/**
+ * Every product URL in one channel, in the market's OWN spelling.
+ *
+ * Slovakia reads the base row, so its URL is `Product.slug` and the query stays two fields.
+ * A foreign market's URL is the translated slug CFM allocates, and the product only exists
+ * there when the exact-locale boundary accepts it — the same boundary the PDP, the listing
+ * and the offers use. Anything it refuses is dropped here rather than published as a URL that
+ * answers with the not-found body.
+ */
+async function fetchProductSlugs(channel: string, locale: string): Promise<ProductEntry[]> {
+	const localized = !isSourceLocale(locale);
+	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
+
 	const nodes = await collectConnection(`${channel}: product`, async (after) => {
 		const result = await executePublicGraphQL(SitemapProductsDocument, {
-			variables: { channel, first: PAGE_SIZE, after },
+			variables: { channel, first: PAGE_SIZE, after, lang, localized },
 			revalidate: REVALIDATE_SECONDS,
 			tags: [sitemapTag(channel)],
 		});
@@ -222,15 +239,34 @@ async function fetchProductSlugs(channel: string): Promise<ProductEntry[]> {
 		return result.data.products ?? null;
 	});
 
-	return nodes
-		.filter((node) => Boolean(node.slug))
-		.map((node) => ({ slug: node.slug, updatedAt: node.updatedAt ?? null }));
+	if (!localized) {
+		return nodes
+			.filter((node) => Boolean(node.slug))
+			.map((node) => ({ slug: node.slug, updatedAt: node.updatedAt ?? null }));
+	}
+
+	const entries: ProductEntry[] = [];
+	for (const node of nodes) {
+		const localizedNode = resolveExactLocaleProduct(node, locale);
+		if (!localizedNode?.slug) continue;
+		entries.push({ slug: localizedNode.slug, updatedAt: node.updatedAt ?? null });
+	}
+	const dropped = nodes.length - entries.length;
+	if (dropped > 0) {
+		console.log(
+			`[sitemap] ${channel}: ${dropped} of ${nodes.length} products are not translated for ${lang}`,
+		);
+	}
+	return entries;
 }
 
-async function fetchStockedCategorySlugs(channel: string): Promise<string[]> {
+async function fetchStockedCategorySlugs(channel: string, locale: string): Promise<string[]> {
+	const localized = !isSourceLocale(locale);
+	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
+
 	const nodes = await collectConnection(`${channel}: category`, async (after) => {
 		const result = await executePublicGraphQL(SitemapCategoriesDocument, {
-			variables: { channel, first: PAGE_SIZE, after },
+			variables: { channel, first: PAGE_SIZE, after, lang, localized },
 			revalidate: REVALIDATE_SECONDS,
 			tags: [sitemapTag(channel)],
 		});
@@ -248,7 +284,14 @@ async function fetchStockedCategorySlugs(channel: string): Promise<string[]> {
 	// empty one is real everywhere and stocked nowhere. Listing it would advertise
 	// an empty page; on the live Slovak catalogue eleven of the thirty are in that
 	// state, including `stresne-nosice`, which sits first in the main navigation.
-	return nodes.filter((node) => (node.products?.totalCount ?? 0) > 0).map((node) => node.slug);
+	//
+	// Abroad it must also BE a page in that market: the category's own translation carries
+	// the four fields the boundary requires, or the page is not-found there. The base slug is
+	// what comes back either way — `categoryUrlFor` turns it into the market's segment.
+	return nodes
+		.filter((node) => (node.products?.totalCount ?? 0) > 0)
+		.filter((node) => !localized || resolveExactLocaleCategory(node, locale) !== null)
+		.map((node) => node.slug);
 }
 
 /**
@@ -329,7 +372,7 @@ async function pageEntriesFor(market: string): Promise<MetadataRoute.Sitemap> {
 		{ url: `${base}/${market}/products`, changeFrequency: "daily", priority: 0.8 },
 	];
 
-	for (const slug of await fetchStockedCategorySlugs(channel)) {
+	for (const slug of await fetchStockedCategorySlugs(channel, CHANNEL_MAP[market].locale)) {
 		entries.push({
 			// The market's canonical spelling: `/cz/stresni-nosice`, never the Slovak root abroad.
 			url: `${base}/${market}${categoryUrlFor(market, slug)}`,
@@ -359,7 +402,7 @@ async function pageEntriesFor(market: string): Promise<MetadataRoute.Sitemap> {
 async function productEntriesFor(market: string): Promise<MetadataRoute.Sitemap> {
 	const base = getBaseUrl();
 	const channel = CHANNEL_MAP[market].saleorSlug;
-	const products = await fetchProductSlugs(channel);
+	const products = await fetchProductSlugs(channel, CHANNEL_MAP[market].locale);
 
 	return products.map((product) => ({
 		// Root-level product URL. /{market}/products/{slug} has 308'd here since
