@@ -38,16 +38,16 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 			<div className="mx-auto max-w-md text-center">
 				{/* Icon */}
 				<div className="bg-destructive/10 mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full">
-					<AlertCircle className="h-8 w-8 text-destructive" />
+					<AlertCircle className="text-destructive h-8 w-8" />
 				</div>
 
 				{/* Heading */}
-				<h1 className="mb-2 text-2xl font-bold tracking-tight text-foreground">
+				<h1 className="text-foreground mb-2 text-2xl font-bold tracking-tight">
 					{errorType === "network" ? "Connection Error" : "Something Went Wrong"}
 				</h1>
 
 				{/* Message */}
-				<p className="mb-8 text-muted-foreground">{userMessage}</p>
+				<p className="text-muted-foreground mb-8">{userMessage}</p>
 
 				{/* Actions */}
 				<div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -65,7 +65,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 						href="/"
 						className={`${buttonBase} ${
 							isRetryable
-								? "border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+								? "border-input bg-background hover:bg-accent hover:text-accent-foreground border"
 								: "hover:bg-primary/90 bg-primary text-primary-foreground"
 						}`}
 					>
@@ -77,7 +77,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 				{/* Back link */}
 				<button
 					onClick={() => window.history.back()}
-					className="mt-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+					className="text-muted-foreground hover:text-foreground mt-6 inline-flex items-center gap-1 text-sm"
 				>
 					<ArrowLeft className="h-3 w-3" />
 					Go back

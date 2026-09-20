@@ -52,7 +52,7 @@ export function vehicleConfirmDestination(pathname: string): string | null {
 	if (segments.length !== MARKET_ROOT_SEGMENT_COUNT) return null;
 	// The segment has to BE a market, not merely be alone. Counting segments was the
 	// first version of this and it was wrong in the one way that mattered: `/checkout`
-	// is a real single-segment route (`src/app/checkout/page.tsx`, outside `[channel]`),
+	// is a real single-segment route (`src/app/(site)/checkout/page.tsx`, outside `[channel]`),
 	// so changing your car while paying would have pushed you out of the checkout —
 	// exactly the failure this function exists to avoid. `/sk/cart` has two segments and
 	// passed its test, which is how the hole survived it.

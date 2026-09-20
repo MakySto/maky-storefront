@@ -1,25 +1,35 @@
 import { GeistSans } from "geist/font/sans";
 import Script from "next/script";
-import "./globals.css";
 import { type ReactNode } from "react";
-import { rootMetadata } from "@/lib/seo";
-import { DEFAULT_LOCALE, LOCALE_MAP } from "@/config/locale";
-
-export const metadata = rootMetadata;
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
 const CF_WEB_ANALYTICS_TOKEN = process.env.NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN;
 
-export default function RootLayout(props: { children: ReactNode }) {
-	const { children } = props;
-
+/**
+ * The `<html>` document every root layout renders.
+ *
+ * There are two root layouts, and that is what lets `lang` be true. `<html>` can only be
+ * emitted by a root layout, and a root layout at `app/` has no `params` — `[channel]` sits
+ * below it — so a single root could only ever hardcode one language. It hardcoded `sk`, and
+ * all twelve markets were served `lang="sk"`; a client effect corrected it after hydration,
+ * which is invisible to anything that does not run JavaScript and arrives too late for a
+ * screen reader's first announcement.
+ *
+ * So the market segment owns its own document (`app/[channel]/layout.tsx`) and everything
+ * without a market shares another (`app/(site)/layout.tsx`). The chrome that must be
+ * identical in both — fonts, consent defaults, tag manager, analytics — lives here rather
+ * than being copied into each, because a consent default that drifts between two roots is
+ * the kind of difference nobody notices until it matters.
+ *
+ * No GeistMono. next/font preloads every font it is given — the mono face was fetched at
+ * high priority on every page while the LCP image waited — and nothing renders it:
+ * `font-mono` has no remaining use in src/, and the `--font-mono` token in brand.css names
+ * "Geist Mono" while the @font-face family is "GeistMono", so the utility never selected
+ * this file anyway.
+ */
+export function DocumentShell({ lang, children }: { lang: string; children: ReactNode }) {
 	return (
-		// No GeistMono. next/font preloads every font it is given — the mono face
-		// was fetched at high priority on every page while the LCP image waited —
-		// and nothing renders it: `font-mono` has no remaining use in src/, and the
-		// `--font-mono` token in brand.css names "Geist Mono" while the @font-face
-		// family is "GeistMono", so the utility never selected this file anyway.
-		<html lang={LOCALE_MAP[DEFAULT_LOCALE].htmlLang} className={`${GeistSans.variable} min-h-dvh`}>
+		<html lang={lang} className={`${GeistSans.variable} min-h-dvh`}>
 			<body className="min-h-dvh font-sans">
 				{GTM_ID ? (
 					<noscript>
@@ -41,6 +51,11 @@ export default function RootLayout(props: { children: ReactNode }) {
 
 				{GTM_ID ? (
 					<>
+						{/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document --
+						    The rule recognises `app/layout.tsx` and this file is not one, but it IS
+						    rendered by both root layouts and nothing else — which is exactly the
+						    position the rule is protecting. The strategy is load-bearing: the consent
+						    defaults must be in dataLayer before the container below can read them. */}
 						<Script
 							id="maky-consent-default"
 							strategy="beforeInteractive"

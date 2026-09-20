@@ -5,7 +5,7 @@ import { MarketNotFound } from "@/ui/components/market-not-found";
  *
  * Without this file, every `notFound()` outside the `[productSlug]` segment —
  * categories, collections, Saleor pages, search, the seven Slovak legal pages and
- * the CMS routes — fell through to `src/app/not-found.tsx`, which is hardcoded
+ * the CMS routes — fell through to `src/app/not-found.tsx` (the app-root one), which is hardcoded
  * English and was being rendered inside Slovak chrome.
  */
 export default function MarketNotFoundBoundary() {

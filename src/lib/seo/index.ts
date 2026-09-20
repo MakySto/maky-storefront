@@ -7,7 +7,7 @@
  *
  * 1. Root layout metadata:
  * ```tsx
- * // src/app/layout.tsx
+ * // a root layout: src/app/(site)/layout.tsx or src/app/[channel]/layout.tsx
  * export { rootMetadata as metadata } from "@/lib/seo";
  * ```
  *

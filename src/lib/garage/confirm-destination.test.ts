@@ -41,7 +41,7 @@ describe("where confirming a vehicle sends the shopper", () => {
 	});
 
 	it("requires the segment to BE a market, not merely to be alone", () => {
-		// `/checkout` lives outside `[channel]` (`src/app/checkout/page.tsx`), so it is a
+		// `/checkout` lives outside `[channel]` (`src/app/(site)/checkout/page.tsx`), so it is a
 		// REAL one-segment route. The first version of this function counted segments and
 		// would have pushed a shopper out of the checkout for changing their car — the
 		// precise failure the rule above is written to avoid. `/sk/cart` has two segments,

@@ -9,7 +9,7 @@ import { seoConfig, getMetadataBase } from "./config";
  * Import and export this from your root layout.tsx
  *
  * @example
- * // In src/app/layout.tsx
+ * // In a root layout (src/app/(site)/layout.tsx or src/app/[channel]/layout.tsx)
  * export { rootMetadata as metadata } from "@/lib/seo";
  */
 export const rootMetadata: Metadata = {
