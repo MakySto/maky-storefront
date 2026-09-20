@@ -2,7 +2,7 @@ import { type MetadataRoute } from "next";
 import { categoryUrlFor } from "@/config/category-routes";
 import { getBaseUrl } from "@/lib/seo/config";
 import { CHANNEL_MAP } from "@/lib/channel-map";
-import { liveMarkets } from "@/lib/market-state";
+import { indexableMarkets } from "@/lib/market-state";
 import { marketHasRoute, ROUTE_POLICY } from "@/lib/route-policy";
 import { cmsRouteAvailable } from "@/lib/cms/availability";
 import { indexabilityOf } from "@/lib/catalog-content/publication";
@@ -50,7 +50,8 @@ import {
  * A sitemap is a list of preferred canonical URLs, and empty storefronts are
  * thin content, so it then listed only `sk`. That hardcoded "sk is the only
  * stocked market", which is about to stop being true: the market list now comes
- * from `liveMarkets()`, so a market is advertised exactly when it is live.
+ * from `indexableMarkets()`, so a market is advertised exactly when it is live AND cleared
+ * for indexing — never merely routable.
  */
 
 /**
@@ -323,7 +324,7 @@ async function fetchStockedCategorySlugs(channel: string, locale: string): Promi
  *
  * CFM said plainly that nine published translations are not permission to index them.
  * That permission is not decided here and never was: this function only ever runs for a
- * LIVE market, because `sitemap()` iterates `liveMarkets()`. A market stays `preview`
+ * LIVE market cleared for indexing, because `sitemap()` iterates `indexableMarkets()`. A market stays `preview`
  * until someone lists it — reachable, `noindex, nofollow` from the proxy, absent from the
  * sitemap and from every hreflang cluster. So a translated catalogue can be loaded,
  * served and checked on production long before a crawler is told about it, which is
@@ -465,7 +466,7 @@ export function planShards(market: string, kind: SitemapShardKind, count: number
  */
 export async function sitemapShards(): Promise<SitemapShard[]> {
 	const perMarket = await Promise.all(
-		liveMarkets().map(async (market) => {
+		indexableMarkets().map(async (market) => {
 			const counts = await Promise.all(
 				SHARD_KINDS.map(async (kind) => (await entriesOf(market, kind)).length),
 			);
@@ -485,7 +486,7 @@ export async function sitemapShardEntries(id: string): Promise<MetadataRoute.Sit
 	const match = SHARD_ID.exec(id);
 	if (!match) return null;
 	const [, market, kind, partText] = match as unknown as [string, string, SitemapShardKind, string];
-	if (!liveMarkets().includes(market)) return null;
+	if (!indexableMarkets().includes(market)) return null;
 
 	const part = Number(partText);
 	const entries = await entriesOf(market, kind);
@@ -559,7 +560,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	// The union of every shard: the same URLs the single file used to list. The routes
 	// serve it in shards; this is what the tests and the checks compare against.
 	const perMarket = await Promise.all(
-		liveMarkets().map(async (market) =>
+		indexableMarkets().map(async (market) =>
 			(await Promise.all(SHARD_KINDS.map((kind) => entriesOf(market, kind)))).flat(),
 		),
 	);

@@ -92,7 +92,13 @@ type PageProps = {
 const baseSlugOf = (params: { slug: string; channel: string }) =>
 	categoryBaseSlug(params.channel, params.slug);
 
-/** Live markets where this category is an indexable page: translated there, and stocked there. */
+/**
+ * Live markets where this category is a real page: translated there, and stocked there.
+ *
+ * LIVE, not indexable: this feeds the market switcher as well as hreflang, and a preview
+ * market is somewhere you can still be sent by hand. `counterpartAlternates()` narrows the
+ * hreflang cluster to indexable markets on its own.
+ */
 async function categoryCounterparts(baseSlug: string): Promise<MarketCounterpart[]> {
 	const counterparts: MarketCounterpart[] = [];
 	for (const market of liveMarkets()) {

@@ -27,10 +27,11 @@ export async function register(): Promise<void> {
 	if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
 	const { describeMarketState } = await import("./lib/market-state");
-	const { live, preview, unknown } = describeMarketState();
+	const { live, preview, unknown, indexable, liveNotIndexable } = describeMarketState();
 
 	console.log(
-		`[market-state] live=${live.join(",")} preview=${preview.join(",")} unknown=${unknown.join(",")}`,
+		`[market-state] live=${live.join(",")} preview=${preview.join(",")} unknown=${unknown.join(",")}` +
+			` indexable=${indexable.join(",")}`,
 	);
 
 	// The 404 gate decides HTTP statuses from an upstream lookup, so which markets
@@ -80,6 +81,19 @@ export async function register(): Promise<void> {
 			`[market-state] MAKY_LIVE_MARKETS contains ${unknown.length} name(s) that are not markets: ` +
 				`${unknown.join(", ")}. They were ignored. Fix the env var — the live set in use is ` +
 				`${live.join(",")}.`,
+		);
+	}
+
+	// Live but still baked `noindex`. Not an error — it is the intended state between a
+	// market opening for business and being handed to a crawler — but it must be visible,
+	// because the symptom otherwise is a market that sells, appears in no sitemap and
+	// quietly refuses every crawler, with nothing in the logs to say why.
+	if (liveNotIndexable.length > 0) {
+		console.warn(
+			`[market-state] live but NOT indexable: ${liveNotIndexable.join(",")}. These markets ` +
+				`sell and route normally and are deliberately invisible to search — their pages carry ` +
+				`a baked noindex and they are absent from the sitemap and every hreflang cluster. ` +
+				`Add them to MAKY_INDEXABLE_MARKETS and DEPLOY (not just restart) to lift it.`,
 		);
 	}
 }

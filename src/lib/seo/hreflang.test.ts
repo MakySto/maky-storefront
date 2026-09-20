@@ -9,6 +9,7 @@ import { CHANNEL_MAP } from "@/lib/channel-map";
 async function alternatesFor(markets: string, path = "/kontakt") {
 	vi.resetModules();
 	vi.stubEnv("MAKY_LIVE_MARKETS", markets);
+	vi.stubEnv("MAKY_INDEXABLE_MARKETS", markets);
 	const { buildHreflangAlternates } = await import("./hreflang");
 	return buildHreflangAlternates(path);
 }
@@ -87,6 +88,7 @@ describe("buildHreflangAlternates — page-level eligibility", () => {
 	async function subject(markets: string) {
 		vi.resetModules();
 		vi.stubEnv("MAKY_LIVE_MARKETS", markets);
+		vi.stubEnv("MAKY_INDEXABLE_MARKETS", markets);
 		return (await import("./hreflang")).buildHreflangAlternates;
 	}
 
@@ -157,6 +159,7 @@ describe("counterpartAlternates", () => {
 	async function counterpart(markets: string) {
 		vi.resetModules();
 		vi.stubEnv("MAKY_LIVE_MARKETS", markets);
+		vi.stubEnv("MAKY_INDEXABLE_MARKETS", markets);
 		vi.stubEnv("NEXT_PUBLIC_STOREFRONT_URL", "https://maky.store");
 		return (await import("./hreflang")).counterpartAlternates;
 	}

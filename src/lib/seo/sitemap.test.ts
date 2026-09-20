@@ -122,6 +122,7 @@ beforeEach(() => {
 	// `sk` is the default live market; an inherited override would change the
 	// number of markets walked and with it every count below.
 	delete process.env.MAKY_LIVE_MARKETS;
+	delete process.env.MAKY_INDEXABLE_MARKETS;
 	executePublicGraphQL.mockReset();
 	// Default: no catalogue snapshot, which is what a deployment without
 	// MAKY_CATALOG_CONTENT_PATH serves. The vehicle-page tests opt in.
@@ -546,6 +547,7 @@ describe("the vehicle pages", () => {
 	 */
 	it("asks for each market's own language, and serves nothing when it is missing", async () => {
 		process.env.MAKY_LIVE_MARKETS = "sk,de";
+		process.env.MAKY_INDEXABLE_MARKETS = "sk,de";
 		serve((after) => productPage(after, 0));
 		// Slovak has an artifact; German does not.
 		loadCatalogView.mockImplementation(async (language: string) =>
@@ -566,6 +568,7 @@ describe("the vehicle pages", () => {
 	/** Two markets on one language share one artifact: CFM publishes one English text. */
 	it("serves both English markets from the single en artifact", async () => {
 		process.env.MAKY_LIVE_MARKETS = "us,ca";
+		process.env.MAKY_INDEXABLE_MARKETS = "us,ca";
 		serve((after) => productPage(after, 0));
 		loadCatalogView.mockImplementation(async (language: string) =>
 			language === "en"
@@ -609,6 +612,7 @@ describe("the sitemap index and its shards", () => {
 
 	it("lists one shard per kind for today's Slovak catalogue, and nothing for a preview market", async () => {
 		process.env.MAKY_LIVE_MARKETS = "sk";
+		process.env.MAKY_INDEXABLE_MARKETS = "sk";
 		serve((after) => productPage(after));
 		loadCatalogView.mockResolvedValue(catalogView("sk", DELIVERY));
 
@@ -696,6 +700,7 @@ describe("the sitemap index and its shards", () => {
 
 	it("tags every Saleor read behind a shard with its channel", async () => {
 		process.env.MAKY_LIVE_MARKETS = "sk,cz";
+		process.env.MAKY_INDEXABLE_MARKETS = "sk,cz";
 		serve((after) => productPage(after, 3));
 
 		await sitemapShards();
@@ -771,6 +776,7 @@ describe("a foreign market's sitemap is written in that market's own URLs", () =
 
 	beforeEach(() => {
 		process.env.MAKY_LIVE_MARKETS = "at";
+		process.env.MAKY_INDEXABLE_MARKETS = "at";
 	});
 
 	it("asks in the market's own language and publishes the translated slug", async () => {
@@ -810,6 +816,7 @@ describe("a foreign market's sitemap is written in that market's own URLs", () =
 
 	it("keeps Slovakia on the base row, and does not ask for a translation there", async () => {
 		process.env.MAKY_LIVE_MARKETS = "sk";
+		process.env.MAKY_INDEXABLE_MARKETS = "sk";
 		serve(() => ({
 			ok: true,
 			data: {

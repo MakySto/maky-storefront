@@ -6,6 +6,7 @@ import { CartProvider, CartDrawerWrapper } from "@/ui/components/cart";
 import { brandConfig } from "@/config/brand";
 import { Logo } from "@/ui/components/shared/logo";
 import { getLocaleFromChannel, LOCALE_MAP } from "@/config/locale";
+import { isChannelIndexable, PREVIEW_MARKET_ROBOTS_META } from "@/lib/market-state";
 
 /**
  * Dynamic metadata per channel — hreflang, canonical, OG locale.
@@ -39,15 +40,24 @@ export async function generateMetadata({
 			locale: localeConfig?.ogLocale,
 			images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: brandConfig.siteName }],
 		},
-		// NOTE: the `noindex` for a market that is not live yet is NOT set here.
-		// It is an `X-Robots-Tag` response header from src/proxy.ts.
+		// The SECOND `noindex` for a market no index GO has been given for. The first
+		// is the `X-Robots-Tag` header from src/proxy.ts, and it remains the one that
+		// reacts to a restart.
 		//
-		// It was here first, and it did not work. generateMetadata has no
-		// request-time input, so under cacheComponents it is evaluated once and
-		// baked into the prerendered shell — measured 2026-08-06: with
-		// MAKY_LIVE_MARKETS="sk,cz" the sitemap picked cz up immediately (it is a
-		// dynamic route) while /cz kept serving the `noindex` baked at build time.
-		// A market state that can only change at build time is not a market state.
+		// This one was here alone once, and alone it did not work: generateMetadata has
+		// no request-time input, so under cacheComponents it is evaluated once and baked
+		// into the prerendered shell — measured 2026-08-06, with MAKY_LIVE_MARKETS="sk,cz"
+		// the sitemap picked cz up immediately (it is a dynamic route) while /cz kept
+		// serving the `noindex` baked at build time. A market state that can only change
+		// at build time is not a market state.
+		//
+		// That is still true, and it is why this is a floor rather than the control. Baked
+		// is exactly the property wanted from a backstop: it survives the header going
+		// missing, whether because a response did not come through `marketRewrite()` or
+		// because somebody edited an env var. Lifting it needs a deploy, which is what
+		// "explicit index GO" means for a step Google will not let us take back.
+		// `undefined` for an indexable market, so pages keep deciding for themselves.
+		robots: isChannelIndexable(channel) ? undefined : PREVIEW_MARKET_ROBOTS_META,
 		//
 		// Canonical + hreflang are page-specific and set per page (the homepage
 		// owns the market canonical). A layout-level canonical with path="" would

@@ -6,7 +6,7 @@
  */
 
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
-import { liveMarkets } from "@/lib/market-state";
+import { indexableMarkets } from "@/lib/market-state";
 import { marketHasRoute, routePolicyFor } from "@/lib/route-policy";
 import { getBaseUrl } from "./config";
 
@@ -29,7 +29,7 @@ type HreflangEntry = {
  * explicitly rather than widening this rule.
  */
 function eligibleMarkets(normalizedPath: string): readonly string[] {
-	const live = liveMarkets();
+	const live = indexableMarkets();
 
 	// The market homepage. It exists wherever the market does, by construction.
 	const segment = normalizedPath.replace(/^\//, "").split("/")[0] ?? "";
@@ -219,8 +219,9 @@ export interface MarketCounterpart {
  * ignored, which is why a market that is merely routable never appears — and why there is no
  * shortcut that lists all twelve prefixes.
  *
- * Read per request: `liveMarkets()` is the runtime env, so on these dynamic routes a market
- * joins the cluster with a restart. (The static routes' `buildHreflangAlternates` is baked
+ * Read per request: `indexableMarkets()` is the runtime env intersected with the baked index
+ * allowlist, so on these dynamic routes a market joins the cluster with a restart ONLY once a
+ * deploy has cleared it for indexing. (The static routes' `buildHreflangAlternates` is baked
  * into prerendered shells and follows only a rebuild — see `market-state.ts`.)
  */
 export function counterpartAlternates(
@@ -228,7 +229,7 @@ export function counterpartAlternates(
 	counterparts: readonly MarketCounterpart[],
 ): Record<string, string> | undefined {
 	const base = getBaseUrl();
-	const live = liveMarkets();
+	const live = indexableMarkets();
 	const byMarket = new Map(counterparts.map((counterpart) => [counterpart.market, counterpart.path]));
 	const cluster = live.filter((market) => byMarket.has(market));
 	if (cluster.length < 2 || !cluster.includes(current)) return undefined;

@@ -262,6 +262,7 @@ describe("legalRoute — language alternates", () => {
 	async function metadataFor(liveMarkets: string, channel: string) {
 		vi.resetModules();
 		vi.stubEnv("MAKY_LIVE_MARKETS", liveMarkets);
+		vi.stubEnv("MAKY_INDEXABLE_MARKETS", liveMarkets);
 		const { legalRoute } = await import("./legal-route");
 		const route = legalRoute({
 			path: "/kontakt",
@@ -305,6 +306,7 @@ describe("legalRoute — language alternates", () => {
 	it("still 404s a market with no approved copy, with no canonical to nominate", async () => {
 		vi.resetModules();
 		vi.stubEnv("MAKY_LIVE_MARKETS", "sk,cz");
+		vi.stubEnv("MAKY_INDEXABLE_MARKETS", "sk,cz");
 		const { legalRoute } = await import("./legal-route");
 		const route = legalRoute({ path: "/kontakt", copy: {} as never });
 		const meta = await route.generateMetadata({ params: Promise.resolve({ channel: "sk-eur" }) });

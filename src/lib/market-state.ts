@@ -98,9 +98,14 @@ export function describeMarketState(): {
 	live: readonly string[];
 	preview: readonly string[];
 	unknown: readonly string[];
+	indexable: readonly string[];
+	/** Live, but still baked `noindex` — sellable and deliberately invisible to search. */
+	liveNotIndexable: readonly string[];
 } {
 	const live = liveMarkets();
 	const preview = Object.keys(CHANNEL_MAP).filter((m) => !live.includes(m));
+	const indexable = indexableMarkets();
+	const liveNotIndexable = live.filter((m) => !indexable.includes(m));
 
 	const raw = process.env[ENV_VAR];
 	const unknown = raw
@@ -111,7 +116,7 @@ export function describeMarketState(): {
 				.filter((m) => !FRIENDLY_SLUGS.has(m))
 		: [];
 
-	return { live, preview, unknown };
+	return { live, preview, unknown, indexable, liveNotIndexable };
 }
 
 /** `live` or `preview` for a friendly market slug (`sk`, `de`, …). */
@@ -146,6 +151,97 @@ export function isChannelLive(saleorSlug: string): boolean {
 export const PREVIEW_MARKET_ROBOTS_HEADER = "noindex, nofollow";
 
 /**
+ * The same refusal in the form `generateMetadata` speaks.
+ *
+ * `googleBot` as well as the generic directive: Google honours the specific one over the
+ * general, so omitting it would let a future `index` in the generic slot be read as an
+ * invitation by the crawler that matters most.
+ */
+export const PREVIEW_MARKET_ROBOTS_META = {
+	index: false,
+	follow: false,
+	googleBot: { index: false, follow: false },
+} as const;
+
+/**
+ * Markets an explicit index GO has been given for.
+ *
+ * A SECOND gate, not a rename of the first, and the distinction is the whole point.
+ * `liveMarkets()` says a market may be sold to and navigated; this says a crawler may
+ * keep it. Until 2026-09-20 those were one fact with one enforcement point — the
+ * `X-Robots-Tag` header `marketRewrite()` sets — so every response that did not go
+ * through that one function was indexable by default. A header is a fine primary
+ * control and a poor only control: it is absent from anything the rewrite branch does
+ * not produce, and its disappearance is indistinguishable from a market having been
+ * launched on purpose.
+ *
+ * So the refusal is also baked into the page's own metadata, and the two gates are
+ * intersected. Turning the env var on promotes nothing by itself: the baked `noindex`
+ * outlives a restart and only a deploy can lift it. That asymmetry is deliberate —
+ * indexing is the one step in the rollout that cannot be undone by changing your mind,
+ * because Google keeps what it took.
+ */
+const INDEX_ENV_VAR = "MAKY_INDEXABLE_MARKETS";
+
+/**
+ * Deliberately `sk`, exactly like the live default.
+ *
+ * Both gates therefore resolve to the same single market today, which is why adding the
+ * second one changes no behaviour that exists — it changes what happens when the first
+ * one stops being enforced.
+ */
+const DEFAULT_INDEXABLE_MARKETS: readonly string[] = ["sk"];
+
+let indexWarned = false;
+
+/**
+ * Markets that are live AND cleared for indexing, in `CHANNEL_MAP` order.
+ *
+ * Intersected rather than checked separately so there is no order in which the two
+ * env vars can be edited that yields "indexable but not live" — a market absent from
+ * navigation and the cookie while still inviting a crawler.
+ */
+export function indexableMarkets(): readonly string[] {
+	const live = liveMarkets();
+	const raw = process.env[INDEX_ENV_VAR];
+	if (!raw) return live.filter((m) => DEFAULT_INDEXABLE_MARKETS.includes(m));
+
+	const requested = raw
+		.split(",")
+		.map((s) => s.trim().toLowerCase())
+		.filter(Boolean);
+	const known = requested.filter((m) => FRIENDLY_SLUGS.has(m));
+
+	if (known.length !== requested.length && !indexWarned) {
+		indexWarned = true;
+		const unknown = requested.filter((m) => !FRIENDLY_SLUGS.has(m));
+		console.warn(`[market-state] ${INDEX_ENV_VAR} lists unknown markets, ignoring: ${unknown.join(", ")}`);
+	}
+
+	// An override that resolves to nothing falls back to the default, same as the live
+	// set — and unlike the live set the failure direction is already closed, so this is
+	// about being predictable rather than about safety.
+	if (known.length === 0) {
+		if (!indexWarned) indexWarned = true;
+		console.warn(`[market-state] ${INDEX_ENV_VAR} resolved to no known markets, falling back to the default`);
+		return live.filter((m) => DEFAULT_INDEXABLE_MARKETS.includes(m));
+	}
+
+	return live.filter((m) => known.includes(m));
+}
+
+/** Whether a crawler may keep this market's pages. Friendly slug (`sk`, `de`, …). */
+export function isMarketIndexable(market: string): boolean {
+	return indexableMarkets().includes(market);
+}
+
+/** Same question, asked with a Saleor channel slug (`sk-eur`, `de-eur`, …). */
+export function isChannelIndexable(saleorSlug: string): boolean {
+	const market = REVERSE_MAP[saleorSlug];
+	return market ? isMarketIndexable(market) : false;
+}
+
+/**
  * ── What follows the env var immediately, and what waits for a deploy ──────────
  *
  *   instant   the `noindex` header (proxy, per request)
@@ -165,4 +261,5 @@ export const PREVIEW_MARKET_ROBOTS_HEADER = "noindex, nofollow";
 /** Test seam. Resets the once-only warning so a test can assert on it. */
 export function resetMarketStateWarningForTests(): void {
 	warned = false;
+	indexWarned = false;
 }
