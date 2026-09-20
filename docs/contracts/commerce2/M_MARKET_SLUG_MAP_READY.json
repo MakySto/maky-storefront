@@ -1,0 +1,68 @@
+{
+	"schema": "maky.commerce2.market-slug-map-ready/1",
+	"status": "MAP_READY",
+	"map": {
+		"sha256": "99fc63cacc1b08034fcb55384dee04d3948fcf0515277102e12a1191ef6328b0",
+		"path": "/opt/storefront-artifacts/MARKET_SLUG_REDIRECTS_apply_1.1.0-20260920.json",
+		"contract": "cfm.commerce2.market-slug-redirects/1",
+		"loaded_log_line": "[market-slug-redirects] loaded 100730 entries in 11 markets from sha256 99fc63cacc1b…",
+		"entries_loaded": 100730,
+		"markets_loaded": 11,
+		"entries_discarded": 0,
+		"discard_reasons": {}
+	},
+	"activation": {
+		"method": "env repoint + pm2 restart maky-storefront --update-env",
+		"rebuilt": false,
+		"env_backup": "/opt/storefront/.env.backup-20260920T214926Z",
+		"env_lines_changed": 2,
+		"port_answering_after_ms": 447,
+		"smtp_process_touched": false,
+		"superseded_map_sha256": "1635f8143c774ca3fbb4a2797846a0edc8e7ce90e251ca4fa82aa1c67c89394e",
+		"superseded_map_kept_on_disk": true
+	},
+	"git_sha": "55db628ff66b29d11999e720e0b8df579db2aefb",
+	"build_id": "ow3e-dxt969Y8fm2MKYYT",
+	"canary": {
+		"cells": 33,
+		"v1_url_one_301_to_a_real_product_page": 30,
+		"v1_url_soft_404_pending_cfm_swap": 3,
+		"live_slug_serves_the_product": 33,
+		"noindex_on_what_is_served": 33
+	},
+	"hu_cells_pending": {
+		"count": 3,
+		"market": "hu",
+		"state": "Their final slug is not in Saleor yet, so the existence gate keeps the redirect dormant. The canary intermediate slug still serves the product; the original V1 URL now renders the localized 'product not found' page (HTTP 200, noindex) instead of redirecting.",
+		"self_healing": true,
+		"action_required_from_m": "none — the redirect activates by itself the moment CFM swaps the cell",
+		"accepted_by_owner": "yes — three products on a low-value vehicle, foreign noindex market, not worth gating the map on"
+	},
+	"off_canary_probe": {
+		"sampled": 30,
+		"population": 100697,
+		"prematurely_redirected": 0
+	},
+	"sk_unchanged": true,
+	"sk_sitemap": {
+		"products": 9571,
+		"pages": 33,
+		"vehicles": 1475,
+		"shards": 3
+	},
+	"foreign_noindex_unchanged": true,
+	"foreign_purchase_enabled": false,
+	"live_markets": "sk",
+	"corrections_to_earlier_evidence": [
+		{
+			"file": "M_MARKET_SLUG_CANARY_VERIFIED.json",
+			"field": "off_canary_probe.serving_current_url",
+			"was": 24,
+			"correction": "Those 24 URLs answered HTTP 200 but were soft-404 pages, not served products: only three products are public per foreign channel, so every other foreign product URL renders 'not found'. The probe was status-only. The claim that mattered — prematurely_redirected: 0 — stands, and is re-measured here content-aware over 30 rows."
+		}
+	],
+	"observations_for_the_indexing_step": [
+		"An unknown product slug answers HTTP 200 with a localized not-found page on every market, Slovakia included; the existence gate is deployed but not armed for the product family. On SK that page carries no x-robots-tag header at all, so its noindex depends entirely on page metadata."
+	],
+	"observed_at": "2026-09-20T21:52:42Z"
+}
