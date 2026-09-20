@@ -1,0 +1,66 @@
+{
+	"schema": "maky.commerce2.market-slug-canary-verified/1",
+	"status": "PASS",
+	"worklist_sha256": "21db925995404aaa84e6f5a45543e9e550a4ddd357ca5fb60645ec3179715253",
+	"migration_receipt_sha256": "a4c089f263fce76786ddce609277fcfd40fe6bbd1a2a8d67bee31c4497cfae2f",
+	"map_sha256": "1635f8143c774ca3fbb4a2797846a0edc8e7ce90e251ca4fa82aa1c67c89394e",
+	"map_reloaded": false,
+	"storefront_restarted": false,
+	"git_sha": "55db628ff66b29d11999e720e0b8df579db2aefb",
+	"build_id": "ow3e-dxt969Y8fm2MKYYT",
+	"revalidated": {
+		"requested": 33,
+		"http_200": 33,
+		"success_true": 33,
+		"with_expected_tag": 0,
+		"with_base_slug_tag": 33,
+		"with_product_miss": 33
+	},
+	"verified": {
+		"checked": 33,
+		"single_301": 33,
+		"new_url_200": 33,
+		"correct_identity": 33,
+		"correct_language": 33,
+		"channel_price": 33,
+		"canonical_is_new_url": 33,
+		"noindex_unchanged": 33
+	},
+	"off_canary_probe": {
+		"sampled": 24,
+		"population": 100694,
+		"serving_current_url": 24,
+		"prematurely_redirected": 0
+	},
+	"sk_unchanged": true,
+	"sk_sitemap": {
+		"products": 9571,
+		"pages": 33,
+		"vehicles": 1475,
+		"shards": 3
+	},
+	"foreign_noindex_unchanged": true,
+	"foreign_purchase_enabled": false,
+	"live_markets": "sk",
+	"deviations": [
+		{
+			"field": "revalidated.with_expected_tag",
+			"observed": 0,
+			"expected_by_worklist": 33,
+			"impact": "none",
+			"detail": "The worklist derives expected_tag from the NEW TRANSLATED slug, but /api/revalidate builds the product tag from the slug the request carries — and the request carries the BASE slug, as the worklist itself specifies. So the endpoint emits product:{channel}:{locale}:{base_slug} and can never emit the translated form for this request. The purge still reaches the entry behind the translated URL: a foreign PDP is tagged with BOTH its URL slug and its base slug (src/lib/saleor/product-cache-tags.ts). Measured on all three AT cells — after a base-slug event the next request recomputed (479/856/451 ms) against 12-14 ms served from cache. Drop this check from the next worklist or set expected_tag to the base-slug form."
+		},
+		{
+			"field": "revalidation visibility delay",
+			"observed": "~2 s",
+			"impact": "measurement only",
+			"detail": "revalidateTag does not take effect for a request issued immediately after the endpoint responds. With no settle only 2/33 recomputed, with 250 ms 1/33, with 2 s every cell tested recomputed. Allow ~2 s before treating a response as post-purge when the remaining 100694 cells are swapped."
+		}
+	],
+	"notes": [
+		"The new URLs already served 200 before this revalidation ran: the cached not-found answers from M's own pre-swap probes had already been refreshed. Nothing was blocked; the worklist was still run in full.",
+		"Identity is compared after stripping the cfm:product: prefix, the same rule the proxy uses in sameCfmProduct(); Saleor stores externalReference as cfm:product:CFMP-…",
+		"Old URLs return one 301 straight to the final path — the second hop is the 200, never another redirect."
+	],
+	"observed_at": "2026-09-20T13:22:44Z"
+}

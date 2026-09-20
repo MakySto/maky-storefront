@@ -64,3 +64,17 @@ je platná stará URL. Stav je v logu PM2 (`[market-slug-redirects] loaded N ent
 - `externalReference` nech zostane na každom produkte kohorty.
 - Rezervované routy trhu nech neobsadí žiadny `new_slug` (zoznam vyššie).
 - Po doručení M overí sha256 a **oznámi pripravenosť**; až potom má zmysel meniť slugy v Saleore.
+
+## Revalidácia po výmene slugu (overené na canary 2026-09-20)
+
+Udalosť sa posiela **nezmenená**: `{"product":{"slug":"<base slug>"},"channel":"<kanál>"}`. Preložený
+slug do requestu nepatrí a endpoint ho nikdy nevráti.
+
+- **Tag nesie base slug, nie preložený.** `/api/revalidate` skladá `product:{kanál}:{locale}:{slug}`
+  z toho, čo dostal. Zahraničná PDP je pritom otagovaná **oboma** — svojím URL slugom aj base slugom
+  (`src/lib/saleor/product-cache-tags.ts`), takže base-slug udalosť na ňu dosiahne. Kontrola
+  `expected_tag` postavená na novom slugu preto nikdy neprejde, hoci purge prebehol správne.
+- **Cachovaný not-found pod novou URL** čistí `product-miss:{kanál}:{locale}`, ktorý každá produktová
+  aj kategóriová udalosť v danom kanáli vydá. SK sa netaguje — tam je URL slug zároveň base slug.
+- **Purge sa neprejaví okamžite.** Request vyslaný hneď po odpovedi endpointu ešte dostane starý
+  záznam; pri odstupe ~2 s sa prepočíta vždy. Pri overovaní zvyšku kohorty s tým treba rátať.
