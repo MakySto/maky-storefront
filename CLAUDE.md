@@ -337,6 +337,20 @@ This is not a memory problem and no amount of RAM fixes it — `pnpm build` peak
 It is also invisible to every uptime check that only looks at status codes. An external
 monitor on `/sk` must use a **keyword check**, not HTTP 200.
 
+### 13.1.1 Run production commands directly, never through a wrapper
+
+A command that changes production is typed into the Bash tool as itself. Not `bash some.sh`,
+not `setsid`, not `nohup`, not a script in a scratchpad or in `/tmp`.
+
+The permission rules match the command as it is written. A wrapper hides the real command
+inside a file, so the rule never fires and nothing asks. That is not hypothetical: on
+2026-09-21 a long catalogue run was started as `setsid nohup bash /tmp/.../step13_2_second.sh`,
+no prompt appeared, and it took the box to load 40 with swap full — `setsid` had also
+detached it from the one session that was watching it.
+
+A run too long to sit in the foreground does not become a script. It becomes a systemd unit
+with `MemoryMax` and no swap, installed and started by a human.
+
 ### 13.2 Production deploy — run the script, not the steps
 
 ```bash
