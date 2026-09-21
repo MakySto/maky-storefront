@@ -20,6 +20,12 @@
 // destination instead. Body size is recorded because a page can keep every field and still
 // lose its body.
 //
+// `bytes` is compared with a 1% tolerance, not exactly. A PDP's HTML carries Next's
+// per-render encrypted server-action references, and their ciphertext length moves between
+// renders of identical content — measured on one SK PDP: 195,180 / 195,266 / 195,309 bytes,
+// a spread of 129 (0.07%). Exact comparison would therefore fail every PDP on every diff,
+// while a page that has actually lost its body drops by far more than a percent.
+//
 // Every URL is fetched twice and only the second answer is recorded. A cold render and a
 // cached one differ in size for the same content — measured on `/sk/stresne-nosice`, 271,993
 // bytes cold against 276,795 warm and stable, same fifteen products — and after a deploy
@@ -151,6 +157,15 @@ function diff(beforePath, afterPath) {
 		}
 		for (const field of Object.keys(x)) {
 			if (field === "url") continue;
+			if (field === "bytes") {
+				// Render noise, not content — see the note at the top of this file.
+				const [before, after] = [x.bytes ?? 0, y.bytes ?? 0];
+				const biggest = Math.max(before, after, 1);
+				if (Math.abs(after - before) / biggest > 0.01) {
+					differences.push({ url, field, before, after });
+				}
+				continue;
+			}
 			const l = JSON.stringify(x[field] ?? null);
 			const r = JSON.stringify(y[field] ?? null);
 			if (l !== r) differences.push({ url, field, before: x[field] ?? null, after: y[field] ?? null });
