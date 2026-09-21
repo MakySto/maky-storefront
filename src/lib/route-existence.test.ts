@@ -370,3 +370,87 @@ describe("cache and load shedding", () => {
 		expect(fetchMock.mock.calls.length, "no further upstream calls while open").toBe(before);
 	});
 });
+
+describe("abroad, a product URL is the TRANSLATED slug", () => {
+	/**
+	 * Answers the base and the translated query differently, and records what was asked.
+	 *
+	 * The two are told apart by `slugLanguageCode` in the document, which is the only thing
+	 * that distinguishes them on the wire — and the distinction is the whole subject here:
+	 * `product(slug:)` reads the base row ONLY, so a foreign market's own URL never matches it.
+	 */
+	const upstream = (answers: { base?: unknown; translated?: unknown }) => {
+		const asked: string[] = [];
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (_url: unknown, init: { body: string }) => {
+				const sent = JSON.parse(init.body) as { query: string; variables: Record<string, unknown> };
+				const translated = sent.query.includes("slugLanguageCode");
+				asked.push(
+					translated ? `translated:${String(sent.variables.l)}` : `base:${String(sent.variables.s)}`,
+				);
+				return saleor(translated ? answers.translated : answers.base);
+			}),
+		);
+		return asked;
+	};
+
+	it("is not absent merely because the base row does not match", async () => {
+		// The regression this exists to prevent: arming the gate with a base-only query
+		// hard-404s every foreign product page on the site, the canary URLs included.
+		const asked = upstream({
+			base: { data: { product: null } },
+			translated: { data: { product: { id: "p1", externalReference: "cfm:product:CFMP-X" } } },
+		});
+		await expect(lookupExistence("product", "dachtrager-nordrive-helio", "at-eur")).resolves.toBe("exists");
+		expect(asked).toEqual(["base:dachtrager-nordrive-helio", "translated:DE_AT"]);
+	});
+
+	it("asks in the order the page resolves — base first, translated only on a miss", async () => {
+		const asked = upstream({ base: { data: { product: { id: "p1" } } } });
+		await expect(lookupExistence("product", "stresny-nosic", "at-eur")).resolves.toBe("exists");
+		expect(asked).toEqual(["base:stresny-nosic"]);
+	});
+
+	it("is absent only when neither row matches", async () => {
+		const asked = upstream({
+			base: { data: { product: null } },
+			translated: { data: { product: null } },
+		});
+		await expect(lookupExistence("product", "nothing-anywhere-xyz", "at-eur")).resolves.toBe("absent");
+		expect(asked).toEqual(["base:nothing-anywhere-xyz", "translated:DE_AT"]);
+	});
+
+	it("asks Slovakia for the base row alone", async () => {
+		// Slovakia has no translated row by definition — its URL slug IS the base slug.
+		const asked = upstream({ base: { data: { product: null } } });
+		await expect(lookupExistence("product", "nothing-anywhere-xyz", "sk-eur")).resolves.toBe("absent");
+		expect(asked).toEqual(["base:nothing-anywhere-xyz"]);
+	});
+
+	it("uses each market's own language, not its language family", async () => {
+		// DE_AT and EN_CA are separate rows. Asking Austria in DE, or Canada in EN, would
+		// read Germany's and the United States' slugs and 404 the ones that differ.
+		for (const [channel, code] of [
+			["at-eur", "DE_AT"],
+			["de-eur", "DE"],
+			["ca-cad", "EN_CA"],
+			["us-usd", "EN"],
+			["cz-czk", "CS"],
+		] as const) {
+			resetRouteExistenceStateForTests();
+			const asked = upstream({ base: { data: { product: null } }, translated: { data: { product: null } } });
+			await lookupExistence("product", "nothing-anywhere-xyz", channel);
+			expect(asked, channel).toEqual(["base:nothing-anywhere-xyz", `translated:${code}`]);
+		}
+	});
+
+	it("never turns a fault on the translated row into a 404", async () => {
+		// Fail open all the way down: an upstream that cannot answer must not remove a page.
+		for (const fault of [{ errors: [{ message: "boom" }] }, { data: null }, { data: {} }]) {
+			resetRouteExistenceStateForTests();
+			upstream({ base: { data: { product: null } }, translated: fault });
+			await expect(lookupExistence("product", "slug-x", "at-eur")).resolves.toBe("unknown");
+		}
+	});
+});

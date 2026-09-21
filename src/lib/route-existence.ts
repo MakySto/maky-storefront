@@ -1,4 +1,5 @@
-import { CHANNEL_MAP, FRIENDLY_SLUGS } from "./channel-map";
+import { CHANNEL_MAP, FRIENDLY_SLUGS, REVERSE_MAP } from "./channel-map";
+import { MARKET_LANGUAGE_CODE } from "@/config/market-language";
 import { isCategorySlug } from "@/config/categories";
 import { categoryBaseSlug, isLocalizedRootSegment } from "@/config/category-routes";
 import { previousProductSlug } from "./product-redirects";
@@ -219,16 +220,46 @@ async function askUpstream(family: RouteFamily, slug: string, channel: string): 
 }
 
 /**
+ * The language a market writes its product slugs in — null for Slovakia, which uses the base row.
+ *
+ * `MARKET_LANGUAGE_CODE` rather than `LOCALE_MAP`: this module is reachable from the proxy
+ * bundle, and `config/locale.ts` pulls in generated GraphQL documents. The contract test keeps
+ * the two tables identical.
+ */
+function translatedLanguageForChannel(channel: string): string | null {
+	const market = REVERSE_MAP[channel];
+	return market ? MARKET_LANGUAGE_CODE[market] ?? null : null;
+}
+
+/**
  * The authoritative question, with the same slug semantics the page uses.
  *
- * `previousProductSlug` matters: ten products are reachable at their new
- * canonical URL while Saleor still holds the old slug, and the page's own
- * resolver falls back to it. A gate that asked only about the new slug would
- * hard-404 live products for the length of that convergence window.
+ * Three asks, in the order the PAGE resolves them, and the order is the point — a gate that
+ * answers differently from the renderer hard-404s a URL that renders perfectly well.
+ *
+ * 1. the base row (`product(slug:)`), which is what Slovakia serves;
+ * 2. abroad, the TRANSLATED row. A foreign market's product URL is its translated slug, and
+ *    `product(slug:)` alone never matches one — it only reads the base row. So "absent" from
+ *    step 1 says nothing at all abroad, and arming this gate without step 2 would have
+ *    hard-404'd every foreign product page on the site, including the 33 canary URLs;
+ * 3. `previousProductSlug`, because ten products are reachable at their new canonical URL
+ *    while Saleor still holds the old slug and the page's own resolver falls back to it.
+ *
+ * Steps 2 and 3 run only when the cheaper answer was `absent`, and the whole verdict is cached,
+ * so the extra round trip costs a foreign miss once per 300 s rather than once per request. It
+ * borrows this call's concurrency slot instead of taking a second one: nesting the cached
+ * `lookupTranslatedProduct` here would have each gate check hold two, and shed load at half
+ * the traffic.
  */
 async function resolveVerdict(family: RouteFamily, slug: string, channel: string): Promise<ExistenceVerdict> {
 	const first = await askUpstream(family, slug, channel);
 	if (first !== "absent" || family !== "product") return first;
+
+	const language = translatedLanguageForChannel(channel);
+	if (language) {
+		const translated = (await askTranslatedUpstream(slug, channel, language)).verdict;
+		if (translated !== "absent") return translated;
+	}
 
 	const previous = previousProductSlug(slug);
 	return previous ? askUpstream(family, previous, channel) : "absent";
