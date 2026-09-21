@@ -26,6 +26,10 @@ const ROUTES = [
 	"[channel]/(main)/orders/page.tsx",
 	"[channel]/(main)/login/page.tsx",
 	"[channel]/(main)/signup/page.tsx",
+	// Outside `[channel]`, which is exactly why it was missed: it never sees the market
+	// layout's metadata, so it inherited `index, follow` from the root. Covers
+	// `/checkout/complete` as well — no child overrides `robots`.
+	"(site)/checkout/layout.tsx",
 ];
 
 const read = (rel: string) => fs.readFileSync(path.join(process.cwd(), "src/app", rel), "utf8");
