@@ -11,10 +11,20 @@
 		"note": "This supersedes M_CATALOG_PATCH_DEPLOYED.json as the deploy reference: production has moved on twice since 5ce2f0b. Evidence is bound to the SHA above, not to a historical M deploy."
 	},
 	"cfm_binding": {
-		"_comment": "Filled by M from CFM's canary handoff. M does not invent hashes; these stay null until CFM delivers them.",
-		"grouped_plan_sha256": null,
-		"canary_run_id": null,
-		"canary_readback_sha256": null,
+		"_comment": "Delivered by CFM 2026-09-21 and copied verbatim. The CFM artifact tree lives on a different host — /home/ubuntu/cfm-artifacts/ does not exist here — so M cannot recompute these hashes and does not claim to have verified them. What M verified is in `checks`, which is measured against the live storefront and Saleor and needs none of these values.",
+		"grouped_plan_sha256": "5c4c0333a4c02586ba5184f441e1a2a70f3f2f935e199e1ddf4039fda3981b45",
+		"canary_run_id": "market_catalog_grouped-5c4c0333a4c0",
+		"canary_readback_sha256": "f412cc8dd2c4fbdc748eeaf580ca7a5ea26ee66f8c6262bbe3923499e83ec548",
+		"canary_readback_file": "L10N_READBACK_catalog_canary.json (runbook line 506)",
+		"receipts": {
+			"_dir": "/home/ubuntu/cfm-artifacts/commerce-2-catalog-apply-20260917/13_grouped/canary/ (on the CFM host)",
+			"GROUPED_CATALOG_canary.json": "3affcd262a2fa5fdce1b7ef714b59624e872adb359e3887e577e8cf6ce50dc83",
+			"GROUPED_CATALOG_canary-capability-dry.json": "b28e73cbe3ee875301aad35be03b64a582a2edbaeab05d08b9aca9a21080d713",
+			"L10N_READBACK_catalog_canary.json": "f412cc8dd2c4fbdc748eeaf580ca7a5ea26ee66f8c6262bbe3923499e83ec548",
+			"L10N_READBACK_catalog_canary.json.provenance.json": "19ffc4d85818f74fa8682097140fd2ee89f7409dcfbffaa10d8b5b8a5d4ae7d1"
+		},
+		"code_pin_note": "CFM reported 2026-09-21 that the release named by $GO (tip 8c5c37c, release commerce-2-8c5c37cfb253) does NOT match the code pin the canary wrote into its journal — grouped_l10n.py and nordrive_l10n/journal.py differ. The canary ran from a release matching seven others, including commerce-2-current (f23439aa), and CFM ran the schema-only gate from that one. Recorded here so the evidence chain names the code that actually produced the canary, not the one the GO names. CFM-reported, not verifiable from this host.",
+		"canary_run_id_note": "Not an independent identifier — it is the string `market_catalog_grouped-` plus the first 12 characters of grouped_plan_sha256, so it names the plan, not a particular execution of it.",
 		"cfm_reported": {
 			"applied_at": "2026-09-19T14:10Z/14:13Z",
 			"verified_cells": 33,
@@ -22,8 +32,21 @@
 			"ambiguous": 0,
 			"mutation_executions": 9,
 			"mutation_cells": 99,
+			"schema_only_gate_2026_09_21": {
+				"verdict_ok": true,
+				"channels_verified": 11,
+				"saleor": "3.23.31",
+				"manage_products": true,
+				"manage_translations": true,
+				"mutation_executions": 0,
+				"http_requests": 5,
+				"data_readiness": "READY",
+				"exact_locale_sample": "50/50 in all 11 markets",
+				"category_exact_locale": "true x 11"
+			},
 			"source": "CFM session report, not independently verifiable from the storefront"
-		}
+		},
+		"bound_at": "2026-09-21T18:12:23Z"
 	},
 	"scope": {
 		"products": 3,
