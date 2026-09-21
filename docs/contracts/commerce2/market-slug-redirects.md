@@ -78,3 +78,41 @@ slug do requestu nepatrí a endpoint ho nikdy nevráti.
   aj kategóriová udalosť v danom kanáli vydá. SK sa netaguje — tam je URL slug zároveň base slug.
 - **Purge sa neprejaví okamžite.** Request vyslaný hneď po odpovedi endpointu ešte dostane starý
   záznam; pri odstupe ~2 s sa prepočíta vždy. Pri overovaní zvyšku kohorty s tým treba rátať.
+
+## Revalidácia po grouped publikácii — zmena rozsahu (21. 9. 2026)
+
+Starý worklist má 100 727 riadkov, jeden na bunku. **Ako dôkaz slug migrácie zostáva v platnosti a
+nemaže sa.** Ako revalidačný plán po grouped publikácii je ale zbytočne veľký — a to sa dá dokázať
+priamo z kódu, nie odhadom.
+
+Čo je nacachované pred publikáciou: pre 9 154 produktov na kanál **neexistuje žiadny `found` záznam**,
+lebo produkt v tom kanáli nebol publikovaný. Existuje len prípadná **not-found odpoveď**, a tá nie je
+otagovaná slugom — `productAnswerTags()` jej dáva jediný tag (`src/lib/saleor/product-cache-tags.ts`):
+
+```ts
+// not-found abroad
+return [buildTag(CACHE_PROFILES.productMisses, identity)]; // product-miss:{kanál}:{locale}
+```
+
+Ten tag je **per kanál + locale**, nie per produkt — miss totiž nemá base slug, ktorým by sa dal
+pomenovať (`productMissTagFor()` vracia `null` pre SK, takže Slovensko sa nedotkne vôbec). A vydáva ho
+`/api/revalidate` pri **každej** produktovej, kategóriovej aj nepomenovanej udalosti v danom kanáli
+(`src/app/api/revalidate/route.ts:191, 206, 227` — `case "collection"` ho zámerne nevydáva).
+
+Z toho vyplýva rozsah po grouped APPLY:
+
+| krok                                      | počet                                     | čo rieši                                                                 |
+| ----------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------ |
+| miss purge, 1 udalosť na zahraničný kanál | **11**                                    | všetky cachované „produkt neexistuje" odpovede v tom kanáli naraz        |
+| kategóriová/listingová udalosť na kanál   | podľa existujúceho category tag kontraktu | `/{kanál}/products`, korene kategórií, `fitment-offers`                  |
+| explicitná produktová udalosť             | **3 × 11 = 33**                           | iba canary, ktoré sú ako jediné cachované ako `found` a majú starý obsah |
+| vzorkový smoke cez reálne stránky         | 5–10 na trh, stratifikovane               | overenie, nie purge                                                      |
+
+Teda **rádovo desiatky udalostí, nie 100 697**. Udalosť sa neposiela inak, než hovorí sekcia vyššie:
+`{"product":{"slug":"<base slug>"},"channel":"<kanál>"}`, preložený slug do nej nepatrí. A stále platí
+~2 s odstup, než sa purge prejaví na ďalšom requeste.
+
+Jedna výhrada, ktorú netreba prehliadnuť: toto pokrýva **cache**, nie **ISR/PPR prerender**. Zahraničné
+PDP sa doteraz nikdy nevykreslili, takže prvý request po publikácii bude studený (canary merané
+479/856/451 ms proti 12–14 ms z cache). Pri vzorkovom smoke s tým treba rátať a nečítať pomalú prvú
+odpoveď ako chybu.

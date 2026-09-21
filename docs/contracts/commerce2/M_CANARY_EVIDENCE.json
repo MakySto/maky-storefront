@@ -1,0 +1,164 @@
+{
+	"schema": "maky.commerce2.m-canary-evidence/1",
+	"status": "PASS",
+	"summary": "Storefront evidence for CFM grouped catalog canary (3 products x 11 foreign markets), measured against today's production build. Every cell serves the real product under its CFM-authored translated slug, in the market's exact locale, at the channel price, not purchasable, not indexable. Slovakia unchanged.",
+	"measured_against": {
+		"host": "maky.store — PM2 app maky-storefront (next start -p 3000 behind nginx) on ubuntu@ip-10-0-2-88",
+		"git_sha": "536749fdac3289995776d6b0fc457f334440b730",
+		"build_id": "CNqIFwcZcscoOCvpdhy_W",
+		"built_at": "2026-09-21T14:48:20Z",
+		"probe_origin": "http://127.0.0.1:3000 (the rollback gate origin; the public URL is the same artifact behind nginx)",
+		"note": "This supersedes M_CATALOG_PATCH_DEPLOYED.json as the deploy reference: production has moved on twice since 5ce2f0b. Evidence is bound to the SHA above, not to a historical M deploy."
+	},
+	"cfm_binding": {
+		"_comment": "Filled by M from CFM's canary handoff. M does not invent hashes; these stay null until CFM delivers them.",
+		"grouped_plan_sha256": null,
+		"canary_run_id": null,
+		"canary_readback_sha256": null,
+		"cfm_reported": {
+			"applied_at": "2026-09-19T14:10Z/14:13Z",
+			"verified_cells": 33,
+			"held": 0,
+			"ambiguous": 0,
+			"mutation_executions": 9,
+			"mutation_cells": 99,
+			"source": "CFM session report, not independently verifiable from the storefront"
+		}
+	},
+	"scope": {
+		"products": 3,
+		"foreign_markets": 11,
+		"cells": 33,
+		"cfm_product_ids": [
+			"CFMP-B-NOR-9482056495260e-000000",
+			"CFMP-B-NOR-997d876281c846-000000",
+			"CFMP-B-NOR-a51bec20924e7e-000000"
+		],
+		"markets": ["at", "ca", "cz", "de", "es", "fr", "hu", "it", "pl", "ro", "us"],
+		"note": "These are the three products CFM's grouped canary published on 2026-09-19 — not a historical canary set. Every foreign channel holds exactly these three and nothing else."
+	},
+	"checks": {
+		"pdp_http_200": {
+			"passed": 33,
+			"of": 33
+		},
+		"real_product_not_soft_404": {
+			"passed": 33,
+			"of": 33,
+			"how": "JSON-LD @type Product had to be present AND its name had to equal the Saleor translation name for that exact language code. HTTP 200 alone is not evidence — the not-found page also answers 200."
+		},
+		"identity_matches_cfm_product_id": {
+			"passed": 33,
+			"of": 33,
+			"how": "Cell resolved from Saleor by externalReference cfm:product:<id>; the served page's JSON-LD name compared against that product's translation(languageCode) name."
+		},
+		"exact_locale_html_lang": {
+			"passed": 33,
+			"of": 33,
+			"includes_regional": {
+				"at": "de-AT",
+				"ca": "en-CA"
+			}
+		},
+		"final_translated_slug": {
+			"passed": 33,
+			"of": 33,
+			"how": "URL built from Saleor translation slug; canonical had to echo it."
+		},
+		"canonical_is_final_url": {
+			"passed": 33,
+			"of": 33
+		},
+		"channel_price_and_currency": {
+			"passed": 33,
+			"of": 33
+		},
+		"not_purchasable": {
+			"passed": 33,
+			"of": 33,
+			"storefront_reflects_it": 33,
+			"how": "Saleor isAvailableForPurchase=false in all 11 foreign channels; the PDP renders it as schema.org/OutOfStock and the sold-out label."
+		},
+		"foreign_noindex_both_layers": {
+			"header": 33,
+			"metadata": 33,
+			"of": 33
+		},
+		"history_url_one_301_to_final": {
+			"passed": 36,
+			"of": 36,
+			"note": "36, not 33: the map carries three extra HU rows for the intermediate slugs the canary passed through. All resolve in a single hop to the final slug."
+		},
+		"cfm_internal_id_not_leaked_into_sku": {
+			"leaks": 0,
+			"of": 33
+		}
+	},
+	"slovakia_unchanged": {
+		"pdp": [
+			{
+				"url": "/sk/stresny-nosic-nordrive-helio-silver-audi-80-avant-1991-1995-klasicke-lyziny",
+				"http": 200,
+				"html_lang": "sk-SK",
+				"x_robots_tag": null,
+				"meta_robots": null,
+				"price": 72,
+				"currency": "EUR",
+				"availability": "https://schema.org/BackOrder",
+				"is_available_for_purchase": true
+			},
+			{
+				"url": "/sk/stresny-nosic-nordrive-silenzio-cx-black-fiat-multipla-1998-2010-fixacne-body",
+				"http": 200,
+				"html_lang": "sk-SK",
+				"x_robots_tag": null,
+				"meta_robots": null,
+				"price": 245,
+				"currency": "EUR",
+				"availability": "https://schema.org/BackOrder",
+				"is_available_for_purchase": true
+			},
+			{
+				"url": "/sk/stresny-nosic-nordrive-snap-alu-silver-bmw-x2-u10-2024-integrovane-lyziny",
+				"http": 200,
+				"html_lang": "sk-SK",
+				"x_robots_tag": null,
+				"meta_robots": null,
+				"price": 139,
+				"currency": "EUR",
+				"availability": "https://schema.org/BackOrder",
+				"is_available_for_purchase": true
+			}
+		],
+		"sitemap": {
+			"products": 9571,
+			"pages": 33,
+			"vehicles": 1475,
+			"shards": 3,
+			"identical_to": "M_MARKET_SLUG_MAP_READY.json sk_sitemap, measured 2026-09-20"
+		},
+		"sk_is_the_only_indexable_market": true,
+		"sk_products_remain_purchasable": true
+	},
+	"gates_at_measurement": {
+		"live_markets": "sk",
+		"indexable_markets_effective": "sk",
+		"indexable_markets_env_var_set": false,
+		"indexable_markets_note": "MAKY_INDEXABLE_MARKETS is not present in .env; the effective value comes from the code default (['sk'] intersected with MAKY_LIVE_MARKETS). Turning on more markets needs the variable AND a rebuild — hreflang for static pages is baked at build time.",
+		"route_existence_gate": "off",
+		"foreign_purchase": "off",
+		"foreign_noindex": "on",
+		"slug_redirect_map": {
+			"sha256": "99fc63cacc1b08034fcb55384dee04d3948fcf0515277102e12a1191ef6328b0",
+			"entries": 100730,
+			"markets": 11,
+			"discarded": 0
+		}
+	},
+	"not_claimed": [
+		"Nothing here proves the other 9154 products of the cohort. Each foreign channel holds exactly 3 published products; the rest are unpublished and every other foreign product URL renders the localized not-found page (HTTP 200, noindex) in both its old and its new slug form.",
+		"CFM's own counters (mutation executions, readback hashes, plan SHA) are reproduced as reported, not verified — the storefront cannot see them.",
+		"JSON-LD brand is null on every cell. Pre-existing CFM data gap (cfm:attribute:manufacturer), unrelated to this rollout."
+	],
+	"observed_at": "2026-09-21T14:55:04Z"
+}
