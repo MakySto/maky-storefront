@@ -2,7 +2,7 @@
 	"$about": "Documented exceptions to the no-hardcoded-customer-string rule for commerce surfaces. check-commerce-i18n.mjs asserts each literal still exists at its file — if one is fixed or moved, update this ledger in the same change. Nothing may be ADDED here without a written justification.",
 	"entries": [
 		{
-			"file": "src/app/checkout/layout.tsx",
+			"file": "src/app/(site)/checkout/layout.tsx",
 			"literal": "formatPageTitle(\"Pokladňa\")",
 			"justification": "PPR static shell: the layout metadata prerenders without request data, so it cannot know the market locale. Store-default (sk) tab title is served initially; CheckoutDocumentTitle swaps in the market-locale title (checkout.meta.title) client-side after hydration."
 		},
