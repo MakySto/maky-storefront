@@ -76,6 +76,23 @@ export async function register(): Promise<void> {
 		);
 	}
 
+	// How hard we are willing to lean on Saleor. Its quiet failure is the one that hid the
+	// longest: a 200 ms floor under every query cost a flat ~170 ms of idle wait on every
+	// page and capped the whole site at 15 queries per second, and nothing anywhere said so —
+	// the site was simply slow. Settings, not secrets, so the numbers themselves are printed.
+	const { saleorQueueSettings } = await import("./lib/graphql");
+	const queue = saleorQueueSettings();
+	console.log(`[saleor-queue] max_concurrent=${queue.maxConcurrent} min_delay_ms=${queue.minDelayMs}`);
+	if (queue.minDelayMs > 0) {
+		console.warn(
+			`[saleor-queue] every Saleor query is held for at least ${queue.minDelayMs} ms whatever ` +
+				`Saleor does, and the site is capped at ${Math.round(
+					(queue.maxConcurrent * 1000) / queue.minDelayMs,
+				)} ` +
+				`queries/second. Unset SALEOR_MIN_REQUEST_DELAY_MS unless an upstream rate limit needs it.`,
+		);
+	}
+
 	if (unknown.length > 0) {
 		console.error(
 			`[market-state] MAKY_LIVE_MARKETS contains ${unknown.length} name(s) that are not markets: ` +

@@ -144,7 +144,10 @@ class RequestQueue {
 	private readonly maxConcurrent: number;
 	private readonly minDelayMs: number;
 
-	constructor(maxConcurrent = 3, minDelayMs = 300) {
+	constructor(
+		maxConcurrent: number = SALEOR_QUEUE_DEFAULTS.maxConcurrent,
+		minDelayMs: number = SALEOR_QUEUE_DEFAULTS.minDelayMs,
+	) {
 		this.maxConcurrent = maxConcurrent;
 		this.minDelayMs = minDelayMs;
 	}
@@ -160,6 +163,9 @@ class RequestQueue {
 			if (signal?.aborted) {
 				throw signal.reason instanceof Error ? signal.reason : new DOMException("Aborted", "AbortError");
 			}
+			// The floor is skipped rather than slept for zero: a `setTimeout(…, 0)` per query
+			// is a macrotask hop on the render path for no reason once the floor is gone.
+			if (this.minDelayMs <= 0) return await fn();
 			const [result] = await Promise.all([fn(), sleep(this.minDelayMs)]);
 			return result;
 		} finally {
@@ -198,10 +204,56 @@ function formatVariablesForLog(variables: Record<string, unknown>): string {
 	return parts.length > 0 ? `(${parts.join(", ")})` : "";
 }
 
-const requestQueue = new RequestQueue(
-	parseInt(process.env.SALEOR_MAX_CONCURRENT_REQUESTS || "3", 10),
-	parseInt(process.env.SALEOR_MIN_REQUEST_DELAY_MS || "200", 10),
-);
+/**
+ * How hard the storefront is willing to lean on Saleor.
+ *
+ * These were `3` concurrent and a `200 ms` floor held under `Promise.all` — so every query
+ * occupied its slot for 200 ms no matter how fast Saleor answered. Saleor is OUR OWN box
+ * (`api.maky.store`): measured 2026-09-22 it returns a product query in 35 ms and serves 24
+ * concurrent in 0.32 s without effort. The old pair therefore bought nothing and cost a flat
+ * ~170 ms of idle wait on every page of the site, plus a site-wide ceiling of 15 queries per
+ * second. Removing it took a warm page from 204 ms to 22 ms and 24 concurrent visits from
+ * 1.99 s to 0.26 s.
+ *
+ * They stay configurable, because the numbers belong to this deployment and not to the code:
+ * a hosted Saleor with a published rate limit would want the floor back.
+ */
+const SALEOR_QUEUE_DEFAULTS = { maxConcurrent: 12, minDelayMs: 0 } as const;
+
+/**
+ * A setting that is not a usable number falls back rather than being passed on.
+ *
+ * `parseInt("")` is `NaN`, and `activeRequests < NaN` is false for every value — so one
+ * mistyped env var would have parked every Saleor query in the queue forever and taken the
+ * storefront down with no error anywhere. The old code passed `parseInt` straight through.
+ */
+function queueSetting(raw: string | undefined, fallback: number, minimum: number): number {
+	const parsed = Number.parseInt(raw ?? "", 10);
+	return Number.isFinite(parsed) && parsed >= minimum ? parsed : fallback;
+}
+
+const SALEOR_QUEUE = {
+	maxConcurrent: queueSetting(
+		process.env.SALEOR_MAX_CONCURRENT_REQUESTS,
+		SALEOR_QUEUE_DEFAULTS.maxConcurrent,
+		1,
+	),
+	minDelayMs: queueSetting(process.env.SALEOR_MIN_REQUEST_DELAY_MS, SALEOR_QUEUE_DEFAULTS.minDelayMs, 0),
+} as const;
+
+/**
+ * What the queue is actually running with, for the boot log.
+ *
+ * Reported rather than assumed: both settings are read from the environment, they change
+ * nothing observable from the outside when they are wrong, and the failure they produce is a
+ * site that is merely slow. That is exactly the class of setting `src/instrumentation.ts`
+ * exists to print.
+ */
+export function saleorQueueSettings(): { maxConcurrent: number; minDelayMs: number } {
+	return { ...SALEOR_QUEUE };
+}
+
+const requestQueue = new RequestQueue(SALEOR_QUEUE.maxConcurrent, SALEOR_QUEUE.minDelayMs);
 
 function getRetryConfig() {
 	const buildRetries = process.env.NEXT_BUILD_RETRIES;
