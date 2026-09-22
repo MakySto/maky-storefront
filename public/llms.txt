@@ -1,44 +1,48 @@
 # MAKY.STORE
 
-> Slovenský e-shop s autopríslušenstvom pre prepravu na streche a za vozidlom:
-> strešné nosiče, strešné boxy, nosiče bicyklov a lyží, snehové reťaze,
-> autochladničky a strešné stany. Predávané značky sú okrem iných Thule,
-> Nordrive, Menabo, Yakima, Peruzzo, Pro-USER, Spinder, Green Valley a DAC.
+> Slovenský e-shop s autopríslušenstvom na prepravu na streche a za vozidlom:
+> strešné nosiče, strešné boxy, nosiče bicyklov a lyží, autochladničky
+> a strešné stany. Predávané značky sú okrem iných Thule, Nordrive, Menabo,
+> Yakima, Peruzzo, Pro-USER, Spinder, Green Valley a DAC.
 
-Prevádzkovateľ je platiteľ DPH, takže všetky ceny na stránkach sú uvedené
-vrátane DPH. Hlavným a jediným zásobeným trhom je momentálne Slovensko
-(`/sk`, ceny v EUR); ostatné jazykové verzie zatiaľ nemajú naskladnený
-katalóg. Obsah je po slovensky.
+Prevádzkovateľom je MAKY.STORE s. r. o. (Bratislava), platiteľ DPH — všetky
+ceny na stránkach sú uvedené vrátane DPH. Obchod predáva na 12 trhoch, každý
+v jazyku a mene svojho trhu: Slovensko (`/sk`, EUR), Česko (`/cz`, CZK),
+Nemecko (`/de`, EUR), Rakúsko (`/at`, EUR), Poľsko (`/pl`, PLN), Maďarsko
+(`/hu`, HUF), Taliansko (`/it`, EUR), Francúzsko (`/fr`, EUR), Španielsko
+(`/es`, EUR), Rumunsko (`/ro`, RON), USA (`/us`, USD) a Kanada (`/ca`, CAD).
+Ceny sa medzi trhmi líšia; záväzná je cena na stránke daného trhu. Odkazy
+nižšie vedú na slovenskú verziu.
 
 ## Kategórie
 
-- [Strešné nosiče](https://maky.store/sk/categories/stresne-nosice): priečniky, pätky a montážne kity
-- [Strešné boxy](https://maky.store/sk/categories/stresne-boxy): boxy na strechu vozidla
-- [Nosiče bicyklov](https://maky.store/sk/categories/nosice-bicyklov): na ťažné zariadenie, strechu a piate dvere
-- [Nosiče lyží](https://maky.store/sk/categories/nosice-lyzi): nosiče lyží a snowboardov
-- [Snehové reťaze](https://maky.store/sk/categories/snehove-retaze)
-- [Autochladničky](https://maky.store/sk/categories/autochladnicky)
-- [Strešné stany](https://maky.store/sk/categories/stresne-stany)
-- [Všetky produkty](https://maky.store/sk/products): kompletný katalóg s filtrovaním
+- [Strešné nosiče](https://maky.store/sk/stresne-nosice): kompletné zostavy pre konkrétne vozidlo — priečniky, pätky a montážny kit v jednom balení
+- [Strešné nosiče podľa vozidla](https://maky.store/sk/stresne-nosice/skoda): stránky majú tvar `/sk/stresne-nosice/<značka>/<model>/<generácia>`
+- [Strešné boxy](https://maky.store/sk/stresne-boxy): boxy na strechu vozidla a príslušenstvo k nim
+- [Nosiče bicyklov](https://maky.store/sk/nosice-bicyklov): na ťažné zariadenie, na strechu a na zadné dvere
+- [Nosiče lyží](https://maky.store/sk/nosice-lyzi): nosiče lyží a snowboardov
+- [Autochladničky](https://maky.store/sk/autochladnicky)
+- [Strešné stany](https://maky.store/sk/stresne-stany)
+- [Všetky produkty](https://maky.store/sk/products): celý katalóg s filtrovaním
 
 ## Nákup, doprava a vrátenie
 
-- [Doprava a platba](https://maky.store/sk/doprava-a-platba): zásielky doručuje FedEx. Cena dopravy závisí od rozmerov, hmotnosti a miesta doručenia, preto ju zákazník uvidí až v košíku
-- [Reklamácie a vrátenie](https://maky.store/sk/reklamacie-a-vratenie): zákonná dvojročná záruka; lehota na odstúpenie od zmluvy a postup vrátenia sú popísané tu
+- [Doprava a platba](https://maky.store/sk/doprava-a-platba): zásielky doručuje Slovenská pošta a FedEx. Cena dopravy závisí od rozmerov, hmotnosti a miesta doručenia, preto ju zákazník uvidí až v košíku. Dodacia lehota je v EÚ 5–10 pracovných dní, do USA a Kanady 7–14 pracovných dní
+- [Reklamácie a vrátenie](https://maky.store/sk/reklamacie-a-vratenie): zákonná dvojročná záruka; spotrebiteľ môže od zmluvy odstúpiť do 14 dní od prevzatia tovaru, registrovaným zákazníkom, ktorí objednávku vytvorili po prihlásení do účtu, platí predĺžená lehota 30 dní
 - [Obchodné podmienky](https://maky.store/sk/obchodne-podmienky): úplné znenie vrátane údajov o prevádzkovateľovi
 - [Ochrana osobných údajov](https://maky.store/sk/ochrana-osobnych-udajov)
 - [Kontakt](https://maky.store/sk/kontakt)
 
 ## Poradňa
 
-- [Poradňa](https://maky.store/sk/poradna): články o výbere a montáži nosičov a boxov
+- [Poradňa](https://maky.store/sk/poradna): ako vybrať strešný nosič, ktorý sedí vášmu autu, a na čo sa pýtať pred objednávkou
 
 ## Poznámky pre agentov
 
 - Detail produktu má tvar `https://maky.store/sk/<slug-produktu>`; staršie
   adresy `/sk/products/<slug>` presmerúvajú stavom 308.
 - Vyhľadávanie používa parameter `query`, napríklad
-  `https://maky.store/sk/products?query=thule`.
+  `https://maky.store/sk/search?query=thule`.
 - Dostupnosť a cena na stránke produktu sú záväzné; údaje z iných zdrojov
   môžu byť neaktuálne.
 - MAKY.STORE neposkytuje dopravu zadarmo. Akýkoľvek údaj o cene dopravy mimo
