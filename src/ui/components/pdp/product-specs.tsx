@@ -55,36 +55,41 @@ export async function ProductSpecs({
 
 	return (
 		<section className="border-border-subtle mt-14 border-t pt-10 lg:mt-20 lg:pt-12">
-			<nav aria-label={t("productDetails")}>
-				<ul className="grid gap-3 sm:grid-cols-2">
-					{hasDescription && (
-						<li>
-							<a
-								href="#product-description"
-								className="border-border-default bg-surface-card text-text-primary hover:border-action-primary hover:bg-surface-muted focus-visible:ring-focus-ring flex min-h-14 items-center justify-between rounded-md border px-5 py-3 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none"
-							>
-								{t("description")}
-								<span aria-hidden className="text-text-tertiary text-lg leading-none">
-									↓
-								</span>
-							</a>
-						</li>
-					)}
-					{hasTechnicalParameters && (
-						<li>
-							<a
-								href="#technical-parameters"
-								className="border-border-default bg-surface-card text-text-primary hover:border-action-primary hover:bg-surface-muted focus-visible:ring-focus-ring flex min-h-14 items-center justify-between rounded-md border px-5 py-3 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none"
-							>
-								{t("technicalParameters")}
-								<span aria-hidden className="text-text-tertiary text-lg leading-none">
-									↓
-								</span>
-							</a>
-						</li>
-					)}
-				</ul>
-			</nav>
+			{/* Jump links only when there are two sections to choose between. With one, the
+			    card sat directly above the section it pointed at and read as a collapsed
+			    accordion of the same name. */}
+			{hasDescription && hasTechnicalParameters && (
+				<nav aria-label={t("productDetails")}>
+					<ul className="grid gap-3 sm:grid-cols-2">
+						{hasDescription && (
+							<li>
+								<a
+									href="#product-description"
+									className="border-border-default bg-surface-card text-text-primary hover:border-action-primary hover:bg-surface-muted focus-visible:ring-focus-ring flex min-h-14 items-center justify-between rounded-md border px-5 py-3 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none"
+								>
+									{t("description")}
+									<span aria-hidden className="text-text-tertiary text-lg leading-none">
+										↓
+									</span>
+								</a>
+							</li>
+						)}
+						{hasTechnicalParameters && (
+							<li>
+								<a
+									href="#technical-parameters"
+									className="border-border-default bg-surface-card text-text-primary hover:border-action-primary hover:bg-surface-muted focus-visible:ring-focus-ring flex min-h-14 items-center justify-between rounded-md border px-5 py-3 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none"
+								>
+									{t("technicalParameters")}
+									<span aria-hidden className="text-text-tertiary text-lg leading-none">
+										↓
+									</span>
+								</a>
+							</li>
+						)}
+					</ul>
+				</nav>
+			)}
 
 			<div className="mt-6 space-y-6 lg:mt-8">
 				{hasDescription && (

@@ -55,6 +55,8 @@ export async function VehicleListingFilter({
 	const locale = getLocaleFromChannel(channel);
 	const t = await getTranslations({ locale, namespace: "fitment" });
 
+	// The sentence keeps at least 12rem, so on a 360px phone the button wraps onto its own
+	// line instead of squeezing the text to one word per line (`min-w-0` let it shrink to ~100px).
 	const shell = (children: React.ReactNode, tone?: "muted") => (
 		<div
 			className={cn(
@@ -73,7 +75,7 @@ export async function VehicleListingFilter({
 		return shell(
 			<>
 				<Car className="text-text-tertiary h-5 w-5 shrink-0" aria-hidden="true" />
-				<p className="text-text-secondary min-w-0 flex-1 text-sm">
+				<p className="text-text-secondary min-w-[12rem] flex-1 text-sm">
 					{filter.requested ? t("listingNoVehicle") : t("listingOffer")}
 				</p>
 				<VehicleSelectorLauncher variant="inline" />
@@ -85,7 +87,7 @@ export async function VehicleListingFilter({
 		return shell(
 			<>
 				<Car className="text-text-tertiary h-5 w-5 shrink-0" aria-hidden="true" />
-				<p className="text-text-secondary min-w-0 flex-1 text-sm">
+				<p className="text-text-secondary min-w-[12rem] flex-1 text-sm">
 					{t("listingOfferFor", { vehicle: filter.vehicleLabel ?? "" })}
 				</p>
 				<LinkWithChannel
@@ -102,7 +104,7 @@ export async function VehicleListingFilter({
 		return shell(
 			<>
 				<CircleHelp className="h-5 w-5 shrink-0" aria-hidden="true" />
-				<p className="min-w-0 flex-1 text-sm">
+				<p className="min-w-[12rem] flex-1 text-sm">
 					{t("listingUnanswerable", { vehicle: filter.vehicleLabel ?? "" })}
 				</p>
 				<LinkWithChannel

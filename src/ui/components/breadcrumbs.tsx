@@ -60,7 +60,12 @@ export function Breadcrumbs({ items, tone = "default", jsonLd = true, className 
 							>
 								{index > 0 && <ChevronRight aria-hidden className="h-3.5 w-3.5 shrink-0" />}
 								{item.href && !isLast ? (
-									<Link href={item.href} className={`whitespace-nowrap transition-colors ${hover}`}>
+									// On a photo the link must carry its own colour: the base `a { color: var(--text-link) }`
+									// beats the inherited white/70 and painted "Domov" copper on a dark image.
+									<Link
+										href={item.href}
+										className={`whitespace-nowrap transition-colors ${onImage ? muted : ""} ${hover}`}
+									>
 										{item.label}
 									</Link>
 								) : (

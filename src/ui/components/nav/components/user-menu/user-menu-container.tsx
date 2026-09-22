@@ -1,11 +1,13 @@
 import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
+import { getLocaleFromChannel } from "@/config/locale";
 import { UserIcon } from "lucide-react";
 import { UserMenu } from "./user-menu";
 import { CurrentUserDocument } from "@/gql/graphql";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 
-export async function UserMenuContainer() {
+export async function UserMenuContainer({ channel }: { channel: string }) {
 	// During static generation, cookies() throws - skip user fetch entirely
 	let hasCookies = false;
 	try {
@@ -28,13 +30,15 @@ export async function UserMenuContainer() {
 	if (user) {
 		return <UserMenu user={user} />;
 	} else {
+		// Was a hardcoded English "Log in" for screen readers on all twelve markets.
+		const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "nav" });
 		return (
 			<LinkWithChannel
 				href="/login"
-				className="inline-flex h-10 w-10 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-accent-foreground"
+				className="hover:bg-accent hover:text-accent-foreground inline-flex h-10 w-10 items-center justify-center rounded-md transition-colors"
 			>
 				<UserIcon className="h-5 w-5" aria-hidden="true" />
-				<span className="sr-only">Log in</span>
+				<span className="sr-only">{t("login")}</span>
 			</LinkWithChannel>
 		);
 	}

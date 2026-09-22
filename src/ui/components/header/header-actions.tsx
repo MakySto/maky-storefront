@@ -16,11 +16,15 @@ export async function HeaderActions({ channel }: { channel: string }) {
 	return (
 		<div className="flex items-center gap-0.5 sm:gap-1">
 			<Suspense fallback={<ActionSkeleton />}>
-				<UserMenuContainer />
+				<UserMenuContainer channel={channel} />
 			</Suspense>
 
+			{/* The wishlist page is not built yet (kept on purpose, owner 2026-09-22). No
+			    prefetch until it is: every page view fetched /xx/wishlist and got a 404
+			    (183 of them in nginx on 2026-09-22 alone). */}
 			<LinkWithChannel
 				href="/wishlist"
+				prefetch={false}
 				className="hover:bg-sand-100 inline-flex h-10 w-10 items-center justify-center rounded-xs text-gray-600 transition-colors hover:text-gray-900"
 				aria-label={t("wishlist")}
 			>

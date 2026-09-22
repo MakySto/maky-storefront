@@ -9,7 +9,7 @@ export function CopyrightText() {
 	const year = new Date().getFullYear();
 	return (
 		<>
-			© {year} {companyInfo.legalName}. {t("allRightsReserved")}.
+			© {year} {companyInfo.legalName} {t("allRightsReserved")}.
 		</>
 	);
 }
