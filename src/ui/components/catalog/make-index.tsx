@@ -51,8 +51,12 @@ export async function CatalogMakeIndex({ channel, slug }: { channel: string; slu
 			<ul className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
 				{makes.map((make) => (
 					<li key={make.vehicleId}>
+						{/* No prefetch: 60+ makes, each prefetched as ~5 requests the moment the list
+						    scrolls into view — about 300 origin requests per listing view for pages a
+						    visitor opens one of, if any. */}
 						<Link
 							href={marketHref(channel, make.urlPath)}
+							prefetch={false}
 							className="border-border-default hover:border-action-primary bg-surface-primary text-text-primary flex h-full items-center rounded-lg border px-3 py-2 text-sm font-medium break-words transition-colors"
 						>
 							{make.name}

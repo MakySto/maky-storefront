@@ -23,7 +23,7 @@ export function SearchResults({ products, channel }: SearchResultsProps) {
 		<ul role="list" className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
 			{products.map((product, index) => (
 				<li key={product.id}>
-					<SearchResultCard product={product} channel={channel} priority={index < 2} />
+					<SearchResultCard product={product} channel={channel} priority={index < 2} lcp={index === 0} />
 				</li>
 			))}
 		</ul>
@@ -34,10 +34,13 @@ export async function SearchResultCard({
 	product,
 	channel,
 	priority,
+	lcp,
 }: {
 	product: SearchProduct;
 	channel: string;
 	priority?: boolean;
+	/** Next 16.2 `priority` does NOT imply fetchPriority="high"; only the LCP candidate gets it. */
+	lcp?: boolean;
 }) {
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "product" });
 	const tCart = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "cart" });
@@ -60,6 +63,7 @@ export async function SearchResultCard({
 						sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
 						className="object-cover transition-transform duration-300 group-hover:scale-105"
 						priority={priority}
+						fetchPriority={lcp ? "high" : undefined}
 					/>
 				) : (
 					<div className="text-muted-foreground flex h-full items-center justify-center">

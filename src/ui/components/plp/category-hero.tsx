@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Breadcrumbs, type BreadcrumbItem } from "@/ui/components/breadcrumbs";
 import { WavePattern } from "./wave-pattern";
 
@@ -17,8 +18,19 @@ export function CategoryHero({ title, description, backgroundImage, breadcrumbs 
 			<div className="absolute inset-0">
 				{hasImage ? (
 					<>
-						{/* eslint-disable-next-line @next/next/no-img-element */}
-						<img src={backgroundImage} alt={title} className="h-full w-full object-cover" />
+						{/* The LCP element on every category page with a photo (Lighthouse, 2026-09-22).
+						    It was a raw <img> of a 4096px thumbnail at Low priority while the first
+						    product card's preload went first. next/image gives it a srcset (a phone no
+						    longer fetches the 4096px file), AVIF/WebP, and the one high-priority hint. */}
+						<Image
+							src={backgroundImage}
+							alt={title}
+							fill
+							sizes="100vw"
+							priority
+							fetchPriority="high"
+							className="object-cover"
+						/>
 						<div className="absolute inset-0 bg-gradient-to-r from-gray-900/70 via-gray-900/40 to-transparent" />
 					</>
 				) : (
