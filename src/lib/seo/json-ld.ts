@@ -1,4 +1,6 @@
 import { type WithContext, type Product, type ProductGroup } from "schema-dts";
+import { companyInfo } from "@/config/company";
+import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import { carriesInternalMarker } from "@/lib/product-code";
 import { seoConfig, getBaseUrl } from "./config";
 
@@ -142,7 +144,9 @@ export function buildProductJsonLd(options: {
 	const fullUrl = url ? `${baseUrl}${url}` : undefined;
 	const availability = availabilityOf(isPurchasable && inStock, availabilityMode);
 
-	const seller = { "@type": "Organization" as const, name: seoConfig.organizationName };
+	// A reference to the shop the homepage describes in full, not a second, nameless
+	// organisation per product — see `organizationReference`.
+	const seller = organizationReference();
 
 	const base = {
 		"@context": "https://schema.org" as const,
@@ -260,6 +264,193 @@ export function buildBreadcrumbJsonLd(items: { label: string; href?: string }[])
 			name: item.label,
 			...(item.href ? { item: item.href.startsWith("http") ? item.href : `${base}${item.href}` } : {}),
 		})),
+	};
+}
+
+// ============================================================================
+// The shop itself: OnlineStore + WebSite, on every market homepage
+// ============================================================================
+
+/**
+ * The one identity every page's markup points at.
+ *
+ * A fragment on the site root rather than a page URL, because the organisation is not any
+ * one page. The `@id` is what joins the homepage's `OnlineStore`, the `WebSite` that names
+ * it as publisher, and every product's `offers.seller` into a single node — without it a
+ * crawler sees twelve homepages and nine thousand offers each describing a different,
+ * anonymous "MAKY.STORE".
+ */
+export function organizationId(): string {
+	return `${getBaseUrl()}/#organization`;
+}
+
+export function websiteId(): string {
+	return `${getBaseUrl()}/#website`;
+}
+
+/** What a product's offer names as its seller: a pointer to the node above, not a copy of it. */
+export function organizationReference() {
+	return { "@type": "Organization" as const, "@id": organizationId(), name: seoConfig.organizationName };
+}
+
+/**
+ * The deer on brown, a 512×512 PNG from `public/`. Google asks for a logo of at least
+ * 112×112 px that works on a white background; this one is square and fully opaque.
+ */
+const ORGANIZATION_LOGO_PATH = "/android-chrome-512x512.png";
+
+/**
+ * The page that explains returns, under the market prefix. The legal slugs are Slovak in
+ * every market (`/de/reklamacie-a-vratenie`), and `route-policy.ts` serves this one in all
+ * twelve — the test asserts both, so a market losing the page cannot keep a link to a 404.
+ */
+export const RETURNS_PAGE_PATH = "/reklamacie-a-vratenie";
+
+/**
+ * The return window the markup states: 14 days, the statutory minimum.
+ *
+ * Owner decision 2026-09-22. The 30 days the site mentions are an extension for customers
+ * signed in to a registered account, and structured data cannot say "30 for some" — a
+ * crawler reads the number as the policy for every buyer, so it has to be the one every
+ * buyer actually gets.
+ *
+ * Deliberately absent: `returnFees`, `returnMethod` and any return-shipping amount. Who
+ * pays for a return, and how an oversized parcel travels back, is not confirmed per
+ * shipping class yet (CLAUDE.md §9); a guess published here would be a promise.
+ */
+const RETURN_DAYS = 14;
+
+/**
+ * Delivery time by destination, in working days — the same windows `common.onDemand` promises
+ * beside every price (owner decision 2026-09-22): 5–10 inside the EU markets, 7–14 to the US
+ * and Canada. `json-ld.organization.test.ts` reads each locale's copy and fails when the two
+ * disagree, and it fails when a market's country is in neither list, so a thirteenth market
+ * needs a decision here rather than inheriting someone else's promise.
+ *
+ * The windows are the whole wait the customer is told about, so they are declared as transit
+ * time and no separate handling time is invented next to them.
+ *
+ * No `shippingRate`, anywhere. The price depends on the parcel's size, weight and
+ * destination and is shown in the cart (CLAUDE.md §9); any number here — 0 included — would
+ * be read as a rate. No carrier either: schema.org's ShippingService has no carrier
+ * property, and naming FedEx or Slovenská pošta in a free-text field would be a claim
+ * without a structure behind it.
+ */
+const DELIVERY_REGIONS = [
+	{
+		countries: ["SK", "CZ", "DE", "AT", "PL", "HU", "IT", "FR", "ES", "RO"],
+		transitDays: { min: 5, max: 10 },
+	},
+	{ countries: ["US", "CA"], transitDays: { min: 7, max: 14 } },
+] as const;
+
+/** Working days, in the plain form Google's examples use. */
+const WORKING_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
+
+/** The countries the shop sells to, one per market, in `CHANNEL_MAP` order. */
+function marketCountries(): string[] {
+	return Object.values(CHANNEL_MAP).map((config) => config.country);
+}
+
+/** `sk-eur` or `sk` → `sk`; anything else → null. */
+function marketOf(channel: string): string | null {
+	const market = REVERSE_MAP[channel] ?? channel;
+	return CHANNEL_MAP[market] ? market : null;
+}
+
+/**
+ * Organization markup — as `OnlineStore`, the subtype Google asks an e-commerce site to use.
+ *
+ * Every identifying value comes from `src/config/company.ts`, the one place the operating
+ * entity is written down; nothing here restates it. Only the return link differs by market:
+ * it is the returns page of the market the homepage belongs to.
+ *
+ * `null` for a channel that is not a market, rather than a store whose return policy links to
+ * a page that does not exist.
+ *
+ * @see https://developers.google.com/search/docs/appearance/structured-data/organization
+ * @see https://developers.google.com/search/docs/appearance/structured-data/return-policy
+ * @see https://developers.google.com/search/docs/appearance/structured-data/shipping-policy
+ */
+export function buildOrganizationJsonLd(channel: string) {
+	if (!seoConfig.enableJsonLd) return null;
+	const market = marketOf(channel);
+	if (!market) return null;
+
+	const base = getBaseUrl();
+
+	return {
+		"@context": "https://schema.org",
+		"@type": "OnlineStore",
+		"@id": organizationId(),
+		name: seoConfig.organizationName,
+		legalName: companyInfo.legalName,
+		url: `${base}/`,
+		logo: `${base}${ORGANIZATION_LOGO_PATH}`,
+		email: companyInfo.email,
+		telephone: companyInfo.phone,
+		address: {
+			"@type": "PostalAddress",
+			streetAddress: companyInfo.street,
+			postalCode: companyInfo.postalCode,
+			addressLocality: companyInfo.locality,
+			addressCountry: companyInfo.countryCode,
+		},
+		vatID: companyInfo.icDph,
+		taxID: companyInfo.dic,
+		hasMerchantReturnPolicy: {
+			"@type": "MerchantReturnPolicy",
+			applicableCountry: marketCountries(),
+			returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+			merchantReturnDays: RETURN_DAYS,
+			merchantReturnLink: `${base}/${market}${RETURNS_PAGE_PATH}`,
+		},
+		hasShippingService: {
+			"@type": "ShippingService",
+			fulfillmentType: "FulfillmentTypeDelivery",
+			shippingConditions: DELIVERY_REGIONS.map((region) => ({
+				"@type": "ShippingConditions",
+				shippingDestination: region.countries.map((country) => ({
+					"@type": "DefinedRegion",
+					addressCountry: country,
+				})),
+				transitTime: {
+					"@type": "ServicePeriod",
+					duration: {
+						"@type": "QuantitativeValue",
+						minValue: region.transitDays.min,
+						maxValue: region.transitDays.max,
+						unitCode: "DAY",
+					},
+					businessDays: [...WORKING_DAYS],
+				},
+			})),
+		},
+	};
+}
+
+/**
+ * WebSite markup: the site's name, and the language of the market it is rendered in.
+ *
+ * `url` is the domain root, which is where Google reads a site name from. No
+ * `potentialAction` / SearchAction: Google retired the sitelinks search box, and the markup
+ * would describe a feature nothing renders.
+ *
+ * @see https://developers.google.com/search/docs/appearance/site-names
+ */
+export function buildWebSiteJsonLd(channel: string) {
+	if (!seoConfig.enableJsonLd) return null;
+	const market = marketOf(channel);
+	if (!market) return null;
+
+	return {
+		"@context": "https://schema.org",
+		"@type": "WebSite",
+		"@id": websiteId(),
+		name: seoConfig.siteName,
+		url: `${getBaseUrl()}/`,
+		inLanguage: CHANNEL_MAP[market].locale,
+		publisher: { "@id": organizationId() },
 	};
 }
 

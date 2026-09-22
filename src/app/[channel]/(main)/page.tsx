@@ -11,7 +11,14 @@ import { formatPageTitle } from "@/config/brand";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { ProductList } from "@/ui/components/product-list";
-import { HeroSection, CategoryGrid, WhyMaky, BrandsStrip, NewsletterCTA } from "@/ui/components/homepage";
+import {
+	HeroSection,
+	CategoryGrid,
+	WhyMaky,
+	BrandsStrip,
+	NewsletterCTA,
+	HomepageStructuredData,
+} from "@/ui/components/homepage";
 import {
 	ActiveVehicleLauncher,
 	ActiveVehicleLauncherSkeleton,
@@ -81,6 +88,13 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 export default function Page(props: { params: Promise<{ channel: string }> }) {
 	return (
 		<>
+			{/* OnlineStore + WebSite — who sells here, the return window, delivery times.
+			    The homepage is the one page that describes the shop in full; product pages
+			    point at it by `@id`. */}
+			<Suspense fallback={null}>
+				<HomepageStructuredData params={props.params} />
+			</Suspense>
+
 			{/* The hero CTA is request-time (it names the saved car), the rest of the hero
 			    is not. Its own boundary keeps the static shell for everything else. */}
 			<HeroSection

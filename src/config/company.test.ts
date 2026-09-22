@@ -149,6 +149,13 @@ describe("company identity", () => {
 		expect(companyInfo).not.toHaveProperty("vatPayer");
 	});
 
+	it("prints the registered office exactly as before, composed from its parts", () => {
+		// The legal pages print `city`; structured data reads the parts. One source for both.
+		expect(companyInfo.city).toBe(`${companyInfo.postalCode} ${companyInfo.locality}`);
+		expect(companyInfo.city).toBe("811 05 Bratislava-Staré Mesto");
+		expect(companyInfo.countryCode).toBe("SK");
+	});
+
 	it("states an effective date for VAT registration and for the terms", () => {
 		expect(companyInfo.vatEffectiveFrom).toBeTruthy();
 		expect(companyInfo.termsEffectiveFrom).toBe(companyInfo.vatEffectiveFrom);

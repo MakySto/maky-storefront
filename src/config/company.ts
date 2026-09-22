@@ -10,12 +10,25 @@
  * mean the same thing eventually disagree. Registration was granted in July 2026
  * and takes effect on `vatEffectiveFrom`; no order is accepted before that date,
  * and the terms of sale carry the same effective date.
+ *
+ * The registered office is also held in parts — `postalCode`, `locality`, `countryCode` —
+ * because a machine-readable address (schema.org `PostalAddress`) needs them separately.
+ * `city` is composed from the first two, so the display form the legal pages print and the
+ * structured form Google reads cannot drift apart.
  */
+const POSTAL_CODE = "811 05";
+const LOCALITY = "Bratislava-Staré Mesto";
+
 export const companyInfo = {
 	legalName: "MAKY.STORE s. r. o.",
 	street: "Lermontovova 911/3",
-	city: "811 05 Bratislava-Staré Mesto",
+	postalCode: POSTAL_CODE,
+	locality: LOCALITY,
+	/** Display form, Slovak convention: postal code, then municipality. */
+	city: `${POSTAL_CODE} ${LOCALITY}`,
 	country: "Slovenská republika",
+	/** ISO 3166-1 alpha-2 of the registered office. */
+	countryCode: "SK",
 	ico: "57 704 627",
 	dic: "2122890660",
 	icDph: "SK2122890660",
