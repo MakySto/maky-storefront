@@ -182,6 +182,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 				)}
 				{product.isPurchasable ? (
 					<AvailabilityBadge
+						label={tCommon}
 						mode={product.availabilityMode}
 						trackInventory={product.trackInventory}
 						quantityAvailable={product.quantityAvailable}

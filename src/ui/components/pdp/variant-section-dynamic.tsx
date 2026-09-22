@@ -235,6 +235,7 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 				)}
 				{isPurchasable ? (
 					<AvailabilityBadge
+						label={tCommon}
 						// Falls back to the product's mode so a multi-variant product answers
 						// before anything is picked. It used to render NOTHING until the
 						// customer chose a variant, and a blank where availability belongs

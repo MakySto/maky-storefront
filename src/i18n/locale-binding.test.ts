@@ -29,7 +29,13 @@ import { describe, expect, it } from "vitest";
  */
 
 const ROOTS = ["src/app/[channel]", "src/ui/components"];
-const NAKED = /\bgetTranslations\(\s*["'`]/;
+/**
+ * Both forms. `useTranslations("ns")` in a SERVER component reads request state exactly as
+ * `getTranslations("ns")` does — and checking only the latter is how `availability-badge.tsx`
+ * survived the first sweep and went on announcing "Na objednávku, dodanie 5–10 pracovných dní"
+ * on a Canadian product page whose every other line was English.
+ */
+const NAKED = /\b(?:get|use)Translations\(\s*["'`]/;
 
 /** Files that are allowed to keep a bare call, each for a stated reason. */
 const EXEMPT = new Set<string>([

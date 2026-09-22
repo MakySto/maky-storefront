@@ -1,4 +1,3 @@
-import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 /**
@@ -45,6 +44,9 @@ export type AvailabilityInput = {
 	quantityAvailable?: number | null;
 };
 
+/** The `common.*` keys this badge can ask for. */
+export type AvailabilityKey = "inStock" | "onDemand" | "outOfStock";
+
 type Resolved =
 	| { key: "inStock"; tone: "success" }
 	| { key: "onDemand"; tone: "info" }
@@ -74,8 +76,25 @@ export function resolveAvailability({
 	return null;
 }
 
-export function AvailabilityBadge({ className, ...input }: AvailabilityInput & { className?: string }) {
-	const t = useTranslations("common");
+/**
+ * The label is a PROP, and required, because this badge renders on both sides of the
+ * client boundary: `VariantSectionDynamic` is a server component, `ProductCard` is a client
+ * one. It used to reach for the `common` namespace itself, through the translations hook with a
+ * bare namespace, which reads whichever locale the
+ * surrounding render happens to carry — and when that render carries none, `i18n/request.ts`
+ * answers with DEFAULT_LOCALE, which is Slovak. The result was a Canadian product page,
+ * correct in every other respect, announcing "Na objednávku, dodanie 5–10 pracovných dní".
+ *
+ * It was the last component in the codebase doing that, and it survived the first sweep
+ * because the check looked for `getTranslations` and this one used the hook. Making the label
+ * a required prop removes the ambient lookup instead of binding it: there is no locale here to
+ * get wrong.
+ */
+export function AvailabilityBadge({
+	className,
+	label,
+	...input
+}: AvailabilityInput & { className?: string; label: (key: AvailabilityKey) => string }) {
 	const resolved = resolveAvailability(input);
 
 	if (!resolved) return null;
@@ -103,7 +122,7 @@ export function AvailabilityBadge({ className, ...input }: AvailabilityInput & {
 							: "bg-text-tertiary",
 				)}
 			/>
-			{t(resolved.key)}
+			{label(resolved.key)}
 		</span>
 	);
 }
