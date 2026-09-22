@@ -797,6 +797,27 @@ check_market_state() {
 	info "indexable markets confirmed: ${got:-none}"
 }
 
+# Does any foreign market answer in Slovak?
+#
+# Four separate locale faults shipped to production and every one of them was found by the
+# owner in his browser, not here — because the checks fetched pages the way a robot does. This
+# one carries a cookie jar from /sk, `Accept-Language: sk-SK`, the RSC payload a click actually
+# downloads, and a saved vehicle when `.env` supplies one. It reads the Slovak and the market's
+# own value for each message key and only compares where the two differ, so it has no word list
+# to rot.
+#
+# Post-deploy, not a rollback gate: a Slovak label is a real defect but swapping the artifact
+# back does not fix it, and the build is otherwise serving correctly. Exit 75 says so.
+check_market_language() {
+	local script="$APP_DIR/scripts/checks/market-language.mjs" garage=""
+	[[ -f "$script" ]] || { err "$script is missing"; return 1; }
+	if [[ -f "$APP_DIR/.env" ]] && grep -q '^MAKY_SMOKE_GARAGE_COOKIE=' "$APP_DIR/.env"; then
+		garage=$(grep '^MAKY_SMOKE_GARAGE_COOKIE=' "$APP_DIR/.env" | tail -1 | cut -d= -f2-)
+	fi
+	MAKY_SMOKE_GARAGE_COOKIE="$garage" node "$script" --base "$LOCAL_URL" | sed 's/^/    /'
+	return "${PIPESTATUS[0]}"
+}
+
 write_deploy_log() {
 	step "record"
 	local snap_name="none"
@@ -877,6 +898,7 @@ gate_local
 
 soft "external verification" verify_external
 soft "market state"         check_market_state
+soft "market language"      check_market_language
 soft "deployment log"       write_deploy_log
 soft "snapshot pruning"     prune
 
