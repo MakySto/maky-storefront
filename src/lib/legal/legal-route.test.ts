@@ -303,6 +303,19 @@ describe("legalRoute — language alternates", () => {
 		expect(fromDe.alternates?.languages).toEqual(fromSk.alternates?.languages);
 	});
 
+	it("carries the market's Open Graph fields and its own og:url", async () => {
+		// Setting `openGraph` replaces the layout's whole object, so the shared fields must
+		// come along — and og:url is the canonical, relative like it.
+		const meta = await metadataFor("sk,de", "de-eur");
+		expect(meta.openGraph).toMatchObject({
+			type: "website",
+			siteName: "MAKY.STORE",
+			locale: "de_DE",
+			url: "/de/kontakt",
+			images: [{ url: "/opengraph-image.png", width: 1200, height: 630 }],
+		});
+	});
+
 	it("still 404s a market with no approved copy, with no canonical to nominate", async () => {
 		vi.resetModules();
 		vi.stubEnv("MAKY_LIVE_MARKETS", "sk,cz");

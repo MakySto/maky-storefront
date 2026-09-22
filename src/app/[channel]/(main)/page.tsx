@@ -7,6 +7,7 @@ import {
 	OrderDirection,
 } from "@/gql/graphql";
 import { buildAlternatesMetadata } from "@/lib/seo/hreflang";
+import { marketOpenGraph } from "@/lib/seo/metadata";
 import { formatPageTitle } from "@/config/brand";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
@@ -77,11 +78,14 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 	// resolved title and description, which is how the current (wrong) values got
 	// there in the first place.
 	//
-	// Homepage owns the market canonical (/{market}) + hreflang alternates.
+	// Homepage owns the market canonical (/{market}) + hreflang alternates, and og:url is
+	// that canonical.
+	const { alternates } = buildAlternatesMetadata(channel);
 	return {
 		title: { absolute: formatPageTitle(t("heroTitle")) },
 		description: t("metaDescription"),
-		...buildAlternatesMetadata(channel),
+		alternates,
+		openGraph: marketOpenGraph(channel, alternates.canonical),
 	};
 }
 

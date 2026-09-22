@@ -154,6 +154,7 @@ export function cmsPageRoute(config: CmsRouteConfig): CmsRoute {
 		const page = outcome.status === "found" ? outcome.page : null;
 
 		const metadata = buildPageMetadata({
+			channel,
 			// CMS meta first, then the document's own title/summary, then this market's
 			// static copy. Never another market's.
 			title: page?.meta.title ?? page?.title ?? marketCopy?.staticTitle ?? "",

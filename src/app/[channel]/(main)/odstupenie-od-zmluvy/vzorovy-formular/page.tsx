@@ -7,6 +7,7 @@ import { legalLocaleFor, type LegalLocale } from "@/lib/legal/locale";
 import { buildLanguageAlternates } from "@/lib/seo/hreflang";
 import { LegalPage } from "@/ui/components/legal/legal-page";
 import { ModelFormActions } from "@/ui/components/withdrawal/model-form-actions";
+import { marketOpenGraph } from "@/lib/seo/metadata";
 
 /**
  * The statutory model withdrawal form, on its own printable route.
@@ -675,6 +676,7 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 			canonical: marketHref(channel, "/odstupenie-od-zmluvy/vzorovy-formular"),
 			...(languages && { languages }),
 		},
+		openGraph: marketOpenGraph(channel, marketHref(channel, "/odstupenie-od-zmluvy/vzorovy-formular")),
 	};
 }
 

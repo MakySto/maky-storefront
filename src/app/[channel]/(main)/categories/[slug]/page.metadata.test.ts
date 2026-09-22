@@ -87,6 +87,22 @@ describe("category page title", () => {
 		expect(occurrences(title, "MAKY.STORE")).toBe(1);
 	});
 
+	it("og:url is the canonical, beside the market's shared Open Graph fields", async () => {
+		const { generateMetadata } = await import("./page");
+		const meta = await generateMetadata({
+			params: Promise.resolve({ channel: "sk-eur", slug: "autochladnicky" }),
+			searchParams: Promise.resolve({}),
+		});
+		expect(meta.alternates?.canonical).toBe("https://maky.store/sk/autochladnicky");
+		expect(meta.openGraph).toMatchObject({
+			type: "website",
+			siteName: "MAKY.STORE",
+			locale: "sk_SK",
+			url: meta.alternates?.canonical,
+			images: [{ url: "/opengraph-image.png", width: 1200, height: 630 }],
+		});
+	});
+
 	it("the empty-in-this-channel branch follows the same rule", async () => {
 		category.products = { ...(category.products as object), totalCount: 0 };
 		const { generateMetadata } = await import("./page");

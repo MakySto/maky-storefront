@@ -20,6 +20,7 @@ import { parseEditorJSToText } from "@/lib/editorjs";
 import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { buildCanonicalUrl, counterpartAlternates, type MarketCounterpart } from "@/lib/seo/hreflang";
+import { marketOpenGraph } from "@/lib/seo/metadata";
 import { liveMarkets } from "@/lib/market-state";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
@@ -163,6 +164,11 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 		};
 	}
 
+	const canonical = buildCanonicalUrl(
+		REVERSE_MAP[params.channel] || params.channel,
+		categoryUrlFor(params.channel, baseSlugOf(params)),
+	);
+
 	return {
 		title,
 		description: category.seoDescription || plainDescription || category.seoTitle || category.name,
@@ -178,10 +184,7 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 			// route: on maky.store 2026-09-16 the canonical of `/sk/categories/nordrive-stresne-nosice`
 			// was `/sk/nordrive-stresne-nosice`, which answers "Produkt nenájdený" with `noindex`. And
 			// abroad `category.slug` is whatever Saleor's translation says, not the URL routed here.
-			canonical: buildCanonicalUrl(
-				REVERSE_MAP[params.channel] || params.channel,
-				categoryUrlFor(params.channel, baseSlugOf(params)),
-			),
+			canonical,
 			// The same category, in each live market where it resolves in that market's language
 			// and holds products — the two conditions under which that page is indexable too.
 			languages: counterpartAlternates(
@@ -189,6 +192,7 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 				await categoryCounterparts(baseSlugOf(params)),
 			),
 		},
+		openGraph: marketOpenGraph(params.channel, canonical),
 	};
 };
 

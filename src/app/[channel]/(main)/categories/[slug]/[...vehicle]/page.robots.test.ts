@@ -83,6 +83,11 @@ describe("vehicle page robots", () => {
 		const meta = await metadataFor();
 		expect(meta).not.toHaveProperty("robots");
 		expect(meta.alternates?.canonical).toBe(`https://maky.store/sk${URL_PATH}`);
+		expect(meta.openGraph).toMatchObject({
+			url: meta.alternates?.canonical,
+			locale: "sk_SK",
+			siteName: "MAKY.STORE",
+		});
 	});
 
 	it("a published page without editorial text stays out of the index, and is still followed", async () => {

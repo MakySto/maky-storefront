@@ -5,8 +5,8 @@ import { Header } from "@/ui/components/header";
 import { CartProvider, CartDrawerWrapper } from "@/ui/components/cart";
 import { brandConfig } from "@/config/brand";
 import { Logo } from "@/ui/components/shared/logo";
-import { getLocaleFromChannel, LOCALE_MAP } from "@/config/locale";
 import { isChannelIndexable, PREVIEW_MARKET_ROBOTS_META } from "@/lib/market-state";
+import { marketOpenGraph } from "@/lib/seo/metadata";
 
 /**
  * Dynamic metadata per channel — hreflang, canonical, OG locale.
@@ -17,8 +17,6 @@ export async function generateMetadata({
 	params: Promise<{ channel: string }>;
 }): Promise<Metadata> {
 	const { channel } = await params;
-	const locale = getLocaleFromChannel(channel);
-	const localeConfig = LOCALE_MAP[locale];
 
 	return {
 		// absolute: the root layout's title.template would otherwise brand the
@@ -34,12 +32,10 @@ export async function generateMetadata({
 		// gap. Measured on production 2026-09-07: every page except a product PDP —
 		// which sets its own — shipped og:title, og:description and og:locale and no
 		// og:image at all. The share card existed as a file that nothing pointed at.
-		openGraph: {
-			type: "website",
-			siteName: brandConfig.siteName,
-			locale: localeConfig?.ogLocale,
-			images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: brandConfig.siteName }],
-		},
+		//
+		// `marketOpenGraph` is that whole object, shared with every page that declares its
+		// own `openGraph` to add an og:url — so they replace this with the same fields.
+		openGraph: marketOpenGraph(channel),
 		// The SECOND `noindex` for a market no index GO has been given for. The first
 		// is the `X-Robots-Tag` header from src/proxy.ts, and it remains the one that
 		// reacts to a restart.

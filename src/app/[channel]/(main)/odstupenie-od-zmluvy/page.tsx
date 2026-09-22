@@ -16,6 +16,7 @@ import { Ca, Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk, Us } from "@/ui/content/l
 import { WithdrawalForm } from "@/ui/components/withdrawal/withdrawal-form";
 import { getCurrentUser, type AccountUser } from "../account/get-current-user";
 import { submitWithdrawalAction } from "./actions";
+import { marketOpenGraph } from "@/lib/seo/metadata";
 
 /**
  * `/sk/odstupenie-od-zmluvy` — the online withdrawal function, plus the explanation.
@@ -254,6 +255,7 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 		// design — whether the online function is served — but the pages are still
 		// translations of one another, which is what hreflang annotates.
 		alternates: { canonical: marketHref(channel, PATH), ...(languages && { languages }) },
+		openGraph: marketOpenGraph(channel, marketHref(channel, PATH)),
 	};
 }
 

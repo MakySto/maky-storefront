@@ -183,6 +183,7 @@ export async function generateMetadata(props: {
 	const priceCurrency = product.pricing?.priceRange?.start?.gross?.currency;
 
 	const metadata = buildPageMetadata({
+		channel: params.channel,
 		title: product.seoTitle || product.name,
 		titleSource: hasExplicitSeoTitle ? "seo" : "fallback",
 		description,

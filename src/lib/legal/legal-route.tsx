@@ -4,6 +4,7 @@ import { type ReactNode } from "react";
 import { formatPageTitle } from "@/config/brand";
 import { marketHref } from "@/lib/channel-map";
 import { buildLanguageAlternates } from "@/lib/seo/hreflang";
+import { marketOpenGraph } from "@/lib/seo/metadata";
 import { LegalPage } from "@/ui/components/legal/legal-page";
 import { legalLocaleFor, type LegalLocale } from "./locale";
 
@@ -89,6 +90,7 @@ export function legalRoute({ path, copy, After }: LegalRouteOptions) {
 				// The canonical is unchanged — still relative, still `marketHref`. Only the
 				// language annotations are new.
 				alternates: { canonical: marketHref(channel, path), ...(languages && { languages }) },
+				openGraph: marketOpenGraph(channel, marketHref(channel, path)),
 			};
 		},
 
