@@ -34,7 +34,7 @@ import { loadSelectorStep } from "@/lib/fitment/selector-actions";
 import { type MonthAnswer, type RoofAnswer, type SelectorStep } from "@/lib/fitment/selector-types";
 import { type GenerationCandidate } from "@/lib/fitment/selector-plan";
 import { chooseVehicle } from "@/lib/garage/actions";
-import { GARAGE_MAX_VEHICLES } from "@/lib/garage/cookie";
+import { GARAGE_MAX_VEHICLES } from "@/lib/garage/limits";
 import { searchWithoutPagination, vehicleConfirmDestination } from "@/lib/garage/confirm-destination";
 import { REVERSE_MAP } from "@/lib/channel-map";
 

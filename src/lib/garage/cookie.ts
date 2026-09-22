@@ -22,6 +22,7 @@
  */
 
 import { type RoofType, type BodyType, type VehicleSelection } from "@/lib/fitment/contract";
+import { GARAGE_MAX_VEHICLES } from "./limits";
 import { fromBase64Url, signValue, toBase64Url, verifyValue } from "./signature";
 
 export const GARAGE_COOKIE_NAME = "maky-garage";
@@ -29,8 +30,9 @@ export const GARAGE_COOKIE_NAME = "maky-garage";
 /** One year, matching `COOKIE_MAX_AGE` for the market cookie. */
 export const GARAGE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
-/** v1 stores three. A limit the UI enforces visibly, never by silently dropping. */
-export const GARAGE_MAX_VEHICLES = 3;
+// Lives in `./limits` so client components can read it without pulling in `./signature`
+// (and with it Node's `crypto`). Re-exported for the server code that imports it from here.
+export { GARAGE_MAX_VEHICLES };
 
 export const GARAGE_PAYLOAD_VERSION = 3;
 

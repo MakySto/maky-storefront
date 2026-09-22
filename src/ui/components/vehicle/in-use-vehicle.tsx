@@ -20,7 +20,7 @@ import { Car, Loader2, Plus } from "lucide-react";
 
 import { Button } from "@/ui/components/ui/button";
 import { saveActiveVehicle } from "@/lib/garage/actions";
-import { GARAGE_MAX_VEHICLES } from "@/lib/garage/cookie";
+import { GARAGE_MAX_VEHICLES } from "@/lib/garage/limits";
 import { joinVehicleDetail } from "@/lib/garage/label";
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import { type RoofType } from "@/lib/fitment/contract";
