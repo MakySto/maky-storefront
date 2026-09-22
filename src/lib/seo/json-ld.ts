@@ -464,6 +464,19 @@ export function jsonLdScriptProps(data: object | null) {
 	if (!data) return null;
 	return {
 		type: "application/ld+json",
-		dangerouslySetInnerHTML: { __html: JSON.stringify(data) },
+		dangerouslySetInnerHTML: { __html: serializeJsonLd(data) },
 	};
+}
+
+/**
+ * JSON for inside a <script> element.
+ *
+ * `JSON.stringify` leaves `<` alone, so a product name or description containing
+ * `</script>` — supplier text arrives through CFM, not from us — would end the element
+ * early and turn the rest into markup. `\u003c` is the same character to every JSON
+ * parser and cannot close a tag. It also covers `<!--`, the other sequence that changes
+ * how a script element's content is parsed.
+ */
+export function serializeJsonLd(data: object): string {
+	return JSON.stringify(data).replace(/</g, "\\u003c");
 }
