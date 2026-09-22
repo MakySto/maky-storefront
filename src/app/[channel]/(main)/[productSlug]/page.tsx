@@ -178,7 +178,10 @@ export async function generateMetadata(props: {
 		: Boolean(product.translation?.seoTitle?.trim());
 
 	const description = product.seoDescription || product.name;
-	const ogImage = getGalleryImages(product, null)[0]?.url || product.thumbnail?.url;
+	// The gallery's first image, which already falls back to the thumbnail — and already
+	// leaves the "no image" placeholder out. A second `|| product.thumbnail?.url` here would
+	// put the placeholder straight back as the share image.
+	const ogImage = getGalleryImages(product, null)[0]?.url;
 	const priceAmount = product.pricing?.priceRange?.start?.gross?.amount;
 	const priceCurrency = product.pricing?.priceRange?.start?.gross?.currency;
 

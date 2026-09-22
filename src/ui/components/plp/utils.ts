@@ -7,6 +7,7 @@ import { getLocaleConfigByLocale, getLocaleFromChannel, localeConfig } from "@/c
 import { hasDiscountInPriceRange } from "@/lib/pricing";
 import { productHref } from "@/lib/product-url";
 import { formatAttributeValue } from "@/lib/product-attributes";
+import { publishableProductImage } from "@/lib/product-image";
 
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
 
@@ -139,7 +140,8 @@ export function transformToProductCard(
 		price: startPrice?.amount ?? 0,
 		compareAtPrice: isSale ? undiscountedStartPrice?.amount : null,
 		currency: startPrice?.currency ?? localeConfig.fallbackCurrency,
-		image: product.thumbnail?.url ?? "/placeholder.svg",
+		// The "no image" GIF some imports carry is no image either — `lib/product-image.ts`.
+		image: publishableProductImage(product.thumbnail?.url) ?? "/placeholder.svg",
 		imageAlt: product.thumbnail?.alt ?? product.name,
 		hoverImage: null, // Would need additional media in fragment
 		href: productHref(channel, product.slug),

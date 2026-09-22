@@ -1,3 +1,5 @@
+import { isPlaceholderProductImage } from "@/lib/product-image";
+
 export type GalleryMedia = {
 	/** Saleor's ProductMedia id — stable across reordering and re-import. */
 	id?: string | null;
@@ -17,10 +19,13 @@ type GalleryProduct = {
 
 type GalleryVariant = { media?: readonly GalleryMedia[] | null } | null | undefined;
 
+// The "no image" placeholder is not a product image — see `lib/product-image.ts`. Dropping it
+// here is what keeps it out of the gallery, the product JSON-LD and og:image at once, since
+// the PDP takes all three from this function.
 const images = (media: readonly GalleryMedia[] | null | undefined): GalleryImage[] =>
 	(media ?? [])
 		.map((item, index) => ({ item, index }))
-		.filter(({ item }) => item.type === "IMAGE")
+		.filter(({ item }) => item.type === "IMAGE" && !isPlaceholderProductImage(item.url))
 		.sort((a, b) => {
 			const aHasOrder = typeof a.item.sortOrder === "number";
 			const bHasOrder = typeof b.item.sortOrder === "number";
@@ -63,10 +68,12 @@ export function getGalleryImages(product: GalleryProduct, selectedVariant: Galle
 		return variantImages;
 	}
 
-	if (product.thumbnail) {
+	if (product.thumbnail && !isPlaceholderProductImage(product.thumbnail.url)) {
 		// The thumbnail is a rendition, not a media row, so it has no media id.
 		return [{ url: product.thumbnail.url, alt: product.thumbnail.alt }];
 	}
 
+	// Nothing publishable: the gallery shows its localized "no image" state, and the page
+	// falls back to the generic share card.
 	return [];
 }

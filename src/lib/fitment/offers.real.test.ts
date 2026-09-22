@@ -400,3 +400,24 @@ describe("verifyPurchasable on a live-shaped answer", () => {
 		).resolves.toEqual({ ok: false, reason: "not-published" });
 	});
 });
+
+describe('an offer never carries the grey "no image" GIF as its thumbnail', () => {
+	const PLACEHOLDER =
+		"https://cdn.maky.store/thumbnails/products/c32bc543a46f5bf4eff3becb79dffc196d598106ae2608c85b48516_14c60dff_thumbnail_4.gif";
+
+	it("maps the placeholder to no thumbnail, and keeps a real one", async () => {
+		const withThumbnail = (url: string): ProductNode => ({
+			...node({ variantMeta: "sale_to_order" }),
+			thumbnail: { url, alt: "Set" },
+		});
+
+		executePublicGraphQL.mockResolvedValue(answer([withThumbnail(PLACEHOLDER)]));
+		const placeholder = await resolveFitmentOffers([REF], "sk-eur", "sk-SK", { dataset: null });
+		expect(placeholder.offers[0]!.thumbnailUrl).toBeNull();
+
+		const real = "https://cdn.maky.store/thumbnails/products/set-a_thumbnail_512.webp";
+		executePublicGraphQL.mockResolvedValue(answer([withThumbnail(real)]));
+		const photo = await resolveFitmentOffers([REF], "sk-eur", "sk-SK", { dataset: null });
+		expect(photo.offers[0]!.thumbnailUrl).toBe(real);
+	});
+});

@@ -32,6 +32,7 @@ import "server-only";
 
 import { executePublicGraphQL } from "@/lib/graphql";
 import { resolveExactLocaleProduct } from "@/lib/saleor/exact-locale";
+import { publishableProductImage } from "@/lib/product-image";
 import { FitmentProductsByIdsDocument } from "@/gql/graphql";
 import { resolveAvailability, AVAILABILITY_METADATA_KEY } from "@/ui/components/product/availability-badge";
 import { getLocaleConfigByLocale } from "@/config/locale";
@@ -355,7 +356,8 @@ export async function resolveFitmentOffers(
 					productKind: ref.productKind,
 					name: localized.name,
 					slug: localized.slug,
-					thumbnailUrl: localized.thumbnail?.url ?? null,
+					// Never the "no image" GIF — see `lib/product-image.ts`.
+					thumbnailUrl: publishableProductImage(localized.thumbnail?.url),
 					thumbnailAlt: localized.thumbnail?.alt ?? null,
 					categoryName: localized.category?.name ?? null,
 					price: gross ? { amount: gross.amount, currency: gross.currency } : null,
