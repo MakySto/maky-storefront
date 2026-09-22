@@ -727,7 +727,9 @@
 		"resultsFor": "Találatok erre: „{query}”",
 		"noResultsFor": "Nincs találat erre: „{query}”",
 		"noResultsHelp": "Nem találtunk a keresésnek megfelelő terméket. Próbáljon meg más kifejezést, vagy böngésszen a kategóriáink között.",
-		"browseAll": "Összes termék böngészése"
+		"browseAll": "Összes termék böngészése",
+		"metaTitle": "Termékkeresés",
+		"metaDescription": "Keresési találatok a {siteName} kínálatában."
 	},
 	"account": {
 		"welcomeBack": "Üdvözöljük újra",

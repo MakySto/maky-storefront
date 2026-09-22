@@ -727,7 +727,9 @@
 		"resultsFor": "Výsledky pro „{query}“",
 		"noResultsFor": "Žádné výsledky pro „{query}“",
 		"noResultsHelp": "Nenašli jsme žádné produkty odpovídající vašemu hledání. Zkuste jiný výraz nebo si projděte naše kategorie.",
-		"browseAll": "Procházet všechny produkty"
+		"browseAll": "Procházet všechny produkty",
+		"metaTitle": "Vyhledávání produktů",
+		"metaDescription": "Výsledky vyhledávání v nabídce {siteName}."
 	},
 	"account": {
 		"welcomeBack": "Vítejte zpět",
