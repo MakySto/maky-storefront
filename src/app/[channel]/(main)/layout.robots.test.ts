@@ -47,11 +47,18 @@ describe("the market layout bakes a noindex floor", () => {
 	});
 
 	it("says nothing for a market that is live and cleared, so pages decide", async () => {
-		// `undefined`, not `index: true`. A layout that asserted indexability would
-		// override every page that has its own reason to refuse — a not-found PDP, an
-		// empty category, a checkout step.
+		// Absent, not `index: true`. A layout that asserted indexability would override
+		// every page that has its own reason to refuse — a not-found PDP, an empty
+		// category, a checkout step.
+		//
+		// And absent, not `undefined`: Next merges with `for (key in metadata)`, so a key
+		// that is present with the value `undefined` still resets the root's `index,
+		// follow, max-image-preview:large` to nothing. `toBeUndefined()` cannot tell the
+		// two apart, which is how the layout shipped with no robots meta on any page of
+		// an indexable market from 2026-09-20.
 		const meta = await metadataFor(SK, {});
-		expect(meta.robots).toBeUndefined();
+		expect(meta).not.toHaveProperty("robots");
+		expect(Object.keys(meta)).not.toContain("robots");
 	});
 
 	it("keeps refusing a market that is merely live", async () => {
@@ -66,7 +73,27 @@ describe("the market layout bakes a noindex floor", () => {
 			MAKY_LIVE_MARKETS: "sk,de",
 			MAKY_INDEXABLE_MARKETS: "sk,de",
 		});
-		expect(meta.robots).toBeUndefined();
+		expect(meta).not.toHaveProperty("robots");
+	});
+
+	it("lifts for every market once all twelve are cleared — the production state today", async () => {
+		const all = Object.keys(CHANNEL_MAP).join(",");
+		for (const { saleorSlug } of Object.values(CHANNEL_MAP)) {
+			const meta = await metadataFor(saleorSlug, { MAKY_LIVE_MARKETS: all, MAKY_INDEXABLE_MARKETS: all });
+			expect(meta, saleorSlug).not.toHaveProperty("robots");
+		}
+	});
+
+	it("keeps the floor, exactly as before, for every market not cleared", async () => {
+		for (const { saleorSlug } of Object.values(CHANNEL_MAP)) {
+			if (saleorSlug === SK) continue;
+			const meta = await metadataFor(saleorSlug, {});
+			expect(meta.robots, saleorSlug).toEqual({
+				index: false,
+				follow: false,
+				googleBot: { index: false, follow: false },
+			});
+		}
 	});
 
 	it("refuses an unrecognised channel rather than defaulting it open", async () => {

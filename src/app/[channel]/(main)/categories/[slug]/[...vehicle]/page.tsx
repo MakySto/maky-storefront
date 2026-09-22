@@ -99,7 +99,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 				? { languages: counterpartAlternates(market, await vehicleCounterparts(node.vehicleId)) }
 				: {}),
 		},
-		robots: indexable ? undefined : { index: false, follow: true },
+		// Absent, not `undefined`, for an indexable page: a present-but-undefined `robots`
+		// erases the root's `index, follow, max-image-preview:large` instead of inheriting
+		// it — see the market layout.
+		...(indexable ? {} : { robots: { index: false, follow: true } }),
 	};
 }
 
