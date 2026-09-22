@@ -49,6 +49,12 @@ Enterprise Variables REST API). Mirror tokens code→Figma by generating a versi
 milestone cadence. The conversion is OKLCH→sRGB (lossy) and one-way — Figma never
 becomes the source.
 
+Update 2026-09-22: the official Figma MCP now exposes `use_figma`, which runs Plugin API
+code in a file and whose documented scope includes creating variables, components and
+frames. The connection works (Maky-88, Pro, Full seat). It has not yet been used to write
+variables here; until it has, the Tokens Studio route above stands. Either way the mirror
+stays one-way.
+
 ## 3. Design-change workflow
 
 For any non-trivial UI change:
@@ -109,6 +115,11 @@ layer". Concretely:
   `cva`). Only ADD aliases.
 
 ### 4.2 The shadcn → semantic bridge (known context — undefined-token wall)
+
+**Status 2026-09-22: the bridge has landed** — `brand.css` maps the shadcn names in its
+`@theme inline` block (search `--color-primary:`), and `promo` exists (`--color-promo:`).
+What follows is the history and still the reason to check that any NEW token name
+actually resolves before trusting a build.
 
 ~70 component files — every shadcn UI primitive (`Button`, `Badge`, `Input`,
 `Checkbox`, `Sheet`, `Accordion`, `Carousel`, `DropdownMenu`) plus much of `account/*`,
@@ -196,7 +207,8 @@ Highlight manuals/PDFs on the product page where available (not on the homepage)
 
 Shipping:
 
-- Shipping is via FedEx.
+- Shipping is via Slovenská pošta and FedEx, as `/sk/doprava-a-platba` states (owner
+  confirmed 2026-09-22).
 - Shipping price depends on product size, weight and destination; communicate
   "cenu uvidíte v košíku".
 - Do NOT claim free shipping unless explicitly implemented for specific products or
@@ -204,7 +216,9 @@ Shipping:
 
 Returns:
 
-- "30 dní na vrátenie" may be communicated.
+- The withdrawal period is **14 days**; registered customers who place the order while
+  signed in get an extended **30 days** — exactly as `/sk/reklamacie-a-vratenie` states.
+  Never present 30 days as unconditional. Structured data uses 14 (owner, 2026-09-22).
 - Do NOT hardcode return-shipping-cost wording into badges/trust-lines until the policy
   per shipping class is confirmed. For oversized goods use cautious wording and link to
   a detailed returns page.
@@ -298,7 +312,7 @@ Additional gates (from design analysis 2026-06-21):
 
 Ground truth captured by `docs/design/storefront-analysis-20260621.md`:
 
-- **Canonical source:** `src/styles/brand.css` (463 lines). Tailwind v4 CSS-first; layers
+- **Canonical source:** `src/styles/brand.css`. Tailwind v4 CSS-first; layers
   are `@theme` primitives (OKLCH, ~51 tokens: copper/forest/sand/gray + red/amber/blue),
   `@theme inline` semantic aliases, `:root` semantic tokens (var()-chained to primitives),
   `@layer base`.
