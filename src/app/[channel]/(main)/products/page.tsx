@@ -20,6 +20,7 @@ import {
 	vehicleFilterIds,
 } from "@/lib/fitment/plp-vehicle-filter";
 import { VehicleListingFilter } from "@/ui/components/fitment/vehicle-listing-filter";
+import { marketOpenGraph } from "@/lib/seo/metadata";
 
 /**
  * The market's main listing had a static English metadata block — it served
@@ -39,12 +40,12 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 	const { channel } = await props.params;
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "plp" });
 
+	const canonical = buildCanonicalUrl(REVERSE_MAP[channel] || channel, "/products");
 	return {
 		title: `${t("allProducts")} | ${brandConfig.siteName}`,
 		description: t("allProductsDescription"),
-		alternates: {
-			canonical: buildCanonicalUrl(REVERSE_MAP[channel] || channel, "/products"),
-		},
+		alternates: { canonical },
+		openGraph: marketOpenGraph(channel, canonical),
 	};
 }
 

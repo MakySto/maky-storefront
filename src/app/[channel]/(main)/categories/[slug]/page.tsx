@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { categoryBaseSlug, categorySegment, categoryUrlFor } from "@/config/category-routes";
 import { notFound } from "next/navigation";
-import { type ResolvingMetadata, type Metadata } from "next";
+import { type Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { ProductListByCategoryDocument, type ProductListByCategoryQuery } from "@/gql/graphql";
 import { executePublicGraphQL } from "@/lib/graphql";
@@ -20,6 +20,7 @@ import { parseEditorJSToText } from "@/lib/editorjs";
 import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { buildCanonicalUrl, counterpartAlternates, type MarketCounterpart } from "@/lib/seo/hreflang";
+import { marketOpenGraph } from "@/lib/seo/metadata";
 import { liveMarkets } from "@/lib/market-state";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
@@ -31,6 +32,7 @@ import {
 import { VehicleListingFilter } from "@/ui/components/fitment/vehicle-listing-filter";
 import { CatalogMakeIndex } from "@/ui/components/catalog/make-index";
 import { CategoryPageClient } from "./client";
+import { formatPageTitleOnce } from "@/config/brand";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleCategory, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
@@ -109,7 +111,7 @@ async function categoryCounterparts(baseSlug: string): Promise<MarketCounterpart
 	return counterparts;
 }
 
-export const generateMetadata = async (props: PageProps, parent: ResolvingMetadata): Promise<Metadata> => {
+export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 	const params = await props.params;
 	const outcome = await getCategoryOutcome(baseSlugOf(params), params.channel);
 
@@ -137,6 +139,12 @@ export const generateMetadata = async (props: PageProps, parent: ResolvingMetada
 
 	const plainDescription = parseEditorJSToText(category.description);
 
+	// The SEO title when Saleor has one, the name when it does not — and the brand once.
+	// This used to be `${name} | ${seoTitle || parent title}`, which printed the category
+	// twice wherever the SEO title was the name itself: "Autochladničky | Autochladničky",
+	// with no brand at all. Built the way the other pages build theirs.
+	const title = formatPageTitleOnce(category.seoTitle?.trim() || category.name);
+
 	// A category that exists but holds nothing in THIS channel.
 	//
 	// `category(slug:)` takes no channel argument — categories are global in
@@ -148,7 +156,7 @@ export const generateMetadata = async (props: PageProps, parent: ResolvingMetada
 	// it reverts on its own the moment the channel gets stock — no deploy.
 	if ((category.products?.totalCount ?? 0) === 0) {
 		return {
-			title: `${category.name} | ${category.seoTitle || (await parent).title?.absolute}`,
+			title,
 			description: category.seoDescription || plainDescription || category.seoTitle || category.name,
 			robots: { index: false, follow: true, googleBot: { index: false, follow: true } },
 			// No canonical, deliberately: a self-canonical nominates the URL, which
@@ -156,8 +164,13 @@ export const generateMetadata = async (props: PageProps, parent: ResolvingMetada
 		};
 	}
 
+	const canonical = buildCanonicalUrl(
+		REVERSE_MAP[params.channel] || params.channel,
+		categoryUrlFor(params.channel, baseSlugOf(params)),
+	);
+
 	return {
-		title: `${category.name} | ${category.seoTitle || (await parent).title?.absolute}`,
+		title,
 		description: category.seoDescription || plainDescription || category.seoTitle || category.name,
 		// Category listings had no canonical at all, while product pages have always
 		// had one. The toolbar appends ?sort= and filter params, so without this every
@@ -171,10 +184,7 @@ export const generateMetadata = async (props: PageProps, parent: ResolvingMetada
 			// route: on maky.store 2026-09-16 the canonical of `/sk/categories/nordrive-stresne-nosice`
 			// was `/sk/nordrive-stresne-nosice`, which answers "Produkt nenájdený" with `noindex`. And
 			// abroad `category.slug` is whatever Saleor's translation says, not the URL routed here.
-			canonical: buildCanonicalUrl(
-				REVERSE_MAP[params.channel] || params.channel,
-				categoryUrlFor(params.channel, baseSlugOf(params)),
-			),
+			canonical,
 			// The same category, in each live market where it resolves in that market's language
 			// and holds products — the two conditions under which that page is indexable too.
 			languages: counterpartAlternates(
@@ -182,6 +192,7 @@ export const generateMetadata = async (props: PageProps, parent: ResolvingMetada
 				await categoryCounterparts(baseSlugOf(params)),
 			),
 		},
+		openGraph: marketOpenGraph(params.channel, canonical),
 	};
 };
 

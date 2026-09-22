@@ -13,6 +13,7 @@ import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
 import { StarRating } from "@/ui/components/product/star-rating";
 import { cn } from "@/lib/utils";
 import { marketHref } from "@/lib/channel-map";
+import { isPlaceholderProductImage } from "@/lib/product-image";
 import { useLocale } from "@/providers/locale-provider";
 import { addListingItemToCartAction } from "./actions";
 import { CartForm } from "./cart-form";
@@ -105,8 +106,13 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 		product.isPurchasable && Boolean(product.variantId) && product.quantityAvailable !== 0;
 
 	// A product mid-import has no thumbnail yet. Show a quiet placeholder rather
-	// than the broken-image glyph, which reads as a fault in the shop.
-	const hasImage = Boolean(product.image) && product.image !== "/placeholder.svg";
+	// than the broken-image glyph, which reads as a fault in the shop. Same for the grey
+	// "no image" GIF some products were imported with — `transformToProductCard` already
+	// drops it; this is the backstop for any other producer of card data.
+	const hasImage =
+		Boolean(product.image) &&
+		product.image !== "/placeholder.svg" &&
+		!isPlaceholderProductImage(product.image);
 
 	return (
 		<article className="group border-border-subtle bg-surface-card flex flex-col rounded-lg border p-3 transition-shadow duration-200 hover:shadow-md">

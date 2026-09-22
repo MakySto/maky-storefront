@@ -11,6 +11,7 @@ import { SearchProductsDocument, OrderDirection, ProductOrderField } from "@/gql
 import type { SearchProduct, SearchResult, SearchPagination } from "./types";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
+import { publishableProductImage } from "@/lib/product-image";
 
 interface SearchOptions {
 	query: string;
@@ -75,7 +76,8 @@ export async function searchProducts(options: SearchOptions): Promise<SearchResu
 		id: node.id,
 		name: node.name,
 		slug: node.slug,
-		thumbnailUrl: node.thumbnail?.url,
+		// Never the "no image" GIF — the result card has a localized state for that.
+		thumbnailUrl: publishableProductImage(node.thumbnail?.url) ?? undefined,
 		thumbnailAlt: node.thumbnail?.alt,
 		price: node.pricing?.priceRange?.start?.gross.amount ?? 0,
 		currency: node.pricing?.priceRange?.start?.gross.currency ?? localeConfig.fallbackCurrency,

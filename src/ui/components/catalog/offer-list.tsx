@@ -1,23 +1,8 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { DEFAULT_LOCALE, formatPrice } from "@/config/locale";
+import { formatPrice } from "@/config/locale";
 import { marketHref } from "@/lib/channel-map";
 import { type FitmentOffers } from "@/lib/fitment/offers";
-
-/**
- * A set's price, in the market's own format — except in Slovakia, where it stays exactly
- * what the live page has shown since the vehicle pages launched (`72.00 EUR`).
- *
- * The Slovak string is kept on purpose, not by oversight: the COMMERCE-2 brief forbids
- * changing live Slovak copy as a side effect of localizing the other eleven markets, and
- * `formatPrice` would turn it into `72,00 €`. Whether Slovakia should match the PDP is a
- * decision for its own change. Elsewhere `toFixed` printed `1234.00 HUF`, which is not how
- * any of those markets writes a price.
- */
-export function formatOfferPrice(amount: number, currency: string, locale: string): string {
-	if (locale === DEFAULT_LOCALE) return `${amount.toFixed(2)} ${currency}`;
-	return formatPrice(amount, currency, locale);
-}
 
 /**
  * The products a generation page offers.
@@ -102,8 +87,11 @@ export async function CatalogOfferList({
 						>
 							<span className="text-text-primary font-medium break-words">{offer.name}</span>
 							{offer.price ? (
+								// The market's own format in every market, Slovakia included —
+								// `147,00 €`, as on the product page. Slovakia printed
+								// `147.00 EUR` here until the owner decided on 2026-09-22.
 								<span className="text-price-regular mt-2 font-semibold">
-									{formatOfferPrice(offer.price.amount, offer.price.currency, locale)}
+									{formatPrice(offer.price.amount, offer.price.currency, locale)}
 								</span>
 							) : null}
 							<span className="text-text-tertiary mt-1 text-sm">

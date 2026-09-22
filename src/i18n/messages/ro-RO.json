@@ -727,7 +727,9 @@
 		"resultsFor": "Rezultate pentru „{query}”",
 		"noResultsFor": "Niciun rezultat pentru „{query}”",
 		"noResultsHelp": "Nu am găsit produse care să corespundă căutării dumneavoastră. Încercați alt termen sau răsfoiți categoriile noastre.",
-		"browseAll": "Vezi toate produsele"
+		"browseAll": "Vezi toate produsele",
+		"metaTitle": "Căutare produse",
+		"metaDescription": "Rezultatele căutării în oferta {siteName}."
 	},
 	"account": {
 		"welcomeBack": "Bine ați revenit",

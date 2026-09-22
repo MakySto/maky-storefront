@@ -15,6 +15,10 @@ import { describe, expect, it, vi } from "vitest";
  * sentence: the runtime merges missing keys from en-US, so a key forgotten in one file
  * would still look fine in a demo, and only a test that renders each market catches it.
  *
+ * The one deliberate exception is the price. Slovakia kept `72.00 EUR` here until the owner
+ * decided on 2026-09-22 that it should read like every other price in the shop, `72,00 €`;
+ * the expected value below is that decision, typed out.
+ *
  * `createTranslator` is next-intl's own formatter, so ICU plurals are exercised for real.
  */
 
@@ -37,7 +41,7 @@ vi.mock("next-intl/server", () => ({
 }));
 
 import { type FitmentOffer, type FitmentOffers } from "@/lib/fitment/offers";
-import { CatalogOfferList, formatOfferPrice } from "./offer-list";
+import { CatalogOfferList } from "./offer-list";
 
 const offer = (i: number, over: Partial<FitmentOffer> = {}): FitmentOffer => ({
 	saleorProductId: `p${i}`,
@@ -101,7 +105,8 @@ const SK = {
 	count7: "7 zostáv",
 	onOrder: "Na objednávku",
 	outOfStock: "Momentálne nedostupné",
-	price: "72.00 EUR",
+	// The market format, with the no-break space Intl puts before the sign.
+	price: "72,00\u00a0€",
 	lookupFailed:
 		"Ponuku sa teraz nepodarilo načítať. Skúste to prosím o chvíľu — nie je to informácia o tom, že na vaše vozidlo nič nepasuje.",
 	unverified:
@@ -130,7 +135,6 @@ const SK_SENTENCES = [
 	"Testovacia ukážka.",
 	"Ide o simulované údaje, nie o skutočnú ponuku ani o overenú kompatibilitu.",
 	SK.partial,
-	SK.price,
 	"zostáv",
 ];
 
@@ -199,8 +203,9 @@ describe("no other market renders a Slovak sentence", () => {
 			const own = load(locale);
 			for (const sentence of SK_SENTENCES) {
 				// "Na objednávku" is also correct Czech, and cs-CZ says so in its own file; a
-				// string that IS the market's translation is not a leak. Prices are formatted
-				// per market, so the SK price string cannot appear either.
+				// string that IS the market's translation is not a leak. The price is not in
+				// this list: `72,00 €` is how Germany, Italy, France and Spain write it too, so
+				// it is not a Slovak sentence — the per-market price test below pins it instead.
 				if (sentence === own.common.onOrder) continue;
 				expect(rendered).not.toContain(sentence);
 			}
@@ -237,17 +242,23 @@ describe("catalog-only availability", () => {
 	}
 });
 
-describe("formatOfferPrice", () => {
-	it("keeps the Slovak string byte for byte", () => {
-		expect(formatOfferPrice(72, "EUR", "sk-SK")).toBe("72.00 EUR");
-		expect(formatOfferPrice(1234.5, "EUR", "sk-SK")).toBe("1234.50 EUR");
+describe("an offer's price, in the market's own format", () => {
+	const priced = (amount: number, currency: string) =>
+		offers({ offers: [offer(0, { price: { amount, currency } })], compatibleCount: 1, purchasableCount: 1 });
+
+	it("Slovakia: `147,00 €`, no longer `147.00 EUR` — owner decision 2026-09-22", async () => {
+		const rendered = await text(priced(147, "EUR"), "sk-SK");
+		expect(rendered).toContain("|147,00\u00a0€|");
+		expect(rendered).not.toContain("147.00 EUR");
+		expect(await text(priced(1234.5, "EUR"), "sk-SK")).toContain("|1\u00a0234,50\u00a0€|");
 	});
 
-	it("uses the market's own format elsewhere", () => {
-		expect(formatOfferPrice(72, "CZK", "cs-CZ")).toBe(
-			new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(72),
+	it("every other market in its own format", async () => {
+		expect(await text(priced(72, "CZK"), "cs-CZ", "cz-czk")).toContain(
+			`|${new Intl.NumberFormat("cs-CZ", { style: "currency", currency: "CZK" }).format(72)}|`,
 		);
-		expect(formatOfferPrice(12990, "HUF", "hu-HU")).not.toContain(".00");
-		expect(formatOfferPrice(189.99, "USD", "en-US")).toBe("$189.99");
+		expect(await text(priced(72, "EUR"), "de-AT", "at-eur")).toContain("|€\u00a072,00|");
+		expect(await text(priced(12990, "HUF"), "hu-HU", "hu-huf")).not.toContain(",00");
+		expect(await text(priced(189.99, "USD"), "en-US", "us-usd")).toContain("|$189.99|");
 	});
 });

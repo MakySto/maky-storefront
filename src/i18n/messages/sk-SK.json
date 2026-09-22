@@ -727,7 +727,9 @@
 		"resultsFor": "Výsledky pre „{query}“",
 		"noResultsFor": "Žiadne výsledky pre „{query}“",
 		"noResultsHelp": "Nenašli sme žiadne produkty zodpovedajúce vášmu hľadaniu. Skúste iný výraz alebo prejdite naše kategórie.",
-		"browseAll": "Prehliadať všetky produkty"
+		"browseAll": "Prehliadať všetky produkty",
+		"metaTitle": "Vyhľadávanie produktov",
+		"metaDescription": "Výsledky vyhľadávania v ponuke {siteName}."
 	},
 	"account": {
 		"welcomeBack": "Vitajte späť",

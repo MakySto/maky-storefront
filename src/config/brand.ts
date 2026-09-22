@@ -26,3 +26,17 @@ export const brandConfig = {
 export function formatPageTitle(title: string): string {
 	return brandConfig.titleTemplate.replace("%s", title);
 }
+
+/**
+ * `formatPageTitle` for a title that comes from data and may already name the shop.
+ *
+ * Saleor and CFM titles are edited by hand, and some arrive as "Strešné boxy | MAKY.STORE";
+ * suffixing those again would print the brand twice. Any title that already contains the
+ * site name (in any case) is returned as it is, trimmed; everything else gets the suffix.
+ */
+export function formatPageTitleOnce(title: string): string {
+	const trimmed = title.trim();
+	return trimmed.toLowerCase().includes(brandConfig.siteName.toLowerCase())
+		? trimmed
+		: formatPageTitle(trimmed);
+}

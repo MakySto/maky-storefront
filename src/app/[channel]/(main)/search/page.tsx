@@ -1,5 +1,6 @@
 import { getLocaleFromChannel } from "@/config/locale";
 import { Suspense } from "react";
+import { type Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
@@ -9,12 +10,34 @@ import { Pagination } from "@/ui/components/pagination";
 import { SearchSort } from "./search-sort";
 import { SearchIcon } from "lucide-react";
 import { marketHref } from "@/lib/channel-map";
-import { brandConfig } from "@/config/brand";
+import { brandConfig, formatPageTitle } from "@/config/brand";
+import { routePolicyFor } from "@/lib/route-policy";
 
-export const metadata = {
-	title: "Search products",
-	description: `Search products at ${brandConfig.siteName}`,
-};
+/**
+ * Internal search results are never for the index — `route-policy.ts` says so, and this is
+ * the page honouring it. Until now it did not: `/sk/search?query=thule` answered HTTP 200
+ * with no robots meta at all, so every query string a crawler found was an indexable page,
+ * thin, infinite and titled "Search products" in all twelve markets.
+ *
+ * `noindex, follow`: the results link to real product pages, and those links are worth
+ * following even though the listing itself is not worth keeping. A missing policy entry
+ * counts as not indexable — the safe direction for a page that exists in every market.
+ *
+ * Title and description depend on the market only, never on the query: they are resolved
+ * from `params`, like every other page's, so the shell stays prerenderable.
+ */
+const SEARCH_INDEXABLE = routePolicyFor("search")?.indexable === true;
+
+export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {
+	const { channel } = await props.params;
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "search" });
+
+	return {
+		title: formatPageTitle(t("metaTitle")),
+		description: t("metaDescription", { siteName: brandConfig.siteName }),
+		...(SEARCH_INDEXABLE ? {} : { robots: { index: false, follow: true } }),
+	};
+}
 
 type SearchParams = {
 	query?: string | string[];

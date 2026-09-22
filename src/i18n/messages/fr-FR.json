@@ -727,7 +727,9 @@
 		"resultsFor": "Résultats pour « {query} »",
 		"noResultsFor": "Aucun résultat pour « {query} »",
 		"noResultsHelp": "Nous n’avons trouvé aucun produit correspondant à votre recherche. Essayez un autre terme ou parcourez nos catégories.",
-		"browseAll": "Parcourir tous les produits"
+		"browseAll": "Parcourir tous les produits",
+		"metaTitle": "Recherche de produits",
+		"metaDescription": "Résultats de recherche dans le catalogue {siteName}."
 	},
 	"account": {
 		"welcomeBack": "Bon retour",

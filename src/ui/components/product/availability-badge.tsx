@@ -24,8 +24,9 @@ import { cn } from "@/lib/utils";
  * 7–14 for US and CA. Until then every foreign market said only "Auf Bestellung",
  * "Made to order", "Na zamówienie" — the mode without the wait — so a Slovak
  * shopper was the only one who learned how long it takes. If a market's real lead
- * time changes, `common.onDemand` in that locale is the single line to edit; there
- * is no number anywhere in the code to keep in step with it.
+ * time changes, `common.onDemand` in that locale is the line customers read — and the
+ * homepage's shipping markup (`DELIVERY_REGIONS` in `src/lib/seo/json-ld.ts`) states the
+ * same window to Google. `json-ld.organization.test.ts` fails until both say the same.
  */
 
 export const AVAILABILITY_METADATA_KEY = "cfm_availability_mode";

@@ -76,6 +76,7 @@ async function routeModule() {
 			robots?: unknown;
 			title?: unknown;
 			alternates?: { canonical?: string };
+			openGraph?: unknown;
 		}>;
 	};
 }
@@ -151,6 +152,40 @@ describe("/sk/poradna — a published document", () => {
 		const metadata = await (await routeModule()).generateMetadata(CHANNEL);
 		expect(metadata.robots).toBeUndefined();
 		expect(metadata.alternates?.canonical).toBe("/sk/poradna");
+	});
+
+	it("a document with no SEO image shares the generic card, not nothing", async () => {
+		// `meta.image: null` used to ship `images: undefined` — which, because a page's
+		// `openGraph` replaces the layout's wholesale, meant no og:image at all.
+		vi.spyOn(console, "log").mockImplementation(() => undefined);
+		stub(json(published()));
+
+		const metadata = await (await routeModule()).generateMetadata(CHANNEL);
+		expect(metadata.openGraph).toMatchObject({
+			siteName: "MAKY.STORE",
+			locale: "sk_SK",
+			url: "/sk/poradna",
+			images: [{ url: "/opengraph-image.png", width: 1200, height: 630 }],
+		});
+	});
+
+	it("a document with an SEO image shares it, without claiming its size", async () => {
+		vi.spyOn(console, "log").mockImplementation(() => undefined);
+		const url = "https://cms-media.maky.store/media/pages/poradna-og.png";
+		stub(
+			json(
+				published({
+					meta: {
+						title: "Poradňa",
+						description: "Rady k výberu.",
+						image: { id: "m1", alt: "Poradňa", url, mimeType: "image/png", width: 1600, height: 900 },
+					},
+				}),
+			),
+		);
+
+		const metadata = await (await routeModule()).generateMetadata(CHANNEL);
+		expect((metadata.openGraph as { images: unknown }).images).toEqual([{ url, alt: "Poradňa" }]);
 	});
 });
 

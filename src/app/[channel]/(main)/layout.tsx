@@ -5,8 +5,8 @@ import { Header } from "@/ui/components/header";
 import { CartProvider, CartDrawerWrapper } from "@/ui/components/cart";
 import { brandConfig } from "@/config/brand";
 import { Logo } from "@/ui/components/shared/logo";
-import { getLocaleFromChannel, LOCALE_MAP } from "@/config/locale";
 import { isChannelIndexable, PREVIEW_MARKET_ROBOTS_META } from "@/lib/market-state";
+import { marketOpenGraph } from "@/lib/seo/metadata";
 
 /**
  * Dynamic metadata per channel — hreflang, canonical, OG locale.
@@ -17,8 +17,6 @@ export async function generateMetadata({
 	params: Promise<{ channel: string }>;
 }): Promise<Metadata> {
 	const { channel } = await params;
-	const locale = getLocaleFromChannel(channel);
-	const localeConfig = LOCALE_MAP[locale];
 
 	return {
 		// absolute: the root layout's title.template would otherwise brand the
@@ -34,12 +32,10 @@ export async function generateMetadata({
 		// gap. Measured on production 2026-09-07: every page except a product PDP —
 		// which sets its own — shipped og:title, og:description and og:locale and no
 		// og:image at all. The share card existed as a file that nothing pointed at.
-		openGraph: {
-			type: "website",
-			siteName: brandConfig.siteName,
-			locale: localeConfig?.ogLocale,
-			images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: brandConfig.siteName }],
-		},
+		//
+		// `marketOpenGraph` is that whole object, shared with every page that declares its
+		// own `openGraph` to add an og:url — so they replace this with the same fields.
+		openGraph: marketOpenGraph(channel),
 		// The SECOND `noindex` for a market no index GO has been given for. The first
 		// is the `X-Robots-Tag` header from src/proxy.ts, and it remains the one that
 		// reacts to a restart.
@@ -56,8 +52,15 @@ export async function generateMetadata({
 		// missing, whether because a response did not come through `marketRewrite()` or
 		// because somebody edited an env var. Lifting it needs a deploy, which is what
 		// "explicit index GO" means for a step Google will not let us take back.
-		// `undefined` for an indexable market, so pages keep deciding for themselves.
-		robots: isChannelIndexable(channel) ? undefined : PREVIEW_MARKET_ROBOTS_META,
+		//
+		// For an indexable market the key is ABSENT, not `undefined`, so pages keep
+		// deciding for themselves and everything else inherits the root's `index, follow,
+		// max-image-preview:large`. The difference is not cosmetic: Next merges metadata
+		// with `for (key in metadata)`, and a key that is present with the value `undefined`
+		// still runs `resolveRobots(undefined)` and resets the parent's robots to nothing.
+		// That is what this line did from 2026-09-20 — no page on an indexable market
+		// emitted a robots meta at all. The floor itself is unchanged.
+		...(isChannelIndexable(channel) ? {} : { robots: PREVIEW_MARKET_ROBOTS_META }),
 		//
 		// Canonical + hreflang are page-specific and set per page (the homepage
 		// owns the market canonical). A layout-level canonical with path="" would

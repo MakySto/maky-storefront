@@ -80,6 +80,7 @@ export const generateMetadata = async (props: {
 	const page = outcome.resource;
 
 	return buildPageMetadata({
+		channel: params.channel,
 		title: page.seoTitle || page.title,
 		description: page.seoDescription || page.seoTitle || page.title,
 		url: marketHref(params.channel, `/pages/${encodeURIComponent(params.slug)}`),

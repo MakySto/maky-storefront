@@ -115,3 +115,35 @@ describe("stable media identity", () => {
 		expect(gallery[0].id).toBeUndefined();
 	});
 });
+
+describe('getGalleryImages never publishes the grey "no image" GIF', () => {
+	const PLACEHOLDER =
+		"https://cdn.maky.store/thumbnails/products/c32bc543a46f5bf4eff3becb79dffc196d598106ae2608c85b48516_14c60dff_thumbnail_4.gif";
+	const placeholder = (id: number): GalleryMedia => ({ ...image(id), url: PLACEHOLDER });
+
+	it("drops it from a gallery that also has real photos", () => {
+		const gallery = getGalleryImages({ media: [placeholder(1), image(2), image(3)], variants: [{}] }, null);
+		expect(gallery.map((row) => row.url)).toEqual([image(2).url, image(3).url]);
+	});
+
+	it("falls through to a real thumbnail when the placeholder was the only media", () => {
+		const thumbnail = { url: "https://cdn.example/thumb.jpg", alt: "thumb" };
+		const gallery = getGalleryImages({ media: [placeholder(1)], thumbnail, variants: [{}] }, null);
+		expect(gallery).toEqual([{ url: thumbnail.url, alt: "thumb" }]);
+	});
+
+	it("returns nothing — the localized empty state — when the placeholder is all there is", () => {
+		// 80 Slovak products are exactly this: the GIF as media AND as thumbnail.
+		const gallery = getGalleryImages(
+			{ media: [placeholder(1)], thumbnail: { url: PLACEHOLDER, alt: null }, variants: [{}] },
+			null,
+		);
+		expect(gallery).toEqual([]);
+	});
+
+	it("drops it from a variant's own gallery too", () => {
+		const variant = { media: [placeholder(7), image(8)] };
+		const gallery = getGalleryImages({ media: [image(1)], variants: [variant, {}] }, variant);
+		expect(gallery.map((row) => row.url)).toEqual([image(8).url]);
+	});
+});

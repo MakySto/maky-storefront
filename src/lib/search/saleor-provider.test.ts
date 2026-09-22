@@ -80,3 +80,30 @@ describe("Saleor search, abroad", () => {
 		expect(result.products[0]!.isPurchasable).toBe(false);
 	});
 });
+
+describe('Saleor search never offers the grey "no image" GIF as a thumbnail', () => {
+	const PLACEHOLDER =
+		"https://cdn.maky.store/thumbnails/products/c32bc543a46f5bf4eff3becb79dffc196d598106ae2608c85b48516_14c60dff_thumbnail_4.gif";
+	const REAL = "https://cdn.maky.store/thumbnails/products/roof-rack_thumbnail_1024.webp";
+
+	it("drops the placeholder — the result card then shows its localized no-image state — and keeps a photo", async () => {
+		const withThumbnail = (id: string, url: string) => {
+			const row = hit(id, "EN_CA", true);
+			return { ...row, node: { ...row.node, thumbnail: { url, alt: "x" } } };
+		};
+		executePublicGraphQL.mockResolvedValue({
+			ok: true,
+			data: {
+				products: {
+					totalCount: 2,
+					edges: [withThumbnail("a", PLACEHOLDER), withThumbnail("b", REAL)],
+					pageInfo: { hasNextPage: false, hasPreviousPage: false, endCursor: null, startCursor: null },
+				},
+			},
+		});
+
+		const result = await searchProducts({ query: "roof", channel: "ca-cad" });
+
+		expect(result.products.map((p) => p.thumbnailUrl)).toEqual([undefined, REAL]);
+	});
+});
