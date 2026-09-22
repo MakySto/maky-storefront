@@ -26,6 +26,11 @@ const CF_WEB_ANALYTICS_TOKEN = process.env.NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN;
  * `font-mono` has no remaining use in src/, and the `--font-mono` token in brand.css names
  * "Geist Mono" while the @font-face family is "GeistMono", so the utility never selected
  * this file anyway.
+ *
+ * The sans face had the same mismatch and nobody noticed until 2026-09-22: `--font-sans`
+ * named "Geist" while next/font declares "GeistSans", so this preload ran on every page and
+ * the text was drawn in the visitor's system font. brand.css now reads `--font-geist-sans`,
+ * the variable this class sets on <html>, and `brand-fonts.test.ts` keeps it that way.
  */
 export function DocumentShell({ lang, children }: { lang: string; children: ReactNode }) {
 	return (

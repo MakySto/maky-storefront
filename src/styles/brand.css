@@ -131,7 +131,12 @@
     0 8px 16px -6px oklch(0.20 0.01 60 / 0.05);
 
   /* ── Font families ── */
-  --font-sans: "Geist", "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Geist comes from next/font (`geist/font/sans`), whose @font-face family is "GeistSans",
+     exposed as --font-geist-sans on <html>. This used to say "Geist", a name no @font-face
+     declares: the 58 KB woff2 was preloaded on every page and never applied, so visitors saw
+     whatever their system had (Segoe UI, San Francisco, Roboto…). The fallback inside var()
+     covers the root not-found page, which Next renders without the <html> class. */
+  --font-sans: var(--font-geist-sans, "Geist"), ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
 
   /* ── Easing curves ── */
