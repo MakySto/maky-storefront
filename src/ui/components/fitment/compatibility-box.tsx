@@ -69,7 +69,13 @@ export async function CompatibilityBox({
 	locale,
 	className,
 }: Props) {
-	const t = await getTranslations("fitment");
+	// The locale is a PROP, not request state. This subtree renders on the dynamic path
+	// (it reads a cookie or searchParams), where `setRequestLocale` from the market layout
+	// is not guaranteed to be in scope — and `i18n/request.ts` answers a missing request
+	// locale with DEFAULT_LOCALE, which is Slovak. That is how a German page comes to hold
+	// a Slovak label next to a German one. Asking with the locale we were handed cannot
+	// drift, whatever the render path.
+	const t = await getTranslations({ locale, namespace: "fitment" });
 
 	// Conditions are resolved BEFORE the tone is chosen: a verified fit carrying a
 	// condition we cannot state in this locale is a qualified fit, and it must not

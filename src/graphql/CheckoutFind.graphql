@@ -1,4 +1,15 @@
-query CheckoutFind($id: ID!) {
+# The cart has to name the product the way the market names it.
+#
+# `product.name`, `product.slug` and `category.name` are the BASE row, which is Slovak. A
+# German shopper was putting "Dachträger Nordrive Helio Black …" into the basket and finding
+# "Strešný nosič Nordrive Helio Black …" in it — the storefront was rendering exactly what it
+# asked for. `$languageCode` comes from the checkout's channel via `checkout-locale.ts`, the
+# same mapping the checkout already uses for its own language.
+#
+# The base fields stay: abroad a translation can be absent, and a Slovak name is a far better
+# answer than an empty one. `checkout-line-display.ts` owns that fallback so every surface
+# resolves it identically.
+query CheckoutFind($id: ID!, $languageCode: LanguageCodeEnum!) {
 	checkout(id: $id) {
 		id
 		email
@@ -19,12 +30,19 @@ query CheckoutFind($id: ID!) {
 					id
 					name
 					slug
+					translation(languageCode: $languageCode) {
+						name
+						slug
+					}
 					thumbnail {
 						url
 						alt
 					}
 					category {
 						name
+						translation(languageCode: $languageCode) {
+							name
+						}
 					}
 				}
 				pricing {

@@ -1,4 +1,5 @@
 import * as Checkout from "@/lib/checkout";
+import { resolveCheckoutLocale } from "@/lib/checkout-locale";
 import { CartDrawer } from "./cart-drawer-content";
 
 interface CartDrawerWrapperProps {
@@ -7,7 +8,7 @@ interface CartDrawerWrapperProps {
 
 export async function CartDrawerWrapper({ channel }: CartDrawerWrapperProps) {
 	const checkoutId = await Checkout.getIdFromCookies(channel);
-	const lookup = await Checkout.lookup(checkoutId);
+	const lookup = await Checkout.lookup(checkoutId, { locale: resolveCheckoutLocale(channel) });
 	const checkout = lookup.status === "found" ? lookup.checkout : null;
 
 	return (

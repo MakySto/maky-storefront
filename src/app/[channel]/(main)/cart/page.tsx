@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { type CheckoutFindQuery } from "@/gql/graphql";
 import { CheckoutLink } from "./checkout-link";
 import * as Checkout from "@/lib/checkout";
+import { checkoutLineDisplay } from "@/lib/checkout-line-display";
 import { getLocaleFromChannel, formatPrice } from "@/config/locale";
 import { compareAtLineTotal } from "@/lib/pricing";
 import { getHrefForVariant } from "@/lib/utils";
@@ -75,22 +76,24 @@ async function CartItem({
 }) {
 	const t = await getTranslations({ locale, namespace: "cart" });
 	const details = getVariantDetails(line.variant);
+	// The market's own name for the product, not Saleor's Slovak base row.
+	const display = checkoutLineDisplay(line);
 
 	return (
 		<li className="border-border bg-card rounded-xl border p-4 shadow-xs sm:p-5">
 			<div className="flex gap-4 sm:gap-5">
 				<LinkWithChannel
 					href={getHrefForVariant({
-						productSlug: line.variant.product.slug,
+						productSlug: display.slug,
 						variantId: line.variant.id,
 					})}
-					aria-label={line.variant.product.name}
+					aria-label={display.name}
 					className="border-border bg-background relative h-28 w-28 shrink-0 overflow-hidden rounded-xl border sm:h-36 sm:w-36"
 				>
 					{line.variant.product.thumbnail?.url ? (
 						<ResilientProductImage
 							src={line.variant.product.thumbnail.url}
-							alt={line.variant.product.thumbnail.alt?.trim() || line.variant.product.name}
+							alt={line.variant.product.thumbnail.alt?.trim() || display.name}
 							fill
 							sizes="(min-width: 640px) 144px, 112px"
 							className="object-contain p-2"
@@ -103,15 +106,15 @@ async function CartItem({
 						<div className="min-w-0">
 							<LinkWithChannel
 								href={getHrefForVariant({
-									productSlug: line.variant.product.slug,
+									productSlug: display.slug,
 									variantId: line.variant.id,
 								})}
 								className="line-clamp-2 leading-6 font-semibold hover:underline"
 							>
-								{line.variant.product.name}
+								{display.name}
 							</LinkWithChannel>
-							{line.variant.product.category?.name ? (
-								<p className="text-muted-foreground mt-1 text-sm">{line.variant.product.category.name}</p>
+							{display.categoryName ? (
+								<p className="text-muted-foreground mt-1 text-sm">{display.categoryName}</p>
 							) : null}
 							{details.length > 0 ? (
 								<p className="text-muted-foreground mt-1 line-clamp-2 text-sm break-words">
@@ -136,7 +139,7 @@ async function CartItem({
 					channel={channel}
 					checkoutId={checkoutId}
 					lineId={line.id}
-					productName={line.variant.product.name}
+					productName={display.name}
 					quantity={line.quantity}
 					trackInventory={line.variant.trackInventory}
 					quantityAvailable={line.variant.quantityAvailable}
@@ -155,7 +158,7 @@ async function CartContent({ channel }: { channel: string }) {
 	const t = await getTranslations({ locale, namespace: "cart" });
 	const tCheckout = await getTranslations({ locale, namespace: "checkout.common" });
 	const checkoutId = await Checkout.getIdFromCookies(channel);
-	const lookup = await Checkout.lookup(checkoutId);
+	const lookup = await Checkout.lookup(checkoutId, { locale });
 
 	if (lookup.status === "upstream-error") {
 		return (

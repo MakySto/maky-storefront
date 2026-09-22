@@ -146,17 +146,24 @@ export async function lookup(
 	 * so it otherwise keeps the transport's three attempts with exponential
 	 * backoff, and a single lookup can then outlast the budget on its own.
 	 */
-	options?: { signal?: AbortSignal; retry?: boolean },
+	/**
+	 * `locale` decides which translation Saleor returns for the line's product and
+	 * category. Without it the cart names every product in Slovak, whatever market the
+	 * shopper is in — `checkout-line-display.ts` has the rest of that story. Omitting it
+	 * falls back to the store default, which is the old behaviour rather than a failure.
+	 */
+	options?: { signal?: AbortSignal; retry?: boolean; locale?: string | null },
 ): Promise<CheckoutLookup<FoundCheckout>> {
 	if (!checkoutId) {
 		// No pointer at all is not an outage; there is genuinely nothing to find.
 		return { status: "not-found" };
 	}
 
+	const { locale, ...transport } = options ?? {};
 	const result = await executeAuthenticatedGraphQL(CheckoutFindDocument, {
-		variables: { id: checkoutId },
+		variables: { id: checkoutId, ...checkoutGraphqlLocaleVariables(locale) },
 		cache: "no-cache",
-		...options,
+		...transport,
 	});
 
 	if (!result.ok) {
@@ -185,8 +192,8 @@ export type CreatedCheckout = NonNullable<NonNullable<CheckoutCreateMutation["ch
  * write or session path; `lookup` exists because that collapse is exactly the
  * defect.
  */
-export async function find(checkoutId: string) {
-	const result = await lookup(checkoutId);
+export async function find(checkoutId: string, locale?: string | null) {
+	const result = await lookup(checkoutId, { locale });
 	return result.status === "found" ? result.checkout : null;
 }
 

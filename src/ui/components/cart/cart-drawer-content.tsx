@@ -8,6 +8,7 @@ import { formatPrice } from "@/config/locale";
 import { marketHref } from "@/lib/channel-map";
 import { compareAtLineTotal } from "@/lib/pricing";
 import { productHref } from "@/lib/product-url";
+import { checkoutLineDisplay } from "@/lib/checkout-line-display";
 import { useLocale } from "@/providers/locale-provider";
 import { buildCheckoutPath } from "@/session-bridge";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
@@ -43,7 +44,9 @@ function DrawerLine({
 }) {
 	const t = useTranslations("cart");
 	const { locale } = useLocale();
-	const href = productHref(channel, line.variant.product.slug, line.variant.id);
+	// The market's own name and slug, not Saleor's Slovak base row.
+	const display = checkoutLineDisplay(line);
+	const href = productHref(channel, display.slug, line.variant.id);
 	const details = getVariantDetails(line.variant);
 	const compareAt = compareAtLineTotal({
 		price: line.variant.pricing?.price?.gross.amount,
@@ -58,13 +61,13 @@ function DrawerLine({
 				<Link
 					href={href}
 					onClick={closeCart}
-					aria-label={line.variant.product.name}
+					aria-label={display.name}
 					className="border-border bg-card group relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border sm:h-24 sm:w-24"
 				>
 					{line.variant.product.thumbnail?.url ? (
 						<ResilientProductImage
 							src={line.variant.product.thumbnail.url}
-							alt={line.variant.product.thumbnail.alt?.trim() || line.variant.product.name}
+							alt={line.variant.product.thumbnail.alt?.trim() || display.name}
 							fill
 							sizes="(min-width: 640px) 96px, 80px"
 							className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
@@ -77,10 +80,10 @@ function DrawerLine({
 						onClick={closeCart}
 						className="line-clamp-2 text-sm leading-5 font-semibold hover:underline"
 					>
-						{line.variant.product.name}
+						{display.name}
 					</Link>
-					{line.variant.product.category?.name ? (
-						<p className="text-muted-foreground mt-1 text-xs">{line.variant.product.category.name}</p>
+					{display.categoryName ? (
+						<p className="text-muted-foreground mt-1 text-xs">{display.categoryName}</p>
 					) : null}
 					{details.length > 0 ? (
 						<p className="text-muted-foreground mt-1 line-clamp-2 text-xs break-words">
@@ -100,7 +103,7 @@ function DrawerLine({
 					channel={channel}
 					checkoutId={checkoutId}
 					lineId={line.id}
-					productName={line.variant.product.name}
+					productName={display.name}
 					quantity={line.quantity}
 					trackInventory={line.variant.trackInventory}
 					quantityAvailable={line.variant.quantityAvailable}

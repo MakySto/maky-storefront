@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { LanguageCodeEnum } from "@/gql/graphql";
 
 import { CheckoutFindDocument } from "@/gql/graphql";
 import { executePublicGraphQL } from "./graphql";
@@ -43,7 +44,7 @@ const neverAnswers = () =>
 
 const find = (signal: AbortSignal) =>
 	executePublicGraphQL(CheckoutFindDocument, {
-		variables: { id: "Q2hlY2tvdXQ6MQ==" },
+		variables: { id: "Q2hlY2tvdXQ6MQ==", languageCode: LanguageCodeEnum.Sk },
 		cache: "no-cache",
 		retry: false,
 		signal,
@@ -98,7 +99,7 @@ describe("a caller deadline reaches the wire", () => {
 		globalThis.fetch = fetchMock as unknown as typeof fetch;
 
 		await executePublicGraphQL(CheckoutFindDocument, {
-			variables: { id: "Q2hlY2tvdXQ6MQ==" },
+			variables: { id: "Q2hlY2tvdXQ6MQ==", languageCode: LanguageCodeEnum.Sk },
 			cache: "no-cache",
 			signal: AbortSignal.timeout(80),
 		});
@@ -134,7 +135,7 @@ describe("a caller deadline reaches the wire", () => {
 		globalThis.fetch = fetchMock as unknown as typeof fetch;
 
 		const result = await executePublicGraphQL(CheckoutFindDocument, {
-			variables: { id: "Q2hlY2tvdXQ6MQ==" },
+			variables: { id: "Q2hlY2tvdXQ6MQ==", languageCode: LanguageCodeEnum.Sk },
 			cache: "no-cache",
 		});
 

@@ -5,6 +5,7 @@ import { type ProductDetailsQuery } from "@/gql/graphql";
 
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
+import { getLocaleFromChannel } from "@/config/locale";
 import { AddToCart } from "./add-to-cart";
 import { VariantSelectionSection } from "./variant-selection";
 import { StickyBar } from "./sticky-bar";
@@ -86,9 +87,16 @@ type VariantPricing = {
  */
 export async function VariantSectionDynamic({ product, channel, searchParams }: VariantSectionDynamicProps) {
 	const { variant: variantParam } = await searchParams;
-	const tCommon = await getTranslations("common");
-	const tProduct = await getTranslations("product");
-	const tCart = await getTranslations("cart");
+	// The locale comes from the channel, not from request state. This subtree renders on the dynamic path
+	// (it reads a cookie or searchParams), where `setRequestLocale` from the market layout
+	// is not guaranteed to be in scope — and `i18n/request.ts` answers a missing request
+	// locale with DEFAULT_LOCALE, which is Slovak. That is how a German page comes to hold
+	// a Slovak label next to a German one. Asking with the locale we were handed cannot
+	// drift, whatever the render path.
+	const locale = getLocaleFromChannel(channel);
+	const tCommon = await getTranslations({ locale, namespace: "common" });
+	const tProduct = await getTranslations({ locale, namespace: "product" });
+	const tCart = await getTranslations({ locale, namespace: "cart" });
 	const variants = product.variants || [];
 	const isPurchasable = product.isAvailableForPurchase === true;
 
