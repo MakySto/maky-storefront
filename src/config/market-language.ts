@@ -1,3 +1,5 @@
+import { requestKeyed } from "@/lib/request-keyed";
+
 /**
  * Market → the Saleor language code it reads, as plain strings.
  *
@@ -10,7 +12,7 @@
  *
  * Slovakia is absent on purpose. It reads the base row, never a translation.
  */
-export const MARKET_LANGUAGE_CODE: Readonly<Record<string, string>> = {
+export const MARKET_LANGUAGE_CODE: Readonly<Record<string, string>> = requestKeyed({
 	cz: "CS",
 	de: "DE",
 	at: "DE_AT",
@@ -22,7 +24,7 @@ export const MARKET_LANGUAGE_CODE: Readonly<Record<string, string>> = {
 	ro: "RO",
 	us: "EN",
 	ca: "EN_CA",
-};
+});
 
 /** The language a market reads, or undefined for Slovakia and anything that is not a market. */
 export function marketLanguageCode(market: string): string | undefined {
