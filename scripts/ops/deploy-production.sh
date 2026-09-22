@@ -51,6 +51,7 @@ NOTE=""
 SNAPSHOT=""            # absolute path of the moved-out .next; empty until it is moved
 COMMITTED=0            # 1 once the local gate has passed — after this, never roll back
 POST_DEPLOY_FAILED=0   # a post-commit step failed; the new build stays live
+POST_DEPLOY_FAILED_STEPS=()   # and their labels — exit 75 must name the step, not point at the log
 SUDO_KEEPALIVE_PID=""
 TMP_FILES=()
 DOWN_FROM=0
@@ -58,7 +59,8 @@ DOWNTIME=0
 AVAIL_MEM_MB="?"
 PREV_BUILD_ID="none"
 PREV_SHA="unknown"
-MARKET_LINES_BEFORE=0   # [market-state] lines in the PM2 log before this boot
+MARKET_LOG_FILE=""      # PM2 stdout log for $PM2_APP, resolved just before start
+MARKET_LOG_OFFSET=0     # its size in bytes at that moment — this boot's log boundary
 BUILD_LOG="/tmp/maky-deploy-$(date -u +%Y%m%d-%H%M%S).log"
 CSS_PATH=""
 declare -A CHECKED_BUILD_ASSETS=()
@@ -294,6 +296,7 @@ soft() {
 		return 0
 	fi
 	POST_DEPLOY_FAILED=1
+	POST_DEPLOY_FAILED_STEPS+=("$label")
 	warn "post-deploy step failed: ${label} — the new build stays live"
 	return 0
 }
@@ -440,12 +443,42 @@ write_meta() {
 	cat "$APP_DIR/.next/MAKY_DEPLOY_META"
 }
 
+# Where PM2 sends this app's stdout. Asked of PM2 rather than guessed from
+# ~/.pm2/logs, because a renamed or relocated log would silently turn the market
+# read-back into a check of the wrong file.
+pm2_out_log() {
+	pm2 jlist 2>/dev/null | python3 -c '
+import json, sys
+try:
+    apps = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+for a in apps:
+    if a.get("name") == sys.argv[1]:
+        print(a.get("pm2_env", {}).get("pm_out_log_path", "") or "")
+        break
+' "$PM2_APP"
+}
+
 start() {
 	step "start"
-	# Baseline for check_market_state: PM2 does not truncate the log between
-	# deploys, so without this the read-back could confirm the previous boot's
-	# market set and never notice.
-	MARKET_LINES_BEFORE=$(pm2 logs "$PM2_APP" --nostream --lines 1000 2>/dev/null | grep -c '\[market-state\] live=' || true)
+	# Boot boundary for check_market_state. PM2 never truncates this log, so the
+	# read-back has to look at what THIS boot wrote and nothing else.
+	#
+	# Counting [market-state] lines in a sliding `pm2 logs --lines 1000` window
+	# cannot do that. The window scrolls past the previous boot's line at about the
+	# rate the asset gate fills it with [cms] lines, so the count comes out flat and
+	# the check reports "no NEW line" on a perfectly healthy deploy. That is exactly
+	# what exit 75 was on 2026-09-22 (fe04b47): the previous line sat 80 lines inside
+	# a 1000-line window, and the gate wrote more than 80 lines before the check ran.
+	# A byte offset has no such race.
+	MARKET_LOG_FILE=$(pm2_out_log)
+	if [[ -n "$MARKET_LOG_FILE" && -f "$MARKET_LOG_FILE" ]]; then
+		MARKET_LOG_OFFSET=$(stat -c %s "$MARKET_LOG_FILE")
+	else
+		MARKET_LOG_FILE=""
+		warn "cannot resolve the PM2 stdout log for $PM2_APP — the market read-back cannot run"
+	fi
 	pm2 start "$PM2_APP" >/dev/null
 	wait_ready || die "$PM2_APP did not answer on $LOCAL_URL$SMOKE_PATH within ${READY_TIMEOUT_S}s"
 	info "responding on $LOCAL_URL$SMOKE_PATH"
@@ -747,24 +780,24 @@ market_state_from_env() {
 	fi
 }
 
-check_market_state() {
-	local line got unknown want after
+# Everything $PM2_APP has written since the offset start() recorded — this boot's
+# log and nothing before it.
+market_log_since_boot() {
+	[[ -n "$MARKET_LOG_FILE" && -f "$MARKET_LOG_FILE" ]] || return 1
+	tail -c "+$(( MARKET_LOG_OFFSET + 1 ))" "$MARKET_LOG_FILE" 2>/dev/null
+}
 
-	# The log is not truncated between deploys, so the newest [market-state] line
-	# may well be the PREVIOUS boot's — in which case this check would happily
-	# confirm the market set of the build we just replaced. Count them before
-	# `pm2 start` and require the count to have grown.
-	after=$(pm2 logs "$PM2_APP" --nostream --lines 1000 2>/dev/null | grep -c '\[market-state\] live=' || true)
-	if (( after <= ${MARKET_LINES_BEFORE:-0} )); then
-		err "no NEW [market-state] line since pm2 start — the line below is from the previous boot"
+check_market_state() {
+	local line got unknown want since
+
+	if ! since=$(market_log_since_boot); then
+		err "no PM2 log baseline was taken at start — cannot tell this boot's market state from the last one"
 		return 1
 	fi
 
-	line=$(pm2 logs "$PM2_APP" --nostream --lines 400 2>/dev/null |
-		grep -o '\[market-state\] live=[^ ]* preview=[^ ]* unknown=[^ ]*' | tail -1)
-
+	line=$(grep -o '\[market-state\] live=[^ ]* preview=[^ ]* unknown=[^ ]*' <<<"$since" | tail -1)
 	if [[ -z "$line" ]]; then
-		err "no [market-state] line in the PM2 log — cannot confirm which markets are indexable"
+		err "this boot wrote no [market-state] line — cannot confirm which markets are indexable"
 		return 1
 	fi
 	info "$line"
@@ -773,10 +806,9 @@ check_market_state() {
 	# markets and families, is the single most consequential runtime setting on
 	# this artifact — it must be visible in the deploy output, not inferred.
 	local gate_line
-	gate_line=$(pm2 logs "$PM2_APP" --nostream --lines 400 2>/dev/null |
-		grep -o '\[route-existence\] gate=[^ ]* markets=[^ ]* families=[^ ]*' | tail -1)
+	gate_line=$(grep -o '\[route-existence\] gate=[^ ]* markets=[^ ]* families=[^ ]*' <<<"$since" | tail -1)
 	if [[ -z "$gate_line" ]]; then
-		err "no [route-existence] line — cannot confirm whether the existence gate is armed"
+		err "this boot wrote no [route-existence] line — cannot confirm whether the existence gate is armed"
 		return 1
 	fi
 	info "$gate_line"
@@ -907,6 +939,13 @@ info "deployed $(git rev-parse --short HEAD) as BUILD_ID $(cat "$APP_DIR/.next/B
 warn "now look at $PUBLIC_URL$SMOKE_PATH in a browser: automated checks cannot see a colourless button (§4.2)"
 
 if (( POST_DEPLOY_FAILED == 1 )); then
-	err "the build is live and verified locally, but at least one post-deploy step failed (see above)"
+	# "see above" is not a diagnosis. A deploy that ends in 75 has to say which step,
+	# by name, on the last line — that is the line a tired human actually reads.
+	err "POST_DEPLOY_FAILED:"
+	for failed_step in ${POST_DEPLOY_FAILED_STEPS+"${POST_DEPLOY_FAILED_STEPS[@]}"}; do
+		err "  - ${failed_step}"
+	done
+	err "the build is live and verified locally; the steps above did not pass"
 	exit 75
 fi
+info "POST_DEPLOY_FAILED: none"
