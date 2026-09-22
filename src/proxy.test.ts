@@ -460,6 +460,26 @@ describe("root detection only ever chooses a live market", () => {
 		expect(target(await rootWith({}, "de"))).toBe("/de");
 	});
 
+	it.each(["XX", "T1", "EU", "AP", "", "constructor", "toString"])(
+		"treats CF-IPCountry %j as no answer rather than a market",
+		async (country) => {
+			// Cloudflare does not only send ISO country codes. `XX` is "unknown", `T1` is Tor —
+			// and Onion Routing is on for this zone, so T1 is a value this site will really be
+			// sent. `EU`/`AP` are its regional codes. The last two are there because the lookup
+			// is a plain object literal: `COUNTRY_TO_MARKET["constructor"]` returns a function,
+			// which is truthy, so "not in the map" is not the same as "falsy" and the market
+			// check is what actually has to catch it.
+			process.env[ENV] = "sk,de,us";
+			expect(target(await rootWith({ "CF-IPCountry": country }))).toBe("/sk");
+		},
+	);
+
+	it("falls through to Accept-Language when the geo header says unknown", async () => {
+		// The order matters: an unknown country must not shadow a language we can act on.
+		process.env[ENV] = "sk,de";
+		expect(target(await rootWith({ "CF-IPCountry": "XX", "Accept-Language": "de-DE,de;q=0.9" }))).toBe("/de");
+	});
+
 	it("still prefers the live market a visitor actually chose", async () => {
 		process.env[ENV] = "sk,cz";
 		expect(target(await rootWith({ "CF-IPCountry": "DE" }, "cz"))).toBe("/cz");
