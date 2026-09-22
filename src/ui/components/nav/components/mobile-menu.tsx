@@ -50,8 +50,10 @@ export const MobileMenu = ({ children }: Props) => {
 				</SheetHeader>
 				<nav className="flex-1 overflow-y-auto">
 					<MobileMenuContext.Provider value={{ close }}>
-						<ul
-							className="[&>*:nth-child(n+2)]:border-border flex flex-col p-4 whitespace-nowrap [&>*:nth-child(n+2)]:border-t [&>li]:py-3"
+						{/* A <div>, not the <ul> it was: the children are a search form and a <nav>
+						    with its own list, and a <ul> may only hold <li>. */}
+						<div
+							className="flex flex-col gap-6 p-4"
 							id="mobile-menu"
 							onClick={(e) => {
 								// Close menu when a link is clicked
@@ -61,7 +63,7 @@ export const MobileMenu = ({ children }: Props) => {
 							}}
 						>
 							{children}
-						</ul>
+						</div>
 					</MobileMenuContext.Provider>
 				</nav>
 			</SheetContent>

@@ -9,6 +9,7 @@ import { marketHasRoute } from "@/lib/route-policy";
 import { visibleNavLinks } from "@/lib/cms/availability";
 import { PrivacySettingsLink } from "./privacy-settings-link";
 import { companyInfo, companyPhoneHref } from "@/config/company";
+import { ALL_CATEGORIES_NAV, localizedNavHref } from "./header/header.config";
 
 // Which of these a market actually has is `route-policy.ts`'s answer, not a second
 // list kept in step by hand: `marketHasRoute` is the same question the proxy asks
@@ -69,6 +70,7 @@ export function footerLegalLinks(channel: string) {
 export async function Footer({ channel }: { channel: string }) {
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "footer" });
 	const tc = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "common" });
+	const tNav = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "nav" });
 	const links = footerLegalLinks(channel);
 	const { showPrivacyPolicy, showTerms } = links;
 	// The same rule the header uses, so the two cannot drift apart again.
@@ -92,6 +94,26 @@ export async function Footer({ channel }: { channel: string }) {
 						<a href={companyPhoneHref} className={`mt-1 block ${linkClass}`}>
 							{companyInfo.phone}
 						</a>
+					</div>
+
+					{/* The categories, on every page. The mobile menu listed none of them until
+					    the same change, so on a phone this column was the only way from a product
+					    page to another category; it is also every page's crawlable link to all six. */}
+					<div>
+						<h2 className="mb-4 text-sm font-medium text-gray-200">{tNav("categories")}</h2>
+						<ul className="space-y-3">
+							{ALL_CATEGORIES_NAV.map((item) => (
+								<li key={item.key}>
+									<Link
+										href={marketHref(channel, localizedNavHref(channel, item.href))}
+										prefetch={false}
+										className={linkClass}
+									>
+										{tNav(item.key)}
+									</Link>
+								</li>
+							))}
+						</ul>
 					</div>
 
 					{support.length > 0 && (

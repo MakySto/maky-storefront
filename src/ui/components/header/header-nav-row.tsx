@@ -1,9 +1,12 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { getTranslations } from "next-intl/server";
+import { getLocaleFromChannel } from "@/config/locale";
 import { liveMarkets } from "@/lib/market-state";
 import { AllCategoriesTrigger } from "./all-categories-trigger";
 import { HeaderMarketControls } from "./header-market-controls";
 import { HeaderPrimaryNav } from "./header-primary-nav";
+import { ALL_CATEGORIES_NAV, localizedNavHref } from "./header.config";
 import {
 	ActiveVehicleLauncher,
 	ActiveVehicleLauncherSkeleton,
@@ -34,10 +37,17 @@ function MarketControlsSkeleton() {
 }
 
 export async function HeaderNavRow({ channel }: { channel: string }) {
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "nav" });
+	const allCategories = ALL_CATEGORIES_NAV.map((item) => ({
+		key: item.key,
+		href: localizedNavHref(channel, item.href),
+		label: t(item.key),
+	}));
+
 	return (
 		<div className="flex h-12 items-center justify-between">
 			<div className="flex items-center gap-3">
-				<AllCategoriesTrigger />
+				<AllCategoriesTrigger label={t("allCategories")} items={allCategories} />
 
 				<Suspense>
 					<HeaderPrimaryNav channel={channel} />

@@ -4,7 +4,7 @@ import { Logo } from "@/ui/components/logo";
 import { HeaderSearch } from "./header-search";
 import { HeaderActions } from "./header-actions";
 import { MobileMenu } from "@/ui/components/nav/components/mobile-menu";
-import { HeaderPrimaryNav } from "./header-primary-nav";
+import { HeaderMenuNav } from "./header-menu-nav";
 
 function SearchSkeleton() {
 	return <div className="bg-sand-100 h-11 w-full max-w-2xl animate-pulse rounded-sm" />;
@@ -26,7 +26,7 @@ export async function HeaderMainRow({ channel }: { channel: string }) {
 							<HeaderSearch channel={channel} />
 						</Suspense>
 						<Suspense>
-							<HeaderPrimaryNav channel={channel} />
+							<HeaderMenuNav channel={channel} />
 						</Suspense>
 					</MobileMenu>
 				</Suspense>
