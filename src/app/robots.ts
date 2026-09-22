@@ -11,7 +11,15 @@ export default function robots(): MetadataRoute.Robots {
 				allow: "/",
 				disallow: [
 					// Private / non-content storefront areas (market-less legacy entries)
-					"/checkout",
+					//
+					// `/checkout` was here until 2026-09-22 and came out for the reason the
+					// comment below already gives for /admin and the login pages: a URL a
+					// crawler may not fetch can never be re-crawled, so it can never be
+					// dropped from the index either. Both checkout routes now carry
+					// `noindex, follow` (`app/(site)/checkout/layout.tsx`, 2026-09-21),
+					// which is what actually keeps them out. Disallow only saved crawl
+					// budget on two pages, and paid for it by freezing whatever was already
+					// indexed.
 					"/cart",
 					"/api/",
 					"/orders",
