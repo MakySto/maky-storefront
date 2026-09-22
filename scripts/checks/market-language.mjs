@@ -54,7 +54,15 @@ function literalBody(file, name) {
 	const start = source.indexOf(`export const ${name}`);
 	if (start === -1) throw new Error(`export const ${name} not found in ${file}`);
 	const open = source.indexOf("{", start);
-	const close = source.indexOf("\n};", open);
+	// The tables are wrapped in `requestKeyed({...})` so a market slug off a URL cannot reach
+	// Object.prototype, which closes them with `});` instead of `};`. Both are accepted —
+	// whichever comes first — because this parser breaking is not a cosmetic failure: it is
+	// the check that proves no market answers in Slovak, and it should fail loudly when the
+	// shape changes rather than silently read the wrong thing.
+	const plain = source.indexOf("\n};", open);
+	const wrapped = source.indexOf("\n});", open);
+	const candidates = [plain, wrapped].filter((i) => i !== -1);
+	const close = candidates.length > 0 ? Math.min(...candidates) : -1;
 	if (open === -1 || close === -1) throw new Error(`${name} in ${file} is not the object literal expected`);
 	return source.slice(open, close);
 }
