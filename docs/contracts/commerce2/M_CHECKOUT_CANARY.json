@@ -1,0 +1,174 @@
+{
+	"schema": "maky.commerce2.m-checkout-canary/1",
+	"status": "PASS",
+	"summary": "One real checkout per foreign channel, taken to paymentGatewayInitialize and stopped there. Shipping resolves, Saleor adds no tax on top of the gross price, and Stripe answers with a LIVE publishable key in all eleven markets.",
+	"measured_against": {
+		"git_sha": "e3d4cf8e54d0630f0e477e152cd4a4f096c428fd",
+		"build_id": "yZcdsr5_oP_1k-RB4Ttxg",
+		"tool": "scripts/checks/payment-canary.mjs --execute",
+		"variant": "UHJvZHVjdFZhcmlhbnQ6NTYz (N15040)"
+	},
+	"what_was_written": "Eleven checkouts in production Saleor, one per channel. Nothing was paid, confirmed or completed; the script has no mutation that could, and `payment-canary-script.test.ts` fails if one is added. They expire on their own.",
+	"checks": {
+		"shipping_method_offered": {
+			"passed": 11,
+			"of": 11
+		},
+		"no_tax_added_on_top": {
+			"passed": 11,
+			"of": 11,
+			"how": "Saleor reported tax 0 in every channel and the total equals the gross line price plus shipping exactly, with each line price read back from that channel rather than assumed — FR and ES price this variant at 92.99 EUR where AT, DE and IT price it at 82.99, which is deliberate price policy and looks like a 10 EUR discrepancy to anyone who assumes one EUR price. Prices are gross with the market's VAT already inside them, which is why this had to be measured: `tax_configuration` in Saleor is still DEFERRED_BY_OWNER, so nothing but a real checkout could show whether Saleor would add VAT a second time."
+		},
+		"stripe_initialized": {
+			"passed": 11,
+			"of": 11,
+			"gateway": "saleor.app.payment.stripe",
+			"publishable_key_mode": "LIVE",
+			"note": "Mode only — no key is read, printed or stored by the script."
+		},
+		"nothing_charged": {
+			"passed": 11,
+			"of": 11
+		}
+	},
+	"markets": [
+		{
+			"market": "at",
+			"channel": "at-eur",
+			"country": "AT",
+			"shipping_method": "CE 0-5kg",
+			"shipping": 5.99,
+			"line_gross": 82.99,
+			"total": 88.98,
+			"currency": "EUR",
+			"tax": 0,
+			"total_equals_line_plus_shipping": true
+		},
+		{
+			"market": "cz",
+			"channel": "cz-czk",
+			"country": "CZ",
+			"shipping_method": "CE 0-5kg",
+			"shipping": 149,
+			"line_gross": 1909.0,
+			"total": 2058,
+			"currency": "CZK",
+			"tax": 0,
+			"total_equals_line_plus_shipping": true
+		},
+		{
+			"market": "de",
+			"channel": "de-eur",
+			"country": "DE",
+			"shipping_method": "CE 0-5kg",
+			"shipping": 5.99,
+			"line_gross": 82.99,
+			"total": 88.98,
+			"currency": "EUR",
+			"tax": 0,
+			"total_equals_line_plus_shipping": true
+		},
+		{
+			"market": "pl",
+			"channel": "pl-pln",
+			"country": "PL",
+			"shipping_method": "CE 0-5kg",
+			"shipping": 25,
+			"line_gross": 340.99,
+			"total": 365.99,
+			"currency": "PLN",
+			"tax": 0,
+			"total_equals_line_plus_shipping": true
+		},
+		{
+			"market": "hu",
+			"channel": "hu-huf",
+			"country": "HU",
+			"shipping_method": "CE 0-5kg",
+			"shipping": 2399,
+			"line_gross": 29990.0,
+			"total": 32389,
+			"currency": "HUF",
+			"tax": 0,
+			"total_equals_line_plus_shipping": true
+		},
+		{
+			"market": "it",
+			"channel": "it-eur",
+			"country": "IT",
+			"shipping_method": "CE 0-5kg",
+			"shipping": 5.99,
+			"line_gross": 82.99,
+			"total": 88.98,
+			"currency": "EUR",
+			"tax": 0,
+			"total_equals_line_plus_shipping": true
+		},
+		{
+			"market": "fr",
+			"channel": "fr-eur",
+			"country": "FR",
+			"shipping_method": "WE 0-5kg",
+			"shipping": 8.99,
+			"line_gross": 92.99,
+			"total": 101.98,
+			"currency": "EUR",
+			"tax": 0,
+			"total_equals_line_plus_shipping": true
+		},
+		{
+			"market": "es",
+			"channel": "es-eur",
+			"country": "ES",
+			"shipping_method": "WE 0-5kg",
+			"shipping": 8.99,
+			"line_gross": 92.99,
+			"total": 101.98,
+			"currency": "EUR",
+			"tax": 0,
+			"total_equals_line_plus_shipping": true
+		},
+		{
+			"market": "ro",
+			"channel": "ro-ron",
+			"country": "RO",
+			"shipping_method": "CE 0-5kg",
+			"shipping": 29,
+			"line_gross": 413.99,
+			"total": 442.99,
+			"currency": "RON",
+			"tax": 0,
+			"total_equals_line_plus_shipping": true
+		},
+		{
+			"market": "us",
+			"channel": "us-usd",
+			"country": "US",
+			"shipping_method": "NA 0-5kg",
+			"shipping": 14.99,
+			"line_gross": 196.99,
+			"total": 211.98,
+			"currency": "USD",
+			"tax": 0,
+			"total_equals_line_plus_shipping": true
+		},
+		{
+			"market": "ca",
+			"channel": "ca-cad",
+			"country": "CA",
+			"shipping_method": "NA 0-5kg",
+			"shipping": 14.99,
+			"line_gross": 278.99,
+			"total": 293.98,
+			"currency": "CAD",
+			"tax": 0,
+			"total_equals_line_plus_shipping": true
+		}
+	],
+	"not_claimed": [
+		"Nothing here proves a payment. The canary stops at paymentGatewayInitialize by construction: no charge, no confirmation, no order, and no test of what Stripe does with a real card.",
+		"One product, one weight band (0-5 kg). A heavier or oversized item may resolve a different shipping method or none at all.",
+		"Delivery lead time is a copy claim (5-10 working days in the EU, 7-14 for US and CA, owner decision 2026-09-22), not something this measures."
+	],
+	"observed_at": "2026-09-22T08:40:19Z"
+}
