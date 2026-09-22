@@ -9,7 +9,11 @@ import { indexabilityOf } from "@/lib/catalog-content/publication";
 import { catalogLanguageForMarket, loadCatalogView } from "@/lib/catalog-content/resolve";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
-import { SitemapProductsDocument, SitemapCategoriesDocument } from "@/gql/graphql";
+import {
+	SitemapProductsDocument,
+	SitemapCategoriesDocument,
+	SitemapProductCountDocument,
+} from "@/gql/graphql";
 import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
 import { getLocaleConfigByLocale } from "@/config/locale";
 import {
@@ -416,6 +420,51 @@ async function productEntriesFor(market: string): Promise<MetadataRoute.Sitemap>
 	}));
 }
 
+/**
+ * How many products the channel publishes — one round trip, query cost 1.
+ *
+ * `null` when Saleor could not answer. The caller falls back to the exact walk rather than
+ * guessing: an index built on a failed count is worse than a slow one.
+ */
+async function fetchProductCount(channel: string): Promise<number | null> {
+	const result = await executePublicGraphQL(SitemapProductCountDocument, {
+		variables: { channel },
+		revalidate: REVALIDATE_SECONDS,
+		tags: [sitemapTag(channel)],
+	});
+	if (!result.ok) {
+		logUpstreamError("sitemap-product-count", upstreamError(result), { channel });
+		return null;
+	}
+	return result.data.products?.totalCount ?? null;
+}
+
+/**
+ * The product shards of one market, planned WITHOUT materialising a single product URL.
+ *
+ * The index needs a shard count. Deriving it from `entriesOf` walked the whole catalogue —
+ * 92 pages per market, each page carrying every product's translation, category, attributes
+ * and variants, because that is what the exact-locale boundary reads. Twelve markets of that
+ * is 74 seconds, and none of it is cached: a page of that payload is over Next's 2 MB Data
+ * Cache limit, so `revalidate` stores nothing and every request walks again. Measured
+ * 2026-09-22 on the live catalogue — three consecutive fetches of one shard, 18.5 s each.
+ *
+ * `totalCount` answers the same question in one round trip. Abroad it is an UPPER BOUND:
+ * `resolveExactLocaleProduct` drops a product whose translation is incomplete, so the real
+ * entry count can be lower. That matters only if the over-count crosses a shard boundary and
+ * invents a shard with nothing in it — `sitemapShardEntries` would 404 a URL the index
+ * advertises. So the cheap number is trusted only while it fits in ONE shard, which is the
+ * case for every market today (9,157 against a 40,000 limit); anything larger falls back to
+ * the exact walk, where the count is the truth rather than a bound.
+ */
+async function productShardPlan(market: string): Promise<SitemapShard[]> {
+	const total = await fetchProductCount(CHANNEL_MAP[market].saleorSlug);
+	if (total !== null && total <= MAX_URLS_PER_SITEMAP) {
+		return planShards(market, "products", total);
+	}
+	return planShards(market, "products", (await productEntriesFor(market)).length);
+}
+
 export type SitemapShardKind = "pages" | "products" | "vehicles";
 
 const SHARD_KINDS: readonly SitemapShardKind[] = ["pages", "products", "vehicles"];
@@ -467,10 +516,15 @@ export function planShards(market: string, kind: SitemapShardKind, count: number
 export async function sitemapShards(): Promise<SitemapShard[]> {
 	const perMarket = await Promise.all(
 		indexableMarkets().map(async (market) => {
-			const counts = await Promise.all(
-				SHARD_KINDS.map(async (kind) => (await entriesOf(market, kind)).length),
-			);
-			return SHARD_KINDS.flatMap((kind, index) => planShards(market, kind, counts[index]!));
+			// `pages` and `vehicles` are cheap to enumerate — a static route table and the local
+			// catalogue snapshot, measured at 0.2 s and 0.3 s per market. `products` is not, and
+			// is planned from a count instead; see `productShardPlan`.
+			const [pages, products, vehicles] = await Promise.all([
+				entriesOf(market, "pages").then((entries) => planShards(market, "pages", entries.length)),
+				productShardPlan(market),
+				entriesOf(market, "vehicles").then((entries) => planShards(market, "vehicles", entries.length)),
+			]);
+			return [...pages, ...products, ...vehicles];
 		}),
 	);
 	return perMarket.flat();

@@ -1,0 +1,19 @@
+# How many products one channel publishes — for planning the sitemap INDEX only.
+#
+# The index needs a number of shards, not the URLs in them. Asking `SitemapProducts` for that
+# number walks the whole catalogue: 100 products a page, every page carrying each product's
+# translation, category, every attribute and every variant, because that is what the
+# exact-locale boundary reads. At 9,157 products across 12 markets that is 74 seconds per
+# request, and it never gets cached — a page of that payload is over Next's 2 MB Data Cache
+# limit, so `revalidate` silently stores nothing and every request walks again.
+#
+# This asks Saleor to count. Query cost 1, one round trip, no page of payload.
+#
+# It is an UPPER BOUND abroad: `resolveExactLocaleProduct` drops products whose translation is
+# incomplete, so the real entry count can be lower. `productShardPlan` only trusts it while the
+# answer fits in a single shard, where an over-count cannot invent a shard that does not exist.
+query SitemapProductCount($channel: String!) {
+	products(channel: $channel, first: 0) {
+		totalCount
+	}
+}

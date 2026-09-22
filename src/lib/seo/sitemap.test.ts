@@ -16,7 +16,11 @@ vi.mock("@/lib/catalog-content/resolve", async (importOriginal) => ({
 	loadCatalogView,
 }));
 
-import { SitemapCategoriesDocument, SitemapProductsDocument } from "@/gql/graphql";
+import {
+	SitemapCategoriesDocument,
+	SitemapProductsDocument,
+	SitemapProductCountDocument,
+} from "@/gql/graphql";
 import { resolveSitemap } from "next/dist/build/webpack/loaders/metadata/resolve-route-data";
 import sitemap, {
 	MAX_URLS_PER_SITEMAP,
@@ -97,16 +101,54 @@ const categoriesResult = {
 	},
 };
 
-/** Serve products from `pages`, categories from the fixture above. */
+/**
+ * Serve products from `pages`, categories from the fixture above.
+ *
+ * `count` answers `SitemapProductCount`, which the INDEX uses instead of walking the
+ * catalogue. It defaults to walking `pages` once and counting what comes back, so a test that
+ * only describes its catalogue keeps getting a truthful count for free.
+ */
 function serve(
 	pages: (after: string | null | undefined) => unknown,
 	categories: (after: string | null | undefined) => unknown = () => categoriesResult,
+	count?: number,
 ) {
 	executePublicGraphQL.mockImplementation((document: unknown, options: { variables: Variables }) => {
 		if (document === SitemapProductsDocument) return Promise.resolve(pages(options.variables.after));
 		if (document === SitemapCategoriesDocument) return Promise.resolve(categories(options.variables.after));
+		if (document === SitemapProductCountDocument) {
+			const total = count ?? countFrom(pages);
+			return Promise.resolve({ ok: true, data: { products: { totalCount: total } } });
+		}
 		throw new Error("the sitemap asked for a document this test does not serve");
 	});
+}
+
+/** How many products `pages` yields, by reading it the way `collectConnection` does. */
+function countFrom(pages: (after: string | null | undefined) => unknown): number {
+	let after: string | null | undefined = undefined;
+	let total = 0;
+	for (let guard = 0; guard < 1000; guard++) {
+		const page = pages(after) as
+			| {
+					ok?: boolean;
+					data?: {
+						products?: { edges?: unknown[]; pageInfo?: { hasNextPage?: boolean; endCursor?: string | null } };
+					};
+			  }
+			| undefined;
+		const products = page?.data?.products;
+		if (!page?.ok || !products) return total;
+		total += products.edges?.length ?? 0;
+		if (!products.pageInfo?.hasNextPage) return total;
+		after = products.pageInfo.endCursor;
+	}
+	return total;
+}
+
+/** How many times the INDEX asked Saleor to count, rather than to walk. */
+function productCountCalls(): number {
+	return executePublicGraphQL.mock.calls.filter((call) => call[0] === SitemapProductCountDocument).length;
 }
 
 function productUrls(entries: Awaited<ReturnType<typeof sitemap>>): string[] {
@@ -620,6 +662,55 @@ describe("the sitemap index and its shards", () => {
 		expect(shards.map((shard) => shard.id)).toEqual(["sk-pages-1", "sk-products-1", "sk-vehicles-1"]);
 		expect(shards.find((shard) => shard.kind === "products")?.urls).toBe(CATALOGUE_SIZE);
 		expect(shards.some((shard) => shard.market !== "sk")).toBe(false);
+	});
+
+	it("plans the index from a count, without walking a single product page", async () => {
+		process.env.MAKY_LIVE_MARKETS = "sk";
+		process.env.MAKY_INDEXABLE_MARKETS = "sk";
+		serve((after) => productPage(after));
+		loadCatalogView.mockResolvedValue(catalogView("sk", DELIVERY));
+
+		const shards = await sitemapShards();
+
+		// The whole point of the fix: the index asked Saleor how many products there are and
+		// never asked for one. Walking them cost 74 s across twelve markets and cached nothing —
+		// a page of that query carries every product's translation, category, attributes and
+		// variants, which is over Next's 2 MB Data Cache limit, so `revalidate` stored nothing.
+		expect(productCountCalls()).toBe(1);
+		expect(productPageCalls()).toBe(0);
+		// And the plan is the same one the walk produced.
+		expect(shards.find((shard) => shard.kind === "products")?.urls).toBe(CATALOGUE_SIZE);
+	});
+
+	it("falls back to the walk when the count claims more than one shard", async () => {
+		process.env.MAKY_LIVE_MARKETS = "sk";
+		process.env.MAKY_INDEXABLE_MARKETS = "sk";
+		// Abroad the count is an UPPER BOUND — the exact-locale boundary drops products whose
+		// translation is incomplete. While the answer fits one shard an over-count is harmless.
+		// Past that it could invent a shard with nothing in it, and the index would advertise a
+		// URL that 404s, so the exact walk decides instead.
+		serve((after) => productPage(after, 45_000), undefined, 45_000);
+
+		const shards = (await sitemapShards()).filter((shard) => shard.kind === "products");
+		expect(shards.map((shard) => shard.urls)).toEqual([40_000, 5_000]);
+		expect(productPageCalls()).toBeGreaterThan(0);
+	});
+
+	it("falls back to the walk when Saleor cannot answer the count", async () => {
+		process.env.MAKY_LIVE_MARKETS = "sk";
+		process.env.MAKY_INDEXABLE_MARKETS = "sk";
+		executePublicGraphQL.mockImplementation((document: unknown, options: { variables: Variables }) => {
+			if (document === SitemapProductCountDocument)
+				return Promise.resolve({ ok: false, error: { kind: "network" } });
+			if (document === SitemapProductsDocument) return Promise.resolve(productPage(options.variables.after));
+			return Promise.resolve(categoriesResult);
+		});
+		loadCatalogView.mockResolvedValue(catalogView("sk", DELIVERY));
+
+		// An index built on a failed count is worse than a slow one.
+		const shards = await sitemapShards();
+		expect(shards.find((shard) => shard.kind === "products")?.urls).toBe(CATALOGUE_SIZE);
+		expect(productPageCalls()).toBeGreaterThan(0);
 	});
 
 	it("splits a catalogue past the limit and loses nothing across the boundary", async () => {
