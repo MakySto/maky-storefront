@@ -192,7 +192,7 @@ export function getLocaleFromChannel(channelSlug: string): string {
  *   formatPrice(3490, "CZK", "cs-CZ")  → "3 490,00 Kč"
  *   formatPrice(62990, "HUF", "hu-HU") → "62 990 Ft"
  */
-export function formatPrice(amount: number, currency: string, locale: string = DEFAULT_LOCALE): string {
+export function formatPrice(amount: number, currency: string, locale: string): string {
 	return new Intl.NumberFormat(locale, {
 		style: "currency",
 		currency,

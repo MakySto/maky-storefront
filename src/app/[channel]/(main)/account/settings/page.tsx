@@ -1,3 +1,4 @@
+import { getLocaleFromChannel } from "@/config/locale";
 import { getTranslations } from "next-intl/server";
 import { Mail, Calendar } from "lucide-react";
 import { EditNameForm } from "@/ui/components/account/edit-name-form";
@@ -5,8 +6,15 @@ import { ChangePasswordForm } from "@/ui/components/account/change-password-form
 import { DeleteAccountSection } from "@/ui/components/account/delete-account-section";
 import { getCurrentUser } from "../get-current-user";
 
-export default async function AccountSettingsPage() {
-	const t = await getTranslations("account");
+export default async function AccountSettingsPage({
+	params,
+}: {
+	// The market segment is in the route, and the page needs it: a translation asked for
+	// without a locale is answered in Slovak whenever the request locale is out of scope.
+	params: Promise<{ channel: string }>;
+}) {
+	const locale = getLocaleFromChannel((await params).channel);
+	const t = await getTranslations({ locale, namespace: "account" });
 	const user = await getCurrentUser();
 	if (!user) return null;
 

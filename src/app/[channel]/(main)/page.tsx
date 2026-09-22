@@ -59,7 +59,7 @@ async function getFeaturedProducts(channel: string) {
 
 export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {
 	const { channel } = await props.params;
-	const t = await getTranslations("home");
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "home" });
 
 	// `absolute`, because the (main) layout pins the bare site name as the title of
 	// every page that does not set its own. That is right for the rest of the site
@@ -114,13 +114,13 @@ async function FeaturedProducts({ params: paramsPromise }: { params: Promise<{ c
 		return null;
 	}
 
-	const t = await getTranslations("home");
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "home" });
 
 	return (
 		<section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
 			<h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">{t("featuredTitle")}</h2>
 			<div className="mt-8">
-				<ProductList products={products} />
+				<ProductList products={products} locale={getLocaleFromChannel(channel)} />
 			</div>
 		</section>
 	);

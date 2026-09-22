@@ -68,7 +68,7 @@ type PageProps = {
  */
 export default async function Page(props: PageProps) {
 	const params = await props.params;
-	const t = await getTranslations("plp");
+	const t = await getTranslations({ locale: getLocaleFromChannel(params.channel), namespace: "plp" });
 
 	const breadcrumbs = [
 		{ label: t("home"), href: marketHref(params.channel) },

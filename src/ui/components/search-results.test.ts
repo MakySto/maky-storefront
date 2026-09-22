@@ -5,9 +5,19 @@ const MESSAGES: Record<string, string> = {
 	"cart.addUnavailable": "Tento produkt momentálne nie je dostupný na objednanie.",
 	"product.noImageAvailable": "Bez obrázka",
 };
+/**
+ * `getTranslations` takes either a namespace string or `{ locale, namespace }`. Channel-scoped
+ * components pass the object form — a bare namespace is answered in Slovak whenever the request
+ * locale is out of scope, which `src/i18n/locale-binding.test.ts` now forbids. The mock accepts
+ * both so it describes the real API rather than the half of it this file happened to use.
+ */
+const namespaceOf = (arg: string | { locale?: string; namespace: string }): string =>
+	typeof arg === "string" ? arg : arg.namespace;
 vi.mock("next-intl/server", () => ({
-	getTranslations: async (namespace: string) => (key: string) =>
-		MESSAGES[`${namespace}.${key}`] ?? `${namespace}.${key}`,
+	getTranslations: async (arg: string | { locale?: string; namespace: string }) => {
+		const namespace = namespaceOf(arg);
+		return (key: string) => MESSAGES[`${namespace}.${key}`] ?? `${namespace}.${key}`;
+	},
 }));
 
 import type { SearchProduct } from "@/lib/search";

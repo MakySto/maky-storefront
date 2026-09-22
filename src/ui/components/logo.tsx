@@ -2,8 +2,10 @@ import { getTranslations } from "next-intl/server";
 import { LinkWithChannel } from "../atoms/link-with-channel";
 import { Logo as SharedLogo } from "./shared/logo";
 
-export const Logo = async () => {
-	const t = await getTranslations("common");
+export const Logo = async ({ locale }: { locale: string }) => {
+	// The locale is a prop, not request state. The slogan beside the wordmark is the visible
+	// casualty when a translation is asked for without one and answered in Slovak.
+	const t = await getTranslations({ locale, namespace: "common" });
 
 	// No aria-label on the link. The wordmark inside is real text and the slogan beside
 	// it is aria-hidden, so the link already computes the accessible name "MAKY.STORE".

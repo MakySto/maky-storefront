@@ -1,3 +1,4 @@
+import { getLocaleFromChannel } from "@/config/locale";
 import { getTranslations } from "next-intl/server";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { HEADER_PRIMARY_NAV } from "./header.config";
@@ -16,8 +17,8 @@ function localizedHref(channel: string, href: string): string {
 }
 
 export async function HeaderPrimaryNav({ channel }: { channel: string }) {
-	const t = await getTranslations("nav");
-	const tAccount = await getTranslations("account");
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "nav" });
+	const tAccount = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "account" });
 	// `channel` used to be destructured away, which is how `/poradna` came to be linked
 	// in twelve markets and to exist in one. The category links are untouched — they are
 	// root catalogue URLs, not routes this policy knows about.

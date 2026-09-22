@@ -28,9 +28,21 @@ vi.mock("server-only", () => ({}));
 // No request context in a unit test. Mocked against the real catalogues so the
 // assertions below are about real strings, not placeholders.
 let activeLocale = "sk-SK";
+/**
+ * `getTranslations` takes either a namespace string or `{ locale, namespace }`. Channel-scoped
+ * components pass the object form — a bare namespace is answered in Slovak whenever the request
+ * locale is out of scope, which `src/i18n/locale-binding.test.ts` now forbids. The mock accepts
+ * both so it describes the real API rather than the half of it this file happened to use.
+ */
+const namespaceOf = (arg: string | { locale?: string; namespace: string }): string =>
+	typeof arg === "string" ? arg : arg.namespace;
 vi.mock("next-intl/server", () => ({
-	getTranslations: async (namespace: string) => {
-		const file = join(dirname(fileURLToPath(import.meta.url)), "../../i18n/messages", `${activeLocale}.json`);
+	getTranslations: async (arg: string | { locale?: string; namespace: string }) => {
+		const namespace = namespaceOf(arg);
+		// An explicit locale wins, which is the behaviour under test: a market page must be able
+		// to ask for its own language rather than whatever the request happens to carry.
+		const locale = typeof arg === "string" ? activeLocale : arg.locale ?? activeLocale;
+		const file = join(dirname(fileURLToPath(import.meta.url)), "../../i18n/messages", `${locale}.json`);
 		const messages = JSON.parse(readFileSync(file, "utf8")) as Record<string, Record<string, string>>;
 		return (key: string) => messages[namespace]?.[key] ?? `${namespace}.${key}`;
 	},

@@ -1,3 +1,4 @@
+import { getLocaleFromChannel } from "@/config/locale";
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
 import { getTranslations } from "next-intl/server";
@@ -66,7 +67,10 @@ export const generateMetadata = async (props: {
 		// Streaming/PPR can't set a 404 status after the shell is flushed, so the
 		// noindex robots meta is the only crawler-visible not-found signal here
 		// until the proxy gate lands.
-		const t = await getTranslations("pages");
+		const t = await getTranslations({
+			locale: getLocaleFromChannel(params.channel),
+			namespace: "pages",
+		});
 		return {
 			title: t("notFound"),
 			robots: { index: false, follow: false, googleBot: { index: false, follow: false } },

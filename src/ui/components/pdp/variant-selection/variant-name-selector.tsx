@@ -1,6 +1,7 @@
 "use client";
 
 import { cn, formatMoney } from "@/lib/utils";
+import { useLocale } from "@/providers/locale-provider";
 
 /**
  * Fallback selector for variants that have no structured attributes.
@@ -48,6 +49,10 @@ export function VariantNameSelector({
 	label = "Variant",
 	isPending,
 }: VariantNameSelectorProps) {
+	// Money is formatted in the market's locale, not the store default: `sk-SK` renders a
+	// dollar price as "196,99 USD" where a US shopper expects "$196.99".
+	const { locale } = useLocale();
+
 	// Check if prices differ between variants (show price if so)
 	const prices = variants
 		.map((v) => v.pricing?.price?.gross?.amount)
@@ -60,7 +65,7 @@ export function VariantNameSelector({
 		<div className="space-y-3">
 			<div className="flex items-center gap-2">
 				<span className="text-sm font-medium">{label}</span>
-				{selectedVariant && <span className="text-sm text-muted-foreground">{selectedVariant.name}</span>}
+				{selectedVariant && <span className="text-muted-foreground text-sm">{selectedVariant.name}</span>}
 			</div>
 
 			<div
@@ -87,7 +92,7 @@ export function VariantNameSelector({
 					const accessibleParts = [
 						variant.name,
 						isOutOfStock && "out of stock",
-						showPrices && price && formatMoney(price.amount, price.currency),
+						showPrices && price && formatMoney(price.amount, price.currency, locale),
 						discountPercent && `${discountPercent}% off`,
 					].filter(Boolean);
 
@@ -100,11 +105,11 @@ export function VariantNameSelector({
 								aria-disabled={isOutOfStock}
 								className={cn(
 									"h-12 min-w-[4.5rem] rounded-lg border px-4 text-sm font-medium transition-all",
-									"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+									"focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
 									isSelected
 										? "border-foreground bg-foreground text-background"
 										: "border-border bg-background text-foreground hover:border-foreground",
-									isOutOfStock && "cursor-not-allowed text-muted-foreground line-through opacity-60",
+									isOutOfStock && "text-muted-foreground cursor-not-allowed line-through opacity-60",
 								)}
 								title={isOutOfStock ? `${variant.name} - Out of stock` : undefined}
 								aria-label={accessibleParts.join(", ")}
@@ -114,14 +119,14 @@ export function VariantNameSelector({
 									{variant.name}
 									{showPrices && price && (
 										<span className={cn("text-xs", isSelected ? "opacity-80" : "text-muted-foreground")}>
-											{formatMoney(price.amount, price.currency)}
+											{formatMoney(price.amount, price.currency, locale)}
 										</span>
 									)}
 								</span>
 							</button>
 							{discountPercent && !isOutOfStock && (
 								<span
-									className="pointer-events-none absolute -bottom-2 -right-1 rounded-full border border-destructive bg-background px-1.5 py-0.5 text-[10px] font-semibold text-destructive"
+									className="border-destructive bg-background text-destructive pointer-events-none absolute -right-1 -bottom-2 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold"
 									aria-hidden="true"
 								>
 									-{discountPercent}%

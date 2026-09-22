@@ -161,7 +161,10 @@ export async function generateMetadata(props: {
 		// Streaming/PPR can't set a 404 status after the shell is flushed, so the
 		// noindex robots meta is the only crawler-visible not-found signal here
 		// until the proxy gate lands.
-		const t = await getTranslations("product");
+		const t = await getTranslations({
+			locale: getLocaleFromChannel(params.channel),
+			namespace: "product",
+		});
 		return {
 			title: t("notFoundTitle"),
 			robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
@@ -262,7 +265,10 @@ async function ProductContent({
 	const productAttributes = extractProductAttributes(product);
 	const careInstructions = extractCareInstructions(product);
 
-	const tCommon = await getTranslations("common");
+	const tCommon = await getTranslations({
+		locale: getLocaleFromChannel(params.channel),
+		namespace: "common",
+	});
 	const breadcrumbs = [
 		{ label: tCommon("home"), href: marketHref(params.channel) },
 		...(product.category

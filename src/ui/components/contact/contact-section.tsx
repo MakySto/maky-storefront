@@ -1,3 +1,4 @@
+import { getLocaleFromChannel } from "@/config/locale";
 import { getTranslations } from "next-intl/server";
 import { REVERSE_MAP } from "@/lib/channel-map";
 import { contactFormBlockReason, isContactFormServable } from "@/lib/contact/servable";
@@ -29,7 +30,7 @@ export async function ContactSection({ channel }: { channel: string }) {
 		return null;
 	}
 
-	const t = await getTranslations("contact");
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "contact" });
 
 	return (
 		<section aria-labelledby="contact-form-heading" className="mt-10">

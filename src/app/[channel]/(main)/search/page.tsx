@@ -1,3 +1,4 @@
+import { getLocaleFromChannel } from "@/config/locale";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
@@ -50,8 +51,9 @@ async function SearchContent({
 	params: Promise<{ channel: string }>;
 }) {
 	const [searchParams, params] = await Promise.all([searchParamsPromise, paramsPromise]);
-	const t = await getTranslations("search");
-	const tPlp = await getTranslations("plp");
+	const locale = getLocaleFromChannel(params.channel);
+	const t = await getTranslations({ locale, namespace: "search" });
+	const tPlp = await getTranslations({ locale, namespace: "plp" });
 
 	// Extract and validate query
 	const queryParam = searchParams.query;
@@ -169,8 +171,9 @@ function SearchSkeleton() {
 }
 
 async function EmptyState({ query, channel }: { query: string; channel: string }) {
-	const t = await getTranslations("search");
-	const tPages = await getTranslations("pages");
+	const locale = getLocaleFromChannel(channel);
+	const t = await getTranslations({ locale, namespace: "search" });
+	const tPages = await getTranslations({ locale, namespace: "pages" });
 	return (
 		<div className="flex flex-col items-center justify-center py-16 text-center">
 			<div className="bg-muted mb-6 flex h-16 w-16 items-center justify-center rounded-full">

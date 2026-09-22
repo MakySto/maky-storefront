@@ -126,11 +126,18 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 	const price = selectedVariant?.pricing?.price?.gross
 		? selectedVariant.pricing.price.gross.amount === 0
 			? "FREE"
-			: formatMoney(selectedVariant.pricing.price.gross.amount, selectedVariant.pricing.price.gross.currency)
-		: formatMoneyRange({
-				start: product.pricing?.priceRange?.start?.gross,
-				stop: product.pricing?.priceRange?.stop?.gross,
-			}) || "";
+			: formatMoney(
+					selectedVariant.pricing.price.gross.amount,
+					selectedVariant.pricing.price.gross.currency,
+					locale,
+				)
+		: formatMoneyRange(
+				{
+					start: product.pricing?.priceRange?.start?.gross,
+					stop: product.pricing?.priceRange?.stop?.gross,
+				},
+				locale,
+			) || "";
 
 	// Calculate discount/sale information
 	const currentPrice = selectedVariant?.pricing?.price?.gross?.amount;
@@ -142,6 +149,7 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 			? formatMoney(
 					selectedVariant.pricing.priceUndiscounted.gross.amount,
 					selectedVariant.pricing.priceUndiscounted.gross.currency,
+					locale,
 				)
 			: null;
 

@@ -1,3 +1,4 @@
+import { getLocaleFromChannel } from "@/config/locale";
 import { Suspense } from "react";
 import { HeartIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
@@ -10,7 +11,7 @@ function ActionSkeleton() {
 }
 
 export async function HeaderActions({ channel }: { channel: string }) {
-	const t = await getTranslations("nav");
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "nav" });
 
 	return (
 		<div className="flex items-center gap-0.5 sm:gap-1">

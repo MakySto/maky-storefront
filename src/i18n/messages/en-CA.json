@@ -110,7 +110,7 @@
 		"quantity": "Quantity",
 		"decreaseQuantity": "Decrease quantity",
 		"increaseQuantity": "Increase quantity",
-		"priceWithVat": "Price incl. VAT",
+		"priceWithVat": "Final price",
 		"technicalParameters": "Technical specifications",
 		"outerDimensions": "Outer dimensions"
 	},

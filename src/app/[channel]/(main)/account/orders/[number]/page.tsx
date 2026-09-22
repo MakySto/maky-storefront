@@ -1,3 +1,4 @@
+import { getLocaleFromChannel } from "@/config/locale";
 import { notFound } from "next/navigation";
 import { MapPin, CreditCard } from "lucide-react";
 import { OrderByNumberDocument } from "@/gql/graphql";
@@ -11,11 +12,13 @@ import { type AddressDetailsFragment } from "@/gql/graphql";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
 type Props = {
-	params: Promise<{ number: string }>;
+	// `channel` too: money is formatted in the market's locale, not the store default.
+	params: Promise<{ channel: string; number: string }>;
 };
 
 export default async function OrderDetailPage({ params }: Props) {
-	const { number } = await params;
+	const { channel, number } = await params;
+	const locale = getLocaleFromChannel(channel);
 
 	// Saleor's `me.orders` doesn't support filtering by number (UserOrdersArgs
 	// only has pagination args). We fetch a page and find client-side. This covers
@@ -92,7 +95,7 @@ export default async function OrderDetailPage({ params }: Props) {
 										</div>
 										{lineTotal != null && currency && (
 											<span className="text-sm font-medium tabular-nums">
-												{formatMoney(lineTotal, currency)}
+												{formatMoney(lineTotal, currency, locale)}
 											</span>
 										)}
 									</div>
@@ -105,7 +108,7 @@ export default async function OrderDetailPage({ params }: Props) {
 								<div className="flex justify-between">
 									<dt className="text-muted-foreground">Subtotal</dt>
 									<dd className="tabular-nums">
-										{formatMoney(order.subtotal.gross.amount, order.subtotal.gross.currency)}
+										{formatMoney(order.subtotal.gross.amount, order.subtotal.gross.currency, locale)}
 									</dd>
 								</div>
 								<div className="flex justify-between">
@@ -113,21 +116,25 @@ export default async function OrderDetailPage({ params }: Props) {
 									<dd className="tabular-nums">
 										{order.shippingPrice.gross.amount === 0
 											? "Free"
-											: formatMoney(order.shippingPrice.gross.amount, order.shippingPrice.gross.currency)}
+											: formatMoney(
+													order.shippingPrice.gross.amount,
+													order.shippingPrice.gross.currency,
+													locale,
+												)}
 									</dd>
 								</div>
 								{order.total.tax.amount > 0 && (
 									<div className="flex justify-between">
 										<dt className="text-muted-foreground">Tax</dt>
 										<dd className="tabular-nums">
-											{formatMoney(order.total.tax.amount, order.total.tax.currency)}
+											{formatMoney(order.total.tax.amount, order.total.tax.currency, locale)}
 										</dd>
 									</div>
 								)}
 								<div className="flex justify-between border-t pt-2 font-semibold">
 									<dt>Total</dt>
 									<dd className="tabular-nums">
-										{formatMoney(order.total.gross.amount, order.total.gross.currency)}
+										{formatMoney(order.total.gross.amount, order.total.gross.currency, locale)}
 									</dd>
 								</div>
 							</dl>

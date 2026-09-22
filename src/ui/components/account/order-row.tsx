@@ -7,10 +7,12 @@ import { accountRoutes } from "./routes";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
 type Props = {
+	/** The market's locale — money is formatted in it, not in the store default. */
+	locale: string;
 	order: OrderDetailsFragment;
 };
 
-export function OrderRow({ order }: Props) {
+export function OrderRow({ order, locale }: Props) {
 	const thumbnails = order.lines
 		.filter((l) => l.variant?.product.thumbnail)
 		.map((l) => l.variant!.product.thumbnail!)
@@ -63,7 +65,7 @@ export function OrderRow({ order }: Props) {
 					<span className="hidden sm:inline">{customerStatusLabel[order.status] ?? order.statusDisplay}</span>
 				</span>
 				<span className="text-sm font-semibold tabular-nums">
-					{formatMoney(order.total.gross.amount, order.total.gross.currency)}
+					{formatMoney(order.total.gross.amount, order.total.gross.currency, locale)}
 				</span>
 				<ArrowRight className="text-muted-foreground h-4 w-4" />
 			</div>

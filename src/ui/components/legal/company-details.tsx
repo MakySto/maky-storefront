@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE } from "@/config/locale";
 import { getTranslations } from "next-intl/server";
 import { companyInfo } from "@/config/company";
 
@@ -28,8 +29,10 @@ import { companyInfo } from "@/config/company";
  * Bratislava III…" is the register's own name, not a sentence to translate — the same
  * reason the street and city are not translated either.
  */
-export async function CompanyDetails() {
-	const t = await getTranslations("company");
+export async function CompanyDetails({ locale = DEFAULT_LOCALE }: { locale?: string } = {}) {
+	// `/o-nas` is pinned to sk by ROUTE_POLICY, so the default is the honest one here — but the
+	// locale is a parameter so the component does not become the reason it cannot move.
+	const t = await getTranslations({ locale, namespace: "company" });
 
 	return (
 		<>

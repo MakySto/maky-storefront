@@ -39,8 +39,8 @@ export async function SearchResultCard({
 	channel: string;
 	priority?: boolean;
 }) {
-	const t = await getTranslations("product");
-	const tCart = await getTranslations("cart");
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "product" });
+	const tCart = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "cart" });
 	// The channel's price in the channel's market format: `3 490,00 Kč` in Czechia, not the
 	// Slovak `3 490,00 CZK` every market used to get. Slovakia formats exactly as before.
 	const formattedPrice = formatPrice(product.price, product.currency, getLocaleFromChannel(channel));

@@ -1,3 +1,4 @@
+import { getLocaleFromChannel } from "@/config/locale";
 import { Suspense } from "react";
 import { Logo } from "@/ui/components/logo";
 import { HeaderSearch } from "./header-search";
@@ -32,7 +33,7 @@ export async function HeaderMainRow({ channel }: { channel: string }) {
 			</div>
 
 			{/* Logo */}
-			<Logo />
+			<Logo locale={getLocaleFromChannel(channel)} />
 
 			{/* Search — desktop only, dominant center */}
 			<div className="hidden flex-1 justify-center px-8 lg:flex">

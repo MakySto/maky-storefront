@@ -9,7 +9,13 @@ export function ProductElement({
 	product,
 	loading,
 	priority,
-}: { product: ProductListItemFragment } & { loading: "eager" | "lazy"; priority?: boolean }) {
+	locale,
+}: { product: ProductListItemFragment } & {
+	loading: "eager" | "lazy";
+	priority?: boolean;
+	/** The market's locale — money is formatted in it, not in the store default. */
+	locale: string;
+}) {
 	return (
 		<li data-testid="ProductElement">
 			<LinkWithChannel href={productPath(product.slug)} key={product.id} prefetch={false}>
@@ -33,10 +39,13 @@ export function ProductElement({
 							</p>
 						</div>
 						<p className="mt-1 text-sm font-medium text-neutral-900" data-testid="ProductElement_PriceRange">
-							{formatMoneyRange({
-								start: product?.pricing?.priceRange?.start?.gross,
-								stop: product?.pricing?.priceRange?.stop?.gross,
-							})}
+							{formatMoneyRange(
+								{
+									start: product?.pricing?.priceRange?.start?.gross,
+									stop: product?.pricing?.priceRange?.stop?.gross,
+								},
+								locale,
+							)}
 						</p>
 					</div>
 				</div>

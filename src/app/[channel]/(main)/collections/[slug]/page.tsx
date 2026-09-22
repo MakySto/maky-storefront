@@ -96,7 +96,10 @@ export const generateMetadata = async (props: PageProps, parent: ResolvingMetada
 		// Streaming/PPR can't set a 404 status after the shell is flushed, so the
 		// noindex robots meta is the only crawler-visible not-found signal here
 		// until the proxy gate lands.
-		const t = await getTranslations("pages");
+		const t = await getTranslations({
+			locale: getLocaleFromChannel(params.channel),
+			namespace: "pages",
+		});
 		return {
 			title: t("notFound"),
 			robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
@@ -135,7 +138,7 @@ async function CollectionContent({
 	const params = await paramsPromise;
 	const [outcome, t] = await Promise.all([
 		getCollectionOutcome(params.slug, params.channel),
-		getTranslations("plp"),
+		getTranslations({ locale: getLocaleFromChannel(params.channel), namespace: "plp" }),
 	]);
 
 	// A fault is not an absence.

@@ -1,3 +1,4 @@
+import { getLocaleFromChannel } from "@/config/locale";
 import { getTranslations } from "next-intl/server";
 import { ChevronRight } from "lucide-react";
 import { CurrentUserOrdersPaginatedDocument } from "@/gql/graphql";
@@ -8,8 +9,14 @@ import { AccountAddressCard } from "@/ui/components/account/address-card";
 import { accountRoutes } from "@/ui/components/account/routes";
 import { getCurrentUser } from "./get-current-user";
 
-export default async function AccountOverviewPage() {
-	const t = await getTranslations("account");
+export default async function AccountOverviewPage({
+	params,
+}: {
+	// Money is formatted in the market's locale, not the store default.
+	params: Promise<{ channel: string }>;
+}) {
+	const { channel } = await params;
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "account" });
 	const [user, ordersResult] = await Promise.all([
 		getCurrentUser(),
 		executeAuthenticatedGraphQL(CurrentUserOrdersPaginatedDocument, {
@@ -53,7 +60,7 @@ export default async function AccountOverviewPage() {
 				) : (
 					<div className="space-y-2">
 						{orders.map(({ node: order }) => (
-							<OrderRow key={order.id} order={order} />
+							<OrderRow key={order.id} order={order} locale={getLocaleFromChannel(channel)} />
 						))}
 					</div>
 				)}

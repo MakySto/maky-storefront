@@ -1,3 +1,4 @@
+import { getLocaleFromChannel } from "@/config/locale";
 import Link from "next/link";
 import { ShieldCheck, Truck, RotateCcw, MessageCircle } from "lucide-react";
 import { getTranslations } from "next-intl/server";
@@ -18,7 +19,7 @@ import { marketHref } from "@/lib/channel-map";
  * customers reading it.
  */
 export async function PurchaseTrust({ channel }: { channel: string }) {
-	const t = await getTranslations("footer");
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "footer" });
 
 	const items = [
 		{ icon: ShieldCheck, label: t("securePayment"), href: null },

@@ -1,3 +1,4 @@
+import { getLocaleFromChannel } from "@/config/locale";
 import Link from "next/link";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
@@ -66,8 +67,8 @@ export function footerLegalLinks(channel: string) {
 }
 
 export async function Footer({ channel }: { channel: string }) {
-	const t = await getTranslations("footer");
-	const tc = await getTranslations("common");
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "footer" });
+	const tc = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "common" });
 	const links = footerLegalLinks(channel);
 	const { showPrivacyPolicy, showTerms } = links;
 	// The same rule the header uses, so the two cannot drift apart again.

@@ -1,3 +1,4 @@
+import { getLocaleFromChannel } from "@/config/locale";
 import { CurrentUserOrdersPaginatedDocument } from "@/gql/graphql";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
 import { OrderRow } from "@/ui/components/account/order-row";
@@ -8,10 +9,14 @@ import { accountRoutes } from "@/ui/components/account/routes";
 const ORDERS_PER_PAGE = 10;
 
 type Props = {
+	// The market segment is in the route; the page needs it because money is formatted in the
+	// market's locale, not the store default.
+	params: Promise<{ channel: string }>;
 	searchParams: Promise<{ after?: string }>;
 };
 
-export default async function AccountOrdersPage({ searchParams }: Props) {
+export default async function AccountOrdersPage({ params, searchParams }: Props) {
+	const { channel } = await params;
 	const { after } = await searchParams;
 
 	const result = await executeAuthenticatedGraphQL(CurrentUserOrdersPaginatedDocument, {
@@ -35,7 +40,7 @@ export default async function AccountOrdersPage({ searchParams }: Props) {
 		<div className="space-y-6">
 			<div>
 				<h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
-				<p className="mt-1 text-sm text-muted-foreground">
+				<p className="text-muted-foreground mt-1 text-sm">
 					{totalCount === 0 ? "No orders yet" : `${totalCount} order${totalCount !== 1 ? "s" : ""}`}
 				</p>
 			</div>
@@ -48,7 +53,7 @@ export default async function AccountOrdersPage({ searchParams }: Props) {
 				<>
 					<div className="space-y-2">
 						{orders.map(({ node: order }) => (
-							<OrderRow key={order.id} order={order} />
+							<OrderRow key={order.id} order={order} locale={getLocaleFromChannel(channel)} />
 						))}
 					</div>
 

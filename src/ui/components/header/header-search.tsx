@@ -1,10 +1,11 @@
+import { getLocaleFromChannel } from "@/config/locale";
 import { redirect } from "next/navigation";
 import { SearchIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { marketHref } from "@/lib/channel-map";
 
 export async function HeaderSearch({ channel }: { channel: string }) {
-	const t = await getTranslations("nav");
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "nav" });
 
 	async function onSubmit(formData: FormData) {
 		"use server";

@@ -1,12 +1,20 @@
+import { getLocaleFromChannel } from "@/config/locale";
 import { getTranslations } from "next-intl/server";
 import { AccountAddressCard } from "@/ui/components/account/address-card";
 import { AddressFormDialog } from "@/ui/components/account/address-form-dialog";
 import { DeleteAddressButton, SetDefaultAddressButton } from "@/ui/components/account/address-actions";
 import { getCurrentUser } from "../get-current-user";
 
-export default async function AddressesPage() {
-	const t = await getTranslations("account");
-	const tCheckout = await getTranslations("checkout.addressForm");
+export default async function AddressesPage({
+	params,
+}: {
+	// The market segment is in the route, and the page needs it: a translation asked for
+	// without a locale is answered in Slovak whenever the request locale is out of scope.
+	params: Promise<{ channel: string }>;
+}) {
+	const locale = getLocaleFromChannel((await params).channel);
+	const t = await getTranslations({ locale, namespace: "account" });
+	const tCheckout = await getTranslations({ locale, namespace: "checkout.addressForm" });
 	const user = await getCurrentUser();
 	if (!user) return null;
 

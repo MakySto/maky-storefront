@@ -6,13 +6,15 @@ import { type OrderDetailsFragment } from "@/gql/graphql";
 import { PaymentStatus } from "@/ui/components/payment-status";
 
 type Props = {
+	/** The market's locale — money is formatted in it, not in the store default. */
+	locale: string;
 	order: OrderDetailsFragment;
 };
 
-export const OrderListItem = async ({ order }: Props) => {
-	const tNav = await getTranslations("nav");
-	const tProduct = await getTranslations("product");
-	const tPlp = await getTranslations("plp");
+export const OrderListItem = async ({ order, locale }: Props) => {
+	const tNav = await getTranslations({ locale, namespace: "nav" });
+	const tProduct = await getTranslations({ locale, namespace: "product" });
+	const tPlp = await getTranslations({ locale, namespace: "plp" });
 	return (
 		<li className="bg-white">
 			<div className="flex flex-col gap-2 border bg-neutral-200/20 px-6 py-4 md:grid md:grid-cols-4 md:gap-8">
@@ -104,6 +106,7 @@ export const OrderListItem = async ({ order }: Props) => {
 													formatMoney(
 														item.variant.pricing.price.gross.amount,
 														item.variant.pricing.price.gross.currency,
+														locale,
 													)}
 											</td>
 											<td className="py-6 text-end">
@@ -112,6 +115,7 @@ export const OrderListItem = async ({ order }: Props) => {
 														formatMoney(
 															item.variant.pricing.price.gross.amount * item.quantity,
 															item.variant.pricing.price.gross.currency,
+															locale,
 														)}
 													{item.quantity > 1 && (
 														<span className="text-xs md:hidden">
@@ -120,6 +124,7 @@ export const OrderListItem = async ({ order }: Props) => {
 																formatMoney(
 																	item.variant.pricing.price.gross.amount,
 																	item.variant.pricing.price.gross.currency,
+																	locale,
 																)}
 														</span>
 													)}
@@ -133,7 +138,7 @@ export const OrderListItem = async ({ order }: Props) => {
 					</div>
 					<dl className="flex justify-between border-y py-6 text-sm font-medium text-neutral-900 md:border md:px-6">
 						<dt>Total amount including delivery</dt>
-						<dd>{formatMoney(order.total.gross.amount, order.total.gross.currency)}</dd>
+						<dd>{formatMoney(order.total.gross.amount, order.total.gross.currency, locale)}</dd>
 					</dl>
 				</>
 			)}
