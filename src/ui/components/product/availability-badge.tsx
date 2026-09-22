@@ -19,6 +19,14 @@ import { cn } from "@/lib/utils";
  * fact the customer needs before they buy, so it belongs in the badge rather
  * than further down the page. The structured-data half of the same claim is
  * `buildProductJsonLd`, which emits schema.org/BackOrder for this mode.
+ *
+ * The lead time is NOT the same everywhere, and the copy is the only place that
+ * says so. Owner decision 2026-09-22: 5–10 working days across the EU markets,
+ * 7–14 for US and CA. Until then every foreign market said only "Auf Bestellung",
+ * "Made to order", "Na zamówienie" — the mode without the wait — so a Slovak
+ * shopper was the only one who learned how long it takes. If a market's real lead
+ * time changes, `common.onDemand` in that locale is the single line to edit; there
+ * is no number anywhere in the code to keep in step with it.
  */
 
 export const AVAILABILITY_METADATA_KEY = "cfm_availability_mode";
