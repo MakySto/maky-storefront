@@ -12,7 +12,10 @@
  */
 
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
-import { LanguageCodeEnum } from "@/gql/graphql";
+import { LanguageCode } from "@/config/language-code";
+// Type only: this module reaches the browser, and a value import of the enum would take all of
+// `@/gql/graphql` with it (a 114 KB chunk on /sk). `./language-code.ts` says why.
+import type { LanguageCodeEnum } from "@/gql/graphql";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,7 +61,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"sk-SK": {
 		locale: "sk-SK",
 		htmlLang: "sk",
-		graphqlLanguageCode: LanguageCodeEnum.Sk,
+		graphqlLanguageCode: LanguageCode.Sk,
 		ogLocale: "sk_SK",
 		fallbackCurrency: "EUR",
 		stripeLocale: "sk",
@@ -66,7 +69,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"cs-CZ": {
 		locale: "cs-CZ",
 		htmlLang: "cs",
-		graphqlLanguageCode: LanguageCodeEnum.Cs,
+		graphqlLanguageCode: LanguageCode.Cs,
 		ogLocale: "cs_CZ",
 		fallbackCurrency: "CZK",
 		stripeLocale: "cs",
@@ -74,7 +77,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"de-DE": {
 		locale: "de-DE",
 		htmlLang: "de",
-		graphqlLanguageCode: LanguageCodeEnum.De,
+		graphqlLanguageCode: LanguageCode.De,
 		ogLocale: "de_DE",
 		fallbackCurrency: "EUR",
 		stripeLocale: "de",
@@ -82,7 +85,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"de-AT": {
 		locale: "de-AT",
 		htmlLang: "de",
-		graphqlLanguageCode: LanguageCodeEnum.DeAt,
+		graphqlLanguageCode: LanguageCode.DeAt,
 		ogLocale: "de_AT",
 		fallbackCurrency: "EUR",
 		stripeLocale: "de",
@@ -90,7 +93,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"pl-PL": {
 		locale: "pl-PL",
 		htmlLang: "pl",
-		graphqlLanguageCode: LanguageCodeEnum.Pl,
+		graphqlLanguageCode: LanguageCode.Pl,
 		ogLocale: "pl_PL",
 		fallbackCurrency: "PLN",
 		stripeLocale: "pl",
@@ -98,7 +101,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"hu-HU": {
 		locale: "hu-HU",
 		htmlLang: "hu",
-		graphqlLanguageCode: LanguageCodeEnum.Hu,
+		graphqlLanguageCode: LanguageCode.Hu,
 		ogLocale: "hu_HU",
 		fallbackCurrency: "HUF",
 		stripeLocale: "hu",
@@ -106,7 +109,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"it-IT": {
 		locale: "it-IT",
 		htmlLang: "it",
-		graphqlLanguageCode: LanguageCodeEnum.It,
+		graphqlLanguageCode: LanguageCode.It,
 		ogLocale: "it_IT",
 		fallbackCurrency: "EUR",
 		stripeLocale: "it",
@@ -114,7 +117,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"fr-FR": {
 		locale: "fr-FR",
 		htmlLang: "fr",
-		graphqlLanguageCode: LanguageCodeEnum.Fr,
+		graphqlLanguageCode: LanguageCode.Fr,
 		ogLocale: "fr_FR",
 		fallbackCurrency: "EUR",
 		stripeLocale: "fr",
@@ -122,7 +125,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"es-ES": {
 		locale: "es-ES",
 		htmlLang: "es",
-		graphqlLanguageCode: LanguageCodeEnum.Es,
+		graphqlLanguageCode: LanguageCode.Es,
 		ogLocale: "es_ES",
 		fallbackCurrency: "EUR",
 		stripeLocale: "es",
@@ -130,7 +133,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"ro-RO": {
 		locale: "ro-RO",
 		htmlLang: "ro",
-		graphqlLanguageCode: LanguageCodeEnum.Ro,
+		graphqlLanguageCode: LanguageCode.Ro,
 		ogLocale: "ro_RO",
 		fallbackCurrency: "RON",
 		stripeLocale: "ro",
@@ -138,7 +141,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"en-US": {
 		locale: "en-US",
 		htmlLang: "en",
-		graphqlLanguageCode: LanguageCodeEnum.En,
+		graphqlLanguageCode: LanguageCode.En,
 		ogLocale: "en_US",
 		fallbackCurrency: "USD",
 		stripeLocale: "en",
@@ -146,7 +149,7 @@ export const LOCALE_MAP: Record<string, LocaleConfig> = {
 	"en-CA": {
 		locale: "en-CA",
 		htmlLang: "en",
-		graphqlLanguageCode: LanguageCodeEnum.EnCa,
+		graphqlLanguageCode: LanguageCode.EnCa,
 		ogLocale: "en_CA",
 		fallbackCurrency: "CAD",
 		stripeLocale: "en",
