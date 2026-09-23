@@ -9,6 +9,10 @@ import { buildOrderConfirmationPath } from "@/session-bridge";
  * from the post-payment callback does not reliably unmount the checkout SPA. `replace` (not
  * `push`) keeps the confirmed order out of the browser Back history.
  *
+ * The id rides in this request only. The proxy answers it with a 303 to `/checkout/complete`
+ * and an HttpOnly cookie (`src/lib/order-confirmation-handoff.ts`), so the confirmation document
+ * that loads analytics never has the id in its URL.
+ *
  * Placed outside `lib/payment/` on purpose: it is payment-agnostic (session-bridge only) so it
  * does not couple to the payment registry (B.4.4).
  *

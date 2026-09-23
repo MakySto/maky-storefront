@@ -53,7 +53,9 @@ export async function CheckoutSessionLoader({
 	const fallbackLocale = await resolveFallbackLocale(searchParams.locale);
 
 	if (orderId) {
-		// Order confirmation lives on its own route (/checkout/complete).
+		// Order confirmation lives on its own route (/checkout/complete). A document request never
+		// gets here: the proxy answers `?order=` with a 303 and the handoff cookie first (see
+		// src/lib/order-confirmation-handoff.ts). This hop sends anything else through it too.
 		redirect(buildOrderConfirmationPath({ orderId }));
 	}
 

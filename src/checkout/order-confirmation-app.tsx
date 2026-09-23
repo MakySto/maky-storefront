@@ -23,8 +23,8 @@ type OrderConfirmationAppProps = {
  * Deliberately separate from `CheckoutApp`: it mounts ONLY the server-hydrated, read-only order
  * context — no `CheckoutDataProvider` (cart/checkout state), no `AuthProvider`, no payment. The
  * confirmation subtree (`OrderConfirmation` + `CheckoutHeader` + `OrderSummary`) reads only the
- * order, so nothing else is needed. A missing order (bogus/expired `?order=`) renders the shared
- * not-found instead of crashing.
+ * order, so nothing else is needed. A missing order (no handoff cookie, an expired one, or an id
+ * Saleor does not know) renders the shared not-found instead of crashing.
  */
 export function OrderConfirmationApp({ orderId, initialOrder }: OrderConfirmationAppProps) {
 	const t = useTranslations("checkout.confirmation");

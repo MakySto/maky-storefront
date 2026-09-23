@@ -12,6 +12,7 @@ import {
 	marketHref,
 } from "./lib/channel-map";
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
+import { orderConfirmationHandoff } from "./lib/order-confirmation-handoff";
 import { marketSlugRedirect, sameCfmProduct } from "./lib/market-slug-redirects";
 import { marketLanguageCode } from "./config/market-language";
 import { catalogRedirectTarget } from "./lib/catalog-content/redirects";
@@ -220,6 +221,16 @@ async function route(request: NextRequest) {
 	if (PUBLIC_ASSET_PATHS.has(pathname) || METADATA_ROUTE_PATHS.has(pathname)) {
 		return NextResponse.next();
 	}
+
+	// ORDER CONFIRMATION -> the order id leaves the URL: 303 + HttpOnly cookie.
+	//
+	// `/checkout/complete?order=<id>` put the credential for the order into the URL of a
+	// document that loads the tag manager, and from there into every page_view and consent
+	// ping sent to GA4 and Google Ads, and into the referrer of the next page. Decided here,
+	// before any page renders, for the same PPR reason the redirects below live here. See
+	// src/lib/order-confirmation-handoff.ts.
+	const handoff = orderConfirmationHandoff(request);
+	if (handoff) return handoff;
 
 	// ROOT: geo-detect -> redirect to /xx
 	if (pathname === "/") {
