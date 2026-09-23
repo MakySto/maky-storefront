@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { notFound, redirect } from "next/navigation";
 import nextPkg from "next/package.json" with { type: "json" };
 import type { GraphQLResult } from "@/lib/graphql";
 import {
@@ -99,12 +100,66 @@ describe("catchUpstreamError", () => {
 		});
 	});
 
-	it("does not swallow unrelated errors", async () => {
-		await expect(
-			catchUpstreamError(async () => {
-				throw new TypeError("a real bug");
-			}),
-		).rejects.toThrow(TypeError);
+	/**
+	 * What production actually hands the caller. An error thrown inside `"use cache"` is
+	 * serialised into the cache entry's stream and comes back as a NEW plain Error carrying
+	 * React's placeholder message and the original error's digest — never the original class.
+	 * Built here the way React's Flight client builds it, from the thrown error's own digest.
+	 */
+	const asDeliveredByUseCache = (thrown: Error & { digest?: string }) =>
+		Object.assign(
+			new Error(
+				"An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details.",
+			),
+			{ digest: thrown.digest ?? "2338785109" },
+		);
+
+	it("recognises a fault that crossed the use-cache boundary, where instanceof cannot", async () => {
+		const thrown = new UpstreamUnavailableError({
+			status: "upstream-error",
+			type: "http",
+			retryable: true,
+			message: "HTTP 503: Service Unavailable",
+		});
+		const delivered = asDeliveredByUseCache(thrown);
+		expect(delivered).not.toBeInstanceOf(UpstreamUnavailableError);
+
+		const outcome = await catchUpstreamError(async () => {
+			throw delivered;
+		});
+		expect(outcome).toMatchObject({ status: "upstream-error", type: "http", retryable: true });
+	});
+
+	it("treats ANY rejection from a cached resolver as a fault, never as an answer or a crash", async () => {
+		for (const thrown of [
+			new TypeError("a real bug"),
+			asDeliveredByUseCache(new TypeError("a real bug, obfuscated")),
+			"a bare string",
+		]) {
+			const outcome = await catchUpstreamError(async () => {
+				throw thrown;
+			});
+			expect(outcome.status).toBe("upstream-error");
+		}
+	});
+
+	it("hands Next's own control flow back to Next untouched", async () => {
+		await expect(catchUpstreamError(async () => notFound())).rejects.toMatchObject({
+			digest: expect.stringContaining("NEXT_HTTP_ERROR_FALLBACK"),
+		});
+		await expect(catchUpstreamError(async () => redirect("/sk"))).rejects.toMatchObject({
+			digest: expect.stringContaining("NEXT_REDIRECT"),
+		});
+	});
+
+	it("keeps the fault's detail out of the digest: type and retry flag only", () => {
+		const thrown = new UpstreamUnavailableError({
+			status: "upstream-error",
+			type: "network",
+			retryable: false,
+			message: "secret-looking upstream body 10.0.0.7",
+		});
+		expect(thrown.digest).toBe("MAKY_UPSTREAM_UNAVAILABLE;network;0");
 	});
 });
 

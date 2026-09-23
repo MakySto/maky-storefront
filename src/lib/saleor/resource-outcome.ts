@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import type { GraphQLErrorType, GraphQLResult } from "@/lib/graphql";
 
 /**
@@ -80,6 +81,38 @@ export function toOutcome<Data, Resource>(
 }
 
 /**
+ * The `digest` an `UpstreamUnavailableError` carries: `MAKY_UPSTREAM_UNAVAILABLE;<type>;<0|1>`.
+ *
+ * Why a digest and not the class: in a production build an error thrown inside a
+ * `"use cache"` function does not reach the caller as itself. The cache runs in its own React
+ * server environment, the rejection is serialised into the entry's stream, and the caller gets a
+ * NEW plain `Error` whose message is React's production placeholder ("The specific message is
+ * omitted in production builds"). `instanceof UpstreamUnavailableError` is therefore always
+ * false there, and it was: with Saleor failing, the product page lost its title, robots tag
+ * and canonical and the `[upstream-error]` line never appeared — measured on a production
+ * build, 2026-09-23. Next does keep an error's OWN `digest` across that boundary
+ * (`create-error-handler.js`: "If the error already has a digest, respect the original
+ * digest"), so the classification rides on it. Only the type and the retry flag: a digest
+ * can reach the browser if some future caller does not catch it, and Saleor's message
+ * should not. The full message is still logged server-side by Next itself.
+ */
+const UPSTREAM_DIGEST_PREFIX = "MAKY_UPSTREAM_UNAVAILABLE";
+
+const ERROR_TYPES: readonly GraphQLErrorType[] = ["network", "http", "graphql", "validation", "blocked"];
+
+function upstreamDigest(outcome: UpstreamError): string {
+	return `${UPSTREAM_DIGEST_PREFIX};${outcome.type};${outcome.retryable ? 1 : 0}`;
+}
+
+function parseUpstreamDigest(digest: unknown): { type: GraphQLErrorType; retryable: boolean } | null {
+	if (typeof digest !== "string") return null;
+	const [prefix, type, retryable] = digest.split(";");
+	if (prefix !== UPSTREAM_DIGEST_PREFIX) return null;
+	const known = ERROR_TYPES.find((candidate) => candidate === type);
+	return known ? { type: known, retryable: retryable === "1" } : null;
+}
+
+/**
  * Thrown out of a `"use cache"` function so the entry is never stored.
  *
  * Next does not cache a rejected promise — it re-runs the body on the next call.
@@ -93,12 +126,14 @@ export function toOutcome<Data, Resource>(
 export class UpstreamUnavailableError extends Error {
 	readonly type: GraphQLErrorType;
 	readonly retryable: boolean;
+	readonly digest: string;
 
 	constructor(outcome: UpstreamError) {
 		super(outcome.message);
 		this.name = "UpstreamUnavailableError";
 		this.type = outcome.type;
 		this.retryable = outcome.retryable;
+		this.digest = upstreamDigest(outcome);
 	}
 }
 
@@ -114,8 +149,52 @@ export function refuseToCacheUpstreamError<T>(outcome: ResourceOutcome<T>): Auth
 }
 
 /**
- * Wrap the call to a cached resolver. Turns the throw back into an outcome, so
+ * What a rejection from a cached resolver means: always a fault, never an answer.
+ *
+ * A cached resolver resolves with the two authoritative answers and rejects for everything
+ * else — so a rejection, whatever it looks like by the time it arrives, is by construction
+ * "we could not find out". That is the only reading that survives production, where the
+ * rejection arrives as an anonymous `Error` (see `UPSTREAM_DIGEST_PREFIX`). The digest, when
+ * it is ours, only restores the detail for the log line.
+ */
+export function upstreamErrorFromRejection(error: unknown): UpstreamError {
+	const digest =
+		typeof error === "object" && error !== null ? (error as { digest?: unknown }).digest : undefined;
+	const known = parseUpstreamDigest(digest);
+	if (known) {
+		return {
+			status: "upstream-error",
+			type: known.type,
+			retryable: known.retryable,
+			message:
+				error instanceof UpstreamUnavailableError
+					? error.message
+					: `upstream unavailable (${String(digest)})`,
+		};
+	}
+	return {
+		status: "upstream-error",
+		type: "network",
+		retryable: true,
+		message: `cached resolver rejected${typeof digest === "string" ? ` (digest ${digest})` : ""}: ${
+			error instanceof Error ? error.message : String(error)
+		}`,
+	};
+}
+
+/**
+ * Wrap the call to a cached resolver. Turns the rejection back into an outcome, so
  * callers keep a total union to switch on instead of a try/catch.
+ *
+ * ANY rejection becomes `upstream-error`. This used to test `instanceof
+ * UpstreamUnavailableError` and rethrow everything else, which is exactly right in vitest and
+ * always wrong in production (see `UPSTREAM_DIGEST_PREFIX`): every Saleor fault was rethrown,
+ * out of `generateMetadata` as well, and the product page lost its title, robots tag and
+ * canonical whenever any one market failed to answer.
+ *
+ * Next's own control flow — `notFound()`, `redirect()`, a prerender bailout — is not a fault
+ * and is handed back to Next untouched; `unstable_rethrow` recognises those by their digests,
+ * which survive the cache boundary for the same reason ours does.
  */
 export async function catchUpstreamError<T>(
 	run: () => Promise<AuthoritativeOutcome<T>>,
@@ -123,15 +202,8 @@ export async function catchUpstreamError<T>(
 	try {
 		return await run();
 	} catch (error) {
-		if (error instanceof UpstreamUnavailableError) {
-			return {
-				status: "upstream-error",
-				type: error.type,
-				retryable: error.retryable,
-				message: error.message,
-			};
-		}
-		throw error;
+		unstable_rethrow(error);
+		return upstreamErrorFromRejection(error);
 	}
 }
 

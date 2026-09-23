@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, cache } from "react";
 import { categoryUrlFor } from "@/config/category-routes";
 import { cacheTag } from "next/cache";
 import { notFound } from "next/navigation";
@@ -58,10 +58,26 @@ type Product = NonNullable<ProductDetailsQuery["product"]>;
  */
 type LocalizedProduct = Product & { baseSlug: string };
 
+/**
+ * How long a product page waits to hear whether ANOTHER market has the product.
+ *
+ * The answer only decides an hreflang entry and a market-switcher target, so it gets one
+ * attempt and a deadline, and a market that does not answer in time is simply left out. It
+ * used to go through the transport's default budget — three retries, 1 + 2 + 4 s apart, each
+ * holding a queue slot — and a single market answering 503 kept every product page waiting
+ * about 7 s for its hreflang, on both the crawler and the customer path (measured on a
+ * production build, 2026-09-23). The page's OWN product keeps the full budget: that one
+ * decides whether there is a page at all.
+ */
+const COUNTERPART_DEADLINE_MS = 1_500;
+
+type LookupBudget = { signal: AbortSignal; retry: false };
+
 async function fetchProductOutcome(
 	slug: string,
 	channel: string,
 	locale: string,
+	budget?: LookupBudget,
 ): Promise<ResourceOutcome<LocalizedProduct>> {
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 	const result = await lookupBySlug(
@@ -83,6 +99,7 @@ async function fetchProductOutcome(
 				// the `"use cache"` entry is the only cache, and its tags (see
 				// `product-cache-tags.ts`) are the whole invalidation story.
 				revalidate: isSourceLocale(locale) ? 300 : 0,
+				...budget,
 			}),
 	);
 
@@ -93,19 +110,19 @@ async function fetchProductOutcome(
 }
 
 /**
- * The cached half. Ends in `refuseToCacheUpstreamError`, which throws on a fault
- * so Next never stores it — an outage must not be remembered as an absence for
- * the length of a `cacheLife("minutes")` entry.
+ * The body both cached lookups share. Ends in `refuseToCacheUpstreamError`, which throws on
+ * a fault so Next never stores it — an outage must not be remembered as an absence for the
+ * length of a `cacheLife("minutes")` entry. Called only from inside a `"use cache"` function.
  */
-async function getProductOutcomeCached(
+async function resolveProductAnswer(
 	slug: string,
 	channel: string,
 	locale: string,
+	budget?: LookupBudget,
 ): Promise<AuthoritativeOutcome<LocalizedProduct>> {
-	"use cache";
 	applyCacheProfile(CACHE_PROFILES.products, { channel, locale, slug });
 
-	let outcome = await fetchProductOutcome(slug, channel, locale);
+	let outcome = await fetchProductOutcome(slug, channel, locale, budget);
 
 	// Migration shim: a product whose Saleor slug has not been updated to the
 	// SKU-last form yet is still reachable at its canonical new URL. Only fires
@@ -114,7 +131,7 @@ async function getProductOutcomeCached(
 	// explicitly mapped slugs, so it disappears on its own once Saleor has converged.
 	if (outcome.status === "not-found") {
 		const previous = previousProductSlug(slug);
-		if (previous) outcome = await fetchProductOutcome(previous, channel, locale);
+		if (previous) outcome = await fetchProductOutcome(previous, channel, locale, budget);
 	}
 
 	const answer = refuseToCacheUpstreamError(outcome);
@@ -130,14 +147,57 @@ async function getProductOutcomeCached(
 	return answer;
 }
 
-/** `found` | `not-found` | `upstream-error`, shared by the page and its metadata. */
-export async function getProductOutcome(
+/** The page's own product, with the transport's full retry budget. */
+async function getProductOutcomeCached(
 	slug: string,
 	channel: string,
-): Promise<ResourceOutcome<LocalizedProduct>> {
-	const locale = getLocaleFromChannel(channel);
-	return catchUpstreamError(() => getProductOutcomeCached(slug, channel, locale));
+	locale: string,
+): Promise<AuthoritativeOutcome<LocalizedProduct>> {
+	"use cache";
+	return resolveProductAnswer(slug, channel, locale);
 }
+
+/**
+ * The same product in another market, for hreflang and the switcher: one attempt, one
+ * deadline for the whole answer (including the translated-slug and old-slug asks). A
+ * separate entry from the page's own lookup on purpose, because the two are allowed to give
+ * up at different times.
+ */
+async function getCounterpartOutcomeCached(
+	slug: string,
+	channel: string,
+	locale: string,
+): Promise<AuthoritativeOutcome<LocalizedProduct>> {
+	"use cache";
+	return resolveProductAnswer(slug, channel, locale, {
+		signal: AbortSignal.timeout(COUNTERPART_DEADLINE_MS),
+		retry: false,
+	});
+}
+
+/**
+ * `found` | `not-found` | `upstream-error`, shared by the page and its metadata.
+ *
+ * `cache()` so the two share one answer per request explicitly — including a fault, which is
+ * never stored across requests but must not be asked for twice, with retries, inside one.
+ */
+export const getProductOutcome = cache(
+	async (slug: string, channel: string): Promise<ResourceOutcome<LocalizedProduct>> => {
+		const locale = getLocaleFromChannel(channel);
+		return catchUpstreamError(() => getProductOutcomeCached(slug, channel, locale));
+	},
+);
+
+/** Another market's answer. A fault leaves that market out, and says so once per request. */
+const getCounterpartOutcome = cache(
+	async (slug: string, channel: string): Promise<ResourceOutcome<LocalizedProduct>> => {
+		const locale = getLocaleFromChannel(channel);
+		const outcome = await catchUpstreamError(() => getCounterpartOutcomeCached(slug, channel, locale));
+		if (outcome.status === "upstream-error")
+			logUpstreamError("product-counterpart", outcome, { slug, channel });
+		return outcome;
+	},
+);
 
 // ============================================================================
 // Metadata
@@ -207,7 +267,7 @@ export async function generateMetadata(props: {
 	const market = REVERSE_MAP[params.channel] ?? params.channel;
 	const languages = counterpartAlternates(
 		market,
-		await productCounterparts(product, params.channel, getProductOutcome),
+		await productCounterparts(product, params.channel, getCounterpartOutcome),
 	);
 	return languages ? { ...metadata, alternates: { ...metadata.alternates, languages } } : metadata;
 }
@@ -246,13 +306,17 @@ async function ProductContent({
 
 	const outcome = await getProductOutcome(params.productSlug, params.channel);
 
-	// An upstream fault is NOT an absence. Throwing hands it to the error
-	// boundary; calling notFound() here would tell the world a live, buyable
-	// product is gone every time Saleor hiccups — and once the proxy gate is
+	// An upstream fault is NOT an absence. Calling notFound() here would tell the world a
+	// live, buyable product is gone every time Saleor hiccups — and once the proxy gate is
 	// enabled, that would be a real 404 rather than a soft one.
+	//
+	// Rendered rather than thrown. There is no error boundary under `[channel]`, so the throw
+	// this used to be ended as React's client-side retry of the Suspense boundary and, failing
+	// that, the framework's bare "Application error" screen. The metadata for the same request
+	// is `noindex` with no canonical (see `generateMetadata`), and nothing here is cached.
 	if (outcome.status === "upstream-error") {
 		logUpstreamError("product", outcome, { slug: params.productSlug, channel: params.channel });
-		throw new Error(`product lookup failed for ${params.productSlug}: ${outcome.message}`);
+		return <ProductTemporarilyUnavailable channel={params.channel} productSlug={params.productSlug} />;
 	}
 
 	if (outcome.status === "not-found") {
@@ -432,9 +496,50 @@ async function ProductContent({
  * the same set as its hreflang cluster, from the same cached lookups.
  */
 async function ProductSwitchTargets({ product, channel }: { product: LocalizedProduct; channel: string }) {
-	const counterparts = await productCounterparts(product, channel, getProductOutcome);
+	const counterparts = await productCounterparts(product, channel, getCounterpartOutcome);
 	return (
 		<MarketSwitchTargets paths={Object.fromEntries(counterparts.map(({ market, path }) => [market, path]))} />
+	);
+}
+
+/**
+ * What the page says when Saleor could not be asked about its own product: a temporary
+ * error, never "this product does not exist". The retry is a plain link to the same URL, so
+ * it is a fresh request and a fresh lookup — nothing about the failure was cached.
+ */
+async function ProductTemporarilyUnavailable({
+	channel,
+	productSlug,
+}: {
+	channel: string;
+	productSlug: string;
+}) {
+	const locale = getLocaleFromChannel(channel);
+	const [tCommon, tProduct] = await Promise.all([
+		getTranslations({ locale, namespace: "common" }),
+		getTranslations({ locale, namespace: "product" }),
+	]);
+	const buttonBase =
+		"inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+	return (
+		<main className="mx-auto flex min-h-[50vh] w-full max-w-7xl flex-1 flex-col items-center justify-center px-4 py-16 text-center">
+			<h1 className="text-text-primary mb-6 text-2xl font-bold tracking-tight">{tCommon("error")}</h1>
+			<div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+				<a
+					href={marketHref(channel, `/${productSlug}`)}
+					className={`${buttonBase} bg-action-primary text-action-primary-text hover:bg-action-primary-hover`}
+				>
+					{tCommon("retry")}
+				</a>
+				<a
+					href={marketHref(channel)}
+					className={`${buttonBase} border-border-default bg-surface-primary text-text-primary hover:bg-surface-muted border`}
+				>
+					{tProduct("goHome")}
+				</a>
+			</div>
+		</main>
 	);
 }
 
