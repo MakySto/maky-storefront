@@ -17,6 +17,8 @@ import {
 } from "@/lib/saleor/resource-outcome";
 import { buildPageMetadata } from "@/lib/seo";
 import { marketHref } from "@/lib/channel-map";
+import { Suspense } from "react";
+import { RouteLoading } from "@/ui/components/route-loading";
 
 const parser = edjsHTML();
 
@@ -87,7 +89,19 @@ export const generateMetadata = async (props: {
 	});
 };
 
-export default async function Page(props: { params: Promise<{ slug: string }> }) {
+/**
+ * Its own boundary: the page is a Saleor lookup keyed on a slug no build knows, and the
+ * layout no longer wraps the page in one — see `app/[channel]/(main)/layout.tsx`.
+ */
+export default function Page(props: { params: Promise<{ slug: string }> }) {
+	return (
+		<Suspense fallback={<RouteLoading />}>
+			<SaleorPage {...props} />
+		</Suspense>
+	);
+}
+
+async function SaleorPage(props: { params: Promise<{ slug: string }> }) {
 	const params = await props.params;
 	const outcome = await getSaleorPage(params.slug);
 

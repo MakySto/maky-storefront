@@ -133,9 +133,29 @@ export default async function RootLayout(props: {
 				<Suspense fallback={<HeaderSkeleton />}>
 					<Header channel={channel} />
 				</Suspense>
-				<main className="flex-1">
-					<Suspense fallback={null}>{props.children}</Suspense>
-				</main>
+				{/* No Suspense around the page. There was one here — `fallback={null}`, from the
+				    Paper template — and it put the footer on screen before the content on
+				    every page of the site.
+
+				    React 19.2 does not write a finished boundary in place when doing so would
+				    take the flush past 12 800 bytes (`progressiveChunkSize`); it "outlines"
+				    it: an empty <template> here, the content after the footer, and a `$RC`
+				    script to move it in. The head and the header already fill ~11 KB, so any
+				    page body over ~1.5 KB was outlined — the homepage, every category, every
+				    legal page, measured in `.next/server/app/sk-eur*.html`. And `$RC` waits
+				    until 300 ms after the first frame once one has been painted. When the
+				    browser painted before reaching it, the first frame was the header with
+				    the footer right under it, and 300 ms later the page pushed the footer
+				    off-screen: CLS 0.87 on /sk and 0.61 on a product page in Lighthouse, and
+				    the same race for real visitors on a slow parse.
+
+				    Without the boundary the body is written inline and the first frame holds
+				    the real page. A route that needs request-time data before it can render
+				    anything declares its own boundary at page level, with a fallback tall
+				    enough to keep the footer below the fold (`RouteLoading`). The build
+				    enforces it: without one, `next build` fails with "Uncached data was
+				    accessed outside of Suspense". */}
+				<main className="flex-1">{props.children}</main>
 				<Footer channel={channel} />
 			</div>
 			<Suspense fallback={null}>

@@ -17,6 +17,8 @@ import { WithdrawalForm } from "@/ui/components/withdrawal/withdrawal-form";
 import { getCurrentUser, type AccountUser } from "../account/get-current-user";
 import { submitWithdrawalAction } from "./actions";
 import { marketOpenGraph } from "@/lib/seo/metadata";
+import { Suspense } from "react";
+import { RouteLoading } from "@/ui/components/route-loading";
 
 /**
  * `/sk/odstupenie-od-zmluvy` — the online withdrawal function, plus the explanation.
@@ -290,7 +292,19 @@ function prefillPhone(user: AccountUser): string | null {
 	return null;
 }
 
-export default async function Page(props: { params: Promise<{ channel: string }> }) {
+/**
+ * Its own boundary, because every render is request-time (`connection()` below) and the
+ * layout no longer wraps the page in one — see `app/[channel]/(main)/layout.tsx`.
+ */
+export default function Page(props: { params: Promise<{ channel: string }> }) {
+	return (
+		<Suspense fallback={<RouteLoading />}>
+			<WithdrawalPage {...props} />
+		</Suspense>
+	);
+}
+
+async function WithdrawalPage(props: { params: Promise<{ channel: string }> }) {
 	// Opt out of prerendering: every render must mint its own submissionId.
 	await connection();
 

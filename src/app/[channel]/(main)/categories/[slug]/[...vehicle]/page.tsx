@@ -31,6 +31,7 @@ import { Breadcrumbs, type BreadcrumbItem } from "@/ui/components/breadcrumbs";
 import { ContentBlocks } from "@/ui/components/catalog/content-blocks";
 import { CatalogOfferList } from "@/ui/components/catalog/offer-list";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
+import { RouteLoading } from "@/ui/components/route-loading";
 
 /**
  * The vehicle category pages: `/sk/stresne-nosice/[make]/[model]/[generation]`.
@@ -234,7 +235,20 @@ async function Offers({
 	return <CatalogOfferList offers={offers} channel={channel} locale={locale} />;
 }
 
-export default async function Page({ params }: Params) {
+/**
+ * Its own boundary: `params` names a vehicle no build enumerates, so reading them is
+ * request-time, and the layout no longer wraps the page in one — see
+ * `app/[channel]/(main)/layout.tsx`.
+ */
+export default function Page(props: Params) {
+	return (
+		<Suspense fallback={<RouteLoading />}>
+			<VehiclePage {...props} />
+		</Suspense>
+	);
+}
+
+async function VehiclePage({ params }: Params) {
 	const { channel, slug, vehicle } = await params;
 	const resolved = await resolve(channel, slug, vehicle);
 	if (!resolved) notFound();
