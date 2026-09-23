@@ -2,6 +2,8 @@ import { GeistSans } from "geist/font/sans";
 import Script from "next/script";
 import { type ReactNode } from "react";
 
+import { analyticsUrlRedactionScript } from "./analytics-url-redaction";
+
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
 const CF_WEB_ANALYTICS_TOKEN = process.env.NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN;
 
@@ -60,7 +62,9 @@ export function DocumentShell({ lang, children }: { lang: string; children: Reac
 						    The rule recognises `app/layout.tsx` and this file is not one, but it IS
 						    rendered by both root layouts and nothing else — which is exactly the
 						    position the rule is protecting. The strategy is load-bearing: the consent
-						    defaults must be in dataLayer before the container below can read them. */}
+						    defaults must be in dataLayer before the container below can read them, and
+						    so must the URL redaction appended to them (./analytics-url-redaction.ts),
+						    which keeps checkout, Stripe and password-reset values out of every hit. */}
 						<Script
 							id="maky-consent-default"
 							strategy="beforeInteractive"
@@ -82,7 +86,7 @@ try {
   var s = JSON.parse(localStorage.getItem('maky-consent') || 'null');
   if (s && s.consent) { gtag('consent', 'update', s.consent); }
 } catch (e) {}
-`,
+${analyticsUrlRedactionScript}`,
 							}}
 						/>
 						{/* lazyOnload, not afterInteractive. The container and gtag/js are
