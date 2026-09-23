@@ -23,6 +23,7 @@
 		"prepare": "husky install",
 		"i18n:check": "node scripts/i18n/check-commerce-i18n.mjs && node scripts/i18n/check-locale-matrix.mjs && node scripts/i18n/check-message-parity.mjs",
 		"check:css": "node scripts/checks/css-utilities.mjs",
+		"check:shells": "node scripts/checks/shell-outlining.mjs",
 		"check:nav": "node scripts/checks/nav-links.mjs",
 		"check:fitment": "node scripts/checks/fitment-dataset.mjs",
 		"check:catalog": "vitest run src/lib/catalog-content/whole-set.acceptance.test.ts src/lib/catalog-content/redirects.acceptance.test.ts src/lib/catalog-content/category-routes.acceptance.test.ts",
