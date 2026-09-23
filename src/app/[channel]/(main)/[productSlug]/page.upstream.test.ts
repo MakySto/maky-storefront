@@ -8,7 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  *
  * The owner's table, one row per test:
  *   a) the product exists here, another market cannot be asked  -> the page keeps its title,
- *      robots and canonical; hreflang just leaves that market out;
+ *      robots and canonical; hreflang names no market it could not verify (the presence
+ *      query is one request, so a fault there leaves the page naming only itself);
  *   b) this market's own lookup fails                           -> noindex, no canonical, no
  *      "not found" title;
  *   c) Saleor answers `product: null`                            -> the not-found branch.
@@ -18,20 +19,35 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type Answer = Record<string, unknown> | null | "fail";
 let answers: Record<string, Answer>;
-let calls: { channel: string; slug: string; retry?: boolean; signal?: AbortSignal }[];
+let calls: { query: string; channel?: string; retry?: boolean; signal?: AbortSignal }[];
+
+const FAILED = {
+	ok: false,
+	error: { type: "http", statusCode: 503, message: "HTTP 503", isRetryable: true },
+};
 
 vi.mock("@/lib/graphql", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/lib/graphql")>()),
 	executePublicGraphQL: async (
-		_doc: unknown,
-		options: { variables: { channel: string; slug: string }; retry?: boolean; signal?: AbortSignal },
+		doc: { toString(): string },
+		options: { variables: { channel?: string; id?: string }; retry?: boolean; signal?: AbortSignal },
 	) => {
-		const { channel, slug } = options.variables;
-		calls.push({ channel, slug, retry: options.retry, signal: options.signal });
-		const answer = answers[channel];
-		if (answer === "fail") {
-			return { ok: false, error: { type: "http", statusCode: 503, message: "HTTP 503", isRetryable: true } };
+		const query = doc.toString();
+		const { channel } = options.variables;
+		calls.push({ query: query.slice(0, 40), channel, retry: options.retry, signal: options.signal });
+		// The presence query: one alias per live market, `product(id: $id, channel: "…")`.
+		if (options.variables.id !== undefined) {
+			const aliases = [...query.matchAll(/(\w+): product\(id: \$id, channel: "([^"]+)"\)/g)];
+			if (aliases.some(([, , aliasChannel]) => answers[aliasChannel!] === "fail")) return FAILED;
+			return {
+				ok: true,
+				data: Object.fromEntries(
+					aliases.map(([, market, aliasChannel]) => [market, answers[aliasChannel!] ?? null]),
+				),
+			};
 		}
+		const answer = answers[channel!];
+		if (answer === "fail") return FAILED;
 		return { ok: true, data: { product: answer ?? null } };
 	},
 }));
@@ -99,32 +115,37 @@ const metadataFor = async () => {
 };
 
 describe("PDP metadata when Saleor fails", () => {
-	it("a) another market failing leaves the page's title, robots and canonical alone, and only that market out of hreflang", async () => {
+	it("with every market answering, the cluster is the markets that have the product, so the rows below are not vacuous", async () => {
+		const meta = await metadataFor();
+		expect(Object.keys(meta.alternates?.languages ?? {})).toEqual(["sk-SK", "cs-CZ", "x-default"]);
+	});
+
+	it("a) another market failing leaves the page's title, robots and canonical alone, and names no unverified market", async () => {
 		answers["de-eur"] = "fail";
 		const meta = await metadataFor();
 
 		expect(String(meta.title)).toContain("Nordrive Silenzio CX");
 		expect(meta.robots).toBeUndefined();
 		expect(meta.alternates?.canonical).toBe(`/sk/${BASE}`);
-		expect(Object.keys(meta.alternates?.languages ?? {})).toEqual(["sk-SK", "cs-CZ", "x-default"]);
+		expect(meta.alternates?.languages).toBeUndefined();
 	});
 
-	it("a) another market is asked once, with a deadline, while the page's own product keeps its retries", async () => {
+	it("a) the other markets are asked once, with a deadline, while the page's own product keeps its retries", async () => {
 		answers["de-eur"] = "fail";
 		await metadataFor();
 
 		const own = calls.filter((call) => call.channel === "sk-eur");
-		const foreign = calls.filter((call) => call.channel !== "sk-eur");
+		const others = calls.filter((call) => call.channel === undefined);
 		expect(own.length).toBeGreaterThan(0);
 		for (const call of own) {
 			expect(call.retry).toBeUndefined();
 			expect(call.signal).toBeUndefined();
 		}
-		expect(foreign.length).toBeGreaterThan(0);
-		for (const call of foreign) {
-			expect(call.retry).toBe(false);
-			expect(call.signal).toBeInstanceOf(AbortSignal);
-		}
+		expect(others).toHaveLength(1);
+		expect(others[0]!.query).toMatch(/^query ProductMarketPresence/);
+		expect(others[0]!.retry).toBe(false);
+		expect(others[0]!.signal).toBeInstanceOf(AbortSignal);
+		expect(calls.filter((call) => call.channel !== undefined && call.channel !== "sk-eur")).toEqual([]);
 	});
 
 	it("b) the page's own lookup failing gives noindex and no canonical — and no not-found title", async () => {
