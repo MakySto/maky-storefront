@@ -1,5 +1,6 @@
 import { type ReactNode, Suspense } from "react";
 import { hasAuthSession } from "@/lib/auth/has-auth-session";
+import { AuthProvider } from "@/lib/auth";
 import { LoginForm } from "@/ui/components/login-form";
 import { AccountNav } from "@/ui/components/account/account-nav";
 import { AccountSkeleton } from "@/ui/components/account/account-skeleton";
@@ -22,17 +23,31 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
 	);
 }
 
+/**
+ * The sign-in form needs the Saleor auth provider: `LoginMode` calls `useSaleorAuthContext()`,
+ * which throws outside it. /login wraps the form; this shell did not, so every signed-out visit to
+ * /account or /account/orders — and any visit with an expired session — ended in Next's English
+ * "This page couldn't load" (seen on production 2026-09-23).
+ */
+function SignIn() {
+	return (
+		<AuthProvider>
+			<LoginForm />
+		</AuthProvider>
+	);
+}
+
 async function AccountShell({ children }: { children: ReactNode }) {
 	// Proper auth gate: are Saleor session tokens actually present? (Not a loose
 	// "any cookie exists" scan, which was effectively always true.)
 	if (!(await hasAuthSession())) {
-		return <LoginForm />;
+		return <SignIn />;
 	}
 
 	const user = await getCurrentUser();
 
 	if (!user) {
-		return <LoginForm />;
+		return <SignIn />;
 	}
 
 	return (
