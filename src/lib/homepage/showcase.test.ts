@@ -72,6 +72,7 @@ describe("hero showcase", () => {
 			href: "/sk/stresny-box-thule-motion-3-xl-titan-glossy-639801",
 			price: formatPrice(899, "EUR", "sk-SK"),
 			image: "https://cdn.example/cut-out.webp",
+			category: null,
 		});
 		// One attempt, and the product's own event expires the entry.
 		expect(sent[0]).toMatchObject({ operation: "HomeHeroProduct", retry: false });

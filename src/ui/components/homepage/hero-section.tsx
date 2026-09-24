@@ -57,7 +57,9 @@ export async function HeroSection({
 							style={
 								{ "--hero-pos": photo.position, "--hero-pos-mobile": photo.mobilePosition } as CSSProperties
 							}
-							className="object-cover object-[var(--hero-pos-mobile)] lg:object-[var(--hero-pos)]"
+							// A touch warmer and crisper than the file: the approved hero is late light, and the
+							// scenery photos from the product galleries are shot flat.
+							className="object-cover object-[var(--hero-pos-mobile)] brightness-[1.06] contrast-[1.05] saturate-[1.18] sepia-[0.12] lg:object-[var(--hero-pos)]"
 						/>
 					)}
 					<div
@@ -65,23 +67,28 @@ export async function HeroSection({
 						className="via-scrim/25 to-scrim absolute inset-0 bg-linear-to-b from-transparent lg:hidden"
 					/>
 				</div>
-				{/* Warm late light over the cool mist: a soft copper glow from the top right, blended so
-				    it tints the scenery and never the product's own colour. */}
+				{/* Warm late light over the cool scenery, as the approved hero's golden hour: a copper
+				    glow from the top right and a warm grade over the whole photo, both blended so they
+				    tint the landscape and never shift the product's own colour. */}
 				<div
 					aria-hidden="true"
-					className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_88%_0%,var(--color-copper-300),transparent_62%)] opacity-35 mix-blend-soft-light"
+					className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_82%_0%,var(--color-copper-300),transparent_65%)] opacity-60 mix-blend-soft-light"
+				/>
+				<div
+					aria-hidden="true"
+					className="to-copper-200 absolute inset-0 -z-10 bg-linear-to-b from-transparent via-transparent opacity-25 mix-blend-soft-light"
 				/>
 				{/* Darkening where the words are, on a desktop: the left, and the foot under the benefits. */}
 				<div
 					aria-hidden="true"
-					className="from-scrim/85 via-scrim/40 absolute inset-0 -z-10 hidden bg-linear-to-r to-transparent lg:block"
+					className="from-scrim/80 via-scrim/35 absolute inset-0 -z-10 hidden bg-linear-to-r via-45% to-transparent to-75% lg:block"
 				/>
 				<div
 					aria-hidden="true"
-					className="from-scrim/70 absolute inset-x-0 bottom-0 -z-10 hidden h-48 bg-linear-to-t to-transparent lg:block"
+					className="from-scrim/75 absolute inset-x-0 bottom-0 -z-10 hidden h-40 bg-linear-to-t to-transparent lg:block"
 				/>
 
-				<div className="max-w-page relative mx-auto flex flex-col px-4 pt-[13.5rem] pb-10 sm:px-6 sm:pt-[19rem] lg:min-h-[41rem] lg:px-8 lg:pt-24 lg:pb-36">
+				<div className="max-w-page relative mx-auto flex flex-col px-4 pt-[13.5rem] pb-10 sm:px-6 sm:pt-[19rem] lg:min-h-[37rem] lg:px-8 lg:pt-20 lg:pb-32">
 					<div className="max-w-2xl">
 						<p className="text-text-inverse/85 text-xs font-semibold tracking-[0.2em] uppercase sm:text-[0.8125rem]">
 							{t("heroEyebrow")}
@@ -90,7 +97,7 @@ export async function HeroSection({
 						<h1 className="mt-4 text-[2.625rem] leading-[1.02] font-bold tracking-[-0.03em] text-balance sm:text-6xl lg:text-[4.5rem]">
 							{t("heroHeadline")}
 						</h1>
-						<p className="text-text-inverse/85 mt-5 max-w-lg text-base leading-relaxed text-pretty sm:text-lg">
+						<p className="text-text-inverse/90 mt-5 max-w-xl text-base leading-relaxed text-pretty sm:text-lg lg:text-xl">
 							{t("heroLead")}
 						</p>
 
@@ -98,10 +105,10 @@ export async function HeroSection({
 							{vehicleAction}
 							<Link
 								href={boxesHref}
-								className="border-text-inverse/45 bg-scrim/20 text-text-inverse hover:border-text-inverse hover:bg-text-inverse/10 focus-visible:ring-text-inverse inline-flex h-12 items-center justify-center gap-2 rounded-xs border px-6 text-base font-semibold backdrop-blur-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:outline-hidden"
+								className="border-text-inverse/85 bg-scrim/25 text-text-inverse hover:bg-text-inverse/12 focus-visible:ring-text-inverse inline-flex h-[3.25rem] items-center justify-center gap-2 rounded-xs border-2 px-6 text-base font-semibold backdrop-blur-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:outline-hidden"
 							>
 								{t("heroSecondaryCta")}
-								<ArrowRightIcon className="h-4 w-4" aria-hidden="true" />
+								<ArrowRightIcon className="h-[1.125rem] w-[1.125rem]" strokeWidth={2.25} aria-hidden="true" />
 							</Link>
 						</div>
 					</div>

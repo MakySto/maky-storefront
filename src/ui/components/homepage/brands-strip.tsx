@@ -1,53 +1,64 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { ArrowRightIcon } from "lucide-react";
 import { getLocaleFromChannel } from "@/config/locale";
+import { HOMEPAGE_BRAND_SLUGS, getBrands } from "@/lib/brands/catalog";
 import { marketHref } from "@/lib/channel-map";
+import { BrandMark } from "@/ui/components/brands/brand-mark";
 
 /**
- * Homepage brand strip.
+ * Homepage brand strip: the approved makers (CLAUDE.md §6) that this market actually sells, each
+ * to its brand page, and a link to all of them.
  *
- * Every name here must clear two tests, and the list before 2026-09-22 cleared neither.
+ * Every name clears two tests. Approved for the homepage — Thule, Nordrive, Menabo, Yakima,
+ * Peruzzo, Pro-USER, Spinder, Green Valley, SnowDrive, DAC, and never Cruz, HAK-SYSTEM, GALIA,
+ * ORIS or JAEGER, nor a brand that only appears in a generated mockup (Dometic, iKamper). And
+ * stocked here: the list is `getBrands` — Saleor's makers counted in this channel — so SnowDrive,
+ * approved but with no products, stays out until it has some.
  *
- * 1. Approved for the homepage — CLAUDE.md §6 names Thule, Nordrive, Menabo, Yakima,
- *    Peruzzo, Pro-USER, Spinder, Green Valley, SnowDrive and DAC, and explicitly says
- *    NOT to show Cruz, HAK-SYSTEM, GALIA, ORIS or JAEGER until approved. A brand that only
- *    appears in a generated mockup (Dometic, iKamper) is not approved either.
- * 2. Actually stocked. Checked against the `cfm:attribute:manufacturer` values in Saleor.
- *    SnowDrive is approved but has no catalogue products, so it is left out until it does.
- *
- * Each name is set as a wordmark and leads somewhere real: the search for that brand. There
- * is no brand index page, so there is no "all brands" link.
+ * A brand shows its logo once the owner publishes it in Payload's `brands` collection; until
+ * then the name is set as a wordmark. A fault reading the brands hides the strip: a row of
+ * links that may lead nowhere is worse than none.
  */
-const BRANDS = [
-	"Thule",
-	"Yakima",
-	"Menabo",
-	"Nordrive",
-	"Peruzzo",
-	"Pro-USER",
-	"Spinder",
-	"Green Valley",
-	"DAC",
-];
-
 export async function BrandsStrip({ channel }: { channel: string }) {
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "home" });
+	const all = await getBrands(channel).catch((error: unknown) => {
+		console.warn(
+			`[Homepage] brand strip left out for ${channel}:`,
+			error instanceof Error ? error.message : error,
+		);
+		return [];
+	});
+	const brands = HOMEPAGE_BRAND_SLUGS.flatMap((slug) => all.filter((brand) => brand.slug === slug));
+	if (brands.length === 0) return null;
 
 	return (
-		<section className="max-w-page mx-auto px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
-			<h2 className="text-text-primary text-xl font-bold tracking-[-0.02em] sm:text-2xl">
-				{t("brandsTitle")}
-			</h2>
-			<ul className="border-border-subtle mt-6 grid grid-cols-3 items-center gap-x-4 gap-y-7 border-y py-8 sm:grid-cols-5 lg:flex lg:justify-between lg:gap-x-6">
-				{BRANDS.map((name) => (
-					<li key={name} className="text-center">
+		<section className="max-w-page mx-auto px-4 pt-10 pb-12 sm:px-6 sm:pt-12 sm:pb-14 lg:px-8">
+			<div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+				<h2 className="text-text-primary text-2xl font-extrabold tracking-[-0.025em] sm:text-[1.875rem]">
+					{t("brandsTitle")}
+				</h2>
+				<Link
+					href={marketHref(channel, "/znacky")}
+					className="text-text-primary hover:text-brand group inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold transition-colors"
+				>
+					{t("brandsAll")}
+					<ArrowRightIcon
+						className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+						strokeWidth={2.25}
+						aria-hidden="true"
+					/>
+				</Link>
+			</div>
+			<ul className="mt-6 grid grid-cols-3 items-center gap-x-4 gap-y-6 sm:grid-cols-5 lg:flex lg:justify-between lg:gap-x-6">
+				{brands.map((brand) => (
+					<li key={brand.slug} className="flex justify-center">
 						<Link
-							href={marketHref(channel, `/search?query=${encodeURIComponent(name)}`)}
-							prefetch={false}
-							// Set like a wordmark in the secondary graphite; the brand's own colour on hover.
-							className="text-text-secondary hover:text-brand text-lg font-black tracking-[0.06em] whitespace-nowrap uppercase transition-colors sm:text-xl"
+							href={marketHref(channel, `/znacky/${brand.slug}`)}
+							aria-label={brand.name}
+							className="hover:text-brand focus-visible:ring-ring rounded-xs transition-[color,opacity] hover:opacity-80 focus-visible:ring-2 focus-visible:outline-hidden"
 						>
-							{name}
+							<BrandMark brand={brand} className="text-lg sm:text-xl xl:text-[1.375rem]" />
 						</Link>
 					</li>
 				))}

@@ -684,7 +684,12 @@
 		"newsletterTitle": "Iscriviti alle novità",
 		"newsletterText": "Novità, idee per le gite e ispirazione per i tuoi viaggi.",
 		"newsletterSoon": "L'iscrizione sarà disponibile a breve.",
-		"brandsAll": "Vedi tutti i marchi"
+		"brandsAll": "Vedi tutti i marchi",
+		"vehicleShowCompatible": "Mostra i prodotti compatibili",
+		"featuredTabAll": "Tutti",
+		"adviceSectionTitle": "Consigli e suggerimenti",
+		"adviceRead": "Leggi l'articolo",
+		"newsletterConsent": "Acconsento a ricevere la newsletter"
 	},
 	"garage": {
 		"title": "Il mio garage",

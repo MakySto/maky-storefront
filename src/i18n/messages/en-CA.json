@@ -684,7 +684,12 @@
 		"newsletterTitle": "Get our newsletter",
 		"newsletterText": "News, trip tips and inspiration for your travels.",
 		"newsletterSoon": "Sign-up is coming soon.",
-		"brandsAll": "View all brands"
+		"brandsAll": "View all brands",
+		"vehicleShowCompatible": "Show compatible products",
+		"featuredTabAll": "All",
+		"adviceSectionTitle": "Advice and tips",
+		"adviceRead": "Read the article",
+		"newsletterConsent": "I agree to receive the newsletter"
 	},
 	"garage": {
 		"title": "My Garage",

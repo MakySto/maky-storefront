@@ -56,8 +56,9 @@ export const TILE_SCENERY: Readonly<Partial<Record<string, SceneryPhoto>>> = {
 		mediaId: "UHJvZHVjdE1lZGlhOjc3Mw==",
 		position: "50% 55%",
 	},
-	// Thule SnowPack with skis on the roof (product 242).
-	"nosice-lyzi": { productId: "UHJvZHVjdDoyNDI=", mediaId: "UHJvZHVjdE1lZGlhOjU2OA==", position: "40% 60%" },
+	// Nordrive Pro-SLIDE EVO on a car roof under snowy peaks (product 42, media 1776) — the ski
+	// shelf's one real mountain scene; Thule SnowPack's roof shot stands on a white sky.
+	"nosice-lyzi": { productId: "UHJvZHVjdDo0Mg==", mediaId: "UHJvZHVjdE1lZGlhOjE3NzY=", position: "55% 55%" },
 	// Carcamp Alba 2 on a Land Rover in the dust (product 465).
 	"stresne-stany": {
 		productId: "UHJvZHVjdDo0NjU=",

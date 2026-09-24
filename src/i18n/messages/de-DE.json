@@ -684,7 +684,12 @@
 		"newsletterTitle": "Newsletter abonnieren",
 		"newsletterText": "Neuheiten, Ausflugstipps und Inspiration für Ihre Reisen.",
 		"newsletterSoon": "Die Anmeldung bereiten wir gerade vor.",
-		"brandsAll": "Alle Marken anzeigen"
+		"brandsAll": "Alle Marken anzeigen",
+		"vehicleShowCompatible": "Passende Produkte anzeigen",
+		"featuredTabAll": "Alle",
+		"adviceSectionTitle": "Ratgeber und Tipps",
+		"adviceRead": "Artikel lesen",
+		"newsletterConsent": "Ich möchte den Newsletter erhalten"
 	},
 	"garage": {
 		"title": "Meine Garage",

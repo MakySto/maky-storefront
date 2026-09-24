@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
-import { CarIcon } from "lucide-react";
+import { ArrowRightIcon, CarIcon } from "lucide-react";
 import { getLocaleFromChannel } from "@/config/locale";
 import { categoryUrlFor } from "@/config/category-routes";
 import { marketHref } from "@/lib/channel-map";
@@ -59,10 +59,15 @@ export async function HeroVehicleActions({ params }: { params: Promise<{ channel
 		<div className="flex min-w-0 flex-col">
 			<Link
 				href={roofRacksForCar}
-				className="bg-cta text-cta-text hover:bg-cta-hover focus-visible:ring-cta inline-flex h-12 items-center justify-center gap-2.5 rounded-xs px-6 text-base font-semibold shadow-lg transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+				className="bg-cta text-cta-text hover:bg-cta-hover focus-visible:ring-cta inline-flex h-[3.25rem] items-center justify-center gap-2.5 rounded-xs px-6 text-base font-semibold shadow-lg transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
 			>
 				<CarIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
 				{t("heroShowForMyCar")}
+				<ArrowRightIcon
+					className="h-[1.125rem] w-[1.125rem] shrink-0"
+					strokeWidth={2.25}
+					aria-hidden="true"
+				/>
 			</Link>
 			<p className="text-text-inverse/85 mt-2 flex h-5 min-w-0 items-center gap-1.5 text-sm">
 				<span className="truncate">{carLabel}</span>
@@ -81,7 +86,7 @@ export async function HeroVehicleActions({ params }: { params: Promise<{ channel
 export function HeroVehicleActionsSkeleton() {
 	return (
 		<div className="flex flex-col" aria-hidden="true">
-			<div className="bg-text-inverse/10 h-12 w-full animate-pulse rounded-xs sm:w-[14rem]" />
+			<div className="bg-text-inverse/10 h-[3.25rem] w-full animate-pulse rounded-xs sm:w-[15rem]" />
 			<span className="mt-2 hidden h-5 sm:block" />
 		</div>
 	);

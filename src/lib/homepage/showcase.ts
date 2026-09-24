@@ -63,7 +63,14 @@ export async function getHomeCategoryImages(channel: string): Promise<CategoryIm
  * a product's slug changes whenever the catalogue renames it, its id does not.
  */
 export type HeroShowcase = {
-	product: { name: string; href: string; price: string | null; image: string | null } | null;
+	product: {
+		name: string;
+		href: string;
+		price: string | null;
+		image: string | null;
+		/** The product's category in this market's words — "Strešné boxy". */
+		category: string | null;
+	} | null;
 };
 
 export async function getHeroShowcase(channel: string): Promise<HeroShowcase | null> {
@@ -94,6 +101,7 @@ export async function getHeroShowcase(channel: string): Promise<HeroShowcase | n
 					href: productHref(channel, localized.slug),
 					price: gross ? formatPrice(gross.amount, gross.currency, locale) : null,
 					image: publishableProductImage(localized.thumbnail?.url) ?? null,
+					category: localized.category?.name ?? null,
 				}
 			: null,
 	};

@@ -684,7 +684,12 @@
 		"newsletterTitle": "Odoberajte novinky",
 		"newsletterText": "Novinky, tipy na výlety a inšpirácia pre vaše cesty.",
 		"newsletterSoon": "Prihlasovanie na odber pripravujeme.",
-		"brandsAll": "Zobraziť všetky značky"
+		"brandsAll": "Zobraziť všetky značky",
+		"vehicleShowCompatible": "Zobraziť kompatibilné produkty",
+		"featuredTabAll": "Všetko",
+		"adviceSectionTitle": "Poradňa a tipy",
+		"adviceRead": "Prečítať článok",
+		"newsletterConsent": "Súhlasím so zasielaním noviniek"
 	},
 	"garage": {
 		"title": "Moja garáž",

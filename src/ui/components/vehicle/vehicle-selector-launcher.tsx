@@ -26,7 +26,7 @@
  */
 
 import { useState } from "react";
-import { CarIcon, CheckIcon } from "lucide-react";
+import { ArrowRightIcon, CarIcon, CheckIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { SheetTrigger } from "@/ui/components/ui/sheet";
@@ -90,7 +90,7 @@ export function VehicleSelectorLauncher({
 						variant === "header" &&
 							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-11 items-center gap-2.5 rounded-xs px-3 text-left shadow-sm transition-colors xl:px-3.5",
 						variant === "hero" &&
-							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-12 items-center justify-center gap-2.5 rounded-xs px-6 text-base font-semibold shadow-lg transition-colors",
+							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-[3.25rem] items-center justify-center gap-2.5 rounded-xs px-6 text-base font-semibold shadow-lg transition-colors",
 						// The hero's green button at listing size: the vehicle panel above a roof-rack listing.
 						variant === "primary" &&
 							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-11 items-center justify-center gap-2 rounded-xs px-5 text-sm font-semibold whitespace-nowrap transition-colors",
@@ -154,6 +154,13 @@ export function VehicleSelectorLauncher({
 						>
 							{label}
 						</span>
+					)}
+					{variant === "hero" && (
+						<ArrowRightIcon
+							className="h-[1.125rem] w-[1.125rem] shrink-0"
+							strokeWidth={2.25}
+							aria-hidden="true"
+						/>
 					)}
 					{variant === "inline" && car && (
 						<span className="text-text-link ml-auto shrink-0 text-sm font-medium">

@@ -53,7 +53,7 @@ export function CategoryGrid({ photos }: { photos: CategoryTilePhotos | null }) 
 
 	return (
 		<section id="categories" className="max-w-page mx-auto px-4 pt-12 pb-10 sm:px-6 sm:pt-16 lg:px-8">
-			<h2 className="text-text-primary text-2xl font-bold tracking-[-0.02em] sm:text-[1.75rem]">
+			<h2 className="text-text-primary text-2xl font-extrabold tracking-[-0.025em] sm:text-[1.875rem]">
 				{th("categoriesTitle")}
 			</h2>
 			<ul role="list" className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -65,11 +65,19 @@ export function CategoryGrid({ photos }: { photos: CategoryTilePhotos | null }) 
 							<Link
 								href={marketHref(channel, categoryUrlFor(channel, category.slug))}
 								className={cn(
-									"group relative isolate flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-sm shadow-sm transition-shadow duration-300 hover:shadow-xl",
+									"group relative isolate flex aspect-[7/8] flex-col justify-end overflow-hidden rounded-sm shadow-sm transition-shadow duration-300 hover:shadow-xl",
 									"focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden",
 									photo?.kind === "scene" ? "bg-scrim" : "from-surface-muted to-sand-400 bg-linear-to-b",
 								)}
 							>
+								{/* A studio picture stands on the warm ground with the mountains drawn behind it,
+								    so the tile reads as designed rather than as a cut-out on white. */}
+								{photo?.kind === "studio" && (
+									<div
+										aria-hidden="true"
+										className="art-mountains bg-sand-500/45 absolute inset-x-0 top-[12%] -z-10 h-1/2"
+									/>
+								)}
 								{photo && (
 									<Image
 										src={photo.url}
@@ -98,7 +106,7 @@ export function CategoryGrid({ photos }: { photos: CategoryTilePhotos | null }) 
 								/>
 								<div className="flex items-end justify-between gap-2 p-3.5 sm:p-4">
 									<span className="min-w-0">
-										<span className="text-text-inverse block text-base leading-tight font-bold tracking-[-0.01em] sm:text-lg">
+										<span className="text-text-inverse block text-base leading-tight font-extrabold tracking-[-0.01em] sm:text-lg xl:text-xl">
 											{t(category.key)}
 										</span>
 										{tagline && (

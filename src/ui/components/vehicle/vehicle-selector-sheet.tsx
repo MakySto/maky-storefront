@@ -38,6 +38,8 @@ import { GARAGE_MAX_VEHICLES } from "@/lib/garage/limits";
 import { searchWithoutPagination, vehicleConfirmDestination } from "@/lib/garage/confirm-destination";
 import { REVERSE_MAP } from "@/lib/channel-map";
 
+export type VehicleDraft = Draft;
+
 type Draft = {
 	makeId?: string;
 	makeName?: string;
@@ -67,6 +69,13 @@ type Props = {
 	children: ReactNode;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	/**
+	 * Where the questions start. The homepage and listing fields (`VehicleQuickSelect`) answer
+	 * make, model and year in place and open this sheet only for what a car still needs —
+	 * the generation when a year names two, the roof, the body, the doors, the month. Empty,
+	 * the sheet starts at the make, as it always has.
+	 */
+	initialDraft?: Draft;
 };
 
 // One map, imported — this file used to carry a byte-identical copy of it, which is two
@@ -85,7 +94,7 @@ const BODY_LABEL_KEYS: Record<BodyType, string> = {
 	pickup: "bodyPickup",
 };
 
-export function VehicleSelectorSheet({ children, open, onOpenChange }: Props) {
+export function VehicleSelectorSheet({ children, open, onOpenChange, initialDraft }: Props) {
 	const t = useTranslations("fitment");
 	// Save failures come from the garage action, so they read from the garage namespace.
 	const tg = useTranslations("garage");
@@ -124,7 +133,7 @@ export function VehicleSelectorSheet({ children, open, onOpenChange }: Props) {
 
 	const handleOpenChange = (nextOpen: boolean) => {
 		onOpenChange(nextOpen);
-		if (nextOpen) applyDraft({});
+		if (nextOpen) applyDraft(initialDraft ?? {});
 	};
 
 	// Clearing downstream answers is the whole point: a model left over from another

@@ -684,7 +684,12 @@
 		"newsletterTitle": "Abonați-vă la noutăți",
 		"newsletterText": "Noutăți, idei de excursii și inspirație pentru călătoriile tale.",
 		"newsletterSoon": "Abonarea va fi disponibilă în curând.",
-		"brandsAll": "Vezi toate mărcile"
+		"brandsAll": "Vezi toate mărcile",
+		"vehicleShowCompatible": "Afișează produsele compatibile",
+		"featuredTabAll": "Toate",
+		"adviceSectionTitle": "Sfaturi și recomandări",
+		"adviceRead": "Citește articolul",
+		"newsletterConsent": "Sunt de acord să primesc newsletterul"
 	},
 	"garage": {
 		"title": "Garajul meu",

@@ -684,7 +684,12 @@
 		"newsletterTitle": "Iratkozzon fel hírlevelünkre",
 		"newsletterText": "Újdonságok, kirándulási tippek és inspiráció az utazásaihoz.",
 		"newsletterSoon": "A feliratkozást hamarosan elindítjuk.",
-		"brandsAll": "Összes márka"
+		"brandsAll": "Összes márka",
+		"vehicleShowCompatible": "Kompatibilis termékek",
+		"featuredTabAll": "Mind",
+		"adviceSectionTitle": "Tanácsok és tippek",
+		"adviceRead": "Cikk elolvasása",
+		"newsletterConsent": "Hozzájárulok a hírlevél küldéséhez"
 	},
 	"garage": {
 		"title": "Garázsom",

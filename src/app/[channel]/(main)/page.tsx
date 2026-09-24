@@ -11,7 +11,8 @@ import { marketOpenGraph } from "@/lib/seo/metadata";
 import { formatPageTitle } from "@/config/brand";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
-import { ProductGrid, transformToProductCard } from "@/ui/components/plp";
+import { transformToProductCard } from "@/ui/components/plp";
+import { FeaturedShowcase } from "@/ui/components/homepage/featured-showcase";
 import {
 	HeroSection,
 	HeroProductCard,
@@ -174,30 +175,30 @@ async function FeaturedProducts({ params: paramsPromise }: { params: Promise<{ c
 	const t = await getTranslations({ locale, namespace: "home" });
 
 	// The same card as a category page — one product card across the shop — in the homepage's
-	// five-column rows.
+	// five-column rows, with a tab per category the collection holds.
 	return (
 		<section className="max-w-page mx-auto px-4 pt-10 pb-6 sm:px-6 sm:pt-14 lg:px-8">
-			<div className="flex items-end justify-between gap-4">
-				<h2 className="text-text-primary text-2xl font-bold tracking-[-0.02em] sm:text-[1.75rem]">
+			<div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+				<h2 className="text-text-primary text-2xl font-extrabold tracking-[-0.025em] sm:text-[1.875rem]">
 					{t("featuredTitle")}
 				</h2>
 				<Link
 					href={marketHref(channel, "/products")}
-					className="text-text-primary hover:text-brand group hidden shrink-0 items-center gap-1.5 text-sm font-semibold transition-colors sm:inline-flex"
+					className="text-text-primary hover:text-brand group inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold transition-colors"
 				>
 					{t("featuredAll")}
 					<ArrowRightIcon
 						className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+						strokeWidth={2.25}
 						aria-hidden="true"
 					/>
 				</Link>
 			</div>
-			<div className="mt-6">
-				<ProductGrid
-					columns="home"
-					products={products.map((product) => transformToProductCard(product, channel, locale))}
-				/>
-			</div>
+			<FeaturedShowcase
+				products={products.map((product) => transformToProductCard(product, channel, locale))}
+				allLabel={t("featuredTabAll")}
+				tabsLabel={t("featuredTitle")}
+			/>
 		</section>
 	);
 }
@@ -210,19 +211,16 @@ function FeaturedProductsSkeleton() {
 	return (
 		<section className="max-w-page mx-auto px-4 pt-10 pb-6 sm:px-6 sm:pt-14 lg:px-8" aria-hidden="true">
 			<div className="bg-surface-secondary h-8 w-64 animate-pulse rounded-xs sm:h-9" />
-			<div className="mt-6 grid w-full grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 xl:gap-5 min-[90rem]:grid-cols-5">
+			<div className="mt-6 grid w-full grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:gap-5 min-[90rem]:grid-cols-5">
 				{Array.from({ length: FEATURED_PRODUCTS_LIMIT }).map((_, i) => (
-					<div
-						key={i}
-						className="border-border-subtle bg-surface-card grid grid-cols-[minmax(7.5rem,38%)_minmax(0,1fr)] gap-3 rounded-sm border p-3 sm:flex sm:flex-col sm:gap-0 sm:p-0"
-					>
-						<div className="bg-surface-secondary aspect-square animate-pulse rounded-xs sm:aspect-[5/4] sm:rounded-none" />
-						<div className="space-y-2 sm:px-4 sm:pt-2">
+					<div key={i} className="border-border-subtle bg-surface-card flex flex-col rounded-sm border">
+						<div className="bg-surface-secondary aspect-[5/4] animate-pulse rounded-t-sm" />
+						<div className="space-y-2 px-3 pt-2 sm:px-4">
 							<div className="bg-surface-secondary h-3 w-24 rounded-xs" />
-							<div className="bg-surface-secondary h-4 w-full rounded-xs sm:h-[3lh]" />
-							<div className="bg-surface-secondary h-5 w-20 rounded-xs" />
+							<div className="bg-surface-secondary h-[2lh] w-full rounded-xs" />
+							<div className="bg-surface-secondary h-6 w-20 rounded-xs" />
 						</div>
-						<div className="bg-surface-secondary col-span-2 h-11 rounded-xs sm:mx-4 sm:mt-3 sm:mb-4" />
+						<div className="bg-surface-secondary mx-3 mt-3 mb-3 h-11 rounded-xs sm:mx-4 sm:mb-4" />
 					</div>
 				))}
 			</div>
