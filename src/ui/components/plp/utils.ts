@@ -141,7 +141,11 @@ export function transformToProductCard(
 		compareAtPrice: isSale ? undiscountedStartPrice?.amount : null,
 		currency: startPrice?.currency ?? localeConfig.fallbackCurrency,
 		// The "no image" GIF some imports carry is no image either — `lib/product-image.ts`.
-		image: publishableProductImage(product.thumbnail?.url) ?? "/placeholder.svg",
+		// When it is the thumbnail, the gallery's first real photo stands in, as on the PDP.
+		image:
+			publishableProductImage(product.thumbnail?.url) ??
+			product.cardMedia?.map((media) => publishableProductImage(media.url)).find(Boolean) ??
+			"/placeholder.svg",
 		imageAlt: product.thumbnail?.alt ?? product.name,
 		hoverImage: null, // Would need additional media in fragment
 		href: productHref(channel, product.slug),

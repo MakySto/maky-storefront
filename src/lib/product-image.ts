@@ -28,16 +28,29 @@
  */
 const PLACEHOLDER_CONTENT_HASH = "c32bc543a46f5bf4";
 
+/**
+ * A red warning triangle with no text (225 px), in the galleries of 51 products — G3 and
+ * Northline roof boxes among them. It is never a gallery's first file, but on five it comes
+ * straight after the "no image" GIF, so once the GIF was dropped their product page OPENED on
+ * it, and it was their share image and the image Google read from the structured data
+ * (G3 Arjes 280, measured on maky.store 2026-09-24). A pictogram that says nothing about the
+ * product is no more a photo of it than the GIF is. Same identification, by content hash.
+ */
+const WARNING_PICTOGRAM_CONTENT_HASH = "74d87407e7026263";
+
+const NOT_A_PRODUCT_PHOTO = [PLACEHOLDER_CONTENT_HASH, WARNING_PICTOGRAM_CONTENT_HASH] as const;
+
+/** Is this one of the files above — an image in a gallery that is not a picture of the product? */
 export function isPlaceholderProductImage(url: string | null | undefined): boolean {
 	if (!url) return false;
 	let pathname: string;
 	try {
 		// A base, so a relative path (`/placeholder.svg`) parses instead of throwing.
-		pathname = new URL(url, "https://cdn.maky.store").pathname;
+		pathname = new URL(url, "https://cdn.maky.store").pathname.toLowerCase();
 	} catch {
 		return false;
 	}
-	return pathname.toLowerCase().includes(PLACEHOLDER_CONTENT_HASH);
+	return NOT_A_PRODUCT_PHOTO.some((hash) => pathname.includes(hash));
 }
 
 /** The URL when it is an image worth publishing; `null` when it is missing or the placeholder. */

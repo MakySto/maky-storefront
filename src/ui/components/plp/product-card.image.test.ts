@@ -24,7 +24,7 @@ const PLACEHOLDER =
 const REAL = "https://cdn.maky.store/products/autochladnicka-40l.jpg";
 
 /** The fields `transformToProductCard` reads; the rest of the fragment is irrelevant here. */
-const listItem = (thumbnailUrl: string | null) =>
+const listItem = (thumbnailUrl: string | null, gallery: string[] = []) =>
 	({
 		id: "UHJvZHVjdDox",
 		name: "Autochladnička 40 l",
@@ -36,12 +36,20 @@ const listItem = (thumbnailUrl: string | null) =>
 		category: null,
 		pricing: { priceRange: { start: { gross: { amount: 147, currency: "EUR" } } } },
 		thumbnail: thumbnailUrl ? { url: thumbnailUrl, alt: "Autochladnička" } : null,
+		cardMedia: gallery.map((url) => ({ url })),
 		variants: [],
 	}) as unknown as ProductListItemFragment;
 
 describe("transformToProductCard", () => {
 	it("keeps a real thumbnail", () => {
 		expect(transformToProductCard(listItem(REAL), "sk-eur", "sk-SK").image).toBe(REAL);
+	});
+
+	it("shows the gallery's first real photo when the placeholder came first", () => {
+		// 15 of 414 products on 2026-09-24: the GIF as media #1, a gallery of real photos after it.
+		expect(transformToProductCard(listItem(PLACEHOLDER, [PLACEHOLDER, REAL]), "sk-eur", "sk-SK").image).toBe(
+			REAL,
+		);
 	});
 
 	it("treats the placeholder exactly like a missing thumbnail", () => {

@@ -80,6 +80,13 @@ fragment ProductListItem on Product {
 		url
 		alt
 	}
+	# The gallery's stored files, for the card to fall back on when the thumbnail is the
+	# imported grey "no image" GIF: 15 of the 414 non-roof-rack products in sk-eur carry it
+	# FIRST and their real photos after it (2026-09-24), so their cards said "no image" over
+	# a gallery of ten. Aliased so it never merges with a query's own `media` selection.
+	cardMedia: media {
+		url
+	}
 	variants {
 		id
 		sku

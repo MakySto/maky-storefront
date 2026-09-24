@@ -25,6 +25,15 @@ describe("isPlaceholderProductImage", () => {
 		).toBe(true);
 	});
 
+	it("recognises the warning pictogram shared by 51 galleries", () => {
+		// G3 Arjes 280's gallery on 2026-09-24: the GIF, then this, then the photos.
+		expect(
+			isPlaceholderProductImage(
+				"https://cdn.maky.store/thumbnails/products/74d87407e70262632946f6615847ed4d07583994a14aec829117ada_cf28b9af_thumbnail_4.png",
+			),
+		).toBe(true);
+	});
+
 	it("leaves real product photos alone — small ones included", () => {
 		for (const url of [
 			"https://cdn.maky.store/products/nordrive-snap-alu-bars_1a2b3c.jpg",
