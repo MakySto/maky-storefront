@@ -619,7 +619,12 @@
 		"filterTitle": "Filtrează produsele",
 		"anyPrice": "Toate prețurile",
 		"showResults": "Afișează rezultatele",
-		"activeFilters": "Filtre active"
+		"activeFilters": "Filtre active",
+		"volume": "Volum",
+		"brandSearch": "Caută marca…",
+		"volumeUpTo": "Până la {max} l",
+		"volumeBetween": "{min} – {max} l",
+		"volumeOver": "Peste {min} l"
 	},
 	"cookieConsent": {
 		"title": "Ne pasă de confidențialitatea ta",

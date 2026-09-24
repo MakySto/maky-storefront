@@ -43,11 +43,11 @@ export function SubcategoryNav({
 							// "Na strechu" — and it still contains the visible words (WCAG 2.5.3).
 							aria-label={(chip.label ?? allLabel) === chip.name ? undefined : chip.name}
 							className={cn(
-								"inline-flex h-9 items-center rounded-full border px-3.5 text-sm font-medium whitespace-nowrap transition-colors",
+								"inline-flex h-11 min-w-[7.5rem] items-center justify-center rounded-xs border px-5 text-sm font-semibold whitespace-nowrap shadow-xs transition-colors",
 								"focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden",
 								chip.current
 									? "border-brand bg-brand text-brand-text"
-									: "border-border-default bg-surface-card text-text-secondary hover:border-brand hover:text-text-primary",
+									: "border-border-default bg-surface-card text-text-primary hover:border-brand hover:text-brand",
 							)}
 						>
 							{chip.label ?? allLabel}

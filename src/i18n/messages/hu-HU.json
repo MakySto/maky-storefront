@@ -619,7 +619,12 @@
 		"filterTitle": "Termékek szűrése",
 		"anyPrice": "Bármilyen ár",
 		"showResults": "Találatok megjelenítése",
-		"activeFilters": "Aktív szűrők"
+		"activeFilters": "Aktív szűrők",
+		"volume": "Térfogat",
+		"brandSearch": "Márka keresése…",
+		"volumeUpTo": "{max} l-ig",
+		"volumeBetween": "{min} – {max} l",
+		"volumeOver": "{min} l felett"
 	},
 	"cookieConsent": {
 		"title": "Fontos számunkra az adatvédelme",

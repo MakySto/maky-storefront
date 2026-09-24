@@ -1,7 +1,10 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense, useCallback, useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import type { BrandFacet, VolumeFacet } from "@/lib/listing/category-facets";
+import { parseBrandParam, volumeBand } from "@/lib/listing/facet-params";
 import {
 	ListingEmptyState,
 	ListingFilterPanel,
@@ -40,6 +43,58 @@ interface CategoryPageClientProps {
 	vehicleFilterEmpty?: boolean;
 	/** The category family for the side panel, "Všetko" first, with each one's count. */
 	categoryLinks?: readonly SubcategoryChip[] | null;
+	/** The makers on this shelf, with counts (`getCategoryFacets`); empty = no maker filter. */
+	brandFacets?: readonly BrandFacet[];
+	/** The volume bands on this shelf, with counts; empty = no volume filter. */
+	volumeFacets?: readonly VolumeFacet[];
+}
+
+/**
+ * The maker and volume filters in the URL (`?brand=thule,menabo`, `?volume=300-400`). Like the
+ * price, each is a Saleor filter over the whole listing: a change is a new list from its first
+ * page, so the page position is dropped.
+ */
+function useFacetFilters() {
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
+	const selectedBrands = useMemo(() => parseBrandParam(searchParams.get("brand")), [searchParams]);
+	const selectedVolume = volumeBand(searchParams.get("volume"))?.value ?? null;
+
+	const push = useCallback(
+		(mutate: (params: URLSearchParams) => void) => {
+			const params = new URLSearchParams(searchParams.toString());
+			params.delete("cursor");
+			params.delete("direction");
+			mutate(params);
+			const query = params.toString();
+			router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+		},
+		[router, pathname, searchParams],
+	);
+
+	const toggleBrand = useCallback(
+		(slug: string) =>
+			push((params) => {
+				const next = selectedBrands.includes(slug)
+					? selectedBrands.filter((existing) => existing !== slug)
+					: [...selectedBrands, slug];
+				if (next.length > 0) params.set("brand", next.join(","));
+				else params.delete("brand");
+			}),
+		[push, selectedBrands],
+	);
+
+	const setVolume = useCallback(
+		(value: string | null) =>
+			push((params) => {
+				if (value) params.set("volume", value);
+				else params.delete("volume");
+			}),
+		[push],
+	);
+
+	return { selectedBrands, selectedVolume, toggleBrand, setVolume };
 }
 
 function PaginationSkeleton() {
@@ -65,8 +120,11 @@ export function CategoryPageClient({
 	accessoryIds = [],
 	vehicleFilterEmpty = false,
 	categoryLinks = null,
+	brandFacets = [],
+	volumeFacets = [],
 }: CategoryPageClientProps) {
 	const t = useTranslations("plp");
+	const facetFilters = useFacetFilters();
 	const {
 		filteredProducts,
 		priceRanges,
@@ -74,12 +132,60 @@ export function CategoryPageClient({
 		selectedSizes,
 		selectedPriceRange,
 		sortValue,
-		activeFilters,
+		activeFilters: baseActiveFilters,
 		handlePriceRangeChange,
 		handleSortChange,
-		handleRemoveFilter,
+		handleRemoveFilter: removeBaseFilter,
 		handleClearFilters,
 	} = useProductFilters({ products, priceFilter });
+
+	const volumeLabel = useCallback(
+		(value: string) => {
+			const band = volumeBand(value);
+			if (!band) return value;
+			if (!("min" in band)) return t("volumeUpTo", { max: band.max });
+			if (!("max" in band)) return t("volumeOver", { min: band.min });
+			return t("volumeBetween", { min: band.min, max: band.max });
+		},
+		[t],
+	);
+
+	// The maker and volume chips join the price's, named as the panel names them.
+	const activeFilters = useMemo(
+		() => [
+			...baseActiveFilters,
+			...facetFilters.selectedBrands.map((slug) => ({
+				key: "brand",
+				label: t("brand"),
+				value: brandFacets.find((brand) => brand.slug === slug)?.name ?? slug,
+			})),
+			...(facetFilters.selectedVolume
+				? [{ key: "volume", label: t("volume"), value: volumeLabel(facetFilters.selectedVolume) }]
+				: []),
+		],
+		[
+			baseActiveFilters,
+			facetFilters.selectedBrands,
+			facetFilters.selectedVolume,
+			brandFacets,
+			t,
+			volumeLabel,
+		],
+	);
+
+	const handleRemoveFilter = useCallback(
+		(key: string, value: string) => {
+			if (key === "brand") {
+				const slug = brandFacets.find((brand) => brand.name === value)?.slug ?? value;
+				facetFilters.toggleBrand(slug);
+			} else if (key === "volume") {
+				facetFilters.setVolume(null);
+			} else {
+				removeBaseFilter(key, value);
+			}
+		},
+		[brandFacets, facetFilters, removeBaseFilter],
+	);
 
 	const resultCount = listingResultCount({
 		totalCount,
@@ -96,7 +202,11 @@ export function CategoryPageClient({
 
 	if (vehicleFilterEmpty && filteredProducts.length === 0) return null;
 
-	const hasPanel = Boolean(categoryLinks?.length) || priceRanges.length > 0;
+	const hasPanel =
+		Boolean(categoryLinks?.length) ||
+		priceRanges.length > 0 ||
+		brandFacets.length > 0 ||
+		volumeFacets.length > 0;
 	const panel = hasPanel
 		? {
 				categoryLinks,
@@ -104,6 +214,12 @@ export function CategoryPageClient({
 				priceRanges,
 				selectedPriceRange,
 				onPriceRangeChange: handlePriceRangeChange,
+				brands: brandFacets,
+				selectedBrands: facetFilters.selectedBrands,
+				onBrandToggle: facetFilters.toggleBrand,
+				volumes: volumeFacets.map((facet) => ({ ...facet, label: volumeLabel(facet.value) })),
+				selectedVolume: facetFilters.selectedVolume,
+				onVolumeChange: facetFilters.setVolume,
 				hasActiveFilters: activeFilters.length > 0,
 				onClearFilters: handleClearFilters,
 			}

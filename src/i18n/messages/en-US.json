@@ -619,7 +619,12 @@
 		"filterTitle": "Filter products",
 		"anyPrice": "Any price",
 		"showResults": "Show results",
-		"activeFilters": "Active filters"
+		"activeFilters": "Active filters",
+		"volume": "Volume",
+		"brandSearch": "Search brands…",
+		"volumeUpTo": "Up to {max} l",
+		"volumeBetween": "{min} – {max} l",
+		"volumeOver": "Over {min} l"
 	},
 	"cookieConsent": {
 		"title": "We value your privacy",

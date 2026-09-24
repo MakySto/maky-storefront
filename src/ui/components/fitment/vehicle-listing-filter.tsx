@@ -9,7 +9,8 @@ import {
 import { cn } from "@/lib/utils";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { VehicleSelectorLauncher } from "@/ui/components/vehicle/vehicle-selector-launcher";
-import { VehicleSelectorField } from "@/ui/components/vehicle/vehicle-selector-field";
+import { VehicleQuickSelect } from "@/ui/components/vehicle/vehicle-quick-select";
+import { loadSelectorStep } from "@/lib/fitment/selector-actions";
 
 /**
  * The listing's vehicle control: what it is doing to this list, and how to undo it.
@@ -61,7 +62,6 @@ export async function VehicleListingFilter({
 
 	const locale = getLocaleFromChannel(channel);
 	const t = await getTranslations({ locale, namespace: "fitment" });
-	const tHome = await getTranslations({ locale, namespace: "home" });
 
 	const clearHref = vehicleFilterHref(basePath, searchParams, false);
 	const changeVehicle = (
@@ -98,20 +98,47 @@ export async function VehicleListingFilter({
 		</div>
 	);
 
+	// Before a car is chosen: the approved category page's vehicle bar — the icon and the question,
+	// then the three fields and the green button in one row (second pass, 2026-09-24). The same
+	// selector's steps (`VehicleQuickSelect`); a car settled by its year goes straight to this
+	// listing with the filter on — the button's words are that request — and anything more a car
+	// needs is asked in the sheet.
 	if (filter.state === "no-vehicle") {
-		return panel(
-			<>
-				<p className="text-text-primary text-base font-bold tracking-[-0.01em]">{t("listingPickTitle")}</p>
-				<p className="text-text-secondary mt-0.5 text-sm">
-					{filter.requested ? t("listingNoVehicle") : t("listingPickBody")}
-				</p>
-			</>,
-			<VehicleSelectorLauncher variant="primary" label={tHome("heroSelectCar")} className="h-12 px-6" />,
-			<div className="grid grid-cols-3 gap-3">
-				<VehicleSelectorField label={tHome("vehicleMake")} placeholder={tHome("vehiclePickMake")} />
-				<VehicleSelectorField label={tHome("vehicleModel")} placeholder={tHome("vehiclePickModel")} />
-				<VehicleSelectorField label={tHome("vehicleYear")} placeholder={tHome("vehiclePickYear")} />
-			</div>,
+		const first = await loadSelectorStep({});
+		if (first.unavailable || first.makes.length === 0) return null;
+		return (
+			<div
+				className={cn(
+					"border-border-subtle bg-surface-card relative isolate overflow-hidden rounded-sm border shadow-xs",
+					className,
+				)}
+			>
+				<div
+					aria-hidden="true"
+					className="art-mountains bg-sand-400/60 absolute right-0 bottom-0 -z-10 hidden h-[90%] w-[22%] 2xl:block"
+				/>
+				<div className="flex flex-col gap-4 p-4 sm:p-5 xl:flex-row xl:items-end xl:gap-8 xl:p-6">
+					<div className="flex min-w-0 items-center gap-3.5 xl:w-[19rem] xl:shrink-0 xl:self-center">
+						<span className="bg-status-success-bg text-status-success flex h-12 w-12 shrink-0 items-center justify-center rounded-full">
+							<Car className="h-6 w-6" strokeWidth={2.25} aria-hidden="true" />
+						</span>
+						<div className="min-w-0">
+							<p className="text-text-primary text-lg font-extrabold tracking-[-0.015em]">
+								{t("listingPickTitle")}
+							</p>
+							<p className="text-text-secondary mt-0.5 text-[0.8125rem] leading-snug">
+								{filter.requested ? t("listingNoVehicle") : t("listingPickBody")}
+							</p>
+						</div>
+					</div>
+					<VehicleQuickSelect
+						makes={first.makes}
+						layout="bar"
+						afterConfirmPath={vehicleFilterHref(basePath, searchParams, true)}
+						className="min-w-0 flex-1"
+					/>
+				</div>
+			</div>
 		);
 	}
 

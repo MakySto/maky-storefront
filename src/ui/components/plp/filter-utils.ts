@@ -13,6 +13,7 @@
 
 import type { ProductOrder, ProductOrderField, OrderDirection, ProductFilterInput } from "@/gql/graphql";
 import { compareSizes } from "@/lib/sizes";
+import { BRAND_ATTRIBUTE_SLUG, VOLUME_ATTRIBUTE_SLUG } from "@/lib/listing/facet-params";
 import type { ProductCardData } from "./product-card";
 import type { FilterOption, ActiveFilter, SortOption } from "./filter-bar";
 
@@ -65,6 +66,10 @@ export function buildFilterVariables(params: {
 	vehicleProductIds?: string[];
 	attributeFilters?: Partial<Record<StorefrontAttributeSlug, readonly string[]>>;
 	attributeRanges?: Partial<Record<"year-from" | "year-to", { gte?: number; lte?: number }>>;
+	/** The makers chosen in the listing's "Značka" filter — `manufacturer` value slugs. */
+	brandSlugs?: readonly string[];
+	/** The litres chosen in the listing's "Objem" filter, as Saleor's inclusive range. */
+	volumeRange?: { gte?: number; lte?: number } | null;
 }): ProductFilterInput | undefined {
 	const filter: ProductFilterInput = {};
 	let hasFilter = false;
@@ -97,6 +102,12 @@ export function buildFilterVariables(params: {
 		if (range && (range.gte !== undefined || range.lte !== undefined)) {
 			attributes.push({ slug, valuesRange: range });
 		}
+	}
+	if (params.brandSlugs?.length) {
+		attributes.push({ slug: BRAND_ATTRIBUTE_SLUG, values: [...params.brandSlugs] });
+	}
+	if (params.volumeRange && (params.volumeRange.gte !== undefined || params.volumeRange.lte !== undefined)) {
+		attributes.push({ slug: VOLUME_ATTRIBUTE_SLUG, valuesRange: params.volumeRange });
 	}
 	if (attributes.length > 0) {
 		filter.attributes = attributes;

@@ -619,7 +619,12 @@
 		"filterTitle": "Produkte filtern",
 		"anyPrice": "Alle Preise",
 		"showResults": "Ergebnisse anzeigen",
-		"activeFilters": "Aktive Filter"
+		"activeFilters": "Aktive Filter",
+		"volume": "Volumen",
+		"brandSearch": "Marke suchen…",
+		"volumeUpTo": "Bis {max} l",
+		"volumeBetween": "{min} – {max} l",
+		"volumeOver": "Über {min} l"
 	},
 	"cookieConsent": {
 		"title": "Ihre Privatsphäre ist uns wichtig",

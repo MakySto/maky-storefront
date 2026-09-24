@@ -46,6 +46,8 @@ import {
 } from "@/lib/fitment/plp-vehicle-filter";
 import { VehicleListingFilter } from "@/ui/components/fitment/vehicle-listing-filter";
 import { CatalogMakeIndex } from "@/ui/components/catalog/make-index";
+import { HeroBenefits } from "@/ui/components/homepage/hero-benefits";
+import { STOREFRONT_CATEGORIES } from "@/config/categories";
 import { CategoryPageClient } from "./client";
 import { formatPageTitleOnce } from "@/config/brand";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
@@ -54,10 +56,22 @@ import { MarketSwitchTargets } from "@/ui/components/header/market-switch-target
 import { lookupBySlug } from "@/lib/saleor/slug-lookup";
 import { getCategoryNavigation } from "@/lib/listing/category-navigation";
 import { getCategoryPriceBands } from "@/lib/listing/category-prices";
+import { getCategoryFacets } from "@/lib/listing/category-facets";
+import { parseBrandParam, volumeBand, volumeRange } from "@/lib/listing/facet-params";
 import { getProductTypeGroups } from "@/lib/listing/product-groups";
 import { isGroupCursor, loadGroupedPage, parseGroupPosition } from "@/lib/listing/grouped-listing";
 
 type Category = NonNullable<ProductListByCategoryQuery["category"]>;
+
+/** A main category's line over its banner title — the homepage tile's, from the `home` messages. */
+const CATEGORY_TAGLINES: Readonly<Record<string, string>> = {
+	roofRacks: "tileRoofRacks",
+	roofBoxes: "tileRoofBoxes",
+	bikeCarriers: "tileBikeCarriers",
+	skiCarriers: "tileSkiCarriers",
+	roofTents: "tileRoofTents",
+	carFridges: "tileCarFridges",
+};
 
 async function getCategoryOutcomeCached(
 	slug: string,
@@ -101,6 +115,8 @@ type PageProps = {
 		colors?: string;
 		sizes?: string;
 		vehicle?: string;
+		brand?: string;
+		volume?: string;
 	}>;
 };
 
@@ -261,6 +277,8 @@ async function CategoryContent({
 
 	const category = outcome.resource;
 	const plainDescription = parseEditorJSToText(category.description);
+	const tHome = await getTranslations({ locale: getLocaleFromChannel(params.channel), namespace: "home" });
+	const tagline = CATEGORY_TAGLINES[STOREFRONT_CATEGORIES.find((c) => c.slug === baseSlug)?.key ?? ""];
 
 	const breadcrumbs = [
 		{ label: t("home"), href: marketHref(params.channel) },
@@ -277,6 +295,9 @@ async function CategoryContent({
 			<CategoryHero
 				title={category.name}
 				description={plainDescription}
+				// A main category's own line from the homepage tile; a sub-category, its family's name.
+				eyebrow={navigation?.parent ? navigation.parent.name : tagline ? tHome(tagline) : null}
+				benefits={<HeroBenefits channel={params.channel} variant="banner" />}
 				photo={
 					scenery?.banners[baseSlug] ??
 					(navigation?.parent ? scenery?.banners[navigation.parent.baseSlug] : undefined) ??
@@ -303,6 +324,8 @@ async function CategoryContent({
 			<Suspense fallback={null}>
 				<CatalogMakeIndex channel={params.channel} slug={categorySegment(params.channel, baseSlug)} />
 			</Suspense>
+			{/* The approved listing closes on the shop's four promises, in a warm band. */}
+			<HeroBenefits channel={params.channel} variant="band" />
 		</>
 	);
 }
@@ -360,20 +383,31 @@ async function CategoryProducts({
 	const vehicleFilter = await resolveVehicleListingFilter(isVehicleFilterRequested(searchParams.vehicle), {
 		categorySlug: baseSlug,
 	});
+	const volume = volumeBand(searchParams.volume);
 	const filter = buildFilterVariables({
 		priceRange: searchParams.price,
 		vehicleProductIds: vehicleFilterIds(vehicleFilter),
+		brandSlugs: parseBrandParam(searchParams.brand),
+		volumeRange: volume ? volumeRange(volume) : null,
 	});
 	const locale = getLocaleFromChannel(params.channel);
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
-	const [groups, priceBands, t] = await Promise.all([
+	const [groups, priceBands, facets, t] = await Promise.all([
 		// The recommended order is Saleor's default order, grouped. A shopper's own order — by
 		// price, by date — applies to the whole listing at once and needs no groups.
 		sortBy ? null : getProductTypeGroups().catch(() => null),
 		getCategoryPriceBands(baseSlug, params.channel).catch((error: unknown) => {
 			console.warn(
 				`[Listing] price filter left out for ${baseSlug}:`,
+				error instanceof Error ? error.message : error,
+			);
+			return null;
+		}),
+		// The maker and volume filters, with their counts; a fault leaves them out.
+		getCategoryFacets(baseSlug, params.channel).catch((error: unknown) => {
+			console.warn(
+				`[Listing] maker and volume filters left out for ${baseSlug}:`,
 				error instanceof Error ? error.message : error,
 			);
 			return null;
@@ -535,6 +569,8 @@ async function CategoryProducts({
 				accessoryIds={listing.accessoryIds}
 				vehicleFilterEmpty={vehicleFilter.state === "empty"}
 				categoryLinks={categoryLinks}
+				brandFacets={facets?.brands ?? []}
+				volumeFacets={facets?.volumes ?? []}
 			/>
 		</>
 	);

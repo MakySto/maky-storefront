@@ -619,7 +619,12 @@
 		"filterTitle": "Filtrovať produkty",
 		"anyPrice": "Všetky ceny",
 		"showResults": "Zobraziť výsledky",
-		"activeFilters": "Aktívne filtre"
+		"activeFilters": "Aktívne filtre",
+		"volume": "Objem",
+		"brandSearch": "Vyhľadať značku…",
+		"volumeUpTo": "Do {max} l",
+		"volumeBetween": "{min} – {max} l",
+		"volumeOver": "Viac ako {min} l"
 	},
 	"cookieConsent": {
 		"title": "Záleží nám na vašom súkromí",
