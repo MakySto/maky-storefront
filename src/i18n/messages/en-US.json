@@ -123,7 +123,15 @@
 		"no": "No",
 		"keyFeatures": "Key features",
 		"productDescription": "Product description",
-		"imageCounter": "Image {current} of {total}"
+		"imageCounter": "Image {current} of {total}",
+		"trustPaymentTitle": "Secure payment",
+		"trustPaymentText": "Encrypted connection",
+		"trustShippingTitle": "Shipping",
+		"trustShippingText": "Price shown in your cart",
+		"trustReturnsTitle": "Returns",
+		"trustReturnsText": "At least 14 days",
+		"trustWarrantyTitle": "2-year warranty",
+		"trustWarrantyText": "On every product"
 	},
 	"fitment": {
 		"selectVehicle": "Select your vehicle",

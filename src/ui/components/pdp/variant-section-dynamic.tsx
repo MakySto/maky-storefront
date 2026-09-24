@@ -4,8 +4,10 @@ import { getDiscountInfo } from "@/lib/pricing";
 import { type ProductDetailsQuery } from "@/gql/graphql";
 
 import { Suspense } from "react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getLocaleFromChannel } from "@/config/locale";
+import { marketHref } from "@/lib/channel-map";
 import { AddToCart } from "./add-to-cart";
 import { VariantSelectionSection } from "./variant-selection";
 import { StickyBar } from "./sticky-bar";
@@ -16,6 +18,9 @@ import { addVariantToCart } from "@/ui/components/plp/actions";
 import type { AddToCartResult } from "@/ui/components/plp/add-to-cart-result";
 import { CartForm } from "@/ui/components/plp/cart-form";
 import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
+import { StarRating } from "@/ui/components/product/star-rating";
+import { WishlistButton } from "@/ui/components/wishlist/wishlist-button";
+import { reviewSummaryFor } from "@/lib/reviews/summary";
 import { PdpCompatibility } from "@/ui/components/fitment/pdp-compatibility";
 
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
@@ -163,14 +168,22 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 	// Manufacturer was previously reachable only by scrolling to parameter row
 	// four. It is a primary buying signal on an accessory store, so it belongs
 	// beside the title.
-	const manufacturer = (product.attributes ?? []).find(
+	const manufacturerValue = (product.attributes ?? []).find(
 		(a) => a.attribute.externalReference === MANUFACTURER_REF,
-	)?.values[0]?.name;
+	)?.values[0];
+	const manufacturer = manufacturerValue?.name;
+	// The maker's brand page (`/znacky/<slug>`), for every real maker — not for "Neznačkové".
+	const manufacturerHref =
+		manufacturerValue?.slug && manufacturerValue.slug !== "neznackove"
+			? marketHref(channel, `/znacky/${manufacturerValue.slug}`)
+			: null;
 
 	// The declared short code, never `variant.sku` — on the roof-rack bundles the
 	// SKU is that code with a CFM-internal suffix appended, and this line used to
 	// print the whole thing under a "SKU:" label.
 	const productCode = publicProductCode(selectedVariant ?? variants[0]);
+
+	const reviewSummary = reviewSummaryFor(product);
 
 	// Server action for adding to cart. `useActionState` shape, so <CartForm> can
 	// render what actually happened instead of the outcome reaching a log only.
@@ -214,25 +227,47 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 
 	return (
 		<>
-			{/* Category + Sale badge row - order:1 so it appears ABOVE the h1 */}
-			<div className="order-1 flex flex-wrap items-center gap-2">
-				{product.category && (
-					<span className="bg-surface-accent text-brand rounded-full px-3 py-1 text-xs font-semibold">
-						{product.category.name}
-					</span>
-				)}
-				{isOnSale && (
-					<Badge variant="destructive" className="text-xs">
-						{tCommon("sale")}
-					</Badge>
-				)}
+			{/* Category + Sale badge row - order:1 so it appears ABOVE the h1, the heart at its end:
+			    the product goes to this browser's favourites (`lib/wishlist`). */}
+			<div className="order-1 flex items-center gap-2">
+				<div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+					{product.category && (
+						<span className="bg-surface-muted text-brand rounded-2xs px-3 py-1.5 text-[0.8125rem] font-semibold">
+							{product.category.name}
+						</span>
+					)}
+					{isOnSale && (
+						<Badge variant="destructive" className="text-xs">
+							{tCommon("sale")}
+						</Badge>
+					)}
+				</div>
+				<WishlistButton productId={product.id} productName={product.name} size="large" className="shrink-0" />
 			</div>
+
+			{/* Stars only when the catalogue carries a rating — Saleor's own `Product.rating`, null
+			    across the whole catalogue today (`lib/reviews`). Nothing is drawn for no rating. */}
+			{reviewSummary && (
+				<StarRating
+					rating={reviewSummary.average}
+					count={reviewSummary.count}
+					className="order-3 mt-3 [&_svg]:h-4 [&_svg]:w-4"
+				/>
+			)}
 
 			{/* Manufacturer · SKU - order:3, directly under the h1 and its summary. */}
 			<div className="order-3 mt-4 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5">
-				{manufacturer && (
-					<span className="text-brand text-sm font-bold tracking-[0.06em] uppercase">{manufacturer}</span>
-				)}
+				{manufacturer &&
+					(manufacturerHref ? (
+						<Link
+							href={manufacturerHref}
+							className="text-brand decoration-brand/40 hover:decoration-brand text-sm font-bold tracking-[0.06em] uppercase underline underline-offset-4 transition-colors"
+						>
+							{manufacturer}
+						</Link>
+					) : (
+						<span className="text-brand text-sm font-bold tracking-[0.06em] uppercase">{manufacturer}</span>
+					))}
 				{productCode && (
 					<span className="text-text-tertiary min-w-0 text-xs">
 						{tProduct("sku")}:{" "}
@@ -289,7 +324,7 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 								// selection: unknown, which resolveAvailability treats as unknown
 								// rather than as zero. A hard zero on a chosen variant still wins.
 								quantityAvailable={selectedVariant?.quantityAvailable}
-								className="text-sm"
+								detailed
 							/>
 						) : (
 							<span className="text-text-secondary text-sm">{tCart("addUnavailable")}</span>

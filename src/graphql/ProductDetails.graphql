@@ -43,6 +43,8 @@ query ProductDetails(
 		attributes {
 			values {
 				name
+				# The value's own key — the maker's brand page is `/znacky/<slug>`.
+				slug
 				# A BOOLEAN attribute's value is named "<attribute>: Yes" by Saleor; the flag is
 				# what the parameters table reads, as "Áno"/"Nie" in the market's language.
 				boolean

@@ -123,7 +123,15 @@
 		"no": "Nem",
 		"keyFeatures": "Fő jellemzők",
 		"productDescription": "Termékleírás",
-		"imageCounter": "{current}. kép / {total}"
+		"imageCounter": "{current}. kép / {total}",
+		"trustPaymentTitle": "Biztonságos fizetés",
+		"trustPaymentText": "Titkosított kapcsolat",
+		"trustShippingTitle": "Szállítás",
+		"trustShippingText": "Az ár a kosárban",
+		"trustReturnsTitle": "Visszaküldés",
+		"trustReturnsText": "Legalább 14 nap",
+		"trustWarrantyTitle": "2 év jótállás",
+		"trustWarrantyText": "A törvény szerint"
 	},
 	"fitment": {
 		"selectVehicle": "Válassza ki járművét",

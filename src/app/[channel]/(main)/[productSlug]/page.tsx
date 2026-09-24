@@ -414,10 +414,14 @@ async function ProductContent({
 						    smaller so it does not push the price off the first screen. */}
 						<h1
 							className={cn(
-								"text-text-primary order-2 mt-3 leading-[1.12] font-bold tracking-[-0.025em] text-balance break-words",
+								"text-text-primary order-2 mt-3 font-extrabold tracking-[-0.03em] text-balance break-words",
 								product.name.length > 64
-									? "text-2xl sm:text-[1.75rem] xl:text-[2rem]"
-									: "text-[1.75rem] sm:text-[2.125rem] xl:text-[2.5rem]",
+									? "text-2xl sm:text-[1.875rem] xl:text-[2.125rem]"
+									: "text-[1.875rem] sm:text-[2.375rem] xl:text-[2.75rem]",
+								// After the sizes: tailwind-merge drops a line height that comes BEFORE a
+								// font size (Tailwind's `text-*` sets one), which left the title at the
+								// body's 1.5 — a 66px gap between two lines of a 44px title.
+								"leading-[1.1]",
 							)}
 						>
 							{product.name}
@@ -439,16 +443,25 @@ async function ProductContent({
 								/>
 							</Suspense>
 						</ErrorBoundary>
+
+						{/* The key features under the buy box, as the approved page has them — and on a
+						    phone after the purchase row, before the description. */}
+						<ProductHighlights
+							attributes={productAttributes}
+							locale={getLocaleFromChannel(params.channel)}
+							className="order-8 mt-7"
+						/>
 					</div>
 				</div>
-
-				<ProductHighlights attributes={productAttributes} locale={getLocaleFromChannel(params.channel)} />
 
 				<ProductSpecs
 					descriptionHtml={descriptionHtml}
 					attributes={productAttributes}
 					careInstructions={careInstructions}
 					locale={getLocaleFromChannel(params.channel)}
+					// The product's own second photo beside the description, when the gallery has one:
+					// never a stock picture, never one the gallery does not already show.
+					image={images[1] ? { url: images[1].url, alt: images[1].alt ?? product.name } : null}
 				/>
 
 				{/* Which cars this product is documented to fit — answerable with no

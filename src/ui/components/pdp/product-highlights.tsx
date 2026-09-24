@@ -41,9 +41,11 @@ const MAX_HIGHLIGHTS = 4;
 export async function ProductHighlights({
 	attributes,
 	locale,
+	className,
 }: {
 	attributes: readonly AttributeInput[];
 	locale: string;
+	className?: string;
 }) {
 	const t = await getTranslations({ locale, namespace: "product" });
 	const words = { yes: t("yes"), no: t("no") };
@@ -63,22 +65,19 @@ export async function ProductHighlights({
 
 	if (items.length < 2) return null;
 
+	// Under the buy box, as the approved page places them: warm tiles, the brown icon drawn
+	// without a ring, the value in bold over its name. Two to a row in the purchase column.
 	return (
-		<section aria-label={t("keyFeatures")} className="mt-10 lg:mt-12">
-			<ul className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+		<section aria-label={t("keyFeatures")} className={className}>
+			<ul className="grid grid-cols-2 gap-2.5 sm:gap-3">
 				{items.map(({ ref, icon: Icon, label, value }) => (
-					<li
-						key={ref}
-						className="border-border-subtle bg-surface-card flex items-center gap-3.5 rounded-sm border p-4 shadow-xs sm:p-5"
-					>
-						<span className="bg-surface-accent text-brand flex h-11 w-11 shrink-0 items-center justify-center rounded-full">
-							<Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
-						</span>
+					<li key={ref} className="bg-surface-muted flex items-center gap-3 rounded-sm px-3.5 py-3 sm:px-4">
+						<Icon className="text-brand h-7 w-7 shrink-0" strokeWidth={2} aria-hidden="true" />
 						<span className="min-w-0">
-							<span className="text-text-primary block text-base leading-tight font-bold tracking-[-0.01em] break-words">
+							<span className="text-text-primary block text-[0.9375rem] leading-tight font-bold tracking-[-0.01em] break-words">
 								{value}
 							</span>
-							<span className="text-text-secondary mt-0.5 block text-[0.8125rem] leading-snug">{label}</span>
+							<span className="text-text-secondary mt-0.5 block text-xs leading-snug">{label}</span>
 						</span>
 					</li>
 				))}

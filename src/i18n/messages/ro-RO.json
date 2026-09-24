@@ -123,7 +123,15 @@
 		"no": "Nu",
 		"keyFeatures": "Caracteristici principale",
 		"productDescription": "Descrierea produsului",
-		"imageCounter": "Imaginea {current} din {total}"
+		"imageCounter": "Imaginea {current} din {total}",
+		"trustPaymentTitle": "Plată securizată",
+		"trustPaymentText": "Conexiune criptată",
+		"trustShippingTitle": "Livrare",
+		"trustShippingText": "Prețul apare în coș",
+		"trustReturnsTitle": "Returnare",
+		"trustReturnsText": "Cel puțin 14 zile",
+		"trustWarrantyTitle": "Garanție 2 ani",
+		"trustWarrantyText": "Legală"
 	},
 	"fitment": {
 		"selectVehicle": "Selectați vehiculul",

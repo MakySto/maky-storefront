@@ -123,7 +123,15 @@
 		"no": "Ne",
 		"keyFeatures": "Hlavní vlastnosti",
 		"productDescription": "Popis produktu",
-		"imageCounter": "Obrázek {current} z {total}"
+		"imageCounter": "Obrázek {current} z {total}",
+		"trustPaymentTitle": "Bezpečná platba",
+		"trustPaymentText": "Šifrované spojení",
+		"trustShippingTitle": "Doprava",
+		"trustShippingText": "Cenu uvidíte v košíku",
+		"trustReturnsTitle": "Vrácení zboží",
+		"trustReturnsText": "Nejméně 14 dní",
+		"trustWarrantyTitle": "Záruka 2 roky",
+		"trustWarrantyText": "Na zboží podle zákona"
 	},
 	"fitment": {
 		"selectVehicle": "Vyberte vaše vozidlo",

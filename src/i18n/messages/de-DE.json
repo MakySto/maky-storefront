@@ -123,7 +123,15 @@
 		"no": "Nein",
 		"keyFeatures": "Wichtigste Merkmale",
 		"productDescription": "Produktbeschreibung",
-		"imageCounter": "Bild {current} von {total}"
+		"imageCounter": "Bild {current} von {total}",
+		"trustPaymentTitle": "Sichere Zahlung",
+		"trustPaymentText": "Verschlüsselte Verbindung",
+		"trustShippingTitle": "Versand",
+		"trustShippingText": "Preis im Warenkorb",
+		"trustReturnsTitle": "Rückgabe",
+		"trustReturnsText": "Mindestens 14 Tage",
+		"trustWarrantyTitle": "2 Jahre Gewährleistung",
+		"trustWarrantyText": "Gesetzlich"
 	},
 	"fitment": {
 		"selectVehicle": "Wählen Sie Ihr Fahrzeug",
