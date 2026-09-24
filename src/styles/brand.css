@@ -30,19 +30,24 @@
    ────────────────────────────────────────────────────────────── */
 
 @theme {
-  /* ── Brand palette — Copper (hue 60°) ──
-     CTA, action, interactive, links */
-  --color-copper-50:  oklch(0.98 0.010 60);
-  --color-copper-100: oklch(0.94 0.025 60);
-  --color-copper-200: oklch(0.88 0.045 60);
-  --color-copper-300: oklch(0.79 0.065 60);
-  --color-copper-400: oklch(0.69 0.082 60);
-  --color-copper-500: oklch(0.60 0.095 60);
-  --color-copper-600: oklch(0.52 0.088 60);
-  --color-copper-700: oklch(0.44 0.072 60);
-  --color-copper-800: oklch(0.35 0.055 60);
-  --color-copper-900: oklch(0.26 0.040 60);
-  --color-copper-950: oklch(0.18 0.028 60);
+  /* ── Brand palette — Copper (hue 50°) ──
+     CTA, action, interactive, links.
+     Premium redesign, second pass (2026-09-24): the owner asked for "a more pronounced brown"
+     on the icons and badges. The approved mockups fill "Všetky kategórie", the active tab and
+     the chips with #723c18 — oklch(0.417 0.090 51) — and draw their icons in the same brown;
+     the old scale (hue 60°, chroma ≤0.095) read as a greyish tan beside it. Same lightness
+     steps, redder hue, more chroma, so every contrast figure above still holds. */
+  --color-copper-50:  oklch(0.978 0.012 55);
+  --color-copper-100: oklch(0.94 0.030 53);
+  --color-copper-200: oklch(0.88 0.052 52);
+  --color-copper-300: oklch(0.79 0.078 51);
+  --color-copper-400: oklch(0.69 0.100 50);
+  --color-copper-500: oklch(0.60 0.112 50);
+  --color-copper-600: oklch(0.52 0.106 50);
+  --color-copper-700: oklch(0.43 0.092 50);
+  --color-copper-800: oklch(0.35 0.074 50);
+  --color-copper-900: oklch(0.26 0.052 50);
+  --color-copper-950: oklch(0.18 0.034 50);
 
   /* ── Brand palette — Forest (hue 158°) ──
      Purchase CTA, vehicle actions, in stock, fitment confirmed.

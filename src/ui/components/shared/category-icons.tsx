@@ -14,7 +14,7 @@ export function RoofRackIcon({ className }: { className?: string }) {
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
-			strokeWidth={1.5}
+			strokeWidth={2}
 			className={className}
 		>
 			<path strokeLinecap="round" d="M3 8h18M3 8l2-4h14l2 4M6 8v4M18 8v4M3 12h18" />
@@ -29,7 +29,7 @@ export function RoofBoxIcon({ className }: { className?: string }) {
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
-			strokeWidth={1.5}
+			strokeWidth={2}
 			className={className}
 		>
 			<rect x="2" y="8" width="20" height="8" rx="2" strokeLinecap="round" />
@@ -45,7 +45,7 @@ export function BikeIcon({ className }: { className?: string }) {
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
-			strokeWidth={1.5}
+			strokeWidth={2}
 			className={className}
 		>
 			<circle cx="6" cy="17" r="3" />
@@ -62,7 +62,7 @@ export function SkiIcon({ className }: { className?: string }) {
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
-			strokeWidth={1.5}
+			strokeWidth={2}
 			className={className}
 		>
 			<path strokeLinecap="round" d="M4 20L20 4M7 17l2-2M13 11l2-2M9 3v6M15 15v6" />
@@ -77,7 +77,7 @@ export function ChainIcon({ className }: { className?: string }) {
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
-			strokeWidth={1.5}
+			strokeWidth={2}
 			className={className}
 		>
 			<path
@@ -95,7 +95,7 @@ export function FridgeIcon({ className }: { className?: string }) {
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
-			strokeWidth={1.5}
+			strokeWidth={2}
 			className={className}
 		>
 			<rect x="4" y="2" width="16" height="20" rx="2" />
@@ -111,7 +111,7 @@ export function TowBarIcon({ className }: { className?: string }) {
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
-			strokeWidth={1.5}
+			strokeWidth={2}
 			className={className}
 		>
 			<circle cx="12" cy="18" r="2" />
@@ -127,7 +127,7 @@ export function RoofTentIcon({ className }: { className?: string }) {
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
-			strokeWidth={1.5}
+			strokeWidth={2}
 			className={className}
 		>
 			<path strokeLinecap="round" strokeLinejoin="round" d="M3 20h18M6 20l6-10 6 10M12 20v-5M9 4h6M12 4v6" />

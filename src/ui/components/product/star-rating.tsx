@@ -41,7 +41,7 @@ export function StarRating({
 							<Star className="text-border-strong absolute inset-0 h-3.5 w-3.5" />
 							{fill > 0 && (
 								<span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
-									<Star className="text-status-warning h-3.5 w-3.5 fill-current" />
+									<Star className="text-status-success h-3.5 w-3.5 fill-current" />
 								</span>
 							)}
 						</span>
