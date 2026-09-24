@@ -34,7 +34,8 @@
 		"slogan": "Alles für Ihr Hobby!",
 		"home": "Startseite",
 		"onDemand": "Auf Bestellung, Lieferung in 5–10 Werktagen",
-		"viewDetail": "Zum Produkt"
+		"viewDetail": "Zum Produkt",
+		"addToCartShort": "In den Warenkorb"
 	},
 	"nav": {
 		"home": "Startseite",
@@ -68,7 +69,10 @@
 		"account": "Konto",
 		"language": "Sprache",
 		"currency": "Währung",
-		"market": "Land und Währung"
+		"market": "Land und Währung",
+		"favorites": "Favoriten",
+		"selectVehicleHint": "Macht die Auswahl leichter",
+		"vehicleSaved": "Gewähltes Fahrzeug"
 	},
 	"product": {
 		"description": "Beschreibung",
@@ -113,7 +117,12 @@
 		"increaseQuantity": "Menge erhöhen",
 		"priceWithVat": "Preis inkl. MwSt.",
 		"technicalParameters": "Technische Daten",
-		"outerDimensions": "Außenmaße"
+		"outerDimensions": "Außenmaße",
+		"yes": "Ja",
+		"no": "Nein",
+		"keyFeatures": "Wichtigste Merkmale",
+		"productDescription": "Produktbeschreibung",
+		"imageCounter": "Bild {current} von {total}"
 	},
 	"fitment": {
 		"selectVehicle": "Wählen Sie Ihr Fahrzeug",
@@ -605,7 +614,11 @@
 		"accessoriesHeading": "Zubehör und Ersatzteile",
 		"priceUnder": "Bis {max}",
 		"priceBetween": "{min} – {max}",
-		"priceOver": "Ab {min}"
+		"priceOver": "Ab {min}",
+		"filterTitle": "Produkte filtern",
+		"anyPrice": "Alle Preise",
+		"showResults": "Ergebnisse anzeigen",
+		"activeFilters": "Aktive Filter"
 	},
 	"cookieConsent": {
 		"title": "Ihre Privatsphäre ist uns wichtig",
@@ -634,7 +647,42 @@
 		"heroShowForMyCar": "Dachträger für mein Auto anzeigen",
 		"heroChangeCar": "Auto ändern",
 		"heroPhotoCaption": "Im Bild",
-		"heroImageAlt": "Auto mit Dachbox auf dem Dach"
+		"heroImageAlt": "Auto mit Dachbox auf dem Dach",
+		"heroEyebrow": "Mehr Platz für Ihre Abenteuer",
+		"heroHeadline": "Unterwegs zu Ihren Erlebnissen",
+		"heroLead": "Dachträger, Dachboxen, Fahrradträger, Dachzelte und Autokühlboxen für Ihre Reisen.",
+		"heroRecommended": "Unsere Empfehlung",
+		"benefitAdviceTitle": "Fachkundige Beratung",
+		"benefitAdviceText": "Wir helfen bei der Auswahl",
+		"benefitBrandsTitle": "Bewährte Marken",
+		"benefitBrandsText": "Thule, Yakima, Menabo und mehr",
+		"benefitShippingTitle": "Versand je nach Produkt",
+		"benefitShippingText": "Den Preis sehen Sie im Warenkorb",
+		"benefitWarrantyTitle": "2 Jahre Gewährleistung",
+		"benefitWarrantyText": "Gesetzlich auf alle Waren",
+		"tileRoofRacks": "Die Basis für Ihre Reisen",
+		"tileRoofBoxes": "Mehr Platz, mehr Möglichkeiten",
+		"tileBikeCarriers": "Ihre Fahrräder immer dabei",
+		"tileSkiCarriers": "Bereit für den Winter",
+		"tileRoofTents": "Abenteuer ohne Grenzen",
+		"tileCarFridges": "Frisches Essen unterwegs",
+		"vehicleTitle": "Wählen Sie Ihr Fahrzeug",
+		"vehicleBody": "Bei Dachträgern zeigen wir Ihnen nur die für Ihr Auto geprüften Sets.",
+		"vehiclePickMake": "Marke wählen",
+		"vehiclePickModel": "Modell wählen",
+		"vehiclePickYear": "Baujahr wählen",
+		"vehicleYear": "Baujahr",
+		"vehicleMake": "Marke",
+		"vehicleModel": "Modell",
+		"featuredAll": "Alle Produkte anzeigen",
+		"brandsTitle": "Marken in unserem Sortiment",
+		"adviceBadge": "Ratgeber",
+		"adviceTitle": "So finden Sie die richtige Ausrüstung für die Reise",
+		"adviceText": "Der passende Dachträger, die richtige Boxgröße, der Fahrradträger – im Ratgeber lesen Sie, worauf es ankommt.",
+		"adviceCta": "Zum Ratgeber",
+		"newsletterTitle": "Newsletter abonnieren",
+		"newsletterText": "Neuheiten, Ausflugstipps und Inspiration für Ihre Reisen.",
+		"newsletterSoon": "Die Anmeldung bereiten wir gerade vor."
 	},
 	"garage": {
 		"title": "Meine Garage",

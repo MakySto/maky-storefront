@@ -34,7 +34,8 @@
 		"slogan": "Tutto per il tuo hobby!",
 		"home": "Home",
 		"onDemand": "Su ordinazione, consegna in 5–10 giorni lavorativi",
-		"viewDetail": "Vedi prodotto"
+		"viewDetail": "Vedi prodotto",
+		"addToCartShort": "Aggiungi"
 	},
 	"nav": {
 		"home": "Home",
@@ -68,7 +69,10 @@
 		"account": "Account",
 		"language": "Lingua",
 		"currency": "Valuta",
-		"market": "Paese e valuta"
+		"market": "Paese e valuta",
+		"favorites": "Preferiti",
+		"selectVehicleHint": "Per scegliere più facilmente",
+		"vehicleSaved": "Veicolo selezionato"
 	},
 	"product": {
 		"description": "Descrizione",
@@ -113,7 +117,12 @@
 		"increaseQuantity": "Aumenta quantità",
 		"priceWithVat": "Prezzo IVA inclusa",
 		"technicalParameters": "Specifiche tecniche",
-		"outerDimensions": "Dimensioni esterne"
+		"outerDimensions": "Dimensioni esterne",
+		"yes": "Sì",
+		"no": "No",
+		"keyFeatures": "Caratteristiche principali",
+		"productDescription": "Descrizione del prodotto",
+		"imageCounter": "Immagine {current} di {total}"
 	},
 	"fitment": {
 		"selectVehicle": "Seleziona il tuo veicolo",
@@ -605,7 +614,11 @@
 		"accessoriesHeading": "Accessori e ricambi",
 		"priceUnder": "Fino a {max}",
 		"priceBetween": "{min} – {max}",
-		"priceOver": "Da {min}"
+		"priceOver": "Da {min}",
+		"filterTitle": "Filtra i prodotti",
+		"anyPrice": "Tutti i prezzi",
+		"showResults": "Mostra risultati",
+		"activeFilters": "Filtri attivi"
 	},
 	"cookieConsent": {
 		"title": "Teniamo alla tua privacy",
@@ -634,7 +647,42 @@
 		"heroShowForMyCar": "Mostra i portapacchi per la mia auto",
 		"heroChangeCar": "Cambia auto",
 		"heroPhotoCaption": "Nella foto",
-		"heroImageAlt": "Auto con box da tetto"
+		"heroImageAlt": "Auto con box da tetto",
+		"heroEyebrow": "Più spazio per le tue avventure",
+		"heroHeadline": "In viaggio verso le tue esperienze",
+		"heroLead": "Barre portatutto, box da tetto, portabici, tende da tetto e frigoriferi portatili per i tuoi viaggi.",
+		"heroRecommended": "Consigliato",
+		"benefitAdviceTitle": "Consulenza esperta",
+		"benefitAdviceText": "Ti aiutiamo a scegliere",
+		"benefitBrandsTitle": "Marchi affidabili",
+		"benefitBrandsText": "Thule, Yakima, Menabo e altri",
+		"benefitShippingTitle": "Spedizione in base al prodotto",
+		"benefitShippingText": "Vedrai il prezzo nel carrello",
+		"benefitWarrantyTitle": "Garanzia di 2 anni",
+		"benefitWarrantyText": "Sui prodotti, per legge",
+		"tileRoofRacks": "La base per i tuoi viaggi",
+		"tileRoofBoxes": "Più spazio, più possibilità",
+		"tileBikeCarriers": "Porta le tue bici ovunque",
+		"tileSkiCarriers": "Pronti per l'inverno",
+		"tileRoofTents": "Avventura senza confini",
+		"tileCarFridges": "Cibo fresco in viaggio",
+		"vehicleTitle": "Scegli il tuo veicolo",
+		"vehicleBody": "Per le barre portatutto ti mostriamo solo i kit verificati per la tua auto.",
+		"vehiclePickMake": "Scegli la marca",
+		"vehiclePickModel": "Scegli il modello",
+		"vehiclePickYear": "Scegli l'anno",
+		"vehicleYear": "Anno",
+		"vehicleMake": "Marca",
+		"vehicleModel": "Modello",
+		"featuredAll": "Vedi tutti i prodotti",
+		"brandsTitle": "I marchi della nostra offerta",
+		"adviceBadge": "Consigli",
+		"adviceTitle": "Come scegliere l'attrezzatura giusta per il viaggio",
+		"adviceText": "Le barre giuste per la tua auto, la misura del box, il tipo di portabici: nella sezione consigli trovi a cosa fare attenzione.",
+		"adviceCta": "Vai ai consigli",
+		"newsletterTitle": "Iscriviti alle novità",
+		"newsletterText": "Novità, idee per le gite e ispirazione per i tuoi viaggi.",
+		"newsletterSoon": "L'iscrizione sarà disponibile a breve."
 	},
 	"garage": {
 		"title": "Il mio garage",

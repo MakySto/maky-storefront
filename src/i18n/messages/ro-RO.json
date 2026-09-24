@@ -34,7 +34,8 @@
 		"slogan": "Totul pentru hobby-ul tău!",
 		"home": "Acasă",
 		"onDemand": "La comandă, livrare în 5–10 zile lucrătoare",
-		"viewDetail": "Vezi produsul"
+		"viewDetail": "Vezi produsul",
+		"addToCartShort": "În coș"
 	},
 	"nav": {
 		"home": "Acasă",
@@ -68,7 +69,10 @@
 		"account": "Cont",
 		"language": "Limbă",
 		"currency": "Monedă",
-		"market": "Țara și moneda"
+		"market": "Țara și moneda",
+		"favorites": "Favorite",
+		"selectVehicleHint": "Pentru o alegere mai ușoară",
+		"vehicleSaved": "Vehicul selectat"
 	},
 	"product": {
 		"description": "Descriere",
@@ -113,7 +117,12 @@
 		"increaseQuantity": "Crește cantitatea",
 		"priceWithVat": "Preț cu TVA",
 		"technicalParameters": "Specificații tehnice",
-		"outerDimensions": "Dimensiuni exterioare"
+		"outerDimensions": "Dimensiuni exterioare",
+		"yes": "Da",
+		"no": "Nu",
+		"keyFeatures": "Caracteristici principale",
+		"productDescription": "Descrierea produsului",
+		"imageCounter": "Imaginea {current} din {total}"
 	},
 	"fitment": {
 		"selectVehicle": "Selectați vehiculul",
@@ -605,7 +614,11 @@
 		"accessoriesHeading": "Accesorii și piese de schimb",
 		"priceUnder": "Până la {max}",
 		"priceBetween": "{min} – {max}",
-		"priceOver": "De la {min}"
+		"priceOver": "De la {min}",
+		"filterTitle": "Filtrează produsele",
+		"anyPrice": "Toate prețurile",
+		"showResults": "Afișează rezultatele",
+		"activeFilters": "Filtre active"
 	},
 	"cookieConsent": {
 		"title": "Ne pasă de confidențialitatea ta",
@@ -634,7 +647,42 @@
 		"heroShowForMyCar": "Vezi barele pentru mașina mea",
 		"heroChangeCar": "Schimbă mașina",
 		"heroPhotoCaption": "În imagine",
-		"heroImageAlt": "Mașină cu cutie de acoperiș pe plafon"
+		"heroImageAlt": "Mașină cu cutie de acoperiș pe plafon",
+		"heroEyebrow": "Mai mult spațiu pentru aventurile tale",
+		"heroHeadline": "Pe drumul spre experiențele tale",
+		"heroLead": "Bare transversale, cutii portbagaj, suporturi de biciclete, corturi de plafon și frigidere auto pentru călătoriile tale.",
+		"heroRecommended": "Recomandat",
+		"benefitAdviceTitle": "Consultanță de specialitate",
+		"benefitAdviceText": "Vă ajutăm să alegeți",
+		"benefitBrandsTitle": "Mărci de încredere",
+		"benefitBrandsText": "Thule, Yakima, Menabo și altele",
+		"benefitShippingTitle": "Livrare în funcție de produs",
+		"benefitShippingText": "Vedeți prețul în coș",
+		"benefitWarrantyTitle": "Garanție 2 ani",
+		"benefitWarrantyText": "Legală, pentru fiecare produs",
+		"tileRoofRacks": "Baza călătoriilor tale",
+		"tileRoofBoxes": "Mai mult spațiu, mai multe posibilități",
+		"tileBikeCarriers": "Ia-ți bicicletele oriunde",
+		"tileSkiCarriers": "Pregătiți pentru iarnă",
+		"tileRoofTents": "Aventură fără limite",
+		"tileCarFridges": "Mâncare proaspătă la drum",
+		"vehicleTitle": "Alegeți vehiculul",
+		"vehicleBody": "La barele transversale vă arătăm doar seturile verificate pentru mașina dvs.",
+		"vehiclePickMake": "Alegeți marca",
+		"vehiclePickModel": "Alegeți modelul",
+		"vehiclePickYear": "Alegeți anul",
+		"vehicleYear": "Anul fabricației",
+		"vehicleMake": "Marca",
+		"vehicleModel": "Modelul",
+		"featuredAll": "Vezi toate produsele",
+		"brandsTitle": "Mărcile din oferta noastră",
+		"adviceBadge": "Sfaturi",
+		"adviceTitle": "Cum alegeți echipamentul potrivit pentru drum",
+		"adviceText": "Barele potrivite pentru mașina ta, mărimea cutiei sau tipul suportului de biciclete – în secțiunea de sfaturi afli la ce să fii atent.",
+		"adviceCta": "Mergi la sfaturi",
+		"newsletterTitle": "Abonați-vă la noutăți",
+		"newsletterText": "Noutăți, idei de excursii și inspirație pentru călătoriile tale.",
+		"newsletterSoon": "Abonarea va fi disponibilă în curând."
 	},
 	"garage": {
 		"title": "Garajul meu",

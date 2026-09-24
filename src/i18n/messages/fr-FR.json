@@ -34,7 +34,8 @@
 		"slogan": "Tout pour votre hobby !",
 		"home": "Accueil",
 		"onDemand": "Sur commande, livraison sous 5 à 10 jours ouvrés",
-		"viewDetail": "Voir le produit"
+		"viewDetail": "Voir le produit",
+		"addToCartShort": "Ajouter"
 	},
 	"nav": {
 		"home": "Accueil",
@@ -68,7 +69,10 @@
 		"account": "Compte",
 		"language": "Langue",
 		"currency": "Devise",
-		"market": "Pays et devise"
+		"market": "Pays et devise",
+		"favorites": "Favoris",
+		"selectVehicleHint": "Pour choisir plus facilement",
+		"vehicleSaved": "Véhicule choisi"
 	},
 	"product": {
 		"description": "Description",
@@ -113,7 +117,12 @@
 		"increaseQuantity": "Augmenter la quantité",
 		"priceWithVat": "Prix TTC",
 		"technicalParameters": "Caractéristiques techniques",
-		"outerDimensions": "Dimensions extérieures"
+		"outerDimensions": "Dimensions extérieures",
+		"yes": "Oui",
+		"no": "Non",
+		"keyFeatures": "Caractéristiques principales",
+		"productDescription": "Description du produit",
+		"imageCounter": "Image {current} sur {total}"
 	},
 	"fitment": {
 		"selectVehicle": "Sélectionnez votre véhicule",
@@ -605,7 +614,11 @@
 		"accessoriesHeading": "Accessoires et pièces détachées",
 		"priceUnder": "Jusqu'à {max}",
 		"priceBetween": "{min} – {max}",
-		"priceOver": "À partir de {min}"
+		"priceOver": "À partir de {min}",
+		"filterTitle": "Filtrer les produits",
+		"anyPrice": "Tous les prix",
+		"showResults": "Voir les résultats",
+		"activeFilters": "Filtres actifs"
 	},
 	"cookieConsent": {
 		"title": "Votre vie privée nous tient à cœur",
@@ -634,7 +647,42 @@
 		"heroShowForMyCar": "Voir les barres de toit pour ma voiture",
 		"heroChangeCar": "Changer de voiture",
 		"heroPhotoCaption": "Sur la photo",
-		"heroImageAlt": "Voiture équipée d'un coffre de toit"
+		"heroImageAlt": "Voiture équipée d'un coffre de toit",
+		"heroEyebrow": "Plus de place pour vos aventures",
+		"heroHeadline": "En route vers vos aventures",
+		"heroLead": "Barres de toit, coffres de toit, porte-vélos, tentes de toit et glacières électriques pour vos voyages.",
+		"heroRecommended": "Notre sélection",
+		"benefitAdviceTitle": "Conseils d'experts",
+		"benefitAdviceText": "Nous vous aidons à choisir",
+		"benefitBrandsTitle": "Des marques reconnues",
+		"benefitBrandsText": "Thule, Yakima, Menabo et d'autres",
+		"benefitShippingTitle": "Livraison selon le produit",
+		"benefitShippingText": "Vous verrez le prix dans le panier",
+		"benefitWarrantyTitle": "Garantie 2 ans",
+		"benefitWarrantyText": "Légale, sur chaque produit",
+		"tileRoofRacks": "La base de vos voyages",
+		"tileRoofBoxes": "Plus de place, plus de possibilités",
+		"tileBikeCarriers": "Emmenez vos vélos partout",
+		"tileSkiCarriers": "Prêts pour l'hiver",
+		"tileRoofTents": "L'aventure sans limites",
+		"tileCarFridges": "Des aliments frais en route",
+		"vehicleTitle": "Choisissez votre véhicule",
+		"vehicleBody": "Pour les barres de toit, nous n'affichons que les kits vérifiés pour votre voiture.",
+		"vehiclePickMake": "Choisir la marque",
+		"vehiclePickModel": "Choisir le modèle",
+		"vehiclePickYear": "Choisir l'année",
+		"vehicleYear": "Année",
+		"vehicleMake": "Marque",
+		"vehicleModel": "Modèle",
+		"featuredAll": "Voir tous les produits",
+		"brandsTitle": "Les marques de notre offre",
+		"adviceBadge": "Conseils",
+		"adviceTitle": "Bien choisir son équipement de voyage",
+		"adviceText": "Les barres adaptées à votre voiture, la taille du coffre, le type de porte-vélos : nos conseils vous disent à quoi faire attention.",
+		"adviceCta": "Voir les conseils",
+		"newsletterTitle": "Recevez nos nouveautés",
+		"newsletterText": "Nouveautés, idées d'escapades et inspiration pour vos voyages.",
+		"newsletterSoon": "L'inscription arrive bientôt."
 	},
 	"garage": {
 		"title": "Mon garage",

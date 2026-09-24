@@ -34,7 +34,8 @@
 		"slogan": "Vše pro Vaše hobby!",
 		"home": "Domů",
 		"onDemand": "Na objednávku, dodání 5–10 pracovních dnů",
-		"viewDetail": "Detail produktu"
+		"viewDetail": "Detail produktu",
+		"addToCartShort": "Do košíku"
 	},
 	"nav": {
 		"home": "Domů",
@@ -68,7 +69,10 @@
 		"account": "Účet",
 		"language": "Jazyk",
 		"currency": "Měna",
-		"market": "Země a měna"
+		"market": "Země a měna",
+		"favorites": "Oblíbené",
+		"selectVehicleHint": "Pro snadnější výběr",
+		"vehicleSaved": "Vybrané vozidlo"
 	},
 	"product": {
 		"description": "Popis",
@@ -113,7 +117,12 @@
 		"increaseQuantity": "Zvýšit množství",
 		"priceWithVat": "Cena s DPH",
 		"technicalParameters": "Technické parametry",
-		"outerDimensions": "Vnější rozměry"
+		"outerDimensions": "Vnější rozměry",
+		"yes": "Ano",
+		"no": "Ne",
+		"keyFeatures": "Hlavní vlastnosti",
+		"productDescription": "Popis produktu",
+		"imageCounter": "Obrázek {current} z {total}"
 	},
 	"fitment": {
 		"selectVehicle": "Vyberte vaše vozidlo",
@@ -605,7 +614,11 @@
 		"accessoriesHeading": "Příslušenství a náhradní díly",
 		"priceUnder": "Do {max}",
 		"priceBetween": "{min} – {max}",
-		"priceOver": "Od {min}"
+		"priceOver": "Od {min}",
+		"filterTitle": "Filtrovat produkty",
+		"anyPrice": "Všechny ceny",
+		"showResults": "Zobrazit výsledky",
+		"activeFilters": "Aktivní filtry"
 	},
 	"cookieConsent": {
 		"title": "Záleží nám na vašem soukromí",
@@ -634,7 +647,42 @@
 		"heroShowForMyCar": "Zobrazit nosiče pro moje auto",
 		"heroChangeCar": "Změnit auto",
 		"heroPhotoCaption": "Na fotce",
-		"heroImageAlt": "Auto se střešním boxem na střeše"
+		"heroImageAlt": "Auto se střešním boxem na střeše",
+		"heroEyebrow": "Více prostoru pro vaše dobrodružství",
+		"heroHeadline": "Na cestě za vašimi zážitky",
+		"heroLead": "Střešní nosiče, boxy, nosiče kol, střešní stany a autochladničky pro vaše cesty.",
+		"heroRecommended": "Doporučujeme",
+		"benefitAdviceTitle": "Odborné poradenství",
+		"benefitAdviceText": "Pomůžeme s výběrem",
+		"benefitBrandsTitle": "Ověřené značky",
+		"benefitBrandsText": "Thule, Yakima, Menabo a další",
+		"benefitShippingTitle": "Doprava podle produktu",
+		"benefitShippingText": "Cenu uvidíte v košíku",
+		"benefitWarrantyTitle": "Záruka 2 roky",
+		"benefitWarrantyText": "Na zboží podle zákona",
+		"tileRoofRacks": "Základ pro vaše cesty",
+		"tileRoofBoxes": "Více prostoru, více možností",
+		"tileBikeCarriers": "Vezměte svá kola všude",
+		"tileSkiCarriers": "Připraveni na zimu",
+		"tileRoofTents": "Dobrodružství bez hranic",
+		"tileCarFridges": "Čerstvé jídlo na cestách",
+		"vehicleTitle": "Vyberte své vozidlo",
+		"vehicleBody": "U střešních nosičů vám ukážeme jen sestavy ověřené pro vaše auto.",
+		"vehiclePickMake": "Vyberte značku",
+		"vehiclePickModel": "Vyberte model",
+		"vehiclePickYear": "Vyberte rok",
+		"vehicleYear": "Rok výroby",
+		"vehicleMake": "Značka",
+		"vehicleModel": "Model",
+		"featuredAll": "Zobrazit všechny produkty",
+		"brandsTitle": "Značky v naší nabídce",
+		"adviceBadge": "Poradna",
+		"adviceTitle": "Jak vybrat správnou výbavu na cesty",
+		"adviceText": "Střešní nosič pro vaše auto, velikost boxu nebo typ nosiče kol – v poradně najdete, na co si dát pozor.",
+		"adviceCta": "Přejít do poradny",
+		"newsletterTitle": "Odebírejte novinky",
+		"newsletterText": "Novinky, tipy na výlety a inspirace pro vaše cesty.",
+		"newsletterSoon": "Přihlašování k odběru připravujeme."
 	},
 	"garage": {
 		"title": "Moje garáž",

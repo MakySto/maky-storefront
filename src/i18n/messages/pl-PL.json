@@ -34,7 +34,8 @@
 		"slogan": "Wszystko dla Twojego hobby!",
 		"home": "Strona główna",
 		"onDemand": "Na zamówienie, dostawa w 5–10 dni roboczych",
-		"viewDetail": "Szczegóły produktu"
+		"viewDetail": "Szczegóły produktu",
+		"addToCartShort": "Do koszyka"
 	},
 	"nav": {
 		"home": "Strona główna",
@@ -68,7 +69,10 @@
 		"account": "Konto",
 		"language": "Język",
 		"currency": "Waluta",
-		"market": "Kraj i waluta"
+		"market": "Kraj i waluta",
+		"favorites": "Ulubione",
+		"selectVehicleHint": "Ułatwia wybór",
+		"vehicleSaved": "Wybrany pojazd"
 	},
 	"product": {
 		"description": "Opis",
@@ -113,7 +117,12 @@
 		"increaseQuantity": "Zwiększ ilość",
 		"priceWithVat": "Cena z VAT",
 		"technicalParameters": "Dane techniczne",
-		"outerDimensions": "Wymiary zewnętrzne"
+		"outerDimensions": "Wymiary zewnętrzne",
+		"yes": "Tak",
+		"no": "Nie",
+		"keyFeatures": "Najważniejsze cechy",
+		"productDescription": "Opis produktu",
+		"imageCounter": "Zdjęcie {current} z {total}"
 	},
 	"fitment": {
 		"selectVehicle": "Wybierz swój pojazd",
@@ -605,7 +614,11 @@
 		"accessoriesHeading": "Akcesoria i części zamienne",
 		"priceUnder": "Do {max}",
 		"priceBetween": "{min} – {max}",
-		"priceOver": "Od {min}"
+		"priceOver": "Od {min}",
+		"filterTitle": "Filtruj produkty",
+		"anyPrice": "Wszystkie ceny",
+		"showResults": "Pokaż wyniki",
+		"activeFilters": "Aktywne filtry"
 	},
 	"cookieConsent": {
 		"title": "Zależy nam na Twojej prywatności",
@@ -634,7 +647,42 @@
 		"heroShowForMyCar": "Pokaż bagażniki do mojego auta",
 		"heroChangeCar": "Zmień auto",
 		"heroPhotoCaption": "Na zdjęciu",
-		"heroImageAlt": "Auto z boksem dachowym na dachu"
+		"heroImageAlt": "Auto z boksem dachowym na dachu",
+		"heroEyebrow": "Więcej miejsca na Twoje przygody",
+		"heroHeadline": "W drodze po Twoje przeżycia",
+		"heroLead": "Bagażniki dachowe, boxy, bagażniki rowerowe, namioty dachowe i lodówki samochodowe na Twoje podróże.",
+		"heroRecommended": "Polecamy",
+		"benefitAdviceTitle": "Fachowe doradztwo",
+		"benefitAdviceText": "Pomożemy w wyborze",
+		"benefitBrandsTitle": "Sprawdzone marki",
+		"benefitBrandsText": "Thule, Yakima, Menabo i inne",
+		"benefitShippingTitle": "Dostawa zależna od produktu",
+		"benefitShippingText": "Cenę zobaczysz w koszyku",
+		"benefitWarrantyTitle": "2 lata gwarancji",
+		"benefitWarrantyText": "Na towar zgodnie z prawem",
+		"tileRoofRacks": "Podstawa Twoich podróży",
+		"tileRoofBoxes": "Więcej miejsca, więcej możliwości",
+		"tileBikeCarriers": "Zabierz rowery wszędzie",
+		"tileSkiCarriers": "Gotowi na zimę",
+		"tileRoofTents": "Przygoda bez granic",
+		"tileCarFridges": "Świeże jedzenie w podróży",
+		"vehicleTitle": "Wybierz swój pojazd",
+		"vehicleBody": "W przypadku bagażników dachowych pokażemy tylko zestawy sprawdzone dla Twojego auta.",
+		"vehiclePickMake": "Wybierz markę",
+		"vehiclePickModel": "Wybierz model",
+		"vehiclePickYear": "Wybierz rok",
+		"vehicleYear": "Rok produkcji",
+		"vehicleMake": "Marka",
+		"vehicleModel": "Model",
+		"featuredAll": "Zobacz wszystkie produkty",
+		"brandsTitle": "Marki w naszej ofercie",
+		"adviceBadge": "Poradnik",
+		"adviceTitle": "Jak wybrać odpowiednie wyposażenie na drogę",
+		"adviceText": "Bagażnik dachowy do Twojego auta, rozmiar boxu czy typ bagażnika rowerowego – w poradniku dowiesz się, na co zwrócić uwagę.",
+		"adviceCta": "Przejdź do poradnika",
+		"newsletterTitle": "Zapisz się na nowości",
+		"newsletterText": "Nowości, pomysły na wycieczki i inspiracje na podróże.",
+		"newsletterSoon": "Zapisy wkrótce uruchomimy."
 	},
 	"garage": {
 		"title": "Mój garaż",

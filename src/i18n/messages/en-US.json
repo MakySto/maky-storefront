@@ -34,7 +34,8 @@
 		"slogan": "Everything for Your Hobby!",
 		"home": "Home",
 		"onDemand": "Made to order, delivery in 7–14 business days",
-		"viewDetail": "View product"
+		"viewDetail": "View product",
+		"addToCartShort": "Add to cart"
 	},
 	"nav": {
 		"home": "Home",
@@ -68,7 +69,10 @@
 		"account": "Account",
 		"language": "Language",
 		"currency": "Currency",
-		"market": "Country and currency"
+		"market": "Country and currency",
+		"favorites": "Favorites",
+		"selectVehicleHint": "Makes choosing easier",
+		"vehicleSaved": "Selected vehicle"
 	},
 	"product": {
 		"description": "Description",
@@ -113,7 +117,12 @@
 		"increaseQuantity": "Increase quantity",
 		"priceWithVat": "Final price",
 		"technicalParameters": "Technical specifications",
-		"outerDimensions": "Outer dimensions"
+		"outerDimensions": "Outer dimensions",
+		"yes": "Yes",
+		"no": "No",
+		"keyFeatures": "Key features",
+		"productDescription": "Product description",
+		"imageCounter": "Image {current} of {total}"
 	},
 	"fitment": {
 		"selectVehicle": "Select your vehicle",
@@ -605,7 +614,11 @@
 		"accessoriesHeading": "Accessories and spare parts",
 		"priceUnder": "Up to {max}",
 		"priceBetween": "{min} – {max}",
-		"priceOver": "From {min}"
+		"priceOver": "From {min}",
+		"filterTitle": "Filter products",
+		"anyPrice": "Any price",
+		"showResults": "Show results",
+		"activeFilters": "Active filters"
 	},
 	"cookieConsent": {
 		"title": "We value your privacy",
@@ -634,7 +647,42 @@
 		"heroShowForMyCar": "Show roof racks for my car",
 		"heroChangeCar": "Change car",
 		"heroPhotoCaption": "Pictured",
-		"heroImageAlt": "Car with a roof box on the roof"
+		"heroImageAlt": "Car with a roof box on the roof",
+		"heroEyebrow": "More room for your adventures",
+		"heroHeadline": "On the road to your adventures",
+		"heroLead": "Roof racks, roof boxes, bike carriers, rooftop tents and car fridges for your trips.",
+		"heroRecommended": "Our pick",
+		"benefitAdviceTitle": "Expert advice",
+		"benefitAdviceText": "We help you choose",
+		"benefitBrandsTitle": "Trusted brands",
+		"benefitBrandsText": "Thule, Yakima, Menabo and more",
+		"benefitShippingTitle": "Shipping by product",
+		"benefitShippingText": "You'll see the price in your cart",
+		"benefitWarrantyTitle": "2-year warranty",
+		"benefitWarrantyText": "On every product",
+		"tileRoofRacks": "The base for every trip",
+		"tileRoofBoxes": "More room, more options",
+		"tileBikeCarriers": "Take your bikes anywhere",
+		"tileSkiCarriers": "Ready for winter",
+		"tileRoofTents": "Adventure without limits",
+		"tileCarFridges": "Fresh food on the go",
+		"vehicleTitle": "Choose your vehicle",
+		"vehicleBody": "For roof racks, we show you only the sets verified for your car.",
+		"vehiclePickMake": "Choose a make",
+		"vehiclePickModel": "Choose a model",
+		"vehiclePickYear": "Choose a year",
+		"vehicleYear": "Year",
+		"vehicleMake": "Make",
+		"vehicleModel": "Model",
+		"featuredAll": "View all products",
+		"brandsTitle": "Brands we carry",
+		"adviceBadge": "Advice",
+		"adviceTitle": "How to choose the right gear for the road",
+		"adviceText": "The right roof rack for your car, the size of a box, the type of bike carrier – our advice pages cover what to look out for.",
+		"adviceCta": "Go to advice",
+		"newsletterTitle": "Get our newsletter",
+		"newsletterText": "News, trip tips and inspiration for your travels.",
+		"newsletterSoon": "Sign-up is coming soon."
 	},
 	"garage": {
 		"title": "My Garage",

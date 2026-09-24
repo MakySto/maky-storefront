@@ -34,7 +34,8 @@
 		"slogan": "Minden a hobbihoz!",
 		"home": "Kezdőlap",
 		"onDemand": "Rendelésre, szállítás 5–10 munkanapon belül",
-		"viewDetail": "Termék részletei"
+		"viewDetail": "Termék részletei",
+		"addToCartShort": "Kosárba"
 	},
 	"nav": {
 		"home": "Kezdőlap",
@@ -68,7 +69,10 @@
 		"account": "Fiók",
 		"language": "Nyelv",
 		"currency": "Pénznem",
-		"market": "Ország és pénznem"
+		"market": "Ország és pénznem",
+		"favorites": "Kedvencek",
+		"selectVehicleHint": "Könnyebb választás",
+		"vehicleSaved": "Kiválasztott jármű"
 	},
 	"product": {
 		"description": "Leírás",
@@ -113,7 +117,12 @@
 		"increaseQuantity": "Mennyiség növelése",
 		"priceWithVat": "Ár áfával",
 		"technicalParameters": "Műszaki adatok",
-		"outerDimensions": "Külső méretek"
+		"outerDimensions": "Külső méretek",
+		"yes": "Igen",
+		"no": "Nem",
+		"keyFeatures": "Fő jellemzők",
+		"productDescription": "Termékleírás",
+		"imageCounter": "{current}. kép / {total}"
 	},
 	"fitment": {
 		"selectVehicle": "Válassza ki járművét",
@@ -605,7 +614,11 @@
 		"accessoriesHeading": "Tartozékok és pótalkatrészek",
 		"priceUnder": "Legfeljebb {max}",
 		"priceBetween": "{min} – {max}",
-		"priceOver": "Legalább {min}"
+		"priceOver": "Legalább {min}",
+		"filterTitle": "Termékek szűrése",
+		"anyPrice": "Bármilyen ár",
+		"showResults": "Találatok megjelenítése",
+		"activeFilters": "Aktív szűrők"
 	},
 	"cookieConsent": {
 		"title": "Fontos számunkra az adatvédelme",
@@ -634,7 +647,42 @@
 		"heroShowForMyCar": "Tetőcsomagtartók az autómhoz",
 		"heroChangeCar": "Autó módosítása",
 		"heroPhotoCaption": "A képen",
-		"heroImageAlt": "Autó tetőboxszal a tetején"
+		"heroImageAlt": "Autó tetőboxszal a tetején",
+		"heroEyebrow": "Több hely a kalandjaihoz",
+		"heroHeadline": "Úton az élményei felé",
+		"heroLead": "Tetőcsomagtartók, tetőboxok, kerékpártartók, tetősátrak és autós hűtők az utazásaihoz.",
+		"heroRecommended": "Ajánlatunk",
+		"benefitAdviceTitle": "Szakszerű tanácsadás",
+		"benefitAdviceText": "Segítünk a választásban",
+		"benefitBrandsTitle": "Megbízható márkák",
+		"benefitBrandsText": "Thule, Yakima, Menabo és mások",
+		"benefitShippingTitle": "Szállítás a termék szerint",
+		"benefitShippingText": "Az árat a kosárban látja",
+		"benefitWarrantyTitle": "2 év jótállás",
+		"benefitWarrantyText": "A termékekre a törvény szerint",
+		"tileRoofRacks": "Az utazások alapja",
+		"tileRoofBoxes": "Több hely, több lehetőség",
+		"tileBikeCarriers": "Vigye magával a kerékpárjait",
+		"tileSkiCarriers": "Készen a télre",
+		"tileRoofTents": "Kaland határok nélkül",
+		"tileCarFridges": "Friss étel útközben",
+		"vehicleTitle": "Válassza ki járművét",
+		"vehicleBody": "A tetőcsomagtartóknál csak az autójára ellenőrzött szetteket mutatjuk.",
+		"vehiclePickMake": "Válasszon márkát",
+		"vehiclePickModel": "Válasszon modellt",
+		"vehiclePickYear": "Válasszon évet",
+		"vehicleYear": "Gyártási év",
+		"vehicleMake": "Márka",
+		"vehicleModel": "Modell",
+		"featuredAll": "Összes termék",
+		"brandsTitle": "Márkák kínálatunkban",
+		"adviceBadge": "Tanácsadó",
+		"adviceTitle": "Hogyan válassza ki a megfelelő felszerelést az útra",
+		"adviceText": "Tetőcsomagtartó az autójához, a box mérete vagy a kerékpártartó típusa – a tanácsadóban megtalálja, mire figyeljen.",
+		"adviceCta": "Tovább a tanácsadóhoz",
+		"newsletterTitle": "Iratkozzon fel hírlevelünkre",
+		"newsletterText": "Újdonságok, kirándulási tippek és inspiráció az utazásaihoz.",
+		"newsletterSoon": "A feliratkozást hamarosan elindítjuk."
 	},
 	"garage": {
 		"title": "Garázsom",

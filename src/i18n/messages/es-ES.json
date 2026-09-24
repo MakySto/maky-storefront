@@ -34,7 +34,8 @@
 		"slogan": "¡Todo para tu hobby!",
 		"home": "Inicio",
 		"onDemand": "Bajo pedido, entrega en 5–10 días laborables",
-		"viewDetail": "Ver producto"
+		"viewDetail": "Ver producto",
+		"addToCartShort": "Añadir"
 	},
 	"nav": {
 		"home": "Inicio",
@@ -68,7 +69,10 @@
 		"account": "Cuenta",
 		"language": "Idioma",
 		"currency": "Moneda",
-		"market": "País y moneda"
+		"market": "País y moneda",
+		"favorites": "Favoritos",
+		"selectVehicleHint": "Para elegir más fácilmente",
+		"vehicleSaved": "Vehículo elegido"
 	},
 	"product": {
 		"description": "Descripción",
@@ -113,7 +117,12 @@
 		"increaseQuantity": "Aumentar cantidad",
 		"priceWithVat": "Precio con IVA",
 		"technicalParameters": "Especificaciones técnicas",
-		"outerDimensions": "Dimensiones exteriores"
+		"outerDimensions": "Dimensiones exteriores",
+		"yes": "Sí",
+		"no": "No",
+		"keyFeatures": "Características principales",
+		"productDescription": "Descripción del producto",
+		"imageCounter": "Imagen {current} de {total}"
 	},
 	"fitment": {
 		"selectVehicle": "Seleccione su vehículo",
@@ -605,7 +614,11 @@
 		"accessoriesHeading": "Accesorios y recambios",
 		"priceUnder": "Hasta {max}",
 		"priceBetween": "{min} – {max}",
-		"priceOver": "Desde {min}"
+		"priceOver": "Desde {min}",
+		"filterTitle": "Filtrar productos",
+		"anyPrice": "Todos los precios",
+		"showResults": "Ver resultados",
+		"activeFilters": "Filtros activos"
 	},
 	"cookieConsent": {
 		"title": "Nos importa tu privacidad",
@@ -634,7 +647,42 @@
 		"heroShowForMyCar": "Ver barras de techo para mi coche",
 		"heroChangeCar": "Cambiar coche",
 		"heroPhotoCaption": "En la foto",
-		"heroImageAlt": "Coche con un cofre de techo"
+		"heroImageAlt": "Coche con un cofre de techo",
+		"heroEyebrow": "Más espacio para tus aventuras",
+		"heroHeadline": "De camino a tus experiencias",
+		"heroLead": "Barras de techo, cofres, portabicicletas, tiendas de techo y neveras de coche para tus viajes.",
+		"heroRecommended": "Recomendado",
+		"benefitAdviceTitle": "Asesoramiento experto",
+		"benefitAdviceText": "Te ayudamos a elegir",
+		"benefitBrandsTitle": "Marcas de confianza",
+		"benefitBrandsText": "Thule, Yakima, Menabo y más",
+		"benefitShippingTitle": "Envío según el producto",
+		"benefitShippingText": "Verás el precio en el carrito",
+		"benefitWarrantyTitle": "Garantía de 2 años",
+		"benefitWarrantyText": "Legal, en cada producto",
+		"tileRoofRacks": "La base de tus viajes",
+		"tileRoofBoxes": "Más espacio, más posibilidades",
+		"tileBikeCarriers": "Lleva tus bicis a todas partes",
+		"tileSkiCarriers": "Listos para el invierno",
+		"tileRoofTents": "Aventura sin límites",
+		"tileCarFridges": "Comida fresca en ruta",
+		"vehicleTitle": "Elige tu vehículo",
+		"vehicleBody": "En barras de techo te mostramos solo los kits verificados para tu coche.",
+		"vehiclePickMake": "Elige la marca",
+		"vehiclePickModel": "Elige el modelo",
+		"vehiclePickYear": "Elige el año",
+		"vehicleYear": "Año",
+		"vehicleMake": "Marca",
+		"vehicleModel": "Modelo",
+		"featuredAll": "Ver todos los productos",
+		"brandsTitle": "Marcas de nuestra oferta",
+		"adviceBadge": "Consejos",
+		"adviceTitle": "Cómo elegir el equipo adecuado para el viaje",
+		"adviceText": "Las barras adecuadas para tu coche, el tamaño del cofre o el tipo de portabicicletas: en nuestros consejos verás en qué fijarte.",
+		"adviceCta": "Ir a los consejos",
+		"newsletterTitle": "Recibe nuestras novedades",
+		"newsletterText": "Novedades, ideas de escapadas e inspiración para tus viajes.",
+		"newsletterSoon": "La suscripción estará disponible pronto."
 	},
 	"garage": {
 		"title": "Mi garaje",
