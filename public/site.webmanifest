@@ -5,8 +5,8 @@
 	"lang": "sk",
 	"start_url": "/",
 	"display": "standalone",
-	"theme_color": "#fefcf9",
-	"background_color": "#fefcf9",
+	"theme_color": "#ffffff",
+	"background_color": "#ffffff",
 	"icons": [
 		{
 			"src": "/android-chrome-192x192.png",

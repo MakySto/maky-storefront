@@ -81,41 +81,20 @@ export const rootMetadata: Metadata = {
 		},
 	}),
 
-	// Icons - with light/dark mode support
+	// Icons — the brown deer on an opaque white square, one set for light and dark tab strips
+	// alike (a transparent icon took the strip's colour and all but vanished on a dark one).
+	// Rendered by scripts/brand/make-icons.mjs. `/favicon.ico` (16, 32, 48) is emitted by the
+	// src/app/favicon.ico file convention, so it is not repeated here. 192 and 96 are
+	// multiples of 48, which is what Search asks for, and 192 stays first (metadata.test.ts).
+	// The 16 and 32 px files are drawn for their size, so the tab shows them instead of a
+	// shrunken large mark; 32 comes last because Firefox takes the last declaration and it
+	// stays sharp on a 2x screen.
 	icons: {
 		icon: [
-			{
-				url: "/android-chrome-192x192.png",
-				sizes: "192x192",
-				type: "image/png",
-			},
-			{ url: "/favicon.ico", sizes: "32x32" },
-			// Light mode (dark icon on light tabs)
-			{
-				url: "/favicon-16x16.png",
-				sizes: "16x16",
-				type: "image/png",
-				media: "(prefers-color-scheme: light)",
-			},
-			{
-				url: "/favicon-32x32.png",
-				sizes: "32x32",
-				type: "image/png",
-				media: "(prefers-color-scheme: light)",
-			},
-			// Dark mode (light icon on dark tabs)
-			{
-				url: "/favicon-dark-16x16.png",
-				sizes: "16x16",
-				type: "image/png",
-				media: "(prefers-color-scheme: dark)",
-			},
-			{
-				url: "/favicon-dark-32x32.png",
-				sizes: "32x32",
-				type: "image/png",
-				media: "(prefers-color-scheme: dark)",
-			},
+			{ url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+			{ url: "/icon.png", sizes: "96x96", type: "image/png" },
+			{ url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+			{ url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
 		],
 		apple: "/apple-icon.png",
 	},
