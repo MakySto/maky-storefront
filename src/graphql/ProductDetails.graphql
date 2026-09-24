@@ -43,6 +43,9 @@ query ProductDetails(
 		attributes {
 			values {
 				name
+				# A BOOLEAN attribute's value is named "<attribute>: Yes" by Saleor; the flag is
+				# what the parameters table reads, as "Áno"/"Nie" in the market's language.
+				boolean
 				translation(languageCode: $lang) {
 					name
 				}

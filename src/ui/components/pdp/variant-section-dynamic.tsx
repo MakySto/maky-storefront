@@ -215,8 +215,12 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 	return (
 		<>
 			{/* Category + Sale badge row - order:1 so it appears ABOVE the h1 */}
-			<div className="order-1 flex items-center gap-2">
-				{product.category && <span className="text-muted-foreground text-sm">{product.category.name}</span>}
+			<div className="order-1 flex flex-wrap items-center gap-2">
+				{product.category && (
+					<span className="bg-surface-accent text-brand rounded-full px-3 py-1 text-xs font-semibold">
+						{product.category.name}
+					</span>
+				)}
 				{isOnSale && (
 					<Badge variant="destructive" className="text-xs">
 						{tCommon("sale")}
@@ -224,49 +228,33 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 				)}
 			</div>
 
-			{/* Manufacturer · SKU · availability - order:3, directly under the h1. */}
-			<div className="order-3 mt-1 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5">
-				{manufacturer && <span className="text-text-primary text-sm font-medium">{manufacturer}</span>}
+			{/* Manufacturer · SKU - order:3, directly under the h1 and its summary. */}
+			<div className="order-3 mt-4 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5">
+				{manufacturer && (
+					<span className="text-brand text-sm font-bold tracking-[0.06em] uppercase">{manufacturer}</span>
+				)}
 				{productCode && (
 					<span className="text-text-tertiary min-w-0 text-xs">
 						{tProduct("sku")}:{" "}
 						<span className="font-medium [overflow-wrap:anywhere] tabular-nums">{productCode}</span>
 					</span>
 				)}
-				{isPurchasable ? (
-					<AvailabilityBadge
-						label={tCommon}
-						// Falls back to the product's mode so a multi-variant product answers
-						// before anything is picked. It used to render NOTHING until the
-						// customer chose a variant, and a blank where availability belongs
-						// reads as "in stock" — on a catalogue that holds none.
-						mode={selectedVariant?.metafield ?? productAvailabilityMode}
-						// A tracked positive quantity is real channel/warehouse stock and
-						// overrides a stale sale-to-order metafield.
-						trackInventory={selectedVariant?.trackInventory}
-						// Still the SELECTED variant's, and undefined when there is no
-						// selection: unknown, which resolveAvailability treats as unknown
-						// rather than as zero. A hard zero on a chosen variant still wins.
-						quantityAvailable={selectedVariant?.quantityAvailable}
-						className="text-xs"
-					/>
-				) : (
-					<span className="text-text-secondary text-xs">{tCart("addUnavailable")}</span>
-				)}
 			</div>
 
-			{/* Compatibility - order:4, immediately above the purchase CTA (CLAUDE.md §8)
-			    and deliberately OUTSIDE the form below: the box carries a button, and
+			{/* Compatibility - order:6, right under the purchase CTA (CLAUDE.md §8: near it, not in
+			    the description; since the 2026-09 redesign under the button, so the price and
+			    the button stay on a laptop's first screen) and deliberately OUTSIDE the form
+			    above it: the box carries a button, and
 			    `ui/button.tsx` sets no default `type`, so a submit here would add to the
 			    cart while the shopper thought they were changing their car. Its own
 			    Suspense boundary because it may have to reach the fitment provider over
 			    HTTP, and an add-to-cart button must never wait on that. */}
 			<Suspense fallback={null}>
-				<PdpCompatibility channel={channel} saleorProductId={product.id} className="order-4 mt-5" />
+				<PdpCompatibility channel={channel} saleorProductId={product.id} className="order-6 mt-6" />
 			</Suspense>
 
 			{/* Rest of variant section - order:5 so it appears BELOW the meta row */}
-			<CartForm action={addToCart} className="order-5 mt-5 space-y-6">
+			<CartForm action={addToCart} className="order-5 mt-6 space-y-6">
 				{/* Variant Selectors */}
 				<VariantSelectionSection
 					variants={variantsForClient}
@@ -275,7 +263,9 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 					channel={channel}
 				/>
 
-				{/* Add to Cart */}
+				{/* Add to Cart — the price, then what the catalogue says about availability, then the
+				    quantity and the button. The badge renders here on the server and is handed to the
+				    client component as an element. */}
 				<AddToCart
 					price={price}
 					compareAtPrice={compareAtPrice}
@@ -283,6 +273,28 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 					disabled={isAddToCartDisabled}
 					disabledReason={disabledReason}
 					maxQuantity={maxQuantity}
+					availability={
+						isPurchasable ? (
+							<AvailabilityBadge
+								label={tCommon}
+								// Falls back to the product's mode so a multi-variant product answers
+								// before anything is picked. It used to render NOTHING until the
+								// customer chose a variant, and a blank where availability belongs
+								// reads as "in stock" — on a catalogue that holds none.
+								mode={selectedVariant?.metafield ?? productAvailabilityMode}
+								// A tracked positive quantity is real channel/warehouse stock and
+								// overrides a stale sale-to-order metafield.
+								trackInventory={selectedVariant?.trackInventory}
+								// Still the SELECTED variant's, and undefined when there is no
+								// selection: unknown, which resolveAvailability treats as unknown
+								// rather than as zero. A hard zero on a chosen variant still wins.
+								quantityAvailable={selectedVariant?.quantityAvailable}
+								className="text-sm"
+							/>
+						) : (
+							<span className="text-text-secondary text-sm">{tCart("addUnavailable")}</span>
+						)
+					}
 				/>
 
 				{/* Sticky Add to Cart Bar (Mobile) */}
@@ -293,7 +305,7 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 
 			{/* Purchase confidence - order:6, outside the form (nothing submittable). */}
 			{isPurchasable ? (
-				<div className="order-6 mt-6">
+				<div className="order-7 mt-7">
 					<PurchaseTrust channel={channel} />
 				</div>
 			) : null}

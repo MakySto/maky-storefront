@@ -27,6 +27,8 @@ import { productHref } from "@/lib/product-url";
 import { Breadcrumbs } from "@/ui/components/breadcrumbs";
 import { getGalleryImages } from "@/ui/components/pdp/gallery-images";
 import { PdpVehicleApplications } from "@/ui/components/fitment/pdp-vehicle-applications";
+import { ProductHighlights } from "@/ui/components/pdp/product-highlights";
+import { cn } from "@/lib/utils";
 import {
 	ProductGallery,
 	ProductSpecs,
@@ -281,6 +283,10 @@ async function ProductContent({
 	const descriptionHtml = parseEditorJSToHtml(product.description);
 	const images = getGalleryImages(product, selectedVariant);
 	const productAttributes = extractProductAttributes(product);
+	const subtitle =
+		product.seoDescription?.trim() && product.seoDescription.trim() !== product.name.trim()
+			? product.seoDescription.trim()
+			: null;
 	const careInstructions = extractCareInstructions(product);
 
 	const tCommon = await getTranslations({
@@ -366,7 +372,7 @@ async function ProductContent({
 	// ~2 s of load delay on mobile by competing for the connection.
 
 	return (
-		<div className="bg-background flex min-h-screen flex-col">
+		<div className="bg-background flex flex-col">
 			{/* Own boundary: it asks the other live channels, and the product must never wait. */}
 			<Suspense fallback={null}>
 				<ProductSwitchTargets product={product} channel={params.channel} />
@@ -383,30 +389,46 @@ async function ProductContent({
 			    body ran the full width while the header and footer stopped 80px short
 			    on each side — and the loading skeleton next door is max-w-7xl too, so
 			    the page also jumped 160px wider the moment the content arrived. */}
-			<main className="mx-auto w-full max-w-7xl flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
+			<main className="max-w-page mx-auto w-full flex-1 px-4 pt-4 pb-16 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8 lg:pb-20">
 				{/* Shown on mobile now. It used to be `hidden sm:block`, which cost phone
 				    visitors the only "up to the category" control on the page — the trail
 				    stays on one scrollable line instead of wrapping, and drops its own
 				    (redundant) last crumb below `sm`. */}
-				<Breadcrumbs items={breadcrumbs} className="mb-6" />
+				<Breadcrumbs items={breadcrumbs} className="mb-5 lg:mb-6" />
 
-				{/* HERO — gallery beside the purchase summary, and nothing else.
-				    Both columns end at roughly the same height, so neither leaves a
-				    dead area on a wide monitor. Description and parameters moved
-				    below at full width; the gallery is deliberately NOT sticky,
-				    which would only re-create the imbalance. */}
-				{/* `[&>*]:min-w-0` is load-bearing on phones. The lg template already uses
+				{/* HERO — the gallery beside the purchase block (premium redesign 2026-09): the
+				    gallery takes a little over half, the purchase block the rest, both starting on
+				    the same line. Description and parameters follow at full width.
+
+				    `[&>*]:min-w-0` is load-bearing on phones. The lg template already uses
 				    minmax(0,…), but below lg this is a single implicit column whose items
 				    keep `min-width: auto` — so the column could not go under its own
 				    min-content (365px) and the document ended up wider than a 360px
 				    viewport, letting the whole page pan sideways while scrolling. */}
-				<div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-14 xl:gap-20 [&>*]:min-w-0">
+				<div className="grid gap-7 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-12 xl:gap-16 [&>*]:min-w-0">
 					<ProductGallery images={images} productName={product.name} />
 
-					<div className="flex flex-col gap-3">
-						<h1 className="order-2 text-3xl font-semibold tracking-tight text-balance lg:text-4xl">
+					<div className="flex flex-col">
+						{/* The whole name, never split: a roof-rack set's name carries the car and the roof
+						    type, and cutting it at a dash would be guessing. A long one is set a size
+						    smaller so it does not push the price off the first screen. */}
+						<h1
+							className={cn(
+								"text-text-primary order-2 mt-3 leading-[1.12] font-bold tracking-[-0.025em] text-balance break-words",
+								product.name.length > 64
+									? "text-2xl sm:text-[1.75rem] xl:text-[2rem]"
+									: "text-[1.75rem] sm:text-[2.125rem] xl:text-[2.5rem]",
+							)}
+						>
 							{product.name}
 						</h1>
+						{/* The product's own short summary from the catalogue — its SEO description,
+						    written per product — never a slogan made up for the page. */}
+						{subtitle && (
+							<p className="text-text-secondary order-2 mt-3 line-clamp-3 text-[0.9375rem] leading-relaxed sm:text-base">
+								{subtitle}
+							</p>
+						)}
 
 						<ErrorBoundary FallbackComponent={VariantSectionError}>
 							<Suspense fallback={<VariantSectionSkeleton />}>
@@ -420,6 +442,8 @@ async function ProductContent({
 					</div>
 				</div>
 
+				<ProductHighlights attributes={productAttributes} locale={getLocaleFromChannel(params.channel)} />
+
 				<ProductSpecs
 					descriptionHtml={descriptionHtml}
 					attributes={productAttributes}
@@ -431,7 +455,7 @@ async function ProductContent({
 				    vehicle selected, which is when most shoppers ask it. Its own
 				    boundary: it reads the fitment provider, and nothing above it may
 				    wait on that. */}
-				<div className="mt-10">
+				<div className="mt-6">
 					<Suspense fallback={null}>
 						<PdpVehicleApplications saleorProductId={product.id} />
 					</Suspense>
@@ -501,9 +525,9 @@ async function ProductTemporarilyUnavailable({
 function ProductPageSkeleton() {
 	return (
 		<div className="animate-skeleton-delayed bg-background flex min-h-screen flex-col opacity-0">
-			<main className="mx-auto w-full max-w-7xl flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-10">
+			<main className="max-w-page mx-auto w-full flex-1 px-4 pt-4 pb-16 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8">
 				<div className="bg-secondary mb-6 hidden h-4 w-64 animate-pulse rounded sm:block" />
-				<div className="grid gap-8 lg:grid-cols-2 lg:gap-16">
+				<div className="grid gap-7 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-12 xl:gap-16">
 					<div className="bg-secondary aspect-square animate-pulse rounded-lg" />
 					<div className="flex flex-col gap-4">
 						<div className="bg-secondary h-8 w-3/4 animate-pulse rounded" />

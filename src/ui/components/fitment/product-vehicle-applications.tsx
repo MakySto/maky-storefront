@@ -64,9 +64,15 @@ export function ProductVehicleApplications({ saleorProductId, initial }: Props) 
 	};
 
 	return (
-		<section aria-labelledby="fitment-applications">
+		<section
+			aria-labelledby="fitment-applications"
+			className="border-border-subtle bg-surface-card rounded-sm border p-5 shadow-xs sm:p-8 lg:p-10"
+		>
 			<div className="flex flex-wrap items-baseline justify-between gap-2">
-				<h2 id="fitment-applications" className="text-text-primary text-lg font-semibold">
+				<h2
+					id="fitment-applications"
+					className="text-text-primary text-2xl font-bold tracking-[-0.02em] sm:text-[1.75rem]"
+				>
 					{t("applicationsTitle")}
 				</h2>
 				<p className="text-text-tertiary text-sm">{t("applicationsCount", { count: page.total })}</p>

@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { cn } from "@/lib/utils";
 
 import {
 	formatOuterDimensions,
@@ -39,11 +40,12 @@ export async function ProductSpecs({
 	// a Slovak label next to a German one. Asking with the locale we were handed cannot
 	// drift, whatever the render path.
 	const t = await getTranslations({ locale, namespace: "product" });
+	const words = { yes: t("yes"), no: t("no") };
 
 	const rows = attributes
 		.map((attribute) => ({
 			label: attribute.attribute.name ?? "",
-			values: formatProductAttributeValue(attribute, locale),
+			values: formatProductAttributeValue(attribute, locale, words),
 		}))
 		.filter((row) => row.label && row.values.length > 0);
 
@@ -53,59 +55,57 @@ export async function ProductSpecs({
 
 	if (!hasDescription && !hasTechnicalParameters) return null;
 
+	const sections = [
+		hasDescription && { href: "#product-description", label: t("description") },
+		hasTechnicalParameters && { href: "#technical-parameters", label: t("technicalParameters") },
+	].filter((section): section is { href: string; label: string } => Boolean(section));
+
 	return (
-		<section className="border-border-subtle mt-14 border-t pt-10 lg:mt-20 lg:pt-12">
-			{/* Jump links only when there are two sections to choose between. With one, the
-			    card sat directly above the section it pointed at and read as a collapsed
-			    accordion of the same name. */}
-			{hasDescription && hasTechnicalParameters && (
-				<nav aria-label={t("productDetails")}>
-					<ul className="grid gap-3 sm:grid-cols-2">
-						{hasDescription && (
-							<li>
+		<section className="mt-10 lg:mt-14">
+			{/* The sections this product has, as a row of jump links in the approved design's tab
+			    style. Links, not a tab widget: everything stays on the page and readable without
+			    a click, and an empty section never gets a tab. */}
+			{sections.length > 1 && (
+				<nav aria-label={t("productDetails")} className="border-border-default border-b">
+					<ul className="scrollbar-hide -mb-px flex gap-6 overflow-x-auto sm:gap-8">
+						{sections.map((section) => (
+							<li key={section.href}>
 								<a
-									href="#product-description"
-									className="border-border-default bg-surface-card text-text-primary hover:border-action-primary hover:bg-surface-muted focus-visible:ring-focus-ring flex min-h-14 items-center justify-between rounded-md border px-5 py-3 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none"
+									href={section.href}
+									className="text-text-secondary hover:text-text-primary hover:border-brand focus-visible:ring-ring inline-flex h-12 items-center border-b-2 border-transparent text-[0.9375rem] font-semibold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none"
 								>
-									{t("description")}
-									<span aria-hidden className="text-text-tertiary text-lg leading-none">
-										↓
-									</span>
+									{section.label}
 								</a>
 							</li>
-						)}
-						{hasTechnicalParameters && (
-							<li>
-								<a
-									href="#technical-parameters"
-									className="border-border-default bg-surface-card text-text-primary hover:border-action-primary hover:bg-surface-muted focus-visible:ring-focus-ring flex min-h-14 items-center justify-between rounded-md border px-5 py-3 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none"
-								>
-									{t("technicalParameters")}
-									<span aria-hidden className="text-text-tertiary text-lg leading-none">
-										↓
-									</span>
-								</a>
-							</li>
-						)}
+						))}
 					</ul>
 				</nav>
 			)}
 
-			<div className="mt-6 space-y-6 lg:mt-8">
+			{/* On a wide screen the parameters stand beside the description instead of under it —
+			    the description reads at a comfortable measure and the space beside it is used. */}
+			<div
+				className={cn(
+					"mt-6 grid gap-6 lg:mt-8",
+					hasDescription &&
+						hasTechnicalParameters &&
+						"xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] xl:items-start",
+				)}
+			>
 				{hasDescription && (
 					<article
 						id="product-description"
 						aria-labelledby="product-description-heading"
-						className="border-border-subtle bg-surface-card scroll-mt-28 rounded-lg border p-5 sm:p-7 lg:p-9"
+						className="border-border-subtle bg-surface-card scroll-mt-40 rounded-sm border p-5 shadow-xs sm:p-8 lg:p-10"
 					>
 						<h2
 							id="product-description-heading"
-							className="text-text-primary mb-6 text-2xl font-semibold tracking-tight"
+							className="text-text-primary mb-5 text-2xl font-bold tracking-[-0.02em] sm:text-[1.75rem]"
 						>
-							{t("description")}
+							{t("productDescription")}
 						</h2>
 						{descriptionHtml?.length ? (
-							<div className="prose text-text-secondary prose-headings:text-text-primary prose-p:text-text-secondary prose-a:text-text-link prose-strong:text-text-primary prose-li:text-text-secondary max-w-none leading-relaxed">
+							<div className="prose text-text-secondary prose-headings:text-text-primary prose-headings:tracking-[-0.01em] prose-p:text-text-secondary prose-a:text-text-link prose-strong:text-text-primary prose-li:text-text-secondary prose-li:marker:text-cta max-w-3xl leading-relaxed">
 								{descriptionHtml.map((html) => (
 									<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
 								))}
@@ -113,7 +113,7 @@ export async function ProductSpecs({
 						) : null}
 
 						{careInstructions && (
-							<div className="border-border-subtle bg-surface-muted mt-8 rounded-md border p-4 sm:p-5">
+							<div className="border-border-subtle bg-surface-secondary mt-8 max-w-3xl rounded-xs border p-4 sm:p-5">
 								<h3 className="text-text-primary mb-2 font-semibold">{t("careInstructions")}</h3>
 								<p className="text-text-secondary leading-relaxed">{careInstructions}</p>
 							</div>
@@ -125,15 +125,21 @@ export async function ProductSpecs({
 					<section
 						id="technical-parameters"
 						aria-labelledby="technical-parameters-heading"
-						className="border-border-subtle bg-surface-card scroll-mt-28 rounded-lg border p-5 sm:p-7 lg:p-9"
+						className="border-border-subtle bg-surface-card scroll-mt-40 rounded-sm border p-5 shadow-xs sm:p-8 lg:p-10"
 					>
 						<h2
 							id="technical-parameters-heading"
-							className="text-text-primary mb-6 text-2xl font-semibold tracking-tight"
+							className="text-text-primary mb-5 text-2xl font-bold tracking-[-0.02em] sm:text-[1.75rem]"
 						>
 							{t("technicalParameters")}
 						</h2>
-						<dl className="grid gap-x-10 text-sm sm:grid-cols-2">
+						<dl
+							className={cn(
+								"grid text-sm sm:text-[0.9375rem]",
+								// Two columns across the full width; one beside the description.
+								hasDescription ? "lg:grid-cols-2 lg:gap-x-12 xl:grid-cols-1" : "lg:grid-cols-2 lg:gap-x-12",
+							)}
+						>
 							{outerDimensions && (
 								<SpecRow label={t("outerDimensions")} values={[outerDimensions]} emphasised />
 							)}
@@ -153,11 +159,11 @@ function SpecRow({ label, values, emphasised }: { label: string; values: string[
 		<div
 			className={
 				"border-border-subtle grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-5 border-b py-3.5" +
-				(emphasised ? " bg-surface-secondary -mx-3 rounded-sm px-3" : "")
+				(emphasised ? " bg-surface-secondary -mx-3 rounded-xs px-3" : "")
 			}
 		>
 			<dt className="text-text-secondary break-words">{label}</dt>
-			<dd className="text-text-primary text-right font-medium break-words tabular-nums">
+			<dd className="text-text-primary text-right font-semibold break-words tabular-nums">
 				{values.join(", ")}
 			</dd>
 		</div>

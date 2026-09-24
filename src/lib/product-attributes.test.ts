@@ -98,6 +98,30 @@ describe("formatProductAttributeValue", () => {
 	it("returns an empty list for an attribute with no values", () => {
 		expect(formatProductAttributeValue(attr("cfm:attribute:weight", []), SK)).toEqual([]);
 	});
+
+	it("answers a yes/no parameter in the market's words, never with Saleor's value name", () => {
+		// The live shape: Saleor names the value "<attribute>: Yes" and carries the flag beside it.
+		const tilt: AttributeInput = {
+			attribute: {
+				name: "Sklopná funkcia",
+				slug: "tilt-function",
+				externalReference: "cfm:attribute:tilt_function",
+				inputType: "BOOLEAN",
+				unit: null,
+			},
+			values: [{ name: "Sklopná funkcia: Yes", boolean: true }],
+		};
+		expect(formatProductAttributeValue(tilt, SK, { yes: "Áno", no: "Nie" })).toEqual(["Áno"]);
+		expect(
+			formatProductAttributeValue(
+				{ ...tilt, values: [{ name: "Sklopná funkcia: No", boolean: false }] },
+				SK,
+				{ yes: "Áno", no: "Nie" },
+			),
+		).toEqual(["Nie"]);
+		// Without words there is nothing honest to print — not "Sklopná funkcia: Yes".
+		expect(formatProductAttributeValue(tilt, SK)).toEqual([]);
+	});
 });
 
 describe("formatOuterDimensions", () => {

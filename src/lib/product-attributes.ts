@@ -69,8 +69,11 @@ export type AttributeInput = {
 		inputType?: string | null;
 		unit?: string | null;
 	};
-	values: readonly { name?: string | null }[];
+	values: readonly { name?: string | null; boolean?: boolean | null }[];
 };
+
+/** The market's words for a yes/no parameter. */
+export type YesNoWords = { readonly yes: string; readonly no: string };
 
 /** Display unit for an attribute, or undefined when none is proven. */
 export function getAttributeUnit(attribute: AttributeInput["attribute"]): string | undefined {
@@ -123,8 +126,24 @@ export function formatAttributeValue(
 	return unit ? `${formatted}${NBSP}${unit}` : formatted;
 }
 
-/** Every value of an attribute, formatted. */
-export function formatProductAttributeValue(attribute: AttributeInput, locale: string): string[] {
+/**
+ * Every value of an attribute, formatted.
+ *
+ * A BOOLEAN attribute is answered from its flag, as `words.yes` / `words.no`. Saleor names such
+ * a value "<attribute>: Yes", and the parameters table printed exactly that — "Sklopná funkcia |
+ * Sklopná funkcia: Yes", in English on a Slovak page — until the 2026-09 redesign. Without the
+ * words (or the flag) a boolean says nothing rather than repeat its own name.
+ */
+export function formatProductAttributeValue(
+	attribute: AttributeInput,
+	locale: string,
+	words?: YesNoWords,
+): string[] {
+	if (attribute.attribute.inputType === "BOOLEAN") {
+		return attribute.values
+			.map((v) => (typeof v.boolean === "boolean" && words ? (v.boolean ? words.yes : words.no) : null))
+			.filter((text): text is string => text !== null);
+	}
 	return attribute.values
 		.map((v) => v.name)
 		.filter((n): n is string => Boolean(n && n.trim()))

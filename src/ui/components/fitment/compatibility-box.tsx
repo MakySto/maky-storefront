@@ -109,15 +109,17 @@ export async function CompatibilityBox({
 
 	return (
 		<div
-			className={cn("rounded-lg border border-current/15 p-4", TONE_CLASSES[tone], className)}
+			className={cn("rounded-sm border border-current/15 p-4 sm:p-5", TONE_CLASSES[tone], className)}
 			// The verdict changes what the shopper is about to buy, so a screen reader
 			// should hear it when it changes — but politely, mid-purchase.
 			aria-live="polite"
 		>
-			<div className="flex items-start gap-3">
-				<Icon className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-				<div className="min-w-0 flex-1">
-					<p className="text-sm font-semibold">
+			<div className="flex items-start gap-3.5">
+				<span className="bg-surface-card flex h-9 w-9 shrink-0 items-center justify-center rounded-full shadow-xs">
+					<Icon className="h-[1.125rem] w-[1.125rem]" strokeWidth={2.25} aria-hidden="true" />
+				</span>
+				<div className="min-w-0 flex-1 pt-1">
+					<p className="text-[0.9375rem] font-bold">
 						{qualified ? t("verdictQualified") : t(VERDICT_LABEL_KEY[result.verdict])}
 					</p>
 					<p className="mt-1 text-sm opacity-90">{qualified ? t("verdictQualifiedDetail") : detail}</p>
