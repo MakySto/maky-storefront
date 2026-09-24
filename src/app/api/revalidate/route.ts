@@ -7,6 +7,7 @@ import { CHANNEL_MAP, SALEOR_SLUGS } from "@/lib/channel-map";
 import { categoryBaseSlug, categorySegment } from "@/config/category-routes";
 import { parseWebhookPayload } from "@/lib/saleor/webhook-payload";
 import { productMissTagFor } from "@/lib/saleor/product-cache-tags";
+import { forgetProductExistence } from "@/lib/route-existence";
 
 /**
  * Webhook endpoint for cache invalidation.
@@ -245,6 +246,19 @@ export async function POST(request: NextRequest) {
 		revalidatePath("/sitemap.xml");
 		revalidatedPaths.push("/sitemap.xml");
 
+		// The proxy's existence gate keeps its own answers (60 s "absent", 300 s "exists"), outside
+		// every tag above. Without this a product published in a market answered 404 at its new
+		// URL for up to a minute after this very event, and an unpublished one kept its 200 soft
+		// 404 for five. `existence` (how many answers this handler could see and drop) goes to the
+		// log only: the response body is a contract CFM checks field for field.
+		const existence =
+			kind === "product"
+				? forgetProductExistence({
+						channels,
+						slugs: [slug, previousSlug].filter((value): value is string => Boolean(value)),
+					})
+				: null;
+
 		if (unnamedProduct) {
 			console.warn(
 				"[Revalidate] product event carried no slug — listing and sitemap refreshed, but no " +
@@ -260,6 +274,7 @@ export async function POST(request: NextRequest) {
 			slug: sanitizedSlug,
 			paths: sanitizedPaths,
 			tags: sanitizedTags,
+			existence,
 		});
 		return Response.json({ paths: revalidatedPaths, tags: revalidatedTags, success: true });
 	} catch (error) {

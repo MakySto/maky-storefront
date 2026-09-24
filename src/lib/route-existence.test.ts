@@ -2,9 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	classifyRoute,
 	describeGate,
+	forgetProductExistence,
 	gateEnabledFor,
 	isGateEnabled,
 	lookupExistence,
+	lookupTranslatedProduct,
 	normalizePathname,
 	resetRouteExistenceStateForTests,
 	routeExistenceStats,
@@ -445,6 +447,15 @@ describe("abroad, a product URL is the TRANSLATED slug", () => {
 		}
 	});
 
+	it("never turns a fault on the translated row into a 404, even for a product event", async () => {
+		upstream({ base: { data: { product: null } }, translated: { errors: [{ message: "boom" }] } });
+		await expect(lookupExistence("product", "slug-y", "at-eur")).resolves.toBe("unknown");
+		expect(forgetProductExistence({ channels: ["at-eur"], slugs: ["slug-y"] })).toEqual({
+			dropped: 0,
+			remaining: 0,
+		});
+	});
+
 	it("never turns a fault on the translated row into a 404", async () => {
 		// Fail open all the way down: an upstream that cannot answer must not remove a page.
 		for (const fault of [{ errors: [{ message: "boom" }] }, { data: null }, { data: {} }]) {
@@ -452,5 +463,125 @@ describe("abroad, a product URL is the TRANSLATED slug", () => {
 			upstream({ base: { data: { product: null } }, translated: fault });
 			await expect(lookupExistence("product", "slug-x", "at-eur")).resolves.toBe("unknown");
 		}
+	});
+});
+
+/**
+ * A product event reaches this cache: `/api/revalidate` calls `forgetProductExistence`.
+ *
+ * Without it, a product published in a market answered 404 at its new URL for up to 60 s
+ * after the event, and an unpublished one kept its 200 soft-404 for up to 300 s — measured on
+ * a production build. The Saleor stub answers by (channel, slug) from a table the tests edit,
+ * which is how a publication is simulated here.
+ */
+describe("a product event reaches the existence cache", () => {
+	const BASE = "stresny-nosic-nordrive-helio-black";
+	const DE = "dachtrager-nordrive-helio-black";
+	let published: Record<string, { base: string; translated?: string } | undefined>;
+	let calls: number;
+
+	beforeEach(() => {
+		calls = 0;
+		published = {};
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (_url: unknown, init: { body: string }) => {
+				calls++;
+				const { query, variables } = JSON.parse(init.body) as {
+					query: string;
+					variables: { s: string; c: string };
+				};
+				if (query.includes("category(")) return saleor({ data: { category: { id: "c" } } });
+				const row = published[variables.c];
+				const translated = query.includes("slugLanguageCode");
+				const match = row && (translated ? row.translated === variables.s : row.base === variables.s);
+				return saleor({
+					data: {
+						product: match ? { id: "p", slug: row.base, externalReference: "cfm:product:CFMP-1" } : null,
+					},
+				});
+			}),
+		);
+	});
+
+	it("publish: the cached absence of the new translated URL is dropped, so it answers at once", async () => {
+		await expect(lookupExistence("product", DE, "de-eur")).resolves.toBe("absent");
+		published["de-eur"] = { base: BASE, translated: DE };
+		await expect(
+			lookupExistence("product", DE, "de-eur"),
+			"still the cached absence before the event",
+		).resolves.toBe("absent");
+
+		// The event names the BASE slug; the absence was cached under the translated one.
+		expect(forgetProductExistence({ channels: ["de-eur"], slugs: [BASE] }).dropped).toBe(1);
+		await expect(lookupExistence("product", DE, "de-eur")).resolves.toBe("exists");
+	});
+
+	it("unpublish: an exists cached under the translated URL is found by the base slug and dropped", async () => {
+		published["de-eur"] = { base: BASE, translated: DE };
+		await expect(lookupExistence("product", DE, "de-eur")).resolves.toBe("exists");
+		published["de-eur"] = undefined;
+
+		forgetProductExistence({ channels: ["de-eur"], slugs: [BASE] });
+		await expect(lookupExistence("product", DE, "de-eur")).resolves.toBe("absent");
+	});
+
+	it("leaves other products, other channels and other families alone", async () => {
+		published["de-eur"] = { base: "another-product" };
+		published["sk-eur"] = { base: BASE };
+		await lookupExistence("product", "another-product", "de-eur");
+		await lookupExistence("product", BASE, "sk-eur");
+		await lookupExistence("category", "stresne-nosice", "de-eur");
+		const before = calls;
+
+		expect(forgetProductExistence({ channels: ["de-eur"], slugs: [BASE] })).toEqual({
+			dropped: 0,
+			remaining: 3,
+		});
+		await lookupExistence("product", "another-product", "de-eur");
+		await lookupExistence("product", BASE, "sk-eur");
+		expect(calls, "answered from memory, not re-asked").toBe(before);
+	});
+
+	it("drops the translated-slug identity the redirects use, the same way", async () => {
+		published["de-eur"] = { base: BASE, translated: DE };
+		await expect(lookupTranslatedProduct(DE, "de-eur", "DE")).resolves.toMatchObject({
+			verdict: "exists",
+			baseSlug: BASE,
+		});
+		published["de-eur"] = undefined;
+		forgetProductExistence({ channels: ["de-eur"], slugs: [BASE] });
+		await expect(lookupTranslatedProduct(DE, "de-eur", "DE")).resolves.toMatchObject({ verdict: "absent" });
+	});
+
+	it("does not store an answer that was asked for before the event landed", async () => {
+		let release: () => void = () => {};
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				await new Promise<void>((resolve) => (release = resolve));
+				return saleor({ data: { product: null } });
+			}),
+		);
+		const pending = lookupExistence("product", "stresny-nosic-x", "sk-eur");
+		forgetProductExistence({ channels: ["sk-eur"], slugs: ["stresny-nosic-x"] });
+		release();
+		await expect(pending).resolves.toBe("absent");
+		expect(routeExistenceStats().size, "the pre-event absence was not cached").toBe(0);
+	});
+
+	it("is one cache per process, not per bundle: another copy of this module sees and drops the same entries", async () => {
+		// The proxy and the route handlers are separate bundles, each with its own copy of this
+		// module. `vi.resetModules()` gives this test a second copy, the way `/api/revalidate` has one.
+		await expect(lookupExistence("product", DE, "de-eur")).resolves.toBe("absent");
+		vi.resetModules();
+		const otherCopy = await import("./route-existence");
+		expect(otherCopy.forgetProductExistence).not.toBe(forgetProductExistence);
+
+		expect(otherCopy.forgetProductExistence({ channels: ["de-eur"], slugs: [BASE] })).toEqual({
+			dropped: 1,
+			remaining: 0,
+		});
+		expect(routeExistenceStats().size).toBe(0);
 	});
 });

@@ -102,27 +102,60 @@ const MAX_CONCURRENT = 8;
 const BREAKER_THRESHOLD = 5;
 const BREAKER_COOLDOWN_MS = 30_000;
 
-// --- process-local cache -------------------------------------------------------
+// --- process-wide cache ----------------------------------------------------------
 //
-// A performance cache, never a correctness dependency. The proxy is its own
-// bundle, so nothing else can invalidate it and it is empty after every restart;
-// both are fine, because a miss costs one small request and a wrong-but-stale
-// POSITIVE only means a page renders its own not-found body, as it does today.
-// Stale NEGATIVES are the dangerous direction, which is why their TTL is short.
+// A performance cache, never a correctness dependency: a miss costs one small request.
+// A STALE answer is not free, though, and nothing could expire this one early. An
+// "absent" kept for 60 s meant a product just published in a market answered 404 at its
+// new URL for up to a minute after the event that announced it; an "exists" kept for 300 s
+// meant one just unpublished kept serving its soft-404 body with a 200. Both measured on a
+// production build, 2026-09-23, after a real POST to /api/revalidate.
+//
+// So the state lives on `globalThis` under a registry symbol rather than in this module.
+// The proxy is one bundle and the route handlers another, so each loads its OWN copy of this
+// module; under `next start` both run in one process and one realm, so they share
+// `globalThis`. That is what lets `/api/revalidate` drop what this cache believes about a
+// product (`forgetProductExistence`). Verified on a production build rather than assumed —
+// the revalidate response reports how many entries it could see.
 
-type Entry = { verdict: "exists" | "absent"; expiresAt: number };
+type Entry = { verdict: "exists" | "absent"; expiresAt: number; baseSlug: string | null };
+type IdentityEntry = { answer: TranslatedProductAnswer; expiresAt: number };
 
-const cache = new Map<string, Entry>();
-const inFlight = new Map<string, Promise<ExistenceVerdict>>();
-let concurrent = 0;
-let consecutiveFaults = 0;
-let breakerOpenUntil = 0;
+interface ExistenceState {
+	readonly cache: Map<string, Entry>;
+	readonly inFlight: Map<string, Promise<ExistenceVerdict>>;
+	readonly identityCache: Map<string, IdentityEntry>;
+	readonly identityInFlight: Map<string, Promise<TranslatedProductAnswer>>;
+	concurrent: number;
+	consecutiveFaults: number;
+	breakerOpenUntil: number;
+	/** Bumped by every product event: an answer asked for before it is not stored after it. */
+	epoch: number;
+}
+
+const STATE_KEY = Symbol.for("maky.route-existence.state.v1");
+
+function state(): ExistenceState {
+	const registry = globalThis as typeof globalThis & { [STATE_KEY]?: ExistenceState };
+	registry[STATE_KEY] ??= {
+		cache: new Map(),
+		inFlight: new Map(),
+		identityCache: new Map(),
+		identityInFlight: new Map(),
+		concurrent: 0,
+		consecutiveFaults: 0,
+		breakerOpenUntil: 0,
+		epoch: 0,
+	};
+	return registry[STATE_KEY];
+}
 
 function cacheKey(channel: string, family: RouteFamily, slug: string): string {
 	return `${channel}:${family}:${slug}`;
 }
 
 function readCache(key: string, now: number): ExistenceVerdict {
+	const { cache } = state();
 	const hit = cache.get(key);
 	if (!hit) return "unknown";
 	if (hit.expiresAt <= now) {
@@ -135,10 +168,12 @@ function readCache(key: string, now: number): ExistenceVerdict {
 	return hit.verdict;
 }
 
-function writeCache(key: string, verdict: "exists" | "absent", now: number): void {
+function writeCache(key: string, verdict: "exists" | "absent", now: number, baseSlug: string | null): void {
+	const { cache } = state();
 	cache.set(key, {
 		verdict,
 		expiresAt: now + (verdict === "exists" ? POSITIVE_TTL_MS : NEGATIVE_TTL_MS),
+		baseSlug,
 	});
 	while (cache.size > MAX_ENTRIES) {
 		const oldest = cache.keys().next();
@@ -147,26 +182,82 @@ function writeCache(key: string, verdict: "exists" | "absent", now: number): voi
 	}
 }
 
-/** Test seam — the cache and breaker are module state by design. */
+/** Test seam — the cache and breaker are process state by design. */
 export function resetRouteExistenceStateForTests(): void {
-	cache.clear();
-	inFlight.clear();
-	identityCache.clear();
-	identityInFlight.clear();
-	concurrent = 0;
-	consecutiveFaults = 0;
-	breakerOpenUntil = 0;
+	const s = state();
+	s.cache.clear();
+	s.inFlight.clear();
+	s.identityCache.clear();
+	s.identityInFlight.clear();
+	s.concurrent = 0;
+	s.consecutiveFaults = 0;
+	s.breakerOpenUntil = 0;
+	s.epoch = 0;
 }
 
 export function routeExistenceStats(): { size: number; inFlight: number; breakerOpen: boolean } {
-	return { size: cache.size, inFlight: inFlight.size, breakerOpen: breakerOpenUntil > Date.now() };
+	const s = state();
+	return { size: s.cache.size, inFlight: s.inFlight.size, breakerOpen: s.breakerOpenUntil > Date.now() };
+}
+
+/**
+ * A product event reached `/api/revalidate`: forget what this cache believes about it.
+ *
+ * - every "absent" product answer in the event's channels — a URL that did not exist a moment
+ *   ago may be the translated slug the event just published, and an absence has no base slug
+ *   to be named by (the same reasoning as the page cache's `product-miss` tag);
+ * - every "exists" answer that resolved to one of the event's slugs, under any URL — the base
+ *   slug in Slovakia, the translated slug abroad, an old mapped slug;
+ * - the same two for the translated-slug identities the redirects rely on.
+ *
+ * Any answer still in flight was asked before the event, so it is not stored when it lands.
+ * Returns what it did, so the caller can report it — and so a caller in a different realm
+ * would visibly see an empty cache rather than silently doing nothing.
+ */
+export function forgetProductExistence(event: { channels: readonly string[]; slugs: readonly string[] }): {
+	dropped: number;
+	remaining: number;
+} {
+	const s = state();
+	s.epoch += 1;
+	const channels = new Set(event.channels);
+	const slugs = new Set(event.slugs.filter(Boolean));
+	let dropped = 0;
+
+	for (const [key, entry] of s.cache) {
+		const [channel, family, ...rest] = key.split(":");
+		if (family !== "product" || !channels.has(channel!)) continue;
+		if (
+			entry.verdict === "absent" ||
+			slugs.has(rest.join(":")) ||
+			(entry.baseSlug && slugs.has(entry.baseSlug))
+		) {
+			s.cache.delete(key);
+			dropped++;
+		}
+	}
+	for (const [key, entry] of s.identityCache) {
+		const channel = key.slice(0, key.indexOf(":"));
+		if (!channels.has(channel)) continue;
+		if (entry.answer.verdict === "absent" || (entry.answer.baseSlug && slugs.has(entry.answer.baseSlug))) {
+			s.identityCache.delete(key);
+			dropped++;
+		}
+	}
+	for (const key of s.inFlight.keys())
+		if (channels.has(key.slice(0, key.indexOf(":")))) s.inFlight.delete(key);
+	for (const key of s.identityInFlight.keys())
+		if (channels.has(key.slice(0, key.indexOf(":")))) s.identityInFlight.delete(key);
+
+	return { dropped, remaining: s.cache.size + s.identityCache.size };
 }
 
 // --- the query -----------------------------------------------------------------
 
 const QUERIES: Record<RouteFamily, { query: string; field: string; channelScoped: boolean }> = {
 	product: {
-		query: "query E($s:String!,$c:String!){product(slug:$s,channel:$c){id}}",
+		// `slug` is the base slug, so a product event can find this answer again.
+		query: "query E($s:String!,$c:String!){product(slug:$s,channel:$c){id slug}}",
 		field: "product",
 		channelScoped: true,
 	},
@@ -184,9 +275,21 @@ const QUERIES: Record<RouteFamily, { query: string; field: string; channelScoped
 	"saleor-page": { query: "query E($s:String!){page(slug:$s){id}}", field: "page", channelScoped: false },
 };
 
-async function askUpstream(family: RouteFamily, slug: string, channel: string): Promise<ExistenceVerdict> {
+/** A verdict, plus the base slug of the product it found, so a product event can name it. */
+type Probe = { verdict: ExistenceVerdict; baseSlug: string | null };
+
+const UNKNOWN_PROBE: Probe = { verdict: "unknown", baseSlug: null };
+
+const slugOf = (resource: unknown): string | null =>
+	typeof resource === "object" &&
+	resource !== null &&
+	typeof (resource as { slug?: unknown }).slug === "string"
+		? (resource as { slug: string }).slug
+		: null;
+
+async function askUpstream(family: RouteFamily, slug: string, channel: string): Promise<Probe> {
 	const endpoint = process.env.NEXT_PUBLIC_SALEOR_API_URL;
-	if (!endpoint) return "unknown";
+	if (!endpoint) return UNKNOWN_PROBE;
 
 	const spec = QUERIES[family];
 
@@ -202,20 +305,23 @@ async function askUpstream(family: RouteFamily, slug: string, channel: string): 
 			cache: "no-store",
 		});
 
-		if (!response.ok) return "unknown";
+		if (!response.ok) return UNKNOWN_PROBE;
 
 		const body: unknown = await response.json();
-		if (typeof body !== "object" || body === null) return "unknown";
+		if (typeof body !== "object" || body === null) return UNKNOWN_PROBE;
 
 		const payload = body as { data?: Record<string, unknown> | null; errors?: unknown };
 		// A partial response — data AND errors — is not a trustworthy negative.
-		if (payload.errors) return "unknown";
-		if (payload.data == null || !(spec.field in payload.data)) return "unknown";
+		if (payload.errors) return UNKNOWN_PROBE;
+		if (payload.data == null || !(spec.field in payload.data)) return UNKNOWN_PROBE;
 
-		return payload.data[spec.field] == null ? "absent" : "exists";
+		const resource = payload.data[spec.field];
+		return resource == null
+			? { verdict: "absent", baseSlug: null }
+			: { verdict: "exists", baseSlug: slugOf(resource) };
 	} catch {
 		// Timeout, DNS, connection reset, malformed JSON. All the same answer.
-		return "unknown";
+		return UNKNOWN_PROBE;
 	}
 }
 
@@ -251,18 +357,19 @@ function translatedLanguageForChannel(channel: string): string | null {
  * `lookupTranslatedProduct` here would have each gate check hold two, and shed load at half
  * the traffic.
  */
-async function resolveVerdict(family: RouteFamily, slug: string, channel: string): Promise<ExistenceVerdict> {
+async function resolveVerdict(family: RouteFamily, slug: string, channel: string): Promise<Probe> {
 	const first = await askUpstream(family, slug, channel);
-	if (first !== "absent" || family !== "product") return first;
+	if (first.verdict !== "absent" || family !== "product") return first;
 
 	const language = translatedLanguageForChannel(channel);
 	if (language) {
-		const translated = (await askTranslatedUpstream(slug, channel, language)).verdict;
-		if (translated !== "absent") return translated;
+		const translated = await askTranslatedUpstream(slug, channel, language);
+		if (translated.verdict !== "absent")
+			return { verdict: translated.verdict, baseSlug: translated.baseSlug ?? null };
 	}
 
 	const previous = previousProductSlug(slug);
-	return previous ? askUpstream(family, previous, channel) : "absent";
+	return previous ? askUpstream(family, previous, channel) : { verdict: "absent", baseSlug: null };
 }
 
 /**
@@ -279,41 +386,44 @@ export async function lookupExistence(
 	const cached = readCache(key, now);
 	if (cached !== "unknown") return cached;
 
+	const s = state();
 	// A run of faults means Saleor is unwell. Stop asking and let everything
 	// through until it has had a chance to recover.
-	if (breakerOpenUntil > now) return "unknown";
+	if (s.breakerOpenUntil > now) return "unknown";
 
-	const existing = inFlight.get(key);
+	const existing = s.inFlight.get(key);
 	if (existing) return existing;
 
 	// Bounded concurrency. Under a dictionary scan this sheds load by failing
 	// open rather than queueing, which keeps the added latency bounded.
-	if (concurrent >= MAX_CONCURRENT) return "unknown";
+	if (s.concurrent >= MAX_CONCURRENT) return "unknown";
 
-	concurrent += 1;
-	const pending = resolveVerdict(family, slug, channel)
-		.then((verdict) => {
+	s.concurrent += 1;
+	const epoch = s.epoch;
+	const pending: Promise<ExistenceVerdict> = resolveVerdict(family, slug, channel)
+		.then(({ verdict, baseSlug }) => {
 			if (verdict === "unknown") {
-				consecutiveFaults += 1;
-				if (consecutiveFaults >= BREAKER_THRESHOLD) {
-					breakerOpenUntil = Date.now() + BREAKER_COOLDOWN_MS;
-					consecutiveFaults = 0;
+				s.consecutiveFaults += 1;
+				if (s.consecutiveFaults >= BREAKER_THRESHOLD) {
+					s.breakerOpenUntil = Date.now() + BREAKER_COOLDOWN_MS;
+					s.consecutiveFaults = 0;
 					console.error(
 						`[route-existence] breaker open for ${BREAKER_COOLDOWN_MS}ms after ${BREAKER_THRESHOLD} faults`,
 					);
 				}
 				return verdict;
 			}
-			consecutiveFaults = 0;
-			writeCache(key, verdict, Date.now());
+			s.consecutiveFaults = 0;
+			// Asked before a product event landed: answer this request, remember nothing.
+			if (s.epoch === epoch) writeCache(key, verdict, Date.now(), baseSlug);
 			return verdict;
 		})
 		.finally(() => {
-			concurrent -= 1;
-			inFlight.delete(key);
+			s.concurrent -= 1;
+			if (s.inFlight.get(key) === pending) s.inFlight.delete(key);
 		});
 
-	inFlight.set(key, pending);
+	s.inFlight.set(key, pending);
 	return pending;
 }
 
@@ -330,17 +440,14 @@ export interface TranslatedProductAnswer {
 	readonly verdict: ExistenceVerdict;
 	/** Saleor's `externalReference` (`cfm:product:CFMP-…`), when the slug resolved. */
 	readonly externalReference: string | null;
+	/** The owner's BASE slug, when the slug resolved: what a product event names it by. */
+	readonly baseSlug?: string | null;
 }
 
 const UNKNOWN_PRODUCT: TranslatedProductAnswer = { verdict: "unknown", externalReference: null };
 
-type IdentityEntry = { answer: TranslatedProductAnswer; expiresAt: number };
-
-const identityCache = new Map<string, IdentityEntry>();
-const identityInFlight = new Map<string, Promise<TranslatedProductAnswer>>();
-
 const TRANSLATED_PRODUCT_QUERY =
-	"query T($s:String!,$c:String!,$l:LanguageCodeEnum!){product(slug:$s,channel:$c,slugLanguageCode:$l){id externalReference}}";
+	"query T($s:String!,$c:String!,$l:LanguageCodeEnum!){product(slug:$s,channel:$c,slugLanguageCode:$l){id slug externalReference}}";
 
 async function askTranslatedUpstream(
 	slug: string,
@@ -371,7 +478,11 @@ async function askTranslatedUpstream(
 
 		const product = payload.data.product as { externalReference?: string | null } | null;
 		if (product == null) return { verdict: "absent", externalReference: null };
-		return { verdict: "exists", externalReference: product.externalReference ?? null };
+		return {
+			verdict: "exists",
+			externalReference: product.externalReference ?? null,
+			baseSlug: slugOf(product),
+		};
 	} catch {
 		return UNKNOWN_PRODUCT;
 	}
@@ -391,53 +502,57 @@ export async function lookupTranslatedProduct(
 	now: number = Date.now(),
 ): Promise<TranslatedProductAnswer> {
 	const key = `${channel}:${languageCode}:${slug}`;
+	const s = state();
 
-	const hit = identityCache.get(key);
+	const hit = s.identityCache.get(key);
 	if (hit && hit.expiresAt > now) {
-		identityCache.delete(key);
-		identityCache.set(key, hit);
+		s.identityCache.delete(key);
+		s.identityCache.set(key, hit);
 		return hit.answer;
 	}
-	if (hit) identityCache.delete(key);
+	if (hit) s.identityCache.delete(key);
 
-	if (breakerOpenUntil > now) return UNKNOWN_PRODUCT;
+	if (s.breakerOpenUntil > now) return UNKNOWN_PRODUCT;
 
-	const existing = identityInFlight.get(key);
+	const existing = s.identityInFlight.get(key);
 	if (existing) return existing;
-	if (concurrent >= MAX_CONCURRENT) return UNKNOWN_PRODUCT;
+	if (s.concurrent >= MAX_CONCURRENT) return UNKNOWN_PRODUCT;
 
-	concurrent += 1;
-	const pending = askTranslatedUpstream(slug, channel, languageCode)
+	s.concurrent += 1;
+	const epoch = s.epoch;
+	const pending: Promise<TranslatedProductAnswer> = askTranslatedUpstream(slug, channel, languageCode)
 		.then((answer) => {
 			if (answer.verdict === "unknown") {
-				consecutiveFaults += 1;
-				if (consecutiveFaults >= BREAKER_THRESHOLD) {
-					breakerOpenUntil = Date.now() + BREAKER_COOLDOWN_MS;
-					consecutiveFaults = 0;
+				s.consecutiveFaults += 1;
+				if (s.consecutiveFaults >= BREAKER_THRESHOLD) {
+					s.breakerOpenUntil = Date.now() + BREAKER_COOLDOWN_MS;
+					s.consecutiveFaults = 0;
 					console.error(
 						`[route-existence] breaker open for ${BREAKER_COOLDOWN_MS}ms after ${BREAKER_THRESHOLD} faults`,
 					);
 				}
 				return answer;
 			}
-			consecutiveFaults = 0;
-			identityCache.set(key, {
+			s.consecutiveFaults = 0;
+			// Asked before a product event landed: answer this request, remember nothing.
+			if (s.epoch !== epoch) return answer;
+			s.identityCache.set(key, {
 				answer,
 				expiresAt: Date.now() + (answer.verdict === "exists" ? POSITIVE_TTL_MS : NEGATIVE_TTL_MS),
 			});
-			while (identityCache.size > MAX_ENTRIES) {
-				const oldest = identityCache.keys().next();
+			while (s.identityCache.size > MAX_ENTRIES) {
+				const oldest = s.identityCache.keys().next();
 				if (oldest.done) break;
-				identityCache.delete(oldest.value);
+				s.identityCache.delete(oldest.value);
 			}
 			return answer;
 		})
 		.finally(() => {
-			concurrent -= 1;
-			identityInFlight.delete(key);
+			s.concurrent -= 1;
+			if (s.identityInFlight.get(key) === pending) s.identityInFlight.delete(key);
 		});
 
-	identityInFlight.set(key, pending);
+	s.identityInFlight.set(key, pending);
 	return pending;
 }
 
