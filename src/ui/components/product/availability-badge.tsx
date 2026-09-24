@@ -104,10 +104,13 @@ export function AvailabilityBadge({
 		<span
 			className={cn(
 				"inline-flex items-center gap-1.5 text-sm font-medium",
+				// "Na objednávku" is information, not a warning and not good news: it reads in the
+				// quiet body colour, and only its dot carries the info hue. Blue text beside the
+				// warm prices of the 2026-09 redesign read as a link.
 				resolved.tone === "success"
 					? "text-status-success"
 					: resolved.tone === "info"
-						? "text-status-info"
+						? "text-text-secondary"
 						: "text-text-tertiary",
 				className,
 			)}
@@ -115,7 +118,7 @@ export function AvailabilityBadge({
 			<span
 				aria-hidden
 				className={cn(
-					"h-1.5 w-1.5 rounded-full",
+					"h-2 w-2 shrink-0 rounded-full",
 					resolved.tone === "success"
 						? "bg-status-success"
 						: resolved.tone === "info"

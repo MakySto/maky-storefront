@@ -44,10 +44,10 @@ export function Pagination({
 
 	const link = (enabled: boolean) =>
 		cn(
-			"inline-flex h-11 items-center gap-1.5 rounded-md border px-4 text-sm font-medium transition-colors",
+			"inline-flex h-11 items-center gap-1.5 rounded-xs border px-5 text-sm font-semibold transition-colors",
 			"focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden",
 			enabled
-				? "border-border-default text-text-primary hover:bg-surface-secondary"
+				? "border-border-default bg-surface-card text-text-primary hover:border-text-tertiary"
 				: "border-border-subtle text-text-tertiary pointer-events-none",
 		);
 

@@ -13,21 +13,23 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 				ref={ref}
 				className={cn(
 					// Base styles
-					"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium",
+					// 8px corners since the 2026-09 redesign: the approved mockups square the buttons off,
+					// and the 16px pill read as a toy next to the photography.
+					"inline-flex items-center justify-center gap-2 rounded-xs font-medium whitespace-nowrap",
 					// Transitions
 					"transition-all duration-200",
 					// Focus states
-					"focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+					"focus-visible:ring-ring focus-visible:ring-offset-background focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden",
 					// Disabled states
 					"disabled:pointer-events-none disabled:opacity-50",
 					// Variants
 					{
-						"hover:bg-primary/90 shadow-xs bg-primary text-primary-foreground": variant === "default",
+						"hover:bg-primary/90 bg-primary text-primary-foreground shadow-xs": variant === "default",
 						"hover:bg-secondary/80 bg-secondary text-secondary-foreground": variant === "secondary",
-						"shadow-xs border border-input bg-background hover:bg-accent hover:text-accent-foreground":
+						"border-input bg-background hover:bg-accent hover:text-accent-foreground border shadow-xs":
 							variant === "outline-solid",
 						"hover:bg-accent hover:text-accent-foreground": variant === "ghost",
-						"hover:bg-destructive/90 shadow-xs bg-destructive text-destructive-foreground":
+						"hover:bg-destructive/90 bg-destructive text-destructive-foreground shadow-xs":
 							variant === "destructive",
 					},
 					// Sizes

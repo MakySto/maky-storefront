@@ -36,6 +36,8 @@ export interface QuantityStepperProps {
 	 * target stays within EAA.
 	 */
 	compact?: boolean;
+	/** 56px tall, beside the product page's large buy button. */
+	size?: "default" | "large";
 }
 
 const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max);
@@ -58,7 +60,9 @@ export function QuantityStepper({
 	disabled = false,
 	className,
 	compact = false,
+	size = "default",
 }: QuantityStepperProps) {
+	const large = size === "large";
 	const t = useTranslations("product");
 	const inputId = useId();
 	const [internal, setInternal] = useState(() => clamp(defaultValue, min, max));
@@ -75,17 +79,18 @@ export function QuantityStepper({
 	const atMax = current >= max;
 
 	const button =
-		`flex h-11 ${
-			compact ? "w-8" : "w-11"
+		`flex ${large ? "h-14 w-12" : "h-11"} ${
+			large ? "" : compact ? "w-8" : "w-11"
 		} shrink-0 items-center justify-center text-text-secondary transition-colors ` +
-		"hover:bg-control-bg-hover hover:text-text-primary " +
+		"hover:bg-surface-secondary hover:text-text-primary " +
 		"focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset " +
 		"disabled:pointer-events-none disabled:opacity-40";
 
 	return (
 		<div
 			className={cn(
-				"border-control-border bg-surface-primary inline-flex h-11 shrink-0 items-center rounded-md border",
+				"border-border-default bg-surface-card inline-flex shrink-0 items-center overflow-hidden rounded-xs border",
+				large ? "h-14" : "h-11",
 				disabled && "pointer-events-none opacity-50",
 				className,
 			)}
@@ -107,7 +112,7 @@ export function QuantityStepper({
 				type="number"
 				inputMode="numeric"
 				className={cn(
-					compact ? "h-11 w-9" : "h-11 w-10",
+					large ? "h-14 w-11 text-base" : compact ? "h-11 w-9" : "h-11 w-10",
 					"border-0 bg-transparent text-center text-sm font-medium tabular-nums",
 					"text-text-primary focus:outline-hidden",
 					// Native spinners duplicate the −/+ buttons.
