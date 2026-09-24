@@ -1,12 +1,14 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
 	FilterBar,
 	ListingEmptyState,
 	listingResultCount,
 	ProductGrid,
 	useProductFilters,
+	type PriceFilter,
 	type ProductCardData,
 } from "@/ui/components/plp";
 import { Pagination } from "@/ui/components/pagination";
@@ -21,6 +23,19 @@ interface CategoryPageClientProps {
 		startCursor?: string | null;
 		endCursor?: string | null;
 	};
+	/** The price filter's bands for this category, or none to offer. */
+	priceFilter?: PriceFilter | null;
+	/**
+	 * The accessories and spare parts on this page, when the listing is in its recommended
+	 * order and the category also holds main products — the grid heads them.
+	 */
+	accessoryIds?: readonly string[];
+	/**
+	 * The vehicle filter narrowed this listing to nothing. Its own panel above says so and
+	 * offers the ways on; a second "no products" line and an idle toolbar would only
+	 * contradict it.
+	 */
+	vehicleFilterEmpty?: boolean;
 }
 
 function PaginationSkeleton() {
@@ -37,7 +52,11 @@ export function CategoryPageClient({
 	totalCount,
 	localeDropped,
 	pageInfo,
+	priceFilter = null,
+	accessoryIds = [],
+	vehicleFilterEmpty = false,
 }: CategoryPageClientProps) {
+	const t = useTranslations("plp");
 	const {
 		filteredProducts,
 		colorOptions,
@@ -54,7 +73,7 @@ export function CategoryPageClient({
 		handleSortChange,
 		handleRemoveFilter,
 		handleClearFilters,
-	} = useProductFilters({ products });
+	} = useProductFilters({ products, priceFilter });
 
 	const resultCount = listingResultCount({
 		totalCount,
@@ -62,6 +81,14 @@ export function CategoryPageClient({
 		localeDropped,
 		hasClientSideFilters: selectedColors.length > 0 || selectedSizes.length > 0,
 	});
+
+	const groupHeading = useMemo(() => {
+		const accessories = new Set(accessoryIds);
+		const first = filteredProducts.find((product) => accessories.has(product.id));
+		return first ? { beforeProductId: first.id, label: t("accessoriesHeading") } : null;
+	}, [accessoryIds, filteredProducts, t]);
+
+	if (vehicleFilterEmpty && filteredProducts.length === 0) return null;
 
 	return (
 		<>
@@ -85,7 +112,7 @@ export function CategoryPageClient({
 			<div className="w-full">
 				<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 					{filteredProducts.length > 0 ? (
-						<ProductGrid products={filteredProducts} />
+						<ProductGrid products={filteredProducts} groupHeading={groupHeading} />
 					) : (
 						<ListingEmptyState
 							totalCount={totalCount}

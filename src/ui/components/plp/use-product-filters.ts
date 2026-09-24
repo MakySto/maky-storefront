@@ -2,18 +2,25 @@
 
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type { SortOption, ActiveFilter } from "./filter-bar";
 import type { ProductCardData } from "./product-card";
 import {
 	extractColorOptions,
 	extractSizeOptions,
 	extractCategoryOptions,
-	STATIC_PRICE_RANGES_WITH_COUNT,
 	filterProducts,
 	buildActiveFilters,
 	sortProductsClientSide,
 	type CategoryOption,
 } from "./filter-utils";
+import { priceBandFormatter, priceRangeLabel, type PriceFilter } from "./price-ranges";
+
+/** The orders the listing offers; anything else in the URL reads as the default one. */
+const SORT_OPTIONS: readonly SortOption[] = ["featured", "newest", "price_asc", "price_desc"];
+
+/** Query parameters that position a page. Any change to the filters or the order starts over. */
+const PAGE_POSITION_PARAMS = ["cursor", "direction"] as const;
 
 interface UseProductFiltersOptions {
 	products: ProductCardData[];
@@ -21,6 +28,11 @@ interface UseProductFiltersOptions {
 	resolvedCategories?: Array<{ slug: string; id: string; name: string }>;
 	/** Whether to include category filter (only for /products page) */
 	enableCategoryFilter?: boolean;
+	/**
+	 * The listing's price bands and currency (`getCategoryPriceBands`). Without them the price
+	 * filter is not offered: there is no honest band to offer.
+	 */
+	priceFilter?: PriceFilter | null;
 }
 
 interface UseProductFiltersResult {
@@ -31,7 +43,7 @@ interface UseProductFiltersResult {
 	categoryOptions: CategoryOption[];
 	colorOptions: Array<{ name: string; count: number; hex?: string }>;
 	sizeOptions: Array<{ name: string; count: number }>;
-	priceRanges: typeof STATIC_PRICE_RANGES_WITH_COUNT;
+	priceRanges: ReadonlyArray<{ label: string; value: string; count: number }>;
 
 	// Selected filter values
 	selectedCategories: string[];
@@ -64,10 +76,13 @@ export function useProductFilters({
 	products,
 	resolvedCategories = [],
 	enableCategoryFilter = false,
+	priceFilter = null,
 }: UseProductFiltersOptions): UseProductFiltersResult {
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
+	const locale = useLocale();
+	const t = useTranslations("plp");
 
 	// Parse current filters from URL
 	const selectedCategories = useMemo(
@@ -83,7 +98,9 @@ export function useProductFilters({
 		[searchParams],
 	);
 	const selectedPriceRange = searchParams.get("price") || null;
-	const sortValue = (searchParams.get("sort") as SortOption) || "featured";
+	const requestedSort = searchParams.get("sort") as SortOption | null;
+	const sortValue: SortOption =
+		requestedSort && SORT_OPTIONS.includes(requestedSort) ? requestedSort : "featured";
 
 	// Update URL with new filters (triggers server re-fetch for server-side filters)
 	const updateFilters = useCallback(
@@ -95,6 +112,9 @@ export function useProductFilters({
 			sort?: string;
 		}) => {
 			const params = new URLSearchParams(searchParams.toString());
+			// A new filter or order is a new list: page 3 of the old one means nothing in it, and
+			// a cursor from one order handed to Saleor under another is an error, not a page.
+			for (const key of PAGE_POSITION_PARAMS) params.delete(key);
 
 			if (updates.categories !== undefined) {
 				if (updates.categories.length > 0) {
@@ -240,28 +260,51 @@ export function useProductFilters({
 		[clientFilteredProducts, sortValue],
 	);
 
+	// Offered bands: only those computed for this listing, in its currency.
+	const priceRanges = useMemo(
+		() => (priceFilter?.ranges ?? []).map((range) => ({ ...range, count: 0 })),
+		[priceFilter],
+	);
+
 	// Build active filters for display
 	const activeFilters = useMemo(() => {
-		const filters = buildActiveFilters({
-			colors: selectedColors,
-			sizes: selectedSizes,
-			priceRange: selectedPriceRange,
-		});
+		const formatAmount = priceFilter
+			? priceBandFormatter(locale, priceFilter.currency)
+			: (amount: number) => new Intl.NumberFormat(locale).format(amount);
+		const filters = buildActiveFilters(
+			{
+				colors: selectedColors,
+				sizes: selectedSizes,
+				priceRange: selectedPriceRange,
+			},
+			{
+				color: t("color"),
+				size: t("size"),
+				price: t("price"),
+				priceRange: (value) =>
+					priceFilter?.ranges.find((range) => range.value === value)?.label ??
+					priceRangeLabel(value, formatAmount, {
+						under: (max) => t("priceUnder", { max }),
+						between: (min, max) => t("priceBetween", { min, max }),
+						over: (min) => t("priceOver", { min }),
+					}),
+			},
+		);
 
 		// Add category filters from server-resolved data
 		resolvedCategories.forEach((cat) => {
-			filters.unshift({ key: "category", label: "Category", value: cat.name });
+			filters.unshift({ key: "category", label: t("category"), value: cat.name });
 		});
 
 		return filters;
-	}, [selectedColors, selectedSizes, selectedPriceRange, resolvedCategories]);
+	}, [selectedColors, selectedSizes, selectedPriceRange, resolvedCategories, priceFilter, locale, t]);
 
 	return {
 		filteredProducts,
 		categoryOptions,
 		colorOptions,
 		sizeOptions,
-		priceRanges: STATIC_PRICE_RANGES_WITH_COUNT,
+		priceRanges: priceRanges,
 		selectedCategories,
 		selectedColors,
 		selectedSizes,

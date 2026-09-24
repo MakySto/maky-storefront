@@ -80,6 +80,22 @@ export const STOREFRONT_CATEGORIES: readonly StorefrontCategory[] = [
 	},
 ];
 
+/**
+ * The Saleor product type CFM gives every accessory and spare part — bags, covers, adapters,
+ * locks, mounting kits — as opposed to the product a shopper came for (a roof box, a bike
+ * carrier, a car fridge). Measured on sk-eur 2026-09-24: every product in the accessory and
+ * spare-part sub-categories has this type, and no product in a main category does.
+ *
+ * A category listing's recommended order shows the other types first and this one after
+ * them (`src/lib/listing/grouped-listing.ts`). The type is looked up by this slug, never by
+ * an id typed here; when Saleor has no type with it, listings keep Saleor's own order, so a
+ * renamed type costs the grouping and never the page.
+ *
+ * Which group a product lands in is catalogue data. A product filed under the wrong type is
+ * corrected in CFM, not worked around by reading its name or its price here.
+ */
+export const ACCESSORY_PRODUCT_TYPE_SLUG = "automotive-accessory-spare-part";
+
 /** Categories linked from `surface`, in display order. */
 export function categoriesFor(surface: CategorySurface): readonly StorefrontCategory[] {
 	return STOREFRONT_CATEGORIES.filter((category) => category.surfaces.includes(surface));

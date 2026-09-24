@@ -14,8 +14,7 @@ import {
 	filterProducts,
 	sortProductsClientSide,
 	buildActiveFilters,
-	STATIC_PRICE_RANGES,
-	STATIC_PRICE_RANGES_WITH_COUNT,
+	type ActiveFilterWords,
 } from "./filter-utils";
 import {
 	sampleProducts,
@@ -136,11 +135,10 @@ describe("buildSortVariables", () => {
 		});
 	});
 
-	it("returns RATING DESC for 'bestselling'", () => {
-		expect(buildSortVariables("bestselling")).toEqual({
-			field: "RATING",
-			direction: "DESC",
-		});
+	it("does not sort by rating under a 'bestselling' label", () => {
+		// "Najpredávanejšie" sorted by RATING, and the catalogue has neither sales nor
+		// ratings. An old link to it gets the default order.
+		expect(buildSortVariables("bestselling")).toBeUndefined();
 	});
 
 	it("returns undefined for unknown sort option", () => {
@@ -365,71 +363,54 @@ describe("sortProductsClientSide", () => {
 // buildActiveFilters
 // =============================================================================
 describe("buildActiveFilters", () => {
+	// The market's words, as the listing passes them in from its messages.
+	const words: ActiveFilterWords = {
+		color: "Farba",
+		size: "Veľkosť",
+		price: "Cena",
+		priceRange: (value) => `[${value}]`,
+	};
+
 	it("returns empty array when no filters", () => {
-		const result = buildActiveFilters({});
+		const result = buildActiveFilters({}, words);
 		expect(result).toEqual([]);
 	});
 
 	it("builds color filters", () => {
-		const result = buildActiveFilters({ colors: ["Black", "White"] });
+		const result = buildActiveFilters({ colors: ["Black", "White"] }, words);
 
 		expect(result).toEqual([
-			{ key: "color", label: "Color", value: "Black" },
-			{ key: "color", label: "Color", value: "White" },
+			{ key: "color", label: "Farba", value: "Black" },
+			{ key: "color", label: "Farba", value: "White" },
 		]);
 	});
 
 	it("builds size filters", () => {
-		const result = buildActiveFilters({ sizes: ["S", "M"] });
+		const result = buildActiveFilters({ sizes: ["S", "M"] }, words);
 
 		expect(result).toEqual([
-			{ key: "size", label: "Size", value: "S" },
-			{ key: "size", label: "Size", value: "M" },
+			{ key: "size", label: "Veľkosť", value: "S" },
+			{ key: "size", label: "Veľkosť", value: "M" },
 		]);
 	});
 
-	it("builds price range filter with range", () => {
-		const result = buildActiveFilters({ priceRange: "50-100" });
+	it("names a price range in the market's words, never as dollars", () => {
+		const result = buildActiveFilters({ priceRange: "50-100" }, words);
 
-		expect(result).toEqual([{ key: "price", label: "Price", value: "$50 - $100" }]);
-	});
-
-	it("builds price range filter with open-ended max", () => {
-		const result = buildActiveFilters({ priceRange: "200-" });
-
-		expect(result).toEqual([{ key: "price", label: "Price", value: "$200+" }]);
+		expect(result).toEqual([{ key: "price", label: "Cena", value: "[50-100]" }]);
 	});
 
 	it("combines all filter types", () => {
-		const result = buildActiveFilters({
-			colors: ["Black"],
-			sizes: ["M"],
-			priceRange: "50-100",
-		});
+		const result = buildActiveFilters(
+			{
+				colors: ["Black"],
+				sizes: ["M"],
+				priceRange: "50-100",
+			},
+			words,
+		);
 
 		expect(result).toHaveLength(3);
 		expect(result.map((f) => f.key)).toEqual(["color", "size", "price"]);
-	});
-});
-
-// =============================================================================
-// Static Price Ranges
-// =============================================================================
-describe("STATIC_PRICE_RANGES", () => {
-	it("has 4 price ranges", () => {
-		expect(STATIC_PRICE_RANGES).toHaveLength(4);
-	});
-
-	it("has correct format", () => {
-		expect(STATIC_PRICE_RANGES[0]).toEqual({ label: "Under $50", value: "0-50" });
-		expect(STATIC_PRICE_RANGES[3]).toEqual({ label: "$200+", value: "200-" });
-	});
-
-	it("STATIC_PRICE_RANGES_WITH_COUNT adds count: 0", () => {
-		expect(STATIC_PRICE_RANGES_WITH_COUNT[0]).toEqual({
-			label: "Under $50",
-			value: "0-50",
-			count: 0,
-		});
 	});
 });

@@ -41,20 +41,6 @@ export const STOREFRONT_ATTRIBUTE_SLUGS = [
 export type StorefrontAttributeSlug = (typeof STOREFRONT_ATTRIBUTE_SLUGS)[number];
 
 // ============================================================================
-// Static Price Ranges (for server-side filtering)
-// ============================================================================
-
-export const STATIC_PRICE_RANGES = [
-	{ label: "Under $50", value: "0-50" },
-	{ label: "$50 - $100", value: "50-100" },
-	{ label: "$100 - $200", value: "100-200" },
-	{ label: "$200+", value: "200-" },
-] as const;
-
-/** Price ranges with count=0 for FilterBar compatibility */
-export const STATIC_PRICE_RANGES_WITH_COUNT = STATIC_PRICE_RANGES.map((r) => ({ ...r, count: 0 }));
-
-// ============================================================================
 // Server-side: Saleor GraphQL Filters
 // ============================================================================
 
@@ -126,11 +112,12 @@ export function buildFilterVariables(params: {
 export function buildSortVariables(sort: SortOption | string | undefined): ProductOrder | undefined {
 	if (!sort || sort === "featured") return undefined;
 
+	// No "bestselling": it sorted by RATING under the label "Najpredávanejšie", and the catalogue
+	// has neither sales figures nor ratings. An old `?sort=bestselling` link gets the default order.
 	const sortMap: Record<string, { field: ProductOrderField; direction: OrderDirection }> = {
 		newest: { field: "DATE" as ProductOrderField, direction: "DESC" as OrderDirection },
 		price_asc: { field: "PRICE" as ProductOrderField, direction: "ASC" as OrderDirection },
 		price_desc: { field: "PRICE" as ProductOrderField, direction: "DESC" as OrderDirection },
-		bestselling: { field: "RATING" as ProductOrderField, direction: "DESC" as OrderDirection },
 	};
 
 	return sortMap[sort];
@@ -271,29 +258,42 @@ export function sortProductsClientSide<T extends { price: number; createdAt?: st
 // Active Filters Display
 // ============================================================================
 
+/** The words an active-filter chip is made of, in the market's language. */
+export interface ActiveFilterWords {
+	color: string;
+	size: string;
+	price: string;
+	/** `?price=` value → "50 € – 200 €", in the market's currency. */
+	priceRange: (value: string) => string;
+}
+
 /**
  * Build active filters array for display.
  * Note: Categories are added separately from resolved server data.
+ *
+ * The labels used to be English literals — a Slovak shopper filtering by price saw
+ * "Price: $50 - $100" above a listing priced in euros.
  */
-export function buildActiveFilters(filters: {
-	colors?: string[];
-	sizes?: string[];
-	priceRange?: string | null;
-}): ActiveFilter[] {
+export function buildActiveFilters(
+	filters: {
+		colors?: string[];
+		sizes?: string[];
+		priceRange?: string | null;
+	},
+	words: ActiveFilterWords,
+): ActiveFilter[] {
 	const active: ActiveFilter[] = [];
 
 	filters.colors?.forEach((color) => {
-		active.push({ key: "color", label: "Color", value: color });
+		active.push({ key: "color", label: words.color, value: color });
 	});
 
 	filters.sizes?.forEach((size) => {
-		active.push({ key: "size", label: "Size", value: size });
+		active.push({ key: "size", label: words.size, value: size });
 	});
 
 	if (filters.priceRange) {
-		const [min, max] = filters.priceRange.split("-");
-		const label = max ? `$${min} - $${max}` : `$${min}+`;
-		active.push({ key: "price", label: "Price", value: label });
+		active.push({ key: "price", label: words.price, value: words.priceRange(filters.priceRange) });
 	}
 
 	return active;

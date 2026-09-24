@@ -11,7 +11,6 @@ export {
 	type CategoryFilterOption,
 	type ActiveFilter,
 } from "./filter-bar";
-export { WavePattern } from "./wave-pattern";
 export { transformToProductCard, formatPrice } from "./utils";
 export {
 	// Server-side filter helpers (resolveCategorySlugsToIds is in filter-utils.server.ts)
@@ -24,10 +23,15 @@ export {
 	filterProducts,
 	sortProductsClientSide,
 	buildActiveFilters,
-	// Constants
-	STATIC_PRICE_RANGES,
-	STATIC_PRICE_RANGES_WITH_COUNT,
 	// Types
 	type CategoryOption,
 } from "./filter-utils";
+export { SubcategoryNav, type SubcategoryChip } from "./subcategory-nav";
+export {
+	priceRangeOptions,
+	priceBandFormatter,
+	priceRangeLabel,
+	type PriceFilter,
+	type PriceRangeOption,
+} from "./price-ranges";
 export { useProductFilters } from "./use-product-filters";

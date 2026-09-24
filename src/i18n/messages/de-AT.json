@@ -237,7 +237,13 @@
 		"verdictQualified": "Passt mit Montagebedingungen",
 		"verdictQualifiedDetail": "Dieses Set ist für Ihr Fahrzeug geprüft, es gilt aber eine Montagebedingung, die wir Ihnen im Moment nicht verständlich wiedergeben können.",
 		"conditionsIncomplete": "{count, plural, one {Für dieses Set gilt # Montagebedingung, die wir noch nicht in Ihrer Sprache wiedergeben können.} other {Für dieses Set gelten # Montagebedingungen, die wir noch nicht in Ihrer Sprache wiedergeben können.}}",
-		"demoNotice": "Testvorschau. Es handelt sich um simulierte Daten — kein echtes Angebot und keine geprüfte Kompatibilität."
+		"demoNotice": "Testvorschau. Es handelt sich um simulierte Daten — kein echtes Angebot und keine geprüfte Kompatibilität.",
+		"listingPickTitle": "Wählen Sie Ihr Auto",
+		"listingPickBody": "Wir zeigen nur Produkte, die für Ihr Auto geprüft sind. Solange Sie keins wählen, sehen Sie das ganze Sortiment.",
+		"listingChangeVehicle": "Auto ändern",
+		"listingEmptyTitle": "Für {vehicle} ist noch kein Produkt geprüft",
+		"listingContact": "Schreiben Sie uns",
+		"listingEmptyBody": "Das heißt nicht, dass nichts passt. Sehen Sie sich das ganze Sortiment an oder schreiben Sie uns – wir helfen Ihnen bei der Auswahl."
 	},
 	"cart": {
 		"yourCart": "Ihr Warenkorb",
@@ -593,7 +599,13 @@
 		"pagination": "Seitennavigation",
 		"allProductsDescription": "Das komplette Zubehörsortiment für Ihr Auto.",
 		"relevance": "Relevanz",
-		"sortByName": "Name"
+		"sortByName": "Name",
+		"subcategories": "Unterkategorien",
+		"allInCategory": "Alle",
+		"accessoriesHeading": "Zubehör und Ersatzteile",
+		"priceUnder": "Bis {max}",
+		"priceBetween": "{min} – {max}",
+		"priceOver": "Ab {min}"
 	},
 	"cookieConsent": {
 		"title": "Ihre Privatsphäre ist uns wichtig",

@@ -1,0 +1,88 @@
+# A category listing in its recommended order: the category's own products (`main`), then
+# its accessories and spare parts (`accessories`), paged across the two as one list.
+#
+# Both groups and the completeness check travel in one request, so the three counts come
+# from one snapshot of the catalogue. `all` is the same filter without the product-type
+# split: when `main + accessories` does not add up to it, a product has a type the split
+# does not know and the page falls back to Saleor's own order rather than hide it.
+# See `src/lib/listing/grouped-listing.ts`.
+query ProductListByCategoryGrouped(
+	$slug: String!
+	$channel: String!
+	$lang: LanguageCodeEnum!
+	$slugLang: LanguageCodeEnum
+	$mainFirst: Int
+	$mainAfter: String
+	$mainLast: Int
+	$mainBefore: String
+	$mainFilter: ProductFilterInput!
+	$accessoriesFirst: Int
+	$accessoriesAfter: String
+	$accessoriesLast: Int
+	$accessoriesBefore: String
+	$accessoriesFilter: ProductFilterInput!
+	$allFilter: ProductFilterInput
+) {
+	category(slug: $slug, slugLanguageCode: $slugLang) {
+		id
+		name
+		slug
+		description
+		seoDescription
+		seoTitle
+		translation(languageCode: $lang) {
+			name
+			slug
+			description
+			seoDescription
+			seoTitle
+		}
+		main: products(
+			first: $mainFirst
+			after: $mainAfter
+			last: $mainLast
+			before: $mainBefore
+			channel: $channel
+			filter: $mainFilter
+		) {
+			edges {
+				node {
+					...ProductListItem
+				}
+				cursor
+			}
+			pageInfo {
+				hasNextPage
+				hasPreviousPage
+				startCursor
+				endCursor
+			}
+			totalCount
+		}
+		accessories: products(
+			first: $accessoriesFirst
+			after: $accessoriesAfter
+			last: $accessoriesLast
+			before: $accessoriesBefore
+			channel: $channel
+			filter: $accessoriesFilter
+		) {
+			edges {
+				node {
+					...ProductListItem
+				}
+				cursor
+			}
+			pageInfo {
+				hasNextPage
+				hasPreviousPage
+				startCursor
+				endCursor
+			}
+			totalCount
+		}
+		all: products(first: 1, channel: $channel, filter: $allFilter) {
+			totalCount
+		}
+	}
+}

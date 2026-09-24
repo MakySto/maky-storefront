@@ -237,7 +237,13 @@
 		"verdictQualified": "Compatibil, cu condiții de montaj",
 		"verdictQualifiedDetail": "Acest set este verificat pentru vehiculul dumneavoastră, dar i se aplică o condiție de montaj pe care acum nu v-o putem prezenta clar.",
 		"conditionsIncomplete": "{count, plural, one {Acestui set i se aplică # condiție pe care deocamdată nu o putem prezenta în limba dumneavoastră.} few {Acestui set i se aplică # condiții pe care deocamdată nu le putem prezenta în limba dumneavoastră.} other {Acestui set i se aplică # de condiții pe care deocamdată nu le putem prezenta în limba dumneavoastră.}}",
-		"demoNotice": "Demonstrație de test. Sunt date simulate, nu o ofertă reală și nici o compatibilitate verificată."
+		"demoNotice": "Demonstrație de test. Sunt date simulate, nu o ofertă reală și nici o compatibilitate verificată.",
+		"listingPickTitle": "Selectați mașina",
+		"listingPickBody": "Afișăm doar produsele verificate pentru mașina dvs. Până nu o selectați, vedeți întreaga ofertă.",
+		"listingChangeVehicle": "Schimbă mașina",
+		"listingEmptyTitle": "Pentru {vehicle} nu avem încă un produs verificat",
+		"listingContact": "Scrieți-ne",
+		"listingEmptyBody": "Asta nu înseamnă că nimic nu se potrivește. Vedeți întreaga ofertă sau scrieți-ne și vă ajutăm să alegeți."
 	},
 	"cart": {
 		"yourCart": "Coșul dvs.",
@@ -593,7 +599,13 @@
 		"pagination": "Paginare",
 		"allProductsDescription": "Gama completă de accesorii pentru mașina ta.",
 		"relevance": "Relevanță",
-		"sortByName": "Nume"
+		"sortByName": "Nume",
+		"subcategories": "Subcategorii",
+		"allInCategory": "Toate",
+		"accessoriesHeading": "Accesorii și piese de schimb",
+		"priceUnder": "Până la {max}",
+		"priceBetween": "{min} – {max}",
+		"priceOver": "De la {min}"
 	},
 	"cookieConsent": {
 		"title": "Ne pasă de confidențialitatea ta",

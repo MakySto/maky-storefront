@@ -237,7 +237,13 @@
 		"verdictQualified": "Pasuje s podmínkami",
 		"verdictQualifiedDetail": "Tato sestava je pro vaše vozidlo ověřená, ale váže se na montážní podmínku, kterou vám teď nedokážeme srozumitelně uvést.",
 		"conditionsIncomplete": "{count, plural, one {K této sestavě se váže # podmínka, kterou zatím nedokážeme uvést ve vašem jazyce.} few {K této sestavě se vážou # podmínky, které zatím nedokážeme uvést ve vašem jazyce.} other {K této sestavě se váže # podmínek, které zatím nedokážeme uvést ve vašem jazyce.}}",
-		"demoNotice": "Testovací ukázka. Jde o simulované údaje, ne o skutečnou nabídku ani o ověřenou kompatibilitu."
+		"demoNotice": "Testovací ukázka. Jde o simulované údaje, ne o skutečnou nabídku ani o ověřenou kompatibilitu.",
+		"listingPickTitle": "Vyberte své auto",
+		"listingPickBody": "Ukážeme jen produkty ověřené pro vaše auto. Dokud ho nevyberete, vidíte celou nabídku.",
+		"listingChangeVehicle": "Změnit auto",
+		"listingEmptyTitle": "Pro {vehicle} zatím nemáme ověřený produkt",
+		"listingContact": "Napište nám",
+		"listingEmptyBody": "Neznamená to, že nic nepasuje. Podívejte se na celou nabídku nebo nám napište a s výběrem vám pomůžeme."
 	},
 	"cart": {
 		"yourCart": "Váš košík",
@@ -593,7 +599,13 @@
 		"pagination": "Stránkování",
 		"allProductsDescription": "Kompletní nabídka příslušenství pro vaše auto.",
 		"relevance": "Relevance",
-		"sortByName": "Název"
+		"sortByName": "Název",
+		"subcategories": "Podkategorie",
+		"allInCategory": "Vše",
+		"accessoriesHeading": "Příslušenství a náhradní díly",
+		"priceUnder": "Do {max}",
+		"priceBetween": "{min} – {max}",
+		"priceOver": "Od {min}"
 	},
 	"cookieConsent": {
 		"title": "Záleží nám na vašem soukromí",

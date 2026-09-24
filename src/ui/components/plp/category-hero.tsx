@@ -1,65 +1,53 @@
 import Image from "next/image";
 import { Breadcrumbs, type BreadcrumbItem } from "@/ui/components/breadcrumbs";
-import { WavePattern } from "./wave-pattern";
 
 interface CategoryHeroProps {
 	title: string;
 	description?: string | null;
+	/**
+	 * The category's photo in Saleor. Every one is a product cut-out on white, so it is shown
+	 * whole beside the title — never cropped into a banner behind it.
+	 */
 	backgroundImage?: string | null;
 	breadcrumbs: BreadcrumbItem[];
+	/** Under the title and the introduction: the row of sub-categories. */
+	children?: React.ReactNode;
 }
 
-export function CategoryHero({ title, description, backgroundImage, breadcrumbs }: CategoryHeroProps) {
-	const hasImage = !!backgroundImage;
-
+/**
+ * The head of a listing: where you are, what this is, and where else you can go from here.
+ *
+ * It used to be a fixed 180–210 px banner with the category photo cropped behind a dark
+ * gradient — a 900 px cut-out of a roof box blown up until only its lid showed, pushing the
+ * products below the fold on a phone. The photo now sits beside the title at its own size,
+ * on the same white it was shot on, and the band is only as tall as what it says.
+ */
+export function CategoryHero({
+	title,
+	description,
+	backgroundImage,
+	breadcrumbs,
+	children,
+}: CategoryHeroProps) {
 	return (
-		<section className="border-border-default relative h-[180px] overflow-hidden border-b sm:h-[210px]">
-			{/* Background */}
-			<div className="absolute inset-0">
-				{hasImage ? (
-					<>
-						{/* The LCP element on every category page with a photo (Lighthouse, 2026-09-22).
-						    It was a raw <img> of a 4096px thumbnail at Low priority while the first
-						    product card's preload went first. next/image gives it a srcset (a phone no
-						    longer fetches the 4096px file), AVIF/WebP, and the one high-priority hint. */}
-						<Image
-							src={backgroundImage}
-							alt={title}
-							fill
-							sizes="100vw"
-							priority
-							fetchPriority="high"
-							className="object-cover"
-						/>
-						<div className="absolute inset-0 bg-gradient-to-r from-gray-900/70 via-gray-900/40 to-transparent" />
-					</>
-				) : (
-					<WavePattern className="h-full w-full" />
-				)}
-			</div>
-
-			{/* Content */}
-			{/* max-w-7xl so the hero title lines up with the breadcrumb and the product
-			    grid underneath it. At max-w-[1480px] the heading sat 80px further left
-			    than everything else on the page. */}
-			<div className="relative mx-auto flex h-full max-w-7xl flex-col justify-end px-4 pb-6 sm:px-6 lg:px-8">
-				<Breadcrumbs items={breadcrumbs} tone={hasImage ? "onImage" : "default"} className="mb-4" />
-
-				<h1
-					className={`text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl ${
-						hasImage ? "text-white" : "text-text-primary"
-					}`}
-				>
-					{title}
-				</h1>
-				{description && (
-					<p
-						className={`mt-3 max-w-lg text-base md:text-lg ${
-							hasImage ? "text-white/80" : "text-text-secondary"
-						}`}
-					>
-						{description}
-					</p>
+		<section className="border-border-subtle bg-surface-card border-b">
+			{/* max-w-7xl so the title lines up with the filter bar and the product grid. */}
+			<div className="mx-auto flex max-w-7xl items-center gap-6 px-4 pt-4 pb-5 sm:px-6 sm:pt-5 sm:pb-6 lg:px-8">
+				<div className="min-w-0 flex-1">
+					<Breadcrumbs items={breadcrumbs} className="mb-2" />
+					<h1 className="text-text-primary text-2xl font-bold tracking-[-0.02em] break-words sm:text-3xl lg:text-4xl">
+						{title}
+					</h1>
+					{description && (
+						<p className="text-text-secondary mt-1.5 max-w-2xl text-sm sm:text-base">{description}</p>
+					)}
+					{children && <div className="mt-4">{children}</div>}
+				</div>
+				{backgroundImage && (
+					<div className="relative hidden aspect-square w-24 shrink-0 sm:block lg:w-32">
+						{/* Decorative: the heading beside it names the category. */}
+						<Image src={backgroundImage} alt="" fill sizes="128px" className="object-contain" />
+					</div>
 				)}
 			</div>
 		</section>

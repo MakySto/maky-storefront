@@ -1,0 +1,54 @@
+# A category's place in the tree, for the row of sub-categories above its listing and the
+# breadcrumb: its parent, its children and its siblings, each with what it holds in THIS
+# channel. See `src/lib/listing/category-navigation.ts`.
+query CategoryNavigation(
+	$slug: String!
+	$channel: String!
+	$lang: LanguageCodeEnum!
+	$accessoryTypes: [ID!]
+	$withAccessories: Boolean!
+) {
+	category(slug: $slug) {
+		...CategoryNavigationNode
+		parent {
+			...CategoryNavigationNode
+			children(first: 30) {
+				edges {
+					node {
+						...CategoryNavigationNode
+					}
+				}
+			}
+		}
+		children(first: 30) {
+			edges {
+				node {
+					...CategoryNavigationNode
+				}
+			}
+		}
+	}
+}
+
+fragment CategoryNavigationNode on Category {
+	id
+	slug
+	name
+	description
+	seoTitle
+	seoDescription
+	translation(languageCode: $lang) {
+		name
+		slug
+		description
+		seoTitle
+		seoDescription
+	}
+	products(channel: $channel, first: 1) {
+		totalCount
+	}
+	accessoryProducts: products(channel: $channel, first: 1, filter: { productTypes: $accessoryTypes })
+		@include(if: $withAccessories) {
+		totalCount
+	}
+}

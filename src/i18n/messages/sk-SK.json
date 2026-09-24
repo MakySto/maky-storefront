@@ -237,7 +237,13 @@
 		"verdictQualified": "Pasuje s podmienkami",
 		"verdictQualifiedDetail": "Táto zostava je pre vaše vozidlo overená, ale viaže sa na montážnu podmienku, ktorú vám teraz nevieme zrozumiteľne uviesť.",
 		"conditionsIncomplete": "{count, plural, one {K tejto zostave sa viaže # podmienka, ktorú zatiaľ nevieme uviesť vo vašom jazyku.} few {K tejto zostave sa viažu # podmienky, ktoré zatiaľ nevieme uviesť vo vašom jazyku.} other {K tejto zostave sa viaže # podmienok, ktoré zatiaľ nevieme uviesť vo vašom jazyku.}}",
-		"demoNotice": "Testovacia ukážka. Ide o simulované údaje, nie o skutočnú ponuku ani o overenú kompatibilitu."
+		"demoNotice": "Testovacia ukážka. Ide o simulované údaje, nie o skutočnú ponuku ani o overenú kompatibilitu.",
+		"listingPickTitle": "Vyberte svoje auto",
+		"listingPickBody": "Ukážeme iba produkty overené pre vaše auto. Kým ho nevyberiete, vidíte celú ponuku.",
+		"listingChangeVehicle": "Zmeniť auto",
+		"listingEmptyTitle": "Pre {vehicle} zatiaľ nemáme overený produkt",
+		"listingContact": "Napíšte nám",
+		"listingEmptyBody": "Neznamená to, že nič nepasuje. Pozrite si celú ponuku alebo nám napíšte a s výberom vám pomôžeme."
 	},
 	"cart": {
 		"yourCart": "Váš košík",
@@ -593,7 +599,13 @@
 		"pagination": "Stránkovanie",
 		"allProductsDescription": "Kompletná ponuka príslušenstva pre vaše auto.",
 		"relevance": "Relevancia",
-		"sortByName": "Názov"
+		"sortByName": "Názov",
+		"subcategories": "Podkategórie",
+		"allInCategory": "Všetko",
+		"accessoriesHeading": "Príslušenstvo a náhradné diely",
+		"priceUnder": "Do {max}",
+		"priceBetween": "{min} – {max}",
+		"priceOver": "Od {min}"
 	},
 	"cookieConsent": {
 		"title": "Záleží nám na vašom súkromí",

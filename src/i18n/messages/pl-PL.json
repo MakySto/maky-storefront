@@ -237,7 +237,13 @@
 		"verdictQualified": "Pasuje z warunkami montażu",
 		"verdictQualifiedDetail": "Ten zestaw jest potwierdzony dla Twojego pojazdu, ale obowiązuje przy nim warunek montażu, którego nie umiemy Ci teraz zrozumiale przedstawić.",
 		"conditionsIncomplete": "{count, plural, one {Z tym zestawem wiąże się # warunek, którego nie umiemy jeszcze podać w Twoim języku.} few {Z tym zestawem wiążą się # warunki, których nie umiemy jeszcze podać w Twoim języku.} many {Z tym zestawem wiąże się # warunków, których nie umiemy jeszcze podać w Twoim języku.} other {Z tym zestawem wiąże się # warunku, którego nie umiemy jeszcze podać w Twoim języku.}}",
-		"demoNotice": "Testowa wersja demonstracyjna. To są dane symulowane, a nie prawdziwa oferta ani potwierdzona kompatybilność."
+		"demoNotice": "Testowa wersja demonstracyjna. To są dane symulowane, a nie prawdziwa oferta ani potwierdzona kompatybilność.",
+		"listingPickTitle": "Wybierz swoje auto",
+		"listingPickBody": "Pokażemy tylko produkty zweryfikowane dla Twojego auta. Dopóki go nie wybierzesz, widzisz całą ofertę.",
+		"listingChangeVehicle": "Zmień auto",
+		"listingEmptyTitle": "Dla {vehicle} nie mamy jeszcze zweryfikowanego produktu",
+		"listingContact": "Napisz do nas",
+		"listingEmptyBody": "Nie oznacza to, że nic nie pasuje. Zobacz całą ofertę albo napisz do nas – pomożemy w wyborze."
 	},
 	"cart": {
 		"yourCart": "Twój koszyk",
@@ -593,7 +599,13 @@
 		"pagination": "Paginacja",
 		"allProductsDescription": "Pełna oferta akcesoriów do Twojego auta.",
 		"relevance": "Trafność",
-		"sortByName": "Nazwa"
+		"sortByName": "Nazwa",
+		"subcategories": "Podkategorie",
+		"allInCategory": "Wszystko",
+		"accessoriesHeading": "Akcesoria i części zamienne",
+		"priceUnder": "Do {max}",
+		"priceBetween": "{min} – {max}",
+		"priceOver": "Od {min}"
 	},
 	"cookieConsent": {
 		"title": "Zależy nam na Twojej prywatności",

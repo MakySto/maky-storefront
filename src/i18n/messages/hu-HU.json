@@ -237,7 +237,13 @@
 		"verdictQualified": "Feltételekkel illik az Ön járművére",
 		"verdictQualifiedDetail": "Ezt a szettet ellenőriztük az Ön járművéhez, de tartozik hozzá egy szerelési feltétel, amelyet most nem tudunk érthetően megfogalmazni.",
 		"conditionsIncomplete": "{count, plural, one {Ehhez a szetthez # szerelési feltétel tartozik, amelyet egyelőre nem tudunk megjeleníteni az Ön nyelvén.} other {Ehhez a szetthez # szerelési feltétel tartozik, amelyeket egyelőre nem tudunk megjeleníteni az Ön nyelvén.}}",
-		"demoNotice": "Tesztbemutató. Szimulált adatok — nem valós ajánlat és nem ellenőrzött kompatibilitás."
+		"demoNotice": "Tesztbemutató. Szimulált adatok — nem valós ajánlat és nem ellenőrzött kompatibilitás.",
+		"listingPickTitle": "Válassza ki autóját",
+		"listingPickBody": "Csak az autójához ellenőrzött termékeket mutatjuk. Amíg nem választ, a teljes kínálatot látja.",
+		"listingChangeVehicle": "Autó módosítása",
+		"listingEmptyTitle": "Ehhez a járműhöz még nincs ellenőrzött termékünk: {vehicle}",
+		"listingContact": "Írjon nekünk",
+		"listingEmptyBody": "Ez nem jelenti azt, hogy semmi sem illik rá. Nézze meg a teljes kínálatot, vagy írjon nekünk, és segítünk a választásban."
 	},
 	"cart": {
 		"yourCart": "Az Ön kosara",
@@ -593,7 +599,13 @@
 		"pagination": "Lapozás",
 		"allProductsDescription": "A teljes autós kiegészítő kínálat.",
 		"relevance": "Relevancia",
-		"sortByName": "Név"
+		"sortByName": "Név",
+		"subcategories": "Alkategóriák",
+		"allInCategory": "Összes",
+		"accessoriesHeading": "Tartozékok és pótalkatrészek",
+		"priceUnder": "Legfeljebb {max}",
+		"priceBetween": "{min} – {max}",
+		"priceOver": "Legalább {min}"
 	},
 	"cookieConsent": {
 		"title": "Fontos számunkra az adatvédelme",

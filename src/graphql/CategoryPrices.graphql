@@ -1,0 +1,28 @@
+# The prices a category listing holds in a channel, for the price filter's bands — every
+# price when the listing is small, only the cheapest and dearest when it is not.
+# See `src/lib/listing/category-prices.ts`.
+query CategoryPrices($slug: String!, $channel: String!, $first: Int!, $after: String, $sortBy: ProductOrder) {
+	category(slug: $slug) {
+		products(channel: $channel, first: $first, after: $after, sortBy: $sortBy) {
+			totalCount
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
+			edges {
+				node {
+					pricing {
+						priceRange {
+							start {
+								gross {
+									amount
+									currency
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

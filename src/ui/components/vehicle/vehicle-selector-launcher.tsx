@@ -34,7 +34,7 @@ import { SheetTrigger } from "@/ui/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { VehicleSelectorSheet } from "./vehicle-selector-sheet";
 
-type Variant = "header" | "hero" | "compact" | "inline" | "link";
+type Variant = "header" | "hero" | "primary" | "compact" | "inline" | "link";
 
 type Props = {
 	variant?: Variant;
@@ -81,6 +81,9 @@ export function VehicleSelectorLauncher({
 							"border-status-success-border bg-status-success-bg text-status-success hover:border-cta inline-flex h-10 items-center gap-2 rounded-sm border px-3 text-sm font-medium transition-colors",
 						variant === "hero" &&
 							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-12 items-center justify-center gap-2 rounded-sm px-6 text-base font-semibold transition-colors",
+						// The hero's green button at listing size: the vehicle panel above a roof-rack listing.
+						variant === "primary" &&
+							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-11 items-center justify-center gap-2 rounded-sm px-5 text-sm font-semibold whitespace-nowrap transition-colors",
 						// `h-11` matches the search field it sits beside, and `whitespace-nowrap`
 						// because at 360px the label wrapped inside a fixed-height button and spilled
 						// out of it.
@@ -88,9 +91,10 @@ export function VehicleSelectorLauncher({
 							"border-status-success-border bg-status-success-bg text-status-success hover:border-cta inline-flex h-11 min-w-0 items-center gap-2 rounded-sm border px-3 text-sm font-medium whitespace-nowrap transition-colors",
 						variant === "inline" &&
 							"border-border-default text-text-primary hover:bg-surface-muted inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors",
-						// A text link on the dark hero: "Zmeniť auto" next to the car's name.
+						// A text link — "Zmeniť auto" next to the car's name. Its colour is the caller's: white
+						// on the dark hero, the link colour on a listing.
 						variant === "link" &&
-							"hover:text-text-inverse inline-flex items-center font-medium underline decoration-1 underline-offset-2 transition-colors",
+							"inline-flex items-center font-medium underline decoration-1 underline-offset-2 transition-colors",
 						"focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden",
 						className,
 					)}
@@ -114,7 +118,7 @@ export function VehicleSelectorLauncher({
 					    on a 360px row shared with the search it costs width the label needs. Kept
 					    where the replaced trigger had it; dropped where it is both wrong and
 					    expensive. */}
-					{variant !== "hero" && variant !== "compact" && variant !== "link" && (
+					{variant !== "hero" && variant !== "primary" && variant !== "compact" && variant !== "link" && (
 						<ChevronDownIcon className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden="true" />
 					)}
 				</button>

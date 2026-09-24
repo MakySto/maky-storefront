@@ -24,7 +24,7 @@ import {
 	SheetCloseButton,
 } from "@/ui/components/ui/sheet";
 
-export type SortOption = "featured" | "newest" | "price_asc" | "price_desc" | "bestselling";
+export type SortOption = "featured" | "newest" | "price_asc" | "price_desc";
 
 export interface FilterOption {
 	name: string;
@@ -325,7 +325,6 @@ export function FilterBar({
 									<DropdownMenuRadioItem value="newest">{t("newest")}</DropdownMenuRadioItem>
 									<DropdownMenuRadioItem value="price_asc">{t("priceLowToHigh")}</DropdownMenuRadioItem>
 									<DropdownMenuRadioItem value="price_desc">{t("priceHighToLow")}</DropdownMenuRadioItem>
-									<DropdownMenuRadioItem value="bestselling">{t("bestSelling")}</DropdownMenuRadioItem>
 								</DropdownMenuRadioGroup>
 							</DropdownMenuContent>
 						</DropdownMenu>

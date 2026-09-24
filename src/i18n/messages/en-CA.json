@@ -237,7 +237,13 @@
 		"verdictQualified": "Fits, with conditions",
 		"verdictQualifiedDetail": "This set is verified for your vehicle, but an installation condition applies that we can't spell out clearly for you right now.",
 		"conditionsIncomplete": "{count, plural, one {This set has # installation condition that we can't state in your language yet.} other {This set has # installation conditions that we can't state in your language yet.}}",
-		"demoNotice": "Test preview. This is simulated data — not a real offer, and not a verified fit."
+		"demoNotice": "Test preview. This is simulated data — not a real offer, and not a verified fit.",
+		"listingPickTitle": "Select your car",
+		"listingPickBody": "We show only products verified for your car. Until you pick one, you see the whole range.",
+		"listingChangeVehicle": "Change car",
+		"listingEmptyTitle": "Nothing is verified for {vehicle} yet",
+		"listingContact": "Write to us",
+		"listingEmptyBody": "That does not mean nothing fits. See the whole range, or write to us and we will help you choose."
 	},
 	"cart": {
 		"yourCart": "Your cart",
@@ -593,7 +599,13 @@
 		"pagination": "Pagination",
 		"allProductsDescription": "The complete range of accessories for your car.",
 		"relevance": "Relevance",
-		"sortByName": "Name"
+		"sortByName": "Name",
+		"subcategories": "Subcategories",
+		"allInCategory": "All",
+		"accessoriesHeading": "Accessories and spare parts",
+		"priceUnder": "Up to {max}",
+		"priceBetween": "{min} – {max}",
+		"priceOver": "From {min}"
 	},
 	"cookieConsent": {
 		"title": "We value your privacy",

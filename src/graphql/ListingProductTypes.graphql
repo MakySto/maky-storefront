@@ -1,0 +1,15 @@
+# Every product type, for the listing's recommended order: a category's products first,
+# its accessories and spare parts after. See `src/lib/listing/product-groups.ts`.
+query ListingProductTypes {
+	productTypes(first: 100) {
+		pageInfo {
+			hasNextPage
+		}
+		edges {
+			node {
+				id
+				slug
+			}
+		}
+	}
+}

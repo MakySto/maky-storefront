@@ -237,7 +237,13 @@
 		"verdictQualified": "Compatible con condiciones",
 		"verdictQualifiedDetail": "Este conjunto está verificado para su vehículo, pero está sujeto a una condición de montaje que ahora no podemos indicarle de forma comprensible.",
 		"conditionsIncomplete": "{count, plural, one {Este conjunto está sujeto a # condición que todavía no podemos indicarle en su idioma.} other {Este conjunto está sujeto a # condiciones que todavía no podemos indicarle en su idioma.}}",
-		"demoNotice": "Demostración de prueba. Son datos simulados, no una oferta real ni una compatibilidad verificada."
+		"demoNotice": "Demostración de prueba. Son datos simulados, no una oferta real ni una compatibilidad verificada.",
+		"listingPickTitle": "Seleccione su coche",
+		"listingPickBody": "Solo mostramos los productos verificados para su coche. Mientras no lo seleccione, verá toda la oferta.",
+		"listingChangeVehicle": "Cambiar coche",
+		"listingEmptyTitle": "Todavía no tenemos ningún producto verificado para {vehicle}",
+		"listingContact": "Escríbanos",
+		"listingEmptyBody": "Eso no significa que nada encaje. Vea toda la oferta o escríbanos y le ayudaremos a elegir."
 	},
 	"cart": {
 		"yourCart": "Tu carrito",
@@ -593,7 +599,13 @@
 		"pagination": "Paginación",
 		"allProductsDescription": "La gama completa de accesorios para su coche.",
 		"relevance": "Relevancia",
-		"sortByName": "Nombre"
+		"sortByName": "Nombre",
+		"subcategories": "Subcategorías",
+		"allInCategory": "Todo",
+		"accessoriesHeading": "Accesorios y recambios",
+		"priceUnder": "Hasta {max}",
+		"priceBetween": "{min} – {max}",
+		"priceOver": "Desde {min}"
 	},
 	"cookieConsent": {
 		"title": "Nos importa tu privacidad",

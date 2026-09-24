@@ -3,7 +3,12 @@ import { categoryBaseSlug, categorySegment, categoryUrlFor } from "@/config/cate
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { ProductListByCategoryDocument, type ProductListByCategoryQuery } from "@/gql/graphql";
+import {
+	ProductListByCategoryDocument,
+	ProductListByCategoryGroupedDocument,
+	type ProductListByCategoryQuery,
+	type ProductListByCategoryGroupedQuery,
+} from "@/gql/graphql";
 import { executePublicGraphQL } from "@/lib/graphql";
 import {
 	catchUpstreamError,
@@ -16,8 +21,16 @@ import {
 } from "@/lib/saleor/resource-outcome";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { getPaginatedListVariables } from "@/lib/utils";
+import { ProductsPerPage } from "@/app/config";
 import { parseEditorJSToText } from "@/lib/editorjs";
-import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
+import {
+	CategoryHero,
+	SubcategoryNav,
+	priceBandFormatter,
+	priceRangeOptions,
+	transformToProductCard,
+	type PriceFilter,
+} from "@/ui/components/plp";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { buildCanonicalUrl, counterpartAlternates, type MarketCounterpart } from "@/lib/seo/hreflang";
 import { marketOpenGraph } from "@/lib/seo/metadata";
@@ -37,6 +50,10 @@ import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleCategory, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
 import { lookupBySlug } from "@/lib/saleor/slug-lookup";
+import { getCategoryNavigation } from "@/lib/listing/category-navigation";
+import { getCategoryPriceBands } from "@/lib/listing/category-prices";
+import { getProductTypeGroups } from "@/lib/listing/product-groups";
+import { isGroupCursor, loadGroupedPage, parseGroupPosition } from "@/lib/listing/grouped-listing";
 
 type Category = NonNullable<ProductListByCategoryQuery["category"]>;
 
@@ -213,9 +230,18 @@ async function CategoryContent({
 }) {
 	const params = await paramsPromise;
 	const baseSlug = baseSlugOf(params);
-	const [outcome, t] = await Promise.all([
+	const [outcome, t, navigation] = await Promise.all([
 		getCategoryOutcome(baseSlug, params.channel),
 		getTranslations({ locale: getLocaleFromChannel(params.channel), namespace: "plp" }),
+		// The parent and the row of sub-categories are a way around the listing, not the listing:
+		// a fault leaves them out and the page renders as before.
+		getCategoryNavigation(baseSlug, params.channel).catch((error: unknown) => {
+			console.warn(
+				`[Listing] category navigation left out for ${baseSlug}:`,
+				error instanceof Error ? error.message : error,
+			);
+			return null;
+		}),
 	]);
 
 	// A fault is not an absence. notFound() here would claim a live category is
@@ -234,6 +260,7 @@ async function CategoryContent({
 
 	const breadcrumbs = [
 		{ label: t("home"), href: marketHref(params.channel) },
+		...(navigation?.parent ? [{ label: navigation.parent.name, href: navigation.parent.href }] : []),
 		{ label: category.name, href: marketHref(params.channel, categoryUrlFor(params.channel, baseSlug)) },
 	];
 
@@ -248,7 +275,11 @@ async function CategoryContent({
 				description={plainDescription}
 				backgroundImage={category.backgroundImage?.url}
 				breadcrumbs={breadcrumbs}
-			/>
+			>
+				{navigation?.chips && (
+					<SubcategoryNav label={t("subcategories")} allLabel={t("allInCategory")} chips={navigation.chips} />
+				)}
+			</CategoryHero>
 			<Suspense fallback={<ProductsGridSkeleton />}>
 				<CategoryProducts params={paramsPromise} searchParams={searchParams} />
 			</Suspense>
@@ -275,6 +306,30 @@ async function CategorySwitchTargets({ baseSlug }: { baseSlug: string }) {
 	);
 }
 
+type ListingProduct = NonNullable<
+	NonNullable<ProductListByCategoryQuery["category"]>["products"]
+>["edges"][number]["node"];
+
+type GroupedCategory = NonNullable<ProductListByCategoryGroupedQuery["category"]>;
+
+/** One page of a category listing, however it was ordered. */
+interface CategoryListing {
+	category: Pick<
+		Category,
+		"id" | "name" | "slug" | "description" | "seoDescription" | "seoTitle" | "translation"
+	>;
+	products: ListingProduct[];
+	totalCount: number;
+	pageInfo: {
+		hasNextPage: boolean;
+		hasPreviousPage: boolean;
+		startCursor?: string | null;
+		endCursor?: string | null;
+	};
+	/** Accessories on this page, when the page is in the grouped order and the category also has main products. */
+	accessoryIds: string[];
+}
+
 async function CategoryProducts({
 	params: paramsPromise,
 	searchParams: searchParamsPromise,
@@ -285,7 +340,6 @@ async function CategoryProducts({
 	const [params, searchParams] = await Promise.all([paramsPromise, searchParamsPromise]);
 	const baseSlug = baseSlugOf(params);
 
-	const paginationVariables = getPaginatedListVariables({ params: searchParams });
 	const sortBy = buildSortVariables(searchParams.sort);
 	const vehicleFilter = await resolveVehicleListingFilter(isVehicleFilterRequested(searchParams.vehicle), {
 		categorySlug: baseSlug,
@@ -297,53 +351,153 @@ async function CategoryProducts({
 	const locale = getLocaleFromChannel(params.channel);
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
-	const result = await lookupBySlug(
-		locale,
-		(data: ProductListByCategoryQuery) => data.category,
-		(slugLang) =>
-			executePublicGraphQL(ProductListByCategoryDocument, {
-				variables: {
-					slug: baseSlug,
-					channel: params.channel,
-					lang,
-					slugLang,
-					...paginationVariables,
-					sortBy,
-					filter,
-				},
-				revalidate: 300,
-			}),
-	);
+	const [groups, priceBands, t] = await Promise.all([
+		// The recommended order is Saleor's default order, grouped. A shopper's own order — by
+		// price, by date — applies to the whole listing at once and needs no groups.
+		sortBy ? null : getProductTypeGroups().catch(() => null),
+		getCategoryPriceBands(baseSlug, params.channel).catch((error: unknown) => {
+			console.warn(
+				`[Listing] price filter left out for ${baseSlug}:`,
+				error instanceof Error ? error.message : error,
+			);
+			return null;
+		}),
+		getTranslations({ locale, namespace: "plp" }),
+	]);
 
-	// This runs in a NESTED Suspense, after CategoryHero has already streamed —
-	// so the outer lookup has just proved the category exists. Calling notFound()
-	// on a transport failure here painted 404 content underneath a hero for a
-	// category that is demonstrably there. An error is an error.
-	if (!result.ok) {
-		logUpstreamError("category-products", upstreamError(result), {
-			slug: baseSlug,
-			channel: params.channel,
-		});
+	const failed = (result: Parameters<typeof upstreamError>[0], scope: string): never => {
+		// This runs in a NESTED Suspense, after CategoryHero has already streamed —
+		// so the outer lookup has just proved the category exists. Calling notFound()
+		// on a transport failure here painted 404 content underneath a hero for a
+		// category that is demonstrably there. An error is an error.
+		logUpstreamError(scope, upstreamError(result), { slug: baseSlug, channel: params.channel });
 		throw new Error(`category product list failed for ${baseSlug}: ${result.error.message}`);
+	};
+
+	let listing: CategoryListing | null = null;
+
+	if (groups) {
+		const outcome = await loadGroupedPage(
+			parseGroupPosition(searchParams),
+			ProductsPerPage,
+			async (request) => {
+				const result = await lookupBySlug(
+					locale,
+					(data: ProductListByCategoryGroupedQuery) => data.category,
+					(slugLang) =>
+						executePublicGraphQL(ProductListByCategoryGroupedDocument, {
+							variables: {
+								slug: baseSlug,
+								channel: params.channel,
+								lang,
+								slugLang,
+								mainFirst: request.main.first,
+								mainAfter: request.main.after ?? null,
+								mainLast: request.main.last,
+								mainBefore: request.main.before ?? null,
+								mainFilter: { ...filter, productTypes: [...groups.main] },
+								accessoriesFirst: request.accessories.first,
+								accessoriesAfter: request.accessories.after ?? null,
+								accessoriesLast: request.accessories.last,
+								accessoriesBefore: request.accessories.before ?? null,
+								accessoriesFilter: { ...filter, productTypes: [...groups.accessories] },
+								allFilter: filter ?? null,
+							},
+							revalidate: 300,
+						}),
+				);
+				if (!result.ok) return failed(result, "category-products");
+				const category: GroupedCategory | null | undefined = result.data.category;
+				if (!category?.main || !category.accessories) return null;
+				return {
+					category,
+					main: category.main,
+					accessories: category.accessories,
+					all: category.all?.totalCount ?? 0,
+				};
+			},
+		);
+
+		if (outcome.status === "not-found") notFound();
+		if (outcome.status === "incomplete") {
+			// A product whose type is in neither group — a type created after the list was read.
+			// Saleor's own order hides nothing, so that is what this page falls back to.
+			console.warn(
+				`[Listing] grouped order skipped for ${baseSlug}: main ${outcome.main} + accessories ${outcome.accessories} ≠ ${outcome.all}`,
+			);
+		} else {
+			const { page, category } = outcome;
+			const headed = page.totals.main > 0 && page.totals.accessories > 0;
+			listing = {
+				category,
+				products: page.items.map((item) => item.node),
+				totalCount: page.totals.main + page.totals.accessories,
+				pageInfo: page.pageInfo,
+				accessoryIds: headed
+					? page.items.filter((item) => item.group === "accessories").map((item) => item.node.id)
+					: [],
+			};
+		}
 	}
 
-	const category = resolveExactLocaleCategory(result.data.category, locale);
-	const products = category?.products;
-	if (!products) {
+	if (!listing) {
+		// A cursor from the grouped order means nothing to Saleor's own: start from the top.
+		const paginationVariables = getPaginatedListVariables({
+			params: isGroupCursor(searchParams.cursor) ? {} : searchParams,
+		});
+		const result = await lookupBySlug(
+			locale,
+			(data: ProductListByCategoryQuery) => data.category,
+			(slugLang) =>
+				executePublicGraphQL(ProductListByCategoryDocument, {
+					variables: {
+						slug: baseSlug,
+						channel: params.channel,
+						lang,
+						slugLang,
+						...paginationVariables,
+						sortBy,
+						filter,
+					},
+					revalidate: 300,
+				}),
+		);
+		if (!result.ok) return failed(result, "category-products");
+		const category = result.data.category;
+		if (!category?.products) notFound();
+		listing = {
+			category,
+			products: category.products.edges.map((edge) => edge.node),
+			totalCount: category.products.totalCount ?? 0,
+			pageInfo: category.products.pageInfo,
+			accessoryIds: [],
+		};
+	}
+
+	if (!resolveExactLocaleCategory(listing.category, locale)) {
 		notFound();
 	}
 
-	const localized = resolveExactLocaleProducts(
-		products.edges.map((edge) => edge.node),
-		locale,
-	);
+	const localized = resolveExactLocaleProducts(listing.products, locale);
 	const productCards = localized.products.map((product) =>
 		transformToProductCard(product, params.channel, locale),
 	);
 
+	const priceFilter: PriceFilter | null =
+		priceBands && priceBands.boundaries.length > 0
+			? {
+					currency: priceBands.currency,
+					ranges: priceRangeOptions(priceBands.boundaries, priceBandFormatter(locale, priceBands.currency), {
+						under: (max) => t("priceUnder", { max }),
+						between: (min, max) => t("priceBetween", { min, max }),
+						over: (min) => t("priceOver", { min }),
+					}),
+				}
+			: null;
+
 	return (
 		<>
-			<div className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+			<div className="mx-auto w-full max-w-7xl px-4 pt-6 empty:hidden sm:px-6 lg:px-8">
 				<VehicleListingFilter
 					channel={params.channel}
 					filter={vehicleFilter}
@@ -358,9 +512,12 @@ async function CategoryProducts({
 			</div>
 			<CategoryPageClient
 				products={productCards}
-				totalCount={products.totalCount ?? 0}
+				totalCount={listing.totalCount}
 				localeDropped={localized.dropped}
-				pageInfo={products.pageInfo}
+				pageInfo={listing.pageInfo}
+				priceFilter={priceFilter}
+				accessoryIds={listing.accessoryIds}
+				vehicleFilterEmpty={vehicleFilter.state === "empty"}
 			/>
 		</>
 	);

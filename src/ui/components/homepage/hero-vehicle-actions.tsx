@@ -67,7 +67,11 @@ export async function HeroVehicleActions({ params }: { params: Promise<{ channel
 			<p className="text-text-inverse/75 mt-2 flex h-5 min-w-0 items-center gap-1.5 text-sm">
 				<span className="truncate">{carLabel}</span>
 				<span aria-hidden="true">·</span>
-				<VehicleSelectorLauncher variant="link" label={t("heroChangeCar")} className="shrink-0" />
+				<VehicleSelectorLauncher
+					variant="link"
+					label={t("heroChangeCar")}
+					className="hover:text-text-inverse shrink-0"
+				/>
 			</p>
 		</div>
 	);

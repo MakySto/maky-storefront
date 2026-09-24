@@ -237,7 +237,13 @@
 		"verdictQualified": "Compatible sous conditions",
 		"verdictQualifiedDetail": "Cet ensemble est vérifié pour votre véhicule, mais il est soumis à une condition de montage que nous ne pouvons pas vous formuler clairement pour le moment.",
 		"conditionsIncomplete": "{count, plural, one {Cet ensemble est soumis à # condition que nous ne pouvons pas encore vous indiquer dans votre langue.} other {Cet ensemble est soumis à # conditions que nous ne pouvons pas encore vous indiquer dans votre langue.}}",
-		"demoNotice": "Démonstration de test. Il s'agit de données simulées, pas d'une offre réelle ni d'une compatibilité vérifiée."
+		"demoNotice": "Démonstration de test. Il s'agit de données simulées, pas d'une offre réelle ni d'une compatibilité vérifiée.",
+		"listingPickTitle": "Sélectionnez votre voiture",
+		"listingPickBody": "Nous n'affichons que les produits vérifiés pour votre voiture. Tant que vous n'en choisissez pas, vous voyez toute l'offre.",
+		"listingChangeVehicle": "Changer de voiture",
+		"listingEmptyTitle": "Aucun produit n'est encore vérifié pour {vehicle}",
+		"listingContact": "Écrivez-nous",
+		"listingEmptyBody": "Cela ne veut pas dire que rien ne convient. Parcourez toute l'offre ou écrivez-nous : nous vous aiderons à choisir."
 	},
 	"cart": {
 		"yourCart": "Votre panier",
@@ -593,7 +599,13 @@
 		"pagination": "Pagination",
 		"allProductsDescription": "La gamme complète d’accessoires pour votre voiture.",
 		"relevance": "Pertinence",
-		"sortByName": "Nom"
+		"sortByName": "Nom",
+		"subcategories": "Sous-catégories",
+		"allInCategory": "Tout",
+		"accessoriesHeading": "Accessoires et pièces détachées",
+		"priceUnder": "Jusqu'à {max}",
+		"priceBetween": "{min} – {max}",
+		"priceOver": "À partir de {min}"
 	},
 	"cookieConsent": {
 		"title": "Votre vie privée nous tient à cœur",
