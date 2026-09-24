@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { VehicleSelectorLauncher } from "@/ui/components/vehicle/vehicle-selector-launcher";
+import { VehicleSelectorField } from "@/ui/components/vehicle/vehicle-selector-field";
 
 /**
  * The listing's vehicle control: what it is doing to this list, and how to undo it.
@@ -71,33 +72,46 @@ export async function VehicleListingFilter({
 		/>
 	);
 
-	// Before the filter is on: a panel, green like every vehicle action on the site.
-	const panel = (body: React.ReactNode, actions: React.ReactNode) => (
+	// Before the filter is on: a white panel with the mountains drawn faintly at its edge, like the
+	// homepage's vehicle block, and the green action (premium redesign 2026-09).
+	const panel = (body: React.ReactNode, actions: React.ReactNode, fields?: React.ReactNode) => (
 		<div
 			className={cn(
-				"border-status-success-border bg-status-success-bg flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-5",
+				"border-border-subtle bg-surface-card relative isolate overflow-hidden rounded-sm border shadow-xs",
 				className,
 			)}
 		>
-			<div className="flex min-w-0 flex-1 items-start gap-3">
-				<span className="bg-surface-card text-status-success flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-					<Car className="h-5 w-5" aria-hidden="true" />
-				</span>
-				<div className="min-w-0 pt-0.5">{body}</div>
+			<div
+				aria-hidden="true"
+				className="art-mountains bg-sand-400/60 absolute right-0 bottom-0 -z-10 hidden h-[90%] w-[34%] lg:block"
+			/>
+			<div className="flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:items-center lg:gap-8 lg:p-6">
+				<div className="flex min-w-0 items-start gap-3.5 lg:w-[22rem] lg:shrink-0">
+					<span className="bg-status-success-bg text-status-success flex h-11 w-11 shrink-0 items-center justify-center rounded-full">
+						<Car className="h-5 w-5" aria-hidden="true" />
+					</span>
+					<div className="min-w-0 pt-0.5">{body}</div>
+				</div>
+				{fields && <div className="hidden min-w-0 flex-1 md:block">{fields}</div>}
+				<div className="flex flex-wrap items-center gap-x-5 gap-y-3 lg:ml-auto lg:shrink-0">{actions}</div>
 			</div>
-			<div className="flex flex-wrap items-center gap-x-5 gap-y-3 sm:shrink-0">{actions}</div>
 		</div>
 	);
 
 	if (filter.state === "no-vehicle") {
 		return panel(
 			<>
-				<p className="text-text-primary font-semibold">{t("listingPickTitle")}</p>
+				<p className="text-text-primary text-base font-bold tracking-[-0.01em]">{t("listingPickTitle")}</p>
 				<p className="text-text-secondary mt-0.5 text-sm">
 					{filter.requested ? t("listingNoVehicle") : t("listingPickBody")}
 				</p>
 			</>,
-			<VehicleSelectorLauncher variant="primary" label={tHome("heroSelectCar")} />,
+			<VehicleSelectorLauncher variant="primary" label={tHome("heroSelectCar")} className="h-12 px-6" />,
+			<div className="grid grid-cols-3 gap-3">
+				<VehicleSelectorField label={tHome("vehicleMake")} placeholder={tHome("vehiclePickMake")} />
+				<VehicleSelectorField label={tHome("vehicleModel")} placeholder={tHome("vehiclePickModel")} />
+				<VehicleSelectorField label={tHome("vehicleYear")} placeholder={tHome("vehiclePickYear")} />
+			</div>,
 		);
 	}
 
@@ -109,7 +123,7 @@ export async function VehicleListingFilter({
 			<>
 				<LinkWithChannel
 					href={vehicleFilterHref(basePath, searchParams, true)}
-					className="bg-cta text-cta-text hover:bg-cta-hover focus-visible:ring-ring inline-flex h-11 items-center justify-center gap-2 rounded-sm px-5 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+					className="bg-cta text-cta-text hover:bg-cta-hover focus-visible:ring-ring inline-flex h-12 items-center justify-center gap-2 rounded-xs px-6 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
 				>
 					<Car className="h-4 w-4 shrink-0" aria-hidden="true" />
 					{t("listingApply")}
@@ -122,7 +136,7 @@ export async function VehicleListingFilter({
 	const clearButton = (
 		<LinkWithChannel
 			href={clearHref}
-			className="border-border-default bg-surface-card text-text-primary hover:bg-surface-muted focus-visible:ring-ring inline-flex h-10 items-center rounded-sm border px-3.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+			className="border-border-default bg-surface-card text-text-primary hover:border-text-tertiary focus-visible:ring-ring inline-flex h-10 items-center rounded-xs border px-4 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
 		>
 			{t("listingClear")}
 		</LinkWithChannel>
@@ -132,7 +146,7 @@ export async function VehicleListingFilter({
 		return (
 			<div
 				className={cn(
-					"bg-fitment-unconfirmed-bg text-fitment-unconfirmed flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-current/15 p-3 sm:p-4",
+					"bg-fitment-unconfirmed-bg text-fitment-unconfirmed flex flex-wrap items-center gap-x-4 gap-y-3 rounded-sm border border-current/15 p-3 sm:p-4",
 					className,
 				)}
 			>
@@ -156,7 +170,7 @@ export async function VehicleListingFilter({
 		return (
 			<div
 				className={cn(
-					"border-border-default bg-surface-card rounded-lg border px-5 py-8 text-center sm:px-8 sm:py-10",
+					"border-border-subtle bg-surface-card rounded-sm border px-5 py-10 text-center shadow-xs sm:px-8 sm:py-12",
 					className,
 				)}
 			>
@@ -173,7 +187,7 @@ export async function VehicleListingFilter({
 				<div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-5">
 					<LinkWithChannel
 						href={clearHref}
-						className="bg-cta text-cta-text hover:bg-cta-hover focus-visible:ring-ring inline-flex h-11 items-center justify-center rounded-sm px-5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+						className="bg-cta text-cta-text hover:bg-cta-hover focus-visible:ring-ring inline-flex h-12 items-center justify-center rounded-xs px-6 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
 					>
 						{t("listingClear")}
 					</LinkWithChannel>
@@ -193,7 +207,7 @@ export async function VehicleListingFilter({
 	return (
 		<div
 			className={cn(
-				"border-border-default bg-surface-card flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border p-3 sm:p-4",
+				"border-border-subtle bg-surface-card flex flex-wrap items-center gap-x-4 gap-y-3 rounded-sm border p-3 shadow-xs sm:p-4",
 				className,
 			)}
 		>

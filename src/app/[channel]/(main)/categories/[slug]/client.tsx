@@ -3,13 +3,15 @@
 import { Suspense, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import {
-	FilterBar,
 	ListingEmptyState,
+	ListingFilterPanel,
+	ListingToolbar,
 	listingResultCount,
 	ProductGrid,
 	useProductFilters,
 	type PriceFilter,
 	type ProductCardData,
+	type SubcategoryChip,
 } from "@/ui/components/plp";
 import { Pagination } from "@/ui/components/pagination";
 
@@ -36,17 +38,24 @@ interface CategoryPageClientProps {
 	 * contradict it.
 	 */
 	vehicleFilterEmpty?: boolean;
+	/** The category family for the side panel, "Všetko" first, with each one's count. */
+	categoryLinks?: readonly SubcategoryChip[] | null;
 }
 
 function PaginationSkeleton() {
 	return (
 		<nav className="flex items-center justify-center gap-x-4 px-4 pt-12">
-			<span className="bg-surface-muted h-10 w-24 animate-pulse rounded-sm" />
-			<span className="bg-surface-muted h-10 w-24 animate-pulse rounded-sm" />
+			<span className="bg-surface-muted h-11 w-28 animate-pulse rounded-xs" />
+			<span className="bg-surface-muted h-11 w-28 animate-pulse rounded-xs" />
 		</nav>
 	);
 }
 
+/**
+ * The listing below the category banner (premium redesign 2026-09): the filter panel on the
+ * left of a wide screen, the count, the order and the grid on the right — four columns from
+ * 1440px, three below, two on a tablet, one on a phone, where the filters open in a sheet.
+ */
 export function CategoryPageClient({
 	products,
 	totalCount,
@@ -55,20 +64,17 @@ export function CategoryPageClient({
 	priceFilter = null,
 	accessoryIds = [],
 	vehicleFilterEmpty = false,
+	categoryLinks = null,
 }: CategoryPageClientProps) {
 	const t = useTranslations("plp");
 	const {
 		filteredProducts,
-		colorOptions,
-		sizeOptions,
 		priceRanges,
 		selectedColors,
 		selectedSizes,
 		selectedPriceRange,
 		sortValue,
 		activeFilters,
-		handleColorToggle,
-		handleSizeToggle,
 		handlePriceRangeChange,
 		handleSortChange,
 		handleRemoveFilter,
@@ -90,29 +96,51 @@ export function CategoryPageClient({
 
 	if (vehicleFilterEmpty && filteredProducts.length === 0) return null;
 
+	const hasPanel = Boolean(categoryLinks?.length) || priceRanges.length > 0;
+	const panel = hasPanel
+		? {
+				categoryLinks,
+				allLabel: t("allInCategory"),
+				priceRanges,
+				selectedPriceRange,
+				onPriceRangeChange: handlePriceRangeChange,
+				hasActiveFilters: activeFilters.length > 0,
+				onClearFilters: handleClearFilters,
+			}
+		: null;
+
 	return (
-		<>
-			<FilterBar
-				resultCount={resultCount}
-				sortValue={sortValue}
-				onSortChange={handleSortChange}
-				colorOptions={colorOptions}
-				sizeOptions={sizeOptions}
-				priceRanges={priceRanges}
-				selectedColors={selectedColors}
-				selectedSizes={selectedSizes}
-				selectedPriceRange={selectedPriceRange}
-				onColorToggle={handleColorToggle}
-				onSizeToggle={handleSizeToggle}
-				onPriceRangeChange={handlePriceRangeChange}
-				activeFilters={activeFilters}
-				onRemoveFilter={handleRemoveFilter}
-				onClearFilters={handleClearFilters}
-			/>
-			<div className="w-full">
-				<div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+		<div className="max-w-page mx-auto w-full px-4 pt-6 pb-16 sm:px-6 lg:px-8">
+			<div
+				className={
+					hasPanel
+						? "lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-8 xl:grid-cols-[16.5rem_minmax(0,1fr)] xl:gap-10"
+						: ""
+				}
+			>
+				{panel && (
+					<aside className="hidden lg:block">
+						{/* Below the sticky header, never under it. */}
+						<div className="border-border-subtle bg-surface-card sticky top-[calc(var(--header-offset)+1.25rem)] rounded-sm border px-5 pt-5 pb-1 shadow-xs">
+							<ListingFilterPanel {...panel} />
+						</div>
+					</aside>
+				)}
+				<div className="min-w-0">
+					<ListingToolbar
+						resultCount={resultCount}
+						sortValue={sortValue}
+						onSortChange={handleSortChange}
+						activeFilters={activeFilters}
+						onRemoveFilter={handleRemoveFilter}
+						panel={panel}
+					/>
 					{filteredProducts.length > 0 ? (
-						<ProductGrid products={filteredProducts} groupHeading={groupHeading} />
+						<ProductGrid
+							products={filteredProducts}
+							groupHeading={groupHeading}
+							columns={hasPanel ? "listing" : "full"}
+						/>
 					) : (
 						<ListingEmptyState
 							totalCount={totalCount}
@@ -126,6 +154,6 @@ export function CategoryPageClient({
 					</Suspense>
 				</div>
 			</div>
-		</>
+		</div>
 	);
 }

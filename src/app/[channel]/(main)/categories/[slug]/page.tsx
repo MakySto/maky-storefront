@@ -30,7 +30,9 @@ import {
 	priceRangeOptions,
 	transformToProductCard,
 	type PriceFilter,
+	type SubcategoryChip,
 } from "@/ui/components/plp";
+import { getSceneryOrNone } from "@/lib/homepage/scenery";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { buildCanonicalUrl, counterpartAlternates, type MarketCounterpart } from "@/lib/seo/hreflang";
 import { marketOpenGraph } from "@/lib/seo/metadata";
@@ -230,7 +232,7 @@ async function CategoryContent({
 }) {
 	const params = await paramsPromise;
 	const baseSlug = baseSlugOf(params);
-	const [outcome, t, navigation] = await Promise.all([
+	const [outcome, t, navigation, scenery] = await Promise.all([
 		getCategoryOutcome(baseSlug, params.channel),
 		getTranslations({ locale: getLocaleFromChannel(params.channel), namespace: "plp" }),
 		// The parent and the row of sub-categories are a way around the listing, not the listing:
@@ -242,6 +244,8 @@ async function CategoryContent({
 			);
 			return null;
 		}),
+		// The banner photo decorates; without it the banner is the dark one with the mountains.
+		getSceneryOrNone(params.channel),
 	]);
 
 	// A fault is not an absence. notFound() here would claim a live category is
@@ -273,15 +277,24 @@ async function CategoryContent({
 			<CategoryHero
 				title={category.name}
 				description={plainDescription}
-				backgroundImage={category.backgroundImage?.url}
+				photo={
+					scenery?.banners[baseSlug] ??
+					(navigation?.parent ? scenery?.banners[navigation.parent.baseSlug] : undefined) ??
+					null
+				}
 				breadcrumbs={breadcrumbs}
-			>
-				{navigation?.chips && (
+			/>
+			{navigation?.chips && (
+				<div className="max-w-page mx-auto w-full px-4 pt-5 sm:px-6 sm:pt-6 lg:px-8">
 					<SubcategoryNav label={t("subcategories")} allLabel={t("allInCategory")} chips={navigation.chips} />
-				)}
-			</CategoryHero>
+				</div>
+			)}
 			<Suspense fallback={<ProductsGridSkeleton />}>
-				<CategoryProducts params={paramsPromise} searchParams={searchParams} />
+				<CategoryProducts
+					params={paramsPromise}
+					searchParams={searchParams}
+					categoryLinks={navigation?.chips ?? null}
+				/>
 			</Suspense>
 			{/* Below the listing, and in its own Suspense: reading the 9.7 MB catalogue
 			    snapshot must never hold up the products this page exists to show. It
@@ -333,9 +346,12 @@ interface CategoryListing {
 async function CategoryProducts({
 	params: paramsPromise,
 	searchParams: searchParamsPromise,
+	categoryLinks,
 }: {
 	params: PageProps["params"];
 	searchParams: PageProps["searchParams"];
+	/** The category family for the side panel, when the page has a row of sub-categories. */
+	categoryLinks: readonly SubcategoryChip[] | null;
 }) {
 	const [params, searchParams] = await Promise.all([paramsPromise, searchParamsPromise]);
 	const baseSlug = baseSlugOf(params);
@@ -497,7 +513,7 @@ async function CategoryProducts({
 
 	return (
 		<>
-			<div className="mx-auto w-full max-w-7xl px-4 pt-6 empty:hidden sm:px-6 lg:px-8">
+			<div className="max-w-page mx-auto w-full px-4 pt-6 empty:hidden sm:px-6 lg:px-8">
 				<VehicleListingFilter
 					channel={params.channel}
 					filter={vehicleFilter}
@@ -518,6 +534,7 @@ async function CategoryProducts({
 				priceFilter={priceFilter}
 				accessoryIds={listing.accessoryIds}
 				vehicleFilterEmpty={vehicleFilter.state === "empty"}
+				categoryLinks={categoryLinks}
 			/>
 		</>
 	);

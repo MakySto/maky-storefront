@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 export interface SubcategoryChip {
 	readonly id: string;
 	readonly href: string;
+	/** Products in this category in this market — the side panel shows it, the chip does not. */
+	readonly count?: number;
 	/** The category's full name — the chip's accessible name. */
 	readonly name: string;
 	/** What the chip shows; `null` for the family's own listing, which reads `allLabel`. */

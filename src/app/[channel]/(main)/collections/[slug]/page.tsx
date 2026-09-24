@@ -164,7 +164,17 @@ async function CollectionContent({
 			<CategoryHero
 				title={collection.name}
 				description={plainDescription}
-				backgroundImage={collection.backgroundImage?.url}
+				// A collection's own image in Saleor is its banner photo, centred.
+				photo={
+					collection.backgroundImage?.url
+						? {
+								url: collection.backgroundImage.url,
+								position: "50% 50%",
+								mobilePosition: "50% 50%",
+								source: "saleor",
+							}
+						: null
+				}
 				breadcrumbs={breadcrumbs}
 			/>
 			<Suspense fallback={<ProductsGridSkeleton />}>

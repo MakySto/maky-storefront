@@ -27,6 +27,8 @@ export {
 	type CategoryOption,
 } from "./filter-utils";
 export { SubcategoryNav, type SubcategoryChip } from "./subcategory-nav";
+export { ListingFilterPanel } from "./listing-filter-panel";
+export { ListingToolbar } from "./listing-toolbar";
 export {
 	priceRangeOptions,
 	priceBandFormatter,
