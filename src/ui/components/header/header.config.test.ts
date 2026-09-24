@@ -10,7 +10,11 @@ const source = (file: string) => readFileSync(join(HERE, file), "utf8");
 describe("category navigation lists", () => {
 	it("lists every category the homepage grid shows, in the same order", () => {
 		expect(ALL_CATEGORIES_NAV.map((item) => item.href)).toEqual(categoriesFor("home").map(categoryHref));
-		expect(ALL_CATEGORIES_NAV.length).toBeGreaterThan(HEADER_PRIMARY_NAV.length - 1);
+		// Never fewer categories than the desktop row holds: since the second pass the row links
+		// all six, besides Značky and Poradňa.
+		const categoryHrefs = new Set(ALL_CATEGORIES_NAV.map((item) => item.href));
+		const rowCategories = HEADER_PRIMARY_NAV.filter((item) => categoryHrefs.has(item.href));
+		expect(ALL_CATEGORIES_NAV.length).toBeGreaterThanOrEqual(rowCategories.length);
 	});
 
 	it("localizes a category link per market and leaves other links alone", () => {

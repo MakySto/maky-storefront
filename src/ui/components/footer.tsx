@@ -1,7 +1,10 @@
 import { getLocaleFromChannel } from "@/config/locale";
 import Link from "next/link";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
+import { liveMarkets } from "@/lib/market-state";
+import { HeaderMarketControls } from "./header/header-market-controls";
 import { CopyrightText } from "./copyright-text";
 import { Logo } from "./shared/logo";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
@@ -68,6 +71,20 @@ export function footerLegalLinks(channel: string) {
 	};
 }
 
+/**
+ * The market and its currency, switchable — in the footer since the owner moved it out of the
+ * header (2026-09-24).
+ *
+ * The live set is read per request, not per build: `MAKY_LIVE_MARKETS` is the one control that
+ * promotes a market without a rebuild, and reading it in a prerendered shell would bake the
+ * launch-day list into the HTML. `connection()` opts this one control out of the shell; its
+ * fallback is the same words, unswitchable, at the same size.
+ */
+async function FooterMarketControls() {
+	await connection();
+	return <HeaderMarketControls markets={liveMarkets()} tone="dark" />;
+}
+
 export async function Footer({ channel }: { channel: string }) {
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "footer" });
 	const tc = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "common" });
@@ -86,7 +103,7 @@ export async function Footer({ channel }: { channel: string }) {
 		<footer className="bg-surface-inverse relative overflow-hidden print:hidden">
 			<div
 				aria-hidden="true"
-				className="art-mountains bg-copper-400/40 pointer-events-none absolute right-6 bottom-20 hidden h-44 w-[30rem] xl:block 2xl:right-[calc((100vw-88rem)/2+2rem)]"
+				className="art-mountains bg-copper-400/55 pointer-events-none absolute right-4 bottom-16 hidden h-52 w-[34rem] xl:block 2xl:right-[calc((100vw-88rem)/2+1rem)]"
 			/>
 			<div className="max-w-page relative mx-auto px-4 pt-14 pb-24 sm:px-6 sm:pb-10 lg:px-8 lg:pt-16">
 				<div className="grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-4 xl:grid-cols-[1.25fr_1fr_1fr_1fr_1.6fr]">
@@ -171,10 +188,16 @@ export async function Footer({ channel }: { channel: string }) {
 						</Suspense>
 					</p>
 					<div className="text-text-inverse/55 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
-						{/* The market this page belongs to, in words — the switch itself is the header's. */}
-						<span>
-							{tc("country")} · {tc("currency")}
-						</span>
+						{/* The market this page belongs to, and the switch to another one. */}
+						<Suspense
+							fallback={
+								<span className="inline-flex h-9 items-center">
+									{tc("country")} | {tc("currency")}
+								</span>
+							}
+						>
+							<FooterMarketControls />
+						</Suspense>
 						{showPrivacyPolicy && (
 							<Link
 								href={marketHref(channel, "/ochrana-osobnych-udajov")}

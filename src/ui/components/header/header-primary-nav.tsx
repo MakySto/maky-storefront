@@ -1,6 +1,6 @@
 import { getLocaleFromChannel } from "@/config/locale";
 import { getTranslations } from "next-intl/server";
-import { HEADER_PRIMARY_NAV, localizedNavHref } from "./header.config";
+import { HEADER_PRIMARY_NAV, NAV_VISIBLE_FROM, localizedNavHref } from "./header.config";
 import { HeaderNavLink } from "./header-nav-link";
 import { visibleNavLinks } from "@/lib/cms/availability";
 
@@ -15,7 +15,17 @@ export async function HeaderPrimaryNav({ channel }: { channel: string }) {
 	return (
 		<nav aria-label={tAccount("primaryNavigation")} className="hidden h-full items-stretch lg:flex">
 			{items.map((item) => (
-				<HeaderNavLink key={item.key} href={localizedNavHref(channel, item.href)}>
+				<HeaderNavLink
+					key={item.key}
+					href={localizedNavHref(channel, item.href)}
+					className={
+						NAV_VISIBLE_FROM[item.key] === "xl"
+							? "hidden xl:flex"
+							: NAV_VISIBLE_FROM[item.key] === "2xl"
+								? "hidden 2xl:flex"
+								: undefined
+					}
+				>
 					{t(item.key)}
 				</HeaderNavLink>
 			))}

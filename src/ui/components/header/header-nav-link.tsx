@@ -11,7 +11,15 @@ import { cn } from "@/lib/utils";
  * the `/sk-eur/categories/stresne-boxy` the proxy rewrites it to, and both end in the slug the
  * link was built from. A sub-category page underlines nothing — it has no link of its own here.
  */
-export function HeaderNavLink({ href, children }: { href: string; children: React.ReactNode }) {
+export function HeaderNavLink({
+	href,
+	children,
+	className,
+}: {
+	href: string;
+	children: React.ReactNode;
+	className?: string;
+}) {
 	const pathname = usePathname();
 	const segment = href.split("/").filter(Boolean).at(-1);
 	const current = Boolean(segment) && pathname.split("/").filter(Boolean).at(-1) === segment;
@@ -25,6 +33,7 @@ export function HeaderNavLink({ href, children }: { href: string; children: Reac
 				"after:bg-brand after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:transition-transform after:duration-200 xl:after:inset-x-3",
 				"hover:text-brand hover:after:scale-x-100",
 				current ? "text-brand after:scale-x-100" : "text-text-primary",
+				className,
 			)}
 		>
 			{children}

@@ -70,7 +70,18 @@ export function switchTargetFor(
  * working payment; a preview market is reachable by typing its URL, and that is
  * the whole of its contract.
  */
-export function HeaderMarketControls({ markets }: { markets: readonly string[] }) {
+export function HeaderMarketControls({
+	markets,
+	tone = "light",
+}: {
+	markets: readonly string[];
+	/**
+	 * `dark` — the footer's bottom bar, where the control lives since the owner moved it out of
+	 * the header (2026-09-24): the country and the currency in words, the list opening upwards.
+	 */
+	tone?: "light" | "dark";
+}) {
+	const dark = tone === "dark";
 	const t = useTranslations("nav");
 	const router = useRouter();
 	const params = useParams<{ channel: string }>();
@@ -120,19 +131,45 @@ export function HeaderMarketControls({ markets }: { markets: readonly string[] }
 				aria-label={`${t("market")}: ${currentMarket.label}, ${currentMarket.currency}`}
 				aria-expanded={canSwitch ? isOpen : undefined}
 				aria-disabled={canSwitch ? undefined : true}
-				className="text-text-secondary hover:bg-surface-secondary hover:text-text-primary focus-visible:ring-ring inline-flex h-10 items-center gap-1.5 rounded-xs px-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+				className={
+					dark
+						? "text-text-inverse/70 hover:text-text-inverse focus-visible:ring-text-inverse/60 inline-flex h-9 items-center gap-2 rounded-xs text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-hidden"
+						: "text-text-secondary hover:bg-surface-secondary hover:text-text-primary focus-visible:ring-ring inline-flex h-10 items-center gap-1.5 rounded-xs px-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+				}
 			>
-				<GlobeIcon className="h-3.5 w-3.5" aria-hidden />
-				<span>{currentMarket.slug.toUpperCase()}</span>
-				<span aria-hidden className="text-text-tertiary">
-					·
-				</span>
-				<span>{currentMarket.currency}</span>
-				{canSwitch && <ChevronDownIcon className="h-3 w-3 opacity-50" aria-hidden />}
+				{dark ? (
+					<>
+						<FlagImg code={currentMarket.code} size={20} />
+						<span>{currentMarket.label}</span>
+						<span aria-hidden className="text-text-inverse/35">
+							|
+						</span>
+						<span>{currentMarket.currency}</span>
+					</>
+				) : (
+					<>
+						<GlobeIcon className="h-3.5 w-3.5" aria-hidden />
+						<span>{currentMarket.slug.toUpperCase()}</span>
+						<span aria-hidden className="text-text-tertiary">
+							·
+						</span>
+						<span>{currentMarket.currency}</span>
+					</>
+				)}
+				{canSwitch && (
+					<ChevronDownIcon
+						className={dark ? "h-3 w-3 rotate-180 opacity-60" : "h-3 w-3 opacity-50"}
+						aria-hidden
+					/>
+				)}
 			</button>
 
 			{isOpen && canSwitch && (
-				<div className="border-border-subtle bg-surface-card absolute top-full right-0 z-[var(--z-dropdown)] mt-2 w-72 rounded-sm border p-1 shadow-xl">
+				<div
+					className={`border-border-subtle bg-surface-card absolute z-[var(--z-dropdown)] w-72 rounded-sm border p-1 shadow-xl ${
+						dark ? "bottom-full left-0 mb-2 sm:right-0 sm:left-auto" : "top-full right-0 mt-2"
+					}`}
+				>
 					{options.map((market) => (
 						<button
 							key={market.slug}
@@ -146,8 +183,8 @@ export function HeaderMarketControls({ markets }: { markets: readonly string[] }
 						>
 							<FlagImg code={market.code} size={20} />
 							<span className="flex-1 text-left">{market.label}</span>
-							<span className="w-10 text-right text-xs text-gray-400">{market.currency}</span>
-							<span className="w-6 text-right text-xs font-medium text-gray-500">{market.symbol}</span>
+							<span className="text-text-tertiary w-10 text-right text-xs">{market.currency}</span>
+							<span className="text-text-secondary w-6 text-right text-xs font-medium">{market.symbol}</span>
 						</button>
 					))}
 				</div>

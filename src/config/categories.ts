@@ -62,8 +62,10 @@ export const STOREFRONT_CATEGORIES: readonly StorefrontCategory[] = [
 	{ slug: "stresne-boxy", key: "roofBoxes", surfaces: ["nav", "home"], fitmentKind: "roof-box" },
 	{ slug: "nosice-bicyklov", key: "bikeCarriers", surfaces: ["nav", "home"], fitmentKind: "bike-carrier" },
 	{ slug: "nosice-lyzi", key: "skiCarriers", surfaces: ["nav", "home"], fitmentKind: "ski-carrier" },
-	{ slug: "stresne-stany", key: "roofTents", surfaces: ["home"] },
-	{ slug: "autochladnicky", key: "carFridges", surfaces: ["home"] },
+	// In the desktop row since the 2026-09 redesign's second pass: the approved header links
+	// the roof tents and the fridges directly (`header.config.ts` decides from which width).
+	{ slug: "stresne-stany", key: "roofTents", surfaces: ["nav", "home"] },
+	{ slug: "autochladnicky", key: "carFridges", surfaces: ["nav", "home"] },
 	{
 		slug: "snehove-retaze",
 		key: "snowChains",
