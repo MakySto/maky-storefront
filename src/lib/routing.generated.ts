@@ -72,4 +72,5 @@ export const MARKET_ROOT_SEGMENTS: ReadonlySet<string> = new Set([
 	"reklamacie-a-vratenie",
 	"search",
 	"signup",
+	"znacky",
 ]);

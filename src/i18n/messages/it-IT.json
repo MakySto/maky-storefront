@@ -683,7 +683,8 @@
 		"adviceCta": "Vai ai consigli",
 		"newsletterTitle": "Iscriviti alle novità",
 		"newsletterText": "Novità, idee per le gite e ispirazione per i tuoi viaggi.",
-		"newsletterSoon": "L'iscrizione sarà disponibile a breve."
+		"newsletterSoon": "L'iscrizione sarà disponibile a breve.",
+		"brandsAll": "Vedi tutti i marchi"
 	},
 	"garage": {
 		"title": "Il mio garage",
@@ -887,5 +888,11 @@
 		"emptyCta": "Sfoglia le categorie",
 		"unavailable": "Non è stato possibile caricare i preferiti. Riprova tra poco.",
 		"notInMarket": "{count, plural, one {# prodotto salvato non è in vendita in questo negozio.} other {# prodotti salvati non sono in vendita in questo negozio.}}"
+	},
+	"brands": {
+		"title": "Marchi",
+		"description": "I produttori di barre portatutto, box da tetto, portabici e altro, i cui prodotti trovi da noi.",
+		"productCount": "{count, plural, one {# prodotto} other {# prodotti}}",
+		"brandDescription": "Prodotti {brand} su MAKY.STORE."
 	}
 }

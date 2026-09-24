@@ -683,7 +683,8 @@
 		"adviceCta": "Voir les conseils",
 		"newsletterTitle": "Recevez nos nouveautés",
 		"newsletterText": "Nouveautés, idées d'escapades et inspiration pour vos voyages.",
-		"newsletterSoon": "L'inscription arrive bientôt."
+		"newsletterSoon": "L'inscription arrive bientôt.",
+		"brandsAll": "Voir toutes les marques"
 	},
 	"garage": {
 		"title": "Mon garage",
@@ -887,5 +888,11 @@
 		"emptyCta": "Parcourir les catégories",
 		"unavailable": "Impossible de charger vos favoris pour le moment. Réessayez dans un instant.",
 		"notInMarket": "{count, plural, one {# produit enregistré n'est pas vendu dans cette boutique.} other {# produits enregistrés ne sont pas vendus dans cette boutique.}}"
+	},
+	"brands": {
+		"title": "Marques",
+		"description": "Les fabricants de barres de toit, coffres, porte-vélos et autres équipements dont vous trouverez les produits chez nous.",
+		"productCount": "{count, plural, one {# produit} other {# produits}}",
+		"brandDescription": "Les produits {brand} chez MAKY.STORE."
 	}
 }

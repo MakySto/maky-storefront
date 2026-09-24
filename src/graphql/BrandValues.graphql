@@ -1,0 +1,14 @@
+# The makers the catalogue knows — Saleor's `manufacturer` attribute and its values — for the
+# brand pages (`/{market}/znacky`). Read-only; see `src/lib/brands/catalog.ts`.
+query BrandValues {
+	attribute(slug: "manufacturer") {
+		choices(first: 100) {
+			edges {
+				node {
+					name
+					slug
+				}
+			}
+		}
+	}
+}

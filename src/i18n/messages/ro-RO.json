@@ -683,7 +683,8 @@
 		"adviceCta": "Mergi la sfaturi",
 		"newsletterTitle": "Abonați-vă la noutăți",
 		"newsletterText": "Noutăți, idei de excursii și inspirație pentru călătoriile tale.",
-		"newsletterSoon": "Abonarea va fi disponibilă în curând."
+		"newsletterSoon": "Abonarea va fi disponibilă în curând.",
+		"brandsAll": "Vezi toate mărcile"
 	},
 	"garage": {
 		"title": "Garajul meu",
@@ -887,5 +888,11 @@
 		"emptyCta": "Vezi categoriile",
 		"unavailable": "Favoritele nu au putut fi încărcate acum. Încercați din nou peste puțin timp.",
 		"notInMarket": "{count, plural, one {# produs salvat nu se vinde în acest magazin.} few {# produse salvate nu se vând în acest magazin.} other {# de produse salvate nu se vând în acest magazin.}}"
+	},
+	"brands": {
+		"title": "Mărci",
+		"description": "Producătorii de bare portbagaj, cutii de plafon, suporturi de biciclete și alte echipamente ale căror produse le găsiți la noi.",
+		"productCount": "{count, plural, one {# produs} few {# produse} other {# de produse}}",
+		"brandDescription": "Produse {brand} în oferta MAKY.STORE."
 	}
 }

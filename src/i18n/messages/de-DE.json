@@ -683,7 +683,8 @@
 		"adviceCta": "Zum Ratgeber",
 		"newsletterTitle": "Newsletter abonnieren",
 		"newsletterText": "Neuheiten, Ausflugstipps und Inspiration für Ihre Reisen.",
-		"newsletterSoon": "Die Anmeldung bereiten wir gerade vor."
+		"newsletterSoon": "Die Anmeldung bereiten wir gerade vor.",
+		"brandsAll": "Alle Marken anzeigen"
 	},
 	"garage": {
 		"title": "Meine Garage",
@@ -887,5 +888,11 @@
 		"emptyCta": "Kategorien ansehen",
 		"unavailable": "Die Favoriten konnten gerade nicht geladen werden. Bitte versuchen Sie es gleich noch einmal.",
 		"notInMarket": "{count, plural, one {# gespeichertes Produkt wird in diesem Shop nicht verkauft.} other {# gespeicherte Produkte werden in diesem Shop nicht verkauft.}}"
+	},
+	"brands": {
+		"title": "Marken",
+		"description": "Die Hersteller von Dachträgern, Dachboxen, Fahrradträgern und weiterer Ausrüstung, deren Produkte Sie bei uns kaufen.",
+		"productCount": "{count, plural, one {# Produkt} other {# Produkte}}",
+		"brandDescription": "Produkte der Marke {brand} bei MAKY.STORE."
 	}
 }

@@ -683,7 +683,8 @@
 		"adviceCta": "Tovább a tanácsadóhoz",
 		"newsletterTitle": "Iratkozzon fel hírlevelünkre",
 		"newsletterText": "Újdonságok, kirándulási tippek és inspiráció az utazásaihoz.",
-		"newsletterSoon": "A feliratkozást hamarosan elindítjuk."
+		"newsletterSoon": "A feliratkozást hamarosan elindítjuk.",
+		"brandsAll": "Összes márka"
 	},
 	"garage": {
 		"title": "Garázsom",
@@ -887,5 +888,11 @@
 		"emptyCta": "Kategóriák böngészése",
 		"unavailable": "A kedvenceket most nem sikerült betölteni. Próbálja újra egy kicsit később.",
 		"notInMarket": "{count, plural, other {# mentett terméket ebben az üzletben nem árusítunk.}}"
+	},
+	"brands": {
+		"title": "Márkák",
+		"description": "A tetőcsomagtartók, tetőboxok, kerékpártartók és más felszerelések gyártói, akiknek termékeit nálunk megvásárolhatja.",
+		"productCount": "{count, plural, other {# termék}}",
+		"brandDescription": "{brand} termékek a MAKY.STORE kínálatában."
 	}
 }

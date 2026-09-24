@@ -683,7 +683,8 @@
 		"adviceCta": "Przejdź do poradnika",
 		"newsletterTitle": "Zapisz się na nowości",
 		"newsletterText": "Nowości, pomysły na wycieczki i inspiracje na podróże.",
-		"newsletterSoon": "Zapisy wkrótce uruchomimy."
+		"newsletterSoon": "Zapisy wkrótce uruchomimy.",
+		"brandsAll": "Pokaż wszystkie marki"
 	},
 	"garage": {
 		"title": "Mój garaż",
@@ -887,5 +888,11 @@
 		"emptyCta": "Przeglądaj kategorie",
 		"unavailable": "Nie udało się teraz wczytać ulubionych. Spróbuj ponownie za chwilę.",
 		"notInMarket": "{count, plural, one {# zapisany produkt nie jest sprzedawany w tym sklepie.} few {# zapisane produkty nie są sprzedawane w tym sklepie.} other {# zapisanych produktów nie jest sprzedawanych w tym sklepie.}}"
+	},
+	"brands": {
+		"title": "Marki",
+		"description": "Producenci bagażników dachowych, boksów, uchwytów na rowery i innego wyposażenia, których produkty kupisz u nas.",
+		"productCount": "{count, plural, one {# produkt} few {# produkty} other {# produktów}}",
+		"brandDescription": "Produkty marki {brand} w ofercie MAKY.STORE."
 	}
 }

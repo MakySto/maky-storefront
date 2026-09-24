@@ -683,7 +683,8 @@
 		"adviceCta": "Prejsť do poradne",
 		"newsletterTitle": "Odoberajte novinky",
 		"newsletterText": "Novinky, tipy na výlety a inšpirácia pre vaše cesty.",
-		"newsletterSoon": "Prihlasovanie na odber pripravujeme."
+		"newsletterSoon": "Prihlasovanie na odber pripravujeme.",
+		"brandsAll": "Zobraziť všetky značky"
 	},
 	"garage": {
 		"title": "Moja garáž",
@@ -887,5 +888,11 @@
 		"emptyCta": "Prezrieť kategórie",
 		"unavailable": "Obľúbené produkty sa teraz nepodarilo načítať. Skúste to o chvíľu znova.",
 		"notInMarket": "{count, plural, one {# uložený produkt sa v tomto obchode nepredáva.} few {# uložené produkty sa v tomto obchode nepredávajú.} other {# uložených produktov sa v tomto obchode nepredáva.}}"
+	},
+	"brands": {
+		"title": "Značky",
+		"description": "Výrobcovia strešných nosičov, boxov, nosičov bicyklov a ďalšej výbavy, ktorých produkty u nás kúpite.",
+		"productCount": "{count, plural, one {# produkt} few {# produkty} other {# produktov}}",
+		"brandDescription": "Produkty značky {brand} v ponuke MAKY.STORE."
 	}
 }

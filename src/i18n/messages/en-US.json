@@ -683,7 +683,8 @@
 		"adviceCta": "Go to advice",
 		"newsletterTitle": "Get our newsletter",
 		"newsletterText": "News, trip tips and inspiration for your travels.",
-		"newsletterSoon": "Sign-up is coming soon."
+		"newsletterSoon": "Sign-up is coming soon.",
+		"brandsAll": "View all brands"
 	},
 	"garage": {
 		"title": "My Garage",
@@ -887,5 +888,11 @@
 		"emptyCta": "Browse categories",
 		"unavailable": "Your favorites could not be loaded right now. Please try again in a moment.",
 		"notInMarket": "{count, plural, one {# saved product is not sold in this store.} other {# saved products are not sold in this store.}}"
+	},
+	"brands": {
+		"title": "Brands",
+		"description": "The makers of roof racks, roof boxes, bike carriers and more whose products you can buy here.",
+		"productCount": "{count, plural, one {# product} other {# products}}",
+		"brandDescription": "{brand} products at MAKY.STORE."
 	}
 }

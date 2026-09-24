@@ -75,6 +75,9 @@ export const ROUTE_POLICY: readonly MarketRoutePolicy[] = [
 	{ segment: "categories", kind: "catalogue", markets: "all", indexable: true },
 	{ segment: "collections", kind: "catalogue", markets: "all", indexable: true },
 	{ segment: "pages", kind: "catalogue", markets: "all", indexable: true },
+	// The makers this market sells, and each maker's products (`lib/brands/catalog.ts`). The
+	// segment is Slovak in every market, like the configurator's.
+	{ segment: "znacky", kind: "catalogue", markets: "all", indexable: true },
 	// Search result pages are thin and infinite; crawling them wastes budget.
 	{ segment: "search", kind: "catalogue", markets: "all", indexable: false },
 

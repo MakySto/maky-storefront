@@ -683,7 +683,8 @@
 		"adviceCta": "Ir a los consejos",
 		"newsletterTitle": "Recibe nuestras novedades",
 		"newsletterText": "Novedades, ideas de escapadas e inspiración para tus viajes.",
-		"newsletterSoon": "La suscripción estará disponible pronto."
+		"newsletterSoon": "La suscripción estará disponible pronto.",
+		"brandsAll": "Ver todas las marcas"
 	},
 	"garage": {
 		"title": "Mi garaje",
@@ -887,5 +888,11 @@
 		"emptyCta": "Ver categorías",
 		"unavailable": "No se han podido cargar tus favoritos. Inténtalo de nuevo en un momento.",
 		"notInMarket": "{count, plural, one {# producto guardado no se vende en esta tienda.} other {# productos guardados no se venden en esta tienda.}}"
+	},
+	"brands": {
+		"title": "Marcas",
+		"description": "Los fabricantes de barras de techo, cofres, portabicicletas y otros equipos cuyos productos puedes comprar aquí.",
+		"productCount": "{count, plural, one {# producto} other {# productos}}",
+		"brandDescription": "Productos {brand} en MAKY.STORE."
 	}
 }

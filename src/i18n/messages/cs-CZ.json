@@ -683,7 +683,8 @@
 		"adviceCta": "Přejít do poradny",
 		"newsletterTitle": "Odebírejte novinky",
 		"newsletterText": "Novinky, tipy na výlety a inspirace pro vaše cesty.",
-		"newsletterSoon": "Přihlašování k odběru připravujeme."
+		"newsletterSoon": "Přihlašování k odběru připravujeme.",
+		"brandsAll": "Zobrazit všechny značky"
 	},
 	"garage": {
 		"title": "Moje garáž",
@@ -887,5 +888,11 @@
 		"emptyCta": "Procházet kategorie",
 		"unavailable": "Oblíbené produkty se teď nepodařilo načíst. Zkuste to za chvíli znovu.",
 		"notInMarket": "{count, plural, one {# uložený produkt se v tomto obchodě neprodává.} few {# uložené produkty se v tomto obchodě neprodávají.} other {# uložených produktů se v tomto obchodě neprodává.}}"
+	},
+	"brands": {
+		"title": "Značky",
+		"description": "Výrobci střešních nosičů, boxů, nosičů kol a další výbavy, jejichž produkty u nás koupíte.",
+		"productCount": "{count, plural, one {# produkt} few {# produkty} other {# produktů}}",
+		"brandDescription": "Produkty značky {brand} v nabídce MAKY.STORE."
 	}
 }
