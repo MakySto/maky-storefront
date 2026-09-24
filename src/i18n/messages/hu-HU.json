@@ -35,7 +35,8 @@
 		"home": "Kezdőlap",
 		"onDemand": "Rendelésre, szállítás 5–10 munkanapon belül",
 		"viewDetail": "Termék részletei",
-		"addToCartShort": "Kosárba"
+		"addToCartShort": "Kosárba",
+		"onDemandShort": "Rendelésre"
 	},
 	"nav": {
 		"home": "Kezdőlap",
@@ -872,5 +873,19 @@
 			"other": "Egyéb"
 		},
 		"topic": "Miről szól az üzenet"
+	},
+	"wishlist": {
+		"title": "Kedvenc termékek",
+		"intro": "A szívvel megjelölt termékek. A lista ebben a böngészőben tárolódik.",
+		"add": "Hozzáadás a kedvencekhez: {name}",
+		"remove": "Eltávolítás a kedvencek közül: {name}",
+		"addShort": "Kedvencekhez",
+		"removeShort": "Eltávolítás a kedvencek közül",
+		"count": "{count, plural, other {# termék}}",
+		"emptyTitle": "Még nincs itt semmi",
+		"emptyBody": "Kattintson a szívre a terméknél, és itt megtalálja, amikor dönteni szeretne.",
+		"emptyCta": "Kategóriák böngészése",
+		"unavailable": "A kedvenceket most nem sikerült betölteni. Próbálja újra egy kicsit később.",
+		"notInMarket": "{count, plural, other {# mentett terméket ebben az üzletben nem árusítunk.}}"
 	}
 }

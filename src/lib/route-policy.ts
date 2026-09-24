@@ -91,6 +91,9 @@ export const ROUTE_POLICY: readonly MarketRoutePolicy[] = [
 	// for whoever owns URL shape.
 	{ segment: "garage", kind: "private", markets: "all", indexable: false },
 	{ segment: "konfigurator", kind: "private", markets: "all", indexable: false },
+	// One browser's favourites (`lib/wishlist`): a list read in the browser, an empty shell to
+	// a crawler. Every market, like the garage; the segment is Slovak like the configurator's.
+	{ segment: "oblubene", kind: "private", markets: "all", indexable: false },
 ];
 
 const BY_SEGMENT: ReadonlyMap<string, MarketRoutePolicy> = new Map(

@@ -1,0 +1,12 @@
+# The products on a shopper's favourites list (`/{market}/oblubene`), by id, in this channel.
+# Read-only. `translation` applies to the returned fields only; the lookup stays by id, so a
+# foreign market cannot lose a product to a translated slug.
+query WishlistProducts($ids: [ID!]!, $channel: String!, $first: Int!, $lang: LanguageCodeEnum!) {
+	products(first: $first, channel: $channel, filter: { ids: $ids }) {
+		edges {
+			node {
+				...ProductListItem
+			}
+		}
+	}
+}

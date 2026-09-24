@@ -1,22 +1,31 @@
 import { Fragment } from "react";
 import { cn } from "@/lib/utils";
-import { ProductCard, type ProductCardData } from "./product-card";
+import { ProductCard, type ProductCardData, type ProductCardPurchase } from "./product-card";
 
 /**
- * How many columns the grid may use, which depends on what shares its row.
+ * How many columns the grid may use, which depends on what shares its row. Two on a phone
+ * everywhere: the photo sits above the words (owner, 2026-09-24), and two cards to a row keep a
+ * list of twenty-four a scroll rather than a slideshow.
  *
  * - `home`: the full page width — four columns, five from 1440px, where each card still gets
- *   ~250px (the approved homepage is five by two).
- * - `listing`: beside the category filter panel — three from 1280px, four from 1440px. The
- *   homepage's five are NOT carried over; beside a panel they would be 190px wide.
- * - `full`: search and collections, no panel — up to four.
+ *   ~250px (the approved homepage is five by two). Quantity and "Do košíka" side by side.
+ * - `listing`: beside the category filter panel — three from 1024px, four from 1440px. The
+ *   homepage's five are NOT carried over; beside a panel they would be 190px wide. One
+ *   full-width "Do košíka", as the approved category page draws it.
+ * - `full`: search and collections, no panel — up to four, with the listing's button.
  */
 export type ProductGridColumns = "home" | "listing" | "full";
 
 const COLUMNS: Record<ProductGridColumns, string> = {
-	home: "sm:grid-cols-2 lg:grid-cols-4 min-[90rem]:grid-cols-5",
-	listing: "sm:grid-cols-2 xl:grid-cols-3 min-[90rem]:grid-cols-4",
-	full: "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
+	home: "lg:grid-cols-4 min-[90rem]:grid-cols-5",
+	listing: "lg:grid-cols-3 min-[90rem]:grid-cols-4",
+	full: "md:grid-cols-3 xl:grid-cols-4",
+};
+
+const PURCHASE: Record<ProductGridColumns, ProductCardPurchase> = {
+	home: "stepper",
+	listing: "button",
+	full: "button",
 };
 
 interface ProductGridProps {
@@ -39,10 +48,9 @@ interface ProductGridProps {
  */
 export function ProductGrid({ products, groupHeading, columns = "full" }: ProductGridProps) {
 	return (
-		// One column of compact rows on a phone, then as many as `columns` allows.
-		<div className={cn("grid w-full grid-cols-1 gap-3 sm:gap-4 xl:gap-5", COLUMNS[columns])}>
-			{/* Exactly ONE preload. The grid is single-column on a phone, so only the
-			    first card is above the fold there, yet `priority` on the first four
+		<div className={cn("grid w-full grid-cols-2 gap-3 sm:gap-4 xl:gap-5", COLUMNS[columns])}>
+			{/* Exactly ONE preload. On a phone only the first row is above the fold, yet
+			    `priority` on the first four
 			    emitted four high-priority preloads that fought over the connection —
 			    worth ~2.9 s of LCP load delay on mobile.
 
@@ -60,7 +68,7 @@ export function ProductGrid({ products, groupHeading, columns = "full" }: Produc
 							{groupHeading.label}
 						</h2>
 					)}
-					<ProductCard product={product} priority={index === 0} />
+					<ProductCard product={product} priority={index === 0} purchase={PURCHASE[columns]} />
 				</Fragment>
 			))}
 		</div>

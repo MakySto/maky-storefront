@@ -1,3 +1,4 @@
+import { CircleCheckIcon, CircleSlashIcon, Clock3Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -46,7 +47,7 @@ export type AvailabilityInput = {
 };
 
 /** The `common.*` keys this badge can ask for. */
-export type AvailabilityKey = "inStock" | "onDemand" | "outOfStock";
+export type AvailabilityKey = "inStock" | "onDemand" | "onDemandShort" | "outOfStock";
 
 type Resolved =
 	| { key: "inStock"; tone: "success" }
@@ -94,11 +95,71 @@ export function resolveAvailability({
 export function AvailabilityBadge({
 	className,
 	label,
+	short = false,
+	detailed = false,
 	...input
-}: AvailabilityInput & { className?: string; label: (key: AvailabilityKey) => string }) {
+}: AvailabilityInput & {
+	className?: string;
+	label: (key: AvailabilityKey) => string;
+	/**
+	 * The mode without the lead time ("Na objednávku") — for a listing card, where the full line
+	 * wrapped to three rows beside the price. The product page, where the shopper decides, keeps
+	 * the lead time.
+	 */
+	short?: boolean;
+	/**
+	 * The product page's two lines, as the approved buy box draws them: an icon, the state in
+	 * bold, and under it the lead time. The lead time is the rest of the market's own `onDemand`
+	 * line after its short form — never a second copy of the figure that could drift from it.
+	 */
+	detailed?: boolean;
+}) {
 	const resolved = resolveAvailability(input);
 
 	if (!resolved) return null;
+	const key: AvailabilityKey = short && resolved.key === "onDemand" ? "onDemandShort" : resolved.key;
+
+	if (detailed) {
+		const full = label(resolved.key);
+		const head = resolved.key === "onDemand" ? label("onDemandShort") : full;
+		const rest =
+			resolved.key === "onDemand" && full.startsWith(head)
+				? full.slice(head.length).replace(/^[\s,–-]+/, "")
+				: "";
+		const Icon =
+			resolved.tone === "success" ? CircleCheckIcon : resolved.tone === "info" ? Clock3Icon : CircleSlashIcon;
+		return (
+			<span className={cn("flex items-start gap-2.5", className)}>
+				<Icon
+					aria-hidden
+					strokeWidth={2.25}
+					className={cn(
+						"mt-px h-[1.375rem] w-[1.375rem] shrink-0",
+						resolved.tone === "success"
+							? "text-status-success"
+							: resolved.tone === "info"
+								? "text-brand"
+								: "text-text-tertiary",
+					)}
+				/>
+				<span className="min-w-0">
+					<span
+						className={cn(
+							"block text-[0.9375rem] leading-tight font-bold",
+							resolved.tone === "success" ? "text-status-success" : "text-text-primary",
+						)}
+					>
+						{head}
+					</span>
+					{rest && (
+						<span className="text-text-secondary mt-1 block text-sm leading-snug">
+							{rest.charAt(0).toUpperCase() + rest.slice(1)}
+						</span>
+					)}
+				</span>
+			</span>
+		);
+	}
 
 	return (
 		<span
@@ -126,7 +187,7 @@ export function AvailabilityBadge({
 							: "bg-text-tertiary",
 				)}
 			/>
-			{label(resolved.key)}
+			{label(key)}
 		</span>
 	);
 }

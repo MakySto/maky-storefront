@@ -35,7 +35,8 @@
 		"home": "Acasă",
 		"onDemand": "La comandă, livrare în 5–10 zile lucrătoare",
 		"viewDetail": "Vezi produsul",
-		"addToCartShort": "În coș"
+		"addToCartShort": "În coș",
+		"onDemandShort": "La comandă"
 	},
 	"nav": {
 		"home": "Acasă",
@@ -872,5 +873,19 @@
 			"other": "Altele"
 		},
 		"topic": "Subiectul mesajului"
+	},
+	"wishlist": {
+		"title": "Produse favorite",
+		"intro": "Produsele marcate cu inimioară. Lista este salvată în acest browser.",
+		"add": "Adaugă la favorite: {name}",
+		"remove": "Elimină de la favorite: {name}",
+		"addShort": "Adaugă la favorite",
+		"removeShort": "Elimină de la favorite",
+		"count": "{count, plural, one {# produs} few {# produse} other {# de produse}}",
+		"emptyTitle": "Încă nu este nimic aici",
+		"emptyBody": "Apăsați inimioara unui produs și îl găsiți aici când vreți să vă decideți.",
+		"emptyCta": "Vezi categoriile",
+		"unavailable": "Favoritele nu au putut fi încărcate acum. Încercați din nou peste puțin timp.",
+		"notInMarket": "{count, plural, one {# produs salvat nu se vinde în acest magazin.} few {# produse salvate nu se vând în acest magazin.} other {# de produse salvate nu se vând în acest magazin.}}"
 	}
 }

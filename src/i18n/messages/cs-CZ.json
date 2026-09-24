@@ -35,7 +35,8 @@
 		"home": "Domů",
 		"onDemand": "Na objednávku, dodání 5–10 pracovních dnů",
 		"viewDetail": "Detail produktu",
-		"addToCartShort": "Do košíku"
+		"addToCartShort": "Do košíku",
+		"onDemandShort": "Na objednávku"
 	},
 	"nav": {
 		"home": "Domů",
@@ -872,5 +873,19 @@
 			"other": "Jiné"
 		},
 		"topic": "Čeho se zpráva týká"
+	},
+	"wishlist": {
+		"title": "Oblíbené produkty",
+		"intro": "Produkty, které jste si označili srdíčkem. Seznam se ukládá v tomto prohlížeči.",
+		"add": "Přidat do oblíbených: {name}",
+		"remove": "Odebrat z oblíbených: {name}",
+		"addShort": "Přidat do oblíbených",
+		"removeShort": "Odebrat z oblíbených",
+		"count": "{count, plural, one {# produkt} few {# produkty} other {# produktů}}",
+		"emptyTitle": "Zatím tu nic není",
+		"emptyBody": "Klikněte na srdíčko u produktu a najdete ho tady, až se budete chtít rozhodnout.",
+		"emptyCta": "Procházet kategorie",
+		"unavailable": "Oblíbené produkty se teď nepodařilo načíst. Zkuste to za chvíli znovu.",
+		"notInMarket": "{count, plural, one {# uložený produkt se v tomto obchodě neprodává.} few {# uložené produkty se v tomto obchodě neprodávají.} other {# uložených produktů se v tomto obchodě neprodává.}}"
 	}
 }

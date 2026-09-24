@@ -35,7 +35,8 @@
 		"home": "Accueil",
 		"onDemand": "Sur commande, livraison sous 5 à 10 jours ouvrés",
 		"viewDetail": "Voir le produit",
-		"addToCartShort": "Ajouter"
+		"addToCartShort": "Ajouter",
+		"onDemandShort": "Sur commande"
 	},
 	"nav": {
 		"home": "Accueil",
@@ -872,5 +873,19 @@
 			"other": "Autre"
 		},
 		"topic": "Objet du message"
+	},
+	"wishlist": {
+		"title": "Produits favoris",
+		"intro": "Les produits que vous avez marqués d'un cœur. La liste est enregistrée dans ce navigateur.",
+		"add": "Ajouter aux favoris : {name}",
+		"remove": "Retirer des favoris : {name}",
+		"addShort": "Ajouter aux favoris",
+		"removeShort": "Retirer des favoris",
+		"count": "{count, plural, one {# produit} other {# produits}}",
+		"emptyTitle": "Rien pour l'instant",
+		"emptyBody": "Touchez le cœur d'un produit et vous le retrouverez ici au moment de vous décider.",
+		"emptyCta": "Parcourir les catégories",
+		"unavailable": "Impossible de charger vos favoris pour le moment. Réessayez dans un instant.",
+		"notInMarket": "{count, plural, one {# produit enregistré n'est pas vendu dans cette boutique.} other {# produits enregistrés ne sont pas vendus dans cette boutique.}}"
 	}
 }

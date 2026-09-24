@@ -35,7 +35,8 @@
 		"home": "Home",
 		"onDemand": "Made to order, delivery in 7–14 business days",
 		"viewDetail": "View product",
-		"addToCartShort": "Add to cart"
+		"addToCartShort": "Add to cart",
+		"onDemandShort": "Made to order"
 	},
 	"nav": {
 		"home": "Home",
@@ -872,5 +873,19 @@
 			"other": "Other"
 		},
 		"topic": "What is this about"
+	},
+	"wishlist": {
+		"title": "Favourites",
+		"intro": "Products you marked with the heart. The list is saved in this browser.",
+		"add": "Add to favourites: {name}",
+		"remove": "Remove from favourites: {name}",
+		"addShort": "Add to favourites",
+		"removeShort": "Remove from favourites",
+		"count": "{count, plural, one {# product} other {# products}}",
+		"emptyTitle": "Nothing here yet",
+		"emptyBody": "Tap the heart on a product and you will find it here when you are ready to decide.",
+		"emptyCta": "Browse categories",
+		"unavailable": "Your favourites could not be loaded right now. Please try again in a moment.",
+		"notInMarket": "{count, plural, one {# saved product is not sold in this store.} other {# saved products are not sold in this store.}}"
 	}
 }

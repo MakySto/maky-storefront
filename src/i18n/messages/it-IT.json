@@ -35,7 +35,8 @@
 		"home": "Home",
 		"onDemand": "Su ordinazione, consegna in 5–10 giorni lavorativi",
 		"viewDetail": "Vedi prodotto",
-		"addToCartShort": "Aggiungi"
+		"addToCartShort": "Aggiungi",
+		"onDemandShort": "Su ordinazione"
 	},
 	"nav": {
 		"home": "Home",
@@ -872,5 +873,19 @@
 			"other": "Altro"
 		},
 		"topic": "Oggetto del messaggio"
+	},
+	"wishlist": {
+		"title": "Prodotti preferiti",
+		"intro": "I prodotti che hai segnato con il cuore. L'elenco è salvato in questo browser.",
+		"add": "Aggiungi ai preferiti: {name}",
+		"remove": "Rimuovi dai preferiti: {name}",
+		"addShort": "Aggiungi ai preferiti",
+		"removeShort": "Rimuovi dai preferiti",
+		"count": "{count, plural, one {# prodotto} other {# prodotti}}",
+		"emptyTitle": "Ancora nessun preferito",
+		"emptyBody": "Tocca il cuore su un prodotto e lo troverai qui quando vorrai decidere.",
+		"emptyCta": "Sfoglia le categorie",
+		"unavailable": "Non è stato possibile caricare i preferiti. Riprova tra poco.",
+		"notInMarket": "{count, plural, one {# prodotto salvato non è in vendita in questo negozio.} other {# prodotti salvati non sono in vendita in questo negozio.}}"
 	}
 }

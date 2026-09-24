@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { CartNavItem } from "@/ui/components/nav/components/cart-nav-item";
 import { UserMenuContainer } from "@/ui/components/nav/components/user-menu/user-menu-container";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
+import { WishlistNavBadge } from "@/ui/components/wishlist/wishlist-nav-badge";
 import { headerActionClass, headerActionLabelClass } from "./header-action";
 
 function ActionSkeleton() {
@@ -24,11 +25,13 @@ export async function HeaderActions({ channel }: { channel: string }) {
 				<UserMenuContainer channel={channel} />
 			</Suspense>
 
-			{/* The wishlist page is not built yet (kept on purpose, owner 2026-09-22). No
-			    prefetch until it is: every page view fetched /xx/wishlist and got a 404
-			    (183 of them in nginx on 2026-09-22 alone). */}
-			<LinkWithChannel href="/wishlist" prefetch={false} className={headerActionClass}>
-				<HeartIcon className="h-5 w-5 lg:h-[1.375rem] lg:w-[1.375rem]" aria-hidden />
+			{/* Favourites: the heart's list in this browser (`lib/wishlist`), counted like the cart.
+			    No prefetch — the header is on every page and the list is read in the browser. */}
+			<LinkWithChannel href="/oblubene" prefetch={false} className={headerActionClass}>
+				<span className="relative">
+					<HeartIcon className="h-5 w-5 lg:h-[1.375rem] lg:w-[1.375rem]" aria-hidden />
+					<WishlistNavBadge />
+				</span>
 				<span className={headerActionLabelClass}>{t("favorites")}</span>
 			</LinkWithChannel>
 

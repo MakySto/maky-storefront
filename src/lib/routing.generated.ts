@@ -62,6 +62,7 @@ export const MARKET_ROOT_SEGMENTS: ReadonlySet<string> = new Set([
 	"login",
 	"o-nas",
 	"obchodne-podmienky",
+	"oblubene",
 	"ochrana-osobnych-udajov",
 	"odstupenie-od-zmluvy",
 	"orders",

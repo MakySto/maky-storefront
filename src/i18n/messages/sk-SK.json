@@ -35,7 +35,8 @@
 		"home": "Domov",
 		"onDemand": "Na objednávku, dodanie 5–10 pracovných dní",
 		"viewDetail": "Detail produktu",
-		"addToCartShort": "Do košíka"
+		"addToCartShort": "Do košíka",
+		"onDemandShort": "Na objednávku"
 	},
 	"nav": {
 		"home": "Domov",
@@ -872,5 +873,19 @@
 			"other": "Iné"
 		},
 		"topic": "Čoho sa správa týka"
+	},
+	"wishlist": {
+		"title": "Obľúbené produkty",
+		"intro": "Produkty, ktoré ste si označili srdiečkom. Zoznam sa ukladá v tomto prehliadači.",
+		"add": "Pridať do obľúbených: {name}",
+		"remove": "Odobrať z obľúbených: {name}",
+		"addShort": "Pridať do obľúbených",
+		"removeShort": "Odobrať z obľúbených",
+		"count": "{count, plural, one {# produkt} few {# produkty} other {# produktov}}",
+		"emptyTitle": "Zatiaľ tu nič nie je",
+		"emptyBody": "Kliknite na srdiečko pri produkte a nájdete ho tu, keď sa budete chcieť rozhodnúť.",
+		"emptyCta": "Prezrieť kategórie",
+		"unavailable": "Obľúbené produkty sa teraz nepodarilo načítať. Skúste to o chvíľu znova.",
+		"notInMarket": "{count, plural, one {# uložený produkt sa v tomto obchode nepredáva.} few {# uložené produkty sa v tomto obchode nepredávajú.} other {# uložených produktov sa v tomto obchode nepredáva.}}"
 	}
 }

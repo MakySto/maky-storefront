@@ -35,7 +35,8 @@
 		"home": "Startseite",
 		"onDemand": "Auf Bestellung, Lieferung in 5–10 Werktagen",
 		"viewDetail": "Zum Produkt",
-		"addToCartShort": "In den Warenkorb"
+		"addToCartShort": "In den Warenkorb",
+		"onDemandShort": "Auf Bestellung"
 	},
 	"nav": {
 		"home": "Startseite",
@@ -872,5 +873,19 @@
 			"other": "Sonstiges"
 		},
 		"topic": "Worum geht es?"
+	},
+	"wishlist": {
+		"title": "Favoriten",
+		"intro": "Produkte, die Sie mit dem Herz markiert haben. Die Liste wird in diesem Browser gespeichert.",
+		"add": "Zu den Favoriten hinzufügen: {name}",
+		"remove": "Aus den Favoriten entfernen: {name}",
+		"addShort": "Zu den Favoriten",
+		"removeShort": "Aus den Favoriten entfernen",
+		"count": "{count, plural, one {# Produkt} other {# Produkte}}",
+		"emptyTitle": "Noch keine Favoriten",
+		"emptyBody": "Klicken Sie beim Produkt auf das Herz, dann finden Sie es hier, wenn Sie sich entscheiden möchten.",
+		"emptyCta": "Kategorien ansehen",
+		"unavailable": "Die Favoriten konnten gerade nicht geladen werden. Bitte versuchen Sie es gleich noch einmal.",
+		"notInMarket": "{count, plural, one {# gespeichertes Produkt wird in diesem Shop nicht verkauft.} other {# gespeicherte Produkte werden in diesem Shop nicht verkauft.}}"
 	}
 }

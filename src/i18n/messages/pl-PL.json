@@ -35,7 +35,8 @@
 		"home": "Strona główna",
 		"onDemand": "Na zamówienie, dostawa w 5–10 dni roboczych",
 		"viewDetail": "Szczegóły produktu",
-		"addToCartShort": "Do koszyka"
+		"addToCartShort": "Do koszyka",
+		"onDemandShort": "Na zamówienie"
 	},
 	"nav": {
 		"home": "Strona główna",
@@ -872,5 +873,19 @@
 			"other": "Inne"
 		},
 		"topic": "Czego dotyczy wiadomość"
+	},
+	"wishlist": {
+		"title": "Ulubione produkty",
+		"intro": "Produkty oznaczone przez Ciebie serduszkiem. Lista jest zapisana w tej przeglądarce.",
+		"add": "Dodaj do ulubionych: {name}",
+		"remove": "Usuń z ulubionych: {name}",
+		"addShort": "Dodaj do ulubionych",
+		"removeShort": "Usuń z ulubionych",
+		"count": "{count, plural, one {# produkt} few {# produkty} other {# produktów}}",
+		"emptyTitle": "Na razie nic tu nie ma",
+		"emptyBody": "Kliknij serduszko przy produkcie, a znajdziesz go tutaj, gdy zechcesz podjąć decyzję.",
+		"emptyCta": "Przeglądaj kategorie",
+		"unavailable": "Nie udało się teraz wczytać ulubionych. Spróbuj ponownie za chwilę.",
+		"notInMarket": "{count, plural, one {# zapisany produkt nie jest sprzedawany w tym sklepie.} few {# zapisane produkty nie są sprzedawane w tym sklepie.} other {# zapisanych produktów nie jest sprzedawanych w tym sklepie.}}"
 	}
 }
