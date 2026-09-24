@@ -11,7 +11,7 @@ import { marketOpenGraph } from "@/lib/seo/metadata";
 import { formatPageTitle } from "@/config/brand";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
-import { ProductList } from "@/ui/components/product-list";
+import { ProductGrid, transformToProductCard } from "@/ui/components/plp";
 import {
 	HeroSection,
 	HeroPhotoFrame,
@@ -141,40 +141,45 @@ async function FeaturedProducts({ params: paramsPromise }: { params: Promise<{ c
 		return null;
 	}
 
-	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "home" });
+	const locale = getLocaleFromChannel(channel);
+	const t = await getTranslations({ locale, namespace: "home" });
 
+	// The same card and grid as a category page — one product card across the shop.
 	return (
-		<section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-			<h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">{t("featuredTitle")}</h2>
-			<div className="mt-8">
-				<ProductList products={products} locale={getLocaleFromChannel(channel)} />
+		<section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+			<h2 className="text-text-primary text-2xl font-bold tracking-[-0.02em] sm:text-3xl">
+				{t("featuredTitle")}
+			</h2>
+			<div className="mt-6 sm:mt-8">
+				<ProductGrid products={products.map((product) => transformToProductCard(product, channel, locale))} />
 			</div>
 		</section>
 	);
 }
 
+/**
+ * The featured section while it streams: the same heading slot and the same grid of the same
+ * cards (photo square, three title lines, purchase row), so the real section lands in place.
+ */
 function FeaturedProductsSkeleton() {
 	return (
-		<section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-			<div className="mt-8">
-				<ul
-					role="list"
-					data-testid="ProductList"
-					className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-				>
-					{Array.from({ length: 8 }).map((_, i) => (
-						<li key={i} className="animate-pulse">
-							<div className="aspect-square overflow-hidden rounded-lg bg-gray-100" />
-							<div className="mt-3 flex justify-between">
-								<div>
-									<div className="h-4 w-32 rounded bg-gray-100" />
-									<div className="mt-2 h-4 w-20 rounded bg-gray-100" />
-								</div>
-								<div className="h-4 w-16 rounded bg-gray-100" />
-							</div>
-						</li>
-					))}
-				</ul>
+		<section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8" aria-hidden="true">
+			<div className="bg-surface-secondary h-8 w-64 animate-pulse rounded-xs sm:h-9" />
+			<div className="mt-6 grid w-full grid-cols-1 gap-3 sm:mt-8 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4">
+				{Array.from({ length: 8 }).map((_, i) => (
+					<div
+						key={i}
+						className="border-border-subtle bg-surface-card grid grid-cols-[6.5rem_minmax(0,1fr)] gap-3 rounded-lg border p-3 sm:flex sm:flex-col sm:gap-0 sm:p-0"
+					>
+						<div className="bg-surface-secondary aspect-square animate-pulse rounded-sm sm:rounded-none" />
+						<div className="space-y-2 sm:px-4 sm:pt-3">
+							<div className="bg-surface-secondary h-3 w-24 rounded-xs" />
+							<div className="bg-surface-secondary h-4 w-full rounded-xs sm:h-[3lh]" />
+							<div className="bg-surface-secondary h-5 w-20 rounded-xs" />
+						</div>
+						<div className="bg-surface-secondary col-span-2 h-11 rounded-sm sm:mx-4 sm:mt-3 sm:mb-4" />
+					</div>
+				))}
 			</div>
 		</section>
 	);

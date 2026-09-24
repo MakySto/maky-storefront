@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { categoryUrlFor } from "@/config/category-routes";
 import { useFormStatus } from "react-dom";
 import { useTranslations } from "next-intl";
 
@@ -12,7 +11,6 @@ import { ResilientProductImage } from "@/ui/components/ui/resilient-product-imag
 import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
 import { StarRating } from "@/ui/components/product/star-rating";
 import { cn } from "@/lib/utils";
-import { marketHref } from "@/lib/channel-map";
 import { isPlaceholderProductImage } from "@/lib/product-image";
 import { useLocale } from "@/providers/locale-provider";
 import { addListingItemToCartAction } from "./actions";
@@ -73,21 +71,21 @@ function AddButton() {
 }
 
 /**
- * Listing card.
+ * Listing card — the one card for category pages, search and the homepage.
  *
- * Title sits ABOVE the image, which is unusual for a commerce grid but right for
- * this catalogue: the names are long and technical and differ only at the end
- * ("… Motion 3 - XXL - Titan Glossy"), so they are far easier to compare when
- * they line up as text than when they trail under a picture.
+ * Photo first, then what the shopper decides by: brand and type on one line, the name
+ * (up to three lines, four in the narrow phone row — Nordrive set names end with the car
+ * and the roof type, the part a two-line clamp cut off), one distinguishing fact, availability, the price with its
+ * tax note, and the quantity with the green add button. The SKU stays on the product
+ * page; the category is plain text, not a second link; the photo has no frame of its
+ * own inside the card's.
  *
- * That layout only holds if every card starts its image at the same height, so
- * the title block is a FIXED two lines and the note a fixed one — otherwise a
- * one-line name in a row of three-line names shunts its image upward and the row
- * falls apart. Same reasoning pins price and actions to the bottom.
+ * On a phone it is a compact row: a 104 px photo on the left, the facts on the right and
+ * the purchase row across the bottom, so the price and the button are on the first
+ * screen instead of a full-width square photo above them. One column, quantity kept.
  *
- * The media area is square and `object-contain`. The previous card used a 3/4
- * portrait box with `object-cover`, which cropped every wide product — the roof
- * boxes and transport cages that make up most of this catalogue.
+ * From `sm` up the fixed title and note heights line the price rows up across a grid
+ * row, and the purchase block is pinned to the bottom.
  */
 export function ProductCard({ product, priority = false }: ProductCardProps) {
 	const tCommon = useTranslations("common");
@@ -114,32 +112,28 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 		product.image !== "/placeholder.svg" &&
 		!isPlaceholderProductImage(product.image);
 
-	return (
-		<article className="group border-border-subtle bg-surface-card flex flex-col rounded-lg border p-3 transition-shadow duration-200 hover:shadow-md">
-			{/* Title + note, above the image and fixed in height so images align */}
-			<Link href={product.href} className="block focus-visible:outline-hidden">
-				<h2 className="text-text-primary line-clamp-2 min-h-[2lh] text-sm leading-snug font-medium underline-offset-2 group-hover:underline">
-					{product.name}
-				</h2>
-				<p className="text-text-tertiary mt-0.5 line-clamp-2 min-h-[2lh] text-xs">{product.note ?? ""}</p>
-			</Link>
+	const meta = [product.brand, product.category?.name].filter(Boolean);
 
+	return (
+		<article className="group border-border-subtle bg-surface-card grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-3 rounded-lg border p-3 transition-shadow duration-200 hover:shadow-md sm:flex sm:flex-col sm:gap-0 sm:overflow-hidden sm:p-0">
 			{/* Square, contained, centred — never crops a wide roof box */}
 			<Link
 				href={product.href}
-				className="border-border-subtle relative mt-2 block aspect-square overflow-hidden rounded-md border bg-white"
+				tabIndex={-1}
+				aria-hidden="true"
+				className="relative block aspect-square self-start overflow-hidden rounded-sm bg-white sm:self-stretch sm:rounded-none"
 			>
 				{hasImage ? (
 					<ResilientProductImage
 						src={product.image}
 						alt={product.imageAlt || product.name}
 						fill
-						sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1536px) 33vw, 25vw"
-						className="object-contain p-3 transition-transform duration-300 ease-out md:group-hover:scale-105"
+						sizes="(max-width: 639px) 104px, (max-width: 1023px) 50vw, (max-width: 1279px) 33vw, 25vw"
+						className="object-contain p-1.5 transition-transform duration-300 ease-out sm:p-4 md:group-hover:scale-105"
 						priority={priority}
 					/>
 				) : (
-					<span className="text-text-tertiary absolute inset-0 flex items-center justify-center px-4 text-center text-xs">
+					<span className="text-text-tertiary absolute inset-0 flex items-center justify-center px-2 text-center text-xs sm:px-4">
 						{tProduct("noImageAvailable")}
 					</span>
 				)}
@@ -153,71 +147,66 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 				)}
 			</Link>
 
-			{/* Category + manufacturer */}
-			<div className="mt-3 space-y-0.5 text-center text-xs">
-				{product.category && (
-					<p className="truncate">
-						{/* Underlined at rest, not just on hover. Matching the breadcrumb
-						    convention (muted, underline on hover) made it indistinguishable
-						    from the plain text around it, and on a phone there is no hover
-						    and no cursor to reveal it. */}
-						<Link
-							href={marketHref(product.channel, categoryUrlFor(product.channel, product.category.slug))}
-							className="text-text-tertiary hover:text-text-primary decoration-border-strong hover:decoration-text-primary underline underline-offset-2 transition-colors"
-						>
-							{product.category.name}
-						</Link>
+			<div className="flex min-w-0 flex-col sm:flex-1 sm:px-4 sm:pt-3">
+				{meta.length > 0 && (
+					<p className="text-text-tertiary truncate text-xs">
+						{product.brand && <span className="text-text-secondary font-semibold">{product.brand}</span>}
+						{product.brand && product.category && <span aria-hidden="true"> · </span>}
+						{product.category?.name}
 					</p>
 				)}
-				{product.brand && (
-					<p className="text-text-tertiary truncate">
-						{tProduct("brand")}: <span className="text-text-secondary font-medium">{product.brand}</span>
-					</p>
-				)}
-			</div>
+				<h2 className="text-text-primary mt-0.5 line-clamp-4 text-sm leading-snug font-semibold sm:line-clamp-3 sm:min-h-[3lh]">
+					<Link
+						href={product.href}
+						className="text-text-primary underline-offset-2 group-hover:underline focus-visible:outline-hidden"
+					>
+						{product.name}
+					</Link>
+				</h2>
+				<p className="text-text-secondary mt-1 line-clamp-1 text-xs sm:min-h-[1lh]">{product.note ?? ""}</p>
 
-			{/* SKU, then availability on its own line beneath it */}
-			<div className="mt-1.5 space-y-1 text-center">
-				{product.productCode && (
-					<p className="text-text-tertiary truncate text-xs tabular-nums">
-						{/* Not upper-cased. These codes are case-sensitive supplier codes —
-						    `.toUpperCase()` here turned 34 of the 417 real ones into strings
-						    the supplier does not use, e.g. `g3K9042` and `PZ-GP001bag`. */}
-						{tProduct("sku")}: <span className="font-medium">{product.productCode}</span>
-					</p>
-				)}
-				{product.isPurchasable ? (
-					<AvailabilityBadge
-						label={tCommon}
-						mode={product.availabilityMode}
-						trackInventory={product.trackInventory}
-						quantityAvailable={product.quantityAvailable}
-						className="text-xs"
-					/>
-				) : (
-					<p className="text-text-secondary text-xs">{tCart("addUnavailable")}</p>
-				)}
-			</div>
-
-			{/* Renders nothing until something actually populates Product.rating */}
-			<StarRating rating={product.rating} className="mt-1.5 justify-center" />
-
-			{/* Pinned to the bottom so uneven content above never misaligns a row */}
-			<div className="mt-auto pt-3">
-				<div className="flex items-baseline justify-center gap-2">
-					<span className={cn("text-lg font-semibold", product.compareAtPrice && "text-price-sale")}>
-						{formatPrice(product.price, product.currency)}
-					</span>
-					{product.compareAtPrice && (
-						<span className="text-price-compare text-sm line-through">
-							{formatPrice(product.compareAtPrice, product.currency)}
-						</span>
+				<div className="mt-1.5">
+					{product.isPurchasable ? (
+						<AvailabilityBadge
+							label={tCommon}
+							mode={product.availabilityMode}
+							trackInventory={product.trackInventory}
+							quantityAvailable={product.quantityAvailable}
+							className="text-xs"
+						/>
+					) : (
+						<p className="text-text-secondary text-xs">{tCart("addUnavailable")}</p>
 					)}
 				</div>
-				<p className="text-text-tertiary mt-0.5 text-center text-[0.6875rem]">{tProduct("priceWithVat")}</p>
 
+				{/* Renders nothing until something actually populates Product.rating */}
+				<StarRating rating={product.rating} className="mt-1.5" />
+
+				<div className="mt-2 sm:mt-auto sm:pt-3">
+					<div className="flex items-baseline gap-2">
+						<span
+							className={cn(
+								"text-text-primary text-base font-bold tabular-nums sm:text-lg",
+								product.compareAtPrice && "text-price-sale",
+							)}
+						>
+							{formatPrice(product.price, product.currency)}
+						</span>
+						{product.compareAtPrice && (
+							<span className="text-price-compare text-sm tabular-nums line-through">
+								{formatPrice(product.compareAtPrice, product.currency)}
+							</span>
+						)}
+					</div>
+					<p className="text-text-tertiary text-[0.6875rem]">{tProduct("priceWithVat")}</p>
+				</div>
+			</div>
+
+			{/* The purchase row: across the bottom of the compact phone row, pinned to the
+			    bottom of the card from `sm` up so uneven content never misaligns a row. */}
+			<div className="col-span-2 sm:px-4 sm:pt-3 sm:pb-4">
 				{canAddDirectly ? (
-					<CartForm action={addListingItemToCartAction} className="mt-2">
+					<CartForm action={addListingItemToCartAction}>
 						<div className="flex items-stretch gap-2">
 							<input type="hidden" name="channel" value={product.channel} />
 							<input type="hidden" name="variantId" value={product.variantId ?? ""} />
@@ -231,7 +220,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 					// the link carries the styling itself.
 					<Link
 						href={product.href}
-						className="border-input hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mt-2 flex h-11 w-full items-center justify-center rounded-md border text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+						className="border-input hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring flex h-11 w-full items-center justify-center rounded-md border text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-hidden"
 					>
 						{tCommon("viewDetail")}
 					</Link>

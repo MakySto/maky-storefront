@@ -14,7 +14,10 @@ interface ProductGridProps {
  */
 export function ProductGrid({ products }: ProductGridProps) {
 	return (
-		<div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5 2xl:grid-cols-4">
+		// One column of compact rows on a phone, then 2, 3 and — from 1280 px, where the
+		// listing container gives each card ~290 px, enough for the stepper beside the button
+		// — 4 columns.
+		<div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4">
 			{/* Exactly ONE preload. The grid is single-column on a phone, so only the
 			    first card is above the fold there, yet `priority` on the first four
 			    emitted four high-priority preloads that fought over the connection —
