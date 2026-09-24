@@ -33,7 +33,7 @@ export async function ActiveVehicleLauncher({
 	variant,
 	className,
 }: {
-	variant: "header" | "hero" | "compact" | "inline";
+	variant: "header" | "hero" | "compact" | "inline" | "icon";
 	className?: string;
 }) {
 	await connection();
@@ -65,17 +65,18 @@ export function ActiveVehicleLauncherSkeleton({
 	variant,
 	className,
 }: {
-	variant: "header" | "hero" | "compact";
+	variant: "header" | "hero" | "compact" | "icon";
 	className?: string;
 }) {
 	return (
 		<div
 			aria-hidden="true"
 			className={cn(
-				"bg-sand-100 animate-pulse rounded-sm",
-				variant === "header" && "h-10 w-[3.75rem] xl:w-[11rem]",
-				variant === "compact" && "h-10 w-[9.5rem] rounded-sm",
-				variant === "hero" && "h-12 w-[13rem] rounded-md",
+				"bg-surface-secondary animate-pulse rounded-xs",
+				variant === "header" && "h-11 w-11 xl:w-[13.5rem]",
+				variant === "compact" && "h-11 w-[9.5rem]",
+				variant === "icon" && "h-11 w-11",
+				variant === "hero" && "h-12 w-[13rem]",
 				className,
 			)}
 		/>

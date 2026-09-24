@@ -6,6 +6,7 @@ import { UserMenu } from "./user-menu";
 import { CurrentUserDocument } from "@/gql/graphql";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
+import { headerActionClass, headerActionLabelClass } from "@/ui/components/header/header-action";
 
 export async function UserMenuContainer({ channel }: { channel: string }) {
 	// During static generation, cookies() throws - skip user fetch entirely
@@ -30,15 +31,14 @@ export async function UserMenuContainer({ channel }: { channel: string }) {
 	if (user) {
 		return <UserMenu user={user} />;
 	} else {
-		// Was a hardcoded English "Log in" for screen readers on all twelve markets.
+		// Was a hardcoded English "Log in" for screen readers on all twelve markets. The visible
+		// name is "Môj účet", like the approved header; the link still leads to the login page,
+		// which is where an account starts.
 		const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "nav" });
 		return (
-			<LinkWithChannel
-				href="/login"
-				className="hover:bg-accent hover:text-accent-foreground inline-flex h-10 w-10 items-center justify-center rounded-md transition-colors"
-			>
-				<UserIcon className="h-5 w-5" aria-hidden="true" />
-				<span className="sr-only">{t("login")}</span>
+			<LinkWithChannel href="/login" className={headerActionClass}>
+				<UserIcon className="h-5 w-5 lg:h-[1.375rem] lg:w-[1.375rem]" aria-hidden="true" />
+				<span className={headerActionLabelClass}>{t("myAccount")}</span>
 			</LinkWithChannel>
 		);
 	}

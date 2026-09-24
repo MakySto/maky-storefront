@@ -40,7 +40,8 @@ const LEGAL_COMPANY = [
 	{ key: "cookiePolicy", href: "/cookies" },
 ] as const;
 
-const linkClass = "text-sm text-gray-400 transition-colors hover:text-gray-200";
+const linkClass = "text-text-inverse/65 hover:text-text-inverse text-sm transition-colors";
+const headingClass = "text-text-inverse mb-4 text-[0.9375rem] font-semibold";
 
 /** `/kontakt` → `kontakt`, the shape `route-policy` keys on. */
 const segmentOf = (href: string) => href.slice(1);
@@ -80,28 +81,36 @@ export async function Footer({ channel }: { channel: string }) {
 	]);
 
 	return (
-		<footer className="bg-gray-900 text-gray-300 print:hidden">
-			<div className="mx-auto max-w-7xl px-4 pt-12 pb-24 sm:px-6 sm:pb-12 lg:px-8 lg:py-16">
-				<div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:gap-12">
+		// Dark graphite with a copper mountain line drawn along the right edge, as in the approved
+		// design. The drawing sits behind a column that holds nothing, so it never runs under a link.
+		<footer className="bg-surface-inverse relative overflow-hidden print:hidden">
+			<div
+				aria-hidden="true"
+				className="art-mountains bg-copper-400/40 pointer-events-none absolute right-6 bottom-20 hidden h-44 w-[30rem] xl:block 2xl:right-[calc((100vw-88rem)/2+2rem)]"
+			/>
+			<div className="max-w-page relative mx-auto px-4 pt-14 pb-24 sm:px-6 sm:pb-10 lg:px-8 lg:pt-16">
+				<div className="grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-4 xl:grid-cols-[1.25fr_1fr_1fr_1fr_1.6fr]">
 					<div className="col-span-2 md:col-span-1">
-						<Link href={marketHref(channel)} prefetch={false} className="mb-4 inline-block">
+						<Link href={marketHref(channel)} prefetch={false} className="inline-block">
 							<Logo className="h-7 w-auto" inverted showSlogan slogan={tc("slogan")} />
 						</Link>
-						<p className="mt-4 max-w-xs text-sm leading-relaxed text-gray-400">{t("tagline")}</p>
-						<a href={`mailto:${companyInfo.email}`} className={`mt-4 inline-block ${linkClass}`}>
-							{companyInfo.email}
-						</a>
-						<a href={companyPhoneHref} className={`mt-1 block ${linkClass}`}>
-							{companyInfo.phone}
-						</a>
+						<p className="text-text-inverse/65 mt-5 max-w-xs text-sm leading-relaxed">{t("tagline")}</p>
+						<div className="mt-5 flex flex-col gap-1.5">
+							<a href={`mailto:${companyInfo.email}`} className={linkClass}>
+								{companyInfo.email}
+							</a>
+							<a href={companyPhoneHref} className={linkClass}>
+								{companyInfo.phone}
+							</a>
+						</div>
 					</div>
 
 					{/* The categories, on every page. The mobile menu listed none of them until
 					    the same change, so on a phone this column was the only way from a product
 					    page to another category; it is also every page's crawlable link to all six. */}
 					<div>
-						<h2 className="mb-4 text-sm font-medium text-gray-200">{tNav("categories")}</h2>
-						<ul className="space-y-3">
+						<h2 className={headingClass}>{tNav("categories")}</h2>
+						<ul className="space-y-2.5">
 							{ALL_CATEGORIES_NAV.map((item) => (
 								<li key={item.key}>
 									<Link
@@ -118,8 +127,8 @@ export async function Footer({ channel }: { channel: string }) {
 
 					{support.length > 0 && (
 						<div>
-							<h2 className="mb-4 text-sm font-medium text-gray-200">{t("support")}</h2>
-							<ul className="space-y-3">
+							<h2 className={headingClass}>{t("support")}</h2>
+							<ul className="space-y-2.5">
 								{support.map((link) => (
 									<li key={link.href}>
 										<Link href={marketHref(channel, link.href)} prefetch={false} className={linkClass}>
@@ -133,8 +142,8 @@ export async function Footer({ channel }: { channel: string }) {
 
 					{company.length > 0 && (
 						<div>
-							<h2 className="mb-4 text-sm font-medium text-gray-200">{t("company")}</h2>
-							<ul className="space-y-3">
+							<h2 className={headingClass}>{t("company")}</h2>
+							<ul className="space-y-2.5">
 								{company.map((link) => (
 									<li key={link.href}>
 										<Link href={marketHref(channel, link.href)} prefetch={false} className={linkClass}>
@@ -155,34 +164,36 @@ export async function Footer({ channel }: { channel: string }) {
 				    page, which is what "easily, directly and permanently accessible" asks for
 				    under zákon 22/2004 and Directive 2000/31/EC Art. 5. The footer itself is
 				    not the required location. */}
-				<div className="mt-12 border-t border-gray-800 pt-8">
-					<div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-						<p className="text-xs text-gray-400">
-							<Suspense fallback={<>© {companyInfo.legalName}</>}>
-								<CopyrightText />
-							</Suspense>
-						</p>
-						<div className="flex items-center gap-6">
-							{showPrivacyPolicy && (
-								<Link
-									href={marketHref(channel, "/ochrana-osobnych-udajov")}
-									prefetch={false}
-									className="text-xs text-gray-400 transition-colors hover:text-gray-300"
-								>
-									{t("privacyPolicy")}
-								</Link>
-							)}
-							{showTerms && (
-								<Link
-									href={marketHref(channel, "/obchodne-podmienky")}
-									prefetch={false}
-									className="text-xs text-gray-400 transition-colors hover:text-gray-300"
-								>
-									{t("termsOfService")}
-								</Link>
-							)}
-							<PrivacySettingsLink label={t("privacySettings")} />
-						</div>
+				<div className="border-text-inverse/10 mt-12 flex flex-col gap-4 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
+					<p className="text-text-inverse/55 text-xs">
+						<Suspense fallback={<>© {companyInfo.legalName}</>}>
+							<CopyrightText />
+						</Suspense>
+					</p>
+					<div className="text-text-inverse/55 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+						{/* The market this page belongs to, in words — the switch itself is the header's. */}
+						<span>
+							{tc("country")} · {tc("currency")}
+						</span>
+						{showPrivacyPolicy && (
+							<Link
+								href={marketHref(channel, "/ochrana-osobnych-udajov")}
+								prefetch={false}
+								className="text-text-inverse/55 hover:text-text-inverse transition-colors"
+							>
+								{t("privacyPolicy")}
+							</Link>
+						)}
+						{showTerms && (
+							<Link
+								href={marketHref(channel, "/obchodne-podmienky")}
+								prefetch={false}
+								className="text-text-inverse/55 hover:text-text-inverse transition-colors"
+							>
+								{t("termsOfService")}
+							</Link>
+						)}
+						<PrivacySettingsLink label={t("privacySettings")} />
 					</div>
 				</div>
 			</div>

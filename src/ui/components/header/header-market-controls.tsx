@@ -120,7 +120,7 @@ export function HeaderMarketControls({ markets }: { markets: readonly string[] }
 				aria-label={`${t("market")}: ${currentMarket.label}, ${currentMarket.currency}`}
 				aria-expanded={canSwitch ? isOpen : undefined}
 				aria-disabled={canSwitch ? undefined : true}
-				className="border-border-default bg-surface-card text-text-secondary hover:border-brand hover:text-text-primary focus-visible:ring-ring inline-flex h-9 items-center gap-1.5 rounded-xs border px-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+				className="text-text-secondary hover:bg-surface-secondary hover:text-text-primary focus-visible:ring-ring inline-flex h-10 items-center gap-1.5 rounded-xs px-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
 			>
 				<GlobeIcon className="h-3.5 w-3.5" aria-hidden />
 				<span>{currentMarket.slug.toUpperCase()}</span>
@@ -132,14 +132,16 @@ export function HeaderMarketControls({ markets }: { markets: readonly string[] }
 			</button>
 
 			{isOpen && canSwitch && (
-				<div className="border-sand-300 absolute top-full right-0 z-[var(--z-dropdown)] mt-2 w-72 rounded-md border bg-white py-1 shadow-lg">
+				<div className="border-border-subtle bg-surface-card absolute top-full right-0 z-[var(--z-dropdown)] mt-2 w-72 rounded-sm border p-1 shadow-xl">
 					{options.map((market) => (
 						<button
 							key={market.slug}
 							type="button"
 							onClick={() => handleSelect(market.slug)}
-							className={`hover:bg-sand-100 flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-								market.slug === currentFriendly ? "bg-sand-50 text-copper-700 font-medium" : "text-gray-700"
+							className={`hover:bg-surface-secondary flex w-full items-center gap-3 rounded-xs px-3 py-2.5 text-sm transition-colors ${
+								market.slug === currentFriendly
+									? "bg-surface-secondary text-brand font-medium"
+									: "text-text-secondary"
 							}`}
 						>
 							<FlagImg code={market.code} size={20} />

@@ -10,10 +10,9 @@
  * Both stubs are gone: `header-nav-row.tsx` and `hero-section.tsx` now mount this,
  * through the server-side `ActiveVehicleLauncher` which supplies the saved car's name.
  *
- * The `header` variant reproduces the replaced button's classes EXACTLY, so that swap is
- * visually a no-op. Those classes use raw `forest-*` primitives rather than semantic
- * tokens, which CLAUDE.md §4 forbids — preserved deliberately rather than silently
- * restyling the header in the same commit that wires it up; it is reported instead.
+ * Since the 2026-09 redesign the `header` variant is the approved design's filled green
+ * button with two lines ("Vybrať vozidlo / Pre jednoduchší výber", or the car and "Zmeniť
+ * vozidlo"), and `icon` is the 44px square beside the phone search.
  *
  * `compact` exists because `header` hides its label below `xl`, which is right in a
  * desktop nav row and wrong everywhere else: the nav row itself is `lg:hidden`'s
@@ -27,14 +26,14 @@
  */
 
 import { useState } from "react";
-import { CarIcon, ChevronDownIcon } from "lucide-react";
+import { CarIcon, CheckIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { SheetTrigger } from "@/ui/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { VehicleSelectorSheet } from "./vehicle-selector-sheet";
 
-type Variant = "header" | "hero" | "primary" | "compact" | "inline" | "link";
+type Variant = "header" | "hero" | "primary" | "compact" | "inline" | "link" | "icon";
 
 type Props = {
 	variant?: Variant;
@@ -61,8 +60,19 @@ export function VehicleSelectorLauncher({
 	const tFitment = useTranslations("fitment");
 
 	const fallback =
-		variant === "header" || variant === "compact" ? tNav("selectVehicle") : tFitment("selectVehicle");
-	const label = labelOverride?.trim() || vehicleLabel?.trim() || fallback;
+		variant === "header" || variant === "compact" || variant === "icon"
+			? tNav("selectVehicle")
+			: tFitment("selectVehicle");
+	const car = vehicleLabel?.trim() || null;
+	const label = labelOverride?.trim() || car || fallback;
+
+	// The header's green button speaks in two lines: what it is and what the click does.
+	// "Vybrať vozidlo / Pre jednoduchší výber" without a car; the car and "Zmeniť vozidlo"
+	// with one. Its accessible name is those two lines, read in order.
+	const hint = car ? tFitment("changeVehicle") : tNav("selectVehicleHint");
+	// The 44px square beside the phone search names the car only to assistive tech; the
+	// filled button with a check is how it shows one is chosen.
+	const iconLabel = car ? `${tNav("vehicleSaved")}: ${car}. ${tFitment("changeVehicle")}` : fallback;
 
 	return (
 		<VehicleSelectorSheet open={open} onOpenChange={setOpen}>
@@ -71,26 +81,35 @@ export function VehicleSelectorLauncher({
 			<SheetTrigger asChild>
 				<button
 					type="button"
-					aria-label={label}
+					aria-label={variant === "header" ? undefined : variant === "icon" ? iconLabel : label}
 					aria-haspopup="dialog"
 					className={cn(
-						// Green, through the status and CTA tokens (it used raw `forest-*` primitives until
-						// the 2026-09 facelift). The hero's filled button is the page's one primary action;
-						// the header chip is the same colour at chip weight.
+						// The header's green entry to the vehicle selector: the approved design's filled
+						// button with two lines. Below `xl` the nav row has no width for the words, and the
+						// car icon alone stands in, named by its title.
 						variant === "header" &&
-							"border-status-success-border bg-status-success-bg text-status-success hover:border-cta inline-flex h-10 items-center gap-2 rounded-sm border px-3 text-sm font-medium transition-colors",
+							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-11 items-center gap-2.5 rounded-xs px-3 text-left shadow-sm transition-colors xl:px-3.5",
 						variant === "hero" &&
-							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-12 items-center justify-center gap-2 rounded-sm px-6 text-base font-semibold transition-colors",
+							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-12 items-center justify-center gap-2.5 rounded-xs px-6 text-base font-semibold shadow-lg transition-colors",
 						// The hero's green button at listing size: the vehicle panel above a roof-rack listing.
 						variant === "primary" &&
-							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-11 items-center justify-center gap-2 rounded-sm px-5 text-sm font-semibold whitespace-nowrap transition-colors",
+							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-11 items-center justify-center gap-2 rounded-xs px-5 text-sm font-semibold whitespace-nowrap transition-colors",
 						// `h-11` matches the search field it sits beside, and `whitespace-nowrap`
 						// because at 360px the label wrapped inside a fixed-height button and spilled
 						// out of it.
 						variant === "compact" &&
-							"border-status-success-border bg-status-success-bg text-status-success hover:border-cta inline-flex h-11 min-w-0 items-center gap-2 rounded-sm border px-3 text-sm font-medium whitespace-nowrap transition-colors",
+							"border-status-success-border bg-status-success-bg text-status-success hover:border-cta inline-flex h-11 min-w-0 items-center gap-2 rounded-xs border px-3 text-sm font-medium whitespace-nowrap transition-colors",
+						// The phone header's square beside the search: light green without a car, filled
+						// with a check once one is chosen.
+						variant === "icon" &&
+							cn(
+								"relative inline-flex h-11 w-11 items-center justify-center rounded-xs border transition-colors",
+								car
+									? "border-cta bg-cta text-cta-text hover:bg-cta-hover"
+									: "border-status-success-border bg-status-success-bg text-status-success hover:border-cta",
+							),
 						variant === "inline" &&
-							"border-border-default text-text-primary hover:bg-surface-muted inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors",
+							"border-border-default bg-surface-card text-text-primary hover:border-cta inline-flex min-h-11 items-center gap-2.5 rounded-xs border px-3 text-sm font-medium transition-colors",
 						// A text link — "Zmeniť auto" next to the car's name. Its colour is the caller's: white
 						// on the dark hero, the link colour on a listing.
 						variant === "link" &&
@@ -99,27 +118,47 @@ export function VehicleSelectorLauncher({
 						className,
 					)}
 				>
-					{variant !== "link" && <CarIcon className="h-4 w-4 shrink-0" aria-hidden="true" />}
-					<span
-						className={cn(
-							"truncate",
-							// The header is tight below xl; the label is hidden there, exactly as
-							// the original trigger did, so the icon alone stands in. `compact` keeps
-							// it and lets it shrink instead — it shares a 360px row with the search
-							// field, where an unlabelled car icon is a guess.
-							variant === "header" && "hidden max-w-[10rem] xl:inline",
-							variant === "compact" && "max-w-[8.5rem]",
-							variant !== "header" && variant !== "compact" && variant !== "link" && "max-w-[16rem]",
-						)}
-					>
-						{label}
-					</span>
-					{/* The chevron says "a menu drops from here", which is not what happens, and
-					    on a 360px row shared with the search it costs width the label needs. Kept
-					    where the replaced trigger had it; dropped where it is both wrong and
-					    expensive. */}
-					{variant !== "hero" && variant !== "primary" && variant !== "compact" && variant !== "link" && (
-						<ChevronDownIcon className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden="true" />
+					{variant !== "link" && (
+						<CarIcon
+							className={cn(
+								"shrink-0",
+								variant === "header" ? "h-5 w-5" : "h-4 w-4",
+								variant === "icon" && "h-5 w-5",
+							)}
+							aria-hidden="true"
+						/>
+					)}
+					{variant === "icon" && car && (
+						<span
+							aria-hidden="true"
+							className="bg-surface-card text-cta absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full shadow-sm"
+						>
+							<CheckIcon className="h-3 w-3" strokeWidth={3} />
+						</span>
+					)}
+					{variant === "header" && (
+						// Always in the DOM: below `xl` it is the button's accessible name, from `xl` its face.
+						<span className="sr-only min-w-0 flex-col leading-tight xl:not-sr-only xl:flex">
+							<span className="max-w-[13rem] truncate text-sm font-semibold">{label}</span>
+							<span className="max-w-[13rem] truncate text-xs opacity-85">{hint}</span>
+						</span>
+					)}
+					{variant !== "header" && variant !== "icon" && (
+						<span
+							className={cn(
+								"truncate",
+								// `compact` shares a 360px row with the search field, where it must shrink.
+								variant === "compact" && "max-w-[8.5rem]",
+								variant !== "compact" && variant !== "link" && "max-w-[16rem]",
+							)}
+						>
+							{label}
+						</span>
+					)}
+					{variant === "inline" && car && (
+						<span className="text-text-link ml-auto shrink-0 text-sm font-medium">
+							{tFitment("changeVehicle")}
+						</span>
 					)}
 				</button>
 			</SheetTrigger>

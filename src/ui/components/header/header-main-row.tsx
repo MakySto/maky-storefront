@@ -5,9 +5,10 @@ import { HeaderSearch } from "./header-search";
 import { HeaderActions } from "./header-actions";
 import { MobileMenu } from "@/ui/components/nav/components/mobile-menu";
 import { HeaderMenuNav } from "./header-menu-nav";
+import { ActiveVehicleLauncher } from "@/ui/components/vehicle/active-vehicle-launcher";
 
 function SearchSkeleton() {
-	return <div className="bg-sand-100 h-11 w-full max-w-2xl animate-pulse rounded-sm" />;
+	return <div className="bg-surface-secondary h-11 w-full max-w-3xl animate-pulse rounded-xs lg:h-12" />;
 }
 
 export async function HeaderMainRow({ channel }: { channel: string }) {
@@ -17,13 +18,18 @@ export async function HeaderMainRow({ channel }: { channel: string }) {
 		// usable width. The document went 42px wider than the viewport and the whole
 		// page could be panned sideways while scrolling. The logo is now the flexible
 		// one; the hamburger and the actions keep their size and their touch targets.
-		<div className="flex h-16 items-center gap-2 sm:gap-4">
+		<div className="flex h-16 items-center gap-2 sm:gap-4 lg:h-[4.5rem] lg:gap-8">
 			{/* Mobile: hamburger */}
 			<div className="shrink-0 lg:hidden">
 				<Suspense>
 					<MobileMenu>
 						<Suspense fallback={<SearchSkeleton />}>
 							<HeaderSearch channel={channel} />
+						</Suspense>
+						{/* The saved car in full, which the 44px button beside the search cannot
+						    spell out, with the way to change it. Nothing without a garage. */}
+						<Suspense>
+							<ActiveVehicleLauncher variant="inline" className="w-full justify-start" />
 						</Suspense>
 						<Suspense>
 							<HeaderMenuNav channel={channel} />
@@ -36,14 +42,14 @@ export async function HeaderMainRow({ channel }: { channel: string }) {
 			<Logo locale={getLocaleFromChannel(channel)} />
 
 			{/* Search — desktop only, dominant center */}
-			<div className="hidden flex-1 justify-center px-8 lg:flex">
+			<div className="hidden flex-1 justify-center lg:flex">
 				<Suspense fallback={<SearchSkeleton />}>
 					<HeaderSearch channel={channel} />
 				</Suspense>
 			</div>
 
 			{/* Actions: account, wishlist, cart */}
-			<div className="ml-auto shrink-0">
+			<div className="ml-auto shrink-0 lg:ml-0">
 				<Suspense>
 					<HeaderActions channel={channel} />
 				</Suspense>

@@ -2,23 +2,37 @@
 
 import { Fragment } from "react";
 import clsx from "clsx";
+import { useTranslations } from "next-intl";
 import { Menu, Transition } from "@headlessui/react";
 import { UserInfo } from "./components/user-info";
 import { UserAvatar } from "./components/user-avatar";
 import { type UserDetailsFragment } from "@/gql/graphql";
 import { logout } from "@/app/actions";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
+import { headerActionClass, headerActionLabelClass } from "@/ui/components/header/header-action";
 
 type Props = {
 	user: UserDetailsFragment;
 };
 
+const itemClass = (active: boolean) =>
+	clsx(
+		active && "bg-surface-secondary text-text-primary",
+		"text-text-secondary block rounded-2xs px-3 py-2 text-sm font-medium",
+	);
+
+/**
+ * The signed-in account menu: the avatar where the account icon is, with the same label under
+ * it on a desktop. Its entries read "My account", "My orders" and "Log Out" in every market
+ * until the 2026-09 header redesign; they come from the `nav` messages now.
+ */
 export function UserMenu({ user }: Props) {
+	const t = useTranslations("nav");
 	return (
 		<Menu as="div" className="relative">
-			<Menu.Button className="relative flex rounded-full bg-neutral-200 text-sm focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-neutral-800 focus:outline-hidden">
-				<span className="sr-only">Open user menu</span>
+			<Menu.Button className={headerActionClass}>
 				<UserAvatar user={user} />
+				<span className={headerActionLabelClass}>{t("myAccount")}</span>
 			</Menu.Button>
 			<Transition
 				as={Fragment}
@@ -29,48 +43,30 @@ export function UserMenu({ user }: Props) {
 				leaveFrom="transform opacity-100 scale-100"
 				leaveTo="transform opacity-0 scale-95"
 			>
-				<Menu.Items className="ring-opacity-5 absolute right-0 z-[var(--z-dropdown)] mt-2 w-48 origin-top-right divide-y divide-neutral-200 bg-white text-start shadow-sm ring-1 ring-neutral-200 focus:outline-hidden">
+				<Menu.Items className="border-border-subtle bg-surface-card divide-border-subtle absolute right-0 z-[var(--z-dropdown)] mt-2 w-56 origin-top-right divide-y rounded-sm border text-start shadow-lg focus:outline-hidden">
 					<UserInfo user={user} />
-					<div className="flex flex-col px-1 py-1">
+					<div className="flex flex-col p-1">
 						<Menu.Item>
 							{({ active }) => (
-								<LinkWithChannel
-									href="/account"
-									className={clsx(
-										active && "bg-neutral-100",
-										"block px-4 py-2 text-sm font-medium text-neutral-500 hover:text-neutral-700",
-									)}
-								>
-									My account
+								<LinkWithChannel href="/account" className={itemClass(active)}>
+									{t("myAccount")}
 								</LinkWithChannel>
 							)}
 						</Menu.Item>
 						<Menu.Item>
 							{({ active }) => (
-								<LinkWithChannel
-									href="/account/orders"
-									className={clsx(
-										active && "bg-neutral-100",
-										"block px-4 py-2 text-sm font-medium text-neutral-500 hover:text-neutral-700",
-									)}
-								>
-									My orders
+								<LinkWithChannel href="/account/orders" className={itemClass(active)}>
+									{t("myOrders")}
 								</LinkWithChannel>
 							)}
 						</Menu.Item>
 					</div>
-					<div className="flex flex-col px-1 py-1">
+					<div className="flex flex-col p-1">
 						<Menu.Item>
 							{({ active }) => (
 								<form action={logout} className="w-full">
-									<button
-										type="submit"
-										className={clsx(
-											active && "bg-neutral-100",
-											"w-full px-4 py-2 text-start text-sm font-medium text-neutral-500 hover:text-neutral-700",
-										)}
-									>
-										Log Out
+									<button type="submit" className={clsx(itemClass(active), "w-full text-start")}>
+										{t("logout")}
 									</button>
 								</form>
 							)}

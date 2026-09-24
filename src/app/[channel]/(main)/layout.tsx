@@ -71,45 +71,44 @@ export async function generateMetadata({
 /**
  * Mirrors SiteHeader row for row, because it has to reserve the same height.
  *
- * The old skeleton was a single 64px row. The real header is that row plus a
- * search row below it on mobile and tablet, plus a bordered nav row on desktop —
- * roughly 120px and 113px. So every cold load pushed the entire page down by
- * ~50px the moment the header resolved, which was the whole of the measured
- * 0.06 CLS. The wrapper classes here are copied from SiteHeader and
- * HeaderMainRow deliberately: if those rows change height, this changes with
- * them.
+ * The old skeleton was a single 64px row while the real header was taller, so every cold load
+ * pushed the page down by ~50px when the header resolved — the whole of a measured 0.06 CLS.
+ * Since the 2026-09 redesign the header is 64px + a 56px search row on a phone and a 72px +
+ * 52px pair of rows on a desktop; the wrapper classes here are copied from SiteHeader and
+ * HeaderMainRow deliberately, so if those rows change height, this changes with them.
  */
 function HeaderSkeleton() {
 	return (
-		<header className="sticky top-0 z-[var(--z-header)] bg-white/80 backdrop-blur-xl print:hidden">
-			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-				<div className="flex h-16 items-center gap-2 sm:gap-4">
+		<header className="border-border-subtle bg-surface-card sticky top-0 z-[var(--z-header)] border-b print:hidden">
+			<div className="max-w-page mx-auto px-4 sm:px-6 lg:px-8">
+				<div className="flex h-16 items-center gap-2 sm:gap-4 lg:h-[4.5rem] lg:gap-8">
 					{/* hamburger — mobile and tablet only */}
-					<div className="bg-sand-100 h-10 w-10 shrink-0 animate-pulse rounded-xs lg:hidden" />
+					<div className="bg-surface-secondary h-10 w-10 shrink-0 animate-pulse rounded-xs lg:hidden" />
 					<div className="flex shrink-0 items-center">
 						<Logo className="h-7 w-auto" />
 					</div>
 					{/* inline search — desktop only */}
-					<div className="hidden flex-1 justify-center px-8 lg:flex">
-						<div className="bg-sand-100 h-11 w-full max-w-2xl animate-pulse rounded-sm" />
+					<div className="hidden flex-1 justify-center lg:flex">
+						<div className="bg-surface-secondary h-12 w-full max-w-3xl animate-pulse rounded-xs" />
 					</div>
-					<div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
-						<div className="bg-sand-100 h-10 w-10 animate-pulse rounded-xs" />
-						<div className="bg-sand-100 h-10 w-10 animate-pulse rounded-xs" />
-						<div className="bg-sand-100 h-10 w-10 animate-pulse rounded-xs" />
+					<div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1 lg:ml-0 lg:gap-2">
+						<div className="bg-surface-secondary h-10 w-10 animate-pulse rounded-xs lg:h-14 lg:w-16" />
+						<div className="bg-surface-secondary h-10 w-10 animate-pulse rounded-xs lg:h-14 lg:w-16" />
+						<div className="bg-surface-secondary h-10 w-10 animate-pulse rounded-xs lg:h-14 lg:w-16" />
 					</div>
 				</div>
 
-				{/* search row — mobile and tablet only */}
-				<div className="pb-3 lg:hidden">
-					<div className="bg-sand-100 h-11 w-full max-w-2xl animate-pulse rounded-sm" />
+				{/* search row — mobile and tablet only: the field and the 44px vehicle square */}
+				<div className="flex items-center gap-2 pb-3 lg:hidden">
+					<div className="bg-surface-secondary h-11 min-w-0 flex-1 animate-pulse rounded-xs" />
+					<div className="bg-surface-secondary h-11 w-11 shrink-0 animate-pulse rounded-xs" />
 				</div>
 			</div>
 
 			{/* nav row — desktop only */}
-			<div className="border-sand-200/60 bg-sand-100/50 hidden border-t backdrop-blur-xl lg:block">
-				<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-					<div className="flex h-12 items-center" />
+			<div className="border-border-subtle hidden border-t lg:block">
+				<div className="max-w-page mx-auto px-4 sm:px-6 lg:px-8">
+					<div className="flex h-[3.25rem] items-center" />
 				</div>
 			</div>
 		</header>

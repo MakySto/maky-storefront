@@ -29,7 +29,7 @@ async function LiveMarketControls() {
 
 function MarketControlsSkeleton() {
 	// One chip now ("SK · EUR"), the width of the widest label it shows.
-	return <div className="bg-surface-secondary h-9 w-[6.75rem] animate-pulse rounded-xs" />;
+	return <div className="bg-surface-secondary h-10 w-[6.75rem] animate-pulse rounded-xs" />;
 }
 
 export async function HeaderNavRow({ channel }: { channel: string }) {
@@ -41,8 +41,8 @@ export async function HeaderNavRow({ channel }: { channel: string }) {
 	}));
 
 	return (
-		<div className="flex h-12 items-center justify-between">
-			<div className="flex items-center gap-3">
+		<div className="flex h-[3.25rem] items-center justify-between gap-4">
+			<div className="flex h-full min-w-0 items-center gap-3 xl:gap-5">
 				<AllCategoriesTrigger label={t("allCategories")} items={allCategories} />
 
 				<Suspense>
@@ -50,7 +50,7 @@ export async function HeaderNavRow({ channel }: { channel: string }) {
 				</Suspense>
 			</div>
 
-			<div className="flex items-center gap-2">
+			<div className="flex shrink-0 items-center gap-2">
 				<Suspense fallback={<MarketControlsSkeleton />}>
 					<LiveMarketControls />
 				</Suspense>

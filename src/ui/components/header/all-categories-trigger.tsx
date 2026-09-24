@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDownIcon, LayoutGridIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronRightIcon, LayoutGridIcon } from "lucide-react";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { CategoryIcon } from "@/ui/components/shared/category-icons";
 import {
@@ -36,28 +36,36 @@ export function AllCategoriesTrigger({
 			<DropdownMenuTrigger asChild>
 				<button
 					type="button"
-					className="group bg-brand hover:bg-brand-strong data-[state=open]:bg-brand-strong inline-flex h-10 items-center gap-2 rounded-sm px-4 text-[0.9375rem] font-semibold text-white transition-colors"
+					className="group bg-brand hover:bg-brand-strong data-[state=open]:bg-brand-strong text-brand-text focus-visible:ring-ring inline-flex h-10 shrink-0 items-center gap-2.5 rounded-xs pr-3 pl-3.5 text-sm font-semibold shadow-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden xl:min-w-[12.5rem] xl:text-[0.9375rem]"
 				>
-					<LayoutGridIcon className="h-4 w-4" aria-hidden />
-					<span>{label}</span>
+					<LayoutGridIcon className="h-[1.125rem] w-[1.125rem]" aria-hidden />
+					<span className="flex-1 text-left">{label}</span>
 					<ChevronDownIcon
-						className="h-3.5 w-3.5 opacity-80 transition-transform group-data-[state=open]:rotate-180"
+						className="h-4 w-4 opacity-80 transition-transform duration-200 group-data-[state=open]:rotate-180"
 						aria-hidden
 					/>
 				</button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align="start" sideOffset={8} className="w-[30rem] p-2">
+			<DropdownMenuContent
+				align="start"
+				sideOffset={10}
+				className="border-border-subtle w-[32rem] rounded-sm p-2 shadow-xl"
+			>
 				<div className="grid grid-cols-2 gap-1">
 					{items.map((item) => (
 						<DropdownMenuItem key={item.key} asChild>
 							<LinkWithChannel
 								href={item.href}
-								className="text-text-primary flex cursor-pointer items-center gap-3 rounded-md p-2 text-sm font-medium"
+								className="group/item text-text-primary focus:bg-surface-secondary flex cursor-pointer items-center gap-3 rounded-xs p-2.5 text-[0.9375rem] font-medium"
 							>
-								<span className="bg-surface-muted text-brand flex h-9 w-9 shrink-0 items-center justify-center rounded-md">
+								<span className="bg-surface-secondary text-brand group-focus/item:bg-surface-card flex h-10 w-10 shrink-0 items-center justify-center rounded-xs transition-colors">
 									<CategoryIcon categoryKey={item.key} className="h-5 w-5" />
 								</span>
-								{item.label}
+								<span className="flex-1">{item.label}</span>
+								<ChevronRightIcon
+									className="text-text-tertiary group-focus/item:text-brand h-4 w-4 transition-transform group-focus/item:translate-x-0.5"
+									aria-hidden
+								/>
 							</LinkWithChannel>
 						</DropdownMenuItem>
 					))}

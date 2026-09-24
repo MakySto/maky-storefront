@@ -1,6 +1,6 @@
 "use client";
 
-const FOOTER_CLASS = "cursor-pointer text-xs text-gray-400 transition-colors hover:text-gray-300";
+const FOOTER_CLASS = "text-text-inverse/55 hover:text-text-inverse cursor-pointer text-xs transition-colors";
 
 /**
  * Reopens the consent dialog.

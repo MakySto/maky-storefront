@@ -4,8 +4,18 @@ import { SearchIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { marketHref } from "@/lib/channel-map";
 
+/**
+ * The header search: one wide field with its button inside the right edge.
+ *
+ * A server action, so it searches without JavaScript. The button is a real submit button —
+ * Enter was the only way to search before, which a pointer user had to know.
+ */
 export async function HeaderSearch({ channel }: { channel: string }) {
-	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "nav" });
+	const locale = getLocaleFromChannel(channel);
+	const [t, tCommon] = await Promise.all([
+		getTranslations({ locale, namespace: "nav" }),
+		getTranslations({ locale, namespace: "common" }),
+	]);
 
 	async function onSubmit(formData: FormData) {
 		"use server";
@@ -16,24 +26,25 @@ export async function HeaderSearch({ channel }: { channel: string }) {
 	}
 
 	return (
-		<form action={onSubmit} className="group relative w-full max-w-2xl">
-			<label className="relative block">
+		<form action={onSubmit} role="search" className="group relative w-full max-w-3xl">
+			<label className="block">
 				<span className="sr-only">{t("searchAriaLabel")}</span>
-				<span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-					<SearchIcon
-						className="h-4 w-4 text-gray-400 transition-colors group-focus-within:text-gray-700"
-						aria-hidden
-					/>
-				</span>
 				<input
 					type="text"
 					name="search"
 					placeholder={t("searchPlaceholder")}
 					autoComplete="off"
 					required
-					className="border-sand-300 focus:border-copper-500 focus:ring-copper-500 h-11 w-full rounded-sm border bg-white py-2 pr-4 pl-11 text-sm text-gray-900 transition-all placeholder:text-gray-400 hover:border-gray-300 focus:bg-white focus:ring-1 focus:outline-hidden"
+					className="border-border-default bg-surface-card text-text-primary placeholder:text-text-tertiary hover:border-border-strong focus:border-brand focus:ring-brand h-11 w-full rounded-xs border py-2 pr-14 pl-4 text-sm transition-colors focus:ring-1 focus:outline-hidden lg:h-12 lg:text-[0.9375rem]"
 				/>
 			</label>
+			<button
+				type="submit"
+				aria-label={tCommon("search")}
+				className="bg-surface-secondary text-text-secondary hover:bg-surface-muted hover:text-text-primary focus-visible:ring-ring rounded-2xs absolute inset-y-1 right-1 flex w-10 items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-hidden lg:w-12"
+			>
+				<SearchIcon className="h-[1.125rem] w-[1.125rem]" aria-hidden />
+			</button>
 		</form>
 	);
 }
