@@ -139,12 +139,20 @@ describe("helpers", () => {
  * `next build` + `next start`): three identical requests ran the throwing body
  * three times and the resolving body once.
  *
+ * Re-verified for 16.3.6 (2026-09-23) on production builds of a minimal
+ * cacheComponents app with the same shape — `"use cache"` + cacheLife("minutes")
+ * + cacheTag, thrown inside, caught outside — built once on 16.2.9 and once on
+ * 16.3.6: on both, three requests ran the throwing body three times, the
+ * resolving body once, a body that threw once and then resolved ran twice and
+ * was then served from cache, and revalidateTag(tag, { expire: 0 }) made the
+ * next request run it again, once.
+ *
  * So this pins the version. If Next is upgraded, the check has to be repeated
  * before this test is allowed to pass again — the alternative is silently
  * inheriting a cached 404 for every product during the next Saleor blip.
  */
 describe("use-cache rejection behaviour is version-pinned", () => {
-	const VERIFIED_AGAINST = "16.2.9";
+	const VERIFIED_AGAINST = "16.3.6";
 
 	it(`was verified on next@${VERIFIED_AGAINST}`, () => {
 		expect(
