@@ -67,7 +67,8 @@
 		"openMenu": "Deschide meniul",
 		"account": "Cont",
 		"language": "Limbă",
-		"currency": "Monedă"
+		"currency": "Monedă",
+		"market": "Țara și moneda"
 	},
 	"product": {
 		"description": "Descriere",
@@ -612,9 +613,16 @@
 	},
 	"home": {
 		"heroTitle": "Bare de plafon, cutii portbagaj și suporturi de biciclete",
-		"heroSubtitle": "Seturi complete pentru mașina ta — bare, picioare și kitul de montaj într-un singur pachet.",
+		"heroSubtitle": "Alege bare de acoperiș pentru mașina ta, o cutie pentru bagaje sau un suport pentru biciclete. Te ajutăm să alegi.",
 		"metaDescription": "Bare de plafon, cutii portbagaj, suporturi de biciclete și schiuri. Seturi complete pentru mașina ta — bare, picioare și kit de montaj. Te ajutăm să alegi.",
-		"featuredTitle": "Produse recomandate"
+		"featuredTitle": "Produse recomandate",
+		"heroSecondaryCta": "Vezi cutiile de acoperiș",
+		"categoriesTitle": "Cumpără după categorie",
+		"heroSelectCar": "Alege mașina mea",
+		"heroShowForMyCar": "Vezi barele pentru mașina mea",
+		"heroChangeCar": "Schimbă mașina",
+		"heroPhotoCaption": "În imagine",
+		"heroImageAlt": "Mașină cu cutie de acoperiș pe plafon"
 	},
 	"garage": {
 		"title": "Garajul meu",

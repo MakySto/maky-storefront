@@ -67,7 +67,8 @@
 		"openMenu": "Otvoriť menu",
 		"account": "Účet",
 		"language": "Jazyk",
-		"currency": "Mena"
+		"currency": "Mena",
+		"market": "Krajina a mena"
 	},
 	"product": {
 		"description": "Popis",
@@ -612,9 +613,16 @@
 	},
 	"home": {
 		"heroTitle": "Strešné nosiče, boxy a nosiče bicyklov",
-		"heroSubtitle": "Kompletné zostavy pre vaše auto — tyče, pätky aj montážny kit v jednom balení.",
+		"heroSubtitle": "Vyberte si strešný nosič pre svoje auto, box na batožinu alebo nosič na bicykle. S výberom vám pomôžeme.",
 		"metaDescription": "Strešné nosiče, strešné boxy, nosiče bicyklov a lyží. Kompletné zostavy pre vaše auto — tyče, pätky aj montážny kit. Poradíme s výberom.",
-		"featuredTitle": "Odporúčané produkty"
+		"featuredTitle": "Odporúčané produkty",
+		"heroSecondaryCta": "Pozrieť strešné boxy",
+		"categoriesTitle": "Nakupujte podľa kategórie",
+		"heroSelectCar": "Vybrať moje auto",
+		"heroShowForMyCar": "Zobraziť nosiče pre moje auto",
+		"heroChangeCar": "Zmeniť auto",
+		"heroPhotoCaption": "Na fotke",
+		"heroImageAlt": "Auto so strešným boxom na streche"
 	},
 	"garage": {
 		"title": "Moja garáž",

@@ -34,7 +34,7 @@ import { SheetTrigger } from "@/ui/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { VehicleSelectorSheet } from "./vehicle-selector-sheet";
 
-type Variant = "header" | "hero" | "compact" | "inline";
+type Variant = "header" | "hero" | "compact" | "inline" | "link";
 
 type Props = {
 	variant?: Variant;
@@ -74,22 +74,28 @@ export function VehicleSelectorLauncher({
 					aria-label={label}
 					aria-haspopup="dialog"
 					className={cn(
+						// Green, through the status and CTA tokens (it used raw `forest-*` primitives until
+						// the 2026-09 facelift). The hero's filled button is the page's one primary action;
+						// the header chip is the same colour at chip weight.
 						variant === "header" &&
-							"border-forest-200 bg-forest-50 text-forest-700 hover:border-forest-300 hover:bg-forest-100 inline-flex h-10 items-center gap-2 rounded-sm border px-3 text-sm font-medium transition-colors",
+							"border-status-success-border bg-status-success-bg text-status-success hover:border-cta inline-flex h-10 items-center gap-2 rounded-sm border px-3 text-sm font-medium transition-colors",
 						variant === "hero" &&
-							"bg-action-primary text-action-primary-text hover:bg-action-primary-hover inline-flex h-12 items-center gap-2 rounded-md px-6 text-base font-semibold transition-colors",
+							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-12 items-center justify-center gap-2 rounded-sm px-6 text-base font-semibold transition-colors",
 						// `h-11` matches the search field it sits beside, and `whitespace-nowrap`
 						// because at 360px the label wrapped inside a fixed-height button and spilled
 						// out of it.
 						variant === "compact" &&
-							"border-forest-200 bg-forest-50 text-forest-700 hover:border-forest-300 hover:bg-forest-100 inline-flex h-11 min-w-0 items-center gap-2 rounded-sm border px-3 text-sm font-medium whitespace-nowrap transition-colors",
+							"border-status-success-border bg-status-success-bg text-status-success hover:border-cta inline-flex h-11 min-w-0 items-center gap-2 rounded-sm border px-3 text-sm font-medium whitespace-nowrap transition-colors",
 						variant === "inline" &&
 							"border-border-default text-text-primary hover:bg-surface-muted inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors",
+						// A text link on the dark hero: "Zmeniť auto" next to the car's name.
+						variant === "link" &&
+							"hover:text-text-inverse inline-flex items-center font-medium underline decoration-1 underline-offset-2 transition-colors",
 						"focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden",
 						className,
 					)}
 				>
-					<CarIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+					{variant !== "link" && <CarIcon className="h-4 w-4 shrink-0" aria-hidden="true" />}
 					<span
 						className={cn(
 							"truncate",
@@ -99,7 +105,7 @@ export function VehicleSelectorLauncher({
 							// field, where an unlabelled car icon is a guess.
 							variant === "header" && "hidden max-w-[10rem] xl:inline",
 							variant === "compact" && "max-w-[8.5rem]",
-							variant !== "header" && variant !== "compact" && "max-w-[16rem]",
+							variant !== "header" && variant !== "compact" && variant !== "link" && "max-w-[16rem]",
 						)}
 					>
 						{label}
@@ -108,7 +114,7 @@ export function VehicleSelectorLauncher({
 					    on a 360px row shared with the search it costs width the label needs. Kept
 					    where the replaced trigger had it; dropped where it is both wrong and
 					    expensive. */}
-					{variant !== "hero" && variant !== "compact" && (
+					{variant !== "hero" && variant !== "compact" && variant !== "link" && (
 						<ChevronDownIcon className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden="true" />
 					)}
 				</button>

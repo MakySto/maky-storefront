@@ -67,7 +67,8 @@
 		"openMenu": "Ouvrir le menu",
 		"account": "Compte",
 		"language": "Langue",
-		"currency": "Devise"
+		"currency": "Devise",
+		"market": "Pays et devise"
 	},
 	"product": {
 		"description": "Description",
@@ -612,9 +613,16 @@
 	},
 	"home": {
 		"heroTitle": "Barres de toit, coffres et porte-vélos",
-		"heroSubtitle": "Kits complets pour votre voiture : barres, pieds et kit de fixation en un seul colis.",
+		"heroSubtitle": "Choisissez des barres de toit pour votre voiture, un coffre pour vos bagages ou un porte-vélos. Nous vous aidons à choisir.",
 		"metaDescription": "Barres de toit, coffres, porte-vélos et porte-skis. Kits complets pour votre voiture : barres, pieds et kit de fixation. Nous vous aidons à choisir.",
-		"featuredTitle": "Produits en vedette"
+		"featuredTitle": "Produits en vedette",
+		"heroSecondaryCta": "Voir les coffres de toit",
+		"categoriesTitle": "Acheter par catégorie",
+		"heroSelectCar": "Choisir ma voiture",
+		"heroShowForMyCar": "Voir les barres de toit pour ma voiture",
+		"heroChangeCar": "Changer de voiture",
+		"heroPhotoCaption": "Sur la photo",
+		"heroImageAlt": "Voiture équipée d'un coffre de toit"
 	},
 	"garage": {
 		"title": "Mon garage",

@@ -67,7 +67,8 @@
 		"openMenu": "Open menu",
 		"account": "Account",
 		"language": "Language",
-		"currency": "Currency"
+		"currency": "Currency",
+		"market": "Country and currency"
 	},
 	"product": {
 		"description": "Description",
@@ -612,9 +613,16 @@
 	},
 	"home": {
 		"heroTitle": "Roof racks, roof boxes and bike carriers",
-		"heroSubtitle": "Complete kits for your car — bars, feet and the fitting kit in one package.",
+		"heroSubtitle": "Choose a roof rack for your car, a roof box for your luggage or a bike carrier. We'll help you choose.",
 		"metaDescription": "Roof racks, roof boxes, bike and ski carriers. Complete kits for your car — bars, feet and the fitting kit. We help you choose the right one.",
-		"featuredTitle": "Featured products"
+		"featuredTitle": "Featured products",
+		"heroSecondaryCta": "Browse roof boxes",
+		"categoriesTitle": "Shop by category",
+		"heroSelectCar": "Choose my car",
+		"heroShowForMyCar": "Show roof racks for my car",
+		"heroChangeCar": "Change car",
+		"heroPhotoCaption": "Pictured",
+		"heroImageAlt": "Car with a roof box on the roof"
 	},
 	"garage": {
 		"title": "My Garage",

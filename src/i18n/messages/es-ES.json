@@ -67,7 +67,8 @@
 		"openMenu": "Abrir menú",
 		"account": "Cuenta",
 		"language": "Idioma",
-		"currency": "Moneda"
+		"currency": "Moneda",
+		"market": "País y moneda"
 	},
 	"product": {
 		"description": "Descripción",
@@ -612,9 +613,16 @@
 	},
 	"home": {
 		"heroTitle": "Barras de techo, cofres y portabicicletas",
-		"heroSubtitle": "Kits completos para tu coche: barras, soportes y kit de montaje en un solo paquete.",
+		"heroSubtitle": "Elige unas barras de techo para tu coche, un cofre para el equipaje o un portabicicletas. Te ayudamos a elegir.",
 		"metaDescription": "Barras de techo, cofres, portabicicletas y portaesquís. Kits completos para tu coche: barras, soportes y kit de montaje. Te ayudamos a elegir.",
-		"featuredTitle": "Productos destacados"
+		"featuredTitle": "Productos destacados",
+		"heroSecondaryCta": "Ver cofres de techo",
+		"categoriesTitle": "Compra por categoría",
+		"heroSelectCar": "Elegir mi coche",
+		"heroShowForMyCar": "Ver barras de techo para mi coche",
+		"heroChangeCar": "Cambiar coche",
+		"heroPhotoCaption": "En la foto",
+		"heroImageAlt": "Coche con un cofre de techo"
 	},
 	"garage": {
 		"title": "Mi garaje",

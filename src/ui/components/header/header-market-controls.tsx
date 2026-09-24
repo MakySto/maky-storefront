@@ -91,9 +91,16 @@ export function HeaderMarketControls({ markets }: { markets: readonly string[] }
 				setIsOpen(false);
 			}
 		}
+		function handleEscape(e: KeyboardEvent) {
+			if (e.key === "Escape") setIsOpen(false);
+		}
 		if (isOpen) {
 			document.addEventListener("mousedown", handleClickOutside);
-			return () => document.removeEventListener("mousedown", handleClickOutside);
+			document.addEventListener("keydown", handleEscape);
+			return () => {
+				document.removeEventListener("mousedown", handleClickOutside);
+				document.removeEventListener("keydown", handleEscape);
+			};
 		}
 	}, [isOpen]);
 
@@ -104,31 +111,25 @@ export function HeaderMarketControls({ markets }: { markets: readonly string[] }
 
 	return (
 		<div className="relative" ref={dropdownRef}>
-			<div className="flex items-center gap-1">
-				<button
-					type="button"
-					onClick={() => canSwitch && setIsOpen(!isOpen)}
-					aria-label={t("language")}
-					aria-expanded={canSwitch ? isOpen : undefined}
-					aria-disabled={canSwitch ? undefined : true}
-					className="border-sand-300/80 hover:border-copper-500 inline-flex h-9 items-center gap-1.5 rounded-xs border bg-white/60 px-2.5 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-				>
-					<GlobeIcon className="h-3.5 w-3.5" aria-hidden />
-					<span>{currentMarket.lang}</span>
-					{canSwitch && <ChevronDownIcon className="h-3 w-3 opacity-50" aria-hidden />}
-				</button>
-
-				<button
-					type="button"
-					onClick={() => canSwitch && setIsOpen(!isOpen)}
-					aria-label={t("currency")}
-					aria-disabled={canSwitch ? undefined : true}
-					className="border-sand-300/80 hover:border-copper-500 inline-flex h-9 items-center gap-1.5 rounded-xs border bg-white/60 px-2.5 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-				>
-					<span>{currentMarket.currency}</span>
-					{canSwitch && <ChevronDownIcon className="h-3 w-3 opacity-50" aria-hidden />}
-				</button>
-			</div>
+			{/* One control, not two. "SK" and "EUR" used to be separate buttons opening the same
+			    list, and "EUR" looked like a currency switch, which CLAUDE.md §5 rules out: the
+			    currency belongs to the market. The chip names the market by its country code. */}
+			<button
+				type="button"
+				onClick={() => canSwitch && setIsOpen(!isOpen)}
+				aria-label={`${t("market")}: ${currentMarket.label}, ${currentMarket.currency}`}
+				aria-expanded={canSwitch ? isOpen : undefined}
+				aria-disabled={canSwitch ? undefined : true}
+				className="border-border-default bg-surface-card text-text-secondary hover:border-brand hover:text-text-primary focus-visible:ring-ring inline-flex h-9 items-center gap-1.5 rounded-xs border px-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+			>
+				<GlobeIcon className="h-3.5 w-3.5" aria-hidden />
+				<span>{currentMarket.slug.toUpperCase()}</span>
+				<span aria-hidden className="text-text-tertiary">
+					·
+				</span>
+				<span>{currentMarket.currency}</span>
+				{canSwitch && <ChevronDownIcon className="h-3 w-3 opacity-50" aria-hidden />}
+			</button>
 
 			{isOpen && canSwitch && (
 				<div className="border-sand-300 absolute top-full right-0 z-[var(--z-dropdown)] mt-2 w-72 rounded-md border bg-white py-1 shadow-lg">

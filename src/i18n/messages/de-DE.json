@@ -67,7 +67,8 @@
 		"openMenu": "Menü öffnen",
 		"account": "Konto",
 		"language": "Sprache",
-		"currency": "Währung"
+		"currency": "Währung",
+		"market": "Land und Währung"
 	},
 	"product": {
 		"description": "Beschreibung",
@@ -612,9 +613,16 @@
 	},
 	"home": {
 		"heroTitle": "Dachträger, Dachboxen und Fahrradträger",
-		"heroSubtitle": "Komplettsätze für Ihr Auto — Träger, Füße und Montagekit in einem Paket.",
+		"heroSubtitle": "Wählen Sie einen Dachträger für Ihr Auto, eine Dachbox für Ihr Gepäck oder einen Fahrradträger. Wir helfen Ihnen bei der Auswahl.",
 		"metaDescription": "Dachträger, Dachboxen, Fahrrad- und Skiträger. Komplettsätze für Ihr Auto — Träger, Füße und Montagekit. Wir beraten Sie bei der Auswahl.",
-		"featuredTitle": "Empfohlene Produkte"
+		"featuredTitle": "Empfohlene Produkte",
+		"heroSecondaryCta": "Dachboxen ansehen",
+		"categoriesTitle": "Nach Kategorie einkaufen",
+		"heroSelectCar": "Mein Auto auswählen",
+		"heroShowForMyCar": "Dachträger für mein Auto anzeigen",
+		"heroChangeCar": "Auto ändern",
+		"heroPhotoCaption": "Im Bild",
+		"heroImageAlt": "Auto mit Dachbox auf dem Dach"
 	},
 	"garage": {
 		"title": "Meine Garage",

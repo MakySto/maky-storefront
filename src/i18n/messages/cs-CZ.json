@@ -67,7 +67,8 @@
 		"openMenu": "Otevřít menu",
 		"account": "Účet",
 		"language": "Jazyk",
-		"currency": "Měna"
+		"currency": "Měna",
+		"market": "Země a měna"
 	},
 	"product": {
 		"description": "Popis",
@@ -612,9 +613,16 @@
 	},
 	"home": {
 		"heroTitle": "Střešní nosiče, boxy a nosiče kol",
-		"heroSubtitle": "Kompletní sady pro vaše auto — tyče, patky i montážní kit v jednom balení.",
+		"heroSubtitle": "Vyberte si střešní nosič pro své auto, box na zavazadla nebo nosič kol. S výběrem vám pomůžeme.",
 		"metaDescription": "Střešní nosiče, střešní boxy, nosiče kol a lyží. Kompletní sady pro vaše auto — tyče, patky i montážní kit. Poradíme s výběrem.",
-		"featuredTitle": "Doporučené produkty"
+		"featuredTitle": "Doporučené produkty",
+		"heroSecondaryCta": "Prohlédnout střešní boxy",
+		"categoriesTitle": "Nakupujte podle kategorie",
+		"heroSelectCar": "Vybrat moje auto",
+		"heroShowForMyCar": "Zobrazit nosiče pro moje auto",
+		"heroChangeCar": "Změnit auto",
+		"heroPhotoCaption": "Na fotce",
+		"heroImageAlt": "Auto se střešním boxem na střeše"
 	},
 	"garage": {
 		"title": "Moje garáž",

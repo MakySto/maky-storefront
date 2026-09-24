@@ -28,12 +28,8 @@ async function LiveMarketControls() {
 }
 
 function MarketControlsSkeleton() {
-	return (
-		<div className="flex items-center gap-1">
-			<div className="bg-sand-100 h-9 w-[4.5rem] animate-pulse rounded-xs" />
-			<div className="bg-sand-100 h-9 w-[5.25rem] animate-pulse rounded-xs" />
-		</div>
-	);
+	// One chip now ("SK · EUR"), the width of the widest label it shows.
+	return <div className="bg-surface-secondary h-9 w-[6.75rem] animate-pulse rounded-xs" />;
 }
 
 export async function HeaderNavRow({ channel }: { channel: string }) {

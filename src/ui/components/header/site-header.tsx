@@ -10,7 +10,9 @@ import { HeaderSearch } from "./header-search";
 
 export async function SiteHeader({ channel }: { channel: string }) {
 	return (
-		<header className="sticky top-0 z-[var(--z-header)] bg-white/80 backdrop-blur-xl print:hidden">
+		// Solid white, not the old 80 % white with a blur: the page scrolled visibly through
+		// it and the tinted nav row made the header read as two bands of different colour.
+		<header className="border-border-subtle bg-surface-card sticky top-0 z-[var(--z-header)] border-b print:hidden">
 			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 				<HeaderMainRow channel={channel} />
 
@@ -32,7 +34,7 @@ export async function SiteHeader({ channel }: { channel: string }) {
 			</div>
 
 			{/* Nav row — desktop only */}
-			<div className="border-sand-200/60 bg-sand-100/50 hidden border-t backdrop-blur-xl lg:block">
+			<div className="border-border-subtle hidden border-t lg:block">
 				<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 					<HeaderNavRow channel={channel} />
 				</div>

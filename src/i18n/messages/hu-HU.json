@@ -67,7 +67,8 @@
 		"openMenu": "Menü megnyitása",
 		"account": "Fiók",
 		"language": "Nyelv",
-		"currency": "Pénznem"
+		"currency": "Pénznem",
+		"market": "Ország és pénznem"
 	},
 	"product": {
 		"description": "Leírás",
@@ -612,9 +613,16 @@
 	},
 	"home": {
 		"heroTitle": "Tetőcsomagtartók, tetőboxok és kerékpártartók",
-		"heroSubtitle": "Komplett szettek az autójához – rudak, talpak és a szerelőkészlet egy csomagban.",
+		"heroSubtitle": "Válasszon tetőcsomagtartót az autójához, tetőboxot a csomagjaihoz vagy kerékpártartót. Segítünk a választásban.",
 		"metaDescription": "Tetőcsomagtartók, tetőboxok, kerékpár- és síléctartók. Komplett szettek az autójához – rudak, talpak és szerelőkészlet. Segítünk a választásban.",
-		"featuredTitle": "Kiemelt termékek"
+		"featuredTitle": "Kiemelt termékek",
+		"heroSecondaryCta": "Tetőboxok megtekintése",
+		"categoriesTitle": "Vásároljon kategória szerint",
+		"heroSelectCar": "Autóm kiválasztása",
+		"heroShowForMyCar": "Tetőcsomagtartók az autómhoz",
+		"heroChangeCar": "Autó módosítása",
+		"heroPhotoCaption": "A képen",
+		"heroImageAlt": "Autó tetőboxszal a tetején"
 	},
 	"garage": {
 		"title": "Garázsom",

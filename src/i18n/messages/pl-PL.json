@@ -67,7 +67,8 @@
 		"openMenu": "Otwórz menu",
 		"account": "Konto",
 		"language": "Język",
-		"currency": "Waluta"
+		"currency": "Waluta",
+		"market": "Kraj i waluta"
 	},
 	"product": {
 		"description": "Opis",
@@ -612,9 +613,16 @@
 	},
 	"home": {
 		"heroTitle": "Bagażniki dachowe, boxy i bagażniki rowerowe",
-		"heroSubtitle": "Kompletne zestawy do Twojego auta — belki, stopy i kit montażowy w jednej paczce.",
+		"heroSubtitle": "Wybierz bagażnik dachowy do swojego auta, boks na bagaż albo bagażnik rowerowy. Pomożemy Ci w wyborze.",
 		"metaDescription": "Bagażniki dachowe, boxy, bagażniki rowerowe i narciarskie. Kompletne zestawy do Twojego auta — belki, stopy i kit montażowy. Pomożemy w wyborze.",
-		"featuredTitle": "Polecane produkty"
+		"featuredTitle": "Polecane produkty",
+		"heroSecondaryCta": "Zobacz boksy dachowe",
+		"categoriesTitle": "Kupuj według kategorii",
+		"heroSelectCar": "Wybierz moje auto",
+		"heroShowForMyCar": "Pokaż bagażniki do mojego auta",
+		"heroChangeCar": "Zmień auto",
+		"heroPhotoCaption": "Na zdjęciu",
+		"heroImageAlt": "Auto z boksem dachowym na dachu"
 	},
 	"garage": {
 		"title": "Mój garaż",

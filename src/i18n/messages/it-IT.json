@@ -67,7 +67,8 @@
 		"openMenu": "Apri menu",
 		"account": "Account",
 		"language": "Lingua",
-		"currency": "Valuta"
+		"currency": "Valuta",
+		"market": "Paese e valuta"
 	},
 	"product": {
 		"description": "Descrizione",
@@ -612,9 +613,16 @@
 	},
 	"home": {
 		"heroTitle": "Barre portatutto, box da tetto e portabici",
-		"heroSubtitle": "Kit completi per la tua auto: barre, piedi e kit di montaggio in un unico pacco.",
+		"heroSubtitle": "Scegli un portapacchi da tetto per la tua auto, un box per i bagagli o un portabici. Ti aiutiamo a scegliere.",
 		"metaDescription": "Barre portatutto, box da tetto, portabici e portasci. Kit completi per la tua auto: barre, piedi e kit di montaggio. Ti aiutiamo a scegliere.",
-		"featuredTitle": "Prodotti in evidenza"
+		"featuredTitle": "Prodotti in evidenza",
+		"heroSecondaryCta": "Vedi i box da tetto",
+		"categoriesTitle": "Acquista per categoria",
+		"heroSelectCar": "Scegli la mia auto",
+		"heroShowForMyCar": "Mostra i portapacchi per la mia auto",
+		"heroChangeCar": "Cambia auto",
+		"heroPhotoCaption": "Nella foto",
+		"heroImageAlt": "Auto con box da tetto"
 	},
 	"garage": {
 		"title": "Il mio garage",
