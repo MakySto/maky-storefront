@@ -1,10 +1,10 @@
 export { HeroSection } from "./hero-section";
-export { HeroPhotoFrame } from "./hero-photo-frame";
-export { HeroShowcasePhoto } from "./hero-showcase";
+export { HeroProductCard } from "./hero-product-card";
 export { HeroVehicleActions, HeroVehicleActionsSkeleton } from "./hero-vehicle-actions";
 export { CategoryGrid } from "./category-grid";
 export { CategoryGridPhotos } from "./category-grid-photos";
-export { WhyMaky } from "./why-maky";
+export { HomeVehicleBlock } from "./home-vehicle-block";
+export { HomeVehicleBlockSkeleton } from "./home-vehicle-skeleton";
 export { BrandsStrip } from "./brands-strip";
-export { NewsletterCTA } from "./newsletter-cta";
+export { AdviceAndNewsletter } from "./advice-and-newsletter";
 export { HomepageStructuredData } from "./structured-data";

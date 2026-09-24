@@ -14,21 +14,33 @@ import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { ProductGrid, transformToProductCard } from "@/ui/components/plp";
 import {
 	HeroSection,
-	HeroPhotoFrame,
-	HeroShowcasePhoto,
+	HeroProductCard,
 	HeroVehicleActions,
 	HeroVehicleActionsSkeleton,
 	CategoryGrid,
 	CategoryGridPhotos,
-	WhyMaky,
+	HomeVehicleBlock,
+	HomeVehicleBlockSkeleton,
 	BrandsStrip,
-	NewsletterCTA,
+	AdviceAndNewsletter,
 	HomepageStructuredData,
 } from "@/ui/components/homepage";
+import Link from "next/link";
+import { ArrowRightIcon } from "lucide-react";
+import { marketHref } from "@/lib/channel-map";
+import { getSceneryOrNone } from "@/lib/homepage/scenery";
+import { HERO_SCENERY } from "@/config/storefront-imagery";
 import { getTranslations } from "next-intl/server";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleCollection, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
 import { lookupBySlug } from "@/lib/saleor/slug-lookup";
+
+/**
+ * How many featured products the homepage shows: two rows of five on a wide desktop. Eight or
+ * twelve work as well; the grid does not need a full last row, and nothing is ever duplicated to
+ * fill one.
+ */
+const FEATURED_PRODUCTS_LIMIT = 10;
 
 async function getFeaturedProducts(channel: string) {
 	"use cache";
@@ -46,7 +58,7 @@ async function getFeaturedProducts(channel: string) {
 					channel,
 					lang,
 					slugLang,
-					first: 12,
+					first: FEATURED_PRODUCTS_LIMIT,
 					sortBy: { field: ProductOrderField.Collection, direction: OrderDirection.Asc },
 				},
 				revalidate: 300,
@@ -90,7 +102,11 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 	};
 }
 
-export default function Page(props: { params: Promise<{ channel: string }> }) {
+export default async function Page(props: { params: Promise<{ channel: string }> }) {
+	const { channel } = await props.params;
+	// Scenery is cached for hours and never throws here; without it the hero is its dark ground.
+	const scenery = await getSceneryOrNone(channel);
+
 	return (
 		<>
 			{/* OnlineStore + WebSite — who sells here, the return window, delivery times.
@@ -100,23 +116,35 @@ export default function Page(props: { params: Promise<{ channel: string }> }) {
 				<HomepageStructuredData params={props.params} />
 			</Suspense>
 
-			{/* The hero's vehicle action is request-time (it reads the saved car) and its photo
-			    comes from Saleor; each has its own boundary and a same-size fallback, so the
-			    title and the copy stay in the static shell and nothing moves when they land. */}
+			{/* The photo, the words and the buttons are in the static shell. The vehicle action is
+			    request-time (it reads the saved car) and the floating product card is this market's
+			    product; each has its own boundary, so nothing moves when they land. */}
 			<HeroSection
+				channel={channel}
+				photo={scenery?.hero ?? null}
 				vehicleAction={
 					<Suspense fallback={<HeroVehicleActionsSkeleton />}>
 						<HeroVehicleActions params={props.params} />
 					</Suspense>
 				}
-				showcase={
-					<Suspense fallback={<HeroPhotoFrame />}>
-						<HeroShowcasePhoto params={props.params} />
-					</Suspense>
+				// Not in a Suspense boundary of its own: its data is cached, so it resolves in the
+				// static shell, and a completed boundary this far down the page would be outlined
+				// behind the footer (the flush is past React's 12 800-byte chunk by now).
+				productCard={
+					<HeroProductCard
+						params={props.params}
+						// "Na fotke" only when the photo is the product's own; over the owner's
+						// illustration from Payload the card recommends instead.
+						showsProduct={scenery?.hero?.source === "saleor" && HERO_SCENERY.showsProduct}
+					/>
 				}
 			/>
-			<Suspense fallback={<CategoryGrid images={null} />}>
+			<Suspense fallback={<CategoryGrid photos={null} />}>
 				<CategoryGridPhotos params={props.params} />
+			</Suspense>
+
+			<Suspense fallback={<HomeVehicleBlockSkeleton />}>
+				<HomeVehicleBlock params={props.params} />
 			</Suspense>
 
 			{/* Featured Products — the whole section (heading included) renders only when the
@@ -125,9 +153,10 @@ export default function Page(props: { params: Promise<{ channel: string }> }) {
 				<FeaturedProducts params={props.params} />
 			</Suspense>
 
-			<WhyMaky />
-			<BrandsStrip />
-			<NewsletterCTA />
+			<BrandsStrip channel={channel} />
+			{/* Inline, like the product card above: cached reads only, and an empty-fallback
+			    boundary here would be outlined after the footer and push it down on arrival. */}
+			<AdviceAndNewsletter channel={channel} photo={scenery?.advice ?? null} />
 		</>
 	);
 }
@@ -144,14 +173,30 @@ async function FeaturedProducts({ params: paramsPromise }: { params: Promise<{ c
 	const locale = getLocaleFromChannel(channel);
 	const t = await getTranslations({ locale, namespace: "home" });
 
-	// The same card and grid as a category page — one product card across the shop.
+	// The same card as a category page — one product card across the shop — in the homepage's
+	// five-column rows.
 	return (
-		<section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-			<h2 className="text-text-primary text-2xl font-bold tracking-[-0.02em] sm:text-3xl">
-				{t("featuredTitle")}
-			</h2>
-			<div className="mt-6 sm:mt-8">
-				<ProductGrid products={products.map((product) => transformToProductCard(product, channel, locale))} />
+		<section className="max-w-page mx-auto px-4 pt-10 pb-6 sm:px-6 sm:pt-14 lg:px-8">
+			<div className="flex items-end justify-between gap-4">
+				<h2 className="text-text-primary text-2xl font-bold tracking-[-0.02em] sm:text-[1.75rem]">
+					{t("featuredTitle")}
+				</h2>
+				<Link
+					href={marketHref(channel, "/products")}
+					className="text-text-primary hover:text-brand group hidden shrink-0 items-center gap-1.5 text-sm font-semibold transition-colors sm:inline-flex"
+				>
+					{t("featuredAll")}
+					<ArrowRightIcon
+						className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+						aria-hidden="true"
+					/>
+				</Link>
+			</div>
+			<div className="mt-6">
+				<ProductGrid
+					columns="home"
+					products={products.map((product) => transformToProductCard(product, channel, locale))}
+				/>
 			</div>
 		</section>
 	);
@@ -163,21 +208,21 @@ async function FeaturedProducts({ params: paramsPromise }: { params: Promise<{ c
  */
 function FeaturedProductsSkeleton() {
 	return (
-		<section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8" aria-hidden="true">
+		<section className="max-w-page mx-auto px-4 pt-10 pb-6 sm:px-6 sm:pt-14 lg:px-8" aria-hidden="true">
 			<div className="bg-surface-secondary h-8 w-64 animate-pulse rounded-xs sm:h-9" />
-			<div className="mt-6 grid w-full grid-cols-1 gap-3 sm:mt-8 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4">
-				{Array.from({ length: 8 }).map((_, i) => (
+			<div className="mt-6 grid w-full grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 xl:gap-5 min-[90rem]:grid-cols-5">
+				{Array.from({ length: FEATURED_PRODUCTS_LIMIT }).map((_, i) => (
 					<div
 						key={i}
-						className="border-border-subtle bg-surface-card grid grid-cols-[6.5rem_minmax(0,1fr)] gap-3 rounded-lg border p-3 sm:flex sm:flex-col sm:gap-0 sm:p-0"
+						className="border-border-subtle bg-surface-card grid grid-cols-[minmax(7.5rem,38%)_minmax(0,1fr)] gap-3 rounded-sm border p-3 sm:flex sm:flex-col sm:gap-0 sm:p-0"
 					>
-						<div className="bg-surface-secondary aspect-square animate-pulse rounded-sm sm:rounded-none" />
-						<div className="space-y-2 sm:px-4 sm:pt-3">
+						<div className="bg-surface-secondary aspect-square animate-pulse rounded-xs sm:aspect-[5/4] sm:rounded-none" />
+						<div className="space-y-2 sm:px-4 sm:pt-2">
 							<div className="bg-surface-secondary h-3 w-24 rounded-xs" />
 							<div className="bg-surface-secondary h-4 w-full rounded-xs sm:h-[3lh]" />
 							<div className="bg-surface-secondary h-5 w-20 rounded-xs" />
 						</div>
-						<div className="bg-surface-secondary col-span-2 h-11 rounded-sm sm:mx-4 sm:mt-3 sm:mb-4" />
+						<div className="bg-surface-secondary col-span-2 h-11 rounded-xs sm:mx-4 sm:mt-3 sm:mb-4" />
 					</div>
 				))}
 			</div>

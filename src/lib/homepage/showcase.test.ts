@@ -33,14 +33,15 @@ vi.mock("next/cache", async (importOriginal) => ({
 	cacheTag: (...added: string[]) => tags.push(...added),
 }));
 
-const { getHeroShowcase, getHomeCategoryImages, HERO_SHOWCASE } = await import("./showcase");
+const { getHeroShowcase, getHomeCategoryImages } = await import("./showcase");
+const { HERO_SCENERY } = await import("@/config/storefront-imagery");
 
 const SK = CHANNEL_MAP.sk.saleorSlug;
 const DE = CHANNEL_MAP.de.saleorSlug;
 
 function heroProduct(overrides: Record<string, unknown> = {}) {
 	return {
-		id: HERO_SHOWCASE.productId,
+		id: HERO_SCENERY.photo.productId,
 		isAvailableForPurchase: true,
 		name: "Strešný box Thule Motion 3 - XL - Titan Glossy",
 		slug: "stresny-box-thule-motion-3-xl-titan-glossy-639801",
@@ -50,10 +51,7 @@ function heroProduct(overrides: Record<string, unknown> = {}) {
 		attributes: [],
 		category: null,
 		pricing: { priceRange: { start: { gross: { amount: 899, currency: "EUR" } } } },
-		media: [
-			{ id: "UHJvZHVjdE1lZGlhOjEw", url: "https://cdn.example/cut-out.webp" },
-			{ id: HERO_SHOWCASE.mediaId, url: "https://cdn.example/lifestyle.webp" },
-		],
+		thumbnail: { url: "https://cdn.example/cut-out.webp", alt: null },
 		...overrides,
 	};
 }
@@ -65,26 +63,25 @@ beforeEach(() => {
 });
 
 describe("hero showcase", () => {
-	it("shows the chosen photo with this market's name, price and link", async () => {
+	it("names the product on the photo with this market's name, price, link and photo", async () => {
 		answers.HomeHeroProduct = { ok: true, data: { product: heroProduct() } };
 		const showcase = await getHeroShowcase(SK);
 
-		expect(showcase?.imageUrl).toBe("https://cdn.example/lifestyle.webp");
 		expect(showcase?.product).toEqual({
 			name: "Strešný box Thule Motion 3 - XL - Titan Glossy",
 			href: "/sk/stresny-box-thule-motion-3-xl-titan-glossy-639801",
 			price: formatPrice(899, "EUR", "sk-SK"),
+			image: "https://cdn.example/cut-out.webp",
 		});
 		// One attempt, and the product's own event expires the entry.
 		expect(sent[0]).toMatchObject({ operation: "HomeHeroProduct", retry: false });
 		expect(tags).toContain(`product:${SK}:sk-SK:stresny-box-thule-motion-3-xl-titan-glossy-639801`);
 	});
 
-	it("keeps the photo but names nothing in a market where the product is not translated", async () => {
+	it("names nothing in a market where the product is not translated", async () => {
 		answers.HomeHeroProduct = { ok: true, data: { product: heroProduct() } };
 		const showcase = await getHeroShowcase(DE);
 
-		expect(showcase?.imageUrl).toBe("https://cdn.example/lifestyle.webp");
 		expect(showcase?.product).toBeNull();
 	});
 
@@ -111,10 +108,7 @@ describe("hero showcase", () => {
 		expect(showcase?.product?.href).toBe("/de/dachbox-thule-motion-3-xl-titan-glossy-639801");
 	});
 
-	it("shows no photo when the chosen one is gone or the product is not sold here", async () => {
-		answers.HomeHeroProduct = { ok: true, data: { product: heroProduct({ media: [] }) } };
-		expect(await getHeroShowcase(SK)).toBeNull();
-
+	it("names nothing when the product is not sold here", async () => {
 		answers.HomeHeroProduct = { ok: true, data: { product: null } };
 		expect(await getHeroShowcase(SK)).toBeNull();
 	});

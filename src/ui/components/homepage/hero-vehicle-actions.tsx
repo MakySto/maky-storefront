@@ -59,12 +59,12 @@ export async function HeroVehicleActions({ params }: { params: Promise<{ channel
 		<div className="flex min-w-0 flex-col">
 			<Link
 				href={roofRacksForCar}
-				className="bg-cta text-cta-text hover:bg-cta-hover focus-visible:ring-cta inline-flex h-12 items-center justify-center gap-2 rounded-sm px-6 text-base font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+				className="bg-cta text-cta-text hover:bg-cta-hover focus-visible:ring-cta inline-flex h-12 items-center justify-center gap-2.5 rounded-xs px-6 text-base font-semibold shadow-lg transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
 			>
 				<CarIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
 				{t("heroShowForMyCar")}
 			</Link>
-			<p className="text-text-inverse/75 mt-2 flex h-5 min-w-0 items-center gap-1.5 text-sm">
+			<p className="text-text-inverse/85 mt-2 flex h-5 min-w-0 items-center gap-1.5 text-sm">
 				<span className="truncate">{carLabel}</span>
 				<span aria-hidden="true">·</span>
 				<VehicleSelectorLauncher
@@ -81,7 +81,7 @@ export async function HeroVehicleActions({ params }: { params: Promise<{ channel
 export function HeroVehicleActionsSkeleton() {
 	return (
 		<div className="flex flex-col" aria-hidden="true">
-			<div className="bg-text-inverse/10 h-12 w-full animate-pulse rounded-sm sm:w-[14rem]" />
+			<div className="bg-text-inverse/10 h-12 w-full animate-pulse rounded-xs sm:w-[14rem]" />
 			<span className="mt-2 hidden h-5 sm:block" />
 		</div>
 	);

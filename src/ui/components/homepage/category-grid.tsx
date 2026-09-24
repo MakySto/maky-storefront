@@ -1,5 +1,6 @@
 "use client";
 
+import { type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -8,24 +9,42 @@ import { ArrowRightIcon } from "lucide-react";
 import { marketHref } from "@/lib/channel-map";
 import { categoriesFor } from "@/config/categories";
 import { categoryUrlFor } from "@/config/category-routes";
-import type { CategoryImages } from "@/lib/homepage/showcase";
+import { cn } from "@/lib/utils";
 
 /**
- * Six category tiles with the category's own photo from Saleor.
- *
- * The photos used to be a fixed map of line icons on rainbow tints, so a photo added to a
- * category in Saleor never reached the homepage. `images` now comes from Saleor (see
- * `category-grid-photos.tsx`); `null` while it streams in, or when Saleor could not be
- * asked — the tile keeps its name, its link and its size either way.
- *
- * The photos are product cut-outs on white, so they are shown WHOLE (`object-contain` with a
- * margin) on a white panel, never cropped to fill: a cover crop of a roof rack is a close-up
- * of a plastic foot. A lifestyle photo added later is letterboxed, never cut.
- *
- * Names come from the same `nav` labels as the menu, so a tile and the menu item it mirrors
- * cannot drift apart; the photo is decorative (`alt=""`) because the link text names it.
+ * One tile's picture: a `scene` is a photograph that fills the tile; a `studio` picture is the
+ * category's product cut-out on white, shown whole on a warm ground — never cropped and never
+ * passed off as a lifestyle photo.
  */
-export function CategoryGrid({ images }: { images: CategoryImages | null }) {
+export type CategoryTilePhoto = {
+	readonly url: string;
+	readonly position: string;
+	readonly kind: "scene" | "studio";
+};
+
+export type CategoryTilePhotos = Readonly<Record<string, CategoryTilePhoto>>;
+
+/** One tagline per category, from the `home` messages. */
+const TAGLINES: Readonly<Record<string, string>> = {
+	roofRacks: "tileRoofRacks",
+	roofBoxes: "tileRoofBoxes",
+	bikeCarriers: "tileBikeCarriers",
+	skiCarriers: "tileSkiCarriers",
+	roofTents: "tileRoofTents",
+	carFridges: "tileCarFridges",
+};
+
+/**
+ * The six main categories as photographic tiles (premium redesign 2026-09).
+ *
+ * The photo fills the tile and the name sits over a dark fade at its foot. Six in a row on a wide
+ * desktop — short visual entries, not product cards — three on a tablet, two on a phone.
+ *
+ * `photos` is `null` while it streams in or when it could not be read; every tile keeps its name,
+ * its link and its size either way, so the swap moves nothing. Names come from the same `nav`
+ * labels as the menu; the picture is decorative (`alt=""`), because the link text names it.
+ */
+export function CategoryGrid({ photos }: { photos: CategoryTilePhotos | null }) {
 	const t = useTranslations("nav");
 	const th = useTranslations("home");
 	const params = useParams<{ channel: string }>();
@@ -33,37 +52,63 @@ export function CategoryGrid({ images }: { images: CategoryImages | null }) {
 	const categories = categoriesFor("home");
 
 	return (
-		<section id="categories" className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-			<h2 className="text-text-primary text-2xl font-bold tracking-[-0.02em] sm:text-3xl">
+		<section id="categories" className="max-w-page mx-auto px-4 pt-12 pb-10 sm:px-6 sm:pt-16 lg:px-8">
+			<h2 className="text-text-primary text-2xl font-bold tracking-[-0.02em] sm:text-[1.75rem]">
 				{th("categoriesTitle")}
 			</h2>
-			{/* Three across on desktop, two on a phone — six tiles, two full rows either way. */}
-			<ul role="list" className="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-4 lg:grid-cols-3 lg:gap-6">
-				{categories.map((category) => {
-					const photo = images?.[category.slug];
+			<ul role="list" className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-6">
+				{categories.map((category, index) => {
+					const photo = photos?.[category.slug];
+					const tagline = TAGLINES[category.key];
 					return (
 						<li key={category.key}>
 							<Link
 								href={marketHref(channel, categoryUrlFor(channel, category.slug))}
-								className="group border-border-subtle bg-surface-card hover:border-border-default focus-visible:ring-ring flex h-full flex-col overflow-hidden rounded-lg border transition hover:shadow-md focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+								className={cn(
+									"group relative isolate flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-sm shadow-sm transition-shadow duration-300 hover:shadow-xl",
+									"focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden",
+									photo?.kind === "scene" ? "bg-scrim" : "from-surface-muted to-sand-400 bg-linear-to-b",
+								)}
 							>
-								<div className="bg-surface-card relative aspect-[4/3] w-full">
-									{photo && (
-										<Image
-											src={photo}
-											alt=""
-											fill
-											sizes="(min-width: 1280px) 395px, (min-width: 1024px) 31vw, 46vw"
-											className="object-contain p-3 transition-transform duration-300 ease-out group-hover:scale-[1.04] sm:p-5"
-										/>
+								{photo && (
+									<Image
+										src={photo.url}
+										alt=""
+										fill
+										// The first row of a phone is on the first screen.
+										loading={index < 2 ? "eager" : "lazy"}
+										sizes="(min-width: 1280px) 224px, (min-width: 768px) 31vw, 46vw"
+										style={{ "--tile-pos": photo.position } as CSSProperties}
+										className={cn(
+											"-z-10 transition-transform duration-700 ease-out motion-safe:group-hover:scale-[1.06]",
+											photo.kind === "scene"
+												? "object-cover object-[var(--tile-pos)]"
+												: "object-contain px-4 pt-5 pb-20 mix-blend-multiply",
+										)}
+									/>
+								)}
+								<div
+									aria-hidden="true"
+									className={cn(
+										"absolute inset-x-0 bottom-0 -z-10 bg-linear-to-t to-transparent",
+										photo?.kind === "scene"
+											? "from-scrim/90 via-scrim/35 h-3/4"
+											: "from-scrim/85 via-scrim/25 h-1/2",
 									)}
-								</div>
-								<div className="border-border-subtle flex items-center justify-between gap-2 border-t px-3 py-3 sm:px-5 sm:py-4">
-									<span className="text-text-primary text-sm leading-tight font-semibold sm:text-base">
-										{t(category.key)}
+								/>
+								<div className="flex items-end justify-between gap-2 p-3.5 sm:p-4">
+									<span className="min-w-0">
+										<span className="text-text-inverse block text-base leading-tight font-bold tracking-[-0.01em] sm:text-lg">
+											{t(category.key)}
+										</span>
+										{tagline && (
+											<span className="text-text-inverse/80 mt-1 hidden text-[0.8125rem] leading-snug sm:block">
+												{th(tagline)}
+											</span>
+										)}
 									</span>
 									<ArrowRightIcon
-										className="text-text-tertiary group-hover:text-text-link h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5"
+										className="text-text-inverse h-4 w-4 shrink-0 opacity-0 transition-all duration-300 group-hover:translate-x-0.5 group-hover:opacity-100"
 										aria-hidden="true"
 									/>
 								</div>

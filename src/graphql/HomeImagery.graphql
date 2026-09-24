@@ -1,0 +1,17 @@
+# The stored originals of the photos the homepage and the category banners use as scenery,
+# chosen by product and media id in `src/config/storefront-imagery.ts`. Read-only. The URL is
+# the stored file, not a Saleor thumbnail: next/image resizes it, and asking Saleor for a new
+# thumbnail size would make it generate one on first request.
+query HomeImagery($ids: [ID!]!, $channel: String!) {
+	products(first: 30, channel: $channel, filter: { ids: $ids }) {
+		edges {
+			node {
+				id
+				media {
+					id
+					url
+				}
+			}
+		}
+	}
+}

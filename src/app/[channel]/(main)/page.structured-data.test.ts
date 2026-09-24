@@ -25,6 +25,9 @@ afterEach(() => {
 	vi.unstubAllEnvs();
 });
 
+// The hero's scenery is read from Saleor; it carries no structured data, so it is left out.
+vi.mock("@/lib/homepage/scenery", () => ({ getSceneryOrNone: async () => null }));
+
 /** Every element in a tree, including ones passed through props such as `vehicleAction`. */
 function elementsIn(node: unknown): ReactElement[] {
 	if (Array.isArray(node)) return (node as unknown[]).flatMap((child) => elementsIn(child));
@@ -40,7 +43,7 @@ describe("the market homepage", () => {
 			const { default: Page } = await import("./page");
 			const { HomepageStructuredData } = await import("@/ui/components/homepage/structured-data");
 
-			const tree = Page({ params: Promise.resolve({ channel }) });
+			const tree = await Page({ params: Promise.resolve({ channel }) });
 			const blocks = elementsIn(tree).filter((element) => element.type === HomepageStructuredData);
 			expect(blocks).toHaveLength(1);
 
