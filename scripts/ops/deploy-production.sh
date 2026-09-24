@@ -157,9 +157,15 @@ restore() {
 		return 1
 	fi
 
+	# The start step may already have run. A live server keeps writing ISR shells into
+	# .next/server/app, so `rm -rf` fails with "Directory not empty", the snapshot cannot
+	# move back, and PM2 goes on serving a half-deleted build (exit 71, 2026-09-24).
+	# Stop it first; stopping a stopped app is a no-op.
+	pm2 stop "$PM2_APP" >/dev/null 2>&1 || true
+
 	if [[ -e "$APP_DIR/.next" ]]; then
 		info "discarding the partial build (its log is at $BUILD_LOG)"
-		rm -rf "${APP_DIR:?}/.next"
+		rm -rf "${APP_DIR:?}/.next" || { err "could not remove the partial build"; return 1; }
 	fi
 
 	info "restoring $(basename "$SNAPSHOT")"
@@ -331,6 +337,16 @@ preflight() {
 		command -v "$cmd" >/dev/null || die "$cmd not found in PATH — a deploy check depends on it"
 	done
 	pm2 describe "$PM2_APP" >/dev/null 2>&1 || die "PM2 knows no app called '$PM2_APP'"
+
+	# This script never installs dependencies. A tree whose pnpm-lock.yaml differs from
+	# the lockfile node_modules was installed from builds on the old packages without a
+	# word (Next 16.2.9 under a package.json that said 16.3.6, 2026-09-24), and installing
+	# here would replace files the running server still loads. pnpm keeps a copy of the
+	# lockfile it installed from in node_modules/.pnpm/lock.yaml.
+	[[ -f node_modules/.pnpm/lock.yaml ]] \
+		|| die "node_modules/.pnpm/lock.yaml is missing — cannot tell which dependencies are installed"
+	cmp -s pnpm-lock.yaml node_modules/.pnpm/lock.yaml \
+		|| die "pnpm-lock.yaml differs from what node_modules was installed from — a dependency change needs its own procedure (PM2 stopped, node_modules set aside, pnpm install --frozen-lockfile), not this script"
 
 	# Cheap and worth it: about two seconds, and it is what catches a drift between
 	# public/ and src/lib/routing.generated.ts. That list decides which paths
@@ -731,11 +747,23 @@ PY
 	# Client-side navigation. The proxy matcher also fires for RSC and prefetch
 	# requests, so a change there can break in-app navigation while every plain
 	# page load still looks fine.
+	#
+	# Next 16.3 answers a request that carries `RSC: 1` but no `_rsc` with a 307 to
+	# `?_rsc` (its cache-busting check); a browser sends `_rsc` itself. A probe that
+	# took that 307 for a failure rolled back a healthy build on 2026-09-24. So follow
+	# one redirect and require the RSC payload of the same path, not a status alone.
+	local rsc final final_path ctype
 	for path in "$SMOKE_PATH" "$SMOKE_PATH/products"; do
-		code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 -H 'RSC: 1' "$LOCAL_URL$path" 2>/dev/null || echo 000)
-		[[ "$code" == "200" ]] || die "RSC navigation to $path answered $code — client-side routing is broken"
+		rsc=$(curl -sS -o /dev/null -L --max-redirs 1 --max-time 25 -H 'RSC: 1' \
+			-w '%{http_code}|%{content_type}|%{url_effective}' "$LOCAL_URL$path" 2>/dev/null || true)
+		IFS='|' read -r code ctype final <<<"$rsc"
+		code=${code:-000}
+		final_path=${final#"$LOCAL_URL"}
+		final_path=${final_path%%\?*}
+		[[ "$code" == "200" && "$ctype" == text/x-component* && "$final_path" == "$path" ]] \
+			|| die "RSC navigation to $path answered $code $ctype at $final — client-side routing is broken"
 	done
-	info "RSC navigation: 200"
+	info "RSC navigation: 200 text/x-component"
 
 	# The pages a customer actually needs.
 	for path in "$SMOKE_PATH/products" /checkout; do
