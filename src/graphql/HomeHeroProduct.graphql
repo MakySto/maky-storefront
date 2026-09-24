@@ -1,0 +1,11 @@
+# The product whose lifestyle photo the homepage hero shows, with the listing fields the
+# exact-locale check needs, so its label is only ever this market's name, URL and price.
+query HomeHeroProduct($id: ID!, $channel: String!, $lang: LanguageCodeEnum!) {
+	product(id: $id, channel: $channel) {
+		...ProductListItem
+		media {
+			id
+			url(size: 1600, format: WEBP)
+		}
+	}
+}

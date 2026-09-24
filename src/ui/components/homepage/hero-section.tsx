@@ -1,64 +1,68 @@
 "use client";
 
 import { type ReactNode } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { ArrowRightIcon } from "lucide-react";
+import { marketHref } from "@/lib/channel-map";
+import { categoryUrlFor } from "@/config/category-routes";
 
 /**
- * `vehicleAction` is a slot, not a button.
+ * The homepage hero: what the shop sells and the two ways in, with a real photo beside it.
  *
- * The hero used to render its own amber car button with no `onClick` — a stub, and the
- * wrong colour besides: CLAUDE.md §4 reserves amber for promotions and gives the purchase
- * and primary actions the action tokens. The real launcher has to resolve the saved
- * vehicle on the server, so it is passed in from the page rather than imported here, and
- * it is EMPTY when the vehicle feature cannot act (no dataset, or no garage). An absent
- * CTA is honest; a CTA that opens an empty selector is not.
+ * Both request-time parts are slots filled by the page, each behind its own Suspense
+ * boundary with a same-size fallback, so the static shell keeps the title and the copy:
+ *
+ * - `vehicleAction` names the saved car (it reads the garage cookie on the server) and is
+ *   EMPTY when the vehicle feature cannot act — an absent button is honest, one that opens
+ *   an empty selector is not;
+ * - `showcase` is the lifestyle photo from Saleor (see `hero-showcase.tsx`).
+ *
+ * Copy left, photo right; on a phone the copy and the buttons come first and the photo
+ * follows, so the first screen is the offer rather than a decorative picture.
  */
-export function HeroSection({ vehicleAction }: { vehicleAction?: ReactNode }) {
-	const t = useTranslations("nav");
-	const th = useTranslations("home");
+export function HeroSection({
+	vehicleAction,
+	showcase,
+}: {
+	vehicleAction?: ReactNode;
+	showcase?: ReactNode;
+}) {
+	const t = useTranslations("home");
+	const params = useParams<{ channel: string }>();
+	const boxesHref = marketHref(params.channel, categoryUrlFor(params.channel, "stresne-boxy"));
 
 	return (
-		<section className="relative overflow-hidden bg-gray-900 text-white">
-			<div className="mx-auto max-w-7xl px-6 py-20 sm:py-28 lg:px-8 lg:py-32">
-				<div className="max-w-2xl">
-					<p className="text-sm font-semibold tracking-widest text-amber-400 uppercase">MAKY.STORE</p>
+		<section className="bg-surface-inverse text-text-inverse">
+			<div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-12 lg:gap-12 lg:px-8 lg:py-16">
+				<div className="lg:col-span-6">
 					{/* Real copy from the `home` namespace, not three nav labels glued together.
-					    The old line read "Strešné nosiče, Strešné boxy, Ťažné zariadenia" —
-					    capitalised mid-sentence because they are menu labels, and it promised
-					    towbars, which CLAUDE.md §6 keeps off the homepage and which hold zero
-					    products in sk-eur. The subtitle below was a hardcoded two-way fork on
-					    `common.country === "Slovensko"`, so nine of the twelve locales were
-					    served English regardless of their own language. */}
-					<h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-						{th("heroTitle")}
+					    The old line read "Strešné nosiče, Strešné boxy, Ťažné zariadenia" and
+					    promised towbars, which CLAUDE.md §6 keeps off the homepage. The subtitle
+					    speaks to the whole range; "bars, feet and a fitting kit in one box" only
+					    ever described the roof-rack sets. */}
+					<h1 className="text-4xl leading-[1.05] font-bold tracking-[-0.025em] text-balance sm:text-5xl lg:text-[3.5rem]">
+						{t("heroTitle")}
 					</h1>
-					<p className="mt-6 text-lg leading-8 text-gray-300">{th("heroSubtitle")}</p>
+					<p className="text-text-inverse/75 mt-5 max-w-xl text-lg leading-8 text-pretty">
+						{t("heroSubtitle")}
+					</p>
 
-					<div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+					<div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-start">
 						{vehicleAction}
-						<a
-							href="#categories"
-							className="inline-flex items-center gap-1 text-sm font-medium text-gray-300 transition hover:text-white"
+						<Link
+							href={boxesHref}
+							className="border-text-inverse/25 text-text-inverse hover:border-text-inverse/60 hover:bg-text-inverse/10 focus-visible:ring-text-inverse inline-flex h-12 items-center justify-center gap-2 rounded-sm border px-6 text-base font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:outline-hidden"
 						>
-							{t("allCategories")}
-							<ArrowIcon />
-						</a>
+							{t("heroSecondaryCta")}
+							<ArrowRightIcon className="h-4 w-4" aria-hidden="true" />
+						</Link>
 					</div>
 				</div>
-			</div>
-			<div className="absolute inset-0 -z-10 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
-		</section>
-	);
-}
 
-function ArrowIcon() {
-	return (
-		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-			<path
-				fillRule="evenodd"
-				d="M5.22 14.78a.75.75 0 001.06 0l7.22-7.22v5.69a.75.75 0 001.5 0v-7.5a.75.75 0 00-.75-.75h-7.5a.75.75 0 000 1.5h5.69l-7.22 7.22a.75.75 0 000 1.06z"
-				clipRule="evenodd"
-			/>
-		</svg>
+				<div className="lg:col-span-6">{showcase}</div>
+			</div>
+		</section>
 	);
 }

@@ -1,0 +1,15 @@
+# Photos for the homepage category tiles. Read-only; images are not per channel, so the
+# channel only decides which cache tags the answer carries.
+query HomeCategoryImages($slugs: [String!]!) {
+	categories(filter: { slugs: $slugs }, first: 20) {
+		edges {
+			node {
+				id
+				slug
+				backgroundImage(size: 1024, format: WEBP) {
+					url
+				}
+			}
+		}
+	}
+}

@@ -14,16 +14,17 @@ import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { ProductList } from "@/ui/components/product-list";
 import {
 	HeroSection,
+	HeroPhotoFrame,
+	HeroShowcasePhoto,
+	HeroVehicleActions,
+	HeroVehicleActionsSkeleton,
 	CategoryGrid,
+	CategoryGridPhotos,
 	WhyMaky,
 	BrandsStrip,
 	NewsletterCTA,
 	HomepageStructuredData,
 } from "@/ui/components/homepage";
-import {
-	ActiveVehicleLauncher,
-	ActiveVehicleLauncherSkeleton,
-} from "@/ui/components/vehicle/active-vehicle-launcher";
 import { getTranslations } from "next-intl/server";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleCollection, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
@@ -99,16 +100,24 @@ export default function Page(props: { params: Promise<{ channel: string }> }) {
 				<HomepageStructuredData params={props.params} />
 			</Suspense>
 
-			{/* The hero CTA is request-time (it names the saved car), the rest of the hero
-			    is not. Its own boundary keeps the static shell for everything else. */}
+			{/* The hero's vehicle action is request-time (it reads the saved car) and its photo
+			    comes from Saleor; each has its own boundary and a same-size fallback, so the
+			    title and the copy stay in the static shell and nothing moves when they land. */}
 			<HeroSection
 				vehicleAction={
-					<Suspense fallback={<ActiveVehicleLauncherSkeleton variant="hero" />}>
-						<ActiveVehicleLauncher variant="hero" />
+					<Suspense fallback={<HeroVehicleActionsSkeleton />}>
+						<HeroVehicleActions params={props.params} />
+					</Suspense>
+				}
+				showcase={
+					<Suspense fallback={<HeroPhotoFrame />}>
+						<HeroShowcasePhoto params={props.params} />
 					</Suspense>
 				}
 			/>
-			<CategoryGrid />
+			<Suspense fallback={<CategoryGrid images={null} />}>
+				<CategoryGridPhotos params={props.params} />
+			</Suspense>
 
 			{/* Featured Products — the whole section (heading included) renders only when the
 			    featured-products collection is non-empty; otherwise it is hidden entirely. */}

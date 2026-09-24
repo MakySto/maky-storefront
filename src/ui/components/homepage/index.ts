@@ -1,5 +1,9 @@
 export { HeroSection } from "./hero-section";
+export { HeroPhotoFrame } from "./hero-photo-frame";
+export { HeroShowcasePhoto } from "./hero-showcase";
+export { HeroVehicleActions, HeroVehicleActionsSkeleton } from "./hero-vehicle-actions";
 export { CategoryGrid } from "./category-grid";
+export { CategoryGridPhotos } from "./category-grid-photos";
 export { WhyMaky } from "./why-maky";
 export { BrandsStrip } from "./brands-strip";
 export { NewsletterCTA } from "./newsletter-cta";
