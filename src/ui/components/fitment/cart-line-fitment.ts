@@ -18,6 +18,7 @@ import {
 	VERDICT_LABEL_KEY,
 	type VerdictTone,
 } from "./verdict-presentation";
+import { programmeCovered, rememberProgramme } from "./programme-memory";
 import { withinDeadline } from "./within-deadline";
 
 /**
@@ -27,11 +28,11 @@ import { withinDeadline } from "./within-deadline";
  */
 export const CART_FITMENT_WAIT_MS = 800;
 
-/** What a cart line says about the saved car: the verdict's own words, and the car. */
+/** What a cart line says about the saved car: the verdict's own words, and the car when known. */
 export interface CartLineFitment {
 	readonly tone: VerdictTone;
 	readonly label: string;
-	readonly vehicle: string;
+	readonly vehicle: string | null;
 }
 
 /** Verdicts about our data rather than the product: a cart line keeps quiet about them. */
@@ -60,12 +61,15 @@ export async function cartLineFitments(
 	try {
 		// No garage cookie, no car: the common case costs neither the dataset nor a wait.
 		if (!(await cookies()).has(GARAGE_COOKIE_NAME)) return {};
+		// ONE deadline for the whole cart, around its one dataset load — not one per line: the
+		// lines are then judged synchronously from the same dataset.
 		const loaded = await withinDeadline(loadFitmentDataset(), CART_FITMENT_WAIT_MS);
-		if (!loaded) return {};
-		const { dataset } = loaded;
+		const dataset = loaded?.dataset ?? null;
+		if (!dataset) return await unavailable(channel, productIds);
+		rememberProgramme(dataset);
 		// Simulated data: the product page says so beside every answer; a cart badge has no room
 		// for that notice, so it says nothing rather than a bare green claim.
-		if (!dataset || isDemoDataset(dataset)) return {};
+		if (isDemoDataset(dataset)) return {};
 		const garage = await readGarage(dataset);
 		const active = garage.active && !garage.active.unresolved ? garage.active : null;
 		if (!active) return {};
@@ -98,4 +102,22 @@ export async function cartLineFitments(
 		console.error("[fitment] cart compatibility failed:", error);
 		return {};
 	}
+}
+
+/**
+ * The data did not come this time (past the deadline, or the provider down): each line the
+ * programme covers — as the last dataset this process loaded knew it — says "Kompatibilitu teraz
+ * nevieme overiť", neutral, without a car it could not resolve. The others say nothing.
+ */
+async function unavailable(
+	channel: string,
+	productIds: readonly string[],
+): Promise<Record<string, CartLineFitment>> {
+	const covered = [...new Set(productIds)].filter((id) => programmeCovered(id) === true);
+	if (covered.length === 0) return {};
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "fitment" });
+	const label = t(VERDICT_LABEL_KEY.PROVIDER_UNAVAILABLE);
+	return Object.fromEntries(
+		covered.map((id) => [id, { tone: "unconfirmed" as const, label, vehicle: null }]),
+	);
 }

@@ -132,7 +132,12 @@
 		"trustReturnsTitle": "Zwrot towaru",
 		"trustReturnsText": "Co najmniej 14 dni",
 		"trustWarrantyTitle": "2 lata gwarancji",
-		"trustWarrantyText": "Zgodnie z prawem"
+		"trustWarrantyText": "Zgodnie z prawem",
+		"highlightBikes": "{count, plural, one {Na # rower} few {Na # rowery} many {Na # rowerów} other {Na # roweru}}",
+		"highlightLoad": "Ładowność {value}",
+		"highlightLoadPerBike": "Na rower do {value}",
+		"highlightVolume": "Pojemność {value}",
+		"highlightWeight": "Waga {value}"
 	},
 	"fitment": {
 		"selectVehicle": "Wybierz swój pojazd",

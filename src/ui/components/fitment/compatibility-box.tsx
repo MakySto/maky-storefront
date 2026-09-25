@@ -96,7 +96,10 @@ export async function CompatibilityBox({
 	const needsVehicle =
 		detailKey !== "verdictSelectVehicleDetail" &&
 		detailKey !== "verdictUniversalDetail" &&
-		detailKey !== "verdictNeedsDetailDetail";
+		detailKey !== "verdictNeedsDetailDetail" &&
+		// About our data, not the car: said as is, with or without a car resolved.
+		detailKey !== "verdictUnavailableDetail" &&
+		detailKey !== "verdictStaleDetail";
 	// Whose word this is, named. The supplier comes from the row's own evidence rather
 	// than from a constant, so a second brand's data cannot arrive one day still
 	// attributed to the first. An unnamed source degrades to "the manufacturer" — vague,

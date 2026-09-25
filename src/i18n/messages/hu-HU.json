@@ -132,7 +132,12 @@
 		"trustReturnsTitle": "Visszaküldés",
 		"trustReturnsText": "Legalább 14 nap",
 		"trustWarrantyTitle": "2 év jótállás",
-		"trustWarrantyText": "A törvény szerint"
+		"trustWarrantyText": "A törvény szerint",
+		"highlightBikes": "{count, plural, one {# kerékpárhoz} other {# kerékpárhoz}}",
+		"highlightLoad": "Teherbírás {value}",
+		"highlightLoadPerBike": "Kerékpáronként legfeljebb {value}",
+		"highlightVolume": "Térfogat {value}",
+		"highlightWeight": "Tömeg {value}"
 	},
 	"fitment": {
 		"selectVehicle": "Válassza ki járművét",

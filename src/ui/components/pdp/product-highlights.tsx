@@ -17,7 +17,9 @@ import { cn } from "@/lib/utils";
 
 /**
  * The parameters worth seeing before the description, in the order a shopper decides by — for a
- * bike carrier how many bikes and how much weight, for a box its volume and how it opens.
+ * bike carrier how many bikes and how much weight, for a box its volume and how it opens. Each is
+ * a short statement that stands on its own where it can be ("Pre 2 bicykle", "Nosnosť 60 kg",
+ * "Vhodný pre e-bike"), else the value over its name.
  *
  * Only the product's own attributes, formatted like the parameters table below. The total load
  * and the load per bike are two different attributes and are shown as such; nothing is derived
@@ -38,6 +40,26 @@ const HIGHLIGHTS: readonly { ref: string; icon: LucideIcon }[] = [
 ];
 
 const MAX_HIGHLIGHTS = 4;
+
+/**
+ * The highlights that read as one finished phrase (owner, 2026-09-25): "Pre 2 bicykle",
+ * "Nosnosť 60 kg" instead of a bare "2" or "60 kg" explained by small print under it. The value
+ * is the attribute's own, formatted exactly as in the parameters table — the phrase only wraps
+ * it. A value that does not fit its phrase (a count that is not a whole number) keeps the
+ * two-line form, as does every attribute without a phrase.
+ */
+const PHRASE: Readonly<
+	Record<
+		string,
+		"highlightBikes" | "highlightLoad" | "highlightLoadPerBike" | "highlightVolume" | "highlightWeight"
+	>
+> = {
+	"cfm:attribute:bike_capacity": "highlightBikes",
+	"cfm:attribute:max_load": "highlightLoad",
+	"cfm:attribute:max_load_per_bike": "highlightLoadPerBike",
+	"cfm:attribute:volume": "highlightVolume",
+	"cfm:attribute:weight": "highlightWeight",
+};
 
 export async function ProductHighlights({
 	attributes,
@@ -64,7 +86,16 @@ export async function ProductHighlights({
 			}
 			const values = formatProductAttributeValue(attribute, locale, words);
 			if (values.length === 0) return [];
-			return [{ ref, icon, value: values.join(", "), label: attribute.attribute.name }];
+			const value = values.join(", ");
+			const phrase = PHRASE[ref];
+			if (phrase === "highlightBikes") {
+				if (values.length === 1 && /^\d+$/.test(value.trim())) {
+					return [{ ref, icon, value: t(phrase, { count: Number(value.trim()) }), label: null }];
+				}
+			} else if (phrase && values.length === 1) {
+				return [{ ref, icon, value: t(phrase, { value }), label: null }];
+			}
+			return [{ ref, icon, value, label: attribute.attribute.name }];
 		},
 	).slice(0, MAX_HIGHLIGHTS);
 

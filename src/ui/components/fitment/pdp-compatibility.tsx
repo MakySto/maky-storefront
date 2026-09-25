@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
 
@@ -5,12 +6,14 @@ import { getLocaleFromChannel } from "@/config/locale";
 import { isDemoDataset } from "@/lib/fitment/offers";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { datasetSpeaksForProduct, resolveFitment } from "@/lib/fitment/resolve";
+import { GARAGE_COOKIE_NAME } from "@/lib/garage/cookie";
 import { joinVehicleDetail, vehicleDetailParts, vehicleShortLabel } from "@/lib/garage/label";
 import { readGarage } from "@/lib/garage/state";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import { VehicleSelectorLauncher } from "@/ui/components/vehicle/vehicle-selector-launcher";
 import { CompatibilityBox } from "./compatibility-box";
+import { programmeCovered, rememberProgramme } from "./programme-memory";
 import { withinDeadline } from "./within-deadline";
 
 /**
@@ -31,14 +34,17 @@ const PDP_FITMENT_WAIT_MS = 800;
  * thought they were changing their car. Keeping it outside the form removes the hazard
  * rather than relying on every future edit to remember it.
  *
- * It renders NOTHING in three cases, and all are the honest answer:
+ * It renders NOTHING when there is nothing true to say:
  *
- *   - no dataset — the provider is off or unreachable, so there is no compatibility
- *     feature on this deployment to speak with;
- *   - no dataset within `PDP_FITMENT_WAIT_MS` — the box renders with the purchase block, so
- *     it comes in time or not at all this view;
+ *   - the provider has never answered in this process — no compatibility feature to speak with;
  *   - the dataset has no row for this product — see `datasetSpeaksForProduct`. Silence,
  *     never NO_FIT, is what absence means outside the programme's scope.
+ *
+ * When the data does not come THIS time — past `PDP_FITMENT_WAIT_MS`, or with the provider
+ * down — for a product the programme covers and a shopper with a saved car, it says so: the
+ * neutral "Kompatibilitu teraz nevieme overiť", neither a fit nor a misfit (owner, 2026-09-25:
+ * a failure must not read as "nothing to say"). Which products the programme covers is taken
+ * from the last dataset this process loaded (`programme-memory.ts`).
  *
  * The action under the verdict changes with the verdict, because "choose your car" is
  * the wrong offer to someone who has just been told their car does not fit: that shopper
@@ -75,15 +81,25 @@ async function renderCompatibility({
 	await connection();
 
 	const loaded = await withinDeadline(loadFitmentDataset(), PDP_FITMENT_WAIT_MS);
-	if (!loaded) {
-		console.warn(`[fitment] PDP compatibility left out: no dataset within ${PDP_FITMENT_WAIT_MS} ms`);
-		return null;
+	const dataset = loaded?.dataset ?? null;
+	const locale = getLocaleFromChannel(channel);
+	if (!dataset) {
+		if (!loaded) console.warn(`[fitment] PDP compatibility: no dataset within ${PDP_FITMENT_WAIT_MS} ms`);
+		// Not this time: said as such for a covered product and a saved car, else nothing.
+		if (programmeCovered(saleorProductId) !== true) return null;
+		if (!(await cookies()).has(GARAGE_COOKIE_NAME)) return null;
+		return (
+			<CompatibilityBox
+				result={resolveFitment(null, null, { saleorProductId })}
+				vehicleLabel={null}
+				locale={locale}
+				className={className}
+			/>
+		);
 	}
-	const { dataset } = loaded;
-	if (!dataset) return null;
+	rememberProgramme(dataset);
 	if (!datasetSpeaksForProduct(dataset, saleorProductId)) return null;
 
-	const locale = getLocaleFromChannel(channel);
 	const t = await getTranslations({ locale, namespace: "fitment" });
 
 	const garage = await readGarage(dataset);

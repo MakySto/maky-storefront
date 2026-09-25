@@ -132,7 +132,12 @@
 		"trustReturnsTitle": "Retour",
 		"trustReturnsText": "Au moins 14 jours",
 		"trustWarrantyTitle": "Garantie 2 ans",
-		"trustWarrantyText": "Légale"
+		"trustWarrantyText": "Légale",
+		"highlightBikes": "{count, plural, one {Pour # vélo} other {Pour # vélos}}",
+		"highlightLoad": "Charge max. {value}",
+		"highlightLoadPerBike": "Jusqu'à {value} par vélo",
+		"highlightVolume": "Volume {value}",
+		"highlightWeight": "Poids {value}"
 	},
 	"fitment": {
 		"selectVehicle": "Sélectionnez votre véhicule",

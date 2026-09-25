@@ -132,7 +132,12 @@
 		"trustReturnsTitle": "Reso",
 		"trustReturnsText": "Almeno 14 giorni",
 		"trustWarrantyTitle": "Garanzia di 2 anni",
-		"trustWarrantyText": "Per legge"
+		"trustWarrantyText": "Per legge",
+		"highlightBikes": "{count, plural, one {Per # bicicletta} other {Per # biciclette}}",
+		"highlightLoad": "Portata {value}",
+		"highlightLoadPerBike": "Fino a {value} per bicicletta",
+		"highlightVolume": "Volume {value}",
+		"highlightWeight": "Peso {value}"
 	},
 	"fitment": {
 		"selectVehicle": "Seleziona il tuo veicolo",

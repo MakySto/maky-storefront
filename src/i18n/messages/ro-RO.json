@@ -132,7 +132,12 @@
 		"trustReturnsTitle": "Returnare",
 		"trustReturnsText": "Cel puțin 14 zile",
 		"trustWarrantyTitle": "Garanție 2 ani",
-		"trustWarrantyText": "Legală"
+		"trustWarrantyText": "Legală",
+		"highlightBikes": "{count, plural, one {Pentru # bicicletă} few {Pentru # biciclete} other {Pentru # de biciclete}}",
+		"highlightLoad": "Capacitate {value}",
+		"highlightLoadPerBike": "Până la {value} pe bicicletă",
+		"highlightVolume": "Volum {value}",
+		"highlightWeight": "Greutate {value}"
 	},
 	"fitment": {
 		"selectVehicle": "Selectați vehiculul",

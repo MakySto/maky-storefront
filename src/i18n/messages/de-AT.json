@@ -132,7 +132,12 @@
 		"trustReturnsTitle": "Rückgabe",
 		"trustReturnsText": "Mindestens 14 Tage",
 		"trustWarrantyTitle": "2 Jahre Gewährleistung",
-		"trustWarrantyText": "Gesetzlich"
+		"trustWarrantyText": "Gesetzlich",
+		"highlightBikes": "{count, plural, one {Für # Fahrrad} other {Für # Fahrräder}}",
+		"highlightLoad": "Tragkraft {value}",
+		"highlightLoadPerBike": "Pro Fahrrad bis {value}",
+		"highlightVolume": "Volumen {value}",
+		"highlightWeight": "Gewicht {value}"
 	},
 	"fitment": {
 		"selectVehicle": "Wählen Sie Ihr Fahrzeug",

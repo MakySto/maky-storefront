@@ -28,7 +28,8 @@ export function CartLineFit({ fitment, className }: { fitment: CartLineFitment; 
 		>
 			<Icon className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={2.5} aria-hidden="true" />
 			<span className="min-w-0">
-				{fitment.label} <span className="font-normal opacity-90">· {fitment.vehicle}</span>
+				{fitment.label}
+				{fitment.vehicle && <span className="font-normal opacity-90"> · {fitment.vehicle}</span>}
 			</span>
 		</p>
 	);

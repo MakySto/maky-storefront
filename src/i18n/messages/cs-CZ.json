@@ -132,7 +132,12 @@
 		"trustReturnsTitle": "Vrácení zboží",
 		"trustReturnsText": "Nejméně 14 dní",
 		"trustWarrantyTitle": "Záruka 2 roky",
-		"trustWarrantyText": "Na zboží podle zákona"
+		"trustWarrantyText": "Na zboží podle zákona",
+		"highlightBikes": "{count, plural, one {Pro # kolo} few {Pro # kola} other {Pro # kol}}",
+		"highlightLoad": "Nosnost {value}",
+		"highlightLoadPerBike": "Na kolo až {value}",
+		"highlightVolume": "Objem {value}",
+		"highlightWeight": "Hmotnost {value}"
 	},
 	"fitment": {
 		"selectVehicle": "Vyberte vaše vozidlo",

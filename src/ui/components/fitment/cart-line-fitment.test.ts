@@ -26,6 +26,7 @@ vi.mock("next-intl/server", () => ({
 }));
 
 import { CART_FITMENT_WAIT_MS, cartLineFitments } from "./cart-line-fitment";
+import { __forgetProgramme } from "./programme-memory";
 
 const gid = (pk: number) => Buffer.from(`Product:${pk}`, "utf8").toString("base64");
 const FITS = gid(1);
@@ -127,6 +128,7 @@ beforeEach(() => {
 	vi.resetAllMocks();
 	vi.useRealTimers();
 	cookieJar.hasGarage = true;
+	__forgetProgramme();
 	vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
@@ -189,6 +191,48 @@ describe("cart line compatibility", () => {
 		const result = cartLineFitments("sk-eur", [FITS]);
 		await vi.advanceTimersByTimeAsync(CART_FITMENT_WAIT_MS);
 		await expect(result).resolves.toEqual({});
+	});
+
+	it("one deadline for the whole cart, not one per line", async () => {
+		vi.useFakeTimers();
+		loadFitmentDataset.mockReturnValue(new Promise(() => {}));
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		const result = cartLineFitments("sk-eur", [FITS, OTHER_CAR, NOT_IN_DATASET, gid(4), gid(5)]);
+		let settled = false;
+		void result.then(() => (settled = true));
+		await vi.advanceTimersByTimeAsync(CART_FITMENT_WAIT_MS);
+		expect(settled).toBe(true);
+		expect(loadFitmentDataset).toHaveBeenCalledTimes(1);
+	});
+
+	it("says it cannot check now — neutral, no car — for covered lines when the data does not come", async () => {
+		// A first cart loads the dataset: the process now knows which products the programme covers.
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset() });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+		await cartLineFitments("sk-eur", [FITS]);
+
+		vi.useFakeTimers();
+		loadFitmentDataset.mockReturnValue(new Promise(() => {}));
+		const result = cartLineFitments("sk-eur", [FITS, OTHER_CAR, NOT_IN_DATASET]);
+		await vi.advanceTimersByTimeAsync(CART_FITMENT_WAIT_MS);
+		const fitments = await result;
+
+		for (const id of [FITS, OTHER_CAR]) {
+			expect(fitments[id]).toEqual({ tone: "unconfirmed", label: "verdictUnavailable", vehicle: null });
+		}
+		expect(fitments[NOT_IN_DATASET]).toBeUndefined();
+	});
+
+	it("says the same when the provider answers with no dataset after a good load", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset() });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+		await cartLineFitments("sk-eur", [FITS]);
+
+		loadFitmentDataset.mockResolvedValue({ dataset: null });
+		const fitments = await cartLineFitments("sk-eur", [FITS]);
+		expect(fitments[FITS]?.tone).toBe("unconfirmed");
+		expect(fitments[FITS]?.tone).not.toBe("fits");
 	});
 
 	it("turns a fault into silence, never into a broken cart", async () => {
