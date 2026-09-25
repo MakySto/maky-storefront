@@ -211,16 +211,16 @@ function FeaturedProductsSkeleton() {
 	return (
 		<section className="max-w-page mx-auto px-4 pt-10 pb-6 sm:px-6 sm:pt-14 lg:px-8" aria-hidden="true">
 			<div className="bg-surface-secondary h-8 w-64 animate-pulse rounded-xs sm:h-9" />
-			<div className="mt-6 grid w-full grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:gap-5 min-[90rem]:grid-cols-5">
+			<div className="mt-6 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:gap-5 min-[90rem]:grid-cols-5">
 				{Array.from({ length: FEATURED_PRODUCTS_LIMIT }).map((_, i) => (
-					<div key={i} className="border-border-subtle bg-surface-card flex flex-col rounded-sm border">
+					<div key={i} className="border-border-default bg-surface-card flex flex-col rounded-sm border">
 						<div className="bg-surface-secondary aspect-[5/4] animate-pulse rounded-t-sm" />
-						<div className="space-y-2 px-3 pt-2 sm:px-4">
+						<div className="space-y-2 px-4 pt-3">
 							<div className="bg-surface-secondary h-3 w-24 rounded-xs" />
 							<div className="bg-surface-secondary h-[2lh] w-full rounded-xs" />
 							<div className="bg-surface-secondary h-6 w-20 rounded-xs" />
 						</div>
-						<div className="bg-surface-secondary mx-3 mt-3 mb-3 h-11 rounded-xs sm:mx-4 sm:mb-4" />
+						<div className="bg-surface-secondary mx-4 mt-3 mb-4 h-11 rounded-xs" />
 					</div>
 				))}
 			</div>

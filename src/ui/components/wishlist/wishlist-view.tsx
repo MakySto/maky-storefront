@@ -109,7 +109,7 @@ function WishlistContent({ channel }: { channel: string }) {
 			<p className="text-text-primary text-sm font-semibold" aria-live="polite">
 				{t("count", { count: products.length })}
 			</p>
-			<div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 xl:gap-5 min-[90rem]:grid-cols-5">
+			<div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:gap-5 min-[90rem]:grid-cols-5">
 				{products.map((product) => (
 					<ProductCard key={product.id} product={product} purchase="button" />
 				))}

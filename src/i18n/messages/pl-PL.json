@@ -36,7 +36,8 @@
 		"onDemand": "Na zamówienie, dostawa w 5–10 dni roboczych",
 		"viewDetail": "Szczegóły produktu",
 		"addToCartShort": "Do koszyka",
-		"onDemandShort": "Na zamówienie"
+		"onDemandShort": "Na zamówienie",
+		"addedShort": "Dodano"
 	},
 	"nav": {
 		"home": "Strona główna",

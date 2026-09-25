@@ -36,7 +36,8 @@
 		"onDemand": "Rendelésre, szállítás 5–10 munkanapon belül",
 		"viewDetail": "Termék részletei",
 		"addToCartShort": "Kosárba",
-		"onDemandShort": "Rendelésre"
+		"onDemandShort": "Rendelésre",
+		"addedShort": "Kosárban"
 	},
 	"nav": {
 		"home": "Kezdőlap",

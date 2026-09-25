@@ -36,7 +36,8 @@
 		"onDemand": "La comandă, livrare în 5–10 zile lucrătoare",
 		"viewDetail": "Vezi produsul",
 		"addToCartShort": "În coș",
-		"onDemandShort": "La comandă"
+		"onDemandShort": "La comandă",
+		"addedShort": "Adăugat"
 	},
 	"nav": {
 		"home": "Acasă",

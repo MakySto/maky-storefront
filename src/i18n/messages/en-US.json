@@ -36,7 +36,8 @@
 		"onDemand": "Made to order, delivery in 7–14 business days",
 		"viewDetail": "View product",
 		"addToCartShort": "Add to cart",
-		"onDemandShort": "Made to order"
+		"onDemandShort": "Made to order",
+		"addedShort": "Added"
 	},
 	"nav": {
 		"home": "Home",

@@ -36,7 +36,8 @@
 		"onDemand": "Na objednávku, dodanie 5–10 pracovných dní",
 		"viewDetail": "Detail produktu",
 		"addToCartShort": "Do košíka",
-		"onDemandShort": "Na objednávku"
+		"onDemandShort": "Na objednávku",
+		"addedShort": "Pridané"
 	},
 	"nav": {
 		"home": "Domov",

@@ -36,7 +36,8 @@
 		"onDemand": "Auf Bestellung, Lieferung in 5–10 Werktagen",
 		"viewDetail": "Zum Produkt",
 		"addToCartShort": "In den Warenkorb",
-		"onDemandShort": "Auf Bestellung"
+		"onDemandShort": "Auf Bestellung",
+		"addedShort": "Hinzugefügt"
 	},
 	"nav": {
 		"home": "Startseite",

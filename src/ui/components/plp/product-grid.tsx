@@ -3,9 +3,11 @@ import { cn } from "@/lib/utils";
 import { ProductCard, type ProductCardData, type ProductCardPurchase } from "./product-card";
 
 /**
- * How many columns the grid may use, which depends on what shares its row. Two on a phone
- * everywhere: the photo sits above the words (owner, 2026-09-24), and two cards to a row keep a
- * list of twenty-four a scroll rather than a slideshow.
+ * How many columns the grid may use, which depends on what shares its row. ONE on a phone,
+ * everywhere (owner, 2026-09-24, third pass): these products are chosen on their facts — the
+ * maker, the name that carries the car, the code, the price and the lead time — and two cards
+ * to a 360px row left each of them 160px, with a photo too small to judge the product by. The
+ * photo stays on top and takes the card's whole width. Two columns from 640px.
  *
  * - `home`: the full page width — four columns, five from 1440px, where each card still gets
  *   ~250px (the approved homepage is five by two). Quantity and "Do košíka" side by side.
@@ -47,8 +49,13 @@ interface ProductGridProps {
  * remaining catalogue lands.
  */
 export function ProductGrid({ products, groupHeading, columns = "full" }: ProductGridProps) {
+	// A category's own listing holds one category: its name on every card said nothing the page
+	// heading had not. Where the grid mixes categories — the homepage, search, a parent category,
+	// a maker's page — the card names each product's.
+	const showCategory = new Set(products.map((product) => product.category?.id ?? null)).size > 1;
+
 	return (
-		<div className={cn("grid w-full grid-cols-2 gap-3 sm:gap-4 xl:gap-5", COLUMNS[columns])}>
+		<div className={cn("grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:gap-5", COLUMNS[columns])}>
 			{/* Exactly ONE preload. On a phone only the first row is above the fold, yet
 			    `priority` on the first four
 			    emitted four high-priority preloads that fought over the connection —
@@ -68,7 +75,12 @@ export function ProductGrid({ products, groupHeading, columns = "full" }: Produc
 							{groupHeading.label}
 						</h2>
 					)}
-					<ProductCard product={product} priority={index === 0} purchase={PURCHASE[columns]} />
+					<ProductCard
+						product={product}
+						priority={index === 0}
+						purchase={PURCHASE[columns]}
+						showCategory={showCategory}
+					/>
 				</Fragment>
 			))}
 		</div>

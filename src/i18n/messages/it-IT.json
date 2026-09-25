@@ -36,7 +36,8 @@
 		"onDemand": "Su ordinazione, consegna in 5–10 giorni lavorativi",
 		"viewDetail": "Vedi prodotto",
 		"addToCartShort": "Aggiungi",
-		"onDemandShort": "Su ordinazione"
+		"onDemandShort": "Su ordinazione",
+		"addedShort": "Aggiunto"
 	},
 	"nav": {
 		"home": "Home",

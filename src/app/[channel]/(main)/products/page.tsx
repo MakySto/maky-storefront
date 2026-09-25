@@ -195,8 +195,8 @@ async function ProductsContent({
 function ProductsGridSkeleton() {
 	return (
 		<div className="animate-skeleton-delayed mx-auto max-w-7xl px-4 py-8 opacity-0 sm:px-6 lg:px-8">
-			{/* Matches ProductGrid: grid-cols-2 lg:grid-cols-3 */}
-			<div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
+			{/* Matches ProductGrid: one column on a phone, two from sm, three from lg */}
+			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
 				{Array.from({ length: 6 }).map((_, i) => (
 					<div key={i} className="animate-pulse">
 						{/* Matches ProductCard: aspect-[3/4] rounded-xl */}

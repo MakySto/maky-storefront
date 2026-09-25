@@ -1,12 +1,22 @@
 "use client";
 
-import { useActionState } from "react";
+import { createContext, useActionState, useContext } from "react";
 import { useTranslations } from "next-intl";
 import { AlertCircle, CheckCircle2, HelpCircle } from "lucide-react";
 
 import type { AddToCartResult } from "./add-to-cart-result";
 
 type CartFormAction = (previous: AddToCartResult | null, formData: FormData) => Promise<AddToCartResult>;
+
+const CartFormResultContext = createContext<AddToCartResult | null>(null);
+
+/**
+ * The last outcome of the surrounding `<CartForm>` — a new object for every submission, so a
+ * button can tell one add from the next. Null before the first submission and outside a form.
+ */
+export function useCartFormResult(): AddToCartResult | null {
+	return useContext(CartFormResultContext);
+}
 
 /**
  * The add-to-cart form, with the outcome shown to the customer.
@@ -22,24 +32,48 @@ type CartFormAction = (previous: AddToCartResult | null, formData: FormData) => 
 export function CartForm({
 	action,
 	className,
+	quietSuccess = false,
 	children,
 }: {
 	action: CartFormAction;
 	className?: string;
+	/**
+	 * The listing card's form: a success is told by the button itself ("Pridané", then back) and
+	 * to assistive tech by a hidden status line, not by a visible line under the button. A line
+	 * appearing in one card of a grid pushed that card's purchase row out of line with the rest of
+	 * its row. A refusal, and a "we do not know", still show — a shopper must see those.
+	 */
+	quietSuccess?: boolean;
 	children: React.ReactNode;
 }) {
 	const [result, formAction] = useActionState(action, null);
 
 	return (
 		<form action={formAction} className={className}>
-			{children}
-			<AddToCartStatus result={result} />
+			<CartFormResultContext.Provider value={result}>{children}</CartFormResultContext.Provider>
+			<AddToCartStatus result={result} quietSuccess={quietSuccess} />
 		</form>
 	);
 }
 
-function AddToCartStatus({ result }: { result: AddToCartResult | null }) {
+function AddToCartStatus({
+	result,
+	quietSuccess,
+}: {
+	result: AddToCartResult | null;
+	quietSuccess: boolean;
+}) {
 	const t = useTranslations("cart");
+
+	// The quiet form keeps its status region in the DOM from the start, so the announcement is a
+	// change to a region that already exists — the form assistive tech reliably reads.
+	if (quietSuccess && (!result || result.status === "added")) {
+		return (
+			<p role="status" className="sr-only">
+				{result ? t("addedToCart") : ""}
+			</p>
+		);
+	}
 
 	if (!result) return null;
 

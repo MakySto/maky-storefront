@@ -36,7 +36,8 @@
 		"onDemand": "Bajo pedido, entrega en 5–10 días laborables",
 		"viewDetail": "Ver producto",
 		"addToCartShort": "Añadir",
-		"onDemandShort": "Bajo pedido"
+		"onDemandShort": "Bajo pedido",
+		"addedShort": "Añadido"
 	},
 	"nav": {
 		"home": "Inicio",
