@@ -1,0 +1,74 @@
+{
+  "change": "publish",
+  "dependents": [],
+  "entityId": "01928f3e-7777-7000-8000-000000000001",
+  "entitySlug": "brands",
+  "entityType": "collection",
+  "event": "publish",
+  "eventId": "01928f3f-0000-7000-8000-000000000009",
+  "locale": null,
+  "locales": [
+    "sk",
+    "cs",
+    "pl",
+    "hu",
+    "ro",
+    "de",
+    "it",
+    "fr",
+    "es",
+    "en"
+  ],
+  "markets": [
+    "SK",
+    "CZ",
+    "PL",
+    "HU",
+    "RO",
+    "AT",
+    "DE",
+    "IT",
+    "FR",
+    "ES",
+    "US",
+    "CA"
+  ],
+  "occurredAt": "2026-09-26T08:00:00.000Z",
+  "previousSlug": null,
+  "revision": "2026-09-26T07:59:58.412Z",
+  "routes": {
+    "current": {
+      "locales": [
+        "sk",
+        "cs",
+        "pl",
+        "hu",
+        "ro",
+        "de",
+        "it",
+        "fr",
+        "es",
+        "en"
+      ],
+      "markets": [
+        "SK",
+        "CZ",
+        "PL",
+        "HU",
+        "RO",
+        "AT",
+        "DE",
+        "IT",
+        "FR",
+        "ES",
+        "US",
+        "CA"
+      ],
+      "slug": "thule"
+    },
+    "previous": null
+  },
+  "schemaVersion": 2,
+  "slug": "thule",
+  "source": "maky-cms"
+}

@@ -1,0 +1,7 @@
+{
+  "success": true,
+  "schemaVersion": 2,
+  "eventId": "01928f3f-0000-7000-8000-000000000008",
+  "revalidated": ["cms:collection:public-media", "cms:collection:pages", "cms:page:poradna", "cms:collection:brands"],
+  "targets": []
+}

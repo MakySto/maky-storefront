@@ -1,0 +1,46 @@
+{
+  "change": "update",
+  "dependents": [],
+  "entityId": "01928f3e-4b1a-7c3d-9e2f-0123456789ab",
+  "entitySlug": "pages",
+  "entityType": "collection",
+  "event": "update",
+  "eventId": "01928f3f-0000-7000-8000-000000000002",
+  "locale": null,
+  "locales": [
+    "sk",
+    "cs"
+  ],
+  "markets": [
+    "SK",
+    "CZ"
+  ],
+  "occurredAt": "2026-09-26T08:00:00.000Z",
+  "previousSlug": "o-firme",
+  "revision": "2026-09-26T07:59:58.412Z",
+  "routes": {
+    "current": {
+      "locales": [
+        "sk",
+        "cs"
+      ],
+      "markets": [
+        "SK",
+        "CZ"
+      ],
+      "slug": "o-nas"
+    },
+    "previous": {
+      "locales": [
+        "sk"
+      ],
+      "markets": [
+        "SK"
+      ],
+      "slug": "o-firme"
+    }
+  },
+  "schemaVersion": 2,
+  "slug": "o-nas",
+  "source": "maky-cms"
+}

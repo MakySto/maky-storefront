@@ -1,0 +1,83 @@
+{
+  "id": "storefront-cms",
+  "version": 3,
+  "status": "candidate",
+  "provider": "maky-cms thread 2 (feat/v2-editorial-workspace)",
+  "payloadVersion": "3.90.2",
+  "parts": {
+    "revalidationEvent": {
+      "schemaVersion": 2,
+      "contract": "revalidation-event-v2.md",
+      "compatibleWith": "storefront-cms-o-nas-v1 revalidation (v1 fields unchanged)"
+    },
+    "preview": {
+      "version": 1,
+      "contract": "preview-v1.md",
+      "collections": [
+        "pages"
+      ],
+      "tokenTtlSeconds": 1800,
+      "storefrontRoute": "/api/cms/preview",
+      "exitRoute": "/api/cms/preview/exit",
+      "cookie": "maky-cms-preview",
+      "resolveEndpoint": "/api/pages/preview-resolve",
+      "identity": "service-accounts/preview-reader"
+    },
+    "pages": {
+      "version": 3,
+      "contract": "pages-content.md",
+      "base": "storefront-cms-pages-v2",
+      "unsupportedBlock": "skip-with-diagnostics (legal pages: reject document)",
+      "focalPoint": "object-position focalX% focalY%",
+      "revisionMeta": "maky-cms-revision"
+    }
+  },
+  "supportedBlocks": [
+    "hero",
+    "richText",
+    "image",
+    "gallery",
+    "cta",
+    "faq",
+    "mediaText"
+  ],
+  "marketLocales": {
+    "SK": "sk",
+    "CZ": "cs",
+    "PL": "pl",
+    "HU": "hu",
+    "RO": "ro",
+    "AT": "de",
+    "DE": "de",
+    "IT": "it",
+    "FR": "fr",
+    "ES": "es",
+    "US": "en",
+    "CA": "en"
+  },
+  "files": {
+    "README.md": "8b70e5cd1a4dafe53835413b0d1cff724d1fd9d476be39630d00f1b903278531",
+    "fixtures/events/brand-publish.json": "b40087c48d6f9556912b9a6c2cd474f7f1d930df9ba2be21087aa9709741c053",
+    "fixtures/events/global-update.json": "c80014fc0a667ec47a95fc276bec038dd1e0b2d98cbfe741506434074d744d5f",
+    "fixtures/events/media-update.json": "3972c30db1feb9c0e5caae0322990e1c3cee7f3fbb51505d9ae4f7e4599441b8",
+    "fixtures/events/page-all-markets-update.json": "d337f81116678ea7cb5413eb4f53f950d531708e82e4e536606a5d0fc8df3ccf",
+    "fixtures/events/page-delete.json": "91467f765613426568a2f153d5216d8c1993945d12dd4fffc00bdd5b872473c0",
+    "fixtures/events/page-publish.json": "963692b88cbebbc5c6d44b6fdb60dd4988c7cadd5b7ffd1822903ee0463c08e5",
+    "fixtures/events/page-restore.json": "9fdcf34a41c34bf28ec72e1efdaf1d55ec8453177de17496142d07ba5c1909e9",
+    "fixtures/events/page-trash.json": "7a323541b3c9189ef055590308bed2a6f8d780c4efc34657dadca2aa5348e811",
+    "fixtures/events/page-unpublish.json": "47457bd55adbdcfbead9d24a193896bf5d60993c843a337034b739b962b2ec6b",
+    "fixtures/events/page-update-slug-and-markets.json": "77708dd1cf934008b2866ea61246349f5c747916656d7ef16ac57bf7b1366cef",
+    "fixtures/preview/launch.form.html": "29cd2bc242128d608c072b67120cd14bb276c7724eb4be6329339fdc587e0f10",
+    "fixtures/preview/resolve.errors.json": "b00667d646ec373a8034e66bbedcb3419178ccd4932f928d59ba1a950dce02fe",
+    "fixtures/preview/resolve.request.json": "d3f96f2931c4e6317b0a2df701f1ba1957a976bf4afc77940b63437fb6aac6db",
+    "fixtures/preview/resolve.response.json": "d754ef088812bcf83dabc3ae1d73d99bcea41649d8e9e17945ef631226e8f1eb",
+    "fixtures/responses/revalidate-v1.json": "3317b1b36c04d527f9d2cbb438a81798091a4aeb846df597ce16eda40002508a",
+    "fixtures/responses/revalidate-v2-media.json": "dc5c39996d60d3f827bf053ddf2e7743468547ee464472383a4a1e98253c3d10",
+    "fixtures/responses/revalidate-v2-not-live.json": "dd0ee973d2038d03c400c709f8b0724210045e65cc4385e87fc3a418dc80c5ac",
+    "fixtures/responses/revalidate-v2-page-publish.json": "412d6c4c44ca844e53fc2ec20641925c9d3167dd8af857a0b38dae4a1898960e",
+    "fixtures/responses/revalidate-v2-unpublish.json": "5581585dcbafe1ac83bb9ea1ef598b033b335d096924aea38451450ced7fc838",
+    "pages-content.md": "1b616a4e8fc9149c87020503261da2c5bf1e2cc838fd2f6013fc58960ee33dd9",
+    "preview-v1.md": "5e3a1c5227726741b31c3b8fb8277b3fb353d014179b96db262c9afcd1d8c7fe",
+    "revalidation-event-v2.md": "d1bd6617d5a008c2bfc8782c7da7aea71855a0e175391286bdc90dbb9ca214c1"
+  }
+}

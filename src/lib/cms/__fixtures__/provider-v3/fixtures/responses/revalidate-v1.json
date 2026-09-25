@@ -1,0 +1,4 @@
+{
+  "success": true,
+  "revalidated": ["cms:collection:pages", "cms:page:o-nas"]
+}

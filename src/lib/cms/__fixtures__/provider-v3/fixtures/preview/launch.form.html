@@ -1,0 +1,8 @@
+<!-- What the CMS answers to GET /api/pages/:id/preview?market=CZ for a logged-in editor.
+     The browser auto-submits it: the token travels in a POST body, never in a URL. -->
+<p>Otváram náhľad pre trh CZ (cs)…</p>
+<form method="post" action="https://maky.store/api/cms/preview">
+  <input type="hidden" name="token" value="eyJ2IjoxLCJ0eXAiOiJtYWt5LXByZXZpZXciLCJjb2wiOiJwYWdlcyIs...SIGNATURE">
+  <noscript><button type="submit">Otvoriť náhľad</button></noscript>
+</form>
+<script>document.forms[0].submit()</script>
