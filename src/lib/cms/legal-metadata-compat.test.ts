@@ -473,8 +473,27 @@ describe("legalMetadata — the route serves the CMS document, not the bootstrap
  * Every rule below is re-run with `legalMetadata` present on the document.
  */
 describe("legalMetadata — validation is not weakened", () => {
-	it("still rejects the whole document for an unsupported blockType", () => {
+	// Pages contract v3 (`__fixtures__/provider-v3/pages-content.md` §1): on an EDITORIAL page
+	// an unsupported block is skipped, not the whole document; the group now decides which of
+	// the two a page is. The block itself never renders either way.
+	it("skips an unsupported blockType on an editorial page, keeping the rest", () => {
 		const doc = augmented();
+		doc.docs[0]!.layout = [
+			...(doc.docs[0]!.layout as unknown[]),
+			{ blockType: "futureBlock", markets: null },
+		];
+		const result = parsePagesResponse(doc);
+		expect(result.status).toBe("ok");
+		if (result.status !== "ok") return;
+		expect(result.page.layout.map((block) => block.blockType)).toEqual(["richText"]);
+		expect(result.warnings).toEqual([
+			expect.objectContaining({ code: "block-skipped", blockType: "futureBlock" }),
+		]);
+	});
+
+	it("still rejects the whole document for an unsupported blockType on a legal page", () => {
+		const doc = augmented();
+		doc.docs[0]!.legalMetadata = { documentType: "legal", legalVersion: "1.2", effectiveFrom: "2026-08-04" };
 		doc.docs[0]!.layout = [
 			...(doc.docs[0]!.layout as unknown[]),
 			{ blockType: "futureBlock", markets: null },

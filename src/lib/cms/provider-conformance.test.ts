@@ -133,19 +133,35 @@ describe("provider pack — anonymous access stays published-only", () => {
 	});
 });
 
-describe("provider pack — an unsupported block rejects the document", () => {
-	it("refuses the whole candidate rather than rendering the richText around it", () => {
-		// The pack's own prose describes the V1 behaviour as "skip and log". That is the
-		// behaviour this hardening pass removed: the fixture's page would have rendered
-		// its richText block and dropped `futureBlock` in silence. The fixture is kept
-		// byte-identical because it IS the contract; the divergence is recorded in
-		// PROVENANCE.md and is owned by the provider repository.
+describe("provider pack — an unsupported block", () => {
+	it("refuses this candidate, because skipping futureBlock leaves o-nas without a body", () => {
+		// The pack's own prose describes the V1 behaviour as "skip and log"; a later hardening
+		// pass rejected the whole document instead; pages contract v3
+		// (`provider-v3/pages-content.md` §1) returned to skipping on editorial pages. This
+		// fixture is still refused under v3 — for a different reason: its only other block is
+		// an EMPTY richText, so after the skip `o-nas` has no body for its route contract, and
+		// v3 forbids an empty success. The fixture is kept byte-identical because it IS the
+		// contract.
 		const result = parsePagesResponse(fixture("fixtures/rest/page-unsupported-block.sk.json"));
 		expect(result.status).toBe("invalid");
 		if (result.status !== "invalid") return;
 		expect(result.violation.blockType).toBe("futureBlock");
 		expect(result.violation.slug).toBe("o-nas");
 		expect(result.violation.documentId).toBe("fixture-unsupported-block");
+	});
+
+	it("skips futureBlock and keeps the rich text on a page without a body contract", () => {
+		const response = fixture("fixtures/rest/page-unsupported-block.sk.json") as {
+			docs: [Record<string, unknown>];
+		};
+		response.docs[0].slug = "poradna";
+		const result = parsePagesResponse(response);
+		expect(result.status).toBe("ok");
+		if (result.status !== "ok") return;
+		expect(result.page.layout.map((block) => block.blockType)).toEqual(["richText"]);
+		expect(result.warnings).toEqual([
+			expect.objectContaining({ code: "block-skipped", index: 1, blockType: "futureBlock" }),
+		]);
 	});
 });
 

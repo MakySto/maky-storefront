@@ -2,7 +2,7 @@ import "server-only";
 import { cmsCollectionTag, cmsPageTag } from "./cache-tags";
 import { readCmsConnection } from "./env";
 import { type MarketCode, type PayloadLocale } from "./markets";
-import { parsePagesResponse, type CmsPage } from "./page-schema";
+import { parsePagesResponse, type CmsPage, type CmsParseWarning } from "./page-schema";
 
 /**
  * Server-side reader for Payload CMS.
@@ -42,6 +42,39 @@ function logCmsError(event: string, detail: Record<string, unknown>): void {
 function logCmsWarning(event: string, detail: Record<string, unknown>): void {
 	// Structured single line for accepted content whose optional presentation degraded.
 	console.warn(`[cms] ${event}`, JSON.stringify(detail));
+}
+
+/** Diagnostics are identifiers from the CMS; bound them so a log line stays a line. */
+function clip(value: string | null): string | null {
+	return value && value.length > 80 ? `${value.slice(0, 79)}…` : value;
+}
+
+/**
+ * One line per degradation of an accepted document.
+ *
+ * A skipped block (pages contract v3 §1) gets its own event name, `[cms] block-skipped`, so
+ * "which page is missing a block, and why" is one grep away. It carries the document, the
+ * block's index and types and the reason — never the block's content.
+ */
+function logParseWarnings(
+	warnings: readonly CmsParseWarning[],
+	context: { slug: string; locale: PayloadLocale; documentId: string },
+): void {
+	for (const warning of warnings) {
+		if (warning.code === "block-skipped") {
+			logCmsWarning("block-skipped", {
+				documentId: context.documentId,
+				slug: context.slug,
+				locale: context.locale,
+				index: warning.index,
+				blockType: clip(warning.blockType),
+				nodeType: clip(warning.nodeType),
+				reason: warning.reason,
+			});
+			continue;
+		}
+		logCmsWarning("content-degraded", { ...context, code: warning.code, reason: warning.reason });
+	}
 }
 
 /**
@@ -227,15 +260,7 @@ export async function fetchCmsPage(
 		};
 	}
 
-	for (const warning of parsed.warnings) {
-		logCmsWarning("content-degraded", {
-			slug,
-			locale,
-			documentId: parsed.page.id,
-			code: warning.code,
-			reason: warning.reason,
-		});
-	}
+	logParseWarnings(parsed.warnings, { slug, locale, documentId: parsed.page.id });
 
 	logCmsServed({
 		slug,

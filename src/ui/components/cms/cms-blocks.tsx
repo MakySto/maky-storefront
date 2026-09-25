@@ -9,16 +9,16 @@ import { LexicalContent } from "./lexical-content";
  * Renders a Payload page's `layout` array.
  *
  * By the time blocks reach this component they are all renderable: an unsupported
- * `blockType`, an unrenderable Lexical node and missing required content each reject the
- * entire document back in `parseBlock`. So there is no "skip the odd one out" branch
- * here, and that is the point — a partially rendered page is a silent failure and this
- * component cannot produce one.
+ * `blockType`, an unrenderable Lexical node and missing required content each fail their
+ * block in `parseBlock`, and the page parser has already skipped it (editorial page, logged
+ * as `[cms] block-skipped`) or rejected the document (legal page). So there is no "skip the
+ * odd one out" branch here — that decision is made once, upstream, where it is logged.
  *
  * The dispatch is an exhaustive `switch` ending in a `never` assignment. **It must never
  * gain a `default` that returns null.** A default would turn "the parser accepts a block
  * type nobody wrote a renderer for" from a build error into an empty section on a live
- * page — the failure the fail-closed rule upstream exists to prevent, reintroduced one
- * layer down. `SUPPORTED_BLOCK_TYPES` and the cases below are held together by a test
+ * page — an unlogged skip, which is exactly what the parser's diagnostics exist to prevent,
+ * reintroduced one layer down. `SUPPORTED_BLOCK_TYPES` and the cases below are held together by a test
  * rather than by a comment asking two files to stay in sync.
  *
  * Market filtering happens here per block, and is the one thing that legitimately removes
