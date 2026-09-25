@@ -26,7 +26,12 @@ import {
 import { categoryAliasTarget, listingCategoryAliasTarget } from "./lib/catalog-content/category-aliases";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/routing.generated";
 import { isMarketLive, liveMarkets, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
-import { isRouteMissingInMarket } from "./lib/route-policy";
+import { isRouteMissingInMarket, routePolicyFor } from "./lib/route-policy";
+import {
+	CMS_PREVIEW_CACHE_CONTROL,
+	CMS_PREVIEW_ROBOTS_HEADER,
+	hasCmsPreviewCookies,
+} from "./lib/cms/preview-cookies";
 import {
 	classifyRoute,
 	gateEnabledFor,
@@ -194,6 +199,36 @@ function marketRewrite(
 		});
 	}
 	return res;
+}
+
+/**
+ * A CMS page (`o-nas`, `poradna` — a `cms` route in `route-policy.ts`) requested inside a CMS
+ * draft preview session: BOTH Next's Draft Mode cookie and `maky-cms-preview` are present.
+ *
+ * `__fixtures__/provider-v3/preview-v1.md` requires the preview to work for all twelve
+ * markets without opening any of them, so only for such a request the route-policy 404 below
+ * steps aside and the page itself decides. It is a narrow door:
+ *
+ *   - exactly `/{market}/{cms-slug}` (plus Next's `.rsc` forms) — nothing below it, no other
+ *     route, never the checkout;
+ *   - cookie PRESENCE only; the page then needs Draft Mode to be genuinely on (Next checks
+ *     its cookie against the build's secret) and the CMS to accept the token on every load,
+ *     and without both it renders exactly what it would anyway — for a market outside the
+ *     policy, a 404 body;
+ *   - the response is `noindex, nofollow` and `private, no-store`, whatever the market;
+ *   - nothing is enabled: the market stays not-live, no `maky-market` cookie is set for it,
+ *     no link, sitemap entry or hreflang appears.
+ *
+ * Without both cookies nothing here changes.
+ */
+function isCmsPreviewPage(request: NextRequest): boolean {
+	if (!hasCmsPreviewCookies(request.cookies)) return false;
+	const normalized = normalizePathname(request.nextUrl.pathname).split("/").filter(Boolean);
+	return (
+		normalized.length === 2 &&
+		FRIENDLY_SLUGS.has(normalized[0]) &&
+		routePolicyFor(normalized[1])?.kind === "cms"
+	);
 }
 
 /**
@@ -420,7 +455,16 @@ async function route(request: NextRequest) {
 	// Decided from the route policy, so it costs no upstream call and ships ahead
 	// of the resource-existence gate. A market gains these the moment it has its
 	// own translated set — see docs/design/market-launch-checklist.md.
-	if (first && FRIENDLY_SLUGS.has(first) && segments[1] && isRouteMissingInMarket(first, segments[1])) {
+	//
+	// Except for a CMS page inside a CMS preview session — see `isCmsPreviewPage`.
+	const cmsPreview = isCmsPreviewPage(request);
+	if (
+		first &&
+		FRIENDLY_SLUGS.has(first) &&
+		segments[1] &&
+		isRouteMissingInMarket(first, segments[1]) &&
+		!cmsPreview
+	) {
 		const url = request.nextUrl.clone();
 		url.pathname = "/_not-found";
 		return NextResponse.rewrite(url, {
@@ -527,7 +571,13 @@ async function route(request: NextRequest) {
 			(isCategorySlug(normalized[1]) || isLocalizedRootSegment(first, normalized[1]))
 				? CATEGORY_ROUTE_PREFIX + "/" + segments.slice(1).join("/")
 				: undefined;
-		return marketRewrite(request, first, gateVerdict, internalRest);
+		const res = marketRewrite(request, first, gateVerdict, internalRest);
+		// A preview is never indexed or stored, in a live market as much as in any other.
+		if (cmsPreview) {
+			res.headers.set("x-robots-tag", CMS_PREVIEW_ROBOTS_HEADER);
+			res.headers.set("cache-control", CMS_PREVIEW_CACHE_CONTROL);
+		}
+		return res;
 	}
 
 	// INVALID FIRST SEGMENT -> real 404.
