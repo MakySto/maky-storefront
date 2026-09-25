@@ -61,6 +61,33 @@ export interface CmsMedia {
 	readonly mimeType: string;
 	/** Generated variants, by name — `thumbnail`, `card`, `content`, `hero`, `og`. */
 	readonly sizes: Readonly<Record<string, { readonly url: string; readonly width: number | null }>>;
+	/**
+	 * The editor's focal point, in percent of the width and height (pages contract v3 §2).
+	 * Always a number from 0 to 100: missing or invalid is the centre, 50.
+	 */
+	readonly focalX: number;
+	readonly focalY: number;
+}
+
+/** The centre of the picture — what a missing or invalid focal value means. */
+const FOCAL_CENTRE = 50;
+
+/**
+ * One focal coordinate. The contract (`pages-content.md` §2) makes a missing or invalid value
+ * the centre, so this never fails the media — a bad focal point is a presentation detail,
+ * not a reason to drop a picture.
+ */
+function readFocal(value: unknown): number {
+	if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 100) return FOCAL_CENTRE;
+	return Math.round(value * 100) / 100;
+}
+
+/**
+ * `object-position` for a CMS picture cropped with `object-fit: cover`, so the crop keeps
+ * what the editor marked as the subject: `<focalX>% <focalY>%`.
+ */
+export function cmsMediaObjectPosition(media: Pick<CmsMedia, "focalX" | "focalY">): string {
+	return `${media.focalX}% ${media.focalY}%`;
 }
 
 /**
@@ -400,6 +427,8 @@ export function readMedia(value: unknown): MediaResult {
 			height: height.value,
 			mimeType,
 			sizes,
+			focalX: readFocal(value.focalX),
+			focalY: readFocal(value.focalY),
 		},
 	};
 }

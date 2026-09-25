@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { type ReactNode } from "react";
-import { type CmsMedia } from "@/lib/cms/blocks";
+import { cmsMediaObjectPosition, type CmsMedia } from "@/lib/cms/blocks";
 
 /**
  * One CMS image.
@@ -17,6 +17,10 @@ import { type CmsMedia } from "@/lib/cms/blocks";
  *
  * `alt` is never invented. A media object without it does not parse (see `readMedia`), so
  * by the time one reaches here the editor has written alt text.
+ *
+ * The crop is `object-cover` around the editor's focal point (pages contract v3 §2), so a
+ * box whose shape differs from the picture's keeps the subject in view rather than its
+ * middle. With no focal point set, that is the middle — `50% 50%`, as before.
  */
 export function CmsImage({
 	media,
@@ -43,6 +47,7 @@ export function CmsImage({
 				sizes={sizes}
 				priority={priority}
 				className="object-cover"
+				style={{ objectPosition: cmsMediaObjectPosition(media) }}
 			/>
 		</div>
 	);

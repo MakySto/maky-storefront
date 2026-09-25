@@ -11,7 +11,7 @@ const { mergeScenery } = await import("@/lib/homepage/scenery");
  * ID. The blocks here have the parsed shape the CMS parser hands over (`blocks.ts`).
  */
 
-const media = (url: string) => ({
+const media = (url: string, focal: { focalX: number; focalY: number } = { focalX: 50, focalY: 50 }) => ({
 	id: url,
 	url,
 	alt: "",
@@ -19,6 +19,7 @@ const media = (url: string) => ({
 	height: 1200,
 	mimeType: "image/jpeg",
 	sizes: {},
+	...focal,
 });
 const common = { id: null, blockName: null, markets: null };
 
@@ -45,7 +46,8 @@ describe("CMS scenery", () => {
 				anchorId: "banner-stresne-boxy",
 				heading: "Strešné boxy",
 				subheading: null,
-				media: media("https://m/boxes.jpg"),
+				// The editor marked the box on the roof, top right of the picture.
+				media: media("https://m/boxes.jpg", { focalX: 72.5, focalY: 20 }),
 				links: [],
 			},
 			{
@@ -64,10 +66,11 @@ describe("CMS scenery", () => {
 			},
 		]);
 		expect(scenery).toEqual({
-			hero: "https://m/hero.jpg",
-			advice: "https://m/advice.jpg",
-			tiles: { "stresne-nosice": "https://m/racks.jpg" },
-			banners: { "stresne-boxy": "https://m/boxes.jpg" },
+			hero: { url: "https://m/hero.jpg", position: "50% 50%" },
+			advice: { url: "https://m/advice.jpg", position: "50% 50%" },
+			tiles: { "stresne-nosice": { url: "https://m/racks.jpg", position: "50% 50%" } },
+			// The focal point travels with the photo (pages contract v3 §2).
+			banners: { "stresne-boxy": { url: "https://m/boxes.jpg", position: "72.5% 20%" } },
 		});
 	});
 
@@ -109,16 +112,17 @@ describe("CMS scenery", () => {
 				banners: {},
 			},
 			{
-				hero: "https://m/hero.jpg",
+				hero: { url: "https://m/hero.jpg", position: "30% 65%" },
 				advice: null,
-				tiles: { "stresne-nosice": "https://m/racks.jpg" },
+				tiles: { "stresne-nosice": { url: "https://m/racks.jpg", position: "50% 50%" } },
 				banners: {},
 			},
 		);
+		// The editor's focal point, on every screen — never a hard-coded centre.
 		expect(merged?.hero).toEqual({
 			url: "https://m/hero.jpg",
-			position: "50% 50%",
-			mobilePosition: "50% 50%",
+			position: "30% 65%",
+			mobilePosition: "30% 65%",
 			source: "cms",
 		});
 		expect(merged?.advice?.source).toBe("saleor");

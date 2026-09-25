@@ -15,6 +15,8 @@ const logo = {
 	height: 120,
 	mimeType: "image/png",
 	sizes: {},
+	focalX: 50,
+	focalY: 50,
 };
 
 describe("brand catalogue", () => {
