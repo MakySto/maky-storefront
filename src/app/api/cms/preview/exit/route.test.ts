@@ -7,6 +7,13 @@ vi.mock("next/headers", () => ({
 	cookies: async () => ({ get: () => undefined }),
 }));
 
+/** Outside Next there is no request to wait for; record that the handler asked. */
+const connection = vi.hoisted(() => vi.fn(async () => undefined));
+vi.mock("next/server", async (importOriginal) => ({
+	...(await importOriginal<typeof import("next/server")>()),
+	connection,
+}));
+
 const { GET } = await import("./route");
 
 /**
@@ -20,6 +27,7 @@ const exit = (query: string) =>
 
 beforeEach(() => {
 	draft.disable.mockClear();
+	connection.mockClear();
 });
 
 describe("GET /api/cms/preview/exit", () => {
@@ -37,6 +45,14 @@ describe("GET /api/cms/preview/exit", () => {
 
 		expect(response.headers.get("cache-control")).toBe("private, no-store");
 		expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+	});
+
+	it("is request-time only: it waits for the connection before touching Draft Mode", async () => {
+		// Under Cache Components a GET handler would otherwise be prerendered at build time,
+		// where `draftMode().disable()` is an error.
+		await exit("?path=%2F");
+		expect(connection).toHaveBeenCalledTimes(1);
+		expect(connection.mock.invocationCallOrder[0]).toBeLessThan(draft.disable.mock.invocationCallOrder[0]!);
 	});
 
 	it("keeps a query on the returned path", async () => {
