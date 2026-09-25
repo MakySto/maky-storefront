@@ -219,8 +219,10 @@ Shipping:
 
 - Shipping is via Slovenská pošta and FedEx, as `/sk/doprava-a-platba` states (owner
   confirmed 2026-09-22).
-- Shipping price depends on product size, weight and destination; communicate
-  "cenu uvidíte v košíku".
+- Shipping price depends on product size, weight and destination; say that it is calculated
+  at checkout — "Cenu vypočítame v pokladni" (short) / "Cena dopravy sa vypočíta v pokladni".
+  The earlier "cenu uvidíte v košíku" was untrue: the cart shows "Vypočíta sa v pokladni" until
+  a delivery is chosen (owner, 2026-09-25). Every locale says the same.
 - Do NOT claim free shipping unless explicitly implemented for specific products or
   campaigns.
 
