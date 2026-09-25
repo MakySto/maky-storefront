@@ -214,7 +214,7 @@ function FeaturedProductsSkeleton() {
 			<div className="mt-6 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:gap-5 min-[90rem]:grid-cols-5">
 				{Array.from({ length: FEATURED_PRODUCTS_LIMIT }).map((_, i) => (
 					<div key={i} className="border-border-default bg-surface-card flex flex-col rounded-sm border">
-						<div className="bg-surface-secondary aspect-[5/4] animate-pulse rounded-t-sm" />
+						<div className="bg-surface-secondary aspect-[3/2] animate-pulse rounded-t-sm sm:aspect-[5/4]" />
 						<div className="space-y-2 px-4 pt-3">
 							<div className="bg-surface-secondary h-3 w-24 rounded-xs" />
 							<div className="bg-surface-secondary h-[2lh] w-full rounded-xs" />

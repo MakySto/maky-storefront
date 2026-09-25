@@ -49,11 +49,6 @@ interface ProductGridProps {
  * remaining catalogue lands.
  */
 export function ProductGrid({ products, groupHeading, columns = "full" }: ProductGridProps) {
-	// A category's own listing holds one category: its name on every card said nothing the page
-	// heading had not. Where the grid mixes categories — the homepage, search, a parent category,
-	// a maker's page — the card names each product's.
-	const showCategory = new Set(products.map((product) => product.category?.id ?? null)).size > 1;
-
 	return (
 		<div className={cn("grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:gap-5", COLUMNS[columns])}>
 			{/* Exactly ONE preload. On a phone only the first row is above the fold, yet
@@ -75,12 +70,7 @@ export function ProductGrid({ products, groupHeading, columns = "full" }: Produc
 							{groupHeading.label}
 						</h2>
 					)}
-					<ProductCard
-						product={product}
-						priority={index === 0}
-						purchase={PURCHASE[columns]}
-						showCategory={showCategory}
-					/>
+					<ProductCard product={product} priority={index === 0} purchase={PURCHASE[columns]} />
 				</Fragment>
 			))}
 		</div>

@@ -199,8 +199,8 @@ function ProductsGridSkeleton() {
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
 				{Array.from({ length: 6 }).map((_, i) => (
 					<div key={i} className="animate-pulse">
-						{/* Matches ProductCard: aspect-[3/4] rounded-xl */}
-						<div className="bg-muted mb-4 aspect-[3/4] rounded-xl" />
+						{/* The card's photo window: 3:2 on a phone, 5:4 from sm */}
+						<div className="bg-muted mb-4 aspect-[3/2] rounded-sm sm:aspect-[5/4]" />
 						<div className="space-y-1.5">
 							<div className="bg-muted h-4 w-3/4 rounded" />
 							<div className="bg-muted h-4 w-1/2 rounded" />

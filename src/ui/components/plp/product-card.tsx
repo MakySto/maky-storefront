@@ -71,11 +71,6 @@ interface ProductCardProps {
 	/** Preloads the image. Reserve for the single LCP candidate — see ProductGrid. */
 	priority?: boolean;
 	purchase?: ProductCardPurchase;
-	/**
-	 * The product's category beside its maker. The grid turns it off where every card shares one
-	 * category — a category's own listing — and the name would repeat the page heading.
-	 */
-	showCategory?: boolean;
 }
 
 /** How long the button says "Pridané" after a successful add. */
@@ -121,18 +116,23 @@ function AddButton({ withIcon }: { withIcon: boolean }) {
  * Listing card — the one card for category pages, search, collections, favourites and the
  * homepage.
  *
- * Third pass (owner, 2026-09-24): ONE card to a row on a phone, the photo on top and the full
+ * Third pass (owner, 2026-09-24/25): ONE card to a row on a phone, the photo on top and the full
  * width of the card; the product facts in the middle; a hairline, then the price, the lead time
  * and the purchase. The hierarchy:
  *
  *   photo + heart
- *   BRAND  category · name · one distinguishing fact · SKU · stars
+ *   BRAND · category
+ *   name · one distinguishing fact · SKU · stars
  *   ─────────────────────
  *   price  ● availability
  *   quantity + add
  *
- * - The photo is the product from Saleor, WHOLE (`object-contain` on the card's own white), in
- *   a 5:4 window that suits the wide boxes, bars and carriers this shop sells.
+ * - The photo is the product from Saleor, WHOLE (`object-contain` on the card's own white): a
+ *   3:2 window on a phone, where one card spans the screen and a squarer one was mostly white
+ *   above and below a roof box; 5:4 from 640px, in the narrower cards of a multi-column grid.
+ * - The maker and the product's category (its market's own name, from Saleor) share one quiet
+ *   line, the category in plain text, never a badge; a long one ("Nosiče bicyklov na ťažné
+ *   zariadenie") wraps rather than being cut to a stub.
  * - The name is the card's headline and gets up to four lines: a roof-rack set's name ends with
  *   the car and the roof type, the part a shopper checks. The maker above it is set smaller and
  *   quieter than the name.
@@ -147,12 +147,7 @@ function AddButton({ withIcon }: { withIcon: boolean }) {
  *   form's hidden status line says it to a screen reader). A line under one card's button used
  *   to push that card's purchase row out of line with its neighbours.
  */
-export function ProductCard({
-	product,
-	priority = false,
-	purchase = "stepper",
-	showCategory = true,
-}: ProductCardProps) {
+export function ProductCard({ product, priority = false, purchase = "stepper" }: ProductCardProps) {
 	const tCommon = useTranslations("common");
 	const tProduct = useTranslations("product");
 	const tCart = useTranslations("cart");
@@ -177,7 +172,7 @@ export function ProductCard({
 		product.image !== "/placeholder.svg" &&
 		!isPlaceholderProductImage(product.image);
 
-	const category = showCategory ? product.category : null;
+	const category = product.category;
 
 	return (
 		<article
@@ -196,7 +191,7 @@ export function ProductCard({
 					href={product.href}
 					tabIndex={-1}
 					aria-hidden="true"
-					className="bg-surface-card relative block aspect-[5/4] overflow-hidden"
+					className="bg-surface-card relative block aspect-[3/2] overflow-hidden sm:aspect-[5/4]"
 				>
 					{hasImage ? (
 						<ResilientProductImage
@@ -204,7 +199,7 @@ export function ProductCard({
 							alt={product.imageAlt || product.name}
 							fill
 							sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, (max-width: 1439px) 25vw, 20vw"
-							className="object-contain px-5 pt-6 pb-2 transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.03]"
+							className="object-contain px-4 pt-4 pb-1 transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.03] sm:px-5 sm:pt-6 sm:pb-2"
 							priority={priority}
 						/>
 					) : (
@@ -232,21 +227,24 @@ export function ProductCard({
 			{/* The facts. `flex-1`: the block takes the card's spare height, so the hairline under it
 			    sits at one height across a row of cards. */}
 			<div className="flex min-w-0 flex-1 flex-col px-4 pt-3">
-				{/* The maker, set like a wordmark but quieter than the name; the type after it. */}
+				{/* The maker, set like a wordmark but quieter than the name, and the category after it in
+				    plain text. One line of running text, so a long category wraps under the maker. */}
 				{(product.brand || category) && (
-					<p className="flex min-w-0 items-baseline gap-2 text-xs">
+					<p className="text-text-tertiary line-clamp-2 text-xs leading-snug">
 						{product.brand && (
-							<span className="text-text-secondary shrink-0 font-bold tracking-[0.07em] uppercase">
+							<span className="text-text-secondary font-bold tracking-[0.07em] uppercase">
 								{product.brand}
 							</span>
 						)}
-						{category && <span className="text-text-tertiary truncate">{category.name}</span>}
+						{product.brand && category && <span aria-hidden="true"> · </span>}
+						{category && <span>{category.name}</span>}
 					</p>
 				)}
 				{/* Up to four lines: a roof-rack set's name ends with the car and the roof type, the
-				    part a shopper checks. Short names still reserve two lines, so the facts under
-				    them start at one height across a row. */}
-				<h2 className="text-text-primary mt-1.5 line-clamp-4 min-h-[2lh] text-base leading-snug font-semibold tracking-[-0.01em] sm:text-[0.9375rem]">
+				    part a shopper checks. From sm, where cards share a row, a short name still
+				    reserves two lines so the facts under it start at one height across the row; a
+				    phone shows one card to a row and keeps no empty line. */}
+				<h2 className="text-text-primary mt-1.5 line-clamp-4 text-base leading-snug font-semibold tracking-[-0.01em] sm:min-h-[2lh] sm:text-[0.9375rem]">
 					<Link
 						href={product.href}
 						className="text-text-primary decoration-brand/40 underline-offset-[3px] hover:underline focus-visible:outline-hidden"
@@ -257,10 +255,10 @@ export function ProductCard({
 					</Link>
 				</h2>
 				{product.note && (
-					<p className="text-text-secondary mt-1.5 line-clamp-1 text-[0.8125rem]">{product.note}</p>
+					<p className="text-text-secondary mt-1 line-clamp-1 text-[0.8125rem]">{product.note}</p>
 				)}
 				{product.productCode && (
-					<p className="text-text-tertiary mt-1 truncate text-xs">
+					<p className="text-text-tertiary mt-0.5 truncate text-xs">
 						{tProduct("sku")}: <span className="tabular-nums">{product.productCode}</span>
 					</p>
 				)}
@@ -271,7 +269,7 @@ export function ProductCard({
 
 			{/* A hairline inset to the text, then the price and what the catalogue says about
 			    availability. Not positioned: a click here still reaches the card-wide link. */}
-			<div className="border-border-subtle mx-4 mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t pt-3">
+			<div className="border-border-subtle mx-4 mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t pt-3">
 				<span className="flex flex-wrap items-baseline gap-x-2 whitespace-nowrap">
 					<span
 						className={cn(
