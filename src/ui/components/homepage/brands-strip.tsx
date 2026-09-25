@@ -33,36 +33,40 @@ export async function BrandsStrip({ channel }: { channel: string }) {
 	if (brands.length === 0) return null;
 
 	return (
-		<section className="max-w-page mx-auto px-4 pt-10 pb-12 sm:px-6 sm:pt-12 sm:pb-14 lg:px-8">
-			<div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-				<h2 className="text-text-primary text-2xl font-extrabold tracking-[-0.025em] sm:text-[1.875rem]">
-					{t("brandsTitle")}
-				</h2>
-				<Link
-					href={marketHref(channel, "/znacky")}
-					className="text-text-primary hover:text-brand group inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold transition-colors"
-				>
-					{t("brandsAll")}
-					<ArrowRightIcon
-						className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-						strokeWidth={2.25}
-						aria-hidden="true"
-					/>
-				</Link>
+		<section className="max-w-page mx-auto px-4 pt-8 pb-10 sm:px-6 sm:pt-10 sm:pb-12 lg:px-8">
+			{/* Between two hairlines (third pass, 2026-09-24): a quiet band of its own between the
+			    vehicle panel and Poradňa, not a fourth card. */}
+			<div className="border-border-default border-y py-8 sm:py-10">
+				<div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+					<h2 className="text-text-primary text-2xl font-extrabold tracking-[-0.025em] sm:text-[1.875rem]">
+						{t("brandsTitle")}
+					</h2>
+					<Link
+						href={marketHref(channel, "/znacky")}
+						className="text-text-primary hover:text-brand group inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold transition-colors"
+					>
+						{t("brandsAll")}
+						<ArrowRightIcon
+							className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+							strokeWidth={2.25}
+							aria-hidden="true"
+						/>
+					</Link>
+				</div>
+				<ul className="mt-6 grid grid-cols-3 items-center gap-x-4 gap-y-6 sm:grid-cols-5 lg:flex lg:justify-between lg:gap-x-6">
+					{brands.map((brand) => (
+						<li key={brand.slug} className="flex justify-center">
+							<Link
+								href={marketHref(channel, `/znacky/${brand.slug}`)}
+								aria-label={brand.name}
+								className="hover:text-brand focus-visible:ring-ring rounded-xs transition-[color,opacity] hover:opacity-80 focus-visible:ring-2 focus-visible:outline-hidden"
+							>
+								<BrandMark brand={brand} className="text-lg sm:text-xl xl:text-[1.375rem]" />
+							</Link>
+						</li>
+					))}
+				</ul>
 			</div>
-			<ul className="mt-6 grid grid-cols-3 items-center gap-x-4 gap-y-6 sm:grid-cols-5 lg:flex lg:justify-between lg:gap-x-6">
-				{brands.map((brand) => (
-					<li key={brand.slug} className="flex justify-center">
-						<Link
-							href={marketHref(channel, `/znacky/${brand.slug}`)}
-							aria-label={brand.name}
-							className="hover:text-brand focus-visible:ring-ring rounded-xs transition-[color,opacity] hover:opacity-80 focus-visible:ring-2 focus-visible:outline-hidden"
-						>
-							<BrandMark brand={brand} className="text-lg sm:text-xl xl:text-[1.375rem]" />
-						</Link>
-					</li>
-				))}
-			</ul>
 		</section>
 	);
 }

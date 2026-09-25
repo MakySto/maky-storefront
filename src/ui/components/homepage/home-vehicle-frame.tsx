@@ -17,18 +17,20 @@ export function HomeVehicleFrame({
 }) {
 	return (
 		<section className="max-w-page mx-auto px-4 pb-4 sm:px-6 lg:px-8">
-			<div className="border-border-subtle bg-surface-muted relative isolate overflow-hidden rounded-sm border shadow-xs">
+			<div className="border-border-default bg-surface-muted relative isolate overflow-hidden rounded-sm border shadow-xs">
 				<div
 					aria-hidden="true"
 					className="from-surface-card/70 absolute inset-y-0 left-0 -z-10 w-2/3 bg-linear-to-r to-transparent"
 				/>
+				{/* The mountains run behind the right of the fields and the button, so they are drawn
+				    faint (third pass, 2026-09-24): scenery, never competing with a control. */}
 				<div
 					aria-hidden="true"
-					className="art-mountains bg-sand-500/70 absolute right-0 bottom-0 -z-10 hidden h-full w-[40%] md:block"
+					className="art-mountains bg-sand-500/45 absolute right-0 bottom-0 -z-10 hidden h-full w-[40%] md:block"
 				/>
 				<div
 					aria-hidden="true"
-					className="art-mountains bg-sand-400/60 absolute right-[18%] bottom-0 -z-10 hidden h-[70%] w-[34%] -scale-x-100 lg:block"
+					className="art-mountains bg-sand-400/35 absolute right-[18%] bottom-0 -z-10 hidden h-[70%] w-[34%] -scale-x-100 lg:block"
 				/>
 				<div className="p-5 sm:p-8 lg:px-10 lg:py-9">
 					<div className="flex items-center gap-3">

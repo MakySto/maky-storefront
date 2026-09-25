@@ -37,7 +37,10 @@ export const HERO_SCENERY: HeroScenery = {
 	photo: {
 		productId: "UHJvZHVjdDozMDI=",
 		mediaId: "UHJvZHVjdE1lZGlhOjc5OA==",
-		position: "50% 60%",
+		// Anchored higher than centre: from ~1600px the hero's fixed height crops the photo's top,
+		// and at "50% 60%" the roof box — the product on the card — lost its lid (owner, 2026-09-24);
+		// "50% 32%" overshot and dropped the car under the benefits row at 1920px.
+		position: "50% 45%",
 		mobilePosition: "50% 62%",
 	},
 	showsProduct: true,

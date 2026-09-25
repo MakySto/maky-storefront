@@ -104,13 +104,16 @@ export function CategoryGrid({ photos }: { photos: CategoryTilePhotos | null }) 
 											: "from-scrim/85 via-scrim/25 h-1/2",
 									)}
 								/>
+								{/* One text block of the same shape on every tile: two lines kept for the name,
+								    set on the lower one, and two for the line under it. A name that wraps
+								    ("Nosiče bicyklov") no longer lifts its tile's words above its neighbours'. */}
 								<div className="flex items-end justify-between gap-2 p-3.5 sm:p-4">
 									<span className="min-w-0">
-										<span className="text-text-inverse block text-base leading-tight font-extrabold tracking-[-0.01em] sm:text-lg xl:text-xl">
+										<span className="text-text-inverse flex min-h-[2lh] items-end text-base leading-tight font-extrabold tracking-[-0.01em] sm:text-lg xl:text-xl">
 											{t(category.key)}
 										</span>
 										{tagline && (
-											<span className="text-text-inverse/80 mt-1 hidden text-[0.8125rem] leading-snug sm:block">
+											<span className="text-text-inverse/80 mt-1 hidden min-h-[2lh] text-[0.8125rem] leading-snug sm:line-clamp-2">
 												{th(tagline)}
 											</span>
 										)}

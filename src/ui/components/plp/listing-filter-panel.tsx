@@ -158,7 +158,7 @@ export function ListingFilterPanel({
 								value={brandQuery}
 								onChange={(event) => setBrandQuery(event.target.value)}
 								placeholder={t("brandSearch")}
-								className="border-border-default bg-surface-card placeholder:text-text-tertiary focus:border-brand focus:ring-brand h-10 w-full rounded-xs border pr-3 pl-9 text-sm focus:ring-1 focus:outline-hidden"
+								className="border-border-strong bg-surface-card placeholder:text-text-tertiary focus:border-brand focus:ring-brand h-10 w-full rounded-xs border pr-3 pl-9 text-sm focus:ring-1 focus:outline-hidden"
 							/>
 						</label>
 					)}
@@ -212,7 +212,7 @@ export function ListingFilterPanel({
 											name="price"
 											checked={checked}
 											onChange={() => onPriceRangeChange(range.value)}
-											className="border-border-strong text-brand focus:ring-ring h-[1.125rem] w-[1.125rem] shrink-0"
+											className="border-text-tertiary text-brand focus:ring-ring h-[1.125rem] w-[1.125rem] shrink-0"
 										/>
 										<span className="tabular-nums">{range.label}</span>
 									</label>
@@ -226,7 +226,11 @@ export function ListingFilterPanel({
 	);
 }
 
-/** The drawn checkbox of a row: brown and ticked when chosen. */
+/**
+ * The drawn checkbox of a row: brown and ticked when chosen; empty, it is drawn in the tertiary
+ * text colour — at least 3:1 on white, so it reads as a control (WCAG 1.4.11), where the old
+ * light-grey rule nearly vanished.
+ */
 function Box({ checked, round = false }: { checked: boolean; round?: boolean }) {
 	return (
 		<span
@@ -234,7 +238,7 @@ function Box({ checked, round = false }: { checked: boolean; round?: boolean }) 
 			className={cn(
 				"flex h-[1.125rem] w-[1.125rem] shrink-0 items-center justify-center border transition-colors",
 				round ? "rounded-full" : "rounded-[0.25rem]",
-				checked ? "border-brand bg-brand text-brand-text" : "border-border-strong bg-surface-card",
+				checked ? "border-brand bg-brand text-brand-text" : "border-text-tertiary bg-surface-card",
 			)}
 		>
 			{checked && <CheckIcon className="h-3 w-3" strokeWidth={3} />}

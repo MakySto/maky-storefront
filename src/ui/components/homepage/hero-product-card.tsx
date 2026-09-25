@@ -47,15 +47,18 @@ export async function HeroProductCard({
 	return (
 		<Link
 			href={product.href}
-			className="group bg-surface-card/85 text-text-primary hover:bg-surface-card/95 focus-visible:ring-text-inverse absolute right-6 bottom-36 hidden w-[26rem] items-center gap-4 rounded-sm border border-white/60 p-3 pr-4 shadow-2xl transition-colors focus-visible:ring-2 focus-visible:outline-hidden lg:flex xl:right-8"
+			// Smaller and lighter than the first cut (third pass, 2026-09-24): the card is a caption
+			// to the photo, not a second hero. Only its ground is see-through — the name and the price
+			// stay fully opaque.
+			className="group bg-surface-card/75 text-text-primary hover:bg-surface-card/90 focus-visible:ring-text-inverse absolute right-6 bottom-36 hidden w-[22.5rem] items-center gap-3.5 rounded-sm border border-white/50 p-2.5 pr-3.5 shadow-xl transition-colors focus-visible:ring-2 focus-visible:outline-hidden lg:flex xl:right-8"
 		>
-			<span className="relative h-24 w-36 shrink-0">
+			<span className="relative h-20 w-28 shrink-0">
 				{product.image && (
 					<Image
 						src={product.image}
 						alt=""
 						fill
-						sizes="144px"
+						sizes="112px"
 						className="object-contain mix-blend-multiply"
 					/>
 				)}

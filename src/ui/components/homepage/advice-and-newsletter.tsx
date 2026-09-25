@@ -128,7 +128,9 @@ export async function AdviceAndNewsletter({
 				)}
 
 				{adviceHref && topics.length > 0 && (
-					<ul className="grid content-start gap-3">
+					// Rows of one height, whatever each topic's wording: the arrows and the icon tiles line
+					// up down the column.
+					<ul className="grid auto-rows-fr gap-3">
 						{topics.map((topic, index) => {
 							const Icon = TOPIC_ICONS[index % TOPIC_ICONS.length]!;
 							return (
@@ -136,17 +138,17 @@ export async function AdviceAndNewsletter({
 									<Link
 										href={`${adviceHref}#${topic.anchor}`}
 										prefetch={false}
-										className="group border-border-subtle bg-surface-card hover:border-border-default focus-visible:ring-ring flex items-center gap-4 rounded-sm border p-3 pr-4 shadow-xs transition-[box-shadow,border-color] hover:shadow-md focus-visible:ring-2 focus-visible:outline-hidden"
+										className="group border-border-default bg-surface-card hover:border-border-strong focus-visible:ring-ring flex h-full items-center gap-4 rounded-sm border p-3 pr-4 shadow-xs transition-[box-shadow,border-color] hover:shadow-md focus-visible:ring-2 focus-visible:outline-hidden"
 									>
 										<span className="bg-surface-muted text-brand flex h-16 w-20 shrink-0 items-center justify-center rounded-xs">
 											<Icon className="h-7 w-7" strokeWidth={2.25} aria-hidden="true" />
 										</span>
 										<span className="min-w-0 flex-1">
-											<span className="text-text-primary line-clamp-2 block text-[0.9375rem] leading-snug font-bold">
+											<span className="text-text-primary line-clamp-2 text-[0.9375rem] leading-snug font-bold">
 												{topic.title}
 											</span>
 											{topic.text && (
-												<span className="text-text-secondary mt-0.5 line-clamp-1 block text-[0.8125rem]">
+												<span className="text-text-secondary mt-0.5 line-clamp-2 text-[0.8125rem] leading-snug">
 													{topic.text}
 												</span>
 											)}
@@ -163,47 +165,88 @@ export async function AdviceAndNewsletter({
 					</ul>
 				)}
 
+				{/* The newsletter panel, on the vehicle panel's warm surface with the same rule, so the
+				    homepage has one family of panels (third pass, 2026-09-24). Alone — a market with no
+				    Poradňa, the US and Canada today — it runs the page's width as a band: the words on
+				    the left, the form on the right, instead of a vast white card with a small form in
+				    its middle. The form stays visibly inactive until sign-ups open. */}
 				<div
 					className={cn(
-						"border-border-subtle bg-surface-card relative isolate flex flex-col items-center justify-center overflow-hidden rounded-sm border p-6 text-center shadow-xs sm:p-8",
+						"border-border-default bg-surface-muted relative isolate flex flex-col items-center justify-center overflow-hidden rounded-sm border p-6 text-center shadow-xs sm:p-8",
 						adviceHref && topics.length > 0 && "lg:col-span-2 xl:col-span-1",
+						!adviceHref && "lg:flex-row lg:justify-between lg:gap-12 lg:px-10 lg:py-9 lg:text-left",
 					)}
 				>
 					<div
 						aria-hidden="true"
-						className="art-mountains bg-sand-300 absolute right-0 bottom-0 -z-10 h-2/5 w-full opacity-90"
+						className={cn(
+							"art-mountains absolute right-0 bottom-0 -z-10",
+							adviceHref ? "bg-sand-300 h-2/5 w-full opacity-90" : "bg-sand-400/45 h-3/4 w-full lg:w-1/2",
+						)}
 					/>
-					<MailIcon className="text-brand h-9 w-9" strokeWidth={2} aria-hidden="true" />
-					<h2 className="text-text-primary mt-3 text-xl font-extrabold tracking-[-0.02em] sm:text-2xl">
-						{t("newsletterTitle")}
-					</h2>
-					<p className="text-text-secondary mt-2 max-w-xs text-[0.9375rem]">{t("newsletterText")}</p>
-					<form className="mt-5 flex w-full max-w-sm flex-col gap-2.5" aria-describedby="newsletter-soon">
-						<label className="min-w-0">
-							<span className="sr-only">{tFooter("newsletterPlaceholder")}</span>
-							<input
-								type="email"
-								disabled
-								placeholder={tFooter("newsletterPlaceholder")}
-								className="border-border-default bg-surface-card text-text-primary placeholder:text-text-tertiary h-12 w-full rounded-xs border px-4 text-sm disabled:cursor-not-allowed"
-							/>
-						</label>
-						<button
-							type="button"
-							disabled
-							className="bg-cta text-cta-text inline-flex h-12 items-center justify-center gap-2 rounded-xs px-6 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-55"
+					<div className={cn("flex flex-col items-center", !adviceHref && "lg:max-w-xl lg:items-start")}>
+						<MailIcon className="text-brand h-9 w-9" strokeWidth={2} aria-hidden="true" />
+						<h2 className="text-text-primary mt-3 text-xl font-extrabold tracking-[-0.02em] sm:text-2xl">
+							{t("newsletterTitle")}
+						</h2>
+						<p
+							className={cn(
+								"text-text-secondary mt-2 max-w-xs text-[0.9375rem]",
+								!adviceHref && "lg:max-w-md",
+							)}
 						>
-							{tFooter("subscribe")}
-							<ArrowRightIcon className="h-4 w-4" strokeWidth={2.25} aria-hidden="true" />
-						</button>
-						<label className="text-text-tertiary flex items-center justify-center gap-2 text-xs">
-							<input type="checkbox" disabled className="border-border-default rounded-2xs h-4 w-4" />
-							{t("newsletterConsent")}
-						</label>
-					</form>
-					<p id="newsletter-soon" className="text-text-secondary mt-3 text-[0.8125rem] font-medium">
-						{t("newsletterSoon")}
-					</p>
+							{t("newsletterText")}
+						</p>
+					</div>
+					<div
+						className={cn(
+							"flex w-full max-w-sm flex-col items-center",
+							!adviceHref && "lg:max-w-md lg:shrink-0",
+						)}
+					>
+						<form
+							className={cn("mt-5 flex w-full flex-col gap-2.5", !adviceHref && "lg:mt-0")}
+							aria-describedby="newsletter-soon"
+						>
+							<div className={cn("flex flex-col gap-2.5", !adviceHref && "sm:flex-row")}>
+								<label className="min-w-0 flex-1">
+									<span className="sr-only">{tFooter("newsletterPlaceholder")}</span>
+									<input
+										type="email"
+										disabled
+										placeholder={tFooter("newsletterPlaceholder")}
+										className="border-border-strong bg-surface-card text-text-primary placeholder:text-text-tertiary h-12 w-full rounded-xs border px-4 text-sm disabled:cursor-not-allowed"
+									/>
+								</label>
+								<button
+									type="button"
+									disabled
+									className="bg-cta text-cta-text inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xs px-6 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-55"
+								>
+									{tFooter("subscribe")}
+									<ArrowRightIcon className="h-4 w-4" strokeWidth={2.25} aria-hidden="true" />
+								</button>
+							</div>
+							<label
+								className={cn(
+									"text-text-tertiary flex items-center justify-center gap-2 text-xs",
+									!adviceHref && "lg:justify-start",
+								)}
+							>
+								<input type="checkbox" disabled className="border-border-default rounded-2xs h-4 w-4" />
+								{t("newsletterConsent")}
+							</label>
+						</form>
+						<p
+							id="newsletter-soon"
+							className={cn(
+								"text-text-secondary mt-3 w-full text-[0.8125rem] font-medium",
+								!adviceHref && "lg:text-left",
+							)}
+						>
+							{t("newsletterSoon")}
+						</p>
+					</div>
 				</div>
 			</div>
 		</section>

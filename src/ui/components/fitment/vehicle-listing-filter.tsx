@@ -74,7 +74,14 @@ export async function VehicleListingFilter({
 
 	// Before the filter is on: a white panel with the mountains drawn faintly at its edge, like the
 	// homepage's vehicle block, and the green action (premium redesign 2026-09).
-	const panel = (body: React.ReactNode, actions: React.ReactNode, fields?: React.ReactNode) => (
+	const panel = (
+		body: React.ReactNode,
+		actions: React.ReactNode,
+		fields?: React.ReactNode,
+		// With no fields between them the words take the row's width up to the actions, instead of
+		// a 22rem column broken over four lines beside an empty middle (third pass, 2026-09-24).
+		wide = !fields,
+	) => (
 		<div
 			className={cn(
 				"border-border-subtle bg-surface-card relative isolate overflow-hidden rounded-sm border shadow-xs",
@@ -83,10 +90,15 @@ export async function VehicleListingFilter({
 		>
 			<div
 				aria-hidden="true"
-				className="art-mountains bg-sand-400/60 absolute right-0 bottom-0 -z-10 hidden h-[90%] w-[34%] lg:block"
+				className="art-mountains bg-sand-400/40 absolute right-0 bottom-0 -z-10 hidden h-[90%] w-[34%] lg:block"
 			/>
 			<div className="flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:items-center lg:gap-8 lg:p-6">
-				<div className="flex min-w-0 items-start gap-3.5 lg:w-[22rem] lg:shrink-0">
+				<div
+					className={cn(
+						"flex min-w-0 items-start gap-3.5",
+						wide ? "lg:max-w-2xl lg:flex-1 lg:items-center" : "lg:w-[22rem] lg:shrink-0",
+					)}
+				>
 					<span className="bg-status-success-bg text-status-success flex h-11 w-11 shrink-0 items-center justify-center rounded-full">
 						<Car className="h-5 w-5" aria-hidden="true" />
 					</span>
@@ -144,7 +156,7 @@ export async function VehicleListingFilter({
 
 	if (filter.state === "offered") {
 		return panel(
-			<p className="text-text-primary text-sm sm:text-base">
+			<p className="text-text-primary text-sm font-medium sm:text-base">
 				{t("listingOfferFor", { vehicle: filter.vehicleLabel ?? "" })}
 			</p>,
 			<>
