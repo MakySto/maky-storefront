@@ -296,7 +296,8 @@
 		"shippingNextStepNote": "Koszt dostawy zostanie obliczony podczas składania zamówienia.",
 		"removing": "Usuwanie",
 		"removeLineAria": "Usuń pozycję z koszyka",
-		"removingLineAria": "Usuwanie pozycji z koszyka"
+		"removingLineAria": "Usuwanie pozycji z koszyka",
+		"totalWithoutShipping": "Razem bez dostawy"
 	},
 	"checkout": {
 		"placeOrder": "Zamawiam i płacę",

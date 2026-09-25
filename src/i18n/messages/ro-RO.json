@@ -296,7 +296,8 @@
 		"shippingNextStepNote": "Costul livrării se calculează la finalizarea comenzii.",
 		"removing": "Se elimină",
 		"removeLineAria": "Elimină produsul din coș",
-		"removingLineAria": "Se elimină produsul din coș"
+		"removingLineAria": "Se elimină produsul din coș",
+		"totalWithoutShipping": "Total fără livrare"
 	},
 	"checkout": {
 		"placeOrder": "Comandă și plătește",

@@ -296,7 +296,8 @@
 		"shippingNextStepNote": "Doprava sa vypočíta v pokladni.",
 		"removing": "Odstraňujem",
 		"removeLineAria": "Odstrániť položku z košíka",
-		"removingLineAria": "Odstraňujem položku z košíka"
+		"removingLineAria": "Odstraňujem položku z košíka",
+		"totalWithoutShipping": "Spolu bez dopravy"
 	},
 	"checkout": {
 		"placeOrder": "Objednať s povinnosťou platby",

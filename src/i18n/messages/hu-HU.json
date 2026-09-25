@@ -296,7 +296,8 @@
 		"shippingNextStepNote": "A szállítási díjat a pénztárnál számítjuk ki.",
 		"removing": "Eltávolítás…",
 		"removeLineAria": "Tétel eltávolítása a kosárból",
-		"removingLineAria": "Tétel eltávolítása a kosárból"
+		"removingLineAria": "Tétel eltávolítása a kosárból",
+		"totalWithoutShipping": "Összesen szállítás nélkül"
 	},
 	"checkout": {
 		"placeOrder": "Megrendelem és fizetek",

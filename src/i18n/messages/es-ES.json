@@ -296,7 +296,8 @@
 		"shippingNextStepNote": "Los gastos de envío se calculan al finalizar la compra.",
 		"removing": "Eliminando…",
 		"removeLineAria": "Eliminar artículo del carrito",
-		"removingLineAria": "Eliminando artículo del carrito"
+		"removingLineAria": "Eliminando artículo del carrito",
+		"totalWithoutShipping": "Total sin envío"
 	},
 	"checkout": {
 		"placeOrder": "Comprar y pagar",

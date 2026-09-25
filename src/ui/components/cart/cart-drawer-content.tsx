@@ -13,7 +13,9 @@ import { useLocale } from "@/providers/locale-provider";
 import { buildCheckoutPath } from "@/session-bridge";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 import { Sheet, SheetCloseButton, SheetContent, SheetHeader, SheetTitle } from "@/ui/components/ui/sheet";
+import type { CartLineFitment } from "@/ui/components/fitment/cart-line-fitment";
 import { CartLineActions } from "./cart-line-actions";
+import { CartLineFit } from "./cart-line-fit";
 import { useCart } from "./cart-context";
 import { getVariantDetails } from "./variant-details";
 
@@ -28,6 +30,8 @@ type CartDrawerProps = {
 	subtotalPrice: TaxedMoney | null;
 	shippingPrice: TaxedMoney | null;
 	channel: string;
+	/** Each product's fit with the saved car, by Saleor product id; absent = say nothing. */
+	fitments?: Readonly<Record<string, CartLineFitment>>;
 	loadFailed?: boolean;
 };
 
@@ -35,11 +39,13 @@ function DrawerLine({
 	line,
 	checkoutId,
 	channel,
+	fitment,
 	closeCart,
 }: {
 	line: CartLine;
 	checkoutId: string;
 	channel: string;
+	fitment?: CartLineFitment;
 	closeCart: () => void;
 }) {
 	const t = useTranslations("cart");
@@ -96,6 +102,7 @@ function DrawerLine({
 							{t("variantLabel", { variant: line.variant.name })}
 						</p>
 					) : null}
+					{fitment ? <CartLineFit fitment={fitment} className="mt-2" /> : null}
 				</div>
 			</div>
 			<div className="mt-4 flex flex-wrap items-end justify-between gap-3">
@@ -131,6 +138,7 @@ export function CartDrawer({
 	subtotalPrice,
 	shippingPrice,
 	channel,
+	fitments = {},
 	loadFailed = false,
 }: CartDrawerProps) {
 	const t = useTranslations("cart");
@@ -198,6 +206,7 @@ export function CartDrawer({
 									line={line}
 									checkoutId={checkoutId}
 									channel={channel}
+									fitment={fitments[line.variant.product.id]}
 									closeCart={closeCart}
 								/>
 							))}
@@ -220,8 +229,10 @@ export function CartDrawer({
 										: t("shippingAtCheckout")}
 								</span>
 							</div>
+							{/* Until a delivery is chosen the sum holds no shipping, and its label says so:
+							    "Celkom" under "Doprava: vypočíta sa v pokladni" read as the final price. */}
 							<div className="border-border flex items-center justify-between gap-4 border-t pt-3 text-base font-semibold">
-								<span>{t("total")}</span>
+								<span>{shipping > 0 ? t("total") : t("totalWithoutShipping")}</span>
 								<span className="tabular-nums">{formatPrice(total, currency, locale)}</span>
 							</div>
 						</div>

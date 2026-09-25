@@ -296,7 +296,8 @@
 		"shippingNextStepNote": "Le spese di spedizione vengono calcolate al checkout.",
 		"removing": "Rimozione…",
 		"removeLineAria": "Rimuovi articolo dal carrello",
-		"removingLineAria": "Rimozione articolo dal carrello"
+		"removingLineAria": "Rimozione articolo dal carrello",
+		"totalWithoutShipping": "Totale senza spedizione"
 	},
 	"checkout": {
 		"placeOrder": "Ordina e paga",

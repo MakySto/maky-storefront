@@ -33,10 +33,10 @@
 		"country": "United States",
 		"slogan": "Everything for Your Hobby!",
 		"home": "Home",
-		"onDemand": "Made to order, delivery in 7–14 business days",
+		"onDemand": "Available to order, delivery in 7–14 business days",
 		"viewDetail": "View product",
 		"addToCartShort": "Add to cart",
-		"onDemandShort": "Made to order",
+		"onDemandShort": "Available to order",
 		"addedShort": "Added"
 	},
 	"nav": {
@@ -128,7 +128,7 @@
 		"trustPaymentTitle": "Secure payment",
 		"trustPaymentText": "Encrypted connection",
 		"trustShippingTitle": "Shipping",
-		"trustShippingText": "Price shown in your cart",
+		"trustShippingText": "Calculated at checkout",
 		"trustReturnsTitle": "Returns",
 		"trustReturnsText": "At least 14 days",
 		"trustWarrantyTitle": "2-year warranty",
@@ -296,7 +296,8 @@
 		"shippingNextStepNote": "Shipping is calculated at checkout.",
 		"removing": "Removing",
 		"removeLineAria": "Remove line from cart",
-		"removingLineAria": "Removing line from cart"
+		"removingLineAria": "Removing line from cart",
+		"totalWithoutShipping": "Total before shipping"
 	},
 	"checkout": {
 		"placeOrder": "Order and pay",
@@ -672,7 +673,7 @@
 		"benefitBrandsTitle": "Trusted brands",
 		"benefitBrandsText": "Thule, Yakima, Menabo and more",
 		"benefitShippingTitle": "Shipping by product",
-		"benefitShippingText": "You'll see the price in your cart",
+		"benefitShippingText": "Price calculated at checkout",
 		"benefitWarrantyTitle": "2-year warranty",
 		"benefitWarrantyText": "On every product",
 		"tileRoofRacks": "The base for every trip",

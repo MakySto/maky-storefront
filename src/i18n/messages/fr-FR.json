@@ -296,7 +296,8 @@
 		"shippingNextStepNote": "Les frais de livraison sont calculés lors de la commande.",
 		"removing": "Suppression…",
 		"removeLineAria": "Supprimer l'article du panier",
-		"removingLineAria": "Suppression de l'article du panier"
+		"removingLineAria": "Suppression de l'article du panier",
+		"totalWithoutShipping": "Total hors livraison"
 	},
 	"checkout": {
 		"placeOrder": "Commander et payer",

@@ -12,6 +12,8 @@ import { getHrefForVariant } from "@/lib/utils";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { CartLineActions } from "@/ui/components/cart/cart-line-actions";
 import { getVariantDetails } from "@/ui/components/cart/variant-details";
+import { CartLineFit } from "@/ui/components/cart/cart-line-fit";
+import { cartLineFitments, type CartLineFitment } from "@/ui/components/fitment/cart-line-fitment";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
 type CheckoutData = NonNullable<CheckoutFindQuery["checkout"]>;
@@ -68,11 +70,13 @@ async function CartItem({
 	checkoutId,
 	channel,
 	locale,
+	fitment,
 }: {
 	line: CartLine;
 	checkoutId: string;
 	channel: string;
 	locale: string;
+	fitment?: CartLineFitment;
 }) {
 	const t = await getTranslations({ locale, namespace: "cart" });
 	const details = getVariantDetails(line.variant);
@@ -127,6 +131,7 @@ async function CartItem({
 									{t("variantLabel", { variant: line.variant.name })}
 								</p>
 							) : null}
+							{fitment ? <CartLineFit fitment={fitment} className="mt-2" /> : null}
 						</div>
 						<div className="hidden sm:block">
 							<CartLinePrice line={line} locale={locale} />
@@ -193,6 +198,11 @@ async function CartContent({ channel }: { channel: string }) {
 	}
 
 	const itemCount = checkout.lines.reduce((sum, line) => sum + line.quantity, 0);
+	// Each line's fit with the saved car — see `cartLineFitments`.
+	const fitments = await cartLineFitments(
+		channel,
+		checkout.lines.map((line) => line.variant.product.id),
+	);
 	const currency = checkout.totalPrice.gross.currency;
 	const shipping = checkout.shippingPrice.gross.amount;
 
@@ -203,7 +213,14 @@ async function CartContent({ channel }: { channel: string }) {
 				<div>
 					<ul data-testid="CartProductList" role="list" className="space-y-4">
 						{checkout.lines.map((line) => (
-							<CartItem key={line.id} line={line} checkoutId={checkoutId} channel={channel} locale={locale} />
+							<CartItem
+								key={line.id}
+								line={line}
+								checkoutId={checkoutId}
+								channel={channel}
+								locale={locale}
+								fitment={fitments[line.variant.product.id]}
+							/>
 						))}
 					</ul>
 					<LinkWithChannel
@@ -239,8 +256,9 @@ async function CartContent({ channel }: { channel: string }) {
 									: t("shippingAtCheckout")}
 							</span>
 						</div>
+						{/* Until a delivery is chosen the sum holds no shipping, and its label says so. */}
 						<div className="border-border flex items-center justify-between gap-4 border-t pt-4 text-lg font-semibold">
-							<span>{t("total")}</span>
+							<span>{shipping > 0 ? t("total") : t("totalWithoutShipping")}</span>
 							<span className="tabular-nums">
 								{formatPrice(checkout.totalPrice.gross.amount, currency, locale)}
 							</span>

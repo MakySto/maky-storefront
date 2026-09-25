@@ -296,7 +296,8 @@
 		"shippingNextStepNote": "Die Versandkosten werden im Checkout berechnet.",
 		"removing": "Wird entfernt",
 		"removeLineAria": "Artikel aus dem Warenkorb entfernen",
-		"removingLineAria": "Artikel wird aus dem Warenkorb entfernt"
+		"removingLineAria": "Artikel wird aus dem Warenkorb entfernt",
+		"totalWithoutShipping": "Gesamt ohne Versand"
 	},
 	"checkout": {
 		"placeOrder": "Zahlungspflichtig bestellen",

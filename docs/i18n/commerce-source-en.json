@@ -244,6 +244,18 @@
 			"usageCount": 2,
 			"runtimeStatus": "production"
 		},
+		"cart.totalWithoutShipping": {
+			"source": "Total before shipping",
+			"context": "Label of the sum in the cart drawer footer and the full-cart-page summary box WHILE no delivery is chosen (the shipping row then reads cart.shippingAtCheckout): the sum holds no shipping yet, and 'Total' there read as the final price. Once a delivery with a price is chosen the label is cart.total again. Slovak 'Spolu bez dopravy'.",
+			"kind": "visible",
+			"maxLength": 28,
+			"callSites": [
+				"src/app/[channel]/(main)/cart/page.tsx",
+				"src/ui/components/cart/cart-drawer-content.tsx"
+			],
+			"usageCount": 2,
+			"runtimeStatus": "production"
+		},
 		"cart.variantAttribute": {
 			"source": "{name} {value}",
 			"context": "Cart drawer line item — non-color variant attribute rendered as attribute name followed by its value (e.g. \"Size XL\"); keyed so locales can reorder the pair.",
