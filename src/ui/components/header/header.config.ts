@@ -25,14 +25,15 @@ export const ADVICE_NAV: NavItem = { key: "advice", href: "/poradna" };
 export const BRANDS_NAV: NavItem = { key: "brands", href: "/znacky" };
 
 /**
- * The desktop row's two groups (third pass, 2026-09-24).
+ * The desktop row, in order of priority (owner, 2026-09-25).
  *
- * The categories run from the left, in the catalogue's order, and give way from the END when the
- * row is short of width — the fridges first, then the tents — because every one of them is also
- * in "Všetky kategórie". "Značky" and "Poradňa" sit apart at the right of the row and never give
- * way. Width is measured, not guessed from the viewport: the page stops growing at 88rem, the
- * labels differ by up to 40% between markets ("Strešné stany" / "Namioty dachowe"), and a
- * viewport breakpoint therefore let the row run under the vehicle button (see
+ * One line: the catalogue's categories first, then "Značky" and "Poradňa" after a short rule.
+ * When the row is short of width the links give way from the END — "Poradňa" first, then
+ * "Značky", then the categories from the last (the fridges, the tents) — so a shelf that sells
+ * never disappears to keep a secondary link in view. Both secondary links stay reachable at every
+ * width: in the "Všetky kategórie" menu, the phone menu and on the homepage. Width is measured,
+ * not guessed from the viewport: the page stops growing at 88rem and the labels differ by up to
+ * 40% between markets, and a viewport breakpoint let the row run under the vehicle button (see
  * `header-primary-nav.tsx`).
  */
 export const HEADER_CATEGORY_NAV: readonly NavItem[] = categoriesFor("nav").map((category) => ({

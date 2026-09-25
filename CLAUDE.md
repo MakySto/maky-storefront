@@ -157,6 +157,16 @@ Country/language selection may be less prominent (footer or account/settings is
 acceptable). Do NOT implement hard IP-based redirects for language/country. A dismissible
 "suggest local version" banner is acceptable later.
 
+Desktop category row — priorities (owner, 2026-09-25):
+
+- The catalogue categories come first. "Značky" and "Poradňa" are SECONDARY links: they follow
+  the categories and are the first to give way when the row is short of width. Never make them
+  mandatory in the row again, and never let a selling category disappear to keep them in view.
+- They must stay reachable at every width: the "Všetky kategórie" menu, the phone menu and the
+  homepage carry them.
+- The row measures its own width (wrap-and-clip, `NavOverflowRow`); no link may run under the
+  vehicle button, and a hidden link leaves the tab order (`inert`).
+
 ## 6. Homepage rules
 
 Focus on the current Auto-Moto launch scope.

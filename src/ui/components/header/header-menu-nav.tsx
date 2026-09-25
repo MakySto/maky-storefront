@@ -1,10 +1,10 @@
-import { BookOpenIcon, ChevronRightIcon } from "lucide-react";
+import { BookOpenIcon, ChevronRightIcon, TagsIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getLocaleFromChannel } from "@/config/locale";
 import { visibleNavLinks } from "@/lib/cms/availability";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { CategoryIcon } from "@/ui/components/shared/category-icons";
-import { ADVICE_NAV, ALL_CATEGORIES_NAV, localizedNavHref } from "./header.config";
+import { ADVICE_NAV, ALL_CATEGORIES_NAV, BRANDS_NAV, localizedNavHref } from "./header.config";
 
 const rowClass =
 	"text-text-primary hover:bg-surface-muted flex min-h-12 items-center gap-3 rounded-md px-1 py-2 text-base font-medium transition-colors";
@@ -21,6 +21,7 @@ export async function HeaderMenuNav({ channel }: { channel: string }) {
 	const locale = getLocaleFromChannel(channel);
 	const t = await getTranslations({ locale, namespace: "nav" });
 	const tAccount = await getTranslations({ locale, namespace: "account" });
+	const [brands] = await visibleNavLinks(channel, [BRANDS_NAV]);
 	const [advice] = await visibleNavLinks(channel, [ADVICE_NAV]);
 
 	return (
@@ -41,15 +42,26 @@ export async function HeaderMenuNav({ channel }: { channel: string }) {
 					</li>
 				))}
 			</ul>
-			{advice && (
+			{(brands || advice) && (
 				<div className="border-border-subtle mt-4 border-t pt-4">
-					<LinkWithChannel href={advice.href} className={rowClass}>
-						<span className={iconClass}>
-							<BookOpenIcon className="h-5 w-5" aria-hidden />
-						</span>
-						<span className="flex-1">{t("advice")}</span>
-						<ChevronRightIcon className="text-text-tertiary h-4 w-4" aria-hidden />
-					</LinkWithChannel>
+					{brands && (
+						<LinkWithChannel href={brands.href} className={rowClass}>
+							<span className={iconClass}>
+								<TagsIcon className="h-5 w-5" aria-hidden />
+							</span>
+							<span className="flex-1">{t("brands")}</span>
+							<ChevronRightIcon className="text-text-tertiary h-4 w-4" aria-hidden />
+						</LinkWithChannel>
+					)}
+					{advice && (
+						<LinkWithChannel href={advice.href} className={rowClass}>
+							<span className={iconClass}>
+								<BookOpenIcon className="h-5 w-5" aria-hidden />
+							</span>
+							<span className="flex-1">{t("advice")}</span>
+							<ChevronRightIcon className="text-text-tertiary h-4 w-4" aria-hidden />
+						</LinkWithChannel>
+					)}
 				</div>
 			)}
 		</nav>

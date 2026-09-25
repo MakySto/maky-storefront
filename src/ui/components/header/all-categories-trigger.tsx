@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDownIcon, ChevronRightIcon, LayoutGridIcon } from "lucide-react";
+import { BookOpenIcon, ChevronDownIcon, ChevronRightIcon, LayoutGridIcon, TagsIcon } from "lucide-react";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { CategoryIcon } from "@/ui/components/shared/category-icons";
 import {
@@ -24,12 +24,21 @@ export type CategoryMenuItem = {
  * fridges had no link in the header at all. Labels and localized hrefs are resolved on the
  * server (`header-nav-row.tsx`) and passed in, so this needs no translations of its own.
  */
+/** The secondary links' icons, by nav key: the makers and the advice pages. */
+const SECONDARY_ICON: Readonly<Record<string, typeof TagsIcon>> = { brands: TagsIcon, advice: BookOpenIcon };
+
 export function AllCategoriesTrigger({
 	label,
 	items,
+	links = [],
 }: {
 	label: string;
 	items: readonly CategoryMenuItem[];
+	/**
+	 * "Značky" and "Poradňa", under the categories. In the desktop row they are the first links to
+	 * give way when it is short of width (`header.config.ts`); here they stay at every width.
+	 */
+	links?: readonly CategoryMenuItem[];
 }) {
 	return (
 		<DropdownMenu modal={false}>
@@ -70,6 +79,24 @@ export function AllCategoriesTrigger({
 						</DropdownMenuItem>
 					))}
 				</div>
+				{links.length > 0 && (
+					<div className="border-border-subtle mt-2 grid grid-cols-2 gap-1 border-t pt-2">
+						{links.map((item) => {
+							const Icon = SECONDARY_ICON[item.key] ?? ChevronRightIcon;
+							return (
+								<DropdownMenuItem key={item.key} asChild>
+									<LinkWithChannel
+										href={item.href}
+										className="group/item text-text-primary focus:bg-surface-secondary flex cursor-pointer items-center gap-3 rounded-xs px-2.5 py-2 text-[0.9375rem] font-medium"
+									>
+										<Icon className="text-brand h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
+										<span className="flex-1">{item.label}</span>
+									</LinkWithChannel>
+								</DropdownMenuItem>
+							);
+						})}
+					</div>
+				)}
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);
