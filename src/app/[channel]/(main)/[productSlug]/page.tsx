@@ -443,16 +443,18 @@ async function ProductContent({
 								/>
 							</Suspense>
 						</ErrorBoundary>
-
-						{/* The key features under the buy box, as the approved page has them — and on a
-						    phone after the purchase row, before the description. */}
-						<ProductHighlights
-							attributes={productAttributes}
-							locale={getLocaleFromChannel(params.channel)}
-							className="order-8 mt-7"
-						/>
 					</div>
 				</div>
+
+				{/* The key features as one band across the page, under the gallery AND the buy box
+				    (third pass, 2026-09-24). In the buy column they ran on below the purchase while
+				    the gallery's half of the page stood empty beside them. On a phone they come
+				    after the purchase row, before the description, as before. */}
+				<ProductHighlights
+					attributes={productAttributes}
+					locale={getLocaleFromChannel(params.channel)}
+					className="mt-8 lg:mt-10"
+				/>
 
 				<ProductSpecs
 					descriptionHtml={descriptionHtml}

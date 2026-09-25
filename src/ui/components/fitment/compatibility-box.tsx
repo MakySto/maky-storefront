@@ -13,7 +13,7 @@ import {
 } from "./verdict-presentation";
 
 /**
- * The compatibility answer, rendered next to the purchase button.
+ * The compatibility answer, rendered right above the price and the purchase button.
  *
  * ⚠️ This component is mounted INSIDE the PDP's `<form action={addToCart}>`
  * (`variant-section-dynamic.tsx`). `src/ui/components/ui/button.tsx` sets no default
@@ -107,24 +107,53 @@ export async function CompatibilityBox({
 			? t("verdictSelectVehicleDetail")
 			: t(detailKey, { vehicle: vehicleLabel ?? "", supplier });
 
+	// A fit is said in two lines, not three sentences (third pass, 2026-09-24): the verdict names
+	// whose word it is ("Kompatibilné podľa údajov výrobcu"), and the line under it names the car
+	// and its roof — which is what the long sentence repeated. Every other verdict keeps its
+	// sentence: "we do not know yet" and "it does not fit" need their explanation.
+	const fitLine =
+		!qualified && isFit(result.verdict) && vehicleLabel
+			? [vehicleLabel, vehicleDetail].filter(Boolean).join(" · ")
+			: null;
+
 	return (
 		<div
-			className={cn("rounded-sm border border-current/15 p-4 sm:p-5", TONE_CLASSES[tone], className)}
+			className={cn("rounded-sm border border-current/15 px-4 py-3.5", TONE_CLASSES[tone], className)}
 			// The verdict changes what the shopper is about to buy, so a screen reader
 			// should hear it when it changes — but politely, mid-purchase.
 			aria-live="polite"
 		>
-			<div className="flex items-start gap-3.5">
-				<span className="bg-surface-card flex h-9 w-9 shrink-0 items-center justify-center rounded-full shadow-xs">
-					<Icon className="h-[1.125rem] w-[1.125rem]" strokeWidth={2.25} aria-hidden="true" />
+			<div className="flex items-start gap-3">
+				<span className="bg-surface-card mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full shadow-xs">
+					<Icon className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
 				</span>
-				<div className="min-w-0 flex-1 pt-1">
-					<p className="text-[0.9375rem] font-bold">
-						{qualified ? t("verdictQualified") : t(VERDICT_LABEL_KEY[result.verdict])}
-					</p>
-					<p className="mt-1 text-sm opacity-90">{qualified ? t("verdictQualifiedDetail") : detail}</p>
-
-					{vehicleDetail && <p className="mt-1 text-xs opacity-75">{vehicleDetail}</p>}
+				<div className="min-w-0 flex-1">
+					{/* The verdict and its one action — "Zmeniť vozidlo" or "Vybrať vozidlo", or the way
+					    to what does fit. Beside a two-line fit; under a verdict that needs its sentence,
+					    which a button beside it squeezed into a narrow column. */}
+					<div
+						className={cn(
+							"flex gap-x-4 gap-y-3",
+							fitLine ? "flex-wrap items-start justify-between" : "flex-col items-start",
+						)}
+					>
+						<div className={cn("min-w-0", fitLine ? "flex-1 basis-56" : "w-full")}>
+							<p className="text-[0.9375rem] leading-snug font-bold">
+								{qualified ? t("verdictQualified") : t(VERDICT_LABEL_KEY[result.verdict])}
+							</p>
+							{fitLine ? (
+								<p className="mt-0.5 text-sm font-medium opacity-90">{fitLine}</p>
+							) : (
+								<>
+									<p className="mt-0.5 text-sm opacity-90">
+										{qualified ? t("verdictQualifiedDetail") : detail}
+									</p>
+									{vehicleDetail && <p className="mt-0.5 text-xs opacity-75">{vehicleDetail}</p>}
+								</>
+							)}
+						</div>
+						{action && <div className="shrink-0">{action}</div>}
+					</div>
 
 					{conditions.resolved.length > 0 && (
 						<div className="mt-3">
@@ -146,10 +175,12 @@ export async function CompatibilityBox({
 					)}
 
 					{isDemo && <p className="mt-2 text-xs font-medium opacity-80">{t("demoNotice")}</p>}
-
-					{action && <div className="mt-3">{action}</div>}
 				</div>
 			</div>
 		</div>
 	);
+}
+
+function isFit(verdict: FitmentVerdict): boolean {
+	return verdict === "VERIFIED_FIT" || verdict === "MANUFACTURER_FIT";
 }

@@ -11,6 +11,15 @@ import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import { VehicleSelectorLauncher } from "@/ui/components/vehicle/vehicle-selector-launcher";
 import { CompatibilityBox } from "./compatibility-box";
+import { withinDeadline } from "./within-deadline";
+
+/**
+ * How long the product page waits for the fitment data before it leaves the box out. The box
+ * sits ABOVE the price and renders in the same stream as the purchase block, so it must come
+ * with it or not at all (see `withinDeadline`). A warm memo answers in a few milliseconds; a
+ * reload after the memo expired took ~280 ms on the box (2026-09-25).
+ */
+const PDP_FITMENT_WAIT_MS = 800;
 
 /**
  * The PDP's compatibility answer, resolved for THIS product and the saved car.
@@ -22,10 +31,12 @@ import { CompatibilityBox } from "./compatibility-box";
  * thought they were changing their car. Keeping it outside the form removes the hazard
  * rather than relying on every future edit to remember it.
  *
- * It renders NOTHING in two cases, and both are the honest answer:
+ * It renders NOTHING in three cases, and all are the honest answer:
  *
  *   - no dataset — the provider is off or unreachable, so there is no compatibility
  *     feature on this deployment to speak with;
+ *   - no dataset within `PDP_FITMENT_WAIT_MS` — the box renders with the purchase block, so
+ *     it comes in time or not at all this view;
  *   - the dataset has no row for this product — see `datasetSpeaksForProduct`. Silence,
  *     never NO_FIT, is what absence means outside the programme's scope.
  *
@@ -63,7 +74,12 @@ async function renderCompatibility({
 	// Explicit, not incidental: this subtree reads the garage cookie.
 	await connection();
 
-	const { dataset } = await loadFitmentDataset();
+	const loaded = await withinDeadline(loadFitmentDataset(), PDP_FITMENT_WAIT_MS);
+	if (!loaded) {
+		console.warn(`[fitment] PDP compatibility left out: no dataset within ${PDP_FITMENT_WAIT_MS} ms`);
+		return null;
+	}
+	const { dataset } = loaded;
 	if (!dataset) return null;
 	if (!datasetSpeaksForProduct(dataset, saleorProductId)) return null;
 
@@ -96,12 +112,16 @@ async function renderCompatibility({
 		>
 			{t("showCompatible")}
 		</LinkWithChannel>
-	) : (
+	) : vehicleLabel ? (
+		// The car is named in the box already: the action is a quiet "Zmeniť vozidlo", once.
 		<VehicleSelectorLauncher
-			variant="inline"
-			label={vehicleLabel ? t("changeVehicle") : undefined}
+			variant="link"
+			label={t("changeVehicle")}
 			vehicleLabel={vehicleLabel}
+			className="min-h-7 text-sm"
 		/>
+	) : (
+		<VehicleSelectorLauncher variant="inline" />
 	);
 
 	// The configuration the answer is about. The roof decides which feet fit, so an

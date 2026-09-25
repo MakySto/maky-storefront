@@ -13,6 +13,7 @@ import {
 	type LucideIcon,
 } from "lucide-react";
 import { formatProductAttributeValue, type AttributeInput } from "@/lib/product-attributes";
+import { cn } from "@/lib/utils";
 
 /**
  * The parameters worth seeing before the description, in the order a shopper decides by — for a
@@ -51,33 +52,53 @@ export async function ProductHighlights({
 	const words = { yes: t("yes"), no: t("no") };
 	const byRef = new Map(attributes.map((a) => [a.attribute.externalReference ?? "", a]));
 
-	const items = HIGHLIGHTS.flatMap(({ ref, icon }) => {
-		const attribute = byRef.get(ref);
-		if (!attribute?.attribute.name) return [];
-		// A yes/no parameter is a feature only when it is a yes.
-		if (attribute.attribute.inputType === "BOOLEAN" && !attribute.values.some((v) => v.boolean === true)) {
-			return [];
-		}
-		const values = formatProductAttributeValue(attribute, locale, words);
-		if (values.length === 0) return [];
-		return [{ ref, icon, label: attribute.attribute.name, value: values.join(", ") }];
-	}).slice(0, MAX_HIGHLIGHTS);
+	const items = HIGHLIGHTS.flatMap(
+		({ ref, icon }): { ref: string; icon: LucideIcon; value: string; label: string | null }[] => {
+			const attribute = byRef.get(ref);
+			if (!attribute?.attribute.name) return [];
+			if (attribute.attribute.inputType === "BOOLEAN") {
+				// A yes/no parameter is a feature only when it is a yes — and then its NAME is the
+				// feature: "Vhodný pre e-bike", not "Áno" over "Vhodný pre e-bike".
+				if (!attribute.values.some((v) => v.boolean === true)) return [];
+				return [{ ref, icon, value: attribute.attribute.name, label: null }];
+			}
+			const values = formatProductAttributeValue(attribute, locale, words);
+			if (values.length === 0) return [];
+			return [{ ref, icon, value: values.join(", "), label: attribute.attribute.name }];
+		},
+	).slice(0, MAX_HIGHLIGHTS);
 
 	if (items.length < 2) return null;
 
-	// Under the buy box, as the approved page places them: warm tiles, the brown icon drawn
-	// without a ring, the value in bold over its name. Two to a row in the purchase column.
+	// One warm band across the page under the gallery and the buy box (third pass, 2026-09-24),
+	// its items split by hairlines: in a row of four on a desktop, two by two on a phone. In the
+	// buy column they left the gallery's side of the page empty. The hairlines are the band's
+	// own colour showing through a 1px gap, so they follow any wrap and never dangle at an edge.
 	return (
 		<section aria-label={t("keyFeatures")} className={className}>
-			<ul className="grid grid-cols-2 gap-2.5 sm:gap-3">
+			<ul
+				className={cn(
+					"bg-border-default border-border-default grid grid-cols-2 gap-px overflow-hidden rounded-sm border",
+					// An odd item out on a phone spans the row rather than leaving a hole.
+					"[&>li:last-child:nth-child(odd)]:col-span-2 lg:[&>li:last-child:nth-child(odd)]:col-span-1",
+					items.length === 2 && "lg:grid-cols-2",
+					items.length === 3 && "lg:grid-cols-3",
+					items.length === 4 && "lg:grid-cols-4",
+				)}
+			>
 				{items.map(({ ref, icon: Icon, label, value }) => (
-					<li key={ref} className="bg-surface-muted flex items-center gap-3 rounded-sm px-3.5 py-3 sm:px-4">
+					<li
+						key={ref}
+						className="bg-surface-muted flex min-w-0 items-center gap-3 px-4 py-4 sm:gap-3.5 sm:px-5"
+					>
 						<Icon className="text-brand h-7 w-7 shrink-0" strokeWidth={2} aria-hidden="true" />
 						<span className="min-w-0">
 							<span className="text-text-primary block text-[0.9375rem] leading-tight font-bold tracking-[-0.01em] break-words">
 								{value}
 							</span>
-							<span className="text-text-secondary mt-0.5 block text-xs leading-snug">{label}</span>
+							{label && (
+								<span className="text-text-secondary mt-0.5 block text-xs leading-snug">{label}</span>
+							)}
 						</span>
 					</li>
 				))}

@@ -19,16 +19,24 @@ interface ProductSpecsProps {
 
 /**
  * The description's typography, as the approved page sets it: the first paragraph is the lead —
- * larger and in the text colour — and a list reads as green ticks. The HTML is Saleor's (one
- * `<div>` per EditorJS block), so the styling reaches into it by structure.
+ * larger and in the text colour. The HTML is Saleor's (one `<div>` per EditorJS block), so the
+ * styling reaches into it by structure.
+ *
+ * Lists are plain, with a quiet brown bullet (third pass, 2026-09-24). They used to be green
+ * ticks, one per item, and a supplier's list holds anything: the product's advantages, but also
+ * the contents of the box, dimensions, and "check the fastening before every journey" — a green
+ * tick on a warning reads as a promise. Nothing in the data says which list is which, and
+ * guessing it from a heading's wording in twelve languages would be worse than no ticks.
  */
 const DESCRIPTION_PROSE = cn(
 	"prose text-text-secondary max-w-none leading-relaxed",
 	"prose-headings:text-text-primary prose-headings:tracking-[-0.01em] prose-p:text-text-secondary prose-a:text-text-link prose-strong:text-text-primary prose-li:text-text-secondary",
 	"[&>div:first-child>p:first-child]:text-text-primary [&>div:first-child>p:first-child]:text-[1.0625rem] [&>div:first-child>p:first-child]:font-medium sm:[&>div:first-child>p:first-child]:text-lg",
-	"[&_ul]:list-none [&_ul]:pl-0 [&_ul>li]:relative [&_ul>li]:pl-8",
-	"[&_ul>li]:before:bg-cta [&_ul>li]:before:text-cta-text [&_ul>li]:before:absolute [&_ul>li]:before:top-[0.2em] [&_ul>li]:before:left-0 [&_ul>li]:before:flex [&_ul>li]:before:h-5 [&_ul>li]:before:w-5 [&_ul>li]:before:items-center [&_ul>li]:before:justify-center [&_ul>li]:before:rounded-full [&_ul>li]:before:text-[0.6875rem] [&_ul>li]:before:font-bold [&_ul>li]:before:content-['✓']",
+	"prose-ul:pl-5 prose-li:my-1 prose-li:marker:text-brand",
 );
+
+/** A value longer than this reads as a sentence: it gets the row's full width, left-aligned. */
+const LONG_VALUE = 32;
 
 /**
  * Description and technical parameters, full width below the hero.
@@ -79,21 +87,19 @@ export async function ProductSpecs({
 
 	return (
 		<section className="mt-10 lg:mt-14">
-			{/* The sections this product has, as a row of jump links in the approved design's tab
-			    style. Links, not a tab widget: everything stays on the page and readable without
-			    a click, and an empty section never gets a tab. */}
+			{/* The sections this product has, as a row of jump links: one hairline under the row, the
+			    current one underlined in brown — not another raised panel. Links, not a tab widget:
+			    everything stays on the page and readable without a click, and an empty section never
+			    gets a tab. */}
 			{sections.length > 1 && (
-				<nav
-					aria-label={t("productDetails")}
-					className="border-border-subtle bg-surface-card rounded-sm border px-4 shadow-xs sm:px-6"
-				>
-					<ul className="scrollbar-hide -mb-px flex gap-6 overflow-x-auto sm:gap-10">
+				<nav aria-label={t("productDetails")} className="border-border-default border-b">
+					<ul className="scrollbar-hide -mb-px flex gap-7 overflow-x-auto sm:gap-10">
 						{sections.map((section, index) => (
 							<li key={section.href}>
 								<a
 									href={section.href}
 									className={cn(
-										"hover:text-brand hover:border-brand focus-visible:ring-ring inline-flex h-14 items-center border-b-2 text-[0.9375rem] font-semibold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none",
+										"hover:text-brand hover:border-brand focus-visible:ring-ring inline-flex h-12 items-center border-b-2 text-[0.9375rem] font-semibold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none sm:text-base",
 										// The first section opens under the row, so it reads as the one in view.
 										index === 0 ? "text-brand border-brand" : "text-text-primary border-transparent",
 									)}
@@ -106,42 +112,21 @@ export async function ProductSpecs({
 				</nav>
 			)}
 
-			{/* The description with the product's photo beside it, then the parameters at full width
-			    in two columns — the approved page's order. */}
-			<div className="mt-4 grid gap-4 lg:mt-5 lg:gap-5">
+			{/* The description with the product's photo beside its opening, then the parameters at
+			    full width in two columns — the approved page's order. */}
+			<div className="mt-5 grid gap-4 lg:mt-6 lg:gap-5">
 				{hasDescription && (
 					<article
 						id="product-description"
 						aria-labelledby="product-description-heading"
-						className={cn(
-							"border-border-subtle bg-surface-card scroll-mt-40 rounded-sm border p-5 shadow-xs sm:p-8 lg:p-10",
-							image && "xl:grid xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] xl:items-start xl:gap-12",
-						)}
+						className="border-border-subtle bg-surface-card flow-root scroll-mt-[calc(var(--header-offset)+1rem)] rounded-sm border p-5 shadow-xs sm:p-8 lg:p-10"
 					>
-						<div className="min-w-0">
-							<h2
-								id="product-description-heading"
-								className="text-text-primary mb-5 text-2xl font-extrabold tracking-[-0.025em] sm:text-[1.875rem]"
-							>
-								{t("productDescription")}
-							</h2>
-							{descriptionHtml?.length ? (
-								<div className={DESCRIPTION_PROSE}>
-									{descriptionHtml.map((html) => (
-										<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
-									))}
-								</div>
-							) : null}
-
-							{careInstructions && (
-								<div className="border-border-subtle bg-surface-secondary mt-8 rounded-xs border p-4 sm:p-5">
-									<h3 className="text-text-primary mb-2 font-semibold">{t("careInstructions")}</h3>
-									<p className="text-text-secondary leading-relaxed">{careInstructions}</p>
-								</div>
-							)}
-						</div>
+						{/* The product's own photo floats beside the opening of the description, and the
+						    text runs on at full width under it. It used to stand in a sticky column of
+						    its own for the description's whole length, which held a long description — a
+						    Nordrive set's runs to three screens — to 55% of the page. */}
 						{image && (
-							<div className="bg-surface-card relative mt-8 hidden aspect-[4/3] overflow-hidden rounded-sm xl:sticky xl:top-[calc(var(--header-offset)+1.5rem)] xl:mt-0 xl:block">
+							<div className="bg-surface-card relative mb-6 ml-10 hidden aspect-[4/3] w-[40%] overflow-hidden rounded-sm xl:float-right xl:block">
 								<Image
 									src={image.url}
 									alt={image.alt}
@@ -151,6 +136,26 @@ export async function ProductSpecs({
 								/>
 							</div>
 						)}
+						<h2
+							id="product-description-heading"
+							className="text-text-primary mb-5 text-2xl font-extrabold tracking-[-0.025em] sm:text-[1.875rem]"
+						>
+							{t("productDescription")}
+						</h2>
+						{descriptionHtml?.length ? (
+							<div className={DESCRIPTION_PROSE}>
+								{descriptionHtml.map((html) => (
+									<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
+								))}
+							</div>
+						) : null}
+
+						{careInstructions && (
+							<div className="border-border-subtle bg-surface-secondary mt-8 rounded-xs border p-4 sm:p-5">
+								<h3 className="text-text-primary mb-2 font-semibold">{t("careInstructions")}</h3>
+								<p className="text-text-secondary leading-relaxed">{careInstructions}</p>
+							</div>
+						)}
 					</article>
 				)}
 
@@ -158,7 +163,7 @@ export async function ProductSpecs({
 					<section
 						id="technical-parameters"
 						aria-labelledby="technical-parameters-heading"
-						className="border-border-subtle bg-surface-card scroll-mt-40 rounded-sm border p-5 shadow-xs sm:p-8 lg:p-10"
+						className="border-border-subtle bg-surface-card scroll-mt-[calc(var(--header-offset)+1rem)] rounded-sm border p-5 shadow-xs sm:p-8 lg:p-10"
 					>
 						<h2
 							id="technical-parameters-heading"
@@ -166,7 +171,9 @@ export async function ProductSpecs({
 						>
 							{t("technicalParameters")}
 						</h2>
-						<dl className="grid text-sm sm:text-[0.9375rem] lg:grid-cols-2 lg:gap-x-12">
+						{/* Two columns that read DOWN, each a list of its own with a rule between them — not
+						    a grid read across in zig-zag pairs. */}
+						<dl className="text-sm sm:text-[0.9375rem] lg:columns-2 lg:gap-x-14 lg:[column-rule:1px_solid_var(--border-subtle)]">
 							{outerDimensions && (
 								<SpecRow label={t("outerDimensions")} values={[outerDimensions]} emphasised />
 							)}
@@ -182,16 +189,27 @@ export async function ProductSpecs({
 }
 
 function SpecRow({ label, values, emphasised }: { label: string; values: string[]; emphasised?: boolean }) {
+	const value = values.join(", ");
+	// A short value — a number, a unit, "Áno" — sits at the row's right edge, where a column of
+	// them can be scanned. A sentence ("max. šírka kolies 80 mm vzdialenosť…") was squeezed into
+	// the right half, right-aligned; it gets the row's width and reads from the left.
+	const long = value.length > LONG_VALUE;
 	return (
 		<div
-			className={
-				"border-border-subtle grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-5 border-b py-3.5" +
-				(emphasised ? " bg-surface-secondary -mx-3 rounded-xs px-3" : "")
-			}
+			className={cn(
+				"border-border-subtle break-inside-avoid border-b py-3.5",
+				long ? "grid gap-1" : "grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-5",
+				emphasised && "bg-surface-secondary -mx-3 rounded-xs px-3",
+			)}
 		>
 			<dt className="text-text-secondary break-words">{label}</dt>
-			<dd className="text-text-primary text-right font-semibold break-words tabular-nums">
-				{values.join(", ")}
+			<dd
+				className={cn(
+					"text-text-primary font-semibold break-words tabular-nums",
+					long ? "text-left leading-relaxed" : "text-right",
+				)}
+			>
+				{value}
 			</dd>
 		</div>
 	);

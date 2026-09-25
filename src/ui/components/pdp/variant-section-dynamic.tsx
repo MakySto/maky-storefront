@@ -3,7 +3,6 @@ import { formatMoney, formatMoneyRange } from "@/lib/utils";
 import { getDiscountInfo } from "@/lib/pricing";
 import { type ProductDetailsQuery } from "@/gql/graphql";
 
-import { Suspense } from "react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getLocaleFromChannel } from "@/config/locale";
@@ -276,17 +275,22 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 				)}
 			</div>
 
-			{/* Compatibility - order:6, right under the purchase CTA (CLAUDE.md §8: near it, not in
-			    the description; since the 2026-09 redesign under the button, so the price and
-			    the button stay on a laptop's first screen) and deliberately OUTSIDE the form
-			    above it: the box carries a button, and
-			    `ui/button.tsx` sets no default `type`, so a submit here would add to the
-			    cart while the shopper thought they were changing their car. Its own
-			    Suspense boundary because it may have to reach the fitment provider over
-			    HTTP, and an add-to-cart button must never wait on that. */}
-			<Suspense fallback={null}>
-				<PdpCompatibility channel={channel} saleorProductId={product.id} className="order-6 mt-6" />
-			</Suspense>
+			{/* Compatibility - order:4, BEFORE the price and the button (third pass, 2026-09-24): what
+			    it is, for which car, whether it fits — then what it costs and the purchase. It is
+			    compact (two lines for a fit), so the price and the button still make a laptop's
+			    first screen. CLAUDE.md §8: near the CTA, not in the description.
+
+			    No Suspense boundary of its own, on purpose: above the price, a box that streamed in
+			    after the purchase block pushed the price and the button down (measured 2026-09-25,
+			    ~280 ms late whenever the fitment memo had expired). It renders with the purchase
+			    block instead, and waits for the fitment data only up to a short deadline — past it
+			    the box is left out for that view (`PdpCompatibility`), so the purchase never waits
+			    on the provider for long.
+
+			    Deliberately OUTSIDE the form below it: the box carries a button, and
+			    `ui/button.tsx` sets no default `type`, so a submit here would add to the cart while
+			    the shopper thought they were changing their car. */}
+			<PdpCompatibility channel={channel} saleorProductId={product.id} className="order-4 mt-5" />
 
 			{/* Rest of variant section - order:5 so it appears BELOW the meta row */}
 			<CartForm action={addToCart} className="order-5 mt-6 space-y-6">

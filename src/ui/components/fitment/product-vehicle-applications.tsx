@@ -28,6 +28,38 @@ type Props = {
 	initial: ApplicationPage;
 };
 
+/** Above this many vehicles the list gets its search field. */
+const SEARCH_FROM = 8;
+
+function yearsOf(row: ApplicationRow, t: ReturnType<typeof useTranslations>): string {
+	return row.yearTo === null
+		? t("yearFromOnly", { from: row.yearFrom })
+		: t("yearRange", { from: row.yearFrom, to: row.yearTo });
+}
+
+/** The one vehicle a product is made for, as a short block: the car, then years, body and roof. */
+function SingleApplication({ row }: { row: ApplicationRow }) {
+	const t = useTranslations("fitment");
+	const facts = [
+		yearsOf(row, t),
+		row.bodyTypes?.map((b) => t(BODY_LABEL_KEY[b as BodyType])).join(", "),
+		row.roofTypes?.map((r) => t(ROOF_LABEL_KEY[r as RoofType])).join(", "),
+	].filter(Boolean);
+	return (
+		<div className="border-border-subtle bg-surface-secondary mt-4 rounded-xs border px-4 py-3.5 sm:px-5">
+			<p className="text-text-primary text-base font-semibold">
+				{row.makeName} {row.modelName} <span className="text-text-secondary">{row.generationName}</span>
+				{!row.accepted && (
+					<span className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed ml-2 rounded px-1.5 py-0.5 align-middle text-xs font-normal">
+						{t("applicationsProvisional")}
+					</span>
+				)}
+			</p>
+			<p className="text-text-secondary mt-1 text-sm">{facts.join(" · ")}</p>
+		</div>
+	);
+}
+
 export function ProductVehicleApplications({ saleorProductId, initial }: Props) {
 	const t = useTranslations("fitment");
 	const [page, setPage] = useState<ApplicationPage>(initial);
@@ -80,22 +112,29 @@ export function ProductVehicleApplications({ saleorProductId, initial }: Props) 
 
 			{initial.total === 0 && !query ? (
 				<p className="text-text-tertiary mt-2 text-sm">{t("applicationsEmpty")}</p>
+			) : initial.total === 1 && initial.rows.length === 1 ? (
+				// One car: its name and its facts, not a search field and a table of one row.
+				<SingleApplication row={initial.rows[0]} />
 			) : (
 				<>
-					<div className="relative mt-3">
-						<Search
-							className="text-text-tertiary pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-							aria-hidden="true"
-						/>
-						<Input
-							type="search"
-							value={query}
-							onChange={(event) => runSearch(event.target.value)}
-							aria-label={t("applicationsSearchLabel")}
-							placeholder={t("applicationsSearchPlaceholder")}
-							className="pl-9"
-						/>
-					</div>
+					{/* A search only where there is something to search: a set for three cars lists
+					    them. */}
+					{initial.total > SEARCH_FROM && (
+						<div className="relative mt-3">
+							<Search
+								className="text-text-tertiary pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+								aria-hidden="true"
+							/>
+							<Input
+								type="search"
+								value={query}
+								onChange={(event) => runSearch(event.target.value)}
+								aria-label={t("applicationsSearchLabel")}
+								placeholder={t("applicationsSearchPlaceholder")}
+								className="pl-9"
+							/>
+						</div>
+					)}
 
 					{/* The table scrolls in its own container. A wide table must never make
 					    the whole page scroll sideways on a phone. */}
@@ -129,11 +168,7 @@ export function ProductVehicleApplications({ saleorProductId, initial }: Props) 
 												</span>
 											)}
 										</td>
-										<td className="text-text-secondary py-2 pr-3 whitespace-nowrap">
-											{row.yearTo === null
-												? t("yearFromOnly", { from: row.yearFrom })
-												: t("yearRange", { from: row.yearFrom, to: row.yearTo })}
-										</td>
+										<td className="text-text-secondary py-2 pr-3 whitespace-nowrap">{yearsOf(row, t)}</td>
 										<td className="text-text-secondary py-2">
 											{row.roofTypes
 												? row.roofTypes.map((r) => t(ROOF_LABEL_KEY[r as RoofType])).join(", ")
