@@ -9,6 +9,7 @@ import { isContentReady } from "@/lib/cms/content-readiness";
 import { marketHasRoute } from "@/lib/route-policy";
 import { buildPageMetadata } from "@/lib/seo";
 import { cmsLanguageAlternates } from "@/lib/cms/availability";
+import { cmsRevisionMetadata } from "@/lib/cms/revision";
 import { CmsBlocks } from "@/ui/components/cms/cms-blocks";
 
 /**
@@ -172,11 +173,17 @@ export function cmsPageRoute(config: CmsRouteConfig): CmsRoute {
 		// the bad entry. `publishedCmsMarkets` asks only the markets the static policy
 		// already allows, through the same cached read the page performs.
 		//
+		// The revision marker (pages contract v3 §3) — only when a CMS document is what the
+		// page renders. A bootstrap served on an outage carries none, so the CMS verifier can
+		// never mistake the code copy for its new revision.
+		const revision = page ? cmsRevisionMetadata(page) : undefined;
+		const withRevision: Metadata = revision ? { ...metadata, other: revision } : metadata;
+
 		// Only `languages` is added; the canonical `buildPageMetadata` already produced
 		// stays exactly as it was.
 		const languages = await cmsLanguageAlternates(slug);
-		if (!languages) return metadata;
-		return { ...metadata, alternates: { ...metadata.alternates, languages } };
+		if (!languages) return withRevision;
+		return { ...withRevision, alternates: { ...withRevision.alternates, languages } };
 	}
 
 	async function Page({ params }: { params: Promise<{ channel: string }> }): Promise<ReactNode> {
