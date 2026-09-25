@@ -18,8 +18,10 @@ export async function HeaderNavRow({ channel }: { channel: string }) {
 	}));
 
 	return (
-		<div className="flex h-[3.25rem] items-center justify-between gap-4">
-			<div className="flex h-full min-w-0 items-center gap-3 xl:gap-5">
+		<div className="flex h-[3.25rem] items-center justify-between gap-4 xl:gap-6">
+			{/* Takes the row's width left over by the vehicle button, and no more — the nav inside
+			    measures exactly that, so nothing can run under the button. */}
+			<div className="flex h-full min-w-0 flex-1 items-center gap-3 xl:gap-5">
 				<AllCategoriesTrigger label={t("allCategories")} items={allCategories} />
 
 				<Suspense>
@@ -28,7 +30,9 @@ export async function HeaderNavRow({ channel }: { channel: string }) {
 			</div>
 
 			{/* The market and its currency moved to the footer (owner, 2026-09-24): the row keeps
-			    the categories and the vehicle, as the approved header draws it. */}
+			    the categories and the vehicle, as the approved header draws it. The button has one
+			    fixed width from xl, and its fallback the same, so the row never re-flows when the
+			    saved car streams in. */}
 			<div className="flex shrink-0 items-center gap-2">
 				<Suspense fallback={<ActiveVehicleLauncherSkeleton variant="header" />}>
 					<ActiveVehicleLauncher variant="header" />

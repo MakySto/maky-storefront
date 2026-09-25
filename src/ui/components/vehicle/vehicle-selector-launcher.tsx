@@ -86,9 +86,11 @@ export function VehicleSelectorLauncher({
 					className={cn(
 						// The header's green entry to the vehicle selector: the approved design's filled
 						// button with two lines. Below `xl` the nav row has no width for the words, and the
-						// car icon alone stands in, named by its title.
+						// car icon alone stands in, named by its title. From `xl` ONE fixed width, whatever
+						// the car's name — a long name is cut inside the button, never by pushing into the
+						// links beside it — and the same width as its loading placeholder.
 						variant === "header" &&
-							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-11 items-center gap-2.5 rounded-xs px-3 text-left shadow-sm transition-colors xl:px-3.5",
+							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-11 w-11 shrink-0 items-center justify-center gap-2.5 rounded-xs text-left shadow-sm transition-colors xl:w-[16rem] xl:justify-start xl:px-3.5",
 						variant === "hero" &&
 							"bg-cta text-cta-text hover:bg-cta-hover inline-flex h-[3.25rem] items-center justify-center gap-2.5 rounded-xs px-6 text-base font-semibold shadow-lg transition-colors",
 						// The hero's green button at listing size: the vehicle panel above a roof-rack listing.
@@ -138,9 +140,9 @@ export function VehicleSelectorLauncher({
 					)}
 					{variant === "header" && (
 						// Always in the DOM: below `xl` it is the button's accessible name, from `xl` its face.
-						<span className="sr-only min-w-0 flex-col leading-tight xl:not-sr-only xl:flex">
-							<span className="max-w-[13rem] truncate text-sm font-semibold">{label}</span>
-							<span className="max-w-[13rem] truncate text-xs opacity-85">{hint}</span>
+						<span className="sr-only min-w-0 flex-1 flex-col leading-tight xl:not-sr-only xl:flex">
+							<span className="truncate text-sm font-semibold">{label}</span>
+							<span className="truncate text-xs opacity-85">{hint}</span>
 						</span>
 					)}
 					{variant !== "header" && variant !== "icon" && (
@@ -162,7 +164,11 @@ export function VehicleSelectorLauncher({
 							aria-hidden="true"
 						/>
 					)}
-					{variant === "inline" && car && (
+					{/* "Zmeniť vozidlo" after the car's name — but only after the NAME. When the caller has
+					    already put the action on the button ("Zmeniť vozidlo" in the PDP's compatibility
+					    box), a second one read "Zmeniť vozidlo Zmeniť vozidlo" (owner's screenshots,
+					    DE and US, 2026-09-24). */}
+					{variant === "inline" && car && !labelOverride?.trim() && (
 						<span className="text-text-link ml-auto shrink-0 text-sm font-medium">
 							{tFitment("changeVehicle")}
 						</span>

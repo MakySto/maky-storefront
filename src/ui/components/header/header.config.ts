@@ -18,33 +18,31 @@ export interface NavItem {
 	readonly href: string;
 }
 
-/**
- * From which width a desktop-row link shows. The row is one line: at 1024px it holds the three
- * main shelves and Poradňa, at 1280px the tents and the fridges join, the skis at 1536px — the
- * approved header at 1440px draws exactly the row that fits there. Every category stays one
- * click away in "Všetky kategórie" at every width.
- */
-export const NAV_VISIBLE_FROM: Readonly<Record<string, "xl" | "2xl">> = {
-	roofTents: "xl",
-	carFridges: "xl",
-	brands: "xl",
-	skiCarriers: "2xl",
-};
-
 /** `/poradna`. Linked only where the market has the page — see `visibleNavLinks`. */
 export const ADVICE_NAV: NavItem = { key: "advice", href: "/poradna" };
 
 /** `/znacky` — the makers this market sells, each to its own page (`lib/brands/catalog.ts`). */
 export const BRANDS_NAV: NavItem = { key: "brands", href: "/znacky" };
 
-export const HEADER_PRIMARY_NAV: readonly NavItem[] = [
-	...categoriesFor("nav").map((category) => ({
-		key: category.key,
-		href: categoryHref(category),
-	})),
-	BRANDS_NAV,
-	ADVICE_NAV,
-];
+/**
+ * The desktop row's two groups (third pass, 2026-09-24).
+ *
+ * The categories run from the left, in the catalogue's order, and give way from the END when the
+ * row is short of width — the fridges first, then the tents — because every one of them is also
+ * in "Všetky kategórie". "Značky" and "Poradňa" sit apart at the right of the row and never give
+ * way. Width is measured, not guessed from the viewport: the page stops growing at 88rem, the
+ * labels differ by up to 40% between markets ("Strešné stany" / "Namioty dachowe"), and a
+ * viewport breakpoint therefore let the row run under the vehicle button (see
+ * `header-primary-nav.tsx`).
+ */
+export const HEADER_CATEGORY_NAV: readonly NavItem[] = categoriesFor("nav").map((category) => ({
+	key: category.key,
+	href: categoryHref(category),
+}));
+
+export const HEADER_UTILITY_NAV: readonly NavItem[] = [BRANDS_NAV, ADVICE_NAV];
+
+export const HEADER_PRIMARY_NAV: readonly NavItem[] = [...HEADER_CATEGORY_NAV, ...HEADER_UTILITY_NAV];
 
 /**
  * Every surfaced category, for the lists that have room for all of them: the mobile menu,

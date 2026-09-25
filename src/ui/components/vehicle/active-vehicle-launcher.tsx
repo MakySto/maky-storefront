@@ -73,7 +73,8 @@ export function ActiveVehicleLauncherSkeleton({
 			aria-hidden="true"
 			className={cn(
 				"bg-surface-secondary animate-pulse rounded-xs",
-				variant === "header" && "h-11 w-11 xl:w-[13.5rem]",
+				// The header button's own box: a 44px square below xl, 16rem from xl (see the launcher).
+				variant === "header" && "h-11 w-11 xl:w-[16rem]",
 				variant === "compact" && "h-11 w-[9.5rem]",
 				variant === "icon" && "h-11 w-11",
 				variant === "hero" && "h-12 w-[13rem]",
