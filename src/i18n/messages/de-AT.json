@@ -859,7 +859,136 @@
 		"email": "E-Mail",
 		"variantsUnavailable": "Die Produktoptionen konnten nicht geladen werden.",
 		"openMenu": "Menü öffnen",
-		"primaryNavigation": "Hauptnavigation"
+		"primaryNavigation": "Hauptnavigation",
+		"meta": {
+			"signInTitle": "Anmelden",
+			"signInDescription": "Melden Sie sich an, um Ihre Bestellungen und gespeicherten Adressen zu sehen.",
+			"signUpTitle": "Registrieren",
+			"signUpDescription": "Erstellen Sie ein Konto und haben Sie Ihre Adressen und Bestellungen an einem Ort.",
+			"accountTitle": "Mein Konto"
+		},
+		"form": {
+			"showPassword": "Passwort anzeigen",
+			"hidePassword": "Passwort verbergen",
+			"emailPlaceholder": "name@example.com"
+		},
+		"signIn": {
+			"noAccount": "Noch kein Konto?",
+			"createAccountLink": "Jetzt registrieren"
+		},
+		"signUp": {
+			"goToSignIn": "Zur Anmeldung",
+			"consent": "Mit der Erstellung eines Kontos akzeptieren Sie unsere <terms>AGB</terms>. Wie wir personenbezogene Daten verarbeiten, erfahren Sie in unserer <privacy>Datenschutzerklärung</privacy>."
+		},
+		"reset": {
+			"subtitle": "Legen Sie ein neues Passwort für <strong>{email}</strong> fest.",
+			"success": "Ihr Passwort wurde geändert und Sie sind jetzt angemeldet."
+		},
+		"errors": {
+			"enterNewPassword": "Bitte geben Sie ein neues Passwort ein.",
+			"tooManyAttempts": "Zu viele fehlgeschlagene Versuche. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+			"accountNotConfirmed": "Ihr Konto ist noch nicht aktiviert. Bitte aktivieren Sie es über den Link in der E-Mail, die wir Ihnen geschickt haben.",
+			"accountInactive": "Dieses Konto ist nicht aktiv. Bitte kontaktieren Sie uns.",
+			"emailTaken": "Mit dieser E-Mail-Adresse gibt es bereits ein Konto. Bitte melden Sie sich an.",
+			"passwordTooCommon": "Dieses Passwort ist zu häufig. Bitte wählen Sie ein anderes.",
+			"passwordNumeric": "Das Passwort darf nicht nur aus Ziffern bestehen.",
+			"passwordTooSimilar": "Das Passwort ist Ihren persönlichen Daten zu ähnlich. Bitte wählen Sie ein anderes.",
+			"wrongCurrentPassword": "Das aktuelle Passwort ist nicht korrekt.",
+			"signUpFailed": "Das Konto konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+			"profileSaveFailed": "Die Änderungen konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+			"passwordChangeFailed": "Das Passwort konnte nicht geändert werden. Bitte versuchen Sie es erneut.",
+			"addressSaveFailed": "Die Adresse konnte nicht gespeichert werden. Bitte prüfen Sie Ihre Angaben und versuchen Sie es erneut.",
+			"addressDeleteFailed": "Die Adresse konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+			"deletionFailed": "Die Anfrage zur Kontolöschung konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+			"invalidField": "Bitte prüfen Sie das Feld „{field}“."
+		},
+		"menu": {
+			"backToStore": "Zurück zum Shop",
+			"overview": "Übersicht",
+			"orders": "Bestellungen"
+		},
+		"dashboard": {
+			"greeting": "Willkommen zurück, {name}",
+			"viewAll": "Alle anzeigen",
+			"manage": "Verwalten"
+		},
+		"orders": {
+			"empty": "Sie haben noch keine Bestellungen aufgegeben.",
+			"count": "{count, plural, =0 {Noch keine Bestellungen} one {# Bestellung} other {# Bestellungen}}",
+			"itemCount": "{count, plural, one {# Artikel} other {# Artikel}}"
+		},
+		"order": {
+			"placedOn": "Bestelldatum: {date}",
+			"items": "Artikel ({count})",
+			"quantity": "Menge: {quantity}",
+			"subtotal": "Zwischensumme",
+			"shipping": "Versand",
+			"total": "Gesamt",
+			"taxIncluded": "davon MwSt.",
+			"shippingAddress": "Lieferadresse",
+			"billingAddress": "Rechnungsadresse",
+			"payment": "Zahlung",
+			"paid": "Bezahlt",
+			"refunded": "Erstattet",
+			"partiallyRefunded": "Teilweise erstattet",
+			"help": "Brauchen Sie Hilfe?"
+		},
+		"status": {
+			"unfulfilled": "In Bearbeitung",
+			"unconfirmed": "Wartet auf Bestätigung",
+			"partiallyFulfilled": "Teilweise versandt",
+			"fulfilled": "Versandt",
+			"canceled": "Storniert",
+			"returned": "Zurückgesendet",
+			"partiallyReturned": "Teilweise zurückgesendet",
+			"draft": "Entwurf",
+			"expired": "Abgelaufen"
+		},
+		"timeline": {
+			"title": "Bestellverlauf",
+			"placed": "Bestellung eingegangen",
+			"shipped": "Versandt",
+			"shipmentCanceled": "Versand storniert",
+			"refunded": "Erstattet",
+			"refundedAndReturned": "Zurückgesendet und erstattet",
+			"replaced": "Ersetzt",
+			"returned": "Zurückgesendet",
+			"awaitingApproval": "Wartet auf Freigabe",
+			"tracking": "Sendungsnummer: {number}"
+		},
+		"address": {
+			"add": "Adresse hinzufügen",
+			"edit": "Adresse bearbeiten",
+			"save": "Adresse speichern",
+			"addDescription": "Fügen Sie Ihrem Konto eine neue Adresse hinzu.",
+			"editDescription": "Bearbeiten Sie die gespeicherte Adresse.",
+			"delete": "Adresse löschen",
+			"defaultShipping": "Standard-Lieferadresse",
+			"defaultBilling": "Standard-Rechnungsadresse",
+			"countryCode": "Ländercode"
+		},
+		"profile": {
+			"name": "Name",
+			"notSet": "Nicht angegeben",
+			"updated": "Gespeichert",
+			"currentPassword": "Aktuelles Passwort",
+			"confirmNewPassword": "Neues Passwort bestätigen",
+			"changePassword": "Passwort ändern",
+			"memberSince": "Konto erstellt: {date}"
+		},
+		"deletion": {
+			"title": "Konto löschen",
+			"description": "Ihr Kundenkonto wird dauerhaft gelöscht.",
+			"open": "Konto löschen",
+			"warning": "Dieser Schritt kann nicht rückgängig gemacht werden. Bevor Ihr Konto gelöscht wird, erhalten Sie eine Bestätigungs-E-Mail.",
+			"confirm": "Ja, mein Konto löschen",
+			"sent": "Wir haben Ihnen eine Bestätigungs-E-Mail geschickt. Über den Link darin schließen Sie die Löschung ab."
+		},
+		"withdrawal": {
+			"title": "Rücktrittsrecht",
+			"body": "Wie Sie von dieser Bestellung zurücktreten können, erfahren Sie auf der Seite zum Rücktrittsrecht.",
+			"cta": "Zum Rücktrittsrecht"
+		}
 	},
 	"contact": {
 		"heading": "Schreiben Sie uns",

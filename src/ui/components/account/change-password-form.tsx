@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition, useRef, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
 import { Label } from "@/ui/components/ui/label";
 import { changePassword } from "@/app/[channel]/(main)/account/actions";
+import { accountErrorKey } from "@/ui/components/account/account-error";
 
 export function ChangePasswordForm() {
 	const [isOpen, setIsOpen] = useState(false);
@@ -15,6 +17,10 @@ export function ChangePasswordForm() {
 	const [showOld, setShowOld] = useState(false);
 	const [showNew, setShowNew] = useState(false);
 	const formRef = useRef<HTMLFormElement>(null);
+	const t = useTranslations("account");
+	const tCommon = useTranslations("common");
+	const tCheckout = useTranslations("checkout");
+	const tr = useTranslations();
 
 	const handleSubmit = useCallback(
 		(formData: FormData) => {
@@ -24,7 +30,7 @@ export function ChangePasswordForm() {
 			startTransition(async () => {
 				const result = await changePassword(formData);
 				if (!result.success) {
-					setError(result.error);
+					setError(tr(accountErrorKey("passwordChange", result.code)));
 				} else {
 					setSuccess(true);
 					setIsOpen(false);
@@ -32,24 +38,24 @@ export function ChangePasswordForm() {
 				}
 			});
 		},
-		[startTransition],
+		[startTransition, tr],
 	);
 
 	if (!isOpen) {
 		return (
 			<div className="flex items-center justify-between">
 				<div>
-					<p className="text-sm text-muted-foreground">Password</p>
+					<p className="text-muted-foreground text-sm">{tCheckout("contactSection.passwordPlaceholder")}</p>
 					<p className="font-medium">••••••••</p>
 				</div>
 				<div className="flex items-center gap-2">
 					{success && (
 						<span aria-live="polite" className="text-sm text-green-600">
-							Updated
+							{t("profile.updated")}
 						</span>
 					)}
 					<Button variant="ghost" size="sm" onClick={() => setIsOpen(true)}>
-						Change
+						{tCheckout("common.change")}
 					</Button>
 				</div>
 			</div>
@@ -58,30 +64,30 @@ export function ChangePasswordForm() {
 
 	return (
 		<form ref={formRef} action={handleSubmit} className="space-y-4">
-			<p className="text-sm text-muted-foreground">Password</p>
+			<p className="text-muted-foreground text-sm">{tCheckout("contactSection.passwordPlaceholder")}</p>
 			{error && (
-				<p role="alert" className="text-sm text-destructive">
+				<p role="alert" className="text-destructive text-sm">
 					{error}
 				</p>
 			)}
 
 			<div className="space-y-1.5">
-				<Label htmlFor="oldPassword">Current password</Label>
+				<Label htmlFor="oldPassword">{t("profile.currentPassword")}</Label>
 				<div className="relative">
-					<Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
 						id="oldPassword"
 						name="oldPassword"
 						type={showOld ? "text" : "password"}
 						autoComplete="current-password"
-						className="pl-10 pr-10"
+						className="pr-10 pl-10"
 						required
 					/>
 					<button
 						type="button"
 						onClick={() => setShowOld(!showOld)}
-						aria-label={showOld ? "Hide password" : "Show password"}
-						className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+						aria-label={showOld ? t("form.hidePassword") : t("form.showPassword")}
+						className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
 					>
 						{showOld ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
 					</button>
@@ -89,24 +95,24 @@ export function ChangePasswordForm() {
 			</div>
 
 			<div className="space-y-1.5">
-				<Label htmlFor="newPassword">New password</Label>
+				<Label htmlFor="newPassword">{tCheckout("contactSection.resetPassword.newPasswordLabel")}</Label>
 				<div className="relative">
-					<Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
 						id="newPassword"
 						name="newPassword"
 						type={showNew ? "text" : "password"}
 						autoComplete="new-password"
-						placeholder="At least 8 characters…"
-						className="pl-10 pr-10"
+						placeholder={t("minEightChars")}
+						className="pr-10 pl-10"
 						minLength={8}
 						required
 					/>
 					<button
 						type="button"
 						onClick={() => setShowNew(!showNew)}
-						aria-label={showNew ? "Hide password" : "Show password"}
-						className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+						aria-label={showNew ? t("form.hidePassword") : t("form.showPassword")}
+						className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
 					>
 						{showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
 					</button>
@@ -114,9 +120,9 @@ export function ChangePasswordForm() {
 			</div>
 
 			<div className="space-y-1.5">
-				<Label htmlFor="confirmPassword">Confirm new password</Label>
+				<Label htmlFor="confirmPassword">{t("profile.confirmNewPassword")}</Label>
 				<div className="relative">
-					<Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
 						id="confirmPassword"
 						name="confirmPassword"
@@ -131,7 +137,7 @@ export function ChangePasswordForm() {
 
 			<div className="flex gap-2">
 				<Button type="submit" size="sm" disabled={isPending}>
-					{isPending ? "Changing…" : "Change password"}
+					{isPending ? tCheckout("contactSection.processing") : t("profile.changePassword")}
 				</Button>
 				<Button
 					type="button"
@@ -143,7 +149,7 @@ export function ChangePasswordForm() {
 						formRef.current?.reset();
 					}}
 				>
-					Cancel
+					{tCommon("cancel")}
 				</Button>
 			</div>
 		</form>

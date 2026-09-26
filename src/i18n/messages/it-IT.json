@@ -859,7 +859,136 @@
 		"email": "E-mail",
 		"variantsUnavailable": "Non è stato possibile caricare le opzioni del prodotto.",
 		"openMenu": "Apri il menu",
-		"primaryNavigation": "Navigazione principale"
+		"primaryNavigation": "Navigazione principale",
+		"meta": {
+			"signInTitle": "Accedi",
+			"signInDescription": "Accedi al tuo account per vedere i tuoi ordini e gli indirizzi salvati.",
+			"signUpTitle": "Crea un account",
+			"signUpDescription": "Crea un account e ritrova indirizzi e ordini in un unico posto.",
+			"accountTitle": "Il mio account"
+		},
+		"form": {
+			"showPassword": "Mostra password",
+			"hidePassword": "Nascondi password",
+			"emailPlaceholder": "nome@example.com"
+		},
+		"signIn": {
+			"noAccount": "Non hai un account?",
+			"createAccountLink": "Registrati"
+		},
+		"signUp": {
+			"goToSignIn": "Vai all'accesso",
+			"consent": "Creando un account accetti le nostre <terms>condizioni generali di vendita</terms>. Per sapere come trattiamo i dati personali, consulta la nostra <privacy>informativa sulla privacy</privacy>."
+		},
+		"reset": {
+			"subtitle": "Inserisci una nuova password per <strong>{email}</strong>.",
+			"success": "La password è stata modificata e hai effettuato l'accesso."
+		},
+		"errors": {
+			"enterNewPassword": "Inserisci una nuova password.",
+			"tooManyAttempts": "Troppi tentativi non riusciti. Attendi un momento e riprova.",
+			"accountNotConfirmed": "Il tuo account non è ancora attivo. Attivalo con il link nell'e-mail che ti abbiamo inviato.",
+			"accountInactive": "Questo account non è attivo. Contattaci.",
+			"emailTaken": "Esiste già un account con questo indirizzo e-mail. Accedi.",
+			"passwordTooCommon": "Questa password è troppo comune. Scegline un'altra.",
+			"passwordNumeric": "La password non può contenere solo numeri.",
+			"passwordTooSimilar": "La password è troppo simile ai tuoi dati personali. Scegline un'altra.",
+			"wrongCurrentPassword": "La password attuale non è corretta.",
+			"signUpFailed": "Non è stato possibile creare l'account. Riprova.",
+			"profileSaveFailed": "Non è stato possibile salvare le modifiche. Riprova.",
+			"passwordChangeFailed": "Non è stato possibile modificare la password. Riprova.",
+			"addressSaveFailed": "Non è stato possibile salvare l'indirizzo. Controlla i dati e riprova.",
+			"addressDeleteFailed": "Non è stato possibile eliminare l'indirizzo. Riprova.",
+			"deletionFailed": "Non è stato possibile inviare la richiesta di eliminazione dell'account. Riprova.",
+			"invalidField": "Controlla il campo «{field}»."
+		},
+		"menu": {
+			"backToStore": "Torna al negozio",
+			"overview": "Panoramica",
+			"orders": "Ordini"
+		},
+		"dashboard": {
+			"greeting": "Ciao, {name}",
+			"viewAll": "Vedi tutti",
+			"manage": "Gestisci"
+		},
+		"orders": {
+			"empty": "Non hai ancora effettuato ordini.",
+			"count": "{count, plural, =0 {Ancora nessun ordine} one {# ordine} other {# ordini}}",
+			"itemCount": "{count, plural, one {# articolo} other {# articoli}}"
+		},
+		"order": {
+			"placedOn": "Data dell'ordine: {date}",
+			"items": "Articoli ({count})",
+			"quantity": "Quantità: {quantity}",
+			"subtotal": "Subtotale",
+			"shipping": "Spedizione",
+			"total": "Totale",
+			"taxIncluded": "di cui IVA",
+			"shippingAddress": "Indirizzo di spedizione",
+			"billingAddress": "Indirizzo di fatturazione",
+			"payment": "Pagamento",
+			"paid": "Pagato",
+			"refunded": "Rimborsato",
+			"partiallyRefunded": "Rimborsato in parte",
+			"help": "Hai bisogno di aiuto?"
+		},
+		"status": {
+			"unfulfilled": "In lavorazione",
+			"unconfirmed": "In attesa di conferma",
+			"partiallyFulfilled": "Spedito in parte",
+			"fulfilled": "Spedito",
+			"canceled": "Annullato",
+			"returned": "Reso",
+			"partiallyReturned": "Reso in parte",
+			"draft": "Bozza",
+			"expired": "Scaduto"
+		},
+		"timeline": {
+			"title": "Stato dell'ordine",
+			"placed": "Ordine ricevuto",
+			"shipped": "Spedito",
+			"shipmentCanceled": "Spedizione annullata",
+			"refunded": "Rimborsato",
+			"refundedAndReturned": "Reso e rimborsato",
+			"replaced": "Sostituito",
+			"returned": "Reso",
+			"awaitingApproval": "In attesa di approvazione",
+			"tracking": "Numero di tracciamento: {number}"
+		},
+		"address": {
+			"add": "Aggiungi indirizzo",
+			"edit": "Modifica indirizzo",
+			"save": "Salva indirizzo",
+			"addDescription": "Aggiungi un nuovo indirizzo al tuo account.",
+			"editDescription": "Modifica i dati di questo indirizzo.",
+			"delete": "Elimina indirizzo",
+			"defaultShipping": "Spedizione predefinita",
+			"defaultBilling": "Fatturazione predefinita",
+			"countryCode": "Codice paese"
+		},
+		"profile": {
+			"name": "Nome",
+			"notSet": "Non impostato",
+			"updated": "Salvato",
+			"currentPassword": "Password attuale",
+			"confirmNewPassword": "Conferma la nuova password",
+			"changePassword": "Modifica password",
+			"memberSince": "Account creato: {date}"
+		},
+		"deletion": {
+			"title": "Elimina account",
+			"description": "Il tuo account cliente verrà eliminato definitivamente.",
+			"open": "Elimina account",
+			"warning": "Questa operazione non può essere annullata. Prima dell'eliminazione ti invieremo un'e-mail di conferma.",
+			"confirm": "Sì, elimina il mio account",
+			"sent": "Ti abbiamo inviato un'e-mail di conferma. Usa il link che contiene per completare l'eliminazione."
+		},
+		"withdrawal": {
+			"title": "Diritto di recesso e restituzione",
+			"body": "Per sapere come recedere da questo ordine o restituire articoli, consulta la pagina su recesso e resi.",
+			"cta": "Recesso e resi"
+		}
 	},
 	"contact": {
 		"heading": "Scrivici",

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition, useCallback } from "react";
+import { useState, useTransition, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
+import { useParams } from "next/navigation";
 import { Plus, Pencil } from "lucide-react";
 import { type AddressDetailsFragment } from "@/gql/graphql";
 import { Button } from "@/ui/components/ui/button";
@@ -15,6 +17,8 @@ import {
 	SheetCloseButton,
 } from "@/ui/components/ui/sheet";
 import { createAddress, updateAddress } from "@/app/[channel]/(main)/account/actions";
+import { accountErrorKey } from "@/ui/components/account/account-error";
+import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 
 type Props = {
 	address?: AddressDetailsFragment;
@@ -26,6 +30,30 @@ export function AddressFormDialog({ address }: Props) {
 	const [error, setError] = useState("");
 
 	const isEditing = !!address;
+	const t = useTranslations("account.address");
+	const tr = useTranslations();
+	const tCheckout = useTranslations("checkout");
+	const optional = (label: string) => `${label} ${tCheckout("common.optional")}`;
+	// The example in the country field is the market's own country (it was "US" everywhere).
+	const { channel } = useParams<{ channel: string }>();
+	const marketCountry = CHANNEL_MAP[REVERSE_MAP[channel] ?? ""]?.country ?? "SK";
+
+	/** The label of each field, so a field Saleor rejects can be named in the error. */
+	const labels: Readonly<Record<string, string>> = useMemo(
+		() => ({
+			firstName: tCheckout("firstName"),
+			lastName: tCheckout("lastName"),
+			companyName: tCheckout("addressForm.fields.companyName"),
+			streetAddress1: tCheckout("address"),
+			streetAddress2: tCheckout("addressForm.fields.streetAddress2"),
+			city: tCheckout("city"),
+			postalCode: tCheckout("postalCode"),
+			countryArea: tCheckout("addressForm.fields.countryArea"),
+			country: t("countryCode"),
+			phone: tCheckout("phone"),
+		}),
+		[t, tCheckout],
+	);
 
 	const handleSubmit = useCallback(
 		(formData: FormData) => {
@@ -35,33 +63,38 @@ export function AddressFormDialog({ address }: Props) {
 			startTransition(async () => {
 				const result = await action(formData);
 				if (!result.success) {
-					setError(result.error);
+					const field = result.field ? labels[result.field] : undefined;
+					setError(
+						field
+							? tr("account.errors.invalidField", { field })
+							: tr(accountErrorKey("address", result.code)),
+					);
 				} else {
 					setOpen(false);
 				}
 			});
 		},
-		[isEditing, startTransition],
+		[isEditing, startTransition, labels, tr],
 	);
 
 	return (
 		<>
 			{isEditing ? (
-				<Button variant="ghost" size="sm" onClick={() => setOpen(true)} aria-label="Edit address">
+				<Button variant="ghost" size="sm" onClick={() => setOpen(true)} aria-label={t("edit")}>
 					<Pencil className="h-3.5 w-3.5" />
 				</Button>
 			) : (
 				<Button variant="outline-solid" size="sm" onClick={() => setOpen(true)}>
 					<Plus className="mr-1 h-4 w-4" />
-					Add address
+					{t("add")}
 				</Button>
 			)}
 			<Sheet open={open} onOpenChange={setOpen}>
 				<SheetContent side="right" className="overflow-y-auto p-6">
 					<SheetHeader className="mb-6">
-						<SheetTitle>{isEditing ? "Edit address" : "Add new address"}</SheetTitle>
+						<SheetTitle>{isEditing ? t("edit") : tCheckout("addressForm.addNewAddress")}</SheetTitle>
 						<SheetDescription className="sr-only">
-							{isEditing ? "Update your address details" : "Add a new address to your account"}
+							{isEditing ? t("editDescription") : t("addDescription")}
 						</SheetDescription>
 						<SheetCloseButton />
 					</SheetHeader>
@@ -70,14 +103,14 @@ export function AddressFormDialog({ address }: Props) {
 						{isEditing && <input type="hidden" name="id" value={address.id} />}
 
 						{error && (
-							<p role="alert" className="text-sm text-destructive">
+							<p role="alert" className="text-destructive text-sm">
 								{error}
 							</p>
 						)}
 
 						<div className="grid gap-4 sm:grid-cols-2">
 							<div className="space-y-1.5">
-								<Label htmlFor="addr-firstName">First name</Label>
+								<Label htmlFor="addr-firstName">{labels.firstName}</Label>
 								<Input
 									id="addr-firstName"
 									name="firstName"
@@ -87,7 +120,7 @@ export function AddressFormDialog({ address }: Props) {
 								/>
 							</div>
 							<div className="space-y-1.5">
-								<Label htmlFor="addr-lastName">Last name</Label>
+								<Label htmlFor="addr-lastName">{labels.lastName}</Label>
 								<Input
 									id="addr-lastName"
 									name="lastName"
@@ -99,7 +132,7 @@ export function AddressFormDialog({ address }: Props) {
 						</div>
 
 						<div className="space-y-1.5">
-							<Label htmlFor="addr-companyName">Company (optional)</Label>
+							<Label htmlFor="addr-companyName">{optional(labels.companyName)}</Label>
 							<Input
 								id="addr-companyName"
 								name="companyName"
@@ -109,7 +142,7 @@ export function AddressFormDialog({ address }: Props) {
 						</div>
 
 						<div className="space-y-1.5">
-							<Label htmlFor="addr-streetAddress1">Street address</Label>
+							<Label htmlFor="addr-streetAddress1">{labels.streetAddress1}</Label>
 							<Input
 								id="addr-streetAddress1"
 								name="streetAddress1"
@@ -120,7 +153,7 @@ export function AddressFormDialog({ address }: Props) {
 						</div>
 
 						<div className="space-y-1.5">
-							<Label htmlFor="addr-streetAddress2">Apt, suite, etc. (optional)</Label>
+							<Label htmlFor="addr-streetAddress2">{optional(labels.streetAddress2)}</Label>
 							<Input
 								id="addr-streetAddress2"
 								name="streetAddress2"
@@ -131,7 +164,7 @@ export function AddressFormDialog({ address }: Props) {
 
 						<div className="grid gap-4 sm:grid-cols-2">
 							<div className="space-y-1.5">
-								<Label htmlFor="addr-city">City</Label>
+								<Label htmlFor="addr-city">{labels.city}</Label>
 								<Input
 									id="addr-city"
 									name="city"
@@ -141,7 +174,7 @@ export function AddressFormDialog({ address }: Props) {
 								/>
 							</div>
 							<div className="space-y-1.5">
-								<Label htmlFor="addr-postalCode">Postal code</Label>
+								<Label htmlFor="addr-postalCode">{labels.postalCode}</Label>
 								<Input
 									id="addr-postalCode"
 									name="postalCode"
@@ -154,7 +187,7 @@ export function AddressFormDialog({ address }: Props) {
 
 						<div className="grid gap-4 sm:grid-cols-2">
 							<div className="space-y-1.5">
-								<Label htmlFor="addr-countryArea">State / Province</Label>
+								<Label htmlFor="addr-countryArea">{labels.countryArea}</Label>
 								<Input
 									id="addr-countryArea"
 									name="countryArea"
@@ -163,13 +196,13 @@ export function AddressFormDialog({ address }: Props) {
 								/>
 							</div>
 							<div className="space-y-1.5">
-								<Label htmlFor="addr-country">Country code</Label>
+								<Label htmlFor="addr-country">{labels.country}</Label>
 								<Input
 									id="addr-country"
 									name="country"
 									autoComplete="country"
 									defaultValue={address?.country.code}
-									placeholder="US"
+									placeholder={marketCountry}
 									maxLength={2}
 									required
 								/>
@@ -177,7 +210,7 @@ export function AddressFormDialog({ address }: Props) {
 						</div>
 
 						<div className="space-y-1.5">
-							<Label htmlFor="addr-phone">Phone (optional)</Label>
+							<Label htmlFor="addr-phone">{optional(labels.phone)}</Label>
 							<Input
 								id="addr-phone"
 								name="phone"
@@ -189,7 +222,7 @@ export function AddressFormDialog({ address }: Props) {
 
 						<div className="flex gap-2 pt-2">
 							<Button type="submit" disabled={isPending} className="flex-1">
-								{isPending ? "Saving…" : isEditing ? "Update address" : "Add address"}
+								{isPending ? tCheckout("common.saving") : isEditing ? t("save") : t("add")}
 							</Button>
 						</div>
 					</form>

@@ -859,7 +859,136 @@
 		"email": "Email",
 		"variantsUnavailable": "Unable to load product options.",
 		"openMenu": "Open menu",
-		"primaryNavigation": "Primary navigation"
+		"primaryNavigation": "Primary navigation",
+		"meta": {
+			"signInTitle": "Sign in",
+			"signInDescription": "Sign in to your account to see your orders and saved addresses.",
+			"signUpTitle": "Create an account",
+			"signUpDescription": "Create an account to keep your addresses and orders in one place.",
+			"accountTitle": "My account"
+		},
+		"form": {
+			"showPassword": "Show password",
+			"hidePassword": "Hide password",
+			"emailPlaceholder": "you@example.com"
+		},
+		"signIn": {
+			"noAccount": "Don't have an account?",
+			"createAccountLink": "Sign up"
+		},
+		"signUp": {
+			"goToSignIn": "Go to sign in",
+			"consent": "By creating an account, you agree to our <terms>terms of service</terms>. To learn how we process personal data, see our <privacy>privacy policy</privacy>."
+		},
+		"reset": {
+			"subtitle": "Enter a new password for <strong>{email}</strong>.",
+			"success": "Your password has been changed and you are now signed in."
+		},
+		"errors": {
+			"enterNewPassword": "Please enter a new password.",
+			"tooManyAttempts": "Too many unsuccessful attempts. Please wait a moment and try again.",
+			"accountNotConfirmed": "Your account isn't activated yet. Please activate it using the link in the email we sent you.",
+			"accountInactive": "This account isn't active. Please contact us.",
+			"emailTaken": "An account with this email already exists. Please sign in.",
+			"passwordTooCommon": "This password is too common. Please choose another one.",
+			"passwordNumeric": "Your password can't consist of numbers only.",
+			"passwordTooSimilar": "Your password is too similar to your personal details. Please choose another one.",
+			"wrongCurrentPassword": "Your current password is incorrect.",
+			"signUpFailed": "We couldn't create your account. Please try again.",
+			"profileSaveFailed": "We couldn't save your changes. Please try again.",
+			"passwordChangeFailed": "We couldn't change your password. Please try again.",
+			"addressSaveFailed": "We couldn't save the address. Please check the details and try again.",
+			"addressDeleteFailed": "We couldn't delete the address. Please try again.",
+			"deletionFailed": "We couldn't send your account deletion request. Please try again.",
+			"invalidField": "Please check the “{field}” field."
+		},
+		"menu": {
+			"backToStore": "Back to store",
+			"overview": "Overview",
+			"orders": "Orders"
+		},
+		"dashboard": {
+			"greeting": "Welcome back, {name}",
+			"viewAll": "View all",
+			"manage": "Manage"
+		},
+		"orders": {
+			"empty": "You haven't placed any orders yet.",
+			"count": "{count, plural, =0 {No orders yet} one {# order} other {# orders}}",
+			"itemCount": "{count, plural, one {# item} other {# items}}"
+		},
+		"order": {
+			"placedOn": "Placed on {date}",
+			"items": "Items ({count})",
+			"quantity": "Qty: {quantity}",
+			"subtotal": "Subtotal",
+			"shipping": "Shipping",
+			"total": "Total",
+			"taxIncluded": "Tax",
+			"shippingAddress": "Shipping address",
+			"billingAddress": "Billing address",
+			"payment": "Payment",
+			"paid": "Paid",
+			"refunded": "Refunded",
+			"partiallyRefunded": "Partially refunded",
+			"help": "Need help?"
+		},
+		"status": {
+			"unfulfilled": "Processing",
+			"unconfirmed": "Awaiting confirmation",
+			"partiallyFulfilled": "Partially shipped",
+			"fulfilled": "Shipped",
+			"canceled": "Canceled",
+			"returned": "Returned",
+			"partiallyReturned": "Partially returned",
+			"draft": "Draft",
+			"expired": "Expired"
+		},
+		"timeline": {
+			"title": "Order timeline",
+			"placed": "Order placed",
+			"shipped": "Shipped",
+			"shipmentCanceled": "Shipment canceled",
+			"refunded": "Refunded",
+			"refundedAndReturned": "Returned and refunded",
+			"replaced": "Replaced",
+			"returned": "Returned",
+			"awaitingApproval": "Awaiting approval",
+			"tracking": "Tracking number: {number}"
+		},
+		"address": {
+			"add": "Add address",
+			"edit": "Edit address",
+			"save": "Save address",
+			"addDescription": "Add a new address to your account.",
+			"editDescription": "Update the details of this address.",
+			"delete": "Delete address",
+			"defaultShipping": "Default shipping",
+			"defaultBilling": "Default billing",
+			"countryCode": "Country code"
+		},
+		"profile": {
+			"name": "Name",
+			"notSet": "Not set",
+			"updated": "Saved",
+			"currentPassword": "Current password",
+			"confirmNewPassword": "Confirm new password",
+			"changePassword": "Change password",
+			"memberSince": "Member since {date}"
+		},
+		"deletion": {
+			"title": "Delete account",
+			"description": "Your customer account will be permanently deleted.",
+			"open": "Delete account",
+			"warning": "This can't be undone. We'll send you a confirmation email before your account is deleted.",
+			"confirm": "Yes, delete my account",
+			"sent": "We've sent you a confirmation email. Use the link in it to complete the deletion."
+		},
+		"withdrawal": {
+			"title": "Cancel a purchase or return items",
+			"body": "To find out how to cancel this order or return items, see our cancellations and returns page.",
+			"cta": "Cancellations and returns"
+		}
 	},
 	"contact": {
 		"heading": "Write to us",

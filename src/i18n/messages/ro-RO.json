@@ -859,7 +859,136 @@
 		"email": "E-mail",
 		"variantsUnavailable": "Opțiunile produsului nu au putut fi încărcate.",
 		"openMenu": "Deschideți meniul",
-		"primaryNavigation": "Navigare principală"
+		"primaryNavigation": "Navigare principală",
+		"meta": {
+			"signInTitle": "Autentificare",
+			"signInDescription": "Autentificați-vă în cont pentru a vedea comenzile și adresele salvate.",
+			"signUpTitle": "Creare cont",
+			"signUpDescription": "Creați un cont și aveți adresele și comenzile într-un singur loc.",
+			"accountTitle": "Contul meu"
+		},
+		"form": {
+			"showPassword": "Afișați parola",
+			"hidePassword": "Ascundeți parola",
+			"emailPlaceholder": "nume@example.com"
+		},
+		"signIn": {
+			"noAccount": "Nu aveți cont?",
+			"createAccountLink": "Înregistrați-vă"
+		},
+		"signUp": {
+			"goToSignIn": "Mergeți la autentificare",
+			"consent": "Prin crearea unui cont, acceptați <terms>termenii și condițiile</terms> noastre. Modul în care prelucrăm datele cu caracter personal este descris în <privacy>politica de confidențialitate</privacy>."
+		},
+		"reset": {
+			"subtitle": "Introduceți o parolă nouă pentru <strong>{email}</strong>.",
+			"success": "Parola a fost schimbată, iar sesiunea dvs. este activă."
+		},
+		"errors": {
+			"enterNewPassword": "Introduceți o parolă nouă.",
+			"tooManyAttempts": "Prea multe încercări nereușite. Așteptați puțin și încercați din nou.",
+			"accountNotConfirmed": "Contul dvs. nu este încă activat. Activați-l folosind linkul din e-mailul pe care vi l-am trimis.",
+			"accountInactive": "Acest cont nu este activ. Vă rugăm să ne contactați.",
+			"emailTaken": "Există deja un cont cu această adresă de e-mail. Vă rugăm să vă autentificați.",
+			"passwordTooCommon": "Această parolă este prea des folosită. Alegeți alta.",
+			"passwordNumeric": "Parola nu poate conține doar cifre.",
+			"passwordTooSimilar": "Parola seamănă prea mult cu datele dvs. personale. Alegeți alta.",
+			"wrongCurrentPassword": "Parola actuală nu este corectă.",
+			"signUpFailed": "Contul nu a putut fi creat. Încercați din nou.",
+			"profileSaveFailed": "Modificările nu au putut fi salvate. Încercați din nou.",
+			"passwordChangeFailed": "Parola nu a putut fi schimbată. Încercați din nou.",
+			"addressSaveFailed": "Adresa nu a putut fi salvată. Verificați datele și încercați din nou.",
+			"addressDeleteFailed": "Adresa nu a putut fi ștearsă. Încercați din nou.",
+			"deletionFailed": "Cererea de ștergere a contului nu a putut fi trimisă. Încercați din nou.",
+			"invalidField": "Verificați câmpul „{field}”."
+		},
+		"menu": {
+			"backToStore": "Înapoi la magazin",
+			"overview": "Prezentare generală",
+			"orders": "Comenzi"
+		},
+		"dashboard": {
+			"greeting": "Bine ați revenit, {name}",
+			"viewAll": "Vedeți toate",
+			"manage": "Gestionați"
+		},
+		"orders": {
+			"empty": "Nu ați plasat încă nicio comandă.",
+			"count": "{count, plural, =0 {Nicio comandă deocamdată} one {# comandă} few {# comenzi} other {# de comenzi}}",
+			"itemCount": "{count, plural, one {# produs} few {# produse} other {# de produse}}"
+		},
+		"order": {
+			"placedOn": "Data comenzii: {date}",
+			"items": "Produse ({count})",
+			"quantity": "Cantitate: {quantity}",
+			"subtotal": "Subtotal",
+			"shipping": "Livrare",
+			"total": "Total",
+			"taxIncluded": "din care TVA",
+			"shippingAddress": "Adresa de livrare",
+			"billingAddress": "Adresa de facturare",
+			"payment": "Plată",
+			"paid": "Plătit",
+			"refunded": "Rambursat",
+			"partiallyRefunded": "Rambursat parțial",
+			"help": "Aveți nevoie de ajutor?"
+		},
+		"status": {
+			"unfulfilled": "În procesare",
+			"unconfirmed": "În așteptarea confirmării",
+			"partiallyFulfilled": "Expediată parțial",
+			"fulfilled": "Expediată",
+			"canceled": "Anulată",
+			"returned": "Returnată",
+			"partiallyReturned": "Returnată parțial",
+			"draft": "Ciornă",
+			"expired": "Expirată"
+		},
+		"timeline": {
+			"title": "Istoricul comenzii",
+			"placed": "Comandă primită",
+			"shipped": "Expediat",
+			"shipmentCanceled": "Expediere anulată",
+			"refunded": "Rambursat",
+			"refundedAndReturned": "Returnat și rambursat",
+			"replaced": "Înlocuit",
+			"returned": "Returnat",
+			"awaitingApproval": "În așteptarea aprobării",
+			"tracking": "Număr de urmărire: {number}"
+		},
+		"address": {
+			"add": "Adăugați o adresă",
+			"edit": "Editați adresa",
+			"save": "Salvați adresa",
+			"addDescription": "Adăugați o adresă nouă în contul dvs.",
+			"editDescription": "Modificați datele acestei adrese.",
+			"delete": "Ștergeți adresa",
+			"defaultShipping": "Livrare implicită",
+			"defaultBilling": "Facturare implicită",
+			"countryCode": "Codul țării"
+		},
+		"profile": {
+			"name": "Nume",
+			"notSet": "Necompletat",
+			"updated": "Salvat",
+			"currentPassword": "Parola actuală",
+			"confirmNewPassword": "Confirmați parola nouă",
+			"changePassword": "Schimbați parola",
+			"memberSince": "Cont creat: {date}"
+		},
+		"deletion": {
+			"title": "Ștergerea contului",
+			"description": "Contul dvs. de client va fi șters definitiv.",
+			"open": "Ștergeți contul",
+			"warning": "Această acțiune nu poate fi anulată. Înainte de ștergerea contului vă vom trimite un e-mail de confirmare.",
+			"confirm": "Da, ștergeți contul meu",
+			"sent": "V-am trimis un e-mail de confirmare. Folosiți linkul din acesta pentru a finaliza ștergerea."
+		},
+		"withdrawal": {
+			"title": "Dreptul de retragere și returnarea produselor",
+			"body": "Cum vă puteți retrage din această comandă sau returna produse aflați pe pagina despre retragere și returnări.",
+			"cta": "Retragere și returnări"
+		}
 	},
 	"contact": {
 		"heading": "Scrieți-ne",

@@ -10,6 +10,7 @@ import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
 import { Label } from "@/ui/components/ui/label";
 import { marketHref } from "@/lib/channel-map";
+import { accountErrorKey } from "@/ui/components/account/account-error";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -18,6 +19,9 @@ export function LoginMode() {
 	const params = useParams<{ channel: string }>();
 	const { signIn } = useSaleorAuthContext();
 	const t = useTranslations("account");
+	// Sign-in texts the checkout already translated; `tr` resolves full paths (account-error.ts).
+	const tAuth = useTranslations("checkout.contactSection");
+	const tr = useTranslations();
 
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -32,12 +36,12 @@ export function LoginMode() {
 		setError("");
 
 		if (!email || !EMAIL_RE.test(email)) {
-			setError("Please enter a valid email address");
+			setError(tAuth("enterValidEmail"));
 			return;
 		}
 
 		if (!password) {
-			setError("Please enter your password");
+			setError(t("enterPassword"));
 			return;
 		}
 
@@ -47,15 +51,9 @@ export function LoginMode() {
 			const result = await signIn({ email, password });
 
 			if (result.data?.tokenCreate?.errors?.length) {
-				const err = result.data.tokenCreate.errors[0];
-				const isInvalidCredentials =
-					err.message?.toLowerCase().includes("invalid") ||
-					err.message?.toLowerCase().includes("credentials");
-				setError(
-					isInvalidCredentials
-						? "Invalid email or password. Please try again."
-						: err.message || "Sign in failed",
-				);
+				// The SDK types only `message`, but its tokenCreate mutation asks Saleor for `code` too.
+				const { code } = result.data.tokenCreate.errors[0] as { code?: string | null };
+				setError(tr(accountErrorKey("signIn", code)));
 				return;
 			}
 
@@ -66,7 +64,7 @@ export function LoginMode() {
 				router.refresh();
 			}
 		} catch {
-			setError("An error occurred. Please try again.");
+			setError(tr("checkout.errors.generic"));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -77,7 +75,7 @@ export function LoginMode() {
 		setResetMessage("");
 
 		if (!email || !EMAIL_RE.test(email)) {
-			setError("Please enter a valid email address first");
+			setError(email ? tAuth("enterValidEmail") : tAuth("enterEmailFirst"));
 			return;
 		}
 
@@ -95,21 +93,19 @@ export function LoginMode() {
 			});
 
 			const data = (await response.json()) as {
-				errors?: Array<{ message: string }>;
+				errors?: Array<{ message: string; code?: string | null }>;
 				success?: boolean;
 			};
 
 			if (data.errors?.length) {
-				setError(data.errors[0].message || "Failed to send reset link");
+				setError(tr(accountErrorKey("forgotPassword", data.errors[0].code)));
 				return;
 			}
 
 			setResetEmailSent(true);
-			setResetMessage(
-				`If an account exists for ${email}, a password reset link has been sent. Note: You can only request one reset link every 15 minutes.`,
-			);
+			setResetMessage(tAuth("resetLinkSent", { email }));
 		} catch {
-			setError("An error occurred. Please try again.");
+			setError(tr("checkout.errors.generic"));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -121,12 +117,12 @@ export function LoginMode() {
 				<div className="mb-6 text-center">
 					<h1 className="text-2xl font-semibold">{t("welcomeBack")}</h1>
 					<p className="text-muted-foreground mt-2 text-sm">
-						Don&apos;t have an account?{" "}
+						{t("signIn.noAccount")}{" "}
 						<Link
 							href={marketHref(params.channel, "/signup")}
 							className="text-foreground font-medium underline underline-offset-2 hover:no-underline"
 						>
-							Sign up
+							{t("signIn.createAccountLink")}
 						</Link>
 					</p>
 				</div>
@@ -146,14 +142,14 @@ export function LoginMode() {
 
 					<div className="space-y-1.5">
 						<Label htmlFor="email" className="text-sm font-medium">
-							Email address
+							{tAuth("emailPlaceholder")}
 						</Label>
 						<div className="relative">
 							<Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 							<Input
 								id="email"
 								type="email"
-								placeholder="you@example.com"
+								placeholder={t("form.emailPlaceholder")}
 								autoComplete="email"
 								spellCheck={false}
 								value={email}
@@ -169,7 +165,7 @@ export function LoginMode() {
 
 					<div className="space-y-1.5">
 						<Label htmlFor="password" className="text-sm font-medium">
-							Password
+							{tAuth("passwordPlaceholder")}
 						</Label>
 						<div className="relative">
 							<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -186,7 +182,7 @@ export function LoginMode() {
 							<button
 								type="button"
 								onClick={() => setShowPassword(!showPassword)}
-								aria-label={showPassword ? "Hide password" : "Show password"}
+								aria-label={showPassword ? t("form.hidePassword") : t("form.showPassword")}
 								className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
 							>
 								{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -201,12 +197,12 @@ export function LoginMode() {
 							disabled={isSubmitting}
 							className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-2 hover:no-underline disabled:opacity-50"
 						>
-							{resetEmailSent ? "Resend link?" : "Forgot password?"}
+							{resetEmailSent ? tAuth("resendResetLink") : tAuth("forgotPassword")}
 						</button>
 					</div>
 
 					<Button type="submit" disabled={isSubmitting} className="h-12 w-full text-base font-semibold">
-						{isSubmitting ? "Signing in…" : "Sign In"}
+						{isSubmitting ? tAuth("processing") : tAuth("signIn")}
 					</Button>
 				</form>
 			</div>

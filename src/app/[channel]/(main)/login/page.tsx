@@ -1,5 +1,8 @@
 import { Suspense } from "react";
+import { type Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import { getLocaleFromChannel } from "@/config/locale";
 import { LoginForm } from "@/ui/components/login-form";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
 import { resolveSessionUser } from "@/lib/auth/resolve-session-user";
@@ -7,14 +10,19 @@ import { CurrentUserDocument } from "@/gql/graphql";
 import { AuthProvider } from "@/lib/auth";
 import { marketHref } from "@/lib/channel-map";
 
-export const metadata = {
-	title: "Sign In",
-	description: "Sign in to your account to access your orders and saved addresses.",
-	// See the note on the signup page: the robots.txt Disallow that used to hide
-	// this had to be removed so the already-indexed junk URLs can be crawled and
-	// dropped. noindex, follow replaces it.
-	robots: { index: false, follow: true },
-};
+export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {
+	const { channel } = await props.params;
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "account.meta" });
+	return {
+		// Was the English "Sign In" in every market until 2026-09-26.
+		title: t("signInTitle"),
+		description: t("signInDescription"),
+		// See the note on the signup page: the robots.txt Disallow that used to hide
+		// this had to be removed so the already-indexed junk URLs can be crawled and
+		// dropped. noindex, follow replaces it.
+		robots: { index: false, follow: true },
+	};
+}
 
 export default function LoginPage(props: { params: Promise<{ channel: string }> }) {
 	return (

@@ -9,6 +9,7 @@ import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
 import { Label } from "@/ui/components/ui/label";
 import { marketHref } from "@/lib/channel-map";
+import { accountErrorKey } from "@/ui/components/account/account-error";
 
 type Props = {
 	email: string;
@@ -17,6 +18,9 @@ type Props = {
 
 export function SetPasswordMode({ email, token }: Props) {
 	const t = useTranslations("account");
+	// The checkout's reset form already has these texts in every language.
+	const tReset = useTranslations("checkout.contactSection.resetPassword");
+	const tr = useTranslations();
 	const router = useRouter();
 	const params = useParams<{ channel: string }>();
 
@@ -33,17 +37,17 @@ export function SetPasswordMode({ email, token }: Props) {
 		setError("");
 
 		if (!password) {
-			setError("Please enter a new password");
+			setError(t("errors.enterNewPassword"));
 			return;
 		}
 
 		if (password.length < 8) {
-			setError("Password must be at least 8 characters");
+			setError(tReset("passwordTooShort"));
 			return;
 		}
 
 		if (password !== confirmPassword) {
-			setError("Passwords do not match");
+			setError(t("passwordsDoNotMatch"));
 			return;
 		}
 
@@ -63,23 +67,22 @@ export function SetPasswordMode({ email, token }: Props) {
 
 			if (data.errors?.length) {
 				const err = data.errors[0];
-				if (err.code === "INVALID_TOKEN" || err.message?.includes("token")) {
-					setError("This password reset link has expired. Please request a new one.");
-				} else {
-					setError(err.message || "Failed to set password");
-				}
+				// Saleor's message is only read to recognise a dead link that came back without a code.
+				const code = err.code ?? (/token/i.test(err.message ?? "") ? "INVALID_TOKEN" : null);
+				setError(tr(accountErrorKey("setPassword", code)));
 				return;
 			}
 
 			if (data.success) {
 				setSuccess(true);
 				setTimeout(() => {
-					router.push(`/${params.channel}/login`);
+					// The market URL (/sk), not the internal channel (/sk-eur), which would only redirect.
+					router.push(marketHref(params.channel, "/login"));
 					router.refresh();
 				}, 2000);
 			}
 		} catch {
-			setError("An error occurred. Please try again.");
+			setError(tr("checkout.errors.generic"));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -94,9 +97,7 @@ export function SetPasswordMode({ email, token }: Props) {
 							<CheckCircle className="h-8 w-8 text-green-600" />
 						</div>
 						<h1 className="text-2xl font-semibold">{t("passwordUpdated")}</h1>
-						<p className="text-muted-foreground">
-							Your password has been successfully reset. You are now signed in.
-						</p>
+						<p className="text-muted-foreground">{t("reset.success")}</p>
 						<p className="text-muted-foreground text-sm">{t("redirecting")}</p>
 					</div>
 				</div>
@@ -110,7 +111,10 @@ export function SetPasswordMode({ email, token }: Props) {
 				<div className="mb-6 text-center">
 					<h1 className="text-2xl font-semibold">{t("setNewPassword")}</h1>
 					<p className="text-muted-foreground mt-2 text-sm">
-						Enter a new password for <span className="font-medium">{email}</span>
+						{t.rich("reset.subtitle", {
+							email,
+							strong: (chunks) => <span className="font-medium">{chunks}</span>,
+						})}
 					</p>
 				</div>
 
@@ -123,7 +127,7 @@ export function SetPasswordMode({ email, token }: Props) {
 
 					<div className="space-y-1.5">
 						<Label htmlFor="password" className="text-sm font-medium">
-							New Password
+							{tReset("newPasswordLabel")}
 						</Label>
 						<div className="relative">
 							<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -140,7 +144,7 @@ export function SetPasswordMode({ email, token }: Props) {
 							<button
 								type="button"
 								onClick={() => setShowPassword(!showPassword)}
-								aria-label={showPassword ? "Hide password" : "Show password"}
+								aria-label={showPassword ? t("form.hidePassword") : t("form.showPassword")}
 								className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
 							>
 								{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -150,7 +154,7 @@ export function SetPasswordMode({ email, token }: Props) {
 
 					<div className="space-y-1.5">
 						<Label htmlFor="confirmPassword" className="text-sm font-medium">
-							Confirm Password
+							{tReset("confirmPasswordLabel")}
 						</Label>
 						<div className="relative">
 							<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -167,7 +171,7 @@ export function SetPasswordMode({ email, token }: Props) {
 							<button
 								type="button"
 								onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-								aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+								aria-label={showConfirmPassword ? t("form.hidePassword") : t("form.showPassword")}
 								className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
 							>
 								{showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -176,7 +180,7 @@ export function SetPasswordMode({ email, token }: Props) {
 					</div>
 
 					<Button type="submit" disabled={isSubmitting} className="h-12 w-full text-base font-semibold">
-						{isSubmitting ? "Updating…" : "Update Password"}
+						{isSubmitting ? tr("checkout.contactSection.processing") : tReset("submit")}
 					</Button>
 
 					<div className="text-center">
@@ -184,7 +188,7 @@ export function SetPasswordMode({ email, token }: Props) {
 							href={marketHref(params.channel, "/login")}
 							className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-2 hover:no-underline"
 						>
-							Back to Sign In
+							{tReset("backToSignIn")}
 						</Link>
 					</div>
 				</form>

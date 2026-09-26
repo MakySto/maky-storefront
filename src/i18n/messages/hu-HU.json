@@ -859,7 +859,136 @@
 		"email": "E-mail",
 		"variantsUnavailable": "A termék beállításait nem sikerült betölteni.",
 		"openMenu": "Menü megnyitása",
-		"primaryNavigation": "Fő navigáció"
+		"primaryNavigation": "Fő navigáció",
+		"meta": {
+			"signInTitle": "Bejelentkezés",
+			"signInDescription": "Jelentkezzen be fiókjába, és tekintse meg rendeléseit és mentett címeit.",
+			"signUpTitle": "Regisztráció",
+			"signUpDescription": "Hozzon létre egy fiókot, és legyenek címei és rendelései egy helyen.",
+			"accountTitle": "Fiókom"
+		},
+		"form": {
+			"showPassword": "Jelszó megjelenítése",
+			"hidePassword": "Jelszó elrejtése",
+			"emailPlaceholder": "nev@example.com"
+		},
+		"signIn": {
+			"noAccount": "Még nincs fiókja?",
+			"createAccountLink": "Regisztráljon"
+		},
+		"signUp": {
+			"goToSignIn": "Tovább a bejelentkezéshez",
+			"consent": "A fiók létrehozásával elfogadja <terms>általános szerződési feltételeinket</terms>. A személyes adatok kezeléséről <privacy>adatvédelmi tájékoztatónkban</privacy> olvashat."
+		},
+		"reset": {
+			"subtitle": "Adjon meg új jelszót a(z) <strong>{email}</strong> fiókhoz.",
+			"success": "Jelszavát megváltoztattuk, és Ön bejelentkezett."
+		},
+		"errors": {
+			"enterNewPassword": "Adjon meg egy új jelszót.",
+			"tooManyAttempts": "Túl sok sikertelen próbálkozás. Várjon egy kicsit, majd próbálja újra.",
+			"accountNotConfirmed": "Fiókja még nincs aktiválva. Aktiválja az általunk küldött e-mailben található hivatkozással.",
+			"accountInactive": "Ez a fiók nem aktív. Kérjük, lépjen kapcsolatba velünk.",
+			"emailTaken": "Ezzel az e-mail-címmel már létezik fiók. Kérjük, jelentkezzen be.",
+			"passwordTooCommon": "Ez a jelszó túl gyakori. Válasszon másikat.",
+			"passwordNumeric": "A jelszó nem állhat csak számjegyekből.",
+			"passwordTooSimilar": "A jelszó túlságosan hasonlít a személyes adataira. Válasszon másikat.",
+			"wrongCurrentPassword": "A jelenlegi jelszó nem helyes.",
+			"signUpFailed": "A fiókot nem sikerült létrehozni. Próbálja újra.",
+			"profileSaveFailed": "A módosításokat nem sikerült menteni. Próbálja újra.",
+			"passwordChangeFailed": "A jelszót nem sikerült megváltoztatni. Próbálja újra.",
+			"addressSaveFailed": "A címet nem sikerült menteni. Ellenőrizze az adatokat, és próbálja újra.",
+			"addressDeleteFailed": "A címet nem sikerült törölni. Próbálja újra.",
+			"deletionFailed": "A fiók törlésére vonatkozó kérelmet nem sikerült elküldeni. Próbálja újra.",
+			"invalidField": "Kérjük, ellenőrizze a(z) „{field}” mezőt."
+		},
+		"menu": {
+			"backToStore": "Vissza az áruházba",
+			"overview": "Áttekintés",
+			"orders": "Rendelések"
+		},
+		"dashboard": {
+			"greeting": "Üdvözöljük újra, {name}",
+			"viewAll": "Összes megtekintése",
+			"manage": "Kezelés"
+		},
+		"orders": {
+			"empty": "Még nem adott le rendelést.",
+			"count": "{count, plural, =0 {Még nincs rendelés} one {# rendelés} other {# rendelés}}",
+			"itemCount": "{count, plural, one {# darab} other {# darab}}"
+		},
+		"order": {
+			"placedOn": "Rendelés dátuma: {date}",
+			"items": "Tételek ({count})",
+			"quantity": "Mennyiség: {quantity}",
+			"subtotal": "Részösszeg",
+			"shipping": "Szállítás",
+			"total": "Összesen",
+			"taxIncluded": "ebből áfa",
+			"shippingAddress": "Szállítási cím",
+			"billingAddress": "Számlázási cím",
+			"payment": "Fizetés",
+			"paid": "Kifizetve",
+			"refunded": "Visszatérítve",
+			"partiallyRefunded": "Részben visszatérítve",
+			"help": "Segítségre van szüksége?"
+		},
+		"status": {
+			"unfulfilled": "Feldolgozás alatt",
+			"unconfirmed": "Megerősítésre vár",
+			"partiallyFulfilled": "Részben feladva",
+			"fulfilled": "Feladva",
+			"canceled": "Törölve",
+			"returned": "Visszaküldve",
+			"partiallyReturned": "Részben visszaküldve",
+			"draft": "Piszkozat",
+			"expired": "Lejárt"
+		},
+		"timeline": {
+			"title": "A rendelés állapota",
+			"placed": "Rendelés beérkezett",
+			"shipped": "Feladva",
+			"shipmentCanceled": "Feladás törölve",
+			"refunded": "Visszatérítve",
+			"refundedAndReturned": "Visszaküldve és visszatérítve",
+			"replaced": "Kicserélve",
+			"returned": "Visszaküldve",
+			"awaitingApproval": "Jóváhagyásra vár",
+			"tracking": "Csomagszám: {number}"
+		},
+		"address": {
+			"add": "Cím hozzáadása",
+			"edit": "Cím szerkesztése",
+			"save": "Cím mentése",
+			"addDescription": "Adjon hozzá új címet a fiókjához.",
+			"editDescription": "Módosítsa a mentett cím adatait.",
+			"delete": "Cím törlése",
+			"defaultShipping": "Alapértelmezett szállítási",
+			"defaultBilling": "Alapértelmezett számlázási",
+			"countryCode": "Országkód"
+		},
+		"profile": {
+			"name": "Név",
+			"notSet": "Nincs megadva",
+			"updated": "Mentve",
+			"currentPassword": "Jelenlegi jelszó",
+			"confirmNewPassword": "Új jelszó megerősítése",
+			"changePassword": "Jelszó módosítása",
+			"memberSince": "Fiók létrehozva: {date}"
+		},
+		"deletion": {
+			"title": "Fiók törlése",
+			"description": "Vásárlói fiókja véglegesen törlődik.",
+			"open": "Fiók törlése",
+			"warning": "Ez a művelet nem vonható vissza. A fiók törlése előtt megerősítő e-mailt küldünk Önnek.",
+			"confirm": "Igen, törlöm a fiókomat",
+			"sent": "Megerősítő e-mailt küldtünk Önnek. A törlést az abban található hivatkozással fejezheti be."
+		},
+		"withdrawal": {
+			"title": "Elállási jog és visszaküldés",
+			"body": "Arról, hogyan állhat el ettől a rendeléstől vagy küldhet vissza termékeket, az elállásról és visszaküldésről szóló oldalon tájékozódhat.",
+			"cta": "Elállás és visszaküldés"
+		}
 	},
 	"contact": {
 		"heading": "Írjon nekünk",

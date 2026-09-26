@@ -859,7 +859,136 @@
 		"email": "E-mail",
 		"variantsUnavailable": "Nie udało się wczytać opcji produktu.",
 		"openMenu": "Otwórz menu",
-		"primaryNavigation": "Nawigacja główna"
+		"primaryNavigation": "Nawigacja główna",
+		"meta": {
+			"signInTitle": "Logowanie",
+			"signInDescription": "Zaloguj się na swoje konto, aby zobaczyć zamówienia i zapisane adresy.",
+			"signUpTitle": "Rejestracja",
+			"signUpDescription": "Załóż konto i miej adresy i zamówienia w jednym miejscu.",
+			"accountTitle": "Moje konto"
+		},
+		"form": {
+			"showPassword": "Pokaż hasło",
+			"hidePassword": "Ukryj hasło",
+			"emailPlaceholder": "imie@example.com"
+		},
+		"signIn": {
+			"noAccount": "Nie masz konta?",
+			"createAccountLink": "Zarejestruj się"
+		},
+		"signUp": {
+			"goToSignIn": "Przejdź do logowania",
+			"consent": "Zakładając konto, akceptujesz nasz <terms>regulamin</terms>. Informacje o przetwarzaniu danych osobowych znajdziesz w <privacy>polityce prywatności</privacy>."
+		},
+		"reset": {
+			"subtitle": "Wpisz nowe hasło dla konta <strong>{email}</strong>.",
+			"success": "Hasło zostało zmienione, a Twoja sesja jest aktywna."
+		},
+		"errors": {
+			"enterNewPassword": "Wpisz nowe hasło.",
+			"tooManyAttempts": "Zbyt wiele nieudanych prób. Poczekaj chwilę i spróbuj ponownie.",
+			"accountNotConfirmed": "Twoje konto nie jest jeszcze aktywne. Aktywuj je za pomocą linku z e-maila, który Ci wysłaliśmy.",
+			"accountInactive": "To konto jest nieaktywne. Skontaktuj się z nami.",
+			"emailTaken": "Konto z tym adresem e-mail już istnieje. Zaloguj się.",
+			"passwordTooCommon": "To hasło jest zbyt popularne. Wybierz inne.",
+			"passwordNumeric": "Hasło nie może składać się wyłącznie z cyfr.",
+			"passwordTooSimilar": "Hasło jest zbyt podobne do Twoich danych osobowych. Wybierz inne.",
+			"wrongCurrentPassword": "Obecne hasło jest nieprawidłowe.",
+			"signUpFailed": "Nie udało się założyć konta. Spróbuj ponownie.",
+			"profileSaveFailed": "Nie udało się zapisać zmian. Spróbuj ponownie.",
+			"passwordChangeFailed": "Nie udało się zmienić hasła. Spróbuj ponownie.",
+			"addressSaveFailed": "Nie udało się zapisać adresu. Sprawdź dane i spróbuj ponownie.",
+			"addressDeleteFailed": "Nie udało się usunąć adresu. Spróbuj ponownie.",
+			"deletionFailed": "Nie udało się wysłać prośby o usunięcie konta. Spróbuj ponownie.",
+			"invalidField": "Sprawdź pole „{field}”."
+		},
+		"menu": {
+			"backToStore": "Wróć do sklepu",
+			"overview": "Przegląd",
+			"orders": "Zamówienia"
+		},
+		"dashboard": {
+			"greeting": "Witaj ponownie, {name}",
+			"viewAll": "Zobacz wszystkie",
+			"manage": "Zarządzaj"
+		},
+		"orders": {
+			"empty": "Nie masz jeszcze żadnych zamówień.",
+			"count": "{count, plural, =0 {Brak zamówień} one {# zamówienie} few {# zamówienia} many {# zamówień} other {# zamówienia}}",
+			"itemCount": "{count, plural, one {# sztuka} few {# sztuki} many {# sztuk} other {# sztuki}}"
+		},
+		"order": {
+			"placedOn": "Data zamówienia: {date}",
+			"items": "Produkty ({count})",
+			"quantity": "Ilość: {quantity}",
+			"subtotal": "Suma częściowa",
+			"shipping": "Dostawa",
+			"total": "Razem",
+			"taxIncluded": "w tym VAT",
+			"shippingAddress": "Adres dostawy",
+			"billingAddress": "Adres rozliczeniowy",
+			"payment": "Płatność",
+			"paid": "Opłacone",
+			"refunded": "Zwrócono środki",
+			"partiallyRefunded": "Częściowo zwrócono środki",
+			"help": "Potrzebujesz pomocy?"
+		},
+		"status": {
+			"unfulfilled": "W realizacji",
+			"unconfirmed": "Oczekuje na potwierdzenie",
+			"partiallyFulfilled": "Częściowo wysłane",
+			"fulfilled": "Wysłane",
+			"canceled": "Anulowane",
+			"returned": "Zwrócone",
+			"partiallyReturned": "Częściowo zwrócone",
+			"draft": "Wersja robocza",
+			"expired": "Wygasło"
+		},
+		"timeline": {
+			"title": "Przebieg zamówienia",
+			"placed": "Zamówienie przyjęte",
+			"shipped": "Wysłano",
+			"shipmentCanceled": "Wysyłka anulowana",
+			"refunded": "Zwrócono środki",
+			"refundedAndReturned": "Zwrócono towar i środki",
+			"replaced": "Wymieniono",
+			"returned": "Zwrócono towar",
+			"awaitingApproval": "Oczekuje na zatwierdzenie",
+			"tracking": "Numer przesyłki: {number}"
+		},
+		"address": {
+			"add": "Dodaj adres",
+			"edit": "Edytuj adres",
+			"save": "Zapisz adres",
+			"addDescription": "Dodaj nowy adres do swojego konta.",
+			"editDescription": "Zmień dane tego adresu.",
+			"delete": "Usuń adres",
+			"defaultShipping": "Domyślny adres dostawy",
+			"defaultBilling": "Domyślny adres rozliczeniowy",
+			"countryCode": "Kod kraju"
+		},
+		"profile": {
+			"name": "Imię i nazwisko",
+			"notSet": "Nie podano",
+			"updated": "Zapisano",
+			"currentPassword": "Obecne hasło",
+			"confirmNewPassword": "Potwierdź nowe hasło",
+			"changePassword": "Zmień hasło",
+			"memberSince": "Konto założone: {date}"
+		},
+		"deletion": {
+			"title": "Usuwanie konta",
+			"description": "Twoje konto klienta zostanie trwale usunięte.",
+			"open": "Usuń konto",
+			"warning": "Tej operacji nie można cofnąć. Przed usunięciem konta wyślemy Ci e-mail z potwierdzeniem.",
+			"confirm": "Tak, usuń moje konto",
+			"sent": "Wysłaliśmy Ci e-mail z potwierdzeniem. Kliknij link w wiadomości, aby dokończyć usuwanie konta."
+		},
+		"withdrawal": {
+			"title": "Odstąpienie od umowy i zwrot towaru",
+			"body": "Jak odstąpić od tego zamówienia lub zwrócić towar, dowiesz się na stronie o odstąpieniu od umowy i zwrotach.",
+			"cta": "Odstąpienie i zwroty"
+		}
 	},
 	"contact": {
 		"heading": "Napisz do nas",

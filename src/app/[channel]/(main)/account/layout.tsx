@@ -1,4 +1,7 @@
 import { type ReactNode, Suspense } from "react";
+import { type Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import { getLocaleFromChannel } from "@/config/locale";
 import { hasAuthSession } from "@/lib/auth/has-auth-session";
 import { AuthProvider } from "@/lib/auth";
 import { LoginForm } from "@/ui/components/login-form";
@@ -7,13 +10,18 @@ import { AccountSkeleton } from "@/ui/components/account/account-skeleton";
 import { AccountProvider } from "@/ui/components/account/account-context";
 import { getCurrentUser } from "./get-current-user";
 
-export const metadata = {
-	title: "My Account",
-	// Applies to the whole /account subtree — overview, orders, addresses and
-	// settings — none of which override `robots`. See the cart page for why this
-	// is noindex rather than a robots.txt Disallow.
-	robots: { index: false, follow: true },
-};
+export async function generateMetadata(props: { params: Promise<{ channel: string }> }): Promise<Metadata> {
+	const { channel } = await props.params;
+	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "account.meta" });
+	return {
+		// Was the English "My Account" in every market until 2026-09-26.
+		title: t("accountTitle"),
+		// Applies to the whole /account subtree — overview, orders, addresses and
+		// settings — none of which override `robots`. See the cart page for why this
+		// is noindex rather than a robots.txt Disallow.
+		robots: { index: false, follow: true },
+	};
+}
 
 export default function AccountLayout({ children }: { children: ReactNode }) {
 	return (

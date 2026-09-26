@@ -1,18 +1,21 @@
 import { ArrowRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { type OrderDetailsFragment } from "@/gql/graphql";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
-import { formatDate, formatMoney } from "@/lib/utils";
-import { orderStatusStyle, defaultStatusStyle, customerStatusLabel } from "./order-status-config";
+import { formatDate } from "@/config/locale";
+import { formatMoney } from "@/lib/utils";
+import { orderStatusStyle, defaultStatusStyle, orderStatusLabelKey } from "./order-status-config";
 import { accountRoutes } from "./routes";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
 type Props = {
-	/** The market's locale — money is formatted in it, not in the store default. */
+	/** The market's locale — money, dates and words are all in it, not in the store default. */
 	locale: string;
 	order: OrderDetailsFragment;
 };
 
-export function OrderRow({ order, locale }: Props) {
+export async function OrderRow({ order, locale }: Props) {
+	const t = await getTranslations({ locale, namespace: "account" });
 	const thumbnails = order.lines
 		.filter((l) => l.variant?.product.thumbnail)
 		.map((l) => l.variant!.product.thumbnail!)
@@ -22,6 +25,7 @@ export function OrderRow({ order, locale }: Props) {
 
 	const style = orderStatusStyle[order.status] ?? defaultStatusStyle;
 	const StatusIcon = style.icon;
+	const labelKey = orderStatusLabelKey[order.status];
 
 	return (
 		<LinkWithChannel
@@ -53,16 +57,16 @@ export function OrderRow({ order, locale }: Props) {
 			<div className="min-w-0 flex-1">
 				<p className="text-sm font-semibold">ORD-{order.number}</p>
 				<p className="text-muted-foreground text-[13px]">
-					<time dateTime={order.created}>{formatDate(new Date(order.created))}</time>
+					<time dateTime={order.created}>{formatDate(new Date(order.created), locale)}</time>
 					{" · "}
-					{itemCount} {itemCount === 1 ? "item" : "items"}
+					{t("orders.itemCount", { count: itemCount })}
 				</p>
 			</div>
 
 			<div className="flex items-center gap-4">
 				<span className={`inline-flex items-center gap-1.5 text-[13px] font-medium ${style.className}`}>
 					<StatusIcon className="h-4 w-4" strokeWidth={1.75} />
-					<span className="hidden sm:inline">{customerStatusLabel[order.status] ?? order.statusDisplay}</span>
+					<span className="hidden sm:inline">{labelKey ? t(labelKey) : order.statusDisplay}</span>
 				</span>
 				<span className="text-sm font-semibold tabular-nums">
 					{formatMoney(order.total.gross.amount, order.total.gross.currency, locale)}

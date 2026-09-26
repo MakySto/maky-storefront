@@ -16,7 +16,11 @@ export default async function AccountOverviewPage({
 	params: Promise<{ channel: string }>;
 }) {
 	const { channel } = await params;
-	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "account" });
+	const locale = getLocaleFromChannel(channel);
+	const [t, tCheckout] = await Promise.all([
+		getTranslations({ locale, namespace: "account" }),
+		getTranslations({ locale, namespace: "checkout.addressForm" }),
+	]);
 	const [user, ordersResult] = await Promise.all([
 		getCurrentUser(),
 		executeAuthenticatedGraphQL(CurrentUserOrdersPaginatedDocument, {
@@ -35,7 +39,9 @@ export default async function AccountOverviewPage({
 	return (
 		<div className="space-y-8">
 			<div>
-				<h1 className="text-2xl font-semibold tracking-tight">Welcome back, {displayName}</h1>
+				<h1 className="text-2xl font-semibold tracking-tight">
+					{t("dashboard.greeting", { name: displayName })}
+				</h1>
 				<p className="text-muted-foreground mt-1 text-sm">{t("overview")}</p>
 			</div>
 
@@ -47,7 +53,7 @@ export default async function AccountOverviewPage({
 							href={accountRoutes.orders}
 							className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm font-medium transition-colors"
 						>
-							View all
+							{t("dashboard.viewAll")}
 							<ChevronRight className="h-4 w-4" />
 						</LinkWithChannel>
 					)}
@@ -55,12 +61,12 @@ export default async function AccountOverviewPage({
 
 				{orders.length === 0 ? (
 					<div className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
-						You haven&apos;t placed any orders yet.
+						{t("orders.empty")}
 					</div>
 				) : (
 					<div className="space-y-2">
 						{orders.map(({ node: order }) => (
-							<OrderRow key={order.id} order={order} locale={getLocaleFromChannel(channel)} />
+							<OrderRow key={order.id} order={order} locale={locale} />
 						))}
 					</div>
 				)}
@@ -73,16 +79,16 @@ export default async function AccountOverviewPage({
 						href={accountRoutes.addresses}
 						className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm font-medium transition-colors"
 					>
-						Manage
+						{t("dashboard.manage")}
 						<ChevronRight className="h-4 w-4" />
 					</LinkWithChannel>
 				</div>
 
 				{defaultAddress ? (
-					<AccountAddressCard address={defaultAddress} isDefaultShipping />
+					<AccountAddressCard address={defaultAddress} locale={locale} isDefaultShipping />
 				) : (
 					<div className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
-						No addresses saved yet.
+						{tCheckout("noSavedAddressesYet")}
 					</div>
 				)}
 			</section>

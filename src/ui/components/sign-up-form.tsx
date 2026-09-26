@@ -10,9 +10,21 @@ import { Input } from "@/ui/components/ui/input";
 import { Label } from "@/ui/components/ui/label";
 import { cn } from "@/lib/utils";
 import { marketHref } from "@/lib/channel-map";
+import { accountErrorKey } from "@/ui/components/account/account-error";
 
-export function SignUpForm() {
+type Props = {
+	/**
+	 * The market's own terms and privacy pages, or null where the market has none. Until
+	 * 2026-09-26 both were `href="#"` — a consent line whose documents could not be opened.
+	 */
+	legal: { terms: string; privacy: string } | null;
+};
+
+export function SignUpForm({ legal }: Props) {
 	const t = useTranslations("account");
+	// Sign-in texts the checkout already translated; `tr` resolves full paths (account-error.ts).
+	const tAuth = useTranslations("checkout.contactSection");
+	const tr = useTranslations();
 	const params = useParams<{ channel: string }>();
 
 	const [firstName, setFirstName] = useState("");
@@ -33,17 +45,17 @@ export function SignUpForm() {
 
 		// Validation
 		if (!email || !validateEmail(email)) {
-			setError("Please enter a valid email address");
+			setError(tAuth("enterValidEmail"));
 			return;
 		}
 
 		if (password.length < 8) {
-			setError("Password must be at least 8 characters");
+			setError(tAuth("resetPassword.passwordTooShort"));
 			return;
 		}
 
 		if (password !== confirmPassword) {
-			setError("Passwords do not match");
+			setError(t("passwordsDoNotMatch"));
 			return;
 		}
 
@@ -70,19 +82,14 @@ export function SignUpForm() {
 			};
 
 			if (data.errors?.length) {
-				const err = data.errors[0];
-				if (err.code === "UNIQUE") {
-					setError("An account with this email already exists. Please sign in instead.");
-				} else {
-					setError(err.message || "Failed to create account");
-				}
+				setError(tr(accountErrorKey("signUp", data.errors[0].code)));
 				return;
 			}
 
 			// Success - show confirmation message
 			setSuccess(true);
 		} catch {
-			setError("An error occurred. Please try again.");
+			setError(tr("checkout.errors.generic"));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -110,7 +117,7 @@ export function SignUpForm() {
 							href={marketHref(params.channel, "/login")}
 							className="text-foreground mt-6 inline-block text-sm font-medium underline underline-offset-2 hover:no-underline"
 						>
-							Go to Sign In
+							{t("signUp.goToSignIn")}
 						</Link>
 					</div>
 				</div>
@@ -124,12 +131,12 @@ export function SignUpForm() {
 				<div className="mb-6 text-center">
 					<h1 className="text-2xl font-semibold">{t("createAccount")}</h1>
 					<p className="text-muted-foreground mt-2 text-sm">
-						Already have an account?{" "}
+						{tAuth("haveAccount")}{" "}
 						<Link
 							href={marketHref(params.channel, "/login")}
 							className="text-foreground font-medium underline underline-offset-2 hover:no-underline"
 						>
-							Sign in
+							{tAuth("signIn")}
 						</Link>
 					</p>
 				</div>
@@ -145,14 +152,13 @@ export function SignUpForm() {
 					<div className="grid grid-cols-2 gap-4">
 						<div className="space-y-1.5">
 							<Label htmlFor="firstName" className="text-sm font-medium">
-								First name
+								{t("firstName")}
 							</Label>
 							<div className="relative">
 								<User className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 								<Input
 									id="firstName"
 									type="text"
-									placeholder={t("firstName")}
 									autoComplete="given-name"
 									value={firstName}
 									onChange={(e) => setFirstName(e.target.value)}
@@ -162,12 +168,11 @@ export function SignUpForm() {
 						</div>
 						<div className="space-y-1.5">
 							<Label htmlFor="lastName" className="text-sm font-medium">
-								Last name
+								{t("lastName")}
 							</Label>
 							<Input
 								id="lastName"
 								type="text"
-								placeholder={t("lastName")}
 								autoComplete="family-name"
 								value={lastName}
 								onChange={(e) => setLastName(e.target.value)}
@@ -179,14 +184,14 @@ export function SignUpForm() {
 					{/* Email */}
 					<div className="space-y-1.5">
 						<Label htmlFor="email" className="text-sm font-medium">
-							Email address
+							{tAuth("emailPlaceholder")}
 						</Label>
 						<div className="relative">
 							<Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 							<Input
 								id="email"
 								type="email"
-								placeholder="you@example.com"
+								placeholder={t("form.emailPlaceholder")}
 								autoComplete="email"
 								spellCheck={false}
 								value={email}
@@ -200,7 +205,7 @@ export function SignUpForm() {
 					{/* Password */}
 					<div className="space-y-1.5">
 						<Label htmlFor="password" className="text-sm font-medium">
-							Password
+							{tAuth("passwordPlaceholder")}
 						</Label>
 						<div className="relative">
 							<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -218,7 +223,7 @@ export function SignUpForm() {
 							<button
 								type="button"
 								onClick={() => setShowPassword(!showPassword)}
-								aria-label={showPassword ? "Hide password" : "Show password"}
+								aria-label={showPassword ? t("form.hidePassword") : t("form.showPassword")}
 								className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
 							>
 								{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -229,7 +234,7 @@ export function SignUpForm() {
 					{/* Confirm Password */}
 					<div className="space-y-1.5">
 						<Label htmlFor="confirmPassword" className="text-sm font-medium">
-							Confirm password
+							{t("confirmPassword")}
 						</Label>
 						<div className="relative">
 							<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -253,19 +258,25 @@ export function SignUpForm() {
 					</div>
 
 					<Button type="submit" disabled={isSubmitting} className="h-12 w-full text-base font-semibold">
-						{isSubmitting ? "Creating account…" : "Create Account"}
+						{isSubmitting ? tAuth("processing") : t("createAccount")}
 					</Button>
 
-					<p className="text-muted-foreground text-center text-xs">
-						By creating an account, you agree to our{" "}
-						<Link href="#" className="underline hover:no-underline">
-							Terms of Service
-						</Link>{" "}
-						and{" "}
-						<Link href="#" className="underline hover:no-underline">
-							Privacy Policy
-						</Link>
-					</p>
+					{legal && (
+						<p className="text-muted-foreground text-center text-xs">
+							{t.rich("signUp.consent", {
+								terms: (chunks) => (
+									<Link href={legal.terms} className="underline hover:no-underline">
+										{chunks}
+									</Link>
+								),
+								privacy: (chunks) => (
+									<Link href={legal.privacy} className="underline hover:no-underline">
+										{chunks}
+									</Link>
+								),
+							})}
+						</p>
+					)}
 				</form>
 			</div>
 		</div>

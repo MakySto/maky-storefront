@@ -1,7 +1,10 @@
+import { getTranslations } from "next-intl/server";
 import { FulfillmentStatus, type OrderFullDetailsFragment } from "@/gql/graphql";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/config/locale";
 
 type Props = {
+	/** The market's locale — labels and dates are in its language. */
+	locale: string;
 	order: OrderFullDetailsFragment;
 };
 
@@ -12,60 +15,46 @@ type TimelineEvent = {
 	isCurrent: boolean;
 };
 
-const fulfillmentLabels: Record<FulfillmentStatus, { label: string; description: string }> = {
-	[FulfillmentStatus.Fulfilled]: { label: "Shipped", description: "Your order has been shipped" },
-	[FulfillmentStatus.Canceled]: {
-		label: "Fulfillment cancelled",
-		description: "Shipment was cancelled",
-	},
-	[FulfillmentStatus.Refunded]: { label: "Refunded", description: "Payment has been refunded" },
-	[FulfillmentStatus.RefundedAndReturned]: {
-		label: "Refunded & Returned",
-		description: "Items returned and refunded",
-	},
-	[FulfillmentStatus.Replaced]: {
-		label: "Replaced",
-		description: "Items have been replaced",
-	},
-	[FulfillmentStatus.Returned]: { label: "Returned", description: "Items have been returned" },
-	[FulfillmentStatus.WaitingForApproval]: {
-		label: "Awaiting approval",
-		description: "Fulfillment is pending approval",
-	},
+/** Keys in the `account` messages. */
+const fulfillmentLabelKey: Record<FulfillmentStatus, string> = {
+	[FulfillmentStatus.Fulfilled]: "timeline.shipped",
+	[FulfillmentStatus.Canceled]: "timeline.shipmentCanceled",
+	[FulfillmentStatus.Refunded]: "timeline.refunded",
+	[FulfillmentStatus.RefundedAndReturned]: "timeline.refundedAndReturned",
+	[FulfillmentStatus.Replaced]: "timeline.replaced",
+	[FulfillmentStatus.Returned]: "timeline.returned",
+	[FulfillmentStatus.WaitingForApproval]: "timeline.awaitingApproval",
 };
 
-function buildTimeline(order: OrderFullDetailsFragment): TimelineEvent[] {
+type Translate = (key: string, values?: Record<string, string | number>) => string;
+
+function buildTimeline(order: OrderFullDetailsFragment, t: Translate): TimelineEvent[] {
 	const events: TimelineEvent[] = [];
 
+	// "Order placed", not the "Payment confirmed and order placed" this said until 2026-09-26:
+	// the first event is the order's creation, which is true of an unpaid order as well.
 	events.push({
-		label: "Order confirmed",
-		description: "Payment confirmed and order placed",
+		label: t("timeline.placed"),
+		description: "",
 		date: new Date(order.created),
 		isCurrent: false,
 	});
 
 	for (const fulfillment of order.fulfillments) {
-		const config = fulfillmentLabels[fulfillment.status] ?? {
-			label: fulfillment.status,
-			description: "",
-		};
+		const labelKey = fulfillmentLabelKey[fulfillment.status];
 		const itemCount = fulfillment.lines?.reduce((sum, l) => sum + l.quantity, 0) ?? 0;
-		const description =
-			itemCount > 0
-				? `${config.description} (${itemCount} item${itemCount === 1 ? "" : "s"})`
-				: config.description;
 
 		events.push({
-			label: config.label,
-			description,
+			label: labelKey ? t(labelKey) : fulfillment.status,
+			description: itemCount > 0 ? t("orders.itemCount", { count: itemCount }) : "",
 			date: new Date(fulfillment.created),
 			isCurrent: false,
 		});
 
 		if (fulfillment.trackingNumber) {
 			events.push({
-				label: "Tracking updated",
-				description: `Tracking number: ${fulfillment.trackingNumber}`,
+				label: t("timeline.tracking", { number: fulfillment.trackingNumber }),
+				description: "",
 				date: new Date(fulfillment.created),
 				isCurrent: false,
 			});
@@ -81,37 +70,38 @@ function buildTimeline(order: OrderFullDetailsFragment): TimelineEvent[] {
 	return events;
 }
 
-export function OrderTimeline({ order }: Props) {
-	const events = buildTimeline(order);
+export async function OrderTimeline({ order, locale }: Props) {
+	const t = await getTranslations({ locale, namespace: "account" });
+	const events = buildTimeline(order, t);
 
 	if (events.length === 0) return null;
 
 	return (
 		<div className="rounded-xl border">
 			<div className="border-b px-5 py-4">
-				<h2 className="text-sm font-semibold">Order Timeline</h2>
+				<h2 className="text-sm font-semibold">{t("timeline.title")}</h2>
 			</div>
 			<div className="px-5 py-4">
-				<ol className="relative ml-3 border-l border-border">
+				<ol className="border-border relative ml-3 border-l">
 					{events.map((event, i) => (
 						<li key={i} className="relative mb-6 ml-6 last:mb-0">
 							<span
-								className={`absolute -left-[calc(1.5rem+5px)] top-1 h-2.5 w-2.5 rounded-full border-2 border-background ${
+								className={`border-background absolute top-1 -left-[calc(1.5rem+5px)] h-2.5 w-2.5 rounded-full border-2 ${
 									event.isCurrent ? "bg-foreground" : "bg-muted-foreground/40"
 								}`}
 							/>
 							<p
 								className={`text-sm ${
-									event.isCurrent ? "font-semibold" : "font-medium text-muted-foreground"
+									event.isCurrent ? "font-semibold" : "text-muted-foreground font-medium"
 								}`}
 							>
 								{event.label}
 							</p>
 							{event.description && (
-								<p className="mt-0.5 text-[13px] text-muted-foreground">{event.description}</p>
+								<p className="text-muted-foreground mt-0.5 text-[13px]">{event.description}</p>
 							)}
-							<p className="mt-0.5 text-[13px] text-muted-foreground">
-								<time dateTime={event.date.toISOString()}>{formatDate(event.date)}</time>
+							<p className="text-muted-foreground mt-0.5 text-[13px]">
+								<time dateTime={event.date.toISOString()}>{formatDate(event.date, locale)}</time>
 							</p>
 						</li>
 					))}

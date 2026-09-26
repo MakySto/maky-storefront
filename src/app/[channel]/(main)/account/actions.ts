@@ -16,7 +16,31 @@ import {
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
 import { getFormString, getFormStringOptional } from "@/ui/components/account/form-utils";
 
-type ActionResult = { success: true } | { success: false; error: string };
+/**
+ * `error` is Saleor's (English) message and is for logs only. The form shows its own translated
+ * text, picked by `code` — Saleor's `AccountErrorCode`, or one of ours — and `field` where
+ * Saleor names the field it rejected (see `account-error.ts`).
+ */
+type ActionResult = { success: true } | { success: false; error: string; code?: string; field?: string };
+
+type SaleorError = { message?: string | null; code?: string | null; field?: string | null };
+
+function failed(error: SaleorError | undefined, fallback: string): ActionResult {
+	return {
+		success: false,
+		error: error?.message || fallback,
+		code: error?.code ?? undefined,
+		field: error?.field ?? undefined,
+	};
+}
+
+/** A request that failed before Saleor could judge it — the validation errors, if it did. */
+function requestFailed(error: {
+	message: string;
+	validationErrors?: ReadonlyArray<{ field?: string | null; message: string; code?: string | null }>;
+}): ActionResult {
+	return failed(error.validationErrors?.[0] ?? { message: error.message }, error.message);
+}
 
 export async function updateProfile(formData: FormData): Promise<ActionResult> {
 	const firstName = getFormString(formData, "firstName");
@@ -28,12 +52,12 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
 	});
 
 	if (!result.ok) {
-		return { success: false, error: result.error.message };
+		return requestFailed(result.error);
 	}
 
 	const errors = result.data.accountUpdate?.errors;
 	if (errors?.length) {
-		return { success: false, error: errors[0].message ?? "Failed to update profile" };
+		return failed(errors[0], "Failed to update profile");
 	}
 
 	revalidatePath("/account", "layout");
@@ -46,11 +70,15 @@ export async function changePassword(formData: FormData): Promise<ActionResult> 
 	const confirmPassword = getFormString(formData, "confirmPassword");
 
 	if (newPassword.length < 8) {
-		return { success: false, error: "New password must be at least 8 characters" };
+		return {
+			success: false,
+			error: "New password must be at least 8 characters",
+			code: "PASSWORD_TOO_SHORT",
+		};
 	}
 
 	if (newPassword !== confirmPassword) {
-		return { success: false, error: "Passwords do not match" };
+		return { success: false, error: "Passwords do not match", code: "PASSWORD_MISMATCH" };
 	}
 
 	const result = await executeAuthenticatedGraphQL(PasswordChangeDocument, {
@@ -59,12 +87,12 @@ export async function changePassword(formData: FormData): Promise<ActionResult> 
 	});
 
 	if (!result.ok) {
-		return { success: false, error: result.error.message };
+		return requestFailed(result.error);
 	}
 
 	const errors = result.data.passwordChange?.errors;
 	if (errors?.length) {
-		return { success: false, error: errors[0].message ?? "Failed to change password" };
+		return failed(errors[0], "Failed to change password");
 	}
 
 	return { success: true };
@@ -79,12 +107,12 @@ export async function createAddress(formData: FormData): Promise<ActionResult> {
 	});
 
 	if (!result.ok) {
-		return { success: false, error: result.error.message };
+		return requestFailed(result.error);
 	}
 
 	const errors = result.data.accountAddressCreate?.errors;
 	if (errors?.length) {
-		return { success: false, error: errors[0].message ?? "Failed to create address" };
+		return failed(errors[0], "Failed to create address");
 	}
 
 	revalidatePath("/account/addresses", "page");
@@ -101,12 +129,12 @@ export async function updateAddress(formData: FormData): Promise<ActionResult> {
 	});
 
 	if (!result.ok) {
-		return { success: false, error: result.error.message };
+		return requestFailed(result.error);
 	}
 
 	const errors = result.data.accountAddressUpdate?.errors;
 	if (errors?.length) {
-		return { success: false, error: errors[0].message ?? "Failed to update address" };
+		return failed(errors[0], "Failed to update address");
 	}
 
 	revalidatePath("/account/addresses", "page");
@@ -122,12 +150,12 @@ export async function deleteAddress(formData: FormData): Promise<ActionResult> {
 	});
 
 	if (!result.ok) {
-		return { success: false, error: result.error.message };
+		return requestFailed(result.error);
 	}
 
 	const errors = result.data.accountAddressDelete?.errors;
 	if (errors?.length) {
-		return { success: false, error: errors[0].message ?? "Failed to delete address" };
+		return failed(errors[0], "Failed to delete address");
 	}
 
 	revalidatePath("/account/addresses", "page");
@@ -146,12 +174,12 @@ export async function setDefaultAddress(formData: FormData): Promise<ActionResul
 	});
 
 	if (!result.ok) {
-		return { success: false, error: result.error.message };
+		return requestFailed(result.error);
 	}
 
 	const errors = result.data.accountSetDefaultAddress?.errors;
 	if (errors?.length) {
-		return { success: false, error: errors[0].message ?? "Failed to set default address" };
+		return failed(errors[0], "Failed to set default address");
 	}
 
 	revalidatePath("/account/addresses", "page");
@@ -168,12 +196,12 @@ export async function requestAccountDeletion(formData: FormData): Promise<Action
 	});
 
 	if (!result.ok) {
-		return { success: false, error: result.error.message };
+		return requestFailed(result.error);
 	}
 
 	const errors = result.data.accountRequestDeletion?.errors;
 	if (errors?.length) {
-		return { success: false, error: errors[0].message ?? "Failed to request account deletion" };
+		return failed(errors[0], "Failed to request account deletion");
 	}
 
 	return { success: true };

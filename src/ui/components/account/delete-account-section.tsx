@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { requestAccountDeletion } from "@/app/[channel]/(main)/account/actions";
 import { marketHref } from "@/lib/channel-map";
+import { accountErrorKey } from "@/ui/components/account/account-error";
 
 export function DeleteAccountSection() {
 	const params = useParams<{ channel: string }>();
@@ -13,6 +15,9 @@ export function DeleteAccountSection() {
 	const [isPending, startTransition] = useTransition();
 	const [error, setError] = useState("");
 	const [sent, setSent] = useState(false);
+	const t = useTranslations("account.deletion");
+	const tCommon = useTranslations("common");
+	const tr = useTranslations();
 
 	function handleDelete() {
 		setError("");
@@ -22,7 +27,7 @@ export function DeleteAccountSection() {
 			formData.set("channel", params.channel);
 			const result = await requestAccountDeletion(formData);
 			if (!result.success) {
-				setError(result.error);
+				setError(tr(accountErrorKey("deletion", result.code)));
 			} else {
 				setSent(true);
 			}
@@ -31,10 +36,8 @@ export function DeleteAccountSection() {
 
 	if (sent) {
 		return (
-			<div aria-live="polite" className="rounded-lg border border-border bg-green-50 p-4">
-				<p className="text-sm text-green-800">
-					A confirmation email has been sent. Please check your inbox to complete account deletion.
-				</p>
+			<div aria-live="polite" className="border-border rounded-lg border bg-green-50 p-4">
+				<p className="text-sm text-green-800">{t("sent")}</p>
 			</div>
 		);
 	}
@@ -42,36 +45,33 @@ export function DeleteAccountSection() {
 	return (
 		<div className="space-y-3">
 			<div>
-				<p className="text-sm font-medium text-destructive">Delete account</p>
-				<p className="text-sm text-muted-foreground">
-					Permanently remove your account and all associated data.
-				</p>
+				<p className="text-destructive text-sm font-medium">{t("title")}</p>
+				{/* Not "and all associated data", as this said until 2026-09-26: Saleor keeps a deleted
+				    customer's orders (under the order's e-mail address), so that was not true. */}
+				<p className="text-muted-foreground text-sm">{t("description")}</p>
 			</div>
 
 			{error && (
-				<p role="alert" className="text-sm text-destructive">
+				<p role="alert" className="text-destructive text-sm">
 					{error}
 				</p>
 			)}
 
 			{!showConfirm ? (
 				<Button variant="destructive" size="sm" onClick={() => setShowConfirm(true)}>
-					Delete account
+					{t("open")}
 				</Button>
 			) : (
 				<div className="border-destructive/20 bg-destructive/5 flex items-start gap-3 rounded-lg border p-4">
-					<AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+					<AlertTriangle className="text-destructive mt-0.5 h-5 w-5 shrink-0" />
 					<div className="space-y-3">
-						<p className="text-sm">
-							This action cannot be undone. You will receive a confirmation email before your account is
-							deleted.
-						</p>
+						<p className="text-sm">{t("warning")}</p>
 						<div className="flex gap-2">
 							<Button variant="destructive" size="sm" onClick={handleDelete} disabled={isPending}>
-								{isPending ? "Sending…" : "Yes, delete my account"}
+								{isPending ? tr("checkout.contactSection.processing") : t("confirm")}
 							</Button>
 							<Button variant="ghost" size="sm" onClick={() => setShowConfirm(false)}>
-								Cancel
+								{tCommon("cancel")}
 							</Button>
 						</div>
 					</div>

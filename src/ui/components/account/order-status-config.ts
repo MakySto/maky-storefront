@@ -59,10 +59,21 @@ export const defaultStatusStyle: StatusConfig = {
 	className: "text-muted-foreground",
 };
 
-/** Customer-friendly overrides for Saleor's internal status labels. */
-export const customerStatusLabel: Partial<Record<OrderStatus, string>> = {
-	[OrderStatus.Unfulfilled]: "Processing",
-	[OrderStatus.Unconfirmed]: "Pending confirmation",
-	[OrderStatus.PartiallyFulfilled]: "Partially shipped",
-	[OrderStatus.Fulfilled]: "Delivered",
+/**
+ * The customer's word for each status, as a key in the `account` messages. Every status has one:
+ * Saleor's own `statusDisplay` is English whatever the market.
+ *
+ * FULFILLED said "Delivered" until 2026-09-26. In Saleor it means every line has been fulfilled,
+ * which in this shop is handed to the carrier — shipped, not delivered.
+ */
+export const orderStatusLabelKey: Record<OrderStatus, string> = {
+	[OrderStatus.Unfulfilled]: "status.unfulfilled",
+	[OrderStatus.Unconfirmed]: "status.unconfirmed",
+	[OrderStatus.PartiallyFulfilled]: "status.partiallyFulfilled",
+	[OrderStatus.Fulfilled]: "status.fulfilled",
+	[OrderStatus.Canceled]: "status.canceled",
+	[OrderStatus.Returned]: "status.returned",
+	[OrderStatus.PartiallyReturned]: "status.partiallyReturned",
+	[OrderStatus.Draft]: "status.draft",
+	[OrderStatus.Expired]: "status.expired",
 };

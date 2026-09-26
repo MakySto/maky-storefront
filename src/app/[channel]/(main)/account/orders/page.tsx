@@ -1,4 +1,5 @@
 import { getLocaleFromChannel } from "@/config/locale";
+import { getTranslations } from "next-intl/server";
 import { CurrentUserOrdersPaginatedDocument } from "@/gql/graphql";
 import { executeAuthenticatedGraphQL } from "@/lib/graphql";
 import { OrderRow } from "@/ui/components/account/order-row";
@@ -18,6 +19,11 @@ type Props = {
 export default async function AccountOrdersPage({ params, searchParams }: Props) {
 	const { channel } = await params;
 	const { after } = await searchParams;
+	const locale = getLocaleFromChannel(channel);
+	const [t, tCommon] = await Promise.all([
+		getTranslations({ locale, namespace: "account" }),
+		getTranslations({ locale, namespace: "common" }),
+	]);
 
 	const result = await executeAuthenticatedGraphQL(CurrentUserOrdersPaginatedDocument, {
 		variables: {
@@ -39,28 +45,26 @@ export default async function AccountOrdersPage({ params, searchParams }: Props)
 	return (
 		<div className="space-y-6">
 			<div>
-				<h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
-				<p className="text-muted-foreground mt-1 text-sm">
-					{totalCount === 0 ? "No orders yet" : `${totalCount} order${totalCount !== 1 ? "s" : ""}`}
-				</p>
+				<h1 className="text-2xl font-semibold tracking-tight">{t("menu.orders")}</h1>
+				<p className="text-muted-foreground mt-1 text-sm">{t("orders.count", { count: totalCount })}</p>
 			</div>
 
 			{orders.length === 0 ? (
 				<div className="rounded-lg border border-dashed p-8 text-center">
-					<p className="text-muted-foreground">You haven&apos;t placed any orders yet.</p>
+					<p className="text-muted-foreground">{t("orders.empty")}</p>
 				</div>
 			) : (
 				<>
 					<div className="space-y-2">
 						{orders.map(({ node: order }) => (
-							<OrderRow key={order.id} order={order} locale={getLocaleFromChannel(channel)} />
+							<OrderRow key={order.id} order={order} locale={locale} />
 						))}
 					</div>
 
 					{pageInfo?.hasNextPage && pageInfo.endCursor && (
 						<div className="flex justify-center pt-2">
 							<LinkWithChannel href={`${accountRoutes.orders}?after=${pageInfo.endCursor}`}>
-								<Button variant="outline-solid">Load more orders</Button>
+								<Button variant="outline-solid">{tCommon("loadMore")}</Button>
 							</LinkWithChannel>
 						</div>
 					)}

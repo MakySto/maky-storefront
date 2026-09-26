@@ -859,7 +859,136 @@
 		"email": "E-mail",
 		"variantsUnavailable": "Možnosti produktu se nepodařilo načíst.",
 		"openMenu": "Otevřít menu",
-		"primaryNavigation": "Hlavní navigace"
+		"primaryNavigation": "Hlavní navigace",
+		"meta": {
+			"signInTitle": "Přihlášení",
+			"signInDescription": "Přihlaste se ke svému účtu a prohlédněte si objednávky a uložené adresy.",
+			"signUpTitle": "Registrace",
+			"signUpDescription": "Vytvořte si účet a mějte své adresy a objednávky na jednom místě.",
+			"accountTitle": "Můj účet"
+		},
+		"form": {
+			"showPassword": "Zobrazit heslo",
+			"hidePassword": "Skrýt heslo",
+			"emailPlaceholder": "jmeno@example.com"
+		},
+		"signIn": {
+			"noAccount": "Nemáte účet?",
+			"createAccountLink": "Zaregistrujte se"
+		},
+		"signUp": {
+			"goToSignIn": "Přejít na přihlášení",
+			"consent": "Vytvořením účtu souhlasíte s <terms>obchodními podmínkami</terms>. Jak zpracováváme osobní údaje, se dočtete v <privacy>zásadách ochrany osobních údajů</privacy>."
+		},
+		"reset": {
+			"subtitle": "Zadejte nové heslo pro účet <strong>{email}</strong>.",
+			"success": "Heslo bylo změněno a jste přihlášeni."
+		},
+		"errors": {
+			"enterNewPassword": "Zadejte nové heslo.",
+			"tooManyAttempts": "Příliš mnoho neúspěšných pokusů. Chvíli počkejte a zkuste to znovu.",
+			"accountNotConfirmed": "Účet ještě není aktivován. Aktivujte ho pomocí odkazu v e-mailu, který jsme vám poslali.",
+			"accountInactive": "Tento účet není aktivní. Kontaktujte nás, prosím.",
+			"emailTaken": "Účet s tímto e-mailem už existuje. Přihlaste se.",
+			"passwordTooCommon": "Toto heslo je příliš běžné. Zvolte jiné.",
+			"passwordNumeric": "Heslo nesmí obsahovat pouze číslice.",
+			"passwordTooSimilar": "Heslo je příliš podobné vašim údajům. Zvolte jiné.",
+			"wrongCurrentPassword": "Současné heslo není správné.",
+			"signUpFailed": "Účet se nepodařilo vytvořit. Zkuste to znovu.",
+			"profileSaveFailed": "Změny se nepodařilo uložit. Zkuste to znovu.",
+			"passwordChangeFailed": "Heslo se nepodařilo změnit. Zkuste to znovu.",
+			"addressSaveFailed": "Adresu se nepodařilo uložit. Zkontrolujte údaje a zkuste to znovu.",
+			"addressDeleteFailed": "Adresu se nepodařilo odstranit. Zkuste to znovu.",
+			"deletionFailed": "Žádost o zrušení účtu se nepodařilo odeslat. Zkuste to znovu.",
+			"invalidField": "Zkontrolujte prosím pole „{field}“."
+		},
+		"menu": {
+			"backToStore": "Zpět do obchodu",
+			"overview": "Přehled",
+			"orders": "Objednávky"
+		},
+		"dashboard": {
+			"greeting": "Vítejte zpět, {name}",
+			"viewAll": "Zobrazit vše",
+			"manage": "Spravovat"
+		},
+		"orders": {
+			"empty": "Zatím jste si nic neobjednali.",
+			"count": "{count, plural, =0 {Zatím žádné objednávky} one {# objednávka} few {# objednávky} many {# objednávky} other {# objednávek}}",
+			"itemCount": "{count, plural, one {# kus} few {# kusy} many {# kusu} other {# kusů}}"
+		},
+		"order": {
+			"placedOn": "Datum objednávky: {date}",
+			"items": "Položky ({count})",
+			"quantity": "Množství: {quantity}",
+			"subtotal": "Mezisoučet",
+			"shipping": "Doprava",
+			"total": "Celkem",
+			"taxIncluded": "z toho DPH",
+			"shippingAddress": "Doručovací adresa",
+			"billingAddress": "Fakturační adresa",
+			"payment": "Platba",
+			"paid": "Zaplaceno",
+			"refunded": "Peníze vráceny",
+			"partiallyRefunded": "Peníze částečně vráceny",
+			"help": "Potřebujete pomoc?"
+		},
+		"status": {
+			"unfulfilled": "Zpracovává se",
+			"unconfirmed": "Čeká na potvrzení",
+			"partiallyFulfilled": "Částečně odeslaná",
+			"fulfilled": "Odeslaná",
+			"canceled": "Zrušená",
+			"returned": "Vrácená",
+			"partiallyReturned": "Částečně vrácená",
+			"draft": "Rozpracovaná",
+			"expired": "Platnost vypršela"
+		},
+		"timeline": {
+			"title": "Průběh objednávky",
+			"placed": "Objednávka přijata",
+			"shipped": "Odesláno",
+			"shipmentCanceled": "Odeslání zrušeno",
+			"refunded": "Peníze vráceny",
+			"refundedAndReturned": "Zboží vráceno, peníze vráceny",
+			"replaced": "Zboží vyměněno",
+			"returned": "Zboží vráceno",
+			"awaitingApproval": "Čeká na schválení",
+			"tracking": "Číslo zásilky: {number}"
+		},
+		"address": {
+			"add": "Přidat adresu",
+			"edit": "Upravit adresu",
+			"save": "Uložit adresu",
+			"addDescription": "Přidejte do svého účtu novou adresu.",
+			"editDescription": "Upravte údaje uložené adresy.",
+			"delete": "Odstranit adresu",
+			"defaultShipping": "Výchozí doručovací",
+			"defaultBilling": "Výchozí fakturační",
+			"countryCode": "Kód země"
+		},
+		"profile": {
+			"name": "Jméno a příjmení",
+			"notSet": "Nevyplněno",
+			"updated": "Uloženo",
+			"currentPassword": "Současné heslo",
+			"confirmNewPassword": "Potvrďte nové heslo",
+			"changePassword": "Změnit heslo",
+			"memberSince": "Účet vytvořen: {date}"
+		},
+		"deletion": {
+			"title": "Zrušení účtu",
+			"description": "Zákaznický účet bude trvale zrušen.",
+			"open": "Zrušit účet",
+			"warning": "Tuto akci nelze vrátit zpět. Před zrušením účtu vám pošleme potvrzovací e-mail.",
+			"confirm": "Ano, zrušit můj účet",
+			"sent": "Poslali jsme vám potvrzovací e-mail. Zrušení účtu dokončíte pomocí odkazu v něm."
+		},
+		"withdrawal": {
+			"title": "Odstoupení od smlouvy",
+			"body": "Jak od této objednávky odstoupit, najdete na stránce o odstoupení od smlouvy.",
+			"cta": "Odstoupit od smlouvy"
+		}
 	},
 	"contact": {
 		"heading": "Napište nám",

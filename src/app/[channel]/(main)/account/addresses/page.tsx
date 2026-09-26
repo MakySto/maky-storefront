@@ -49,6 +49,7 @@ export default async function AddressesPage({
 							<AccountAddressCard
 								key={address.id}
 								address={address}
+								locale={locale}
 								isDefaultShipping={isDefaultShipping}
 								isDefaultBilling={isDefaultBilling}
 							>

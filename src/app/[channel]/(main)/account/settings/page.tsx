@@ -1,4 +1,4 @@
-import { getLocaleFromChannel } from "@/config/locale";
+import { formatDate, getLocaleFromChannel } from "@/config/locale";
 import { getTranslations } from "next-intl/server";
 import { Mail, Calendar } from "lucide-react";
 import { EditNameForm } from "@/ui/components/account/edit-name-form";
@@ -18,7 +18,9 @@ export default async function AccountSettingsPage({
 	const user = await getCurrentUser();
 	if (!user) return null;
 
-	const memberSince = new Date(user.dateJoined).toLocaleDateString("en-US", {
+	// In the market's language: this was pinned to "en-US" until 2026-09-26.
+	const memberSince = formatDate(new Date(user.dateJoined), locale, {
+		dateStyle: undefined,
 		month: "long",
 		year: "numeric",
 	});
@@ -54,7 +56,7 @@ export default async function AccountSettingsPage({
 				<div className="p-4 sm:p-6">
 					<div className="text-muted-foreground flex items-center gap-2 text-sm">
 						<Calendar className="h-4 w-4" />
-						<span>Member since {memberSince}</span>
+						<span>{t("profile.memberSince", { date: memberSince })}</span>
 					</div>
 				</div>
 			</div>

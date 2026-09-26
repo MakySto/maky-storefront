@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useTransition, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
 import { Label } from "@/ui/components/ui/label";
 import { updateProfile } from "@/app/[channel]/(main)/account/actions";
+import { accountErrorKey } from "@/ui/components/account/account-error";
 
 type Props = {
 	firstName: string;
@@ -16,6 +18,10 @@ export function EditNameForm({ firstName, lastName }: Props) {
 	const [isPending, startTransition] = useTransition();
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState(false);
+	const t = useTranslations("account");
+	const tCommon = useTranslations("common");
+	const tCheckout = useTranslations("checkout");
+	const tr = useTranslations();
 
 	const handleSubmit = useCallback(
 		(formData: FormData) => {
@@ -25,33 +31,33 @@ export function EditNameForm({ firstName, lastName }: Props) {
 			startTransition(async () => {
 				const result = await updateProfile(formData);
 				if (!result.success) {
-					setError(result.error);
+					setError(tr(accountErrorKey("profile", result.code)));
 				} else {
 					setSuccess(true);
 					setIsEditing(false);
 				}
 			});
 		},
-		[startTransition],
+		[startTransition, tr],
 	);
 
 	if (!isEditing) {
 		return (
 			<div className="flex items-center justify-between">
 				<div>
-					<p className="text-sm text-muted-foreground">Name</p>
+					<p className="text-muted-foreground text-sm">{t("profile.name")}</p>
 					<p className="font-medium">
-						{firstName || lastName ? `${firstName} ${lastName}`.trim() : "Not set"}
+						{firstName || lastName ? `${firstName} ${lastName}`.trim() : t("profile.notSet")}
 					</p>
 				</div>
 				<div className="flex items-center gap-2">
 					{success && (
 						<span aria-live="polite" className="text-sm text-green-600">
-							Updated
+							{t("profile.updated")}
 						</span>
 					)}
 					<Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
-						Edit
+						{tCommon("edit")}
 					</Button>
 				</div>
 			</div>
@@ -61,13 +67,13 @@ export function EditNameForm({ firstName, lastName }: Props) {
 	return (
 		<form action={handleSubmit} className="space-y-4">
 			{error && (
-				<p role="alert" className="text-sm text-destructive">
+				<p role="alert" className="text-destructive text-sm">
 					{error}
 				</p>
 			)}
 			<div className="grid gap-4 sm:grid-cols-2">
 				<div className="space-y-1.5">
-					<Label htmlFor="firstName">First name</Label>
+					<Label htmlFor="firstName">{tCheckout("firstName")}</Label>
 					<Input
 						id="firstName"
 						name="firstName"
@@ -77,13 +83,13 @@ export function EditNameForm({ firstName, lastName }: Props) {
 					/>
 				</div>
 				<div className="space-y-1.5">
-					<Label htmlFor="lastName">Last name</Label>
+					<Label htmlFor="lastName">{tCheckout("lastName")}</Label>
 					<Input id="lastName" name="lastName" autoComplete="family-name" defaultValue={lastName} required />
 				</div>
 			</div>
 			<div className="flex gap-2">
 				<Button type="submit" size="sm" disabled={isPending}>
-					{isPending ? "Saving…" : "Save"}
+					{isPending ? tCheckout("common.saving") : tCommon("save")}
 				</Button>
 				<Button
 					type="button"
@@ -94,7 +100,7 @@ export function EditNameForm({ firstName, lastName }: Props) {
 						setError("");
 					}}
 				>
-					Cancel
+					{tCommon("cancel")}
 				</Button>
 			</div>
 		</form>

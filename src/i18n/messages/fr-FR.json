@@ -859,7 +859,136 @@
 		"email": "E-mail",
 		"variantsUnavailable": "Impossible de charger les options du produit.",
 		"openMenu": "Ouvrir le menu",
-		"primaryNavigation": "Navigation principale"
+		"primaryNavigation": "Navigation principale",
+		"meta": {
+			"signInTitle": "Connexion",
+			"signInDescription": "Connectez-vous à votre compte pour consulter vos commandes et vos adresses enregistrées.",
+			"signUpTitle": "Créer un compte",
+			"signUpDescription": "Créez un compte pour retrouver vos adresses et vos commandes au même endroit.",
+			"accountTitle": "Mon compte"
+		},
+		"form": {
+			"showPassword": "Afficher le mot de passe",
+			"hidePassword": "Masquer le mot de passe",
+			"emailPlaceholder": "nom@example.com"
+		},
+		"signIn": {
+			"noAccount": "Pas encore de compte ?",
+			"createAccountLink": "Créer un compte"
+		},
+		"signUp": {
+			"goToSignIn": "Aller à la connexion",
+			"consent": "En créant un compte, vous acceptez nos <terms>conditions générales de vente</terms>. Pour savoir comment nous traitons les données personnelles, consultez notre <privacy>politique de confidentialité</privacy>."
+		},
+		"reset": {
+			"subtitle": "Saisissez un nouveau mot de passe pour <strong>{email}</strong>.",
+			"success": "Votre mot de passe a été modifié et votre session est ouverte."
+		},
+		"errors": {
+			"enterNewPassword": "Veuillez saisir un nouveau mot de passe.",
+			"tooManyAttempts": "Trop de tentatives infructueuses. Veuillez patienter un instant puis réessayer.",
+			"accountNotConfirmed": "Votre compte n'est pas encore activé. Activez-le à l'aide du lien figurant dans l'e-mail que nous vous avons envoyé.",
+			"accountInactive": "Ce compte n'est pas actif. Veuillez nous contacter.",
+			"emailTaken": "Un compte existe déjà avec cette adresse e-mail. Veuillez vous connecter.",
+			"passwordTooCommon": "Ce mot de passe est trop courant. Veuillez en choisir un autre.",
+			"passwordNumeric": "Le mot de passe ne peut pas contenir uniquement des chiffres.",
+			"passwordTooSimilar": "Le mot de passe ressemble trop à vos informations personnelles. Veuillez en choisir un autre.",
+			"wrongCurrentPassword": "Le mot de passe actuel est incorrect.",
+			"signUpFailed": "Le compte n'a pas pu être créé. Veuillez réessayer.",
+			"profileSaveFailed": "Les modifications n'ont pas pu être enregistrées. Veuillez réessayer.",
+			"passwordChangeFailed": "Le mot de passe n'a pas pu être modifié. Veuillez réessayer.",
+			"addressSaveFailed": "L'adresse n'a pas pu être enregistrée. Vérifiez les informations et réessayez.",
+			"addressDeleteFailed": "L'adresse n'a pas pu être supprimée. Veuillez réessayer.",
+			"deletionFailed": "La demande de suppression du compte n'a pas pu être envoyée. Veuillez réessayer.",
+			"invalidField": "Veuillez vérifier le champ « {field} »."
+		},
+		"menu": {
+			"backToStore": "Retour à la boutique",
+			"overview": "Vue d'ensemble",
+			"orders": "Commandes"
+		},
+		"dashboard": {
+			"greeting": "Bon retour, {name}",
+			"viewAll": "Tout afficher",
+			"manage": "Gérer"
+		},
+		"orders": {
+			"empty": "Vous n'avez encore passé aucune commande.",
+			"count": "{count, plural, =0 {Aucune commande pour l'instant} one {# commande} other {# commandes}}",
+			"itemCount": "{count, plural, one {# article} other {# articles}}"
+		},
+		"order": {
+			"placedOn": "Date de commande : {date}",
+			"items": "Articles ({count})",
+			"quantity": "Quantité : {quantity}",
+			"subtotal": "Sous-total",
+			"shipping": "Livraison",
+			"total": "Total",
+			"taxIncluded": "dont TVA",
+			"shippingAddress": "Adresse de livraison",
+			"billingAddress": "Adresse de facturation",
+			"payment": "Paiement",
+			"paid": "Payé",
+			"refunded": "Remboursé",
+			"partiallyRefunded": "Partiellement remboursé",
+			"help": "Besoin d'aide ?"
+		},
+		"status": {
+			"unfulfilled": "En préparation",
+			"unconfirmed": "En attente de confirmation",
+			"partiallyFulfilled": "Partiellement expédiée",
+			"fulfilled": "Expédiée",
+			"canceled": "Annulée",
+			"returned": "Retournée",
+			"partiallyReturned": "Partiellement retournée",
+			"draft": "Brouillon",
+			"expired": "Expirée"
+		},
+		"timeline": {
+			"title": "Suivi de la commande",
+			"placed": "Commande reçue",
+			"shipped": "Expédié",
+			"shipmentCanceled": "Expédition annulée",
+			"refunded": "Remboursé",
+			"refundedAndReturned": "Retourné et remboursé",
+			"replaced": "Remplacé",
+			"returned": "Retourné",
+			"awaitingApproval": "En attente de validation",
+			"tracking": "Numéro de suivi : {number}"
+		},
+		"address": {
+			"add": "Ajouter une adresse",
+			"edit": "Modifier l'adresse",
+			"save": "Enregistrer l'adresse",
+			"addDescription": "Ajoutez une nouvelle adresse à votre compte.",
+			"editDescription": "Modifiez les informations de cette adresse.",
+			"delete": "Supprimer l'adresse",
+			"defaultShipping": "Livraison par défaut",
+			"defaultBilling": "Facturation par défaut",
+			"countryCode": "Code pays"
+		},
+		"profile": {
+			"name": "Nom",
+			"notSet": "Non renseigné",
+			"updated": "Enregistré",
+			"currentPassword": "Mot de passe actuel",
+			"confirmNewPassword": "Confirmez le nouveau mot de passe",
+			"changePassword": "Modifier le mot de passe",
+			"memberSince": "Compte créé : {date}"
+		},
+		"deletion": {
+			"title": "Supprimer le compte",
+			"description": "Votre compte client sera définitivement supprimé.",
+			"open": "Supprimer le compte",
+			"warning": "Cette action est irréversible. Avant la suppression de votre compte, nous vous enverrons un e-mail de confirmation.",
+			"confirm": "Oui, supprimer mon compte",
+			"sent": "Nous vous avons envoyé un e-mail de confirmation. Utilisez le lien qu'il contient pour finaliser la suppression."
+		},
+		"withdrawal": {
+			"title": "Droit de rétractation et retour",
+			"body": "Pour savoir comment vous rétracter de cette commande ou retourner des articles, consultez la page dédiée à la rétractation et aux retours.",
+			"cta": "Rétractation et retours"
+		}
 	},
 	"contact": {
 		"heading": "Écrivez-nous",
