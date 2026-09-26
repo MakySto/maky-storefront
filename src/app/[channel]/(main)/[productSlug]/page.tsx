@@ -3,6 +3,7 @@ import { categoryUrlFor } from "@/config/category-routes";
 import { cacheTag } from "next/cache";
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
+import { meaningfulTitle } from "@/config/brand";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { getTranslations } from "next-intl/server";
@@ -183,9 +184,10 @@ export async function generateMetadata(props: {
 
 	const product = outcome.resource;
 	const locale = getLocaleFromChannel(params.channel);
+	// A seoTitle that is only the shop's name is a placeholder, not a title (see `meaningfulTitle`).
 	const hasExplicitSeoTitle = isSourceLocale(locale)
-		? Boolean(product.seoTitle?.trim())
-		: Boolean(product.translation?.seoTitle?.trim());
+		? Boolean(meaningfulTitle(product.seoTitle))
+		: Boolean(meaningfulTitle(product.translation?.seoTitle));
 
 	const description = product.seoDescription || product.name;
 	// The gallery's first image, which already falls back to the thumbnail — and already
@@ -197,7 +199,7 @@ export async function generateMetadata(props: {
 
 	const metadata = buildPageMetadata({
 		channel: params.channel,
-		title: product.seoTitle || product.name,
+		title: meaningfulTitle(product.seoTitle) ?? product.name,
 		titleSource: hasExplicitSeoTitle ? "seo" : "fallback",
 		description,
 		image: ogImage,

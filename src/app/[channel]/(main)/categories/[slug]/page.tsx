@@ -49,7 +49,7 @@ import { CatalogMakeIndex } from "@/ui/components/catalog/make-index";
 import { HeroBenefits } from "@/ui/components/homepage/hero-benefits";
 import { STOREFRONT_CATEGORIES } from "@/config/categories";
 import { CategoryPageClient } from "./client";
-import { formatPageTitleOnce } from "@/config/brand";
+import { formatPageTitleOnce, meaningfulTitle } from "@/config/brand";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleCategory, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
@@ -178,7 +178,8 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 	// This used to be `${name} | ${seoTitle || parent title}`, which printed the category
 	// twice wherever the SEO title was the name itself: "Autochladničky | Autochladničky",
 	// with no brand at all. Built the way the other pages build theirs.
-	const title = formatPageTitleOnce(category.seoTitle?.trim() || category.name);
+	// A seoTitle that is only the shop's name (CFM's translations, 2026-09-26) is no title at all.
+	const title = formatPageTitleOnce(meaningfulTitle(category.seoTitle) ?? category.name);
 
 	// A category that exists but holds nothing in THIS channel.
 	//
@@ -192,7 +193,8 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 	if ((category.products?.totalCount ?? 0) === 0) {
 		return {
 			title,
-			description: category.seoDescription || plainDescription || category.seoTitle || category.name,
+			description:
+				category.seoDescription || plainDescription || meaningfulTitle(category.seoTitle) || category.name,
 			robots: { index: false, follow: true, googleBot: { index: false, follow: true } },
 			// No canonical, deliberately: a self-canonical nominates the URL, which
 			// is the opposite of what noindex is here to say.
@@ -206,7 +208,8 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 
 	return {
 		title,
-		description: category.seoDescription || plainDescription || category.seoTitle || category.name,
+		description:
+			category.seoDescription || plainDescription || meaningfulTitle(category.seoTitle) || category.name,
 		// Category listings had no canonical at all, while product pages have always
 		// had one. The toolbar appends ?sort= and filter params, so without this every
 		// sort order is a separate indexable URL competing with the clean one. Points

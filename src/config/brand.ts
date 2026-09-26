@@ -40,3 +40,23 @@ export function formatPageTitleOnce(title: string): string {
 		? trimmed
 		: formatPageTitle(trimmed);
 }
+
+/**
+ * A title from data that says something besides the shop's name — trimmed — or `null`.
+ *
+ * CFM's category translations carried `seoTitle: "MAKY.STORE"` in all eleven foreign languages
+ * (measured 2026-09-26), and `formatPageTitleOnce` keeps a title that already names the shop as
+ * it is: the one real category of every foreign market was titled "MAKY.STORE". A title that is
+ * nothing but the shop's name is a placeholder, not an approved SEO title, so the caller falls
+ * back to the localized name — never to another language's text.
+ */
+export function meaningfulTitle(title: string | null | undefined): string | null {
+	const trimmed = title?.trim();
+	if (!trimmed) return null;
+	const rest = trimmed
+		.toLowerCase()
+		.split(brandConfig.siteName.toLowerCase())
+		.join("")
+		.replace(/[\s|·•:\u2013\u2014-]+/g, "");
+	return rest ? trimmed : null;
+}
