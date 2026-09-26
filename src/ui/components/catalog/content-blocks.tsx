@@ -2,6 +2,7 @@ import Link from "next/link";
 import { type ReactNode } from "react";
 import { type ContentBlock } from "@/lib/catalog-content/contract";
 import { type InlineNode, parseInline, withMarketPrefix } from "@/lib/catalog-content/inline";
+import { canonicalCatalogPath } from "@/lib/catalog-content/category-aliases";
 
 /**
  * CFM's editorial blocks, rendered as React elements.
@@ -44,15 +45,14 @@ function renderInline(
 		if (node.kind === "bold") {
 			return <strong key={key}>{renderInline(node.children, market, key, linkable)}</strong>;
 		}
-		if (linkable && !linkable(node.href)) {
+		// The market's own spelling first: CFM writes the Slovak path in every language, and a link
+		// through the 301 is a detour for the visitor and a wasted fetch for every crawler.
+		const href = canonicalCatalogPath(market, node.href);
+		if (linkable && !linkable(href)) {
 			return <span key={key}>{renderInline(node.children, market, key, linkable)}</span>;
 		}
 		return (
-			<Link
-				key={key}
-				href={withMarketPrefix(node.href, market)}
-				className="text-action-primary hover:underline"
-			>
+			<Link key={key} href={withMarketPrefix(href, market)} className="text-action-primary hover:underline">
 				{renderInline(node.children, market, key, linkable)}
 			</Link>
 		);

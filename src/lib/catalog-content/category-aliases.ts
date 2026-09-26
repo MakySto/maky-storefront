@@ -48,6 +48,28 @@ export function categoryAliasTarget(market: string, rest: readonly string[]): st
 }
 
 /**
+ * A catalogue path in the spelling this market publishes it under: where the proxy's 301 would
+ * send it (`categoryAliasTarget`), or the path itself when it is already canonical or is not a
+ * catalogue path at all. Query and fragment are kept; a leading market segment is kept too.
+ *
+ * For the links the storefront builds, so they point AT the page instead of through a redirect.
+ * CFM's copy links other vehicles by their Slovak path in every language, and the fitment tree
+ * falls back to that path for a node with no page of its own: `/de/dachtraeger/opel` linked its
+ * twenty models a second time as `/de/stresne-nosice/opel/…`, and the site sent itself 4 418
+ * such 301s in one day (2026-09-25).
+ */
+export function canonicalCatalogPath(market: string, path: string): string {
+	const cut = path.search(/[?#]/);
+	const pathname = cut === -1 ? path : path.slice(0, cut);
+	const suffix = cut === -1 ? "" : path.slice(cut);
+	const segments = pathname.split("/").filter(Boolean);
+	const prefixed = segments[0] === market;
+	const target = categoryAliasTarget(market, prefixed ? segments.slice(1) : segments);
+	if (!target) return path;
+	return `${prefixed ? `/${market}` : ""}${target}${suffix}`;
+}
+
+/**
  * The canonical `/categories/{segment}` for a LISTING category spelled the other way.
  *
  * `/cz/categories/nordrive-stresne-nosice` → the Czech spelling, still under `/categories/`. Root

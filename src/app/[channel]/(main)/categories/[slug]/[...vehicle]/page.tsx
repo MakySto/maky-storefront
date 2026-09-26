@@ -32,6 +32,7 @@ import { ContentBlocks } from "@/ui/components/catalog/content-blocks";
 import { CatalogOfferList } from "@/ui/components/catalog/offer-list";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
 import { RouteLoading } from "@/ui/components/route-loading";
+import { canonicalCatalogPath } from "@/lib/catalog-content/category-aliases";
 
 /**
  * The vehicle category pages: `/sk/stresne-nosice/[make]/[model]/[generation]`.
@@ -141,7 +142,9 @@ async function VehicleSwitchTargets({ vehicleId }: { vehicleId: string }) {
 }
 
 function tileHref(channel: string, node: CatalogNode): string {
-	return marketHref(channel, node.urlPath);
+	// A node with no page in this language carries the fitment dataset's Slovak path; link the
+	// market's own spelling, not a 301 to it.
+	return marketHref(channel, canonicalCatalogPath(REVERSE_MAP[channel] ?? channel, node.urlPath));
 }
 
 /**
