@@ -392,6 +392,8 @@ human gets wrong at 23:00. What it does:
 lock        flock — Claude, Codex and a human share this box; two deploys must not race
 preflight   memory, disk, clean tree, current BUILD_ID + its sha, NEXT_OUTPUT unset,
             sudo, PM2 app
+secrets     copy the keys other systems issue from AWS SSM into .env (§13.9) — before
+            the stop, warn-only: a failure leaves .env as the last sync wrote it
 stop        maky-storefront only — never maky-smtp-app
 snapshot    sudo mv -T .next → rollbacks/.next.rollback-<prev-sha>-<prev-BUILD_ID>-<UTC>
 build       pnpm build, output teed to a log file
@@ -577,7 +579,9 @@ chat, a repository, a log or a person copying it (owner, 2026-09-26).
 - The issuer writes a SecureString under `/maky/storefront/<issuer>/…`; `scripts/ops/sync-secrets.sh`
   copies the mapped ones into `/opt/storefront/.env` — atomically, mode 600, the previous file backed
   up outside the repo, values never printed. Exit `10` means `.env` changed: restart PM2 (a
-  server-side variable needs no rebuild). Rotation is the same two steps.
+  server-side variable needs no rebuild). `deploy-production.sh` runs it on every deploy, before
+  the stop (a dry run only reports), so a rotated key is picked up by the next deploy on its own;
+  between deploys, run the script and restart PM2.
 - Access (IAM inline policies, set in CloudShell): `maky-ec2-ssm-role` (this server) reads
   `/maky/storefront/*`; `maky-cms-role` writes `/maky/storefront/cms/*` only.
 - Only the parameters listed in the script's `MAPPINGS` are copied, each onto one variable, so an

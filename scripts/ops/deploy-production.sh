@@ -409,6 +409,33 @@ Restore a snapshot first (CLAUDE.md §13.3), or set ALLOW_NO_BASELINE=1 for a on
 	ps -eo pid,comm,rss --sort=-rss | head -5
 }
 
+# Copy the keys other systems issue for the storefront from AWS SSM into .env (CLAUDE.md
+# §13.9) — before the stop, so it adds no downtime, and before the build, so a build-time
+# variable would be current too. `pm2 start` below then reads the new .env.
+#
+# Warn-only, on purpose: an SSM or IAM hiccup leaves .env exactly as the last successful sync
+# wrote it, which is the state the live site already runs on, so it is never a reason to hold
+# a deploy back. A dry run only reports what would change.
+sync_secrets() {
+	step "secrets"
+	local sync="$APP_DIR/scripts/ops/sync-secrets.sh" out rc=0
+	if [[ ! -x "$sync" ]]; then
+		warn "no $sync in this tree — .env left as it is"
+		return 0
+	fi
+	if (( DRY_RUN == 1 )); then
+		out=$(ENV_FILE="$APP_DIR/.env" "$sync" --check 2>&1) || rc=$?
+	else
+		out=$(ENV_FILE="$APP_DIR/.env" "$sync" 2>&1) || rc=$?
+	fi
+	case "$rc" in
+		0) info "$out" ;;
+		10) info "$out (the start step below loads it)" ;;
+		*) warn "could not sync secrets from SSM (exit $rc) — .env left as it was: $out" ;;
+	esac
+	return 0
+}
+
 snapshot_name() {
 	printf '%s/.next.rollback-%s-%s-%s' "$ROLLBACK_DIR" "$PREV_SHA" "$PREV_BUILD_ID" "$(date -u +%Y%m%dT%H%M%SZ)"
 }
@@ -929,11 +956,13 @@ prune() {
 # --- main ----------------------------------------------------------------------------
 take_lock
 preflight
+sync_secrets
 
 if (( DRY_RUN == 1 )); then
 	step "dry run — nothing was changed"
 	cat <<-EOF
 	Would, in this order:
+	  copy secrets from AWS SSM into .env (see "secrets" above; warn-only)
 	  pm2 stop $PM2_APP
 	  sudo mv -T $APP_DIR/.next $(snapshot_name)
 	  pnpm build
