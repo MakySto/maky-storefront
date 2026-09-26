@@ -567,3 +567,21 @@ been tested. Prove it off production first: build in worktree A, create worktree
 same sha, move A's `.next` into B, serve B on a spare port, and check homepage, CSS, a
 PLP, a PDP and a CMS page. Until that passes, stop–build–start with planned downtime is
 the procedure.
+
+### 13.9 Secrets another system issues come from AWS SSM — never by hand
+
+A key that another system issues for the storefront (today: the CMS's `preview-reader` key,
+`PAYLOAD_PREVIEW_API_KEY`) reaches this server through AWS SSM Parameter Store — never through a
+chat, a repository, a log or a person copying it (owner, 2026-09-26).
+
+- The issuer writes a SecureString under `/maky/storefront/<issuer>/…`; `scripts/ops/sync-secrets.sh`
+  copies the mapped ones into `/opt/storefront/.env` — atomically, mode 600, the previous file backed
+  up outside the repo, values never printed. Exit `10` means `.env` changed: restart PM2 (a
+  server-side variable needs no rebuild). Rotation is the same two steps.
+- Access (IAM inline policies, set in CloudShell): `maky-ec2-ssm-role` (this server) reads
+  `/maky/storefront/*`; `maky-cms-role` writes `/maky/storefront/cms/*` only.
+- Only the parameters listed in the script's `MAPPINGS` are copied, each onto one variable, so an
+  issuer can never override any other setting. A new secret = a reviewed `MAPPINGS` line, the issuer
+  writes the parameter, the script runs, PM2 restarts.
+- No other system gets write access to this repository for a hand-over (no deploy keys): code comes
+  as a branch in its own repo, which this server can read, and is reviewed, merged and pushed here.
