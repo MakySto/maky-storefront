@@ -834,7 +834,8 @@
 		"metaTitle": "Wyszukiwanie produktów",
 		"metaDescription": "Wyniki wyszukiwania w ofercie {siteName}.",
 		"unavailableTitle": "Wyszukiwarka jest chwilowo niedostępna",
-		"unavailableHelp": "Nie udało się teraz wczytać wyników dla „{query}”. Spróbuj ponownie za chwilę lub przejrzyj nasze kategorie."
+		"unavailableHelp": "Nie udało się teraz wczytać wyników dla „{query}”. Spróbuj ponownie za chwilę lub przejrzyj nasze kategorie.",
+		"correctedFrom": "Nie znaleźliśmy nic dla „{query}”, dlatego pokazujemy wyniki dla najbardziej podobnej marki."
 	},
 	"account": {
 		"welcomeBack": "Witamy ponownie",

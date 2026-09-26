@@ -834,7 +834,8 @@
 		"metaTitle": "Product search",
 		"metaDescription": "Search results from the {siteName} catalog.",
 		"unavailableTitle": "Search is temporarily unavailable",
-		"unavailableHelp": "We couldn't load the results for “{query}” just now. Please try again in a moment or browse our categories."
+		"unavailableHelp": "We couldn't load the results for “{query}” just now. Please try again in a moment or browse our categories.",
+		"correctedFrom": "We found nothing for “{query}”, so we're showing results for the closest brand."
 	},
 	"account": {
 		"welcomeBack": "Welcome back",

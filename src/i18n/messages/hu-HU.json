@@ -834,7 +834,8 @@
 		"metaTitle": "Termékkeresés",
 		"metaDescription": "Keresési találatok a {siteName} kínálatában.",
 		"unavailableTitle": "A keresés átmenetileg nem érhető el",
-		"unavailableHelp": "A(z) „{query}” találatait most nem sikerült betölteni. Próbálja újra egy kis idő múlva, vagy böngésszen kategóriáink között."
+		"unavailableHelp": "A(z) „{query}” találatait most nem sikerült betölteni. Próbálja újra egy kis idő múlva, vagy böngésszen kategóriáink között.",
+		"correctedFrom": "A(z) „{query}” keresésre nincs találat, ezért a leginkább hasonló márka találatait mutatjuk."
 	},
 	"account": {
 		"welcomeBack": "Üdvözöljük újra",

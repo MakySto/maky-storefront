@@ -13,6 +13,7 @@ import { marketHref } from "@/lib/channel-map";
 import { brandConfig, formatPageTitle } from "@/config/brand";
 import { routePolicyFor } from "@/lib/route-policy";
 import { searchView } from "./search-view";
+import { correctBrandTypos } from "@/lib/search/brand-typos";
 
 /**
  * Internal search results are never for the index — `route-policy.ts` says so, and this is
@@ -115,14 +116,31 @@ async function SearchContent({
 		: "relevance";
 
 	// Search using Saleor
-	const result = await searchProducts({
-		query,
-		channel: params.channel,
-		limit: 20,
-		cursor,
-		direction,
-		sortBy,
-	});
+	const search = (text: string) =>
+		searchProducts({
+			query: text,
+			channel: params.channel,
+			limit: 20,
+			cursor,
+			direction,
+			sortBy,
+		});
+	let result = await search(query);
+	let shownQuery = query;
+	let correctedFrom: string | null = null;
+
+	// Nothing found, and a word is one or two letters away from a maker the shop sells
+	// ("tule" → "thule"): ask again with the maker, and say so (`brand-typos.ts`). The same
+	// correction runs on every page of the answer, so pagination and sorting stay consistent.
+	if (searchView(result) === "empty") {
+		const corrected = correctBrandTypos(query);
+		const retried = corrected ? await search(corrected) : null;
+		if (corrected && retried && searchView(retried) === "results") {
+			result = retried;
+			shownQuery = corrected;
+			correctedFrom = query;
+		}
+	}
 
 	const { products, pagination } = result;
 	const view = searchView(result);
@@ -140,7 +158,12 @@ async function SearchContent({
 			{/* Header with count and sort */}
 			<div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<h1 className="text-2xl font-semibold">{t("resultsFor", { query })}</h1>
+					<h1 className="text-2xl font-semibold">{t("resultsFor", { query: shownQuery })}</h1>
+					{correctedFrom && (
+						<p className="text-muted-foreground mt-1 text-sm">
+							{t("correctedFrom", { query: correctedFrom })}
+						</p>
+					)}
 					<p className="text-muted-foreground mt-1 text-sm">
 						{pagination.totalCountIsEstimate ? "≥ " : ""}
 						{/* `plp.productCount` already carries each locale's plural rules — Slovak,

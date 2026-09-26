@@ -834,7 +834,8 @@
 		"metaTitle": "Căutare produse",
 		"metaDescription": "Rezultatele căutării în oferta {siteName}.",
 		"unavailableTitle": "Căutarea este temporar indisponibilă",
-		"unavailableHelp": "Nu am putut încărca acum rezultatele pentru „{query}”. Încercați din nou peste puțin timp sau răsfoiți categoriile noastre."
+		"unavailableHelp": "Nu am putut încărca acum rezultatele pentru „{query}”. Încercați din nou peste puțin timp sau răsfoiți categoriile noastre.",
+		"correctedFrom": "Nu am găsit nimic pentru „{query}”, așa că afișăm rezultatele pentru cea mai apropiată marcă."
 	},
 	"account": {
 		"welcomeBack": "Bine ați revenit",

@@ -30,5 +30,6 @@ describe("searchView", () => {
 		expect(messages.search.unavailableTitle).toBeTruthy();
 		expect(messages.search.unavailableHelp).toContain("{query}");
 		expect(messages.common.retry).toBeTruthy();
+		expect(messages.search.correctedFrom).toContain("{query}");
 	});
 });

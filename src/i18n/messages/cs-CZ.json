@@ -834,7 +834,8 @@
 		"metaTitle": "Vyhledávání produktů",
 		"metaDescription": "Výsledky vyhledávání v nabídce {siteName}.",
 		"unavailableTitle": "Vyhledávání je dočasně nedostupné",
-		"unavailableHelp": "Výsledky pro „{query}“ se nám teď nepodařilo načíst. Zkuste to za chvíli znovu nebo si projděte naše kategorie."
+		"unavailableHelp": "Výsledky pro „{query}“ se nám teď nepodařilo načíst. Zkuste to za chvíli znovu nebo si projděte naše kategorie.",
+		"correctedFrom": "Pro „{query}“ jsme nic nenašli, proto zobrazujeme výsledky pro nejbližší značku."
 	},
 	"account": {
 		"welcomeBack": "Vítejte zpět",

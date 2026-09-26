@@ -834,7 +834,8 @@
 		"metaTitle": "Ricerca prodotti",
 		"metaDescription": "Risultati della ricerca nel catalogo {siteName}.",
 		"unavailableTitle": "La ricerca non è temporaneamente disponibile",
-		"unavailableHelp": "Al momento non è stato possibile caricare i risultati per «{query}». Riprova tra poco o sfoglia le nostre categorie."
+		"unavailableHelp": "Al momento non è stato possibile caricare i risultati per «{query}». Riprova tra poco o sfoglia le nostre categorie.",
+		"correctedFrom": "Non abbiamo trovato nulla per «{query}», quindi mostriamo i risultati per il marchio più simile."
 	},
 	"account": {
 		"welcomeBack": "Bentornato",
