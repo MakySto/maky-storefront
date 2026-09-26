@@ -3,6 +3,7 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 import { main as guardLiveBuild } from "./scripts/ops/guard-live-build.mjs";
 import { CMS_MEDIA_BASE_URL } from "./src/config/cms-media.js";
+import { HTML_LIMITED_BOTS } from "./src/config/html-limited-bots.js";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const cmsMediaBaseUrl = new URL(CMS_MEDIA_BASE_URL);
@@ -13,6 +14,10 @@ const config = {
 	// Enables mixing static, cached, and dynamic content in a single route.
 	// See: https://nextjs.org/docs/app/getting-started/cache-components
 	cacheComponents: true,
+
+	// Google's crawlers get the metadata in <head>, like Bingbot and the share previews already
+	// do — see src/config/html-limited-bots.js. Visitors keep the streamed metadata.
+	htmlLimitedBots: HTML_LIMITED_BOTS,
 
 	// Optimize barrel file imports for better bundle size and cold start performance
 	// See: https://vercel.com/blog/how-we-optimized-package-imports-in-next-js
