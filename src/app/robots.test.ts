@@ -41,6 +41,13 @@ describe("robots.txt", () => {
 		expect(group("Amazonbot")?.allow).toBeUndefined();
 	});
 
+	// Owner decision 2026-09-26: the training crawler is refused, ChatGPT's search is not.
+	it("keeps GPTBot off the site without an Allow that would reopen part of it", () => {
+		expect(list(group("GPTBot")?.disallow)).toEqual(["/"]);
+		expect(group("GPTBot")?.allow).toBeUndefined();
+		expect(group("GPTBot")?.crawlDelay).toBeUndefined();
+	});
+
 	it("does not name the search engines or the user-triggered AI agents", () => {
 		const named = rules().map((rule) => rule.userAgent);
 		for (const agent of [

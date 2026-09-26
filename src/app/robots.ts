@@ -24,8 +24,17 @@ const CRAWL_DELAY_SECONDS = 10;
  * product lives at `/{market}/{slug}` beside every other page — so the only rule that covers
  * them is the whole site. It made 19 % of requests on 2026-09-22 and ~17k of the day's
  * `/_next/image?w=3840` encodes, for a shop that does not sell on Amazon.
+ *
+ * GPTBot joined it on 2026-09-26 (owner decision). Requests identifying as GPTBot were 84 % of
+ * the day's traffic up to 19:00 UTC — 125k, of which 57k `?_rsc=` data requests and 45k
+ * `/_next/image` — against 0.4 % for Googlebot. GPTBot is OpenAI's crawler for model training;
+ * ChatGPT's search uses OAI-SearchBot and user-triggered fetches use ChatGPT-User, which OpenAI
+ * documents as separate, independently configured agents. Those two stay unnamed, so they
+ * follow the catch-all group like every search engine. A user agent is a claim, not an
+ * identity: whether the traffic really comes from OpenAI is a matter of its published IP
+ * ranges, and whether it obeys this file shows only in the logs afterwards.
  */
-const BLOCKED_CRAWLERS = ["Amazonbot"] as const;
+const BLOCKED_CRAWLERS = ["Amazonbot", "GPTBot"] as const;
 
 export default function robots(): MetadataRoute.Robots {
 	const base = getBaseUrl();
