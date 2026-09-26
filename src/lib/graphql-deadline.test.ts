@@ -142,3 +142,48 @@ describe("a caller deadline reaches the wire", () => {
 		expect(result.ok).toBe(true);
 	});
 });
+
+describe("a caller deadline also ends the wait for a queue slot", () => {
+	// With every slot held by a slow Saleor, a query with a 1.5 s deadline used to sit in the
+	// queue for as long as the slow ones took — a Googlebot request for a product page took
+	// 43.8 s that way (2026-09-25). A caller who has given up must leave the queue at once.
+	it("returns at its deadline while every slot is held, and never reaches the wire", async () => {
+		fetchMock = neverAnswers();
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const holders = Array.from({ length: 12 }, () => new AbortController());
+		const held = holders.map((holder) => find(holder.signal));
+		// Let the twelve take their slots.
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		const onWire = fetchMock.mock.calls.length;
+
+		const started = Date.now();
+		const result = await find(AbortSignal.timeout(100));
+
+		expect(result.ok).toBe(false);
+		expect(Date.now() - started).toBeLessThan(2_000);
+		expect(fetchMock.mock.calls.length, "the queued query must not go out after its deadline").toBe(onWire);
+
+		for (const holder of holders) holder.abort();
+		await Promise.all(held);
+	});
+
+	it("still admits a queued caller without a deadline once a slot frees", async () => {
+		fetchMock = neverAnswers();
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const holders = Array.from({ length: 12 }, () => new AbortController());
+		const held = holders.map((holder) => find(holder.signal));
+		await new Promise((resolve) => setTimeout(resolve, 20));
+
+		const late = new AbortController();
+		const waiting = find(late.signal);
+		holders[0]!.abort();
+		await new Promise((resolve) => setTimeout(resolve, 50));
+		expect(fetchMock.mock.calls.length, "the waiting query takes the freed slot").toBe(13);
+
+		late.abort();
+		for (const holder of holders) holder.abort();
+		await Promise.all([...held, waiting]);
+	});
+});

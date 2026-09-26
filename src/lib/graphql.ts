@@ -153,15 +153,15 @@ class RequestQueue {
 	}
 
 	async enqueue<T>(fn: () => Promise<T>, signal?: AbortSignal): Promise<T> {
-		await this.waitForSlot();
+		await this.waitForSlot(signal);
 		this.activeRequests++;
 
 		try {
-			// Waiting for a slot is unbounded, so a job can outlive the deadline it was
-			// queued under. Starting it here would send a request after the caller had
-			// given up — which is exactly the "it went out later anyway" failure.
+			// The slot can come free in the same tick the deadline passes. Starting the job
+			// then would send a request after the caller had given up — which is exactly the
+			// "it went out later anyway" failure.
 			if (signal?.aborted) {
-				throw signal.reason instanceof Error ? signal.reason : new DOMException("Aborted", "AbortError");
+				throw abortReason(signal);
 			}
 			// The floor is skipped rather than slept for zero: a `setTimeout(…, 0)` per query
 			// is a macrotask hop on the render path for no reason once the floor is gone.
@@ -174,11 +174,33 @@ class RequestQueue {
 		}
 	}
 
-	private waitForSlot(): Promise<void> {
+	/**
+	 * A free slot, or the caller's deadline — whichever comes first.
+	 *
+	 * The wait used to be unbounded: with every slot held by a slow Saleor, a query carrying a
+	 * 1.5 s deadline sat in this queue for as long as the slow ones took, and only noticed its
+	 * deadline once a slot came free. On 2026-09-25 a Googlebot request for a product page took
+	 * 43.8 s that way. A caller that gave up leaves the queue at once; one without a deadline
+	 * waits as before.
+	 */
+	private waitForSlot(signal?: AbortSignal): Promise<void> {
 		if (this.activeRequests < this.maxConcurrent) {
 			return Promise.resolve();
 		}
-		return new Promise((resolve) => this.queue.push(resolve));
+		if (signal?.aborted) return Promise.reject(abortReason(signal));
+		return new Promise((resolve, reject) => {
+			const onAbort = () => {
+				const index = this.queue.indexOf(admit);
+				if (index !== -1) this.queue.splice(index, 1);
+				reject(abortReason(signal!));
+			};
+			const admit = () => {
+				signal?.removeEventListener("abort", onAbort);
+				resolve();
+			};
+			signal?.addEventListener("abort", onAbort, { once: true });
+			this.queue.push(admit);
+		});
 	}
 
 	private processQueue(): void {
@@ -187,6 +209,10 @@ class RequestQueue {
 			next?.();
 		}
 	}
+}
+
+function abortReason(signal: AbortSignal): Error {
+	return signal.reason instanceof Error ? signal.reason : new DOMException("Aborted", "AbortError");
 }
 
 function sleep(ms: number): Promise<void> {
