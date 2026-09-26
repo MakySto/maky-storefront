@@ -89,16 +89,20 @@ const config = {
 				protocol: "https",
 				hostname: "api.maky.store",
 			},
-			{
-				// Kept deliberately. Narrowing this is a good idea and NOT this commit's job:
-				// it is CLAUDE.md §10 deployment configuration, it needs its own approval, and
-				// it needs an acceptance step that a homepage smoke test cannot give you.
-				// Removing it here returned HTTP 400 '"url" parameter is not allowed' for
-				// every cdn.maky.store image on a real production build — 142 broken images on
-				// one PLP — while /logo-deer.webp kept working, so the homepage looked fine.
-				// `next dev` cannot see this; only `next start` can.
-				hostname: "*",
-			},
+			// No `hostname: "*"` any more (owner GO, 2026-09-26). It let anyone use this
+			// server to fetch and re-encode an image from any host on the internet. Before it
+			// went, the last two days of nginx logs were read for every `/_next/image` source:
+			// 91 043 from https://cdn.maky.store/thumbnails, 282 from Saleor's
+			// https://api.maky.store/thumbnail fallback, 81 local — nothing else. Both hosts
+			// are listed above, and `next-image-allowlist.test.ts` checks them through Next's
+			// own 400 path, with every width those logged URLs use.
+			//
+			// Why this is not the July outage again (fixed in 58fa984, 2026-07-31): then, removing the wildcard
+			// returned 400 '"url" parameter is not allowed' for every cdn.maky.store image
+			// (142 broken on one PLP) because nothing ELSE admitted that host. The explicit
+			// cdn.maky.store entry exists since 58fa984. Accepting a change here still takes
+			// a `next start` of a production build with real image URLs — `next dev` and a
+			// homepage smoke test cannot see it.
 		],
 	},
 	typedRoutes: false,

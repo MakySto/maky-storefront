@@ -85,10 +85,53 @@ describe("next/image production optimizer", () => {
 		expect(result).not.toHaveProperty("errorMessage");
 	});
 
-	it("keeps the pre-existing wildcard until a separately accepted config hardening", () => {
-		expect(productionConfig.images.remotePatterns).toEqual(
+	// The widths `/_next/image` URLs used in production in the two days before the wildcard went
+	// (nginx, 2026-09-25/26). Sizes were not part of that change: every one must still validate.
+	const LOGGED_WIDTHS = [
+		"3840",
+		"96",
+		"750",
+		"640",
+		"384",
+		"828",
+		"256",
+		"1080",
+		"1920",
+		"48",
+		"2048",
+		"1200",
+	];
+
+	it.each(LOGGED_WIDTHS)("still accepts a product thumbnail at the logged width w=%s", (w) => {
+		const result = ImageOptimizerCache.validateParams(
+			request,
+			{
+				url: "https://cdn.maky.store/thumbnails/products/n15094-a-01_eca34cd3_thumbnail_4096.jpg",
+				w,
+				q: "75",
+			},
+			productionConfig,
+			false,
+		);
+		expect(result).not.toHaveProperty("errorMessage");
+	});
+
+	// Owner GO 2026-09-26: the optimizer is no longer an image proxy for the whole internet.
+	it.each([
+		"https://example.com/photo.jpg",
+		"https://cdn.maky.store.example.com/thumbnails/x.jpg",
+		"http://cdn.maky.store/thumbnails/products/x.jpg",
+	])("refuses %s", (url) => {
+		expect(productionConfig.images.remotePatterns).not.toEqual(
 			expect.arrayContaining([expect.objectContaining({ hostname: "*" })]),
 		);
+		const result = ImageOptimizerCache.validateParams(
+			request,
+			{ url, w: "640", q: "75" },
+			productionConfig,
+			false,
+		);
+		expect(result).toHaveProperty("errorMessage");
 	});
 
 	it("keeps the parser and exact Next pattern aligned with the provider media fixture", () => {
@@ -96,9 +139,9 @@ describe("next/image production optimizer", () => {
 		expect(parsedMedia.kind).toBe("ok");
 		if (parsedMedia.kind !== "ok") return;
 
-		// Remove the broad production wildcard for this assertion. Otherwise it would hide
-		// the exact regression this guard exists to catch: parser and optimizer origins
-		// drifting apart while an unrelated wildcard still happens to admit the URL.
+		// Filtered anyway, should a broad wildcard ever come back: it would hide the exact
+		// regression this guard exists to catch — parser and optimizer origins drifting apart
+		// while an unrelated wildcard still happens to admit the URL.
 		const strictConfig = {
 			...productionConfig,
 			images: {
