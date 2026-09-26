@@ -1,6 +1,7 @@
 import { type Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { getLocaleFromChannel } from "@/config/locale";
+import { formatPageTitle } from "@/config/brand";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { marketHasRoute } from "@/lib/route-policy";
 import { SignUpForm } from "@/ui/components/sign-up-form";
@@ -10,7 +11,7 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "account.meta" });
 	return {
 		// Was the English "Create Account" in every market until 2026-09-26.
-		title: t("signUpTitle"),
+		title: formatPageTitle(t("signUpTitle")),
 		description: t("signUpDescription"),
 		// Kept out of the index by a robots.txt Disallow until now. That rule had to go
 		// so Googlebot can see the 404s on the junk URLs it already indexed, and a

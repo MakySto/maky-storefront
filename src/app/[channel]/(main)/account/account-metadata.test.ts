@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { createTranslator } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { formatPageTitle } from "@/config/brand";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 
 /**
@@ -53,7 +54,7 @@ describe.each(PAGES)("$name metadata", ({ load: loadPage, key }) => {
 			const { generateMetadata } = await loadPage();
 			const metadata = await generateMetadata({ params: Promise.resolve({ channel: saleorSlug }) });
 
-			expect(metadata.title).toBe(load(locale).account.meta[key]);
+			expect(metadata.title).toBe(formatPageTitle(load(locale).account.meta[key]));
 			expect(metadata.robots).toEqual({ index: false, follow: true });
 		},
 	);
