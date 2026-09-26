@@ -62,12 +62,29 @@ type Product = NonNullable<ProductDetailsQuery["product"]>;
  */
 type LocalizedProduct = Product & { baseSlug: string };
 
+/**
+ * The most a product page's own product may take to arrive, retries included.
+ *
+ * It had no bound but the transport's: 15 s per attempt, three retries with back-off — about a
+ * minute, past nginx's 60 s. A crawler that is served the finished page (`htmlLimitedBots`)
+ * waits for this answer before the first byte, and on 2026-09-25 one waited 43.8 s. A healthy
+ * answer takes ~0.1 s; past this budget the page takes its "temporarily unavailable" path, which
+ * is never cached and recovers on the next request. Generous on purpose: a visitor would rather
+ * wait a few seconds for a slow Saleor than see that state, and a crawler is not held by it —
+ * while Saleor is unwell the proxy answers crawlers 503 before any rendering (`saleorUnwell`).
+ * Measured on a preview with every Saleor query slowed by 8 s: 8.4 s with a 6 s budget, against
+ * about a minute without one.
+ */
+const PRODUCT_DEADLINE_MS = 8_000;
+
 async function fetchProductOutcome(
 	slug: string,
 	channel: string,
 	locale: string,
 ): Promise<ResourceOutcome<LocalizedProduct>> {
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
+	// One budget for the whole lookup, however many slug languages it tries.
+	const signal = AbortSignal.timeout(PRODUCT_DEADLINE_MS);
 	const result = await lookupBySlug(
 		locale,
 		(data: ProductDetailsQuery) => data.product,
@@ -87,6 +104,7 @@ async function fetchProductOutcome(
 				// the `"use cache"` entry is the only cache, and its tags (see
 				// `product-cache-tags.ts`) are the whole invalidation story.
 				revalidate: isSourceLocale(locale) ? 300 : 0,
+				signal,
 			}),
 	);
 

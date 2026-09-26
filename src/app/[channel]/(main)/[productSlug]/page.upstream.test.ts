@@ -130,7 +130,9 @@ describe("PDP metadata when Saleor fails", () => {
 		expect(meta.alternates?.languages).toBeUndefined();
 	});
 
-	it("a) the other markets are asked once, with a deadline, while the page's own product keeps its retries", async () => {
+	// The page's own product keeps its retries, inside a deadline of its own: without one a slow
+	// Saleor held a crawler that is served the finished page for 43.8 s (2026-09-25).
+	it("a) the other markets are asked once, with a deadline, while the page's own product keeps its retries within its own", async () => {
 		answers["de-eur"] = "fail";
 		await metadataFor();
 
@@ -139,7 +141,7 @@ describe("PDP metadata when Saleor fails", () => {
 		expect(own.length).toBeGreaterThan(0);
 		for (const call of own) {
 			expect(call.retry).toBeUndefined();
-			expect(call.signal).toBeUndefined();
+			expect(call.signal).toBeInstanceOf(AbortSignal);
 		}
 		expect(others).toHaveLength(1);
 		expect(others[0]!.query).toMatch(/^query ProductMarketPresence/);
