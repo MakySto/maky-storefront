@@ -79,6 +79,30 @@ export function hreflangEntriesFor(markets: readonly string[], path: string = ""
 	return entriesFor(markets, base, normalizedPath);
 }
 
+/**
+ * hreflang for the market's main product listing, `/{market}/products` — that page only.
+ *
+ * `eligibleMarkets` refuses the catalogue segments on purpose, and that rule stays: a product slug
+ * under `/sk` says nothing about `/de`. The listing itself is not a product, though. It is the
+ * segment's own page, which the route policy gives every market (`markets: "all"`), and which
+ * lists that market's own channel in its own language — so which markets have it follows from
+ * the policy alone, exactly as for a static page. It had no hreflang in any market until
+ * 2026-09-26, although all twelve are in the sitemap.
+ *
+ * Deliberately not a helper for "a catalogue segment": `/znacky` is catalogue too and goes
+ * noindex in a market with no stocked brands, and an alternate pointing at a noindex page is the
+ * kind of non-reciprocal entry that gets a whole cluster ignored. This takes no path, so it can
+ * never be asked about a product URL either.
+ */
+export function productListingAlternates(): Record<string, string> | undefined {
+	const policy = routePolicyFor("products");
+	if (!policy?.indexable) return undefined;
+	return languageAlternatesFor(
+		indexableMarkets().filter((market) => marketHasRoute(market, "products")),
+		"/products",
+	);
+}
+
 /** `hreflang` map for an explicit market list, or `undefined` when there is nothing to say. */
 export function languageAlternatesFor(
 	markets: readonly string[],

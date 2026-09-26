@@ -208,3 +208,48 @@ describe("counterpartAlternates", () => {
 		});
 	});
 });
+
+describe("productListingAlternates", () => {
+	async function subject(markets: string) {
+		vi.resetModules();
+		vi.stubEnv("MAKY_LIVE_MARKETS", markets);
+		vi.stubEnv("MAKY_INDEXABLE_MARKETS", markets);
+		vi.stubEnv("NEXT_PUBLIC_STOREFRONT_URL", "https://maky.store");
+		return (await import("./hreflang")).productListingAlternates;
+	}
+
+	afterEach(() => vi.unstubAllEnvs());
+
+	it("links the main listing of every indexable market, with x-default on the first", async () => {
+		const all = Object.keys(CHANNEL_MAP).join(",");
+		const languages = (await subject(all))();
+		expect(Object.keys(languages ?? {})).toHaveLength(Object.keys(CHANNEL_MAP).length + 1);
+		for (const [market, config] of Object.entries(CHANNEL_MAP)) {
+			expect(languages?.[config.locale]).toBe(`https://maky.store/${market}/products`);
+		}
+		expect(languages?.["x-default"]).toBe("https://maky.store/sk/products");
+	});
+
+	it("leaves out a market that is live but not indexable", async () => {
+		vi.resetModules();
+		vi.stubEnv("MAKY_LIVE_MARKETS", "sk,cz,de");
+		vi.stubEnv("MAKY_INDEXABLE_MARKETS", "sk,de");
+		vi.stubEnv("NEXT_PUBLIC_STOREFRONT_URL", "https://maky.store");
+		const languages = (await import("./hreflang")).productListingAlternates();
+		expect(Object.values(languages ?? {})).not.toContain("https://maky.store/cz/products");
+	});
+
+	it("says nothing while only one market is indexable", async () => {
+		expect((await subject("sk"))()).toBeUndefined();
+	});
+
+	// The catalogue rule itself is unchanged: a product URL still gets no alternates.
+	it("does not open the catalogue rule to product URLs", async () => {
+		vi.resetModules();
+		vi.stubEnv("MAKY_LIVE_MARKETS", "sk,cz,de");
+		vi.stubEnv("MAKY_INDEXABLE_MARKETS", "sk,cz,de");
+		const { buildHreflangAlternates } = await import("./hreflang");
+		expect(buildHreflangAlternates("/products/thule-motion-3")).toEqual([]);
+		expect(buildHreflangAlternates("/products")).toEqual([]);
+	});
+});

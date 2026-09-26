@@ -11,7 +11,7 @@ import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/fi
 import { resolveCategorySlugsToIds } from "@/ui/components/plp/filter-utils.server";
 import { ProductsPageClient } from "./products-client";
 import { brandConfig } from "@/config/brand";
-import { buildCanonicalUrl } from "@/lib/seo/hreflang";
+import { buildCanonicalUrl, productListingAlternates } from "@/lib/seo/hreflang";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
 import {
@@ -41,10 +41,11 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "plp" });
 
 	const canonical = buildCanonicalUrl(REVERSE_MAP[channel] || channel, "/products");
+	const languages = productListingAlternates();
 	return {
 		title: `${t("allProducts")} | ${brandConfig.siteName}`,
 		description: t("allProductsDescription"),
-		alternates: { canonical },
+		alternates: { canonical, ...(languages ? { languages } : {}) },
 		openGraph: marketOpenGraph(channel, canonical),
 	};
 }
