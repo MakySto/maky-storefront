@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "schemaVersion": 2,
+  "eventId": "01928f3f-0000-7000-8000-000000000002",
+  "revalidated": ["cms:collection:pages", "cms:page:o-nas", "cms:page:o-firme"],
+  "targets": [
+    {
+      "market": "SK",
+      "locale": "sk",
+      "live": true,
+      "expect": "present",
+      "url": "https://maky.store/sk/o-nas"
+    },
+    {
+      "market": "CZ",
+      "locale": "cs",
+      "live": false,
+      "expect": "present",
+      "url": null,
+      "reason": "market-not-live"
+    }
+  ]
+}

@@ -3,7 +3,7 @@ import { HomeImageryDocument } from "@/gql/graphql";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { publishableProductImage } from "@/lib/product-image";
-import { getCmsScenery, type CmsScenery } from "@/lib/cms/scenery";
+import { getCmsScenery, type CmsScenery, type CmsSceneryPhoto } from "@/lib/cms/scenery";
 import {
 	ADVICE_SCENERY,
 	BANNER_SCENERY,
@@ -122,18 +122,26 @@ export async function getSceneryOrNone(channel: string): Promise<Scenery | null>
 	return mergeScenery(saleor, cms);
 }
 
-/** Pure, exported for the test: a CMS photo replaces the Saleor one for its placement. */
+/**
+ * Pure, exported for the test: a CMS photo replaces the Saleor one for its placement.
+ *
+ * A CMS photo is cropped around the editor's focal point (pages contract v3 §2) on every
+ * screen: Payload has one focal point per picture, not one per breakpoint.
+ */
 export function mergeScenery(saleor: Scenery | null, cms: CmsScenery | null): Scenery | null {
 	if (!saleor && !cms) return null;
-	const fromCms = (url: string): SceneryImage => ({
-		url,
-		position: "50% 50%",
-		mobilePosition: "50% 50%",
+	const fromCms = (photo: CmsSceneryPhoto): SceneryImage => ({
+		url: photo.url,
+		position: photo.position,
+		mobilePosition: photo.position,
 		source: "cms",
 	});
-	const bySlug = (base: Readonly<Record<string, SceneryImage>>, extra: Readonly<Record<string, string>>) => ({
+	const bySlug = (
+		base: Readonly<Record<string, SceneryImage>>,
+		extra: Readonly<Record<string, CmsSceneryPhoto>>,
+	) => ({
 		...base,
-		...Object.fromEntries(Object.entries(extra).map(([slug, url]) => [slug, fromCms(url)])),
+		...Object.fromEntries(Object.entries(extra).map(([slug, photo]) => [slug, fromCms(photo)])),
 	});
 	return {
 		hero: cms?.hero ? fromCms(cms.hero) : saleor?.hero ?? null,

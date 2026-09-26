@@ -43,3 +43,21 @@ export function readCmsConnection(): CmsConnection | null {
 		timeoutMs,
 	};
 }
+
+/**
+ * The storefront's `preview-reader` API key for `POST /api/pages/preview-resolve`
+ * (`__fixtures__/provider-v3/preview-v1.md`), or `null` when preview is not set up.
+ *
+ * Server-only, like everything in this file, and deliberately a SEPARATE credential from the
+ * Cloudflare Access pair above: that pair only opens the network boundary and every published
+ * read stays anonymous. This key identifies the storefront to Payload as the one machine
+ * identity allowed to resolve a signed preview token, and it is sent on that one request only
+ * — never on a published read (see `client.ts`).
+ *
+ * Missing means preview is off: `/api/cms/preview` answers "Náhľad nie je nastavený" and
+ * nothing else changes. Read at call time, for the same reason as the connection.
+ */
+export function readCmsPreviewApiKey(): string | null {
+	const key = process.env.PAYLOAD_PREVIEW_API_KEY?.trim();
+	return key ? key : null;
+}

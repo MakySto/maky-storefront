@@ -2,6 +2,7 @@ import { revalidateTag } from "next/cache";
 import { type NextRequest } from "next/server";
 import { readBearerToken, verifyPayloadRevalidateSecret } from "@/lib/cms/revalidate-auth";
 import { parseCmsRevalidateEvent, tagsForCmsEvent } from "@/lib/cms/revalidate-event";
+import { revalidationTargets } from "@/lib/cms/revalidate-targets";
 
 /**
  * Cache invalidation for Payload CMS content.
@@ -31,6 +32,14 @@ import { parseCmsRevalidateEvent, tagsForCmsEvent } from "@/lib/cms/revalidate-e
  *
  * That is why the cutover gate is worded as "the edit must appear by the second view".
  * It is not slack in the check — it is the documented semantics of this line.
+ *
+ * ## v1 and v2 bodies
+ *
+ * A v1 body is answered exactly as before: `{ revalidated, success }`. A v2 body
+ * (`schemaVersion: 2`, `__fixtures__/provider-v3/revalidation-event-v2.md`) additionally
+ * gets `schemaVersion`, its `eventId` and `targets` — the public URLs the CMS should check
+ * for the new revision, and the markets it should not, because they are not open. The
+ * targets never widen what is invalidated and never open a market; they only describe.
  */
 
 /** Only ever tags this endpoint derived itself — never a path or tag from the body. */
@@ -71,18 +80,46 @@ export async function POST(request: NextRequest) {
 	// authenticated, there is simply no cache entry the storefront holds for it.
 	revalidateDerivedTags(tags);
 
+	if (!event.v2) {
+		console.log(
+			"[cms-revalidate] ok",
+			JSON.stringify({
+				event: event.event,
+				entityType: event.entityType,
+				entitySlug: event.entitySlug,
+				slug: event.slug,
+				previousSlug: event.previousSlug,
+				locale: event.locale,
+				tags,
+			}),
+		);
+
+		return Response.json({ revalidated: tags, success: true });
+	}
+
+	const targets = revalidationTargets(event);
+
 	console.log(
 		"[cms-revalidate] ok",
 		JSON.stringify({
+			schemaVersion: 2,
+			eventId: event.v2.eventId,
 			event: event.event,
+			change: event.v2.change,
 			entityType: event.entityType,
 			entitySlug: event.entitySlug,
 			slug: event.slug,
 			previousSlug: event.previousSlug,
-			locale: event.locale,
 			tags,
+			targets: targets.map((target) => `${target.market}:${target.live ? "live" : target.reason}`),
 		}),
 	);
 
-	return Response.json({ revalidated: tags, success: true });
+	return Response.json({
+		success: true,
+		schemaVersion: 2,
+		eventId: event.v2.eventId,
+		revalidated: tags,
+		targets,
+	});
 }

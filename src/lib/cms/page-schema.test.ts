@@ -158,11 +158,12 @@ describe("parsePagesResponse — market-first candidate selection", () => {
 	});
 });
 
-describe("parsePagesResponse — an unsupported block rejects the whole document", () => {
-	it("refuses the document rather than rendering the supported blocks around the gap", () => {
-		// The behaviour this replaces returned status "ok" with the bannerGrid marked
-		// unsupported, and the renderer dropped it. The page looked complete, the
-		// publish reported success, and nobody found out.
+describe("parsePagesResponse — an unsupported block", () => {
+	it("is skipped on an editorial page, with a diagnostic, and the supported blocks render", () => {
+		// Pages contract v3 (`__fixtures__/provider-v3/pages-content.md` §1). v2 refused the
+		// whole document here; the silent drop that rule was written against is now a logged
+		// `block-skipped` warning, and the CMS refuses to publish such a block in the first
+		// place.
 		const result = parsePagesResponse(
 			published({
 				layout: [
@@ -171,7 +172,33 @@ describe("parsePagesResponse — an unsupported block rejects the whole document
 				],
 			}),
 		);
+		expect(result.status).toBe("ok");
+		if (result.status !== "ok") return;
+		expect(result.page.layout.map((block) => block.blockType)).toEqual(["richText"]);
+		expect(result.warnings).toEqual([
+			{
+				code: "block-skipped",
+				index: 1,
+				blockType: "bannerGrid",
+				nodeType: null,
+				reason: "layout[1] has unsupported blockType bannerGrid",
+			},
+		]);
+	});
+
+	it("still refuses the whole document on a legal page", () => {
+		const result = parsePagesResponse(
+			published({
+				legalMetadata: { documentType: "legal", legalVersion: "1.0", effectiveFrom: null },
+				layout: [
+					{ blockType: "richText", content: lexical, markets: null },
+					{ blockType: "bannerGrid", markets: null },
+				],
+			}),
+		);
 		expect(result.status).toBe("invalid");
+		if (result.status !== "invalid") return;
+		expect(result.violation.blockType).toBe("bannerGrid");
 	});
 
 	it("names the document and the offending block type, so the log can be acted on", () => {

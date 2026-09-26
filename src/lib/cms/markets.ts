@@ -37,8 +37,27 @@ const MARKET_TO_PAYLOAD_LOCALE: Record<MarketCode, PayloadLocale> = {
 
 const MARKET_CODES = new Set<string>(Object.keys(MARKET_TO_PAYLOAD_LOCALE));
 
+/** All twelve, in Payload's own order — the order its events list them in. */
+export const ALL_MARKET_CODES = Object.keys(MARKET_TO_PAYLOAD_LOCALE) as readonly MarketCode[];
+
+const PAYLOAD_LOCALES = new Set<string>(Object.values(MARKET_TO_PAYLOAD_LOCALE));
+
 export function isMarketCode(value: unknown): value is MarketCode {
 	return typeof value === "string" && MARKET_CODES.has(value);
+}
+
+export function isPayloadLocale(value: unknown): value is PayloadLocale {
+	return typeof value === "string" && PAYLOAD_LOCALES.has(value);
+}
+
+/**
+ * The storefront's own market slug (`sk`, `cz`, …) for a Payload market code.
+ *
+ * `CHANNEL_MAP[*].country` is the same ISO code Payload uses, so this is a lookup, not a
+ * second table. `null` only for a code no channel carries.
+ */
+export function friendlyMarketFor(market: MarketCode): string | null {
+	return Object.entries(CHANNEL_MAP).find(([, config]) => config.country === market)?.[0] ?? null;
 }
 
 /**

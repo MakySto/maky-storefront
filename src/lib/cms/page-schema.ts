@@ -1,4 +1,5 @@
 import { parseBlock, readBlockMarkets, readMedia, type CmsBlock, type CmsBlockWarning } from "./blocks";
+import { isContentReady } from "./content-readiness";
 import { isMarketCode, isVisibleInMarket, type MarketCode } from "./markets";
 
 // Re-exported so consumers keep importing the page contract from one place; the block
@@ -36,29 +37,42 @@ export type {
  * `empty` and `market-mismatch` are authoritative absences and must NOT resurrect a stale fallback.
  * `invalid` means we cannot trust what we got and must fall back.
  *
- * ## All-or-nothing
+ * ## A block that cannot be rendered is skipped — on an editorial page
  *
- * A document is rendered whole or not at all. Anything the storefront cannot render
- * faithfully — an unsupported `blockType`, an unknown content-bearing Lexical node —
- * makes the entire candidate `invalid` rather than being skipped.
+ * Pages contract v3 (`__fixtures__/provider-v3/pages-content.md` §1) replaced the old
+ * all-or-nothing rule, and the two kinds of page now answer differently:
  *
- * The rejected alternative was to drop the offending part and render the rest. It
- * produces a page that looks fine, a publish that reported success, and an editor who
- * never learns a paragraph is missing. A page that visibly reverts to its bootstrap
- * copy is a worse-looking failure and a far better one: it is noticed. The cost is
- * real and worth stating — adding a block type in Payload takes this route back to its
- * code fallback until the storefront learns to render it.
+ *   editorial   an unsupported `blockType`, or a block that fails validation (an unknown
+ *               Lexical node, a disallowed URL, missing required content, media without
+ *               alt text), is SKIPPED. The other blocks render. Each skip is reported as a
+ *               `block-skipped` warning — index, block type, node type, reason, never the
+ *               block's content — and `client.ts` logs it as `[cms] block-skipped`.
+ *   legal       `legalMetadata.documentType === "legal"` stays fail-closed: one bad block
+ *               makes the whole document `invalid`, because a missing paragraph of legal
+ *               text changes what the text says.
+ *
+ * The checks themselves are not softened. A block that breaks one — link protocols, the
+ * media origin, locale without fallback, no raw HTML — is not rendered; the difference is
+ * only whether its neighbours are.
+ *
+ * Skipping must never produce an empty success. When blocks were skipped and nothing is
+ * left to show in this market — or what is left no longer satisfies the route's body
+ * contract (`isContentReady`) — the document is `invalid`, exactly as v2 treated it, so the
+ * route falls back to its bootstrap or its "temporarily unavailable" state with `noindex`.
+ * The second half matters for `o-nas`: a skipped rich-text body next to a surviving image
+ * would otherwise read as an authoritative "no content here" and 404 the About page.
+ *
+ * The v2 argument for all-or-nothing — a page that silently loses a paragraph — is answered
+ * by the provider now refusing to publish an unsupported block at all (its readiness check),
+ * which leaves skipping as the second line of defence for old data, plus the log line.
  *
  * This does not turn optional presentation metadata into page availability. A supported
  * Page/Post link whose destination has no consumer route and a harmless relative URL keep
  * their visible label without an `href`; an unusable optional `meta.image` is omitted. A
  * structurally valid optional hero upload whose MIME is outside the provider image contract
- * is omitted too. Each degradation is logged. Unknown relationship collections, malformed
- * wrappers, unsafe URL schemes and unsupported required media remain hard failures. In other
- * words, the words stay all-or-nothing; only a destination or optional preview that cannot be
- * emitted safely may disappear.
+ * is omitted too. Each degradation is logged.
  *
- * ## All-or-nothing is about CONTENT, not about key sets
+ * ## Validation is about CONTENT, not about key sets
  *
  * The rule above fires on things the storefront would have to render and cannot: an
  * unsupported `blockType`, a content-bearing Lexical node it has no case for. It does
@@ -117,12 +131,37 @@ export interface CmsContractViolation {
 	readonly nodeType: string | null;
 }
 
+/**
+ * One block an editorial page rendered without. Carries enough to find the block in
+ * Payload and nothing of what it says.
+ */
+export interface CmsBlockSkipped {
+	readonly code: "block-skipped";
+	/** Position in the document's `layout`, before market filtering. */
+	readonly index: number;
+	/** The block's own `blockType`, whatever it was — `null` when it had none. */
+	readonly blockType: string | null;
+	/** The Lexical node type that made it unrenderable, when that was the cause. */
+	readonly nodeType: string | null;
+	readonly reason: string;
+}
+
 export type CmsParseWarning =
 	| CmsBlockWarning
+	| CmsBlockSkipped
 	| {
 			readonly code: "meta-image-omitted";
 			readonly reason: string;
 	  };
+
+export interface CmsPageParseOptions {
+	/**
+	 * Admit a document whose `_status` is `draft`. Only the preview path sets this: the
+	 * CMS answers `preview-resolve` with exactly the version the signed token names, which
+	 * may be a draft. Every published read keeps refusing one.
+	 */
+	readonly allowDraft?: boolean;
+}
 
 export type CmsPageParse =
 	| { readonly status: "ok"; readonly page: CmsPage; readonly warnings: readonly CmsParseWarning[] }
@@ -186,7 +225,23 @@ function parseMeta(value: unknown): MetaResult {
 	};
 }
 
-export function parsePagesResponse(raw: unknown, market?: MarketCode): CmsPageParse {
+/** `legalMetadata.documentType === "legal"`; any other value, or none, is editorial. */
+function isLegalDocument(doc: Record<string, unknown>): boolean {
+	const group = doc.legalMetadata;
+	return isRecord(group) && group.documentType === "legal";
+}
+
+function declaredBlockType(entry: unknown): string | null {
+	return isRecord(entry) && typeof entry.blockType === "string" && entry.blockType.length > 0
+		? entry.blockType
+		: null;
+}
+
+export function parsePagesResponse(
+	raw: unknown,
+	market?: MarketCode,
+	options: CmsPageParseOptions = {},
+): CmsPageParse {
 	/** Identifying fields are filled in as soon as they are known and trusted. */
 	let documentId: string | null = null;
 	let documentSlug: string | null = null;
@@ -223,8 +278,9 @@ export function parsePagesResponse(raw: unknown, market?: MarketCode): CmsPagePa
 
 	// Defence in depth. The query already filters `_status=published`; refusing a
 	// non-published document here means a CMS-side change to that filter cannot
-	// quietly publish a draft to the storefront.
-	if (doc._status !== "published") {
+	// quietly publish a draft to the storefront. Only the preview path admits a draft.
+	const draftAdmitted = options.allowDraft === true && doc._status === "draft";
+	if (doc._status !== "published" && !draftAdmitted) {
 		return invalid(`docs[0]._status is ${JSON.stringify(doc._status)}, not published`);
 	}
 
@@ -245,21 +301,51 @@ export function parsePagesResponse(raw: unknown, market?: MarketCode): CmsPagePa
 		};
 	}
 
+	// Editorial pages skip what they cannot render; legal pages refuse the document.
+	const failClosed = isLegalDocument(doc);
+
 	const layout: CmsBlock[] = [];
 	const warnings: CmsParseWarning[] = [];
+	/** The first skip, kept for the violation if skipping leaves nothing to show. */
+	let firstSkip: { reason: string; blockType?: string; nodeType?: string } | null = null;
+	let skipped = 0;
+
 	for (const [index, entry] of doc.layout.entries()) {
 		// Filter each block before validating its content, as required by V2. We still
-		// validate the markets field itself, because an unknown market is an enum break.
+		// validate the markets field itself, because an unknown market is an enum break —
+		// one that hides the block, since there is no telling where it belongs.
 		const visibility = readBlockMarkets(entry, index);
-		if (!visibility.ok) return invalid(visibility.reason);
-		if (market && !isVisibleInMarket(visibility.markets, market)) continue;
+		if (visibility.ok && market && !isVisibleInMarket(visibility.markets, market)) continue;
+		const parsed = visibility.ok ? parseBlock(entry, index) : visibility;
 
-		const parsed = parseBlock(entry, index);
 		if (!parsed.ok) {
-			return invalid(parsed.reason, { blockType: parsed.blockType, nodeType: parsed.nodeType });
+			// `blockType` on a violation names an UNSUPPORTED type only; a supported block with
+			// a bad payload leaves it null, as it always has.
+			const failure = { reason: parsed.reason, blockType: parsed.blockType, nodeType: parsed.nodeType };
+			if (failClosed) return invalid(failure.reason, failure);
+
+			skipped += 1;
+			firstSkip ??= failure;
+			warnings.push({
+				code: "block-skipped",
+				index,
+				blockType: declaredBlockType(entry),
+				nodeType: parsed.nodeType ?? null,
+				reason: parsed.reason,
+			});
+			continue;
 		}
 		layout.push(parsed.block);
 		if (parsed.warnings) warnings.push(...parsed.warnings);
+	}
+
+	// Never an empty success: skipping that leaves this market with nothing to show — or
+	// without the body its route requires — is the v2 outcome, a document we cannot serve.
+	if (firstSkip && (layout.length === 0 || !isContentReady(slug, layout))) {
+		return invalid(
+			`${skipped} block(s) skipped, leaving nothing this market can render; first: ${firstSkip.reason}`,
+			firstSkip,
+		);
 	}
 
 	const meta = parseMeta(doc.meta);

@@ -1,0 +1,9 @@
+{
+  "401-no-identity": { "status": 401, "body": { "ok": false, "error": "Unauthorized", "data": null } },
+  "403-not-preview-reader": { "status": 403, "body": { "ok": false, "error": "Forbidden", "data": null } },
+  "401-invalid-token": { "status": 401, "body": { "ok": false, "code": "PREVIEW_TOKEN_INVALID" } },
+  "401-expired-token": { "status": 401, "body": { "ok": false, "code": "PREVIEW_TOKEN_EXPIRED" } },
+  "404-document-unavailable": { "status": 404, "body": { "ok": false, "code": "PREVIEW_DOCUMENT_UNAVAILABLE" } },
+  "404-version-unavailable": { "status": 404, "body": { "ok": false, "code": "PREVIEW_VERSION_UNAVAILABLE" } },
+  "503-not-configured": { "status": 503, "body": { "ok": false, "code": "PREVIEW_NOT_CONFIGURED" } }
+}

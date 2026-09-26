@@ -2,6 +2,7 @@ import { GeistSans } from "geist/font/sans";
 import Script from "next/script";
 import { type ReactNode } from "react";
 
+import { isDraftModeEnabled } from "@/lib/cms/preview-session";
 import { analyticsUrlRedactionScript } from "./analytics-url-redaction";
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
@@ -33,22 +34,17 @@ const CF_WEB_ANALYTICS_TOKEN = process.env.NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN;
  * named "Geist" while next/font declares "GeistSans", so this preload ran on every page and
  * the text was drawn in the visitor's system font. brand.css now reads `--font-geist-sans`,
  * the variable this class sets on <html>, and `brand-fonts.test.ts` keeps it that way.
+ *
+ * No analytics at all during a CMS draft preview (`preview-v1.md`, „Súkromie a cache“): no
+ * tag manager (so no GA4, no Ads) and no Cloudflare beacon while Next's Draft Mode is on.
+ * Draft Mode is only ever switched on by `/api/cms/preview`, and reading it costs a
+ * prerender nothing — at build time it simply answers "off".
  */
 export function DocumentShell({ lang, children }: { lang: string; children: ReactNode }) {
 	return (
 		<html lang={lang} className={`${GeistSans.variable} min-h-dvh`}>
 			<body className="min-h-dvh font-sans">
-				{GTM_ID ? (
-					<noscript>
-						<iframe
-							src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
-							height="0"
-							width="0"
-							style={{ display: "none", visibility: "hidden" }}
-							title="Google Tag Manager"
-						/>
-					</noscript>
-				) : null}
+				<TagManagerNoscript />
 
 				{/* No <SpeedInsights />. It only works on Vercel's platform; this site is
 				    served by PM2 behind nginx, so its script 404s and the browser refuses
@@ -56,20 +52,47 @@ export function DocumentShell({ lang, children }: { lang: string; children: Reac
 				    Cloudflare Web Analytics below is the one that actually works. */}
 				{children}
 
-				{GTM_ID ? (
-					<>
-						{/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document --
-						    The rule recognises `app/layout.tsx` and this file is not one, but it IS
-						    rendered by both root layouts and nothing else — which is exactly the
-						    position the rule is protecting. The strategy is load-bearing: the consent
-						    defaults must be in dataLayer before the container below can read them, and
-						    so must the URL redaction appended to them (./analytics-url-redaction.ts),
-						    which keeps checkout, Stripe and password-reset values out of every hit. */}
-						<Script
-							id="maky-consent-default"
-							strategy="beforeInteractive"
-							dangerouslySetInnerHTML={{
-								__html: `
+				<AnalyticsScripts />
+			</body>
+		</html>
+	);
+}
+
+/** The tag manager's no-JavaScript fallback, where GTM asks for it: first in `<body>`. */
+async function TagManagerNoscript(): Promise<ReactNode> {
+	if (!GTM_ID || (await isDraftModeEnabled())) return null;
+	return (
+		<noscript>
+			<iframe
+				src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+				height="0"
+				width="0"
+				style={{ display: "none", visibility: "hidden" }}
+				title="Google Tag Manager"
+			/>
+		</noscript>
+	);
+}
+
+/** Consent defaults, the tag manager and the Cloudflare beacon — none of them in a preview. */
+async function AnalyticsScripts(): Promise<ReactNode> {
+	if (await isDraftModeEnabled()) return null;
+	return (
+		<>
+			{GTM_ID ? (
+				<>
+					{/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document --
+					    The rule recognises `app/layout.tsx` and this file is not one, but it IS
+					    rendered by both root layouts and nothing else — which is exactly the
+					    position the rule is protecting. The strategy is load-bearing: the consent
+					    defaults must be in dataLayer before the container below can read them, and
+					    so must the URL redaction appended to them (./analytics-url-redaction.ts),
+					    which keeps checkout, Stripe and password-reset values out of every hit. */}
+					<Script
+						id="maky-consent-default"
+						strategy="beforeInteractive"
+						dangerouslySetInnerHTML={{
+							__html: `
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('consent', 'default', {
@@ -87,42 +110,41 @@ try {
   if (s && s.consent) { gtag('consent', 'update', s.consent); }
 } catch (e) {}
 ${analyticsUrlRedactionScript}`,
-							}}
-						/>
-						{/* lazyOnload, not afterInteractive. The container and gtag/js are
-						    304 KB — 49% of all script bytes on the page — and they land in
-						    the middle of the TBT window: measured 183 ms of blocking time
-						    out of 284 ms total, and blocking both of them moved TBT from
-						    284 to 103 ms. Loading during idle after `load` keeps every tag,
-						    GA4, Ads and Consent Mode exactly as they are; it only stops them
-						    competing with the page's own hydration. The consent defaults
-						    above stay beforeInteractive, so dataLayer still carries the
-						    denied state before the container ever reads it. */}
-						<Script
-							id="maky-gtm"
-							strategy="lazyOnload"
-							dangerouslySetInnerHTML={{
-								__html: `
+						}}
+					/>
+					{/* lazyOnload, not afterInteractive. The container and gtag/js are
+					    304 KB — 49% of all script bytes on the page — and they land in
+					    the middle of the TBT window: measured 183 ms of blocking time
+					    out of 284 ms total, and blocking both of them moved TBT from
+					    284 to 103 ms. Loading during idle after `load` keeps every tag,
+					    GA4, Ads and Consent Mode exactly as they are; it only stops them
+					    competing with the page's own hydration. The consent defaults
+					    above stay beforeInteractive, so dataLayer still carries the
+					    denied state before the container ever reads it. */}
+					<Script
+						id="maky-gtm"
+						strategy="lazyOnload"
+						dangerouslySetInnerHTML={{
+							__html: `
 (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','${GTM_ID}');
 `,
-							}}
-						/>
-					</>
-				) : null}
-
-				{CF_WEB_ANALYTICS_TOKEN ? (
-					<Script
-						id="cf-web-analytics"
-						src="https://static.cloudflareinsights.com/beacon.min.js"
-						strategy="afterInteractive"
-						data-cf-beacon={JSON.stringify({ token: CF_WEB_ANALYTICS_TOKEN })}
+						}}
 					/>
-				) : null}
-			</body>
-		</html>
+				</>
+			) : null}
+
+			{CF_WEB_ANALYTICS_TOKEN ? (
+				<Script
+					id="cf-web-analytics"
+					src="https://static.cloudflareinsights.com/beacon.min.js"
+					strategy="afterInteractive"
+					data-cf-beacon={JSON.stringify({ token: CF_WEB_ANALYTICS_TOKEN })}
+				/>
+			) : null}
+		</>
 	);
 }

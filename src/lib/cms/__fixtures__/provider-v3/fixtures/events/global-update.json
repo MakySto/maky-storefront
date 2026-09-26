@@ -1,0 +1,45 @@
+{
+  "change": "update",
+  "dependents": [],
+  "entitySlug": "announcement-bar",
+  "entityType": "global",
+  "event": "update",
+  "eventId": "01928f3f-0000-7000-8000-00000000000a",
+  "locale": null,
+  "locales": [
+    "sk",
+    "cs",
+    "pl",
+    "hu",
+    "ro",
+    "de",
+    "it",
+    "fr",
+    "es",
+    "en"
+  ],
+  "markets": [
+    "SK",
+    "CZ",
+    "PL",
+    "HU",
+    "RO",
+    "AT",
+    "DE",
+    "IT",
+    "FR",
+    "ES",
+    "US",
+    "CA"
+  ],
+  "occurredAt": "2026-09-26T08:00:00.000Z",
+  "previousSlug": null,
+  "revision": "2026-09-26T07:59:58.412Z",
+  "routes": {
+    "current": null,
+    "previous": null
+  },
+  "schemaVersion": 2,
+  "slug": null,
+  "source": "maky-cms"
+}

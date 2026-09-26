@@ -465,20 +465,45 @@ describe("v2 block enums and links — malformed values fail closed", () => {
 	});
 });
 
-describe("v2 blocks — the fail-closed rule still covers everything", () => {
-	it("rejects a document with an unsupported block, naming the type", () => {
+describe("v2 blocks — an unrenderable block never renders (pages contract v3 §1)", () => {
+	// The v2 pack expects `reject-complete-candidate` for both fixtures below, and they stay
+	// byte-identical. Pages contract v3 (`__fixtures__/provider-v3/pages-content.md` §1)
+	// changed the expected OUTCOME for an editorial page: the offending block is skipped with
+	// a diagnostic and its neighbours render. Only these assertions moved.
+	it("skips an unsupported block between supported ones, naming the type", () => {
 		// The fixture puts `futureEditorial` BETWEEN two supported blocks, one of which is a
-		// cta the renderer now handles. Asserting only `invalid` would stop testing the
-		// right thing the moment every other block in the fixture became renderable.
+		// cta the renderer handles, so the neighbours on both sides must survive.
 		const result = parsePagesResponse(
 			fixture("fixtures/rest/page-unsupported-block-between-supported.sk.json"),
 		);
+		expect(result.status).toBe("ok");
+		if (result.status !== "ok") return;
+		expect(result.page.layout.map((block) => block.blockType)).toEqual(["richText", "cta"]);
+		expect(result.warnings).toEqual([
+			{
+				code: "block-skipped",
+				index: 1,
+				blockType: "futureEditorial",
+				nodeType: null,
+				reason: expect.stringContaining("futureEditorial"),
+			},
+		]);
+	});
+
+	it("still rejects the same document whole when it is a legal page", () => {
+		const response = fixture("fixtures/rest/page-unsupported-block-between-supported.sk.json") as {
+			docs: [Record<string, unknown>];
+		};
+		response.docs[0].legalMetadata = { documentType: "legal", legalVersion: "1.0", effectiveFrom: null };
+		const result = parsePagesResponse(response);
 		expect(result.status).toBe("invalid");
 		if (result.status !== "invalid") return;
 		expect(result.violation.blockType).toBe("futureEditorial");
 	});
 
-	it("rejects a document with an unsupported Lexical node", () => {
+	it("rejects a document whose only block carries an unsupported Lexical node — nothing is left", () => {
+		// Skipping the one rich-text block would leave an empty page, and v3 forbids an empty
+		// success: the document is invalid, as in v2, and the route falls back.
 		const result = parsePagesResponse(fixture("fixtures/rest/page-unsupported-lexical-node.sk.json"));
 		expect(result.status).toBe("invalid");
 		if (result.status !== "invalid") return;
@@ -562,10 +587,19 @@ describe("v2 blocks — market filtering, exactly as the manifest expects", () =
 		expect(hidden).toBeTruthy();
 		hidden!.blockType = "futureEditorial";
 
-		expect(parsePagesResponse(mutated, "SK").status).toBe("ok");
+		// SK never looks at the CZ block, so it has nothing to skip.
+		const sk = parsePagesResponse(mutated, "SK");
+		expect(sk.status).toBe("ok");
+		if (sk.status === "ok") expect(sk.warnings.filter((w) => w.code === "block-skipped")).toEqual([]);
+
+		// CZ does, and under pages contract v3 §1 it skips that block and renders the rest.
 		const cz = parsePagesResponse(mutated, "CZ");
-		expect(cz.status).toBe("invalid");
-		if (cz.status === "invalid") expect(cz.violation.blockType).toBe("futureEditorial");
+		expect(cz.status).toBe("ok");
+		if (cz.status !== "ok") return;
+		expect(cz.page.layout.some((block) => block.id === excludedId)).toBe(false);
+		expect(cz.warnings).toContainEqual(
+			expect.objectContaining({ code: "block-skipped", blockType: "futureEditorial" }),
+		);
 	});
 });
 

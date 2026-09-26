@@ -16,8 +16,10 @@ import { CMS_MEDIA_BASE_URL } from "@/config/cms-media";
  *
  * ## The rule every parser here obeys
  *
- * Required content missing means the whole candidate is rejected, exactly as an
- * unsupported `blockType` does. The required set is the provider's, not ours
+ * Required content missing fails the block, exactly as an unsupported `blockType` does.
+ * What a failed block costs is the page parser's decision, not this file's: an editorial
+ * page renders without it, a legal page is rejected whole (pages contract v3 §1,
+ * `page-schema.ts`). The required set is the provider's, not ours
  * (`__fixtures__/provider-v2/README.md`):
  *
  *   hero        heading
@@ -36,8 +38,8 @@ import { CMS_MEDIA_BASE_URL } from "@/config/cms-media";
  *
  * `richText.content`, `faq.items[].answer` and `mediaText.content` are all Lexical
  * documents and all three run the same validation. Forgetting one would leave a hole
- * exactly where the fail-closed rule is supposed to be total — an unsupported node inside
- * an FAQ answer would render as a silently truncated answer.
+ * exactly where validation is supposed to be total — an unsupported node inside an FAQ
+ * answer would render as a silently truncated answer instead of a skipped block.
  */
 
 /** Fields every block carries, whatever its type. */
@@ -59,6 +61,33 @@ export interface CmsMedia {
 	readonly mimeType: string;
 	/** Generated variants, by name — `thumbnail`, `card`, `content`, `hero`, `og`. */
 	readonly sizes: Readonly<Record<string, { readonly url: string; readonly width: number | null }>>;
+	/**
+	 * The editor's focal point, in percent of the width and height (pages contract v3 §2).
+	 * Always a number from 0 to 100: missing or invalid is the centre, 50.
+	 */
+	readonly focalX: number;
+	readonly focalY: number;
+}
+
+/** The centre of the picture — what a missing or invalid focal value means. */
+const FOCAL_CENTRE = 50;
+
+/**
+ * One focal coordinate. The contract (`pages-content.md` §2) makes a missing or invalid value
+ * the centre, so this never fails the media — a bad focal point is a presentation detail,
+ * not a reason to drop a picture.
+ */
+function readFocal(value: unknown): number {
+	if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 100) return FOCAL_CENTRE;
+	return Math.round(value * 100) / 100;
+}
+
+/**
+ * `object-position` for a CMS picture cropped with `object-fit: cover`, so the crop keeps
+ * what the editor marked as the subject: `<focalX>% <focalY>%`.
+ */
+export function cmsMediaObjectPosition(media: Pick<CmsMedia, "focalX" | "focalY">): string {
+	return `${media.focalX}% ${media.focalY}%`;
 }
 
 /**
@@ -167,7 +196,7 @@ export type CmsBlock =
 /**
  * The block types this storefront renders, in the contract's own order.
  *
- * A `blockType` outside this set rejects the whole candidate. The set is exported so a
+ * A `blockType` outside this set fails its block. The set is exported so a
  * test can assert the renderer has a case for every member — the two drifting apart is
  * the silent-partial-render failure this pilot exists to prevent, and a comment asking
  * two files to stay in sync would not survive contact with an eighth block.
@@ -398,6 +427,8 @@ export function readMedia(value: unknown): MediaResult {
 			height: height.value,
 			mimeType,
 			sizes,
+			focalX: readFocal(value.focalX),
+			focalY: readFocal(value.focalY),
 		},
 	};
 }
@@ -517,7 +548,7 @@ function checkLexical(value: unknown, where: string): BlockFailure | null {
 }
 
 /**
- * Parse one block, or explain why the whole candidate must be rejected.
+ * Parse one block, or explain why it cannot be rendered.
  *
  * The dispatch below is exhaustive over `SupportedBlockType` and ends in a `never`
  * assignment, so adding an eighth block type to the contract fails the build here rather
@@ -532,8 +563,8 @@ export function parseBlock(value: unknown, index: number): BlockResult {
 		return { ok: false, reason: `${at} has no blockType` };
 	}
 
-	// An unsupported block type rejects the document. Rendering the rest would show a page
-	// the editor never published and never gets told about.
+	// An unsupported block type fails the block, named, so the page parser can skip it with a
+	// diagnostic (editorial) or refuse the document (legal).
 	if (!isSupportedBlockType(blockType)) {
 		return {
 			ok: false,

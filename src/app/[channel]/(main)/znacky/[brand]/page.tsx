@@ -8,6 +8,7 @@ import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { ProductListPaginatedDocument } from "@/gql/graphql";
 import { getBrand, type Brand } from "@/lib/brands/catalog";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
+import { cmsMediaObjectPosition } from "@/lib/cms/blocks";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { BRAND_ATTRIBUTE_SLUG } from "@/lib/listing/facet-params";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
@@ -115,7 +116,13 @@ async function BrandContent({ params: paramsPromise, searchParams: searchParamsP
 				description={brand.shortDescription ?? t("brandDescription", { brand: brand.name })}
 				photo={
 					brand.heroImage
-						? { url: brand.heroImage.url, position: "50% 50%", mobilePosition: "50% 50%", source: "cms" }
+						? {
+								url: brand.heroImage.url,
+								// The editor's focal point (pages contract v3 §2); the centre when unset.
+								position: cmsMediaObjectPosition(brand.heroImage),
+								mobilePosition: cmsMediaObjectPosition(brand.heroImage),
+								source: "cms",
+							}
 						: null
 				}
 				breadcrumbs={[

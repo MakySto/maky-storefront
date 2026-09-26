@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import { type CmsBlock } from "./blocks";
+import { cmsMediaObjectPosition, type CmsBlock } from "./blocks";
 import { cmsCollectionTag, cmsPageTag } from "./cache-tags";
 import { fetchCmsPage } from "./client";
 import { marketForChannel, payloadLocaleForMarket } from "./markets";
@@ -28,37 +28,45 @@ import { marketForChannel, payloadLocaleForMarket } from "./markets";
  */
 export const CMS_SCENERY_SLUG = "storefront-obrazky";
 
+/** One placed photo: its URL and where to crop it — the editor's focal point. */
+export type CmsSceneryPhoto = {
+	readonly url: string;
+	/** `object-position`, `<focalX>% <focalY>%` (pages contract v3 §2); `50% 50%` when unset. */
+	readonly position: string;
+};
+
 export type CmsScenery = {
-	readonly hero: string | null;
-	readonly advice: string | null;
+	readonly hero: CmsSceneryPhoto | null;
+	readonly advice: CmsSceneryPhoto | null;
 	/** By category base slug. */
-	readonly tiles: Readonly<Record<string, string>>;
+	readonly tiles: Readonly<Record<string, CmsSceneryPhoto>>;
 	/** By category base slug. */
-	readonly banners: Readonly<Record<string, string>>;
+	readonly banners: Readonly<Record<string, CmsSceneryPhoto>>;
 };
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /** Pure half of `getCmsScenery`, exported for its test: page blocks → placed photos. */
 export function sceneryFromBlocks(blocks: readonly CmsBlock[]): CmsScenery {
-	const scenery = { hero: null as string | null, advice: null as string | null, tiles: {}, banners: {} } as {
-		hero: string | null;
-		advice: string | null;
-		tiles: Record<string, string>;
-		banners: Record<string, string>;
+	const scenery = { hero: null, advice: null, tiles: {}, banners: {} } as {
+		hero: CmsSceneryPhoto | null;
+		advice: CmsSceneryPhoto | null;
+		tiles: Record<string, CmsSceneryPhoto>;
+		banners: Record<string, CmsSceneryPhoto>;
 	};
 	for (const block of blocks) {
 		const anchor = block.anchorId?.trim().toLowerCase();
 		if (!anchor) continue;
-		const url =
-			block.blockType === "image" ? block.media.url : block.blockType === "hero" ? block.media?.url : null;
-		if (!url) continue;
+		const media = block.blockType === "image" ? block.media : block.blockType === "hero" ? block.media : null;
+		if (!media) continue;
+		const photo: CmsSceneryPhoto = { url: media.url, position: cmsMediaObjectPosition(media) };
 		// The first block for a placement wins, as it would read top to bottom in the editor.
-		if (anchor === "home-hero") scenery.hero ??= url;
-		else if (anchor === "advice") scenery.advice ??= url;
-		else if (anchor.startsWith("tile-") && SLUG.test(anchor.slice(5))) scenery.tiles[anchor.slice(5)] ??= url;
+		if (anchor === "home-hero") scenery.hero ??= photo;
+		else if (anchor === "advice") scenery.advice ??= photo;
+		else if (anchor.startsWith("tile-") && SLUG.test(anchor.slice(5)))
+			scenery.tiles[anchor.slice(5)] ??= photo;
 		else if (anchor.startsWith("banner-") && SLUG.test(anchor.slice(7)))
-			scenery.banners[anchor.slice(7)] ??= url;
+			scenery.banners[anchor.slice(7)] ??= photo;
 	}
 	return scenery;
 }
