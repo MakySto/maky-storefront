@@ -7,6 +7,7 @@ import { getLocaleFromChannel } from "@/config/locale";
 import { categoryUrlFor } from "@/config/category-routes";
 import { marketHref } from "@/lib/channel-map";
 import type { SceneryImage } from "@/lib/homepage/scenery";
+import { offersCategory, offersFullRange, type MarketAssortment } from "@/lib/market-assortment";
 import { HeroBenefits } from "./hero-benefits";
 
 /**
@@ -27,17 +28,27 @@ import { HeroBenefits } from "./hero-benefits";
  */
 export async function HeroSection({
 	channel,
+	assortment,
 	photo,
 	vehicleAction,
 	productCard,
 }: {
 	channel: string;
+	/** What this market sells — the lead and the second action name only that. */
+	assortment: MarketAssortment;
 	photo: SceneryImage | null;
 	vehicleAction?: ReactNode;
 	productCard?: ReactNode;
 }) {
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "home" });
-	const boxesHref = marketHref(channel, categoryUrlFor(channel, "stresne-boxy"));
+	// The approved second action is the roof boxes. A market that does not sell them — every
+	// foreign one on 2026-09-25, where it led to "Seite nicht gefunden" — gets the roof racks,
+	// and a market with neither gets no second action at all rather than a dead one.
+	const secondary = offersCategory(assortment, "stresne-boxy")
+		? { slug: "stresne-boxy", label: t("heroSecondaryCta") }
+		: offersCategory(assortment, "stresne-nosice")
+			? { slug: "stresne-nosice", label: t("heroSecondaryCtaRoofRacks") }
+			: null;
 
 	return (
 		<section className="relative">
@@ -98,18 +109,24 @@ export async function HeroSection({
 							{t("heroHeadline")}
 						</h1>
 						<p className="text-text-inverse/90 mt-5 max-w-xl text-base leading-relaxed text-pretty sm:text-lg lg:text-xl">
-							{t("heroLead")}
+							{offersFullRange(assortment) ? t("heroLead") : t("heroLeadRoofRacks")}
 						</p>
 
 						<div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-start">
 							{vehicleAction}
-							<Link
-								href={boxesHref}
-								className="border-text-inverse/85 bg-scrim/25 text-text-inverse hover:bg-text-inverse/12 focus-visible:ring-text-inverse inline-flex h-[3.25rem] items-center justify-center gap-2 rounded-xs border-2 px-6 text-base font-semibold backdrop-blur-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:outline-hidden"
-							>
-								{t("heroSecondaryCta")}
-								<ArrowRightIcon className="h-[1.125rem] w-[1.125rem]" strokeWidth={2.25} aria-hidden="true" />
-							</Link>
+							{secondary && (
+								<Link
+									href={marketHref(channel, categoryUrlFor(channel, secondary.slug))}
+									className="border-text-inverse/85 bg-scrim/25 text-text-inverse hover:bg-text-inverse/12 focus-visible:ring-text-inverse inline-flex h-[3.25rem] items-center justify-center gap-2 rounded-xs border-2 px-6 text-base font-semibold backdrop-blur-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:outline-hidden"
+								>
+									{secondary.label}
+									<ArrowRightIcon
+										className="h-[1.125rem] w-[1.125rem]"
+										strokeWidth={2.25}
+										aria-hidden="true"
+									/>
+								</Link>
+							)}
 						</div>
 					</div>
 

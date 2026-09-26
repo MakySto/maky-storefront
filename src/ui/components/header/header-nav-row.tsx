@@ -12,7 +12,8 @@ import {
 
 export async function HeaderNavRow({ channel }: { channel: string }) {
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "nav" });
-	const allCategories = ALL_CATEGORIES_NAV.map((item) => ({
+	// Only the shelves this market offers — the rule the row, the phone menu and the footer share.
+	const allCategories = (await visibleNavLinks(channel, ALL_CATEGORIES_NAV)).map((item) => ({
 		key: item.key,
 		href: localizedNavHref(channel, item.href),
 		label: t(item.key),

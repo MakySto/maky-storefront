@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
-import { BadgeCheckIcon, HeadsetIcon, ShieldCheckIcon, TruckIcon } from "lucide-react";
+import { BadgeCheckIcon, CarIcon, HeadsetIcon, ShieldCheckIcon, TruckIcon } from "lucide-react";
 import { getLocaleFromChannel } from "@/config/locale";
+import { stockedBrandSlugs } from "@/lib/brands/catalog";
 import { cn } from "@/lib/utils";
 
 /**
@@ -18,6 +19,23 @@ import { cn } from "@/lib/utils";
  * - `banner` — the foot of a category banner, desktop only (a phone's banner has no room);
  * - `band` — the warm strip that closes a listing, the brown icons drawn without a ring.
  */
+/** The makers `home.benefitBrandsText` names ("Thule, Yakima, Menabo a ďalšie") — keep in step. */
+const NAMED_BRANDS: readonly string[] = ["thule", "yakima", "menabo"];
+
+/**
+ * Whether this market sells every maker the brands promise names. Abroad none of them is sold
+ * (2026-09-25: the foreign channels hold only the Nordrive sets), and "Bewährte Marken: Thule,
+ * Yakima, Menabo und mehr" stood over a shop without one of them. A fault makes no claim.
+ */
+async function claimsNamedBrands(channel: string): Promise<boolean> {
+	try {
+		const stocked = await stockedBrandSlugs(channel);
+		return NAMED_BRANDS.every((slug) => stocked.has(slug));
+	} catch {
+		return false;
+	}
+}
+
 export async function HeroBenefits({
 	channel,
 	variant = "hero",
@@ -25,10 +43,17 @@ export async function HeroBenefits({
 	channel: string;
 	variant?: "hero" | "banner" | "band";
 }) {
-	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "home" });
+	const [t, brands] = await Promise.all([
+		getTranslations({ locale: getLocaleFromChannel(channel), namespace: "home" }),
+		claimsNamedBrands(channel),
+	]);
 	const items = [
 		{ icon: HeadsetIcon, title: t("benefitAdviceTitle"), text: t("benefitAdviceText") },
-		{ icon: BadgeCheckIcon, title: t("benefitBrandsTitle"), text: t("benefitBrandsText") },
+		// Where the named makers are not sold, the promise every market can keep: sets chosen
+		// for the car, by model and roof.
+		brands
+			? { icon: BadgeCheckIcon, title: t("benefitBrandsTitle"), text: t("benefitBrandsText") }
+			: { icon: CarIcon, title: t("benefitFitTitle"), text: t("benefitFitText") },
 		{ icon: TruckIcon, title: t("benefitShippingTitle"), text: t("benefitShippingText") },
 		{ icon: ShieldCheckIcon, title: t("benefitWarrantyTitle"), text: t("benefitWarrantyText") },
 	];

@@ -44,12 +44,28 @@ const TAGLINES: Readonly<Record<string, string>> = {
  * its link and its size either way, so the swap moves nothing. Names come from the same `nav`
  * labels as the menu; the picture is decorative (`alt=""`), because the link text names it.
  */
-export function CategoryGrid({ photos }: { photos: CategoryTilePhotos | null }) {
+export function CategoryGrid({
+	photos,
+	offered,
+}: {
+	photos: CategoryTilePhotos | null;
+	/**
+	 * The slugs this market sells (`lib/market-assortment.ts`), read once by the page so the
+	 * fallback and the tiles with their photos show the same set. A tile for a shelf the market
+	 * does not have led to "Seite nicht gefunden" in eleven markets (2026-09-25).
+	 */
+	offered: readonly string[];
+}) {
 	const t = useTranslations("nav");
 	const th = useTranslations("home");
 	const params = useParams<{ channel: string }>();
 	const channel = params.channel;
-	const categories = categoriesFor("home");
+	const categories = categoriesFor("home").filter((category) => offered.includes(category.slug));
+
+	// One tile is not a choice between categories: a market that sells a single shelf reaches it
+	// from the hero, the menu and the vehicle block, and the section would stand there as a lone
+	// card under a "shop by category" heading.
+	if (categories.length < 2) return null;
 
 	return (
 		<section id="categories" className="max-w-page mx-auto px-4 pt-12 pb-10 sm:px-6 sm:pt-16 lg:px-8">

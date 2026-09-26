@@ -10,6 +10,7 @@ import { Logo } from "./shared/logo";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { marketHasRoute } from "@/lib/route-policy";
 import { visibleNavLinks } from "@/lib/cms/availability";
+import { getMarketAssortment, offersFullRange } from "@/lib/market-assortment";
 import { PrivacySettingsLink } from "./privacy-settings-link";
 import { companyInfo, companyPhoneHref } from "@/config/company";
 import { ALL_CATEGORIES_NAV, localizedNavHref } from "./header/header.config";
@@ -92,9 +93,11 @@ export async function Footer({ channel }: { channel: string }) {
 	const links = footerLegalLinks(channel);
 	const { showPrivacyPolicy, showTerms } = links;
 	// The same rule the header uses, so the two cannot drift apart again.
-	const [support, company] = await Promise.all([
+	const [support, company, categories, assortment] = await Promise.all([
 		visibleNavLinks(channel, links.support),
 		visibleNavLinks(channel, links.company),
+		visibleNavLinks(channel, ALL_CATEGORIES_NAV),
+		getMarketAssortment(channel),
 	]);
 
 	return (
@@ -111,7 +114,10 @@ export async function Footer({ channel }: { channel: string }) {
 						<Link href={marketHref(channel)} prefetch={false} className="inline-block">
 							<Logo className="h-7 w-auto" inverted showSlogan slogan={tc("slogan")} />
 						</Link>
-						<p className="text-text-inverse/65 mt-5 max-w-xs text-sm leading-relaxed">{t("tagline")}</p>
+						<p className="text-text-inverse/65 mt-5 max-w-xs text-sm leading-relaxed">
+							{/* The line names the shelves, so it says only what this market sells. */}
+							{offersFullRange(assortment) ? t("tagline") : t("taglineRoofRacks")}
+						</p>
 						<div className="mt-5 flex flex-col gap-1.5">
 							<a href={`mailto:${companyInfo.email}`} className={linkClass}>
 								{companyInfo.email}
@@ -128,7 +134,7 @@ export async function Footer({ channel }: { channel: string }) {
 					<div>
 						<h2 className={headingClass}>{tNav("categories")}</h2>
 						<ul className="space-y-2.5">
-							{ALL_CATEGORIES_NAV.map((item) => (
+							{categories.map((item) => (
 								<li key={item.key}>
 									<Link
 										href={marketHref(channel, localizedNavHref(channel, item.href))}

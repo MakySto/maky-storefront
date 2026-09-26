@@ -9,6 +9,8 @@ import {
 import { buildAlternatesMetadata } from "@/lib/seo/hreflang";
 import { marketOpenGraph } from "@/lib/seo/metadata";
 import { formatPageTitle } from "@/config/brand";
+import { categoriesFor } from "@/config/categories";
+import { getMarketAssortment, offersCategory, offersFullRange } from "@/lib/market-assortment";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { transformToProductCard } from "@/ui/components/plp";
@@ -95,9 +97,12 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 	// Homepage owns the market canonical (/{market}) + hreflang alternates, and og:url is
 	// that canonical.
 	const { alternates } = buildAlternatesMetadata(channel);
+	// A market that sells only the roof-rack sets gets a title and a description that say so,
+	// not the full Slovak range (`lib/market-assortment.ts`).
+	const full = offersFullRange(await getMarketAssortment(channel));
 	return {
-		title: { absolute: formatPageTitle(t("heroTitle")) },
-		description: t("metaDescription"),
+		title: { absolute: formatPageTitle(t(full ? "heroTitle" : "heroTitleRoofRacks")) },
+		description: t(full ? "metaDescription" : "metaDescriptionRoofRacks"),
 		alternates,
 		openGraph: marketOpenGraph(channel, alternates.canonical),
 	};
@@ -106,7 +111,13 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 export default async function Page(props: { params: Promise<{ channel: string }> }) {
 	const { channel } = await props.params;
 	// Scenery is cached for hours and never throws here; without it the hero is its dark ground.
-	const scenery = await getSceneryOrNone(channel);
+	// The assortment is cached too, and never throws: what this market sells decides the tiles,
+	// the hero's second action and its lead — read once here, so the tiles' fallback and the
+	// tiles themselves agree and nothing moves when the photos land.
+	const [scenery, assortment] = await Promise.all([getSceneryOrNone(channel), getMarketAssortment(channel)]);
+	const offered = categoriesFor("home")
+		.filter((category) => offersCategory(assortment, category.slug))
+		.map((category) => category.slug);
 
 	return (
 		<>
@@ -122,6 +133,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 			    product; each has its own boundary, so nothing moves when they land. */}
 			<HeroSection
 				channel={channel}
+				assortment={assortment}
 				photo={scenery?.hero ?? null}
 				vehicleAction={
 					<Suspense fallback={<HeroVehicleActionsSkeleton />}>
@@ -140,8 +152,8 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 					/>
 				}
 			/>
-			<Suspense fallback={<CategoryGrid photos={null} />}>
-				<CategoryGridPhotos params={props.params} />
+			<Suspense fallback={<CategoryGrid photos={null} offered={offered} />}>
+				<CategoryGridPhotos params={props.params} offered={offered} />
 			</Suspense>
 
 			<Suspense fallback={<HomeVehicleBlockSkeleton />}>

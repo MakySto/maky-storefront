@@ -10,7 +10,14 @@ import { CategoryGrid, type CategoryTilePhotos } from "./category-grid";
  * A tile's picture is its scenery photo when one is set (`storefront-imagery.ts`, or Payload),
  * otherwise the category's own image in Saleor, shown whole as a cut-out.
  */
-export async function CategoryGridPhotos({ params }: { params: Promise<{ channel: string }> }) {
+export async function CategoryGridPhotos({
+	params,
+	offered,
+}: {
+	params: Promise<{ channel: string }>;
+	/** The slugs this market sells — the page reads them once for this and for the fallback. */
+	offered: readonly string[];
+}) {
 	const { channel } = await params;
 	let images: CategoryImages | null = null;
 	try {
@@ -30,5 +37,5 @@ export async function CategoryGridPhotos({ params }: { params: Promise<{ channel
 	for (const [slug, photo] of Object.entries(scenery?.tiles ?? {})) {
 		photos[slug] = { url: photo.url, position: photo.position, kind: "scene" };
 	}
-	return <CategoryGrid photos={photos} />;
+	return <CategoryGrid photos={photos} offered={offered} />;
 }

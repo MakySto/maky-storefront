@@ -1,10 +1,13 @@
 import "server-only";
+import { isCategorySlug } from "@/config/categories";
+import { stockedBrandSlugs } from "@/lib/brands/catalog";
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import { fetchCmsPage } from "@/lib/cms/client";
 import { marketForChannel, payloadLocaleForChannel } from "@/lib/cms/markets";
 import { isContentReady } from "@/lib/cms/content-readiness";
 import { liveMarkets } from "@/lib/market-state";
 import { isMarketRootSegment, marketHasRoute, routePolicyFor } from "@/lib/route-policy";
+import { getMarketAssortment, offersCategory, type MarketAssortment } from "@/lib/market-assortment";
 import { languageAlternatesFor } from "@/lib/seo/hreflang";
 
 /**
@@ -59,20 +62,36 @@ export function isCmsRoute(segment: string): boolean {
 }
 
 /**
+ * The brand index (`/znacky`) lists the makers this channel sells. Abroad that is none today — the
+ * Nordrive sets carry no maker in Saleor — and the page was an empty, indexable list linked from
+ * every page. Only an authoritative empty answer hides the link; a fault keeps it.
+ */
+const BRANDS_SEGMENT = "znacky";
+
+async function brandsOffered(channel: string): Promise<boolean> {
+	try {
+		return (await stockedBrandSlugs(channel)).size > 0;
+	} catch {
+		return true;
+	}
+}
+
+/**
  * Filter a set of navigation links to the ones this market may actually show.
  *
- * One rule for the header and the footer, because they had two and they disagreed.
- * Task A taught the footer to hide a legal route a market does not have; the header
- * kept linking `/poradna` in all twelve markets while eleven of them answer 404 — a
- * dead link in the primary navigation of every page, on every market but Slovakia.
+ * One rule for the header, the menus and the footer, because they had two and they disagreed.
+ * Task A taught the footer to hide a legal route a market does not have; the header kept linking
+ * `/poradna` in all twelve markets while eleven of them answer 404 — a dead link in the primary
+ * navigation of every page, on every market but Slovakia.
  *
  * A link is dropped only when this module is entitled to an opinion:
  *
- *   not a market-root segment  the category links (`/stresne-nosice`) are root
- *                              product-catalogue URLs, not entries in `route-policy`.
- *                              They are kept untouched — asking `marketHasRoute` about
- *                              them would answer "no" for every one and empty the menu.
- *   a static route             `marketHasRoute` decides.
+ *   a catalogue category       offered in this market — `lib/market-assortment.ts`, the same
+ *                              question the sitemap asks. Abroad every channel held only the
+ *                              roof-rack sets while five more categories were linked from every
+ *                              page (2026-09-25). An UNKNOWN assortment keeps them all.
+ *   not a market-root segment  anything else outside `route-policy` is kept untouched.
+ *   a static route             `marketHasRoute` decides; `/znacky` also needs a maker to list.
  *   a CMS route                `marketHasRoute` first, then whether a document is
  *                              actually published — see `cmsRouteAvailable`.
  */
@@ -80,11 +99,18 @@ export async function visibleNavLinks<T extends { readonly href: string }>(
 	channel: string,
 	links: readonly T[],
 ): Promise<T[]> {
+	// Asked once per call, and only when a category link is in the set.
+	let assortment: Promise<MarketAssortment> | null = null;
 	const decisions = await Promise.all(
 		links.map(async (link) => {
 			const segment = link.href.replace(/^\//, "").split("/")[0] ?? "";
+			if (isCategorySlug(segment)) {
+				assortment ??= getMarketAssortment(channel);
+				return offersCategory(await assortment, segment);
+			}
 			if (!isMarketRootSegment(segment)) return true;
 			if (!marketHasRoute(REVERSE_MAP[channel] ?? "", segment)) return false;
+			if (segment === BRANDS_SEGMENT) return brandsOffered(channel);
 			return isCmsRoute(segment) ? cmsRouteAvailable(channel, segment) : true;
 		}),
 	);

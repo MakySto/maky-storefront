@@ -89,6 +89,15 @@ async function saleorBrands(
 	return counted.filter((maker) => maker.productCount > 0);
 }
 
+/**
+ * The makers this channel sells, from Saleor alone — for the questions that need no logo or
+ * description: is there a brand page worth linking at all, and may a claim name a maker here.
+ * Throws on a fault, like `getBrands`; the caller decides what an unknown answer means.
+ */
+export async function stockedBrandSlugs(channel: string): Promise<ReadonlySet<string>> {
+	return new Set((await saleorBrands(channel)).map((maker) => maker.slug));
+}
+
 /** Pure half of `getBrands`, exported for its test. */
 export function mergeBrands(
 	makers: readonly { slug: string; name: string; productCount: number }[],

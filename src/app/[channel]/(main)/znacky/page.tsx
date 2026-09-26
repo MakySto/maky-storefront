@@ -6,7 +6,7 @@ import { ArrowRightIcon } from "lucide-react";
 
 import { brandConfig } from "@/config/brand";
 import { getLocaleFromChannel } from "@/config/locale";
-import { getBrands } from "@/lib/brands/catalog";
+import { getBrands, stockedBrandSlugs } from "@/lib/brands/catalog";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { buildCanonicalUrl } from "@/lib/seo/hreflang";
 import { marketOpenGraph } from "@/lib/seo/metadata";
@@ -24,10 +24,19 @@ export async function generateMetadata(props: { params: Promise<{ channel: strin
 	const { channel } = await props.params;
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "brands" });
 	const canonical = buildCanonicalUrl(REVERSE_MAP[channel] || channel, "/znacky");
+	// A market whose channel sells no maker has an empty index here — every foreign market on
+	// 2026-09-25, and it was indexable. Only an authoritative empty answer says so; a fault keeps
+	// the page indexable, like any other outage. The navigation hides the link on the same answer.
+	const empty = await stockedBrandSlugs(channel).then(
+		(stocked) => stocked.size === 0,
+		() => false,
+	);
 	return {
 		title: `${t("title")} | ${brandConfig.siteName}`,
 		description: t("description"),
-		alternates: { canonical },
+		...(empty
+			? { robots: { index: false, follow: true, googleBot: { index: false, follow: true } } }
+			: { alternates: { canonical } }),
 		openGraph: marketOpenGraph(channel, canonical),
 	};
 }

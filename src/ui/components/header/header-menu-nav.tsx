@@ -21,8 +21,11 @@ export async function HeaderMenuNav({ channel }: { channel: string }) {
 	const locale = getLocaleFromChannel(channel);
 	const t = await getTranslations({ locale, namespace: "nav" });
 	const tAccount = await getTranslations({ locale, namespace: "account" });
-	const [brands] = await visibleNavLinks(channel, [BRANDS_NAV]);
-	const [advice] = await visibleNavLinks(channel, [ADVICE_NAV]);
+	const [categories, [brands], [advice]] = await Promise.all([
+		visibleNavLinks(channel, ALL_CATEGORIES_NAV),
+		visibleNavLinks(channel, [BRANDS_NAV]),
+		visibleNavLinks(channel, [ADVICE_NAV]),
+	]);
 
 	return (
 		<nav aria-label={tAccount("primaryNavigation")}>
@@ -30,7 +33,7 @@ export async function HeaderMenuNav({ channel }: { channel: string }) {
 				{t("categories")}
 			</h2>
 			<ul className="divide-border-subtle mt-2 divide-y">
-				{ALL_CATEGORIES_NAV.map((item) => (
+				{categories.map((item) => (
 					<li key={item.key}>
 						<LinkWithChannel href={localizedNavHref(channel, item.href)} className={rowClass}>
 							<span className={iconClass}>

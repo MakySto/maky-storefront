@@ -14,6 +14,17 @@ vi.mock("server-only", () => ({}));
 const fetchCmsPage = vi.fn();
 vi.mock("@/lib/cms/client", () => ({ fetchCmsPage: (...args: unknown[]) => fetchCmsPage(...args) }));
 
+const getMarketAssortment = vi.fn();
+vi.mock("@/lib/market-assortment", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@/lib/market-assortment")>()),
+	getMarketAssortment: (...args: unknown[]) => getMarketAssortment(...args),
+}));
+
+const stockedBrandSlugs = vi.fn();
+vi.mock("@/lib/brands/catalog", () => ({
+	stockedBrandSlugs: (...args: unknown[]) => stockedBrandSlugs(...args),
+}));
+
 const marketHasRoute = vi.fn();
 vi.mock("@/lib/route-policy", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/lib/route-policy")>()),
@@ -60,6 +71,10 @@ beforeEach(() => {
 	fetchCmsPage.mockReset();
 	marketHasRoute.mockReset();
 	marketHasRoute.mockReturnValue(true);
+	getMarketAssortment.mockReset();
+	getMarketAssortment.mockResolvedValue({ state: "unknown" });
+	stockedBrandSlugs.mockReset();
+	stockedBrandSlugs.mockResolvedValue(new Set(["thule"]));
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -148,13 +163,51 @@ describe("visibleNavLinks", () => {
 		{ key: "advice", href: "/poradna" },
 	] as const;
 
-	it("keeps the category links, which are not route-policy segments", async () => {
+	it("keeps every category link while the assortment is unknown — never the route policy's answer", async () => {
 		marketHasRoute.mockReturnValue(false);
 		const { visibleNavLinks } = await subject();
 		const kept = (await visibleNavLinks("de-eur", NAV)).map((l) => l.href);
 		expect(kept).toContain("/stresne-nosice");
 		expect(kept).toContain("/nosice-bicyklov");
 		expect(fetchCmsPage, "a category link must never trigger a CMS read").not.toHaveBeenCalled();
+	});
+
+	// 2026-09-25: every foreign channel sold only the roof-rack sets, and five more categories
+	// were linked from every page of eleven markets to "page not found".
+	it("drops a category this market does not offer, and keeps the ones it does", async () => {
+		fetchCmsPage.mockResolvedValue(foundWithBody());
+		getMarketAssortment.mockResolvedValue({ state: "known", categories: new Set(["stresne-nosice"]) });
+		const { visibleNavLinks } = await subject();
+		const kept = (await visibleNavLinks("de-eur", NAV)).map((l) => l.href);
+		expect(kept).toContain("/stresne-nosice");
+		expect(kept).not.toContain("/nosice-bicyklov");
+	});
+
+	it("a remembered assortment decides the same way as a fresh one", async () => {
+		fetchCmsPage.mockResolvedValue(foundWithBody());
+		getMarketAssortment.mockResolvedValue({ state: "remembered", categories: new Set(["stresne-nosice"]) });
+		const { visibleNavLinks } = await subject();
+		expect((await visibleNavLinks("de-eur", NAV)).map((l) => l.href)).not.toContain("/nosice-bicyklov");
+	});
+
+	it("asks for the assortment once per call, and not at all without a category link", async () => {
+		fetchCmsPage.mockResolvedValue(foundWithBody());
+		const { visibleNavLinks } = await subject();
+		await visibleNavLinks("de-eur", NAV);
+		expect(getMarketAssortment).toHaveBeenCalledTimes(1);
+		getMarketAssortment.mockClear();
+		await visibleNavLinks("de-eur", [{ key: "contact", href: "/kontakt" }]);
+		expect(getMarketAssortment).not.toHaveBeenCalled();
+	});
+
+	it("drops the brand index where the market sells no maker, keeps it on a fault", async () => {
+		const BRANDS = [{ key: "brands", href: "/znacky" }];
+		const { visibleNavLinks } = await subject();
+		expect(await visibleNavLinks("de-eur", BRANDS)).toHaveLength(1);
+		stockedBrandSlugs.mockResolvedValue(new Set());
+		expect(await visibleNavLinks("de-eur", BRANDS)).toHaveLength(0);
+		stockedBrandSlugs.mockRejectedValue(new Error("timeout"));
+		expect(await visibleNavLinks("de-eur", BRANDS)).toHaveLength(1);
 	});
 
 	it("drops a CMS route the market does not have", async () => {
