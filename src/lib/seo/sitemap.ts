@@ -1,4 +1,13 @@
 import { type MetadataRoute } from "next";
+import {
+	collectConnection,
+	fetchStockedCategorySlugs,
+	PAGE_SIZE,
+	REVALIDATE_SECONDS,
+	sitemapTag,
+} from "@/lib/seo/catalogue-walk";
+
+export { sitemapTag };
 import { categoryUrlFor } from "@/config/category-routes";
 import { getBaseUrl } from "@/lib/seo/config";
 import { CHANNEL_MAP } from "@/lib/channel-map";
@@ -9,18 +18,9 @@ import { indexabilityOf } from "@/lib/catalog-content/publication";
 import { catalogLanguageForMarket, loadCatalogView } from "@/lib/catalog-content/resolve";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
-import {
-	SitemapProductsDocument,
-	SitemapCategoriesDocument,
-	SitemapProductCountDocument,
-} from "@/gql/graphql";
-import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
+import { SitemapProductsDocument, SitemapProductCountDocument } from "@/gql/graphql";
 import { getLocaleConfigByLocale } from "@/config/locale";
-import {
-	isSourceLocale,
-	resolveExactLocaleCategory,
-	resolveExactLocaleProduct,
-} from "@/lib/saleor/exact-locale";
+import { isSourceLocale, resolveExactLocaleProduct } from "@/lib/saleor/exact-locale";
 
 /**
  * ## A sitemap index and shards, not one file (COMMERCE-2 M5)
@@ -112,107 +112,15 @@ export async function staticPathsFor(market: string): Promise<readonly string[]>
 	return paths;
 }
 
-/** Saleor's `products` is a cursor connection; 100 is a comfortable page. */
-const PAGE_SIZE = 100;
-
-/** Re-read the catalogue at most hourly; a sitemap is not a live view. */
-const REVALIDATE_SECONDS = 3600;
-
 /**
  * Most URLs one shard may carry. Google's hard limit is 50 000 URLs and 50 MB uncompressed;
  * a product entry serializes to about 250 bytes, so 40 000 is ~10 MB and well inside both.
  */
 export const MAX_URLS_PER_SITEMAP = 40_000;
 
-/** The data-cache tag every Saleor read behind one channel's shards carries. */
-export function sitemapTag(channel: string): string {
-	return buildTag(CACHE_PROFILES.sitemap, { channel, locale: "" });
-}
-
 interface ProductEntry {
 	slug: string;
 	updatedAt: string | null;
-}
-
-interface Page<T> {
-	edges: readonly { node: T }[];
-	pageInfo: { hasNextPage: boolean; endCursor?: string | null };
-}
-
-/**
- * Raised when the catalogue could not be enumerated in full.
- *
- * A short sitemap is indistinguishable from a complete one, and Google reads the
- * difference as "these URLs are gone". This turns silent truncation into a
- * visible failure — see the note on `sitemap()` for why that is the safer of the
- * two.
- */
-class SitemapIncompleteError extends Error {}
-
-/**
- * Walk a Saleor cursor connection to its end, or fail loudly.
- *
- * There is deliberately NO page ceiling. There used to be one — MAX_PAGES = 20,
- * sized against a 458-product catalogue — and it was a truncation waiting for a
- * bigger catalogue to arrive. 9 192 Slovak products at 100 a page is 92, so the
- * cap would have thrown on every single build the moment they were published.
- *
- * What replaces it is a guard on the thing the cap was actually defending
- * against: a connection that never terminates. `hasNextPage` ends the loop; a
- * cursor that repeats or fails to advance ends it with an error. Those are the
- * only two ways out, and the second one is loud on purpose.
- *
- * Shared by products and categories because the guarantee has to be the same for
- * both. It previously was not: the product walk had all of this and the category
- * walk was a bare `first: 100` with no `pageInfo` selected at all, so it could
- * not even detect that it had truncated. Thirty categories exist today, so that
- * was latent rather than live — which is precisely the shape of the product cap
- * it replaced.
- */
-async function collectConnection<T>(
-	label: string,
-	fetchPage: (after: string | null) => Promise<Page<T> | null>,
-): Promise<T[]> {
-	const out: T[] = [];
-	let after: string | null = null;
-	// Every cursor already followed. Saleor's are opaque, so the only thing that
-	// can be said about one is whether it has been seen before — which is exactly
-	// the question. A repeat means the connection is cycling, and without this the
-	// loop would spin forever building an ever-growing array.
-	const seen = new Set<string>();
-
-	for (let page = 1; ; page++) {
-		const connection = await fetchPage(after);
-		// `null` here is any failure at all — transport, HTTP, GraphQL — because
-		// the fetchers collapse them. Previously this `break` returned whatever had
-		// been collected so far: one blip on page 3 of 5 silently dropped ~200
-		// products with no error anywhere.
-		if (!connection) {
-			throw new SitemapIncompleteError(`${label} page ${page} did not resolve`);
-		}
-
-		for (const edge of connection.edges) out.push(edge.node);
-
-		if (!connection.pageInfo.hasNextPage) return out;
-
-		const next: string | null = connection.pageInfo.endCursor ?? null;
-		if (!next) {
-			throw new SitemapIncompleteError(`${label}: hasNextPage with no cursor`);
-		}
-		if (next === after) {
-			throw new SitemapIncompleteError(
-				`${label}: cursor did not advance past ${next} on page ${page} (${out.length} so far)`,
-			);
-		}
-		if (seen.has(next)) {
-			throw new SitemapIncompleteError(
-				`${label}: cursor ${next} repeated on page ${page} (${out.length} so far)`,
-			);
-		}
-
-		seen.add(next);
-		after = next;
-	}
 }
 
 /**
@@ -263,40 +171,6 @@ async function fetchProductSlugs(channel: string, locale: string): Promise<Produ
 		);
 	}
 	return entries;
-}
-
-async function fetchStockedCategorySlugs(channel: string, locale: string): Promise<string[]> {
-	const localized = !isSourceLocale(locale);
-	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
-
-	const nodes = await collectConnection(`${channel}: category`, async (after) => {
-		const result = await executePublicGraphQL(SitemapCategoriesDocument, {
-			variables: { channel, first: PAGE_SIZE, after, lang, localized },
-			revalidate: REVALIDATE_SECONDS,
-			tags: [sitemapTag(channel)],
-		});
-		if (!result.ok) {
-			logUpstreamError("sitemap-categories", upstreamError(result), {
-				channel,
-				after: after ?? "start",
-			});
-			return null;
-		}
-		return result.data.categories ?? null;
-	});
-
-	// Categories exist globally in Saleor but hold products per channel, so an
-	// empty one is real everywhere and stocked nowhere. Listing it would advertise
-	// an empty page; on the live Slovak catalogue eleven of the thirty are in that
-	// state, including `stresne-nosice`, which sits first in the main navigation.
-	//
-	// Abroad it must also BE a page in that market: the category's own translation carries
-	// the four fields the boundary requires, or the page is not-found there. The base slug is
-	// what comes back either way — `categoryUrlFor` turns it into the market's segment.
-	return nodes
-		.filter((node) => (node.products?.totalCount ?? 0) > 0)
-		.filter((node) => !localized || resolveExactLocaleCategory(node, locale) !== null)
-		.map((node) => node.slug);
 }
 
 /**
