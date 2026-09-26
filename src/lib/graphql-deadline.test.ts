@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LanguageCodeEnum } from "@/gql/graphql";
 
 import { CheckoutFindDocument } from "@/gql/graphql";
-import { executePublicGraphQL } from "./graphql";
+import { executePublicGraphQL, executeRawGraphQL, retryPauseMs } from "./graphql";
 
 /**
  * A deadline is only real if it can end a request that never answers.
@@ -185,5 +185,89 @@ describe("a caller deadline also ends the wait for a queue slot", () => {
 		late.abort();
 		for (const holder of holders) holder.abort();
 		await Promise.all([...held, waiting]);
+	});
+});
+
+/**
+ * The places a deadline still did not reach (2026-09-26): the pause between retries, a body read
+ * when the caller set no deadline, the raw executor, and a `Retry-After` header.
+ */
+describe("the rest of the wait is bounded too", () => {
+	const variables = { id: "Q2hlY2tvdXQ6MQ==", languageCode: LanguageCodeEnum.Sk };
+	const stalledBody = () =>
+		({
+			ok: true,
+			status: 200,
+			statusText: "OK",
+			json: () => new Promise(() => {}),
+			text: () => new Promise(() => {}),
+			headers: new Headers(),
+		}) as unknown as Response;
+
+	afterEach(() => {
+		delete process.env.SALEOR_REQUEST_TIMEOUT_MS;
+	});
+
+	it("does not sit out a retry pause after the caller's deadline has passed", async () => {
+		// A query retries; the first pause alone is 1 000 ms.
+		fetchMock = vi.fn(async () => json({ errors: [{ message: "busy" }] }, 503));
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const started = Date.now();
+		const result = await executePublicGraphQL(CheckoutFindDocument, {
+			variables,
+			cache: "no-cache",
+			signal: AbortSignal.timeout(150),
+		});
+
+		expect(result.ok).toBe(false);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect(Date.now() - started).toBeLessThan(800);
+	});
+
+	it("bounds a body that never arrives even when the caller set no deadline", async () => {
+		process.env.SALEOR_REQUEST_TIMEOUT_MS = "200";
+		fetchMock = vi.fn(async () => stalledBody());
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const started = Date.now();
+		const result = await executePublicGraphQL(CheckoutFindDocument, {
+			variables,
+			cache: "no-cache",
+			retry: false,
+		});
+
+		expect(result.ok).toBe(false);
+		expect(Date.now() - started).toBeLessThan(2_000);
+	});
+
+	it("gives the raw executor a timeout on the request and on the body", async () => {
+		process.env.SALEOR_REQUEST_TIMEOUT_MS = "200";
+		fetchMock = neverAnswers();
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+		const started = Date.now();
+		expect((await executeRawGraphQL({ query: "query Shop { shop { name } }" })).ok).toBe(false);
+
+		fetchMock = vi.fn(async () => stalledBody());
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+		expect((await executeRawGraphQL({ query: "query Shop { shop { name } }" })).ok).toBe(false);
+		expect(Date.now() - started).toBeLessThan(3_000);
+	});
+});
+
+describe("retryPauseMs", () => {
+	it("backs off exponentially without a header", () => {
+		expect([0, 1, 2].map((attempt) => retryPauseMs(attempt, null, 1000))).toEqual([1000, 2000, 4000]);
+	});
+
+	it("follows a sane Retry-After, but never for minutes", () => {
+		expect(retryPauseMs(0, "2", 1000)).toBe(2000);
+		expect(retryPauseMs(0, "120", 1000)).toBe(5000);
+	});
+
+	it("backs off normally for an HTTP date, a negative or an empty value", () => {
+		expect(retryPauseMs(1, "Wed, 21 Oct 2026 07:28:00 GMT", 1000)).toBe(2000);
+		expect(retryPauseMs(1, "-5", 1000)).toBe(2000);
+		expect(retryPauseMs(1, "", 1000)).toBe(2000);
 	});
 });

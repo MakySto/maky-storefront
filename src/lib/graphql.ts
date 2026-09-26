@@ -215,8 +215,40 @@ function abortReason(signal: AbortSignal): Error {
 	return signal.reason instanceof Error ? signal.reason : new DOMException("Aborted", "AbortError");
 }
 
-function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
+/**
+ * A pause that also ends when `signal` aborts.
+ *
+ * The retry backoff (1 s, 2 s, 4 s) used to be a plain timer: a caller whose deadline passed in
+ * the middle of it waited out the whole pause, and only then found out it had given up.
+ */
+function sleep(ms: number, signal?: AbortSignal | null): Promise<void> {
+	if (!signal) return new Promise((resolve) => setTimeout(resolve, ms));
+	if (signal.aborted) return Promise.resolve();
+	return new Promise((resolve) => {
+		const done = () => {
+			clearTimeout(timer);
+			signal.removeEventListener("abort", done);
+			resolve();
+		};
+		const timer = setTimeout(done, ms);
+		signal.addEventListener("abort", done, { once: true });
+	});
+}
+
+/**
+ * The longest pause a `Retry-After` header may impose. Saleor or Cloudflare answering "retry
+ * after 120" used to hold the render for two minutes per attempt when the caller set no deadline.
+ */
+const MAX_RETRY_AFTER_MS = 5_000;
+
+/** The pause before retry `attempt + 1`: the header when it is a sane number of seconds, else backoff. */
+export function retryPauseMs(attempt: number, retryAfter: string | null, delayMs: number): number {
+	const backoff = delayMs * Math.pow(2, attempt);
+	if (!retryAfter) return backoff;
+	const seconds = Number(retryAfter.trim());
+	// An HTTP date, an empty value or garbage: back off as for any other failure.
+	if (!Number.isFinite(seconds) || seconds < 0) return backoff;
+	return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
 }
 
 function formatVariablesForLog(variables: Record<string, unknown>): string {
@@ -291,7 +323,11 @@ function getRetryConfig() {
 	return { maxRetries: 3, delayMs: 1000, timeoutMs };
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+/**
+ * The caller's deadline, if any, composed with the transport's own per-attempt ceiling.
+ * `release()` ends the ceiling only — see `fetchWithTimeout` for why the caller link stays.
+ */
+function attemptSignal(caller: AbortSignal | null | undefined, timeoutMs: number) {
 	const controller = new AbortController();
 	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -303,7 +339,6 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
 	// the configured TS lib does not describe. Doing it explicitly also makes the
 	// listener removal below visible, and an un-removed abort listener on a
 	// long-lived caller signal is a leak.
-	const caller = init.signal;
 	const onCallerAbort = () => controller.abort(caller?.reason);
 	if (caller?.aborted) {
 		controller.abort(caller.reason);
@@ -311,15 +346,29 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
 		caller?.addEventListener("abort", onCallerAbort, { once: true });
 	}
 
+	return { signal: controller.signal, release: () => clearTimeout(timeoutId) };
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+	const attempt = attemptSignal(init.signal, timeoutMs);
 	try {
-		return await fetch(url, { ...init, signal: controller.signal });
+		return await fetch(url, { ...init, signal: attempt.signal });
 	} finally {
 		// Only the timeout is released here. The caller link stays attached on
 		// purpose: `fetch` resolves when the HEADERS arrive, and the body is read
 		// later by the caller. Detaching now would leave that read — and its
 		// socket — unabortable, which is the hole this is closing.
-		clearTimeout(timeoutId);
+		attempt.release();
 	}
+}
+
+/**
+ * The bound on reading a response body. The per-attempt ceiling ends when the headers arrive,
+ * so without a caller deadline the body read used to have no bound at all: a server that sent
+ * headers and then stalled held the render indefinitely.
+ */
+function bodyDeadline(signal: AbortSignal | null | undefined): AbortSignal {
+	return signal ?? AbortSignal.timeout(getRetryConfig().timeoutMs);
 }
 
 // ============================================================================
@@ -413,23 +462,36 @@ async function fetchWithRetry(
 					client = null;
 				}
 
-				response = client
-					? await client.fetchWithAuth(url, input)
-					: await fetchWithTimeout(url, input, timeoutMs);
+				if (client) {
+					// The same per-attempt ceiling as the public path. Until 2026-09-26 the
+					// authenticated path had only the caller's deadline, and most callers set
+					// none — a signed-in customer's request could wait on Saleor indefinitely.
+					const attempt = attemptSignal(input.signal, timeoutMs);
+					try {
+						response = await client.fetchWithAuth(url, { ...input, signal: attempt.signal });
+					} finally {
+						attempt.release();
+					}
+				} else {
+					response = await fetchWithTimeout(url, input, timeoutMs);
+				}
 			} else {
 				response = await fetchWithTimeout(url, input, timeoutMs);
 			}
 
 			// Retry on 429 (rate limit) or 5xx (server errors)
 			if ((response.status === 429 || response.status >= 500) && attempt < maxRetries) {
-				const retryAfter = response.headers.get("Retry-After");
-				const retryDelayMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : delayMs * Math.pow(2, attempt);
+				const retryDelayMs = retryPauseMs(attempt, response.headers.get("Retry-After"), delayMs);
 				console.warn(
 					`[GraphQL] ${operationName}${variablesForLog ? ` ${variablesForLog}` : ""}: HTTP ${
 						response.status
 					} - retrying in ${retryDelayMs}ms (attempt ${attempt + 1}/${maxRetries})`,
 				);
-				await sleep(retryDelayMs);
+				await sleep(retryDelayMs, input.signal);
+				// The deadline may have passed during the pause; nobody is waiting for another try.
+				if (input.signal?.aborted) {
+					return networkError(`${operationName}: deadline exceeded`);
+				}
 				continue;
 			}
 
@@ -452,7 +514,10 @@ async function fetchWithRetry(
 						variablesForLog ? ` ${variablesForLog}` : ""
 					}: ${errorType} - retrying (attempt ${attempt + 1}/${maxRetries})`,
 				);
-				await sleep(delayMs * Math.pow(2, attempt));
+				await sleep(delayMs * Math.pow(2, attempt), input.signal);
+				if (input.signal?.aborted) {
+					return networkError(`${operationName}: deadline exceeded`, error);
+				}
 				continue;
 			}
 			return networkError(
@@ -588,9 +653,10 @@ async function executeGraphQL<Result, Variables>(
 	}
 
 	const response = fetchResult.data;
+	const readUntil = bodyDeadline(signal);
 
 	if (!response.ok) {
-		const body = await response.text().catch(() => "");
+		const body = await withSignal(response.text(), readUntil).catch(() => "");
 		return httpError(response.status, `HTTP ${response.status}: ${response.statusText}\n${body}`);
 	}
 
@@ -606,8 +672,11 @@ async function executeGraphQL<Result, Variables>(
 		// Reading the body is a second, unbounded wait — a server can answer headers
 		// promptly and then stall the stream. It sits outside `fetchWithRetry`, so it
 		// used to be covered by no timeout at all.
-		body = (await withSignal(response.json(), signal)) as GraphQLResponse<Result>;
+		body = (await withSignal(response.json(), readUntil)) as GraphQLResponse<Result>;
 	} catch (error) {
+		if (readUntil.aborted) {
+			return networkError(`${operationName}: response body did not arrive in time`, error);
+		}
 		return networkError(
 			`invalid JSON in a ${response.status} response: ${error instanceof Error ? error.message : "unknown"}`,
 			error,
@@ -718,18 +787,25 @@ export async function executeRawGraphQL<T = unknown>(options: RawGraphQLOptions)
 	}
 
 	try {
-		const response = await fetch(url, {
-			method: "POST",
-			headers: { "Content-Type": "application/json", ...headers },
-			body: JSON.stringify({ query, variables }),
-		});
+		// This executor used to have no timeout at all: not on the request, not on the body.
+		const { timeoutMs } = getRetryConfig();
+		const response = await fetchWithTimeout(
+			url,
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json", ...headers },
+				body: JSON.stringify({ query, variables }),
+			},
+			timeoutMs,
+		);
+		const readUntil = bodyDeadline(undefined);
 
 		if (!response.ok) {
-			const body = await response.text().catch(() => "");
+			const body = await withSignal(response.text(), readUntil).catch(() => "");
 			return httpError(response.status, `HTTP ${response.status}: ${response.statusText}\n${body}`);
 		}
 
-		const body = (await response.json()) as GraphQLResponse<T>;
+		const body = (await withSignal(response.json(), readUntil)) as GraphQLResponse<T>;
 
 		if ("errors" in body) {
 			return graphqlError(body.errors.map((e) => e.message));
