@@ -832,7 +832,9 @@
 		"noResultsHelp": "Nie znaleźliśmy produktów pasujących do wyszukiwania. Spróbuj innego hasła lub przejrzyj nasze kategorie.",
 		"browseAll": "Przeglądaj wszystkie produkty",
 		"metaTitle": "Wyszukiwanie produktów",
-		"metaDescription": "Wyniki wyszukiwania w ofercie {siteName}."
+		"metaDescription": "Wyniki wyszukiwania w ofercie {siteName}.",
+		"unavailableTitle": "Wyszukiwarka jest chwilowo niedostępna",
+		"unavailableHelp": "Nie udało się teraz wczytać wyników dla „{query}”. Spróbuj ponownie za chwilę lub przejrzyj nasze kategorie."
 	},
 	"account": {
 		"welcomeBack": "Witamy ponownie",

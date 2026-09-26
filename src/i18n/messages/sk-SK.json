@@ -832,7 +832,9 @@
 		"noResultsHelp": "Nenašli sme žiadne produkty zodpovedajúce vášmu hľadaniu. Skúste iný výraz alebo prejdite naše kategórie.",
 		"browseAll": "Prehliadať všetky produkty",
 		"metaTitle": "Vyhľadávanie produktov",
-		"metaDescription": "Výsledky vyhľadávania v ponuke {siteName}."
+		"metaDescription": "Výsledky vyhľadávania v ponuke {siteName}.",
+		"unavailableTitle": "Vyhľadávanie je dočasne nedostupné",
+		"unavailableHelp": "Výsledky pre „{query}“ sa nám teraz nepodarilo načítať. Skúste to o chvíľu znova alebo prejdite naše kategórie."
 	},
 	"account": {
 		"welcomeBack": "Vitajte späť",

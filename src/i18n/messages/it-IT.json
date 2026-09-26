@@ -832,7 +832,9 @@
 		"noResultsHelp": "Non abbiamo trovato prodotti corrispondenti alla tua ricerca. Prova un altro termine o sfoglia le nostre categorie.",
 		"browseAll": "Sfoglia tutti i prodotti",
 		"metaTitle": "Ricerca prodotti",
-		"metaDescription": "Risultati della ricerca nel catalogo {siteName}."
+		"metaDescription": "Risultati della ricerca nel catalogo {siteName}.",
+		"unavailableTitle": "La ricerca non è temporaneamente disponibile",
+		"unavailableHelp": "Al momento non è stato possibile caricare i risultati per «{query}». Riprova tra poco o sfoglia le nostre categorie."
 	},
 	"account": {
 		"welcomeBack": "Bentornato",

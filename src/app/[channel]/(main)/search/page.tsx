@@ -12,6 +12,7 @@ import { SearchIcon } from "lucide-react";
 import { marketHref } from "@/lib/channel-map";
 import { brandConfig, formatPageTitle } from "@/config/brand";
 import { routePolicyFor } from "@/lib/route-policy";
+import { searchView } from "./search-view";
 
 /**
  * Internal search results are never for the index — `route-policy.ts` says so, and this is
@@ -124,8 +125,13 @@ async function SearchContent({
 	});
 
 	const { products, pagination } = result;
+	const view = searchView(result);
 
-	if (pagination.totalCount === 0) {
+	if (view === "unavailable") {
+		return <SearchUnavailable query={query} channel={params.channel} />;
+	}
+
+	if (view === "empty") {
 		return <EmptyState query={query} channel={params.channel} />;
 	}
 
@@ -188,6 +194,40 @@ function SearchSkeleton() {
 						</div>
 					</div>
 				))}
+			</div>
+		</div>
+	);
+}
+
+/**
+ * Saleor could not be asked. Not "no results": the same query may well find products a moment
+ * later, so the first action offered is to ask again.
+ */
+async function SearchUnavailable({ query, channel }: { query: string; channel: string }) {
+	const locale = getLocaleFromChannel(channel);
+	const t = await getTranslations({ locale, namespace: "search" });
+	const tCommon = await getTranslations({ locale, namespace: "common" });
+	return (
+		<div role="status" className="flex flex-col items-center justify-center py-16 text-center">
+			<div className="bg-muted mb-6 flex h-16 w-16 items-center justify-center rounded-full">
+				<SearchIcon className="text-muted-foreground h-8 w-8" />
+			</div>
+			<h1 className="text-2xl font-semibold">{t("unavailableTitle")}</h1>
+			<p className="text-muted-foreground mt-2 max-w-md">{t("unavailableHelp", { query })}</p>
+			<div className="mt-8 flex flex-col gap-3 sm:flex-row">
+				<Link
+					href={marketHref(channel, `/search?query=${encodeURIComponent(query)}`)}
+					prefetch={false}
+					className="hover:bg-primary/90 bg-primary text-primary-foreground inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-medium transition-colors"
+				>
+					{tCommon("retry")}
+				</Link>
+				<Link
+					href={marketHref(channel, "/products")}
+					className="border-border bg-background text-foreground hover:bg-muted inline-flex items-center justify-center rounded-lg border px-6 py-3 text-sm font-medium transition-colors"
+				>
+					{t("browseAll")}
+				</Link>
 			</div>
 		</div>
 	);

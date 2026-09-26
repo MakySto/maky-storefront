@@ -832,7 +832,9 @@
 		"noResultsHelp": "Nenašli jsme žádné produkty odpovídající vašemu hledání. Zkuste jiný výraz nebo si projděte naše kategorie.",
 		"browseAll": "Procházet všechny produkty",
 		"metaTitle": "Vyhledávání produktů",
-		"metaDescription": "Výsledky vyhledávání v nabídce {siteName}."
+		"metaDescription": "Výsledky vyhledávání v nabídce {siteName}.",
+		"unavailableTitle": "Vyhledávání je dočasně nedostupné",
+		"unavailableHelp": "Výsledky pro „{query}“ se nám teď nepodařilo načíst. Zkuste to za chvíli znovu nebo si projděte naše kategorie."
 	},
 	"account": {
 		"welcomeBack": "Vítejte zpět",

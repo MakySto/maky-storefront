@@ -832,7 +832,9 @@
 		"noResultsHelp": "Nem találtunk a keresésnek megfelelő terméket. Próbáljon meg más kifejezést, vagy böngésszen a kategóriáink között.",
 		"browseAll": "Összes termék böngészése",
 		"metaTitle": "Termékkeresés",
-		"metaDescription": "Keresési találatok a {siteName} kínálatában."
+		"metaDescription": "Keresési találatok a {siteName} kínálatában.",
+		"unavailableTitle": "A keresés átmenetileg nem érhető el",
+		"unavailableHelp": "A(z) „{query}” találatait most nem sikerült betölteni. Próbálja újra egy kis idő múlva, vagy böngésszen kategóriáink között."
 	},
 	"account": {
 		"welcomeBack": "Üdvözöljük újra",

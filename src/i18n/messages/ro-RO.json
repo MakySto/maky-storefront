@@ -832,7 +832,9 @@
 		"noResultsHelp": "Nu am găsit produse care să corespundă căutării dumneavoastră. Încercați alt termen sau răsfoiți categoriile noastre.",
 		"browseAll": "Vezi toate produsele",
 		"metaTitle": "Căutare produse",
-		"metaDescription": "Rezultatele căutării în oferta {siteName}."
+		"metaDescription": "Rezultatele căutării în oferta {siteName}.",
+		"unavailableTitle": "Căutarea este temporar indisponibilă",
+		"unavailableHelp": "Nu am putut încărca acum rezultatele pentru „{query}”. Încercați din nou peste puțin timp sau răsfoiți categoriile noastre."
 	},
 	"account": {
 		"welcomeBack": "Bine ați revenit",
