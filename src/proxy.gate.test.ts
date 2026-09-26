@@ -446,3 +446,51 @@ describe("the sk product + category rollout configuration", () => {
 		expect(mock).toHaveBeenCalledTimes(0);
 	});
 });
+
+/**
+ * Saleor down, a crawler asking: 503 and "come back later", never the page's temporarily
+ * unavailable state — HTTP 200 with `noindex` — for a product that has not gone anywhere.
+ * Googlebot is served the finished page (`htmlLimitedBots`), so for it that state was final.
+ */
+describe("a crawler asking while Saleor is down", () => {
+	const GOOGLEBOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
+	const CHROME =
+		"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
+	const asAgent = (path: string, ua: string) =>
+		new NextRequest(new URL(`https://maky.store${path}`), { headers: { "user-agent": ua } });
+
+	/** Five failed probes open the breaker. */
+	async function tripBreaker() {
+		upstream(() => {
+			throw new Error("ECONNRESET");
+		});
+		for (let i = 0; i < 5; i++) await proxy(asAgent(`/sk/produkt-na-vypadok-${i}`, CHROME));
+	}
+
+	it("gets 503 with Retry-After once the breaker is open", async () => {
+		arm();
+		await tripBreaker();
+		const res = await proxy(asAgent("/sk/strecny-nosic-ktory-existuje", GOOGLEBOT));
+		expect(res.status).toBe(503);
+		expect(res.headers.get("retry-after")).toBe("120");
+		expect(res.headers.get("x-maky-gate")).toBe("product:unknown:unwell");
+	});
+
+	it("a visitor still gets the page, which recovers the moment Saleor does", async () => {
+		arm();
+		await tripBreaker();
+		const res = await proxy(asAgent("/sk/strecny-nosic-ktory-existuje", CHROME));
+		expect(res.status).not.toBe(503);
+		expect(res.headers.get("x-maky-gate")).toBe("product:unknown");
+	});
+
+	it("one slow probe is not an outage: the crawler gets the page", async () => {
+		arm();
+		upstream(() => {
+			throw new Error("ECONNRESET");
+		});
+		const res = await proxy(asAgent("/sk/strecny-nosic-ktory-existuje", GOOGLEBOT));
+		expect(res.status).not.toBe(503);
+		expect(res.headers.get("x-maky-gate")).toBe("product:unknown");
+	});
+});

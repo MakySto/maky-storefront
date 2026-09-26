@@ -34,7 +34,9 @@ import {
 	lookupExistence,
 	lookupTranslatedProduct,
 	normalizePathname,
+	saleorUnwell,
 } from "./lib/route-existence";
+import { HTML_LIMITED_BOTS } from "./config/html-limited-bots.js";
 
 /**
  * First path segments that are legitimately not a market.
@@ -460,6 +462,29 @@ async function route(request: NextRequest) {
 		} else {
 			const verdict = await lookupExistence(decision.family, decision.slug, decision.channel);
 			gateVerdict = `${decision.family}:${verdict}`;
+
+			// SALEOR IS DOWN, AND A CRAWLER IS ASKING -> 503, come back later.
+			//
+			// The crawlers in HTML_LIMITED_BOTS (Googlebot among them) are served the finished page,
+			// so for them the answer waits for the page's data. With Saleor down that answer is the
+			// page's temporarily-unavailable state: HTTP 200 with `noindex` — which a search engine
+			// reads as "drop this product", for a product that has not gone anywhere. Only an OPEN
+			// BREAKER counts (a run of failed probes, not one slow one), and only crawlers get it:
+			// a visitor still gets the page, which recovers on its own the moment Saleor does.
+			if (
+				verdict === "unknown" &&
+				saleorUnwell() &&
+				HTML_LIMITED_BOTS.test(request.headers.get("user-agent") ?? "")
+			) {
+				return new NextResponse(null, {
+					status: 503,
+					headers: {
+						"retry-after": "120",
+						"cache-control": "no-store",
+						"x-maky-gate": `${gateVerdict}:unwell`,
+					},
+				});
+			}
 
 			if (verdict === "absent") {
 				const url = request.nextUrl.clone();

@@ -373,6 +373,16 @@ async function resolveVerdict(family: RouteFamily, slug: string, channel: string
 }
 
 /**
+ * Whether Saleor is known to be unwell right now: the gate's breaker is open after a run of
+ * faults. Not one slow probe — a run of them. The proxy uses it to tell a crawler "come back
+ * later" (503) instead of letting it render the page's temporarily-unavailable state, which a
+ * search engine reads as `noindex` for a product that has not gone anywhere.
+ */
+export function saleorUnwell(now: number = Date.now()): boolean {
+	return state().breakerOpenUntil > now;
+}
+
+/**
  * `exists`, `absent`, or `unknown` — and only `absent` may become a 404.
  */
 export async function lookupExistence(
