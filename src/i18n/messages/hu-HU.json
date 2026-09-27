@@ -268,7 +268,12 @@
 		"listingChangeVehicle": "Autó módosítása",
 		"listingEmptyTitle": "Ehhez a járműhöz még nincs ellenőrzött termékünk: {vehicle}",
 		"listingContact": "Írjon nekünk",
-		"listingEmptyBody": "Ez nem jelenti azt, hogy semmi sem illik rá. Nézze meg a teljes kínálatot, vagy írjon nekünk, és segítünk a választásban."
+		"listingEmptyBody": "Ez nem jelenti azt, hogy semmi sem illik rá. Nézze meg a teljes kínálatot, vagy írjon nekünk, és segítünk a választásban.",
+		"intendedFor": "Ehhez készült: <link>{vehicle}</link>",
+		"intendedForMore": "{count, plural, one {és még # jármű} other {és még # jármű}}",
+		"intendedForAlternative": "Tetőcsomagtartók megtekintése ehhez: {vehicle}",
+		"cartOfferFor": "Ehhez készült: {vehicle}",
+		"cartAlternative": "Tetőcsomagtartók ehhez: {vehicle}"
 	},
 	"cart": {
 		"yourCart": "Az Ön kosara",

@@ -268,7 +268,12 @@
 		"listingChangeVehicle": "Changer de voiture",
 		"listingEmptyTitle": "Aucun produit n'est encore vérifié pour {vehicle}",
 		"listingContact": "Écrivez-nous",
-		"listingEmptyBody": "Cela ne veut pas dire que rien ne convient. Parcourez toute l'offre ou écrivez-nous : nous vous aiderons à choisir."
+		"listingEmptyBody": "Cela ne veut pas dire que rien ne convient. Parcourez toute l'offre ou écrivez-nous : nous vous aiderons à choisir.",
+		"intendedFor": "Véhicule prévu : <link>{vehicle}</link>",
+		"intendedForMore": "{count, plural, one {et # autre véhicule} other {et # autres véhicules}}",
+		"intendedForAlternative": "Voir les barres de toit pour {vehicle}",
+		"cartOfferFor": "Offre pour {vehicle}",
+		"cartAlternative": "Barres de toit pour {vehicle}"
 	},
 	"cart": {
 		"yourCart": "Votre panier",

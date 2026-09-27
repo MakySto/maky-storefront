@@ -39,6 +39,18 @@ export function vehicleDisplayName(vehicle: VehicleNameParts | null | undefined)
 }
 
 /**
+ * The car without its maker — "Passat Variant B9" — for a link that already sits beside the full
+ * name ("Pozrieť nosiče pre Passat Variant B9"). Falls back to the full name when the model or
+ * the generation is unnamed, never to a fragment.
+ */
+export function vehicleModelLabel(vehicle: VehicleNameParts | null | undefined): string | null {
+	if (!vehicle || vehicle.unresolved) return null;
+	const model = vehicle.modelName?.trim();
+	const generation = vehicle.generationName?.trim();
+	return model && generation ? `${model} ${generation}` : vehicleDisplayName(vehicle);
+}
+
+/**
  * The short form: identity and year — "ŠKODA Octavia Combi NX · 2024".
  *
  * The year belongs in the SHORT form, not the long one, because it is not decoration: a

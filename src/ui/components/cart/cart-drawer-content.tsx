@@ -102,7 +102,7 @@ function DrawerLine({
 							{t("variantLabel", { variant: line.variant.name })}
 						</p>
 					) : null}
-					{fitment ? <CartLineFit fitment={fitment} className="mt-2" /> : null}
+					{fitment ? <CartLineFit fitment={fitment} className="mt-2" onNavigate={closeCart} /> : null}
 				</div>
 			</div>
 			<div className="mt-4 flex flex-wrap items-end justify-between gap-3">
@@ -206,7 +206,7 @@ export function CartDrawer({
 									line={line}
 									checkoutId={checkoutId}
 									channel={channel}
-									fitment={fitments[line.variant.product.id]}
+									fitment={fitments[line.variant.id]}
 									closeCart={closeCart}
 								/>
 							))}

@@ -268,7 +268,12 @@
 		"listingChangeVehicle": "Change car",
 		"listingEmptyTitle": "Nothing is verified for {vehicle} yet",
 		"listingContact": "Write to us",
-		"listingEmptyBody": "That does not mean nothing fits. See the whole range, or write to us and we will help you choose."
+		"listingEmptyBody": "That does not mean nothing fits. See the whole range, or write to us and we will help you choose.",
+		"intendedFor": "Intended for: <link>{vehicle}</link>",
+		"intendedForMore": "{count, plural, one {and # more vehicle} other {and # more vehicles}}",
+		"intendedForAlternative": "See roof racks for {vehicle}",
+		"cartOfferFor": "Made for {vehicle}",
+		"cartAlternative": "Roof racks for {vehicle}"
 	},
 	"cart": {
 		"yourCart": "Your cart",

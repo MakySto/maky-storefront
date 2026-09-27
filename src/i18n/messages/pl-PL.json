@@ -268,7 +268,12 @@
 		"listingChangeVehicle": "Zmień auto",
 		"listingEmptyTitle": "Dla {vehicle} nie mamy jeszcze zweryfikowanego produktu",
 		"listingContact": "Napisz do nas",
-		"listingEmptyBody": "Nie oznacza to, że nic nie pasuje. Zobacz całą ofertę albo napisz do nas – pomożemy w wyborze."
+		"listingEmptyBody": "Nie oznacza to, że nic nie pasuje. Zobacz całą ofertę albo napisz do nas – pomożemy w wyborze.",
+		"intendedFor": "Przeznaczenie: <link>{vehicle}</link>",
+		"intendedForMore": "{count, plural, one {i # inny pojazd} few {i # inne pojazdy} many {i # innych pojazdów} other {i # innego pojazdu}}",
+		"intendedForAlternative": "Zobacz bagażniki dachowe do {vehicle}",
+		"cartOfferFor": "Oferta do {vehicle}",
+		"cartAlternative": "Bagażniki dachowe do {vehicle}"
 	},
 	"cart": {
 		"yourCart": "Twój koszyk",

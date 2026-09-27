@@ -201,7 +201,7 @@ async function CartContent({ channel }: { channel: string }) {
 	// Each line's fit with the saved car — see `cartLineFitments`.
 	const fitments = await cartLineFitments(
 		channel,
-		checkout.lines.map((line) => line.variant.product.id),
+		checkout.lines.map((line) => ({ productId: line.variant.product.id, variantId: line.variant.id })),
 	);
 	const currency = checkout.totalPrice.gross.currency;
 	const shipping = checkout.shippingPrice.gross.amount;
@@ -219,7 +219,7 @@ async function CartContent({ channel }: { channel: string }) {
 								checkoutId={checkoutId}
 								channel={channel}
 								locale={locale}
-								fitment={fitments[line.variant.product.id]}
+								fitment={fitments[line.variant.id]}
 							/>
 						))}
 					</ul>

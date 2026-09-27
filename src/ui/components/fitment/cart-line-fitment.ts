@@ -4,13 +4,15 @@ import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 
 import { getLocaleFromChannel } from "@/config/locale";
+import { marketHref } from "@/lib/channel-map";
 import { renderConditions } from "@/lib/fitment/conditions";
 import { type FitmentVerdict } from "@/lib/fitment/contract";
+import { intendedVehiclesFor, presentFitment } from "@/lib/fitment/intended-for";
 import { isDemoDataset } from "@/lib/fitment/offers";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { datasetSpeaksForProduct, resolveFitment } from "@/lib/fitment/resolve";
 import { GARAGE_COOKIE_NAME } from "@/lib/garage/cookie";
-import { vehicleShortLabel } from "@/lib/garage/label";
+import { vehicleModelLabel, vehicleShortLabel } from "@/lib/garage/label";
 import { readGarage } from "@/lib/garage/state";
 import {
 	CONDITION_LABEL_KEY,
@@ -28,19 +30,31 @@ import { withinDeadline } from "./within-deadline";
  */
 export const CART_FITMENT_WAIT_MS = 800;
 
-/** What a cart line says about the saved car: the verdict's own words, and the car when known. */
+/** One cart line, as the fitment data knows it: the product and the exact variant bought. */
+export interface CartLineRef {
+	readonly productId: string;
+	readonly variantId: string;
+}
+
+/**
+ * What a cart line says about the saved car: the verdict's own words, and the car when known —
+ * or, for a line made for another car, which car ("Ponuka pre AUDI A4 Avant B8") and the way to
+ * the offers for the saved one. `offer` is neutral: a description of the line, not a verdict.
+ */
 export interface CartLineFitment {
-	readonly tone: VerdictTone;
+	readonly tone: VerdictTone | "offer";
 	readonly label: string;
 	readonly vehicle: string | null;
+	readonly alternative?: { readonly label: string; readonly href: string };
 }
 
 /** Verdicts about our data rather than the product: a cart line keeps quiet about them. */
 const SILENT: ReadonlySet<FitmentVerdict> = new Set(["STALE", "PROVIDER_UNAVAILABLE", "NO_VEHICLE_SELECTED"]);
 
 /**
- * The compatibility of each product in the cart with the saved car — the same answer, in the
- * same words, as the product page's box (`pdp-compatibility.tsx`), keyed by Saleor product id.
+ * The compatibility of each line in the cart with the saved car — the same answer, in the
+ * same words, as the product page's box (`pdp-compatibility.tsx`), keyed by Saleor VARIANT id:
+ * the answer is about the exact variant bought, as on the product page.
  *
  * Why (third pass, 2026-09-24): the header said Passat while the cart held a set made for an
  * Audi A3, and nothing in the cart said so. It may be a present for someone else's car, so the
@@ -55,9 +69,9 @@ const SILENT: ReadonlySet<FitmentVerdict> = new Set(["STALE", "PROVIDER_UNAVAILA
  */
 export async function cartLineFitments(
 	channel: string,
-	productIds: readonly string[],
+	lines: readonly CartLineRef[],
 ): Promise<Record<string, CartLineFitment>> {
-	if (productIds.length === 0) return {};
+	if (lines.length === 0) return {};
 	try {
 		// No garage cookie, no car: the common case costs neither the dataset nor a wait.
 		if (!(await cookies()).has(GARAGE_COOKIE_NAME)) return {};
@@ -65,7 +79,7 @@ export async function cartLineFitments(
 		// lines are then judged synchronously from the same dataset.
 		const loaded = await withinDeadline(loadFitmentDataset(), CART_FITMENT_WAIT_MS);
 		const dataset = loaded?.dataset ?? null;
-		if (!dataset) return await unavailable(channel, productIds);
+		if (!dataset) return await unavailable(channel, lines);
 		rememberProgramme(dataset);
 		// Simulated data: the product page says so beside every answer; a cart badge has no room
 		// for that notice, so it says nothing rather than a bare green claim.
@@ -78,11 +92,37 @@ export async function cartLineFitments(
 
 		const locale = getLocaleFromChannel(channel);
 		const t = await getTranslations({ locale, namespace: "fitment" });
+		const carModel = vehicleModelLabel(active);
 		const fitments: Record<string, CartLineFitment> = {};
-		for (const saleorProductId of new Set(productIds)) {
+		for (const { productId: saleorProductId, variantId: saleorVariantId } of uniqueLines(lines)) {
 			if (!datasetSpeaksForProduct(dataset, saleorProductId)) continue;
-			const result = resolveFitment(dataset, active.selection, { saleorProductId });
+			const result = resolveFitment(dataset, active.selection, { saleorProductId, saleorVariantId });
 			if (SILENT.has(result.verdict)) continue;
+			// Made for another car: which one, and where the saved car's offers are — the product
+			// page's "Určené pre", said short. Never "nepasuje": see `intended-for.ts`.
+			const presentation = presentFitment(
+				result,
+				intendedVehiclesFor(dataset, saleorProductId, saleorVariantId),
+			);
+			if (presentation.kind === "intended-for") {
+				const [first, ...rest] = presentation.vehicles;
+				fitments[saleorVariantId] = {
+					tone: "offer",
+					label: t("cartOfferFor", {
+						vehicle: rest.length > 0 ? `${first.name} (+${rest.length})` : first.name,
+					}),
+					vehicle: null,
+					...(carModel
+						? {
+								alternative: {
+									label: t("cartAlternative", { vehicle: carModel }),
+									href: marketHref(channel, "/konfigurator"),
+								},
+							}
+						: {}),
+				};
+				continue;
+			}
 			// A fit that carries a condition we cannot state is a qualified fit, exactly as on the
 			// product page — never a plain green one.
 			const conditions = renderConditions(result.conditions, locale, (code) => {
@@ -91,7 +131,7 @@ export async function cartLineFitments(
 			});
 			const fit = result.verdict === "VERIFIED_FIT" || result.verdict === "MANUFACTURER_FIT";
 			const qualified = fit && conditions.unresolvedCount > 0;
-			fitments[saleorProductId] = {
+			fitments[saleorVariantId] = {
 				tone: qualified ? "unconfirmed" : toneForVerdict(result.verdict),
 				label: qualified ? t("verdictQualified") : t(VERDICT_LABEL_KEY[result.verdict]),
 				vehicle,
@@ -111,13 +151,18 @@ export async function cartLineFitments(
  */
 async function unavailable(
 	channel: string,
-	productIds: readonly string[],
+	lines: readonly CartLineRef[],
 ): Promise<Record<string, CartLineFitment>> {
-	const covered = [...new Set(productIds)].filter((id) => programmeCovered(id) === true);
+	const covered = uniqueLines(lines).filter((line) => programmeCovered(line.productId) === true);
 	if (covered.length === 0) return {};
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "fitment" });
 	const label = t(VERDICT_LABEL_KEY.PROVIDER_UNAVAILABLE);
 	return Object.fromEntries(
-		covered.map((id) => [id, { tone: "unconfirmed" as const, label, vehicle: null }]),
+		covered.map((line) => [line.variantId, { tone: "unconfirmed" as const, label, vehicle: null }]),
 	);
+}
+
+/** Each variant once: two lines of the same variant get one answer. */
+function uniqueLines(lines: readonly CartLineRef[]): CartLineRef[] {
+	return [...new Map(lines.map((line) => [line.variantId, line])).values()];
 }

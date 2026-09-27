@@ -268,7 +268,12 @@
 		"listingChangeVehicle": "Auto ändern",
 		"listingEmptyTitle": "Für {vehicle} ist noch kein Produkt geprüft",
 		"listingContact": "Schreiben Sie uns",
-		"listingEmptyBody": "Das heißt nicht, dass nichts passt. Sehen Sie sich das ganze Sortiment an oder schreiben Sie uns – wir helfen Ihnen bei der Auswahl."
+		"listingEmptyBody": "Das heißt nicht, dass nichts passt. Sehen Sie sich das ganze Sortiment an oder schreiben Sie uns – wir helfen Ihnen bei der Auswahl.",
+		"intendedFor": "Bestimmt für: <link>{vehicle}</link>",
+		"intendedForMore": "{count, plural, one {und # weiteres Fahrzeug} other {und # weitere Fahrzeuge}}",
+		"intendedForAlternative": "Dachträger für {vehicle} ansehen",
+		"cartOfferFor": "Angebot für {vehicle}",
+		"cartAlternative": "Dachträger für {vehicle}"
 	},
 	"cart": {
 		"yourCart": "Ihr Warenkorb",

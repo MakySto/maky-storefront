@@ -268,7 +268,12 @@
 		"listingChangeVehicle": "Změnit auto",
 		"listingEmptyTitle": "Pro {vehicle} zatím nemáme ověřený produkt",
 		"listingContact": "Napište nám",
-		"listingEmptyBody": "Neznamená to, že nic nepasuje. Podívejte se na celou nabídku nebo nám napište a s výběrem vám pomůžeme."
+		"listingEmptyBody": "Neznamená to, že nic nepasuje. Podívejte se na celou nabídku nebo nám napište a s výběrem vám pomůžeme.",
+		"intendedFor": "Určeno pro: <link>{vehicle}</link>",
+		"intendedForMore": "{count, plural, one {a # další vozidlo} few {a # další vozidla} other {a # dalších vozidel}}",
+		"intendedForAlternative": "Zobrazit nosiče pro {vehicle}",
+		"cartOfferFor": "Nabídka pro {vehicle}",
+		"cartAlternative": "Nosiče pro {vehicle}"
 	},
 	"cart": {
 		"yourCart": "Váš košík",

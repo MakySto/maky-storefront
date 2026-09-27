@@ -268,7 +268,12 @@
 		"listingChangeVehicle": "Cambia auto",
 		"listingEmptyTitle": "Per {vehicle} non abbiamo ancora un prodotto verificato",
 		"listingContact": "Scrivici",
-		"listingEmptyBody": "Non significa che nulla sia compatibile. Guarda l'intera offerta oppure scrivici: ti aiutiamo a scegliere."
+		"listingEmptyBody": "Non significa che nulla sia compatibile. Guarda l'intera offerta oppure scrivici: ti aiutiamo a scegliere.",
+		"intendedFor": "Veicolo previsto: <link>{vehicle}</link>",
+		"intendedForMore": "{count, plural, one {e # altro veicolo} other {e altri # veicoli}}",
+		"intendedForAlternative": "Vedi i portapacchi da tetto per {vehicle}",
+		"cartOfferFor": "Offerta per {vehicle}",
+		"cartAlternative": "Portapacchi da tetto per {vehicle}"
 	},
 	"cart": {
 		"yourCart": "Il tuo carrello",

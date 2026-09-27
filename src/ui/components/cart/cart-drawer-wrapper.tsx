@@ -15,7 +15,10 @@ export async function CartDrawerWrapper({ channel }: CartDrawerWrapperProps) {
 	// would be silent, and never a reason for the drawer not to open.
 	const fitments = await cartLineFitments(
 		channel,
-		(checkout?.lines ?? []).map((line) => line.variant.product.id),
+		(checkout?.lines ?? []).map((line) => ({
+			productId: line.variant.product.id,
+			variantId: line.variant.id,
+		})),
 	);
 
 	return (

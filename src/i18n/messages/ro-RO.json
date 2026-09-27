@@ -268,7 +268,12 @@
 		"listingChangeVehicle": "Schimbă mașina",
 		"listingEmptyTitle": "Pentru {vehicle} nu avem încă un produs verificat",
 		"listingContact": "Scrieți-ne",
-		"listingEmptyBody": "Asta nu înseamnă că nimic nu se potrivește. Vedeți întreaga ofertă sau scrieți-ne și vă ajutăm să alegeți."
+		"listingEmptyBody": "Asta nu înseamnă că nimic nu se potrivește. Vedeți întreaga ofertă sau scrieți-ne și vă ajutăm să alegeți.",
+		"intendedFor": "Pentru vehiculul: <link>{vehicle}</link>",
+		"intendedForMore": "{count, plural, one {și încă # vehicul} few {și încă # vehicule} other {și încă # de vehicule}}",
+		"intendedForAlternative": "Vedeți barele de acoperiș pentru {vehicle}",
+		"cartOfferFor": "Ofertă pentru {vehicle}",
+		"cartAlternative": "Bare de acoperiș pentru {vehicle}"
 	},
 	"cart": {
 		"yourCart": "Coșul dvs.",

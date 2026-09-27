@@ -3,16 +3,25 @@ import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
 
 import { getLocaleFromChannel } from "@/config/locale";
+import { vehiclePageHref } from "@/lib/catalog-content/vehicle-href";
+import { marketHref } from "@/lib/channel-map";
+import { intendedVehiclesFor, presentFitment } from "@/lib/fitment/intended-for";
 import { isDemoDataset } from "@/lib/fitment/offers";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { datasetSpeaksForProduct, resolveFitment } from "@/lib/fitment/resolve";
 import { GARAGE_COOKIE_NAME } from "@/lib/garage/cookie";
-import { joinVehicleDetail, vehicleDetailParts, vehicleShortLabel } from "@/lib/garage/label";
+import {
+	joinVehicleDetail,
+	vehicleDetailParts,
+	vehicleModelLabel,
+	vehicleShortLabel,
+} from "@/lib/garage/label";
 import { readGarage } from "@/lib/garage/state";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import { VehicleSelectorLauncher } from "@/ui/components/vehicle/vehicle-selector-launcher";
 import { CompatibilityBox } from "./compatibility-box";
+import { IntendedForBox } from "./intended-for-box";
 import { programmeCovered, rememberProgramme } from "./programme-memory";
 import { withinDeadline } from "./within-deadline";
 
@@ -23,6 +32,9 @@ import { withinDeadline } from "./within-deadline";
  * reload after the memo expired took ~280 ms on the box (2026-09-25).
  */
 const PDP_FITMENT_WAIT_MS = 800;
+
+/** How long the vehicle's own page may take to resolve before the name is printed unlinked. */
+const VEHICLE_HREF_WAIT_MS = 300;
 
 /**
  * The PDP's compatibility answer, resolved for THIS product and the saved car.
@@ -58,6 +70,8 @@ const PDP_FITMENT_WAIT_MS = 800;
 export async function PdpCompatibility(props: {
 	channel: string;
 	saleorProductId: string;
+	/** The variant on the page. A claim about one variant is never carried over to another. */
+	saleorVariantId?: string;
 	className?: string;
 }) {
 	try {
@@ -71,10 +85,12 @@ export async function PdpCompatibility(props: {
 async function renderCompatibility({
 	channel,
 	saleorProductId,
+	saleorVariantId,
 	className,
 }: {
 	channel: string;
 	saleorProductId: string;
+	saleorVariantId?: string;
 	className?: string;
 }) {
 	// Explicit, not incidental: this subtree reads the garage cookie.
@@ -106,7 +122,41 @@ async function renderCompatibility({
 	const active = garage.active && !garage.active.unresolved ? garage.active : null;
 	const vehicleLabel = vehicleShortLabel(active ? { ...active, year: active.stored.y } : null);
 
-	const result = resolveFitment(dataset, active?.selection ?? null, { saleorProductId });
+	const result = resolveFitment(dataset, active?.selection ?? null, { saleorProductId, saleorVariantId });
+
+	// An offer documented for another car, or no car saved: say what the offer IS for, rather than
+	// "we cannot confirm" (owner, 2026-09-27 — see `intended-for.ts` for which answers this may and
+	// may not replace).
+	const presentation = presentFitment(result, intendedVehiclesFor(dataset, saleorProductId, saleorVariantId));
+	if (presentation.kind === "intended-for") {
+		const [first] = presentation.vehicles;
+		const carName = active ? vehicleModelLabel(active) : null;
+		// The saved car's offers are the configurator's answer: it reads the Garage — year, roof and
+		// all — which a public vehicle page deliberately does not.
+		const alternative = carName
+			? {
+					label: t("intendedForAlternative", { vehicle: carName }),
+					href: marketHref(channel, "/konfigurator"),
+				}
+			: null;
+		// Past its short deadline, or on any fault, the car is named without a link — never not at all.
+		const vehicleHref = first
+			? (await withinDeadline(vehiclePageHref(channel, first.generationId), VEHICLE_HREF_WAIT_MS).catch(
+					() => null,
+				)) ?? null
+			: null;
+		return (
+			<IntendedForBox
+				vehicles={presentation.vehicles}
+				vehicleHref={vehicleHref}
+				alternative={alternative}
+				// No car: the fact first, then the way to check one's own (CLAUDE.md §8).
+				action={active ? null : <VehicleSelectorLauncher variant="inline" label={t("checkFitment")} />}
+				locale={locale}
+				className={className}
+			/>
+		);
+	}
 
 	// "Show me what DOES fit" belongs on both dead ends, not just the flat no.
 	//

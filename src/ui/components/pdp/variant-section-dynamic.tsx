@@ -290,7 +290,12 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 			    Deliberately OUTSIDE the form below it: the box carries a button, and
 			    `ui/button.tsx` sets no default `type`, so a submit here would add to the cart while
 			    the shopper thought they were changing their car. */}
-			<PdpCompatibility channel={channel} saleorProductId={product.id} className="order-4 mt-5" />
+			<PdpCompatibility
+				channel={channel}
+				saleorProductId={product.id}
+				saleorVariantId={selectedVariant?.id}
+				className="order-4 mt-5"
+			/>
 
 			{/* Rest of variant section - order:5 so it appears BELOW the meta row */}
 			<CartForm action={addToCart} className="order-5 mt-6 space-y-6">
