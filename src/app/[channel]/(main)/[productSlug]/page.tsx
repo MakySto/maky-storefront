@@ -1,29 +1,19 @@
-import { Suspense, cache } from "react";
+import { Suspense } from "react";
 import { categoryUrlFor } from "@/config/category-routes";
-import { cacheTag } from "next/cache";
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
 import { meaningfulTitle } from "@/config/brand";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { getTranslations } from "next-intl/server";
-import { executePublicGraphQL } from "@/lib/graphql";
-import {
-	catchUpstreamError,
-	logUpstreamError,
-	refuseToCacheUpstreamError,
-	toOutcome,
-	type AuthoritativeOutcome,
-	type ResourceOutcome,
-} from "@/lib/saleor/resource-outcome";
-import { ProductDetailsDocument, type ProductDetailsQuery } from "@/gql/graphql";
+import { logUpstreamError } from "@/lib/saleor/resource-outcome";
+import { type ProductDetailsQuery } from "@/gql/graphql";
 import { buildPageMetadata, buildProductJsonLd } from "@/lib/seo";
-import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
 import { REVERSE_MAP, marketHref } from "@/lib/channel-map";
 import { counterpartAlternates } from "@/lib/seo/hreflang";
 import { productCounterparts } from "@/lib/seo/product-counterparts";
 import { getProductMarketPresence } from "@/lib/saleor/product-presence";
-import { previousProductSlug } from "@/lib/product-redirects";
+import { getProductOutcome, type LocalizedProduct } from "@/lib/saleor/product-outcome";
 import { productHref } from "@/lib/product-url";
 import { Breadcrumbs } from "@/ui/components/breadcrumbs";
 import { getGalleryImages } from "@/ui/components/pdp/gallery-images";
@@ -37,11 +27,9 @@ import {
 	VariantSectionSkeleton,
 	VariantSectionError,
 } from "@/ui/components/pdp";
-import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
+import { getLocaleFromChannel } from "@/config/locale";
 import { parseEditorJSToHtml } from "@/lib/editorjs";
-import { isSourceLocale, resolveExactLocaleProduct } from "@/lib/saleor/exact-locale";
-import { lookupBySlug } from "@/lib/saleor/slug-lookup";
-import { productAnswerTags } from "@/lib/saleor/product-cache-tags";
+import { isSourceLocale } from "@/lib/saleor/exact-locale";
 import { publicSku } from "@/lib/product-code";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
 
@@ -49,124 +37,12 @@ import { MarketSwitchTargets } from "@/ui/components/header/market-switch-target
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
 
 // ============================================================================
-// Cached Data Fetching
+// Data
 // ============================================================================
 
-type Product = NonNullable<ProductDetailsQuery["product"]>;
-
-/**
- * The product in the market's language, plus the one thing the exact-locale boundary
- * overwrites and the page still needs: the BASE slug (`Product.slug`). Abroad `slug` is the
- * translated slug — the market's URL — while every other market, the revalidation event and
- * the cache key of the Slovak page know the product by its base slug.
- */
-type LocalizedProduct = Product & { baseSlug: string };
-
-/**
- * The most a product page's own product may take to arrive, retries included.
- *
- * It had no bound but the transport's: 15 s per attempt, three retries with back-off — about a
- * minute, past nginx's 60 s. A crawler that is served the finished page (`htmlLimitedBots`)
- * waits for this answer before the first byte, and on 2026-09-25 one waited 43.8 s. A healthy
- * answer takes ~0.1 s; past this budget the page takes its "temporarily unavailable" path, which
- * is never cached and recovers on the next request. Generous on purpose: a visitor would rather
- * wait a few seconds for a slow Saleor than see that state, and a crawler is not held by it —
- * while Saleor is unwell the proxy answers crawlers 503 before any rendering (`saleorUnwell`).
- * Measured on a preview with every Saleor query slowed by 8 s: 8.4 s with a 6 s budget, against
- * about a minute without one.
- */
-const PRODUCT_DEADLINE_MS = 8_000;
-
-async function fetchProductOutcome(
-	slug: string,
-	channel: string,
-	locale: string,
-): Promise<ResourceOutcome<LocalizedProduct>> {
-	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
-	// One budget for the whole lookup, however many slug languages it tries.
-	const signal = AbortSignal.timeout(PRODUCT_DEADLINE_MS);
-	const result = await lookupBySlug(
-		locale,
-		(data: ProductDetailsQuery) => data.product,
-		(slugLang) =>
-			executePublicGraphQL(ProductDetailsDocument, {
-				variables: {
-					slug: decodeURIComponent(slug),
-					channel,
-					lang,
-					slugLang,
-				},
-				// Slovakia keeps its 300 s fetch cache: its URL slug is the base slug, so the
-				// event's path purge (`/sk-eur/<slug>`) already expires this fetch with the
-				// entry. Abroad the URL is the translated slug, the event cannot name that path,
-				// and a fetch cached here outlived every tag purge by up to 300 s — measured:
-				// the entry re-ran and read the old answer back from the fetch cache. So abroad
-				// the `"use cache"` entry is the only cache, and its tags (see
-				// `product-cache-tags.ts`) are the whole invalidation story.
-				revalidate: isSourceLocale(locale) ? 300 : 0,
-				signal,
-			}),
-	);
-
-	return toOutcome(result, (data) => {
-		const localized = resolveExactLocaleProduct(data.product, locale);
-		return localized && data.product ? { ...localized, baseSlug: data.product.slug } : null;
-	});
-}
-
-/**
- * The cached half. Ends in `refuseToCacheUpstreamError`, which throws on a fault
- * so Next never stores it — an outage must not be remembered as an absence for
- * the length of a `cacheLife("minutes")` entry.
- *
- * Only ever the page's OWN product now. The other markets are answered by
- * `getProductMarketPresence`, in one request, by product id.
- */
-async function getProductOutcomeCached(
-	slug: string,
-	channel: string,
-	locale: string,
-): Promise<AuthoritativeOutcome<LocalizedProduct>> {
-	"use cache";
-	applyCacheProfile(CACHE_PROFILES.products, { channel, locale, slug });
-
-	let outcome = await fetchProductOutcome(slug, channel, locale);
-
-	// Migration shim: a product whose Saleor slug has not been updated to the
-	// SKU-last form yet is still reachable at its canonical new URL. Only fires
-	// on an AUTHORITATIVE miss — a fault throws below without ever getting here,
-	// so a blip can no longer send us down this path — and only for the ten
-	// explicitly mapped slugs, so it disappears on its own once Saleor has converged.
-	if (outcome.status === "not-found") {
-		const previous = previousProductSlug(slug);
-		if (previous) outcome = await fetchProductOutcome(previous, channel, locale);
-	}
-
-	const answer = refuseToCacheUpstreamError(outcome);
-
-	// Abroad the URL slug is the translated one, and the events that must reach this entry
-	// name the base slug — see `product-cache-tags.ts`. No extra tags in Slovakia.
-	const extraTags = productAnswerTags(
-		{ channel, locale, slug },
-		answer.status === "found" ? { status: "found", baseSlug: answer.resource.baseSlug } : answer,
-	);
-	for (const tag of extraTags) cacheTag(tag);
-
-	return answer;
-}
-
-/**
- * `found` | `not-found` | `upstream-error`, shared by the page and its metadata.
- *
- * `cache()` so the two share one answer per request explicitly — including a fault, which is
- * never stored across requests but must not be asked for twice, with retries, inside one.
- */
-export const getProductOutcome = cache(
-	async (slug: string, channel: string): Promise<ResourceOutcome<LocalizedProduct>> => {
-		const locale = getLocaleFromChannel(channel);
-		return catchUpstreamError(() => getProductOutcomeCached(slug, channel, locale));
-	},
-);
+// The page's own product comes from `@/lib/saleor/product-outcome`, the one resolver the page,
+// its metadata and the crawler preflight (`/api/internal/product-outcome`) all read — so a
+// crawler's status and the page it is served are decided by the same `"use cache"` entry.
 
 // ============================================================================
 // Metadata

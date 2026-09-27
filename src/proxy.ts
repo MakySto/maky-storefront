@@ -42,6 +42,7 @@ import {
 	saleorUnwell,
 } from "./lib/route-existence";
 import { HTML_LIMITED_BOTS } from "./config/html-limited-bots.js";
+import { describePreflight, isBotPreflightEnabled, preflightProductOutcome } from "./lib/bot-preflight";
 
 /**
  * First path segments that are legitimately not a market.
@@ -557,6 +558,45 @@ async function route(request: NextRequest) {
 		}
 	}
 
+	// A CRAWLER ON A PRODUCT PAGE -> the page's own product read decides 200 or 503.
+	//
+	// The breaker above only catches an outage the existence query itself sees. When Saleor
+	// answers that small query but fails the page's full product read, a crawler that is served
+	// the finished page (`htmlLimitedBots`) got HTTP 200 with `noindex` and no canonical — a
+	// "drop this product" for a product that has not gone anywhere. The page cannot change its
+	// own status (the shell decides it under cacheComponents), so it is decided here, from the
+	// SAME read the page will render: the preflight asks the page's resolver over loopback, which
+	// fills or reads the page's own `"use cache"` entry. No second Saleor read, no window in which
+	// the status was decided by one read and the page rendered from another. Only a proven
+	// `upstream-error` is a 503; anything the preflight could not find out lets the request
+	// through unchanged. Visitors are never asked about — they keep the page, which recovers on
+	// its own. See src/lib/bot-preflight.ts.
+	let preflight: string | null = null;
+	if (
+		first &&
+		FRIENDLY_SLUGS.has(first) &&
+		(request.method === "GET" || request.method === "HEAD") &&
+		isBotPreflightEnabled() &&
+		HTML_LIMITED_BOTS.test(request.headers.get("user-agent") ?? "")
+	) {
+		const decision = classifyRoute(first, normalizePathname(pathname).split("/").filter(Boolean));
+		if (decision?.family === "product") {
+			const answer = await preflightProductOutcome(decision.slug, decision.channel);
+			preflight = describePreflight(answer);
+			if (answer.verdict === "upstream-error") {
+				return new NextResponse(null, {
+					status: 503,
+					headers: {
+						"retry-after": "120",
+						"cache-control": "no-store",
+						"x-maky-preflight": preflight,
+						...(gateVerdict ? { "x-maky-gate": gateVerdict } : {}),
+					},
+				});
+			}
+		}
+	}
+
 	// REWRITE friendly slug -> Saleor channel slug (URL stays /sk/...)
 	//
 	// A root-level category is carried onto its route file in the same hop. The root
@@ -597,6 +637,7 @@ async function route(request: NextRequest) {
 				? CATEGORY_ROUTE_PREFIX + "/" + segments.slice(1).join("/")
 				: undefined;
 		const res = marketRewrite(request, first, gateVerdict, internalRest);
+		if (preflight) res.headers.set("x-maky-preflight", preflight);
 		// A preview is never indexed or stored, in a live market as much as in any other.
 		if (cmsPreview) {
 			res.headers.set("x-robots-tag", CMS_PREVIEW_ROBOTS_HEADER);

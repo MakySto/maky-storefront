@@ -16,9 +16,10 @@ import htmlBots from "next/dist/shared/lib/router/utils/html-bots.js";
  *
  * A bot on this list gets a blocking render: the answer waits for the page's data. That is why
  * the product page's own query has a deadline (`PRODUCT_DEADLINE_MS`), the Saleor queue lets a
- * caller with a deadline go instead of holding it behind slow queries, and — while Saleor is
- * unwell (the existence gate's breaker is open) — the proxy answers these bots 503 with
- * Retry-After instead of a page whose temporarily-unavailable state reads as `noindex`.
+ * caller with a deadline go instead of holding it behind slow queries, and the proxy answers
+ * these bots 503 with Retry-After instead of a page whose temporarily-unavailable state reads as
+ * `noindex` — while Saleor is unwell (the existence gate's breaker is open), and on a product page
+ * whenever the page's own product read fails (the crawler preflight, `src/lib/bot-preflight.ts`).
  */
 export const HTML_LIMITED_BOTS = new RegExp(
 	`${htmlBots.HTML_LIMITED_BOT_UA_RE.source}|Googlebot|GoogleOther`,
