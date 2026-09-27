@@ -132,7 +132,29 @@ interface ProductEntry {
  * and the offers use. Anything it refuses is dropped here rather than published as a URL that
  * answers with the not-found body.
  */
-async function fetchProductSlugs(channel: string, locale: string): Promise<ProductEntry[]> {
+function fetchProductSlugs(channel: string, locale: string): Promise<ProductEntry[]> {
+	const key = `${channel}\u0000${locale}`;
+	const running = walksInFlight.get(key);
+	if (running) return running;
+	const walk = walkProductSlugs(channel, locale).finally(() => walksInFlight.delete(key));
+	walksInFlight.set(key, walk);
+	return walk;
+}
+
+/**
+ * One product walk per channel and language at a time, in this process.
+ *
+ * Measured on a fresh build (2026-09-27): a foreign market's walk is 92 pages and takes ~14 s
+ * cold, 0.3 s warm; Slovakia ~6.5 s cold. Next locks a cache MISS per fetch key, but its
+ * incremental cache is created per request ("incremental-cache is request specific",
+ * next-server.js), so two requests arriving while the cache is cold — right after a deploy, a
+ * crawler and a second crawler on the same shard — each walked the whole catalogue. A second
+ * caller now joins the walk already running. A failed walk fails both, which is the policy: an
+ * error, never a short list. The map holds only walks in flight, so nothing here outlives them.
+ */
+const walksInFlight = new Map<string, Promise<ProductEntry[]>>();
+
+async function walkProductSlugs(channel: string, locale: string): Promise<ProductEntry[]> {
 	const localized = !isSourceLocale(locale);
 	const nodes = await collectConnection(`${channel}: product`, (after) =>
 		fetchProductPage(channel, locale, after),

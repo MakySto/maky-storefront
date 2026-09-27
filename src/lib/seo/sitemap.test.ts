@@ -927,6 +927,31 @@ describe("a foreign market's sitemap is written in that market's own URLs", () =
 		expect(await sitemapShardEntries("at-products-1")).toHaveLength(1);
 	});
 
+	it("walks a market once when two requests arrive while the cache is cold", async () => {
+		// Every page answers on a later tick, as Saleor would: the second request arrives mid-walk.
+		serve((after) => productPage(after, 950));
+		const answer = executePublicGraphQL.getMockImplementation()!;
+		executePublicGraphQL.mockImplementation(
+			(...args: Parameters<typeof answer>) =>
+				new Promise((resolve) => setTimeout(() => resolve(answer(...args)), 1)),
+		);
+		process.env.MAKY_LIVE_MARKETS = "sk";
+		process.env.MAKY_INDEXABLE_MARKETS = "sk";
+
+		const [a, b] = await Promise.all([
+			sitemapShardEntries("sk-products-1"),
+			sitemapShardEntries("sk-products-1"),
+		]);
+		expect(a).toHaveLength(950);
+		expect(b).toEqual(a);
+		// Ten pages, once — not twenty.
+		expect(productPageCalls()).toBe(10);
+
+		// Finished walks are not kept: the next request asks again (and hits Next's data cache).
+		await sitemapShardEntries("sk-products-1");
+		expect(productPageCalls()).toBe(20);
+	});
+
 	it("keeps Slovakia on the base row, and does not ask for a translation there", async () => {
 		process.env.MAKY_LIVE_MARKETS = "sk";
 		process.env.MAKY_INDEXABLE_MARKETS = "sk";
