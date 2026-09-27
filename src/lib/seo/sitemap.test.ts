@@ -905,6 +905,28 @@ describe("a foreign market's sitemap is written in that market's own URLs", () =
 		expect(withoutCategory).not.toContain(`${BASE}/at/dachtraeger`);
 	});
 
+	it("never advertises a product shard whose every product fails the boundary (count > 0, entries 0)", async () => {
+		// Saleor counts three products in the channel; none carries a translation the market can
+		// render. The shard would 404 — so the index must not name it.
+		serveAustria([node("a", null), node("b", { ...complete("b-de"), slug: null }), node("c", null)]);
+
+		const shards = await sitemapShards();
+		expect(shards.map((shard) => shard.id)).not.toContain("at-products-1");
+		expect(await sitemapShardEntries("at-products-1")).toBeNull();
+		// Every shard the index does name answers.
+		for (const shard of shards) expect(await sitemapShardEntries(shard.id), shard.id).not.toBeNull();
+	});
+
+	it("plans a foreign shard from the count once the first page shows one publishable product", async () => {
+		serveAustria([node("stresny-nosic-sk", complete("dachtrager-neu")), node("zwei", null)]);
+
+		const shards = await sitemapShards();
+		expect(shards.find((shard) => shard.id === "at-products-1")?.urls).toBe(2);
+		// One page: the walk's own first page, not a walk.
+		expect(productPageCalls()).toBe(1);
+		expect(await sitemapShardEntries("at-products-1")).toHaveLength(1);
+	});
+
 	it("keeps Slovakia on the base row, and does not ask for a translation there", async () => {
 		process.env.MAKY_LIVE_MARKETS = "sk";
 		process.env.MAKY_INDEXABLE_MARKETS = "sk";

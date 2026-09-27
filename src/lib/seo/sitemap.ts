@@ -134,23 +134,9 @@ interface ProductEntry {
  */
 async function fetchProductSlugs(channel: string, locale: string): Promise<ProductEntry[]> {
 	const localized = !isSourceLocale(locale);
-	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
-
-	const nodes = await collectConnection(`${channel}: product`, async (after) => {
-		const result = await executePublicGraphQL(SitemapProductsDocument, {
-			variables: { channel, first: PAGE_SIZE, after, lang, localized },
-			revalidate: REVALIDATE_SECONDS,
-			tags: [sitemapTag(channel)],
-		});
-		if (!result.ok) {
-			logUpstreamError("sitemap-products", upstreamError(result), {
-				channel,
-				after: after ?? "start",
-			});
-			return null;
-		}
-		return result.data.products ?? null;
-	});
+	const nodes = await collectConnection(`${channel}: product`, (after) =>
+		fetchProductPage(channel, locale, after),
+	);
 
 	if (!localized) {
 		return nodes
@@ -158,17 +144,49 @@ async function fetchProductSlugs(channel: string, locale: string): Promise<Produ
 			.map((node) => ({ slug: node.slug, updatedAt: node.updatedAt ?? null }));
 	}
 
+	const entries = localizedEntries(nodes, locale);
+	const dropped = nodes.length - entries.length;
+	if (dropped > 0) {
+		console.log(
+			`[sitemap] ${channel}: ${dropped} of ${nodes.length} products are not translated for ${
+				getLocaleConfigByLocale(locale).graphqlLanguageCode
+			}`,
+		);
+	}
+	return entries;
+}
+
+type ProductNode = NonNullable<Awaited<ReturnType<typeof fetchProductPage>>>["edges"][number]["node"];
+
+/**
+ * One page of a channel's product walk. The index reads the FIRST page too (`countIsExact`), with
+ * the very same variables, so the two share one cached answer rather than asking twice.
+ */
+async function fetchProductPage(channel: string, locale: string, after: string | null) {
+	const localized = !isSourceLocale(locale);
+	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
+	const result = await executePublicGraphQL(SitemapProductsDocument, {
+		variables: { channel, first: PAGE_SIZE, after, lang, localized },
+		revalidate: REVALIDATE_SECONDS,
+		tags: [sitemapTag(channel)],
+	});
+	if (!result.ok) {
+		logUpstreamError("sitemap-products", upstreamError(result), {
+			channel,
+			after: after ?? "start",
+		});
+		return null;
+	}
+	return result.data.products ?? null;
+}
+
+/** The products the exact-locale boundary accepts in this language, at their translated slug. */
+function localizedEntries(nodes: readonly ProductNode[], locale: string): ProductEntry[] {
 	const entries: ProductEntry[] = [];
 	for (const node of nodes) {
 		const localizedNode = resolveExactLocaleProduct(node, locale);
 		if (!localizedNode?.slug) continue;
 		entries.push({ slug: localizedNode.slug, updatedAt: node.updatedAt ?? null });
-	}
-	const dropped = nodes.length - entries.length;
-	if (dropped > 0) {
-		console.log(
-			`[sitemap] ${channel}: ${dropped} of ${nodes.length} products are not translated for ${lang}`,
-		);
 	}
 	return entries;
 }
@@ -332,11 +350,36 @@ async function fetchProductCount(channel: string): Promise<number | null> {
  * the exact walk, where the count is the truth rather than a bound.
  */
 async function productShardPlan(market: string): Promise<SitemapShard[]> {
-	const total = await fetchProductCount(CHANNEL_MAP[market].saleorSlug);
-	if (total !== null && total <= MAX_URLS_PER_SITEMAP) {
+	const { saleorSlug: channel, locale } = CHANNEL_MAP[market];
+	const total = await fetchProductCount(channel);
+	if (total !== null && total <= MAX_URLS_PER_SITEMAP && (await countIsExact(channel, locale, total))) {
 		return planShards(market, "products", total);
 	}
 	return planShards(market, "products", (await productEntriesFor(market)).length);
+}
+
+/**
+ * Whether a one-shard count may plan the shard — which comes down to one question, because a
+ * single shard exists exactly when it has one entry: will the shard have one?
+ *
+ * In Slovakia every counted product is an entry (base rows, no boundary). Abroad a product is an
+ * entry only when the exact-locale boundary accepts its translation, so a positive count alone
+ * could advertise `at-products-1.xml` while every product failed the boundary — and the shard,
+ * which reads the real entries, would answer 404 to the URL the index had just named (Codex
+ * review, 2026-09-27; not seen on production, where all eleven foreign markets carry 9 157 of
+ * 9 157). So abroad the first page must show one accepted product; if it does not, the exact walk
+ * decides. The first page is the walk's own first page (`fetchProductPage`), cached with it.
+ */
+async function countIsExact(channel: string, locale: string, total: number): Promise<boolean> {
+	if (total === 0 || isSourceLocale(locale)) return true;
+	const first = await fetchProductPage(channel, locale, null);
+	if (!first) return false;
+	return (
+		localizedEntries(
+			first.edges.map((edge) => edge.node),
+			locale,
+		).length > 0
+	);
 }
 
 export type SitemapShardKind = "pages" | "products" | "vehicles";
