@@ -35,7 +35,6 @@ import {
 	type ProductKind,
 	type VehicleSelection,
 } from "./contract";
-import { ABSENT_UNDER_PARTIAL_COVERAGE } from "./intended-for";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -58,6 +57,12 @@ function emptyResult(verdict: FitmentVerdict, reason: string, dataset: FitmentDa
 		reason,
 	};
 }
+
+/**
+ * The reason for "this car has no row for this offer, and no make is complete". `intended-for.ts`
+ * reads it back: the offer's own applications are shown instead of an empty "we do not know".
+ */
+export const ABSENT_UNDER_PARTIAL_COVERAGE = "absent-under-partial-coverage";
 
 /** A dataset past `validUntil`, or older than `staleAfterDays`, may not answer YES. */
 export function isDatasetStale(dataset: FitmentDataset, now: number): boolean {

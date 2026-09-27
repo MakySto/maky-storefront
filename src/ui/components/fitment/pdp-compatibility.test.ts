@@ -220,6 +220,22 @@ describe("PDP compatibility on the N15060 offers", () => {
 		expect(markup).not.toContain("stresne-nosice");
 	});
 
+	it("expired data with no car saved says 'Vyberte vozidlo', as before — never 'Určené pre'", async () => {
+		const DAY = 24 * 60 * 60 * 1000;
+		readGarage.mockResolvedValue(garageWith(null));
+		for (const dataset of [
+			n15060Dataset({
+				validity: { validUntil: new Date(Date.now() - DAY).toISOString(), staleAfterDays: 30 },
+			}),
+			n15060Dataset({ generatedAt: new Date(Date.now() - 31 * DAY).toISOString() }),
+		]) {
+			loadFitmentDataset.mockResolvedValue({ dataset });
+			const { text } = await render("sk-eur", AUDI_OFFER);
+			expect(text).toContain("Vyberte vozidlo");
+			expect(text).not.toContain("Určené pre");
+		}
+	});
+
 	it("simulated data keeps its box and its test-data notice — never a bare 'Určené pre'", async () => {
 		loadFitmentDataset.mockResolvedValue({ dataset: n15060Dataset({ source: { system: "fixture" } }) });
 		for (const car of [PASSAT_2025, null]) {

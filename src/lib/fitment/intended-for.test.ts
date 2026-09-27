@@ -183,6 +183,44 @@ describe("presentFitment on the real N15060 offers", () => {
 	});
 });
 
+describe("expired data never names what an offer is for", () => {
+	const DAY = 24 * 60 * 60 * 1000;
+	const past = new Date(Date.now() - DAY).toISOString();
+	const expired = {
+		"validUntil in the past": n15060Dataset({ validity: { validUntil: past, staleAfterDays: 30 } }),
+		"older than staleAfterDays": n15060Dataset({
+			generatedAt: new Date(Date.now() - 31 * DAY).toISOString(),
+		}),
+	};
+
+	// The real flow with no car saved: the resolver answers NO_VEHICLE_SELECTED before it checks
+	// freshness, so the gate has to hold in `intendedVehiclesFor` itself.
+	it.each(Object.entries(expired))("%s, no car saved → the ordinary 'choose a car' box", (_, dataset) => {
+		const result = resolveFitment(dataset, null, { ...offer(AUDI_OFFER) });
+		expect(result.verdict).toBe("NO_VEHICLE_SELECTED");
+		expect(intendedVehiclesFor(dataset, AUDI_OFFER.productId, AUDI_OFFER.variantId)).toEqual([]);
+		expect(
+			presentFitment(result, intendedVehiclesFor(dataset, AUDI_OFFER.productId, AUDI_OFFER.variantId)),
+		).toEqual({ kind: "verdict" });
+	});
+
+	it.each(Object.entries(expired))("%s, Passat saved → STALE, never 'Určené pre'", (_, dataset) => {
+		const result = resolveFitment(dataset, PASSAT_2025, { ...offer(AUDI_OFFER) });
+		expect(result.verdict).toBe("STALE");
+		expect(
+			presentFitment(result, intendedVehiclesFor(dataset, AUDI_OFFER.productId, AUDI_OFFER.variantId)),
+		).toEqual({ kind: "verdict" });
+	});
+
+	it("fresh data with no car saved still names the car", () => {
+		const dataset = n15060Dataset();
+		const result = resolveFitment(dataset, null, { ...offer(AUDI_OFFER) });
+		expect(
+			presentFitment(result, intendedVehiclesFor(dataset, AUDI_OFFER.productId, AUDI_OFFER.variantId)).kind,
+		).toBe("intended-for");
+	});
+});
+
 describe("the resolver, variant by variant", () => {
 	it("answers for the exact variant, and only for it", () => {
 		const dataset = n15060Dataset();

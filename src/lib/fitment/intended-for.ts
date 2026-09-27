@@ -36,9 +36,9 @@ import {
 	type FitmentWindow,
 	type RoofType,
 } from "./contract";
+import { ABSENT_UNDER_PARTIAL_COVERAGE, isDatasetStale } from "./resolve";
 
-/** The resolver's reason for "this car has no row for this offer, and no make is complete". */
-export const ABSENT_UNDER_PARTIAL_COVERAGE = "absent-under-partial-coverage";
+export { ABSENT_UNDER_PARTIAL_COVERAGE };
 
 export interface IntendedVehicle {
 	readonly applicationId: string;
@@ -88,13 +88,19 @@ function vehicleName(names: Names, generationId: string): string | null {
  * against, for this product and — when given — this variant. A held, disputed or unsellable row
  * describes nothing a shopper may rely on, so it is not listed; the resolver's own box speaks
  * for those.
+ *
+ * Nothing from a dataset past `validUntil` or older than `staleAfterDays` — the resolver's own
+ * freshness rule. It matters most with no car saved: the resolver answers NO_VEHICLE_SELECTED
+ * BEFORE it looks at freshness, so without this an expired dataset would still name the car an
+ * offer is for (Codex review of c5bc471, 2026-09-27). Expired data says only what it said before.
  */
 export function intendedVehiclesFor(
 	dataset: FitmentDataset | null,
 	saleorProductId: string,
 	saleorVariantId?: string,
+	now: number = Date.now(),
 ): IntendedVehicle[] {
-	if (!dataset) return [];
+	if (!dataset || isDatasetStale(dataset, now)) return [];
 	const names = namesOf(dataset);
 	const out: IntendedVehicle[] = [];
 	for (const application of dataset.applications) {
