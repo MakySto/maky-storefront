@@ -78,6 +78,14 @@ describe("a caller deadline reaches the wire", () => {
 		expect(init.signal).toBeInstanceOf(AbortSignal);
 	});
 
+	it("a request that went out and timed out is NOT marked never-sent", async () => {
+		fetchMock = neverAnswers();
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+		const result = await find(AbortSignal.timeout(50));
+		expect(result.ok).toBe(false);
+		expect(!result.ok && result.error.neverSent).toBeUndefined();
+	});
+
 	it("does not put a request on the wire at all once the deadline has passed", async () => {
 		fetchMock = vi.fn(async () => json({ data: { checkout: null } }));
 		globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -163,6 +171,9 @@ describe("a caller deadline also ends the wait for a queue slot", () => {
 		expect(result.ok).toBe(false);
 		expect(Date.now() - started).toBeLessThan(2_000);
 		expect(fetchMock.mock.calls.length, "the queued query must not go out after its deadline").toBe(onWire);
+		// …and it says so: nothing reached Saleor, so nothing is known about Saleor.
+		expect(!result.ok && result.error.neverSent).toBe(true);
+		expect(!result.ok && result.error.type).toBe("network");
 
 		for (const holder of holders) holder.abort();
 		await Promise.all(held);

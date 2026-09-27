@@ -36,6 +36,13 @@ export async function GET(request: NextRequest) {
 
 	const outcome = await getProductOutcome(slug, channel);
 
+	// The read gave up in this bundle's own Saleor queue, before anything was sent. Route
+	// handlers share that queue with the sitemap walks, not with the page — so this says only
+	// that the queue was full, never that Saleor is down. The preflight fails open on it.
+	if (outcome.status === "upstream-error" && outcome.neverSent) {
+		return Response.json({ status: "undetermined" }, { headers: NO_STORE });
+	}
+
 	if (outcome.status === "upstream-error") {
 		logUpstreamError("product-preflight", outcome, { slug, channel });
 		return Response.json(

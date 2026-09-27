@@ -130,6 +130,40 @@ describe("catchUpstreamError", () => {
 		expect(outcome).toMatchObject({ status: "upstream-error", type: "http", retryable: true });
 	});
 
+	it("carries 'never sent' across the use-cache boundary, and only when it is true", async () => {
+		const queued = new UpstreamUnavailableError({
+			status: "upstream-error",
+			type: "network",
+			retryable: true,
+			message: "ProductDetails: deadline exceeded before a Saleor slot came free",
+			neverSent: true,
+		});
+		expect(queued.digest).toBe("MAKY_UPSTREAM_UNAVAILABLE;network;1;never-sent");
+		const outcome = await catchUpstreamError(async () => {
+			throw asDeliveredByUseCache(queued);
+		});
+		expect(outcome).toMatchObject({ status: "upstream-error", type: "network", neverSent: true });
+
+		// A request that went out and failed is a statement about Saleor: no flag.
+		const sent = await catchUpstreamError(async () => {
+			throw asDeliveredByUseCache(
+				new UpstreamUnavailableError({
+					status: "upstream-error",
+					type: "network",
+					retryable: true,
+					message: "x",
+				}),
+			);
+		});
+		expect(sent).not.toHaveProperty("neverSent");
+		// A digest written before the flag existed still parses.
+		const old = await catchUpstreamError(async () => {
+			throw Object.assign(new Error("x"), { digest: "MAKY_UPSTREAM_UNAVAILABLE;http;1" });
+		});
+		expect(old).toMatchObject({ status: "upstream-error", type: "http", retryable: true });
+		expect(old).not.toHaveProperty("neverSent");
+	});
+
 	it("treats ANY rejection from a cached resolver as a fault, never as an answer or a crash", async () => {
 		for (const thrown of [
 			new TypeError("a real bug"),

@@ -30,6 +30,8 @@ export type ResourceOutcome<T> =
 			type: GraphQLErrorType;
 			retryable: boolean;
 			message: string;
+			/** Nothing reached Saleor: the read gave up in the local queue (`GraphQLError.neverSent`). */
+			neverSent?: true;
 	  };
 
 /**
@@ -53,6 +55,7 @@ export function upstreamError(result: Extract<GraphQLResult<unknown>, { ok: fals
 		type: result.error.type,
 		retryable: result.error.isRetryable ?? false,
 		message: result.error.message,
+		...(result.error.neverSent ? { neverSent: true as const } : {}),
 	};
 }
 
@@ -101,15 +104,20 @@ const UPSTREAM_DIGEST_PREFIX = "MAKY_UPSTREAM_UNAVAILABLE";
 const ERROR_TYPES: readonly GraphQLErrorType[] = ["network", "http", "graphql", "validation", "blocked"];
 
 function upstreamDigest(outcome: UpstreamError): string {
-	return `${UPSTREAM_DIGEST_PREFIX};${outcome.type};${outcome.retryable ? 1 : 0}`;
+	// The fourth field is optional, so a digest written without it still parses.
+	return `${UPSTREAM_DIGEST_PREFIX};${outcome.type};${outcome.retryable ? 1 : 0}${
+		outcome.neverSent ? ";never-sent" : ""
+	}`;
 }
 
-function parseUpstreamDigest(digest: unknown): { type: GraphQLErrorType; retryable: boolean } | null {
+function parseUpstreamDigest(
+	digest: unknown,
+): { type: GraphQLErrorType; retryable: boolean; neverSent: boolean } | null {
 	if (typeof digest !== "string") return null;
-	const [prefix, type, retryable] = digest.split(";");
+	const [prefix, type, retryable, sent] = digest.split(";");
 	if (prefix !== UPSTREAM_DIGEST_PREFIX) return null;
 	const known = ERROR_TYPES.find((candidate) => candidate === type);
-	return known ? { type: known, retryable: retryable === "1" } : null;
+	return known ? { type: known, retryable: retryable === "1", neverSent: sent === "never-sent" } : null;
 }
 
 /**
@@ -166,6 +174,7 @@ export function upstreamErrorFromRejection(error: unknown): UpstreamError {
 			status: "upstream-error",
 			type: known.type,
 			retryable: known.retryable,
+			...(known.neverSent ? { neverSent: true as const } : {}),
 			message:
 				error instanceof UpstreamUnavailableError
 					? error.message

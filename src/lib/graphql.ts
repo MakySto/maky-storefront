@@ -24,6 +24,12 @@ export interface GraphQLError {
 	isRetryable: boolean;
 	/** Original error for debugging */
 	cause?: unknown;
+	/**
+	 * The request never left this process: it gave up waiting for a slot in the Saleor queue.
+	 * Still a `network` failure to every caller that only asks "did it work" — but it says
+	 * nothing about Saleor, and the crawler preflight must not read it as an outage.
+	 */
+	neverSent?: true;
 	/** Saleor validation errors with field info (only for 'validation' type) */
 	validationErrors?: ReadonlyArray<{
 		field?: string | null;
@@ -161,7 +167,7 @@ class RequestQueue {
 			// then would send a request after the caller had given up — which is exactly the
 			// "it went out later anyway" failure.
 			if (signal?.aborted) {
-				throw abortReason(signal);
+				throw new QueueWaitAbort(abortReason(signal));
 			}
 			// The floor is skipped rather than slept for zero: a `setTimeout(…, 0)` per query
 			// is a macrotask hop on the render path for no reason once the floor is gone.
@@ -187,12 +193,12 @@ class RequestQueue {
 		if (this.activeRequests < this.maxConcurrent) {
 			return Promise.resolve();
 		}
-		if (signal?.aborted) return Promise.reject(abortReason(signal));
+		if (signal?.aborted) return Promise.reject(new QueueWaitAbort(abortReason(signal)));
 		return new Promise((resolve, reject) => {
 			const onAbort = () => {
 				const index = this.queue.indexOf(admit);
 				if (index !== -1) this.queue.splice(index, 1);
-				reject(abortReason(signal!));
+				reject(new QueueWaitAbort(abortReason(signal!)));
 			};
 			const admit = () => {
 				signal?.removeEventListener("abort", onAbort);
@@ -208,6 +214,21 @@ class RequestQueue {
 			const next = this.queue.shift();
 			next?.();
 		}
+	}
+}
+
+/**
+ * The caller's deadline passed while the job was still waiting for a slot — nothing was sent.
+ *
+ * Its own class so `executeGraphQL` can tell it from a request that went out and timed out.
+ * The distinction matters where the answer becomes a status: route handlers and pages run in
+ * separate bundles, each with its own queue, so a queue full of sitemap walks can make a product
+ * read wait while Saleor itself is healthy (review of the crawler preflight, 2026-09-27).
+ */
+class QueueWaitAbort extends Error {
+	constructor(readonly reason: Error) {
+		super(`gave up waiting for a Saleor slot: ${reason.message}`);
+		this.name = "QueueWaitAbort";
 	}
 }
 
@@ -644,7 +665,19 @@ async function executeGraphQL<Result, Variables>(
 			signal,
 		);
 	} catch (error) {
-		// The queue refused to start an expired job, or the fetch aborted.
+		// The queue refused to start an expired job — nothing reached Saleor — or the fetch aborted.
+		if (error instanceof QueueWaitAbort) {
+			return {
+				ok: false,
+				error: {
+					type: "network",
+					message: `${operationName}: deadline exceeded before a Saleor slot came free`,
+					isRetryable: true,
+					cause: error,
+					neverSent: true,
+				},
+			};
+		}
 		return networkError(`${operationName}: deadline exceeded`, error);
 	}
 

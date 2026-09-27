@@ -110,6 +110,8 @@ export async function preflightProductOutcome(
 		const body: unknown = await response.json();
 		const status =
 			typeof body === "object" && body !== null ? (body as { status?: unknown }).status : undefined;
+		// The route could not tell: its read never reached Saleor (a full local queue).
+		if (status === "undetermined") return skipped("undetermined");
 		const verdict = VERDICTS.find((candidate) => candidate === status);
 		if (!verdict) return skipped("malformed");
 		return { verdict, ms: Math.round(now() - started) };

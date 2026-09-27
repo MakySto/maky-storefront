@@ -80,4 +80,19 @@ describe("/api/internal/product-outcome", () => {
 		expect(JSON.stringify(body)).not.toContain("internal detail");
 		expect(res.headers.get("cache-control")).toBe("private, no-store");
 	});
+
+	it("says 'undetermined' — never upstream-error — when the read gave up in the local queue", async () => {
+		// Route handlers share their Saleor queue with the sitemap walks, not with the page: a full
+		// queue says nothing about Saleor, and must not become a 503 for a crawler.
+		getProductOutcome.mockResolvedValue({
+			status: "upstream-error",
+			type: "network",
+			retryable: true,
+			message: "ProductDetails: deadline exceeded before a Saleor slot came free",
+			neverSent: true,
+		});
+		const res = await call("slug=x&channel=sk-eur");
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ status: "undetermined" });
+	});
 });

@@ -84,6 +84,11 @@ describe("preflightProductOutcome", () => {
 		["a 500 from the route itself", () => new Response("boom", { status: 500 }), "http-500"],
 		["a body that is not JSON", () => new Response("<html>", { status: 200 }), "transport"],
 		["a JSON body with an unknown status", () => json({ status: "maybe" }), "malformed"],
+		[
+			"the route's 'undetermined' (its read never reached Saleor)",
+			() => json({ status: "undetermined" }),
+			"undetermined",
+		],
 		["a JSON body that is not an object", () => json("found"), "malformed"],
 		[
 			"a refused connection",
