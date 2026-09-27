@@ -103,7 +103,13 @@ export async function Footer({ channel }: { channel: string }) {
 	return (
 		// Dark graphite with a copper mountain line drawn along the right edge, as in the approved
 		// design. The drawing sits behind a column that holds nothing, so it never runs under a link.
-		<footer className="bg-surface-inverse relative overflow-hidden print:hidden">
+		//
+		// Clipped sideways only (`overflow-x-clip`), never upwards: the country list in the bottom bar
+		// opens UP, and under `overflow-hidden` its first three entries — Slovensko, Česko,
+		// Deutschland — sat above the footer's top edge, cut off and unclickable (owner's
+		// screenshot, 2026-09-27; measured on production at 1440×900). `clip` on one axis leaves the
+		// other visible, where `hidden` would have turned it into a scroll box.
+		<footer className="bg-surface-inverse relative overflow-x-clip print:hidden">
 			<div
 				aria-hidden="true"
 				className="art-mountains bg-copper-400/55 pointer-events-none absolute right-4 bottom-16 hidden h-52 w-[34rem] xl:block 2xl:right-[calc((100vw-88rem)/2+1rem)]"

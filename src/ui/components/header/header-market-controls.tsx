@@ -166,7 +166,9 @@ export function HeaderMarketControls({
 
 			{isOpen && canSwitch && (
 				<div
-					className={`border-border-subtle bg-surface-card absolute z-[var(--z-dropdown)] w-72 rounded-sm border p-1 shadow-xl ${
+					// Twelve markets are ~490 px: on a short window the list scrolls rather than running
+					// off the top of the screen, where nothing can reach it.
+					className={`border-border-subtle bg-surface-card absolute z-[var(--z-dropdown)] max-h-[calc(100dvh-5rem)] w-72 overflow-y-auto rounded-sm border p-1 shadow-xl ${
 						dark ? "bottom-full left-0 mb-2 sm:right-0 sm:left-auto" : "top-full right-0 mt-2"
 					}`}
 				>
