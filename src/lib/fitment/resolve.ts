@@ -35,6 +35,7 @@ import {
 	type ProductKind,
 	type VehicleSelection,
 } from "./contract";
+import { ABSENT_UNDER_PARTIAL_COVERAGE } from "./intended-for";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -122,6 +123,14 @@ function dedupeConditions(applications: FitmentApplication[]): FitmentCondition[
 export type ResolveOptions = {
 	/** Restrict to applications offering this product. Used by the PDP. */
 	saleorProductId?: string;
+	/**
+	 * And to this exact variant of it — the one on the page or in the cart line. A claim the
+	 * source makes for one variant is never carried over to a sibling: `saleorVariantId` is
+	 * "the exact variant that is purchasable" (`FitmentProductRef`). Omitted, the product
+	 * answers for all its variants, as before. Every product in the 2026-09-15 export has one
+	 * variant, and Saleor's matches the dataset's for all 9 157 published (checked 2026-09-27).
+	 */
+	saleorVariantId?: string;
 	/** A product the catalogue marks as fitting every vehicle. */
 	universal?: boolean;
 	/** Injected for determinism in tests. */
@@ -157,8 +166,11 @@ export function resolveFitment(
 	const coverage = coverageComplete ? "complete" : "partial";
 
 	const forGeneration = dataset.applications.filter((a) => a.generationId === selection.generationId);
+	const isOffer = (p: FitmentProductRef) =>
+		p.saleorProductId === options.saleorProductId &&
+		(options.saleorVariantId === undefined || p.saleorVariantId === options.saleorVariantId);
 	const relevant = options.saleorProductId
-		? forGeneration.filter((a) => a.products.some((p) => p.saleorProductId === options.saleorProductId))
+		? forGeneration.filter((a) => a.products.some(isOffer))
 		: forGeneration;
 
 	const positives: FitmentApplication[] = [];
@@ -213,7 +225,7 @@ export function resolveFitment(
 		}
 
 		const refs = positives
-			.map((a) => a.products.find((p) => p.saleorProductId === options.saleorProductId))
+			.map((a) => a.products.find(isOffer))
 			.filter((r): r is NonNullable<typeof r> => Boolean(r));
 
 		// Evidence lives on the PRODUCT, so a row disputed for this product is disputed
@@ -279,7 +291,9 @@ export function resolveFitment(
 		return { ...emptyResult("NO_FIT", "absent-under-complete-coverage", dataset), coverage };
 	}
 
-	return { ...emptyResult("UNKNOWN", "absent-under-partial-coverage", dataset), coverage };
+	// `intended-for.ts` reads this reason back: the offer's own applications are what the
+	// shopper is shown instead of an empty "we do not know".
+	return { ...emptyResult("UNKNOWN", ABSENT_UNDER_PARTIAL_COVERAGE, dataset), coverage };
 }
 
 /**
