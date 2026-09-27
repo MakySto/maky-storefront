@@ -220,6 +220,16 @@ describe("PDP compatibility on the N15060 offers", () => {
 		expect(markup).not.toContain("stresne-nosice");
 	});
 
+	it("simulated data keeps its box and its test-data notice — never a bare 'Určené pre'", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: n15060Dataset({ source: { system: "fixture" } }) });
+		for (const car of [PASSAT_2025, null]) {
+			readGarage.mockResolvedValue(garageWith(car));
+			const { text } = await render("sk-eur", AUDI_OFFER);
+			expect(text).toContain("Testovacia ukážka");
+			expect(text).not.toContain("Určené pre");
+		}
+	});
+
 	it("an outage after a good load says it cannot check now — never 'made for' from stale memory", async () => {
 		readGarage.mockResolvedValue(garageWith(PASSAT_2025));
 		await render("sk-eur", AUDI_OFFER);

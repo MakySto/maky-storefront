@@ -126,8 +126,11 @@ async function renderCompatibility({
 
 	// An offer documented for another car, or no car saved: say what the offer IS for, rather than
 	// "we cannot confirm" (owner, 2026-09-27 — see `intended-for.ts` for which answers this may and
-	// may not replace).
-	const presentation = presentFitment(result, intendedVehiclesFor(dataset, saleorProductId, saleorVariantId));
+	// may not replace). Never from simulated data: that answer carries its test-data notice, and it
+	// only does so in `CompatibilityBox` below.
+	const presentation = isDemoDataset(dataset)
+		? ({ kind: "verdict" } as const)
+		: presentFitment(result, intendedVehiclesFor(dataset, saleorProductId, saleorVariantId));
 	if (presentation.kind === "intended-for") {
 		const [first] = presentation.vehicles;
 		const carName = active ? vehicleModelLabel(active) : null;
