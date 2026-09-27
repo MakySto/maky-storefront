@@ -184,13 +184,21 @@ type ProductNode = NonNullable<Awaited<ReturnType<typeof fetchProductPage>>>["ed
  * One page of a channel's product walk. The index reads the FIRST page too (`countIsExact`), with
  * the very same variables, so the two share one cached answer rather than asking twice.
  */
-async function fetchProductPage(channel: string, locale: string, after: string | null) {
+async function fetchProductPage(
+	channel: string,
+	locale: string,
+	after: string | null,
+	options: { readonly deadlineMs?: number } = {},
+) {
 	const localized = !isSourceLocale(locale);
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 	const result = await executePublicGraphQL(SitemapProductsDocument, {
 		variables: { channel, first: PAGE_SIZE, after, lang, localized },
 		revalidate: REVALIDATE_SECONDS,
 		tags: [sitemapTag(channel)],
+		// A bounded single attempt, for the index's look at the first page. The deadline is not part
+		// of Next's cache key, so the walk still shares the answer.
+		...(options.deadlineMs ? { retry: false, signal: AbortSignal.timeout(options.deadlineMs) } : {}),
 	});
 	if (!result.ok) {
 		logUpstreamError("sitemap-products", upstreamError(result), {
@@ -392,10 +400,17 @@ async function productShardPlan(market: string): Promise<SitemapShard[]> {
  * 9 157). So abroad the first page must show one accepted product; if it does not, the exact walk
  * decides. The first page is the walk's own first page (`fetchProductPage`), cached with it.
  */
+/** Cold, one page takes ~150 ms (a 92-page walk is ~14 s); warm, it is a cache read. */
+const FIRST_PAGE_DEADLINE_MS = 5_000;
+
 async function countIsExact(channel: string, locale: string, total: number): Promise<boolean> {
 	if (total === 0 || isSourceLocale(locale)) return true;
-	const first = await fetchProductPage(channel, locale, null);
-	if (!first) return false;
+	const first = await fetchProductPage(channel, locale, null, { deadlineMs: FIRST_PAGE_DEADLINE_MS });
+	// The page did not come: nothing is learned about the translations, so the count stands, as it
+	// did before this check. Falling back to the walk would only send the request that just failed
+	// again, with a full retry ladder (review 2026-09-27), and the shard fails loudly by itself if
+	// Saleor stays down.
+	if (!first) return true;
 	return (
 		localizedEntries(
 			first.edges.map((edge) => edge.node),

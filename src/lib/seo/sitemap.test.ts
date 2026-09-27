@@ -927,6 +927,29 @@ describe("a foreign market's sitemap is written in that market's own URLs", () =
 		expect(await sitemapShardEntries("at-products-1")).toHaveLength(1);
 	});
 
+	it("a first page that does not load leaves the count standing, and is not asked for twice", async () => {
+		executePublicGraphQL.mockImplementation((document: unknown) => {
+			if (document === SitemapProductCountDocument)
+				return Promise.resolve({ ok: true, data: { products: { totalCount: 9_157 } } });
+			if (document === SitemapProductsDocument)
+				return Promise.resolve({ ok: false, error: { kind: "network" } });
+			return Promise.resolve(categoriesResult);
+		});
+
+		const shards = await sitemapShards();
+		expect(shards.find((shard) => shard.id === "at-products-1")?.urls).toBe(9_157);
+		expect(productPageCalls()).toBe(1);
+		// Bounded: one attempt with a deadline, not the retry ladder.
+		const options = executePublicGraphQL.mock.calls.find(
+			(call) => call[0] === SitemapProductsDocument,
+		)![1] as {
+			retry?: boolean;
+			signal?: AbortSignal;
+		};
+		expect(options.retry).toBe(false);
+		expect(options.signal).toBeInstanceOf(AbortSignal);
+	});
+
 	it("walks a market once when two requests arrive while the cache is cold", async () => {
 		// Every page answers on a later tick, as Saleor would: the second request arrives mid-walk.
 		serve((after) => productPage(after, 950));
