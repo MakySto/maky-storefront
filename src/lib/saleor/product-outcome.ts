@@ -10,7 +10,7 @@ import {
 	type ResourceOutcome,
 } from "@/lib/saleor/resource-outcome";
 import { ProductDetailsDocument, type ProductDetailsQuery } from "@/gql/graphql";
-import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
+import { CACHE_PROFILES, applyCacheProfile, buildTag } from "@/lib/cache-manifest";
 import { previousProductSlug } from "@/lib/product-redirects";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { isSourceLocale, resolveExactLocaleProduct } from "@/lib/saleor/exact-locale";
@@ -71,6 +71,14 @@ async function fetchProductOutcome(
 				// the `"use cache"` entry is the only cache, and its tags (see
 				// `product-cache-tags.ts`) are the whole invalidation story.
 				revalidate: isSourceLocale(locale) ? 300 : 0,
+				// ...and the product's own tag on that fetch, the one the event expires
+				// IMMEDIATELY. The path purge reaches a fetch only through the READER's implicit
+				// tags, and the reader is no longer always the page: the crawler preflight's
+				// internal route regenerates this entry too, and a fetch it reads is not under
+				// `/sk-eur/<slug>` — so after a price change it would have stored the old answer
+				// back into the page's entry (review of 73f2521, 2026-09-27). With the tag the
+				// purge reaches the fetch whoever reads it.
+				tags: [buildTag(CACHE_PROFILES.products, { channel, locale, slug })],
 				signal,
 			}),
 	);
