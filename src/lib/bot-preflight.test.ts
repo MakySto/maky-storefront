@@ -3,8 +3,10 @@ import { PRODUCT_DEADLINE_MS } from "@/config/product-deadline";
 import {
 	PREFLIGHT_PATH,
 	PREFLIGHT_TIMEOUT_MS,
+	__resetSkipLog,
 	describePreflight,
 	isBotPreflightEnabled,
+	logSkippedPreflight,
 	preflightProductOutcome,
 } from "./bot-preflight";
 import { INTERNAL_TOKEN_HEADER, internalLoopbackToken, isInternalLoopbackToken } from "./internal-token";
@@ -41,6 +43,15 @@ describe("preflightProductOutcome", () => {
 		expect(new Headers(init?.headers).get(INTERNAL_TOKEN_HEADER)).toBe(internalLoopbackToken());
 		expect(init?.cache).toBe("no-store");
 		expect(init?.signal).toBeInstanceOf(AbortSignal);
+		// Never follows a redirect, which would carry the token header elsewhere.
+		expect(init?.redirect).toBe("manual");
+	});
+
+	it("treats a redirect as 'something else answered': skipped, not a verdict", async () => {
+		const redirect = () =>
+			new Response(null, { status: 308, headers: { location: "https://example.test/" } });
+		const answer = await preflightProductOutcome("x", "sk-eur", { port: "3000", fetchImpl: stub(redirect) });
+		expect(answer).toMatchObject({ verdict: "skipped", reason: "http-308" });
 	});
 
 	for (const status of ["found", "not-found", "upstream-error"] as const) {
@@ -129,5 +140,25 @@ describe("the loopback token", () => {
 		expect(isInternalLoopbackToken(token.slice(1))).toBe(false);
 		expect(isInternalLoopbackToken("")).toBe(false);
 		expect(isInternalLoopbackToken(null)).toBe(false);
+	});
+});
+
+describe("logSkippedPreflight", () => {
+	afterEach(() => __resetSkipLog());
+
+	it("warns once per reason per minute, and never for a verdict", () => {
+		const log = vi.fn();
+		const skipped = { verdict: "skipped", reason: "transport", ms: 3 } as const;
+		logSkippedPreflight(skipped, { now: 0, log });
+		logSkippedPreflight(skipped, { now: 59_999, log });
+		logSkippedPreflight({ verdict: "skipped", reason: "timeout", ms: 9_500 }, { now: 1, log });
+		logSkippedPreflight({ verdict: "found", ms: 2 }, { now: 2, log });
+		logSkippedPreflight({ verdict: "upstream-error", ms: 7_000 }, { now: 3, log });
+		logSkippedPreflight(skipped, { now: 60_000, log });
+		expect(log.mock.calls.map(([message]) => String(message).match(/\((\w+),/)?.[1])).toEqual([
+			"transport",
+			"timeout",
+			"transport",
+		]);
 	});
 });

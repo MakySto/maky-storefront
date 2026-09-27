@@ -42,7 +42,12 @@ import {
 	saleorUnwell,
 } from "./lib/route-existence";
 import { HTML_LIMITED_BOTS } from "./config/html-limited-bots.js";
-import { describePreflight, isBotPreflightEnabled, preflightProductOutcome } from "./lib/bot-preflight";
+import {
+	describePreflight,
+	isBotPreflightEnabled,
+	logSkippedPreflight,
+	preflightProductOutcome,
+} from "./lib/bot-preflight";
 
 /**
  * First path segments that are legitimately not a market.
@@ -583,6 +588,7 @@ async function route(request: NextRequest) {
 		if (decision?.family === "product") {
 			const answer = await preflightProductOutcome(decision.slug, decision.channel);
 			preflight = describePreflight(answer);
+			logSkippedPreflight(answer);
 			if (answer.verdict === "upstream-error") {
 				return new NextResponse(null, {
 					status: 503,

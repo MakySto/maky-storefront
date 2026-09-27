@@ -101,6 +101,9 @@ export async function preflightProductOutcome(
 			headers: { [INTERNAL_TOKEN_HEADER]: options.token ?? internalLoopbackToken() },
 			signal: AbortSignal.timeout(options.timeoutMs ?? PREFLIGHT_TIMEOUT_MS),
 			cache: "no-store",
+			// The route never redirects. A redirect means something else answered, and following
+			// it would carry the token header to wherever it points.
+			redirect: "manual",
 		});
 		if (!response.ok) return skipped(`http-${response.status}`);
 
@@ -114,6 +117,33 @@ export async function preflightProductOutcome(
 		const name = error instanceof Error ? error.name : "";
 		return skipped(name === "TimeoutError" || name === "AbortError" ? "timeout" : "transport");
 	}
+}
+
+/** How often one skip reason may reach the log: a broken loopback would otherwise log every bot hit. */
+const SKIP_LOG_INTERVAL_MS = 60_000;
+const lastSkipLog = new Map<string, number>();
+
+/**
+ * A skipped preflight fails open — the crawler gets the page as before — so without a log line the
+ * mechanism could stop working and nobody would know. One warning per reason per minute.
+ */
+export function logSkippedPreflight(
+	answer: PreflightAnswer,
+	options: { readonly now?: number; readonly log?: (message: string) => void } = {},
+): void {
+	if (answer.verdict !== "skipped") return;
+	const now = options.now ?? Date.now();
+	const last = lastSkipLog.get(answer.reason);
+	if (last !== undefined && now - last < SKIP_LOG_INTERVAL_MS) return;
+	lastSkipLog.set(answer.reason, now);
+	(options.log ?? console.warn)(
+		`[bot-preflight] skipped (${answer.reason}, ${answer.ms} ms): crawler served the page without the check`,
+	);
+}
+
+/** For tests: forget when each reason was last logged. */
+export function __resetSkipLog(): void {
+	lastSkipLog.clear();
 }
 
 /** The header value that reports what the preflight concluded, on every response it looked at. */
