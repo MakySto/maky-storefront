@@ -36,10 +36,10 @@ export async function GET(request: NextRequest) {
 
 	const outcome = await getProductOutcome(slug, channel);
 
-	// The read gave up in this bundle's own Saleor queue, before anything was sent. Route
+	// The read's deadline was spent in this bundle's own Saleor queue, not on Saleor. Route
 	// handlers share that queue with the sitemap walks, not with the page — so this says only
 	// that the queue was full, never that Saleor is down. The preflight fails open on it.
-	if (outcome.status === "upstream-error" && outcome.neverSent) {
+	if (outcome.status === "upstream-error" && outcome.queueStarved) {
 		return Response.json({ status: "undetermined" }, { headers: NO_STORE });
 	}
 

@@ -136,13 +136,13 @@ describe("catchUpstreamError", () => {
 			type: "network",
 			retryable: true,
 			message: "ProductDetails: deadline exceeded before a Saleor slot came free",
-			neverSent: true,
+			queueStarved: true,
 		});
-		expect(queued.digest).toBe("MAKY_UPSTREAM_UNAVAILABLE;network;1;never-sent");
+		expect(queued.digest).toBe("MAKY_UPSTREAM_UNAVAILABLE;network;1;queue-starved");
 		const outcome = await catchUpstreamError(async () => {
 			throw asDeliveredByUseCache(queued);
 		});
-		expect(outcome).toMatchObject({ status: "upstream-error", type: "network", neverSent: true });
+		expect(outcome).toMatchObject({ status: "upstream-error", type: "network", queueStarved: true });
 
 		// A request that went out and failed is a statement about Saleor: no flag.
 		const sent = await catchUpstreamError(async () => {
@@ -155,13 +155,13 @@ describe("catchUpstreamError", () => {
 				}),
 			);
 		});
-		expect(sent).not.toHaveProperty("neverSent");
+		expect(sent).not.toHaveProperty("queueStarved");
 		// A digest written before the flag existed still parses.
 		const old = await catchUpstreamError(async () => {
 			throw Object.assign(new Error("x"), { digest: "MAKY_UPSTREAM_UNAVAILABLE;http;1" });
 		});
 		expect(old).toMatchObject({ status: "upstream-error", type: "http", retryable: true });
-		expect(old).not.toHaveProperty("neverSent");
+		expect(old).not.toHaveProperty("queueStarved");
 	});
 
 	it("treats ANY rejection from a cached resolver as a fault, never as an answer or a crash", async () => {

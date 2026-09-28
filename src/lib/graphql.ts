@@ -25,11 +25,12 @@ export interface GraphQLError {
 	/** Original error for debugging */
 	cause?: unknown;
 	/**
-	 * The request never left this process: it gave up waiting for a slot in the Saleor queue.
+	 * The caller's deadline was spent in the LOCAL Saleor queue, not on Saleor: the request never
+	 * left this process, or it left so late that Saleor had under `FAIR_WIRE_MS` to answer.
 	 * Still a `network` failure to every caller that only asks "did it work" — but it says
 	 * nothing about Saleor, and the crawler preflight must not read it as an outage.
 	 */
-	neverSent?: true;
+	queueStarved?: true;
 	/** Saleor validation errors with field info (only for 'validation' type) */
 	validationErrors?: ReadonlyArray<{
 		field?: string | null;
@@ -216,6 +217,13 @@ class RequestQueue {
 		}
 	}
 }
+
+/**
+ * The least time Saleor must have had on the wire before a deadline abort counts against it.
+ * A product read answers in ~0.1–0.3 s; a request that got a slot with less than this left of
+ * its budget, after waiting longer than that in the queue, was starved here, not refused there.
+ */
+const FAIR_WIRE_MS = 2_000;
 
 /**
  * The caller's deadline passed while the job was still waiting for a slot — nothing was sent.
@@ -651,19 +659,30 @@ async function executeGraphQL<Result, Variables>(
 		signal,
 	};
 
+	// When the job waited, and when it went on the wire: a deadline spent in the queue is a fact
+	// about this process, not about Saleor (`queueStarved`).
+	const queuedAt = performance.now();
+	let sentAt: number | null = null;
+	const starved = (): boolean => {
+		if (sentAt === null) return true;
+		const onWire = performance.now() - sentAt;
+		return onWire < FAIR_WIRE_MS && sentAt - queuedAt > onWire;
+	};
+	const starvedFailure = (failure: GraphQLFailure): GraphQLFailure =>
+		signal?.aborted && starved() ? { ok: false, error: { ...failure.error, queueStarved: true } } : failure;
+
 	let fetchResult: FetchResult;
 	try {
-		fetchResult = await requestQueue.enqueue(
-			() =>
-				fetchWithRetry(
-					input,
-					withAuth,
-					operationName,
-					variablesForLog,
-					retriesFor(operation.toString(), retry),
-				),
-			signal,
-		);
+		fetchResult = await requestQueue.enqueue(() => {
+			sentAt = performance.now();
+			return fetchWithRetry(
+				input,
+				withAuth,
+				operationName,
+				variablesForLog,
+				retriesFor(operation.toString(), retry),
+			);
+		}, signal);
 	} catch (error) {
 		// The queue refused to start an expired job — nothing reached Saleor — or the fetch aborted.
 		if (error instanceof QueueWaitAbort) {
@@ -674,15 +693,15 @@ async function executeGraphQL<Result, Variables>(
 					message: `${operationName}: deadline exceeded before a Saleor slot came free`,
 					isRetryable: true,
 					cause: error,
-					neverSent: true,
+					queueStarved: true,
 				},
 			};
 		}
-		return networkError(`${operationName}: deadline exceeded`, error);
+		return starvedFailure(networkError(`${operationName}: deadline exceeded`, error));
 	}
 
 	if (!fetchResult.ok) {
-		return fetchResult;
+		return starvedFailure(fetchResult);
 	}
 
 	const response = fetchResult.data;
@@ -708,7 +727,7 @@ async function executeGraphQL<Result, Variables>(
 		body = (await withSignal(response.json(), readUntil)) as GraphQLResponse<Result>;
 	} catch (error) {
 		if (readUntil.aborted) {
-			return networkError(`${operationName}: response body did not arrive in time`, error);
+			return starvedFailure(networkError(`${operationName}: response body did not arrive in time`, error));
 		}
 		return networkError(
 			`invalid JSON in a ${response.status} response: ${error instanceof Error ? error.message : "unknown"}`,

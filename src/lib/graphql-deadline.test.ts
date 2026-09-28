@@ -78,12 +78,12 @@ describe("a caller deadline reaches the wire", () => {
 		expect(init.signal).toBeInstanceOf(AbortSignal);
 	});
 
-	it("a request that went out and timed out is NOT marked never-sent", async () => {
+	it("a request that went out and timed out is NOT marked queue-starved", async () => {
 		fetchMock = neverAnswers();
 		globalThis.fetch = fetchMock as unknown as typeof fetch;
 		const result = await find(AbortSignal.timeout(50));
 		expect(result.ok).toBe(false);
-		expect(!result.ok && result.error.neverSent).toBeUndefined();
+		expect(!result.ok && result.error.queueStarved).toBeUndefined();
 	});
 
 	it("does not put a request on the wire at all once the deadline has passed", async () => {
@@ -172,10 +172,34 @@ describe("a caller deadline also ends the wait for a queue slot", () => {
 		expect(Date.now() - started).toBeLessThan(2_000);
 		expect(fetchMock.mock.calls.length, "the queued query must not go out after its deadline").toBe(onWire);
 		// …and it says so: nothing reached Saleor, so nothing is known about Saleor.
-		expect(!result.ok && result.error.neverSent).toBe(true);
+		expect(!result.ok && result.error.queueStarved).toBe(true);
 		expect(!result.ok && result.error.type).toBe("network");
 
 		for (const holder of holders) holder.abort();
+		await Promise.all(held);
+	});
+
+	it("a slot that came free just before the deadline is the queue's fault, not Saleor's", async () => {
+		// Twelve slow answers hold every slot for 300 ms; the thirteenth caller has 350 ms in all,
+		// so it reaches the wire with ~50 ms left, and its (never-answering) request is cut there.
+		fetchMock = neverAnswers();
+		for (let i = 0; i < 12; i++) {
+			fetchMock.mockImplementationOnce(
+				() =>
+					new Promise<Response>((resolve) =>
+						setTimeout(() => resolve(json({ data: { checkout: null } })), 300),
+					),
+			);
+		}
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		const held = Array.from({ length: 12 }, () => find(AbortSignal.timeout(5_000)));
+		await new Promise((resolve) => setTimeout(resolve, 5));
+		const result = await find(AbortSignal.timeout(350));
+
+		expect(result.ok).toBe(false);
+		expect(fetchMock.mock.calls.length, "it did go out").toBe(13);
+		expect(!result.ok && result.error.queueStarved).toBe(true);
 		await Promise.all(held);
 	});
 

@@ -89,7 +89,7 @@ describe("/api/internal/product-outcome", () => {
 			type: "network",
 			retryable: true,
 			message: "ProductDetails: deadline exceeded before a Saleor slot came free",
-			neverSent: true,
+			queueStarved: true,
 		});
 		const res = await call("slug=x&channel=sk-eur");
 		expect(res.status).toBe(200);

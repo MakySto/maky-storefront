@@ -30,8 +30,8 @@ export type ResourceOutcome<T> =
 			type: GraphQLErrorType;
 			retryable: boolean;
 			message: string;
-			/** Nothing reached Saleor: the read gave up in the local queue (`GraphQLError.neverSent`). */
-			neverSent?: true;
+			/** The deadline was spent in the local queue, not on Saleor (`GraphQLError.queueStarved`). */
+			queueStarved?: true;
 	  };
 
 /**
@@ -55,7 +55,7 @@ export function upstreamError(result: Extract<GraphQLResult<unknown>, { ok: fals
 		type: result.error.type,
 		retryable: result.error.isRetryable ?? false,
 		message: result.error.message,
-		...(result.error.neverSent ? { neverSent: true as const } : {}),
+		...(result.error.queueStarved ? { queueStarved: true as const } : {}),
 	};
 }
 
@@ -106,18 +106,18 @@ const ERROR_TYPES: readonly GraphQLErrorType[] = ["network", "http", "graphql", 
 function upstreamDigest(outcome: UpstreamError): string {
 	// The fourth field is optional, so a digest written without it still parses.
 	return `${UPSTREAM_DIGEST_PREFIX};${outcome.type};${outcome.retryable ? 1 : 0}${
-		outcome.neverSent ? ";never-sent" : ""
+		outcome.queueStarved ? ";queue-starved" : ""
 	}`;
 }
 
 function parseUpstreamDigest(
 	digest: unknown,
-): { type: GraphQLErrorType; retryable: boolean; neverSent: boolean } | null {
+): { type: GraphQLErrorType; retryable: boolean; queueStarved: boolean } | null {
 	if (typeof digest !== "string") return null;
 	const [prefix, type, retryable, sent] = digest.split(";");
 	if (prefix !== UPSTREAM_DIGEST_PREFIX) return null;
 	const known = ERROR_TYPES.find((candidate) => candidate === type);
-	return known ? { type: known, retryable: retryable === "1", neverSent: sent === "never-sent" } : null;
+	return known ? { type: known, retryable: retryable === "1", queueStarved: sent === "queue-starved" } : null;
 }
 
 /**
@@ -174,7 +174,7 @@ export function upstreamErrorFromRejection(error: unknown): UpstreamError {
 			status: "upstream-error",
 			type: known.type,
 			retryable: known.retryable,
-			...(known.neverSent ? { neverSent: true as const } : {}),
+			...(known.queueStarved ? { queueStarved: true as const } : {}),
 			message:
 				error instanceof UpstreamUnavailableError
 					? error.message
