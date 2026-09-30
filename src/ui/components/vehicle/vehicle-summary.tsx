@@ -69,8 +69,14 @@ export async function VehicleSummary({
 					<p className="text-text-primary text-sm font-semibold break-words">{label || "—"}</p>
 					{details && <p className="text-text-secondary text-sm break-words">{details}</p>}
 				</div>
-				<div className="flex flex-wrap items-center gap-2">
-					<VehicleSelectorLauncher variant="inline" vehicleLabel={label || null} />
+				{/*
+				 * `min-w-0` on the group and on the button, so a long name is cut inside the button.
+				 * Without them the button could not shrink below its whole label: with the longest
+				 * name in the dataset ("VOLKSWAGEN Golf VIII Alltrack Golf VIII Alltrack") it ran
+				 * past the box and the page scrolled sideways at 390 px and below.
+				 */}
+				<div className="flex min-w-0 flex-wrap items-center gap-2">
+					<VehicleSelectorLauncher variant="inline" vehicleLabel={label || null} className="min-w-0" />
 					<LinkWithChannel
 						href="/garage"
 						className="text-text-secondary hover:text-text-primary text-sm underline underline-offset-4"
