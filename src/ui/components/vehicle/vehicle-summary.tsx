@@ -51,7 +51,14 @@ export async function VehicleSummary({
 		>
 			<div className="flex flex-wrap items-center gap-x-4 gap-y-3">
 				<Car className="text-text-tertiary h-5 w-5 shrink-0" aria-hidden="true" />
-				<div className="min-w-0 flex-1">
+				{/*
+				 * A floor, not `min-w-0`. With no width of its own this column took whatever the
+				 * launcher left over, so wherever the actions still fitted beside it the row never
+				 * wrapped and the name went one word per line — "MAN / TGE UY / 2020 · / Van · /
+				 * Pevné / body" at 500 px, "VOLK / SWAG / EN" at 600 px. With a floor `flex-wrap`
+				 * moves the actions to their own line instead, as in `in-use-vehicle`.
+				 */}
+				<div className="min-w-[12rem] flex-1">
 					<p className="text-text-tertiary text-xs font-medium tracking-wide uppercase">{t("yourVehicle")}</p>
 					{/*
 					 * Wraps rather than truncates. This is the FULL form, on the page whose
@@ -62,8 +69,14 @@ export async function VehicleSummary({
 					<p className="text-text-primary text-sm font-semibold break-words">{label || "—"}</p>
 					{details && <p className="text-text-secondary text-sm break-words">{details}</p>}
 				</div>
-				<div className="flex flex-wrap items-center gap-2">
-					<VehicleSelectorLauncher variant="inline" vehicleLabel={label || null} />
+				{/*
+				 * `min-w-0` on the group and on the button, so a long name is cut inside the button.
+				 * Without them the button could not shrink below its whole label: with the longest
+				 * name in the dataset ("VOLKSWAGEN Golf VIII Alltrack Golf VIII Alltrack") it ran
+				 * past the box and the page scrolled sideways at 390 px and below.
+				 */}
+				<div className="flex min-w-0 flex-wrap items-center gap-2">
+					<VehicleSelectorLauncher variant="inline" vehicleLabel={label || null} className="min-w-0" />
 					<LinkWithChannel
 						href="/garage"
 						className="text-text-secondary hover:text-text-primary text-sm underline underline-offset-4"
