@@ -30,27 +30,34 @@ const PATH = process.env.MAKY_FITMENT_DATASET_PATH?.trim();
 const available = Boolean(PATH && existsSync(PATH));
 
 /**
- * Verified 2026-09-15 against https://carfitmanager.com/media/fitment/ — the downloaded
- * bytes checked with `sha256sum -c` against `SHA256SUMS_FULL_20260915.2`.
+ * Verified 2026-09-30 against https://carfitmanager.com/media/fitment/ — the downloaded
+ * bytes checked with `sha256sum -c` against `SHA256SUMS_FULL_20261001`.
  *
- * What changed from 20260907.2: VOZIDLA-2 moved 20 products onto the right generation
- * (Golf Variant BA5, Legacy Kombi BH, H-1 Van A1), which added three generations and removed
- * two (Legacy Kombi BP, H-1 Van TQ); seven generations had their production years corrected.
- * No other product moved. 20260915.2 (CFM RELEASE-4) then released exactly those 20 from
- * `hold`: `qaStatus` accepted, `sellable` true, held 26 → 6. Measured field by field against
- * 20260915: nothing else changed.
+ * What changed from 20260915.2 (THULE-C1 pilot, measured with `dataset-delta.check.test.ts`
+ * on the production build 228590b): eleven Thule sets, one application each, on 5 new
+ * generations (MAN TGE UY, VW Transporter T5, Toyota Hilux AN120, Opel Vivaro Van C,
+ * Audi Q7 4M) and 6 existing ones; +1 make (MAN), +4 models. Nordrive: 0 applications
+ * changed or removed, and every selection a shopper can have saved resolves to the same
+ * Nordrive offer. Outside the pilot: 9 BMW model names ("3-Rad" → "3 Series") and two Ford
+ * Transit Connect generations re-dated (V761 from 2022 → 2024, V408 to 2022 → 2024).
+ * `coverage.scope.programId` became `maky-roof-racks`. One application carries a condition
+ * (`roof-without-glass-roof`, CFM 71743) that this build shows as text but does not
+ * evaluate — so that set stays unpublished in Saleor.
+ *
+ * 20260915.2 before it: 7 977 173 B, transport 6fddb7aa…, semantic af9e6750…, 62/557/857/1102,
+ * 9 163 products.
  */
 const DELIVERED = {
-	datasetVersion: "3.0.0-full-20260915.2",
-	bytes: 7_977_173,
-	transport: "6fddb7aa56aa109f9ec6c59e59f8f0e514b2a2f01ba155f57c214239dab43fa6",
-	semantic: "af9e6750b5961da21225430f31558961123effc5963a90dfd680bbc5e771d499",
-	makes: 62,
-	models: 557,
-	generations: 857,
-	applications: 1102,
+	datasetVersion: "3.0.0-full-20261001",
+	bytes: 7_993_764,
+	transport: "6cfbacc3a0c18e7ef285a86b6ca1a595b94c5b39d7fab23aef61426e7e864fc0",
+	semantic: "fd3507de798ac50e31c4e481e1ecd9c39e80288359f0524123eaedf69af0bc30",
+	makes: 63,
+	models: 561,
+	generations: 862,
+	applications: 1113,
 	/** `accounting.products_exported`, and the number of distinct products the applications name. */
-	products: 9163,
+	products: 9174,
 	/** `manifest_rows − products_exported`: products deactivated in CFM and not exported. */
 	withdrawn: 29,
 	/** `accounting.products_held`: exported, but `qaStatus: hold` and not sellable. */
