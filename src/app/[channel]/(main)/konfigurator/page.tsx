@@ -62,6 +62,18 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 	const tf = await getTranslations({ locale, namespace: "fitment" });
 
 	const { dataset } = await loadFitmentDataset();
+	// No dataset, no answer — whatever the garage holds. Asked without one, `readGarage` marks
+	// every saved car unresolved, and this page used to take that for "no car" and tell a
+	// shopper whose car was right there to pick one first, over a selector that would open on
+	// an empty list of makes. The data is what is missing, so that is what it says.
+	if (!dataset) {
+		return (
+			<div className="mt-6">
+				<Notice title={t("lookupFailed")} />
+			</div>
+		);
+	}
+
 	const garage = await readGarage(dataset);
 	const active = garage.active && !garage.active.unresolved ? garage.active : null;
 	const isDemo = isDemoDataset(dataset);
