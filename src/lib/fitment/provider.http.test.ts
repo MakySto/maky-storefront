@@ -1,4 +1,8 @@
+import { AsyncLocalStorage } from "node:async_hooks";
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { __forgetRootContext, captureRootContext } from "@/lib/async/detached";
 
 import fixtureDataset from "./fixtures/dataset-v1.json";
 import { datasetHashFromText } from "./dataset-hash";
@@ -13,10 +17,12 @@ import { datasetHashFromText } from "./dataset-hash";
  * treat as authoritative.
  *
  * `loadFitmentDataset` is wrapped in React `cache()`, so each test re-imports the module
- * to get a fresh one rather than the previous test's memoised answer.
+ * to get a fresh one rather than the previous test's memoised answer. The memo itself is
+ * process-wide (it lives on `globalThis`, see the provider), so it is reset before each test.
  */
 
 const SALEOR_HOST = "api.maky.store";
+const URL_A = "https://carfitmanager.test/fitment.json";
 
 /** A payload shaped like a real delivery: no demo catalogue, real instance, real hash. */
 function delivered(overrides: Record<string, unknown> = {}): string {
@@ -44,17 +50,27 @@ function respondWith(body: string, init: { status?: number } = {}) {
 	);
 }
 
+const ENV_KEYS = [
+	"MAKY_FITMENT_PROVIDER",
+	"MAKY_FITMENT_URL",
+	"MAKY_FITMENT_REVALIDATE_SECONDS",
+	"NEXT_PUBLIC_SALEOR_API_URL",
+] as const;
 const SAVED = { ...process.env };
 
-beforeEach(() => {
+beforeEach(async () => {
 	process.env.MAKY_FITMENT_PROVIDER = "http";
-	process.env.MAKY_FITMENT_URL = "https://carfitmanager.test/fitment.json";
+	process.env.MAKY_FITMENT_URL = URL_A;
 	process.env.NEXT_PUBLIC_SALEOR_API_URL = `https://${SALEOR_HOST}/graphql/`;
+	(await import("./provider")).__resetFitmentMemo();
 });
 
 afterEach(() => {
 	vi.unstubAllGlobals();
-	for (const k of ["MAKY_FITMENT_PROVIDER", "MAKY_FITMENT_URL", "NEXT_PUBLIC_SALEOR_API_URL"]) {
+	vi.useRealTimers();
+	vi.restoreAllMocks();
+	__forgetRootContext();
+	for (const k of ENV_KEYS) {
 		if (SAVED[k] === undefined) delete process.env[k];
 		else process.env[k] = SAVED[k];
 	}
@@ -220,5 +236,475 @@ describe("the dataset is fetched once, not once per render", () => {
 		await loadFitmentDataset();
 
 		expect(spy).toHaveBeenCalledTimes(2);
+	});
+
+	it("keeps one memo per process, not one per copy of the module", async () => {
+		// The page bundles and the sitemap route handlers each carry their own copy of the
+		// provider. Each copy used to hold, and reload, its own 8 MB dataset.
+		const spy = vi.fn(async () => new Response(delivered(), { status: 200 }));
+		vi.stubGlobal("fetch", spy);
+
+		const pages = await freshModule();
+		const sitemap = await freshModule();
+		expect(sitemap).not.toBe(pages);
+
+		const a = await pages.loadFitmentDataset();
+		const b = await sitemap.loadFitmentDataset();
+		expect(spy).toHaveBeenCalledTimes(1);
+		expect(b.dataset).toBe(a.dataset);
+	});
+});
+
+/**
+ * Everything below is about the moment the held dataset goes stale.
+ *
+ * The first memo refetched in front of the render that noticed: that render waited for
+ * 8 MB, and for a parse and a validation that held the event loop. In production those
+ * reloads line up with the prerender bailouts (a bare 500). Now the held dataset answers
+ * at once — fresh or stale — and the refresh happens behind it, outside the render.
+ */
+describe("a stale dataset is answered at once and refreshed behind the read", () => {
+	type Handler = (request: { url: string; headers: Headers }) => Promise<Response>;
+
+	/** A fetch whose behaviour each test can change between calls, recording every call. */
+	function upstream(initial: Handler) {
+		let handler = initial;
+		const calls: { url: string; headers: Headers }[] = [];
+		const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const request = { url: String(input), headers: new Headers(init?.headers) };
+			calls.push(request);
+			return handler(request);
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		return {
+			calls,
+			respond(next: Handler) {
+				handler = next;
+			},
+		};
+	}
+
+	const ok =
+		(body: string, headers: Record<string, string> = {}): Handler =>
+		async () =>
+			new Response(body, { status: 200, headers });
+
+	/** A response the test releases by hand, to observe what readers get meanwhile. */
+	function gate() {
+		let open: (response: Response) => void = () => {};
+		const pending = new Promise<Response>((resolve) => {
+			open = resolve;
+		});
+		return { handler: (() => pending) as Handler, open };
+	}
+
+	function logs() {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		const lines = (spy: typeof log) => spy.mock.calls.map((args) => args.map(String).join(" "));
+		return {
+			log: () => lines(log),
+			warn: () => lines(warn),
+			error: () => lines(error),
+		};
+	}
+
+	/** Loaded once, then left to go stale: one second of TTL, run down on a fake clock. */
+	async function heldThenStale(first: string, handler: Handler = ok(first)) {
+		vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+		process.env.MAKY_FITMENT_REVALIDATE_SECONDS = "1";
+		const net = upstream(handler);
+		vi.resetModules();
+		const provider = await import("./provider");
+		const held = await provider.loadFitmentDataset();
+		expect(held.dataset).not.toBeNull();
+		vi.advanceTimersByTime(1_001);
+		return { provider, net, held };
+	}
+
+	it("logs one line per dataset taken into use: version, datasetHash, bytes, time", async () => {
+		const out = logs();
+		const body = delivered({ datasetVersion: "3.0.0-full-20260915.2" });
+		respondWith(body);
+		const { dataset } = await load();
+
+		const loaded = out.log().filter((line) => line.startsWith("[fitment] loaded "));
+		expect(loaded).toHaveLength(1);
+		expect(loaded[0]).toBe(
+			`[fitment] loaded 3.0.0-full-20260915.2 ${dataset?.datasetHash} (${Buffer.byteLength(body)} B, ` +
+				loaded[0].match(/, (\d+) ms\)$/)?.[1] +
+				" ms)",
+		);
+		expect(dataset?.datasetHash).toMatch(/^[0-9a-f]{64}$/);
+	});
+
+	it("answers from the held dataset while the refresh is still downloading", async () => {
+		const out = logs();
+		const { provider, net, held } = await heldThenStale(delivered({ datasetVersion: "v1" }));
+
+		const slow = gate();
+		net.respond(slow.handler);
+		const during = await provider.loadFitmentDataset();
+
+		// The download has not finished — it has not even been answered — and the reader
+		// already has its dataset: the one it had before.
+		expect(net.calls).toHaveLength(2);
+		expect(during.dataset).toBe(held.dataset);
+
+		slow.open(new Response(delivered({ datasetVersion: "v2" }), { status: 200 }));
+		await provider.__settleFitmentRefreshes();
+
+		const after = await provider.loadFitmentDataset();
+		expect(after.dataset?.datasetVersion).toBe("v2");
+		expect(out.log().filter((line) => line.startsWith("[fitment] loaded "))).toHaveLength(2);
+	});
+
+	it("starts one refresh however many readers find the entry stale", async () => {
+		logs();
+		const { provider, net } = await heldThenStale(delivered());
+		const slow = gate();
+		net.respond(slow.handler);
+
+		await Promise.all(Array.from({ length: 10 }, () => provider.loadFitmentDataset()));
+		expect(net.calls).toHaveLength(2);
+
+		slow.open(new Response(delivered(), { status: 200 }));
+		await provider.__settleFitmentRefreshes();
+	});
+
+	/**
+	 * Next learns what a render is doing from `AsyncLocalStorage`, and that context rides
+	 * along into every promise the render starts — a background refresh included. This
+	 * stands in for Next's work-unit store: the refresh must not be able to see it.
+	 */
+	it("runs the refresh outside the render that noticed it", async () => {
+		logs();
+		const renderStore = new AsyncLocalStorage<{ route: string }>();
+		captureRootContext(); // what `register()` does at boot, before any request
+
+		const { provider, net } = await heldThenStale(delivered());
+		let seenByFetch: { route: string } | undefined = { route: "not called" };
+		net.respond(async () => {
+			seenByFetch = renderStore.getStore();
+			return new Response(delivered(), { status: 200 });
+		});
+
+		await renderStore.run({ route: "/[channel]" }, () => provider.loadFitmentDataset());
+		await provider.__settleFitmentRefreshes();
+
+		expect(net.calls).toHaveLength(2);
+		expect(seenByFetch).toBeUndefined();
+	});
+
+	it("would run it inside the render if boot had captured no context", async () => {
+		// The contrast that makes the previous test mean something.
+		logs();
+		const renderStore = new AsyncLocalStorage<{ route: string }>();
+
+		const { provider, net } = await heldThenStale(delivered());
+		let seenByFetch: { route: string } | undefined;
+		net.respond(async () => {
+			seenByFetch = renderStore.getStore();
+			return new Response(delivered(), { status: 200 });
+		});
+
+		await renderStore.run({ route: "/[channel]" }, () => provider.loadFitmentDataset());
+		await provider.__settleFitmentRefreshes();
+
+		expect(seenByFetch).toEqual({ route: "/[channel]" });
+	});
+});
+
+describe("a failed refresh keeps the dataset it failed to replace", () => {
+	async function heldThenStale() {
+		vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+		process.env.MAKY_FITMENT_REVALIDATE_SECONDS = "1";
+		const spy = vi.fn(async () => new Response(delivered({ datasetVersion: "good" }), { status: 200 }));
+		vi.stubGlobal("fetch", spy);
+		vi.resetModules();
+		const provider = await import("./provider");
+		const held = await provider.loadFitmentDataset();
+		expect(held.dataset?.datasetVersion).toBe("good");
+		vi.advanceTimersByTime(1_001);
+		return { provider, spy, held };
+	}
+
+	function quiet() {
+		vi.spyOn(console, "log").mockImplementation(() => {});
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		return vi.spyOn(console, "error").mockImplementation(() => {});
+	}
+
+	const failures: [string, () => Promise<Response>, string][] = [
+		[
+			"the network fails",
+			async () => {
+				throw new TypeError("fetch failed");
+			},
+			"fetch-failed",
+		],
+		["CFM answers 503", async () => new Response("unwell", { status: 503 }), "http-503"],
+		["the file is gone (404)", async () => new Response("gone", { status: 404 }), "http-404"],
+		[
+			"a proxy answers with HTML",
+			async () => new Response("<!doctype html>", { status: 200 }),
+			"payload-not-json",
+		],
+	];
+
+	it.each(failures)("keeps serving the old dataset when %s", async (_what, failure, reason) => {
+		const errors = quiet();
+		const { provider, spy, held } = await heldThenStale();
+		spy.mockImplementation(failure);
+
+		// The read that finds the entry stale is still answered from it.
+		const during = await provider.loadFitmentDataset();
+		expect(during.dataset).toBe(held.dataset);
+		await provider.__settleFitmentRefreshes();
+
+		// And so is every read after the refresh has failed.
+		const after = await provider.loadFitmentDataset();
+		expect(after.dataset).toBe(held.dataset);
+		expect(after.status.unavailableReason).toBeNull();
+
+		const lines = errors.mock.calls.map((args) => args.map(String).join(" "));
+		expect(lines).toContainEqual(
+			`[fitment] refresh failed (${reason}) from carfitmanager.test/fitment.json; keeping good ${held.dataset?.datasetHash}, next attempt in 30 s`,
+		);
+	});
+
+	it("says which status CFM answered with", async () => {
+		const errors = quiet();
+		const { provider, spy } = await heldThenStale();
+		spy.mockImplementation(async () => new Response("unwell", { status: 503 }));
+
+		await provider.loadFitmentDataset();
+		await provider.__settleFitmentRefreshes();
+
+		const lines = errors.mock.calls.map((args) => args.map(String).join(" "));
+		expect(lines).toContainEqual("[fitment] provider answered HTTP 503 for carfitmanager.test/fitment.json");
+	});
+
+	it("waits 30 s before the next attempt, not one read", async () => {
+		quiet();
+		const { provider, spy } = await heldThenStale();
+		spy.mockImplementation(async () => new Response("unwell", { status: 503 }));
+
+		await provider.loadFitmentDataset();
+		await provider.__settleFitmentRefreshes();
+		expect(spy).toHaveBeenCalledTimes(2);
+
+		for (let i = 0; i < 5; i++) await provider.loadFitmentDataset();
+		expect(spy).toHaveBeenCalledTimes(2);
+
+		vi.advanceTimersByTime(30_001);
+		await provider.loadFitmentDataset();
+		await provider.__settleFitmentRefreshes();
+		expect(spy).toHaveBeenCalledTimes(3);
+	});
+
+	it("takes the new dataset once CFM is back", async () => {
+		quiet();
+		const { provider, spy } = await heldThenStale();
+		spy.mockImplementation(async () => new Response("unwell", { status: 503 }));
+		await provider.loadFitmentDataset();
+		await provider.__settleFitmentRefreshes();
+
+		spy.mockImplementation(
+			async () => new Response(delivered({ datasetVersion: "recovered" }), { status: 200 }),
+		);
+		vi.advanceTimersByTime(30_001);
+		await provider.loadFitmentDataset();
+		await provider.__settleFitmentRefreshes();
+
+		expect((await provider.loadFitmentDataset()).dataset?.datasetVersion).toBe("recovered");
+	});
+});
+
+describe("a payload that fails validation never replaces a good one", () => {
+	async function heldThenStale() {
+		vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+		process.env.MAKY_FITMENT_REVALIDATE_SECONDS = "1";
+		const spy = vi.fn(async () => new Response(delivered({ datasetVersion: "good" }), { status: 200 }));
+		vi.stubGlobal("fetch", spy);
+		vi.resetModules();
+		const provider = await import("./provider");
+		const held = await provider.loadFitmentDataset();
+		vi.advanceTimersByTime(1_001);
+		vi.spyOn(console, "log").mockImplementation(() => {});
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+		return { provider, spy, held, errors };
+	}
+
+	const tampered = (() => {
+		// Content changed after hashing, hash kept — the in-flight tamper the semantic
+		// `datasetHash` recomputation exists to catch.
+		const d = JSON.parse(delivered({ datasetVersion: "good" })) as Record<string, unknown>;
+		(d.makes as { name: string }[])[0].name = "Tampered";
+		d.datasetVersion = "tampered";
+		return JSON.stringify(d);
+	})();
+
+	const refused: [string, string][] = [
+		["content changed under its datasetHash", tampered],
+		["a payload built for another Saleor instance", delivered({ saleorInstance: "staging.example.test" })],
+		["a schema this build does not implement", delivered({ schemaVersion: "3.1.0" })],
+	];
+
+	it.each(refused)("keeps the good dataset when the refresh brings %s", async (_what, body) => {
+		const { provider, spy, held, errors } = await heldThenStale();
+		spy.mockImplementation(async () => new Response(body, { status: 200 }));
+
+		// The read that notices the stale entry is answered from it, not from the refresh.
+		expect((await provider.loadFitmentDataset()).dataset).toBe(held.dataset);
+		await provider.__settleFitmentRefreshes();
+
+		const after = await provider.loadFitmentDataset();
+		expect(after.dataset).toBe(held.dataset);
+		expect(after.dataset?.datasetVersion).toBe("good");
+		expect(after.status.unavailableReason).toBeNull();
+
+		const lines = errors.mock.calls.map((args) => args.map(String).join(" "));
+		expect(lines.some((line) => line.startsWith("[fitment] provider payload failed validation:"))).toBe(true);
+		expect(lines.some((line) => line.startsWith("[fitment] refresh failed (payload-invalid)"))).toBe(true);
+	});
+
+	it("still validates a changed payload in full, datasetHash included", async () => {
+		const { provider, spy } = await heldThenStale();
+		// Same version string, different content, correct hash: new bytes, so it is checked
+		// and — being valid — taken.
+		const changed = JSON.parse(delivered({ datasetVersion: "good" })) as Record<string, unknown>;
+		(changed.makes as { name: string }[])[0].name = "Renamed by CFM";
+		delete changed.datasetHash;
+		changed.datasetHash = datasetHashFromText(JSON.stringify(changed));
+		spy.mockImplementation(async () => new Response(JSON.stringify(changed), { status: 200 }));
+
+		// Until it has been checked, the reader keeps the dataset it had.
+		expect((await provider.loadFitmentDataset()).dataset?.makes[0].name).not.toBe("Renamed by CFM");
+		await provider.__settleFitmentRefreshes();
+
+		const after = await provider.loadFitmentDataset();
+		expect(after.dataset?.makes[0].name).toBe("Renamed by CFM");
+	});
+});
+
+describe("an unchanged file is not parsed or validated again", () => {
+	function quiet() {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		return { log, warn };
+	}
+
+	async function boot(first: () => Promise<Response>) {
+		vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+		process.env.MAKY_FITMENT_REVALIDATE_SECONDS = "1";
+		const headersSeen: Headers[] = [];
+		const spy = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+			headersSeen.push(new Headers(init?.headers));
+			return first();
+		});
+		vi.stubGlobal("fetch", spy);
+		vi.resetModules();
+		const provider = await import("./provider");
+		const held = await provider.loadFitmentDataset();
+		vi.advanceTimersByTime(1_001);
+		return { provider, spy, held, headersSeen };
+	}
+
+	it("asks conditionally and keeps the dataset on 304", async () => {
+		const { log } = quiet();
+		const body = delivered({ datasetVersion: "3.0.0-full-20260915.2" });
+		const { provider, spy, held, headersSeen } = await boot(
+			async () =>
+				new Response(body, {
+					status: 200,
+					headers: { etag: '"6aa947a3-79b8d5"', "last-modified": "Tue, 15 Sep 2026 13:26:59 GMT" },
+				}),
+		);
+		spy.mockImplementation(async (_input, init) => {
+			headersSeen.push(new Headers(init?.headers));
+			return new Response(null, { status: 304 });
+		});
+
+		expect((await provider.loadFitmentDataset()).dataset).toBe(held.dataset);
+		await provider.__settleFitmentRefreshes();
+
+		expect(headersSeen[0].get("if-none-match")).toBeNull();
+		expect(headersSeen[1].get("if-none-match")).toBe('"6aa947a3-79b8d5"');
+		expect(headersSeen[1].get("if-modified-since")).toBe("Tue, 15 Sep 2026 13:26:59 GMT");
+
+		const after = await provider.loadFitmentDataset();
+		expect(after.dataset).toBe(held.dataset);
+		const lines = log.mock.calls.map((args) => args.map(String).join(" "));
+		expect(lines.at(-1)).toMatch(
+			new RegExp(
+				`^\\[fitment\\] unchanged 3\\.0\\.0-full-20260915\\.2 ${held.dataset?.datasetHash} \\(304 not modified, \\d+ ms\\)$`,
+			),
+		);
+	});
+
+	it("recognises the same bytes from a server with no validators", async () => {
+		const { log, warn } = quiet();
+		// A version whose window overruns its generation, so a load prints a warning.
+		const body = delivered();
+		const { provider, spy, held } = await boot(async () => new Response(body, { status: 200 }));
+		const warnedAtFirstLoad = warn.mock.calls.length;
+		spy.mockImplementation(async () => new Response(body, { status: 200 }));
+
+		expect((await provider.loadFitmentDataset()).dataset).toBe(held.dataset);
+		await provider.__settleFitmentRefreshes();
+
+		const after = await provider.loadFitmentDataset();
+		expect(after.dataset).toBe(held.dataset);
+		// Nothing new was validated, so nothing new was warned about.
+		expect(warn.mock.calls.length).toBe(warnedAtFirstLoad);
+		const lines = log.mock.calls.map((args) => args.map(String).join(" "));
+		expect(lines.at(-1)).toMatch(/^\[fitment\] unchanged \S+ [0-9a-f]{64} \(\d+ B, same bytes, \d+ ms\)$/);
+	});
+
+	it("takes different bytes through the whole validation", async () => {
+		quiet();
+		const { provider, spy } = await boot(
+			async () => new Response(delivered({ datasetVersion: "one" }), { status: 200 }),
+		);
+		spy.mockImplementation(async () => new Response(delivered({ datasetVersion: "two" }), { status: 200 }));
+
+		// Stale-while-revalidate: the read that starts the refresh still gets "one".
+		expect((await provider.loadFitmentDataset()).dataset?.datasetVersion).toBe("one");
+		await provider.__settleFitmentRefreshes();
+
+		expect((await provider.loadFitmentDataset()).dataset?.datasetVersion).toBe("two");
+	});
+});
+
+describe("boot loads the dataset before the first request", () => {
+	it("prewarms in http mode, so the first render finds it held", async () => {
+		vi.spyOn(console, "log").mockImplementation(() => {});
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		const spy = vi.fn(async () => new Response(delivered(), { status: 200 }));
+		vi.stubGlobal("fetch", spy);
+
+		vi.resetModules();
+		const { prewarmFitmentDataset, loadFitmentDataset } = await import("./provider");
+		await prewarmFitmentDataset();
+		expect(spy).toHaveBeenCalledTimes(1);
+
+		const first = await loadFitmentDataset();
+		expect(first.dataset).not.toBeNull();
+		expect(spy).toHaveBeenCalledTimes(1);
+	});
+
+	it("does nothing when the provider is not http", async () => {
+		const spy = vi.fn();
+		vi.stubGlobal("fetch", spy);
+		for (const mode of ["off", "fixture", ""]) {
+			process.env.MAKY_FITMENT_PROVIDER = mode;
+			vi.resetModules();
+			await (await import("./provider")).prewarmFitmentDataset();
+		}
+		expect(spy).not.toHaveBeenCalled();
 	});
 });

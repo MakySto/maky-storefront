@@ -26,6 +26,16 @@ export async function register(): Promise<void> {
 	// neither useful nor guaranteed to see the same env.
 	if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
+	// First, while no request exists yet: the context that background work runs in. Captured
+	// any later, it could be a render's — see `src/lib/async/detached.ts`. Not during `next
+	// build`, whose prerenders must keep counting a dataset load as their own work so that
+	// they wait for it.
+	const building = process.env.NEXT_PHASE === "phase-production-build";
+	if (!building) {
+		const { captureRootContext } = await import("./lib/async/detached");
+		captureRootContext();
+	}
+
 	const { describeMarketState } = await import("./lib/market-state");
 	const { live, preview, unknown, indexable, liveNotIndexable } = describeMarketState();
 
@@ -112,5 +122,15 @@ export async function register(): Promise<void> {
 				`a baked noindex and they are absent from the sitemap and every hreflang cluster. ` +
 				`Add them to MAKY_INDEXABLE_MARKETS and DEPLOY (not just restart) to lift it.`,
 		);
+	}
+
+	// The fitment dataset, loaded before the first request instead of by it: after this, no
+	// render waits for the 8 MB download. Its `[fitment] loaded <version> <datasetHash>` line
+	// is the boot-time answer to "which dataset is this process serving". Bounded by
+	// MAKY_FITMENT_TIMEOUT_MS; a CFM outage at boot is held and retried in the background,
+	// never thrown.
+	if (!building) {
+		const { prewarmFitmentDataset } = await import("./lib/fitment/provider");
+		await prewarmFitmentDataset();
 	}
 }

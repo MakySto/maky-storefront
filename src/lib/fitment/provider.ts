@@ -1,6 +1,7 @@
 import "server-only";
 
-import { createExpiringMemo } from "@/lib/cache/expiring-memo";
+import { runDetached, hasRootContext } from "@/lib/async/detached";
+import { createExpiringMemo, type ExpiringMemo } from "@/lib/cache/expiring-memo";
 
 /**
  * Fitment provider resolution — where the dataset comes from, and what happens when
@@ -25,6 +26,7 @@ import { createExpiringMemo } from "@/lib/cache/expiring-memo";
 
 import { cache } from "react";
 
+import { transportChecksum } from "./dataset-hash";
 import { validateFitmentDataset } from "./validate";
 import { isSimulatedDataset, type FitmentDataset } from "./contract";
 import fixtureDataset from "./fixtures/dataset-v1.json";
@@ -101,43 +103,119 @@ function loadFixture(): FitmentLoad {
 }
 
 /**
- * In-process memo for the HTTP dataset, because Next's data cache will not hold it.
+ * The HTTP dataset: held in memory, answered at once, refreshed behind the read.
  *
- * `next: { revalidate }` below is the intended cache and it works — for a small payload.
- * The full CFM export is 7.9 MB, and Next refuses to store any entry over 2 MB:
+ * ## Memory, because Next's data cache will not hold it
+ *
+ * The full CFM export is 7.9 MB, and Next refuses to store any data-cache entry over 2 MB:
  *
  *     Failed to set Next.js data cache … items over 2MB can not be cached (10637357 bytes)
  *
  * The fetch still succeeds, so nothing looks broken: the page renders, the resolver
- * answers, the tests pass. What silently stops happening is the caching. Measured on a
- * production build against the live CFM URL — three PDP renders, three full downloads.
- * At 9,577 product pages that is a lot of someone else's bandwidth per crawl.
+ * answers, the tests pass. What silently stops happening is the caching — measured on a
+ * production build against the live CFM URL, three PDP renders were three full downloads.
+ * The pilot was 60 KB and cached correctly, which is why this only appeared with the real
+ * dataset.
  *
- * The pilot was 60 KB and cached correctly, which is exactly why this only appears with
- * the real dataset.
+ * ## A render never waits for a refresh
  *
- * Two entries, not one value: `inflight` collapses a cold start's concurrent requests
- * into a single download rather than one per request. Failures are held for a much
- * shorter window than successes — long enough to stop a thundering herd against a broken
- * upstream, short enough that recovery does not wait out the full TTL.
+ * The first memo refetched IN FRONT of whichever render found it expired. Every five
+ * minutes one page waited for 8 MB, and then for a parse, a full validation and a
+ * `datasetHash` recomputation that held the event loop for ~240 ms (measured on a build
+ * of 228590b; production's heap is ten times the size). Production's PM2 log holds 45
+ * `NEXT_STATIC_GEN_BAILOUT`s — a runtime prerender giving up, its request answered with a
+ * bare 500 — and 38 of them are printed on the line straight after a reload's warnings,
+ * where about 2 % of the log's other errors are (2026-09-30). None of those pages reads
+ * the dataset in its shell, so what they share with the reload is its time on the event
+ * loop.
  *
- * The `revalidate` hint is left in place: it costs nothing, and it is still the mechanism
- * if CFM ever serves a payload small enough for Next to hold.
- */
-const NEGATIVE_TTL_MS = 30_000;
-/**
+ * So the answer is now whatever is held, fresh or stale, and a stale entry is refreshed in
+ * the background. The refresh runs detached from the render that noticed it
+ * (`runDetached`): inside the render's context Next would count the download as the page's
+ * own work. The only read that ever waits is a process's very first, and `register()`
+ * makes that one at boot, before the server takes a request.
+ *
+ * ## An unchanged file costs almost nothing
+ *
+ * The URL names a versioned file, so nearly every refresh finds the same bytes. It asks
+ * conditionally (`If-None-Match` / `If-Modified-Since` — CFM's server answers 304) and,
+ * where a server keeps no validators, compares the transport SHA-256 with the bytes the
+ * held dataset was validated from. Either way an unchanged file is neither parsed nor
+ * validated again, and its warnings are not printed again. ANY other bytes are validated
+ * in full, `datasetHash` recomputation included, before they may replace anything —
+ * validation reads no clock, so identical bytes can only get the verdict they already had.
+ *
+ * ## A failed refresh keeps the dataset it failed to replace
+ *
+ * Stale-if-error. A timeout, a 404 or 503, a body that is not the dataset it claims to be:
+ * none of these may turn a working configurator into an empty one. The held dataset stays,
+ * the log says so, and the next attempt waits `NEGATIVE_TTL_MS` — long enough not to hammer
+ * a broken upstream, short enough that recovery does not wait out the full TTL. With
+ * nothing held, a failure is held for the same window instead.
+ *
+ * ## One per process, not one per bundle
+ *
+ * The page bundles and the sitemap route handlers are separate module graphs, each with its
+ * own copy of this file, and each copy used to hold — and reload — its own 8 MB dataset.
+ * The state lives on `globalThis`, so there is one memo, one refresh and one copy.
+ *
  * Expiry is scheduled rather than compared against `Date.now()` on each read. The clock
  * read used to sit on the render path of every vehicle page, and under `cacheComponents`
  * that is refused while a non-prerendered route builds its shell — a 500 on every preview
  * market. See `src/lib/cache/expiring-memo.ts`.
  */
-const memo = createExpiringMemo<FitmentLoad>();
-let inflight: { key: string; promise: Promise<FitmentLoad> } | null = null;
+const NEGATIVE_TTL_MS = 30_000;
 
-/** Exported for tests only — there is no other way to observe a module-level memo. */
+type Validators = { etag: string | null; lastModified: string | null };
+
+const NO_VALIDATORS: Validators = { etag: null, lastModified: null };
+
+/** A memo entry: the answer, and what it takes to revalidate it without a download. */
+type Held = {
+	load: FitmentLoad;
+	/** SHA-256 of the exact bytes `load.dataset` was validated from; null with no dataset. */
+	sha256: string | null;
+	validators: Validators;
+};
+
+/** An entry that actually holds a dataset — the only kind a refresh may fall back to. */
+type HeldDataset = Held & { load: FitmentLoad & { dataset: FitmentDataset } };
+
+function holdsDataset(held: Held | null): held is HeldDataset {
+	return held !== null && held.load.dataset !== null;
+}
+
+/** What one request to the upstream came back with, before it may touch the memo. */
+type Attempt =
+	| { kind: "new"; next: HeldDataset; bytes: number; warnings: string[] }
+	| { kind: "same"; held: HeldDataset; bytes: number | null; validators: Validators }
+	| { kind: "failed"; reason: string };
+
+type ProviderState = {
+	memo: ExpiringMemo<Held>;
+	inflight: Map<string, Promise<Held>>;
+};
+
+const STATE = Symbol.for("maky.fitment.provider.v2");
+
+type WithState = typeof globalThis & { [STATE]?: ProviderState };
+
+function shared(): ProviderState {
+	const scope = globalThis as WithState;
+	return (scope[STATE] ??= { memo: createExpiringMemo<Held>(), inflight: new Map() });
+}
+
+/** Exported for tests only — there is no other way to observe a process-wide memo. */
 export function __resetFitmentMemo(): void {
-	memo.clear();
-	inflight = null;
+	const scope = globalThis as WithState;
+	// A refresh still running writes into the state it started with, which this discards.
+	scope[STATE]?.memo.clear();
+	delete scope[STATE];
+}
+
+/** Exported for tests only: resolves once every refresh in flight has settled. */
+export async function __settleFitmentRefreshes(): Promise<void> {
+	await Promise.all(shared().inflight.values());
 }
 
 async function loadHttp(): Promise<FitmentLoad> {
@@ -147,73 +225,221 @@ async function loadHttp(): Promise<FitmentLoad> {
 	}
 
 	// Keyed by URL so that swapping MAKY_FITMENT_URL is not served a stale dataset.
-	const key = url;
-	const hit = memo.get(key);
-	if (hit) return hit;
-	if (inflight && inflight.key === key) return inflight.promise;
+	const state = shared();
+	const held = state.memo.getStale(url);
+	if (held) {
+		// Fresh or stale, the answer is what is held. A stale entry is refreshed behind this
+		// read, never in front of it.
+		if (state.memo.get(url) === undefined) void refresh(state, url, held);
+		return held.load;
+	}
+	// Nothing held: this process has not finished a single attempt for this URL. The one
+	// read that waits for the network — and `register()` normally makes it at boot.
+	return (await refresh(state, url, null)).load;
+}
 
-	const promise = fetchHttp(url).then((load) => {
-		const ttlMs = load.dataset ? datasetRevalidateSeconds() * 1000 : NEGATIVE_TTL_MS;
-		memo.set(key, load, ttlMs);
-		inflight = null;
-		return load;
+let warnedInRender = false;
+
+/**
+ * One attempt per URL at a time; every caller shares it. Never rejects: whatever happens,
+ * it settles into the entry that is held afterwards.
+ */
+function refresh(state: ProviderState, url: string, held: Held | null): Promise<Held> {
+	const running = state.inflight.get(url);
+	if (running) return running;
+
+	if (held && !hasRootContext() && process.env.NEXT_RUNTIME === "nodejs" && !warnedInRender) {
+		warnedInRender = true;
+		console.warn(
+			"[fitment] no boot context was captured (register() did not run), so the background " +
+				"refresh runs inside the render that noticed the stale entry",
+		);
+	}
+
+	const promise = runDetached(async (): Promise<Held> => {
+		const started = performance.now();
+		try {
+			const attempt = await attemptLoad(url, held);
+			return settle(state, url, held, attempt, Math.round(performance.now() - started));
+		} catch (error) {
+			// `attemptLoad` catches everything it can anticipate; this is for what it cannot.
+			console.error("[fitment] refresh threw:", error);
+			return settle(state, url, held, { kind: "failed", reason: "refresh-threw" }, 0);
+		} finally {
+			state.inflight.delete(url);
+		}
 	});
-	inflight = { key, promise };
+	state.inflight.set(url, promise);
 	return promise;
 }
 
-async function fetchHttp(url: string): Promise<FitmentLoad> {
+function describe(dataset: FitmentDataset): string {
+	return `${dataset.datasetVersion} ${dataset.datasetHash}`;
+}
+
+/** Where a load came from, for the log: no credentials, no query string. */
+function where(url: string): string {
+	try {
+		const parsed = new URL(url);
+		return `${parsed.host}${parsed.pathname}`;
+	} catch {
+		return "MAKY_FITMENT_URL";
+	}
+}
+
+function settle(state: ProviderState, url: string, held: Held | null, attempt: Attempt, ms: number): Held {
+	const ttlMs = datasetRevalidateSeconds() * 1000;
+
+	if (attempt.kind === "new") {
+		if (attempt.warnings.length > 0) {
+			console.warn("[fitment] provider payload warnings:", attempt.warnings);
+		}
+		state.memo.set(url, attempt.next, ttlMs);
+		// One line per dataset taken into use: which one this process is answering from, and
+		// what it cost. CFM asks exactly this before every publication batch.
+		console.log(`[fitment] loaded ${describe(attempt.next.load.dataset)} (${attempt.bytes} B, ${ms} ms)`);
+		return attempt.next;
+	}
+
+	if (attempt.kind === "same") {
+		const next: HeldDataset = { ...attempt.held, validators: attempt.validators };
+		state.memo.set(url, next, ttlMs);
+		const how = attempt.bytes === null ? "304 not modified" : `${attempt.bytes} B, same bytes`;
+		console.log(`[fitment] unchanged ${describe(next.load.dataset)} (${how}, ${ms} ms)`);
+		return next;
+	}
+
+	if (holdsDataset(held)) {
+		// Stale-if-error: the dataset that was working keeps working.
+		state.memo.set(url, held, NEGATIVE_TTL_MS);
+		const kept = describe(held.load.dataset);
+		console.error(
+			`[fitment] refresh failed (${attempt.reason}) from ${where(url)}; keeping ${kept}, ` +
+				`next attempt in ${NEGATIVE_TTL_MS / 1000} s`,
+		);
+		return held;
+	}
+
+	const failed: Held = {
+		load: { dataset: null, status: statusFor("http", null, attempt.reason) },
+		sha256: null,
+		validators: NO_VALIDATORS,
+	};
+	state.memo.set(url, failed, NEGATIVE_TTL_MS);
+	console.error(
+		`[fitment] load failed (${attempt.reason}) from ${where(url)}; no dataset to serve, ` +
+			`next attempt in ${NEGATIVE_TTL_MS / 1000} s`,
+	);
+	return failed;
+}
+
+function validatorsOf(response: Response, fallback: Validators): Validators {
+	return {
+		etag: response.headers.get("etag") ?? fallback.etag,
+		lastModified: response.headers.get("last-modified") ?? fallback.lastModified,
+	};
+}
+
+async function attemptLoad(url: string, held: Held | null): Promise<Attempt> {
 	const timeoutMs = Number(process.env.MAKY_FITMENT_TIMEOUT_MS ?? DEFAULT_TIMEOUT_MS);
 	const token = process.env.MAKY_FITMENT_TOKEN?.trim();
 
+	// Asked conditionally only while a dataset is held: "not modified" is an answer only if
+	// there is something it refers to.
+	const good = holdsDataset(held) ? held : null;
+	const headers: Record<string, string> = {};
+	if (token) headers.authorization = `Bearer ${token}`;
+	if (good?.validators.etag) headers["if-none-match"] = good.validators.etag;
+	if (good?.validators.lastModified) headers["if-modified-since"] = good.validators.lastModified;
+
+	let response: Response;
 	try {
-		const response = await fetch(url, {
-			headers: token ? { authorization: `Bearer ${token}` } : undefined,
+		response = await fetch(url, {
+			headers,
 			signal: AbortSignal.timeout(Number.isFinite(timeoutMs) ? timeoutMs : DEFAULT_TIMEOUT_MS),
-			// Shared across requests. The dataset is a versioned document, not per-visitor
-			// data, and it is large: the selector alone asks for it once per step, so
-			// `no-store` here meant re-downloading the whole index on every click.
-			//
-			// Nothing customer-specific is ever in this response — the vehicle lives in a
-			// cookie and is resolved against the dataset afterwards — so it is safe to
-			// share. Freshness comes from the upstream `datasetVersion`, not from this TTL.
+			// Detached from any render (see `refresh`), Next's patched fetch passes this call
+			// straight through and the hint below is never read. It stays for the one path that
+			// is not detached — a server that skipped `register()` — where an explicit cache
+			// setting keeps a prerender from handing this fetch a promise that never settles.
 			next: { revalidate: datasetRevalidateSeconds(), tags: ["fitment-dataset"] },
 		});
-		if (!response.ok) {
-			return { dataset: null, status: statusFor("http", null, `http-${response.status}`) };
-		}
-		// Text, not `.json()`. The exact bytes are needed twice over: the semantic
-		// `datasetHash` is only reproducible against CFM's Python when every number is
-		// re-emitted from its original source token, and the transport checksum is by
-		// definition a fact about the bytes and cannot be recovered from a parsed object.
-		const text = await response.text();
-		let body: unknown;
-		try {
-			body = JSON.parse(text);
-		} catch {
-			return { dataset: null, status: statusFor("http", null, "payload-not-json") };
-		}
-		const validation = validateFitmentDataset(body, {
-			expectedSaleorInstance: expectedSaleorInstance(),
-			rawText: text,
-		});
-		if (!validation.ok) {
-			console.error("[fitment] provider payload failed validation:", validation.errors);
-			return { dataset: null, status: statusFor("http", null, "payload-invalid") };
-		}
-		if (validation.warnings.length > 0) {
-			console.warn("[fitment] provider payload warnings:", validation.warnings);
-		}
-		return { dataset: validation.dataset, status: statusFor("http", validation.dataset, null) };
 	} catch (error) {
 		console.error("[fitment] provider fetch failed:", error);
-		return { dataset: null, status: statusFor("http", null, "fetch-failed") };
+		return { kind: "failed", reason: "fetch-failed" };
 	}
+
+	if (response.status === 304 && good) {
+		return { kind: "same", held: good, bytes: null, validators: validatorsOf(response, good.validators) };
+	}
+	if (!response.ok) {
+		// A 404 or 503 used to leave no trace at all: the configurator emptied and the log was
+		// silent about why.
+		console.error(`[fitment] provider answered HTTP ${response.status} for ${where(url)}`);
+		return { kind: "failed", reason: `http-${response.status}` };
+	}
+
+	let bytes: Uint8Array;
+	try {
+		bytes = new Uint8Array(await response.arrayBuffer());
+	} catch (error) {
+		// The headers arrived and the body did not: a timeout or a reset mid-transfer.
+		console.error("[fitment] provider fetch failed:", error);
+		return { kind: "failed", reason: "fetch-failed" };
+	}
+	const validators = validatorsOf(response, NO_VALIDATORS);
+	const sha256 = transportChecksum(bytes);
+	if (good && good.sha256 === sha256) {
+		return { kind: "same", held: good, bytes: bytes.byteLength, validators };
+	}
+
+	// The exact bytes as text, not `.json()`. They are needed twice over: the semantic
+	// `datasetHash` is only reproducible against CFM's Python when every number is
+	// re-emitted from its original source token, and the transport checksum is by
+	// definition a fact about the bytes and cannot be recovered from a parsed object.
+	// `TextDecoder` drops a leading BOM exactly as `response.text()` did.
+	const text = new TextDecoder().decode(bytes);
+	let body: unknown;
+	try {
+		body = JSON.parse(text);
+	} catch {
+		console.error(`[fitment] provider payload is not JSON (${bytes.byteLength} B from ${where(url)})`);
+		return { kind: "failed", reason: "payload-not-json" };
+	}
+	const validation = validateFitmentDataset(body, {
+		expectedSaleorInstance: expectedSaleorInstance(),
+		rawText: text,
+	});
+	if (!validation.ok) {
+		console.error("[fitment] provider payload failed validation:", validation.errors);
+		return { kind: "failed", reason: "payload-invalid" };
+	}
+	return {
+		kind: "new",
+		next: {
+			load: { dataset: validation.dataset, status: statusFor("http", validation.dataset, null) },
+			sha256,
+			validators,
+		},
+		bytes: bytes.byteLength,
+		warnings: validation.warnings,
+	};
 }
 
 function datasetRevalidateSeconds(): number {
 	const raw = Number(process.env.MAKY_FITMENT_REVALIDATE_SECONDS ?? 300);
 	return Number.isFinite(raw) && raw > 0 ? raw : 300;
+}
+
+/**
+ * Load the HTTP dataset once at boot, so that no render ever waits for the first download.
+ *
+ * Called from `register()`, which `next start` finishes before it serves a request. Never
+ * throws: a boot during a CFM outage holds the failure for `NEGATIVE_TTL_MS` and retries in
+ * the background, exactly like a failure at any other time.
+ */
+export async function prewarmFitmentDataset(): Promise<void> {
+	if (resolveProviderMode() !== "http") return;
+	await loadHttp();
 }
 
 /**

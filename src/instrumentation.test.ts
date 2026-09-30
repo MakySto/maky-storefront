@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { register } from "./instrumentation";
+import { __forgetRootContext, hasRootContext } from "./lib/async/detached";
+import { datasetHashFromText } from "./lib/fitment/dataset-hash";
+import fixtureDataset from "./lib/fitment/fixtures/dataset-v1.json";
+import { __resetFitmentMemo } from "./lib/fitment/provider";
 
 /**
  * The boot line for the § 20a online function.
@@ -37,6 +41,10 @@ interface Captured {
 
 async function boot(env: Record<string, string | undefined>): Promise<Captured> {
 	vi.stubEnv("NEXT_RUNTIME", "nodejs");
+	// Off unless a test asks for it: boot loads the fitment dataset, and no test may reach
+	// for a real one because the shell it runs in happens to have MAKY_FITMENT_* set.
+	vi.stubEnv("MAKY_FITMENT_PROVIDER", "");
+	vi.stubEnv("NEXT_PHASE", "");
 	for (const [name, value] of Object.entries(env)) {
 		vi.stubEnv(name, value as string);
 	}
@@ -60,7 +68,10 @@ const withdrawalLine = (c: Captured): string =>
 
 afterEach(() => {
 	vi.unstubAllEnvs();
+	vi.unstubAllGlobals();
 	vi.restoreAllMocks();
+	__resetFitmentMemo();
+	__forgetRootContext();
 });
 
 describe("the withdrawal configuration read-back", () => {
@@ -144,5 +155,71 @@ describe("the withdrawal configuration read-back", () => {
 		await register();
 
 		expect(log).not.toHaveBeenCalled();
+	});
+});
+
+/**
+ * The fitment dataset is loaded by boot, not by the first page that needs it — so no render
+ * waits for the download — and boot captures the context that background refreshes run in
+ * before any request exists (see `src/lib/async/detached.ts`).
+ */
+describe("the fitment dataset at boot", () => {
+	const SALEOR_HOST = "api.maky.store";
+
+	function delivery(): string {
+		const d = JSON.parse(JSON.stringify(fixtureDataset)) as Record<string, unknown>;
+		delete d.demoCatalogue;
+		d.source = { system: "cfm" };
+		d.saleorInstance = SALEOR_HOST;
+		d.datasetVersion = "3.0.0-full-boot";
+		delete d.datasetHash;
+		d.datasetHash = datasetHashFromText(JSON.stringify(d));
+		return JSON.stringify(d);
+	}
+
+	const HTTP = {
+		MAKY_FITMENT_PROVIDER: "http",
+		MAKY_FITMENT_URL: "https://carfitmanager.test/fitment.json",
+		NEXT_PUBLIC_SALEOR_API_URL: `https://${SALEOR_HOST}/graphql/`,
+	};
+
+	it("captures the boot context and loads the dataset before any request", async () => {
+		const upstream = vi.fn(async () => new Response(delivery(), { status: 200 }));
+		vi.stubGlobal("fetch", upstream);
+
+		const captured = await boot({ ...SECRETS, ...HTTP });
+
+		expect(hasRootContext()).toBe(true);
+		expect(upstream).toHaveBeenCalledTimes(1);
+		expect(
+			captured.log.some((line) =>
+				/^\[fitment\] loaded 3\.0\.0-full-boot [0-9a-f]{64} \(\d+ B, \d+ ms\)$/.test(line),
+			),
+		).toBe(true);
+	});
+
+	it("does neither during next build, whose prerenders must wait for their own load", async () => {
+		const upstream = vi.fn();
+		vi.stubGlobal("fetch", upstream);
+
+		await boot({ ...SECRETS, ...HTTP, NEXT_PHASE: "phase-production-build" });
+
+		expect(hasRootContext()).toBe(false);
+		expect(upstream).not.toHaveBeenCalled();
+	});
+
+	it("still starts when CFM is down at boot, and says so", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				throw new TypeError("fetch failed");
+			}),
+		);
+
+		const captured = await boot({ ...SECRETS, ...HTTP });
+
+		expect(captured.error.join("\n")).toContain("[fitment] load failed (fetch-failed)");
+		// The rest of boot ran: the deploy script's read-back lines are all there.
+		expect(captured.log.some((line) => line.startsWith("[market-state] live="))).toBe(true);
 	});
 });
