@@ -708,3 +708,162 @@ describe("boot loads the dataset before the first request", () => {
 		expect(spy).not.toHaveBeenCalled();
 	});
 });
+
+/**
+ * The runtime status — what the RUNNING process holds.
+ *
+ * CFM opens each batch only after the storefront confirms the `datasetHash` it loaded, and neither
+ * a file nor an environment variable can say that: `.env` is what a restart WOULD load, and the
+ * file at the URL is what CFM published. This reads the process's own memory. It must never cause
+ * the load it reports on, and it must say what happened when the last attempt did not go well.
+ */
+describe("the runtime status says what this process holds", () => {
+	it("says nothing is loaded before anything is, and loads nothing to find out", async () => {
+		const spy = vi.fn();
+		vi.stubGlobal("fetch", spy);
+		vi.resetModules();
+		const { fitmentRuntimeStatus } = await import("./provider");
+
+		expect(fitmentRuntimeStatus()).toMatchObject({
+			mode: "http",
+			loaded: false,
+			datasetVersion: null,
+			datasetHash: null,
+			transportSha256: null,
+			takenIntoUseAt: null,
+			lastCheck: null,
+			unavailableReason: "not-loaded-yet",
+		});
+		expect(spy, "a status read must not be able to cause a load").not.toHaveBeenCalled();
+	});
+
+	it("reports the hash the process RECOMPUTED, the bytes it weighed and when it took them", async () => {
+		vi.spyOn(console, "log").mockImplementation(() => {});
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		const body = delivered({ datasetVersion: "3.0.0-full-20261001.2" });
+		respondWith(body);
+		vi.resetModules();
+		const { loadFitmentDataset, fitmentRuntimeStatus } = await import("./provider");
+		const { dataset } = await loadFitmentDataset();
+
+		const status = fitmentRuntimeStatus();
+		expect(status.loaded).toBe(true);
+		expect(status.datasetVersion).toBe("3.0.0-full-20261001.2");
+		expect(status.datasetHash).toBe(dataset?.datasetHash);
+		// Not the declared field: the same recomputation the validator makes, from the bytes.
+		expect(status.datasetHash).toBe(datasetHashFromText(body));
+		expect(status.transportSha256).toMatch(/^[0-9a-f]{64}$/);
+		expect(status.bytes).toBe(Buffer.byteLength(body));
+		expect(status.loadMs).toBeGreaterThanOrEqual(0);
+		expect(status.takenIntoUseAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+		expect(status.lastCheck).toMatchObject({ outcome: "new", reason: null });
+		expect(status.counts).toMatchObject({ makes: expect.any(Number), applications: expect.any(Number) });
+		expect(status.unavailableReason).toBeNull();
+	});
+
+	it("names the source by host and path only — never a query string or a credential", async () => {
+		vi.spyOn(console, "log").mockImplementation(() => {});
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		process.env.MAKY_FITMENT_URL = "https://user:pw@carfitmanager.test/media/fitment/x.json?token=SECRET";
+		respondWith(delivered());
+		vi.resetModules();
+		const { loadFitmentDataset, fitmentRuntimeStatus } = await import("./provider");
+		await loadFitmentDataset();
+
+		const json = JSON.stringify(fitmentRuntimeStatus());
+		expect(json).toContain("carfitmanager.test/media/fitment/x.json");
+		expect(json).not.toContain("SECRET");
+		expect(json).not.toContain("pw");
+		expect(json).not.toContain("token");
+	});
+
+	it("says when the dataset stops answering YES, and whether it already has", async () => {
+		vi.spyOn(console, "log").mockImplementation(() => {});
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		respondWith(
+			delivered({ generatedAt: "2026-10-01T17:48:14Z", validity: { validUntil: null, staleAfterDays: 30 } }),
+		);
+		vi.resetModules();
+		const { loadFitmentDataset, fitmentRuntimeStatus } = await import("./provider");
+		await loadFitmentDataset();
+
+		const status = fitmentRuntimeStatus();
+		// 30 days after generation — the date the owner has to have a new export by.
+		expect(status.staleAfter).toBe("2026-10-31T17:48:14.000Z");
+		expect(status.stale).toBe(false);
+
+		respondWith(
+			delivered({ generatedAt: "2020-01-01T00:00:00Z", validity: { validUntil: null, staleAfterDays: 30 } }),
+		);
+		vi.resetModules();
+		const old = await import("./provider");
+		// The memo lives on `globalThis`, so a fresh module still sees the last one's entry.
+		old.__resetFitmentMemo();
+		await old.loadFitmentDataset();
+		expect(old.fitmentRuntimeStatus().stale).toBe(true);
+	});
+
+	it("keeps the loaded dataset in view when a refresh fails, and says how the attempt ended", async () => {
+		vi.spyOn(console, "log").mockImplementation(() => {});
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+		process.env.MAKY_FITMENT_REVALIDATE_SECONDS = "1";
+		const fetchMock = vi.fn(async () => new Response(delivered({ datasetVersion: "good" }), { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+		vi.resetModules();
+		const provider = await import("./provider");
+		await provider.loadFitmentDataset();
+		const before = provider.fitmentRuntimeStatus();
+		vi.advanceTimersByTime(1_001);
+
+		fetchMock.mockImplementation(async () => new Response("unwell", { status: 503 }));
+		await provider.loadFitmentDataset();
+		await provider.__settleFitmentRefreshes();
+
+		const after = provider.fitmentRuntimeStatus();
+		// The dataset it was answering from did not change, and neither did when it was taken…
+		expect(after.datasetHash).toBe(before.datasetHash);
+		expect(after.takenIntoUseAt).toBe(before.takenIntoUseAt);
+		expect(after.loaded).toBe(true);
+		// …and the failed attempt is on record.
+		expect(after.lastCheck).toMatchObject({ outcome: "failed", reason: "http-503" });
+	});
+
+	it("records a 304 as an unchanged check, not a new load", async () => {
+		vi.spyOn(console, "log").mockImplementation(() => {});
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+		process.env.MAKY_FITMENT_REVALIDATE_SECONDS = "1";
+		const fetchMock = vi.fn(
+			async () => new Response(delivered(), { status: 200, headers: { etag: '"abc"' } }),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+		vi.resetModules();
+		const provider = await import("./provider");
+		await provider.loadFitmentDataset();
+		const first = provider.fitmentRuntimeStatus();
+		vi.advanceTimersByTime(1_001);
+
+		fetchMock.mockImplementation(async () => new Response(null, { status: 304 }));
+		await provider.loadFitmentDataset();
+		await provider.__settleFitmentRefreshes();
+
+		const second = provider.fitmentRuntimeStatus();
+		expect(second.lastCheck).toMatchObject({ outcome: "unchanged" });
+		expect(second.takenIntoUseAt).toBe(first.takenIntoUseAt);
+		expect(second.datasetHash).toBe(first.datasetHash);
+	});
+
+	it("is honest when the provider is not http", async () => {
+		process.env.MAKY_FITMENT_PROVIDER = "off";
+		vi.resetModules();
+		const { fitmentRuntimeStatus } = await import("./provider");
+		expect(fitmentRuntimeStatus()).toMatchObject({
+			mode: "disabled",
+			loaded: false,
+			datasetHash: null,
+			unavailableReason: "provider-not-http",
+		});
+	});
+});

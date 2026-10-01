@@ -170,12 +170,17 @@ type Validators = { etag: string | null; lastModified: string | null };
 
 const NO_VALIDATORS: Validators = { etag: null, lastModified: null };
 
+/** When this process took a dataset into use, what it weighed and what taking it cost. */
+type Taken = { at: number; ms: number; bytes: number };
+
 /** A memo entry: the answer, and what it takes to revalidate it without a download. */
 type Held = {
 	load: FitmentLoad;
 	/** SHA-256 of the exact bytes `load.dataset` was validated from; null with no dataset. */
 	sha256: string | null;
 	validators: Validators;
+	/** Set when `load.dataset` came from a download; carried over by an unchanged answer. */
+	taken?: Taken;
 };
 
 /** An entry that actually holds a dataset — the only kind a refresh may fall back to. */
@@ -191,9 +196,13 @@ type Attempt =
 	| { kind: "same"; held: HeldDataset; bytes: number | null; validators: Validators }
 	| { kind: "failed"; reason: string };
 
+/** The last attempt to reach the upstream, whatever it came back with. */
+type LastCheck = { at: number; outcome: "new" | "unchanged" | "failed"; reason: string | null };
+
 type ProviderState = {
 	memo: ExpiringMemo<Held>;
 	inflight: Map<string, Promise<Held>>;
+	lastCheck: LastCheck | null;
 };
 
 const STATE = Symbol.for("maky.fitment.provider.v2");
@@ -202,7 +211,7 @@ type WithState = typeof globalThis & { [STATE]?: ProviderState };
 
 function shared(): ProviderState {
 	const scope = globalThis as WithState;
-	return (scope[STATE] ??= { memo: createExpiringMemo<Held>(), inflight: new Map() });
+	return (scope[STATE] ??= { memo: createExpiringMemo<Held>(), inflight: new Map(), lastCheck: null });
 }
 
 /** Exported for tests only — there is no other way to observe a process-wide memo. */
@@ -294,21 +303,25 @@ function settle(state: ProviderState, url: string, held: Held | null, attempt: A
 		if (attempt.warnings.length > 0) {
 			console.warn("[fitment] provider payload warnings:", attempt.warnings);
 		}
-		state.memo.set(url, attempt.next, ttlMs);
+		const next: HeldDataset = { ...attempt.next, taken: { at: wallClockMs(), ms, bytes: attempt.bytes } };
+		state.memo.set(url, next, ttlMs);
+		state.lastCheck = { at: wallClockMs(), outcome: "new", reason: null };
 		// One line per dataset taken into use: which one this process is answering from, and
 		// what it cost. CFM asks exactly this before every publication batch.
-		console.log(`[fitment] loaded ${describe(attempt.next.load.dataset)} (${attempt.bytes} B, ${ms} ms)`);
-		return attempt.next;
+		console.log(`[fitment] loaded ${describe(next.load.dataset)} (${attempt.bytes} B, ${ms} ms)`);
+		return next;
 	}
 
 	if (attempt.kind === "same") {
 		const next: HeldDataset = { ...attempt.held, validators: attempt.validators };
 		state.memo.set(url, next, ttlMs);
+		state.lastCheck = { at: wallClockMs(), outcome: "unchanged", reason: null };
 		const how = attempt.bytes === null ? "304 not modified" : `${attempt.bytes} B, same bytes`;
 		console.log(`[fitment] unchanged ${describe(next.load.dataset)} (${how}, ${ms} ms)`);
 		return next;
 	}
 
+	state.lastCheck = { at: wallClockMs(), outcome: "failed", reason: attempt.reason };
 	if (holdsDataset(held)) {
 		// Stale-if-error: the dataset that was working keeps working.
 		state.memo.set(url, held, NEGATIVE_TTL_MS);
@@ -428,6 +441,98 @@ async function attemptLoad(url: string, held: Held | null): Promise<Attempt> {
 function datasetRevalidateSeconds(): number {
 	const raw = Number(process.env.MAKY_FITMENT_REVALIDATE_SECONDS ?? 300);
 	return Number.isFinite(raw) && raw > 0 ? raw : 300;
+}
+
+/**
+ * Wall-clock milliseconds, read without `Date`.
+ *
+ * `Date.now()` before uncached data is a build/prerender error under `cacheComponents` (see
+ * `expiring-memo.ts`). This runs detached from any render and at boot, where it would be
+ * fine — but the one path that is NOT detached (a server that skipped `register()`) reaches it
+ * from inside a render, and a status read-out is not worth a 500 there.
+ */
+function wallClockMs(): number {
+	return Math.round(performance.timeOrigin + performance.now());
+}
+
+/** What the running process holds, for an operator — read only, never triggers a load. */
+export type FitmentRuntimeStatus = {
+	mode: FitmentProviderMode;
+	/** Host and path of the source; no query string, no credentials. */
+	source: string | null;
+	loaded: boolean;
+	datasetVersion: string | null;
+	/** The semantic hash this process RECOMPUTED from the bytes it validated — not a header, not a file name. */
+	datasetHash: string | null;
+	/** SHA-256 of the exact bytes the dataset was validated from. */
+	transportSha256: string | null;
+	schemaVersion: string | null;
+	generatedAt: string | null;
+	/** When the dataset stops answering YES (`generatedAt` + `staleAfterDays`, or `validUntil`). */
+	staleAfter: string | null;
+	stale: boolean;
+	counts: { makes: number; models: number; generations: number; applications: number } | null;
+	/** When this process took the dataset into use, what it weighed, and what taking it cost. */
+	takenIntoUseAt: string | null;
+	bytes: number | null;
+	loadMs: number | null;
+	/** The last attempt to reach the source, and how it ended. */
+	lastCheck: { at: string; outcome: "new" | "unchanged" | "failed"; reason: string | null } | null;
+	/** Why there is no dataset, when there is none. */
+	unavailableReason: string | null;
+};
+
+export function fitmentRuntimeStatus(): FitmentRuntimeStatus {
+	const mode = resolveProviderMode();
+	const url = process.env.MAKY_FITMENT_URL?.trim() || null;
+	const state = shared();
+	const held = mode === "http" && url ? state.memo.getStale(url) ?? null : null;
+	const dataset = held?.load.dataset ?? null;
+
+	let staleAfter: string | null = null;
+	if (dataset) {
+		const generated = Date.parse(dataset.generatedAt);
+		const byAge = Number.isFinite(generated)
+			? generated + dataset.validity.staleAfterDays * 86_400_000
+			: null;
+		const byDate = dataset.validity.validUntil ? Date.parse(dataset.validity.validUntil) : null;
+		const candidates = [byAge, byDate].filter(
+			(value): value is number => value !== null && Number.isFinite(value),
+		);
+		staleAfter = candidates.length > 0 ? new Date(Math.min(...candidates)).toISOString() : null;
+	}
+
+	const last = state.lastCheck;
+	return {
+		mode,
+		source: url ? where(url) : null,
+		loaded: dataset !== null,
+		datasetVersion: dataset?.datasetVersion ?? null,
+		datasetHash: dataset?.datasetHash ?? null,
+		transportSha256: held?.sha256 ?? null,
+		schemaVersion: dataset?.schemaVersion ?? null,
+		generatedAt: dataset?.generatedAt ?? null,
+		staleAfter,
+		stale: staleAfter !== null && wallClockMs() > Date.parse(staleAfter),
+		counts: dataset
+			? {
+					makes: dataset.makes.length,
+					models: dataset.models.length,
+					generations: dataset.generations.length,
+					applications: dataset.applications.length,
+				}
+			: null,
+		takenIntoUseAt: held?.taken ? new Date(held.taken.at).toISOString() : null,
+		bytes: held?.taken?.bytes ?? null,
+		loadMs: held?.taken?.ms ?? null,
+		lastCheck: last
+			? { at: new Date(last.at).toISOString(), outcome: last.outcome, reason: last.reason }
+			: null,
+		unavailableReason:
+			mode === "http"
+				? held?.load.status.unavailableReason ?? (held ? null : "not-loaded-yet")
+				: "provider-not-http",
+	};
 }
 
 /**
