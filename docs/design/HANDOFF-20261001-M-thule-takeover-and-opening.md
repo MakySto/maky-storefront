@@ -115,6 +115,9 @@ Dôsledok pre postup: po každom `pm2 restart` hodiny po builde okamžite „zah
 
 - **9 140 id zo `HIDDEN_PRODUCTS_INDEX.csv` (37 blokov) → 92 anonymných dotazov na verejné Saleor API (kanál `sk-eur`): viditeľných 0.**
   PDP piatich skrytých slugov z bloku 1 = **404**; ani jeden z prvých 3 000 slugov v `sk-products-1.xml`; 71743 = 404.
+- **Identita a varianty, nie len počty:** všetkých **9 140 riadkov `HIDDEN_PRODUCTS_INDEX.csv`** (id produktu, id variantu a `externalReference` z read-backu
+  Saleoru, ktorý urobilo CFM) sa v datasete nachádza s **rovnakým id variantu aj rovnakou externou referenciou** (0 rozdielov, 0 chýbajúcich),
+  všetky `roof-rack-set`, `accepted`, `sellable`, žiadny produkt s viac ako jedným riadkom aplikácie; 11 Thule produktov mimo indexu = 10 pilotov + 71743.
 - **28 prípadov CFM** (`M_TEST_CASES.json`) cez náš `resolveVehicleOutcome`: **28/28 zhoda** v každom produkte, verdikte, podmienke aj `setOffered`.
   Je to ale len polovica vety CFM — „očakávaná odpoveď resolvera nie je očakávaná obchodná ponuka". Druhú polovicu som spravil cez HTTP proti
   lokálnemu buildu a živému Saleoru (každý prípad s podpísaným cookie): stránka ukazuje **presne tie sady, ktoré sú overené pre auto A ZÁROVEŇ
@@ -152,6 +155,9 @@ Vetva `claude/thule-open-r1-20261001` = R0 + R1, **38 zdrojových súborov + 12 
 12 jazykov, parita 12/12; 12 nových kľúčov (`fitment.card*`, `fitment.listing*`, `catalog.offers*`).
 Testy: **3 374 prešlo / 38 preskočených / 0 zlyhalo** (R0: 3 268), lint 0 chýb, `tsc` bez chýb, build čistý (lokálny, dataset sa pri builde nenačíta), `check:css` OK.
 
+**Zoznam kategórie = konfigurátor:** pre všetkých 28 áut je zoznam police s `?vehicle=1` (všetky stránky) **zhodný s konfigurátorom v názvoch aj v počte** (28/28),
+čo je „po explicitnom výbere sa výsledok zhoduje s konfigurátorom". Obe čerpajú z toho istého `resolveVehicleOutcome` a z toho istého prieniku so Saleorom.
+
 Overené v prehliadači (lokálny produkčný build, živý Saleor, nový dataset), 1440 / 390 / 360 / 320 px, **bez horizontálneho pretekania**:
 BMW X5 E70 2012 → police sa predvolene zúži na jeho 8 predajných sád, `?vehicle=0` ukáže 9 167; Honda Civic Sedan FD (iba skryté Thule) → panel
 „existujú kompatibilné zostavy…"; Fiat Grande Panda (nič overené) → „preto vidíte ponuku pre všetky vozidlá"; bez auta → výber auta a 10 pilotov;
@@ -181,6 +187,10 @@ anonymnému dotazu nevráti). Vozidlové adresy: 1 475 (s R1; bez Legacy BP). CF
 je cachovaná (tag, 3 600 s) a súbežné žiadosti sa spájajú do jednej prechádzky; teplá odpoveď 70–90 ms (12 súbežných 0,38 s, zahraničné
 trhy 0,65 s). Pomalá je len **studená** (po štarte/builde ~5,8 s teraz, ~12 s pri 18 700 produktoch), raz. Iné cache som nezaviedol — žiadna nie je
 potrebná a každá by pridala ďalšiu vec, ktorú treba invalidovať pri stiahnutí.
+
+**HTML sa medzi návštevníkmi necachuje** (CFM to žiadalo overiť): police aj konfigurátor odpovedajú `cache-control: private, no-cache, no-store, max-age=0, must-revalidate`
+a `cf-cache-status: DYNAMIC` — na produkcii aj na lokálnom builde; zoznam podľa auta (predvolený alebo `?vehicle=`) je v dynamickej časti stránky a statický shell nenesie garáž.
+Sitemapa a jej shardy garáž nečítajú vôbec.
 
 **Ručné vyčistenie** (overené len na lokálnom serveri; na produkcii ho spustí človek, mení iba cache):
 
