@@ -1,0 +1,1085 @@
+{
+	"artifact": "THULE_C1_BLOCK1_CUSTOMER_TEST",
+	"resolver": "maky-storefront resolveVehicleOutcome",
+	"dataset": {
+		"file": "maky_roof_fitment_3.0.0-full-20261001.2.json",
+		"datasetHash": "394346c97009832300cd407159117a42c99cf23541202117bc986d3da7d333c9",
+		"datasetVersion": "3.0.0-full-20261001.2"
+	},
+	"block": {
+		"number": 1,
+		"sets": 250,
+		"firstPk": 71720,
+		"lastPk": 72042
+	},
+	"cases": [
+		{
+			"category": "set_shown",
+			"note": "first set of the block — the set must be offered, at its own price",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5Njg0",
+				"externalReference": "cfm:product:CFMP-B-THU-d23cc69eb0374a-000000",
+				"sourceRef": "145190|710500|892000",
+				"sourceWindow": "2009>2011",
+				"slug": "stresny-nosic-thule-slidebar-evo-silver-honda-civic-sedan-fd-2009-2011-hladka-strecha",
+				"price": "554.85",
+				"cfmPk": "71720"
+			},
+			"vehicle": {
+				"make": "HONDA",
+				"model": "Civic Sedan",
+				"generation": "FD",
+				"production": [2005, 2011],
+				"urlPath": null
+			},
+			"selection": {
+				"makeId": "veh:mk:5e6b6806-37d2-4a48-ba73-9a427faf817f",
+				"modelId": "veh:md:49e2822b-e657-42b7-8932-a7584271c89c",
+				"generationId": "veh:gn:45b99ad5-53b2-44af-a484-1e1d2523084f",
+				"year": 2009,
+				"roofType": "naked-roof",
+				"bodyType": "saloon"
+			},
+			"setOffered": true
+		},
+		{
+			"category": "year_before_window",
+			"note": "first set of the block — one year before the window: not offered",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5Njg0",
+				"externalReference": "cfm:product:CFMP-B-THU-d23cc69eb0374a-000000",
+				"sourceRef": "145190|710500|892000",
+				"sourceWindow": "2009>2011",
+				"slug": "stresny-nosic-thule-slidebar-evo-silver-honda-civic-sedan-fd-2009-2011-hladka-strecha",
+				"price": "554.85",
+				"cfmPk": "71720"
+			},
+			"vehicle": {
+				"make": "HONDA",
+				"model": "Civic Sedan",
+				"generation": "FD",
+				"production": [2005, 2011],
+				"urlPath": null
+			},
+			"selection": {
+				"makeId": "veh:mk:5e6b6806-37d2-4a48-ba73-9a427faf817f",
+				"modelId": "veh:md:49e2822b-e657-42b7-8932-a7584271c89c",
+				"generationId": "veh:gn:45b99ad5-53b2-44af-a484-1e1d2523084f",
+				"year": 2008,
+				"roofType": "naked-roof",
+				"bodyType": "saloon"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "no_roof",
+			"note": "first set of the block — roof not confirmed: not offered, the shopper is asked",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5Njg0",
+				"externalReference": "cfm:product:CFMP-B-THU-d23cc69eb0374a-000000",
+				"sourceRef": "145190|710500|892000",
+				"sourceWindow": "2009>2011",
+				"slug": "stresny-nosic-thule-slidebar-evo-silver-honda-civic-sedan-fd-2009-2011-hladka-strecha",
+				"price": "554.85",
+				"cfmPk": "71720"
+			},
+			"vehicle": {
+				"make": "HONDA",
+				"model": "Civic Sedan",
+				"generation": "FD",
+				"production": [2005, 2011],
+				"urlPath": null
+			},
+			"selection": {
+				"makeId": "veh:mk:5e6b6806-37d2-4a48-ba73-9a427faf817f",
+				"modelId": "veh:md:49e2822b-e657-42b7-8932-a7584271c89c",
+				"generationId": "veh:gn:45b99ad5-53b2-44af-a484-1e1d2523084f",
+				"year": 2009,
+				"bodyType": "saloon"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "set_shown",
+			"note": "last set of the block — the set must be offered, at its own price",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5OTMz",
+				"externalReference": "cfm:product:CFMP-B-THU-bbb821a6a4667a-000000",
+				"sourceRef": "145135|710500|711420",
+				"sourceWindow": "2012>2017",
+				"slug": "stresny-nosic-thule-wingbar-evo-black-honda-civic-hatchback-fk-2012-2017-hladka-strecha",
+				"price": "439.85",
+				"cfmPk": "72042"
+			},
+			"vehicle": {
+				"make": "HONDA",
+				"model": "Civic Hatchback",
+				"generation": "FK",
+				"production": [2012, 2017],
+				"urlPath": null
+			},
+			"selection": {
+				"makeId": "veh:mk:5e6b6806-37d2-4a48-ba73-9a427faf817f",
+				"modelId": "veh:md:01064f2f-1ddb-4d4e-a603-7bf55c5078ac",
+				"generationId": "veh:gn:ef8bb255-8f16-491b-afbd-17050403153e",
+				"year": 2017,
+				"roofType": "naked-roof",
+				"bodyType": "hatchback"
+			},
+			"setOffered": true
+		},
+		{
+			"category": "no_roof",
+			"note": "last set of the block — roof not confirmed: not offered, the shopper is asked",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5OTMz",
+				"externalReference": "cfm:product:CFMP-B-THU-bbb821a6a4667a-000000",
+				"sourceRef": "145135|710500|711420",
+				"sourceWindow": "2012>2017",
+				"slug": "stresny-nosic-thule-wingbar-evo-black-honda-civic-hatchback-fk-2012-2017-hladka-strecha",
+				"price": "439.85",
+				"cfmPk": "72042"
+			},
+			"vehicle": {
+				"make": "HONDA",
+				"model": "Civic Hatchback",
+				"generation": "FK",
+				"production": [2012, 2017],
+				"urlPath": null
+			},
+			"selection": {
+				"makeId": "veh:mk:5e6b6806-37d2-4a48-ba73-9a427faf817f",
+				"modelId": "veh:md:01064f2f-1ddb-4d4e-a603-7bf55c5078ac",
+				"generationId": "veh:gn:ef8bb255-8f16-491b-afbd-17050403153e",
+				"year": 2017,
+				"bodyType": "hatchback"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "set_shown",
+			"note": "classic rails, generation page, closed window — the set must be offered, at its own price",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5NzA4",
+				"externalReference": "cfm:product:CFMP-B-THU-b2e359016bf539-000000",
+				"sourceRef": "720400|721300|721200",
+				"sourceWindow": "2000>2003",
+				"slug": "stresny-nosic-thule-wingbar-edge-silver-mercedes-benz-trieda-e-kombi-w210-2000-2003-klasicke-lyziny",
+				"price": "469.85",
+				"cfmPk": "71760"
+			},
+			"vehicle": {
+				"make": "MERCEDES-BENZ",
+				"model": "E-Class Kombi",
+				"generation": "W210",
+				"production": [1996, 2003],
+				"urlPath": "/stresne-nosice/mercedes-benz/e-class-kombi/w210"
+			},
+			"selection": {
+				"makeId": "veh:mk:a56014a0-69d8-4d7a-8d51-affffb6bbaa5",
+				"modelId": "veh:md:1b060127-b090-4e42-8894-ededa5673395",
+				"generationId": "veh:gn:04302384-6a25-44ed-a845-a99050599e16",
+				"year": 2001,
+				"roofType": "raised-rails",
+				"bodyType": "estate"
+			},
+			"setOffered": true
+		},
+		{
+			"category": "year_before_window",
+			"note": "classic rails, generation page, closed window — one year before the window: not offered",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5NzA4",
+				"externalReference": "cfm:product:CFMP-B-THU-b2e359016bf539-000000",
+				"sourceRef": "720400|721300|721200",
+				"sourceWindow": "2000>2003",
+				"slug": "stresny-nosic-thule-wingbar-edge-silver-mercedes-benz-trieda-e-kombi-w210-2000-2003-klasicke-lyziny",
+				"price": "469.85",
+				"cfmPk": "71760"
+			},
+			"vehicle": {
+				"make": "MERCEDES-BENZ",
+				"model": "E-Class Kombi",
+				"generation": "W210",
+				"production": [1996, 2003],
+				"urlPath": "/stresne-nosice/mercedes-benz/e-class-kombi/w210"
+			},
+			"selection": {
+				"makeId": "veh:mk:a56014a0-69d8-4d7a-8d51-affffb6bbaa5",
+				"modelId": "veh:md:1b060127-b090-4e42-8894-ededa5673395",
+				"generationId": "veh:gn:04302384-6a25-44ed-a845-a99050599e16",
+				"year": 1999,
+				"roofType": "raised-rails",
+				"bodyType": "estate"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "no_roof",
+			"note": "classic rails, generation page, closed window — roof not confirmed: not offered, the shopper is asked",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5NzA4",
+				"externalReference": "cfm:product:CFMP-B-THU-b2e359016bf539-000000",
+				"sourceRef": "720400|721300|721200",
+				"sourceWindow": "2000>2003",
+				"slug": "stresny-nosic-thule-wingbar-edge-silver-mercedes-benz-trieda-e-kombi-w210-2000-2003-klasicke-lyziny",
+				"price": "469.85",
+				"cfmPk": "71760"
+			},
+			"vehicle": {
+				"make": "MERCEDES-BENZ",
+				"model": "E-Class Kombi",
+				"generation": "W210",
+				"production": [1996, 2003],
+				"urlPath": "/stresne-nosice/mercedes-benz/e-class-kombi/w210"
+			},
+			"selection": {
+				"makeId": "veh:mk:a56014a0-69d8-4d7a-8d51-affffb6bbaa5",
+				"modelId": "veh:md:1b060127-b090-4e42-8894-ededa5673395",
+				"generationId": "veh:gn:04302384-6a25-44ed-a845-a99050599e16",
+				"year": 2001,
+				"bodyType": "estate"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "set_shown",
+			"note": "integrated rails, generation page — the set must be offered, at its own price",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5ODM4",
+				"externalReference": "cfm:product:CFMP-B-THU-ef72203a79d5dc-000000",
+				"sourceRef": "186008|710600|892000",
+				"sourceWindow": "2021>2024",
+				"slug": "stresny-nosic-thule-slidebar-evo-silver-hyundai-santa-fe-tm-2021-2024-integrovane-lyziny",
+				"price": "554.85",
+				"cfmPk": "71917"
+			},
+			"vehicle": {
+				"make": "HYUNDAI",
+				"model": "Santa Fe",
+				"generation": "TM",
+				"production": [2018, 2023],
+				"urlPath": "/stresne-nosice/hyundai/santa-fe/tm"
+			},
+			"selection": {
+				"makeId": "veh:mk:f1c04661-be53-447b-b6aa-81fac10756ec",
+				"modelId": "veh:md:980da34c-1fc8-4347-a309-efef31bbb0ac",
+				"generationId": "veh:gn:01e7a916-5131-4785-83b4-176e7bd4df63",
+				"year": 2021,
+				"roofType": "flush-rails",
+				"bodyType": "suv"
+			},
+			"setOffered": true
+		},
+		{
+			"category": "year_before_window",
+			"note": "integrated rails, generation page — one year before the window: not offered",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5ODM4",
+				"externalReference": "cfm:product:CFMP-B-THU-ef72203a79d5dc-000000",
+				"sourceRef": "186008|710600|892000",
+				"sourceWindow": "2021>2024",
+				"slug": "stresny-nosic-thule-slidebar-evo-silver-hyundai-santa-fe-tm-2021-2024-integrovane-lyziny",
+				"price": "554.85",
+				"cfmPk": "71917"
+			},
+			"vehicle": {
+				"make": "HYUNDAI",
+				"model": "Santa Fe",
+				"generation": "TM",
+				"production": [2018, 2023],
+				"urlPath": "/stresne-nosice/hyundai/santa-fe/tm"
+			},
+			"selection": {
+				"makeId": "veh:mk:f1c04661-be53-447b-b6aa-81fac10756ec",
+				"modelId": "veh:md:980da34c-1fc8-4347-a309-efef31bbb0ac",
+				"generationId": "veh:gn:01e7a916-5131-4785-83b4-176e7bd4df63",
+				"year": 2020,
+				"roofType": "flush-rails",
+				"bodyType": "suv"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "no_roof",
+			"note": "integrated rails, generation page — roof not confirmed: not offered, the shopper is asked",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5ODM4",
+				"externalReference": "cfm:product:CFMP-B-THU-ef72203a79d5dc-000000",
+				"sourceRef": "186008|710600|892000",
+				"sourceWindow": "2021>2024",
+				"slug": "stresny-nosic-thule-slidebar-evo-silver-hyundai-santa-fe-tm-2021-2024-integrovane-lyziny",
+				"price": "554.85",
+				"cfmPk": "71917"
+			},
+			"vehicle": {
+				"make": "HYUNDAI",
+				"model": "Santa Fe",
+				"generation": "TM",
+				"production": [2018, 2023],
+				"urlPath": "/stresne-nosice/hyundai/santa-fe/tm"
+			},
+			"selection": {
+				"makeId": "veh:mk:f1c04661-be53-447b-b6aa-81fac10756ec",
+				"modelId": "veh:md:980da34c-1fc8-4347-a309-efef31bbb0ac",
+				"generationId": "veh:gn:01e7a916-5131-4785-83b4-176e7bd4df63",
+				"year": 2021,
+				"bodyType": "suv"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "set_shown",
+			"note": "fixed points, generation page, open window — the set must be offered, at its own price",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5NzE3",
+				"externalReference": "cfm:product:CFMP-B-THU-95b425eb2fc559-000000",
+				"sourceRef": "187140|720700|721520|721520",
+				"sourceWindow": "2022>",
+				"slug": "stresny-nosic-thule-wingbar-edge-black-mercedes-benz-eqe-v295-2022-fixacne-body",
+				"price": "489.80",
+				"cfmPk": "71771"
+			},
+			"vehicle": {
+				"make": "MERCEDES-BENZ",
+				"model": "EQE",
+				"generation": "V295",
+				"production": [2022, null],
+				"urlPath": "/stresne-nosice/mercedes-benz/eqe/v295"
+			},
+			"selection": {
+				"makeId": "veh:mk:a56014a0-69d8-4d7a-8d51-affffb6bbaa5",
+				"modelId": "veh:md:67ecbfc3-ec8f-45e2-90c8-971dc1cfcdb7",
+				"generationId": "veh:gn:4f319f30-4a59-416e-99ee-92e6ff9ca187",
+				"year": 2026,
+				"roofType": "fixpoint",
+				"bodyType": "saloon"
+			},
+			"setOffered": true
+		},
+		{
+			"category": "no_roof",
+			"note": "fixed points, generation page, open window — roof not confirmed: not offered, the shopper is asked",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5NzE3",
+				"externalReference": "cfm:product:CFMP-B-THU-95b425eb2fc559-000000",
+				"sourceRef": "187140|720700|721520|721520",
+				"sourceWindow": "2022>",
+				"slug": "stresny-nosic-thule-wingbar-edge-black-mercedes-benz-eqe-v295-2022-fixacne-body",
+				"price": "489.80",
+				"cfmPk": "71771"
+			},
+			"vehicle": {
+				"make": "MERCEDES-BENZ",
+				"model": "EQE",
+				"generation": "V295",
+				"production": [2022, null],
+				"urlPath": "/stresne-nosice/mercedes-benz/eqe/v295"
+			},
+			"selection": {
+				"makeId": "veh:mk:a56014a0-69d8-4d7a-8d51-affffb6bbaa5",
+				"modelId": "veh:md:67ecbfc3-ec8f-45e2-90c8-971dc1cfcdb7",
+				"generationId": "veh:gn:4f319f30-4a59-416e-99ee-92e6ff9ca187",
+				"year": 2026,
+				"bodyType": "saloon"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "set_shown",
+			"note": "bare roof, generation page, black bars (gallery) — the set must be offered, at its own price",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5NzA2",
+				"externalReference": "cfm:product:CFMP-B-THU-69274ae5630a7b-000000",
+				"sourceRef": "145122|720500|721520|721520",
+				"sourceWindow": "2018>2021",
+				"slug": "stresny-nosic-thule-wingbar-edge-black-opel-grandland-x-p1uo-2018-2021-hladka-strecha",
+				"price": "489.80",
+				"cfmPk": "71758"
+			},
+			"vehicle": {
+				"make": "OPEL",
+				"model": "Grandland X",
+				"generation": "P1UO",
+				"production": [2017, 2024],
+				"urlPath": "/stresne-nosice/opel/grandland-x/p1uo"
+			},
+			"selection": {
+				"makeId": "veh:mk:7b682990-fa86-4519-b7f6-e178f738fd12",
+				"modelId": "veh:md:d0066bce-5d5a-4b70-b42f-b88486eedbc6",
+				"generationId": "veh:gn:02c01ea1-6027-42a2-b5fc-d2c58f2f550e",
+				"year": 2019,
+				"roofType": "naked-roof",
+				"bodyType": "suv"
+			},
+			"setOffered": true
+		},
+		{
+			"category": "year_before_window",
+			"note": "bare roof, generation page, black bars (gallery) — one year before the window: not offered",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5NzA2",
+				"externalReference": "cfm:product:CFMP-B-THU-69274ae5630a7b-000000",
+				"sourceRef": "145122|720500|721520|721520",
+				"sourceWindow": "2018>2021",
+				"slug": "stresny-nosic-thule-wingbar-edge-black-opel-grandland-x-p1uo-2018-2021-hladka-strecha",
+				"price": "489.80",
+				"cfmPk": "71758"
+			},
+			"vehicle": {
+				"make": "OPEL",
+				"model": "Grandland X",
+				"generation": "P1UO",
+				"production": [2017, 2024],
+				"urlPath": "/stresne-nosice/opel/grandland-x/p1uo"
+			},
+			"selection": {
+				"makeId": "veh:mk:7b682990-fa86-4519-b7f6-e178f738fd12",
+				"modelId": "veh:md:d0066bce-5d5a-4b70-b42f-b88486eedbc6",
+				"generationId": "veh:gn:02c01ea1-6027-42a2-b5fc-d2c58f2f550e",
+				"year": 2017,
+				"roofType": "naked-roof",
+				"bodyType": "suv"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "other_roof",
+			"note": "bare roof, generation page, black bars (gallery) — the generation's other roof (flush-rails): not offered",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5NzA2",
+				"externalReference": "cfm:product:CFMP-B-THU-69274ae5630a7b-000000",
+				"sourceRef": "145122|720500|721520|721520",
+				"sourceWindow": "2018>2021",
+				"slug": "stresny-nosic-thule-wingbar-edge-black-opel-grandland-x-p1uo-2018-2021-hladka-strecha",
+				"price": "489.80",
+				"cfmPk": "71758"
+			},
+			"vehicle": {
+				"make": "OPEL",
+				"model": "Grandland X",
+				"generation": "P1UO",
+				"production": [2017, 2024],
+				"urlPath": "/stresne-nosice/opel/grandland-x/p1uo"
+			},
+			"selection": {
+				"makeId": "veh:mk:7b682990-fa86-4519-b7f6-e178f738fd12",
+				"modelId": "veh:md:d0066bce-5d5a-4b70-b42f-b88486eedbc6",
+				"generationId": "veh:gn:02c01ea1-6027-42a2-b5fc-d2c58f2f550e",
+				"year": 2019,
+				"roofType": "flush-rails",
+				"bodyType": "suv"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "set_shown",
+			"note": "bare roof, car WITHOUT a page — the set must be offered, at its own price",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5Njg2",
+				"externalReference": "cfm:product:CFMP-B-THU-1700f871bbebe3-000000",
+				"sourceRef": "145022|720500|721400|721400",
+				"sourceWindow": "2012>2021",
+				"slug": "stresny-nosic-thule-wingbar-edge-silver-seat-mii-ke1-2012-2021-hladka-strecha",
+				"price": "469.80",
+				"cfmPk": "71725"
+			},
+			"vehicle": {
+				"make": "SEAT",
+				"model": "Mii",
+				"generation": "KE1",
+				"production": [2011, 2021],
+				"urlPath": null
+			},
+			"selection": {
+				"makeId": "veh:mk:810addef-06ec-4470-b85a-7e9856644efa",
+				"modelId": "veh:md:e11edff5-c8c1-4917-b202-2dc66d13b787",
+				"generationId": "veh:gn:0700dd65-6c27-4d2f-9288-5cb858bf12c7",
+				"year": 2012,
+				"roofType": "naked-roof",
+				"bodyType": "hatchback"
+			},
+			"setOffered": true
+		},
+		{
+			"category": "year_before_window",
+			"note": "bare roof, car WITHOUT a page — one year before the window: not offered",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5Njg2",
+				"externalReference": "cfm:product:CFMP-B-THU-1700f871bbebe3-000000",
+				"sourceRef": "145022|720500|721400|721400",
+				"sourceWindow": "2012>2021",
+				"slug": "stresny-nosic-thule-wingbar-edge-silver-seat-mii-ke1-2012-2021-hladka-strecha",
+				"price": "469.80",
+				"cfmPk": "71725"
+			},
+			"vehicle": {
+				"make": "SEAT",
+				"model": "Mii",
+				"generation": "KE1",
+				"production": [2011, 2021],
+				"urlPath": null
+			},
+			"selection": {
+				"makeId": "veh:mk:810addef-06ec-4470-b85a-7e9856644efa",
+				"modelId": "veh:md:e11edff5-c8c1-4917-b202-2dc66d13b787",
+				"generationId": "veh:gn:0700dd65-6c27-4d2f-9288-5cb858bf12c7",
+				"year": 2011,
+				"roofType": "naked-roof",
+				"bodyType": "hatchback"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "no_roof",
+			"note": "bare roof, car WITHOUT a page — roof not confirmed: not offered, the shopper is asked",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5Njg2",
+				"externalReference": "cfm:product:CFMP-B-THU-1700f871bbebe3-000000",
+				"sourceRef": "145022|720500|721400|721400",
+				"sourceWindow": "2012>2021",
+				"slug": "stresny-nosic-thule-wingbar-edge-silver-seat-mii-ke1-2012-2021-hladka-strecha",
+				"price": "469.80",
+				"cfmPk": "71725"
+			},
+			"vehicle": {
+				"make": "SEAT",
+				"model": "Mii",
+				"generation": "KE1",
+				"production": [2011, 2021],
+				"urlPath": null
+			},
+			"selection": {
+				"makeId": "veh:mk:810addef-06ec-4470-b85a-7e9856644efa",
+				"modelId": "veh:md:e11edff5-c8c1-4917-b202-2dc66d13b787",
+				"generationId": "veh:gn:0700dd65-6c27-4d2f-9288-5cb858bf12c7",
+				"year": 2012,
+				"bodyType": "hatchback"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "set_shown",
+			"note": "fixed points, car WITHOUT a page, black bars (gallery) — the set must be offered, at its own price",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5NzM5",
+				"externalReference": "cfm:product:CFMP-B-THU-24d23b5d3d4b90-000000",
+				"sourceRef": "187166|710700|711520",
+				"sourceWindow": "2006>2013",
+				"slug": "stresny-nosic-thule-wingbar-evo-black-mercedes-benz-sprinter-van-w906-2006-2013-fixacne-body",
+				"price": "439.85",
+				"cfmPk": "71799"
+			},
+			"vehicle": {
+				"make": "MERCEDES-BENZ",
+				"model": "Sprinter Van",
+				"generation": "W906",
+				"production": [2006, 2018],
+				"urlPath": null
+			},
+			"selection": {
+				"makeId": "veh:mk:a56014a0-69d8-4d7a-8d51-affffb6bbaa5",
+				"modelId": "veh:md:974b6883-6aa6-4fb6-aea4-b469721f8dc7",
+				"generationId": "veh:gn:017cf11e-dfe8-41a2-a5ee-a4b8df827eab",
+				"year": 2013,
+				"roofType": "fixpoint",
+				"bodyType": "van"
+			},
+			"setOffered": true
+		},
+		{
+			"category": "year_after_window",
+			"note": "fixed points, car WITHOUT a page, black bars (gallery) — one year after the window: not offered",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5NzM5",
+				"externalReference": "cfm:product:CFMP-B-THU-24d23b5d3d4b90-000000",
+				"sourceRef": "187166|710700|711520",
+				"sourceWindow": "2006>2013",
+				"slug": "stresny-nosic-thule-wingbar-evo-black-mercedes-benz-sprinter-van-w906-2006-2013-fixacne-body",
+				"price": "439.85",
+				"cfmPk": "71799"
+			},
+			"vehicle": {
+				"make": "MERCEDES-BENZ",
+				"model": "Sprinter Van",
+				"generation": "W906",
+				"production": [2006, 2018],
+				"urlPath": null
+			},
+			"selection": {
+				"makeId": "veh:mk:a56014a0-69d8-4d7a-8d51-affffb6bbaa5",
+				"modelId": "veh:md:974b6883-6aa6-4fb6-aea4-b469721f8dc7",
+				"generationId": "veh:gn:017cf11e-dfe8-41a2-a5ee-a4b8df827eab",
+				"year": 2014,
+				"roofType": "fixpoint",
+				"bodyType": "van"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "other_roof",
+			"note": "fixed points, car WITHOUT a page, black bars (gallery) — the generation's other roof (t-track): not offered",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5NzM5",
+				"externalReference": "cfm:product:CFMP-B-THU-24d23b5d3d4b90-000000",
+				"sourceRef": "187166|710700|711520",
+				"sourceWindow": "2006>2013",
+				"slug": "stresny-nosic-thule-wingbar-evo-black-mercedes-benz-sprinter-van-w906-2006-2013-fixacne-body",
+				"price": "439.85",
+				"cfmPk": "71799"
+			},
+			"vehicle": {
+				"make": "MERCEDES-BENZ",
+				"model": "Sprinter Van",
+				"generation": "W906",
+				"production": [2006, 2018],
+				"urlPath": null
+			},
+			"selection": {
+				"makeId": "veh:mk:a56014a0-69d8-4d7a-8d51-affffb6bbaa5",
+				"modelId": "veh:md:974b6883-6aa6-4fb6-aea4-b469721f8dc7",
+				"generationId": "veh:gn:017cf11e-dfe8-41a2-a5ee-a4b8df827eab",
+				"year": 2013,
+				"roofType": "t-track",
+				"bodyType": "van"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "set_shown",
+			"note": "T-track — the set must be offered, at its own price",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5ODkx",
+				"externalReference": "cfm:product:CFMP-B-THU-6ce359d49449ca-000000",
+				"sourceRef": "187004|710700|711520",
+				"sourceWindow": "2018>",
+				"slug": "stresny-nosic-thule-wingbar-evo-black-mercedes-benz-sprinter-van-w910-2018-t-drazka-v-streche",
+				"price": "439.85",
+				"cfmPk": "71986"
+			},
+			"vehicle": {
+				"make": "MERCEDES-BENZ",
+				"model": "Sprinter Van",
+				"generation": "W910",
+				"production": [2018, null],
+				"urlPath": null
+			},
+			"selection": {
+				"makeId": "veh:mk:a56014a0-69d8-4d7a-8d51-affffb6bbaa5",
+				"modelId": "veh:md:974b6883-6aa6-4fb6-aea4-b469721f8dc7",
+				"generationId": "veh:gn:b7fd1603-670f-4231-adbc-d0b18821e236",
+				"year": 2022,
+				"roofType": "t-track",
+				"bodyType": "van"
+			},
+			"setOffered": true
+		},
+		{
+			"category": "other_roof",
+			"note": "T-track — the generation's other roof (fixpoint): not offered",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5ODkx",
+				"externalReference": "cfm:product:CFMP-B-THU-6ce359d49449ca-000000",
+				"sourceRef": "187004|710700|711520",
+				"sourceWindow": "2018>",
+				"slug": "stresny-nosic-thule-wingbar-evo-black-mercedes-benz-sprinter-van-w910-2018-t-drazka-v-streche",
+				"price": "439.85",
+				"cfmPk": "71986"
+			},
+			"vehicle": {
+				"make": "MERCEDES-BENZ",
+				"model": "Sprinter Van",
+				"generation": "W910",
+				"production": [2018, null],
+				"urlPath": null
+			},
+			"selection": {
+				"makeId": "veh:mk:a56014a0-69d8-4d7a-8d51-affffb6bbaa5",
+				"modelId": "veh:md:974b6883-6aa6-4fb6-aea4-b469721f8dc7",
+				"generationId": "veh:gn:b7fd1603-670f-4231-adbc-d0b18821e236",
+				"year": 2022,
+				"roofType": "fixpoint",
+				"bodyType": "van"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "set_shown",
+			"note": "BMW — the set must be offered, at its own price",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5ODIz",
+				"externalReference": "cfm:product:CFMP-B-THU-8a0290ab63e4c5-000000",
+				"sourceRef": "710410|391000",
+				"sourceWindow": "2000>2004",
+				"slug": "stresny-nosic-thule-probar-evo-silver-bmw-x5-e53-2000-2004-klasicke-lyziny",
+				"price": "384.90",
+				"cfmPk": "71898"
+			},
+			"vehicle": {
+				"make": "BMW",
+				"model": "X5",
+				"generation": "E53",
+				"production": [1999, 2006],
+				"urlPath": "/stresne-nosice/bmw/x5/e53"
+			},
+			"selection": {
+				"makeId": "veh:mk:0569257e-8630-4d82-81aa-63f25364f5bb",
+				"modelId": "veh:md:aae91cc5-c88d-4145-a00e-08582c3e5b97",
+				"generationId": "veh:gn:081cac81-ba81-4b30-bba3-53dddadb4e33",
+				"year": 2000,
+				"roofType": "raised-rails",
+				"bodyType": "suv"
+			},
+			"setOffered": true
+		},
+		{
+			"category": "year_before_window",
+			"note": "BMW — one year before the window: not offered",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5ODIz",
+				"externalReference": "cfm:product:CFMP-B-THU-8a0290ab63e4c5-000000",
+				"sourceRef": "710410|391000",
+				"sourceWindow": "2000>2004",
+				"slug": "stresny-nosic-thule-probar-evo-silver-bmw-x5-e53-2000-2004-klasicke-lyziny",
+				"price": "384.90",
+				"cfmPk": "71898"
+			},
+			"vehicle": {
+				"make": "BMW",
+				"model": "X5",
+				"generation": "E53",
+				"production": [1999, 2006],
+				"urlPath": "/stresne-nosice/bmw/x5/e53"
+			},
+			"selection": {
+				"makeId": "veh:mk:0569257e-8630-4d82-81aa-63f25364f5bb",
+				"modelId": "veh:md:aae91cc5-c88d-4145-a00e-08582c3e5b97",
+				"generationId": "veh:gn:081cac81-ba81-4b30-bba3-53dddadb4e33",
+				"year": 1999,
+				"roofType": "raised-rails",
+				"bodyType": "suv"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "other_roof",
+			"note": "BMW — the generation's other roof (naked-roof): not offered",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5ODIz",
+				"externalReference": "cfm:product:CFMP-B-THU-8a0290ab63e4c5-000000",
+				"sourceRef": "710410|391000",
+				"sourceWindow": "2000>2004",
+				"slug": "stresny-nosic-thule-probar-evo-silver-bmw-x5-e53-2000-2004-klasicke-lyziny",
+				"price": "384.90",
+				"cfmPk": "71898"
+			},
+			"vehicle": {
+				"make": "BMW",
+				"model": "X5",
+				"generation": "E53",
+				"production": [1999, 2006],
+				"urlPath": "/stresne-nosice/bmw/x5/e53"
+			},
+			"selection": {
+				"makeId": "veh:mk:0569257e-8630-4d82-81aa-63f25364f5bb",
+				"modelId": "veh:md:aae91cc5-c88d-4145-a00e-08582c3e5b97",
+				"generationId": "veh:gn:081cac81-ba81-4b30-bba3-53dddadb4e33",
+				"year": 2000,
+				"roofType": "naked-roof",
+				"bodyType": "suv"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "set_shown",
+			"note": "Volkswagen — the set must be offered, at its own price",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5NzI3",
+				"externalReference": "cfm:product:CFMP-B-THU-43df5dbb2b5187-000000",
+				"sourceRef": "186053|710600|711320",
+				"sourceWindow": "2018>2023",
+				"slug": "stresny-nosic-thule-wingbar-evo-black-volkswagen-touareg-cr-2018-2023-integrovane-lyziny",
+				"price": "439.85",
+				"cfmPk": "71785"
+			},
+			"vehicle": {
+				"make": "VOLKSWAGEN",
+				"model": "Touareg",
+				"generation": "CR",
+				"production": [2018, null],
+				"urlPath": "/stresne-nosice/volkswagen/touareg/cr"
+			},
+			"selection": {
+				"makeId": "veh:mk:bcdc8224-888f-48b0-920b-9d1707a414c3",
+				"modelId": "veh:md:95954ac6-5ccb-43da-89cd-e0e5bc34b96d",
+				"generationId": "veh:gn:31505e80-a30c-45b7-8e27-7d13f1723fe8",
+				"year": 2023,
+				"roofType": "flush-rails",
+				"bodyType": "suv"
+			},
+			"setOffered": true
+		},
+		{
+			"category": "year_after_window",
+			"note": "Volkswagen — one year after the window: not offered",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5NzI3",
+				"externalReference": "cfm:product:CFMP-B-THU-43df5dbb2b5187-000000",
+				"sourceRef": "186053|710600|711320",
+				"sourceWindow": "2018>2023",
+				"slug": "stresny-nosic-thule-wingbar-evo-black-volkswagen-touareg-cr-2018-2023-integrovane-lyziny",
+				"price": "439.85",
+				"cfmPk": "71785"
+			},
+			"vehicle": {
+				"make": "VOLKSWAGEN",
+				"model": "Touareg",
+				"generation": "CR",
+				"production": [2018, null],
+				"urlPath": "/stresne-nosice/volkswagen/touareg/cr"
+			},
+			"selection": {
+				"makeId": "veh:mk:bcdc8224-888f-48b0-920b-9d1707a414c3",
+				"modelId": "veh:md:95954ac6-5ccb-43da-89cd-e0e5bc34b96d",
+				"generationId": "veh:gn:31505e80-a30c-45b7-8e27-7d13f1723fe8",
+				"year": 2024,
+				"roofType": "flush-rails",
+				"bodyType": "suv"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "no_roof",
+			"note": "Volkswagen — roof not confirmed: not offered, the shopper is asked",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5NzI3",
+				"externalReference": "cfm:product:CFMP-B-THU-43df5dbb2b5187-000000",
+				"sourceRef": "186053|710600|711320",
+				"sourceWindow": "2018>2023",
+				"slug": "stresny-nosic-thule-wingbar-evo-black-volkswagen-touareg-cr-2018-2023-integrovane-lyziny",
+				"price": "439.85",
+				"cfmPk": "71785"
+			},
+			"vehicle": {
+				"make": "VOLKSWAGEN",
+				"model": "Touareg",
+				"generation": "CR",
+				"production": [2018, null],
+				"urlPath": "/stresne-nosice/volkswagen/touareg/cr"
+			},
+			"selection": {
+				"makeId": "veh:mk:bcdc8224-888f-48b0-920b-9d1707a414c3",
+				"modelId": "veh:md:95954ac6-5ccb-43da-89cd-e0e5bc34b96d",
+				"generationId": "veh:gn:31505e80-a30c-45b7-8e27-7d13f1723fe8",
+				"year": 2023,
+				"bodyType": "suv"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "set_shown",
+			"note": "Mercedes-Benz — the set must be offered, at its own price",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5ODU5",
+				"externalReference": "cfm:product:CFMP-B-THU-a8e45cc9b9fe9d-000000",
+				"sourceRef": "186098|710600|711320",
+				"sourceWindow": "2020>2023",
+				"slug": "stresny-nosic-thule-wingbar-evo-black-mercedes-benz-gla-h247-2020-2023-integrovane-lyziny",
+				"price": "439.85",
+				"cfmPk": "71945"
+			},
+			"vehicle": {
+				"make": "MERCEDES-BENZ",
+				"model": "GLA",
+				"generation": "H247",
+				"production": [2020, null],
+				"urlPath": "/stresne-nosice/mercedes-benz/gla/h247"
+			},
+			"selection": {
+				"makeId": "veh:mk:a56014a0-69d8-4d7a-8d51-affffb6bbaa5",
+				"modelId": "veh:md:55d08569-f929-46d1-9884-ed3bbe54e19b",
+				"generationId": "veh:gn:2870fdac-fee8-451b-9acb-5d506737f130",
+				"year": 2021,
+				"roofType": "flush-rails",
+				"bodyType": "suv"
+			},
+			"setOffered": true
+		},
+		{
+			"category": "year_after_window",
+			"note": "Mercedes-Benz — one year after the window: not offered",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5ODU5",
+				"externalReference": "cfm:product:CFMP-B-THU-a8e45cc9b9fe9d-000000",
+				"sourceRef": "186098|710600|711320",
+				"sourceWindow": "2020>2023",
+				"slug": "stresny-nosic-thule-wingbar-evo-black-mercedes-benz-gla-h247-2020-2023-integrovane-lyziny",
+				"price": "439.85",
+				"cfmPk": "71945"
+			},
+			"vehicle": {
+				"make": "MERCEDES-BENZ",
+				"model": "GLA",
+				"generation": "H247",
+				"production": [2020, null],
+				"urlPath": "/stresne-nosice/mercedes-benz/gla/h247"
+			},
+			"selection": {
+				"makeId": "veh:mk:a56014a0-69d8-4d7a-8d51-affffb6bbaa5",
+				"modelId": "veh:md:55d08569-f929-46d1-9884-ed3bbe54e19b",
+				"generationId": "veh:gn:2870fdac-fee8-451b-9acb-5d506737f130",
+				"year": 2024,
+				"roofType": "flush-rails",
+				"bodyType": "suv"
+			},
+			"setOffered": false
+		},
+		{
+			"category": "no_roof",
+			"note": "Mercedes-Benz — roof not confirmed: not offered, the shopper is asked",
+			"set": {
+				"saleorProductId": "UHJvZHVjdDo5ODU5",
+				"externalReference": "cfm:product:CFMP-B-THU-a8e45cc9b9fe9d-000000",
+				"sourceRef": "186098|710600|711320",
+				"sourceWindow": "2020>2023",
+				"slug": "stresny-nosic-thule-wingbar-evo-black-mercedes-benz-gla-h247-2020-2023-integrovane-lyziny",
+				"price": "439.85",
+				"cfmPk": "71945"
+			},
+			"vehicle": {
+				"make": "MERCEDES-BENZ",
+				"model": "GLA",
+				"generation": "H247",
+				"production": [2020, null],
+				"urlPath": "/stresne-nosice/mercedes-benz/gla/h247"
+			},
+			"selection": {
+				"makeId": "veh:mk:a56014a0-69d8-4d7a-8d51-affffb6bbaa5",
+				"modelId": "veh:md:55d08569-f929-46d1-9884-ed3bbe54e19b",
+				"generationId": "veh:gn:2870fdac-fee8-451b-9acb-5d506737f130",
+				"year": 2021,
+				"bodyType": "suv"
+			},
+			"setOffered": false
+		}
+	],
+	"pilots": [
+		{
+			"cfmPk": "71732",
+			"slug": "stresny-nosic-thule-wingbar-evo-silver-bmw-x5-e70-2011-2013-klasicke-lyziny",
+			"hidden": false
+		},
+		{
+			"cfmPk": "71778",
+			"slug": "stresny-nosic-thule-wingbar-evo-black-honda-cr-v-rm-2015-2018-integrovane-lyziny",
+			"hidden": false
+		},
+		{
+			"cfmPk": "72883",
+			"slug": "stresny-nosic-thule-wingbar-evo-black-opel-combo-life-e-2018-2024-klasicke-lyziny",
+			"hidden": false
+		},
+		{
+			"cfmPk": "71755",
+			"slug": "stresny-nosic-thule-wingbar-edge-silver-audi-q5-fy-2017-2020-integrovane-lyziny",
+			"hidden": false
+		},
+		{
+			"cfmPk": "71719",
+			"slug": "stresny-nosic-thule-wingbar-edge-black-seat-ibiza-6j-2009-2012-hladka-strecha",
+			"hidden": false
+		},
+		{
+			"cfmPk": "71723",
+			"slug": "stresny-nosic-thule-wingbar-edge-black-toyota-hilux-an120-2026-hladka-strecha",
+			"hidden": false
+		},
+		{
+			"cfmPk": "71721",
+			"slug": "stresny-nosic-thule-squarebar-evo-black-audi-q7-4m-2020-2024-integrovane-lyziny",
+			"hidden": false
+		},
+		{
+			"cfmPk": "71769",
+			"slug": "stresny-nosic-thule-probar-evo-silver-bmw-x2-u10-2024-hladka-strecha",
+			"hidden": false
+		},
+		{
+			"cfmPk": "71843",
+			"slug": "stresny-nosic-thule-probar-evo-silver-volkswagen-transporter-t5-2010-2015-t-drazka-v-streche",
+			"hidden": false
+		},
+		{
+			"cfmPk": "71729",
+			"slug": "stresny-nosic-thule-slidebar-evo-silver-man-tge-uy-2017-fixacne-body",
+			"hidden": false
+		},
+		{
+			"cfmPk": "71743",
+			"slug": "stresny-nosic-thule-squarebar-evo-black-opel-vivaro-van-c-2019-2024-fixacne-body",
+			"hidden": true
+		}
+	],
+	"laterBlocksSample": [
+		"UHJvZHVjdDo5OTM0",
+		"UHJvZHVjdDoxMDA4Mg==",
+		"UHJvZHVjdDoxMDIzMA==",
+		"UHJvZHVjdDoxMDM3OA==",
+		"UHJvZHVjdDoxMDUyNg==",
+		"UHJvZHVjdDoxMDY3NA==",
+		"UHJvZHVjdDoxMDgyMg==",
+		"UHJvZHVjdDoxMDk3MA==",
+		"UHJvZHVjdDoxMTExOA==",
+		"UHJvZHVjdDoxMTI2Ng==",
+		"UHJvZHVjdDoxMTQxNA==",
+		"UHJvZHVjdDoxMTU2Mg==",
+		"UHJvZHVjdDoxMTcxMA==",
+		"UHJvZHVjdDoxMTg1OA==",
+		"UHJvZHVjdDoxMjAwNg==",
+		"UHJvZHVjdDoxMjE1NA==",
+		"UHJvZHVjdDoxMjMwMg==",
+		"UHJvZHVjdDoxMjQ1MA==",
+		"UHJvZHVjdDoxMjU5OA==",
+		"UHJvZHVjdDoxMjc0Ng==",
+		"UHJvZHVjdDoxMjg5NA==",
+		"UHJvZHVjdDoxMzA0Mg==",
+		"UHJvZHVjdDoxMzE5MA==",
+		"UHJvZHVjdDoxMzMzOA==",
+		"UHJvZHVjdDoxMzQ4Ng==",
+		"UHJvZHVjdDoxMzYzNA==",
+		"UHJvZHVjdDoxMzc4Mg==",
+		"UHJvZHVjdDoxMzkzMA==",
+		"UHJvZHVjdDoxNDA3OA==",
+		"UHJvZHVjdDoxNDIyNg==",
+		"UHJvZHVjdDoxNDM3NA==",
+		"UHJvZHVjdDoxNDUyMg==",
+		"UHJvZHVjdDoxNDY3MA==",
+		"UHJvZHVjdDoxNDgxOA==",
+		"UHJvZHVjdDoxNDk2Ng==",
+		"UHJvZHVjdDoxNTExNA==",
+		"UHJvZHVjdDoxNTI2Mg==",
+		"UHJvZHVjdDoxNTQxMA==",
+		"UHJvZHVjdDoxNTU1OA==",
+		"UHJvZHVjdDoxNTcwNg==",
+		"UHJvZHVjdDoxNTg1NA==",
+		"UHJvZHVjdDoxNjAwMg==",
+		"UHJvZHVjdDoxNjE1MA==",
+		"UHJvZHVjdDoxNjI5OA==",
+		"UHJvZHVjdDoxNjQ0Ng==",
+		"UHJvZHVjdDoxNjU5NA==",
+		"UHJvZHVjdDoxNjc0Mg==",
+		"UHJvZHVjdDoxNjg5MA==",
+		"UHJvZHVjdDoxNzAzOA==",
+		"UHJvZHVjdDoxNzE4Ng==",
+		"UHJvZHVjdDoxNzMzNA==",
+		"UHJvZHVjdDoxNzQ4Mg==",
+		"UHJvZHVjdDoxNzYzMA==",
+		"UHJvZHVjdDoxNzc3OA==",
+		"UHJvZHVjdDoxNzkyNg==",
+		"UHJvZHVjdDoxODA3NA==",
+		"UHJvZHVjdDoxODIyMg==",
+		"UHJvZHVjdDoxODM3MA==",
+		"UHJvZHVjdDoxODUxOA==",
+		"UHJvZHVjdDoxODY2Ng=="
+	]
+}

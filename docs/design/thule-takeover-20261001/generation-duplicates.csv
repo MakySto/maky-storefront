@@ -1,0 +1,49 @@
+kind;make;model;generation_a;a_id;a_years;a_urlPath;a_sets;generation_b;b_id;b_years;b_urlPath;b_sets;new_in_20261001.2
+nested;VOLKSWAGEN;Touareg;2002-2018;veh:gn:02972758-adba-4e42-ae66-0c11a3fbae4c;2002-2018;/stresne-nosice/volkswagen/touareg/2002-2018;2;7L;veh:gn:c4b9e605-9081-45dd-b9f4-03a2e1e931e9;2002-2010;/stresne-nosice/volkswagen/touareg/7l;50;no
+nested;VOLKSWAGEN;Touareg;2002-2018;veh:gn:02972758-adba-4e42-ae66-0c11a3fbae4c;2002-2018;/stresne-nosice/volkswagen/touareg/2002-2018;2;7P;veh:gn:eff11eaa-af5d-4030-8cb5-2978566b683e;2010-2018;;14;yes
+nested;VOLKSWAGEN;Passat Variant;B5;veh:gn:03a0e7f9-7484-4df5-ad6d-8e7de4f90de1;1997-2005;/stresne-nosice/volkswagen/passat-variant/b5;7;3BG;veh:gn:2aca6394-c593-4220-b603-026ed8150c66;2000-2005;;7;yes
+nested;VOLKSWAGEN;Passat Variant;B5;veh:gn:03a0e7f9-7484-4df5-ad6d-8e7de4f90de1;1997-2005;/stresne-nosice/volkswagen/passat-variant/b5;7;3B;veh:gn:5e70196f-1873-411b-8510-d751c48b37b1;1997-2000;;4;yes
+nested;DS AUTOMOBILES;DS 4;DS 4;veh:gn:069733bd-6a33-4012-83e2-a3980c1bcc32;2025-;/stresne-nosice/ds-automobiles/ds-4/ds-4;12;D41;veh:gn:0ad0020e-8321-436b-a5a9-d58751e2792a;2021-;/stresne-nosice/ds-automobiles/ds-4/d41;12;no
+nested;RENAULT;Twingo;III;veh:gn:070226c9-e490-4c98-8cf4-0383228fc958;2014-2024;/stresne-nosice/renault/twingo/iii;26;II (Open Air);veh:gn:777a2e67-608e-449b-982e-b1b3de346831;2014-2019;/stresne-nosice/renault/twingo/ii-open-air;12;no
+same-range;VOLVO;V90;SPA;veh:gn:08e278b5-b4a2-4d2a-9083-4c5d60e43b9c;2016-;/stresne-nosice/volvo/v90/spa;16;235;veh:gn:d1bf85b5-4ae7-4746-85bc-7e41a4ab95e9;2016-;;7;yes
+nested;FORD;Tourneo Connect;Gran (MK2 facelift);veh:gn:c1b49d5a-ef04-4af5-91ee-2f999742831f;2019-2022;/stresne-nosice/ford/tourneo-connect/gran-mk2-facelift;2;V408;veh:gn:ce46a05a-c4b0-4c18-9e02-47612fcbb3ca;2013-2022;/stresne-nosice/ford/tourneo-connect/v408;18;no
+same-range;JEEP;Patriot;MK;veh:gn:0a803ac3-1fd5-42ec-88f4-d653cd19c34c;2006-2017;;7;MK74;veh:gn:96967478-9381-465d-9f28-cdacd471e290;2006-2017;/stresne-nosice/jeep/patriot/mk74;14;yes
+nested;SEAT;Ibiza;6P;veh:gn:0c8aa690-db34-4fc3-9381-93386e83257f;2015-2017;;7;6J;veh:gn:6e9e16a0-69ba-4387-a2d6-c58f8b956793;2008-2017;/stresne-nosice/seat/ibiza/6j;30;yes
+nested;VOLKSWAGEN;Multivan;T5;veh:gn:0da71e72-c4f9-4255-8b89-218d1064fc83;2003-2015;;20;T5/T6;veh:gn:868aa8e7-921e-4897-a1e2-5433b071d7c1;2003-2021;;10;yes
+same-range;VOLKSWAGEN;Transporter;T6;veh:gn:0f2571ad-70b6-4b6a-a18a-4dbf423eff32;2015-2024;;10;SJ;veh:gn:8298f40c-5077-48f7-b492-b3dbae7dd4fc;2015-2024;;10;yes
+same-range;VOLKSWAGEN;Transporter;7E;veh:gn:39ebee7e-12f6-41ab-b516-f3eefab77b75;2003-2015;;10;T5;veh:gn:b4065b98-14f1-4c52-a753-6b6dd04be707;2003-2015;;10;yes
+nested;AUDI;A6 Avant;FN;veh:gn:e0671646-89b7-4d96-a18d-2a47afbf3eef;2025-;;7;C8;veh:gn:f91e77b4-ad94-49dd-9a68-05b2b3c2345c;2018-;/stresne-nosice/audi/a6-avant/c8;25;yes
+nested;OPEL;Combo;E;veh:gn:140e6ca3-a73b-44d2-a1ed-e5fef7ca56a0;2018-;/stresne-nosice/opel/combo/e;33;Combo;veh:gn:2dc988be-5dfa-48fe-9e18-cb7323dd5719;2022-;/stresne-nosice/opel/combo/combo;6;no
+nested;FORD;Explorer;U6;veh:gn:19529e76-fe12-47c6-9db5-72dad924b864;2019-;/stresne-nosice/ford/explorer/u6;34;CX740;veh:gn:64191178-0393-4e64-b8cb-80e4359a4d5a;2024-;;7;yes
+nested;PEUGEOT;Rifter;Rifter;veh:gn:1b6604ed-c076-4cb5-a411-bc49dfc1c9cb;2022-2024;/stresne-nosice/peugeot/rifter/rifter;8;K9;veh:gn:952e5295-24cb-4d4d-a4f7-3157b995286c;2018-;/stresne-nosice/peugeot/rifter/k9;44;no
+nested;TOYOTA;Yaris Cross;XPB1F;veh:gn:1d892c9e-28b7-4b1d-8f46-845e467c1e36;2024-;;7;XP210;veh:gn:e4185940-a560-4176-a3e5-a7a38936f1d7;2020-;/stresne-nosice/toyota/yaris-cross/xp210;16;yes
+same-range;OPEL;Crossland X;P17;veh:gn:1fb24074-3224-408f-bf6a-05aea676ec89;2017-2024;;14;2021-;veh:gn:38562193-20fb-4dbb-b2cd-b8c5a1ab99be;2017-2024;/stresne-nosice/opel/crossland-x/2021;42;yes
+same-range;FIAT;Sedici;2006-;veh:gn:201e418d-52d6-4cd8-983c-dafcc51ebea5;2006-2014;/stresne-nosice/fiat/sedici/2006;9;FY;veh:gn:a8a09d0e-196e-4a0e-90df-518c8bae1189;2006-2014;;6;yes
+same-range;FIAT;Ducato Van;X250;veh:gn:221a4e51-b3e1-4838-ba6a-ba393651ad1e;2006-;;1;250;veh:gn:b5054388-4778-4fdd-b0fd-ef4cac60d6db;2006-;;1;yes
+nested;AUDI;Q3;F3;veh:gn:937836eb-f289-4b12-b6df-020f334fe38b;2018-;/stresne-nosice/audi/q3/f3;16;FJ;veh:gn:b71b3da7-6755-482b-96c2-ae0dae342b6c;2025-;;7;yes
+nested;FORD;Kuga;MK1;veh:gn:3049d996-2b77-49fc-9bb3-21527b8fdb2d;2008-2013;/stresne-nosice/ford/kuga/mk1;23;2008-2019;veh:gn:c0884c88-a739-4787-9eb4-54e70873dc6a;2008-2019;/stresne-nosice/ford/kuga/2008-2019;7;no
+nested;FORD;Kuga;DM2;veh:gn:970a2d23-492d-4482-8d96-aec6a7956076;2012-2019;;14;2008-2019;veh:gn:c0884c88-a739-4787-9eb4-54e70873dc6a;2008-2019;/stresne-nosice/ford/kuga/2008-2019;7;yes
+nested;VOLKSWAGEN;Polo;9N;veh:gn:68ed3cac-3337-46f0-b217-417db21775b6;2001-2005;;7;9N;veh:gn:7b7a554e-8582-484f-91cc-fb0431f59e5f;2001-2009;/stresne-nosice/volkswagen/polo/9n;6;yes
+nested;KGM;Rexton;Y200;veh:gn:3733edde-95e4-472c-a183-8d2ec735ad90;2002-2017;/stresne-nosice/kgm/rexton/y200;28;Y250;veh:gn:57826cbc-09ed-4882-bfc6-b9864120704a;2006-2012;;5;yes
+nested;DACIA;Duster;HS;veh:gn:38d38736-c67f-4786-8fef-f51ddaba4452;2010-2017;;2;2010-2024;veh:gn:f3ec5a69-ae3f-45cf-a85f-b4d2e6b85356;2010-;/stresne-nosice/dacia/duster/2010-2024;15;yes
+nested;DACIA;Duster;P1310;veh:gn:8cdaf448-e739-47e1-be4e-5ac0e4620e3f;2024-;;7;2010-2024;veh:gn:f3ec5a69-ae3f-45cf-a85f-b4d2e6b85356;2010-;/stresne-nosice/dacia/duster/2010-2024;15;yes
+nested;DACIA;Duster;HM;veh:gn:ed3c1b50-e128-45da-8614-d64d5b398f0a;2017-2024;;12;2010-2024;veh:gn:f3ec5a69-ae3f-45cf-a85f-b4d2e6b85356;2010-;/stresne-nosice/dacia/duster/2010-2024;15;yes
+nested;CITROËN;C5 Aircross;2019-2025;veh:gn:399e597c-aea8-44d5-8015-1ea41474e964;2018-;/stresne-nosice/citroen/c5-aircross/2019-2025;22;CR3;veh:gn:c82eae11-6891-4209-8550-2d0f509481f3;2025-;;7;yes
+same-range;KIA;Sportage;QLE;veh:gn:6ff16213-15fe-4452-8de1-32db03fe54b0;2015-2021;;14;QL;veh:gn:ccb640ef-39f6-4526-ac0c-341c54804b58;2015-2021;/stresne-nosice/kia/sportage/ql;23;yes
+nested;VOLKSWAGEN;Caddy Maxi;SA;veh:gn:3db57462-b5a4-4a83-9e11-fe125983a6d3;2015-2020;;12;2K;veh:gn:c9da5373-8e72-4e8f-9e2b-29344f1f65ab;2007-2020;/stresne-nosice/volkswagen/caddy-maxi/2k;14;yes
+nested;RENAULT;Megane Grandtour;BF;veh:gn:afeb9d9a-be15-4add-8c95-3f0c143c4cd4;2016-2024;/stresne-nosice/renault/megane-grandtour/bf;37;IV;veh:gn:e9f5825d-8c45-40e3-85b7-c930d451e88c;2016-;;7;yes
+nested;KIA;EV6;CV;veh:gn:45503c07-cba9-4d9a-bdea-8b9535d61560;2021-;;7;CV1;veh:gn:ebd23928-4113-4aeb-9338-24865222e618;2024-;;7;yes
+same-range;ŠKODA;Scala;NW1;veh:gn:4d08622a-cbcc-4062-9426-255178893888;2019-;;7;NW;veh:gn:e701da37-e7f4-4096-acbd-d905c8ebe867;2019-;/stresne-nosice/skoda/scala/nw;19;yes
+nested;FORD;Mondeo Kombi;MK3;veh:gn:9d49f9dd-2a58-4ed4-9150-7d6dfe2b9419;2000-2007;;21;1993-2007;veh:gn:d12d166b-8ef2-4b6d-a568-8f9a8086ddf9;1993-2007;/stresne-nosice/ford/mondeo-kombi/1993-2007;9;yes
+nested;FORD;Mondeo Kombi;1993-2007;veh:gn:d12d166b-8ef2-4b6d-a568-8f9a8086ddf9;1993-2007;/stresne-nosice/ford/mondeo-kombi/1993-2007;9;MK1/MK2;veh:gn:fb0d5552-a656-4da3-96de-6d3af2ba847b;1993-2000;/stresne-nosice/ford/mondeo-kombi/mk1mk2;6;no
+nested;DS AUTOMOBILES;DS7 Crossback;DS 7;veh:gn:50f39e8c-5abf-405f-b188-9c515f2d92a5;2022-;/stresne-nosice/ds-automobiles/ds7-crossback/ds-7;16;X74;veh:gn:c6cd00f1-31c4-4a63-b8e3-98aba38c2fce;2017-;/stresne-nosice/ds-automobiles/ds7-crossback/x74;16;no
+same-range;VOLVO;S90;V541;veh:gn:59f09d1d-e83a-41f0-adb1-a648260eb086;2016-;;7;234;veh:gn:da612515-a246-48db-a2cc-7605be817f39;2016-;/stresne-nosice/volvo/s90/234;19;yes
+nested;KGM;XLV;2016-2021;veh:gn:644e9670-03f3-4314-ba62-96febebee946;2016-2021;/stresne-nosice/kgm/xlv/2016-2021;7;X100;veh:gn:8f9be361-cfb2-4284-96c8-792d4f06dbd6;2016-2019;;7;yes
+nested;VOLKSWAGEN;Caddy;2K;veh:gn:9995b84c-e335-4be5-8a4c-3a9efc85c9b6;2004-2020;/stresne-nosice/volkswagen/caddy/2k;14;SA;veh:gn:e25e96ea-07ec-4293-a391-a88e49c9f836;2015-2020;;12;yes
+nested;AUDI;A7 Sportback;4G;veh:gn:8244d465-313b-4aba-80ca-2019e80e516c;2010-2018;;7;4GA;veh:gn:ce971069-33e1-40aa-86ec-bfaafc5afb45;2014-2018;;7;yes
+same-range;LEXUS;UX;ZA10;veh:gn:895e23b3-f92d-44d7-9b60-718e47357c38;2018-;;7;ZA1;veh:gn:b813a3a2-0b11-4173-bb40-225631f5da11;2018-;/stresne-nosice/lexus/ux/za1;9;yes
+same-range;MITSUBISHI;ASX;GA;veh:gn:bd830c5e-ac32-4c05-b8dc-dcd9f660b0d0;2010-2022;/stresne-nosice/mitsubishi/asx/ga;44;GA0;veh:gn:e3dd7072-74d6-469b-af11-5c52f3ffe434;2010-2022;;14;yes
+same-range;CITROËN;C4 Cactus;2014-2018;veh:gn:c000f9f2-4f8e-4397-84f8-bb824f0c2c4f;2014-2020;/stresne-nosice/citroen/c4-cactus/2014-2018;9;E3;veh:gn:ce02b5ff-16e8-42ef-9520-59cd91835fa2;2014-2020;;2;yes
+same-range;TOYOTA;Corolla Hatchback;E210;veh:gn:e170ea17-2a2b-4606-886d-1be6c89da148;2019-;;7;E21;veh:gn:e5ab8d05-838c-4b20-a159-39260a2bc40f;2019-;;14;yes
+same-range;ŠKODA;Kamiq;NW;veh:gn:e5b3a3bd-6365-43af-a2bc-98b6a4b955f6;2019-;/stresne-nosice/skoda/kamiq/nw;25;NW4;veh:gn:ef723b41-366f-4ed0-9fae-fd6647b936cd;2019-;;7;yes
+same-range;DACIA;Bigster;RYMW;veh:gn:f429b67d-246a-4597-a323-df105f1a8a69;2025-;;7;2025-;veh:gn:f681aabe-0305-4871-aa75-00285ffff39d;2025-;/stresne-nosice/dacia/bigster/2025;9;yes

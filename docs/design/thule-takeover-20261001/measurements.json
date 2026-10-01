@@ -1,0 +1,208 @@
+{
+	"measuredAt": "2026-10-01 19:38–20:12 UTC",
+	"where": "the production host (aarch64, Node v24.15.0); local test servers on spare ports; production Saleor and CFM read-only",
+	"coldLoadPhasesMs": {
+		"note": "vitest on the build's own modules; reading, decoding and the transport SHA-256 are 5–8 ms each",
+		"new_16MB": {
+			"readMs": 4.808628,
+			"bytes": 15915111,
+			"decodeMs": 8.076607,
+			"transportSha256Ms": 7.93766,
+			"transportSha256": "befb1cb5792a3cff2fdb9eb2215cbe27285450f363d5d297460b54e8b0f5e9f1",
+			"plainParseMs": 37.701057,
+			"datasetHashWholeMs": 424.592633,
+			"datasetHash": "394346c97009832300cd407159117a42c99cf23541202117bc986d3da7d333c9",
+			"canonicalJsonMs": 165.471785,
+			"canonicalChars": 11589405,
+			"validateWholeMs": 378.172878,
+			"warnings": 153,
+			"heapUsedDeltaMB": 323,
+			"rssDeltaMB": 476,
+			"selections": 2192,
+			"resolveVehicleOutcomeMs": {
+				"n": 2192,
+				"median": 0.415606,
+				"p95": 1.074494,
+				"p99": 1.718736,
+				"max": 3.688225,
+				"worstCandidates": 39
+			}
+		},
+		"old_8MB": {
+			"readMs": 2.385972,
+			"bytes": 7993764,
+			"decodeMs": 4.084243,
+			"transportSha256Ms": 4.123231,
+			"transportSha256": "6cfbacc3a0c18e7ef285a86b6ca1a595b94c5b39d7fab23aef61426e7e864fc0",
+			"plainParseMs": 23.533606,
+			"datasetHashWholeMs": 205.1171,
+			"datasetHash": "fd3507de798ac50e31c4e481e1ecd9c39e80288359f0524123eaedf69af0bc30",
+			"canonicalJsonMs": 101.230131,
+			"canonicalChars": 5863572,
+			"validateWholeMs": 190.110941,
+			"warnings": 96,
+			"heapUsedDeltaMB": 110,
+			"rssDeltaMB": 261,
+			"selections": 1094,
+			"resolveVehicleOutcomeMs": {
+				"n": 1094,
+				"median": 0.14918,
+				"p95": 0.402654,
+				"p99": 0.678129,
+				"max": 1.446711,
+				"worstCandidates": 97
+			}
+		}
+	},
+	"serverBoot": {
+		"r1_new_dataset": "[fitment] loaded 3.0.0-full-20261001.2 394346c9… (15915111 B, 501–527 ms) with a 546–549 ms event-loop block, before the first request"
+	},
+	"swapUnderLoad": {
+		"provider": "R0/R1 (conditional GET, stale-if-error)",
+		"requests": 426,
+		"workers": 3,
+		"statuses": [200],
+		"p50ms": 42,
+		"p95ms": 58,
+		"maxMs": 560,
+		"slowOver300ms": 3,
+		"setsShown": "8 throughout",
+		"datasetBlocksMs": [549, 215, 493],
+		"unchanged304Ms": "15–28"
+	},
+	"oldProviderVersusR1_4min": {
+		"ttlSeconds": 2,
+		"old_228590b": {
+			"eventLoopStallsOver100ms": 87,
+			"typicalStallMs": 470,
+			"rssMB": "111 → 694 peak → ~580 plateau"
+		},
+		"r1": {
+			"rssMB": "265 → 334",
+			"stalls": "only on a real dataset change"
+		},
+		"samples": [
+			{
+				"s": 0,
+				"r0": 265,
+				"old": 111
+			},
+			{
+				"s": 15,
+				"r0": 278,
+				"old": 694
+			},
+			{
+				"s": 30,
+				"r0": 285,
+				"old": 502
+			},
+			{
+				"s": 45,
+				"r0": 302,
+				"old": 505
+			},
+			{
+				"s": 60,
+				"r0": 303,
+				"old": 556
+			},
+			{
+				"s": 75,
+				"r0": 309,
+				"old": 554
+			},
+			{
+				"s": 90,
+				"r0": 325,
+				"old": 557
+			},
+			{
+				"s": 105,
+				"r0": 329,
+				"old": 576
+			},
+			{
+				"s": 120,
+				"r0": 328,
+				"old": 576
+			},
+			{
+				"s": 135,
+				"r0": 327,
+				"old": 577
+			},
+			{
+				"s": 150,
+				"r0": 327,
+				"old": 598
+			},
+			{
+				"s": 165,
+				"r0": 332,
+				"old": 579
+			},
+			{
+				"s": 180,
+				"r0": 331,
+				"old": 578
+			},
+			{
+				"s": 195,
+				"r0": 332,
+				"old": 577
+			},
+			{
+				"s": 210,
+				"r0": 332,
+				"old": 578
+			},
+			{
+				"s": 225,
+				"r0": 335,
+				"old": 579
+			},
+			{
+				"s": 240,
+				"r0": 334,
+				"old": 579
+			}
+		]
+	},
+	"resolver": {
+		"selections": 2192,
+		"n": 2192,
+		"median": 0.415606,
+		"p95": 1.074494,
+		"p99": 1.718736,
+		"max": 3.688225,
+		"worstCandidates": 39
+	},
+	"sitemap": {
+		"prodWarm": {
+			"skProducts1": {
+				"urls": 9581,
+				"bytes": 2200045,
+				"singleMs": "70–90",
+				"twelveConcurrentS": 0.38
+			},
+			"czProducts1": {
+				"twelveConcurrentS": 0.65
+			},
+			"skVehicles1": {
+				"urls": 1475
+			}
+		},
+		"localColdFreshProcess": {
+			"skProducts1TwelveConcurrentS": 5.8,
+			"afterPurgeS": 5.6
+		},
+		"localWarm": {
+			"twelveConcurrentMedianS": 0.17
+		}
+	},
+	"coldStart": {
+		"freshBuild": "3 of 3 first requests 200",
+		"staleCache": "228590b: 1 of 2 fresh starts answered 500 on /sk (NEXT_STATIC_GEN_BAILOUT x3); R0: first start 500, later starts 200"
+	}
+}
