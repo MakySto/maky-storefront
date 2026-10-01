@@ -8,7 +8,9 @@ import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { resolveVehicleOutcome } from "@/lib/fitment/resolve";
 import { isDemoDataset, resolveFitmentOffers } from "@/lib/fitment/offers";
 import { renderConditions } from "@/lib/fitment/conditions";
+import { describeOfferFit, offerFitsByProduct } from "@/lib/fitment/offer-fit";
 import { readGarage } from "@/lib/garage/state";
+import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import { ConfiguratorResults, type ResultCard } from "@/ui/components/vehicle/configurator-results";
 import { VehicleSelectorLauncher } from "@/ui/components/vehicle/vehicle-selector-launcher";
 import { VehicleSummary } from "@/ui/components/vehicle/vehicle-summary";
@@ -74,7 +76,7 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 		);
 	}
 
-	const garage = await readGarage(dataset);
+	const garage = await readGarage(dataset, catalogLanguageForChannel(channel));
 	const active = garage.active && !garage.active.unresolved ? garage.active : null;
 	const isDemo = isDemoDataset(dataset);
 
@@ -108,8 +110,16 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 			const key = CONDITION_LABEL_KEY[code];
 			return key ? tf(key) : null;
 		});
+		// The roof and the years of the application this set was matched through — the selection's own
+		// answer, so the card says which window and which roof the fit rests on.
+		const fit = describeOfferFit(
+			offerFitsByProduct(match?.result.matched ?? []).get(offer.saleorProductId),
+			tf,
+			ROOF_LABEL_KEY,
+		);
 		return {
 			offer,
+			fit,
 			conditions: conditions.resolved.map((c) => c.text),
 			unresolvedConditions: conditions.unresolvedCount,
 			// Offerable is two verdicts, not one, and the card has to be able to tell them

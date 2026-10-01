@@ -273,7 +273,16 @@
 		"intendedForMore": "{count, plural, one {i # inny pojazd} few {i # inne pojazdy} many {i # innych pojazdów} other {i # innego pojazdu}}",
 		"intendedForAlternative": "Zobacz bagażniki dachowe do {vehicle}",
 		"cartOfferFor": "Oferta do {vehicle}",
-		"cartAlternative": "Bagażniki dachowe do {vehicle}"
+		"cartAlternative": "Bagażniki dachowe do {vehicle}",
+		"cardRoof": "Dach: {roof}",
+		"cardYears": "Lata: {years}",
+		"listingModeGroup": "Widok oferty",
+		"listingModeVehicle": "Dla mojego auta",
+		"listingModeAll": "Wszystkie pojazdy",
+		"listingAllNotice": "Widzisz ofertę dla wszystkich pojazdów — nie jest dopasowana do Twojego auta ({vehicle}).",
+		"listingDefaultNone": "Dla {vehicle} nie mamy jeszcze zweryfikowanego zestawu, dlatego widzisz ofertę dla wszystkich pojazdów.",
+		"listingNotOnSaleTitle": "Dla {vehicle} istnieją zgodne zestawy, które obecnie nie są w sprzedaży",
+		"listingNotOnSaleBody": "To nie znaczy, że nic nie pasuje. Dodajemy te zestawy do oferty — w międzyczasie możesz przejrzeć wszystkie pojazdy lub napisać do nas."
 	},
 	"cart": {
 		"yourCart": "Twój koszyk",
@@ -819,7 +828,10 @@
 		"offersCount": "{count, plural, one {# zestaw} few {# zestawy} many {# zestawów} other {# zestawu}}",
 		"offersDemo": "Testowa wersja demonstracyjna. To symulowane dane, a nie prawdziwa oferta ani potwierdzona kompatybilność.",
 		"offersPartial": "Nie udało się wczytać części oferty, dlatego lista może być niepełna.",
-		"previewNotice": "Podgląd nieopublikowanej strony. Odwiedzający jej nie widzą."
+		"previewNotice": "Podgląd nieopublikowanej strony. Odwiedzający jej nie widzą.",
+		"offersTitleGeneration": "Zestawy dla tej generacji",
+		"offersBrowseNote": "Każdy zestaw obowiązuje tylko dla podanego typu dachu i lat. Zestawy nie są dopasowane do Twojego auta — po wyborze pojazdu pokażemy tylko te, które pasują.",
+		"offersGroupOther": "Bez podanego typu dachu"
 	},
 	"company": {
 		"operatedBy": "Sprzedawca:",

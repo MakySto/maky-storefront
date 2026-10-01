@@ -17,7 +17,7 @@
  */
 
 import { loadFitmentDataset } from "./provider";
-import { type FitmentApplication } from "./contract";
+import { type FitmentApplication, vehicleNodeName } from "./contract";
 import {
 	monthDecidesFor,
 	resolveGenerationForYear,
@@ -52,11 +52,18 @@ export async function loadSelectorStep(input: {
 	year?: number;
 	/** Only sent back when the year was ambiguous and the shopper separated the two. */
 	generationId?: string;
+	/**
+	 * The language the shopper reads (`sk`, `cs`…), so a make and a model carry the name CFM
+	 * states for that language (`displayNames`) — and fall back to `name` where it states none.
+	 * Absent, every name is the dataset's own `name`, exactly as before.
+	 */
+	language?: string;
 }): Promise<SelectorStep> {
 	const { dataset, status } = await loadFitmentDataset();
 	if (!dataset) return { ...EMPTY_STEP, isFixture: status.isFixture };
 
-	const makes = byName(dataset.makes.map((m) => ({ id: m.id, name: m.name })));
+	const language = input.language;
+	const makes = byName(dataset.makes.map((m) => ({ id: m.id, name: vehicleNodeName(m, language) })));
 	const base = {
 		makes,
 		isFixture: status.isFixture,
@@ -73,7 +80,9 @@ export async function loadSelectorStep(input: {
 	if (!make) return base;
 
 	const models = byName(
-		dataset.models.filter((m) => m.makeId === make.id).map((m) => ({ id: m.id, name: m.name })),
+		dataset.models
+			.filter((m) => m.makeId === make.id)
+			.map((m) => ({ id: m.id, name: vehicleNodeName(m, language) })),
 	);
 
 	const model = input.modelId ? dataset.models.find((m) => m.id === input.modelId) : undefined;
@@ -84,7 +93,7 @@ export async function loadSelectorStep(input: {
 	const years = yearsForModel(generations);
 	if (input.year === undefined) return { ...base, models, years };
 
-	const resolution = resolveGenerationForYear(generations, input.year);
+	const resolution = resolveGenerationForYear(generations, input.year, language);
 	if (resolution.kind === "none") return { ...base, models, years };
 
 	let generation: GenerationCandidate;

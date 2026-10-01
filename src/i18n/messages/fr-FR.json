@@ -273,7 +273,16 @@
 		"intendedForMore": "{count, plural, one {et # autre véhicule} other {et # autres véhicules}}",
 		"intendedForAlternative": "Voir les barres de toit pour {vehicle}",
 		"cartOfferFor": "Offre pour {vehicle}",
-		"cartAlternative": "Barres de toit pour {vehicle}"
+		"cartAlternative": "Barres de toit pour {vehicle}",
+		"cardRoof": "Toit : {roof}",
+		"cardYears": "Années : {years}",
+		"listingModeGroup": "Affichage de l'offre",
+		"listingModeVehicle": "Pour ma voiture",
+		"listingModeAll": "Tous les véhicules",
+		"listingAllNotice": "Vous voyez l'offre pour tous les véhicules : elle n'est pas filtrée pour votre voiture ({vehicle}).",
+		"listingDefaultNone": "Nous n'avons pas encore d'ensemble vérifié pour {vehicle} ; vous voyez donc l'offre pour tous les véhicules.",
+		"listingNotOnSaleTitle": "Il existe des ensembles compatibles avec {vehicle} qui ne sont pas en vente pour le moment",
+		"listingNotOnSaleBody": "Cela ne veut pas dire que rien ne convient. Nous ajoutons ces ensembles à l'offre ; en attendant, vous pouvez voir tous les véhicules ou nous écrire."
 	},
 	"cart": {
 		"yourCart": "Votre panier",
@@ -819,7 +828,10 @@
 		"offersCount": "{count, plural, one {# ensemble} other {# ensembles}}",
 		"offersDemo": "Démonstration de test. Il s'agit de données simulées, ni d'une offre réelle ni d'une compatibilité vérifiée.",
 		"offersPartial": "Une partie de l'offre n'a pas pu être chargée, la liste peut donc être incomplète.",
-		"previewNotice": "Aperçu d'une page non publiée. Elle n'est pas affichée aux visiteurs."
+		"previewNotice": "Aperçu d'une page non publiée. Elle n'est pas affichée aux visiteurs.",
+		"offersTitleGeneration": "Ensembles pour cette génération",
+		"offersBrowseNote": "Chaque ensemble ne vaut que pour le type de toit et les années indiqués. Les ensembles ne sont pas filtrés pour votre voiture : une fois votre véhicule choisi, nous ne montrons que ceux qui lui conviennent.",
+		"offersGroupOther": "Type de toit non précisé"
 	},
 	"company": {
 		"operatedBy": "Vendeur :",

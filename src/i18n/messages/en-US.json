@@ -273,7 +273,16 @@
 		"intendedForMore": "{count, plural, one {and # more vehicle} other {and # more vehicles}}",
 		"intendedForAlternative": "See roof racks for {vehicle}",
 		"cartOfferFor": "Made for {vehicle}",
-		"cartAlternative": "Roof racks for {vehicle}"
+		"cartAlternative": "Roof racks for {vehicle}",
+		"cardRoof": "Roof: {roof}",
+		"cardYears": "Years: {years}",
+		"listingModeGroup": "Listing view",
+		"listingModeVehicle": "For my car",
+		"listingModeAll": "All vehicles",
+		"listingAllNotice": "You are viewing the range for all vehicles — it is not matched to your car ({vehicle}).",
+		"listingDefaultNone": "We have no verified set for {vehicle} yet, so you are seeing the range for all vehicles.",
+		"listingNotOnSaleTitle": "There are compatible sets for {vehicle} that are not on sale right now",
+		"listingNotOnSaleBody": "That does not mean nothing fits. We are adding these sets to the range — meanwhile you can browse all vehicles or write to us."
 	},
 	"cart": {
 		"yourCart": "Your cart",
@@ -819,7 +828,10 @@
 		"offersCount": "{count, plural, one {# set} other {# sets}}",
 		"offersDemo": "Test preview. This is simulated data, not a real offer and not verified compatibility.",
 		"offersPartial": "Part of the offer could not be loaded, so the list may be incomplete.",
-		"previewNotice": "Preview of an unpublished page. It is not shown to visitors."
+		"previewNotice": "Preview of an unpublished page. It is not shown to visitors.",
+		"offersTitleGeneration": "Sets for this generation",
+		"offersBrowseNote": "Each set applies only to the roof type and years shown. The sets are not matched to your car — once you choose your vehicle we show only the ones that fit it.",
+		"offersGroupOther": "No roof type stated"
 	},
 	"company": {
 		"operatedBy": "Seller:",

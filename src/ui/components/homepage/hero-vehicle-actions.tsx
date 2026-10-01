@@ -8,6 +8,7 @@ import { marketHref } from "@/lib/channel-map";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { vehicleFilterHref } from "@/lib/fitment/plp-vehicle-filter";
 import { readGarage } from "@/lib/garage/state";
+import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import { vehicleShortLabel } from "@/lib/garage/label";
 import { VehicleSelectorLauncher } from "@/ui/components/vehicle/vehicle-selector-launcher";
 
@@ -30,7 +31,7 @@ export async function HeroVehicleActions({ params }: { params: Promise<{ channel
 
 	const { dataset } = await loadFitmentDataset();
 	if (!dataset) return null;
-	const garage = await readGarage(dataset);
+	const garage = await readGarage(dataset, catalogLanguageForChannel(channel));
 	if (garage.status === "disabled") return null;
 
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "home" });

@@ -273,7 +273,16 @@
 		"intendedForMore": "{count, plural, one {y # vehículo más} other {y # vehículos más}}",
 		"intendedForAlternative": "Ver barras de techo para {vehicle}",
 		"cartOfferFor": "Oferta para {vehicle}",
-		"cartAlternative": "Barras de techo para {vehicle}"
+		"cartAlternative": "Barras de techo para {vehicle}",
+		"cardRoof": "Techo: {roof}",
+		"cardYears": "Años: {years}",
+		"listingModeGroup": "Vista de la oferta",
+		"listingModeVehicle": "Para mi coche",
+		"listingModeAll": "Todos los vehículos",
+		"listingAllNotice": "Está viendo la oferta para todos los vehículos: no está filtrada para su coche ({vehicle}).",
+		"listingDefaultNone": "Todavía no tenemos un conjunto verificado para {vehicle}, por eso ve la oferta para todos los vehículos.",
+		"listingNotOnSaleTitle": "Hay conjuntos compatibles con {vehicle} que ahora mismo no están a la venta",
+		"listingNotOnSaleBody": "Eso no significa que nada encaje. Estamos incorporando estos conjuntos a la oferta; mientras tanto puede ver todos los vehículos o escribirnos."
 	},
 	"cart": {
 		"yourCart": "Tu carrito",
@@ -819,7 +828,10 @@
 		"offersCount": "{count, plural, one {# conjunto} other {# conjuntos}}",
 		"offersDemo": "Demostración de prueba. Son datos simulados, no una oferta real ni una compatibilidad verificada.",
 		"offersPartial": "No se ha podido cargar parte de la oferta, por lo que la lista puede estar incompleta.",
-		"previewNotice": "Vista previa de una página no publicada. No se muestra a los visitantes."
+		"previewNotice": "Vista previa de una página no publicada. No se muestra a los visitantes.",
+		"offersTitleGeneration": "Conjuntos para esta generación",
+		"offersBrowseNote": "Cada conjunto solo es válido para el tipo de techo y los años indicados. Los conjuntos no están filtrados para su coche: al elegir su vehículo le mostraremos solo los que le encajan.",
+		"offersGroupOther": "Sin tipo de techo indicado"
 	},
 	"company": {
 		"operatedBy": "Vendedor:",

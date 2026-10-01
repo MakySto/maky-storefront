@@ -40,14 +40,19 @@ import { liveMarkets } from "@/lib/market-state";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import {
-	isVehicleFilterRequested,
 	resolveVehicleListingFilter,
+	settleVehicleFilter,
 	vehicleFilterIds,
+	vehicleFilterRequestOf,
 } from "@/lib/fitment/plp-vehicle-filter";
+import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import { VehicleListingFilter } from "@/ui/components/fitment/vehicle-listing-filter";
+import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
+import { loadFitmentDataset } from "@/lib/fitment/provider";
+import { describeOfferFit, productFitIndex } from "@/lib/fitment/offer-fit";
 import { CatalogMakeIndex } from "@/ui/components/catalog/make-index";
 import { HeroBenefits } from "@/ui/components/homepage/hero-benefits";
-import { STOREFRONT_CATEGORIES } from "@/config/categories";
+import { STOREFRONT_CATEGORIES, categoryFitmentKind } from "@/config/categories";
 import { CategoryPageClient } from "./client";
 import { formatPageTitleOnce, meaningfulTitle } from "@/config/brand";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
@@ -383,8 +388,9 @@ async function CategoryProducts({
 	const baseSlug = baseSlugOf(params);
 
 	const sortBy = buildSortVariables(searchParams.sort);
-	const vehicleFilter = await resolveVehicleListingFilter(isVehicleFilterRequested(searchParams.vehicle), {
+	const vehicleFilter = await resolveVehicleListingFilter(vehicleFilterRequestOf(searchParams.vehicle), {
 		categorySlug: baseSlug,
+		language: catalogLanguageForChannel(params.channel),
 	});
 	const volume = volumeBand(searchParams.volume);
 	const filter = buildFilterVariables({
@@ -532,9 +538,23 @@ async function CategoryProducts({
 	}
 
 	const localized = resolveExactLocaleProducts(listing.products, locale);
-	const productCards = localized.products.map((product) =>
-		transformToProductCard(product, params.channel, locale),
-	);
+
+	// What each set on this shelf is FOR — the roof and the years, from the source's own
+	// application and not from the title. Only on a shelf the programme covers, and only for a
+	// product the dataset names; every other card is untouched. A statement about the set, never
+	// "fits": it reads the same with a car chosen and without one.
+	const fitDataset = categoryFitmentKind(baseSlug) !== null ? (await loadFitmentDataset()).dataset : null;
+	const fitIndex = fitDataset ? productFitIndex(fitDataset) : null;
+	const tFit = fitIndex ? await getTranslations({ locale, namespace: "fitment" }) : null;
+	const productCards = localized.products.map((product) => {
+		const card = transformToProductCard(product, params.channel, locale);
+		const fit = fitIndex && tFit ? describeOfferFit(fitIndex.get(product.id), tFit, ROOF_LABEL_KEY) : null;
+		return fit ? { ...card, fit } : card;
+	});
+
+	// Only the catalogue knows whether a verified set is on sale. When the car's whole list is
+	// hidden or withdrawn, say that, instead of an empty grid under "overené pre …".
+	const shownFilter = settleVehicleFilter(vehicleFilter, listing, searchParams);
 
 	const priceFilter: PriceFilter | null =
 		priceBands && priceBands.boundaries.length > 0
@@ -553,7 +573,7 @@ async function CategoryProducts({
 			<div className="max-w-page mx-auto w-full px-4 pt-6 empty:hidden sm:px-6 lg:px-8">
 				<VehicleListingFilter
 					channel={params.channel}
-					filter={vehicleFilter}
+					filter={shownFilter}
 					// categoryUrlFor(), not a hand-built `/categories/…`: a catalogue category now
 					// lives at the root, and this path is what every vehicle-filter link is
 					// built from. Hard-coding the retired shape would make each filter click a
@@ -570,8 +590,15 @@ async function CategoryProducts({
 				pageInfo={listing.pageInfo}
 				priceFilter={priceFilter}
 				accessoryIds={listing.accessoryIds}
-				vehicleFilterEmpty={vehicleFilter.state === "empty"}
-				categoryLinks={categoryLinks}
+				vehicleFilterEmpty={shownFilter.state === "empty" || shownFilter.state === "not-on-sale"}
+				// The family's counts describe the WHOLE shelf (9 167 sets) and the list beside them is one
+				// car's (8). Two totals on one screen is a defect, so a narrowed list drops the numbers and
+				// keeps the links.
+				categoryLinks={
+					shownFilter.state === "active"
+						? categoryLinks?.map((link) => ({ ...link, count: undefined })) ?? null
+						: categoryLinks
+				}
 				brandFacets={facets?.brands ?? []}
 				volumeFacets={facets?.volumes ?? []}
 			/>

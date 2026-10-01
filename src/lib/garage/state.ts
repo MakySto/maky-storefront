@@ -18,7 +18,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-import { type FitmentDataset, type VehicleSelection } from "@/lib/fitment/contract";
+import { type FitmentDataset, type VehicleSelection, vehicleNodeName } from "@/lib/fitment/contract";
 import { resolveGarageMode } from "./config";
 import {
 	decodeGarageCookie,
@@ -111,7 +111,7 @@ export async function readGaragePayload(): Promise<{
 	return { payload: decoded.payload, status: "ok", signed: decoded.signed };
 }
 
-function labelsFor(dataset: FitmentDataset | null, vehicle: StoredVehicle) {
+function labelsFor(dataset: FitmentDataset | null, vehicle: StoredVehicle, language?: string | null) {
 	if (!dataset) {
 		return { makeName: null, modelName: null, generationName: null, unresolved: true };
 	}
@@ -119,9 +119,11 @@ function labelsFor(dataset: FitmentDataset | null, vehicle: StoredVehicle) {
 	const model = dataset.models.find((m) => m.id === vehicle.m) ?? null;
 	const generation = dataset.generations.find((g) => g.id === vehicle.g) ?? null;
 	return {
-		makeName: make?.name ?? null,
-		modelName: model?.name ?? null,
-		generationName: generation?.name ?? null,
+		// The name CFM states for the reader's language, the dataset's own `name` otherwise.
+		// Resolved here, at render time, from the dataset — the cookie only ever held ids.
+		makeName: make ? vehicleNodeName(make, language) : null,
+		modelName: model ? vehicleNodeName(model, language) : null,
+		generationName: generation ? vehicleNodeName(generation, language) : null,
 		unresolved: make === null || model === null || generation === null,
 	};
 }
@@ -133,20 +135,27 @@ function labelsFor(dataset: FitmentDataset | null, vehicle: StoredVehicle) {
  * vehicles: the shopper's own cars do not disappear because CFM is down. They are marked
  * `unresolved`, so no surface can print a name it does not have or claim a fit.
  */
-export async function readGarage(dataset: FitmentDataset | null): Promise<GarageState> {
+export async function readGarage(
+	dataset: FitmentDataset | null,
+	language?: string | null,
+): Promise<GarageState> {
 	const { payload, status, signed } = await readGaragePayload();
 	if (status === "disabled") return { ...EMPTY_GARAGE_STATE, status: "disabled" };
 
 	const vehicles: ResolvedVehicle[] = payload.c.map((stored) => ({
 		stored,
 		selection: toVehicleSelection(stored),
-		...labelsFor(dataset, stored),
+		...labelsFor(dataset, stored, language),
 	}));
 
 	// The car in use but not saved. `normalizePayload` guarantees it is not also in `c`,
 	// so exactly one of these two branches produces the active vehicle.
 	const inUse: ResolvedVehicle | null = payload.u
-		? { stored: payload.u, selection: toVehicleSelection(payload.u), ...labelsFor(dataset, payload.u) }
+		? {
+				stored: payload.u,
+				selection: toVehicleSelection(payload.u),
+				...labelsFor(dataset, payload.u, language),
+			}
 		: null;
 
 	const savedIndex = vehicles.length === 0 ? 0 : Math.min(payload.a, vehicles.length - 1);
@@ -173,8 +182,11 @@ export async function readGarage(dataset: FitmentDataset | null): Promise<Garage
  * feeding it to the resolver could only produce a coincidence, and a coincidence
  * presented as a fit is the one outcome this feature must never produce.
  */
-export async function readActiveSelection(dataset: FitmentDataset | null): Promise<VehicleSelection | null> {
-	const garage = await readGarage(dataset);
+export async function readActiveSelection(
+	dataset: FitmentDataset | null,
+	language?: string | null,
+): Promise<VehicleSelection | null> {
+	const garage = await readGarage(dataset, language);
 	if (!garage.active || garage.active.unresolved) return null;
 	return garage.active.selection;
 }

@@ -13,7 +13,7 @@
 
 import { loadFitmentDataset } from "./provider";
 import { collectApplicationsForProduct } from "./resolve";
-import { type FitmentApplication, type FitmentProductRef } from "./contract";
+import { type FitmentApplication, type FitmentProductRef, vehicleNodeName } from "./contract";
 import {
 	APPLICATIONS_PAGE_SIZE,
 	EMPTY_APPLICATION_PAGE,
@@ -48,7 +48,13 @@ function toRow(
 
 export async function listProductApplications(
 	saleorProductId: string,
-	options: { query?: string; offset?: number; limit?: number } = {},
+	options: {
+		query?: string;
+		offset?: number;
+		limit?: number;
+		/** The reading language: vehicles are named as CFM states them for it (`displayNames`). */
+		language?: string;
+	} = {},
 ): Promise<ApplicationPage> {
 	const { dataset, status } = await loadFitmentDataset();
 	if (!dataset) return { ...EMPTY_APPLICATION_PAGE, isFixture: status.isFixture };
@@ -68,7 +74,11 @@ export async function listProductApplications(
 		rows.push(
 			toRow(
 				application,
-				{ make: make.name, model: model.name, generation: generation.name },
+				{
+					make: vehicleNodeName(make, options.language),
+					model: vehicleNodeName(model, options.language),
+					generation: vehicleNodeName(generation, options.language),
+				},
 				application.products.find((p) => p.saleorProductId === saleorProductId),
 			),
 		);

@@ -35,6 +35,7 @@ import {
 	type FitmentResult,
 	type FitmentWindow,
 	type RoofType,
+	vehicleNodeName,
 } from "./contract";
 import { ABSENT_UNDER_PARTIAL_COVERAGE, isDatasetStale } from "./resolve";
 
@@ -59,17 +60,28 @@ type Names = {
 	readonly make: ReadonlyMap<string, string>;
 };
 
-const NAMES = new WeakMap<FitmentDataset, Names>();
+/** Per dataset and per reading language: the names CFM states for a language are not the dataset's own. */
+const NAMES = new WeakMap<FitmentDataset, Map<string, Names>>();
 
-function namesOf(dataset: FitmentDataset): Names {
-	let names = NAMES.get(dataset);
+function namesOf(dataset: FitmentDataset, language?: string | null): Names {
+	let perLanguage = NAMES.get(dataset);
+	if (!perLanguage) {
+		perLanguage = new Map();
+		NAMES.set(dataset, perLanguage);
+	}
+	const key = language ?? "";
+	let names = perLanguage.get(key);
 	if (!names) {
 		names = {
-			generation: new Map(dataset.generations.map((g) => [g.id, { name: g.name, modelId: g.modelId }])),
-			model: new Map(dataset.models.map((m) => [m.id, { name: m.name, makeId: m.makeId }])),
-			make: new Map(dataset.makes.map((m) => [m.id, m.name])),
+			generation: new Map(
+				dataset.generations.map((g) => [g.id, { name: vehicleNodeName(g, language), modelId: g.modelId }]),
+			),
+			model: new Map(
+				dataset.models.map((m) => [m.id, { name: vehicleNodeName(m, language), makeId: m.makeId }]),
+			),
+			make: new Map(dataset.makes.map((m) => [m.id, vehicleNodeName(m, language)])),
 		};
-		NAMES.set(dataset, names);
+		perLanguage.set(key, names);
 	}
 	return names;
 }
@@ -99,9 +111,11 @@ export function intendedVehiclesFor(
 	saleorProductId: string,
 	saleorVariantId?: string,
 	now: number = Date.now(),
+	/** The reading language, so the car is named as the rest of the page names it. */
+	language?: string | null,
 ): IntendedVehicle[] {
 	if (!dataset || isDatasetStale(dataset, now)) return [];
-	const names = namesOf(dataset);
+	const names = namesOf(dataset, language);
 	const out: IntendedVehicle[] = [];
 	for (const application of dataset.applications) {
 		if (application.negative) continue;

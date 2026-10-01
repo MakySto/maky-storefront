@@ -2,6 +2,7 @@ import { connection } from "next/server";
 
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { readGarage } from "@/lib/garage/state";
+import { getLocale } from "@/config/locale.server";
 import { vehicleShortLabel } from "@/lib/garage/label";
 import { cn } from "@/lib/utils";
 import { VehicleSelectorLauncher } from "./vehicle-selector-launcher";
@@ -41,7 +42,9 @@ export async function ActiveVehicleLauncher({
 	const { dataset } = await loadFitmentDataset();
 	if (!dataset) return null;
 
-	const garage = await readGarage(dataset);
+	// The shopper's language, from the request: this component sits in the header on every page and
+	// has no channel prop. `connection()` above makes the header read legitimate here.
+	const garage = await readGarage(dataset, (await getLocale()).split("-")[0]);
 	if (garage.status === "disabled") return null;
 
 	return (

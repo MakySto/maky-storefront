@@ -3,7 +3,7 @@
 import { useId, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ArrowRightIcon, ChevronsUpDownIcon, Loader2 } from "lucide-react";
 
 import { SheetTrigger } from "@/ui/components/ui/sheet";
@@ -90,11 +90,12 @@ export function VehicleQuickSelect({
 	const modelName = models?.find((m) => m.id === modelId)?.name;
 	const yearNumber = year ? Number(year) : undefined;
 
+	const language = useLocale().split("-")[0];
 	const load = (input: Parameters<typeof loadSelectorStep>[0], apply: (step: SelectorStep) => void) => {
 		const ticket = ++request.current;
 		setError(null);
 		startLoading(async () => {
-			const result = await loadSelectorStep(input);
+			const result = await loadSelectorStep({ ...input, language });
 			if (ticket === request.current) apply(result);
 		});
 	};

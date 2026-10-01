@@ -273,7 +273,16 @@
 		"intendedForMore": "{count, plural, one {și încă # vehicul} few {și încă # vehicule} other {și încă # de vehicule}}",
 		"intendedForAlternative": "Vedeți barele de acoperiș pentru {vehicle}",
 		"cartOfferFor": "Ofertă pentru {vehicle}",
-		"cartAlternative": "Bare de acoperiș pentru {vehicle}"
+		"cartAlternative": "Bare de acoperiș pentru {vehicle}",
+		"cardRoof": "Acoperiș: {roof}",
+		"cardYears": "Ani: {years}",
+		"listingModeGroup": "Afișarea ofertei",
+		"listingModeVehicle": "Pentru mașina mea",
+		"listingModeAll": "Toate vehiculele",
+		"listingAllNotice": "Vedeți oferta pentru toate vehiculele — nu este filtrată pentru mașina dvs. ({vehicle}).",
+		"listingDefaultNone": "Pentru {vehicle} nu avem încă un set verificat, de aceea vedeți oferta pentru toate vehiculele.",
+		"listingNotOnSaleTitle": "Pentru {vehicle} există seturi compatibile care momentan nu sunt la vânzare",
+		"listingNotOnSaleBody": "Asta nu înseamnă că nimic nu se potrivește. Adăugăm aceste seturi în ofertă — între timp puteți vedea toate vehiculele sau ne puteți scrie."
 	},
 	"cart": {
 		"yourCart": "Coșul dvs.",
@@ -819,7 +828,10 @@
 		"offersCount": "{count, plural, one {# set} few {# seturi} other {# de seturi}}",
 		"offersDemo": "Demonstrație de test. Sunt date simulate, nu o ofertă reală și nici o compatibilitate verificată.",
 		"offersPartial": "O parte din ofertă nu a putut fi încărcată, așa că lista poate fi incompletă.",
-		"previewNotice": "Previzualizarea unei pagini nepublicate. Nu este afișată vizitatorilor."
+		"previewNotice": "Previzualizarea unei pagini nepublicate. Nu este afișată vizitatorilor.",
+		"offersTitleGeneration": "Seturi pentru această generație",
+		"offersBrowseNote": "Fiecare set este valabil doar pentru tipul de acoperiș și anii indicați. Seturile nu sunt filtrate pentru mașina dvs. — după ce alegeți vehiculul, vi le arătăm doar pe cele potrivite.",
+		"offersGroupOther": "Fără tip de acoperiș indicat"
 	},
 	"company": {
 		"operatedBy": "Vânzătorul:",

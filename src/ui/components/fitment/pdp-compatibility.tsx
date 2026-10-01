@@ -17,6 +17,7 @@ import {
 	vehicleShortLabel,
 } from "@/lib/garage/label";
 import { readGarage } from "@/lib/garage/state";
+import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import { VehicleSelectorLauncher } from "@/ui/components/vehicle/vehicle-selector-launcher";
@@ -118,7 +119,7 @@ async function renderCompatibility({
 
 	const t = await getTranslations({ locale, namespace: "fitment" });
 
-	const garage = await readGarage(dataset);
+	const garage = await readGarage(dataset, catalogLanguageForChannel(channel));
 	const active = garage.active && !garage.active.unresolved ? garage.active : null;
 	const vehicleLabel = vehicleShortLabel(active ? { ...active, year: active.stored.y } : null);
 
@@ -130,7 +131,16 @@ async function renderCompatibility({
 	// only does so in `CompatibilityBox` below.
 	const presentation = isDemoDataset(dataset)
 		? ({ kind: "verdict" } as const)
-		: presentFitment(result, intendedVehiclesFor(dataset, saleorProductId, saleorVariantId));
+		: presentFitment(
+				result,
+				intendedVehiclesFor(
+					dataset,
+					saleorProductId,
+					saleorVariantId,
+					undefined,
+					catalogLanguageForChannel(channel),
+				),
+			);
 	if (presentation.kind === "intended-for") {
 		const [first] = presentation.vehicles;
 		const carName = active ? vehicleModelLabel(active) : null;

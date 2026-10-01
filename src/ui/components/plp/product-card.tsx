@@ -28,6 +28,13 @@ export interface ProductCardData {
 	brand?: string | null;
 	/** One-line distinguishing fact — volume, capacity, load. */
 	note?: string | null;
+	/**
+	 * What a vehicle-specific set is FOR, from the source's own application — the roof it needs and
+	 * the model years it is made for, already in the reader's words. Absent for every product the
+	 * compatibility programme has no row for. It is a statement about the SET, never about the
+	 * shopper's car: it appears with or without a car chosen, and does not say "fits".
+	 */
+	fit?: { roof: string | null; years: string } | null;
 	productCode?: string | null;
 	/** Set only when the product has exactly one variant. */
 	variantId?: string | null;
@@ -151,6 +158,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 	const tCommon = useTranslations("common");
 	const tProduct = useTranslations("product");
 	const tCart = useTranslations("cart");
+	const tFit = useTranslations("fitment");
 	const { locale } = useLocale();
 
 	const formatPrice = (amount: number, currency: string) =>
@@ -256,6 +264,22 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 				</h2>
 				{product.note && (
 					<p className="text-text-secondary mt-1 line-clamp-1 text-[0.8125rem]">{product.note}</p>
+				)}
+				{/* The roof and the years the set is made for: two facts the title buries at its end.
+				    Up to two lines so a long roof name wraps instead of being cut. */}
+				{product.fit && (
+					<p
+						className="text-text-secondary mt-1 line-clamp-2 text-[0.8125rem] leading-snug"
+						data-testid="card-fit"
+					>
+						{product.fit.roof && (
+							<>
+								<span>{tFit("cardRoof", { roof: product.fit.roof })}</span>
+								<span aria-hidden="true"> · </span>
+							</>
+						)}
+						<span>{tFit("cardYears", { years: product.fit.years })}</span>
+					</p>
 				)}
 				{product.productCode && (
 					<p className="text-text-tertiary mt-0.5 truncate text-xs">

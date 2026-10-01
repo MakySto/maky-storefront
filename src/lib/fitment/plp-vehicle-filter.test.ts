@@ -33,8 +33,11 @@ import {
 	isVehicleFilterRequested,
 	NO_PRODUCTS_SENTINEL_ID,
 	resolveVehicleListingFilter,
+	settleVehicleFilter,
 	vehicleFilterHref,
 	vehicleFilterIds,
+	vehicleFilterRequestOf,
+	type VehicleListingFilter,
 } from "./plp-vehicle-filter";
 import { buildFilterVariables } from "@/ui/components/plp/filter-utils";
 
@@ -131,7 +134,7 @@ describe("what narrows the listing, and what must not", () => {
 		readGarage.mockResolvedValue(garageWith(SELECTION));
 
 		const filter = await resolveVehicleListingFilter(false);
-		expect(filter.state).toBe("offered");
+		expect(filter).toMatchObject({ state: "offered", reason: "all" });
 		expect(vehicleFilterIds(filter)).toBeUndefined();
 	});
 
@@ -143,7 +146,7 @@ describe("what narrows the listing, and what must not", () => {
 		// The YEAR is part of the label on purpose: this banner claims a result for a
 		// car, and "Make Model Gen" is the same string for a 2018 and a 2024 vehicle,
 		// which are different generations taking different racks.
-		expect(filter).toMatchObject({ state: "offered", vehicleLabel: "Make Model Gen · 2022" });
+		expect(filter).toMatchObject({ state: "offered", vehicleLabel: "Make Model Gen · 2022", reason: "all" });
 	});
 
 	it("narrows to every verified id when asked", async () => {
@@ -303,13 +306,194 @@ describe("the URL contract", () => {
 		expect(vehicleFilterHref("/products", params, true)).toBe(
 			"/products?sort=price_asc&price=50-100&vehicle=1",
 		);
+		// "All vehicles" is an explicit `0`, not the absence of the parameter: on a shelf the
+		// absence now means "for my car", and a link that says it turns the car filter off must not
+		// leave it on.
 		expect(vehicleFilterHref("/products", { ...params, vehicle: "1" }, false)).toBe(
-			"/products?sort=price_asc&price=50-100",
+			"/products?sort=price_asc&price=50-100&vehicle=0",
 		);
 	});
 
-	it("returns a bare path when nothing else is set", () => {
-		expect(vehicleFilterHref("/categories/boxy", { vehicle: "1" }, false)).toBe("/categories/boxy");
+	it("says all vehicles explicitly even when nothing else is set", () => {
+		expect(vehicleFilterHref("/categories/boxy", { vehicle: "1" }, false)).toBe("/categories/boxy?vehicle=0");
+	});
+
+	it("keeps the maker when the car or the mode changes", () => {
+		// Changing the car on the Thule shelf must not drop the maker the shopper narrowed to.
+		const params = { brand: "thule", sort: "price_asc", vehicle: "0", cursor: "x" };
+		expect(vehicleFilterHref("/stresne-nosice", params, true)).toBe(
+			"/stresne-nosice?brand=thule&sort=price_asc&vehicle=1",
+		);
+	});
+
+	it("tells the three requests apart", () => {
+		expect(vehicleFilterRequestOf("1")).toBe("vehicle");
+		expect(vehicleFilterRequestOf("0")).toBe("all");
+		expect(vehicleFilterRequestOf(["0", "1"])).toBe("all");
+		expect(vehicleFilterRequestOf(undefined)).toBe("default");
+		// Anything else is not a request at all — a typo must not read as "off".
+		expect(vehicleFilterRequestOf("true")).toBe("default");
+		expect(vehicleFilterRequestOf("")).toBe("default");
+	});
+});
+
+/**
+ * The opening of the Thule shelf (2026-10-01): ~9 150 vehicle-specific sets land on one listing,
+ * and for a shopper with a saved car an alphabetical list of them is of no use.
+ *
+ * The rules, each one a way the default could lie:
+ *
+ *   - on a SHELF with a saved car the car's own list is what the shopper sees, unasked;
+ *   - `?vehicle=0` is the shopper's word and nothing overrides it;
+ *   - a default that would end in nothing (no verified set, or an answer we cannot give) leaves
+ *     the shelf whole and says why — an empty page the shopper never asked for is a dead end;
+ *   - the SAME answer to an explicit `?vehicle=1` keeps its own panel;
+ *   - `/products` and collections never narrow by default.
+ */
+describe("narrowing by default, on a roof-rack shelf", () => {
+	const SHELF = { categorySlug: "stresne-nosice" };
+
+	it("shows the car's own list when nobody said otherwise", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1), gid(2)]) });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		const filter = await resolveVehicleListingFilter("default", SHELF);
+		expect(filter).toMatchObject({ state: "active", productIds: [gid(1), gid(2)] });
+		expect(vehicleFilterIds(filter)).toEqual([gid(1), gid(2)]);
+	});
+
+	it("never overrides the shopper's explicit all-vehicles choice", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1)]) });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		const filter = await resolveVehicleListingFilter("all", SHELF);
+		expect(filter).toMatchObject({ state: "offered", reason: "all" });
+		expect(vehicleFilterIds(filter)).toBeUndefined();
+	});
+
+	it("narrows the Thule and Nordrive shelves as it narrows the main one", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1)]) });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		for (const categorySlug of ["thule-stresne-nosice", "nordrive-stresne-nosice"]) {
+			expect(await resolveVehicleListingFilter("default", { categorySlug })).toMatchObject({
+				state: "active",
+				productIds: [gid(1)],
+			});
+		}
+	});
+
+	it("leaves the accessory and spare-part buckets alone", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1)]) });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		// A set's id never names a product in these, so narrowing them to roof-rack ids would empty
+		// them under a claim nobody earned.
+		for (const categorySlug of ["prislusenstvo-k-stresnym-boxom", "nahradne-diely-k-nosicom-bicyklov"]) {
+			expect((await resolveVehicleListingFilter("default", { categorySlug })).state).toBe("out-of-scope");
+		}
+	});
+
+	it("keeps the shelf whole when the car has no verified set — no dead end nobody asked for", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([]) });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		const filter = await resolveVehicleListingFilter("default", SHELF);
+		expect(filter).toMatchObject({ state: "offered", reason: "none-fit" });
+		expect(vehicleFilterIds(filter)).toBeUndefined();
+
+		// The same answer to an EXPLICIT request is the panel, as it always was.
+		expect(await resolveVehicleListingFilter("vehicle", SHELF)).toMatchObject({ state: "empty" });
+	});
+
+	it("keeps the shelf whole when the dataset cannot answer, and says so", async () => {
+		const stale = dataset([gid(1)], {
+			validity: { validUntil: "2020-01-01T00:00:00.000Z", staleAfterDays: 30 },
+		});
+		loadFitmentDataset.mockResolvedValue({ dataset: stale });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		const filter = await resolveVehicleListingFilter("default", SHELF);
+		expect(filter).toMatchObject({ state: "unanswerable", verdict: "STALE" });
+		expect(vehicleFilterIds(filter)).toBeUndefined();
+	});
+
+	it("asks for a car when there is none, narrowing nothing", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1)]) });
+		readGarage.mockResolvedValue(garageWith(null));
+
+		const filter = await resolveVehicleListingFilter("default", SHELF);
+		expect(filter).toMatchObject({ state: "no-vehicle", requested: false });
+		expect(vehicleFilterIds(filter)).toBeUndefined();
+	});
+
+	it("never narrows /products or a collection by default", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1)]) });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		// No scope: the whole catalogue, where narrowing is true — but only when asked.
+		expect(await resolveVehicleListingFilter("default", {})).toMatchObject({
+			state: "offered",
+			reason: "all",
+		});
+		expect(await resolveVehicleListingFilter("vehicle", {})).toMatchObject({ state: "active" });
+	});
+
+	it("still treats the old boolean the way it always did", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1)]) });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		expect((await resolveVehicleListingFilter(true, SHELF)).state).toBe("active");
+		// `false` is "not asked" — which on a shelf is the default, now, and narrows.
+		expect((await resolveVehicleListingFilter(false, SHELF)).state).toBe("active");
+	});
+});
+
+/**
+ * Only the catalogue knows whether a verified set is on sale.
+ *
+ * After the dataset switch and before the activation the 9 140 new sets are verified in the
+ * dataset and hidden in Saleor: the id list is full and the listing query returns nothing. That
+ * is neither "nothing fits" nor "show everything".
+ */
+describe("when every verified set is hidden in the shop", () => {
+	const active: VehicleListingFilter = {
+		state: "active",
+		vehicleLabel: "Make Model Gen · 2022",
+		productIds: [gid(1)],
+		isDemo: false,
+	};
+
+	it("says the sets are not on sale, instead of drawing an empty grid under 'overené pre …'", () => {
+		expect(settleVehicleFilter(active, { totalCount: 0 }, {})).toEqual({
+			state: "not-on-sale",
+			vehicleLabel: "Make Model Gen · 2022",
+			isDemo: false,
+		});
+	});
+
+	it("leaves a listing that returned something alone", () => {
+		expect(settleVehicleFilter(active, { totalCount: 3 }, {})).toBe(active);
+	});
+
+	it("does not blame the shop when a price band or a maker may have emptied the list", () => {
+		for (const params of [{ price: "50-100" }, { brand: "thule" }, { volume: "300-400" }]) {
+			expect(settleVehicleFilter(active, { totalCount: 0 }, params)).toBe(active);
+		}
+		// A blank parameter is not a filter.
+		expect(settleVehicleFilter(active, { totalCount: 0 }, { price: "" }).state).toBe("not-on-sale");
+	});
+
+	it("only ever settles an active filter", () => {
+		const offered: VehicleListingFilter = { state: "offered", vehicleLabel: null, reason: "all" };
+		expect(settleVehicleFilter(offered, { totalCount: 0 }, {})).toBe(offered);
+		const empty: VehicleListingFilter = { state: "empty", vehicleLabel: null, isDemo: false };
+		expect(settleVehicleFilter(empty, { totalCount: 0 }, {})).toBe(empty);
+	});
+
+	it("does not pass the new state to Saleor as a filter", () => {
+		const settled = settleVehicleFilter(active, { totalCount: 0 }, {});
+		expect(vehicleFilterIds(settled)).toBeUndefined();
 	});
 });
 

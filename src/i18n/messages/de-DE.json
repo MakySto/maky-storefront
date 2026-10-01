@@ -273,7 +273,16 @@
 		"intendedForMore": "{count, plural, one {und # weiteres Fahrzeug} other {und # weitere Fahrzeuge}}",
 		"intendedForAlternative": "Dachträger für {vehicle} ansehen",
 		"cartOfferFor": "Angebot für {vehicle}",
-		"cartAlternative": "Dachträger für {vehicle}"
+		"cartAlternative": "Dachträger für {vehicle}",
+		"cardRoof": "Dach: {roof}",
+		"cardYears": "Baujahre: {years}",
+		"listingModeGroup": "Ansicht des Angebots",
+		"listingModeVehicle": "Für mein Auto",
+		"listingModeAll": "Alle Fahrzeuge",
+		"listingAllNotice": "Sie sehen das Angebot für alle Fahrzeuge – es ist nicht auf Ihr Auto ({vehicle}) abgestimmt.",
+		"listingDefaultNone": "Für {vehicle} haben wir noch keinen geprüften Satz, deshalb sehen Sie das Angebot für alle Fahrzeuge.",
+		"listingNotOnSaleTitle": "Für {vehicle} gibt es passende Sätze, die derzeit nicht im Verkauf sind",
+		"listingNotOnSaleBody": "Das heißt nicht, dass nichts passt. Wir nehmen die Sätze ins Angebot auf – bis dahin können Sie alle Fahrzeuge ansehen oder uns schreiben."
 	},
 	"cart": {
 		"yourCart": "Ihr Warenkorb",
@@ -819,7 +828,10 @@
 		"offersCount": "{count, plural, one {# Set} other {# Sets}}",
 		"offersDemo": "Testvorschau. Es handelt sich um simulierte Daten, nicht um ein echtes Angebot und nicht um eine geprüfte Kompatibilität.",
 		"offersPartial": "Ein Teil des Angebots konnte nicht geladen werden, die Liste ist daher möglicherweise nicht vollständig.",
-		"previewNotice": "Vorschau einer unveröffentlichten Seite. Besucher sehen sie nicht."
+		"previewNotice": "Vorschau einer unveröffentlichten Seite. Besucher sehen sie nicht.",
+		"offersTitleGeneration": "Sätze für diese Generation",
+		"offersBrowseNote": "Jeder Satz gilt nur für die angegebene Dachform und die genannten Baujahre. Die Sätze sind nicht auf Ihr Auto abgestimmt – nach der Fahrzeugwahl zeigen wir nur die passenden.",
+		"offersGroupOther": "Ohne angegebene Dachform"
 	},
 	"company": {
 		"operatedBy": "Anbieter:",

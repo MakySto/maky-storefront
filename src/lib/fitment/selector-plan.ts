@@ -29,7 +29,13 @@
  * shopper's roof. So the generation may be derived and the roof type may not.
  */
 
-import { type BodyType, type FitmentApplication, type FitmentDataset, type RoofType } from "./contract";
+import {
+	type BodyType,
+	type FitmentApplication,
+	type FitmentDataset,
+	type RoofType,
+	vehicleNodeName,
+} from "./contract";
 
 /** A generation the shopper's year could refer to. */
 export type GenerationCandidate = {
@@ -57,10 +63,10 @@ function openEnd(): number {
 	return new Date().getUTCFullYear() + 1;
 }
 
-function toCandidate(g: GenerationLike): GenerationCandidate {
+function toCandidate(g: GenerationLike, language?: string | null): GenerationCandidate {
 	return {
 		id: g.id,
-		name: g.name,
+		name: vehicleNodeName(g, language),
 		productionYearFrom: g.productionYearFrom,
 		productionYearTo: g.productionYearTo,
 		bodyTypes: g.qualifiers?.bodyTypes?.length ? g.qualifiers.bodyTypes : null,
@@ -93,10 +99,15 @@ export function yearsForModel(generations: GenerationLike[]): number[] {
  * question has to be one a person can answer from looking at their car, which is why the
  * candidates carry body type and door count rather than a bare internal code.
  */
-export function resolveGenerationForYear(generations: GenerationLike[], year: number): GenerationResolution {
+export function resolveGenerationForYear(
+	generations: GenerationLike[],
+	year: number,
+	/** The reading language, so a candidate is named the way the rest of the selector names it. */
+	language?: string | null,
+): GenerationResolution {
 	const candidates = generations
 		.filter((g) => year >= g.productionYearFrom && year <= (g.productionYearTo ?? openEnd()))
-		.map(toCandidate);
+		.map((g) => toCandidate(g, language));
 	if (candidates.length === 0) return { kind: "none" };
 	if (candidates.length === 1) return { kind: "resolved", generation: candidates[0]! };
 	return { kind: "ambiguous", candidates };

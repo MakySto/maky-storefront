@@ -23,9 +23,15 @@ import "server-only";
  *     the worst outcome this feature has available to it, so `empty` is its own state
  *     and the query is not run at all.
  *
- *   - **It only ever narrows on request.** A saved car must not quietly empty a listing
- *     of snow chains, and the fitment programme covers exactly one product kind. The
- *     filter is off unless the URL says `?vehicle=1`.
+ *   - **It narrows by itself only where that is a true statement, and says so.** A saved
+ *     car must not quietly empty a listing of snow chains, and the fitment programme covers
+ *     exactly one product kind. On a roof-rack SHELF a shopper with a saved car sees the list
+ *     for that car by default — the shelf holds ~18 000 vehicle-specific sets and an
+ *     alphabetical list of them is of no use — but only when that yields something: a car with
+ *     no verified set, or one the dataset cannot answer for, leaves the shelf whole and says
+ *     why, never a dead end the shopper did not ask for. Everywhere else (`/products`,
+ *     collections) the filter is off unless the URL says `?vehicle=1`. `?vehicle=0` is the
+ *     shopper's explicit "all vehicles", and it is never overridden.
  *
  *   - **It only answers for a shelf the programme assessed.** Requiring `?vehicle=1` was
  *     not enough, because the control that sets it was offered on every listing. Measured
@@ -48,9 +54,27 @@ import { categoryFitmentKind } from "@/config/categories";
 import { vehicleShortLabel } from "../garage/label";
 import { readGarage } from "../garage/state";
 
-/** The URL contract. One param, one value — an explicit, linkable, clearable state. */
+/**
+ * The URL contract. One param, two explicit values — a linkable, clearable state.
+ *
+ *   `?vehicle=1`  "for my car", asked for
+ *   `?vehicle=0`  "all vehicles", asked for — wins over every default
+ *   (absent)      the default: for my car on a roof-rack shelf when that has an answer, the
+ *                 whole listing everywhere else
+ */
 export const VEHICLE_FILTER_PARAM = "vehicle";
 export const VEHICLE_FILTER_VALUE = "1";
+export const VEHICLE_FILTER_OFF_VALUE = "0";
+
+/** What the URL asked for, before anything is known about the car or the shelf. */
+export type VehicleFilterRequest = "vehicle" | "all" | "default";
+
+export function vehicleFilterRequestOf(value: string | string[] | undefined): VehicleFilterRequest {
+	const raw = Array.isArray(value) ? value[0] : value;
+	if (raw === VEHICLE_FILTER_VALUE) return "vehicle";
+	if (raw === VEHICLE_FILTER_OFF_VALUE) return "all";
+	return "default";
+}
 
 /**
  * A well-formed global id for `Product:-1`, which cannot exist — Saleor's primary keys
@@ -97,12 +121,24 @@ export type VehicleListingFilter =
 	| { state: "no-vehicle"; requested: boolean }
 	/** This listing holds a kind the programme never assessed. Say nothing, narrow nothing. */
 	| { state: "out-of-scope" }
-	/** A saved car, and the filter is available but not applied. */
-	| { state: "offered"; vehicleLabel: string | null }
+	/**
+	 * A saved car, and the listing is NOT narrowed for it. `reason` says why, because the shopper
+	 * has to be able to tell "you chose all vehicles" from "we have nothing verified for your car":
+	 * `all` — chosen (or this listing never narrows by default); `none-fit` — the car's own list is
+	 * empty, so the shelf stays whole instead of ending in a panel nobody asked for.
+	 */
+	| { state: "offered"; vehicleLabel: string | null; reason: "all" | "none-fit" }
 	/** Requested, but the dataset cannot answer for THIS car. The listing is NOT narrowed. */
 	| { state: "unanswerable"; vehicleLabel: string | null; verdict: FitmentVerdict | null }
 	/** Requested and answered: nothing in the programme is verified for this car. */
 	| { state: "empty"; vehicleLabel: string | null; isDemo: boolean }
+	/**
+	 * Narrowed to this car's verified sets and NONE of them is on sale — every one is hidden,
+	 * withdrawn or not purchasable in this channel. Settled after the listing is read
+	 * (`settleVehicleFilter`), because only the catalogue knows. It is neither "nothing fits" nor an
+	 * invitation to look at everything: the sets exist, and the shop is not selling them yet.
+	 */
+	| { state: "not-on-sale"; vehicleLabel: string | null; isDemo: boolean }
 	/** Requested and answered. `productIds` is non-empty by construction. */
 	| {
 			state: "active";
@@ -111,33 +147,20 @@ export type VehicleListingFilter =
 			isDemo: boolean;
 	  };
 
+/** Kept for the callers that only ever asked "was `?vehicle=1` in the URL?". */
 export function isVehicleFilterRequested(value: string | string[] | undefined): boolean {
-	const raw = Array.isArray(value) ? value[0] : value;
-	return raw === VEHICLE_FILTER_VALUE;
+	return vehicleFilterRequestOf(value) === "vehicle";
 }
 
-/**
- * Build the listing's vehicle filter for this request.
- *
- * Resolved on EVERY listing request, not only when `?vehicle=1` is present: a filter a
- * shopper can only reach by hand-editing the URL is not a feature. `requested` decides
- * whether the ids are applied, never whether the question is asked.
- *
- * Only VERIFIED sets become ids. An unconfirmed, provisional or disputed row is not a
- * narrower listing, it is a claim we have not earned — `resolveVehicleOutcome` already
- * separates the three, and only the first is used here.
- *
- * Never throws: a listing is a page that sells things, and it must not go down because
- * the compatibility provider did.
- */
 /**
  * Which shelf the shopper is standing in front of.
  *
  * `categorySlug` absent means the listing is not one category — `/{market}/products` and
  * collections. Those are left as they were: the whole catalogue really does contain the
- * verified sets, so narrowing it is a true statement.
+ * verified sets, so narrowing it is a true statement — when asked for. Only a SHELF
+ * (`categorySlug` present, and a kind the dataset covers) may narrow by default.
  */
-export type VehicleListingScope = { categorySlug?: string };
+export type VehicleListingScope = { categorySlug?: string; language?: string | null };
 
 /**
  * Does the programme make any claim about the shelf this listing is showing?
@@ -155,26 +178,52 @@ function coversThisListing(dataset: FitmentDataset, scope: VehicleListingScope):
 	return kind !== null && dataset.coverage.scope.productKinds.includes(kind);
 }
 
+/**
+ * Build the listing's vehicle filter for this request.
+ *
+ * Resolved on EVERY listing request, not only when `?vehicle=1` is present: a filter a
+ * shopper can only reach by hand-editing the URL is not a feature. `request` decides
+ * whether the ids are applied, never whether the question is asked.
+ *
+ * Only VERIFIED sets become ids. An unconfirmed, provisional or disputed row is not a
+ * narrower listing, it is a claim we have not earned — `resolveVehicleOutcome` already
+ * separates the three, and only the first is used here. The ids are what the dataset calls
+ * verified; whether the SHOP sells them is Saleor's answer, which the listing query gives by
+ * intersection (hidden and unpublished products are not returned) — see `settleVehicleFilter`.
+ *
+ * Never throws: a listing is a page that sells things, and it must not go down because
+ * the compatibility provider did.
+ */
 export async function resolveVehicleListingFilter(
-	requested: boolean,
+	request: VehicleFilterRequest | boolean,
 	scope: VehicleListingScope = {},
 ): Promise<VehicleListingFilter> {
+	const asked: VehicleFilterRequest =
+		typeof request === "boolean" ? (request ? "vehicle" : "default") : request;
 	try {
 		const { dataset } = await loadFitmentDataset();
 		if (!dataset) return { state: "unavailable" };
 
-		// Before the garage, before `requested`: on a shelf we never assessed there is no
+		// Before the garage, before `request`: on a shelf we never assessed there is no
 		// question to ask, so there is nothing to offer and nothing to explain either.
 		if (!coversThisListing(dataset, scope)) return { state: "out-of-scope" };
 
-		const garage = await readGarage(dataset);
+		const garage = await readGarage(dataset, scope.language);
 		const active = garage.active && !garage.active.unresolved ? garage.active : null;
-		if (!active) return { state: "no-vehicle", requested };
+		if (!active) return { state: "no-vehicle", requested: asked === "vehicle" };
 
 		// Short form: the banner claims a result FOR a car, so it must name which one —
 		// a 2018 and a 2024 Octavia are different generations with different racks.
 		const vehicleLabel = vehicleShortLabel({ ...active, year: active.stored.y });
-		if (!requested) return { state: "offered", vehicleLabel };
+
+		// Narrow when asked to, or — on a shelf — when nobody said otherwise. `?vehicle=0` is the
+		// shopper's own word and nothing below may override it.
+		const narrow = asked === "vehicle" || (asked === "default" && Boolean(scope.categorySlug));
+		if (!narrow) return { state: "offered", vehicleLabel, reason: "all" };
+		// A DEFAULT answer that is not a list of sets must not be a dead end the shopper never
+		// asked for: it leaves the shelf whole and says so. The same answer to an explicit
+		// `?vehicle=1` keeps its own panel.
+		const byDefault = asked === "default";
 
 		const isDemo = isDemoDataset(dataset);
 		const outcome = resolveVehicleOutcome(dataset, active.selection, { kind: CONFIGURATOR_PRODUCT_KIND });
@@ -186,7 +235,11 @@ export async function resolveVehicleListingFilter(
 		// is exactly what stops it borrowing a real product's photograph and price. So it
 		// can never narrow a listing of real products to anything, and saying "nothing is
 		// verified for this car" is both true and the only safe answer.
-		if (isDemo) return { state: "empty", vehicleLabel, isDemo };
+		if (isDemo) {
+			return byDefault
+				? { state: "offered", vehicleLabel, reason: "none-fit" }
+				: { state: "empty", vehicleLabel, isDemo };
+		}
 
 		// De-duplicated: one product can be verified through several application rows.
 		const candidates = [...new Set(outcome.verified.map((o) => o.ref.saleorProductId))];
@@ -198,7 +251,11 @@ export async function resolveVehicleListingFilter(
 				} malformed Saleor product id(s) from the listing filter`,
 			);
 		}
-		if (productIds.length === 0) return { state: "empty", vehicleLabel, isDemo };
+		if (productIds.length === 0) {
+			return byDefault
+				? { state: "offered", vehicleLabel, reason: "none-fit" }
+				: { state: "empty", vehicleLabel, isDemo };
+		}
 
 		return { state: "active", vehicleLabel, productIds, isDemo };
 	} catch (error) {
@@ -221,13 +278,45 @@ export function vehicleFilterIds(filter: VehicleListingFilter): string[] | undef
 	return undefined;
 }
 
+/** Params that narrow a listing besides the vehicle — any of them can empty it on its own. */
+const OTHER_NARROWING_PARAMS = ["price", "brand", "volume", "colors", "sizes"] as const;
+
 /**
- * The href that turns the filter on or off, with the cursor dropped.
+ * The filter the page shows, once it knows how many products the listing returned.
+ *
+ * `active` hands Saleor the ids of every verified set and Saleor answers with the ones it
+ * sells — a hidden, unpublished or unpurchasable product is simply not returned. When it
+ * returns NONE, the dataset's claim ("these fit your car") and the shop's ("these are on
+ * sale") disagree, and the page must say which of them is speaking instead of drawing an
+ * empty grid under a headline that reads "Zobrazujeme iba produkty overené pre …".
+ *
+ * Only when nothing else narrowed the list: with a price band or a maker in force an empty
+ * result may be those filters' doing, and the listing's own empty state already says so.
+ */
+export function settleVehicleFilter(
+	filter: VehicleListingFilter,
+	listing: { totalCount: number },
+	searchParams: Record<string, string | string[] | undefined>,
+): VehicleListingFilter {
+	if (filter.state !== "active" || listing.totalCount > 0) return filter;
+	if (OTHER_NARROWING_PARAMS.some((key) => searchParams[key] !== undefined && searchParams[key] !== "")) {
+		return filter;
+	}
+	return { state: "not-on-sale", vehicleLabel: filter.vehicleLabel, isDemo: filter.isDemo };
+}
+
+/**
+ * The href that selects a mode, with the cursor dropped.
+ *
+ * `enable` true is "for my car" (`?vehicle=1`); false is "all vehicles" (`?vehicle=0`) — NOT
+ * "remove the parameter", which on a shelf now means the default and would turn the car filter
+ * back on under a link that says it is turning it off.
  *
  * Dropping `cursor`/`direction` is not tidiness. A cursor is a position in ONE ordered
  * result set; carrying it across a change of filter asks Saleor to continue from a row
  * that is no longer in the list, and the shopper lands on an arbitrary page or an empty
- * one. Sorting and price survive, because those are still the shopper's choices.
+ * one. Sorting, price and maker survive, because those are still the shopper's choices — and
+ * changing the car must not drop them either, which is why every other parameter is carried.
  */
 export function vehicleFilterHref(
 	basePath: string,
@@ -240,7 +329,7 @@ export function vehicleFilterHref(
 		if (value === undefined) continue;
 		for (const one of Array.isArray(value) ? value : [value]) next.append(key, one);
 	}
-	if (enable) next.set(VEHICLE_FILTER_PARAM, VEHICLE_FILTER_VALUE);
+	next.set(VEHICLE_FILTER_PARAM, enable ? VEHICLE_FILTER_VALUE : VEHICLE_FILTER_OFF_VALUE);
 	const query = next.toString();
 	return query ? `${basePath}?${query}` : basePath;
 }

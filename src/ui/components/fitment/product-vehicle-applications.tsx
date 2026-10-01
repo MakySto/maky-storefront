@@ -26,6 +26,8 @@ import { type BodyType, type RoofType } from "@/lib/fitment/contract";
 type Props = {
 	saleorProductId: string;
 	initial: ApplicationPage;
+	/** The reading language, handed back to the server action so every page names vehicles alike. */
+	language?: string;
 };
 
 /** Above this many vehicles the list gets its search field. */
@@ -60,7 +62,7 @@ function SingleApplication({ row }: { row: ApplicationRow }) {
 	);
 }
 
-export function ProductVehicleApplications({ saleorProductId, initial }: Props) {
+export function ProductVehicleApplications({ saleorProductId, initial, language }: Props) {
 	const t = useTranslations("fitment");
 	const [page, setPage] = useState<ApplicationPage>(initial);
 	const [rows, setRows] = useState<ApplicationRow[]>(initial.rows);
@@ -81,7 +83,7 @@ export function ProductVehicleApplications({ saleorProductId, initial }: Props) 
 	const runSearch = (next: string) => {
 		setQuery(next);
 		startTransition(async () => {
-			const result = await listProductApplications(saleorProductId, { query: next, offset: 0 });
+			const result = await listProductApplications(saleorProductId, { query: next, offset: 0, language });
 			setPage(result);
 			setRows(result.rows);
 		});
@@ -89,7 +91,7 @@ export function ProductVehicleApplications({ saleorProductId, initial }: Props) 
 
 	const loadMore = () => {
 		startTransition(async () => {
-			const result = await listProductApplications(saleorProductId, { query, offset: rows.length });
+			const result = await listProductApplications(saleorProductId, { query, offset: rows.length, language });
 			setPage(result);
 			setRows((current) => [...current, ...result.rows]);
 		});

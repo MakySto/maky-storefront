@@ -75,3 +75,25 @@ describe("ConfiguratorResults catalog-only offer", () => {
 		expect(addConfiguredSetToCart).not.toHaveBeenCalled();
 	});
 });
+
+describe("ConfiguratorResults — the application a fit rests on", () => {
+	it("says which roof and which years the set was matched through", () => {
+		const html = renderToStaticMarkup(
+			createElement(ConfiguratorResults, {
+				channel: "us-usd",
+				locale: "en-US",
+				cards: [{ ...catalogOnlyCard, fit: { roof: "Flush rails", years: "2018 – 2021" } }],
+			}),
+		);
+		expect(html).toContain('data-testid="card-fit"');
+		expect(html).toContain("fitment.cardRoof");
+		expect(html).toContain("fitment.cardYears");
+	});
+
+	it("prints no such line for a set whose application names neither", () => {
+		const html = renderToStaticMarkup(
+			createElement(ConfiguratorResults, { channel: "us-usd", locale: "en-US", cards: [catalogOnlyCard] }),
+		);
+		expect(html).not.toContain('data-testid="card-fit"');
+	});
+});

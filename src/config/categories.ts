@@ -23,6 +23,7 @@
  */
 
 import type { ProductKind } from "@/lib/fitment/contract";
+import { shelfFitmentKind } from "./fitment-shelves";
 
 export type CategorySurface = "nav" | "home";
 
@@ -35,22 +36,6 @@ export interface StorefrontCategory {
 	readonly surfaces: readonly CategorySurface[];
 	/** Why a category is not surfaced. Required when `surfaces` is empty. */
 	readonly withheldReason?: string;
-	/**
-	 * The fitment product kind this category holds, if the compatibility programme has
-	 * a name for it. Absent means "we make no vehicle claim about this shelf".
-	 *
-	 * This is what stops the vehicle filter answering for a category it never assessed.
-	 * Measured on production 2026-09-07: a saved ŠKODA with `?vehicle=1` emptied roof
-	 * boxes, bike carriers, ski carriers, roof tents and car fridges — 101, 188, 26, 9
-	 * and 7 products to zero — each under the headline "Zobrazujeme iba produkty overené
-	 * pre ŠKODA Octavia Combi NX". The programme covers roof-rack sets, so every one of
-	 * those five was a claim we had not earned.
-	 *
-	 * A kind here is NOT a promise that the dataset covers it. The dataset says what it
-	 * covers (`coverage.scope.productKinds`); this only says what is on the shelf, and
-	 * the filter narrows where the two agree.
-	 */
-	readonly fitmentKind?: ProductKind;
 }
 
 /**
@@ -58,10 +43,10 @@ export interface StorefrontCategory {
  * grid renders its own subset in this order.
  */
 export const STOREFRONT_CATEGORIES: readonly StorefrontCategory[] = [
-	{ slug: "stresne-nosice", key: "roofRacks", surfaces: ["nav", "home"], fitmentKind: "roof-rack-set" },
-	{ slug: "stresne-boxy", key: "roofBoxes", surfaces: ["nav", "home"], fitmentKind: "roof-box" },
-	{ slug: "nosice-bicyklov", key: "bikeCarriers", surfaces: ["nav", "home"], fitmentKind: "bike-carrier" },
-	{ slug: "nosice-lyzi", key: "skiCarriers", surfaces: ["nav", "home"], fitmentKind: "ski-carrier" },
+	{ slug: "stresne-nosice", key: "roofRacks", surfaces: ["nav", "home"] },
+	{ slug: "stresne-boxy", key: "roofBoxes", surfaces: ["nav", "home"] },
+	{ slug: "nosice-bicyklov", key: "bikeCarriers", surfaces: ["nav", "home"] },
+	{ slug: "nosice-lyzi", key: "skiCarriers", surfaces: ["nav", "home"] },
 	// In the desktop row since the 2026-09 redesign's second pass: the approved header links
 	// the roof tents and the fridges directly (`header.config.ts` decides from which width).
 	{ slug: "stresne-stany", key: "roofTents", surfaces: ["nav", "home"] },
@@ -184,10 +169,10 @@ export function isCategorySlug(slug: string): boolean {
  * The fitment product kind on this category's shelf, or `null` when the compatibility
  * programme makes no claim about it.
  *
- * `null` for a slug this file does not name is deliberate and is the safe direction:
- * Saleor holds 30 categories and 22 of them are accessory and spare-part buckets. An
- * unknown shelf is one we have not assessed, so the vehicle filter must leave it alone.
+ * The scope lives in `fitment-shelves.ts`, apart from this registry: this file decides what the
+ * site links to and which root URLs exist, and the vehicle filter's scope must not depend on
+ * either. Kept here as the name callers already import.
  */
 export function categoryFitmentKind(slug: string): ProductKind | null {
-	return STOREFRONT_CATEGORIES.find((category) => category.slug === slug)?.fitmentKind ?? null;
+	return shelfFitmentKind(slug);
 }

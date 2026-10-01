@@ -34,6 +34,8 @@ import { fitStatementFor, presentCardFailure } from "./configurator-card-state";
 
 export type ResultCard = {
 	offer: FitmentOffer;
+	/** The roof and the years of the application this set was matched through; null when it names none. */
+	fit?: { roof: string | null; years: string } | null;
 	/** Already-translated condition texts for THIS set. */
 	conditions: string[];
 	/** Conditions that exist but could not be stated in this locale. */
@@ -114,7 +116,7 @@ export function ConfiguratorResults({
 
 	return (
 		<ul className="grid gap-4 sm:grid-cols-2">
-			{cards.map(({ offer, conditions, unresolvedConditions, verdict, supplier }) => {
+			{cards.map(({ offer, fit, conditions, unresolvedConditions, verdict, supplier }) => {
 				const outOfStock = offer.availability === "out-of-stock";
 				const catalogOnly = offer.isPurchasable !== true;
 				// Whose word this set's fit rests on. An unnamed supplier degrades to the
@@ -194,6 +196,13 @@ export function ConfiguratorResults({
 									? t(statement.key)
 									: t(statement.key, { supplier: statement.supplier ?? tf("supplierFallback") })}
 							</p>
+
+							{fit && (
+								<p className="text-text-secondary text-sm" data-testid="card-fit">
+									{fit.roof ? `${tf("cardRoof", { roof: fit.roof })} · ` : ""}
+									{tf("cardYears", { years: fit.years })}
+								</p>
+							)}
 
 							{includes.length > 0 && (
 								<p className="text-text-secondary text-sm">

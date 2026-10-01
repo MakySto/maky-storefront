@@ -273,7 +273,16 @@
 		"intendedForMore": "{count, plural, one {a # další vozidlo} few {a # další vozidla} other {a # dalších vozidel}}",
 		"intendedForAlternative": "Zobrazit nosiče pro {vehicle}",
 		"cartOfferFor": "Nabídka pro {vehicle}",
-		"cartAlternative": "Nosiče pro {vehicle}"
+		"cartAlternative": "Nosiče pro {vehicle}",
+		"cardRoof": "Střecha: {roof}",
+		"cardYears": "Roky: {years}",
+		"listingModeGroup": "Zobrazení nabídky",
+		"listingModeVehicle": "Pro moje auto",
+		"listingModeAll": "Všechna vozidla",
+		"listingAllNotice": "Zobrazujete nabídku pro všechna vozidla — není vybraná podle vašeho auta ({vehicle}).",
+		"listingDefaultNone": "Pro {vehicle} zatím nemáme ověřenou sadu, proto vidíte nabídku pro všechna vozidla.",
+		"listingNotOnSaleTitle": "Pro {vehicle} existují kompatibilní sady, které momentálně nejsou v prodeji",
+		"listingNotOnSaleBody": "Neznamená to, že nic nepasuje. Sady připravujeme do nabídky — mezitím si můžete prohlédnout všechna vozidla nebo nám napsat."
 	},
 	"cart": {
 		"yourCart": "Váš košík",
@@ -819,7 +828,10 @@
 		"offersCount": "{count, plural, one {# sestava} few {# sestavy} other {# sestav}}",
 		"offersDemo": "Testovací ukázka. Jde o simulovaná data, nikoli o skutečnou nabídku ani o ověřenou kompatibilitu.",
 		"offersPartial": "Část nabídky se nepodařilo načíst, seznam proto nemusí být úplný.",
-		"previewNotice": "Náhled nepublikované stránky. Návštěvníkům se nezobrazuje."
+		"previewNotice": "Náhled nepublikované stránky. Návštěvníkům se nezobrazuje.",
+		"offersTitleGeneration": "Sady pro tuto generaci",
+		"offersBrowseNote": "Každá sada platí jen pro uvedený typ střechy a roky. Sady nejsou vybrané podle vašeho auta — po výběru vozidla vám ukážeme jen ty, které na něj pasují.",
+		"offersGroupOther": "Bez určeného typu střechy"
 	},
 	"company": {
 		"operatedBy": "Provozovatel:",

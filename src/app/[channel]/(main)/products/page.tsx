@@ -15,10 +15,11 @@ import { buildCanonicalUrl, productListingAlternates } from "@/lib/seo/hreflang"
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
 import {
-	isVehicleFilterRequested,
 	resolveVehicleListingFilter,
+	vehicleFilterRequestOf,
 	vehicleFilterIds,
 } from "@/lib/fitment/plp-vehicle-filter";
+import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import { VehicleListingFilter } from "@/ui/components/fitment/vehicle-listing-filter";
 import { marketOpenGraph } from "@/lib/seo/metadata";
 
@@ -117,7 +118,9 @@ async function ProductsContent({
 
 	// Resolved on every request, not only when ?vehicle=1 is present: the control has to
 	// be offerable, and `requested` decides only whether the ids are applied.
-	const vehicleFilter = await resolveVehicleListingFilter(isVehicleFilterRequested(searchParams.vehicle));
+	const vehicleFilter = await resolveVehicleListingFilter(vehicleFilterRequestOf(searchParams.vehicle), {
+		language: catalogLanguageForChannel(params.channel),
+	});
 
 	const filter = buildFilterVariables({
 		priceRange: searchParams.price,

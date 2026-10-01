@@ -117,19 +117,25 @@ export function VehicleSelectorSheet({ children, open, onOpenChange, initialDraf
 	 * it, and rightly: the fetch is a reaction to an EVENT (a click), not a
 	 * synchronisation with an external system.
 	 */
-	const applyDraft = useCallback((next: Draft) => {
-		setDraft(next);
-		setError(null);
-		startLoading(async () => {
-			const result = await loadSelectorStep({
-				makeId: next.makeId,
-				modelId: next.modelId,
-				year: next.year,
-				generationId: next.generationId,
+	const language = locale.split("-")[0];
+	const applyDraft = useCallback(
+		(next: Draft) => {
+			setDraft(next);
+			setError(null);
+			startLoading(async () => {
+				const result = await loadSelectorStep({
+					makeId: next.makeId,
+					modelId: next.modelId,
+					year: next.year,
+					generationId: next.generationId,
+					// The names CFM states for this language (`displayNames`), falling back to `name`.
+					language,
+				});
+				setStep(result);
 			});
-			setStep(result);
-		});
-	}, []);
+		},
+		[language],
+	);
 
 	const handleOpenChange = (nextOpen: boolean) => {
 		onOpenChange(nextOpen);

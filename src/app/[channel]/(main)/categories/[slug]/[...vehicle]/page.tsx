@@ -26,6 +26,7 @@ import {
 import { splitContent } from "@/lib/catalog-content/text";
 import { type CatalogNode, type CatalogTree, ancestorsOf } from "@/lib/catalog-content/tree";
 import { resolveFitmentOffers, uniqueProductRefs } from "@/lib/fitment/offers";
+import { offerFitsByProduct } from "@/lib/fitment/offer-fit";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { Breadcrumbs, type BreadcrumbItem } from "@/ui/components/breadcrumbs";
 import { ContentBlocks } from "@/ui/components/catalog/content-blocks";
@@ -235,7 +236,16 @@ async function Offers({
 	const offers = await resolveFitmentOffers(uniqueProductRefs([...applications]), channel, locale, {
 		dataset: fitment.dataset,
 	});
-	return <CatalogOfferList offers={offers} channel={channel} locale={locale} />;
+	// The roof and the years each set is made for, from its own application: this page lists the
+	// whole generation, so without them the sets of every roof and every window read alike.
+	return (
+		<CatalogOfferList
+			offers={offers}
+			channel={channel}
+			locale={locale}
+			fits={offerFitsByProduct(applications)}
+		/>
+	);
 }
 
 /**
@@ -290,7 +300,10 @@ async function VehiclePage({ params }: Params) {
 	// Tiles for children a visitor can actually open. A tile onto a not-found body is a
 	// worse experience than one fewer tile.
 	const children = (view.tree.childrenOf.get(node.vehicleId) ?? []).filter(
-		(child) => !child.page || isPubliclyVisible(child.page),
+		// Not a page that redirects either: its tile would be a hop to somewhere the next tile
+		// already points, and the page it names no longer renders.
+		(child) =>
+			(!child.page || isPubliclyVisible(child.page)) && !catalogRedirectTarget(market, child.urlPath),
 	);
 
 	const crumbs: BreadcrumbItem[] = [

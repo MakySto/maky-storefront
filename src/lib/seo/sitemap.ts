@@ -15,6 +15,7 @@ import { indexableMarkets } from "@/lib/market-state";
 import { marketHasRoute, ROUTE_POLICY } from "@/lib/route-policy";
 import { cmsRouteAvailable } from "@/lib/cms/availability";
 import { indexabilityOf } from "@/lib/catalog-content/publication";
+import { catalogRedirectTarget } from "@/lib/catalog-content/redirects";
 import { catalogLanguageForMarket, loadCatalogView } from "@/lib/catalog-content/resolve";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
@@ -267,6 +268,10 @@ async function catalogEntriesFor(market: string): Promise<MetadataRoute.Sitemap>
 	const entries: MetadataRoute.Sitemap = [];
 	for (const node of view.tree.byUrlPath.values()) {
 		if (!node.page || !indexabilityOf(node.page).indexable) continue;
+		// A retired page is a 301, not a URL. The fitment tree can name a node whose page CFM has
+		// since retired (2026-10-01: Subaru Legacy BP came back with Thule's data while its page still
+		// redirects to BH); listing the path would advertise an address that answers with a redirect.
+		if (catalogRedirectTarget(market, node.page.urlPath)) continue;
 		entries.push({
 			// `urlPath` is language-agnostic and already absolute: `/stresne-nosice/bmw`.
 			url: `${base}/${market}${node.page.urlPath}`,

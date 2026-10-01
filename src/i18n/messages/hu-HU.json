@@ -273,7 +273,16 @@
 		"intendedForMore": "{count, plural, one {és még # jármű} other {és még # jármű}}",
 		"intendedForAlternative": "Tetőcsomagtartók megtekintése ehhez: {vehicle}",
 		"cartOfferFor": "Ehhez készült: {vehicle}",
-		"cartAlternative": "Tetőcsomagtartók ehhez: {vehicle}"
+		"cartAlternative": "Tetőcsomagtartók ehhez: {vehicle}",
+		"cardRoof": "Tető: {roof}",
+		"cardYears": "Évjárat: {years}",
+		"listingModeGroup": "A kínálat megjelenítése",
+		"listingModeVehicle": "Az én autómhoz",
+		"listingModeAll": "Minden jármű",
+		"listingAllNotice": "A kínálatot minden járműre látja – nem az Ön autójához ({vehicle}) igazítva.",
+		"listingDefaultNone": "A(z) {vehicle} járműhöz még nincs ellenőrzött készletünk, ezért a kínálatot minden járműre látja.",
+		"listingNotOnSaleTitle": "A(z) {vehicle} járműhöz vannak kompatibilis készletek, amelyek jelenleg nincsenek forgalomban",
+		"listingNotOnSaleBody": "Ez nem jelenti azt, hogy semmi sem illik. A készleteket most vesszük fel a kínálatba – addig megnézheti az összes járművet, vagy írhat nekünk."
 	},
 	"cart": {
 		"yourCart": "Az Ön kosara",
@@ -819,7 +828,10 @@
 		"offersCount": "{count, plural, one {# szett} other {# szett}}",
 		"offersDemo": "Tesztbemutató. Szimulált adatokról van szó, nem valódi kínálatról és nem ellenőrzött kompatibilitásról.",
 		"offersPartial": "A kínálat egy részét nem sikerült betölteni, ezért a lista hiányos lehet.",
-		"previewNotice": "Nem közzétett oldal előnézete. A látogatók nem látják."
+		"previewNotice": "Nem közzétett oldal előnézete. A látogatók nem látják.",
+		"offersTitleGeneration": "Készletek ehhez a generációhoz",
+		"offersBrowseNote": "Minden készlet csak a megadott tetőtípusra és évjáratokra érvényes. A készletek nincsenek az Ön autójához igazítva – a jármű kiválasztása után csak a hozzá illőket mutatjuk.",
+		"offersGroupOther": "Nincs megadott tetőtípus"
 	},
 	"company": {
 		"operatedBy": "Az eladó:",

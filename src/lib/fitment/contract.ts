@@ -139,21 +139,55 @@ export type FitmentQualifiers = {
 // Vehicle tree
 // ---------------------------------------------------------------------------
 
+/**
+ * The name of a make, model or generation in each language, where it differs from `name`.
+ *
+ * Keyed by LANGUAGE (`sk`, `cs`, `de`…), not by locale: the vehicle's name is one string for every
+ * market in CFM, and a localized one is the exception it chooses to state — "Rad 3" for the BMW
+ * "3 Series", "Porsche" for "PORSCHE". The condition texts are the other way round, keyed by
+ * LOCALE (`sk-SK`); the two are not interchangeable and neither is derived from the other.
+ *
+ * Optional everywhere and never required: a node without it, or without the asked language, is
+ * named by `name`. See `vehicleNodeName`.
+ */
+export type VehicleDisplayNames = Readonly<Record<string, string>>;
+
 export type VehicleMake = {
 	id: string;
 	name: string;
+	displayNames?: VehicleDisplayNames;
 };
 
 export type VehicleModel = {
 	id: string;
 	makeId: string;
 	name: string;
+	displayNames?: VehicleDisplayNames;
 };
+
+/**
+ * What a vehicle node is called to a shopper reading `language`.
+ *
+ * `displayNames[language]` when CFM stated one, otherwise `name`. Nothing else: no other
+ * language's name stands in (a Czech name on a Slovak page is exactly the mistake this boundary
+ * exists to stop), no capitalisation is repaired, and a blank or non-string entry is ignored
+ * rather than printed — a display field is cosmetic, so a malformed one must cost the polish and
+ * never the vehicle. There is no second names table in the storefront; the dataset is the only
+ * source.
+ */
+export function vehicleNodeName(
+	node: { name: string; displayNames?: VehicleDisplayNames },
+	language: string | null | undefined,
+): string {
+	const stated = language ? node.displayNames?.[language] : undefined;
+	return typeof stated === "string" && stated.trim().length > 0 ? stated : node.name;
+}
 
 export type VehicleGeneration = {
 	id: string;
 	modelId: string;
 	name: string;
+	displayNames?: VehicleDisplayNames;
 	/** Production window of the generation. NOT an application window — see file header. */
 	productionYearFrom: number;
 	/** `null` = still in production. */

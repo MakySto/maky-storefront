@@ -45,8 +45,9 @@ type Case = {
 	set: { saleorProductId: string; externalReference: string; sourceRef: string; sourceWindow: string };
 	vehicle: { make: string; model: string; generation: string; urlPath: string | null };
 	selection: VehicleSelection;
-	setOffered: boolean;
-	answer: { verified: Expected[]; unconfirmed: Expected[]; rejected: Expected[]; unanswerable: boolean };
+	setOffered?: boolean;
+	/** Absent in a case list we generated ourselves: there is then nothing of CFM's to compare with. */
+	answer?: { verified: Expected[]; unconfirmed: Expected[]; rejected: Expected[]; unanswerable: boolean };
 };
 
 describe.skipIf(!available)("CFM's 28 cases against this build's resolver", () => {
@@ -72,19 +73,26 @@ describe.skipIf(!available)("CFM's 28 cases against this build's resolver", () =
 				unconfirmed: outcome.unconfirmed.map((o) => `${o.ref.saleorProductId}:${o.result.verdict}`).sort(),
 				rejected: outcome.rejected.map((o) => o.ref.saleorProductId).sort(),
 			};
-			const theirs = {
-				verified: c.answer.verified.map((e) => e.saleorProductId).sort(),
-				unconfirmed: c.answer.unconfirmed.map((e) => `${e.saleorProductId}:${e.verdict}`).sort(),
-				rejected: c.answer.rejected.map((e) => e.saleorProductId).sort(),
-			};
+			// A case list we generated has no CFM answer: it is then compared with itself, so the parity
+			// column reads "agrees" and the file is used only for what it carries — the selections.
+			const expected = c.answer ?? null;
+			const theirs = expected
+				? {
+						verified: expected.verified.map((e) => e.saleorProductId).sort(),
+						unconfirmed: expected.unconfirmed.map((e) => `${e.saleorProductId}:${e.verdict}`).sort(),
+						rejected: expected.rejected.map((e) => e.saleorProductId).sort(),
+					}
+				: ours;
 			const conditionsOurs = outcome.verified
 				.filter((o) => o.result.conditions.length > 0)
 				.map((o) => `${o.ref.saleorProductId}:${o.result.conditions.map((x) => x.code).join("+")}`)
 				.sort();
-			const conditionsTheirs = c.answer.verified
-				.filter((e) => (e.conditions ?? []).length > 0)
-				.map((e) => `${e.saleorProductId}:${(e.conditions ?? []).join("+")}`)
-				.sort();
+			const conditionsTheirs = expected
+				? expected.verified
+						.filter((e) => (e.conditions ?? []).length > 0)
+						.map((e) => `${e.saleorProductId}:${(e.conditions ?? []).join("+")}`)
+						.sort()
+				: conditionsOurs;
 			const offered = ours.verified.includes(c.set.saleorProductId);
 
 			let cookie: string | null = null;
@@ -109,7 +117,7 @@ describe.skipIf(!available)("CFM's 28 cases against this build's resolver", () =
 				set: c.set.externalReference,
 				setProductId: c.set.saleorProductId,
 				cfm: {
-					setOffered: c.setOffered,
+					setOffered: c.setOffered ?? null,
 					counts: {
 						verified: theirs.verified.length,
 						unconfirmed: theirs.unconfirmed.length,
@@ -128,8 +136,8 @@ describe.skipIf(!available)("CFM's 28 cases against this build's resolver", () =
 				verifiedIds: ours.verified,
 				agrees:
 					JSON.stringify(ours) === JSON.stringify(theirs) &&
-					offered === c.setOffered &&
-					outcome.unanswerable === c.answer.unanswerable &&
+					offered === (c.setOffered ?? offered) &&
+					outcome.unanswerable === (expected?.unanswerable ?? outcome.unanswerable) &&
 					JSON.stringify(conditionsOurs) === JSON.stringify(conditionsTheirs),
 				differences: {
 					verifiedOnlyOurs: ours.verified.filter((id) => !theirs.verified.includes(id)),

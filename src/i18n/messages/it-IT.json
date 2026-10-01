@@ -273,7 +273,16 @@
 		"intendedForMore": "{count, plural, one {e # altro veicolo} other {e altri # veicoli}}",
 		"intendedForAlternative": "Vedi i portapacchi da tetto per {vehicle}",
 		"cartOfferFor": "Offerta per {vehicle}",
-		"cartAlternative": "Portapacchi da tetto per {vehicle}"
+		"cartAlternative": "Portapacchi da tetto per {vehicle}",
+		"cardRoof": "Tetto: {roof}",
+		"cardYears": "Anni: {years}",
+		"listingModeGroup": "Visualizzazione dell'offerta",
+		"listingModeVehicle": "Per la mia auto",
+		"listingModeAll": "Tutti i veicoli",
+		"listingAllNotice": "Stai vedendo l'offerta per tutti i veicoli: non è filtrata per la tua auto ({vehicle}).",
+		"listingDefaultNone": "Per {vehicle} non abbiamo ancora un kit verificato, quindi vedi l'offerta per tutti i veicoli.",
+		"listingNotOnSaleTitle": "Esistono kit compatibili con {vehicle} che al momento non sono in vendita",
+		"listingNotOnSaleBody": "Questo non significa che nulla sia adatto. Stiamo aggiungendo questi kit all'offerta: nel frattempo puoi vedere tutti i veicoli o scriverci."
 	},
 	"cart": {
 		"yourCart": "Il tuo carrello",
@@ -819,7 +828,10 @@
 		"offersCount": "{count, plural, one {# set} other {# set}}",
 		"offersDemo": "Anteprima di prova. Si tratta di dati simulati, non di un'offerta reale né di una compatibilità verificata.",
 		"offersPartial": "Non è stato possibile caricare parte dell'offerta, quindi l'elenco potrebbe essere incompleto.",
-		"previewNotice": "Anteprima di una pagina non pubblicata. Non è visibile ai visitatori."
+		"previewNotice": "Anteprima di una pagina non pubblicata. Non è visibile ai visitatori.",
+		"offersTitleGeneration": "Kit per questa generazione",
+		"offersBrowseNote": "Ogni kit vale solo per il tipo di tetto e per gli anni indicati. I kit non sono filtrati per la tua auto: dopo aver scelto il veicolo mostriamo solo quelli adatti.",
+		"offersGroupOther": "Tipo di tetto non indicato"
 	},
 	"company": {
 		"operatedBy": "Venditore:",

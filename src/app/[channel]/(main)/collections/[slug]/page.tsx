@@ -25,10 +25,11 @@ import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
 import { marketHref } from "@/lib/channel-map";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import {
-	isVehicleFilterRequested,
 	resolveVehicleListingFilter,
+	vehicleFilterRequestOf,
 	vehicleFilterIds,
 } from "@/lib/fitment/plp-vehicle-filter";
+import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import { VehicleListingFilter } from "@/ui/components/fitment/vehicle-listing-filter";
 import { CollectionPageClient } from "./client";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
@@ -198,7 +199,9 @@ async function CollectionProducts({
 		field: ProductOrderField.Collection,
 		direction: OrderDirection.Asc,
 	};
-	const vehicleFilter = await resolveVehicleListingFilter(isVehicleFilterRequested(searchParams.vehicle));
+	const vehicleFilter = await resolveVehicleListingFilter(vehicleFilterRequestOf(searchParams.vehicle), {
+		language: catalogLanguageForChannel(params.channel),
+	});
 	const filter = buildFilterVariables({
 		priceRange: searchParams.price,
 		vehicleProductIds: vehicleFilterIds(vehicleFilter),

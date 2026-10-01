@@ -6,6 +6,7 @@ import { marketHref } from "@/lib/channel-map";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { vehicleFilterHref } from "@/lib/fitment/plp-vehicle-filter";
 import { loadSelectorStep } from "@/lib/fitment/selector-actions";
+import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import { readGarage } from "@/lib/garage/state";
 import {
 	VehicleQuickSelect,
@@ -32,19 +33,20 @@ export async function HomeVehicleBlock({ params }: { params: Promise<{ channel: 
 
 	const { dataset } = await loadFitmentDataset();
 	if (!dataset) return null;
-	const garage = await readGarage(dataset);
+	const language = catalogLanguageForChannel(channel) ?? undefined;
+	const garage = await readGarage(dataset, language);
 	if (garage.status === "disabled") return null;
 
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "home" });
 	const active = garage.active && !garage.active.unresolved ? garage.active : null;
 
-	const first = await loadSelectorStep({});
+	const first = await loadSelectorStep({ language });
 	if (first.unavailable || first.makes.length === 0) return null;
 
 	let initial: VehicleQuickSelectInitial | null = null;
 	if (active) {
 		const { k: makeId, m: modelId, y: year } = active.stored;
-		const known = await loadSelectorStep({ makeId, modelId });
+		const known = await loadSelectorStep({ makeId, modelId, language });
 		if (known.models && known.years?.includes(year)) {
 			initial = { makeId, modelId, year, models: known.models, years: known.years };
 		}

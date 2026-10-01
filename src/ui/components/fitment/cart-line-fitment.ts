@@ -14,6 +14,7 @@ import { datasetSpeaksForProduct, resolveFitment } from "@/lib/fitment/resolve";
 import { GARAGE_COOKIE_NAME } from "@/lib/garage/cookie";
 import { vehicleModelLabel, vehicleShortLabel } from "@/lib/garage/label";
 import { readGarage } from "@/lib/garage/state";
+import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import {
 	CONDITION_LABEL_KEY,
 	toneForVerdict,
@@ -84,7 +85,7 @@ export async function cartLineFitments(
 		// Simulated data: the product page says so beside every answer; a cart badge has no room
 		// for that notice, so it says nothing rather than a bare green claim.
 		if (isDemoDataset(dataset)) return {};
-		const garage = await readGarage(dataset);
+		const garage = await readGarage(dataset, catalogLanguageForChannel(channel));
 		const active = garage.active && !garage.active.unresolved ? garage.active : null;
 		if (!active) return {};
 		const vehicle = vehicleShortLabel({ ...active, year: active.stored.y });
@@ -102,7 +103,13 @@ export async function cartLineFitments(
 			// page's "Určené pre", said short. Never "nepasuje": see `intended-for.ts`.
 			const presentation = presentFitment(
 				result,
-				intendedVehiclesFor(dataset, saleorProductId, saleorVariantId),
+				intendedVehiclesFor(
+					dataset,
+					saleorProductId,
+					saleorVariantId,
+					undefined,
+					catalogLanguageForChannel(channel),
+				),
 			);
 			if (presentation.kind === "intended-for") {
 				const [first, ...rest] = presentation.vehicles;

@@ -31,6 +31,9 @@ const status = {
 	unavailableReason: null,
 };
 
+/** Parsed bodies are asserted field by field; their exact shape is the route's, not this file's. */
+type Body = Record<string, any>;
+
 async function call(headers: Record<string, string> = {}) {
 	vi.resetModules();
 	process.env.REVALIDATE_SECRET = SECRET;
@@ -48,18 +51,18 @@ describe("/api/fitment/status", () => {
 	it("tells anyone which dataset the process holds — the file is public and so is its hash", async () => {
 		const response = await call();
 		expect(response.status).toBe(200);
-		const body = await response.json();
+		const body = (await response.json()) as Body;
 		expect(body.dataset.datasetHash).toBe(HASH);
 		expect(body.dataset.datasetVersion).toBe("3.0.0-full-20261001.2");
 		expect(body.dataset.loaded).toBe(true);
 	});
 
 	it("keeps what identifies the process for the operator who holds the secret", async () => {
-		const open = await (await call()).json();
+		const open = (await (await call()).json()) as Body;
 		expect(open.process).toBeUndefined();
 		expect(open.build).toBeUndefined();
 
-		const operator = await (await call({ authorization: `Bearer ${SECRET}` })).json();
+		const operator = (await (await call({ authorization: `Bearer ${SECRET}` })).json()) as Body;
 		expect(operator.process).toMatchObject({ pid: process.pid, node: process.version });
 		expect(operator.process.rssMB).toBeGreaterThan(0);
 		expect(operator.build).toHaveProperty("buildId");
@@ -67,7 +70,7 @@ describe("/api/fitment/status", () => {
 	});
 
 	it("does not take a wrong secret for the right one", async () => {
-		const body = await (await call({ authorization: "Bearer not-the-secret" })).json();
+		const body = (await (await call({ authorization: "Bearer not-the-secret" })).json()) as Body;
 		expect(body.process).toBeUndefined();
 	});
 
@@ -87,7 +90,7 @@ describe("/api/fitment/status", () => {
 		});
 		const response = await call();
 		expect(response.status).toBe(200);
-		expect((await response.json()).dataset).toMatchObject({ loaded: false, datasetHash: null });
+		expect(((await response.json()) as Body).dataset).toMatchObject({ loaded: false, datasetHash: null });
 	});
 
 	it("exposes nothing from the environment", async () => {

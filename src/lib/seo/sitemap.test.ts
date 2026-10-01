@@ -556,6 +556,38 @@ describe("the vehicle pages", () => {
 	const vehicleUrls = (entries: Awaited<ReturnType<typeof sitemap>>) =>
 		entries.map((e) => e.url).filter((u) => u.includes("/stresne-nosice/"));
 
+	/**
+	 * 2026-10-01: CFM's Thule data brought the Subaru Legacy BP generation back into the fitment
+	 * tree — a node with a URL and a published page — while the storefront still answers that URL
+	 * with a 301 to BH (RELEASE-4). The tree is built from fitment, so the node is there and the
+	 * page is indexable; the sitemap must not advertise an address that redirects.
+	 */
+	it("never advertises a page that is retired and redirects", async () => {
+		serve((after) => productPage(after, 0));
+		loadCatalogView.mockResolvedValue(
+			catalogView("sk", [
+				...DELIVERY,
+				{
+					urlPath: "/stresne-nosice/subaru/legacy-kombi/bp",
+					state: "published",
+					indexable: true,
+					hasEditorialText: true,
+				},
+				{
+					urlPath: "/stresne-nosice/subaru/legacy-kombi/bh",
+					state: "published",
+					indexable: true,
+					hasEditorialText: true,
+				},
+			]),
+		);
+
+		const urls = vehicleUrls(await sitemap());
+		expect(urls).not.toContain(`${BASE}/sk/stresne-nosice/subaru/legacy-kombi/bp`);
+		// Its replacement is an ordinary page and stays.
+		expect(urls).toContain(`${BASE}/sk/stresne-nosice/subaru/legacy-kombi/bh`);
+	});
+
 	it("lists only pages that are published, indexable AND have text", async () => {
 		serve((after) => productPage(after, 0));
 		loadCatalogView.mockResolvedValue(catalogView("sk", DELIVERY));

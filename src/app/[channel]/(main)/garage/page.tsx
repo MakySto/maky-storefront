@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { getLocaleFromChannel } from "@/config/locale";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { readGarage } from "@/lib/garage/state";
+import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import { GARAGE_MAX_VEHICLES } from "@/lib/garage/cookie";
 import { GarageList } from "@/ui/components/vehicle/garage-list";
 import { InUseVehicle } from "@/ui/components/vehicle/in-use-vehicle";
@@ -59,7 +60,7 @@ async function GarageContent({ channel }: { channel: string }) {
 
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "garage" });
 	const { dataset, status } = await loadFitmentDataset();
-	const garage = await readGarage(dataset);
+	const garage = await readGarage(dataset, catalogLanguageForChannel(channel));
 
 	if (garage.status === "disabled") {
 		return <Notice title={t("notConfigured")} detail={t("notConfiguredDetail")} className="mt-6" />;
