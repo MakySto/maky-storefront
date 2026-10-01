@@ -286,7 +286,7 @@ node scripts/checks/thule-early-test.mjs --base https://maky.store --cases docs/
 `<block1-cookies.json>` robí `M_CASES=docs/design/thule-takeover-20261001/block1-cases.json M_CASES_DATASET=<dataset .2> M_CASES_OUT=<block1-cookies.json> MAKY_GARAGE_COOKIE_SECRET=… npx vitest run src/lib/fitment/thule-cases.check.test.ts`
 (tajomstvo z prostredia, nikde sa nevypisuje; cookie len vyberú auto — nepatria do repozitára).
 
-1. CFM (po samostatnom GO Mareka) spustí aktiváciu; po 250 sadách sa zastaví.
+1. CFM spustí aktiváciu po GO, ktoré mu Marek dá vo vlastnom vlákne CFM (CFM neberie GO prenesené z inej relácie); po 250 sadách sa zastaví.
 2. **Čakať ≥ 6 minút** po poslednej mutácii bloku (alebo spustiť ručné vyčistenie z §7).
 3. Skorý test (len čítanie, nič nevytvára):
 
@@ -297,7 +297,7 @@ node scripts/checks/thule-early-test.mjs --base https://maky.store --cases docs/
 12 prípadov „musí ukázať" a 21 „nesmie ukázať" (rok mimo okna / iná strecha / žiadna strecha), pre každý: produktová stránka (200, cena JSON-LD = cena CFM, `index, follow`,
 kanonická na seba), konfigurátor (karta je, cena CFM, strecha a roky), polica Thule s autom (je v predvolenom zozname), stránka generácie (ak existuje); okolo: piloty
 200, 71743 404, vzorka 60 sád zo zvyšných blokov stále neviditeľná. Ručne k tomu: mobil 390 px, jeden prechod konfigurátor → produkt → košík (**košík je zápis do Saleoru —
-jeden anonymný checkout ako 30. 9.; objednávku ani platbu nevytvárať**) a regresia Nordrive (uložené BMW → tých istých 7 Nordrive). 4. Marek potvrdí → CFM nastaví `EARLY_TEST_OK=1` → ostatné bloky. Počas behu nemeniť vozidlá, fity, ceny ani obsah (CFM aj M). 5. Po poslednom bloku: ručné vyčistenie (§7), jedna studená žiadosť na `sk-products-1.xml`, kontrola sitemapy (~18 700) a sledovanie `NEXT_STATIC_GEN_BAILOUT` / chybového logu 48 h.
+jeden anonymný checkout ako 30. 9.; objednávku ani platbu nevytvárať**) a regresia Nordrive (uložené BMW → tých istých 7 Nordrive). 4. **Zmena 1. 10. večer (rozhodnutie vlastníka, "ZADANIE VLASTNÍKA"): Marek už nepotvrdzuje.** Ak skorý test prejde, CFM pokračuje s `EARLY_TEST_OK=1` automaticky (všetkých 37 blokov, bez ďalšieho potvrdenia). M zapíše výsledok ako `EARLY_TEST_RESULT=PASS|FAIL` do `M_TO_CFM_STATUS.md`; pri FAIL sa zastaví a hlási Marekovi. → ostatné bloky. Počas behu nemeniť vozidlá, fity, ceny ani obsah (CFM aj M). 5. Po poslednom bloku: ručné vyčistenie (§7), jedna studená žiadosť na `sk-products-1.xml`, kontrola sitemapy (~18 700) a sledovanie `NEXT_STATIC_GEN_BAILOUT` / chybového logu 48 h.
 
 Otestované: `pre` na skutočnom bloku 1 = **81/81**; `post` na 10 skutočne verejných pilotoch = **114/114**; `pre` na tých istých pilotoch **padá** (30), takže skript vie zlyhať.
 

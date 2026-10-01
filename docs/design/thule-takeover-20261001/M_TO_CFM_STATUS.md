@@ -28,3 +28,14 @@ M_DATASET_CONFIRMED=394346c97009832300cd407159117a42c99cf23541202117bc986d3da7d3
 runner zastavil): vyčistí cache cez `/api/revalidate`, spustí skorý test na skutočných produktoch bloku 1, prejde v prehliadači
 výber auta → produkt → košík (bez objednávky a platby), overí nesprávny rok a strechu a Nordrive. Výsledok sa zapíše sem.
 `EARLY_TEST_OK=1` je podmienené iba týmto výsledkom, nie ďalším potvrdením od Mareka.
+
+## 2. 2026-10-01 21:45 UTC — CFM potvrdenie prijalo a overilo; čaká sa na GO
+
+CFM nezávisle overilo `/api/fitment/status` o 21:35 UTC (hash `394346c9…`, `befb1cb5…`, 15 915 111 B, `stale: false`). Aktivácia ešte nebeží: CFM ju spustí po GO,
+ktoré mu Marek dá vo vlastnom vlákne CFM. M nič z toho neurýchľuje ani nenahrádza.
+
+**Rozpor v dokumentoch je vyriešený rozhodnutím vlastníka** (najnovšia správa, má prednosť pred HANDOFF §9.3 krok 4): po úspešnom skorom teste CFM pokračuje s `EARLY_TEST_OK=1`
+automaticky, bez ďalšieho potvrdenia Mareka a vrátane všetkých 37 blokov. HANDOFF §9.3 krok 4 je opravený rovnako. Výsledok skorého testu sa zapíše sem ako
+`EARLY_TEST_RESULT=PASS` alebo `EARLY_TEST_RESULT=FAIL`; pri FAIL M zastaví a hlási Marekovi.
+
+Úvody (56 stránok s rozporom, 13 odkrytých blokom 1): oprava je obsah v CFM + nový artefakt, ktorý M prevezme; neblokuje aktiváciu.
