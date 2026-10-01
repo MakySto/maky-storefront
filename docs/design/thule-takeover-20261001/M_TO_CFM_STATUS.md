@@ -39,3 +39,25 @@ automaticky, bez ďalšieho potvrdenia Mareka a vrátane všetkých 37 blokov. H
 `EARLY_TEST_RESULT=PASS` alebo `EARLY_TEST_RESULT=FAIL`; pri FAIL M zastaví a hlási Marekovi.
 
 Úvody (56 stránok s rozporom, 13 odkrytých blokom 1): oprava je obsah v CFM + nový artefakt, ktorý M prevezme; neblokuje aktiváciu.
+
+## 3. 2026-10-01 21:58 UTC — skorý test bloku 1 (250 sád, pk 71720–72042) na produkcii
+
+Výsledok (samostatný riadok, ktorý CFM číta):
+
+EARLY_TEST_RESULT=PASS
+
+| overené                                                                                             | výsledok                                                                                                                                                                                                                            |
+| --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| automatizovaný skorý test `thule-early-test.mjs --phase post` na živom `maky.store`, 33 prípadov    | **136 z 136** (12 prípadov ukáže sadu za cenu CFM so strechou a rokmi, 21 prípadov ju neukáže: rok pred oknom, rok po okne, iná strecha, žiadna strecha; piloty 200; 71743 404; vzorka 60 sád z ďalších blokov stále neviditeľná)   |
+| cache                                                                                               | riadená invalidácia `/api/revalidate` pre `stresne-nosice`, `thule-stresne-nosice`, `nordrive-stresne-nosice` o 21:49:44 UTC, až po konci mutácií CFM (21:47:48)                                                                    |
+| zákaznícky priechod v prehliadači (výber auta v selektore → konfigurátor → klik na produkt → košík) | Honda Civic Sedan FD 2009 → Thule SlideBar EVO Silver **554,85 €**; Mercedes-Benz Sprinter W906 2013 → Thule WingBar EVO Black **439,85 €**; produktová stránka `index, follow`, kanonická na seba, JSON-LD cena = cena CFM         |
+| košík (kontrola priamo v Saleore podľa cookie košíka)                                               | 2 riadky, správne produkty a varianty (SKU končí `…d23cc69eb0374a-000000` a `…24d23b5d3d4b90-000000`), množstvo 1, 554,85 € + 439,85 € = **994,70 €**; objednávka ani platba sa nevytvorili, košík po teste vyprázdnený (0 riadkov) |
+| nesprávny rok a strecha                                                                             | Civic 2008 (pred oknom 2009–2011), Sprinter 2014 (po okne 2006–2013), Grandland X 2019 s integrovanými pozdĺžnikmi (sada je pre holú strechu): očakávaná sada sa neukáže                                                            |
+| Nordrive zachovaný                                                                                  | BMW X5 E70 2012: 7 sád Nordrive, názvy aj ceny totožné so stavom z 30. 9. (+ 1 verejný pilot Thule)                                                                                                                                 |
+| mobil                                                                                               | 390 px: výber auta → karta → produkt funguje; 390 a 360 px bez horizontálneho pretekania na produkte, polici Thule aj konfigurátore                                                                                                 |
+| galérie                                                                                             | 6 čiernych sád bloku 1: 4 až 5 obrázkov, bez strieborného detailu. Sady s pätkou 710800 sú v blokoch 7, 10, 13 … 37, overia sa po poslednom bloku                                                                                   |
+| sitemapa                                                                                            | `sk-products-1.xml` 9 581 → **9 831** adries (+250), 260 adries Thule (250 + 10 pilotov), všetkých 12 prípadových sád v nej je                                                                                                      |
+| stabilita                                                                                           | od aktivácie 0 nových `NEXT_STATIC_GEN_BAILOUT` (254 ako pred nasadením), 0 nových riadkov chybového logu, dataset `unchanged` (304 not modified), všetky kľúčové stránky 200                                                       |
+
+Podľa rozhodnutia vlastníka teda CFM pokračuje blokmi 2 až 37 s `EARLY_TEST_OK=1`. M počas behu nič nemení; sleduje Saleor a po poslednom bloku čistí cache a sitemapu,
+overí verejný počet a galérie 710800 a čiernych sád.
