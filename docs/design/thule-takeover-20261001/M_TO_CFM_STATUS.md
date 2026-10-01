@@ -40,7 +40,7 @@ automaticky, bez ďalšieho potvrdenia Mareka a vrátane všetkých 37 blokov. H
 
 Úvody (56 stránok s rozporom, 13 odkrytých blokom 1): oprava je obsah v CFM + nový artefakt, ktorý M prevezme; neblokuje aktiváciu.
 
-## 3. 2026-10-01 21:58 UTC — skorý test bloku 1 (250 sád, pk 71720–72042) na produkcii
+## 3. 2026-10-01 21:55 UTC — skorý test bloku 1 (250 sád, pk 71720–72042) na produkcii
 
 Výsledok (samostatný riadok, ktorý CFM číta):
 
@@ -61,3 +61,22 @@ EARLY_TEST_RESULT=PASS
 
 Podľa rozhodnutia vlastníka teda CFM pokračuje blokmi 2 až 37 s `EARLY_TEST_OK=1`. M počas behu nič nemení; sleduje Saleor a po poslednom bloku čistí cache a sitemapu,
 overí verejný počet a galérie 710800 a čiernych sád.
+
+## 4. 2026-10-01 23:05 UTC — po poslednom bloku: všetkých 37 blokov verejných, overené na produkcii
+
+| overené                                        | výsledok                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Saleor, anonymný návštevník `sk-eur`           | **9 140 z 9 140** sád viditeľných aj kúpiteľných (`isAvailableForPurchase`), posledný blok 37 o 22:54:39 UTC; verejných produktov spolu **18 721** (9 581 + 9 140)                                                                                                                                                                                                         |
+| cache                                          | riadená invalidácia `/api/revalidate` pre tri police o 22:55:37 UTC po konci mutácií, sitemapa zahriata (studená prechádzka 12,9 s, teplá 77 ms)                                                                                                                                                                                                                           |
+| sitemapa                                       | jeden SK shard, **18 721** produktových adries, všetkých 9 140 nových sád v ňom je, adries Thule 9 150, 71743 v nej nie je                                                                                                                                                                                                                                                 |
+| produktové stránky                             | vzorka 148 stránok (4 z každého z 37 blokov): všetky 200, JSON-LD cena = cena CFM, `index, follow`, kanonická na seba, Thule v názve                                                                                                                                                                                                                                       |
+| 71743 (podmienka skla)                         | HTTP 404, ostáva skrytá                                                                                                                                                                                                                                                                                                                                                    |
+| 28 prípadov CFM cez HTTP na živom `maky.store` | **všetkých 28 v poriadku**: pre každé auto počet overených = predávaných = kariet na stránke, každá karta má „Strecha · Roky“; sady, ktoré boli pred aktiváciou „nie sú v predaji“ (Q7 2025, X2 U10, Q5 FY, X5 E70, Civic FD, pätka 710800), ukazujú plné sady; prípad 28 správne „nie sú v predaji“; prípady bez strechy alebo s inou karosériou „nemáme overenú zostavu“ |
+| galéria pätky 710800                           | všetkých 27 sád: 6 obrázkov vrátane `thule_oversize_rail_foot_-_710800` (dve fotky pätky) a nákresu strechy s lyžinami; vizuálne overené na čiernej sade KGM Rexton Sports Q200 (čierna tyč, detail priečnika, pätka, montáž, nákres)                                                                                                                                      |
+| čierne vyhotovenie                             | 40 čiernych sád rozložených cez všetky bloky: 3 až 6 obrázkov, bez strieborného detailu (verejný pilot 72883 má podľa dohody starú galériu)                                                                                                                                                                                                                                |
+| police                                         | Thule strešné nosiče **9 150** produktov (9 140 + 10 pilotov), Nordrive 9 157, hlavná polica strešných nosičov 18 307                                                                                                                                                                                                                                                      |
+| stabilita                                      | od nasadenia 0 nových `NEXT_STATIC_GEN_BAILOUT` (254 ako pred ním), +11 riadkov chybového logu za 1 h 40 min, dataset `unchanged` (304), záťaž ~0, jeden proces PM2 bez reštartu od 21:29:58                                                                                                                                                                               |
+
+Čo ostáva mimo tohto behu (nič z toho neblokovalo otvorenie): 56 úvodov s nepravdivou vetou o jednej streche (CFM opraví cielene, M prevezme nový artefakt obsahu),
+Subaru Legacy BP, 48 dvojíc generácií s rovnakými rokmi, rozdiel 82 vs 84 zmenených generácií, roky okien za koncom výroby generácie, `urlPath` pre 383 áut, dataset v2.
+Dataset `.2` zastará **2026-10-31 17:48 UTC** — nový export musí prísť skôr.
