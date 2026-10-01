@@ -30,34 +30,47 @@ const PATH = process.env.MAKY_FITMENT_DATASET_PATH?.trim();
 const available = Boolean(PATH && existsSync(PATH));
 
 /**
- * Verified 2026-09-30 against https://carfitmanager.com/media/fitment/ — the downloaded
- * bytes checked with `sha256sum -c` against `SHA256SUMS_FULL_20261001`.
+ * Verified 2026-10-01 against https://carfitmanager.com/media/fitment/ — the downloaded bytes
+ * checked with `sha256sum -c` against `SHA256SUMS_FULL_20261001.2`, then by this build's own hash
+ * and validator.
  *
- * What changed from 20260915.2 (THULE-C1 pilot, measured with `dataset-delta.check.test.ts`
- * on the production build 228590b): eleven Thule sets, one application each, on 5 new
- * generations (MAN TGE UY, VW Transporter T5, Toyota Hilux AN120, Opel Vivaro Van C,
- * Audi Q7 4M) and 6 existing ones; +1 make (MAN), +4 models. Nordrive: 0 applications
- * changed or removed, and every selection a shopper can have saved resolves to the same
- * Nordrive offer. Outside the pilot: 9 BMW model names ("3-Rad" → "3 Series") and two Ford
- * Transit Connect generations re-dated (V761 from 2022 → 2024, V408 to 2022 → 2024).
- * `coverage.scope.programId` became `maky-roof-racks`. One application carries a condition
- * (`roof-without-glass-roof`, CFM 71743) that this build shows as text but does not
- * evaluate — so that set stays unpublished in Saleor.
+ * THULE-C1, the full opening (measured with `dataset-delta.check.test.ts` on the build's own
+ * code, old = 3.0.0-full-20261001, new = this one):
+ *   + 9 140 Thule sets, one application each — 18 314 products now, 9 163 Nordrive and 9 151 Thule
+ *     (the 9 140, the 10 pilots that were already on sale, and 71743 with its glass-roof condition);
+ *   + 7 makes, +130 models, +246 generations, +1 453 applications (1 108 generations, 2 566
+ *     applications in all); 10 existing pilot applications gained more sets with the same window
+ *     and roof;
+ *   0 products removed, 0 Nordrive applications changed, 0 saved selections left unresolved: of
+ *     55 840 selections a shopper can have saved, 19 720 resolve exactly as before and 36 120 gain
+ *     Thule sets alongside the same Nordrive ones, and none resolves differently;
+ *   82 generations changed their qualifiers: 75 gained a roof option (the selector asks about the roof
+ *     every time and never fills it in) and 9 gained a body type (so the selector now asks which
+ *     body, where it used to fill the single one in); 2 gained both. A saved selection keeps the
+ *     roof and body it was saved with;
+ *   `displayNames` (language-keyed, `sk`, `cs`, `de`…) on 57 makes, 38 models and 10 generations;
+ *   153 provider warnings, all of the two kinds the previous file already had (a window ending past
+ *     the generation's last production year, or starting before its first): 96 before, 57 more.
+ * What it costs this build, measured on the production box: read 4 ms, plain parse 37 ms,
+ * `datasetHash` 420 ms (of which canonical JSON 165 ms), validation 380–420 ms in all — one event-loop
+ * block of ~0.5 s per dataset taken into use, 0.4 ms median and 4.6 ms at worst to resolve one
+ * vehicle across all 2 192 selections the selector can produce.
  *
- * 20260915.2 before it: 7 977 173 B, transport 6fddb7aa…, semantic af9e6750…, 62/557/857/1102,
- * 9 163 products.
+ * Earlier files, for the history: 20261001 (30. 9., pilot, 7 993 764 B, semantic fd3507de…,
+ * 63/561/862/1113, 9 174 products) and 20260915.2 (7 977 173 B, semantic af9e6750…, 62/557/857/1102,
+ * 9 163 products).
  */
 const DELIVERED = {
-	datasetVersion: "3.0.0-full-20261001",
-	bytes: 7_993_764,
-	transport: "6cfbacc3a0c18e7ef285a86b6ca1a595b94c5b39d7fab23aef61426e7e864fc0",
-	semantic: "fd3507de798ac50e31c4e481e1ecd9c39e80288359f0524123eaedf69af0bc30",
-	makes: 63,
-	models: 561,
-	generations: 862,
-	applications: 1113,
+	datasetVersion: "3.0.0-full-20261001.2",
+	bytes: 15_915_111,
+	transport: "befb1cb5792a3cff2fdb9eb2215cbe27285450f363d5d297460b54e8b0f5e9f1",
+	semantic: "394346c97009832300cd407159117a42c99cf23541202117bc986d3da7d333c9",
+	makes: 70,
+	models: 691,
+	generations: 1108,
+	applications: 2566,
 	/** `accounting.products_exported`, and the number of distinct products the applications name. */
-	products: 9174,
+	products: 18314,
 	/** `manifest_rows − products_exported`: products deactivated in CFM and not exported. */
 	withdrawn: 29,
 	/** `accounting.products_held`: exported, but `qaStatus: hold` and not sellable. */

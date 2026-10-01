@@ -9,7 +9,7 @@
 // rather than by a second implementation that can drift from them.
 //
 // It is a script and not part of `pnpm test` on purpose: the default suite must not
-// depend on the network or on an 8 MB download. What makes that safe is that the
+// depend on the network or on a 16 MB download. What makes that safe is that the
 // accepted numbers are committed in the test — running this later re-proves the same
 // claim rather than blessing whatever is being served today.
 //
@@ -26,7 +26,7 @@ const argOf = (flag, fallback) => {
 	return i === -1 ? fallback : args[i + 1];
 };
 
-const DEFAULT_URL = "https://carfitmanager.com/media/fitment/maky_roof_fitment_3.0.0-full-20261001.json";
+const DEFAULT_URL = "https://carfitmanager.com/media/fitment/maky_roof_fitment_3.0.0-full-20261001.2.json";
 const file = argOf("--file", null);
 const url = argOf("--url", DEFAULT_URL);
 
