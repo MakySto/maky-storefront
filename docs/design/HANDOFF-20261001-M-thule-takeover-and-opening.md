@@ -224,18 +224,20 @@ Pravidlá: každý krok je jeden príkaz zadaný priamo (CLAUDE.md §13.1.1), na
 cd /opt/storefront && git fetch origin && git checkout --detach origin/release/r1-thule-20261001
 ```
 
+Skúška (nič nemení; **dnes o 20:32 UTC prešla testami, sudo aj diskom, ale zastavila sa na pamäti: 9 449 MB voľných z požadovaných 10 240** — preto `MIN_FREE_MEM_MB`,
+rozhodnutie majiteľa z 28. 9., alebo najprv zastaviť nečinné relácie):
+
 ```bash
-cd /opt/storefront && ./scripts/ops/deploy-production.sh --dry-run -m "R0+R1: fitment provider SWR, car filter on the Thule shelf, roof and years on cards (release/r1-thule-20261001)"
+cd /opt/storefront && MIN_FREE_MEM_MB=9216 ./scripts/ops/deploy-production.sh --dry-run -m "R0+R1: fitment provider SWR, car filter on the Thule shelf, roof and years on cards (release/r1-thule-20261001)"
 ```
 
 ```bash
-cd /opt/storefront && ./scripts/ops/deploy-production.sh -m "R0+R1: fitment provider SWR, car filter on the Thule shelf, roof and years on cards (release/r1-thule-20261001)"
+cd /opt/storefront && MIN_FREE_MEM_MB=9216 ./scripts/ops/deploy-production.sh -m "R0+R1: fitment provider SWR, car filter on the Thule shelf, roof and years on cards (release/r1-thule-20261001)"
 ```
 
-Odstávka 2–5 min. Ak preflight nahlási pamäť: `MIN_FREE_MEM_MB=9216 ./scripts/ops/deploy-production.sh -m "…"` (odporúčané už skôr, k dispozícii ~10,9 GB).
-**Vrátenie:** skript pred bránou sám obnoví predošlý build; po nej `sudo cp -a /opt/storefront-rollbacks/<snapshot> .next` podľa CLAUDE.md §13.3.
-Po nasadení (ja, len čítanie): `MAKY_DEPLOY_META` (sha, BUILD_ID), riadok `[fitment] loaded 3.0.0-full-20261001 fd3507de…` v OUT logu, nové
-`NEXT_STATIC_GEN_BAILOUT` oproti základu 254 / 1 163 315 riadkov, §13.5 smoke, `/api/fitment/status` (stále `fd3507de…`), uložené BMW → 8 sád.
+Odstávka 2–5 min. **Vrátenie:** skript pred bránou sám obnoví predošlý build; po nej `sudo cp -a /opt/storefront-rollbacks/<snapshot> .next` podľa CLAUDE.md §13.3
+(a `git checkout --detach 228590b`). Po nasadení (ja, len čítanie): `MAKY_DEPLOY_META` (sha, BUILD_ID), riadok `[fitment] loaded 3.0.0-full-20261001 fd3507de…` v OUT logu, nové
+`NEXT_STATIC_GEN_BAILOUT` oproti základu 254 / 1 163 315 riadkov, §13.5 smoke, `/api/fitment/status` (stále `fd3507de…`), uložené BMW → 8 sád, polica s uloženým autom.
 
 ### 9.2 Prepnutie datasetu — jedna krátka medzera pred aktiváciou
 
