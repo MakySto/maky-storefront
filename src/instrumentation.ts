@@ -133,4 +133,14 @@ export async function register(): Promise<void> {
 		const { prewarmFitmentDataset } = await import("./lib/fitment/provider");
 		await prewarmFitmentDataset();
 	}
+
+	// Then the release manifest. Started last and never awaited: its first pass downloads and verifies up to
+	// ten content files and the dataset, which is minutes of work on a cold CFM, and no request may wait
+	// for it. Until a market has a verified file it keeps being answered by the settings above, so turning
+	// this on changes nothing a visitor sees. Its read-back line says which settings are in charge. Not
+	// during `next build`: nothing there may open a timer or a connection.
+	if (!building) {
+		const { startReleaseSync } = await import("./lib/catalog-release/sync");
+		startReleaseSync();
+	}
 }

@@ -1,0 +1,70 @@
+{
+ "artifact": "MAKY_RELEASE_MANIFEST",
+ "schemaVersion": "1.0.0",
+ "manifestVersion": 7,
+ "generatedAt": "2026-10-05T09:30:12.481230+00:00",
+ "publisher": "carfitmanager",
+ "base": "https://cfm.example/media/fitment/releases/",
+ "rules": {
+  "activation": "per-target",
+  "contentSelection": "by-target",
+  "contentAndFitment": "independent",
+  "sharedFiles": "identical-bytes-share-one-file"
+ },
+ "content": {
+  "contract": {
+   "artifact": "CATALOG_CONTENT_SNAPSHOT",
+   "schemaVersion": "1.0.0"
+  },
+  "targets": {
+   "at": {
+    "market": "at",
+    "language": "de",
+    "file": "maky_catalog_content_1.0.0-de-228e98800e1357ad.json",
+    "sha256": "228e98800e1357ad075c73e54dedd25ffb40e1d29a657d845297e57cfad0c48c",
+    "bytes": 1832411,
+    "release": 2,
+    "pages": 412
+   },
+   "de": {
+    "market": "de",
+    "language": "de",
+    "file": "maky_catalog_content_1.0.0-de-228e98800e1357ad.json",
+    "sha256": "228e98800e1357ad075c73e54dedd25ffb40e1d29a657d845297e57cfad0c48c",
+    "bytes": 1832411,
+    "release": 3,
+    "pages": 412
+   },
+   "sk": {
+    "market": "sk",
+    "language": "sk",
+    "file": "maky_catalog_content_1.0.0-sk-52068f4e05c9138c.json",
+    "sha256": "52068f4e05c9138cb6dd1fd1c4df30c3966ed12ca805736166fa12ad32d31ffa",
+    "bytes": 1790233,
+    "release": 5,
+    "pages": 412
+   },
+   "us": {
+    "market": "us",
+    "language": "en",
+    "file": "maky_catalog_content_1.0.0-en-8d5a3bb6562ffef3.json",
+    "sha256": "8d5a3bb6562ffef349802545b2e2d8eaf14eb703439ce73a36ef2efadd8cc587",
+    "bytes": 1655120,
+    "release": 1,
+    "pages": 398
+   }
+  }
+ },
+ "fitment": {
+  "file": "maky_fitment_3.0.0-full-example.1-731644a817482eaf.json",
+  "sha256": "731644a817482eaf7c6568a904b69aea93e0023ed8b90c2c3ad1f2a7bb5eecc9",
+  "bytes": 8123456,
+  "release": 2,
+  "contract": {
+   "schemaVersion": "3.0.0"
+  },
+  "datasetVersion": "3.0.0-full-example.1",
+  "datasetHash": "5e85b22ecf3402bfd37d572e2043ab1537a019f227d3c5c43108e831b4bde60a"
+ },
+ "selfSha256": "fa43a17a86fa53643e4f27c8d7fc9b51b204144e3bd8338940fe6a9664ad2c3a"
+}
