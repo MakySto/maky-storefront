@@ -90,6 +90,26 @@ pm2 jlist | jq '[.[] | select(.name=="maky-storefront" and .pm2_env.status=="onl
 procesu nie je potvrdenie všetkých: CFM berie cieľ ako prevzatý, až keď **všetky** očakávané procesy hlásia `active`
 s rovnakým SHA-256.
 
+### Krok 0 · Napíš CFM, z čoho dnes čítaš (iba čítanie, nič sa nemení ani nenasadzuje)
+
+CFM pri zavedení zaregistruje ako východiskové vydanie **presne tie súbory, ktoré storefront dnes ukazuje**, aby sa pri
+prepnutí na manifest nezmenil ani bajt viditeľného obsahu. Obsah v starom režime nemá stavový endpoint, preto CFM tie
+súbory nevie zistiť sám a potrebuje ich od teba:
+
+```bash
+grep -E '^MAKY_(CATALOG_CONTENT_(PATH|URL|SHA256SUMS)|FITMENT_URL)=' /opt/storefront/.env
+```
+
+Sú to verejné adresy súborov CFM, nie tajomstvá; nič iné z `.env` nevkladaj. Z bežiaceho procesu (nie z `.env`) potom dataset:
+
+```bash
+curl -s https://maky.store/api/fitment/status | jq '.dataset | {mode, loaded, datasetVersion, datasetHash, transportSha256, staleAfter}'
+```
+
+Zapíš to spolu s počtom procesov. Ak `MAKY_CATALOG_CONTENT_*` ešte ukazuje na staršiu sadu než C1 `20261001` (vydanie 56
+úvodov je tvoje, krok 2), napíš to: CFM zavedie tú, ktorú storefront naozaj číta, a 56 úvodov sa v CFM objaví ako
+„Publikované so zmenami“ (nezverejní sa samo).
+
 ### Krok 1 · Nasadiť vetvu bez zapnutia (režim `off`)
 
 Tvojím postupom, `CLAUDE.md` §13 (nikdy `next build` pri bežiacom PM2):
@@ -205,6 +225,7 @@ SYNC1_BRANCH_REVIEW=<OK|NEOK + dôvod>          # vetva claude/sync1-release-man
 SYNC1_DEPLOYED=<áno|nie> <sha, BUILD_ID, čas UTC z MAKY_DEPLOY_META>
 SYNC1_MODE=<off|manifest>                      # z riadku [release] mode=…
 SYNC1_PROCESSES=<počet z pm2 jlist>            # CFM ho nastaví ako CATALOG_STOREFRONT_EXPECTED_PROCESSES
+SYNC1_LIVE_SOURCES=<MAKY_CATALOG_CONTENT_PATH|URL|SHA256SUMS + výstup curl pre /api/fitment/status z kroku 0>  # z čoho čítaš dnes
 SYNC1_STATUS=<výstup curl + jq z kroku 4>      # po prvom prevzatí
 SYNC1_LIVE_TEST=<PASS|FAIL + čo sa zmenilo, za koľko sekúnd, bez reštartu?>
 SYNC1_REVALIDATE_NEEDED=<áno|nie>              # otvorená otázka z kroku 5
