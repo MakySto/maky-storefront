@@ -11,6 +11,7 @@ import { transportChecksum } from "@/lib/fitment/dataset-hash";
 import { expectedSaleorInstance } from "@/lib/fitment/saleor-instance";
 import { validateFitmentDataset } from "@/lib/fitment/validate";
 
+import { type CacheDocument, filesOf, loadFile, prune, readActive, storeFile, writeActive } from "./cache";
 import { type ReleaseConfig, type ReleaseSetting, describePointer, releaseSetting } from "./config";
 import {
 	type ContentEntry,
@@ -47,6 +48,10 @@ import {
  *     the page already shows. Those settings answer for a market only until its first verified file.
  *   - CONTENT AND FITMENT ARE INDEPENDENT. They are joined on `vehicleId` at render time; neither waits
  *     for the other and neither's failure touches the other.
+ *   - A RESTART MAY BEGIN FROM THE LAST VERIFIED RELEASE (opt-in, `MAKY_RELEASE_CACHE_DIR`, see `cache.ts`).
+ *     The first pass restores it from disk, through the same checks a download gets and before the network
+ *     is asked anything. Without it, a restart forgets and the older settings answer until the first pass has
+ *     downloaded again.
  *
  * Nothing here is shared with a request but the slots, and nothing here reads a clock a render could see:
  * the loop runs detached from any render (`runDetached`), and timestamps come from `performance`, for the
@@ -108,12 +113,23 @@ type ManifestState = {
 	failures: number;
 };
 
+/** What is kept on disk for the next boot (`cache.ts`), as far as this process knows. */
+type CacheState = {
+	/** The first pass of a boot restores from disk, once. */
+	restored: boolean;
+	/** Files this process wrote, or restored and verified: the only ones a recorded set may name. */
+	readonly stored: Set<string>;
+	/** What is in use changed after it was last recorded. */
+	dirty: boolean;
+};
+
 type ReleaseState = {
 	readonly bootId: string;
 	readonly startedAt: number;
 	readonly manifest: ManifestState;
 	readonly targets: Map<string, TargetState>;
 	readonly fitment: FitmentState;
+	readonly cache: CacheState;
 	timer: ReturnType<typeof setTimeout> | null;
 	running: Promise<void> | null;
 	started: boolean;
@@ -139,6 +155,7 @@ function shared(): ReleaseState {
 		},
 		targets: new Map(),
 		fitment: { active: null, desired: null, fault: null, failures: 0, retryAt: 0 },
+		cache: { restored: false, stored: new Set(), dirty: false },
 		timer: null,
 		running: null,
 		started: false,
@@ -397,6 +414,7 @@ function applyManifest(state: ReleaseState, manifest: ReleaseManifest): void {
 			slot.active.entry.release !== entry.release
 		) {
 			slot.active = { ...slot.active, entry };
+			state.cache.dirty = true;
 		}
 	}
 	// A market that left the manifest keeps what it serves. Taking live content away is a withdrawal, which
@@ -426,6 +444,7 @@ function applyManifest(state: ReleaseState, manifest: ReleaseManifest): void {
 		fitment.active.entry.release !== wanted.release
 	) {
 		fitment.active = { ...fitment.active, entry: wanted };
+		state.cache.dirty = true;
 	}
 }
 
@@ -529,6 +548,25 @@ function failTarget(state: ReleaseState, market: string, slot: TargetState, faul
 	logOnce(state, `target:${market}`, `${market}: ${fault.code}: ${fault.message}; ${keeping}`, "error");
 }
 
+/** A verified snapshot, in use by one target: what a download and a restore from disk both end in. */
+function contentSlot(entry: ContentEntry, snapshot: CatalogContentSnapshot): ContentSlot {
+	return {
+		entry,
+		activatedAt: wallClockMs(),
+		load: {
+			snapshot,
+			status: {
+				mode: "release",
+				unavailableReason: null,
+				language: snapshot.language,
+				generatedAt: snapshot.generatedAt,
+				pageCount: snapshot.pages.length,
+				sha256: entry.sha256,
+			},
+		},
+	};
+}
+
 /** A verified snapshot some other target already holds for these exact bytes, if any. */
 function alreadyVerified(state: ReleaseState, sha256: string): CatalogContentSnapshot | null {
 	for (const slot of state.targets.values()) {
@@ -544,10 +582,13 @@ async function activateContent(state: ReleaseState, config: ReleaseConfig, marke
 	if (!manifest || !first) return;
 
 	let snapshot = alreadyVerified(state, first.sha256);
+	// The verified bytes, when this call is the one that fetched them, so that they can be kept for the next boot.
+	let downloaded: Uint8Array | null = null;
 	if (!snapshot) {
 		try {
 			const bytes = await downloadFile(fileUrl(manifest.base, first.file), first.bytes, config.fileTimeoutMs);
 			snapshot = verifyContent(bytes, first);
+			downloaded = bytes;
 		} catch (error) {
 			const fault =
 				error instanceof ReleaseFailure
@@ -569,21 +610,7 @@ async function activateContent(state: ReleaseState, config: ReleaseConfig, marke
 			failTarget(state, market, slot, problem);
 			continue;
 		}
-		slot.active = {
-			entry,
-			activatedAt: wallClockMs(),
-			load: {
-				snapshot,
-				status: {
-					mode: "release",
-					unavailableReason: null,
-					language: snapshot.language,
-					generatedAt: snapshot.generatedAt,
-					pageCount: snapshot.pages.length,
-					sha256: entry.sha256,
-				},
-			},
-		};
+		slot.active = contentSlot(entry, snapshot);
 		slot.fault = null;
 		slot.failures = 0;
 		slot.retryAt = 0;
@@ -596,7 +623,61 @@ async function activateContent(state: ReleaseState, config: ReleaseConfig, marke
 				first.bytes
 			} B, sha256 ${first.sha256.slice(0, 12)}…)`,
 		);
+		state.cache.dirty = true;
+		if (downloaded) await remember(state, config, first.file, downloaded);
 	}
+}
+
+/** Bytes → the dataset the manifest described, or the contract code that says why they are not. */
+function verifyFitment(bytes: Uint8Array, entry: FitmentEntry): FitmentDataset {
+	const sha256 = transportChecksum(bytes);
+	if (sha256 !== entry.sha256) {
+		throw new ReleaseFailure(
+			"file_hash_mismatch",
+			`${entry.file}: sha256 ${sha256.slice(0, 12)}… but the manifest says ${entry.sha256.slice(0, 12)}…`,
+		);
+	}
+	// The exact bytes as text: the semantic hash is only reproducible against CFM's Python when every
+	// number is re-emitted from its source token (`dataset-hash.ts`).
+	const text = new TextDecoder().decode(bytes);
+	let body: unknown;
+	try {
+		body = JSON.parse(text);
+	} catch {
+		throw new ReleaseFailure("fitment_invalid", `${entry.file} is not JSON`);
+	}
+	const validation = validateFitmentDataset(body, {
+		expectedSaleorInstance: expectedSaleorInstance(),
+		rawText: text,
+	});
+	if (!validation.ok) {
+		throw new ReleaseFailure(
+			"fitment_invalid",
+			`${entry.file}: ${validation.errors[0] ?? "failed validation"}`,
+		);
+	}
+	const dataset = validation.dataset;
+	// `validateFitmentDataset` recomputed the hash and found it equal to the one in the file. It still has
+	// to be the one in the MANIFEST: a perfectly valid dataset that is not the approved one is not the
+	// delivery.
+	if (dataset.datasetHash !== entry.datasetHash) {
+		throw new ReleaseFailure(
+			"fitment_hash_mismatch",
+			`recomputed datasetHash ${dataset.datasetHash.slice(
+				0,
+				12,
+			)}… but the manifest says ${entry.datasetHash.slice(0, 12)}…`,
+		);
+	}
+	if (dataset.datasetVersion !== entry.datasetVersion || dataset.schemaVersion !== entry.schemaVersion) {
+		throw new ReleaseFailure(
+			"fitment_invalid",
+			`the dataset is ${dataset.datasetVersion} (${dataset.schemaVersion}), the manifest says ${entry.datasetVersion} (${entry.schemaVersion})`,
+		);
+	}
+	if (validation.warnings.length > 0)
+		console.warn("[release] fitment payload warnings:", validation.warnings);
+	return dataset;
 }
 
 async function activateFitment(state: ReleaseState, config: ReleaseConfig): Promise<void> {
@@ -608,53 +689,7 @@ async function activateFitment(state: ReleaseState, config: ReleaseConfig): Prom
 	const started = performance.now();
 	try {
 		const bytes = await downloadFile(fileUrl(manifest.base, entry.file), entry.bytes, config.fileTimeoutMs);
-		const sha256 = transportChecksum(bytes);
-		if (sha256 !== entry.sha256) {
-			throw new ReleaseFailure(
-				"file_hash_mismatch",
-				`${entry.file}: sha256 ${sha256.slice(0, 12)}… but the manifest says ${entry.sha256.slice(0, 12)}…`,
-			);
-		}
-		// The exact bytes as text: the semantic hash is only reproducible against CFM's Python when every
-		// number is re-emitted from its source token (`dataset-hash.ts`).
-		const text = new TextDecoder().decode(bytes);
-		let body: unknown;
-		try {
-			body = JSON.parse(text);
-		} catch {
-			throw new ReleaseFailure("fitment_invalid", `${entry.file} is not JSON`);
-		}
-		const validation = validateFitmentDataset(body, {
-			expectedSaleorInstance: expectedSaleorInstance(),
-			rawText: text,
-		});
-		if (!validation.ok) {
-			throw new ReleaseFailure(
-				"fitment_invalid",
-				`${entry.file}: ${validation.errors[0] ?? "failed validation"}`,
-			);
-		}
-		const dataset = validation.dataset;
-		// `validateFitmentDataset` recomputed the hash and found it equal to the one in the file. It still has
-		// to be the one in the MANIFEST: a perfectly valid dataset that is not the approved one is not the
-		// delivery.
-		if (dataset.datasetHash !== entry.datasetHash) {
-			throw new ReleaseFailure(
-				"fitment_hash_mismatch",
-				`recomputed datasetHash ${dataset.datasetHash.slice(
-					0,
-					12,
-				)}… but the manifest says ${entry.datasetHash.slice(0, 12)}…`,
-			);
-		}
-		if (dataset.datasetVersion !== entry.datasetVersion || dataset.schemaVersion !== entry.schemaVersion) {
-			throw new ReleaseFailure(
-				"fitment_invalid",
-				`the dataset is ${dataset.datasetVersion} (${dataset.schemaVersion}), the manifest says ${entry.datasetVersion} (${entry.schemaVersion})`,
-			);
-		}
-		if (validation.warnings.length > 0)
-			console.warn("[release] fitment payload warnings:", validation.warnings);
+		const dataset = verifyFitment(bytes, entry);
 		const ms = Math.round(performance.now() - started);
 		f.active = { entry, dataset, bytes: bytes.byteLength, loadMs: ms, activatedAt: wallClockMs() };
 		f.fault = null;
@@ -664,6 +699,9 @@ async function activateFitment(state: ReleaseState, config: ReleaseConfig): Prom
 		console.log(
 			`[release] fitment active: ${dataset.datasetVersion} ${dataset.datasetHash} (${bytes.byteLength} B, ${ms} ms)`,
 		);
+		state.cache.dirty = true;
+		// Never throws: a cache that cannot be written must not turn a verified dataset into a failed one.
+		await remember(state, config, entry.file, bytes);
 	} catch (error) {
 		const fault =
 			error instanceof ReleaseFailure
@@ -675,6 +713,150 @@ async function activateFitment(state: ReleaseState, config: ReleaseConfig): Prom
 		const keeping = f.active ? `keeping ${f.active.dataset.datasetVersion}` : "nothing active yet";
 		logOnce(state, "fitment", `fitment: ${fault.code}: ${fault.message}; ${keeping}`, "error");
 	}
+}
+
+// ── what is kept for the next boot ───────────────────────────────────────────
+
+/** Keep verified bytes for the next boot. Best effort: a cache that cannot be written is one line, never a failure. */
+async function remember(
+	state: ReleaseState,
+	config: ReleaseConfig,
+	file: string,
+	bytes: Uint8Array,
+): Promise<void> {
+	const dir = config.cacheDir;
+	if (!dir) return;
+	try {
+		await storeFile(dir, file, bytes);
+		state.cache.stored.add(file);
+		state.logged.delete("cache");
+	} catch (error) {
+		state.cache.stored.delete(file);
+		logOnce(state, "cache", `cache: ${file} not kept for the next boot: ${describe(error)}`, "warn");
+	}
+}
+
+/** What is in use AND on disk, as a set a restart can take back. `null` when there is nothing to record. */
+function keptSet(state: ReleaseState): CacheDocument | null {
+	const content: Record<string, ContentEntry> = {};
+	for (const [market, slot] of state.targets) {
+		if (slot.active && state.cache.stored.has(slot.active.entry.file)) content[market] = slot.active.entry;
+	}
+	const active = state.fitment.active;
+	const fitment = active && state.cache.stored.has(active.entry.file) ? active.entry : null;
+	if (fitment === null && Object.keys(content).length === 0) return null;
+	return { manifestVersion: state.manifest.held?.manifest.manifestVersion ?? null, content, fitment };
+}
+
+/**
+ * Record what is in use when that has changed, then remove what nothing names any more.
+ *
+ * An empty set is never recorded over one that is there: "this boot has verified nothing yet" is not news,
+ * and it is exactly the state every boot starts in.
+ */
+async function persist(state: ReleaseState, config: ReleaseConfig): Promise<void> {
+	const dir = config.cacheDir;
+	if (!dir || !state.cache.dirty) return;
+	const held = keptSet(state);
+	if (!held) {
+		state.cache.dirty = false;
+		return;
+	}
+	try {
+		await writeActive(dir, held);
+		state.cache.dirty = false;
+		state.logged.delete("cache");
+	} catch (error) {
+		// Still dirty: the next pass tries again, so fixing the directory's permissions is enough.
+		logOnce(state, "cache", `cache: what is in use was not recorded: ${describe(error)}`, "warn");
+		return;
+	}
+	try {
+		const removed = await prune(dir, new Set(filesOf(held)), wallClockMs());
+		if (removed.length > 0)
+			console.log(`[release] cache: removed ${removed.length} file(s) nothing names any more`);
+	} catch (error) {
+		logOnce(state, "cache:prune", `cache: pruning failed: ${describe(error)}`, "warn");
+	}
+}
+
+/**
+ * The first pass of a boot: take back what the last run had verified and in use, from disk, through the same
+ * checks a download gets. It asks the network nothing and cannot fail the boot: what does not restore is
+ * answered by the older settings, exactly as it is without a cache.
+ */
+async function restore(state: ReleaseState, config: ReleaseConfig): Promise<void> {
+	const dir = config.cacheDir;
+	if (!dir) return;
+	let recorded: CacheDocument | null;
+	try {
+		recorded = await readActive(dir);
+	} catch (error) {
+		logOnce(state, "cache", `cache: ${describe(error)}; nothing restored`, "warn");
+		return;
+	}
+	if (!recorded) return;
+
+	const restored: string[] = [];
+	const refused: string[] = [];
+
+	// One read, one hash and one parse per file, however many markets name it.
+	const files = new Map<string, ContentEntry[]>();
+	for (const entry of Object.values(recorded.content)) {
+		const key = [entry.file, entry.sha256, entry.bytes].join("|");
+		files.set(key, [...(files.get(key) ?? []), entry]);
+	}
+	for (const entries of files.values()) {
+		const head = entries[0];
+		let snapshot: CatalogContentSnapshot;
+		try {
+			snapshot = verifyContent(await loadFile(dir, head.file, head.bytes), head);
+		} catch (error) {
+			const fault = error instanceof ReleaseFailure ? error.fault.message : describe(error);
+			refused.push(`${entries.map((entry) => entry.market).join(",")} (${head.file}): ${fault}`);
+			continue;
+		}
+		state.cache.stored.add(head.file);
+		for (const entry of entries) {
+			if (state.targets.get(entry.market)?.active) continue;
+			const problem = entryProblem(entry, snapshot);
+			if (problem) {
+				refused.push(`${entry.market}: ${problem.message}`);
+				continue;
+			}
+			// Only now does the market become a target: a record must not be able to add one the storefront refuses.
+			target(state, entry.market).active = contentSlot(entry, snapshot);
+			restored.push(`${entry.market}@${entry.release}`);
+		}
+		// Parsing a large file holds the event loop for a moment; let a request in between files.
+		await new Promise<void>((resolve) => setImmediate(resolve));
+	}
+
+	const entry = recorded.fitment;
+	if (entry && !state.fitment.active) {
+		const started = performance.now();
+		try {
+			const bytes = await loadFile(dir, entry.file, entry.bytes);
+			const dataset = verifyFitment(bytes, entry);
+			const loadMs = Math.round(performance.now() - started);
+			state.fitment.active = { entry, dataset, bytes: bytes.byteLength, loadMs, activatedAt: wallClockMs() };
+			state.cache.stored.add(entry.file);
+			restored.push(`fitment ${dataset.datasetVersion}`);
+		} catch (error) {
+			const fault = error instanceof ReleaseFailure ? error.fault.message : describe(error);
+			refused.push(`fitment (${entry.file}): ${fault}`);
+		}
+	}
+
+	if (restored.length > 0) {
+		console.log(
+			`[release] restored from the cache: ${restored.join(
+				", ",
+			)}; the first manifest check decides what happens next`,
+		);
+	}
+	if (refused.length > 0)
+		logOnce(state, "cache:restore", `cache: not restored: ${refused.join("; ")}`, "warn");
 }
 
 /** Work through everything the manifest wants that is not yet active and is due. */
@@ -697,8 +879,15 @@ async function reconcile(state: ReleaseState, config: ReleaseConfig): Promise<vo
 async function pass(state: ReleaseState, setting: ReleaseSetting): Promise<void> {
 	if (setting.kind !== "on") return;
 	try {
+		// Before the network is asked anything: what the last run had verified is better than the older
+		// settings for exactly as long as CFM takes to answer, and for as long as it does not.
+		if (!state.cache.restored) {
+			state.cache.restored = true;
+			await restore(state, setting.config);
+		}
 		await checkManifest(state, setting.config);
 		await reconcile(state, setting.config);
+		await persist(state, setting.config);
 	} catch (error) {
 		// Everything anticipated is a status, not a throw. This is for what is not.
 		console.error("[release] pass threw:", error);
@@ -737,8 +926,9 @@ function schedule(state: ReleaseState, delayMs: number): void {
 
 /**
  * Start following the manifest. Idempotent, never throws, never blocks the boot: the first pass runs in
- * the background, and until it has verified a file for a market that market is answered by the older
- * `MAKY_CATALOG_CONTENT_*` settings, so nothing a visitor sees changes while it happens.
+ * the background, and until it has verified a file for a market (or restored one from the cache, which is
+ * the same checks against local disk) that market is answered by the older `MAKY_CATALOG_CONTENT_*`
+ * settings, so nothing a visitor sees changes while it happens.
  */
 export function startReleaseSync(): void {
 	const setting = releaseSetting();
@@ -762,8 +952,12 @@ export function startReleaseSync(): void {
 	console.log(
 		`[release] mode=manifest source=${describePointer(setting.config)} poll=${
 			setting.config.pollMs / 1000
-		}s ` + `boot=${state.bootId.slice(0, 8)} older-content-setting=${content}`,
+		}s ` +
+			`boot=${state.bootId.slice(0, 8)} older-content-setting=${content} cache=${
+				setting.config.cacheDir ?? "off"
+			}`,
 	);
+	if (setting.config.cacheNote) console.warn(`[release] ${setting.config.cacheNote}`);
 	if (content !== "none") {
 		console.warn(
 			`[release] MAKY_CATALOG_CONTENT_${content.toUpperCase()} is set next to the manifest. The manifest wins: ` +

@@ -1,3 +1,5 @@
+import { isAbsolute } from "node:path";
+
 /**
  * Where the release manifest comes from, read from the environment at call time.
  *
@@ -5,6 +7,8 @@
  *                               process behaves exactly as before: `MAKY_CATALOG_CONTENT_*` and
  *                               `MAKY_FITMENT_*` decide everything.
  *   MAKY_RELEASE_POLL_SECONDS   how often the pointer is asked for again. Default 30, kept within 10–300.
+ *   MAKY_RELEASE_CACHE_DIR      optional, absolute. Where the last VERIFIED release is kept, so that a restart
+ *                               begins from it instead of from the older settings. Unset = nothing is written.
  *
  * Read at call time rather than at module scope because the deploy changes it with a restart, and a tested
  * module must be able to see a different value on the next call.
@@ -21,6 +25,10 @@ export type ReleaseConfig = {
 	readonly pollMs: number;
 	readonly manifestTimeoutMs: number;
 	readonly fileTimeoutMs: number;
+	/** Where the last verified release is kept across restarts; `null` keeps nothing, which is what it always was. */
+	readonly cacheDir: string | null;
+	/** Why the cache is off although it was asked for, for the boot line. */
+	readonly cacheNote: string | null;
 };
 
 export type ReleaseSetting =
@@ -40,6 +48,23 @@ function number(name: string, fallback: number, min: number, max: number): numbe
 	return Number.isFinite(raw) && raw > 0 ? Math.min(max, Math.max(min, raw)) : fallback;
 }
 
+/**
+ * A cache directory that is not an absolute path is a typo, not a place. It switches the cache off and says
+ * so; it does not switch release mode off, because a process that follows the manifest without a cache is
+ * better than one that follows nothing.
+ */
+function cacheSetting(): Pick<ReleaseConfig, "cacheDir" | "cacheNote"> {
+	const raw = process.env.MAKY_RELEASE_CACHE_DIR?.trim();
+	if (!raw) return { cacheDir: null, cacheNote: null };
+	if (!isAbsolute(raw)) {
+		return {
+			cacheDir: null,
+			cacheNote: "MAKY_RELEASE_CACHE_DIR is not an absolute path; nothing is kept across restarts",
+		};
+	}
+	return { cacheDir: raw, cacheNote: null };
+}
+
 export function releaseSetting(): ReleaseSetting {
 	const raw = process.env.MAKY_RELEASE_MANIFEST_URL?.trim();
 	if (!raw) return { kind: "off" };
@@ -57,6 +82,7 @@ export function releaseSetting(): ReleaseSetting {
 		return { kind: "invalid", reason: "MAKY_RELEASE_MANIFEST_URL must not carry credentials" };
 	}
 
+	const cache = cacheSetting();
 	return {
 		kind: "on",
 		config: {
@@ -70,6 +96,7 @@ export function releaseSetting(): ReleaseSetting {
 				60_000,
 			),
 			fileTimeoutMs: number("MAKY_RELEASE_FILE_TIMEOUT_MS", DEFAULT_FILE_TIMEOUT_MS, 5000, 300_000),
+			...cache,
 		},
 	};
 }

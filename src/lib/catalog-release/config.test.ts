@@ -15,6 +15,7 @@ const ENV = [
 	"MAKY_RELEASE_POLL_SECONDS",
 	"MAKY_RELEASE_MANIFEST_TIMEOUT_MS",
 	"MAKY_RELEASE_FILE_TIMEOUT_MS",
+	"MAKY_RELEASE_CACHE_DIR",
 ] as const;
 const SAVED = Object.fromEntries(ENV.map((key) => [key, process.env[key]]));
 
@@ -81,6 +82,8 @@ describe("the release setting", () => {
 			pollMs: 30_000,
 			manifestTimeoutMs: 10_000,
 			fileTimeoutMs: 60_000,
+			cacheDir: null,
+			cacheNote: null,
 		});
 	});
 
@@ -111,6 +114,39 @@ describe("the release setting", () => {
 		process.env.MAKY_RELEASE_MANIFEST_TIMEOUT_MS = "9999999";
 		process.env.MAKY_RELEASE_FILE_TIMEOUT_MS = "9999999";
 		expect(configured()).toMatchObject({ manifestTimeoutMs: 60_000, fileTimeoutMs: 300_000 });
+	});
+
+	it("keeps nothing across restarts unless a cache directory is named, and a blank one names nothing", () => {
+		process.env.MAKY_RELEASE_MANIFEST_URL = ADDRESS;
+		expect(configured()).toMatchObject({ cacheDir: null, cacheNote: null });
+
+		process.env.MAKY_RELEASE_CACHE_DIR = "   ";
+		expect(configured()).toMatchObject({ cacheDir: null, cacheNote: null });
+	});
+
+	it("keeps the last verified release in the directory it is given, when that is an absolute path", () => {
+		process.env.MAKY_RELEASE_MANIFEST_URL = ADDRESS;
+		process.env.MAKY_RELEASE_CACHE_DIR = "  /var/lib/maky-storefront  ";
+
+		expect(configured()).toMatchObject({ cacheDir: "/var/lib/maky-storefront", cacheNote: null });
+	});
+
+	it("takes a relative directory for a typo: no cache and a note for the boot line, but release mode stays on", () => {
+		process.env.MAKY_RELEASE_MANIFEST_URL = ADDRESS;
+		process.env.MAKY_RELEASE_CACHE_DIR = "var/cache";
+
+		const config = configured();
+
+		expect(config.cacheDir).toBeNull();
+		expect(config.cacheNote).toContain("MAKY_RELEASE_CACHE_DIR");
+		expect(config.cacheNote).toContain("not an absolute path");
+		expect(releaseEnabled()).toBe(true);
+	});
+
+	it("does not turn release mode on by itself: the cache is a part of following a manifest, not a way in", () => {
+		process.env.MAKY_RELEASE_CACHE_DIR = "/var/lib/maky-storefront";
+
+		expect(releaseSetting()).toEqual({ kind: "off" });
 	});
 
 	it("is read when asked, so the next call sees what the environment says now", () => {

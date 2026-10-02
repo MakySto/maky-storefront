@@ -163,7 +163,8 @@ export function manifestSelfSha256(document: Record<string, unknown>): string {
 		.digest("hex");
 }
 
-function parseContentEntry(market: string, raw: unknown): ContentEntry {
+/** One target's entry, as the manifest writes it. Exported because the restart cache keeps entries in the same shape. */
+export function parseContentEntry(market: string, raw: unknown): ContentEntry {
 	const entry = record(raw, `content.targets.${market}`);
 	if (entry.market !== undefined && entry.market !== market) {
 		refuse("manifest_invalid", `content.targets.${market} names market ${JSON.stringify(entry.market)}`);
@@ -184,7 +185,8 @@ function parseContentEntry(market: string, raw: unknown): ContentEntry {
 	};
 }
 
-function parseFitmentEntry(raw: unknown): FitmentEntry {
+/** The `fitment` entry, as the manifest writes it (the schema version sits under `contract`). */
+export function parseFitmentEntry(raw: unknown): FitmentEntry {
 	const entry = record(raw, "fitment");
 	const contract = record(entry.contract, "fitment.contract");
 	return {
