@@ -1,6 +1,6 @@
 # Storefront 4.5 — spoločný aktuálny stav
 
-Počiatočná snímka v2.0 · 4. 10. 2026 (text z balíka bez zmeny, okrem sekcie „Posledná delta“). Tento súbor je od založenia živý stav na integračnej vetve: aktualizuje sa tu, nie súčasne v Library, pamäti a ďalšom STATUS.md. Integračné handoffy ostávajú zdrojmi podrobných dôkazov.
+Počiatočná snímka v2.0 · 4. 10. 2026 (text z balíka; po založení sa mení riadok SF-2, bod o vetvách CoolZ pilotu a sekcia „Posledná delta“). Tento súbor je od založenia živý stav na integračnej vetve: aktualizuje sa tu, nie súčasne v Library, pamäti a ďalšom STATUS.md. Integračné handoffy ostávajú zdrojmi podrobných dôkazov.
 
 ## Pôvod údajov
 
@@ -13,6 +13,7 @@ ChatGPT pri príprave v2.0 čítal oba ZIP-y, ostatné prílohy, CLAUDE.md/AGENT
 - **M hlási produkciu:** `fab2985ab1d7df8703e53a6ff05df9b965dc8701`, BUILD_ID `F2fH6eFtARQRLHD7LGRR9`, build 1. 10. 21:23:35 UTC. Jeden obsluhujúci storefrontový proces.
 - **M hlási SYNC-1:** SF `claude/sync1-release-manifest @ a848d82`; CFM PR #46 `c98094a`; nenasadené. V2.0 znovu neoveroval hroty týchto dvoch kandidátov.
 - **M hlási kolo 8:** `feat/round8-category-root-urls @ b74a652` iba na VPS, nepushnuté.
+- **Vetvy CoolZ pilotu (4. 10.):** storefront `claude/storefront-45-coolz-pilot-7n5gmo` z `release/r1-thule-20261001 @ 6e0f378`, PR #3 proti tej istej vetve; CFM `claude/storefront-45-coolz-pilot-7n5gmo` z `master @ a226a28`, PR #47 proti `master`. Detail v poslednej delte nižšie.
 - Dlhodobé zosúladenie `main` je odporúčaná Git údržba. Nie je podmienkou začatia: nové vlákno má explicitný správny základ. Zmenu vzdialeného `main` tento balík nevykonal.
 
 ## Posledné hlásené dáta a funkcie
@@ -30,7 +31,7 @@ Vlastník je zodpovedný za dokončenie, nie trvalé výhradné oprávnenie. Pri
 
 | ID    | Stav / dnešný vykonávateľ podľa podkladov            | Najbližší užitočný výsledok                                                                                                                                                      |
 | ----- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SF-2  | Návrh; nový projekt koordinuje SF a CFM časť         | Jeden CoolZ cez skutočný prenos a kvalitný desktop/mobile render; potom všetkých päť modelov. SF-0c je potrebná príprava v tejto práci, nie samostatný projekt zelených kontrol. |
+| SF-2  | Pilot hotový na vetve, PR #3 (SF) a #47 (CFM)        | Kontrola validátora produkčného Saleoru bez zápisu (M), rozhodnutie o nasadení, potom prepínač a nová publikácia piatich popisov. Ďalšie bloky: SF-3. Náhľad a oba PR sú hotové. |
 | SF-1a | 56 úvodov pripravených; existujúce M                 | Doručiť už opravený obsah a ukázať dotknutú stránku bez nepravdivej vety. Neopakovať výrobu dát ani celý audit vozidiel.                                                         |
 | SF-1b | SYNC-1 kandidát; existujúce M + CFM                  | Dokončiť existujúcu implementáciu vrátane reálne automatickej publikácie. Konkrétne otvorené nálezy sú v handoffe §4; nie nový všeobecný audit.                                  |
 | SF-1c | CFM export, storefront prevzatie                     | Včas obnoviť dataset pred staleAfter.                                                                                                                                            |
@@ -45,6 +46,21 @@ Prvé odporúčané súbežné výsledky sú CoolZ a dokončenie už rozpracovan
 
 ## Posledná delta
 
-4. 10. 2026 — pripravený jednotný balík v2.0. Žiadny deploy, merge, zmena main, import pamäte ani pripojenie VPS sa touto prípravou nevykonali. Existujúce schválené úlohy pokračujú; tento súbor nepredstiera nové produkčné schválenie.
+**4. 10. 2026** — pripravený jednotný balík v2.0. Žiadny deploy, merge, zmena main, import pamäte ani pripojenie VPS sa touto prípravou nevykonali. Existujúce schválené úlohy pokračujú; tento súbor nepredstiera nové produkčné schválenie.
 
-5. 10. 2026 (vlákno CoolZ pilot) — projekt prevzal Goal a Project instructions v2.0. Do zdieľanej pamäte tohto cloudového projektu sa uložili `MEMORY.md` (index) a `decisions.md` (kvôli limitu 4 KB na súbor pamäte v dvoch súboroch, text nezmenený); nešlo o import do Codexu ani do lokálneho vlákna. Tento súbor je založený na vetve `claude/storefront-45-coolz-pilot-7n5gmo`, ktorá vychádza z `release/r1-thule-20261001 @ 6e0f378`. Nová vetva nemení stav SYNC-1, kola 8 ani 56 úvodov; tie ostávajú u existujúceho M/CFM.
+**4. 10. 2026 (vlákno CoolZ pilot)** — projekt prevzal Goal a Project instructions v2.0. Do zdieľanej pamäte tohto cloudového projektu sa uložili `MEMORY.md` (index) a `decisions.md` (kvôli limitu 4 KB na súbor pamäte v dvoch súboroch, text nezmenený); nešlo o import do Codexu ani do lokálneho vlákna. Tento súbor je založený na vetve `claude/storefront-45-coolz-pilot-7n5gmo`, ktorá vychádza z `release/r1-thule-20261001 @ 6e0f378`. Nová vetva nemení stav SYNC-1, kola 8 ani 56 úvodov; tie ostávajú u existujúceho M/CFM.
+
+**4. 10. 2026 (vlákno CoolZ pilot, výsledok)** — porovnávacia tabuľka CoolZ 19 / 32 / 40 / 65 / 83 je hotová ako integrovaný náhľad a pripravený release. Do živého katalógu sa nič nezapísalo a produkčný Saleor ani CFM sa nemenili.
+
+- **Čo zákazník dostane.** Po nasadení tohto kódu a po zapnutí prepínača v CFM sa na piatich stránkach CoolZ „Porovnanie modelov“ zmení zo zoznamu sedemnástich riadkov na tabuľku: stĺpec na model, tri časti, pás „Rovnaké pre všetky modely“, zvýraznený aktuálny model s menovkou „Tento model“, správne hodnoty a jednotky podľa návrhu. Na mobile ostáva prvý stĺpec na mieste a tabuľka sa posúva vodorovne od aktuálneho modelu. Kým CFM tabuľku nepošle, stránka vyzerá ako doteraz. Cena, sklad a ostatné produkty sa nemenia.
+- **Commity.** Storefront: `3a9dae7` tabuľka (čítanie bloku `table`, vykreslenie, 12 jazykov, kontrakt a spoločná ukážka), `57064ab` CLAUDE.md a AGENTS.md podľa REPO_RULES_DELTA, `6e28498` sandbox skripty a návod (`docs/storefront-4.5/sandbox.md`), `16c0a30` tento súbor. CFM: `2757cba` producent a prepínač `CFM_SALEOR_NATIVE_COMPARISON_TABLES` (štandardne vypnutý), `9baaa02` kontrakt `STOREFRONT_COMPARISON_TABLE_V1.md`.
+- **Jedna ukážka, nie dve schémy.** CoolZ 32 vygeneroval skutočný producent CFM; tie isté bajty sú v oboch repozitároch (`docs/contracts/comparison-table/` a `storefront_contract/`), pripnuté odtlačkom sha256 a git blob id, s provenance z čistého commitu. Profil vlastní storefront (konzument), ukážku CFM (producent).
+- **Overené.** Producent CFM → zápis do Saleoru 3.23.31 (zostaveného zo zdroja, sandbox) → nové čítanie → storefront v produkčnom builde: 5 z 5 modelov, bunky tabuľky bajt po bajte rovnaké, práve jedna tabuľka, zvýraznený správny model, všetky názvy modelov, riadkov a častí na stránke (`scripts/sandbox/roundtrip-coolz.mjs`). `next build` prešiel (88 stránok), `pnpm check:css` v poriadku, lint bez chýb, `tsc` čisté, `pnpm test:run` 3433 prešlo (59 nových). CFM: 62 nových testov, prepínač overený vo všetkých šiestich miestach. Desktop 1440 aj mobil 360 skontrolované v Chromiu, bez vodorovného posunu stránky. Nákup v sandboxe: stránka, košík, pokladňa krok 1 a 2 s dopravou, spolu 283,90 €; platba v sandboxe nie je.
+- **Zostáva a komu.**
+  1. **M:** na produkčnom Saleore spustiť bez zápisu čistú funkciu `clean_editorjs` na ukážke (príkaz je v `docs/contracts/comparison-table.md`). Verzia 3.22.50 blok `table` odmietla (TKS30011, 28. 7. 2026), záznam z 16. 9. 2026 hlási 3.23.31, ale tabuľku cez produkčný validátor nikto neprepustil. Kým to neprejde, prepínač ostáva vypnutý.
+  2. **Marek:** jedno súhrnné rozhodnutie o nasadení s presným účinkom vyššie. Potom vykonávateľ CFM zapne prepínač, znova vygeneruje a povýši päť dokumentov (`promote_coolz_v2_drafts`) a existujúcou cestou publikuje päť popisov; po publikácii prečíta jeden produkt cez dotaz storefrontu a porovná ho s ukážkou.
+  3. **Vykonávateľ CFM:** nebol dosiahnuteľný, preto je zadanie vypísané v `STOREFRONT_COMPARISON_TABLE_V1.md` (CFM PR #47) a závislosť ostáva. Aj tam: PG testy `test_pg_coolz_phase_c.py::test_v2_promotion_*` padajú už na `master @ a226a28` (prázdny `render_dependency_hash` vo fixture), preto treba pred zapnutím overiť skutočnú dráhu povýšenia.
+  4. **Preklady a Dashboard:** tok prekladu popisov musí zachovať tvar tabuľky (riadky, stĺpce, `<mark>`, ✓ ✗ —); do overenia na skutočnom Dashboarde sa popisy CoolZ v ňom neupravujú. Pilot beží na trhu SK.
+  5. **Ďalšie:** cenový riadok v pilote nie je (návrh ho má len pri porovnaní odvodenom zo SKU); ostatné bloky podľa SF-3.
+- **Nálezy mimo rozsahu, nezmenené.** Produkčný build s katalógom bez jediného výrobcu padá (`src/lib/brands/catalog.ts` zostaví prázdny dotaz `BrandCounts`); v produkcii výrobcovia sú. Stránka pokladne v `next dev` (Turbopack) padá na `createContext` v generovanom checkout kóde, produkčný build je v poriadku. `pnpm dev` (webpack) padá na `node:crypto` v tomto prostredí. `pnpm i18n:check` hlási `checkout.addressForm.delete`. Štyri CFM testy (`closure_duplicates_and_seo` ×2, `source_pack_and_publication_path` ×2) padajú už na základe.
+- **Nedotknuté.** SYNC-1 (otvorené nálezy o hranici verzie po reštarte a o súbehu zápisu manifestu ostávajú u M/CFM), kolo 8 a 56 úvodov tento pilot nemení; s CFM PR #46 (SYNC-1) zdieľa PR #47 jediný súbor, `config/settings/base.py`, na iných miestach.
