@@ -122,12 +122,57 @@ Skript prepíše súbory aj `PROVENANCE.json` tu, kópie v CFM a vypíše odtla�
        clean_editorjs(json.load(open(f"{name}.description.json")))
    ```
    Obe musia vrátiť dokument s rovnakými blokmi.
-2. **Produkčné atribúty chladničiek.** Šablóna zoskupuje parametre a berie fakty z atribútov `cfm:attribute:<kľúč>`. Sandbox atribúty (`scripts/sandbox/coolz-attributes.mjs`) sú **predpoklad**: kľúče a typy sú tie, ktoré CFM zapisuje (`ATTRIBUTE_TO_SPEC`), čísla sú z manifestu, ale názvy a textové hodnoty sú napísané po slovensky ručne. Uložený text niektorých riadkov je pravdepodobne anglický manifest (`compressor`, `2 wire baskets | 1 rack`). Kým sa neprečítajú skutočné riadky cez `ro_prod`, náhľad nedokazuje, ako bude vyzerať živá stránka. Zoskupenie spadne na plochý zoznam, keď sa nenájdu aspoň tri známe riadky; riadok výrobcu ide do „Ďalšie parametre“.
-3. **Poradie nasadenia a prepínač.** Najprv storefront (čítačka a šablóna); s vypnutým prepínačom v CFM sa nezmení žiadny popis. Zmení sa ale zápis technických parametrov produktov, ktoré majú atribúty chladničky (päť CoolZ): jednotky pri `rated_power` (W), `net_volume` (l), `interior_height` (mm), `input_current_ac` (A) a `temperature_min`/`temperature_max` (°C), „3 roky“ namiesto „3“ pri `warranty_years` a zoznam namiesto „a | b“ pri `cooling_modes` a `interior_components`, ak sú hodnoty čisté čísla, resp. text oddelený `|` (`src/lib/product-attributes.ts`). Text, ktorý nie je čisté číslo, sa nemení, takže jednotka sa nezdvojí. Potom CFM zapne `CFM_SALEOR_MAKY_CONTENT_TEMPLATES` a znova publikuje popisy piatich chladničiek. Ide o jediné produkčné rozhodnutie: **Marek** musí rozhodnúť s presným zákazníckym účinkom, ktorý je v zadaní PR. Do vtedy existuje iba integrovaný náhľad v sandboxe.
+2. **Produkčné atribúty chladničiek.** Šablóna zoskupuje parametre a berie fakty z atribútov `cfm:attribute:<kľúč>`. Sandbox atribúty (`scripts/sandbox/coolz-attributes.mjs`) sú **predpoklad**: kľúče a typy sú tie, ktoré CFM zapisuje (`ATTRIBUTE_TO_SPEC`), čísla sú z manifestu, ale názvy a textové hodnoty sú napísané po slovensky ručne. Uložený text niektorých riadkov je pravdepodobne anglický manifest (`compressor`, `2 wire baskets | 1 rack`). Rozhodujú iba `externalReference` atribútov a to, či `volume`, `rated_power`, `temperature_min` a `temperature_max` sú čisté čísla a `bluetooth_app_control` je BOOLEAN; názvy a textové hodnoty sú kozmetika a stránka ich ukazuje tak, ako ich má dnes. Kým sa skutočné riadky neprečítajú (`pnpm check:fridge`, časť „Nasadenie po rozhodnutí“ nižšie, bez zápisu), náhľad nedokazuje, ako bude vyzerať živá stránka. Zoskupenie spadne na plochý zoznam, keď sa nenájdu aspoň tri známe riadky; riadok výrobcu ide do „Ďalšie parametre“.
+3. **Poradie nasadenia a prepínač.** Najprv storefront (čítačka a šablóna); s vypnutým prepínačom v CFM sa nezmení žiadny popis. Zmení sa ale zápis technických parametrov produktov, ktoré majú atribúty chladničky (päť CoolZ): jednotky pri `rated_power` (W), `net_volume` (l), `interior_height` (mm), `input_current_ac` (A) a `temperature_min`/`temperature_max` (°C), „3 roky“ namiesto „3“ pri `warranty_years` a zoznam namiesto „a | b“ pri `cooling_modes` a `interior_components`, ak sú hodnoty čisté čísla, resp. text oddelený `|` (`src/lib/product-attributes.ts`). Text, ktorý nie je čisté číslo, sa nemení, takže jednotka sa nezdvojí. Potom CFM zapne `CFM_SALEOR_MAKY_CONTENT_TEMPLATES` a znova publikuje popisy piatich chladničiek. **Marek rozhodol 4. 10. 2026 o 19:30 UTC „Áno, po kontrole“** (karta „Nasadiť šablónu autochladničky na päť stránok CoolZ?“, v jej texte bol presný zákaznícky účinok); postup a kontroly sú v časti „Nasadenie po rozhodnutí“ nižšie.
 4. **Preklady.** Tok prekladu popisov musí zachovať `id` blokov a `version` dokumentu a tvar každého bloku. Kým sa neprekladá, zahraničné trhy majú slovenský text. Ak preklad značky stratí, dokument sa vykreslí ako obyčajné bloky: nič sa nestratí, len sa nenakreslia roly. Pilot beží na trhu SK.
 5. **Saleor Dashboard.** Neoverené, či uloženie produktu v Dashboarde zachová `id` blokov a `version`; Dashboard má vlastný Editor.js. Kým to **M** neoverí na skutočnom Dashboarde, popisy CoolZ sa tam neupravujú.
 6. **Revalidácia.** Stránka drží čítanie zo Saleoru v cache so značkou `product:<kanál>:<jazyk>:<slug>`; nový popis sa objaví do niekoľkých minút a jednej-dvoch návštev, alebo hneď po `POST /api/revalidate`. CFM to pri publikácii nevolá, takže je potrebné ju vyvolať ručne.
 7. **Text tipu.** Tip CoolZ je v zdroji napísaný v tykaní („vychlaď“, „nebudeš“), kým obchod vyká. Mení sa v zdrojovom dokumente v CFM, nie v storefronte.
+
+## Nasadenie po rozhodnutí
+
+**Rozhodnutie.** Marek 4. 10. 2026 o 19:30 UTC: „Áno, po kontrole“ na karte „Nasadiť šablónu autochladničky na päť stránok CoolZ?“. Platí pre túto šablónu na piatich CoolZ (19, 32, 40, 65, 83), nie pre iné produkty ani iné šablóny. Zákaznícky účinok, ktorý schválil, má dve časti:
+
+- **A. Nasadenie storefrontu** (bez zásahu CFM): technické parametre piatich CoolZ sa píšu s jednotkami (`60 W`, `287 mm`, `0,26 A`, `−20 °C`, `3 roky`), režimy chladenia a vnútorná výbava ako zoznam. Popisy sa nemenia.
+- **B. Zapnutie prepínača a nová publikácia piatich popisov:** navrhnuté bloky v popise, pás kľúčových faktov pod nákupným boxom, zoskupené parametre a „Porovnanie modelov“ ako vlastná karta s odkazom v navigácii stránky.
+
+„Po kontrole“ sú dve kontroly nižšie. Keď niektorá zlyhá tak, že zákazník by videl niečo iné než v časti B, publikácia sa zastaví a vráti sa s rozdielom: je to iný účinok, než Marek schválil.
+
+**Poradie.** Každý produkčný krok robí relácia na príslušnom VPS a vyžaduje Marekovo „áno“ v jej vlákne.
+
+1. **Kontrola produkčných atribútov** a **kontrola Saleoru** (nižšie), obe bez zápisu a pred akýmkoľvek nasadením: od atribútov závisí aj časť A zákazníckeho účinku, lebo jednotky dostanú iba čisté čísla.
+2. **Storefront.** Zlúčiť PR #6 merge commitom, nie squashom (CFM pripína `a347602`), nasadiť `./scripts/ops/deploy-production.sh`. Po nasadení: CoolZ 32 má pri príkone `60 W` (nie `60`) a pri záruke `3 roky`; cena, sklad, popis a stránka iného produktu sú rovnaké.
+3. **CFM.** Release s párovým PR (musí obsahovať aj to, čo na CFM serveri naozaj beží; pozri `STOREFRONT_MAKY_CONTENT_V1.md` v CFM). `CFM_SALEOR_MAKY_CONTENT_TEMPLATES=1` a `CFM_SALEOR_NATIVE_COMPARISON_TABLES=1` iba pre beh publisheru, potom nová publikácia popisov cez TAZAR: **CoolZ 32 (TK20410) prvá**, skontrolovať skutočnú stránku (nižšie), potom TK20409, TK20411, TK20412 a TK20413.
+4. **Návrat.** Prepínač vypnúť a päť popisov znova publikovať: popisy sa vrátia na dnešný tvar z toho istého uloženého dokumentu. Jednotky pri parametroch sú vec storefrontu; vrátiť ich znamená vrátiť jeho build.
+
+### Kontrola produkčných atribútov
+
+```bash
+node --env-file=/opt/storefront/.env scripts/checks/fridge-attributes.mjs --verbose
+```
+
+Skript (`pnpm check:fridge`) pošle jeden GraphQL `query` bez tokenu, nič nezapisuje, nepotrebuje build a adresu nevypisuje. Je v PR #6, takže sa spustí z ľubovoľného checkoutu s touto vetvou (po zlúčení aj z `/opt/storefront`; nič nestavia ani nerestartuje). Dá sa spustiť aj nad uloženou odpoveďou (`--from-file`) a `--json` dá strojový výstup. Zákaznícky účinok A aj B platí, keď pre **každú** z piatich CoolZ (SKU TK20409 až TK20413) platí:
+
+- kanál `sk-eur` ju vráti v kategórii `autochladnicky`;
+- `cfm:attribute:volume`, `cfm:attribute:rated_power`, `cfm:attribute:temperature_min` a `cfm:attribute:temperature_max` sú riadky s názvom a **čistým číslom** (`60`, `-20`, `0,26`), nie textom („60 W“, „-20 °C“): iba čisté číslo dostane jednotku a tvorí fakt v páse;
+- aspoň tri riadky sú pomenované šablónou (v praxi ich je viac ako dvadsať); pod tri ostanú parametre jedným plochým zoznamom;
+- `cfm:attribute:bluetooth_app_control` je BOOLEAN. „Nie“ alebo chýbajúci riadok je iba poznámka: pás má vtedy menej faktov.
+
+`PASS` = pokračovať. `FAIL` pomenuje produkt a riadok; hodnoty sa opravujú v zdroji (CFM), nie v storefronte, a ak by oprava zmenila zákaznícky účinok, vráť sa s rozdielom. Textové hodnoty („Kompresor“ alebo „compressor“, „2 drôtené koše | 1 rošt“) skript nesúdi: stránka ich ukáže tak, ako ich má dnes, preto si ich pozri vo výstupe `--verbose`. Skript číta, čo šablóna pomenúva, priamo z `src/lib/product-templates.ts` a jeho test (`src/lib/fridge-attributes-script.test.ts`) drží zhodu s kódom stránky.
+
+### Kontrola Saleoru
+
+Čistá funkcia `clean_editorjs` na oboch ukážkach (príkaz je pri bode 1 v časti „Čo dokázané nie je“ vyššie) v `manage.py shell` produkčného Saleoru; nezapisuje. Obe musia vrátiť dokument s rovnakými blokmi; jediný povolený rozdiel je `rel="noopener noreferrer"`, ktoré Saleor pridá k odkazom.
+
+### Kontrola živej stránky
+
+Po publikácii CoolZ 32. CFM stránku nerevaliduje, takže nová verzia sa objaví po niekoľkých minútach alebo hneď po `POST /api/revalidate`.
+
+```bash
+curl -s https://maky.store/sk/<slug> | grep -o 'maky-callout-tip\|maky-benefits\|maky-inbox\|maky-features\|maky-sg\|id="model-comparison"\|aria-label="Hlavné vlastnosti"' | sort | uniq -c
+```
+
+`<slug>` vypíše skript pri každom produkte. Pred publikáciou nie je v stránke ani jeden z týchto reťazcov; po nej je každý aspoň raz (overené na vykreslení zo sandboxu). V `pm2 logs maky-storefront` nesmie pribudnúť riadok `[maky-content]`. Cena, sklad a stránka iného produktu sú rovnaké ako pred publikáciou. Potom pohľad v prehliadači na desktope aj mobile: automatická kontrola nevidí napríklad bezfarebné tlačidlo (CLAUDE.md §4.2).
 
 ## Čo to nerobí
 
