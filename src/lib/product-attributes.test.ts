@@ -3,6 +3,7 @@ import {
 	formatAttributeValue,
 	formatOuterDimensions,
 	formatProductAttributeValue,
+	formatTemperatureRange,
 	getAttributeUnit,
 	type AttributeInput,
 } from "./product-attributes";
@@ -152,5 +153,80 @@ describe("formatOuterDimensions", () => {
 	it("is null when a value is not numeric", () => {
 		const bad = [dims[0], dims[1], attr("cfm:attribute:outer_height", ["n/a"])];
 		expect(formatOuterDimensions(bad, SK)).toBeNull();
+	});
+});
+
+describe("a car fridge's attributes", () => {
+	const fridge = (key: string, values: string[], extra: Partial<AttributeInput["attribute"]> = {}) =>
+		attr(`cfm:attribute:${key}`, values, extra);
+
+	it("carry the unit of the specification key CFM wrote them from", () => {
+		const unit = (key: string) => getAttributeUnit(fridge(key, []).attribute);
+		expect(unit("rated_power")).toBe("W");
+		expect(unit("net_volume")).toBe("l");
+		expect(unit("interior_height")).toBe("mm");
+		expect(unit("input_current_ac")).toBe("A");
+		expect(unit("temperature_min")).toBe("°C");
+		expect(unit("temperature_max")).toBe("°C");
+		// A text with its own unit inside ("5 / 2,5") has none to add.
+		expect(unit("input_current_dc")).toBeUndefined();
+	});
+
+	it("prints a number with the unit and the market's decimal comma", () => {
+		expect(formatProductAttributeValue(fridge("rated_power", ["60"]), SK)).toEqual([`60${NBSP}W`]);
+		expect(formatProductAttributeValue(fridge("input_current_ac", ["0.26"]), SK)).toEqual([`0,26${NBSP}A`]);
+	});
+
+	it("prints a count of years with the market's plural, and only when it is given one", () => {
+		const years = (count: number) => `${count} roky`;
+		const warranty = fridge("warranty_years", ["3"]);
+		expect(formatProductAttributeValue(warranty, SK, undefined, years)).toEqual(["3 roky"]);
+		// Without the plural the number stays what it was: no invented unit.
+		expect(formatProductAttributeValue(warranty, SK)).toEqual(["3"]);
+		// Only the attribute that counts years is written so; a text value is left alone.
+		expect(formatProductAttributeValue(fridge("rated_power", ["3"]), SK, undefined, years)).toEqual([
+			`3${NBSP}W`,
+		]);
+		expect(
+			formatProductAttributeValue(fridge("warranty_years", ["do konca roka"]), SK, undefined, years),
+		).toEqual(["do konca roka"]);
+	});
+
+	it("prints a list CFM keeps as one joined text as the list it is", () => {
+		const modes = fridge("cooling_modes", ["Rýchle chladenie | Úsporný režim"], { inputType: "PLAIN_TEXT" });
+		expect(formatProductAttributeValue(modes, SK)).toEqual(["Rýchle chladenie", "Úsporný režim"]);
+		const one = fridge("interior_components", ["1 rošt"], { inputType: "PLAIN_TEXT" });
+		expect(formatProductAttributeValue(one, SK)).toEqual(["1 rošt"]);
+		// Any other text keeps its bar: a separator is not guessed from a value.
+		const other = fridge("climate_class", ["T | ST"], { inputType: "PLAIN_TEXT" });
+		expect(formatProductAttributeValue(other, SK)).toEqual(["T | ST"]);
+	});
+});
+
+describe("formatTemperatureRange", () => {
+	const join = (min: string, max: string) => `${min} až ${max}`;
+	const ends = (min: string | null, max: string | null): AttributeInput[] => [
+		...(min === null ? [] : [attr("cfm:attribute:temperature_min", [min])]),
+		...(max === null ? [] : [attr("cfm:attribute:temperature_max", [max])]),
+	];
+
+	it("writes both ends as one range, with a real minus and the plus the range crosses zero with", () => {
+		expect(formatTemperatureRange(ends("-20", "20"), SK, join)).toEqual({
+			full: `\u221220${NBSP}°C až +20${NBSP}°C`,
+			short: `\u221220 až +20${NBSP}°C`,
+		});
+	});
+
+	it("has no plus when the range does not cross zero", () => {
+		expect(formatTemperatureRange(ends("2", "8"), SK, join)?.short).toBe(`2 až 8${NBSP}°C`);
+		expect(formatTemperatureRange(ends("-25", "-5"), SK, join)?.short).toBe(`\u221225 až \u22125${NBSP}°C`);
+	});
+
+	it("is not a range with one end missing, an end that is not a number, or the ends the wrong way round", () => {
+		expect(formatTemperatureRange(ends("-20", null), SK, join)).toBeNull();
+		expect(formatTemperatureRange(ends(null, "20"), SK, join)).toBeNull();
+		expect(formatTemperatureRange(ends("-20", "podľa režimu"), SK, join)).toBeNull();
+		expect(formatTemperatureRange(ends("20", "-20"), SK, join)).toBeNull();
+		expect(formatTemperatureRange([], SK, join)).toBeNull();
 	});
 });
