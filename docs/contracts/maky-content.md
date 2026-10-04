@@ -132,7 +132,7 @@ Skript prepíše súbory aj `PROVENANCE.json` tu, kópie v CFM a vypíše odtla�
 
 ## Nasadenie po rozhodnutí
 
-**Stav (4. 10. 2026, 21:30 UTC): vykonané pre všetkých päť CoolZ.** Storefront je nasadený od 20:34 UTC, CFM beží z release `f02b6d6` od 21:09 UTC, popisy sa publikovali o 21:12 (CoolZ 32) a o 21:19 UTC (ostatné štyri) a stránky sú skontrolované na živom webe. Postup nižšie ostáva ako návod pre ďalšiu šablónu a pre návrat. Texty parametrov (anglické hodnoty atribútov) sa nezverejnili: pozri `docs/storefront-4.5/current-state.md`.
+**Stav (4. 10. 2026, 21:51 UTC): vykonané pre všetkých päť CoolZ.** Storefront je nasadený od 20:34 UTC, CFM beží z release `f02b6d6` od 21:09 UTC a od 21:46 UTC z `f76d64c5` (`f02b6d6` + PR #49), popisy sa publikovali o 21:12 (CoolZ 32) a o 21:19 UTC (ostatné štyri), slovenské texty parametrov (predtým anglické hodnoty atribútov) o 21:49 UTC a stránky sú skontrolované na živom webe. Postup nižšie ostáva ako návod pre ďalšiu šablónu a pre návrat. Podrobnosti: `docs/storefront-4.5/current-state.md`.
 
 **Rozhodnutie.** Marek 4. 10. 2026 o 19:30 UTC: „Áno, po kontrole“ na karte „Nasadiť šablónu autochladničky na päť stránok CoolZ?“. Platí pre túto šablónu na piatich CoolZ (19, 32, 40, 65, 83), nie pre iné produkty ani iné šablóny. Zákaznícky účinok, ktorý schválil, má dve časti:
 
