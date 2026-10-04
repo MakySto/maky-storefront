@@ -6,6 +6,9 @@ before any design/UI task.
 
 > Companion reference: `docs/design/storefront-analysis-20260621.md` is the read-only
 > audit of the current token/component/i18n state. Read it before token or component work.
+>
+> Live project state (what is done, what is open, who owns what):
+> `docs/storefront-4.5/current-state.md`.
 
 ## 1. Project context
 
@@ -42,33 +45,36 @@ Practical rule: before changing or "redesigning" any existing component, FIRST r
 real implementation in code. Do not rebuild it from scratch in Figma. Figma mirrors and
 documents the current system and is a sketch space for changes.
 
-**Figma is a one-way mirror, not a write target (from design analysis 2026-06-21):**
-There is NO MCP tool that writes Figma variables, and the account is Pro tier (no
-Enterprise Variables REST API). Mirror tokens code→Figma by generating a versioned
-`design/tokens.json` from `brand.css` and importing it via the Tokens Studio plugin at
-milestone cadence. The conversion is OKLCH→sRGB (lossy) and one-way — Figma never
-becomes the source.
+**Figma mirrors the code; it is not a prerequisite for it.** `src/styles/brand.css` stays the
+source of truth and tokens flow code→Figma only: the conversion is OKLCH→sRGB (lossy), so Figma
+never becomes the source. The official Figma MCP exposes `use_figma`, which runs Plugin API code
+in a file and whose documented scope includes creating variables, components and frames (connection
+checked 2026-09-22: Maky-88, Pro, Full seat), so writing to Figma is possible when a task calls
+for it. The older route also works: a versioned `design/tokens.json` generated from `brand.css`
+and imported with the Tokens Studio plugin at milestone cadence. Implementation does not wait for
+either, and a Figma sync is not a reason to order a new audit of the Figma system.
 
-Update 2026-09-22: the official Figma MCP now exposes `use_figma`, which runs Plugin API
-code in a file and whose documented scope includes creating variables, components and
-frames. The connection works (Maky-88, Pro, Full seat). It has not yet been used to write
-variables here; until it has, the Tokens Studio route above stands. Either way the mirror
-stays one-way.
+## 3. Delivery workflow
 
-## 3. Design-change workflow
+Start with the requested customer or operator outcome and read the relevant existing
+implementation. Use the agreed visual/written intent. Show a representative result in the
+real application early, before expanding the implementation or its test matrix. A smaller
+delivery reduces scope, not quality.
 
-For any non-trivial UI change:
+A task to implement or fix an outcome includes the necessary technical decisions, related
+code/test changes, targeted validation, commits, pushing the working branch, and a pull
+request. Do not require a second approval for an ordinary step or corrective commit inside
+that task. A task that includes deployment includes completing deployment and checking its
+effect through the established runbook.
 
-1. Read the existing code (component, tokens, props, where it is used).
-2. Take design intent from a Figma frame or a written spec.
-3. Propose an implementation plan and wait for approval.
-4. Implement in a small, single-purpose branch.
-5. Run validation (see §11).
-6. Capture desktop + mobile screenshots and summarize differences vs. intent.
-7. Update `docs/design/` or Figma documentation if relevant.
+Ask the owner only for a missing business decision, material new cost, irreversible external
+effect, or work outside the assigned scope. A review-only request does not authorize
+unrelated production changes.
 
-Prefer small branches and small commits. For significant edits, show the plan/diff
-before applying.
+Use branches and intermediate commits to preserve work. Coordinate overlapping changes and
+one production switch at a time. Choose parallelism according to useful work and actual
+capacity, not a fixed agent quota. Report the delivered outcome and its evidence, not only a
+count of checks.
 
 ## 4. Color semantics (anchored to existing OKLCH tokens)
 
@@ -107,43 +113,38 @@ layer". Concretely:
   (`--action-primary/secondary/ghost`); status `error` exists as **`danger`**
   (`--color-status-danger*`). Use the real names; add thin aliases if a generic name is
   required.
-- **`promo` is the only genuinely missing color category** — add it (mirror the
-  `price`/`status` pattern: base/-bg/-border + on-promo).
-- **NEVER rename an existing token.** Tailwind v4 generates utilities from token _names_;
+- **`promo` exists** (`--color-promo`, `-bg`, `-border`, `-solid` and `--color-on-promo` in
+  `brand.css`). Use it; do not add it a second time.
+- **A rename must not break existing usage.** Tailwind v4 generates utilities from token _names_;
   renaming silently kills every existing `bg-action-primary` / `text-danger` usage with
   **no build error** and no type-check (class strings are hand-rolled `cn()` objects, no
-  `cva`). Only ADD aliases.
+  `cva`). When a name has to change, update every consumer in the same change or keep the old
+  name as a compatible alias, and check in the real application that the touched components
+  still paint.
 
-### 4.2 The shadcn → semantic bridge (known context — undefined-token wall)
+### 4.2 The shadcn → semantic bridge (landed)
 
-**Status 2026-09-22: the bridge has landed** — `brand.css` maps the shadcn names in its
-`@theme inline` block (search `--color-primary:`), and `promo` exists (`--color-promo:`).
-What follows is the history and still the reason to check that any NEW token name
-actually resolves before trusting a build.
+The bridge is in place: `brand.css` maps the shadcn names that the primitives and much of
+`account/*`, `pdp/*` and `cart/*` use (`bg-primary`, `text-muted-foreground`, `bg-card`,
+`bg-background`, `bg-destructive`, `border-input`, `ring-ring`, …) onto the existing semantics in its
+`@theme inline` block (search `--color-primary:`). Do not add it a second time, and do not treat it as
+a step that has to come before component work. Its history is in
+`docs/design/storefront-analysis-20260621.md` §6.4.
 
-~70 component files — every shadcn UI primitive (`Button`, `Badge`, `Input`,
-`Checkbox`, `Sheet`, `Accordion`, `Carousel`, `DropdownMenu`) plus much of `account/*`,
-`pdp/*`, `cart/*` — use a shadcn token vocabulary (`bg-primary`, `text-muted-foreground`,
-`bg-card`, `bg-background`, `bg-destructive`, `border-input`, `ring-ring`) that is **not
-defined** in `brand.css`. Under Tailwind v4 an undefined `--color-*` emits **no rule**, so
-those utilities render **colorless** (this is the "ghost add-to-cart button":
-`bg-primary` with no `--color-primary` → `background-color: rgba(0,0,0,0)`).
+What still matters: under Tailwind v4 an undefined `--color-*` emits **no rule**, so a utility whose
+token does not resolve renders colorless while the build stays green (this was the "ghost add-to-cart
+button": `bg-primary` with no `--color-primary` → `background-color: rgba(0,0,0,0)`). When a component
+uses a token name for the first time, check that it resolves in `brand.css`. When a component that still
+carries raw palette literals (`bg-green-50`, `bg-red-50`) is touched, move it to the matching
+`status-*` tokens.
 
-The fix is a **token change, not a component change**: one additive `@theme inline` block
-mapping the shadcn names onto existing semantics (`--color-primary: var(--action-primary)`,
-`--color-destructive: var(--color-status-danger)`, `--color-background: var(--surface-primary)`,
-`--color-muted-foreground: var(--text-tertiary)`, `--color-input: var(--border-default)`,
-`--color-ring: var(--focus-ring)`, …). This **Step-0 bridge un-breaks all ~70 files at
-once and must land before any component redesign.** Separately, the defined-but-unused
-`status-*` tokens should replace raw `bg-green-50`/`bg-red-50` literals during
-per-component work. Full bridge in `docs/design/storefront-analysis-20260621.md` §6.4.
+### 4.3 Component work
 
-### 4.3 Component sequence (dependency order)
-
-Redesign in dependency-topological order, NOT starting at ProductCard (it composes the
-broken primitives): **token bridge → Badge → Button → new `Price` primitive →
-ProductCard → fan out**. Vehicle-selector / CompatibilityBox comes after primitives,
-built against a **mocked** fitment data shape (real fitment data is a parallel track).
+No order of components is prescribed. The primitives are unblocked (§4.2), so a task starts where its
+customer outcome is. A change to a shared primitive (`Badge`, `Button`, the price display, …) reaches
+every card, PDP block and cart line that composes it, so look at those consumers in the real
+application. For the vehicle selector and the compatibility box, read the real fitment implementation
+(`src/lib/fitment`) first and build against its data shape, not an invented one.
 
 ## 5. Header rules
 
@@ -194,8 +195,9 @@ Compatibility badge states:
 - "Vyberte vozidlo" — when no vehicle is selected and the product is vehicle-specific.
 - "Univerzálny produkt" — for universal products.
 
-For roof-rack bundles, communicate the complete set:
-"Kompletná zostava: tyče + pätky + kit".
+For roof-rack bundles, communicate the complete set as the product data shows it: the bars, the
+feet and the fitting kit that are really in the bundle. "Kompletná zostava: tyče + pätky + kit" is
+the wording only when all three are in it; a set with another composition says what it contains.
 
 ## 8. Product detail (PDP) rules
 
@@ -248,20 +250,24 @@ satisfies "easily, directly and permanently accessible" under zákon 22/2004 and
 Directive 2000/31/EC Art. 5. **Do not reintroduce the footer block, and do not remove
 those two links without moving the details somewhere equally reachable.**
 
-## 10. Technical restrictions
+## 10. Task scope and integrations
 
-Do NOT change the following without explicit approval:
+An assigned storefront feature or fix may include necessary changes to GraphQL, cart,
+checkout, CFM/Payload consumers, routing, locale handling, tests and related configuration.
+These are not separately forbidden merely because they cross a file or module boundary.
+Preserve each system's data ownership and coordinate with the current implementer when work
+overlaps.
 
-- Saleor integration / GraphQL query structure
-- checkout logic
-- cart logic
-- CFM integration
-- channel / routing / i18n locale logic
-- environment / secrets
-- deployment configuration
+Use appropriate development, sandbox or VPS access for the task. Do not mistake a missing
+capability for a permanent policy restriction. Production activation and genuine business
+effects must be part of the assigned scope; they are not incidental side effects of a
+preview or a general review.
 
-Do NOT copy XStore code or assets. XStore is a layout/UX reference only.
-Do NOT add new dependencies solely for styling without approval.
+Resolve routine engineering choices yourself. A dependency is not prohibited by category,
+but must serve the requested result without unnecessary complexity, material unapproved cost
+or license conflict.
+
+Do not copy XStore code or assets. XStore remains a layout/UX reference only.
 
 ## 10.1 The repository is a public fork — a leaked secret can never be unleaked
 
@@ -290,35 +296,42 @@ Practical consequences:
   remote and the deploy path, delete the fork. Treat it as a planned operation, never as a fix for
   a leak that already happened.
 
-## 11. Validation requirements
+## 11. Verification proportional to the change
 
-For UI changes:
+Use relevant existing tests and add regression coverage for the behavior being changed. Type
+checks, lint, integration builds, locale parity, accessibility checks and wider suites are
+selected by the impact of the change. An inexpensive existing suite may run in full; shared
+behavior needs broader coverage than an isolated copy or spacing change.
 
-- run lint
-- run typecheck
-- run build
-- capture desktop + mobile screenshots where possible
-- summarize visual differences vs. the design intent
-- list changed files
+Exercise the decisive user/data path early. Inspect UI in the real application on desktop
+and mobile. A fixture preview is not proof of a producer-to-storefront integration; a loaded
+hash is not proof of updated HTML. Check the actual output that matters to the task.
 
-Use small branches and small commits. Follow the project's established commit-hook
-convention.
+Reuse evidence when its code, inputs and environment remain relevant. Do not regenerate
+unchanged artifacts, repeat complete audits, or ask multiple reviewers to rerun the same
+commands merely to increase confidence without a specific concern. Do not weaken or skip
+failing tests just to get a green result.
 
-Additional gates (from design analysis 2026-06-21):
+Finish when the agreed outcome is demonstrated and relevant regressions are addressed. A
+specific unresolved defect can justify more verification. A speculative unrelated concern
+does not block this delivery; record it separately.
 
-- **i18n 12-locale parity check (en-GB/gb-gbp market removed 2026-07-20)** whenever copy changes — all message files must stay
-  structurally parallel — the invariant is that **all 12 files are identical** (missing 0 / extra 0),
-  NOT a fixed count (it drifts as keys are added/removed; ~219 as of 2026-06-30). next-intl is NOT type-augmented, so missing
-  keys fail silently at runtime, not at build. Parity script:
+Facts that decide what a check proves (not a checklist to run every time):
+
+- **Locale parity.** When copy changes, all 12 message files must stay structurally parallel: the
+  invariant is that they are identical (missing 0 / extra 0), not a fixed count (it drifts as keys are
+  added or removed; en-GB/gb-gbp market removed 2026-07-20). next-intl is NOT type-augmented, so a
+  missing key fails silently at runtime, not at build. Parity script:
   ```bash
   node -e 'const fs=require("fs");function flat(o,p=""){let r=[];for(const k of Object.keys(o)){const key=p?p+"."+k:k;o[k]&&typeof o[k]=="object"&&!Array.isArray(o[k])?r=r.concat(flat(o[k],key)):r.push(key)}return r}const d="src/i18n/messages/",L=["cs-CZ","de-AT","de-DE","en-CA","en-US","es-ES","fr-FR","hu-HU","it-IT","pl-PL","ro-RO","sk-SK"],ref=new Set(flat(JSON.parse(fs.readFileSync(d+"en-US.json"))));for(const l of L){const k=new Set(flat(JSON.parse(fs.readFileSync(d+l+".json"))));console.log(l,"missing",[...ref].filter(x=>!k.has(x)),"extra",[...k].filter(x=>!ref.has(x)))}'
   ```
-- **Manual light-only visual check.** Dark mode is NOT wired — there is no `.dark` block
-  (`color-scheme: light` is hardcoded), so any `dark:` variant in components is dead.
-  Do not rely on or add `dark:` variants until dark mode is intentionally introduced.
-- **`next build` passing does NOT certify token correctness.** Tailwind v4 silently emits
-  nothing for an undefined `--color-*`; a colorless utility passes the build. Visually
-  verify that touched components actually paint (see §4.2).
+- **Light only.** Dark mode is NOT wired: there is no `.dark` block and `color-scheme: light` is
+  hardcoded, so any `dark:` variant in a component is dead. Do not rely on or add `dark:` variants
+  until dark mode is intentionally introduced.
+- **A passing `next build` does NOT certify token correctness.** Tailwind v4 silently emits nothing
+  for an undefined `--color-*`; a colorless utility passes the build. Look at the touched components in
+  the real application to see that they paint (§4.2).
+- Commits follow the project's established commit-hook convention (husky + lint-staged).
 
 ## 12. Token system — current state (from design analysis 2026-06-21)
 
@@ -329,13 +342,14 @@ Ground truth captured by `docs/design/storefront-analysis-20260621.md`:
   `@theme inline` semantic aliases, `:root` semantic tokens (var()-chained to primitives),
   `@layer base`.
 - **Already complete semantic categories:** surface, text, border, price, status
-  (success/warning/danger/info), action (=cta), plus component/z-index/control/disabled/
+  (success/warning/danger/info), action (=cta), promo, plus component/z-index/control/disabled/
   focus/motion tokens.
-- **Gaps:** `promo` (missing), `brand` (only via primitives), `error` alias (use `danger`),
-  `overlay`/scrim (hardcoded). The shadcn vocabulary is undefined (§4.2).
-- **Two distinct issues — do not conflate:** (a) shadcn tokens are _used-but-undefined_
-  → broken, fix via the bridge; (b) `status-*` tokens are _defined-but-unused_ → fine,
-  migrate raw palette literals to them.
+- **Gaps:** `brand` (only via primitives), `error` alias (use `danger`), `overlay`/scrim
+  (hardcoded). `promo` and the shadcn vocabulary have since landed (§4.1, §4.2).
+- **Two distinct issues — do not conflate:** (a) a token name that is _used-but-undefined_
+  renders colorless and has to be defined or mapped (the shadcn names were this and are now
+  mapped); (b) `status-*` tokens are _defined-but-unused_ in places → fine, migrate raw palette
+  literals to them when a component is touched.
 - **Stale/misleading:** `src/styles/README.md` describes a hex `--background`/`.dark`
   system that does not exist in `brand.css`; `src/app/api/og/route.tsx` ships those stale
   hex values (Satori can't read CSS vars). Reconcile before declaring "code canonical".
@@ -363,19 +377,27 @@ This is not a memory problem and no amount of RAM fixes it — `pnpm build` peak
 It is also invisible to every uptime check that only looks at status codes. An external
 monitor on `/sk` must use a **keyword check**, not HTTP 200.
 
-### 13.1.1 Run production commands directly, never through a wrapper
+### 13.1.1 A command that changes production must show its effect
 
-A command that changes production is typed into the Bash tool as itself. Not `bash some.sh`,
-not `setsid`, not `nohup`, not a script in a scratchpad or in `/tmp`.
+A script is fine; the deploy itself runs as one (§13.2). What a script must not do is hide what it
+changes or get around a refusal. Before it runs, its effect, its scope (which paths, which processes,
+which data) and the permissions it runs with must be clear from the command and the file it runs, and
+it is never used to take a step that a permission rule or a hook has already refused. If a rule refuses
+a step you are entitled to take, deal with that rule or ask for the permission; a different wrapper
+around the same step is not the permission.
 
-The permission rules match the command as it is written. A wrapper hides the real command
-inside a file, so the rule never fires and nothing asks. That is not hypothetical: on
-2026-09-21 a long catalogue run was started as `setsid nohup bash /tmp/.../step13_2_second.sh`,
-no prompt appeared, and it took the box to load 40 with swap full — `setsid` had also
-detached it from the one session that was watching it.
+Why this exists: on 2026-09-21 a long catalogue run was started as
+`setsid nohup bash /tmp/.../step13_2_second.sh`. No prompt appeared because the permission rule matched
+the wrapper and not what was inside it, the run took the box to load 40 with swap full, and `setsid` had
+detached it from the one session that was watching it. What went wrong was an effect nobody had agreed
+to, hidden in a file, and a long run nobody could see.
 
-A run too long to sit in the foreground does not become a script. It becomes a systemd unit
-with `MemoryMax` and no swap, installed and started by a human.
+A run too long to sit in the foreground stays in front of a session that watches it, or it becomes a
+systemd unit with `MemoryMax` and no swap, installed and started by a human. It is not detached with
+`setsid` or `nohup`.
+
+Routine diagnostics (logs, status, `--dry-run`, the smoke test in §13.5) and a rollback inside an
+assigned deploy (§13.3) need no further go-ahead.
 
 ### 13.2 Production deploy — run the script, not the steps
 

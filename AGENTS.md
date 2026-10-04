@@ -14,8 +14,11 @@ pnpm run generate:checkout  # After ANY src/checkout/graphql/*.graphql file chan
 pnpm exec tsc --noEmit      # Type check
 pnpm run build              # Full build
 pnpm run dev                # Development server
-pnpm test                   # Run tests (watch mode)
+pnpm test:run               # Run tests once (non-interactive)
 ```
+
+These commands are a reference, not a checklist: run the ones the change calls for (see
+`CLAUDE.md` §11), not all of them after every edit.
 
 ### Skills Architecture
 
@@ -27,6 +30,9 @@ Skills are organized in two locations:
 | `.agents/skills/`                 | Installed community skills        | Vercel React best practices, composition patterns, web design guidelines |
 
 ### When to Use Which Skill
+
+The tables are a map to the rules that fit a task, not a duty to load every skill; open the rule that
+matches the work and leave the community skills until a task needs them.
 
 **Project skill** ([`saleor-paper-storefront`](skills/saleor-paper-storefront/SKILL.md)) -- use for all Saleor storefront tasks:
 
@@ -209,6 +215,10 @@ useEffect(() => {
 ---
 
 ## Caching Strategy
+
+The layers and the revalidation route below are the upstream defaults. Check them against the code that
+the task touches (`src/lib/graphql.ts`, `src/lib/cache/`, `src/app/api/revalidate/`) before relying on a
+TTL or a route sample.
 
 | Layer            | TTL          | Purpose                |
 | ---------------- | ------------ | ---------------------- |
