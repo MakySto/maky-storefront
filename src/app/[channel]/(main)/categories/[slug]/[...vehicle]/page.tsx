@@ -56,7 +56,9 @@ async function resolve(channel: string, categorySlug: string, vehicle: string[])
 	const language = catalogLanguageForChannel(channel);
 	if (!language) return null;
 
-	const view = await loadCatalogView(language);
+	// `params.channel` is the SALEOR channel (`sk-eur`); the content target is the market (`sk`).
+	const market = REVERSE_MAP[channel] ?? channel;
+	const view = await loadCatalogView(language, market);
 	if (!view.ready) return null;
 	const node = resolveVehiclePath(view.tree, categorySlug, vehicle);
 	if (!node?.page) return null;
@@ -74,7 +76,7 @@ async function resolve(channel: string, categorySlug: string, vehicle: string[])
 		// `params.channel` is the SALEOR channel (`sk-eur`). Every public URL uses the
 		// market segment (`sk`), so a canonical or a link built from the raw param points
 		// at a path that does not exist. Caught by reading the served HTML, not by tsc.
-		market: REVERSE_MAP[channel] ?? channel,
+		market,
 		published: visibility.visible,
 	};
 }
@@ -122,7 +124,7 @@ async function vehicleCounterparts(vehicleId: string): Promise<MarketCounterpart
 	for (const market of liveMarkets()) {
 		const language = catalogLanguageForMarket(market);
 		if (!language) continue;
-		const view = await loadCatalogView(language);
+		const view = await loadCatalogView(language, market);
 		if (!view.ready) continue;
 		const page = view.tree.byVehicleId.get(vehicleId)?.page;
 		if (page && indexabilityOf(page).indexable) counterparts.push({ market, path: page.urlPath });
@@ -226,7 +228,7 @@ async function Offers({
 	const language = catalogLanguageForChannel(channel);
 	if (!language) return null;
 
-	const view = await loadCatalogView(language);
+	const view = await loadCatalogView(language, REVERSE_MAP[channel] ?? channel);
 	if (!view.ready) return null;
 
 	const applications = view.tree.applicationsOf.get(vehicleId) ?? [];

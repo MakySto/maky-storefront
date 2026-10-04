@@ -261,7 +261,7 @@ async function catalogEntriesFor(market: string): Promise<MetadataRoute.Sitemap>
 	const language = catalogLanguageForMarket(market);
 	if (!language) return [];
 
-	const view = await loadCatalogView(language);
+	const view = await loadCatalogView(language, market);
 	if (!view.ready) return [];
 
 	const base = getBaseUrl();

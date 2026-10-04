@@ -2,6 +2,7 @@ import "server-only";
 
 import { runDetached, hasRootContext } from "@/lib/async/detached";
 import { createExpiringMemo, type ExpiringMemo } from "@/lib/cache/expiring-memo";
+import { releasedFitment } from "@/lib/catalog-release/sync";
 
 /**
  * Fitment provider resolution — where the dataset comes from, and what happens when
@@ -19,6 +20,12 @@ import { createExpiringMemo, type ExpiringMemo } from "@/lib/cache/expiring-memo
  *   "http"         — a real CFM endpoint from MAKY_FITMENT_URL, validated at the
  *                    boundary like any other untrusted input.
  *
+ * A fourth answer exists that no variable selects: "release". When MAKY_RELEASE_MANIFEST_URL is set, the
+ * dataset the CFM release manifest names, once this process has verified it, answers INSTEAD of the modes
+ * above (except "fixture", which is test data and is never mixed with a delivery). Until that first
+ * verified dataset exists the modes above answer exactly as before, so switching a deploy over changes
+ * nothing a visitor sees. See `src/lib/catalog-release/sync.ts`.
+ *
  * Credentials never leave the server: this module is `server-only` and no dataset field
  * is designed to carry one. The whole dataset is deliberately NOT shipped to the client
  * either — surfaces receive resolved answers and the slice of the tree they render.
@@ -27,11 +34,12 @@ import { createExpiringMemo, type ExpiringMemo } from "@/lib/cache/expiring-memo
 import { cache } from "react";
 
 import { transportChecksum } from "./dataset-hash";
+import { expectedSaleorInstance } from "./saleor-instance";
 import { validateFitmentDataset } from "./validate";
 import { isSimulatedDataset, type FitmentDataset } from "./contract";
 import fixtureDataset from "./fixtures/dataset-v1.json";
 
-export type FitmentProviderMode = "disabled" | "fixture" | "http";
+export type FitmentProviderMode = "disabled" | "fixture" | "http" | "release";
 
 export type FitmentProviderStatus = {
 	mode: FitmentProviderMode;
@@ -73,16 +81,6 @@ function statusFor(
 		datasetVersion: dataset?.datasetVersion ?? null,
 		generatedAt: dataset?.generatedAt ?? null,
 	};
-}
-
-function expectedSaleorInstance(): string | undefined {
-	const url = process.env.NEXT_PUBLIC_SALEOR_API_URL;
-	if (!url) return undefined;
-	try {
-		return new URL(url).host;
-	} catch {
-		return undefined;
-	}
 }
 
 function loadFixture(): FitmentLoad {
@@ -483,11 +481,13 @@ export type FitmentRuntimeStatus = {
 };
 
 export function fitmentRuntimeStatus(): FitmentRuntimeStatus {
-	const mode = resolveProviderMode();
+	const configured = resolveProviderMode();
+	const released = configured !== "fixture" ? releasedFitment() : null;
+	const mode: FitmentProviderMode = released ? "release" : configured;
 	const url = process.env.MAKY_FITMENT_URL?.trim() || null;
 	const state = shared();
-	const held = mode === "http" && url ? state.memo.getStale(url) ?? null : null;
-	const dataset = held?.load.dataset ?? null;
+	const held = !released && mode === "http" && url ? state.memo.getStale(url) ?? null : null;
+	const dataset = released?.dataset ?? held?.load.dataset ?? null;
 
 	let staleAfter: string | null = null;
 	if (dataset) {
@@ -502,14 +502,14 @@ export function fitmentRuntimeStatus(): FitmentRuntimeStatus {
 		staleAfter = candidates.length > 0 ? new Date(Math.min(...candidates)).toISOString() : null;
 	}
 
-	const last = state.lastCheck;
+	const last = released ? released.lastCheck : state.lastCheck;
 	return {
 		mode,
-		source: url ? where(url) : null,
+		source: released ? released.file : url ? where(url) : null,
 		loaded: dataset !== null,
 		datasetVersion: dataset?.datasetVersion ?? null,
 		datasetHash: dataset?.datasetHash ?? null,
-		transportSha256: held?.sha256 ?? null,
+		transportSha256: released?.sha256 ?? held?.sha256 ?? null,
 		schemaVersion: dataset?.schemaVersion ?? null,
 		generatedAt: dataset?.generatedAt ?? null,
 		staleAfter,
@@ -522,14 +522,19 @@ export function fitmentRuntimeStatus(): FitmentRuntimeStatus {
 					applications: dataset.applications.length,
 				}
 			: null,
-		takenIntoUseAt: held?.taken ? new Date(held.taken.at).toISOString() : null,
-		bytes: held?.taken?.bytes ?? null,
-		loadMs: held?.taken?.ms ?? null,
+		takenIntoUseAt: released
+			? new Date(released.activatedAt).toISOString()
+			: held?.taken
+				? new Date(held.taken.at).toISOString()
+				: null,
+		bytes: released?.bytes ?? held?.taken?.bytes ?? null,
+		loadMs: released?.loadMs ?? held?.taken?.ms ?? null,
 		lastCheck: last
 			? { at: new Date(last.at).toISOString(), outcome: last.outcome, reason: last.reason }
 			: null,
-		unavailableReason:
-			mode === "http"
+		unavailableReason: released
+			? null
+			: mode === "http"
 				? held?.load.status.unavailableReason ?? (held ? null : "not-loaded-yet")
 				: "provider-not-http",
 	};
@@ -557,6 +562,13 @@ export async function prewarmFitmentDataset(): Promise<void> {
  */
 export const loadFitmentDataset = cache(async function loadFitmentDataset(): Promise<FitmentLoad> {
 	const mode = resolveProviderMode();
+	if (mode !== "fixture") {
+		// Synchronous and in memory: a render never waits for a release. `null` until this process has
+		// verified the dataset the manifest names; then it is the one that answers, whatever the older
+		// settings say, because those may describe an older file.
+		const released = releasedFitment();
+		if (released) return { dataset: released.dataset, status: statusFor("release", released.dataset, null) };
+	}
 	if (mode === "disabled") {
 		return { dataset: null, status: statusFor("disabled", null, "provider-disabled") };
 	}

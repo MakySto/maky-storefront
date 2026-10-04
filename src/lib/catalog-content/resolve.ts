@@ -20,8 +20,16 @@ export type CatalogView =
 	| { readonly ready: true; readonly tree: CatalogTree; readonly status: CatalogContentStatus }
 	| { readonly ready: false; readonly reason: string; readonly status: CatalogContentStatus };
 
-export const loadCatalogView = cache(async function loadCatalogView(language: string): Promise<CatalogView> {
-	const [content, fitment] = await Promise.all([loadCatalogContent(language), loadFitmentDataset()]);
+/**
+ * `market` is the target the content is read for (`de`, `at`) and selects the file when the process
+ * follows a release manifest; see `loadCatalogContent`. Every caller that knows its market passes it,
+ * and `release-call-sites.test.ts` fails the build when one does not.
+ */
+export const loadCatalogView = cache(async function loadCatalogView(
+	language: string,
+	market?: string,
+): Promise<CatalogView> {
+	const [content, fitment] = await Promise.all([loadCatalogContent(language, market), loadFitmentDataset()]);
 
 	if (!content.snapshot) {
 		return {

@@ -1,0 +1,81 @@
+{
+ "artifact": "MAKY_STOREFRONT_CATALOG_STATUS",
+ "schemaVersion": "1.0.0",
+ "process": {
+  "bootId": "0c64a9d8-72ad-4b1d-a1a4-9d7e3b6f5c20",
+  "pid": 4120,
+  "startedAt": "2026-10-05T08:02:11.907Z"
+ },
+ "capabilities": {
+  "contentByTarget": true
+ },
+ "manifest": {
+  "version": 7,
+  "sha256": "72203aac874b845c043de839fd09e5db354c73e1df80445b30fc4a67e652c9c0",
+  "checkedAt": "2026-10-05T09:31:30.000Z",
+  "outcome": "unchanged",
+  "error": null
+ },
+ "content": {
+  "targets": {
+   "at": {
+    "file": "maky_catalog_content_1.0.0-de-228e98800e1357ad.json",
+    "sha256": "228e98800e1357ad075c73e54dedd25ffb40e1d29a657d845297e57cfad0c48c",
+    "release": 2,
+    "language": "de",
+    "pages": 412,
+    "state": "active",
+    "activatedAt": "2026-10-05T09:31:02.114Z",
+    "error": null,
+    "source": "manifest"
+   },
+   "de": {
+    "file": "maky_catalog_content_1.0.0-de-228e98800e1357ad.json",
+    "sha256": "228e98800e1357ad075c73e54dedd25ffb40e1d29a657d845297e57cfad0c48c",
+    "release": 3,
+    "language": "de",
+    "pages": 412,
+    "state": "active",
+    "activatedAt": "2026-10-05T09:31:02.114Z",
+    "error": null,
+    "source": "manifest"
+   },
+   "sk": {
+    "file": "maky_catalog_content_1.0.0-sk-52068f4e05c9138c.json",
+    "sha256": "52068f4e05c9138cb6dd1fd1c4df30c3966ed12ca805736166fa12ad32d31ffa",
+    "release": 5,
+    "language": "sk",
+    "pages": 412,
+    "state": "active",
+    "activatedAt": "2026-10-05T09:31:02.114Z",
+    "error": null,
+    "source": "manifest"
+   },
+   "us": {
+    "file": null,
+    "sha256": "a3f0c1b2d4e5968778695a4b3c2d1e0f5a6b7c8d9e0f1a2b3c4d5e6f708192a3",
+    "release": null,
+    "language": "en",
+    "pages": null,
+    "state": "stale",
+    "activatedAt": null,
+    "error": {
+     "code": "file_hash_mismatch",
+     "message": "stiahnutý súbor má iný odtlačok, než udáva manifest v7; ostáva predošlá verzia"
+    },
+    "source": "legacy"
+   }
+  }
+ },
+ "fitment": {
+  "file": "maky_fitment_3.0.0-full-example.1-731644a817482eaf.json",
+  "sha256": "731644a817482eaf7c6568a904b69aea93e0023ed8b90c2c3ad1f2a7bb5eecc9",
+  "datasetHash": "5e85b22ecf3402bfd37d572e2043ab1537a019f227d3c5c43108e831b4bde60a",
+  "datasetVersion": "3.0.0-full-example.1",
+  "release": 2,
+  "state": "active",
+  "activatedAt": "2026-10-05T09:31:04.502Z",
+  "error": null,
+  "source": "manifest"
+ }
+}
