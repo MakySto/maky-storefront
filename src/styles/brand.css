@@ -942,6 +942,624 @@
 	}
 }
 
+/*
+ * The typed content blocks of a product description (`docs/contracts/maky-content.md`): callouts,
+ * benefits, the contents of the box, features, steps, questions, documents and the parameter sheet
+ * (the approved design: PRODUCT_TEMPLATES, phase 2).
+ *
+ * `parseProductContent` builds every one of them from blocks Saleor stores, so everything here
+ * styles markup that renderer emitted itself, and a class a document tries to carry is dropped by
+ * `sanitizeBlock`. Colours are the semantic tokens only. Icons are CSS masks of the lucide glyphs
+ * the rest of the shop uses, so they follow `currentColor` and need no markup beyond an empty
+ * span. Layout follows the width of the box a block is in (a container query on `.maky-blk`), not
+ * the window, so it holds in a half-width column as much as on a phone.
+ */
+@layer components {
+	.maky-ico {
+		display: inline-block;
+		flex: none;
+		width: 1.25rem;
+		height: 1.25rem;
+		background: currentColor;
+		-webkit-mask: var(--maky-ico) center / contain no-repeat;
+		mask: var(--maky-ico) center / contain no-repeat;
+	}
+
+	.maky-ico,
+	.maky-ico-sparkles {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/%3E%3Cpath d='M5 3v4'/%3E%3Cpath d='M19 17v4'/%3E%3Cpath d='M3 5h4'/%3E%3Cpath d='M17 19h4'/%3E%3C/svg%3E");
+	}
+
+	.maky-ico-check {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+	}
+
+	.maky-ico-alert {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E");
+	}
+
+	.maky-ico-info {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E");
+	}
+
+	.maky-ico-chevron {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+	}
+
+	.maky-ico-download {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/%3E%3Cpolyline points='7 10 12 15 17 10'/%3E%3Cline x1='12' x2='12' y1='15' y2='3'/%3E%3C/svg%3E");
+	}
+
+	.maky-ico-file {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z'/%3E%3Cpath d='M14 2v4a2 2 0 0 0 2 2h4'/%3E%3Cpath d='M10 9H8'/%3E%3Cpath d='M16 13H8'/%3E%3Cpath d='M16 17H8'/%3E%3C/svg%3E");
+	}
+
+	.maky-ico-package {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7.5 4.27 9 5.15'/%3E%3Cpath d='M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z'/%3E%3Cpath d='m3.3 7 8.7 5 8.7-5'/%3E%3Cpath d='M12 22V12'/%3E%3C/svg%3E");
+	}
+
+	.maky-ico-battery {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 7h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2'/%3E%3Cpath d='M6 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1'/%3E%3Cpath d='m11 7-3 5h4l-3 5'/%3E%3Cline x1='22' x2='22' y1='11' y2='13'/%3E%3C/svg%3E");
+	}
+
+	.maky-ico-stand {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3'/%3E%3Cpath d='M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H7v-2a2 2 0 0 0-4 0Z'/%3E%3Cpath d='M5 18v2'/%3E%3Cpath d='M19 18v2'/%3E%3C/svg%3E");
+	}
+
+	.maky-ico-smartphone {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='14' height='20' x='5' y='2' rx='2' ry='2'/%3E%3Cpath d='M12 18h.01'/%3E%3C/svg%3E");
+	}
+
+	.maky-ico-lightbulb {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5'/%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3C/svg%3E");
+	}
+
+	.maky-ico-snowflake {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='2' x2='22' y1='12' y2='12'/%3E%3Cline x1='12' x2='12' y1='2' y2='22'/%3E%3Cpath d='m20 16-4-4 4-4'/%3E%3Cpath d='m4 8 4 4-4 4'/%3E%3Cpath d='m16 4-4 4-4-4'/%3E%3Cpath d='m8 20 4-4 4 4'/%3E%3C/svg%3E");
+	}
+
+	.maky-ico-plug {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22v-5'/%3E%3Cpath d='M9 8V2'/%3E%3Cpath d='M15 8V2'/%3E%3Cpath d='M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z'/%3E%3C/svg%3E");
+	}
+
+	.maky-ico-shield {
+		--maky-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E");
+	}
+
+	/* A titled block: the heading, then the block. The first block of a description starts its card. */
+	.maky-blk {
+		container-type: inline-size;
+		margin-top: 2rem;
+	}
+
+	:where(.prose) > div:first-child > :is(.maky-blk, .maky-callout) {
+		margin-top: 0;
+	}
+
+	.maky-h {
+		margin: 0 0 1rem;
+		font-size: 1.1875rem;
+		font-weight: 700;
+		letter-spacing: -0.015em;
+		line-height: 1.25;
+		color: var(--text-primary);
+	}
+
+	/* The parts items are built from. */
+	.maky-txt {
+		display: block;
+		min-width: 0;
+		overflow-wrap: break-word;
+	}
+
+	.maky-t {
+		display: block;
+		font-weight: 700;
+		line-height: 1.3;
+		color: var(--text-primary);
+	}
+
+	.maky-d {
+		display: block;
+		margin-top: 0.125rem;
+		font-size: 0.90625rem;
+		line-height: 1.55;
+		color: var(--text-secondary);
+	}
+
+	/* The text after a title continues the title ("chladí a mrazí…"); it is set as a sentence of its own. */
+	.maky-d::first-letter {
+		text-transform: uppercase;
+	}
+
+	.maky-txt > .maky-d:first-child {
+		margin-top: 0;
+	}
+
+	.maky-cap {
+		display: block;
+		margin-top: 0.375rem;
+		font-size: 0.8125rem;
+		line-height: 1.45;
+		color: var(--text-tertiary);
+	}
+
+	.maky-tile {
+		display: grid;
+		flex: none;
+		place-items: center;
+		width: 2.375rem;
+		height: 2.375rem;
+		border: 1px solid var(--border-subtle);
+		border-radius: 0.625rem;
+		background: var(--surface-card);
+		color: var(--brand);
+	}
+
+	.maky-tile > .maky-ico {
+		width: 1.25rem;
+		height: 1.25rem;
+	}
+
+	/* Callouts: a tip, a note, a warning. The kind is colour and glyph, never colour alone: the box
+	   has an accessible name from the market's catalogue. */
+	.maky-callout {
+		display: grid;
+		grid-template-columns: 1.375rem minmax(0, 1fr);
+		gap: 0.75rem;
+		margin-top: 1.5rem;
+		padding: 0.875rem 1rem;
+		border: 1px solid;
+		border-radius: var(--radius-sm);
+		font-size: 0.90625rem;
+		line-height: 1.6;
+		color: var(--text-secondary);
+	}
+
+	.maky-callout > .maky-ico {
+		width: 1.375rem;
+		height: 1.375rem;
+		margin-top: 1px;
+	}
+
+	.maky-callout-b {
+		min-width: 0;
+		overflow-wrap: break-word;
+	}
+
+	.maky-callout-t {
+		display: block;
+		margin-bottom: 0.125rem;
+		font-size: 0.9375rem;
+		font-weight: 700;
+	}
+
+	.maky-callout-b p {
+		margin: 0;
+	}
+
+	.maky-callout-b :is(ul, ol) {
+		margin: 0.375rem 0 0;
+		padding-left: 1.125rem;
+		list-style: disc;
+	}
+
+	.maky-callout-b ol {
+		list-style: decimal;
+	}
+
+	.maky-callout-b li + li {
+		margin-top: 0.1875rem;
+	}
+
+	.maky-callout-tip {
+		background: var(--surface-accent);
+		border-color: var(--color-copper-200);
+	}
+
+	.maky-callout-tip > .maky-ico,
+	.maky-callout-tip .maky-callout-t {
+		color: var(--brand-strong);
+	}
+
+	.maky-callout-warn {
+		background: var(--surface-warning);
+		border-color: color-mix(in oklch, var(--border-warning) 50%, var(--surface-card));
+	}
+
+	.maky-callout-warn > .maky-ico,
+	.maky-callout-warn .maky-callout-t {
+		color: var(--text-warning);
+	}
+
+	.maky-callout-info {
+		background: var(--surface-info);
+		border-color: color-mix(in oklch, var(--border-info) 40%, var(--surface-card));
+	}
+
+	.maky-callout-info > .maky-ico,
+	.maky-callout-info .maky-callout-t {
+		color: var(--text-info);
+	}
+
+	/* Benefits: the only list with ticks, because here a tick is true. */
+	.maky-benefits,
+	.maky-inbox,
+	.maky-features,
+	.maky-steps,
+	.maky-docs {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.maky-benefits {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0 2.25rem;
+	}
+
+	.maky-benefits > li {
+		display: grid;
+		grid-template-columns: 1.625rem minmax(0, 1fr);
+		gap: 0.75rem;
+		padding: 0.875rem 0;
+		border-bottom: 1px solid var(--border-subtle);
+	}
+
+	.maky-mark {
+		display: grid;
+		place-items: center;
+		width: 1.625rem;
+		height: 1.625rem;
+		margin-top: 1px;
+		border-radius: 50%;
+		background: var(--color-copper-100);
+		color: var(--brand);
+	}
+
+	.maky-mark > .maky-ico {
+		width: 0.875rem;
+		height: 0.875rem;
+	}
+
+	/* The contents of the box. */
+	.maky-inbox {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0.625rem 0.875rem;
+	}
+
+	.maky-inbox > li {
+		display: grid;
+		grid-template-columns: 2.375rem minmax(0, 1fr);
+		gap: 0.75rem;
+		align-items: center;
+		padding: 0.75rem 0.875rem;
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-xs);
+		background: var(--surface-primary);
+	}
+
+	.maky-inbox .maky-t {
+		font-size: 0.90625rem;
+	}
+
+	.maky-inbox .maky-d {
+		margin-top: 1px;
+		font-size: 0.84375rem;
+		line-height: 1.5;
+	}
+
+	/* Features: an icon tile and a short text; the caption is the small print under it. */
+	.maky-features {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0.875rem;
+	}
+
+	.maky-feature {
+		display: grid;
+		grid-template-columns: 3rem minmax(0, 1fr);
+		gap: 0.875rem;
+		align-items: start;
+		padding: 0.875rem;
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-sm);
+		background: var(--surface-primary);
+	}
+
+	.maky-tile-lg {
+		width: 3rem;
+		height: 3rem;
+		border-color: var(--color-copper-200);
+		border-radius: 0.875rem;
+		background: var(--surface-accent);
+	}
+
+	.maky-tile-lg > .maky-ico {
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+
+	.maky-feature .maky-t {
+		font-size: 1.0625rem;
+	}
+
+	.maky-feature .maky-d {
+		margin-top: 0.375rem;
+	}
+
+	/* Steps: numbered on a line that runs to the next one. */
+	.maky-steps {
+		counter-reset: maky-step;
+	}
+
+	.maky-steps > li {
+		position: relative;
+		display: grid;
+		grid-template-columns: 2.125rem minmax(0, 1fr);
+		gap: 1rem;
+		padding-bottom: 1.125rem;
+		counter-increment: maky-step;
+	}
+
+	.maky-steps > li::before {
+		content: counter(maky-step);
+		z-index: 1;
+		display: grid;
+		place-items: center;
+		width: 2rem;
+		height: 2rem;
+		border-radius: 50%;
+		background: var(--brand);
+		color: var(--brand-text);
+		font-size: 0.875rem;
+		font-weight: 700;
+	}
+
+	.maky-steps > li::after {
+		content: "";
+		position: absolute;
+		top: 2.125rem;
+		bottom: 0.125rem;
+		left: 0.96875rem;
+		width: 1px;
+		background: var(--border-default);
+	}
+
+	.maky-steps > li:last-child {
+		padding-bottom: 0;
+	}
+
+	.maky-steps > li:last-child::after {
+		display: none;
+	}
+
+	.maky-steps .maky-t {
+		padding-top: 0.25rem;
+	}
+
+	/* Questions: every answer is in the page, closed or open. */
+	.maky-faq {
+		border-top: 1px solid var(--border-subtle);
+	}
+
+	.maky-qa {
+		border-bottom: 1px solid var(--border-subtle);
+	}
+
+	.maky-q {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0.9375rem 0.125rem;
+		list-style: none;
+		cursor: pointer;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.maky-q::-webkit-details-marker {
+		display: none;
+	}
+
+	.maky-q:focus-visible {
+		outline: var(--focus-ring-width) solid var(--focus-ring);
+		outline-offset: var(--focus-ring-offset);
+	}
+
+	.maky-q > .maky-ico {
+		width: 1.125rem;
+		height: 1.125rem;
+		color: var(--text-tertiary);
+	}
+
+	.maky-qa[open] > .maky-q > .maky-ico {
+		transform: rotate(180deg);
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.maky-q > .maky-ico {
+			transition: transform 0.2s;
+		}
+	}
+
+	.maky-a {
+		max-width: 70ch;
+		padding: 0 0.125rem 1rem;
+		font-size: 0.90625rem;
+		line-height: 1.6;
+		color: var(--text-secondary);
+	}
+
+	/* Documents: the whole card is the link. */
+	.maky-docs {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0.625rem;
+	}
+
+	.maky-doc {
+		position: relative;
+		display: grid;
+		grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+		gap: 0.875rem;
+		align-items: center;
+		padding: 0.75rem 0.875rem;
+		border: 1px solid var(--border-default);
+		border-radius: var(--radius-sm);
+		background: var(--surface-card);
+	}
+
+	.maky-doc > .maky-tile {
+		width: 2.5rem;
+		height: 2.5rem;
+		border-color: transparent;
+		background: var(--surface-accent);
+	}
+
+	.maky-doc-a {
+		font-size: 0.90625rem;
+		font-weight: 600;
+		line-height: 1.3;
+		color: var(--text-primary);
+		text-decoration: none;
+	}
+
+	.maky-doc-a::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+	}
+
+	.maky-doc > .maky-ico {
+		width: 1.125rem;
+		height: 1.125rem;
+		color: var(--brand);
+	}
+
+	.maky-doc:has(.maky-doc-a:focus-visible) {
+		outline: var(--focus-ring-width) solid var(--focus-ring);
+		outline-offset: var(--focus-ring-offset);
+	}
+
+	@media (hover: hover) {
+		.maky-doc:hover {
+			border-color: var(--brand);
+		}
+
+		.maky-doc-a:hover {
+			text-decoration: underline;
+		}
+	}
+
+	/* The parameter sheet: groups of name and value, in two columns that read down. One definition
+	   for the `specs` block and for the parameters the page derives from attributes. */
+	.maky-specs {
+		columns: 2 22rem;
+		column-gap: 3.5rem;
+		column-rule: 1px solid var(--border-subtle);
+		font-size: 0.875rem;
+	}
+
+	.maky-sg {
+		margin-bottom: 1.5rem;
+		break-inside: avoid;
+	}
+
+	.maky-sg:last-child {
+		margin-bottom: 0;
+	}
+
+	.maky-sg-t {
+		margin: 0;
+		padding-bottom: 0.5rem;
+		border-bottom: 1px solid var(--border-default);
+		font-size: 0.71875rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--brand);
+	}
+
+	.maky-sg > dl {
+		margin: 0;
+	}
+
+	.maky-sr {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 1.25rem;
+		align-items: start;
+		padding: 0.875rem 0;
+		border-bottom: 1px solid var(--border-subtle);
+	}
+
+	.maky-sr > dt {
+		overflow-wrap: break-word;
+		color: var(--text-secondary);
+	}
+
+	.maky-sr > dd {
+		margin: 0;
+		overflow-wrap: break-word;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		text-align: right;
+		color: var(--text-primary);
+	}
+
+	/* A value that reads as a sentence gets the row's width and reads from the left. */
+	.maky-sr-long {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0.25rem;
+	}
+
+	.maky-sr-long > dd {
+		line-height: 1.5;
+		text-align: left;
+	}
+
+	@media (min-width: 40rem) {
+		.maky-specs {
+			font-size: 0.9375rem;
+		}
+	}
+
+	/* Wide enough for two columns: benefits, the box and documents in two, features in two when there is room. */
+	@container (min-width: 40rem) {
+		.maky-benefits,
+		.maky-inbox,
+		.maky-docs {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@container (min-width: 44rem) {
+		.maky-features {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+		.maky-feature {
+			grid-template-columns: 3.5rem minmax(0, 1fr);
+			gap: 1.125rem;
+			padding: 1.125rem 1.25rem;
+		}
+
+		.maky-tile-lg {
+			width: 3.5rem;
+			height: 3.5rem;
+		}
+
+		.maky-tile-lg > .maky-ico {
+			width: 1.625rem;
+			height: 1.625rem;
+		}
+	}
+}
+
 /* ──────────────────────────────────────────────────────────────
    Layer 5 — Animations
    ──────────────────────────────────────────────────────────────

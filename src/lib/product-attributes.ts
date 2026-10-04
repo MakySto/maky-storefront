@@ -28,6 +28,15 @@ const UNIT_BY_EXTERNAL_REFERENCE: Readonly<Record<string, string>> = {
 	"cfm:attribute:outer_width": "cm",
 	"cfm:attribute:volume": "l",
 	"cfm:attribute:max_speed": "km/h",
+	// A car fridge's own measurements. The unit is the one the CFM specification key carries
+	// (`rated_power_w`, `net_volume_l`, `interior_height_mm`, `input_ac_current_a`,
+	// `temperature_min_c`), which is where the catalogue got the number from.
+	"cfm:attribute:rated_power": "W",
+	"cfm:attribute:net_volume": "l",
+	"cfm:attribute:interior_height": "mm",
+	"cfm:attribute:input_current_ac": "A",
+	"cfm:attribute:temperature_min": "°C",
+	"cfm:attribute:temperature_max": "°C",
 	// Deliberately absent, and NOT an oversight:
 	//   bike_capacity   - a count, not a measurement
 	//   max_tire_width  - no catalogue values yet; mm and inch are both plausible
@@ -74,6 +83,24 @@ export type AttributeInput = {
 
 /** The market's words for a yes/no parameter. */
 export type YesNoWords = { readonly yes: string; readonly no: string };
+
+/** The market's way of writing a count of years — "3 roky", "1 rok" — from the message catalogue's plural. */
+type YearsFormat = (count: number) => string;
+
+/**
+ * A parameter counted in years. The number alone ("Záruka 3") says nothing about its unit, and a
+ * unit cannot be a suffix string: the word changes with the number in most of the markets.
+ */
+const YEARS_REFERENCES: ReadonlySet<string> = new Set(["cfm:attribute:warranty_years"]);
+
+/**
+ * Parameters CFM keeps as ONE text joined with " | " (`LIST_SPEC_KEYS` of the CoolZ content
+ * builder: the matrix reads them as a list). A page prints them as a list, not with the separator.
+ */
+const LIST_REFERENCES: ReadonlySet<string> = new Set([
+	"cfm:attribute:cooling_modes",
+	"cfm:attribute:interior_components",
+]);
 
 /** Display unit for an attribute, or undefined when none is proven. */
 export function getAttributeUnit(attribute: AttributeInput["attribute"]): string | undefined {
@@ -138,16 +165,29 @@ export function formatProductAttributeValue(
 	attribute: AttributeInput,
 	locale: string,
 	words?: YesNoWords,
+	years?: YearsFormat,
 ): string[] {
 	if (attribute.attribute.inputType === "BOOLEAN") {
 		return attribute.values
 			.map((v) => (typeof v.boolean === "boolean" && words ? (v.boolean ? words.yes : words.no) : null))
 			.filter((text): text is string => text !== null);
 	}
+	const reference = attribute.attribute.externalReference ?? "";
 	return attribute.values
 		.map((v) => v.name)
 		.filter((n): n is string => Boolean(n && n.trim()))
-		.map((n) => formatAttributeValue(n, attribute.attribute, locale));
+		.flatMap((n) => {
+			if (LIST_REFERENCES.has(reference) && n.includes("|")) {
+				return n
+					.split("|")
+					.map((part) => part.trim())
+					.filter(Boolean);
+			}
+			const count = YEARS_REFERENCES.has(reference) && years ? parseNumeric(n) : null;
+			return count === null || !years
+				? [formatAttributeValue(n, attribute.attribute, locale)]
+				: [years(count)];
+		});
 }
 
 const DIMENSION_REFS = [
@@ -185,4 +225,43 @@ export function formatOuterDimensions(attributes: readonly AttributeInput[], loc
 	return `${parts
 		.map((n) => formatNumber(n, locale, { maximumFractionDigits: 2 }))
 		.join(" × ")}${NBSP}${unit}`;
+}
+
+const TEMPERATURE_MIN = "cfm:attribute:temperature_min";
+const TEMPERATURE_MAX = "cfm:attribute:temperature_max";
+const MINUS = "\u2212";
+
+/**
+ * The working temperature range, from its two ends — `−20 °C až +20 °C` for a parameter row and
+ * `−20 až +20 °C` for a short fact — or null unless both ends are plain numbers. Nothing is
+ * worked out: the two attributes are the product's own, the range is only how they are written
+ * together, and a range with one end missing is not a range, so the ends stay separate rows.
+ *
+ * `join` is the market's way of saying "from … to …"; the caller takes it from the message
+ * catalogue. A negative number is written with a real minus sign, and the upper end carries its
+ * plus when the range crosses zero, as a thermometer does.
+ */
+export function formatTemperatureRange(
+	attributes: readonly AttributeInput[],
+	locale: string,
+	join: (min: string, max: string) => string,
+): { full: string; short: string } | null {
+	const byRef = new Map(attributes.map((a) => [a.attribute.externalReference ?? "", a]));
+	const min = parseNumeric(byRef.get(TEMPERATURE_MIN)?.values[0]?.name ?? "");
+	const max = parseNumeric(byRef.get(TEMPERATURE_MAX)?.values[0]?.name ?? "");
+	if (min === null || max === null || min > max) return null;
+
+	const unit = UNIT_BY_EXTERNAL_REFERENCE[TEMPERATURE_MAX];
+	const crosses = min < 0 && max > 0;
+	const number = (value: number, signed: boolean): string =>
+		formatNumber(value, locale, {
+			maximumFractionDigits: 2,
+			signDisplay: signed ? "exceptZero" : "auto",
+		}).replace("-", MINUS);
+	const low = number(min, false);
+	const high = number(max, crosses);
+	return {
+		full: join(`${low}${NBSP}${unit}`, `${high}${NBSP}${unit}`),
+		short: `${join(low, high)}${NBSP}${unit}`,
+	};
 }

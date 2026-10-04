@@ -130,6 +130,25 @@
 			"sameForAll": "La fel pentru toate modelele",
 			"scrollRegion": "Comparație între modele, tabel derulabil"
 		},
+		"content": {
+			"kind": {
+				"tip": "Sfat",
+				"info": "Informație",
+				"warn": "Avertisment"
+			},
+			"navComparison": "Comparație modele",
+			"navDocuments": "Descărcări",
+			"groups": {
+				"cooling": "Răcire",
+				"power": "Alimentare",
+				"dimensions": "Dimensiuni și greutate",
+				"equipment": "Dotări",
+				"other": "Alți parametri"
+			},
+			"temperatureRange": "Interval de temperatură",
+			"range": "{min} până la {max}",
+			"years": "{count, plural, one {# an} few {# ani} other {# de ani}}"
+		},
 		"keyFeatures": "Caracteristici principale",
 		"productDescription": "Descrierea produsului",
 		"imageCounter": "Imaginea {current} din {total}",
@@ -145,7 +164,8 @@
 		"highlightLoad": "Capacitate {value}",
 		"highlightLoadPerBike": "Până la {value} pe bicicletă",
 		"highlightVolume": "Volum {value}",
-		"highlightWeight": "Greutate {value}"
+		"highlightWeight": "Greutate {value}",
+		"highlightPower": "Putere {value}"
 	},
 	"fitment": {
 		"selectVehicle": "Selectați vehiculul",

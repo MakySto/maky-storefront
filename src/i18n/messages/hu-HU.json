@@ -130,6 +130,25 @@
 			"sameForAll": "Minden modellnél azonos",
 			"scrollRegion": "Modellek összehasonlítása, görgethető táblázat"
 		},
+		"content": {
+			"kind": {
+				"tip": "Tipp",
+				"info": "Tájékoztatás",
+				"warn": "Figyelmeztetés"
+			},
+			"navComparison": "Modellek összehasonlítása",
+			"navDocuments": "Letöltések",
+			"groups": {
+				"cooling": "Hűtés",
+				"power": "Tápellátás",
+				"dimensions": "Méretek és tömeg",
+				"equipment": "Felszereltség",
+				"other": "További paraméterek"
+			},
+			"temperatureRange": "Hőmérséklet-tartomány",
+			"range": "{min} – {max}",
+			"years": "{count, plural, other {# év}}"
+		},
 		"keyFeatures": "Fő jellemzők",
 		"productDescription": "Termékleírás",
 		"imageCounter": "{current}. kép / {total}",
@@ -145,7 +164,8 @@
 		"highlightLoad": "Teherbírás {value}",
 		"highlightLoadPerBike": "Kerékpáronként legfeljebb {value}",
 		"highlightVolume": "Térfogat {value}",
-		"highlightWeight": "Tömeg {value}"
+		"highlightWeight": "Tömeg {value}",
+		"highlightPower": "Teljesítményfelvétel {value}"
 	},
 	"fitment": {
 		"selectVehicle": "Válassza ki járművét",

@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import {
 	BikeIcon,
+	BluetoothIcon,
 	FoldHorizontalIcon,
 	PackageIcon,
 	PanelTopOpenIcon,
@@ -8,36 +9,40 @@ import {
 	RulerIcon,
 	ScaleIcon,
 	SnowflakeIcon,
+	ThermometerSnowflakeIcon,
 	WeightIcon,
 	ZapIcon,
 	type LucideIcon,
 } from "lucide-react";
-import { formatProductAttributeValue, type AttributeInput } from "@/lib/product-attributes";
+import {
+	formatProductAttributeValue,
+	formatTemperatureRange,
+	type AttributeInput,
+} from "@/lib/product-attributes";
+import {
+	GENERIC_FACTS,
+	templateFor,
+	type FactIcon,
+	type KeyFact,
+	type ProductTemplate,
+} from "@/lib/product-templates";
 import { cn } from "@/lib/utils";
 
-/**
- * The parameters worth seeing before the description, in the order a shopper decides by — for a
- * bike carrier how many bikes and how much weight, for a box its volume and how it opens. Each is
- * a short statement that stands on its own where it can be ("Pre 2 bicykle", "Nosnosť 60 kg",
- * "Vhodný pre e-bike"), else the value over its name.
- *
- * Only the product's own attributes, formatted like the parameters table below. The total load
- * and the load per bike are two different attributes and are shown as such; nothing is derived
- * (no per-bike limit worked out by division), and a "no" is never promoted into a feature.
- */
-const HIGHLIGHTS: readonly { ref: string; icon: LucideIcon }[] = [
-	{ ref: "cfm:attribute:bike_capacity", icon: BikeIcon },
-	{ ref: "cfm:attribute:volume", icon: PackageIcon },
-	{ ref: "cfm:attribute:ski_snowboard_capacity", icon: SnowflakeIcon },
-	{ ref: "cfm:attribute:max_load", icon: WeightIcon },
-	{ ref: "cfm:attribute:max_load_per_bike", icon: WeightIcon },
-	{ ref: "cfm:attribute:opening_type", icon: PanelTopOpenIcon },
-	{ ref: "cfm:attribute:tilt_function", icon: RotateCcwIcon },
-	{ ref: "cfm:attribute:ebike_compatible", icon: ZapIcon },
-	{ ref: "cfm:attribute:max_ski_length", icon: RulerIcon },
-	{ ref: "cfm:attribute:foldable", icon: FoldHorizontalIcon },
-	{ ref: "cfm:attribute:weight", icon: ScaleIcon },
-];
+/** The icons a template names its facts by. */
+const FACT_ICONS: Readonly<Record<FactIcon, LucideIcon>> = {
+	bike: BikeIcon,
+	bluetooth: BluetoothIcon,
+	fold: FoldHorizontalIcon,
+	opening: PanelTopOpenIcon,
+	package: PackageIcon,
+	ruler: RulerIcon,
+	scale: ScaleIcon,
+	snowflake: SnowflakeIcon,
+	temperature: ThermometerSnowflakeIcon,
+	tilt: RotateCcwIcon,
+	weight: WeightIcon,
+	zap: ZapIcon,
+};
 
 const MAX_HIGHLIGHTS = 4;
 
@@ -51,53 +56,94 @@ const MAX_HIGHLIGHTS = 4;
 const PHRASE: Readonly<
 	Record<
 		string,
-		"highlightBikes" | "highlightLoad" | "highlightLoadPerBike" | "highlightVolume" | "highlightWeight"
+		| "highlightBikes"
+		| "highlightLoad"
+		| "highlightLoadPerBike"
+		| "highlightPower"
+		| "highlightVolume"
+		| "highlightWeight"
 	>
 > = {
 	"cfm:attribute:bike_capacity": "highlightBikes",
 	"cfm:attribute:max_load": "highlightLoad",
 	"cfm:attribute:max_load_per_bike": "highlightLoadPerBike",
+	"cfm:attribute:rated_power": "highlightPower",
 	"cfm:attribute:volume": "highlightVolume",
 	"cfm:attribute:weight": "highlightWeight",
 };
 
+type Highlight = { key: string; icon: LucideIcon; value: string; label: string | null };
+
+/**
+ * The parameters worth seeing before the description, in the order a shopper decides by — for a
+ * bike carrier how many bikes and how much weight, for a box its volume and how it opens, for a
+ * car fridge its volume, its temperature range, its power and whether an app controls it. Each
+ * is a short statement that stands on its own where it can be ("Pre 2 bicykle", "Nosnosť 60 kg",
+ * "Vhodný pre e-bike"), else the value over its name.
+ *
+ * The page's template names the facts that come first (`@/lib/product-templates`); the generic
+ * facts fill the band up to its limit, so a product that lacks one of its template's facts still
+ * gets a full band.
+ *
+ * Only the product's own attributes, formatted like the parameters table below. The total load
+ * and the load per bike are two different attributes and are shown as such; nothing is derived
+ * (no per-bike limit worked out by division), and a "no" is never promoted into a feature. The
+ * one thing written together is a range, from its two ends.
+ */
 export async function ProductHighlights({
 	attributes,
 	locale,
 	className,
+	template = templateFor(null),
 }: {
 	attributes: readonly AttributeInput[];
 	locale: string;
 	className?: string;
+	template?: ProductTemplate;
 }) {
 	const t = await getTranslations({ locale, namespace: "product" });
 	const words = { yes: t("yes"), no: t("no") };
 	const byRef = new Map(attributes.map((a) => [a.attribute.externalReference ?? "", a]));
 
-	const items = HIGHLIGHTS.flatMap(
-		({ ref, icon }): { ref: string; icon: LucideIcon; value: string; label: string | null }[] => {
-			const attribute = byRef.get(ref);
-			if (!attribute?.attribute.name) return [];
-			if (attribute.attribute.inputType === "BOOLEAN") {
-				// A yes/no parameter is a feature only when it is a yes — and then its NAME is the
-				// feature: "Vhodný pre e-bike", not "Áno" over "Vhodný pre e-bike".
-				if (!attribute.values.some((v) => v.boolean === true)) return [];
-				return [{ ref, icon, value: attribute.attribute.name, label: null }];
+	const highlight = (fact: KeyFact): Highlight[] => {
+		const icon = FACT_ICONS[fact.icon];
+		if (fact.kind === "range") {
+			const range = formatTemperatureRange(attributes, locale, (min, max) =>
+				t("content.range", { min, max }),
+			);
+			return range
+				? [{ key: "range:temperature", icon, value: range.short, label: t("content.temperatureRange") }]
+				: [];
+		}
+		const { ref } = fact;
+		const attribute = byRef.get(ref);
+		if (!attribute?.attribute.name) return [];
+		if (attribute.attribute.inputType === "BOOLEAN") {
+			// A yes/no parameter is a feature only when it is a yes — and then its NAME is the
+			// feature: "Vhodný pre e-bike", not "Áno" over "Vhodný pre e-bike".
+			if (!attribute.values.some((v) => v.boolean === true)) return [];
+			return [{ key: ref, icon, value: attribute.attribute.name, label: null }];
+		}
+		const values = formatProductAttributeValue(attribute, locale, words);
+		if (values.length === 0) return [];
+		const value = values.join(", ");
+		const phrase = PHRASE[ref];
+		if (phrase === "highlightBikes") {
+			if (values.length === 1 && /^\d+$/.test(value.trim())) {
+				return [{ key: ref, icon, value: t(phrase, { count: Number(value.trim()) }), label: null }];
 			}
-			const values = formatProductAttributeValue(attribute, locale, words);
-			if (values.length === 0) return [];
-			const value = values.join(", ");
-			const phrase = PHRASE[ref];
-			if (phrase === "highlightBikes") {
-				if (values.length === 1 && /^\d+$/.test(value.trim())) {
-					return [{ ref, icon, value: t(phrase, { count: Number(value.trim()) }), label: null }];
-				}
-			} else if (phrase && values.length === 1) {
-				return [{ ref, icon, value: t(phrase, { value }), label: null }];
-			}
-			return [{ ref, icon, value, label: attribute.attribute.name }];
-		},
-	).slice(0, MAX_HIGHLIGHTS);
+		} else if (phrase && values.length === 1) {
+			return [{ key: ref, icon, value: t(phrase, { value }), label: null }];
+		}
+		return [{ key: ref, icon, value, label: attribute.attribute.name }];
+	};
+
+	// The template's facts first, then the generic ones, each key once.
+	const seen = new Set<string>();
+	const items = [...template.facts, ...GENERIC_FACTS]
+		.flatMap(highlight)
+		.filter(({ key }) => (seen.has(key) ? false : Boolean(seen.add(key))))
+		.slice(0, MAX_HIGHLIGHTS);
 
 	if (items.length < 2) return null;
 
@@ -117,9 +163,9 @@ export async function ProductHighlights({
 					items.length === 4 && "lg:grid-cols-4",
 				)}
 			>
-				{items.map(({ ref, icon: Icon, label, value }) => (
+				{items.map(({ key, icon: Icon, label, value }) => (
 					<li
-						key={ref}
+						key={key}
 						className="bg-surface-muted flex min-w-0 items-center gap-3 px-4 py-4 sm:gap-3.5 sm:px-5"
 					>
 						<Icon className="text-brand h-7 w-7 shrink-0" strokeWidth={2} aria-hidden="true" />
