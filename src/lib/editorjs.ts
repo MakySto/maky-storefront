@@ -8,6 +8,7 @@ import {
 	type ContentBlock,
 	type ContentIssue,
 	type ContentLabels,
+	type SpecFact,
 } from "./editorjs-content";
 import {
 	escapeHtml,
@@ -350,13 +351,15 @@ export function isEditorJSContent(content: string | null | undefined): boolean {
 export interface ProductContentBlock {
 	html: string;
 	/**
-	 * Which section a template may lift this block into, when it is one: the model comparison and
-	 * the documents each have a card of their own on a template page.
+	 * Which section a template may lift this block into, when it is one: the model comparison, the
+	 * documents and the parameter sheet each have a card of their own on a template page.
 	 */
-	section?: "comparison" | "documents";
+	section?: "comparison" | "documents" | "specs";
 	/** A lifted block's own heading (sanitized inline HTML) and its body without it, for the page that sets the heading itself. */
 	title?: string | null;
 	body?: string;
+	/** A parameter sheet's rows as plain text (never markup), for the facts a page may set apart from it. */
+	facts?: SpecFact[];
 }
 
 interface ProductContent {
@@ -420,7 +423,15 @@ export function parseProductContent(
 					rendered.push(
 						outcome.role === "documents"
 							? { html: outcome.html, section: "documents", title: outcome.title, body: outcome.body }
-							: { html: outcome.html },
+							: outcome.role === "specs"
+								? {
+										html: outcome.html,
+										section: "specs",
+										title: outcome.title,
+										body: outcome.body,
+										facts: outcome.facts ?? [],
+									}
+								: { html: outcome.html },
 					);
 					if (header) index += 1;
 					continue;

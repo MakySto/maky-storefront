@@ -14,6 +14,7 @@ import {
 	ZapIcon,
 	type LucideIcon,
 } from "lucide-react";
+import { type SpecFact } from "@/lib/editorjs-content";
 import {
 	formatProductAttributeValue,
 	formatTemperatureRange,
@@ -72,7 +73,8 @@ const PHRASE: Readonly<
 	"cfm:attribute:weight": "highlightWeight",
 };
 
-type Highlight = { key: string; icon: LucideIcon; value: string; label: string | null };
+/** A fact of the band; a fact read from a parameter sheet has no icon, because nothing says which one fits. */
+type Highlight = { key: string; icon: LucideIcon | null; value: string; label: string | null };
 
 /**
  * The parameters worth seeing before the description, in the order a shopper decides by — for a
@@ -89,17 +91,25 @@ type Highlight = { key: string; icon: LucideIcon; value: string; label: string |
  * and the load per bike are two different attributes and are shown as such; nothing is derived
  * (no per-bike limit worked out by division), and a "no" is never promoted into a feature. The
  * one thing written together is a range, from its two ends.
+ *
+ * A product with no attributes of its own — a roof-rack set carries everything in its description —
+ * gets the band from the template instead, when the template says so: the first rows of the
+ * description's parameter sheet (`sheet`), each as it is written, the value over its name. No icon
+ * is drawn for them: nothing in a sheet says which icon fits a row, and a wrong one is worse than none.
  */
 export async function ProductHighlights({
 	attributes,
 	locale,
 	className,
 	template = templateFor(null),
+	sheet = [],
 }: {
 	attributes: readonly AttributeInput[];
 	locale: string;
 	className?: string;
 	template?: ProductTemplate;
+	/** The rows of the description's parameter sheet the band may be made of (`sheetFacts`). */
+	sheet?: readonly SpecFact[];
 }) {
 	const t = await getTranslations({ locale, namespace: "product" });
 	const words = { yes: t("yes"), no: t("no") };
@@ -140,10 +150,21 @@ export async function ProductHighlights({
 
 	// The template's facts first, then the generic ones, each key once.
 	const seen = new Set<string>();
-	const items = [...template.facts, ...GENERIC_FACTS]
+	const attributeItems = [...template.facts, ...GENERIC_FACTS]
 		.flatMap(highlight)
 		.filter(({ key }) => (seen.has(key) ? false : Boolean(seen.add(key))))
 		.slice(0, MAX_HIGHLIGHTS);
+	// The attributes gave the band too little to be one: the sheet's rows stand in for them, all or
+	// none, so a band never mixes a figure from an attribute with the same figure from the sheet.
+	const items: Highlight[] =
+		attributeItems.length >= 2
+			? attributeItems
+			: sheet.slice(0, MAX_HIGHLIGHTS).map(({ label, value }, index) => ({
+					key: `sheet:${index}`,
+					icon: null,
+					value,
+					label,
+				}));
 
 	if (items.length < 2) return null;
 
@@ -168,7 +189,7 @@ export async function ProductHighlights({
 						key={key}
 						className="bg-surface-muted flex min-w-0 items-center gap-3 px-4 py-4 sm:gap-3.5 sm:px-5"
 					>
-						<Icon className="text-brand h-7 w-7 shrink-0" strokeWidth={2} aria-hidden="true" />
+						{Icon && <Icon className="text-brand h-7 w-7 shrink-0" strokeWidth={2} aria-hidden="true" />}
 						<span className="min-w-0">
 							<span className="text-text-primary block text-[0.9375rem] leading-tight font-bold tracking-[-0.01em] break-words">
 								{value}

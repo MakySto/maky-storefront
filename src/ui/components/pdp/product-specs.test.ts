@@ -4,8 +4,10 @@ import { createElement, Fragment, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createTranslator } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
+import { getContentLabels } from "@/lib/content-labels";
+import { parseProductContent } from "@/lib/editorjs";
 import { formatProductAttributeValue, type AttributeInput } from "@/lib/product-attributes";
-import { templateFor } from "@/lib/product-templates";
+import { liftSections, sheetFacts, templateFor } from "@/lib/product-templates";
 import { ProductHighlights } from "./product-highlights";
 import { ProductSpecs } from "./product-specs";
 
@@ -130,6 +132,121 @@ describe("the key-facts band", () => {
 		);
 		expect(html).toContain(`Príkon 60${NBSP}W`);
 		expect(html).toContain(`Objem 19${NBSP}l`);
+	});
+});
+
+/**
+ * A roof-rack set's page, made from the real description CFM writes for one (the shared sample, a
+ * Thule set typed as `maky-content/1:stresny-nosic`): the sheet in a card of its own, the band
+ * from its first rows. The set has no attributes of its own but the maker.
+ */
+describe("a roof-rack set's page", async () => {
+	const rack = templateFor("stresny-nosic");
+	const sample = readFileSync(
+		path.join(process.cwd(), "docs/contracts/maky-content/set-thule-71732.description.json"),
+		"utf8",
+	);
+	const content = parseProductContent(sample, { content: await getContentLabels(SK) });
+	const sections = liftSections(content?.blocks ?? [], rack);
+	const maker = attribute("manufacturer", "Výrobca", "Thule");
+
+	const specs = (extra: Partial<Parameters<typeof ProductSpecs>[0]> = {}) =>
+		render(
+			ProductSpecs({
+				descriptionHtml: sections.description,
+				specs: sections.specs,
+				template: rack,
+				attributes: [],
+				locale: SK,
+				...extra,
+			}),
+		);
+
+	it("sets the description's parameter sheet in a card of its own, titled by the document, with a jump link", async () => {
+		const html = await specs();
+		expect(html).toMatch(/<h2 id="technical-parameters-heading"[^>]*>Technické parametre<\/h2>/);
+		expect(html).toContain('<section id="technical-parameters"');
+		expect(html).toContain('href="#technical-parameters"');
+		// The sheet's rows are the document's, once: not in the description's card as well.
+		expect(rowValue(html, "Nosnosť")).toBe("do 75 kg (zostavy)");
+		expect(rowValue(html, "Typ upevnenia")).toBe("na klasické lyžiny");
+		expect(html.match(/<dt>Nosnosť<\/dt>/g)).toHaveLength(1);
+		// The rest of the document stays in the description.
+		expect(html).toContain("maky-inbox");
+		expect(html).toContain("maky-callout-warn");
+	});
+
+	it("keeps the product's own attributes in the same card, under the sheet: no row is dropped", async () => {
+		const html = await specs({ attributes: [maker] });
+		expect(html.indexOf("T-drážka v priečniku")).toBeLessThan(html.indexOf("Výrobca"));
+		expect(rowValue(html, "Výrobca")).toBe("Thule");
+		expect(html.match(/id="technical-parameters"/g)).toHaveLength(1);
+	});
+
+	it("is the page it always was for the same product without the template's sheet", async () => {
+		const html = await specs({ specs: null, template: templateFor(null), attributes: [maker] });
+		// The generic page lifts nothing: the card holds the attributes only.
+		expect(rowValue(html, "Výrobca")).toBe("Thule");
+		expect(rowValue(html, "Nosnosť")).toBeNull();
+	});
+
+	it("opens with the sheet's first four rows as the key facts, the value over its name, without icons", async () => {
+		const html = await render(
+			ProductHighlights({
+				attributes: [maker],
+				locale: SK,
+				template: rack,
+				sheet: sheetFacts(sections, rack),
+			}),
+		);
+		expect(html.match(/<li/g)).toHaveLength(4);
+		for (const [value, label] of [
+			["do 75 kg (zostavy)", "Nosnosť"],
+			["127 cm", "Dĺžka priečnikov"],
+			["Hliník", "Materiál priečnikov"],
+			["Aerodynamický", "Profil"],
+		]) {
+			expect(html).toMatch(new RegExp(`>${value.replace(/[()]/g, "\\$&")}</span><span[^>]*>${label}</span>`));
+		}
+		// No icon is guessed for a row of text.
+		expect(html).not.toContain("<svg");
+		expect(html).not.toContain("Farba");
+	});
+
+	it("keeps the band the attributes make when they make one: the sheet does not mix in", async () => {
+		const html = await render(
+			ProductHighlights({
+				attributes: [
+					attribute("bike_capacity", "Počet bicyklov", "2"),
+					attribute("max_load", "Nosnosť", "60"),
+				],
+				locale: SK,
+				template: rack,
+				sheet: sheetFacts(sections, rack),
+			}),
+		);
+		expect(html).toContain("Pre 2 bicykle");
+		expect(html).not.toContain("do 75 kg");
+	});
+
+	it("has no band at all when the sheet gives fewer than two rows", async () => {
+		const html = await render(
+			ProductHighlights({
+				attributes: [],
+				locale: SK,
+				template: rack,
+				sheet: [{ label: "Nosnosť", value: "do 75 kg (zostavy)" }],
+			}),
+		);
+		expect(html).toBe("");
+	});
+
+	it("builds no band from a sheet for a template that does not say so", async () => {
+		const html = await render(
+			ProductHighlights({ attributes: [], locale: SK, template: templateFor(null), sheet: [] }),
+		);
+		expect(html).toBe("");
+		expect(sheetFacts(sections, templateFor(null))).toEqual([]);
 	});
 });
 

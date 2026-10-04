@@ -31,7 +31,7 @@ import { getLocaleFromChannel } from "@/config/locale";
 import { parseProductContent } from "@/lib/editorjs";
 import { getComparisonLabels } from "@/lib/comparison-labels";
 import { getContentLabels } from "@/lib/content-labels";
-import { liftSections, templateFor } from "@/lib/product-templates";
+import { liftSections, sheetFacts, templateFor } from "@/lib/product-templates";
 import { isSourceLocale } from "@/lib/saleor/exact-locale";
 import { publicSku } from "@/lib/product-code";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
@@ -373,6 +373,7 @@ async function ProductContent({
 					attributes={productAttributes}
 					locale={locale}
 					template={template}
+					sheet={sheetFacts(sections, template)}
 					className="mt-8 lg:mt-10"
 				/>
 
@@ -380,6 +381,7 @@ async function ProductContent({
 					descriptionHtml={sections?.description}
 					comparisonHtml={sections?.comparison}
 					documents={sections?.documents}
+					specs={sections?.specs}
 					template={template}
 					attributes={productAttributes}
 					careInstructions={careInstructions}
