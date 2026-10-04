@@ -94,12 +94,15 @@ export async function ProductSpecs({
 	// drift, whatever the render path.
 	const t = await getTranslations({ locale, namespace: "product" });
 	const words = { yes: t("yes"), no: t("no") };
+	const years = (count: number) => t("content.years", { count });
 
 	const attributeRows: ParameterRow[] = attributes
 		.map((attribute) => ({
 			ref: attribute.attribute.externalReference ?? "",
 			label: attribute.attribute.name ?? "",
-			values: formatProductAttributeValue(attribute, locale, words, (count) => t("content.years", { count })),
+			// The row prints the attribute's name beside its values, so a name that already says the unit
+			// ("Záruka (roky)") must not get it said a second time.
+			values: formatProductAttributeValue(attribute, locale, words, years, { nameBesideValue: true }),
 		}))
 		.filter((row) => row.label && row.values.length > 0);
 
