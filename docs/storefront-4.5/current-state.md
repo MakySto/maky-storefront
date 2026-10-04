@@ -10,7 +10,7 @@ ChatGPT pri príprave v2.0 čítal oba ZIP-y, ostatné prílohy, CLAUDE.md/AGENT
 
 - **GitHub overený pri v2.0:** `main = be64a695e57e9cca0fccb2a53ff774c25b0bd109`.
 - **GitHub overený pri v2.0:** `release/r1-thule-20261001 = 6e0f378f44d2d5e2871258492623e9f68e5479fe`. Toto je počiatočný vývojový a PR základ.
-- **M hlási produkciu:** `fab2985ab1d7df8703e53a6ff05df9b965dc8701`, BUILD_ID `F2fH6eFtARQRLHD7LGRR9`, build 1. 10. 21:23:35 UTC. Jeden obsluhujúci storefrontový proces.
+- **Produkcia (storefront VPS, nasadené 4. 10. 16:56 UTC):** `d64e2065c1fdd91eecccb909d1475306c132351e` (merge PR #3, špička `release/r1-thule-20261001` pri nasadení), BUILD_ID `5Lm0wXLDDpz5dnwbIhHzs`, build 4. 10. 16:56:15 UTC; predtým `fab2985` / `F2fH6eFtARQRLHD7LGRR9` (1. 10. 21:23:35 UTC). Jeden obsluhujúci storefrontový proces (`pm2 jlist`: 1, fork). Návrat: snapshot `.next.rollback-fab2985-F2fH6eFtARQRLHD7LGRR9-20261004T165548Z` v `/opt/storefront-rollbacks` (postup CLAUDE.md §13.3).
 - **M hlási SYNC-1:** SF `claude/sync1-release-manifest @ a848d82`; CFM PR #46 `c98094a`; nenasadené. V2.0 znovu neoveroval hroty týchto dvoch kandidátov.
 - **M hlási kolo 8:** `feat/round8-category-root-urls @ b74a652` iba na VPS, nepushnuté.
 - **Vetvy CoolZ pilotu (4. 10.):** storefront `claude/storefront-45-coolz-pilot-7n5gmo` z `release/r1-thule-20261001 @ 6e0f378`, PR #3 proti tej istej vetve; CFM `claude/storefront-45-coolz-pilot-7n5gmo` z `master @ a226a28`, PR #47 proti `master`. Detail v poslednej delte nižšie.
@@ -19,7 +19,7 @@ ChatGPT pri príprave v2.0 čítal oba ZIP-y, ostatné prílohy, CLAUDE.md/AGENT
 ## Posledné hlásené dáta a funkcie
 
 - Fitment `3.0.0-full-20261001.2`, hash `394346c97009832300cd407159117a42c99cf23541202117bc986d3da7d333c9`, podľa M `stale:false`. **staleAfter 31. 10. 2026 17:48:14 UTC**. Je to termín obnovy datasetu, nie dôkaz jeho aktuálneho poškodenia.
-- Texty vozidiel `20260915.2`; opravená sada `20261001` s 56 úvodmi pripravená, podľa M nenainštalovaná.
+- Texty vozidiel: sada `20261001` (56 opravených úvodov) je živá od 4. 10. 14:32 UTC. `MAKY_CATALOG_CONTENT_PATH` a `MAKY_CATALOG_CONTENT_SHA256SUMS` ukazujú na `…20261001…` v `/opt/storefront-artifacts`; sada `20260915.2` tam ostala nedotknutá ako návrat.
 - M hlási 12 živých/indexovateľných trhov; SK 18 721 produktov, zahraničné kanály po 9 157, Nordrive. Počty sú snímka, nie navždy očakávané hodnoty testov.
 - Výber vozidla, Garáž a kompatibilita existujú. Košík podľa M používa aktuálne vybrané auto a neukladá vozidlo pri vložení položky.
 - Payload konzument v3 podľa M nasadený; chýba `storefront-obrazky`, `categoryShowcase` konzument a časť homepage/kampaní. Presný rozsah ďalšieho CMS míľnika prevziať pri tej úlohe.
@@ -29,18 +29,18 @@ ChatGPT pri príprave v2.0 čítal oba ZIP-y, ostatné prílohy, CLAUDE.md/AGENT
 
 Vlastník je zodpovedný za dokončenie, nie trvalé výhradné oprávnenie. Pri prevzatí stačí aktuálna dohoda a krátka delta. Neaktívna alebo skončená stará relácia nie je dôvod čakať na špeciálny formulár; nadviazať treba na jej poslednú prácu bez duplicity.
 
-| ID    | Stav / dnešný vykonávateľ podľa podkladov            | Najbližší užitočný výsledok                                                                                                                           |
-| ----- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SF-2  | Pilot hotový, PR #3 (SF) a #47 (CFM); Marek: áno     | Kontrola Saleoru bez zápisu, potom nasadenie storefrontu, prepínač a publikácia piatich popisov (kroky v delte 4. 10. 14:02 UTC). Ďalšie bloky: SF-3. |
-| SF-1a | 56 úvodov pripravených; existujúce M                 | Doručiť už opravený obsah a ukázať dotknutú stránku bez nepravdivej vety. Neopakovať výrobu dát ani celý audit vozidiel.                              |
-| SF-1b | SYNC-1 kandidát; existujúce M + CFM                  | Dokončiť existujúcu implementáciu vrátane reálne automatickej publikácie. Konkrétne otvorené nálezy sú v handoffe §4; nie nový všeobecný audit.       |
-| SF-1c | CFM export, storefront prevzatie                     | Včas obnoviť dataset pred staleAfter.                                                                                                                 |
-| SF-1e | Hlásený chybný CSS limit v deploy smoke              | Opraviť nesprávne kritérium; nezrušiť overenie reálne načítaných štýlov.                                                                              |
-| SF-8  | Hotová lokálna vetva; existujúce M                   | Uchovať/pushnúť prácu, zosúladiť so súčasnou integráciou a dokončiť kategóriové URL/404. Vývoj nemusí čakať na všetky ostatné oblasti.                |
-| SF-3  | Návrh                                                | Po prvom CoolZ potrebné bloky a kompletná prezentácia; reprezentatívne sady s kitom aj bez.                                                           |
-| SF-4  | Jasný zákaznícky smer; medzera košíka známa          | Jednotný výber a položkové vozidlo, zachovanie Thule kategórie. Nečakať na opätovné poslanie už známych požiadaviek.                                  |
-| SF-5  | Existujúci CMS konzument, ďalšie funkcie nedokončené | Konkrétna redakčná zmena viditeľná v náhľade aj po publikovaní.                                                                                       |
-| SF-6  | Priebežná kvalita                                    | Cielené SEO/výkon pri dotknutých cestách, nie ďalší audit všetkého.                                                                                   |
+| ID    | Stav / dnešný vykonávateľ podľa podkladov            | Najbližší užitočný výsledok                                                                                                                     |
+| ----- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| SF-2  | SF nasadený 4. 10. 16:56; zostáva CFM; Marek: áno    | Prepínač a publikácia piatich popisov v CFM, najprv CoolZ 32 (kroky v delte 4. 10. 14:02 UTC). Ďalšie bloky: SF-3.                              |
+| SF-1a | Hotovo 4. 10. 14:32 UTC (storefront VPS)             | Doručené a overené: 56 z 56 stránok ukazuje opravený text, 0 starý. Nič ďalšie.                                                                 |
+| SF-1b | SYNC-1 kandidát; existujúce M + CFM                  | Dokončiť existujúcu implementáciu vrátane reálne automatickej publikácie. Konkrétne otvorené nálezy sú v handoffe §4; nie nový všeobecný audit. |
+| SF-1c | CFM export, storefront prevzatie                     | Včas obnoviť dataset pred staleAfter.                                                                                                           |
+| SF-1e | Hlásený chybný CSS limit v deploy smoke              | Opraviť nesprávne kritérium; nezrušiť overenie reálne načítaných štýlov.                                                                        |
+| SF-8  | Hotová lokálna vetva; existujúce M                   | Uchovať/pushnúť prácu, zosúladiť so súčasnou integráciou a dokončiť kategóriové URL/404. Vývoj nemusí čakať na všetky ostatné oblasti.          |
+| SF-3  | Návrh                                                | Po prvom CoolZ potrebné bloky a kompletná prezentácia; reprezentatívne sady s kitom aj bez.                                                     |
+| SF-4  | Jasný zákaznícky smer; medzera košíka známa          | Jednotný výber a položkové vozidlo, zachovanie Thule kategórie. Nečakať na opätovné poslanie už známych požiadaviek.                            |
+| SF-5  | Existujúci CMS konzument, ďalšie funkcie nedokončené | Konkrétna redakčná zmena viditeľná v náhľade aj po publikovaní.                                                                                 |
+| SF-6  | Priebežná kvalita                                    | Cielené SEO/výkon pri dotknutých cestách, nie ďalší audit všetkého.                                                                             |
 
 Prvé odporúčané súbežné výsledky sú CoolZ a dokončenie už rozpracovanej obsahovej integrácie. To nie je trvalý limit dvoch vlákien. Aktívny zákaznícky incident môže dostať prednosť.
 
@@ -74,3 +74,10 @@ Prvé odporúčané súbežné výsledky sú CoolZ a dokončenie už rozpracovan
 5. **Návrat.** Ak niečo nesedí: prepínač vypnúť a päť popisov znova publikovať (vrátia sa na zoznam, stránky sa obnovia ako v kroku 4). Kód storefrontu v produkcii zostáva, je bez účinku.
 
 Do overenia na skutočnom Dashboarde sa popisy CoolZ v Saleor Dashboarde neupravujú. SYNC-1, kolo 8 a 56 úvodov tento postup nemení.
+
+**4. 10. 2026, 14:32 a 16:56 UTC (relácia na storefront VPS)** — dve nasadenia na Marekov pokyn, úvody a potom CoolZ.
+
+- **Úvody 20261001 (14:32 UTC).** `sudo install` desiatich jazykových súborov, `SHA256SUMS_CONTENT_20261001` a schémy do `/opt/storefront-artifacts` (root:root 0644). `sha256sum -c` 11 z 11 v poriadku, súbory bajt po bajte rovnaké ako verejné súbory CFM; deväť jazykov je rovnakých ako `20260915.2`, SK sa líši v 56 stránkach z 1 478. `.env` zálohovaný (`.env.backup-20261004T143023Z`), dve premenné prepnuté, jeden `pm2 restart`, zahriatie štyroch stránok (200 na prvý pokus). Na webe 56 z 56 stránok ukazuje opravený text a 0 starý (Ford Tourneo Courier V769: „riešenia pre autá s klasickými lyžinami aj s fixačnými bodmi“), vzorka 41 stránok vrátane 11 ďalších trhov dáva 200, sitemap `sk-vehicles` ostal 1 475 URL, dataset nezmenený (`394346c97009`). Návrat: obnoviť `.env` zo zálohy a `pm2 restart maky-storefront`.
+- **Čítačka tabuľky CoolZ (16:56 UTC).** `scripts/ops/deploy-production.sh` na `d64e206`: testy zelené, výpadok 206 s, lokálna brána aj verejné kontroly bez varovania, exit 0. Po nasadení je 47 stránok vzorky (päť CoolZ, TK20414, Ford V769 a 40 ďalších produktov) rovnakých ako pred ním, v HTML nie je `class="maky-cmp"` a päť stránok CoolZ ostáva so zoznamom. Desktop aj telefón (390 px) v prehliadači bez vodorovného posunu, úvody stále 56 z 56. Čítačka je živá a bez účinku, kým CFM nepublikuje popis s tabuľkou. Relácii „CFM VPS“ som to oznámil priamo (prečítanie nepotvrdené).
+- **Fakty z kroku 0 SYNC-1** (z bežiaceho procesu, 4. 10. 14:35 UTC): `pm2 jlist` 1 online proces; `MAKY_CATALOG_CONTENT_PATH=/opt/storefront-artifacts/maky_catalog_content_1.0.0-{lang}-20261001.json`, `MAKY_CATALOG_CONTENT_SHA256SUMS=/opt/storefront-artifacts/SHA256SUMS_CONTENT_20261001`, `MAKY_CATALOG_CONTENT_URL` nenastavené, `MAKY_FITMENT_URL=https://carfitmanager.com/media/fitment/maky_roof_fitment_3.0.0-full-20261001.2.json`; `/api/fitment/status`: `3.0.0-full-20261001.2`, `datasetHash` `394346c97009832300cd407159117a42c99cf23541202117bc986d3da7d333c9`, `staleAfter` 2026-10-31T17:48:14Z. Poslané relácii „CFM VPS“. Vetva SYNC-1 nie je nasadená, `/api/catalog/status` dáva 404.
+- **Nálezy mimo rozsahu, nezmenené.** Medzi 14:32 a 16:56 UTC starý proces zalogoval `NEXT_STATIC_GEN_BAILOUT` pre `/[channel]/znacky` a `/[channel]`, dve vypršania čakania na Saleor (`CategoryPrices`, `ProductMarketPresence`); o 14:19 UTC dal prvý dotaz na `/sk/konfigurator` 500 a ďalšie boli 200. Po novom štarte o 16:56 UTC nič. Falošný exit 75 z 1. 10. (kritérium CSS v smoke teste, SF-1e) sa tentoraz neukázal, kritérium samo ostáva neopravené.
