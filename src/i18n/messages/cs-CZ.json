@@ -123,6 +123,13 @@
 		"outerDimensions": "Vnější rozměry",
 		"yes": "Ano",
 		"no": "Ne",
+		"comparison": {
+			"thisModel": "Tento model",
+			"modelCount": "{count, plural, one {# model} few {# modely} many {# modelu} other {# modelů}}",
+			"parameter": "Parametr",
+			"sameForAll": "Stejné pro všechny modely",
+			"scrollRegion": "Porovnání modelů, posuvná tabulka"
+		},
 		"keyFeatures": "Hlavní vlastnosti",
 		"productDescription": "Popis produktu",
 		"imageCounter": "Obrázek {current} z {total}",

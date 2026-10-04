@@ -1,0 +1,18 @@
+{
+  "cfm_copy": "backend/apps/saleor_sync/storefront_contract/comparison_table_coolz_32.description.json",
+  "cfm_git_head": "2757cba2d6437d2af6348728461c0fb3c4582285",
+  "cfm_tree_state": "clean",
+  "file": "coolz-32.description.json",
+  "git_blob_sha1": "90307d666aa57b9901f38a447e061e4c0076ade2",
+  "inputs": {
+    "coolz_catalog_v1.json": "b759d31e51483d67fde8f0e59b3498ff88866a15c0662b51f0e4aa60ca2cdfc0",
+    "coolz_catalog_v1.production_receipt.json": "5a5753cb80420ece57a312c4eb3a068c2d844ede6630d7a57824eb00add915fa",
+    "coolz_legacy_rich_html_v1.txt": "0869fd14f5a700ffaed4ed94d6711b1374318b5463e40449b78c7aec25a1d46d"
+  },
+  "model": "CoolZ 32",
+  "native_tables": true,
+  "producer": "backend/scripts/storefront_comparison_sample.py --example",
+  "sha256": "fa42023c8b3e81b8322fffce0825a445f18b2bf7c51b72ff1bd226081c154164",
+  "sku": "TK20410",
+  "values_source": "onboarding manifest, not the production database; nothing here connects to one"
+}

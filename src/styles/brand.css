@@ -640,6 +640,308 @@
 	}
 }
 
+/*
+ * The model comparison table (the approved design: PRODUCT_TEMPLATES, "Tabuľka ako tabuľka").
+ *
+ * `parseEditorJSToHtml` builds it from a plain Editor.js table that carries the comparison
+ * profile (`docs/contracts/comparison-table.md`), so everything here styles markup this
+ * renderer emitted itself. The current model's column is highlighted, rows are in titled
+ * parts, the rows that are the same for every model are one band, and the first column stays
+ * put while the rest scrolls. The narrow layout follows the width of the box the table is in
+ * (a container query), not the window, so it holds in a half-width column as much as on a phone.
+ */
+@layer components {
+	.maky-cmp {
+		container-type: inline-size;
+		margin-block: 2rem 1rem;
+	}
+
+	.maky-cmp-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.375rem 1.125rem;
+		margin-bottom: 0.875rem;
+	}
+
+	.maky-cmp-head > :is(h2, h3, h4, h5, h6) {
+		margin: 0;
+	}
+
+	.maky-cmp-cap {
+		font-size: 0.8125rem;
+		color: var(--text-tertiary);
+	}
+
+	.maky-cmp-frame {
+		position: relative;
+	}
+
+	.maky-cmp-scroll {
+		position: relative;
+		overflow-x: auto;
+		border: 1px solid var(--border-default);
+		border-radius: var(--radius-sm);
+		background: var(--surface-card);
+	}
+
+	.maky-cmp-scroll:focus-visible {
+		outline: var(--focus-ring-width) solid var(--focus-ring);
+		outline-offset: var(--focus-ring-offset);
+	}
+
+	.maky-cmp-table {
+		/* The first column's width and the cells' side padding: the one value that stays beside
+		   it while the table scrolls is placed with them (`.maky-cmp-sv`). */
+		--cmp-label: 168px;
+		--cmp-pad: 14px;
+		border-collapse: separate;
+		border-spacing: 0;
+		width: 100%;
+		min-width: 760px;
+		margin: 0;
+		font-size: 0.875rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.maky-cmp-table :is(th, td) {
+		padding: 11px var(--cmp-pad);
+		border-bottom: 1px solid var(--border-subtle);
+		text-align: center;
+		vertical-align: middle;
+	}
+
+	.maky-cmp-table thead th {
+		background: var(--surface-muted);
+		color: var(--text-primary);
+		font-weight: 700;
+		vertical-align: bottom;
+		padding-block: 14px 13px;
+		border-bottom: 1px solid var(--border-default);
+		line-height: 1.25;
+	}
+
+	.maky-cmp-table thead th:first-child {
+		text-align: left;
+		position: sticky;
+		left: 0;
+		z-index: 3;
+	}
+
+	.maky-cmp-name {
+		display: block;
+		font-size: 0.9375rem;
+		letter-spacing: -0.01em;
+	}
+
+	.maky-cmp-table tbody th[scope="row"] {
+		position: sticky;
+		left: 0;
+		z-index: 2;
+		min-width: var(--cmp-label);
+		text-align: left;
+		background: var(--surface-primary);
+		color: var(--text-primary);
+		font-weight: 600;
+		line-height: 1.35;
+		border-right: 1px solid var(--border-subtle);
+	}
+
+	/* The current model: a tinted column, its header in the brand colour. */
+	.maky-cmp-table .maky-cmp-self {
+		background: var(--surface-accent);
+		font-weight: 700;
+		border-left: 1px solid var(--color-copper-200);
+		border-right: 1px solid var(--color-copper-200);
+	}
+
+	.maky-cmp-table thead th.maky-cmp-self {
+		background: var(--brand);
+		color: var(--brand-text);
+		border-color: var(--brand);
+	}
+
+	.maky-cmp-you {
+		display: inline-block;
+		margin-bottom: 7px;
+		padding: 3px 8px;
+		border-radius: 999px;
+		background: oklch(1 0 0 / 0.2);
+		font-size: 10px;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		white-space: nowrap;
+	}
+
+	/* A titled part. The title stays in view while the columns scroll under it. */
+	.maky-cmp-table .maky-cmp-grp th {
+		padding: 9px 14px;
+		background: var(--surface-primary);
+		border-top: 1px solid var(--border-default);
+		border-bottom: 1px solid var(--border-subtle);
+		text-align: left;
+		color: var(--brand);
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		white-space: nowrap;
+	}
+
+	.maky-cmp-table tbody tr:first-child.maky-cmp-grp th {
+		border-top: 0;
+	}
+
+	.maky-cmp-gl {
+		position: sticky;
+		left: 14px;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	/* One value for every model: a single cell across the table. */
+	.maky-cmp-table td.maky-cmp-same {
+		text-align: left;
+		background: var(--surface-primary);
+		color: var(--text-primary);
+		font-weight: 600;
+	}
+
+	/*
+	 * The cell spans every model column, so it is as wide as the table; the value inside it is what
+	 * stays in view, directly right of the fixed first column, however far the table is scrolled.
+	 */
+	.maky-cmp-sv {
+		position: sticky;
+		left: calc(var(--cmp-label) + var(--cmp-pad));
+		display: inline-block;
+		max-width: calc(100cqw - var(--cmp-label) - 2 * var(--cmp-pad) - 2px);
+	}
+
+	.maky-cmp-table tbody tr:last-child :is(th, td) {
+		border-bottom: 0;
+	}
+
+	/* Dimensions wrap at their spaces until the box is wide enough to hold them on one line. */
+	.maky-cmp-table td.maky-cmp-nw {
+		white-space: normal;
+	}
+
+	@container (min-width: 1040px) {
+		.maky-cmp-table td.maky-cmp-nw {
+			white-space: nowrap;
+		}
+	}
+
+	/* Yes is a green mark with the word for assistive technology; no and "nothing" are quiet. */
+	.maky-cmp-yes {
+		display: inline-grid;
+		place-items: center;
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		background: var(--surface-success);
+		border: 1px solid var(--border-success);
+		color: var(--text-success);
+		vertical-align: middle;
+	}
+
+	.maky-cmp-yes::before {
+		content: "";
+		width: 13px;
+		height: 13px;
+		background: currentColor;
+		-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+		mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+	}
+
+	.maky-cmp-no {
+		color: var(--text-tertiary);
+		font-weight: 500;
+	}
+
+	.maky-cmp-nil {
+		color: var(--text-tertiary);
+		font-weight: 400;
+	}
+
+	.maky-cmp-sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		white-space: nowrap;
+	}
+
+	.maky-cmp-fade {
+		display: none;
+	}
+
+	@media (hover: hover) {
+		.maky-cmp-table tbody tr:not(.maky-cmp-grp):hover td:not(.maky-cmp-self),
+		.maky-cmp-table tbody tr:not(.maky-cmp-grp):hover th[scope="row"] {
+			background: var(--surface-muted);
+		}
+	}
+
+	/* Narrower than the table: it scrolls, so the first column has one exact width and the right edge fades. */
+	@container (max-width: 760px) {
+		.maky-cmp-table tbody th[scope="row"] {
+			width: var(--cmp-label);
+			max-width: var(--cmp-label);
+		}
+
+		.maky-cmp-fade {
+			display: block;
+			position: absolute;
+			top: 1px;
+			right: 1px;
+			bottom: 1px;
+			width: 30px;
+			background: linear-gradient(to right, transparent, var(--surface-card));
+			border-radius: 0 11px 11px 0;
+			pointer-events: none;
+			z-index: 4;
+		}
+	}
+
+	@container (max-width: 640px) {
+		.maky-cmp-table {
+			--cmp-label: 118px;
+			--cmp-pad: 10px;
+			min-width: 620px;
+			font-size: 0.8125rem;
+		}
+
+		.maky-cmp-table :is(th, td) {
+			padding-block: 10px;
+		}
+
+		.maky-cmp-table tbody th[scope="row"] {
+			font-size: 0.78rem;
+			box-shadow: 1px 0 0 var(--border-default);
+		}
+
+		.maky-cmp-table td {
+			min-width: 94px;
+		}
+
+		.maky-cmp-name {
+			font-size: 0.875rem;
+		}
+
+		.maky-cmp-you {
+			padding: 2px 6px;
+			font-size: 9px;
+			letter-spacing: 0.05em;
+		}
+	}
+}
+
 /* ──────────────────────────────────────────────────────────────
    Layer 5 — Animations
    ──────────────────────────────────────────────────────────────

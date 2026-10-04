@@ -29,6 +29,7 @@ import {
 } from "@/ui/components/pdp";
 import { getLocaleFromChannel } from "@/config/locale";
 import { parseEditorJSToHtml } from "@/lib/editorjs";
+import { getComparisonLabels } from "@/lib/comparison-labels";
 import { isSourceLocale } from "@/lib/saleor/exact-locale";
 import { publicSku } from "@/lib/product-code";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
@@ -176,7 +177,9 @@ async function ProductContent({
 	const selectedVariantId = searchParams.variant || (variants.length === 1 ? variants[0].id : undefined);
 	const selectedVariant = variants.find((v) => v.id === selectedVariantId);
 
-	const descriptionHtml = parseEditorJSToHtml(product.description);
+	const descriptionHtml = parseEditorJSToHtml(product.description, {
+		comparison: await getComparisonLabels(getLocaleFromChannel(params.channel)),
+	});
 	const images = getGalleryImages(product, selectedVariant);
 	const productAttributes = extractProductAttributes(product);
 	const subtitle =

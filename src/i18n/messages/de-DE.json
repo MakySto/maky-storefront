@@ -123,6 +123,13 @@
 		"outerDimensions": "Außenmaße",
 		"yes": "Ja",
 		"no": "Nein",
+		"comparison": {
+			"thisModel": "Dieses Modell",
+			"modelCount": "{count, plural, one {# Modell} other {# Modelle}}",
+			"parameter": "Parameter",
+			"sameForAll": "Bei allen Modellen gleich",
+			"scrollRegion": "Modellvergleich, scrollbare Tabelle"
+		},
 		"keyFeatures": "Wichtigste Merkmale",
 		"productDescription": "Produktbeschreibung",
 		"imageCounter": "Bild {current} von {total}",

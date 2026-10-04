@@ -123,6 +123,13 @@
 		"outerDimensions": "Outer dimensions",
 		"yes": "Yes",
 		"no": "No",
+		"comparison": {
+			"thisModel": "This model",
+			"modelCount": "{count, plural, one {# model} other {# models}}",
+			"parameter": "Parameter",
+			"sameForAll": "Same for all models",
+			"scrollRegion": "Model comparison, scrollable table"
+		},
 		"keyFeatures": "Key features",
 		"productDescription": "Product description",
 		"imageCounter": "Image {current} of {total}",

@@ -123,6 +123,13 @@
 		"outerDimensions": "Külső méretek",
 		"yes": "Igen",
 		"no": "Nem",
+		"comparison": {
+			"thisModel": "Ez a modell",
+			"modelCount": "{count, plural, one {# modell} other {# modell}}",
+			"parameter": "Paraméter",
+			"sameForAll": "Minden modellnél azonos",
+			"scrollRegion": "Modellek összehasonlítása, görgethető táblázat"
+		},
 		"keyFeatures": "Fő jellemzők",
 		"productDescription": "Termékleírás",
 		"imageCounter": "{current}. kép / {total}",
