@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { cn } from "@/lib/utils";
+import { ComparisonScrollToCurrent } from "./comparison-scroll";
 
 import {
 	formatOuterDimensions,
@@ -34,6 +35,9 @@ const DESCRIPTION_PROSE = cn(
 	"[&>div:first-child>p:first-child]:text-text-primary [&>div:first-child>p:first-child]:text-[1.0625rem] [&>div:first-child>p:first-child]:font-medium sm:[&>div:first-child>p:first-child]:text-lg",
 	"prose-ul:pl-5 prose-li:my-1 prose-li:marker:text-brand",
 );
+
+/** The scrolling box `parseEditorJSToHtml` puts around a model comparison table. */
+const COMPARISON_REGION_CLASS = "maky-cmp-scroll";
 
 /** A value longer than this reads as a sentence: it gets the row's full width, left-aligned. */
 const LONG_VALUE = 32;
@@ -149,6 +153,11 @@ export async function ProductSpecs({
 								))}
 							</div>
 						) : null}
+						{/* Only a description with a model comparison ships the few lines that start its
+						    scrolling table at the current model. */}
+						{descriptionHtml?.some((html) => html.includes(COMPARISON_REGION_CLASS)) && (
+							<ComparisonScrollToCurrent />
+						)}
 
 						{careInstructions && (
 							<div className="border-border-subtle bg-surface-secondary mt-8 rounded-xs border p-4 sm:p-5">

@@ -123,6 +123,13 @@
 		"outerDimensions": "Dimensiuni exterioare",
 		"yes": "Da",
 		"no": "Nu",
+		"comparison": {
+			"thisModel": "Acest model",
+			"modelCount": "{count, plural, one {# model} few {# modele} other {# de modele}}",
+			"parameter": "Parametru",
+			"sameForAll": "La fel pentru toate modelele",
+			"scrollRegion": "Comparație între modele, tabel derulabil"
+		},
 		"keyFeatures": "Caracteristici principale",
 		"productDescription": "Descrierea produsului",
 		"imageCounter": "Imaginea {current} din {total}",

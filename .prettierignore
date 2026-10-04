@@ -51,3 +51,8 @@ docs/design/market-rollout/*/shipping-states.*.json
 # test verifies them. Reformatting the JSON changes the bytes and breaks the checksum,
 # which would make a vendored artefact silently stop matching its source.
 src/lib/cms/__fixtures__/provider-handoff-20260910/
+
+# The comparison-table example is the producer's own output (CFM), copied in verbatim; its
+# SHA-256 and git blob id are recorded in PROVENANCE.json and re-verified by
+# editorjs-comparison.test.ts, and CFM pins the same bytes. Reformatting changes them.
+docs/contracts/comparison-table/
