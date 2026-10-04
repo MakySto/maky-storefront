@@ -203,6 +203,84 @@ describe("a car fridge's attributes", () => {
 	});
 });
 
+describe("a name that already states the unit", () => {
+	// The market's plural as the catalogue writes it: one / few / many / other, so "rok" "roky" "roka" "rokov".
+	const years = (count: number) =>
+		Number.isInteger(count)
+			? count === 1
+				? "1 rok"
+				: count < 5
+					? `${count} roky`
+					: `${count} rokov`
+			: `${count} roka`;
+	const named = (key: string, name: string | null, values: string[]) =>
+		attr(`cfm:attribute:${key}`, values, { name });
+	const beside = { nameBesideValue: true };
+	const table = (attribute: AttributeInput) =>
+		formatProductAttributeValue(attribute, SK, undefined, years, beside);
+
+	it("prints the bare number where the name says years, as the live warranty does", () => {
+		// The production attribute is "Záruka (roky)": "Záruka (roky) 2 roky" said years twice.
+		expect(table(named("warranty_years", "Záruka (roky)", ["2"]))).toEqual(["2"]);
+		expect(table(named("warranty_years", "Záruka (roky)", ["1,5"]))).toEqual(["1,5"]);
+	});
+
+	it("still writes the plural where the name does not say years", () => {
+		expect(table(named("warranty_years", "Záruka", ["2"]))).toEqual(["2 roky"]);
+		expect(table(named("warranty_years", null, ["2"]))).toEqual(["2 roky"]);
+		// A bracket is not the unit just for being a bracket.
+		expect(table(named("warranty_years", "Záruka (výrobca)", ["2"]))).toEqual(["2 roky"]);
+		expect(table(named("warranty_years", "Záruka 2 roky", ["2"]))).toEqual(["2 roky"]);
+	});
+
+	it.each(["rok", "roky", "rokov", "roka", "ROKY"])("knows %s as the market's word for years", (word) => {
+		expect(table(named("warranty_years", `Záruka (${word})`, ["2"]))).toEqual(["2"]);
+	});
+
+	it("keeps the unit of a measurement the name does not state, and drops the one it does", () => {
+		const power = (name: string) => table(named("rated_power", name, ["60"]));
+		expect(power("Menovitý výkon")).toEqual([`60${NBSP}W`]);
+		expect(power("Menovitý výkon (W)")).toEqual(["60"]);
+		expect(power("Menovitý výkon [w]")).toEqual(["60"]);
+		expect(power("Menovitý výkon (W, 12/24 V)")).toEqual(["60"]);
+		// The unit we hold is the one asked for: "(kW)" is another, and is not guessed to be it.
+		expect(power("Menovitý výkon (kW)")).toEqual([`60${NBSP}W`]);
+	});
+
+	it.each([
+		["net_volume", "Čistý objem (l)", "17", `17${NBSP}l`],
+		["interior_height", "Výška vnútra (mm)", "287", `287${NBSP}mm`],
+		["input_current_ac", "Vstupný prúd AC (A)", "0,26", `0,26${NBSP}A`],
+		["temperature_min", "Najnižšia teplota (°C)", "2", `2${NBSP}°C`],
+		["temperature_max", "Najvyššia teplota (°C)", "8", `8${NBSP}°C`],
+	])("%s: the number alone under %s", (key, name, value, withUnit) => {
+		expect(table(named(key, name, [value]))).toEqual([value]);
+		expect(table(named(key, name.replace(/ \(.*\)$/, ""), [value]))).toEqual([withUnit]);
+	});
+
+	it("keeps the unit wherever the value stands without its name", () => {
+		// The key-facts band prints "Príkon 60 W": the name is not beside the value there.
+		const power = named("rated_power", "Menovitý výkon (W)", ["60"]);
+		expect(formatProductAttributeValue(power, SK)).toEqual([`60${NBSP}W`]);
+		expect(formatProductAttributeValue(power, SK, undefined, years)).toEqual([`60${NBSP}W`]);
+		const warranty = named("warranty_years", "Záruka (roky)", ["2"]);
+		expect(formatProductAttributeValue(warranty, SK, undefined, years)).toEqual(["2 roky"]);
+	});
+
+	it("leaves the older units as the live pages print them", () => {
+		// These units were printed beside their names long before the car-fridge page; nothing about
+		// them changes with it, whatever the name says.
+		expect(table(named("weight", "Hmotnosť (kg)", ["25,2"]))).toEqual([`25,2${NBSP}kg`]);
+		expect(table(named("volume", "Objem (l)", ["590"]))).toEqual([`590${NBSP}l`]);
+		expect(table(named("max_load", "Nosnosť (kg)", ["75"]))).toEqual([`75${NBSP}kg`]);
+	});
+
+	it("never touches a value that is text", () => {
+		expect(table(named("warranty_years", "Záruka (roky)", ["do konca roka"]))).toEqual(["do konca roka"]);
+		expect(table(named("rated_power", "Menovitý výkon (W)", ["podľa režimu"]))).toEqual(["podľa režimu"]);
+	});
+});
+
 describe("formatTemperatureRange", () => {
 	const join = (min: string, max: string) => `${min} až ${max}`;
 	const ends = (min: string | null, max: string | null): AttributeInput[] => [
