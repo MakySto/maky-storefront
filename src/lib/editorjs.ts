@@ -1,8 +1,26 @@
-import xss, { safeAttrValue as defaultSafeAttrValue, type IWhiteList } from "xss";
-interface EditorJSBlock {
-	type: string;
-	data: Record<string, unknown>;
-}
+import xss from "xss";
+import {
+	hasText,
+	isUnknownRole,
+	readEnvelope,
+	readMarker,
+	renderRole,
+	type ContentBlock,
+	type ContentIssue,
+	type ContentLabels,
+} from "./editorjs-content";
+import {
+	escapeHtml,
+	plainText,
+	sanitizeBlock,
+	sanitizeInline,
+	TABLE_SCROLL_CLASS,
+} from "./editorjs-sanitize";
+
+export { TABLE_SCROLL_CLASS };
+export type { ContentLabels };
+
+type EditorJSBlock = ContentBlock;
 
 interface EditorJSContent {
 	time?: number;
@@ -31,7 +49,7 @@ export interface ComparisonLabels {
 	no: string;
 }
 
-export interface ParseOptions {
+interface ParseOptions {
 	/**
 	 * Present where the page wants the comparison-table profile read: a table that carries its
 	 * markers (see `docs/contracts/comparison-table.md`) is then set as a comparison. Without
@@ -39,127 +57,14 @@ export interface ParseOptions {
 	 * extraction for metadata relies on.
 	 */
 	comparison?: ComparisonLabels;
+	/**
+	 * Present where the page wants the typed content profile read (`docs/contracts/maky-content.md`):
+	 * a document whose `version` is `maky-content/1…` then has its marked blocks drawn as callouts,
+	 * benefits, the contents of the box and so on. Without it every block is the plain block it is
+	 * in Saleor, which is what text extraction for metadata relies on.
+	 */
+	content?: ContentLabels;
 }
-
-const INLINE_TAGS: IWhiteList = {
-	a: ["href", "title", "target", "rel"],
-	b: [],
-	br: [],
-	code: [],
-	em: [],
-	i: [],
-	mark: [],
-	strong: [],
-};
-
-/**
- * The one class this renderer is allowed to emit.
- *
- * A wide table has to be able to scroll inside its own box, or it widens the
- * page and the whole document pans sideways on a phone. That needs a container
- * element, and the container needs a hook to style — so `div` carries `class`,
- * and `safeAttrValue` below rejects every value except this exact one. Nothing
- * from Saleor can reach that attribute in any case: cell text is sanitized with
- * INLINE_TAGS first, which has neither `div` nor any `class`.
- */
-export const TABLE_SCROLL_CLASS = "maky-prose-scroll";
-
-const BLOCK_TAGS: IWhiteList = {
-	...INLINE_TAGS,
-	// `class` and the few ARIA/focus attributes exist for what this renderer builds itself — the
-	// scroll container and the comparison table. Cell text is sanitized with INLINE_TAGS before
-	// it is placed in any of them, so none of it can reach these attributes; and
-	// `safeAttrValue` below accepts only the exact values this file emits.
-	div: ["class", "tabindex", "role", "aria-label"],
-	span: ["class", "aria-hidden"],
-	blockquote: [],
-	caption: ["class"],
-	figcaption: [],
-	figure: [],
-	h2: [],
-	h3: [],
-	h4: [],
-	h5: [],
-	h6: [],
-	hr: [],
-	img: ["src", "alt", "width", "height", "loading", "decoding"],
-	li: [],
-	ol: [],
-	p: [],
-	table: ["class"],
-	tbody: [],
-	td: ["class", "colspan"],
-	th: ["class", "scope", "colspan"],
-	thead: [],
-	tr: ["class"],
-	ul: [],
-};
-
-/**
- * The classes each tag may carry, and no others. `maky-prose-scroll` is the plain table's
- * container; the rest belong to the comparison table (styled in `brand.css`). `not-prose` keeps
- * the typography plugin's table rules off it.
- */
-const COMPARISON_CLASSES: Record<string, readonly string[]> = {
-	div: ["maky-cmp", "maky-cmp-head", "maky-cmp-frame", "maky-cmp-scroll", "not-prose"],
-	span: [
-		"maky-cmp-cap",
-		"maky-cmp-you",
-		"maky-cmp-name",
-		"maky-cmp-yes",
-		"maky-cmp-no",
-		"maky-cmp-nil",
-		"maky-cmp-fade",
-		"maky-cmp-gl",
-		"maky-cmp-sv",
-		"maky-cmp-sr",
-	],
-	caption: ["maky-cmp-sr"],
-	table: ["maky-cmp-table"],
-	tr: ["maky-cmp-grp", "maky-cmp-common"],
-	th: ["maky-cmp-self"],
-	td: ["maky-cmp-self", "maky-cmp-same", "maky-cmp-nw"],
-};
-
-/** What a value is allowed to be, per attribute, once the tag has let the attribute through. */
-const FIXED_ATTRIBUTE_VALUES: Record<string, RegExp> = {
-	scope: /^(col|row|rowgroup)$/,
-	colspan: /^[1-9]\d?$/,
-	tabindex: /^0$/,
-	role: /^region$/,
-	"aria-hidden": /^true$/,
-};
-
-const sanitizeInline = (value: unknown): string =>
-	xss(typeof value === "string" ? value : "", {
-		whiteList: INLINE_TAGS,
-		stripIgnoreTag: true,
-		stripIgnoreTagBody: ["script", "style", "iframe", "object", "embed"],
-	});
-
-const sanitizeBlock = (value: string): string =>
-	xss(value, {
-		whiteList: BLOCK_TAGS,
-		stripIgnoreTag: true,
-		stripIgnoreTagBody: ["script", "style", "iframe", "object", "embed"],
-		safeAttrValue(tag, name, value, cssFilter) {
-			// `class` exists for what this renderer builds and nothing else. A value is kept
-			// only when it is the scroll container's exact class, or when every token is one
-			// this tag is listed for; anything else is dropped rather than passed through, so
-			// widening the whitelist cannot become a general styling channel.
-			if (name === "class") {
-				if (value === TABLE_SCROLL_CLASS && tag === "div") return value;
-				const allowed = COMPARISON_CLASSES[tag] ?? [];
-				const tokens = value.split(/\s+/).filter(Boolean);
-				return tokens.length > 0 && tokens.every((token) => allowed.includes(token)) ? tokens.join(" ") : "";
-			}
-			if (name === "aria-label")
-				return tag === "div" ? defaultSafeAttrValue(tag, name, value, cssFilter) : "";
-			const fixed = FIXED_ATTRIBUTE_VALUES[name];
-			if (fixed) return fixed.test(value) ? value : "";
-			return defaultSafeAttrValue(tag, name, value, cssFilter);
-		},
-	});
 
 const positiveDimension = (value: unknown, fallback: number): number =>
 	typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.round(value) : fallback;
@@ -198,9 +103,6 @@ const ABSENT_MARK = "\u2014";
 const CURRENT_HEADER = /^\s*<mark>([\s\S]*)<\/mark>\s*$/i;
 /** Dimensions ("669 × 374 × 398 mm") keep to one line where the width allows it. */
 const DIMENSION_VALUE = /\d\s×\s\d/;
-
-const escapeHtml = (value: string): string =>
-	value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 const cellText = (value: unknown): string => (typeof value === "string" ? value : "");
 
@@ -264,6 +166,8 @@ function renderComparison(
 	data: Record<string, unknown>,
 	labels: ComparisonLabels,
 	title?: { text: unknown; level: unknown },
+	/** In a typed document the title is set like every other block's: an `h3` of the shared class. */
+	typed = false,
 ): string | null {
 	const table = readComparison(data);
 	if (!table) return null;
@@ -342,10 +246,12 @@ function renderComparison(
 
 	// The heading directly above the table is its title; the caption beside it counts the models.
 	const titleHtml = title ? sanitizeInline(title.text) : "";
-	const level = Math.min(6, Math.max(2, Number(title?.level) || 2));
-	const plainTitle = xss(titleHtml, { whiteList: {}, stripIgnoreTag: true });
+	const level = typed ? 3 : Math.min(6, Math.max(2, Number(title?.level) || 2));
+	const plainTitle = plainText(titleHtml);
 	const heading = titleHtml
-		? `<div class="maky-cmp-head"><h${level}>${titleHtml}</h${level}><span class="maky-cmp-cap">${escapeHtml(
+		? `<div class="maky-cmp-head"><h${level}${
+				typed ? ' class="maky-h"' : ""
+			}>${titleHtml}</h${level}><span class="maky-cmp-cap">${escapeHtml(
 				labels.models(valueColumns),
 			)}</span></div>`
 		: "";
@@ -406,7 +312,7 @@ function renderBlock(block: EditorJSBlock): string | null {
 			const src = safeImageUrl(file.url ?? data.url);
 			if (!src) return null;
 			const caption = sanitizeInline(data.caption);
-			const alt = xss(caption, { whiteList: {}, stripIgnoreTag: true });
+			const alt = plainText(caption);
 			const width = positiveDimension(data.width ?? file.width, 1024);
 			const height = positiveDimension(data.height ?? file.height, 768);
 			return `<figure><img src="${src}" alt="${alt}" width="${width}" height="${height}" loading="lazy" decoding="async">${
@@ -440,52 +346,165 @@ export function isEditorJSContent(content: string | null | undefined): boolean {
 	return Boolean(content && parseContent(content));
 }
 
+/** One rendered block of a description, in document order. */
+export interface ProductContentBlock {
+	html: string;
+	/**
+	 * Which section a template may lift this block into, when it is one: the model comparison and
+	 * the documents each have a card of their own on a template page.
+	 */
+	section?: "comparison" | "documents";
+	/** A lifted block's own heading (sanitized inline HTML) and its body without it, for the page that sets the heading itself. */
+	title?: string | null;
+	body?: string;
+}
+
+interface ProductContent {
+	blocks: ProductContentBlock[];
+	/** The template the document names (`maky-content/1:<template>`), or null. The registry decides if it knows it. */
+	template: string | null;
+	/** The typed profile was read: the caller asked for it and the document's major version is known. */
+	typed: boolean;
+	/** What could not be drawn as intended. A page logs these; none of them removes text. */
+	issues: ContentIssue[];
+}
+
 /**
- * Render only explicitly supported Editor.js blocks.
+ * Render only explicitly supported Editor.js blocks, and say what the document is.
  *
- * Malformed/unknown JSON is never printed back to the shopper. Plain legacy
- * text remains supported and is escaped into one paragraph.
+ * Malformed/unknown JSON is never printed back to the shopper. Plain legacy text remains
+ * supported and is escaped into one paragraph.
+ *
+ * With `options.content`, a document of the typed profile (`maky-content/1`) has its marked blocks
+ * drawn as their roles. A marked block that cannot be read as its role is rendered as the
+ * standard block it is and reported in `issues` — never dropped. Unknown block types are dropped
+ * as before, but Saleor stores none, so for a warning that is a defect to be seen: a block that
+ * carries a warning marker and has text yet is not shown is an issue of severity `error`.
  */
-export function parseEditorJSToHtml(
+export function parseProductContent(
 	content: string | null | undefined,
 	options: ParseOptions = {},
-): string[] | null {
+): ProductContent | null {
 	if (!content) return null;
 	const parsed = parseContent(content);
 	if (!parsed) {
 		const trimmed = content.trim();
 		if (trimmed.startsWith("{") || trimmed.startsWith("[")) return null;
-		return [sanitizeBlock(`<p>${sanitizeInline(content)}</p>`)];
+		return {
+			blocks: [{ html: sanitizeBlock(`<p>${sanitizeInline(content)}</p>`) }],
+			template: null,
+			typed: false,
+			issues: [],
+		};
 	}
 
-	const rendered: string[] = [];
+	const labels = options.content;
+	const envelope = labels ? readEnvelope(parsed.version) : { typed: false, template: null };
+	const typed = envelope.typed;
+	const issues: ContentIssue[] = [];
+	const rendered: ProductContentBlock[] = [];
 	const { blocks } = parsed;
+
 	for (let index = 0; index < blocks.length; index += 1) {
 		const block = blocks[index];
+		const next = blocks[index + 1];
+
+		if (typed && labels) {
+			// A heading directly above a marked block is that block's title.
+			const header = block.type === "header" && !block.id && next && readMarker(next.id) ? block : null;
+			const target = header ? next : block;
+			const marker = readMarker(target.id);
+			if (marker) {
+				const outcome = renderRole(target, marker, header, labels);
+				if (!("problem" in outcome)) {
+					rendered.push(
+						outcome.role === "documents"
+							? { html: outcome.html, section: "documents", title: outcome.title, body: outcome.body }
+							: { html: outcome.html },
+					);
+					if (header) index += 1;
+					continue;
+				}
+				// With a heading above, the heading stands as the plain heading it is now and the
+				// block is reported on its own turn, so one defect is one issue.
+				if (!header) {
+					issues.push({
+						severity: "warn",
+						code: "malformed-block",
+						block: index,
+						marker: String(block.id),
+						detail: outcome.problem,
+					});
+					const plain = renderBlock(block);
+					if (plain) {
+						rendered.push({ html: plain });
+					} else if (marker.role === "callout" && marker.kind === "warn" && hasText(block)) {
+						issues.push({
+							severity: "error",
+							code: "warning-not-shown",
+							block: index,
+							marker: String(block.id),
+							detail: `a warning of type ${block.type} could not be shown`,
+						});
+					}
+					continue;
+				}
+			} else if (isUnknownRole(block.id)) {
+				issues.push({
+					severity: "warn",
+					code: "unknown-role",
+					block: index,
+					marker: String(block.id),
+					detail: "a marker this reader does not know; the block is shown as the standard block it is",
+				});
+			}
+		}
+
 		if (options.comparison) {
-			// A heading directly above a comparison table is that table's title.
-			const next = blocks[index + 1];
-			const titled = block.type === "header" && next?.type === "table";
+			// A heading directly above a comparison table is that table's title. A block that carries a
+			// marker of the typed profile is never read as a comparison: a malformed specs table has
+			// the shape of a small table and must stay what its marker says it is.
+			const marked = (candidate: EditorJSBlock | undefined): boolean =>
+				typed && Boolean(candidate && (readMarker(candidate.id) || isUnknownRole(candidate.id)));
+			const titled = block.type === "header" && next?.type === "table" && !marked(next);
 			const table = titled ? next : block;
 			const html =
-				table.type === "table"
+				table.type === "table" && !marked(table)
 					? renderComparison(
 							table.data ?? {},
 							options.comparison,
 							titled ? ((block.data ?? {}) as never) : undefined,
+							typed,
 						)
 					: null;
 			if (html) {
-				rendered.push(html);
+				rendered.push({ html, section: "comparison" });
 				if (titled) index += 1;
 				continue;
 			}
 		}
 		const html = renderBlock(block);
-		if (html) rendered.push(html);
+		if (html) rendered.push({ html });
 	}
-	const safe = rendered.map(sanitizeBlock);
-	return safe.length > 0 ? safe : null;
+
+	const safe = rendered.map((block) => ({
+		...block,
+		html: sanitizeBlock(block.html),
+		...(block.body === undefined ? {} : { body: sanitizeBlock(block.body) }),
+	}));
+	// A description with nothing left to show has no blocks, but what went wrong is still said: a
+	// warning that could not be drawn must not vanish together with the page it belonged to.
+	if (safe.length === 0 && issues.length === 0) return null;
+	return { blocks: safe, template: envelope.template, typed, issues };
+}
+
+/** The blocks of a description as HTML, one string per block. */
+export function parseEditorJSToHtml(
+	content: string | null | undefined,
+	options: ParseOptions = {},
+): string[] | null {
+	const parsed = parseProductContent(content, options);
+	return parsed && parsed.blocks.length > 0 ? parsed.blocks.map((block) => block.html) : null;
 }
 
 /** Extract safe plain text for metadata and listing heroes. */

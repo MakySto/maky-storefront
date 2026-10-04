@@ -130,6 +130,25 @@
 			"sameForAll": "Identique pour tous les modèles",
 			"scrollRegion": "Comparaison des modèles, tableau défilant"
 		},
+		"content": {
+			"kind": {
+				"tip": "Astuce",
+				"info": "Information",
+				"warn": "Avertissement"
+			},
+			"navComparison": "Comparatif des modèles",
+			"navDocuments": "Téléchargements",
+			"groups": {
+				"cooling": "Refroidissement",
+				"power": "Alimentation",
+				"dimensions": "Dimensions et poids",
+				"equipment": "Équipement",
+				"other": "Autres caractéristiques"
+			},
+			"temperatureRange": "Plage de température",
+			"range": "{min} à {max}",
+			"years": "{count, plural, one {# an} other {# ans}}"
+		},
 		"keyFeatures": "Caractéristiques principales",
 		"productDescription": "Description du produit",
 		"imageCounter": "Image {current} sur {total}",
@@ -145,7 +164,8 @@
 		"highlightLoad": "Charge max. {value}",
 		"highlightLoadPerBike": "Jusqu'à {value} par vélo",
 		"highlightVolume": "Volume {value}",
-		"highlightWeight": "Poids {value}"
+		"highlightWeight": "Poids {value}",
+		"highlightPower": "Puissance {value}"
 	},
 	"fitment": {
 		"selectVehicle": "Sélectionnez votre véhicule",

@@ -56,3 +56,8 @@ src/lib/cms/__fixtures__/provider-handoff-20260910/
 # SHA-256 and git blob id are recorded in PROVENANCE.json and re-verified by
 # editorjs-comparison.test.ts, and CFM pins the same bytes. Reformatting changes them.
 docs/contracts/comparison-table/
+
+# The typed-content examples (CoolZ 32 and the gallery) are the producer's own output (CFM), copied in
+# verbatim; their SHA-256 and git blob ids are recorded in PROVENANCE.json and re-verified by
+# editorjs-content.test.ts, and CFM pins the same bytes. Reformatting changes them.
+docs/contracts/maky-content/

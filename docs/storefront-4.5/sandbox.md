@@ -7,6 +7,8 @@ Neplatené, izolované testovacie prostredie na jednom stroji. Slúži na to, ab
 - Lokálny Saleor 3.23.31 zostavený zo zdroja (tag `3.23.31`, commit `a1ab3a23a3f5711bb74abb3a2972cf28454cb59e`) nad PostgreSQL 16 v Dockeri, storefront z tejto vetvy a producent CFM spustený bez databázy a bez siete.
 - Nič z toho nevedie do produkcie. Skripty v `scripts/sandbox/` odmietnu adresu, ktorá nie je na tomto stroji, prihlasujú sa účtom sandboxu (nikdy tokenom z prostredia) a druhé spustenie nič nezdvojí.
 - Obsahuje päť CoolZ (TK20409 až TK20413) v kanáli `sk-eur`, kategóriu, typ produktu, výrobcu Pro-USER, dopravu „Kuriér“ za 4,90 € a sklad 25 ks na model. Ceny sú katalógové hodnoty z návrhu, v sandboxe iba skúšobné.
+- Keď je v adresári popisov aj `gallery.description.json`, pribudne šiesty produkt „Ukážka blokov popisu (len sandbox)“ (SKU `SANDBOX-GALLERY`): vymyslená galéria všetkých rolí a ikon typovaného popisu, nie produkt.
+- Päť CoolZ má 25 atribútov autochladničky (`scripts/sandbox/coolz-attributes.mjs`). Kľúče (`cfm:attribute:<kľúč>`), typy vstupu a čísla sú to, čo CFM zapisuje a čo je v onboarding manifeste. **Zobrazované názvy a textové hodnoty sú predpoklad**, napísaný po slovensky ručne; skutočné produkčné riadky sa nečítali.
 - Nemá fotografie produktov (médiá z prostredia nejdú), Payload CMS ani platobnú bránu. CMS nahrádza prázdna atrapa, platba chýba.
 - Nie je dôkazom, že produkčný Saleor prijme blok `table`. To uzatvára bezzápisová kontrola na produkčnej inštancii (`docs/contracts/comparison-table.md`).
 
@@ -81,7 +83,8 @@ pnpm run generate:all        # čerpá schému zo sandbox Saleoru, ten už musí
 
 ```bash
 cd CarFitManager-4/backend
-python scripts/storefront_comparison_sample.py --out /tmp/coolz-sample   # päť popisov presne tak, ako ich posiela CFM
+python scripts/storefront_comparison_sample.py --out /tmp/coolz-sample   # päť popisov presne tak, ako ich posiela CFM dnes (zoznam, bez šablóny)
+python scripts/storefront_maky_content_sample.py --out /tmp/coolz-typed  # päť typovaných popisov šablóny autochladničky + galéria
 
 cd maky-storefront
 export NEXT_PUBLIC_SALEOR_API_URL=http://127.0.0.1:8000/graphql/
@@ -89,11 +92,15 @@ SANDBOX_STAFF_EMAIL=sandbox-admin@example.invalid SANDBOX_STAFF_PASSWORD=<heslo-
   node scripts/sandbox/seed-coolz.mjs --descriptions /tmp/coolz-sample
 ```
 
+Typovaný popis sa zapíše rovnako, z druhého adresára (`--descriptions /tmp/coolz-typed`); seed popis existujúcich produktov prepíše, takže ten istý sandbox ukáže „pred“ aj „po“.
+
 **5. Beh storefrontu.**
 
 - Vývoj: `pnpm exec next dev -p 3000` (Turbopack, to isté ako `pnpm dev:turbopack`). `pnpm dev` beží s `--webpack` a v tomto prostredí padá na `node:crypto`; nie je to zmena z CoolZ pilotu.
 - Produkčný režim: `node scripts/sandbox/cms-empty.mjs &`, potom `pnpm run build` a `pnpm exec next start -p 3000`. Build bez CMS padne zámerne (chýbajúce CMS je chyba, nie prázdna stránka), preto atrapa.
-- Okružná kontrola, bez zápisu: `node scripts/sandbox/roundtrip-coolz.mjs --descriptions /tmp/coolz-sample`. Pre každý model porovná to, čo poslal producent, s tým, čo Saleor vráti pri novom čítaní, a s tým, čo storefront nakreslí (jedna tabuľka, zvýraznený správny model, názvy modelov, riadkov a častí).
+- Okružná kontrola, bez zápisu: `node scripts/sandbox/roundtrip-coolz.mjs --descriptions /tmp/coolz-sample` (alebo `/tmp/coolz-typed`). Pre každý model porovná to, čo poslal producent, s tým, čo Saleor vráti pri novom čítaní (bloky, `id` a `version` rovnaké; jediný rozdiel, ktorý toleruje, je `rel="noopener noreferrer"`, ktoré Saleor pridá k odkazom), a s tým, čo storefront nakreslí (jedna tabuľka, zvýraznený správny model, názvy modelov, riadkov a častí; pri typovanom popise aj každý značkovaný blok nakreslený ako jeho rola, presne toľkokrát, koľkokrát ho producent poslal).
+- `next dev` si pri štarte dopíše blok „nextjs-agent-rules“ do `AGENTS.md`. Nie je to zmena zadania; do commitu nepatrí (`git checkout -- AGENTS.md`).
+- Stránka produktu v dev režime beží na `/sk/<slug>` (napr. `/sk/kompresorova-autochladnicka-pro-user-coolz-32-l-tk20410`). Prvé vykreslenie trvá pár sekúnd; chyby čítačky typovaného popisu idú do konzoly servera ako `[maky-content] …`.
 
 ## Nákupný priechod
 
@@ -111,7 +118,8 @@ V režime `next dev` (Turbopack) pokladňa padá na `createContext only works in
 
 ## Čo sandbox nedokazuje
 
-- že produkčný Saleor prijme `table` (bezzápisová kontrola na produkcii, viď kontrakt),
+- že produkčný Saleor prijme `table` ani typovaný popis (bezzápisová kontrola na produkcii, viď `docs/contracts/comparison-table.md` a `docs/contracts/maky-content.md`),
+- ako vyzerá živá stránka autochladničky: názvy a textové hodnoty atribútov sú predpoklad (viď vyššie), takže zoskupenie parametrov a pás kľúčových faktov sa tu ukazuje na vymyslených hodnotách,
 - ako sa blok správa po uložení v Saleor Dashboarde,
 - preklady popisov do ostatných jazykov,
 - obsah a obrázky z Payload CMS, fotografie produktov, platby.

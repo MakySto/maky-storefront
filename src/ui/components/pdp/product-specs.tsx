@@ -6,11 +6,27 @@ import { ComparisonScrollToCurrent } from "./comparison-scroll";
 import {
 	formatOuterDimensions,
 	formatProductAttributeValue,
+	formatTemperatureRange,
 	type AttributeInput,
 } from "@/lib/product-attributes";
+import {
+	groupParameters,
+	templateFor,
+	TEMPERATURE_RANGE_REF,
+	type PageSections,
+	type ParameterRow,
+	type ProductTemplate,
+} from "@/lib/product-templates";
 
 interface ProductSpecsProps {
+	/** The blocks of the description that stay in its card. */
 	descriptionHtml?: string[] | null;
+	/** The model comparison, when the page's template sets it in a card of its own. */
+	comparisonHtml?: PageSections["comparison"];
+	/** The documents, when the page's template sets them in a card of their own. */
+	documents?: PageSections["documents"];
+	/** How this kind of product is put together; the generic page when it is not given. */
+	template?: ProductTemplate;
 	attributes: readonly AttributeInput[];
 	careInstructions?: string | null;
 	locale: string;
@@ -42,6 +58,11 @@ const COMPARISON_REGION_CLASS = "maky-cmp-scroll";
 /** A value longer than this reads as a sentence: it gets the row's full width, left-aligned. */
 const LONG_VALUE = 32;
 
+/** One card of the page: the description, the comparison, the parameters, the documents. */
+const CARD =
+	"border-border-subtle bg-surface-card scroll-mt-[calc(var(--header-offset)+1rem)] rounded-sm border p-5 shadow-xs sm:p-8 lg:p-10";
+const CARD_TITLE = "text-text-primary mb-5 text-2xl font-extrabold tracking-[-0.025em] sm:text-[1.875rem]";
+
 /**
  * Description and technical parameters, full width below the hero.
  *
@@ -57,6 +78,9 @@ const LONG_VALUE = 32;
  */
 export async function ProductSpecs({
 	descriptionHtml,
+	comparisonHtml = null,
+	documents = null,
+	template = templateFor(null),
 	attributes,
 	careInstructions,
 	locale,
@@ -71,22 +95,38 @@ export async function ProductSpecs({
 	const t = await getTranslations({ locale, namespace: "product" });
 	const words = { yes: t("yes"), no: t("no") };
 
-	const rows = attributes
+	const attributeRows: ParameterRow[] = attributes
 		.map((attribute) => ({
+			ref: attribute.attribute.externalReference ?? "",
 			label: attribute.attribute.name ?? "",
-			values: formatProductAttributeValue(attribute, locale, words),
+			values: formatProductAttributeValue(attribute, locale, words, (count) => t("content.years", { count })),
 		}))
 		.filter((row) => row.label && row.values.length > 0);
+
+	// A template that names the temperature range writes the two ends as one row ("−20 °C až
+	// +20 °C"), at the place the first of them stood; with one end missing both stay as they are.
+	const range = template.groups.some((group) => group.refs.includes(TEMPERATURE_RANGE_REF))
+		? formatTemperatureRange(attributes, locale, (min, max) => t("content.range", { min, max }))
+		: null;
+	const rows = range
+		? withTemperatureRange(attributeRows, range.full, t("content.temperatureRange"))
+		: attributeRows;
+	const groups = groupParameters(template, rows);
 
 	const outerDimensions = formatOuterDimensions(attributes, locale);
 	const hasDescription = Boolean(descriptionHtml?.length || careInstructions);
 	const hasTechnicalParameters = rows.length > 0 || Boolean(outerDimensions);
+	const hasComparison = Boolean(comparisonHtml);
+	const hasDocuments = Boolean(documents);
 
-	if (!hasDescription && !hasTechnicalParameters) return null;
+	if (!hasDescription && !hasTechnicalParameters && !hasComparison && !hasDocuments) return null;
 
+	// The sections in the order the cards follow each other.
 	const sections = [
 		hasDescription && { href: "#product-description", label: t("description") },
+		hasComparison && { href: "#model-comparison", label: t("content.navComparison") },
 		hasTechnicalParameters && { href: "#technical-parameters", label: t("technicalParameters") },
+		hasDocuments && { href: "#product-documents", label: t("content.navDocuments") },
 	].filter((section): section is { href: string; label: string } => Boolean(section));
 
 	return (
@@ -123,7 +163,7 @@ export async function ProductSpecs({
 					<article
 						id="product-description"
 						aria-labelledby="product-description-heading"
-						className="border-border-subtle bg-surface-card flow-root scroll-mt-[calc(var(--header-offset)+1rem)] rounded-sm border p-5 shadow-xs sm:p-8 lg:p-10"
+						className={cn(CARD, "flow-root")}
 					>
 						{/* The product's own photo floats beside the opening of the description, and the
 						    text runs on at full width under it. It used to stand in a sticky column of
@@ -140,10 +180,7 @@ export async function ProductSpecs({
 								/>
 							</div>
 						)}
-						<h2
-							id="product-description-heading"
-							className="text-text-primary mb-5 text-2xl font-extrabold tracking-[-0.025em] sm:text-[1.875rem]"
-						>
+						<h2 id="product-description-heading" className={CARD_TITLE}>
 							{t("productDescription")}
 						</h2>
 						{descriptionHtml?.length ? (
@@ -168,41 +205,121 @@ export async function ProductSpecs({
 					</article>
 				)}
 
+				{/* The model comparison, in a card of its own when the template says so. The table is the
+				    description's block, set by the same renderer; only where it stands differs. */}
+				{comparisonHtml && (
+					<article id="model-comparison" aria-label={t("content.navComparison")} className={CARD}>
+						<div
+							className="[&_.maky-cmp]:mt-0 [&_.maky-cmp]:mb-0"
+							dangerouslySetInnerHTML={{ __html: comparisonHtml }}
+						/>
+						<ComparisonScrollToCurrent />
+					</article>
+				)}
+
 				{hasTechnicalParameters && (
-					<section
-						id="technical-parameters"
-						aria-labelledby="technical-parameters-heading"
-						className="border-border-subtle bg-surface-card scroll-mt-[calc(var(--header-offset)+1rem)] rounded-sm border p-5 shadow-xs sm:p-8 lg:p-10"
-					>
-						<h2
-							id="technical-parameters-heading"
-							className="text-text-primary mb-5 text-2xl font-extrabold tracking-[-0.025em] sm:text-[1.875rem]"
-						>
+					<section id="technical-parameters" aria-labelledby="technical-parameters-heading" className={CARD}>
+						<h2 id="technical-parameters-heading" className={CARD_TITLE}>
 							{t("technicalParameters")}
 						</h2>
-						{/* Two columns that read DOWN, each a list of its own with a rule between them — not
-						    a grid read across in zig-zag pairs. */}
-						<dl className="text-sm sm:text-[0.9375rem] lg:columns-2 lg:gap-x-14 lg:[column-rule:1px_solid_var(--border-subtle)]">
-							{outerDimensions && (
-								<SpecRow label={t("outerDimensions")} values={[outerDimensions]} emphasised />
-							)}
-							{rows.map((row) => (
-								<SpecRow key={row.label} label={row.label} values={row.values} />
-							))}
-						</dl>
+						{groups ? (
+							/* The template's groups: one definition list each, titled, in the sheet's two
+							   columns that read down. */
+							<div className="maky-specs">
+								{groups.map((group, index) => (
+									<section key={group.id} className="maky-sg">
+										<h3 className="maky-sg-t">{t(`content.groups.${group.id}`)}</h3>
+										<dl>
+											{index === 0 && outerDimensions && (
+												<SpecRow label={t("outerDimensions")} values={[outerDimensions]} emphasised grouped />
+											)}
+											{group.rows.map((row) => (
+												<SpecRow key={row.ref || row.label} label={row.label} values={row.values} grouped />
+											))}
+										</dl>
+									</section>
+								))}
+							</div>
+						) : (
+							/* Two columns that read DOWN, each a list of its own with a rule between them — not
+							   a grid read across in zig-zag pairs. */
+							<dl className="text-sm sm:text-[0.9375rem] lg:columns-2 lg:gap-x-14 lg:[column-rule:1px_solid_var(--border-subtle)]">
+								{outerDimensions && (
+									<SpecRow label={t("outerDimensions")} values={[outerDimensions]} emphasised />
+								)}
+								{rows.map((row) => (
+									<SpecRow key={row.label} label={row.label} values={row.values} />
+								))}
+							</dl>
+						)}
 					</section>
+				)}
+
+				{documents && (
+					<article id="product-documents" aria-labelledby="product-documents-heading" className={CARD}>
+						{documents.title ? (
+							<h2
+								id="product-documents-heading"
+								className={CARD_TITLE}
+								dangerouslySetInnerHTML={{ __html: documents.title }}
+							/>
+						) : (
+							<h2 id="product-documents-heading" className={CARD_TITLE}>
+								{t("content.navDocuments")}
+							</h2>
+						)}
+						{/* `maky-blk` is the box the documents' columns are measured against. */}
+						<div className="maky-blk mt-0" dangerouslySetInnerHTML={{ __html: documents.body }} />
+					</article>
 				)}
 			</div>
 		</section>
 	);
 }
 
-function SpecRow({ label, values, emphasised }: { label: string; values: string[]; emphasised?: boolean }) {
+/**
+ * The two ends of the temperature range as one row, at the place the first of them stood.
+ * Without both ends the rows are returned as they were.
+ */
+function withTemperatureRange(rows: ParameterRow[], value: string, label: string): ParameterRow[] {
+	const ends = new Set(["cfm:attribute:temperature_min", "cfm:attribute:temperature_max"]);
+	const first = rows.findIndex((row) => ends.has(row.ref));
+	if (first === -1) return rows;
+	const merged: ParameterRow = { ref: TEMPERATURE_RANGE_REF, label, values: [value] };
+	return rows.flatMap((row, index) => (index === first ? [merged] : ends.has(row.ref) ? [] : [row]));
+}
+
+function SpecRow({
+	label,
+	values,
+	emphasised,
+	grouped,
+}: {
+	label: string;
+	values: string[];
+	emphasised?: boolean;
+	/** A row of a template's group: the shared sheet's own classes (`brand.css`), not the flat list's. */
+	grouped?: boolean;
+}) {
 	const value = values.join(", ");
 	// A short value — a number, a unit, "Áno" — sits at the row's right edge, where a column of
 	// them can be scanned. A sentence ("max. šírka kolies 80 mm vzdialenosť…") was squeezed into
 	// the right half, right-aligned; it gets the row's width and reads from the left.
 	const long = value.length > LONG_VALUE;
+	if (grouped) {
+		return (
+			<div
+				className={cn(
+					"maky-sr",
+					long && "maky-sr-long",
+					emphasised && "bg-surface-secondary -mx-3 rounded-xs px-3",
+				)}
+			>
+				<dt>{label}</dt>
+				<dd>{value}</dd>
+			</div>
+		);
+	}
 	return (
 		<div
 			className={cn(

@@ -10,13 +10,19 @@
 //   SANDBOX_STAFF_EMAIL=… SANDBOX_STAFF_PASSWORD=… \
 //     node scripts/sandbox/seed-coolz.mjs --descriptions <dir with TK2040x.description.json>
 //
-// The descriptions are the files `backend/scripts/storefront_comparison_sample.py` in the CFM
-// repository writes from the real producer (comparison matrix, V2 mapper, renderer, Editor.js
-// converter). Names, slugs and weights come from the same onboarding manifest; the prices are
-// the catalogue prices shown in the approved design and are sandbox values. Run it twice and
-// nothing is duplicated: every object is looked up by slug or SKU first.
+// The descriptions are the files `backend/scripts/storefront_maky_content_sample.py` (typed
+// `maky-content/1`, the CoolZ pages) and `backend/scripts/storefront_comparison_sample.py` (the
+// earlier untyped form) in the CFM repository write from the real producer. Names, slugs and
+// weights come from the same onboarding manifest; the prices are the catalogue prices shown in the
+// approved design and are sandbox values. Run it twice and nothing is duplicated: every object is
+// looked up by slug or SKU first.
+//
+// With the typed files the sandbox also gets the fridge attributes (`coolz-attributes.mjs`, a
+// documented assumption about names and text values) and one more product, the block gallery: an
+// invented page showing every block the profile has. It exists in the sandbox only.
 import fs from "node:fs";
 import path from "node:path";
+import { FRIDGE_ATTRIBUTES, fridgeValues } from "./coolz-attributes.mjs";
 
 const COOLERS = [
 	{
@@ -55,6 +61,14 @@ const COOLERS = [
 		weight: 20.5,
 	},
 ];
+/** The invented block gallery (`gallery.description.json`): every role and icon once. Not a product. */
+const GALLERY = {
+	sku: "SANDBOX-GALLERY",
+	price: "99.00",
+	name: "Ukážka blokov popisu (len sandbox)",
+	weight: 1,
+	file: "gallery.description.json",
+};
 const CHANNEL = { name: "SK EUR", slug: "sk-eur", currencyCode: "EUR", defaultCountry: "SK" };
 
 const args = process.argv.slice(2);
@@ -245,15 +259,79 @@ if (!assigned.productType.productAttributes.some((attribute) => attribute.slug =
 	);
 }
 
+// ── fridge attributes ────────────────────────────────────────────────────────────────────────
+// Created with CFM's external references and input types, so the storefront reads them exactly as it
+// reads CFM's (`cfm:attribute:<key>`). Names and text values are a sandbox assumption, see
+// `coolz-attributes.mjs`. Skipped when the descriptions are not the typed ones.
+const typedDescriptions = fs.existsSync(path.join(descriptionsDir, GALLERY.file));
+const fridgeAttributeIds = {};
+if (typedDescriptions) {
+	const present = await gql("query($id:ID!){productType(id:$id){productAttributes{id slug}}}", {
+		id: productType.id,
+	});
+	const assignedSlugs = new Set(present.productType.productAttributes.map((attribute) => attribute.slug));
+	const toAssign = [];
+	for (const [key, name, inputType] of FRIDGE_ATTRIBUTES) {
+		const slug = key.replace(/_/g, "-");
+		let attribute = (await gql("query($slug:String!){attribute(slug:$slug){id slug}}", { slug })).attribute;
+		if (!attribute) {
+			attribute = (
+				await mutate(
+					"mutation($input:AttributeCreateInput!){attributeCreate(input:$input){attribute{id slug} errors{field code message}}}",
+					{
+						input: {
+							name,
+							slug,
+							type: "PRODUCT_TYPE",
+							inputType,
+							externalReference: `cfm:attribute:${key}`,
+							valueRequired: false,
+							visibleInStorefront: true,
+						},
+					},
+					"attributeCreate",
+				)
+			).attribute;
+		}
+		fridgeAttributeIds[key] = { id: attribute.id, inputType };
+		if (!assignedSlugs.has(slug)) toAssign.push({ id: attribute.id, type: "PRODUCT" });
+	}
+	if (toAssign.length > 0) {
+		await mutate(
+			"mutation($id:ID!,$operations:[ProductAttributeAssignInput!]!){productAttributeAssign(productTypeId:$id,operations:$operations){errors{field code message}}}",
+			{ id: productType.id, operations: toAssign },
+			"productAttributeAssign",
+		);
+		console.log(`assigned ${toAssign.length} fridge attributes to ${productTypeSlug}`);
+	}
+}
+
+/** The `attributes` input of a product: the maker, and the fridge values when it has them. */
+function attributeInput(values) {
+	const input = [{ id: maker.id, dropdown: { value: MAKER } }];
+	for (const [key, value] of Object.entries(values ?? {})) {
+		const { id, inputType } = fridgeAttributeIds[key] ?? {};
+		if (!id) continue;
+		if (inputType === "NUMERIC") input.push({ id, numeric: String(value) });
+		else if (inputType === "BOOLEAN") input.push({ id, boolean: Boolean(value) });
+		else input.push({ id, plainText: String(value) });
+	}
+	return input;
+}
+
 // ── the five coolers ─────────────────────────────────────────────────────────────────────────
-for (const cooler of COOLERS) {
+const SEEDED = [
+	...COOLERS.map((cooler) => ({ ...cooler, file: `${cooler.sku}.description.json`, fridge: true })),
+	...(typedDescriptions ? [{ ...GALLERY, fridge: false }] : []),
+];
+for (const cooler of SEEDED) {
 	const slug = `${cooler.name
 		.toLowerCase()
 		.normalize("NFD")
 		.replace(/[̀-ͯ]/g, "")
 		.replace(/[^a-z0-9]+/g, "-")
 		.replace(/^-|-$/g, "")}-${cooler.sku.toLowerCase()}`;
-	const file = path.join(descriptionsDir, `${cooler.sku}.description.json`);
+	const file = path.join(descriptionsDir, cooler.file);
 	const description = fs.readFileSync(file, "utf8").trim();
 	JSON.parse(description); // refuse a file that is not JSON before anything is written
 
@@ -269,7 +347,7 @@ for (const cooler of COOLERS) {
 		seo: { title: cooler.name, description: `${cooler.name} - sandbox` },
 		weight: cooler.weight,
 		category: category.id,
-		attributes: [{ id: maker.id, dropdown: { value: MAKER } }],
+		attributes: attributeInput(typedDescriptions && cooler.fridge ? fridgeValues(cooler.sku) : null),
 	};
 	if (product) {
 		await mutate(
@@ -324,7 +402,7 @@ for (const cooler of COOLERS) {
 		{ id: variant.id, input: [{ channelId: channel.id, price: cooler.price }] },
 		"productVariantChannelListingUpdate",
 	);
-	console.log(`${cooler.sku}  CoolZ ${cooler.model}  ${slug}`);
+	console.log(`${cooler.sku}  ${cooler.model ? `CoolZ ${cooler.model}` : "gallery"}  ${slug}`);
 }
 
 console.log("done");

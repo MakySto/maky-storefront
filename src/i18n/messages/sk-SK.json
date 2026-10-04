@@ -130,6 +130,25 @@
 			"sameForAll": "Rovnaké pre všetky modely",
 			"scrollRegion": "Porovnanie modelov, posúvateľná tabuľka"
 		},
+		"content": {
+			"kind": {
+				"tip": "Tip",
+				"info": "Informácia",
+				"warn": "Upozornenie"
+			},
+			"navComparison": "Porovnanie modelov",
+			"navDocuments": "Na stiahnutie",
+			"groups": {
+				"cooling": "Chladenie",
+				"power": "Napájanie",
+				"dimensions": "Rozmery a hmotnosť",
+				"equipment": "Výbava",
+				"other": "Ďalšie parametre"
+			},
+			"temperatureRange": "Rozsah teplôt",
+			"range": "{min} až {max}",
+			"years": "{count, plural, one {# rok} few {# roky} many {# roka} other {# rokov}}"
+		},
 		"keyFeatures": "Hlavné vlastnosti",
 		"productDescription": "Popis produktu",
 		"imageCounter": "Obrázok {current} z {total}",
@@ -145,7 +164,8 @@
 		"highlightLoad": "Nosnosť {value}",
 		"highlightLoadPerBike": "Na bicykel do {value}",
 		"highlightVolume": "Objem {value}",
-		"highlightWeight": "Hmotnosť {value}"
+		"highlightWeight": "Hmotnosť {value}",
+		"highlightPower": "Príkon {value}"
 	},
 	"fitment": {
 		"selectVehicle": "Vyberte vaše vozidlo",
