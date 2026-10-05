@@ -87,6 +87,7 @@
 		"reviews": "Recenzie",
 		"reviewCount": "{count, plural, =0 {Žiadne recenzie} one {# recenzia} few {# recenzie} other {# recenzií}}",
 		"sku": "SKU",
+		"ean": "EAN",
 		"brand": "Značka",
 		"weight": "Hmotnosť",
 		"dimensions": "Rozmery",

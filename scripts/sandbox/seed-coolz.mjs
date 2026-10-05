@@ -24,9 +24,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { FRIDGE_ATTRIBUTES, fridgeValues } from "./coolz-attributes.mjs";
 
+// `ean` is the number CFM holds for the product (the onboarding manifest) and publishes as the public
+// variant metafield `cfm_ean`; the sandbox writes the same key so the product page shows it.
 const COOLERS = [
 	{
 		sku: "TK20409",
+		ean: "8717809204097",
 		model: "19",
 		price: "249.00",
 		name: "Kompresorová autochladnička PRO-USER CoolZ 19 l",
@@ -34,6 +37,7 @@ const COOLERS = [
 	},
 	{
 		sku: "TK20410",
+		ean: "8717809204103",
 		model: "32",
 		price: "279.00",
 		name: "Kompresorová autochladnička PRO-USER CoolZ 32 l",
@@ -41,6 +45,7 @@ const COOLERS = [
 	},
 	{
 		sku: "TK20411",
+		ean: "8717809204110",
 		model: "40",
 		price: "319.00",
 		name: "Kompresorová autochladnička PRO-USER CoolZ 40 l",
@@ -48,6 +53,7 @@ const COOLERS = [
 	},
 	{
 		sku: "TK20412",
+		ean: "8717809204127",
 		model: "65",
 		price: "379.00",
 		name: "Kompresorová autochladnička PRO-USER CoolZ 65 l",
@@ -55,6 +61,7 @@ const COOLERS = [
 	},
 	{
 		sku: "TK20413",
+		ean: "8717809204134",
 		model: "83",
 		price: "489.00",
 		name: "Dvojzónová kompresorová autochladnička PRO-USER CoolZ 83 l",
@@ -402,6 +409,13 @@ for (const cooler of SEEDED) {
 		{ id: variant.id, input: [{ channelId: channel.id, price: cooler.price }] },
 		"productVariantChannelListingUpdate",
 	);
+	if (cooler.ean) {
+		await mutate(
+			"mutation($id:ID!,$input:[MetadataInput!]!){updateMetadata(id:$id,input:$input){errors{field code message}}}",
+			{ id: variant.id, input: [{ key: "cfm_ean", value: cooler.ean }] },
+			"updateMetadata",
+		);
+	}
 	console.log(`${cooler.sku}  ${cooler.model ? `CoolZ ${cooler.model}` : "gallery"}  ${slug}`);
 }
 

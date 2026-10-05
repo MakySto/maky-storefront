@@ -87,6 +87,7 @@
 		"reviews": "Opinie",
 		"reviewCount": "{count, plural, =0 {Brak opinii} one {# opinia} few {# opinie} other {# opinii}}",
 		"sku": "Numer katalogowy",
+		"ean": "EAN",
 		"brand": "Marka",
 		"weight": "Waga",
 		"dimensions": "Wymiary",

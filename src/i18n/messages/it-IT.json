@@ -87,6 +87,7 @@
 		"reviews": "Recensioni",
 		"reviewCount": "{count, plural, =0 {Nessuna recensione} one {# recensione} other {# recensioni}}",
 		"sku": "Codice articolo",
+		"ean": "EAN",
 		"brand": "Marca",
 		"weight": "Peso",
 		"dimensions": "Dimensioni",

@@ -87,6 +87,7 @@
 		"reviews": "Reviews",
 		"reviewCount": "{count, plural, =0 {No reviews} one {# review} other {# reviews}}",
 		"sku": "SKU",
+		"ean": "EAN",
 		"brand": "Brand",
 		"weight": "Weight",
 		"dimensions": "Dimensions",

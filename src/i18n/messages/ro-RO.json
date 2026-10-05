@@ -87,6 +87,7 @@
 		"reviews": "Recenzii",
 		"reviewCount": "{count, plural, =0 {Nicio recenzie} one {# recenzie} few {# recenzii} other {# recenzii}}",
 		"sku": "Cod produs",
+		"ean": "EAN",
 		"brand": "Marcă",
 		"weight": "Greutate",
 		"dimensions": "Dimensiuni",

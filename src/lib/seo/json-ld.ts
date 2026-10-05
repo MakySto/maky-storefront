@@ -2,6 +2,7 @@ import { type WithContext, type Product, type ProductGroup } from "schema-dts";
 import { companyInfo } from "@/config/company";
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import { carriesInternalMarker } from "@/lib/product-code";
+import { gtinProperty, publicGtin } from "@/lib/product-ean";
 import { seoConfig, getBaseUrl } from "./config";
 
 /**
@@ -25,6 +26,8 @@ const SALE_TO_ORDER = "sale_to_order";
 
 export interface JsonLdVariant {
 	sku?: string | null;
+	/** The variant's EAN as CFM published it. Checked again here: only a real GTIN is emitted. */
+	gtin?: string | null;
 	name?: string | null;
 	price?: { amount: number; currency: string } | null;
 	inStock?: boolean;
@@ -71,6 +74,12 @@ export function buildProductJsonLd(options: {
 	description?: string;
 	images?: string[];
 	sku?: string | null;
+	/**
+	 * The EAN of the product's variant, as CFM published it (`cfm_ean`). It is emitted as `gtin8`,
+	 * `gtin12`, `gtin13` or `gtin14` by its length, and only when it is a valid GTIN: a barcode that is
+	 * not one is left out, never repaired. The variant's own number wins over this fallback.
+	 */
+	gtin?: string | null;
 	brand?: string | null;
 	url?: string;
 	/** Single variant pricing */
@@ -129,6 +138,7 @@ export function buildProductJsonLd(options: {
 		description,
 		images,
 		sku,
+		gtin,
 		brand,
 		url,
 		price,
@@ -175,6 +185,7 @@ export function buildProductJsonLd(options: {
 				"@type": "Product" as const,
 				name: variant.name || name,
 				...(publishableSku(variant.sku) ? { sku: variant.sku } : {}),
+				...gtinProperty(variant.gtin),
 				offers: {
 					"@type": "Offer" as const,
 					url: fullUrl,
@@ -229,11 +240,14 @@ export function buildProductJsonLd(options: {
 
 	// The variant's own SKU wins: it identifies what is actually being sold.
 	const resolvedSku = [only?.sku, sku].find(publishableSku) ?? undefined;
+	// The same for the EAN: the variant that is sold names its own number, a valid one.
+	const resolvedGtin = [only?.gtin, gtin].find((value) => publicGtin(value) !== null);
 
 	return {
 		...base,
 		"@type": "Product",
 		...(resolvedSku ? { sku: resolvedSku } : {}),
+		...gtinProperty(resolvedGtin),
 		...(offers ? { offers } : {}),
 	} satisfies WithContext<Product>;
 }
