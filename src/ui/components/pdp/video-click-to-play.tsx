@@ -24,9 +24,18 @@ const STILL = ".maky-video > img";
  * Where the still does not come (the optimizer could not fetch it), the browser would draw its
  * broken-image mark in a corner of the preview. The picture is taken out instead, and what is left
  * is the shop's own card, which was under it and is the same link.
+ *
+ * The player does not outlive its page. The router keeps a page the shopper has left, hidden, to give
+ * it back unchanged on the way back, and everything in it stays alive, a player with it: a film behind
+ * the next page that the shopper can neither see nor stop. So when this page's effects are cleaned up
+ * (it is hidden, or removed) every player it opened is taken out and the preview it replaced is put
+ * back. On the way back the shopper finds the preview, one click from the film.
  */
 export function VideoClickToPlay() {
 	useEffect(() => {
+		// The players this page has opened, each with the preview link it took the place of.
+		const opened = new Map<HTMLIFrameElement, Element>();
+
 		// A still that failed before this script ran is already broken; one that fails later raises
 		// `error`, which does not bubble and so is heard on the way down.
 		for (const image of document.querySelectorAll<HTMLImageElement>(STILL)) {
@@ -55,12 +64,17 @@ export function VideoClickToPlay() {
 			frame.allowFullscreen = true;
 			frame.referrerPolicy = "strict-origin-when-cross-origin";
 			link.replaceWith(frame);
+			opened.set(frame, link);
 			frame.focus();
 		};
 		document.addEventListener("click", onClick);
 		return () => {
 			document.removeEventListener("click", onClick);
 			document.removeEventListener("error", onStillError, true);
+			for (const [frame, link] of opened) {
+				if (frame.isConnected) frame.replaceWith(link);
+			}
+			opened.clear();
 		};
 	}, []);
 
