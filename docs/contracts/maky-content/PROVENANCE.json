@@ -1,12 +1,12 @@
 {
-  "cfm_git_head": "8e12955ef58acd5b28b24e0fc8ab69a1c7509d3a",
+  "cfm_git_head": "92529a5a33648832aed37d72b26c462e2cebef2e",
   "cfm_tree_state": "clean",
   "files": {
     "coolz-32.description.json": {
       "cfm_copy": "backend/apps/saleor_sync/storefront_contract/maky_content_coolz_32.description.json",
       "describes": "CoolZ 32 (TK20410), the real producer's description",
-      "git_blob_sha1": "4b497a2faaf762f2698542856f6951b115fa983f",
-      "sha256": "a11334a97e7f9bea4c9e4903dfd8c4ffa74d2741239c0646e5f99aa9f01b6084",
+      "git_blob_sha1": "de44ccc82da344be3999c51af3d181547eaf0b83",
+      "sha256": "26aea4e0fe67be1ea63b76dac3e3695c2e3b853eaeaa3ca94bb1614f6ec3459d",
       "template": "autochladnicka"
     },
     "gallery.description.json": {

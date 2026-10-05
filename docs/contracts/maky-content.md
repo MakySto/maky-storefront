@@ -45,7 +45,7 @@ Skrátený príklad (celý dokument je v ukážke):
 		{
 			"type": "paragraph",
 			"id": "maky:callout:tip",
-			"data": { "text": "Pred výletom vychlaď chladničku doma …" }
+			"data": { "text": "Pred výletom vychlaďte chladničku doma …" }
 		},
 		{ "type": "header", "data": { "level": 2, "text": "Prečo si vybrať CoolZ 32?" } },
 		{
@@ -136,7 +136,7 @@ Skript prepíše súbory aj `PROVENANCE.json` tu, kópie v CFM a vypíše odtla�
 4. **Preklady.** Tok prekladu popisov musí zachovať `id` blokov a `version` dokumentu a tvar každého bloku. Kým sa neprekladá, zahraničné trhy majú slovenský text. Ak preklad značky stratí, dokument sa vykreslí ako obyčajné bloky: nič sa nestratí, len sa nenakreslia roly. Pilot beží na trhu SK.
 5. **Saleor Dashboard.** Neoverené, či uloženie produktu v Dashboarde zachová `id` blokov a `version`; Dashboard má vlastný Editor.js. Kým to **M** neoverí na skutočnom Dashboarde, popisy CoolZ sa tam neupravujú.
 6. **Revalidácia.** Stránka drží čítanie zo Saleoru v cache so značkou `product:<kanál>:<jazyk>:<slug>`; nový popis sa objaví do niekoľkých minút a jednej-dvoch návštev, alebo hneď po `POST /api/revalidate`. CFM to pri publikácii nevolá, takže je potrebné ju vyvolať ručne.
-7. **Text tipu.** Tip CoolZ je v zdroji napísaný v tykaní („vychlaď“, „nebudeš“), kým obchod vyká. Mení sa v zdrojovom dokumente v CFM, nie v storefronte.
+7. **Text tipu.** Tip CoolZ bol v zdroji napísaný v tykaní („vychlaď“, „nebudeš“), kým obchod vyká. V CFM je opravený ako deklarovaná oprava zachovaného textu („vychlaďte“, „nebudete“; päť chladničiek a CoolZ Power, CFM PR #50) a spoločná ukážka CoolZ 32 už nesie opravený text; storefront nič nemení. Na živom webe ostáva starý text, kým relácia na CFM serveri znova nezostaví a nepovýši dokumenty CoolZ a nepublikuje ich (postup je v CFM kontrakte `STOREFRONT_MAKY_CONTENT_V1.md`).
 8. **Strešné sady: nič nie je nasadené.** Kód je v PR na oboch stranách, ostrá publikácia nebola. Poradie: najprv storefront (čítačka sady je v tom istom PR; staršia čítačka ukáže všetok text, len bez rolí), potom beh v CFM s `--typed-description` a so zapnutým `CFM_SALEOR_NATIVE_COMPARISON_TABLES`, najprv pre desať verejných pilotných sád Thule (`plan_sk_public_update`, plán sa pečatí a schvaľuje), až potom skryté sady pred aktiváciou. Počet sád, ktoré by typovanie zadržalo (HTML, ktoré skladač nenapísal), sa na celom katalógu zatiaľ nezmeral: je to len čítanie a robí ho relácia na serveri CFM.
 9. **Čo návrh sady chce a CFM zatiaľ nemá.** Obrázok pri „Typ strechy“, samostatné pole „Kód“ v dlaždici obsahu balenia (kód je dnes v texte), skupiny parametrov (Nosnosť a rozmery, Konštrukcia, Upevnenie) a označenie, ktoré riadky tabuľky sú kľúčové pre pás. Každé z toho je nový údaj od CFM (strojový kľúč riadku, pole, obrázok), z textu sa nehádajú.
 
