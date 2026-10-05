@@ -87,6 +87,7 @@
 		"reviews": "Vélemények",
 		"reviewCount": "{count, plural, =0 {Nincs vélemény} one {# vélemény} other {# vélemény}}",
 		"sku": "Cikkszám",
+		"ean": "EAN",
 		"brand": "Márka",
 		"weight": "Súly",
 		"dimensions": "Méretek",
@@ -147,6 +148,10 @@
 			},
 			"temperatureRange": "Hőmérséklet-tartomány",
 			"range": "{min} – {max}",
+			"video": {
+				"play": "Videó lejátszása",
+				"note": "YouTube · csak a kattintás után töltődik be"
+			},
 			"years": "{count, plural, other {# év}}"
 		},
 		"keyFeatures": "Fő jellemzők",

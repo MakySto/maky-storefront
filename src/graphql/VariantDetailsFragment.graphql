@@ -3,6 +3,10 @@ fragment VariantDetails on ProductVariant {
 	name
 	sku
 	sourceSku: metafield(key: "cfm_source_sku")
+	# The product's EAN, as CFM publishes it (PUBLIC variant metadata, only when it can be a real GTIN).
+	# `lib/product-ean` checks it again before anything shows it. Absent on products CFM has not
+	# published it for yet, which is a blank, not an error.
+	ean: metafield(key: "cfm_ean")
 	quantityAvailable
 	# Distinguishes real warehouse stock from Saleor's synthetic checkout cap when
 	# inventory tracking is disabled. A tracked positive quantity must win over a

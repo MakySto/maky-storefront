@@ -1,4 +1,5 @@
 import { publicProductCode } from "@/lib/product-code";
+import { publicEan } from "@/lib/product-ean";
 import { formatMoney, formatMoneyRange } from "@/lib/utils";
 import { getDiscountInfo } from "@/lib/pricing";
 import { type ProductDetailsQuery } from "@/gql/graphql";
@@ -181,6 +182,9 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 	// SKU is that code with a CFM-internal suffix appended, and this line used to
 	// print the whole thing under a "SKU:" label.
 	const productCode = publicProductCode(selectedVariant ?? variants[0]);
+	// The EAN, as CFM publishes it on the variant (`cfm_ean`) and only when it can be a real GTIN —
+	// `publicEan` checks it again. Nothing when the product has none: a blank, never a placeholder.
+	const ean = publicEan(selectedVariant ?? variants[0]);
 
 	const reviewSummary = reviewSummaryFor(product);
 
@@ -254,7 +258,7 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 				/>
 			)}
 
-			{/* Manufacturer · SKU - order:3, directly under the h1 and its summary. */}
+			{/* Manufacturer · SKU · EAN - order:3, directly under the h1 and its summary. */}
 			<div className="order-3 mt-4 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5">
 				{manufacturer &&
 					(manufacturerHref ? (
@@ -271,6 +275,11 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 					<span className="text-text-tertiary min-w-0 text-xs">
 						{tProduct("sku")}:{" "}
 						<span className="font-medium [overflow-wrap:anywhere] tabular-nums">{productCode}</span>
+					</span>
+				)}
+				{ean && (
+					<span className="text-text-tertiary min-w-0 text-xs">
+						{tProduct("ean")}: <span className="font-medium tabular-nums">{ean}</span>
 					</span>
 				)}
 			</div>

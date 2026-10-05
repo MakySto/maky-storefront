@@ -87,6 +87,7 @@
 		"reviews": "Recenze",
 		"reviewCount": "{count, plural, =0 {Žádné recenze} one {# recenze} few {# recenze} other {# recenzí}}",
 		"sku": "Kód produktu",
+		"ean": "EAN",
 		"brand": "Značka",
 		"weight": "Hmotnost",
 		"dimensions": "Rozměry",
@@ -147,6 +148,10 @@
 			},
 			"temperatureRange": "Rozsah teplot",
 			"range": "{min} až {max}",
+			"video": {
+				"play": "Přehrát video",
+				"note": "YouTube · načte se až po kliknutí"
+			},
 			"years": "{count, plural, one {# rok} few {# roky} many {# roku} other {# let}}"
 		},
 		"keyFeatures": "Hlavní vlastnosti",
