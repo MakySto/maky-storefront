@@ -1461,10 +1461,14 @@
 
 	/* A video: a dark 16:9 preview that is only a link until the shopper asks for the film. Nothing of
 	   the film is on the page before that, so the preview is made of the shop's own colours, not of
-	   a thumbnail fetched from YouTube. The player (`VideoClickToPlay`) takes the link's place. */
+	   a thumbnail fetched from YouTube. The player (`VideoClickToPlay`) takes the link's place.
+	   It stands in the middle of the block: where the block is wider than the preview (a desktop card)
+	   the space is shared by both sides; where it is not (a phone) the preview fills the width, so
+	   nothing moves there. */
 	.maky-video {
 		position: relative;
 		max-width: 42rem;
+		margin-inline: auto;
 		aspect-ratio: 16 / 9;
 		overflow: hidden;
 		border-radius: var(--radius-sm);
