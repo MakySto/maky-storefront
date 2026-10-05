@@ -34,6 +34,7 @@ import { getContentLabels } from "@/lib/content-labels";
 import { liftSections, sheetFacts, templateFor } from "@/lib/product-templates";
 import { isSourceLocale } from "@/lib/saleor/exact-locale";
 import { publicSku } from "@/lib/product-code";
+import { publicEan } from "@/lib/product-ean";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
 
 /** CFM's manufacturer attribute, keyed on externalReference — see product-attributes.ts. */
@@ -248,6 +249,9 @@ async function ProductContent({
 		// 94% of pages once the Nordrive cohort went live. The visible code has
 		// always been correct; only this path bypassed the module that makes it so.
 		sku: publicSku(product.variants?.[0]) ?? undefined,
+		// The EAN CFM published on the variant, as `gtin13` (or the length it has). `publicEan` and the
+		// builder both refuse a number that cannot be a GTIN; a product CFM has none for says nothing.
+		gtin: publicEan(product.variants?.[0]) ?? undefined,
 		isPurchasable: product.isAvailableForPurchase === true,
 		priceRange: product.pricing?.priceRange?.start?.gross
 			? {
@@ -264,6 +268,7 @@ async function ProductContent({
 		// is the arm that actually renders.
 		variants: (product.variants ?? []).map((v) => ({
 			sku: publicSku(v),
+			gtin: publicEan(v),
 			name: v.name,
 			price: v.pricing?.price?.gross
 				? { amount: v.pricing.price.gross.amount, currency: v.pricing.price.gross.currency }

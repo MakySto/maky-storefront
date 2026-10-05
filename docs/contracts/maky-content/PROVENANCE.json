@@ -1,19 +1,19 @@
 {
-  "cfm_git_head": "92529a5a33648832aed37d72b26c462e2cebef2e",
+  "cfm_git_head": "b63b6b817b4395a05d199cdf43d70358e87aca6f",
   "cfm_tree_state": "clean",
   "files": {
     "coolz-32.description.json": {
       "cfm_copy": "backend/apps/saleor_sync/storefront_contract/maky_content_coolz_32.description.json",
       "describes": "CoolZ 32 (TK20410), the real producer's description",
-      "git_blob_sha1": "de44ccc82da344be3999c51af3d181547eaf0b83",
-      "sha256": "26aea4e0fe67be1ea63b76dac3e3695c2e3b853eaeaa3ca94bb1614f6ec3459d",
+      "git_blob_sha1": "e78c88b54981e7add9b107b63f37af90ce5915e9",
+      "sha256": "02a986ccf6a72b43cf4efe339b01b86e9863902b223a7acc9224c18378887f32",
       "template": "autochladnicka"
     },
     "gallery.description.json": {
       "cfm_copy": "backend/apps/saleor_sync/storefront_contract/maky_content_gallery.description.json",
       "describes": "invented gallery: every role and icon once, not a product",
-      "git_blob_sha1": "72c813b8575accc92379d5e3e79c1b5b1836e0e4",
-      "sha256": "7c7cd0cfa75583d063e84ede0fb30f79a9048203c03659fd3f1f7f70e903482d",
+      "git_blob_sha1": "3f216be069a66687cfb9cb00e4f081ca6f059388",
+      "sha256": "bdeefc801583d3d80541c5dbdafeb8093ca5cb4fa8669f8ff97544d5b69c59ad",
       "template": "autochladnicka"
     },
     "set-thule-71732.description.json": {
@@ -28,6 +28,7 @@
     "coolz_catalog_v1.json": "b759d31e51483d67fde8f0e59b3498ff88866a15c0662b51f0e4aa60ca2cdfc0",
     "coolz_catalog_v1.production_receipt.json": "5a5753cb80420ece57a312c4eb3a068c2d844ede6630d7a57824eb00add915fa",
     "coolz_legacy_rich_html_v1.txt": "0869fd14f5a700ffaed4ed94d6711b1374318b5463e40449b78c7aec25a1d46d",
+    "maky_content_media.py": "15eb376d4ba2e07f9b84e2a19dd81217642ee81a8e8f96e26a3837b645013618",
     "maky_content_set_thule_71732.html": "958a1590d69c1bfbe544a45ac5fc51fdfa6ef4ceeb0435b4b05d4760e83f689e"
   },
   "producer": "backend/scripts/storefront_maky_content_sample.py --example",

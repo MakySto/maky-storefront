@@ -4,6 +4,7 @@ import { createElement, Fragment, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createTranslator } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
+import { getComparisonLabels } from "@/lib/comparison-labels";
 import { getContentLabels } from "@/lib/content-labels";
 import { parseProductContent } from "@/lib/editorjs";
 import { formatProductAttributeValue, type AttributeInput } from "@/lib/product-attributes";
@@ -36,6 +37,12 @@ vi.mock("next-intl/server", () => ({
 			messages: load(options.locale) as never,
 			namespace: options.namespace as never,
 		}),
+}));
+
+// The click that opens a video is a client component that draws nothing. Its place in the page is
+// what is tested here, so it is replaced by a marker that shows where it was put.
+vi.mock("./video-click-to-play", () => ({
+	VideoClickToPlay: () => createElement("i", { id: "video-click-to-play" }),
 }));
 
 const render = async (element: Promise<ReactNode> | ReactNode): Promise<string> =>
@@ -118,6 +125,66 @@ describe("the car fridge's parameters table", () => {
 		);
 		expect(rowValue(html, "Záruka (roky)")).toBe("2");
 		expect(rowValue(html, "Hmotnosť")).toBe(`4,2${NBSP}kg`);
+	});
+});
+
+/**
+ * A car fridge's page with the manufacturer's film and datasheet, made from the real description CFM
+ * writes for CoolZ 32 (the shared sample): the film stays in the description card with the click that
+ * opens it, the datasheet is a card of its own, and nothing of YouTube is on the page before a click.
+ */
+describe("a car fridge's page with its video", async () => {
+	const fridge = templateFor("autochladnicka");
+	const sample = readFileSync(
+		path.join(process.cwd(), "docs/contracts/maky-content/coolz-32.description.json"),
+		"utf8",
+	);
+	const content = parseProductContent(sample, {
+		content: await getContentLabels(SK),
+		comparison: await getComparisonLabels(SK),
+	});
+	const sections = liftSections(content?.blocks ?? [], fridge);
+
+	const page = (description: string[]) =>
+		render(
+			ProductSpecs({
+				descriptionHtml: description,
+				comparisonHtml: sections.comparison,
+				documents: sections.documents,
+				template: fridge,
+				attributes: cooler(STATING),
+				locale: SK,
+			}),
+		);
+
+	it("holds the film in the description card, with the click that opens it", async () => {
+		const html = await page(sections.description);
+		const card = html.slice(html.indexOf('id="product-description"'), html.indexOf('id="model-comparison"'));
+		expect(card).toContain('class="maky-video"');
+		expect(card).toContain('href="https://www.youtube.com/watch?v=D5lm_R-m3BA"');
+		expect(html.match(/id="video-click-to-play"/g)).toHaveLength(1);
+	});
+
+	it("loads nothing of YouTube before a click: no frame, no image, no script, no other address", async () => {
+		const html = await page(sections.description);
+		expect(html).not.toMatch(/<iframe|youtube-nocookie|ytimg|<video/);
+		expect(html.match(/youtube\.com/g)).toHaveLength(1);
+	});
+
+	it("sets the datasheet in the card of its own, under the name the page navigation uses", async () => {
+		const html = await page(sections.description);
+		expect(html).toContain('<article id="product-documents"');
+		expect(html).toContain('href="#product-documents"');
+		expect(html).toContain("Na stiahnutie");
+		expect(html).toContain("CoolZ%2032.pdf");
+	});
+
+	it("ships no click for a page that has no video", async () => {
+		const withoutVideo = sections.description.filter((html) => !html.includes("maky-video"));
+		expect(withoutVideo.length).toBeLessThan(sections.description.length);
+		const html = await page(withoutVideo);
+		expect(html).not.toContain("video-click-to-play");
+		expect(html).not.toContain("maky-video");
 	});
 });
 

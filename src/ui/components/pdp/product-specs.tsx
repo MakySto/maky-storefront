@@ -2,6 +2,7 @@ import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { cn } from "@/lib/utils";
 import { ComparisonScrollToCurrent } from "./comparison-scroll";
+import { VideoClickToPlay } from "./video-click-to-play";
 
 import {
 	formatOuterDimensions,
@@ -56,6 +57,9 @@ const DESCRIPTION_PROSE = cn(
 
 /** The scrolling box `parseEditorJSToHtml` puts around a model comparison table. */
 const COMPARISON_REGION_CLASS = "maky-cmp-scroll";
+
+/** The link `renderRole` draws for a video; the preview that `VideoClickToPlay` turns into the player. */
+const VIDEO_LINK_CLASS = "maky-video-a";
 
 /** A value longer than this reads as a sentence: it gets the row's full width, left-aligned. */
 const LONG_VALUE = 32;
@@ -202,6 +206,8 @@ export async function ProductSpecs({
 						{descriptionHtml?.some((html) => html.includes(COMPARISON_REGION_CLASS)) && (
 							<ComparisonScrollToCurrent />
 						)}
+						{/* Likewise only a description with a video ships the click that opens it. */}
+						{descriptionHtml?.some((html) => html.includes(VIDEO_LINK_CLASS)) && <VideoClickToPlay />}
 
 						{careInstructions && (
 							<div className="border-border-subtle bg-surface-secondary mt-8 rounded-xs border p-4 sm:p-5">

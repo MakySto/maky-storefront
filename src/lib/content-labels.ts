@@ -15,5 +15,9 @@ export async function getContentLabels(locale: string): Promise<ContentLabels> {
 			info: t("content.kind.info"),
 			warn: t("content.kind.warn"),
 		},
+		video: {
+			play: t("content.video.play"),
+			note: t("content.video.note"),
+		},
 	};
 }

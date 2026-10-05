@@ -87,6 +87,7 @@
 		"reviews": "Opiniones",
 		"reviewCount": "{count, plural, =0 {Sin opiniones} one {# opinión} other {# opiniones}}",
 		"sku": "Referencia",
+		"ean": "EAN",
 		"brand": "Marca",
 		"weight": "Peso",
 		"dimensions": "Dimensiones",
@@ -147,6 +148,10 @@
 			},
 			"temperatureRange": "Rango de temperatura",
 			"range": "{min} a {max}",
+			"video": {
+				"play": "Reproducir vídeo",
+				"note": "YouTube · se carga solo al hacer clic"
+			},
 			"years": "{count, plural, one {# año} other {# años}}"
 		},
 		"keyFeatures": "Características principales",

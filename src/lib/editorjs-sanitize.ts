@@ -125,9 +125,12 @@ const STRUCTURAL_ICONS = [
 	"file",
 	"info",
 	"package",
+	"play",
 	"sparkles",
 ] as const;
 export type IconName = FeatureIcon | (typeof STRUCTURAL_ICONS)[number];
+/** Every icon a block can draw, so a test can hold each of them to a mask in `brand.css`. */
+export const ICON_NAMES: readonly IconName[] = [...FEATURE_ICONS, ...STRUCTURAL_ICONS];
 
 /**
  * The classes of the typed content blocks, as one set for the tags that carry them. Every
@@ -147,7 +150,7 @@ const CONTENT_CLASS_TOKENS: readonly string[] = [
 	"maky-callout-t",
 	// the parts items are built from
 	"maky-ico",
-	...[...FEATURE_ICONS, ...STRUCTURAL_ICONS].map((name) => `maky-ico-${name}`),
+	...ICON_NAMES.map((name) => `maky-ico-${name}`),
 	"maky-mark",
 	"maky-tile",
 	"maky-tile-lg",
@@ -173,6 +176,14 @@ const CONTENT_CLASS_TOKENS: readonly string[] = [
 	"maky-sg-t",
 	"maky-sr",
 	"maky-sr-long",
+	// the video's preview: the box, the link that is the whole of it, its play mark and its words
+	"maky-video",
+	"maky-video-a",
+	"maky-video-play",
+	"maky-video-txt",
+	"maky-video-t",
+	"maky-video-n",
+	"maky-video-sr",
 ];
 
 const CONTENT_CLASS_TAGS = new Set([

@@ -237,6 +237,90 @@ describe("offers describe what is actually sold", () => {
 });
 
 /**
+ * The product's EAN, as the GTIN a crawler can match against Merchant Center and other listings.
+ * It comes from CFM (`Product.ean`, published as the `cfm_ean` variant metafield) and is only ever
+ * emitted when it can be a real GTIN: a wrong barcode in structured data is a claim about another
+ * product, which is worse than none.
+ */
+describe("product JSON-LD GTIN", () => {
+	const COOLZ_32 = "8717809204103";
+	const single = {
+		name: "Kompresorová autochladnička PRO-USER CoolZ 32 l",
+		url: "/sk/kompresorova-autochladnicka-pro-user-coolz-32-l-tk20410",
+		priceRange: { lowPrice: 279, highPrice: 279, currency: "EUR" },
+		variantCount: 1,
+		variants: [{ sku: "TK20410", price: { amount: 279, currency: "EUR" }, inStock: true }],
+	};
+	const asRecord = (value: unknown) => value as Record<string, unknown>;
+
+	it("emits the EAN-13 of a single-variant product as gtin13", () => {
+		const data = asRecord(buildProductJsonLd({ ...single, gtin: COOLZ_32 }));
+		expect(data.gtin13).toBe(COOLZ_32);
+		expect(data).not.toHaveProperty("gtin8");
+		expect(data).not.toHaveProperty("gtin");
+	});
+
+	it("names the property by the length of the number", () => {
+		expect(asRecord(buildProductJsonLd({ name: "x", gtin: "96385074" })).gtin8).toBe("96385074");
+		expect(asRecord(buildProductJsonLd({ name: "x", gtin: "036000291452" })).gtin12).toBe("036000291452");
+		expect(asRecord(buildProductJsonLd({ name: "x", gtin: "10614141000415" })).gtin14).toBe("10614141000415");
+	});
+
+	it("takes the number from the variant that is sold, ahead of the product-level one", () => {
+		const data = asRecord(
+			buildProductJsonLd({
+				...single,
+				gtin: "8717809204097",
+				variants: [{ ...single.variants[0], gtin: COOLZ_32 }],
+			}),
+		);
+		expect(data.gtin13).toBe(COOLZ_32);
+	});
+
+	it("falls back to the product-level number when the variant's own is not a GTIN", () => {
+		const data = asRecord(
+			buildProductJsonLd({
+				...single,
+				gtin: COOLZ_32,
+				variants: [{ ...single.variants[0], gtin: "8717809204104" }],
+			}),
+		);
+		expect(data.gtin13).toBe(COOLZ_32);
+	});
+
+	it("says nothing about a number that cannot be a GTIN, and never repairs it", () => {
+		const data = asRecord(buildProductJsonLd({ ...single, gtin: "8717809204104" }));
+		for (const key of ["gtin", "gtin8", "gtin12", "gtin13", "gtin14"]) expect(data).not.toHaveProperty(key);
+		// A restricted circulation number is a shop's own code, not the product's.
+		expect(buildProductJsonLd({ ...single, gtin: "2000000000008" })).not.toHaveProperty("gtin13");
+	});
+
+	it("says nothing for a product CFM has no number for", () => {
+		const data = asRecord(buildProductJsonLd({ ...single, gtin: null }));
+		for (const key of ["gtin", "gtin8", "gtin12", "gtin13", "gtin14"]) expect(data).not.toHaveProperty(key);
+	});
+
+	it("gives every member of a ProductGroup its own number, and the group none", () => {
+		const data = asRecord(
+			buildProductJsonLd({
+				...single,
+				gtin: COOLZ_32,
+				variantCount: 2,
+				variants: [
+					{ sku: "A", gtin: "8717809204097", price: { amount: 10, currency: "EUR" } },
+					{ sku: "B", gtin: null, price: { amount: 20, currency: "EUR" } },
+				],
+			}),
+		);
+		expect(data["@type"]).toBe("ProductGroup");
+		expect(data).not.toHaveProperty("gtin13");
+		const members = data.hasVariant as Record<string, unknown>[];
+		expect(members[0]!.gtin13).toBe("8717809204097");
+		expect(members[1]).not.toHaveProperty("gtin13");
+	});
+});
+
+/**
  * The builder's own defence. Callers are meant to pass a value already resolved
  * by `publicSku`, but the PDP shipped `sourceSku || sku` for months and put the
  * internal identifier into the `sku` Google reads on 94% of pages. A module whose

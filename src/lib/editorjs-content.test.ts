@@ -44,7 +44,7 @@ import {
 	type ContentLabels,
 } from "./editorjs";
 import { isUnknownRole, readEnvelope, readMarker } from "./editorjs-content";
-import { FEATURE_ICONS } from "./editorjs-sanitize";
+import { FEATURE_ICONS, ICON_NAMES, sanitizeBlock } from "./editorjs-sanitize";
 import { liftSections, sheetFacts, templateFor } from "./product-templates";
 
 const LOCALES = [
@@ -89,6 +89,21 @@ const table = (id: string | undefined, content: string[][], withHeadings = false
 	type: "table",
 	...(id ? { id } : {}),
 	data: { withHeadings, content },
+});
+
+const FILM = "D5lm_R-m3BA";
+const FILM_TITLE = "PRO-USER CoolZ – kompresorové autochladničky s powerbankou";
+/** A video as CFM writes it: Editor.js' embed block, the film named by its watch and its embed address. */
+const video = (changes: Record<string, unknown> = {}, id: string | undefined = "maky:video"): Block => ({
+	type: "embed",
+	...(id ? { id } : {}),
+	data: {
+		service: "youtube",
+		source: `https://www.youtube.com/watch?v=${FILM}`,
+		embed: `https://www.youtube.com/embed/${FILM}`,
+		caption: FILM_TITLE,
+		...changes,
+	},
 });
 
 let labels: ContentLabels;
@@ -337,6 +352,45 @@ describe("each role is drawn as itself", () => {
 		expect(block?.body).toContain('<span class="maky-d">PDF · SK</span>');
 	});
 
+	it("a video: a link to its watch page and its title, with nothing of YouTube loaded", () => {
+		const parsed = parse(doc([header("Video"), video()]));
+		const block = parsed?.blocks[0];
+		expect(parsed?.issues).toEqual([]);
+		expect(parsed?.blocks).toHaveLength(1);
+		// The video stays in the description: only the comparison and the documents are lifted.
+		expect(block?.section).toBeUndefined();
+		expect(block?.html).toBe(
+			'<section class="maky-blk not-prose"><h3 class="maky-h">Video</h3>' +
+				'<div class="maky-video"><a class="maky-video-a" href="https://www.youtube.com/watch?v=D5lm_R-m3BA" target="_blank" rel="noopener noreferrer">' +
+				'<span class="maky-video-play" aria-hidden="true"><span class="maky-ico maky-ico-play" aria-hidden="true"></span></span>' +
+				'<span class="maky-video-txt"><span class="maky-video-sr">Prehrať video: </span>' +
+				`<strong class="maky-video-t">${FILM_TITLE}</strong>` +
+				'<span class="maky-video-n">YouTube · načíta sa až po kliknutí</span></span></a></div></section>',
+		);
+		// The page asks YouTube for nothing until the shopper does: no frame, no image, no script,
+		// and the only address in the markup is the link that opens the watch page.
+		for (const forbidden of ["<iframe", "<img", "<script", "<video", "src=", "youtube-nocookie", "/embed/"]) {
+			expect(block?.html, forbidden).not.toContain(forbidden);
+		}
+		expect(block?.html.match(/https?:\/\/[^"\s<]+/g)).toEqual([`https://www.youtube.com/watch?v=${FILM}`]);
+	});
+
+	it("a video needs no heading above it, and its markup is kept whole by the second pass", () => {
+		const parsed = parse(doc([video()]));
+		const html = parsed?.blocks[0].html ?? "";
+		expect(html).toContain('<section class="maky-blk not-prose"><div class="maky-video">');
+		expect(html).not.toContain("<h3");
+		// The renderer's own markup is exactly what the sanitizer lets through, so no class or attribute is dropped.
+		expect(sanitizeBlock(html)).toBe(html);
+	});
+
+	it("a video is addressed by the identifier alone: the link is rebuilt from it, not copied", () => {
+		// Whatever else the address says is not the identifier, so this is not a video the page draws.
+		const html = htmlOf(doc([video()]));
+		expect(html).toContain(`href="https://www.youtube.com/watch?v=${FILM}"`);
+		expect(html.match(/href="/g)).toHaveLength(1);
+	});
+
 	it("a role's title is the heading directly above it, and only that", () => {
 		const html = htmlOf(
 			doc([
@@ -429,7 +483,79 @@ describe("nothing is lost when a role cannot be drawn", () => {
 		const parsed = parse(content);
 		expect(parsed?.blocks.length ?? 0).toBeGreaterThan(0);
 		expect(parsed?.issues.map((issue) => issue.code)).toEqual(["malformed-block"]);
-		expect(htmlOf(content)).not.toMatch(/class="maky-(benefits|inbox|features|faq|specs|callout|steps|docs)/);
+		expect(htmlOf(content)).not.toMatch(
+			/class="maky-(benefits|inbox|features|faq|specs|callout|steps|docs|video)/,
+		);
+	});
+
+	it.each([
+		[
+			"a paragraph in place of the embed",
+			{ type: "paragraph", id: "maky:video", data: { text: "Film" } },
+			"carried by an embed",
+		],
+		["of another service", video({ service: "vimeo" }), "is not youtube"],
+		[
+			"on another host",
+			video({ source: "https://evil.example/watch?v=D5lm_R-m3BA" }),
+			"not a youtube.com watch address",
+		],
+		[
+			"on a look-alike host",
+			video({ source: "https://www.youtube.com.evil.example/watch?v=D5lm_R-m3BA" }),
+			"not a youtube.com watch address",
+		],
+		[
+			"over plain http",
+			video({ source: "http://www.youtube.com/watch?v=D5lm_R-m3BA" }),
+			"not a youtube.com watch address",
+		],
+		[
+			"with a second parameter",
+			video({ source: "https://www.youtube.com/watch?v=D5lm_R-m3BA&autoplay=1" }),
+			"not a youtube.com watch address",
+		],
+		[
+			"with a short identifier",
+			video({ source: "https://www.youtube.com/watch?v=D5lm_R-m3B" }),
+			"not a youtube.com watch address",
+		],
+		["whose source is not text", video({ source: 7 }), "not a youtube.com watch address"],
+		[
+			"whose embed is another film",
+			video({ embed: "https://www.youtube.com/embed/AAAAAAAAAAA" }),
+			"embed address",
+		],
+		[
+			"whose embed is on another host",
+			video({ embed: "https://evil.example/embed/D5lm_R-m3BA" }),
+			"embed address",
+		],
+		["with no embed", video({ embed: undefined }), "embed address"],
+		["with no title", video({ caption: "" }), "has no title"],
+		["with a title that is only markup", video({ caption: "<b> </b>" }), "has no title"],
+	])("a video %s is not drawn, and says why", (_name, block, why) => {
+		const content = typed([block]);
+		expect(htmlOf(content)).not.toContain("maky-video");
+		expect(htmlOf(content)).not.toContain("<iframe");
+		expect(issuesOf(content)).toMatchObject([
+			{ code: "malformed-block", detail: expect.stringContaining(why) },
+		]);
+	});
+
+	it("keeps the heading above a video it cannot draw as the heading it is", () => {
+		const content = typed([header("Video"), video({ service: "vimeo" })]);
+		expect(htmlOf(content)).toBe("<h2>Video</h2>");
+		expect(issuesOf(content).map((issue) => issue.code)).toEqual(["malformed-block"]);
+	});
+
+	it("draws no video for a reader that was not asked for the profile, or whose major version differs", () => {
+		const blocks = [header("Video"), video()];
+		expect((parseEditorJSToHtml(doc(blocks)) ?? []).join("\n")).toBe("<h2>Video</h2>");
+		const newer = parseProductContent(doc(blocks, "maky-content/2:autochladnicka"), { content: labels });
+		expect(newer?.blocks.map((block) => block.html).join("\n")).toBe("<h2>Video</h2>");
+		// A listing or a search result is made of text only, and a film is none.
+		expect(parseEditorJSToText(doc(blocks))).toBe("Video");
 	});
 
 	it("has nothing to show for an empty marked list, and so nothing to lose", () => {
@@ -548,6 +674,25 @@ describe("Saleor's text cannot reach the markup", () => {
 		// The class the forged element asked for is not the class on the page.
 		expect(html).not.toContain("maky-callout-warn");
 		expect(html).toContain("maky-ico-sparkles");
+	});
+
+	it("reaches the page as text only when it is the title of a video, and never as an address", () => {
+		const html = htmlOf(
+			doc([
+				video({
+					caption:
+						'Film <script>alert(1)</script><iframe src="https://evil.test"></iframe><img src=x onerror="y()"><a href="https://evil.test/p" class="maky-video-a">odkaz</a> <em onclick="z()">dôležité</em>',
+				}),
+			]),
+		);
+		for (const forbidden of ["<script", "<iframe", "<img", "onerror", "onclick", "evil.test/p", "alert(1)"]) {
+			expect(html, forbidden).not.toContain(forbidden);
+		}
+		expect(html).toContain("Film");
+		expect(html).toContain("dôležité");
+		// Only the link the renderer wrote opens anything.
+		expect(html.match(/class="maky-video-a"/g)).toHaveLength(1);
+		expect(html.match(/https:\/\/www\.youtube\.com\/watch\?v=/g)).toHaveLength(1);
 	});
 
 	it("never takes the fixed words, the classes or the icon names from the document", () => {
@@ -691,8 +836,12 @@ describe("the samples CFM's producer writes", () => {
 			expect(Object.keys(parsed).sort()).toEqual(["blocks", "version"]);
 			expect(parsed.version).toBe(version);
 			for (const block of parsed.blocks) {
-				expect(["paragraph", "header", "list", "table"]).toContain(block.type);
+				expect(["paragraph", "header", "list", "table", "embed"]).toContain(block.type);
 				expect(Object.keys(block).every((key) => ["type", "id", "data"].includes(key))).toBe(true);
+				// What Saleor keeps of an embed is these fields (EditorJSEmbedDataModel); the producer sends four.
+				if (block.type === "embed") {
+					expect(Object.keys(block.data).sort()).toEqual(["caption", "embed", "service", "source"]);
+				}
 				if (block.id !== undefined) expect(readMarker(block.id), block.id).not.toBeNull();
 			}
 		}
@@ -711,6 +860,27 @@ describe("the samples CFM's producer writes", () => {
 		// The four features of the page, each with the icon the producer chose for it.
 		for (const icon of ["battery", "stand", "smartphone", "lightbulb"])
 			expect(html).toContain(`maky-ico-${icon}`);
+		// The manufacturer's film, once, as a link that loads nothing; and the datasheet of this very model.
+		expect(count(html, /class="maky-video"/g)).toBe(1);
+		expect(html).toContain(`href="https://www.youtube.com/watch?v=${FILM}"`);
+		expect(html).toContain(FILM_TITLE);
+		expect(html).not.toMatch(/<iframe|<img|youtube-nocookie/);
+		expect(count(html, /class="maky-doc"/g)).toBe(1);
+		expect(html).toContain(
+			'href="https://www.pro-user.com/public/attachments/20410/Datasheets/2510_PUE_Datasheets_koelboxen_CoolZ%2032.pdf"',
+		);
+	});
+
+	it("CoolZ 32: the film stays in the description after the features, the datasheet and the comparison are cards of their own", () => {
+		const parsed = parseProductContent(COOLZ, { content: labels, comparison });
+		const sections = liftSections(parsed?.blocks ?? [], templateFor(parsed?.template));
+		const description = sections.description.join("");
+		expect(description).toContain('class="maky-video"');
+		expect(description.indexOf("maky-features")).toBeLessThan(description.indexOf("maky-video"));
+		expect(sections.comparison).toContain("maky-cmp-table");
+		expect(sections.documents?.body).toContain('class="maky-docs"');
+		expect(sections.documents?.body).toContain("CoolZ%2032.pdf");
+		expect(sections.documents?.body).not.toContain("maky-video");
 	});
 
 	it("the gallery: every role and every icon, nothing refused", () => {
@@ -718,7 +888,7 @@ describe("the samples CFM's producer writes", () => {
 		const html = parsed?.blocks.map((block) => block.html).join("\n") ?? "";
 		expect(parsed).toMatchObject({ typed: true, template: "autochladnicka", issues: [] });
 		for (const kind of ["tip", "info", "warn"]) expect(html).toContain(`maky-callout-${kind}`);
-		for (const role of ["benefits", "inbox", "features", "steps", "faq", "specs", "docs"]) {
+		for (const role of ["benefits", "inbox", "features", "steps", "faq", "specs", "docs", "video"]) {
 			expect(count(html, new RegExp(`class="maky-${role}"`, "g")), role).toBe(1);
 		}
 		for (const icon of FEATURE_ICONS) expect(html, icon).toContain(`maky-ico-${icon}`);
@@ -786,6 +956,9 @@ describe("the samples CFM's producer writes", () => {
 			};
 			for (const block of source.blocks) {
 				if (typeof block.data.text === "string") strings.push(visible(block.data.text));
+				// A video's title is the one text its block has.
+				if (block.type === "embed" && typeof block.data.caption === "string")
+					strings.push(visible(block.data.caption));
 				collect(block.data.items);
 				// The comparison table has its own contract: its marks are words on the page.
 				if (block.type === "table" && block.id === "maky:specs") {
@@ -807,6 +980,15 @@ describe("the fixed words of every market", () => {
 			expect(words.callout[kind]).not.toMatch(/[{}]/);
 		}
 		expect(new Set(Object.values(words.callout)).size).toBe(3);
+		// The words of a video's preview: the action, and where the film is hosted and that nothing loads before the click.
+		for (const text of [words.video.play, words.video.note]) {
+			expect(text, locale).toMatch(/\S/);
+			expect(text).not.toMatch(/[{}<>]/);
+		}
+		expect(words.video.note).toContain("YouTube");
+		expect(words.video.play).not.toBe(words.video.note);
+		if (locale !== "sk-SK")
+			expect(words.video.play, locale).not.toBe((await getContentLabels("sk-SK")).video.play);
 
 		const t = createTranslator({
 			locale,
@@ -819,5 +1001,25 @@ describe("the fixed words of every market", () => {
 			expect(text).not.toMatch(/[{}#]/);
 		}
 		expect(t("content.range", { min: "−20", max: "+20" })).toContain("−20");
+	});
+});
+
+describe("the styles of the typed blocks", () => {
+	const css = readFileSync(join(ROOT, "src/styles/brand.css"), "utf8");
+
+	it("hold a mask for every icon a block can draw (an icon without one is drawn as a plain square)", () => {
+		for (const name of ICON_NAMES) {
+			expect(css, name).toMatch(new RegExp(`\\.maky-ico-${name}\\s*\\{[^}]*--maky-ico:\\s*url\\(`));
+		}
+	});
+
+	it("hold a rule for every class the video's preview is drawn with (a class without one is drawn unstyled)", () => {
+		const html = htmlOf(doc([header("Video"), video()]));
+		const classes = new Set([...html.matchAll(/class="([^"]+)"/g)].flatMap((match) => match[1].split(/\s+/)));
+		for (const name of classes) {
+			if (name === "not-prose") continue;
+			expect(css, name).toContain(`.${name}`);
+		}
+		expect(classes.has("maky-video-a")).toBe(true);
 	});
 });
