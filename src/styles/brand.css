@@ -1473,6 +1473,16 @@
 		margin-bottom: 0;
 	}
 
+	/* A sheet of one group has nothing to balance the columns with: its rows flow down the first and
+	   on into the second, each row whole, as the flat list of a page without groups does. */
+	.maky-sg:only-child {
+		break-inside: auto;
+	}
+
+	.maky-sg:only-child .maky-sr {
+		break-inside: avoid;
+	}
+
 	.maky-sg-t {
 		margin: 0;
 		padding-bottom: 0.5rem;

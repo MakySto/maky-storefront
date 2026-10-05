@@ -175,8 +175,14 @@ function textParts(content: string, extra = ""): string {
 
 // ─── Roles ───────────────────────────────────────────────────────────────────────────────────
 
+/** One row of a parameter sheet as plain text: the label and its value, for what is set outside the sheet. */
+export interface SpecFact {
+	label: string;
+	value: string;
+}
+
 /** A role's body, or the reason it cannot be drawn as that role. */
-type Body = { html: string } | { problem: string };
+type Body = { html: string; facts?: SpecFact[] } | { problem: string };
 
 const refuse = (problem: string): Body => ({ problem });
 
@@ -220,11 +226,24 @@ function calloutBody(block: ContentBlock, kind: string | null, title: string, la
 	};
 }
 
+/**
+ * A benefit without a leading title is a selling point that stands on its own ("Aerodynamický profil
+ * znižuje hluk vetra"): the whole of it is the title, set as the titles of the other benefits are, not
+ * as the small grey text that follows a title.
+ */
+function benefitText(content: string): string {
+	return LEADING_STRONG.test(content)
+		? textParts(content)
+		: `<span class="maky-txt"><strong class="maky-t">${sanitizeInline(content)}</strong></span>`;
+}
+
 function benefitsBody(items: Item[]): Body {
 	if (items.some((item) => item.children.length > 0)) return refuse("a benefit has nested items");
 	const rows = items.map(
 		(item) =>
-			`<li><span class="maky-mark" aria-hidden="true">${ico("check")}</span>${textParts(item.content)}</li>`,
+			`<li><span class="maky-mark" aria-hidden="true">${ico("check")}</span>${benefitText(
+				item.content,
+			)}</li>`,
 	);
 	return { html: `<ul class="maky-benefits">${rows.join("")}</ul>` };
 }
@@ -328,6 +347,7 @@ function specsBody(block: ContentBlock): Body {
 	if (!Array.isArray(data.content)) return refuse("specs have no rows");
 
 	const groups: { title: string | null; rows: { label: string; value: string }[] }[] = [];
+	const facts: SpecFact[] = [];
 	let valued = 0;
 	for (const row of data.content) {
 		if (!Array.isArray(row) || row.length !== 2 || row.some((cell) => typeof cell !== "string")) {
@@ -343,6 +363,10 @@ function specsBody(block: ContentBlock): Body {
 		if (!label) return refuse("a specs row has a value and no label");
 		if (groups.length === 0) groups.push({ title: null, rows: [] });
 		groups[groups.length - 1].rows.push({ label: sanitizeInline(label), value: sanitizeInline(value) });
+		facts.push({
+			label: plainText(sanitizeInline(label)).trim(),
+			value: plainText(sanitizeInline(value)).trim(),
+		});
 		valued += 1;
 	}
 	if (valued === 0) return refuse("specs have no row with a value");
@@ -362,7 +386,7 @@ function specsBody(block: ContentBlock): Body {
 			}</section>`;
 		})
 		.join("");
-	return { html: `<div class="maky-specs">${html}</div>` };
+	return { html: `<div class="maky-specs">${html}</div>`, facts };
 }
 
 // ─── One marked block ────────────────────────────────────────────────────────────────────────
@@ -375,6 +399,8 @@ interface RenderedRole {
 	title: string | null;
 	/** The block without its heading. */
 	body: string;
+	/** A parameter sheet's rows as plain text, in order; set only for `specs`. */
+	facts?: SpecFact[];
 }
 
 type RoleOutcome = RenderedRole | { problem: string };
@@ -445,6 +471,7 @@ export function renderRole(
 		}</section>`,
 		title,
 		body: body.html,
+		...(body.facts ? { facts: body.facts } : {}),
 	};
 }
 

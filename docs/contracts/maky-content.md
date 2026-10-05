@@ -1,8 +1,8 @@
 # Typovaný popis produktu · kontrakt storefront ↔ CFM
 
-Profil „maky-content“, verzia 1. Šablóna: autochladnička (pilot CoolZ 19 / 32 / 40 / 65 / 83, ďalšie autochladničky). Dizajn: „Šablóny produktových stránok“ z 2. 10. 2026, fáza 2.
+Profil „maky-content“, verzia 1. Šablóny: autochladnička (pilot CoolZ 19 / 32 / 40 / 65 / 83, ďalšie autochladničky) a strešný nosič (sady Nordrive a Thule). Dizajn: „Šablóny produktových stránok“ z 2. 10. 2026, fáza 2.
 
-**Kto čo vlastní.** Profil, teda čo storefront vie prečítať a zobraziť, vlastní storefront, lebo je konzument. Dve ukážky, proti ktorým testujú obe strany, generuje CFM, lebo je producent. Bajty ukážok sú v oboch repozitároch rovnaké a každá strana ich pripína odtlačkom, takže sa jedna nemôže potichu rozísť s druhou. Druhá schéma nevznikla: popis je obyčajný Editor.js dokument zložený z blokov, ktoré Saleor sám ukladá a vracia.
+**Kto čo vlastní.** Profil, teda čo storefront vie prečítať a zobraziť, vlastní storefront, lebo je konzument. Tri ukážky, proti ktorým testujú obe strany, generuje CFM, lebo je producent. Bajty ukážok sú v oboch repozitároch rovnaké a každá strana ich pripína odtlačkom, takže sa jedna nemôže potichu rozísť s druhou. Druhá schéma nevznikla: popis je obyčajný Editor.js dokument zložený z blokov, ktoré Saleor sám ukladá a vracia.
 
 ## Prečo profil a nie nové typy blokov
 
@@ -29,6 +29,7 @@ Dizajn posiela popis ako bloky vlastných druhov (`callout`, `benefits`, `inBox`
 | `maky:specs`                         | `table` bez hlavičky     | dve bunky na riadok, riadok skupiny má druhú prázdnu                          | skupiny parametrov                                                                       |
 | `maky:documents`                     | `list`                   | `<a href="https://…">Názov</a> poznámka`                                      | karty na stiahnutie                                                                      |
 
+- **Strešná sada** (`maky-content/1:stresny-nosic`) vzniká z HTML, ktoré napíše skladač sád (`_compose_roof_rack_html`), podľa **tried sekcií**, nie podľa textu: `product-components` → `maky:inbox` (názov dielu bez dvojbodky), `product-benefits` → `maky:benefits` (každá položka je jedna veta bez `<strong>`), `product-tech-params` → `maky:specs` (jedna skupina bez názvu), `product-warnings` → `maky:callout:warn`, `product-roof-guide` → `maky:callout:info`. Úvod, kompatibilita, použitie a motto ostávajú obyčajné bloky. Popis má rovnaké bloky v rovnakom poradí s rovnakým textom ako doteraz; líši sa tabuľkou parametrov namiesto zoznamu a dvojbodkou pri názve dielu. Čo CFM takto nevie napísať, riadok zadrží, späť na text bez rolí nepadá. Typuje sa iba v behu, ktorý o to požiada (`--typed-description` v `plan_sk_public_update` a `publish_sk_hidden_catalog`), nie globálnym prepínačom, a tabuľka parametrov potrebuje v tom behu zapnuté `CFM_SALEOR_NATIVE_COMPARISON_TABLES`.
 - **Ikony** (`meta.icon`) sú uzavretá množina: `battery`, `stand`, `smartphone`, `lightbulb`, `snowflake`, `plug`, `shield`. Neznámy názov nakreslí všeobecnú značku; je to chyba producenta, nie zákazníka, takže stránka ostane celá.
 - **Odkaz dokumentu** je `https://…` alebo cesta na tomto webe (`/…`). Protokol-relatívny odkaz (`//…`) a každá iná schéma sú chyba bloku. Otvára sa v novej karte s `noopener noreferrer`.
 - Saleor 3.23.31 pri odkazoch pridá `rel="noopener noreferrer"`, takže zapísaný a prečítaný dokument sa líši práve v tom a v ničom inom. Čítačka to toleruje.
@@ -44,7 +45,7 @@ Skrátený príklad (celý dokument je v ukážke):
 		{
 			"type": "paragraph",
 			"id": "maky:callout:tip",
-			"data": { "text": "Pred výletom vychlaď chladničku doma …" }
+			"data": { "text": "Pred výletom vychlaďte chladničku doma …" }
 		},
 		{ "type": "header", "data": { "level": 2, "text": "Prečo si vybrať CoolZ 32?" } },
 		{
@@ -68,6 +69,11 @@ Skrátený príklad (celý dokument je v ukážke):
   - **Technické parametre v skupinách** „Chladenie“, „Napájanie“, „Rozmery a hmotnosť“, „Výbava“ podľa kľúča atribútu (`cfm:attribute:<kľúč>`). Riadok, ktorý nepatrí do žiadnej skupiny, nezmizne: ide do „Ďalšie parametre“. Ak šablóna pozná menej než tri riadky, ostáva plochý zoznam ako doteraz.
   - **Samostatné karty**: porovnanie modelov (`#model-comparison`) a dokumenty (`#product-documents`) sa vyberú z popisu, dostanú vlastnú kartu a odkaz v navigácii stránky („Porovnanie modelov“, „Na stiahnutie“). Zdvihne sa len prvý blok každého druhu; ďalší ostane v popise.
   - **Hodnoty atribútov**: `warranty_years` sa píše s jednotkou a správnym tvarom („3 roky“, `product.content.years`), `cooling_modes` a `interior_components` sa rozdelia na položky podľa `|`.
+- **Strešný nosič (sada)** (`stresny-nosic`) určuje:
+  - **Samostatná karta „Technické parametre“** (`#technical-parameters`, odkaz v navigácii stránky): tabuľka parametrov (`maky:specs`) sa vyberie z popisu, nadpis je nadpis dokumentu. Šablóna nepotrebuje, aby sada niesla nejaký atribút: ak ich má (napríklad Výrobcu), pridajú sa v tej istej karte pod tabuľku, nič sa nezahodí. Ktoré atribúty nesú produkčné sady, sa nečítalo; stránka je skúšaná bez atribútov aj s jediným, Výrobcom. Zvyšok popisu (obsah balenia, výhody, použitie, upozornenia, typ strechy) ostáva v popise v poradí, v akom ho CFM napísal.
+  - **Pás kľúčových faktov** zo štyroch prvých riadkov tabuľky parametrov, v poradí a znení, ako ich CFM napísal: hodnota nad názvom, **bez ikon**, lebo z textu riadku sa ikona nehádá. Riadok s hodnotou dlhšou než 48 znakov (veta) sa preskočí. Ak atribúty produktu dajú aspoň dva fakty, pás ostáva z atribútov a tabuľka doň nevstupuje. Aké riadky budú v páse, rozhoduje poradie riadkov v CFM; označiť riadok ako kľúčový by chcelo nový údaj od CFM.
+  - **Výhody bez názvu** (položka je jedna veta bez `<strong>`) sa kreslia celé ako názov, rovnako ako názvy ostatných výhod. Platí pre každú šablónu.
+  - Text „Kompatibilita“ v popise ostáva (nič sa nemaže); jeho vypustenie, keďže vozidlá ukazuje sekcia pod popisom, patrí k norme textov v2.
 - **Názov, ktorý jednotku už hovorí.** Názov atribútu je v Saleore jeden pre všetky produkty a jednotku nesie v zátvorke: produkčné `warranty_years` je „Záruka (roky)“. Tabuľka parametrov píše názov vedľa hodnoty, takže „Záruka (roky) | 2 roky“ povie roky dvakrát; podľa hlásenia z nasadenia sa to stalo pri prvom nasadení tejto šablóny (4. 10. 2026, stránka TK20414), opravuje to samostatný PR. Preto tabuľka pri `warranty_years` a pri jednotkách, ktoré táto stránka pridala (`rated_power`, `net_volume`, `interior_height`, `input_current_ac`, `temperature_min`, `temperature_max`), nepíše jednotku, ktorú názov v zátvorke už hovorí: „Záruka (roky) | 2“, „Menovitý výkon (W) | 60“. Roky sa poznajú podľa slov z množného tvaru trhu (`product.content.years`: rok, roky, roka, rokov), merná jednotka podľa presnej značky; iná jednotka v zátvorke („(kW)“) sa za našu nepovažuje a naša ostane. Názov bez jednotky dostane jednotku ako doteraz („Záruka | 3 roky“, „Menovitý výkon | 60 W“), takže ak CFM atribút premenuje na „Záruka“, stránka bez zásahu napíše „3 roky“. Pás kľúčových faktov názov vedľa hodnoty nemá („Príkon 60 W“) a jednotku si necháva. Staršie jednotky (`weight`, `volume`, `max_load` a ďalšie) sa nemenia: tie sa vedľa názvov písali dávno a živé stránky ostávajú, aké sú.
 - **Pevné slová** (druh poznámky, názvy skupín, „Rozsah teplôt“, „{min} až {max}“, „rok/roky/rokov“, navigácia) sú v `product.content.*` vo všetkých 12 jazykových súboroch. Texty blokov a názvy riadkov sú text zo Saleoru, takže v cudzom trhu sú v tom jazyku, v akom prišiel preklad popisu.
 
@@ -85,17 +91,18 @@ Skrátený príklad (celý dokument je v ukážke):
 
 Stránka každé hlásenie zapíše cez `console.error("[maky-content] …")` s indexom bloku a značkou, takže sa dá nájsť v logoch PM2. CFM kontroluje tie isté pravidlá pred zápisom (`maky_content.problems`), takže sa k zákazníkovi nedostane nič, čo by CFM sám odmietol.
 
-## Dve spoločné ukážky
+## Tri spoločné ukážky
 
-| Strana     | Súbor                                                                                                                          | Čo ju drží                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| storefront | `docs/contracts/maky-content/coolz-32.description.json`, `gallery.description.json` a `PROVENANCE.json`                        | `src/lib/editorjs-content.test.ts` ich vykreslí a porovná odtlačky s provenance     |
-| CFM        | `backend/apps/saleor_sync/storefront_contract/maky_content_coolz_32.description.json`, `maky_content_gallery.description.json` | `test_maky_content.py` ich znova vygeneruje z producenta a porovná bajty a odtlačky |
+| Strana     | Súbor                                                                                                                                                                                                  | Čo ju drží                                                                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| storefront | `docs/contracts/maky-content/coolz-32.description.json`, `gallery.description.json`, `set-thule-71732.description.json` a `PROVENANCE.json`                                                            | `src/lib/editorjs-content.test.ts` ich vykreslí a porovná odtlačky s provenance                                                                     |
+| CFM        | `backend/apps/saleor_sync/storefront_contract/maky_content_coolz_32.description.json`, `maky_content_gallery.description.json`, `maky_content_set_thule_71732.description.json` (a jeho vstup `.html`) | `test_maky_content.py` ich znova vygeneruje z producenta a porovná bajty a odtlačky, `test_maky_content_sets.py` dokáže, že vstup je skutočný popis |
 
 - **CoolZ 32** (TK20410) je skutočný popis zo skutočného dokumentu: úvod, tip, výhody, obsah balenia, kľúčové vlastnosti a natívna tabuľka porovnania.
+- **Strešná sada Thule** (CFM pk 71732, Thule WingBar EVO Silver pre BMW X5 E70) je skutočný popis z plánu pilotných sád (pred normou textov v2), typovaný ako `maky-content/1:stresny-nosic` tou istou funkciou, ktorú volá publisher. Vstup (HTML skladača sád) je v CFM uložený vedľa a test dokazuje, že sa dá premeniť späť na dokument z plánu. Ukazuje úvod, kompatibilitu, obsah balenia, výhody, tabuľku parametrov, použitie, upozornenia, typ strechy a motto. V sandboxe z nej (a z troch ďalších skutočných sád, `scripts/sandbox/seed-roof-racks.mjs`) vzniknú produkty.
 - **Galéria** je **vymyslená**: obsahuje každú rolu a druh poznámky aspoň raz (aj tie, ktoré CoolZ nepoužíva: poznámku, varovanie, kroky, otázky, parametre, dokumenty) a každú ikonu. Nepatrí k žiadnemu produktu a text je ukážkový. Vyrába ju ten istý kódovač ako popis chladničky, takže ukazuje presne to, čo producent vie napísať. Seed sandboxu z nej robí produkt „Ukážka blokov popisu (len sandbox)“ (SKU `SANDBOX-GALLERY`).
 
-`PROVENANCE.json` nesie commit CFM, z ktorého vznikla, stav stromu (musí byť `clean`), sha256 a git blob id súborov a odtlačky vstupov. Hodnoty CoolZ sú z onboarding manifestu, nie z produkčnej databázy.
+`PROVENANCE.json` nesie commit CFM, z ktorého vznikla, stav stromu (musí byť `clean`), pri každom súbore šablónu, ktorou je typovaný, sha256 a git blob id a odtlačky vstupov. Hodnoty CoolZ sú z onboarding manifestu a sada z popisu uloženého v pláne pilotných sád, nie z produkčnej databázy.
 
 Obnova, keď sa zmení producent alebo profil, z čistého commitnutého stromu CFM:
 
@@ -110,8 +117,9 @@ Skript prepíše súbory aj `PROVENANCE.json` tu, kópie v CFM a vypíše odtla�
 
 - **Saleor 3.23.31 zostavený zo zdroja (sandbox):** `clean_editorjs` vráti popisy všetkých piatich chladničiek **nezmenené** a galériu nezmenenú, až na `rel="noopener noreferrer"`, ktoré Saleor pridá k odkazom. `productCreate` ich prijme a prečítaný dokument má bloky, `id` aj `version` rovnaké.
 - **Storefront** z prečítaného dokumentu vykreslil CoolZ 32 aj galériu na desktope aj mobile, s atribútmi pripravenými v sandboxe (pozri nižšie).
+- **Strešné sady:** typovanie prešlo na 36 skutočných popisoch (11 pilotných Thule a 25 Nordrive z rampy) a na skutočnom skladači. Saleor 3.23.31 zo zdroja (sandbox) uložil a vrátil štyri skutočné sady (tri Thule, jednu Nordrive) s rovnakými blokmi, `id` aj `version`, vrátane tabuľky parametrov. Storefront ich vykreslil na desktope aj mobile.
 - **Ostatné produkty sa nemenia.** Jednorazovo overené proti čítačke z vetvy, od ktorej sa vychádzalo: 17 dokumentov bez profilu (doterajšie popisy, tabuľka porovnania, hraničné prípady) sa vykreslilo 34-krát bajt po bajte rovnako. Tá istá doterajšia čítačka ukáže každý reťazec oboch ukážok, len bez vzhľadu rolí.
-- **Testy:** `src/lib/editorjs-content.test.ts` (každá rola, degradácia, zachovanie textu, XSS a odkazy, varovanie, pevné slová v 12 jazykoch, odtlačky ukážok), `src/lib/product-templates.test.ts` (register, zdvihnuté karty, zoskupenie parametrov) a `src/lib/product-attributes.test.ts` (roky, zoznamy, rozsah teplôt).
+- **Testy:** `src/lib/editorjs-content.test.ts` (každá rola, degradácia, zachovanie textu, XSS a odkazy, varovanie, pevné slová v 12 jazykoch, odtlačky ukážok), `src/lib/product-templates.test.ts` (register, zdvihnuté karty, zoskupenie parametrov, fakty zo sady), `src/ui/components/pdp/product-specs.test.ts` (karta parametrov a pás z ukážky sady) a `src/lib/product-attributes.test.ts` (roky, zoznamy, rozsah teplôt).
 
 ## Čo dokázané nie je a kto to uzavrie
 
@@ -128,7 +136,9 @@ Skript prepíše súbory aj `PROVENANCE.json` tu, kópie v CFM a vypíše odtla�
 4. **Preklady.** Tok prekladu popisov musí zachovať `id` blokov a `version` dokumentu a tvar každého bloku. Kým sa neprekladá, zahraničné trhy majú slovenský text. Ak preklad značky stratí, dokument sa vykreslí ako obyčajné bloky: nič sa nestratí, len sa nenakreslia roly. Pilot beží na trhu SK.
 5. **Saleor Dashboard.** Neoverené, či uloženie produktu v Dashboarde zachová `id` blokov a `version`; Dashboard má vlastný Editor.js. Kým to **M** neoverí na skutočnom Dashboarde, popisy CoolZ sa tam neupravujú.
 6. **Revalidácia.** Stránka drží čítanie zo Saleoru v cache so značkou `product:<kanál>:<jazyk>:<slug>`; nový popis sa objaví do niekoľkých minút a jednej-dvoch návštev, alebo hneď po `POST /api/revalidate`. CFM to pri publikácii nevolá, takže je potrebné ju vyvolať ručne.
-7. **Text tipu.** Tip CoolZ je v zdroji napísaný v tykaní („vychlaď“, „nebudeš“), kým obchod vyká. Mení sa v zdrojovom dokumente v CFM, nie v storefronte.
+7. **Text tipu.** Tip CoolZ bol v zdroji napísaný v tykaní („vychlaď“, „nebudeš“), kým obchod vyká. V CFM je opravený ako deklarovaná oprava zachovaného textu („vychlaďte“, „nebudete“; päť chladničiek a CoolZ Power, CFM PR #50) a spoločná ukážka CoolZ 32 už nesie opravený text; storefront nič nemení. Na živom webe ostáva starý text, kým relácia na CFM serveri znova nezostaví a nepovýši dokumenty CoolZ a nepublikuje ich (postup je v CFM kontrakte `STOREFRONT_MAKY_CONTENT_V1.md`).
+8. **Strešné sady: nič nie je nasadené.** Kód je v PR na oboch stranách, ostrá publikácia nebola. Poradie: najprv storefront (čítačka sady je v tom istom PR; staršia čítačka ukáže všetok text, len bez rolí), potom beh v CFM s `--typed-description` a so zapnutým `CFM_SALEOR_NATIVE_COMPARISON_TABLES`, najprv pre desať verejných pilotných sád Thule (`plan_sk_public_update`, plán sa pečatí a schvaľuje), až potom skryté sady pred aktiváciou. Počet sád, ktoré by typovanie zadržalo (HTML, ktoré skladač nenapísal), sa na celom katalógu zatiaľ nezmeral: je to len čítanie a robí ho relácia na serveri CFM.
+9. **Čo návrh sady chce a CFM zatiaľ nemá.** Obrázok pri „Typ strechy“, samostatné pole „Kód“ v dlaždici obsahu balenia (kód je dnes v texte), skupiny parametrov (Nosnosť a rozmery, Konštrukcia, Upevnenie) a označenie, ktoré riadky tabuľky sú kľúčové pre pás. Každé z toho je nový údaj od CFM (strojový kľúč riadku, pole, obrázok), z textu sa nehádajú.
 
 ## Nasadenie po rozhodnutí
 
@@ -180,5 +190,5 @@ curl -s https://maky.store/sk/<slug> | grep -o 'maky-callout-tip\|maky-benefits\
 ## Čo to nerobí
 
 - Neposiela `soldSeparately`, `video` ani `products` z návrhu (v dátach nie sú a Saleor ich pri popise neuloží).
-- Nerobí z popisu druhý register parametrov: parametre sú atribúty produktu, šablóna ich len zoskupuje.
-- Nemení stránky ostatných kategórií: strešné nosiče a ďalšie šablóny sú ďalší krok, ktorý pridá meno do registra a nový zoznam skupín, nie novú čítačku.
+- Nerobí z popisu druhý register parametrov: parametre autochladničky sú atribúty produktu a šablóna ich len zoskupuje. Parametre strešnej sady sú tabuľka v popise (nie atribúty; šablóna sa o ne neopiera) a pás faktov z nej preberie len prvé riadky tak, ako sú napísané; nič nepočíta, neprepisuje a nehádá z nich ikonu.
+- Nemení stránky kategórií bez šablóny: ďalšia šablóna je nový záznam v registri a nový zoznam skupín, nie nová čítačka.
