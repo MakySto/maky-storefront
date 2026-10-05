@@ -183,7 +183,7 @@ async function ProductContent({
 	const locale = getLocaleFromChannel(params.channel);
 	const [comparisonLabels, contentLabels] = await Promise.all([
 		getComparisonLabels(locale),
-		getContentLabels(locale),
+		getContentLabels(locale, params.channel),
 	]);
 	const content = parseProductContent(product.description, {
 		comparison: comparisonLabels,

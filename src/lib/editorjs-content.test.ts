@@ -34,6 +34,7 @@ vi.mock("next-intl/server", () => ({
 		}),
 }));
 
+import { CHANNEL_MAP } from "@/lib/channel-map";
 import { getComparisonLabels } from "@/lib/comparison-labels";
 import { getContentLabels } from "@/lib/content-labels";
 import {
@@ -43,7 +44,7 @@ import {
 	type ComparisonLabels,
 	type ContentLabels,
 } from "./editorjs";
-import { isUnknownRole, readEnvelope, readMarker } from "./editorjs-content";
+import { isUnknownRole, readEnvelope, readMarker, renderRole } from "./editorjs-content";
 import { FEATURE_ICONS, ICON_NAMES, sanitizeBlock } from "./editorjs-sanitize";
 import { liftSections, sheetFacts, templateFor } from "./product-templates";
 
@@ -61,6 +62,11 @@ const LOCALES = [
 	"ro-RO",
 	"sk-SK",
 ] as const;
+
+/** The Saleor channel each locale is served in, which is what the configurator's address is made from. */
+const CHANNEL_OF: Record<string, string> = Object.fromEntries(
+	Object.values(CHANNEL_MAP).map((market) => [market.locale, market.saleorSlug]),
+);
 
 const CONTRACT = join(ROOT, "docs/contracts/maky-content");
 const readSample = (name: string): string => readFileSync(join(CONTRACT, name), "utf8");
@@ -109,7 +115,7 @@ const video = (changes: Record<string, unknown> = {}, id: string | undefined = "
 let labels: ContentLabels;
 let comparison: ComparisonLabels;
 beforeAll(async () => {
-	labels = await getContentLabels("sk-SK");
+	labels = await getContentLabels("sk-SK", "sk-eur");
 	comparison = await getComparisonLabels("sk-SK");
 });
 
@@ -974,7 +980,7 @@ describe("the samples CFM's producer writes", () => {
 
 describe("the fixed words of every market", () => {
 	it.each(LOCALES)("%s has the words of the blocks, and a plural of years that parses", async (locale) => {
-		const words = await getContentLabels(locale);
+		const words = await getContentLabels(locale, CHANNEL_OF[locale]);
 		for (const kind of ["tip", "info", "warn"] as const) {
 			expect(words.callout[kind], `${locale} ${kind}`).toMatch(/\S/);
 			expect(words.callout[kind]).not.toMatch(/[{}]/);
@@ -988,7 +994,7 @@ describe("the fixed words of every market", () => {
 		expect(words.video.note).toContain("YouTube");
 		expect(words.video.play).not.toBe(words.video.note);
 		if (locale !== "sk-SK")
-			expect(words.video.play, locale).not.toBe((await getContentLabels("sk-SK")).video.play);
+			expect(words.video.play, locale).not.toBe((await getContentLabels("sk-SK", "sk-eur")).video.play);
 
 		const t = createTranslator({
 			locale,
@@ -1001,6 +1007,100 @@ describe("the fixed words of every market", () => {
 			expect(text).not.toMatch(/[{}#]/);
 		}
 		expect(t("content.range", { min: "−20", max: "+20" })).toContain("−20");
+	});
+});
+
+describe("the words that lead to the configurator", () => {
+	const PHRASE = "našom konfigurátore";
+	const HREF = "/sk/konfigurator";
+	const SENTENCE = `Pred nákupom odporúčame overiť kompatibilitu v ${PHRASE}.`;
+	const LINKED = `<a href="${HREF}">${PHRASE}</a>`;
+	const render = (content: string, words: ContentLabels = labels): string =>
+		(parseProductContent(content, { content: words })?.blocks ?? []).map((block) => block.html).join("\n");
+	/** The market's words without the configurator's: set when it is asked for, as `labels` is only read in `beforeAll`. */
+	const withoutLink = (): ContentLabels => ({ ...labels, configurator: undefined });
+
+	it("belong to the Slovak market, with that market's own address, and to no market whose wording is not known", async () => {
+		expect(labels.configurator).toEqual({ phrase: PHRASE, href: HREF });
+		expect((await getContentLabels("sk-SK", "sk-eur")).configurator).toEqual({ phrase: PHRASE, href: HREF });
+		for (const locale of LOCALES.filter((name) => name !== "sk-SK")) {
+			expect((await getContentLabels(locale, CHANNEL_OF[locale])).configurator, locale).toBeUndefined();
+		}
+	});
+
+	it("are a link in a warning's list, and nothing else of the sentence changes", () => {
+		const content = doc(
+			[list("maky:callout:warn", ["Pred každou jazdou skontrolujte utiahnutie.", SENTENCE])],
+			RACK_VERSION,
+		);
+		const html = render(content);
+		expect(html).toContain(`<li>Pred nákupom odporúčame overiť kompatibilitu v ${LINKED}.</li>`);
+		expect(html).toContain("<li>Pred každou jazdou skontrolujte utiahnutie.</li>");
+		expect(count(html, /<a /g)).toBe(1);
+		// A link is a change of markup, not of words: take the anchor away and the page is what it was.
+		const plain = render(content, withoutLink());
+		expect(plain).not.toContain("<a ");
+		expect(html.replace(/<a [^>]*>|<\/a>/g, "")).toBe(plain);
+	});
+
+	it("are a link in a callout that is one paragraph, whatever its kind", () => {
+		for (const kind of ["warn", "info", "tip"]) {
+			const html = render(doc([paragraph(SENTENCE, `maky:callout:${kind}`)]));
+			expect(html, kind).toContain(`<p>Pred nákupom odporúčame overiť kompatibilitu v ${LINKED}.</p>`);
+		}
+	});
+
+	it("are a way in once per box: the first time they stand in plain text", () => {
+		const html = render(doc([list("maky:callout:warn", [SENTENCE, SENTENCE])]));
+		expect(count(html, /<a /g)).toBe(1);
+		expect(html).toContain(
+			`<li>Pred nákupom odporúčame overiť kompatibilitu v ${LINKED}.</li><li>Pred nákupom odporúčame overiť kompatibilitu v ${PHRASE}.</li>`,
+		);
+		// Each box has its own: two callouts are two ways in.
+		const two = render(
+			doc([paragraph(SENTENCE, "maky:callout:warn"), paragraph(SENTENCE, "maky:callout:info")]),
+		);
+		expect(count(two, /<a /g)).toBe(2);
+	});
+
+	it("keep the link the producer wrote, and are never a link inside a link", () => {
+		const own = `Overte to v <a href="https://www.thule.com/sk-sk/">${PHRASE}</a> výrobcu.`;
+		const html = render(doc([paragraph(own, "maky:callout:warn")]));
+		expect(count(html, /<a /g)).toBe(1);
+		expect(html).toContain('href="https://www.thule.com/sk-sk/"');
+		expect(html).not.toContain(HREF);
+		// ...and the words that follow a link of its own are still found.
+		const after = render(
+			doc([paragraph(`<a href="https://www.thule.com/">Thule</a>: ${SENTENCE}`, "maky:callout:warn")]),
+		);
+		expect(after).toContain(`overiť kompatibilitu v ${LINKED}.`);
+		expect(count(after, /<a /g)).toBe(2);
+	});
+
+	it("are left as text when a tag cuts them in two, and when they are not said in a callout", () => {
+		const cut = render(
+			doc([paragraph("Overte to v našom <strong>konfigurátore</strong>.", "maky:callout:warn")]),
+		);
+		expect(cut).not.toContain("<a ");
+		const elsewhere = render(
+			doc([
+				header("Overenie v našom konfigurátore", 3),
+				paragraph("Pozor.", "maky:callout:warn"),
+				list("maky:benefits", [SENTENCE]),
+				paragraph(SENTENCE),
+			]),
+		);
+		expect(elsewhere).not.toContain("<a ");
+	});
+
+	it("are written into the markup as an address that is the page's own", () => {
+		const outcome = renderRole(
+			{ type: "paragraph", data: { text: SENTENCE } },
+			{ role: "callout", kind: "warn" },
+			null,
+			{ ...labels, configurator: { phrase: PHRASE, href: '/sk/a"b' } },
+		);
+		expect("html" in outcome && outcome.html).toContain('<a href="/sk/a&quot;b">');
 	});
 });
 
@@ -1021,6 +1121,11 @@ describe("the styles of the typed blocks", () => {
 			expect(css, name).toContain(`.${name}`);
 		}
 		expect(classes.has("maky-video-a")).toBe(true);
+	});
+
+	it("underline a link inside a callout, so it reads as a link without depending on its colour", () => {
+		const rule = css.match(/\.maky-callout-b a\s*\{([^}]*)\}/)?.[1] ?? "";
+		expect(rule).toMatch(/text-decoration:\s*underline/);
 	});
 
 	it("stand the video's preview in the middle of its block, capped in width (on a phone it fills the block, so nothing moves there)", () => {

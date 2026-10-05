@@ -68,6 +68,13 @@ export interface ContentLabels {
 		/** What the preview says under the title: where the film is hosted and that nothing loads before the click. */
 		note: string;
 	};
+	/**
+	 * The shop's own configurator, as a callout names it. The producer's sentence is plain words, the same
+	 * in every market ("… overiť kompatibilitu v našom konfigurátore."), and the address is the market's,
+	 * so the page joins the two: the first time a callout says `phrase` in plain text, those words are a
+	 * link to `href`. Absent where no wording is known, and the sentence then stays text.
+	 */
+	configurator?: { phrase: string; href: string };
 }
 
 export interface ContentBlock {
@@ -209,6 +216,33 @@ function listItemsHtml(items: unknown[]): string {
 		.join("");
 }
 
+/**
+ * Make the first `phrase` that stands in plain text a link to `href`. `html` is sanitized inline text
+ * inside the wrappers this file puts round it, so every `<` in it opens or closes a tag and the rest of
+ * the text is escaped. Words that are already inside a link stay that link, and words a tag cuts in two
+ * are not found: both are left as the producer wrote them, never turned into a link inside a link.
+ */
+function linkFirst(html: string, phrase: string, href: string): string {
+	let anchors = 0;
+	let linked = false;
+	return html
+		.split(/(<[^>]*>)/)
+		.map((part) => {
+			if (part.startsWith("<")) {
+				if (/^<a[\s>]/i.test(part)) anchors += 1;
+				else if (/^<\/a\s*>/i.test(part)) anchors = Math.max(0, anchors - 1);
+				return part;
+			}
+			const at = linked || anchors > 0 ? -1 : part.indexOf(phrase);
+			if (at < 0) return part;
+			linked = true;
+			return `${part.slice(0, at)}<a href="${escapeHtml(href)}">${phrase}</a>${part.slice(
+				at + phrase.length,
+			)}`;
+		})
+		.join("");
+}
+
 function calloutBody(block: ContentBlock, kind: string | null, title: string, labels: ContentLabels): Body {
 	if (!kind || !(CALLOUT_KINDS as readonly string[]).includes(kind)) {
 		return refuse(`callout kind ${JSON.stringify(kind)} is not tip, info or warn`);
@@ -228,6 +262,8 @@ function calloutBody(block: ContentBlock, kind: string | null, title: string, la
 	}
 	const kindIcon: Record<CalloutKind, IconName> = { tip: "lightbulb", info: "info", warn: "alert" };
 	const label = labels.callout[kind as CalloutKind];
+	const configurator = labels.configurator;
+	if (configurator) inner = linkFirst(inner, configurator.phrase, configurator.href);
 	return {
 		html:
 			`<aside class="maky-callout maky-callout-${kind} not-prose" role="note" aria-label="${escapeHtml(

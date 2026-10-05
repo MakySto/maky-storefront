@@ -140,7 +140,7 @@ describe("a car fridge's page with its video", async () => {
 		"utf8",
 	);
 	const content = parseProductContent(sample, {
-		content: await getContentLabels(SK),
+		content: await getContentLabels(SK, "sk-eur"),
 		comparison: await getComparisonLabels(SK),
 	});
 	const sections = liftSections(content?.blocks ?? [], fridge);
@@ -214,7 +214,7 @@ describe("a roof-rack set's page", async () => {
 		path.join(process.cwd(), "docs/contracts/maky-content/set-thule-71732.description.json"),
 		"utf8",
 	);
-	const content = parseProductContent(sample, { content: await getContentLabels(SK) });
+	const content = parseProductContent(sample, { content: await getContentLabels(SK, "sk-eur") });
 	const sections = liftSections(content?.blocks ?? [], rack);
 	const maker = attribute("manufacturer", "Výrobca", "Thule");
 

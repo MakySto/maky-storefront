@@ -1156,6 +1156,14 @@
 		margin-top: 0.1875rem;
 	}
 
+	/* The words of a callout that lead into the shop (the configurator): the link colour of the page,
+	   underlined, so they read as a link in the box's running text without depending on colour. */
+	.maky-callout-b a {
+		font-weight: 600;
+		text-decoration: underline;
+		text-underline-offset: 0.15em;
+	}
+
 	.maky-callout-tip {
 		background: var(--surface-accent);
 		border-color: var(--color-copper-200);
