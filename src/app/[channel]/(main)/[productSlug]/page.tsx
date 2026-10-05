@@ -31,6 +31,7 @@ import { getLocaleFromChannel } from "@/config/locale";
 import { parseProductContent } from "@/lib/editorjs";
 import { getComparisonLabels } from "@/lib/comparison-labels";
 import { getContentLabels } from "@/lib/content-labels";
+import { extendedWarrantyYears } from "@/lib/product-attributes";
 import { liftSections, sheetFacts, templateFor } from "@/lib/product-templates";
 import { isSourceLocale } from "@/lib/saleor/exact-locale";
 import { publicSku } from "@/lib/product-code";
@@ -183,7 +184,7 @@ async function ProductContent({
 	const locale = getLocaleFromChannel(params.channel);
 	const [comparisonLabels, contentLabels] = await Promise.all([
 		getComparisonLabels(locale),
-		getContentLabels(locale),
+		getContentLabels(locale, params.channel),
 	]);
 	const content = parseProductContent(product.description, {
 		comparison: comparisonLabels,
@@ -203,6 +204,9 @@ async function ProductContent({
 	}
 	const images = getGalleryImages(product, selectedVariant);
 	const productAttributes = extractProductAttributes(product);
+	// The warranty under the buy button: the product's own, where its template reads one (the car
+	// fridges) and the attribute states more than the statutory two years; otherwise the statutory line.
+	const warrantyYears = extendedWarrantyYears(productAttributes, template.warrantyRef);
 	const subtitle =
 		product.seoDescription?.trim() && product.seoDescription.trim() !== product.name.trim()
 			? product.seoDescription.trim()
@@ -364,6 +368,7 @@ async function ProductContent({
 									product={product}
 									channel={params.channel}
 									searchParams={searchParamsPromise}
+									warrantyYears={warrantyYears}
 								/>
 							</Suspense>
 						</ErrorBoundary>

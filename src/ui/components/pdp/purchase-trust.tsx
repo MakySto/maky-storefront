@@ -15,8 +15,19 @@ import { marketHref } from "@/lib/channel-map";
  * every customer, because the extended 30 days hold only for an order placed while signed in and
  * must never read as unconditional — and the statutory two-year warranty. No delivery date, no
  * free shipping, and none of the mockup's "oficiálna distribúcia", which nothing backs.
+ *
+ * The warranty line says two years unless the page hands it the product's own, longer one
+ * (`warrantyYears`, from `extendedWarrantyYears`: only a template the owner confirmed a longer
+ * warranty for reads one). It then names the years and says it is on this product, not "by law":
+ * the statutory line must never be printed under a figure that is not the statute's.
  */
-export async function PurchaseTrust({ channel }: { channel: string }) {
+export async function PurchaseTrust({
+	channel,
+	warrantyYears,
+}: {
+	channel: string;
+	warrantyYears?: number | null;
+}) {
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "product" });
 
 	const items = [
@@ -28,7 +39,14 @@ export async function PurchaseTrust({ channel }: { channel: string }) {
 			text: t("trustReturnsText"),
 			href: "/reklamacie-a-vratenie",
 		},
-		{ icon: BadgeCheck, title: t("trustWarrantyTitle"), text: t("trustWarrantyText"), href: null },
+		warrantyYears
+			? {
+					icon: BadgeCheck,
+					title: t("trustWarrantyYearsTitle", { years: t("content.years", { count: warrantyYears }) }),
+					text: t("trustWarrantyYearsText"),
+					href: null,
+				}
+			: { icon: BadgeCheck, title: t("trustWarrantyTitle"), text: t("trustWarrantyText"), href: null },
 	];
 
 	const body = (Icon: typeof ShieldCheck, title: string, text: string, linked: boolean) => (

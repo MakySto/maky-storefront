@@ -165,6 +165,8 @@
 		"trustReturnsText": "At least 14 days",
 		"trustWarrantyTitle": "2-year warranty",
 		"trustWarrantyText": "On every product",
+		"trustWarrantyYearsTitle": "Warranty: {years}",
+		"trustWarrantyYearsText": "On this product",
 		"highlightBikes": "{count, plural, one {For # bike} other {For # bikes}}",
 		"highlightLoad": "Load capacity {value}",
 		"highlightLoadPerBike": "Up to {value} per bike",

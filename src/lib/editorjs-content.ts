@@ -6,7 +6,13 @@ import {
 	type FeatureIcon,
 	type IconName,
 } from "./editorjs-sanitize";
-import { youtubeEmbedUrl, youtubeIdFromWatchUrl, youtubeWatchUrl } from "./video-embed";
+import {
+	POSTER_WIDTH,
+	videoPosterSrc,
+	youtubeEmbedUrl,
+	youtubeIdFromWatchUrl,
+	youtubeWatchUrl,
+} from "./video-embed";
 
 /**
  * The typed content profile, `maky-content/1`: the roles a product description can have beyond
@@ -35,8 +41,10 @@ import { youtubeEmbedUrl, youtubeIdFromWatchUrl, youtubeWatchUrl } from "./video
  *   names and the labels are this file's own; the second pass in `sanitizeBlock` accepts only
  *   those.
  * - A video is never loaded by the description. The role draws a link to the watch page and a play
- *   mark, built from an identifier this file parses itself (`video-embed.ts`); the browser turns the
- *   link into the player on the click, so nothing of YouTube is asked for before the shopper does.
+ *   mark over the still YouTube keeps of the film, all built from an identifier this file parses
+ *   itself (`video-embed.ts`); the still is asked of this site's own image optimizer, and the browser
+ *   turns the link into the player on the click, so nothing of YouTube is asked of the shopper's
+ *   browser before the shopper asks for the film.
  */
 
 const PROFILE_MAJOR = 1;
@@ -68,6 +76,13 @@ export interface ContentLabels {
 		/** What the preview says under the title: where the film is hosted and that nothing loads before the click. */
 		note: string;
 	};
+	/**
+	 * The shop's own configurator, as a callout names it. The producer's sentence is plain words, the same
+	 * in every market ("… overiť kompatibilitu v našom konfigurátore."), and the address is the market's,
+	 * so the page joins the two: the first time a callout says `phrase` in plain text, those words are a
+	 * link to `href`. Absent where no wording is known, and the sentence then stays text.
+	 */
+	configurator?: { phrase: string; href: string };
 }
 
 export interface ContentBlock {
@@ -209,6 +224,33 @@ function listItemsHtml(items: unknown[]): string {
 		.join("");
 }
 
+/**
+ * Make the first `phrase` that stands in plain text a link to `href`. `html` is sanitized inline text
+ * inside the wrappers this file puts round it, so every `<` in it opens or closes a tag and the rest of
+ * the text is escaped. Words that are already inside a link stay that link, and words a tag cuts in two
+ * are not found: both are left as the producer wrote them, never turned into a link inside a link.
+ */
+function linkFirst(html: string, phrase: string, href: string): string {
+	let anchors = 0;
+	let linked = false;
+	return html
+		.split(/(<[^>]*>)/)
+		.map((part) => {
+			if (part.startsWith("<")) {
+				if (/^<a[\s>]/i.test(part)) anchors += 1;
+				else if (/^<\/a\s*>/i.test(part)) anchors = Math.max(0, anchors - 1);
+				return part;
+			}
+			const at = linked || anchors > 0 ? -1 : part.indexOf(phrase);
+			if (at < 0) return part;
+			linked = true;
+			return `${part.slice(0, at)}<a href="${escapeHtml(href)}">${phrase}</a>${part.slice(
+				at + phrase.length,
+			)}`;
+		})
+		.join("");
+}
+
 function calloutBody(block: ContentBlock, kind: string | null, title: string, labels: ContentLabels): Body {
 	if (!kind || !(CALLOUT_KINDS as readonly string[]).includes(kind)) {
 		return refuse(`callout kind ${JSON.stringify(kind)} is not tip, info or warn`);
@@ -228,6 +270,8 @@ function calloutBody(block: ContentBlock, kind: string | null, title: string, la
 	}
 	const kindIcon: Record<CalloutKind, IconName> = { tip: "lightbulb", info: "info", warn: "alert" };
 	const label = labels.callout[kind as CalloutKind];
+	const configurator = labels.configurator;
+	if (configurator) inner = linkFirst(inner, configurator.phrase, configurator.href);
 	return {
 		html:
 			`<aside class="maky-callout maky-callout-${kind} not-prose" role="note" aria-label="${escapeHtml(
@@ -350,10 +394,12 @@ function documentsBody(items: Item[]): Body {
 }
 
 /**
- * A video: a link to its watch page, set as a dark 16:9 preview with a play mark and the film's title.
- * No image, no frame and no address from the document are in it: the identifier is parsed here and the
- * address rebuilt from it, so the markup holds nothing that asks YouTube for anything. Without a
- * script the link opens the watch page in a new tab; `VideoClickToPlay` turns it into the player.
+ * A video: a link to its watch page, set as a 16:9 preview over the film's own still, with a play
+ * mark and the film's title. No frame and no address from the document are in it: the identifier is
+ * parsed here and every address rebuilt from it. The one picture in the markup is this site's own image
+ * optimizer's address for the still (`videoPosterSrc`), never YouTube's, so the markup holds nothing
+ * that asks YouTube for anything. Without a script the link opens the watch page in a new tab;
+ * `VideoClickToPlay` turns it into the player.
  */
 function videoBody(block: ContentBlock, labels: ContentLabels): Body {
 	if (block.type !== "embed") return refuse(`a video is carried by an embed, not a ${block.type}`);
@@ -371,9 +417,14 @@ function videoBody(block: ContentBlock, labels: ContentLabels): Body {
 	// link is a second destination the page never wrote.
 	const title = plainText(sanitizeInline(data.caption)).trim();
 	if (!title) return refuse("a video has no title");
+	// Decorative, so no alt text: the link says what the preview is. It is drawn under the link, and a
+	// still that does not load leaves the card the shop made.
+	const still = `<img src="${escapeHtml(videoPosterSrc(id))}" alt="" width="${POSTER_WIDTH}" height="${
+		(POSTER_WIDTH * 9) / 16
+	}" loading="lazy" decoding="async">`;
 	return {
 		html:
-			`<div class="maky-video"><a class="maky-video-a" href="${youtubeWatchUrl(
+			`<div class="maky-video">${still}<a class="maky-video-a" href="${youtubeWatchUrl(
 				id,
 			)}" target="_blank" rel="noopener noreferrer">` +
 			`<span class="maky-video-play" aria-hidden="true">${ico("play")}</span>` +

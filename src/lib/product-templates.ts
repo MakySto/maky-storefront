@@ -53,6 +53,14 @@ export interface ProductTemplate {
 	factsFromSheet: boolean;
 	/** The technical parameters, grouped by the reference of the attribute each row comes from. */
 	groups: readonly { id: ParameterGroupId; refs: readonly string[] }[];
+	/**
+	 * The attribute that carries the product's own warranty in years, for a kind of product whose
+	 * warranty the owner has confirmed to be longer than the statutory two years. The line under the
+	 * buy button then says that figure (`extendedWarrantyYears`). Absent, the line says the two years
+	 * every sale carries: a template does not state a warranty nobody confirmed for its products, and a
+	 * product with the attribute but another template keeps the statutory line.
+	 */
+	warrantyRef?: string;
 }
 
 const attr = (key: string): string => `cfm:attribute:${key}`;
@@ -89,6 +97,10 @@ const GENERIC: ProductTemplate = {
  * A car fridge. The attribute keys are the ones CFM writes for the CoolZ range
  * (`ATTRIBUTE_TO_SPEC` in the CoolZ content builder); a row whose attribute is not in a group is
  * not lost, it goes to the last group, "other parameters".
+ *
+ * The warranty line under the buy button follows the product's own `warranty_years`: the owner
+ * confirmed (2026-10-05) that the PRO-USER fridges carry three years, and CFM holds 3 for the five
+ * CoolZ and 2 for CoolZ Power (TK20414), which therefore keeps the two-year line.
  */
 const AUTOCHLADNICKA: ProductTemplate = {
 	id: "autochladnicka",
@@ -150,6 +162,7 @@ const AUTOCHLADNICKA: ProductTemplate = {
 			],
 		},
 	],
+	warrantyRef: attr("warranty_years"),
 };
 
 /**
