@@ -92,8 +92,8 @@ type Highlight = { key: string; icon: LucideIcon | null; value: string; label: s
  * (no per-bike limit worked out by division), and a "no" is never promoted into a feature. The
  * one thing written together is a range, from its two ends.
  *
- * A product with no attributes of its own — a roof-rack set carries everything in its description —
- * gets the band from the template instead, when the template says so: the first rows of the
+ * A product whose attributes give the band too little — a roof-rack set says its figures in its
+ * description — gets the band from the template instead, when the template says so: the first rows of the
  * description's parameter sheet (`sheet`), each as it is written, the value over its name. No icon
  * is drawn for them: nothing in a sheet says which icon fits a row, and a wrong one is worse than none.
  */

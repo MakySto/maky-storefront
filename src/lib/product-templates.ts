@@ -47,8 +47,8 @@ export interface ProductTemplate {
 	facts: readonly KeyFact[];
 	/**
 	 * Whether a product whose attributes give the band fewer than two facts opens with the first rows
-	 * of the parameter sheet its description carries instead. A roof-rack set has no attributes at all:
-	 * everything it says is in the description.
+	 * of the parameter sheet its description carries instead. A roof-rack set writes its figures in the
+	 * description, so the band does not wait for attributes the set may never have.
 	 */
 	factsFromSheet: boolean;
 	/** The technical parameters, grouped by the reference of the attribute each row comes from. */
@@ -153,10 +153,12 @@ const AUTOCHLADNICKA: ProductTemplate = {
 };
 
 /**
- * A roof-rack set (Nordrive, Thule). The product holds no attributes: the parameters, like the rest
- * of what it says, are in the description, as a parameter sheet (`maky:specs`). The template sets
- * that sheet in a card of its own, with a jump link, and opens the page with its first rows. What is
- * in the box, the benefits and the warnings stay in the description, in the order CFM wrote them.
+ * A roof-rack set (Nordrive, Thule). The parameters, like the rest of what it says, are in the
+ * description, as a parameter sheet (`maky:specs`); the template does not need the product to carry
+ * any attribute, and keeps the ones it has (the maker, say) in the same card under the sheet. It
+ * sets the sheet in a card of its own, with a jump link, and opens the page with its first rows.
+ * What is in the box, the benefits and the warnings stay in the description, in the order CFM wrote
+ * them. Which attributes a production set carries was not read when this was written.
  */
 const STRESNY_NOSIC: ProductTemplate = {
 	id: "stresny-nosic",

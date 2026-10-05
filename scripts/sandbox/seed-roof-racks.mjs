@@ -14,9 +14,9 @@
 // (`docs/contracts/maky-content.md`): the sample files in `docs/contracts/maky-content/` or any
 // directory holding the same files. Names are the catalogue names of four real sets (Thule and
 // Nordrive, classic rails, flush rails, integrated rails, a smooth roof); the SKUs and prices are
-// sandbox values. A set has no attributes in the catalogue except the maker, which is how the
-// production sets are too. Run it twice and nothing is duplicated: every object is looked up by
-// slug or SKU first.
+// sandbox values. The sandbox set carries the maker and no other attribute; that is a choice made
+// here, not a reading of the production sets (which attributes those carry was not read). Run it
+// twice and nothing is duplicated: every object is looked up by slug or SKU first.
 import fs from "node:fs";
 import path from "node:path";
 
@@ -156,8 +156,8 @@ for (const { category } of SETS) {
 	);
 }
 
-// The maker: every production product carries Saleor's `manufacturer` attribute and the storefront
-// builds its brand list from it. A set carries nothing else.
+// The maker: the storefront builds its brand list from Saleor's `manufacturer` attribute
+// (`src/lib/brands/catalog.ts`), so the sandbox set carries it. It carries nothing else.
 let maker = (await gql('{attribute(slug:"manufacturer"){id slug}}')).attribute;
 if (!maker) {
 	maker = (

@@ -138,7 +138,8 @@ describe("the key-facts band", () => {
 /**
  * A roof-rack set's page, made from the real description CFM writes for one (the shared sample, a
  * Thule set typed as `maky-content/1:stresny-nosic`): the sheet in a card of its own, the band
- * from its first rows. The set has no attributes of its own but the maker.
+ * from its first rows. The page is tried with no attributes and with the maker alone: which
+ * attributes a production set carries was not read, and the card must be right either way.
  */
 describe("a roof-rack set's page", async () => {
 	const rack = templateFor("stresny-nosic");
