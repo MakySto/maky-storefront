@@ -165,6 +165,8 @@
 		"trustReturnsText": "Najmenej 14 dní",
 		"trustWarrantyTitle": "Záruka 2 roky",
 		"trustWarrantyText": "Na tovar podľa zákona",
+		"trustWarrantyYearsTitle": "Záruka {years}",
+		"trustWarrantyYearsText": "Na tento produkt",
 		"highlightBikes": "{count, plural, one {Pre # bicykel} few {Pre # bicykle} other {Pre # bicyklov}}",
 		"highlightLoad": "Nosnosť {value}",
 		"highlightLoadPerBike": "Na bicykel do {value}",

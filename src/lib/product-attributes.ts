@@ -146,6 +146,36 @@ const parseNumeric = (raw: string): number | null => {
 	return Number.isFinite(n) ? n : null;
 };
 
+/** What every consumer sale carries by law, in years: the strip under the buy button says it unless the product says more. */
+const STATUTORY_WARRANTY_YEARS = 2;
+
+/** The longest warranty the strip will state. A larger figure is more likely a slip in the data than a promise. */
+const MAX_STATED_WARRANTY_YEARS = 10;
+
+/**
+ * The product's own warranty in whole years, when its attribute `reference` says one longer than
+ * the statutory two. Null in every other case, and the strip then keeps the statutory line:
+ * no reference (the template does not read one), no such attribute, more than one value, a value
+ * that is not a whole number in full ("3 roky", "2,5"), two years or fewer, or a figure over ten.
+ * Nothing is guessed, so a product is never given a warranty its data does not state.
+ */
+export function extendedWarrantyYears(
+	attributes: readonly AttributeInput[],
+	reference: string | undefined,
+): number | null {
+	if (!reference) return null;
+	const own = attributes.find((a) => a.attribute.externalReference === reference);
+	const values = (own?.values ?? []).map((v) => v.name?.trim()).filter((n): n is string => Boolean(n));
+	if (values.length !== 1) return null;
+	const years = parseNumeric(values[0]);
+	return years !== null &&
+		Number.isInteger(years) &&
+		years > STATUTORY_WARRANTY_YEARS &&
+		years <= MAX_STATED_WARRANTY_YEARS
+		? years
+		: null;
+}
+
 /**
  * A value with the unit given, or none.
  *

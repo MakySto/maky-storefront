@@ -165,6 +165,8 @@
 		"trustReturnsText": "Legalább 14 nap",
 		"trustWarrantyTitle": "2 év jótállás",
 		"trustWarrantyText": "A törvény szerint",
+		"trustWarrantyYearsTitle": "{years} jótállás",
+		"trustWarrantyYearsText": "Erre a termékre",
 		"highlightBikes": "{count, plural, one {# kerékpárhoz} other {# kerékpárhoz}}",
 		"highlightLoad": "Teherbírás {value}",
 		"highlightLoadPerBike": "Kerékpáronként legfeljebb {value}",
