@@ -25,6 +25,8 @@ interface ProductSpecsProps {
 	comparisonHtml?: PageSections["comparison"];
 	/** The documents, when the page's template sets them in a card of their own. */
 	documents?: PageSections["documents"];
+	/** The description's own parameter sheet, when the page's template sets it in a card of its own. */
+	specs?: PageSections["specs"];
 	/** How this kind of product is put together; the generic page when it is not given. */
 	template?: ProductTemplate;
 	attributes: readonly AttributeInput[];
@@ -80,6 +82,7 @@ export async function ProductSpecs({
 	descriptionHtml,
 	comparisonHtml = null,
 	documents = null,
+	specs = null,
 	template = templateFor(null),
 	attributes,
 	careInstructions,
@@ -94,12 +97,15 @@ export async function ProductSpecs({
 	// drift, whatever the render path.
 	const t = await getTranslations({ locale, namespace: "product" });
 	const words = { yes: t("yes"), no: t("no") };
+	const years = (count: number) => t("content.years", { count });
 
 	const attributeRows: ParameterRow[] = attributes
 		.map((attribute) => ({
 			ref: attribute.attribute.externalReference ?? "",
 			label: attribute.attribute.name ?? "",
-			values: formatProductAttributeValue(attribute, locale, words, (count) => t("content.years", { count })),
+			// The row prints the attribute's name beside its values, so a name that already says the unit
+			// ("Záruka (roky)") must not get it said a second time.
+			values: formatProductAttributeValue(attribute, locale, words, years, { nameBesideValue: true }),
 		}))
 		.filter((row) => row.label && row.values.length > 0);
 
@@ -115,7 +121,8 @@ export async function ProductSpecs({
 
 	const outerDimensions = formatOuterDimensions(attributes, locale);
 	const hasDescription = Boolean(descriptionHtml?.length || careInstructions);
-	const hasTechnicalParameters = rows.length > 0 || Boolean(outerDimensions);
+	const hasAttributeParameters = rows.length > 0 || Boolean(outerDimensions);
+	const hasTechnicalParameters = hasAttributeParameters || Boolean(specs);
 	const hasComparison = Boolean(comparisonHtml);
 	const hasDocuments = Boolean(documents);
 
@@ -219,10 +226,22 @@ export async function ProductSpecs({
 
 				{hasTechnicalParameters && (
 					<section id="technical-parameters" aria-labelledby="technical-parameters-heading" className={CARD}>
-						<h2 id="technical-parameters-heading" className={CARD_TITLE}>
-							{t("technicalParameters")}
-						</h2>
-						{groups ? (
+						{specs?.title ? (
+							<h2
+								id="technical-parameters-heading"
+								className={CARD_TITLE}
+								dangerouslySetInnerHTML={{ __html: specs.title }}
+							/>
+						) : (
+							<h2 id="technical-parameters-heading" className={CARD_TITLE}>
+								{t("technicalParameters")}
+							</h2>
+						)}
+						{/* The description's own parameter sheet, when the template lifts it: the block the
+						    reader drew, only where it stands differs. `maky-blk` is the box its columns are
+						    measured against. */}
+						{specs && <div className="maky-blk mt-0" dangerouslySetInnerHTML={{ __html: specs.body }} />}
+						{hasAttributeParameters && groups ? (
 							/* The template's groups: one definition list each, titled, in the sheet's two
 							   columns that read down. */
 							<div className="maky-specs">
@@ -240,7 +259,7 @@ export async function ProductSpecs({
 									</section>
 								))}
 							</div>
-						) : (
+						) : hasAttributeParameters ? (
 							/* Two columns that read DOWN, each a list of its own with a rule between them — not
 							   a grid read across in zig-zag pairs. */
 							<dl className="text-sm sm:text-[0.9375rem] lg:columns-2 lg:gap-x-14 lg:[column-rule:1px_solid_var(--border-subtle)]">
@@ -251,7 +270,7 @@ export async function ProductSpecs({
 									<SpecRow key={row.label} label={row.label} values={row.values} />
 								))}
 							</dl>
-						)}
+						) : null}
 					</section>
 				)}
 

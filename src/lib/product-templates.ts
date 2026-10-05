@@ -1,4 +1,5 @@
 import { type ProductContentBlock } from "@/lib/editorjs";
+import { type SpecFact } from "@/lib/editorjs-content";
 
 /**
  * Product page templates: how a page is put together for a kind of product.
@@ -14,7 +15,7 @@ import { type ProductContentBlock } from "@/lib/editorjs";
  */
 
 /** The parts of a description a template may set as sections of their own. */
-type LiftedSection = "comparison" | "documents";
+type LiftedSection = "comparison" | "documents" | "specs";
 
 export type FactIcon =
 	| "bike"
@@ -44,6 +45,12 @@ export interface ProductTemplate {
 	lift: readonly LiftedSection[];
 	/** The facts that open the page first; the generic facts fill the band up to its limit. */
 	facts: readonly KeyFact[];
+	/**
+	 * Whether a product whose attributes give the band fewer than two facts opens with the first rows
+	 * of the parameter sheet its description carries instead. A roof-rack set writes its figures in the
+	 * description, so the band does not wait for attributes the set may never have.
+	 */
+	factsFromSheet: boolean;
 	/** The technical parameters, grouped by the reference of the attribute each row comes from. */
 	groups: readonly { id: ParameterGroupId; refs: readonly string[] }[];
 }
@@ -70,7 +77,13 @@ export const GENERIC_FACTS: readonly KeyFact[] = [
 	fact("weight", "scale"),
 ];
 
-const GENERIC: ProductTemplate = { id: "generic", lift: [], facts: GENERIC_FACTS, groups: [] };
+const GENERIC: ProductTemplate = {
+	id: "generic",
+	lift: [],
+	facts: GENERIC_FACTS,
+	factsFromSheet: false,
+	groups: [],
+};
 
 /**
  * A car fridge. The attribute keys are the ones CFM writes for the CoolZ range
@@ -86,6 +99,7 @@ const AUTOCHLADNICKA: ProductTemplate = {
 		fact("rated_power", "zap"),
 		fact("bluetooth_app_control", "bluetooth"),
 	],
+	factsFromSheet: false,
 	groups: [
 		{
 			id: "cooling",
@@ -138,8 +152,25 @@ const AUTOCHLADNICKA: ProductTemplate = {
 	],
 };
 
+/**
+ * A roof-rack set (Nordrive, Thule). The parameters, like the rest of what it says, are in the
+ * description, as a parameter sheet (`maky:specs`); the template does not need the product to carry
+ * any attribute, and keeps the ones it has (the maker, say) in the same card under the sheet. It
+ * sets the sheet in a card of its own, with a jump link, and opens the page with its first rows.
+ * What is in the box, the benefits and the warnings stay in the description, in the order CFM wrote
+ * them. Which attributes a production set carries was not read when this was written.
+ */
+const STRESNY_NOSIC: ProductTemplate = {
+	id: "stresny-nosic",
+	lift: ["specs"],
+	facts: [],
+	factsFromSheet: true,
+	groups: [],
+};
+
 export const PRODUCT_TEMPLATES: Readonly<Record<string, ProductTemplate>> = {
 	[AUTOCHLADNICKA.id]: AUTOCHLADNICKA,
+	[STRESNY_NOSIC.id]: STRESNY_NOSIC,
 };
 
 /** The template a description names, or the generic one when it names none or an unknown one. */
@@ -158,6 +189,8 @@ export interface PageSections {
 	comparison: string | null;
 	/** The documents, set in a card of their own, or null. */
 	documents: { title: string | null; body: string } | null;
+	/** The parameter sheet, set in a card of its own, or null. Its rows are also kept as plain text, for the key-facts band. */
+	specs: { title: string | null; body: string; facts: readonly SpecFact[] } | null;
 }
 
 /**
@@ -169,17 +202,41 @@ export function liftSections(
 	blocks: readonly ProductContentBlock[],
 	template: ProductTemplate,
 ): PageSections {
-	const sections: PageSections = { description: [], comparison: null, documents: null };
+	const sections: PageSections = { description: [], comparison: null, documents: null, specs: null };
 	for (const block of blocks) {
 		if (block.section === "comparison" && template.lift.includes("comparison") && !sections.comparison) {
 			sections.comparison = block.html;
 		} else if (block.section === "documents" && template.lift.includes("documents") && !sections.documents) {
 			sections.documents = { title: block.title ?? null, body: block.body ?? block.html };
+		} else if (block.section === "specs" && template.lift.includes("specs") && !sections.specs) {
+			sections.specs = {
+				title: block.title ?? null,
+				body: block.body ?? block.html,
+				facts: block.facts ?? [],
+			};
 		} else {
 			sections.description.push(block.html);
 		}
 	}
 	return sections;
+}
+
+/**
+ * The longest value a cell of the key-facts band takes: a figure with its qualifier ("do 60 kg
+ * (tejto konfigurácie pre vaše vozidlo)") still stands on two lines in a cell; anything longer
+ * reads as a sentence and is not a fact.
+ */
+const MAX_FACT_LENGTH = 48;
+
+/**
+ * The rows of the parameter sheet the key-facts band may be made of, when the template says the band
+ * comes from the sheet: the sheet's rows in the order CFM wrote them, without the ones whose value
+ * reads as a sentence. Nothing is worked out and no row is reworded — the band shows what the sheet
+ * says. The page's band takes them only when the product's attributes gave it too little.
+ */
+export function sheetFacts(sections: PageSections | null, template: ProductTemplate): readonly SpecFact[] {
+	if (!template.factsFromSheet || !sections?.specs) return [];
+	return sections.specs.facts.filter(({ label, value }) => label && value && value.length <= MAX_FACT_LENGTH);
 }
 
 // ─── Grouped parameters ──────────────────────────────────────────────────────────────────────

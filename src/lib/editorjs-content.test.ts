@@ -45,6 +45,7 @@ import {
 } from "./editorjs";
 import { isUnknownRole, readEnvelope, readMarker } from "./editorjs-content";
 import { FEATURE_ICONS } from "./editorjs-sanitize";
+import { liftSections, sheetFacts, templateFor } from "./product-templates";
 
 const LOCALES = [
 	"cs-CZ",
@@ -65,9 +66,12 @@ const CONTRACT = join(ROOT, "docs/contracts/maky-content");
 const readSample = (name: string): string => readFileSync(join(CONTRACT, name), "utf8");
 const COOLZ = readSample("coolz-32.description.json");
 const GALLERY = readSample("gallery.description.json");
+/** A real roof-rack set (Thule, CFM pk 71732), typed the way the publisher types a set. */
+const RACK = readSample("set-thule-71732.description.json");
 
 type Block = { type: string; id?: string; data: Record<string, unknown> };
 const VERSION = "maky-content/1:autochladnicka";
+const RACK_VERSION = "maky-content/1:stresny-nosic";
 const doc = (blocks: Block[], version: string | null = VERSION): string =>
 	JSON.stringify(version === null ? { blocks } : { version, blocks });
 const paragraph = (text: string, id?: string): Block => ({
@@ -212,6 +216,28 @@ describe("each role is drawn as itself", () => {
 		expect(count(html, /maky-ico-package/g)).toBe(2);
 	});
 
+	it("a benefit without a leading title is all title, set as the titles of the others are", () => {
+		const html = htmlOf(
+			doc([
+				list("maky:benefits", [
+					"Aerodynamický profil znižuje hluk vetra",
+					"<strong>Tichý chod</strong> Nehlučí.",
+					'Odolná <em onclick="x()">anodizovaná</em> úprava<script>alert(1)</script>',
+				]),
+			]),
+		);
+		expect(html).toContain(
+			'<span class="maky-txt"><strong class="maky-t">Aerodynamický profil znižuje hluk vetra</strong></span>',
+		);
+		// An item that has a title keeps it, with its text under it.
+		expect(html).toContain('<strong class="maky-t">Tichý chod</strong><span class="maky-d">Nehlučí.</span>');
+		// The text of an item without one is sanitized like every other text of the document.
+		expect(html).toContain('<strong class="maky-t">Odolná <em>anodizovaná</em> úprava');
+		for (const forbidden of ["<script", "onclick"]) expect(html, forbidden).not.toContain(forbidden);
+		// Only the one item with a title has a grey text under it.
+		expect(count(html, /class="maky-d"/g)).toBe(1);
+	});
+
 	it("features: an icon from the closed set, the generic mark for any other, and a caption", () => {
 		const html = htmlOf(
 			doc([
@@ -263,6 +289,31 @@ describe("each role is drawn as itself", () => {
 		expect(html).toContain('<h4 class="maky-sg-t">Chladenie</h4>');
 		expect(html).toContain('<div class="maky-sr"><dt>Objem</dt><dd>32 l</dd></div>');
 		expect(count(html, /class="maky-sr maky-sr-long"/g)).toBe(1);
+	});
+
+	it("a parameter sheet is a section a template may set as a card, with its rows as plain text", () => {
+		const parsed = parse(
+			doc([
+				paragraph("Úvod."),
+				header("Technické parametre"),
+				table("maky:specs", [
+					["Nosnosť", "do 75 kg (zostavy)"],
+					["Skupina", ""],
+					["Materiál <em>priečnikov</em>", "<strong>Hliník</strong>"],
+				]),
+			]),
+		);
+		const block = parsed?.blocks.find((b) => b.section === "specs");
+		expect(parsed?.blocks.map((b) => b.section ?? "plain")).toEqual(["plain", "specs"]);
+		expect(block?.title).toBe("Technické parametre");
+		expect(block?.html).toContain('<h3 class="maky-h">Technické parametre</h3>');
+		expect(block?.body).toContain('<div class="maky-specs">');
+		expect(block?.body).not.toContain("Technické parametre");
+		// The facts are text, never markup, and a group's title is not one.
+		expect(block?.facts).toEqual([
+			{ label: "Nosnosť", value: "do 75 kg (zostavy)" },
+			{ label: "Materiál priečnikov", value: "Hliník" },
+		]);
 	});
 
 	it("documents: a link, its kind of file, and a section a template may set as a card", () => {
@@ -590,16 +641,29 @@ describe("the model comparison beside the roles", () => {
 describe("the samples CFM's producer writes", () => {
 	const provenance = JSON.parse(readSample("PROVENANCE.json")) as {
 		profile: string;
-		template: string;
 		cfm_git_head: string;
 		cfm_tree_state: string;
-		files: Record<string, { sha256: string; git_blob_sha1: string }>;
+		files: Record<string, { sha256: string; git_blob_sha1: string; template: string }>;
 	};
 
 	it("come from a named, clean commit of the producer", () => {
 		expect(provenance.cfm_git_head).toMatch(/^[0-9a-f]{40}$/);
 		expect(provenance.cfm_tree_state).toBe("clean");
-		expect(provenance.template).toBe("autochladnicka");
+	});
+
+	it("name the template each is typed with, and the document says the same", () => {
+		const templates = Object.fromEntries(
+			Object.entries(provenance.files).map(([name, entry]) => [name, entry.template]),
+		);
+		expect(templates).toEqual({
+			"coolz-32.description.json": "autochladnicka",
+			"gallery.description.json": "autochladnicka",
+			"set-thule-71732.description.json": "stresny-nosic",
+		});
+		for (const [name, template] of Object.entries(templates)) {
+			const version = (JSON.parse(readSample(name)) as { version: string }).version;
+			expect(version, name).toBe(`maky-content/1:${template}`);
+		}
 	});
 
 	it("are the bytes their provenance says they are", () => {
@@ -607,6 +671,7 @@ describe("the samples CFM's producer writes", () => {
 		expect(Object.keys(provenance.files).sort()).toEqual([
 			"coolz-32.description.json",
 			"gallery.description.json",
+			"set-thule-71732.description.json",
 		]);
 		for (const [name, expected] of Object.entries(provenance.files)) {
 			const bytes = readFileSync(join(CONTRACT, name));
@@ -617,10 +682,14 @@ describe("the samples CFM's producer writes", () => {
 	});
 
 	it("are what Saleor stores: a version, blocks, and nothing else of a block but a type, an id and data", () => {
-		for (const sample of [COOLZ, GALLERY]) {
+		for (const [sample, version] of [
+			[COOLZ, VERSION],
+			[GALLERY, VERSION],
+			[RACK, RACK_VERSION],
+		] as const) {
 			const parsed = JSON.parse(sample) as { version: string; blocks: Block[]; time?: unknown };
 			expect(Object.keys(parsed).sort()).toEqual(["blocks", "version"]);
-			expect(parsed.version).toBe(VERSION);
+			expect(parsed.version).toBe(version);
 			for (const block of parsed.blocks) {
 				expect(["paragraph", "header", "list", "table"]).toContain(block.type);
 				expect(Object.keys(block).every((key) => ["type", "id", "data"].includes(key))).toBe(true);
@@ -657,10 +726,51 @@ describe("the samples CFM's producer writes", () => {
 		expect(parsed?.blocks.filter((block) => block.section === "documents")).toHaveLength(1);
 	});
 
+	it("the roof-rack set: every role CFM writes for it is read, and the page is put together from it", () => {
+		const parsed = parseProductContent(RACK, { content: labels, comparison });
+		const html = parsed?.blocks.map((block) => block.html).join("\n") ?? "";
+		expect(parsed).toMatchObject({ typed: true, template: "stresny-nosic", issues: [] });
+		expect(count(html, /<ul class="maky-inbox">/g)).toBe(1);
+		expect(count(html, /<ul class="maky-benefits">/g)).toBe(1);
+		expect(count(html, /<div class="maky-specs">/g)).toBe(1);
+		expect(count(html, /class="maky-callout maky-callout-warn/g)).toBe(1);
+		expect(count(html, /class="maky-callout maky-callout-info/g)).toBe(1);
+		// Every benefit of a set is one sentence with no title of its own: each is set as a title.
+		expect(count(html, /<strong class="maky-t">/g)).toBeGreaterThanOrEqual(3);
+		expect(html).not.toContain('class="maky-d"><');
+
+		// The page: the sheet is a card of its own, the rest of the document stays in order.
+		const template = templateFor(parsed?.template);
+		const sections = liftSections(parsed?.blocks ?? [], template);
+		expect(sections.specs?.title).toBe("Technické parametre");
+		expect(sections.specs?.body).toContain('<div class="maky-specs">');
+		expect(sections.description.join("")).not.toContain("maky-specs");
+		expect(sections.description.join("")).toContain("maky-inbox");
+		expect(sections.comparison).toBeNull();
+		expect(sections.documents).toBeNull();
+		// Nothing was lost between the document and the two places it is shown: every block's text
+		// is in one of them, once (the sheet only changed places).
+		const shown = visible(
+			[...sections.description, sections.specs?.title ?? "", sections.specs?.body ?? ""].join(" "),
+		);
+		const blockTexts = (parsed?.blocks ?? []).map((block) => visible(block.html));
+		expect(blockTexts.filter((text) => !shown.includes(text))).toEqual([]);
+		expect(shown.length).toBe(visible(html).length);
+
+		// The key facts are the sheet's first rows, as the sheet writes them.
+		expect(sheetFacts(sections, template).slice(0, 4)).toEqual([
+			{ label: "Nosnosť", value: "do 75 kg (zostavy)" },
+			{ label: "Dĺžka priečnikov", value: "127 cm" },
+			{ label: "Materiál priečnikov", value: "Hliník" },
+			{ label: "Profil", value: "Aerodynamický" },
+		]);
+	});
+
 	it("lose no word: everything a shopper could read in the document is on the page", () => {
 		for (const [name, sample] of [
 			["CoolZ 32", COOLZ],
 			["the gallery", GALLERY],
+			["the roof-rack set", RACK],
 		] as const) {
 			const source = JSON.parse(sample) as { blocks: Block[] };
 			const page = visible((parse(sample)?.blocks ?? []).map((block) => block.html).join(" "));

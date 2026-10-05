@@ -1,27 +1,36 @@
 {
-  "cfm_git_head": "5e99b93d1f878b1378ad817d97bcd50cf4ca2896",
+  "cfm_git_head": "92529a5a33648832aed37d72b26c462e2cebef2e",
   "cfm_tree_state": "clean",
   "files": {
     "coolz-32.description.json": {
       "cfm_copy": "backend/apps/saleor_sync/storefront_contract/maky_content_coolz_32.description.json",
       "describes": "CoolZ 32 (TK20410), the real producer's description",
-      "git_blob_sha1": "4b497a2faaf762f2698542856f6951b115fa983f",
-      "sha256": "a11334a97e7f9bea4c9e4903dfd8c4ffa74d2741239c0646e5f99aa9f01b6084"
+      "git_blob_sha1": "de44ccc82da344be3999c51af3d181547eaf0b83",
+      "sha256": "26aea4e0fe67be1ea63b76dac3e3695c2e3b853eaeaa3ca94bb1614f6ec3459d",
+      "template": "autochladnicka"
     },
     "gallery.description.json": {
       "cfm_copy": "backend/apps/saleor_sync/storefront_contract/maky_content_gallery.description.json",
       "describes": "invented gallery: every role and icon once, not a product",
       "git_blob_sha1": "72c813b8575accc92379d5e3e79c1b5b1836e0e4",
-      "sha256": "7c7cd0cfa75583d063e84ede0fb30f79a9048203c03659fd3f1f7f70e903482d"
+      "sha256": "7c7cd0cfa75583d063e84ede0fb30f79a9048203c03659fd3f1f7f70e903482d",
+      "template": "autochladnicka"
+    },
+    "set-thule-71732.description.json": {
+      "cfm_copy": "backend/apps/saleor_sync/storefront_contract/maky_content_set_thule_71732.description.json",
+      "describes": "roof-rack set Thule WingBar EVO Silver for a BMW X5 E70 (CFM pk 71732), the real composer's HTML of the pilot plan, typed as the publisher types a set",
+      "git_blob_sha1": "67a512237b48b5e43707a13b1748012ae1bdaa8c",
+      "sha256": "c0bdde733191c34b407144ce27ad96b1568f95e32fd2a2eb58868332cae97510",
+      "template": "stresny-nosic"
     }
   },
   "inputs": {
     "coolz_catalog_v1.json": "b759d31e51483d67fde8f0e59b3498ff88866a15c0662b51f0e4aa60ca2cdfc0",
     "coolz_catalog_v1.production_receipt.json": "5a5753cb80420ece57a312c4eb3a068c2d844ede6630d7a57824eb00add915fa",
-    "coolz_legacy_rich_html_v1.txt": "0869fd14f5a700ffaed4ed94d6711b1374318b5463e40449b78c7aec25a1d46d"
+    "coolz_legacy_rich_html_v1.txt": "0869fd14f5a700ffaed4ed94d6711b1374318b5463e40449b78c7aec25a1d46d",
+    "maky_content_set_thule_71732.html": "958a1590d69c1bfbe544a45ac5fc51fdfa6ef4ceeb0435b4b05d4760e83f689e"
   },
   "producer": "backend/scripts/storefront_maky_content_sample.py --example",
   "profile": "maky-content/1",
-  "template": "autochladnicka",
-  "values_source": "onboarding manifest, not the production database; nothing here connects to one"
+  "values_source": "the coolers: onboarding manifest; the set: the description saved in the pilot plan (artifacts/thule/C1_20260930/pilot11_plan); not the production database, nothing here connects to one"
 }

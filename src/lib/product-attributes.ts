@@ -16,6 +16,20 @@ import { formatNumber } from "@/config/locale";
 
 const NBSP = " ";
 
+/**
+ * A car fridge's own measurements. The unit is the one the CFM specification key carries
+ * (`rated_power_w`, `net_volume_l`, `interior_height_mm`, `input_ac_current_a`,
+ * `temperature_min_c`), which is where the catalogue got the number from.
+ */
+const CAR_FRIDGE_UNITS: Readonly<Record<string, string>> = {
+	"cfm:attribute:rated_power": "W",
+	"cfm:attribute:net_volume": "l",
+	"cfm:attribute:interior_height": "mm",
+	"cfm:attribute:input_current_ac": "A",
+	"cfm:attribute:temperature_min": "°C",
+	"cfm:attribute:temperature_max": "°C",
+};
+
 /** CFM external reference -> display unit. */
 const UNIT_BY_EXTERNAL_REFERENCE: Readonly<Record<string, string>> = {
 	"cfm:attribute:max_load": "kg",
@@ -28,15 +42,7 @@ const UNIT_BY_EXTERNAL_REFERENCE: Readonly<Record<string, string>> = {
 	"cfm:attribute:outer_width": "cm",
 	"cfm:attribute:volume": "l",
 	"cfm:attribute:max_speed": "km/h",
-	// A car fridge's own measurements. The unit is the one the CFM specification key carries
-	// (`rated_power_w`, `net_volume_l`, `interior_height_mm`, `input_ac_current_a`,
-	// `temperature_min_c`), which is where the catalogue got the number from.
-	"cfm:attribute:rated_power": "W",
-	"cfm:attribute:net_volume": "l",
-	"cfm:attribute:interior_height": "mm",
-	"cfm:attribute:input_current_ac": "A",
-	"cfm:attribute:temperature_min": "°C",
-	"cfm:attribute:temperature_max": "°C",
+	...CAR_FRIDGE_UNITS,
 	// Deliberately absent, and NOT an oversight:
 	//   bike_capacity   - a count, not a measurement
 	//   max_tire_width  - no catalogue values yet; mm and inch are both plausible
@@ -94,6 +100,19 @@ type YearsFormat = (count: number) => string;
 const YEARS_REFERENCES: ReadonlySet<string> = new Set(["cfm:attribute:warranty_years"]);
 
 /**
+ * The parameters whose name may already say the unit. The catalogue names an attribute once for every
+ * product and writes the unit in brackets when it has one: the production warranty is "Záruka (roky)",
+ * and "Záruka (roky) 2 roky" says years twice.
+ *
+ * Only the units the car-fridge page added, and the years. The older units were always printed beside
+ * their names, on pages that are live as they are, and stay exactly as they were.
+ */
+const NAME_MAY_STATE_UNIT: ReadonlySet<string> = new Set([
+	...Object.keys(CAR_FRIDGE_UNITS),
+	...YEARS_REFERENCES,
+]);
+
+/**
  * Parameters CFM keeps as ONE text joined with " | " (`LIST_SPEC_KEYS` of the CoolZ content
  * builder: the matrix reads them as a list). A page prints them as a list, not with the separator.
  */
@@ -128,19 +147,14 @@ const parseNumeric = (raw: string): number | null => {
 };
 
 /**
- * One attribute value as display text.
+ * A value with the unit given, or none.
  *
  * Numbers go through Intl for the locale's decimal separator — sk-SK renders
  * `25,2`, and a hand-rolled `toString()` would render `25.2` and read as a typo
  * to a Slovak customer. The unit is joined with a non-breaking space so it can
  * never wrap onto its own line.
  */
-export function formatAttributeValue(
-	value: string,
-	attribute: AttributeInput["attribute"],
-	locale: string,
-): string {
-	const unit = getAttributeUnit(attribute);
+const withUnit = (value: string, unit: string | undefined, locale: string): string => {
 	const numeric = parseNumeric(value);
 
 	if (numeric === null) {
@@ -151,6 +165,47 @@ export function formatAttributeValue(
 
 	const formatted = formatNumber(numeric, locale, { maximumFractionDigits: 2 });
 	return unit ? `${formatted}${NBSP}${unit}` : formatted;
+};
+
+/** One attribute value as display text, with the attribute's unit when one is proven. */
+export function formatAttributeValue(
+	value: string,
+	attribute: AttributeInput["attribute"],
+	locale: string,
+): string {
+	return withUnit(value, getAttributeUnit(attribute), locale);
+}
+
+/** A text as its lower-case words, split where the separator says. */
+const wordsOf = (text: string, separator: RegExp): string[] =>
+	text.toLowerCase().split(separator).filter(Boolean);
+
+/** What stands in brackets in a name — "(roky)", "[W]" — as lower-case words. */
+const bracketedWords = (name: string | null | undefined): string[] =>
+	Array.from((name ?? "").matchAll(/[([]([^)\]]*)[)\]]/g), (match) => match[1] ?? "").flatMap((group) =>
+		wordsOf(group, /[\s/,;]+/),
+	);
+
+/**
+ * The market's words for years, read off the plural the table already prints them with ("rok",
+ * "roky", "roka", "rokov") rather than listed again for twelve languages.
+ */
+const yearsWords = (years: YearsFormat): string[] =>
+	[1, 1.5, 2, 5].flatMap((count) => wordsOf(years(count), /[^\p{L}]+/u));
+
+/**
+ * Whether the name already says the unit this page would write beside the value, in brackets as the
+ * catalogue writes it. Only for `NAME_MAY_STATE_UNIT`, and only the unit we hold: "(kW)" is not "W",
+ * so a name that says another unit keeps ours rather than have it guessed away.
+ */
+function nameStatesUnit(attribute: AttributeInput["attribute"], years?: YearsFormat): boolean {
+	if (!NAME_MAY_STATE_UNIT.has(attribute.externalReference ?? "")) return false;
+	const inName = bracketedWords(attribute.name);
+	const unit = getAttributeUnit(attribute);
+	if (unit) return inName.includes(unit.toLowerCase());
+	if (!years) return false;
+	const forYears = yearsWords(years);
+	return inName.some((word) => forYears.includes(word));
 }
 
 /**
@@ -160,12 +215,17 @@ export function formatAttributeValue(
  * a value "<attribute>: Yes", and the parameters table printed exactly that — "Sklopná funkcia |
  * Sklopná funkcia: Yes", in English on a Slovak page — until the 2026-09 redesign. Without the
  * words (or the flag) a boolean says nothing rather than repeat its own name.
+ *
+ * `nameBesideValue` is for a caller that prints the attribute's name next to its values, as the
+ * parameters table does: a name that already says the unit ("Záruka (roky)") then gets the bare number.
+ * Where the value stands without its name (the key-facts band: "Príkon 60 W") the unit is kept.
  */
 export function formatProductAttributeValue(
 	attribute: AttributeInput,
 	locale: string,
 	words?: YesNoWords,
 	years?: YearsFormat,
+	options: { nameBesideValue?: boolean } = {},
 ): string[] {
 	if (attribute.attribute.inputType === "BOOLEAN") {
 		return attribute.values
@@ -173,6 +233,8 @@ export function formatProductAttributeValue(
 			.filter((text): text is string => text !== null);
 	}
 	const reference = attribute.attribute.externalReference ?? "";
+	const stated = options.nameBesideValue === true && nameStatesUnit(attribute.attribute, years);
+	const unit = stated ? undefined : getAttributeUnit(attribute.attribute);
 	return attribute.values
 		.map((v) => v.name)
 		.filter((n): n is string => Boolean(n && n.trim()))
@@ -183,10 +245,8 @@ export function formatProductAttributeValue(
 					.map((part) => part.trim())
 					.filter(Boolean);
 			}
-			const count = YEARS_REFERENCES.has(reference) && years ? parseNumeric(n) : null;
-			return count === null || !years
-				? [formatAttributeValue(n, attribute.attribute, locale)]
-				: [years(count)];
+			const count = YEARS_REFERENCES.has(reference) && years && !stated ? parseNumeric(n) : null;
+			return count === null || !years ? [withUnit(n, unit, locale)] : [years(count)];
 		});
 }
 
