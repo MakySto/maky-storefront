@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 import { youtubeIdFromWatchUrl, youtubePlayerUrl } from "@/lib/video-embed";
 
-/** The still under the link: the picture of the preview, which the preview does not depend on. */
-const STILL = ".maky-video > img";
+/** The still in the preview's stage: the picture of the preview, which the preview does not depend on. */
+const STILL = ".maky-video-stage > img";
 
 /**
  * A product's video is drawn as a link to its watch page (`maky:video`, `renderRole`), and nothing
@@ -23,7 +23,8 @@ const STILL = ".maky-video > img";
  *
  * Where the still does not come (the optimizer could not fetch it), the browser would draw its
  * broken-image mark in a corner of the preview. The picture is taken out instead, and what is left
- * is the shop's own card, which was under it and is the same link.
+ * is the shop's own card, which was under it and is the same link. The player takes the link's
+ * place in the card and fills it at 16:9, so the words that stood under the stage go with the link.
  *
  * The player does not outlive its page. The router keeps a page the shopper has left, hidden, to give
  * it back unchanged on the way back, and everything in it stays alive, a player with it: a film behind
