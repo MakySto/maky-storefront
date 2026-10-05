@@ -367,17 +367,23 @@ describe("each role is drawn as itself", () => {
 		expect(block?.section).toBeUndefined();
 		expect(block?.html).toBe(
 			'<section class="maky-blk not-prose"><h3 class="maky-h">Video</h3>' +
-				'<div class="maky-video"><a class="maky-video-a" href="https://www.youtube.com/watch?v=D5lm_R-m3BA" target="_blank" rel="noopener noreferrer">' +
+				// The still, drawn under the link and asked of this site's own optimizer; `alt` is the empty one.
+				'<div class="maky-video"><img src="/_next/image?url=https%3A%2F%2Fi.ytimg.com%2Fvi%2FD5lm_R-m3BA%2Fhqdefault.jpg&amp;w=640&amp;q=75" alt width="640" height="360" loading="lazy" decoding="async">' +
+				'<a class="maky-video-a" href="https://www.youtube.com/watch?v=D5lm_R-m3BA" target="_blank" rel="noopener noreferrer">' +
 				'<span class="maky-video-play" aria-hidden="true"><span class="maky-ico maky-ico-play" aria-hidden="true"></span></span>' +
 				'<span class="maky-video-txt"><span class="maky-video-sr">Prehrať video: </span>' +
 				`<strong class="maky-video-t">${FILM_TITLE}</strong>` +
 				'<span class="maky-video-n">YouTube · načíta sa až po kliknutí</span></span></a></div></section>',
 		);
-		// The page asks YouTube for nothing until the shopper does: no frame, no image, no script,
-		// and the only address in the markup is the link that opens the watch page.
-		for (const forbidden of ["<iframe", "<img", "<script", "<video", "src=", "youtube-nocookie", "/embed/"]) {
+		// The page asks YouTube for nothing until the shopper does: no frame, no script, and the only
+		// address in the markup that names another host is the link that opens the watch page. The one
+		// picture is this site's own optimizer's address for the still; YouTube's host is only the
+		// percent-encoded `url` it is asked to fetch, never an address the browser requests.
+		for (const forbidden of ["<iframe", "<script", "<video", "youtube-nocookie", "/embed/"]) {
 			expect(block?.html, forbidden).not.toContain(forbidden);
 		}
+		expect(block?.html.match(/<img /g)).toHaveLength(1);
+		expect(block?.html.match(/src="[^"]*"/g)).toEqual([expect.stringMatching(/^src="\/_next\/image\?url=/)]);
 		expect(block?.html.match(/https?:\/\/[^"\s<]+/g)).toEqual([`https://www.youtube.com/watch?v=${FILM}`]);
 	});
 
@@ -691,9 +697,19 @@ describe("Saleor's text cannot reach the markup", () => {
 				}),
 			]),
 		);
-		for (const forbidden of ["<script", "<iframe", "<img", "onerror", "onclick", "evil.test/p", "alert(1)"]) {
+		for (const forbidden of [
+			"<script",
+			"<iframe",
+			"src=x",
+			"onerror",
+			"onclick",
+			"evil.test/p",
+			"alert(1)",
+		]) {
 			expect(html, forbidden).not.toContain(forbidden);
 		}
+		// The one picture is the renderer's own, from the identifier; the caption's `<img>` is gone.
+		expect(html.match(/<img /g)).toHaveLength(1);
 		expect(html).toContain("Film");
 		expect(html).toContain("dôležité");
 		// Only the link the renderer wrote opens anything.
@@ -870,7 +886,11 @@ describe("the samples CFM's producer writes", () => {
 		expect(count(html, /class="maky-video"/g)).toBe(1);
 		expect(html).toContain(`href="https://www.youtube.com/watch?v=${FILM}"`);
 		expect(html).toContain(FILM_TITLE);
-		expect(html).not.toMatch(/<iframe|<img|youtube-nocookie/);
+		// No frame and no player host. The only picture is the film's still, asked of this site.
+		expect(html).not.toMatch(/<iframe|youtube-nocookie/);
+		expect(html.match(/<img [^>]*>/g)).toEqual([
+			expect.stringContaining('src="/_next/image?url=https%3A%2F%2Fi.ytimg.com%2Fvi%2F'),
+		]);
 		expect(count(html, /class="maky-doc"/g)).toBe(1);
 		expect(html).toContain(
 			'href="https://www.pro-user.com/public/attachments/20410/Datasheets/2510_PUE_Datasheets_koelboxen_CoolZ%2032.pdf"',

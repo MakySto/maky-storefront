@@ -9,6 +9,7 @@ import { ImageOptimizerCache } from "next/dist/server/image-optimizer.js";
 import { resolveNextConfig } from "../../next.config.js";
 import { CMS_MEDIA_BASE_URL } from "@/config/cms-media";
 import { readMedia } from "@/lib/cms/blocks";
+import { videoPosterSrc, youtubeStillUrl } from "@/lib/video-embed";
 
 const PRODUCTION_IMAGE_URLS = [
 	"https://cdn.maky.store/thumbnails/products/example.webp",
@@ -132,6 +133,40 @@ describe("next/image production optimizer", () => {
 			false,
 		);
 		expect(result).toHaveProperty("errorMessage");
+	});
+
+	// The preview of a product's video shows the still YouTube keeps of it, fetched by this server so the
+	// shopper's browser never asks YouTube. The door is exactly that one path on that one host.
+	describe("the still of a video", () => {
+		const VIDEO = "D5lm_R-m3BA";
+		const validate = (url: string) =>
+			ImageOptimizerCache.validateParams(request, { url, w: "640", q: "75" }, productionConfig, false);
+
+		it("is accepted at the address the page writes, through the exact 400 validation path", () => {
+			const query = new URL(videoPosterSrc(VIDEO), "https://maky.store").searchParams;
+			const result = ImageOptimizerCache.validateParams(
+				request,
+				{ url: query.get("url") ?? "", w: query.get("w") ?? "", q: query.get("q") ?? "" },
+				productionConfig,
+				false,
+			);
+			expect(result).not.toHaveProperty("errorMessage");
+			expect(result).toMatchObject({ href: youtubeStillUrl(VIDEO), width: 640, quality: 75 });
+		});
+
+		it.each([
+			["another still size", `https://i.ytimg.com/vi/${VIDEO}/maxresdefault.jpg`],
+			["another path on the host", "https://i.ytimg.com/sb/x/storyboard.jpg"],
+			["a path that climbs out of it", `https://i.ytimg.com/vi/${VIDEO}/../../x/hqdefault.jpg`],
+			["a deeper path", `https://i.ytimg.com/vi/${VIDEO}/x/hqdefault.jpg`],
+			["a query string", `https://i.ytimg.com/vi/${VIDEO}/hqdefault.jpg?x=1`],
+			["plain http", `http://i.ytimg.com/vi/${VIDEO}/hqdefault.jpg`],
+			["a look-alike host", `https://i.ytimg.com.example.com/vi/${VIDEO}/hqdefault.jpg`],
+			["a user-info trick", `https://i.ytimg.com@example.com/vi/${VIDEO}/hqdefault.jpg`],
+			["a sibling host", `https://s.ytimg.com/vi/${VIDEO}/hqdefault.jpg`],
+		])("is not the door to %s", (_name, url) => {
+			expect(validate(url)).toHaveProperty("errorMessage");
+		});
 	});
 
 	it("keeps the parser and exact Next pattern aligned with the provider media fixture", () => {

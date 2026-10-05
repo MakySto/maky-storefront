@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { youtubeEmbedUrl, youtubeIdFromWatchUrl, youtubePlayerUrl, youtubeWatchUrl } from "./video-embed";
+import {
+	POSTER_QUALITY,
+	POSTER_WIDTH,
+	videoPosterSrc,
+	youtubeEmbedUrl,
+	youtubeIdFromWatchUrl,
+	youtubePlayerUrl,
+	youtubeStillUrl,
+	youtubeWatchUrl,
+} from "./video-embed";
 
 const ID = "D5lm_R-m3BA";
 
@@ -70,6 +79,32 @@ describe("youtubePlayerUrl", () => {
 		"is made only from an identifier, not from %j",
 		(value) => {
 			expect(() => youtubePlayerUrl(value)).toThrow();
+		},
+	);
+});
+
+describe("the still of a video", () => {
+	it("is the hqdefault one every video has, on YouTube's still host", () => {
+		expect(youtubeStillUrl(ID)).toBe("https://i.ytimg.com/vi/D5lm_R-m3BA/hqdefault.jpg");
+	});
+
+	it("is handed to the browser as the address of this site's own image optimizer, never YouTube's", () => {
+		const src = videoPosterSrc(ID);
+		expect(src.startsWith("/_next/image?")).toBe(true);
+		// A same-origin path: the shopper's browser has nothing to ask YouTube or Google for.
+		expect(new URL(src, "https://maky.store").origin).toBe("https://maky.store");
+		const query = new URL(src, "https://maky.store").searchParams;
+		expect(query.get("url")).toBe(youtubeStillUrl(ID));
+		expect(query.get("w")).toBe(String(POSTER_WIDTH));
+		expect(query.get("q")).toBe(String(POSTER_QUALITY));
+		expect([...query.keys()].sort()).toEqual(["q", "url", "w"]);
+	});
+
+	it.each(["", "short", "D5lm_R-m3BAA", "D5lm_R-m3B/", "../../x", "D5lm_R-m3BA\n", "D5lm_R-m3BA?x=1"])(
+		"is made only from an identifier, not from %j",
+		(value) => {
+			expect(() => youtubeStillUrl(value)).toThrow();
+			expect(() => videoPosterSrc(value)).toThrow();
 		},
 	);
 });

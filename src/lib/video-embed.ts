@@ -10,10 +10,24 @@
  * The server draws a link (`renderRole`), the browser turns it into the player on the click
  * (`VideoClickToPlay`); both read the identifier through this one function, so what the server
  * accepted is exactly what the browser will open.
+ *
+ * The preview carries the still YouTube keeps of the video. A shopper's browser never asks YouTube
+ * or Google for it: it asks this site's own image optimizer (`videoPosterSrc`), which fetches the
+ * still itself. So nothing of YouTube reaches the shopper before the click, as before.
  */
 
 const WATCH = /^https:\/\/www\.youtube\.com\/watch\?v=([A-Za-z0-9_-]{11})$/;
 const ID = /^[A-Za-z0-9_-]{11}$/;
+
+/**
+ * The host YouTube serves its stills from. `next.config.js` lets the image optimizer fetch exactly
+ * `/vi/<identifier>/hqdefault.jpg` from it and nothing else (`next-image-allowlist.test.ts`).
+ */
+export const YOUTUBE_STILL_HOST = "i.ytimg.com";
+
+/** The width and quality the preview asks the optimizer for: a `deviceSizes` entry and the one `qualities` entry. */
+export const POSTER_WIDTH = 640;
+export const POSTER_QUALITY = 75;
 
 /** The watch page of a video: where the link goes without a script, and what the document names. */
 export const youtubeWatchUrl = (id: string): string => `https://www.youtube.com/watch?v=${id}`;
@@ -38,4 +52,25 @@ export function youtubeIdFromWatchUrl(value: unknown): string | null {
 export function youtubePlayerUrl(id: string): string {
 	if (!ID.test(id)) throw new Error("not a YouTube video identifier");
 	return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1`;
+}
+
+/**
+ * The still YouTube keeps of a video: `hqdefault.jpg`, 480 × 360, the one size every video has. For
+ * a 16:9 film YouTube sets the picture in black bars above and below it; the preview crops exactly
+ * those off (`object-fit: cover` in a 16:9 box). Throws for anything that is not an identifier.
+ */
+export function youtubeStillUrl(id: string): string {
+	if (!ID.test(id)) throw new Error("not a YouTube video identifier");
+	return `https://${YOUTUBE_STILL_HOST}/vi/${id}/hqdefault.jpg`;
+}
+
+/**
+ * What the shopper's browser is given for the preview's picture: this site's image optimizer
+ * (`/_next/image`), asked for the still. The optimizer fetches it from YouTube on the server, so the
+ * shopper's address and browser never reach YouTube before the click. If the optimizer cannot get the
+ * still, the picture does not draw and the preview stays what it is without one: the shop's own
+ * card, still a link to the film.
+ */
+export function videoPosterSrc(id: string): string {
+	return `/_next/image?url=${encodeURIComponent(youtubeStillUrl(id))}&w=${POSTER_WIDTH}&q=${POSTER_QUALITY}`;
 }

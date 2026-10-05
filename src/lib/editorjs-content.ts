@@ -6,7 +6,13 @@ import {
 	type FeatureIcon,
 	type IconName,
 } from "./editorjs-sanitize";
-import { youtubeEmbedUrl, youtubeIdFromWatchUrl, youtubeWatchUrl } from "./video-embed";
+import {
+	POSTER_WIDTH,
+	videoPosterSrc,
+	youtubeEmbedUrl,
+	youtubeIdFromWatchUrl,
+	youtubeWatchUrl,
+} from "./video-embed";
 
 /**
  * The typed content profile, `maky-content/1`: the roles a product description can have beyond
@@ -35,8 +41,10 @@ import { youtubeEmbedUrl, youtubeIdFromWatchUrl, youtubeWatchUrl } from "./video
  *   names and the labels are this file's own; the second pass in `sanitizeBlock` accepts only
  *   those.
  * - A video is never loaded by the description. The role draws a link to the watch page and a play
- *   mark, built from an identifier this file parses itself (`video-embed.ts`); the browser turns the
- *   link into the player on the click, so nothing of YouTube is asked for before the shopper does.
+ *   mark over the still YouTube keeps of the film, all built from an identifier this file parses
+ *   itself (`video-embed.ts`); the still is asked of this site's own image optimizer, and the browser
+ *   turns the link into the player on the click, so nothing of YouTube is asked of the shopper's
+ *   browser before the shopper asks for the film.
  */
 
 const PROFILE_MAJOR = 1;
@@ -386,10 +394,12 @@ function documentsBody(items: Item[]): Body {
 }
 
 /**
- * A video: a link to its watch page, set as a dark 16:9 preview with a play mark and the film's title.
- * No image, no frame and no address from the document are in it: the identifier is parsed here and the
- * address rebuilt from it, so the markup holds nothing that asks YouTube for anything. Without a
- * script the link opens the watch page in a new tab; `VideoClickToPlay` turns it into the player.
+ * A video: a link to its watch page, set as a 16:9 preview over the film's own still, with a play
+ * mark and the film's title. No frame and no address from the document are in it: the identifier is
+ * parsed here and every address rebuilt from it. The one picture in the markup is this site's own image
+ * optimizer's address for the still (`videoPosterSrc`), never YouTube's, so the markup holds nothing
+ * that asks YouTube for anything. Without a script the link opens the watch page in a new tab;
+ * `VideoClickToPlay` turns it into the player.
  */
 function videoBody(block: ContentBlock, labels: ContentLabels): Body {
 	if (block.type !== "embed") return refuse(`a video is carried by an embed, not a ${block.type}`);
@@ -407,9 +417,14 @@ function videoBody(block: ContentBlock, labels: ContentLabels): Body {
 	// link is a second destination the page never wrote.
 	const title = plainText(sanitizeInline(data.caption)).trim();
 	if (!title) return refuse("a video has no title");
+	// Decorative, so no alt text: the link says what the preview is. It is drawn under the link, and a
+	// still that does not load leaves the card the shop made.
+	const still = `<img src="${escapeHtml(videoPosterSrc(id))}" alt="" width="${POSTER_WIDTH}" height="${
+		(POSTER_WIDTH * 9) / 16
+	}" loading="lazy" decoding="async">`;
 	return {
 		html:
-			`<div class="maky-video"><a class="maky-video-a" href="${youtubeWatchUrl(
+			`<div class="maky-video">${still}<a class="maky-video-a" href="${youtubeWatchUrl(
 				id,
 			)}" target="_blank" rel="noopener noreferrer">` +
 			`<span class="maky-video-play" aria-hidden="true">${ico("play")}</span>` +

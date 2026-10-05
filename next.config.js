@@ -89,6 +89,15 @@ const config = {
 				protocol: "https",
 				hostname: "api.maky.store",
 			},
+			{
+				// The still of a product's video, which its preview shows (src/lib/video-embed.ts). The
+				// shopper's browser asks this server for it, so nothing of YouTube loads before the click.
+				// Exactly the one path the preview uses and no query: not an open door to the host.
+				protocol: "https",
+				hostname: "i.ytimg.com",
+				pathname: "/vi/*/hqdefault.jpg",
+				search: "",
+			},
 			// No `hostname: "*"` any more (owner GO, 2026-09-26). It let anyone use this
 			// server to fetch and re-encode an image from any host on the internet. Before it
 			// went, the last two days of nginx logs were read for every `/_next/image` source:

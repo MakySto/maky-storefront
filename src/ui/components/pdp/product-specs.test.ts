@@ -165,10 +165,18 @@ describe("a car fridge's page with its video", async () => {
 		expect(html.match(/id="video-click-to-play"/g)).toHaveLength(1);
 	});
 
-	it("loads nothing of YouTube before a click: no frame, no image, no script, no other address", async () => {
+	it("loads nothing of YouTube before a click: no frame, no video, no address of YouTube's but the link", async () => {
 		const html = await page(sections.description);
-		expect(html).not.toMatch(/<iframe|youtube-nocookie|ytimg|<video/);
+		expect(html).not.toMatch(/<iframe|youtube-nocookie|<video/);
 		expect(html.match(/youtube\.com/g)).toHaveLength(1);
+		// The one picture asks this site's own optimizer; YouTube's still host is only the percent-encoded
+		// address it is asked to fetch, so the shopper's browser has no request to make to it.
+		const pictures = html.match(/<img [^>]*>/g) ?? [];
+		expect(pictures).toHaveLength(1);
+		expect(pictures[0]).toContain(
+			'src="/_next/image?url=https%3A%2F%2Fi.ytimg.com%2Fvi%2FD5lm_R-m3BA%2Fhqdefault.jpg',
+		);
+		expect(html.match(/https?:\/\/i\.ytimg\.com/g)).toBeNull();
 	});
 
 	it("sets the datasheet in the card of its own, under the name the page navigation uses", async () => {
