@@ -148,6 +148,10 @@
 			},
 			"temperatureRange": "Intervallo di temperatura",
 			"range": "da {min} a {max}",
+			"video": {
+				"play": "Riproduci il video",
+				"note": "YouTube · si carica solo dopo il clic"
+			},
 			"years": "{count, plural, one {# anno} other {# anni}}"
 		},
 		"keyFeatures": "Caratteristiche principali",

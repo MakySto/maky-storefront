@@ -148,6 +148,10 @@
 			},
 			"temperatureRange": "Rozsah teplot",
 			"range": "{min} až {max}",
+			"video": {
+				"play": "Přehrát video",
+				"note": "YouTube · načte se až po kliknutí"
+			},
 			"years": "{count, plural, one {# rok} few {# roky} many {# roku} other {# let}}"
 		},
 		"keyFeatures": "Hlavní vlastnosti",

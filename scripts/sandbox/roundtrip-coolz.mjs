@@ -15,7 +15,8 @@
 // Per product it checks that
 //   1. Saleor returned the producer's blocks unchanged (the table block cell for cell),
 //   2. every block that carries a `maky:` marker is drawn as its role, once, and the typed page has
-//      no marked block left as plain text (typed descriptions only),
+//      no marked block left as plain text (typed descriptions only); a video is drawn as the link to
+//      its watch page and nothing of YouTube is loaded by the page itself,
 // and, for a description that has the comparison table,
 //   3. the product page holds exactly one comparison table,
 //   4. the highlighted column is the model the page is about, and
@@ -37,6 +38,7 @@ const ROLE_CLASS = {
 	faq: "maky-faq",
 	specs: "maky-specs",
 	documents: "maky-docs",
+	video: "maky-video",
 };
 
 const args = process.argv.slice(2);
@@ -161,11 +163,32 @@ for (const { sku, file } of subjects) {
 				const wrong = [];
 				for (const { id, drawn } of marked) {
 					if (!drawn) continue;
-					const count = (html.match(new RegExp(`class="[^"]*\\b${drawn}\\b`, "g")) ?? []).length;
+					// The whole class, not a prefix of another: `maky-video` is also the start of `maky-video-a`.
+					const count = (html.match(new RegExp(`class="[^"]*(?<![\\w-])${drawn}(?![\\w-])`, "g")) ?? [])
+						.length;
 					const wanted = marked.filter((entry) => entry.drawn === drawn).length;
 					if (count !== wanted) wrong.push(`${id}: drawn ${count}x, sent ${wanted}x`);
 				}
 				check("every marked block is drawn as its role", wrong.length === 0, [...new Set(wrong)].join("; "));
+
+				// A video is a link until it is clicked: the watch page of the film the producer named is
+				// on the page, and the page asks YouTube for nothing (no frame, no player host, no image).
+				for (const block of sent.blocks.filter((entry) => entry.id?.startsWith("maky:video"))) {
+					const film = /[?&]v=([A-Za-z0-9_-]{11})$/.exec(block.data?.source ?? "")?.[1];
+					check(
+						"the film is a link to its watch page",
+						Boolean(film) && html.includes(`href="https://www.youtube.com/watch?v=${film}"`),
+						`no link to ${film ?? "an unreadable source"} on the page`,
+					);
+					const loaded = ["<iframe", "youtube-nocookie", "ytimg.com", "i.ytimg", "<video"].filter((needle) =>
+						html.includes(needle),
+					);
+					check(
+						"the page itself loads nothing of YouTube",
+						loaded.length === 0,
+						`found ${loaded.join(", ")}`,
+					);
+				}
 			}
 
 			if (!sentTable) {

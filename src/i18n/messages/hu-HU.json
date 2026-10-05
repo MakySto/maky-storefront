@@ -148,6 +148,10 @@
 			},
 			"temperatureRange": "Hőmérséklet-tartomány",
 			"range": "{min} – {max}",
+			"video": {
+				"play": "Videó lejátszása",
+				"note": "YouTube · csak a kattintás után töltődik be"
+			},
 			"years": "{count, plural, other {# év}}"
 		},
 		"keyFeatures": "Fő jellemzők",

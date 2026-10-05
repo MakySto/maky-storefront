@@ -148,6 +148,10 @@
 			},
 			"temperatureRange": "Zakres temperatur",
 			"range": "od {min} do {max}",
+			"video": {
+				"play": "Odtwórz film",
+				"note": "YouTube · wczyta się dopiero po kliknięciu"
+			},
 			"years": "{count, plural, one {# rok} few {# lata} many {# lat} other {# roku}}"
 		},
 		"keyFeatures": "Najważniejsze cechy",

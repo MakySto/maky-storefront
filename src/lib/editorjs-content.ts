@@ -6,6 +6,7 @@ import {
 	type FeatureIcon,
 	type IconName,
 } from "./editorjs-sanitize";
+import { youtubeEmbedUrl, youtubeIdFromWatchUrl, youtubeWatchUrl } from "./video-embed";
 
 /**
  * The typed content profile, `maky-content/1`: the roles a product description can have beyond
@@ -16,8 +17,8 @@ import {
  *
  * - the document's `version` is `maky-content/1` or `maky-content/1:<template>`;
  * - a block's `id` names its role: `maky:callout:tip|info|warn`, `maky:benefits`, `maky:inbox`,
- *   `maky:features`, `maky:steps`, `maky:faq`, `maky:specs`, `maky:documents` (a `#2` suffix only
- *   keeps a repeated role unique);
+ *   `maky:features`, `maky:steps`, `maky:faq`, `maky:specs`, `maky:documents`, `maky:video` (a `#2`
+ *   suffix only keeps a repeated role unique);
  * - an unmarked `header` directly above a marked block is that block's title.
  *
  * The contract, with the sample both repositories test against, is
@@ -33,6 +34,9 @@ import {
  * - Nothing from Saleor reaches markup except through `sanitizeInline`. The classes, the icon
  *   names and the labels are this file's own; the second pass in `sanitizeBlock` accepts only
  *   those.
+ * - A video is never loaded by the description. The role draws a link to the watch page and a play
+ *   mark, built from an identifier this file parses itself (`video-embed.ts`); the browser turns the
+ *   link into the player on the click, so nothing of YouTube is asked for before the shopper does.
  */
 
 const PROFILE_MAJOR = 1;
@@ -40,7 +44,7 @@ const PROFILE_MAJOR = 1;
 type CalloutKind = "tip" | "info" | "warn";
 const CALLOUT_KINDS: readonly CalloutKind[] = ["tip", "info", "warn"];
 
-type Role = "callout" | "benefits" | "inbox" | "features" | "steps" | "faq" | "specs" | "documents";
+type Role = "callout" | "benefits" | "inbox" | "features" | "steps" | "faq" | "specs" | "documents" | "video";
 const ROLES: readonly Role[] = [
 	"callout",
 	"benefits",
@@ -50,12 +54,20 @@ const ROLES: readonly Role[] = [
 	"faq",
 	"specs",
 	"documents",
+	"video",
 ];
 
 /** The fixed words of the blocks, in the shopper's language. Never taken from the document. */
 export interface ContentLabels {
 	/** What kind of note a callout is, as its accessible name. */
 	callout: Record<CalloutKind, string>;
+	/** The words of a video's preview, which is all that stands there until the shopper asks for the film. */
+	video: {
+		/** The action, said to assistive technology before the film's title: "Prehrať video". */
+		play: string;
+		/** What the preview says under the title: where the film is hosted and that nothing loads before the click. */
+		note: string;
+	};
 }
 
 export interface ContentBlock {
@@ -337,6 +349,40 @@ function documentsBody(items: Item[]): Body {
 	return { html: `<ul class="maky-docs">${rows.join("")}</ul>` };
 }
 
+/**
+ * A video: a link to its watch page, set as a dark 16:9 preview with a play mark and the film's title.
+ * No image, no frame and no address from the document are in it: the identifier is parsed here and the
+ * address rebuilt from it, so the markup holds nothing that asks YouTube for anything. Without a
+ * script the link opens the watch page in a new tab; `VideoClickToPlay` turns it into the player.
+ */
+function videoBody(block: ContentBlock, labels: ContentLabels): Body {
+	if (block.type !== "embed") return refuse(`a video is carried by an embed, not a ${block.type}`);
+	const data = block.data ?? {};
+	if (data.service !== "youtube")
+		return refuse(`video service ${JSON.stringify(data.service)} is not youtube`);
+	const id = youtubeIdFromWatchUrl(data.source);
+	if (!id) return refuse("the video's source is not a youtube.com watch address");
+	// The two addresses are the document's record of ONE video. Two different ones are a defect of
+	// the producer, and a page that picked either would be guessing which film the product means.
+	if (data.embed !== youtubeEmbedUrl(id)) {
+		return refuse("the video's embed address is not the one its source names");
+	}
+	// Text, not inline markup: the title sits inside the preview's own link, and a link inside a
+	// link is a second destination the page never wrote.
+	const title = plainText(sanitizeInline(data.caption)).trim();
+	if (!title) return refuse("a video has no title");
+	return {
+		html:
+			`<div class="maky-video"><a class="maky-video-a" href="${youtubeWatchUrl(
+				id,
+			)}" target="_blank" rel="noopener noreferrer">` +
+			`<span class="maky-video-play" aria-hidden="true">${ico("play")}</span>` +
+			`<span class="maky-video-txt"><span class="maky-video-sr">${escapeHtml(labels.video.play)}: </span>` +
+			`<strong class="maky-video-t">${title}</strong>` +
+			`<span class="maky-video-n">${escapeHtml(labels.video.note)}</span></span></a></div>`,
+	};
+}
+
 /** A value longer than this reads as a sentence: it gets the row's full width. */
 const LONG_VALUE = 32;
 
@@ -430,7 +476,9 @@ export function renderRole(
 	}
 
 	let body: Body;
-	if (marker.role === "specs") {
+	if (marker.role === "video") {
+		body = videoBody(block, labels);
+	} else if (marker.role === "specs") {
 		body = specsBody(block);
 	} else if (block.type !== "list") {
 		body = refuse(`${marker.role} is carried by a list, not a ${block.type}`);

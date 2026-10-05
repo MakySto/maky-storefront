@@ -148,6 +148,10 @@
 			},
 			"temperatureRange": "Interval de temperatură",
 			"range": "{min} până la {max}",
+			"video": {
+				"play": "Redă videoclipul",
+				"note": "YouTube · se încarcă abia după clic"
+			},
 			"years": "{count, plural, one {# an} few {# ani} other {# de ani}}"
 		},
 		"keyFeatures": "Caracteristici principale",
