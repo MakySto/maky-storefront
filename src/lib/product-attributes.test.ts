@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	extendedWarrantyYears,
 	formatAttributeValue,
 	formatOuterDimensions,
 	formatProductAttributeValue,
@@ -200,6 +201,48 @@ describe("a car fridge's attributes", () => {
 		// Any other text keeps its bar: a separator is not guessed from a value.
 		const other = fridge("climate_class", ["T | ST"], { inputType: "PLAIN_TEXT" });
 		expect(formatProductAttributeValue(other, SK)).toEqual(["T | ST"]);
+	});
+});
+
+describe("extendedWarrantyYears", () => {
+	const WARRANTY = "cfm:attribute:warranty_years";
+	const warranty = (...values: string[]) => attr(WARRANTY, values);
+
+	it("answers the whole years the product's attribute states, when they are more than the statutory two", () => {
+		expect(extendedWarrantyYears([warranty("3")], WARRANTY)).toBe(3);
+		expect(extendedWarrantyYears([warranty("5")], WARRANTY)).toBe(5);
+		expect(extendedWarrantyYears([warranty("10")], WARRANTY)).toBe(10);
+		// The way a catalogue writes a whole number with a decimal part, and a stray space.
+		expect(extendedWarrantyYears([warranty("3,0")], WARRANTY)).toBe(3);
+		expect(extendedWarrantyYears([warranty(" 3 ")], WARRANTY)).toBe(3);
+	});
+
+	it("answers nothing for the statutory two years and for fewer: the strip keeps its statutory line", () => {
+		for (const value of ["2", "1", "0", "-3"]) {
+			expect(extendedWarrantyYears([warranty(value)], WARRANTY), value).toBeNull();
+		}
+	});
+
+	it("answers nothing for a value that is not a whole number of years in full", () => {
+		for (const value of ["2,5", "3.5", "3 roky", "3 years", "tri", "", "  ", "11", "30", "1e1"]) {
+			expect(extendedWarrantyYears([warranty(value)], WARRANTY), value).toBeNull();
+		}
+	});
+
+	it("answers nothing when the value is not one and one only", () => {
+		expect(extendedWarrantyYears([warranty("3", "5")], WARRANTY)).toBeNull();
+		expect(extendedWarrantyYears([warranty()], WARRANTY)).toBeNull();
+		// An empty second value is no second value.
+		expect(extendedWarrantyYears([warranty("3", "")], WARRANTY)).toBe(3);
+	});
+
+	it("reads only the attribute it is told to, and none when it is told none", () => {
+		const other = attr("cfm:attribute:weight", ["3"]);
+		expect(extendedWarrantyYears([other], WARRANTY)).toBeNull();
+		expect(extendedWarrantyYears([], WARRANTY)).toBeNull();
+		expect(extendedWarrantyYears([warranty("3")], undefined)).toBeNull();
+		expect(extendedWarrantyYears([warranty("3")], "")).toBeNull();
+		expect(extendedWarrantyYears([attr(null, ["3"])], WARRANTY)).toBeNull();
 	});
 });
 

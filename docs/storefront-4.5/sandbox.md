@@ -20,6 +20,8 @@ Docker, `uv`, Python 3.12, Node 22, pnpm 10.28.1, Chromium (snímky cez Playwrig
 dockerd --host=unix:///var/run/docker.sock --iptables=false --ip6tables=false --bridge=none &
 ```
 
+Keď Docker nie je (cloudové vlákno 5. 10. 2026 ho nemalo), stačí PostgreSQL 16 z balíčkov systému: `initdb -A trust` do adresára v `/tmp`, `pg_ctl … -o '-p 5432 -c listen_addresses=127.0.0.1 -c fsync=off'`, rola `saleor` (superuser, heslo sandboxu) a databáza `saleor`, zvyšok postupu je rovnaký. Binárky sú v `/usr/lib/postgresql/16/bin`.
+
 ## Postup
 
 **1. PostgreSQL.** `fsync=off` je v poriadku, databáza je na jedno použitie.
@@ -124,6 +126,7 @@ V režime `next dev` (Turbopack) pokladňa padá na `createContext only works in
 - že produkčný Saleor prijme `table` ani typovaný popis (bezzápisová kontrola na produkcii, viď `docs/contracts/comparison-table.md` a `docs/contracts/maky-content.md`),
 - ako vyzerá živá stránka autochladničky: názvy a textové hodnoty atribútov sú predpoklad (viď vyššie), takže zoskupenie parametrov a pás kľúčových faktov sa tu ukazuje na vymyslených hodnotách,
 - že film hrá a že technické listy výrobcu existujú: YouTube a pro-user.com sú z cloudu nedostupné (kontrolu liveness robí na serveri CFM `scripts/check_maky_content_media.py`, prehrávanie sa vidí v skutočnom prehliadači po nasadení),
+- že optimalizátor obrázkov stiahne úvodný obrázok filmu z `i.ytimg.com`: z cloudu tam cesta nevedie a `next dev` odmieta stiahnuť obrázok z adresy, ktorá ukazuje na lokálny stroj (správne: stráži server pred požiadavkou na vnútornú sieť). Náhľady úvodného obrázka preto vznikajú tak, že testovací prehliadač odpovie na jedinú požiadavku stránky o ten obrázok (na `/_next/image` tohto servera) náhradným obrázkom; kontroluje sa, čo stránka žiada a ako to kreslí, nie čo drží YouTube. Samotné stiahnutie sa overuje až na VPS po nasadení (`docs/contracts/maky-content.md`, časť po publikácii),
 - ako sa blok správa po uložení v Saleor Dashboarde,
 - preklady popisov do ostatných jazykov,
 - obsah a obrázky z Payload CMS, fotografie produktov, platby.

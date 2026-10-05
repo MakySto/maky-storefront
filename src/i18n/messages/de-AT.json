@@ -165,6 +165,8 @@
 		"trustReturnsText": "Mindestens 14 Tage",
 		"trustWarrantyTitle": "2 Jahre Gewährleistung",
 		"trustWarrantyText": "Gesetzlich",
+		"trustWarrantyYearsTitle": "{years} Garantie",
+		"trustWarrantyYearsText": "Auf dieses Produkt",
 		"highlightBikes": "{count, plural, one {Für # Fahrrad} other {Für # Fahrräder}}",
 		"highlightLoad": "Tragkraft {value}",
 		"highlightLoadPerBike": "Pro Fahrrad bis {value}",

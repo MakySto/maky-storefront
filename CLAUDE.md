@@ -240,6 +240,12 @@ Returns:
 Warranty:
 
 - Standard warranty is 2 years unless a product-specific warranty is confirmed.
+- Confirmed (owner, 2026-10-05): the PRO-USER car fridges (CoolZ) carry **3 years**. The line under the
+  buy button follows the product's own `warranty_years` for the fridge template only (`warrantyRef` in
+  `src/lib/product-templates.ts`, `extendedWarrantyYears`): 3 to 10 whole years print "Záruka N roky /
+  Na tento produkt", anything else keeps "Záruka 2 roky / Na tovar podľa zákona" (CoolZ Power TK20414
+  holds 2). Another template gets the longer line only when the owner says so, and the statutory words
+  are never printed beside a figure that is not the statute's.
 
 Operating-entity details (legal name, address, IČO, DIČ, register entry, SOI as the
 supervisory authority): the entity is now **MAKY.STORE s. r. o.** These live on

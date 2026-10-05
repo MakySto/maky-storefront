@@ -53,6 +53,27 @@ describe("templateFor", () => {
 	});
 });
 
+describe("the warranty a template reads", () => {
+	// The owner confirmed three years for the PRO-USER car fridges (2026-10-05) and for nothing else, so
+	// the line under the buy button reads a product's own warranty only where a template says to.
+	it("is the fridge's warranty attribute, and no other template reads one", () => {
+		expect(templateFor("autochladnicka").warrantyRef).toBe(attr("warranty_years"));
+		expect(templateFor("stresny-nosic").warrantyRef).toBeUndefined();
+		expect(templateFor(null).warrantyRef).toBeUndefined();
+		expect(templateFor("nope").warrantyRef).toBeUndefined();
+		expect(
+			Object.values(PRODUCT_TEMPLATES)
+				.filter((template) => template.warrantyRef !== undefined)
+				.map((template) => template.id),
+		).toEqual(["autochladnicka"]);
+	});
+
+	it("is an attribute the template also groups, so the table and the line cannot disagree", () => {
+		const fridge = templateFor("autochladnicka");
+		expect(fridge.groups.flatMap((group) => group.refs)).toContain(fridge.warrantyRef);
+	});
+});
+
 describe("liftSections", () => {
 	const blocks: ProductContentBlock[] = [
 		{ html: "<p>lead</p>" },

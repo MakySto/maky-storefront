@@ -31,6 +31,8 @@ interface VariantSectionDynamicProps {
 	product: Product;
 	channel: string;
 	searchParams: Promise<{ variant?: string }>;
+	/** The product's own warranty in years when it is longer than the statutory two (`extendedWarrantyYears`). */
+	warrantyYears?: number | null;
 }
 
 /**
@@ -90,7 +92,12 @@ type VariantPricing = {
  * because it accesses searchParams (runtime data). The product data is
  * already cached in the static shell - this just adds the interactive parts.
  */
-export async function VariantSectionDynamic({ product, channel, searchParams }: VariantSectionDynamicProps) {
+export async function VariantSectionDynamic({
+	product,
+	channel,
+	searchParams,
+	warrantyYears,
+}: VariantSectionDynamicProps) {
 	const { variant: variantParam } = await searchParams;
 	// The locale comes from the channel, not from request state. This subtree renders on the dynamic path
 	// (it reads a cookie or searchParams), where `setRequestLocale` from the market layout
@@ -359,7 +366,7 @@ export async function VariantSectionDynamic({ product, channel, searchParams }: 
 			{/* Purchase confidence - order:6, outside the form (nothing submittable). */}
 			{isPurchasable ? (
 				<div className="order-7 mt-7">
-					<PurchaseTrust channel={channel} />
+					<PurchaseTrust channel={channel} warrantyYears={warrantyYears} />
 				</div>
 			) : null}
 		</>
