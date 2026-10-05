@@ -1467,27 +1467,49 @@
 		}
 	}
 
-	/* A video: a 16:9 preview that is only a link until the shopper asks for the film. The still YouTube
-	   keeps of the film is drawn over the card; it is asked of this site's own image optimizer, so the
-	   shopper's browser has asked YouTube for nothing. Where the still has not come yet, or does not
-	   (`VideoClickToPlay` takes the broken picture out), what shows is the card itself, in the brand's
-	   brown, and it is the same link. The player (`VideoClickToPlay`) takes the link's place.
-	   It stands in the middle of the block: where the block is wider than the preview (a desktop card)
-	   the space is shared by both sides; where it is not (a phone) the preview fills the width, so
-	   nothing moves there. */
+	/* A video: a card that is only a link until the shopper asks for the film. Its stage is a 16:9
+	   preview: the still YouTube keeps of the film, asked of this site's own image optimizer (so the
+	   shopper's browser has asked YouTube for nothing), and the play mark over it. The film's title and the
+	   note that it loads from YouTube only on a click stand under the stage, on the card's own brown, and
+	   never over the picture: a still has lettering of its own, and two sets of words that meet read as a
+	   clash wherever they do. Where the still has not come yet, or does not (`VideoClickToPlay` takes the
+	   broken picture out), the stage shows the card's brown, and it is the same link. The player
+	   (`VideoClickToPlay`) takes the link's place and fills the card at 16:9.
+	   It stands in the middle of the block: where the block is wider than the card (a desktop card) the
+	   space is shared by both sides; where it is not (a phone) the card fills the width, so nothing
+	   moves there. */
 	.maky-video {
 		position: relative;
 		max-width: 42rem;
 		margin-inline: auto;
-		aspect-ratio: 16 / 9;
 		overflow: hidden;
 		border-radius: var(--radius-sm);
 		background: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%);
 	}
 
-	/* YouTube sets a 16:9 film in black bars on a 4:3 picture; covering the 16:9 box crops exactly those.
-	   The hair of scale keeps an antialiased edge of a bar out of sight. */
-	.maky-video > img {
+	/* The link is the whole card: a click on the picture or on the words starts the film. */
+	.maky-video-a {
+		display: block;
+		text-decoration: none;
+		color: var(--text-inverse);
+	}
+
+	.maky-video-a:focus-visible {
+		outline: var(--focus-ring-width) solid var(--focus-ring);
+		outline-offset: -0.375rem;
+	}
+
+	.maky-video-stage {
+		position: relative;
+		display: grid;
+		place-items: center;
+		aspect-ratio: 16 / 9;
+		overflow: hidden;
+	}
+
+	/* YouTube sets a 16:9 film in black bars on a 4:3 picture; covering the 16:9 stage crops exactly those.
+	   The hair of scale keeps an antialiased edge of a bar out of sight, and the stage clips it. */
+	.maky-video-stage > img {
 		position: absolute;
 		inset: 0;
 		width: 100%;
@@ -1496,35 +1518,11 @@
 		transform: scale(1.02);
 	}
 
-	/* The link is the whole preview. The words stand at the foot, on a scrim that deepens under them
-	   (dark enough for white words on the brightest still); the play mark sits in the room the words
-	   leave, so a long title never reaches it. */
-	.maky-video-a {
-		position: absolute;
-		inset: 0;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		text-decoration: none;
-		color: var(--text-inverse);
-		background: linear-gradient(
-			to top,
-			color-mix(in oklch, var(--scrim) 88%, transparent) 0%,
-			color-mix(in oklch, var(--scrim) 60%, transparent) 40%,
-			transparent 78%
-		);
-	}
-
-	.maky-video-a:focus-visible {
-		outline: var(--focus-ring-width) solid var(--focus-ring);
-		outline-offset: -0.375rem;
-	}
-
+	/* Positioned, and after the picture in the page, so it is painted over the picture. */
 	.maky-video-play {
+		position: relative;
 		display: grid;
-		flex: none;
 		place-items: center;
-		margin-block: auto;
 		width: 3.5rem;
 		height: 3.5rem;
 		border-radius: 9999px;
@@ -1545,7 +1543,6 @@
 
 	.maky-video-txt {
 		display: block;
-		align-self: stretch;
 		min-width: 0;
 		padding: 0.75rem 1rem;
 		text-align: left;
@@ -1582,12 +1579,11 @@
 		border: 0;
 	}
 
-	/* The player that replaces the preview once it is clicked. */
+	/* The player that replaces the preview once it is clicked: the card is its 16:9 frame. */
 	.maky-video-f {
-		position: absolute;
-		inset: 0;
+		display: block;
 		width: 100%;
-		height: 100%;
+		aspect-ratio: 16 / 9;
 		border: 0;
 	}
 
