@@ -190,5 +190,5 @@ curl -s https://maky.store/sk/<slug> | grep -o 'maky-callout-tip\|maky-benefits\
 ## Čo to nerobí
 
 - Neposiela `soldSeparately`, `video` ani `products` z návrhu (v dátach nie sú a Saleor ich pri popise neuloží).
-- Nerobí z popisu druhý register parametrov: parametre sú atribúty produktu, šablóna ich len zoskupuje.
-- Nemení stránky ostatných kategórií: strešné nosiče a ďalšie šablóny sú ďalší krok, ktorý pridá meno do registra a nový zoznam skupín, nie novú čítačku.
+- Nerobí z popisu druhý register parametrov: parametre autochladničky sú atribúty produktu a šablóna ich len zoskupuje. Strešná sada atribúty nemá (okrem výrobcu), jej parametre sú tabuľka v popise a pás faktov z nej preberie len prvé riadky tak, ako sú napísané; nič nepočíta, neprepisuje a nehádá z nich ikonu.
+- Nemení stránky kategórií bez šablóny: ďalšia šablóna je nový záznam v registri a nový zoznam skupín, nie nová čítačka.
