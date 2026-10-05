@@ -1022,4 +1022,10 @@ describe("the styles of the typed blocks", () => {
 		}
 		expect(classes.has("maky-video-a")).toBe(true);
 	});
+
+	it("stand the video's preview in the middle of its block, capped in width (on a phone it fills the block, so nothing moves there)", () => {
+		const rule = css.match(/\.maky-video\s*\{([^}]*)\}/)?.[1] ?? "";
+		expect(rule).toMatch(/max-width:\s*42rem/);
+		expect(rule).toMatch(/margin-inline:\s*auto/);
+	});
 });
