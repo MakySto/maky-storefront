@@ -68,6 +68,50 @@ export const STOREFRONT_CATEGORIES: readonly StorefrontCategory[] = [
 ];
 
 /**
+ * Every OTHER category Saleor holds — the ones this catalogue does not name.
+ *
+ * Saleor holds 30 categories (30 on 2026-09-07 too; the list is the one CFM read from `api.maky.store`
+ * for its catalogue-pages import): the 8 above and these 22 —
+ * Saleor's own `default-category`, the accessory and spare-part sub-categories of the catalogue
+ * ones, their other sub-categories (bike carriers on the roof, the tow bar or the rear door,
+ * dog cages, …) and the Thule and Nordrive roof-rack shelves. No menu or tile links to them, so
+ * they have no entry above (an entry is a menu slot, `surfaces` and an i18n key), but every one
+ * of them has the same public URL as a catalogue category: root-level, no `/categories/` segment
+ * (owner, 2026-10-06).
+ *
+ * This list plus `STOREFRONT_CATEGORIES` IS the set the proxy tells a category from a product
+ * with, so it has to name every category Saleor holds. A category created in Saleor and not
+ * written here keeps working at `/{market}/categories/{slug}` — `categoryUrl` answers that, and
+ * the proxy serves it — until it is added; `pnpm check:nav` lists exactly such categories.
+ *
+ * One slug per line and no comments inside the array: `scripts/checks/nav-links.mjs` reads it.
+ */
+export const OTHER_CATEGORY_SLUGS: readonly string[] = [
+	"default-category",
+	"autodoplnky",
+	"nosice-kajakov-a-surfov",
+	"preprava-zvierat",
+	"drziaky-a-stojany-na-bicykle",
+	"nahradne-diely-k-nosicom-bicyklov",
+	"nahradne-diely-k-stresnym-boxom",
+	"nordrive-stresne-nosice",
+	"nosice-bicyklov-na-strechu",
+	"nosice-bicyklov-na-tazne-zariadenie",
+	"nosice-bicyklov-na-zadne-dvere",
+	"ochranne-mreze-a-bariery",
+	"ochranne-potahy-do-auta",
+	"opravne-sady",
+	"prepravne-klietky-pre-psov-do-auta",
+	"prislusenstvo-k-nosicom-bicyklov",
+	"prislusenstvo-k-nosicom-lyzi",
+	"prislusenstvo-k-prepravnym-klietkam",
+	"prislusenstvo-k-stresnym-boxom",
+	"prislusenstvo-k-stresnym-stanom",
+	"thule-stresne-nosice",
+	"vanicky-do-kufra",
+];
+
+/**
  * The Saleor product type CFM gives every accessory and spare part — bags, covers, adapters,
  * locks, mounting kits — as opposed to the product a shopper came for (a roof box, a bike
  * carrier, a car fridge). Measured on sk-eur 2026-09-24: every product in the accessory and
@@ -108,7 +152,7 @@ export const CATEGORY_ROUTE_PREFIX = "categories";
  *
  * The root is a namespace shared with product slugs, and nothing in Saleor stops a
  * product being given a category's slug. `pnpm check:nav` asks Saleor whether any
- * product now holds one of these slugs; today none does, out of 9,587.
+ * product now holds the slug of ANY category — the 8 here and `OTHER_CATEGORY_SLUGS`.
  */
 export function categoryHref(category: StorefrontCategory): string {
 	return `/${category.slug}`;
@@ -117,22 +161,22 @@ export function categoryHref(category: StorefrontCategory): string {
 /**
  * Public, channel-relative URL for ANY Saleor category slug — catalogue or not.
  *
- * Saleor holds 30 categories; this file names 8. The other 22 are accessory and
- * spare-part buckets (`prislusenstvo-k-stresnym-boxom`, `nahradne-diely-k-nosicom-bicyklov`)
- * plus brand-filtered duplicates of the main listings, and nothing in the site's own
- * navigation links to them — a product's breadcrumb does, and so does its card on a
- * listing, from whatever category Saleor put it in.
+ * Every category Saleor holds has a root URL (`/sk/prislusenstvo-k-stresnym-boxom`,
+ * `/sk/nosice-bicyklov-na-tazne-zariadenie`), not only the 8 this file names: the owner asked
+ * for category URLs without the `/categories/` segment on 2026-10-06, for all of them. Nothing in
+ * the site's own navigation links to the other 22, but a product's breadcrumb does, and so does
+ * its card on a listing, from whatever category Saleor put it in.
  *
- * Only catalogue categories get a root URL. The proxy resolves the root namespace
- * from a build-time set with no upstream call, so a slug it does not know falls
- * through to `[productSlug]` and soft-404s. Handing every Saleor category a root URL
- * therefore needs a different mechanism, not a longer list — see
- * docs/design/category-root-urls-20260907.md.
+ * The one URL that still carries `/categories/` is a category this build does not know yet —
+ * created in Saleor after the set above was last written. The proxy resolves the root namespace
+ * from that build-time set with no upstream call, so a slug it does not know would fall through
+ * to `[productSlug]` and soft-404; until the slug is added, the category keeps the URL it has,
+ * which works, and `pnpm check:nav` reports it. Each category has exactly ONE canonical URL at
+ * any time, which is the property that matters to a crawler.
  *
- * The split is not only a workaround. `/sk/prislusenstvo-k-stresnym-boxom` claims
- * top-level standing for an accessory bucket; `/sk/categories/…` says what it is.
- * Each category still has exactly ONE canonical URL, which is the property that
- * matters to a crawler.
+ * The earlier split — root URLs for the catalogue only, `/categories/` for the rest — is
+ * recorded in docs/design/category-root-urls-20260907.md, with why this was the harder option
+ * of the two it names (a build-time set, not resolution at request time).
  */
 export function categoryUrl(slug: string): string {
 	return isCategorySlug(slug) ? `/${slug}` : categoryRoutePath(slug);
@@ -144,14 +188,19 @@ export function categoryRoutePath(slug: string): string {
 }
 
 /**
- * Every category slug, for the proxy.
+ * Every category slug Saleor holds, for the proxy.
  *
  * The proxy needs this at the edge to tell `/sk/stresne-nosice` (a category) from
  * `/sk/stresny-nosic-nordrive-…` (a product) without asking Saleor on every request.
  * It is a build-time set because the catalogue is a build-time list — and
- * `categories.test.ts` fails if a slug is ever written anywhere else.
+ * `categories.test.ts` fails if a slug is ever written anywhere else. The catalogue
+ * categories and `OTHER_CATEGORY_SLUGS` together are all 30 that Saleor holds, and
+ * `pnpm check:nav` asks Saleor whether that is still true.
  */
-export const CATEGORY_SLUGS: ReadonlySet<string> = new Set(STOREFRONT_CATEGORIES.map((c) => c.slug));
+export const CATEGORY_SLUGS: ReadonlySet<string> = new Set([
+	...STOREFRONT_CATEGORIES.map((c) => c.slug),
+	...OTHER_CATEGORY_SLUGS,
+]);
 
 /**
  * Is this the first path segment of a public category URL?
@@ -159,7 +208,8 @@ export const CATEGORY_SLUGS: ReadonlySet<string> = new Set(STOREFRONT_CATEGORIES
  * Withheld categories answer `true` as well, deliberately. `surfaces` decides what the
  * site LINKS to; the URL keeps working either way, so `/sk/snehove-retaze` resolves to
  * its (empty, `noindex`) listing rather than 404-ing, and the old
- * `/sk/categories/snehove-retaze` still redirects to it.
+ * `/sk/categories/snehove-retaze` still redirects to it. So does every other category
+ * Saleor holds: the set is not "the catalogue" any more, it is all of them.
  */
 export function isCategorySlug(slug: string): boolean {
 	return CATEGORY_SLUGS.has(slug);

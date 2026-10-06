@@ -104,9 +104,9 @@ export async function VehicleListingFilter({
 	/**
 	 * Channel-relative path of this listing, e.g. `/products` or `/stresne-boxy`.
 	 *
-	 * Build it with `categoryUrl()` rather than by hand — a catalogue category lives at
-	 * the root and a non-catalogue one still under `/categories/`, and every filter link
-	 * on the page is derived from this string.
+	 * Build it with `categoryUrl()` rather than by hand — every category Saleor holds lives
+	 * at the root, and a category this build does not know yet still under `/categories/`,
+	 * and every filter link on the page is derived from this string.
 	 */
 	basePath: string;
 	searchParams: Record<string, string | string[] | undefined>;

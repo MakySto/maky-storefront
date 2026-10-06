@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { STOREFRONT_CATEGORIES, categoryUrl } from "@/config/categories";
+import { CATEGORY_SLUGS, STOREFRONT_CATEGORIES, categoryUrl } from "@/config/categories";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { MARKET_ROOT_SEGMENTS } from "@/lib/routing.generated";
 import {
@@ -63,11 +63,9 @@ describe("the category route table matches the shared contract", () => {
 		expect(language("cz")).toBe("cs");
 	});
 
-	it("keeps the root and the Nordrive listing apart — two identities, never one segment", () => {
+	it("keeps the root and the Nordrive shelf apart — two identities, never one segment", () => {
 		const [root, nordrive] = LOCALIZED_CATEGORIES;
 		expect(root!.saleorId).not.toBe(nordrive!.saleorId);
-		expect(root!.placement).toBe("root");
-		expect(nordrive!.placement).toBe("listing");
 		for (const language of CATALOG_LANGUAGES) {
 			const segments = LOCALIZED_CATEGORIES.map((category) => category.segments[language]);
 			expect(new Set(segments).size, language).toBe(segments.length);
@@ -93,11 +91,10 @@ describe("no collision in the shared root namespace", () => {
 		}
 	});
 
-	it("no localized segment is another catalogue category's slug", () => {
-		const slugs = new Set(STOREFRONT_CATEGORIES.map((category) => category.slug));
+	it("no localized segment is another category's slug — any of the 30 Saleor holds", () => {
 		for (const { language, segment, category } of localized) {
 			if (segment === category.baseSlug) continue;
-			expect(slugs.has(segment), `${language}: ${segment}`).toBe(false);
+			expect(CATEGORY_SLUGS.has(segment), `${language}: ${segment}`).toBe(false);
 		}
 	});
 });
@@ -105,8 +102,8 @@ describe("no collision in the shared root namespace", () => {
 describe("Slovakia is unchanged", () => {
 	const slugs = [
 		...STOREFRONT_CATEGORIES.map((category) => category.slug),
-		"nordrive-stresne-nosice",
-		"prislusenstvo-k-stresnym-boxom",
+		...CATEGORY_SLUGS,
+		"a-category-this-build-does-not-know",
 	];
 
 	for (const key of ["sk", "sk-eur"]) {
@@ -132,8 +129,8 @@ describe("foreign markets", () => {
 
 	it("accept a spelling Saleor already translated and still land on the canonical URL", () => {
 		expect(categoryUrlFor("cz-czk", "stresni-nosice")).toBe("/stresni-nosice");
-		expect(categoryUrlFor("cz-czk", "nordrive-stresni-nosice")).toBe("/categories/nordrive-stresni-nosice");
-		expect(categoryUrlFor("de-eur", "nordrive-stresne-nosice")).toBe("/categories/nordrive-dachtraeger");
+		expect(categoryUrlFor("cz-czk", "nordrive-stresni-nosice")).toBe("/nordrive-stresni-nosice");
+		expect(categoryUrlFor("de-eur", "nordrive-stresne-nosice")).toBe("/nordrive-dachtraeger");
 	});
 
 	it("map every localized segment back to the base slug Saleor knows", () => {
@@ -143,11 +140,24 @@ describe("foreign markets", () => {
 		}
 	});
 
-	it("leave every other category on its base slug", () => {
+	it("leave every other category on its base slug, at the root like the rest (owner, 2026-10-06)", () => {
 		expect(categoryUrlFor("cz-czk", "stresne-boxy")).toBe("/stresne-boxy");
 		expect(categoryUrlFor("cz-czk", "prislusenstvo-k-stresnym-boxom")).toBe(
-			"/categories/prislusenstvo-k-stresnym-boxom",
+			"/prislusenstvo-k-stresnym-boxom",
 		);
+		expect(categoryUrlFor("de-eur", "nosice-bicyklov-na-tazne-zariadenie")).toBe(
+			"/nosice-bicyklov-na-tazne-zariadenie",
+		);
+	});
+
+	it("keep a category this build does not know on its /categories/ URL, which still works", () => {
+		// Created in Saleor after src/config/categories.ts was last written: the proxy cannot tell
+		// it from a product, so it keeps the URL it has until the slug is added.
+		expect(categoryUrlFor("cz-czk", "a-category-this-build-does-not-know")).toBe(
+			"/categories/a-category-this-build-does-not-know",
+		);
+		// A slug Saleor translated and the table does not map is left for the page to resolve.
+		expect(categoryUrlFor("de-eur", "fahrradtraeger")).toBe("/categories/fahrradtraeger");
 	});
 
 	it("do not recognise another language's spelling", () => {
@@ -156,7 +166,9 @@ describe("foreign markets", () => {
 		expect(categoryBaseSlug("cz-czk", "dachtraeger")).toBe("dachtraeger");
 	});
 
-	it("never call a listing category a root", () => {
-		expect(isLocalizedRootSegment("cz", "nordrive-stresni-nosice")).toBe(false);
+	it("recognise the localized Nordrive spelling as a root in its own market only", () => {
+		expect(isLocalizedRootSegment("cz", "nordrive-stresni-nosice")).toBe(true);
+		expect(isLocalizedRootSegment("cz", "nordrive-dachtraeger")).toBe(false);
+		expect(isLocalizedRootSegment("sk", "nordrive-stresne-nosice")).toBe(false);
 	});
 });

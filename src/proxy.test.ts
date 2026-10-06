@@ -9,6 +9,7 @@ import { CHANNEL_MAP, cartSegment, marketHref } from "./lib/channel-map";
 import { catalogLanguageForMarket } from "./lib/catalog-content/language";
 import { CATALOG_REDIRECTS } from "./lib/catalog-content/redirects";
 import { BORROWED_ROUTES } from "./lib/catalog-content/borrowed-routes";
+import { CATEGORY_SLUGS } from "./config/categories";
 import { categoryRouteTable } from "./config/category-routes";
 import { proxy } from "./proxy";
 
@@ -215,18 +216,64 @@ describe("dotted first segment", () => {
 		expect(res.headers.get("location")).toContain("/sk/stresne-boxy");
 	});
 
-	it("leaves a NON-catalogue category on its /categories/ URL", async () => {
-		// Saleor holds 30 categories; src/config/categories.ts names 8. The root
-		// namespace is resolved from that build-time set with no upstream call, so a
-		// slug it does not know soft-404s at the root. Redirecting this one would turn
-		// a working accessory listing into a 404 for the sake of a tidier path — and
-		// the sitemap and every product breadcrumb would follow it there.
-		const res = await proxy(req("/sk/categories/prislusenstvo-k-stresnym-boxom"));
+	it("308s the retired /categories/ URL of EVERY category Saleor holds, not only the catalogue's", async () => {
+		// Owner, 2026-10-06: `/sk/categories/nosice-bicyklov-na-tazne-zariadenie` is
+		// `/sk/nosice-bicyklov-na-tazne-zariadenie`. The root namespace is resolved from the
+		// build-time set of all 30 categories, so each of them has a root to land on.
+		for (const slug of CATEGORY_SLUGS) {
+			const res = await proxy(req(`/sk/categories/${slug}`));
+			expect(res.status, slug).toBe(308);
+			expect(new URL(res.headers.get("location")!).pathname, slug).toBe(`/sk/${slug}`);
+		}
+	});
+
+	it("keeps the query string when it redirects a retired category URL", async () => {
+		const res = await proxy(req("/sk/categories/nosice-bicyklov-na-tazne-zariadenie?sort=price&page=2"));
+		expect(res.status).toBe(308);
+		const target = new URL(res.headers.get("location")!);
+		expect(target.pathname).toBe("/sk/nosice-bicyklov-na-tazne-zariadenie");
+		expect(target.search).toBe("?sort=price&page=2");
+	});
+
+	it("carries the root URL of a non-catalogue category onto its route file", async () => {
+		const res = await proxy(req("/sk/nosice-bicyklov-na-tazne-zariadenie"));
+		expect(res.status).not.toBe(404);
+		expect(res.headers.get("location")).toBeNull();
+		expect(res.headers.get("x-middleware-rewrite")).toContain(
+			"/sk-eur/categories/nosice-bicyklov-na-tazne-zariadenie",
+		);
+	});
+
+	it("leaves a category this build does not know on its /categories/ URL", async () => {
+		// Created in Saleor after src/config/categories.ts was last written. The root namespace is
+		// resolved from that build-time set with no upstream call, so the slug would soft-404 at the
+		// root. Redirecting it would turn a working listing into a 404 — so it keeps the URL it has
+		// until it is added, and `pnpm check:nav` reports it.
+		const res = await proxy(req("/sk/categories/a-category-this-build-does-not-know"));
 		expect(res.status).not.toBe(308);
+		expect(res.headers.get("location")).toBeNull();
 		expect(res.headers.get("x-channel")).toBe("sk-eur");
 		expect(res.headers.get("x-middleware-rewrite")).toContain(
-			"/sk-eur/categories/prislusenstvo-k-stresnym-boxom",
+			"/sk-eur/categories/a-category-this-build-does-not-know",
 		);
+	});
+
+	it("does not take a product for a category: only a slug in the set is routed to the category page", async () => {
+		const res = await proxy(req("/sk/nosice-bicyklov-na-tazne-zariadenie-thule-xt-3"));
+		expect(res.headers.get("x-middleware-rewrite")).toContain(
+			"/sk-eur/nosice-bicyklov-na-tazne-zariadenie-thule-xt-3",
+		);
+		expect(res.headers.get("x-middleware-rewrite")).not.toContain("/categories/");
+	});
+
+	it("routes the vehicle pages and any path below a category slug to the category route", async () => {
+		// `/sk/stresne-nosice/mazda/cx-60/kh` is the vehicle page; a category with no vehicle tree
+		// answers not-found from the same catch-all, exactly as it did under /categories/.
+		for (const path of ["/sk/stresne-nosice/mazda/cx-60/kh", "/sk/nosice-lyzi/neexistuje/vozidlo"]) {
+			const res = await proxy(req(path));
+			expect(res.headers.get("location"), path).toBeNull();
+			expect(res.headers.get("x-middleware-rewrite"), path).toContain(`/sk-eur/categories${path.slice(3)}`);
+		}
 	});
 
 	it("carries a root category onto its route file, keeping the public URL", async () => {
@@ -576,7 +623,7 @@ describe("retired vehicle pages", () => {
  * the retired BP/TQ pages spelled either way.
  */
 describe("localized category roots (COMMERCE-2 M1)", () => {
-	const roots = categoryRouteTable().filter((row) => row.placement === "root");
+	const roots = categoryRouteTable().filter((row) => row.baseSlug === "stresne-nosice");
 	const foreign = roots.filter((row) => row.market !== "sk");
 	const location = (res: Response) => {
 		const value = res.headers.get("location");
@@ -696,19 +743,41 @@ describe("localized category roots (COMMERCE-2 M1)", () => {
 		}
 	});
 
-	it("moves the Nordrive listing to its localized spelling and leaves it under /categories/", async () => {
-		const listings = categoryRouteTable().filter((row) => row.placement === "listing");
-		for (const row of listings) {
+	it("gives the Nordrive shelf a root URL of its own, localized abroad, with no /categories/ left", async () => {
+		const shelves = categoryRouteTable().filter((row) => row.baseSlug === "nordrive-stresne-nosice");
+		expect(shelves.map((row) => row.market)).toEqual(Object.keys(CHANNEL_MAP));
+		for (const row of shelves) {
+			expect(row.path, row.market).toBe(`/${row.market}/${row.segment}`);
 			const canonical = await proxy(req(row.path));
 			expect(canonical.headers.get("location"), row.path).toBeNull();
 			expect(canonical.headers.get("x-middleware-rewrite"), row.path).toContain(
 				`/${row.channel}/categories/${row.segment}`,
 			);
+			// The retired form, Slovak or localized, goes to the market's root in ONE hop.
+			for (const spelling of new Set(["nordrive-stresne-nosice", row.segment])) {
+				const retired = await proxy(req(`/${row.market}/categories/${spelling}`));
+				expect(retired.status, `${row.market} ${spelling}`).toBe(308);
+				expect(location(retired)?.pathname, `${row.market} ${spelling}`).toBe(row.path);
+			}
 			if (row.market === "sk") continue;
-			const alias = await proxy(req(`/${row.market}/categories/nordrive-stresne-nosice`));
+			// The Slovak spelling at a foreign market's root is the same one-hop alias as the roof racks'.
+			const alias = await proxy(req(`/${row.market}/nordrive-stresne-nosice`));
 			expect(alias.status, row.path).toBe(301);
 			expect(location(alias)?.pathname, row.path).toBe(row.path);
 		}
+	});
+
+	it("leaves a category Saleor translated and the table does not map under /categories/ abroad", async () => {
+		// `/de/categories/fahrradtraeger` is the link the category navigation builds from Saleor's
+		// translated slug. The proxy cannot know that spelling without an upstream call, so it is not
+		// redirected to a root that would answer not-found; the page resolves it. The base slug IS known.
+		const translated = await proxy(req("/de/categories/fahrradtraeger"));
+		expect(translated.status).not.toBe(308);
+		expect(translated.headers.get("x-middleware-rewrite")).toContain("/de-eur/categories/fahrradtraeger");
+
+		const base = await proxy(req("/de/categories/nosice-bicyklov"));
+		expect(base.status).toBe(308);
+		expect(location(base)?.pathname).toBe("/de/nosice-bicyklov");
 	});
 
 	it("does not treat another language's spelling as a category", async () => {

@@ -71,9 +71,9 @@ describe("category navigation", () => {
 		]);
 		// The whole name stays, for the accessible name.
 		expect(navigation.chips?.[1]?.name).toBe("Nosiče bicyklov na strechu");
-		// A catalogue category at its root URL, a sub-category under /categories/.
+		// Every category at its root URL — the catalogue's and its sub-categories alike (2026-10-06).
 		expect(navigation.chips?.[0]?.href).toBe("/sk/nosice-bicyklov");
-		expect(navigation.chips?.[1]?.href).toBe("/sk/categories/nosice-bicyklov-na-strechu");
+		expect(navigation.chips?.[1]?.href).toBe("/sk/nosice-bicyklov-na-strechu");
 	});
 
 	it("keeps the row on a sub-category page, with its siblings and the page marked", () => {
