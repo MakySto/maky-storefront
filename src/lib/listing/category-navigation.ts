@@ -2,6 +2,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { CategoryNavigationDocument, type CategoryNavigationNodeFragment } from "@/gql/graphql";
 import { categoryUrlFor } from "@/config/category-routes";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
+import { answered, faulted, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
 import { marketHref } from "@/lib/channel-map";
 import { executePublicGraphQL } from "@/lib/graphql";
@@ -57,7 +58,18 @@ type NavCategory = NavNode & {
 /** The row is secondary to the listing: one attempt with a deadline, never the retry ladder. */
 const NAVIGATION_DEADLINE_MS = 2_000;
 
+/**
+ * Throws on a fault to the caller, so "no row" is never taken for an answer and the page renders
+ * without it. Inside the cache it is a value that is remembered for seconds only (`@/lib/cache-fault`).
+ */
 export async function getCategoryNavigation(baseSlug: string, channel: string): Promise<CategoryNavigation> {
+	return valueOrThrow(await readCategoryNavigation(baseSlug, channel));
+}
+
+async function readCategoryNavigation(
+	baseSlug: string,
+	channel: string,
+): Promise<CachedRead<CategoryNavigation>> {
 	"use cache";
 	const locale = getLocaleFromChannel(channel);
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
@@ -80,8 +92,7 @@ export async function getCategoryNavigation(baseSlug: string, channel: string): 
 		signal: AbortSignal.timeout(NAVIGATION_DEADLINE_MS),
 	});
 	if (!result.ok) {
-		// Thrown, so "no row" is never cached for an outage; the page renders without it.
-		throw new Error(`[Listing] category navigation unavailable for ${baseSlug}: ${result.error.message}`);
+		return faulted(`[Listing] category navigation unavailable for ${baseSlug}: ${result.error.message}`);
 	}
 
 	const category = result.data.category;
@@ -89,7 +100,7 @@ export async function getCategoryNavigation(baseSlug: string, channel: string): 
 	for (const node of relatives(category)) {
 		cacheTag(buildTag(CACHE_PROFILES.categories, { channel, locale, slug: node.slug }));
 	}
-	return buildCategoryNavigation(category, channel, locale);
+	return answered(buildCategoryNavigation(category, channel, locale));
 }
 
 function relatives(category: NavCategory | null | undefined): NavNode[] {

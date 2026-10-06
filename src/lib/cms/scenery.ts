@@ -1,5 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
+import { answered, faulted, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { cmsMediaObjectPosition, type CmsBlock } from "./blocks";
 import { cmsCollectionTag, cmsPageTag } from "./cache-tags";
 import { fetchCmsPage } from "./client";
@@ -74,11 +75,16 @@ export function sceneryFromBlocks(blocks: readonly CmsBlock[]): CmsScenery {
 /**
  * This market's scenery photos from Payload, or `null` when the page is not published for it.
  *
- * A fault THROWS, so it is never cached as "no photos": an unreachable CMS must not keep the
- * owner's banners off the site for hours after it recovers. The caller falls back to the Saleor
- * photos meanwhile.
+ * A fault THROWS to the caller, so an unreachable CMS is never taken for "no photos": the caller
+ * falls back to the Saleor photos meanwhile. Inside the cache it is a value instead, see
+ * `@/lib/cache-fault`: a throw out of a `"use cache"` function fails the prerender it happens in,
+ * whatever the caller does with it.
  */
 export async function getCmsScenery(channel: string): Promise<CmsScenery | null> {
+	return valueOrThrow(await readCmsScenery(channel));
+}
+
+async function readCmsScenery(channel: string): Promise<CachedRead<CmsScenery | null>> {
 	"use cache";
 	cacheLife("hours");
 	const pageTag = cmsPageTag(CMS_SCENERY_SLUG);
@@ -87,10 +93,10 @@ export async function getCmsScenery(channel: string): Promise<CmsScenery | null>
 	if (collectionTag) cacheTag(collectionTag);
 
 	const market = marketForChannel(channel);
-	if (!market) return null;
+	if (!market) return answered(null);
 
 	const outcome = await fetchCmsPage(CMS_SCENERY_SLUG, payloadLocaleForMarket(market), market);
-	if (outcome.status === "error") throw new Error(`[Scenery] CMS unavailable: ${outcome.reason}`);
-	if (outcome.status !== "found") return null;
-	return sceneryFromBlocks(outcome.page.layout);
+	if (outcome.status === "error") return faulted(`[Scenery] CMS unavailable: ${outcome.reason}`);
+	if (outcome.status !== "found") return answered(null);
+	return answered(sceneryFromBlocks(outcome.page.layout));
 }

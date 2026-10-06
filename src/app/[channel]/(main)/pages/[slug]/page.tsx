@@ -8,11 +8,10 @@ import { cacheLife, cacheTag } from "next/cache";
 import { PageGetBySlugDocument, type PageGetBySlugQuery } from "@/gql/graphql";
 import { executePublicGraphQL } from "@/lib/graphql";
 import {
+	cachedOutcome,
 	catchUpstreamError,
 	logUpstreamError,
-	refuseToCacheUpstreamError,
 	toOutcome,
-	type AuthoritativeOutcome,
 	type ResourceOutcome,
 } from "@/lib/saleor/resource-outcome";
 import { buildPageMetadata } from "@/lib/seo";
@@ -37,17 +36,19 @@ type SaleorPage = NonNullable<PageGetBySlugQuery["page"]>;
  * `page(slug:)` takes no channel argument, so a Saleor page is global — the
  * cache key deliberately carries no channel either.
  */
-async function getSaleorPageCached(slug: string): Promise<AuthoritativeOutcome<SaleorPage>> {
+async function getSaleorPageCached(slug: string): Promise<ResourceOutcome<SaleorPage>> {
 	"use cache";
 	cacheLife("minutes");
 	cacheTag(`saleor-page:${slug}`);
 
-	const result = await executePublicGraphQL(PageGetBySlugDocument, {
-		variables: { slug },
-		revalidate: 60,
+	// A fault is remembered for seconds only, and is not thrown out of the cache (`cachedOutcome`).
+	return cachedOutcome(async () => {
+		const result = await executePublicGraphQL(PageGetBySlugDocument, {
+			variables: { slug },
+			revalidate: 60,
+		});
+		return toOutcome(result, (data) => data.page);
 	});
-
-	return refuseToCacheUpstreamError(toOutcome(result, (data) => data.page));
 }
 
 async function getSaleorPage(slug: string): Promise<ResourceOutcome<SaleorPage>> {

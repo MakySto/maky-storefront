@@ -10,11 +10,10 @@ import { liveMarkets } from "@/lib/market-state";
 import { isSourceLocale, resolveExactLocaleProduct } from "@/lib/saleor/exact-locale";
 import { productMissTagFor } from "@/lib/saleor/product-cache-tags";
 import {
+	cachedOutcome,
 	catchUpstreamError,
 	logUpstreamError,
-	refuseToCacheUpstreamError,
 	upstreamError,
-	type AuthoritativeOutcome,
 	type ResourceOutcome,
 } from "@/lib/saleor/resource-outcome";
 
@@ -39,9 +38,9 @@ import {
  *   page's own URL, and asked by base slug they could only ever find nothing or a DIFFERENT
  *   product whose translated slug happened to match.
  * - **A fault is the whole map.** HTTP, network, GraphQL errors — partial ones included — or an
- *   alias missing from the answer: the result is `upstream-error`, it is not cached, it is
- *   logged, and the page falls back to naming only itself. One market that could not be asked
- *   is never reported as a market that does not have the product.
+ *   alias missing from the answer: the result is `upstream-error`, it is remembered for seconds only
+ *   (`cachedOutcome`), it is logged, and the page falls back to naming only itself. One market that
+ *   could not be asked is never reported as a market that does not have the product.
  * - **One attempt, one deadline.** It only decides hreflang and the switcher, so a slow or
  *   failing Saleor costs at most `PRESENCE_DEADLINE_MS`, never the transport's 1 + 2 + 4 s
  *   retry ladder.
@@ -155,7 +154,7 @@ async function getProductMarketPresenceCached(
 	productId: string,
 	baseSlug: string,
 	markets: readonly string[],
-): Promise<AuthoritativeOutcome<PresenceMap>> {
+): Promise<ResourceOutcome<PresenceMap>> {
 	"use cache";
 	// Same lifetime as the product entries it sits beside, and every live channel's product tag:
 	// a product event for any market re-asks all of them.
@@ -180,7 +179,8 @@ async function getProductMarketPresenceCached(
 			retry: false,
 		},
 	);
-	const answer = refuseToCacheUpstreamError(readPresence(result, productId, markets));
+	// A fault is the `upstream-error` outcome, remembered for seconds (`cachedOutcome`), not thrown.
+	const answer = await cachedOutcome(async () => readPresence(result, productId, markets));
 
 	if (answer.status === "found" && result.ok) {
 		for (const market of markets) {
