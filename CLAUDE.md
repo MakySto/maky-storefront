@@ -449,7 +449,12 @@ build       pnpm build there; the log is teed to a file; the finished build must
             path only in required-server-files (§13.8)
 metadata    write .next/MAKY_DEPLOY_META (git sha, build id, timestamp); keep a clean copy of .next
 bridge      the same build on 127.0.0.1:3100 as a second PM2 app, maky-storefront-bridge, in a
-            clean environment; the whole gate runs on it while nobody is sent there
+            clean environment, logging to files of this run (/tmp/maky-deploy-<UTC>.log.bridge-out
+            and .bridge-err, which stay); the whole gate runs on it while nobody is sent there
+show        what the gate cannot see, read from the bridge before anyone is sent to it: the category
+            list it read from Saleor (`[live-categories] … loaded=yes`, when the build has the
+            module) and the catalogue release it took from CFM (`/api/catalog/status` shows what
+            the live process shows, or newer) — see "What the bridge has to show" below
 flip        nginx-upstream.sh set bridge-primary: nginx -t, graceful reload, a request through
             nginx's loopback listener must be answered by the bridge; then the public path too
 swap        wait for the requests the live process holds, pm2 stop maky-storefront,
@@ -457,9 +462,14 @@ swap        wait for the requests the live process holds, pm2 stop maky-storefro
             the clean copy → .next, pm2 start maky-storefront, wait for the port to answer
 ─────────── the commit point ────────────────────────────────────────────────────
 gate        127.0.0.1:3000 — the same gate as on the bridge, now on the live process
+types       the GraphQL types the build generated go into /opt/storefront/src, where the next
+            preflight imports them from (build output, ignored by git)
+release     customers stay on the bridge until the live process serves the catalogue release the
+            bridge serves, up to CATALOG_PARITY_WAIT_S — warn only
 back        nginx-upstream.sh set canonical-only, wait for the bridge's requests, pm2 delete the
             bridge, remove the scratch tree
-verify      nginx via --resolve, then the public URL — retried, warn only
+verify      nginx via --resolve, then the public URL — retried, warn only; the live process's own
+            category read-back
 log         append a block to /opt/DEPLOYMENTS.log, with what customers saw during the switch
 prune       keep the newest 2 snapshots plus any pinned with a sidecar .keep
 ```
@@ -467,6 +477,36 @@ prune       keep the newest 2 snapshots plus any pinned with a sidecar .keep
 `restart` is the same without the bridge and the two nginx steps: the finished build is swapped in
 and the gap is the stop-to-answer in the middle. `classic` is the original sequence: stop, snapshot,
 build in place, start, gate.
+
+**What the bridge has to show before customers are sent to it.** The gate looks at pages and files.
+Two things it cannot see are decided by the environment the process starts in, and the bridge starts
+clean (`env -i`), so both are read back from the bridge itself, in the files its own log goes to:
+
+- **The category list.** At boot the server reads the category list from Saleor and prints one line,
+  `[live-categories] floor=30 live=0 refused=0 loaded=yes` (storefront PR #28; a build without
+  `src/lib/live-categories.ts` is not asked). `no Saleor endpoint configured` means
+  `NEXT_PUBLIC_SALEOR_API_URL` did not reach the process (`.env`), and `loaded=no` is a Saleor that did
+  not answer within the few seconds boot waits for it: the build's own 30 categories still answer, so
+  nobody would see a fault, but it is not the list the deploy meant to ship. The check nudges the
+  server's retry with a request and accepts `loaded=no` followed by `Saleor answered again`, for up to
+  `CATEGORIES_WAIT_S` (45). `refused=N` is reported, not failed: Saleor holds N categories the server
+  will not route at the root, and the log names them.
+- **The catalogue release.** CFM publishes the catalogue text per market and the fitment dataset
+  through a release manifest, and each process takes the files in the background after boot, from its
+  cache and then from the network (SYNC-1). CFM calls a release adopted only when every expected
+  live process reports the same file on `/api/catalog/status`; the bridge is not one of them (its PM2
+  name differs), but customers are on it for about a minute. So before they are sent there it has to
+  serve what the live process serves from the manifest, or newer, for each market and for fitment,
+  for up to `CATALOG_PARITY_WAIT_S` (90). A bridge that does not follow the manifest at all while the
+  live process does (`MAKY_RELEASE_MANIFEST_URL` missing from its environment) fails at once, since
+  waiting cannot fix it. A live process that serves no status, or serves the manifest as off, leaves
+  nothing to compare. After the swap the same comparison runs the other way round and only warns:
+  the live process on the new build is given the same time to catch up before customers go back to it.
+
+Either failing is a failure before anyone was moved: the bridge and the scratch tree go, and the live
+process was never touched. What the bridge wrote is the evidence, so its log files stay and the exit
+handler prints their names and their last lines. `--rehearse` runs both. The live process's own category read-back is a
+post-commit step like the market-state read-back (exit `75` names it).
 
 **Everything before the gate rolls back on failure. Nothing after it does.** Until nginx points at
 the bridge a failure changes nothing a customer can see: the bridge and the scratch tree are removed
@@ -573,6 +613,11 @@ What differs from a plain restart, and is accepted:
   stale until the next revalidation. The window is the length of the gate, and publishing the document
   again closes it.
 - **The image cache starts cold twice** (bridge, then the live process), where a restart did it once.
+- **A process that has just started takes the catalogue release in the background.** Until it has, it
+  serves the older `MAKY_CATALOG_CONTENT_*` files. That is what the release check above is for: the
+  bridge is not used until it serves what the live process serves, and the live process on the new
+  build is waited for before customers go back. If it does not catch up within the wait, customers go
+  back anyway (the build is verified and live) and CFM reads its status until it has adopted.
 - **The live process's environment is whatever started it** (today it carries variables of the agent
   session that did), while the bridge starts clean. All configuration comes from `.env`, which Next reads
   itself, so the two behave alike; a difference between them points at a variable that exists only in
@@ -584,7 +629,7 @@ What differs from a plain restart, and is accepted:
 ### 13.2.2 Changing the deploy scripts
 
 `deploy-production.sh` and `nginx-upstream.sh` have a regression suite that runs them for real:
-`pnpm test:deploy-box`, about three minutes. It is not part of `pnpm vitest run`, which the deploy
+`pnpm test:deploy-box`, about six minutes (74 cases). It is not part of `pnpm vitest run`, which the deploy
 preflight runs on the live box before every deploy.
 
 The suite builds a whole box in a temporary directory (`src/lib/__fixtures__/deploy-world`): a git
@@ -596,7 +641,10 @@ a customer would have met (two clients ask for the home page all the way through
 like afterwards, for the deploy that goes well and for a failure at every step that can fail: the build,
 the relocation audit, the gate on the bridge, nginx refusing the switch, the swapped-in build failing its
 gate, the restore failing (exit `71`), nginx refusing to take customers back (exit `75`), and the refusals
-that come before anything is changed.
+that come before anything is changed. The read-backs have their own cases: the category list (loaded, loaded
+after a retry, never loaded, no endpoint, refused slugs), the catalogue release (the bridge behind and
+catching up, behind for good, behind on fitment only, not following the manifest, behind after the swap)
+and the GraphQL types handed over after the commit point and not before.
 
 What it cannot show is how the real nginx and PM2 behave; that is what `--rehearse` and the first deploy
 on the box are for. A new failure path gets a case here. To see that a case really guards its behaviour,

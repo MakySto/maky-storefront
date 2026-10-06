@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createWorld, waitForHttp, type World } from "./__fixtures__/deploy-world/world";
@@ -106,6 +106,52 @@ async function plainWorld(): Promise<World> {
 	return world;
 }
 
+/** The commit being deployed carries the module that reads the category list from Saleor (storefront PR #28). */
+const withLiveCategories = (w: World) => w.commitFiles({ "src/lib/live-categories.ts": "export {};\n" });
+
+const sha = (release: number) => String(release).repeat(64).slice(0, 64);
+
+/**
+ * What GET /api/catalog/status serves (src/lib/catalog-release/status.ts), cut down to what the deploy reads:
+ * whether the process follows the release manifest, and the release it took for one market and for the
+ * fitment dataset. `null` is a process that took nothing from the manifest yet.
+ */
+function catalogStatus(
+	release: number | null,
+	{ follows = true, fitment = release }: { follows?: boolean; fitment?: number | null } = {},
+): string {
+	const file = (n: number | null) =>
+		n === null
+			? { file: null, sha256: null, release: null, state: "missing", source: "none" }
+			: { file: `release-${n}.json`, sha256: sha(n), release: n, state: "active", source: "manifest" };
+	return JSON.stringify({
+		artifact: "MAKY_STOREFRONT_CATALOG_STATUS",
+		schemaVersion: "1.0.0",
+		process: { bootId: `fixture-${release}` },
+		capabilities: { contentByTarget: follows },
+		content: { targets: { "sk-SK": file(release) } },
+		fitment: follows ? file(fitment) : null,
+	});
+}
+
+/** The process customers are on already serves a document: it sits in the live build, which the fake app reads per request. */
+const liveServes = (w: World, doc: string) =>
+	writeFileSync(join(w.app, ".next/FAKE_CATALOG_STATUS.json"), doc);
+
+const staleTypes = ["src/gql/graphql.ts", "src/checkout/graphql/generated/index.ts"];
+
+/** Types of an earlier commit in the live checkout, where gitignored build output lives. */
+function seedStaleTypes(w: World) {
+	for (const rel of staleTypes) {
+		mkdirSync(dirname(join(w.app, rel)), { recursive: true });
+		writeFileSync(join(w.app, rel), "types of an earlier commit\n");
+	}
+}
+
+const typesIn = (w: World) => staleTypes.map((rel) => read(join(w.app, rel)));
+const gitStatus = (w: World) =>
+	spawnSync("git", ["status", "--porcelain"], { cwd: w.app, encoding: "utf8" }).stdout;
+
 /** Runs the deploy while two clients keep asking for the home page, the way customers do. */
 async function deployUnderLoad(w: World, args: string[], extraEnv: Record<string, string> = {}) {
 	const mark = w.events().length;
@@ -206,6 +252,9 @@ describe("deploy-production.sh, bridge: nginx prepared", () => {
 			expect(readFileSync(join(w.app, ".next/required-server-files.js"), "utf8")).not.toContain(w.build);
 			const html = await (await fetch(`${w.canonicalUrl}/sk`)).text();
 			expect(html).toContain(`app-${id}.css`);
+
+			// What the bridge printed stays beside the build log, for whoever wants to know how it went.
+			expect(read(`${w.env.BUILD_LOG}.bridge-out`)).toContain("[market-state]");
 
 			// The bridge wrote into the tree it served (that is what a server does); what went into the live
 			// directory is the copy taken before it ever started, so nothing of the bridge's is in it.
@@ -396,6 +445,12 @@ describe("deploy-production.sh, bridge: nginx prepared", () => {
 			expect(run.out).toContain("the bridge did not answer");
 			expect(count(run.lines, NGINX_RELOAD)).toBe(0);
 			expectLiveSiteUntouched(w, before, run);
+
+			// The bridge and its scratch tree are gone by now; what it wrote is the only evidence of why it was not ready.
+			const bridgeLog = `${w.env.BUILD_LOG}.bridge-out`;
+			expect(run.out).toContain(`the last lines of ${bridgeLog}`);
+			expect(run.out).toContain(`bridge log: ${bridgeLog}`);
+			expect(read(bridgeLog)).toContain("[market-state]");
 		},
 		SLOW,
 	);
@@ -591,6 +646,407 @@ describe("deploy-production.sh, bridge: nginx prepared", () => {
 			expect(count(run.lines, NGINX_RELOAD)).toBe(0);
 			expect(count(run.lines, PM2_START_BRIDGE)).toBe(0);
 			expect(liveBuildId(w)).not.toBe("old-build");
+		},
+		SLOW,
+	);
+});
+
+describe("deploy-production.sh, bridge: what the new process must show before customers are sent to it", () => {
+	it(
+		"reads the category list back from the bridge before moving customers, and from the live process after the swap",
+		async () => {
+			const w = await bridgeWorld();
+			withLiveCategories(w);
+			w.setCtl("next-behavior", "categories=yes\n");
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(0);
+			const onBridge = run.out.indexOf("the bridge: [live-categories] floor=30 live=0 refused=0 loaded=yes");
+			expect(onBridge, run.out).toBeGreaterThan(-1);
+			expect(run.out.indexOf("customers → bridge")).toBeGreaterThan(onBridge);
+			expect(run.out).toContain("maky-storefront: [live-categories] floor=30 live=0 refused=0 loaded=yes");
+			expect(run.out).toContain("POST_DEPLOY_FAILED: none");
+			expect(run.customers.failures).toEqual([]);
+		},
+		SLOW,
+	);
+
+	it(
+		"asks for nothing from a build that does not read categories from Saleor",
+		async () => {
+			const w = await bridgeWorld();
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(0);
+			expect(run.out).toContain("the bridge: this build does not read categories from Saleor");
+			expect(run.out).toContain("maky-storefront: this build does not read categories from Saleor");
+		},
+		SLOW,
+	);
+
+	it(
+		"does not send customers to a bridge that could not read the category list from Saleor",
+		async () => {
+			const w = await bridgeWorld();
+			withLiveCategories(w);
+			const before = liveTree(w);
+			w.setCtl("next-behavior", "categories=no\n");
+			const run = await deployUnderLoad(w, ["-m", "x"], { CATEGORIES_WAIT_S: "4" });
+
+			expect(run.code, run.out).toBe(1);
+			expect(run.out).toContain("could not read the category list from Saleor within 4s");
+			expect(run.out).toContain("customers were not sent to it");
+			expect(count(run.lines, NGINX_RELOAD)).toBe(0);
+			expectLiveSiteUntouched(w, before, run);
+			expect(upstreamState(w)).toBe("canonical-only");
+		},
+		SLOW,
+	);
+
+	it(
+		"accepts a bridge whose first read failed once Saleor has answered again",
+		async () => {
+			const w = await bridgeWorld();
+			withLiveCategories(w);
+			// The retry the server runs on a market request, 1.5 s after it started, is what the check waits for.
+			w.setCtl("next-behavior", "categories=no\ncategoriesrecoverms=1500\n");
+			const run = await deployUnderLoad(w, ["-m", "x"], { CATEGORIES_WAIT_S: "20" });
+
+			expect(run.code, run.out).toBe(0);
+			expect(run.out).toContain("loaded=no, then Saleor answered again — the list was read");
+			expect(run.customers.failures).toEqual([]);
+		},
+		SLOW,
+	);
+
+	it(
+		"does not send customers to a bridge with no Saleor endpoint, which is the .env it did not get",
+		async () => {
+			const w = await bridgeWorld();
+			withLiveCategories(w);
+			const before = liveTree(w);
+			w.setCtl("next-behavior", "categories=noendpoint\n");
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(1);
+			expect(run.out).toContain("NEXT_PUBLIC_SALEOR_API_URL is missing from its environment (.env)");
+			expect(count(run.lines, NGINX_RELOAD)).toBe(0);
+			expectLiveSiteUntouched(w, before, run);
+		},
+		SLOW,
+	);
+
+	it(
+		"goes on, and says so, when Saleor holds categories that are not routed at the root",
+		async () => {
+			const w = await bridgeWorld();
+			withLiveCategories(w);
+			w.setCtl("next-behavior", "categories=refused\n");
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(0);
+			expect(run.out).toContain("refused=2 — that many categories Saleor holds are not routed at the root");
+		},
+		SLOW,
+	);
+
+	it(
+		"does not take what an earlier bridge left in PM2's own log for this bridge's boot line",
+		async () => {
+			const w = await bridgeWorld();
+			withLiveCategories(w);
+			const before = liveTree(w);
+			mkdirSync(join(w.root, "pm2logs"), { recursive: true });
+			writeFileSync(
+				join(w.root, "pm2logs/maky-storefront-bridge-out.log"),
+				"[live-categories] floor=30 live=0 refused=0 loaded=yes\n",
+			);
+			w.setCtl("next-behavior", "categories=noendpoint\n");
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(1);
+			expect(run.out).toContain("NEXT_PUBLIC_SALEOR_API_URL is missing");
+			expectLiveSiteUntouched(w, before, run);
+		},
+		SLOW,
+	);
+
+	it(
+		"compares nothing while the release manifest is off in both processes, which is how production runs today",
+		async () => {
+			const w = await bridgeWorld();
+			liveServes(w, catalogStatus(null, { follows: false }));
+			w.setCtl("catalog-status.json", catalogStatus(null, { follows: false }));
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(0);
+			expect(run.out).toContain("catalogue release: the release manifest is off in both");
+		},
+		SLOW,
+	);
+
+	it(
+		"says nothing can be compared when the live process serves no catalogue status",
+		async () => {
+			const w = await bridgeWorld();
+			w.setCtl("catalog-status.json", catalogStatus(2));
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(0);
+			expect(run.out).toContain(
+				"maky-storefront serves no /api/catalog/status — nothing to compare the bridge with",
+			);
+		},
+		SLOW,
+	);
+
+	it(
+		"holds customers back until the bridge serves the catalogue release the live process serves",
+		async () => {
+			const w = await bridgeWorld();
+			// Live is on release 2 (market and fitment). The bridge boots on release 1 and takes release 2 five seconds later.
+			liveServes(w, catalogStatus(2));
+			w.setCtl("catalog-status.json", catalogStatus(2));
+			w.setCtl("catalog-status-lag.json", catalogStatus(1));
+			w.setCtl("catalog-status-later.json", catalogStatus(2));
+			w.setCtl("next-behavior", "statuslagin=build\nstatusafterms=5000\n");
+			const run = await deployUnderLoad(w, ["-m", "x"], { CATALOG_PARITY_POLL_S: "1" });
+
+			expect(run.code, run.out).toBe(0);
+			expect(run.out).toContain(
+				"catalogue release: what maky-storefront took from the manifest (1 market target(s) and the fitment dataset) the bridge serves too",
+			);
+			const events = w.events().slice(run.mark);
+			const bridgeStarted = events.find((event) => PM2_START_BRIDGE.test(event.text))!.t;
+			const movedToBridge = events.find((event) => NGINX_RELOAD.test(event.text))!.t;
+			expect(
+				movedToBridge - bridgeStarted,
+				"customers were sent to the bridge only once it served the release",
+			).toBeGreaterThanOrEqual(5);
+			expect(run.customers.failures).toEqual([]);
+		},
+		SLOW,
+	);
+
+	it(
+		"does not send customers to a bridge that never takes the release the live process serves",
+		async () => {
+			const w = await bridgeWorld();
+			liveServes(w, catalogStatus(2));
+			const before = liveTree(w);
+			w.setCtl("catalog-status.json", catalogStatus(2));
+			w.setCtl("catalog-status-lag.json", catalogStatus(1));
+			w.setCtl("next-behavior", "statuslagin=build\n");
+			const run = await deployUnderLoad(w, ["-m", "x"], {
+				CATALOG_PARITY_WAIT_S: "3",
+				CATALOG_PARITY_POLL_S: "1",
+			});
+
+			expect(run.code, run.out).toBe(1);
+			expect(run.out).toContain("sk-SK: the bridge serves release 1, maky-storefront serves release 2");
+			expect(run.out).toContain("customers were not sent to it");
+			expect(count(run.lines, NGINX_RELOAD)).toBe(0);
+			expectLiveSiteUntouched(w, before, run);
+		},
+		SLOW,
+	);
+
+	it(
+		"does not send customers to a bridge that is behind on the fitment dataset alone",
+		async () => {
+			const w = await bridgeWorld();
+			liveServes(w, catalogStatus(2, { fitment: 3 }));
+			const before = liveTree(w);
+			w.setCtl("catalog-status.json", catalogStatus(2, { fitment: 2 }));
+			const run = await deployUnderLoad(w, ["-m", "x"], {
+				CATALOG_PARITY_WAIT_S: "2",
+				CATALOG_PARITY_POLL_S: "1",
+			});
+
+			expect(run.code, run.out).toBe(1);
+			expect(run.out).toContain("fitment: the bridge serves release 2, maky-storefront serves release 3");
+			expectLiveSiteUntouched(w, before, run);
+		},
+		SLOW,
+	);
+
+	it(
+		"fails at once, without waiting for it, when the bridge does not follow the release manifest at all",
+		async () => {
+			const w = await bridgeWorld();
+			liveServes(w, catalogStatus(2));
+			const before = liveTree(w);
+			w.setCtl("catalog-status.json", catalogStatus(2, { follows: false }));
+			const startedAt = Date.now();
+			const run = await deployUnderLoad(w, ["-m", "x"], { CATALOG_PARITY_WAIT_S: "60" });
+
+			expect(run.code, run.out).toBe(1);
+			// Waiting does not give a process the setting it lacks: the whole deploy is a few seconds, not the minute on offer.
+			expect(Date.now() - startedAt).toBeLessThan(30_000);
+			expect(run.out).toContain(
+				"maky-storefront follows the release manifest and the bridge does not: MAKY_RELEASE_MANIFEST_URL is not in its environment (.env)",
+			);
+			expect(run.out).not.toContain("had 60s to take it");
+			expectLiveSiteUntouched(w, before, run);
+		},
+		SLOW,
+	);
+
+	it(
+		"goes on and says so when the live process on the new build is behind the bridge after the swap",
+		async () => {
+			const w = await bridgeWorld();
+			liveServes(w, catalogStatus(2));
+			w.setCtl("catalog-status.json", catalogStatus(2));
+			w.setCtl("catalog-status-lag.json", catalogStatus(1));
+			// The bridge answers with release 2; the live process, once the build is moved into the live directory, with release 1.
+			w.setCtl("next-behavior", "statuslagin=app\n");
+			const run = await deployUnderLoad(w, ["-m", "x"], {
+				CATALOG_PARITY_WAIT_S: "3",
+				CATALOG_PARITY_POLL_S: "1",
+			});
+
+			// After the commit point this can only delay and warn: the build is live and customers go back to it.
+			expect(run.code, run.out).toBe(0);
+			expect(run.out).toContain(
+				"sk-SK: maky-storefront on the new build serves release 1, the bridge serves release 2",
+			);
+			expect(run.out).toContain("maky-storefront on the new build gets customers back anyway");
+			expect(liveBuildId(w)).not.toBe("old-build");
+			expect(upstreamState(w)).toBe("canonical-only");
+			expect(w.pm2(BRIDGE_APP)).toBe("absent");
+			expect(count(run.lines, NGINX_RELOAD)).toBe(2);
+			expect(run.customers.failures).toEqual([]);
+		},
+		SLOW,
+	);
+
+	it(
+		"holds a rehearsal to the same two checks, and still switches nothing",
+		async () => {
+			const w = await bridgeWorld();
+			withLiveCategories(w);
+			const before = liveTree(w);
+			w.setCtl("next-behavior", "categories=no\n");
+			const noCategories = await deployUnderLoad(w, ["--rehearse"], { CATEGORIES_WAIT_S: "4" });
+			expect(noCategories.code, noCategories.out).toBe(1);
+			expect(noCategories.out).toContain(
+				"the bridge did not read the category list from Saleor — nothing was switched",
+			);
+			expectLiveSiteUntouched(w, before, noCategories);
+
+			liveServes(w, catalogStatus(2));
+			const beforeLag = liveTree(w);
+			w.setCtl("next-behavior", "categories=yes\nstatuslagin=build\n");
+			w.setCtl("catalog-status.json", catalogStatus(2));
+			w.setCtl("catalog-status-lag.json", catalogStatus(1));
+			const lagging = await deployUnderLoad(w, ["--rehearse"], {
+				CATALOG_PARITY_WAIT_S: "3",
+				CATALOG_PARITY_POLL_S: "1",
+			});
+			expect(lagging.code, lagging.out).toBe(1);
+			expect(lagging.out).toContain(
+				"does not serve the catalogue release maky-storefront serves — nothing was switched",
+			);
+			expect(count(lagging.lines, NGINX_RELOAD)).toBe(0);
+			expectLiveSiteUntouched(w, beforeLag, lagging);
+		},
+		SLOW,
+	);
+});
+
+describe("deploy-production.sh, the GraphQL types a build generates", () => {
+	it(
+		"hands them to the live checkout after the commit point, and leaves the checkout clean for git",
+		async () => {
+			const w = await bridgeWorld();
+			seedStaleTypes(w);
+			w.setCtl("build-generates-types");
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(0);
+			const generated = `generated by ${liveBuildId(w)}\n`;
+			expect(typesIn(w)).toEqual([generated, generated]);
+			expect(gitStatus(w), "the next preflight demands a clean tree").toBe("");
+			expect(run.out).toContain("the GraphQL types this build generated are now in");
+		},
+		SLOW,
+	);
+
+	it(
+		"does the same after a restart",
+		async () => {
+			const w = await plainWorld();
+			seedStaleTypes(w);
+			w.setCtl("build-generates-types");
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(0);
+			const generated = `generated by ${liveBuildId(w)}\n`;
+			expect(typesIn(w)).toEqual([generated, generated]);
+			expect(gitStatus(w)).toBe("");
+		},
+		SLOW,
+	);
+
+	it(
+		"does not touch them when the deploy is rolled back",
+		async () => {
+			const w = await bridgeWorld();
+			seedStaleTypes(w);
+			w.setCtl("build-generates-types");
+			w.setCtl("next-behavior", "css404in=app\n");
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(1);
+			expect(typesIn(w)).toEqual(["types of an earlier commit\n", "types of an earlier commit\n"]);
+		},
+		SLOW,
+	);
+
+	it(
+		"says there was nothing to hand over when the build generates none",
+		async () => {
+			const w = await bridgeWorld();
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(0);
+			expect(run.out).toContain("this build generated no GraphQL types — nothing to hand over");
+			expect(existsSync(join(w.app, "src/gql"))).toBe(false);
+		},
+		SLOW,
+	);
+});
+
+describe("deploy-production.sh, restart: the live process's categories", () => {
+	it(
+		"reads them back after the restart, and names the step in exit 75 when the process has none",
+		async () => {
+			const w = await plainWorld();
+			withLiveCategories(w);
+			w.setCtl("next-behavior", "categories=noendpoint\n");
+			const run = await deployUnderLoad(w, ["-m", "x"], { CATEGORIES_WAIT_S: "4" });
+
+			expect(run.code, run.out).toBe(75);
+			expect(run.out).toContain("maky-storefront: [live-categories] no Saleor endpoint is configured");
+			expect(run.out).toContain("  - live categories");
+			// A configuration fault does not undo a verified build.
+			expect(liveBuildId(w)).not.toBe("old-build");
+			expect(w.pm2(LIVE_APP)).toBe("online");
+		},
+		SLOW,
+	);
+
+	it(
+		"passes when the restarted process has read them",
+		async () => {
+			const w = await plainWorld();
+			withLiveCategories(w);
+			w.setCtl("next-behavior", "categories=yes\n");
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(0);
+			expect(run.out).toContain("maky-storefront: [live-categories] floor=30 live=0 refused=0 loaded=yes");
 		},
 		SLOW,
 	);

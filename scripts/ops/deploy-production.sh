@@ -16,9 +16,11 @@
 # scripts/ops/nginx-upstream.sh, otherwise restart). All three build the new version in a scratch
 # tree next to the live one, never under the running server.
 #
-#   bridge    the new build runs on a spare port and is fully gated while nobody sees it; nginx is
-#             pointed at it, the live process is swapped onto the same build, gated again, and nginx
-#             goes back. Customers see no error. This is the default once nginx is prepared.
+#   bridge    the new build runs on a spare port and is fully gated while nobody sees it, and has to
+#             show what the gate cannot see (the category list it read from Saleor, the catalogue
+#             release it took from CFM); nginx is pointed at it, the live process is swapped onto the
+#             same build, gated again, and nginx goes back. Customers see no error. This is the
+#             default once nginx is prepared.
 #   restart   stop the live process, install the finished build, start it: a gap of the few seconds
 #             the server takes to boot. Needs nothing from nginx.
 #   classic   the old flow: stop, build in place, start. 3 to 4 minutes of 502.
@@ -74,6 +76,14 @@ DRAIN_TIMEOUT_S="${DRAIN_TIMEOUT_S:-20}"
 PROBE_INTERVAL_S="${PROBE_INTERVAL_S:-0.5}"
 PROBE_MAX_ITERATIONS="${PROBE_MAX_ITERATIONS:-2400}"   # a probe nobody stopped ends by itself
 
+# What a new process has to show, besides passing the gate, before customers are sent to it. Two things the
+# server does in the background of its first requests: it reads the category list from Saleor at boot, and
+# when the release manifest is on it takes the catalogue files CFM published, from the cache of the last
+# verified release and then from the network. A page that renders is not proof of either.
+CATEGORIES_WAIT_S="${CATEGORIES_WAIT_S:-45}"
+CATALOG_PARITY_WAIT_S="${CATALOG_PARITY_WAIT_S:-90}"
+CATALOG_PARITY_POLL_S="${CATALOG_PARITY_POLL_S:-3}"
+
 DRY_RUN=0
 REHEARSE=0
 MODE="${DEPLOY_MODE:-auto}"
@@ -86,6 +96,7 @@ POST_DEPLOY_FAILED=0   # a post-commit step failed; the new build stays live
 POST_DEPLOY_FAILED_STEPS=()   # and their labels — exit 75 must name the step, not point at the log
 SUDO_KEEPALIVE_PID=""
 TMP_FILES=()
+TMP_PATH=""
 DOWN_FROM=0
 DOWNTIME=0
 AVAIL_MEM_MB="?"
@@ -109,6 +120,8 @@ FLOW_REASON=""          # why auto picked it, for the dry run and the log
 CANONICAL_STOPPED=0     # 1 between stopping $PM2_APP and seeing it answer again
 SCRATCH=0               # 1 while $BUILD_DIR holds a tree this run made
 BRIDGE_UP=0             # 1 while the bridge app is registered with PM2
+BRIDGE_OUT_LOG=""       # where the bridge writes its stdout and stderr: files of this run (named after $BUILD_LOG),
+BRIDGE_ERR_LOG=""       # so nothing older is in them, and kept after it so that a failure can be read
 UPSTREAM_TOUCHED=0      # 1 once this run has asked nginx to switch, so it knows to look before it leaves
 RELEASE_FAILED=0        # 1 once nginx would not take customers back: the exit handler does not ask a second time
 NEW_NEXT=""             # the finished build waiting to be installed into $APP_DIR/.next
@@ -318,9 +331,11 @@ on_exit() {
 	fi
 
 	err "deploy failed before the commit point (exit $code) — restoring the previous build"
+	show_bridge_log
 	if ! restore; then
 		err "CRITICAL: the deploy failed AND the restore failed"
 		err "build log: $BUILD_LOG"
+		[[ -z "$BRIDGE_OUT_LOG" ]] || err "bridge log: $BRIDGE_OUT_LOG and $BRIDGE_ERR_LOG"
 		probe_report
 		cleanup_tmp
 		exit 71
@@ -328,17 +343,17 @@ on_exit() {
 	probe_report
 	cleanup_tmp
 	err "build log: $BUILD_LOG"
+	[[ -z "$BRIDGE_OUT_LOG" ]] || err "bridge log: $BRIDGE_OUT_LOG and $BRIDGE_ERR_LOG"
 	exit "$code"
 }
 
 # --- helpers -------------------------------------------------------------------------
 http_code() { curl -sS -o /dev/null -w '%{http_code}' --max-time 25 "$@" 2>/dev/null || echo 000; }
 
+# Sets TMP_PATH. Not for use inside $(...): the subshell would take the registration for cleanup_tmp with it.
 new_tmp() {
-	local f
-	f=$(mktemp)
-	TMP_FILES+=("$f")
-	printf '%s' "$f"
+	TMP_PATH=$(mktemp)
+	TMP_FILES+=("$TMP_PATH")
 }
 
 # 200 with a body worth having. A 200 serving an empty file is still a broken site.
@@ -743,7 +758,7 @@ gate_page_assets() {
 
 	[[ "$path" == /* && "$path" != *".."* ]] || die "$label has an unsafe gate path: $path"
 
-	html=$(new_tmp)
+	new_tmp; html=$TMP_PATH
 	curl -fsS --max-time 25 "$GATE_URL$path" -o "$html" || die "$label did not respond at $path"
 	html_size=$(stat -c '%s' -- "$html")
 	(( html_size >= MIN_ASSET_BYTES )) || die "$label at $path returned only ${html_size} B"
@@ -882,7 +897,7 @@ gate_routing() {
 	# Sitemap: reachable, parses, and not suspiciously short. A truncated sitemap
 	# reads to Google as "the missing URLs are gone", and is indistinguishable
 	# from a complete one without a floor to compare against.
-	body=$(new_tmp)
+	new_tmp; body=$TMP_PATH
 	curl -fsS --max-time 25 "$GATE_URL/sitemap.xml" -o "$body" || die "/sitemap.xml did not respond"
 
 	# This used to read:
@@ -1474,13 +1489,22 @@ swap_in_new_build() {
 
 start_bridge() {
 	step "bridge on $BRIDGE_URL"
+	# The bridge writes into files of this run. PM2 never truncates the logs it keeps in its own directory,
+	# so a bridge an earlier deploy started would still be in them, and what this bridge printed at boot
+	# (check_categories_loaded) has to be this boot's and nothing older. They sit beside the build log, which
+	# is named after the minute of the run, and stay when the run ends: a bridge that fails is read from them.
+	BRIDGE_OUT_LOG="${BUILD_LOG}.bridge-out"
+	BRIDGE_ERR_LOG="${BUILD_LOG}.bridge-err"
+	rm -f -- "$BRIDGE_OUT_LOG"* "$BRIDGE_ERR_LOG"*
 	# A clean environment. The live process carries the variables of whichever shell started it, tokens
 	# of an agent session included; everything the app needs is in .env, which Next reads itself.
 	env -i HOME="$HOME" PATH="$PATH" LANG=C.UTF-8 ${PM2_HOME:+PM2_HOME="$PM2_HOME"} \
-		pm2 start npm --name "$BRIDGE_APP" --cwd "$BUILD_DIR" -- start -- -p "$BRIDGE_PORT" -H 127.0.0.1 >/dev/null \
+		pm2 start npm --name "$BRIDGE_APP" --cwd "$BUILD_DIR" \
+			--output "$BRIDGE_OUT_LOG" --error "$BRIDGE_ERR_LOG" \
+			-- start -- -p "$BRIDGE_PORT" -H 127.0.0.1 >/dev/null \
 		|| die "pm2 could not start the bridge"
 	BRIDGE_UP=1
-	wait_ready_at "$BRIDGE_URL" || die "the bridge did not answer on $BRIDGE_URL$SMOKE_PATH within ${READY_TIMEOUT_S}s (pm2 logs $BRIDGE_APP)"
+	wait_ready_at "$BRIDGE_URL" || die "the bridge did not answer on $BRIDGE_URL$SMOKE_PATH within ${READY_TIMEOUT_S}s (its log: $BRIDGE_ERR_LOG, $BRIDGE_OUT_LOG)"
 	info "the bridge answers on $BRIDGE_URL$SMOKE_PATH"
 }
 
@@ -1488,6 +1512,238 @@ gate_bridge() {
 	GATE_URL="$BRIDGE_URL"
 	GATE_DIR="$BUILD_DIR"
 	gate_artifact "the bridge, before any customer is sent to it"
+}
+
+# --- what the new process has to show before customers are sent to it -----------------------
+# Everything the bridge has printed since it started. Its log files are this run's own (start_bridge).
+bridge_log_text() {
+	[[ -n "$BRIDGE_OUT_LOG" ]] || return 1
+	cat -- "$BRIDGE_OUT_LOG"* 2>/dev/null
+}
+
+# The end of what the bridge wrote, for a failure: the bridge is deleted and the scratch tree removed
+# before anyone can ask it, and what it said is the only evidence of why it did not come up.
+show_bridge_log() {
+	local f
+	[[ -n "$BRIDGE_OUT_LOG" ]] || return 0
+	for f in "$BRIDGE_ERR_LOG" "$BRIDGE_OUT_LOG"; do
+		[[ -s "$f" ]] || continue
+		printf '    the last lines of %s:\n' "$f" >&2
+		tail -n 15 -- "$f" 2>/dev/null | sed 's/^/      /' >&2 || true
+	done
+}
+
+# The server reads the category list from Saleor at boot and prints what it will route, in one line:
+#
+#   [live-categories] floor=30 live=0 refused=0 loaded=yes
+#
+# `loaded=no` is a Saleor that did not answer in the few seconds boot waits for it. The build's own list
+# still answers, so no customer sees anything wrong, and the load is retried in the background: the retry
+# prints `Saleor answered again` when it works, and it runs when a request reaches a market URL, which is
+# what the nudge below is for. A process that has not read the list from Saleor is not what the deploy
+# meant to ship, so before customers are sent to it that is a failure and not a remark.
+#
+# Only a build that has the module is asked. $1 is the tree it was built from, $2 says who is being asked,
+# $3 is the address to nudge a retry with, $4 names the function that prints what that process has written
+# since it booted.
+check_categories_loaded() {
+	local tree="$1" who="$2" url="$3" reader="$4"
+	local deadline since line refused
+
+	if [[ ! -f "$tree/src/lib/live-categories.ts" ]]; then
+		info "$who: this build does not read categories from Saleor — nothing to read back"
+		return 0
+	fi
+	deadline=$(( SECONDS + CATEGORIES_WAIT_S ))
+	while :; do
+		since=$("$reader" 2>/dev/null || true)
+		line=$(grep -o '\[live-categories\] \(floor=[0-9]* live=[0-9]* refused=[0-9]* loaded=[a-z]*\|no Saleor endpoint configured\)' <<<"$since" | tail -1 || true)
+		case "$line" in
+			*"no Saleor endpoint configured")
+				err "$who: [live-categories] no Saleor endpoint is configured — NEXT_PUBLIC_SALEOR_API_URL is missing from its environment (.env)"
+				return 1 ;;
+			*"loaded=yes")
+				info "$who: $line"
+				refused=$(sed -n 's/.* refused=\([0-9]*\) .*/\1/p' <<<"$line")
+				if [[ "$refused" != "0" ]]; then
+					warn "$who: refused=$refused — that many categories Saleor holds are not routed at the root (a product holds the slug, or it names a route); the log names them: grep '\[live-categories\]'"
+				fi
+				return 0 ;;
+			*"loaded=no")
+				if grep -q '\[live-categories\] Saleor answered again' <<<"$since"; then
+					info "$who: $line, then Saleor answered again — the list was read"
+					return 0
+				fi
+				curl -sS -o /dev/null --max-time 10 "$url$SMOKE_PATH" 2>/dev/null || true ;;
+		esac
+		if (( SECONDS >= deadline )); then
+			if [[ -z "$line" ]]; then
+				err "$who wrote no [live-categories] line within ${CATEGORIES_WAIT_S}s of its start — cannot tell which categories it routes"
+			else
+				err "$who could not read the category list from Saleor within ${CATEGORIES_WAIT_S}s ($line): it would route only the categories of the build"
+			fi
+			return 1
+		fi
+		sleep 3
+	done
+}
+
+# What the release manifest has given a process, as CFM reads it (SYNC-1). CFM publishes the catalogue text
+# per market and the fitment dataset as files named by a manifest; a process takes them in the background of
+# its first requests, from the cache of the last verified release and then from the network, and reports what
+# it serves on /api/catalog/status. CFM calls a release adopted only when every live process says so.
+catalog_status_of() {
+	curl -fsS --max-time 10 "$1/api/catalog/status" 2>/dev/null
+}
+
+# Two of those documents side by side: $1 is the process customers are on, $2 the one about to get them,
+# $3 and $4 their names for the messages. Prints what it found and returns
+#   0  the second serves what the first adopted from the manifest, or something newer (or the first adopted nothing)
+#   1  the second is still behind, or does not answer yet: the first pass of a fresh process takes a while
+#   2  it is configured differently, which waiting does not change
+#   3  the first serves no catalogue status, so there is nothing to compare
+# Only what a process took from the manifest is compared. What it holds from the older MAKY_CATALOG_CONTENT_*
+# settings depends on which pages it happened to render, so a cold process and a warm one differ there for no reason.
+compare_catalog_status() {
+	python3 -c '
+import json, sys
+
+ARTIFACT = "MAKY_STOREFRONT_CATALOG_STATUS"
+ref_label, cand_label = sys.argv[3], sys.argv[4]
+
+def load(raw):
+    try:
+        doc = json.loads(raw)
+    except Exception:
+        return None
+    return doc if isinstance(doc, dict) and doc.get("artifact") == ARTIFACT else None
+
+def table(value):
+    return value if isinstance(value, dict) else {}
+
+def adopted(item):
+    return isinstance(item, dict) and item.get("source") == "manifest" and bool(item.get("sha256"))
+
+def release(item):
+    value = item.get("release") if isinstance(item, dict) else None
+    return value if isinstance(value, int) and not isinstance(value, bool) else -1
+
+def lag(name, ref, cand):
+    if not adopted(ref):
+        return None
+    if not adopted(cand):
+        return "%s: %s serves release %d from the manifest, %s serves none yet" % (name, ref_label, release(ref), cand_label)
+    if cand.get("sha256") != ref.get("sha256") and release(cand) <= release(ref):
+        return "%s: %s serves release %d, %s serves release %d" % (name, cand_label, release(cand), ref_label, release(ref))
+    return None
+
+ref, cand = load(sys.argv[1]), load(sys.argv[2])
+if ref is None:
+    print("%s serves no catalogue status" % ref_label)
+    sys.exit(3)
+if cand is None:
+    print("%s serves no catalogue status document" % cand_label)
+    sys.exit(1)
+
+ref_on = bool(table(ref.get("capabilities")).get("contentByTarget"))
+cand_on = bool(table(cand.get("capabilities")).get("contentByTarget"))
+if ref_on and not cand_on:
+    print("%s follows the release manifest and %s does not: MAKY_RELEASE_MANIFEST_URL is not in its environment (.env)" % (ref_label, cand_label))
+    sys.exit(2)
+if not ref_on:
+    if cand_on:
+        print("the release manifest is off in %s and on in %s (.env changed after %s started); nothing to compare" % (ref_label, cand_label, ref_label))
+    else:
+        print("the release manifest is off in both")
+    sys.exit(0)
+
+problems = []
+ref_targets = table(table(ref.get("content")).get("targets"))
+cand_targets = table(table(cand.get("content")).get("targets"))
+count = 0
+for market in sorted(ref_targets):
+    if adopted(ref_targets[market]):
+        count += 1
+    message = lag(market, ref_targets[market], cand_targets.get(market))
+    if message:
+        problems.append(message)
+fitment = ref.get("fitment")
+message = lag("fitment", fitment, cand.get("fitment"))
+if message:
+    problems.append(message)
+if problems:
+    print("; ".join(problems))
+    sys.exit(1)
+print("what %s took from the manifest (%d market target(s)%s) %s serves too" % (ref_label, count, " and the fitment dataset" if adopted(fitment) else "", cand_label))
+' "$1" "$2" "$3" "$4"
+}
+
+# Before customers are sent to a process, it has to serve what the process they are on serves, or newer: a
+# cold one that is behind would show them an older catalogue file, or one CFM has since replaced, until it
+# catches up. $1 is the process to check, $2 the one customers are on, $3 `strict` (fail) or `warn` (say so
+# and go on), $4 and $5 their names for the messages, $6 the function that prints what the first one has
+# written since it booted, for the evidence.
+check_catalog_parity() {
+	local cand="$1" ref="$2" mode="$3" cand_label="$4" ref_label="$5" reader="$6"
+	local ref_doc cand_doc out rc deadline
+
+	if ! ref_doc=$(catalog_status_of "$ref"); then
+		info "catalogue release: $ref_label serves no /api/catalog/status — nothing to compare $cand_label with"
+		return 0
+	fi
+	deadline=$(( SECONDS + CATALOG_PARITY_WAIT_S ))
+	while :; do
+		cand_doc=$(catalog_status_of "$cand" || true)
+		rc=0
+		out=$(compare_catalog_status "$ref_doc" "$cand_doc" "$ref_label" "$cand_label") || rc=$?
+		case "$rc" in
+			0) info "catalogue release: $out"; return 0 ;;
+			3) info "catalogue release: $out — nothing to compare"; return 0 ;;
+		esac
+		if (( rc == 2 || SECONDS >= deadline )); then
+			break
+		fi
+		sleep "$CATALOG_PARITY_POLL_S"
+		# The process customers are on may take a newer release meanwhile, and the new one has to reach that.
+		ref_doc=$(catalog_status_of "$ref" || printf '%s' "$ref_doc")
+	done
+
+	if [[ "$mode" == "strict" ]]; then
+		err "catalogue release: $out"
+	else
+		warn "catalogue release: $out"
+	fi
+	if (( rc != 2 )); then
+		printf '    %s had %ss to take it; what it logged about the release manifest:\n' "$cand_label" "$CATALOG_PARITY_WAIT_S" >&2
+		"$reader" 2>/dev/null | grep '\[release\]' | tail -6 | sed 's/^/      /' >&2 || true
+	fi
+	if [[ "$mode" == "strict" ]]; then
+		return 1
+	fi
+	warn "$cand_label gets customers back anyway: it takes the release in the background and CFM reads its status until it has"
+	return 0
+}
+
+# `prebuild` generates the GraphQL types next to the code it builds, so the scratch tree now holds the types of
+# this commit. They are gitignored build output, and the preflight tests of the NEXT deploy import them from
+# $APP_DIR. The build in place used to refresh them on every deploy; a build made aside has to hand them over,
+# or they fall further behind the code with every deploy until a test cannot import what a new query needs.
+# Nothing running reads them: the server serves .next.
+refresh_generated_types() {
+	local rel from to handed=0
+	for rel in src/gql src/checkout/graphql/generated; do
+		from="$BUILD_DIR/$rel"
+		to="$APP_DIR/$rel"
+		[[ -d "$from" ]] || continue
+		mkdir -p -- "$to"
+		cp -a -- "$from/." "$to/" || { err "could not copy the generated types in $rel into $APP_DIR"; return 1; }
+		handed=1
+	done
+	if (( handed == 1 )); then
+		info "the GraphQL types this build generated are now in $APP_DIR/src, where the next preflight reads them"
+	else
+		info "this build generated no GraphQL types — nothing to hand over"
+	fi
 }
 
 flip_to_bridge() {
@@ -1514,7 +1770,7 @@ probe_loop() {
 
 probe_start() {
 	local url="$1"
-	PROBE_FILE=$(new_tmp)
+	new_tmp; PROBE_FILE=$TMP_PATH
 	# fd 9 is the deploy lock; a probe that outlived the script must not keep holding it. Its stderr goes
 	# nowhere: stopping it kills the request it is in the middle of, and bash reports that as "Terminated".
 	( exec 9>&- 2>/dev/null; probe_loop "$url" "$PROBE_FILE" ) &
@@ -1558,6 +1814,7 @@ probe_report() {
 post_commit_steps() {
 	soft "external verification" verify_external
 	soft "market state"         check_market_state
+	soft "live categories"      check_categories_loaded "$APP_DIR" "$PM2_APP" "$LOCAL_URL" market_log_since_boot
 	soft "market language"      check_market_language
 	soft "deployment log"       write_deploy_log
 	soft "snapshot pruning"     prune
@@ -1583,6 +1840,7 @@ run_restart() {
 	swap_in_new_build
 	gate_local
 	probe_report
+	soft "generated GraphQL types" refresh_generated_types
 	soft "scratch tree removal" remove_scratch
 	post_commit_steps
 }
@@ -1594,6 +1852,10 @@ run_bridge() {
 	make_pristine
 	start_bridge
 	gate_bridge
+	check_categories_loaded "$BUILD_DIR" "the bridge" "$BRIDGE_URL" bridge_log_text \
+		|| die "the bridge did not read the category list from Saleor — customers were not sent to it"
+	check_catalog_parity "$BRIDGE_URL" "$LOCAL_URL" strict "the bridge" "$PM2_APP" bridge_log_text \
+		|| die "the bridge does not serve the catalogue release $PM2_APP serves — customers were not sent to it"
 	probe_start "http://${PROBE_ADDR}${SMOKE_PATH}"
 	flip_to_bridge
 	drain_port "${CANONICAL_ADDR##*:}"
@@ -1602,6 +1864,10 @@ run_bridge() {
 	GATE_DIR="$APP_DIR"
 	gate_artifact "the live process on the new build, customers still on the bridge"
 	commit_point
+	soft "generated GraphQL types" refresh_generated_types
+	# Customers stay on the bridge until the live process serves the catalogue release the bridge serves,
+	# for as long as CATALOG_PARITY_WAIT_S allows. After the commit point this can only delay and warn.
+	soft "catalogue release on $PM2_APP" check_catalog_parity "$LOCAL_URL" "$BRIDGE_URL" warn "$PM2_APP on the new build" "the bridge" market_log_since_boot
 	soft "customers back on $PM2_APP, bridge stopped" release_bridge
 	probe_report
 	post_commit_steps
@@ -1613,6 +1879,10 @@ run_rehearse() {
 	write_meta_in "$BUILD_DIR"
 	start_bridge
 	gate_bridge
+	check_categories_loaded "$BUILD_DIR" "the bridge" "$BRIDGE_URL" bridge_log_text \
+		|| die "the bridge did not read the category list from Saleor — nothing was switched"
+	check_catalog_parity "$BRIDGE_URL" "$LOCAL_URL" strict "the bridge" "$PM2_APP" bridge_log_text \
+		|| die "the bridge does not serve the catalogue release $PM2_APP serves — nothing was switched"
 	release_bridge
 	COMMITTED=1
 	step "rehearsal passed"
@@ -1660,6 +1930,7 @@ print_plan() {
 			  mv the finished build into $APP_DIR/.next
 			  pm2 start $PM2_APP                                 <- the gap ends when it answers
 			  gate (rollback if it fails):  homepage/PLP/category/PDP + every referenced CSS/JS, on disk and over local HTTP
+			  hand the GraphQL types the build generated to $APP_DIR/src (the next preflight imports them)
 			  verify (warn only), append to $DEPLOY_LOG, prune snapshots
 			A probe request every ${PROBE_INTERVAL_S}s from just before the stop counts what customers saw.
 			Before the stop a failure changes nothing; after it, the snapshot goes back and PM2 restarts.
@@ -1672,10 +1943,14 @@ print_plan() {
 			  export HEAD and copy node_modules into $BUILD_DIR; build there (nice $BUILD_NICE) while $PM2_APP keeps serving
 			  write $BUILD_DIR/.next/MAKY_DEPLOY_META, keep a clean copy of the build
 			  start the bridge ($BRIDGE_APP, port $BRIDGE_PORT, clean environment) and run the whole gate on it
+			  read back what the bridge printed at boot (the category list from Saleor, when this build reads it, up to ${CATEGORIES_WAIT_S}s)
+			  and check that it serves the catalogue release $PM2_APP serves, from /api/catalog/status (up to ${CATALOG_PARITY_WAIT_S}s)
 			  $NGINX_TOOL set bridge-primary                     <- customers move to the bridge
 			  wait for the requests $PM2_APP holds to finish, then pm2 stop $PM2_APP
 			  sudo mv -T $APP_DIR/.next $(snapshot_name)
 			  mv the clean copy into $APP_DIR/.next, pm2 start $PM2_APP, run the whole gate on it   <- the commit point
+			  hand the GraphQL types the build generated to $APP_DIR/src (the next preflight imports them)
+			  keep customers on the bridge until $PM2_APP serves the bridge's catalogue release (up to ${CATALOG_PARITY_WAIT_S}s, warn only)
 			  $NGINX_TOOL set canonical-only                     <- customers move back
 			  stop the bridge, remove $BUILD_DIR
 			  verify (warn only), append to $DEPLOY_LOG, prune snapshots
@@ -1690,6 +1965,7 @@ print_plan() {
 			  export HEAD and copy node_modules into $BUILD_DIR; build there (nice $BUILD_NICE) while $PM2_APP keeps serving
 			  write $BUILD_DIR/.next/MAKY_DEPLOY_META
 			  start the bridge ($BRIDGE_APP, port $BRIDGE_PORT, clean environment) and run the whole gate on it
+			  read back what the bridge printed at boot and check that it serves the catalogue release $PM2_APP serves
 			  stop the bridge, remove $BUILD_DIR
 			$PM2_APP, nginx, .env and $DEPLOY_LOG are not touched.
 			EOF
