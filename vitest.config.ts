@@ -5,6 +5,7 @@ export default defineConfig({
 	test: {
 		globals: true,
 		environment: "node",
+		globalSetup: ["./vitest.global-setup.ts"],
 		setupFiles: ["./vitest.setup.ts"],
 		include: ["src/**/*.test.ts"],
 		// The deploy scripts against a box of small programs: real processes, a few minutes. deploy-production.sh

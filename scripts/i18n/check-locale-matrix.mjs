@@ -34,7 +34,7 @@ if (Object.keys(channelMap).length === 0) {
 const localeSource = read("src/config/locale.ts");
 const localeMap = {};
 const localeEntryRe =
-	/"([a-z]{2}-[A-Z]{2})":\s*\{\s*locale:\s*"[^"]+",\s*htmlLang:\s*"[^"]+",\s*graphqlLanguageCode:\s*LanguageCodeEnum\.(\w+),[^}]*stripeLocale:\s*"([^"]+)"/g;
+	/"([a-z]{2}-[A-Z]{2})":\s*\{\s*locale:\s*"[^"]+",\s*htmlLang:\s*"[^"]+",\s*graphqlLanguageCode:\s*LanguageCode(?:Enum)?\.(\w+),[^}]*stripeLocale:\s*"([^"]+)"/g;
 for (const m of localeSource.matchAll(localeEntryRe)) {
 	// enum member PascalCase -> GraphQL value (Sk -> SK, EnGb -> EN_GB)
 	const languageCode = m[2].replace(/([a-z])([A-Z])/g, "$1_$2").toUpperCase();

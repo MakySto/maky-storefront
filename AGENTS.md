@@ -11,6 +11,7 @@ This document provides essential context for AI agents. For detailed task-specif
 ```bash
 pnpm run generate           # After ANY src/graphql/*.graphql file change
 pnpm run generate:checkout  # After ANY src/checkout/graphql/*.graphql file change
+pnpm run generate:offline   # Both of the above, from the pinned Saleor schema: no live Saleor needed
 pnpm exec tsc --noEmit      # Type check
 pnpm run build              # Full build
 pnpm run dev                # Development server
@@ -133,6 +134,11 @@ NEXT_PUBLIC_DEFAULT_CHANNEL=       # Your Saleor channel slug (e.g., "default-ch
 pnpm run generate           # Regenerate types after src/graphql/*.graphql changes
 pnpm run generate:checkout  # Regenerate types after src/checkout/graphql/*.graphql changes
 ```
+
+The generated types are gitignored, so a fresh clone has none and most tests fail on import without them.
+`pnpm test:run` generates them itself from the schema of the Saleor version production runs when they are
+missing (`pnpm run generate:offline`, no live Saleor needed, `scripts/generate-offline.mjs`). That path is for
+tests, `tsc` and sandboxes: a build keeps generating from the live API (`prebuild`).
 
 ### 2. Nullable Fields
 

@@ -107,6 +107,14 @@ Typovaný popis sa zapíše rovnako, z druhého adresára (`--descriptions /tmp/
 - `next dev` si pri štarte dopíše blok „nextjs-agent-rules“ do `AGENTS.md`. Nie je to zmena zadania; do commitu nepatrí (`git checkout -- AGENTS.md`).
 - Stránka produktu v dev režime beží na `/sk/<slug>` (napr. `/sk/kompresorova-autochladnicka-pro-user-coolz-32-l-tk20410`). Prvé vykreslenie trvá pár sekúnd; chyby čítačky typovaného popisu idú do konzoly servera ako `[maky-content] …`.
 
+## Testy a typy bez Saleoru
+
+Vygenerované GraphQL typy (`src/gql`, `src/checkout/graphql/generated`) sú v `.gitignore`, takže čerstvý klon ich nemá a väčšina testov bez nich padne už pri importe (`Cannot find package '@/gql/graphql'`). Živý Saleor na ne netreba: schéma verzie, ktorú beží produkcia (Core 3.23.31), je súčasťou zdrojov Saleoru. Pred 6. 10. 2026 sa tu uvádzalo, že sa typy v sandboxe vygenerovať nedajú; dajú sa, a so skutočnými typmi sú testy zelené (3 820 prešlo, 38 preskočených, 0 padlo).
+
+- `pnpm run generate:offline` stiahne túto jednu schému z GitHubu (pripnutý commit `a1ab3a23a3f5711bb74abb3a2972cf28454cb59e` a SHA-256, súbor v `node_modules/.cache/saleor-schema/`) a spustí oba codegeny proti nej. Trvá okolo šiestich sekúnd, po prvom stiahnutí bez siete.
+- Každý beh `vitest` to urobí sám, keď typy chýbajú (`vitest.global-setup.ts`): prvé `pnpm test:run` v čistom klone ich vygeneruje a vypíše `[vitest] Missing …`. Ak sa nedajú vygenerovať (napríklad bez prístupu na `raw.githubusercontent.com`), beh sa zastaví s dôvodom, namiesto aby hlásil desiatky „padajúcich“ testov.
+- Iba pre testy, `tsc` a sandboxy. Build ide ďalej cez `prebuild` a `generate:all` proti živému API, aby sa to, čo ide von, vygenerovalo z toho, čo produkcia odpovedá. Pri povýšení Saleoru sa posúva `SALEOR_SCHEMA` v `scripts/generate-offline.mjs` (verzia, commit a hash spolu).
+
 ## Nákupný priechod
 
 Vyskúšané 4. 10. 2026 na produkčnom builde (`next build` a `next start`) v Chromiu, desktop 1440 × 900 a mobil 390 × 844:

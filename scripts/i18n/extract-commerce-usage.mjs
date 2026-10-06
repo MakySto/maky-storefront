@@ -54,24 +54,42 @@ export function extractCommerceUsage(repoRoot) {
 		const text = fs.readFileSync(file, "utf8");
 		const lines = text.split("\n");
 
-		// namespace bindings in this file (name -> namespace; "" = unscoped full paths)
+		// namespace bindings in this file (name -> [{ at, ns }] in source order; "" = unscoped full paths).
+		// One file often binds the same name in several components, each to its own namespace
+		// (`const t = useTranslations("a")` here, `const t = useTranslations("b")` further down), so a call
+		// belongs to the nearest binding above it, not to whichever binding the file declares last.
 		const bindings = new Map();
+		const bind = (name, at, ns) => {
+			if (!bindings.has(name)) bindings.set(name, []);
+			bindings.get(name).push({ at, ns });
+		};
 		for (const match of text.matchAll(BINDING_RE)) {
-			bindings.set(match[1], match[2]);
+			bind(match[1], match.index, match[2]);
 		}
 		for (const match of text.matchAll(BINDING_OBJECT_RE)) {
-			bindings.set(match[1], match[2]);
+			bind(match[1], match.index, match[2]);
 		}
 		for (const match of text.matchAll(UNSCOPED_RE)) {
-			if (!bindings.has(match[1])) bindings.set(match[1], "");
+			bind(match[1], match.index, "");
 		}
 
-		for (const [name, ns] of bindings) {
+		const lineStart = [];
+		let offset = 0;
+		for (const line of lines) {
+			lineStart.push(offset);
+			offset += line.length + 1;
+		}
+
+		for (const [name, bound] of bindings) {
+			bound.sort((a, b) => a.at - b.at);
+			// A call above every binding (a helper that is handed `t`) takes the first one below it.
+			const namespaceAt = (at) => (bound.findLast((b) => b.at <= at) ?? bound[0]).ns;
 			const callRe = new RegExp(`\\b${name}(?:\\.(?:rich|markup|raw))?\\(\\s*"([^"]+)"`, "g");
 			const dynRe = new RegExp(`\\b${name}(?:\\.(?:rich|markup|raw))?\\(\\s*[\`\\w[]`, "g");
 
 			for (let i = 0; i < lines.length; i++) {
 				for (const m of lines[i].matchAll(callRe)) {
+					const ns = namespaceAt(lineStart[i] + m.index);
 					record(ns ? `${ns}.${m[1]}` : m[1], `${rel}:${i + 1}`);
 				}
 				if (dynRe.test(lines[i])) {
