@@ -640,11 +640,20 @@ What differs from a plain restart, and is accepted:
   the live process's environment. Found by the first bridge deploy (2026-10-06, names only, values never
   read): the live process holds 153 variable names, 28 of them from agent sessions (`CLAUDE_CODE_*`,
   `CLAUDE_*`, `ANTHROPIC_BASE_URL`, among them a messaging token), unchanged by the deploy.
-  - **Why.** `pm2 start` stores the environment of the shell that registers the process, and
+  - **Why.** Read on the box (2026-10-06 20:22 UTC, names only, values never printed): the one PM2 record of
+    `maky-storefront` (`fork_mode`, node running `/usr/bin/npm start -- -p 3000` in `/opt/storefront`, logs in
+    `~/.pm2/logs`, no other options) holds 83 names, a copy of the environment of a whole interactive SSH
+    session: the 28 above plus `HOME`, `PATH`, `TMUX`, `SSH_*`, `VSCODE_*`, `MCP_*` and the like. Of `.env` it
+    holds only `NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN` and `NEXT_PUBLIC_GTM_ID`, with the values `.env` has.
+    `pm2 start` stores the environment of the shell that registers the process, and
     `pm2 restart <app> --update-env` adds the whole environment of the calling shell to that record and
     never removes a name. `pm2 stop` / `pm2 start maky-storefront`, which the deploy does, start the
     process again from the stored record unchanged, so the record outlives every deploy. A stored value
-    also wins over `.env`, because Next does not overwrite a variable that is already set.
+    also wins over `.env`, because Next does not overwrite a variable that is already set. The PM2 daemon
+    and `~/.pm2/dump.pm2` are clean (no session names; the dump holds `maky-storefront` and `maky-smtp-app`,
+    and `pm2-ubuntu.service` is enabled), so a reboot of the box starts the app clean. The 30 names of `.env`
+    that are not in `/proc/PID/environ` are no fault: Next reads `.env` itself, inside the process.
+  - **Do not run `pm2 save` while the record is like this.** It would write the record into the clean dump.
   - **Rule: never `pm2 restart ... --update-env` for this app.** An `.env` change needs only
     `pm2 restart maky-storefront`: Next reads `.env` itself when the process starts. A variable that must
     reach the process goes into `.env`, never into the shell that restarts it.
