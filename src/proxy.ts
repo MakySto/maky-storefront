@@ -17,13 +17,8 @@ import { marketSlugRedirect, sameCfmProduct } from "./lib/market-slug-redirects"
 import { marketLanguageCode } from "./config/market-language";
 import { catalogRedirectTarget } from "./lib/catalog-content/redirects";
 import { CATEGORY_ROUTE_PREFIX, isCategorySlug } from "./config/categories";
-import {
-	categoryBaseSlug,
-	categorySegment,
-	isLocalizedRootSegment,
-	mappedCategoryFor,
-} from "./config/category-routes";
-import { categoryAliasTarget, listingCategoryAliasTarget } from "./lib/catalog-content/category-aliases";
+import { categoryBaseSlug, categorySegment, isLocalizedRootSegment } from "./config/category-routes";
+import { categoryAliasTarget } from "./lib/catalog-content/category-aliases";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/routing.generated";
 import { isMarketLive, liveMarkets, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
 import { isRouteMissingInMarket, routePolicyFor } from "./lib/route-policy";
@@ -352,33 +347,27 @@ async function route(request: NextRequest) {
 	// from the route file comes back 200, because the shell is flushed before it can
 	// set a status. Proven once already by that migration; not re-litigated here.
 	//
-	// ONLY for a slug in src/config/categories.ts, and that condition is load-bearing.
-	// Saleor holds 30 categories and the catalogue names 8; the other 22 keep this URL
-	// as their real one, because the root namespace is resolved from a build-time set
-	// and would soft-404 them. Redirecting every /categories/ URL would send
-	// `/sk/prislusenstvo-k-stresnym-boxom` to a page that does not exist — turning a
-	// working listing into a 404 for the sake of a tidier path.
+	// For EVERY category Saleor holds, not only the catalogue's: since 2026-10-06 the whole
+	// set in src/config/categories.ts (`isCategorySlug`) lives at the root. That condition is
+	// still load-bearing, though. The root namespace is resolved from that build-time set,
+	// and a category created in Saleor after it was last written is not in it: its
+	// `/categories/` URL is its real one until it is added, and redirecting it to a root that
+	// answers "not found" would turn a working listing into a 404. `pnpm check:nav` lists
+	// such categories.
 	//
 	// Only the DETAIL url redirects; `/{market}/categories` has no page either way.
 	//
 	// Straight to the market's CANONICAL root, in one hop: `/cz/categories/stresne-nosice` goes
 	// to `/cz/stresni-nosice`, not to `/cz/stresne-nosice` and from there onwards. The Czech
 	// spelling under `/categories/` is accepted too, since it is what a link built from a
-	// translated Saleor slug would produce. Slovakia is unchanged: its segment is the slug.
+	// translated Saleor slug would produce — for the categories the table in
+	// `config/category-routes.ts` maps. Slovakia is unchanged: its segment is the slug.
 	if (first && FRIENDLY_SLUGS.has(first) && segments.length === 3 && segments[1] === CATEGORY_ROUTE_PREFIX) {
-		const mapped = mappedCategoryFor(first, segments[2]);
-		if (isCategorySlug(segments[2]) || mapped?.placement === "root") {
+		const base = categoryBaseSlug(first, segments[2]);
+		if (isCategorySlug(base)) {
 			const url = request.nextUrl.clone();
-			url.pathname = "/" + first + "/" + categorySegment(first, categoryBaseSlug(first, segments[2]));
+			url.pathname = "/" + first + "/" + categorySegment(first, base);
 			return NextResponse.redirect(url, 308);
-		}
-		// A listing category (not a root one) with a localized segment keeps `/categories/`,
-		// and only its spelling changes: `/cz/categories/nordrive-stresne-nosice` → the Czech one.
-		const listing = listingCategoryAliasTarget(first, segments[2]);
-		if (listing) {
-			const url = request.nextUrl.clone();
-			url.pathname = "/" + first + listing;
-			return NextResponse.redirect(url, 301);
 		}
 	}
 

@@ -417,17 +417,19 @@ function videoBody(block: ContentBlock, labels: ContentLabels): Body {
 	// link is a second destination the page never wrote.
 	const title = plainText(sanitizeInline(data.caption)).trim();
 	if (!title) return refuse("a video has no title");
-	// Decorative, so no alt text: the link says what the preview is. It is drawn under the link, and a
-	// still that does not load leaves the card the shop made.
+	// Decorative, so no alt text: the link says what the preview is. It is drawn in the stage, under the
+	// play mark, and a still that does not load leaves the card the shop made. The words are not drawn
+	// over it: a still carries lettering of its own, and two sets of words that meet read as a clash.
 	const still = `<img src="${escapeHtml(videoPosterSrc(id))}" alt="" width="${POSTER_WIDTH}" height="${
 		(POSTER_WIDTH * 9) / 16
 	}" loading="lazy" decoding="async">`;
 	return {
 		html:
-			`<div class="maky-video">${still}<a class="maky-video-a" href="${youtubeWatchUrl(
+			`<div class="maky-video"><a class="maky-video-a" href="${youtubeWatchUrl(
 				id,
 			)}" target="_blank" rel="noopener noreferrer">` +
-			`<span class="maky-video-play" aria-hidden="true">${ico("play")}</span>` +
+			`<span class="maky-video-stage">${still}` +
+			`<span class="maky-video-play" aria-hidden="true">${ico("play")}</span></span>` +
 			`<span class="maky-video-txt"><span class="maky-video-sr">${escapeHtml(labels.video.play)}: </span>` +
 			`<strong class="maky-video-t">${title}</strong>` +
 			`<span class="maky-video-n">${escapeHtml(labels.video.note)}</span></span></a></div>`,

@@ -176,9 +176,11 @@ const CONTENT_CLASS_TOKENS: readonly string[] = [
 	"maky-sg-t",
 	"maky-sr",
 	"maky-sr-long",
-	// the video's preview: the box, the link that is the whole of it, its play mark and its words
+	// the video's preview: the card, the link that is the whole of it, the stage that holds the still
+	// and the play mark, and the words under the stage
 	"maky-video",
 	"maky-video-a",
+	"maky-video-stage",
 	"maky-video-play",
 	"maky-video-txt",
 	"maky-video-t",

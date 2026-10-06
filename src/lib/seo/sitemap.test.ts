@@ -207,7 +207,7 @@ describe("the whole catalogue, or an error", () => {
 
 		expect(urls).toContain(`${BASE}/sk`);
 		expect(urls).toContain(`${BASE}/sk/products`);
-		// A catalogue category is root-level; a non-catalogue one keeps /categories/.
+		// Every category Saleor holds is root-level; one this build does not know keeps /categories/.
 		expect(urls).toContain(`${BASE}/sk/nosice-bicyklov`);
 		expect(urls, "an empty category is thin content, not a canonical URL").not.toContain(
 			`${BASE}/sk/prazdna-kategoria`,
@@ -216,6 +216,41 @@ describe("the whole catalogue, or an error", () => {
 			`${BASE}/sk/categories/nosice-bicyklov`,
 		);
 		expect(urls).toContain(`${BASE}/sk/kontakt`);
+	});
+});
+
+describe("category URLs", () => {
+	it("lists every stocked category at the root — the catalogue's, the accessory buckets and the sub-categories", async () => {
+		serve(
+			(after) => productPage(after, 0),
+			() => ({
+				ok: true as const,
+				data: {
+					categories: {
+						edges: [
+							{ node: { slug: "nosice-bicyklov", products: { totalCount: 1_204 } } },
+							{ node: { slug: "nosice-bicyklov-na-tazne-zariadenie", products: { totalCount: 50 } } },
+							{ node: { slug: "prislusenstvo-k-stresnym-boxom", products: { totalCount: 43 } } },
+							{ node: { slug: "thule-stresne-nosice", products: { totalCount: 0 } } },
+						],
+						pageInfo: { hasNextPage: false, endCursor: "offset:4" },
+					},
+				},
+			}),
+		);
+
+		const urls = (await sitemap()).map((entry) => entry.url);
+
+		expect(urls).toContain(`${BASE}/sk/nosice-bicyklov`);
+		expect(urls).toContain(`${BASE}/sk/nosice-bicyklov-na-tazne-zariadenie`);
+		expect(urls).toContain(`${BASE}/sk/prislusenstvo-k-stresnym-boxom`);
+		expect(urls, "an empty category is thin content, not a canonical URL").not.toContain(
+			`${BASE}/sk/thule-stresne-nosice`,
+		);
+		expect(
+			urls.filter((url) => url.includes("/categories/")),
+			"no category URL carries the retired /categories/ segment",
+		).toEqual([]);
 	});
 });
 
@@ -307,10 +342,10 @@ describe("categories are walked to the end too", async () => {
 		);
 
 		const entries = await sitemap();
-		// `kategoria-N` is not in src/config/categories.ts, so these keep the
-		// `/categories/` shape — which is the point of the split, and worth pinning:
-		// only a catalogue category gets a root URL, and the sitemap says the same
-		// thing the breadcrumbs and the proxy do, because all three call categoryUrl().
+		// `kategoria-N` is in neither list in src/config/categories.ts — a category this build
+		// does not know — so these keep the `/categories/` shape, which is worth pinning: the
+		// sitemap says the same thing the breadcrumbs and the proxy do, because all three call
+		// categoryUrl(), and the proxy only routes a root URL it has in its set.
 		const categoryUrls = entries.filter((entry) => entry.url.startsWith(`${BASE}/sk/categories/kategoria-`));
 
 		expect(categoryUrls).toHaveLength(CATEGORY_COUNT);

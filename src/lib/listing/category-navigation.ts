@@ -22,7 +22,7 @@ export interface CategoryLink {
 	readonly id: string;
 	/** Saleor's own slug — the base slug the scenery and the cache know the category by. */
 	readonly baseSlug: string;
-	/** Market-prefixed URL, e.g. `/sk/categories/nosice-bicyklov-na-strechu`. */
+	/** Market-prefixed URL, e.g. `/sk/nosice-bicyklov-na-strechu`. */
 	readonly href: string;
 	/** The name in this market's language. */
 	readonly name: string;

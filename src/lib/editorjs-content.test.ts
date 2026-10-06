@@ -367,10 +367,11 @@ describe("each role is drawn as itself", () => {
 		expect(block?.section).toBeUndefined();
 		expect(block?.html).toBe(
 			'<section class="maky-blk not-prose"><h3 class="maky-h">Video</h3>' +
-				// The still, drawn under the link and asked of this site's own optimizer; `alt` is the empty one.
-				'<div class="maky-video"><img src="/_next/image?url=https%3A%2F%2Fi.ytimg.com%2Fvi%2FD5lm_R-m3BA%2Fhqdefault.jpg&amp;w=640&amp;q=75" alt width="640" height="360" loading="lazy" decoding="async">' +
-				'<a class="maky-video-a" href="https://www.youtube.com/watch?v=D5lm_R-m3BA" target="_blank" rel="noopener noreferrer">' +
-				'<span class="maky-video-play" aria-hidden="true"><span class="maky-ico maky-ico-play" aria-hidden="true"></span></span>' +
+				// The still, drawn in the stage under the play mark and asked of this site's own optimizer; `alt`
+				// is the empty one. The words follow the stage: none of them is over the picture.
+				'<div class="maky-video"><a class="maky-video-a" href="https://www.youtube.com/watch?v=D5lm_R-m3BA" target="_blank" rel="noopener noreferrer">' +
+				'<span class="maky-video-stage"><img src="/_next/image?url=https%3A%2F%2Fi.ytimg.com%2Fvi%2FD5lm_R-m3BA%2Fhqdefault.jpg&amp;w=640&amp;q=75" alt width="640" height="360" loading="lazy" decoding="async">' +
+				'<span class="maky-video-play" aria-hidden="true"><span class="maky-ico maky-ico-play" aria-hidden="true"></span></span></span>' +
 				'<span class="maky-video-txt"><span class="maky-video-sr">Prehrať video: </span>' +
 				`<strong class="maky-video-t">${FILM_TITLE}</strong>` +
 				'<span class="maky-video-n">YouTube · načíta sa až po kliknutí</span></span></a></div></section>',

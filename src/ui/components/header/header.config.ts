@@ -59,8 +59,9 @@ export const ALL_CATEGORIES_NAV: readonly NavItem[] = categoriesFor("home").map(
 
 /**
  * A category link is stored as `/{base slug}`; abroad its canonical segment differs —
- * `/cz/stresni-nosice`. Only a catalogue category is touched: `categoryUrlFor` would turn
- * any other slug into a `/categories/…` URL, and `/poradna` is not a category.
+ * `/cz/stresni-nosice`. Only a category is touched: `/poradna` is not one, and `categoryUrlFor`
+ * would send any other slug to the `/categories/…` form meant for a category this build does not
+ * know.
  */
 export function localizedNavHref(channel: string, href: string): string {
 	const slug = href.slice(1);

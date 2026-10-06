@@ -16,8 +16,8 @@
 //
 // Exit 0 = every invariant held across the sample. Exit 1 = at least one did not.
 // Exit 2 = the check could not run (no sitemap, no products), which is not a pass.
-import { readFileSync } from "node:fs";
 import process from "node:process";
+import { readCategorySource } from "./category-source.mjs";
 
 const args = process.argv.slice(2);
 const argOf = (flag, fallback) => {
@@ -50,8 +50,13 @@ const INTERNAL_MARKER = /CFMP-/i;
  * the same approach `nav-links.mjs` takes, and for the same reason. A category added
  * there must not need a second edit in a checking script that would silently rot.
  */
-const CATEGORY_SOURCE = readFileSync(new URL("../../src/config/categories.ts", import.meta.url), "utf8");
-const CATEGORY_SLUGS = [...CATEGORY_SOURCE.matchAll(/\{\s*slug:\s*"([a-z0-9-]+)",\s*key:/g)].map((m) => m[1]);
+const CATEGORY_SOURCE = readCategorySource();
+// Every category Saleor holds has a root URL (2026-10-06), so all of them are in the sitemap beside the
+// products — the catalogue's 8 and the other 22 alike.
+const CATEGORY_SLUGS = [
+	...CATEGORY_SOURCE.catalogue.map((category) => category.slug),
+	...CATEGORY_SOURCE.other,
+];
 if (CATEGORY_SLUGS.length === 0) {
 	console.error("could not read any category out of src/config/categories.ts");
 	process.exit(2);
