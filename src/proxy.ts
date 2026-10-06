@@ -17,6 +17,7 @@ import { marketSlugRedirect, sameCfmProduct } from "./lib/market-slug-redirects"
 import { marketLanguageCode } from "./config/market-language";
 import { catalogRedirectTarget } from "./lib/catalog-content/redirects";
 import { CATEGORY_ROUTE_PREFIX, isCategorySlug } from "./config/categories";
+import { infoRouteFor, internalizeInfoPath } from "./config/info-routes";
 import {
 	categoryBaseSlug,
 	categorySegment,
@@ -26,7 +27,7 @@ import {
 import { categoryAliasTarget, listingCategoryAliasTarget } from "./lib/catalog-content/category-aliases";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/routing.generated";
 import { isMarketLive, liveMarkets, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
-import { isRouteMissingInMarket, routePolicyFor } from "./lib/route-policy";
+import { isRouteMissingInMarket, marketHasRoute, routePolicyFor } from "./lib/route-policy";
 import {
 	CMS_PREVIEW_CACHE_CONTROL,
 	CMS_PREVIEW_ROBOTS_HEADER,
@@ -167,7 +168,8 @@ function marketRewrite(
 	internalRest?: string,
 ): NextResponse {
 	const config = CHANNEL_MAP[market];
-	const rest = internalRest ?? request.nextUrl.pathname.split("/").filter(Boolean).slice(1).join("/");
+	const publicRest = request.nextUrl.pathname.split("/").filter(Boolean).slice(1).join("/");
+	const rest = internalRest ?? internalizeInfoPath(market, "/" + publicRest).slice(1);
 	const url = request.nextUrl.clone();
 	url.pathname = "/" + config.saleorSlug + (rest ? "/" + rest : "");
 
@@ -297,6 +299,40 @@ async function route(request: NextRequest) {
 			const url = request.nextUrl.clone();
 			url.pathname = marketHref(first, rest ? "/" + rest : "");
 			return NextResponse.redirect(url, 301);
+		}
+	}
+
+	// INFORMATIONAL URL -> its market's public spelling and the existing page file.
+	// Resolve before product redirects and the existence gate: `/us/contact` is a static
+	// page, not a product to ask Saleor about. Both the printable form's segments are mapped.
+	// A legacy address gets one HTTP redirect before any streamed HTML can be committed.
+	if (first && FRIENDLY_SLUGS.has(first)) {
+		const normalizedRest = "/" + normalizePathname(pathname).split("/").filter(Boolean).slice(1).join("/");
+		const rawRest = "/" + segments.slice(1).join("/");
+		const info = infoRouteFor(first, normalizedRest);
+		// The gate normalizer accepts more suffix combinations than a real page URL does.
+		// Do not turn an unsupported child such as `/kontakt/.rsc` into a redirect to itself.
+		const publicHref = marketHref(first, rawRest);
+		const supportedSpelling =
+			rawRest === normalizedRest ||
+			publicHref !== `/${first}${rawRest}` ||
+			internalizeInfoPath(first, rawRest) !== rawRest;
+		if (info && supportedSpelling) {
+			const internalSegment = info.internalPath.slice(1).split("/")[0];
+			// Translated URL words do not grant a market approved copy or indexing permission.
+			if (!marketHasRoute(first, internalSegment)) {
+				const url = request.nextUrl.clone();
+				url.pathname = "/_not-found";
+				return NextResponse.rewrite(url, { status: 404, headers: { "x-robots-tag": "noindex" } });
+			}
+			if (normalizedRest !== info.publicPath) {
+				const url = request.nextUrl.clone();
+				url.pathname = publicHref;
+				const res = NextResponse.redirect(url, 308);
+				if (!isMarketLive(first)) res.headers.set("x-robots-tag", PREVIEW_MARKET_ROBOTS_HEADER);
+				return res;
+			}
+			return marketRewrite(request, first, isGateEnabled() ? "unclassified" : null);
 		}
 	}
 

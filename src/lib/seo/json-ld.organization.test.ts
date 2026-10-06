@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { companyInfo } from "@/config/company";
-import { CHANNEL_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, marketHref } from "@/lib/channel-map";
 import { marketHasRoute } from "@/lib/route-policy";
 import {
 	RETURNS_PAGE_PATH,
@@ -214,10 +214,19 @@ describe("the return policy states the statutory window and nothing unconfirmed"
 			returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
 			// NOT 30: the extension is for signed-in registered customers only.
 			merchantReturnDays: 14,
-			merchantReturnLink: `https://maky.store/${market}/reklamacie-a-vratenie`,
+			merchantReturnLink: `${ORIGIN}${marketHref(market, RETURNS_PAGE_PATH)}`,
 		});
 		// The link is a page this market actually serves — not a 404 with a return policy on it.
 		expect(marketHasRoute(market, RETURNS_PAGE_PATH.slice(1))).toBe(true);
+	});
+
+	it.each([
+		["sk", "/sk/reklamacie-a-vratenie"],
+		["de", "/de/reklamationen-und-ruecksendungen"],
+		["us", "/us/returns-and-complaints"],
+		["ca", "/ca/returns-and-complaints"],
+	])("%s: advertises the localized public returns URL", (market, pathname) => {
+		expect(returnPolicy(market).merchantReturnLink).toBe(`${ORIGIN}${pathname}`);
 	});
 
 	it("names no fee, no method, no return-shipping amount and no refund terms", () => {

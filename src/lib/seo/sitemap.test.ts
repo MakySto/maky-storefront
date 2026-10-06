@@ -31,6 +31,7 @@ import sitemap, {
 	sitemapShards,
 } from "./sitemap";
 import { REVERSE_MAP } from "@/lib/channel-map";
+import { INFO_ROUTES } from "@/config/info-routes";
 
 /**
  * The sitemap must enumerate the WHOLE catalogue or fail.
@@ -416,21 +417,45 @@ describe("sitemap — static paths follow route-policy", async () => {
 		expect(await derived("sk")).toContain("/odstupenie-od-zmluvy/vzorovy-formular");
 	});
 
-	it("gives the other markets their seven legal pages", async () => {
-		for (const market of ["cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"]) {
+	it("gives every market its informational pages at their canonical public URLs", async () => {
+		for (const market of ["sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"] as const) {
 			const paths = await derived(market);
-			for (const path of [
-				"/kontakt",
-				"/doprava-a-platba",
-				"/reklamacie-a-vratenie",
-				"/odstupenie-od-zmluvy",
-				"/obchodne-podmienky",
-				"/ochrana-osobnych-udajov",
-				"/cookies",
-			]) {
-				expect(paths, `${market} is missing ${path}`).toContain(path);
+			for (const route of INFO_ROUTES) {
+				expect(paths, `${market} is missing ${route.paths[market]}`).toContain(route.paths[market]);
+				if (route.paths[market] !== route.internalPath) {
+					expect(paths, `${market} advertises a redirect`).not.toContain(route.internalPath);
+				}
 			}
 		}
+	});
+
+	it("serializes the US and German page shards with localized URLs, never the legacy aliases", async () => {
+		process.env.MAKY_LIVE_MARKETS = "sk,de,us";
+		process.env.MAKY_INDEXABLE_MARKETS = "sk,de,us";
+		serve((after) => productPage(after, 1));
+		const us = resolveSitemap((await sitemapShardEntries("us-pages-1"))!);
+		const de = resolveSitemap((await sitemapShardEntries("de-pages-1"))!);
+		for (const path of [
+			"/us/shipping-and-payment",
+			"/us/contact",
+			"/us/terms-and-conditions",
+			"/us/privacy-policy",
+			"/us/cancellations-and-returns",
+			"/us/cancellations-and-returns/form",
+			"/us/returns-and-complaints",
+		])
+			expect(us).toContain(`<loc>${BASE}${path}</loc>`);
+		for (const path of [
+			"/de/versand-und-zahlung",
+			"/de/agb",
+			"/de/datenschutz",
+			"/de/widerruf/musterformular",
+		]) {
+			expect(de).toContain(`<loc>${BASE}${path}</loc>`);
+		}
+		expect(us).not.toContain("/us/doprava-a-platba");
+		expect(us).not.toContain("/us/odstupenie-od-zmluvy");
+		expect(de).not.toContain("/de/ochrana-osobnych-udajov");
 	});
 
 	it("keeps the CMS pages to the markets route-policy actually lists", async () => {

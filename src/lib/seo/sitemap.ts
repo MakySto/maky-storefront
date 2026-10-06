@@ -10,7 +10,7 @@ import {
 export { sitemapTag };
 import { categoryUrlFor } from "@/config/category-routes";
 import { getBaseUrl } from "@/lib/seo/config";
-import { CHANNEL_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, localizeMarketPath } from "@/lib/channel-map";
 import { indexableMarkets } from "@/lib/market-state";
 import { marketHasRoute, ROUTE_POLICY } from "@/lib/route-policy";
 import { cmsRouteAvailable } from "@/lib/cms/availability";
@@ -110,7 +110,9 @@ export async function staticPathsFor(market: string): Promise<readonly string[]>
 		paths.push(`/${policy.segment}`);
 		paths.push(...(STATIC_SUBROUTES[policy.segment] ?? []));
 	}
-	return paths;
+	// Policy and CMS lookups keep their stable internal identities. Only the public URL
+	// changes, through the same map as page canonicals, links and proxy redirects.
+	return paths.map((path) => localizeMarketPath(market, path));
 }
 
 /**

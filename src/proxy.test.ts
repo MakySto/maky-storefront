@@ -320,7 +320,8 @@ describe("a route that exists, but not in this market", () => {
 		// synthetic case above.
 		for (const market of Object.keys(CHANNEL_MAP)) {
 			for (const segment of LEGAL_PAGES) {
-				expect(await statusOf(`/${market}/${segment}`), `/${market}/${segment}`).not.toBe(404);
+				const pathname = marketHref(market, `/${segment}`);
+				expect(await statusOf(pathname), pathname).toBe(200);
 			}
 		}
 	});
@@ -334,7 +335,8 @@ describe("a route that exists, but not in this market", () => {
 		// seven static pages do not.
 		for (const market of ["cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro"]) {
 			for (const segment of LEGAL_PAGES) {
-				expect(await statusOf(`/${market}/${segment}`), `/${market}/${segment}`).not.toBe(404);
+				const pathname = marketHref(market, `/${segment}`);
+				expect(await statusOf(pathname), pathname).toBe(200);
 			}
 			for (const segment of CMS_PAGES) {
 				expect(await statusOf(`/${market}/${segment}`), `/${market}/${segment}`).toBe(404);
@@ -354,7 +356,7 @@ describe("a route that exists, but not in this market", () => {
 
 		expect(await headerFor(`/${UNCOVERED_MARKET}/kontakt`)).toBe("noindex");
 		// The covered market's page is the other rule, and it is a different string.
-		expect(await headerFor("/us/kontakt")).toBe("noindex, nofollow");
+		expect(await headerFor("/us/contact")).toBe("noindex, nofollow");
 	});
 
 	it("leaves them alone on sk", async () => {

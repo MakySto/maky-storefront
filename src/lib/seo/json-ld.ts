@@ -1,6 +1,6 @@
 import { type WithContext, type Product, type ProductGroup } from "schema-dts";
 import { companyInfo } from "@/config/company";
-import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, REVERSE_MAP, marketHref } from "@/lib/channel-map";
 import { carriesInternalMarker } from "@/lib/product-code";
 import { gtinProperty, publicGtin } from "@/lib/product-ean";
 import { seoConfig, getBaseUrl } from "./config";
@@ -314,9 +314,9 @@ export function organizationReference() {
 const ORGANIZATION_LOGO_PATH = "/android-chrome-512x512.png";
 
 /**
- * The page that explains returns, under the market prefix. The legal slugs are Slovak in
- * every market (`/de/reklamacie-a-vratenie`), and `route-policy.ts` serves this one in all
- * twelve — the test asserts both, so a market losing the page cannot keep a link to a 404.
+ * The internal route for returns. `marketHref` gives it the same localized public URL
+ * used in navigation and metadata. `route-policy.ts` serves it in all twelve markets;
+ * the test verifies that each market has a route before advertising its return policy.
  */
 export const RETURNS_PAGE_PATH = "/reklamacie-a-vratenie";
 
@@ -417,7 +417,7 @@ export function buildOrganizationJsonLd(channel: string) {
 			applicableCountry: marketCountries(),
 			returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
 			merchantReturnDays: RETURN_DAYS,
-			merchantReturnLink: `${base}/${market}${RETURNS_PAGE_PATH}`,
+			merchantReturnLink: `${base}${marketHref(market, RETURNS_PAGE_PATH)}`,
 		},
 		hasShippingService: {
 			"@type": "ShippingService",
