@@ -235,7 +235,10 @@ describe("deploy-production.sh, bridge: nginx prepared", () => {
 			// The bridge runs on a clean environment; the live process, as always, on whatever started it.
 			const bridgeStart = run.lines.find((line) => PM2_START_BRIDGE.test(line)) ?? "";
 			expect(bridgeStart).toContain("secret-visible=no");
-			expect(bridgeStart).toContain(`-p ${w.ports.bridge} -H 127.0.0.1`);
+			// And it is started the way the live process is: `next start -p <port>` and nothing after the port. With
+			// -H 127.0.0.1 Next answered every market page with a redirect to itself (the first rehearsal on the
+			// box); the fake app reproduces that, so a -H here would also stop this deploy at the bridge's readiness.
+			expect(bridgeStart).toMatch(new RegExp(` -- start -- -p ${w.ports.bridge} \\[secret-visible=no\\]$`));
 			expect(run.lines.find((line) => PM2_STOP_LIVE.test(line))).toContain("secret-visible=yes");
 
 			// The box afterwards.
@@ -451,6 +454,150 @@ describe("deploy-production.sh, bridge: nginx prepared", () => {
 			expect(run.out).toContain(`the last lines of ${bridgeLog}`);
 			expect(run.out).toContain(`bridge log: ${bridgeLog}`);
 			expect(read(bridgeLog)).toContain("[market-state]");
+
+			// And it says what the bridge answered, not only that it did not answer: the first rehearsal on the box
+			// ended on "did not answer within 120s", with a log that held nothing about a request.
+			// (The first probe may meet a process that has not opened its port yet, so the message says first and last.)
+			expect(run.out).toMatch(/the last: HTTP 500, 4 B|every probe got: HTTP 500, 4 B/);
+			expect(run.out).toMatch(/the bridge as PM2 sees it: status=online restarts=0 up=\d+ s pid=\d+/);
+			expect(run.out).toContain("takes connections");
+			expect(run.out).toContain("/robots.txt: 200");
+			expect(run.out).toContain("HTTP/1.1 500 Internal Server Error");
+			expect(run.out).toMatch(/first 300 bytes of its body:\s+boom/);
+		},
+		SLOW,
+	);
+
+	it(
+		"names the redirect a bridge answers with instead of the page",
+		async () => {
+			const w = await bridgeWorld();
+			const before = liveTree(w);
+			w.setCtl("next-behavior", "homestatus=308\nhomelocation=http://127.0.0.1:1/somewhere-else\n");
+			const run = await deployUnderLoad(w, ["-m", "x"], { READY_TIMEOUT_S: "3" });
+
+			expect(run.code, run.out).toBe(1);
+			expect(run.out).toMatch(
+				/(the last|every probe got): HTTP 308, redirecting to http:\/\/127\.0\.0\.1:1\/somewhere-else/,
+			);
+			expect(run.out).toMatch(/location: http:\/\/127\.0\.0\.1:1\/somewhere-else/i);
+			expect(count(run.lines, NGINX_RELOAD)).toBe(0);
+			expectLiveSiteUntouched(w, before, run);
+		},
+		SLOW,
+	);
+
+	it(
+		"names a bridge that redirects to the very address it was asked for",
+		async () => {
+			const w = await bridgeWorld();
+			const before = liveTree(w);
+			// What the first rehearsal on the box met (next start -H 127.0.0.1): /sk answered 301 with Location: /sk.
+			w.setCtl("next-behavior", "homestatus=301\nhomelocation=/sk\n");
+			const run = await deployUnderLoad(w, ["-m", "x"], { READY_TIMEOUT_S: "3" });
+
+			expect(run.code, run.out).toBe(1);
+			expect(run.out).toContain(
+				`HTTP 301, redirecting to the very address it was asked for (http://127.0.0.1:${w.ports.bridge}/sk)`,
+			);
+			expect(run.out).toMatch(/location: \/sk/i);
+			expect(count(run.lines, NGINX_RELOAD)).toBe(0);
+			expectLiveSiteUntouched(w, before, run);
+		},
+		SLOW,
+	);
+
+	it(
+		"keeps the fixture honest: its app answers as next start -H 127.0.0.1 did on the box, and as it does without",
+		async () => {
+			const w = await bridgeWorld();
+			const url = `http://127.0.0.1:${w.ports.bridge}`;
+			const start = (...host: string[]) =>
+				pm2(
+					w,
+					"start",
+					"npm",
+					"--name",
+					"host-probe",
+					"--cwd",
+					w.app,
+					"--",
+					"start",
+					"--",
+					"-p",
+					String(w.ports.bridge),
+					...host,
+				);
+
+			expect(start("-H", "127.0.0.1").status).toBe(0);
+			await waitForHttp(`${url}/robots.txt`);
+			const redirected = await fetch(`${url}/sk`, { redirect: "manual" });
+			expect(redirected.status).toBe(301);
+			expect(redirected.headers.get("location")).toBe("/sk");
+			expect(redirected.headers.get("x-middleware-rewrite")).toBe(
+				`http://localhost:${w.ports.bridge}/sk-eur`,
+			);
+			expect((await fetch(`${url}/sk/products`, { redirect: "manual" })).status).toBe(301);
+			expect((await fetch(`${url}/robots.txt`)).status).toBe(200);
+			expect(pm2(w, "delete", "host-probe").status).toBe(0);
+
+			expect(start().status).toBe(0);
+			await waitForHttp(`${url}/sk`);
+			expect((await fetch(`${url}/sk`, { redirect: "manual" })).status).toBe(200);
+			expect(pm2(w, "delete", "host-probe").status).toBe(0);
+		},
+		SLOW,
+	);
+
+	it(
+		"says when the answer of a bridge is cut off after its 200",
+		async () => {
+			const w = await bridgeWorld();
+			const before = liveTree(w);
+			// A stream that dies after the shell: curl has the status line and a piece of the body, then the connection drops.
+			w.setCtl("next-behavior", "cut=/sk\n");
+			const run = await deployUnderLoad(w, ["-m", "x"], { READY_TIMEOUT_S: "3" });
+
+			expect(run.code, run.out).toBe(1);
+			expect(run.out).toMatch(/HTTP 200, then the transfer failed after \d+ B \(curl exit (18|56)/);
+			expect(count(run.lines, NGINX_RELOAD)).toBe(0);
+			expectLiveSiteUntouched(w, before, run);
+		},
+		SLOW,
+	);
+
+	it(
+		"says when nothing comes of a bridge that PM2 reports as online",
+		async () => {
+			const w = await bridgeWorld();
+			const before = liveTree(w);
+			w.setCtl(`pm2-never-listen-${BRIDGE_APP}`);
+			const run = await deployUnderLoad(w, ["-m", "x"], { READY_TIMEOUT_S: "3" });
+
+			expect(run.code, run.out).toBe(1);
+			expect(run.out).toMatch(/no HTTP answer \(curl exit 7: .*Failed to connect/i);
+			expect(run.out).toContain("the bridge as PM2 sees it: status=online");
+			expect(run.out).toContain("refuses connections");
+			expect(count(run.lines, NGINX_RELOAD)).toBe(0);
+			expectLiveSiteUntouched(w, before, run);
+		},
+		SLOW,
+	);
+
+	it(
+		"reports a body cut short as 000 and not as the 200 that preceded it",
+		async () => {
+			const w = await bridgeWorld();
+			const before = liveTree(w);
+			// The page is fine and ready; one of the gate's static files is cut off after its status line.
+			w.setCtl("next-behavior", "cut=/robots.txt\n");
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(1);
+			expect(run.out).toMatch(/static asset \/robots\.txt answered 000\b/);
+			expect(run.out).not.toContain("200000");
+			expect(count(run.lines, NGINX_RELOAD)).toBe(0);
+			expectLiveSiteUntouched(w, before, run);
 		},
 		SLOW,
 	);

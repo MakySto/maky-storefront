@@ -28,8 +28,14 @@ start_server() {
 	fi
 	cwd=$(cat "$state/$name.cwd")
 	port=$(cat "$state/$name.port")
+	boot_ms="${FAKE_BOOT_MS:-300}"
+	# A process that is up as far as PM2 can tell and never opens its port.
+	[[ -e "$world/ctl/pm2-never-listen-$name" ]] && boot_ms=600000
+	# What `-H <host>` named on the start command line, as next start takes it.
+	host_args=()
+	[[ -s "$state/$name.host" ]] && host_args=(--hostname "$(cat "$state/$name.host")")
 	node "$world/fake/fake-app-server.mjs" --port "$port" --cwd "$cwd" \
-		--log "$(log_path "$name")" --boot-ms "${FAKE_BOOT_MS:-300}" >/dev/null 2>&1 9>&- &
+		--log "$(log_path "$name")" --boot-ms "$boot_ms" ${host_args[@]+"${host_args[@]}"} >/dev/null 2>&1 9>&- &
 	echo $! >"$state/$name.pid"
 	echo online >"$state/$name.status"
 	disown
@@ -69,8 +75,9 @@ case "$cmd" in
 		for f in "$state"/*.cwd; do
 			[[ -e "$f" ]] || continue
 			name=$(basename "$f" .cwd)
-			printf '%s{"name":"%s","pm2_env":{"status":"%s","pm_out_log_path":"%s"}}' \
-				"$sep" "$name" "$(cat "$state/$name.status")" "$(log_path "$name")"
+			printf '%s{"name":"%s","pid":%s,"pm2_env":{"status":"%s","restart_time":0,"pm_uptime":%s,"pm_out_log_path":"%s"}}' \
+				"$sep" "$name" "$(cat "$state/$name.pid" 2>/dev/null || echo 0)" "$(cat "$state/$name.status")" \
+				"$(( $(date +%s) * 1000 ))" "$(log_path "$name")"
 			sep=','
 		done
 		printf ']\n'
@@ -78,18 +85,20 @@ case "$cmd" in
 	start)
 		if [[ "${1:-}" == "npm" ]]; then
 			shift
-			name="" cwd="" port="" out=""
+			name="" cwd="" port="" out="" host=""
 			while [[ $# -gt 0 ]]; do
 				case "$1" in
 					--name) name="$2"; shift 2 ;;
 					--cwd) cwd="$2"; shift 2 ;;
 					--output) out="$2"; shift 2 ;;
 					-p) port="$2"; shift 2 ;;
+					-H) host="$2"; shift 2 ;;
 					*) shift ;;
 				esac
 			done
 			printf '%s' "$cwd" >"$state/$name.cwd"
 			printf '%s' "$port" >"$state/$name.port"
+			printf '%s' "$host" >"$state/$name.host"
 			rm -f "$state/$name.out"
 			[[ -z "$out" ]] || printf '%s' "$out" >"$state/$name.out"
 			echo stopped >"$state/$name.status"
@@ -113,7 +122,7 @@ case "$cmd" in
 			exit 1
 		fi
 		stop_server "${1:-}"
-		rm -f "$state/${1:-}.cwd" "$state/${1:-}.port" "$state/${1:-}.status" "$state/${1:-}.pid" "$state/${1:-}.out"
+		rm -f "$state/${1:-}.cwd" "$state/${1:-}.port" "$state/${1:-}.host" "$state/${1:-}.status" "$state/${1:-}.pid" "$state/${1:-}.out"
 		;;
 	*)
 		echo "fake pm2: unsupported: $cmd $*" >&2

@@ -448,8 +448,9 @@ scratch     /opt/storefront-build: git archive HEAD, node_modules, .env
 build       pnpm build there; the log is teed to a file; the finished build must carry its own
             path only in required-server-files (§13.8)
 metadata    write .next/MAKY_DEPLOY_META (git sha, build id, timestamp); keep a clean copy of .next
-bridge      the same build on 127.0.0.1:3100 as a second PM2 app, maky-storefront-bridge, in a
-            clean environment, logging to files of this run (/tmp/maky-deploy-<UTC>.log.bridge-out
+bridge      the same build on 127.0.0.1:3100 as a second PM2 app, maky-storefront-bridge, started
+            like the live process (`next start -p 3100`, no `-H`, see §13.2.1) in a clean
+            environment, logging to files of this run (/tmp/maky-deploy-<UTC>.log.bridge-out
             and .bridge-err, which stay); the whole gate runs on it while nobody is sent there
 show        what the gate cannot see, read from the bridge before anyone is sent to it: the category
             list it read from Saleor (`[live-categories] … loaded=yes`, when the build has the
@@ -505,8 +506,12 @@ clean (`env -i`), so both are read back from the bridge itself, in the files its
 
 Either failing is a failure before anyone was moved: the bridge and the scratch tree go, and the live
 process was never touched. What the bridge wrote is the evidence, so its log files stay and the exit
-handler prints their names and their last lines. `--rehearse` runs both. The live process's own category read-back is a
-post-commit step like the market-state read-back (exit `75` names it).
+handler prints their names and their last lines. A process that does not answer the readiness probe is
+reported with what it did answer, first probe and last (the code, where a redirect points, a transfer that was
+cut off, or no connection at all), and a bridge also with its state as PM2 sees it, whether its port takes
+connections and the headers of one more request: the first `--rehearse` on the box ended on "did not answer
+within 120s" and nothing else, and the cause was a redirect to itself. `--rehearse` runs both. The live process's
+own category read-back is a post-commit step like the market-state read-back (exit `75` names it).
 
 **Everything before the gate rolls back on failure. Nothing after it does.** Until nginx points at
 the bridge a failure changes nothing a customer can see: the bridge and the scratch tree are removed
@@ -612,6 +617,14 @@ What differs from a plain restart, and is accepted:
   the flip back updates only the bridge, so the few pages the gate warmed on the live process can stay
   stale until the next revalidation. The window is the length of the gate, and publishing the document
   again closes it.
+- **The bridge listens on every interface** for the minutes it runs, as the live process does on its port all
+  the time: it is started the way that process is, `next start -p <port>`, with no `-H`. `-H 127.0.0.1` would keep
+  it on loopback and does not work: Next hands the proxy a URL whose host it has turned from `127.0.0.1` into
+  `localhost`, and calls a rewrite internal only when its origin equals the one built from `-H`, so `/sk` →
+  `/sk-eur` became a request to the bridge itself and every market page answered a 301 to its own address (the
+  first `--rehearse`, 2026-10-06; reproduced on a minimal app with the same Next 16.3.6, where no `-H` and
+  `-H 0.0.0.0` answer 200). Do not put `-H` back. Whether a port is reachable from outside is the security
+  group's doing and cannot be read from the box: 3100 has to stay closed there, as 3000 should be.
 - **The image cache starts cold twice** (bridge, then the live process), where a restart did it once.
 - **A process that has just started takes the catalogue release in the background.** Until it has, it
   serves the older `MAKY_CATALOG_CONTENT_*` files. That is what the release check above is for: the
@@ -629,7 +642,7 @@ What differs from a plain restart, and is accepted:
 ### 13.2.2 Changing the deploy scripts
 
 `deploy-production.sh` and `nginx-upstream.sh` have a regression suite that runs them for real:
-`pnpm test:deploy-box`, about six minutes (74 cases). It is not part of `pnpm vitest run`, which the deploy
+`pnpm test:deploy-box`, about seven minutes (80 cases). It is not part of `pnpm vitest run`, which the deploy
 preflight runs on the live box before every deploy.
 
 The suite builds a whole box in a temporary directory (`src/lib/__fixtures__/deploy-world`): a git
@@ -641,7 +654,11 @@ a customer would have met (two clients ask for the home page all the way through
 like afterwards, for the deploy that goes well and for a failure at every step that can fail: the build,
 the relocation audit, the gate on the bridge, nginx refusing the switch, the swapped-in build failing its
 gate, the restore failing (exit `71`), nginx refusing to take customers back (exit `75`), and the refusals
-that come before anything is changed. The read-backs have their own cases: the category list (loaded, loaded
+that come before anything is changed. A bridge that is not ready has its own cases, one for each way it can
+answer (a 500, a redirect, a redirect to the very address asked, a transfer cut off after its 200, a port nobody
+listens on), and the fixture's app answers a market page with the redirect to itself when it is started with
+`-H 127.0.0.1`, as Next 16.3.6 did on the box, so a `-H` put back into the bridge's start line stops the deploy
+there. The read-backs have their own cases: the category list (loaded, loaded
 after a retry, never loaded, no endpoint, refused slugs), the catalogue release (the bridge behind and
 catching up, behind for good, behind on fitment only, not following the manifest, behind after the swap)
 and the GraphQL types handed over after the commit point and not before.
