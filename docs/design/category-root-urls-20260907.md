@@ -147,8 +147,8 @@ canonical, hreflang, drobčeky a karty produktov (všetko cez `categoryUrlFor`).
 
 - **Zahraničné preložené slugy.** Kategóriu, ktorú CFM preložil a tabuľka v `category-routes.ts` ju nemá, odkazuje
   navigácia kategórií dnes pod `/{trh}/categories/{preložený slug}` (napr. `/de/categories/fahrradtraeger`). Proxy ten
-  slug bez dopytu nahor nepozná, preto ho nepresmeruje (presmerovala by na root, kde by bol 404). Zahraničné trhy
-  sú v náhľade (`noindex`); lokalizovaný koreň dostane kategória, keď dostane riadok v `LOCALIZED_CATEGORIES`.
+  slug bez dopytu nahor nepozná, preto ho nepresmeruje (presmerovala by na root, kde by bol 404). Tak to bolo aj
+  pred touto zmenou; lokalizovaný koreň dostane kategória, keď dostane riadok v `LOCALIZED_CATEGORIES`.
 - **`.rsc` na starej adrese.** Rozhoduje sa na surovej ceste ako doteraz; zostarnutá karta prehliadača s odkazom
   `/sk/categories/x` dostane stránku cez rewrite, nový odkaz už ide na root.
 
