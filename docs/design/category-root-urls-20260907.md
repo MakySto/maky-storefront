@@ -223,6 +223,12 @@ novej kategórii v zahraničí platí základný slug ako doteraz), vnútorná c
   prekáža, stačí slug dopísať do `OTHER_CATEGORY_SLUGS` pri najbližšej zmene kódu; URL sa tým nemení.
 - **Jeden proces.** Stav je v pamäti procesu (`globalThis`), ako pri `route-existence.ts`. Dnes beží jeden proces
   `maky-storefront`; pri viacerých by každý mal vlastnú množinu.
+- **Pevný zoznam vyhradených slov v CFM.** CFM drží pre prideľovanie slugov produktov pevných 68 slov (30 slugov
+  kategórií, 18 lokalizovaných koreňov, trasy storefrontu; údaj CFM zo 6. 10.). Kategóriu mimo tých 30, ktorú storefront
+  naučí zo Saleoru, ten zoznam nepozná, a keďže kategória pri zhode vyhráva, produkt, ktorému sa taký slug pridelí
+  neskôr, by za ňou zmizol. Prosba pre CFM (pri prideľovaní rezervovať aj všetky slugy kategórií, ktoré Saleor v tej
+  chvíli drží) je v bloku, ktorý Marek vkladá do vlákna CFM. Kým ju CFM nerealizuje, kolíziu nájde
+  `pnpm check:nav --saleor-only --all-channels`.
 
 ### Overenie
 
@@ -230,12 +236,17 @@ V cloude: testy modulu proti falošnému Saleoru (nová kategória v každom trh
 zoznam, backoff, jedno načítanie pre súbežných volajúcich, udalosť počas načítania), proxy (nová kategória: odpoveď z
 toho, čo je známe, potom rewrite aj 308, vozidlové stránky, cudzí trh, kolízia, Saleor nedostupný, Saleor, ktorý
 neodpovedá), `/api/revalidate` (zoznam sa načíta pred prvou expiráciou, telo odpovede nezmenené), sitemapa, štart
-servera a `check:nav` proti falošnému Saleoru a webu v piatich scenároch. **Neoverené z cloudu:** skutočný Saleor,
-`next build` a `next start` (najmä to, že proxy a route handlery zdieľajú `globalThis` ako pri `route-existence.ts`) a
-pohľad v prehliadači.
+servera a `check:nav` proti falošnému Saleoru a webu v piatich scenároch. Celá sada so skutočnými vygenerovanými
+GraphQL typmi: 3 865 testov prešlo, 38 preskočených zámerne, 0 padlo (špička vydania `d1740621` má s typmi 3 812,
+rozdiel je presne 53 nových testov), `tsc` a `eslint` bez chýb. `next build --experimental-build-mode=compile`
+(Turbopack) prešiel; v klientskych chunkoch nie je kód načítania a v serverových je modul vo viacerých kópiách, čo je
+dôvod, prečo je stav na `globalThis`. **Neoverené z cloudu:** skutočný Saleor, plné zostavenie a `next start` (najmä to,
+že proxy a route handlery zdieľajú `globalThis` ako pri `route-existence.ts`; ak by ho nezdieľali, proxy sa naučí
+kategórie z prvej požiadavky a stránky zo štartu a z udalostí kategórie) a pohľad v prehliadači.
 
-Na serveri po nasadení: v logu `[live-categories] floor=30 live=… refused=… loaded=yes`; `pnpm check:nav` (kategórie
-nad základ vypíše a skontroluje od konca po koniec); v HTML domovskej stránky nemá byť odkaz `/sk/categories/…`
+Na serveri po nasadení: v logu `[live-categories] floor=30 live=0 refused=0 loaded=yes` (CFM čítalo Saleor 6. 10. o
+9:48 UTC a drží presne tých 30 známych kategórií; `live` sú kategórie nad základom); `pnpm check:nav` (kategórie nad
+základ vypíše a skontroluje od konca po koniec); v HTML domovskej stránky nemá byť odkaz `/sk/categories/…`
 (`curl -s https://maky.store/sk | grep -o 'href="/sk/categories/[^"]*"'`). Skúška nového správania: vytvoriť testovaciu
 kategóriu v Saleore (po Marekovom súhlase) a do minúty musí `/sk/<slug>` odpovedať ako kategória a
 `/sk/categories/<slug>` presmerovať 308.
