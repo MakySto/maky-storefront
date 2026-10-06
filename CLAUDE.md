@@ -496,7 +496,8 @@ clean (`env -i`), so both are read back from the bridge itself, in the files its
   through a release manifest, and each process takes the files in the background after boot, from its
   cache and then from the network (SYNC-1). CFM calls a release adopted only when every expected
   live process reports the same file on `/api/catalog/status`; the bridge is not one of them (its PM2
-  name differs), but customers are on it for about a minute. So before they are sent there it has to
+  name differs), but customers are on it while the live process swaps and passes the gate (182 s on the
+  first deploy, 2026-10-06). So before they are sent there it has to
   serve what the live process serves from the manifest, or newer, for each market and for fitment,
   for up to `CATALOG_PARITY_WAIT_S` (90). A bridge that does not follow the manifest at all while the
   live process does (`MAKY_RELEASE_MANIFEST_URL` missing from its environment) fails at once, since
@@ -535,8 +536,10 @@ or `LOCAL_URL` (the other flows). The output and `/opt/DEPLOYMENTS.log` carry th
 "N of M probe requests failed", with the longest failing stretch when there is one.
 
 Budget: the build time (a few minutes of waiting for whoever runs it, none for customers), then
-about a minute of switching. `restart` costs customers the few seconds of the swap, `classic` the
-old 3 to 4 minutes.
+the switching, during which customers are on the bridge. Measured on the first bridge deploy
+(2026-10-06): 7 min 24 s from start to exit, of which `maky-storefront` itself was swapped in 182 s
+behind the bridge, and 0 of 331 probe requests failed. `restart` costs customers the few seconds of
+the swap, `classic` the old 3 to 4 minutes (197 to 206 s of 502 measured before the bridge).
 
 `--rehearse` is the dress rehearsal: it builds aside, runs the build on the spare port, passes it
 through the whole gate and removes everything again. It switches nothing and touches neither the
@@ -634,7 +637,30 @@ What differs from a plain restart, and is accepted:
 - **The live process's environment is whatever started it** (today it carries variables of the agent
   session that did), while the bridge starts clean. All configuration comes from `.env`, which Next reads
   itself, so the two behave alike; a difference between them points at a variable that exists only in
-  the live process's environment.
+  the live process's environment. Found by the first bridge deploy (2026-10-06, names only, values never
+  read): the live process holds 153 variable names, 28 of them from agent sessions (`CLAUDE_CODE_*`,
+  `CLAUDE_*`, `ANTHROPIC_BASE_URL`, among them a messaging token), unchanged by the deploy.
+  - **Why.** Read on the box (2026-10-06 20:22 UTC, names only, values never printed): the one PM2 record of
+    `maky-storefront` (`fork_mode`, node running `/usr/bin/npm start -- -p 3000` in `/opt/storefront`, logs in
+    `~/.pm2/logs`, no other options) holds 83 names, a copy of the environment of a whole interactive SSH
+    session: the 28 above plus `HOME`, `PATH`, `TMUX`, `SSH_*`, `VSCODE_*`, `MCP_*` and the like. Of `.env` it
+    holds only `NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN` and `NEXT_PUBLIC_GTM_ID`, with the values `.env` has.
+    `pm2 start` stores the environment of the shell that registers the process, and
+    `pm2 restart <app> --update-env` adds the whole environment of the calling shell to that record and
+    never removes a name. `pm2 stop` / `pm2 start maky-storefront`, which the deploy does, start the
+    process again from the stored record unchanged, so the record outlives every deploy. A stored value
+    also wins over `.env`, because Next does not overwrite a variable that is already set. The PM2 daemon
+    and `~/.pm2/dump.pm2` are clean (no session names; the dump holds `maky-storefront` and `maky-smtp-app`,
+    and `pm2-ubuntu.service` is enabled), so a reboot of the box starts the app clean. The 30 names of `.env`
+    that are not in `/proc/PID/environ` are no fault: Next reads `.env` itself, inside the process.
+  - **Do not run `pm2 save` while the record is like this.** It would write the record into the clean dump.
+  - **Rule: never `pm2 restart ... --update-env` for this app.** An `.env` change needs only
+    `pm2 restart maky-storefront`: Next reads `.env` itself when the process starts. A variable that must
+    reach the process goes into `.env`, never into the shell that restarts it.
+  - **To find the live server process, use its working directory, not its name.** `maky-smtp-app` runs a
+    `next-server` too (Next 15), so `ps ... | awk '/next-server/'` takes both. Next sets the process title
+    `next-server (v16.x)`, which makes `/proc/PID/comm` start with `next-server`; the live one is the one
+    whose `/proc/PID/cwd` is `/opt/storefront`.
 - **A relative `*_PATH` or `*_DIR` in `.env`** resolves against the bridge's working directory. The
   preflight names such variables, never their values.
 - **The build competes for CPU** with the live process; `nice -n 10` gives the live process the first claim.
