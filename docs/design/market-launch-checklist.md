@@ -38,8 +38,12 @@ MAKY_LIVE_MARKETS=sk,cz
 ```
 
 ```bash
-pm2 restart maky-storefront --update-env
+pm2 restart maky-storefront
 ```
+
+Without `--update-env`: Next reads `.env` itself when the process starts, and `--update-env` would copy
+the whole environment of the calling shell into PM2's stored record, where it stays through every
+deploy and wins over `.env` (CLAUDE.md §13.2.1; first found 2026-10-06).
 
 The app prints its resolved split once at boot, and the deploy script reads that
 line back and compares it with `.env`:

@@ -181,8 +181,12 @@ The gate is a runtime flag, so the first rollback needs no deploy at all:
 
 ```bash
 # remove ROUTE_EXISTENCE_GATE from /opt/storefront/.env, then
-pm2 restart maky-storefront --update-env
+pm2 restart maky-storefront
 ```
+
+[Corrected 2026-10-06: the command first read `pm2 restart maky-storefront --update-env`. Next reads
+`.env` itself at start; `--update-env` copies the calling shell's whole environment into PM2's stored
+record and never removes a name (CLAUDE.md §13.2.1).]
 
 Artifact rollback, if the deploy itself is bad — CLAUDE.md §13.3:
 
