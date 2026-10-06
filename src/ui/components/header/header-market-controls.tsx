@@ -41,7 +41,7 @@ function FlagImg({ code, size = 20 }: { code: string; size?: number }) {
  *
  * An entity page (product, category, vehicle) registers its counterparts: the same entity at
  * the target market's own URL, or — when it does not exist there — the target's home. Any
- * other page keeps its path, with the market's localized cart word swapped and the query kept.
+ * other page uses the target market's localized route, keeping its query and anchor.
  * Exported for the test; reads `window.location` because that is where the registration was
  * keyed, whatever the internal rewrite made of the path.
  */
@@ -56,8 +56,9 @@ export function switchTargetFor(
 	if (registered !== undefined) return registered === null ? `/${target}` : `/${target}${registered}`;
 
 	const search = typeof window === "undefined" ? "" : window.location.search;
+	const hash = typeof window === "undefined" ? "" : window.location.hash ?? "";
 	const pathAfterMarket = here.replace(new RegExp(`^/(${currentMarket}|${channel})(?=/|$)`), "");
-	return marketSwitchHref(target, `${pathAfterMarket}${search}`);
+	return marketSwitchHref(target, `${pathAfterMarket}${search}${hash}`, currentMarket);
 }
 
 /**

@@ -310,9 +310,10 @@ describe("earlier rules still win over the gate", () => {
 		// every market, or if the synthetic market were failing at the invalid-first-segment
 		// gate instead of the policy one.
 		const mock = upstream(exists);
-		const res = await proxy(req("/us/kontakt"));
+		const res = await proxy(req("/us/contact"));
 
-		expect(res.status).not.toBe(404);
+		expect(res.status).toBe(200);
+		expect(res.headers.get("x-middleware-rewrite")).toBe("https://maky.store/us-usd/kontakt");
 		expect(mock).not.toHaveBeenCalled();
 	});
 });

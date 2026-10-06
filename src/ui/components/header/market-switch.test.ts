@@ -11,8 +11,8 @@ import { registerMarketSwitchTargets, registeredMarketTarget } from "./market-sw
  * market's translated slug, the category at its localized root — and never on a path the
  * target market's proxy does not route.
  */
-function at(pathname: string, search = "") {
-	vi.stubGlobal("window", { location: { pathname, search } });
+function at(pathname: string, search = "", hash = "") {
+	vi.stubGlobal("window", { location: { pathname, search, hash } });
 }
 
 afterEach(() => vi.unstubAllGlobals());
@@ -86,6 +86,27 @@ describe("pages without an entity keep their path", () => {
 		expect(switchTargetFor("us", "sk", "sk-eur", "/ignored")).toBe("/us/cart");
 		at("/us/cart");
 		expect(switchTargetFor("de", "us", "us-usd", "/ignored")).toBe("/de/warenkorb");
+	});
+
+	it("switches a legal page from the source market's public slug to the target's", () => {
+		at("/de/agb");
+		expect(switchTargetFor("us", "de", "de-eur", "/ignored")).toBe("/us/terms-and-conditions");
+		at("/us/contact");
+		expect(switchTargetFor("de", "us", "us-usd", "/ignored")).toBe("/de/kontakt");
+	});
+
+	it("switches the complete nested form path and preserves query and anchor", () => {
+		at("/at/ruecktritt/musterformular", "?download=1", "#form");
+		expect(switchTargetFor("de", "at", "at-eur", "/ignored")).toBe(
+			"/de/widerruf/musterformular?download=1#form",
+		);
+	});
+
+	it("does not mistake legal-looking product slugs for an information route", () => {
+		at("/de/agb-roof-box");
+		expect(switchTargetFor("us", "de", "de-eur", "/ignored")).toBe("/us/agb-roof-box");
+		at("/de/contact");
+		expect(switchTargetFor("sk", "de", "de-eur", "/ignored")).toBe("/sk/contact");
 	});
 
 	it("goes to the target's home from a home page", () => {

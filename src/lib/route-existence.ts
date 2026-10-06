@@ -2,6 +2,7 @@ import { CHANNEL_MAP, FRIENDLY_SLUGS, REVERSE_MAP } from "./channel-map";
 import { MARKET_LANGUAGE_CODE } from "@/config/market-language";
 import { isCategorySlug } from "@/config/categories";
 import { categoryBaseSlug, isLocalizedRootSegment } from "@/config/category-routes";
+import { infoRouteFor } from "@/config/info-routes";
 import { previousProductSlug } from "./product-redirects";
 import { isMarketRootSegment } from "./route-policy";
 
@@ -617,6 +618,8 @@ export function classifyRoute(market: string, segments: readonly string[]): Gate
 
 	const rest = segments.slice(1);
 	if (rest.length === 0) return null;
+	// Public informational slugs are aliases of existing App Router pages, never products.
+	if (infoRouteFor(market, "/" + rest.join("/"))) return null;
 
 	// /{market}/{slug} — but only when the segment is not a real route. This is
 	// the check that stops the gate asking Saleor about "poradna".

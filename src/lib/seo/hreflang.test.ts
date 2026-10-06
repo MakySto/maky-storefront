@@ -145,8 +145,40 @@ describe("buildHreflangAlternates — page-level eligibility", () => {
 		expect(urls).toEqual(
 			expect.arrayContaining([
 				expect.stringContaining("/sk/odstupenie-od-zmluvy/vzorovy-formular"),
-				expect.stringContaining("/de/odstupenie-od-zmluvy/vzorovy-formular"),
+				expect.stringContaining("/de/widerruf/musterformular"),
 			]),
+		);
+	});
+});
+
+describe("informational URLs use the same public spelling for canonical and hreflang", () => {
+	it("maps a stable shipping page identity into every market's own URL", async () => {
+		vi.resetModules();
+		vi.stubEnv("MAKY_LIVE_MARKETS", "sk,de,us,ca");
+		vi.stubEnv("MAKY_INDEXABLE_MARKETS", "sk,de,us,ca");
+		vi.stubEnv("NEXT_PUBLIC_STOREFRONT_URL", "https://maky.store");
+		const { buildAlternatesMetadata } = await import("./hreflang");
+		const { alternates } = buildAlternatesMetadata("us-usd", "/doprava-a-platba");
+		expect(alternates.canonical).toBe("https://maky.store/us/shipping-and-payment");
+		expect(alternates.languages).toEqual({
+			"sk-SK": "https://maky.store/sk/doprava-a-platba",
+			"de-DE": "https://maky.store/de/versand-und-zahlung",
+			"en-US": "https://maky.store/us/shipping-and-payment",
+			"en-CA": "https://maky.store/ca/shipping-and-payment",
+			"x-default": "https://maky.store/sk/doprava-a-platba",
+		});
+	});
+
+	it("uses the first eligible market's localized form URL for x-default", async () => {
+		const entries = await alternatesFor("de,at,us", "/odstupenie-od-zmluvy/vzorovy-formular");
+		expect(entries.find((entry) => entry.hreflang === "x-default")?.url).toMatch(
+			/\/de\/widerruf\/musterformular$/,
+		);
+		expect(entries.find((entry) => entry.hreflang === "de-AT")?.url).toMatch(
+			/\/at\/ruecktritt\/musterformular$/,
+		);
+		expect(entries.find((entry) => entry.hreflang === "en-US")?.url).toMatch(
+			/\/us\/cancellations-and-returns\/form$/,
 		);
 	});
 });

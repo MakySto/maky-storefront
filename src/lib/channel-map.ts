@@ -1,4 +1,5 @@
 import { requestKeyed } from "./request-keyed";
+import { internalizeInfoPath, localizeInfoPath } from "../config/info-routes";
 
 /**
  * Channel mapping: friendly URL prefix -> Saleor channel slug + metadata.
@@ -90,21 +91,30 @@ export function cartSegment(channelOrMarket: string): string {
  */
 export function localizeMarketPath(channelOrMarket: string, path: string): string {
 	if (!path) return "";
+	const market = REVERSE_MAP[channelOrMarket] || channelOrMarket;
+	const localized = localizeInfoPath(market, path);
 	const replacement = cartSegment(channelOrMarket);
-	return path.replace(/^\/cart(?=$|[/?#]|\.(?:rsc|json)(?:$|[/?#]))/, `/${replacement}`);
+	return localized.replace(/^\/cart(?=$|[/?#]|\.(?:rsc|json)(?:$|[/?#]))/, `/${replacement}`);
 }
 
 /**
  * The same NON-entity page in another market — the market switcher's fallback when the page
  * registered no counterparts (cart, search, account, legal).
  *
- * Only the market-localised root segment moves: each market's proxy accepts its own cart word
- * and no other, so `/de/warenkorb` switched to Czechia must become `/cz/kosik`, not
- * `/cz/warenkorb` — which the Czech proxy reads as a product slug. Query and hash are kept.
+ * Resolve an informational page using its SOURCE market before spelling it for the target.
+ * Each proxy accepts only its own public words: `/us/contact` moves to `/de/kontakt`, while a
+ * German product called `/contact` must remain a product. Cart words retain the existing
+ * fallback for callers without a source market. Query and hash are kept.
  */
-export function marketSwitchHref(targetMarket: string, pathAfterMarket: string): string {
+export function marketSwitchHref(
+	targetMarket: string,
+	pathAfterMarket: string,
+	sourceMarket: string = targetMarket,
+): string {
+	const source = REVERSE_MAP[sourceMarket] || sourceMarket;
+	const infoPath = internalizeInfoPath(source, pathAfterMarket);
 	const cartWords = new Set(Object.values(CART_SEGMENT_BY_MARKET));
-	const internal = pathAfterMarket.replace(/^\/([^/?#]+)(?=$|[/?#])/, (whole, first: string) =>
+	const internal = infoPath.replace(/^\/([^/?#]+)(?=$|[/?#])/, (whole, first: string) =>
 		cartWords.has(first) ? "/cart" : whole,
 	);
 	return marketHref(targetMarket, internal);
