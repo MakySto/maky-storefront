@@ -31,6 +31,8 @@ import sitemap, {
 	sitemapShards,
 } from "./sitemap";
 import { REVERSE_MAP } from "@/lib/channel-map";
+import { resetLiveCategoriesForTests } from "@/lib/live-categories";
+import { installFakeSaleor } from "@/lib/live-categories.testkit";
 
 /**
  * The sitemap must enumerate the WHOLE catalogue or fail.
@@ -170,10 +172,17 @@ beforeEach(() => {
 	// MAKY_CATALOG_CONTENT_PATH serves. The vehicle-page tests opt in.
 	loadCatalogView.mockReset();
 	loadCatalogView.mockResolvedValue({ ready: false, reason: "no snapshot", status: catalogStatus(null) });
+	// The sitemap asks the live category list to be current. With no Saleor endpoint that is a no-op,
+	// so no test here reaches for a real one because the shell it runs in happens to have one set;
+	// the tests of categories created in Saleor install a fake.
+	vi.stubEnv("NEXT_PUBLIC_SALEOR_API_URL", "");
 });
 
 afterEach(() => {
 	delete process.env.NEXT_PUBLIC_STOREFRONT_URL;
+	vi.unstubAllEnvs();
+	vi.unstubAllGlobals();
+	resetLiveCategoriesForTests();
 });
 
 describe("the whole catalogue, or an error", () => {
@@ -207,7 +216,7 @@ describe("the whole catalogue, or an error", () => {
 
 		expect(urls).toContain(`${BASE}/sk`);
 		expect(urls).toContain(`${BASE}/sk/products`);
-		// Every category Saleor holds is root-level; one this build does not know keeps /categories/.
+		// Every category Saleor holds is root-level; one nobody has learned yet keeps /categories/.
 		expect(urls).toContain(`${BASE}/sk/nosice-bicyklov`);
 		expect(urls, "an empty category is thin content, not a canonical URL").not.toContain(
 			`${BASE}/sk/prazdna-kategoria`,
@@ -251,6 +260,67 @@ describe("category URLs", () => {
 			urls.filter((url) => url.includes("/categories/")),
 			"no category URL carries the retired /categories/ segment",
 		).toEqual([]);
+	});
+
+	/**
+	 * Owner, 2026-10-06: a category created in Saleor gets its root URL with no edit and no deploy.
+	 * The sitemap says what the proxy does — both ask the live category list — so it brings that
+	 * list up to date before it writes a URL, and never lists a root the proxy would not serve.
+	 */
+	describe("created in Saleor after this build", () => {
+		const stocked = (...slugs: string[]) => ({
+			ok: true as const,
+			data: {
+				categories: {
+					edges: slugs.map((slug) => ({ node: { slug, products: { totalCount: 7 } } })),
+					pageInfo: { hasNextPage: false, endCursor: `offset:${slugs.length}` },
+				},
+			},
+		});
+
+		it("is listed at its root, and nowhere under /categories/", async () => {
+			const { world } = installFakeSaleor();
+			world.categories.push("kategoria-nova");
+			serve(
+				(after) => productPage(after, 0),
+				() => stocked("kategoria-nova"),
+			);
+
+			const urls = (await sitemap()).map((entry) => entry.url);
+
+			expect(urls).toContain(`${BASE}/sk/kategoria-nova`);
+			expect(urls).not.toContain(`${BASE}/sk/categories/kategoria-nova`);
+		});
+
+		it("keeps /categories/ when the live list refused its root, because a product holds the slug", async () => {
+			const { world } = installFakeSaleor();
+			world.categories.push("kategoria-nova");
+			world.products["kategoria-nova"] = ["sk-eur"];
+			serve(
+				(after) => productPage(after, 0),
+				() => stocked("kategoria-nova"),
+			);
+			vi.spyOn(console, "warn").mockImplementation(() => {});
+
+			const urls = (await sitemap()).map((entry) => entry.url);
+
+			expect(urls).toContain(`${BASE}/sk/categories/kategoria-nova`);
+			expect(urls).not.toContain(`${BASE}/sk/kategoria-nova`);
+		});
+
+		it("is still written when Saleor cannot be asked: the sitemap does not wait for it, or fail on it", async () => {
+			installFakeSaleor({ down: true });
+			vi.spyOn(console, "log").mockImplementation(() => {});
+			serve(
+				(after) => productPage(after, 0),
+				() => stocked("kategoria-nova", "nosice-bicyklov"),
+			);
+
+			const urls = (await sitemap()).map((entry) => entry.url);
+
+			expect(urls).toContain(`${BASE}/sk/categories/kategoria-nova`);
+			expect(urls).toContain(`${BASE}/sk/nosice-bicyklov`);
+		});
 	});
 });
 
@@ -342,10 +412,11 @@ describe("categories are walked to the end too", async () => {
 		);
 
 		const entries = await sitemap();
-		// `kategoria-N` is in neither list in src/config/categories.ts — a category this build
-		// does not know — so these keep the `/categories/` shape, which is worth pinning: the
-		// sitemap says the same thing the breadcrumbs and the proxy do, because all three call
-		// categoryUrl(), and the proxy only routes a root URL it has in its set.
+		// `kategoria-N` is in neither list in src/config/categories.ts, and no Saleor endpoint is
+		// set here for the live category list to learn them from — so these keep the `/categories/`
+		// shape, which is worth pinning: the sitemap says the same thing the breadcrumbs and the
+		// proxy do, because all three call categoryUrl(), and the proxy only routes a root URL it
+		// has in its set.
 		const categoryUrls = entries.filter((entry) => entry.url.startsWith(`${BASE}/sk/categories/kategoria-`));
 
 		expect(categoryUrls).toHaveLength(CATEGORY_COUNT);

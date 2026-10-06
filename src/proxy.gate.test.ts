@@ -10,6 +10,12 @@ import { resetRouteExistenceStateForTests, routeExistenceStats } from "./lib/rou
 import { MARKET_ROOT_SEGMENTS } from "./lib/routing.generated";
 import { proxy } from "./proxy";
 
+// The proxy starts a background refresh of the live category list on every market URL, and that is a
+// `fetch` of its own. Everything in this file is about the fetches `proxy()` makes for something
+// else, and counts them, so the list is stood down here: it has its own tests
+// (`lib/live-categories.test.ts`), and what the proxy does with it is pinned in `proxy.test.ts`.
+vi.mock("./lib/live-categories", () => ({ keepLiveCategoriesFresh: vi.fn() }));
+
 /**
  * The proxy with the resource-existence gate ARMED.
  *

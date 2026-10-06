@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 
 const { revalidatePath, revalidateTag, verifySecret, verifyWebhookSignature, extractBearerToken } =
 	vi.hoisted(() => ({
@@ -14,6 +14,9 @@ vi.mock("@/lib/api-auth", () => ({ verifySecret, verifyWebhookSignature, extract
 
 import { NextRequest } from "next/server";
 import { GET, POST } from "./route";
+import { isCategorySlug } from "@/config/categories";
+import { liveCategoriesStats, resetLiveCategoriesForTests } from "@/lib/live-categories";
+import { installFakeSaleor } from "@/lib/live-categories.testkit";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 
 const ALL_CHANNELS = Object.values(CHANNEL_MAP).map((c) => c.saleorSlug);
@@ -34,6 +37,18 @@ beforeEach(() => {
 	verifyWebhookSignature.mockReturnValue(true);
 	verifySecret.mockReturnValue(true);
 	extractBearerToken.mockReturnValue(null);
+	// A category event reloads the live category list from Saleor. With no endpoint that is a no-op,
+	// so no test here reaches for a real Saleor because the shell it runs in happens to have one
+	// set; the live list tests below install a fake one.
+	vi.stubEnv("NEXT_PUBLIC_SALEOR_API_URL", "");
+});
+
+afterEach(() => {
+	vi.useRealTimers();
+	vi.restoreAllMocks();
+	vi.unstubAllEnvs();
+	vi.unstubAllGlobals();
+	resetLiveCategoriesForTests();
 });
 
 describe("Saleor revalidation webhook", () => {
@@ -234,6 +249,80 @@ describe("category events and the localized roots (COMMERCE-2 M1)", () => {
 		expect(body.paths?.filter((path) => path.includes("/categories/"))).toEqual([
 			"/sk-eur/categories/stresne-nosice",
 		]);
+	});
+});
+
+/**
+ * Owner, 2026-10-06: a category created in Saleor gets its root URL with no edit and no deploy.
+ * A category event is the one signal that says "the list has changed", so it reloads the live list
+ * (`lib/live-categories.ts`) — and does it BEFORE it expires anything, because a render that
+ * re-fills an expired cache entry in between would bake a `/categories/…` link into it.
+ */
+describe("a category event and the live category list", () => {
+	const NEW = "a-category-created-today";
+
+	it("learns the new category before the first cache entry is expired, and answers exactly as before", async () => {
+		const { world } = installFakeSaleor();
+		world.categories.push(NEW);
+		const knownWhenFirstExpired: boolean[] = [];
+		revalidateTag.mockImplementation(() => {
+			knownWhenFirstExpired.push(isCategorySlug(NEW));
+		});
+
+		const response = await post({ category: { slug: NEW }, channel: "sk-eur" });
+
+		expect(response.status).toBe(200);
+		expect(knownWhenFirstExpired.length).toBeGreaterThan(0);
+		expect(knownWhenFirstExpired.every(Boolean)).toBe(true);
+		expect(isCategorySlug(NEW)).toBe(true);
+		// The body is a contract CFM checks field for field: nothing was added to it.
+		expect(Object.keys((await response.json()) as object).sort()).toEqual(["paths", "success", "tags"]);
+	});
+
+	it("is not held up by a Saleor that is down: the event is still answered, the floor still stands", async () => {
+		installFakeSaleor({ down: true });
+		vi.spyOn(console, "log").mockImplementation(() => {});
+
+		const response = await post({ category: { slug: "stresne-nosice" }, channel: "sk-eur" });
+
+		expect(response.status).toBe(200);
+		expect(taggedWith("category:sk-eur").length).toBeGreaterThan(0);
+		expect(liveCategoriesStats().loaded).toBe(false);
+		expect(isCategorySlug("stresne-nosice")).toBe(true);
+	});
+
+	it("waits two seconds for a Saleor that does not answer, and not a moment longer", async () => {
+		vi.useFakeTimers();
+		vi.stubGlobal("fetch", () => new Promise<Response>(() => {}));
+		vi.stubEnv("NEXT_PUBLIC_SALEOR_API_URL", "https://saleor.test/graphql/");
+
+		const answered = post({ category: { slug: NEW }, channel: "sk-eur" });
+		await vi.advanceTimersByTimeAsync(1_900);
+		expect(revalidateTag, "still waiting for the live list").not.toHaveBeenCalled();
+
+		await vi.advanceTimersByTimeAsync(200);
+		expect((await answered).status).toBe(200);
+		expect(revalidateTag).toHaveBeenCalled();
+	});
+
+	it("asks nothing of Saleor for an event that cannot announce a category", async () => {
+		const { fetchMock } = installFakeSaleor();
+
+		await post({ product: { slug: "n60012", channel: { slug: "sk-eur" } } });
+		await post({ collection: { slug: "summer" }, channel: "sk-eur" });
+
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("does not reload anything for a call it refuses", async () => {
+		const { fetchMock } = installFakeSaleor();
+
+		expect((await post({ category: { slug: NEW }, channel: "not-a-channel" })).status).toBe(400);
+		verifyWebhookSignature.mockReturnValue(false);
+		verifySecret.mockReturnValue(false);
+		expect((await post({ category: { slug: NEW }, channel: "sk-eur" })).status).toBe(401);
+
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 });
 

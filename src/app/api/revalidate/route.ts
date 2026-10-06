@@ -8,6 +8,7 @@ import { categoryBaseSlug, categorySegment } from "@/config/category-routes";
 import { parseWebhookPayload } from "@/lib/saleor/webhook-payload";
 import { productMissTagFor } from "@/lib/saleor/product-cache-tags";
 import { forgetProductExistence } from "@/lib/route-existence";
+import { refreshLiveCategories } from "@/lib/live-categories";
 
 /**
  * Webhook endpoint for cache invalidation.
@@ -22,6 +23,9 @@ import { forgetProductExistence } from "@/lib/route-existence";
  * - Verifies Saleor's HMAC signature (timing-safe)
  * - Falls back to Bearer token / x-revalidate-secret header
  */
+
+/** How long a category event waits for the live category list to reload. */
+const LIVE_CATEGORIES_WAIT_MS = 2_000;
 
 // ============================================================================
 // Revalidation helper — keeps the switch cases DRY
@@ -159,6 +163,20 @@ export async function POST(request: NextRequest) {
 		if (!channels) {
 			console.warn("[Revalidate] Unknown channel:", String(resource.channel).replace(/[\r\n]/g, ""));
 			return Response.json({ error: "Unknown channel" }, { status: 400 });
+		}
+
+		// A category event may be the one that announces a category the proxy has never heard of.
+		// The live list (`lib/live-categories.ts`) is brought up to date BEFORE anything is expired,
+		// so a render that re-fills a cache this event is about to expire already knows the
+		// category's root URL — otherwise it bakes a `/categories/…` link into that cache. Waits at
+		// most LIVE_CATEGORIES_WAIT_MS and never fails the revalidation: the live list reports its
+		// own failures, and the minute-old refresh the proxy starts is the fallback.
+		if (kind === "category") {
+			try {
+				await refreshLiveCategories({ force: true, waitMs: LIVE_CATEGORIES_WAIT_MS });
+			} catch (error) {
+				console.error("[Revalidate] live category list refresh failed:", error);
+			}
 		}
 
 		for (const channel of channels) {

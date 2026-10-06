@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+// The live list has its own tests, against a fake Saleor. Here it is only asked whether boot calls
+// it — and the stubbed `fetch` of the fitment tests below must not be answered for it.
+const { prewarmLiveCategories } = vi.hoisted(() => ({
+	prewarmLiveCategories: vi.fn(async (): Promise<void> => {}),
+}));
+vi.mock("./lib/live-categories", () => ({ prewarmLiveCategories }));
+
 import { register } from "./instrumentation";
 import { __forgetRootContext, hasRootContext } from "./lib/async/detached";
 import { datasetHashFromText } from "./lib/fitment/dataset-hash";
@@ -70,6 +77,7 @@ afterEach(() => {
 	vi.unstubAllEnvs();
 	vi.unstubAllGlobals();
 	vi.restoreAllMocks();
+	prewarmLiveCategories.mockClear();
 	__resetFitmentMemo();
 	__forgetRootContext();
 });
@@ -221,5 +229,40 @@ describe("the fitment dataset at boot", () => {
 		expect(captured.error.join("\n")).toContain("[fitment] load failed (fetch-failed)");
 		// The rest of boot ran: the deploy script's read-back lines are all there.
 		expect(captured.log.some((line) => line.startsWith("[market-state] live="))).toBe(true);
+	});
+});
+
+/**
+ * Owner, 2026-10-06: a category created in Saleor gets its root URL with no edit and no deploy. The
+ * live category list that makes it so is loaded at boot — before the first request, so a cache
+ * filled at start-up does not bake a `/categories/…` link for a category that already has a root.
+ */
+describe("the live category list at boot", () => {
+	it("is loaded before the process answers anything, and boot waits for it", async () => {
+		let loaded = false;
+		prewarmLiveCategories.mockImplementationOnce(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 10));
+			loaded = true;
+		});
+
+		await boot({ ...SECRETS });
+
+		expect(prewarmLiveCategories).toHaveBeenCalledTimes(1);
+		expect(loaded).toBe(true);
+	});
+
+	it("is left alone during next build, which reaches out from nothing in here", async () => {
+		await boot({ ...SECRETS, NEXT_PHASE: "phase-production-build" });
+
+		expect(prewarmLiveCategories).not.toHaveBeenCalled();
+	});
+
+	it("is not run in the edge runtime", async () => {
+		vi.stubEnv("NEXT_RUNTIME", "edge");
+		vi.spyOn(console, "log").mockImplementation(() => {});
+
+		await register();
+
+		expect(prewarmLiveCategories).not.toHaveBeenCalled();
 	});
 });

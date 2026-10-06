@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# A stand-in for nginx -t: refuses a site file that names an upstream nobody defined, and fails on
+# request. Controls: nginx-t-fail, nginx-t-fail-when-canonical-only, nginx-t-fail-when-bridge-primary.
+set -u
+world="${FAKE_WORLD:?}"
+printf '%s nginx %s\n' "$(date +%s.%N)" "$*" >>"$world/events.log"
+if [[ "${1:-}" == "-t" ]]; then
+	upstream="${UPSTREAM_FILE:?}"
+	site="${SITE_FILE:?}"
+	if [[ -e "$world/ctl/nginx-t-fail" ]]; then
+		echo "nginx: [emerg] failing on purpose" >&2
+		exit 1
+	fi
+	if [[ -e "$world/ctl/nginx-t-fail-when-canonical-only" ]] && grep -q '^# state: canonical-only' "$upstream" 2>/dev/null; then
+		echo "nginx: [emerg] failing on purpose for canonical-only" >&2
+		exit 1
+	fi
+	if [[ -e "$world/ctl/nginx-t-fail-when-bridge-primary" ]] && grep -q '^# state: bridge-primary' "$upstream" 2>/dev/null; then
+		echo "nginx: [emerg] failing on purpose for bridge-primary" >&2
+		exit 1
+	fi
+	if grep -q 'proxy_pass http://maky_storefront;' "$site"; then
+		if ! grep -q '^upstream maky_storefront {' "$upstream" 2>/dev/null; then
+			echo 'nginx: [emerg] host not found in upstream "maky_storefront"' >&2
+			exit 1
+		fi
+	fi
+	echo "nginx: [warn] protocol options redefined (this is only a warning)" >&2
+	echo "nginx: configuration file /etc/nginx/nginx.conf test is successful" >&2
+fi
+exit 0

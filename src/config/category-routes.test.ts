@@ -151,8 +151,9 @@ describe("foreign markets", () => {
 	});
 
 	it("keep a category this build does not know on its /categories/ URL, which still works", () => {
-		// Created in Saleor after src/config/categories.ts was last written: the proxy cannot tell
-		// it from a product, so it keeps the URL it has until the slug is added.
+		// Created in Saleor after src/config/categories.ts was last written, and not yet seen by the
+		// live category list (`lib/live-categories.ts`): the proxy cannot tell it from a product, so
+		// it keeps the URL it has until the live list knows the slug.
 		expect(categoryUrlFor("cz-czk", "a-category-this-build-does-not-know")).toBe(
 			"/categories/a-category-this-build-does-not-know",
 		);

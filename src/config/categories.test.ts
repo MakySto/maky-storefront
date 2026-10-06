@@ -1,9 +1,10 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
 	CATEGORY_SLUGS,
+	LIVE_CATEGORY_SLUGS_KEY,
 	OTHER_CATEGORY_SLUGS,
 	STOREFRONT_CATEGORIES,
 	categoriesFor,
@@ -99,8 +100,9 @@ describe("storefront category catalogue", () => {
 	/**
 	 * Owner, 2026-10-06: no category URL carries `/categories/` — not the catalogue's 8 and not the
 	 * accessory buckets, sub-categories and maker shelves behind them. The proxy tells a category from
-	 * a product with `CATEGORY_SLUGS` and nothing else, so a slug missing from it falls back to
-	 * `/categories/` and one that is only half-registered would answer at a root nothing routes.
+	 * a product with `CATEGORY_SLUGS` plus what the live category list has loaded from Saleor, so a
+	 * slug in neither falls back to `/categories/` and one that is only half-registered would answer
+	 * at a root nothing routes. `CATEGORY_SLUGS` is the floor: what the build was written with.
 	 */
 	describe("every category Saleor holds", () => {
 		it("is in the set the proxy resolves the root with, catalogue and other alike", () => {
@@ -114,7 +116,7 @@ describe("storefront category catalogue", () => {
 			for (const slug of CATEGORY_SLUGS) expect(categoryUrl(slug), slug).toBe(`/${slug}`);
 		});
 
-		it("keeps a category this build does not know on its /categories/ URL until it is added", () => {
+		it("keeps a category nobody knows on its /categories/ URL until the live list has seen it", () => {
 			expect(isCategorySlug("a-category-this-build-does-not-know")).toBe(false);
 			expect(categoryUrl("a-category-this-build-does-not-know")).toBe(
 				"/categories/a-category-this-build-does-not-know",
@@ -166,5 +168,40 @@ describe("storefront category catalogue", () => {
 		}
 
 		expect(offenders).toEqual([]);
+	});
+});
+
+/**
+ * `CATEGORY_SLUGS` is the FLOOR since 2026-10-06. What the running server loads from Saleor is
+ * published on `globalThis` by `lib/live-categories.ts` (tested there, against a fake Saleor);
+ * what has to hold HERE is the reading side, which client components import too.
+ */
+describe("the categories the running server has learned from Saleor", () => {
+	const published = globalThis as typeof globalThis & { [LIVE_CATEGORY_SLUGS_KEY]?: ReadonlySet<string> };
+
+	afterEach(() => {
+		delete published[LIVE_CATEGORY_SLUGS_KEY];
+	});
+
+	it("are answered by isCategorySlug and categoryUrl on top of the floor", () => {
+		expect(isCategorySlug("a-category-created-today")).toBe(false);
+		expect(categoryUrl("a-category-created-today")).toBe("/categories/a-category-created-today");
+
+		published[LIVE_CATEGORY_SLUGS_KEY] = new Set(["a-category-created-today"]);
+
+		expect(isCategorySlug("a-category-created-today")).toBe(true);
+		expect(categoryUrl("a-category-created-today")).toBe("/a-category-created-today");
+	});
+
+	it("never replace the floor: a live set that names none of it still leaves every one of them", () => {
+		published[LIVE_CATEGORY_SLUGS_KEY] = new Set();
+
+		for (const slug of CATEGORY_SLUGS) expect(isCategorySlug(slug), slug).toBe(true);
+	});
+
+	it("are simply absent where nothing has loaded them, as in a browser", () => {
+		expect(published[LIVE_CATEGORY_SLUGS_KEY]).toBeUndefined();
+		expect(isCategorySlug("stresne-boxy")).toBe(true);
+		expect(isCategorySlug("a-category-created-today")).toBe(false);
 	});
 });

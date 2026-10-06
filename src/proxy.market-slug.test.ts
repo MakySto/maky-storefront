@@ -8,6 +8,12 @@ import { resetMarketSlugRedirectsForTests } from "./lib/market-slug-redirects";
 import { resetRouteExistenceStateForTests } from "./lib/route-existence";
 import { proxy } from "./proxy";
 
+// The proxy starts a background refresh of the live category list on every market URL, and that is a
+// `fetch` of its own. Everything in this file is about the fetches `proxy()` makes for something
+// else, and counts them, so the list is stood down here: it has its own tests
+// (`lib/live-categories.test.ts`), and what the proxy does with it is pinned in `proxy.test.ts`.
+vi.mock("./lib/live-categories", () => ({ keepLiveCategoriesFresh: vi.fn() }));
+
 /**
  * PUBLIC_MARKET_URL_V2 — the old market URL, after CFM has replaced it.
  *
