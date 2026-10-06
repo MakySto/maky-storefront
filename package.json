@@ -17,6 +17,7 @@
 		"generate": "graphql-codegen --config .graphqlrc.ts",
 		"generate:checkout": "graphql-codegen --config src/checkout/graphql/codegen.ts",
 		"generate:all": "pnpm run generate && pnpm run generate:checkout",
+		"generate:offline": "node scripts/generate-offline.mjs",
 		"test": "vitest",
 		"test:run": "vitest run",
 		"knip": "knip",
