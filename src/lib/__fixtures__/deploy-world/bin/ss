@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# No connection is ever held open: draining a port returns at once.
+exit 0
