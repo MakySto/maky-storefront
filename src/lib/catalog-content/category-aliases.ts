@@ -1,4 +1,4 @@
-import { LOCALIZED_CATEGORIES, mappedCategoryFor } from "@/config/category-routes";
+import { mappedCategoryFor } from "@/config/category-routes";
 import { catalogLanguageForMarket } from "./language";
 import { isBorrowedCatalogPath } from "./borrowed-routes";
 import { catalogRedirectTarget } from "./redirects";
@@ -28,7 +28,7 @@ export function categoryAliasTarget(market: string, rest: readonly string[]): st
 
 	const first = rest[0]!;
 	const category = mappedCategoryFor(market, first);
-	if (!category || category.placement !== "root") return null;
+	if (!category) return null;
 
 	const segment = category.segments[language as keyof typeof category.segments];
 	if (!segment || segment === category.baseSlug) return null;
@@ -68,23 +68,3 @@ export function canonicalCatalogPath(market: string, path: string): string {
 	if (!target) return path;
 	return `${prefixed ? `/${market}` : ""}${target}${suffix}`;
 }
-
-/**
- * The canonical `/categories/{segment}` for a LISTING category spelled the other way.
- *
- * `/cz/categories/nordrive-stresne-nosice` → the Czech spelling, still under `/categories/`. Root
- * categories are handled by the retired-category-URL redirect instead, which already sends
- * `/categories/{slug}` to the root.
- */
-export function listingCategoryAliasTarget(market: string, segment: string): string | null {
-	const language = catalogLanguageForMarket(market);
-	const category = mappedCategoryFor(market, segment);
-	if (!language || !category || category.placement !== "listing") return null;
-	const canonical = category.segments[language as keyof typeof category.segments];
-	return canonical && canonical !== segment ? `/categories/${canonical}` : null;
-}
-
-/** Every mapped root segment in every language, for tests and the acceptance check. */
-export const MAPPED_ROOT_CATEGORIES = LOCALIZED_CATEGORIES.filter(
-	(category) => category.placement === "root",
-);

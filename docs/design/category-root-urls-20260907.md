@@ -2,6 +2,9 @@
 
 Vetva `fix/category-root-urls-v1`, odbočená z nasadeného `f8ffeba`.
 
+> **Stav od 6. 10. 2026:** rozhodnutie v §4 (root URL iba pre 8 katalógových kategórií) už neplatí. Root dostali
+> všetky kategórie Saleoru, vybrala sa cesta „set vo zdrojovom kóde“. Pozri **Dodatok 2026-10-06** na konci.
+
 `/sk/categories/stresne-nosice` → **`/sk/stresne-nosice`**, so 308 zo starej adresy.
 
 ---
@@ -88,3 +91,69 @@ Brány: lint 0 · tsc 0 · i18n 0 · **1 240 testov** · build 0.
 **nejaký PRODUKT nedostal slug kategórie**. Root je spoločný menný priestor s 9 577
 produktovými slugmi, proxy kolíziu rieši v prospech kategórie a produkt by ticho prišiel
 o svoju kanonickú adresu. Dnes kolízia neexistuje; to je stav, nie záruka.
+
+---
+
+## Dodatok 2026-10-06: root URL pre všetkých 30 kategórií
+
+Marek (cez CFM) 6. 10.: `/sk/categories/nosice-bicyklov-na-tazne-zariadenie` má byť
+`/sk/nosice-bicyklov-na-tazne-zariadenie`, rovnako ako vozidlové stránky
+`/sk/stresne-nosice/mazda/cx-60/kh`. Smerovanie je storefrontu, takže návrh aj nasadenie patria sem.
+
+### Čo sa zvolilo z dvoch ciest v §4
+
+**Commitnutý zoznam, nie rozlíšenie za behu.** `src/config/categories.ts` nesie `STOREFRONT_CATEGORIES` (8
+katalógových) a nový `OTHER_CATEGORY_SLUGS` (22 ďalších vrátane `default-category`). Dokopy je to presne
+tých 30 kategórií, ktoré Saleor drží, a `CATEGORY_SLUGS` z nich skladá množinu, podľa ktorej proxy
+rozlišuje kategóriu od produktu. Dôvody:
+
+- `[productSlug]` ostáva nedotknutý (9 577 stránok, PPR, cache, metadáta) a brána existencie sa nemusí učiť pýtať na
+  dve rodiny naraz;
+- rozhodnutie o `/{trh}/{slug}` stále padá v proxy bez dopytu nahor, synchrónne;
+- kategórie vznikajú zriedka (CFM má zamknutú taxonómiu) a nová kategória nespadne: kým jej slug nie je v zozname,
+  zostáva na `/{trh}/categories/{slug}`, čo funguje, a `pnpm check:nav` ju vypíše.
+
+Cena: nová kategória v Saleore sa dostane na root až so zmenou zdrojového kódu a nasadením.
+
+### Čo sa zmenilo
+
+| miesto                  | zmena                                                                                                                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `categories.ts`         | `OTHER_CATEGORY_SLUGS`; `CATEGORY_SLUGS` je zjednotenie. `categoryUrl()` a `categoryUrlFor()` vracajú root pre všetky, `/categories/{slug}` iba pre slug, ktorý build nepozná |
+| `proxy.ts`              | 308 `/{trh}/categories/{slug}` → `/{trh}/{segment}` pre každú kategóriu v množine, jeden skok, query sa zachová. Rewrite na `categories/[slug]` sa nemení                     |
+| `category-routes.ts`    | zmizol `placement: "listing"`: Nordrive polica (`nordrive-stresne-nosice`) má root URL ako ostatné, v cudzom trhu `nordrive-<lokalizovaný koreň>`                             |
+| `category-aliases.ts`   | zmizla `listingCategoryAliasTarget`, nemá čo robiť                                                                                                                            |
+| `nav-links.mjs`         | kontroluje všetkých 30: root odpovedá, canonical, 308 zo starej adresy, žiadny produkt s rovnakým slugom, a porovnáva zoznam v kóde so Saleorom                               |
+| `published-content.mjs` | berie do `NON_PRODUCT` všetkých 30 slugov, nielen osem                                                                                                                        |
+
+Nemení sa: interná cesta `app/[channel]/(main)/categories/[slug]`, `/api/revalidate` (revaliduje interné cesty
+`/{kanál}/categories/…` a značky `category:{kanál}:{locale}:{slug}`, verejná adresa je iba rewrite), sitemapa
+(volá `categoryUrlFor`, preto sama ide na root; „21 vs 8“ z §5 tým zaniká, obe strany čítajú jednu množinu),
+canonical, hreflang, drobčeky a karty produktov (všetko cez `categoryUrlFor`).
+
+### Kolízie
+
+- **Kategória vs. produkt:** v koreni vyhráva kategória, ak slug je v množine. Slugy kategórií sú krátke
+  slovenské názvy; produktové slugy nesú značku, model a kód. Zhodu zo Saleoru overí `pnpm check:nav`
+  (`product(slug:)` pre každý slug kategórie), v zahraničí treba rezerváciu slugov kategórií pre `new_slug`
+  na strane CFM.
+- **Vozidlové stránky `/{trh}/{sortiment}/{značka}/{model}/{generácia}`:** `{sortiment}` JE slug kategórie, rovnaký
+  menný priestor. Cesta pod slugom kategórie ide do `categories/[slug]/[...vehicle]`; kategória bez vozidlového
+  stromu odpovie „nenájdené“ presne ako doteraz pod `/categories/`. Značka a model sú až druhá úroveň, takže s
+  kategóriou v koreni nekolidujú.
+- **Cesty trhu (`MARKET_ROOT_SEGMENTS`):** `categories.test.ts` zlyhá, ak niektorý slug kategórie je zároveň cestou.
+
+### Čo ostáva mimo
+
+- **Zahraničné preložené slugy.** Kategóriu, ktorú CFM preložil a tabuľka v `category-routes.ts` ju nemá, odkazuje
+  navigácia kategórií dnes pod `/{trh}/categories/{preložený slug}` (napr. `/de/categories/fahrradtraeger`). Proxy ten
+  slug bez dopytu nahor nepozná, preto ho nepresmeruje (presmerovala by na root, kde by bol 404). Zahraničné trhy
+  sú v náhľade (`noindex`); lokalizovaný koreň dostane kategória, keď dostane riadok v `LOCALIZED_CATEGORIES`.
+- **`.rsc` na starej adrese.** Rozhoduje sa na surovej ceste ako doteraz; zostarnutá karta prehliadača s odkazom
+  `/sk/categories/x` dostane stránku cez rewrite, nový odkaz už ide na root.
+
+### Overenie
+
+Testy: proxy (každý slug zo zoznamu 308 na root, query, neznáma kategória ostáva, produkt sa nezamení za kategóriu,
+Nordrive vo všetkých 12 trhoch), `categoryUrlFor`, sitemapa, `classifyRoute`, čítač zoznamu pre `check:nav`.
+Živé overenie po nasadení: `pnpm check:nav` a postup nasadenia v `/mnt/project-files/storefront-4-5/`.

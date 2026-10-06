@@ -2,7 +2,15 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { STOREFRONT_CATEGORIES, categoriesFor, categoryHref } from "@/config/categories";
+import {
+	CATEGORY_SLUGS,
+	OTHER_CATEGORY_SLUGS,
+	STOREFRONT_CATEGORIES,
+	categoriesFor,
+	categoryHref,
+	categoryUrl,
+	isCategorySlug,
+} from "@/config/categories";
 import { HEADER_PRIMARY_NAV } from "@/ui/components/header/header.config";
 import { MARKET_ROOT_SEGMENTS } from "@/lib/routing.generated";
 
@@ -89,6 +97,41 @@ describe("storefront category catalogue", () => {
 	});
 
 	/**
+	 * Owner, 2026-10-06: no category URL carries `/categories/` — not the catalogue's 8 and not the
+	 * accessory buckets, sub-categories and maker shelves behind them. The proxy tells a category from
+	 * a product with `CATEGORY_SLUGS` and nothing else, so a slug missing from it falls back to
+	 * `/categories/` and one that is only half-registered would answer at a root nothing routes.
+	 */
+	describe("every category Saleor holds", () => {
+		it("is in the set the proxy resolves the root with, catalogue and other alike", () => {
+			for (const category of STOREFRONT_CATEGORIES)
+				expect(isCategorySlug(category.slug), category.slug).toBe(true);
+			for (const slug of OTHER_CATEGORY_SLUGS) expect(isCategorySlug(slug), slug).toBe(true);
+			expect(CATEGORY_SLUGS.size).toBe(STOREFRONT_CATEGORIES.length + OTHER_CATEGORY_SLUGS.length);
+		});
+
+		it("has its public URL at the root", () => {
+			for (const slug of CATEGORY_SLUGS) expect(categoryUrl(slug), slug).toBe(`/${slug}`);
+		});
+
+		it("keeps a category this build does not know on its /categories/ URL until it is added", () => {
+			expect(isCategorySlug("a-category-this-build-does-not-know")).toBe(false);
+			expect(categoryUrl("a-category-this-build-does-not-know")).toBe(
+				"/categories/a-category-this-build-does-not-know",
+			);
+		});
+
+		it("is written once: no slug twice, none both in the catalogue and in the other list", () => {
+			const all = [...STOREFRONT_CATEGORIES.map((category) => category.slug), ...OTHER_CATEGORY_SLUGS];
+			expect(new Set(all).size).toBe(all.length);
+		});
+
+		it("is a plain lower-case slug, so a URL segment never needs encoding or escaping", () => {
+			for (const slug of CATEGORY_SLUGS) expect(slug, slug).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+		});
+	});
+
+	/**
 	 * The root is a namespace shared with product slugs, and the proxy resolves it
 	 * from this set alone — no upstream call. A category slug that collides with a
 	 * real route segment would be shadowed by that route and unreachable, with
@@ -96,8 +139,8 @@ describe("storefront category catalogue", () => {
 	 * namespace, the 9,577 product slugs, which only Saleor knows.
 	 */
 	it("has no category slug that collides with a market root segment", () => {
-		for (const category of STOREFRONT_CATEGORIES) {
-			expect(MARKET_ROOT_SEGMENTS.has(category.slug), `${category.slug} is also a route`).toBe(false);
+		for (const slug of CATEGORY_SLUGS) {
+			expect(MARKET_ROOT_SEGMENTS.has(slug), `${slug} is also a route`).toBe(false);
 		}
 	});
 
@@ -112,7 +155,7 @@ describe("storefront category catalogue", () => {
 	 * written anywhere in src/ other than the catalogue is a defect by construction.
 	 */
 	it("has no category slug hard-coded anywhere else in src/", () => {
-		const known = new Set(STOREFRONT_CATEGORIES.map((c) => c.slug));
+		const known = CATEGORY_SLUGS;
 		const offenders: string[] = [];
 
 		for (const file of sourceFiles()) {

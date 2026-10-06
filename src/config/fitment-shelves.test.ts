@@ -7,9 +7,10 @@ import { FITMENT_SHELVES, shelfFitmentKind } from "./fitment-shelves";
  * Which shelves the vehicle filter may speak for — kept apart from the navigation registry.
  *
  * The defect this separation fixes: the Thule and Nordrive roof-rack shelves are real listings
- * that are deliberately NOT in `STOREFRONT_CATEGORIES` (a registry entry is a menu slot, a root
- * URL and a proxy rule), and the filter used to find its scope THERE. So the shelf the 9 150
- * Thule sets land on was the one shelf with no car filter at all.
+ * that are deliberately NOT in `STOREFRONT_CATEGORIES` (a registry entry is a menu slot and an
+ * i18n key; the root URL and the proxy rule come from the set of every category), and the filter
+ * used to find its scope THERE. So the shelf the 9 150 Thule sets land on was the one shelf with
+ * no car filter at all.
  */
 describe("the vehicle filter's shelves", () => {
 	it("covers the main roof-rack category and both makers' shelves", () => {
@@ -49,12 +50,14 @@ describe("the vehicle filter's shelves", () => {
 		}
 	});
 
-	it("adds no URL and no navigation entry — scope is not registration", () => {
-		// The two maker shelves keep the address they have: no root URL, no menu slot, no proxy rule.
-		expect(isCategorySlug("thule-stresne-nosice")).toBe(false);
-		expect(isCategorySlug("nordrive-stresne-nosice")).toBe(false);
-		expect(CATEGORY_SLUGS.has("thule-stresne-nosice")).toBe(false);
+	it("adds no navigation entry — scope is not registration", () => {
+		// The two maker shelves have no menu slot. Their root URL is not this file's doing: since
+		// 2026-10-06 every category Saleor holds has one, and it comes from the same set as the rest.
+		expect(isCategorySlug("thule-stresne-nosice")).toBe(true);
+		expect(isCategorySlug("nordrive-stresne-nosice")).toBe(true);
+		expect(CATEGORY_SLUGS.has("thule-stresne-nosice")).toBe(true);
 		expect(STOREFRONT_CATEGORIES.some((category) => category.slug.includes("thule"))).toBe(false);
+		expect(STOREFRONT_CATEGORIES.some((category) => category.slug.includes("nordrive"))).toBe(false);
 	});
 
 	it("keeps the registry free of scope", () => {

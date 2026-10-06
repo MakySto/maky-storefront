@@ -25,9 +25,10 @@ import { categoryRoutePath, isCategorySlug } from "./categories";
  * ## Two entities, two rows
  *
  * `stresne-nosice` (Category:2) owns a root URL and the vehicle tree below it.
- * `nordrive-stresne-nosice` (Category:5) is its child, a listing under `/categories/`, and the
- * category every Nordrive product names. They must never share a segment in one language —
- * the Nordrive segment is `nordrive-<root>` as the shared contract proposes.
+ * `nordrive-stresne-nosice` (Category:5) is its child, with a root URL of its own since
+ * 2026-10-06 (it was a listing under `/categories/` until then), and the category every Nordrive
+ * product names. They must never share a segment in one language — the Nordrive segment is
+ * `nordrive-<root>` as the shared contract proposes.
  *
  * ## What this does NOT move
  *
@@ -52,15 +53,11 @@ export const CATALOG_LANGUAGES: readonly CatalogLanguage[] = [
 	"en",
 ];
 
-export type CategoryPlacement = "root" | "listing";
-
 export interface LocalizedCategory {
 	/** Saleor base slug: the identity for queries, cache tags and the fitment shelf. */
 	readonly baseSlug: string;
 	/** Saleor global id, read anonymously on 2026-09-16. Checked by `pnpm check:category-routes`. */
 	readonly saleorId: string;
-	/** `root` owns `/{market}/{segment}`; `listing` lives at `/{market}/categories/{segment}`. */
-	readonly placement: CategoryPlacement;
 	/** Canonical URL segment per catalogue language. `sk` is always the base slug. */
 	readonly segments: Readonly<Record<CatalogLanguage, string>>;
 }
@@ -82,13 +79,11 @@ export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 	{
 		baseSlug: "stresne-nosice",
 		saleorId: "Q2F0ZWdvcnk6Mg==",
-		placement: "root",
 		segments: ROOF_RACK_SEGMENTS,
 	},
 	{
 		baseSlug: "nordrive-stresne-nosice",
 		saleorId: "Q2F0ZWdvcnk6NQ==",
-		placement: "listing",
 		segments: Object.fromEntries(
 			CATALOG_LANGUAGES.map((language) => [
 				language,
@@ -167,7 +162,7 @@ export function categoryUrlFor(marketOrChannel: string, slug: string): string {
 }
 
 /**
- * Is this the first segment of a mapped ROOT category's localized URL in this market?
+ * Is this the first segment of a mapped category's localized URL in this market?
  *
  * Only the market's own localized spelling answers `true` — the base slug is already known
  * to the proxy through `isCategorySlug`, and another language's spelling (`/cz/dachtraeger`)
@@ -176,7 +171,7 @@ export function categoryUrlFor(marketOrChannel: string, slug: string): string {
 export function isLocalizedRootSegment(market: string, segment: string): boolean {
 	const language = languageOf(market);
 	const category = language ? BY_SEGMENT.get(language)?.get(segment) : undefined;
-	return Boolean(category && category.placement === "root" && category.baseSlug !== segment);
+	return Boolean(category && category.baseSlug !== segment);
 }
 
 export interface CategoryRouteRow {
@@ -186,7 +181,6 @@ export interface CategoryRouteRow {
 	readonly language: CatalogLanguage;
 	readonly baseSlug: string;
 	readonly saleorId: string;
-	readonly placement: CategoryPlacement;
 	readonly segment: string;
 	/** Market-prefixed canonical path, e.g. `/cz/stresni-nosice`. */
 	readonly path: string;
@@ -211,9 +205,8 @@ export function categoryRouteTable(): readonly CategoryRouteRow[] {
 				language,
 				baseSlug: category.baseSlug,
 				saleorId: category.saleorId,
-				placement: category.placement,
 				segment,
-				path: `/${market}${category.placement === "root" ? `/${segment}` : categoryRoutePath(segment)}`,
+				path: `/${market}/${segment}`,
 			});
 		}
 	}

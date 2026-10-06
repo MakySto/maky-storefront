@@ -655,7 +655,7 @@ export function classifyRoute(market: string, segments: readonly string[]): Gate
 
 	const slug = safeDecode(rest[1]);
 	if (slug === undefined) return null;
-	// Same for a listing category's localized spelling (`/cz/categories/nordrive-stresni-nosice`).
+	// Same for a localized spelling under the retired `/categories/` form (`/cz/categories/stresni-nosice`).
 	return {
 		family,
 		slug: family === "category" ? categoryBaseSlug(market, slug) : slug,

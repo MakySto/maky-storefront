@@ -129,6 +129,26 @@ describe("the sk product + category rollout set", () => {
 		});
 	});
 
+	it("asks Saleor about a root URL as a category for every category Saleor holds, not only the catalogue's", () => {
+		// `/sk/nosice-bicyklov-na-tazne-zariadenie` is a category root since 2026-10-06. Taken for a
+		// product, an armed gate would ask `product(slug:)`, be told "absent" truthfully, and 404 it.
+		for (const slug of [
+			"nosice-bicyklov-na-tazne-zariadenie",
+			"prislusenstvo-k-stresnym-boxom",
+			"opravne-sady",
+		]) {
+			expect(classifyRoute("sk", ["sk", slug]), slug).toEqual({
+				family: "category",
+				slug,
+				channel: "sk-eur",
+			});
+		}
+		// A slug that is in no list is a product candidate, and stays one.
+		expect(classifyRoute("sk", ["sk", "nosice-bicyklov-na-tazne-zariadenie-thule-xt-3"])?.family).toBe(
+			"product",
+		);
+	});
+
 	it("404s only on positive proof of absence, for either family", async () => {
 		arm("sk", "product,category");
 
