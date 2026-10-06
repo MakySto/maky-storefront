@@ -11,6 +11,11 @@ secret_visible=no
 [[ -n "${CLAUDE_FAKE_SECRET:-}" ]] && secret_visible=yes
 printf '%s pm2 %s [secret-visible=%s]\n' "$(date +%s.%N)" "$*" "$secret_visible" >>"$world/events.log"
 
+# Where the app's stdout goes: the file `--output` named, or PM2's own directory like the real thing.
+log_path() {
+	if [[ -f "$state/$1.out" ]]; then cat "$state/$1.out"; else printf '%s' "$world/pm2logs/$1-out.log"; fi
+}
+
 is_online() {
 	[[ -f "$state/$1.pid" ]] && kill -0 "$(cat "$state/$1.pid")" 2>/dev/null
 }
@@ -24,7 +29,7 @@ start_server() {
 	cwd=$(cat "$state/$name.cwd")
 	port=$(cat "$state/$name.port")
 	node "$world/fake/fake-app-server.mjs" --port "$port" --cwd "$cwd" \
-		--log "$world/pm2logs/$name-out.log" --boot-ms "${FAKE_BOOT_MS:-300}" >/dev/null 2>&1 9>&- &
+		--log "$(log_path "$name")" --boot-ms "${FAKE_BOOT_MS:-300}" >/dev/null 2>&1 9>&- &
 	echo $! >"$state/$name.pid"
 	echo online >"$state/$name.status"
 	disown
@@ -65,7 +70,7 @@ case "$cmd" in
 			[[ -e "$f" ]] || continue
 			name=$(basename "$f" .cwd)
 			printf '%s{"name":"%s","pm2_env":{"status":"%s","pm_out_log_path":"%s"}}' \
-				"$sep" "$name" "$(cat "$state/$name.status")" "$world/pm2logs/$name-out.log"
+				"$sep" "$name" "$(cat "$state/$name.status")" "$(log_path "$name")"
 			sep=','
 		done
 		printf ']\n'
@@ -73,17 +78,20 @@ case "$cmd" in
 	start)
 		if [[ "${1:-}" == "npm" ]]; then
 			shift
-			name="" cwd="" port=""
+			name="" cwd="" port="" out=""
 			while [[ $# -gt 0 ]]; do
 				case "$1" in
 					--name) name="$2"; shift 2 ;;
 					--cwd) cwd="$2"; shift 2 ;;
+					--output) out="$2"; shift 2 ;;
 					-p) port="$2"; shift 2 ;;
 					*) shift ;;
 				esac
 			done
 			printf '%s' "$cwd" >"$state/$name.cwd"
 			printf '%s' "$port" >"$state/$name.port"
+			rm -f "$state/$name.out"
+			[[ -z "$out" ]] || printf '%s' "$out" >"$state/$name.out"
 			echo stopped >"$state/$name.status"
 			start_server "$name"
 		else
@@ -105,7 +113,7 @@ case "$cmd" in
 			exit 1
 		fi
 		stop_server "${1:-}"
-		rm -f "$state/${1:-}.cwd" "$state/${1:-}.port" "$state/${1:-}.status" "$state/${1:-}.pid"
+		rm -f "$state/${1:-}.cwd" "$state/${1:-}.port" "$state/${1:-}.status" "$state/${1:-}.pid" "$state/${1:-}.out"
 		;;
 	*)
 		echo "fake pm2: unsupported: $cmd $*" >&2

@@ -13,7 +13,7 @@ import {
 import http from "node:http";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
@@ -70,6 +70,8 @@ export interface World {
 	installNginx(): RunResult;
 	setCtl(name: string, content?: string): void;
 	clearCtl(name: string): void;
+	/** Adds files to the live checkout and commits them, so that the next build (git archive HEAD) has them. */
+	commitFiles(files: Record<string, string>): void;
 	events(): { t: number; text: string }[];
 	/** Index of the first event matching `pattern` at or after `from`, or -1. */
 	indexOf(pattern: RegExp, from?: number): number;
@@ -120,7 +122,11 @@ function createApp(app: string): void {
 	writeFileSync(join(app, "node_modules/.pnpm/lock.yaml"), "lockfileVersion: '9.0'\n");
 	writeFileSync(join(app, "node_modules/marker.js"), "module.exports = 1;\n");
 	writeFileSync(join(app, "scripts/checks/market-language.mjs"), "process.exit(0);\n");
-	writeFileSync(join(app, ".gitignore"), "node_modules\n.next\n.env\n.env.*\n");
+	// The generated GraphQL types are ignored, as in the real repository.
+	writeFileSync(
+		join(app, ".gitignore"),
+		"node_modules\n.next\n.env\n.env.*\nsrc/gql/\nsrc/checkout/graphql/generated/\n",
+	);
 	writeFileSync(join(app, ".env"), "SOME_SETTING=1\n");
 	// Next reads this one at build and at start; the backups are only there to be left behind.
 	writeFileSync(join(app, ".env.production"), "SOME_OTHER_SETTING=1\n");
@@ -321,6 +327,14 @@ export async function createWorld(): Promise<World> {
 
 		setCtl(name, content = "1\n") {
 			writeFileSync(join(ctl, name), content);
+		},
+		commitFiles(files) {
+			for (const [name, content] of Object.entries(files)) {
+				mkdirSync(dirname(join(app, name)), { recursive: true });
+				writeFileSync(join(app, name), content);
+			}
+			git(app, "add", "-A");
+			git(app, "commit", "-q", "-m", `fixture: ${Object.keys(files).join(", ")}`);
 		},
 		clearCtl(name) {
 			rmSync(join(ctl, name), { force: true });
