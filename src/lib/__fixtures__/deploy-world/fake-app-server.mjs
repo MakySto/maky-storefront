@@ -4,11 +4,18 @@
 // What it serves comes from the tree it was started in, so a build moved to another directory
 // is judged where it now lives. Behaviour switches are read from <cwd>/.next/FAKE_BEHAVIOR:
 //   css404in, failhome                         faults the gate must catch
+//   homestatus=<code>, homelocation=<url>      the market page answers that code (with that Location) instead of 200
+//   cut=<path>[,<path>]                        those paths send a 200 with a body promised longer than it comes, then
+//                                              the connection drops: a stream that died after its shell
 //   categories=yes|refused|no|noendpoint       the [live-categories] line it prints at boot; with `no`, the
 //                                              retry that logs "Saleor answered again" once `categoriesrecoverms`
 //                                              have passed and a market page is asked for
 //   release=on                                 the [release] line a process following the manifest prints
 //   statuslagin=<app|build>, statusafterms=N  what /api/catalog/status serves, below
+// And one property of how the process was started, `--hostname <h>` (what `-H <h>` gives next start): an explicit
+// loopback address reproduces what Next 16.3.6 did on the box when the bridge was started with -H 127.0.0.1
+// (rehearsal of 2026-10-06): every market page answers a 301 to itself, with the rewrite as an absolute URL in
+// x-middleware-rewrite; the static files, robots.txt and the API answer as usual.
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -17,6 +24,8 @@ const args = {};
 for (let i = 2; i < process.argv.length; i += 2) args[process.argv[i].slice(2)] = process.argv[i + 1];
 const port = Number(args.port);
 const cwd = args.cwd;
+// Next turns 127.x.x.x and ::1 into `localhost` for the proxy but builds the origin it compares with from -H as given.
+const rewriteLeavesOrigin = /^(127(\.\d{1,3}){3}|\[?::1\]?)$/.test(args.hostname ?? "");
 const startedAt = Date.now();
 let recovered = false;
 
@@ -123,6 +132,13 @@ const server = http.createServer((req, res) => {
 		res.end(body);
 	};
 
+	if (b.cut?.split(",").includes(p)) {
+		res.writeHead(200, { "content-type": "text/html", "content-length": "100000" });
+		res.write("<!doctype html><html>");
+		setTimeout(() => res.socket?.destroy(), 20);
+		return;
+	}
+
 	if (p.startsWith("/_next/static/")) {
 		const file = path.join(cwd, ".next", p.slice("/_next/".length));
 		if (p.endsWith(".css") && b.css404in && cwd.endsWith(b.css404in)) return send(404, "text/plain", "gone");
@@ -158,7 +174,18 @@ const server = http.createServer((req, res) => {
 		return doc === null ? send(404, "text/plain", "not found") : send(200, "application/json", doc);
 	}
 	if (PAGES.has(p) || /^\/sk\/produkt-\d+$/.test(p)) {
+		if (rewriteLeavesOrigin && p.startsWith("/sk")) {
+			res.writeHead(301, { location: p, "x-middleware-rewrite": `http://localhost:${port}/sk-eur` });
+			return res.end();
+		}
 		if (p === "/sk" && b.failhome) return send(500, "text/plain", "boom");
+		if (p === "/sk" && b.homestatus) {
+			res.writeHead(Number(b.homestatus), {
+				"content-type": "text/plain",
+				...(b.homelocation ? { location: b.homelocation } : {}),
+			});
+			return res.end(`answered ${b.homestatus}`);
+		}
 		if (
 			p === "/sk" &&
 			b.categories === "no" &&

@@ -348,7 +348,13 @@ on_exit() {
 }
 
 # --- helpers -------------------------------------------------------------------------
-http_code() { curl -sS -o /dev/null -w '%{http_code}' --max-time 25 "$@" 2>/dev/null || echo 000; }
+# The code a request got, 000 when curl did not finish it. Not `|| echo 000` after the call: curl has already
+# printed the code it saw by the time it fails, so a body cut short after a 200 came back as "200000".
+http_code() {
+	local out
+	out=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 "$@" 2>/dev/null) || out=000
+	printf '%s' "$out"
+}
 
 # Sets TMP_PATH. Not for use inside $(...): the subshell would take the registration for cleanup_tmp with it.
 new_tmp() {
@@ -425,15 +431,62 @@ check_external() {
 	return 1
 }
 
+# Asks once and says what came back in PROBE_NOTE. Returns 0 only for a clean 200: the code AND a finished
+# transfer, because a response that is cut off after its headers still reports 200 (curl prints the code it saw
+# before it fails). The note is for the message that explains why a process was not ready: the first rehearsal on
+# the box gave up after 120 probes with "did not answer", and a log with nothing in it to say what it had answered.
+PROBE_NOTE=""
+probe_once() {
+	local url="$1" out rc=0 code size redirect msg
+	out=$(curl -sS -o /dev/null --max-time 25 \
+		-w '%{http_code}|%{size_download}|%{redirect_url}|%{errormsg}' "$url" 2>/dev/null) || rc=$?
+	IFS='|' read -r code size redirect msg <<<"$out"
+	code=${code:-000}
+	if (( rc == 0 )) && [[ "$code" == "200" ]]; then
+		PROBE_NOTE="HTTP 200, ${size} B"
+		return 0
+	fi
+	if [[ "$code" == "000" ]]; then
+		PROBE_NOTE="no HTTP answer (curl exit ${rc}${msg:+: $msg})"
+	elif (( rc != 0 )); then
+		PROBE_NOTE="HTTP ${code}, then the transfer failed after ${size:-0} B (curl exit ${rc}${msg:+: $msg})"
+	elif [[ "$redirect" == "$url" ]]; then
+		PROBE_NOTE="HTTP ${code}, redirecting to the very address it was asked for (${redirect})"
+	elif [[ -n "$redirect" ]]; then
+		PROBE_NOTE="HTTP ${code}, redirecting to ${redirect}"
+	else
+		PROBE_NOTE="HTTP ${code}, ${size:-0} B"
+	fi
+	return 1
+}
+
+# What the first and the last probe of the last wait got, for the message that gives up.
+READY_FIRST=""
+READY_LAST=""
+
 wait_ready_at() {
 	local base="$1" budget="${2:-$READY_TIMEOUT_S}" i
+	READY_FIRST=""
+	READY_LAST=""
 	for ((i = 0; i < budget; i++)); do
-		if [[ "$(http_code "$base$SMOKE_PATH")" == "200" ]]; then
+		if probe_once "$base$SMOKE_PATH"; then
 			return 0
 		fi
+		READY_FIRST="${READY_FIRST:-$PROBE_NOTE}"
+		READY_LAST="$PROBE_NOTE"
 		sleep 1
 	done
 	return 1
+}
+
+# " — what it answered", appended to the message of a process that did not become ready.
+ready_detail() {
+	[[ -n "$READY_LAST" ]] || return 0
+	if [[ "$READY_FIRST" == "$READY_LAST" ]]; then
+		printf ' — every probe got: %s' "$READY_LAST"
+	else
+		printf ' — the first probe got: %s; the last: %s' "$READY_FIRST" "$READY_LAST"
+	fi
 }
 
 wait_ready() { wait_ready_at "$LOCAL_URL" "${1:-$READY_TIMEOUT_S}"; }
@@ -676,7 +729,7 @@ start() {
 		warn "cannot resolve the PM2 stdout log for $PM2_APP — the market read-back cannot run"
 	fi
 	pm2 start "$PM2_APP" >/dev/null
-	wait_ready || die "$PM2_APP did not answer on $LOCAL_URL$SMOKE_PATH within ${READY_TIMEOUT_S}s"
+	wait_ready || die "$PM2_APP did not answer on $LOCAL_URL$SMOKE_PATH within ${READY_TIMEOUT_S}s$(ready_detail)"
 	CANONICAL_STOPPED=0
 	info "responding on $LOCAL_URL$SMOKE_PATH"
 }
@@ -1487,6 +1540,50 @@ swap_in_new_build() {
 	start
 }
 
+# A bridge that is up and still not ready, asked about itself before the exit handler removes it: what PM2
+# says of it (status, restarts, how long it has been up: never its environment, which holds secrets), whether
+# its port takes connections, and one more request with the headers and the start of the body it gets. The
+# static route answers or does not whatever the market logic does, so it says whether the process serves at all.
+show_bridge_state() {
+	local hdr body rc=0 line
+	new_tmp; hdr=$TMP_PATH
+	new_tmp; body=$TMP_PATH
+	{
+		printf '    the bridge as PM2 sees it: '
+		pm2 jlist 2>/dev/null | python3 -c '
+import json, sys, time
+try:
+    apps = json.load(sys.stdin)
+except Exception:
+    print("its list could not be read")
+    sys.exit(0)
+for a in apps:
+    if a.get("name") != sys.argv[1]:
+        continue
+    env = a.get("pm2_env", {})
+    up = env.get("pm_uptime")
+    age = "unknown" if not isinstance(up, (int, float)) else "%d s" % max(0, int(time.time() - up / 1000))
+    print("status=%s restarts=%s up=%s pid=%s" % (env.get("status", "?"), env.get("restart_time", "?"), age, a.get("pid", "?")))
+    break
+else:
+    print("not in its list")
+' "$BRIDGE_APP" || echo "unreadable"
+		if port_in_use "$BRIDGE_PORT"; then
+			printf '    port %s: takes connections\n' "$BRIDGE_PORT"
+		else
+			printf '    port %s: refuses connections\n' "$BRIDGE_PORT"
+		fi
+		printf '    %s/robots.txt: %s\n' "$BRIDGE_URL" "$(http_code "$BRIDGE_URL/robots.txt")"
+		rc=0
+		curl -sS -D "$hdr" -o "$body" --max-time 25 "$BRIDGE_URL$SMOKE_PATH" 2>/dev/null || rc=$?
+		printf '    %s%s once more (curl exit %s), its headers:\n' "$BRIDGE_URL" "$SMOKE_PATH" "$rc"
+		head -n 20 -- "$hdr" 2>/dev/null | tr -d '\r' | grep -v -i '^set-cookie:' | sed 's/^/      /' || true
+		printf '    and the first 300 bytes of its body:\n'
+		head -c 300 -- "$body" 2>/dev/null | tr -c '[:print:]\n' '?' | sed 's/^/      /' || true
+		printf '\n'
+	} >&2
+}
+
 start_bridge() {
 	step "bridge on $BRIDGE_URL"
 	# The bridge writes into files of this run. PM2 never truncates the logs it keeps in its own directory,
@@ -1498,13 +1595,24 @@ start_bridge() {
 	rm -f -- "$BRIDGE_OUT_LOG"* "$BRIDGE_ERR_LOG"*
 	# A clean environment. The live process carries the variables of whichever shell started it, tokens
 	# of an agent session included; everything the app needs is in .env, which Next reads itself.
+	#
+	# Started the way the live process is, `next start -p <port>`, and with no -H. The first --rehearse on the
+	# box (2026-10-06) had -H 127.0.0.1 here and every market page answered a 301 to itself: Next hands the proxy
+	# a URL whose host it has turned from 127.0.0.1 into `localhost`, and calls a rewrite internal only when its
+	# origin equals the one built from -H, so /sk -> /sk-eur counted as an outside address, was fetched from the
+	# bridge itself and was sent back to /sk by the proxy's own rule for the channel path. With no -H both sides say
+	# localhost. The price: the bridge listens on every interface for the minutes it runs, as the live process
+	# does on its port all the time.
 	env -i HOME="$HOME" PATH="$PATH" LANG=C.UTF-8 ${PM2_HOME:+PM2_HOME="$PM2_HOME"} \
 		pm2 start npm --name "$BRIDGE_APP" --cwd "$BUILD_DIR" \
 			--output "$BRIDGE_OUT_LOG" --error "$BRIDGE_ERR_LOG" \
-			-- start -- -p "$BRIDGE_PORT" -H 127.0.0.1 >/dev/null \
+			-- start -- -p "$BRIDGE_PORT" >/dev/null \
 		|| die "pm2 could not start the bridge"
 	BRIDGE_UP=1
-	wait_ready_at "$BRIDGE_URL" || die "the bridge did not answer on $BRIDGE_URL$SMOKE_PATH within ${READY_TIMEOUT_S}s (its log: $BRIDGE_ERR_LOG, $BRIDGE_OUT_LOG)"
+	if ! wait_ready_at "$BRIDGE_URL"; then
+		show_bridge_state
+		die "the bridge did not answer on $BRIDGE_URL$SMOKE_PATH within ${READY_TIMEOUT_S}s$(ready_detail) (its log: $BRIDGE_ERR_LOG, $BRIDGE_OUT_LOG)"
+	fi
 	info "the bridge answers on $BRIDGE_URL$SMOKE_PATH"
 }
 
