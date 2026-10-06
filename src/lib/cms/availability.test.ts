@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { FAULT_CACHE_LIFE } from "@/lib/cache-fault";
+import { CMS_PAGE_CACHE_LIFE } from "./cache-life";
 
 /**
  * Navigation must follow the CMS, not a static table.
@@ -10,6 +12,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 vi.mock("server-only", () => ({}));
+
+// `"use cache"` is a directive Next compiles; under vitest it is only a string. What the cached
+// function declares about itself is what these tests can see. (`vitest.setup.ts` makes both calls
+// no-ops for every other test; this file replaces them to look at what is declared.)
+const cacheLife = vi.fn();
+const cacheTag = vi.fn();
+vi.mock("next/cache", () => ({
+	cacheLife: (...args: unknown[]) => cacheLife(...args),
+	cacheTag: (...args: unknown[]) => cacheTag(...args),
+}));
 
 const fetchCmsPage = vi.fn();
 vi.mock("@/lib/cms/client", () => ({ fetchCmsPage: (...args: unknown[]) => fetchCmsPage(...args) }));
@@ -68,6 +80,8 @@ async function subject() {
 
 beforeEach(() => {
 	vi.resetModules();
+	cacheLife.mockReset();
+	cacheTag.mockReset();
 	fetchCmsPage.mockReset();
 	marketHasRoute.mockReset();
 	marketHasRoute.mockReturnValue(true);
@@ -130,6 +144,69 @@ describe("cmsRouteAvailable", () => {
 		const { cmsRouteAvailable } = await subject();
 		await cmsRouteAvailable("ca-cad", "o-nas");
 		expect(fetchCmsPage).toHaveBeenCalledWith("o-nas", "en", "CA");
+	});
+
+	/**
+	 * Why the CMS is read inside a `"use cache"` function (see `readCmsPublication`): the footer
+	 * and the homepage's advice section ask this inline, outside any `<Suspense>`, and Next
+	 * answers a plain `fetch` there only while it is not regenerating a shell on demand. After
+	 * that — a shell older than its `expire`, or a tag expired by `/api/revalidate` — the question
+	 * went to the network once more in the pass that decides the static shell, was cut off, and
+	 * the page answered 500 (`NEXT_STATIC_GEN_BAILOUT`) to whoever asked first, on every page.
+	 *
+	 * Under vitest the directive does nothing, so the test holds the part it can see: the read
+	 * declares a cache lifetime and the page's webhook tags BEFORE it reaches the CMS. Take the
+	 * cached function away and `cacheLife` is never called.
+	 */
+	it("reads the CMS inside a cached function that carries the page's webhook tags", async () => {
+		fetchCmsPage.mockResolvedValue(foundWithBody());
+		const { cmsRouteAvailable } = await subject();
+		await cmsRouteAvailable("sk-eur", "o-nas");
+
+		expect(cacheLife).toHaveBeenCalledTimes(1);
+		expect(cacheLife).toHaveBeenCalledWith(CMS_PAGE_CACHE_LIFE);
+		expect(cacheTag).toHaveBeenCalledWith("cms:page:o-nas");
+		expect(cacheTag).toHaveBeenCalledWith("cms:collection:pages");
+		expect(
+			cacheLife.mock.invocationCallOrder[0],
+			"the lifetime is declared before the CMS is asked",
+		).toBeLessThan(fetchCmsPage.mock.invocationCallOrder[0]!);
+	});
+
+	// An error thrown out of a `"use cache"` function fails the prerender that is waiting for it,
+	// whether or not the caller catches it (`@/lib/cache-fault`). The footer asks this on every page,
+	// so a CMS outage during a regeneration must be an ANSWER — "unknown, keep the link" — and one
+	// that is forgotten again within seconds.
+	it("an outage is answered, not thrown, and its entry is shortened to the fault lifetime", async () => {
+		fetchCmsPage.mockResolvedValue({ status: "error", reason: "timeout after 3000ms" });
+		const { cmsRouteAvailable } = await subject();
+
+		await expect(cmsRouteAvailable("sk-eur", "o-nas")).resolves.toBe(true);
+
+		expect(cacheLife).toHaveBeenLastCalledWith(FAULT_CACHE_LIFE);
+		expect(
+			cacheLife.mock.invocationCallOrder.at(-1),
+			"the outage is only known after the CMS has been asked",
+		).toBeGreaterThan(fetchCmsPage.mock.invocationCallOrder[0]!);
+	});
+
+	it.each([
+		["published", foundWithBody()],
+		["unpublished", { status: "not-found" }],
+		["excluded from the market", { status: "market-mismatch", documentId: "x", markets: ["CZ"] }],
+	])("an authoritative answer (%s) keeps the page's own lifetime", async (_name, outcome) => {
+		fetchCmsPage.mockResolvedValue(outcome);
+		const { cmsRouteAvailable } = await subject();
+		await cmsRouteAvailable("sk-eur", "o-nas");
+		expect(cacheLife).not.toHaveBeenCalledWith(FAULT_CACHE_LIFE);
+		expect(cacheLife).toHaveBeenCalledTimes(1);
+	});
+
+	it("does not touch the cache for a market the policy does not offer", async () => {
+		marketHasRoute.mockReturnValue(false);
+		const { cmsRouteAvailable } = await subject();
+		await cmsRouteAvailable("de-eur", "o-nas");
+		expect(cacheLife).not.toHaveBeenCalled();
 	});
 });
 

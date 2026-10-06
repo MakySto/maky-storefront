@@ -3,10 +3,9 @@ import { cacheTag } from "next/cache";
 
 import { executePublicGraphQL } from "@/lib/graphql";
 import {
+	cachedOutcome,
 	catchUpstreamError,
-	refuseToCacheUpstreamError,
 	toOutcome,
-	type AuthoritativeOutcome,
 	type ResourceOutcome,
 } from "@/lib/saleor/resource-outcome";
 import { ProductDetailsDocument, type ProductDetailsQuery } from "@/gql/graphql";
@@ -90,9 +89,33 @@ async function fetchProductOutcome(
 }
 
 /**
- * The cached half. Ends in `refuseToCacheUpstreamError`, which throws on a fault
- * so Next never stores it — an outage must not be remembered as an absence for
- * the length of a `cacheLife("minutes")` entry.
+ * The lookup the cache entry holds: the product, and the migration shim for a slug that has since
+ * been renamed.
+ */
+async function lookupProductOutcome(
+	slug: string,
+	channel: string,
+	locale: string,
+): Promise<ResourceOutcome<LocalizedProduct>> {
+	const outcome = await fetchProductOutcome(slug, channel, locale);
+
+	// Migration shim: a product whose Saleor slug has not been updated to the
+	// SKU-last form yet is still reachable at its canonical new URL. Only fires
+	// on an AUTHORITATIVE miss — a fault is not a miss, so a blip can no longer
+	// send us down this path — and only for the ten explicitly mapped slugs, so
+	// it disappears on its own once Saleor has converged.
+	if (outcome.status === "not-found") {
+		const previous = previousProductSlug(slug);
+		if (previous) return fetchProductOutcome(previous, channel, locale);
+	}
+	return outcome;
+}
+
+/**
+ * The cached half. An authoritative answer is kept for the entry's life; a fault is remembered for
+ * seconds only (`cachedOutcome`) — an outage must not be remembered as an absence for the length of
+ * a `cacheLife("minutes")` entry, and must not be thrown out of the cache either, where it would
+ * fail the prerender that is waiting for it (`@/lib/cache-fault`).
  *
  * Only ever the page's OWN product now. The other markets are answered by
  * `getProductMarketPresence`, in one request, by product id.
@@ -101,31 +124,22 @@ async function getProductOutcomeCached(
 	slug: string,
 	channel: string,
 	locale: string,
-): Promise<AuthoritativeOutcome<LocalizedProduct>> {
+): Promise<ResourceOutcome<LocalizedProduct>> {
 	"use cache";
 	applyCacheProfile(CACHE_PROFILES.products, { channel, locale, slug });
 
-	let outcome = await fetchProductOutcome(slug, channel, locale);
-
-	// Migration shim: a product whose Saleor slug has not been updated to the
-	// SKU-last form yet is still reachable at its canonical new URL. Only fires
-	// on an AUTHORITATIVE miss — a fault throws below without ever getting here,
-	// so a blip can no longer send us down this path — and only for the ten
-	// explicitly mapped slugs, so it disappears on its own once Saleor has converged.
-	if (outcome.status === "not-found") {
-		const previous = previousProductSlug(slug);
-		if (previous) outcome = await fetchProductOutcome(previous, channel, locale);
-	}
-
-	const answer = refuseToCacheUpstreamError(outcome);
+	const answer = await cachedOutcome(() => lookupProductOutcome(slug, channel, locale));
 
 	// Abroad the URL slug is the translated one, and the events that must reach this entry
-	// name the base slug — see `product-cache-tags.ts`. No extra tags in Slovakia.
-	const extraTags = productAnswerTags(
-		{ channel, locale, slug },
-		answer.status === "found" ? { status: "found", baseSlug: answer.resource.baseSlug } : answer,
-	);
-	for (const tag of extraTags) cacheTag(tag);
+	// name the base slug — see `product-cache-tags.ts`. No extra tags in Slovakia, and none for
+	// a fault: it is neither a product nor a miss, and it does not outlive a few seconds.
+	if (answer.status !== "upstream-error") {
+		const extraTags = productAnswerTags(
+			{ channel, locale, slug },
+			answer.status === "found" ? { status: "found", baseSlug: answer.resource.baseSlug } : answer,
+		);
+		for (const tag of extraTags) cacheTag(tag);
+	}
 
 	return answer;
 }
@@ -135,8 +149,8 @@ async function getProductOutcomeCached(
  * preflight's internal endpoint.
  *
  * `cache()` so the page and its metadata share one answer per request explicitly — including a
- * fault, which is never stored across requests but must not be asked for twice, with retries,
- * inside one.
+ * fault, which is stored across requests for seconds only but must not be asked for twice, with
+ * retries, inside one.
  *
  * `slug` is the URL segment exactly as the page receives it in `params.productSlug`.
  */

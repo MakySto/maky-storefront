@@ -1,5 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
+import { settle, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { readBlockMarkets, readMedia, type CmsMedia } from "./blocks";
 import { cmsCollectionTag } from "./cache-tags";
 import { readCmsConnection } from "./env";
@@ -64,15 +65,24 @@ export function brandsFromDocs(
 }
 
 /**
- * This market's published brand entries. A fault THROWS, so it is never cached as "no brands";
- * the pages fall back to Saleor's makers alone meanwhile.
+ * This market's published brand entries. A fault THROWS to the caller, so an unreachable CMS is
+ * never taken for "no brands"; the pages fall back to Saleor's makers alone meanwhile. Inside the
+ * cache it is a value instead, see `@/lib/cache-fault`.
  */
 export async function getCmsBrands(channel: string): Promise<CmsBrand[]> {
+	return valueOrThrow(await readCmsBrands(channel));
+}
+
+async function readCmsBrands(channel: string): Promise<CachedRead<CmsBrand[]>> {
 	"use cache";
 	cacheLife("hours");
 	const tag = cmsCollectionTag("brands");
 	if (tag) cacheTag(tag);
 
+	return settle(() => fetchCmsBrands(channel));
+}
+
+async function fetchCmsBrands(channel: string): Promise<CmsBrand[]> {
 	const market = marketForChannel(channel);
 	const connection = readCmsConnection();
 	if (!market || !connection) return [];

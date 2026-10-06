@@ -2,6 +2,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { categoriesFor } from "@/config/categories";
 import { getLocaleFromChannel } from "@/config/locale";
+import { settle, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { CACHE_PROFILES } from "@/lib/cache-manifest";
 import { fetchStockedCategorySlugs, sitemapTag } from "@/lib/seo/catalogue-walk";
 
@@ -43,17 +44,23 @@ const DEADLINE_MS = 1_500;
 /** The last answer per channel, for when Saleor cannot be asked. Process-local on purpose. */
 const lastKnown = new Map<string, ReadonlySet<string>>();
 
-async function readOfferedCategories(channel: string): Promise<string[]> {
+/**
+ * A fault comes out of the cache as a value that is remembered for seconds (`@/lib/cache-fault`): a throw
+ * out of a `"use cache"` function fails the prerender it happens in, and the header of EVERY page
+ * asks for this. `getMarketAssortment` below still takes it as the fault it is.
+ */
+async function readOfferedCategories(channel: string): Promise<CachedRead<string[]>> {
 	"use cache";
 	cacheLife(CACHE_PROFILES.sitemap.cacheProfile);
 	cacheTag(sitemapTag(channel));
-	// Throws on a fault, and a thrown entry is not cached: the next request asks again.
-	return fetchStockedCategorySlugs(channel, getLocaleFromChannel(channel), { deadlineMs: DEADLINE_MS });
+	return settle(() =>
+		fetchStockedCategorySlugs(channel, getLocaleFromChannel(channel), { deadlineMs: DEADLINE_MS }),
+	);
 }
 
 export async function getMarketAssortment(channel: string): Promise<MarketAssortment> {
 	try {
-		const categories: ReadonlySet<string> = new Set(await readOfferedCategories(channel));
+		const categories: ReadonlySet<string> = new Set(valueOrThrow(await readOfferedCategories(channel)));
 		lastKnown.set(channel, categories);
 		return { state: "known", categories };
 	} catch (error) {

@@ -1,5 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
+import { answered, faulted, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { type CmsBlock } from "./blocks";
 import { cmsCollectionTag, cmsPageTag } from "./cache-tags";
 import { fetchCmsPage } from "./client";
@@ -81,10 +82,15 @@ export function adviceGuideFromBlocks(blocks: readonly CmsBlock[]): AdviceGuide 
 }
 
 /**
- * This market's guide, or `null` where it is not published. A fault THROWS, so an unreachable
- * CMS is never cached as "no guide"; the section falls back to its own words meanwhile.
+ * This market's guide, or `null` where it is not published. A fault THROWS to the caller, so an
+ * unreachable CMS is never taken for "no guide": the section falls back to its own words meanwhile.
+ * Inside the cache it is a value instead, see `@/lib/cache-fault`.
  */
 export async function getAdviceGuide(channel: string): Promise<AdviceGuide | null> {
+	return valueOrThrow(await readAdviceGuide(channel));
+}
+
+async function readAdviceGuide(channel: string): Promise<CachedRead<AdviceGuide | null>> {
 	"use cache";
 	cacheLife("hours");
 	const pageTag = cmsPageTag(ADVICE_GUIDE_SLUG);
@@ -93,10 +99,10 @@ export async function getAdviceGuide(channel: string): Promise<AdviceGuide | nul
 	if (collectionTag) cacheTag(collectionTag);
 
 	const market = marketForChannel(channel);
-	if (!market) return null;
+	if (!market) return answered(null);
 
 	const outcome = await fetchCmsPage(ADVICE_GUIDE_SLUG, payloadLocaleForMarket(market), market);
-	if (outcome.status === "error") throw new Error(`[Advice] CMS unavailable: ${outcome.reason}`);
-	if (outcome.status !== "found") return null;
-	return adviceGuideFromBlocks(outcome.page.layout);
+	if (outcome.status === "error") return faulted(`[Advice] CMS unavailable: ${outcome.reason}`);
+	if (outcome.status !== "found") return answered(null);
+	return answered(adviceGuideFromBlocks(outcome.page.layout));
 }

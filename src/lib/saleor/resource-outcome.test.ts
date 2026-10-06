@@ -1,16 +1,24 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { notFound, redirect } from "next/navigation";
-import nextPkg from "next/package.json" with { type: "json" };
+import { FAULT_CACHE_LIFE } from "@/lib/cache-fault";
 import type { GraphQLResult } from "@/lib/graphql";
+
+const cacheLife = vi.fn();
+vi.mock("next/cache", () => ({ cacheLife: (...args: unknown[]) => cacheLife(...args) }));
+
 import {
-	UpstreamUnavailableError,
+	cachedOutcome,
 	catchUpstreamError,
 	logUpstreamError,
-	refuseToCacheUpstreamError,
 	resourceOrNull,
 	toOutcome,
 	upstreamError,
+	type ResourceOutcome,
 } from "./resource-outcome";
+
+beforeEach(() => {
+	cacheLife.mockReset();
+});
 
 type Data = { product: { id: string } | null };
 
@@ -61,113 +69,98 @@ describe("toOutcome", () => {
 	});
 });
 
-describe("refuseToCacheUpstreamError", () => {
-	it("passes both authoritative answers through untouched", () => {
-		expect(refuseToCacheUpstreamError({ status: "found", resource: 1 })).toEqual({
+const FAULT: ResourceOutcome<number> = {
+	status: "upstream-error",
+	type: "graphql",
+	retryable: false,
+	message: "bad query",
+};
+
+/**
+ * The body of a `"use cache"` function that answers with an outcome. A fault is the outcome it
+ * is, and the entry that holds it is kept for seconds, not for the length of a product entry;
+ * it is never thrown, because a throw out of a cache function fails the prerender it happens in
+ * (`@/lib/cache-fault`).
+ */
+describe("cachedOutcome", () => {
+	it("passes both authoritative answers through untouched, and leaves the entry's life alone", async () => {
+		await expect(cachedOutcome(async () => ({ status: "found", resource: 1 }) as const)).resolves.toEqual({
 			status: "found",
 			resource: 1,
 		});
-		expect(refuseToCacheUpstreamError({ status: "not-found" })).toEqual({ status: "not-found" });
-	});
-
-	it("throws on a fault, so the cache entry is never written", () => {
-		expect(() =>
-			refuseToCacheUpstreamError({
-				status: "upstream-error",
-				type: "network",
-				retryable: true,
-				message: "timeout",
-			}),
-		).toThrow(UpstreamUnavailableError);
-	});
-});
-
-describe("catchUpstreamError", () => {
-	it("round-trips the fault back into an outcome", async () => {
-		const outcome = await catchUpstreamError(async () =>
-			refuseToCacheUpstreamError({
-				status: "upstream-error",
-				type: "graphql",
-				retryable: false,
-				message: "bad query",
-			}),
-		);
-		expect(outcome).toEqual({
-			status: "upstream-error",
-			type: "graphql",
-			retryable: false,
-			message: "bad query",
+		await expect(cachedOutcome(async () => ({ status: "not-found" }) as const)).resolves.toEqual({
+			status: "not-found",
 		});
+		expect(cacheLife).not.toHaveBeenCalled();
 	});
 
-	/**
-	 * What production actually hands the caller. An error thrown inside `"use cache"` is
-	 * serialised into the cache entry's stream and comes back as a NEW plain Error carrying
-	 * React's placeholder message and the original error's digest — never the original class.
-	 * Built here the way React's Flight client builds it, from the thrown error's own digest.
-	 */
-	const asDeliveredByUseCache = (thrown: Error & { digest?: string }) =>
-		Object.assign(
-			new Error(
-				"An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details.",
-			),
-			{ digest: thrown.digest ?? "2338785109" },
-		);
-
-	it("recognises a fault that crossed the use-cache boundary, where instanceof cannot", async () => {
-		const thrown = new UpstreamUnavailableError({
-			status: "upstream-error",
-			type: "http",
-			retryable: true,
-			message: "HTTP 503: Service Unavailable",
-		});
-		const delivered = asDeliveredByUseCache(thrown);
-		expect(delivered).not.toBeInstanceOf(UpstreamUnavailableError);
-
-		const outcome = await catchUpstreamError(async () => {
-			throw delivered;
-		});
-		expect(outcome).toMatchObject({ status: "upstream-error", type: "http", retryable: true });
+	it("hands a fault back as the outcome it is, and shortens the entry to the fault lifetime", async () => {
+		await expect(cachedOutcome(async () => FAULT)).resolves.toEqual(FAULT);
+		expect(cacheLife).toHaveBeenCalledTimes(1);
+		expect(cacheLife).toHaveBeenCalledWith(FAULT_CACHE_LIFE);
 	});
 
-	it("carries 'never sent' across the use-cache boundary, and only when it is true", async () => {
-		const queued = new UpstreamUnavailableError({
+	it("keeps the queue-starved flag, which only the reading side acts on", async () => {
+		const queued: ResourceOutcome<number> = {
 			status: "upstream-error",
 			type: "network",
 			retryable: true,
 			message: "ProductDetails: deadline exceeded before a Saleor slot came free",
 			queueStarved: true,
-		});
-		expect(queued.digest).toBe("MAKY_UPSTREAM_UNAVAILABLE;network;1;queue-starved");
-		const outcome = await catchUpstreamError(async () => {
-			throw asDeliveredByUseCache(queued);
-		});
-		expect(outcome).toMatchObject({ status: "upstream-error", type: "network", queueStarved: true });
-
-		// A request that went out and failed is a statement about Saleor: no flag.
-		const sent = await catchUpstreamError(async () => {
-			throw asDeliveredByUseCache(
-				new UpstreamUnavailableError({
-					status: "upstream-error",
-					type: "network",
-					retryable: true,
-					message: "x",
-				}),
-			);
-		});
-		expect(sent).not.toHaveProperty("queueStarved");
-		// A digest written before the flag existed still parses.
-		const old = await catchUpstreamError(async () => {
-			throw Object.assign(new Error("x"), { digest: "MAKY_UPSTREAM_UNAVAILABLE;http;1" });
-		});
-		expect(old).toMatchObject({ status: "upstream-error", type: "http", retryable: true });
-		expect(old).not.toHaveProperty("queueStarved");
+		};
+		await expect(cachedOutcome(async () => queued)).resolves.toEqual(queued);
 	});
 
+	it("takes ANY throw from the body for a fault, and never throws itself", async () => {
+		for (const thrown of [new TypeError("a real bug"), "a bare string"]) {
+			cacheLife.mockReset();
+			const outcome = await cachedOutcome<number>(async () => {
+				throw thrown;
+			});
+			expect(outcome).toMatchObject({ status: "upstream-error", type: "network", retryable: true });
+			expect(outcome.status === "upstream-error" && outcome.message).toContain(
+				thrown instanceof Error ? thrown.message : thrown,
+			);
+			expect(cacheLife).toHaveBeenCalledWith(FAULT_CACHE_LIFE);
+		}
+	});
+
+	it("hands Next's own control flow back to Next: it is not a fault, and the entry is not shortened", async () => {
+		await expect(cachedOutcome(async () => notFound())).rejects.toMatchObject({
+			digest: expect.stringContaining("NEXT_HTTP_ERROR_FALLBACK"),
+		});
+		await expect(cachedOutcome(async () => redirect("/sk"))).rejects.toMatchObject({
+			digest: expect.stringContaining("NEXT_REDIRECT"),
+		});
+		expect(cacheLife).not.toHaveBeenCalled();
+	});
+});
+
+describe("catchUpstreamError", () => {
+	it("passes every outcome through, a fault included", async () => {
+		await expect(catchUpstreamError(async () => FAULT)).resolves.toEqual(FAULT);
+		await expect(catchUpstreamError(async () => ({ status: "not-found" }) as const)).resolves.toEqual({
+			status: "not-found",
+		});
+		await expect(
+			catchUpstreamError(async () => ({ status: "found", resource: 2 }) as const),
+		).resolves.toEqual({ status: "found", resource: 2 });
+	});
+
+	/**
+	 * A cached resolver does not reject any more, but production hands a rejection the caller as
+	 * a NEW anonymous Error (React's placeholder message, the original's digest), so whatever does
+	 * arrive is read as "we could not find out" and never as an answer.
+	 */
 	it("treats ANY rejection from a cached resolver as a fault, never as an answer or a crash", async () => {
 		for (const thrown of [
 			new TypeError("a real bug"),
-			asDeliveredByUseCache(new TypeError("a real bug, obfuscated")),
+			Object.assign(
+				new Error(
+					"An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details.",
+				),
+				{ digest: "2338785109" },
+			),
 			"a bare string",
 		]) {
 			const outcome = await catchUpstreamError(async () => {
@@ -184,16 +177,6 @@ describe("catchUpstreamError", () => {
 		await expect(catchUpstreamError(async () => redirect("/sk"))).rejects.toMatchObject({
 			digest: expect.stringContaining("NEXT_REDIRECT"),
 		});
-	});
-
-	it("keeps the fault's detail out of the digest: type and retry flag only", () => {
-		const thrown = new UpstreamUnavailableError({
-			status: "upstream-error",
-			type: "network",
-			retryable: false,
-			message: "secret-looking upstream body 10.0.0.7",
-		});
-		expect(thrown.digest).toBe("MAKY_UPSTREAM_UNAVAILABLE;network;0");
 	});
 });
 
@@ -215,41 +198,5 @@ describe("helpers", () => {
 		const payload = JSON.parse(line.replace("[upstream-error] ", "")) as Record<string, unknown>;
 		expect(payload).toMatchObject({ scope: "product", type: "network", retryable: true, slug: "s" });
 		err.mockRestore();
-	});
-});
-
-/**
- * The whole "an outage must never be cached as an absence" mechanism rests on
- * one behaviour of Next's `"use cache"`: a REJECTED promise is not stored, so the
- * body re-runs on the next call, while a resolved value is stored.
- *
- * That cannot be exercised from vitest — it needs the build pipeline. It was
- * verified instead on a production build of this exact version (2026-08-06,
- * `next build` + `next start`): three identical requests ran the throwing body
- * three times and the resolving body once.
- *
- * Re-verified for 16.3.6 (2026-09-23) on production builds of a minimal
- * cacheComponents app with the same shape — `"use cache"` + cacheLife("minutes")
- * + cacheTag, thrown inside, caught outside — built once on 16.2.9 and once on
- * 16.3.6: on both, three requests ran the throwing body three times, the
- * resolving body once, a body that threw once and then resolved ran twice and
- * was then served from cache, and revalidateTag(tag, { expire: 0 }) made the
- * next request run it again, once.
- *
- * So this pins the version. If Next is upgraded, the check has to be repeated
- * before this test is allowed to pass again — the alternative is silently
- * inheriting a cached 404 for every product during the next Saleor blip.
- */
-describe("use-cache rejection behaviour is version-pinned", () => {
-	const VERIFIED_AGAINST = "16.3.6";
-
-	it(`was verified on next@${VERIFIED_AGAINST}`, () => {
-		expect(
-			nextPkg.version,
-			`Next changed from ${VERIFIED_AGAINST} to ${nextPkg.version}. Re-verify that a rejected ` +
-				`promise inside "use cache" is still not cached, on a real production build, before ` +
-				`updating this constant. src/lib/saleor/resource-outcome.ts depends on it: if rejections ` +
-				`start being cached, a Saleor blip becomes a cached "product does not exist".`,
-		).toBe(VERIFIED_AGAINST);
 	});
 });

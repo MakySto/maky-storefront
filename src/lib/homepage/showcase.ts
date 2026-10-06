@@ -1,4 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
+import { answered, faulted, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { HomeCategoryImagesDocument, HomeHeroProductDocument } from "@/gql/graphql";
 import { formatPrice, getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { categoriesFor } from "@/config/categories";
@@ -26,7 +27,16 @@ export type CategoryImages = Readonly<Record<string, string>>;
  */
 const PHOTO_DEADLINE_MS = 1_500;
 
+/**
+ * A fault THROWS to the caller: a tile without a photo still names its category and links to it,
+ * and nothing is invented in its place. Inside the cache it is a value that is remembered for seconds
+ * only, see `@/lib/cache-fault`.
+ */
 export async function getHomeCategoryImages(channel: string): Promise<CategoryImages> {
+	return valueOrThrow(await readHomeCategoryImages(channel));
+}
+
+async function readHomeCategoryImages(channel: string): Promise<CachedRead<CategoryImages>> {
 	"use cache";
 	const locale = getLocaleFromChannel(channel);
 	const slugs = categoriesFor("home").map((category) => category.slug);
@@ -41,17 +51,13 @@ export async function getHomeCategoryImages(channel: string): Promise<CategoryIm
 		retry: false,
 		signal: AbortSignal.timeout(PHOTO_DEADLINE_MS),
 	});
-	if (!result.ok) {
-		// A tile without a photo still names its category and links to it. Nothing is invented
-		// in its place, and a fault is not cached as "no photos".
-		throw new Error(`[Homepage] category images unavailable: ${result.error.message}`);
-	}
+	if (!result.ok) return faulted(`[Homepage] category images unavailable: ${result.error.message}`);
 
 	const images: Record<string, string> = {};
 	for (const { node } of result.data.categories?.edges ?? []) {
 		if (node.backgroundImage?.url) images[node.slug] = node.backgroundImage.url;
 	}
-	return images;
+	return answered(images);
 }
 
 /**
@@ -74,6 +80,10 @@ export type HeroShowcase = {
 };
 
 export async function getHeroShowcase(channel: string): Promise<HeroShowcase | null> {
+	return valueOrThrow(await readHeroShowcase(channel));
+}
+
+async function readHeroShowcase(channel: string): Promise<CachedRead<HeroShowcase | null>> {
 	"use cache";
 	const locale = getLocaleFromChannel(channel);
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
@@ -85,16 +95,16 @@ export async function getHeroShowcase(channel: string): Promise<HeroShowcase | n
 		retry: false,
 		signal: AbortSignal.timeout(PHOTO_DEADLINE_MS),
 	});
-	if (!result.ok) throw new Error(`[Homepage] hero product unavailable: ${result.error.message}`);
+	if (!result.ok) return faulted(`[Homepage] hero product unavailable: ${result.error.message}`);
 
 	const product = result.data.product;
-	if (!product) return null;
+	if (!product) return answered(null);
 	// The product's own event (a new photo, a price, a rename) expires this entry too.
 	cacheTag(buildTag(CACHE_PROFILES.products, { channel, locale, slug: product.slug }));
 
 	const localized = resolveExactLocaleProduct(product, locale);
 	const gross = localized?.pricing?.priceRange?.start?.gross;
-	return {
+	return answered({
 		product: localized
 			? {
 					name: localized.name,
@@ -104,5 +114,5 @@ export async function getHeroShowcase(channel: string): Promise<HeroShowcase | n
 					category: localized.category?.name ?? null,
 				}
 			: null,
-	};
+	});
 }

@@ -1,6 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { CategoryFacetsDocument, type CategoryFacetsQuery } from "@/gql/graphql";
 import { getLocaleFromChannel } from "@/config/locale";
+import { settle, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { VOLUME_BANDS, bandOfVolume } from "./facet-params";
@@ -81,12 +82,27 @@ export function facetsFromNodes(nodes: readonly Node[]): CategoryFacets {
 	};
 }
 
+/**
+ * Throws on a fault to the caller: an outage must not become "no filters" for minutes. Inside the
+ * cache it is a value that is remembered for seconds only (`@/lib/cache-fault`).
+ */
 export async function getCategoryFacets(baseSlug: string, channel: string): Promise<CategoryFacets | null> {
+	return valueOrThrow(await readCategoryFacets(baseSlug, channel));
+}
+
+async function readCategoryFacets(
+	baseSlug: string,
+	channel: string,
+): Promise<CachedRead<CategoryFacets | null>> {
 	"use cache";
 	const locale = getLocaleFromChannel(channel);
 	cacheLife(CACHE_PROFILES.categories.cacheProfile);
 	cacheTag(buildTag(CACHE_PROFILES.categories, { channel, locale, slug: baseSlug }));
 
+	return settle(() => computeCategoryFacets(baseSlug, channel));
+}
+
+async function computeCategoryFacets(baseSlug: string, channel: string): Promise<CategoryFacets | null> {
 	const read = async (after: string | null) => {
 		const result = await executePublicGraphQL(CategoryFacetsDocument, {
 			variables: { slug: baseSlug, channel, first: PAGE, after },
@@ -94,7 +110,6 @@ export async function getCategoryFacets(baseSlug: string, channel: string): Prom
 			retry: false,
 			signal: AbortSignal.timeout(DEADLINE_MS),
 		});
-		// Thrown, never cached: an outage must not become "no filters" for minutes.
 		if (!result.ok) throw new Error(`[Listing] facets unavailable for ${baseSlug}: ${result.error.message}`);
 		return result.data.category?.products ?? null;
 	};

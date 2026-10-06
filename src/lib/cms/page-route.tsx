@@ -3,17 +3,13 @@ import { notFound } from "next/navigation";
 import { cache, type ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
-import {
-	fetchCmsPage,
-	isPreviewTokenRefusal,
-	resolveCmsPreview,
-	type CmsPageOutcome,
-} from "@/lib/cms/client";
+import { isPreviewTokenRefusal, resolveCmsPreview, type CmsPageOutcome } from "@/lib/cms/client";
 import { marketForChannel, payloadLocaleForChannel, type MarketCode } from "@/lib/cms/markets";
 import { isContentReady } from "@/lib/cms/content-readiness";
 import { type CmsPage } from "@/lib/cms/page-schema";
 import { CMS_PREVIEW_COPY } from "@/lib/cms/preview-copy";
 import { readCmsPreviewSession } from "@/lib/cms/preview-session";
+import { readPublishedCmsPage } from "@/lib/cms/published-page";
 import { marketHasRoute } from "@/lib/route-policy";
 import { buildPageMetadata } from "@/lib/seo";
 import { cmsLanguageAlternates } from "@/lib/cms/availability";
@@ -244,12 +240,18 @@ export function cmsPageRoute(config: CmsRouteConfig): CmsRoute {
 		);
 	}
 
+	/**
+	 * The published page, read through a cache entry (`readPublishedCmsPage`) and never with a bare
+	 * `fetch`: this runs outside any `<Suspense>`, and a bare `fetch` is a hole in the shell the first
+	 * time a regeneration is forced on-demand — an expired shell, or a publish webhook — which fails the
+	 * render with a 500. `generateMetadata` and the page component share the one entry.
+	 */
 	async function load(channel: string): Promise<CmsPageOutcome> {
 		const locale = payloadLocaleForChannel(channel);
 		const market = marketForChannel(channel);
 		if (!locale || !market)
 			return { status: "error", reason: `no Payload market/locale for channel ${channel}` };
-		return fetchCmsPage(slug, locale, market);
+		return readPublishedCmsPage(slug, locale, market);
 	}
 
 	async function generateMetadata({ params }: { params: Promise<{ channel: string }> }): Promise<Metadata> {

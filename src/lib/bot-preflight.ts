@@ -34,8 +34,8 @@ import { INTERNAL_TOKEN_HEADER, internalLoopbackToken } from "./internal-token";
  * `getProductOutcome` — the very function the page and its metadata call, with the same
  * arguments. That call reads or fills the page's own `"use cache"` entry: when it succeeds, the
  * entry the page renders from moments later is the one it just stored (or found), and the page
- * makes no Saleor read of its own. When it fails, nothing is stored (`refuseToCacheUpstreamError`)
- * and the crawler is told 503 + Retry-After instead of being handed the page.
+ * makes no Saleor read of its own. When it fails, the fault is remembered for seconds only
+ * (`cachedOutcome`) and the crawler is told 503 + Retry-After instead of being handed the page.
  *
  * ## Fail open, except on proof
  *
