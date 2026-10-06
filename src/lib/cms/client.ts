@@ -1,5 +1,6 @@
 import "server-only";
 import { cmsCollectionTag, cmsPageTag } from "./cache-tags";
+import { CMS_REVALIDATE_SECONDS } from "./cache-life";
 import { readCmsConnection, readCmsPreviewApiKey, type CmsConnection } from "./env";
 import {
 	isMarketCode,
@@ -32,9 +33,6 @@ import { parsePagesResponse, type CmsPage, type CmsParseWarning } from "./page-s
  * resolve a token the CMS itself signed, and no cache of any kind. Its answer only ever
  * reaches a draft-mode render.
  */
-
-/** How long the Data Cache holds a page if no webhook arrives. Insurance, not the mechanism. */
-const FALLBACK_REVALIDATE_SECONDS = 900;
 
 export type CmsPageOutcome =
 	/** A published document, validated. */
@@ -119,11 +117,14 @@ function logParseWarnings(
  *
  * It is a **consumer-read** log, not an origin-fetch counter. It runs after every
  * `fetchCmsPage()` call, whether Next's patched `fetch` went to the network or answered
- * from the Data Cache — and the route calls `fetchCmsPage()` twice per request, once from
- * `generateMetadata` and once from the page component. So **two lines per HTTP request is
- * the healthy steady state**, not evidence of two round trips.
+ * from the Data Cache. The page routes and the navigation read through `"use cache"` entries
+ * (`published-page.ts`, `availability.ts`), so a call happens when one of those entries is
+ * filled — in a fresh process, after its lifetime, after a publish webhook, or while a shell
+ * is regenerated — and **a quiet log is the healthy steady state**. Before the reads moved
+ * into cache entries the route called `fetchCmsPage()` once from `generateMetadata` and once
+ * from the page component, so two lines per HTTP request were the steady state.
  *
- * This was got wrong once, on the cutover day: the doubled lines were read as "the page is
+ * That was got wrong once, on the cutover day: the doubled lines were read as "the page is
  * not cached at all", which is a conclusion this log is structurally incapable of
  * supporting. Measuring it properly means counting arrivals at the other end. Done at the
  * deployed SHA against a mock Payload with a request counter: five page requests produced
@@ -193,7 +194,8 @@ export async function fetchCmsPage(
 			// 3xx is an upstream fault.
 			redirect: "manual",
 			signal: AbortSignal.timeout(connection.timeoutMs),
-			next: { tags: [pageTag, collectionTag], revalidate: FALLBACK_REVALIDATE_SECONDS },
+			// How long the Data Cache holds a page if no webhook arrives. Insurance, not the mechanism.
+			next: { tags: [pageTag, collectionTag], revalidate: CMS_REVALIDATE_SECONDS },
 		});
 	} catch (error) {
 		const timedOut = error instanceof Error && error.name === "TimeoutError";

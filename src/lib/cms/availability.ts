@@ -1,9 +1,12 @@
 import "server-only";
+import { cacheLife, cacheTag } from "next/cache";
 import { isCategorySlug } from "@/config/categories";
 import { stockedBrandSlugs } from "@/lib/brands/catalog";
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
+import { CMS_PAGE_CACHE_LIFE } from "@/lib/cms/cache-life";
+import { cmsCollectionTag, cmsPageTag } from "@/lib/cms/cache-tags";
 import { fetchCmsPage } from "@/lib/cms/client";
-import { marketForChannel, payloadLocaleForChannel } from "@/lib/cms/markets";
+import { marketForChannel, payloadLocaleForChannel, type MarketCode, type PayloadLocale } from "@/lib/cms/markets";
 import { isContentReady } from "@/lib/cms/content-readiness";
 import { liveMarkets } from "@/lib/market-state";
 import { isMarketRootSegment, marketHasRoute, routePolicyFor } from "@/lib/route-policy";
@@ -26,10 +29,10 @@ import { languageAlternatesFor } from "@/lib/seo/hreflang";
  * offer the route never reaches the CMS at all, so today — with `o-nas` still `sk` only —
  * this adds exactly one call on one market and none on the other eleven.
  *
- * That call is `fetchCmsPage`, the same cached read the page itself performs, with the
- * same `cms:page:<slug>` tag. So it is a Data Cache hit rather than a second origin
- * request, and the revalidation webhook that invalidates the page invalidates this at the
- * same moment — which is what makes an unpublish reach the navigation at all.
+ * The answer comes from the same CMS document the page itself reads, under the same
+ * `cms:page:<slug>` tag (see `readCmsPublication`), so the revalidation webhook that
+ * invalidates the page invalidates this at the same moment — which is what makes an
+ * unpublish reach the navigation at all.
  *
  * ## An outage is not an unpublish
  *
@@ -48,12 +51,60 @@ export async function cmsRouteAvailable(channel: string, slug: string): Promise<
 	// like an outage and keep the link, which matches what the route itself will render.
 	if (!locale || !market) return true;
 
+	return readCmsPublication(slug, locale, market);
+}
+
+/**
+ * Whether the CMS holds a published, content-ready document for `slug` in this market — the
+ * CMS half of `cmsRouteAvailable`.
+ *
+ * ## Why this read is a `"use cache"` function and not a bare `fetchCmsPage`
+ *
+ * The footer (every page) and the homepage's advice section ask this question inline, outside
+ * any `<Suspense>`, so the answer has to be in hand when the static shell is decided. Next
+ * decides it in two passes: the first runs the page and fills a resume cache, the second
+ * renders again from that cache and turns whatever is still waiting on I/O into a dynamic hole.
+ *
+ * A bare `fetch` gets through the second pass only while Next answers it from the Data Cache,
+ * and Next stops doing that for an on-demand revalidation: its `fetch` then skips the Data
+ * Cache and the resume cache with it, so the second pass goes to the network again and is cut
+ * off before the answer arrives. A shell is regenerated that way when it has EXPIRED, and when
+ * `/api/revalidate` expires one of its tags (it uses `{ expire: 0 }`, deliberately). The hole
+ * sits outside a boundary, the render fails with `NEXT_STATIC_GEN_BAILOUT`, and whoever asks
+ * first gets a 500 — on every page, because the footer is in the shared layout. That is the
+ * homepage that "occasionally" answered 500 on the first request after a quiet hour.
+ *
+ * `"use cache"` entries are read from the resume cache before anything else, on-demand or not,
+ * so the second pass finds the answer the first one stored. Do not turn this back into a plain
+ * `fetchCmsPage` call, and do not add another uncached read to a component that renders
+ * outside `<Suspense>`.
+ *
+ * ## A fault keeps the link, and is remembered for minutes only
+ *
+ * The other cached readers THROW on a fault, so that an unreachable CMS is never remembered as
+ * an answer. This one cannot: it runs in the footer of every page, and an error thrown out of a
+ * `"use cache"` function is not caught by its caller — Next runs the function again while it
+ * decides the shell, it throws again, and the whole render fails. One CMS outage during a
+ * regeneration would be a 500 on every page. So an unknown answer is `true` (see "An outage is
+ * not an unpublish" above) and the entry shortens its own life to the `minutes` profile.
+ */
+async function readCmsPublication(slug: string, locale: PayloadLocale, market: MarketCode): Promise<boolean> {
+	"use cache";
+	cacheLife(CMS_PAGE_CACHE_LIFE);
+	const pageTag = cmsPageTag(slug);
+	const collectionTag = cmsCollectionTag("pages");
+	if (pageTag) cacheTag(pageTag);
+	if (collectionTag) cacheTag(collectionTag);
+
 	const outcome = await fetchCmsPage(slug, locale, market);
-	if (outcome.status === "not-found" || outcome.status === "market-mismatch") return false;
+	if (outcome.status === "error") {
+		cacheLife("minutes");
+		return true;
+	}
+	if (outcome.status !== "found") return false; // not-found, market-mismatch: authoritative absence
 	// Published but with no body for this market is an authoritative absence too, and the
 	// contract is explicit that it is not a valid navigation, sitemap or hreflang target.
-	if (outcome.status === "found" && !isContentReady(slug, outcome.page.layout)) return false;
-	return true;
+	return isContentReady(slug, outcome.page.layout);
 }
 
 /** Whether `segment` is a CMS-backed route, and so needs the check above. */

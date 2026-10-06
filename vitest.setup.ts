@@ -1,4 +1,4 @@
-import { beforeEach } from "vitest";
+import { beforeEach, vi } from "vitest";
 
 /**
  * The default `node` test environment has no Web Storage, but several checkout
@@ -53,3 +53,17 @@ beforeEach(() => {
 	globalThis.sessionStorage.clear();
 	globalThis.localStorage.clear();
 });
+
+/**
+ * `"use cache"` is a directive Next compiles; under vitest it is only a string, so a cached function
+ * simply runs. What it declares about itself — `cacheLife()` and `cacheTag()` — has no cache scope to
+ * talk to here, and the real ones throw outside one. They do nothing unless a test says otherwise, so
+ * a route or a component that reads through a cached function can be rendered in a test; a test that
+ * wants to see what a function declares replaces them with its own `vi.mock("next/cache", …)`, as
+ * `src/lib/cms/availability.test.ts` does.
+ */
+vi.mock("next/cache", async (importOriginal) => ({
+	...(await importOriginal<typeof import("next/cache")>()),
+	cacheLife: () => {},
+	cacheTag: () => {},
+}));
