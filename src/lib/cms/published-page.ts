@@ -1,5 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
+import { rememberBriefly } from "@/lib/cache-fault";
 import { CMS_PAGE_CACHE_LIFE } from "@/lib/cms/cache-life";
 import { cmsCollectionTag, cmsPageTag } from "@/lib/cms/cache-tags";
 import { fetchCmsPage, type CmsPageOutcome } from "@/lib/cms/client";
@@ -27,13 +28,12 @@ import type { MarketCode, PayloadLocale } from "@/lib/cms/markets";
  *
  * ## A fault is an answer that is kept briefly, not a failure
  *
- * Every cached reader here used to THROW on a fault, so that an unreachable CMS was never
- * remembered as an answer. This one returns the `error` outcome instead and shortens the entry's
- * life: the route has a floor for exactly that case (the bootstrap, or the localised
- * "temporarily unavailable"), and an error thrown out of a `"use cache"` function is not seen by
- * the route at all — Next re-runs the function while it decides the shell, throws again, and the
- * whole page fails. So an outage while a shell is being regenerated must not turn into a 500 on
- * a page that has a fallback, and it is forgotten again within a minute.
+ * This one returns the `error` outcome as a value and shortens the entry's life: the route has a
+ * floor for exactly that case (the bootstrap, or the localised "temporarily unavailable"), and an
+ * error thrown out of a `"use cache"` function is not seen by the route at all — it fails the
+ * prerender that is waiting for it, whether or not the route would have caught it
+ * (`@/lib/cache-fault`). So an outage while a shell is being regenerated must not turn into a 500
+ * on a page that has a fallback, and it is forgotten again within seconds.
  */
 export async function readPublishedCmsPage(
 	slug: string,
@@ -48,6 +48,6 @@ export async function readPublishedCmsPage(
 	if (collectionTag) cacheTag(collectionTag);
 
 	const outcome = await fetchCmsPage(slug, locale, market);
-	if (outcome.status === "error") cacheLife("minutes");
+	if (outcome.status === "error") rememberBriefly();
 	return outcome;
 }

@@ -1,4 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
+import { answered, faulted, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { HomeImageryDocument } from "@/gql/graphql";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { executePublicGraphQL } from "@/lib/graphql";
@@ -53,9 +54,14 @@ export const SCENERY_CACHE_TAG = "scenery";
  *
  * Cached for hours: the configuration is code, and a photo that disappears from a gallery is
  * rare enough that serving its old URL for an hour is the right trade against a Saleor request
- * per render. A fault throws, so it is never cached as "no photos".
+ * per render. A fault throws to the caller, so it is never taken for "no photos"; inside the cache
+ * it is a value that is remembered for seconds only, see `@/lib/cache-fault`.
  */
 export async function getScenery(): Promise<Scenery> {
+	return valueOrThrow(await readScenery());
+}
+
+async function readScenery(): Promise<CachedRead<Scenery>> {
 	"use cache";
 	cacheLife("hours");
 	cacheTag(SCENERY_CACHE_TAG);
@@ -66,7 +72,7 @@ export async function getScenery(): Promise<Scenery> {
 		retry: false,
 		signal: AbortSignal.timeout(SCENERY_DEADLINE_MS),
 	});
-	if (!result.ok) throw new Error(`[Scenery] photos unavailable: ${result.error.message}`);
+	if (!result.ok) return faulted(`[Scenery] photos unavailable: ${result.error.message}`);
 
 	const urls = new Map<string, string>();
 	for (const { node } of result.data.products?.edges ?? []) {
@@ -75,7 +81,7 @@ export async function getScenery(): Promise<Scenery> {
 			if (url) urls.set(`${node.id}/${media.id}`, url);
 		}
 	}
-	return resolveScenery(urls);
+	return answered(resolveScenery(urls));
 }
 
 /** Pure half of `getScenery`, exported for the test: configuration + stored files → scenery. */

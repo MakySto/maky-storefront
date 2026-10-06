@@ -10,12 +10,11 @@ import {
 } from "@/gql/graphql";
 import { executePublicGraphQL } from "@/lib/graphql";
 import {
+	cachedOutcome,
 	catchUpstreamError,
 	logUpstreamError,
-	refuseToCacheUpstreamError,
 	toOutcome,
 	upstreamError,
-	type AuthoritativeOutcome,
 	type ResourceOutcome,
 } from "@/lib/saleor/resource-outcome";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
@@ -42,26 +41,26 @@ async function getCollectionOutcomeCached(
 	slug: string,
 	channel: string,
 	locale: string,
-): Promise<AuthoritativeOutcome<Collection>> {
+): Promise<ResourceOutcome<Collection>> {
 	"use cache";
 	applyCacheProfile(CACHE_PROFILES.collections, { channel, locale, slug });
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 
-	const result = await lookupBySlug(
-		locale,
-		(data: ProductListByCollectionQuery) => data.collection,
-		(slugLang) =>
-			executePublicGraphQL(ProductListByCollectionDocument, {
-				variables: { slug, channel, lang, slugLang, first: 1 },
-				revalidate: 300,
-			}),
-	);
-
-	// Throws on a fault, so the entry is never cached: an outage must not be
-	// remembered as "this collection does not exist" for up to an hour.
-	return refuseToCacheUpstreamError(
-		toOutcome(result, (data) => resolveExactLocaleCollection(data.collection, locale)),
-	);
+	// A fault is remembered for seconds only (`cachedOutcome`): an outage must not be remembered as
+	// "this collection does not exist" for up to an hour, nor thrown out of the cache, where it
+	// would fail the prerender that is waiting for it.
+	return cachedOutcome(async () => {
+		const result = await lookupBySlug(
+			locale,
+			(data: ProductListByCollectionQuery) => data.collection,
+			(slugLang) =>
+				executePublicGraphQL(ProductListByCollectionDocument, {
+					variables: { slug, channel, lang, slugLang, first: 1 },
+					revalidate: 300,
+				}),
+		);
+		return toOutcome(result, (data) => resolveExactLocaleCollection(data.collection, locale));
+	});
 }
 
 /** `found` | `not-found` | `upstream-error`, shared by the page and its metadata. */

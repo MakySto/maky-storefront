@@ -166,7 +166,8 @@ async function ProductContent({
 	// Rendered rather than thrown. There is no error boundary under `[channel]`, so the throw
 	// this used to be ended as React's client-side retry of the Suspense boundary and, failing
 	// that, the framework's bare "Application error" screen. The metadata for the same request
-	// is `noindex` with no canonical (see `generateMetadata`), and nothing here is cached.
+	// is `noindex` with no canonical (see `generateMetadata`), and the fault is remembered for seconds
+	// only, never for the length of a product entry (`cachedOutcome`).
 	if (outcome.status === "upstream-error") {
 		logUpstreamError("product", outcome, { slug: params.productSlug, channel: params.channel });
 		return <ProductTemporarilyUnavailable channel={params.channel} productSlug={params.productSlug} />;

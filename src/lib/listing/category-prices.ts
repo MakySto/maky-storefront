@@ -7,6 +7,7 @@ import {
 	type ProductOrderField,
 } from "@/gql/graphql";
 import { getLocaleFromChannel } from "@/config/locale";
+import { settle, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { priceBoundaries, spanBoundaries } from "@/ui/components/plp/price-ranges";
@@ -32,15 +33,33 @@ const DEADLINE_MS = 2_000;
 
 type Products = NonNullable<NonNullable<CategoryPricesQuery["category"]>["products"]>;
 
+/**
+ * Throws on a fault to the caller: an outage must not become "no price filter" for minutes. Inside
+ * the cache it is a value that is remembered for seconds only (`@/lib/cache-fault`).
+ */
 export async function getCategoryPriceBands(
 	baseSlug: string,
 	channel: string,
 ): Promise<CategoryPriceBands | null> {
+	return valueOrThrow(await readCategoryPriceBands(baseSlug, channel));
+}
+
+async function readCategoryPriceBands(
+	baseSlug: string,
+	channel: string,
+): Promise<CachedRead<CategoryPriceBands | null>> {
 	"use cache";
 	const locale = getLocaleFromChannel(channel);
 	cacheLife(CACHE_PROFILES.categories.cacheProfile);
 	cacheTag(buildTag(CACHE_PROFILES.categories, { channel, locale, slug: baseSlug }));
 
+	return settle(() => computeCategoryPriceBands(baseSlug, channel));
+}
+
+async function computeCategoryPriceBands(
+	baseSlug: string,
+	channel: string,
+): Promise<CategoryPriceBands | null> {
 	const read = async (variables: { first: number; after?: string | null; sortBy?: ProductOrder }) => {
 		const result = await executePublicGraphQL(CategoryPricesDocument, {
 			variables: { slug: baseSlug, channel, ...variables },
@@ -48,7 +67,6 @@ export async function getCategoryPriceBands(
 			retry: false,
 			signal: AbortSignal.timeout(DEADLINE_MS),
 		});
-		// Thrown, never cached: an outage must not become "no price filter" for minutes.
 		if (!result.ok) throw new Error(`[Listing] prices unavailable for ${baseSlug}: ${result.error.message}`);
 		return result.data.category?.products ?? null;
 	};

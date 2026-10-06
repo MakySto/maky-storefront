@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { FAULT_CACHE_LIFE } from "@/lib/cache-fault";
 import { CMS_PAGE_CACHE_LIFE } from "./cache-life";
 
 /**
@@ -172,17 +173,17 @@ describe("cmsRouteAvailable", () => {
 		).toBeLessThan(fetchCmsPage.mock.invocationCallOrder[0]!);
 	});
 
-	// An error thrown out of a `"use cache"` function is not the caller's to catch: Next runs the
-	// function again while it decides the shell, it throws again, and the whole render fails. The
-	// footer asks this on every page, so a CMS outage during a regeneration must be an ANSWER —
-	// "unknown, keep the link" — and one that is forgotten again within minutes.
-	it("an outage is answered, not thrown, and its entry is shortened to minutes", async () => {
+	// An error thrown out of a `"use cache"` function fails the prerender that is waiting for it,
+	// whether or not the caller catches it (`@/lib/cache-fault`). The footer asks this on every page,
+	// so a CMS outage during a regeneration must be an ANSWER — "unknown, keep the link" — and one
+	// that is forgotten again within seconds.
+	it("an outage is answered, not thrown, and its entry is shortened to the fault lifetime", async () => {
 		fetchCmsPage.mockResolvedValue({ status: "error", reason: "timeout after 3000ms" });
 		const { cmsRouteAvailable } = await subject();
 
 		await expect(cmsRouteAvailable("sk-eur", "o-nas")).resolves.toBe(true);
 
-		expect(cacheLife).toHaveBeenLastCalledWith("minutes");
+		expect(cacheLife).toHaveBeenLastCalledWith(FAULT_CACHE_LIFE);
 		expect(
 			cacheLife.mock.invocationCallOrder.at(-1),
 			"the outage is only known after the CMS has been asked",
@@ -197,7 +198,8 @@ describe("cmsRouteAvailable", () => {
 		fetchCmsPage.mockResolvedValue(outcome);
 		const { cmsRouteAvailable } = await subject();
 		await cmsRouteAvailable("sk-eur", "o-nas");
-		expect(cacheLife).not.toHaveBeenCalledWith("minutes");
+		expect(cacheLife).not.toHaveBeenCalledWith(FAULT_CACHE_LIFE);
+		expect(cacheLife).toHaveBeenCalledTimes(1);
 	});
 
 	it("does not touch the cache for a market the policy does not offer", async () => {

@@ -1,6 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { ListingProductTypesDocument } from "@/gql/graphql";
 import { ACCESSORY_PRODUCT_TYPE_SLUG } from "@/config/categories";
+import { answered, faulted, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { executePublicGraphQL } from "@/lib/graphql";
 
 /**
@@ -24,19 +25,22 @@ export const PRODUCT_TYPES_CACHE_TAG = "product-types";
  * other type beside it, or more types than one page holds (a partial list would silently
  * leave products out of both groups).
  *
- * Throws on a fault, so an outage is never cached as "no groups" for hours.
+ * Throws on a fault to the caller, so an outage is never taken for "no groups". Inside the cache
+ * it is a value that is remembered for seconds and not for hours (`@/lib/cache-fault`).
  */
 export async function getProductTypeGroups(): Promise<ProductTypeGroups | null> {
+	return valueOrThrow(await readProductTypeGroups());
+}
+
+async function readProductTypeGroups(): Promise<CachedRead<ProductTypeGroups | null>> {
 	"use cache";
 	// Product types change when the catalogue model changes, not with the stock.
 	cacheLife("hours");
 	cacheTag(PRODUCT_TYPES_CACHE_TAG);
 
 	const result = await executePublicGraphQL(ListingProductTypesDocument, { revalidate: 3600 });
-	if (!result.ok) {
-		throw new Error(`[Listing] product types unavailable: ${result.error.message}`);
-	}
-	return splitProductTypes(result.data.productTypes);
+	if (!result.ok) return faulted(`[Listing] product types unavailable: ${result.error.message}`);
+	return answered(splitProductTypes(result.data.productTypes));
 }
 
 type ProductTypeConnection =

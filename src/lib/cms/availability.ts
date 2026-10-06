@@ -2,11 +2,17 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { isCategorySlug } from "@/config/categories";
 import { stockedBrandSlugs } from "@/lib/brands/catalog";
+import { rememberBriefly } from "@/lib/cache-fault";
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import { CMS_PAGE_CACHE_LIFE } from "@/lib/cms/cache-life";
 import { cmsCollectionTag, cmsPageTag } from "@/lib/cms/cache-tags";
 import { fetchCmsPage } from "@/lib/cms/client";
-import { marketForChannel, payloadLocaleForChannel, type MarketCode, type PayloadLocale } from "@/lib/cms/markets";
+import {
+	marketForChannel,
+	payloadLocaleForChannel,
+	type MarketCode,
+	type PayloadLocale,
+} from "@/lib/cms/markets";
 import { isContentReady } from "@/lib/cms/content-readiness";
 import { liveMarkets } from "@/lib/market-state";
 import { isMarketRootSegment, marketHasRoute, routePolicyFor } from "@/lib/route-policy";
@@ -79,14 +85,14 @@ export async function cmsRouteAvailable(channel: string, slug: string): Promise<
  * `fetchCmsPage` call, and do not add another uncached read to a component that renders
  * outside `<Suspense>`.
  *
- * ## A fault keeps the link, and is remembered for minutes only
+ * ## A fault keeps the link, and is remembered for seconds only
  *
- * The other cached readers THROW on a fault, so that an unreachable CMS is never remembered as
- * an answer. This one cannot: it runs in the footer of every page, and an error thrown out of a
- * `"use cache"` function is not caught by its caller — Next runs the function again while it
- * decides the shell, it throws again, and the whole render fails. One CMS outage during a
- * regeneration would be a 500 on every page. So an unknown answer is `true` (see "An outage is
- * not an unpublish" above) and the entry shortens its own life to the `minutes` profile.
+ * This one runs in the footer of every page, so its fault must not reach the render at all. An
+ * error thrown out of a `"use cache"` function fails the prerender that is waiting for it, whether
+ * or not the caller catches it (`@/lib/cache-fault`): one CMS outage during a regeneration would
+ * be a 500 on every page. So an unknown answer is the value `true` (see "An outage is not an
+ * unpublish" above), and the entry shortens its own life to the fault lifetime, which is how long
+ * the shell may carry it before the next prerender asks the CMS again.
  */
 async function readCmsPublication(slug: string, locale: PayloadLocale, market: MarketCode): Promise<boolean> {
 	"use cache";
@@ -98,7 +104,7 @@ async function readCmsPublication(slug: string, locale: PayloadLocale, market: M
 
 	const outcome = await fetchCmsPage(slug, locale, market);
 	if (outcome.status === "error") {
-		cacheLife("minutes");
+		rememberBriefly();
 		return true;
 	}
 	if (outcome.status !== "found") return false; // not-found, market-mismatch: authoritative absence

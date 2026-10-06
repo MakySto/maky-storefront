@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { FAULT_CACHE_LIFE } from "@/lib/cache-fault";
 import { CMS_PAGE_CACHE_LIFE } from "./cache-life";
 
 /**
@@ -65,15 +66,15 @@ describe("readPublishedCmsPage", () => {
 	});
 
 	// The route has a floor for an outage (the bootstrap, or the localised "temporarily
-	// unavailable"). A thrown error would never reach it: Next runs a cached function again while it
-	// decides the shell, and the second throw fails the whole page.
-	it("an outage is handed back as the error outcome and kept for minutes only", async () => {
+	// unavailable"). A thrown error would never reach it: it fails the prerender that is waiting for
+	// the cached function, whether or not the route would have caught it (`@/lib/cache-fault`).
+	it("an outage is handed back as the error outcome and kept for seconds only", async () => {
 		const outcome = { status: "error", reason: "timeout after 3000ms" };
 		fetchCmsPage.mockResolvedValue(outcome);
 		const { readPublishedCmsPage } = await subject();
 
 		await expect(readPublishedCmsPage("o-nas", "sk", "SK")).resolves.toBe(outcome);
-		expect(cacheLife).toHaveBeenLastCalledWith("minutes");
+		expect(cacheLife).toHaveBeenLastCalledWith(FAULT_CACHE_LIFE);
 	});
 
 	it.each([
@@ -84,6 +85,7 @@ describe("readPublishedCmsPage", () => {
 		fetchCmsPage.mockResolvedValue(outcome);
 		const { readPublishedCmsPage } = await subject();
 		await readPublishedCmsPage("o-nas", "sk", "SK");
-		expect(cacheLife).not.toHaveBeenCalledWith("minutes");
+		expect(cacheLife).not.toHaveBeenCalledWith(FAULT_CACHE_LIFE);
+		expect(cacheLife).toHaveBeenCalledTimes(1);
 	});
 });

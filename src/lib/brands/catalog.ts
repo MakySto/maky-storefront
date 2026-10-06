@@ -1,4 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
+import { answered, faulted, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { BrandValuesDocument } from "@/gql/graphql";
 import { executePublicGraphQL, executeRawGraphQL } from "@/lib/graphql";
 import { getCmsBrands, type CmsBrand } from "@/lib/cms/brands";
@@ -48,9 +49,18 @@ const NOT_A_BRAND: ReadonlySet<string> = new Set(["neznackove"]);
 
 const DEADLINE_MS = 2_500;
 
-async function saleorBrands(
-	channel: string,
-): Promise<{ slug: string; name: string; productCount: number }[]> {
+type Maker = { slug: string; name: string; productCount: number };
+
+/**
+ * Saleor's makers with products in this channel. A fault THROWS to the caller, so an outage is
+ * never taken for "this shop has no brands"; inside the cache it is a value that is remembered for
+ * seconds only, see `@/lib/cache-fault`.
+ */
+async function saleorBrands(channel: string): Promise<Maker[]> {
+	return valueOrThrow(await readSaleorBrands(channel));
+}
+
+async function readSaleorBrands(channel: string): Promise<CachedRead<Maker[]>> {
 	"use cache";
 	cacheLife("hours");
 	cacheTag("brands", `brands:${channel}`);
@@ -60,8 +70,7 @@ async function saleorBrands(
 		retry: false,
 		signal: AbortSignal.timeout(DEADLINE_MS),
 	});
-	// Thrown, never cached: an outage must not become "this shop has no brands" for hours.
-	if (!values.ok) throw new Error(`[Brands] makers unavailable: ${values.error.message}`);
+	if (!values.ok) return faulted(`[Brands] makers unavailable: ${values.error.message}`);
 
 	const makers = (values.data.attribute?.choices?.edges ?? [])
 		.map(({ node }) => ({ slug: node.slug ?? "", name: node.name ?? "" }))
@@ -81,12 +90,12 @@ async function saleorBrands(
 		query,
 		variables: { channel },
 	});
-	if (!counts.ok) throw new Error(`[Brands] counts unavailable: ${counts.error.message}`);
+	if (!counts.ok) return faulted(`[Brands] counts unavailable: ${counts.error.message}`);
 	const counted = safe.map((maker, index) => ({
 		...maker,
 		productCount: counts.data[`b${index}`]?.totalCount ?? 0,
 	}));
-	return counted.filter((maker) => maker.productCount > 0);
+	return answered(counted.filter((maker) => maker.productCount > 0));
 }
 
 /**
