@@ -19,6 +19,7 @@ import { catalogRedirectTarget } from "./lib/catalog-content/redirects";
 import { CATEGORY_ROUTE_PREFIX, isCategorySlug } from "./config/categories";
 import { categoryBaseSlug, categorySegment, isLocalizedRootSegment } from "./config/category-routes";
 import { categoryAliasTarget } from "./lib/catalog-content/category-aliases";
+import { keepLiveCategoriesFresh } from "./lib/live-categories";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/routing.generated";
 import { isMarketLive, liveMarkets, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
 import { isRouteMissingInMarket, routePolicyFor } from "./lib/route-policy";
@@ -295,6 +296,14 @@ async function route(request: NextRequest) {
 		}
 	}
 
+	// THE SET OF CATEGORY SLUGS IS LOADED FROM SALEOR -> keep it fresh, never wait for it.
+	//
+	// `isCategorySlug` below answers from the build's floor plus the categories the running server
+	// has learned (`lib/live-categories.ts`), so a category created in Saleor gets its root URL
+	// with no edit and no deploy. This only STARTS a refresh when the set is a minute old; the
+	// request that starts it is answered from what is known now. Nothing on this path waits.
+	if (first && FRIENDLY_SLUGS.has(first)) keepLiveCategoriesFresh();
+
 	// LOCALISED CART URL -> the shared internal `/cart` route.
 	//
 	// The physical App Router directory stays language-neutral while shoppers and
@@ -348,12 +357,12 @@ async function route(request: NextRequest) {
 	// set a status. Proven once already by that migration; not re-litigated here.
 	//
 	// For EVERY category Saleor holds, not only the catalogue's: since 2026-10-06 the whole
-	// set in src/config/categories.ts (`isCategorySlug`) lives at the root. That condition is
-	// still load-bearing, though. The root namespace is resolved from that build-time set,
-	// and a category created in Saleor after it was last written is not in it: its
-	// `/categories/` URL is its real one until it is added, and redirecting it to a root that
-	// answers "not found" would turn a working listing into a 404. `pnpm check:nav` lists
-	// such categories.
+	// set (`isCategorySlug`: the floor in src/config/categories.ts plus what the live category
+	// list has loaded from Saleor) lives at the root. That condition is still load-bearing,
+	// though. The root namespace is resolved from that set, and a category it does not know yet
+	// — created in Saleor within the last minute, or refused because a product holds its slug —
+	// has its `/categories/` URL as its real one, and redirecting it to a root that answers
+	// "not found" would turn a working listing into a 404.
 	//
 	// Only the DETAIL url redirects; `/{market}/categories` has no page either way.
 	//
@@ -603,7 +612,10 @@ async function route(request: NextRequest) {
 	// (0 of 9,587 product slugs collide) and `pnpm check:nav` fails if it ever does —
 	// but the precedence has to be decided somewhere, and shadowing a product is the
 	// recoverable direction: the product keeps a working URL under `/{market}/products/`,
-	// while a shadowed category would have no URL at all.
+	// while a shadowed category would have no URL at all. A category the live list LEARNS is
+	// held to a stricter rule: it is routed only if no product in any channel held its slug
+	// when it was first seen, so nothing that serves a product today is taken over by a
+	// category created later.
 	if (first && FRIENDLY_SLUGS.has(first)) {
 		// Decided on the NORMALIZED path and rewritten with the raw one.
 		//

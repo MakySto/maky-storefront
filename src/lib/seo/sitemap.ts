@@ -9,6 +9,7 @@ import {
 
 export { sitemapTag };
 import { categoryUrlFor } from "@/config/category-routes";
+import { ensureFreshLiveCategories } from "@/lib/live-categories";
 import { getBaseUrl } from "@/lib/seo/config";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { indexableMarkets } from "@/lib/market-state";
@@ -298,6 +299,10 @@ async function catalogEntriesFor(market: string): Promise<MetadataRoute.Sitemap>
 async function pageEntriesFor(market: string): Promise<MetadataRoute.Sitemap> {
 	const base = getBaseUrl();
 	const channel = CHANNEL_MAP[market].saleorSlug;
+
+	// `categoryUrlFor` below answers from the live category list. A shard built from a set a minute
+	// stale would list a brand-new category under `/categories/…`, and the shard is cached.
+	await ensureFreshLiveCategories({ waitMs: 1_500 });
 
 	const entries: MetadataRoute.Sitemap = [
 		{ url: `${base}/${market}`, changeFrequency: "daily", priority: 1.0 },

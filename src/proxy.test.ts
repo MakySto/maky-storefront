@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	UNCOVERED_MARKET,
 	mockUncoveredMarket,
@@ -11,6 +11,8 @@ import { CATALOG_REDIRECTS } from "./lib/catalog-content/redirects";
 import { BORROWED_ROUTES } from "./lib/catalog-content/borrowed-routes";
 import { CATEGORY_SLUGS } from "./config/categories";
 import { categoryRouteTable } from "./config/category-routes";
+import { liveCategoriesStats, resetLiveCategoriesForTests } from "./lib/live-categories";
+import { installFakeSaleor } from "./lib/live-categories.testkit";
 import { proxy } from "./proxy";
 
 /**
@@ -218,8 +220,9 @@ describe("dotted first segment", () => {
 
 	it("308s the retired /categories/ URL of EVERY category Saleor holds, not only the catalogue's", async () => {
 		// Owner, 2026-10-06: `/sk/categories/nosice-bicyklov-na-tazne-zariadenie` is
-		// `/sk/nosice-bicyklov-na-tazne-zariadenie`. The root namespace is resolved from the
-		// build-time set of all 30 categories, so each of them has a root to land on.
+		// `/sk/nosice-bicyklov-na-tazne-zariadenie`. The root namespace is resolved from the set of
+		// all categories — the build's 30 (`CATEGORY_SLUGS`) and what the live list loads from Saleor
+		// on top — so each of them has a root to land on.
 		for (const slug of CATEGORY_SLUGS) {
 			const res = await proxy(req(`/sk/categories/${slug}`));
 			expect(res.status, slug).toBe(308);
@@ -244,17 +247,17 @@ describe("dotted first segment", () => {
 		);
 	});
 
-	it("leaves a category this build does not know on its /categories/ URL", async () => {
-		// Created in Saleor after src/config/categories.ts was last written. The root namespace is
-		// resolved from that build-time set with no upstream call, so the slug would soft-404 at the
-		// root. Redirecting it would turn a working listing into a 404 — so it keeps the URL it has
-		// until it is added, and `pnpm check:nav` reports it.
-		const res = await proxy(req("/sk/categories/a-category-this-build-does-not-know"));
+	it("leaves a category nobody has learned on its /categories/ URL", async () => {
+		// Created in Saleor after src/config/categories.ts was last written, and not (yet) loaded by
+		// the live category list. The root namespace is resolved from what is known with no upstream
+		// call, so the slug would soft-404 at the root. Redirecting it would turn a working listing
+		// into a 404 — so it keeps the URL it has until the live list knows it.
+		const res = await proxy(req("/sk/categories/a-category-nobody-has-learned"));
 		expect(res.status).not.toBe(308);
 		expect(res.headers.get("location")).toBeNull();
 		expect(res.headers.get("x-channel")).toBe("sk-eur");
 		expect(res.headers.get("x-middleware-rewrite")).toContain(
-			"/sk-eur/categories/a-category-this-build-does-not-know",
+			"/sk-eur/categories/a-category-nobody-has-learned",
 		);
 	});
 
@@ -309,6 +312,139 @@ describe("dotted first segment", () => {
 });
 
 /**
+ * Owner, 2026-10-06: a category created in Saleor gets its root URL with no edit and no deploy.
+ *
+ * The set the proxy tells a category from a product with is the build's floor plus what
+ * `lib/live-categories.ts` has loaded from Saleor. These pin what the PROXY does with it —
+ * the live list's own rules (what it refuses, how it backs off) are tested next to it — against
+ * the same fake Saleor, so the wire is real and the decision is the proxy's.
+ */
+describe("a category created in Saleor after this build", () => {
+	const NEW = "a-category-created-today";
+
+	const settled = () =>
+		vi.waitFor(() => expect(liveCategoriesStats().inFlight).toBe(false), { timeout: 2_000 });
+	const rewriteOf = async (path: string) => (await proxy(req(path))).headers.get("x-middleware-rewrite");
+
+	beforeEach(() => {
+		// The live list says what it learns and refuses; these tests read its state, not its log.
+		vi.spyOn(console, "log").mockImplementation(() => {});
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+		vi.unstubAllGlobals();
+		vi.unstubAllEnvs();
+		resetLiveCategoriesForTests();
+	});
+
+	it("is answered from what is known, starts the refresh that learns it, and is a category afterwards", async () => {
+		const { world, fetchMock } = installFakeSaleor({ delayMs: 20 });
+		world.categories.push(NEW);
+
+		// The request that notices the set is stale starts the load and does NOT wait for it.
+		const first = await rewriteOf(`/sk/${NEW}`);
+		expect(first).toContain(`/sk-eur/${NEW}`);
+		expect(first).not.toContain("/categories/");
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+
+		await settled();
+
+		const after = await proxy(req(`/sk/${NEW}`));
+		expect(after.status).not.toBe(404);
+		expect(after.headers.get("location")).toBeNull();
+		expect(after.headers.get("x-channel")).toBe("sk-eur");
+		expect(after.headers.get("x-middleware-rewrite")).toContain(`/sk-eur/categories/${NEW}`);
+		expect(world.listCalls, "a set that is a few milliseconds old is not read again").toBe(1);
+	});
+
+	it("308s its /categories/ URL to the root once it is known, and keeps it working until then", async () => {
+		const { world } = installFakeSaleor({ delayMs: 20 });
+		world.categories.push(NEW);
+
+		const before = await proxy(req(`/sk/categories/${NEW}`));
+		expect(before.status).not.toBe(308);
+		expect(before.headers.get("x-middleware-rewrite")).toContain(`/sk-eur/categories/${NEW}`);
+
+		await settled();
+
+		const after = await proxy(req(`/sk/categories/${NEW}?sort=price`));
+		expect(after.status).toBe(308);
+		const target = new URL(after.headers.get("location")!);
+		expect(target.pathname).toBe(`/sk/${NEW}`);
+		expect(target.search).toBe("?sort=price");
+	});
+
+	it("carries its vehicle pages, its RSC navigation and a foreign market's root onto the category route", async () => {
+		const { world } = installFakeSaleor({ delayMs: 5 });
+		world.categories.push(NEW);
+		await proxy(req(`/sk/${NEW}`));
+		await settled();
+
+		expect(await rewriteOf(`/sk/${NEW}/mazda/cx-60/kh`)).toContain(
+			`/sk-eur/categories/${NEW}/mazda/cx-60/kh`,
+		);
+		expect(await rewriteOf(`/sk/${NEW}.rsc`)).toContain(`/sk-eur/categories/${NEW}.rsc`);
+		expect(await rewriteOf(`/cz/${NEW}`)).toContain(`/cz-czk/categories/${NEW}`);
+
+		const czLegacy = await proxy(req(`/cz/categories/${NEW}`));
+		expect(czLegacy.status).toBe(308);
+		expect(new URL(czLegacy.headers.get("location")!).pathname).toBe(`/cz/${NEW}`);
+	});
+
+	it("is not taken for a category when it is named like a real route, so /sk/products stays the product listing", async () => {
+		const { world } = installFakeSaleor({ delayMs: 5 });
+		world.categories.push("products");
+		await proxy(req("/sk"));
+		await settled();
+
+		expect(liveCategoriesStats().refused).toHaveProperty("products");
+		expect(await rewriteOf("/sk/products")).not.toContain("/categories/");
+		// ...and the URL it does have is not turned into a redirect to a root that is somebody else's.
+		expect((await proxy(req("/sk/categories/products"))).status).not.toBe(308);
+	});
+
+	it("does not take over a slug a product holds: the product keeps its URL, the category keeps /categories/", async () => {
+		const { world } = installFakeSaleor({ delayMs: 5 });
+		world.categories.push("clash");
+		world.products.clash = ["pl-pln"];
+		await proxy(req("/sk"));
+		await settled();
+
+		expect(liveCategoriesStats().refused.clash).toContain("pl-pln");
+		expect(await rewriteOf("/sk/clash")).toContain("/sk-eur/clash");
+		expect(await rewriteOf("/sk/clash")).not.toContain("/categories/");
+		const legacy = await proxy(req("/sk/categories/clash"));
+		expect(legacy.status).not.toBe(308);
+		expect(legacy.headers.get("x-middleware-rewrite")).toContain("/sk-eur/categories/clash");
+	});
+
+	it("leaves every category the build names exactly as it was while Saleor is down", async () => {
+		installFakeSaleor({ down: true });
+
+		for (const slug of ["stresne-boxy", "stresne-nosice", "nosice-bicyklov-na-tazne-zariadenie"]) {
+			expect(await rewriteOf(`/sk/${slug}`), slug).toContain(`/sk-eur/categories/${slug}`);
+			const legacy = await proxy(req(`/sk/categories/${slug}`));
+			expect(legacy.status, slug).toBe(308);
+			expect(new URL(legacy.headers.get("location")!).pathname, slug).toBe(`/sk/${slug}`);
+		}
+		await settled();
+		expect(liveCategoriesStats().loaded).toBe(false);
+	});
+
+	it("never waits for Saleor, even one that never answers", async () => {
+		vi.stubGlobal("fetch", () => new Promise<Response>(() => {}));
+		vi.stubEnv("NEXT_PUBLIC_SALEOR_API_URL", "https://saleor.test/graphql/");
+
+		const res = await proxy(req("/sk/stresne-boxy"));
+
+		expect(res.headers.get("x-middleware-rewrite")).toContain("/sk-eur/categories/stresne-boxy");
+		expect(liveCategoriesStats().inFlight).toBe(true);
+	});
+});
+
+/**
  * The seven Slovak legal pages and the two CMS pages exist only for `sk` — each
  * calls notFound() for another channel — but `export const metadata` on them has
  * no such branch, so /de/kontakt answered HTTP 200 with a fully indexable Slovak
@@ -317,6 +453,17 @@ describe("dotted first segment", () => {
 // The two cases below mock `@/lib/channel-map` and re-import the proxy; without this the
 // mocked module graph leaks into every later file in the run.
 afterEach(() => restoreChannelMap());
+
+// The proxy starts a live-categories refresh on every market URL. With no Saleor endpoint that is
+// a no-op, so no test in this file reaches for a real Saleor because the shell it runs in happens to
+// have one set; the tests of categories created in Saleor install a fake one.
+beforeEach(() => {
+	vi.stubEnv("NEXT_PUBLIC_SALEOR_API_URL", "");
+});
+afterEach(() => {
+	vi.unstubAllEnvs();
+	resetLiveCategoriesForTests();
+});
 
 describe("a route that exists, but not in this market", () => {
 	/** Static legal copy, approved in Slovak, Czech and German (DE + AT). */
