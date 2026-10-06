@@ -157,3 +157,96 @@ canonical, hreflang, drobčeky a karty produktov (všetko cez `categoryUrlFor`).
 Testy: proxy (každý slug zo zoznamu 308 na root, query, neznáma kategória ostáva, produkt sa nezamení za kategóriu,
 Nordrive vo všetkých 12 trhoch), `categoryUrlFor`, sitemapa, `classifyRoute`, čítač zoznamu pre `check:nav`.
 Živé overenie po nasadení: `pnpm check:nav` a postup nasadenia v `/mnt/project-files/storefront-4-5/`.
+
+---
+
+## Dodatok 2026-10-06 (2): nová kategória dostane root URL sama
+
+Marek (cez koordinátora) 6. 10.: storefront si má kategórie načítať zo Saleoru namiesto ručného zoznamu v kóde, aby
+nová kategória dostala `/{trh}/{slug}` bez zmeny kódu a bez nasadenia. Technické riešenie bolo na nás.
+
+### Čo sa zvolilo
+
+Zoznam v kóde (`STOREFRONT_CATEGORIES` + `OTHER_CATEGORY_SLUGS`, spolu `CATEGORY_SLUGS`) ostáva, ale je to
+**základ** (angl. floor), nie celá množina. Bežiaci server k nemu pridáva kategórie, ktoré drží Saleor
+(`src/lib/live-categories.ts`), a `isCategorySlug()` odpovedá „základ ∪ načítané“. Dôvody, prečo množina a nie dotaz:
+
+- **Dotaz na každú adresu nie.** Koreň zdieľa približne 9 600 produktových slugov na trh a proxy beží pred každou
+  stránkou. Pýtať sa Saleoru „je tento slug kategória?“ pri každej adrese, ktorú nevie zaradiť, by dalo požiadavku na
+  cestu najnavštevovanejšej trasy webu. Jeden dotaz na všetky kategórie v pamäti a obnovovaný na pozadí odpovie na to
+  isté cenou vyhľadania v množine, a rozhodnutie na okraji ostáva synchrónne ako doteraz.
+- **Zoznam generovaný pri zostavení nie.** Stále by potreboval nasadenie pre každú kategóriu (to je asi tri a pol minúty
+  výpadku).
+- **Základ ostáva, lebo musí existovať vždy.** Pri studenom štarte aj pri výpadku Saleoru odpovedá základ, takže 30
+  adries, ktoré dnes fungujú, nikdy neprestane smerovať.
+
+### Ako to funguje
+
+| kedy                                         | čo sa deje                                                                                                                                                                                                   |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| štart procesu (`instrumentation.ts`)         | načíta zoznam; štart na to čaká najviac 2,5 s, potom ide ďalej a načítanie dobehne na pozadí. Riadok v logu: `[live-categories] floor=30 live=N refused=K loaded=yes`                                        |
+| každý požiadavok na adresu trhu (`proxy.ts`) | iba skontroluje, či je množina staršia ako minúta, a ak áno, spustí obnovu na pozadí. **Nikdy na ňu nečaká**; požiadavok dostane odpoveď z toho, čo je známe                                                 |
+| udalosť kategórie na `/api/revalidate`       | obnoví zoznam hneď (najviac 2 s čakania) a **skôr, než sa čokoľvek expiruje**, aby sa cache, ktoré sa po expirácii znovu naplnia, naplnili už so správnou adresou. Telo odpovede (kontrakt SYNC-2) sa nemení |
+| zostavenie sitemapy                          | pred zostavením zdroja trhu sa zoznam dorovná, ak je starší ako minúta                                                                                                                                       |
+
+Kategória sa prijme (admission), iba ak: je to obyčajný slug z malých písmen, nie je to názov skutočnej cesty
+(`/products`, `/poradna`, …), trhu, košíka ani lokalizovaného segmentu inej kategórie, a **žiaden produkt v žiadnom
+z 12 kanálov nemá ten istý slug**. Posledné je kontrola, ktorú dnes robí `pnpm check:nav` ručne; robí sa raz, keď sa
+kategória prvýkrát objaví (jedna požiadavka s 12 aliasmi `product(slug:, channel:)`). Odmietnutá kategória ostáva na
+`/{trh}/categories/{slug}` (funguje), v logu je jedno varovanie `NOT routed at the root: <dôvod>` a pri každom ďalšom
+načítaní sa kontroluje znova, takže v deň, keď sa produkt premenuje, presunie sa na root sama.
+
+### Čo sa nemení
+
+Rozlíšenie kategória/produkt na okraji, kategória vyhráva pri zhode slugu, 308 zo starých adries `/{trh}/categories/{slug}`
+(aj s query reťazcom), `check:nav`, lokalizované segmenty kategórií (tabuľka `LOCALIZED_CATEGORIES` ostáva v kóde, pri
+novej kategórii v zahraničí platí základný slug ako doteraz), vnútorná cesta `categories/[slug]` a obsah odpovede
+`/api/revalidate`.
+
+### Poruchové stavy
+
+| stav                                                 | následok                                                                                                                  |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Saleor nedostupný pri štarte alebo neskôr            | ostáva základ a to, čo sa už načítalo; opakovanie po 15 s, 30 s, … najviac 5 min; v logu jeden riadok na sériu zlyhaní    |
+| odpoveď s `errors`, nesprávny tvar, čiastočný zoznam | berie sa ako zlyhanie; čiastočný zoznam nikdy nič neodoberie                                                              |
+| kategória zmazaná v Saleore                          | úplný zoznam ju vyradí; základ sa nikdy neodoberá                                                                         |
+| viac ako 10 nových kategórií naraz                   | prijíma sa 10 na načítanie, zvyšok pri ďalšom (rozpočet, nie chyba)                                                       |
+| nová kategória medzi dvoma obnovami                  | najviac minútu (alebo do udalosti kategórie) ostane na `/categories/…`, ktoré funguje a po naučení presmeruje 308 na root |
+
+### Známe medze
+
+- **Kolíziu skúša iba prvé videnie.** Produkt, ktorý dostane slug už prijatej kategórie neskôr, nájde `check:nav`
+  (rovnako ako pri základe); kategória by ho zatienila.
+- **Navigácia pečená pri zostavení.** `NavLinks` je `"use cache"` s profilom `navigation` (hodinový); pri zostavení sa
+  zoznam nenačítava (`register()` pri `next build` nič nevolá von), takže kategória mimo základu v menu Saleoru by
+  v predpečenom výstupe niesla `/categories/…`, ktoré 308 vedie na root, kým sa záznam neobnoví. Ak to niekomu
+  prekáža, stačí slug dopísať do `OTHER_CATEGORY_SLUGS` pri najbližšej zmene kódu; URL sa tým nemení.
+- **Jeden proces.** Stav je v pamäti procesu (`globalThis`), ako pri `route-existence.ts`. Dnes beží jeden proces
+  `maky-storefront`; pri viacerých by každý mal vlastnú množinu.
+- **Pevný zoznam vyhradených slov v CFM.** CFM drží pre prideľovanie slugov produktov pevných 68 slov (30 slugov
+  kategórií, 18 lokalizovaných koreňov, trasy storefrontu; údaj CFM zo 6. 10.). Kategóriu mimo tých 30, ktorú storefront
+  naučí zo Saleoru, ten zoznam nepozná, a keďže kategória pri zhode vyhráva, produkt, ktorému sa taký slug pridelí
+  neskôr, by za ňou zmizol. Prosba pre CFM (pri prideľovaní rezervovať aj všetky slugy kategórií, ktoré Saleor v tej
+  chvíli drží) je v bloku, ktorý Marek vkladá do vlákna CFM. Kým ju CFM nerealizuje, kolíziu nájde
+  `pnpm check:nav --saleor-only --all-channels`.
+
+### Overenie
+
+V cloude: testy modulu proti falošnému Saleoru (nová kategória v každom trhu, kolízia s produktom, výpadok, čiastočný
+zoznam, backoff, jedno načítanie pre súbežných volajúcich, udalosť počas načítania), proxy (nová kategória: odpoveď z
+toho, čo je známe, potom rewrite aj 308, vozidlové stránky, cudzí trh, kolízia, Saleor nedostupný, Saleor, ktorý
+neodpovedá), `/api/revalidate` (zoznam sa načíta pred prvou expiráciou, telo odpovede nezmenené), sitemapa, štart
+servera a `check:nav` proti falošnému Saleoru a webu v piatich scenároch. Celá sada so skutočnými vygenerovanými
+GraphQL typmi: 3 865 testov prešlo, 38 preskočených zámerne, 0 padlo (špička vydania `d1740621` má s typmi 3 812,
+rozdiel je presne 53 nových testov), `tsc` a `eslint` bez chýb. `next build --experimental-build-mode=compile`
+(Turbopack) prešiel; v klientskych chunkoch nie je kód načítania a v serverových je modul vo viacerých kópiách, čo je
+dôvod, prečo je stav na `globalThis`. **Neoverené z cloudu:** skutočný Saleor, plné zostavenie a `next start` (najmä to,
+že proxy a route handlery zdieľajú `globalThis` ako pri `route-existence.ts`; ak by ho nezdieľali, proxy sa naučí
+kategórie z prvej požiadavky a stránky zo štartu a z udalostí kategórie) a pohľad v prehliadači.
+
+Na serveri po nasadení: v logu `[live-categories] floor=30 live=0 refused=0 loaded=yes` (CFM čítalo Saleor 6. 10. o
+9:48 UTC a drží presne tých 30 známych kategórií; `live` sú kategórie nad základom); `pnpm check:nav` (kategórie nad
+základ vypíše a skontroluje od konca po koniec); v HTML domovskej stránky nemá byť odkaz `/sk/categories/…`
+(`curl -s https://maky.store/sk | grep -o 'href="/sk/categories/[^"]*"'`). Skúška nového správania: vytvoriť testovaciu
+kategóriu v Saleore (po Marekovom súhlase) a do minúty musí `/sk/<slug>` odpovedať ako kategória a
+`/sk/categories/<slug>` presmerovať 308.
