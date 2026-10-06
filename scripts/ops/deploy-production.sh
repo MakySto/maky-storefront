@@ -230,16 +230,28 @@ new_tmp() {
 
 # 200 with a body worth having. A 200 serving an empty file is still a broken site.
 # Extra curl arguments (e.g. --resolve) may be appended.
+#
+# WANT_BYTES, when set, is the exact size the body must have and replaces the MIN_ASSET_BYTES floor.
+# For a build chunk the size is known from disk, and a chunk can legitimately be tiny: the one that
+# holds only the @font-face rules is 478 B, and a floor judged a good deploy a failed one (exit 75,
+# twice). An exact size still fails an empty body and the HTML a wrong URL would answer.
 fetch_ok() {
 	local url="$1"; shift
 	local out code size
 	out=$(curl -sS -o /dev/null -w '%{http_code} %{size_download}' --max-time 25 "$@" "$url" 2>/dev/null) || out="000 0"
 	code="${out%% *}"; size="${out##* }"
-	if [[ "$code" == "200" ]] && (( size >= MIN_ASSET_BYTES )); then
-		info "ok  $url  (${size} B)"
-		return 0
+	if [[ "$code" == "200" ]] && [[ "$size" =~ ^[0-9]+$ ]]; then
+		if [[ -n "${WANT_BYTES:-}" ]]; then
+			if (( size == WANT_BYTES )); then
+				info "ok  $url  (${size} B, matches build)"
+				return 0
+			fi
+		elif (( size >= MIN_ASSET_BYTES )); then
+			info "ok  $url  (${size} B)"
+			return 0
+		fi
 	fi
-	LAST_FETCH_DETAIL="HTTP $code, ${size} B"
+	LAST_FETCH_DETAIL="HTTP $code, ${size} B${WANT_BYTES:+, build has ${WANT_BYTES} B}"
 	return 1
 }
 
@@ -809,7 +821,15 @@ verify_external() {
 	check_external "nginx (local, Host: $PUBLIC_HOST)" "${PUBLIC_URL}${SMOKE_PATH}" \
 		--resolve "${PUBLIC_HOST}:443:${NGINX_LOCAL_IP}" || ok=1
 	check_external "public page" "${PUBLIC_URL}${SMOKE_PATH}" || ok=1
-	check_external "public CSS" "${PUBLIC_URL}${CSS_PATH}" || ok=1
+	# The stylesheet as served publicly must be this build's own file, byte for byte (see fetch_ok).
+	local css_bytes
+	css_bytes=$(stat -c '%s' -- "$APP_DIR/.next/${CSS_PATH#/_next/}") || css_bytes=""
+	if [[ -n "$css_bytes" && "$css_bytes" -gt 0 ]]; then
+		WANT_BYTES="$css_bytes" check_external "public CSS" "${PUBLIC_URL}${CSS_PATH}" || ok=1
+	else
+		warn "public CSS: ${CSS_PATH:-no stylesheet recorded} is missing or empty on disk"
+		ok=1
+	fi
 	if (( ok != 0 )); then
 		warn "the artifact is verified locally — investigate nginx / DNS / network, not the build"
 		return 1
