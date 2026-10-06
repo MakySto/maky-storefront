@@ -33,25 +33,23 @@ import { fileURLToPath } from "node:url";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 // DEPLOY_SCRIPT_UNDER_TEST points the suite at a modified copy: break a copy on purpose and watch the tests notice.
-export const DEPLOY_SCRIPT =
+const DEPLOY_SCRIPT =
 	process.env.DEPLOY_SCRIPT_UNDER_TEST ??
 	fileURLToPath(new URL("../../../../scripts/ops/deploy-production.sh", import.meta.url));
-export const NGINX_TOOL = fileURLToPath(
-	new URL("../../../../scripts/ops/nginx-upstream.sh", import.meta.url),
-);
+const NGINX_TOOL = fileURLToPath(new URL("../../../../scripts/ops/nginx-upstream.sh", import.meta.url));
 
-export interface RunResult {
+interface RunResult {
 	code: number | null;
 	out: string;
 }
 
-export interface LoadResult {
+interface LoadResult {
 	total: number;
 	failures: { status: number | string; at: number }[];
 	upstreams: Record<string, number>;
 }
 
-export interface Load {
+interface Load {
 	stop(): Promise<LoadResult>;
 }
 
