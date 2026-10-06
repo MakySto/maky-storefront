@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# A stand-in for pm2 that really starts and stops processes, so the order the deploy script does
-# things in can be watched. State lives in $FAKE_WORLD/pm2, every call goes to $FAKE_WORLD/events.log.
+# A stand-in for pm2 that really starts and stops processes, so the order the deploy script
+# does things in can be watched. State lives in $FAKE_WORLD/pm2, every call goes to $FAKE_WORLD/events.log.
+#
+# Like the real one it keeps, with each process, the environment of the shell that registered it
+# ($state/<name>.env, NUL separated) and starts the process again from that record, whatever the environment
+# of the caller is when it says `pm2 start <name>`. That is how a registration made from an agent session's
+# shell outlives every deploy, which is what the clean registration of the live process is for.
 set -u
-# The deploy script starts its bridge with `env -i`, which drops FAKE_WORLD; the box is the directory above bin/.
+# The deploy script registers its processes with `env -i`, which drops FAKE_WORLD; the box is the directory above bin/.
 world="${FAKE_WORLD:-$(cd "$(dirname "$0")/.." && pwd)}"
 state="$world/pm2"
 mkdir -p "$state" "$world/pm2logs"
@@ -11,9 +16,12 @@ secret_visible=no
 [[ -n "${CLAUDE_FAKE_SECRET:-}" ]] && secret_visible=yes
 printf '%s pm2 %s [secret-visible=%s]\n' "$(date +%s.%N)" "$*" "$secret_visible" >>"$world/events.log"
 
-# Where the app's stdout goes: the file `--output` named, or PM2's own directory like the real thing.
+# Where the app's stdout and stderr go: the file `--output` / `--error` named, or PM2's own directory like the real thing.
 log_path() {
 	if [[ -f "$state/$1.out" ]]; then cat "$state/$1.out"; else printf '%s' "$world/pm2logs/$1-out.log"; fi
+}
+err_log_path() {
+	if [[ -f "$state/$1.err" ]]; then cat "$state/$1.err"; else printf '%s' "$world/pm2logs/$1-error.log"; fi
 }
 
 is_online() {
@@ -21,7 +29,8 @@ is_online() {
 }
 
 start_server() {
-	local name="$1" cwd port
+	local name="$1" cwd port kv title
+	local -a stored=()
 	if [[ -e "$world/ctl/pm2-fail-start-$name" ]]; then
 		echo "fake pm2: refusing to start $name" >&2
 		return 1
@@ -34,8 +43,26 @@ start_server() {
 	# What `-H <host>` named on the start command line, as next start takes it.
 	host_args=()
 	[[ -s "$state/$name.host" ]] && host_args=(--hostname "$(cat "$state/$name.host")")
-	node "$world/fake/fake-app-server.mjs" --port "$port" --cwd "$cwd" \
-		--log "$(log_path "$name")" --boot-ms "$boot_ms" ${host_args[@]+"${host_args[@]}"} >/dev/null 2>&1 9>&- &
+	# The environment the process was registered with, and nothing of the caller's.
+	if [[ -s "$state/$name.env" ]]; then
+		while IFS= read -r -d '' kv; do stored+=("$kv"); done <"$state/$name.env"
+	fi
+	[[ ${#stored[@]} -gt 0 ]] || stored=("PATH=$PATH")
+	# A daemon whose own environment leaks into what it starts (the question the real box has to answer): the NAME=value
+	# lines of this control file are added to every process started while it exists.
+	if [[ -e "$world/ctl/pm2-leak-env" ]]; then
+		while IFS= read -r kv || [[ -n "$kv" ]]; do
+			[[ "$kv" == *=* ]] && stored+=("$kv")
+		done <"$world/ctl/pm2-leak-env"
+	fi
+	# maky-smtp-app runs a Next 15; every other app here is the storefront's Next 16.
+	title="next-server (v16.0.0-fixture)"
+	[[ "$name" == "maky-smtp-app" ]] && title="next-server (v15.5.18)"
+	(
+		cd "$cwd" || exit 1
+		exec env -i "${stored[@]}" node "$world/fake/fake-app-server.mjs" --port "$port" --cwd "$cwd" \
+			--log "$(log_path "$name")" --boot-ms "$boot_ms" --title "$title" ${host_args[@]+"${host_args[@]}"}
+	) >/dev/null 2>&1 9>&- &
 	echo $! >"$state/$name.pid"
 	echo online >"$state/$name.status"
 	disown
@@ -75,9 +102,9 @@ case "$cmd" in
 		for f in "$state"/*.cwd; do
 			[[ -e "$f" ]] || continue
 			name=$(basename "$f" .cwd)
-			printf '%s{"name":"%s","pid":%s,"pm2_env":{"status":"%s","restart_time":0,"pm_uptime":%s,"pm_out_log_path":"%s"}}' \
+			printf '%s{"name":"%s","pid":%s,"pm2_env":{"status":"%s","restart_time":0,"pm_uptime":%s,"pm_out_log_path":"%s","pm_err_log_path":"%s"}}' \
 				"$sep" "$name" "$(cat "$state/$name.pid" 2>/dev/null || echo 0)" "$(cat "$state/$name.status")" \
-				"$(( $(date +%s) * 1000 ))" "$(log_path "$name")"
+				"$(( $(date +%s) * 1000 ))" "$(log_path "$name")" "$(err_log_path "$name")"
 			sep=','
 		done
 		printf ']\n'
@@ -85,12 +112,13 @@ case "$cmd" in
 	start)
 		if [[ "${1:-}" == "npm" ]]; then
 			shift
-			name="" cwd="" port="" out="" host=""
+			name="" cwd="" port="" out="" err="" host=""
 			while [[ $# -gt 0 ]]; do
 				case "$1" in
 					--name) name="$2"; shift 2 ;;
 					--cwd) cwd="$2"; shift 2 ;;
 					--output) out="$2"; shift 2 ;;
+					--error) err="$2"; shift 2 ;;
 					-p) port="$2"; shift 2 ;;
 					-H) host="$2"; shift 2 ;;
 					*) shift ;;
@@ -99,8 +127,11 @@ case "$cmd" in
 			printf '%s' "$cwd" >"$state/$name.cwd"
 			printf '%s' "$port" >"$state/$name.port"
 			printf '%s' "$host" >"$state/$name.host"
-			rm -f "$state/$name.out"
+			rm -f "$state/$name.out" "$state/$name.err"
 			[[ -z "$out" ]] || printf '%s' "$out" >"$state/$name.out"
+			[[ -z "$err" ]] || printf '%s' "$err" >"$state/$name.err"
+			# What this shell's environment is when it registers the process is what the process keeps.
+			env -0 >"$state/$name.env"
 			echo stopped >"$state/$name.status"
 			start_server "$name"
 		else
@@ -122,7 +153,8 @@ case "$cmd" in
 			exit 1
 		fi
 		stop_server "${1:-}"
-		rm -f "$state/${1:-}.cwd" "$state/${1:-}.port" "$state/${1:-}.host" "$state/${1:-}.status" "$state/${1:-}.pid" "$state/${1:-}.out"
+		rm -f "$state/${1:-}.cwd" "$state/${1:-}.port" "$state/${1:-}.host" "$state/${1:-}.status" "$state/${1:-}.pid" \
+			"$state/${1:-}.out" "$state/${1:-}.err" "$state/${1:-}.env"
 		;;
 	*)
 		echo "fake pm2: unsupported: $cmd $*" >&2

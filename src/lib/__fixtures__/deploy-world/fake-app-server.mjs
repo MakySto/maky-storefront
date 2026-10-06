@@ -12,6 +12,7 @@
 //                                              have passed and a market page is asked for
 //   release=on                                 the [release] line a process following the manifest prints
 //   statuslagin=<app|build>, statusafterms=N  what /api/catalog/status serves, below
+// `--title <t>` is the process title (a next-server of another version: maky-smtp-app, Next 15).
 // And one property of how the process was started, `--hostname <h>` (what `-H <h>` gives next start): an explicit
 // loopback address reproduces what Next 16.3.6 did on the box when the bridge was started with -H 127.0.0.1
 // (rehearsal of 2026-10-06): every market page answers a 301 to itself, with the rewrite as an absolute URL in
@@ -24,6 +25,9 @@ const args = {};
 for (let i = 2; i < process.argv.length; i += 2) args[process.argv[i].slice(2)] = process.argv[i + 1];
 const port = Number(args.port);
 const cwd = args.cwd;
+// Next titles its server process like this, which is what /proc/<pid>/comm starts with on the box. The deploy script
+// finds the live process by that and by its working directory, because maky-smtp-app runs a next-server too.
+process.title = args.title ?? "next-server (v16.0.0-fixture)";
 // Next turns 127.x.x.x and ::1 into `localhost` for the proxy but builds the origin it compares with from -H as given.
 const rewriteLeavesOrigin = /^(127(\.\d{1,3}){3}|\[?::1\]?)$/.test(args.hostname ?? "");
 const startedAt = Date.now();

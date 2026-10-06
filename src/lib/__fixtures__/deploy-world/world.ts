@@ -64,6 +64,8 @@ export interface World {
 	env: NodeJS.ProcessEnv;
 	/** The deploy script's own `main`, with only the "not root" check lifted, since the tests may run as root. */
 	run(args: string[], extraEnv?: Record<string, string>): Promise<RunResult>;
+	/** One function of the deploy script, sourced as `run` sources it and called with `args` (name first): what it printed. */
+	call(args: string[], extraEnv?: Record<string, string>): { code: number | null; out: string };
 	/** scripts/ops/nginx-upstream.sh with the same fake box around it. */
 	tool(args: string[], extraEnv?: Record<string, string>): RunResult;
 	/** Runs `nginx-upstream.sh setup --apply`, which is how a box gets ready for a bridge. */
@@ -76,6 +78,15 @@ export interface World {
 	/** Index of the first event matching `pattern` at or after `from`, or -1. */
 	indexOf(pattern: RegExp, from?: number): number;
 	pm2(name: string): "online" | "stopped" | "absent";
+	/** The names of the variables the process PM2 knows as `name` was started with (never a value), from /proc. */
+	processEnvNames(name: string): string[];
+	/** The pid PM2 holds for `name`, or 0. */
+	pid(name: string): number;
+	/**
+	 * A second next-server on the box, registered as maky-smtp-app is (Next 15, its own directory, a credential-looking
+	 * variable of its own): it must never be mistaken for the live process. Returns its pid.
+	 */
+	startSmtpApp(): Promise<number>;
 	/** Starts the loop that asks for the page through `url` as a customer would, until stopped. */
 	startLoad(url: string): Load;
 	canonicalUrl: string;
@@ -127,7 +138,9 @@ function createApp(app: string): void {
 		join(app, ".gitignore"),
 		"node_modules\n.next\n.env\n.env.*\nsrc/gql/\nsrc/checkout/graphql/generated/\n",
 	);
-	writeFileSync(join(app, ".env"), "SOME_SETTING=1\n");
+	// NEXT_PUBLIC_FIXTURE_FLAG is also in the environment the live process is registered with (createWorld): the
+	// value stored with a process wins over .env, so it is the name that shows whether the record was reused.
+	writeFileSync(join(app, ".env"), "SOME_SETTING=1\nNEXT_PUBLIC_FIXTURE_FLAG=from-the-env-file\n");
 	// Next reads this one at build and at start; the backups are only there to be left behind.
 	writeFileSync(join(app, ".env.production"), "SOME_OTHER_SETTING=1\n");
 	writeFileSync(join(app, ".env.backup-20260907T191201Z"), "SOME_SETTING=0\n");
@@ -257,11 +270,20 @@ export async function createWorld(): Promise<World> {
 	delete env.DEPLOY_MODE;
 	delete env.NEXT_OUTPUT;
 
-	// The live process, started the way production starts it.
+	// The live process, started the way production starts it, from a shell that holds an agent session's variables
+	// (CLAUDE_FAKE_SECRET and these): PM2 keeps them with the process, as it does on the box. CLAUDE_FAKE_SECRET is
+	// also what the fake pm2 reads to tell the log whether a caller could see the secret.
 	const started = spawnSync(
 		join(bin, "pm2"),
 		["start", "npm", "--name", "maky-storefront", "--cwd", app, "--", "start", "--", "-p", String(canonical)],
-		{ env },
+		{
+			env: {
+				...env,
+				CLAUDE_CODE_SESSION_ID: "fixture-session",
+				ANTHROPIC_BASE_URL: "http://fixture.invalid",
+				NEXT_PUBLIC_FIXTURE_FLAG: "stored-with-the-process",
+			},
+		},
 	);
 	if (started.status !== 0) throw new Error(`could not start the live fixture: ${started.stderr}`);
 	await waitForHttp(`${canonicalUrl}/sk`);
@@ -307,6 +329,20 @@ export async function createWorld(): Promise<World> {
 			});
 		},
 
+		call(args, extraEnv = {}) {
+			const result = spawnSync(
+				"bash",
+				["-c", 'set -euo pipefail\nsource "$1"\nshift\n"$@"', "call", DEPLOY_SCRIPT, ...args],
+				{
+					cwd: app,
+					env: { ...env, ...extraEnv },
+					encoding: "utf8",
+					timeout: 30_000,
+				},
+			);
+			return { code: result.status, out: result.stdout };
+		},
+
 		tool(args, extraEnv = {}) {
 			// The deploy script hands these to the tool itself, derived from LOCAL_URL and BRIDGE_PORT.
 			const addresses = { CANONICAL_ADDR: `127.0.0.1:${canonical}`, BRIDGE_ADDR: `127.0.0.1:${bridge}` };
@@ -348,6 +384,50 @@ export async function createWorld(): Promise<World> {
 		pm2(name) {
 			const file = join(root, "pm2", `${name}.status`);
 			return existsSync(file) ? (readFileSync(file, "utf8").trim() as "online" | "stopped") : "absent";
+		},
+		pid(name) {
+			const file = join(root, "pm2", `${name}.pid`);
+			return existsSync(file) ? Number(readFileSync(file, "utf8").trim()) : 0;
+		},
+		processEnvNames(name) {
+			const pid = world.pid(name);
+			if (!pid) return [];
+			return readFileSync(`/proc/${pid}/environ`, "utf8")
+				.split("\0")
+				.filter((record) => record.includes("="))
+				.map((record) => record.slice(0, record.indexOf("=")))
+				.sort();
+		},
+		async startSmtpApp() {
+			const dirPath = join(root, "smtp");
+			mkdirSync(dirPath, { recursive: true });
+			const port = await freePort();
+			const result = spawnSync(
+				join(bin, "pm2"),
+				[
+					"start",
+					"npm",
+					"--name",
+					"maky-smtp-app",
+					"--cwd",
+					dirPath,
+					"--",
+					"start",
+					"--",
+					"-p",
+					String(port),
+				],
+				{ env: { ...env, SMTP_FAKE_PASSWORD: "smtp-only-value" } },
+			);
+			if (result.status !== 0) throw new Error(`could not start the smtp lookalike: ${result.stderr}`);
+			const pid = world.pid("maky-smtp-app");
+			// The pid is that of the starting shell until it has become node and named itself as `next start` does.
+			for (let waited = 0; waited < 10_000; waited += 100) {
+				const comm = existsSync(`/proc/${pid}/comm`) ? readFileSync(`/proc/${pid}/comm`, "utf8") : "";
+				if (comm.startsWith("next-server")) return pid;
+				await new Promise((resolve) => setTimeout(resolve, 100));
+			}
+			throw new Error("the smtp lookalike never named itself next-server");
 		},
 
 		startLoad(url) {
