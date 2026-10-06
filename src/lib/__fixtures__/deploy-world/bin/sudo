@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# The tests run as one user and touch only their own directories, so sudo only has to get out of the way.
+while [[ "${1:-}" == -* ]]; do shift; done
+[[ $# -gt 0 ]] || exit 0
+[[ "$1" == "true" ]] && exit 0
+# What needed root is part of what the tests look at: /opt belongs to root on the real box.
+world="${FAKE_WORLD:-$(cd "$(dirname "$0")/.." && pwd)}"
+printf '%s sudo %s\n' "$(date +%s.%N)" "$*" >>"$world/events.log"
+exec "$@"

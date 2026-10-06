@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# A stand-in for pm2 that really starts and stops processes, so the order the deploy script does
+# things in can be watched. State lives in $FAKE_WORLD/pm2, every call goes to $FAKE_WORLD/events.log.
+set -u
+# The deploy script starts its bridge with `env -i`, which drops FAKE_WORLD; the box is the directory above bin/.
+world="${FAKE_WORLD:-$(cd "$(dirname "$0")/.." && pwd)}"
+state="$world/pm2"
+mkdir -p "$state" "$world/pm2logs"
+
+secret_visible=no
+[[ -n "${CLAUDE_FAKE_SECRET:-}" ]] && secret_visible=yes
+printf '%s pm2 %s [secret-visible=%s]\n' "$(date +%s.%N)" "$*" "$secret_visible" >>"$world/events.log"
+
+is_online() {
+	[[ -f "$state/$1.pid" ]] && kill -0 "$(cat "$state/$1.pid")" 2>/dev/null
+}
+
+start_server() {
+	local name="$1" cwd port
+	if [[ -e "$world/ctl/pm2-fail-start-$name" ]]; then
+		echo "fake pm2: refusing to start $name" >&2
+		return 1
+	fi
+	cwd=$(cat "$state/$name.cwd")
+	port=$(cat "$state/$name.port")
+	node "$world/fake/fake-app-server.mjs" --port "$port" --cwd "$cwd" \
+		--log "$world/pm2logs/$name-out.log" --boot-ms "${FAKE_BOOT_MS:-300}" >/dev/null 2>&1 9>&- &
+	echo $! >"$state/$name.pid"
+	echo online >"$state/$name.status"
+	disown
+}
+
+stop_server() {
+	local name="$1" pid i
+	if [[ -f "$state/$name.pid" ]]; then
+		pid=$(cat "$state/$name.pid")
+		kill -INT "$pid" 2>/dev/null || true
+		for i in $(seq 1 50); do
+			kill -0 "$pid" 2>/dev/null || break
+			sleep 0.1
+		done
+		kill -KILL "$pid" 2>/dev/null || true
+		rm -f "$state/$name.pid"
+	fi
+	if [[ -f "$state/$name.cwd" ]]; then
+		echo stopped >"$state/$name.status"
+	fi
+	return 0
+}
+
+cmd="${1:-}"
+shift || true
+case "$cmd" in
+	describe)
+		[[ -f "$state/${1:-}.cwd" ]]
+		;;
+	jlist)
+		if [[ -e "$world/ctl/pm2-jlist-garbage" ]]; then
+			echo "this is not json"
+			exit 0
+		fi
+		printf '['
+		sep=''
+		for f in "$state"/*.cwd; do
+			[[ -e "$f" ]] || continue
+			name=$(basename "$f" .cwd)
+			printf '%s{"name":"%s","pm2_env":{"status":"%s","pm_out_log_path":"%s"}}' \
+				"$sep" "$name" "$(cat "$state/$name.status")" "$world/pm2logs/$name-out.log"
+			sep=','
+		done
+		printf ']\n'
+		;;
+	start)
+		if [[ "${1:-}" == "npm" ]]; then
+			shift
+			name="" cwd="" port=""
+			while [[ $# -gt 0 ]]; do
+				case "$1" in
+					--name) name="$2"; shift 2 ;;
+					--cwd) cwd="$2"; shift 2 ;;
+					-p) port="$2"; shift 2 ;;
+					*) shift ;;
+				esac
+			done
+			printf '%s' "$cwd" >"$state/$name.cwd"
+			printf '%s' "$port" >"$state/$name.port"
+			echo stopped >"$state/$name.status"
+			start_server "$name"
+		else
+			[[ -f "$state/${1:-}.cwd" ]] || { echo "fake pm2: no app ${1:-}" >&2; exit 1; }
+			if is_online "$1"; then exit 0; fi
+			start_server "$1"
+		fi
+		;;
+	stop)
+		stop_server "${1:-}"
+		;;
+	restart)
+		stop_server "${1:-}"
+		start_server "${1:-}"
+		;;
+	delete)
+		if [[ -e "$world/ctl/pm2-fail-delete-${1:-}" ]]; then
+			echo "fake pm2: refusing to delete ${1:-}" >&2
+			exit 1
+		fi
+		stop_server "${1:-}"
+		rm -f "$state/${1:-}.cwd" "$state/${1:-}.port" "$state/${1:-}.status" "$state/${1:-}.pid"
+		;;
+	*)
+		echo "fake pm2: unsupported: $cmd $*" >&2
+		exit 2
+		;;
+esac

@@ -364,7 +364,8 @@ Ground truth captured by `docs/design/storefront-analysis-20260621.md`:
 
 Production `maky.store` is served by **PM2** process `maky-storefront` (`npm start` =
 `next start -p 3000`, cwd `/opt/storefront`), proxied by nginx
-(`/etc/nginx/conf.d/storefront.conf` → `proxy_pass 127.0.0.1:3000`). It serves the
+(`/etc/nginx/conf.d/storefront.conf` → `proxy_pass 127.0.0.1:3000`; once nginx has been
+prepared for the bridge flow, §13.2.1, that line names the group `maky_storefront` instead). It serves the
 on-disk `.next` build. `maky-smtp-app` is a **separate** PM2 process on the same box and
 carries transactional e-mail — never stop, restart or include it in a deploy.
 
@@ -382,6 +383,10 @@ This is not a memory problem and no amount of RAM fixes it — `pnpm build` peak
 
 It is also invisible to every uptime check that only looks at status codes. An external
 monitor on `/sk` must use a **keyword check**, not HTTP 200.
+
+The deploy script keeps this rule by never building there: it builds in a scratch tree
+(`/opt/storefront-build`, §13.2), so the live `.next` is only ever replaced while the process
+that served it is stopped.
 
 ### 13.1.1 A command that changes production must show its effect
 
@@ -409,46 +414,89 @@ assigned deploy (§13.3) need no further go-ahead.
 
 ```bash
 cd /opt/storefront
-./scripts/ops/deploy-production.sh -m "why this is going out"
+./scripts/ops/deploy-production.sh --dry-run                    # preflight, the plan, changes nothing
+./scripts/ops/deploy-production.sh --rehearse                   # build aside, gate it on a spare port, switch nothing
+./scripts/ops/deploy-production.sh -m "why this is going out"   # the deploy
 ```
 
 Manual deploys are forbidden. The script exists because the order of the steps is what
 makes them safe, and five steps in the wrong order is exactly what an agent or a tired
-human gets wrong at 23:00. What it does:
+human gets wrong at 23:00.
+
+**The build is made beside the live site, never under it.** The script exports `HEAD`
+(`git archive`) into a scratch tree, `/opt/storefront-build`, copies `node_modules` and `.env`
+into it and builds there at `nice -n 10`. `maky-storefront` keeps serving for the whole build, and
+nothing writes to the `.next` it serves, so §13.1 is never in play. It then switches in one of
+three ways (`--mode`, default `auto`):
+
+| mode      | what customers meet                                                 | needs                                 |
+| --------- | ------------------------------------------------------------------- | ------------------------------------- |
+| `bridge`  | no gap: they are served by a verified copy while the live one swaps | nginx prepared once (§13.2.1)         |
+| `restart` | a gap of the few seconds the server takes to boot                   | nothing                               |
+| `classic` | 3 to 4 minutes of 502: stop, build in place, start (the old flow)   | nothing — the emergency fallback only |
+
+`auto` is `bridge` when nginx has been prepared and `restart` otherwise; `--dry-run` says which and why.
+
+The bridge flow, in this order:
 
 ```
 lock        flock — Claude, Codex and a human share this box; two deploys must not race
-preflight   memory, disk, clean tree, current BUILD_ID + its sha, NEXT_OUTPUT unset,
-            sudo, PM2 app
-secrets     copy the keys other systems issue from AWS SSM into .env (§13.9) — before
-            the stop, warn-only: a failure leaves .env as the last sync wrote it
-stop        maky-storefront only — never maky-smtp-app
-snapshot    sudo mv -T .next → rollbacks/.next.rollback-<prev-sha>-<prev-BUILD_ID>-<UTC>
-build       pnpm build, output teed to a log file
-metadata    write .next/MAKY_DEPLOY_META (git sha, build id, timestamp)
-start       pm2 start maky-storefront, wait for the port to answer
+preflight   memory, disk, clean tree, tests, current BUILD_ID + its sha, NEXT_OUTPUT unset,
+            sudo, PM2 app, nginx state (canonical-only), spare port free
+secrets     copy the keys other systems issue from AWS SSM into .env (§13.9) — warn-only
+scratch     /opt/storefront-build: git archive HEAD, node_modules, .env
+build       pnpm build there; the log is teed to a file; the finished build must carry its own
+            path only in required-server-files (§13.8)
+metadata    write .next/MAKY_DEPLOY_META (git sha, build id, timestamp); keep a clean copy of .next
+bridge      the same build on 127.0.0.1:3100 as a second PM2 app, maky-storefront-bridge, in a
+            clean environment; the whole gate runs on it while nobody is sent there
+flip        nginx-upstream.sh set bridge-primary: nginx -t, graceful reload, a request through
+            nginx's loopback listener must be answered by the bridge; then the public path too
+swap        wait for the requests the live process holds, pm2 stop maky-storefront,
+            sudo mv -T .next → rollbacks/.next.rollback-<prev-sha>-<prev-BUILD_ID>-<UTC>,
+            the clean copy → .next, pm2 start maky-storefront, wait for the port to answer
 ─────────── the commit point ────────────────────────────────────────────────────
-gate        127.0.0.1:3000 — page, CSS chunk on disk, CSS chunk over HTTP
+gate        127.0.0.1:3000 — the same gate as on the bridge, now on the live process
+back        nginx-upstream.sh set canonical-only, wait for the bridge's requests, pm2 delete the
+            bridge, remove the scratch tree
 verify      nginx via --resolve, then the public URL — retried, warn only
-log         append a block to /opt/DEPLOYMENTS.log
+log         append a block to /opt/DEPLOYMENTS.log, with what customers saw during the switch
 prune       keep the newest 2 snapshots plus any pinned with a sidecar .keep
 ```
 
-**Everything before the gate rolls back on failure. Nothing after it does.** Once the
-artifact is serving correctly on `127.0.0.1:3000`, it stays — a failed log write, a
-pruning error or a network blip on the public check is a post-deploy problem, not a
-reason to throw away a verified build. The script exits `75` in that case and says so.
+`restart` is the same without the bridge and the two nginx steps: the finished build is swapped in
+and the gap is the stop-to-answer in the middle. `classic` is the original sequence: stop, snapshot,
+build in place, start, gate.
 
-Only the artifact's own behaviour is in the rollback gate. If nginx or public DNS is
-broken, swapping the build back does not fix it, so those checks report and do not
-revert. Exit codes: `0` deployed, `1` failed and rolled back, `70` internal state error,
-`71` the deploy failed **and** the restore failed (site may be down), `75` deployed but a
-post-deploy step failed.
+**Everything before the gate rolls back on failure. Nothing after it does.** Until nginx points at
+the bridge a failure changes nothing a customer can see: the bridge and the scratch tree are removed
+and the live process was never touched. After it, a failure puts the snapshot back, starts the live
+process on its old build and only then moves customers back — in that order, so nobody is moved onto
+a process that is not up. If the live process cannot be brought back, customers stay on the verified
+bridge and the message says so and what to run (§13.2.1). Once the artifact is serving correctly on
+`127.0.0.1:3000` it stays: a failed log write, a pruning error, a network blip on the public check or
+nginx refusing to take customers back from the bridge is a post-deploy problem, not a reason to
+throw away a verified build. The script exits `75` and names the step.
 
-Budget 2–5 minutes of planned downtime. That is the accepted cost until the scratch
-worktree swap (§13.8) is proven.
+Only the artifact's own behaviour is in the rollback gate. If nginx or public DNS is broken,
+swapping the build back does not fix it, so those checks report and do not revert. Exit codes: `0`
+deployed, `1` failed and rolled back, `70` internal state error, `71` the deploy failed **and** the
+restore failed (the site may be down; in bridge mode it may instead be running on the bridge, and
+the message says which), `75` deployed but a post-deploy step failed.
 
-Rehearse with `--dry-run` first: it runs preflight, prints the plan and touches nothing.
+**What customers met is measured, not claimed.** From just before the first step that could affect
+them to just after the last, one request every 0.5 s goes through nginx's loopback listener (bridge)
+or `LOCAL_URL` (the other flows). The output and `/opt/DEPLOYMENTS.log` carry the result as
+"N of M probe requests failed", with the longest failing stretch when there is one.
+
+Budget: the build time (a few minutes of waiting for whoever runs it, none for customers), then
+about a minute of switching. `restart` costs customers the few seconds of the swap, `classic` the
+old 3 to 4 minutes.
+
+`--rehearse` is the dress rehearsal: it builds aside, runs the build on the spare port, passes it
+through the whole gate and removes everything again. It switches nothing and touches neither the
+live process, nor nginx, nor the deployment log. Run it first on a box that has never done a bridge
+deploy, and after anything that changes the build or its dependencies.
 
 Two deliberate omissions. There is **no `--allow-dirty`**: a deploy from an uncommitted
 tree would write a `git_sha` into `MAKY_DEPLOY_META` that does not describe what was
@@ -458,10 +506,102 @@ really an interlock against deploying while an agent is holding several gigabyte
 it per-run (`MIN_FREE_MEM_MB=6144 ./scripts/ops/deploy-production.sh`) rather than lowering
 the default, until a real cgroup `memory.peak` has been measured across a few deploys.
 
-**Snapshotting by `mv` also gives the build a cold `.next/cache`.** That is load-bearing,
-not hygiene: on the CMS pilot cutover a warm `fetch-cache` baked a pre-cleanup CMS
-document into the build and shipped a duplicated company block. Content changes in the
-CMS must precede the build, and the build must not inherit the old fetch cache.
+**A new build starts with a cold `.next/cache`.** That is load-bearing, not hygiene: on the CMS
+pilot cutover a warm `fetch-cache` baked a pre-cleanup CMS document into the build and shipped a
+duplicated company block. Content changes in the CMS must precede the build, and the build must not
+inherit the old fetch cache. The scratch tree starts empty, so it does not.
+
+### 13.2.1 The bridge: nginx, prepared once
+
+`proxy_pass 127.0.0.1:3000` names one address, so nginx has to be prepared once before the bridge
+flow can run. `scripts/ops/nginx-upstream.sh` does it and owns everything nginx-related afterwards:
+
+```bash
+./scripts/ops/nginx-upstream.sh status             # absent, canonical-only or bridge-primary
+./scripts/ops/nginx-upstream.sh setup              # dry run: the diff and the new file, changes nothing
+./scripts/ops/nginx-upstream.sh setup --apply      # backs storefront.conf up, installs, nginx -t, reload, checks
+```
+
+`setup --apply` edits `/etc/nginx` once, so it belongs to rolling this procedure out and is not run
+casually. It is reversible: `revert --apply` puts the backed-up `storefront.conf` back and removes
+the managed file.
+
+What it installs: `storefront.conf` changes in one line, to `proxy_pass http://maky_storefront;`, and
+`/etc/nginx/conf.d/maky-storefront-upstream.conf` holds the group `maky_storefront` plus a
+loopback-only listener (`127.0.0.1:3199`) that goes through the same group and answers with
+`X-Maky-Upstream`, so the deploy can see which process a request reached. The group has two states:
+
+```
+canonical-only   server 127.0.0.1:3000;                           the resting state: what nginx did before
+bridge-primary   server 127.0.0.1:3100;
+                 server 127.0.0.1:3000 backup;                    the window while the live process swaps
+```
+
+The `backup` line is the safety net: if the bridge dies while it is in front, nginx falls back to the
+live process by itself. Every change is `nginx -t`, a graceful reload (a request already in flight
+finishes on the process that took it), and then a request through the loopback listener that must be
+answered `200` by the process the new state names. If any of it fails the previous file is put back
+and the tool says whether it could prove that (exit `1`) or that nginx may be in an unknown state (exit `2`).
+
+By hand, which is for recovery only (a deploy does all of it):
+
+```bash
+./scripts/ops/nginx-upstream.sh set canonical-only    # customers back on the live process; also the repair for a
+                                                      # run that died between writing the file and the reload
+./scripts/ops/nginx-upstream.sh set bridge-primary
+./scripts/ops/nginx-upstream.sh revert --apply        # the original storefront.conf, the managed file removed
+```
+
+A deploy refuses to start while nginx says `bridge-primary`: an earlier one did not finish. Two
+recoveries are printed by the script itself when they are needed:
+
+- **Exit 71 with customers on the bridge** (the live process would not come back): repair it
+  (`pm2 logs maky-storefront --nostream --lines 50`, `pm2 start maky-storefront`), check that
+  `curl -fsS 127.0.0.1:3000/sk` answers, then `set canonical-only`, `pm2 delete maky-storefront-bridge`,
+  `sudo rm -rf /opt/storefront-build` (`/opt` is root's, so a plain `rm -rf` leaves the emptied directory behind).
+  Until then `/opt/storefront-build` is what the bridge serves from.
+- **Exit 75 with "customers are still on the bridge"** (nginx would not take them back): the same last
+  three commands, once nginx will reload.
+
+What differs from a plain restart, and is accepted:
+
+- **Version skew at the first flip.** A customer who loaded a page from the old build and asks for its
+  chunks just after the flip meets the new build, as in any deploy. There is none at the flip back: the
+  same artifact (same BUILD_ID, chunks and server-action keys) runs in both processes.
+- **Per-process caches.** A `/api/revalidate` that reaches nginx between the live process's start and
+  the flip back updates only the bridge, so the few pages the gate warmed on the live process can stay
+  stale until the next revalidation. The window is the length of the gate, and publishing the document
+  again closes it.
+- **The image cache starts cold twice** (bridge, then the live process), where a restart did it once.
+- **The live process's environment is whatever started it** (today it carries variables of the agent
+  session that did), while the bridge starts clean. All configuration comes from `.env`, which Next reads
+  itself, so the two behave alike; a difference between them points at a variable that exists only in
+  the live process's environment.
+- **A relative `*_PATH` or `*_DIR` in `.env`** resolves against the bridge's working directory. The
+  preflight names such variables, never their values.
+- **The build competes for CPU** with the live process; `nice -n 10` gives the live process the first claim.
+
+### 13.2.2 Changing the deploy scripts
+
+`deploy-production.sh` and `nginx-upstream.sh` have a regression suite that runs them for real:
+`pnpm test:deploy-box`, about three minutes. It is not part of `pnpm vitest run`, which the deploy
+preflight runs on the live box before every deploy.
+
+The suite builds a whole box in a temporary directory (`src/lib/__fixtures__/deploy-world`): a git
+checkout with a live `.next`, a `pm2` that really starts and stops web servers which serve the tree
+they were started in, an nginx that reads the same two files and routes by the group it last loaded
+(a reload takes effect a moment after it returns), a `pnpm` that "builds", and an app that writes into
+the tree it serves as `next start` does. Nothing is mocked inside the scripts. What is asserted is what
+a customer would have met (two clients ask for the home page all the way through) and what the box looks
+like afterwards, for the deploy that goes well and for a failure at every step that can fail: the build,
+the relocation audit, the gate on the bridge, nginx refusing the switch, the swapped-in build failing its
+gate, the restore failing (exit `71`), nginx refusing to take customers back (exit `75`), and the refusals
+that come before anything is changed.
+
+What it cannot show is how the real nginx and PM2 behave; that is what `--rehearse` and the first deploy
+on the box are for. A new failure path gets a case here. To see that a case really guards its behaviour,
+break a copy of the script on purpose and point the suite at it:
+`DEPLOY_SCRIPT_UNDER_TEST=/path/to/broken-copy.sh pnpm test:deploy-box`.
 
 ### 13.3 Snapshots and rollback — never `cp -al`
 
@@ -472,7 +612,8 @@ by accident.
 - **Out (deploy):** `sudo mv -T .next /opt/storefront-rollbacks/.next.rollback-<prev-sha>-<prev-BUILD_ID>-<UTC>`
 - **Back, automatic** (the deploy just failed): `sudo mv -T <snapshot> .next`. That
   snapshot is the artifact this run displaced seconds ago, nothing else refers to it, and
-  `mv` is instant. The script does this itself.
+  `mv` is instant. The script does this itself, with the live process stopped first and
+  started again after, and in bridge mode customers are moved back only once it answers.
 - **Back, manual** (restoring an older, pinned build): `sudo cp -a <snapshot> .next`, so
   the snapshot survives and can be used again.
 - Always `-T` on `mv`. Without it, if the target directory already exists, `mv` puts
@@ -520,6 +661,10 @@ the one you meant to protect be pruned.
 
 ### 13.4 When the build fails
 
+A build that fails in the scratch tree changes nothing a customer can see: the live process was
+never touched, the scratch tree is removed, and the log is at `/tmp/maky-deploy-<UTC>.log`. What
+follows is for `--classic` and for anything done by hand.
+
 - **Never start PM2 over a partial `.next`.** A build killed halfway leaves an
   unservable tree; starting it turns a failed deploy into an outage.
 - `rm -rf .next` is **forbidden before the snapshot exists** — that is what leaves you
@@ -535,7 +680,8 @@ the one you meant to protect be pruned.
 The failure mode this catches returns 200. The page must be _styled_, and the stylesheet
 must be one this build actually contains. Run this against `127.0.0.1:3000` — that is the
 rollback gate. The same checks against nginx and the public URL come after the commit
-point and only warn (§13.2).
+point and only warn (§13.2). In bridge mode the gate runs twice: on the bridge
+(`127.0.0.1:3100`) before any customer is sent there, and on the live process after the swap.
 
 ```bash
 HTML=$(mktemp)
@@ -588,15 +734,29 @@ For a build artifact that only needs to be inspected, build in a **separate
 worktree or clone** and never in the live deploy directory. Nothing about §13.1 changes
 because the intent is "just checking".
 
-### 13.8 Open, not approved: scratch worktree swap
+### 13.8 Building aside and moving the build — why it is safe
 
-Building in a scratch worktree and swapping the directory would cut the downtime from
-minutes to seconds. It is **not approved** — `.next/required-server-files.json` records
-an absolute path to the project root, and whether a moved build tolerates that has not
-been tested. Prove it off production first: build in worktree A, create worktree B at the
-same sha, move A's `.next` into B, serve B on a spare port, and check homepage, CSS, a
-PLP, a PDP and a CMS page. Until that passes, stop–build–start with planned downtime is
-the procedure.
+A finished build names its own location in exactly two files, `.next/required-server-files.json`
+and `.next/required-server-files.js` (`appDir`, the tracing root, the Turbopack root). Everything
+else in `.next` is relative, so moving the build is a `mv -T` plus rewriting those two files. The
+script does both and then proves the result instead of assuming it:
+
+- `audit_relocatable` searches the finished build (source maps and `cache/` left out) for the scratch
+  path and refuses the deploy if it is in any file other than those two;
+- `rewrite_build_paths` rewrites the two files after the move (the JSON is parsed again, the write is atomic);
+- the whole gate runs on the moved build, on the live process, before the commit point. If a moved
+  build does not work, that is where it shows, and the snapshot goes back.
+
+How it was established: a synthetic Next 16 app with `cacheComponents` and Turbopack, as in production,
+was built in directory A, moved into B at the same sha and served from B; the real production artifact has
+the same structure (read off the box, 2026-10-06). No run away from the box can show how its nginx and PM2
+behave, so on a box that has never done a bridge deploy the first step is `--rehearse` (§13.2), and the
+first bridge deploy is watched.
+
+The same facts decide what the scratch tree must be: the commit as git has it (`git archive HEAD`, so
+`MAKY_DEPLOY_META` describes what was built), a **copy** of `node_modules` (the script never installs;
+preflight already refuses a tree whose lockfile differs from what `node_modules` was installed from)
+and `.env`, on the same filesystem as `/opt/storefront` so that installing the build is a rename.
 
 ### 13.9 Secrets another system issues come from AWS SSM — never by hand
 
