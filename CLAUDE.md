@@ -460,7 +460,8 @@ flip        nginx-upstream.sh set bridge-primary: nginx -t, graceful reload, a r
             nginx's loopback listener must be answered by the bridge; then the public path too
 swap        wait for the requests the live process holds, pm2 stop maky-storefront,
             sudo mv -T .next → rollbacks/.next.rollback-<prev-sha>-<prev-BUILD_ID>-<UTC>,
-            the clean copy → .next, pm2 start maky-storefront, wait for the port to answer
+            the clean copy → .next, register maky-storefront afresh (pm2 delete, then pm2 start from
+            a clean environment, see §13.2.1), wait for the port to answer, say what it was started with
 ─────────── the commit point ────────────────────────────────────────────────────
 gate        127.0.0.1:3000 — the same gate as on the bridge, now on the live process
 types       the GraphQL types the build generated go into /opt/storefront/src, where the next
@@ -477,7 +478,7 @@ prune       keep the newest 2 snapshots plus any pinned with a sidecar .keep
 
 `restart` is the same without the bridge and the two nginx steps: the finished build is swapped in
 and the gap is the stop-to-answer in the middle. `classic` is the original sequence: stop, snapshot,
-build in place, start, gate.
+build in place, start, gate. In all three the live process is started by registering it afresh (§13.2.1).
 
 **What the bridge has to show before customers are sent to it.** The gate looks at pages and files.
 Two things it cannot see are decided by the environment the process starts in, and the bridge starts
@@ -604,7 +605,9 @@ A deploy refuses to start while nginx says `bridge-primary`: an earlier one did 
 recoveries are printed by the script itself when they are needed:
 
 - **Exit 71 with customers on the bridge** (the live process would not come back): repair it
-  (`pm2 logs maky-storefront --nostream --lines 50`, `pm2 start maky-storefront`), check that
+  (`pm2 logs maky-storefront --nostream --lines 50`; `pm2 start maky-storefront` when PM2 still lists
+  it, otherwise the registration the message prints, `pm2 delete maky-storefront; env -i HOME="$HOME"
+PATH="$PATH" pm2 start npm --name maky-storefront --cwd /opt/storefront -- start -- -p 3000`), check that
   `curl -fsS 127.0.0.1:3000/sk` answers, then `set canonical-only`, `pm2 delete maky-storefront-bridge`,
   `sudo rm -rf /opt/storefront-build` (`/opt` is root's, so a plain `rm -rf` leaves the emptied directory behind).
   Until then `/opt/storefront-build` is what the bridge serves from.
@@ -634,33 +637,54 @@ What differs from a plain restart, and is accepted:
   bridge is not used until it serves what the live process serves, and the live process on the new
   build is waited for before customers go back. If it does not catch up within the wait, customers go
   back anyway (the build is verified and live) and CFM reads its status until it has adopted.
-- **The live process's environment is whatever started it** (today it carries variables of the agent
-  session that did), while the bridge starts clean. All configuration comes from `.env`, which Next reads
-  itself, so the two behave alike; a difference between them points at a variable that exists only in
-  the live process's environment. Found by the first bridge deploy (2026-10-06, names only, values never
-  read): the live process holds 153 variable names, 28 of them from agent sessions (`CLAUDE_CODE_*`,
-  `CLAUDE_*`, `ANTHROPIC_BASE_URL`, among them a messaging token), unchanged by the deploy.
-  - **Why.** Read on the box (2026-10-06 20:22 UTC, names only, values never printed): the one PM2 record of
-    `maky-storefront` (`fork_mode`, node running `/usr/bin/npm start -- -p 3000` in `/opt/storefront`, logs in
-    `~/.pm2/logs`, no other options) holds 83 names, a copy of the environment of a whole interactive SSH
+- **Both processes are registered from a clean environment, at every deploy.** `pm2 start` keeps, with the
+  process, the environment of the shell that registered it, and `pm2 stop` / `pm2 start <name>`, which this
+  deploy used to end with, start it again from that record unchanged. The live process had been registered
+  (and, going by the runbooks of the time, restarted with `--update-env`) from an agent's interactive SSH
+  session, so its record carried that session's environment, tokens included, through every deploy. Found by
+  the first bridge deploy (2026-10-06, names only, values never read): 153 variable names in the process, 28
+  of them from agent sessions (`CLAUDE_CODE_*`, `CLAUDE_*`, `ANTHROPIC_BASE_URL`, among them a messaging
+  token). A value stored with a process also wins over `.env`, because Next does not overwrite a variable
+  that is already set.
+  - **What was read on the box** (2026-10-06 20:22 UTC, names only, values never printed). The one PM2 record
+    of `maky-storefront` (`fork_mode`, node running `/usr/bin/npm start -- -p 3000` in `/opt/storefront`, logs
+    in `~/.pm2/logs`, no other options) held 83 names, a copy of the environment of a whole interactive SSH
     session: the 28 above plus `HOME`, `PATH`, `TMUX`, `SSH_*`, `VSCODE_*`, `MCP_*` and the like. Of `.env` it
-    holds only `NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN` and `NEXT_PUBLIC_GTM_ID`, with the values `.env` has.
-    `pm2 start` stores the environment of the shell that registers the process, and
-    `pm2 restart <app> --update-env` adds the whole environment of the calling shell to that record and
-    never removes a name. `pm2 stop` / `pm2 start maky-storefront`, which the deploy does, start the
-    process again from the stored record unchanged, so the record outlives every deploy. A stored value
-    also wins over `.env`, because Next does not overwrite a variable that is already set. The PM2 daemon
-    and `~/.pm2/dump.pm2` are clean (no session names; the dump holds `maky-storefront` and `maky-smtp-app`,
-    and `pm2-ubuntu.service` is enabled), so a reboot of the box starts the app clean. The 30 names of `.env`
-    that are not in `/proc/PID/environ` are no fault: Next reads `.env` itself, inside the process.
-  - **Do not run `pm2 save` while the record is like this.** It would write the record into the clean dump.
-  - **Rule: never `pm2 restart ... --update-env` for this app.** An `.env` change needs only
-    `pm2 restart maky-storefront`: Next reads `.env` itself when the process starts. A variable that must
-    reach the process goes into `.env`, never into the shell that restarts it.
+    held only `NEXT_PUBLIC_CF_WEB_ANALYTICS_TOKEN` and `NEXT_PUBLIC_GTM_ID`, with the values `.env` has. The
+    PM2 daemon and `~/.pm2/dump.pm2` are clean (no session names; the dump holds `maky-storefront` and
+    `maky-smtp-app`, and `pm2-ubuntu.service` is enabled), so a reboot of the box starts the app clean. The 30
+    names of `.env` that are not in `/proc/PID/environ` are no fault: Next reads `.env` itself, inside the
+    process.
+  - **What the deploy does now.** In the swap it takes the old record away (`pm2 delete maky-storefront`,
+    while the bridge holds customers) and registers the process again with
+    `env -i HOME PATH LANG [PM2_HOME] pm2 start npm --name maky-storefront --cwd /opt/storefront -- start -- -p 3000`,
+    keeping the log paths of the record it replaces so that the market read-back still reads the file the
+    boot wrote to. That is the record that was read (fork_mode, node, `npm start -- -p 3000`, the directory,
+    the logs) without what the SSH session added. The bridge is registered the same way. Everything the app is
+    configured with is in `.env`, which Next reads itself. The deploy that first does this resets the restart
+    counter and the uptime PM2 shows. If PM2 will not delete the record the deploy stops there and rolls
+    back; if the restore cannot register it either, it falls back to the record PM2 holds (a live process
+    whose environment is not clean is better than none).
+  - **What it says about it.** After each start one line per process, read from `/proc/PID/environ`, names
+    only: `environment of <app> (pid N): K names, none looks like a credential, none hides a value of .env`,
+    or a warning that names (never values) those that look like credentials (`CLAUDE_*`, `ANTHROPIC_*`,
+    `*TOKEN*`, `*SECRET*` and the like) and are not `.env`'s, and those `.env` defines too, whose stored
+    value wins. Warn-only. The preflight warns the same way about names the shell the deploy runs in
+    exports and `.env` defines too, because the shell's value wins in the build. Whether the environment of
+    the PM2 daemon leaks into what `env -i pm2 start` registers has not been measured: the daemon holds no
+    session names (read 2026-10-06), and the first of these lines shows it for both processes. The script
+    reports and does not filter.
+  - **What it does not do: `pm2 save`.** That writes `~/.pm2/dump.pm2`, which `pm2 resurrect` reads, and the
+    dump is clean today, so nothing needs it. It must never run before the live process is registered
+    afresh (it would write the old record into the dump) and never while the bridge exists.
+  - **Rule: never `pm2 restart ... --update-env` for this app.** It adds the whole environment of the calling
+    shell to the record and never removes a name. An `.env` change needs only `pm2 restart maky-storefront`:
+    Next reads `.env` itself when the process starts. A variable that must reach the process goes into `.env`,
+    never into the shell that restarts it.
   - **To find the live server process, use its working directory, not its name.** `maky-smtp-app` runs a
     `next-server` too (Next 15), so `ps ... | awk '/next-server/'` takes both. Next sets the process title
     `next-server (v16.x)`, which makes `/proc/PID/comm` start with `next-server`; the live one is the one
-    whose `/proc/PID/cwd` is `/opt/storefront`.
+    whose `/proc/PID/cwd` is `/opt/storefront` (`server_pid_in` in the script does exactly this).
 - **A relative `*_PATH` or `*_DIR` in `.env`** resolves against the bridge's working directory. The
   preflight names such variables, never their values.
 - **The build competes for CPU** with the live process; `nice -n 10` gives the live process the first claim.
@@ -668,7 +692,7 @@ What differs from a plain restart, and is accepted:
 ### 13.2.2 Changing the deploy scripts
 
 `deploy-production.sh` and `nginx-upstream.sh` have a regression suite that runs them for real:
-`pnpm test:deploy-box`, about seven minutes (80 cases). It is not part of `pnpm vitest run`, which the deploy
+`pnpm test:deploy-box`, about eight minutes (89 cases). It is not part of `pnpm vitest run`, which the deploy
 preflight runs on the live box before every deploy.
 
 The suite builds a whole box in a temporary directory (`src/lib/__fixtures__/deploy-world`): a git
@@ -687,7 +711,12 @@ listens on), and the fixture's app answers a market page with the redirect to it
 there. The read-backs have their own cases: the category list (loaded, loaded
 after a retry, never loaded, no endpoint, refused slugs), the catalogue release (the bridge behind and
 catching up, behind for good, behind on fitment only, not following the manifest, behind after the swap)
-and the GraphQL types handed over after the commit point and not before.
+and the GraphQL types handed over after the commit point and not before. The fixture's `pm2` keeps, as the real
+one does, the environment of the shell that registered a process and starts it again from that record. Its live
+process was registered from a shell that exported an agent session's variables, so the cases for the clean
+registration see them go (in the bridge, restart and classic flows), the log paths of the old record kept, a
+daemon whose own environment leaks into what it starts, a `maky-smtp-app` with a `next-server` of its own, and PM2
+refusing to delete the old record.
 
 What it cannot show is how the real nginx and PM2 behave; that is what `--rehearse` and the first deploy
 on the box are for. A new failure path gets a case here. To see that a case really guards its behaviour,
