@@ -68,7 +68,8 @@ export const STOREFRONT_CATEGORIES: readonly StorefrontCategory[] = [
 ];
 
 /**
- * Every OTHER category Saleor holds — the ones this catalogue does not name.
+ * Every OTHER category Saleor held when this list was last written — the ones this catalogue does
+ * not name.
  *
  * Saleor holds 30 categories (30 on 2026-09-07 too; the list is the one CFM read from `api.maky.store`
  * for its catalogue-pages import): the 8 above and these 22 —
@@ -79,10 +80,13 @@ export const STOREFRONT_CATEGORIES: readonly StorefrontCategory[] = [
  * of them has the same public URL as a catalogue category: root-level, no `/categories/` segment
  * (owner, 2026-10-06).
  *
- * This list plus `STOREFRONT_CATEGORIES` IS the set the proxy tells a category from a product
- * with, so it has to name every category Saleor holds. A category created in Saleor and not
- * written here keeps working at `/{market}/categories/{slug}` — `categoryUrl` answers that, and
- * the proxy serves it — until it is added; `pnpm check:nav` lists exactly such categories.
+ * This list plus `STOREFRONT_CATEGORIES` is the FLOOR of the set the proxy tells a category from a
+ * product with, no longer the whole of it. The running server also loads the categories Saleor
+ * holds (`src/lib/live-categories.ts`), so a category created after this list was written gets
+ * its root URL from that, with no edit here and no deploy (owner, 2026-10-06). The floor is what
+ * the proxy and every link fall back on when Saleor cannot be asked — a cold start, an outage —
+ * so the root URLs that exist today never stop routing. Nothing has to be added here when a
+ * category is created; `pnpm check:nav` lists the ones that are not, as information.
  *
  * One slug per line and no comments inside the array: `scripts/checks/nav-links.mjs` reads it.
  */
@@ -152,7 +156,8 @@ export const CATEGORY_ROUTE_PREFIX = "categories";
  *
  * The root is a namespace shared with product slugs, and nothing in Saleor stops a
  * product being given a category's slug. `pnpm check:nav` asks Saleor whether any
- * product now holds the slug of ANY category — the 8 here and `OTHER_CATEGORY_SLUGS`.
+ * product now holds the slug of ANY category — the 8 here, `OTHER_CATEGORY_SLUGS` and whatever
+ * Saleor holds beyond them.
  */
 export function categoryHref(category: StorefrontCategory): string {
 	return `/${category.slug}`;
@@ -167,16 +172,19 @@ export function categoryHref(category: StorefrontCategory): string {
  * the site's own navigation links to the other 22, but a product's breadcrumb does, and so does
  * its card on a listing, from whatever category Saleor put it in.
  *
- * The one URL that still carries `/categories/` is a category this build does not know yet —
- * created in Saleor after the set above was last written. The proxy resolves the root namespace
- * from that build-time set with no upstream call, so a slug it does not know would fall through
- * to `[productSlug]` and soft-404; until the slug is added, the category keeps the URL it has,
- * which works, and `pnpm check:nav` reports it. Each category has exactly ONE canonical URL at
- * any time, which is the property that matters to a crawler.
+ * The one URL that still carries `/categories/` is a category the running server does not know
+ * yet: created in Saleor within the last minute (the live list looks again at most once a minute,
+ * and at once on a category event), or while Saleor cannot be asked, or refused because a product
+ * already holds its slug. The proxy resolves the root namespace from the floor below plus that
+ * live list, with no upstream call on the request path, so a slug it does not know would fall
+ * through to `[productSlug]` and soft-404; until it learns the slug, the category keeps the URL it
+ * has, which works. Each category has exactly ONE canonical URL at any time, which is the property
+ * that matters to a crawler.
  *
  * The earlier split — root URLs for the catalogue only, `/categories/` for the rest — is
  * recorded in docs/design/category-root-urls-20260907.md, with why this was the harder option
- * of the two it names (a build-time set, not resolution at request time).
+ * of the two it names (a set resolved without a request-time lookup), and how the set is kept
+ * current now that nobody has to write it by hand.
  */
 export function categoryUrl(slug: string): string {
 	return isCategorySlug(slug) ? `/${slug}` : categoryRoutePath(slug);
@@ -188,14 +196,14 @@ export function categoryRoutePath(slug: string): string {
 }
 
 /**
- * Every category slug Saleor holds, for the proxy.
+ * The category slugs this build was written with: the FLOOR of the set the proxy uses.
  *
- * The proxy needs this at the edge to tell `/sk/stresne-nosice` (a category) from
- * `/sk/stresny-nosic-nordrive-…` (a product) without asking Saleor on every request.
- * It is a build-time set because the catalogue is a build-time list — and
- * `categories.test.ts` fails if a slug is ever written anywhere else. The catalogue
- * categories and `OTHER_CATEGORY_SLUGS` together are all 30 that Saleor holds, and
- * `pnpm check:nav` asks Saleor whether that is still true.
+ * The proxy needs the set at the edge to tell `/sk/stresne-nosice` (a category) from
+ * `/sk/stresny-nosic-nordrive-…` (a product) without asking Saleor on every request. The floor
+ * is written down so that it is there on the first request of a fresh process and while Saleor
+ * is unreachable; `categories.test.ts` fails if a slug is ever written anywhere else. The
+ * catalogue categories and `OTHER_CATEGORY_SLUGS` together were all 30 that Saleor held when
+ * this was written. What the running server has learned since is `isCategorySlug`'s other half.
  */
 export const CATEGORY_SLUGS: ReadonlySet<string> = new Set([
 	...STOREFRONT_CATEGORIES.map((c) => c.slug),
@@ -203,7 +211,29 @@ export const CATEGORY_SLUGS: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * Where `src/lib/live-categories.ts` publishes the categories the running server has learned
+ * from Saleor, on `globalThis`.
+ *
+ * On `globalThis` for the reason `route-existence.ts` keeps its state there: the proxy is one
+ * bundle and the route handlers another, each with its own copy of every module, and under
+ * `next start` they share one process and one realm. And a key rather than an import so that this
+ * file, which client components import too, never pulls the live list's `fetch` code into the
+ * browser: there the key is simply absent and the floor answers alone.
+ */
+export const LIVE_CATEGORY_SLUGS_KEY: unique symbol = Symbol.for("maky.live-categories.live.v1");
+
+function liveCategorySlugs(): ReadonlySet<string> | undefined {
+	return (globalThis as typeof globalThis & { [LIVE_CATEGORY_SLUGS_KEY]?: ReadonlySet<string> })[
+		LIVE_CATEGORY_SLUGS_KEY
+	];
+}
+
+/**
  * Is this the first path segment of a public category URL?
+ *
+ * The floor above plus every category the running server has loaded from Saleor — a category
+ * created after this build was written is answered by the second half, once the live list has
+ * seen it. Never fewer than the floor: a failed or partial load can only add.
  *
  * Withheld categories answer `true` as well, deliberately. `surfaces` decides what the
  * site LINKS to; the URL keeps working either way, so `/sk/snehove-retaze` resolves to
@@ -212,7 +242,7 @@ export const CATEGORY_SLUGS: ReadonlySet<string> = new Set([
  * Saleor holds: the set is not "the catalogue" any more, it is all of them.
  */
 export function isCategorySlug(slug: string): boolean {
-	return CATEGORY_SLUGS.has(slug);
+	return CATEGORY_SLUGS.has(slug) || (liveCategorySlugs()?.has(slug) ?? false);
 }
 
 /**

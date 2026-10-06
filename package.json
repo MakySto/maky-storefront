@@ -19,6 +19,7 @@
 		"generate:all": "pnpm run generate && pnpm run generate:checkout",
 		"test": "vitest",
 		"test:run": "vitest run",
+		"test:deploy-box": "vitest run --config vitest.box.config.ts",
 		"knip": "knip",
 		"prepare": "husky install",
 		"i18n:check": "node scripts/i18n/check-commerce-i18n.mjs && node scripts/i18n/check-locale-matrix.mjs && node scripts/i18n/check-message-parity.mjs",

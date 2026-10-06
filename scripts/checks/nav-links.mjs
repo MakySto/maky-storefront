@@ -6,9 +6,10 @@
 //   node scripts/checks/nav-links.mjs --saleor-only --all-channels
 //
 // `--saleor-only` asks Saleor and nothing else — no request to the storefront — so it can run BEFORE a
-// deploy, from any checkout of this file (plain node, no install, no build): does Saleor hold exactly the
-// categories `src/config/categories.ts` names, and does any product hold a category's slug? With
-// `--all-channels` the product question is asked in every channel the storefront serves.
+// deploy, from any checkout of this file (plain node, no install, no build): does Saleor hold every
+// category `src/config/categories.ts` names, which does it hold beyond them, and does any product hold
+// the slug of one of those? With `--all-channels` the product question is asked in every channel the
+// storefront serves.
 //
 // Run it after a deploy and after any catalogue change in Saleor.
 //
@@ -23,11 +24,13 @@
 // does the retired `/categories/` URL still 308, and — the one nothing else can see —
 // has a PRODUCT been given a category's slug, which the proxy would silently shadow.
 //
-// Since 2026-10-06 every category Saleor holds has a root URL, so those three questions are
-// asked of ALL of them — the catalogue's 8 and the other 22 in `OTHER_CATEGORY_SLUGS` — and a
-// fourth is added: does Saleor hold a category the build does not name (it keeps its
-// `/categories/` URL until `src/config/categories.ts` lists it), or does the build name one
-// Saleor no longer has (its root URL is a soft 404)?
+// Since 2026-10-06 every category Saleor holds has a root URL. The build names a FLOOR of them —
+// the catalogue's 8 and the other 22 in `OTHER_CATEGORY_SLUGS` — and the running server learns the
+// rest from Saleor (`src/lib/live-categories.ts`), so those three questions are asked of ALL of
+// them, the floor and whatever Saleor holds beyond it. A category beyond the floor is reported, not
+// failed: it is the system working, and checking it end to end is how this proves the server
+// really did learn it. A fourth question is about the floor alone: does it name a category Saleor
+// no longer has (its root URL is a soft 404)?
 //
 // The catalogue side is checked too: a tile pointing at a real but empty category is
 // the "empty section" CLAUDE.md §6 forbids, and the page marks itself `noindex` while
@@ -36,7 +39,8 @@
 // channel is allowed to be empty and `noindex`.
 //
 // Exit 0 = every surfaced category resolves, holds products and is indexable, and every
-//          category resolves at the root, redirects its retired URL and collides with no product.
+//          category (the floor's and the ones beyond it) resolves at the root, redirects its
+//          retired URL and collides with no product.
 // Exit 1 = at least one did not.  Exit 2 = the check could not run.
 import process from "node:process";
 import { readCategorySource, readChannels } from "./category-source.mjs";
@@ -133,20 +137,27 @@ async function productWithSlug(slug, channel = CHANNEL) {
 	return (await res.json())?.data?.product ?? null;
 }
 
-/** Every category Saleor holds, by slug — what the build's set has to name. */
+/** Every category Saleor holds, by slug, walked to the end of the list. */
 async function saleorCategorySlugs() {
-	const res = await fetch(API, {
-		method: "POST",
-		headers: { "content-type": "application/json" },
-		body: JSON.stringify({
-			query: `{categories(first:100){pageInfo{hasNextPage} edges{node{slug}}}}`,
-		}),
-	});
-	if (!res.ok) throw new Error(`Saleor returned ${res.status}`);
-	const connection = (await res.json())?.data?.categories;
-	if (!connection) throw new Error("Saleor returned no category list");
-	if (connection.pageInfo.hasNextPage) throw new Error("more than 100 categories: page this query");
-	return connection.edges.map((edge) => edge.node.slug);
+	const slugs = [];
+	let after = null;
+	for (let page = 0; page < 50; page += 1) {
+		const res = await fetch(API, {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				query: `query($after:String){categories(first:100,after:$after){pageInfo{hasNextPage endCursor} edges{node{slug}}}}`,
+				variables: { after },
+			}),
+		});
+		if (!res.ok) throw new Error(`Saleor returned ${res.status}`);
+		const connection = (await res.json())?.data?.categories;
+		if (!connection) throw new Error("Saleor returned no category list");
+		slugs.push(...connection.edges.map((edge) => edge.node.slug));
+		if (!connection.pageInfo.hasNextPage) return slugs;
+		after = connection.pageInfo.endCursor;
+	}
+	throw new Error("more than 5000 categories: the list did not end");
 }
 
 /**
@@ -207,38 +218,52 @@ async function checkCategory(slug, { strict }) {
 	return { slug, count, page, problems };
 }
 
-const print = ({ slug, count, page, problems }) => {
+const print = ({ slug, count, page, problems }, note = "") => {
 	const mark = problems.length === 0 ? "ok  " : "FAIL";
 	const products = count === null ? "     ?" : String(count).padStart(6);
-	console.log(`  ${mark}  ${slug.padEnd(38)} ${products} products  ${page?.title ?? ""}`);
+	console.log(`  ${mark}  ${slug.padEnd(38)} ${products} products  ${page?.title ?? ""}${note}`);
 	for (const problem of problems) console.log(`          ${problem}`);
 };
 
-const named = new Set([...entries.map((category) => category.slug), ...otherSlugs]);
+/** The floor: what the build names. The running server adds what Saleor holds beyond it. */
+const floor = new Set([...entries.map((category) => category.slug), ...otherSlugs]);
 
-/** The build's categories against Saleor's, both ways. Prints each mismatch, returns how many there were. */
+/**
+ * The build's floor against what Saleor holds.
+ *
+ * A floor slug Saleor no longer has IS a problem: its root URL is a soft 404. A category Saleor holds
+ * beyond the floor is NOT — the running server learns it (`src/lib/live-categories.ts`) and serves
+ * it at its root — so it is only reported, and handed back to be checked end to end. Adding it to
+ * `OTHER_CATEGORY_SLUGS` changes nothing about its URL; it only lets a build's own prerendered output
+ * link it at the root from the start.
+ *
+ * Prints what it finds; returns the number of problems and the slugs beyond the floor.
+ */
 async function compareWithSaleor() {
 	let problems = 0;
+	let beyond = [];
 	try {
 		const held = await saleorCategorySlugs();
-		for (const slug of held.filter((slug) => !named.has(slug))) {
-			problems += 1;
-			console.log(
-				`  FAIL  Saleor holds "${slug}" and src/config/categories.ts does not: it keeps /${MARKET}/categories/${slug} until it is added to OTHER_CATEGORY_SLUGS`,
-			);
-		}
-		for (const slug of [...named].filter((slug) => !held.includes(slug))) {
+		beyond = held.filter((slug) => !floor.has(slug));
+		for (const slug of [...floor].filter((slug) => !held.includes(slug))) {
 			problems += 1;
 			console.log(
 				`  FAIL  src/config/categories.ts names "${slug}" and Saleor has no such category: /${MARKET}/${slug} is a soft 404`,
 			);
 		}
-		if (problems === 0) console.log(`\n  the build names exactly the ${held.length} categories Saleor holds`);
+		if (problems === 0) {
+			console.log(
+				`\n  Saleor holds all ${floor.size} categories the build names` +
+					(beyond.length > 0
+						? `, and ${beyond.length} beyond them (served from the live list): ${beyond.join(", ")}`
+						: ""),
+			);
+		}
 	} catch (err) {
 		problems += 1;
 		console.log(`  FAIL  could not compare the build's categories with Saleor's: ${err.message}`);
 	}
-	return problems;
+	return { problems, beyond };
 }
 
 /**
@@ -249,23 +274,29 @@ async function saleorOnly() {
 	const channels = ALL_CHANNELS ? readChannels() : [CHANNEL];
 	if (channels.length === 0) fail("could not read any channel out of src/lib/channel-map.ts");
 	console.log(
-		`${API}\n${named.size} category slugs in the build, ${channels.length} channel(s): ${channels.join(
-			", ",
-		)}`,
+		`${API}\n${floor.size} category slugs in the build's floor, ${
+			channels.length
+		} channel(s): ${channels.join(", ")}`,
 	);
 
-	let problems = await compareWithSaleor();
+	const compared = await compareWithSaleor();
+	let problems = compared.problems;
 
-	console.log("\n  does any product hold a category's slug?");
+	const asking = [...floor, ...compared.beyond];
+	console.log(`\n  does any product hold a category's slug? (${asking.length} slugs)`);
 	let asked = 0;
 	for (const channel of channels) {
-		for (const slug of named) {
+		for (const slug of asking) {
 			try {
 				const clash = await productWithSlug(slug, channel);
 				asked += 1;
 				if (clash) {
 					problems += 1;
-					console.log(`  FAIL  ${channel}: product "${clash.name}" holds the category slug "${slug}"`);
+					console.log(
+						floor.has(slug)
+							? `  FAIL  ${channel}: product "${clash.name}" holds the category slug "${slug}"`
+							: `  FAIL  ${channel}: product "${clash.name}" holds the slug of the category "${slug}", which is beyond the build's floor: the server will not route it at the root`,
+					);
 				}
 			} catch (err) {
 				problems += 1;
@@ -291,10 +322,13 @@ for (const category of surfaced) {
 	print(row);
 }
 
-// --- every other category: the build's set against Saleor's, then each one end to end ------------------
+// --- every other category: the floor against Saleor's list, then each one end to end ----------------------
+// Saleor's list comes first, because what it holds beyond the floor is checked with the rest.
+const { problems: setProblems, beyond } = await compareWithSaleor();
 const rest = [...withheld.map((category) => category.slug), ...otherSlugs];
 console.log(
-	`\n  the other ${rest.length} categories (withheld from the nav, or not in the catalogue at all):`,
+	`\n  the other ${rest.length} categories of the floor (withheld from the nav, or not in the catalogue at all)` +
+		(beyond.length > 0 ? `, then the ${beyond.length} beyond it:` : ":"),
 );
 
 let otherFailed = 0;
@@ -303,13 +337,30 @@ for (const slug of rest) {
 	if (row.problems.length > 0) otherFailed += 1;
 	print(row);
 }
-
-const setProblems = await compareWithSaleor();
+for (const slug of beyond) {
+	const row = await checkCategory(slug, { strict: false });
+	if (row.problems.length > 0) otherFailed += 1;
+	print(row, "  [learned from Saleor]");
+	if (row.problems.length > 0) {
+		console.log(
+			`          the server has not learned this category: read the "[live-categories]" lines of its log — a product may hold the slug, or Saleor could not be read when the process started (a minute of traffic, or a restart, reads the list again)`,
+		);
+	}
+}
 
 const totalFailed = failed + otherFailed + setProblems;
 console.log(
 	totalFailed === 0
-		? `\nall ${surfaced.length} surfaced categories resolve at the root, hold products, are indexable,\nand all ${named.size} categories redirect their retired URL, collide with no product slug and\nmatch what Saleor holds`
-		: `\n${failed} of ${surfaced.length} surfaced categories are broken, ${otherFailed} of the other ${rest.length}, ${setProblems} mismatch(es) with Saleor`,
+		? `\nall ${
+				surfaced.length
+			} surfaced categories resolve at the root, hold products, are indexable,\nand all ${
+				floor.size + beyond.length
+			} categories redirect their retired URL and collide with no product slug` +
+				(beyond.length > 0
+					? `\n(${beyond.length} of them beyond the build's floor, served from the live list)`
+					: "")
+		: `\n${failed} of ${surfaced.length} surfaced categories are broken, ${otherFailed} of the other ${
+				rest.length + beyond.length
+			}, ${setProblems} mismatch(es) with Saleor`,
 );
 process.exit(totalFailed === 0 ? 0 : 1);

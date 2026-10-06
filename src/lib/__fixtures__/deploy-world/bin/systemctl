@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# A stand-in for `systemctl reload nginx`. The new configuration takes effect a moment after the
+# command returns, as it does with nginx, and a reload that finds the loopback listener missing
+# starts it. Controls: reload-fail, reload-noop.
+set -u
+world="${FAKE_WORLD:?}"
+printf '%s systemctl %s\n' "$(date +%s.%N)" "$*" >>"$world/events.log"
+if [[ "${1:-}" == "reload" && "${2:-}" == "nginx" ]]; then
+	if [[ -e "$world/ctl/reload-fail" ]]; then
+		echo "Job for nginx.service failed" >&2
+		exit 1
+	fi
+	if [[ -e "$world/ctl/reload-noop" ]]; then
+		exit 0
+	fi
+	mkdir -p "$world/nginx"
+	(
+		sleep 0.2
+		cp "${UPSTREAM_FILE:?}" "$world/nginx/running.conf.tmp" && mv -f "$world/nginx/running.conf.tmp" "$world/nginx/running.conf"
+		if ! { [[ -f "$world/nginx/proxy.pid" ]] && kill -0 "$(cat "$world/nginx/proxy.pid")" 2>/dev/null; }; then
+			node "$world/fake/fake-nginx-proxy.mjs" "${PROBE_ADDR##*:}" "$world/nginx/running.conf" >/dev/null 2>&1 9>&- &
+			echo $! >"$world/nginx/proxy.pid"
+		fi
+	) >/dev/null 2>&1 9>&- &
+fi
+exit 0

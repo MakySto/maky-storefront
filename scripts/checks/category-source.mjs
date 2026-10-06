@@ -2,9 +2,10 @@
 //
 // The checks are plain node with no build step, so they cannot import the TypeScript. They read the two
 // literals they need instead: the catalogue (`STOREFRONT_CATEGORIES`, with where each is surfaced) and
-// the slugs of every other category Saleor holds (`OTHER_CATEGORY_SLUGS`). Together those are the set
-// the proxy tells a category from a product with. `src/lib/category-source-script.test.ts` pins this
-// reader against the real module, so a change to either literal's shape fails a test, not a check.
+// the slugs of the other categories the build names (`OTHER_CATEGORY_SLUGS`). Together those are the
+// FLOOR of the set the proxy tells a category from a product with: the running server adds whatever
+// else Saleor holds (`src/lib/live-categories.ts`). `src/lib/category-source-script.test.ts` pins
+// this reader against the real module, so a change to either literal's shape fails a test, not a check.
 import { readFileSync } from "node:fs";
 
 const CATEGORIES_TS = new URL("../../src/config/categories.ts", import.meta.url);

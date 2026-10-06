@@ -124,6 +124,19 @@ export async function register(): Promise<void> {
 		);
 	}
 
+	// The category slugs the proxy tells a category from a product with: the build's floor plus
+	// whatever Saleor holds beyond it, loaded before the first request — for a moment at most, so a
+	// Saleor that is slow cannot hold the start — instead of by it. Its `[live-categories]
+	// floor=… live=…` line is the boot-time answer to "which categories will this process route at
+	// the root". Not during `next build`, where nothing here reaches out (the prerenders fetch for
+	// themselves) and the output is the floor's: a category outside it that the nav links to is
+	// baked into the prerender as `/categories/…` — which 308s to its root — until that cache
+	// entry is rebuilt, which the navigation profile does hourly.
+	if (!building) {
+		const { prewarmLiveCategories } = await import("./lib/live-categories");
+		await prewarmLiveCategories();
+	}
+
 	// The fitment dataset, loaded before the first request instead of by it: after this, no
 	// render waits for the 8 MB download. Its `[fitment] loaded <version> <datasetHash>` line
 	// is the boot-time answer to "which dataset is this process serving". Bounded by

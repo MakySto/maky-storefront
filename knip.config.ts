@@ -6,6 +6,8 @@ const config: KnipConfig = {
 		"src/app/**/{page,layout,loading,error,not-found,route}.{ts,tsx}",
 		"src/app/api/**/route.ts",
 		"src/checkout/root.tsx",
+		// Run by `pnpm test:deploy-box`, which has its own vitest config
+		"src/**/*.box.test.ts",
 	],
 
 	// Project files to analyze
