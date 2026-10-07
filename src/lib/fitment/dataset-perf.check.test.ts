@@ -78,6 +78,10 @@ describe.skipIf(!PATH)("the cost of the full dataset on this build", () => {
 		metrics.rssDeltaMB = Math.round((heap1.rss - heap0.rss) / 1048576);
 
 		const dataset = validation.dataset;
+		// Resolved as of the moment the dataset was generated. A dataset past its `staleAfterDays` makes
+		// `resolveVehicleOutcome` return at its first line, so by today's clock these timings would be the
+		// cost of refusing to answer, and the table would read as a fast resolver.
+		const now = Date.parse(dataset.generatedAt);
 
 		// ---- one vehicle, whole dataset -------------------------------------------------
 		// Every (generation, year, roof) a shopper could confirm: the first year of each
@@ -111,12 +115,12 @@ describe.skipIf(!PATH)("the cost of the full dataset on this build", () => {
 		metrics.selections = selections.length;
 
 		// Warm the JIT the way a running server is warm, then time.
-		for (const s of selections.slice(0, 200)) resolveVehicleOutcome(dataset, s);
+		for (const s of selections.slice(0, 200)) resolveVehicleOutcome(dataset, s, { now });
 		const samples: number[] = [];
 		let worst = { ms: 0, candidates: 0, generationId: "" };
 		for (const s of selections) {
 			const start = process.hrtime.bigint();
-			const outcome = resolveVehicleOutcome(dataset, s);
+			const outcome = resolveVehicleOutcome(dataset, s, { now });
 			const took = ms(start);
 			samples.push(took);
 			if (took > worst.ms) {

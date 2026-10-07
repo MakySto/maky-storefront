@@ -41,9 +41,16 @@ afterEach(() => {
 	else process.env.MAKY_FITMENT_PROVIDER = ORIGINAL;
 });
 
+/**
+ * The committed demo dataset was generated on 2026-09-05 and is good for 3650 days, so asked by the real
+ * clock every case below would answer STALE from 2036-09-02. They ask the way the file was meant to be
+ * read: the day after it was generated.
+ */
+const DEMO_READ_AT = Date.parse(fixtureDataset.generatedAt) + 24 * 60 * 60 * 1000;
+
 async function demoOffersFor(selection: VehicleSelection) {
 	const { dataset } = await loadFitmentDataset();
-	const outcome = resolveVehicleOutcome(dataset, selection);
+	const outcome = resolveVehicleOutcome(dataset, selection, { now: DEMO_READ_AT });
 	const offers = await resolveFitmentOffers(
 		outcome.verified.map((o) => o.ref),
 		"sk-eur",

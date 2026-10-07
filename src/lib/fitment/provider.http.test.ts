@@ -780,16 +780,20 @@ describe("the runtime status says what this process holds", () => {
 	it("says when the dataset stops answering YES, and whether it already has", async () => {
 		vi.spyOn(console, "log").mockImplementation(() => {});
 		vi.spyOn(console, "warn").mockImplementation(() => {});
-		respondWith(
-			delivered({ generatedAt: "2026-10-01T17:48:14Z", validity: { validUntil: null, staleAfterDays: 30 } }),
-		);
+		// Generated an hour ago by the clock the status reads, so it is fresh on whatever day this runs.
+		// A date written out here went stale on that date (the live dataset's, 2026-10-31 17:48 UTC),
+		// and the deploy preflight, which runs this suite, refused every deploy from that minute on.
+		const generatedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+		respondWith(delivered({ generatedAt, validity: { validUntil: null, staleAfterDays: 30 } }));
 		vi.resetModules();
 		const { loadFitmentDataset, fitmentRuntimeStatus } = await import("./provider");
 		await loadFitmentDataset();
 
 		const status = fitmentRuntimeStatus();
 		// 30 days after generation — the date the owner has to have a new export by.
-		expect(status.staleAfter).toBe("2026-10-31T17:48:14.000Z");
+		expect(status.staleAfter).toBe(
+			new Date(Date.parse(generatedAt) + 30 * 24 * 60 * 60 * 1000).toISOString(),
+		);
 		expect(status.stale).toBe(false);
 
 		respondWith(
