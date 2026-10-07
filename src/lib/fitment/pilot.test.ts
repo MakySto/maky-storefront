@@ -32,6 +32,23 @@ import { resolveFitment } from "./resolve";
 
 const dataset = pilot as unknown as Parameters<typeof resolveFitment>[0];
 
+/**
+ * The clock this file reads the pilot by.
+ *
+ * The pilot is a committed file, and its `validity.staleAfterDays` counts from `generatedAt`:
+ * `resolveFitment` answers STALE for it once thirty days have passed, against whatever `Date.now()`
+ * says. Left to the real clock these cases passed on the day the file was committed and failed from
+ * 2026-10-06 20:36 UTC, each with 'STALE' where the meaning was being checked. The deploy preflight
+ * runs this suite, so from that minute no deploy could go out.
+ *
+ * So every case below asks the way it would have been asked while the file was fresh, one day after
+ * it was generated, and the expiry itself is the last describe in the file, pinned to the instant
+ * that can be read off the file rather than to the calendar.
+ */
+const DAY_MS = 24 * 60 * 60 * 1000;
+const GENERATED_AT = Date.parse(pilot.generatedAt);
+const READ_AT = GENERATED_AT + DAY_MS;
+
 /** Tourneo Courier V769 — month-precise start, open end. */
 const courier = (year: number, manufactureMonth?: number): VehicleSelection => ({
 	makeId: "veh:mk:0bd541b6-a9d0-4557-9d72-0e01961cdc55",
@@ -73,7 +90,7 @@ describe("an open-ended window, month-precise at the start", () => {
 	it("offers a later year without ever asking for a month", () => {
 		// 2025 is past the boundary from every direction. Asking for a month here would
 		// be collecting an answer that cannot change the outcome.
-		const result = resolveFitment(dataset, courier(2025), { saleorProductId: COURIER_SET });
+		const result = resolveFitment(dataset, courier(2025), { saleorProductId: COURIER_SET, now: READ_AT });
 		expect(result.verdict).toBe("MANUFACTURER_FIT");
 		expect(isFitmentOfferable({ verdict: result.verdict, eligibility: result.product?.eligibility })).toBe(
 			true,
@@ -81,22 +98,25 @@ describe("an open-ended window, month-precise at the start", () => {
 	});
 
 	it("asks for the month on the boundary year, and answers once it has it", () => {
-		const unknownMonth = resolveFitment(dataset, courier(2023), { saleorProductId: COURIER_SET });
+		const unknownMonth = resolveFitment(dataset, courier(2023), {
+			saleorProductId: COURIER_SET,
+			now: READ_AT,
+		});
 		expect(unknownMonth.verdict).toBe("NEEDS_DETAIL");
 
 		// The window opens in November, so November is in and October is not.
-		expect(resolveFitment(dataset, courier(2023, 11), { saleorProductId: COURIER_SET }).verdict).toBe(
-			"MANUFACTURER_FIT",
-		);
-		expect(resolveFitment(dataset, courier(2023, 10), { saleorProductId: COURIER_SET }).verdict).toBe(
-			"UNKNOWN",
-		);
+		expect(
+			resolveFitment(dataset, courier(2023, 11), { saleorProductId: COURIER_SET, now: READ_AT }).verdict,
+		).toBe("MANUFACTURER_FIT");
+		expect(
+			resolveFitment(dataset, courier(2023, 10), { saleorProductId: COURIER_SET, now: READ_AT }).verdict,
+		).toBe("UNKNOWN");
 	});
 
 	it("never claims a fit before the window opens", () => {
-		expect(resolveFitment(dataset, courier(2022), { saleorProductId: COURIER_SET }).verdict).not.toBe(
-			"MANUFACTURER_FIT",
-		);
+		expect(
+			resolveFitment(dataset, courier(2022), { saleorProductId: COURIER_SET, now: READ_AT }).verdict,
+		).not.toBe("MANUFACTURER_FIT");
 	});
 });
 
@@ -104,22 +124,26 @@ describe("a window clamped at one end only", () => {
 	it("needs no month at the clamped start — the source admitted it does not know one", () => {
 		// `reconciledToGeneration: true`, `startPrecision: "year"`. The whole of 1998 is
 		// inside the window, so a month cannot move the answer and is not asked for.
-		const result = resolveFitment(dataset, a6(1998), { saleorProductId: A6_SET });
+		const result = resolveFitment(dataset, a6(1998), { saleorProductId: A6_SET, now: READ_AT });
 		expect(result.verdict).toBe("MANUFACTURER_FIT");
 	});
 
 	it("still needs one at the month-precise end", () => {
-		expect(resolveFitment(dataset, a6(2005), { saleorProductId: A6_SET }).verdict).toBe("NEEDS_DETAIL");
-		expect(resolveFitment(dataset, a6(2005, 2), { saleorProductId: A6_SET }).verdict).toBe(
+		expect(resolveFitment(dataset, a6(2005), { saleorProductId: A6_SET, now: READ_AT }).verdict).toBe(
+			"NEEDS_DETAIL",
+		);
+		expect(resolveFitment(dataset, a6(2005, 2), { saleorProductId: A6_SET, now: READ_AT }).verdict).toBe(
 			"MANUFACTURER_FIT",
 		);
-		expect(resolveFitment(dataset, a6(2005, 3), { saleorProductId: A6_SET }).verdict).toBe("UNKNOWN");
+		expect(resolveFitment(dataset, a6(2005, 3), { saleorProductId: A6_SET, now: READ_AT }).verdict).toBe(
+			"UNKNOWN",
+		);
 	});
 });
 
 describe("a held mapping", () => {
 	it("is never offerable, however well the vehicle matches", () => {
-		const result = resolveFitment(dataset, h1(2008, 1), { saleorProductId: H1_SET });
+		const result = resolveFitment(dataset, h1(2008, 1), { saleorProductId: H1_SET, now: READ_AT });
 		expect(isFitmentOfferable({ verdict: result.verdict, eligibility: result.product?.eligibility })).toBe(
 			false,
 		);
@@ -130,7 +154,7 @@ describe("a held mapping", () => {
 	it("reads as 'we cannot confirm this', not as 'your car is wrong'", () => {
 		// The distinction is the point: a hold is OUR uncertainty about a mapping, not a
 		// fact about the shopper's vehicle. NO_FIT would be a claim we cannot make.
-		const result = resolveFitment(dataset, h1(2008, 1), { saleorProductId: H1_SET });
+		const result = resolveFitment(dataset, h1(2008, 1), { saleorProductId: H1_SET, now: READ_AT });
 		expect(result.verdict).not.toBe("NO_FIT");
 		expect(result.verdict).toBe("UNKNOWN");
 	});
@@ -138,7 +162,9 @@ describe("a held mapping", () => {
 	it("still asks for the month it needs, even on a row it will refuse anyway", () => {
 		// The question comes before the refusal: answering it is how we learn whether the
 		// row was even relevant.
-		expect(resolveFitment(dataset, h1(2008), { saleorProductId: H1_SET }).verdict).toBe("NEEDS_DETAIL");
+		expect(resolveFitment(dataset, h1(2008), { saleorProductId: H1_SET, now: READ_AT }).verdict).toBe(
+			"NEEDS_DETAIL",
+		);
 	});
 });
 
@@ -157,13 +183,41 @@ describe("the whole pilot is the manufacturer's word, and says so", () => {
 			[courier(2025), COURIER_SET],
 			[a6(1998), A6_SET],
 		] as const) {
-			expect(resolveFitment(dataset, selection, { saleorProductId: id }).verdict).not.toBe("VERIFIED_FIT");
+			expect(resolveFitment(dataset, selection, { saleorProductId: id, now: READ_AT }).verdict).not.toBe(
+				"VERIFIED_FIT",
+			);
 		}
 	});
 
 	it("names the supplier that stands behind each row", () => {
-		const result = resolveFitment(dataset, courier(2025), { saleorProductId: COURIER_SET });
+		const result = resolveFitment(dataset, courier(2025), { saleorProductId: COURIER_SET, now: READ_AT });
 		expect(result.product?.evidence.kind).toBe("manufacturer-application");
 		expect(result.product?.evidence.supplier).toBeTruthy();
+	});
+});
+
+describe("the pilot's thirty days", () => {
+	// Every dataset CFM ships stops answering YES on a day that can be read off it, and this is that
+	// instant for this file. It is pinned here so the expiry is something the suite looks at on
+	// purpose, rather than something it runs into on a date nobody chose.
+	const lastFreshMoment = GENERATED_AT + pilot.validity.staleAfterDays * DAY_MS;
+
+	it("still answers on the last millisecond of them", () => {
+		const result = resolveFitment(dataset, courier(2025), {
+			saleorProductId: COURIER_SET,
+			now: lastFreshMoment,
+		});
+		expect(result.verdict).toBe("MANUFACTURER_FIT");
+	});
+
+	it("answers STALE from the next one, and never offers a set", () => {
+		const result = resolveFitment(dataset, courier(2025), {
+			saleorProductId: COURIER_SET,
+			now: lastFreshMoment + 1,
+		});
+		expect(result.verdict).toBe("STALE");
+		expect(isFitmentOfferable({ verdict: result.verdict, eligibility: result.product?.eligibility })).toBe(
+			false,
+		);
 	});
 });
