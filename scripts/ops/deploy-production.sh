@@ -28,6 +28,11 @@
 # --rehearse builds aside, runs the build on the spare port, gates it, and removes everything again.
 # It switches nothing and touches neither the live process nor nginx.
 #
+# The bridge and the live process are both registered with PM2 from a clean environment (the live one with
+# pm2 delete, then pm2 start npm ...), not started again from the record PM2 keeps: that record holds the
+# environment of whichever shell registered the process, and carried an agent session's tokens through every
+# deploy (CLAUDE.md §13.2.1). After each start the script says what the process was started with, names only.
+#
 # Exit codes
 #   0   deployed and verified
 #   1   failed before the commit point — the previous build was restored
@@ -75,6 +80,7 @@ NGINX_TOOL="${NGINX_TOOL:-$(dirname "${BASH_SOURCE[0]}")/nginx-upstream.sh}"
 DRAIN_TIMEOUT_S="${DRAIN_TIMEOUT_S:-20}"
 PROBE_INTERVAL_S="${PROBE_INTERVAL_S:-0.5}"
 PROBE_MAX_ITERATIONS="${PROBE_MAX_ITERATIONS:-2400}"   # a probe nobody stopped ends by itself
+PROC_ROOT="${PROC_ROOT:-/proc}"                 # where processes are looked up (name, directory, environment names): only the tests change it
 
 # What a new process has to show, besides passing the gate, before customers are sent to it. Two things the
 # server does in the background of its first requests: it reads the category list from Saleor at boot, and
@@ -227,7 +233,7 @@ restore_canonical() {
 		if (( CANONICAL_STOPPED == 1 )); then
 			# Stopped, but nothing had been moved out yet: the old build is still in place.
 			info "$PM2_APP was stopped before the snapshot — starting the untouched build again"
-			pm2 start "$PM2_APP" >/dev/null 2>&1 || pm2 restart "$PM2_APP" >/dev/null 2>&1 || true
+			start_canonical_again
 			if wait_ready "$RESTORE_TIMEOUT_S"; then
 				CANONICAL_STOPPED=0
 				info "previous build is back up"
@@ -235,6 +241,7 @@ restore_canonical() {
 			fi
 			err "$PM2_APP DID NOT COME UP — intervene now"
 			err "  pm2 logs $PM2_APP --nostream --lines 50"
+			err "  if PM2 no longer lists it: $(register_hint)"
 			return 1
 		fi
 		info "nothing was moved out — the live build is untouched"
@@ -263,7 +270,7 @@ restore_canonical() {
 	# A pin marker must never ride back into the live tree and pin the next snapshot.
 	rm -f "$APP_DIR/.next/.keep"
 
-	pm2 start "$PM2_APP" >/dev/null 2>&1 || pm2 restart "$PM2_APP" >/dev/null 2>&1 || true
+	start_canonical_again
 	if wait_ready "$RESTORE_TIMEOUT_S"; then
 		CANONICAL_STOPPED=0
 		info "previous build is back up"
@@ -275,6 +282,7 @@ restore_canonical() {
 		err "RESTORE DID NOT COME UP — the site is down, intervene now"
 	fi
 	err "  pm2 logs $PM2_APP --nostream --lines 50"
+	err "  if PM2 no longer lists it: $(register_hint)"
 	return 1
 }
 
@@ -298,7 +306,7 @@ restore() {
 		else
 			err "the bridge could not be put in front either — the site may be down"
 		fi
-		err "$BUILD_DIR must stay until $PM2_APP is repaired: pm2 logs $PM2_APP, then $NGINX_TOOL set canonical-only"
+		err "$BUILD_DIR must stay until $PM2_APP is repaired: pm2 logs $PM2_APP (or register it again: $(register_hint)), then $NGINX_TOOL set canonical-only"
 	elif (( BRIDGE_UP == 0 )); then
 		remove_scratch || true
 	fi
@@ -606,12 +614,13 @@ Restore a snapshot first (CLAUDE.md §13.3), or set ALLOW_NO_BASELINE=1 for a on
 	# Printed here so a --dry-run shows it too. Confirmed against the running
 	# process after the gate, by check_market_state.
 	info "indexable markets requested by .env: $(market_state_from_env)"
+	warn_shell_shadows_dotenv
 	ps -eo pid,comm,rss --sort=-rss | head -5
 }
 
 # Copy the keys other systems issue for the storefront from AWS SSM into .env (CLAUDE.md
 # §13.9) — before the stop, so it adds no downtime, and before the build, so a build-time
-# variable would be current too. `pm2 start` below then reads the new .env.
+# variable would be current too. The process registered below reads the new .env when it starts.
 #
 # Warn-only, on purpose: an SSM or IAM hiccup leaves .env exactly as the last successful sync
 # wrote it, which is the state the live site already runs on, so it is never a reason to hold
@@ -692,10 +701,169 @@ write_meta_in() {
 # Classic builds the working tree itself, so what it records is the commit that tree is on now.
 write_meta() { write_meta_in "$APP_DIR" "$(git -C "$APP_DIR" rev-parse HEAD)"; }
 
+# --- the environment a process is registered with -------------------------------------------------
+# PM2 keeps, with a process, the environment of the shell that registered it, and `pm2 stop`, `pm2 start <name>` and
+# `pm2 restart <name>` start it again from that record unchanged. `pm2 restart <name> --update-env` adds the whole
+# environment of the calling shell to it and never takes a name out. The live process was registered, and later
+# restarted that way, from agent sessions, so its record carried their variables, tokens included, through every
+# deploy; and a value stored with a process wins over .env, because Next does not overwrite a variable that is already
+# set (CLAUDE.md §13.2.1; found by the first bridge deploy, 2026-10-06).
+#
+# So both processes are registered the same way, from nothing but what starting the app takes. Everything the app is
+# configured with is in .env, which Next reads itself when the process starts.
+pm2_clean() {
+	env -i HOME="$HOME" PATH="$PATH" LANG=C.UTF-8 ${PM2_HOME:+PM2_HOME="$PM2_HOME"} pm2 "$@"
+}
+
+# Registers $PM2_APP afresh: `npm start -- -p <port>` in $APP_DIR, started on the spot. $1 and $2 are the stdout and
+# stderr logs of the record this replaces, so the log the market read-back takes its boot boundary from stays the same file.
+register_canonical() {
+	local out_log="${1:-}" err_log="${2:-}"
+	pm2_clean start npm --name "$PM2_APP" --cwd "$APP_DIR" \
+		${out_log:+--output "$out_log"} ${err_log:+--error "$err_log"} \
+		-- start -- -p "${CANONICAL_ADDR##*:}" >/dev/null
+}
+
+# What to type, from a shell, to register $PM2_APP again by hand: for a message, when PM2 has lost the record.
+register_hint() {
+	printf 'pm2 delete %s; env -i HOME="$HOME" PATH="$PATH" pm2 start npm --name %s --cwd %s -- start -- -p %s' \
+		"$PM2_APP" "$PM2_APP" "$APP_DIR" "${CANONICAL_ADDR##*:}"
+}
+
+# Starts $PM2_APP on the build in $APP_DIR: the record PM2 holds for it goes, and the process is registered again from
+# a clean environment. Returns 1, with the reason on stderr, when it cannot.
+start_canonical() {
+	local out_log err_log rc=0
+	out_log=$(pm2_field "$PM2_APP" pm_out_log_path)
+	err_log=$(pm2_field "$PM2_APP" pm_err_log_path)
+	pm2_has_app "$PM2_APP" || rc=$?
+	case "$rc" in
+		0) pm2 delete "$PM2_APP" >/dev/null 2>&1 || { err "pm2 could not delete the old record of $PM2_APP"; return 1; } ;;
+		1) ;;
+		*) err "cannot read PM2's process list (pm2 jlist) — not registering $PM2_APP blind"; return 1 ;;
+	esac
+	register_canonical "$out_log" "$err_log" || { err "pm2 could not register $PM2_APP"; return 1; }
+}
+
+# The restore's way to start it. Where PM2 will not take a clean registration it falls back to the record it holds:
+# a live process whose environment is not clean is better than none.
+start_canonical_again() {
+	start_canonical && return 0
+	pm2 start "$PM2_APP" >/dev/null 2>&1 || pm2 restart "$PM2_APP" >/dev/null 2>&1 || true
+}
+
+# The pid of the `next-server` whose working directory is $1. Found by directory and not by name: maky-smtp-app, on the same
+# box, runs a next-server of its own (Next 15), so `ps | awk '/next-server/'` finds two. Next titles its server process
+# `next-server (v16.x)`, which is what /proc/<pid>/comm starts with.
+server_pid_in() {
+	local dir p comm cwd
+	dir=$(readlink -f -- "$1" 2>/dev/null) || return 1
+	for p in "$PROC_ROOT"/[0-9]*; do
+		comm=""
+		{ read -r comm <"$p/comm"; } 2>/dev/null || continue
+		[[ "$comm" == "next-server"* ]] || continue
+		cwd=$(readlink -- "$p/cwd" 2>/dev/null) || continue
+		if [[ "$cwd" == "$dir" ]]; then
+			printf '%s\n' "${p##*/}"
+			return 0
+		fi
+	done
+	return 1
+}
+
+# The NAMES of the variables a process was started with, one a line, from /proc/<pid>/environ. Never a value, and not
+# by cutting lines at "=": a value can hold newlines (a key), so the records are split at the NUL that ends each of them.
+process_env_names() {
+	local rec name
+	[[ -r "$PROC_ROOT/$1/environ" ]] || return 1
+	while IFS= read -r -d '' rec || [[ -n "$rec" ]]; do
+		name="${rec%%=*}"
+		if [[ "$rec" == *=* && "$name" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+			printf '%s\n' "$name"
+		fi
+	done <"$PROC_ROOT/$1/environ" | sort -u
+}
+
+# The NAMES .env defines, never a value.
+dotenv_names() {
+	local line
+	[[ -f "$APP_DIR/.env" ]] || return 0
+	while IFS= read -r line || [[ -n "$line" ]]; do
+		line="${line#"${line%%[![:space:]]*}"}"
+		line="${line#export }"
+		if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)= ]]; then
+			printf '%s\n' "${BASH_REMATCH[1]}"
+		fi
+	done <"$APP_DIR/.env"
+}
+
+# What does not belong in the environment of a server process: the variables of an agent session, and whatever else looks like
+# a credential. A name list for a warning, never a filter of what a process gets.
+CREDENTIAL_NAMES_RE='^(CLAUDE|ANTHROPIC|OPENAI|AWS|GH|GITHUB|SSH|GPG)(_|$)|TOKEN|SECRET|PASSW|API_?KEY|PRIVATE|CREDENTIAL|AUTH'
+
+# What the environment a running server process was started with is made of, as /proc shows it: how many names, which of them look
+# like credentials and are not .env's, which of them are .env's and so hide its value (the value the process was started
+# with wins). Names only, never a value. $1 says who, $2 is the directory it runs in. Warns, never fails: the process
+# has passed its gate, and what it was started with is a finding for whoever reads this, not a reason to throw a build away.
+report_environment() {
+	local who="$1" dir="$2" pid name names total=0
+	local -a shadow=() foreign=()
+	local -A in_dotenv=()
+	if ! pid=$(server_pid_in "$dir"); then
+		info "environment of $who: no next-server found in $dir"
+		return 0
+	fi
+	if ! names=$(process_env_names "$pid"); then
+		info "environment of $who (pid $pid): cannot be read"
+		return 0
+	fi
+	while IFS= read -r name; do
+		[[ -z "$name" ]] || in_dotenv["$name"]=1
+	done < <(dotenv_names)
+	while IFS= read -r name; do
+		[[ -n "$name" ]] || continue
+		total=$((total + 1))
+		if [[ -n "${in_dotenv[$name]:-}" ]]; then
+			shadow+=("$name")
+		elif grep -qiE "$CREDENTIAL_NAMES_RE" <<<"$name"; then
+			foreign+=("$name")
+		fi
+	done <<<"$names"
+	if (( ${#foreign[@]} == 0 && ${#shadow[@]} == 0 )); then
+		info "environment of $who (pid $pid): $total names, none looks like a credential, none hides a value of .env"
+		return 0
+	fi
+	info "environment of $who (pid $pid): $total names"
+	if (( ${#foreign[@]} > 0 )); then
+		warn "environment of $who: ${#foreign[@]} names look like credentials and are not .env's: ${foreign[*]} (names only; PM2 copies the environment of the shell that registers a process, CLAUDE.md §13.2.1)"
+	fi
+	if (( ${#shadow[@]} > 0 )); then
+		warn "environment of $who: ${#shadow[@]} names are defined in .env too, and the value the process was started with wins: ${shadow[*]}"
+	fi
+	return 0
+}
+
+# The names the shell this deploy runs in exports and .env defines too. Next does not overwrite a variable that is
+# already set, so the build, and the process the build is started by, would take the shell's value. Names only.
+warn_shell_shadows_dotenv() {
+	local name
+	local -a names=()
+	while IFS= read -r name; do
+		[[ -z "$name" ]] || names+=("$name")
+	done < <(comm -12 <(compgen -e | sort -u) <(dotenv_names | sort -u))
+	if (( ${#names[@]} > 0 )); then
+		warn "this shell exports ${#names[@]} names that $APP_DIR/.env defines too, and the shell's value wins over .env in the build: ${names[*]}"
+	fi
+}
+
 # Where PM2 sends this app's stdout. Asked of PM2 rather than guessed from
 # ~/.pm2/logs, because a renamed or relocated log would silently turn the market
 # read-back into a check of the wrong file.
-pm2_out_log() {
+pm2_out_log() { pm2_field "$PM2_APP" pm_out_log_path; }
+
+# One field of what PM2 holds for an app (its stdout log, its stderr log), empty when there is no such app or its
+# list cannot be read. Never the environment: that is where the tokens are.
+pm2_field() {
 	pm2 jlist 2>/dev/null | python3 -c '
 import json, sys
 try:
@@ -704,9 +872,9 @@ except Exception:
     sys.exit(0)
 for a in apps:
     if a.get("name") == sys.argv[1]:
-        print(a.get("pm2_env", {}).get("pm_out_log_path", "") or "")
+        print(a.get("pm2_env", {}).get(sys.argv[2], "") or "")
         break
-' "$PM2_APP"
+' "$1" "$2"
 }
 
 start() {
@@ -728,10 +896,12 @@ start() {
 		MARKET_LOG_FILE=""
 		warn "cannot resolve the PM2 stdout log for $PM2_APP — the market read-back cannot run"
 	fi
-	pm2 start "$PM2_APP" >/dev/null
+	# Registered afresh, from a clean environment, like the bridge: see pm2_clean.
+	start_canonical || die "pm2 could not start $PM2_APP — if it no longer lists it: $(register_hint)"
 	wait_ready || die "$PM2_APP did not answer on $LOCAL_URL$SMOKE_PATH within ${READY_TIMEOUT_S}s$(ready_detail)"
 	CANONICAL_STOPPED=0
 	info "responding on $LOCAL_URL$SMOKE_PATH"
+	report_environment "$PM2_APP" "$APP_DIR"
 }
 
 # Pick a real PDP from the just-built sitemap so the asset gate follows the
@@ -1593,8 +1763,8 @@ start_bridge() {
 	BRIDGE_OUT_LOG="${BUILD_LOG}.bridge-out"
 	BRIDGE_ERR_LOG="${BUILD_LOG}.bridge-err"
 	rm -f -- "$BRIDGE_OUT_LOG"* "$BRIDGE_ERR_LOG"*
-	# A clean environment. The live process carries the variables of whichever shell started it, tokens
-	# of an agent session included; everything the app needs is in .env, which Next reads itself.
+	# A clean environment, like the live process now: see pm2_clean. Before 2026-10-06 the live process
+	# carried the variables of whichever shell had registered it, tokens of an agent session included.
 	#
 	# Started the way the live process is, `next start -p <port>`, and with no -H. The first --rehearse on the
 	# box (2026-10-06) had -H 127.0.0.1 here and every market page answered a 301 to itself: Next hands the proxy
@@ -1603,10 +1773,9 @@ start_bridge() {
 	# bridge itself and was sent back to /sk by the proxy's own rule for the channel path. With no -H both sides say
 	# localhost. The price: the bridge listens on every interface for the minutes it runs, as the live process
 	# does on its port all the time.
-	env -i HOME="$HOME" PATH="$PATH" LANG=C.UTF-8 ${PM2_HOME:+PM2_HOME="$PM2_HOME"} \
-		pm2 start npm --name "$BRIDGE_APP" --cwd "$BUILD_DIR" \
-			--output "$BRIDGE_OUT_LOG" --error "$BRIDGE_ERR_LOG" \
-			-- start -- -p "$BRIDGE_PORT" >/dev/null \
+	pm2_clean start npm --name "$BRIDGE_APP" --cwd "$BUILD_DIR" \
+		--output "$BRIDGE_OUT_LOG" --error "$BRIDGE_ERR_LOG" \
+		-- start -- -p "$BRIDGE_PORT" >/dev/null \
 		|| die "pm2 could not start the bridge"
 	BRIDGE_UP=1
 	if ! wait_ready_at "$BRIDGE_URL"; then
@@ -1614,6 +1783,7 @@ start_bridge() {
 		die "the bridge did not answer on $BRIDGE_URL$SMOKE_PATH within ${READY_TIMEOUT_S}s$(ready_detail) (its log: $BRIDGE_ERR_LOG, $BRIDGE_OUT_LOG)"
 	fi
 	info "the bridge answers on $BRIDGE_URL$SMOKE_PATH"
+	report_environment "the bridge" "$BUILD_DIR"
 }
 
 gate_bridge() {
@@ -2017,7 +2187,7 @@ print_plan() {
 			  sudo mv -T $APP_DIR/.next $(snapshot_name)
 			  pnpm build
 			  write $APP_DIR/.next/MAKY_DEPLOY_META
-			  pm2 start $PM2_APP
+			  register $PM2_APP afresh from a clean environment (pm2 delete, then pm2 start npm ...), say which variable names it has
 			  gate (rollback if it fails):  homepage/PLP/category/PDP + every referenced CSS/JS, on disk and over local HTTP
 			  verify (warn only):           nginx via --resolve, then $PUBLIC_URL
 			  append to $DEPLOY_LOG
@@ -2036,7 +2206,7 @@ print_plan() {
 			  pm2 stop $PM2_APP                                  <- the gap starts
 			  sudo mv -T $APP_DIR/.next $(snapshot_name)
 			  mv the finished build into $APP_DIR/.next
-			  pm2 start $PM2_APP                                 <- the gap ends when it answers
+			  register $PM2_APP afresh from a clean environment   <- the gap ends when it answers
 			  gate (rollback if it fails):  homepage/PLP/category/PDP + every referenced CSS/JS, on disk and over local HTTP
 			  hand the GraphQL types the build generated to $APP_DIR/src (the next preflight imports them)
 			  verify (warn only), append to $DEPLOY_LOG, prune snapshots
@@ -2050,13 +2220,14 @@ print_plan() {
 			  copy secrets from AWS SSM into .env (see "secrets" above; warn-only)
 			  export HEAD and copy node_modules into $BUILD_DIR; build there (nice $BUILD_NICE) while $PM2_APP keeps serving
 			  write $BUILD_DIR/.next/MAKY_DEPLOY_META, keep a clean copy of the build
-			  start the bridge ($BRIDGE_APP, port $BRIDGE_PORT, clean environment) and run the whole gate on it
+			  start the bridge ($BRIDGE_APP, port $BRIDGE_PORT, clean environment), say which variable names it has, and run the whole gate on it
 			  read back what the bridge printed at boot (the category list from Saleor, when this build reads it, up to ${CATEGORIES_WAIT_S}s)
 			  and check that it serves the catalogue release $PM2_APP serves, from /api/catalog/status (up to ${CATALOG_PARITY_WAIT_S}s)
 			  $NGINX_TOOL set bridge-primary                     <- customers move to the bridge
 			  wait for the requests $PM2_APP holds to finish, then pm2 stop $PM2_APP
 			  sudo mv -T $APP_DIR/.next $(snapshot_name)
-			  mv the clean copy into $APP_DIR/.next, pm2 start $PM2_APP, run the whole gate on it   <- the commit point
+			  mv the clean copy into $APP_DIR/.next, register $PM2_APP afresh from a clean environment
+			  (pm2 delete, then pm2 start npm ...; the record it had is not reused), run the whole gate on it   <- the commit point
 			  hand the GraphQL types the build generated to $APP_DIR/src (the next preflight imports them)
 			  keep customers on the bridge until $PM2_APP serves the bridge's catalogue release (up to ${CATALOG_PARITY_WAIT_S}s, warn only)
 			  $NGINX_TOOL set canonical-only                     <- customers move back
@@ -2072,7 +2243,7 @@ print_plan() {
 			Would, in this order:
 			  export HEAD and copy node_modules into $BUILD_DIR; build there (nice $BUILD_NICE) while $PM2_APP keeps serving
 			  write $BUILD_DIR/.next/MAKY_DEPLOY_META
-			  start the bridge ($BRIDGE_APP, port $BRIDGE_PORT, clean environment) and run the whole gate on it
+			  start the bridge ($BRIDGE_APP, port $BRIDGE_PORT, clean environment), say which variable names it has, and run the whole gate on it
 			  read back what the bridge printed at boot and check that it serves the catalogue release $PM2_APP serves
 			  stop the bridge, remove $BUILD_DIR
 			$PM2_APP, nginx, .env and $DEPLOY_LOG are not touched.

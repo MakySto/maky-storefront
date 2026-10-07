@@ -138,7 +138,8 @@ Then, in order:
    Expect `gate=` to be **empty** while the gate is off. That is correct, not a broken log.
 9. **STOP report** written from those outputs, then **Marek's GO**.
 10. **Arm `product` + `sk`** — add to `/opt/storefront/.env` and
-    `pm2 restart maky-storefront --update-env`. **No build, no deploy.**
+    `pm2 restart maky-storefront` (not `--update-env`, which copies the shell's whole environment into
+    PM2's stored record; CLAUDE.md §13.2.1, corrected 2026-10-06). **No build, no deploy.**
     ```
     ROUTE_EXISTENCE_GATE=on
     ROUTE_EXISTENCE_MARKETS=sk
