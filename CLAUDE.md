@@ -679,9 +679,12 @@ What differs from a plain restart, and is accepted:
     `*TOKEN*`, `*SECRET*` and the like) and are not `.env`'s, and those `.env` defines too, whose stored
     value wins. Warn-only. The preflight warns the same way about names the shell the deploy runs in
     exports and `.env` defines too, because the shell's value wins in the build. Whether the environment of
-    the PM2 daemon leaks into what `env -i pm2 start` registers has not been measured: the daemon holds no
-    session names (read 2026-10-06), and the first of these lines shows it for both processes. The script
-    reports and does not filter.
+    the PM2 daemon leaks into what `env -i pm2 start` registers was measured on the first deploy with this
+    registration (2026-10-07, `5f2ad3c`): the new record held 9 names (`HOME`, `LANG` and `PATH` from `env -i`,
+    and `NODE_APP_INSTANCE`, `PM2_HOME`, `PM2_USAGE`, `PWD`, `unique_id` and the app name, which PM2 adds itself)
+    and the process 77 (25 `npm_*` and 52 more: PM2's own record fields, npm's `COLOR`, `EDITOR`, `INIT_CWD`,
+    `NODE`, `NODE_PATH`, and the names above), none from a session and none flagged. The count follows the PM2
+    and npm versions, so nothing pins it. The script reports and does not filter.
   - **What it does not do: `pm2 save`.** That writes `~/.pm2/dump.pm2`, which `pm2 resurrect` reads, and the
     dump is clean today, so nothing needs it. It must never run before the live process is registered
     afresh (it would write the old record into the dump) and never while the bridge exists.
