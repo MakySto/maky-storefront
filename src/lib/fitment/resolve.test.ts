@@ -500,4 +500,31 @@ describe("staleness", () => {
 	it("treats an unparsable generatedAt as stale rather than fresh", () => {
 		expect(isDatasetStale(dataset({ generatedAt: "not-a-date" }), NOW)).toBe(true);
 	});
+
+	// The boundaries, on a clock the test owns. A dataset that goes stale on a calendar date is a test
+	// that goes red on it, and the deploy preflight runs this suite on the live box.
+	it("is fresh through the last millisecond of staleAfterDays, and stale from the next", () => {
+		// Generated 2026-09-01T00:00:00Z, thirty days: the last fresh instant is 2026-10-01T00:00:00Z.
+		const lastFresh = Date.parse("2026-10-01T00:00:00.000Z");
+		expect(isDatasetStale(dataset(), lastFresh)).toBe(false);
+		expect(isDatasetStale(dataset(), lastFresh + 1)).toBe(true);
+		expect(resolveFitment(dataset(), octaviaFlush, { saleorProductId: "P1", now: lastFresh }).verdict).toBe(
+			"VERIFIED_FIT",
+		);
+		expect(
+			resolveFitment(dataset(), octaviaFlush, { saleorProductId: "P1", now: lastFresh + 1 }).verdict,
+		).toBe("STALE");
+	});
+
+	it("is fresh through validUntil itself, and stale from the next millisecond", () => {
+		const validUntil = "2026-09-10T00:00:00.000Z";
+		const d = dataset({ validity: { validUntil, staleAfterDays: 3650 } });
+		expect(isDatasetStale(d, Date.parse(validUntil))).toBe(false);
+		expect(isDatasetStale(d, Date.parse(validUntil) + 1)).toBe(true);
+	});
+
+	it("goes stale by age even when validUntil is still far ahead", () => {
+		const d = dataset({ validity: { validUntil: "2099-01-01T00:00:00.000Z", staleAfterDays: 30 } });
+		expect(isDatasetStale(d, Date.parse("2026-10-01T00:00:00.001Z"))).toBe(true);
+	});
 });

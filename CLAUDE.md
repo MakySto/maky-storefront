@@ -337,6 +337,14 @@ Facts that decide what a check proves (not a checklist to run every time):
 - **A passing `next build` does NOT certify token correctness.** Tailwind v4 silently emits nothing
   for an undefined `--color-*`; a colorless utility passes the build. Look at the touched components in
   the real application to see that they paint (§4.2).
+- **A test owns its clock.** A committed dataset or fixture that carries a date the code compares with
+  `Date.now()` (`generatedAt` with `validity.staleAfterDays`, `validUntil`) expires on a calendar day, and
+  `deploy-production.sh` runs the whole suite on the box before every deploy: a test that asks the real clock
+  goes red on that day and no deploy goes out. It happened on 2026-10-06 20:36 UTC, when the pilot's thirty
+  days ran out under `pilot.test.ts`. Pass `now` to the resolver, or generate the date from the clock the code
+  reads. To look for the next one, run the suite with `Date.now()`, `new Date()` and `performance.timeOrigin`
+  moved to a few dates over the coming years (a throwaway vitest setup file that offsets them): whatever goes
+  red is a clock dependence. The live fitment dataset has its own date, `staleAfter` in `/api/fitment/status`.
 - Commits follow the project's established commit-hook convention (husky + lint-staged).
 
 ## 12. Token system — current state (from design analysis 2026-06-21)

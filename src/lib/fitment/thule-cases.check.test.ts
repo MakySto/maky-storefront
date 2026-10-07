@@ -64,10 +64,14 @@ describe.skipIf(!available)("CFM's 28 cases against this build's resolver", () =
 		if (!result.ok) throw new Error(result.errors.join("; "));
 		const dataset: FitmentDataset = result.dataset;
 		expect(dataset.datasetHash, "the cases were made against another dataset").toBe(file.dataset.datasetHash);
+		// Asked at the moment the dataset was generated. Whether a dataset is still young enough to answer
+		// is `isDatasetStale`'s question and has its own tests; asked by today's clock, a dataset thirty
+		// days old makes all 28 cases come back STALE and this reads as 28 disagreements about products.
+		const now = Date.parse(dataset.generatedAt);
 
 		const secret = process.env.MAKY_GARAGE_COOKIE_SECRET?.trim() || null;
 		const rows = file.cases.map((c, index) => {
-			const outcome = resolveVehicleOutcome(dataset, c.selection);
+			const outcome = resolveVehicleOutcome(dataset, c.selection, { now });
 			const ours = {
 				verified: outcome.verified.map((o) => o.ref.saleorProductId).sort(),
 				unconfirmed: outcome.unconfirmed.map((o) => `${o.ref.saleorProductId}:${o.result.verdict}`).sort(),
