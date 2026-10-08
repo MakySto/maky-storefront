@@ -17,9 +17,10 @@ import { formatNumber } from "@/config/locale";
 const NBSP = " ";
 
 /**
- * A car fridge's own measurements. The unit is the one the CFM specification key carries
- * (`rated_power_w`, `net_volume_l`, `interior_height_mm`, `input_ac_current_a`,
- * `temperature_min_c`), which is where the catalogue got the number from.
+ * A car fridge's own measurements, and those of its external battery (CoolZ Power). The unit is the
+ * one the CFM specification key carries (`rated_power_w`, `net_volume_l`, `interior_height_mm`,
+ * `input_ac_current_a`, `temperature_min_c`, `battery_capacity_wh`, `nominal_voltage_v`,
+ * `usb_a_max_w`, `usb_c_pd_max_w`), which is where the catalogue got the number from.
  */
 const CAR_FRIDGE_UNITS: Readonly<Record<string, string>> = {
 	"cfm:attribute:rated_power": "W",
@@ -28,6 +29,10 @@ const CAR_FRIDGE_UNITS: Readonly<Record<string, string>> = {
 	"cfm:attribute:input_current_ac": "A",
 	"cfm:attribute:temperature_min": "°C",
 	"cfm:attribute:temperature_max": "°C",
+	"cfm:attribute:battery_capacity": "Wh",
+	"cfm:attribute:nominal_voltage": "V",
+	"cfm:attribute:usb_a_max": "W",
+	"cfm:attribute:usb_c_pd_max": "W",
 };
 
 /** CFM external reference -> display unit. */

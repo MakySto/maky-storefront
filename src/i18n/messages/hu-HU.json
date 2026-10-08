@@ -167,12 +167,12 @@
 		"trustWarrantyText": "A törvény szerint",
 		"trustWarrantyYearsTitle": "{years} jótállás",
 		"trustWarrantyYearsText": "Erre a termékre",
-		"highlightBikes": "{count, plural, one {# kerékpárhoz} other {# kerékpárhoz}}",
+		"highlightBikes": "{count, plural, one {# kerék\u00ADpárhoz} other {# kerék\u00ADpárhoz}}",
 		"highlightLoad": "Teherbírás {value}",
-		"highlightLoadPerBike": "Kerékpáronként legfeljebb {value}",
+		"highlightLoadPerBike": "Kerék\u00ADpáron\u00ADként legfeljebb {value}",
 		"highlightVolume": "Térfogat {value}",
 		"highlightWeight": "Tömeg {value}",
-		"highlightPower": "Teljesítményfelvétel {value}"
+		"highlightPower": "Teljesít\u00ADmény\u00ADfelvétel {value}"
 	},
 	"fitment": {
 		"selectVehicle": "Válassza ki járművét",

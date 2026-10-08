@@ -172,7 +172,7 @@
 		"highlightLoadPerBike": "Pro Fahrrad bis {value}",
 		"highlightVolume": "Volumen {value}",
 		"highlightWeight": "Gewicht {value}",
-		"highlightPower": "Leistungsaufnahme {value}"
+		"highlightPower": "Leistungs\u00ADaufnahme {value}"
 	},
 	"fitment": {
 		"selectVehicle": "Wählen Sie Ihr Fahrzeug",

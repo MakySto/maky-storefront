@@ -173,3 +173,51 @@ describe("foreign markets", () => {
 		expect(isLocalizedRootSegment("sk", "nordrive-stresne-nosice")).toBe(false);
 	});
 });
+
+describe("the car-fridge category", () => {
+	// What CFM writes as the category's translated slug, typed out so the row has to keep it (the CoolZ
+	// translation pack, 2026-10-08). To be compared with what Saleor holds once CFM has written it.
+	const SEGMENTS: Readonly<Record<string, string>> = {
+		sk: "autochladnicky",
+		cz: "autochladnicky",
+		de: "kuehlboxen-fuers-auto",
+		at: "kuehlboxen-fuers-auto",
+		pl: "lodowki-samochodowe",
+		hu: "autos-hutoladak",
+		it: "frigoriferi-portatili",
+		fr: "glacieres-pour-voiture",
+		es: "neveras-de-coche",
+		ro: "frigidere-auto",
+		us: "portable-refrigerators-freezers",
+		ca: "portable-refrigerators-freezers",
+	};
+
+	it("has the segment CFM writes, in every market", () => {
+		const rows = categoryRouteTable().filter((row) => row.baseSlug === "autochladnicky");
+		expect(rows).toHaveLength(12);
+		for (const row of rows) expect(row.path, row.market).toBe(`/${row.market}/${SEGMENTS[row.market]}`);
+	});
+
+	it("is the Saleor category it names (Category:10)", () => {
+		const fridges = LOCALIZED_CATEGORIES.find((category) => category.baseSlug === "autochladnicky");
+		expect(fridges?.saleorId).toBe(btoa("Category:10"));
+	});
+
+	it("is one address, whether the link carries the base slug or the slug Saleor translated", () => {
+		// The product page links with the translated slug, the menu and the home page with the base one.
+		for (const [market, segment] of Object.entries(SEGMENTS)) {
+			expect(categoryUrlFor(market, "autochladnicky"), market).toBe(`/${segment}`);
+			expect(categoryUrlFor(market, segment), market).toBe(`/${segment}`);
+			expect(categoryBaseSlug(market, segment), market).toBe("autochladnicky");
+		}
+	});
+
+	it("is a root only in the market's own spelling, and in Slovakia only as the base slug", () => {
+		expect(isLocalizedRootSegment("de", "kuehlboxen-fuers-auto")).toBe(true);
+		expect(isLocalizedRootSegment("at", "kuehlboxen-fuers-auto")).toBe(true);
+		expect(isLocalizedRootSegment("cz", "kuehlboxen-fuers-auto")).toBe(false);
+		expect(isLocalizedRootSegment("sk", "autochladnicky")).toBe(false);
+		// The Czech spelling is the base slug itself: recognised through the category list, not as a spelling.
+		expect(isLocalizedRootSegment("cz", "autochladnicky")).toBe(false);
+	});
+});

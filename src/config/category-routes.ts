@@ -30,6 +30,15 @@ import { categoryRoutePath, isCategorySlug } from "./categories";
  * product names. They must never share a segment in one language — the Nordrive segment is
  * `nordrive-<root>` as the shared contract proposes.
  *
+ * ## Car fridges (2026-10-08)
+ *
+ * `autochladnicky` (Category:10) has a row of its own. Its segments are not vehicle-page roots: they
+ * are the slugs CFM writes as the category's translated slug (the market-config pack of the CoolZ
+ * translations, `COOLZ_L10N_MANIFEST`), which is also what the product page's category link carries
+ * abroad. Without the row that link went to `/de/categories/kuehlboxen-fuers-auto` while the menu and
+ * the home page went to `/de/autochladnicky`: one category, two public addresses. The row is checked
+ * against what Saleor holds once CFM has written the translations, not against the pack.
+ *
  * ## What this does NOT move
  *
  * Product slugs, model and generation slugs, and the three RELEASE-4 pages each foreign
@@ -75,6 +84,19 @@ const ROOF_RACK_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
 	en: "roof-racks",
 };
 
+const CAR_FRIDGE_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
+	sk: "autochladnicky",
+	cs: "autochladnicky",
+	de: "kuehlboxen-fuers-auto",
+	pl: "lodowki-samochodowe",
+	hu: "autos-hutoladak",
+	it: "frigoriferi-portatili",
+	fr: "glacieres-pour-voiture",
+	es: "neveras-de-coche",
+	ro: "frigidere-auto",
+	en: "portable-refrigerators-freezers",
+};
+
 export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 	{
 		baseSlug: "stresne-nosice",
@@ -90,6 +112,11 @@ export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 				language === "sk" ? "nordrive-stresne-nosice" : `nordrive-${ROOF_RACK_SEGMENTS[language]}`,
 			]),
 		) as Record<CatalogLanguage, string>,
+	},
+	{
+		baseSlug: "autochladnicky",
+		saleorId: "Q2F0ZWdvcnk6MTA=",
+		segments: CAR_FRIDGE_SEGMENTS,
 	},
 ];
 

@@ -947,6 +947,87 @@ describe("localized category roots (COMMERCE-2 M1)", () => {
 	});
 });
 
+/**
+ * The car-fridge category has one address per market (2026-10-08). The menu and the home page link
+ * its base slug and the product page links the slug CFM translated it to, under `/categories/`, so
+ * `/de/autochladnicky` and `/de/categories/kuehlboxen-fuers-auto` both answered the same page.
+ * Every old spelling now goes to the market's one address, in one hop.
+ */
+describe("the car-fridge category address", () => {
+	const rows = categoryRouteTable().filter((row) => row.baseSlug === "autochladnicky");
+	const abroad = rows.filter((row) => row.segment !== row.baseSlug);
+	const location = (res: Response) => {
+		const value = res.headers.get("location");
+		return value ? new URL(value) : null;
+	};
+
+	it("has an address in all twelve markets, localized in ten of them", () => {
+		expect(rows.map((row) => row.market)).toEqual(Object.keys(CHANNEL_MAP));
+		expect(abroad.map((row) => row.market)).toEqual([
+			"de",
+			"at",
+			"pl",
+			"hu",
+			"it",
+			"fr",
+			"es",
+			"ro",
+			"us",
+			"ca",
+		]);
+	});
+
+	it("serves the market's own address with no redirect, onto the category route", async () => {
+		expect(rows).toHaveLength(12);
+		for (const row of rows) {
+			const res = await proxy(req(row.path));
+			expect(res.headers.get("location"), row.path).toBeNull();
+			expect(res.headers.get("x-middleware-rewrite"), row.path).toContain(
+				`/${row.channel}/categories/${row.segment}`,
+			);
+		}
+	});
+
+	it("sends the Slovak spelling abroad to it with a 301, query kept", async () => {
+		expect(abroad).toHaveLength(10);
+		for (const row of abroad) {
+			const res = await proxy(req(`/${row.market}/autochladnicky?utm_source=x`));
+			expect(res.status, row.market).toBe(301);
+			expect(location(res)?.pathname, row.market).toBe(row.path);
+			expect(location(res)?.search, row.market).toBe("?utm_source=x");
+		}
+	});
+
+	it("sends the /categories/ spellings, the base slug and the translated one, to it with a 308", async () => {
+		expect(rows).toHaveLength(12);
+		for (const row of rows) {
+			for (const spelling of new Set([row.baseSlug, row.segment])) {
+				const res = await proxy(req(`/${row.market}/categories/${spelling}`));
+				expect(res.status, `${row.market} ${spelling}`).toBe(308);
+				expect(location(res)?.pathname, `${row.market} ${spelling}`).toBe(row.path);
+			}
+		}
+	});
+
+	it("leaves a translated slug the table does not hold under /categories/, where the page resolves it", async () => {
+		// Whatever Saleor holds if it is not what the table says: the link built from it still opens
+		// the page (the lookup asks the base slug first, then the translated one), it is just not moved.
+		const res = await proxy(req("/de/categories/kuehlboxen-auto"));
+		expect(res.status).not.toBe(308);
+		expect(res.headers.get("x-middleware-rewrite")).toContain("/de-eur/categories/kuehlboxen-auto");
+	});
+
+	it("keeps Slovakia and Czechia on the base slug", async () => {
+		for (const market of ["sk", "cz"]) {
+			const res = await proxy(req(`/${market}/autochladnicky`));
+			expect(res.headers.get("location"), market).toBeNull();
+			expect(res.headers.get("x-middleware-rewrite"), market).toContain(
+				`/${CHANNEL_MAP[market]!.saleorSlug}/categories/autochladnicky`,
+			);
+		}
+	});
+});
+
 describe("sitemap index and shards (COMMERCE-2 M5)", () => {
 	it("hands /sitemap.xml and the shards to their routes, not to the invalid-first-segment 404", async () => {
 		for (const path of ["/sitemap.xml", "/sitemaps/sk-products-1.xml", "/sitemaps/sk-pages-1.xml"]) {
