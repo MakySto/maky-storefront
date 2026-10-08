@@ -115,6 +115,7 @@
 		"secureCheckout": "Acquisto sicuro",
 		"noImageAvailable": "Nessuna immagine disponibile",
 		"selectOptions": "Seleziona opzioni",
+		"requestQuote": "Richiedi un preventivo",
 		"goHome": "Vai alla home",
 		"quantity": "Quantità",
 		"decreaseQuantity": "Diminuisci quantità",
@@ -1047,6 +1048,9 @@
 	"contact": {
 		"heading": "Scrivici",
 		"intro": "Rispondiamo nei giorni lavorativi. Per domande su un ordine, indica il numero.",
+		"quoteFor": "Preventivo per: {product}",
+		"quoteHelp": "Scrivici o chiamaci e indica questo prodotto.",
+		"quoteMessage": "Buongiorno, vorrei ricevere un preventivo per: {product}.",
 		"name": "Nome e cognome",
 		"email": "E-mail",
 		"phone": "Telefono (facoltativo)",

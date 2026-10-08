@@ -115,6 +115,7 @@
 		"secureCheckout": "Biztonságos fizetés",
 		"noImageAvailable": "Nincs elérhető kép",
 		"selectOptions": "Válasszon opciót",
+		"requestQuote": "Ajánlatkérés",
 		"goHome": "Kezdőlapra",
 		"quantity": "Mennyiség",
 		"decreaseQuantity": "Mennyiség csökkentése",
@@ -1047,6 +1048,9 @@
 	"contact": {
 		"heading": "Írjon nekünk",
 		"intro": "Munkanapokon válaszolunk. Rendeléssel kapcsolatos kérdésnél adja meg a rendelés számát.",
+		"quoteFor": "Ajánlatkérés a következő termékre: {product}",
+		"quoteHelp": "Írjon nekünk vagy hívjon minket, és adja meg ezt a terméket.",
+		"quoteMessage": "Jó napot kívánok! Kérem, küldjenek ajánlatot a következő termékre: {product}.",
 		"name": "Név",
 		"email": "E-mail",
 		"phone": "Telefon (nem kötelező)",

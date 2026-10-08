@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { CONTACT_TOPICS } from "@/lib/forms/contact-contract";
 import { CONTACT_FIELD_LIMITS, type ContactField } from "@/lib/contact/validate";
 import { submitContactAction, type ContactFormState } from "@/app/[channel]/(main)/kontakt/actions";
+import { useQuoteReference } from "./quote-request";
 
 /**
  * The contact form.
@@ -58,6 +59,11 @@ export function ContactForm({ channel }: { channel: string }) {
 	// needs to be unique, not secret.
 	const [submissionId] = useState(() => crypto.randomUUID());
 	const t = useTranslations("contact");
+	// The product of a "request a quote" link (`/kontakt#quote=…`), known only in the browser. It starts the
+	// message and picks the topic; both fields stay the visitor's to change, and a visit without it is the
+	// empty form it always was. The field's key is the reference, so the field is made again, with the new
+	// default, in the one moment the reference becomes known after the page is up.
+	const quote = useQuoteReference();
 	const [state, action] = useActionState(submitContactAction, INITIAL);
 	const formRef = useRef<HTMLFormElement>(null);
 	const statusRef = useRef<HTMLDivElement>(null);
@@ -165,10 +171,11 @@ export function ContactForm({ channel }: { channel: string }) {
 						{t("topic")}
 					</label>
 					<select
+						key={quote ?? ""}
 						id={fieldId("topic")}
 						name="topic"
 						required
-						defaultValue=""
+						defaultValue={quote ? "productAdvice" : ""}
 						aria-invalid={errors.topic ? true : undefined}
 						aria-describedby={errors.topic ? errorId("topic") : undefined}
 						className="border-border-default bg-surface-primary text-text-primary focus-visible:ring-focus-ring mt-1 min-h-11 w-full rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none"
@@ -195,10 +202,12 @@ export function ContactForm({ channel }: { channel: string }) {
 					{t("message")}
 				</label>
 				<textarea
+					key={quote ?? ""}
 					id={fieldId("message")}
 					name="message"
 					required
 					rows={6}
+					defaultValue={quote ? t("quoteMessage", { product: quote }) : undefined}
 					maxLength={CONTACT_FIELD_LIMITS.message}
 					aria-invalid={errors.message ? true : undefined}
 					aria-describedby={errors.message ? errorId("message") : undefined}

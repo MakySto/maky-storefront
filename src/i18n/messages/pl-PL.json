@@ -115,6 +115,7 @@
 		"secureCheckout": "Bezpieczne zakupy",
 		"noImageAvailable": "Brak zdjęcia",
 		"selectOptions": "Wybierz opcje",
+		"requestQuote": "Zapytaj o ofertę",
 		"goHome": "Strona główna",
 		"quantity": "Ilość",
 		"decreaseQuantity": "Zmniejsz ilość",
@@ -1047,6 +1048,9 @@
 	"contact": {
 		"heading": "Napisz do nas",
 		"intro": "Odpowiadamy w dni robocze. Jeśli pytasz o zamówienie, podaj jego numer.",
+		"quoteFor": "Oferta dla: {product}",
+		"quoteHelp": "Napisz do nas lub zadzwoń i podaj ten produkt.",
+		"quoteMessage": "Dzień dobry, proszę o ofertę na produkt: {product}.",
 		"name": "Imię i nazwisko",
 		"email": "E-mail",
 		"phone": "Telefon (opcjonalnie)",

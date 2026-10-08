@@ -115,6 +115,7 @@
 		"secureCheckout": "Secure checkout",
 		"noImageAvailable": "No image available",
 		"selectOptions": "Select options",
+		"requestQuote": "Request a quote",
 		"goHome": "Go Home",
 		"quantity": "Quantity",
 		"decreaseQuantity": "Decrease quantity",
@@ -1047,6 +1048,9 @@
 	"contact": {
 		"heading": "Write to us",
 		"intro": "We reply on business days. If your question is about an order, please include its number.",
+		"quoteFor": "Quote for: {product}",
+		"quoteHelp": "Write to us or call us and mention this product.",
+		"quoteMessage": "Hello, I would like a quote for: {product}.",
 		"name": "Full name",
 		"email": "Email",
 		"phone": "Phone (optional)",

@@ -1,6 +1,7 @@
 import { publicProductCode } from "@/lib/product-code";
 import { publicEan } from "@/lib/product-ean";
 import { formatMoney, formatMoneyRange } from "@/lib/utils";
+import { quoteReferenceFor, quoteRequestHref } from "@/lib/contact/quote-request";
 import { getDiscountInfo } from "@/lib/pricing";
 import { type ProductDetailsQuery } from "@/gql/graphql";
 
@@ -108,7 +109,6 @@ export async function VariantSectionDynamic({
 	const locale = getLocaleFromChannel(channel);
 	const tCommon = await getTranslations({ locale, namespace: "common" });
 	const tProduct = await getTranslations({ locale, namespace: "product" });
-	const tCart = await getTranslations({ locale, namespace: "cart" });
 	const variants = product.variants || [];
 	const isPurchasable = product.isAvailableForPurchase === true;
 
@@ -192,6 +192,12 @@ export async function VariantSectionDynamic({
 	// The EAN, as CFM publishes it on the variant (`cfm_ean`) and only when it can be a real GTIN —
 	// `publicEan` checks it again. Nothing when the product has none: a blank, never a placeholder.
 	const ean = publicEan(selectedVariant ?? variants[0]);
+
+	// A product the shop shows but cannot sell in this market offers a quote instead of a buy button: the link
+	// opens the contact page with the product (its name and public code) in the URL's fragment.
+	const quoteHref = isPurchasable
+		? undefined
+		: quoteRequestHref(channel, quoteReferenceFor(product.name, productCode));
 
 	const reviewSummary = reviewSummaryFor(product);
 
@@ -333,6 +339,7 @@ export async function VariantSectionDynamic({
 					disabled={isAddToCartDisabled}
 					disabledReason={disabledReason}
 					maxQuantity={maxQuantity}
+					quoteHref={quoteHref}
 					availability={
 						isPurchasable ? (
 							<AvailabilityBadge
@@ -351,9 +358,7 @@ export async function VariantSectionDynamic({
 								quantityAvailable={selectedVariant?.quantityAvailable}
 								detailed
 							/>
-						) : (
-							<span className="text-text-secondary text-sm">{tCart("addUnavailable")}</span>
-						)
+						) : undefined
 					}
 				/>
 

@@ -1,9 +1,14 @@
 import { legalRoute } from "@/lib/legal/legal-route";
 import { ContactSection } from "@/ui/components/contact/contact-section";
+import { QuoteRequestNotice } from "@/ui/components/contact/quote-request";
 import { Ca, Cs, De, DeAt, Es, Fr, Hu, It, Pl, Ro, Sk, Us } from "@/ui/content/legal/kontakt";
 
 const route = legalRoute({
 	path: "/kontakt",
+	// Above the approved copy: which product a visitor from a "request a quote" button asked about.
+	// It is read from the URL fragment in the browser, so the page itself stays one static page, and
+	// it renders nothing for any other visit.
+	Before: QuoteRequestNotice,
 	// The form, where it is switched on. The approved contact copy above it is
 	// untouched and is served in every market whether the form is offered or not.
 	After: ContactSection,
