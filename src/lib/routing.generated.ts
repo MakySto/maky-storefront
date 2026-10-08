@@ -18,6 +18,7 @@ export const PUBLIC_ASSET_PATHS: ReadonlySet<string> = new Set([
 	"/android-chrome-512x512.png",
 	"/android-chrome-maskable-512x512.png",
 	"/brand/mountains.svg",
+	"/c495b1fed398d0bfa806ba2f42d53c85.txt",
 	"/favicon-16x16.png",
 	"/favicon-32x32.png",
 	"/favicon-dark-16x16.png",
