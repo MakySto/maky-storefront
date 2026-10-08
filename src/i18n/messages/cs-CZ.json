@@ -115,6 +115,7 @@
 		"secureCheckout": "Bezpečný nákup",
 		"noImageAvailable": "Obrázek není k dispozici",
 		"selectOptions": "Vyberte možnosti",
+		"requestQuote": "Požádat o nabídku",
 		"goHome": "Na úvod",
 		"quantity": "Množství",
 		"decreaseQuantity": "Snížit množství",
@@ -1047,6 +1048,9 @@
 	"contact": {
 		"heading": "Napište nám",
 		"intro": "Odpovídáme v pracovní dny. Ptáte-li se na objednávku, uveďte její číslo.",
+		"quoteFor": "Nabídka pro: {product}",
+		"quoteHelp": "Napište nám nebo zavolejte a uveďte tento produkt.",
+		"quoteMessage": "Dobrý den, prosím o nabídku na produkt: {product}.",
 		"name": "Jméno a příjmení",
 		"email": "E-mail",
 		"phone": "Telefon (nepovinné)",

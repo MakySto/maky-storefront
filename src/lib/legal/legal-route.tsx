@@ -51,6 +51,14 @@ export interface LegalRouteOptions {
 	/** One entry per language this page is approved in. */
 	readonly copy: Readonly<Record<LegalLocale, LegalCopy>>;
 	/**
+	 * Rendered before the approved body, directly under the title, inside the prose column.
+	 *
+	 * For something that belongs to HOW the visitor arrived rather than to the disclosure, and that
+	 * has to be seen first: today only `/kontakt`'s note on the product a visitor asked a quote for.
+	 * It is a slot of its own, like `After`, because the body is approved copy and stays untouched.
+	 */
+	readonly Before?: (props: { channel: string }) => ReactNode;
+	/**
 	 * Rendered after the approved body, inside the prose column.
 	 *
 	 * For an interactive section that is not part of the statutory disclosure — today
@@ -61,7 +69,7 @@ export interface LegalRouteOptions {
 	readonly After?: (props: { channel: string }) => ReactNode;
 }
 
-export function legalRoute({ path, copy, After }: LegalRouteOptions) {
+export function legalRoute({ path, copy, Before, After }: LegalRouteOptions) {
 	async function resolve(params: Promise<{ channel: string }>) {
 		const { channel } = await params;
 		const locale = legalLocaleFor(channel);
@@ -101,6 +109,7 @@ export function legalRoute({ path, copy, After }: LegalRouteOptions) {
 			const { Body } = resolved;
 			return (
 				<LegalPage title={resolved.heading ?? resolved.title}>
+					{Before ? <Before channel={channel} /> : null}
 					<Body channel={channel} />
 					{After ? <After channel={channel} /> : null}
 				</LegalPage>

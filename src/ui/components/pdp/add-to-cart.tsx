@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
+import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import { useTranslations } from "next-intl";
 import { ShoppingCartIcon } from "lucide-react";
@@ -18,6 +19,12 @@ interface AddToCartProps {
 	disabledReason?: "no-selection" | "out-of-stock" | "unavailable";
 	/** Saleor-capped availability ceiling; undefined when unknown. */
 	maxQuantity?: number;
+	/**
+	 * Where "request a quote" goes (`lib/contact/quote-request`). Used when the product cannot be ordered in
+	 * this market (`disabledReason` "unavailable"): the buy row, which could only ever be disabled, gives way
+	 * to that one link. Without it that state shows the sentence alone.
+	 */
+	quoteHref?: string;
 }
 
 function AddToCartButton({
@@ -25,17 +32,15 @@ function AddToCartButton({
 	disabledReason,
 }: {
 	disabled?: boolean;
-	disabledReason?: "no-selection" | "out-of-stock" | "unavailable";
+	disabledReason?: "no-selection" | "out-of-stock";
 }) {
 	const { pending } = useFormStatus();
 	const t = useTranslations("product");
 	const tCommon = useTranslations("common");
-	const tCart = useTranslations("cart");
 
 	const getButtonText = () => {
 		if (pending) return t("addingToCart");
 		if (!disabled) return tCommon("addToCart");
-		if (disabledReason === "unavailable") return tCart("addUnavailable");
 		if (disabledReason === "out-of-stock") return tCommon("outOfStock");
 		return t("selectOptions");
 	};
@@ -73,9 +78,13 @@ export function AddToCart({
 	disabled = false,
 	disabledReason,
 	maxQuantity,
+	quoteHref,
 }: AddToCartProps) {
 	const t = useTranslations("product");
 	const tCart = useTranslations("cart");
+	// Not orderable in this market: a different page, not a disabled one. The sentence is said once, and the
+	// buy row (a stepper and a button that can only be switched off) becomes the way to ask for a quote.
+	const unavailable = disabledReason === "unavailable";
 
 	return (
 		<div className="space-y-6">
@@ -98,19 +107,33 @@ export function AddToCart({
 				</div>
 				<p className="text-text-tertiary mt-2 text-[0.8125rem]">{t("priceWithVat")}</p>
 				{availability && <div className="mt-4">{availability}</div>}
-				{disabledReason === "unavailable" ? (
-					<p role="status" className="text-text-secondary mt-2 text-sm">
+				{unavailable ? (
+					<p role="status" className="text-text-secondary mt-4 text-sm">
 						{tCart("addUnavailable")}
 					</p>
 				) : null}
 			</div>
 
-			{/* Buy row: quantity + CTA. The stepper writes name="quantity" into the
-			    surrounding form, which both this button and the sticky bar submit. */}
-			<div className="flex items-stretch gap-3">
-				<QuantityStepper name="quantity" max={maxQuantity} disabled={disabled} size="large" />
-				<AddToCartButton disabled={disabled} disabledReason={disabledReason} />
-			</div>
+			{unavailable ? (
+				quoteHref ? (
+					// The one action on this page, so it is the purchase colour (`bg-primary`, the green of the buy
+					// button it stands in for, CLAUDE.md §4), never the brand copper. A link, not a button: it opens
+					// the contact page.
+					<Link
+						href={quoteHref}
+						className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring focus-visible:ring-offset-background inline-flex h-14 w-full items-center justify-center rounded-xs px-8 text-base font-semibold shadow-md transition-all duration-200 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+					>
+						<span className="truncate">{t("requestQuote")}</span>
+					</Link>
+				) : null
+			) : (
+				/* Buy row: quantity + CTA. The stepper writes name="quantity" into the
+				   surrounding form, which both this button and the sticky bar submit. */
+				<div className="flex items-stretch gap-3">
+					<QuantityStepper name="quantity" max={maxQuantity} disabled={disabled} size="large" />
+					<AddToCartButton disabled={disabled} disabledReason={disabledReason} />
+				</div>
+			)}
 		</div>
 	);
 }

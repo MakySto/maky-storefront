@@ -115,6 +115,7 @@
 		"secureCheckout": "Paiement sécurisé",
 		"noImageAvailable": "Aucune image disponible",
 		"selectOptions": "Choisir les options",
+		"requestQuote": "Demander un devis",
 		"goHome": "Accueil",
 		"quantity": "Quantité",
 		"decreaseQuantity": "Diminuer la quantité",
@@ -1047,6 +1048,9 @@
 	"contact": {
 		"heading": "Écrivez-nous",
 		"intro": "Nous répondons les jours ouvrés. Pour une question sur une commande, indiquez son numéro.",
+		"quoteFor": "Devis pour : {product}",
+		"quoteHelp": "Écrivez-nous ou appelez-nous en indiquant ce produit.",
+		"quoteMessage": "Bonjour, je souhaiterais recevoir un devis pour : {product}.",
 		"name": "Nom et prénom",
 		"email": "E-mail",
 		"phone": "Téléphone (facultatif)",
