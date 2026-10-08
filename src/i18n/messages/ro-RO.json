@@ -115,6 +115,8 @@
 		"secureCheckout": "Cumpărături sigure",
 		"noImageAvailable": "Nicio imagine disponibilă",
 		"selectOptions": "Selectați opțiunile",
+		"requestQuote": "Solicită o ofertă",
+		"manufacturerHeading": "Producător",
 		"goHome": "Acasă",
 		"quantity": "Cantitate",
 		"decreaseQuantity": "Reduce cantitatea",
@@ -1047,6 +1049,9 @@
 	"contact": {
 		"heading": "Scrieți-ne",
 		"intro": "Răspundem în zilele lucrătoare. Pentru întrebări despre o comandă, indicați numărul acesteia.",
+		"quoteFor": "Ofertă pentru: {product}",
+		"quoteHelp": "Scrieți-ne sau sunați-ne și indicați acest produs.",
+		"quoteMessage": "Bună ziua, aș dori o ofertă pentru produsul: {product}.",
 		"name": "Nume și prenume",
 		"email": "E-mail",
 		"phone": "Telefon (opțional)",

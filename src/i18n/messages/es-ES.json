@@ -115,6 +115,8 @@
 		"secureCheckout": "Compra segura",
 		"noImageAvailable": "Imagen no disponible",
 		"selectOptions": "Seleccionar opciones",
+		"requestQuote": "Solicitar presupuesto",
+		"manufacturerHeading": "Fabricante",
 		"goHome": "Ir al inicio",
 		"quantity": "Cantidad",
 		"decreaseQuantity": "Reducir cantidad",
@@ -1047,6 +1049,9 @@
 	"contact": {
 		"heading": "Escríbenos",
 		"intro": "Respondemos en días laborables. Si preguntas por un pedido, indica su número.",
+		"quoteFor": "Presupuesto para: {product}",
+		"quoteHelp": "Escríbenos o llámanos e indica este producto.",
+		"quoteMessage": "Hola, me gustaría recibir un presupuesto para: {product}.",
 		"name": "Nombre y apellidos",
 		"email": "Correo electrónico",
 		"phone": "Teléfono (opcional)",

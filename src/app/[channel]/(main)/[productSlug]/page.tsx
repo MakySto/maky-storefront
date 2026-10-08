@@ -22,6 +22,7 @@ import { ProductHighlights } from "@/ui/components/pdp/product-highlights";
 import { cn } from "@/lib/utils";
 import {
 	ProductGallery,
+	ProductManufacturer,
 	ProductSpecs,
 	VariantSectionDynamic,
 	VariantSectionSkeleton,
@@ -400,6 +401,14 @@ async function ProductContent({
 					// The product's own second photo beside the description, when the gallery has one:
 					// never a stock picture, never one the gallery does not already show.
 					image={images[1] ? { url: images[1].url, alt: images[1].alt ?? product.name } : null}
+				/>
+
+				{/* Who makes it — name, postal address, e-mail — for a brand the shop has the maker's details of
+				    (`lib/manufacturers`); nothing for any other. A product offered in the EU has to name its maker. */}
+				<ProductManufacturer
+					attributes={product.attributes ?? []}
+					channel={params.channel}
+					className="mt-6"
 				/>
 
 				{/* Which cars this product is documented to fit — answerable with no
