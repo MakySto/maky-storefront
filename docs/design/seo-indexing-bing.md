@@ -161,16 +161,17 @@ read, a moment of "empty" while products were being written or a fault, stayed i
 from a cached entry with `cacheLife("minutes")`, the listing from its own fetch, `cacheComponents`, the
 Bingbot user agent; the data changes from empty to six products at second 1):
 
-| The entry and the fetch under it                                  | First visit +10 s | +100 s | +320 s | Revisit of a stored page +10 s | +40 s | +100 s |
-| ----------------------------------------------------------------- | ----------------- | ------ | ------ | ------------------------------ | ----- | ------ |
-| As before: `minutes`, fetch `revalidate: 300`                     | stale             | stale  | stale  | stale                          | stale | stale  |
-| `minutes`, fetch not cached                                       | stale             | fresh  | fresh  | stale                          | stale | fresh  |
-| 30 s / 300 s entry, fetch not cached                              | stale             | fresh  | fresh  | stale                          | fresh | fresh  |
-| `minutes`, 5 s / 300 s when empty, fetch not cached (this change) | fresh             | fresh  | fresh  | fresh                          | fresh | fresh  |
+| The entry and the fetch under it                                  | First visit +10 s | +100 s | +320 s | Revisit of a stored page +10 s | +40 s | +100 s | +320 s |
+| ----------------------------------------------------------------- | ----------------- | ------ | ------ | ------------------------------ | ----- | ------ | ------ |
+| As before: `minutes`, fetch `revalidate: 300`                     | stale             | stale  | stale  | stale                          | stale | stale  | stale  |
+| `minutes`, fetch not cached                                       | stale             | fresh  | fresh  | stale                          | stale | fresh  | fresh  |
+| 30 s / 300 s entry, fetch not cached                              | stale             | fresh  | fresh  | stale                          | fresh | fresh  | fresh  |
+| `minutes`, 5 s / 300 s when empty, fetch not cached (this change) | fresh             | fresh  | fresh  | fresh                          | fresh | fresh  | fresh  |
 
 "Stale" is `noindex, follow`, no canonical and the title of the empty read, with the listing under it fresh:
-what Bing was given. Under the old code the head was still stale at 360 s and at 400 s, and healed only on the
-request after that.
+what Bing was given. Under the old code the head was still stale at 360 s and at 400 s, and still two and five
+seconds after a request at 320 s had made the data cache refresh (the entry in front of it was rebuilt from the
+stale read): two caches, two rounds, and a crawler comes once.
 
 **What changed** in `categories/[slug]/page.tsx`:
 
