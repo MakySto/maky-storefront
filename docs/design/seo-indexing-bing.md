@@ -42,7 +42,8 @@ channel (the likely case), or were in and a cached "empty" answer of that catego
 A category entry is refreshed after 60 s and expires after an hour (`cacheLife("minutes")`), and
 `/api/revalidate` expires a category only when the event names it (a product event carries the category
 only if the webhook subscription selects `category { slug }`). Section 4 is written so that the second
-case cannot bite either.
+case cannot bite either, and section 6 shows how a stale answer of that kind reaches a crawler and what was
+changed so that it cannot.
 
 "Almost nothing is indexed" in the screenshot's question is a separate matter: no technical block was found
 (see above), and a new domain with twelve markets and well over a hundred thousand URLs is read by Bing over
@@ -139,3 +140,53 @@ POST names them; the engine fetches them soon after. It does not decide what get
 - **In Bing Webmaster Tools** (Marek's account): "URL Inspection", paste the URL, "Request indexing" for a
   single page (a small daily allowance), and "Sitemaps" once with `https://maky.store/sitemap.xml`. IndexNow does
   the same for many URLs without a person.
+
+## 6. A head that lags behind its page (found the same evening)
+
+Bing's six fridge categories of 14:37 to 14:39 UTC (AT, RO, PL, ES, FR, DE) came back `200` at 48.8 to 49.7 KB,
+the size of a stocked page, and Webmaster Tools says "indexing allowed: No" and no canonical for the two
+inspected (RO and DE). The same pages answered `index, follow` with one canonical to Bing's own live tests at
+19:30 and 19:47 UTC and to the web server's probe of 19:58 to 20:01 UTC (all 177 pages of the page sitemaps and
+all twelve fridge categories). A full listing under a `noindex` head means the two did not come from the same read.
+
+**The mechanism.** The listing is read when the page is rendered. The head (`robots`, canonical, title) comes
+from `getCategoryOutcomeCached`, a `"use cache"` entry (`cacheLife("minutes")`: refreshed after 60 s, gone after
+an hour), and that function read Saleor with `revalidate: 300`, which puts a second cache, the data cache, under
+the entry. The data cache hands back a stale read however old it is and refreshes it behind the request, so a
+prerender that found the entry stale (a stale entry is a miss there) was given the previous read again, and the
+visitor after a long gap, which is what a crawler is, always met the answer from before the last change. One bad
+read, a moment of "empty" while products were being written or a fault, stayed in front of the next visitor.
+
+**Reproduced** on Next 16.3.6, the version in production, in a throwaway app with the same structure (the head
+from a cached entry with `cacheLife("minutes")`, the listing from its own fetch, `cacheComponents`, the
+Bingbot user agent; the data changes from empty to six products at second 1):
+
+| The entry and the fetch under it                                  | First visit +10 s | +100 s | +320 s | Revisit of a stored page +10 s | +40 s | +100 s |
+| ----------------------------------------------------------------- | ----------------- | ------ | ------ | ------------------------------ | ----- | ------ |
+| As before: `minutes`, fetch `revalidate: 300`                     | stale             | stale  | stale  | stale                          | stale | stale  |
+| `minutes`, fetch not cached                                       | stale             | fresh  | fresh  | stale                          | stale | fresh  |
+| 30 s / 300 s entry, fetch not cached                              | stale             | fresh  | fresh  | stale                          | fresh | fresh  |
+| `minutes`, 5 s / 300 s when empty, fetch not cached (this change) | fresh             | fresh  | fresh  | fresh                          | fresh | fresh  |
+
+"Stale" is `noindex, follow`, no canonical and the title of the empty read, with the listing under it fresh:
+what Bing was given. Under the old code the head was still stale at 360 s and at 400 s, and healed only on the
+request after that.
+
+**What changed** in `categories/[slug]/page.tsx`:
+
+- The read behind the outcome is not cached a second time (`cache: "no-store"`); the entry is the one cache.
+- A category that holds nothing in the channel, and one with no name in the market, are kept for seconds
+  (stale after 5 s, gone after 300 s: `FAULT_CACHE_LIFE`, the life a fault already had), not for the profile's
+  hour. Those are the answers that end by themselves when the products or the texts arrive, and `noindex` is the
+  one a crawler does not return for. A stocked category keeps `minutes`.
+- The markets that carry the same category are read together, not one after the other: an entry past its 60 s is
+  read again by a prerender, and without the data cache that is a round trip each.
+
+`page.metadata.test.ts` pins all three. Not changed, and worth knowing: the listing itself and the collection
+page's outcome (`collections/[slug]/page.tsx`) still read under `revalidate: 300`; `/api/revalidate` still expires
+a category only when the event names it (section 4 stays the launch order).
+
+**What was not proven.** Which read poisoned the entry at 14:2x to 14:3x is not in the logs: a head-only fault logs
+nothing, the RO page was full-size at 12:58, 14:06 and 14:25, and the error log does not date its lines. The
+mechanism is shown to exist and to give exactly this picture; the change takes it away whatever the trigger was.
+The restart of 19:42 UTC emptied every cache, so the pages Bing is sent to by IndexNow are read fresh.

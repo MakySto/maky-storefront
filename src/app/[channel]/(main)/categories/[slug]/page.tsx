@@ -19,6 +19,7 @@ import {
 	type ResourceOutcome,
 } from "@/lib/saleor/resource-outcome";
 import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
+import { rememberBriefly } from "@/lib/cache-fault";
 import { getPaginatedListVariables } from "@/lib/utils";
 import { ProductsPerPage } from "@/app/config";
 import { parseEditorJSToText } from "@/lib/editorjs";
@@ -77,6 +78,9 @@ const CATEGORY_TAGLINES: Readonly<Record<string, string>> = {
 	carFridges: "tileCarFridges",
 };
 
+/** A category that exists but holds nothing in the channel it was read for. */
+const categoryIsEmpty = (category: Category): boolean => (category.products?.totalCount ?? 0) === 0;
+
 async function getCategoryOutcomeCached(
 	slug: string,
 	channel: string,
@@ -89,18 +93,33 @@ async function getCategoryOutcomeCached(
 	// A fault is remembered for seconds only (`cachedOutcome`): an outage must not be remembered as
 	// "this category does not exist" for up to an hour, nor thrown out of the cache, where it
 	// would fail the prerender that is waiting for it.
-	return cachedOutcome(async () => {
+	const outcome = await cachedOutcome(async () => {
 		const result = await lookupBySlug(
 			locale,
 			(data: ProductListByCategoryQuery) => data.category,
 			(slugLang) =>
 				executePublicGraphQL(ProductListByCategoryDocument, {
 					variables: { slug, channel, lang, slugLang, first: 1 },
-					revalidate: 300,
+					// NOT `revalidate: 300`. This entry has its own life (the profile above), and a
+					// fetch under it that is cached as well is a second, older answer: the data cache
+					// serves a stale entry however old it is and refreshes it behind the request, so
+					// a prerender that found this entry stale was handed the previous read again.
+					// Found on 2026-10-08: a category whose products had arrived a few minutes
+					// earlier answered `noindex` to Bing's first visit, with the full listing under it.
+					cache: "no-store",
 				}),
 		);
 		return toOutcome(result, (data) => resolveExactLocaleCategory(data.category, locale));
 	});
+
+	// An empty category and a category without its translation are states that end on their own,
+	// when the products or the texts arrive, and `noindex` is the one answer a crawler does not
+	// come back to soon. So they are not kept for the entry's life: stale after 5 s, gone after 300 s,
+	// the same short life a fault gets (`@/lib/cache-fault`).
+	if (outcome.status === "not-found" || (outcome.status === "found" && categoryIsEmpty(outcome.resource))) {
+		rememberBriefly();
+	}
+	return outcome;
 }
 
 /** `found` | `not-found` | `upstream-error`, shared by the page and its metadata. */
@@ -141,13 +160,19 @@ const baseSlugOf = (params: { slug: string; channel: string }) =>
  * hreflang cluster to indexable markets on its own.
  */
 async function categoryCounterparts(baseSlug: string): Promise<MarketCounterpart[]> {
-	const counterparts: MarketCounterpart[] = [];
-	for (const market of liveMarkets()) {
-		const outcome = await getCategoryOutcome(baseSlug, CHANNEL_MAP[market]!.saleorSlug);
-		if (outcome.status !== "found" || (outcome.resource.products?.totalCount ?? 0) === 0) continue;
-		counterparts.push({ market, path: categoryUrlFor(market, baseSlug) });
-	}
-	return counterparts;
+	// All markets at once: an entry past its 60 s is read again by a prerender, and twelve of those
+	// one after the other were twelve round trips to Saleor in front of the page's head.
+	const outcomes = await Promise.all(
+		liveMarkets().map(async (market) => ({
+			market,
+			outcome: await getCategoryOutcome(baseSlug, CHANNEL_MAP[market]!.saleorSlug),
+		})),
+	);
+	return outcomes.flatMap(({ market, outcome }) =>
+		outcome.status === "found" && !categoryIsEmpty(outcome.resource)
+			? [{ market, path: categoryUrlFor(market, baseSlug) }]
+			: [],
+	);
 }
 
 export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
@@ -194,7 +219,7 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 	// main navigation, so 404 is the wrong answer: it would 404 a URL the site
 	// links to from every page. `noindex` with no canonical is the right one, and
 	// it reverts on its own the moment the channel gets stock — no deploy.
-	if ((category.products?.totalCount ?? 0) === 0) {
+	if (categoryIsEmpty(category)) {
 		return {
 			title,
 			description:
