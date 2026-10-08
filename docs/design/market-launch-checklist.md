@@ -140,6 +140,12 @@ A market goes `live` when every line is true. It is a checklist, not a date.
       the market indexable while its statutory pages 404 — worse than leaving it
       in `preview`, because those pages must be permanently accessible.
 - [ ] navigation links only categories that hold products in that channel
+- [ ] **a category is stocked, translated and expired by name before any crawler is pointed at
+      it.** A category with nothing in a market answers `noindex` by design, and a search engine
+      that reads that does not come back soon: Bing read `/cz/autochladnicky` that way on
+      2026-10-08 (09:11 UTC) and Webmaster Tools kept the verdict for hours. The order, the
+      commands and the list of pages where `noindex` stays on purpose are in
+      `docs/design/seo-indexing-bing.md`.
 - [ ] the 404 gate is live (see §5) — see the warning below
 
 ### Translation is not the unit of work — the legal spine is
@@ -230,6 +236,10 @@ unresolved point, not a gate in front of writing.
 Turn the market on as `preview` first. Import, translate, configure, check on
 production. Flip to `live` last. There is no reason to do it in the other order
 and one good reason not to.
+
+Inside a live market the same order holds for every category and product group added later: stock
+and translation first, the category expired by name, a probe with a Bingbot user agent, and only
+then IndexNow (`docs/design/seo-indexing-bing.md` §4 and §5).
 
 ---
 
