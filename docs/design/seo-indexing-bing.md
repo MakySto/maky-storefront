@@ -187,6 +187,15 @@ stale read): two caches, two rounds, and a crawler comes once.
 page's outcome (`collections/[slug]/page.tsx`) still read under `revalidate: 300`; `/api/revalidate` still expires
 a category only when the event names it (section 4 stays the launch order).
 
+**What it costs.** Without the data cache under it, a Saleor outage that outlasts the transport's own retries
+(three, after 1 s, 2 s and 4 s) reaches the head as `upstream-error` (`noindex, nofollow`, remembered 5 s), where
+the data cache used to answer from an older read for up to five minutes. A category that is not cached already
+behaves so, after every deploy and restart. The production error log (1.17 million lines, read on 2026-10-08)
+holds no `scope: category` error; its network errors sit in other uncached reads (product 33, product-presence 78,
+sitemap-categories 46, category-products 4). After a deploy, count the `"scope":"category"` lines in the PM2 logs:
+a rise is this cost, and the remedy is a last-good fallback or arming the category gate (`x-maky-gate:
+category:not-armed` today), not the data cache back.
+
 **What was not proven.** Which read poisoned the entry at 14:2x to 14:3x is not in the logs: a head-only fault logs
 nothing, the RO page was full-size at 12:58, 14:06 and 14:25, and the error log does not date its lines. The
 mechanism is shown to exist and to give exactly this picture; the change takes it away whatever the trigger was.
