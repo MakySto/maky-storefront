@@ -1,5 +1,6 @@
 export { ProductGallery } from "./product-gallery";
 export { ProductSpecs } from "./product-specs";
+export { ProductManufacturer } from "./product-manufacturer";
 export { PurchaseTrust } from "./purchase-trust";
 export { AddToCart } from "./add-to-cart";
 export { StickyBar } from "./sticky-bar";
