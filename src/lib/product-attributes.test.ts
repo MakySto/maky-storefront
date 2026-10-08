@@ -173,6 +173,24 @@ describe("a car fridge's attributes", () => {
 		expect(unit("input_current_dc")).toBeUndefined();
 	});
 
+	it("give the external battery's four numbers their unit, as the page prints them for the fridge", () => {
+		const unit = (key: string) => getAttributeUnit(fridge(key, []).attribute);
+		expect(unit("battery_capacity")).toBe("Wh");
+		expect(unit("nominal_voltage")).toBe("V");
+		expect(unit("usb_a_max")).toBe("W");
+		expect(unit("usb_c_pd_max")).toBe("W");
+		// The text of the output to the fridge ("12-16.8 V DC / 120 W") carries its own units and gets none added.
+		expect(unit("cooler_output")).toBeUndefined();
+		expect(formatProductAttributeValue(fridge("battery_capacity", ["133"]), SK)).toEqual([`133${NBSP}Wh`]);
+		expect(formatProductAttributeValue(fridge("nominal_voltage", ["14.8"]), SK)).toEqual([`14,8${NBSP}V`]);
+		expect(formatProductAttributeValue(fridge("usb_a_max", ["40"]), SK)).toEqual([`40${NBSP}W`]);
+		expect(formatProductAttributeValue(fridge("usb_c_pd_max", ["65"]), SK)).toEqual([`65${NBSP}W`]);
+		// A text value is never reformatted, whatever the attribute.
+		expect(formatProductAttributeValue(fridge("battery_capacity", ["podľa modelu"]), SK)).toEqual([
+			"podľa modelu",
+		]);
+	});
+
 	it("prints a number with the unit and the market's decimal comma", () => {
 		expect(formatProductAttributeValue(fridge("rated_power", ["60"]), SK)).toEqual([`60${NBSP}W`]);
 		expect(formatProductAttributeValue(fridge("input_current_ac", ["0.26"]), SK)).toEqual([`0,26${NBSP}A`]);
@@ -296,6 +314,10 @@ describe("a name that already states the unit", () => {
 		["input_current_ac", "Vstupný prúd AC (A)", "0,26", `0,26${NBSP}A`],
 		["temperature_min", "Najnižšia teplota (°C)", "2", `2${NBSP}°C`],
 		["temperature_max", "Najvyššia teplota (°C)", "8", `8${NBSP}°C`],
+		["battery_capacity", "Kapacita batérie (Wh)", "133", `133${NBSP}Wh`],
+		["nominal_voltage", "Menovité napätie (V)", "14,8", `14,8${NBSP}V`],
+		["usb_a_max", "Maximálny výkon USB-A (W)", "40", `40${NBSP}W`],
+		["usb_c_pd_max", "Maximálny výkon USB-C PD (W)", "65", `65${NBSP}W`],
 	])("%s: the number alone under %s", (key, name, value, withUnit) => {
 		expect(table(named(key, name, [value]))).toEqual([value]);
 		expect(table(named(key, name.replace(/ \(.*\)$/, ""), [value]))).toEqual([withUnit]);
