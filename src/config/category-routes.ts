@@ -42,15 +42,15 @@ import { categoryRoutePath, isCategorySlug } from "./categories";
  * ## Thule roof racks (2026-10-11)
  *
  * `thule-stresne-nosice` (Category:6, a child of the root) is the shelf of every Thule set. CFM writes the Thule
- * sets to nine foreign markets together with the category's translations, whose slug is `thule-<localized root>`
- * in each language: the rule Nordrive's row follows too (`THULE_CATEGORY_L10N_MANIFEST`, CFM 3348ecc6). Without
- * a row, a link built from the translated slug Saleor returns goes to `/de/categories/thule-dachtraeger` (an
- * unmapped slug keeps its `/categories/` form) while the base slug answers at `/de/thule-stresne-nosice`: one
- * category, two public addresses. The row is checked against what Saleor holds once CFM has written them.
+ * sets to the foreign markets together with the category's translations, whose slug is `thule-<localized root>`
+ * in each language: the rule Nordrive's row follows too. Without a row, a link built from the translated slug
+ * Saleor returns goes to `/de/categories/thule-dachtraeger` (an unmapped slug keeps its `/categories/` form)
+ * while the base slug answers at `/de/thule-stresne-nosice`: one category, two public addresses. The row is
+ * checked against what Saleor holds once CFM has written them.
  *
- * English is not in CFM's pack, because no market that reads it is offered for Thule yet (the USA and Canada).
- * The row keeps the base slug there, so their address stays what it was, until CFM writes an English slug and
- * the segment is typed here.
+ * The first run covered the nine markets that read the eight languages (`THULE_CATEGORY_L10N_MANIFEST`, CFM
+ * 3348ecc6). The USA and Canada followed in a second run (CFM d221edc9) with the English translation: `EN` for
+ * `us-usd` and `EN_CA` for `ca-cad`, both with the slug `thule-roof-racks`, so one `en` segment serves both.
  *
  * ## What this does NOT move
  *
@@ -137,9 +137,7 @@ export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 		segments: Object.fromEntries(
 			CATALOG_LANGUAGES.map((language) => [
 				language,
-				language === "sk" || language === "en"
-					? "thule-stresne-nosice"
-					: `thule-${ROOF_RACK_SEGMENTS[language]}`,
+				language === "sk" ? "thule-stresne-nosice" : `thule-${ROOF_RACK_SEGMENTS[language]}`,
 			]),
 		) as Record<CatalogLanguage, string>,
 	},
