@@ -221,3 +221,64 @@ describe("the car-fridge category", () => {
 		expect(isLocalizedRootSegment("cz", "autochladnicky")).toBe(false);
 	});
 });
+
+describe("the Thule roof-rack category", () => {
+	// What CFM writes as the category's translated slug, typed out so the row has to keep it
+	// (THULE_CATEGORY_L10N_MANIFEST of the foreign Thule run, CFM 3348ecc6, 2026-10-11). The USA and Canada
+	// are not in the pack, since no market that reads English is offered for Thule yet: they keep the base slug.
+	const SEGMENTS: Readonly<Record<string, string>> = {
+		sk: "thule-stresne-nosice",
+		cz: "thule-stresni-nosice",
+		de: "thule-dachtraeger",
+		at: "thule-dachtraeger",
+		pl: "thule-bagazniki-dachowe",
+		hu: "thule-tetocsomagtartok",
+		it: "thule-barre-portatutto",
+		fr: "thule-barres-de-toit",
+		es: "thule-barras-de-techo",
+		ro: "thule-bare-transversale",
+		us: "thule-stresne-nosice",
+		ca: "thule-stresne-nosice",
+	};
+	const thule = LOCALIZED_CATEGORIES.find((category) => category.baseSlug === "thule-stresne-nosice");
+
+	it("has the segment CFM writes, in every market", () => {
+		const rows = categoryRouteTable().filter((row) => row.baseSlug === "thule-stresne-nosice");
+		expect(rows).toHaveLength(12);
+		for (const row of rows) expect(row.path, row.market).toBe(`/${row.market}/${SEGMENTS[row.market]}`);
+	});
+
+	it("is the Saleor category it names (Category:6)", () => {
+		expect(thule?.saleorId).toBe(btoa("Category:6"));
+	});
+
+	it("is spelled thule-<localized root> in the eight languages CFM writes, the base slug elsewhere", () => {
+		const [root] = LOCALIZED_CATEGORIES;
+		for (const language of CATALOG_LANGUAGES) {
+			const written = language !== "sk" && language !== "en";
+			expect(thule!.segments[language], language).toBe(
+				written ? `thule-${root!.segments[language]}` : "thule-stresne-nosice",
+			);
+		}
+	});
+
+	it("is one address, whether the link carries the base slug or the slug Saleor translated", () => {
+		// The product page links with the translated slug, the nav and the listing chips with the base one.
+		for (const [market, segment] of Object.entries(SEGMENTS)) {
+			expect(categoryUrlFor(market, "thule-stresne-nosice"), market).toBe(`/${segment}`);
+			expect(categoryUrlFor(market, segment), market).toBe(`/${segment}`);
+			expect(categoryBaseSlug(market, segment), market).toBe("thule-stresne-nosice");
+		}
+	});
+
+	it("is a root only in the market's own spelling, and in Slovakia, the USA and Canada only as the base slug", () => {
+		expect(isLocalizedRootSegment("de", "thule-dachtraeger")).toBe(true);
+		expect(isLocalizedRootSegment("at", "thule-dachtraeger")).toBe(true);
+		expect(isLocalizedRootSegment("cz", "thule-stresni-nosice")).toBe(true);
+		expect(isLocalizedRootSegment("cz", "thule-dachtraeger")).toBe(false);
+		expect(isLocalizedRootSegment("de", "thule-stresni-nosice")).toBe(false);
+		for (const market of ["sk", "us", "ca"]) {
+			expect(isLocalizedRootSegment(market, "thule-stresne-nosice"), market).toBe(false);
+		}
+	});
+});
