@@ -39,11 +39,18 @@
 import type { ProductKind } from "@/lib/fitment/contract";
 
 export const FITMENT_SHELVES: Readonly<Record<string, ProductKind>> = {
-	/** The main roof-rack category: it holds every set, both makers' children included. */
+	/** The main roof-rack category: it holds every set, the makers' children included. */
 	"stresne-nosice": "roof-rack-set",
 	/** The Thule child category — the shelf the 9 150-set opening lands on. */
 	"thule-stresne-nosice": "roof-rack-set",
 	"nordrive-stresne-nosice": "roof-rack-set",
+	/**
+	 * The Green Valley (Aurilis) child category. CFM creates it hidden and opens its sets in blocks, so
+	 * the entry is here before the category is in Saleor; that costs nothing, because the lookup is only
+	 * ever made for a category somebody is looking at. Like the two above it is not in the registry: its
+	 * root URL comes from the live list of Saleor's categories (`src/lib/live-categories.ts`).
+	 */
+	"green-valley-stresne-nosice": "roof-rack-set",
 	// Kinds the dataset does not cover today; listed so that the day CFM ships one, its shelf
 	// starts answering with no storefront change.
 	"stresne-boxy": "roof-box",
