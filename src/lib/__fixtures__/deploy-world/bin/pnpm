@@ -5,7 +5,8 @@
 # catalog-status-lag.json (copied in as the documents the app serves on /api/catalog/status),
 # build-generates-types (the build writes the gitignored GraphQL types, as `prebuild` does),
 # build-leaks-path, build-sleep (seconds the build takes), commit-during-build (somebody else
-# commits in $APP_DIR while the build runs).
+# commits in $APP_DIR while the build runs). The build also leaves a prerender manifest with a shell for each of
+# its routes and a compile cache in cache/turbopack, as a real one does.
 set -u
 world="${FAKE_WORLD:?}"
 log() { printf '%s %s\n' "$(date +%s.%N)" "$*" >>"$world/events.log"; }
@@ -31,6 +32,14 @@ case "${1:-}" in
 		printf '%s' "$id" >.next/BUILD_ID
 		head -c 700 /dev/zero | tr '\0' 'c' >".next/static/chunks/app-$id.css"
 		head -c 500 /dev/zero | tr '\0' 'j' >".next/static/chunks/app-$id.js"
+		# What a real build leaves for the page cache: the manifest, a shell for each route, and its own compile cache.
+		mkdir -p .next/server/app/sk-eur .next/cache/turbopack
+		printf '{"version":4,"routes":{"/":{},"/sk-eur":{}},"dynamicRoutes":{"/[channel]":{},"/sk-eur/[productSlug]":{}}}\n' >.next/prerender-manifest.json
+		for page in index sk-eur '[channel]' 'sk-eur/[productSlug]'; do
+			printf '<html>%s %s</html>' "$page" "$id" >".next/server/app/$page.html"
+			printf '{"status":200}' >".next/server/app/$page.meta"
+		done
+		head -c 20000 /dev/zero | tr '\0' 't' >.next/cache/turbopack/00001.sst
 		printf '{"appDir":"%s","config":{"outputFileTracingRoot":"%s","turbopack":{"root":"%s"}}}\n' "$PWD" "$PWD" "$PWD" >.next/required-server-files.json
 		printf 'module.exports = {"appDir":"%s"}\n' "$PWD" >.next/required-server-files.js
 		if [[ -f "$world/ctl/next-behavior" ]]; then

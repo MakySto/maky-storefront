@@ -37,6 +37,33 @@ const DEPLOY_SCRIPT =
 	process.env.DEPLOY_SCRIPT_UNDER_TEST ??
 	fileURLToPath(new URL("../../../../scripts/ops/deploy-production.sh", import.meta.url));
 const NGINX_TOOL = fileURLToPath(new URL("../../../../scripts/ops/nginx-upstream.sh", import.meta.url));
+const SLIM_TOOL = fileURLToPath(new URL("../../../../scripts/ops/slim-next-dir.mjs", import.meta.url));
+
+/**
+ * The build that is live before a deploy, as it is after days of running: the pages its build made, and the
+ * files the server added while it served (pages it rendered itself for markets the build never prerendered,
+ * optimised images). A snapshot of it is what the deploy has to slim.
+ */
+export const OLD_BUILD_PAGES = [
+	"server/app/index.html",
+	"server/app/index.meta",
+	"server/app/sk-eur.html",
+	"server/app/sk-eur.meta",
+	"server/app/[channel].html",
+	"server/app/[channel].meta",
+	"server/app/sk-eur/[productSlug].html",
+	"server/app/sk-eur/[productSlug].meta",
+];
+export const OLD_RUNTIME_PAGES = [
+	"server/app/cz-czk/produkt-1.html",
+	"server/app/cz-czk/produkt-1.meta",
+	"server/app/cz-czk/produkt-1.segments/_tree.segment.rsc",
+	"server/app/de-eur/produkt-2.html",
+	"server/app/de-eur/produkt-2.meta",
+	"server/app/sk-eur/produkt-9.html",
+];
+export const OLD_RUNTIME_CACHE = ["cache/images/key1/60.1.etag.up.webp", "cache/turbopack/00001.sst"];
+export const OLD_KEPT_CACHE = ["cache/fetch-cache/0123abcd"];
 
 interface RunResult {
 	code: number | null;
@@ -159,6 +186,18 @@ function createApp(app: string): void {
 		"git_sha=0000000000000000000000000000000000000000\nbuild_id=old-build\n",
 	);
 	writeFileSync(join(next, "required-server-files.json"), JSON.stringify({ appDir: app }));
+	writeFileSync(
+		join(next, "prerender-manifest.json"),
+		JSON.stringify({
+			version: 4,
+			routes: { "/": {}, "/sk-eur": {} },
+			dynamicRoutes: { "/[channel]": {}, "/sk-eur/[productSlug]": {} },
+		}),
+	);
+	for (const file of [...OLD_BUILD_PAGES, ...OLD_RUNTIME_PAGES, ...OLD_RUNTIME_CACHE, ...OLD_KEPT_CACHE]) {
+		mkdirSync(dirname(join(next, file)), { recursive: true });
+		writeFileSync(join(next, file), `old ${file}\n`);
+	}
 }
 
 // The `location /` of the real /etc/nginx/conf.d/storefront.conf, which is what nginx-upstream.sh edits.
@@ -249,6 +288,7 @@ export async function createWorld(): Promise<World> {
 		PUBLIC_URL: canonicalUrl,
 		PUBLIC_HOST: "maky.store",
 		NGINX_TOOL,
+		SLIM_TOOL,
 		SITE_FILE: siteFile,
 		UPSTREAM_FILE: upstreamFile,
 		SUDO: "",
@@ -259,6 +299,8 @@ export async function createWorld(): Promise<World> {
 		MIN_ASSET_BYTES: "200",
 		MIN_FREE_MEM_MB: "1",
 		MIN_FREE_DISK_MB: "1",
+		// The warning is about the machine the suite runs on; the case that wants it asks for it.
+		WARN_FREE_DISK_MB: "1",
 		READY_TIMEOUT_S: "20",
 		RESTORE_TIMEOUT_S: "20",
 		EXTERNAL_RETRIES: "1",
