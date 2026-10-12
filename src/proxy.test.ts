@@ -1030,9 +1030,10 @@ describe("the car-fridge category address", () => {
 
 /**
  * The Thule roof-rack category has one address per market (2026-10-11), like the car fridges. CFM writes the
- * Thule sets to nine foreign markets with the category's translated slug (`thule-dachtraeger`), which the
- * product page links under `/categories/`, while the base slug answered at the root: two addresses for one
- * category. Every old spelling now goes to the market's one address, in one hop.
+ * Thule sets to the foreign markets with the category's translated slug (`thule-dachtraeger`, in the USA and
+ * Canada `thule-roof-racks`), which the product page links under `/categories/`, while the base slug answered
+ * at the root: two addresses for one category. Every old spelling now goes to the market's one address, in
+ * one hop.
  */
 describe("the Thule category address", () => {
 	const rows = categoryRouteTable().filter((row) => row.baseSlug === "thule-stresne-nosice");
@@ -1042,9 +1043,10 @@ describe("the Thule category address", () => {
 		return value ? new URL(value) : null;
 	};
 
-	it("has an address in all twelve markets, localized in the nine CFM writes it to", () => {
+	it("has an address in all twelve markets, localized in every one but Slovakia", () => {
+		const foreign = ["cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"];
 		expect(rows.map((row) => row.market)).toEqual(Object.keys(CHANNEL_MAP));
-		expect(abroad.map((row) => row.market)).toEqual(["cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro"]);
+		expect(abroad.map((row) => row.market)).toEqual(foreign);
 	});
 
 	it("serves the market's own address with no redirect, onto the category route", async () => {
@@ -1059,7 +1061,7 @@ describe("the Thule category address", () => {
 	});
 
 	it("sends the Slovak spelling abroad to it with a 301, query kept", async () => {
-		expect(abroad).toHaveLength(9);
+		expect(abroad).toHaveLength(11);
 		for (const row of abroad) {
 			const res = await proxy(req(`/${row.market}/thule-stresne-nosice?utm_source=x`));
 			expect(res.status, row.market).toBe(301);
@@ -1080,19 +1082,37 @@ describe("the Thule category address", () => {
 	});
 
 	it("does not take another language's spelling for a category", async () => {
-		const res = await proxy(req("/cz/thule-dachtraeger"));
-		expect(res.status).not.toBe(301);
-		expect(res.status).not.toBe(308);
-		expect(res.headers.get("x-middleware-rewrite")).not.toContain("/categories/");
+		for (const path of ["/cz/thule-dachtraeger", "/us/thule-dachtraeger", "/cz/thule-roof-racks"]) {
+			const res = await proxy(req(path));
+			expect(res.status, path).not.toBe(301);
+			expect(res.status, path).not.toBe(308);
+			expect(res.headers.get("x-middleware-rewrite"), path).not.toContain("/categories/");
+		}
 	});
 
-	it("keeps Slovakia, the USA and Canada on the base slug until CFM writes their English one", async () => {
-		for (const market of ["sk", "us", "ca"]) {
-			const res = await proxy(req(`/${market}/thule-stresne-nosice`));
-			expect(res.headers.get("location"), market).toBeNull();
-			expect(res.headers.get("x-middleware-rewrite"), market).toContain(
-				`/${CHANNEL_MAP[market]!.saleorSlug}/categories/thule-stresne-nosice`,
+	it("keeps Slovakia on the base slug", async () => {
+		const res = await proxy(req("/sk/thule-stresne-nosice"));
+		expect(res.headers.get("location")).toBeNull();
+		expect(res.headers.get("x-middleware-rewrite")).toContain("/sk-eur/categories/thule-stresne-nosice");
+	});
+
+	it("gives the USA and Canada the English address CFM wrote for both, and moves the old spellings to it", async () => {
+		for (const market of ["us", "ca"]) {
+			const channel = CHANNEL_MAP[market]!.saleorSlug;
+			const own = await proxy(req(`/${market}/thule-roof-racks`));
+			expect(own.headers.get("location"), market).toBeNull();
+			expect(own.headers.get("x-middleware-rewrite"), market).toContain(
+				`/${channel}/categories/thule-roof-racks`,
 			);
+			const base = await proxy(req(`/${market}/thule-stresne-nosice?utm_source=x`));
+			expect(base.status, market).toBe(301);
+			expect(location(base)?.pathname, market).toBe(`/${market}/thule-roof-racks`);
+			expect(location(base)?.search, market).toBe("?utm_source=x");
+			for (const spelling of ["thule-stresne-nosice", "thule-roof-racks"]) {
+				const legacy = await proxy(req(`/${market}/categories/${spelling}`));
+				expect(legacy.status, `${market} ${spelling}`).toBe(308);
+				expect(location(legacy)?.pathname, `${market} ${spelling}`).toBe(`/${market}/thule-roof-racks`);
+			}
 		}
 	});
 });

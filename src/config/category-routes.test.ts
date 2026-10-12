@@ -224,8 +224,8 @@ describe("the car-fridge category", () => {
 
 describe("the Thule roof-rack category", () => {
 	// What CFM writes as the category's translated slug, typed out so the row has to keep it
-	// (THULE_CATEGORY_L10N_MANIFEST of the foreign Thule run, CFM 3348ecc6, 2026-10-11). The USA and Canada
-	// are not in the pack, since no market that reads English is offered for Thule yet: they keep the base slug.
+	// (THULE_CATEGORY_L10N_MANIFEST of the foreign Thule run, CFM 3348ecc6, 2026-10-11; the English slug of the
+	// USA and Canada from the run that followed, CFM d221edc9). To be compared with what Saleor holds.
 	const SEGMENTS: Readonly<Record<string, string>> = {
 		sk: "thule-stresne-nosice",
 		cz: "thule-stresni-nosice",
@@ -237,8 +237,8 @@ describe("the Thule roof-rack category", () => {
 		fr: "thule-barres-de-toit",
 		es: "thule-barras-de-techo",
 		ro: "thule-bare-transversale",
-		us: "thule-stresne-nosice",
-		ca: "thule-stresne-nosice",
+		us: "thule-roof-racks",
+		ca: "thule-roof-racks",
 	};
 	const thule = LOCALIZED_CATEGORIES.find((category) => category.baseSlug === "thule-stresne-nosice");
 
@@ -252,13 +252,23 @@ describe("the Thule roof-rack category", () => {
 		expect(thule?.saleorId).toBe(btoa("Category:6"));
 	});
 
-	it("is spelled thule-<localized root> in the eight languages CFM writes, the base slug elsewhere", () => {
+	it("is spelled thule-<localized root> in every language but Slovak, which keeps the base slug", () => {
 		const [root] = LOCALIZED_CATEGORIES;
 		for (const language of CATALOG_LANGUAGES) {
-			const written = language !== "sk" && language !== "en";
 			expect(thule!.segments[language], language).toBe(
-				written ? `thule-${root!.segments[language]}` : "thule-stresne-nosice",
+				language === "sk" ? "thule-stresne-nosice" : `thule-${root!.segments[language]}`,
 			);
+		}
+	});
+
+	it("gives the USA and Canada the one English segment CFM writes for both (EN and EN_CA)", () => {
+		for (const [market, channel] of [
+			["us", "us-usd"],
+			["ca", "ca-cad"],
+		] as const) {
+			expect(categoryUrlFor(market, "thule-stresne-nosice"), market).toBe("/thule-roof-racks");
+			expect(categoryUrlFor(channel, "thule-roof-racks"), channel).toBe("/thule-roof-racks");
+			expect(categoryBaseSlug(channel, "thule-roof-racks"), channel).toBe("thule-stresne-nosice");
 		}
 	});
 
@@ -271,12 +281,17 @@ describe("the Thule roof-rack category", () => {
 		}
 	});
 
-	it("is a root only in the market's own spelling, and in Slovakia, the USA and Canada only as the base slug", () => {
+	it("is a root only in the market's own spelling, and in Slovakia only as the base slug", () => {
 		expect(isLocalizedRootSegment("de", "thule-dachtraeger")).toBe(true);
 		expect(isLocalizedRootSegment("at", "thule-dachtraeger")).toBe(true);
 		expect(isLocalizedRootSegment("cz", "thule-stresni-nosice")).toBe(true);
+		expect(isLocalizedRootSegment("us", "thule-roof-racks")).toBe(true);
+		expect(isLocalizedRootSegment("ca", "thule-roof-racks")).toBe(true);
 		expect(isLocalizedRootSegment("cz", "thule-dachtraeger")).toBe(false);
 		expect(isLocalizedRootSegment("de", "thule-stresni-nosice")).toBe(false);
+		expect(isLocalizedRootSegment("us", "thule-dachtraeger")).toBe(false);
+		expect(isLocalizedRootSegment("de", "thule-roof-racks")).toBe(false);
+		// The base slug is a spelling nowhere: Slovakia keeps it, the English markets reach it as the base slug.
 		for (const market of ["sk", "us", "ca"]) {
 			expect(isLocalizedRootSegment(market, "thule-stresne-nosice"), market).toBe(false);
 		}
