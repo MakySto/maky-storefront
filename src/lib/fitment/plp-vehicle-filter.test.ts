@@ -371,11 +371,15 @@ describe("narrowing by default, on a roof-rack shelf", () => {
 		expect(vehicleFilterIds(filter)).toBeUndefined();
 	});
 
-	it("narrows the Thule and Nordrive shelves as it narrows the main one", async () => {
+	it("narrows the Thule, Nordrive and Green Valley shelves as it narrows the main one", async () => {
 		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1)]) });
 		readGarage.mockResolvedValue(garageWith(SELECTION));
 
-		for (const categorySlug of ["thule-stresne-nosice", "nordrive-stresne-nosice"]) {
+		for (const categorySlug of [
+			"thule-stresne-nosice",
+			"nordrive-stresne-nosice",
+			"green-valley-stresne-nosice",
+		]) {
 			expect(await resolveVehicleListingFilter("default", { categorySlug })).toMatchObject({
 				state: "active",
 				productIds: [gid(1)],
