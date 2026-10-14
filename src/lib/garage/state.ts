@@ -28,6 +28,7 @@ import {
 	type StoredVehicle,
 	toVehicleSelection,
 } from "./cookie";
+import { canonicalGarage, type VehicleChoice } from "./retired";
 
 export type GarageStatus = "ok" | "disabled" | "absent" | "recovered";
 
@@ -44,6 +45,20 @@ export type ResolvedVehicle = {
 	 * dropped, and it is never matched to a near-miss.
 	 */
 	unresolved: boolean;
+	/**
+	 * Set when the car's generation was merged or dissolved by CFM and its year does not settle
+	 * which of the generations that remain is the shopper's. `unresolved` is true as well, so every
+	 * surface that treats an unresolved car as "no car" keeps doing so; the garage uses this to offer
+	 * the choice instead of "select again". Make and model are named; the generation is not.
+	 */
+	choose?: { makeId: string; modelId: string; candidates: GenerationOption[] };
+};
+
+export type GenerationOption = {
+	id: string;
+	name: string;
+	productionYearFrom: number;
+	productionYearTo: number | null;
 };
 
 export type GarageState = {
@@ -128,6 +143,47 @@ function labelsFor(dataset: FitmentDataset | null, vehicle: StoredVehicle, langu
 	};
 }
 
+function resolveOne(
+	dataset: FitmentDataset | null,
+	stored: StoredVehicle,
+	choice: VehicleChoice | undefined,
+	language?: string | null,
+): ResolvedVehicle {
+	if (!dataset || !choice) {
+		return { stored, selection: toVehicleSelection(stored), ...labelsFor(dataset, stored, language) };
+	}
+	const options = choice.candidates
+		.map((id) => dataset.generations.find((g) => g.id === id))
+		.filter((g): g is FitmentDataset["generations"][number] => g !== undefined)
+		.map((g) => ({
+			id: g.id,
+			name: vehicleNodeName(g, language),
+			productionYearFrom: g.productionYearFrom,
+			productionYearTo: g.productionYearTo,
+		}));
+	return {
+		stored,
+		selection: toVehicleSelection(stored),
+		// The make and the model are known (the candidates are one model); the generation is the
+		// open question, so it is not named and the car stays unresolved.
+		...labelsFor(dataset, choice.vehicle, language),
+		generationName: null,
+		unresolved: true,
+		choose: { makeId: choice.vehicle.k, modelId: choice.vehicle.m, candidates: options },
+	};
+}
+
+/**
+ * The payload as the dataset in hand reads it: cars whose generation CFM merged moved to the one
+ * that remained, cars that became one collapsed. The garage actions work on THIS payload, so an
+ * index the page showed means the same car to the action it triggers, and the first write heals
+ * the cookie.
+ */
+export async function readCanonicalGaragePayload(dataset: FitmentDataset | null) {
+	const read = await readGaragePayload();
+	return { ...read, payload: canonicalGarage(read.payload, dataset).payload };
+}
+
 /**
  * The garage, resolved against the current dataset.
  *
@@ -139,23 +195,22 @@ export async function readGarage(
 	dataset: FitmentDataset | null,
 	language?: string | null,
 ): Promise<GarageState> {
-	const { payload, status, signed } = await readGaragePayload();
+	const { payload: stored, status, signed } = await readGaragePayload();
 	if (status === "disabled") return { ...EMPTY_GARAGE_STATE, status: "disabled" };
 
-	const vehicles: ResolvedVehicle[] = payload.c.map((stored) => ({
-		stored,
-		selection: toVehicleSelection(stored),
-		...labelsFor(dataset, stored, language),
-	}));
+	// A car CFM has since merged into another is read as the other one (`retired.ts`), here and in the
+	// garage actions alike. Without a dataset nothing can be explained and the cookie reads as it is.
+	const canonical = canonicalGarage(stored, dataset);
+	const payload = canonical.payload;
+
+	const vehicles: ResolvedVehicle[] = payload.c.map((vehicle, index) =>
+		resolveOne(dataset, vehicle, canonical.choices.get(index), language),
+	);
 
 	// The car in use but not saved. `normalizePayload` guarantees it is not also in `c`,
 	// so exactly one of these two branches produces the active vehicle.
 	const inUse: ResolvedVehicle | null = payload.u
-		? {
-				stored: payload.u,
-				selection: toVehicleSelection(payload.u),
-				...labelsFor(dataset, payload.u, language),
-			}
+		? resolveOne(dataset, payload.u, canonical.inUseChoice ?? undefined, language)
 		: null;
 
 	const savedIndex = vehicles.length === 0 ? 0 : Math.min(payload.a, vehicles.length - 1);

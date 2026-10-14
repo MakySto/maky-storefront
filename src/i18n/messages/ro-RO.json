@@ -786,6 +786,8 @@
 		"saveThis": "Salvează în garaj",
 		"unresolved": "Acest vehicul nu poate fi asociat cu datele actuale. Vă rugăm să îl selectați din nou.",
 		"unresolvedAction": "Selectați din nou",
+		"chooseGenerationHint": "Am unificat generațiile acestui model și nu o putem stabili pe a dumneavoastră după an. Vă rugăm să o alegeți: {options}.",
+		"chooseGenerationAction": "Alegeți generația",
 		"notConfigured": "Garajul nu este încă activ.",
 		"notConfiguredDetail": "Salvarea vehiculelor nu este configurată în acest mediu.",
 		"unavailable": "Datele despre vehicule sunt momentan indisponibile.",
