@@ -758,6 +758,8 @@ describe("the runtime status says what this process holds", () => {
 		expect(status.takenIntoUseAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 		expect(status.lastCheck).toMatchObject({ outcome: "new", reason: null });
 		expect(status.counts).toMatchObject({ makes: expect.any(Number), applications: expect.any(Number) });
+		// A dataset without a map of retired ids says so with zeros; the status never throws on it.
+		expect(status.retiredIds).toEqual({ moved: 0, split: 0, models: 0, dropped: 0 });
 		expect(status.unavailableReason).toBeNull();
 	});
 

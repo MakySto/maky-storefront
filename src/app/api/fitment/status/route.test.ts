@@ -24,6 +24,7 @@ const status = {
 	staleAfter: "2026-10-31T17:48:14.000Z",
 	stale: false,
 	counts: { makes: 70, models: 691, generations: 1108, applications: 2566 },
+	retiredIds: { moved: 0, split: 0, models: 0, dropped: 0 },
 	takenIntoUseAt: "2026-10-01T20:00:00.000Z",
 	bytes: 15915111,
 	loadMs: 526,

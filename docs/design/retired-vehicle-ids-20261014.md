@@ -49,6 +49,13 @@ All readers (header, home, garage, configurator, PDP, PLP filter, cart line) go 
 actions read the same canonical payload, so the indexes the UI shows are the indexes the actions change,
 and a write heals the cookie.
 
+## What the running process says
+
+`/api/fitment/status` (public tier) carries `dataset.retiredIds` = `{ moved, split, models, dropped }`: how many
+entries of the loaded dataset's map the process believes, and how many it drops as wrong. A dataset without a
+map shows zeros. After CFM issues the dataset, `dropped` must be 0 and the counts must match the producer's
+plan (99 / 14 / 1 for the first wave).
+
 ## Producer acceptance
 
 `M_DELTA_OLD=<live.json> M_DELTA_NEW=<new.json> npx vitest run src/lib/fitment/retired-ids.check.test.ts`
