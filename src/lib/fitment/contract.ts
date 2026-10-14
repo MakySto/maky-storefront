@@ -491,6 +491,31 @@ export type FitmentDataset = {
 	models: VehicleModel[];
 	generations: VehicleGeneration[];
 	applications: FitmentApplication[];
+	/**
+	 * Vehicle identities CFM has retired, and where each went. Optional: a dataset from before
+	 * CFM merged duplicate generations has none. Read through `retired-ids.ts`, never directly —
+	 * it is source data, and an entry is only believed there, after the checks that file makes.
+	 */
+	retiredVehicleIds?: RetiredVehicleIds;
+};
+
+/**
+ * CFM's `cfm-retired-public-vehicle-ids/1`, nested whole under `retiredVehicleIds` so that it
+ * arrives with the dataset it describes, inside the same `datasetHash`.
+ *
+ * - `generations`: a merged generation's old id → the generation that remains.
+ * - `generations_split`: a summary label that was dissolved (a "2008-2019" row beside the real
+ *   generations) → the 2 or 3 generations its cars are now spread over. Which one a given car
+ *   belongs to is the shopper's year, or the shopper's choice: never a name.
+ * - `models`: a merged model's old id → the model that remains.
+ *
+ * The `*_sha256` and `schema` fields are CFM's bookkeeping and are not read here.
+ */
+export type RetiredVehicleIds = {
+	schema?: string;
+	generations?: Record<string, string>;
+	generations_split?: Record<string, string[]>;
+	models?: Record<string, string>;
 };
 
 // ---------------------------------------------------------------------------

@@ -786,6 +786,8 @@
 		"saveThis": "Guardar en el garaje",
 		"unresolved": "Este vehículo no se puede asociar a los datos actuales. Selecciónelo de nuevo, por favor.",
 		"unresolvedAction": "Seleccionar de nuevo",
+		"chooseGenerationHint": "Hemos unificado las generaciones de este modelo y no podemos deducir la suya por el año. Elíjala, por favor: {options}.",
+		"chooseGenerationAction": "Elegir generación",
 		"notConfigured": "El garaje todavía no está en funcionamiento.",
 		"notConfiguredDetail": "El guardado de vehículos no está configurado en este entorno.",
 		"unavailable": "Los datos de los vehículos no están disponibles en este momento.",

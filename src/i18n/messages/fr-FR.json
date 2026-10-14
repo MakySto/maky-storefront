@@ -786,6 +786,8 @@
 		"saveThis": "Enregistrer dans le garage",
 		"unresolved": "Ce véhicule ne peut pas être rattaché aux données actuelles. Merci de le sélectionner à nouveau.",
 		"unresolvedAction": "Sélectionner à nouveau",
+		"chooseGenerationHint": "Nous avons regroupé les générations de ce modèle et ne pouvons pas déduire la vôtre à partir de l'année. Choisissez-la, s'il vous plaît : {options}.",
+		"chooseGenerationAction": "Choisir la génération",
 		"notConfigured": "Le garage n'est pas encore en service.",
 		"notConfiguredDetail": "L'enregistrement des véhicules n'est pas configuré dans cet environnement.",
 		"unavailable": "Les données sur les véhicules sont momentanément indisponibles.",

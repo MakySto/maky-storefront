@@ -786,6 +786,8 @@
 		"saveThis": "Mentés a garázsba",
 		"unresolved": "Ezt a járművet nem tudjuk megfeleltetni az aktuális adatoknak. Kérjük, válassza ki újra.",
 		"unresolvedAction": "Újbóli kiválasztás",
+		"chooseGenerationHint": "Összevontuk ennek a modellnek a generációit, és az évjáratból nem tudjuk megállapítani az Önét. Kérjük, válassza ki: {options}.",
+		"chooseGenerationAction": "Generáció kiválasztása",
 		"notConfigured": "A garázs funkció még nem indult el.",
 		"notConfiguredDetail": "A járművek mentése ebben a környezetben nincs beállítva.",
 		"unavailable": "A járműadatok jelenleg nem érhetők el.",

@@ -786,6 +786,8 @@
 		"saveThis": "Save to garage",
 		"unresolved": "We can't match this vehicle to our current data. Please select it again.",
 		"unresolvedAction": "Select again",
+		"chooseGenerationHint": "We merged this model's generations and can't tell yours from the year. Please choose: {options}.",
+		"chooseGenerationAction": "Choose generation",
 		"notConfigured": "My Garage isn't live yet.",
 		"notConfiguredDetail": "Saving vehicles isn't set up in this environment.",
 		"unavailable": "Vehicle data is temporarily unavailable.",
