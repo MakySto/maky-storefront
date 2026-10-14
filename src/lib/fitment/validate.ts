@@ -28,6 +28,7 @@ import {
 	type FitmentDataset,
 	type FitmentWindow,
 } from "./contract";
+import { retiredIdProblems } from "./retired-ids";
 import { datasetHashFromText, datasetHashFromValue } from "./dataset-hash";
 
 /**
@@ -516,6 +517,10 @@ export function validateFitmentDataset(raw: unknown, options: ValidateOptions = 
 			);
 		}
 	}
+
+	// The map of retired vehicle ids never decides whether a dataset is usable: an entry that does
+	// not hold up is not believed (`retired-ids.ts`) and the shopper is asked again. It is reported.
+	warnings.push(...retiredIdProblems(raw.retiredVehicleIds));
 
 	return { ok: true, dataset: raw as unknown as FitmentDataset, warnings };
 }

@@ -786,6 +786,8 @@
 		"saveThis": "In der Garage speichern",
 		"unresolved": "Dieses Fahrzeug lässt sich den aktuellen Daten nicht zuordnen. Bitte wählen Sie es erneut aus.",
 		"unresolvedAction": "Erneut auswählen",
+		"chooseGenerationHint": "Wir haben die Generationen dieses Modells zusammengeführt und können Ihre nicht aus dem Baujahr ableiten. Bitte wählen Sie: {options}.",
+		"chooseGenerationAction": "Generation wählen",
 		"notConfigured": "Die Garage ist noch nicht aktiv.",
 		"notConfiguredDetail": "Das Speichern von Fahrzeugen ist in dieser Umgebung nicht eingerichtet.",
 		"unavailable": "Die Fahrzeugdaten sind derzeit nicht verfügbar.",

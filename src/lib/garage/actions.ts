@@ -30,7 +30,7 @@ import {
 	type GaragePayload,
 	sameVehicle,
 } from "./cookie";
-import { readGaragePayload } from "./state";
+import { readCanonicalGaragePayload } from "./state";
 
 export type GarageActionResult =
 	| { ok: true; activeIndex: number; count: number }
@@ -68,6 +68,16 @@ function cookieOptions() {
 		path: "/",
 		maxAge: GARAGE_COOKIE_MAX_AGE,
 	};
+}
+
+/**
+ * The payload as the dataset in hand reads it (`retired.ts`): cars CFM merged away are already the
+ * cars that remained. The pages show the garage in this reading, so an index a page sent here names
+ * the same car, and what is written back heals the cookie with it.
+ */
+async function readPayload() {
+	const { dataset } = await loadFitmentDataset();
+	return readCanonicalGaragePayload(dataset);
 }
 
 async function writeGarage(payload: GaragePayload): Promise<boolean> {
@@ -208,7 +218,7 @@ export async function chooseVehicle(selection: VehicleSelection): Promise<Garage
 	const validation = await validateSelection(selection);
 	if (!validation.ok) return { ok: false, error: validation.error };
 
-	const { payload } = await readGaragePayload();
+	const { payload } = await readPayload();
 	const stored = fromVehicleSelection(validation.selection);
 	const existing = payload.c.findIndex((v) => sameVehicle(v, stored));
 
@@ -239,7 +249,7 @@ export async function saveActiveVehicle(): Promise<GarageActionResult> {
 	const mode = resolveGarageMode();
 	if (mode.kind === "disabled") return { ok: false, error: "garage-disabled" };
 
-	const { payload } = await readGaragePayload();
+	const { payload } = await readPayload();
 	const stored = payload.u;
 	// Already saved, or nothing in use: the shopper's intent is already satisfied.
 	if (!stored) return { ok: true, activeIndex: payload.a, count: payload.c.length };
@@ -269,7 +279,7 @@ export async function removeVehicle(index: number): Promise<GarageActionResult> 
 	const mode = resolveGarageMode();
 	if (mode.kind === "disabled") return { ok: false, error: "garage-disabled" };
 
-	const { payload } = await readGaragePayload();
+	const { payload } = await readPayload();
 	if (!Number.isInteger(index) || index < 0 || index >= payload.c.length) {
 		return { ok: false, error: "not-found" };
 	}
@@ -289,7 +299,7 @@ export async function setActiveVehicle(index: number): Promise<GarageActionResul
 	const mode = resolveGarageMode();
 	if (mode.kind === "disabled") return { ok: false, error: "garage-disabled" };
 
-	const { payload } = await readGaragePayload();
+	const { payload } = await readPayload();
 	if (!Number.isInteger(index) || index < 0 || index >= payload.c.length) {
 		return { ok: false, error: "not-found" };
 	}

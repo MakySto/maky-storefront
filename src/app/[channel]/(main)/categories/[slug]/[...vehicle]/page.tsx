@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { type Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
@@ -23,6 +23,7 @@ import {
 	loadCatalogView,
 	resolveVehiclePath,
 } from "@/lib/catalog-content/resolve";
+import { retiredVehiclePageHref } from "@/lib/catalog-content/retired-page";
 import { splitContent } from "@/lib/catalog-content/text";
 import { type CatalogNode, type CatalogTree, ancestorsOf } from "@/lib/catalog-content/tree";
 import { resolveFitmentOffers, uniqueProductRefs } from "@/lib/fitment/offers";
@@ -266,7 +267,13 @@ export default function Page(props: Params) {
 async function VehiclePage({ params }: Params) {
 	const { channel, slug, vehicle } = await params;
 	const resolved = await resolve(channel, slug, vehicle);
-	if (!resolved) notFound();
+	if (!resolved) {
+		// A page CFM merged into another one (a duplicate generation) keeps answering for the old
+		// link: the visitor lands on the page that remained instead of on a not-found body.
+		const moved = await retiredVehiclePageHref(channel, slug, vehicle);
+		if (moved) permanentRedirect(moved);
+		notFound();
+	}
 
 	const { view, node, page, locale, market, published } = resolved;
 	const { top, body } = splitContent(page);

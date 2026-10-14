@@ -786,6 +786,8 @@
 		"saveThis": "Zapisz w garażu",
 		"unresolved": "Tego pojazdu nie da się dopasować do aktualnych danych. Wybierz go, proszę, ponownie.",
 		"unresolvedAction": "Wybierz ponownie",
+		"chooseGenerationHint": "Połączyliśmy generacje tego modelu i nie możemy ustalić Twojej na podstawie roku. Wybierz ją, proszę: {options}.",
+		"chooseGenerationAction": "Wybierz generację",
 		"notConfigured": "Garaż nie jest jeszcze uruchomiony.",
 		"notConfiguredDetail": "Zapisywanie pojazdów nie jest skonfigurowane w tym środowisku.",
 		"unavailable": "Dane o pojazdach są chwilowo niedostępne.",

@@ -130,6 +130,15 @@ async function GarageContent({ channel }: { channel: string }) {
 							year: v.stored.y,
 							roofType: v.stored.r ?? null,
 							unresolved: v.unresolved,
+							choose: v.choose
+								? {
+										makeId: v.choose.makeId,
+										modelId: v.choose.modelId,
+										options: v.choose.candidates.map(
+											(g) => `${g.name} (${g.productionYearFrom}–${g.productionYearTo ?? ""})`,
+										),
+									}
+								: null,
 						}))}
 						activeIndex={garage.activeIndex}
 					/>
