@@ -1,9 +1,20 @@
 import "server-only";
 
+import { REVERSE_MAP } from "@/lib/channel-map";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { successorOf } from "@/lib/fitment/retired-ids";
 import { loadCatalogView, vehiclePathFromSegments, catalogLanguageForChannel } from "./resolve";
 import { vehiclePageHref } from "./vehicle-href";
+
+/**
+ * The release line reads the catalogue by language, the SYNC-1 deploy line by language AND market
+ * (`release-call-sites.test.ts` refuses a call without the market there). The extra argument is
+ * ignored where the function does not take it, so this one call is right on both lines.
+ */
+const loadViewForMarket = loadCatalogView as (
+	language: string,
+	market?: string,
+) => ReturnType<typeof loadCatalogView>;
 
 /**
  * Where a link to a vehicle page CFM has since merged away should land, or `null` when the path is
@@ -24,7 +35,7 @@ export async function retiredVehiclePageHref(
 ): Promise<string | null> {
 	const language = catalogLanguageForChannel(channel);
 	if (!language) return null;
-	const view = await loadCatalogView(language);
+	const view = await loadViewForMarket(language, REVERSE_MAP[channel] ?? channel);
 	if (!view.ready) return null;
 
 	const retiredId = view.tree.orphanPages.get(vehiclePathFromSegments(categorySlug, segments));
