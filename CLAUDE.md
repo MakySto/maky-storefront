@@ -449,13 +449,15 @@ The bridge flow, in this order:
 
 ```
 lock        flock — Claude, Codex and a human share this box; two deploys must not race
-preflight   memory, disk, clean tree, tests, current BUILD_ID + its sha, NEXT_OUTPUT unset,
-            sudo, PM2 app, nginx state (canonical-only), spare port free
+preflight   memory, disk (refuses below 10 GB, warns below 20 GB: §13.3.1), clean tree, tests,
+            current BUILD_ID + its sha, NEXT_OUTPUT unset, sudo, PM2 app, nginx state
+            (canonical-only), spare port free
 secrets     copy the keys other systems issue from AWS SSM into .env (§13.9) — warn-only
 scratch     /opt/storefront-build: git archive HEAD, node_modules, .env
 build       pnpm build there; the log is teed to a file; the finished build must carry its own
             path only in required-server-files (§13.8)
 metadata    write .next/MAKY_DEPLOY_META (git sha, build id, timestamp); keep a clean copy of .next
+            without cache/turbopack (the build's compile cache, which `next start` never reads)
 bridge      the same build on 127.0.0.1:3100 as a second PM2 app, maky-storefront-bridge, started
             like the live process (`next start -p 3100`, no `-H`, see §13.2.1) in a clean
             environment, logging to files of this run (/tmp/maky-deploy-<UTC>.log.bridge-out
@@ -480,13 +482,17 @@ back        nginx-upstream.sh set canonical-only, wait for the bridge's requests
             bridge, remove the scratch tree
 verify      nginx via --resolve, then the public URL — retried, warn only; the live process's own
             category read-back
-log         append a block to /opt/DEPLOYMENTS.log, with what customers saw during the switch
+slim        take what the old server wrote while it ran out of the snapshot just made (§13.3.1)
+log         append a block to /opt/DEPLOYMENTS.log, with what customers saw during the switch, the
+            size of the snapshot and the free disk
 prune       keep the newest 2 snapshots plus any pinned with a sidecar .keep
 ```
 
 `restart` is the same without the bridge and the two nginx steps: the finished build is swapped in
 and the gap is the stop-to-answer in the middle. `classic` is the original sequence: stop, snapshot,
-build in place, start, gate. In all three the live process is started by registering it afresh (§13.2.1).
+build in place, start, gate. In all three the live process is started by registering it afresh (§13.2.1),
+the build that goes live is made without `cache/turbopack`, and the snapshot is slimmed after the commit
+point, never before it, so a rollback restores it exactly as it was moved (§13.3.1).
 
 **What the bridge has to show before customers are sent to it.** The gate looks at pages and files.
 Two things it cannot see are decided by the environment the process starts in, and the bridge starts
@@ -703,7 +709,7 @@ What differs from a plain restart, and is accepted:
 ### 13.2.2 Changing the deploy scripts
 
 `deploy-production.sh` and `nginx-upstream.sh` have a regression suite that runs them for real:
-`pnpm test:deploy-box`, about eight minutes (89 cases). It is not part of `pnpm vitest run`, which the deploy
+`pnpm test:deploy-box`, about eight minutes (95 cases). It is not part of `pnpm vitest run`, which the deploy
 preflight runs on the live box before every deploy.
 
 The suite builds a whole box in a temporary directory (`src/lib/__fixtures__/deploy-world`): a git
@@ -789,6 +795,95 @@ The marker must stay outside the directory because a restore moves the snapshot'
 contents back into the live tree. A `.keep` stored inside would ride along, and the next
 deploy would move it into the new snapshot — silently pinning the wrong build and letting
 the one you meant to protect be pruned.
+
+### 13.3.1 What may be on disk under `.next` — and what may not
+
+**The files under `.next` are the build's own, and they stay the build's own while the server runs.**
+On 2026-10-12 they did not: the live `.next` grew 5 to 8 GB a day (45 GB free of 116), a snapshot 15.5 hours old
+held 136 508 files and 5.2 GB under `server/app` next to a 130 MB build, and every deploy moved that growth
+into the next snapshot.
+
+**Why it grew.** The build prerenders one market, `sk-eur`: `generateStaticParams` in
+`src/app/[channel]/layout.tsx` lists the other channels only when it has `SALEOR_APP_TOKEN`, which the production
+build does not. Every URL of the other eleven markets (and every product or category page the build did not
+enumerate) is rendered when somebody asks for it, and Next's stock cache wrote what it rendered to
+`.next/server/app/<path>.html`, `.meta`, `.rsc` and `.segments/**` (7 files, about 210 KB measured, 267 KB on
+the box) and never removed it. The sitemap names some 238 000 URLs; 19 501 pages had been written in 15.5 hours.
+
+**What keeps it from happening again.**
+
+- **`cache-handler.mjs`**, set as `cacheHandler` in `next.config.js` for the production build and server (not for
+  `NEXT_OUTPUT=standalone`, development or tests). `next start` reads it from the `next.config.js` of the checkout, not
+  from the build: an older build put back from a snapshot runs with it too, and a checkout without the file brings the
+  stock cache, and its disk growth, back (checked with the stock build in a project directory that has the handler). It is Next's own `FileSystemCache` with one change, in `set`:
+  an entry is written to disk only while the build runs, or when its file is already there (a page the build made
+  is refreshed in place, so a restart still picks up the regenerated version). Anything else lives in the memory
+  LRU and nowhere else. `get` is untouched, so tags, `revalidatePath` / `revalidateTag` and stale-while-revalidate
+  work exactly as before. Any doubt (an unknown kind, a path that cannot be built) means memory only: this class
+  can write less than the stock one, never more. `cacheMaxMemorySize` is 256 MB (Next's default is 50), for the page
+  store and for the `"use cache"` store each: about a thousand market pages next to the whole prerendered set, 412 MB
+  more than today once both stores are full (up to some 550 MB: the page store counts characters, and V8 keeps a
+  string with a letter outside Latin-1, such as the č or ł of the Czech and Polish pages, at two bytes a character).
+  The reason for that size is below.
+- **`images.maximumDiskCacheSize`** is 3 GB. The optimised-image cache (`.next/cache/images`) is the other thing a
+  server writes; Next's default bound is half of the free disk at the first image request. Checked end to end with
+  the cap lowered to 200 KB: 60 image variants that fill 619 KB without a cap left 186 KB in 20 files, and the
+  oldest one had to be encoded again.
+- **The deploy.** The build that goes live is installed without `cache/turbopack`, the compile cache `next start`
+  never reads (141 MB). After the commit point, `scripts/ops/slim-next-dir.mjs` takes the snapshot it just made down
+  to the build: the page-cache files whose route is neither a route nor a dynamic route of the snapshot's own
+  `prerender-manifest.json` (the pages the build never made), `cache/images`, `cache/turbopack`. It keeps the build's
+  own pages, `cache/fetch-cache` and the snapshot's modification time (that orders the pruning), and it refuses a
+  directory without a `BUILD_ID`, one named `.next`, and one whose manifest and files do not belong together. A
+  failure is a post-deploy step (exit `75` names "snapshot slimming"); a rollback never reaches it, so a snapshot
+  that is put back is exactly what was moved out. The log block carries `snapshot: <name> (N MB)` and
+  `disk: N MB free`, and the preflight warns below 20 GB free (`WARN_FREE_DISK_MB`) as it refuses below 10 GB.
+
+**What this changes, and what it does not.** Prices and availability come from Saleor as before: the price runs in a
+sandbox gave the same answers as the stock cache after a change, after a webhook and after the 60 s an entry stays
+fresh. Page speed is the same for every page that is still in memory, which is every page of the hot set. Four things
+differ and are accepted:
+
+- A page the build did not make is kept in memory only. One pushed out of the LRU while it is still valid (a page is
+  valid for an hour, `cacheLife("minutes")`) is rendered again on its next visit, as a first visit is, where the stock
+  cache would have answered from its disk copy and refreshed it in the background. Measured on 20 pages asked for one
+  second apart, with a Saleor that took 150 ms per call: 641 ms for a first visit, 182 ms for a page in memory, and
+  for a page more than a minute old that 1 600 other pages had pushed out 602 ms, against 184 ms with the stock cache
+  (with a Saleor that answers at once: 199, 44 and 148 ms, against 60 ms). 256 MB kept those pages through 800 other
+  pages and lost them by 1 600. The LRU is sized so that this is the exception: it holds about a thousand pages, and
+  the crawlers of the box touch 900 to 1 250 distinct pages an hour, so a page stays in memory for roughly 45 to 60
+  minutes. If the nginx log shows many visits to the same long-tail URL 30 to 60 minutes apart, the next step is a
+  larger LRU (watch the RSS of `next-server` and the 10 GB `deploy-production.sh` wants free), then a bounded disk
+  tier; not the stock behaviour back.
+- After a `pm2 restart` the pages of the markets the build did not make start cold and are rendered on their first
+  visit. The stock cache kept what it had written, old prices included: a price changed in Saleor while the server was
+  down was shown from the disk copy after the restart; now it is rendered with the current one.
+- During a Saleor outage a page that is not in memory cannot be served stale from disk.
+- A snapshot is now the build and its fetch cache, not a copy of the server's whole working set. A rollback starts
+  without the optimised-image cache (each image is encoded again on its first request, AVIF slowest) and without the
+  pages the old server had written (rendered again on their first visit); before, it started warm from a snapshot of
+  5 to 16 GB. Images and pages come back by themselves within the first hours.
+
+**Rules.**
+
+- Never `experimental.isrFlushToDisk: false` to "stop it writing": the image optimizer only keeps its disk cache while
+  that switch is on, so the cap above would arrive by switching it off. Never `cacheMaxMemorySize: 0`, which turns
+  the memory cache off and with it every page the handler no longer writes. And never `images.customCacheHandler`:
+  it would send the optimised images through the handler, which keeps what it does not know in memory only.
+- A Next upgrade means reading `node_modules/next/dist/server/lib/incremental-cache/file-system-cache.js` again: the
+  handler extends that class. If it moves, the build and `next start` fail on the import (loud), and
+  `src/config/cache-handler.test.ts` fails first.
+- Do not delete files under the live `.next` to free space. Measure: `du -sb .next/server/app .next/cache/*` and
+  `find .next/server/app -type f | wc -l`, and `du -sm /opt/storefront-rollbacks/.next.rollback-*` for the
+  snapshots. With this handler `server/app` stays the size the last build left it, whatever was visited since (887
+  files and 11 MB in the sandbox after 3 000 foreign pages; the stock cache had 21 000 files and 627 MB more by
+  then); a count that keeps growing with the traffic is the old behaviour or a different handler.
+- An old snapshot made before this change holds the pages its server wrote. Slim it by hand, dry run first, and only
+  with the owner's go-ahead (it deletes files on the box):
+  `node scripts/ops/slim-next-dir.mjs /opt/storefront-rollbacks/.next.rollback-<sha>-<BUILD_ID>-<UTC>`, then the same
+  with `--apply`. Never a pinned snapshot's sidecar, never the live `.next` (the tool refuses a directory named
+  `.next`). The contents of a snapshot belong to `ubuntu`, so no `sudo` is needed; a snapshot restored with
+  `sudo cp -a` and not `chown`ed is the exception.
 
 ### 13.4 When the build fails
 

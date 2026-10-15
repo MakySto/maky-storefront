@@ -1,4 +1,6 @@
-import { PHASE_PRODUCTION_BUILD } from "next/constants.js";
+import { fileURLToPath } from "node:url";
+
+import { PHASE_PRODUCTION_BUILD, PHASE_PRODUCTION_SERVER } from "next/constants.js";
 import createNextIntlPlugin from "next-intl/plugin";
 
 import { main as guardLiveBuild } from "./scripts/ops/guard-live-build.mjs";
@@ -7,6 +9,42 @@ import { HTML_LIMITED_BOTS } from "./src/config/html-limited-bots.js";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const cmsMediaBaseUrl = new URL(CMS_MEDIA_BASE_URL);
+
+/**
+ * How much of the page cache the running server keeps in memory, and what it is allowed to write to
+ * disk. The handler is `cache-handler.mjs`; read the long comment there first.
+ *
+ * `cacheMaxMemorySize` sizes the in-memory LRU of BOTH of Next's page-side caches: the incremental
+ * cache (rendered pages and `fetch` results, which now holds every page the build did not make) and
+ * the `"use cache"` store. Next's default is 50 MB each.
+ *
+ * Why 256 MB: a page the handler no longer keeps on disk lives only in that LRU, and one pushed out
+ * of it before it expires (an hour, `cacheLife("minutes")`) is rendered again on its next visit,
+ * where the stock cache would have served the copy from disk. A market page weighs 200 to 270 KB, so
+ * 256 MB holds roughly a thousand of them (sandbox, Saleor at 150 ms: a page was still in memory
+ * after 800 others had been served and was pushed out after 1 600), and the box's crawlers touch 900
+ * to 1 250 distinct pages an hour (19 501 in 15.5 h on 2026-10-12): a page then survives some 45 to
+ * 60 minutes, about the hour it is valid for. The price is memory: at most 2 x 256 MB (both stores
+ * full) against 2 x 50 MB today, 412 MB more than now (up to some 550 MB: the page store counts
+ * characters, and V8 keeps a string with a letter outside Latin-1, such as the č or ł of the Czech
+ * and Polish pages, at two bytes a character), on a box whose `next-server` held 2.7 GB after 30
+ * hours and that `deploy-production.sh` requires 10 GB free on before it builds. It must never be 0:
+ * that switches the memory cache off, and with it every page the handler no longer writes to disk.
+ */
+const pageCache = {
+	cacheHandler: fileURLToPath(new URL("./cache-handler.mjs", import.meta.url)),
+	cacheMaxMemorySize: 256 * 1024 * 1024,
+};
+
+/**
+ * The most the optimised-image cache (`.next/cache/images`) may hold, least recently used out first.
+ * Next's default is half of the free disk at the first image request, some 22 GB on the box today, and
+ * a snapshot keeps a copy of whatever is there. 3 GB is above the ~2 GB that all of `.next/cache` held
+ * in the box's snapshots (2026-10-12), so normal use evicts nothing, and the cache can no longer outgrow
+ * it. Do not cap it with `experimental.isrFlushToDisk: false`: the image optimizer only keeps this disk
+ * cache while that switch is on (`image-optimizer.js`), so the cap would arrive by switching it off.
+ */
+const IMAGE_DISK_CACHE_BYTES = 3 * 1024 ** 3;
 
 /** @type {import('next').NextConfig} */
 const config = {
@@ -59,6 +97,7 @@ const config = {
 		// `image-optimizer` serves the upstream file unchanged rather than erroring,
 		// so the worst case is a WebP where an AVIF was wanted.
 		formats: ["image/avif", "image/webp"],
+		maximumDiskCacheSize: IMAGE_DISK_CACHE_BYTES,
 		remotePatterns: [
 			{
 				// Saleor Cloud CDN
@@ -193,7 +232,10 @@ export function resolveNextConfig(phase, runLiveBuildGuard = guardLiveBuild) {
 		);
 	}
 
-	return withNextIntl(config);
+	// The Dockerfile builds with NEXT_OUTPUT=standalone: a container's disk is not this box's, and a
+	// standalone server keeps Next's stock cache. Development keeps it too.
+	const isProduction = phase === PHASE_PRODUCTION_BUILD || phase === PHASE_PRODUCTION_SERVER;
+	return withNextIntl(isProduction && !process.env.NEXT_OUTPUT ? { ...config, ...pageCache } : config);
 }
 
 /** @param {string} phase */
