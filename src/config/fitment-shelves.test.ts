@@ -19,6 +19,7 @@ describe("the vehicle filter's shelves", () => {
 			"thule-stresne-nosice",
 			"nordrive-stresne-nosice",
 			"green-valley-stresne-nosice",
+			"menabo-stresne-nosice",
 		]) {
 			expect(shelfFitmentKind(slug)).toBe("roof-rack-set");
 			expect(categoryFitmentKind(slug)).toBe("roof-rack-set");
@@ -64,6 +65,7 @@ describe("the vehicle filter's shelves", () => {
 		expect(STOREFRONT_CATEGORIES.some((category) => category.slug.includes("thule"))).toBe(false);
 		expect(STOREFRONT_CATEGORIES.some((category) => category.slug.includes("nordrive"))).toBe(false);
 		expect(STOREFRONT_CATEGORIES.some((category) => category.slug.includes("green-valley"))).toBe(false);
+		expect(STOREFRONT_CATEGORIES.some((category) => category.slug.includes("menabo"))).toBe(false);
 	});
 
 	it("keeps the registry free of scope", () => {
