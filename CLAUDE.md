@@ -838,10 +838,15 @@ the box) and never removed it. The sitemap names some 238 000 URLs; 19 501 pages
   failure is a post-deploy step (exit `75` names "snapshot slimming"); a rollback never reaches it, so a snapshot
   that is put back is exactly what was moved out. The log block carries `snapshot: <name> (N MB)` and
   `disk: N MB free`, and the preflight warns below 20 GB free (`WARN_FREE_DISK_MB`) as it refuses below 10 GB.
+  `cache/fetch-cache` is kept on purpose and is small only in a `.next` that this handler served: the build's own is 7
+  files and 69 KB, but the stock server that ran before had written 4 593 entries, 1.8 GB, into it in 9.6 hours (93 %
+  `sitemap`-tagged Saleor responses of 0.5 to 1 MB), so the first snapshot after the switch (2026-10-15) was 1 782 MB
+  next to a live `.next` of 59 to 61 MB. Later snapshots should be about 60 MB, because `fetch` entries now stay in
+  memory.
 
 **What this changes, and what it does not.** Prices and availability come from Saleor as before: the price runs in a
 sandbox gave the same answers as the stock cache after a change, after a webhook and after the 60 s an entry stays
-fresh. Page speed is the same for every page that is still in memory, which is every page of the hot set. Four things
+fresh. Page speed is the same for every page that is still in memory, which is every page of the hot set. Five things
 differ and are accepted:
 
 - A page the build did not make is kept in memory only. One pushed out of the LRU while it is still valid (a page is
@@ -850,11 +855,17 @@ differ and are accepted:
   second apart, with a Saleor that took 150 ms per call: 641 ms for a first visit, 182 ms for a page in memory, and
   for a page more than a minute old that 1 600 other pages had pushed out 602 ms, against 184 ms with the stock cache
   (with a Saleor that answers at once: 199, 44 and 148 ms, against 60 ms). 256 MB kept those pages through 800 other
-  pages and lost them by 1 600. The LRU is sized so that this is the exception: it holds about a thousand pages, and
-  the crawlers of the box touch 900 to 1 250 distinct pages an hour, so a page stays in memory for roughly 45 to 60
-  minutes. If the nginx log shows many visits to the same long-tail URL 30 to 60 minutes apart, the next step is a
-  larger LRU (watch the RSS of `next-server` and the 10 GB `deploy-production.sh` wants free), then a bounded disk
-  tier; not the stock behaviour back.
+  pages and lost them by 1 600. The LRU is sized so that this is the exception: it holds about a thousand pages. The
+  box's crawlers touched more distinct pages than the first estimate of 900 to 1 250 an hour (nginx, 39 hours to
+  2026-10-15: median 1 623, peak 3 686), and the same LRU holds the `fetch` entries too, so a page stays in memory for
+  roughly 20 to 25 minutes (an estimate), less while a crawler walks the sitemap: the stock server wrote `fetch`
+  entries, 93 % of their bytes `sitemap` responses of 0.5 to 1 MB, in bursts of 270 to 645 MB an hour, 1 to 2.5 times
+  the whole LRU. On the box a page that is not in memory costs its first render, 0.19 to 0.31 s, and one that is costs
+  2.3 to 2.6 ms; 4.9 % of the repeat visits came 25 to 60 minutes after the last one (1.0 % of all page views), which
+  is the share this can touch. If the nginx log shows many visits to the same long-tail URL 20 to 60 minutes apart,
+  the first thing to try is to keep the large `sitemap` responses out of the shared LRU, then a larger LRU (watch the
+  RSS of `next-server`, below, and the 10 GB `deploy-production.sh` wants free), then a bounded disk tier; not the
+  stock behaviour back.
 - After a `pm2 restart` the pages of the markets the build did not make start cold and are rendered on their first
   visit. The stock cache kept what it had written, old prices included: a price changed in Saleor while the server was
   down was shown from the disk copy after the restart; now it is rendered with the current one.
@@ -863,6 +874,18 @@ differ and are accepted:
   without the optimised-image cache (each image is encoded again on its first request, AVIF slowest) and without the
   pages the old server had written (rendered again on their first visit); before, it started warm from a snapshot of
   5 to 16 GB. Images and pages come back by themselves within the first hours.
+- The process is bigger and has surges. Read on 2026-10-18, 57 hours after the handler went live (GB here are kB /
+  1 000 000): between surges `next-server` sits near 3.5 GB (3.46 GB at the last reading), where the 62-hour stock-cache
+  process before it had a median of 2.5 GB and a maximum of 2.9 GB. At 9.6 hours old the two were level (stock 2.13,
+  now 2.10 GB), at 24 hours they were 2.83 and 3.46 GB, at 57 hours 2.56 and 3.46 GB. That is the order two stores of
+  256 MB should add on real pages (the 412 MB above was measured on test pages some 20 % smaller than the box's), not a
+  proof of it. Twice a crawler surge (2 400 to 7 400 requests per 10 minutes against the usual 500 to 700; the second
+  lasted one 10-minute bucket) took the process from 2.8 and 3.7 GB to 4.6 to 5.0 GB within one or two minutes (peak
+  5.02 GB, 2026-10-17 19:43); it stayed there for 91 minutes and for 6 hours and then fell by 2.1 and 1.6 GB within
+  one minute. Stock-cache processes had such excursions too (4.60 GB on 10 October, 3.85 GB on 12 October); what is new
+  is the higher floor. No restart, no `heap out of memory`, no kernel OOM, `available` 10.7 GB at 3.46 GB. Why the
+  process rises and why it stays up is not measured: the V8 heap cannot be read from outside, its limit is 4 288 MB
+  (Node 24.15), so at 5.0 GB part of the process is not heap.
 
 **Rules.**
 
@@ -884,6 +907,21 @@ differ and are accepted:
   with `--apply`. Never a pinned snapshot's sidecar, never the live `.next` (the tool refuses a directory named
   `.next`). The contents of a snapshot belong to `ubuntu`, so no `sudo` is needed; a snapshot restored with
   `sudo cp -a` and not `chown`ed is the exception.
+- What the live `.next` looked like, measured 2026-10-15 at the deploy and again 57 hours later: `server/app` 897 files
+  and 12.4 MB, `cache/fetch-cache` 7 files and 69 KB, unchanged; free disk fell 469 MB in 2.4 days (53 283 to
+  52 814 MB) where it had fallen 5 to 8 GB a day. `cache/images` is what still grows, about 380 MB a day (905 MB in
+  24 529 files after 2.4 days); at that rate it reaches its 3 GB (`3 * 1024 ** 3` bytes) in about a week and then
+  evicts the least recently used. If it passes 3.3 GB, `images.maximumDiskCacheSize` is not in force.
+- Memory is read from history, not from one reading, because `next-server` moves by gigabytes in a minute. `/var/log/atop`
+  holds a sample a minute of every process (readable without `sudo`, kept since 2026-09-19):
+  `atop -r /var/log/atop/atop_YYYYMMDD -P PRM | awk '$7 == PID && $8 == "(next-server" {print $4, $5, $13}'` prints date,
+  time and RSS in kB (the name has two words, so the fields are shifted by one; `PID` is the `next-server` whose
+  `/proc/PID/cwd` is `/opt/storefront`, `maky-smtp-app` runs one too). Act on: a restart count above 0 for
+  `maky-storefront`, `heap out of memory` in its error log, an OOM line in the kernel log, any minute above 6 GB, or a
+  lowest minute of the day above 4 GB two days running (thresholds set on 2026-10-18 from three days of history). Do
+  not act on a single reading between 3 and 5 GB, or on an excursion that goes back by itself. First aid for a heap
+  OOM is a larger `--max-old-space-size` in the environment the process is registered with (`deploy-production.sh`
+  starts it from a clean one, §13.2.1; `.env` is read too late for V8); then measure what filled it.
 
 ### 13.4 When the build fails
 
