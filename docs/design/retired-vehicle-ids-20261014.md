@@ -76,3 +76,7 @@ explained by the map.
 
 The web code must be live before CFM writes the merge or issues the dataset; an older build ignores the new
 key (the validator ignores unknown fields) and would send shoppers to "choose again".
+
+## Stránky zlúčených generácií: skutočné 301 (18. 10. 2026)
+
+Starý odkaz na stránku auta rieši `redirects.json` v `src/proxy.ts`, pred vykreslením, a to je skutočné HTTP 301. Page-úroveň (`retired-page.ts`) zostáva záloha pre stránku, ktorá v tabuľke nie je; v PPR sa tam stav odošle až po hlavičkách (200 s meta refresh alebo noindex, nezmerané na produkcii). Pre 12 stránok z odpovede CFM 4.5 z 18. 10. (144 dvojíc) tabuľka platí, takže hrana má prednosť pred mäkkým 404. Zoznam a pravidlo cesty sú v `redirects.merged-generations.test.ts`. Cieľ je stránka, ktorú web naozaj vykreslí (uzol s publikovanou stránkou); ak ju zostávajúci uzol nemá, odkaz ide o úroveň vyššie, nie na stránku, ktorú trasa nevykreslí.
