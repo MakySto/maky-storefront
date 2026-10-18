@@ -18,7 +18,10 @@
 //   - cache/turbopack, the build's compile cache, which `next start` never reads.
 //
 // It keeps everything else, `cache/fetch-cache` included: what a restored snapshot answers from there is
-// the behaviour it had, and the build's own entries are small.
+// the behaviour it had, and the build's own entries are small (7 files, 69 KB). What is not small is the
+// fetch-cache of a `.next` that a server with the stock cache ran in: that server had written 4 593 entries,
+// 1.8 GB, into it in 9.6 hours, so the first snapshot after the handler went live was 1.8 GB, and this tool
+// kept every byte of it. Later ones are the size of the build, because the handler keeps `fetch` in memory.
 //
 // Pages missing from a snapshot are rendered again when asked for, exactly as on a first visit, so a
 // restore from a slimmed snapshot is correct, only colder. The tool still refuses a directory that does
