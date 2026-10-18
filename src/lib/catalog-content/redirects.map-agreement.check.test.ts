@@ -63,6 +63,34 @@ function pathIndex(dataset: FitmentDataset, contentPath: string | undefined): Ma
 	return index;
 }
 
+/**
+ * Older entries from RELEASE-4 (2026-09-15) that this check is not about. Their cars are still live
+ * in the datasets of 2026-10-14 and 2026-10-18, so the "still live" test below would fail on them for
+ * a reason that predates the merge of duplicate generations; they are listed in the output instead.
+ */
+const EARLIER_ENTRIES = new Set([
+	"/stresne-nosice/subaru/legacy-kombi/bp",
+	"/stresne-nosice/hyundai/h-1-van/tq",
+]);
+
+/** The path of a vehicle, or of its nearest ancestor that has one: a surviving car with no page of its own is reached through its model or brand. */
+function nearestPath(dataset: FitmentDataset, index: Map<string, string>, id: string): string | undefined {
+	const pathOf = new Map<string, string>();
+	for (const [path, vehicleId] of index) pathOf.set(vehicleId, path);
+	const parent = new Map<string, string>();
+	for (const g of dataset.generations) parent.set(g.id, g.modelId);
+	for (const m of dataset.models) parent.set(m.id, m.makeId);
+	for (
+		let current: string | undefined = id, hops = 0;
+		current && hops < 4;
+		current = parent.get(current), hops += 1
+	) {
+		const path = pathOf.get(current);
+		if (path) return path;
+	}
+	return undefined;
+}
+
 describe.skipIf(!available)("the retired-page redirects against the map of the new dataset", () => {
 	const oldDataset = available ? load(OLD_PATH!) : (undefined as never);
 	const newDataset = available ? load(NEW_PATH!) : (undefined as never);
@@ -75,6 +103,10 @@ describe.skipIf(!available)("the retired-page redirects against the map of the n
 		const problems: string[] = [];
 		const neverPublished: string[] = [];
 		for (const [from, to] of Object.entries(CATALOG_REDIRECTS.exact.sk ?? {})) {
+			if (EARLIER_ENTRIES.has(from)) {
+				rows.push(`${from} -> ${to}: earlier entry (RELEASE-4), not checked here`);
+				continue;
+			}
 			const id = oldIndex.get(from);
 			if (!id) {
 				neverPublished.push(from);
@@ -92,11 +124,17 @@ describe.skipIf(!available)("the retired-page redirects against the map of the n
 			} else if (fate.kind === "gone") {
 				problems.push(`${from}: the map says nothing about ${id}`);
 			} else if (fate.kind === "moved") {
-				const successorPath = [...newIndex].find(([, vehicleId]) => vehicleId === fate.to)?.[0];
-				const ok = successorPath === to || (successorPath ? successorPath.startsWith(`${to}/`) : false);
-				rows.push(`${from} -> ${to}: map -> ${successorPath ?? fate.to} ${ok ? "ok" : "DIFFERENT"}`);
-				if (!ok && successorPath)
-					problems.push(`${from}: redirect goes to ${to}, the map to ${successorPath}`);
+				const successorPath = nearestPath(newDataset, newIndex, fate.to);
+				const ok = successorPath === to;
+				rows.push(
+					`${from} -> ${to}: map -> ${fate.to.slice(-8)} reached at ${successorPath ?? "nothing"} ${
+						ok ? "ok" : "DIFFERENT"
+					}`,
+				);
+				if (!ok)
+					problems.push(
+						`${from}: redirect goes to ${to}, the map leads to ${successorPath ?? "a car with no address"}`,
+					);
 			} else {
 				rows.push(`${from} -> ${to}: split into ${fate.candidates.length} candidates`);
 			}
