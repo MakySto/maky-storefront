@@ -13,7 +13,15 @@ import { createServer } from "node:net";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createWorld, waitForHttp, type World } from "./__fixtures__/deploy-world/world";
+import {
+	createWorld,
+	OLD_BUILD_PAGES,
+	OLD_KEPT_CACHE,
+	OLD_RUNTIME_CACHE,
+	OLD_RUNTIME_PAGES,
+	waitForHttp,
+	type World,
+} from "./__fixtures__/deploy-world/world";
 
 /**
  * scripts/ops/deploy-production.sh, run for real against a box made of small programs that do what
@@ -39,12 +47,14 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 /**
  * Every file under `dir` with its content, so "the live build was not touched" can mean byte for byte.
  * `cache/` is left out: a running server writes there (ISR shells, optimised images) all the time.
+ * `skip` names files (relative to `dir`) to leave out as well.
  */
-function treeSignature(dir: string): string {
+function treeSignature(dir: string, skip: readonly string[] = []): string {
 	const files = readdirSync(dir, { recursive: true, withFileTypes: true })
 		.filter((entry) => entry.isFile())
 		.map((entry) => join(entry.parentPath, entry.name))
 		.filter((file) => !file.slice(dir.length).startsWith("/cache/"))
+		.filter((file) => !skip.includes(file.slice(dir.length + 1)))
 		.sort();
 	const hash = createHash("sha1");
 	for (const file of files) {
@@ -57,6 +67,47 @@ function treeSignature(dir: string): string {
 const read = (path: string) => readFileSync(path, "utf8");
 const liveBuildId = (w: World) => read(join(w.app, ".next/BUILD_ID"));
 const liveTree = (w: World) => treeSignature(join(w.app, ".next"));
+/** The live tree as it is before a deploy, minus the pages the server rendered itself: what its snapshot holds once slimmed. */
+const liveBuildOnly = (w: World) => treeSignature(join(w.app, ".next"), OLD_RUNTIME_PAGES);
+
+/**
+ * The snapshot a deploy leaves (CLAUDE.md §13.3.1): the build it displaced, byte for byte, without what the server added
+ * while it ran (pages the build never made, the optimised images, the compile cache).
+ */
+function expectSlimSnapshot(w: World, snapshot: string | undefined, buildOnly: string) {
+	expect(snapshot).toBeTruthy();
+	const dir = join(w.rollbacks, snapshot ?? "");
+	expect(
+		treeSignature(dir),
+		"everything the displaced build had is there, and nothing was changed in it",
+	).toBe(buildOnly);
+	for (const file of OLD_BUILD_PAGES)
+		expect(existsSync(join(dir, file)), `${file} was made by the build`).toBe(true);
+	for (const file of OLD_RUNTIME_PAGES) expect(existsSync(join(dir, file)), `${file} was not`).toBe(false);
+	for (const file of OLD_RUNTIME_CACHE)
+		expect(existsSync(join(dir, file)), `${file} is made again on demand`).toBe(false);
+	for (const file of OLD_KEPT_CACHE)
+		expect(existsSync(join(dir, file)), `${file} is the build's own`).toBe(true);
+	expect(existsSync(join(dir, "server/app/cz-czk")), "the directory a runtime market left empty").toBe(false);
+	expect(existsSync(join(dir, "server/app/sk-eur")), "the directory that holds the build's own files").toBe(
+		true,
+	);
+}
+
+/** A rollback puts back the tree as the displaced server left it: slimming is after the commit point, never before it. */
+function expectOldServerFilesBack(w: World) {
+	for (const file of [...OLD_BUILD_PAGES, ...OLD_RUNTIME_PAGES, ...OLD_RUNTIME_CACHE, ...OLD_KEPT_CACHE]) {
+		expect(existsSync(join(w.app, ".next", file)), file).toBe(true);
+	}
+}
+
+/** What the build that goes live is made of: its pages, and not the compile cache `next start` never reads. */
+function expectLiveWithoutCompileCache(w: World) {
+	expect(existsSync(join(w.app, ".next/server/app/index.html")), "the pages the build made are live").toBe(
+		true,
+	);
+	expect(existsSync(join(w.app, ".next/cache/turbopack")), "the compile cache is not installed").toBe(false);
+}
 
 function deployMeta(w: World): Record<string, string> {
 	const text = readFileSync(join(w.app, ".next/MAKY_DEPLOY_META"), "utf8");
@@ -247,7 +298,7 @@ describe("deploy-production.sh, bridge: nginx prepared", () => {
 		"builds beside the live site, moves customers onto a verified bridge, swaps, and moves them back",
 		async () => {
 			const w = await bridgeWorld();
-			const before = liveTree(w);
+			const buildOnly = liveBuildOnly(w);
 			// The live process starts out the way the real one was found: carrying what the shell that registered it held.
 			for (const name of POLLUTION) expect(w.processEnvNames(LIVE_APP)).toContain(name);
 			const run = await deployUnderLoad(w, ["-m", "fixture deploy"]);
@@ -340,7 +391,21 @@ describe("deploy-production.sh, bridge: nginx prepared", () => {
 			const [snapshot] = snapshots(w);
 			expect(snapshots(w)).toHaveLength(1);
 			expect(snapshot).toMatch(/^\.next\.rollback-0000000-old-build-\d{8}T\d{6}Z$/);
-			expect(treeSignature(join(w.rollbacks, snapshot ?? ""))).toBe(before);
+			// The displaced build is kept whole, minus what its server added while it ran; the build that went live
+			// carries no compile cache. Both are decided after the commit point and before the log is written.
+			expectSlimSnapshot(w, snapshot, buildOnly);
+			expectLiveWithoutCompileCache(w);
+			expect(plain(run.out)).toContain("the build that goes live is made without its compile cache");
+			expect(plain(run.out)).toMatch(
+				/slim-next-dir: .*\.next\.rollback-0000000-old-build-\S+\n.*never made +removed 6 files/,
+			);
+			inOrder(
+				plain(run.out).split("\n"),
+				/^=== verify — nginx and the public URL ===$/,
+				/^=== slim the snapshot ===$/,
+				/^=== record ===$/,
+				/^=== prune snapshots ===$/,
+			);
 
 			expect(w.pm2(LIVE_APP)).toBe("online");
 			expect(w.pm2(BRIDGE_APP)).toBe("absent");
@@ -352,6 +417,9 @@ describe("deploy-production.sh, bridge: nginx prepared", () => {
 			expect(log).toContain("downtime: 0s for customers");
 			expect(log).toMatch(/probes:   0 of \d+ probe requests failed/);
 			expect(log).toContain("note:     fixture deploy");
+			// What the next reader of the log needs to see a disk filling: the size of what was kept, and what is left.
+			expect(log).toMatch(/^snapshot: \.next\.rollback-0000000-old-build-\S+ \(\d+ MB\)$/m);
+			expect(log).toMatch(/^disk: +\d+ MB free$/m);
 		},
 		SLOW,
 	);
@@ -715,6 +783,7 @@ describe("deploy-production.sh, bridge: nginx prepared", () => {
 
 			expect(liveBuildId(w)).toBe("old-build");
 			expect(liveTree(w)).toBe(before);
+			expectOldServerFilesBack(w);
 			expect(snapshots(w)).toEqual([]);
 			expect(w.pm2(LIVE_APP)).toBe("online");
 			expect(w.pm2(BRIDGE_APP)).toBe("absent");
@@ -854,6 +923,8 @@ describe("deploy-production.sh, bridge: nginx prepared", () => {
 			expect(run.out).toContain("Flow: bridge");
 			expect(run.out).toContain("customers move to the bridge");
 			expect(run.out).toContain(`register ${LIVE_APP} afresh from a clean environment`);
+			expect(run.out).toContain("without cache/turbopack");
+			expect(run.out).toContain("slim the snapshot");
 			expect(count(run.lines, /^pnpm build /)).toBe(0);
 			expect(count(run.lines, NGINX_RELOAD)).toBe(0);
 			expect(count(run.lines, /^pm2 (stop|start|delete|restart)/)).toBe(0);
@@ -1284,7 +1355,7 @@ describe("deploy-production.sh, restart: nginx not prepared", () => {
 		"builds while the site serves, and the only gap is the swap",
 		async () => {
 			const w = await plainWorld();
-			const before = liveTree(w);
+			const buildOnly = liveBuildOnly(w);
 			w.setCtl("build-sleep", "3");
 			const run = await deployUnderLoad(w, ["-m", "fixture deploy"]);
 
@@ -1317,7 +1388,8 @@ describe("deploy-production.sh, restart: nginx not prepared", () => {
 
 			const [snapshot] = snapshots(w);
 			expect(snapshot).toMatch(/^\.next\.rollback-0000000-old-build-/);
-			expect(treeSignature(join(w.rollbacks, snapshot ?? ""))).toBe(before);
+			expectSlimSnapshot(w, snapshot, buildOnly);
+			expectLiveWithoutCompileCache(w);
 			expect(liveBuildId(w)).not.toBe("old-build");
 			expect(existsSync(w.build)).toBe(false);
 			expect(run.lines).toContain(`sudo rmdir -- ${w.build}`);
@@ -1356,6 +1428,7 @@ describe("deploy-production.sh, restart: nginx not prepared", () => {
 			expect(run.out).toContain("previous build is back up");
 			expect(liveBuildId(w)).toBe("old-build");
 			expect(liveTree(w)).toBe(before);
+			expectOldServerFilesBack(w);
 			expect(snapshots(w)).toEqual([]);
 			expect(w.pm2(LIVE_APP)).toBe("online");
 			expect(existsSync(w.build)).toBe(false);
@@ -1388,6 +1461,8 @@ describe("deploy-production.sh, restart: nginx not prepared", () => {
 			expect(run.code, run.out).toBe(0);
 			expect(run.out).toContain("Flow: restart");
 			expect(run.out).toContain(`register ${LIVE_APP} afresh from a clean environment`);
+			expect(run.out).toContain("leave the compile cache (cache/turbopack) out of the build");
+			expect(run.out).toContain("slim the snapshot");
 			expect(count(run.lines, /^pnpm build /)).toBe(0);
 			expect(count(run.lines, /^pm2 (stop|start|delete|restart)/)).toBe(0);
 			expectLiveSiteUntouched(w, before, run);
@@ -1419,7 +1494,7 @@ describe("deploy-production.sh, classic: the old flow stays as the fallback", ()
 		"still stops, builds in place and starts",
 		async () => {
 			const w = await plainWorld();
-			const before = liveTree(w);
+			const buildOnly = liveBuildOnly(w);
 			const run = await deployUnderLoad(w, ["--classic", "-m", "fixture deploy"]);
 
 			expect(run.code, run.out).toBe(0);
@@ -1430,7 +1505,8 @@ describe("deploy-production.sh, classic: the old flow stays as the fallback", ()
 			expect(liveBuildId(w)).not.toBe("old-build");
 			expect(deployMeta(w).build_id).toBe(liveBuildId(w));
 			const [snapshot] = snapshots(w);
-			expect(treeSignature(join(w.rollbacks, snapshot ?? ""))).toBe(before);
+			expectSlimSnapshot(w, snapshot, buildOnly);
+			expectLiveWithoutCompileCache(w);
 			expect(readFileSync(w.env.DEPLOY_LOG!, "utf8")).toContain("flow:     classic");
 		},
 		SLOW,
@@ -1448,8 +1524,135 @@ describe("deploy-production.sh, classic: the old flow stays as the fallback", ()
 			expect(run.out).toContain("previous build is back up");
 			expect(liveBuildId(w)).toBe("old-build");
 			expect(liveTree(w)).toBe(before);
+			expectOldServerFilesBack(w);
 			expect(snapshots(w)).toEqual([]);
 			expect(w.pm2(LIVE_APP)).toBe("online");
+		},
+		SLOW,
+	);
+});
+
+describe("deploy-production.sh, the disk: what a snapshot keeps and what a deploy says about it", () => {
+	it(
+		"keeps a snapshot it could not slim whole, leaves the new build live, and names the step in exit 75",
+		async () => {
+			const w = await bridgeWorld();
+			const before = liveTree(w);
+			// A slimming tool that fails, as one would on files it may not remove.
+			const failing = join(w.root, "slim-fails.mjs");
+			writeFileSync(
+				failing,
+				'console.error("slim-next-dir: 3 paths could not be removed"); process.exit(1);\n',
+			);
+			const run = await deployUnderLoad(w, ["-m", "x"], { SLIM_TOOL: failing });
+
+			expect(run.code, run.out).toBe(75);
+			expect(run.out).toContain("post-deploy step failed: snapshot slimming");
+			expect(run.out).toContain("POST_DEPLOY_FAILED:");
+			expect(plain(run.out)).toMatch(/snapshot slimming/);
+			// The deploy itself is done and verified: the new build is live, customers are back on it, nobody saw an error.
+			expect(liveBuildId(w)).not.toBe("old-build");
+			expect(w.pm2(LIVE_APP)).toBe("online");
+			expect(w.pm2(BRIDGE_APP)).toBe("absent");
+			expect(upstreamState(w)).toBe("canonical-only");
+			expect(run.customers.failures, JSON.stringify(run.customers.failures)).toEqual([]);
+			// The snapshot is what was moved there, byte for byte, and the steps after the failed one still ran.
+			const [snapshot] = snapshots(w);
+			expect(treeSignature(join(w.rollbacks, snapshot ?? ""))).toBe(before);
+			expect(existsSync(join(w.rollbacks, snapshot ?? "", OLD_RUNTIME_PAGES[0]!))).toBe(true);
+			expect(readFileSync(w.env.DEPLOY_LOG!, "utf8")).toContain("flow:     bridge");
+			expect(plain(run.out)).toContain("=== prune snapshots ===");
+		},
+		SLOW,
+	);
+
+	it(
+		"slims the snapshot of the deploy before it, so the box never holds two of them at full weight",
+		async () => {
+			const w = await plainWorld();
+			const first = await deployUnderLoad(w, ["-m", "first"]);
+			expect(first.code, first.out).toBe(0);
+			// What a server leaves in the build it serves: a page it rendered for a market the build never made.
+			const runtimePage = join(w.app, ".next/server/app/pl-pln/produkt-7.html");
+			mkdirSync(dirname(runtimePage), { recursive: true });
+			writeFileSync(runtimePage, "<html>rendered at run time</html>");
+			const buildPage = join(w.app, ".next/server/app/sk-eur.html");
+			const buildBytes = read(buildPage);
+
+			w.commitFiles({ "src/second.txt": "a second deploy\n" });
+			const second = await deployUnderLoad(w, ["-m", "second"]);
+
+			expect(second.code, second.out).toBe(0);
+			// KEEP_SNAPSHOTS is 2: both are there. The newer one was slimmed when it was made; the older one was already.
+			const names = snapshots(w);
+			expect(names).toHaveLength(2);
+			for (const name of names) {
+				expect(existsSync(join(w.rollbacks, name, "server/app/pl-pln")), name).toBe(false);
+				expect(existsSync(join(w.rollbacks, name, "server/app/cz-czk")), name).toBe(false);
+				expect(existsSync(join(w.rollbacks, name, "cache/turbopack")), name).toBe(false);
+			}
+			const newest = names.find((name) => !name.includes("old-build")) ?? "";
+			expect(read(join(w.rollbacks, newest, "server/app/sk-eur.html"))).toBe(buildBytes);
+		},
+		SLOW,
+	);
+
+	it(
+		"warns when the disk is getting low and deploys anyway, and says nothing when it is not",
+		async () => {
+			const w = await plainWorld();
+			const low = await w.run(["--dry-run"], { WARN_FREE_DISK_MB: "999999999" });
+			const roomy = await w.run(["--dry-run"], { WARN_FREE_DISK_MB: "1" });
+
+			expect(low.code, low.out).toBe(0);
+			expect(plain(low.out)).toMatch(/warn: only \d+ MB of disk free \(the deploy warns below 999999999\)/);
+			expect(plain(low.out)).toContain("CLAUDE.md §13.3.1");
+			expect(plain(low.out)).toContain("dry run");
+			expect(roomy.code, roomy.out).toBe(0);
+			expect(plain(roomy.out)).not.toMatch(/MB of disk free \(the deploy warns below/);
+		},
+		SLOW,
+	);
+
+	it(
+		"still refuses a disk below the floor, as before",
+		async () => {
+			const w = await plainWorld();
+			const before = liveTree(w);
+			const run = await deployUnderLoad(w, ["-m", "x"], { MIN_FREE_DISK_MB: "999999999" });
+
+			expect(run.code, run.out).toBe(1);
+			expect(plain(run.out)).toMatch(/only \d+ MB of disk free, need 999999999/);
+			expectLiveSiteUntouched(w, before, run);
+		},
+		SLOW,
+	);
+
+	it(
+		"does not start when the tool that slims the snapshot is missing",
+		async () => {
+			const w = await bridgeWorld();
+			const before = liveTree(w);
+			const run = await deployUnderLoad(w, ["-m", "x"], { SLIM_TOOL: join(w.root, "no-such-tool.mjs") });
+
+			expect(run.code, run.out).toBe(1);
+			expect(run.out).toContain("the snapshot of this deploy could not be slimmed");
+			expect(count(run.lines, /^pnpm build /)).toBe(0);
+			expectLiveSiteUntouched(w, before, run);
+		},
+		SLOW,
+	);
+
+	it(
+		"writes the size of the snapshot and the free disk into the deployment log",
+		async () => {
+			const w = await plainWorld();
+			const run = await deployUnderLoad(w, ["-m", "x"]);
+
+			expect(run.code, run.out).toBe(0);
+			const log = readFileSync(w.env.DEPLOY_LOG!, "utf8");
+			expect(log).toMatch(/^snapshot: \.next\.rollback-\S+ \(\d+ MB\)$/m);
+			expect(log).toMatch(/^disk: +\d+ MB free$/m);
 		},
 		SLOW,
 	);

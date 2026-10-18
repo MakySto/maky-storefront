@@ -40,6 +40,13 @@ export interface CatalogTree {
 	readonly byVehicleId: ReadonlyMap<string, CatalogNode>;
 	readonly childrenOf: ReadonlyMap<string, readonly CatalogNode[]>;
 	readonly applicationsOf: ReadonlyMap<string, readonly FitmentApplication[]>;
+	/**
+	 * Pages whose vehicle the fitment tree no longer holds, by `urlPath`, to the vehicle id they
+	 * describe. CFM keeps a retired page in the export (`state: "retired"`) with the id it had, so
+	 * this is how a link to a merged generation's page is recognised and sent to the one that
+	 * remained (`retired-page.ts`). Nothing is rendered from it.
+	 */
+	readonly orphanPages: ReadonlyMap<string, string>;
 	readonly makes: readonly CatalogNode[];
 	/** Vehicles the fitment tree knows that have no content page, and the reverse. */
 	readonly stats: {
@@ -130,6 +137,11 @@ export function buildCatalogTree(
 		else applicationsOf.set(application.generationId, [application]);
 	}
 
+	const orphanPages = new Map<string, string>();
+	for (const page of snapshot.pages) {
+		if (page.vehicleId && !byVehicleId.has(page.vehicleId)) orphanPages.set(page.urlPath, page.vehicleId);
+	}
+
 	const makes = [...byVehicleId.values()].filter((node) => node.kind === "make").sort(ancestorSort);
 	const joined = [...byVehicleId.values()].filter((node) => node.page !== null).length;
 
@@ -138,6 +150,7 @@ export function buildCatalogTree(
 		byVehicleId,
 		childrenOf,
 		applicationsOf,
+		orphanPages,
 		makes,
 		stats: {
 			nodes: byVehicleId.size,

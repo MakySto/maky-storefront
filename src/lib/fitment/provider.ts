@@ -27,6 +27,7 @@ import { createExpiringMemo, type ExpiringMemo } from "@/lib/cache/expiring-memo
 import { cache } from "react";
 
 import { transportChecksum } from "./dataset-hash";
+import { retiredIdCounts } from "./retired-ids";
 import { validateFitmentDataset } from "./validate";
 import { isSimulatedDataset, type FitmentDataset } from "./contract";
 import fixtureDataset from "./fixtures/dataset-v1.json";
@@ -472,6 +473,11 @@ export type FitmentRuntimeStatus = {
 	staleAfter: string | null;
 	stale: boolean;
 	counts: { makes: number; models: number; generations: number; applications: number } | null;
+	/**
+	 * How many entries of the dataset's `retiredVehicleIds` this process believes (and drops as wrong).
+	 * `null` without a dataset; all zeros for a dataset that carries no map.
+	 */
+	retiredIds: { moved: number; split: number; models: number; dropped: number } | null;
 	/** When this process took the dataset into use, what it weighed, and what taking it cost. */
 	takenIntoUseAt: string | null;
 	bytes: number | null;
@@ -522,6 +528,7 @@ export function fitmentRuntimeStatus(): FitmentRuntimeStatus {
 					applications: dataset.applications.length,
 				}
 			: null,
+		retiredIds: dataset ? retiredIdCounts(dataset) : null,
 		takenIntoUseAt: held?.taken ? new Date(held.taken.at).toISOString() : null,
 		bytes: held?.taken?.bytes ?? null,
 		loadMs: held?.taken?.ms ?? null,

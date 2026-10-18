@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { removeVehicle, setActiveVehicle } from "@/lib/garage/actions";
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import { type RoofType } from "@/lib/fitment/contract";
+import { ChooseGeneration } from "./choose-generation";
 
 export type GarageListVehicle = {
 	makeName: string | null;
@@ -27,6 +28,8 @@ export type GarageListVehicle = {
 	year: number;
 	roofType: RoofType | null;
 	unresolved: boolean;
+	/** The car's generation was merged by CFM and the year does not settle which remains. */
+	choose?: { makeId: string; modelId: string; options: string[] } | null;
 };
 
 export function GarageList({
@@ -76,7 +79,28 @@ export function GarageList({
 						 * words: "VOL / KSW / AGE / N / Tran / sport / er T5".
 						 */}
 						<div className="min-w-[12rem] flex-1">
-							{vehicle.unresolved ? (
+							{vehicle.unresolved && vehicle.choose && vehicle.makeName && vehicle.modelName ? (
+								// CFM merged this car's generation into others and its year does not say which.
+								// Make, model and year are kept; the one open question goes to the shopper.
+								<>
+									<p className="text-text-primary text-sm font-medium break-words">
+										{[vehicle.makeName, vehicle.modelName].join(" ")}
+									</p>
+									<p className="text-text-tertiary text-sm">{vehicle.year}</p>
+									<p className="text-fitment-unconfirmed text-sm">
+										{t("chooseGenerationHint", { options: vehicle.choose.options.join(" / ") })}
+									</p>
+									<ChooseGeneration
+										draft={{
+											makeId: vehicle.choose.makeId,
+											makeName: vehicle.makeName,
+											modelId: vehicle.choose.modelId,
+											modelName: vehicle.modelName,
+											year: vehicle.year,
+										}}
+									/>
+								</>
+							) : vehicle.unresolved ? (
 								// The ids no longer match the dataset. The car is kept and flagged
 								// rather than deleted or matched to something similar-looking.
 								<>
