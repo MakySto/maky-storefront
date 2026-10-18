@@ -173,6 +173,15 @@ what Bing was given. Under the old code the head was still stale at 360 s and at
 seconds after a request at 320 s had made the data cache refresh (the entry in front of it was rebuilt from the
 stale read): two caches, two rounds, and a crawler comes once.
 
+**Repeated with the cache handler of PR #50** (2026-10-18: the same app and variants on Next 16.3.6, built and
+started as production is, with `cache-handler.mjs` and `cacheMaxMemorySize` of 256 MB). A page stored while the
+category was empty and asked for again 10, 40, 100 and 320 s later came back `noindex, follow` every time under
+the old code, and again on a second and third request a few seconds after each. The variant without the data
+cache was `noindex` at +10 and +40 s and fresh from +100 s, the 30 s / 300 s entry `noindex` at +10 s and fresh
+from +40 s, and this change `index, follow` with one canonical from the first revisit at +10 s. The handler
+decides only where an entry is stored (memory, and disk only while the build runs); it does not decide when a stale
+read is handed out, so it neither removes the mechanism nor changes what the fix does.
+
 **What changed** in `categories/[slug]/page.tsx`:
 
 - The read behind the outcome is not cached a second time (`cache: "no-store"`); the entry is the one cache.
