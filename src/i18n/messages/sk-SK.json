@@ -786,6 +786,8 @@
 		"saveThis": "Uložiť do garáže",
 		"unresolved": "Toto vozidlo sa nedá priradiť k aktuálnym údajom. Vyberte ho prosím znova.",
 		"unresolvedAction": "Vybrať znova",
+		"chooseGenerationHint": "Generácie tohto modelu sme zjednotili a z roku nevieme určiť vašu. Vyberte ju prosím: {options}.",
+		"chooseGenerationAction": "Vybrať generáciu",
 		"notConfigured": "Garáž zatiaľ nie je spustená.",
 		"notConfiguredDetail": "Ukladanie vozidiel nie je v tomto prostredí nastavené.",
 		"unavailable": "Údaje o vozidlách sú momentálne nedostupné.",

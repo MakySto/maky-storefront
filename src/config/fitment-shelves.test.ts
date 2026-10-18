@@ -13,8 +13,14 @@ import { FITMENT_SHELVES, shelfFitmentKind } from "./fitment-shelves";
  * no car filter at all.
  */
 describe("the vehicle filter's shelves", () => {
-	it("covers the main roof-rack category and both makers' shelves", () => {
-		for (const slug of ["stresne-nosice", "thule-stresne-nosice", "nordrive-stresne-nosice"]) {
+	it("covers the main roof-rack category and the makers' shelves", () => {
+		for (const slug of [
+			"stresne-nosice",
+			"thule-stresne-nosice",
+			"nordrive-stresne-nosice",
+			"green-valley-stresne-nosice",
+			"menabo-stresne-nosice",
+		]) {
 			expect(shelfFitmentKind(slug)).toBe("roof-rack-set");
 			expect(categoryFitmentKind(slug)).toBe("roof-rack-set");
 		}
@@ -51,13 +57,15 @@ describe("the vehicle filter's shelves", () => {
 	});
 
 	it("adds no navigation entry — scope is not registration", () => {
-		// The two maker shelves have no menu slot. Their root URL is not this file's doing: since
+		// The maker shelves have no menu slot. Their root URL is not this file's doing: since
 		// 2026-10-06 every category Saleor holds has one, and it comes from the same set as the rest.
 		expect(isCategorySlug("thule-stresne-nosice")).toBe(true);
 		expect(isCategorySlug("nordrive-stresne-nosice")).toBe(true);
 		expect(CATEGORY_SLUGS.has("thule-stresne-nosice")).toBe(true);
 		expect(STOREFRONT_CATEGORIES.some((category) => category.slug.includes("thule"))).toBe(false);
 		expect(STOREFRONT_CATEGORIES.some((category) => category.slug.includes("nordrive"))).toBe(false);
+		expect(STOREFRONT_CATEGORIES.some((category) => category.slug.includes("green-valley"))).toBe(false);
+		expect(STOREFRONT_CATEGORIES.some((category) => category.slug.includes("menabo"))).toBe(false);
 	});
 
 	it("keeps the registry free of scope", () => {

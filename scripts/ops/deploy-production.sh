@@ -58,6 +58,9 @@ LOCK_FILE="${LOCK_FILE:-/run/lock/maky-storefront-deploy.lock}"
 KEEP_SNAPSHOTS="${KEEP_SNAPSHOTS:-2}"
 MIN_FREE_MEM_MB="${MIN_FREE_MEM_MB:-10240}"
 MIN_FREE_DISK_MB="${MIN_FREE_DISK_MB:-10240}"
+# Between the two the deploy goes ahead and says so: the disk is the thing that took production down on this box
+# once, and a deploy is the one moment somebody reads this output.
+WARN_FREE_DISK_MB="${WARN_FREE_DISK_MB:-20480}"
 READY_TIMEOUT_S="${READY_TIMEOUT_S:-120}"
 RESTORE_TIMEOUT_S="${RESTORE_TIMEOUT_S:-60}"
 MIN_ASSET_BYTES="${MIN_ASSET_BYTES:-1000}"
@@ -77,6 +80,7 @@ CANONICAL_ADDR="${CANONICAL_ADDR:-${LOCAL_URL#*://}}"
 BRIDGE_ADDR="${BRIDGE_ADDR:-${BRIDGE_URL#*://}}"
 PROBE_ADDR="${PROBE_ADDR:-127.0.0.1:3199}"      # nginx's loopback listener, same upstream as the public one
 NGINX_TOOL="${NGINX_TOOL:-$(dirname "${BASH_SOURCE[0]}")/nginx-upstream.sh}"
+SLIM_TOOL="${SLIM_TOOL:-$(dirname "${BASH_SOURCE[0]}")/slim-next-dir.mjs}"
 DRAIN_TIMEOUT_S="${DRAIN_TIMEOUT_S:-20}"
 PROBE_INTERVAL_S="${PROBE_INTERVAL_S:-0.5}"
 PROBE_MAX_ITERATIONS="${PROBE_MAX_ITERATIONS:-2400}"   # a probe nobody stopped ends by itself
@@ -540,7 +544,7 @@ preflight() {
 	# claim it passed — which is exactly what `command -v xmllint && …` did to the
 	# sitemap validity check for as long as it existed.
 	local cmd
-	for cmd in pnpm pm2 curl git flock awk find sed stat python3; do
+	for cmd in pnpm pm2 curl git flock awk find sed stat python3 node du; do
 		command -v "$cmd" >/dev/null || die "$cmd not found in PATH — a deploy check depends on it"
 	done
 	pm2 describe "$PM2_APP" >/dev/null 2>&1 || die "PM2 knows no app called '$PM2_APP'"
@@ -585,6 +589,10 @@ preflight() {
 	info "memory available: ${AVAIL_MEM_MB} MB   disk free: ${avail_disk} MB"
 	(( AVAIL_MEM_MB >= MIN_FREE_MEM_MB )) || die "only ${AVAIL_MEM_MB} MB of memory available, need ${MIN_FREE_MEM_MB} (stop the agents, or override MIN_FREE_MEM_MB for this run)"
 	(( avail_disk >= MIN_FREE_DISK_MB )) || die "only ${avail_disk} MB of disk free, need ${MIN_FREE_DISK_MB}"
+	if (( avail_disk < WARN_FREE_DISK_MB )); then
+		warn "only ${avail_disk} MB of disk free (the deploy warns below ${WARN_FREE_DISK_MB}): see where it went with 'du -sh $ROLLBACK_DIR/.next.rollback-* $APP_DIR/.next'; CLAUDE.md §13.3.1"
+	fi
+	[[ -f "$SLIM_TOOL" ]] || die "$SLIM_TOOL is missing — the snapshot of this deploy could not be slimmed"
 
 	if [[ -n "$(git status --porcelain)" ]]; then
 		git status --short | head -20 >&2
@@ -1307,9 +1315,10 @@ check_market_language() {
 
 write_deploy_log() {
 	step "record"
-	local snap_name="none"
+	local snap_name="none" snap_mb=""
 	if [[ -n "$SNAPSHOT" ]]; then
 		snap_name=$(basename "$SNAPSHOT")
+		snap_mb=$(du -sm -- "$SNAPSHOT" 2>/dev/null | cut -f1 || true)
 	fi
 	{
 		echo ""
@@ -1318,7 +1327,8 @@ write_deploy_log() {
 		echo "BUILD_ID: $(cat "$APP_DIR/.next/BUILD_ID")"
 		echo "built:    $(stat -c %y "$APP_DIR/.next/BUILD_ID")"
 		echo "previous: ${PREV_BUILD_ID} from ${PREV_SHA}"
-		echo "snapshot: ${snap_name}"
+		echo "snapshot: ${snap_name}${snap_mb:+ (${snap_mb} MB)}"
+		echo "disk:     $(df -Pm "$APP_DIR" | awk 'NR==2 {print $4}') MB free"
 		echo "flow:     ${FLOW}"
 		if [[ "$FLOW" == "bridge" ]]; then
 			echo "downtime: 0s for customers ($PM2_APP itself was swapped in ${DOWNTIME}s, behind the bridge)"
@@ -1330,6 +1340,20 @@ write_deploy_log() {
 		echo "note:     ${NOTE:-<none>}"
 	} | sudo tee -a "$DEPLOY_LOG" >/dev/null || return 1
 	info "appended to $DEPLOY_LOG"
+}
+
+# The snapshot is the artifact this run displaced plus whatever the server put into it while it ran: pages it
+# rendered itself, the optimised images. None of that is needed to put it back, and before the page cache was
+# kept in memory (cache-handler.mjs) it was most of the bytes: 16 GB beside a 130 MB build after three days.
+# Runs after the commit point only, so a deploy that rolls back restores the snapshot exactly as it was moved.
+# scripts/ops/slim-next-dir.mjs says what it removes and why; it refuses anything that does not look like a snapshot.
+slim_snapshot() {
+	step "slim the snapshot"
+	if [[ -z "$SNAPSHOT" || ! -d "$SNAPSHOT" ]]; then
+		info "this run made no snapshot"
+		return 0
+	fi
+	node "$SLIM_TOOL" "$SNAPSHOT" --apply
 }
 
 prune() {
@@ -1646,12 +1670,25 @@ build_aside() {
 	audit_relocatable || die "the build cannot be moved into $APP_DIR safely (CLAUDE.md §13.8)"
 }
 
+# `next build` leaves its own bookkeeping in .next/cache/turbopack, and `next start` never reads it. It would be
+# installed beside the build and then carried into every snapshot (141 MB on a build of this repository in a
+# sandbox, 2026-10-12). What goes live is made without it, and the gate that runs on the live process after the
+# install is what proves the build serves without it.
+drop_compile_cache() {
+	local dir="$1" mb
+	[[ -d "$dir/cache/turbopack" ]] || return 0
+	mb=$(du -sm -- "$dir/cache/turbopack" | cut -f1)
+	rm -rf -- "$dir/cache/turbopack" || die "could not remove $dir/cache/turbopack"
+	info "the build that goes live is made without its compile cache (cache/turbopack, ${mb} MB): next start does not read it"
+}
+
 # The bridge writes into the .next it serves (ISR shells, the image cache). What goes into $APP_DIR is a
 # copy taken before the bridge existed, so the live process starts from the build exactly as it was made.
 make_pristine() {
 	local pristine="$BUILD_DIR/.next.pristine"
 	step "clean copy for $APP_DIR"
 	cp -a -- "$BUILD_DIR/.next" "$pristine" || die "could not copy the finished build"
+	drop_compile_cache "$pristine"
 	NEW_NEXT="$pristine"
 	info "kept a clean copy of the build"
 }
@@ -2094,6 +2131,7 @@ post_commit_steps() {
 	soft "market state"         check_market_state
 	soft "live categories"      check_categories_loaded "$APP_DIR" "$PM2_APP" "$LOCAL_URL" market_log_since_boot
 	soft "market language"      check_market_language
+	soft "snapshot slimming"    slim_snapshot
 	soft "deployment log"       write_deploy_log
 	soft "snapshot pruning"     prune
 }
@@ -2102,6 +2140,7 @@ run_classic() {
 	probe_start "$LOCAL_URL$SMOKE_PATH"
 	snapshot
 	build
+	drop_compile_cache "$APP_DIR/.next"
 	write_meta
 	start
 	gate_local
@@ -2113,6 +2152,7 @@ run_restart() {
 	prepare_scratch
 	build_aside
 	write_meta_in "$BUILD_DIR"
+	drop_compile_cache "$BUILD_DIR/.next"
 	NEW_NEXT="$BUILD_DIR/.next"
 	probe_start "$LOCAL_URL$SMOKE_PATH"
 	swap_in_new_build
@@ -2186,10 +2226,12 @@ print_plan() {
 			  pm2 stop $PM2_APP
 			  sudo mv -T $APP_DIR/.next $(snapshot_name)
 			  pnpm build
+			  leave the compile cache (cache/turbopack) out of the build that goes live
 			  write $APP_DIR/.next/MAKY_DEPLOY_META
 			  register $PM2_APP afresh from a clean environment (pm2 delete, then pm2 start npm ...), say which variable names it has
 			  gate (rollback if it fails):  homepage/PLP/category/PDP + every referenced CSS/JS, on disk and over local HTTP
 			  verify (warn only):           nginx via --resolve, then $PUBLIC_URL
+			  slim the snapshot (pages the build never made, the image cache; scripts/ops/slim-next-dir.mjs)
 			  append to $DEPLOY_LOG
 			  keep the newest $KEEP_SNAPSHOTS snapshots (plus any with a <snapshot>.keep sidecar)
 			Customers get 502 from the stop until the start answers: 3 to 4 minutes.
@@ -2202,14 +2244,14 @@ print_plan() {
 			Would, in this order:
 			  copy secrets from AWS SSM into .env (see "secrets" above; warn-only)
 			  export HEAD and copy node_modules into $BUILD_DIR; build there (nice $BUILD_NICE) while $PM2_APP keeps serving
-			  write $BUILD_DIR/.next/MAKY_DEPLOY_META
+			  write $BUILD_DIR/.next/MAKY_DEPLOY_META, leave the compile cache (cache/turbopack) out of the build
 			  pm2 stop $PM2_APP                                  <- the gap starts
 			  sudo mv -T $APP_DIR/.next $(snapshot_name)
 			  mv the finished build into $APP_DIR/.next
 			  register $PM2_APP afresh from a clean environment   <- the gap ends when it answers
 			  gate (rollback if it fails):  homepage/PLP/category/PDP + every referenced CSS/JS, on disk and over local HTTP
 			  hand the GraphQL types the build generated to $APP_DIR/src (the next preflight imports them)
-			  verify (warn only), append to $DEPLOY_LOG, prune snapshots
+			  verify (warn only), slim the snapshot (scripts/ops/slim-next-dir.mjs), append to $DEPLOY_LOG, prune snapshots
 			A probe request every ${PROBE_INTERVAL_S}s from just before the stop counts what customers saw.
 			Before the stop a failure changes nothing; after it, the snapshot goes back and PM2 restarts.
 			EOF
@@ -2219,7 +2261,7 @@ print_plan() {
 			Would, in this order:
 			  copy secrets from AWS SSM into .env (see "secrets" above; warn-only)
 			  export HEAD and copy node_modules into $BUILD_DIR; build there (nice $BUILD_NICE) while $PM2_APP keeps serving
-			  write $BUILD_DIR/.next/MAKY_DEPLOY_META, keep a clean copy of the build
+			  write $BUILD_DIR/.next/MAKY_DEPLOY_META, keep a clean copy of the build (without cache/turbopack: next start does not read it)
 			  start the bridge ($BRIDGE_APP, port $BRIDGE_PORT, clean environment), say which variable names it has, and run the whole gate on it
 			  read back what the bridge printed at boot (the category list from Saleor, when this build reads it, up to ${CATEGORIES_WAIT_S}s)
 			  and check that it serves the catalogue release $PM2_APP serves, from /api/catalog/status (up to ${CATALOG_PARITY_WAIT_S}s)
@@ -2232,7 +2274,7 @@ print_plan() {
 			  keep customers on the bridge until $PM2_APP serves the bridge's catalogue release (up to ${CATALOG_PARITY_WAIT_S}s, warn only)
 			  $NGINX_TOOL set canonical-only                     <- customers move back
 			  stop the bridge, remove $BUILD_DIR
-			  verify (warn only), append to $DEPLOY_LOG, prune snapshots
+			  verify (warn only), slim the snapshot (scripts/ops/slim-next-dir.mjs), append to $DEPLOY_LOG, prune snapshots
 			A probe request every ${PROBE_INTERVAL_S}s through nginx counts what customers saw.
 			Until nginx points at the bridge a failure changes nothing. After it, a failure restores the snapshot, starts
 			$PM2_APP on its old build, and only then moves customers back. After the commit point nothing rolls back.

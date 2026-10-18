@@ -39,6 +39,19 @@ import { categoryRoutePath, isCategorySlug } from "./categories";
  * the home page went to `/de/autochladnicky`: one category, two public addresses. The row is checked
  * against what Saleor holds once CFM has written the translations, not against the pack.
  *
+ * ## Thule roof racks (2026-10-11)
+ *
+ * `thule-stresne-nosice` (Category:6, a child of the root) is the shelf of every Thule set. CFM writes the Thule
+ * sets to the foreign markets together with the category's translations, whose slug is `thule-<localized root>`
+ * in each language: the rule Nordrive's row follows too. Without a row, a link built from the translated slug
+ * Saleor returns goes to `/de/categories/thule-dachtraeger` (an unmapped slug keeps its `/categories/` form)
+ * while the base slug answers at `/de/thule-stresne-nosice`: one category, two public addresses. The row is
+ * checked against what Saleor holds once CFM has written them.
+ *
+ * The first run covered the nine markets that read the eight languages (`THULE_CATEGORY_L10N_MANIFEST`, CFM
+ * 3348ecc6). The USA and Canada followed in a second run (CFM d221edc9) with the English translation: `EN` for
+ * `us-usd` and `EN_CA` for `ca-cad`, both with the slug `thule-roof-racks`, so one `en` segment serves both.
+ *
  * ## What this does NOT move
  *
  * Product slugs, model and generation slugs, and the three RELEASE-4 pages each foreign
@@ -117,6 +130,16 @@ export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 		baseSlug: "autochladnicky",
 		saleorId: "Q2F0ZWdvcnk6MTA=",
 		segments: CAR_FRIDGE_SEGMENTS,
+	},
+	{
+		baseSlug: "thule-stresne-nosice",
+		saleorId: "Q2F0ZWdvcnk6Ng==",
+		segments: Object.fromEntries(
+			CATALOG_LANGUAGES.map((language) => [
+				language,
+				language === "sk" ? "thule-stresne-nosice" : `thule-${ROOF_RACK_SEGMENTS[language]}`,
+			]),
+		) as Record<CatalogLanguage, string>,
 	},
 ];
 
