@@ -12,6 +12,7 @@ import { __forgetRootContext, hasRootContext } from "./lib/async/detached";
 import { datasetHashFromText } from "./lib/fitment/dataset-hash";
 import fixtureDataset from "./lib/fitment/fixtures/dataset-v1.json";
 import { __resetFitmentMemo } from "./lib/fitment/provider";
+import { stopMemoryLog } from "./lib/memory-log";
 
 /**
  * The boot line for the § 20a online function.
@@ -80,6 +81,7 @@ afterEach(() => {
 	prewarmLiveCategories.mockClear();
 	__resetFitmentMemo();
 	__forgetRootContext();
+	stopMemoryLog();
 });
 
 describe("the withdrawal configuration read-back", () => {
@@ -264,5 +266,48 @@ describe("the live category list at boot", () => {
 		await register();
 
 		expect(prewarmLiveCategories).not.toHaveBeenCalled();
+	});
+});
+
+/**
+ * Owner-side question of 2026-10-18: what is `next-server` made of when it holds 5 GB for hours?
+ * `atop` cannot say, so the process says it itself, once a minute, in the out log it already writes.
+ * Only a production server does: a build, a dev session and a test have no use for it.
+ */
+describe("the memory log at boot", () => {
+	const memoryLines = (c: Captured): string[] => c.log.filter((line) => line.startsWith("[memory] "));
+
+	it("starts on a production server, with its first line at once", async () => {
+		const captured = await boot({ ...SECRETS, NODE_ENV: "production" });
+
+		expect(memoryLines(captured)).toHaveLength(1);
+		expect(memoryLines(captured)[0]).toMatch(/^\[memory\] t=\S+ up=\d+s rss=\d+MB heapUsed=\d+MB /);
+	});
+
+	it("is not started during next build, outside production or in the edge runtime", async () => {
+		expect(
+			memoryLines(await boot({ ...SECRETS, NODE_ENV: "production", NEXT_PHASE: "phase-production-build" })),
+		).toEqual([]);
+		vi.restoreAllMocks();
+		expect(memoryLines(await boot({ ...SECRETS, NODE_ENV: "development" }))).toEqual([]);
+		vi.restoreAllMocks();
+
+		vi.stubEnv("NODE_ENV", "production");
+		vi.stubEnv("NEXT_RUNTIME", "edge");
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		await register();
+		expect(log.mock.calls.filter(([line]) => String(line).startsWith("[memory] "))).toEqual([]);
+	});
+
+	it("is switched off by MAKY_MEMORY_LOG_SECONDS=0 and by nothing else", async () => {
+		expect(
+			memoryLines(await boot({ ...SECRETS, NODE_ENV: "production", MAKY_MEMORY_LOG_SECONDS: "0" })),
+		).toEqual([]);
+		vi.restoreAllMocks();
+		stopMemoryLog();
+
+		expect(
+			memoryLines(await boot({ ...SECRETS, NODE_ENV: "production", MAKY_MEMORY_LOG_SECONDS: "off" })),
+		).toHaveLength(1);
 	});
 });

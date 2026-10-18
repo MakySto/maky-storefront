@@ -922,6 +922,12 @@ differ and are accepted:
   not act on a single reading between 3 and 5 GB, or on an excursion that goes back by itself. First aid for a heap
   OOM is a larger `--max-old-space-size` in the environment the process is registered with (`deploy-production.sh`
   starts it from a clean one, §13.2.1; `.env` is read too late for V8); then measure what filled it.
+  The process measures itself too: once a minute a production server prints one `[memory]` line to the PM2 out log
+  (`src/lib/memory-log.ts`): `rss`, `heapUsed`, `heapTotal`, `heapLimit`, `external` and `arrayBuffers` in MB, with its own
+  time (`grep '^\[memory\]' ~/.pm2/logs/maky-storefront-out.log | tail`). A plateau of held garbage shows as `heapUsed`
+  falling with `rss` in one minute, live data as `heapUsed` staying high after `rss` has fallen, native memory as `rss`
+  well above `heapTotal` plus `external`. `MAKY_MEMORY_LOG_SECONDS` sets the interval (default 60, held between 10 and
+  3 600) and `0` turns it off; a restart is enough.
 
 ### 13.4 When the build fails
 
