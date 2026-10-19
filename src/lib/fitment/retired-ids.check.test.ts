@@ -17,7 +17,10 @@ import { validateFitmentDataset } from "./validate";
  *   1. the new dataset is valid and carries the map;
  *   2. the storefront believes every entry of it (nothing dropped as wrong);
  *   3. no vehicle id the live dataset holds disappears unexplained — a shopper's saved car can always
- *      be led to a live generation (or to a choice between them), never to "select again".
+ *      be led to a live generation (or to a choice between them), never to "select again";
+ *   4. no set the live dataset offers for a merged-away generation is lost: it is also offered, in the
+ *      new dataset, for the generation the map leads to (one the new dataset carries nowhere at all is
+ *      reported apart in the log, but fails too: the shopper loses it either way).
  */
 const OLD_PATH = process.env.M_DELTA_OLD?.trim();
 const NEW_PATH = process.env.M_DELTA_NEW?.trim();
@@ -86,5 +89,42 @@ describe.skipIf(!available)("the map of retired vehicle ids in the new dataset",
 			}
 		}
 		expect(wrong).toEqual([]);
+	});
+
+	it("keeps every set that hung on a merged-away generation on the generation it moved to", () => {
+		const positive = (dataset: FitmentDataset) => dataset.applications.filter((a) => !a.negative);
+		const setsOf = (dataset: FitmentDataset) => {
+			const byGeneration = new Map<string, Set<string>>();
+			for (const application of positive(dataset)) {
+				const sets = byGeneration.get(application.generationId) ?? new Set<string>();
+				for (const product of application.products) sets.add(product.saleorProductId);
+				byGeneration.set(application.generationId, sets);
+			}
+			return byGeneration;
+		};
+		const before = setsOf(oldDataset);
+		const after = setsOf(newDataset);
+		const offeredAnywhere = new Set(
+			positive(newDataset).flatMap((a) => a.products.map((p) => p.saleorProductId)),
+		);
+		const lost: string[] = [];
+		let nowhere = 0;
+		for (const old of oldDataset.generations) {
+			const fate = generationFate(newDataset, old.id);
+			if (fate.kind === "live" || fate.kind === "gone") continue;
+			const targets = fate.kind === "moved" ? [fate.to] : fate.candidates;
+			for (const product of before.get(old.id) ?? []) {
+				if (targets.some((target) => after.get(target)?.has(product))) continue;
+				lost.push(`${old.id} ${product}`);
+				if (!offeredAnywhere.has(product)) nowhere += 1;
+			}
+		}
+		console.log(
+			"sets lost in the merge:",
+			lost.length,
+			"of which offered nowhere in the new dataset:",
+			nowhere,
+		);
+		expect(lost).toEqual([]);
 	});
 });
