@@ -124,6 +124,18 @@ export async function register(): Promise<void> {
 		);
 	}
 
+	// What this process is made of, once a minute, in the same out log as the lines above — the one
+	// line here that is a sample and not a read-back. `atop` can say how big `next-server` is and
+	// never what it is made of; `[memory]` against its `rss` says whether a plateau is held garbage,
+	// live data or native memory (src/lib/memory-log.ts). Not during `next build`, whose memory is
+	// not the server's; not outside a production server, where it would only add noise to a dev
+	// session or a test; off with MAKY_MEMORY_LOG_SECONDS=0.
+	if (!building && process.env.NODE_ENV === "production") {
+		const { memoryLogSeconds, startMemoryLog } = await import("./lib/memory-log");
+		const seconds = memoryLogSeconds(process.env.MAKY_MEMORY_LOG_SECONDS);
+		if (seconds > 0) startMemoryLog(seconds);
+	}
+
 	// The category slugs the proxy tells a category from a product with: the build's floor plus
 	// whatever Saleor holds beyond it, loaded before the first request — for a moment at most, so a
 	// Saleor that is slow cannot hold the start — instead of by it. Its `[live-categories]
