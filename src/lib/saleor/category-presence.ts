@@ -22,11 +22,11 @@ import {
  * The category page finds its hreflang cluster and its market-switcher targets by asking which
  * other live markets carry the same category. It used to run the full category read once per
  * live market — `ProductListByCategory` with a product card in it, twelve of them at once — and
- * to remember an empty or untranslated market for seconds (PR 46, so that a head never outlives
- * its stock). The second half multiplied the first: a category that is empty in eight markets
- * was read eight times, heavy, every few seconds for as long as a crawler walked its pages, and
- * the twelve slots of the page bundle's request queue (`maxConcurrent` in `graphql.ts`) are the
- * ones the header's own deadline-bound reads wait in.
+ * since PR 46 an empty or untranslated market is remembered for seconds only (so that a head never
+ * outlives its stock), which for a category that is empty in eight markets meant up to eight heavy
+ * reads every few seconds while its pages were requested. For a question with a one-line answer
+ * that is a lot to put through the page bundle's request queue, whose twelve slots
+ * (`maxConcurrent` in `graphql.ts`) the header's own deadline-bound reads share.
  *
  * This asks once, with one alias per live market, for exactly the fields the two conditions read —
  * the exact-locale boundary and the product count — and puts the answer through that same
