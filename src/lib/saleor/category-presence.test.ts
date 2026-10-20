@@ -69,13 +69,18 @@ function execute(source: string, variables: Record<string, unknown>, catalogue: 
 			raw = (source.translations as Record<string, Translation> | undefined)?.[
 				String(arg(field, "languageCode"))
 			];
-		else if (name === "products")
+		else if (name === "products") {
+			const count = (source.counts as Record<string, number>)[String(arg(field, "channel"))] ?? 0;
+			const first = Number(arg(field, "first") ?? 0);
 			raw = {
-				totalCount: (source.counts as Record<string, number>)[String(arg(field, "channel"))] ?? 0,
-				edges: [],
+				totalCount: count,
+				// `first: n` returns at most n products, as Saleor's connection does.
+				edges: Array.from({ length: Math.min(count, first) }, (_, index) => ({
+					node: { id: `product-${index}` },
+				})),
 				pageInfo: { hasNextPage: false, hasPreviousPage: false, startCursor: null, endCursor: null },
 			};
-		else raw = source[name] ?? null;
+		} else raw = source[name] ?? null;
 		return field.selectionSet ? project(raw ?? null, field.selectionSet) : raw ?? null;
 	};
 	const project = (raw: unknown, set: SelectionSetNode): unknown => {
@@ -272,11 +277,12 @@ describe("one request, by slug", () => {
 		expect(query).toMatch(/^query CategoryMarketPresence\(\$slug: String!\)/);
 		for (const [index, market] of MARKETS.entries()) {
 			expect(query).toContain(`${market}: category(slug: $slug)`);
-			expect(query).toContain(`products(channel: "${CHANNELS[index]}") { totalCount }`);
+			expect(query).toContain(`products(channel: "${CHANNELS[index]}", first: 1) { edges { node { id } } }`);
 		}
-		// Asked by the base slug: no translated-slug retry, no product card, no listing.
+		// Asked by the base slug: no translated-slug retry, no product card, no listing, no count.
 		expect(query).not.toContain("slugLanguageCode");
-		expect(query).not.toContain("edges");
+		expect(query).not.toContain("totalCount");
+		expect(query).not.toContain("pageInfo");
 		expect(options).toMatchObject({ variables: { slug: SLUG }, retry: false, cache: "no-store" });
 		expect(options.revalidate).toBeUndefined();
 		expect(options.signal).toBeInstanceOf(AbortSignal);

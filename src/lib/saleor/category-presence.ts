@@ -28,10 +28,10 @@ import {
  * that is a lot to put through the page bundle's request queue, whose twelve slots
  * (`maxConcurrent` in `graphql.ts`) the header's own deadline-bound reads share.
  *
- * This asks once, with one alias per live market, for exactly the fields the two conditions read —
- * the exact-locale boundary and the product count — and puts the answer through that same
- * boundary (`resolveExactLocaleCategory`), so it cannot disagree with the page's own lookup, nor
- * with `fetchStockedCategorySlugs`, which the sitemap and the menus use for the same question.
+ * This asks once, with one alias per live market, for exactly what the two conditions read — the
+ * exact-locale boundary and whether the market holds a product — and puts the answer through that
+ * same boundary (`resolveExactLocaleCategory`), so it cannot disagree with the page's own lookup,
+ * nor with `fetchStockedCategorySlugs`, which the sitemap and the menus use for the same question.
  *
  * - **Identity is the slug.** Categories are global in Saleor; only their products are per
  *   channel. `category(slug:)` therefore names one category in every alias, and the aliases differ
@@ -39,6 +39,12 @@ import {
  *   retry: the slug here is the base slug the caller already holds.
  * - **A listed market is translated AND stocked.** The two conditions under which the page there is
  *   indexable too. The own market is not decided here — the page knows it from its own fresh read.
+ * - **Whether, not how many.** A market holds a product when the first one comes back
+ *   (`products(channel:, first: 1)`); the count is never asked for. The first version of this
+ *   document asked for the count, and measured from the production server on 2026-10-20 it took
+ *   1.7 s for `stresne-nosice` (18 305 to 24 944 products per market) against the 1.5 s deadline
+ *   below, and 2.9 s with six such questions at once, where `autochladnicky` (6 to 7 products per
+ *   market) took 0.07 s.
  * - **A fault is the whole answer.** HTTP, network, GraphQL errors — partial ones included — or an
  *   alias missing from the response: `upstream-error`, remembered for seconds (`cachedOutcome`),
  *   logged under the scope `category-presence`. A market that could not be asked is never reported
@@ -67,7 +73,7 @@ export type PresenceCategory = {
 	name?: string | null;
 	slug?: string | null;
 	translation?: PresenceTranslation | null;
-	products?: { totalCount?: number | null } | null;
+	products?: { edges?: readonly unknown[] | null } | null;
 };
 
 type PresenceData = Record<string, PresenceCategory | null>;
@@ -78,7 +84,7 @@ type PresenceData = Record<string, PresenceCategory | null>;
  */
 function selectionFor(market: string): string {
 	const { saleorSlug, locale } = CHANNEL_MAP[market]!;
-	const products = `products(channel: ${JSON.stringify(saleorSlug)}) { totalCount }`;
+	const products = `products(channel: ${JSON.stringify(saleorSlug)}, first: 1) { edges { node { id } } }`;
 	if (isSourceLocale(locale)) return `name slug ${products}`;
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 	return `name slug translation(languageCode: ${lang}) { name slug description seoTitle seoDescription } ${products}`;
@@ -115,7 +121,7 @@ export function readCategoryPresence(
 			};
 		}
 		const category = resolveExactLocaleCategory(data[market], CHANNEL_MAP[market]!.locale);
-		if (category && (category.products?.totalCount ?? 0) > 0) listed.push(market);
+		if (category && (category.products?.edges?.length ?? 0) > 0) listed.push(market);
 	}
 	return { status: "found", resource: listed };
 }
