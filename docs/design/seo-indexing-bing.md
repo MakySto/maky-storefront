@@ -258,9 +258,9 @@ lines (the 25 hours of PR 54 alone had none, so that quiet day is not a baseline
   spent waiting for a Saleor slot in this process.
 
 **Why two requests** (measured on the production server on 2026-10-20, read-only, 32 categories, 12 live markets,
-three runs that day). What Saleor spends on `products(channel:, …)` inside a category depends on what the category
-holds in that channel, and the questions that could answer "does this market hold a product" pull in opposite
-directions:
+three runs that day to choose the shape and a fourth for the code as written). What Saleor spends on
+`products(channel:, …)` inside a category depends on what the category holds in that channel, and the questions that
+could answer "does this market hold a product" pull in opposite directions:
 
 - **The count** (`totalCount`) is cheap for a small category and costs about 140 ms per market for `stresne-nosice`
   (about 25 000 products in a channel): all twelve markets in one request took 1.7 s in the first run (10:34 UTC)
@@ -294,6 +294,20 @@ whatever the category holds, where a count in many markets of a large category h
 repeats of `stresne-nosice` took 696 ms (230, 696, 231, 228, 230) and one of the probe shape 692 ms, at the same
 position, which suggests a pause on the Saleor side and not the shape's own cost.
 
+**Fourth run** (20 Oct, 13:41 UTC, the production server, read-only, 32 categories): the two documents exactly as
+`category-presence.ts` builds them for the twelve live markets (1 418 and 1 173 characters, sha256 `b371b11e…` and
+`b244cb18…`), each category asked three times, alone. The two requests listed the same markets as a read of the
+product count in every market in 32 of 32 categories. The slowest category, by the median of its three passes, took
+228 ms (`stresne-nosice`), the medians added up to 2 001 ms, no category took 600 ms or more, and the slowest single
+pass took 230 ms; the first request took 20 to 40 ms, the second 26 to 208 ms. `stresne-nosice`, `default-category`
+and `autochladnicky` (the three slowest) were asked ten times each, one second apart: the slowest of those repeats
+took 292 ms (`stresne-nosice`). Asked at once, each category on its own connection with its two requests one after the
+other, the six slowest took at most 360 ms and the twelve slowest, which is twelve requests in flight (as many as the
+queue in `graphql.ts` has slots), at most 418 ms, against the page's deadline of 1 500 ms. For comparison, the request
+for the first product in all twelve markets, which the page never sends, still took 897 to 1 223 ms for `nosice-lyzi`,
+`autodoplnky` and `default-category`, categories that hold a product in at most one market: the case the first request
+keeps out of the second.
+
 **What this does not cover.** A category translated in many markets and stocked in few puts the empty markets into
 the second request, 80 to 100 ms each; with every market translated and one stocked that is the 1.1 s above, inside
 the deadline and, past it, a page that names only itself. None of the 32 categories has that shape today. The list
@@ -305,7 +319,10 @@ change, to be made if the failures there continue.
 **How to read the result.** Count the `[upstream-error]` lines per scope, not `[assortment]`: `sitemap-categories`
 with and without `"queueStarved":true`, `category-presence`, `product-presence`, and the `[queueStarved]` marker on
 `category navigation unavailable`. The number to compare is `sitemap-categories` lines per day, counted from a known
-point of the log (it carries no timestamps): 24 in the first 24.5 h after PR 46 went live. If it does not fall and
-the lines are not `queueStarved`, the trigger is the re-read of the list after each catalogue event, and the next
-step is to refresh the list in the background with a longer deadline and not to expire it at once; this change does
-not do that.
+point of the log (it carries no timestamps): 24 in the first 24.5 h after PR 46 went live. Under the build that
+carries PR 57 (live since 08:38 UTC on 20 October) the server counted 2 of them by 13:41 UTC, both `ro-ron`, written
+between 12:46 and 13:24 UTC and none before, next to 136 `[assortment]` lines and two `CategoryNavigation: deadline
+exceeded` lines for `stresne-nosice`, none with the sentence about waiting for a Saleor slot (the server's count of
+its error log, not checked from here). If the count does not fall and the lines are not `queueStarved`, the trigger is
+the re-read of the list after each catalogue event, and the next step is to refresh the list in the background with a
+longer deadline and not to expire it at once; this change does not do that.
