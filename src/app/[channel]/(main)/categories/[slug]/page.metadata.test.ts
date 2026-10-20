@@ -29,12 +29,12 @@ const translated = (name: string) => ({
 	seoDescription: name,
 });
 
-/** A market's alias as Saleor answers it when the category is translated there and holds products. */
+/** A market's alias as Saleor answers it when the category is translated there and holds products: the first one. */
 const stocked = (alias: string) => ({
 	name: "Autochladničky",
 	slug: "autochladnicky",
 	translation: alias === "sk" ? null : translated(`Chladnička ${alias}`),
-	products: { totalCount: 5 },
+	products: { edges: [{ node: { id: `product-${alias}` } }] },
 });
 
 /** One alias per live market, as the presence document asks: stocked unless a test says otherwise. */
@@ -278,7 +278,7 @@ describe("the other markets of a category", () => {
 	});
 
 	it("leave out a market where the category is empty or has no translation", async () => {
-		presenceOverrides.pl = { ...stocked("pl"), products: { totalCount: 0 } };
+		presenceOverrides.pl = { ...stocked("pl"), products: { edges: [] } };
 		presenceOverrides.hu = { ...stocked("hu"), translation: null };
 		expect(Object.keys((await hreflangFor()) ?? {})).toEqual([
 			"sk-SK",
