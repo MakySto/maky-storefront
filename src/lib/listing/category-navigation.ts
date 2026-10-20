@@ -92,7 +92,11 @@ async function readCategoryNavigation(
 		signal: AbortSignal.timeout(NAVIGATION_DEADLINE_MS),
 	});
 	if (!result.ok) {
-		return faulted(`[Listing] category navigation unavailable for ${baseSlug}: ${result.error.message}`);
+		// `queueStarved`: the deadline went on waiting for a Saleor slot in this process, not on Saleor.
+		const starved = result.error.queueStarved ? " [queueStarved]" : "";
+		return faulted(
+			`[Listing] category navigation unavailable for ${baseSlug}: ${result.error.message}${starved}`,
+		);
 	}
 
 	const category = result.data.category;

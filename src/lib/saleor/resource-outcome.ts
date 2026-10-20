@@ -160,7 +160,14 @@ export function resourceOrNull<T>(outcome: ResourceOutcome<T>): T | null {
 	return outcome.status === "found" ? outcome.resource : null;
 }
 
-/** One structured log line per fault, so the gate's fail-open rate is measurable. */
+/**
+ * One structured line per fault, so the gate's fail-open rate is measurable.
+ *
+ * `queueStarved` is printed when the read spent its deadline waiting for a Saleor slot in this
+ * process rather than on the wire. The message alone cannot tell the two apart: a read that waited
+ * a second for a slot and then had half a second left on the wire says "deadline exceeded" like a
+ * read that Saleor answered too slowly.
+ */
 export function logUpstreamError(
 	scope: string,
 	outcome: UpstreamError,
@@ -172,6 +179,7 @@ export function logUpstreamError(
 			type: outcome.type,
 			retryable: outcome.retryable,
 			message: outcome.message,
+			...(outcome.queueStarved ? { queueStarved: true } : {}),
 			...context,
 		})}`,
 	);

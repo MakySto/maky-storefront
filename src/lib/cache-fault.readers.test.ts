@@ -157,6 +157,14 @@ describe("a reader whose upstream is down", () => {
 		},
 	);
 
+	it("category navigation: a deadline spent waiting for a Saleor slot says so, and only then", async () => {
+		await expect(getCategoryNavigation("stresne-nosice", SK)).rejects.toThrow(/deadline exceeded$/);
+		mocks.executePublicGraphQL.mockResolvedValue({ ok: false, error: { ...DOWN.error, queueStarved: true } });
+		await expect(getCategoryNavigation("stresne-nosice", SK)).rejects.toThrow(
+			/category navigation unavailable for stresne-nosice: deadline exceeded \[queueStarved\]$/,
+		);
+	});
+
 	it("brand strip: the Saleor makers' fault reaches the page, the CMS entries' does not", async () => {
 		await expect(getBrands(SK)).rejects.toThrow(/\[Brands\] makers unavailable/);
 	});

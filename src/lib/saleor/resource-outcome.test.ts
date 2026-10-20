@@ -197,6 +197,29 @@ describe("helpers", () => {
 		expect(line).toContain("[upstream-error]");
 		const payload = JSON.parse(line.replace("[upstream-error] ", "")) as Record<string, unknown>;
 		expect(payload).toMatchObject({ scope: "product", type: "network", retryable: true, slug: "s" });
+		expect(payload).not.toHaveProperty("queueStarved");
+		err.mockRestore();
+	});
+
+	it("says in the line when the deadline was spent waiting for a Saleor slot, and only then", () => {
+		const err = vi.spyOn(console, "error").mockImplementation(() => {});
+		const starved = upstreamError({
+			ok: false,
+			error: {
+				type: "network",
+				message: "SitemapCategories: deadline exceeded",
+				isRetryable: true,
+				queueStarved: true,
+			},
+		});
+		logUpstreamError("sitemap-categories", starved, { channel: "ro-ron" });
+		logUpstreamError("sitemap-categories", upstreamError(fail("network", true)), { channel: "ro-ron" });
+
+		const [first, second] = err.mock.calls.map(
+			(call) => JSON.parse(String(call[0]).replace("[upstream-error] ", "")) as Record<string, unknown>,
+		);
+		expect(first).toMatchObject({ scope: "sitemap-categories", queueStarved: true, channel: "ro-ron" });
+		expect(second).not.toHaveProperty("queueStarved");
 		err.mockRestore();
 	});
 });

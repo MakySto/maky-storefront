@@ -190,7 +190,8 @@ read is handed out, so it neither removes the mechanism nor changes what the fix
   hour. Those are the answers that end by themselves when the products or the texts arrive, and `noindex` is the
   one a crawler does not return for. A stocked category keeps `minutes`.
 - The markets that carry the same category are read together, not one after the other: an entry past its 60 s is
-  read again by a prerender, and without the data cache that is a round trip each.
+  read again by a prerender, and without the data cache that is a round trip each. (Superseded by section 7: they
+  are now one request.)
 
 `page.metadata.test.ts` pins all three. Not changed, and worth knowing: the listing itself and the collection
 page's outcome (`collections/[slug]/page.tsx`) still read under `revalidate: 300`; `/api/revalidate` still expires
@@ -209,3 +210,54 @@ category:not-armed` today), not the data cache back.
 nothing, the RO page was full-size at 12:58, 14:06 and 14:25, and the error log does not date its lines. The
 mechanism is shown to exist and to give exactly this picture; the change takes it away whatever the trigger was.
 The restart of 19:42 UTC emptied every cache, so the pages Bing is sent to by IndexNow are read fresh.
+
+## 7. After the deploy: more `[assortment]` lines, and what the follow-up changes (2026-10-20)
+
+PR 46 went live on 2026-10-19 (together with PR 56). The category heads stayed right: 36 of 36 checked pages
+`index, follow` with one canonical, and no `"scope":"category"` error in the first day. But the PM2 error log
+gained 1 422 `[assortment]` lines by 08:00 UTC on 20 October, where the 25 hours of PR 54 alone had none, and
+`category navigation unavailable` went from 10 to 26 (`nordrive-stresne-nosice` 14, `thule-stresne-nosice` 12,
+always `CategoryNavigation: deadline exceeded`).
+
+**What the lines count.** Not outages. `getMarketAssortment` (which categories a market stocks, for the header, the
+menus and the homepage) prints one line on every call that meets a fault, the entry keeps a fault for 5 s
+(`FAULT_CACHE_LIFE`), and a page render calls it several times. The reads that really failed are the
+`[upstream-error]` lines of the scope `sitemap-categories`: 24 since the deploy (`ro-ron` 17, `it-eur` 5, `fr-eur` 1,
+`at-eur` 1), plus 2 of `product-presence`. The 116 lines of 07:47 to 08:00 were two bursts, 48 for `ro-ron` and 68
+for `at-eur`, each matching a cluster of requests to that market in the nginx log. A read of the list took 510 to
+874 ms in 25 of 25 measured attempts (medians 515 to 668 ms) against a deadline of 1 500 ms.
+
+**Why PR 46 is a suspect.** On a cold category head it reads every live market at once, twelve
+`ProductListByCategory` reads (a product card in each) per category slug, and it keeps an empty or untranslated market
+for 5 s, so a category that is empty in eight markets is read up to eight times every few seconds while its pages
+keep being requested. Those reads and the header's own deadline-bound reads (the list above, the category navigation)
+wait in the same request queue, which has twelve slots (`maxConcurrent` in `graphql.ts`). A read that takes 0.5 to
+0.9 s on the wire misses a 1.5 s deadline after a wait of a second or so.
+
+**What is not proven.** That this is the cause. Every failed list read says `SitemapCategories: deadline exceeded`,
+none `before a Saleor slot came free`, and the log did not say whether the deadline went on the queue or on Saleor
+(`queueStarved` was never printed). Every catalogue event also expires the market's list at once
+(`sitemap:{channel}`, `IMMEDIATE` in `/api/revalidate`), so the next render reads it synchronously, right after a
+write, when Saleor may be slowest. And the line is not new: the 64 hours of PR 50 to PR 54 had 48 `[assortment]`
+lines (the 25 hours of PR 54 alone had none, so that quiet day is not a baseline).
+
+**What the follow-up changes** (`category-presence.ts`, `category-counterparts.ts`):
+
+- The other markets' hreflang and market switcher come from ONE request with an alias per live market, the way the
+  product page gets its markets (`product-presence.ts`), not from one heavy read per market. It asks for exactly what
+  the exact-locale boundary and the product count read and answers through that boundary, so it says what the
+  page's own lookup and the sitemap say; a parity test over the real `ProductListByCategory` document pins that, case
+  by case. Its entry keeps the life of a category entry (an empty market does not shorten it; the own market's head
+  keeps its short life from section 6), carries every live channel's category tag, and is cut off at 1.5 s. A fault
+  is the whole answer: the page then names only itself, remembered for 5 s and logged as `category-presence`. The
+  page's own market is decided by the head the page has just read, never by this entry.
+- `[upstream-error]` lines, and the `category navigation unavailable` line, say `queueStarved` when the deadline was
+  spent waiting for a Saleor slot in this process.
+
+**How to read the result.** Count the `[upstream-error]` lines per scope, not `[assortment]`: `sitemap-categories`
+with and without `"queueStarved":true`, `category-presence`, `product-presence`, and the `[queueStarved]` marker on
+`category navigation unavailable`. The number to compare is `sitemap-categories` lines per day, counted from a known
+point of the log (it carries no timestamps): 24 in the first 24.5 h after PR 46 went live. If it does not fall and
+the lines are not `queueStarved`, the trigger is the re-read of the list after each catalogue event, and the next
+step is to refresh the list in the background with a longer deadline and not to expire it at once; this change does
+not do that.
