@@ -12,7 +12,7 @@ import type { MarketCounterpart } from "@/lib/seo/hreflang";
  * somewhere you can still be sent by hand. `counterpartAlternates()` narrows the hreflang cluster to
  * indexable markets on its own.
  *
- * The other markets come from ONE presence query per category (`getCategoryMarketPresence`). The
+ * The other markets come from ONE presence read per category (`getCategoryMarketPresence`). The
  * page's own market does not: the page has just read it, fresh, to build its head, and that read
  * is what decides whether the page itself is a listed one (`listedHere`). So the head and the
  * cluster it names cannot disagree about the page itself, whatever the presence entry remembers.

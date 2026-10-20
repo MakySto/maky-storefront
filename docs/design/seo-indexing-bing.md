@@ -243,16 +243,64 @@ lines (the 25 hours of PR 54 alone had none, so that quiet day is not a baseline
 
 **What the follow-up changes** (`category-presence.ts`, `category-counterparts.ts`):
 
-- The other markets' hreflang and market switcher come from ONE request with an alias per live market, the way the
-  product page gets its markets (`product-presence.ts`), not from one heavy read per market. It asks for exactly what
-  the exact-locale boundary and the product count read and answers through that boundary, so it says what the
-  page's own lookup and the sitemap say; a parity test over the real `ProductListByCategory` document pins that, case
-  by case. Its entry keeps the life of a category entry (an empty market does not shorten it; the own market's head
-  keeps its short life from section 6), carries every live channel's category tag, and is cut off at 1.5 s. A fault
-  is the whole answer: the page then names only itself, remembered for 5 s and logged as `category-presence`. The
-  page's own market is decided by the head the page has just read, never by this entry.
+- The other markets' hreflang and market switcher come from ONE cached read per category, made of two small
+  requests, not from one heavy `ProductListByCategory` per market. The first asks the translations of every live
+  market and no product. The second asks for the first product (`products(channel:, first: 1)`: whether the market
+  holds one, never how many) in the markets the first let through, and only there. Both answers go through the
+  exact-locale boundary and the emptiness rule the page itself uses, so they say what the page's own lookup and the
+  sitemap say; a parity test over the real `ProductListByCategory` document pins that, case by case. The entry keeps
+  the life of a category entry (an empty market does not shorten it; the own market's head keeps its short life
+  from section 6), carries every live channel's category tag, and both requests run under ONE 1.5 s deadline. A fault
+  in either request is the whole answer: the page then names only itself, remembered for 5 s and logged as
+  `category-presence`, with the name of the request that was running (`CategoryMarketTranslations` or
+  `CategoryMarketStock`). The page's own market is decided by the head the page has just read, never by this entry.
 - `[upstream-error]` lines, and the `category navigation unavailable` line, say `queueStarved` when the deadline was
   spent waiting for a Saleor slot in this process.
+
+**Why two requests** (measured on the production server on 2026-10-20, read-only, 32 categories, 12 live markets,
+three runs that day). What Saleor spends on `products(channel:, …)` inside a category depends on what the category
+holds in that channel, and the questions that could answer "does this market hold a product" pull in opposite
+directions:
+
+- **The count** (`totalCount`) is cheap for a small category and costs about 140 ms per market for `stresne-nosice`
+  (about 25 000 products in a channel): all twelve markets in one request took 1.7 s in the first run (10:34 UTC)
+  and in the third, and six such questions at once 2.9 s in the first.
+- **The first product** (`first: 1`) is cheap for a dense category and slow for an empty one: Saleor looks through
+  the channel's products before it can say there is none, 80 to 100 ms for each such market. `stresne-nosice` took
+  0.2 s, but `nosice-lyzi` (26 products, one market) 1.1 s, `autodoplnky` 1.0 s and `default-category` (no product
+  at all) 1.0 s, with eleven or twelve empty markets in the request (the second and third runs).
+- **The texts** are cheap whatever the category holds: 20 to 27 ms for all twelve markets.
+
+28 of the 32 categories are translated in the source market only, so after the first request the second has a
+single alias. The four that are translated everywhere (`stresne-nosice`, `thule-stresne-nosice`,
+`nordrive-stresne-nosice`, `autochladnicky`) are stocked in every market, which is the case where the first product
+is fast. Third run (12:44 UTC), one category at a time, the slowest one and the sum over all 32:
+
+| Shape                                                                                              | Slowest                       | Sum              | Categories over 600 ms |
+| -------------------------------------------------------------------------------------------------- | ----------------------------- | ---------------- | ---------------------- |
+| count in all twelve markets, one request                                                           | 1 693 ms (`stresne-nosice`)   | 6 960 ms         | 3                      |
+| first product in all twelve markets, one request                                                   | 1 102 ms (`nosice-lyzi`)      | 8 847 ms         | 7                      |
+| translations, then the count in the translated markets                                             | 1 712 ms (`stresne-nosice`)   | 5 039 ms         | 3                      |
+| **translations, then the first product in the translated markets (this change)**                   | **226 ms (`stresne-nosice`)** | **1 973 ms**     | **0**                  |
+| count under 1 000 or 5 000 products in the Slovak channel, else the first product                  | 427 ms                        | 4 088 / 4 100 ms | 0                      |
+| the same under 10 000                                                                              | 797 ms                        | 5 475 ms         | 2                      |
+| a first request with the texts and the Slovak count decides the form of the second (1 000 / 5 000) | 371 / 370 ms                  | 1 938 / 1 898 ms | 0                      |
+| count and first product asked at once, the first whole answer wins                                 | 928 ms                        | 4 788 ms         | 1                      |
+
+The shape chosen has the lowest sum, needs no size hint (a hint from the page's own market would split the shared
+cache entry by market), and has the smaller worst case: the second request asks for the first product in at most the
+twelve markets, so it costs no more than the first-product form did for twelve markets (1.1 s at the slowest measured),
+whatever the category holds, where a count in many markets of a large category has no such bound. One of its five
+repeats of `stresne-nosice` took 696 ms (230, 696, 231, 228, 230) and one of the probe shape 692 ms, at the same
+position, which suggests a pause on the Saleor side and not the shape's own cost.
+
+**What this does not cover.** A category translated in many markets and stocked in few puts the empty markets into
+the second request, 80 to 100 ms each; with every market translated and one stocked that is the 1.1 s above, inside
+the deadline and, past it, a page that names only itself. None of the 32 categories has that shape today. The list
+read behind the sitemap and the menus (`SitemapCategories`, 0.5 to 0.7 s per market, the failures above) is not
+changed: the third run read it with the translated markets first and the stock second and got 0.33 s for `ro-ron`
+and `it-eur` against 0.54 and 0.67 s for the count, and no gain for `sk-eur` (0.67 against 0.65 s). That is a separate
+change, to be made if the failures there continue.
 
 **How to read the result.** Count the `[upstream-error]` lines per scope, not `[assortment]`: `sitemap-categories`
 with and without `"queueStarved":true`, `category-presence`, `product-presence`, and the `[queueStarved]` marker on

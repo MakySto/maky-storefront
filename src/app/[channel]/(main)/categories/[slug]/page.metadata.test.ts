@@ -16,9 +16,9 @@ import { FAULT_CACHE_LIFE } from "@/lib/cache-fault";
 let category: Record<string, unknown>;
 /** Saleor answers `category: null`: nothing by that slug, in either of its two lookups. */
 let missing = false;
-/** Per market, what the one presence query gets back instead of the stocked and translated default. */
+/** Per market, what Saleor holds for the category instead of the stocked and translated default. */
 let presenceOverrides: Record<string, Record<string, unknown> | null>;
-/** The presence query fails the way a read that spent its deadline waiting for a Saleor slot does. */
+/** The first presence request fails the way a read that spent its deadline waiting for a Saleor slot does. */
 let presenceFault = false;
 
 const translated = (name: string) => ({
@@ -29,7 +29,7 @@ const translated = (name: string) => ({
 	seoDescription: name,
 });
 
-/** A market's alias as Saleor answers it when the category is translated there and holds products: the first one. */
+/** What Saleor holds for a market when the category is translated there and holds products: the first one. */
 const stocked = (alias: string) => ({
 	name: "Autochladničky",
 	slug: "autochladnicky",
@@ -37,14 +37,25 @@ const stocked = (alias: string) => ({
 	products: { edges: [{ node: { id: `product-${alias}` } }] },
 });
 
-/** One alias per live market, as the presence document asks: stocked unless a test says otherwise. */
-const presenceAnswer = (source: string) =>
-	Object.fromEntries(
-		[...source.matchAll(/(\w+): category\(slug: \$slug\)/g)].map(([, alias]) => [
-			alias,
-			alias! in presenceOverrides ? presenceOverrides[alias!] : stocked(alias!),
-		]),
+/**
+ * One alias per market the document names, carrying what that document selects: the texts for the first
+ * presence request, the first product for the second. Stocked unless a test says otherwise.
+ */
+const presenceAnswer = (source: string) => {
+	const asksStock = source.startsWith("query CategoryMarketStock");
+	return Object.fromEntries(
+		[...source.matchAll(/(\w+): category\(slug: \$slug\)/g)].map(([, alias]) => {
+			const held = alias! in presenceOverrides ? presenceOverrides[alias!] : stocked(alias!);
+			if (held === null) return [alias, null];
+			return [
+				alias,
+				asksStock
+					? { products: held.products }
+					: { name: held.name, slug: held.slug, translation: held.translation },
+			];
+		}),
 	);
+};
 
 const { reads, lives, inFlight } = vi.hoisted(() => ({
 	reads: [] as { operation: string; options: Record<string, unknown> }[],
@@ -61,13 +72,13 @@ vi.mock("@/lib/graphql", async (importOriginal) => ({
 		inFlight.peak = Math.max(inFlight.peak, inFlight.now);
 		await new Promise((resolve) => setTimeout(resolve, 5));
 		inFlight.now -= 1;
-		if (operation === "CategoryMarketPresence") {
+		if (operation.startsWith("CategoryMarket")) {
 			return presenceFault
 				? {
 						ok: false,
 						error: {
 							type: "network",
-							message: "CategoryMarketPresence: deadline exceeded",
+							message: `${operation}: deadline exceeded`,
 							isRetryable: true,
 							queueStarved: true,
 						},
@@ -257,11 +268,13 @@ describe("the other markets of a category", () => {
 		vi.stubEnv("MAKY_INDEXABLE_MARKETS", "sk,cz,de,at,pl,hu");
 	});
 
-	it("are asked in ONE request; the head reads only its own market", async () => {
+	it("are asked in two small requests, one after the other; the head reads only its own market", async () => {
 		await metadataFor();
 		const operations = reads.map((read) => read.operation);
-		expect(operations.filter((operation) => operation === "CategoryMarketPresence")).toHaveLength(1);
+		expect(operations.filter((operation) => operation === "CategoryMarketTranslations")).toHaveLength(1);
+		expect(operations.filter((operation) => operation === "CategoryMarketStock")).toHaveLength(1);
 		expect(operations.filter((operation) => operation === "ProductListByCategory")).toHaveLength(1);
+		expect(operations).toHaveLength(3);
 		expect(inFlight.peak).toBe(1);
 	});
 

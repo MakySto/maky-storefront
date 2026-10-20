@@ -231,7 +231,7 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 			canonical,
 			// The same category, in each live market where it resolves in that market's language
 			// and holds products — the two conditions under which that page is indexable too. The
-			// other markets are one request (`getCategoryMarketPresence`); this page is listed, or
+			// other markets are one cached read (`getCategoryMarketPresence`); this page is listed, or
 			// the empty-in-this-channel branch above would have returned.
 			languages: counterpartAlternates(
 				REVERSE_MAP[params.channel] || params.channel,

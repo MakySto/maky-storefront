@@ -14,10 +14,11 @@ import {
 	logUpstreamError,
 	upstreamError,
 	type ResourceOutcome,
+	type UpstreamError,
 } from "@/lib/saleor/resource-outcome";
 
 /**
- * Where one category is a real page: every live market, in ONE Saleor request.
+ * Where one category is a real page: every live market, in two small Saleor requests.
  *
  * The category page finds its hreflang cluster and its market-switcher targets by asking which
  * other live markets carry the same category. It used to run the full category read once per
@@ -28,29 +29,38 @@ import {
  * that is a lot to put through the page bundle's request queue, whose twelve slots
  * (`maxConcurrent` in `graphql.ts`) the header's own deadline-bound reads share.
  *
- * This asks once, with one alias per live market, for exactly what the two conditions read — the
- * exact-locale boundary and whether the market holds a product — and puts the answer through that
- * same boundary (`resolveExactLocaleCategory`), so it cannot disagree with the page's own lookup,
- * nor with `fetchStockedCategorySlugs`, which the sitemap and the menus use for the same question.
+ * This asks with one alias per market for exactly what the two conditions read — the exact-locale
+ * boundary and whether the market holds a product — and puts the answer through that same boundary
+ * (`resolveExactLocaleCategory`), so it cannot disagree with the page's own lookup, nor with
+ * `fetchStockedCategorySlugs`, which the sitemap and the menus use for the same question.
  *
  * - **Identity is the slug.** Categories are global in Saleor; only their products are per
  *   channel. `category(slug:)` therefore names one category in every alias, and the aliases differ
- *   in the translation they ask for and in the channel they count. There is no translated-slug
+ *   in the translation they ask for and in the channel they look into. There is no translated-slug
  *   retry: the slug here is the base slug the caller already holds.
  * - **A listed market is translated AND stocked.** The two conditions under which the page there is
  *   indexable too. The own market is not decided here — the page knows it from its own fresh read.
- * - **Whether, not how many.** A market holds a product when the first one comes back
- *   (`products(channel:, first: 1)`); the count is never asked for. The first version of this
- *   document asked for the count, and measured from the production server on 2026-10-20 it took
- *   1.7 s for `stresne-nosice` (18 305 to 24 944 products per market) against the 1.5 s deadline
- *   below, and 2.9 s with six such questions at once, where `autochladnicky` (6 to 7 products per
- *   market) took 0.07 s.
+ * - **Two requests, the second only where the first let a market through.** The first asks the
+ *   translations of every live market and no product; the second asks for the first product
+ *   (`products(channel:, first: 1)`) in the translated markets and nowhere else. Whether a market
+ *   holds a product is asked, never how many. One request for every market was measured on the
+ *   production server on 2026-10-20 (32 categories, one at a time) and has no shape that stays
+ *   short: the count took up to 1.7 s (`stresne-nosice`, 25 110 products in the Slovak channel)
+ *   against the 1.5 s deadline below, the first product in all twelve markets up to 1.1 s, because
+ *   where a category holds nothing Saleor looks through the channel's products before it can say
+ *   so (80 to 100 ms for each such alias). 28 of the 32 categories are translated in the source
+ *   market only, so for them the second request has one alias. Asked in two steps, no category
+ *   took more than 0.23 s (one repeat of `stresne-nosice` took 0.70 s). The shape this does not
+ *   like is a category translated in many markets and stocked in few: each empty market costs 80
+ *   to 100 ms in the second request.
  * - **A fault is the whole answer.** HTTP, network, GraphQL errors — partial ones included — or an
- *   alias missing from the response: `upstream-error`, remembered for seconds (`cachedOutcome`),
- *   logged under the scope `category-presence`. A market that could not be asked is never reported
- *   as a market that does not have the category; the page names only itself instead.
- * - **One attempt, one deadline.** This only decides hreflang and the switcher, so a slow Saleor
- *   costs at most `CATEGORY_PRESENCE_DEADLINE_MS`, never the transport's 1 + 2 + 4 s retry ladder.
+ *   alias missing from either response: `upstream-error`, remembered for seconds (`cachedOutcome`),
+ *   logged under the scope `category-presence` with the name of the request that failed. A market
+ *   that could not be asked is never reported as a market that does not have the category; the page
+ *   names only itself instead.
+ * - **One attempt, one deadline for both requests.** This only decides hreflang and the switcher, so
+ *   a slow Saleor costs at most `CATEGORY_PRESENCE_DEADLINE_MS` in all, never the transport's
+ *   1 + 2 + 4 s retry ladder and never that deadline twice.
  * - **It keeps the normal life of a category entry.** An empty market is not an urgent state here
  *   (the own market's head has its own short life); what the page needs is for a market to appear or
  *   leave when its stock does, and the entry carries every live channel's category tag, so the
@@ -68,62 +78,123 @@ type PresenceTranslation = {
 	seoDescription?: string | null;
 };
 
-/** One alias of the answer. Only what `resolveExactLocaleCategory` and the emptiness check read. */
-export type PresenceCategory = {
+/** One alias of the first answer. Only what `resolveExactLocaleCategory` reads. */
+export type TranslatedCategory = {
 	name?: string | null;
 	slug?: string | null;
 	translation?: PresenceTranslation | null;
+};
+
+/** One alias of the second answer: the first product of the category in the alias's channel, if any. */
+export type StockedCategory = {
 	products?: { edges?: readonly unknown[] | null } | null;
 };
 
-type PresenceData = Record<string, PresenceCategory | null>;
+type TranslatedData = Record<string, TranslatedCategory | null>;
+type StockedData = Record<string, StockedCategory | null>;
 
 /**
- * The selection for one market. The source market reads the base row and is held only to a name
- * and a slug, exactly as `resolveExactLocaleCategory` holds it, so it asks for no translation.
+ * The first selection for one market. The source market reads the base row and is held only to a
+ * name and a slug, exactly as `resolveExactLocaleCategory` holds it, so it asks for no translation.
  */
-function selectionFor(market: string): string {
-	const { saleorSlug, locale } = CHANNEL_MAP[market]!;
-	const products = `products(channel: ${JSON.stringify(saleorSlug)}, first: 1) { edges { node { id } } }`;
-	if (isSourceLocale(locale)) return `name slug ${products}`;
+function translationSelection(market: string): string {
+	const { locale } = CHANNEL_MAP[market]!;
+	if (isSourceLocale(locale)) return "name slug";
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
-	return `name slug translation(languageCode: ${lang}) { name slug description seoTitle seoDescription } ${products}`;
+	return `name slug translation(languageCode: ${lang}) { name slug description seoTitle seoDescription }`;
 }
 
-/** The document for these markets: `query CategoryMarketPresence($slug: String!) { sk: category(slug: $slug) { … } … }`. */
-export function categoryPresenceDocument(markets: readonly string[]): string {
-	const aliases = markets.map((market) => `${market}: category(slug: $slug) { ${selectionFor(market)} }`);
-	return `query CategoryMarketPresence($slug: String!) { ${aliases.join(" ")} }`;
+/** The second selection for one market: whether its channel holds a product of the category. */
+function stockSelection(market: string): string {
+	return `products(channel: ${JSON.stringify(
+		CHANNEL_MAP[market]!.saleorSlug,
+	)}, first: 1) { edges { node { id } } }`;
+}
+
+function aliases(markets: readonly string[], selection: (market: string) => string): string {
+	return markets.map((market) => `${market}: category(slug: $slug) { ${selection(market)} }`).join(" ");
+}
+
+/** The first document: `query CategoryMarketTranslations($slug: String!) { sk: category(slug: $slug) { name slug } cz: … }`. */
+export function categoryTranslationsDocument(markets: readonly string[]): string {
+	return `query CategoryMarketTranslations($slug: String!) { ${aliases(markets, translationSelection)} }`;
+}
+
+/** The second document, for the markets the first one let through: `query CategoryMarketStock($slug: String!) { … }`. */
+export function categoryStockDocument(markets: readonly string[]): string {
+	return `query CategoryMarketStock($slug: String!) { ${aliases(markets, stockSelection)} }`;
+}
+
+/** An alias the response does not carry at all is not an answer about that market. */
+function missingAlias(market: string): UpstreamError {
+	return {
+		status: "upstream-error",
+		type: "graphql",
+		retryable: true,
+		message: `category presence answer carried no ${market} alias`,
+	};
 }
 
 /**
- * The transport answer, read market by market through the exact-locale boundary: the friendly
- * slugs of the markets where the category is translated and holds at least one product.
- *
- * Exported for the parity test: whatever this decides must be what the page's own lookup, and the
- * sitemap's, would decide about the same Saleor data.
+ * The first answer, read market by market through the exact-locale boundary: the markets where the
+ * category is translated (or, for the source market, has a name).
  */
-export function readCategoryPresence(
-	result: GraphQLResult<PresenceData>,
+function readTranslatedMarkets(
+	result: GraphQLResult<TranslatedData>,
 	markets: readonly string[],
 ): ResourceOutcome<readonly string[]> {
 	if (!result.ok) return upstreamError(result);
 	const data = result.data;
-	const listed: string[] = [];
+	const translated: string[] = [];
 	for (const market of markets) {
-		// An alias the response does not carry at all is not an answer about that market.
-		if (!data || !(market in data)) {
-			return {
-				status: "upstream-error",
-				type: "graphql",
-				retryable: true,
-				message: `category presence answer carried no ${market} alias`,
-			};
-		}
-		const category = resolveExactLocaleCategory(data[market], CHANNEL_MAP[market]!.locale);
-		if (category && (category.products?.edges?.length ?? 0) > 0) listed.push(market);
+		if (!data || !(market in data)) return missingAlias(market);
+		if (resolveExactLocaleCategory(data[market], CHANNEL_MAP[market]!.locale)) translated.push(market);
 	}
-	return { status: "found", resource: listed };
+	return { status: "found", resource: translated };
+}
+
+/** The second answer: the markets, of those asked, whose channel holds at least one product. */
+function readStockedMarkets(
+	result: GraphQLResult<StockedData>,
+	markets: readonly string[],
+): ResourceOutcome<readonly string[]> {
+	if (!result.ok) return upstreamError(result);
+	const data = result.data;
+	const stocked: string[] = [];
+	for (const market of markets) {
+		if (!data || !(market in data)) return missingAlias(market);
+		if ((data[market]?.products?.edges?.length ?? 0) > 0) stocked.push(market);
+	}
+	return { status: "found", resource: stocked };
+}
+
+/** The friendly slugs of the markets where the category is translated and holds at least one product. */
+async function readPresence(
+	baseSlug: string,
+	markets: readonly string[],
+): Promise<ResourceOutcome<readonly string[]>> {
+	// One deadline for both requests: the page waits for the answer, not for the answer twice.
+	const signal = AbortSignal.timeout(CATEGORY_PRESENCE_DEADLINE_MS);
+	const ask = <Data>(document: string) =>
+		executePublicGraphQL(new TypedDocumentString<Data, { slug: string }>(document), {
+			variables: { slug: baseSlug },
+			// No fetch cache underneath: this entry and its tags are the whole invalidation story, as for
+			// the category entry itself (`getCategoryOutcomeCached`) and for every foreign product answer.
+			cache: "no-store",
+			signal,
+			retry: false,
+		});
+
+	const translated = readTranslatedMarkets(
+		await ask<TranslatedData>(categoryTranslationsDocument(markets)),
+		markets,
+	);
+	// A fault, or a category that is translated nowhere (or does not exist): nothing left to ask.
+	if (translated.status !== "found" || translated.resource.length === 0) return translated;
+	return readStockedMarkets(
+		await ask<StockedData>(categoryStockDocument(translated.resource)),
+		translated.resource,
+	);
 }
 
 async function getCategoryMarketPresenceCached(
@@ -132,7 +203,7 @@ async function getCategoryMarketPresenceCached(
 ): Promise<ResourceOutcome<readonly string[]>> {
 	"use cache";
 	// The life of the category entries it replaces, and every live channel's category tag: a product
-	// or category event for any market re-asks all of them, in the same one request.
+	// or category event for any market re-asks all of them, in the same two requests.
 	for (const [index, market] of markets.entries()) {
 		const identity = {
 			channel: CHANNEL_MAP[market]!.saleorSlug,
@@ -143,19 +214,8 @@ async function getCategoryMarketPresenceCached(
 		else cacheTag(buildTag(CACHE_PROFILES.categories, identity));
 	}
 
-	const result = await executePublicGraphQL(
-		new TypedDocumentString<PresenceData, { slug: string }>(categoryPresenceDocument(markets)),
-		{
-			variables: { slug: baseSlug },
-			// No fetch cache underneath: this entry and its tags are the whole invalidation story, as for
-			// the category entry itself (`getCategoryOutcomeCached`) and for every foreign product answer.
-			cache: "no-store",
-			signal: AbortSignal.timeout(CATEGORY_PRESENCE_DEADLINE_MS),
-			retry: false,
-		},
-	);
 	// A fault is the `upstream-error` outcome, remembered for seconds (`cachedOutcome`), not thrown.
-	return cachedOutcome(async () => readCategoryPresence(result, markets));
+	return cachedOutcome(() => readPresence(baseSlug, markets));
 }
 
 /**

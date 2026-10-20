@@ -14,13 +14,13 @@ import { FAULT_CACHE_LIFE } from "@/lib/cache-fault";
 import { resolveExactLocaleCategory } from "@/lib/saleor/exact-locale";
 
 /**
- * Parity: the one-request presence answer must say exactly what the category page's own lookup
- * would say about the same Saleor data, market by market.
+ * Parity: the presence answer (two small requests) must say exactly what the category page's own
+ * lookup would say about the same Saleor data, market by market.
  *
  * Neither side is mocked at the level of its answer. A small executor PROJECTS a Saleor-side
  * record through whichever document is sent — the real codegen `ProductListByCategory` for
- * today's path, the real presence document for the new one — honouring aliases, fragments,
- * `translation(languageCode:)` and `products(channel:)`. So a field the presence document forgets
+ * today's path, the real presence documents for the new one — honouring aliases, fragments,
+ * `translation(languageCode:)` and `products(channel:)`. So a field a presence document forgets
  * to select is simply absent from its answer, exactly as it would be from Saleor's, and the
  * comparison fails. Both answers then go through the real `resolveExactLocaleCategory`.
  */
@@ -117,7 +117,9 @@ function execute(source: string, variables: Record<string, unknown>, catalogue: 
 
 let catalogue: SaleorCategory[];
 let sent: { query: string; options: Record<string, unknown> }[];
-let fault: null | "http" | "partial" | "missing-alias" | "starved";
+let fault: null | "http" | "partial" | "missing-alias" | "starved" | "throws";
+/** Which of the two requests the fault hits. */
+let faultIn: "CategoryMarketTranslations" | "CategoryMarketStock";
 const tags: string[] = [];
 const lives: unknown[] = [];
 
@@ -127,27 +129,31 @@ vi.mock("@/lib/graphql", async (importOriginal) => ({
 		document: { toString(): string },
 		options: { variables: Record<string, unknown> },
 	) => {
-		sent.push({ query: document.toString(), options });
-		if (fault === "http")
+		const query = document.toString();
+		sent.push({ query, options });
+		const operation = /query\s+(\w+)/.exec(query)?.[1];
+		const hit = fault !== null && operation === faultIn;
+		if (hit && fault === "throws") throw new Error("socket hang up");
+		if (hit && fault === "http")
 			return { ok: false, error: { type: "http", statusCode: 503, message: "HTTP 503", isRetryable: true } };
 		// What `executePublicGraphQL` makes of a response carrying `errors` next to `data`.
-		if (fault === "partial")
+		if (hit && fault === "partial")
 			return {
 				ok: false,
 				error: { type: "graphql", message: "injected partial failure", isRetryable: false },
 			};
-		if (fault === "starved")
+		if (hit && fault === "starved")
 			return {
 				ok: false,
 				error: {
 					type: "network",
-					message: "CategoryMarketPresence: deadline exceeded",
+					message: `${operation}: deadline exceeded`,
 					isRetryable: true,
 					queueStarved: true,
 				},
 			};
-		const data = execute(document.toString(), options.variables, catalogue);
-		if (fault === "missing-alias") delete data.de;
+		const data = execute(query, options.variables, catalogue);
+		if (hit && fault === "missing-alias") delete data.de;
 		return { ok: true, data };
 	},
 }));
@@ -221,6 +227,7 @@ beforeEach(() => {
 	catalogue = [complete()];
 	sent = [];
 	fault = null;
+	faultIn = "CategoryMarketTranslations";
 	tags.length = 0;
 	lives.length = 0;
 	vi.spyOn(console, "error").mockImplementation(() => {});
@@ -269,38 +276,108 @@ describe("presence parity with the page's own lookup", () => {
 	});
 });
 
-describe("one request, by slug", () => {
-	it("sends ONE query with one alias per live market, asked by base slug, once, under a deadline", async () => {
+describe("two requests, by slug", () => {
+	it("asks the translations of every live market, then the first product of the translated ones, once each, under one deadline", async () => {
 		await presence();
-		expect(sent).toHaveLength(1);
-		const { query, options } = sent[0]!;
-		expect(query).toMatch(/^query CategoryMarketPresence\(\$slug: String!\)/);
+		expect(sent).toHaveLength(2);
+		const [translations, stock] = sent as [(typeof sent)[number], (typeof sent)[number]];
+		expect(translations.query).toMatch(/^query CategoryMarketTranslations\(\$slug: String!\)/);
+		expect(stock.query).toMatch(/^query CategoryMarketStock\(\$slug: String!\)/);
 		for (const [index, market] of MARKETS.entries()) {
-			expect(query).toContain(`${market}: category(slug: $slug)`);
-			expect(query).toContain(`products(channel: "${CHANNELS[index]}", first: 1) { edges { node { id } } }`);
+			expect(translations.query).toContain(`${market}: category(slug: $slug)`);
+			expect(stock.query).toContain(
+				`${market}: category(slug: $slug) { products(channel: "${CHANNELS[index]}", first: 1) { edges { node { id } } } }`,
+			);
 		}
-		// Asked by the base slug: no translated-slug retry, no product card, no listing, no count.
-		expect(query).not.toContain("slugLanguageCode");
-		expect(query).not.toContain("totalCount");
-		expect(query).not.toContain("pageInfo");
-		expect(options).toMatchObject({ variables: { slug: SLUG }, retry: false, cache: "no-store" });
-		expect(options.revalidate).toBeUndefined();
-		expect(options.signal).toBeInstanceOf(AbortSignal);
+		// The first asks no product, the second no text; neither a translated-slug retry, a count or a listing.
+		expect(translations.query).not.toContain("products");
+		expect(stock.query).not.toContain("translation");
+		expect(stock.query).not.toContain("name");
+		for (const { query, options } of sent) {
+			expect(query).not.toContain("slugLanguageCode");
+			expect(query).not.toContain("totalCount");
+			expect(query).not.toContain("pageInfo");
+			expect(options).toMatchObject({ variables: { slug: SLUG }, retry: false, cache: "no-store" });
+			expect(options.revalidate).toBeUndefined();
+		}
+		// ONE deadline: the second request runs under what the first left of it, not under a new 1.5 s.
+		expect(translations.options.signal).toBeInstanceOf(AbortSignal);
+		expect(stock.options.signal).toBe(translations.options.signal);
 	});
 
 	it("asks the source market for no translation and a foreign market for the four fields the boundary reads", async () => {
-		const { categoryPresenceDocument } = await import("./category-presence");
-		const query = categoryPresenceDocument(["sk", "cz"]);
+		const { categoryTranslationsDocument } = await import("./category-presence");
+		const query = categoryTranslationsDocument(["sk", "cz"]);
 		const [sk, cz] = query.split(/(?=cz: category)/);
 		expect(sk).not.toContain("translation");
 		expect(cz).toContain("translation(languageCode: CS) { name slug description seoTitle seoDescription }");
 	});
 
-	it("the number of live markets changes the aliases, never the number of requests", async () => {
-		vi.stubEnv("MAKY_LIVE_MARKETS", "sk,cz,de,at,pl,hu,it,fr,es,ro,us,ca");
-		await presence();
+	it("asks the second request only in the markets the first let through", async () => {
+		delete catalogue[0]!.translations.HU;
+		czech().seoTitle = "   ";
+		const outcome = await presence();
+		expect(outcome).toEqual({ status: "found", resource: ["sk", "de", "at", "ca"] });
+		expect(sent).toHaveLength(2);
+		const stock = sent[1]!.query;
+		for (const market of ["sk", "de", "at", "ca"])
+			expect(stock).toContain(`${market}: category(slug: $slug)`);
+		for (const market of ["cz", "hu"]) expect(stock).not.toContain(`${market}: category(slug: $slug)`);
+	});
+
+	it("asks only the source market's stock when that is the only translation", async () => {
+		catalogue[0]!.translations = {};
+		const outcome = await presence();
+		expect(outcome).toEqual({ status: "found", resource: ["sk"] });
+		expect(sent).toHaveLength(2);
+		expect(sent[1]!.query.match(/: category\(slug: \$slug\)/g)).toHaveLength(1);
+		expect(sent[1]!.query).toContain("sk: category(slug: $slug)");
+	});
+
+	it("asks no second request when the category is translated nowhere or does not exist", async () => {
+		catalogue = [];
+		expect(await presence()).toEqual({ status: "found", resource: [] });
 		expect(sent).toHaveLength(1);
-		expect(sent[0]!.query.match(/: category\(slug: \$slug\)/g)).toHaveLength(12);
+		expect(sent[0]!.query).toMatch(/^query CategoryMarketTranslations/);
+	});
+
+	it("asks the first product in the translated markets only, never in a market that is stocked but not translated", async () => {
+		catalogue[0]!.translations = {};
+		catalogue[0]!.counts = Object.fromEntries(CHANNELS.map((channel) => [channel, 7]));
+		await presence();
+		expect(sent[1]!.query).not.toContain('products(channel: "cz-czk"');
+		expect(sent[1]!.query).toContain('products(channel: "sk-eur"');
+	});
+
+	it("the number of live markets changes the aliases, never the number of requests", async () => {
+		const live = ["sk", "cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro", "us", "ca"];
+		vi.stubEnv("MAKY_LIVE_MARKETS", live.join(","));
+		const { CHANNEL_MAP } = await import("@/lib/channel-map");
+		const { getLocaleConfigByLocale } = await import("@/config/locale");
+		const base = complete();
+		base.translations = Object.fromEntries(
+			live
+				.filter((market) => market !== "sk")
+				.map((market) => {
+					const lang = getLocaleConfigByLocale(CHANNEL_MAP[market]!.locale).graphqlLanguageCode;
+					return [
+						lang,
+						{
+							name: lang,
+							slug: `chladnicka-${market}`,
+							description: "{}",
+							seoTitle: lang,
+							seoDescription: lang,
+						},
+					];
+				}),
+		);
+		base.counts = Object.fromEntries(live.map((market) => [CHANNEL_MAP[market]!.saleorSlug, 7]));
+		catalogue = [base];
+		const outcome = await presence();
+		expect(outcome).toEqual({ status: "found", resource: live });
+		expect(sent).toHaveLength(2);
+		for (const { query } of sent) expect(query.match(/: category\(slug: \$slug\)/g)).toHaveLength(12);
 	});
 
 	it("tags the entry with every live channel's category tag, so the existing events reach it", async () => {
@@ -321,20 +398,40 @@ describe("one request, by slug", () => {
 });
 
 describe("a fault is the whole answer, and never a throw", () => {
-	for (const kind of ["http", "partial", "missing-alias", "starved"] as const) {
-		it(`${kind}: upstream-error, remembered for seconds, logged once`, async () => {
-			fault = kind;
-			const outcome = await presence();
-			expect(outcome.status).toBe("upstream-error");
-			expect(lives).toContainEqual(FAULT_CACHE_LIFE);
-			const logged = vi.mocked(console.error).mock.calls.map((call) => String(call[0]));
-			const lines = logged.filter(
-				(line) => line.includes("[upstream-error]") && line.includes("category-presence"),
-			);
-			expect(lines).toHaveLength(1);
-			expect(lines[0]).toContain(`"slug":"${SLUG}"`);
-			// The line says whether the deadline went on the queue or on Saleor.
-			expect(lines[0]!.includes('"queueStarved":true')).toBe(kind === "starved");
-		});
+	for (const request of ["CategoryMarketTranslations", "CategoryMarketStock"] as const) {
+		for (const kind of ["http", "partial", "missing-alias", "starved", "throws"] as const) {
+			it(`${request} — ${kind}: upstream-error, remembered for seconds, logged once`, async () => {
+				fault = kind;
+				faultIn = request;
+				const outcome = await presence();
+				expect(outcome.status).toBe("upstream-error");
+				expect(lives).toContainEqual(FAULT_CACHE_LIFE);
+				const logged = vi.mocked(console.error).mock.calls.map((call) => String(call[0]));
+				const lines = logged.filter(
+					(line) => line.includes("[upstream-error]") && line.includes("category-presence"),
+				);
+				expect(lines).toHaveLength(1);
+				expect(lines[0]).toContain(`"slug":"${SLUG}"`);
+				// The line says whether the deadline went on the queue or on Saleor, and which request spent it.
+				expect(lines[0]!.includes('"queueStarved":true')).toBe(kind === "starved");
+				if (kind === "starved") expect(lines[0]).toContain(`${request}: deadline exceeded`);
+			});
+		}
 	}
+
+	it("a fault in the first request ends it: the second is never sent", async () => {
+		fault = "http";
+		faultIn = "CategoryMarketTranslations";
+		await presence();
+		expect(sent).toHaveLength(1);
+	});
+
+	it("a fault in the second request is not a list of the markets the first one let through", async () => {
+		fault = "http";
+		faultIn = "CategoryMarketStock";
+		const outcome = await presence();
+		expect(sent).toHaveLength(2);
+		expect(outcome.status).toBe("upstream-error");
+		expect("resource" in outcome).toBe(false);
+	});
 });
