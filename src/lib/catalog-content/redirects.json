@@ -1,6 +1,6 @@
 {
 	"release": "20260915.2",
-	"source": "CFM_CONTENT_DELIVERY_20260915_RELEASE4.md (1121 Legacy Kombi BP -> BH, 1348 H-1 Van TQ -> A1, with CatalogPageUrlHistory); ES root: CFM_CONTENT_DELIVERY_20260913_H1_REEXPORT.md; 2026-10-18 merged generations: CFM45_odpoved_20261018.md point 2 (12 pages x 12 markets = 144 pairs, the page itself stays in the export as retired)",
+	"source": "CFM_CONTENT_DELIVERY_20260915_RELEASE4.md (1121 Legacy Kombi BP -> BH, 1348 H-1 Van TQ -> A1, with CatalogPageUrlHistory); ES root: CFM_CONTENT_DELIVERY_20260913_H1_REEXPORT.md; 2026-10-18 merged generations: CFM45_odpoved_20261018.md point 2 (12 pages x 12 markets = 144 pairs, the page itself stays in the export as retired); 2026-10-22 merged Nordrive generations: CFM message of 2026-10-22 point 4 (8 pages x 12 markets = 96 pairs, stranky.tsv sha256 bdcebd65..., the page itself stays in the export as retired until M confirms the 301)",
 	"exact": {
 		"sk": {
 			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -16,7 +16,15 @@
 			"/stresne-nosice/lexus/ux/za1": "/stresne-nosice/lexus/ux",
 			"/stresne-nosice/kgm/xlv/2016-2021": "/stresne-nosice/kgm/xlv",
 			"/stresne-nosice/volkswagen/up/up": "/stresne-nosice/volkswagen",
-			"/stresne-nosice/volkswagen/up": "/stresne-nosice/volkswagen"
+			"/stresne-nosice/volkswagen/up": "/stresne-nosice/volkswagen",
+			"/stresne-nosice/citroen/c4-cactus/2014-2018": "/stresne-nosice/citroen/c4-cactus",
+			"/stresne-nosice/citroen/c4-spacetourer/2018": "/stresne-nosice/citroen/c4-spacetourer",
+			"/stresne-nosice/dacia/bigster/2025": "/stresne-nosice/dacia/bigster",
+			"/stresne-nosice/nissan/navara-pick-up/d40": "/stresne-nosice/nissan/navara-pick-up",
+			"/stresne-nosice/opel/antara/2006-2011": "/stresne-nosice/opel/antara",
+			"/stresne-nosice/opel/crossland-x/2021": "/stresne-nosice/opel/crossland-x",
+			"/stresne-nosice/renault/kadjar/2015-2022": "/stresne-nosice/renault/kadjar",
+			"/stresne-nosice/lancia/zeta/1994-2003": "/stresne-nosice/lancia/zeta"
 		},
 		"cs": {
 			"/stresni-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -34,7 +42,15 @@
 			"/stresni-nosice/lexus/ux/za1": "/stresni-nosice/lexus/ux",
 			"/stresni-nosice/kgm/xlv/2016-2021": "/stresni-nosice/kgm/xlv",
 			"/stresni-nosice/volkswagen/up/up": "/stresni-nosice/volkswagen",
-			"/stresni-nosice/volkswagen/up": "/stresni-nosice/volkswagen"
+			"/stresni-nosice/volkswagen/up": "/stresni-nosice/volkswagen",
+			"/stresni-nosice/citroen/c4-cactus/2014-2018": "/stresni-nosice/citroen/c4-cactus",
+			"/stresni-nosice/citroen/c4-spacetourer/2018": "/stresni-nosice/citroen/c4-spacetourer",
+			"/stresni-nosice/dacia/bigster/2025": "/stresni-nosice/dacia/bigster",
+			"/stresni-nosice/nissan/navara-pick-up/d40": "/stresni-nosice/nissan/navara-pick-up",
+			"/stresni-nosice/opel/antara/2006-2011": "/stresni-nosice/opel/antara",
+			"/stresni-nosice/opel/crossland-x/2021": "/stresni-nosice/opel/crossland-x",
+			"/stresni-nosice/renault/kadjar/2015-2022": "/stresni-nosice/renault/kadjar",
+			"/stresni-nosice/lancia/zeta/1994-2003": "/stresni-nosice/lancia/zeta"
 		},
 		"en": {
 			"/roof-racks/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -52,7 +68,15 @@
 			"/roof-racks/lexus/ux/za1": "/roof-racks/lexus/ux",
 			"/roof-racks/kgm/xlv/2016-2021": "/roof-racks/kgm/xlv",
 			"/roof-racks/volkswagen/up/up": "/roof-racks/volkswagen",
-			"/roof-racks/volkswagen/up": "/roof-racks/volkswagen"
+			"/roof-racks/volkswagen/up": "/roof-racks/volkswagen",
+			"/roof-racks/citroen/c4-cactus/2014-2018": "/roof-racks/citroen/c4-cactus",
+			"/roof-racks/citroen/c4-spacetourer/2018": "/roof-racks/citroen/c4-spacetourer",
+			"/roof-racks/dacia/bigster/2025": "/roof-racks/dacia/bigster",
+			"/roof-racks/nissan/navara-pick-up/d40": "/roof-racks/nissan/navara-pick-up",
+			"/roof-racks/opel/antara/2006-2011": "/roof-racks/opel/antara",
+			"/roof-racks/opel/crossland-x/2021": "/roof-racks/opel/crossland-x",
+			"/roof-racks/renault/kadjar/2015-2022": "/roof-racks/renault/kadjar",
+			"/roof-racks/lancia/zeta/1994-2003": "/roof-racks/lancia/zeta"
 		},
 		"de": {
 			"/dachtraeger/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -70,7 +94,15 @@
 			"/dachtraeger/lexus/ux/za1": "/dachtraeger/lexus/ux",
 			"/dachtraeger/kgm/xlv/2016-2021": "/dachtraeger/kgm/xlv",
 			"/dachtraeger/volkswagen/up/up": "/dachtraeger/volkswagen",
-			"/dachtraeger/volkswagen/up": "/dachtraeger/volkswagen"
+			"/dachtraeger/volkswagen/up": "/dachtraeger/volkswagen",
+			"/dachtraeger/citroen/c4-cactus/2014-2018": "/dachtraeger/citroen/c4-cactus",
+			"/dachtraeger/citroen/c4-spacetourer/2018": "/dachtraeger/citroen/c4-spacetourer",
+			"/dachtraeger/dacia/bigster/2025": "/dachtraeger/dacia/bigster",
+			"/dachtraeger/nissan/navara-pick-up/d40": "/dachtraeger/nissan/navara-pick-up",
+			"/dachtraeger/opel/antara/2006-2011": "/dachtraeger/opel/antara",
+			"/dachtraeger/opel/crossland-x/2021": "/dachtraeger/opel/crossland-x",
+			"/dachtraeger/renault/kadjar/2015-2022": "/dachtraeger/renault/kadjar",
+			"/dachtraeger/lancia/zeta/1994-2003": "/dachtraeger/lancia/zeta"
 		},
 		"pl": {
 			"/bagazniki-dachowe/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -88,7 +120,15 @@
 			"/bagazniki-dachowe/lexus/ux/za1": "/bagazniki-dachowe/lexus/ux",
 			"/bagazniki-dachowe/kgm/xlv/2016-2021": "/bagazniki-dachowe/kgm/xlv",
 			"/bagazniki-dachowe/volkswagen/up/up": "/bagazniki-dachowe/volkswagen",
-			"/bagazniki-dachowe/volkswagen/up": "/bagazniki-dachowe/volkswagen"
+			"/bagazniki-dachowe/volkswagen/up": "/bagazniki-dachowe/volkswagen",
+			"/bagazniki-dachowe/citroen/c4-cactus/2014-2018": "/bagazniki-dachowe/citroen/c4-cactus",
+			"/bagazniki-dachowe/citroen/c4-spacetourer/2018": "/bagazniki-dachowe/citroen/c4-spacetourer",
+			"/bagazniki-dachowe/dacia/bigster/2025": "/bagazniki-dachowe/dacia/bigster",
+			"/bagazniki-dachowe/nissan/navara-pick-up/d40": "/bagazniki-dachowe/nissan/navara-pick-up",
+			"/bagazniki-dachowe/opel/antara/2006-2011": "/bagazniki-dachowe/opel/antara",
+			"/bagazniki-dachowe/opel/crossland-x/2021": "/bagazniki-dachowe/opel/crossland-x",
+			"/bagazniki-dachowe/renault/kadjar/2015-2022": "/bagazniki-dachowe/renault/kadjar",
+			"/bagazniki-dachowe/lancia/zeta/1994-2003": "/bagazniki-dachowe/lancia/zeta"
 		},
 		"hu": {
 			"/tetocsomagtartok/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -106,7 +146,15 @@
 			"/tetocsomagtartok/lexus/ux/za1": "/tetocsomagtartok/lexus/ux",
 			"/tetocsomagtartok/kgm/xlv/2016-2021": "/tetocsomagtartok/kgm/xlv",
 			"/tetocsomagtartok/volkswagen/up/up": "/tetocsomagtartok/volkswagen",
-			"/tetocsomagtartok/volkswagen/up": "/tetocsomagtartok/volkswagen"
+			"/tetocsomagtartok/volkswagen/up": "/tetocsomagtartok/volkswagen",
+			"/tetocsomagtartok/citroen/c4-cactus/2014-2018": "/tetocsomagtartok/citroen/c4-cactus",
+			"/tetocsomagtartok/citroen/c4-spacetourer/2018": "/tetocsomagtartok/citroen/c4-spacetourer",
+			"/tetocsomagtartok/dacia/bigster/2025": "/tetocsomagtartok/dacia/bigster",
+			"/tetocsomagtartok/nissan/navara-pick-up/d40": "/tetocsomagtartok/nissan/navara-pick-up",
+			"/tetocsomagtartok/opel/antara/2006-2011": "/tetocsomagtartok/opel/antara",
+			"/tetocsomagtartok/opel/crossland-x/2021": "/tetocsomagtartok/opel/crossland-x",
+			"/tetocsomagtartok/renault/kadjar/2015-2022": "/tetocsomagtartok/renault/kadjar",
+			"/tetocsomagtartok/lancia/zeta/1994-2003": "/tetocsomagtartok/lancia/zeta"
 		},
 		"ro": {
 			"/bare-transversale/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -124,7 +172,15 @@
 			"/bare-transversale/lexus/ux/za1": "/bare-transversale/lexus/ux",
 			"/bare-transversale/kgm/xlv/2016-2021": "/bare-transversale/kgm/xlv",
 			"/bare-transversale/volkswagen/up/up": "/bare-transversale/volkswagen",
-			"/bare-transversale/volkswagen/up": "/bare-transversale/volkswagen"
+			"/bare-transversale/volkswagen/up": "/bare-transversale/volkswagen",
+			"/bare-transversale/citroen/c4-cactus/2014-2018": "/bare-transversale/citroen/c4-cactus",
+			"/bare-transversale/citroen/c4-spacetourer/2018": "/bare-transversale/citroen/c4-spacetourer",
+			"/bare-transversale/dacia/bigster/2025": "/bare-transversale/dacia/bigster",
+			"/bare-transversale/nissan/navara-pick-up/d40": "/bare-transversale/nissan/navara-pick-up",
+			"/bare-transversale/opel/antara/2006-2011": "/bare-transversale/opel/antara",
+			"/bare-transversale/opel/crossland-x/2021": "/bare-transversale/opel/crossland-x",
+			"/bare-transversale/renault/kadjar/2015-2022": "/bare-transversale/renault/kadjar",
+			"/bare-transversale/lancia/zeta/1994-2003": "/bare-transversale/lancia/zeta"
 		},
 		"fr": {
 			"/barres-de-toit/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -142,7 +198,15 @@
 			"/barres-de-toit/lexus/ux/za1": "/barres-de-toit/lexus/ux",
 			"/barres-de-toit/kgm/xlv/2016-2021": "/barres-de-toit/kgm/xlv",
 			"/barres-de-toit/volkswagen/up/up": "/barres-de-toit/volkswagen",
-			"/barres-de-toit/volkswagen/up": "/barres-de-toit/volkswagen"
+			"/barres-de-toit/volkswagen/up": "/barres-de-toit/volkswagen",
+			"/barres-de-toit/citroen/c4-cactus/2014-2018": "/barres-de-toit/citroen/c4-cactus",
+			"/barres-de-toit/citroen/c4-spacetourer/2018": "/barres-de-toit/citroen/c4-spacetourer",
+			"/barres-de-toit/dacia/bigster/2025": "/barres-de-toit/dacia/bigster",
+			"/barres-de-toit/nissan/navara-pick-up/d40": "/barres-de-toit/nissan/navara-pick-up",
+			"/barres-de-toit/opel/antara/2006-2011": "/barres-de-toit/opel/antara",
+			"/barres-de-toit/opel/crossland-x/2021": "/barres-de-toit/opel/crossland-x",
+			"/barres-de-toit/renault/kadjar/2015-2022": "/barres-de-toit/renault/kadjar",
+			"/barres-de-toit/lancia/zeta/1994-2003": "/barres-de-toit/lancia/zeta"
 		},
 		"it": {
 			"/barre-portatutto/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -160,7 +224,15 @@
 			"/barre-portatutto/lexus/ux/za1": "/barre-portatutto/lexus/ux",
 			"/barre-portatutto/kgm/xlv/2016-2021": "/barre-portatutto/kgm/xlv",
 			"/barre-portatutto/volkswagen/up/up": "/barre-portatutto/volkswagen",
-			"/barre-portatutto/volkswagen/up": "/barre-portatutto/volkswagen"
+			"/barre-portatutto/volkswagen/up": "/barre-portatutto/volkswagen",
+			"/barre-portatutto/citroen/c4-cactus/2014-2018": "/barre-portatutto/citroen/c4-cactus",
+			"/barre-portatutto/citroen/c4-spacetourer/2018": "/barre-portatutto/citroen/c4-spacetourer",
+			"/barre-portatutto/dacia/bigster/2025": "/barre-portatutto/dacia/bigster",
+			"/barre-portatutto/nissan/navara-pick-up/d40": "/barre-portatutto/nissan/navara-pick-up",
+			"/barre-portatutto/opel/antara/2006-2011": "/barre-portatutto/opel/antara",
+			"/barre-portatutto/opel/crossland-x/2021": "/barre-portatutto/opel/crossland-x",
+			"/barre-portatutto/renault/kadjar/2015-2022": "/barre-portatutto/renault/kadjar",
+			"/barre-portatutto/lancia/zeta/1994-2003": "/barre-portatutto/lancia/zeta"
 		},
 		"es": {
 			"/barras-de-techo/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -180,7 +252,15 @@
 			"/barras-de-techo/lexus/ux/za1": "/barras-de-techo/lexus/ux",
 			"/barras-de-techo/kgm/xlv/2016-2021": "/barras-de-techo/kgm/xlv",
 			"/barras-de-techo/volkswagen/up/up": "/barras-de-techo/volkswagen",
-			"/barras-de-techo/volkswagen/up": "/barras-de-techo/volkswagen"
+			"/barras-de-techo/volkswagen/up": "/barras-de-techo/volkswagen",
+			"/barras-de-techo/citroen/c4-cactus/2014-2018": "/barras-de-techo/citroen/c4-cactus",
+			"/barras-de-techo/citroen/c4-spacetourer/2018": "/barras-de-techo/citroen/c4-spacetourer",
+			"/barras-de-techo/dacia/bigster/2025": "/barras-de-techo/dacia/bigster",
+			"/barras-de-techo/nissan/navara-pick-up/d40": "/barras-de-techo/nissan/navara-pick-up",
+			"/barras-de-techo/opel/antara/2006-2011": "/barras-de-techo/opel/antara",
+			"/barras-de-techo/opel/crossland-x/2021": "/barras-de-techo/opel/crossland-x",
+			"/barras-de-techo/renault/kadjar/2015-2022": "/barras-de-techo/renault/kadjar",
+			"/barras-de-techo/lancia/zeta/1994-2003": "/barras-de-techo/lancia/zeta"
 		}
 	},
 	"roots": {
