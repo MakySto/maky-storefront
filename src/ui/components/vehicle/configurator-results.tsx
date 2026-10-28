@@ -18,6 +18,7 @@
  */
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { HelpCircle, Info, Loader2, ShoppingCart } from "lucide-react";
@@ -26,6 +27,8 @@ import { Button } from "@/ui/components/ui/button";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { formatPrice } from "@/config/locale";
+import { quoteInsteadOfPrice } from "@/config/quote-only";
+import { quoteReferenceFor, quoteRequestHref } from "@/lib/contact/quote-request";
 import { addConfiguredSetToCart } from "@/lib/fitment/cart-actions";
 import { type AddSetFailure } from "@/lib/fitment/cart-result";
 import { type FitmentOffer } from "@/lib/fitment/offers";
@@ -77,6 +80,7 @@ export function ConfiguratorResults({
 	const tc = useTranslations("common");
 	const tf = useTranslations("fitment");
 	const tCart = useTranslations("cart");
+	const tProduct = useTranslations("product");
 	const router = useRouter();
 	const [pending, startTransition] = useTransition();
 	const [busyId, setBusyId] = useState<string | null>(null);
@@ -119,6 +123,12 @@ export function ConfiguratorResults({
 			{cards.map(({ offer, fit, conditions, unresolvedConditions, verdict, supplier }) => {
 				const outOfStock = offer.availability === "out-of-stock";
 				const catalogOnly = offer.isPurchasable !== true;
+				// A set this market does not sell, in a category that asks for a quote instead of a price
+				// (`config/quote-only.ts`): no price, and the way to ask in place of the disabled button.
+				const quoteOnly = quoteInsteadOfPrice({
+					isPurchasable: offer.isPurchasable,
+					categorySlug: offer.categorySlug,
+				});
 				// Whose word this set's fit rests on. An unnamed supplier degrades to the
 				// same fallback CompatibilityBox uses, never to silence and never to
 				// "verified".
@@ -229,7 +239,7 @@ export function ConfiguratorResults({
 							)}
 
 							<div className="mt-auto space-y-2">
-								{offer.price ? (
+								{quoteOnly ? null : offer.price ? (
 									<p className="text-text-primary text-lg font-bold">
 										{formatPrice(offer.price.amount, offer.price.currency, locale)}
 									</p>
@@ -264,6 +274,14 @@ export function ConfiguratorResults({
 										<Button type="button" variant="outline-solid" disabled className="flex-1">
 											{t("demoNoPurchase")}
 										</Button>
+									) : quoteOnly ? (
+										// The purchase colour, as on the product page: this is the one action here.
+										<Link
+											href={quoteRequestHref(channel, quoteReferenceFor(offer.name))}
+											className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-10 flex-1 items-center justify-center rounded-md px-3 text-sm font-medium transition-colors"
+										>
+											{tProduct("requestQuote")}
+										</Link>
 									) : catalogOnly ? (
 										<Button type="button" variant="outline-solid" disabled className="flex-1">
 											{tCart("addUnavailable")}

@@ -14,6 +14,7 @@ import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
 import { StarRating } from "@/ui/components/product/star-rating";
 import { WishlistButton } from "@/ui/components/wishlist/wishlist-button";
 import { cn } from "@/lib/utils";
+import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { isPlaceholderProductImage } from "@/lib/product-image";
 import { useLocale } from "@/providers/locale-provider";
 import { addListingItemToCartAction } from "./actions";
@@ -167,6 +168,13 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 	const badgeLabel =
 		product.badge === "sale" ? tCommon("sale") : product.badge === "new" ? tCommon("new") : null;
 
+	// A product this market does not sell, in a category that asks for a quote instead of a price
+	// (`config/quote-only.ts`): the card says so where the price would be.
+	const quoteOnly = quoteInsteadOfPrice({
+		isPurchasable: product.isPurchasable,
+		categorySlug: product.category?.slug,
+	});
+
 	// Only offer a direct add when there is genuinely nothing to choose.
 	const canAddDirectly =
 		product.isPurchasable && Boolean(product.variantId) && product.quantityAvailable !== 0;
@@ -294,21 +302,27 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 			{/* A hairline inset to the text, then the price and what the catalogue says about
 			    availability. Not positioned: a click here still reaches the card-wide link. */}
 			<div className="border-border-subtle mx-4 mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t pt-3">
-				<span className="flex flex-wrap items-baseline gap-x-2 whitespace-nowrap">
-					<span
-						className={cn(
-							"text-price-current text-xl leading-tight font-extrabold tracking-[-0.02em] tabular-nums",
-							product.compareAtPrice && "text-price-sale",
-						)}
-					>
-						{formatPrice(product.price, product.currency)}
+				{quoteOnly ? (
+					<span className="text-text-primary text-base leading-tight font-semibold">
+						{tProduct("requestQuote")}
 					</span>
-					{product.compareAtPrice && (
-						<span className="text-price-compare text-sm tabular-nums line-through">
-							{formatPrice(product.compareAtPrice, product.currency)}
+				) : (
+					<span className="flex flex-wrap items-baseline gap-x-2 whitespace-nowrap">
+						<span
+							className={cn(
+								"text-price-current text-xl leading-tight font-extrabold tracking-[-0.02em] tabular-nums",
+								product.compareAtPrice && "text-price-sale",
+							)}
+						>
+							{formatPrice(product.price, product.currency)}
 						</span>
-					)}
-				</span>
+						{product.compareAtPrice && (
+							<span className="text-price-compare text-sm tabular-nums line-through">
+								{formatPrice(product.compareAtPrice, product.currency)}
+							</span>
+						)}
+					</span>
+				)}
 				{product.isPurchasable ? (
 					<AvailabilityBadge
 						label={tCommon}
@@ -318,7 +332,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 						quantityAvailable={product.quantityAvailable}
 						className="text-xs leading-snug font-semibold whitespace-nowrap"
 					/>
-				) : (
+				) : quoteOnly ? null : (
 					<span className="text-text-secondary text-xs">{tCart("addUnavailable")}</span>
 				)}
 			</div>

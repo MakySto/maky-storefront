@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import type { SearchProduct } from "@/lib/search";
 import { formatPrice, getLocaleFromChannel } from "@/config/locale";
+import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { productHref } from "@/lib/product-url";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
@@ -47,6 +48,11 @@ export async function SearchResultCard({
 	// The channel's price in the channel's market format: `3 490,00 Kč` in Czechia, not the
 	// Slovak `3 490,00 CZK` every market used to get. Slovakia formats exactly as before.
 	const formattedPrice = formatPrice(product.price, product.currency, getLocaleFromChannel(channel));
+	// Not sold in this market, in a category that asks for a quote instead of a price (`config/quote-only.ts`).
+	const quoteOnly = quoteInsteadOfPrice({
+		isPurchasable: product.isPurchasable,
+		categorySlug: product.categorySlug,
+	});
 
 	return (
 		<Link
@@ -76,10 +82,10 @@ export async function SearchResultCard({
 			<div className="p-4">
 				{product.categoryName && <p className="text-muted-foreground mb-1 text-xs">{product.categoryName}</p>}
 				<h3 className="text-foreground leading-tight font-medium group-hover:underline">{product.name}</h3>
-				<p className="text-foreground mt-2 font-semibold">{formattedPrice}</p>
+				<p className="text-foreground mt-2 font-semibold">{quoteOnly ? t("requestQuote") : formattedPrice}</p>
 				{/* Still a hit: the catalogue shows what the channel does not sell right now, and
 				    says so, exactly as the listing card and the PDP do. */}
-				{product.isPurchasable ? null : (
+				{product.isPurchasable || quoteOnly ? null : (
 					<p className="text-text-secondary mt-1 text-xs">{tCart("addUnavailable")}</p>
 				)}
 			</div>

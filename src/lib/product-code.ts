@@ -34,6 +34,18 @@
  */
 const CODE_SHAPE = /^[A-Za-z0-9|/.-]+$/;
 
+/**
+ * The code of a Nordrive Kargo set (2026-10-28): the recipe in the supplier's own part numbers, `+` between the
+ * parts and `n×` in front of a part bought n times — `2×N10035+N30302`, `NKR0902+N30302+N99970`. CFM transports
+ * it literally, so these two characters are legitimate in a code. They are admitted only in THIS grammar, part by
+ * part, and a part needs a letter and a digit: `120×60` on a size variant is not a code, and neither is `Black+XL`.
+ */
+const SET_CODE_PART = /^(?:\d{1,2}×)?(?=[A-Za-z0-9.-]*[A-Za-z])(?=[A-Za-z0-9.-]*\d)[A-Za-z0-9.-]+$/;
+
+function isSetCode(value: string): boolean {
+	return /[×+]/.test(value) && value.split("+").every((part) => SET_CODE_PART.test(part));
+}
+
 /** The internal marker that must never reach a customer, in any casing. */
 const INTERNAL_MARKER = /CFMP-/i;
 
@@ -65,8 +77,7 @@ function isPublicCode(value: string): boolean {
 	return (
 		value.length >= MIN_LENGTH &&
 		value.length <= MAX_LENGTH &&
-		CODE_SHAPE.test(value) &&
-		/[0-9]/.test(value) &&
+		(CODE_SHAPE.test(value) ? /[0-9]/.test(value) : isSetCode(value)) &&
 		!INTERNAL_MARKER.test(value)
 	);
 }

@@ -25,6 +25,12 @@ interface AddToCartProps {
 	 * to that one link. Without it that state shows the sentence alone.
 	 */
 	quoteHref?: string;
+	/**
+	 * The category asks for a quote INSTEAD of a price (`config/quote-only.ts`): in the unavailable state the
+	 * price, its VAT line and the sentence are not shown, and the quote link stands alone. Ignored when the
+	 * product can be ordered.
+	 */
+	quoteOnly?: boolean;
 }
 
 function AddToCartButton({
@@ -79,40 +85,48 @@ export function AddToCart({
 	disabledReason,
 	maxQuantity,
 	quoteHref,
+	quoteOnly = false,
 }: AddToCartProps) {
 	const t = useTranslations("product");
 	const tCart = useTranslations("cart");
 	// Not orderable in this market: a different page, not a disabled one. The sentence is said once, and the
 	// buy row (a stepper and a button that can only be switched off) becomes the way to ask for a quote.
 	const unavailable = disabledReason === "unavailable";
+	const hidePrice = unavailable && quoteOnly && Boolean(quoteHref);
 
 	return (
 		<div className="space-y-6">
 			{/* Price. MAKY.STORE is VAT-registered and Saleor returns a gross
 			    amount, so the displayed figure already includes VAT — label it
-			    rather than leaving the customer to assume. */}
-			<div>
-				<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-					<span className="text-price-current text-[2.25rem] leading-none font-bold tracking-[-0.03em] tabular-nums sm:text-[2.625rem]">
-						{price}
-					</span>
-					{compareAtPrice && (
-						<>
-							<span className="text-text-secondary text-lg tabular-nums line-through">{compareAtPrice}</span>
-							{discountPercent && (
-								<span className="text-price-sale text-sm font-semibold">-{discountPercent}%</span>
-							)}
-						</>
-					)}
+			    rather than leaving the customer to assume. A category that asks
+			    for a quote instead (`quoteOnly`) shows neither the price nor the
+			    sentence: the link below stands alone. */}
+			{hidePrice ? null : (
+				<div>
+					<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+						<span className="text-price-current text-[2.25rem] leading-none font-bold tracking-[-0.03em] tabular-nums sm:text-[2.625rem]">
+							{price}
+						</span>
+						{compareAtPrice && (
+							<>
+								<span className="text-text-secondary text-lg tabular-nums line-through">
+									{compareAtPrice}
+								</span>
+								{discountPercent && (
+									<span className="text-price-sale text-sm font-semibold">-{discountPercent}%</span>
+								)}
+							</>
+						)}
+					</div>
+					<p className="text-text-tertiary mt-2 text-[0.8125rem]">{t("priceWithVat")}</p>
+					{availability && <div className="mt-4">{availability}</div>}
+					{unavailable ? (
+						<p role="status" className="text-text-secondary mt-4 text-sm">
+							{tCart("addUnavailable")}
+						</p>
+					) : null}
 				</div>
-				<p className="text-text-tertiary mt-2 text-[0.8125rem]">{t("priceWithVat")}</p>
-				{availability && <div className="mt-4">{availability}</div>}
-				{unavailable ? (
-					<p role="status" className="text-text-secondary mt-4 text-sm">
-						{tCart("addUnavailable")}
-					</p>
-				) : null}
-			</div>
+			)}
 
 			{unavailable ? (
 				quoteHref ? (
