@@ -238,6 +238,9 @@ export function ConfiguratorResults({
 									<p className="text-text-tertiary text-sm">{t("priceUnavailable")}</p>
 								)}
 
+								{offer.isPurchasable && offer.availability === "in-stock" && (
+									<p className="text-status-success text-sm font-medium">{tc("inStock")}</p>
+								)}
 								{offer.isPurchasable && offer.availability === "on-demand" && (
 									<p className="text-status-info text-sm">{tc("onDemand")}</p>
 								)}

@@ -52,6 +52,7 @@ type NodeOverrides = {
 	productMeta?: string | null;
 	variantMeta?: string | null;
 	quantityAvailable?: number;
+	trackInventory?: boolean;
 	isAvailableForPurchase?: boolean;
 	externalReference?: string;
 	variantId?: string;
@@ -87,6 +88,7 @@ function node(over: NodeOverrides = {}): ProductNode {
 				id: over.variantId ?? REF.saleorVariantId,
 				name: "V1",
 				quantityAvailable: over.quantityAvailable ?? 50,
+				trackInventory: over.trackInventory ?? false,
 				metafield: over.variantMeta ?? null,
 				pricing: { price: { gross: { amount: 100, currency: "EUR" } } },
 				selectionAttributes: [],
@@ -125,6 +127,26 @@ describe("availabilityFrom reads the variant first and the product second", () =
 	});
 });
 
+describe("availabilityFrom says in-stock only for tracked, positive stock", () => {
+	it("tracked with units is in-stock, even beside a stale sale_to_order mode", () => {
+		expect(availabilityFrom("sale_to_order", null, 3, true)).toBe("in-stock");
+	});
+	it("untracked with the synthetic cap of 50 stays on-demand", () => {
+		expect(availabilityFrom("sale_to_order", null, 50, false)).toBe("on-demand");
+		expect(availabilityFrom("sale_to_order", null, 50, null)).toBe("on-demand");
+		expect(availabilityFrom("sale_to_order", null, 50)).toBe("on-demand");
+	});
+	it("untracked and unmarked is unknown, never in-stock", () => {
+		expect(availabilityFrom(null, null, 50, false)).toBe("unknown");
+	});
+	it("tracked and sold out is out-of-stock until CFM flips it back", () => {
+		expect(availabilityFrom("sale_to_order", null, 0, true)).toBe("out-of-stock");
+	});
+	it("tracked with an unknown quantity makes no claim", () => {
+		expect(availabilityFrom("sale_to_order", null, null, true)).toBe("unknown");
+	});
+});
+
 describe("resolveFitmentOffers on a live-shaped answer", () => {
 	it("keeps a fully localized catalog-only product visible without counting it as purchasable", async () => {
 		executePublicGraphQL.mockResolvedValue(
@@ -158,6 +180,33 @@ describe("resolveFitmentOffers on a live-shaped answer", () => {
 		expect(result.offers).toHaveLength(1);
 		expect(result.offers[0]!.availability).toBe("on-demand");
 		expect(result.offers[0]!.price).toEqual({ amount: 100, currency: "EUR" });
+	});
+
+	it("resolves 'in-stock' for a tracked variant with units, and 'on-demand' once CFM untracks it", async () => {
+		executePublicGraphQL.mockResolvedValue(
+			answer([node({ variantMeta: "sale_to_order", trackInventory: true, quantityAvailable: 4 })]),
+		);
+		const tracked = await resolveFitmentOffers([REF], "sk-eur", "sk-SK", { dataset: null });
+		expect(tracked.offers[0]!.availability).toBe("in-stock");
+
+		executePublicGraphQL.mockResolvedValue(
+			answer([node({ variantMeta: "sale_to_order", trackInventory: false, quantityAvailable: 50 })]),
+		);
+		const untracked = await resolveFitmentOffers([REF], "sk-eur", "sk-SK", { dataset: null });
+		expect(untracked.offers[0]!.availability).toBe("on-demand");
+	});
+
+	it("keeps a sold-out tracked set listed, priced and purchasable-flagged — only its stock line changes", async () => {
+		executePublicGraphQL.mockResolvedValue(
+			answer([node({ variantMeta: "sale_to_order", trackInventory: true, quantityAvailable: 0 })]),
+		);
+		const result = await resolveFitmentOffers([REF], "sk-eur", "sk-SK", { dataset: null });
+		expect(result.offers).toHaveLength(1);
+		expect(result.offers[0]).toMatchObject({
+			availability: "out-of-stock",
+			price: { amount: 100, currency: "EUR" },
+			isPurchasable: true,
+		});
 	});
 
 	it("still resolves 'on-demand' when only the product carries it", async () => {

@@ -114,11 +114,13 @@ export async function CatalogOfferList({
 					<span className="text-text-tertiary mt-1 text-sm">
 						{!offer.isPurchasable
 							? t("cart.addUnavailable")
-							: offer.availability === "on-demand"
-								? t("common.onOrder")
-								: offer.availability === "out-of-stock"
-									? t("configurator.outOfStock")
-									: null}
+							: offer.availability === "in-stock"
+								? t("common.inStock")
+								: offer.availability === "on-demand"
+									? t("common.onOrder")
+									: offer.availability === "out-of-stock"
+										? t("configurator.outOfStock")
+										: null}
 					</span>
 				</Link>
 			</li>

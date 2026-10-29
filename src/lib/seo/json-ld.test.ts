@@ -88,6 +88,18 @@ describe("product JSON-LD availability", () => {
 		expect(offer(data)).toMatchObject({ availability: "https://schema.org/InStock" });
 	});
 
+	it("declares InStock from the product-level fallback when tracked stock backs it", () => {
+		// The arm for a caller that knows no priced variants: AggregateOffer.
+		const data = buildProductJsonLd({
+			name: "Nosič",
+			priceRange: { lowPrice: 299, highPrice: 299, currency: "EUR" },
+			inStock: true,
+			trackInventory: true,
+			availabilityMode: "sale_to_order",
+		});
+		expect(offer(data)).toMatchObject({ availability: "https://schema.org/InStock" });
+	});
+
 	it("declares OutOfStock when a tracked variant reaches zero", () => {
 		const data = buildProductJsonLd({
 			name: "Nosič",

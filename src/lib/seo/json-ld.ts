@@ -119,6 +119,11 @@ export function buildProductJsonLd(options: {
 	 * so the markup and the page never disagree.
 	 */
 	availabilityMode?: string | null;
+	/**
+	 * Whether real, tracked stock backs `inStock`, for the product-level fallback only. Each variant in
+	 * `variants` carries its own; this is for a caller that knows no variants.
+	 */
+	trackInventory?: boolean | null;
 	variantCount?: number;
 	/**
 	 * One entry per purchasable variant, when the page knows them.
@@ -146,13 +151,14 @@ export function buildProductJsonLd(options: {
 		inStock = true,
 		isPurchasable = true,
 		availabilityMode,
+		trackInventory,
 		variantCount,
 		variants,
 	} = options;
 
 	const baseUrl = getBaseUrl();
 	const fullUrl = url ? `${baseUrl}${url}` : undefined;
-	const availability = availabilityOf(isPurchasable && inStock, availabilityMode);
+	const availability = availabilityOf(isPurchasable && inStock, availabilityMode, trackInventory);
 
 	// A reference to the shop the homepage describes in full, not a second, nameless
 	// organisation per product — see `organizationReference`.
