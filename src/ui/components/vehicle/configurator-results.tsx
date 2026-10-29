@@ -18,6 +18,7 @@
  */
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { HelpCircle, Info, Loader2, ShoppingCart } from "lucide-react";
@@ -42,6 +43,8 @@ import { ListingViewRoot } from "@/ui/components/listing/listing-view";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { describeIncludes, isCompleteSet, offerSpecs } from "@/lib/fitment/offer-specs";
 import { formatPrice } from "@/config/locale";
+import { quoteInsteadOfPrice } from "@/config/quote-only";
+import { quoteReferenceFor, quoteRequestHref } from "@/lib/contact/quote-request";
 import { addConfiguredSetToCart } from "@/lib/fitment/cart-actions";
 import { type AddSetFailure } from "@/lib/fitment/cart-result";
 import { type FitmentOffer } from "@/lib/fitment/offers";
@@ -127,6 +130,12 @@ export function ConfiguratorResults({
 				{cards.map(({ offer, title, fit, conditions, unresolvedConditions, verdict, supplier }, index) => {
 					const outOfStock = offer.availability === "out-of-stock";
 					const catalogOnly = offer.isPurchasable !== true;
+					// A set this market does not sell, in a category that asks for a quote instead of a price
+					// (`config/quote-only.ts`): no price, and the way to ask in place of the disabled button.
+					const quoteOnly = quoteInsteadOfPrice({
+						isPurchasable: offer.isPurchasable,
+						categorySlug: offer.categorySlug,
+					});
 					// Whose word this set's fit rests on. An unnamed supplier degrades to the
 					// same fallback CompatibilityBox uses, never to silence and never to
 					// "verified".
@@ -258,7 +267,11 @@ export function ConfiguratorResults({
 							</div>
 
 							<div className={PRICE_ROW}>
-								{offer.price ? (
+								{quoteOnly ? (
+									<span className="text-text-primary text-base leading-tight font-semibold">
+										{tProduct("requestQuote")}
+									</span>
+								) : offer.price ? (
 									<span className="text-price-current text-xl leading-tight font-extrabold tracking-[-0.02em] whitespace-nowrap tabular-nums">
 										{formatPrice(offer.price.amount, offer.price.currency, locale)}
 									</span>
@@ -298,6 +311,14 @@ export function ConfiguratorResults({
 											<Button type="button" variant="outline-solid" disabled className="flex-1">
 												{t("demoNoPurchase")}
 											</Button>
+										) : quoteOnly ? (
+											// The purchase colour, as on the product page: this is the one action here.
+											<Link
+												href={quoteRequestHref(channel, quoteReferenceFor(offer.name))}
+												className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-10 flex-1 items-center justify-center rounded-md px-3 text-sm font-medium transition-colors"
+											>
+												{tProduct("requestQuote")}
+											</Link>
 										) : catalogOnly ? (
 											<Button type="button" variant="outline-solid" disabled className="flex-1">
 												{tCart("addUnavailable")}

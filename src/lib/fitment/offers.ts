@@ -70,6 +70,8 @@ export type FitmentOffer = {
 	/** The maker as the catalogue names it (Thule, Nordrive) — an attribute, not a guess from the title. */
 	brand?: string | null;
 	categoryName: string | null;
+	/** The base slug of the product's category; null for a demo entry. */
+	categorySlug: string | null;
 	/** Always the exact variant's price. Null rather than another variant's. */
 	price: { amount: number; currency: string } | null;
 	availability: OfferAvailability;
@@ -234,6 +236,7 @@ function demoOffers(dataset: FitmentDataset, refs: FitmentProductRef[]): Fitment
 			hoverImageUrl: null,
 			brand: null,
 			categoryName: entry.categoryName ?? null,
+			categorySlug: null,
 			price: entry.price ?? null,
 			availability: availabilityFrom(entry.availabilityMode, null, entry.quantityAvailable),
 			completeSetIncludes: ref.completeSet?.includes ?? null,
@@ -405,6 +408,8 @@ export async function resolveFitmentOffers(
 					hoverImageUrl: secondPhotograph(node.cardMedia),
 					brand: manufacturerOf(node.attributes),
 					categoryName: localized.category?.name ?? null,
+					// The base slug, not the translated one: that is how the shelves are keyed.
+					categorySlug: node.category?.slug ?? null,
 					price: gross ? { amount: gross.amount, currency: gross.currency } : null,
 					availability: availabilityFrom(
 						variant.metafield,

@@ -124,6 +124,7 @@ export async function CatalogOfferList({
 		roof: (roof) => tFit("cardRoof", { roof }),
 		years: (years) => tFit("cardYears", { years }),
 		price: { unavailable: tc("priceUnavailable") },
+		requestQuote: t("product.requestQuote"),
 		availability: {
 			inStock: t("common.inStock"),
 			onOrder: t("common.onOrder"),

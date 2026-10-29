@@ -83,6 +83,7 @@ export async function searchProducts(options: SearchOptions): Promise<SearchResu
 		price: node.pricing?.priceRange?.start?.gross.amount ?? 0,
 		currency: node.pricing?.priceRange?.start?.gross.currency ?? localeConfig.fallbackCurrency,
 		categoryName: node.category?.name,
+		categorySlug: node.category?.slug,
 		isPurchasable: node.isAvailableForPurchase === true,
 		card: transformToProductCard(node, channel, locale),
 	}));

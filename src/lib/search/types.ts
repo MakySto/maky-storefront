@@ -32,6 +32,8 @@ export interface SearchProduct {
 	price: number;
 	currency: string;
 	categoryName?: string | null;
+	/** The base slug of the product's category — what `config/quote-only.ts` is keyed by. */
+	categorySlug?: string | null;
 	/**
 	 * The channel's purchase switch (Saleor `isAvailableForPurchase`). Required, so every
 	 * provider has to answer it: `false` is still a visible catalogue hit, shown as not

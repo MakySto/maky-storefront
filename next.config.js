@@ -143,6 +143,17 @@ const config = {
 				pathname: "/vi/*/hqdefault.jpg",
 				search: "",
 			},
+			{
+				// The photographs of a Nordrive Kargo description (CFM, 2026-10-29): CFM writes their
+				// addresses into the product text, and `src/lib/editorjs.ts` has the shopper's browser ask
+				// this server for them, so the live CFM server is asked once per photograph and width, by
+				// this one server, and not by every shopper and every robot. Exactly `/media/` on that host
+				// and no query: not an open door to it.
+				protocol: "https",
+				hostname: "carfitmanager.com",
+				pathname: "/media/**",
+				search: "",
+			},
 			// No `hostname: "*"` any more (owner GO, 2026-09-26). It let anyone use this
 			// server to fetch and re-encode an image from any host on the internet. Before it
 			// went, the last two days of nginx logs were read for every `/_next/image` source:

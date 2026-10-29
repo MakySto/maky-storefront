@@ -20,6 +20,7 @@ const labels: OfferCardLabels = {
 	roof: (roof) => `Strecha: ${roof}`,
 	years: (years) => `Roky: ${years}`,
 	price: { unavailable: "Cena nie je k dispozícii" },
+	requestQuote: "Vyžiadať ponuku",
 	availability: {
 		inStock: "Skladom",
 		onOrder: "Na objednávku",
@@ -40,6 +41,7 @@ const offer: FitmentOffer = {
 	hoverImageUrl: "https://example.test/b.jpg",
 	brand: "Nordrive",
 	categoryName: "Strešné nosiče",
+	categorySlug: "stresne-nosice",
 	price: { amount: 189.9, currency: "EUR" },
 	availability: "on-demand",
 	completeSetIncludes: null,
@@ -138,6 +140,24 @@ describe("OfferCard", () => {
 		expect(html).not.toContain("Strecha:");
 		// the maker is not printed over the name again on a wide screen (the line is phone-only, below)
 		expect(html.match(/<p[^>]*data-testid="offer-kicker"[^>]*class="[^"]*sm:hidden/)).toBeNull();
+	});
+
+	describe("a set the market does not sell, in a category that asks for a quote", () => {
+		const van = { categorySlug: "stresne-nosice-a-kose-na-dodavky", isPurchasable: false };
+
+		it("says so where the price would be, and opens the set's page", () => {
+			const html = render(van);
+			expect(html).toContain("Vyžiadať ponuku");
+			expect(html).not.toMatch(/189,90/);
+			expect(html).not.toContain("Momentálne nedostupné");
+			expect(html).toContain("Zobraziť zostavu");
+		});
+
+		it("keeps the price where the market sells the set, and in any other category", () => {
+			expect(render({ ...van, isPurchasable: true })).toMatch(/189,90/);
+			expect(render({ ...van, categorySlug: "stresne-nosice" })).toMatch(/189,90/);
+			expect(render({ ...van, categorySlug: null })).toMatch(/189,90/);
+		});
 	});
 
 	describe("the line over the name on a phone", () => {

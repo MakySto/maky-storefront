@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/config/locale";
+import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { type FitmentOffer } from "@/lib/fitment/offers";
 import type { SetTitle } from "@/lib/fitment/set-title";
 import {
@@ -32,6 +33,8 @@ export type OfferCardLabels = {
 	roof: (roof: string) => string;
 	years: (years: string) => string;
 	price: { unavailable: string };
+	/** "Vyžiadať ponuku": in place of a price the market does not show (`config/quote-only.ts`). */
+	requestQuote: string;
 	availability: { inStock: string; onOrder: string; outOfStock: string; notPurchasable: string };
 };
 
@@ -78,15 +81,23 @@ export function OfferCard({
 	/** The market to add in, when this card may add to the cart itself; null opens the set's page. */
 	directAdd?: { channel: string } | null;
 }) {
-	const availability = !offer.isPurchasable
-		? { text: labels.availability.notPurchasable, tone: "text-text-secondary" }
-		: offer.availability === "in-stock"
-			? { text: labels.availability.inStock, tone: "text-status-success" }
-			: offer.availability === "on-demand"
-				? { text: labels.availability.onOrder, tone: "text-status-info" }
-				: offer.availability === "out-of-stock"
-					? { text: labels.availability.outOfStock, tone: "text-text-secondary" }
-					: null;
+	// A set this market does not sell, in a category that asks for a quote instead of a price: no price,
+	// and the card is the link to the product page, which carries the button.
+	const quoteOnly = quoteInsteadOfPrice({
+		isPurchasable: offer.isPurchasable,
+		categorySlug: offer.categorySlug,
+	});
+	const availability = quoteOnly
+		? null
+		: !offer.isPurchasable
+			? { text: labels.availability.notPurchasable, tone: "text-text-secondary" }
+			: offer.availability === "in-stock"
+				? { text: labels.availability.inStock, tone: "text-status-success" }
+				: offer.availability === "on-demand"
+					? { text: labels.availability.onOrder, tone: "text-status-info" }
+					: offer.availability === "out-of-stock"
+						? { text: labels.availability.outOfStock, tone: "text-text-secondary" }
+						: null;
 
 	// Orderable now: published and sold in this market, a variant to put in the cart, not a demo set,
 	// and not sold out.
@@ -204,7 +215,11 @@ export function OfferCard({
 			</div>
 
 			<div className={PRICE_ROW}>
-				{offer.price ? (
+				{quoteOnly ? (
+					<span className="text-text-primary text-base leading-tight font-semibold">
+						{labels.requestQuote}
+					</span>
+				) : offer.price ? (
 					<span className="text-price-current text-xl leading-tight font-extrabold tracking-[-0.02em] whitespace-nowrap tabular-nums">
 						{formatPrice(offer.price.amount, offer.price.currency, locale)}
 					</span>
