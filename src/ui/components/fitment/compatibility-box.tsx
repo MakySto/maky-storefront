@@ -38,6 +38,8 @@ type Props = {
 	 * was made for, which the verdict sentence alone does not allow.
 	 */
 	vehicleDetail?: string | null;
+	/** What the export documents the set to contain, already worded; shown under a fit, never under another verdict. */
+	includes?: string | null;
 	/** Rendered under the verdict — the "choose a vehicle" affordance. */
 	action?: React.ReactNode;
 	/** True when the answer came from demo data rather than a real provider. */
@@ -64,6 +66,7 @@ export async function CompatibilityBox({
 	result,
 	vehicleLabel,
 	vehicleDetail,
+	includes = null,
 	action,
 	isDemo,
 	locale,
@@ -145,7 +148,14 @@ export async function CompatibilityBox({
 								{qualified ? t("verdictQualified") : t(VERDICT_LABEL_KEY[result.verdict])}
 							</p>
 							{fitLine ? (
-								<p className="mt-0.5 text-sm font-medium opacity-90">{fitLine}</p>
+								<>
+									<p className="mt-0.5 text-sm font-medium opacity-90">{fitLine}</p>
+									{includes && (
+										<p className="mt-0.5 text-sm opacity-90" data-testid="fitment-set-contents">
+											{includes}
+										</p>
+									)}
+								</>
 							) : (
 								<>
 									<p className="mt-0.5 text-sm opacity-90">

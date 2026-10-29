@@ -301,6 +301,8 @@ async function ProductContent({
 		// on a catalogue that holds none. `sale_to_order` makes it BackOrder, which
 		// is what the badge beside the price already tells the customer.
 		availabilityMode: product.variants?.find((v) => v.metafield)?.metafield,
+		// Real stock only where a variant is tracked AND has quantity; the same test the badge applies.
+		trackInventory: product.variants?.some((v) => v.trackInventory === true && Boolean(v.quantityAvailable)),
 		variantCount: product.variants?.length ?? 0,
 	});
 

@@ -7,6 +7,7 @@ import { getTranslations } from "next-intl/server";
 import { categoryUrlFor } from "@/config/category-routes";
 import { getLocaleFromChannel } from "@/config/locale";
 import { REVERSE_MAP, marketHref } from "@/lib/channel-map";
+import { cn } from "@/lib/utils";
 import { buildCanonicalUrl, counterpartAlternates, type MarketCounterpart } from "@/lib/seo/hreflang";
 import { marketOpenGraph } from "@/lib/seo/metadata";
 import { liveMarkets } from "@/lib/market-state";
@@ -27,6 +28,9 @@ import { retiredVehiclePageHref } from "@/lib/catalog-content/retired-page";
 import { splitContent } from "@/lib/catalog-content/text";
 import { type CatalogNode, type CatalogTree, ancestorsOf } from "@/lib/catalog-content/tree";
 import { resolveFitmentOffers, uniqueProductRefs } from "@/lib/fitment/offers";
+import { datasetMakeNames } from "@/lib/fitment/set-title";
+import { productSetFacts } from "@/lib/fitment/set-facts";
+import { setVehicleOf, type SetVehicle } from "@/lib/fitment/set-vehicle";
 import { offerFitsByProduct } from "@/lib/fitment/offer-fit";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { Breadcrumbs, type BreadcrumbItem } from "@/ui/components/breadcrumbs";
@@ -239,6 +243,13 @@ async function Offers({
 	const offers = await resolveFitmentOffers(uniqueProductRefs([...applications]), channel, locale, {
 		dataset: fitment.dataset,
 	});
+	// The car of this page's applications, named the shop's way, for the sets whose names say it.
+	const dataset = fitment.dataset;
+	const vehicles = dataset
+		? [...new Set(applications.map((application) => application.generationId))]
+				.map((generationId) => setVehicleOf(dataset, generationId, language))
+				.filter((vehicle): vehicle is SetVehicle => vehicle !== null)
+		: undefined;
 	// The roof and the years each set is made for, from its own application: this page lists the
 	// whole generation, so without them the sets of every roof and every window read alike.
 	return (
@@ -246,6 +257,9 @@ async function Offers({
 			offers={offers}
 			channel={channel}
 			locale={locale}
+			makes={dataset ? datasetMakeNames(dataset) : undefined}
+			vehicles={vehicles}
+			facts={dataset ? productSetFacts(dataset) : undefined}
 			fits={offerFitsByProduct(applications)}
 		/>
 	);
@@ -315,6 +329,26 @@ async function VehiclePage({ params }: Params) {
 			(!child.page || isPubliclyVisible(child.page)) && !catalogRedirectTarget(market, child.urlPath),
 	);
 
+	// The generation whose sets this page lists: the page's own when it IS a generation, and the
+	// model's only one when a model has just one. A model with a single generation used to show
+	// that generation as one lonely tile and make the visitor click through to see any product; the
+	// sets are the same ones the generation page lists, under the generation's name, so it is never
+	// unclear which application the offer belongs to. With two or more generations nothing is shown
+	// here — which of them is meant is the visitor's choice, not ours.
+	const onlyGeneration =
+		node.kind === "model"
+			? children.filter(
+					(child) =>
+						child.kind === "generation" && (view.tree.applicationsOf.get(child.vehicleId)?.length ?? 0) > 0,
+				)
+			: [];
+	const offersFor: CatalogNode | null =
+		node.kind === "generation"
+			? node
+			: onlyGeneration.length === 1 && children.length === 1
+				? onlyGeneration[0]!
+				: null;
+
 	const crumbs: BreadcrumbItem[] = [
 		// The market's canonical root, not the segment this URL happened to use: a borrowed Slovak
 		// page abroad (`/cz/stresne-nosice/subaru/legacy-kombi/bh`) sits in the Czech tree, whose
@@ -330,45 +364,61 @@ async function VehiclePage({ params }: Params) {
 		{ label: node.name },
 	];
 
+	// A page with products takes the shop's own width from the crumbs down, so the heading, the
+	// cards and the advice share one left edge; the prose keeps its reading measure inside it.
+	const wide = Boolean(offersFor);
+
 	return (
-		<div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-			{/* Own boundary: other markets' artifacts must never hold up this page. */}
-			<Suspense fallback={null}>
-				<VehicleSwitchTargets vehicleId={node.vehicleId} />
-			</Suspense>
-			<Breadcrumbs items={crumbs} />
+		<>
+			<div className={cn("mx-auto w-full px-4 pt-8 sm:px-6 lg:px-8", wide ? "max-w-page" : "max-w-5xl")}>
+				{/* Own boundary: other markets' artifacts must never hold up this page. */}
+				<Suspense fallback={null}>
+					<VehicleSwitchTargets vehicleId={node.vehicleId} />
+				</Suspense>
+				<Breadcrumbs items={crumbs} />
 
-			{!published ? (
-				<p className="bg-status-warning-bg text-status-warning border-status-warning-border mt-4 rounded-md border px-3 py-2 text-sm">
-					{t("catalog.previewNotice")}
-				</p>
-			) : null}
+				{!published ? (
+					<p className="bg-status-warning-bg text-status-warning border-status-warning-border mt-4 rounded-md border px-3 py-2 text-sm">
+						{t("catalog.previewNotice")}
+					</p>
+				) : null}
 
-			<h1 className="text-text-primary mt-4 text-2xl font-bold break-words sm:text-3xl">
-				{page.h1 ?? vehicleDisplayName(view.tree, node)}
-			</h1>
+				<h1 className="text-text-primary mt-4 text-2xl font-bold break-words sm:text-3xl">
+					{page.h1 ?? vehicleDisplayName(view.tree, node)}
+				</h1>
 
-			{/* Above the listing: the short lead. */}
-			<div className="mt-4">
-				<ContentBlocks blocks={top} market={market} id="top" linkable={isLinkable} />
+				{/* Above the listing: the short lead. */}
+				<div className={cn("mt-4", wide && "max-w-3xl")}>
+					<ContentBlocks blocks={top} market={market} id="top" linkable={isLinkable} />
+				</div>
+
+				<ChildTiles channel={channel} nodes={children} />
 			</div>
 
-			<ChildTiles channel={channel} nodes={children} />
+			{/* Products only where the page names ONE generation: the first level at which the fitment
+		    data makes a claim about a specific car. A make page, and a model with several
+		    generations, are still browsing — the tiles above are the way on.
 
-			{/* Products only on a generation: the first level at which the fitment data
-			    makes a claim about a specific car. A make or model page is still browsing. */}
-			{node.kind === "generation" ? (
-				<Suspense fallback={<OfferSkeleton title={t("configurator.resultsTitle")} />}>
-					<Offers vehicleId={node.vehicleId} channel={channel} locale={locale} />
-				</Suspense>
+		    The listing is as wide as the shop's own listings (`max-w-page`), not as the article column
+		    above and below it: four cards to a row where the screen has the room. */}
+			{offersFor ? (
+				<div className="max-w-page mx-auto w-full px-4 sm:px-6 lg:px-8">
+					<Suspense fallback={<OfferSkeleton title={t("configurator.resultsTitle")} />}>
+						<Offers vehicleId={offersFor.vehicleId} channel={channel} locale={locale} />
+					</Suspense>
+				</div>
 			) : null}
 
-			{/* Below the listing: the advice. Server-rendered, no interaction required. */}
-			{body.length > 0 ? (
-				<section className="border-border-default mt-10 border-t pt-8">
-					<ContentBlocks blocks={body} market={market} id="body" linkable={isLinkable} />
-				</section>
-			) : null}
-		</div>
+			<div className={cn("mx-auto w-full px-4 pb-8 sm:px-6 lg:px-8", wide ? "max-w-page" : "max-w-5xl")}>
+				{/* Below the listing: the advice. Server-rendered, no interaction required. */}
+				{body.length > 0 ? (
+					<section className="border-border-default mt-10 border-t pt-8">
+						<div className={cn(wide && "max-w-3xl")}>
+							<ContentBlocks blocks={body} market={market} id="body" linkable={isLinkable} />
+						</div>
+					</section>
+				) : null}
+			</div>
+		</>
 	);
 }

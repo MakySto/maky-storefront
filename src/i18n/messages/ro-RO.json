@@ -854,7 +854,16 @@
 		"errorCartRejected": "Setul nu a putut fi adăugat în coș.",
 		"errorLookupFailed": "Nu putem confirma dacă setul a fost adăugat. Vă rugăm să verificați coșul.",
 		"errorCatalogueUnavailable": "Nu am putut verifica disponibilitatea setului în acest moment. Vă rugăm să încercați din nou.",
-		"errorGeneric": "Setul nu a putut fi adăugat în coș."
+		"errorGeneric": "Setul nu a putut fi adăugat în coș.",
+		"facetAerodynamic": "Aerodinamic",
+		"facetWing": "Profil aripă",
+		"facetTubular": "Tubular",
+		"facetColourBlack": "Negru",
+		"facetColourSilver": "Argintiu",
+		"facetColourAlu": "Aluminiu natural",
+		"propertyBarLength": "Lungimea barelor",
+		"propertyColour": "Culoare",
+		"propertyBarLoad": "Capacitatea barelor"
 	},
 	"catalog": {
 		"makeIndexTitle": "Alegeți barele de acoperiș după vehicul",
@@ -868,7 +877,7 @@
 		"offersPartial": "O parte din ofertă nu a putut fi încărcată, așa că lista poate fi incompletă.",
 		"previewNotice": "Previzualizarea unei pagini nepublicate. Nu este afișată vizitatorilor.",
 		"offersTitleGeneration": "Seturi pentru această generație",
-		"offersBrowseNote": "Fiecare set este valabil doar pentru tipul de acoperiș și anii indicați. Seturile nu sunt filtrate pentru mașina dvs. — după ce alegeți vehiculul, vi le arătăm doar pe cele potrivite.",
+		"offersBrowseNote": "Fiecare set este valabil doar pentru tipul de plafon și anii indicați, iar diferențele se văd pe carduri. Aveți altă mașină? Schimbați-o în antet.",
 		"offersGroupOther": "Fără tip de acoperiș indicat"
 	},
 	"company": {
@@ -1117,5 +1126,14 @@
 		"description": "Producătorii de bare portbagaj, cutii de plafon, suporturi de biciclete și alte echipamente ale căror produse le găsiți la noi.",
 		"productCount": "{count, plural, one {# produs} few {# produse} other {# de produse}}",
 		"brandDescription": "Produse {brand} în oferta MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Afișarea listei",
+		"viewGrid": "Grilă",
+		"viewList": "Listă",
+		"viewSet": "Vezi setul",
+		"specDimensions": "Dimensiuni",
+		"roofFilterLabel": "Tipul acoperișului",
+		"roofFilterAll": "Toate"
 	}
 }

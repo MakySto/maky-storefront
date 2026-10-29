@@ -854,7 +854,16 @@
 		"errorCartRejected": "No se ha podido añadir el conjunto a la cesta.",
 		"errorLookupFailed": "No podemos confirmar si el conjunto se ha añadido. Compruebe la cesta, por favor.",
 		"errorCatalogueUnavailable": "No hemos podido comprobar la disponibilidad del conjunto en este momento. Inténtelo de nuevo, por favor.",
-		"errorGeneric": "No se ha podido añadir el conjunto a la cesta."
+		"errorGeneric": "No se ha podido añadir el conjunto a la cesta.",
+		"facetAerodynamic": "Aerodinámico",
+		"facetWing": "Perfil de ala",
+		"facetTubular": "Tubular",
+		"facetColourBlack": "Negro",
+		"facetColourSilver": "Plateado",
+		"facetColourAlu": "Aluminio natural",
+		"propertyBarLength": "Longitud de las barras",
+		"propertyColour": "Color",
+		"propertyBarLoad": "Carga de las barras"
 	},
 	"catalog": {
 		"makeIndexTitle": "Elija las barras de techo según su vehículo",
@@ -868,7 +877,7 @@
 		"offersPartial": "No se ha podido cargar parte de la oferta, por lo que la lista puede estar incompleta.",
 		"previewNotice": "Vista previa de una página no publicada. No se muestra a los visitantes.",
 		"offersTitleGeneration": "Conjuntos para esta generación",
-		"offersBrowseNote": "Cada conjunto solo es válido para el tipo de techo y los años indicados. Los conjuntos no están filtrados para su coche: al elegir su vehículo le mostraremos solo los que le encajan.",
+		"offersBrowseNote": "Cada conjunto es válido solo para el tipo de techo y los años indicados; las diferencias se ven en las tarjetas. ¿Otro coche? Cámbielo en la cabecera.",
 		"offersGroupOther": "Sin tipo de techo indicado"
 	},
 	"company": {
@@ -1117,5 +1126,14 @@
 		"description": "Los fabricantes de barras de techo, cofres, portabicicletas y otros equipos cuyos productos puedes comprar aquí.",
 		"productCount": "{count, plural, one {# producto} other {# productos}}",
 		"brandDescription": "Productos {brand} en MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Vista del listado",
+		"viewGrid": "Cuadrícula",
+		"viewList": "Lista",
+		"viewSet": "Ver conjunto",
+		"specDimensions": "Dimensiones",
+		"roofFilterLabel": "Tipo de techo",
+		"roofFilterAll": "Todos"
 	}
 }

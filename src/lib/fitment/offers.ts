@@ -27,7 +27,8 @@ import "server-only";
  *     `priceRange.start` prints some other variant's price next to this variant's name.
  *   - **Availability uses the canonical resolver.** This catalogue is sale-to-order:
  *     `trackInventory` is false and `quantityAvailable` is a synthetic cap of 50, so
- *     treating it as stock would be inventing a stock claim.
+ *     treating it as stock would be inventing a stock claim. Only a variant with
+ *     `trackInventory` true (CFM's Oasis warehouse) has a quantity that is real stock.
  */
 
 import { executePublicGraphQL } from "@/lib/graphql";
@@ -50,7 +51,7 @@ import {
 /** Saleor refuses `first:` above 100 outright, so batches are capped at it. */
 const SALEOR_MAX_PAGE_SIZE = 100;
 
-export type OfferAvailability = "on-demand" | "out-of-stock" | "unknown";
+export type OfferAvailability = "in-stock" | "on-demand" | "out-of-stock" | "unknown";
 
 export type FitmentOffer = {
 	saleorProductId: string;
@@ -61,6 +62,13 @@ export type FitmentOffer = {
 	slug: string | null;
 	thumbnailUrl: string | null;
 	thumbnailAlt: string | null;
+	/**
+	 * The product's own SECOND real photograph, for the card's hover. Null for a product with one
+	 * image and for a demo set, which never borrows a photograph from anything.
+	 */
+	hoverImageUrl?: string | null;
+	/** The maker as the catalogue names it (Thule, Nordrive) — an attribute, not a guess from the title. */
+	brand?: string | null;
 	categoryName: string | null;
 	/** The base slug of the product's category; null for a demo entry. */
 	categorySlug: string | null;
@@ -178,15 +186,20 @@ export function isDemoDataset(dataset: FitmentDataset | null): boolean {
  * source, and the product's is a fallback — never the other way round. The first version
  * read only the product node, which made every older product resolve to "unknown" and
  * quietly dropped the "Na objednávku" line while the PLP and PDP still showed it.
+ *
+ * `trackInventory` decides what `quantity` means: true makes it real warehouse stock ("in-stock"
+ * above zero), anything else leaves it a synthetic cap that can only say "out of stock" at zero.
  */
 export function availabilityFrom(
 	variantMode: string | null | undefined,
 	productMode: string | null | undefined,
 	quantity: number | null | undefined,
+	trackInventory?: boolean | null,
 ): OfferAvailability {
 	const mode = variantMode ?? productMode;
-	const resolved = resolveAvailability({ mode, quantityAvailable: quantity ?? undefined });
+	const resolved = resolveAvailability({ mode, trackInventory, quantityAvailable: quantity ?? undefined });
 	if (!resolved) return "unknown";
+	if (resolved.key === "inStock") return "in-stock";
 	return resolved.key === "outOfStock" ? "out-of-stock" : "on-demand";
 }
 
@@ -220,6 +233,8 @@ function demoOffers(dataset: FitmentDataset, refs: FitmentProductRef[]): Fitment
 			slug: null,
 			thumbnailUrl: null,
 			thumbnailAlt: null,
+			hoverImageUrl: null,
+			brand: null,
 			categoryName: entry.categoryName ?? null,
 			categorySlug: null,
 			price: entry.price ?? null,
@@ -239,6 +254,34 @@ function demoOffers(dataset: FitmentDataset, refs: FitmentProductRef[]): Fitment
 		lookupFailed: false,
 		isDemo: true,
 	};
+}
+
+const MANUFACTURER_REF = "cfm:attribute:manufacturer";
+
+/** The maker named by the product's own manufacturer attribute; null when it carries none. */
+function manufacturerOf(
+	attributes: ReadonlyArray<{
+		attribute: { externalReference?: string | null };
+		values: ReadonlyArray<{ name?: string | null }>;
+	}> | null,
+): string | null {
+	const name = attributes?.find((a) => a.attribute.externalReference === MANUFACTURER_REF)?.values[0]?.name;
+	return name?.trim() ? name.trim() : null;
+}
+
+/**
+ * The gallery's second real photograph. The first is the thumbnail the card already shows, so a
+ * product with one image — or whose other files are videos or the grey "no image" GIF — has none,
+ * and its card does not swap.
+ */
+function secondPhotograph(
+	media: ReadonlyArray<{ url: string; type?: string | null }> | null | undefined,
+): string | null {
+	const images = (media ?? [])
+		.filter((item) => item.type !== "VIDEO")
+		.map((item) => publishableProductImage(item.url))
+		.filter((url): url is string => Boolean(url));
+	return images[1] ?? null;
 }
 
 /**
@@ -362,11 +405,18 @@ export async function resolveFitmentOffers(
 					// Never the "no image" GIF — see `lib/product-image.ts`.
 					thumbnailUrl: publishableProductImage(localized.thumbnail?.url),
 					thumbnailAlt: localized.thumbnail?.alt ?? null,
+					hoverImageUrl: secondPhotograph(node.cardMedia),
+					brand: manufacturerOf(node.attributes),
 					categoryName: localized.category?.name ?? null,
 					// The base slug, not the translated one: that is how the shelves are keyed.
 					categorySlug: node.category?.slug ?? null,
 					price: gross ? { amount: gross.amount, currency: gross.currency } : null,
-					availability: availabilityFrom(variant.metafield, node.metafield, variant.quantityAvailable),
+					availability: availabilityFrom(
+						variant.metafield,
+						node.metafield,
+						variant.quantityAvailable,
+						variant.trackInventory,
+					),
 					completeSetIncludes: ref.completeSet?.includes ?? null,
 					facets: ref.facets ?? null,
 					isPurchasable: node.isAvailableForPurchase === true,
@@ -444,7 +494,12 @@ export async function verifyPurchasable(
 		const gross = variant.pricing?.price?.gross ?? null;
 		return {
 			ok: true,
-			availability: availabilityFrom(variant.metafield, node.metafield, variant.quantityAvailable),
+			availability: availabilityFrom(
+				variant.metafield,
+				node.metafield,
+				variant.quantityAvailable,
+				variant.trackInventory,
+			),
 			price: gross ? { amount: gross.amount, currency: gross.currency } : null,
 		};
 	} catch (error) {

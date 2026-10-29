@@ -45,9 +45,7 @@ import {
 } from "@/lib/fitment/plp-vehicle-filter";
 import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import { VehicleListingFilter } from "@/ui/components/fitment/vehicle-listing-filter";
-import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
-import { loadFitmentDataset } from "@/lib/fitment/provider";
-import { describeOfferFit, productFitIndex } from "@/lib/fitment/offer-fit";
+import { attachSetFacts } from "@/lib/fitment/card-facts";
 import { CatalogMakeIndex } from "@/ui/components/catalog/make-index";
 import { HeroBenefits } from "@/ui/components/homepage/hero-benefits";
 import { STOREFRONT_CATEGORIES, categoryFitmentKind } from "@/config/categories";
@@ -555,18 +553,15 @@ async function CategoryProducts({
 
 	const localized = resolveExactLocaleProducts(listing.products, locale);
 
-	// What each set on this shelf is FOR — the roof and the years, from the source's own
-	// application and not from the title. Only on a shelf the programme covers, and only for a
-	// product the dataset names; every other card is untouched. A statement about the set, never
-	// "fits": it reads the same with a car chosen and without one.
-	const fitDataset = categoryFitmentKind(baseSlug) !== null ? (await loadFitmentDataset()).dataset : null;
-	const fitIndex = fitDataset ? productFitIndex(fitDataset) : null;
-	const tFit = fitIndex ? await getTranslations({ locale, namespace: "fitment" }) : null;
-	const productCards = localized.products.map((product) => {
-		const card = transformToProductCard(product, params.channel, locale);
-		const fit = fitIndex && tFit ? describeOfferFit(fitIndex.get(product.id), tFit, ROOF_LABEL_KEY) : null;
-		return fit ? { ...card, fit } : card;
-	});
+	// What each set on this shelf is FOR — the roof and the years, from the source's own application
+	// and not from the title — and the parameters of the set itself. Only on a shelf the programme
+	// covers, and only for a product the dataset names; every other card is untouched. Statements
+	// about the set, never "fits": they read the same with a car chosen and without one.
+	const baseCards = localized.products.map((product) =>
+		transformToProductCard(product, params.channel, locale),
+	);
+	const productCards =
+		categoryFitmentKind(baseSlug) !== null ? await attachSetFacts(baseCards, locale) : baseCards;
 
 	// Only the catalogue knows whether a verified set is on sale. When the car's whole list is
 	// hidden or withdrawn, say that, instead of an empty grid under "overené pre …".

@@ -854,7 +854,16 @@
 		"errorCartRejected": "A szettet nem sikerült kosárba helyezni.",
 		"errorLookupFailed": "Nem tudjuk megerősíteni, hogy a szett bekerült-e a kosárba. Kérjük, ellenőrizze a kosarat.",
 		"errorCatalogueUnavailable": "A szett elérhetőségét most nem sikerült ellenőrizni. Kérjük, próbálja újra.",
-		"errorGeneric": "A szettet nem sikerült kosárba helyezni."
+		"errorGeneric": "A szettet nem sikerült kosárba helyezni.",
+		"facetAerodynamic": "Aerodinamikus",
+		"facetWing": "Szárnyprofil",
+		"facetTubular": "Csöves",
+		"facetColourBlack": "Fekete",
+		"facetColourSilver": "Ezüst",
+		"facetColourAlu": "Natúr alumínium",
+		"propertyBarLength": "Keresztrudak hossza",
+		"propertyColour": "Szín",
+		"propertyBarLoad": "Keresztrudak teherbírása"
 	},
 	"catalog": {
 		"makeIndexTitle": "Válasszon tetőcsomagtartót jármű szerint",
@@ -868,7 +877,7 @@
 		"offersPartial": "A kínálat egy részét nem sikerült betölteni, ezért a lista hiányos lehet.",
 		"previewNotice": "Nem közzétett oldal előnézete. A látogatók nem látják.",
 		"offersTitleGeneration": "Készletek ehhez a generációhoz",
-		"offersBrowseNote": "Minden készlet csak a megadott tetőtípusra és évjáratokra érvényes. A készletek nincsenek az Ön autójához igazítva – a jármű kiválasztása után csak a hozzá illőket mutatjuk.",
+		"offersBrowseNote": "Minden szett csak a feltüntetett tetőtípusra és évjáratokra érvényes, a különbségek a kártyákon láthatók. Másik autó? Módosítsa a fejlécben.",
 		"offersGroupOther": "Nincs megadott tetőtípus"
 	},
 	"company": {
@@ -1117,5 +1126,14 @@
 		"description": "A tetőcsomagtartók, tetőboxok, kerékpártartók és más felszerelések gyártói, akiknek termékeit nálunk megvásárolhatja.",
 		"productCount": "{count, plural, other {# termék}}",
 		"brandDescription": "{brand} termékek a MAKY.STORE kínálatában."
+	},
+	"listing": {
+		"viewLabel": "A lista megjelenítése",
+		"viewGrid": "Rács",
+		"viewList": "Lista",
+		"viewSet": "Szett megtekintése",
+		"specDimensions": "Méretek",
+		"roofFilterLabel": "Tetőtípus",
+		"roofFilterAll": "Összes"
 	}
 }
