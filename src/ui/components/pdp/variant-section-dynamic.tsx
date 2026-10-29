@@ -1,6 +1,7 @@
 import { publicProductCode } from "@/lib/product-code";
 import { publicEan } from "@/lib/product-ean";
 import { formatMoney, formatMoneyRange } from "@/lib/utils";
+import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { quoteReferenceFor, quoteRequestHref } from "@/lib/contact/quote-request";
 import { getDiscountInfo } from "@/lib/pricing";
 import { type ProductDetailsQuery } from "@/gql/graphql";
@@ -199,6 +200,10 @@ export async function VariantSectionDynamic({
 		? undefined
 		: quoteRequestHref(channel, quoteReferenceFor(product.name, productCode));
 
+	// A category that asks for a quote instead of a price, where this market does not sell the product
+	// (`config/quote-only.ts`): the page shows no price, and the link above stands alone.
+	const quoteOnly = quoteInsteadOfPrice({ isPurchasable, categorySlug: product.category?.slug });
+
 	const reviewSummary = reviewSummaryFor(product);
 
 	// Server action for adding to cart. `useActionState` shape, so <CartForm> can
@@ -340,6 +345,7 @@ export async function VariantSectionDynamic({
 					disabledReason={disabledReason}
 					maxQuantity={maxQuantity}
 					quoteHref={quoteHref}
+					quoteOnly={quoteOnly}
 					availability={
 						isPurchasable ? (
 							<AvailabilityBadge

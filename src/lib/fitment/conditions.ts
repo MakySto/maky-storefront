@@ -71,13 +71,16 @@ export function renderConditions(
 	// sharing a code but carrying different parameters are two different restrictions,
 	// and collapsing them would delete one of them.
 	const seen = new Set<string>();
-	let unresolvedCount = 0;
+	// A kind of condition we cannot state is one fact about the set, however many applications carry it:
+	// a van's versions are one `van-version` condition each, and "9 conditions we cannot show in your
+	// language" would count the same missing translation nine times.
+	const unresolvedCodes = new Set<string>();
 
 	for (const condition of conditions) {
 		const fromSource = pickConditionText(condition.text, locale);
 		const text = fromSource ?? translateCode(condition.code);
 		if (!text) {
-			unresolvedCount += 1;
+			unresolvedCodes.add(condition.code);
 			continue;
 		}
 		const key = `${condition.code}::${text}`;
@@ -90,7 +93,7 @@ export function renderConditions(
 		});
 	}
 
-	return { resolved, unresolvedCount };
+	return { resolved, unresolvedCount: unresolvedCodes.size };
 }
 
 /**

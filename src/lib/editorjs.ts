@@ -70,6 +70,23 @@ interface ParseOptions {
 const positiveDimension = (value: unknown, fallback: number): number =>
 	typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.round(value) : fallback;
 
+/**
+ * A photograph in a description that CFM serves itself (`https://carfitmanager.com/media/…`, the Kargo
+ * descriptions): asked of this site's image optimizer, which fetches it from CFM once and keeps the encoded
+ * copy, and not of CFM by every browser and every robot at full size. `next.config.js` lets the optimizer fetch
+ * exactly `/media/` on that host (`next-image-allowlist.test.ts`); the width is a `deviceSizes` entry and the
+ * quality the one `qualities` allows. One width, no `srcset`: the sanitizer passes only `src`, and a phone
+ * takes the same 1080 px as a desktop column, which AVIF keeps small. Anything else keeps the address it came with.
+ */
+const CFM_MEDIA = /^https:\/\/carfitmanager\.com\/media\/[^\s"'<>?#]+$/;
+const CFM_MEDIA_WIDTH = 1080;
+
+function imageSource(src: string): string {
+	return CFM_MEDIA.test(src)
+		? escapeHtml(`/_next/image?url=${encodeURIComponent(src)}&w=${CFM_MEDIA_WIDTH}&q=75`)
+		: src;
+}
+
 function safeImageUrl(value: unknown): string | null {
 	if (typeof value !== "string") return null;
 	try {
@@ -316,7 +333,9 @@ function renderBlock(block: EditorJSBlock): string | null {
 			const alt = plainText(caption);
 			const width = positiveDimension(data.width ?? file.width, 1024);
 			const height = positiveDimension(data.height ?? file.height, 768);
-			return `<figure><img src="${src}" alt="${alt}" width="${width}" height="${height}" loading="lazy" decoding="async">${
+			return `<figure><img src="${imageSource(
+				src,
+			)}" alt="${alt}" width="${width}" height="${height}" loading="lazy" decoding="async">${
 				caption ? `<figcaption>${caption}</figcaption>` : ""
 			}</figure>`;
 		}

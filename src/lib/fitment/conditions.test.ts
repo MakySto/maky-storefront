@@ -27,6 +27,23 @@ describe("where the words come from", () => {
 		expect(out.resolved[0]).toMatchObject({ text: "Známa podmienka", source: "i18n" });
 	});
 
+	it("counts a kind of condition it cannot state once, however many versions carry it", () => {
+		// A van's versions are one `van-version` condition each; only Slovak words exist for them today.
+		const versions = [
+			{ code: "van-version", text: { "sk-SK": "Určené len pre verziu: dĺžka L2." } },
+			{ code: "van-version", text: { "sk-SK": "Určené len pre verziu: dĺžka L3." } },
+		];
+		const out = renderConditions(versions, "de-DE", KNOWN);
+		expect(out.resolved).toEqual([]);
+		expect(out.unresolvedCount).toBe(1);
+		const sk = renderConditions(versions, "sk-SK", KNOWN);
+		expect(sk.resolved.map((c) => c.text)).toEqual([
+			"Určené len pre verziu: dĺžka L2.",
+			"Určené len pre verziu: dĺžka L3.",
+		]);
+		expect(sk.unresolvedCount).toBe(0);
+	});
+
 	it("counts a condition it cannot state, instead of dropping it silently", () => {
 		const out = renderConditions([condition("mystery-code")], "sk-SK", KNOWN);
 		expect(out.resolved).toEqual([]);

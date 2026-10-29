@@ -160,3 +160,14 @@ describe("quoteReferenceFromFragment", () => {
 		expect(quoteReferenceFromFragment("#quote=100%")).toBe("100%");
 	});
 });
+
+describe("the code of a Kargo set in the link", () => {
+	it("survives the way to the contact page, × and + included", () => {
+		// `+` is a space in a query string; in the fragment it is read the same way unless it is encoded.
+		const reference = quoteReferenceFor("Nordrive Kargo 135 cm", "2×N10035+N30302");
+		const href = quoteRequestHref("us-usd", reference);
+		expect(href).toContain("%2B");
+		expect(quoteReferenceFromFragment(href.slice(href.indexOf("#")))).toBe(reference);
+		expect(reference).toBe("Nordrive Kargo 135 cm (2×N10035+N30302)");
+	});
+});

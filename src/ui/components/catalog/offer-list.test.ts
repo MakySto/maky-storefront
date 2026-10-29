@@ -53,6 +53,7 @@ const offer = (i: number, over: Partial<FitmentOffer> = {}): FitmentOffer => ({
 	thumbnailUrl: null,
 	thumbnailAlt: null,
 	categoryName: null,
+	categorySlug: null,
 	price: { amount: 72, currency: "EUR" },
 	availability: "on-demand",
 	completeSetIncludes: null,

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { categoryUrlFor } from "@/config/category-routes";
+import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
 import { meaningfulTitle } from "@/config/brand";
@@ -232,6 +233,12 @@ async function ProductContent({
 		{ label: product.name },
 	];
 
+	// The page shows a quote button instead of a price here, so the markup states no price either.
+	const quoteOnly = quoteInsteadOfPrice({
+		isPurchasable: product.isAvailableForPurchase === true,
+		categorySlug: product.category?.slug,
+	});
+
 	const productJsonLd = buildProductJsonLd({
 		name: product.name,
 		description: product.seoDescription || product.name,
@@ -259,14 +266,15 @@ async function ProductContent({
 		// builder both refuse a number that cannot be a GTIN; a product CFM has none for says nothing.
 		gtin: publicEan(product.variants?.[0]) ?? undefined,
 		isPurchasable: product.isAvailableForPurchase === true,
-		priceRange: product.pricing?.priceRange?.start?.gross
-			? {
-					lowPrice: product.pricing.priceRange.start.gross.amount,
-					highPrice:
-						product.pricing.priceRange.stop?.gross?.amount || product.pricing.priceRange.start.gross.amount,
-					currency: product.pricing.priceRange.start.gross.currency,
-				}
-			: null,
+		priceRange:
+			product.pricing?.priceRange?.start?.gross && !quoteOnly
+				? {
+						lowPrice: product.pricing.priceRange.start.gross.amount,
+						highPrice:
+							product.pricing.priceRange.stop?.gross?.amount || product.pricing.priceRange.start.gross.amount,
+						currency: product.pricing.priceRange.start.gross.currency,
+					}
+				: null,
 		// The real variants, so a single-variant product gets its EXACT price and
 		// SKU in an Offer instead of a 299-to-299 AggregateOffer band, and a
 		// multi-variant one becomes a ProductGroup whose members each carry their
@@ -276,9 +284,11 @@ async function ProductContent({
 			sku: publicSku(v),
 			gtin: publicEan(v),
 			name: v.name,
-			price: v.pricing?.price?.gross
-				? { amount: v.pricing.price.gross.amount, currency: v.pricing.price.gross.currency }
-				: null,
+			// No price in the markup where the page shows none (`config/quote-only.ts`).
+			price:
+				v.pricing?.price?.gross && !quoteOnly
+					? { amount: v.pricing.price.gross.amount, currency: v.pricing.price.gross.currency }
+					: null,
 			inStock: Boolean(v.quantityAvailable),
 			trackInventory: v.trackInventory,
 			availabilityMode: v.metafield,
