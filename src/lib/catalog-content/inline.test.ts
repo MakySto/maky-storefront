@@ -129,3 +129,16 @@ describe("withMarketPrefix", () => {
 		expect(withMarketPrefix("/skoda/x", "sk")).toBe("/sk/skoda/x");
 	});
 });
+
+describe("parseInline: <strong>", () => {
+	it("reads Saleor's <strong> as the same bold as <b>", () => {
+		expect(parseInline("a <strong>b</strong> c")).toEqual(parseInline("a <b>b</b> c"));
+		expect(parseInline("<STRONG>x</STRONG>")).toEqual([
+			{ kind: "bold", children: [{ kind: "text", value: "x" }] },
+		]);
+	});
+
+	it("still shows a stray close tag instead of swallowing it", () => {
+		expect(textOf(parseInline("x</strong>"))).toBe("x</strong>");
+	});
+});
