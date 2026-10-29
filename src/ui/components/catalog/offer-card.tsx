@@ -6,10 +6,10 @@ import { type FitmentOffer } from "@/lib/fitment/offers";
 import {
 	ACTION_ROW,
 	CARD,
-	DETAIL_LINK,
 	FACTS_COLUMN,
 	MEDIA_BOX,
 	MEDIA_COLUMN,
+	PRIMARY_LINK,
 	PRICE_ROW,
 	TITLE,
 } from "@/ui/components/listing/card-layout";
@@ -163,7 +163,7 @@ export function OfferCard({
 			</div>
 
 			<div className={ACTION_ROW}>
-				<Link href={href} className={DETAIL_LINK}>
+				<Link href={href} className={PRIMARY_LINK}>
 					{labels.viewSet}
 				</Link>
 			</div>

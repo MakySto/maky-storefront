@@ -26,7 +26,7 @@ const offer: FitmentOffer = {
 	saleorProductId: "p1",
 	saleorVariantId: "v1",
 	externalReference: "cfm:product:1",
-	productKind: "roof-rack-bundle",
+	productKind: "roof-rack-set",
 	name: "Nordrive Silenzio Silver",
 	slug: "nordrive-silenzio-silver",
 	thumbnailUrl: "https://example.test/a.jpg",

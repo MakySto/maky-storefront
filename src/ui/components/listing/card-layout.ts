@@ -17,7 +17,8 @@ export const CARD =
 	"group/card border-border-default bg-surface-card relative flex flex-col overflow-hidden rounded-sm border shadow-xs transition-[box-shadow,border-color] duration-200 ease-out hover:border-border-strong hover:shadow-md group-data-[view=list]/lv:sm:grid group-data-[view=list]/lv:sm:grid-cols-[15rem_minmax(0,1fr)_14.5rem] group-data-[view=list]/lv:sm:grid-rows-[1fr_auto] group-data-[view=list]/lv:lg:grid-cols-[17rem_minmax(0,1fr)_15.5rem]";
 
 /** The photograph's column, which in a list spans both rows. */
-export const MEDIA_COLUMN = "relative group-data-[view=list]/lv:sm:row-span-2";
+export const MEDIA_COLUMN =
+	"relative group-data-[view=list]/lv:sm:static group-data-[view=list]/lv:sm:row-span-2";
 
 /** The photograph's window: a fixed ratio, so nothing jumps while photographs load. */
 export const MEDIA_BOX =
@@ -45,6 +46,14 @@ export const TITLE =
  */
 export const CARD_GRID =
 	"grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 group-data-[view=list]/lv:grid-cols-1!";
+
+/**
+ * The same link as the shop's own purchase button: solid, high contrast, the action colour. Used
+ * where a card's one way on is the primary action of the card (a set's page, from a page that has no
+ * confirmed car and so cannot add to the cart).
+ */
+export const PRIMARY_LINK =
+	"bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring flex h-11 w-full items-center justify-center rounded-xs text-sm font-semibold shadow-xs transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden";
 
 /** The link that carries the card's primary action when it is not a form: outlined, full width. */
 export const DETAIL_LINK =

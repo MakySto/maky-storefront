@@ -58,7 +58,7 @@ export function ListingViewToggle({ labels, className }: { labels: ListingViewLa
 						className={cn(
 							"focus-visible:ring-ring inline-flex h-9 items-center gap-1.5 rounded-[0.1875rem] px-2.5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-hidden",
 							active
-								? "bg-brand text-brand-text"
+								? "bg-surface-secondary text-text-primary ring-border-strong ring-1 ring-inset"
 								: "text-text-secondary hover:bg-surface-secondary hover:text-text-primary",
 						)}
 					>
