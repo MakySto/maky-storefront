@@ -5,7 +5,8 @@ import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { CARD_GRID } from "@/ui/components/listing/card-layout";
 
-export type RoofFilterItem = { id: string; roof: string | null; node: ReactNode };
+/** `roofs` is every roof the set is made for; a set that names none carries `["none"]`. */
+export type RoofFilterItem = { id: string; roofs: readonly string[]; node: ReactNode };
 export type RoofFilterGroup = { key: string; label: string; count: number };
 
 /**
@@ -29,7 +30,8 @@ export function RoofFilteredList({
 	labels: { group: string; all: string };
 }) {
 	const [active, setActive] = useState<string | null>(null);
-	const shown = active === null ? items : items.filter((item) => (item.roof ?? "none") === active);
+	// A set made for several roofs is under each of them: narrowing to one roof never hides it.
+	const shown = active === null ? items : items.filter((item) => item.roofs.includes(active));
 
 	const chip = (selected: boolean) =>
 		cn(

@@ -16,7 +16,7 @@ import {
 	SPECS_BLOCK,
 	TITLE,
 } from "@/ui/components/listing/card-layout";
-import { cardKicker } from "@/ui/components/listing/kicker";
+import { cardKicker, setKicker } from "@/ui/components/listing/kicker";
 import { ListingMedia } from "@/ui/components/listing/listing-media";
 import { DIMENSIONS_SPEC_KEY, ListingSpecs, type ListingSpec } from "@/ui/components/listing/listing-specs";
 import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
@@ -171,7 +171,13 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 		!isPlaceholderProductImage(product.image);
 
 	const shownName = product.fit && product.setTitle ? product.setTitle.model : product.name;
-	const kicker = cardKicker(shownName, product.brand, product.category?.name);
+	// A set taken apart is short and its name carries the maker: its line over the name is a phone's
+	// only (who made it and the shelf), as on the vehicle page's card. Any other name keeps the quiet
+	// line that says only what the name does not.
+	const takenApart = Boolean(product.fit && product.setTitle);
+	const kicker = takenApart
+		? setKicker(product.brand, product.category?.name)
+		: cardKicker(shownName, product.brand, product.category?.name);
 	// A combined size ("190 × 80 × 40 cm") has no attribute to take its name from.
 	const specs = (product.specs ?? []).map((spec) =>
 		spec.key === DIMENSIONS_SPEC_KEY ? { ...spec, label: tListing("specDimensions") } : spec,
@@ -223,7 +229,9 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 			<div className={FACTS_COLUMN}>
 				{/* The maker and the shelf, only what the name does not already say. */}
 				{(kicker.brand || kicker.category) && (
-					<p className="text-text-tertiary line-clamp-1 text-xs leading-snug">
+					<p
+						className={cn("text-text-tertiary line-clamp-1 text-xs leading-snug", takenApart && "sm:hidden")}
+					>
 						{kicker.brand && (
 							<span className="text-text-secondary font-bold tracking-[0.07em] uppercase">
 								{kicker.brand}
@@ -235,7 +243,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 				)}
 				{/* Up to four lines for a name that is printed whole: a roof-rack set's name ends with
 				    the car and the roof type, the part a shopper checks. A name taken apart is short. */}
-				<h2 className={cn(TITLE, !(kicker.brand || kicker.category) && "mt-0")}>
+				<h2 className={cn(TITLE, takenApart && "sm:mt-0", !(kicker.brand || kicker.category) && "mt-0")}>
 					<Link
 						href={product.href}
 						className="text-text-primary decoration-brand/40 underline-offset-[3px] hover:underline focus-visible:outline-hidden"

@@ -35,8 +35,9 @@ export type ListingViewLabels = { group: string; grid: string; list: string };
  * "Mriežka / Zoznam". Two native buttons in a labelled group: focusable, operable with Enter and
  * Space, and each says its state with `aria-pressed`. The words arrive as props so the toggle is the
  * same component on a server-rendered page and in a client toolbar, and needs no translation
- * context. The icon is decoration: the words are always in the DOM (visible from `sm`, screen-reader
- * only below), so assistive technology gets the same names a sighted reader gets.
+ * context. Not shown below `sm`: a phone has one card layout, so the choice would change nothing there.
+ * The icon is decoration: the words are always in the DOM, so assistive technology gets the same names
+ * a sighted reader gets.
  */
 export function ListingViewToggle({ labels, className }: { labels: ListingViewLabels; className?: string }) {
 	const [view, setView] = useListingView();
@@ -45,7 +46,10 @@ export function ListingViewToggle({ labels, className }: { labels: ListingViewLa
 		<div
 			role="group"
 			aria-label={labels.group}
-			className={cn("border-border-default bg-surface-card inline-flex rounded-xs border p-0.5", className)}
+			className={cn(
+				"border-border-default bg-surface-card hidden rounded-xs border p-0.5 sm:inline-flex",
+				className,
+			)}
 		>
 			{OPTIONS.map(({ view: option, Icon }) => {
 				const active = view === option;

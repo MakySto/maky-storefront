@@ -15,7 +15,7 @@ import {
 	SPECS_BLOCK,
 	TITLE,
 } from "@/ui/components/listing/card-layout";
-import { cardKicker } from "@/ui/components/listing/kicker";
+import { setKicker } from "@/ui/components/listing/kicker";
 import { ListingMedia } from "@/ui/components/listing/listing-media";
 import { ListingSpecs, type ListingSpec } from "@/ui/components/listing/listing-specs";
 import { ListingAddToCart } from "@/ui/components/plp/listing-add-to-cart";
@@ -96,11 +96,10 @@ export function OfferCard({
 		Boolean(offer.saleorVariantId) &&
 		offer.availability !== "out-of-stock";
 
-	// The maker and the shelf's name, but only what the name does not already say: "NORDRIVE ·
-	// Nordrive strešné nosiče" over "Nordrive Silenzio Silver" said "Nordrive" three times.
-	const shown = title ? title.model : offer.name;
-	const kicker = cardKicker(shown, offer.brand, offer.categoryName);
-	const kickerText = [kicker.brand, kicker.category].filter(Boolean).join(" · ");
+	// The maker and the shelf, on a phone only: there the line sits right under the photograph and
+	// says who made the set. From `sm` the model name already begins with the maker, and the line
+	// would say "Nordrive" twice in a card that is meant to say everything once.
+	const kicker = setKicker(offer.brand, offer.categoryName);
 
 	return (
 		<li
@@ -136,11 +135,22 @@ export function OfferCard({
 			</div>
 
 			<div className={FACTS_COLUMN}>
-				{kickerText ? (
-					<p className="text-text-tertiary line-clamp-1 text-xs leading-snug">{kickerText}</p>
+				{kicker.brand || kicker.category ? (
+					<p
+						className="text-text-tertiary line-clamp-1 text-xs leading-snug sm:hidden"
+						data-testid="offer-kicker"
+					>
+						{kicker.brand ? (
+							<span className="text-text-secondary font-semibold tracking-wider uppercase">
+								{kicker.brand}
+							</span>
+						) : null}
+						{kicker.brand && kicker.category ? <span aria-hidden="true"> · </span> : null}
+						{kicker.category}
+					</p>
 				) : null}
 				{/* A set's model name is one short line: no second line is held back for it (the category card keeps one, its names vary). */}
-				<h3 className={cn(TITLE, "sm:min-h-0", kickerText ? "" : "mt-0")}>
+				<h3 className={cn(TITLE, "sm:mt-0 sm:min-h-0", kicker.brand || kicker.category ? "" : "mt-0")}>
 					<Link
 						href={href}
 						className="text-text-primary decoration-brand/40 underline-offset-[3px] hover:underline focus-visible:outline-hidden"

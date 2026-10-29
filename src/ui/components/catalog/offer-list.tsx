@@ -1,13 +1,15 @@
 import { getTranslations } from "next-intl/server";
 import { marketHref } from "@/lib/channel-map";
 import { type FitmentOffer, type FitmentOffers } from "@/lib/fitment/offers";
-import { ROOF_GROUP_ORDER, describeOfferFit, groupRoofOf, type OfferFit } from "@/lib/fitment/offer-fit";
+import { ROOF_GROUP_ORDER, describeOfferFit, roofsOf, type OfferFit } from "@/lib/fitment/offer-fit";
 import { describeIncludes, isCompleteSet, offerSpecs } from "@/lib/fitment/offer-specs";
 import { type RoofType } from "@/lib/fitment/contract";
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import { CARD_GRID } from "@/ui/components/listing/card-layout";
 import { ListingViewRoot, ListingViewToggle } from "@/ui/components/listing/listing-view";
 import { splitSetTitle } from "@/lib/fitment/set-title";
+import { type SetFacts } from "@/lib/fitment/set-facts";
+import { type SetVehicle } from "@/lib/fitment/set-vehicle";
 import { OfferCard, type OfferCardLabels } from "./offer-card";
 import { RoofFilteredList } from "./offer-roof-filter";
 
@@ -36,6 +38,8 @@ export async function CatalogOfferList({
 	locale,
 	fits,
 	makes,
+	vehicles,
+	facts,
 	title,
 }: {
 	offers: FitmentOffers;
@@ -48,6 +52,17 @@ export async function CatalogOfferList({
 	 * car on separate lines; without them the name is printed whole, as the catalogue wrote it.
 	 */
 	makes?: readonly string[];
+	/**
+	 * The car this page is about, named the way the rest of the shop names it (the dataset's names for
+	 * the reading language). A set whose name says it is for that car is shown under those words.
+	 */
+	vehicles?: readonly SetVehicle[];
+	/**
+	 * What the export says about each set itself (bar shape, load, contents), keyed by Saleor product
+	 * id, read by the rule the product page uses: only rows the source stands behind, and nothing where
+	 * rows disagree. Replaces what the offers carry from the one row they were matched through.
+	 */
+	facts?: ReadonlyMap<string, SetFacts>;
 	/**
 	 * What each set is FOR — roof and years — from its application, keyed by Saleor product id.
 	 *
@@ -123,7 +138,10 @@ export async function CatalogOfferList({
 		const described = fits ? describeOfferFit(fits.get(offer.saleorProductId), tFit, ROOF_LABEL_KEY) : null;
 		// The name is only taken apart for a set whose roof and years are known from its own
 		// application: those lines replace what the long name said, so they must exist.
-		const title = described && makes ? splitSetTitle(offer.name, { brand: offer.brand, makes }) : null;
+		const title =
+			described && makes ? splitSetTitle(offer.name, { brand: offer.brand, makes, vehicles }) : null;
+		const own = facts ? facts.get(offer.saleorProductId) ?? null : undefined;
+		const includes = own === undefined ? offer.completeSetIncludes : own?.includes;
 		return (
 			<OfferCard
 				key={offer.saleorVariantId}
@@ -131,9 +149,9 @@ export async function CatalogOfferList({
 				href={offer.slug ? marketHref(channel, `/${offer.slug}`) : marketHref(channel)}
 				fit={described}
 				title={title}
-				specs={offerSpecs(offer.facets, tc)}
-				includes={describeIncludes(offer.completeSetIncludes, tc)}
-				complete={isCompleteSet(offer.completeSetIncludes)}
+				specs={offerSpecs(own === undefined ? offer.facets : own?.facets, tc)}
+				includes={describeIncludes(includes, tc)}
+				complete={isCompleteSet(includes)}
 				labels={labels}
 				locale={locale}
 				priority={priority}
@@ -182,19 +200,22 @@ export async function CatalogOfferList({
 	// With facts: ONE list, the roofs told apart on each card and, where the page mixes several, by
 	// a filter — not by separate shelves, which left a one-card shelf standing in a field of white.
 	// Within the list: the likeliest roof first, the newest window last within a roof.
-	type Row = { offer: FitmentOffer; roof: RoofType | null; from: number };
+	// A set made for several roofs is sorted under its likeliest roof and found under each of them.
+	type Row = { offer: FitmentOffer; roofs: RoofType[]; from: number };
 	const rows: Row[] = offers.offers.map((offer) => {
 		const own = fits.get(offer.saleorProductId);
-		return { offer, roof: groupRoofOf(own), from: own?.[0]?.yearFrom ?? 0 };
+		return { offer, roofs: roofsOf(own), from: own?.[0]?.yearFrom ?? 0 };
 	});
-	const order = (roof: RoofType | null) =>
-		roof === null ? ROOF_GROUP_ORDER.length : ROOF_GROUP_ORDER.indexOf(roof);
-	const sorted = [...rows].sort((a, b) => order(a.roof) - order(b.roof) || a.from - b.from);
-	const groups = [...new Set(sorted.map((row) => row.roof))].map((roof) => ({
-		key: roof ?? "none",
-		label: roof ? tFit(ROOF_LABEL_KEY[roof]) : t("catalog.offersGroupOther"),
-		count: sorted.filter((row) => row.roof === roof).length,
-	}));
+	const order = (row: Row) =>
+		row.roofs[0] ? ROOF_GROUP_ORDER.indexOf(row.roofs[0]) : ROOF_GROUP_ORDER.length;
+	const sorted = [...rows].sort((a, b) => order(a) - order(b) || a.from - b.from);
+	const groups = [...ROOF_GROUP_ORDER, null]
+		.map((roof) => ({
+			key: roof ?? "none",
+			label: roof ? tFit(ROOF_LABEL_KEY[roof]) : t("catalog.offersGroupOther"),
+			count: sorted.filter((row) => (roof ? row.roofs.includes(roof) : row.roofs.length === 0)).length,
+		}))
+		.filter((group) => group.count > 0);
 
 	// A page that names ONE roof leaves nothing to choose: each card is the set for that roof and
 	// adds to the cart itself. A page that mixes roofs sends the shopper to the set, to say which is theirs.
@@ -221,7 +242,7 @@ export async function CatalogOfferList({
 					<RoofFilteredList
 						items={sorted.map((row, index) => ({
 							id: row.offer.saleorVariantId,
-							roof: row.roof,
+							roofs: row.roofs.length > 0 ? row.roofs : ["none"],
 							node: card(row.offer, index === 0, oneRoof),
 						}))}
 						groups={groups}

@@ -56,10 +56,16 @@ describe("describeIncludes / isCompleteSet", () => {
 		expect(describeIncludes([], t)).toBeNull();
 	});
 
-	it("calls a set complete when it has the bars and the fitting kit, whether the feet are listed or not", () => {
+	it("calls a set complete only when the bars, the feet and the fitting kit are all documented", () => {
 		expect(isCompleteSet(["bars", "feet", "fitting-kit"])).toBe(true);
-		// the manufacturer's own complete sets are the bars plus the kit (Nordrive N15096 = N15086 + N20012)
-		expect(isCompleteSet(["bars", "fitting-kit"])).toBe(true);
+		expect(isCompleteSet(["fitting-kit", "feet", "bars"])).toBe(true);
+	});
+
+	it("does not take a rule about packing for a document: bars plus a kit is not read as complete", () => {
+		// whether a kit comes with its feet differs per system; the export has to say so
+		expect(isCompleteSet(["bars", "fitting-kit"])).toBe(false);
+		// and the contents line still says what is documented
+		expect(describeIncludes(["bars", "fitting-kit"], t)).toBe("[includesBars], [includesFittingKit]");
 	});
 
 	it("does not call a set complete from what is not documented, and does not call it incomplete either", () => {

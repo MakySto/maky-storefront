@@ -10,6 +10,7 @@ import { isDemoDataset, resolveFitmentOffers } from "@/lib/fitment/offers";
 import { renderConditions } from "@/lib/fitment/conditions";
 import { describeOfferFit, offerFitsByProduct } from "@/lib/fitment/offer-fit";
 import { datasetMakeNames, splitSetTitle } from "@/lib/fitment/set-title";
+import { setVehicleOf, type SetVehicle } from "@/lib/fitment/set-vehicle";
 import { ListingViewSwitch } from "@/ui/components/listing/listing-view-switch";
 import { readGarage } from "@/lib/garage/state";
 import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
@@ -115,15 +116,15 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 		});
 		// The roof and the years of the application this set was matched through — the selection's own
 		// answer, so the card says which window and which roof the fit rests on.
-		const fit = describeOfferFit(
-			offerFitsByProduct(match?.result.matched ?? []).get(offer.saleorProductId),
-			tf,
-			ROOF_LABEL_KEY,
-		);
+		const fits = offerFitsByProduct(match?.result.matched ?? []).get(offer.saleorProductId);
+		const fit = describeOfferFit(fits, tf, ROOF_LABEL_KEY);
+		const vehicles = (fits?.[0]?.generationIds ?? [])
+			.map((generationId) => setVehicleOf(dataset, generationId, catalogLanguageForChannel(channel)))
+			.filter((vehicle): vehicle is SetVehicle => vehicle !== null);
 		return {
 			offer,
 			// The page is about one car, named in the summary above: the card prints the model only.
-			title: splitSetTitle(offer.name, { brand: offer.brand, makes: makeNames }),
+			title: splitSetTitle(offer.name, { brand: offer.brand, makes: makeNames, vehicles }),
 			fit,
 			conditions: conditions.resolved.map((c) => c.text),
 			unresolvedConditions: conditions.unresolvedCount,

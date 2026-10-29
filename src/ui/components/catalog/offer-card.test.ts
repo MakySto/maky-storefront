@@ -136,8 +136,40 @@ describe("OfferCard", () => {
 		const heading = html.match(/<h3[^>]*>([\s\S]*?)<\/h3>/)![1]!.replace(/<[^>]+>/g, "");
 		expect(heading).toBe("Nordrive Silenzio Silver");
 		expect(html).not.toContain("Strecha:");
-		// and the maker is not repeated over a name that already carries it
-		expect(html).not.toContain("NORDRIVE");
+		// the maker is not printed over the name again on a wide screen (the line is phone-only, below)
+		expect(html.match(/<p[^>]*data-testid="offer-kicker"[^>]*class="[^"]*sm:hidden/)).toBeNull();
+	});
+
+	describe("the line over the name on a phone", () => {
+		it("says who made the set and the shelf it sits on, without repeating the maker in the shelf", () => {
+			const html = render(
+				{ brand: "Nordrive", categoryName: "Nordrive strešné nosiče" },
+				{ title: { model: "Nordrive Quadra Black", vehicle: "BMW Rad 5 Touring G31" } },
+			);
+			const kicker = html.match(/<p[^>]*data-testid="offer-kicker"[^>]*>([\s\S]*?)<\/p>/);
+			expect(kicker).not.toBeNull();
+			expect(kicker![0]).toContain("sm:hidden");
+			expect(kicker![1]!.replace(/<[^>]+>/g, "")).toBe("Nordrive · Strešné nosiče");
+		});
+
+		it("comes first in the facts, before the name, the car, the roof", () => {
+			const html = render(
+				{ brand: "Nordrive", categoryName: "Strešné nosiče" },
+				{
+					title: { model: "Nordrive Quadra Black", vehicle: "BMW Rad 5 Touring G31" },
+					fit: { roof: "Integrované pozdĺžniky", years: "2017 – 2024" },
+				},
+			);
+			const at = (marker: string) => html.indexOf(marker);
+			expect(at('data-testid="offer-kicker"')).toBeGreaterThan(-1);
+			expect(at('data-testid="offer-kicker"')).toBeLessThan(at("<h3"));
+			expect(at("<h3")).toBeLessThan(at('data-testid="offer-vehicle"'));
+			expect(at('data-testid="offer-vehicle"')).toBeLessThan(at('data-testid="offer-roof"'));
+		});
+
+		it("is not there for a set with neither a maker nor a shelf", () => {
+			expect(render({ brand: null, categoryName: null })).not.toContain("offer-kicker");
+		});
 	});
 
 	it("keeps the whole name and the fit line when the name cannot be taken apart", () => {

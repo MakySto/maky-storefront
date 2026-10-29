@@ -1,4 +1,5 @@
 import type { FitmentDataset } from "./contract";
+import type { SetVehicle } from "./set-vehicle";
 
 /**
  * A roof-rack set's catalogue name, read as the parts a shopper scans a shelf by.
@@ -20,25 +21,56 @@ import type { FitmentDataset } from "./contract";
 export type SetTitle = {
 	/** The product: maker, line and variant. The product type word ("Strešný nosič") is left out. */
 	model: string;
-	/** The car as the name spells it, without the years: "Dacia Bigster". */
+	/** The car, without the years: "Dacia Bigster", as the dataset names it when it can, else as the name spells it. */
 	vehicle: string;
 };
 
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** Index of the last whole-word occurrence of `needle` in `haystack` (case-insensitive), or -1. */
-function lastWordIndex(haystack: string, needle: string): number {
+type Hit = { start: number; end: number };
+
+/** Every whole-word occurrence of `needle` in `haystack` (case-insensitive). */
+function wordHits(haystack: string, needle: string): Hit[] {
 	const pattern = new RegExp(`(^|[^\\p{L}\\p{N}])(${escape(needle)})(?![\\p{L}\\p{N}])`, "giu");
-	let found = -1;
+	const hits: Hit[] = [];
 	for (let match = pattern.exec(haystack); match; match = pattern.exec(haystack)) {
-		found = match.index + match[1]!.length;
+		const start = match.index + match[1]!.length;
+		hits.push({ start, end: start + match[2]!.length });
 	}
-	return found;
+	return hits;
+}
+
+/**
+ * Where the car starts: the last make named in the sentence, a make that is only part of a longer
+ * one ("Rover" inside "Land Rover") not counting.
+ */
+function carStart(rest: string, makes: readonly string[]): number {
+	const hits = makes.flatMap((make) => wordHits(rest, make));
+	const alone = hits.filter(
+		(hit) =>
+			!hits.some(
+				(other) =>
+					other.end - other.start > hit.end - hit.start && other.start <= hit.start && other.end >= hit.end,
+			),
+	);
+	return alone.reduce((last, hit) => Math.max(last, hit.start), -1);
 }
 
 export function splitSetTitle(
 	name: string,
-	options: { brand?: string | null; makes: readonly string[] },
+	options: {
+		brand?: string | null;
+		makes: readonly string[];
+		/**
+		 * The car(s) the set's own application is for. With them the car starts at THEIR maker and nowhere
+		 * else — a product line or a model that is also a maker ("Punto Evo", "Thule WingBar Evo") cannot
+		 * be taken for it — and when the name's car is one of them (its generation is named there too) the
+		 * car is worded the way the rest of the shop words it. A name that does not confirm any of them
+		 * keeps its own words for the car. Without them, the car is whatever the name says after the last
+		 * maker the export knows.
+		 */
+		vehicles?: readonly SetVehicle[];
+	},
 ): SetTitle | null {
 	// The roof type rides after the dash and the years in the last parentheses; both are told by the
 	// set's application, so neither is needed here.
@@ -50,7 +82,7 @@ export function splitSetTitle(
 	let from = 0;
 	const brand = options.brand?.trim();
 	if (brand) {
-		const at = lastWordIndex(body, brand);
+		const at = wordHits(body, brand).reduce((last, hit) => Math.max(last, hit.start), -1);
 		// The product type before the maker ("Strešný nosič") is the shelf's own label.
 		if (at > 0) from = at;
 	}
@@ -58,21 +90,18 @@ export function splitSetTitle(
 
 	// The vehicle starts at the LAST make named in the sentence: a line called "Evo" or a variant that
 	// shares a word with a make comes before the car, never after it.
-	let split = -1;
-	let makeLength = 0;
-	for (const make of options.makes) {
-		const at = lastWordIndex(rest, make);
-		if (at > split || (at === split && make.length > makeLength)) {
-			split = at;
-			makeLength = make.length;
-		}
-	}
+	const own = options.vehicles ?? [];
+	const split = carStart(rest, own.length > 0 ? own.flatMap((vehicle) => vehicle.make) : options.makes);
 	if (split <= 0) return null;
 
 	const model = rest.slice(0, split).trim();
-	const vehicle = rest.slice(split).trim();
-	if (!model || !vehicle) return null;
-	return { model, vehicle };
+	const spelled = rest.slice(split).trim();
+	if (!model || !spelled) return null;
+	// Worded the shop's way only when the name itself says it is that car.
+	const confirmed = own.find((vehicle) =>
+		vehicle.generation.some((generation) => wordHits(spelled, generation).length > 0),
+	);
+	return { model, vehicle: confirmed ? confirmed.label : spelled };
 }
 
 const MAKES = new WeakMap<FitmentDataset, readonly string[]>();

@@ -113,19 +113,17 @@ export function describeIncludes(
 }
 
 /**
- * "Complete set" is the claim that what is in the box is enough to mount the bars on the car: the
- * bars AND the vehicle-specific fitting kit.
+ * "Complete set" is the claim that what is in the box is enough to mount the bars on the car, and
+ * the badge is worn only where the documentation says so part by part: the bars, the feet AND the
+ * vehicle-specific fitting kit are all named in `completeSet.includes`.
  *
- * The feet are not a third condition. A fitting kit such as Nordrive's Evos RA is sold as one item
- * with its feet and the manufacturer's own complete set N15096 is two codes, bars (N15086) plus kit
- * (N20012) — so demanding a separate "feet" part called a complete system incomplete. Bars and feet
- * without a kit are still not complete (the kit is what makes them fit THIS roof).
- *
- * This reads only what CFM documents. A set with no documented contents wears no badge and is not
- * called incomplete either: absence is silence, and the contents line says only what is known. A
- * system that needs no kit at all (a fixpoint system, say) is not recognised here until CFM says so
- * in the export; it prints its documented contents and no badge.
+ * No rule about how roof-rack systems are packed is assumed here. Whether a kit comes with its feet
+ * differs from one system to the next (Nordrive's Evos RA kit is sold with them; a fixpoint system
+ * needs no kit at all), so "bars plus a kit" is not read as complete and "bars plus feet" is not
+ * read as incomplete. A set documented any other way prints what is documented ("Obsahuje: …") and
+ * wears no badge; absence of the badge is silence, never a claim that anything is missing. When CFM
+ * documents a complete set in another shape, the shape is added here from the export, not guessed.
  */
 export function isCompleteSet(includes: readonly string[] | null | undefined): boolean {
-	return Boolean(includes?.includes("bars") && includes.includes("fitting-kit"));
+	return Boolean(includes?.includes("bars") && includes.includes("feet") && includes.includes("fitting-kit"));
 }

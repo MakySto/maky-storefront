@@ -148,6 +148,28 @@ describe("what the page says about its sets", () => {
 		expect(rendered).not.toContain('<h3 class="text-text-primary text-base');
 	});
 
+	it("counts a set made for several roofs under each of them, and does not call the page one roof", async () => {
+		const both = offers({
+			offers: [offer(0), offer(1)],
+			compatibleCount: 2,
+			purchasableCount: 2,
+		});
+		const rendered = await text(
+			both,
+			new Map<string, OfferFit[]>([
+				["p0", [fit({ roofTypes: ["flush-rails", "raised-rails"] })]],
+				["p1", [fit({ roofTypes: ["raised-rails"] })]],
+			]),
+		);
+		// p0 is both an integrated-rails set and a raised-rails set: it is found under either chip.
+		expect(rendered).toContain("|Všetky|2|");
+		expect(rendered).toContain("|Pozdĺžniky nad strechou|2|");
+		expect(rendered).toContain("|Integrované pozdĺžniky|1|");
+		// Two roofs on a card are said, and nothing adds to the cart until the shopper has chosen.
+		expect(rendered).toContain("Strecha: Integrované pozdĺžniky, Pozdĺžniky nad strechou");
+		expect(rendered).not.toContain("data-add");
+	});
+
 	it("lists a group oldest window first", async () => {
 		const rendered = await text(MIXED, MIXED_FITS);
 		expect(rendered.indexOf("|Set 2|")).toBeLessThan(rendered.indexOf("|Set 0|"));
@@ -202,6 +224,52 @@ describe("what the page says about its sets", () => {
 		);
 		expect(rendered).not.toContain("Strecha:");
 		expect(rendered).not.toContain("Roky:");
+	});
+});
+
+describe("what a card says the set contains", () => {
+	const documented = offers({
+		offers: [offer(0, { completeSetIncludes: ["bars", "feet", "fitting-kit"], facets: { maxLoadKg: 90 } })],
+		compatibleCount: 1,
+		purchasableCount: 1,
+	});
+	const one = new Map<string, OfferFit[]>([["p0", [fit()]]]);
+
+	async function withFacts(
+		facts?: Map<string, { facets: Record<string, number> | null; includes: string[] | null }>,
+	) {
+		const html = renderToStaticMarkup(
+			await CatalogOfferList({ offers: documented, channel: "sk-eur", locale: "sk-SK", fits: one, facts }),
+		);
+		return html.replace(/<!-- -->/g, "").replace(/<[^>]+>/g, "|");
+	}
+
+	it("says what the offer carries when the page was given no rows to read", async () => {
+		const rendered = await withFacts();
+		expect(rendered).toContain("Kompletná zostava");
+		expect(rendered).toContain("priečniky, pätky, montážny kit");
+	});
+
+	it("says nothing of a set no sellable row speaks for, and what the rows agree on otherwise", async () => {
+		const silent = await withFacts(new Map());
+		expect(silent).not.toContain("Kompletná zostava");
+		expect(silent).not.toContain("priečniky");
+		expect(silent).not.toContain("90 kg");
+
+		const disagreeing = await withFacts(new Map([["p0", { facets: { maxLoadKg: 75 }, includes: null }]]));
+		expect(disagreeing).not.toContain("Kompletná zostava");
+		expect(disagreeing).not.toContain("priečniky");
+		expect(disagreeing).toContain("75 kg");
+		expect(disagreeing).not.toContain("90 kg");
+	});
+
+	it("wears the badge only for bars, feet and the fitting kit all documented", async () => {
+		const barsAndKit = await withFacts(
+			new Map([["p0", { facets: null, includes: ["bars", "fitting-kit"] }]]),
+		);
+		expect(barsAndKit).not.toContain("Kompletná zostava");
+		expect(barsAndKit).toContain("priečniky, montážny kit");
+		expect(barsAndKit).not.toContain("neúpln");
 	});
 });
 

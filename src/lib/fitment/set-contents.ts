@@ -1,5 +1,6 @@
 import { type FitmentDataset } from "./contract";
 import { isDatasetStale } from "./resolve";
+import { agreedIncludes, sellableRefsOf } from "./set-facts";
 
 /**
  * What CFM documents a set to contain, for the product page: `["bars", "feet", "fitting-kit"]`, or
@@ -7,11 +8,8 @@ import { isDatasetStale } from "./resolve";
  *
  * The same rows the page's "Určené pre" box reads (accepted, sellable, not a negative row, a dataset
  * that is not past its date) — so the contents are only ever stated for an offer the page itself
- * describes. A product reachable through several applications is documented once per application,
- * and those documents can disagree; then nothing is said, because picking one of two statements
- * about what is in the box would be a guess. A row without `completeSet` is no statement at all
- * (a single documented component does not evidence what is in the box), and the answer for such a
- * product is null, never "nothing else".
+ * describes. The rule for several rows that disagree, or none that speaks, is `agreedIncludes`, the
+ * one the listing cards use too.
  */
 export function documentedSetContents(
 	dataset: FitmentDataset | null,
@@ -20,18 +18,5 @@ export function documentedSetContents(
 	now: number = Date.now(),
 ): readonly string[] | null {
 	if (!dataset || isDatasetStale(dataset, now)) return null;
-	const statements = new Map<string, readonly string[]>();
-	for (const application of dataset.applications) {
-		if (application.negative) continue;
-		for (const ref of application.products) {
-			if (ref.saleorProductId !== saleorProductId) continue;
-			if (saleorVariantId !== undefined && ref.saleorVariantId !== saleorVariantId) continue;
-			if (ref.qaStatus !== "accepted" || !ref.eligibility.sellable) continue;
-			const includes = ref.completeSet?.includes;
-			if (!includes || includes.length === 0) continue;
-			const key = [...includes].sort().join("|");
-			if (!statements.has(key)) statements.set(key, includes);
-		}
-	}
-	return statements.size === 1 ? [...statements.values()][0]! : null;
+	return agreedIncludes(sellableRefsOf(dataset, saleorProductId, saleorVariantId));
 }

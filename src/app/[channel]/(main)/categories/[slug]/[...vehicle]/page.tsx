@@ -29,6 +29,8 @@ import { splitContent } from "@/lib/catalog-content/text";
 import { type CatalogNode, type CatalogTree, ancestorsOf } from "@/lib/catalog-content/tree";
 import { resolveFitmentOffers, uniqueProductRefs } from "@/lib/fitment/offers";
 import { datasetMakeNames } from "@/lib/fitment/set-title";
+import { productSetFacts } from "@/lib/fitment/set-facts";
+import { setVehicleOf, type SetVehicle } from "@/lib/fitment/set-vehicle";
 import { offerFitsByProduct } from "@/lib/fitment/offer-fit";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { Breadcrumbs, type BreadcrumbItem } from "@/ui/components/breadcrumbs";
@@ -239,6 +241,13 @@ async function Offers({
 	const offers = await resolveFitmentOffers(uniqueProductRefs([...applications]), channel, locale, {
 		dataset: fitment.dataset,
 	});
+	// The car of this page's applications, named the shop's way, for the sets whose names say it.
+	const dataset = fitment.dataset;
+	const vehicles = dataset
+		? [...new Set(applications.map((application) => application.generationId))]
+				.map((generationId) => setVehicleOf(dataset, generationId, language))
+				.filter((vehicle): vehicle is SetVehicle => vehicle !== null)
+		: undefined;
 	// The roof and the years each set is made for, from its own application: this page lists the
 	// whole generation, so without them the sets of every roof and every window read alike.
 	return (
@@ -246,7 +255,9 @@ async function Offers({
 			offers={offers}
 			channel={channel}
 			locale={locale}
-			makes={fitment.dataset ? datasetMakeNames(fitment.dataset) : undefined}
+			makes={dataset ? datasetMakeNames(dataset) : undefined}
+			vehicles={vehicles}
+			facts={dataset ? productSetFacts(dataset) : undefined}
 			fits={offerFitsByProduct(applications)}
 		/>
 	);
