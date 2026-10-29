@@ -52,7 +52,7 @@ export function safeInternalPath(href: string): string | null {
 	return value;
 }
 
-const TAG = /<(\/?)(a|b)\b([^>]*)>/gi;
+const TAG = /<(\/?)(a|b|strong)\b([^>]*)>/gi;
 
 export function parseInline(raw: string): readonly InlineNode[] {
 	const out: InlineNode[] = [];
@@ -67,7 +67,9 @@ export function parseInline(raw: string): readonly InlineNode[] {
 	for (const match of raw.matchAll(TAG)) {
 		const [full, closing, nameRaw, attrs] = match;
 		const index = match.index ?? 0;
-		const name = nameRaw.toLowerCase() as "a" | "b";
+		// Saleor stores bold as <strong> when it is written through its own adapter; it is the same word.
+		const lowered = nameRaw.toLowerCase();
+		const name = (lowered === "strong" ? "b" : lowered) as "a" | "b";
 
 		pushText(raw.slice(cursor, index));
 		cursor = index + full.length;

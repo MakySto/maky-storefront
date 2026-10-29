@@ -23,6 +23,8 @@ import { rememberBriefly } from "@/lib/cache-fault";
 import { getPaginatedListVariables } from "@/lib/utils";
 import { ProductsPerPage } from "@/app/config";
 import { parseEditorJSToText } from "@/lib/editorjs";
+import { readCategoryArticle } from "@/lib/category-description";
+import { ContentBlocks } from "@/ui/components/catalog/content-blocks";
 import {
 	CategoryHero,
 	SubcategoryNav,
@@ -178,7 +180,9 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 
 	const category = outcome.resource;
 
-	const plainDescription = parseEditorJSToText(category.description);
+	// A description that is an article (lead, then sections) speaks with its lead only.
+	const plainDescription =
+		readCategoryArticle(category.description)?.heroText ?? parseEditorJSToText(category.description);
 
 	// The SEO title when Saleor has one, the name when it does not — and the brand once.
 	// This used to be `${name} | ${seoTitle || parent title}`, which printed the category
@@ -287,7 +291,8 @@ async function CategoryContent({
 	}
 
 	const category = outcome.resource;
-	const plainDescription = parseEditorJSToText(category.description);
+	const article = readCategoryArticle(category.description);
+	const plainDescription = article ? article.heroText : parseEditorJSToText(category.description);
 	const tHome = await getTranslations({ locale: getLocaleFromChannel(params.channel), namespace: "home" });
 	const tagline = CATEGORY_TAGLINES[STOREFRONT_CATEGORIES.find((c) => c.slug === baseSlug)?.key ?? ""];
 
@@ -332,6 +337,21 @@ async function CategoryContent({
 					categoryLinks={navigation?.chips ?? null}
 				/>
 			</Suspense>
+			{/* The article's sections: below the listing, server-rendered in full, no interaction needed. */}
+			{article && article.body.length > 0 ? (
+				<section
+					aria-label={category.name}
+					className="border-border-default max-w-page mx-auto mt-10 w-full border-t px-4 pt-8 pb-4 sm:px-6 lg:px-8"
+				>
+					<div className="max-w-3xl">
+						<ContentBlocks
+							blocks={article.body}
+							market={REVERSE_MAP[params.channel] ?? params.channel}
+							id="category-article"
+						/>
+					</div>
+				</section>
+			) : null}
 			{/* Below the listing, and in its own Suspense: reading the 9.7 MB catalogue
 			    snapshot must never hold up the products this page exists to show. It
 			    renders nothing at all for a category that has no vehicle pages, so the
