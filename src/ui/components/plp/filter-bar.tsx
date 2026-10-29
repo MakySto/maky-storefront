@@ -1,5 +1,6 @@
 "use client";
 
+import { ListingViewSwitch } from "@/ui/components/listing/listing-view-switch";
 import { useState } from "react";
 import { ChevronDown, SlidersHorizontal, X, Check } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -308,6 +309,8 @@ export function FilterBar({
 						<span className="text-text-secondary hidden text-sm sm:block">
 							{t("productCount", { count: resultCount })}
 						</span>
+
+						<ListingViewSwitch />
 
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>

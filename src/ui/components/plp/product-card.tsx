@@ -1,25 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useFormStatus } from "react-dom";
-import { CheckIcon, ShoppingCartIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Badge } from "@/ui/components/ui/badge";
-import { Button } from "@/ui/components/ui/button";
 import { QuantityStepper } from "@/ui/components/ui/quantity-stepper";
-import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
+import {
+	ACTION_ROW,
+	CARD,
+	DETAIL_LINK,
+	FACTS_COLUMN,
+	MEDIA_BOX,
+	MEDIA_COLUMN,
+	PRICE_ROW,
+	SPECS_BLOCK,
+	TITLE,
+} from "@/ui/components/listing/card-layout";
+import { cardKicker, setKicker } from "@/ui/components/listing/kicker";
+import { ListingMedia } from "@/ui/components/listing/listing-media";
+import { DIMENSIONS_SPEC_KEY, ListingSpecs, type ListingSpec } from "@/ui/components/listing/listing-specs";
 import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
 import { StarRating } from "@/ui/components/product/star-rating";
 import { WishlistButton } from "@/ui/components/wishlist/wishlist-button";
 import { cn } from "@/lib/utils";
 import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { isPlaceholderProductImage } from "@/lib/product-image";
+import type { SetTitle } from "@/lib/fitment/set-title";
 import { useLocale } from "@/providers/locale-provider";
 import { addListingItemToCartAction } from "./actions";
-import { CartForm, useCartFormResult } from "./cart-form";
-import type { AddToCartResult } from "./add-to-cart-result";
+import { CartForm } from "./cart-form";
+import { AddButton } from "./listing-add-to-cart";
 
 export interface ProductCardData {
 	id: string;
@@ -36,6 +46,12 @@ export interface ProductCardData {
 	 * shopper's car: it appears with or without a car chosen, and does not say "fits".
 	 */
 	fit?: { roof: string | null; years: string } | null;
+	/**
+	 * The set's name taken apart into the product and the car, when it can be. With it the card says
+	 * the car and the years once, under a short name, instead of printing them in a long name and
+	 * again beneath it. Absent, the name is printed whole.
+	 */
+	setTitle?: SetTitle | null;
 	productCode?: string | null;
 	/** Set only when the product has exactly one variant. */
 	variantId?: string | null;
@@ -49,7 +65,19 @@ export interface ProductCardData {
 	currency: string;
 	image: string;
 	imageAlt?: string;
+	/**
+	 * The product's own SECOND photograph, shown over the first while the card is hovered or has
+	 * focus. Absent when the gallery holds one image, and then the card does not swap.
+	 */
 	hoverImage?: string | null;
+	/**
+	 * The three or four parameters that tell this product from its neighbours, already worded in the
+	 * reader's language — from CFM's facets for a vehicle set, from the product's attributes for
+	 * everything else. Only what the data carries: an absent parameter is absent, never a dash.
+	 */
+	specs?: ListingSpec[];
+	/** What a complete set contains ("priečniky, pätky, montážny kit"), when CFM says. */
+	includes?: string | null;
 	href: string;
 	/** Saleor channel slug — the add-to-cart action needs it in the form. */
 	channel: string;
@@ -79,45 +107,6 @@ interface ProductCardProps {
 	/** Preloads the image. Reserve for the single LCP candidate — see ProductGrid. */
 	priority?: boolean;
 	purchase?: ProductCardPurchase;
-}
-
-/** How long the button says "Pridané" after a successful add. */
-const ADDED_MS = 2400;
-
-function AddButton({ withIcon }: { withIcon: boolean }) {
-	const { pending } = useFormStatus();
-	const tCommon = useTranslations("common");
-	const result = useCartFormResult();
-	// Every submission yields a new result object, so "the add that has already been shown" is
-	// that object: the button says "Pridané" until the timer marks it seen, and a second add of
-	// the same product says it again.
-	const [seen, setSeen] = useState<AddToCartResult | null>(null);
-	const added = result?.status === "added" && seen !== result && !pending;
-	useEffect(() => {
-		if (result?.status !== "added") return;
-		const timer = window.setTimeout(() => setSeen(result), ADDED_MS);
-		return () => window.clearTimeout(timer);
-	}, [result]);
-
-	const Icon = added ? CheckIcon : ShoppingCartIcon;
-	return (
-		// "Do košíka", the short label: beside the stepper the button has ~120px, and the long
-		// "Pridať do košíka" ellipsised there. The cart icon rides wherever the button runs the
-		// card's width. The hidden status line of the form tells assistive tech what happened;
-		// this label is the sighted half of the same answer.
-		<Button
-			type="submit"
-			disabled={pending}
-			className="h-11 min-w-0 flex-1 gap-2 rounded-xs px-2.5 text-sm font-semibold shadow-none"
-		>
-			<Icon
-				className={cn("h-4 w-4 shrink-0", !withIcon && !added && "lg:hidden")}
-				strokeWidth={added ? 3 : 2.25}
-				aria-hidden
-			/>
-			<span className="truncate">{added ? tCommon("addedShort") : tCommon("addToCartShort")}</span>
-		</Button>
-	);
 }
 
 /**
@@ -160,6 +149,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 	const tProduct = useTranslations("product");
 	const tCart = useTranslations("cart");
 	const tFit = useTranslations("fitment");
+	const tListing = useTranslations("listing");
 	const { locale } = useLocale();
 
 	const formatPrice = (amount: number, currency: string) =>
@@ -188,41 +178,43 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 		product.image !== "/placeholder.svg" &&
 		!isPlaceholderProductImage(product.image);
 
-	const category = product.category;
+	const shownName = product.fit && product.setTitle ? product.setTitle.model : product.name;
+	// A set taken apart is short and its name carries the maker: its line over the name is a phone's
+	// only (who made it and the shelf), as on the vehicle page's card. Any other name keeps the quiet
+	// line that says only what the name does not.
+	const takenApart = Boolean(product.fit && product.setTitle);
+	const kicker = takenApart
+		? setKicker(product.brand, product.category?.name)
+		: cardKicker(shownName, product.brand, product.category?.name);
+	// A combined size ("190 × 80 × 40 cm") has no attribute to take its name from.
+	const specs = (product.specs ?? []).map((spec) =>
+		spec.key === DIMENSIONS_SPEC_KEY ? { ...spec, label: tListing("specDimensions") } : spec,
+	);
+	// A vehicle set is the one product whose detail page is where its conditions are read.
+	const isSet = Boolean(product.fit);
 
 	return (
 		<article
 			className={cn(
-				"group border-border-default bg-surface-card relative flex flex-col overflow-hidden rounded-sm border shadow-xs transition-[box-shadow,border-color] duration-200 ease-out",
-				"hover:border-border-strong hover:shadow-md",
+				CARD,
 				// The title's link is the card's link (its span covers the card), and its own outline
 				// would draw around the title alone: the keyboard focus rings the whole card instead.
 				"has-[h2_a:focus-visible]:ring-ring has-[h2_a:focus-visible]:ring-2 has-[h2_a:focus-visible]:ring-offset-2",
 			)}
 		>
-			<div className="relative">
-				{/* The product whole, never cropped: wide boxes and bars fill the 5:4 window, a tall
-				    carrier stands in it. */}
-				<Link
-					href={product.href}
-					tabIndex={-1}
-					aria-hidden="true"
-					className="bg-surface-card relative block aspect-[3/2] overflow-hidden sm:aspect-[5/4]"
-				>
-					{hasImage ? (
-						<ResilientProductImage
-							src={product.image}
-							alt={product.imageAlt || product.name}
-							fill
-							sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, (max-width: 1439px) 25vw, 20vw"
-							className="object-contain px-4 pt-4 pb-1 transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.03] sm:px-5 sm:pt-6 sm:pb-2"
-							priority={priority}
-						/>
-					) : (
-						<span className="text-text-tertiary bg-surface-secondary absolute inset-0 flex items-center justify-center px-4 text-center text-xs">
-							{tProduct("noImageAvailable")}
-						</span>
-					)}
+			<div className={MEDIA_COLUMN}>
+				{/* The product whole, never cropped: wide boxes and bars fill the window, a tall carrier
+				    stands in it. The window is a fixed ratio so nothing jumps while photographs load; in
+				    a list it is the card's full height. */}
+				<Link href={product.href} tabIndex={-1} aria-hidden="true" className={MEDIA_BOX}>
+					<ListingMedia
+						src={hasImage ? product.image : null}
+						alt={product.imageAlt || product.name}
+						hoverSrc={product.hoverImage}
+						sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, (max-width: 1439px) 25vw, 20vw"
+						priority={priority}
+						emptyLabel={tProduct("noImageAvailable")}
+					/>
 				</Link>
 				{badgeLabel && (
 					<Badge
@@ -242,40 +234,56 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 
 			{/* The facts. `flex-1`: the block takes the card's spare height, so the hairline under it
 			    sits at one height across a row of cards. */}
-			<div className="flex min-w-0 flex-1 flex-col px-4 pt-3">
-				{/* The maker, set like a wordmark but quieter than the name, and the category after it in
-				    plain text. One line of running text, so a long category wraps under the maker. */}
-				{(product.brand || category) && (
-					<p className="text-text-tertiary line-clamp-2 text-xs leading-snug">
-						{product.brand && (
+			<div className={FACTS_COLUMN}>
+				{/* The maker and the shelf, only what the name does not already say. */}
+				{(kicker.brand || kicker.category) && (
+					<p
+						className={cn("text-text-tertiary line-clamp-1 text-xs leading-snug", takenApart && "sm:hidden")}
+					>
+						{kicker.brand && (
 							<span className="text-text-secondary font-bold tracking-[0.07em] uppercase">
-								{product.brand}
+								{kicker.brand}
 							</span>
 						)}
-						{product.brand && category && <span aria-hidden="true"> · </span>}
-						{category && <span>{category.name}</span>}
+						{kicker.brand && kicker.category && <span aria-hidden="true"> · </span>}
+						{kicker.category && <span>{kicker.category}</span>}
 					</p>
 				)}
-				{/* Up to four lines: a roof-rack set's name ends with the car and the roof type, the
-				    part a shopper checks. From sm, where cards share a row, a short name still
-				    reserves two lines so the facts under it start at one height across the row; a
-				    phone shows one card to a row and keeps no empty line. */}
-				<h2 className="text-text-primary mt-1.5 line-clamp-4 text-base leading-snug font-semibold tracking-[-0.01em] sm:min-h-[2lh] sm:text-[0.9375rem]">
+				{/* Up to four lines for a name that is printed whole: a roof-rack set's name ends with
+				    the car and the roof type, the part a shopper checks. A name taken apart is short. */}
+				<h2 className={cn(TITLE, takenApart && "sm:mt-0", !(kicker.brand || kicker.category) && "mt-0")}>
 					<Link
 						href={product.href}
 						className="text-text-primary decoration-brand/40 underline-offset-[3px] hover:underline focus-visible:outline-hidden"
 					>
 						{/* The whole card is the link's target area; the title carries its name. */}
 						<span className="absolute inset-0" aria-hidden="true" />
-						{product.name}
+						{shownName}
 					</Link>
 				</h2>
-				{product.note && (
-					<p className="text-text-secondary mt-1 line-clamp-1 text-[0.8125rem]">{product.note}</p>
+				{/* What the set is for. Taken apart: the car and the years on one line, the roof under
+				    it. Whole: the roof and the years in the words the title buries at its end. */}
+				{product.fit && product.setTitle && (
+					<>
+						<p
+							className="text-text-secondary mt-1 line-clamp-2 text-[0.8125rem] leading-snug"
+							data-testid="card-vehicle"
+						>
+							{product.setTitle.vehicle}
+							<span aria-hidden="true"> · </span>
+							{product.fit.years}
+						</p>
+						{product.fit.roof && (
+							<p
+								className="text-text-primary mt-0.5 line-clamp-2 text-[0.8125rem] leading-snug font-medium"
+								data-testid="card-roof"
+							>
+								{product.fit.roof}
+							</p>
+						)}
+					</>
 				)}
-				{/* The roof and the years the set is made for: two facts the title buries at its end.
-				    Up to two lines so a long roof name wraps instead of being cut. */}
-				{product.fit && (
+				{product.fit && !product.setTitle && (
 					<p
 						className="text-text-secondary mt-1 line-clamp-2 text-[0.8125rem] leading-snug"
 						data-testid="card-fit"
@@ -289,8 +297,23 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 						<span>{tFit("cardYears", { years: product.fit.years })}</span>
 					</p>
 				)}
-				{product.productCode && (
-					<p className="text-text-tertiary mt-0.5 truncate text-xs">
+			</div>
+
+			<div className={SPECS_BLOCK}>
+				{specs.length > 0 ? (
+					<ListingSpecs specs={specs} className="border-border-subtle border-t pt-2.5" />
+				) : (
+					product.note && <p className="text-text-secondary line-clamp-1 text-[0.8125rem]">{product.note}</p>
+				)}
+				{product.includes && (
+					<p className="text-text-secondary mt-2 line-clamp-2 text-[0.8125rem] leading-snug">
+						{product.includes}
+					</p>
+				)}
+				{/* The code is for finding the product again, not for choosing it: a quiet line, and not at
+				    all for a set, whose code is several components' codes joined with a bar. */}
+				{product.productCode && !isSet && !product.productCode.includes("|") && (
+					<p className="text-text-tertiary mt-2 truncate text-xs">
 						{tProduct("sku")}: <span className="tabular-nums">{product.productCode}</span>
 					</p>
 				)}
@@ -301,7 +324,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 
 			{/* A hairline inset to the text, then the price and what the catalogue says about
 			    availability. Not positioned: a click here still reaches the card-wide link. */}
-			<div className="border-border-subtle mx-4 mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t pt-3">
+			<div className={PRICE_ROW}>
 				{quoteOnly ? (
 					<span className="text-text-primary text-base leading-tight font-semibold">
 						{tProduct("requestQuote")}
@@ -339,7 +362,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 
 			{/* The purchase row, pinned to the foot of the card. Above the card-wide link
 			    (`relative`), so the stepper and the button stay clickable. */}
-			<div className="relative px-4 pt-3 pb-4">
+			<div className={ACTION_ROW}>
 				{canAddDirectly ? (
 					<CartForm action={addListingItemToCartAction} quietSuccess>
 						<div className="flex items-stretch gap-2">
@@ -357,11 +380,8 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 				) : (
 					// Button is a plain <button> in this codebase — no asChild slot — so
 					// the link carries the styling itself.
-					<Link
-						href={product.href}
-						className="border-border-default text-text-primary hover:border-text-primary focus-visible:ring-ring flex h-11 w-full items-center justify-center rounded-xs border text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-hidden"
-					>
-						{tCommon("viewDetail")}
+					<Link href={product.href} className={DETAIL_LINK}>
+						{isSet ? tListing("viewSet") : tCommon("viewDetail")}
 					</Link>
 				)}
 			</div>

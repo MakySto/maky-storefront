@@ -12,6 +12,7 @@ import type { SearchProduct, SearchResult, SearchPagination } from "./types";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
 import { publishableProductImage } from "@/lib/product-image";
+import { transformToProductCard } from "@/ui/components/plp/utils";
 
 interface SearchOptions {
 	query: string;
@@ -84,6 +85,7 @@ export async function searchProducts(options: SearchOptions): Promise<SearchResu
 		categoryName: node.category?.name,
 		categorySlug: node.category?.slug,
 		isPurchasable: node.isAvailableForPurchase === true,
+		card: transformToProductCard(node, channel, locale),
 	}));
 
 	const pagination: SearchPagination = {

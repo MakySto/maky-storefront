@@ -7,6 +7,8 @@ import { vehiclePageHref } from "@/lib/catalog-content/vehicle-href";
 import { marketHref } from "@/lib/channel-map";
 import { intendedVehiclesFor, presentFitment } from "@/lib/fitment/intended-for";
 import { isDemoDataset } from "@/lib/fitment/offers";
+import { describeIncludes } from "@/lib/fitment/offer-specs";
+import { documentedSetContents } from "@/lib/fitment/set-contents";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { datasetSpeaksForProduct, resolveFitment } from "@/lib/fitment/resolve";
 import { GARAGE_COOKIE_NAME } from "@/lib/garage/cookie";
@@ -118,6 +120,13 @@ async function renderCompatibility({
 	if (!datasetSpeaksForProduct(dataset, saleorProductId)) return null;
 
 	const t = await getTranslations({ locale, namespace: "fitment" });
+	const tConfigurator = await getTranslations({ locale, namespace: "configurator" });
+
+	// What the export says the set contains — as the cards word it, and never from simulated data.
+	const contents = isDemoDataset(dataset)
+		? null
+		: describeIncludes(documentedSetContents(dataset, saleorProductId, saleorVariantId), tConfigurator);
+	const includes = contents ? `${tConfigurator("setIncludes")}: ${contents}` : null;
 
 	const garage = await readGarage(dataset, catalogLanguageForChannel(channel));
 	const active = garage.active && !garage.active.unresolved ? garage.active : null;
@@ -163,6 +172,7 @@ async function renderCompatibility({
 				vehicles={presentation.vehicles}
 				vehicleHref={vehicleHref}
 				alternative={alternative}
+				includes={includes}
 				// No car: the fact first, then the way to check one's own (CLAUDE.md §8).
 				action={active ? null : <VehicleSelectorLauncher variant="inline" label={t("checkFitment")} />}
 				locale={locale}
@@ -221,6 +231,7 @@ async function renderCompatibility({
 			result={result}
 			vehicleLabel={vehicleLabel}
 			vehicleDetail={vehicleDetail}
+			includes={includes}
 			isDemo={isDemoDataset(dataset)}
 			locale={locale}
 			action={action}

@@ -854,7 +854,16 @@
 		"errorCartRejected": "Non è stato possibile aggiungere il set al carrello.",
 		"errorLookupFailed": "Non possiamo confermare se il set è stato aggiunto. Controlla il carrello.",
 		"errorCatalogueUnavailable": "Al momento non è stato possibile verificare la disponibilità del set. Riprova.",
-		"errorGeneric": "Non è stato possibile aggiungere il set al carrello."
+		"errorGeneric": "Non è stato possibile aggiungere il set al carrello.",
+		"facetAerodynamic": "Aerodinamico",
+		"facetWing": "Profilo alare",
+		"facetTubular": "Tubolare",
+		"facetColourBlack": "Nero",
+		"facetColourSilver": "Argento",
+		"facetColourAlu": "Alluminio naturale",
+		"propertyBarLength": "Lunghezza delle barre",
+		"propertyColour": "Colore",
+		"propertyBarLoad": "Portata delle barre"
 	},
 	"catalog": {
 		"makeIndexTitle": "Scegli il portapacchi in base al veicolo",
@@ -868,7 +877,7 @@
 		"offersPartial": "Non è stato possibile caricare parte dell'offerta, quindi l'elenco potrebbe essere incompleto.",
 		"previewNotice": "Anteprima di una pagina non pubblicata. Non è visibile ai visitatori.",
 		"offersTitleGeneration": "Kit per questa generazione",
-		"offersBrowseNote": "Ogni kit vale solo per il tipo di tetto e per gli anni indicati. I kit non sono filtrati per la tua auto: dopo aver scelto il veicolo mostriamo solo quelli adatti.",
+		"offersBrowseNote": "Ogni set vale solo per il tipo di tetto e per gli anni indicati: le differenze si vedono sulle schede. Ha un'altra auto? Può cambiarla nell'intestazione.",
 		"offersGroupOther": "Tipo di tetto non indicato"
 	},
 	"company": {
@@ -1117,5 +1126,14 @@
 		"description": "I produttori di barre portatutto, box da tetto, portabici e altro, i cui prodotti trovi da noi.",
 		"productCount": "{count, plural, one {# prodotto} other {# prodotti}}",
 		"brandDescription": "Prodotti {brand} su MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Visualizzazione dell'elenco",
+		"viewGrid": "Griglia",
+		"viewList": "Elenco",
+		"viewSet": "Vedi il set",
+		"specDimensions": "Dimensioni",
+		"roofFilterLabel": "Tipo di tetto",
+		"roofFilterAll": "Tutti"
 	}
 }

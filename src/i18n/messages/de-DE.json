@@ -854,7 +854,16 @@
 		"errorCartRejected": "Das Set konnte nicht in den Warenkorb gelegt werden.",
 		"errorLookupFailed": "Wir können nicht bestätigen, ob das Set hinzugefügt wurde. Bitte prüfen Sie Ihren Warenkorb.",
 		"errorCatalogueUnavailable": "Die Verfügbarkeit des Sets konnte gerade nicht geprüft werden. Bitte versuchen Sie es noch einmal.",
-		"errorGeneric": "Das Set konnte nicht in den Warenkorb gelegt werden."
+		"errorGeneric": "Das Set konnte nicht in den Warenkorb gelegt werden.",
+		"facetAerodynamic": "Aerodynamisch",
+		"facetWing": "Flügelprofil",
+		"facetTubular": "Rohrprofil",
+		"facetColourBlack": "Schwarz",
+		"facetColourSilver": "Silber",
+		"facetColourAlu": "Alu natur",
+		"propertyBarLength": "Länge der Querträger",
+		"propertyColour": "Farbe",
+		"propertyBarLoad": "Traglast Querträger"
 	},
 	"catalog": {
 		"makeIndexTitle": "Dachträger nach Fahrzeug auswählen",
@@ -868,7 +877,7 @@
 		"offersPartial": "Ein Teil des Angebots konnte nicht geladen werden, die Liste ist daher möglicherweise nicht vollständig.",
 		"previewNotice": "Vorschau einer unveröffentlichten Seite. Besucher sehen sie nicht.",
 		"offersTitleGeneration": "Sätze für diese Generation",
-		"offersBrowseNote": "Jeder Satz gilt nur für die angegebene Dachform und die genannten Baujahre. Die Sätze sind nicht auf Ihr Auto abgestimmt – nach der Fahrzeugwahl zeigen wir nur die passenden.",
+		"offersBrowseNote": "Jedes Set gilt nur für die angegebene Dachform und die genannten Baujahre – die Unterschiede sehen Sie direkt auf den Karten. Anderes Fahrzeug? Ändern Sie es oben in der Kopfzeile.",
 		"offersGroupOther": "Ohne angegebene Dachform"
 	},
 	"company": {
@@ -1117,5 +1126,14 @@
 		"description": "Die Hersteller von Dachträgern, Dachboxen, Fahrradträgern und weiterer Ausrüstung, deren Produkte Sie bei uns kaufen.",
 		"productCount": "{count, plural, one {# Produkt} other {# Produkte}}",
 		"brandDescription": "Produkte der Marke {brand} bei MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Ansicht der Produktliste",
+		"viewGrid": "Raster",
+		"viewList": "Liste",
+		"viewSet": "Set ansehen",
+		"specDimensions": "Maße",
+		"roofFilterLabel": "Dachtyp",
+		"roofFilterAll": "Alle"
 	}
 }

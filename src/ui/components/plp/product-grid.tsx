@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { cn } from "@/lib/utils";
+import { ListingViewRoot } from "@/ui/components/listing/listing-view";
 import { ProductCard, type ProductCardData, type ProductCardPurchase } from "./product-card";
 
 /**
@@ -49,8 +50,15 @@ interface ProductGridProps {
  * remaining catalogue lands.
  */
 export function ProductGrid({ products, groupHeading, columns = "full" }: ProductGridProps) {
-	return (
-		<div className={cn("grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:gap-5", COLUMNS[columns])}>
+	const grid = (
+		<div
+			className={cn(
+				"grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:gap-5",
+				COLUMNS[columns],
+				// A list is one column, whatever the width. The homepage's rows have no list.
+				columns !== "home" && "group-data-[view=list]/lv:grid-cols-1!",
+			)}
+		>
 			{/* Exactly ONE preload. On a phone only the first row is above the fold, yet
 			    `priority` on the first four
 			    emitted four high-priority preloads that fought over the connection —
@@ -75,4 +83,6 @@ export function ProductGrid({ products, groupHeading, columns = "full" }: Produc
 			))}
 		</div>
 	);
+	// The homepage's rows of five are not a listing the reader can switch; every other grid is.
+	return columns === "home" ? grid : <ListingViewRoot>{grid}</ListingViewRoot>;
 }

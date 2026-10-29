@@ -1,12 +1,17 @@
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { formatPrice } from "@/config/locale";
-import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { marketHref } from "@/lib/channel-map";
 import { type FitmentOffer, type FitmentOffers } from "@/lib/fitment/offers";
-import { ROOF_GROUP_ORDER, describeOfferFit, groupRoofOf, type OfferFit } from "@/lib/fitment/offer-fit";
+import { ROOF_GROUP_ORDER, describeOfferFit, roofsOf, type OfferFit } from "@/lib/fitment/offer-fit";
+import { describeIncludes, isCompleteSet, offerSpecs } from "@/lib/fitment/offer-specs";
 import { type RoofType } from "@/lib/fitment/contract";
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
+import { CARD_GRID } from "@/ui/components/listing/card-layout";
+import { ListingViewRoot, ListingViewToggle } from "@/ui/components/listing/listing-view";
+import { splitSetTitle } from "@/lib/fitment/set-title";
+import { type SetFacts } from "@/lib/fitment/set-facts";
+import { type SetVehicle } from "@/lib/fitment/set-vehicle";
+import { OfferCard, type OfferCardLabels } from "./offer-card";
+import { RoofFilteredList } from "./offer-roof-filter";
 
 /**
  * The products a generation page offers.
@@ -32,10 +37,32 @@ export async function CatalogOfferList({
 	channel,
 	locale,
 	fits,
+	makes,
+	vehicles,
+	facts,
+	title,
 }: {
 	offers: FitmentOffers;
 	channel: string;
 	locale: string;
+	/** Replaces the default heading. */
+	title?: string;
+	/**
+	 * The makes the fitment export knows. With them a set's name can be shown as the product and the
+	 * car on separate lines; without them the name is printed whole, as the catalogue wrote it.
+	 */
+	makes?: readonly string[];
+	/**
+	 * The car this page is about, named the way the rest of the shop names it (the dataset's names for
+	 * the reading language). A set whose name says it is for that car is shown under those words.
+	 */
+	vehicles?: readonly SetVehicle[];
+	/**
+	 * What the export says about each set itself (bar shape, load, contents), keyed by Saleor product
+	 * id, read by the rule the product page uses: only rows the source stands behind, and nothing where
+	 * rows disagree. Replaces what the offers carry from the one row they were matched through.
+	 */
+	facts?: ReadonlyMap<string, SetFacts>;
 	/**
 	 * What each set is FOR — roof and years — from its application, keyed by Saleor product id.
 	 *
@@ -86,106 +113,56 @@ export async function CatalogOfferList({
 		);
 	}
 
-	const card = (offer: FitmentOffer) => {
-		// No price for a set this market does not sell where the category asks for a quote (`config/quote-only.ts`);
-		// the card is a link to the product page, which carries the button.
-		const quoteOnly = quoteInsteadOfPrice({
-			isPurchasable: offer.isPurchasable,
-			categorySlug: offer.categorySlug,
-		});
-		const described =
-			tf && fits ? describeOfferFit(fits.get(offer.saleorProductId), tf, ROOF_LABEL_KEY) : null;
+	const tc = await getTranslations({ locale, namespace: "configurator" });
+	const tl = await getTranslations({ locale, namespace: "listing" });
+	const tFit = tf ?? (await getTranslations({ locale, namespace: "fitment" }));
+
+	const labels: OfferCardLabels = {
+		viewSet: tl("viewSet"),
+		completeSet: tc("completeSet"),
+		noPhoto: t("product.noImageAvailable"),
+		roof: (roof) => tFit("cardRoof", { roof }),
+		years: (years) => tFit("cardYears", { years }),
+		price: { unavailable: tc("priceUnavailable") },
+		requestQuote: t("product.requestQuote"),
+		availability: {
+			inStock: t("common.inStock"),
+			onOrder: t("common.onOrder"),
+			outOfStock: t("common.outOfStock"),
+			notPurchasable: t("cart.addUnavailable"),
+		},
+	};
+	const toggleLabels = { group: tl("viewLabel"), grid: tl("viewGrid"), list: tl("viewList") };
+
+	// Only the first card of the page asks for a preload: it is the one LCP candidate.
+	const card = (offer: FitmentOffer, priority: boolean, direct = false) => {
+		const described = fits ? describeOfferFit(fits.get(offer.saleorProductId), tFit, ROOF_LABEL_KEY) : null;
+		// The name is only taken apart for a set whose roof and years are known from its own
+		// application: those lines replace what the long name said, so they must exist.
+		const title =
+			described && makes ? splitSetTitle(offer.name, { brand: offer.brand, makes, vehicles }) : null;
+		const own = facts ? facts.get(offer.saleorProductId) ?? null : undefined;
+		const includes = own === undefined ? offer.completeSetIncludes : own?.includes;
 		return (
-			<li key={offer.saleorVariantId}>
-				<Link
-					href={offer.slug ? marketHref(channel, `/${offer.slug}`) : marketHref(channel)}
-					className="border-border-default hover:border-action-primary bg-surface-primary flex h-full flex-col rounded-lg border p-4 transition-colors"
-				>
-					<span className="text-text-primary font-medium break-words">{offer.name}</span>
-					{described && tf ? (
-						// The roof and the years the set is made for, from its application. A statement
-						// about the SET: this page has no car, so nothing here says it fits one.
-						<span className="text-text-secondary mt-1 text-sm" data-testid="offer-fit">
-							{described.roof ? `${tf("cardRoof", { roof: described.roof })} · ` : ""}
-							{tf("cardYears", { years: described.years })}
-						</span>
-					) : null}
-					{offer.price && !quoteOnly ? (
-						// The market's own format in every market, Slovakia included —
-						// `147,00 €`, as on the product page. Slovakia printed
-						// `147.00 EUR` here until the owner decided on 2026-09-22.
-						<span className="text-price-regular mt-2 font-semibold">
-							{formatPrice(offer.price.amount, offer.price.currency, locale)}
-						</span>
-					) : null}
-					<span className="text-text-tertiary mt-1 text-sm">
-						{quoteOnly
-							? t("product.requestQuote")
-							: !offer.isPurchasable
-								? t("cart.addUnavailable")
-								: offer.availability === "on-demand"
-									? t("common.onOrder")
-									: offer.availability === "out-of-stock"
-										? t("configurator.outOfStock")
-										: null}
-					</span>
-				</Link>
-			</li>
+			<OfferCard
+				key={offer.saleorVariantId}
+				offer={offer}
+				href={offer.slug ? marketHref(channel, `/${offer.slug}`) : marketHref(channel)}
+				fit={described}
+				title={title}
+				specs={offerSpecs(own === undefined ? offer.facets : own?.facets, tc)}
+				includes={describeIncludes(includes, tc)}
+				complete={isCompleteSet(includes)}
+				labels={labels}
+				locale={locale}
+				priority={priority}
+				directAdd={direct && described ? { channel } : null}
+			/>
 		);
 	};
 
-	// Without facts the list is what it always was.
-	if (!fits || !tf) {
-		return (
-			<section className="mt-8">
-				<div className="flex flex-wrap items-baseline justify-between gap-2">
-					<h2 className="text-text-primary text-lg font-semibold">{t("configurator.resultsTitle")}</h2>
-					<p className="text-text-tertiary text-sm">
-						{t("catalog.offersCount", { count: offers.offers.length })}
-					</p>
-				</div>
-
-				{offers.isDemo ? (
-					<p className="bg-status-warning-bg text-status-warning border-status-warning-border mt-3 rounded-md border px-3 py-2 text-sm">
-						{t("catalog.offersDemo")}
-					</p>
-				) : null}
-
-				{offers.lookupFailed ? (
-					<p className="text-text-tertiary mt-3 text-sm">{t("catalog.offersPartial")}</p>
-				) : null}
-
-				<ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">{offers.offers.map(card)}</ul>
-			</section>
-		);
-	}
-
-	// With facts: grouped by roof where the page mixes several, newest window last within a group.
-	type Row = { offer: FitmentOffer; roof: RoofType | null; from: number };
-	const rows: Row[] = offers.offers.map((offer) => {
-		const own = fits.get(offer.saleorProductId);
-		return { offer, roof: groupRoofOf(own), from: own?.[0]?.yearFrom ?? 0 };
-	});
-	const order = (roof: RoofType | null) =>
-		roof === null ? ROOF_GROUP_ORDER.length : ROOF_GROUP_ORDER.indexOf(roof);
-	const groups = [...new Set(rows.map((row) => row.roof))]
-		.sort((a, b) => order(a) - order(b))
-		.map((roof) => ({
-			roof,
-			rows: rows.filter((row) => row.roof === roof).sort((a, b) => a.from - b.from),
-		}));
-	const grouped = groups.length > 1;
-
-	return (
-		<section className="mt-8" data-testid="catalog-offers">
-			<div className="flex flex-wrap items-baseline justify-between gap-2">
-				<h2 className="text-text-primary text-lg font-semibold">{t("catalog.offersTitleGeneration")}</h2>
-				<p className="text-text-tertiary text-sm">
-					{t("configurator.resultsCount", { count: offers.offers.length })}
-				</p>
-			</div>
-			<p className="text-text-secondary mt-2 max-w-prose text-sm">{t("catalog.offersBrowseNote")}</p>
-
+	const notices = (
+		<>
 			{offers.isDemo ? (
 				<p className="bg-status-warning-bg text-status-warning border-status-warning-border mt-3 rounded-md border px-3 py-2 text-sm">
 					{t("catalog.offersDemo")}
@@ -195,22 +172,89 @@ export async function CatalogOfferList({
 			{offers.lookupFailed ? (
 				<p className="text-text-tertiary mt-3 text-sm">{t("catalog.offersPartial")}</p>
 			) : null}
+		</>
+	);
 
-			{groups.map((group) => (
-				<div key={group.roof ?? "none"} className="mt-5">
-					{grouped ? (
-						<h3 className="text-text-primary text-base font-semibold">
-							{group.roof ? tf(ROOF_LABEL_KEY[group.roof]) : t("catalog.offersGroupOther")}
-							<span className="text-text-tertiary ml-2 text-sm font-normal">
-								{t("configurator.resultsCount", { count: group.rows.length })}
-							</span>
-						</h3>
-					) : null}
-					<ul className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${grouped ? "mt-3" : "mt-4"}`}>
-						{group.rows.map((row) => card(row.offer))}
+	// Without facts the list is one flat run of sets.
+	if (!fits) {
+		return (
+			<ListingViewRoot>
+				<section className="mt-8">
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+							<h2 className="sr-only">{t("configurator.resultsTitle")}</h2>
+							<p className="text-text-primary text-sm font-medium">
+								{t("catalog.offersCount", { count: offers.offers.length })}
+							</p>
+						</div>
+						<ListingViewToggle labels={toggleLabels} />
+					</div>
+					{notices}
+					<ul className={`${CARD_GRID} mt-4`}>
+						{offers.offers.map((offer, index) => card(offer, index === 0))}
 					</ul>
+				</section>
+			</ListingViewRoot>
+		);
+	}
+
+	// With facts: ONE list, the roofs told apart on each card and, where the page mixes several, by
+	// a filter — not by separate shelves, which left a one-card shelf standing in a field of white.
+	// Within the list: the likeliest roof first, the newest window last within a roof.
+	// A set made for several roofs is sorted under its likeliest roof and found under each of them.
+	type Row = { offer: FitmentOffer; roofs: RoofType[]; from: number };
+	const rows: Row[] = offers.offers.map((offer) => {
+		const own = fits.get(offer.saleorProductId);
+		return { offer, roofs: roofsOf(own), from: own?.[0]?.yearFrom ?? 0 };
+	});
+	const order = (row: Row) =>
+		row.roofs[0] ? ROOF_GROUP_ORDER.indexOf(row.roofs[0]) : ROOF_GROUP_ORDER.length;
+	const sorted = [...rows].sort((a, b) => order(a) - order(b) || a.from - b.from);
+	const groups = [...ROOF_GROUP_ORDER, null]
+		.map((roof) => ({
+			key: roof ?? "none",
+			label: roof ? tFit(ROOF_LABEL_KEY[roof]) : t("catalog.offersGroupOther"),
+			count: sorted.filter((row) => (roof ? row.roofs.includes(roof) : row.roofs.length === 0)).length,
+		}))
+		.filter((group) => group.count > 0);
+
+	// A page that names ONE roof leaves nothing to choose: each card is the set for that roof and
+	// adds to the cart itself. A page that mixes roofs sends the shopper to the set, to say which is theirs.
+	const oneRoof = groups.length === 1 && groups[0]!.key !== "none";
+
+	return (
+		<ListingViewRoot>
+			<section className="mt-8" data-testid="catalog-offers">
+				<div className="flex flex-wrap items-center justify-between gap-3">
+					<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+						{/* The page's own H1 names the car; this heading is for the outline, the toolbar shows the count. */}
+						<h2 className="sr-only">{title ?? t("catalog.offersTitleGeneration")}</h2>
+						<p className="text-text-primary text-sm font-medium">
+							{t("configurator.resultsCount", { count: offers.offers.length })}
+						</p>
+					</div>
+					<ListingViewToggle labels={toggleLabels} />
 				</div>
-			))}
-		</section>
+				<p className="text-text-secondary mt-2 max-w-prose text-sm">{t("catalog.offersBrowseNote")}</p>
+
+				{notices}
+
+				{groups.length > 1 ? (
+					<RoofFilteredList
+						items={sorted.map((row, index) => ({
+							id: row.offer.saleorVariantId,
+							roofs: row.roofs.length > 0 ? row.roofs : ["none"],
+							node: card(row.offer, index === 0, oneRoof),
+						}))}
+						groups={groups}
+						labels={{ group: tl("roofFilterLabel"), all: tl("roofFilterAll") }}
+					/>
+				) : (
+					<ul className={`${CARD_GRID} mt-4`}>
+						{sorted.map((row, index) => card(row.offer, index === 0, oneRoof))}
+					</ul>
+				)}
+			</section>
+		</ListingViewRoot>
 	);
 }

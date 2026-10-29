@@ -854,7 +854,16 @@
 		"errorCartRejected": "We couldn't add the set to your cart.",
 		"errorLookupFailed": "We can't confirm whether the set was added. Please check your cart.",
 		"errorCatalogueUnavailable": "We couldn't check this set's availability just now. Please try again.",
-		"errorGeneric": "We couldn't add the set to your cart."
+		"errorGeneric": "We couldn't add the set to your cart.",
+		"facetAerodynamic": "Aerodynamic",
+		"facetWing": "Wing profile",
+		"facetTubular": "Tubular",
+		"facetColourBlack": "Black",
+		"facetColourSilver": "Silver",
+		"facetColourAlu": "Natural aluminium",
+		"propertyBarLength": "Bar length",
+		"propertyColour": "Colour",
+		"propertyBarLoad": "Bar load rating"
 	},
 	"catalog": {
 		"makeIndexTitle": "Choose a roof rack by vehicle",
@@ -868,7 +877,7 @@
 		"offersPartial": "Part of the offer could not be loaded, so the list may be incomplete.",
 		"previewNotice": "Preview of an unpublished page. It is not shown to visitors.",
 		"offersTitleGeneration": "Sets for this generation",
-		"offersBrowseNote": "Each set applies only to the roof type and years shown. The sets are not matched to your car — once you choose your vehicle we show only the ones that fit it.",
+		"offersBrowseNote": "Each set applies only to the roof type and years shown, and the differences are on the cards. Another car? Change it in the header.",
 		"offersGroupOther": "No roof type stated"
 	},
 	"company": {
@@ -1117,5 +1126,14 @@
 		"description": "The makers of roof racks, roof boxes, bike carriers and more whose products you can buy here.",
 		"productCount": "{count, plural, one {# product} other {# products}}",
 		"brandDescription": "{brand} products at MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Listing view",
+		"viewGrid": "Grid",
+		"viewList": "List",
+		"viewSet": "View set",
+		"specDimensions": "Dimensions",
+		"roofFilterLabel": "Roof type",
+		"roofFilterAll": "All"
 	}
 }
