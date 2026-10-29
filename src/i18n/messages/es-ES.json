@@ -862,7 +862,8 @@
 		"facetColourSilver": "Plateado",
 		"facetColourAlu": "Aluminio natural",
 		"propertyBarLength": "Longitud de las barras",
-		"propertyColour": "Color"
+		"propertyColour": "Color",
+		"propertyBarLoad": "Carga de las barras"
 	},
 	"catalog": {
 		"makeIndexTitle": "Elija las barras de techo según su vehículo",
@@ -1131,6 +1132,8 @@
 		"viewGrid": "Cuadrícula",
 		"viewList": "Lista",
 		"viewSet": "Ver conjunto",
-		"specDimensions": "Dimensiones"
+		"specDimensions": "Dimensiones",
+		"roofFilterLabel": "Tipo de techo",
+		"roofFilterAll": "Todos"
 	}
 }

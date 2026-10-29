@@ -862,7 +862,8 @@
 		"facetColourSilver": "stříbrná",
 		"facetColourAlu": "hliníková",
 		"propertyBarLength": "Délka příčníků",
-		"propertyColour": "Barva"
+		"propertyColour": "Barva",
+		"propertyBarLoad": "Nosnost příčníků"
 	},
 	"catalog": {
 		"makeIndexTitle": "Vyberte nosič podle vozidla",
@@ -1131,6 +1132,8 @@
 		"viewGrid": "Mřížka",
 		"viewList": "Seznam",
 		"viewSet": "Zobrazit sestavu",
-		"specDimensions": "Rozměry"
+		"specDimensions": "Rozměry",
+		"roofFilterLabel": "Typ střechy",
+		"roofFilterAll": "Všechny"
 	}
 }

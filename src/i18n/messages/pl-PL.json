@@ -862,7 +862,8 @@
 		"facetColourSilver": "Srebrny",
 		"facetColourAlu": "Aluminium naturalne",
 		"propertyBarLength": "Długość belek",
-		"propertyColour": "Kolor"
+		"propertyColour": "Kolor",
+		"propertyBarLoad": "Nośność poprzeczek"
 	},
 	"catalog": {
 		"makeIndexTitle": "Wybierz bagażnik według pojazdu",
@@ -1131,6 +1132,8 @@
 		"viewGrid": "Siatka",
 		"viewList": "Lista",
 		"viewSet": "Zobacz zestaw",
-		"specDimensions": "Wymiary"
+		"specDimensions": "Wymiary",
+		"roofFilterLabel": "Typ dachu",
+		"roofFilterAll": "Wszystkie"
 	}
 }

@@ -199,6 +199,50 @@ describe("PDP compatibility on the N15060 offers", () => {
 		expect(markup).not.toContain("/konfigurator");
 	});
 
+	describe("what the set contains", () => {
+		const documented = (includes: string[] | undefined) => {
+			const dataset = n15060Dataset();
+			for (const application of dataset.applications) {
+				for (const ref of application.products) {
+					if (ref.saleorProductId === AUDI_OFFER.productId) {
+						ref.completeSet = includes ? { includes } : undefined;
+					}
+				}
+			}
+			return dataset;
+		};
+
+		it("is said under what the set is for, in the market's own words, when the export documents it", async () => {
+			readGarage.mockResolvedValue(garageWith(null));
+			loadFitmentDataset.mockResolvedValue({ dataset: documented(["bars", "feet", "fitting-kit"]) });
+			expect((await render("sk-eur", AUDI_OFFER)).text).toContain("Obsahuje: priečniky, pätky, montážny kit");
+
+			const german = await render("de-eur", AUDI_OFFER);
+			expect(german.text).toContain("Enthält:");
+			expect(german.text).not.toContain("Obsahuje");
+		});
+
+		it("is said under a green fit too", async () => {
+			readGarage.mockResolvedValue(garageWith(AUDI_2012));
+			loadFitmentDataset.mockResolvedValue({ dataset: documented(["bars", "fitting-kit"]) });
+			const { text } = await render("sk-eur", AUDI_OFFER);
+			expect(text).toContain("Kompatibilné podľa údajov výrobcu");
+			expect(text).toContain("Obsahuje: priečniky, montážny kit");
+		});
+
+		it("is not said where the export says nothing — no 'Obsahuje' over an unknown box", async () => {
+			readGarage.mockResolvedValue(garageWith(null));
+			loadFitmentDataset.mockResolvedValue({ dataset: documented(undefined) });
+			expect((await render("sk-eur", AUDI_OFFER)).text).not.toContain("Obsahuje");
+		});
+
+		it("is not said under a question or a warning, only under what the set is for or a fit", async () => {
+			readGarage.mockResolvedValue(garageWith({ ...AUDI_2012, roofType: undefined }));
+			loadFitmentDataset.mockResolvedValue({ dataset: documented(["bars", "fitting-kit"]) });
+			expect((await render("sk-eur", AUDI_OFFER)).text).not.toContain("Obsahuje");
+		});
+	});
+
 	it("an unanswered roof still asks for it", async () => {
 		readGarage.mockResolvedValue(garageWith({ ...AUDI_2012, roofType: undefined }));
 		const { text } = await render("sk-eur", AUDI_OFFER);

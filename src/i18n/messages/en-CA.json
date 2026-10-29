@@ -862,7 +862,8 @@
 		"facetColourSilver": "Silver",
 		"facetColourAlu": "Natural aluminium",
 		"propertyBarLength": "Bar length",
-		"propertyColour": "Colour"
+		"propertyColour": "Colour",
+		"propertyBarLoad": "Bar load rating"
 	},
 	"catalog": {
 		"makeIndexTitle": "Choose a roof rack by vehicle",
@@ -1131,6 +1132,8 @@
 		"viewGrid": "Grid",
 		"viewList": "List",
 		"viewSet": "View set",
-		"specDimensions": "Dimensions"
+		"specDimensions": "Dimensions",
+		"roofFilterLabel": "Roof type",
+		"roofFilterAll": "All"
 	}
 }

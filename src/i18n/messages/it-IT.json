@@ -862,7 +862,8 @@
 		"facetColourSilver": "Argento",
 		"facetColourAlu": "Alluminio naturale",
 		"propertyBarLength": "Lunghezza delle barre",
-		"propertyColour": "Colore"
+		"propertyColour": "Colore",
+		"propertyBarLoad": "Portata delle barre"
 	},
 	"catalog": {
 		"makeIndexTitle": "Scegli il portapacchi in base al veicolo",
@@ -1131,6 +1132,8 @@
 		"viewGrid": "Griglia",
 		"viewList": "Elenco",
 		"viewSet": "Vedi il set",
-		"specDimensions": "Dimensioni"
+		"specDimensions": "Dimensioni",
+		"roofFilterLabel": "Tipo di tetto",
+		"roofFilterAll": "Tutti"
 	}
 }

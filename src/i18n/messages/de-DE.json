@@ -862,7 +862,8 @@
 		"facetColourSilver": "Silber",
 		"facetColourAlu": "Alu natur",
 		"propertyBarLength": "Länge der Querträger",
-		"propertyColour": "Farbe"
+		"propertyColour": "Farbe",
+		"propertyBarLoad": "Traglast Querträger"
 	},
 	"catalog": {
 		"makeIndexTitle": "Dachträger nach Fahrzeug auswählen",
@@ -1131,6 +1132,8 @@
 		"viewGrid": "Raster",
 		"viewList": "Liste",
 		"viewSet": "Set ansehen",
-		"specDimensions": "Maße"
+		"specDimensions": "Maße",
+		"roofFilterLabel": "Dachtyp",
+		"roofFilterAll": "Alle"
 	}
 }

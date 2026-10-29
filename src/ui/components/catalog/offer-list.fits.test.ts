@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createTranslator } from "next-intl";
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -29,6 +30,10 @@ vi.mock("next-intl/server", () => ({
 
 // The heart is a client component with its own translation context; no assertion here is about it.
 vi.mock("@/ui/components/wishlist/wishlist-button", () => ({ WishlistButton: () => null }));
+vi.mock("@/ui/components/plp/listing-add-to-cart", () => ({
+	ListingAddToCart: ({ variantId }: { variantId: string }) =>
+		createElement("button", { "data-add": variantId }),
+}));
 
 import { type FitmentOffer, type FitmentOffers } from "@/lib/fitment/offers";
 import { type OfferFit } from "@/lib/fitment/offer-fit";
@@ -126,15 +131,21 @@ describe("what the page says about its sets", () => {
 		expect(rendered).toContain("Strecha: Integrované pozdĺžniky · Roky: od 2022");
 	});
 
-	it("groups by roof where the page mixes several, and counts each group", async () => {
+	it("offers a roof filter where the page mixes several roofs, and counts each", async () => {
 		const rendered = await text(MIXED, MIXED_FITS);
-		// The classic roof first, then integrated, then the sets that name no roof last.
-		const order = ["Pozdĺžniky nad strechou", "Integrované pozdĺžniky", "Bez určeného typu strechy"].map(
-			(heading) => rendered.indexOf(`|${heading}|`),
-		);
+		// All of them, then the classic roof, then integrated, then the sets that name no roof last —
+		// one list of every set, not one shelf per roof.
+		const order = [
+			"Všetky",
+			"Pozdĺžniky nad strechou",
+			"Integrované pozdĺžniky",
+			"Bez určeného typu strechy",
+		].map((label) => rendered.indexOf(`|${label}|`));
 		expect(order.every((at) => at >= 0)).toBe(true);
 		expect([...order].sort((a, b) => a - b)).toEqual(order);
-		expect(rendered).toContain("|2 zostavy|");
+		expect(rendered).toContain("|Integrované pozdĺžniky|2|");
+		expect(rendered).toContain("|Všetky|4|");
+		expect(rendered).not.toContain('<h3 class="text-text-primary text-base');
 	});
 
 	it("lists a group oldest window first", async () => {
@@ -142,11 +153,45 @@ describe("what the page says about its sets", () => {
 		expect(rendered.indexOf("|Set 2|")).toBeLessThan(rendered.indexOf("|Set 0|"));
 	});
 
+	it("keeps the way on to the set's page where the roofs are mixed — the shopper has to say which is theirs", async () => {
+		const rendered = await text(MIXED, MIXED_FITS);
+		expect(rendered).not.toContain("data-add");
+		expect(rendered.match(/Zobraziť zostavu/g)).toHaveLength(4);
+	});
+
+	it("lets every set on a one-roof page add to the cart itself", async () => {
+		const single = new Map<string, OfferFit[]>(["p0", "p1", "p2"].map((id) => [id, [fit()]]));
+		const html = renderToStaticMarkup(
+			await CatalogOfferList({
+				offers: offers({ offers: [offer(0), offer(1), offer(2)], compatibleCount: 3, purchasableCount: 3 }),
+				channel: "sk-eur",
+				locale: "sk-SK",
+				fits: single,
+			}),
+		);
+		expect(html.match(/data-add="v\d"/g)).toHaveLength(3);
+		expect(html).not.toContain("Zobraziť zostavu");
+	});
+
+	it("keeps the link when a set names no roof — the page is then not one roof", async () => {
+		// p3 has no application in the map: nothing says which roof it is for.
+		const html = renderToStaticMarkup(
+			await CatalogOfferList({
+				offers: offers({ offers: [offer(0), offer(3)], compatibleCount: 2, purchasableCount: 2 }),
+				channel: "sk-eur",
+				locale: "sk-SK",
+				fits: new Map([["p0", [fit()]]]),
+			}),
+		);
+		expect(html).not.toContain("data-add");
+		expect(html.match(/Zobraziť zostavu/g)).toHaveLength(2);
+	});
+
 	it("adds no group headings to a page with one roof", async () => {
 		const single = new Map<string, OfferFit[]>(["p0", "p1", "p2", "p3"].map((id) => [id, [fit()]]));
 		const rendered = await text(MIXED, single);
 		expect(rendered).not.toContain("|Bez určeného typu strechy|");
-		expect(rendered).not.toContain("<h3");
+		expect(rendered).not.toContain("|Všetky|");
 		expect(rendered).toContain("Strecha: Integrované pozdĺžniky · Roky: 2018 – 2021");
 	});
 

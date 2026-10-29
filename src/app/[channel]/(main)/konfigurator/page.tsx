@@ -9,6 +9,7 @@ import { resolveVehicleOutcome } from "@/lib/fitment/resolve";
 import { isDemoDataset, resolveFitmentOffers } from "@/lib/fitment/offers";
 import { renderConditions } from "@/lib/fitment/conditions";
 import { describeOfferFit, offerFitsByProduct } from "@/lib/fitment/offer-fit";
+import { datasetMakeNames, splitSetTitle } from "@/lib/fitment/set-title";
 import { ListingViewSwitch } from "@/ui/components/listing/listing-view-switch";
 import { readGarage } from "@/lib/garage/state";
 import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
@@ -43,7 +44,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "configurator" });
 
 	return (
-		<section className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+		<section className="max-w-page mx-auto w-full px-4 py-8 sm:px-6 lg:px-8">
 			<header>
 				<h1 className="text-text-primary text-2xl font-bold sm:text-3xl">{t("title")}</h1>
 				<p className="text-text-secondary mt-2 max-w-prose text-sm">{t("description")}</p>
@@ -105,6 +106,7 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 	const verifiedRefs = outcome.verified.map((o) => o.ref);
 	const offers = await resolveFitmentOffers(verifiedRefs, channel, locale, { dataset });
 
+	const makeNames = datasetMakeNames(dataset);
 	const cards: ResultCard[] = offers.offers.map((offer) => {
 		const match = outcome.verified.find((o) => o.ref.saleorProductId === offer.saleorProductId);
 		const conditions = renderConditions(match?.result.conditions ?? [], locale, (code) => {
@@ -120,6 +122,8 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 		);
 		return {
 			offer,
+			// The page is about one car, named in the summary above: the card prints the model only.
+			title: splitSetTitle(offer.name, { brand: offer.brand, makes: makeNames }),
 			fit,
 			conditions: conditions.resolved.map((c) => c.text),
 			unresolvedConditions: conditions.unresolvedCount,
@@ -145,9 +149,9 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 			/>
 
 			<div className="flex flex-wrap items-center justify-between gap-3">
-				<div>
+				<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
 					<h2 className="text-text-primary text-lg font-semibold">{t("resultsTitle")}</h2>
-					<p className="text-text-tertiary mt-1 text-sm">{t("resultsCount", { count: cards.length })}</p>
+					<p className="text-text-tertiary text-sm">{t("resultsCount", { count: cards.length })}</p>
 				</div>
 				{cards.length > 1 && <ListingViewSwitch />}
 			</div>

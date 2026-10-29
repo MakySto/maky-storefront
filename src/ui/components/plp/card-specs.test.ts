@@ -54,4 +54,36 @@ describe("buildCardSpecs", () => {
 		);
 		expect(buildCardSpecs(many, "sk-SK")).toHaveLength(4);
 	});
+
+	describe("a bike carrier", () => {
+		const carrier = [
+			attr("cfm:attribute:weight", "Hmotnosť nosiča", "14", "KG"),
+			attr("cfm:attribute:max_load_per_bike", "Max. hmotnosť na bicykel", "20", "KG"),
+			attr("cfm:attribute:max_load", "Celková nosnosť", "60", "KG"),
+			attr("cfm:attribute:bike_capacity", "Počet bicyklov", "3"),
+		];
+
+		it("tells how many bikes, the whole load, the load per bike and its own weight — in that order", () => {
+			const specs = buildCardSpecs(carrier, "sk-SK");
+			expect(specs.map((spec) => spec.label)).toEqual([
+				"Počet bicyklov",
+				"Celková nosnosť",
+				"Max. hmotnosť na bicykel",
+				"Hmotnosť nosiča",
+			]);
+			expect(specs.map((spec) => spec.value.replace(/\s/g, " "))).toEqual(["3", "60 kg", "20 kg", "14 kg"]);
+		});
+
+		it("never works out a per-bike limit the catalogue does not state", () => {
+			const specs = buildCardSpecs(
+				[
+					attr("cfm:attribute:bike_capacity", "Počet bicyklov", "3"),
+					attr("cfm:attribute:max_load", "Celková nosnosť", "60", "KG"),
+				],
+				"sk-SK",
+			);
+			// 60 kg over 3 bikes is 20 kg, and it is not on the card: only what the product carries is.
+			expect(specs.map((spec) => spec.label)).toEqual(["Počet bicyklov", "Celková nosnosť"]);
+		});
+	});
 });

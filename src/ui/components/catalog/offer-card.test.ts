@@ -3,6 +3,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/ui/components/wishlist/wishlist-button", () => ({ WishlistButton: () => null }));
+// The one-click add is a client form with its own translation context; what matters here is that the
+// card hands it the right market and variant.
+vi.mock("@/ui/components/plp/listing-add-to-cart", () => ({
+	ListingAddToCart: ({ channel, variantId }: { channel: string; variantId: string }) =>
+		createElement("button", { "data-add": `${channel}:${variantId}` }, "Do košíka"),
+}));
 
 import type { FitmentOffer } from "@/lib/fitment/offers";
 import { OfferCard, type OfferCardLabels } from "./offer-card";
@@ -111,5 +117,62 @@ describe("OfferCard", () => {
 
 	it("keeps a demo set off the favourites", () => {
 		expect(render({ isDemo: true })).not.toContain("wishlist");
+	});
+
+	it("says the car and the years once, under a short name, when the name can be taken apart", () => {
+		const html = render(
+			{ name: "Strešný nosič Nordrive Silenzio Silver Dacia Bigster (2025–) — Klasické lyžiny" },
+			{
+				title: { model: "Nordrive Silenzio Silver", vehicle: "Dacia Bigster" },
+				fit: { roof: "Klasické lyžiny", years: "od 2025" },
+			},
+		);
+		expect(html).toContain(">Nordrive Silenzio Silver<");
+		expect(html).toContain("Dacia Bigster");
+		expect(html).toContain("od 2025");
+		expect(html).toContain("Klasické lyžiny");
+		// the long name, and the second statement of the same facts, are gone from the text (the
+		// photograph's alt text keeps the catalogue's full name for assistive technology)
+		const heading = html.match(/<h3[^>]*>([\s\S]*?)<\/h3>/)![1]!.replace(/<[^>]+>/g, "");
+		expect(heading).toBe("Nordrive Silenzio Silver");
+		expect(html).not.toContain("Strecha:");
+		// and the maker is not repeated over a name that already carries it
+		expect(html).not.toContain("NORDRIVE");
+	});
+
+	it("keeps the whole name and the fit line when the name cannot be taken apart", () => {
+		const html = render({}, { fit: { roof: "Integrované pozdĺžniky", years: "2018 – 2021" } });
+		expect(html).toContain("Nordrive Silenzio Silver");
+		expect(html).toContain("Strecha: Integrované pozdĺžniky · Roky: 2018 – 2021");
+	});
+
+	describe("the action", () => {
+		it("opens the set's page when the card may not add to the cart itself", () => {
+			const html = render({}, { directAdd: null });
+			expect(html).toContain("Zobraziť zostavu");
+			expect(html).not.toContain("data-add");
+		});
+
+		it("adds to the cart in the page's market where nothing is left to choose", () => {
+			const html = render({ availability: "in-stock" }, { directAdd: { channel: "sk-eur" } });
+			expect(html).toContain('data-add="sk-eur:v1"');
+			expect(html).not.toContain("Zobraziť zostavu");
+		});
+
+		it("adds an on-demand set too — the catalogue sells it to order", () => {
+			expect(render({ availability: "on-demand" }, { directAdd: { channel: "sk-eur" } })).toContain(
+				"data-add",
+			);
+		});
+
+		it.each([
+			["sold out", { availability: "out-of-stock" as const }],
+			["not purchasable here", { isPurchasable: false }],
+			["a demo set", { isDemo: true }],
+		])("never adds %s: it opens the set's page", (_label, over) => {
+			const html = render(over, { directAdd: { channel: "sk-eur" } });
+			expect(html).not.toContain("data-add");
+			expect(html).toContain("Zobraziť zostavu");
+		});
 	});
 });

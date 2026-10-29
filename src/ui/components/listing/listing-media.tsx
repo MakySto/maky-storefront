@@ -63,7 +63,7 @@ export function ListingMedia({
 				sizes={sizes}
 				priority={priority}
 				className={cn(
-					"object-contain p-3 transition-[opacity,transform] duration-500 ease-out sm:p-4",
+					"object-contain p-2 transition-[opacity,transform] duration-500 ease-out sm:p-3",
 					hasHover
 						? "group-focus-within/card:opacity-0 group-hover/card:opacity-0"
 						: "motion-safe:group-hover/card:scale-[1.03]",
@@ -79,7 +79,7 @@ export function ListingMedia({
 					loading="lazy"
 					aria-hidden="true"
 					className={cn(
-						"object-contain p-3 opacity-0 transition-opacity duration-500 ease-out group-focus-within/card:opacity-100 group-hover/card:opacity-100 sm:p-4",
+						"object-contain p-2 opacity-0 transition-opacity duration-500 ease-out group-focus-within/card:opacity-100 group-hover/card:opacity-100 sm:p-3",
 						className,
 					)}
 				/>

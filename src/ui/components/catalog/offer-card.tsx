@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/config/locale";
 import { type FitmentOffer } from "@/lib/fitment/offers";
+import type { SetTitle } from "@/lib/fitment/set-title";
 import {
 	ACTION_ROW,
 	CARD,
@@ -11,10 +12,13 @@ import {
 	MEDIA_COLUMN,
 	PRIMARY_LINK,
 	PRICE_ROW,
+	SPECS_BLOCK,
 	TITLE,
 } from "@/ui/components/listing/card-layout";
+import { cardKicker } from "@/ui/components/listing/kicker";
 import { ListingMedia } from "@/ui/components/listing/listing-media";
 import { ListingSpecs, type ListingSpec } from "@/ui/components/listing/listing-specs";
+import { ListingAddToCart } from "@/ui/components/plp/listing-add-to-cart";
 import { WishlistButton } from "@/ui/components/wishlist/wishlist-button";
 
 /**
@@ -37,9 +41,13 @@ export type OfferCardLabels = {
  * availability, and one clear way on — to the set's own page.
  *
  * This page lists a whole generation and no car has been matched to anyone, so the card says what
- * the SET is for and never that it fits: no green promise, no "compatible" on a card. The detail
- * link, not a cart button, is the action — adding to the cart needs the vehicle confirmed, and
- * opening a category does not choose one.
+ * the SET is for and never that it fits: no green promise, no "compatible" on a card.
+ *
+ * The action is the category card's own one-click add (`ListingAddToCart`) where nothing is left
+ * to choose — the page names one roof, so the set printed on the card is the set for that roof —
+ * and the set is orderable. Where the page mixes roofs the shopper still has to say which one
+ * theirs is, so the same green button opens the set's page instead. The garage plays no part in
+ * either: an empty one does not stop an unambiguous set from being bought.
  */
 export function OfferCard({
 	offer,
@@ -48,9 +56,11 @@ export function OfferCard({
 	specs,
 	includes,
 	complete,
+	title,
 	labels,
 	locale,
 	priority = false,
+	directAdd = null,
 }: {
 	offer: FitmentOffer;
 	href: string;
@@ -60,9 +70,13 @@ export function OfferCard({
 	/** What CFM documents the set to contain, in words; null when it does not say. */
 	includes: string | null;
 	complete: boolean;
+	/** The name taken apart (product, car), when it can be; null prints the name whole. */
+	title?: SetTitle | null;
 	labels: OfferCardLabels;
 	locale: string;
 	priority?: boolean;
+	/** The market to add in, when this card may add to the cart itself; null opens the set's page. */
+	directAdd?: { channel: string } | null;
 }) {
 	const availability = !offer.isPurchasable
 		? { text: labels.availability.notPurchasable, tone: "text-text-secondary" }
@@ -73,6 +87,20 @@ export function OfferCard({
 				: offer.availability === "out-of-stock"
 					? { text: labels.availability.outOfStock, tone: "text-text-secondary" }
 					: null;
+
+	// Orderable now: published and sold in this market, a variant to put in the cart, not a demo set,
+	// and not sold out.
+	const canAddDirectly =
+		offer.isPurchasable === true &&
+		!offer.isDemo &&
+		Boolean(offer.saleorVariantId) &&
+		offer.availability !== "out-of-stock";
+
+	// The maker and the shelf's name, but only what the name does not already say: "NORDRIVE ·
+	// Nordrive strešné nosiče" over "Nordrive Silenzio Silver" said "Nordrive" three times.
+	const shown = title ? title.model : offer.name;
+	const kicker = cardKicker(shown, offer.brand, offer.categoryName);
+	const kickerText = [kicker.brand, kicker.category].filter(Boolean).join(" · ");
 
 	return (
 		<li
@@ -108,37 +136,56 @@ export function OfferCard({
 			</div>
 
 			<div className={FACTS_COLUMN}>
-				{offer.brand || offer.categoryName ? (
-					<p className="text-text-tertiary line-clamp-2 text-xs leading-snug">
-						{offer.brand ? (
-							<span className="text-text-secondary font-bold tracking-[0.07em] uppercase">{offer.brand}</span>
-						) : null}
-						{offer.brand && offer.categoryName ? <span aria-hidden="true"> · </span> : null}
-						{offer.categoryName ? <span>{offer.categoryName}</span> : null}
-					</p>
+				{kickerText ? (
+					<p className="text-text-tertiary line-clamp-1 text-xs leading-snug">{kickerText}</p>
 				) : null}
-				<h3 className={TITLE}>
+				{/* A set's model name is one short line: no second line is held back for it (the category card keeps one, its names vary). */}
+				<h3 className={cn(TITLE, "sm:min-h-0", kickerText ? "" : "mt-0")}>
 					<Link
 						href={href}
 						className="text-text-primary decoration-brand/40 underline-offset-[3px] hover:underline focus-visible:outline-hidden"
 					>
 						<span className="absolute inset-0" aria-hidden="true" />
-						{offer.name}
+						{title ? title.model : offer.name}
 					</Link>
 				</h3>
-				{fit ? (
+				{title && fit ? (
+					// The car and the years on one line, the roof under it: said once, where the long name
+					// used to say them and the line under it said them again.
+					<>
+						<p
+							className="text-text-secondary mt-1 line-clamp-2 text-[0.8125rem] leading-snug"
+							data-testid="offer-vehicle"
+						>
+							{title.vehicle}
+							<span aria-hidden="true"> · </span>
+							{fit.years}
+						</p>
+						{fit.roof ? (
+							<p
+								className="text-text-primary mt-0.5 line-clamp-2 text-[0.8125rem] leading-snug font-medium"
+								data-testid="offer-roof"
+							>
+								{fit.roof}
+							</p>
+						) : null}
+					</>
+				) : fit ? (
 					<p
-						className="text-text-secondary mt-1.5 line-clamp-2 text-[0.8125rem] leading-snug"
+						className="text-text-secondary mt-1 line-clamp-2 text-[0.8125rem] leading-snug"
 						data-testid="offer-fit"
 					>
 						{fit.roof ? `${labels.roof(fit.roof)} · ` : ""}
 						{labels.years(fit.years)}
 					</p>
 				) : null}
-				<ListingSpecs specs={specs} className="border-border-subtle mt-3 border-t pt-3" />
+			</div>
+
+			<div className={SPECS_BLOCK}>
+				<ListingSpecs specs={specs} className="border-border-subtle border-t pt-2.5" />
 				{includes ? (
 					<p
-						className="text-text-secondary mt-2.5 line-clamp-2 text-[0.8125rem] leading-snug"
+						className="text-text-secondary mt-2 line-clamp-2 text-[0.8125rem] leading-snug"
 						data-testid="offer-includes"
 					>
 						{includes}
@@ -163,9 +210,13 @@ export function OfferCard({
 			</div>
 
 			<div className={ACTION_ROW}>
-				<Link href={href} className={PRIMARY_LINK}>
-					{labels.viewSet}
-				</Link>
+				{canAddDirectly && directAdd ? (
+					<ListingAddToCart channel={directAdd.channel} variantId={offer.saleorVariantId} />
+				) : (
+					<Link href={href} className={PRIMARY_LINK}>
+						{labels.viewSet}
+					</Link>
+				)}
 			</div>
 		</li>
 	);

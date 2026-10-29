@@ -4,14 +4,14 @@ import { describeIncludes, isCompleteSet, offerSpecs } from "./offer-specs";
 const t = (key: string) => `[${key}]`;
 
 describe("offerSpecs", () => {
-	it("prints the facts in the order a shopper decides in", () => {
+	it("prints the facts in the order a shopper compares bars in", () => {
 		const rows = offerSpecs(
 			{ maxLoadKg: 75, barMaterial: "aluminium", barShape: "aero", barLengthCm: 118, barColour: "black" },
 			t,
 		);
-		expect(rows.map((row) => row.key)).toEqual(["load", "material", "shape", "length"]);
-		expect(rows[0]).toEqual({ key: "load", label: "[propertyMaxLoad]", value: "75 kg" });
-		expect(rows[3]!.value).toBe("118 cm");
+		expect(rows.map((row) => row.key)).toEqual(["material", "shape", "length", "load"]);
+		expect(rows[3]).toEqual({ key: "load", label: "[propertyBarLoad]", value: "75 kg" });
+		expect(rows[2]!.value).toBe("118 cm");
 	});
 
 	it("has the colour only when there is room", () => {
@@ -56,10 +56,16 @@ describe("describeIncludes / isCompleteSet", () => {
 		expect(describeIncludes([], t)).toBeNull();
 	});
 
-	it("calls a set complete only with bars, feet and the fitting kit", () => {
+	it("calls a set complete when it has the bars and the fitting kit, whether the feet are listed or not", () => {
 		expect(isCompleteSet(["bars", "feet", "fitting-kit"])).toBe(true);
+		// the manufacturer's own complete sets are the bars plus the kit (Nordrive N15096 = N15086 + N20012)
+		expect(isCompleteSet(["bars", "fitting-kit"])).toBe(true);
+	});
+
+	it("does not call a set complete from what is not documented, and does not call it incomplete either", () => {
 		expect(isCompleteSet(["bars", "feet"])).toBe(false);
 		expect(isCompleteSet(["feet", "fitting-kit"])).toBe(false);
 		expect(isCompleteSet(undefined)).toBe(false);
+		expect(isCompleteSet([])).toBe(false);
 	});
 });

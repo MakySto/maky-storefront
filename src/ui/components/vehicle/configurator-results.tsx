@@ -31,9 +31,12 @@ import {
 	MEDIA_BOX,
 	MEDIA_COLUMN,
 	PRICE_ROW,
+	SPECS_BLOCK,
 	TITLE,
 } from "@/ui/components/listing/card-layout";
 import { ListingMedia } from "@/ui/components/listing/listing-media";
+import { cn } from "@/lib/utils";
+import { cardKicker } from "@/ui/components/listing/kicker";
 import { ListingSpecs } from "@/ui/components/listing/listing-specs";
 import { ListingViewRoot } from "@/ui/components/listing/listing-view";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
@@ -42,11 +45,14 @@ import { formatPrice } from "@/config/locale";
 import { addConfiguredSetToCart } from "@/lib/fitment/cart-actions";
 import { type AddSetFailure } from "@/lib/fitment/cart-result";
 import { type FitmentOffer } from "@/lib/fitment/offers";
+import { type SetTitle } from "@/lib/fitment/set-title";
 import { type FitmentVerdict } from "@/lib/fitment/contract";
 import { fitStatementFor, presentCardFailure } from "./configurator-card-state";
 
 export type ResultCard = {
 	offer: FitmentOffer;
+	/** The catalogue name read as model and vehicle; null when it does not split cleanly. Only the model is printed here: the car is the one the page is about. */
+	title?: SetTitle | null;
 	/** The roof and the years of the application this set was matched through; null when it names none. */
 	fit?: { roof: string | null; years: string } | null;
 	/** Already-translated condition texts for THIS set. */
@@ -118,7 +124,7 @@ export function ConfiguratorResults({
 	return (
 		<ListingViewRoot>
 			<ul className={CARD_GRID}>
-				{cards.map(({ offer, fit, conditions, unresolvedConditions, verdict, supplier }, index) => {
+				{cards.map(({ offer, title, fit, conditions, unresolvedConditions, verdict, supplier }, index) => {
 					const outOfStock = offer.availability === "out-of-stock";
 					const catalogOnly = offer.isPurchasable !== true;
 					// Whose word this set's fit rests on. An unnamed supplier degrades to the
@@ -135,6 +141,7 @@ export function ConfiguratorResults({
 					// category shelf print for this set.
 					const specs = offerSpecs(offer.facets, t);
 					const includes = describeIncludes(offer.completeSetIncludes, t);
+					const kicker = cardKicker(offer.name, offer.brand, offer.categoryName);
 
 					return (
 						<li key={offer.saleorVariantId} className={CARD} data-testid="configurator-card">
@@ -168,18 +175,30 @@ export function ConfiguratorResults({
 							</div>
 
 							<div className={FACTS_COLUMN}>
-								{(offer.brand || offer.categoryName) && (
-									<p className="text-text-tertiary line-clamp-2 text-xs leading-snug">
-										{offer.brand && (
+								{(kicker.brand || kicker.category) && (
+									<p className="text-text-tertiary line-clamp-1 text-xs leading-snug">
+										{kicker.brand && (
 											<span className="text-text-secondary font-bold tracking-[0.07em] uppercase">
-												{offer.brand}
+												{kicker.brand}
 											</span>
 										)}
-										{offer.brand && offer.categoryName && <span aria-hidden="true"> · </span>}
-										{offer.categoryName && <span>{offer.categoryName}</span>}
+										{kicker.brand && kicker.category && <span aria-hidden="true"> · </span>}
+										{kicker.category && <span>{kicker.category}</span>}
 									</p>
 								)}
-								<h3 className={TITLE}>{offer.name}</h3>
+								<h3 className={cn(TITLE, "sm:min-h-0", !(kicker.brand || kicker.category) && "mt-0")}>
+									{offer.slug ? (
+										<LinkWithChannel
+											href={`/${offer.slug}`}
+											className="text-text-primary decoration-brand/40 underline-offset-[3px] hover:underline focus-visible:outline-hidden"
+										>
+											<span className="absolute inset-0" aria-hidden="true" />
+											{title?.model ?? offer.name}
+										</LinkWithChannel>
+									) : (
+										title?.model ?? offer.name
+									)}
+								</h3>
 
 								{/*
 								  The fit statement belongs to THIS set, not to the page — and it must
@@ -210,8 +229,10 @@ export function ConfiguratorResults({
 										{tf("cardYears", { years: fit.years })}
 									</p>
 								)}
+							</div>
 
-								<ListingSpecs specs={specs} className="border-border-subtle mt-3 border-t pt-3" />
+							<div className={SPECS_BLOCK}>
+								<ListingSpecs specs={specs} className="border-border-subtle border-t pt-2.5" />
 
 								{includes && (
 									<p className="text-text-secondary mt-2.5 text-[0.8125rem] leading-snug">
@@ -321,14 +342,6 @@ export function ConfiguratorResults({
 												)}
 												{outOfStock ? tc("outOfStock") : t("addToCart")}
 											</Button>
-										)}
-										{offer.slug && (
-											<LinkWithChannel
-												href={`/${offer.slug}`}
-												className="border-border-default text-text-primary hover:bg-surface-muted inline-flex h-10 items-center rounded-md border px-3 text-sm font-medium transition-colors"
-											>
-												{t("viewProduct")}
-											</LinkWithChannel>
 										)}
 									</div>
 								</div>

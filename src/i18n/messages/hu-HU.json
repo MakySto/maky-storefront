@@ -862,7 +862,8 @@
 		"facetColourSilver": "Ezüst",
 		"facetColourAlu": "Natúr alumínium",
 		"propertyBarLength": "Keresztrudak hossza",
-		"propertyColour": "Szín"
+		"propertyColour": "Szín",
+		"propertyBarLoad": "Keresztrudak teherbírása"
 	},
 	"catalog": {
 		"makeIndexTitle": "Válasszon tetőcsomagtartót jármű szerint",
@@ -1131,6 +1132,8 @@
 		"viewGrid": "Rács",
 		"viewList": "Lista",
 		"viewSet": "Szett megtekintése",
-		"specDimensions": "Méretek"
+		"specDimensions": "Méretek",
+		"roofFilterLabel": "Tetőtípus",
+		"roofFilterAll": "Összes"
 	}
 }

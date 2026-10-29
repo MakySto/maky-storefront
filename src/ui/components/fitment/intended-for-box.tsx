@@ -22,6 +22,7 @@ export async function IntendedForBox({
 	vehicles,
 	vehicleHref,
 	alternative,
+	includes = null,
 	action,
 	locale,
 	className,
@@ -31,6 +32,8 @@ export async function IntendedForBox({
 	vehicleHref: string | null;
 	/** The way to the offers for the saved car: its label ("Pozrieť nosiče pre …") and the URL. */
 	alternative: { label: string; href: string } | null;
+	/** What the export documents the set to contain, already worded ("Obsahuje: priečniky, pätky"); null when it does not say. */
+	includes?: string | null;
 	/** Rendered last — the "check your car" launcher when no car is saved. */
 	action?: React.ReactNode;
 	locale: string;
@@ -86,6 +89,11 @@ export async function IntendedForBox({
 						)}
 					</p>
 					<p className="text-text-secondary mt-0.5 text-sm">{facts.join(" · ")}</p>
+					{includes && (
+						<p className="text-text-secondary mt-0.5 text-sm" data-testid="fitment-set-contents">
+							{includes}
+						</p>
+					)}
 					{alternative && (
 						<Link
 							href={alternative.href}

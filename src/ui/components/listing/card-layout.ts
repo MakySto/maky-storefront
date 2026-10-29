@@ -8,44 +8,65 @@
  * The switch is CSS only: `group-data-[view=list]/lv:` answers the `data-view` that
  * `ListingViewRoot` publishes. In a list, from `sm`, the card becomes a three-column grid —
  * photograph, facts, and the price with the action — and the photograph spans the card's full
- * height. Below `sm` a list is the same single column as a grid, because a phone has no room for
- * three columns and the facts must stay readable.
+ * height. Below `sm` a list is a compact card: a small photograph beside the name, the parameters
+ * under both, the price and the action across the foot — denser than the grid's one tall card.
  */
 
-/** The card itself. `group/card` carries the hover for the photograph's cross-fade. */
+/**
+ * The card itself. `group/card` carries the hover for the photograph's cross-fade.
+ *
+ * In a list the card becomes a grid whose children are placed explicitly, so the same markup lays
+ * out two ways: below `sm` a small photograph beside the name, the parameters under both and the
+ * price and the action across the card's foot; from `sm` three columns — photograph, facts, and the
+ * price over the action.
+ */
 export const CARD =
-	"group/card border-border-default bg-surface-card relative flex flex-col overflow-hidden rounded-sm border shadow-xs transition-[box-shadow,border-color] duration-200 ease-out hover:border-border-strong hover:shadow-md group-data-[view=list]/lv:sm:grid group-data-[view=list]/lv:sm:grid-cols-[15rem_minmax(0,1fr)_14.5rem] group-data-[view=list]/lv:sm:grid-rows-[1fr_auto] group-data-[view=list]/lv:lg:grid-cols-[17rem_minmax(0,1fr)_15.5rem]";
+	"group/card border-border-default bg-surface-card relative flex flex-col overflow-hidden rounded-sm border shadow-xs transition-[box-shadow,border-color] duration-200 ease-out hover:border-border-strong hover:shadow-md group-data-[view=list]/lv:grid group-data-[view=list]/lv:grid-cols-[7.75rem_minmax(0,1fr)] group-data-[view=list]/lv:sm:grid-cols-[14rem_minmax(0,1fr)_14.5rem] group-data-[view=list]/lv:sm:grid-rows-[auto_1fr] group-data-[view=list]/lv:lg:grid-cols-[16rem_minmax(0,1fr)_15rem]";
 
-/** The photograph's column, which in a list spans both rows. */
+/**
+ * The photograph's column. In a list it is not the positioning parent, so the heart and the badge
+ * sit in the corners of the CARD, not in the middle of it where the photograph ends.
+ */
 export const MEDIA_COLUMN =
-	"relative group-data-[view=list]/lv:sm:static group-data-[view=list]/lv:sm:row-span-2";
+	"relative group-data-[view=list]/lv:static group-data-[view=list]/lv:col-start-1 group-data-[view=list]/lv:row-start-1 group-data-[view=list]/lv:p-3 group-data-[view=list]/lv:sm:row-span-2 group-data-[view=list]/lv:sm:p-0";
 
-/** The photograph's window: a fixed ratio, so nothing jumps while photographs load. */
+/**
+ * The photograph's window: a wide, low ratio, because the products are bars and boxes — a taller
+ * window was mostly white above and below. The product is shown whole (`object-contain`) with a
+ * small inner margin. In a list it is a square on a phone and the card's full height from `sm`.
+ */
 export const MEDIA_BOX =
-	"bg-surface-card relative block aspect-[3/2] overflow-hidden sm:aspect-[4/3] group-data-[view=list]/lv:sm:aspect-auto group-data-[view=list]/lv:sm:h-full group-data-[view=list]/lv:sm:min-h-52";
+	"bg-surface-card relative block aspect-[16/10] max-h-44 w-full overflow-hidden group-data-[view=list]/lv:aspect-square group-data-[view=list]/lv:max-h-none group-data-[view=list]/lv:sm:aspect-auto group-data-[view=list]/lv:sm:h-full group-data-[view=list]/lv:sm:min-h-36";
 
-/** The facts: brand, name, fit, parameters. Grows, so the rows under it line up across a row of cards. */
+/** What the set is: maker, name, and what it is for. A heading, so it is short. */
 export const FACTS_COLUMN =
-	"flex min-w-0 flex-1 flex-col px-4 pt-3 group-data-[view=list]/lv:sm:row-span-2 group-data-[view=list]/lv:sm:py-4";
+	"flex min-w-0 flex-col px-4 pt-3 group-data-[view=list]/lv:col-start-2 group-data-[view=list]/lv:row-start-1 group-data-[view=list]/lv:px-0 group-data-[view=list]/lv:pr-10 group-data-[view=list]/lv:sm:pt-4 group-data-[view=list]/lv:sm:pr-4";
+
+/**
+ * The parameters and what the set contains. `flex-1` in a grid: the block takes the card's spare
+ * height, so the hairline under it sits at one height across a row of cards.
+ */
+export const SPECS_BLOCK =
+	"flex flex-1 flex-col px-4 pt-2.5 group-data-[view=list]/lv:col-span-2 group-data-[view=list]/lv:row-start-2 group-data-[view=list]/lv:px-3 group-data-[view=list]/lv:pt-1 group-data-[view=list]/lv:sm:col-span-1 group-data-[view=list]/lv:sm:col-start-2 group-data-[view=list]/lv:sm:px-0 group-data-[view=list]/lv:sm:pt-0 group-data-[view=list]/lv:sm:pr-4 group-data-[view=list]/lv:sm:pb-4";
 
 /** The price and availability, under a hairline in a grid and at the top of the right column in a list. */
 export const PRICE_ROW =
-	"border-border-subtle mx-4 mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t pt-3 group-data-[view=list]/lv:sm:col-start-3 group-data-[view=list]/lv:sm:mt-0 group-data-[view=list]/lv:sm:self-end group-data-[view=list]/lv:sm:border-t-0 group-data-[view=list]/lv:sm:pt-4";
+	"border-border-subtle mx-4 mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t pt-3 group-data-[view=list]/lv:col-span-2 group-data-[view=list]/lv:row-start-3 group-data-[view=list]/lv:mx-3 group-data-[view=list]/lv:sm:col-span-1 group-data-[view=list]/lv:sm:col-start-3 group-data-[view=list]/lv:sm:row-start-1 group-data-[view=list]/lv:sm:mx-0 group-data-[view=list]/lv:sm:mr-4 group-data-[view=list]/lv:sm:mt-0 group-data-[view=list]/lv:sm:self-end group-data-[view=list]/lv:sm:border-t-0 group-data-[view=list]/lv:sm:pt-4";
 
 /** The action: above the card-wide link (`relative`), so its buttons stay clickable. */
 export const ACTION_ROW =
-	"relative px-4 pt-3 pb-4 group-data-[view=list]/lv:sm:col-start-3 group-data-[view=list]/lv:sm:self-start";
+	"relative px-4 pt-3 pb-4 group-data-[view=list]/lv:col-span-2 group-data-[view=list]/lv:row-start-4 group-data-[view=list]/lv:px-3 group-data-[view=list]/lv:pt-2 group-data-[view=list]/lv:pb-3 group-data-[view=list]/lv:sm:col-span-1 group-data-[view=list]/lv:sm:col-start-3 group-data-[view=list]/lv:sm:row-start-2 group-data-[view=list]/lv:sm:self-start group-data-[view=list]/lv:sm:px-0 group-data-[view=list]/lv:sm:pt-3 group-data-[view=list]/lv:sm:pr-4 group-data-[view=list]/lv:sm:pb-0";
 
 /** The title's own size: roomier in a list, where the facts column is wide. */
 export const TITLE =
 	"text-text-primary mt-1.5 line-clamp-4 text-base leading-snug font-semibold tracking-[-0.01em] sm:min-h-[2lh] sm:text-[0.9375rem] group-data-[view=list]/lv:sm:min-h-0 group-data-[view=list]/lv:sm:text-base";
 
 /**
- * The list of cards: one column on a phone, two from `sm`, three from `lg` — and always one column
+ * The list of cards: one column on a phone, two from `sm`, three from `lg`, four from `xl` — and always one column
  * in a list, whatever the width (`!` beats the responsive columns).
  */
 export const CARD_GRID =
-	"grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 group-data-[view=list]/lv:grid-cols-1!";
+	"grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-5 group-data-[view=list]/lv:grid-cols-1!";
 
 /**
  * The same link as the shop's own purchase button: solid, high contrast, the action colour. Used

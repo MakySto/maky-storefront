@@ -1,13 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useFormStatus } from "react-dom";
-import { CheckIcon, ShoppingCartIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Badge } from "@/ui/components/ui/badge";
-import { Button } from "@/ui/components/ui/button";
 import { QuantityStepper } from "@/ui/components/ui/quantity-stepper";
 import {
 	ACTION_ROW,
@@ -17,8 +13,10 @@ import {
 	MEDIA_BOX,
 	MEDIA_COLUMN,
 	PRICE_ROW,
+	SPECS_BLOCK,
 	TITLE,
 } from "@/ui/components/listing/card-layout";
+import { cardKicker } from "@/ui/components/listing/kicker";
 import { ListingMedia } from "@/ui/components/listing/listing-media";
 import { DIMENSIONS_SPEC_KEY, ListingSpecs, type ListingSpec } from "@/ui/components/listing/listing-specs";
 import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
@@ -26,10 +24,11 @@ import { StarRating } from "@/ui/components/product/star-rating";
 import { WishlistButton } from "@/ui/components/wishlist/wishlist-button";
 import { cn } from "@/lib/utils";
 import { isPlaceholderProductImage } from "@/lib/product-image";
+import type { SetTitle } from "@/lib/fitment/set-title";
 import { useLocale } from "@/providers/locale-provider";
 import { addListingItemToCartAction } from "./actions";
-import { CartForm, useCartFormResult } from "./cart-form";
-import type { AddToCartResult } from "./add-to-cart-result";
+import { CartForm } from "./cart-form";
+import { AddButton } from "./listing-add-to-cart";
 
 export interface ProductCardData {
 	id: string;
@@ -46,6 +45,12 @@ export interface ProductCardData {
 	 * shopper's car: it appears with or without a car chosen, and does not say "fits".
 	 */
 	fit?: { roof: string | null; years: string } | null;
+	/**
+	 * The set's name taken apart into the product and the car, when it can be. With it the card says
+	 * the car and the years once, under a short name, instead of printing them in a long name and
+	 * again beneath it. Absent, the name is printed whole.
+	 */
+	setTitle?: SetTitle | null;
 	productCode?: string | null;
 	/** Set only when the product has exactly one variant. */
 	variantId?: string | null;
@@ -101,45 +106,6 @@ interface ProductCardProps {
 	/** Preloads the image. Reserve for the single LCP candidate — see ProductGrid. */
 	priority?: boolean;
 	purchase?: ProductCardPurchase;
-}
-
-/** How long the button says "Pridané" after a successful add. */
-const ADDED_MS = 2400;
-
-function AddButton({ withIcon }: { withIcon: boolean }) {
-	const { pending } = useFormStatus();
-	const tCommon = useTranslations("common");
-	const result = useCartFormResult();
-	// Every submission yields a new result object, so "the add that has already been shown" is
-	// that object: the button says "Pridané" until the timer marks it seen, and a second add of
-	// the same product says it again.
-	const [seen, setSeen] = useState<AddToCartResult | null>(null);
-	const added = result?.status === "added" && seen !== result && !pending;
-	useEffect(() => {
-		if (result?.status !== "added") return;
-		const timer = window.setTimeout(() => setSeen(result), ADDED_MS);
-		return () => window.clearTimeout(timer);
-	}, [result]);
-
-	const Icon = added ? CheckIcon : ShoppingCartIcon;
-	return (
-		// "Do košíka", the short label: beside the stepper the button has ~120px, and the long
-		// "Pridať do košíka" ellipsised there. The cart icon rides wherever the button runs the
-		// card's width. The hidden status line of the form tells assistive tech what happened;
-		// this label is the sighted half of the same answer.
-		<Button
-			type="submit"
-			disabled={pending}
-			className="h-11 min-w-0 flex-1 gap-2 rounded-xs px-2.5 text-sm font-semibold shadow-none"
-		>
-			<Icon
-				className={cn("h-4 w-4 shrink-0", !withIcon && !added && "lg:hidden")}
-				strokeWidth={added ? 3 : 2.25}
-				aria-hidden
-			/>
-			<span className="truncate">{added ? tCommon("addedShort") : tCommon("addToCartShort")}</span>
-		</Button>
-	);
 }
 
 /**
@@ -204,7 +170,8 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 		product.image !== "/placeholder.svg" &&
 		!isPlaceholderProductImage(product.image);
 
-	const category = product.category;
+	const shownName = product.fit && product.setTitle ? product.setTitle.model : product.name;
+	const kicker = cardKicker(shownName, product.brand, product.category?.name);
 	// A combined size ("190 × 80 × 40 cm") has no attribute to take its name from.
 	const specs = (product.specs ?? []).map((spec) =>
 		spec.key === DIMENSIONS_SPEC_KEY ? { ...spec, label: tListing("specDimensions") } : spec,
@@ -254,38 +221,55 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 			{/* The facts. `flex-1`: the block takes the card's spare height, so the hairline under it
 			    sits at one height across a row of cards. */}
 			<div className={FACTS_COLUMN}>
-				{/* The maker, set like a wordmark but quieter than the name, and the category after it in
-				    plain text. One line of running text, so a long category wraps under the maker. */}
-				{(product.brand || category) && (
-					<p className="text-text-tertiary line-clamp-2 text-xs leading-snug">
-						{product.brand && (
+				{/* The maker and the shelf, only what the name does not already say. */}
+				{(kicker.brand || kicker.category) && (
+					<p className="text-text-tertiary line-clamp-1 text-xs leading-snug">
+						{kicker.brand && (
 							<span className="text-text-secondary font-bold tracking-[0.07em] uppercase">
-								{product.brand}
+								{kicker.brand}
 							</span>
 						)}
-						{product.brand && category && <span aria-hidden="true"> · </span>}
-						{category && <span>{category.name}</span>}
+						{kicker.brand && kicker.category && <span aria-hidden="true"> · </span>}
+						{kicker.category && <span>{kicker.category}</span>}
 					</p>
 				)}
-				{/* Up to four lines: a roof-rack set's name ends with the car and the roof type, the
-				    part a shopper checks. From sm, where cards share a row, a short name still
-				    reserves two lines so the facts under it start at one height across the row; a
-				    phone shows one card to a row and keeps no empty line. */}
-				<h2 className={TITLE}>
+				{/* Up to four lines for a name that is printed whole: a roof-rack set's name ends with
+				    the car and the roof type, the part a shopper checks. A name taken apart is short. */}
+				<h2 className={cn(TITLE, !(kicker.brand || kicker.category) && "mt-0")}>
 					<Link
 						href={product.href}
 						className="text-text-primary decoration-brand/40 underline-offset-[3px] hover:underline focus-visible:outline-hidden"
 					>
 						{/* The whole card is the link's target area; the title carries its name. */}
 						<span className="absolute inset-0" aria-hidden="true" />
-						{product.name}
+						{shownName}
 					</Link>
 				</h2>
-				{/* The roof and the years the set is made for: two facts the title buries at its end.
-				    Up to two lines so a long roof name wraps instead of being cut. */}
-				{product.fit && (
+				{/* What the set is for. Taken apart: the car and the years on one line, the roof under
+				    it. Whole: the roof and the years in the words the title buries at its end. */}
+				{product.fit && product.setTitle && (
+					<>
+						<p
+							className="text-text-secondary mt-1 line-clamp-2 text-[0.8125rem] leading-snug"
+							data-testid="card-vehicle"
+						>
+							{product.setTitle.vehicle}
+							<span aria-hidden="true"> · </span>
+							{product.fit.years}
+						</p>
+						{product.fit.roof && (
+							<p
+								className="text-text-primary mt-0.5 line-clamp-2 text-[0.8125rem] leading-snug font-medium"
+								data-testid="card-roof"
+							>
+								{product.fit.roof}
+							</p>
+						)}
+					</>
+				)}
+				{product.fit && !product.setTitle && (
 					<p
-						className="text-text-secondary mt-1.5 line-clamp-2 text-[0.8125rem] leading-snug"
+						className="text-text-secondary mt-1 line-clamp-2 text-[0.8125rem] leading-snug"
 						data-testid="card-fit"
 					>
 						{product.fit.roof && (
@@ -297,19 +281,22 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 						<span>{tFit("cardYears", { years: product.fit.years })}</span>
 					</p>
 				)}
+			</div>
+
+			<div className={SPECS_BLOCK}>
 				{specs.length > 0 ? (
-					<ListingSpecs specs={specs} className="border-border-subtle mt-3 border-t pt-3" />
+					<ListingSpecs specs={specs} className="border-border-subtle border-t pt-2.5" />
 				) : (
-					product.note && (
-						<p className="text-text-secondary mt-1 line-clamp-1 text-[0.8125rem]">{product.note}</p>
-					)
+					product.note && <p className="text-text-secondary line-clamp-1 text-[0.8125rem]">{product.note}</p>
 				)}
 				{product.includes && (
 					<p className="text-text-secondary mt-2 line-clamp-2 text-[0.8125rem] leading-snug">
 						{product.includes}
 					</p>
 				)}
-				{product.productCode && (
+				{/* The code is for finding the product again, not for choosing it: a quiet line, and not at
+				    all for a set, whose code is several components' codes joined with a bar. */}
+				{product.productCode && !isSet && !product.productCode.includes("|") && (
 					<p className="text-text-tertiary mt-2 truncate text-xs">
 						{tProduct("sku")}: <span className="tabular-nums">{product.productCode}</span>
 					</p>

@@ -195,9 +195,12 @@ Compatibility badge states:
 - "Vyberte vozidlo" — when no vehicle is selected and the product is vehicle-specific.
 - "Univerzálny produkt" — for universal products.
 
-For roof-rack bundles, communicate the complete set as the product data shows it: the bars, the
-feet and the fitting kit that are really in the bundle. "Kompletná zostava: tyče + pätky + kit" is
-the wording only when all three are in it; a set with another composition says what it contains.
+For roof-rack bundles, communicate the set as the product data shows it: what CFM documents it to
+contain ("Obsahuje: priečniky, pätky, montážny kit", `completeSet.includes`). The badge "Kompletná
+zostava" is worn only where that data names the bars AND the fitting kit — the feet are not a third
+condition (a kit is sold with its feet, and a fixpoint system needs none). A set whose contents the
+export does not document wears no badge and is not called incomplete: absence is silence, never a
+claim. Documents that disagree about one product say nothing (`lib/fitment/set-contents.ts`).
 
 ## 8. Product detail (PDP) rules
 

@@ -16,11 +16,12 @@
  *     minimum over its components, withheld unless every component states one). It says nothing
  *     about what a given roof allows, and the label is "Traglast" for the set, not "allowed load".
  *
- * Four rows at most. The order is the order a shopper decides in: how much it carries, what it is
- * made of, what shape the bar is, how long it is.
+ * Four rows at most. The order is the order a shopper compares bars in: what they are made of, what
+ * shape the bar is, how long it is, what the bars carry. The load comes last and is called what it
+ * is — the bars' rating, not the roof's limit — so it cannot be read as permission.
  */
 
-export type SpecKey = "load" | "material" | "shape" | "length" | "colour";
+export type SpecKey = "material" | "shape" | "length" | "load" | "colour";
 
 export type SpecRow = { key: SpecKey; label: string; value: string };
 
@@ -58,10 +59,6 @@ export function offerSpecs(
 	if (!facets) return [];
 	const rows: SpecRow[] = [];
 
-	// A load rating is a safety number: positive and finite, or it is not printed.
-	if (typeof facets.maxLoadKg === "number" && Number.isFinite(facets.maxLoadKg) && facets.maxLoadKg > 0) {
-		rows.push({ key: "load", label: t("propertyMaxLoad"), value: `${facets.maxLoadKg} kg` });
-	}
 	if (typeof facets.barMaterial === "string" && MATERIAL_KEY[facets.barMaterial]) {
 		rows.push({
 			key: "material",
@@ -78,6 +75,11 @@ export function offerSpecs(
 		facets.barLengthCm > 0
 	) {
 		rows.push({ key: "length", label: t("propertyBarLength"), value: `${facets.barLengthCm} cm` });
+	}
+	// A load rating is a safety number: positive and finite, or it is not printed. It is the BARS'
+	// rating and the label says so; what the roof allows is another limit, on another line.
+	if (typeof facets.maxLoadKg === "number" && Number.isFinite(facets.maxLoadKg) && facets.maxLoadKg > 0) {
+		rows.push({ key: "load", label: t("propertyBarLoad"), value: `${facets.maxLoadKg} kg` });
 	}
 	// Last, and only when the four above leave room: the colour is already in most names.
 	if (typeof facets.barColour === "string" && COLOUR_KEY[facets.barColour]) {
@@ -111,11 +113,19 @@ export function describeIncludes(
 }
 
 /**
- * "Complete set" is a claim that bars, feet AND the vehicle-specific fitting kit are all in the box.
- * A set that documents only bars and feet lists them under "Obsahuje" and does not wear the badge:
- * the badge used to appear for any two documented parts, which called a set without its fitting kit
- * complete.
+ * "Complete set" is the claim that what is in the box is enough to mount the bars on the car: the
+ * bars AND the vehicle-specific fitting kit.
+ *
+ * The feet are not a third condition. A fitting kit such as Nordrive's Evos RA is sold as one item
+ * with its feet and the manufacturer's own complete set N15096 is two codes, bars (N15086) plus kit
+ * (N20012) — so demanding a separate "feet" part called a complete system incomplete. Bars and feet
+ * without a kit are still not complete (the kit is what makes them fit THIS roof).
+ *
+ * This reads only what CFM documents. A set with no documented contents wears no badge and is not
+ * called incomplete either: absence is silence, and the contents line says only what is known. A
+ * system that needs no kit at all (a fixpoint system, say) is not recognised here until CFM says so
+ * in the export; it prints its documented contents and no badge.
  */
 export function isCompleteSet(includes: readonly string[] | null | undefined): boolean {
-	return Boolean(includes?.includes("bars") && includes.includes("feet") && includes.includes("fitting-kit"));
+	return Boolean(includes?.includes("bars") && includes.includes("fitting-kit"));
 }

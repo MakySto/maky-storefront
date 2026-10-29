@@ -862,7 +862,8 @@
 		"facetColourSilver": "Argintiu",
 		"facetColourAlu": "Aluminiu natural",
 		"propertyBarLength": "Lungimea barelor",
-		"propertyColour": "Culoare"
+		"propertyColour": "Culoare",
+		"propertyBarLoad": "Capacitatea barelor"
 	},
 	"catalog": {
 		"makeIndexTitle": "Alegeți barele de acoperiș după vehicul",
@@ -1131,6 +1132,8 @@
 		"viewGrid": "Grilă",
 		"viewList": "Listă",
 		"viewSet": "Vezi setul",
-		"specDimensions": "Dimensiuni"
+		"specDimensions": "Dimensiuni",
+		"roofFilterLabel": "Tipul acoperișului",
+		"roofFilterAll": "Toate"
 	}
 }

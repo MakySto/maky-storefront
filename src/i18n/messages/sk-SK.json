@@ -862,7 +862,8 @@
 		"facetColourSilver": "strieborná",
 		"facetColourAlu": "hliníková",
 		"propertyBarLength": "Dĺžka priečnikov",
-		"propertyColour": "Farba"
+		"propertyColour": "Farba",
+		"propertyBarLoad": "Nosnosť priečnikov"
 	},
 	"catalog": {
 		"makeIndexTitle": "Vyberte nosič podľa vozidla",
@@ -1131,6 +1132,8 @@
 		"viewGrid": "Mriežka",
 		"viewList": "Zoznam",
 		"viewSet": "Zobraziť zostavu",
-		"specDimensions": "Rozmery"
+		"specDimensions": "Rozmery",
+		"roofFilterLabel": "Typ strechy",
+		"roofFilterAll": "Všetky"
 	}
 }
