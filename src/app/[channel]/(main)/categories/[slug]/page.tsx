@@ -34,10 +34,8 @@ import {
 } from "@/ui/components/plp";
 import { getSceneryOrNone } from "@/lib/homepage/scenery";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
-import { buildCanonicalUrl, counterpartAlternates, type MarketCounterpart } from "@/lib/seo/hreflang";
+import { buildCanonicalUrl, counterpartAlternates } from "@/lib/seo/hreflang";
 import { marketOpenGraph } from "@/lib/seo/metadata";
-import { liveMarkets } from "@/lib/market-state";
-import { CHANNEL_MAP } from "@/lib/channel-map";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import {
 	resolveVehicleListingFilter,
@@ -59,6 +57,8 @@ import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleCategory, resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
 import { lookupBySlug } from "@/lib/saleor/slug-lookup";
+import { getCategoryMarketPresence } from "@/lib/saleor/category-presence";
+import { categoryCounterparts } from "@/lib/seo/category-counterparts";
 import { getCategoryNavigation } from "@/lib/listing/category-navigation";
 import { getCategoryPriceBands } from "@/lib/listing/category-prices";
 import { getCategoryFacets } from "@/lib/listing/category-facets";
@@ -152,29 +152,6 @@ type PageProps = {
 const baseSlugOf = (params: { slug: string; channel: string }) =>
 	categoryBaseSlug(params.channel, params.slug);
 
-/**
- * Live markets where this category is a real page: translated there, and stocked there.
- *
- * LIVE, not indexable: this feeds the market switcher as well as hreflang, and a preview
- * market is somewhere you can still be sent by hand. `counterpartAlternates()` narrows the
- * hreflang cluster to indexable markets on its own.
- */
-async function categoryCounterparts(baseSlug: string): Promise<MarketCounterpart[]> {
-	// All markets at once: an entry past its 60 s is read again by a prerender, and twelve of those
-	// one after the other were twelve round trips to Saleor in front of the page's head.
-	const outcomes = await Promise.all(
-		liveMarkets().map(async (market) => ({
-			market,
-			outcome: await getCategoryOutcome(baseSlug, CHANNEL_MAP[market]!.saleorSlug),
-		})),
-	);
-	return outcomes.flatMap(({ market, outcome }) =>
-		outcome.status === "found" && !categoryIsEmpty(outcome.resource)
-			? [{ market, path: categoryUrlFor(market, baseSlug) }]
-			: [],
-	);
-}
-
 export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 	const params = await props.params;
 	const outcome = await getCategoryOutcome(baseSlugOf(params), params.channel);
@@ -253,10 +230,12 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 			// abroad `category.slug` is whatever Saleor's translation says, not the URL routed here.
 			canonical,
 			// The same category, in each live market where it resolves in that market's language
-			// and holds products — the two conditions under which that page is indexable too.
+			// and holds products — the two conditions under which that page is indexable too. The
+			// other markets are one cached read (`getCategoryMarketPresence`); this page is listed, or
+			// the empty-in-this-channel branch above would have returned.
 			languages: counterpartAlternates(
 				REVERSE_MAP[params.channel] || params.channel,
-				await categoryCounterparts(baseSlugOf(params)),
+				await categoryCounterparts(baseSlugOf(params), params.channel, true, getCategoryMarketPresence),
 			),
 		},
 		openGraph: marketOpenGraph(params.channel, canonical),
@@ -322,7 +301,11 @@ async function CategoryContent({
 		<>
 			{/* Own boundary: it asks the other live channels, and the listing must never wait. */}
 			<Suspense fallback={null}>
-				<CategorySwitchTargets baseSlug={baseSlug} />
+				<CategorySwitchTargets
+					baseSlug={baseSlug}
+					channel={params.channel}
+					listedHere={!categoryIsEmpty(category)}
+				/>
 			</Suspense>
 			<CategoryHero
 				title={category.name}
@@ -367,8 +350,17 @@ async function CategoryContent({
  * switcher — which used to keep this market's segment (`/cz/stresni-nosice` →
  * `/de/stresni-nosice`, a path the German proxy does not route).
  */
-async function CategorySwitchTargets({ baseSlug }: { baseSlug: string }) {
-	const counterparts = await categoryCounterparts(baseSlug);
+async function CategorySwitchTargets({
+	baseSlug,
+	channel,
+	listedHere,
+}: {
+	baseSlug: string;
+	channel: string;
+	/** Whether this page's own market is a listed one — what the page itself has just read. */
+	listedHere: boolean;
+}) {
+	const counterparts = await categoryCounterparts(baseSlug, channel, listedHere, getCategoryMarketPresence);
 	return (
 		<MarketSwitchTargets paths={Object.fromEntries(counterparts.map(({ market, path }) => [market, path]))} />
 	);

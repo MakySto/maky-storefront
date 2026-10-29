@@ -121,6 +121,35 @@ describe("saying yes", () => {
 		expect(result.conditions.map((c) => c.code)).toEqual(["torque"]);
 	});
 
+	it("keeps every version of a van a set is matched through, and states a repeated one once", () => {
+		// Nordrive Kargo: the applications of one generation differ in one condition, the van's version, and
+		// one set suits several of them. Keyed by code alone the second version disappeared and the page
+		// said the set was meant for the first one only.
+		const base = dataset();
+		const [only] = base.applications;
+		const version = (id: string, words: string) => ({
+			...only!,
+			applicationId: id,
+			conditions: [{ code: "van-version", text: { "sk-SK": words } }],
+		});
+		const result = resolveFitment(
+			dataset({
+				applications: [
+					version("a1", "Určené len pre verziu: dĺžka L2, strecha H1."),
+					version("a2", "Určené len pre verziu: dĺžka L3, strecha H2."),
+					version("a3", "Určené len pre verziu: dĺžka L2, strecha H1."),
+				],
+			}),
+			octaviaFlush,
+			{ saleorProductId: "P1", now: NOW },
+		);
+		expect(result.verdict).toBe("VERIFIED_FIT");
+		expect(result.conditions.map((c) => c.text?.["sk-SK"])).toEqual([
+			"Určené len pre verziu: dĺžka L2, strecha H1.",
+			"Určené len pre verziu: dĺžka L3, strecha H2.",
+		]);
+	});
+
 	it("carries dataset provenance so a surface can say what it checked against", () => {
 		const result = resolveFitment(dataset(), octaviaFlush, { now: NOW });
 		expect(result.dataset).toEqual({

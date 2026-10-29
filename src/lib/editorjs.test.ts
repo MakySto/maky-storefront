@@ -36,6 +36,32 @@ describe("safe Editor.js rendering", () => {
 		expect(result).toContain('loading="lazy"');
 	});
 
+	it("asks this site's optimizer for a photograph that CFM serves", () => {
+		const url = "https://carfitmanager.com/media/kargo/ford-tourneo-courier-b460.jpg";
+		const result = parseEditorJSToHtml(
+			document([{ type: "image", data: { file: { url }, caption: "Upevnenie na strechu" } }]),
+		)?.join("");
+		const encoded = encodeURIComponent(url);
+		expect(result).toContain(`src="/_next/image?url=${encoded}&amp;w=1080&amp;q=75"`);
+		expect(result).toContain('loading="lazy"');
+		expect(result).toContain("<figcaption>Upevnenie na strechu</figcaption>");
+		expect(result).not.toContain(`src="${url}"`);
+	});
+
+	it("leaves every other address, and a CFM address that is not a media path, as it came", () => {
+		for (const url of [
+			"https://img.example/rack.webp",
+			"https://carfitmanager.com/admin/logo.png",
+			"https://carfitmanager.com/media/a.jpg?x=1",
+			"https://carfitmanager.com.example.com/media/a.jpg",
+			"http://carfitmanager.com/media/a.jpg",
+		]) {
+			const result = parseEditorJSToHtml(document([{ type: "image", data: { file: { url } } }]))?.join("");
+			expect(result, url).not.toContain("/_next/image");
+			expect(result, url).not.toContain("srcset");
+		}
+	});
+
 	it("drops iframe, raw, and unknown blocks", () => {
 		const result = parseEditorJSToHtml(
 			document([

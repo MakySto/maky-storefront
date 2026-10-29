@@ -16,6 +16,46 @@ import { FAULT_CACHE_LIFE } from "@/lib/cache-fault";
 let category: Record<string, unknown>;
 /** Saleor answers `category: null`: nothing by that slug, in either of its two lookups. */
 let missing = false;
+/** Per market, what Saleor holds for the category instead of the stocked and translated default. */
+let presenceOverrides: Record<string, Record<string, unknown> | null>;
+/** The first presence request fails the way a read that spent its deadline waiting for a Saleor slot does. */
+let presenceFault = false;
+
+const translated = (name: string) => ({
+	name,
+	slug: null,
+	description: "{}",
+	seoTitle: name,
+	seoDescription: name,
+});
+
+/** What Saleor holds for a market when the category is translated there and holds products: the first one. */
+const stocked = (alias: string) => ({
+	name: "Autochladničky",
+	slug: "autochladnicky",
+	translation: alias === "sk" ? null : translated(`Chladnička ${alias}`),
+	products: { edges: [{ node: { id: `product-${alias}` } }] },
+});
+
+/**
+ * One alias per market the document names, carrying what that document selects: the texts for the first
+ * presence request, the first product for the second. Stocked unless a test says otherwise.
+ */
+const presenceAnswer = (source: string) => {
+	const asksStock = source.startsWith("query CategoryMarketStock");
+	return Object.fromEntries(
+		[...source.matchAll(/(\w+): category\(slug: \$slug\)/g)].map(([, alias]) => {
+			const held = alias! in presenceOverrides ? presenceOverrides[alias!] : stocked(alias!);
+			if (held === null) return [alias, null];
+			return [
+				alias,
+				asksStock
+					? { products: held.products }
+					: { name: held.name, slug: held.slug, translation: held.translation },
+			];
+		}),
+	);
+};
 
 const { reads, lives, inFlight } = vi.hoisted(() => ({
 	reads: [] as { operation: string; options: Record<string, unknown> }[],
@@ -26,11 +66,25 @@ const { reads, lives, inFlight } = vi.hoisted(() => ({
 vi.mock("@/lib/graphql", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/lib/graphql")>()),
 	executePublicGraphQL: async (document: { toString(): string }, options: Record<string, unknown>) => {
-		reads.push({ operation: /query\s+(\w+)/.exec(document.toString())?.[1] ?? "?", options });
+		const operation = /query\s+(\w+)/.exec(document.toString())?.[1] ?? "?";
+		reads.push({ operation, options });
 		inFlight.now += 1;
 		inFlight.peak = Math.max(inFlight.peak, inFlight.now);
 		await new Promise((resolve) => setTimeout(resolve, 5));
 		inFlight.now -= 1;
+		if (operation.startsWith("CategoryMarket")) {
+			return presenceFault
+				? {
+						ok: false,
+						error: {
+							type: "network",
+							message: `${operation}: deadline exceeded`,
+							isRetryable: true,
+							queueStarved: true,
+						},
+					}
+				: { ok: true, data: presenceAnswer(document.toString()) };
+		}
 		return { ok: true, data: { category: missing ? null : category } };
 	},
 }));
@@ -53,6 +107,8 @@ vi.mock("next/cache", async (importOriginal) => ({
 
 beforeEach(() => {
 	missing = false;
+	presenceOverrides = {};
+	presenceFault = false;
 	reads.length = 0;
 	lives.length = 0;
 	inFlight.now = 0;
@@ -194,10 +250,68 @@ describe("how long a category answer is remembered", () => {
 		expect(meta.robots).toMatchObject({ index: false, follow: false });
 		expect(lives).toContainEqual(FAULT_CACHE_LIFE);
 	});
+});
 
-	it("the markets that carry the same category are read together, not one after the other", async () => {
+/**
+ * The other markets of a category — its hreflang cluster and the market switcher — are ONE request.
+ *
+ * PR 46 made the head read every live market at once, which was twelve `ProductListByCategory`
+ * reads (a product card in each) per category slug, and remembered an empty market for seconds.
+ * The other markets' only job here is to say whether the category is a real page there, and one
+ * request with an alias per market says it.
+ */
+describe("the other markets of a category", () => {
+	const hreflangFor = async () => (await metadataFor()).alternates?.languages;
+
+	beforeEach(() => {
 		vi.stubEnv("MAKY_LIVE_MARKETS", "sk,cz,de,at,pl,hu");
+		vi.stubEnv("MAKY_INDEXABLE_MARKETS", "sk,cz,de,at,pl,hu");
+	});
+
+	it("are asked in two small requests, one after the other; the head reads only its own market", async () => {
 		await metadataFor();
-		expect(inFlight.peak).toBeGreaterThan(1);
+		const operations = reads.map((read) => read.operation);
+		expect(operations.filter((operation) => operation === "CategoryMarketTranslations")).toHaveLength(1);
+		expect(operations.filter((operation) => operation === "CategoryMarketStock")).toHaveLength(1);
+		expect(operations.filter((operation) => operation === "ProductListByCategory")).toHaveLength(1);
+		expect(operations).toHaveLength(3);
+		expect(inFlight.peak).toBe(1);
+	});
+
+	it("are named in the hreflang cluster where the category is translated and stocked", async () => {
+		expect(Object.keys((await hreflangFor()) ?? {})).toEqual([
+			"sk-SK",
+			"cs-CZ",
+			"de-DE",
+			"de-AT",
+			"pl-PL",
+			"hu-HU",
+			"x-default",
+		]);
+	});
+
+	it("leave out a market where the category is empty or has no translation", async () => {
+		presenceOverrides.pl = { ...stocked("pl"), products: { edges: [] } };
+		presenceOverrides.hu = { ...stocked("hu"), translation: null };
+		expect(Object.keys((await hreflangFor()) ?? {})).toEqual([
+			"sk-SK",
+			"cs-CZ",
+			"de-DE",
+			"de-AT",
+			"x-default",
+		]);
+	});
+
+	it("say nothing when the question could not be answered, and the head is still the head", async () => {
+		presenceFault = true;
+		const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+		const meta = await metadataFor();
+		expect(meta.alternates?.languages).toBeUndefined();
+		expect(meta.alternates?.canonical).toBe("https://maky.store/sk/autochladnicky");
+		expect(meta.robots).toBeUndefined();
+		expect(meta.title).toBe("Autochladničky | MAKY.STORE");
+		const lines = logged.mock.calls.map((call) => String(call[0]));
+		expect(lines.filter((line) => line.includes('"scope":"category-presence"'))).toHaveLength(1);
+		logged.mockRestore();
 	});
 });

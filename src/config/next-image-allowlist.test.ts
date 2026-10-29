@@ -9,6 +9,7 @@ import { ImageOptimizerCache } from "next/dist/server/image-optimizer.js";
 import { resolveNextConfig } from "../../next.config.js";
 import { CMS_MEDIA_BASE_URL } from "@/config/cms-media";
 import { readMedia } from "@/lib/cms/blocks";
+import { parseEditorJSToHtml } from "@/lib/editorjs";
 import { videoPosterSrc, youtubeStillUrl } from "@/lib/video-embed";
 
 const PRODUCTION_IMAGE_URLS = [
@@ -164,6 +165,42 @@ describe("next/image production optimizer", () => {
 			["a look-alike host", `https://i.ytimg.com.example.com/vi/${VIDEO}/hqdefault.jpg`],
 			["a user-info trick", `https://i.ytimg.com@example.com/vi/${VIDEO}/hqdefault.jpg`],
 			["a sibling host", `https://s.ytimg.com/vi/${VIDEO}/hqdefault.jpg`],
+		])("is not the door to %s", (_name, url) => {
+			expect(validate(url)).toHaveProperty("errorMessage");
+		});
+	});
+
+	// The photographs of a Kargo description, which CFM serves and the page asks of this optimizer
+	// (`imageAttributes` in `src/lib/editorjs.ts`). The door is `/media/` on that host and nothing else.
+	describe("a photograph CFM serves", () => {
+		const PHOTO = "https://carfitmanager.com/media/kargo/ford-tourneo-courier-b460.jpg";
+		const validate = (url: string, w = "1080") =>
+			ImageOptimizerCache.validateParams(request, { url, w, q: "75" }, productionConfig, false);
+
+		it("is accepted at the address the page writes, through the exact 400 validation path", () => {
+			const html = parseEditorJSToHtml(
+				JSON.stringify({ blocks: [{ type: "image", data: { file: { url: PHOTO } } }] }),
+			)?.join("");
+			const src = /src="([^"]+)"/.exec(html ?? "")?.[1]?.replaceAll("&amp;", "&") ?? "";
+			const query = new URL(src, "https://maky.store").searchParams;
+			const result = ImageOptimizerCache.validateParams(
+				request,
+				{ url: query.get("url") ?? "", w: query.get("w") ?? "", q: query.get("q") ?? "" },
+				productionConfig,
+				false,
+			);
+			expect(result).not.toHaveProperty("errorMessage");
+			expect(result).toMatchObject({ href: PHOTO, width: 1080, quality: 75 });
+		});
+
+		it.each([
+			["another path on the host", "https://carfitmanager.com/admin/logo.png"],
+			["a path that climbs out of it", "https://carfitmanager.com/media/../admin/logo.png"],
+			["a query string", `${PHOTO}?x=1`],
+			["plain http", PHOTO.replace("https:", "http:")],
+			["a look-alike host", "https://carfitmanager.com.example.com/media/a.jpg"],
+			["a user-info trick", "https://carfitmanager.com@example.com/media/a.jpg"],
+			["a sibling host", "https://www.carfitmanager.com/media/a.jpg"],
 		])("is not the door to %s", (_name, url) => {
 			expect(validate(url)).toHaveProperty("errorMessage");
 		});

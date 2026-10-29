@@ -139,3 +139,34 @@ describe("a product that can be ordered", () => {
 		expect(empty).not.toContain("<a ");
 	});
 });
+
+/**
+ * Nordrive Kargo (owner, 2026-10-28): where the category asks for a quote instead of a price, the page for a set
+ * the market does not sell shows the quote link and nothing about the price. The car fridges keep theirs.
+ */
+describe("a category that asks for a quote instead of a price", () => {
+	it("shows no price, no VAT line and no sentence, only the quote link, in every market's words", () => {
+		for (const locale of LOCALES) {
+			const messages = load(locale);
+			const html = render(locale, { ...NOT_ORDERABLE, quoteOnly: true });
+			expect(html, `${locale}: the price`).not.toContain("499,00");
+			expect(html, `${locale}: the VAT line`).not.toContain(escaped(messages.product.priceWithVat));
+			expect(html, `${locale}: the sentence`).not.toContain(escaped(messages.cart.addUnavailable));
+			expect(html, `${locale}: the target`).toContain(`href="${QUOTE_HREF}"`);
+			expect(html, `${locale}: the label`).toContain(escaped(messages.product.requestQuote));
+			expect(occurrences(html, "<a "), `${locale}: one link`).toBe(1);
+			expect(html, locale).not.toContain("<button");
+		}
+	});
+
+	it("keeps the price of a product that can be ordered", () => {
+		const html = render("sk-SK", { quoteOnly: true, quoteHref: QUOTE_HREF });
+		expect(html).toContain("499,00");
+		expect(html).toContain('name="quantity"');
+	});
+
+	it("keeps the price when there is no link to put in its place", () => {
+		const html = render("sk-SK", { disabled: true, disabledReason: "unavailable", quoteOnly: true });
+		expect(html).toContain("499,00");
+	});
+});

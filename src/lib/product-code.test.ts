@@ -74,6 +74,24 @@ describe("publicProductCode", () => {
 		}
 	});
 
+	it("accepts the code of a Nordrive Kargo set, with its × and +", () => {
+		// CFM transports the recipe literally (2026-10-28): the supplier's part numbers, `+` between the
+		// parts and `n×` in front of a part bought n times.
+		for (const code of ["2×N10035+N30302", "NKR0902+N30302", "NKR8844+N30314+N99970", "3×N10015+3×N30310"]) {
+			expect(publicProductCode({ name: code })).toBe(code);
+			expect(publicSku({ name: code })).toBe(code);
+		}
+	});
+
+	it("does not take × or + as the mark of a code outside that grammar", () => {
+		// A size or a label with the same characters is not a product code.
+		expect(publicProductCode({ name: "120×60" })).toBeNull();
+		expect(publicProductCode({ name: "Black+XL" })).toBeNull();
+		expect(publicProductCode({ name: "N10035+" })).toBeNull();
+		expect(publicProductCode({ name: "+N10035" })).toBeNull();
+		expect(publicProductCode({ name: "2×N10035+CFMP-B-NOR-7580c97859183e-000000" })).toBeNull();
+	});
+
 	it("preserves case, because the code is case-sensitive", () => {
 		// The listing card used to `.toUpperCase()` this, which changed 34 of the
 		// 417 real codes into strings the supplier does not use.

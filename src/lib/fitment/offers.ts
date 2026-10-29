@@ -62,6 +62,8 @@ export type FitmentOffer = {
 	thumbnailUrl: string | null;
 	thumbnailAlt: string | null;
 	categoryName: string | null;
+	/** The base slug of the product's category; null for a demo entry. */
+	categorySlug: string | null;
 	/** Always the exact variant's price. Null rather than another variant's. */
 	price: { amount: number; currency: string } | null;
 	availability: OfferAvailability;
@@ -219,6 +221,7 @@ function demoOffers(dataset: FitmentDataset, refs: FitmentProductRef[]): Fitment
 			thumbnailUrl: null,
 			thumbnailAlt: null,
 			categoryName: entry.categoryName ?? null,
+			categorySlug: null,
 			price: entry.price ?? null,
 			availability: availabilityFrom(entry.availabilityMode, null, entry.quantityAvailable),
 			completeSetIncludes: ref.completeSet?.includes ?? null,
@@ -360,6 +363,8 @@ export async function resolveFitmentOffers(
 					thumbnailUrl: publishableProductImage(localized.thumbnail?.url),
 					thumbnailAlt: localized.thumbnail?.alt ?? null,
 					categoryName: localized.category?.name ?? null,
+					// The base slug, not the translated one: that is how the shelves are keyed.
+					categorySlug: node.category?.slug ?? null,
 					price: gross ? { amount: gross.amount, currency: gross.currency } : null,
 					availability: availabilityFrom(variant.metafield, node.metafield, variant.quantityAvailable),
 					completeSetIncludes: ref.completeSet?.includes ?? null,

@@ -57,6 +57,14 @@ export const FITMENT_SHELVES: Readonly<Record<string, ProductKind>> = {
 	 * car filter. Same arrangement as Green Valley: scope here, root URL from the live list.
 	 */
 	"menabo-stresne-nosice": "roof-rack-set",
+	/**
+	 * The Nordrive Kargo child category (bars and baskets for vans, under `stresne-nosice`). CFM creates it hidden
+	 * in Saleor and its sets reach the dataset later, so the entry is here before either exists. Same arrangement
+	 * as Green Valley and Menabo: scope here, root URL from the live list. The shelf also holds the stand-alone
+	 * baskets, which fit no car and are in no dataset: with a saved car the default list shows the car's sets
+	 * only, and "all vehicles" shows the baskets too, as on the parent shelf and its accessories.
+	 */
+	"stresne-nosice-a-kose-na-dodavky": "roof-rack-set",
 	// Kinds the dataset does not cover today; listed so that the day CFM ships one, its shelf
 	// starts answering with no storefront change.
 	"stresne-boxy": "roof-box",

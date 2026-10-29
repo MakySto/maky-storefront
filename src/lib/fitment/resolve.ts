@@ -115,11 +115,25 @@ function matchQualifiers(qualifiers: FitmentQualifiers, selection: VehicleSelect
 	return "match";
 }
 
+/**
+ * The conditions of the matched applications, each stated once.
+ *
+ * Identity is the code AND its words, never the code alone: a van's applications differ in exactly one
+ * condition, `van-version` ("length L2, roof H1" in one application, "length L3, roof H2" in the next), and a
+ * set that suits several versions is matched through several applications. Keyed by code, the first version
+ * stayed and the others vanished — the page then said the set was meant for one version only. The words are
+ * compared as written in the source (`text` by locale), so the same restriction carried by two applications
+ * is still stated once.
+ */
 function dedupeConditions(applications: FitmentApplication[]): FitmentCondition[] {
 	const seen = new Map<string, FitmentCondition>();
 	for (const application of applications) {
 		for (const condition of application.conditions) {
-			if (!seen.has(condition.code)) seen.set(condition.code, condition);
+			const text = condition.text
+				? Object.entries(condition.text).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+				: [];
+			const key = JSON.stringify([condition.code, text]);
+			if (!seen.has(key)) seen.set(key, condition);
 		}
 	}
 	return [...seen.values()];

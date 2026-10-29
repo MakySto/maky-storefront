@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { formatPrice } from "@/config/locale";
+import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { marketHref } from "@/lib/channel-map";
 import { type FitmentOffer, type FitmentOffers } from "@/lib/fitment/offers";
 import { ROOF_GROUP_ORDER, describeOfferFit, groupRoofOf, type OfferFit } from "@/lib/fitment/offer-fit";
@@ -86,6 +87,12 @@ export async function CatalogOfferList({
 	}
 
 	const card = (offer: FitmentOffer) => {
+		// No price for a set this market does not sell where the category asks for a quote (`config/quote-only.ts`);
+		// the card is a link to the product page, which carries the button.
+		const quoteOnly = quoteInsteadOfPrice({
+			isPurchasable: offer.isPurchasable,
+			categorySlug: offer.categorySlug,
+		});
 		const described =
 			tf && fits ? describeOfferFit(fits.get(offer.saleorProductId), tf, ROOF_LABEL_KEY) : null;
 		return (
@@ -103,7 +110,7 @@ export async function CatalogOfferList({
 							{tf("cardYears", { years: described.years })}
 						</span>
 					) : null}
-					{offer.price ? (
+					{offer.price && !quoteOnly ? (
 						// The market's own format in every market, Slovakia included —
 						// `147,00 €`, as on the product page. Slovakia printed
 						// `147.00 EUR` here until the owner decided on 2026-09-22.
@@ -112,13 +119,15 @@ export async function CatalogOfferList({
 						</span>
 					) : null}
 					<span className="text-text-tertiary mt-1 text-sm">
-						{!offer.isPurchasable
-							? t("cart.addUnavailable")
-							: offer.availability === "on-demand"
-								? t("common.onOrder")
-								: offer.availability === "out-of-stock"
-									? t("configurator.outOfStock")
-									: null}
+						{quoteOnly
+							? t("product.requestQuote")
+							: !offer.isPurchasable
+								? t("cart.addUnavailable")
+								: offer.availability === "on-demand"
+									? t("common.onOrder")
+									: offer.availability === "out-of-stock"
+										? t("configurator.outOfStock")
+										: null}
 					</span>
 				</Link>
 			</li>

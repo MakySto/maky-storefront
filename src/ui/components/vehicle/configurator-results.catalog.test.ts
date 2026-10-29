@@ -39,6 +39,7 @@ const catalogOnlyCard: ResultCard = {
 		thumbnailUrl: null,
 		thumbnailAlt: null,
 		categoryName: "Roof racks",
+		categorySlug: null,
 		price: { amount: 189.99, currency: "USD" },
 		availability: "on-demand",
 		completeSetIncludes: null,
