@@ -217,10 +217,13 @@ function OfferSkeleton({ title }: { title: string }) {
  */
 async function Offers({
 	vehicleId,
+	vehicleName,
 	channel,
 	locale,
 }: {
 	vehicleId: string;
+	/** What the URL calls the vehicle; the list's heading says the sets are for it. */
+	vehicleName: string;
 	channel: string;
 	locale: string;
 }) {
@@ -244,6 +247,7 @@ async function Offers({
 			offers={offers}
 			channel={channel}
 			locale={locale}
+			vehicleName={vehicleName}
 			fits={offerFitsByProduct(applications)}
 		/>
 	);
@@ -313,6 +317,26 @@ async function VehiclePage({ params }: Params) {
 			(!child.page || isPubliclyVisible(child.page)) && !catalogRedirectTarget(market, child.urlPath),
 	);
 
+	// The generation whose sets this page lists: the page's own when it IS a generation, and the
+	// model's only one when a model has just one. A model with a single generation used to show
+	// that generation as one lonely tile and make the visitor click through to see any product; the
+	// sets are the same ones the generation page lists, under the generation's name, so it is never
+	// unclear which application the offer belongs to. With two or more generations nothing is shown
+	// here — which of them is meant is the visitor's choice, not ours.
+	const onlyGeneration =
+		node.kind === "model"
+			? children.filter(
+					(child) =>
+						child.kind === "generation" && (view.tree.applicationsOf.get(child.vehicleId)?.length ?? 0) > 0,
+				)
+			: [];
+	const offersFor: CatalogNode | null =
+		node.kind === "generation"
+			? node
+			: onlyGeneration.length === 1 && children.length === 1
+				? onlyGeneration[0]!
+				: null;
+
 	const crumbs: BreadcrumbItem[] = [
 		// The market's canonical root, not the segment this URL happened to use: a borrowed Slovak
 		// page abroad (`/cz/stresne-nosice/subaru/legacy-kombi/bh`) sits in the Czech tree, whose
@@ -353,11 +377,17 @@ async function VehiclePage({ params }: Params) {
 
 			<ChildTiles channel={channel} nodes={children} />
 
-			{/* Products only on a generation: the first level at which the fitment data
-			    makes a claim about a specific car. A make or model page is still browsing. */}
-			{node.kind === "generation" ? (
+			{/* Products only where the page names ONE generation: the first level at which the fitment
+			    data makes a claim about a specific car. A make page, and a model with several
+			    generations, are still browsing — the tiles above are the way on. */}
+			{offersFor ? (
 				<Suspense fallback={<OfferSkeleton title={t("configurator.resultsTitle")} />}>
-					<Offers vehicleId={node.vehicleId} channel={channel} locale={locale} />
+					<Offers
+						vehicleId={offersFor.vehicleId}
+						vehicleName={vehicleDisplayName(view.tree, offersFor)}
+						channel={channel}
+						locale={locale}
+					/>
 				</Suspense>
 			) : null}
 

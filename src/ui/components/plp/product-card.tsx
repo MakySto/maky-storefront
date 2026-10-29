@@ -9,7 +9,18 @@ import { useTranslations } from "next-intl";
 import { Badge } from "@/ui/components/ui/badge";
 import { Button } from "@/ui/components/ui/button";
 import { QuantityStepper } from "@/ui/components/ui/quantity-stepper";
-import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
+import {
+	ACTION_ROW,
+	CARD,
+	DETAIL_LINK,
+	FACTS_COLUMN,
+	MEDIA_BOX,
+	MEDIA_COLUMN,
+	PRICE_ROW,
+	TITLE,
+} from "@/ui/components/listing/card-layout";
+import { ListingMedia } from "@/ui/components/listing/listing-media";
+import { DIMENSIONS_SPEC_KEY, ListingSpecs, type ListingSpec } from "@/ui/components/listing/listing-specs";
 import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
 import { StarRating } from "@/ui/components/product/star-rating";
 import { WishlistButton } from "@/ui/components/wishlist/wishlist-button";
@@ -48,7 +59,19 @@ export interface ProductCardData {
 	currency: string;
 	image: string;
 	imageAlt?: string;
+	/**
+	 * The product's own SECOND photograph, shown over the first while the card is hovered or has
+	 * focus. Absent when the gallery holds one image, and then the card does not swap.
+	 */
 	hoverImage?: string | null;
+	/**
+	 * The three or four parameters that tell this product from its neighbours, already worded in the
+	 * reader's language — from CFM's facets for a vehicle set, from the product's attributes for
+	 * everything else. Only what the data carries: an absent parameter is absent, never a dash.
+	 */
+	specs?: ListingSpec[];
+	/** What a complete set contains ("priečniky, pätky, montážny kit"), when CFM says. */
+	includes?: string | null;
 	href: string;
 	/** Saleor channel slug — the add-to-cart action needs it in the form. */
 	channel: string;
@@ -159,6 +182,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 	const tProduct = useTranslations("product");
 	const tCart = useTranslations("cart");
 	const tFit = useTranslations("fitment");
+	const tListing = useTranslations("listing");
 	const { locale } = useLocale();
 
 	const formatPrice = (amount: number, currency: string) =>
@@ -181,40 +205,35 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 		!isPlaceholderProductImage(product.image);
 
 	const category = product.category;
+	// A combined size ("190 × 80 × 40 cm") has no attribute to take its name from.
+	const specs = (product.specs ?? []).map((spec) =>
+		spec.key === DIMENSIONS_SPEC_KEY ? { ...spec, label: tListing("specDimensions") } : spec,
+	);
+	// A vehicle set is the one product whose detail page is where its conditions are read.
+	const isSet = Boolean(product.fit);
 
 	return (
 		<article
 			className={cn(
-				"group border-border-default bg-surface-card relative flex flex-col overflow-hidden rounded-sm border shadow-xs transition-[box-shadow,border-color] duration-200 ease-out",
-				"hover:border-border-strong hover:shadow-md",
+				CARD,
 				// The title's link is the card's link (its span covers the card), and its own outline
 				// would draw around the title alone: the keyboard focus rings the whole card instead.
 				"has-[h2_a:focus-visible]:ring-ring has-[h2_a:focus-visible]:ring-2 has-[h2_a:focus-visible]:ring-offset-2",
 			)}
 		>
-			<div className="relative">
-				{/* The product whole, never cropped: wide boxes and bars fill the 5:4 window, a tall
-				    carrier stands in it. */}
-				<Link
-					href={product.href}
-					tabIndex={-1}
-					aria-hidden="true"
-					className="bg-surface-card relative block aspect-[3/2] overflow-hidden sm:aspect-[5/4]"
-				>
-					{hasImage ? (
-						<ResilientProductImage
-							src={product.image}
-							alt={product.imageAlt || product.name}
-							fill
-							sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, (max-width: 1439px) 25vw, 20vw"
-							className="object-contain px-4 pt-4 pb-1 transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.03] sm:px-5 sm:pt-6 sm:pb-2"
-							priority={priority}
-						/>
-					) : (
-						<span className="text-text-tertiary bg-surface-secondary absolute inset-0 flex items-center justify-center px-4 text-center text-xs">
-							{tProduct("noImageAvailable")}
-						</span>
-					)}
+			<div className={MEDIA_COLUMN}>
+				{/* The product whole, never cropped: wide boxes and bars fill the window, a tall carrier
+				    stands in it. The window is a fixed ratio so nothing jumps while photographs load; in
+				    a list it is the card's full height. */}
+				<Link href={product.href} tabIndex={-1} aria-hidden="true" className={MEDIA_BOX}>
+					<ListingMedia
+						src={hasImage ? product.image : null}
+						alt={product.imageAlt || product.name}
+						hoverSrc={product.hoverImage}
+						sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, (max-width: 1439px) 25vw, 20vw"
+						priority={priority}
+						emptyLabel={tProduct("noImageAvailable")}
+					/>
 				</Link>
 				{badgeLabel && (
 					<Badge
@@ -234,7 +253,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 
 			{/* The facts. `flex-1`: the block takes the card's spare height, so the hairline under it
 			    sits at one height across a row of cards. */}
-			<div className="flex min-w-0 flex-1 flex-col px-4 pt-3">
+			<div className={FACTS_COLUMN}>
 				{/* The maker, set like a wordmark but quieter than the name, and the category after it in
 				    plain text. One line of running text, so a long category wraps under the maker. */}
 				{(product.brand || category) && (
@@ -252,7 +271,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 				    part a shopper checks. From sm, where cards share a row, a short name still
 				    reserves two lines so the facts under it start at one height across the row; a
 				    phone shows one card to a row and keeps no empty line. */}
-				<h2 className="text-text-primary mt-1.5 line-clamp-4 text-base leading-snug font-semibold tracking-[-0.01em] sm:min-h-[2lh] sm:text-[0.9375rem]">
+				<h2 className={TITLE}>
 					<Link
 						href={product.href}
 						className="text-text-primary decoration-brand/40 underline-offset-[3px] hover:underline focus-visible:outline-hidden"
@@ -262,14 +281,11 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 						{product.name}
 					</Link>
 				</h2>
-				{product.note && (
-					<p className="text-text-secondary mt-1 line-clamp-1 text-[0.8125rem]">{product.note}</p>
-				)}
 				{/* The roof and the years the set is made for: two facts the title buries at its end.
 				    Up to two lines so a long roof name wraps instead of being cut. */}
 				{product.fit && (
 					<p
-						className="text-text-secondary mt-1 line-clamp-2 text-[0.8125rem] leading-snug"
+						className="text-text-secondary mt-1.5 line-clamp-2 text-[0.8125rem] leading-snug"
 						data-testid="card-fit"
 					>
 						{product.fit.roof && (
@@ -281,8 +297,20 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 						<span>{tFit("cardYears", { years: product.fit.years })}</span>
 					</p>
 				)}
+				{specs.length > 0 ? (
+					<ListingSpecs specs={specs} className="border-border-subtle mt-3 border-t pt-3" />
+				) : (
+					product.note && (
+						<p className="text-text-secondary mt-1 line-clamp-1 text-[0.8125rem]">{product.note}</p>
+					)
+				)}
+				{product.includes && (
+					<p className="text-text-secondary mt-2 line-clamp-2 text-[0.8125rem] leading-snug">
+						{product.includes}
+					</p>
+				)}
 				{product.productCode && (
-					<p className="text-text-tertiary mt-0.5 truncate text-xs">
+					<p className="text-text-tertiary mt-2 truncate text-xs">
 						{tProduct("sku")}: <span className="tabular-nums">{product.productCode}</span>
 					</p>
 				)}
@@ -293,7 +321,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 
 			{/* A hairline inset to the text, then the price and what the catalogue says about
 			    availability. Not positioned: a click here still reaches the card-wide link. */}
-			<div className="border-border-subtle mx-4 mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t pt-3">
+			<div className={PRICE_ROW}>
 				<span className="flex flex-wrap items-baseline gap-x-2 whitespace-nowrap">
 					<span
 						className={cn(
@@ -325,7 +353,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 
 			{/* The purchase row, pinned to the foot of the card. Above the card-wide link
 			    (`relative`), so the stepper and the button stay clickable. */}
-			<div className="relative px-4 pt-3 pb-4">
+			<div className={ACTION_ROW}>
 				{canAddDirectly ? (
 					<CartForm action={addListingItemToCartAction} quietSuccess>
 						<div className="flex items-stretch gap-2">
@@ -343,11 +371,8 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 				) : (
 					// Button is a plain <button> in this codebase — no asChild slot — so
 					// the link carries the styling itself.
-					<Link
-						href={product.href}
-						className="border-border-default text-text-primary hover:border-text-primary focus-visible:ring-ring flex h-11 w-full items-center justify-center rounded-xs border text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-hidden"
-					>
-						{tCommon("viewDetail")}
+					<Link href={product.href} className={DETAIL_LINK}>
+						{isSet ? tListing("viewSet") : tCommon("viewDetail")}
 					</Link>
 				)}
 			</div>

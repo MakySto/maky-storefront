@@ -854,7 +854,15 @@
 		"errorCartRejected": "L'ensemble n'a pas pu être ajouté au panier.",
 		"errorLookupFailed": "Nous ne pouvons pas confirmer si l'ensemble a bien été ajouté. Merci de vérifier votre panier.",
 		"errorCatalogueUnavailable": "Impossible de vérifier la disponibilité de l'ensemble pour le moment. Merci de réessayer.",
-		"errorGeneric": "L'ensemble n'a pas pu être ajouté au panier."
+		"errorGeneric": "L'ensemble n'a pas pu être ajouté au panier.",
+		"facetAerodynamic": "Aérodynamique",
+		"facetWing": "Profil aile",
+		"facetTubular": "Tubulaire",
+		"facetColourBlack": "Noir",
+		"facetColourSilver": "Argent",
+		"facetColourAlu": "Aluminium naturel",
+		"propertyBarLength": "Longueur des barres",
+		"propertyColour": "Couleur"
 	},
 	"catalog": {
 		"makeIndexTitle": "Choisissez vos barres de toit selon votre véhicule",
@@ -868,7 +876,7 @@
 		"offersPartial": "Une partie de l'offre n'a pas pu être chargée, la liste peut donc être incomplète.",
 		"previewNotice": "Aperçu d'une page non publiée. Elle n'est pas affichée aux visiteurs.",
 		"offersTitleGeneration": "Ensembles pour cette génération",
-		"offersBrowseNote": "Chaque ensemble ne vaut que pour le type de toit et les années indiqués. Les ensembles ne sont pas filtrés pour votre voiture : une fois votre véhicule choisi, nous ne montrons que ceux qui lui conviennent.",
+		"offersBrowseNote": "Chaque ensemble ne vaut que pour le type de toit et les années indiqués ; les différences se voient sur les fiches. Un autre véhicule ? Changez-le dans l'en-tête.",
 		"offersGroupOther": "Type de toit non précisé"
 	},
 	"company": {
@@ -1117,5 +1125,12 @@
 		"description": "Les fabricants de barres de toit, coffres, porte-vélos et autres équipements dont vous trouverez les produits chez nous.",
 		"productCount": "{count, plural, one {# produit} other {# produits}}",
 		"brandDescription": "Les produits {brand} chez MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Affichage de la liste",
+		"viewGrid": "Grille",
+		"viewList": "Liste",
+		"viewSet": "Voir l'ensemble",
+		"specDimensions": "Dimensions"
 	}
 }

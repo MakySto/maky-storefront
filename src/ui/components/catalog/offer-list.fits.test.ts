@@ -27,6 +27,9 @@ vi.mock("next-intl/server", () => ({
 		}),
 }));
 
+// The heart is a client component with its own translation context; no assertion here is about it.
+vi.mock("@/ui/components/wishlist/wishlist-button", () => ({ WishlistButton: () => null }));
+
 import { type FitmentOffer, type FitmentOffers } from "@/lib/fitment/offers";
 import { type OfferFit } from "@/lib/fitment/offer-fit";
 import { CatalogOfferList } from "./offer-list";
@@ -107,9 +110,12 @@ describe("what the page says about its sets", () => {
 		const rendered = await text(MIXED, MIXED_FITS);
 		expect(rendered).toContain("|Zostavy pre túto generáciu|");
 		expect(rendered).not.toContain("Kompatibilné zostavy");
+		// The lead used to say the sets were "not chosen for your car" on a page whose URL names one;
+		// it now says what each set applies to and where the difference is read.
 		expect(rendered).toContain(
-			"Každá zostava platí len pre uvedený typ strechy a roky. Zostavy nie sú vybrané podľa vášho auta — po výbere vozidla vám ukážeme len tie, ktoré naň pasujú.",
+			"Každá zostava platí len pre uvedený typ strechy a roky, rozdiely vidíte priamo na kartách. Máte iné auto? Zmeňte ho v hlavičke.",
 		);
+		expect(rendered).not.toContain("nie sú vybrané podľa vášho auta");
 	});
 
 	it("puts the roof and the years the set is made for on every card", async () => {

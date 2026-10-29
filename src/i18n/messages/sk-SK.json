@@ -854,7 +854,15 @@
 		"errorCartRejected": "Zostavu sa nepodarilo pridať do košíka.",
 		"errorLookupFailed": "Nevieme potvrdiť, či sa zostava pridala. Skontrolujte prosím košík.",
 		"errorCatalogueUnavailable": "Dostupnosť zostavy sa teraz nepodarilo overiť. Skúste to prosím znova.",
-		"errorGeneric": "Zostavu sa nepodarilo pridať do košíka."
+		"errorGeneric": "Zostavu sa nepodarilo pridať do košíka.",
+		"facetAerodynamic": "aerodynamický",
+		"facetWing": "krídlový",
+		"facetTubular": "rúrkový",
+		"facetColourBlack": "čierna",
+		"facetColourSilver": "strieborná",
+		"facetColourAlu": "hliníková",
+		"propertyBarLength": "Dĺžka priečnikov",
+		"propertyColour": "Farba"
 	},
 	"catalog": {
 		"makeIndexTitle": "Vyberte nosič podľa vozidla",
@@ -868,7 +876,7 @@
 		"offersPartial": "Časť ponuky sa nepodarilo načítať, zoznam preto nemusí byť úplný.",
 		"previewNotice": "Náhľad nepublikovanej stránky. Návštevníkom sa nezobrazuje.",
 		"offersTitleGeneration": "Zostavy pre túto generáciu",
-		"offersBrowseNote": "Každá zostava platí len pre uvedený typ strechy a roky. Zostavy nie sú vybrané podľa vášho auta — po výbere vozidla vám ukážeme len tie, ktoré naň pasujú.",
+		"offersBrowseNote": "Každá zostava platí len pre uvedený typ strechy a roky, rozdiely vidíte priamo na kartách. Máte iné auto? Zmeňte ho v hlavičke.",
 		"offersGroupOther": "Bez určeného typu strechy"
 	},
 	"company": {
@@ -1117,5 +1125,12 @@
 		"description": "Výrobcovia strešných nosičov, boxov, nosičov bicyklov a ďalšej výbavy, ktorých produkty u nás kúpite.",
 		"productCount": "{count, plural, one {# produkt} few {# produkty} other {# produktov}}",
 		"brandDescription": "Produkty značky {brand} v ponuke MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Zobrazenie výpisu",
+		"viewGrid": "Mriežka",
+		"viewList": "Zoznam",
+		"viewSet": "Zobraziť zostavu",
+		"specDimensions": "Rozmery"
 	}
 }

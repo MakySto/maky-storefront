@@ -40,6 +40,9 @@ vi.mock("next-intl/server", () => ({
 		}),
 }));
 
+// The heart is a client component with its own translation context; no assertion here is about it.
+vi.mock("@/ui/components/wishlist/wishlist-button", () => ({ WishlistButton: () => null }));
+
 import { type FitmentOffer, type FitmentOffers } from "@/lib/fitment/offers";
 import { CatalogOfferList } from "./offer-list";
 

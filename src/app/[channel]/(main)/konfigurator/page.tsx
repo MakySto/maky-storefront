@@ -9,6 +9,7 @@ import { resolveVehicleOutcome } from "@/lib/fitment/resolve";
 import { isDemoDataset, resolveFitmentOffers } from "@/lib/fitment/offers";
 import { renderConditions } from "@/lib/fitment/conditions";
 import { describeOfferFit, offerFitsByProduct } from "@/lib/fitment/offer-fit";
+import { ListingViewSwitch } from "@/ui/components/listing/listing-view-switch";
 import { readGarage } from "@/lib/garage/state";
 import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import { ConfiguratorResults, type ResultCard } from "@/ui/components/vehicle/configurator-results";
@@ -143,9 +144,12 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 				isDemo={isDemo}
 			/>
 
-			<div>
-				<h2 className="text-text-primary text-lg font-semibold">{t("resultsTitle")}</h2>
-				<p className="text-text-tertiary mt-1 text-sm">{t("resultsCount", { count: cards.length })}</p>
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<div>
+					<h2 className="text-text-primary text-lg font-semibold">{t("resultsTitle")}</h2>
+					<p className="text-text-tertiary mt-1 text-sm">{t("resultsCount", { count: cards.length })}</p>
+				</div>
+				{cards.length > 1 && <ListingViewSwitch />}
 			</div>
 
 			{cards.length > 0 && <ConfiguratorResults channel={channel} locale={locale} cards={cards} />}

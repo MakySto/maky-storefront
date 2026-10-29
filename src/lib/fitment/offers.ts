@@ -62,6 +62,13 @@ export type FitmentOffer = {
 	slug: string | null;
 	thumbnailUrl: string | null;
 	thumbnailAlt: string | null;
+	/**
+	 * The product's own SECOND real photograph, for the card's hover. Null for a product with one
+	 * image and for a demo set, which never borrows a photograph from anything.
+	 */
+	hoverImageUrl?: string | null;
+	/** The maker as the catalogue names it (Thule, Nordrive) — an attribute, not a guess from the title. */
+	brand?: string | null;
 	categoryName: string | null;
 	/** Always the exact variant's price. Null rather than another variant's. */
 	price: { amount: number; currency: string } | null;
@@ -224,6 +231,8 @@ function demoOffers(dataset: FitmentDataset, refs: FitmentProductRef[]): Fitment
 			slug: null,
 			thumbnailUrl: null,
 			thumbnailAlt: null,
+			hoverImageUrl: null,
+			brand: null,
 			categoryName: entry.categoryName ?? null,
 			price: entry.price ?? null,
 			availability: availabilityFrom(entry.availabilityMode, null, entry.quantityAvailable),
@@ -242,6 +251,34 @@ function demoOffers(dataset: FitmentDataset, refs: FitmentProductRef[]): Fitment
 		lookupFailed: false,
 		isDemo: true,
 	};
+}
+
+const MANUFACTURER_REF = "cfm:attribute:manufacturer";
+
+/** The maker named by the product's own manufacturer attribute; null when it carries none. */
+function manufacturerOf(
+	attributes: ReadonlyArray<{
+		attribute: { externalReference?: string | null };
+		values: ReadonlyArray<{ name?: string | null }>;
+	}> | null,
+): string | null {
+	const name = attributes?.find((a) => a.attribute.externalReference === MANUFACTURER_REF)?.values[0]?.name;
+	return name?.trim() ? name.trim() : null;
+}
+
+/**
+ * The gallery's second real photograph. The first is the thumbnail the card already shows, so a
+ * product with one image — or whose other files are videos or the grey "no image" GIF — has none,
+ * and its card does not swap.
+ */
+function secondPhotograph(
+	media: ReadonlyArray<{ url: string; type?: string | null }> | null | undefined,
+): string | null {
+	const images = (media ?? [])
+		.filter((item) => item.type !== "VIDEO")
+		.map((item) => publishableProductImage(item.url))
+		.filter((url): url is string => Boolean(url));
+	return images[1] ?? null;
 }
 
 /**
@@ -365,6 +402,8 @@ export async function resolveFitmentOffers(
 					// Never the "no image" GIF — see `lib/product-image.ts`.
 					thumbnailUrl: publishableProductImage(localized.thumbnail?.url),
 					thumbnailAlt: localized.thumbnail?.alt ?? null,
+					hoverImageUrl: secondPhotograph(node.cardMedia),
+					brand: manufacturerOf(node.attributes),
 					categoryName: localized.category?.name ?? null,
 					price: gross ? { amount: gross.amount, currency: gross.currency } : null,
 					availability: availabilityFrom(

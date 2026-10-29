@@ -854,7 +854,15 @@
 		"errorCartRejected": "Nie udało się dodać zestawu do koszyka.",
 		"errorLookupFailed": "Nie możemy potwierdzić, czy zestaw został dodany. Sprawdź, proszę, koszyk.",
 		"errorCatalogueUnavailable": "Nie udało się teraz sprawdzić dostępności zestawu. Spróbuj ponownie.",
-		"errorGeneric": "Nie udało się dodać zestawu do koszyka."
+		"errorGeneric": "Nie udało się dodać zestawu do koszyka.",
+		"facetAerodynamic": "Aerodynamiczny",
+		"facetWing": "Skrzydłowy",
+		"facetTubular": "Rurowy",
+		"facetColourBlack": "Czarny",
+		"facetColourSilver": "Srebrny",
+		"facetColourAlu": "Aluminium naturalne",
+		"propertyBarLength": "Długość belek",
+		"propertyColour": "Kolor"
 	},
 	"catalog": {
 		"makeIndexTitle": "Wybierz bagażnik według pojazdu",
@@ -868,7 +876,7 @@
 		"offersPartial": "Nie udało się wczytać części oferty, dlatego lista może być niepełna.",
 		"previewNotice": "Podgląd nieopublikowanej strony. Odwiedzający jej nie widzą.",
 		"offersTitleGeneration": "Zestawy dla tej generacji",
-		"offersBrowseNote": "Każdy zestaw obowiązuje tylko dla podanego typu dachu i lat. Zestawy nie są dopasowane do Twojego auta — po wyborze pojazdu pokażemy tylko te, które pasują.",
+		"offersBrowseNote": "Każdy zestaw obowiązuje tylko dla podanego typu dachu i lat, różnice widać na kartach. Masz inne auto? Zmień je w nagłówku.",
 		"offersGroupOther": "Bez podanego typu dachu"
 	},
 	"company": {
@@ -1117,5 +1125,12 @@
 		"description": "Producenci bagażników dachowych, boksów, uchwytów na rowery i innego wyposażenia, których produkty kupisz u nas.",
 		"productCount": "{count, plural, one {# produkt} few {# produkty} other {# produktów}}",
 		"brandDescription": "Produkty marki {brand} w ofercie MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Widok listy produktów",
+		"viewGrid": "Siatka",
+		"viewList": "Lista",
+		"viewSet": "Zobacz zestaw",
+		"specDimensions": "Wymiary"
 	}
 }
