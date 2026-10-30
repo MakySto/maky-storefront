@@ -1,6 +1,9 @@
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import { catalogLanguageForMarket } from "@/lib/catalog-content/language";
 import { categoryRoutePath, isCategorySlug } from "./categories";
+import { KARGO_BASE_SLUG, KARGO_PREVIOUS_SLUG } from "./kargo-slugs";
+
+export { KARGO_BASE_SLUG, KARGO_CATEGORY_SLUGS, KARGO_PREVIOUS_SLUG } from "./kargo-slugs";
 
 /**
  * Localized category URLs — the one table that ties a market to its category segments.
@@ -128,15 +131,6 @@ const CAR_FRIDGE_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
 	ro: "frigidere-auto",
 	en: "portable-refrigerators-freezers",
 };
-
-/**
- * The slug the category had until 2026-10-30 (live on the Slovak shop for one night, 23:14 UTC on the 29th) and
- * the one it has since. Both are kept while Saleor and the shop catch up with each other (`KARGO_CATEGORY_SLUGS`).
- */
-export const KARGO_BASE_SLUG = "kargo-stresne-nosice-a-stresne-kose-na-dodavky";
-export const KARGO_PREVIOUS_SLUG = "stresne-nosice-a-kose-na-dodavky";
-/** What a product's category can be called while the rename is under way; never one without the other. */
-export const KARGO_CATEGORY_SLUGS: readonly string[] = [KARGO_BASE_SLUG, KARGO_PREVIOUS_SLUG];
 
 const KARGO_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
 	sk: "kargo-stresne-nosice-a-stresne-kose-na-dodavky",
