@@ -1,6 +1,6 @@
 {
 	"release": "20260915.2",
-	"source": "CFM_CONTENT_DELIVERY_20260915_RELEASE4.md (1121 Legacy Kombi BP -> BH, 1348 H-1 Van TQ -> A1, with CatalogPageUrlHistory); ES root: CFM_CONTENT_DELIVERY_20260913_H1_REEXPORT.md; 2026-10-18 merged generations: CFM45_odpoved_20261018.md point 2 (12 pages x 12 markets = 144 pairs, the page itself stays in the export as retired); 2026-10-22 merged Nordrive generations: CFM message of 2026-10-22 point 4 (8 pages x 12 markets = 96 pairs, stranky.tsv sha256 bdcebd65..., the page itself stays in the export as retired until M confirms the 301)",
+	"source": "CFM_CONTENT_DELIVERY_20260915_RELEASE4.md (1121 Legacy Kombi BP -> BH, 1348 H-1 Van TQ -> A1, with CatalogPageUrlHistory); ES root: CFM_CONTENT_DELIVERY_20260913_H1_REEXPORT.md; 2026-10-18 merged generations: CFM45_odpoved_20261018.md point 2 (12 pages x 12 markets = 144 pairs, the page itself stays in the export as retired); 2026-10-22 merged Nordrive generations: CFM message of 2026-10-22 point 4 (8 pages x 12 markets = 96 pairs, stranky.tsv sha256 bdcebd65..., the page itself stays in the export as retired until M confirms the 301); 2026-10-30 merged Nordrive generations: CFM message of 2026-10-30 (Roky aut) (Fiat Sedici 2006 and Peugeot 806 1994-2002 x 12 markets = 24 pairs, 301-presmerovanie-cesty-z26-20261022.tsv sha256 c12ed43d..., map of retired ids 4 sha256 e7a7c96a..., the page itself stays in the export as retired until M confirms the 301)",
 	"exact": {
 		"sk": {
 			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -24,7 +24,9 @@
 			"/stresne-nosice/opel/antara/2006-2011": "/stresne-nosice/opel/antara",
 			"/stresne-nosice/opel/crossland-x/2021": "/stresne-nosice/opel/crossland-x",
 			"/stresne-nosice/renault/kadjar/2015-2022": "/stresne-nosice/renault/kadjar",
-			"/stresne-nosice/lancia/zeta/1994-2003": "/stresne-nosice/lancia/zeta"
+			"/stresne-nosice/lancia/zeta/1994-2003": "/stresne-nosice/lancia/zeta",
+			"/stresne-nosice/fiat/sedici/2006": "/stresne-nosice/fiat/sedici",
+			"/stresne-nosice/peugeot/806/1994-2002": "/stresne-nosice/peugeot/806"
 		},
 		"cs": {
 			"/stresni-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -50,7 +52,9 @@
 			"/stresni-nosice/opel/antara/2006-2011": "/stresni-nosice/opel/antara",
 			"/stresni-nosice/opel/crossland-x/2021": "/stresni-nosice/opel/crossland-x",
 			"/stresni-nosice/renault/kadjar/2015-2022": "/stresni-nosice/renault/kadjar",
-			"/stresni-nosice/lancia/zeta/1994-2003": "/stresni-nosice/lancia/zeta"
+			"/stresni-nosice/lancia/zeta/1994-2003": "/stresni-nosice/lancia/zeta",
+			"/stresni-nosice/fiat/sedici/2006": "/stresni-nosice/fiat/sedici",
+			"/stresni-nosice/peugeot/806/1994-2002": "/stresni-nosice/peugeot/806"
 		},
 		"en": {
 			"/roof-racks/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -76,7 +80,9 @@
 			"/roof-racks/opel/antara/2006-2011": "/roof-racks/opel/antara",
 			"/roof-racks/opel/crossland-x/2021": "/roof-racks/opel/crossland-x",
 			"/roof-racks/renault/kadjar/2015-2022": "/roof-racks/renault/kadjar",
-			"/roof-racks/lancia/zeta/1994-2003": "/roof-racks/lancia/zeta"
+			"/roof-racks/lancia/zeta/1994-2003": "/roof-racks/lancia/zeta",
+			"/roof-racks/fiat/sedici/2006": "/roof-racks/fiat/sedici",
+			"/roof-racks/peugeot/806/1994-2002": "/roof-racks/peugeot/806"
 		},
 		"de": {
 			"/dachtraeger/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -102,7 +108,9 @@
 			"/dachtraeger/opel/antara/2006-2011": "/dachtraeger/opel/antara",
 			"/dachtraeger/opel/crossland-x/2021": "/dachtraeger/opel/crossland-x",
 			"/dachtraeger/renault/kadjar/2015-2022": "/dachtraeger/renault/kadjar",
-			"/dachtraeger/lancia/zeta/1994-2003": "/dachtraeger/lancia/zeta"
+			"/dachtraeger/lancia/zeta/1994-2003": "/dachtraeger/lancia/zeta",
+			"/dachtraeger/fiat/sedici/2006": "/dachtraeger/fiat/sedici",
+			"/dachtraeger/peugeot/806/1994-2002": "/dachtraeger/peugeot/806"
 		},
 		"pl": {
 			"/bagazniki-dachowe/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -128,7 +136,9 @@
 			"/bagazniki-dachowe/opel/antara/2006-2011": "/bagazniki-dachowe/opel/antara",
 			"/bagazniki-dachowe/opel/crossland-x/2021": "/bagazniki-dachowe/opel/crossland-x",
 			"/bagazniki-dachowe/renault/kadjar/2015-2022": "/bagazniki-dachowe/renault/kadjar",
-			"/bagazniki-dachowe/lancia/zeta/1994-2003": "/bagazniki-dachowe/lancia/zeta"
+			"/bagazniki-dachowe/lancia/zeta/1994-2003": "/bagazniki-dachowe/lancia/zeta",
+			"/bagazniki-dachowe/fiat/sedici/2006": "/bagazniki-dachowe/fiat/sedici",
+			"/bagazniki-dachowe/peugeot/806/1994-2002": "/bagazniki-dachowe/peugeot/806"
 		},
 		"hu": {
 			"/tetocsomagtartok/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -154,7 +164,9 @@
 			"/tetocsomagtartok/opel/antara/2006-2011": "/tetocsomagtartok/opel/antara",
 			"/tetocsomagtartok/opel/crossland-x/2021": "/tetocsomagtartok/opel/crossland-x",
 			"/tetocsomagtartok/renault/kadjar/2015-2022": "/tetocsomagtartok/renault/kadjar",
-			"/tetocsomagtartok/lancia/zeta/1994-2003": "/tetocsomagtartok/lancia/zeta"
+			"/tetocsomagtartok/lancia/zeta/1994-2003": "/tetocsomagtartok/lancia/zeta",
+			"/tetocsomagtartok/fiat/sedici/2006": "/tetocsomagtartok/fiat/sedici",
+			"/tetocsomagtartok/peugeot/806/1994-2002": "/tetocsomagtartok/peugeot/806"
 		},
 		"ro": {
 			"/bare-transversale/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -180,7 +192,9 @@
 			"/bare-transversale/opel/antara/2006-2011": "/bare-transversale/opel/antara",
 			"/bare-transversale/opel/crossland-x/2021": "/bare-transversale/opel/crossland-x",
 			"/bare-transversale/renault/kadjar/2015-2022": "/bare-transversale/renault/kadjar",
-			"/bare-transversale/lancia/zeta/1994-2003": "/bare-transversale/lancia/zeta"
+			"/bare-transversale/lancia/zeta/1994-2003": "/bare-transversale/lancia/zeta",
+			"/bare-transversale/fiat/sedici/2006": "/bare-transversale/fiat/sedici",
+			"/bare-transversale/peugeot/806/1994-2002": "/bare-transversale/peugeot/806"
 		},
 		"fr": {
 			"/barres-de-toit/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -206,7 +220,9 @@
 			"/barres-de-toit/opel/antara/2006-2011": "/barres-de-toit/opel/antara",
 			"/barres-de-toit/opel/crossland-x/2021": "/barres-de-toit/opel/crossland-x",
 			"/barres-de-toit/renault/kadjar/2015-2022": "/barres-de-toit/renault/kadjar",
-			"/barres-de-toit/lancia/zeta/1994-2003": "/barres-de-toit/lancia/zeta"
+			"/barres-de-toit/lancia/zeta/1994-2003": "/barres-de-toit/lancia/zeta",
+			"/barres-de-toit/fiat/sedici/2006": "/barres-de-toit/fiat/sedici",
+			"/barres-de-toit/peugeot/806/1994-2002": "/barres-de-toit/peugeot/806"
 		},
 		"it": {
 			"/barre-portatutto/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -232,7 +248,9 @@
 			"/barre-portatutto/opel/antara/2006-2011": "/barre-portatutto/opel/antara",
 			"/barre-portatutto/opel/crossland-x/2021": "/barre-portatutto/opel/crossland-x",
 			"/barre-portatutto/renault/kadjar/2015-2022": "/barre-portatutto/renault/kadjar",
-			"/barre-portatutto/lancia/zeta/1994-2003": "/barre-portatutto/lancia/zeta"
+			"/barre-portatutto/lancia/zeta/1994-2003": "/barre-portatutto/lancia/zeta",
+			"/barre-portatutto/fiat/sedici/2006": "/barre-portatutto/fiat/sedici",
+			"/barre-portatutto/peugeot/806/1994-2002": "/barre-portatutto/peugeot/806"
 		},
 		"es": {
 			"/barras-de-techo/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -260,7 +278,9 @@
 			"/barras-de-techo/opel/antara/2006-2011": "/barras-de-techo/opel/antara",
 			"/barras-de-techo/opel/crossland-x/2021": "/barras-de-techo/opel/crossland-x",
 			"/barras-de-techo/renault/kadjar/2015-2022": "/barras-de-techo/renault/kadjar",
-			"/barras-de-techo/lancia/zeta/1994-2003": "/barras-de-techo/lancia/zeta"
+			"/barras-de-techo/lancia/zeta/1994-2003": "/barras-de-techo/lancia/zeta",
+			"/barras-de-techo/fiat/sedici/2006": "/barras-de-techo/fiat/sedici",
+			"/barras-de-techo/peugeot/806/1994-2002": "/barras-de-techo/peugeot/806"
 		}
 	},
 	"roots": {
