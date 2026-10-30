@@ -144,11 +144,11 @@ const KARGO_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
 	de: "kargo-dachtraeger-und-dachkoerbe-fuer-transporter",
 	pl: "kargo-bagazniki-dachowe-i-kosze-dachowe-do-samochodow-dostawczych",
 	hu: "kargo-tetocsomagtartok-es-tetokosarak-kisteherautokra",
-	it: "kargo-barre-portatutto-e-cesti-da-tetto-per-furgoni",
-	fr: "kargo-barres-de-toit-et-paniers-de-toit-pour-utilitaires",
-	es: "kargo-barras-de-techo-y-cestas-de-techo-para-furgonetas",
-	ro: "kargo-bare-transversale-si-cosuri-de-plafon-pentru-autoutilitare",
-	en: "kargo-roof-racks-and-roof-baskets-for-cargo-vans",
+	it: "kargo-barre-portatutto-e-ceste-portacarico-per-furgoni",
+	fr: "kargo-barres-et-galeries-de-toit-pour-utilitaires",
+	es: "kargo-barras-de-techo-y-portaequipajes-para-furgonetas",
+	ro: "kargo-bare-transversale-si-cosuri-portbagaj-pentru-autoutilitare",
+	en: "kargo-roof-racks-and-crossbars-for-vans",
 };
 
 export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
@@ -188,7 +188,7 @@ export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 		segments: KARGO_SEGMENTS,
 		marketSegments: {
 			at: "kargo-dachtraeger-und-dachkoerbe-fuer-lieferwagen",
-			ca: "kargo-roof-racks-and-roof-baskets-for-commercial-vans",
+			ca: "kargo-van-roof-racks-and-crossbars",
 		},
 	},
 ];

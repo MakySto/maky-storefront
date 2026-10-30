@@ -316,12 +316,12 @@ describe("the Nordrive Kargo van category", () => {
 		at: "kargo-dachtraeger-und-dachkoerbe-fuer-lieferwagen",
 		pl: "kargo-bagazniki-dachowe-i-kosze-dachowe-do-samochodow-dostawczych",
 		hu: "kargo-tetocsomagtartok-es-tetokosarak-kisteherautokra",
-		ro: "kargo-bare-transversale-si-cosuri-de-plafon-pentru-autoutilitare",
-		fr: "kargo-barres-de-toit-et-paniers-de-toit-pour-utilitaires",
-		it: "kargo-barre-portatutto-e-cesti-da-tetto-per-furgoni",
-		es: "kargo-barras-de-techo-y-cestas-de-techo-para-furgonetas",
-		us: "kargo-roof-racks-and-roof-baskets-for-cargo-vans",
-		ca: "kargo-roof-racks-and-roof-baskets-for-commercial-vans",
+		ro: "kargo-bare-transversale-si-cosuri-portbagaj-pentru-autoutilitare",
+		fr: "kargo-barres-et-galeries-de-toit-pour-utilitaires",
+		it: "kargo-barre-portatutto-e-ceste-portacarico-per-furgoni",
+		es: "kargo-barras-de-techo-y-portaequipajes-para-furgonetas",
+		us: "kargo-roof-racks-and-crossbars-for-vans",
+		ca: "kargo-van-roof-racks-and-crossbars",
 	};
 	const kargo = LOCALIZED_CATEGORIES.find((category) => category.baseSlug === BASE);
 
