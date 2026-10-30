@@ -4,13 +4,60 @@ import { getTranslations } from "next-intl/server";
 
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import type { ProductCardData } from "@/ui/components/plp/product-card";
+import { isFitmentRefSellable, type FitmentCondition, type FitmentDataset } from "./contract";
+import { pickConditionText } from "./conditions";
 import { describeOfferFit, productFitIndex } from "./offer-fit";
-import { describeIncludes, offerSpecs } from "./offer-specs";
+import type { ListingSpec } from "@/ui/components/listing/listing-specs";
+import { describeIncludes, offerSpecs, withNameSize } from "./offer-specs";
 import { loadFitmentDataset } from "./provider";
 import { isDatasetStale } from "./resolve";
 import { productSetFacts } from "./set-facts";
 import { datasetMakeNames, splitSetTitle } from "./set-title";
 import { setVehicleOf, type SetVehicle } from "./set-vehicle";
+
+/** The condition a van's application carries for the version it is made for ("dĺžka L4, vysoká strecha"). */
+const VAN_VERSION = "van-version";
+
+type VersionRows = { applications: number; versions: FitmentCondition[] };
+
+const VERSIONS = new WeakMap<FitmentDataset, ReadonlyMap<string, VersionRows>>();
+
+/** Per product: how many positive applications speak for it, and the version condition each one carries. */
+function versionIndex(dataset: FitmentDataset): ReadonlyMap<string, VersionRows> {
+	let index = VERSIONS.get(dataset);
+	if (!index) {
+		const built = new Map<string, VersionRows>();
+		for (const application of dataset.applications) {
+			if (application.negative) continue;
+			const versions = application.conditions.filter((condition) => condition.code === VAN_VERSION);
+			for (const ref of application.products) {
+				if (!isFitmentRefSellable(ref)) continue;
+				const rows = built.get(ref.saleorProductId) ?? { applications: 0, versions: [] };
+				rows.applications += 1;
+				rows.versions.push(...versions);
+				built.set(ref.saleorProductId, rows);
+			}
+		}
+		index = built;
+		VERSIONS.set(dataset, index);
+	}
+	return index;
+}
+
+/**
+ * The version of a van the set is made for, in the source's own words for this market, or null.
+ *
+ * Said only where every application that speaks for the set carries exactly one version condition and the
+ * conditions read the same: a set made for both a short and a long van (two applications, two versions) says
+ * nothing here, and the product page, where the shopper's own vehicle decides, says which. A condition the
+ * source has no text of for this market's language is not said, and never put in another language's words.
+ */
+function versionNoteOf(rows: VersionRows | undefined, locale: string): string | null {
+	if (!rows || rows.applications === 0 || rows.versions.length !== rows.applications) return null;
+	const texts = new Set(rows.versions.map((condition) => pickConditionText(condition.text, locale)));
+	const [text] = [...texts];
+	return texts.size === 1 && text ? text : null;
+}
 
 /**
  * What a roof-rack set's listing card says about the SET, from CFM's export — the same words on the
@@ -41,29 +88,43 @@ export async function attachSetFacts(
 	const fitIndex = productFitIndex(dataset);
 	const factsIndex = productSetFacts(dataset);
 	const makes = datasetMakeNames(dataset);
-	const [tFit, tSpecs] = await Promise.all([
+	const versions = versionIndex(dataset);
+	const [tFit, tSpecs, tListing] = await Promise.all([
 		getTranslations({ locale, namespace: "fitment" }),
 		getTranslations({ locale, namespace: "configurator" }),
+		getTranslations({ locale, namespace: "listing" }),
 	]);
 
 	return cards.map((card) => {
 		const fits = fitIndex.get(card.id);
 		const fit = describeOfferFit(fits, tFit, ROOF_LABEL_KEY);
 		const facts = factsIndex.get(card.id);
-		const specs = facts ? offerSpecs(facts.facets, tSpecs) : [];
+		const specs: ListingSpec[] = facts ? offerSpecs(facts.facets, tSpecs) : [];
 		const includes = facts ? describeIncludes(facts.includes, tSpecs) : null;
+		const versionNote = fit ? versionNoteOf(versions.get(card.id), locale) : null;
 		// The car and the years are said once, under a short name, only for a set whose roof and years
 		// come from its own application — those lines are what replaces the long name's tail.
 		const vehicles = (fits?.[0]?.generationIds ?? [])
 			.map((generationId) => setVehicleOf(dataset, generationId, language))
 			.filter((vehicle): vehicle is SetVehicle => vehicle !== null);
 		const setTitle = fit ? splitSetTitle(card.name, { brand: card.brand, makes, vehicles }) : null;
+		// A basket's size is in its name and nowhere else the card reads, and taking the name apart drops it:
+		// it is said as a row of its own, first, unless the card's own attributes already give a size.
+		const held = specs.length > 0 ? specs : card.specs ?? [];
+		const sized = fit
+			? withNameSize(held, card.name, {
+					dimensions: tListing("specDimensions"),
+					bars: tListing("specBars"),
+				})
+			: held;
+		const withSize = sized.length > held.length || sized[0] !== held[0] ? sized : null;
 		return {
 			...card,
 			...(fit ? { fit } : {}),
 			...(setTitle ? { setTitle } : {}),
-			...(specs.length > 0 ? { specs } : {}),
+			...(withSize ? { specs: withSize } : specs.length > 0 ? { specs } : {}),
 			...(includes ? { includes } : {}),
+			...(versionNote ? { versionNote } : {}),
 		};
 	});
 }

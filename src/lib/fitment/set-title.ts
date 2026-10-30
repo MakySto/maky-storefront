@@ -94,7 +94,7 @@ export function splitSetTitle(
 	const split = carStart(rest, own.length > 0 ? own.flatMap((vehicle) => vehicle.make) : options.makes);
 	if (split <= 0) return null;
 
-	const model = rest.slice(0, split).trim();
+	const model = withoutConnector(rest.slice(0, split).trim());
 	const spelled = rest.slice(split).trim();
 	if (!model || !spelled) return null;
 	// Worded the shop's way only when the name itself says it is that car.
@@ -102,6 +102,44 @@ export function splitSetTitle(
 		vehicle.generation.some((generation) => wordHits(spelled, generation).length > 0),
 	);
 	return { model, vehicle: confirmed ? confirmed.label : spelled };
+}
+
+/**
+ * The word that joins a product to its car ("Kargo Rack pre Volkswagen Crafter"), in the markets' languages.
+ * Taken apart at the car, it would stay at the end of the product's name and leave it hanging: "Kargo Rack pre".
+ * Only a whole last word of this list goes, and never the only word the name has.
+ */
+const CONNECTORS = new Set(["pre", "pro", "für", "for", "para", "pour", "per", "pentru", "dla"]);
+
+function withoutConnector(model: string): string {
+	const words = model.split(/\s+/);
+	const last = words[words.length - 1]?.toLowerCase();
+	return words.length > 1 && last && CONNECTORS.has(last) ? words.slice(0, -1).join(" ") : model;
+}
+
+/**
+ * The size a name states for the product itself, as "420 × 180 × 12 cm": three numbers and the unit, written
+ * with × or x. The product's name is the one place that says it for a basket the dataset and Saleor hold no
+ * size of, and taking a set's name apart for the card would otherwise drop it with the rest of the tail.
+ * Nothing is worked out: the numbers are the name's own, in its order, and a name that states no such size
+ * (a bar's, a car's) answers null. Two numbers are not read, because a bar's "150 × 20 mm" is not a basket.
+ */
+export function sizeInName(name: string): string | null {
+	const match =
+		/(?<![\p{L}\p{N}.,])(\d{2,4}(?:[.,]\d+)?)\s*[×x]\s*(\d{2,4}(?:[.,]\d+)?)\s*[×x]\s*(\d{1,3}(?:[.,]\d+)?)\s*cm(?![\p{L}\p{N}])/iu.exec(
+			name,
+		);
+	return match ? `${match[1]} × ${match[2]} × ${match[3]} cm` : null;
+}
+
+/**
+ * The bars a name states for a kit sold as loose bars: "4 tyče 180 cm" is four bars of 180 cm. Slovak words
+ * only (tyč, tyče, tyčí): a name in another language states nothing here, and the card says nothing then.
+ */
+export function barsInName(name: string): { count: number; lengthCm: string } | null {
+	const match =
+		/(?<![\p{L}\p{N}.,])(\d{1,2})\s+tyč(?:e|í)?\s+(\d{2,3}(?:[.,]\d+)?)\s*cm(?![\p{L}\p{N}])/iu.exec(name);
+	return match ? { count: Number(match[1]), lengthCm: match[2]! } : null;
 }
 
 const MAKES = new WeakMap<FitmentDataset, readonly string[]>();
