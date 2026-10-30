@@ -1,10 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { CATEGORY_SLUGS, STOREFRONT_CATEGORIES, categoryUrl } from "@/config/categories";
+import {
+	CATEGORY_SLUGS,
+	LIVE_CATEGORY_SLUGS_KEY,
+	STOREFRONT_CATEGORIES,
+	categoryUrl,
+} from "@/config/categories";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { MARKET_ROOT_SEGMENTS } from "@/lib/routing.generated";
 import {
 	CATALOG_LANGUAGES,
+	KARGO_CATEGORY_SLUGS,
+	KARGO_PREVIOUS_SLUG,
 	LOCALIZED_CATEGORIES,
 	categoryBaseSlug,
 	categoryRouteTable,
@@ -295,5 +302,80 @@ describe("the Thule roof-rack category", () => {
 		for (const market of ["sk", "us", "ca"]) {
 			expect(isLocalizedRootSegment(market, "thule-stresne-nosice"), market).toBe(false);
 		}
+	});
+});
+
+describe("the Nordrive Kargo van category", () => {
+	// Typed out from the table the owner chose on 2026-10-30 (names in `Kargo_kategoria_nazvy_a_slugy_20261030.md`),
+	// not derived from the code: Austria and Canada are spelled apart from Germany and the USA.
+	const BASE = "kargo-stresne-nosice-a-stresne-kose-na-dodavky";
+	const SEGMENTS: Readonly<Record<string, string>> = {
+		sk: BASE,
+		cz: "kargo-stresni-nosice-a-stresni-kose-na-dodavky",
+		de: "kargo-dachtraeger-und-dachkoerbe-fuer-transporter",
+		at: "kargo-dachtraeger-und-dachkoerbe-fuer-lieferwagen",
+		pl: "kargo-bagazniki-dachowe-i-kosze-dachowe-do-samochodow-dostawczych",
+		hu: "kargo-tetocsomagtartok-es-tetokosarak-kisteherautokra",
+		ro: "kargo-bare-transversale-si-cosuri-portbagaj-pentru-autoutilitare",
+		fr: "kargo-barres-et-galeries-de-toit-pour-utilitaires",
+		it: "kargo-barre-portatutto-e-ceste-portacarico-per-furgoni",
+		es: "kargo-barras-de-techo-y-portaequipajes-para-furgonetas",
+		us: "kargo-roof-racks-and-crossbars-for-vans",
+		ca: "kargo-van-roof-racks-and-crossbars",
+	};
+	const kargo = LOCALIZED_CATEGORIES.find((category) => category.baseSlug === BASE);
+
+	// The category is not in the build's own list: the running server learns it from Saleor.
+	const published = globalThis as typeof globalThis & { [LIVE_CATEGORY_SLUGS_KEY]?: ReadonlySet<string> };
+	beforeEach(() => {
+		published[LIVE_CATEGORY_SLUGS_KEY] = new Set([BASE]);
+	});
+	afterEach(() => {
+		delete published[LIVE_CATEGORY_SLUGS_KEY];
+	});
+
+	it("has the segment the owner chose, in every market", () => {
+		const rows = categoryRouteTable().filter((row) => row.baseSlug === BASE);
+		expect(rows).toHaveLength(12);
+		for (const row of rows) expect(row.path, row.market).toBe(`/${row.market}/${SEGMENTS[row.market]}`);
+	});
+
+	it("spells Austria apart from Germany and Canada apart from the USA, and no other pair", () => {
+		expect(SEGMENTS.at).not.toBe(SEGMENTS.de);
+		expect(SEGMENTS.ca).not.toBe(SEGMENTS.us);
+		expect(new Set(Object.values(SEGMENTS)).size).toBe(12);
+	});
+
+	it("is the Saleor category it names (Category:34)", () => {
+		expect(kargo?.saleorId).toBe(btoa("Category:34"));
+	});
+
+	it("is one address, whether the link carries the base slug or the slug Saleor translated", () => {
+		for (const [market, segment] of Object.entries(SEGMENTS)) {
+			expect(categoryUrlFor(market, BASE), market).toBe(`/${segment}`);
+			expect(categoryUrlFor(market, segment), market).toBe(`/${segment}`);
+			expect(categoryBaseSlug(market, segment), market).toBe(BASE);
+		}
+	});
+
+	it("is a root only in the market's own spelling, also where two markets share a language", () => {
+		for (const [market, segment] of Object.entries(SEGMENTS)) {
+			expect(isLocalizedRootSegment(market, segment), market).toBe(market !== "sk");
+		}
+		expect(isLocalizedRootSegment("de", SEGMENTS.at!)).toBe(false);
+		expect(isLocalizedRootSegment("at", SEGMENTS.de!)).toBe(false);
+		expect(isLocalizedRootSegment("us", SEGMENTS.ca!)).toBe(false);
+		expect(isLocalizedRootSegment("ca", SEGMENTS.us!)).toBe(false);
+		expect(isLocalizedRootSegment("cz", SEGMENTS.de!)).toBe(false);
+	});
+
+	it("leaves the other rows of a shared language as they were", () => {
+		expect(categorySegment("at", "stresne-nosice")).toBe("dachtraeger");
+		expect(categorySegment("ca", "stresne-nosice")).toBe("roof-racks");
+		expect(categorySegment("ca", "thule-stresne-nosice")).toBe("thule-roof-racks");
+	});
+
+	it("keeps the old Kargo slug for the shelf and the quote button, while Saleor still names it", () => {
+		expect(KARGO_CATEGORY_SLUGS).toEqual([BASE, KARGO_PREVIOUS_SLUG]);
 	});
 });

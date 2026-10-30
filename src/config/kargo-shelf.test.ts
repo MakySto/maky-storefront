@@ -38,6 +38,11 @@ afterEach(() => {
 });
 
 describe("the Kargo shelf", () => {
+	it("has the car filter under the slug it has since 2026-10-30 as well as the one it had", () => {
+		expect(categoryFitmentKind("kargo-stresne-nosice-a-stresne-kose-na-dodavky")).toBe("roof-rack-set");
+		expect(categoryFitmentKind(KARGO)).toBe("roof-rack-set");
+	});
+
 	it("has the car filter before the live list knows the category", () => {
 		expect(categoryFitmentKind(KARGO)).toBe("roof-rack-set");
 		expect(isCategorySlug(KARGO)).toBe(false);

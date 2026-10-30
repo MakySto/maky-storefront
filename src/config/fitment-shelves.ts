@@ -36,6 +36,8 @@
  * (`categoryBaseSlug` in `category-routes.ts`).
  */
 
+import { KARGO_BASE_SLUG, KARGO_PREVIOUS_SLUG } from "./category-routes";
+
 import type { ProductKind } from "@/lib/fitment/contract";
 
 export const FITMENT_SHELVES: Readonly<Record<string, ProductKind>> = {
@@ -64,7 +66,10 @@ export const FITMENT_SHELVES: Readonly<Record<string, ProductKind>> = {
 	 * baskets, which fit no car and are in no dataset: with a saved car the default list shows the car's sets
 	 * only, and "all vehicles" shows the baskets too, as on the parent shelf and its accessories.
 	 */
-	"stresne-nosice-a-kose-na-dodavky": "roof-rack-set",
+	[KARGO_BASE_SLUG]: "roof-rack-set",
+	// The slug it had for its first night; Saleor is renamed in a separate step, and a product that still names
+	// the old category keeps its shelf until then.
+	[KARGO_PREVIOUS_SLUG]: "roof-rack-set",
 	// Kinds the dataset does not cover today; listed so that the day CFM ships one, its shelf
 	// starts answering with no storefront change.
 	"stresne-boxy": "roof-box",
