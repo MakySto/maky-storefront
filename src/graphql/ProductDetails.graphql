@@ -29,6 +29,13 @@ query ProductDetails(
 			sortOrder
 			alt
 			type
+			# The gallery's own copy of a photograph at 1024 px, the size Saleor keeps nearest to a description column (`lib/gallery-photos.ts`).
+			photo: url(size: 1024, format: WEBP)
+			# CFM leaves the address a gallery photo came from here (`cfm_source_url`); the description's photographs are found by it.
+			metadata {
+				key
+				value
+			}
 		}
 		category {
 			id
