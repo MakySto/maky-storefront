@@ -36,7 +36,7 @@
  * (`categoryBaseSlug` in `category-routes.ts`).
  */
 
-import { KARGO_BASE_SLUG, KARGO_PREVIOUS_SLUG } from "./category-routes";
+import { KARGO_BASE_SLUG, KARGO_PREVIOUS_SLUG } from "./kargo-slugs";
 
 import type { ProductKind } from "@/lib/fitment/contract";
 

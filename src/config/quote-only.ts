@@ -1,4 +1,4 @@
-import { KARGO_CATEGORY_SLUGS } from "./category-routes";
+import { KARGO_CATEGORY_SLUGS } from "./kargo-slugs";
 
 /**
  * Where a product the channel does not sell is shown WITHOUT a price, with the way to ask for a quote in its place.
