@@ -942,7 +942,7 @@ def fetch_xml(value):
     path = urllib.parse.urlsplit(value).path
     if not path.startswith("/"):
         raise SystemExit(f"unsafe sitemap path: {value}")
-    with urllib.request.urlopen(base_url + path, timeout=60) as response:
+    with urllib.request.urlopen(base_url + path, timeout=240) as response:
         if response.status != 200:
             raise SystemExit(f"{path} answered {response.status}")
         return ET.fromstring(response.read())
@@ -1158,7 +1158,7 @@ if root.tag == f"{ns}sitemapindex":
         raise SystemExit("the index names no shard")
     for shard in shards:
         url = sys.argv[2] + urllib.parse.urlsplit(shard).path
-        with urllib.request.urlopen(url, timeout=60) as response:
+        with urllib.request.urlopen(url, timeout=240) as response:
             if response.status != 200:
                 raise SystemExit(f"{url} answered {response.status}")
             total += len(ET.fromstring(response.read()).findall(f".//{ns}loc"))

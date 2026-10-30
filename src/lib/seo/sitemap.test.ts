@@ -32,6 +32,12 @@ import sitemap, {
 } from "./sitemap";
 import { REVERSE_MAP } from "@/lib/channel-map";
 import { resetLiveCategoriesForTests } from "@/lib/live-categories";
+import { prewarmProductWalks } from "./product-walk";
+import {
+	MIN_REFRESH_AFTER_EVENT_MS,
+	markSitemapStale,
+	resetSitemapSnapshotsForTests,
+} from "./sitemap-snapshot";
 import { installFakeSaleor } from "@/lib/live-categories.testkit";
 
 /**
@@ -162,6 +168,8 @@ function productPageCalls(): number {
 }
 
 beforeEach(() => {
+	// The product lists are kept in the process by design; a test starts with none.
+	resetSitemapSnapshotsForTests();
 	process.env.NEXT_PUBLIC_STOREFRONT_URL = BASE;
 	// `sk` is the default live market; an inherited override would change the
 	// number of markets walked and with it every count below.
@@ -183,6 +191,7 @@ afterEach(() => {
 	vi.unstubAllEnvs();
 	vi.unstubAllGlobals();
 	resetLiveCategoriesForTests();
+	resetSitemapSnapshotsForTests();
 });
 
 describe("the whole catalogue, or an error", () => {
@@ -927,15 +936,35 @@ describe("the sitemap index and its shards", () => {
 		);
 	});
 
-	it("tags every Saleor read behind a shard with its channel", async () => {
+	it("tags every cached Saleor read behind a shard with its channel, and keeps the walk out of the cache", async () => {
 		process.env.MAKY_LIVE_MARKETS = "sk,cz";
 		process.env.MAKY_INDEXABLE_MARKETS = "sk,cz";
 		serve((after) => productPage(after, 3));
 
 		await sitemapShards();
-		const tags = executePublicGraphQL.mock.calls.map((call) => (call[1] as { tags?: string[] }).tags);
-		expect(tags.every((value) => value?.length === 1)).toBe(true);
-		expect(new Set(tags.map((value) => value![0]))).toEqual(new Set(["sitemap:sk-eur", "sitemap:cz-czk"]));
+		await sitemapShardEntries("sk-products-1");
+		await sitemapShardEntries("cz-products-1");
+
+		const tagged = new Set<string>();
+		for (const call of executePublicGraphQL.mock.calls) {
+			const options = call[1] as { tags?: string[]; cache?: string; revalidate?: number };
+			if (call[0] === SitemapProductsDocument && options.cache === "no-store") {
+				// A WALK is kept whole in the snapshot, so it must not also fill the shared page cache.
+				expect(options.tags).toBeUndefined();
+				expect(options.revalidate).toBeUndefined();
+				continue;
+			}
+			// Everything else (categories, the count, the index's first page) is small, cached and tagged.
+			expect(options.tags).toHaveLength(1);
+			tagged.add(options.tags![0]!);
+		}
+		expect(tagged).toEqual(new Set(["sitemap:sk-eur", "sitemap:cz-czk"]));
+		// And the walk really did run uncached, or the loop above proved nothing about it.
+		expect(
+			executePublicGraphQL.mock.calls.some(
+				(call) => call[0] === SitemapProductsDocument && (call[1] as { cache?: string }).cache === "no-store",
+			),
+		).toBe(true);
 	});
 });
 
@@ -1108,9 +1137,79 @@ describe("a foreign market's sitemap is written in that market's own URLs", () =
 		// Ten pages, once — not twenty.
 		expect(productPageCalls()).toBe(10);
 
-		// Finished walks are not kept: the next request asks again (and hits Next's data cache).
+		// The finished list is kept: the next request is answered from it, Saleor is not asked again.
 		await sitemapShardEntries("sk-products-1");
-		expect(productPageCalls()).toBe(20);
+		expect(productPageCalls()).toBe(10);
+	});
+
+	it("answers from the kept list after a catalogue event, and from the rebuilt one once it is complete", async () => {
+		process.env.MAKY_LIVE_MARKETS = "sk";
+		process.env.MAKY_INDEXABLE_MARKETS = "sk";
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-10-30T12:00:00Z"));
+		try {
+			serve((after) => productPage(after, 150));
+			expect(await sitemapShardEntries("sk-products-1")).toHaveLength(150);
+			expect(productPageCalls()).toBe(2);
+
+			// Saleor gains ten products and says so. The shard does not wait for a walk to show them…
+			serve((after) => productPage(after, 160));
+			markSitemapStale("sk-eur");
+			vi.setSystemTime(Date.now() + MIN_REFRESH_AFTER_EVENT_MS + 1);
+			expect(await sitemapShardEntries("sk-products-1")).toHaveLength(150);
+
+			// …they arrive with the rebuild, which replaced the list only because it was complete.
+			await new Promise<void>((resolve) => setImmediate(resolve));
+			expect(await sitemapShardEntries("sk-products-1")).toHaveLength(160);
+
+			// And the index counts from the kept list, without a count query or a page.
+			executePublicGraphQL.mockClear();
+			const shards = await sitemapShards();
+			expect(shards.find((shard) => shard.kind === "products")?.urls).toBe(160);
+			expect(
+				executePublicGraphQL.mock.calls.filter(
+					(call) => call[0] === SitemapProductsDocument || call[0] === SitemapProductCountDocument,
+				),
+			).toHaveLength(0);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("keeps the list it has when the rebuild cannot finish a walk", async () => {
+		process.env.MAKY_LIVE_MARKETS = "sk";
+		process.env.MAKY_INDEXABLE_MARKETS = "sk";
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-10-30T12:00:00Z"));
+		try {
+			serve((after) => productPage(after, 150));
+			expect(await sitemapShardEntries("sk-products-1")).toHaveLength(150);
+
+			// Page two never resolves: a short list must not replace the complete one.
+			serve((after) =>
+				after ? { ok: false, error: { type: "network", message: "x" } } : productPage(after, 150),
+			);
+			markSitemapStale("sk-eur");
+			vi.setSystemTime(Date.now() + MIN_REFRESH_AFTER_EVENT_MS + 1);
+			expect(await sitemapShardEntries("sk-products-1")).toHaveLength(150);
+			await new Promise<void>((resolve) => setImmediate(resolve));
+			expect(await sitemapShardEntries("sk-products-1")).toHaveLength(150);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("is ready before the first crawler: the boot warm-up builds every live market's list", async () => {
+		process.env.MAKY_LIVE_MARKETS = "sk,cz";
+		process.env.MAKY_INDEXABLE_MARKETS = "sk,cz";
+		serve((after) => productPage(after, 150));
+
+		await prewarmProductWalks();
+		const walked = productPageCalls();
+		expect(walked).toBe(4); // two pages for each of the two markets
+
+		await sitemapShardEntries("sk-products-1");
+		expect(productPageCalls()).toBe(walked);
 	});
 
 	it("keeps Slovakia on the base row, and does not ask for a translation there", async () => {

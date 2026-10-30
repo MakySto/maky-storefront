@@ -18,6 +18,11 @@ import { isCategorySlug } from "@/config/categories";
 import { liveCategoriesStats, resetLiveCategoriesForTests } from "@/lib/live-categories";
 import { installFakeSaleor } from "@/lib/live-categories.testkit";
 import { CHANNEL_MAP } from "@/lib/channel-map";
+import {
+	MIN_REFRESH_AFTER_EVENT_MS,
+	readSnapshot,
+	resetSitemapSnapshotsForTests,
+} from "@/lib/seo/sitemap-snapshot";
 
 const ALL_CHANNELS = Object.values(CHANNEL_MAP).map((c) => c.saleorSlug);
 
@@ -49,6 +54,7 @@ afterEach(() => {
 	vi.unstubAllEnvs();
 	vi.unstubAllGlobals();
 	resetLiveCategoriesForTests();
+	resetSitemapSnapshotsForTests();
 });
 
 describe("Saleor revalidation webhook", () => {
@@ -343,6 +349,25 @@ describe("sitemap shards (COMMERCE-2 M5)", () => {
 		expect(new Set(taggedWith("sitemap:").map((call) => String(call[0])))).toEqual(
 			new Set(ALL_CHANNELS.map((channel) => `sitemap:${channel}`)),
 		);
+	});
+});
+
+describe("the product lists the sitemap shards keep in the process", () => {
+	it("marks only the event's channel's list due, so the next shard request rebuilds it in the background", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-10-30T12:00:00Z"));
+		const builds = { at: vi.fn(async () => "at"), cz: vi.fn(async () => "cz") };
+		await readSnapshot("at-eur\u0000x", "at-eur", builds.at);
+		await readSnapshot("cz-czk\u0000x", "cz-czk", builds.cz);
+
+		await post({ product: { slug: "n60012", channel: { slug: "at-eur" } } });
+		vi.setSystemTime(Date.now() + MIN_REFRESH_AFTER_EVENT_MS + 1);
+		await readSnapshot("at-eur\u0000x", "at-eur", builds.at);
+		await readSnapshot("cz-czk\u0000x", "cz-czk", builds.cz);
+		await new Promise<void>((resolve) => setImmediate(resolve));
+
+		expect(builds.at).toHaveBeenCalledTimes(2);
+		expect(builds.cz).toHaveBeenCalledTimes(1);
 	});
 });
 

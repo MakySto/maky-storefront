@@ -870,7 +870,7 @@ differ and are accepted:
   the whole LRU. On the box a page that is not in memory costs its first render, 0.19 to 0.31 s, and one that is costs
   2.3 to 2.6 ms; 4.9 % of the repeat visits came 25 to 60 minutes after the last one (1.0 % of all page views), which
   is the share this can touch. If the nginx log shows many visits to the same long-tail URL 20 to 60 minutes apart,
-  the first thing to try is to keep the large `sitemap` responses out of the shared LRU, then a larger LRU (watch the
+  the first thing to try is to keep the large `sitemap` responses out of the shared LRU (the product walk, the bulk of them, has been out of it since 2026-10-30: `docs/design/seo-indexing-bing.md` §8), then a larger LRU (watch the
   RSS of `next-server`, below, and the 10 GB `deploy-production.sh` wants free), then a bounded disk tier; not the
   stock behaviour back.
 - After a `pm2 restart` the pages of the markets the build did not make start cold and are rendered on their first
