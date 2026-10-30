@@ -32,6 +32,7 @@ import {
 import { getLocaleFromChannel } from "@/config/locale";
 import { parseProductContent, productIdsInContent } from "@/lib/editorjs";
 import { resolveContentProducts } from "@/lib/content-products";
+import { withGalleryPhotos } from "@/lib/gallery-photos";
 import { getComparisonLabels } from "@/lib/comparison-labels";
 import { getContentLabels } from "@/lib/content-labels";
 import { extendedWarrantyYears } from "@/lib/product-attributes";
@@ -192,7 +193,7 @@ async function ProductContent({
 		// The parts a set's box names, asked of this market's catalogue; none when the description names none.
 		resolveContentProducts(productIdsInContent(product.description), params.channel, locale),
 	]);
-	const content = parseProductContent(product.description, {
+	const content = parseProductContent(withGalleryPhotos(product.description, product.media), {
 		comparison: comparisonLabels,
 		content: { ...contentLabels, products: contentProducts },
 	});

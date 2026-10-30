@@ -16,8 +16,14 @@ import { orderConfirmationHandoff } from "./lib/order-confirmation-handoff";
 import { marketSlugRedirect, sameCfmProduct } from "./lib/market-slug-redirects";
 import { marketLanguageCode } from "./config/market-language";
 import { catalogRedirectTarget } from "./lib/catalog-content/redirects";
+import { productRedirectTarget } from "./lib/catalog-content/product-redirects";
 import { CATEGORY_ROUTE_PREFIX, isCategorySlug } from "./config/categories";
-import { categoryBaseSlug, categorySegment, isLocalizedRootSegment } from "./config/category-routes";
+import {
+	categoryBaseSlug,
+	categorySegment,
+	isLocalizedRootSegment,
+	renamedCategoryTarget,
+} from "./config/category-routes";
 import { categoryAliasTarget } from "./lib/catalog-content/category-aliases";
 import { keepLiveCategoriesFresh } from "./lib/live-categories";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/routing.generated";
@@ -140,6 +146,23 @@ async function movedMarketSlug(market: string, slug: string): Promise<string | n
 	const answer = await lookupTranslatedProduct(alias.newSlug, channel, language);
 	if (answer.verdict !== "exists") return null;
 	return sameCfmProduct(answer.externalReference, alias.cfmProductId) ? alias.newSlug : null;
+}
+
+/**
+ * The product slug that replaces a retired one — but only once the change is really in Saleor.
+ *
+ * `product-redirects.ts` names old → new. The old address keeps serving until CFM has renamed or
+ * folded the product, so a redirect needs both facts: the old slug is `absent` and the new one
+ * `exists`. Anything else, including a Saleor that does not answer, leaves the request alone.
+ */
+async function retiredProductSlug(market: string, slug: string, channel: string): Promise<string | null> {
+	const target = productRedirectTarget(market, slug);
+	if (!target) return null;
+	const [oldVerdict, newVerdict] = await Promise.all([
+		lookupExistence("product", slug, channel),
+		lookupExistence("product", target, channel),
+	]);
+	return oldVerdict === "absent" && newVerdict === "exists" ? target : null;
 }
 
 /**
@@ -380,6 +403,21 @@ async function route(request: NextRequest) {
 		}
 	}
 
+	// A RENAMED CATEGORY ROOT -> the new root, 301, once Saleor really holds the new slug.
+	//
+	// The Kargo category had one slug for its first night and has another since 2026-10-30
+	// (`config/category-routes.ts`). `renamedCategoryTarget` answers only when the live category list has the
+	// new slug and no longer the old one, so shipping this before the rename in Saleor changes nothing.
+	if (first && FRIENDLY_SLUGS.has(first) && segments.length >= 2) {
+		const rest = normalizePathname(pathname).split("/").filter(Boolean).slice(1);
+		const target = renamedCategoryTarget(first, rest);
+		if (target) {
+			const url = request.nextUrl.clone();
+			url.pathname = "/" + first + target;
+			return NextResponse.redirect(url, 301);
+		}
+	}
+
 	// RETIRED VEHICLE PAGE: /{market}/{catalogue path} -> the page that replaced it, 301.
 	//
 	// CFM retires a vehicle page when its car turns out to be a different car: the products
@@ -419,6 +457,25 @@ async function route(request: NextRequest) {
 			const url = request.nextUrl.clone();
 			url.pathname = "/" + first + target;
 			return NextResponse.redirect(url, 301);
+		}
+	}
+
+	// A RETIRED PRODUCT ADDRESS -> the product that replaces it, 301, once it is really there.
+	//
+	// CFM renames some products and folds others into one (Kargo roof versions, 2026-10-30). The
+	// table is `lib/catalog-content/product-redirects.ts`; `retiredProductSlug` redirects only after
+	// Saleor says the old slug is gone and the new one exists, so shipping the table first is safe.
+	// Decided on the NORMALIZED path, as the redirects around it. Slovakia is included: this is the
+	// one product redirect it has.
+	if (first && FRIENDLY_SLUGS.has(first)) {
+		const decision = classifyRoute(first, normalizePathname(pathname).split("/").filter(Boolean));
+		if (decision?.family === "product") {
+			const replacement = await retiredProductSlug(first, decision.slug, decision.channel);
+			if (replacement) {
+				const url = request.nextUrl.clone();
+				url.pathname = "/" + first + "/" + replacement;
+				return NextResponse.redirect(url, 301);
+			}
 		}
 	}
 

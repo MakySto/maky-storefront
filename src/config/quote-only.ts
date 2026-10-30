@@ -1,3 +1,5 @@
+import { KARGO_CATEGORY_SLUGS } from "./kargo-slugs";
+
 /**
  * Where a product the channel does not sell is shown WITHOUT a price, with the way to ask for a quote in its place.
  *
@@ -8,9 +10,9 @@
  * the quote button instead of it. So the rule is two facts together — the product is not for sale in this channel,
  * and its category is one of these — and never the category alone: in a market that sells the set, the price stays.
  *
- * Keyed by the BASE category slug, as `fitment-shelves.ts` is. Adding a slug here changes no URL and nothing else.
+ * Keyed by the BASE category slug, as `fitment-shelves.ts` is, and by both slugs Kargo has had (`KARGO_CATEGORY_SLUGS`). Adding a slug here changes no URL and nothing else.
  */
-const QUOTE_INSTEAD_OF_PRICE_CATEGORIES: ReadonlySet<string> = new Set(["stresne-nosice-a-kose-na-dodavky"]);
+const QUOTE_INSTEAD_OF_PRICE_CATEGORIES: ReadonlySet<string> = new Set(KARGO_CATEGORY_SLUGS);
 
 /**
  * Whether a surface shows no price for this product: it cannot be ordered in the channel and its category asks for a
