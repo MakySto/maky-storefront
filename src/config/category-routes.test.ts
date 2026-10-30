@@ -1,6 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { CATEGORY_SLUGS, STOREFRONT_CATEGORIES, categoryUrl } from "@/config/categories";
+import {
+	CATEGORY_SLUGS,
+	LIVE_CATEGORY_SLUGS_KEY,
+	STOREFRONT_CATEGORIES,
+	categoryUrl,
+} from "@/config/categories";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { MARKET_ROOT_SEGMENTS } from "@/lib/routing.generated";
 import {
@@ -295,5 +300,62 @@ describe("the Thule roof-rack category", () => {
 		for (const market of ["sk", "us", "ca"]) {
 			expect(isLocalizedRootSegment(market, "thule-stresne-nosice"), market).toBe(false);
 		}
+	});
+});
+
+describe("the Nordrive Kargo van category", () => {
+	// Typed out from CFM's message of 2026-10-30 (the slugs it writes as the category's translations in the nine EU
+	// markets). The USA and Canada are not in that run, so they keep the base slug.
+	const SEGMENTS: Readonly<Record<string, string>> = {
+		sk: "stresne-nosice-a-kose-na-dodavky",
+		cz: "stresni-nosice-a-kose-na-dodavky",
+		de: "dachtraeger-und-dachkoerbe-fuer-transporter",
+		at: "dachtraeger-und-dachkoerbe-fuer-transporter",
+		pl: "bagazniki-dachowe-i-kosze-do-samochodow-dostawczych",
+		hu: "tetocsomagtartok-es-tetokosarak-kisteherautokra",
+		ro: "bare-transversale-si-cosuri-portbagaj-pentru-autoutilitare",
+		fr: "barres-de-toit-et-galeries-pour-utilitaires",
+		it: "barre-portatutto-e-cesti-per-furgoni",
+		es: "barras-de-techo-y-bacas-para-furgonetas",
+		us: "stresne-nosice-a-kose-na-dodavky",
+		ca: "stresne-nosice-a-kose-na-dodavky",
+	};
+	const kargo = LOCALIZED_CATEGORIES.find(
+		(category) => category.baseSlug === "stresne-nosice-a-kose-na-dodavky",
+	);
+
+	it("has the segment CFM writes, in every market", () => {
+		const rows = categoryRouteTable().filter((row) => row.baseSlug === "stresne-nosice-a-kose-na-dodavky");
+		expect(rows).toHaveLength(12);
+		for (const row of rows) expect(row.path, row.market).toBe(`/${row.market}/${SEGMENTS[row.market]}`);
+	});
+
+	it("is the Saleor category it names (Category:34)", () => {
+		expect(kargo?.saleorId).toBe(btoa("Category:34"));
+	});
+
+	// The category is not in the build's own list: the running server learns it from Saleor.
+	const published = globalThis as typeof globalThis & { [LIVE_CATEGORY_SLUGS_KEY]?: ReadonlySet<string> };
+	beforeEach(() => {
+		published[LIVE_CATEGORY_SLUGS_KEY] = new Set(["stresne-nosice-a-kose-na-dodavky"]);
+	});
+	afterEach(() => {
+		delete published[LIVE_CATEGORY_SLUGS_KEY];
+	});
+
+	it("is one address, whether the link carries the base slug or the slug Saleor translated", () => {
+		for (const [market, segment] of Object.entries(SEGMENTS)) {
+			expect(categoryUrlFor(market, "stresne-nosice-a-kose-na-dodavky"), market).toBe(`/${segment}`);
+			expect(categoryUrlFor(market, segment), market).toBe(`/${segment}`);
+			expect(categoryBaseSlug(market, segment), market).toBe("stresne-nosice-a-kose-na-dodavky");
+		}
+	});
+
+	it("is a root only in the market's own spelling", () => {
+		expect(isLocalizedRootSegment("de", "dachtraeger-und-dachkoerbe-fuer-transporter")).toBe(true);
+		expect(isLocalizedRootSegment("at", "dachtraeger-und-dachkoerbe-fuer-transporter")).toBe(true);
+		expect(isLocalizedRootSegment("pl", "bagazniki-dachowe-i-kosze-do-samochodow-dostawczych")).toBe(true);
+		expect(isLocalizedRootSegment("cz", "dachtraeger-und-dachkoerbe-fuer-transporter")).toBe(false);
+		expect(isLocalizedRootSegment("sk", "stresne-nosice-a-kose-na-dodavky")).toBe(false);
 	});
 });

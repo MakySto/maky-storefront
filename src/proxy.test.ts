@@ -9,7 +9,7 @@ import { CHANNEL_MAP, cartSegment, marketHref } from "./lib/channel-map";
 import { catalogLanguageForMarket } from "./lib/catalog-content/language";
 import { CATALOG_REDIRECTS } from "./lib/catalog-content/redirects";
 import { BORROWED_ROUTES } from "./lib/catalog-content/borrowed-routes";
-import { CATEGORY_SLUGS } from "./config/categories";
+import { CATEGORY_SLUGS, LIVE_CATEGORY_SLUGS_KEY } from "./config/categories";
 import { categoryRouteTable } from "./config/category-routes";
 import { liveCategoriesStats, resetLiveCategoriesForTests } from "./lib/live-categories";
 import { installFakeSaleor } from "./lib/live-categories.testkit";
@@ -1024,6 +1024,53 @@ describe("the car-fridge category address", () => {
 			expect(res.headers.get("x-middleware-rewrite"), market).toContain(
 				`/${CHANNEL_MAP[market]!.saleorSlug}/categories/autochladnicky`,
 			);
+		}
+	});
+});
+
+/**
+ * The Nordrive Kargo van category (2026-10-30): CFM writes the translated slugs of the nine EU markets with the
+ * Kargo products. The category is not in the build's own list; the running server learns it from Saleor, which
+ * the test stands in for. The USA and Canada keep the base slug.
+ */
+describe("the Kargo category address", () => {
+	const BASE = "stresne-nosice-a-kose-na-dodavky";
+	const published = globalThis as typeof globalThis & { [LIVE_CATEGORY_SLUGS_KEY]?: ReadonlySet<string> };
+	beforeEach(() => {
+		published[LIVE_CATEGORY_SLUGS_KEY] = new Set([BASE]);
+	});
+	afterEach(() => {
+		delete published[LIVE_CATEGORY_SLUGS_KEY];
+	});
+	const rows = categoryRouteTable().filter((row) => row.baseSlug === BASE);
+	const eu = rows.filter((row) => !["sk", "us", "ca"].includes(row.market));
+
+	it("is served at the market's own address, onto the category route", async () => {
+		expect(eu).toHaveLength(9);
+		for (const row of rows) {
+			const res = await proxy(req(row.path));
+			expect(res.headers.get("location"), row.path).toBeNull();
+			expect(res.headers.get("x-middleware-rewrite"), row.path).toContain(
+				`/${row.channel}/categories/${row.segment}`,
+			);
+		}
+	});
+
+	it("sends the Slovak spelling in the nine EU markets to it with a 301, query kept", async () => {
+		for (const row of eu) {
+			const res = await proxy(req(`/${row.market}/${BASE}?utm_source=x`));
+			expect(res.status, row.market).toBe(301);
+			const to = new URL(res.headers.get("location")!);
+			expect(to.pathname, row.market).toBe(row.path);
+			expect(to.search, row.market).toBe("?utm_source=x");
+		}
+	});
+
+	it("leaves the USA and Canada on the base slug", async () => {
+		for (const market of ["us", "ca"]) {
+			const res = await proxy(req(`/${market}/${BASE}`));
+			expect(res.status, market).not.toBe(301);
+			expect(res.headers.get("location"), market).toBeNull();
 		}
 	});
 });
