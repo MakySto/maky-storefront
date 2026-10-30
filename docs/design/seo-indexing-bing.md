@@ -326,3 +326,56 @@ exceeded` lines for `stresne-nosice`, none with the sentence about waiting for a
 its error log, not checked from here). If the count does not fall and the lines are not `queueStarved`, the trigger is
 the re-read of the list after each catalogue event, and the next step is to refresh the list in the background with a
 longer deadline and not to expire it at once; this change does not do that.
+
+## 8. The product shards: why a cold one took 18 seconds, and what keeps it from being cold (2026-10-30)
+
+**What was seen.** On the box, `/sitemap.xml` answered in 0.8 s and `sk-products-1.xml` (6.3 MB) in 17.9 s cold. The deploy
+of PR 73 timed out three times on the check that reads that shard (`urlopen`, 60 s). The log carried
+`[upstream-error] SitemapCategories: deadline exceeded` for `sk-eur`, `hu-huf` and others.
+
+**Why a shard was slow.** A product shard is built from a walk of the whole Saleor catalogue, 92 to 120 pages of 100
+products read one after another (a cursor connection cannot be read in parallel): ~18 s for Slovakia, ~14 s for a foreign
+market, whose pages also carry every translation the exact-locale boundary reads (0.5 to 1 MB a page). The walk was held
+by Next's data cache under the tag `sitemap:{channel}`, and three things made that cache the wrong place for it:
+
+- `/api/revalidate` expires the tag **immediately** on every product, category and translation event of the channel, so
+  the first crawler after an event paid the whole walk again, in front of the crawler.
+- The entries are memory-only (`cache-handler.mjs`). Twelve markets of 0.5 to 1 MB pages are about a gigabyte against a
+  256 MB LRU that every rendered page shares: they were evicted before they were reused, and they pushed pages out
+  (CLAUDE.md §13.3.1 already named "keep the large `sitemap` responses out of the shared LRU" as the first thing to try).
+- A crawler asking for all shards, or the deploy gate reading all 36 one after another, starts up to twelve walks at once,
+  which is every Saleor slot (`maxConcurrent` 12 in `graphql.ts`); a page render and the deploy's own check queue behind
+  them. That is how a 18 s read becomes a 60 s one right after a restart.
+
+Not the cause: Saleor's speed (a page of the walk is ~0.15 s), the size of the shard (6.3 MB is far under Google's 50 MB
+and 50 000 URLs; it is built in memory and serialised in milliseconds once the list exists) and the index
+(`/sitemap.xml` is one count per market).
+
+**What changed.** `src/lib/seo/sitemap-snapshot.ts` keeps the walk's result (a slug and a date per product) per channel
+and language in the process, and `src/lib/seo/product-walk.ts` is the walk behind it.
+
+- A shard is answered from the kept list at once, whatever its age. A list older than an hour, or one a catalogue event
+  came after (and at least five minutes old: a CFM publish is hundreds of events, one rebuild covers them), is rebuilt in
+  the background and replaces the old one only when the walk is complete. A failed rebuild keeps the old list and waits a
+  minute; a list older than a day is not served unless a rebuild succeeds, so a catalogue that cannot be read for a day is
+  an error and not last week's list. A short list is still never served.
+- Rebuilds run two at a time, not twelve, and outside the request that started them (`runDetached`).
+- The walk no longer goes through the data cache (`cache: "no-store"`), so it does not fill the LRU.
+- The process builds every live market's list at boot (`prewarmProductWalks`, called from `instrumentation.ts`, about a
+  minute of two connections), so the first crawler and the deploy's check usually find them ready. `MAKY_SITEMAP_PREWARM=0`
+  switches it off.
+- The index counts from the kept list when there is one (no count query and no page), and plans from the count as before
+  when there is not.
+- `/api/revalidate` marks the channel's list due (`markSitemapStale`) next to the tag it already expires, which still
+  serves the categories, the count and the index's first page.
+
+**What it does not change.** The first walk in a process (right after a start, until the boot warm-up has reached that
+market) still takes 14 to 18 s, and a request that arrives then joins it. `SitemapCategories` read by the header
+(`market-assortment.ts`, 1.5 s deadline) is untouched: the sitemap's `pages` shard reads the same list without a deadline.
+The deploy script's `urlopen(timeout=60)` is untouched.
+
+**How to read the result.** After the deploy: the `[sitemap] warm-up: N of 12 product lists built in S s` line at boot;
+the nginx `request_time` of `/sitemaps/*-products-1.xml`, which should be tens of milliseconds from the first request
+after that line; and the count of `[sitemap] … rebuild failed` lines. Whether Googlebot and Bingbot ever gave up on a cold
+shard is not in anything read from here (Search Console's Sitemaps report would say "Couldn't fetch"); Bing's traffic was
+healthy at the last reading (952 requests in 40 hours, 936 of them 200, reading the shards).

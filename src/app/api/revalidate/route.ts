@@ -9,6 +9,7 @@ import { parseWebhookPayload } from "@/lib/saleor/webhook-payload";
 import { productMissTagFor } from "@/lib/saleor/product-cache-tags";
 import { forgetProductExistence } from "@/lib/route-existence";
 import { refreshLiveCategories } from "@/lib/live-categories";
+import { markSitemapStale } from "@/lib/seo/sitemap-snapshot";
 
 /**
  * Webhook endpoint for cache invalidation.
@@ -255,6 +256,10 @@ export async function POST(request: NextRequest) {
 			const sitemapTag = buildTag(CACHE_PROFILES.sitemap, { channel, locale });
 			revalidateTag(sitemapTag, IMMEDIATE);
 			revalidatedTags.push(sitemapTag);
+			// The product list the shards serve is kept in this process (`sitemap-snapshot.ts`), not in
+			// the data cache the tag above reaches. This marks it due for a rebuild in the background;
+			// the shards go on answering from the kept list until the new one is complete.
+			markSitemapStale(channel);
 		}
 
 		// Publishing, unpublishing or renaming changes which URLs exist, so the
