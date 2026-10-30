@@ -52,7 +52,17 @@ const PROFILE_MAJOR = 1;
 type CalloutKind = "tip" | "info" | "warn";
 const CALLOUT_KINDS: readonly CalloutKind[] = ["tip", "info", "warn"];
 
-type Role = "callout" | "benefits" | "inbox" | "features" | "steps" | "faq" | "specs" | "documents" | "video";
+type Role =
+	| "callout"
+	| "benefits"
+	| "inbox"
+	| "features"
+	| "steps"
+	| "faq"
+	| "specs"
+	| "documents"
+	| "video"
+	| "cta";
 const ROLES: readonly Role[] = [
 	"callout",
 	"benefits",
@@ -63,6 +73,7 @@ const ROLES: readonly Role[] = [
 	"specs",
 	"documents",
 	"video",
+	"cta",
 ];
 
 /** The fixed words of the blocks, in the shopper's language. Never taken from the document. */
@@ -89,6 +100,8 @@ export interface ContentLabels {
 	 * whose product is not in it is drawn without picture and link; nothing is guessed in its place.
 	 */
 	products?: ReadonlyMap<string, ContentProduct>;
+	/** What a box item that links to its product says it does: "Pozrieť diel". */
+	viewPart?: string;
 }
 
 /** What the catalogue answered for a product a document names. */
@@ -384,8 +397,9 @@ function inboxBody(items: Item[], labels: ContentLabels): Body {
 			item.content,
 			counted ? `<span class="maky-part-qty">${counted}</span>` : "",
 		)}`;
+		const go = labels.viewPart ? `<span class="maky-part-go">${escapeHtml(labels.viewPart)}</span>` : "";
 		const inner = product
-			? `<a class="maky-part-a" href="${escapeHtml(product.href)}">${body}</a>`
+			? `<a class="maky-part-a" href="${escapeHtml(product.href)}">${body}${go}</a>`
 			: `<span class="maky-part-a">${body}</span>`;
 		return `<li class="maky-part">${inner}</li>`;
 	});
@@ -472,6 +486,26 @@ function documentsBody(items: Item[]): Body {
 		);
 	}
 	return { html: `<ul class="maky-docs">${rows.join("")}</ul>` };
+}
+
+/**
+ * A call to action: one button, from a list of one item that is a single link ("Poradiť s výberom").
+ * The link is https or a path on this site, as a document's is, and opens in the same tab: it is
+ * a way on in the shop (the contact page, a form), not a file. The label is the link's own text.
+ */
+function ctaBody(items: Item[]): Body {
+	const [item, ...rest] = items;
+	if (!item || rest.length > 0 || item.children.length > 0) return refuse("a call to action is one link");
+	const found = DOCUMENT_LINK.exec(item.content);
+	const url = found ? decodeAmpersands(found[1]) : "";
+	if (!found || !isDocumentUrl(url) || plainText(found[3]).trim()) {
+		return refuse("a call to action is one link that is https or on this site");
+	}
+	const label = plainText(found[2]).trim();
+	if (!label) return refuse("a call to action has no label");
+	return {
+		html: `<div class="maky-cta"><a class="maky-cta-a" href="${escapeHtml(url)}">${label}</a></div>`,
+	};
 }
 
 /**
@@ -639,6 +673,9 @@ export function renderRole(
 					break;
 				case "documents":
 					body = documentsBody(items);
+					break;
+				case "cta":
+					body = ctaBody(items);
 					break;
 				default:
 					body = refuse(`${marker.role} is not drawn from a list`);

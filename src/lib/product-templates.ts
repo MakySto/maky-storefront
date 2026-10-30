@@ -241,7 +241,15 @@ export function descriptionSections(blocks: readonly string[]): string[][] {
 		if (sections.length === 0 || SECTION_START.test(html)) sections.push([html]);
 		else sections[sections.length - 1].push(html);
 	}
-	return sections;
+	// The steps of a procedure carry out what the section before them describes ("Montáž koša na
+	// vozidlo", then "Postup montáže"): they stay in that section's card, under their own heading,
+	// and are not a card of one short list.
+	return sections.reduce<string[][]>((merged, section) => {
+		const previous = merged[merged.length - 1];
+		if (previous && section[0].includes('class="maky-steps"')) previous.push(...section);
+		else merged.push(section);
+		return merged;
+	}, []);
 }
 
 export interface PageSections {

@@ -148,6 +148,7 @@ async function renderCompatibility({
 					saleorVariantId,
 					undefined,
 					catalogLanguageForChannel(channel),
+					locale,
 				),
 			);
 	if (presentation.kind === "intended-for") {

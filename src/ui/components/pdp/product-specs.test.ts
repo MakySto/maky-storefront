@@ -394,7 +394,26 @@ describe("a Kargo set's page", async () => {
 		expect(html.match(/<article/g)?.length).toBeGreaterThan(8);
 		expect(html.match(/id="product-description"/g)).toHaveLength(1);
 		// The heading of a section is the title of its card.
-		expect(html).toMatch(/<article[^>]*><div[^>]*><div><h3>Čo dostanete v balení<\/h3><\/div>/);
+		expect(html).toMatch(/<article[^>]*><div[^>]*><div[^>]*><div><h3>Čo dostanete v balení<\/h3><\/div>/);
+	});
+
+	it("puts a lone picture of a section beside its text and several in a row under it, none among the paragraphs", async () => {
+		const html = await page();
+		const cards = html
+			.split("<article")
+			.slice(1)
+			.filter((card) => card.includes("<figure>"));
+		expect(cards.length).toBeGreaterThan(2);
+		for (const card of cards) {
+			const [textColumn] = card.split("sm:grid-cols-2");
+			// Whichever way it is set, the text column holds no picture.
+			expect(textColumn.split("<figure>")[0].includes("<h3>")).toBe(true);
+		}
+		const beside = cards.filter((card) => card.includes("lg:grid-cols-["));
+		const rows = cards.filter((card) => card.includes("sm:grid-cols-2"));
+		expect(beside.length).toBeGreaterThan(0);
+		expect(rows.length).toBeGreaterThan(0);
+		expect(beside[0]).toContain("lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]");
 	});
 
 	it("does not draw the gallery's photo beside it: the description shows its own pictures", async () => {

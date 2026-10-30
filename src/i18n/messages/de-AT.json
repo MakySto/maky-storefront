@@ -154,11 +154,13 @@
 				"play": "Video abspielen",
 				"note": "YouTube · wird erst nach dem Klick geladen"
 			},
+			"viewPart": "Teil ansehen",
 			"years": "{count, plural, one {# Jahr} other {# Jahre}}"
 		},
 		"keyFeatures": "Wichtigste Merkmale",
 		"productDescription": "Produktbeschreibung",
 		"imageCounter": "Bild {current} von {total}",
+		"illustrativeImage": "Symbolbild",
 		"trustPaymentTitle": "Sichere Zahlung",
 		"trustPaymentText": "Verschlüsselte Verbindung",
 		"trustShippingTitle": "Versand",
