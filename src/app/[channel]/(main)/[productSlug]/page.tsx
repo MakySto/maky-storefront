@@ -30,11 +30,12 @@ import {
 	VariantSectionError,
 } from "@/ui/components/pdp";
 import { getLocaleFromChannel } from "@/config/locale";
-import { parseProductContent } from "@/lib/editorjs";
+import { parseProductContent, productIdsInContent } from "@/lib/editorjs";
+import { resolveContentProducts } from "@/lib/content-products";
 import { getComparisonLabels } from "@/lib/comparison-labels";
 import { getContentLabels } from "@/lib/content-labels";
 import { extendedWarrantyYears } from "@/lib/product-attributes";
-import { liftSections, sheetFacts, templateFor } from "@/lib/product-templates";
+import { layoutFor, liftSections, sheetFacts, templateFor } from "@/lib/product-templates";
 import { isSourceLocale } from "@/lib/saleor/exact-locale";
 import { publicSku } from "@/lib/product-code";
 import { publicEan } from "@/lib/product-ean";
@@ -185,17 +186,20 @@ async function ProductContent({
 	const selectedVariant = variants.find((v) => v.id === selectedVariantId);
 
 	const locale = getLocaleFromChannel(params.channel);
-	const [comparisonLabels, contentLabels] = await Promise.all([
+	const [comparisonLabels, contentLabels, contentProducts] = await Promise.all([
 		getComparisonLabels(locale),
 		getContentLabels(locale, params.channel),
+		// The parts a set's box names, asked of this market's catalogue; none when the description names none.
+		resolveContentProducts(productIdsInContent(product.description), params.channel, locale),
 	]);
 	const content = parseProductContent(product.description, {
 		comparison: comparisonLabels,
-		content: contentLabels,
+		content: { ...contentLabels, products: contentProducts },
 	});
 	// The template the description names (or the generic one) decides which parts of it stand in
-	// cards of their own and how the key facts and parameters are put together.
-	const template = templateFor(content?.template);
+	// cards of their own and how the key facts and parameters are put together; a description that
+	// carries pictures of its own is set as sections (`layoutFor`).
+	const template = layoutFor(templateFor(content?.template), content?.blocks ?? []);
 	const sections = content ? liftSections(content.blocks, template) : null;
 	// Whatever could not be drawn as intended is said once, in the log: no text was removed, but a
 	// producer that sends a block the reader cannot read should not go unnoticed — a warning that
@@ -411,8 +415,14 @@ async function ProductContent({
 					careInstructions={careInstructions}
 					locale={locale}
 					// The product's own second photo beside the description, when the gallery has one:
-					// never a stock picture, never one the gallery does not already show.
-					image={images[1] ? { url: images[1].url, alt: images[1].alt ?? product.name } : null}
+					// never a stock picture, never one the gallery does not already show. Not where the
+					// description is set as sections: it shows its own pictures, and the gallery's file
+					// is often the very one the section about the fastening shows again.
+					image={
+						!template.sections && images[1]
+							? { url: images[1].url, alt: images[1].alt ?? product.name }
+							: null
+					}
 				/>
 
 				{/* Who makes it — name, postal address, e-mail — for a brand the shop has the maker's details of

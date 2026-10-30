@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { type ProductContentBlock } from "./editorjs";
 import {
+	descriptionSections,
 	GENERIC_FACTS,
 	groupParameters,
+	hasOwnPictures,
+	layoutFor,
 	liftSections,
 	PRODUCT_TEMPLATES,
 	sheetFacts,
@@ -316,5 +319,58 @@ describe("groupParameters", () => {
 			["power", [attr("rated_power")]],
 			["other", [attr("zz")]],
 		]);
+	});
+});
+
+describe("layoutFor", () => {
+	const pictured: ProductContentBlock[] = [
+		{ html: "<h3>Úvod</h3>" },
+		{ html: "<figure><img src='/a.jpg'></figure>" },
+	];
+	const plain: ProductContentBlock[] = [{ html: "<p>Úvod</p>" }];
+
+	it("sets a roof-rack description with pictures of its own as sections and lifts its documents", () => {
+		const laid = layoutFor(templateFor("stresny-nosic"), pictured);
+		expect(laid.sections).toBe(true);
+		expect(laid.lift).toEqual(["specs", "documents"]);
+		expect(hasOwnPictures(pictured)).toBe(true);
+	});
+
+	it("leaves a roof-rack description without pictures of its own as the one card it was approved as", () => {
+		expect(layoutFor(templateFor("stresny-nosic"), plain)).toBe(templateFor("stresny-nosic"));
+	});
+
+	it("leaves a template that did not ask for it alone, pictures or not", () => {
+		expect(layoutFor(templateFor("autochladnicka"), pictured).sections).toBeUndefined();
+		expect(layoutFor(templateFor(null), pictured).sections).toBeUndefined();
+	});
+});
+
+describe("descriptionSections", () => {
+	it("starts a section at every heading the producer wrote, and one for what stands before the first", () => {
+		const sections = descriptionSections([
+			"<p>Lead</p>",
+			"<h3>A</h3>",
+			"<p>a1</p>",
+			"<figure></figure>",
+			'<section class="maky-blk not-prose"><h3 class="maky-h">B</h3><ul></ul></section>',
+			"<aside class='maky-callout'></aside>",
+			"<h3>C</h3>",
+		]);
+		expect(sections).toEqual([
+			["<p>Lead</p>"],
+			["<h3>A</h3>", "<p>a1</p>", "<figure></figure>"],
+			[
+				'<section class="maky-blk not-prose"><h3 class="maky-h">B</h3><ul></ul></section>',
+				"<aside class='maky-callout'></aside>",
+			],
+			["<h3>C</h3>"],
+		]);
+	});
+
+	it("drops and reorders nothing", () => {
+		const blocks = ["<h3>A</h3>", "<p>1</p>", "<h3>B</h3>", "<p>2</p>"];
+		expect(descriptionSections(blocks).flat()).toEqual(blocks);
+		expect(descriptionSections([])).toEqual([]);
 	});
 });

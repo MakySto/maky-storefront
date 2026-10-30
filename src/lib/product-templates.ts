@@ -61,6 +61,14 @@ export interface ProductTemplate {
 	 * product with the attribute but another template keeps the statutory line.
 	 */
 	warrantyRef?: string;
+	/**
+	 * A description of this template that carries pictures of its own (`<figure>`) is set as sections —
+	 * a card for each heading, its pictures beside the text — and its documents get a card of their
+	 * own (`layoutFor`). A description without pictures of its own stays one card, as it was approved.
+	 */
+	sectionsWhenPictured?: boolean;
+	/** Set by `layoutFor`: the description is laid out as one card per section (`descriptionSections`). */
+	sections?: boolean;
 }
 
 const attr = (key: string): string => `cfm:attribute:${key}`;
@@ -179,6 +187,7 @@ const STRESNY_NOSIC: ProductTemplate = {
 	facts: [],
 	factsFromSheet: true,
 	groups: [],
+	sectionsWhenPictured: true,
 };
 
 export const PRODUCT_TEMPLATES: Readonly<Record<string, ProductTemplate>> = {
@@ -194,6 +203,46 @@ export function templateFor(id: string | null | undefined): ProductTemplate {
 }
 
 // ─── Sections of the description ─────────────────────────────────────────────────────────────
+
+/** Whether the description carries pictures of its own (`image` blocks), as against the gallery's. */
+export function hasOwnPictures(blocks: readonly ProductContentBlock[]): boolean {
+	return blocks.some((block) => block.html.includes("<figure"));
+}
+
+/**
+ * The template a page is laid out with once its description has been read. A template that asks for
+ * it (`sectionsWhenPictured`) sets a pictured description as sections and lifts its documents; the
+ * gallery's second photo is then not drawn beside the description (the page asks `template.sections`),
+ * because the description shows its own and the same file would stand there twice.
+ */
+export function layoutFor(
+	template: ProductTemplate,
+	blocks: readonly ProductContentBlock[],
+): ProductTemplate {
+	if (!template.sectionsWhenPictured || !hasOwnPictures(blocks)) return template;
+	return {
+		...template,
+		lift: template.lift.includes("documents") ? template.lift : [...template.lift, "documents"],
+		sections: true,
+	};
+}
+
+/** A block that opens a section: a plain heading, or a role that carries its heading (`maky-h`). */
+const SECTION_START = /^(?:<h3[\s>]|<section class="maky-blk[^"]*"><h3 class="maky-h">)/;
+
+/**
+ * The description's blocks cut into sections, in document order: a new section starts at every
+ * heading the producer wrote (`h3`), and whatever stands before the first heading is a section of
+ * its own. Nothing is dropped or reordered.
+ */
+export function descriptionSections(blocks: readonly string[]): string[][] {
+	const sections: string[][] = [];
+	for (const html of blocks) {
+		if (sections.length === 0 || SECTION_START.test(html)) sections.push([html]);
+		else sections[sections.length - 1].push(html);
+	}
+	return sections;
+}
 
 export interface PageSections {
 	/** The blocks that stay in the description's card. */

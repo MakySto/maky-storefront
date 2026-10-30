@@ -161,6 +161,11 @@ const CONTENT_CLASS_TOKENS: readonly string[] = [
 	// one per role
 	"maky-benefits",
 	"maky-inbox",
+	// a box item that names a part: its picture, its link and its count
+	"maky-part",
+	"maky-part-img",
+	"maky-part-a",
+	"maky-part-qty",
 	"maky-features",
 	"maky-feature",
 	"maky-steps",
