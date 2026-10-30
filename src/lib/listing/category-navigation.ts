@@ -188,13 +188,35 @@ export function buildCategoryNavigation(
 }
 
 /**
+ * The word that joins two things in each market's language. A name whose rest opens with one
+ * is the second half of a pair, not a qualifier: "Strešné nosiče a koše na dodávky" in the row
+ * of "Strešné nosiče" must not shrink to "A koše na dodávky".
+ */
+const JOINING_WORDS: ReadonlySet<string> = new Set([
+	"a",
+	"i",
+	"und",
+	"and",
+	"y",
+	"et",
+	"e",
+	"és",
+	"și",
+	"ve",
+]);
+
+/**
  * "Nosiče bicyklov na strechu" in the row of "Nosiče bicyklov" reads "Na strechu": the row
  * already says whose sub-categories these are. A name that does not start with the family's
- * name — "Príslušenstvo k nosičom bicyklov" — is left whole.
+ * name — "Príslušenstvo k nosičom bicyklov" — is left whole, and so is one that goes on with
+ * "and …" (see `JOINING_WORDS`), which would read as a fragment.
  */
 export function withinFamily(name: string, familyName: string, locale: string): string {
 	const prefix = `${familyName} `;
 	if (!name.toLocaleLowerCase(locale).startsWith(prefix.toLocaleLowerCase(locale))) return name;
 	const rest = name.slice(prefix.length).trim();
-	return rest ? rest.charAt(0).toLocaleUpperCase(locale) + rest.slice(1) : name;
+	if (!rest) return name;
+	const firstWord = rest.split(/\s+/, 1)[0].toLocaleLowerCase(locale);
+	if (JOINING_WORDS.has(firstWord)) return name;
+	return rest.charAt(0).toLocaleUpperCase(locale) + rest.slice(1);
 }

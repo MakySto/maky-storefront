@@ -1,5 +1,6 @@
 import xss from "xss";
 import {
+	contentProductIds,
 	hasText,
 	isUnknownRole,
 	readEnvelope,
@@ -8,6 +9,7 @@ import {
 	type ContentBlock,
 	type ContentIssue,
 	type ContentLabels,
+	type ContentProduct,
 	type SpecFact,
 } from "./editorjs-content";
 import {
@@ -19,7 +21,7 @@ import {
 } from "./editorjs-sanitize";
 
 export { TABLE_SCROLL_CLASS };
-export type { ContentLabels };
+export type { ContentLabels, ContentProduct };
 
 type EditorJSBlock = ContentBlock;
 
@@ -364,6 +366,18 @@ function parseContent(content: string): EditorJSContent | null {
 /** Check whether a string is a well-shaped Editor.js document. */
 export function isEditorJSContent(content: string | null | undefined): boolean {
 	return Boolean(content && parseContent(content));
+}
+
+/**
+ * The Saleor ids of the products a typed document names in the boxes of its set (`meta.productId`),
+ * for the page to ask the catalogue about before it draws them. At most `MAX_CONTENT_PRODUCTS`:
+ * a box that names more is not one a shopper reads.
+ */
+export const MAX_CONTENT_PRODUCTS = 24;
+export function productIdsInContent(content: string | null | undefined): string[] {
+	const parsed = content ? parseContent(content) : null;
+	if (!parsed || !readEnvelope(parsed.version).typed) return [];
+	return contentProductIds(parsed.blocks).slice(0, MAX_CONTENT_PRODUCTS);
 }
 
 /** One rendered block of a description, in document order. */

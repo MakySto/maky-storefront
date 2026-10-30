@@ -8,7 +8,7 @@ import { getComparisonLabels } from "@/lib/comparison-labels";
 import { getContentLabels } from "@/lib/content-labels";
 import { parseProductContent } from "@/lib/editorjs";
 import { formatProductAttributeValue, type AttributeInput } from "@/lib/product-attributes";
-import { liftSections, sheetFacts, templateFor } from "@/lib/product-templates";
+import { layoutFor, liftSections, sheetFacts, templateFor } from "@/lib/product-templates";
 import { ProductHighlights } from "./product-highlights";
 import { ProductSpecs } from "./product-specs";
 
@@ -358,5 +358,93 @@ describe.each([
 		const plain = attribute("warranty_years", "Warranty", "3");
 		expect(formatProductAttributeValue(plain, locale, undefined, years, beside)).toEqual([years(3)]);
 		expect(years(3)).toMatch(/3/);
+	});
+});
+
+/**
+ * A Nordrive Kargo page, from the sample both repositories are to agree on (`set-kargo-crafter-NKR9944`):
+ * the description carries pictures of its own, so it is set as sections, the maker's PDFs get their card and
+ * the gallery's second photo is not drawn beside it.
+ */
+describe("a Kargo set's page", async () => {
+	const sample = readFileSync(
+		path.join(process.cwd(), "docs/contracts/maky-content/set-kargo-crafter-NKR9944.description.json"),
+		"utf8",
+	);
+	const labels = await getContentLabels(SK, "sk-eur");
+	const content = parseProductContent(sample, { content: labels });
+	const template = layoutFor(templateFor(content?.template), content?.blocks ?? []);
+	const sections = liftSections(content?.blocks ?? [], template);
+	const page = () =>
+		render(
+			ProductSpecs({
+				descriptionHtml: sections.description,
+				documents: sections.documents,
+				specs: sections.specs,
+				template,
+				attributes: [],
+				locale: SK,
+				image: { url: "/gallery-second.jpg", alt: "druhá fotka galérie" },
+			}),
+		);
+
+	it("is set as one card for each heading, under one heading for the whole description", async () => {
+		const html = await page();
+		expect(html).toContain('<h2 class="sr-only">Popis produktu</h2>');
+		expect(html.match(/<article/g)?.length).toBeGreaterThan(8);
+		expect(html.match(/id="product-description"/g)).toHaveLength(1);
+		// The heading of a section is the title of its card.
+		expect(html).toMatch(/<article[^>]*><div[^>]*><div><h3>Čo dostanete v balení<\/h3><\/div>/);
+	});
+
+	it("does not draw the gallery's photo beside it: the description shows its own pictures", async () => {
+		const html = await page();
+		expect(html).not.toContain("gallery-second.jpg");
+		expect(html).toContain("<figure>");
+	});
+
+	it("sets the maker's PDFs in a card of their own, with a jump link, and not among the installation steps", async () => {
+		const html = await page();
+		expect(html).toContain('href="#product-documents"');
+		expect(html).toContain('<article id="product-documents"');
+		expect(html.match(/lampa\.it\/pdf\/AZ\/N\/N10205-M-01\.pdf/g)).toHaveLength(1);
+	});
+
+	it("keeps the set's sheet in its own card and every section of the document, in its order", async () => {
+		const html = await page();
+		expect(html).toContain('<section id="technical-parameters"');
+		const order = [
+			"Prečo kôš Kargo Rack",
+			"Čo dostanete v balení",
+			"Doplnky ku košu",
+			"Montáž a návody",
+			"Dôležité upozornenia",
+		];
+		const at = order.map((heading) => html.indexOf(heading));
+		expect(at.every((index) => index > 0)).toBe(true);
+		expect([...at].sort((a, b) => a - b)).toEqual(at);
+	});
+
+	it("is one card with the gallery photo beside it for a description that carries no pictures of its own", async () => {
+		const thule = parseProductContent(
+			readFileSync(
+				path.join(process.cwd(), "docs/contracts/maky-content/set-thule-71732.description.json"),
+				"utf8",
+			),
+			{ content: labels },
+		);
+		const laid = layoutFor(templateFor(thule?.template), thule?.blocks ?? []);
+		expect(laid.sections).toBeUndefined();
+		const html = await render(
+			ProductSpecs({
+				descriptionHtml: liftSections(thule?.blocks ?? [], laid).description,
+				template: laid,
+				attributes: [],
+				locale: SK,
+				image: { url: "/gallery-second.jpg", alt: "druhá fotka galérie" },
+			}),
+		);
+		expect(html.match(/<article/g)).toHaveLength(1);
+		expect(html).toContain("gallery-second.jpg");
 	});
 });
