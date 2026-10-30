@@ -19,8 +19,8 @@ import { CATALOG_REDIRECTS, catalogRedirectTarget } from "./redirects";
  *
  * None of the eight has a successor generation with a page of its own (the surviving generation has no
  * page in the export), so every pair goes one level up, to the model page, which the vehicle route
- * renders. Sedici and Peugeot 806 stay in this batch: their generation pages are retired in the third batch
- * (`redirects.merged-nordrive-z26.test.ts`), the model pages stay.
+ * renders. Sedici and Peugeot 806 stay: their generations and pages do not change, and nothing here may
+ * redirect them.
  */
 const PAGES: readonly (readonly [from: string, to: string])[] = [
 	["citroen/c4-cactus/2014-2018", "citroen/c4-cactus"],
@@ -35,7 +35,9 @@ const PAGES: readonly (readonly [from: string, to: string])[] = [
 
 /** Pages that stay as they are, and must never be answered with a redirect. */
 const STAY = [
+	"fiat/sedici/2006",
 	"fiat/sedici",
+	"peugeot/806/1994-2002",
 	"peugeot/806",
 	"nissan/navara-pick-up/d23",
 	"citroen/grand-c4-spacetourer/3a",
