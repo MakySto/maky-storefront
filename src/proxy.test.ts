@@ -1034,44 +1034,87 @@ describe("the car-fridge category address", () => {
  * the test stands in for. The USA and Canada keep the base slug.
  */
 describe("the Kargo category address", () => {
-	const BASE = "stresne-nosice-a-kose-na-dodavky";
+	const BASE = "kargo-stresne-nosice-a-stresne-kose-na-dodavky";
+	const OLD = "stresne-nosice-a-kose-na-dodavky";
 	const published = globalThis as typeof globalThis & { [LIVE_CATEGORY_SLUGS_KEY]?: ReadonlySet<string> };
-	beforeEach(() => {
-		published[LIVE_CATEGORY_SLUGS_KEY] = new Set([BASE]);
-	});
 	afterEach(() => {
 		delete published[LIVE_CATEGORY_SLUGS_KEY];
 	});
 	const rows = categoryRouteTable().filter((row) => row.baseSlug === BASE);
 	const eu = rows.filter((row) => !["sk", "us", "ca"].includes(row.market));
+	const location = (res: Response) => {
+		const value = res.headers.get("location");
+		return value ? new URL(value) : null;
+	};
 
-	it("is served at the market's own address, onto the category route", async () => {
-		expect(eu).toHaveLength(9);
-		for (const row of rows) {
-			const res = await proxy(req(row.path));
-			expect(res.headers.get("location"), row.path).toBeNull();
-			expect(res.headers.get("x-middleware-rewrite"), row.path).toContain(
-				`/${row.channel}/categories/${row.segment}`,
-			);
-		}
+	describe("once Saleor holds the new slug", () => {
+		beforeEach(() => {
+			published[LIVE_CATEGORY_SLUGS_KEY] = new Set([BASE]);
+		});
+
+		it("is served at the market's own address, onto the category route", async () => {
+			expect(eu).toHaveLength(9);
+			for (const row of rows) {
+				const res = await proxy(req(row.path));
+				expect(res.headers.get("location"), row.path).toBeNull();
+				expect(res.headers.get("x-middleware-rewrite"), row.path).toContain(
+					`/${row.channel}/categories/${row.segment}`,
+				);
+			}
+		});
+
+		it("sends the base slug in the nine EU markets to it with a 301, query kept", async () => {
+			for (const row of eu) {
+				const res = await proxy(req(`/${row.market}/${BASE}?utm_source=x`));
+				expect(res.status, row.market).toBe(301);
+				expect(location(res)?.pathname, row.market).toBe(row.path);
+				expect(location(res)?.search, row.market).toBe("?utm_source=x");
+			}
+		});
+
+		it("sends the old Slovak root, in every market, straight to the market's new address", async () => {
+			for (const row of rows) {
+				const res = await proxy(req(`/${row.market}/${OLD}?utm_source=x`));
+				expect(res.status, row.market).toBe(301);
+				expect(location(res)?.pathname, row.market).toBe(row.path);
+				expect(location(res)?.search, row.market).toBe("?utm_source=x");
+			}
+		});
+
+		it("keeps what is below the old root and answers the router's .rsc request", async () => {
+			const res = await proxy(req(`/sk/${OLD}/anything`));
+			expect(location(res)?.pathname).toBe(`/sk/${BASE}/anything`);
+			const rsc = await proxy(req(`/sk/${OLD}.rsc`));
+			expect(rsc.status).toBe(301);
+			expect(location(rsc)?.pathname).toBe(`/sk/${BASE}`);
+		});
+
+		it("never sends the new address anywhere", async () => {
+			const res = await proxy(req(`/sk/${BASE}`));
+			expect(res.status).not.toBe(301);
+			expect(res.headers.get("location")).toBeNull();
+		});
 	});
 
-	it("sends the Slovak spelling in the nine EU markets to it with a 301, query kept", async () => {
-		for (const row of eu) {
-			const res = await proxy(req(`/${row.market}/${BASE}?utm_source=x`));
-			expect(res.status, row.market).toBe(301);
-			const to = new URL(res.headers.get("location")!);
-			expect(to.pathname, row.market).toBe(row.path);
-			expect(to.search, row.market).toBe("?utm_source=x");
-		}
-	});
+	describe("before CFM has renamed the category in Saleor", () => {
+		it("keeps the old Slovak root as the live category", async () => {
+			published[LIVE_CATEGORY_SLUGS_KEY] = new Set([OLD]);
+			const res = await proxy(req(`/sk/${OLD}`));
+			expect(res.status).not.toBe(301);
+			expect(res.headers.get("location")).toBeNull();
+			expect(res.headers.get("x-middleware-rewrite")).toContain(`/sk-eur/categories/${OLD}`);
+		});
 
-	it("leaves the USA and Canada on the base slug", async () => {
-		for (const market of ["us", "ca"]) {
-			const res = await proxy(req(`/${market}/${BASE}`));
-			expect(res.status, market).not.toBe(301);
-			expect(res.headers.get("location"), market).toBeNull();
-		}
+		it("moves nobody while the old and the new slug are both there", async () => {
+			published[LIVE_CATEGORY_SLUGS_KEY] = new Set([OLD, BASE]);
+			const res = await proxy(req(`/sk/${OLD}`));
+			expect(res.headers.get("location")).toBeNull();
+		});
+
+		it("moves nobody when Saleor's list is not loaded", async () => {
+			const res = await proxy(req(`/sk/${OLD}`));
+			expect(res.status).not.toBe(301);
+		});
 	});
 });
 
