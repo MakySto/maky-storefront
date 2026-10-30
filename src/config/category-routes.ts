@@ -52,6 +52,15 @@ import { categoryRoutePath, isCategorySlug } from "./categories";
  * 3348ecc6). The USA and Canada followed in a second run (CFM d221edc9) with the English translation: `EN` for
  * `us-usd` and `EN_CA` for `ca-cad`, both with the slug `thule-roof-racks`, so one `en` segment serves both.
  *
+ * ## Nordrive Kargo (2026-10-30)
+ *
+ * `stresne-nosice-a-kose-na-dodavky` (Category:34, a child of the root) holds the roof bars and baskets for vans.
+ * CFM writes its translations with the slugs below to the nine EU markets (CS, DE and AT, PL, HU, RO, FR, IT,
+ * ES; CFM message of 2026-10-30), together with the Kargo products. They are not `<root>-…` spellings, so the
+ * row spells them out. The English entry stays the base slug: the USA and Canada are not in that run (Kargo is
+ * quote-only there), and an unmapped segment is the base slug anyway. When CFM writes an English slug, it
+ * replaces it. The row is checked against what Saleor holds once CFM has written the translations.
+ *
  * ## What this does NOT move
  *
  * Product slugs, model and generation slugs, and the three RELEASE-4 pages each foreign
@@ -110,6 +119,19 @@ const CAR_FRIDGE_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
 	en: "portable-refrigerators-freezers",
 };
 
+const KARGO_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
+	sk: "stresne-nosice-a-kose-na-dodavky",
+	cs: "stresni-nosice-a-kose-na-dodavky",
+	de: "dachtraeger-und-dachkoerbe-fuer-transporter",
+	pl: "bagazniki-dachowe-i-kosze-do-samochodow-dostawczych",
+	hu: "tetocsomagtartok-es-tetokosarak-kisteherautokra",
+	it: "barre-portatutto-e-cesti-per-furgoni",
+	fr: "barres-de-toit-et-galeries-pour-utilitaires",
+	es: "barras-de-techo-y-bacas-para-furgonetas",
+	ro: "bare-transversale-si-cosuri-portbagaj-pentru-autoutilitare",
+	en: "stresne-nosice-a-kose-na-dodavky",
+};
+
 export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 	{
 		baseSlug: "stresne-nosice",
@@ -140,6 +162,11 @@ export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 				language === "sk" ? "thule-stresne-nosice" : `thule-${ROOF_RACK_SEGMENTS[language]}`,
 			]),
 		) as Record<CatalogLanguage, string>,
+	},
+	{
+		baseSlug: "stresne-nosice-a-kose-na-dodavky",
+		saleorId: "Q2F0ZWdvcnk6MzQ=",
+		segments: KARGO_SEGMENTS,
 	},
 ];
 
