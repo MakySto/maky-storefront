@@ -1,0 +1,396 @@
+{
+ "version": "maky-content/1:stresny-nosic",
+ "blocks": [
+  {
+   "type": "header",
+   "data": {
+    "level": 3,
+    "text": "Strešný kôš Nordrive Kargo Rack pre Volkswagen Crafter"
+   }
+  },
+  {
+   "type": "paragraph",
+   "data": {
+    "text": "Modulárny kôš 420 × 180 × 7 cm s upevňovacou sadou pre váš Volkswagen Crafter vo verzii L4 s vysokou strechou, ktorý z dodávky urobí pracovný nástroj. Vhodný na rebríky, profily aj dlhé materiály."
+   }
+  },
+  {
+   "type": "paragraph",
+   "data": {
+    "text": "Kôš sa dodáva ako súprava dielov, ktoré pred montážou zostavíte podľa návodu výrobcu."
+   }
+  },
+  {
+   "type": "header",
+   "data": {
+    "level": 3,
+    "text": "Prečo kôš Kargo Rack"
+   }
+  },
+  {
+   "type": "list",
+   "data": {
+    "style": "unordered",
+    "items": [
+     "Eloxovaná hliníková konštrukcia odolná voči korózii",
+     "Bočnice s T-drážkami na osadenie príslušenstva Nordrive",
+     "Modulárny systém, ktorý môžete neskôr dopĺňať",
+     "Upevňovacia sada určená pre vašu verziu dodávky"
+    ]
+   },
+   "id": "maky:benefits"
+  },
+  {
+   "type": "header",
+   "data": {
+    "level": 3,
+    "text": "Pre ktoré vozidlo je určený"
+   }
+  },
+  {
+   "type": "paragraph",
+   "data": {
+    "text": "Zostava koša je podľa aplikačného zoznamu výrobcu určená pre toto vozidlo:"
+   }
+  },
+  {
+   "type": "list",
+   "data": {
+    "style": "unordered",
+    "items": [
+     "<strong>Vozidlo:</strong> Volkswagen Crafter od 01/2017",
+     "<strong>Verzia:</strong> dĺžka L4, vysoká strecha",
+     "<strong>Upevnenie:</strong> na pevné body strechy"
+    ]
+   }
+  },
+  {
+   "type": "header",
+   "data": {
+    "level": 3,
+    "text": "Využitie pri práci"
+   }
+  },
+  {
+   "type": "paragraph",
+   "data": {
+    "text": "Kôš uvoľní nákladový priestor dodávky a na streche unesie dlhé materiály, ktoré by sa dovnútra nezmestili. Bočnice vysoké 7 cm pomáhajú udržať náklad na mieste."
+   }
+  },
+  {
+   "type": "image",
+   "data": {
+    "file": {
+     "url": "https://carfitmanager.com/media/fixture/nkr9944-on-car.jpg"
+    },
+    "caption": "Ilustračná fotografia systému Kargo Rack na vozidle. Fotografia nezobrazuje túto konkrétnu zostavu.",
+    "withBorder": false,
+    "stretched": false,
+    "withBackground": false
+   }
+  },
+  {
+   "type": "header",
+   "data": {
+    "level": 3,
+    "text": "Konštrukcia a upevnenie"
+   }
+  },
+  {
+   "type": "paragraph",
+   "data": {
+    "text": "Ložnú plochu 420 × 180 cm tvorí 16 spodných priečok a po stranách ju ohraničujú bočnice vysoké 7 cm. T-drážky v bočniciach umožňujú osadiť vhodné príslušenstvo Nordrive."
+   }
+  },
+  {
+   "type": "image",
+   "data": {
+    "file": {
+     "url": "https://carfitmanager.com/media/fixture/n30394-kit.jpg"
+    },
+    "caption": "Upevňovacia sada N30394.",
+    "withBorder": false,
+    "stretched": false,
+    "withBackground": false
+   }
+  },
+  {
+   "type": "header",
+   "data": {
+    "level": 3,
+    "text": "Čo dostanete v balení"
+   }
+  },
+  {
+   "type": "paragraph",
+   "data": {
+    "text": "Základ tvorí strešný kôš NKR9944 a upevňovacia sada N30394 pre Volkswagen Crafter."
+   }
+  },
+  {
+   "type": "list",
+   "data": {
+    "style": "unordered",
+    "items": [
+     {
+      "content": "<strong>Zostavovacia sada pre bočnice 7 cm</strong> koncové a spojovacie diely koša",
+      "items": [],
+      "meta": {
+       "productId": "UHJvZHVjdDoxMDIwNQ==",
+       "qty": 2,
+       "unit": "sady",
+       "code": "N10205"
+      }
+     },
+     {
+      "content": "<strong>Bočnice 210 cm</strong> dva páry, spolu štyri segmenty bočníc",
+      "items": [],
+      "meta": {
+       "productId": "UHJvZHVjdDoxMDIwOQ==",
+       "qty": 2,
+       "unit": "páry",
+       "code": "N10209"
+      }
+     },
+     {
+      "content": "<strong>Spodné priečky 180 cm</strong> dve balenia po osem priečok, spolu 16",
+      "items": [],
+      "meta": {
+       "productId": "UHJvZHVjdDoxMDIxNA==",
+       "qty": 2,
+       "unit": "balenia po 8 priečok",
+       "code": "N10214"
+      }
+     },
+     {
+      "content": "<strong>Montážna sada pre vozidlo</strong> upevnenie určené pre túto aplikáciu Craftera",
+      "items": [],
+      "meta": {
+       "qty": 1,
+       "unit": "sada",
+       "code": "N30394"
+      }
+     }
+    ]
+   },
+   "id": "maky:inbox"
+  },
+  {
+   "type": "header",
+   "data": {
+    "level": 3,
+    "text": "Doplnky ku košu"
+   }
+  },
+  {
+   "type": "paragraph",
+   "data": {
+    "text": "Kôš si môžete doplniť podľa výbavy, ktorú vozíte pravidelne. K tomuto košu so šírkou 180 cm sa hodia tieto doplnky Nordrive:"
+   }
+  },
+  {
+   "type": "image",
+   "data": {
+    "file": {
+     "url": "https://carfitmanager.com/media/fixture/n10234-roller.jpg"
+    },
+    "caption": "Zadný nakladací valec N10234",
+    "withBorder": false,
+    "stretched": false,
+    "withBackground": false
+   }
+  },
+  {
+   "type": "paragraph",
+   "data": {
+    "text": "Pri častom nakladaní rebríka či dlhých profilov oceníte oporu pri ich nasúvaní na kôš zo zadnej strany vozidla."
+   }
+  },
+  {
+   "type": "image",
+   "data": {
+    "file": {
+     "url": "https://carfitmanager.com/media/fixture/n10224-upper.jpg"
+    },
+    "caption": "Predná a zadná horná priečka N10224",
+    "withBorder": false,
+    "stretched": false,
+    "withBackground": false
+   }
+  },
+  {
+   "type": "paragraph",
+   "data": {
+    "text": "Pár horných priečok doplní konštrukciu na prednom a zadnom konci koša."
+   }
+  },
+  {
+   "type": "header",
+   "data": {
+    "level": 3,
+    "text": "Montáž a návody"
+   }
+  },
+  {
+   "type": "paragraph",
+   "data": {
+    "text": "Strešné tyče pod kôš nepotrebujete. Postup spája zostavenie koša s jeho osadením na vozidlo."
+   }
+  },
+  {
+   "type": "header",
+   "data": {
+    "level": 4,
+    "text": "Postup montáže"
+   }
+  },
+  {
+   "type": "list",
+   "data": {
+    "style": "ordered",
+    "items": [
+     "Zostavte konštrukciu koša z bočníc, zostavovacej sady a spodných priečok podľa návodu.",
+     "Osaďte upevňovaciu sadu na pevné body strechy vozidla.",
+     "Položte kôš na upevňovaciu sadu a dotiahnite spoje predpísaným momentom."
+    ]
+   },
+   "id": "maky:steps"
+  },
+  {
+   "type": "header",
+   "data": {
+    "level": 4,
+    "text": "Návody výrobcu (PDF)"
+   }
+  },
+  {
+   "type": "list",
+   "data": {
+    "style": "unordered",
+    "items": [
+     "<a href=\"https://www.lampa.it/pdf/AZ/N/N10205-M-01.pdf\">Zostavenie koša Kargo Rack (N10205)</a> PDF",
+     "<a href=\"https://www.lampa.it/pdf/AZ/N/N30394-M-01.pdf\">Montáž upevňovacej sady N30394</a> PDF"
+    ]
+   },
+   "id": "maky:documents"
+  },
+  {
+   "type": "header",
+   "data": {
+    "level": 3,
+    "text": "Technické parametre"
+   }
+  },
+  {
+   "type": "table",
+   "id": "maky:specs",
+   "data": {
+    "withHeadings": false,
+    "content": [
+     [
+      "Rozmer koša",
+      "420 × 180 cm"
+     ],
+     [
+      "Výška bočníc",
+      "7 cm"
+     ],
+     [
+      "Materiál",
+      "eloxovaný hliník"
+     ],
+     [
+      "Upevnenie",
+      "pevné body strechy"
+     ],
+     [
+      "Kód koša",
+      "NKR9944"
+     ],
+     [
+      "Upevňovacia sada",
+      "N30394"
+     ]
+    ]
+   }
+  },
+  {
+   "type": "header",
+   "data": {
+    "level": 3,
+    "text": "Dôležité upozornenia"
+   }
+  },
+  {
+   "type": "list",
+   "data": {
+    "style": "unordered",
+    "items": [
+     "Pred objednaním overte verziu vozidla: dĺžku, výšku strechy a typ upevnenia.",
+     "Nosnosť upevňovacej sady nie je nosnosť koša. Platí nižší z limitov."
+    ]
+   },
+   "id": "maky:callout:warn"
+  },
+  {
+   "type": "header",
+   "data": {
+    "level": 3,
+    "text": "O značke Nordrive"
+   }
+  },
+  {
+   "type": "paragraph",
+   "data": {
+    "text": "Nordrive je značka talianskej spoločnosti Lampa S.p.A. so sídlom vo Viadane."
+   }
+  },
+  {
+   "type": "header",
+   "data": {
+    "level": 3,
+    "text": "Často kladené otázky"
+   }
+  },
+  {
+   "type": "list",
+   "data": {
+    "style": "unordered",
+    "items": [
+     {
+      "content": "Príde kôš už zmontovaný?",
+      "items": [
+       {
+        "content": "Dodáva sa ako súprava dielov: zostavovacia sada, bočnice a spodné priečky.",
+        "items": []
+       }
+      ]
+     },
+     {
+      "content": "Môžem kôš neskôr doplniť?",
+      "items": [
+       {
+        "content": "Áno. Doplnky Nordrive nájdete v časti o doplnkoch vyššie.",
+        "items": []
+       }
+      ]
+     }
+    ]
+   },
+   "id": "maky:faq"
+  },
+  {
+   "type": "header",
+   "data": {
+    "level": 3,
+    "text": "Pripravte svoj Crafter na ďalšiu zákazku"
+   }
+  },
+  {
+   "type": "paragraph",
+   "data": {
+    "text": "Pošlite nám verziu vozidla a povedzte, čo pravidelne vozíte. Pomôžeme vám overiť, či zostava sedí."
+   }
+  }
+ ]
+}

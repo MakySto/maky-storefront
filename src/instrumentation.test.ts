@@ -7,6 +7,12 @@ const { prewarmLiveCategories } = vi.hoisted(() => ({
 }));
 vi.mock("./lib/live-categories", () => ({ prewarmLiveCategories }));
 
+// Same for the sitemap's product lists: their own tests walk a fake Saleor; boot is only asked whether it starts them.
+const { prewarmProductWalks } = vi.hoisted(() => ({
+	prewarmProductWalks: vi.fn(async (): Promise<void> => {}),
+}));
+vi.mock("./lib/seo/product-walk", () => ({ prewarmProductWalks }));
+
 import { register } from "./instrumentation";
 import { __forgetRootContext, hasRootContext } from "./lib/async/detached";
 import { datasetHashFromText } from "./lib/fitment/dataset-hash";
@@ -79,6 +85,7 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 	vi.restoreAllMocks();
 	prewarmLiveCategories.mockClear();
+	prewarmProductWalks.mockClear();
 	__resetFitmentMemo();
 	__forgetRootContext();
 	stopMemoryLog();
@@ -266,6 +273,40 @@ describe("the live category list at boot", () => {
 		await register();
 
 		expect(prewarmLiveCategories).not.toHaveBeenCalled();
+	});
+});
+
+/**
+ * 2026-10-30: the first request for a market's product shard walked Saleor for 14 to 18 seconds, and the
+ * deploy's own check waited for it. The lists are built in the background at boot instead.
+ */
+describe("the sitemap's product lists at boot", () => {
+	it("starts building them on a production server, without holding the start", async () => {
+		let finish!: () => void;
+		prewarmProductWalks.mockImplementationOnce(() => new Promise<void>((resolve) => (finish = resolve)));
+
+		// `register` returns while the warm-up is still running.
+		await boot({ ...SECRETS, NODE_ENV: "production" });
+		await vi.waitFor(() => expect(prewarmProductWalks).toHaveBeenCalledTimes(1));
+		finish();
+	});
+
+	it("is left alone during next build, in development and when switched off", async () => {
+		await boot({ ...SECRETS, NODE_ENV: "production", NEXT_PHASE: "phase-production-build" });
+		await boot({ ...SECRETS, NODE_ENV: "development" });
+		await boot({ ...SECRETS, NODE_ENV: "production", MAKY_SITEMAP_PREWARM: "0" });
+		await new Promise<void>((resolve) => setImmediate(resolve));
+
+		expect(prewarmProductWalks).not.toHaveBeenCalled();
+	});
+
+	it("does not stop the start when the warm-up fails", async () => {
+		prewarmProductWalks.mockRejectedValueOnce(new Error("Saleor is down"));
+
+		const captured = await boot({ ...SECRETS, NODE_ENV: "production" });
+		await vi.waitFor(() =>
+			expect(captured.warn.join("\n")).toContain("[sitemap] warm-up failed: Saleor is down"),
+		);
 	});
 });
 

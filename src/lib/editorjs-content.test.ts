@@ -44,7 +44,7 @@ import {
 	type ComparisonLabels,
 	type ContentLabels,
 } from "./editorjs";
-import { isUnknownRole, readEnvelope, readMarker, renderRole } from "./editorjs-content";
+import { contentProductIds, isUnknownRole, readEnvelope, readMarker, renderRole } from "./editorjs-content";
 import { FEATURE_ICONS, ICON_NAMES, sanitizeBlock } from "./editorjs-sanitize";
 import { liftSections, sheetFacts, templateFor } from "./product-templates";
 
@@ -1153,5 +1153,127 @@ describe("the styles of the typed blocks", () => {
 		const rule = css.match(/\.maky-video\s*\{([^}]*)\}/)?.[1] ?? "";
 		expect(rule).toMatch(/max-width:\s*42rem/);
 		expect(rule).toMatch(/margin-inline:\s*auto/);
+	});
+});
+
+/**
+ * A set's box that names its parts (`meta` of an item of `maky:inbox`): how many, of what unit, which code and
+ * which published product. The picture and the link are the catalogue's answer for the product, not the
+ * document's own words.
+ */
+describe("the contents of the box, when an item names a part", () => {
+	const PART_ID = "UHJvZHVjdDoxMDIwNQ==";
+	const part = (meta: Record<string, unknown> | null, text = "<strong>Bočnice 210 cm</strong> dva páry") => ({
+		content: text,
+		items: [],
+		...(meta ? { meta } : {}),
+	});
+	const box = (items: unknown[]) =>
+		doc([header("Obsah balenia", 3), list("maky:inbox", items)], RACK_VERSION);
+	const withProducts = (products: ContentLabels["products"]) => (content: string) =>
+		(parseProductContent(content, { content: { ...labels, products } })?.blocks ?? [])
+			.map((block) => block.html)
+			.join("\n");
+
+	it("draws the count, the unit and the code under the part's name", () => {
+		const html = htmlOf(box([part({ qty: 2, unit: "páry", code: "N10209" })]));
+		expect(html).toContain('<span class="maky-part-qty">2 × páry · N10209</span>');
+		// Not in the catalogue (or never asked): the package mark stays and nothing is a link.
+		expect(html).toContain("maky-ico-package");
+		expect(html).not.toContain("<a ");
+	});
+
+	it("makes the whole part a link to its page, with the catalogue's picture, when the catalogue has it", () => {
+		const html = withProducts(
+			new Map([
+				[
+					PART_ID,
+					{
+						href: "/sk/bocnice-210-n10209",
+						image: "/_next/image?url=https%3A%2F%2Fcdn.example%2Fa.webp&w=256&q=75",
+					},
+				],
+			]),
+		)(box([part({ productId: PART_ID, qty: 2, unit: "páry", code: "N10209" })]));
+		expect(html).toContain('<a class="maky-part-a" href="/sk/bocnice-210-n10209">');
+		expect(html).toContain(
+			'<img src="/_next/image?url=https%3A%2F%2Fcdn.example%2Fa.webp&amp;w=256&amp;q=75"',
+		);
+		expect(html).not.toContain("maky-ico-package");
+	});
+
+	it("draws no link for a product the catalogue did not answer for: the id alone is never an address", () => {
+		const html = withProducts(new Map())(box([part({ productId: PART_ID, qty: 1, unit: "sada" })]));
+		expect(html).not.toContain("<a ");
+		expect(html).not.toContain("<img");
+		expect(html).toContain("1 × sada");
+	});
+
+	it("takes a picture only from the image optimizer, whatever the map holds", () => {
+		const html = withProducts(new Map([[PART_ID, { href: "/sk/x", image: "https://evil.example/a.jpg" }]]))(
+			box([part({ productId: PART_ID })]),
+		);
+		expect(html).toContain('<a class="maky-part-a" href="/sk/x">');
+		expect(html).not.toContain("evil.example");
+		expect(html).not.toContain("<img");
+	});
+
+	it("reads only a whole positive count, a short unit and a code of a code's shape", () => {
+		const html = htmlOf(
+			box([
+				part({ qty: 0, unit: "<b>sada</b>", code: "N1 <script>" }),
+				part({ qty: 2.5, code: "2×N10035+N30302" }),
+			]),
+		);
+		expect(html).not.toContain("script");
+		expect(html).not.toContain("0 ×");
+		expect(html).not.toContain("2.5");
+		expect(html).toContain('<span class="maky-part-qty">sada</span>');
+		expect(html).toContain('<span class="maky-part-qty">2×N10035+N30302</span>');
+	});
+
+	it("leaves an item that carries no part untouched", () => {
+		expect(htmlOf(box([part(null)]))).toContain('<li><span class="maky-tile"');
+	});
+
+	it("lists the products a document names once, in order, from the boxes only", () => {
+		const blocks = (
+			JSON.parse(
+				box([
+					part({ productId: "AAA=" }),
+					part({ productId: "BBB=" }),
+					part({ productId: "AAA=" }),
+					part({ productId: "not an id" }),
+				]),
+			) as { blocks: Parameters<typeof contentProductIds>[0] }
+		).blocks;
+		expect(contentProductIds(blocks)).toEqual(["AAA=", "BBB="]);
+		const elsewhere = [{ type: "list", id: "maky:benefits", data: { items: [part({ productId: "CCC=" })] } }];
+		expect(contentProductIds(elsewhere as never)).toEqual([]);
+	});
+});
+
+describe("a maker's PDF among the documents", () => {
+	it("does not carry the mark that says a file is saved, which a PDF opened in a tab on the maker's host does not do", () => {
+		const html = htmlOf(
+			doc(
+				[
+					header("Návody", 3),
+					list("maky:documents", [
+						'<a href="https://www.lampa.it/pdf/AZ/N/N10205-M-01.pdf">Zostavenie koša</a> PDF',
+					]),
+				],
+				RACK_VERSION,
+			),
+		);
+		expect(html).toContain('<a class="maky-doc-a" href="https://www.lampa.it/pdf/AZ/N/N10205-M-01.pdf"');
+		expect(html).not.toContain("maky-ico-download");
+		const onSite = htmlOf(
+			doc(
+				[header("Návody", 3), list("maky:documents", ['<a href="/docs/n.pdf">Návod</a> PDF'])],
+				RACK_VERSION,
+			),
+		);
+		expect(onSite).toContain("maky-ico-download");
 	});
 });

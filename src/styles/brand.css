@@ -1263,6 +1263,63 @@
 		line-height: 1.5;
 	}
 
+	/* A part of the box the document names: its picture, its name, how many of it, and the link to
+	   its page where the catalogue has one. The whole card is the link. */
+	.maky-inbox > li.maky-part {
+		display: block;
+		padding: 0;
+	}
+
+	.maky-part-a {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 0.875rem;
+		align-items: center;
+		padding: 0.625rem 0.875rem 0.625rem 0.625rem;
+		border-radius: var(--radius-xs);
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.maky-part-img {
+		display: grid;
+		place-items: center;
+		width: 5rem;
+		height: 5rem;
+		overflow: hidden;
+		border-radius: var(--radius-xs);
+		background: var(--surface-secondary);
+	}
+
+	.maky-part-img > img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+
+	.maky-part-qty {
+		display: block;
+		margin-top: 0.25rem;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--brand);
+	}
+
+	.maky-inbox > li.maky-part:has(a.maky-part-a:focus-visible) {
+		outline: var(--focus-ring-width) solid var(--focus-ring);
+		outline-offset: var(--focus-ring-offset);
+	}
+
+	@media (hover: hover) {
+		.maky-inbox > li.maky-part:has(a.maky-part-a:hover) {
+			border-color: var(--brand);
+		}
+
+		a.maky-part-a:hover .maky-t {
+			text-decoration: underline;
+		}
+	}
+
 	/* Features: an icon tile and a short text; the caption is the small print under it. */
 	.maky-features {
 		display: grid;

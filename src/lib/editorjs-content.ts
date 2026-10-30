@@ -83,6 +83,20 @@ export interface ContentLabels {
 	 * link to `href`. Absent where no wording is known, and the sentence then stays text.
 	 */
 	configurator?: { phrase: string; href: string };
+	/**
+	 * The products a document names (`meta.productId` of a box item), as this market's catalogue answered
+	 * for them: only a product that is published here and complete in this language is in the map. An item
+	 * whose product is not in it is drawn without picture and link; nothing is guessed in its place.
+	 */
+	products?: ReadonlyMap<string, ContentProduct>;
+}
+
+/** What the catalogue answered for a product a document names. */
+export interface ContentProduct {
+	/** The product's page in this market. */
+	href: string;
+	/** The picture, as an address of this site's image optimizer; null when the product has none. */
+	image: string | null;
 }
 
 export interface ContentBlock {
@@ -304,14 +318,77 @@ function benefitsBody(items: Item[]): Body {
 	return { html: `<ul class="maky-benefits">${rows.join("")}</ul>` };
 }
 
-function inboxBody(items: Item[]): Body {
+/** The code of a part: letters, digits and the few marks a set code carries (`2×N10035+N30302`). */
+const PART_CODE = /^[A-Za-z0-9][A-Za-z0-9 ._×+-]{0,39}$/;
+/** A Saleor global id, as `meta.productId` carries it. */
+const PRODUCT_ID = /^[A-Za-z0-9+/=_-]{1,100}$/;
+/** The only picture address a part may carry: this site's image optimizer, asked by `content-products.ts`. */
+const OPTIMIZED_IMAGE = /^\/_next\/image\?url=[^\s"'<>]+$/;
+
+interface PartMeta {
+	qty: number | null;
+	unit: string;
+	code: string;
+	productId: string;
+}
+
+/** What an item of the box says about the part it names: how many, of what unit, which code, which product. */
+function partMeta(item: Item): PartMeta {
+	const meta = item.meta ?? {};
+	const qty =
+		typeof meta.qty === "number" && Number.isInteger(meta.qty) && meta.qty > 0 && meta.qty < 1000
+			? meta.qty
+			: null;
+	const unit = typeof meta.unit === "string" ? plainText(sanitizeInline(meta.unit)).trim().slice(0, 40) : "";
+	const code = typeof meta.code === "string" && PART_CODE.test(meta.code.trim()) ? meta.code.trim() : "";
+	const productId =
+		typeof meta.productId === "string" && PRODUCT_ID.test(meta.productId) ? meta.productId : "";
+	return { qty, unit, code, productId };
+}
+
+/** The ids of the products the boxes of a document name, in order, each once. */
+export function contentProductIds(blocks: readonly ContentBlock[]): string[] {
+	const ids = new Set<string>();
+	for (const block of blocks) {
+		if (readMarker(block.id)?.role !== "inbox" || block.type !== "list") continue;
+		const items = Array.isArray(block.data?.items) ? block.data.items : [];
+		for (const raw of items) {
+			const item = readItem(raw);
+			if (item && partMeta(item).productId) ids.add(partMeta(item).productId);
+		}
+	}
+	return [...ids];
+}
+
+function inboxBody(items: Item[], labels: ContentLabels): Body {
 	if (items.some((item) => item.children.length > 0)) return refuse("an item of the box has nested items");
-	const rows = items.map(
-		(item) =>
-			`<li><span class="maky-tile" aria-hidden="true">${ico("package")}</span>${textParts(
+	const rows = items.map((item) => {
+		const part = partMeta(item);
+		const product = part.productId ? labels.products?.get(part.productId) : undefined;
+		const image = product?.image && OPTIMIZED_IMAGE.test(product.image) ? product.image : null;
+		const counted = [part.qty ? `${part.qty}${part.unit ? ` × ${part.unit}` : ""}` : part.unit, part.code]
+			.filter(Boolean)
+			.join(" · ");
+		// An item that says nothing but its text is the box item it always was.
+		if (!counted && !product) {
+			return `<li><span class="maky-tile" aria-hidden="true">${ico("package")}</span>${textParts(
 				item.content,
-			)}</li>`,
-	);
+			)}</li>`;
+		}
+		const lead = image
+			? `<span class="maky-part-img" aria-hidden="true"><img src="${escapeHtml(
+					image,
+				)}" alt="" width="128" height="128" loading="lazy" decoding="async"></span>`
+			: `<span class="maky-tile" aria-hidden="true">${ico("package")}</span>`;
+		const body = `${lead}${textParts(
+			item.content,
+			counted ? `<span class="maky-part-qty">${counted}</span>` : "",
+		)}`;
+		const inner = product
+			? `<a class="maky-part-a" href="${escapeHtml(product.href)}">${body}</a>`
+			: `<span class="maky-part-a">${body}</span>`;
+		return `<li class="maky-part">${inner}</li>`;
+	});
 	return { html: `<ul class="maky-inbox">${rows.join("")}</ul>` };
 }
 
@@ -387,7 +464,11 @@ function documentsBody(items: Item[]): Body {
 				`<span class="maky-txt"><a class="maky-doc-a" href="${escapeHtml(
 					url,
 				)}" target="_blank" rel="noopener noreferrer">${title}</a>` +
-				`${meta ? `<span class="maky-d">${meta}</span>` : ""}</span>${ico("download")}</li>`,
+				// The mark at the end says "this saves a file", which is true of a file on this site; a
+				// maker's PDF on its own host is opened in a tab, and the page does not say it saves.
+				`${meta ? `<span class="maky-d">${meta}</span>` : ""}</span>${
+					url.startsWith("/") ? ico("download") : ""
+				}</li>`,
 		);
 	}
 	return { html: `<ul class="maky-docs">${rows.join("")}</ul>` };
@@ -545,7 +626,7 @@ export function renderRole(
 					body = benefitsBody(items);
 					break;
 				case "inbox":
-					body = inboxBody(items);
+					body = inboxBody(items, labels);
 					break;
 				case "steps":
 					body = stepsBody(items);

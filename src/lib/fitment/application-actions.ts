@@ -14,6 +14,7 @@
 import { loadFitmentDataset } from "./provider";
 import { collectApplicationsForProduct } from "./resolve";
 import { type FitmentApplication, type FitmentProductRef, vehicleNodeName } from "./contract";
+import { pickConditionText } from "./conditions";
 import {
 	APPLICATIONS_PAGE_SIZE,
 	EMPTY_APPLICATION_PAGE,
@@ -21,11 +22,29 @@ import {
 	type ApplicationRow,
 } from "./application-types";
 
+/** The application's conditions in the reader's words, each one once (same code and same text is one). */
+function rowConditions(
+	application: FitmentApplication,
+	locale: string | undefined,
+): ApplicationRow["conditions"] {
+	const seen = new Set<string>();
+	const out: ApplicationRow["conditions"] = [];
+	for (const condition of application.conditions) {
+		const text = locale ? pickConditionText(condition.text, locale) : null;
+		const key = `${condition.code}::${text ?? ""}`;
+		if (seen.has(key)) continue;
+		seen.add(key);
+		out.push({ code: condition.code, text });
+	}
+	return out;
+}
+
 function toRow(
 	application: FitmentApplication,
 	names: { make: string; model: string; generation: string },
 	/** This product's own row inside the application. Status is never the group's. */
 	ref: FitmentProductRef | undefined,
+	locale: string | undefined,
 ): ApplicationRow {
 	return {
 		applicationId: application.applicationId,
@@ -40,10 +59,15 @@ function toRow(
 		bodyTypes: application.qualifiers.bodyTypes ?? null,
 		doors: application.qualifiers.doors ?? null,
 		conditionCodes: application.conditions.map((c) => c.code),
+		conditions: rowConditions(application, locale),
 		// "The source accepted this row." Not "somebody checked the car" — nothing in the
 		// catalogue is `cfm-verified` yet, and the list must not imply otherwise.
 		accepted: ref?.qaStatus === "accepted",
 	};
+}
+
+function conditionSortKey(row: ApplicationRow): string {
+	return row.conditions.map((c) => c.text ?? c.code).join("|");
 }
 
 export async function listProductApplications(
@@ -54,6 +78,8 @@ export async function listProductApplications(
 		limit?: number;
 		/** The reading language: vehicles are named as CFM states them for it (`displayNames`). */
 		language?: string;
+		/** The full locale ("sk-SK"): the dataset states its condition texts per locale, not per language. */
+		locale?: string;
 	} = {},
 ): Promise<ApplicationPage> {
 	const { dataset, status } = await loadFitmentDataset();
@@ -80,6 +106,7 @@ export async function listProductApplications(
 					generation: vehicleNodeName(generation, options.language),
 				},
 				application.products.find((p) => p.saleorProductId === saleorProductId),
+				options.locale,
 			),
 		);
 	}
@@ -94,7 +121,9 @@ export async function listProductApplications(
 		(a, b) =>
 			a.makeName.localeCompare(b.makeName) ||
 			a.modelName.localeCompare(b.modelName) ||
-			b.yearFrom - a.yearFrom,
+			b.yearFrom - a.yearFrom ||
+			// One car, several versions: they keep the order the source gave them, however many pages are asked for.
+			conditionSortKey(a).localeCompare(conditionSortKey(b)),
 	);
 
 	const offset = Math.max(0, options.offset ?? 0);

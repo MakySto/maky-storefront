@@ -11,6 +11,7 @@ import {
 	type AttributeInput,
 } from "@/lib/product-attributes";
 import {
+	descriptionSections,
 	groupParameters,
 	templateFor,
 	TEMPERATURE_RANGE_REF,
@@ -53,6 +54,24 @@ const DESCRIPTION_PROSE = cn(
 	"prose-headings:text-text-primary prose-headings:tracking-[-0.01em] prose-p:text-text-secondary prose-a:text-text-link prose-strong:text-text-primary prose-li:text-text-secondary",
 	"[&>div:first-child>p:first-child]:text-text-primary [&>div:first-child>p:first-child]:text-[1.0625rem] [&>div:first-child>p:first-child]:font-medium sm:[&>div:first-child>p:first-child]:text-lg",
 	"prose-ul:pl-5 prose-li:my-1 prose-li:marker:text-brand",
+);
+
+/**
+ * A description set as sections: one card for each heading the producer wrote. The first picture of a
+ * section stands beside its text from `lg` (in a column of its own, the whole picture and never cropped),
+ * and in its place among the blocks on a phone; a section's heading is the card's title.
+ */
+const SECTION_PROSE = cn(
+	"[&>div>h3]:before:bg-brand [&>div>h3]:before:mb-4 [&>div>h3]:before:block [&>div>h3]:before:h-[3px] [&>div>h3]:before:w-10 [&>div>h3]:before:rounded-full [&>div>h3]:before:content-[''] [&>div>h3]:mt-0 [&>div>h3]:mb-4 [&>div>h3]:text-2xl [&>div>h3]:font-extrabold [&>div>h3]:tracking-[-0.025em] [&>div>h3]:text-text-primary sm:[&>div>h3]:text-[1.875rem]",
+	"[&_figure]:bg-surface-secondary [&_figure]:ring-border-subtle [&_figure]:mx-0 [&_figure]:my-5 [&_figure]:overflow-hidden [&_figure]:rounded-md [&_figure]:p-0 [&_figure]:ring-1",
+	"[&_figure_img]:mx-auto [&_figure_img]:my-0 [&_figure_img]:h-auto [&_figure_img]:max-h-80 [&_figure_img]:w-full [&_figure_img]:object-contain",
+	"[&_figcaption]:text-text-secondary [&_figcaption]:bg-surface-card [&_figcaption]:border-border-subtle [&_figcaption]:m-0 [&_figcaption]:border-t [&_figcaption]:px-4 [&_figcaption]:py-3 [&_figcaption]:text-left [&_figcaption]:text-sm [&_figcaption]:leading-snug",
+	// From `lg` the first picture of a section stands in a column of its own beside the section's text,
+	// whatever its place among the blocks; a second picture stays in the text, where CFM wrote it.
+	"lg:has-[figure]:grid lg:has-[figure]:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:has-[figure]:items-start lg:has-[figure]:gap-x-10 lg:has-[figure]:[grid-template-rows:repeat(9,auto)_1fr] lg:[&>div]:col-start-1",
+	"lg:[&>div:has(figure)]:col-start-2 lg:[&>div:has(figure)]:row-span-[10] lg:[&>div:has(figure)]:row-start-1",
+	"lg:[&>div:has(figure)~div:has(figure)]:col-start-1 lg:[&>div:has(figure)~div:has(figure)]:row-span-1 lg:[&>div:has(figure)~div:has(figure)_figure]:max-w-sm lg:[&>div:has(figure)~div:has(figure)]:row-start-auto",
+	"lg:[&>div:has(figure)_figure]:mt-0",
 );
 
 /** The scrolling box `parseEditorJSToHtml` puts around a model comparison table. */
@@ -133,6 +152,10 @@ export async function ProductSpecs({
 	if (!hasDescription && !hasTechnicalParameters && !hasComparison && !hasDocuments) return null;
 
 	// The sections in the order the cards follow each other.
+	// A description that carries pictures of its own is set as one card for each of its sections.
+	const sectionCards =
+		template.sections && descriptionHtml?.length ? descriptionSections(descriptionHtml) : null;
+
 	const sections = [
 		hasDescription && { href: "#product-description", label: t("description") },
 		hasComparison && { href: "#model-comparison", label: t("content.navComparison") },
@@ -170,7 +193,33 @@ export async function ProductSpecs({
 			{/* The description with the product's photo beside its opening, then the parameters at
 			    full width in two columns — the approved page's order. */}
 			<div className="mt-5 grid gap-4 lg:mt-6 lg:gap-5">
-				{hasDescription && (
+				{hasDescription && sectionCards && (
+					<>
+						<h2 className="sr-only">{t("productDescription")}</h2>
+						{sectionCards.map((blocks, index) => (
+							<article
+								// The sections have no identity of their own: the producer's order is the key.
+								key={`${index}-${blocks[0]}`}
+								id={index === 0 ? "product-description" : undefined}
+								className={cn(CARD, "flow-root", "scroll-mt-[calc(var(--header-offset)+1rem)]")}
+							>
+								<div className={cn(DESCRIPTION_PROSE, SECTION_PROSE)}>
+									{blocks.map((html) => (
+										<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
+									))}
+								</div>
+								{index === sectionCards.length - 1 && careInstructions && (
+									<div className="border-border-subtle bg-surface-secondary mt-8 rounded-xs border p-4 sm:p-5">
+										<h3 className="text-text-primary mb-2 font-semibold">{t("careInstructions")}</h3>
+										<p className="text-text-secondary leading-relaxed">{careInstructions}</p>
+									</div>
+								)}
+							</article>
+						))}
+					</>
+				)}
+
+				{hasDescription && !sectionCards && (
 					<article
 						id="product-description"
 						aria-labelledby="product-description-heading"

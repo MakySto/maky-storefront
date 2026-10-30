@@ -20,7 +20,7 @@ import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
 import { listProductApplications } from "@/lib/fitment/application-actions";
 import { type ApplicationPage, type ApplicationRow } from "@/lib/fitment/application-types";
-import { BODY_LABEL_KEY, ROOF_LABEL_KEY } from "./verdict-presentation";
+import { BODY_LABEL_KEY, CONDITION_LABEL_KEY, ROOF_LABEL_KEY } from "./verdict-presentation";
 import { type BodyType, type RoofType } from "@/lib/fitment/contract";
 
 type Props = {
@@ -28,6 +28,8 @@ type Props = {
 	initial: ApplicationPage;
 	/** The reading language, handed back to the server action so every page names vehicles alike. */
 	language?: string;
+	/** The full locale: the dataset states a condition's words per locale, so the action needs it, not only the language. */
+	locale?: string;
 };
 
 /** Above this many vehicles the list gets its search field. */
@@ -37,6 +39,37 @@ function yearsOf(row: ApplicationRow, t: ReturnType<typeof useTranslations>): st
 	return row.yearTo === null
 		? t("yearFromOnly", { from: row.yearFrom })
 		: t("yearRange", { from: row.yearFrom, to: row.yearTo });
+}
+
+/**
+ * What the source says about this car and this product beyond its years: the version of a van it
+ * is made for, the fixing, a note. A condition the source has no words for in this locale and no
+ * translation of ours is counted, not dropped: a row that fits "only" something and does not say
+ * what must not read as a plain fit.
+ */
+function RowConditions({ row }: { row: ApplicationRow }) {
+	const t = useTranslations("fitment");
+	const words: string[] = [];
+	let unresolved = 0;
+	for (const condition of row.conditions) {
+		const key = CONDITION_LABEL_KEY[condition.code];
+		const text = condition.text ?? (key ? t(key) : null);
+		if (text) words.push(text);
+		else unresolved += 1;
+	}
+	if (words.length === 0 && unresolved === 0) return null;
+	return (
+		<span className="mt-1 flex flex-wrap gap-1.5" data-testid="fitment-application-conditions">
+			{words.map((text) => (
+				<span key={text} className="bg-surface-muted text-text-secondary rounded-xs px-2 py-0.5 text-xs">
+					{text}
+				</span>
+			))}
+			{unresolved > 0 && (
+				<span className="text-text-tertiary text-xs">{t("conditionsIncomplete", { count: unresolved })}</span>
+			)}
+		</span>
+	);
 }
 
 /** The one vehicle a product is made for, as a short block: the car, then years, body and roof. */
@@ -58,16 +91,19 @@ function SingleApplication({ row }: { row: ApplicationRow }) {
 				)}
 			</p>
 			<p className="text-text-secondary mt-1 text-sm">{facts.join(" · ")}</p>
+			<RowConditions row={row} />
 		</div>
 	);
 }
 
-export function ProductVehicleApplications({ saleorProductId, initial, language }: Props) {
+export function ProductVehicleApplications({ saleorProductId, initial, language, locale }: Props) {
 	const t = useTranslations("fitment");
 	const [page, setPage] = useState<ApplicationPage>(initial);
 	const [rows, setRows] = useState<ApplicationRow[]>(initial.rows);
 	const [query, setQuery] = useState("");
 	const [pending, startTransition] = useTransition();
+	// A column of dashes says nothing: a van's roof is a version (in its conditions), not a roof type.
+	const showRoofColumn = rows.some((row) => row.roofTypes?.length || row.bodyTypes?.length);
 
 	if (initial.unavailable) {
 		return (
@@ -83,7 +119,12 @@ export function ProductVehicleApplications({ saleorProductId, initial, language 
 	const runSearch = (next: string) => {
 		setQuery(next);
 		startTransition(async () => {
-			const result = await listProductApplications(saleorProductId, { query: next, offset: 0, language });
+			const result = await listProductApplications(saleorProductId, {
+				query: next,
+				offset: 0,
+				language,
+				locale,
+			});
 			setPage(result);
 			setRows(result.rows);
 		});
@@ -91,7 +132,12 @@ export function ProductVehicleApplications({ saleorProductId, initial, language 
 
 	const loadMore = () => {
 		startTransition(async () => {
-			const result = await listProductApplications(saleorProductId, { query, offset: rows.length, language });
+			const result = await listProductApplications(saleorProductId, {
+				query,
+				offset: rows.length,
+				language,
+				locale,
+			});
 			setPage(result);
 			setRows((current) => [...current, ...result.rows]);
 		});
@@ -141,46 +187,55 @@ export function ProductVehicleApplications({ saleorProductId, initial, language 
 					{/* The table scrolls in its own container. A wide table must never make
 					    the whole page scroll sideways on a phone. */}
 					<div className="mt-3 overflow-x-auto">
-						<table className="w-full min-w-[34rem] text-left text-sm">
+						<table className="w-full text-left text-sm sm:min-w-[34rem]">
 							<thead className="text-text-tertiary border-border-default border-b text-xs tracking-wide uppercase">
 								<tr>
-									<th scope="col" className="py-2 pr-3 font-medium">
+									<th scope="col" className="py-2 pr-3 font-medium max-sm:hidden">
 										{t("brand")}
 									</th>
 									<th scope="col" className="py-2 pr-3 font-medium">
 										{t("model")}
 									</th>
-									<th scope="col" className="py-2 pr-3 font-medium">
+									<th scope="col" className="py-2 pr-3 font-medium max-sm:hidden">
 										{t("labelYear")}
 									</th>
-									<th scope="col" className="py-2 font-medium">
-										{t("labelRoofType")}
-									</th>
+									{showRoofColumn && (
+										<th scope="col" className="py-2 font-medium">
+											{t("labelRoofType")}
+										</th>
+									)}
 								</tr>
 							</thead>
 							<tbody className="divide-border-subtle divide-y">
 								{rows.map((row) => (
 									<tr key={row.applicationId}>
-										<td className="text-text-primary py-2 pr-3">{row.makeName}</td>
+										<td className="text-text-primary py-2 pr-3 max-sm:hidden">{row.makeName}</td>
 										<td className="text-text-primary py-2 pr-3">
+											<span className="sm:hidden">{row.makeName} </span>
 											{row.modelName} <span className="text-text-tertiary">{row.generationName}</span>
+											<span className="text-text-secondary block text-xs sm:hidden">{yearsOf(row, t)}</span>
 											{!row.accepted && (
 												<span className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed ml-2 rounded px-1.5 py-0.5 text-xs">
 													{t("applicationsProvisional")}
 												</span>
 											)}
+											<RowConditions row={row} />
 										</td>
-										<td className="text-text-secondary py-2 pr-3 whitespace-nowrap">{yearsOf(row, t)}</td>
-										<td className="text-text-secondary py-2">
-											{row.roofTypes
-												? row.roofTypes.map((r) => t(ROOF_LABEL_KEY[r as RoofType])).join(", ")
-												: "—"}
-											{row.bodyTypes && (
-												<span className="text-text-tertiary block text-xs">
-													{row.bodyTypes.map((b) => t(BODY_LABEL_KEY[b as BodyType])).join(", ")}
-												</span>
-											)}
+										<td className="text-text-secondary py-2 pr-3 whitespace-nowrap max-sm:hidden">
+											{yearsOf(row, t)}
 										</td>
+										{showRoofColumn && (
+											<td className="text-text-secondary py-2">
+												{row.roofTypes
+													? row.roofTypes.map((r) => t(ROOF_LABEL_KEY[r as RoofType])).join(", ")
+													: "—"}
+												{row.bodyTypes && (
+													<span className="text-text-tertiary block text-xs">
+														{row.bodyTypes.map((b) => t(BODY_LABEL_KEY[b as BodyType])).join(", ")}
+													</span>
+												)}
+											</td>
+										)}
 									</tr>
 								))}
 							</tbody>
