@@ -18,7 +18,12 @@ import { marketLanguageCode } from "./config/market-language";
 import { catalogRedirectTarget } from "./lib/catalog-content/redirects";
 import { productRedirectTarget } from "./lib/catalog-content/product-redirects";
 import { CATEGORY_ROUTE_PREFIX, isCategorySlug } from "./config/categories";
-import { categoryBaseSlug, categorySegment, isLocalizedRootSegment } from "./config/category-routes";
+import {
+	categoryBaseSlug,
+	categorySegment,
+	isLocalizedRootSegment,
+	renamedCategoryTarget,
+} from "./config/category-routes";
 import { categoryAliasTarget } from "./lib/catalog-content/category-aliases";
 import { keepLiveCategoriesFresh } from "./lib/live-categories";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/routing.generated";
@@ -395,6 +400,21 @@ async function route(request: NextRequest) {
 			const url = request.nextUrl.clone();
 			url.pathname = "/" + first + "/" + categorySegment(first, base);
 			return NextResponse.redirect(url, 308);
+		}
+	}
+
+	// A RENAMED CATEGORY ROOT -> the new root, 301, once Saleor really holds the new slug.
+	//
+	// The Kargo category had one slug for its first night and has another since 2026-10-30
+	// (`config/category-routes.ts`). `renamedCategoryTarget` answers only when the live category list has the
+	// new slug and no longer the old one, so shipping this before the rename in Saleor changes nothing.
+	if (first && FRIENDLY_SLUGS.has(first) && segments.length >= 2) {
+		const rest = normalizePathname(pathname).split("/").filter(Boolean).slice(1);
+		const target = renamedCategoryTarget(first, rest);
+		if (target) {
+			const url = request.nextUrl.clone();
+			url.pathname = "/" + first + target;
+			return NextResponse.redirect(url, 301);
 		}
 	}
 

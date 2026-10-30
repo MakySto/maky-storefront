@@ -10,6 +10,8 @@ import { CHANNEL_MAP } from "@/lib/channel-map";
 import { MARKET_ROOT_SEGMENTS } from "@/lib/routing.generated";
 import {
 	CATALOG_LANGUAGES,
+	KARGO_CATEGORY_SLUGS,
+	KARGO_PREVIOUS_SLUG,
 	LOCALIZED_CATEGORIES,
 	categoryBaseSlug,
 	categoryRouteTable,
@@ -304,58 +306,76 @@ describe("the Thule roof-rack category", () => {
 });
 
 describe("the Nordrive Kargo van category", () => {
-	// Typed out from CFM's message of 2026-10-30 (the slugs it writes as the category's translations in the nine EU
-	// markets). The USA and Canada are not in that run, so they keep the base slug.
+	// Typed out from the table the owner chose on 2026-10-30 (names in `Kargo_kategoria_nazvy_a_slugy_20261030.md`),
+	// not derived from the code: Austria and Canada are spelled apart from Germany and the USA.
+	const BASE = "kargo-stresne-nosice-a-stresne-kose-na-dodavky";
 	const SEGMENTS: Readonly<Record<string, string>> = {
-		sk: "stresne-nosice-a-kose-na-dodavky",
-		cz: "stresni-nosice-a-kose-na-dodavky",
-		de: "dachtraeger-und-dachkoerbe-fuer-transporter",
-		at: "dachtraeger-und-dachkoerbe-fuer-transporter",
-		pl: "bagazniki-dachowe-i-kosze-do-samochodow-dostawczych",
-		hu: "tetocsomagtartok-es-tetokosarak-kisteherautokra",
-		ro: "bare-transversale-si-cosuri-portbagaj-pentru-autoutilitare",
-		fr: "barres-de-toit-et-galeries-pour-utilitaires",
-		it: "barre-portatutto-e-cesti-per-furgoni",
-		es: "barras-de-techo-y-bacas-para-furgonetas",
-		us: "stresne-nosice-a-kose-na-dodavky",
-		ca: "stresne-nosice-a-kose-na-dodavky",
+		sk: BASE,
+		cz: "kargo-stresni-nosice-a-stresni-kose-na-dodavky",
+		de: "kargo-dachtraeger-und-dachkoerbe-fuer-transporter",
+		at: "kargo-dachtraeger-und-dachkoerbe-fuer-lieferwagen",
+		pl: "kargo-bagazniki-dachowe-i-kosze-dachowe-do-samochodow-dostawczych",
+		hu: "kargo-tetocsomagtartok-es-tetokosarak-kisteherautokra",
+		ro: "kargo-bare-transversale-si-cosuri-de-plafon-pentru-autoutilitare",
+		fr: "kargo-barres-de-toit-et-paniers-de-toit-pour-utilitaires",
+		it: "kargo-barre-portatutto-e-cesti-da-tetto-per-furgoni",
+		es: "kargo-barras-de-techo-y-cestas-de-techo-para-furgonetas",
+		us: "kargo-roof-racks-and-roof-baskets-for-cargo-vans",
+		ca: "kargo-roof-racks-and-roof-baskets-for-commercial-vans",
 	};
-	const kargo = LOCALIZED_CATEGORIES.find(
-		(category) => category.baseSlug === "stresne-nosice-a-kose-na-dodavky",
-	);
+	const kargo = LOCALIZED_CATEGORIES.find((category) => category.baseSlug === BASE);
 
-	it("has the segment CFM writes, in every market", () => {
-		const rows = categoryRouteTable().filter((row) => row.baseSlug === "stresne-nosice-a-kose-na-dodavky");
+	// The category is not in the build's own list: the running server learns it from Saleor.
+	const published = globalThis as typeof globalThis & { [LIVE_CATEGORY_SLUGS_KEY]?: ReadonlySet<string> };
+	beforeEach(() => {
+		published[LIVE_CATEGORY_SLUGS_KEY] = new Set([BASE]);
+	});
+	afterEach(() => {
+		delete published[LIVE_CATEGORY_SLUGS_KEY];
+	});
+
+	it("has the segment the owner chose, in every market", () => {
+		const rows = categoryRouteTable().filter((row) => row.baseSlug === BASE);
 		expect(rows).toHaveLength(12);
 		for (const row of rows) expect(row.path, row.market).toBe(`/${row.market}/${SEGMENTS[row.market]}`);
+	});
+
+	it("spells Austria apart from Germany and Canada apart from the USA, and no other pair", () => {
+		expect(SEGMENTS.at).not.toBe(SEGMENTS.de);
+		expect(SEGMENTS.ca).not.toBe(SEGMENTS.us);
+		expect(new Set(Object.values(SEGMENTS)).size).toBe(12);
 	});
 
 	it("is the Saleor category it names (Category:34)", () => {
 		expect(kargo?.saleorId).toBe(btoa("Category:34"));
 	});
 
-	// The category is not in the build's own list: the running server learns it from Saleor.
-	const published = globalThis as typeof globalThis & { [LIVE_CATEGORY_SLUGS_KEY]?: ReadonlySet<string> };
-	beforeEach(() => {
-		published[LIVE_CATEGORY_SLUGS_KEY] = new Set(["stresne-nosice-a-kose-na-dodavky"]);
-	});
-	afterEach(() => {
-		delete published[LIVE_CATEGORY_SLUGS_KEY];
-	});
-
 	it("is one address, whether the link carries the base slug or the slug Saleor translated", () => {
 		for (const [market, segment] of Object.entries(SEGMENTS)) {
-			expect(categoryUrlFor(market, "stresne-nosice-a-kose-na-dodavky"), market).toBe(`/${segment}`);
+			expect(categoryUrlFor(market, BASE), market).toBe(`/${segment}`);
 			expect(categoryUrlFor(market, segment), market).toBe(`/${segment}`);
-			expect(categoryBaseSlug(market, segment), market).toBe("stresne-nosice-a-kose-na-dodavky");
+			expect(categoryBaseSlug(market, segment), market).toBe(BASE);
 		}
 	});
 
-	it("is a root only in the market's own spelling", () => {
-		expect(isLocalizedRootSegment("de", "dachtraeger-und-dachkoerbe-fuer-transporter")).toBe(true);
-		expect(isLocalizedRootSegment("at", "dachtraeger-und-dachkoerbe-fuer-transporter")).toBe(true);
-		expect(isLocalizedRootSegment("pl", "bagazniki-dachowe-i-kosze-do-samochodow-dostawczych")).toBe(true);
-		expect(isLocalizedRootSegment("cz", "dachtraeger-und-dachkoerbe-fuer-transporter")).toBe(false);
-		expect(isLocalizedRootSegment("sk", "stresne-nosice-a-kose-na-dodavky")).toBe(false);
+	it("is a root only in the market's own spelling, also where two markets share a language", () => {
+		for (const [market, segment] of Object.entries(SEGMENTS)) {
+			expect(isLocalizedRootSegment(market, segment), market).toBe(market !== "sk");
+		}
+		expect(isLocalizedRootSegment("de", SEGMENTS.at!)).toBe(false);
+		expect(isLocalizedRootSegment("at", SEGMENTS.de!)).toBe(false);
+		expect(isLocalizedRootSegment("us", SEGMENTS.ca!)).toBe(false);
+		expect(isLocalizedRootSegment("ca", SEGMENTS.us!)).toBe(false);
+		expect(isLocalizedRootSegment("cz", SEGMENTS.de!)).toBe(false);
+	});
+
+	it("leaves the other rows of a shared language as they were", () => {
+		expect(categorySegment("at", "stresne-nosice")).toBe("dachtraeger");
+		expect(categorySegment("ca", "stresne-nosice")).toBe("roof-racks");
+		expect(categorySegment("ca", "thule-stresne-nosice")).toBe("thule-roof-racks");
+	});
+
+	it("keeps the old Kargo slug for the shelf and the quote button, while Saleor still names it", () => {
+		expect(KARGO_CATEGORY_SLUGS).toEqual([BASE, KARGO_PREVIOUS_SLUG]);
 	});
 });
