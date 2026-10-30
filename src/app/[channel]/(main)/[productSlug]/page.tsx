@@ -31,6 +31,7 @@ import {
 } from "@/ui/components/pdp";
 import { getLocaleFromChannel } from "@/config/locale";
 import { parseProductContent } from "@/lib/editorjs";
+import { withGalleryPhotos } from "@/lib/gallery-photos";
 import { getComparisonLabels } from "@/lib/comparison-labels";
 import { getContentLabels } from "@/lib/content-labels";
 import { extendedWarrantyYears } from "@/lib/product-attributes";
@@ -189,7 +190,7 @@ async function ProductContent({
 		getComparisonLabels(locale),
 		getContentLabels(locale, params.channel),
 	]);
-	const content = parseProductContent(product.description, {
+	const content = parseProductContent(withGalleryPhotos(product.description, product.media), {
 		comparison: comparisonLabels,
 		content: contentLabels,
 	});
