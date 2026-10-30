@@ -60,6 +60,34 @@ describe("the vehicles a product is made for", () => {
 	});
 });
 
+describe("what the source says about each car in the list", () => {
+	it("gives a row the condition in the words of the reading locale", async () => {
+		const page = await listProductApplications(OCTAVIA_SET, { locale: "sk-SK" });
+		expect(page.rows[0]!.conditions).toEqual([
+			{ code: "torque-check-after-100km", text: "Po prvých 100 km dotiahnite pätky predpísaným momentom." },
+		]);
+	});
+
+	it("takes Austria's condition from the German text, as the compatibility box does", async () => {
+		const page = await listProductApplications(OCTAVIA_SET, { locale: "de-AT" });
+		expect(page.rows[0]!.conditions[0]?.text).toMatch(/\S/);
+	});
+
+	it("keeps the code with no text where the source has none in this locale, so the row still says there is a condition", async () => {
+		const page = await listProductApplications("demo-product-outofstock", { locale: "sk-SK" });
+		expect(page.rows[0]!.conditions).toEqual([
+			{ code: "unknown-code-with-no-translation-anywhere", text: null },
+		]);
+		const german = await listProductApplications(OCTAVIA_SET, { locale: "pl-PL" });
+		expect(german.rows[0]!.conditions).toEqual([{ code: "torque-check-after-100km", text: null }]);
+	});
+
+	it("gives a row no conditions when the application has none", async () => {
+		const page = await listProductApplications("demo-product-square-flush", { locale: "sk-SK" });
+		expect(page.rows.every((row) => Array.isArray(row.conditions))).toBe(true);
+	});
+});
+
 describe("candidate de-duplication", () => {
 	const ref = (id: string, variant: string) => ({
 		externalReference: `cfm:product:${id}`,

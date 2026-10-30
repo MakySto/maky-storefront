@@ -62,10 +62,10 @@ const DESCRIPTION_PROSE = cn(
  * and in its place among the blocks on a phone; a section's heading is the card's title.
  */
 const SECTION_PROSE = cn(
-	"[&>div>h3]:mt-0 [&>div>h3]:mb-4 [&>div>h3]:text-2xl [&>div>h3]:font-extrabold [&>div>h3]:tracking-[-0.025em] [&>div>h3]:text-text-primary sm:[&>div>h3]:text-[1.875rem]",
-	"[&_figure]:bg-surface-secondary [&_figure]:mx-0 [&_figure]:my-5 [&_figure]:overflow-hidden [&_figure]:rounded-sm [&_figure]:p-3",
-	"[&_figure_img]:mx-auto [&_figure_img]:my-0 [&_figure_img]:h-auto [&_figure_img]:max-h-64 [&_figure_img]:w-auto [&_figure_img]:max-w-full [&_figure_img]:object-contain",
-	"[&_figcaption]:text-text-secondary [&_figcaption]:mt-2 [&_figcaption]:text-center [&_figcaption]:text-sm",
+	"[&>div>h3]:before:bg-brand [&>div>h3]:before:mb-4 [&>div>h3]:before:block [&>div>h3]:before:h-[3px] [&>div>h3]:before:w-10 [&>div>h3]:before:rounded-full [&>div>h3]:before:content-[''] [&>div>h3]:mt-0 [&>div>h3]:mb-4 [&>div>h3]:text-2xl [&>div>h3]:font-extrabold [&>div>h3]:tracking-[-0.025em] [&>div>h3]:text-text-primary sm:[&>div>h3]:text-[1.875rem]",
+	"[&_figure]:bg-surface-secondary [&_figure]:ring-border-subtle [&_figure]:mx-0 [&_figure]:my-5 [&_figure]:overflow-hidden [&_figure]:rounded-md [&_figure]:p-0 [&_figure]:ring-1",
+	"[&_figure_img]:mx-auto [&_figure_img]:my-0 [&_figure_img]:h-auto [&_figure_img]:max-h-80 [&_figure_img]:w-full [&_figure_img]:object-contain",
+	"[&_figcaption]:text-text-secondary [&_figcaption]:bg-surface-card [&_figcaption]:border-border-subtle [&_figcaption]:m-0 [&_figcaption]:border-t [&_figcaption]:px-4 [&_figcaption]:py-3 [&_figcaption]:text-left [&_figcaption]:text-sm [&_figcaption]:leading-snug",
 	// From `lg` the first picture of a section stands in a column of its own beside the section's text,
 	// whatever its place among the blocks; a second picture stays in the text, where CFM wrote it.
 	"lg:has-[figure]:grid lg:has-[figure]:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:has-[figure]:items-start lg:has-[figure]:gap-x-10 lg:has-[figure]:[grid-template-rows:repeat(9,auto)_1fr] lg:[&>div]:col-start-1",
