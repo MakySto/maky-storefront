@@ -4,8 +4,9 @@
 //
 //   node scripts/ops/product-redirects-from-table.mjs <table.tsv> --release <name> [--market sk] [--check]
 //
-// Columns are found by header: the old address is the one named old / stara / from / zdroj, the new one
-// new / nova / to / ciel, an optional market one trh / market. A cell may be a slug, a path (`/sk/slug`)
+// Columns are found by header: the old address is the one named old / stara / stary / from / zdroj, the new one
+// new / nova / novy / to / ciel, an optional market one trh / market (the first matching column wins, so
+// CFM's header trh, stary_slug, novy_slug, dovod, cfm_pk_stary, cfm_pk_novy reads the two slug columns). A cell may be a slug, a path (`/sk/slug`)
 // or a full URL; only the last path segment is kept, and the market comes from the cell when it names
 // one, else from the market column, else from --market (default sk). Anything that is not exactly one
 // slug on each side, a row that points at itself, a slug with two different targets and a target that is
@@ -35,8 +36,8 @@ const sep = lines[0].includes("\t") ? "\t" : ",";
 const cells = (line) => line.split(sep).map((c) => c.trim().replace(/^"|"$/g, ""));
 const header = cells(lines[0]).map((h) => h.toLowerCase());
 const col = (re) => header.findIndex((h) => re.test(h));
-const iOld = col(/(^|[^a-z])(old|stara|from|zdroj)/);
-const iNew = col(/(^|[^a-z])(new|nova|to|ciel)/);
+const iOld = col(/(^|[^a-z])(old|star[ay]|from|zdroj)/);
+const iNew = col(/(^|[^a-z])(new|nov[ay]|to|ciel)/);
 const iMarket = col(/(^|[^a-z])(trh|market)/);
 if (iOld < 0 || iNew < 0) {
 	console.error(`STOP: no old/new column in header: ${header.join(" | ")}`);
