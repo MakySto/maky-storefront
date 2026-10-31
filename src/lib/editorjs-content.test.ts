@@ -279,7 +279,7 @@ describe("each role is drawn as itself", () => {
 		expect(html).toContain('<span class="maky-cap">Voliteľné príslušenstvo</span>');
 	});
 
-	it("a FAQ: each question holds its answer, closed until it is opened", () => {
+	it("a FAQ: each question holds its answer, the first one open", () => {
 		const html = htmlOf(
 			doc([
 				list("maky:faq", [
@@ -288,10 +288,11 @@ describe("each role is drawn as itself", () => {
 				]),
 			]),
 		);
-		expect(count(html, /<details class="maky-qa">/g)).toBe(2);
+		expect(count(html, /<details class="maky-qa"/g)).toBe(2);
+		expect(count(html, /<details class="maky-qa" open>/g)).toBe(1);
+		expect(html.indexOf("open>")).toBeLessThan(html.indexOf("Ako ju zapojím?"));
 		expect(html).toContain('<summary class="maky-q"><span>Ako ju zapojím?</span>');
 		expect(html).toContain('<div class="maky-a">Do zásuvky.</div>');
-		expect(html).not.toContain("<details open");
 	});
 
 	it("specs: groups titled by a row with an empty second cell, a long value on the row's full width", () => {
@@ -1313,5 +1314,100 @@ describe("a maker's PDF among the documents", () => {
 			),
 		);
 		expect(onSite).toContain("maky-ico-download");
+	});
+});
+
+describe("the sections and the facts of a described page", () => {
+	const named = (text: string, kind: string): Block => ({
+		type: "header",
+		id: `maky:section:${kind}`,
+		data: { text, level: 3 },
+	});
+
+	it("draws a heading that names its kind with the kind in its class, and any other id as it did", () => {
+		const html = htmlOf(
+			doc(
+				[named("Pre ktorý Crafter?", "compatibility"), paragraph("Text."), named("Čo ja viem", "nonsense")],
+				RACK_VERSION,
+			),
+		);
+		expect(html).toContain('<h3 class="maky-sec maky-sec-compatibility">Pre ktorý Crafter?</h3>');
+		expect(html).not.toContain("maky-sec-nonsense");
+		// A kind this reader does not know is reported, like a role it does not know, and the heading stays plain.
+		expect(issuesOf(doc([named("Čo ja viem", "nonsense")], RACK_VERSION)).map((issue) => issue.code)).toEqual(
+			["unknown-role"],
+		);
+	});
+
+	it("lifts the kind of product and the key facts of a roof-rack set, with the icons it names", () => {
+		const content = parse(
+			doc(
+				[
+					paragraph("Kompletný strešný kôš s montážnou sadou", "maky:kind"),
+					list("maky:facts", [
+						{ content: "<strong>420 × 180 × 7 cm</strong> Rozmery koša", items: [], meta: { icon: "ruler" } },
+						{ content: "<strong>L4</strong> Verzia vozidla", items: [], meta: { icon: "nonsense" } },
+					]),
+					paragraph("Úvod."),
+				],
+				RACK_VERSION,
+			),
+		);
+		const kind = content?.blocks.find((block) => block.section === "kind");
+		const facts = content?.blocks.find((block) => block.section === "facts");
+		expect(kind?.body).toBe("Kompletný strešný kôš s montážnou sadou");
+		// An icon outside the closed set is none.
+		expect(facts?.facts).toEqual([
+			{ label: "Rozmery koša", value: "420 × 180 × 7 cm", icon: "ruler" },
+			{ label: "Verzia vozidla", value: "L4" },
+		]);
+		expect(facts?.html).toContain('<ul class="maky-tiles">');
+	});
+
+	it("draws the compatibility facts as tiles that stay in the description", () => {
+		const content = parse(
+			doc(
+				[list("maky:facts:compat", [{ content: "<strong>od 01/2017</strong> Obdobie výroby", items: [] }])],
+				RACK_VERSION,
+			),
+		);
+		expect(content?.blocks[0].section).toBeUndefined();
+		expect(content?.blocks[0].html).toContain(
+			'<li class="maky-tl"><span class="maky-tl-v">od 01/2017</span><span class="maky-tl-k">Obdobie výroby</span>',
+		);
+	});
+
+	it("refuses a fact that is not a value and its name, and keeps its text", () => {
+		const html = htmlOf(doc([list("maky:facts", [{ content: "len text", items: [] }])], RACK_VERSION));
+		expect(html).toContain("len text");
+		expect(html).not.toContain("maky-tiles");
+		expect(
+			issuesOf(doc([list("maky:facts", [{ content: "len text", items: [] }])], RACK_VERSION)),
+		).toHaveLength(1);
+	});
+
+	it("draws the accessories as cards of their own, with their own words for the link", () => {
+		const products = new Map([
+			["UHJvZHVjdDox", { href: "/sk/valec", image: "/_next/image?url=%2Fa.jpg&w=256&q=75" }],
+		]);
+		const html = parseProductContent(
+			doc(
+				[
+					list("maky:inbox:accessories", [
+						{
+							content: "<strong>Valec</strong> Opora pri nakladaní.",
+							items: [],
+							meta: { productId: "UHJvZHVjdDox", code: "N10234" },
+						},
+					]),
+				],
+				RACK_VERSION,
+			),
+			{ content: { ...labels, products } },
+		)?.blocks[0].html;
+		expect(html).toContain('<ul class="maky-inbox maky-inbox-acc">');
+		expect(html).toContain('href="/sk/valec"');
+		expect(html).toContain(`<span class="maky-part-go">${labels.viewAccessory}</span>`);
+		expect(labels.viewAccessory).not.toBe(labels.viewPart);
 	});
 });

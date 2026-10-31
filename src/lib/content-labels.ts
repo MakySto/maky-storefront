@@ -30,6 +30,7 @@ export async function getContentLabels(locale: string, channel: string): Promise
 			note: t("content.video.note"),
 		},
 		viewPart: t("content.viewPart"),
+		viewAccessory: t("content.viewAccessory"),
 		...(phrase ? { configurator: { phrase, href: marketHref(channel, "/konfigurator") } } : {}),
 	};
 }
