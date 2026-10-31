@@ -37,6 +37,7 @@ import {
 	type RoofType,
 	vehicleNodeName,
 } from "./contract";
+import { pickConditionText } from "./conditions";
 import { ABSENT_UNDER_PARTIAL_COVERAGE, isDatasetStale } from "./resolve";
 
 export { ABSENT_UNDER_PARTIAL_COVERAGE };
@@ -52,6 +53,13 @@ export interface IntendedVehicle {
 	readonly window: FitmentWindow;
 	readonly roofTypes: readonly RoofType[];
 	readonly bodyTypes: readonly BodyType[];
+	/**
+	 * What the source says holds for this car and this offer ("Určené len pre verziu: dĺžka L4,
+	 * vysoká strecha."), in the words it has for the reading locale, each once. A condition it has no
+	 * words for in that locale is not here, and so is not guessed at; the full list below the fold
+	 * and the compatibility box say it as the resolver does.
+	 */
+	readonly conditions: readonly string[];
 }
 
 type Names = {
@@ -113,6 +121,8 @@ export function intendedVehiclesFor(
 	now: number = Date.now(),
 	/** The reading language, so the car is named as the rest of the page names it. */
 	language?: string | null,
+	/** The full locale ("sk-SK"): the dataset states a condition's words per locale. */
+	locale?: string | null,
 ): IntendedVehicle[] {
 	if (!dataset || isDatasetStale(dataset, now)) return [];
 	const names = namesOf(dataset, language);
@@ -127,12 +137,12 @@ export function intendedVehiclesFor(
 		if (!ref || ref.qaStatus !== "accepted" || !ref.eligibility.sellable) continue;
 		const name = vehicleName(names, application.generationId);
 		if (!name) continue;
-		out.push(intended(application, name));
+		out.push(intended(application, name, locale ?? null));
 	}
 	return out;
 }
 
-function intended(application: FitmentApplication, name: string): IntendedVehicle {
+function intended(application: FitmentApplication, name: string, locale: string | null): IntendedVehicle {
 	return {
 		applicationId: application.applicationId,
 		generationId: application.generationId,
@@ -140,7 +150,30 @@ function intended(application: FitmentApplication, name: string): IntendedVehicl
 		window: application.window,
 		roofTypes: application.qualifiers.roofTypes ?? [],
 		bodyTypes: application.qualifiers.bodyTypes ?? [],
+		conditions: conditionTexts(application, locale),
 	};
+}
+
+function conditionTexts(application: FitmentApplication, locale: string | null): string[] {
+	if (!locale) return [];
+	const texts = new Set<string>();
+	for (const condition of application.conditions) {
+		const text = pickConditionText(condition.text, locale)?.trim();
+		if (text) texts.add(text);
+	}
+	return [...texts];
+}
+
+/**
+ * The conditions that hold for EVERY vehicle an offer is listed for, which is what a line above
+ * the price may say without naming a car: the one version of the one van a basket is made for.
+ * An offer for several cars with different versions says none here; the list of vehicles carries
+ * each car's own.
+ */
+export function sharedConditions(vehicles: readonly IntendedVehicle[]): string[] {
+	const [first, ...rest] = vehicles;
+	if (!first) return [];
+	return first.conditions.filter((text) => rest.every((vehicle) => vehicle.conditions.includes(text)));
 }
 
 /**

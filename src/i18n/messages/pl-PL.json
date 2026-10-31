@@ -154,11 +154,13 @@
 				"play": "Odtwórz film",
 				"note": "YouTube · wczyta się dopiero po kliknięciu"
 			},
+			"viewPart": "Zobacz część",
 			"years": "{count, plural, one {# rok} few {# lata} many {# lat} other {# roku}}"
 		},
 		"keyFeatures": "Najważniejsze cechy",
 		"productDescription": "Opis produktu",
 		"imageCounter": "Zdjęcie {current} z {total}",
+		"illustrativeImage": "Zdjęcie poglądowe",
 		"trustPaymentTitle": "Bezpieczna płatność",
 		"trustPaymentText": "Szyfrowane połączenie",
 		"trustShippingTitle": "Dostawa",
@@ -1133,6 +1135,7 @@
 		"viewList": "Lista",
 		"viewSet": "Zobacz zestaw",
 		"specDimensions": "Wymiary",
+		"specBars": "Belki",
 		"roofFilterLabel": "Typ dachu",
 		"roofFilterAll": "Wszystkie"
 	}

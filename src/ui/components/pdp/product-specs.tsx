@@ -57,22 +57,29 @@ const DESCRIPTION_PROSE = cn(
 );
 
 /**
- * A description set as sections: one card for each heading the producer wrote. The first picture of a
- * section stands beside its text from `lg` (in a column of its own, the whole picture and never cropped),
- * and in its place among the blocks on a phone; a section's heading is the card's title.
+ * A description set as sections: one card for each heading the producer wrote. A section's heading is
+ * the card's title, with a short brown rule above it. The running text keeps to a readable line
+ * (about 70 characters); the cards the producer built (benefits, the box, the steps, the documents)
+ * keep the card's width.
  */
 const SECTION_PROSE = cn(
 	"[&>div>h3]:before:bg-brand [&>div>h3]:before:mb-4 [&>div>h3]:before:block [&>div>h3]:before:h-[3px] [&>div>h3]:before:w-10 [&>div>h3]:before:rounded-full [&>div>h3]:before:content-[''] [&>div>h3]:mt-0 [&>div>h3]:mb-4 [&>div>h3]:text-2xl [&>div>h3]:font-extrabold [&>div>h3]:tracking-[-0.025em] [&>div>h3]:text-text-primary sm:[&>div>h3]:text-[1.875rem]",
-	"[&_figure]:bg-surface-secondary [&_figure]:ring-border-subtle [&_figure]:mx-0 [&_figure]:my-5 [&_figure]:overflow-hidden [&_figure]:rounded-md [&_figure]:p-0 [&_figure]:ring-1",
+	"[&>div>p]:max-w-[44rem] [&>div>ul:not([class])]:max-w-[44rem] [&>div>ol:not([class])]:max-w-[44rem]",
+);
+
+/**
+ * The pictures of a section stand in a column of their own beside its text from `lg` (on the right,
+ * and on the left in every second card that has pictures, so the page does not read as one repeated
+ * card) and under the text on a phone. Whole and never cropped, each with its caption.
+ */
+const SECTION_FIGURES = cn(
+	"[&_figure]:bg-surface-secondary [&_figure]:ring-border-subtle [&_figure]:m-0 [&_figure]:overflow-hidden [&_figure]:rounded-md [&_figure]:p-0 [&_figure]:ring-1",
 	"[&_figure_img]:mx-auto [&_figure_img]:my-0 [&_figure_img]:h-auto [&_figure_img]:max-h-80 [&_figure_img]:w-full [&_figure_img]:object-contain",
 	"[&_figcaption]:text-text-secondary [&_figcaption]:bg-surface-card [&_figcaption]:border-border-subtle [&_figcaption]:m-0 [&_figcaption]:border-t [&_figcaption]:px-4 [&_figcaption]:py-3 [&_figcaption]:text-left [&_figcaption]:text-sm [&_figcaption]:leading-snug",
-	// From `lg` the first picture of a section stands in a column of its own beside the section's text,
-	// whatever its place among the blocks; a second picture stays in the text, where CFM wrote it.
-	"lg:has-[figure]:grid lg:has-[figure]:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:has-[figure]:items-start lg:has-[figure]:gap-x-10 lg:has-[figure]:[grid-template-rows:repeat(9,auto)_1fr] lg:[&>div]:col-start-1",
-	"lg:[&>div:has(figure)]:col-start-2 lg:[&>div:has(figure)]:row-span-[10] lg:[&>div:has(figure)]:row-start-1",
-	"lg:[&>div:has(figure)~div:has(figure)]:col-start-1 lg:[&>div:has(figure)~div:has(figure)]:row-span-1 lg:[&>div:has(figure)~div:has(figure)_figure]:max-w-sm lg:[&>div:has(figure)~div:has(figure)]:row-start-auto",
-	"lg:[&>div:has(figure)_figure]:mt-0",
 );
+
+/** Whether a block of the description is a picture (`<figure>`): it goes to the section's picture column. */
+const isPicture = (html: string) => html.trimStart().startsWith("<figure");
 
 /** The scrolling box `parseEditorJSToHtml` puts around a model comparison table. */
 const COMPARISON_REGION_CLASS = "maky-cmp-scroll";
@@ -196,26 +203,61 @@ export async function ProductSpecs({
 				{hasDescription && sectionCards && (
 					<>
 						<h2 className="sr-only">{t("productDescription")}</h2>
-						{sectionCards.map((blocks, index) => (
-							<article
-								// The sections have no identity of their own: the producer's order is the key.
-								key={`${index}-${blocks[0]}`}
-								id={index === 0 ? "product-description" : undefined}
-								className={cn(CARD, "flow-root", "scroll-mt-[calc(var(--header-offset)+1rem)]")}
-							>
-								<div className={cn(DESCRIPTION_PROSE, SECTION_PROSE)}>
-									{blocks.map((html) => (
-										<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
-									))}
-								</div>
-								{index === sectionCards.length - 1 && careInstructions && (
-									<div className="border-border-subtle bg-surface-secondary mt-8 rounded-xs border p-4 sm:p-5">
-										<h3 className="text-text-primary mb-2 font-semibold">{t("careInstructions")}</h3>
-										<p className="text-text-secondary leading-relaxed">{careInstructions}</p>
+						{sectionCards.map((blocks, index, cards) => {
+							const pictures = blocks.filter(isPicture);
+							const text = pictures.length ? blocks.filter((html) => !isPicture(html)) : blocks;
+							// One picture stands beside the text; two or more are a row under it, so neither column
+							// is left with a gap the other one has filled.
+							const beside = pictures.length === 1;
+							// Every second card with a picture beside its text puts it on the left.
+							const flipped =
+								beside &&
+								cards.slice(0, index).filter((c) => c.filter(isPicture).length === 1).length % 2 === 1;
+							return (
+								<article
+									// The sections have no identity of their own: the producer's order is the key.
+									key={`${index}-${blocks[0]}`}
+									id={index === 0 ? "product-description" : undefined}
+									className={cn(CARD, "flow-root", "scroll-mt-[calc(var(--header-offset)+1rem)]")}
+								>
+									<div
+										className={cn(
+											beside &&
+												"lg:grid lg:items-start lg:gap-x-12 " +
+													(flipped
+														? "lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]"
+														: "lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]"),
+										)}
+									>
+										<div className={cn(DESCRIPTION_PROSE, SECTION_PROSE, flipped && "lg:order-2")}>
+											{text.map((html) => (
+												<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
+											))}
+										</div>
+										{pictures.length > 0 && (
+											<div
+												className={cn(
+													SECTION_FIGURES,
+													beside
+														? cn("mt-6 lg:mt-0", flipped && "lg:order-1")
+														: "mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3",
+												)}
+											>
+												{pictures.map((html) => (
+													<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
+												))}
+											</div>
+										)}
 									</div>
-								)}
-							</article>
-						))}
+									{index === sectionCards.length - 1 && careInstructions && (
+										<div className="border-border-subtle bg-surface-secondary mt-8 rounded-xs border p-4 sm:p-5">
+											<h3 className="text-text-primary mb-2 font-semibold">{t("careInstructions")}</h3>
+											<p className="text-text-secondary leading-relaxed">{careInstructions}</p>
+										</div>
+									)}
+								</article>
+							);
+						})}
 					</>
 				)}
 

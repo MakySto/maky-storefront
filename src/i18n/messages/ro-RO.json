@@ -154,11 +154,13 @@
 				"play": "Redă videoclipul",
 				"note": "YouTube · se încarcă abia după clic"
 			},
+			"viewPart": "Vezi piesa",
 			"years": "{count, plural, one {# an} few {# ani} other {# de ani}}"
 		},
 		"keyFeatures": "Caracteristici principale",
 		"productDescription": "Descrierea produsului",
 		"imageCounter": "Imaginea {current} din {total}",
+		"illustrativeImage": "Imagine ilustrativă",
 		"trustPaymentTitle": "Plată securizată",
 		"trustPaymentText": "Conexiune criptată",
 		"trustShippingTitle": "Livrare",
@@ -1133,6 +1135,7 @@
 		"viewList": "Listă",
 		"viewSet": "Vezi setul",
 		"specDimensions": "Dimensiuni",
+		"specBars": "Bare transversale",
 		"roofFilterLabel": "Tipul acoperișului",
 		"roofFilterAll": "Toate"
 	}

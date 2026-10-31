@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -12,8 +12,12 @@ import {
 	findKey,
 	interpretStatus,
 	main,
+	normaliseEntries,
 	normaliseUrls,
+	parseEntries,
 	parseLocs,
+	readOptions,
+	selectPending,
 	selectShards,
 } from "../../scripts/ops/indexnow.mjs";
 
@@ -24,6 +28,12 @@ type Payload = { host: string; key: string; keyLocation: string; urlList: string
 
 const urlset = (...paths: string[]) =>
 	`<?xml version="1.0"?><urlset>${paths.map((p) => `<url><loc>${SITE}${p}</loc></url>`).join("")}</urlset>`;
+
+/** A shard the way the site writes a product one: every entry with the `lastmod` Saleor gave it. */
+const datedUrlset = (...rows: [path: string, lastmod?: string][]) =>
+	`<?xml version="1.0"?><urlset>${rows
+		.map(([p, d]) => `<url>\n<loc>${SITE}${p}</loc>\n${d ? `<lastmod>${d}</lastmod>\n` : ""}</url>`)
+		.join("\n")}</urlset>`;
 
 const sitemapIndex = (...shards: string[]) =>
 	`<?xml version="1.0"?><sitemapindex>${shards
@@ -96,13 +106,28 @@ afterEach(() => {
 const submittedIn = (path: string) =>
 	Object.keys((JSON.parse(readFileSync(path, "utf8")) as { submitted: Record<string, string> }).submitted);
 
-const run = (argv: string[], w: ReturnType<typeof world>) =>
-	main(argv, { fetch: w.fetch, log, publicDir, sleep: async () => {} });
+const run = (argv: string[], w: ReturnType<typeof world>, extra: { now?: () => Date } = {}) =>
+	main(argv, { fetch: w.fetch, log, publicDir, sleep: async () => {}, ...extra });
 
 describe("scripts/ops/indexnow.mjs, the pieces", () => {
 	it("reads <loc> out of a sitemap and decodes the entities a sitemap escapes", () => {
 		const xml = `<urlset><url><loc>${SITE}/a?x=1&amp;y=2</loc></url><url><loc> ${SITE}/b </loc></url><url><lastmod>2026-10-08</lastmod></url></urlset>`;
 		expect(parseLocs(xml)).toEqual([`${SITE}/a?x=1&y=2`, `${SITE}/b`]);
+	});
+
+	it("reads loc and lastmod of every <url> of a shard, and skips an entry that has no loc", () => {
+		const xml = [
+			'<?xml version="1.0" encoding="UTF-8"?>',
+			'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+			`<url>\n<loc>${SITE}/a?x=1&amp;y=2</loc>\n<lastmod>2026-10-28T09:30:00.000Z</lastmod>\n<changefreq>daily</changefreq>\n<priority>0.7</priority>\n</url>`,
+			`<url><loc> ${SITE}/b </loc></url>`,
+			"<url><lastmod>2026-10-08T00:00:00.000Z</lastmod></url>",
+			"</urlset>",
+		].join("\n");
+		expect(parseEntries(xml)).toEqual([
+			{ loc: `${SITE}/a?x=1&y=2`, lastmod: "2026-10-28T09:30:00.000Z" },
+			{ loc: `${SITE}/b`, lastmod: null },
+		]);
 	});
 
 	it("names a shard by market, kind and part, and nothing else", () => {
@@ -148,6 +173,23 @@ describe("scripts/ops/indexnow.mjs, the pieces", () => {
 		expect(rejected).toEqual(["http://maky.store/cz/insecure", "https://example.com/cz/x", "http://[bad"]);
 	});
 
+	it("carries the lastmod through normalisation, keeps the first of two spellings of one URL, and hands back the rest", () => {
+		const { entries, rejected } = normaliseEntries(
+			[
+				{ loc: `${SITE}/cz/x`, lastmod: "2026-10-01T00:00:00.000Z" },
+				{ loc: `${SITE}/cz/x#top`, lastmod: "2026-10-09T00:00:00.000Z" },
+				"/cz/y",
+				{ loc: "https://example.com/cz/z", lastmod: null },
+			],
+			SITE,
+		);
+		expect(entries).toEqual([
+			{ url: `${SITE}/cz/x`, lastmod: "2026-10-01T00:00:00.000Z" },
+			{ url: `${SITE}/cz/y`, lastmod: null },
+		]);
+		expect(rejected).toEqual(["https://example.com/cz/z"]);
+	});
+
 	it("splits a list into batches without losing or repeating anything", () => {
 		const list = Array.from({ length: 11_000 }, (_, i) => String(i));
 		const batches = chunk(list, BATCH_SIZE);
@@ -164,15 +206,76 @@ describe("scripts/ops/indexnow.mjs, the pieces", () => {
 		});
 	});
 
-	it("lets only 200 and 202 through", () => {
-		expect([200, 202].map((s) => interpretStatus(s).ok)).toEqual([true, true]);
-		expect([400, 403, 422, 429, 500].map((s) => interpretStatus(s).ok)).toEqual([
+	it("lets only a 200 through, and calls a 202 what it is: received, not confirmed", () => {
+		expect(interpretStatus(200).ok).toBe(true);
+		expect([202, 400, 403, 422, 429, 500].map((s) => interpretStatus(s).ok)).toEqual([
+			false,
 			false,
 			false,
 			false,
 			false,
 			false,
 		]);
+		expect(interpretStatus(202)).toMatchObject({ ok: false, unconfirmed: true });
+		expect([400, 403, 422, 429, 500].some((s) => interpretStatus(s).unconfirmed)).toBe(false);
+	});
+
+	describe("selectPending", () => {
+		const now = Date.parse("2026-11-20T06:00:00.000Z");
+		const day = 24 * 60 * 60 * 1000;
+		const entry = (url: string, lastmod: string | null = null) => ({ url, lastmod });
+
+		it("puts what was never sent first, in sitemap order, and what changed since it was sent after it", () => {
+			const { fresh, changed } = selectPending(
+				[
+					entry("u/changed", "2026-11-10T00:00:00.000Z"),
+					entry("u/new-1"),
+					entry("u/new-2", "2026-11-19T00:00:00.000Z"),
+				],
+				{ "u/changed": "2026-11-01T06:00:00.000Z" },
+				{ now, resendAfterMs: 7 * day },
+			);
+			expect(fresh).toEqual(["u/new-1", "u/new-2"]);
+			expect(changed).toEqual(["u/changed"]);
+		});
+
+		it("does not tell a URL again that has not changed since it was sent, or that has no lastmod at all", () => {
+			const sent = "2026-11-01T06:00:00.000Z";
+			const { fresh, changed } = selectPending(
+				[entry("u/older", "2026-10-30T00:00:00.000Z"), entry("u/same-moment", sent), entry("u/page")],
+				{ "u/older": sent, "u/same-moment": sent, "u/page": sent },
+				{ now, resendAfterMs: 0 },
+			);
+			expect(fresh).toEqual([]);
+			expect(changed).toEqual([]);
+		});
+
+		it("does not tell a changed URL again before the resend window has passed", () => {
+			const submitted = { "u/a": "2026-11-17T06:00:00.000Z" }; // three days ago
+			const rows = [entry("u/a", "2026-11-18T00:00:00.000Z")];
+			expect(selectPending(rows, submitted, { now, resendAfterMs: 7 * day }).changed).toEqual([]);
+			expect(selectPending(rows, submitted, { now, resendAfterMs: 3 * day }).changed).toEqual(["u/a"]);
+			expect(selectPending(rows, submitted, { now, resendAfterMs: 0 }).changed).toEqual(["u/a"]);
+		});
+
+		it("reads a recorded time or a lastmod that is not a date as 'sent', so a damaged file makes a run send less", () => {
+			const { fresh, changed } = selectPending(
+				[entry("u/bad-stamp", "2026-11-19T00:00:00.000Z"), entry("u/bad-lastmod", "soon")],
+				{ "u/bad-stamp": "yesterday-ish", "u/bad-lastmod": "2026-11-01T06:00:00.000Z" },
+				{ now, resendAfterMs: 0 },
+			);
+			expect(fresh).toEqual([]);
+			expect(changed).toEqual([]);
+		});
+	});
+
+	it("takes --resend-after-days as a whole number of days and refuses anything else", () => {
+		expect(readOptions([]).resendAfterDays).toBe(7);
+		expect(readOptions(["--resend-after-days", "0"]).resendAfterDays).toBe(0);
+		expect(readOptions(["--resend-after-days", "30"]).resendAfterDays).toBe(30);
+		for (const bad of ["-1", "1.5", "soon", "3651"]) {
+			expect(readOptions(["--resend-after-days", bad]).error).toMatch(/--resend-after-days/);
+		}
 	});
 
 	it("finds the one file whose content is its own name, and refuses none or two", () => {
@@ -236,8 +339,24 @@ describe("scripts/ops/indexnow.mjs, a run", () => {
 
 	it("narrows to the asked kinds and markets", async () => {
 		const w = world();
-		expect(await run(["--fire", "--kinds", "products,vehicles", "--markets", "cz"], w)).toBe(0);
+		const state = join(dir, "state.json");
+		expect(
+			await run(["--fire", "--kinds", "products,vehicles", "--markets", "cz", "--state", state], w),
+		).toBe(0);
 		expect(w.posts[0].body.urlList).toEqual([`${SITE}/cz/a-product`, `${SITE}/cz/b-product`]);
+	});
+
+	it("sends products and vehicles only with a state file, while a dry run, the pages and named URLs need none", async () => {
+		const w = world();
+		expect(await run(["--fire", "--kinds", "products"], w)).toBe(2);
+		expect(await run(["--fire", "--kinds", "pages,vehicles"], w)).toBe(2);
+		expect(w.posts).toHaveLength(0);
+		expect(logLines.join("\n")).toMatch(/products and vehicles are sent only with --state/);
+
+		expect(await run(["--kinds", "products"], w)).toBe(0);
+		expect(await run(["--fire", "--kinds", "pages"], w)).toBe(0);
+		expect(await run(["--fire", "--urls", "/cz/a-product"], w)).toBe(0);
+		expect(w.posts).toHaveLength(2);
 	});
 
 	it("sends named URLs without reading the sitemaps, and sends them again even if they were sent before", async () => {
@@ -288,7 +407,7 @@ describe("scripts/ops/indexnow.mjs, a run", () => {
 		expect(logLines.join("\n")).toMatch(/does NOT serve the key/);
 	});
 
-	it("stops at the first answer that is not 200 or 202 and keeps what had gone through", async () => {
+	it("stops at the first answer that is not a 200 and keeps what had gone through", async () => {
 		const state = join(dir, "state.json");
 		const urls = Array.from({ length: BATCH_SIZE * 2 + 1 }, (_, i) => `/sk/p-${i}`).join(",");
 		const w = world({ endpointStatus: (call) => (call === 1 ? 200 : 429) });
@@ -300,10 +419,137 @@ describe("scripts/ops/indexnow.mjs, a run", () => {
 		expect(logLines.join("\n")).toMatch(/429 \(too many requests/);
 	});
 
-	it("takes 202 as sent", async () => {
+	it("takes a 202 as received, not sent: it stops, records nothing and exits 3", async () => {
+		// 2026-10-08: 177 URLs got a 202, were written to the state file as sent, and Bing never listed them.
+		const state = join(dir, "state.json");
 		const w = world({ endpointStatus: 202 });
-		expect(await run(["--fire"], w)).toBe(0);
+		expect(await run(["--fire", "--state", state], w)).toBe(3);
+		expect(w.posts).toHaveLength(1);
+		expect(existsSync(state)).toBe(false);
 		expect(logLines.join("\n")).toMatch(/202 \(received/);
+		expect(logLines.join("\n")).toMatch(/not recorded as sent/);
+		expect(logLines.join("\n")).not.toMatch(/done:/);
+
+		// The next run, with an engine that now accepts, sends the same URLs.
+		const next = world();
+		expect(await run(["--fire", "--state", state], next)).toBe(0);
+		expect(next.posts[0].body.urlList).toHaveLength(5);
+		expect(submittedIn(state)).toHaveLength(5);
+	});
+
+	it("keeps what the requests before a 202 had confirmed, and records nothing of the one that got it", async () => {
+		const state = join(dir, "state.json");
+		const urls = Array.from({ length: BATCH_SIZE + 1 }, (_, i) => `/sk/p-${i}`).join(",");
+		const w = world({ endpointStatus: (call) => (call === 1 ? 200 : 202) });
+		expect(await run(["--fire", "--state", state, "--urls", urls, "--max", String(BATCH_SIZE + 1)], w)).toBe(
+			3,
+		);
+		expect(w.posts).toHaveLength(2);
+		expect(submittedIn(state)).toHaveLength(BATCH_SIZE);
+	});
+
+	it("sends again a product whose lastmod is later than when it was sent, and not one that is unchanged", async () => {
+		const state = join(dir, "state.json");
+		const sentAt = "2026-11-01T06:00:00.000Z";
+		writeFileSync(
+			state,
+			JSON.stringify({
+				version: 1,
+				submitted: { [`${SITE}/cz/a-product`]: sentAt, [`${SITE}/cz/b-product`]: sentAt },
+			}),
+		);
+		const w = world({
+			files: {
+				"/sitemaps/cz-products-1.xml": datedUrlset(
+					["/cz/a-product", "2026-11-10T08:00:00.000Z"], // changed after it was sent
+					["/cz/b-product", "2026-10-30T08:00:00.000Z"], // last changed before it was sent
+				),
+			},
+		});
+		const now = () => new Date("2026-11-20T06:20:00.000Z");
+		expect(
+			await run(["--fire", "--kinds", "products", "--markets", "cz", "--state", state], w, { now }),
+		).toBe(0);
+		expect(w.posts).toHaveLength(1);
+		expect(w.posts[0].body.urlList).toEqual([`${SITE}/cz/a-product`]);
+		expect(logLines.join("\n")).toMatch(/0 never sent, 1 changed since they were sent/);
+
+		const written = (JSON.parse(readFileSync(state, "utf8")) as { submitted: Record<string, string> })
+			.submitted;
+		expect(written[`${SITE}/cz/a-product`]).toBe("2026-11-20T06:20:00.000Z");
+		expect(written[`${SITE}/cz/b-product`]).toBe(sentAt);
+
+		// And a second run the same day has nothing left.
+		const again = world({
+			files: { "/sitemaps/cz-products-1.xml": datedUrlset(["/cz/a-product", "2026-11-10T08:00:00.000Z"]) },
+		});
+		expect(
+			await run(["--fire", "--kinds", "products", "--markets", "cz", "--state", state], again, { now }),
+		).toBe(0);
+		expect(again.posts).toHaveLength(0);
+	});
+
+	it("does not tell a changed product again before --resend-after-days have passed", async () => {
+		const state = join(dir, "state.json");
+		writeFileSync(
+			state,
+			JSON.stringify({ version: 1, submitted: { [`${SITE}/cz/a-product`]: "2026-11-17T06:00:00.000Z" } }),
+		);
+		const files = {
+			"/sitemaps/cz-products-1.xml": datedUrlset(["/cz/a-product", "2026-11-18T00:00:00.000Z"]),
+		};
+		const now = () => new Date("2026-11-20T06:20:00.000Z");
+		const base = ["--fire", "--kinds", "products", "--markets", "cz", "--state", state];
+
+		const held = world({ files });
+		expect(await run(base, held, { now })).toBe(0);
+		expect(held.posts).toHaveLength(0);
+		expect(logLines.join("\n")).toMatch(/nothing to send/);
+
+		const sooner = world({ files });
+		expect(await run([...base, "--resend-after-days", "2"], sooner, { now })).toBe(0);
+		expect(sooner.posts).toHaveLength(1);
+	});
+
+	it("sends what was never sent before what changed, so a cap cuts the changed ones first", async () => {
+		const state = join(dir, "state.json");
+		writeFileSync(
+			state,
+			JSON.stringify({ version: 1, submitted: { [`${SITE}/cz/a-product`]: "2026-11-01T06:00:00.000Z" } }),
+		);
+		const w = world({
+			files: {
+				"/sitemaps/cz-products-1.xml": datedUrlset(
+					["/cz/a-product", "2026-11-10T08:00:00.000Z"], // changed, listed first
+					["/cz/b-product", "2026-11-12T08:00:00.000Z"], // never sent
+					["/cz/c-product", "2026-11-13T08:00:00.000Z"], // never sent
+				),
+			},
+		});
+		const now = () => new Date("2026-11-20T06:20:00.000Z");
+		expect(
+			await run(["--fire", "--kinds", "products", "--markets", "cz", "--state", state, "--max", "2"], w, {
+				now,
+			}),
+		).toBe(0);
+		expect(w.posts[0].body.urlList).toEqual([`${SITE}/cz/b-product`, `${SITE}/cz/c-product`]);
+		expect(logLines.join("\n")).toMatch(/capped by --max 2/);
+	});
+
+	it("reads the state file the earlier version of the tool wrote, and does not tell a page twice", async () => {
+		// The state of 2026-10-08: version 1, an ISO time per URL, and pages carry no lastmod.
+		const state = join(dir, "state.json");
+		const submitted = Object.fromEntries(
+			["/sk", "/sk/autochladnicky", "/cz", "/cz/autochladnicky", "/cz/kontakt"].map((p) => [
+				`${SITE}${p}`,
+				"2026-10-08T19:44:43.000Z",
+			]),
+		);
+		writeFileSync(state, JSON.stringify({ version: 1, submitted }, null, "\t"));
+		const w = world();
+		expect(await run(["--fire", "--state", state], w)).toBe(0);
+		expect(w.posts).toHaveLength(0);
+		expect(logLines.join("\n")).toMatch(/nothing to send/);
 	});
 
 	it("refuses, before sending anything, when a sitemap lists a URL of another host", async () => {
@@ -340,5 +586,61 @@ describe("scripts/ops/indexnow.mjs, a run", () => {
 		expect(await run(["--markets", "czech"], w)).toBe(2);
 		expect(w.gets).toHaveLength(0);
 		expect(w.posts).toHaveLength(0);
+	});
+});
+
+describe("scripts/ops/systemd, the daily run", () => {
+	const root = process.cwd();
+	const unit = readFileSync(join(root, "scripts/ops/systemd/maky-indexnow.service"), "utf8");
+	const timer = readFileSync(join(root, "scripts/ops/systemd/maky-indexnow.timer"), "utf8");
+
+	it("starts the tool with options it accepts: every kind, a state file outside the checkout, --fire", () => {
+		const line = unit.split("\n").find((l) => l.startsWith("ExecStart="));
+		expect(line).toBeDefined();
+		const args = (line as string)
+			.slice((line as string).indexOf("indexnow.mjs") + "indexnow.mjs".length)
+			.trim()
+			.split(/\s+/);
+		const options = readOptions(args);
+		expect(options.error).toBeUndefined();
+		expect(options).toMatchObject({ fire: true, kinds: ["pages", "products", "vehicles"], max: 10_000 });
+		// A deploy replaces the checkout's files; the progress must not live there.
+		expect(options.state).toMatch(/^\/var\/lib\/maky-indexnow\//);
+		expect(unit).toMatch(/^StateDirectory=maky-indexnow$/m);
+	});
+
+	it("skips while a deploy runs, by the lock the deploy script itself takes", () => {
+		const lock = /LOCK_FILE="\$\{LOCK_FILE:-([^}]+)\}"/.exec(
+			readFileSync(join(root, "scripts/ops/deploy-production.sh"), "utf8"),
+		)?.[1];
+		expect(lock).toBe("/run/lock/maky-storefront-deploy.lock");
+		expect(unit).toContain(`ExecCondition=/usr/bin/flock -n ${lock} -c true`);
+	});
+
+	it("runs once a day, outside the CarFitManager windows on the same box with half an hour to spare", () => {
+		const at = /^OnCalendar=\*-\*-\* (\d\d):(\d\d):00 UTC$/m.exec(timer);
+		expect(at).not.toBeNull();
+		const minute = Number(at?.[1]) * 60 + Number(at?.[2]);
+		// 01:30 to 02:04 and 03:15 to 05:00 UTC every day; Mondays also about 02:30 to 03:04 (all inside these).
+		const windows: [number, number][] = [
+			[90, 124],
+			[195, 300],
+		];
+		for (const [from, to] of windows) {
+			expect(minute < from - 30 || minute > to + 30).toBe(true);
+		}
+		expect(timer).toMatch(/^Persistent=true$/m);
+	});
+
+	it("keeps the ceilings on a job that must not compete with the shop", () => {
+		expect(unit).toMatch(/^Nice=\d+$/m);
+		expect(unit).toMatch(/^MemoryMax=\d+M$/m);
+		expect(unit).toMatch(/^MemorySwapMax=0$/m);
+		// It reads the public sitemaps and writes its state file; nothing of PM2, nginx or .env (comments aside).
+		const settings = unit
+			.split("\n")
+			.filter((l) => l.trim() && !l.trim().startsWith("#"))
+			.join("\n");
+		expect(settings).not.toMatch(/pm2|nginx|\.env|--update-env/i);
 	});
 });

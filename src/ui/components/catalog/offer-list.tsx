@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { marketHref } from "@/lib/channel-map";
 import { type FitmentOffer, type FitmentOffers } from "@/lib/fitment/offers";
 import { ROOF_GROUP_ORDER, describeOfferFit, roofsOf, type OfferFit } from "@/lib/fitment/offer-fit";
-import { describeIncludes, isCompleteSet, offerSpecs } from "@/lib/fitment/offer-specs";
+import { describeIncludes, isCompleteSet, offerSpecs, withNameSize } from "@/lib/fitment/offer-specs";
 import { type RoofType } from "@/lib/fitment/contract";
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import { CARD_GRID } from "@/ui/components/listing/card-layout";
@@ -143,6 +143,7 @@ export async function CatalogOfferList({
 			described && makes ? splitSetTitle(offer.name, { brand: offer.brand, makes, vehicles }) : null;
 		const own = facts ? facts.get(offer.saleorProductId) ?? null : undefined;
 		const includes = own === undefined ? offer.completeSetIncludes : own?.includes;
+		const rows = offerSpecs(own === undefined ? offer.facets : own?.facets, tc);
 		return (
 			<OfferCard
 				key={offer.saleorVariantId}
@@ -150,7 +151,11 @@ export async function CatalogOfferList({
 				href={offer.slug ? marketHref(channel, `/${offer.slug}`) : marketHref(channel)}
 				fit={described}
 				title={title}
-				specs={offerSpecs(own === undefined ? offer.facets : own?.facets, tc)}
+				specs={
+					described
+						? withNameSize(rows, offer.name, { dimensions: tl("specDimensions"), bars: tl("specBars") })
+						: rows
+				}
 				includes={describeIncludes(includes, tc)}
 				complete={isCompleteSet(includes)}
 				labels={labels}

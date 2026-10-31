@@ -154,11 +154,13 @@
 				"play": "Přehrát video",
 				"note": "YouTube · načte se až po kliknutí"
 			},
+			"viewPart": "Zobrazit díl",
 			"years": "{count, plural, one {# rok} few {# roky} many {# roku} other {# let}}"
 		},
 		"keyFeatures": "Hlavní vlastnosti",
 		"productDescription": "Popis produktu",
 		"imageCounter": "Obrázek {current} z {total}",
+		"illustrativeImage": "Ilustrativní zobrazení",
 		"trustPaymentTitle": "Bezpečná platba",
 		"trustPaymentText": "Šifrované spojení",
 		"trustShippingTitle": "Doprava",
@@ -1133,6 +1135,7 @@
 		"viewList": "Seznam",
 		"viewSet": "Zobrazit sestavu",
 		"specDimensions": "Rozměry",
+		"specBars": "Příčníky",
 		"roofFilterLabel": "Typ střechy",
 		"roofFilterAll": "Všechny"
 	}

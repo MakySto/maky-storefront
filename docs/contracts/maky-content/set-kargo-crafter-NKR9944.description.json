@@ -389,8 +389,21 @@
   {
    "type": "paragraph",
    "data": {
-    "text": "Pošlite nám verziu vozidla a povedzte, čo pravidelne vozíte. Pomôžeme vám overiť, či zostava sedí."
+    "text": "Nie ste si istí verziou svojho Craftera? Pošlite nám rok výroby a fotografiu strechy. Pomôžeme vám overiť, či je tento kôš pre vaše vozidlo vhodný."
    }
+  },
+  {
+   "type": "list",
+   "data": {
+    "style": "unordered",
+    "items": [
+     {
+      "content": "<a href=\"/sk/kontakt\">Poradiť s výberom</a>",
+      "items": []
+     }
+    ]
+   },
+   "id": "maky:cta"
   }
  ]
 }

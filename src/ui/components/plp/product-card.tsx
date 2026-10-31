@@ -52,6 +52,12 @@ export interface ProductCardData {
 	 * again beneath it. Absent, the name is printed whole.
 	 */
 	setTitle?: SetTitle | null;
+	/**
+	 * The version of a van the set is made for, in the source's own words ("Určené len pre verziu: dĺžka L4,
+	 * vysoká strecha."). Present only where every application of the set says the same, so a set made for
+	 * several versions says nothing and its page does.
+	 */
+	versionNote?: string | null;
 	productCode?: string | null;
 	/** Set only when the product has exactly one variant. */
 	variantId?: string | null;
@@ -282,6 +288,14 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 							</p>
 						)}
 					</>
+				)}
+				{product.versionNote && (
+					<p
+						className="text-text-primary mt-0.5 line-clamp-2 text-[0.8125rem] leading-snug font-medium"
+						data-testid="card-version"
+					>
+						{product.versionNote}
+					</p>
 				)}
 				{product.fit && !product.setTitle && (
 					<p

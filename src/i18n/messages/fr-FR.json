@@ -154,11 +154,13 @@
 				"play": "Lire la vidéo",
 				"note": "YouTube · ne se charge qu'après le clic"
 			},
+			"viewPart": "Voir la pièce",
 			"years": "{count, plural, one {# an} other {# ans}}"
 		},
 		"keyFeatures": "Caractéristiques principales",
 		"productDescription": "Description du produit",
 		"imageCounter": "Image {current} sur {total}",
+		"illustrativeImage": "Image d'illustration",
 		"trustPaymentTitle": "Paiement sécurisé",
 		"trustPaymentText": "Connexion chiffrée",
 		"trustShippingTitle": "Livraison",
@@ -1133,6 +1135,7 @@
 		"viewList": "Liste",
 		"viewSet": "Voir l'ensemble",
 		"specDimensions": "Dimensions",
+		"specBars": "Barres",
 		"roofFilterLabel": "Type de toit",
 		"roofFilterAll": "Tous"
 	}

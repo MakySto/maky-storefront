@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { ArrowRight, CarFront } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { type IntendedVehicle, windowBounds } from "@/lib/fitment/intended-for";
+import { type IntendedVehicle, sharedConditions, windowBounds } from "@/lib/fitment/intended-for";
 import { BODY_LABEL_KEY, ROOF_LABEL_KEY } from "./verdict-presentation";
 
 /**
@@ -49,6 +49,9 @@ export async function IntendedForBox({
 		first.bodyTypes.map((body) => t(BODY_LABEL_KEY[body])).join(", "),
 		first.roofTypes.map((roof) => t(ROOF_LABEL_KEY[roof])).join(", "),
 	].filter(Boolean);
+	// A version of the van this is made for ("dĺžka L4, vysoká strecha") is part of what it is made
+	// for, and the buyer sees it here whether or not a car is saved.
+	const conditions = sharedConditions(vehicles);
 
 	return (
 		<div
@@ -89,6 +92,15 @@ export async function IntendedForBox({
 						)}
 					</p>
 					<p className="text-text-secondary mt-0.5 text-sm">{facts.join(" · ")}</p>
+					{conditions.length > 0 && (
+						<ul className="mt-1.5 space-y-0.5" data-testid="fitment-intended-conditions">
+							{conditions.map((text) => (
+								<li key={text} className="text-text-primary text-sm font-semibold">
+									{text}
+								</li>
+							))}
+						</ul>
+					)}
 					{includes && (
 						<p className="text-text-secondary mt-0.5 text-sm" data-testid="fitment-set-contents">
 							{includes}
