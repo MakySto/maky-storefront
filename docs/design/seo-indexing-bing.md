@@ -150,7 +150,8 @@ POST names them; the engine fetches them soon after. It does not decide what get
   day. That hour is clear of the CarFitManager 4.5 windows on the same box (01:30 to 02:04 and 03:15 to 05:00
   UTC, Mondays also about 02:30 to 03:04), and the service skips the day while a deploy holds its lock. A run
   sends at most 10 000 URLs, at low priority, under a 768 MB ceiling and without swap, so the first backlog
-  (about 140 000 URLs) is told in about two weeks and after that a run sends what is new or changed. The
+  (140 000 URLs or more; a dry run says how many are pending) is told over a few weeks and after that a run
+  sends what is new or changed. `--max` in the unit is raised once a week of runs looks clean. The
   progress lives in `/var/lib/maky-indexnow/state.json`, outside the checkout, so a deploy does not touch it.
   A person installs it once on the web server (the commands are at the top of the service file); the deploy
   does not. `journalctl -u maky-indexnow.service` shows every run with the endpoint's answers, and
