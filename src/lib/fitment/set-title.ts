@@ -117,31 +117,6 @@ function withoutConnector(model: string): string {
 	return words.length > 1 && last && CONNECTORS.has(last) ? words.slice(0, -1).join(" ") : model;
 }
 
-/**
- * The size a name states for the product itself, as "420 × 180 × 12 cm": three numbers and the unit, written
- * with × or x. The product's name is the one place that says it for a basket the dataset and Saleor hold no
- * size of, and taking a set's name apart for the card would otherwise drop it with the rest of the tail.
- * Nothing is worked out: the numbers are the name's own, in its order, and a name that states no such size
- * (a bar's, a car's) answers null. Two numbers are not read, because a bar's "150 × 20 mm" is not a basket.
- */
-export function sizeInName(name: string): string | null {
-	const match =
-		/(?<![\p{L}\p{N}.,])(\d{2,4}(?:[.,]\d+)?)\s*[×x]\s*(\d{2,4}(?:[.,]\d+)?)\s*[×x]\s*(\d{1,3}(?:[.,]\d+)?)\s*cm(?![\p{L}\p{N}])/iu.exec(
-			name,
-		);
-	return match ? `${match[1]} × ${match[2]} × ${match[3]} cm` : null;
-}
-
-/**
- * The bars a name states for a kit sold as loose bars: "4 tyče 180 cm" is four bars of 180 cm. Slovak words
- * only (tyč, tyče, tyčí): a name in another language states nothing here, and the card says nothing then.
- */
-export function barsInName(name: string): { count: number; lengthCm: string } | null {
-	const match =
-		/(?<![\p{L}\p{N}.,])(\d{1,2})\s+tyč(?:e|í)?\s+(\d{2,3}(?:[.,]\d+)?)\s*cm(?![\p{L}\p{N}])/iu.exec(name);
-	return match ? { count: Number(match[1]), lengthCm: match[2]! } : null;
-}
-
 const MAKES = new WeakMap<FitmentDataset, readonly string[]>();
 
 /** The makes of one dataset, longest first, so "Land Rover" is tried before "Rover". */

@@ -18,7 +18,7 @@ import {
 } from "@/ui/components/listing/card-layout";
 import { cardKicker, setKicker } from "@/ui/components/listing/kicker";
 import { ListingMedia } from "@/ui/components/listing/listing-media";
-import { DIMENSIONS_SPEC_KEY, ListingSpecs, type ListingSpec } from "@/ui/components/listing/listing-specs";
+import { ListingSpecs, withComposedLabels, type ListingSpec } from "@/ui/components/listing/listing-specs";
 import { AvailabilityBadge } from "@/ui/components/product/availability-badge";
 import { StarRating } from "@/ui/components/product/star-rating";
 import { WishlistButton } from "@/ui/components/wishlist/wishlist-button";
@@ -192,10 +192,11 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 	const kicker = takenApart
 		? setKicker(product.brand, product.category?.name)
 		: cardKicker(shownName, product.brand, product.category?.name);
-	// A combined size ("190 × 80 × 40 cm") has no attribute to take its name from.
-	const specs = (product.specs ?? []).map((spec) =>
-		spec.key === DIMENSIONS_SPEC_KEY ? { ...spec, label: tListing("specDimensions") } : spec,
-	);
+	// A combined size ("190 × 80 × 40 cm") and a kit's bars ("4 × 180 cm") have no attribute to take their name from.
+	const specs = withComposedLabels(product.specs ?? [], {
+		dimensions: tListing("specDimensions"),
+		bars: tListing("specBars"),
+	});
 	// A vehicle set is the one product whose detail page is where its conditions are read.
 	const isSet = Boolean(product.fit);
 

@@ -52,40 +52,55 @@ async function attach(
 	return (await attachSetFacts(cards, locale, now ?? (dataset ? dayAfter(dataset) : 0)))[0]!;
 }
 
+const category = (slug: string) => ({ id: "c1", name: "Kargo", slug });
+
 const rows = (dataset: ReturnType<typeof n15060Dataset>) =>
 	dataset.applications.flatMap((a) => a.products).filter((p) => p.saleorProductId === AUDI_OFFER.productId);
 
-describe("attachSetFacts with a size in the name", () => {
+describe("attachSetFacts on the Kargo shelf", () => {
 	const KARGO_NAME =
 		"Strešný kôš Nordrive Kargo Rack pre Audi A4 Avant B8 (od 2008), 420 × 180 × 12 cm, NKR4444+N30394";
+	const KARGO = category("stresne-nosice-a-kose-na-dodavky");
+	const dimensions = { key: "dimensions", label: "", value: "420 × 180 × 12 cm" };
+	const load = { key: "cfm:attribute:max_load", label: "Maximálna nosnosť", value: "50 kg" };
 
-	it("keeps the size the name states, as the first row, where the tail is taken apart", async () => {
-		const result = await attach(n15060Dataset(), "sk-SK", [card({ name: KARGO_NAME })]);
+	it("puts the product's own attribute rows first and takes the name apart without them", async () => {
+		const result = await attach(n15060Dataset(), "sk-SK", [
+			card({ name: KARGO_NAME, category: KARGO, specs: [dimensions] }),
+		]);
 		expect(result.setTitle?.model).toBe("Nordrive Kargo Rack");
-		expect(result.specs?.[0]).toEqual({ key: "dimensions", label: "Rozmery", value: "420 × 180 × 12 cm" });
-		// The set's own facts stay behind it, four rows at most.
-		expect(result.specs?.map((s) => s.label)).toContain("Materiál");
+		expect(result.specs?.[0]).toEqual(dimensions);
+		// The set's own facts follow, four rows at most.
+		expect(result.specs?.map((spec) => spec.label)).toContain("Materiál");
 		expect(result.specs?.length).toBeLessThanOrEqual(4);
 	});
 
-	it("does not add a size to a card that has one from its attributes", async () => {
-		const own = { key: "dimensions", label: "", value: "190 × 80 × 40 cm" };
+	it("does not print a load twice: the attribute states it, so the facet row is dropped", async () => {
 		const dataset = n15060Dataset();
-		for (const ref of rows(dataset)) delete ref.facets;
-		const result = await attach(dataset, "sk-SK", [card({ name: KARGO_NAME, specs: [own] })]);
-		expect(result.specs?.filter((s) => s.key === "dimensions")).toEqual([own]);
-	});
-
-	it("says no size for a product the dataset has no row for", async () => {
-		const result = await attach(n15060Dataset(), "sk-SK", [
-			card({ id: "UHJvZHVjdDo5OTk5", name: KARGO_NAME }),
+		for (const ref of rows(dataset)) ref.facets = { maxLoadKg: 75 };
+		const result = await attach(dataset, "sk-SK", [
+			card({ name: KARGO_NAME, category: KARGO, specs: [load] }),
 		]);
-		expect(result.specs).toBeUndefined();
+		expect(result.specs).toEqual([load]);
 	});
 
-	it("says no size where the name states none", async () => {
-		const result = await attach(n15060Dataset());
-		expect(result.specs?.some((s) => s.key === "dimensions")).toBe(false);
+	it("keeps the attribute rows of a product the dataset has no row for", async () => {
+		const own = card({ id: "UHJvZHVjdDo5OTk5", name: KARGO_NAME, category: KARGO, specs: [dimensions] });
+		expect(await attach(n15060Dataset(), "sk-SK", [own])).toEqual(own);
+		expect(await attach(null, "sk-SK", [own])).toEqual(own);
+	});
+
+	it("reads nothing from the name: a name that states a size but a product with no attribute says no size", async () => {
+		const result = await attach(n15060Dataset(), "sk-SK", [card({ name: KARGO_NAME, category: KARGO })]);
+		expect(result.specs?.some((spec) => spec.key === "dimensions")).toBe(false);
+		const unknown = card({ id: "UHJvZHVjdDo5OTk5", name: KARGO_NAME, category: KARGO });
+		expect(await attach(n15060Dataset(), "sk-SK", [unknown])).toEqual(unknown);
+	});
+
+	it("leaves another shelf alone: its facets still stand in for its attributes", async () => {
+		const other = card({ name: KARGO_NAME, category: category("strešné-boxy"), specs: [load] });
+		const result = await attach(n15060Dataset(), "sk-SK", [other]);
+		expect(result.specs?.some((spec) => spec.key === load.key)).toBe(false);
 	});
 });
 

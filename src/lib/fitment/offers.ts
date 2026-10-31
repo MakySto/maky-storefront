@@ -37,6 +37,8 @@ import { publishableProductImage } from "@/lib/product-image";
 import { FitmentProductsByIdsDocument } from "@/gql/graphql";
 import { resolveAvailability, AVAILABILITY_METADATA_KEY } from "@/ui/components/product/availability-badge";
 import { getLocaleConfigByLocale } from "@/config/locale";
+import { buildCardSpecs, specRefsFor } from "@/ui/components/plp/utils";
+import type { ListingSpec } from "@/ui/components/listing/listing-specs";
 import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
 import {
 	CONFIGURATOR_PRODUCT_KIND,
@@ -77,6 +79,11 @@ export type FitmentOffer = {
 	availability: OfferAvailability;
 	completeSetIncludes: string[] | null;
 	facets: Record<string, string | number | boolean> | null;
+	/**
+	 * The product's own parameter rows from its Saleor attributes (size, bars, load), the same ones its listing
+	 * card prints. Absent for a demo entry.
+	 */
+	specs?: ListingSpec[];
 	/** False keeps the published offer visible but forbids every purchase control. */
 	isPurchasable: boolean;
 	/** True when this offer came from a demo catalogue and cannot be bought. */
@@ -419,6 +426,7 @@ export async function resolveFitmentOffers(
 					),
 					completeSetIncludes: ref.completeSet?.includes ?? null,
 					facets: ref.facets ?? null,
+					specs: buildCardSpecs(localized.attributes, locale, specRefsFor(node.category?.slug)),
 					isPurchasable: node.isAvailableForPurchase === true,
 					isDemo: false,
 				});

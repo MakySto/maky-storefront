@@ -41,7 +41,9 @@ import { cardKicker } from "@/ui/components/listing/kicker";
 import { ListingSpecs } from "@/ui/components/listing/listing-specs";
 import { ListingViewRoot } from "@/ui/components/listing/listing-view";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
-import { describeIncludes, isCompleteSet, offerSpecs, withNameSize } from "@/lib/fitment/offer-specs";
+import { describeIncludes, isCompleteSet, offerSpecs, withAttributeSpecs } from "@/lib/fitment/offer-specs";
+import { KARGO_CATEGORY_SLUGS } from "@/config/kargo-slugs";
+import { withComposedLabels } from "@/ui/components/listing/listing-specs";
 import { formatPrice } from "@/config/locale";
 import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { quoteReferenceFor, quoteRequestHref } from "@/lib/contact/quote-request";
@@ -149,10 +151,14 @@ export function ConfiguratorResults({
 						: null;
 					// The same four parameters and the same contents line the vehicle page and the
 					// category shelf print for this set.
-					const specs = withNameSize(offerSpecs(offer.facets, t), offer.name, {
-						dimensions: tListing("specDimensions"),
-						bars: tListing("specBars"),
-					});
+					const facetRows = offerSpecs(offer.facets, t);
+					const specs =
+						offer.categorySlug && KARGO_CATEGORY_SLUGS.includes(offer.categorySlug)
+							? withComposedLabels(withAttributeSpecs(facetRows, offer.specs ?? []), {
+									dimensions: tListing("specDimensions"),
+									bars: tListing("specBars"),
+								})
+							: facetRows;
 					const includes = describeIncludes(offer.completeSetIncludes, t);
 					const kicker = cardKicker(offer.name, offer.brand, offer.categoryName);
 
