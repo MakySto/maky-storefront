@@ -140,6 +140,13 @@ export function ImageCarousel({
 							<ZoomIn className="h-4 w-4" aria-hidden="true" />
 						</div>
 
+						{/* A picture of the system on a vehicle says it is an illustration, on the picture. */}
+						{images[selectedIndex]?.illustrative && (
+							<div className="bg-surface-card/90 text-text-secondary pointer-events-none absolute bottom-3 left-3 max-w-[60%] rounded-full px-3 py-1 text-xs font-medium shadow-xs backdrop-blur-sm">
+								{tProduct("illustrativeImage")}
+							</div>
+						)}
+
 						{/* Where you are in the gallery: "3 / 8", always visible, bottom right. */}
 						{images.length > 1 && (
 							<div

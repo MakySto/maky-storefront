@@ -14,6 +14,7 @@ import {
 	ABSENT_UNDER_PARTIAL_COVERAGE,
 	intendedVehiclesFor,
 	presentFitment,
+	sharedConditions,
 	windowBounds,
 } from "./intended-for";
 import { resolveFitment } from "./resolve";
@@ -24,6 +25,55 @@ import { resolveFitment } from "./resolve";
  * nevieme potvrdiť". It must say what the set is for instead — and nothing here may turn that
  * into "nepasuje".
  */
+
+describe("the conditions an offer is made under", () => {
+	const VERSION = "Určené len pre verziu: dĺžka L4, vysoká strecha.";
+	const withVersion = (texts: Record<string, string> | undefined) => {
+		const dataset = n15060Dataset();
+		dataset.applications[1].conditions = [{ code: "van-version", text: texts }];
+		return dataset;
+	};
+
+	it("carries the source's words for the reading locale, for a buyer with no car saved", () => {
+		const [audi] = intendedVehiclesFor(
+			withVersion({ "sk-SK": VERSION }),
+			AUDI_OFFER.productId,
+			AUDI_OFFER.variantId,
+			undefined,
+			"sk",
+			"sk-SK",
+		);
+		expect(audi!.conditions).toEqual([VERSION]);
+		expect(sharedConditions([audi!])).toEqual([VERSION]);
+	});
+
+	it("says nothing in a locale the source has no words for, and nothing without a locale", () => {
+		const dataset = withVersion({ "sk-SK": VERSION });
+		expect(
+			intendedVehiclesFor(dataset, AUDI_OFFER.productId, AUDI_OFFER.variantId, undefined, "pl", "pl-PL")[0]!
+				.conditions,
+		).toEqual([]);
+		expect(intendedVehiclesFor(dataset, AUDI_OFFER.productId, AUDI_OFFER.variantId)[0]!.conditions).toEqual(
+			[],
+		);
+	});
+
+	it("names above the price only what holds for every car the offer is for", () => {
+		const [audi] = intendedVehiclesFor(
+			withVersion({ "sk-SK": VERSION }),
+			AUDI_OFFER.productId,
+			AUDI_OFFER.variantId,
+			undefined,
+			"sk",
+			"sk-SK",
+		);
+		const other = { ...audi!, conditions: ["Určené len pre verziu: dĺžka L2."] };
+		const same = { ...audi!, applicationId: "other" };
+		expect(sharedConditions([audi!, same])).toEqual([VERSION]);
+		expect(sharedConditions([audi!, other])).toEqual([]);
+		expect(sharedConditions([])).toEqual([]);
+	});
+});
 
 describe("intendedVehiclesFor", () => {
 	it("names the car an offer is documented for, with the source's own window", () => {

@@ -154,11 +154,13 @@
 				"play": "Prehrať video",
 				"note": "YouTube · načíta sa až po kliknutí"
 			},
+			"viewPart": "Pozrieť diel",
 			"years": "{count, plural, one {# rok} few {# roky} many {# roka} other {# rokov}}"
 		},
 		"keyFeatures": "Hlavné vlastnosti",
 		"productDescription": "Popis produktu",
 		"imageCounter": "Obrázok {current} z {total}",
+		"illustrativeImage": "Ilustračné zobrazenie",
 		"trustPaymentTitle": "Bezpečná platba",
 		"trustPaymentText": "Šifrované spojenie",
 		"trustShippingTitle": "Doprava",

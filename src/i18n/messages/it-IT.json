@@ -154,11 +154,13 @@
 				"play": "Riproduci il video",
 				"note": "YouTube · si carica solo dopo il clic"
 			},
+			"viewPart": "Vedi il ricambio",
 			"years": "{count, plural, one {# anno} other {# anni}}"
 		},
 		"keyFeatures": "Caratteristiche principali",
 		"productDescription": "Descrizione del prodotto",
 		"imageCounter": "Immagine {current} di {total}",
+		"illustrativeImage": "Immagine illustrativa",
 		"trustPaymentTitle": "Pagamento sicuro",
 		"trustPaymentText": "Connessione cifrata",
 		"trustShippingTitle": "Spedizione",

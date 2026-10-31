@@ -1305,6 +1305,19 @@
 		color: var(--brand);
 	}
 
+	/* "Pozrieť diel": under the text, only where the part has a page of its own. */
+	.maky-part-go {
+		grid-column: 2;
+		margin-top: -0.375rem;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--brand);
+	}
+
+	.maky-part-go::after {
+		content: " →";
+	}
+
 	.maky-inbox > li.maky-part:has(a.maky-part-a:focus-visible) {
 		outline: var(--focus-ring-width) solid var(--focus-ring);
 		outline-offset: var(--focus-ring-offset);
@@ -1461,6 +1474,35 @@
 		font-size: 0.90625rem;
 		line-height: 1.6;
 		color: var(--text-secondary);
+	}
+
+	/* A call to action: one button, the shop's own way on (contact, a form). */
+	.maky-cta {
+		margin: 1.25rem 0 0;
+	}
+
+	/* Outlined, not solid: the green purchase button stays the one primary action on the page. */
+	.maky-cta-a {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 2.75rem;
+		padding: 0 1.5rem;
+		border: 1.5px solid var(--brand);
+		border-radius: var(--radius-sm);
+		background: var(--surface-card);
+		color: var(--brand);
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+	.maky-cta-a:hover {
+		background: var(--surface-muted);
+	}
+
+	.maky-cta-a:focus-visible {
+		outline: 2px solid var(--focus-ring);
+		outline-offset: 2px;
 	}
 
 	/* Documents: the whole card is the link. */

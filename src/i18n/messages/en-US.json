@@ -154,11 +154,13 @@
 				"play": "Play video",
 				"note": "YouTube · loads only after you click"
 			},
+			"viewPart": "View part",
 			"years": "{count, plural, one {# year} other {# years}}"
 		},
 		"keyFeatures": "Key features",
 		"productDescription": "Product description",
 		"imageCounter": "Image {current} of {total}",
+		"illustrativeImage": "Illustrative image",
 		"trustPaymentTitle": "Secure payment",
 		"trustPaymentText": "Encrypted connection",
 		"trustShippingTitle": "Shipping",

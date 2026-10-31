@@ -368,6 +368,15 @@ describe("descriptionSections", () => {
 		]);
 	});
 
+	it("keeps the steps of a procedure in the card of the section they carry out", () => {
+		const steps =
+			'<section class="maky-blk not-prose"><h3 class="maky-h">Postup montáže</h3><ol class="maky-steps"><li>1</li></ol></section>';
+		const sections = descriptionSections(["<h3>Montáž koša</h3>", "<p>text</p>", steps, "<h3>Doplnky</h3>"]);
+		expect(sections).toEqual([["<h3>Montáž koša</h3>", "<p>text</p>", steps], ["<h3>Doplnky</h3>"]]);
+		// With nothing before them they are a card of their own, as before.
+		expect(descriptionSections([steps])).toEqual([[steps]]);
+	});
+
 	it("drops and reorders nothing", () => {
 		const blocks = ["<h3>A</h3>", "<p>1</p>", "<h3>B</h3>", "<p>2</p>"];
 		expect(descriptionSections(blocks).flat()).toEqual(blocks);

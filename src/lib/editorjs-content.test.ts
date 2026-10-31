@@ -358,6 +358,30 @@ describe("each role is drawn as itself", () => {
 		expect(block?.body).toContain('<span class="maky-d">PDF · SK</span>');
 	});
 
+	it("a call to action: one link, drawn as a button that opens in the same tab", () => {
+		const parsed = parse(
+			doc([list("maky:cta", ['<a href="/sk/kontakt?produkt=NKR9944">Poradiť s výberom</a>'])]),
+		);
+		expect(parsed?.issues).toEqual([]);
+		expect(parsed?.blocks[0]?.html).toBe(
+			'<section class="maky-blk not-prose"><div class="maky-cta"><a class="maky-cta-a" href="/sk/kontakt?produkt=NKR9944">Poradiť s výberom</a></div></section>',
+		);
+	});
+
+	it("a call to action that is not one plain link is not drawn as one, and loses no text", () => {
+		for (const items of [
+			['<a href="/sk/kontakt">A</a>', '<a href="/sk/kontakt">B</a>'],
+			['<a href="javascript:alert(1)">Poradiť</a>'],
+			['<a href="//evil.test/x">Poradiť</a>'],
+			['<a href="/sk/kontakt">Poradiť</a> a ešte text'],
+			["Bez odkazu"],
+		]) {
+			const parsed = parse(doc([list("maky:cta", items)]));
+			expect(parsed?.issues.length, items.join("|")).toBeGreaterThan(0);
+			expect(parsed?.blocks[0]?.html).not.toContain("maky-cta");
+		}
+	});
+
 	it("a video: a link to its watch page and its title, with nothing of YouTube loaded", () => {
 		const parsed = parse(doc([header("Video"), video()]));
 		const block = parsed?.blocks[0];
@@ -1207,6 +1231,20 @@ describe("the contents of the box, when an item names a part", () => {
 		expect(html).not.toContain("<a ");
 		expect(html).not.toContain("<img");
 		expect(html).toContain("1 × sada");
+	});
+
+	it('says "view the part" inside the link, and only where there is a link', () => {
+		const products = new Map([[PART_ID, { href: "/sk/x", image: null }]]);
+		const html = (map: typeof products) =>
+			(
+				parseProductContent(box([part({ productId: PART_ID, qty: 1 })]), {
+					content: { ...labels, products: map, viewPart: "Pozrieť diel" },
+				})?.blocks ?? []
+			)
+				.map((block) => block.html)
+				.join("\n");
+		expect(html(products)).toContain('<span class="maky-part-go">Pozrieť diel</span></a>');
+		expect(html(new Map())).not.toContain("Pozrieť diel");
 	});
 
 	it("takes a picture only from the image optimizer, whatever the map holds", () => {

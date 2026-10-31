@@ -154,11 +154,13 @@
 				"play": "Videó lejátszása",
 				"note": "YouTube · csak a kattintás után töltődik be"
 			},
+			"viewPart": "Alkatrész megtekintése",
 			"years": "{count, plural, other {# év}}"
 		},
 		"keyFeatures": "Fő jellemzők",
 		"productDescription": "Termékleírás",
 		"imageCounter": "{current}. kép / {total}",
+		"illustrativeImage": "Illusztráció",
 		"trustPaymentTitle": "Biztonságos fizetés",
 		"trustPaymentText": "Titkosított kapcsolat",
 		"trustShippingTitle": "Szállítás",
