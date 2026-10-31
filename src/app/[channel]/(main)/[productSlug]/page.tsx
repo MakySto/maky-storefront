@@ -356,6 +356,16 @@ async function ProductContent({
 					<ProductGallery images={images} productName={product.name} />
 
 					<div className="flex flex-col">
+						{/* What kind of product it is, in the description's own words ("Kompletný strešný kôš s
+						    montážnou sadou"), for the templates that lift it: between the category row above
+						    and the name (both order 2, so the document order decides). */}
+						{sections?.kind && (
+							<p
+								className="text-brand order-2 mt-4 text-[0.8125rem] font-bold tracking-[0.1em] uppercase"
+								// Text only, already escaped (`plainText` in the parser): its entities stay entities.
+								dangerouslySetInnerHTML={{ __html: sections.kind }}
+							/>
+						)}
 						{/* The whole name, never split: a roof-rack set's name carries the car and the roof
 						    type, and cutting it at a dash would be guessing. A long one is set a size
 						    smaller so it does not push the price off the first screen. */}

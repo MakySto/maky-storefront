@@ -154,6 +154,15 @@
 				"play": "Play video",
 				"note": "YouTube · loads only after you click"
 			},
+			"sections": {
+				"intro": "Product description",
+				"compatibility": "Compatibility",
+				"usage": "In everyday use",
+				"accessories": "Suitable accessories",
+				"brand": "About the brand",
+				"closing": "We can help"
+			},
+			"viewAccessory": "View accessory",
 			"viewPart": "View part",
 			"years": "{count, plural, one {# year} other {# years}}"
 		},

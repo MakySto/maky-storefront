@@ -1,5 +1,6 @@
 import { type ProductContentBlock } from "@/lib/editorjs";
 import { type SpecFact } from "@/lib/editorjs-content";
+import { SECTION_KINDS, type SectionKind } from "@/lib/editorjs-sanitize";
 
 /**
  * Product page templates: how a page is put together for a kind of product.
@@ -15,7 +16,7 @@ import { type SpecFact } from "@/lib/editorjs-content";
  */
 
 /** The parts of a description a template may set as sections of their own. */
-type LiftedSection = "comparison" | "documents" | "specs";
+type LiftedSection = "comparison" | "documents" | "specs" | "kind" | "facts";
 
 export type FactIcon =
 	| "bike"
@@ -29,7 +30,10 @@ export type FactIcon =
 	| "tilt"
 	| "weight"
 	| "zap"
-	| "opening";
+	| "opening"
+	| "car"
+	| "truck"
+	| "calendar";
 
 /** A fact of the key-facts band: one attribute, or the range two of them span. */
 export type KeyFact = { kind: "attribute"; ref: string; icon: FactIcon } | { kind: "range"; icon: FactIcon };
@@ -63,8 +67,9 @@ export interface ProductTemplate {
 	warrantyRef?: string;
 	/**
 	 * A description of this template that carries pictures of its own (`<figure>`) is set as sections —
-	 * a card for each heading, its pictures beside the text — and its documents get a card of their
-	 * own (`layoutFor`). A description without pictures of its own stays one card, as it was approved.
+	 * the sections of one card, their pictures beside the text, the questions and the closing in cards of
+	 * their own (`layoutFor`, `descriptionSections`). A description without pictures of its own stays one
+	 * card, as it was approved.
 	 */
 	sectionsWhenPictured?: boolean;
 	/** Set by `layoutFor`: the description is laid out as one card per section (`descriptionSections`). */
@@ -183,7 +188,8 @@ const AUTOCHLADNICKA: ProductTemplate = {
  */
 const STRESNY_NOSIC: ProductTemplate = {
 	id: "stresny-nosic",
-	lift: ["specs"],
+	// The sheet, the short name of the kind of product (over the title) and the key facts (the band).
+	lift: ["specs", "kind", "facts"],
 	facts: [],
 	factsFromSheet: true,
 	groups: [],
@@ -211,24 +217,29 @@ export function hasOwnPictures(blocks: readonly ProductContentBlock[]): boolean 
 
 /**
  * The template a page is laid out with once its description has been read. A template that asks for
- * it (`sectionsWhenPictured`) sets a pictured description as sections and lifts its documents; the
- * gallery's second photo is then not drawn beside the description (the page asks `template.sections`),
- * because the description shows its own and the same file would stand there twice.
+ * it (`sectionsWhenPictured`) sets a pictured description as sections; the gallery's second photo is
+ * then not drawn beside the description (the page asks `template.sections`), because the description
+ * shows its own and the same file would stand there twice. The documents stay in the section that
+ * names them (the assembly), as the steps do.
  */
 export function layoutFor(
 	template: ProductTemplate,
 	blocks: readonly ProductContentBlock[],
 ): ProductTemplate {
 	if (!template.sectionsWhenPictured || !hasOwnPictures(blocks)) return template;
-	return {
-		...template,
-		lift: template.lift.includes("documents") ? template.lift : [...template.lift, "documents"],
-		sections: true,
-	};
+	return { ...template, sections: true };
 }
 
 /** A block that opens a section: a plain heading, or a role that carries its heading (`maky-h`). */
 const SECTION_START = /^(?:<h3[\s>]|<section class="maky-blk[^"]*"><h3 class="maky-h">)/;
+
+/**
+ * The roles that carry out what the section before them describes, under a heading of their own: the
+ * strengths a text has just introduced, the steps of a procedure, the documents of an assembly. They
+ * stay in that section, under their own heading, and are not a section of one short list.
+ */
+const FOLLOWS_PREVIOUS =
+	/^<section class="maky-blk[^"]*"><h3 class="maky-h">[\s\S]*?<(?:ul|ol) class="maky-(?:benefits|steps|docs)"/;
 
 /**
  * The description's blocks cut into sections, in document order: a new section starts at every
@@ -241,15 +252,28 @@ export function descriptionSections(blocks: readonly string[]): string[][] {
 		if (sections.length === 0 || SECTION_START.test(html)) sections.push([html]);
 		else sections[sections.length - 1].push(html);
 	}
-	// The steps of a procedure carry out what the section before them describes ("Montáž koša na
-	// vozidlo", then "Postup montáže"): they stay in that section's card, under their own heading,
-	// and are not a card of one short list.
 	return sections.reduce<string[][]>((merged, section) => {
 		const previous = merged[merged.length - 1];
-		if (previous && section[0].includes('class="maky-steps"')) previous.push(...section);
+		if (previous && FOLLOWS_PREVIOUS.test(section[0])) previous.push(...section);
 		else merged.push(section);
 		return merged;
 	}, []);
+}
+
+/** The kind of section a card opens with (`maky:section:<kind>` on its heading), or null. */
+export function sectionKindOfHtml(section: readonly string[]): SectionKind | null {
+	const found = /^<h3 class="maky-sec maky-sec-([a-z]+)">/.exec(section[0] ?? "");
+	return found && (SECTION_KINDS as readonly string[]).includes(found[1]) ? (found[1] as SectionKind) : null;
+}
+
+/**
+ * Whether a section stands in a card of its own after the parameters, not among the sections of the
+ * description's one card: the questions and the closing.
+ */
+export function isTailSection(section: readonly string[]): boolean {
+	return (
+		sectionKindOfHtml(section) === "closing" || section.some((html) => html.includes('class="maky-faq"'))
+	);
 }
 
 export interface PageSections {
@@ -261,6 +285,10 @@ export interface PageSections {
 	documents: { title: string | null; body: string } | null;
 	/** The parameter sheet, set in a card of its own, or null. Its rows are also kept as plain text, for the key-facts band. */
 	specs: { title: string | null; body: string; facts: readonly SpecFact[] } | null;
+	/** The short name of the kind of product, to stand over the title, or null. */
+	kind: string | null;
+	/** The key facts the producer wrote for the band (`maky:facts`), or null. */
+	facts: readonly SpecFact[] | null;
 }
 
 /**
@@ -272,8 +300,28 @@ export function liftSections(
 	blocks: readonly ProductContentBlock[],
 	template: ProductTemplate,
 ): PageSections {
-	const sections: PageSections = { description: [], comparison: null, documents: null, specs: null };
+	const sections: PageSections = {
+		description: [],
+		comparison: null,
+		documents: null,
+		specs: null,
+		kind: null,
+		facts: null,
+	};
 	for (const block of blocks) {
+		if (block.section === "kind" && template.lift.includes("kind") && !sections.kind && block.body) {
+			sections.kind = block.body;
+			continue;
+		}
+		if (
+			block.section === "facts" &&
+			template.lift.includes("facts") &&
+			!sections.facts &&
+			block.facts?.length
+		) {
+			sections.facts = block.facts;
+			continue;
+		}
 		if (block.section === "comparison" && template.lift.includes("comparison") && !sections.comparison) {
 			sections.comparison = block.html;
 		} else if (block.section === "documents" && template.lift.includes("documents") && !sections.documents) {
@@ -305,6 +353,11 @@ const MAX_FACT_LENGTH = 48;
  * says. The page's band takes them only when the product's attributes gave it too little.
  */
 export function sheetFacts(sections: PageSections | null, template: ProductTemplate): readonly SpecFact[] {
+	// The facts the producer wrote for the band come first, icons and all; the sheet's rows stand in for them.
+	const own = sections?.facts?.filter(
+		({ label, value }) => label && value && value.length <= MAX_FACT_LENGTH,
+	);
+	if (own?.length) return own;
 	if (!template.factsFromSheet || !sections?.specs) return [];
 	return sections.specs.facts.filter(({ label, value }) => label && value && value.length <= MAX_FACT_LENGTH);
 }

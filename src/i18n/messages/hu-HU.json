@@ -154,6 +154,15 @@
 				"play": "Videó lejátszása",
 				"note": "YouTube · csak a kattintás után töltődik be"
 			},
+			"sections": {
+				"intro": "Termékleírás",
+				"compatibility": "Kompatibilitás",
+				"usage": "Használat a gyakorlatban",
+				"accessories": "Megfelelő kiegészítők",
+				"brand": "A márkáról",
+				"closing": "Segítünk a választásban"
+			},
+			"viewAccessory": "Kiegészítő megtekintése",
 			"viewPart": "Alkatrész megtekintése",
 			"years": "{count, plural, other {# év}}"
 		},
