@@ -45,11 +45,13 @@ const UNIT_BY_EXTERNAL_REFERENCE: Readonly<Record<string, string>> = {
 	"cfm:attribute:outer_height": "cm",
 	"cfm:attribute:outer_length": "cm",
 	"cfm:attribute:outer_width": "cm",
+	"cfm:attribute:bar_length": "cm",
 	"cfm:attribute:volume": "l",
 	"cfm:attribute:max_speed": "km/h",
 	...CAR_FRIDGE_UNITS,
 	// Deliberately absent, and NOT an oversight:
 	//   bike_capacity   - a count, not a measurement
+	//   bar_count       - a count, not a measurement
 	//   max_tire_width  - no catalogue values yet; mm and inch are both plausible
 	//   max_wheelbase   - no catalogue values yet; mm and cm are both plausible
 	// An invented unit is a factual claim about the product. Leave them bare

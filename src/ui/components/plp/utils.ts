@@ -6,9 +6,10 @@ import { sortSizes } from "@/lib/sizes";
 import { getLocaleConfigByLocale, getLocaleFromChannel, localeConfig } from "@/config/locale";
 import { hasDiscountInPriceRange } from "@/lib/pricing";
 import { productHref } from "@/lib/product-url";
+import { KARGO_CATEGORY_SLUGS } from "@/config/kargo-slugs";
 import { formatAttributeValue } from "@/lib/product-attributes";
 import { publishableProductImage } from "@/lib/product-image";
-import { DIMENSIONS_SPEC_KEY, type ListingSpec } from "@/ui/components/listing/listing-specs";
+import { BARS_SPEC_KEY, DIMENSIONS_SPEC_KEY, type ListingSpec } from "@/ui/components/listing/listing-specs";
 
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
 
@@ -58,12 +59,33 @@ const DIMENSION_REFS = [
 	"cfm:attribute:outer_height",
 ] as const;
 
+const isKargoSlug = (slug: string | null | undefined) => (slug ? KARGO_CATEGORY_SLUGS.includes(slug) : false);
+
+/**
+ * What a Nordrive Kargo basket or bar kit adds to those: the material it is made of. Asked for only on that
+ * shelf — a `material` attribute on another shelf's products is not a card parameter there.
+ */
+const KARGO_SPEC_REFS = ["cfm:attribute:material"] as const;
+
+/** The further attributes a card of the product's category prints, by the category's base slug. */
+export const specRefsFor = (categorySlug: string | null | undefined): readonly string[] =>
+	isKargoSlug(categorySlug) ? KARGO_SPEC_REFS : [];
+
+/** A kit of loose bars: how many, and how long each one is (cm). */
+const BAR_COUNT_REF = "cfm:attribute:bar_count";
+const BAR_LENGTH_REF = "cfm:attribute:bar_length";
+
 /** A card is a summary: four parameters, the rest is on the product page. */
 const MAX_CARD_SPECS = 4;
 
-export function buildCardSpecs(attributes: ListAttributes, locale: string): ListingSpec[] {
+export function buildCardSpecs(
+	attributes: ListAttributes,
+	locale: string,
+	/** Further attributes this shelf's cards print, after the common ones. */
+	extraRefs: readonly string[] = [],
+): ListingSpec[] {
 	const specs: ListingSpec[] = [];
-	for (const ref of SPEC_REFS) {
+	for (const ref of [...SPEC_REFS, ...extraRefs]) {
 		const attr = attributes?.find((a) => a.attribute.externalReference === ref);
 		const raw = attr?.values[0]?.name;
 		if (!attr || !raw || !attr.attribute.name) continue;
@@ -90,6 +112,23 @@ export function buildCardSpecs(attributes: ListAttributes, locale: string): List
 			// The word is the card's to say (a translation context lives there, not here).
 			label: "",
 			value: `${numbers.join(" × ")}${unit ? ` ${unit}` : ""}`,
+		});
+	}
+
+	// "4 × 180 cm" — the bars of a kit as one fact, only when both the count and the length exist.
+	const count = attributes?.find((a) => a.attribute.externalReference === BAR_COUNT_REF);
+	const length = attributes?.find((a) => a.attribute.externalReference === BAR_LENGTH_REF);
+	const countRaw = count?.values[0]?.name;
+	const lengthRaw = length?.values[0]?.name;
+	if (count && length && countRaw && lengthRaw) {
+		specs.push({
+			key: BARS_SPEC_KEY,
+			label: "",
+			value: `${formatAttributeValue(countRaw, count.attribute, locale)} × ${formatAttributeValue(
+				lengthRaw,
+				length.attribute,
+				locale,
+			)}`,
 		});
 	}
 
@@ -229,7 +268,7 @@ export function transformToProductCard(
 		// it), so whichever way the main image was found, this is the next one — and absent when the
 		// product has only one, in which case the card simply does not swap.
 		hoverImage: gallery[1] ?? null,
-		specs: buildCardSpecs(product.attributes, locale),
+		specs: buildCardSpecs(product.attributes, locale, specRefsFor(product.category?.slug)),
 		href: productHref(channel, product.slug),
 		channel,
 		isPurchasable: product.isAvailableForPurchase === true,
