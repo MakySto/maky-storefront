@@ -5,9 +5,11 @@ import {
 	GENERIC_FACTS,
 	groupParameters,
 	hasOwnPictures,
+	isTailSection,
 	layoutFor,
 	liftSections,
 	PRODUCT_TEMPLATES,
+	sectionKindOfHtml,
 	sheetFacts,
 	TEMPERATURE_RANGE_REF,
 	templateFor,
@@ -126,7 +128,30 @@ describe("liftSections", () => {
 			comparison: null,
 			documents: null,
 			specs: null,
+			kind: null,
+			facts: null,
 		});
+	});
+
+	it("lifts the kind of product and the key facts for a template that names them, and keeps them otherwise", () => {
+		const blocks: ProductContentBlock[] = [
+			{ html: "<p>Kôš</p>", section: "kind", body: "Kompletný kôš" },
+			{
+				html: "<ul>tiles</ul>",
+				section: "facts",
+				facts: [{ label: "Rozmery", value: "420 cm", icon: "ruler" }],
+			},
+			{ html: "<p>Úvod</p>" },
+		];
+		const lifted = liftSections(blocks, templateFor("stresny-nosic"));
+		expect(lifted.kind).toBe("Kompletný kôš");
+		expect(lifted.facts).toEqual([{ label: "Rozmery", value: "420 cm", icon: "ruler" }]);
+		expect(lifted.description).toEqual(["<p>Úvod</p>"]);
+		const kept = liftSections(blocks, templateFor("autochladnicka"));
+		expect(kept.kind).toBeNull();
+		expect(kept.description).toEqual(["<p>Kôš</p>", "<ul>tiles</ul>", "<p>Úvod</p>"]);
+		// The facts the producer wrote are the band; the sheet only stands in for them.
+		expect(sheetFacts(lifted, templateFor("stresny-nosic"))).toEqual(lifted.facts);
 	});
 });
 
@@ -200,6 +225,8 @@ describe("the roof-rack template", () => {
 			comparison: null,
 			documents: null,
 			specs,
+			kind: null,
+			facts: null,
 		});
 
 		it("are the sheet's rows in the order CFM wrote them, as written", () => {
@@ -329,10 +356,10 @@ describe("layoutFor", () => {
 	];
 	const plain: ProductContentBlock[] = [{ html: "<p>Úvod</p>" }];
 
-	it("sets a roof-rack description with pictures of its own as sections and lifts its documents", () => {
+	it("sets a roof-rack description with pictures of its own as sections and keeps its documents in them", () => {
 		const laid = layoutFor(templateFor("stresny-nosic"), pictured);
 		expect(laid.sections).toBe(true);
-		expect(laid.lift).toEqual(["specs", "documents"]);
+		expect(laid.lift).toEqual(["specs", "kind", "facts"]);
 		expect(hasOwnPictures(pictured)).toBe(true);
 	});
 
@@ -375,6 +402,38 @@ describe("descriptionSections", () => {
 		expect(sections).toEqual([["<h3>Montáž koša</h3>", "<p>text</p>", steps], ["<h3>Doplnky</h3>"]]);
 		// With nothing before them they are a card of their own, as before.
 		expect(descriptionSections([steps])).toEqual([[steps]]);
+	});
+
+	it("keeps the benefits of an introduction and the documents of an assembly in their sections too", () => {
+		const role = (title: string, list: string) =>
+			`<section class="maky-blk not-prose"><h3 class="maky-h">${title}</h3>${list}</section>`;
+		const benefits = role("Čo oceníte", '<ul class="maky-benefits"><li>1</li></ul>');
+		const docs = role("Návody", '<ul class="maky-docs"><li>1</li></ul>');
+		const box = role("V balení", '<ul class="maky-inbox"><li>1</li></ul>');
+		expect(
+			descriptionSections([
+				'<h3 class="maky-sec maky-sec-intro">Úvod</h3>',
+				"<p>a</p>",
+				benefits,
+				"<h3>B</h3>",
+				docs,
+				box,
+			]),
+		).toEqual([
+			['<h3 class="maky-sec maky-sec-intro">Úvod</h3>', "<p>a</p>", benefits],
+			["<h3>B</h3>", docs],
+			[box],
+		]);
+	});
+
+	it("knows the kind a section names, and which sections stand in cards of their own", () => {
+		expect(sectionKindOfHtml(['<h3 class="maky-sec maky-sec-usage">Využitie</h3>', "<p>a</p>"])).toBe(
+			"usage",
+		);
+		expect(sectionKindOfHtml(["<h3>Bez druhu</h3>"])).toBeNull();
+		expect(isTailSection(['<h3 class="maky-sec maky-sec-closing">Záver</h3>'])).toBe(true);
+		expect(isTailSection(['<section class="maky-blk"><div class="maky-faq"></div></section>'])).toBe(true);
+		expect(isTailSection(["<h3>Montáž</h3>"])).toBe(false);
 	});
 
 	it("drops and reorders nothing", () => {
