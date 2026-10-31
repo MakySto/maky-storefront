@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeIncludes, isCompleteSet, offerSpecs } from "./offer-specs";
+import { describeIncludes, isCompleteSet, offerSpecs, withNameSize } from "./offer-specs";
 
 const t = (key: string) => `[${key}]`;
 
@@ -73,5 +73,46 @@ describe("describeIncludes / isCompleteSet", () => {
 		expect(isCompleteSet(["feet", "fitting-kit"])).toBe(false);
 		expect(isCompleteSet(undefined)).toBe(false);
 		expect(isCompleteSet([])).toBe(false);
+	});
+});
+
+describe("withNameSize", () => {
+	const NAME =
+		"Strešný kôš Nordrive Kargo Rack pre Volkswagen Crafter (od 2017), 420 × 180 × 12 cm, NKR4444+N30394";
+	const BARS =
+		"Strešný nosič Nordrive Kargo pre Volkswagen Crafter (od 2017), 4 tyče 180 cm, 4×N10015+N30394";
+	const labels = { dimensions: "Rozmery", bars: "Priečniky" };
+
+	it("puts the size the name states first, ahead of the facts, four rows at most", () => {
+		const rows = offerSpecs(
+			{ maxLoadKg: 75, barMaterial: "aluminium", barShape: "aero", barLengthCm: 118 },
+			t,
+		);
+		const sized = withNameSize(rows, NAME, labels);
+		expect(sized[0]).toEqual({ key: "dimensions", label: "Rozmery", value: "420 × 180 × 12 cm" });
+		expect(sized).toHaveLength(4);
+		expect(sized.slice(1).map((row) => row.key)).toEqual(["material", "shape", "length"]);
+	});
+
+	it("is the size alone for a basket with no facts, so four baskets of one van can be told apart", () => {
+		expect(withNameSize([], NAME, labels)).toEqual([
+			{ key: "dimensions", label: "Rozmery", value: "420 × 180 × 12 cm" },
+		]);
+	});
+
+	it("says the count and the length of the bars a kit is sold as", () => {
+		expect(withNameSize([], BARS, labels)).toEqual([
+			{ key: "bars", label: "Priečniky", value: "4 × 180 cm" },
+		]);
+	});
+
+	it("leaves the rows alone where the name states no size or a size is already there", () => {
+		const rows = offerSpecs({ barMaterial: "steel" }, t);
+		expect(withNameSize(rows, "Strešný nosič Thule SquareBar EVO Black Audi A6", labels)).toEqual(rows);
+		expect(withNameSize(rows, null, labels)).toEqual(rows);
+		const own = [{ key: "dimensions", label: "Rozmery", value: "190 × 80 × 40 cm" }];
+		expect(withNameSize(own, NAME, labels)).toEqual(own);
+		const bars = [{ key: "bars", label: "Priečniky", value: "2 × 120 cm" }];
+		expect(withNameSize(bars, BARS, labels)).toEqual(bars);
 	});
 });

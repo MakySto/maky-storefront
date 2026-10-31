@@ -21,7 +21,9 @@
  * is — the bars' rating, not the roof's limit — so it cannot be read as permission.
  */
 
-export type SpecKey = "material" | "shape" | "length" | "load" | "colour";
+import { barsInName, sizeInName } from "./set-title";
+
+export type SpecKey = "material" | "shape" | "length" | "load" | "colour" | "dimensions" | "bars";
 
 export type SpecRow = { key: SpecKey; label: string; value: string };
 
@@ -87,6 +89,35 @@ export function offerSpecs(
 	}
 
 	return rows.slice(0, options.max ?? MAX_SPEC_ROWS);
+}
+
+/** The words a name's own size is given a row with: the card's own, in the reader's language. */
+export type NameSizeLabels = { dimensions: string; bars: string };
+
+/**
+ * What the set's name states about its size, put first: the size of a basket ("420 × 180 × 12 cm") or the bars
+ * of a kit sold as loose bars ("4 tyče 180 cm"), and only where the rows do not already say a size.
+ *
+ * CFM's facets carry neither, and the name is the one place that does: four baskets of one van that differ only
+ * in their size would otherwise look the same on a shelf. The numbers are the name's own (`sizeInName`,
+ * `barsInName`), never worked out, and a name that states none leaves the rows as they were. Four rows at most,
+ * the size taking the first of them.
+ */
+export function withNameSize<Row extends { key: string; label: string; value: string }>(
+	rows: readonly Row[],
+	name: string | null | undefined,
+	labels: NameSizeLabels,
+	max: number = MAX_SPEC_ROWS,
+): (Row | { key: "dimensions" | "bars"; label: string; value: string })[] {
+	if (!name || rows.some((row) => row.key === "dimensions" || row.key === "bars")) return [...rows];
+	const size = sizeInName(name);
+	const bars = size ? null : barsInName(name);
+	const added = size
+		? { key: "dimensions" as const, label: labels.dimensions, value: size }
+		: bars
+			? { key: "bars" as const, label: labels.bars, value: `${bars.count} × ${bars.lengthCm} cm` }
+			: null;
+	return added ? [added, ...rows].slice(0, max) : [...rows];
 }
 
 /** The `configurator` messages that word what a set contains. */

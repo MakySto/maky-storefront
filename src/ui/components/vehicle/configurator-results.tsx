@@ -41,7 +41,7 @@ import { cardKicker } from "@/ui/components/listing/kicker";
 import { ListingSpecs } from "@/ui/components/listing/listing-specs";
 import { ListingViewRoot } from "@/ui/components/listing/listing-view";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
-import { describeIncludes, isCompleteSet, offerSpecs } from "@/lib/fitment/offer-specs";
+import { describeIncludes, isCompleteSet, offerSpecs, withNameSize } from "@/lib/fitment/offer-specs";
 import { formatPrice } from "@/config/locale";
 import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { quoteReferenceFor, quoteRequestHref } from "@/lib/contact/quote-request";
@@ -87,6 +87,7 @@ export function ConfiguratorResults({
 	const tf = useTranslations("fitment");
 	const tCart = useTranslations("cart");
 	const tProduct = useTranslations("product");
+	const tListing = useTranslations("listing");
 	const router = useRouter();
 	const [pending, startTransition] = useTransition();
 	const [busyId, setBusyId] = useState<string | null>(null);
@@ -148,7 +149,10 @@ export function ConfiguratorResults({
 						: null;
 					// The same four parameters and the same contents line the vehicle page and the
 					// category shelf print for this set.
-					const specs = offerSpecs(offer.facets, t);
+					const specs = withNameSize(offerSpecs(offer.facets, t), offer.name, {
+						dimensions: tListing("specDimensions"),
+						bars: tListing("specBars"),
+					});
 					const includes = describeIncludes(offer.completeSetIncludes, t);
 					const kicker = cardKicker(offer.name, offer.brand, offer.categoryName);
 

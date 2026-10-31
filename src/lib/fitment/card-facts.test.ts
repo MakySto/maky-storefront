@@ -55,6 +55,78 @@ async function attach(
 const rows = (dataset: ReturnType<typeof n15060Dataset>) =>
 	dataset.applications.flatMap((a) => a.products).filter((p) => p.saleorProductId === AUDI_OFFER.productId);
 
+describe("attachSetFacts with a size in the name", () => {
+	const KARGO_NAME =
+		"Strešný kôš Nordrive Kargo Rack pre Audi A4 Avant B8 (od 2008), 420 × 180 × 12 cm, NKR4444+N30394";
+
+	it("keeps the size the name states, as the first row, where the tail is taken apart", async () => {
+		const result = await attach(n15060Dataset(), "sk-SK", [card({ name: KARGO_NAME })]);
+		expect(result.setTitle?.model).toBe("Nordrive Kargo Rack");
+		expect(result.specs?.[0]).toEqual({ key: "dimensions", label: "Rozmery", value: "420 × 180 × 12 cm" });
+		// The set's own facts stay behind it, four rows at most.
+		expect(result.specs?.map((s) => s.label)).toContain("Materiál");
+		expect(result.specs?.length).toBeLessThanOrEqual(4);
+	});
+
+	it("does not add a size to a card that has one from its attributes", async () => {
+		const own = { key: "dimensions", label: "", value: "190 × 80 × 40 cm" };
+		const dataset = n15060Dataset();
+		for (const ref of rows(dataset)) delete ref.facets;
+		const result = await attach(dataset, "sk-SK", [card({ name: KARGO_NAME, specs: [own] })]);
+		expect(result.specs?.filter((s) => s.key === "dimensions")).toEqual([own]);
+	});
+
+	it("says no size for a product the dataset has no row for", async () => {
+		const result = await attach(n15060Dataset(), "sk-SK", [
+			card({ id: "UHJvZHVjdDo5OTk5", name: KARGO_NAME }),
+		]);
+		expect(result.specs).toBeUndefined();
+	});
+
+	it("says no size where the name states none", async () => {
+		const result = await attach(n15060Dataset());
+		expect(result.specs?.some((s) => s.key === "dimensions")).toBe(false);
+	});
+});
+
+describe("attachSetFacts with a van's version", () => {
+	const L4 = { code: "van-version", text: { "sk-SK": "Určené len pre verziu: dĺžka L4, vysoká strecha." } };
+	const L3 = { code: "van-version", text: { "sk-SK": "Určené len pre verziu: dĺžka L3, vysoká strecha." } };
+	const own = (dataset: ReturnType<typeof n15060Dataset>) =>
+		dataset.applications.filter((a) => a.products.some((p) => p.saleorProductId === AUDI_OFFER.productId));
+
+	it("says the version the set is made for, in the source's words, when every application agrees", async () => {
+		const dataset = n15060Dataset();
+		for (const application of own(dataset)) application.conditions = [L4];
+		expect((await attach(dataset)).versionNote).toBe("Určené len pre verziu: dĺžka L4, vysoká strecha.");
+	});
+
+	it("says nothing for a set made for several versions, and nothing where one application names none", async () => {
+		const dataset = n15060Dataset();
+		const [first, ...rest] = own(dataset);
+		const copy = structuredClone(first!);
+		copy.applicationId = "app:other-version";
+		first!.conditions = [L4];
+		copy.conditions = [L3];
+		dataset.applications.push(copy);
+		expect((await attach(dataset)).versionNote).toBeUndefined();
+
+		copy.conditions = [];
+		expect((await attach(dataset)).versionNote).toBeUndefined();
+		void rest;
+	});
+
+	it("does not put it in another language's words", async () => {
+		const dataset = n15060Dataset();
+		for (const application of own(dataset)) application.conditions = [L4];
+		expect((await attach(dataset, "en-US")).versionNote).toBeUndefined();
+	});
+
+	it("says nothing about a set with no version condition", async () => {
+		expect((await attach(n15060Dataset())).versionNote).toBeUndefined();
+	});
+});
+
 describe("attachSetFacts", () => {
 	it("puts the set's own facts on its card", async () => {
 		const result = await attach(n15060Dataset());
