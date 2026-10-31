@@ -87,6 +87,53 @@ describe("attachSetFacts with a size in the name", () => {
 		const result = await attach(n15060Dataset());
 		expect(result.specs?.some((s) => s.key === "dimensions")).toBe(false);
 	});
+
+	describe("on the Kargo shelf, for a product the dataset has no row for", () => {
+		const COMPACT = "Strešný kôš Nordrive Kargo Rack Compact 140 × 120 × 12 cm bez upevňovacej sady";
+		const category = (slug: string) => ({ id: "c1", name: "Kargo", slug });
+		const unknown = (over: Partial<ProductCardData>) => card({ id: "UHJvZHVjdDo5OTk5", ...over });
+		const expected = { key: "dimensions", label: "Rozmery", value: "140 × 120 × 12 cm" };
+
+		it("says the size its own name states, under either slug of the category", async () => {
+			for (const slug of [
+				"kargo-stresne-nosice-a-stresne-kose-na-dodavky",
+				"stresne-nosice-a-kose-na-dodavky",
+			]) {
+				const result = await attach(n15060Dataset(), "sk-SK", [
+					unknown({ name: COMPACT, category: category(slug) }),
+				]);
+				expect(result.specs).toEqual([expected]);
+				expect(result.setTitle).toBeUndefined();
+				expect(result.fit).toBeUndefined();
+			}
+		});
+
+		it("says it without a dataset too, since the name needs no export", async () => {
+			const result = await attach(null, "sk-SK", [
+				unknown({ name: COMPACT, category: category("stresne-nosice-a-kose-na-dodavky") }),
+			]);
+			expect(result.specs).toEqual([expected]);
+		});
+
+		it("keeps the size its own attributes give", async () => {
+			const own = { key: "dimensions", label: "", value: "150 × 100 × 12 cm" };
+			const result = await attach(n15060Dataset(), "sk-SK", [
+				unknown({ name: COMPACT, specs: [own], category: category("stresne-nosice-a-kose-na-dodavky") }),
+			]);
+			expect(result.specs).toEqual([own]);
+		});
+
+		it("says nothing for a name that states no size, and nothing on another shelf", async () => {
+			const kargo = category("stresne-nosice-a-kose-na-dodavky");
+			expect(
+				(await attach(n15060Dataset(), "sk-SK", [unknown({ name: "Kargo Rack Compact", category: kargo })]))
+					.specs,
+			).toBeUndefined();
+			const other = unknown({ name: COMPACT, category: category("strešné-boxy") });
+			expect(await attach(n15060Dataset(), "sk-SK", [other])).toEqual(other);
+			expect(await attach(null, "sk-SK", [other])).toEqual(other);
+		});
+	});
 });
 
 describe("attachSetFacts with a van's version", () => {

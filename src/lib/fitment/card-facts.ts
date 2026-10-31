@@ -2,13 +2,14 @@ import "server-only";
 
 import { getTranslations } from "next-intl/server";
 
+import { KARGO_CATEGORY_SLUGS } from "@/config/kargo-slugs";
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import type { ProductCardData } from "@/ui/components/plp/product-card";
 import { isFitmentRefSellable, type FitmentCondition, type FitmentDataset } from "./contract";
 import { pickConditionText } from "./conditions";
 import { describeOfferFit, productFitIndex } from "./offer-fit";
 import type { ListingSpec } from "@/ui/components/listing/listing-specs";
-import { describeIncludes, offerSpecs, withNameSize } from "./offer-specs";
+import { describeIncludes, offerSpecs, withNameSize, type NameSizeLabels } from "./offer-specs";
 import { loadFitmentDataset } from "./provider";
 import { isDatasetStale } from "./resolve";
 import { productSetFacts } from "./set-facts";
@@ -59,6 +60,20 @@ function versionNoteOf(rows: VersionRows | undefined, locale: string): string | 
 	return texts.size === 1 && text ? text : null;
 }
 
+/** A card of the Nordrive Kargo category, whether or not the dataset has a row for its product. */
+const isKargoCard = (card: ProductCardData) =>
+	card.category ? KARGO_CATEGORY_SLUGS.includes(card.category.slug) : false;
+
+/**
+ * The rows a card has once its name's own size is added in front, or null when the name adds none.
+ * A basket's size is in its name and nowhere else the card reads: the dataset carries no facets for it, and
+ * taking the name apart for a set drops it with the rest of the tail.
+ */
+function sizedRows(held: readonly ListingSpec[], name: string, labels: NameSizeLabels): ListingSpec[] | null {
+	const sized = withNameSize(held, name, labels);
+	return sized.length > held.length || sized[0] !== held[0] ? sized : null;
+}
+
 /**
  * What a roof-rack set's listing card says about the SET, from CFM's export — the same words on the
  * category shelf, in search and anywhere else a Saleor product becomes a card.
@@ -82,7 +97,16 @@ export async function attachSetFacts(
 ): Promise<ProductCardData[]> {
 	if (cards.length === 0) return [...cards];
 	const { dataset } = await loadFitmentDataset();
-	if (!dataset || isDatasetStale(dataset, now)) return [...cards];
+	if (!dataset || isDatasetStale(dataset, now)) {
+		// The name's size needs no export: a Kargo card still says it, a card of any other shelf stays as it was.
+		if (!cards.some(isKargoCard)) return [...cards];
+		const tNames = await getTranslations({ locale, namespace: "listing" });
+		const names = { dimensions: tNames("specDimensions"), bars: tNames("specBars") };
+		return cards.map((card) => {
+			const specs = isKargoCard(card) ? sizedRows(card.specs ?? [], card.name, names) : null;
+			return specs ? { ...card, specs } : card;
+		});
+	}
 	const language = locale.split("-")[0]?.toLowerCase() || null;
 
 	const fitIndex = productFitIndex(dataset);
@@ -108,16 +132,13 @@ export async function attachSetFacts(
 			.map((generationId) => setVehicleOf(dataset, generationId, language))
 			.filter((vehicle): vehicle is SetVehicle => vehicle !== null);
 		const setTitle = fit ? splitSetTitle(card.name, { brand: card.brand, makes, vehicles }) : null;
-		// A basket's size is in its name and nowhere else the card reads, and taking the name apart drops it:
-		// it is said as a row of its own, first, unless the card's own attributes already give a size.
+		// A set the dataset names, and any card of the Kargo shelf, says the size its own name states, first,
+		// unless the card's own attributes already give one.
 		const held = specs.length > 0 ? specs : card.specs ?? [];
-		const sized = fit
-			? withNameSize(held, card.name, {
-					dimensions: tListing("specDimensions"),
-					bars: tListing("specBars"),
-				})
-			: held;
-		const withSize = sized.length > held.length || sized[0] !== held[0] ? sized : null;
+		const withSize =
+			fit || isKargoCard(card)
+				? sizedRows(held, card.name, { dimensions: tListing("specDimensions"), bars: tListing("specBars") })
+				: null;
 		return {
 			...card,
 			...(fit ? { fit } : {}),
