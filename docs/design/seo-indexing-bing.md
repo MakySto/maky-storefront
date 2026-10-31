@@ -123,18 +123,46 @@ POST names them; the engine fetches them soon after. It does not decide what get
 
   ```bash
   node scripts/ops/indexnow.mjs --kinds pages                  # plan only; also says whether the key file is served
-  node scripts/ops/indexnow.mjs --kinds pages --state ~/indexnow-state.json --fire
-  node scripts/ops/indexnow.mjs --kinds vehicles,products --max 10000 --state ~/indexnow-state.json --fire
+  node scripts/ops/indexnow.mjs --kinds pages --fire           # about 190 URLs in one request; needs no state file
+  node scripts/ops/indexnow.mjs --kinds pages,products,vehicles --state /var/lib/maky-indexnow/state.json --fire
   node scripts/ops/indexnow.mjs --urls /cz/autochladnicky,/cz/<product> --fire     # after a publish
   ```
 
-  `pages` is the home pages, categories and content pages of every market (about 180 URLs): start there.
-  Products and vehicles are about 140 000: with `--state`, each run sends the next `--max` URLs and the
-  last one says "nothing to send". `--urls` ignores the state, because a URL is named when it has just changed.
+  `pages` is the home pages, categories and content pages of every market (about 190 URLs): start there.
+  Products and vehicles are about 140 000. They go out only with `--state`, because without it every run would
+  send the same first `--max` URLs again. With it, a run sends first the URLs it has never sent (in sitemap
+  order, so a backlog drains market by market), then those whose sitemap `lastmod` is later than the time
+  they were sent, none of them more than once per `--resend-after-days` (default 7). Only products carry a
+  `lastmod`; a page or a vehicle is told once. `--urls` ignores the state, because a URL is named when it has
+  just changed.
 
+- **Only a 200 counts as sent.** The endpoint answers 200 (accepted) or 202 (received, the key file has not
+  been checked yet). On 2026-10-08 the first run, 177 URLs, got a 202, the tool wrote all of them to the state
+  file as sent, and Bing Webmaster Tools never listed them. The site was not at fault: the key file was served
+  as `text/plain` with exactly the key, and the next two submissions (2 and 9 URLs on 2026-10-12) were
+  answered with a 200. A 202 now stops the run, records nothing and exits 3, so the next run sends the same
+  URLs again.
 - **What stops it.** Not firing unless the public site serves the key file; any URL off the site's host; a
-  typo in an option; any answer other than 200 or 202 (403: key file not reachable or wrong; 422: URLs
-  not of the host; 429: too many requests, wait and run again, the state file has kept the progress).
+  typo in an option; products or vehicles without `--state`; any answer other than 200 (202: exit 3, nothing
+  recorded; 403: key file not reachable or wrong; 422: URLs not of the host; 429: too many requests, wait and
+  run again, the state file has kept the progress).
+- **The daily run.** `scripts/ops/systemd/maky-indexnow.timer` starts `maky-indexnow.service` at 06:20 UTC every
+  day. That hour is clear of the CarFitManager 4.5 windows on the same box (01:30 to 02:04 and 03:15 to 05:00
+  UTC, Mondays also about 02:30 to 03:04), and the service skips the day while a deploy holds its lock. A run
+  sends at most 10 000 URLs, at low priority, under a 768 MB ceiling and without swap, so the first backlog
+  (about 140 000 URLs) is told in about two weeks and after that a run sends what is new or changed. The
+  progress lives in `/var/lib/maky-indexnow/state.json`, outside the checkout, so a deploy does not touch it.
+  A person installs it once on the web server (the commands are at the top of the service file); the deploy
+  does not. `journalctl -u maky-indexnow.service` shows every run with the endpoint's answers, and
+  `sudo systemctl disable --now maky-indexnow.timer` stops it. If `maky-storefront` restarts, its memory passes
+  6 GB (CLAUDE.md section 13.3.1) or the nginx log shows 5xx answers on a day it ran, stop the timer first and
+  look second.
+- **Reading Bing Webmaster Tools.** The IndexNow report names two sources. "Self" is what this tool sent.
+  "Cloudflare" is Cloudflare's Crawler Hints, which names only cached static files (robots.txt, the favicon,
+  fonts, images) and does no harm. Times are shown in the account's time zone, not UTC. "Indexing insights"
+  counts URLs sent, crawled and indexed; a submission shows there within about a day. The first thing to look
+  for is the crawl: `bingbot` asking for the URLs in the nginx log. Whether Bing then indexes them is Bing's
+  decision.
 - **Etiquette.** Send what is new or changed, not the whole site every hour. Only URLs that are indexable:
   the sitemap-driven mode sends sitemap URLs only; `--urls` sends whatever it is given.
 - **In Bing Webmaster Tools** (Marek's account): "URL Inspection", paste the URL, "Request indexing" for a

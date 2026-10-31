@@ -1,0 +1,15 @@
+# Once a day at 06:20 UTC (07:20 in Bratislava in winter, 08:20 in summer).
+#
+# The hour keeps clear of the CarFitManager 4.5 windows on the same box: 01:30 to 02:04 and 03:15 to
+# 05:00 UTC every day, and on Mondays also about 02:30 to 03:04 UTC (the fitment renewal). A deploy is
+# kept out by the lock the service checks, not by the clock.
+[Unit]
+Description=IndexNow, once a day
+
+[Timer]
+OnCalendar=*-*-* 06:20:00 UTC
+# After a reboot or an outage, run the day that was missed.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
