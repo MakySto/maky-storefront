@@ -9,6 +9,7 @@ import { type ProductDetailsQuery } from "@/gql/graphql";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getLocaleFromChannel } from "@/config/locale";
+import { baseSlugOfCategory } from "@/config/category-routes";
 import { marketHref } from "@/lib/channel-map";
 import { AddToCart } from "./add-to-cart";
 import { VariantSelectionSection } from "./variant-selection";
@@ -202,7 +203,10 @@ export async function VariantSectionDynamic({
 
 	// A category that asks for a quote instead of a price, where this market does not sell the product
 	// (`config/quote-only.ts`): the page shows no price, and the link above stands alone.
-	const quoteOnly = quoteInsteadOfPrice({ isPurchasable, categorySlug: product.category?.slug });
+	const quoteOnly = quoteInsteadOfPrice({
+		isPurchasable,
+		categorySlug: baseSlugOfCategory(channel, product.category?.slug),
+	});
 
 	const reviewSummary = reviewSummaryFor(product);
 

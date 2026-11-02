@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProductListItemFragment } from "@/gql/graphql";
+import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { buildCardSpecs, cardSpecsFor, transformToProductCard } from "./utils";
 
 type Attrs = ProductListItemFragment["attributes"];
@@ -175,6 +176,30 @@ describe("buildCardSpecs", () => {
 			expect(keys("kargo-stresne-nosice-a-stresne-kose-na-dodavky", "sk-eur", "sk-SK")).toEqual(abroad);
 			expect(keys("stresne-nosice-a-kose-na-dodavky", "sk-eur", "sk-SK")).toEqual(abroad);
 			expect(keys("kargo-dachtraeger-und-dachkoerbe-fuer-lieferwagen", "at-eur", "de-AT")).toEqual(abroad);
+		});
+
+		it("carries the base slug of its category beside the translated one, for the rules keyed by it", () => {
+			const abroad = transformToProductCard(product(DE_SLUG), "de-eur", "de-DE").category;
+			expect(abroad).toMatchObject({
+				slug: DE_SLUG,
+				baseSlug: "kargo-stresne-nosice-a-stresne-kose-na-dodavky",
+			});
+			const home = transformToProductCard(product("stresne-boxy"), "sk-eur", "sk-SK").category;
+			expect(home).toMatchObject({ slug: "stresne-boxy", baseSlug: "stresne-boxy" });
+		});
+
+		it("asks for a quote where the market does not sell it, under the translated slug too", () => {
+			const quote = (slug: string, channel: string, locale: string) => {
+				const category = transformToProductCard(product(slug), channel, locale).category;
+				return quoteInsteadOfPrice({
+					isPurchasable: false,
+					categorySlug: category?.baseSlug ?? category?.slug,
+				});
+			};
+			expect(quote("kargo-roof-racks-and-crossbars-for-vans", "us-usd", "en-US")).toBe(true);
+			expect(quote("kargo-van-roof-racks-and-crossbars", "ca-cad", "en-CA")).toBe(true);
+			expect(quote(DE_SLUG, "de-eur", "de-DE")).toBe(true);
+			expect(quote("dachtraeger", "de-eur", "de-DE")).toBe(false);
 		});
 
 		it("leaves another shelf's translated slug alone: its load stays and no material is asked for", () => {

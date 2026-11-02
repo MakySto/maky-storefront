@@ -262,6 +262,15 @@ export function isKargoCategory(marketOrChannel: string, slug: string | null | u
 	return Boolean(slug) && KARGO_CATEGORY_SLUGS.includes(categoryBaseSlug(marketOrChannel, slug!));
 }
 
+/**
+ * The base slug of the category a product carries in this market, or `null` for a product with none. Where a surface
+ * compares a category with a rule keyed by BASE slug (`quote-only.ts`, the Kargo shelf), it asks this first: abroad
+ * the slug on the product is the translated one.
+ */
+export function baseSlugOfCategory(marketOrChannel: string, slug: string | null | undefined): string | null {
+	return slug ? categoryBaseSlug(marketOrChannel, slug) : null;
+}
+
 /** The canonical public segment of a category in this market. Unmapped slugs pass through. */
 export function categorySegment(marketOrChannel: string, slug: string): string {
 	const category = mappedCategoryFor(marketOrChannel, slug);

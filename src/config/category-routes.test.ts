@@ -16,6 +16,7 @@ import {
 	categoryBaseSlug,
 	categoryRouteTable,
 	categorySegment,
+	baseSlugOfCategory,
 	categoryUrlFor,
 	isKargoCategory,
 	isLocalizedRootSegment,
@@ -387,6 +388,13 @@ describe("the Nordrive Kargo van category", () => {
 		}
 		// Another market's spelling is not this market's.
 		expect(isKargoCategory("cz", SEGMENTS.de!)).toBe(false);
+		// What a surface hands to a rule keyed by base slug: the base slug itself, whatever the market spelled.
+		for (const [market, segment] of Object.entries(SEGMENTS)) {
+			expect(baseSlugOfCategory(market, segment), market).toBe(BASE);
+		}
+		expect(baseSlugOfCategory("de", "autochladnicky")).toBe("autochladnicky");
+		expect(baseSlugOfCategory("de", null)).toBeNull();
+		expect(baseSlugOfCategory("de", undefined)).toBeNull();
 		expect(isKargoCategory("de", null)).toBe(false);
 		expect(isKargoCategory("de", "")).toBe(false);
 	});
