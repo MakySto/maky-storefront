@@ -13,6 +13,7 @@ import {
 	sheetFacts,
 	TEMPERATURE_RANGE_REF,
 	templateFor,
+	withoutSheetRepeats,
 	type PageSections,
 	type ParameterRow,
 } from "./product-templates";
@@ -440,5 +441,51 @@ describe("descriptionSections", () => {
 		const blocks = ["<h3>A</h3>", "<p>1</p>", "<h3>B</h3>", "<p>2</p>"];
 		expect(descriptionSections(blocks).flat()).toEqual(blocks);
 		expect(descriptionSections([])).toEqual([]);
+	});
+});
+
+describe("withoutSheetRepeats", () => {
+	const sheet = [
+		{ label: "Rozmery koša", value: "420 × 180 × 7 cm" },
+		{ label: "Materiál koša", value: "eloxovaný hliník" },
+	];
+	const rows = [
+		{ label: "Materiál", values: ["eloxovaný hliník"] },
+		{ label: "Farba", values: ["strieborná"] },
+	];
+
+	it("drops the attribute rows whose value the sheet already says, and the outer dimensions with them", () => {
+		const out = withoutSheetRepeats(rows, "420\u00a0×\u00a0180 × 7 cm", sheet);
+		expect(out.rows.map((r) => r.label)).toEqual(["Farba"]);
+		expect(out.outerDimensions).toBeNull();
+	});
+
+	it("keeps a row whose value the sheet does not carry, and dimensions that differ", () => {
+		const out = withoutSheetRepeats(rows, "180 × 135 × 7 cm", [
+			{ label: "Rozmery koša", value: "420 × 180 × 7 cm" },
+		]);
+		expect(out.rows).toHaveLength(2);
+		expect(out.outerDimensions).toBe("180 × 135 × 7 cm");
+	});
+
+	it("matches the same figures in any language and spelling of the sign", () => {
+		const out = withoutSheetRepeats(
+			[{ label: "Material", values: ["Eloxiertes Aluminium"] }],
+			"420x180x7 cm",
+			[
+				{ label: "Maße", value: "420 × 180 × 7 cm" },
+				{ label: "Material des Korbs", value: "eloxiertes Aluminium" },
+			],
+		);
+		expect(out.rows).toEqual([]);
+		expect(out.outerDimensions).toBeNull();
+	});
+
+	it("drops nothing when the page has no sheet", () => {
+		for (const none of [null, undefined, []]) {
+			const out = withoutSheetRepeats(rows, "1 × 2 × 3 cm", none);
+			expect(out.rows).toHaveLength(2);
+			expect(out.outerDimensions).toBe("1 × 2 × 3 cm");
+		}
 	});
 });

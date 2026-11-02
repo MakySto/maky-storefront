@@ -17,6 +17,7 @@ import {
 	sectionKindOfHtml,
 	templateFor,
 	TEMPERATURE_RANGE_REF,
+	withoutSheetRepeats,
 	type PageSections,
 	type ParameterRow,
 	type ProductTemplate,
@@ -172,12 +173,16 @@ export async function ProductSpecs({
 	const range = template.groups.some((group) => group.refs.includes(TEMPERATURE_RANGE_REF))
 		? formatTemperatureRange(attributes, locale, (min, max) => t("content.range", { min, max }))
 		: null;
-	const rows = range
+	const allRows = range
 		? withTemperatureRange(attributeRows, range.full, t("content.temperatureRange"))
 		: attributeRows;
+	// Under the description's own sheet the attributes keep only what the sheet does not already say.
+	const { rows, outerDimensions } = withoutSheetRepeats(
+		allRows,
+		formatOuterDimensions(attributes, locale),
+		specs?.facts,
+	);
 	const groups = groupParameters(template, rows);
-
-	const outerDimensions = formatOuterDimensions(attributes, locale);
 	const hasDescription = Boolean(descriptionHtml?.length || careInstructions);
 	const hasAttributeParameters = rows.length > 0 || Boolean(outerDimensions);
 	const hasTechnicalParameters = hasAttributeParameters || Boolean(specs);
