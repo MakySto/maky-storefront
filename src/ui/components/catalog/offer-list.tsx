@@ -2,7 +2,9 @@ import { getTranslations } from "next-intl/server";
 import { marketHref } from "@/lib/channel-map";
 import { type FitmentOffer, type FitmentOffers } from "@/lib/fitment/offers";
 import { ROOF_GROUP_ORDER, describeOfferFit, roofsOf, type OfferFit } from "@/lib/fitment/offer-fit";
-import { describeIncludes, isCompleteSet, offerSpecs, withNameSize } from "@/lib/fitment/offer-specs";
+import { describeIncludes, isCompleteSet, offerSpecs, withAttributeSpecs } from "@/lib/fitment/offer-specs";
+import { KARGO_CATEGORY_SLUGS } from "@/config/kargo-slugs";
+import { withComposedLabels } from "@/ui/components/listing/listing-specs";
 import { type RoofType } from "@/lib/fitment/contract";
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import { CARD_GRID } from "@/ui/components/listing/card-layout";
@@ -152,8 +154,11 @@ export async function CatalogOfferList({
 				fit={described}
 				title={title}
 				specs={
-					described
-						? withNameSize(rows, offer.name, { dimensions: tl("specDimensions"), bars: tl("specBars") })
+					offer.categorySlug && KARGO_CATEGORY_SLUGS.includes(offer.categorySlug)
+						? withComposedLabels(withAttributeSpecs(rows, offer.specs ?? []), {
+								dimensions: tl("specDimensions"),
+								bars: tl("specBars"),
+							})
 						: rows
 				}
 				includes={describeIncludes(includes, tc)}
