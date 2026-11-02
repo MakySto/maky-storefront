@@ -362,6 +362,38 @@ export function sheetFacts(sections: PageSections | null, template: ProductTempl
 	return sections.specs.facts.filter(({ label, value }) => label && value && value.length <= MAX_FACT_LENGTH);
 }
 
+/** A value as it is compared with another: case, spacing and the sign between dimensions do not tell two values apart. */
+const comparable = (value: string): string =>
+	value
+		.toLowerCase()
+		.replace(/[\u00a0\u202f\s]+/g, " ")
+		.replace(/\s*[×x]\s*/g, "×")
+		.replace(/[\s.;,]+$/, "")
+		.trim();
+
+/**
+ * The attribute rows a card that already prints the description's parameter sheet still has to print: the
+ * ones whose value the sheet does not already say. A Kargo basket's sheet has "Rozmery koša 420 × 180 × 7 cm" and
+ * "Materiál koša eloxovaný hliník", and its attributes the very same figures as "Vonkajšie rozmery" and
+ * "Materiál"; printed together the page says everything twice. The rows are matched by VALUE, which reads the
+ * same in every language, never by label, which does not; a row whose value the sheet does not carry stays.
+ * With no sheet nothing is dropped.
+ */
+export function withoutSheetRepeats<Row extends { values: readonly string[] }>(
+	rows: readonly Row[],
+	outerDimensions: string | null,
+	sheet: readonly SpecFact[] | null | undefined,
+): { rows: Row[]; outerDimensions: string | null } {
+	const stated = new Set((sheet ?? []).map(({ value }) => comparable(value ?? "")).filter(Boolean));
+	if (stated.size === 0) return { rows: [...rows], outerDimensions };
+	const repeats = (values: readonly string[]) =>
+		values.length > 0 && stated.has(comparable(values.join(", ")));
+	return {
+		rows: rows.filter((row) => !repeats(row.values)),
+		outerDimensions: outerDimensions && stated.has(comparable(outerDimensions)) ? null : outerDimensions,
+	};
+}
+
 // ─── Grouped parameters ──────────────────────────────────────────────────────────────────────
 
 export interface ParameterRow {
