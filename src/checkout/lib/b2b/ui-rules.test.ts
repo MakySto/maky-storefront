@@ -4,16 +4,19 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+	billingToFollowShipping,
+	billingWhenCompanyOff,
 	billingWithoutCompany,
 	companyBillingAddressInput,
 	companyFieldErrorKey,
 	defaultSameAsShipping,
 	initialCompanyFieldsValue,
 	isSameAddress,
+	placeBillingErrors,
 	type B2bCompanyFieldsValue,
 } from "./company-form-state";
 import type { B2bTaxedReason, B2bUiOutcome, B2bVatVerificationStatus } from "./contract";
-import { b2bPaymentGate, taxedQuoteKey } from "./payment-gate";
+import { b2bPaymentGate, confirmsTaxedQuote, taxedQuoteKey } from "./payment-gate";
 import { b2bStatusMessage } from "./status-message";
 import { vatFieldLabelKey } from "./vat-id";
 
@@ -144,6 +147,127 @@ describe("billing address: the sameAsBilling overwrite (zadanie 02, §2)", () =>
 	});
 });
 
+describe("billing address after a failed payment and a delivery change (review, PR #84)", () => {
+	// The payment attempt copied the delivery address into billing, company included ("same as delivery").
+	const copied = { ...shipping };
+	const movedInput = {
+		...shipping,
+		streetAddress1: "Neue Str. 9",
+		city: "Hamburg",
+		postalCode: "20095",
+		country: "DE",
+	};
+
+	it("a billing address that was only a copy follows the new delivery address (B2B on or off alike)", () => {
+		expect(
+			billingToFollowShipping({ billingAddress: copied, shippingAddress: shipping }, movedInput as never),
+		).toBe(movedInput);
+		// …and the Payment step then finds billing = delivery, so "same as delivery" is ticked again.
+		expect(
+			defaultSameAsShipping({
+				isShippingRequired: true,
+				shippingAddress: { ...movedInput, country: { code: "DE" } },
+				billingAddress: { ...movedInput, country: { code: "DE" } },
+			}),
+		).toBe(true);
+	});
+
+	it("a billing address of the customer's own is never touched", () => {
+		const own = { ...shipping, streetAddress1: "Rechnungsweg 2" };
+		expect(
+			billingToFollowShipping({ billingAddress: own, shippingAddress: shipping }, movedInput as never),
+		).toBeNull();
+		const otherCompany = { ...shipping, companyName: "Invoice Company s. r. o." };
+		expect(
+			billingToFollowShipping(
+				{ billingAddress: otherCompany, shippingAddress: shipping },
+				movedInput as never,
+			),
+		).toBeNull();
+	});
+
+	it("nothing is written when the delivery address did not change, or there is no billing address yet", () => {
+		const same = { ...shipping, country: "DE" };
+		expect(
+			billingToFollowShipping({ billingAddress: copied, shippingAddress: shipping }, same as never),
+		).toBeNull();
+		expect(
+			billingToFollowShipping({ billingAddress: null, shippingAddress: shipping }, movedInput as never),
+		).toBeNull();
+		expect(billingToFollowShipping({ billingAddress: copied, shippingAddress: shipping }, null)).toBeNull();
+	});
+
+	it("switching the company purchase off with 'same as delivery' takes the delivery address being saved", () => {
+		const storedBilling = { ...shipping, companyName: "Invoice Company" };
+		expect(
+			billingWhenCompanyOff(
+				{ billingSameAsShipping: true },
+				{ sameAsShippingOffered: true, storedBilling },
+				movedInput as never,
+			),
+		).toBe(movedInput);
+		// A separate billing address keeps its address and loses the company.
+		expect(
+			billingWhenCompanyOff(
+				{ billingSameAsShipping: false },
+				{ sameAsShippingOffered: true, storedBilling },
+				movedInput as never,
+			),
+		).toEqual(billingWithoutCompany(storedBilling));
+	});
+});
+
+describe("Saleor's billing errors are shown where the customer can see them", () => {
+	const where = {
+		billingFields: ["firstName", "lastName", "streetAddress1", "city", "postalCode"],
+		shippingFields: ["firstName", "lastName", "streetAddress1", "city", "postalCode", "phone"],
+	};
+
+	it("'same as delivery': the delivery form's field; the company name stays at the company", () => {
+		expect(
+			placeBillingErrors(
+				[
+					{ field: "postalCode", message: "Invalid postal code" },
+					{ field: "companyName", message: "Too long" },
+				],
+				{ ...where, sameAsShipping: true },
+				"fallback",
+			),
+		).toEqual({
+			company: { companyName: "Too long" },
+			shipping: { postalCode: "Invalid postal code" },
+			form: [],
+		});
+	});
+
+	it("a separate billing address: the billing field in the company block", () => {
+		expect(
+			placeBillingErrors([{ field: "city", message: null }], { ...where, sameAsShipping: false }, "fallback"),
+		).toEqual({ company: { "billing.city": "fallback" }, shipping: {}, form: [] });
+	});
+
+	it("no field, or a field not on screen (a saved address was picked): on the form, never on a hidden input", () => {
+		expect(
+			placeBillingErrors(
+				[
+					{ field: null, message: "Address is invalid" },
+					{ field: "phone", message: "Bad phone" },
+					{ field: "phone", message: "Bad phone" },
+				],
+				{ ...where, sameAsShipping: false },
+				"fallback",
+			),
+		).toEqual({ company: {}, shipping: {}, form: ["Address is invalid", "Bad phone"] });
+		expect(
+			placeBillingErrors(
+				[{ field: "postalCode", message: "Invalid" }],
+				{ billingFields: [], shippingFields: [], sameAsShipping: true },
+				"fallback",
+			).form,
+		).toEqual(["Invalid"]);
+	});
+});
+
 describe("b2bPaymentGate", () => {
 	const gate = (outcome: B2bUiOutcome | null, patch: Partial<Parameters<typeof b2bPaymentGate>[0]> = {}) =>
 		b2bPaymentGate({
@@ -187,6 +311,37 @@ describe("b2bPaymentGate", () => {
 		expect(taxedQuoteKey(quote(154.98), outcome)).toBe("invalid|EUR|154.9800");
 		expect(taxedQuoteKey(quote(154.98), outcome)).not.toBe(taxedQuoteKey(quote(160), outcome));
 		expect(taxedQuoteKey(quote(126), { kind: "exempt", checkedAt: null, expiresAt: null })).toBeNull();
+	});
+});
+
+describe("'Pokračovať s DPH' in the Information step confirms only the quote it was pressed for", () => {
+	const taxed: B2bUiOutcome = { kind: "taxed", reason: "invalid", needsTaxedConfirmation: true };
+	const quote = (amount: number) => ({ totalPrice: { gross: { amount, currency: "EUR" } } });
+	const pressedFor = taxedQuoteKey(quote(154.98), taxed);
+
+	it("the same taxed quote after the save: confirmed", () => {
+		expect(confirmsTaxedQuote({ outcome: taxed, checkout: quote(154.98) }, pressedFor)).toBe(true);
+	});
+
+	it("another total, another reason, an exemption now, or no answer: not confirmed, shown instead", () => {
+		expect(confirmsTaxedQuote({ outcome: taxed, checkout: quote(160.97) }, pressedFor)).toBe(false);
+		expect(
+			confirmsTaxedQuote(
+				{
+					outcome: { kind: "taxed", reason: "unavailable", needsTaxedConfirmation: true },
+					checkout: quote(154.98),
+				},
+				pressedFor,
+			),
+		).toBe(false);
+		expect(
+			confirmsTaxedQuote(
+				{ outcome: { kind: "exempt", checkedAt: null, expiresAt: null }, checkout: quote(126) },
+				pressedFor,
+			),
+		).toBe(false);
+		expect(confirmsTaxedQuote({ outcome: taxed, checkout: null }, pressedFor)).toBe(false);
+		expect(confirmsTaxedQuote({ outcome: taxed, checkout: quote(154.98) }, null)).toBe(false);
 	});
 });
 
@@ -294,6 +449,15 @@ describe("labels the company block uses", () => {
 		// The national names are the same in every language: it is the invoiced company's country that names the field.
 		expect(lookup("en-US", "checkout.b2b.vatLabel.SK")).toBe("IČ DPH");
 		expect(lookup("de-DE", "checkout.b2b.vatLabel.AT")).toBe("UID-Nummer");
+	});
+
+	it("the VAT placeholder takes the country's example in every locale; none names a fixed country", () => {
+		for (const locale of LOCALES) {
+			const placeholder = lookup(locale, "checkout.b2b.vatIdPlaceholder");
+			expect(placeholder, locale).toMatch(/\{example\}/);
+			expect(placeholder, locale).not.toMatch(/[A-Z]{2}\d{6,}/);
+		}
+		expect(lookup("sk-SK", "checkout.b2b.vatIdPlaceholder")).toBe("napr. {example}");
 	});
 
 	it("every form error code has its sentence in every locale", () => {

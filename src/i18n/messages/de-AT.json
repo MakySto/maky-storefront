@@ -622,7 +622,7 @@
 			"companyName": "Firmenname",
 			"registrationId": "IČO",
 			"taxId": "DIČ",
-			"vatIdPlaceholder": "z. B. DE123456789",
+			"vatIdPlaceholder": "z. B. {example}",
 			"vatIdHint": "Mit einer gültigen UID-Nummer aus einem anderen EU-Land und Lieferung in dieses Land kann die Lieferung umsatzsteuerfrei sein. Wir entscheiden nach der Prüfung in VIES.",
 			"billingSameAsShipping": "Rechnungsadresse ist gleich der Lieferadresse",
 			"billingAddressTitle": "Rechnungsadresse",

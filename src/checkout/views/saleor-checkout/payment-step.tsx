@@ -284,7 +284,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 					pending={b2b.pending}
 					detail={offerTaxedConfirmation ? t("b2b.taxedTotal", { total: totalStr }) : undefined}
 					on={{
-						continueWithVat: offerTaxedConfirmation ? b2b.confirmTaxed : undefined,
+						continueWithVat: offerTaxedConfirmation ? () => b2b.confirmTaxed() : undefined,
 						retry: () => void b2b.evaluate("evaluate"),
 						recheck: () => void b2b.evaluate("confirm"),
 						refreshStatus: () => {

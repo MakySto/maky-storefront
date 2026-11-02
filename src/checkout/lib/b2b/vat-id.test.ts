@@ -7,8 +7,67 @@ import {
 	isValidSlovakTaxId,
 	normalizeVatId,
 	vatFieldLabelKey,
+	vatIdExample,
 	viesPrefixForCountry,
 } from "./vat-id";
+
+const EU = [
+	"AT",
+	"BE",
+	"BG",
+	"CY",
+	"CZ",
+	"DE",
+	"DK",
+	"EE",
+	"ES",
+	"FI",
+	"FR",
+	"GR",
+	"HR",
+	"HU",
+	"IE",
+	"IT",
+	"LT",
+	"LU",
+	"LV",
+	"MT",
+	"NL",
+	"PL",
+	"PT",
+	"RO",
+	"SE",
+	"SI",
+	"SK",
+];
+
+describe("vatIdExample: the placeholder follows the invoiced company's country (review, PR #84)", () => {
+	it("is the country's own shape, as the reviewers asked: SK1234567890, DE123456789, ATU12345678", () => {
+		expect(vatIdExample("SK")).toBe("SK1234567890");
+		expect(vatIdExample("DE")).toBe("DE123456789");
+		expect(vatIdExample("AT")).toBe("ATU12345678");
+		expect(vatIdExample("GR")).toBe("EL123456789");
+	});
+
+	it("every member state has one, and each passes the format check for its own country", () => {
+		for (const country of EU) {
+			const example = vatIdExample(country);
+			expect(example, country).toBeTruthy();
+			const normalized = normalizeVatId(example!, country);
+			expect(normalized, `${country}: ${example}`).toMatchObject({
+				ok: true,
+				vatId: example,
+				countryCode: country,
+			});
+		}
+	});
+
+	it("outside the EU there is no example (the field then shows its name)", () => {
+		expect(vatIdExample("US")).toBeNull();
+		expect(vatIdExample("CH")).toBeNull();
+		expect(vatIdExample(null)).toBeNull();
+	});
+});
 
 describe("normalizeVatId (zadanie 02, §2 Polia a normalizácia)", () => {
 	it("upper-cases and strips spaces, dots and hyphens, keeping leading zeros", () => {

@@ -43,8 +43,13 @@ export type CheckoutB2bContextValue = {
 	evaluate: (mode: "evaluate" | "confirm") => Promise<B2bEvaluationView | null>;
 	/** The company data are being edited: whatever was said before no longer describes them. */
 	invalidate: () => void;
-	/** The customer accepts the current taxed total ("Pokračovať s DPH"). Bound to that total. */
-	confirmTaxed: () => void;
+	/**
+	 * The customer accepts a taxed total ("Pokračovať s DPH"). Bound to that quote (reason, currency, amount): a new
+	 * quote needs a new confirmation. Without a key, the quote shown now.
+	 */
+	confirmTaxed: (forQuote?: string | null) => void;
+	/** The quote a "Pokračovať s DPH" would confirm now (`taxedQuoteKey`), `null` when there is none. */
+	quoteKey: string | null;
 	gate: B2bPaymentGate;
 };
 
@@ -105,7 +110,10 @@ export function CheckoutB2bProvider({
 	}, []);
 
 	const quoteKey = checkout && outcome ? taxedQuoteKey(checkout, outcome) : null;
-	const confirmTaxed = useCallback(() => setTaxedConfirmedFor(quoteKey), [quoteKey]);
+	const confirmTaxed = useCallback(
+		(forQuote?: string | null) => setTaxedConfirmedFor(typeof forQuote === "string" ? forQuote : quoteKey),
+		[quoteKey],
+	);
 
 	const taxedConfirmed = quoteKey !== null && taxedConfirmedFor === quoteKey;
 	const gate = useMemo(
@@ -126,6 +134,7 @@ export function CheckoutB2bProvider({
 			evaluate,
 			invalidate,
 			confirmTaxed,
+			quoteKey,
 			gate,
 		}),
 		[
@@ -140,6 +149,7 @@ export function CheckoutB2bProvider({
 			evaluate,
 			invalidate,
 			confirmTaxed,
+			quoteKey,
 			gate,
 		],
 	);
@@ -159,6 +169,7 @@ const OFF_VALUE: CheckoutB2bContextValue = {
 	evaluate: async () => null,
 	invalidate: () => {},
 	confirmTaxed: () => {},
+	quoteKey: null,
 	gate: { allowed: true, state: "ready" },
 };
 

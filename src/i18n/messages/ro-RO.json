@@ -622,7 +622,7 @@
 			"companyName": "Denumirea firmei",
 			"registrationId": "IČO",
 			"taxId": "DIČ",
-			"vatIdPlaceholder": "de ex. DE123456789",
+			"vatIdPlaceholder": "de ex. {example}",
 			"vatIdHint": "Cu un cod de TVA valabil dintr-o altă țară UE și livrare în acea țară, livrarea poate fi scutită de TVA. Decidem după verificarea în VIES.",
 			"billingSameAsShipping": "Adresa de facturare este aceeași cu adresa de livrare",
 			"billingAddressTitle": "Adresa de facturare",

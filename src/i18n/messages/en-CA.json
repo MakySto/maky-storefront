@@ -622,7 +622,7 @@
 			"companyName": "Company name",
 			"registrationId": "Company ID (IČO)",
 			"taxId": "Tax ID (DIČ)",
-			"vatIdPlaceholder": "e.g. DE123456789",
+			"vatIdPlaceholder": "e.g. {example}",
 			"vatIdHint": "With a valid VAT ID from another EU country and delivery to that country, the supply may be exempt from VAT. We decide after checking it in VIES.",
 			"billingSameAsShipping": "Billing address is the same as the delivery address",
 			"billingAddressTitle": "Billing address",

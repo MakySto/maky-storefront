@@ -622,7 +622,7 @@
 			"companyName": "Cégnév",
 			"registrationId": "IČO",
 			"taxId": "DIČ",
-			"vatIdPlaceholder": "pl. DE123456789",
+			"vatIdPlaceholder": "pl. {example}",
 			"vatIdHint": "Egy másik uniós ország érvényes közösségi adószámával és az adott országba történő szállítással az értékesítés áfamentes lehet. A VIES-ellenőrzés után döntünk.",
 			"billingSameAsShipping": "A számlázási cím megegyezik a szállítási címmel",
 			"billingAddressTitle": "Számlázási cím",

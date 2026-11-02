@@ -81,6 +81,46 @@ const NATIONAL_FORMAT: Readonly<Record<string, RegExp>> = {
 	SK: /^\d{10}$/,
 };
 
+/**
+ * The placeholder's example, in the shape of the invoiced company's country (`SK1234567890`, `ATU12345678`, …).
+ * Counting digits, never a real number; each one passes `normalizeVatId` for its country (tested).
+ */
+const VAT_ID_EXAMPLE: Readonly<Record<string, string>> = {
+	AT: "ATU12345678",
+	BE: "BE0123456789",
+	BG: "BG123456789",
+	CY: "CY12345678X",
+	CZ: "CZ12345678",
+	DE: "DE123456789",
+	DK: "DK12345678",
+	EE: "EE123456789",
+	EL: "EL123456789",
+	ES: "ESB12345678",
+	FI: "FI12345678",
+	FR: "FR12345678901",
+	HR: "HR12345678901",
+	HU: "HU12345678",
+	IE: "IE1234567T",
+	IT: "IT12345678901",
+	LT: "LT123456789",
+	LU: "LU12345678",
+	LV: "LV12345678901",
+	MT: "MT12345678",
+	NL: "NL123456789B01",
+	PL: "PL1234567890",
+	PT: "PT123456789",
+	RO: "RO12345678",
+	SE: "SE123456789001",
+	SI: "SI12345678",
+	SK: "SK1234567890",
+};
+
+/** An example VAT number for the invoiced company's country, or `null` outside the EU (no example then). */
+export function vatIdExample(countryCode: string | null | undefined): string | null {
+	const prefix = viesPrefixForCountry(countryCode);
+	return prefix ? VAT_ID_EXAMPLE[prefix] ?? null : null;
+}
+
 /** Longest normalized VAT number accepted (prefix + national part); every real one is far shorter. */
 export const VAT_ID_MAX_LENGTH = 16;
 

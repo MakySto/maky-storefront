@@ -16,10 +16,11 @@ import { runPaymentPreflight } from "./payment-preflight";
 import type { ViesResult } from "./vies-client";
 
 /**
- * MOCKS. `FakeBackend` plays the Saleor backend of the PROPOSED contract (`maky-b2b-v1.graphql`): a `contextVersion`
- * that moves with the context, `checkoutB2bTaxAttestationUpdate` that refuses a stale version, decides, and returns
- * the recalculated totals. It is the storefront's reading of the contract, not the backend's code; the real backend
- * is tested in its own session. VIES is a stub. Prices are the brief's example: 154,98 s DPH, 126,00 bez DPH.
+ * MOCKS. `FakeBackend` plays the Saleor backend of the contract (MAKY-B2B-V1 as `maky-b2b-v1.graphql`, generated from
+ * the backend's schema, describes it): a `contextVersion` that moves with the context,
+ * `checkoutB2bTaxAttestationUpdate` that refuses a stale version or a started payment (`paymentLocked`), decides, and
+ * returns the recalculated totals. It is the storefront's reading of the contract, not the backend's code; the real
+ * backend is tested in its own repository. VIES is a stub. Prices are the brief's example: 154,98 s DPH, 126,00 bez DPH.
  */
 
 const NOW = Date.parse("2026-11-02T12:00:00.000Z");
@@ -44,6 +45,8 @@ class FakeBackend {
 	decision: Decision = "TAXED_UNVERIFIED";
 	effective = false;
 	expiresAt: string | null = null;
+	/** A started payment froze the context: the backend refuses every attestation (contract §8). */
+	paymentLocked = false;
 	channel = "de-eur";
 	input: B2bInputV1 | null = companyInput();
 	shippingCountry = "DE";
@@ -88,6 +91,7 @@ class FakeBackend {
 				effectiveTaxExemption: this.effective,
 				checkedAt: this.effective ? new Date(NOW).toISOString() : null,
 				expiresAt: this.expiresAt,
+				paymentLocked: this.paymentLocked,
 			},
 			totalPrice: {
 				net: { amount: totals.gross - totals.tax, currency: "EUR" },
@@ -138,6 +142,17 @@ class FakeBackend {
 				this.applyCalls.push(input);
 				const custom = this.applyResponder?.(input);
 				if (custom) return custom;
+				if (this.paymentLocked) {
+					return {
+						ok: true as const,
+						data: {
+							checkoutB2bTaxAttestationUpdate: {
+								errors: [{ field: null, code: "CHECKOUT_LOCKED", message: null }],
+								checkout: null,
+							},
+						},
+					};
+				}
 				if (input.expectedContextVersion !== `v${this.version}`) {
 					return {
 						ok: true as const,
@@ -200,17 +215,129 @@ describe("evaluateB2B: who it applies to", () => {
 		expect(deps.readState).not.toHaveBeenCalled();
 		expect(deps.verifyVatId).not.toHaveBeenCalled();
 	});
+});
 
-	it("readiness failed: off, no VIES answer sent, no exemption offered", async () => {
+describe("evaluateB2B: the app's access is not ready (never 'off' over the backend's state)", () => {
+	const notReady = { readiness: async () => ({ ok: false }) };
+
+	it("nothing verified yet: 'cannot be verified now', continue with VAT — no VIES call, no write", async () => {
 		const backend = new FakeBackend();
-		const deps = backend.deps({ readiness: async () => ({ ok: false }) });
+		const deps = backend.deps(notReady);
 		expect(await evaluate(deps)).toMatchObject({
-			outcome: { kind: "off" },
-			cause: "readiness-failed",
+			outcome: { kind: "taxed", reason: "unavailable", needsTaxedConfirmation: true },
+			cause: "no-access-TAXED_UNVERIFIED",
 			exemptionAvailable: false,
 		});
+		expect(deps.readState).toHaveBeenCalledTimes(1);
 		expect(deps.verifyVatId).not.toHaveBeenCalled();
 		expect(deps.applyAttestation).not.toHaveBeenCalled();
+	});
+
+	it("an exemption the backend already confirmed is kept, with its untaxed total", async () => {
+		const backend = new FakeBackend();
+		backend.decision = "EXEMPT";
+		backend.effective = true;
+		backend.expiresAt = new Date(NOW + 3600_000).toISOString();
+		for (const mode of ["evaluate", "confirm"] as const) {
+			const deps = backend.deps(notReady);
+			const result = await evaluate(deps, mode);
+			expect(result).toMatchObject({ outcome: { kind: "exempt" }, exemptionAvailable: false });
+			expect(result.checkout?.totalPrice?.gross?.amount).toBe(126);
+			expect(deps.applyAttestation).not.toHaveBeenCalled();
+		}
+		// …also in its last minute, when a ready process would have asked VIES again: the backend counts the 24 h.
+		backend.expiresAt = new Date(NOW + 30_000).toISOString();
+		const lastMinute = backend.deps(notReady);
+		expect(await evaluate(lastMinute)).toMatchObject({
+			outcome: { kind: "exempt" },
+			cause: "no-access-EXEMPT",
+		});
+		expect(lastMinute.verifyVatId).not.toHaveBeenCalled();
+	});
+
+	it("over data that no longer support the exemption, nobody can vouch for it: unconfirmed", async () => {
+		const backend = new FakeBackend();
+		backend.decision = "EXEMPT";
+		backend.effective = true;
+		backend.expiresAt = new Date(NOW + 3600_000).toISOString();
+		backend.shippingCountry = "AT"; // the VAT ID is German: a revocation would be due
+		const deps = backend.deps(notReady);
+		expect(await evaluate(deps)).toMatchObject({
+			outcome: { kind: "unconfirmed" },
+			cause: "no-access-EXEMPT",
+		});
+		expect(deps.applyAttestation).not.toHaveBeenCalled();
+	});
+
+	it("the backend's own taxed answer for these data is stated as it is", async () => {
+		const backend = new FakeBackend();
+		backend.decision = "TAXED_INVALID";
+		expect(await evaluate(backend.deps(notReady))).toMatchObject({
+			outcome: { kind: "taxed", reason: "invalid", needsTaxedConfirmation: true },
+		});
+		backend.decision = "TAXED_SK_VAT";
+		backend.input = companyInput({ vatId: "SK2122890660" });
+		expect(await evaluate(backend.deps(notReady))).toMatchObject({
+			outcome: { kind: "taxed", reason: "sk_vat", needsTaxedConfirmation: false },
+		});
+	});
+
+	it("the state cannot be read either: unconfirmed, no payment", async () => {
+		const backend = new FakeBackend();
+		const deps = backend.deps({
+			...notReady,
+			readState: vi.fn(async () => ({
+				ok: false as const,
+				error: { kind: "network" as const, message: "" },
+			})),
+		});
+		expect(await evaluate(deps)).toMatchObject({
+			outcome: { kind: "unconfirmed" },
+			cause: "state-read-network",
+			exemptionAvailable: false,
+		});
+	});
+});
+
+describe("evaluateB2B: a started payment (paymentLocked) — nothing is asked or written", () => {
+	it("its frozen exemption stands, also after the VIES answer's 24 h, so the same payment can go on", async () => {
+		const backend = new FakeBackend();
+		backend.decision = "EXEMPT";
+		backend.effective = true;
+		backend.expiresAt = new Date(NOW - 60_000).toISOString();
+		backend.paymentLocked = true;
+		for (const mode of ["evaluate", "confirm"] as const) {
+			const deps = backend.deps();
+			expect(await evaluate(deps, mode)).toMatchObject({
+				outcome: { kind: "exempt" },
+				cause: "payment-locked-EXEMPT",
+			});
+			expect(deps.verifyVatId).not.toHaveBeenCalled();
+			expect(deps.applyAttestation).not.toHaveBeenCalled();
+		}
+		expect(await runPaymentPreflight({ checkoutId: ID, expectedAmount: 126 }, backend.deps())).toMatchObject({
+			kind: "ready",
+		});
+	});
+
+	it("a taxed snapshot keeps its reason; a context that moved under it is a payment in progress", async () => {
+		const backend = new FakeBackend();
+		backend.decision = "TAXED_UNAVAILABLE";
+		backend.paymentLocked = true;
+		const deps = backend.deps();
+		expect(await evaluate(deps)).toMatchObject({
+			outcome: { kind: "taxed", reason: "unavailable", needsTaxedConfirmation: true },
+		});
+		expect(deps.verifyVatId).not.toHaveBeenCalled();
+
+		backend.decision = "TAXED_STALE";
+		expect(await evaluate(backend.deps())).toMatchObject({
+			outcome: { kind: "locked" },
+			cause: "payment-locked-TAXED_STALE",
+		});
+		expect(
+			await runPaymentPreflight({ checkoutId: ID, expectedAmount: 154.98 }, backend.deps()),
+		).toMatchObject({ kind: "blocked", code: "CHECKOUT_LOCKED" });
 	});
 });
 

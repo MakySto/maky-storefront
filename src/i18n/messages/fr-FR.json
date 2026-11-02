@@ -622,7 +622,7 @@
 			"companyName": "Raison sociale",
 			"registrationId": "IČO",
 			"taxId": "DIČ",
-			"vatIdPlaceholder": "p. ex. DE123456789",
+			"vatIdPlaceholder": "p. ex. {example}",
 			"vatIdHint": "Avec un numéro de TVA intracommunautaire valide d'un autre pays de l'UE et une livraison dans ce pays, la livraison peut être exonérée de TVA. Nous décidons après vérification dans VIES.",
 			"billingSameAsShipping": "L'adresse de facturation est identique à l'adresse de livraison",
 			"billingAddressTitle": "Adresse de facturation",

@@ -120,6 +120,81 @@ export function companyBillingAddressInput(
 	return { ...Object.fromEntries(entries), country: value.billingCountry, companyName } as AddressInput;
 }
 
+/** An address as the form sends it, in the shape of a stored one (`country: { code }`), for comparisons. */
+function storedShapeOf(input: AddressInput): AddressLike {
+	const { country, ...rest } = input as AddressInput & Record<string, unknown>;
+	return { ...(rest as AddressLike), country: country ? { code: String(country) } : null };
+}
+
+/**
+ * A billing address that was only a COPY of the delivery address follows it.
+ *
+ * The case: a payment attempt copies the delivery address into billing ("same as delivery"); it fails; the customer
+ * changes the delivery address in the Information step. Without this the Payment step found a billing address that
+ * no longer matches the delivery one, unticked "same as delivery" and kept the old copy for the invoice. So when the
+ * stored billing address IS the stored delivery address (company included) and the delivery address changes, the
+ * new delivery address is written as billing too. A billing address that differs is the customer's own and is never
+ * touched; neither is anything when the delivery address did not change. Holds with the company purchase off too.
+ */
+export function billingToFollowShipping(
+	stored: { billingAddress?: AddressLike | null; shippingAddress?: AddressLike | null },
+	nextShipping: AddressInput | null,
+): AddressInput | null {
+	const { billingAddress, shippingAddress } = stored;
+	if (!nextShipping || !billingAddress || !shippingAddress) return null;
+	if (!isSameAddress(billingAddress, shippingAddress, { includeCompany: true })) return null;
+	if (isSameAddress(storedShapeOf(nextShipping), shippingAddress, { includeCompany: true })) return null;
+	return nextShipping;
+}
+
+/**
+ * The billing address written when the company purchase is switched OFF. With "same as delivery" it is the delivery
+ * address being saved (so it follows a delivery change made in the same step, as an ordinary purchase would);
+ * otherwise the stored billing address without the company.
+ */
+export function billingWhenCompanyOff(
+	value: Pick<B2bCompanyFieldsValue, "billingSameAsShipping">,
+	options: { sameAsShippingOffered: boolean; storedBilling: AddressLike | null | undefined },
+	shippingInput: AddressInput | null,
+): AddressInput | null {
+	if (options.sameAsShippingOffered && value.billingSameAsShipping && shippingInput) return shippingInput;
+	return billingWithoutCompany(options.storedBilling);
+}
+
+/**
+ * Where a Saleor error of the billing write is shown. "Same as delivery" copies the delivery address, so its field
+ * errors belong to the delivery form; a separate billing address has its own fields in the company block. An error
+ * without a field, or on a field that is not on screen (a saved address picked from the list), is said on the form
+ * instead of being put on an input nobody sees.
+ */
+export type BillingErrorPlacement = {
+	/** Keys as `B2bCompanyFields` renders them: `companyName`, `billing.<field>`. */
+	company: Record<string, string>;
+	/** Keys as the delivery address form renders them. */
+	shipping: Record<string, string>;
+	form: string[];
+};
+
+export function placeBillingErrors(
+	errors: ReadonlyArray<{ field?: string | null; message?: string | null }>,
+	where: { sameAsShipping: boolean; billingFields: readonly string[]; shippingFields: readonly string[] },
+	fallbackMessage: string,
+): BillingErrorPlacement {
+	const placed: BillingErrorPlacement = { company: {}, shipping: {}, form: [] };
+	for (const error of errors) {
+		const message = error.message || fallbackMessage;
+		const field = error.field ?? "";
+		if (field === "companyName") placed.company.companyName = message;
+		else if (!field) placed.form.push(message);
+		else if (where.sameAsShipping && where.shippingFields.includes(field)) placed.shipping[field] = message;
+		else if (!where.sameAsShipping && where.billingFields.includes(field))
+			placed.company[`billing.${field}`] = message;
+		else placed.form.push(message);
+	}
+	placed.form = [...new Set(placed.form)];
+	return placed;
+}
+
 /** Switching the company purchase off keeps the address and drops the company from the invoice. */
 export function billingWithoutCompany(billing: AddressLike | null | undefined): AddressInput | null {
 	if (!billing?.companyName?.trim() || !billing.country?.code) return null;

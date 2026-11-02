@@ -622,7 +622,7 @@
 			"companyName": "Název firmy",
 			"registrationId": "IČO",
 			"taxId": "DIČ",
-			"vatIdPlaceholder": "např. DE123456789",
+			"vatIdPlaceholder": "např. {example}",
 			"vatIdHint": "S platným DIČ (VAT) z jiné země EU a doručením do této země může být dodání osvobozeno od DPH. Rozhodneme po ověření ve VIES.",
 			"billingSameAsShipping": "Fakturační adresa je stejná jako doručovací",
 			"billingAddressTitle": "Fakturační adresa",

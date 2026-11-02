@@ -9,7 +9,7 @@ import { useAddressFormUtils } from "@/checkout/components/address-form/use-addr
 import { getCountryName } from "@/checkout/lib/utils/locale";
 import { COMPANY_NAME_MAX_LENGTH } from "@/checkout/lib/b2b/b2b-input";
 import type { B2bCompanyFieldsValue } from "@/checkout/lib/b2b/company-form-state";
-import { VAT_ID_MAX_LENGTH, vatFieldLabelKey } from "@/checkout/lib/b2b/vat-id";
+import { VAT_ID_MAX_LENGTH, vatFieldLabelKey, vatIdExample } from "@/checkout/lib/b2b/vat-id";
 import {
 	AddressFields,
 	FieldError,
@@ -58,12 +58,13 @@ export const B2bCompanyFields: FC<B2bCompanyFieldsProps> = ({
 	const sameAsShipping = canUseShippingAddress && value.billingSameAsShipping;
 	const billingCountry = sameAsShipping ? shippingCountry : value.billingCountry;
 	const isSlovak = billingCountry === "SK";
-	const { orderedAddressFields, getFieldLabel, isRequiredField, countryAreaChoices } = useAddressFormUtils(
-		value.billingCountry,
-	);
+	const { orderedAddressFields, getFieldLabel, isRequiredField, countryAreaChoices, rulesKnown } =
+		useAddressFormUtils(value.billingCountry);
 
 	const set = (patch: Partial<B2bCompanyFieldsValue>) => onChange({ ...value, ...patch });
 	const vatLabel = t(`b2b.vatLabel.${vatFieldLabelKey(billingCountry)}`);
+	// The example follows the invoiced company's country, as the label does (SK1234567890, ATU12345678, …).
+	const vatExample = vatIdExample(billingCountry);
 	const optional = <span className="text-muted-foreground ml-1 font-normal">{t("common.optional")}</span>;
 	// The company name has its own required field above; the billing form does not ask for it twice.
 	const billingFields = orderedAddressFields.filter((field) => field !== "companyName");
@@ -149,6 +150,7 @@ export const B2bCompanyFields: FC<B2bCompanyFieldsProps> = ({
 								orderedFields={billingFields}
 								getFieldLabel={getFieldLabel}
 								isRequiredField={isRequiredField}
+								rulesKnown={rulesKnown}
 								formData={value.billingForm}
 								errors={Object.fromEntries(
 									Object.entries(errors)
@@ -208,7 +210,7 @@ export const B2bCompanyFields: FC<B2bCompanyFieldsProps> = ({
 							</Label>
 							<FormInput
 								id="b2b-vat-id"
-								placeholder={t("b2b.vatIdPlaceholder")}
+								placeholder={vatExample ? t("b2b.vatIdPlaceholder", { example: vatExample }) : vatLabel}
 								value={value.vatId}
 								onChange={(vatId) => set({ vatId })}
 								error={errors.vatId}
@@ -216,7 +218,8 @@ export const B2bCompanyFields: FC<B2bCompanyFieldsProps> = ({
 								autoComplete="off"
 							/>
 							<FieldError error={errors.vatId} />
-							<p className="text-muted-foreground text-xs">{t("b2b.vatIdHint")}</p>
+							{/* The exemption sentence is about a company from ANOTHER member state: never for a Slovak one. */}
+							{isSlovak ? null : <p className="text-muted-foreground text-xs">{t("b2b.vatIdHint")}</p>}
 						</div>
 					) : null}
 				</div>

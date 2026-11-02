@@ -56,3 +56,21 @@ export function taxedQuoteKey(checkout: QuoteLike, outcome: B2bUiOutcome): strin
 	if (!gross || typeof gross.amount !== "number") return null;
 	return `${outcome.reason}|${gross.currency}|${gross.amount.toFixed(4)}`;
 }
+
+/**
+ * Does this evaluation still offer the very taxed quote the customer accepted? "Pokračovať s DPH" in the Information
+ * step saves the form first and asks again; only an answer that is the same taxed quote (same reason, same total)
+ * lets the customer go on with it. Anything else — exempt now, another reason, another total — is shown instead.
+ */
+export function confirmsTaxedQuote(
+	view: { outcome: B2bUiOutcome; checkout: QuoteLike | null },
+	acceptedQuote: string | null,
+): boolean {
+	if (!acceptedQuote || !view.checkout) return false;
+	const { outcome } = view;
+	return (
+		outcome.kind === "taxed" &&
+		outcome.needsTaxedConfirmation &&
+		taxedQuoteKey(view.checkout, outcome) === acceptedQuote
+	);
+}

@@ -2,7 +2,7 @@ import "server-only";
 
 import { saleorWriteDecision } from "@/lib/saleor/write-policy";
 
-import { MakyB2bReadinessDocument } from "../graphql";
+import { MAKY_B2B_READINESS_OPERATION, MakyB2bReadinessDocument } from "../graphql";
 import { readB2bRuntimeConfig } from "./b2b-config";
 import { executeB2bAppGraphQL } from "./b2b-saleor-client";
 
@@ -11,20 +11,19 @@ import { executeB2bAppGraphQL } from "./b2b-saleor-client";
  *
  * A green deploy is not the answer: `deploy-production.sh` only warns when the secret sync fails, and a missing SSM
  * parameter is skipped with the old `.env` kept. So the running app asks Saleor itself, with the token it actually
- * holds, and reports names, ids and booleans — never a value. When this is not `ok`, the company block still works
- * (a company buys with VAT), but no VIES result is sent and no exemption is offered.
+ * holds, and reports names, ids and booleans — never a value. When this is not `ok`, nothing is written with the
+ * token: no VIES answer is sent and no new exemption is granted. What the backend has already decided is still read
+ * (publicly) and stated (`evaluate-b2b.ts`), never replaced by "off".
+ *
+ * The probe is one request (`MakyB2bReadinessDocument`): it executes `app { … }` and makes Saleor VALIDATE the very
+ * state query and attestation mutation this build sends. So the schema check names no type: an endpoint without the
+ * contract, or with a field, argument or input type spelled differently, refuses the document (HTTP 400) and its
+ * validation messages are reported in `schema.errors`.
  *
  * Kept briefly per process so a checkout render does not cost a Saleor round trip each time.
  */
 
 export const REQUIRED_APP_PERMISSIONS = ["MANAGE_TAXES", "HANDLE_TAXES"] as const;
-const REQUIRED_STATE_FIELDS = [
-	"contextVersion",
-	"decision",
-	"effectiveTaxExemption",
-	"checkedAt",
-	"expiresAt",
-];
 const OK_TTL_MS = 60_000;
 const FAIL_TTL_MS = 15_000;
 
@@ -38,7 +37,11 @@ export type B2bReadiness = {
 	writes: string;
 	app: { id: string; name: string | null; isActive: boolean | null } | null;
 	permissions: { required: Record<string, boolean>; other: string[] };
-	schema: { checkoutB2bTaxState: boolean; stateFields: boolean; attestationMutation: boolean };
+	/**
+	 * `valid`: the endpoint accepted the B2B documents of this build. `invalid`: it refused them, `errors` says why.
+	 * `unknown`: the probe was not sent or did not get that far (no token, writes blocked, network).
+	 */
+	schema: { contract: "valid" | "invalid" | "unknown"; errors: string[] };
 	/** Why `ok` is false, as stable short codes. */
 	failures: string[];
 	/** Not blocking, but worth a look (e.g. the app holds more permissions than it needs). */
@@ -86,7 +89,7 @@ export async function checkB2bReadiness(
 			required: Object.fromEntries(REQUIRED_APP_PERMISSIONS.map((code) => [code, false])),
 			other: [],
 		},
-		schema: { checkoutB2bTaxState: false, stateFields: false, attestationMutation: false },
+		schema: { contract: "unknown", errors: [] },
 		failures,
 		warnings,
 	};
@@ -96,18 +99,26 @@ export async function checkB2bReadiness(
 	if (!config.requester) failures.push("requester-vat-id-missing");
 	if (!decision.allowed) failures.push("writes-blocked");
 
-	if (config.hasAppToken && readiness.endpointHost) {
+	// The probe carries the attestation mutation (validated, never executed), so the write guard treats it as a
+	// write: where writes are blocked it is not sent, and `writes-blocked` already says the process is not ready.
+	if (config.hasAppToken && readiness.endpointHost && decision.allowed) {
 		const result = await executeB2bAppGraphQL(
 			MakyB2bReadinessDocument,
 			{},
-			{ signal: AbortSignal.timeout(8_000) },
+			{ signal: AbortSignal.timeout(8_000), operationName: MAKY_B2B_READINESS_OPERATION },
 		);
 		if (!result.ok) {
-			failures.push(
-				`saleor-${result.error.kind}${result.error.statusCode ? `-${result.error.statusCode}` : ""}`,
-			);
+			if (result.error.kind === "invalid") {
+				readiness.schema = { contract: "invalid", errors: result.error.messages ?? [result.error.message] };
+				failures.push("schema-contract-invalid");
+			} else {
+				failures.push(
+					`saleor-${result.error.kind}${result.error.statusCode ? `-${result.error.statusCode}` : ""}`,
+				);
+			}
 		} else {
-			const { app, mutationType, checkoutType, stateType } = result.data;
+			readiness.schema = { contract: "valid", errors: [] };
+			const { app } = result.data;
 			if (!app) {
 				failures.push("app-not-authenticated");
 			} else {
@@ -123,18 +134,6 @@ export async function checkB2bReadiness(
 				);
 				if (readiness.permissions.other.length) warnings.push("app-has-extra-permissions");
 			}
-			const checkoutFields = new Set((checkoutType?.fields ?? []).map((field) => field.name));
-			const stateFields = new Set((stateType?.fields ?? []).map((field) => field.name));
-			const mutations = new Set((mutationType?.fields ?? []).map((field) => field.name));
-			readiness.schema = {
-				checkoutB2bTaxState: checkoutFields.has("b2bTaxState"),
-				stateFields: REQUIRED_STATE_FIELDS.every((field) => stateFields.has(field)),
-				attestationMutation: mutations.has("checkoutB2bTaxAttestationUpdate"),
-			};
-			if (!readiness.schema.checkoutB2bTaxState) failures.push("schema-missing-b2bTaxState");
-			if (!readiness.schema.stateFields) failures.push("schema-incomplete-CheckoutB2bTaxState");
-			if (!readiness.schema.attestationMutation)
-				failures.push("schema-missing-checkoutB2bTaxAttestationUpdate");
 		}
 	}
 

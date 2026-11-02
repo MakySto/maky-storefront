@@ -6,7 +6,7 @@ import * as Checkout from "@/lib/checkout";
 import { MakyB2bApplyVerificationDocument, MakyB2bCheckoutStateDocument } from "../graphql";
 import { isB2bCheckoutUiEnabled, readB2bRuntimeConfig } from "./b2b-config";
 import { checkB2bReadiness } from "./b2b-readiness";
-import { executeB2bAppGraphQL } from "./b2b-saleor-client";
+import { executeB2bAppGraphQL, executeB2bPublicGraphQL } from "./b2b-saleor-client";
 import type { EvaluateB2bDeps } from "./evaluate-b2b";
 import { cachedViesCheck } from "./vies-cache";
 import { checkVatNumber } from "./vies-client";
@@ -24,8 +24,10 @@ export function productionEvaluateB2bDeps(localeSlug?: string): EvaluateB2bDeps 
 		cookieCheckoutId: async (channelSlug) => (await Checkout.getIdFromCookies(channelSlug)) || null,
 		uiEnabled: isB2bCheckoutUiEnabled,
 		readiness: () => checkB2bReadiness(),
+		// Public, without the token (contract §4): so the state is read, and stated, also when the app's access is not
+		// ready. Only the attestation below is made as the app.
 		readState: (checkoutId) =>
-			executeB2bAppGraphQL(
+			executeB2bPublicGraphQL(
 				MakyB2bCheckoutStateDocument,
 				{ id: checkoutId },
 				{ signal: AbortSignal.timeout(STATE_READ_DEADLINE_MS) },

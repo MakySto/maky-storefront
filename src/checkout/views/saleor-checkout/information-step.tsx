@@ -16,10 +16,12 @@ import {
 import { saveB2bInputAction } from "@/checkout/lib/b2b/actions";
 import { validateB2bForm, type B2bFormErrors } from "@/checkout/lib/b2b/b2b-input";
 import {
-	billingWithoutCompany,
+	billingToFollowShipping,
+	billingWhenCompanyOff,
 	companyBillingAddressInput,
 	companyFieldErrorKey,
 	initialCompanyFieldsValue,
+	placeBillingErrors,
 	type B2bCompanyFieldsValue,
 } from "@/checkout/lib/b2b/company-form-state";
 import {
@@ -27,6 +29,7 @@ import {
 	isTaxContextChangedCode,
 	type B2bUiOutcome,
 } from "@/checkout/lib/b2b/contract";
+import { confirmsTaxedQuote } from "@/checkout/lib/b2b/payment-gate";
 import { b2bStatusMessage } from "@/checkout/lib/b2b/status-message";
 import { B2bCompanyFields } from "@/checkout/components/b2b/b2b-company-fields";
 import { B2bStatusNotice } from "@/checkout/components/b2b/b2b-status-notice";
@@ -207,7 +210,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 	const [formError, setFormError] = useState<string | null>(null);
 
 	// Country-specific address configuration
-	const { orderedAddressFields, getFieldLabel, isRequiredField, countryAreaChoices } =
+	const { orderedAddressFields, getFieldLabel, isRequiredField, countryAreaChoices, rulesKnown } =
 		useAddressFormUtils(countryCode);
 
 	// ----- Company purchase (MAKY-B2B-V1) -----
@@ -231,11 +234,10 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 		setB2bValue(next);
 		setB2bErrors({});
 		setFormError(null);
-		// What was said about the stored data no longer describes what is being typed.
-		if (b2bAttention || b2b.outcome) {
-			setB2bAttention(false);
-			b2b.invalidate();
-		}
+		// What was said about the stored data no longer describes what is being typed, and an answer still on its
+		// way (a check started before this edit) is dropped instead of being shown for these values.
+		setB2bAttention(false);
+		b2b.invalidate();
 	};
 
 	/** Client-side checks of the company block; returns the errors (keys as rendered by B2bCompanyFields). */
@@ -281,19 +283,30 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 	 * Saves the company block through the existing controlled paths and asks for the backend's decision:
 	 * billing address (with the company name) → `maky.b2b.input.v1` → evaluateB2B. Returns false when the customer
 	 * has to look at something first (the status card says what).
+	 *
+	 * `acceptTaxedFor` is the taxed quote the customer accepted with "Pokračovať s DPH": the data are saved and
+	 * checked first like on the main button, and the customer goes on with VAT only when the answer is that very
+	 * quote (same reason, same total). `shippingFields` are the delivery inputs on screen, for Saleor's errors.
 	 */
 	const saveCompany = useCallback(
 		async (
 			validated: ReturnType<typeof validateB2bForm>,
 			shippingInput: Parameters<typeof checkoutShippingAddressUpdateAction>[0]["shippingAddress"] | null,
+			options: { acceptTaxedFor: string | null; shippingFields: readonly string[] },
 		): Promise<boolean> => {
 			if (!validated.ok) return false;
 			const turningOff = !b2bValue.isBusiness;
+			// As the company block shows it: "same as delivery" copies the delivery address being saved.
+			const sameAsShipping = canUseShippingAddress && b2bValue.billingSameAsShipping;
 
 			const billingInput = turningOff
-				? billingWithoutCompany(checkout.billingAddress)
+				? billingWhenCompanyOff(
+						b2bValue,
+						{ sameAsShippingOffered: canUseShippingAddress, storedBilling: checkout.billingAddress },
+						shippingInput ?? null,
+					)
 				: companyBillingAddressInput(
-						{ ...b2bValue, billingSameAsShipping: canUseShippingAddress && b2bValue.billingSameAsShipping },
+						{ ...b2bValue, billingSameAsShipping: sameAsShipping },
 						validated.companyName,
 						shippingInput ?? null,
 					);
@@ -317,13 +330,23 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 					return false;
 				}
 				if (billingErrors.length) {
-					const mapped: Record<string, string> = {};
-					billingErrors.forEach((error) => {
-						const field =
-							error.field === "companyName" ? "companyName" : `billing.${error.field || "streetAddress1"}`;
-						mapped[field] = error.message || t("errors.invalidValue");
-					});
-					setB2bErrors(mapped);
+					// Saleor's message at the input it is about: the delivery form for "same as delivery", the company
+					// block's billing form otherwise; anything else on the form, never on an input that is not shown.
+					const placed = placeBillingErrors(
+						billingErrors,
+						{
+							sameAsShipping,
+							billingFields:
+								turningOff || sameAsShipping
+									? []
+									: billingUtils.orderedAddressFields.filter((field) => field !== "companyName"),
+							shippingFields: options.shippingFields,
+						},
+						t("errors.invalidValue"),
+					);
+					setErrors((previous) => ({ ...previous, ...placed.shipping }));
+					setB2bErrors(placed.company);
+					if (placed.form.length) setFormError(placed.form.join(" "));
 					return false;
 				}
 			}
@@ -339,9 +362,20 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 			// US/CA: a company name and address, no VIES (zadanie 02, §2).
 			if (!b2b.euMarket) return true;
 
-			// No answer (the call failed; the status card then says the state is unconfirmed) is not a green light either.
-			const evaluation = await b2b.evaluate("evaluate");
+			// "Pokračovať s DPH" asks with "confirm": a verified taxed decision that still answers for these data is
+			// reused (no new VIES call), so the total the customer accepted does not change under them.
+			const evaluation = await b2b.evaluate(options.acceptTaxedFor ? "confirm" : "evaluate");
+			if (evaluation && confirmsTaxedQuote(evaluation, options.acceptTaxedFor)) {
+				b2b.confirmTaxed(options.acceptTaxedFor);
+				return true;
+			}
+			// No answer (the call failed, or an edit made it stale; the status card then says the state is unconfirmed)
+			// is not a green light either.
 			if (!evaluation || needsAttention(evaluation.outcome)) {
+				if (options.acceptTaxedFor && evaluation?.outcome.kind === "taxed") {
+					// Accepted for other data or another total: the card shows the quote as it is now, this says why.
+					setFormError(t("payment.orderUpdated"));
+				}
 				// Leaving the company purchase hides the company block and its status card: say it on the form.
 				if (turningOff) {
 					const kind = evaluation?.outcome.kind;
@@ -360,7 +394,16 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 			}
 			return true;
 		},
-		[b2bValue, checkout.billingAddress, checkout.id, canUseShippingAddress, locale, t, b2b],
+		[
+			b2bValue,
+			checkout.billingAddress,
+			checkout.id,
+			canUseShippingAddress,
+			locale,
+			t,
+			b2b,
+			billingUtils.orderedAddressFields,
+		],
 	);
 
 	// ----- Event Handlers -----
@@ -426,12 +469,12 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 	};
 
 	// ----- Submit Logic -----
-	const handleSubmit = useCallback(
-		async (event?: React.FormEvent) => {
-			if (event) {
-				event.preventDefault();
-			}
-
+	/**
+	 * Validate, save, ask, go on — the one path for the main button and for "Pokračovať s DPH" (`acceptTaxedFor`, the
+	 * quote the customer accepted), so neither can carry the customer on with data that were not saved and checked.
+	 */
+	const submitInformation = useCallback(
+		async (acceptTaxedFor: string | null) => {
 			const newErrors: Record<string, string> = {};
 
 			// Validate email (guests only)
@@ -481,6 +524,12 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 				element?.focus();
 				return;
 			}
+
+			// The delivery inputs on screen (none when a saved address is picked from the list).
+			const shippingFields =
+				checkout.isShippingRequired && !(authenticated && user?.addresses?.length && !showNewAddressForm)
+					? orderedAddressFields
+					: [];
 
 			// ----- Save to Saleor -----
 			setIsSubmitting(true);
@@ -577,10 +626,49 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 
 				// Company purchase: billing company, input metadata and the backend's decision, in that order.
 				if (company && (b2bValue.isBusiness || b2b.input?.isBusiness)) {
-					const proceed = await saveCompany(company.result, savedShippingInput);
+					const proceed = await saveCompany(company.result, savedShippingInput, {
+						acceptTaxedFor,
+						shippingFields,
+					});
 					if (!proceed) {
 						await refetch();
 						return;
+					}
+				} else {
+					// An ordinary purchase (no company, or B2B switched off altogether): a billing address that was only a
+					// copy of the delivery address (the Payment step's "same as delivery") follows the new delivery address,
+					// so a failed payment and a delivery change do not leave the old copy on the invoice. A billing address
+					// of the customer's own is never touched.
+					const follow = billingToFollowShipping(checkout, savedShippingInput);
+					if (follow) {
+						const billingResult = await checkoutBillingAddressUpdateAction(
+							{ checkoutId: checkout.id, billingAddress: follow },
+							locale,
+						);
+						// Not refetched on a failure: the stored copy is what makes the next attempt follow again.
+						if (billingResult.error) {
+							setFormError(t("info.addressSaveFailed"));
+							return;
+						}
+						const billingErrors = billingResult.data?.checkoutBillingAddressUpdate?.errors ?? [];
+						if (billingErrors.some((error) => isCheckoutLockedCode(error.code))) {
+							setFormError(t("payment.checkoutLocked"));
+							return;
+						}
+						if (billingErrors.some((error) => isTaxContextChangedCode(error.code))) {
+							setFormError(t("payment.orderUpdated"));
+							return;
+						}
+						if (billingErrors.length) {
+							const placed = placeBillingErrors(
+								billingErrors,
+								{ sameAsShipping: true, billingFields: [], shippingFields },
+								t("errors.invalidValue"),
+							);
+							setErrors(placed.shipping);
+							if (placed.form.length) setFormError(placed.form.join(" "));
+							return;
+						}
 					}
 				}
 
@@ -614,9 +702,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 			email,
 			createAccount,
 			accountPassword,
-			checkout.isShippingRequired,
-			checkout.id,
-			checkout.channel.slug,
+			checkout,
 			user?.addresses,
 			showNewAddressForm,
 			selectedAddressId,
@@ -635,6 +721,14 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 			validateCompany,
 			saveCompany,
 		],
+	);
+
+	const handleSubmit = useCallback(
+		(event?: React.FormEvent) => {
+			event?.preventDefault();
+			void submitInformation(null);
+		},
+		[submitInformation],
 	);
 
 	// ----- Render: Password Reset -----
@@ -699,106 +793,114 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 			? t("info.continueToShipping")
 			: t("info.continueToPayment");
 
+	// While the step saves or the company is being checked nothing can be edited, so every answer is about the values
+	// that were sent. With B2B off the form behaves as it did before.
+	const locked = b2b.config.uiEnabled && (isSubmitting || b2b.pending);
+
 	return (
-		<form className="space-y-8" onSubmit={handleSubmit} noValidate>
-			<ContactSection
-				isSignedIn={authenticated}
-				user={user}
-				onSignOut={() => {}} // User signs out via header
-				onSignInClick={() => setContactView("signIn")}
-				email={email}
-				onEmailChange={handleEmailChange}
-				onEmailBlur={handleEmailBlur}
-				emailError={errors.email}
-				createAccount={createAccount}
-				onCreateAccountChange={setCreateAccount}
-				password={accountPassword}
-				onPasswordChange={setAccountPassword}
-				passwordError={errors.password}
-			/>
-
-			{/* Newsletter opt-in — persisted via checkout metadata, carried onto the order (auditable). */}
-			<div className="flex items-center gap-2">
-				<Checkbox
-					id="newsletterConsent"
-					checked={newsletterConsent}
-					onCheckedChange={(checked) => setNewsletterConsent(checked === true)}
+		<form className="space-y-8" onSubmit={handleSubmit} noValidate aria-busy={locked || undefined}>
+			<fieldset disabled={locked} className="m-0 min-w-0 space-y-8 border-0 p-0">
+				<ContactSection
+					isSignedIn={authenticated}
+					user={user}
+					onSignOut={() => {}} // User signs out via header
+					onSignInClick={() => setContactView("signIn")}
+					email={email}
+					onEmailChange={handleEmailChange}
+					onEmailBlur={handleEmailBlur}
+					emailError={errors.email}
+					createAccount={createAccount}
+					onCreateAccountChange={setCreateAccount}
+					password={accountPassword}
+					onPasswordChange={setAccountPassword}
+					passwordError={errors.password}
 				/>
-				<Label htmlFor="newsletterConsent" className="text-muted-foreground cursor-pointer text-sm">
-					{t("info.newsletterLabel")}
-				</Label>
-			</div>
 
-			{checkout.isShippingRequired && (
-				<ShippingAddressSection
-					isAuthenticated={authenticated}
-					userAddresses={user?.addresses || []}
-					defaultAddressId={user?.defaultShippingAddress?.id}
-					selectedAddressId={selectedAddressId}
-					onSelectAddress={setSelectedAddressId}
-					showNewAddressForm={showNewAddressForm}
-					onShowNewAddressForm={handleShowNewAddressForm}
-					countryCode={countryCode}
-					onCountryChange={handleCountryChange}
-					availableCountries={availableShippingCountries}
-					formData={formData}
-					onFieldChange={handleFieldChange}
-					errors={errors}
-					orderedAddressFields={orderedAddressFields}
-					getFieldLabel={getFieldLabel}
-					isRequiredField={isRequiredField}
-					countryAreaChoices={countryAreaChoices}
-				/>
-			)}
+				{/* Newsletter opt-in — persisted via checkout metadata, carried onto the order (auditable). */}
+				<div className="flex items-center gap-2">
+					<Checkbox
+						id="newsletterConsent"
+						checked={newsletterConsent}
+						onCheckedChange={(checked) => setNewsletterConsent(checked === true)}
+					/>
+					<Label htmlFor="newsletterConsent" className="text-muted-foreground cursor-pointer text-sm">
+						{t("info.newsletterLabel")}
+					</Label>
+				</div>
 
-			{b2b.config.uiEnabled ? (
-				<B2bCompanyFields
-					value={b2bValue}
-					onChange={handleB2bChange}
-					shippingCountry={deliveryCountry}
-					canUseShippingAddress={canUseShippingAddress}
-					euMarket={b2b.euMarket}
-					availableCountries={availableShippingCountries}
-					errors={b2bErrors}
+				{checkout.isShippingRequired && (
+					<ShippingAddressSection
+						isAuthenticated={authenticated}
+						userAddresses={user?.addresses || []}
+						defaultAddressId={user?.defaultShippingAddress?.id}
+						selectedAddressId={selectedAddressId}
+						onSelectAddress={setSelectedAddressId}
+						showNewAddressForm={showNewAddressForm}
+						onShowNewAddressForm={handleShowNewAddressForm}
+						countryCode={countryCode}
+						onCountryChange={handleCountryChange}
+						availableCountries={availableShippingCountries}
+						formData={formData}
+						onFieldChange={handleFieldChange}
+						errors={errors}
+						orderedAddressFields={orderedAddressFields}
+						getFieldLabel={getFieldLabel}
+						isRequiredField={isRequiredField}
+						rulesKnown={rulesKnown}
+						countryAreaChoices={countryAreaChoices}
+					/>
+				)}
+
+				{b2b.config.uiEnabled ? (
+					<B2bCompanyFields
+						value={b2bValue}
+						onChange={handleB2bChange}
+						shippingCountry={deliveryCountry}
+						canUseShippingAddress={canUseShippingAddress}
+						euMarket={b2b.euMarket}
+						availableCountries={availableShippingCountries}
+						errors={b2bErrors}
+						disabled={isSubmitting || b2b.pending}
+					/>
+				) : null}
+
+				{b2bStatus ? (
+					<B2bStatusNotice
+						message={b2bStatus}
+						pending={b2b.pending}
+						on={{
+							// The main button's path: an edit made after the card appeared is saved and checked first.
+							continueWithVat: b2bAttention ? () => void submitInformation(b2b.quoteKey) : undefined,
+							retry: () => void recheckCompany(),
+							recheck: () => void recheckCompany(),
+							refreshStatus: () => void recheckCompany(),
+						}}
+					/>
+				) : null}
+
+				{formError ? (
+					<p role="alert" className="text-destructive text-sm">
+						{formError}
+					</p>
+				) : null}
+
+				<Button
+					type="submit"
 					disabled={isSubmitting}
+					className="hidden h-14 w-full text-base font-semibold md:flex"
+				>
+					{buttonText}
+				</Button>
+
+				<MobileStickyAction
+					step={getStepNumber("INFO", checkout.isShippingRequired)}
+					isShippingRequired={checkout.isShippingRequired}
+					type="submit"
+					onAction={handleSubmit}
+					isLoading={isSubmitting}
+					loadingText={t("common.saving")}
 				/>
-			) : null}
-
-			{b2bStatus ? (
-				<B2bStatusNotice
-					message={b2bStatus}
-					pending={b2b.pending}
-					on={{
-						continueWithVat: b2bAttention ? onNext : undefined,
-						retry: () => void recheckCompany(),
-						recheck: () => void recheckCompany(),
-						refreshStatus: () => void recheckCompany(),
-					}}
-				/>
-			) : null}
-
-			{formError ? (
-				<p role="alert" className="text-destructive text-sm">
-					{formError}
-				</p>
-			) : null}
-
-			<Button
-				type="submit"
-				disabled={isSubmitting}
-				className="hidden h-14 w-full text-base font-semibold md:flex"
-			>
-				{buttonText}
-			</Button>
-
-			<MobileStickyAction
-				step={getStepNumber("INFO", checkout.isShippingRequired)}
-				isShippingRequired={checkout.isShippingRequired}
-				type="submit"
-				onAction={handleSubmit}
-				isLoading={isSubmitting}
-				loadingText={t("common.saving")}
-			/>
+			</fieldset>
 		</form>
 	);
 };

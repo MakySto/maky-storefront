@@ -622,7 +622,7 @@
 			"companyName": "Razón social",
 			"registrationId": "IČO",
 			"taxId": "DIČ",
-			"vatIdPlaceholder": "p. ej., DE123456789",
+			"vatIdPlaceholder": "p. ej., {example}",
 			"vatIdHint": "Con un NIF-IVA válido de otro país de la UE y entrega en ese país, la entrega puede estar exenta de IVA. Lo decidimos tras comprobarlo en VIES.",
 			"billingSameAsShipping": "La dirección de facturación es la misma que la de entrega",
 			"billingAddressTitle": "Dirección de facturación",

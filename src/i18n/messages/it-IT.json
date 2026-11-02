@@ -622,7 +622,7 @@
 			"companyName": "Ragione sociale",
 			"registrationId": "IČO",
 			"taxId": "DIČ",
-			"vatIdPlaceholder": "es. DE123456789",
+			"vatIdPlaceholder": "es. {example}",
 			"vatIdHint": "Con una partita IVA valida di un altro paese UE e la consegna in quel paese, la cessione può essere esente da IVA. Decidiamo dopo la verifica in VIES.",
 			"billingSameAsShipping": "L'indirizzo di fatturazione è uguale a quello di consegna",
 			"billingAddressTitle": "Indirizzo di fatturazione",

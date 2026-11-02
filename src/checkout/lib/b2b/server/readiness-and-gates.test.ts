@@ -15,8 +15,8 @@ import { checkB2bReadiness, resetB2bReadinessCache } from "./b2b-readiness";
 import { executeB2bAppGraphQL, setB2bAppExecutorForTests } from "./b2b-saleor-client";
 
 /**
- * MOCKS: the Saleor transport is replaced (`setB2bAppExecutorForTests`); the readiness answers are fixtures of the
- * PROPOSED schema (`maky-b2b-v1.graphql`). The token value is an obvious fake.
+ * MOCKS: the Saleor transport is replaced (`setB2bAppExecutorForTests`) by fixed answers. The probe run against the
+ * backend's real schema is in `graphql.test.ts`. The token value is an obvious fake.
  */
 
 const FAKE_TOKEN = "fake-b2b-app-token-for-tests";
@@ -57,15 +57,22 @@ const readyAnswer = (patch: Partial<MakyB2bReadinessQuery> = {}): MakyB2bReadine
 		isActive: true,
 		permissions: [{ code: "MANAGE_TAXES" }, { code: "HANDLE_TAXES" }],
 	},
-	mutationType: { fields: [{ name: "checkoutComplete" }, { name: "checkoutB2bTaxAttestationUpdate" }] },
-	checkoutType: { fields: [{ name: "id" }, { name: "b2bTaxState" }] },
-	stateType: {
-		fields: ["contextVersion", "decision", "effectiveTaxExemption", "checkedAt", "expiresAt"].map((name) => ({
-			name,
-		})),
-	},
 	...patch,
 });
+
+/** What the transport hands over for Saleor's answer to a document its schema does not validate. */
+const invalidDocument = (...messages: string[]) =>
+	({
+		ok: false,
+		error: {
+			type: "http",
+			statusCode: 400,
+			message: `HTTP 400: Bad Request\n${JSON.stringify({
+				errors: messages.map((message) => ({ message })),
+			})}`,
+			isRetryable: false,
+		},
+	}) as GraphQLResult<unknown>;
 
 function answer(data: MakyB2bReadinessQuery | null, error?: GraphQLResult<unknown>) {
 	const executor = vi.fn(async (_doc: unknown, options: { headers: HeadersInit }) => {
@@ -136,12 +143,21 @@ describe("checkB2bReadiness (mocked Saleor)", () => {
 			requester: "configured",
 			app: { id: "QXBwOjQy", isActive: true },
 			permissions: { required: { MANAGE_TAXES: true, HANDLE_TAXES: true }, other: [] },
-			schema: { checkoutB2bTaxState: true, stateFields: true, attestationMutation: true },
+			schema: { contract: "valid", errors: [] },
 		});
 		expect(JSON.stringify(readiness)).not.toContain(FAKE_TOKEN);
 	});
 
-	it("names what is missing: permission, inactive app, backend without the contract", async () => {
+	it("names the operation it executes: the documents it carries are only validated", async () => {
+		const executor = answer(readyAnswer());
+		await checkB2bReadiness({ fresh: true });
+		const [document, options] = executor.mock.calls[0] as unknown as [unknown, { operationName?: string }];
+		expect(options.operationName).toBe("MakyB2bReadiness");
+		expect(String(document)).toMatch(/query MakyB2bCheckoutState\(/);
+		expect(String(document)).toMatch(/mutation MakyB2bApplyVerification\(/);
+	});
+
+	it("names what is missing: permission, inactive app", async () => {
 		answer(
 			readyAnswer({
 				app: {
@@ -150,24 +166,47 @@ describe("checkB2bReadiness (mocked Saleor)", () => {
 					isActive: false,
 					permissions: [{ code: "MANAGE_TAXES" }, { code: "MANAGE_ORDERS" }],
 				},
-				mutationType: { fields: [{ name: "checkoutComplete" }] },
-				checkoutType: { fields: [{ name: "id" }] },
-				stateType: null,
 			}),
 		);
 		const readiness = await checkB2bReadiness({ fresh: true });
 		expect(readiness.ok).toBe(false);
 		expect(readiness.failures).toEqual(
-			expect.arrayContaining([
-				"app-inactive",
-				"permission-missing-HANDLE_TAXES",
-				"schema-missing-b2bTaxState",
-				"schema-incomplete-CheckoutB2bTaxState",
-				"schema-missing-checkoutB2bTaxAttestationUpdate",
-			]),
+			expect.arrayContaining(["app-inactive", "permission-missing-HANDLE_TAXES"]),
 		);
 		expect(readiness.warnings).toContain("app-has-extra-permissions");
 		expect(readiness.permissions.other).toEqual(["MANAGE_ORDERS"]);
+	});
+
+	it("a backend that refuses the documents: not ready, with Saleor's validation messages", async () => {
+		answer(
+			null,
+			invalidDocument(
+				'Cannot query field "b2bTaxState" on type "Checkout".',
+				'Unknown type "CheckoutB2bTaxAttestationInput".',
+			),
+		);
+		const readiness = await checkB2bReadiness({ fresh: true });
+		expect(readiness).toMatchObject({
+			ok: false,
+			schema: {
+				contract: "invalid",
+				errors: [
+					'Cannot query field "b2bTaxState" on type "Checkout".',
+					'Unknown type "CheckoutB2bTaxAttestationInput".',
+				],
+			},
+		});
+		expect(readiness.failures).toEqual(["schema-contract-invalid"]);
+	});
+
+	it("any other failure is named by its kind, and says nothing about the schema", async () => {
+		answer(null, {
+			ok: false,
+			error: { type: "http", statusCode: 502, message: "HTTP 502", isRetryable: true },
+		} as never);
+		const readiness = await checkB2bReadiness({ fresh: true });
+		expect(readiness.failures).toEqual(["saleor-http-502"]);
+		expect(readiness.schema).toEqual({ contract: "unknown", errors: [] });
 	});
 
 	it("a token Saleor does not accept, or no token, is not ready", async () => {
@@ -216,11 +255,12 @@ describe("action gate", () => {
 });
 
 describe("write policy", () => {
-	it("a process that may not write to Saleor is not ready", async () => {
+	it("a process that may not write to Saleor is not ready, and does not send the probe that carries the write", async () => {
 		process.env.MAKY_SALEOR_WRITES = "block";
-		answer(readyAnswer());
+		const executor = answer(readyAnswer());
 		const readiness = await checkB2bReadiness({ fresh: true });
-		expect(readiness).toMatchObject({ ok: false, writes: "blocked" });
-		expect(readiness.failures).toContain("writes-blocked");
+		expect(readiness).toMatchObject({ ok: false, writes: "blocked", schema: { contract: "unknown" } });
+		expect(readiness.failures).toEqual(["writes-blocked"]);
+		expect(executor).not.toHaveBeenCalled();
 	});
 });
