@@ -34,7 +34,7 @@ AWS="${AWS_CLI:-$(command -v aws || echo /snap/bin/aws)}"
 # SSM parameter -> .env variable. Add a line here to hand the storefront a new secret.
 MAPPINGS=(
 	"/maky/storefront/cms/PAYLOAD_PREVIEW_API_KEY PAYLOAD_PREVIEW_API_KEY"
-	# The token of the Saleor app "MAKY Storefront B2B" (MANAGE_TAXES + HANDLE_TAXES), server-only: the B2B
+	# The token of the Saleor app "MAKY B2B checkout - production" (MANAGE_TAXES + HANDLE_TAXES), server-only: the B2B
 	# checkout's attestation and its private state read. Written by an operator in the AWS console, never by
 	# maky-cms-role. A missing parameter is skipped like any other, so a green sync proves nothing about it:
 	# the running process says whether it holds a working token (GET /api/internal/b2b-readiness).
