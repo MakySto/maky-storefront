@@ -106,24 +106,33 @@ const SAID_BY_ATTRIBUTE: Readonly<Record<SpecKey, string | undefined>> = {
 };
 
 /**
+ * No load row on the Kargo shelf, from either source. CFM writes no `max_load` attribute for a Kargo product, and
+ * the export's `maxLoadKg` (50 kg) is the rating of the fitting kit's parts, not of the basket or of the bars: a
+ * "Nosnosť 50 kg" beside a basket would be read as what the basket carries (CFM, 2026-11-02).
+ */
+const NO_LOAD_ROW = new Set<string>(["load", "cfm:attribute:max_load"]);
+
+/**
  * A product's own attribute rows first, then the export's facet rows for what the attributes do not say.
  *
  * For a shelf whose products CFM describes through Saleor attributes (the Nordrive Kargo baskets and bars carry
- * their size, bars, material and load there, and a set's facets carry little or nothing of it). One source per
- * fact: a facet row whose fact an attribute row already states is dropped, never printed beside it with another
- * value. Four rows at most.
+ * their size, bars and material there, and a set's facets carry little or nothing of it). One source per fact: a
+ * facet row whose fact an attribute row already states is dropped, never printed beside it with another value.
+ * Never a load row (see `NO_LOAD_ROW`). Four rows at most.
  */
 export function withAttributeSpecs(
 	facetRows: readonly SpecRow[],
 	attributeRows: readonly ListingSpec[],
 	max: number = MAX_SPEC_ROWS,
 ): ListingSpec[] {
-	const said = new Set(attributeRows.map((row) => row.key));
+	const own = attributeRows.filter((row) => !NO_LOAD_ROW.has(row.key));
+	const said = new Set(own.map((row) => row.key));
 	const rest = facetRows.filter((row) => {
+		if (NO_LOAD_ROW.has(row.key)) return false;
 		const covering = SAID_BY_ATTRIBUTE[row.key];
 		return !(covering && said.has(covering));
 	});
-	return [...attributeRows, ...rest].slice(0, max);
+	return [...own, ...rest].slice(0, max);
 }
 
 /** The `configurator` messages that word what a set contains. */

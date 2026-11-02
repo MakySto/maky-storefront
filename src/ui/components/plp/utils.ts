@@ -67,9 +67,21 @@ const isKargoSlug = (slug: string | null | undefined) => (slug ? KARGO_CATEGORY_
  */
 const KARGO_SPEC_REFS = ["cfm:attribute:material"] as const;
 
-/** The further attributes a card of the product's category prints, by the category's base slug. */
-export const specRefsFor = (categorySlug: string | null | undefined): readonly string[] =>
-	isKargoSlug(categorySlug) ? KARGO_SPEC_REFS : [];
+/**
+ * A Kargo product has no load on its card: CFM writes no `max_load` for it, and the export's 50 kg is the fitting
+ * kit's rating, not the basket's or the bars' (CFM, 2026-11-02).
+ */
+const KARGO_SKIPPED_REFS = ["cfm:attribute:max_load"] as const;
+
+/** The card parameters of a product, by the base slug of its category: the common ones, plus or minus the shelf's own. */
+export const cardSpecsFor = (
+	attributes: ListAttributes,
+	locale: string,
+	categorySlug: string | null | undefined,
+): ListingSpec[] =>
+	isKargoSlug(categorySlug)
+		? buildCardSpecs(attributes, locale, KARGO_SPEC_REFS, KARGO_SKIPPED_REFS)
+		: buildCardSpecs(attributes, locale);
 
 /** A kit of loose bars: how many, and how long each one is (cm). */
 const BAR_COUNT_REF = "cfm:attribute:bar_count";
@@ -83,9 +95,12 @@ export function buildCardSpecs(
 	locale: string,
 	/** Further attributes this shelf's cards print, after the common ones. */
 	extraRefs: readonly string[] = [],
+	/** Common attributes this shelf's cards never print. */
+	skipRefs: readonly string[] = [],
 ): ListingSpec[] {
 	const specs: ListingSpec[] = [];
 	for (const ref of [...SPEC_REFS, ...extraRefs]) {
+		if (skipRefs.includes(ref)) continue;
 		const attr = attributes?.find((a) => a.attribute.externalReference === ref);
 		const raw = attr?.values[0]?.name;
 		if (!attr || !raw || !attr.attribute.name) continue;
@@ -268,7 +283,7 @@ export function transformToProductCard(
 		// it), so whichever way the main image was found, this is the next one — and absent when the
 		// product has only one, in which case the card simply does not swap.
 		hoverImage: gallery[1] ?? null,
-		specs: buildCardSpecs(product.attributes, locale, specRefsFor(product.category?.slug)),
+		specs: cardSpecsFor(product.attributes, locale, product.category?.slug),
 		href: productHref(channel, product.slug),
 		channel,
 		isPurchasable: product.isAvailableForPurchase === true,

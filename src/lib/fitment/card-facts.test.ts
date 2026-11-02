@@ -75,13 +75,13 @@ describe("attachSetFacts on the Kargo shelf", () => {
 		expect(result.specs?.length).toBeLessThanOrEqual(4);
 	});
 
-	it("does not print a load twice: the attribute states it, so the facet row is dropped", async () => {
+	it("says no load on this shelf: neither the export's rating of the fitting kit nor an attribute's", async () => {
 		const dataset = n15060Dataset();
-		for (const ref of rows(dataset)) ref.facets = { maxLoadKg: 75 };
+		for (const ref of rows(dataset)) ref.facets = { maxLoadKg: 50 };
 		const result = await attach(dataset, "sk-SK", [
-			card({ name: KARGO_NAME, category: KARGO, specs: [load] }),
+			card({ name: KARGO_NAME, category: KARGO, specs: [dimensions, load] }),
 		]);
-		expect(result.specs).toEqual([load]);
+		expect(result.specs).toEqual([dimensions]);
 	});
 
 	it("keeps the attribute rows of a product the dataset has no row for", async () => {

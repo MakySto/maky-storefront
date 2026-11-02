@@ -80,6 +80,7 @@ describe("withAttributeSpecs", () => {
 	const dimensions = { key: "dimensions", label: "Rozmery", value: "420 × 180 × 12 cm" };
 	const bars = { key: "bars", label: "Priečniky", value: "4 × 180 cm" };
 	const load = { key: "cfm:attribute:max_load", label: "Maximálna nosnosť", value: "50 kg" };
+	const material = { key: "cfm:attribute:material", label: "Materiál", value: "hliník" };
 
 	it("puts the product's own attribute rows first and keeps the facts the attributes do not say", () => {
 		const rows = offerSpecs({ barColour: "black", barShape: "aero" }, t);
@@ -88,29 +89,28 @@ describe("withAttributeSpecs", () => {
 	});
 
 	it("never prints a fact twice: the attribute row wins over the facet that says the same", () => {
-		const rows = offerSpecs({ maxLoadKg: 50, barMaterial: "aluminium", barLengthCm: 180 }, t);
-		const merged = withAttributeSpecs(rows, [
-			bars,
-			load,
-			{ key: "cfm:attribute:material", label: "Materiál", value: "hliník" },
-		]);
-		expect(merged.map((row) => row.key)).toEqual([
-			"bars",
-			"cfm:attribute:max_load",
-			"cfm:attribute:material",
-		]);
-		expect(merged.find((row) => row.key === "cfm:attribute:max_load")?.value).toBe("50 kg");
+		const rows = offerSpecs({ barMaterial: "aluminium", barLengthCm: 180 }, t);
+		const merged = withAttributeSpecs(rows, [bars, material]);
+		expect(merged.map((row) => row.key)).toEqual(["bars", "cfm:attribute:material"]);
 	});
 
-	it("keeps the facet row when no attribute states that fact, and is the facts alone without attributes", () => {
-		const rows = offerSpecs({ maxLoadKg: 50 }, t);
-		expect(withAttributeSpecs(rows, [dimensions]).map((row) => row.key)).toEqual(["dimensions", "load"]);
+	it("never says a load: not the export's maxLoadKg, which is the fitting kit's rating, and not an attribute's", () => {
+		const rows = offerSpecs({ maxLoadKg: 50, barMaterial: "steel" }, t);
+		expect(withAttributeSpecs(rows, [dimensions]).map((row) => row.key)).toEqual(["dimensions", "material"]);
+		expect(withAttributeSpecs([], [dimensions, load])).toEqual([dimensions]);
+	});
+
+	it("is the facts alone without attributes (but for the load), and nothing for nothing", () => {
+		const rows = offerSpecs({ barShape: "square" }, t);
 		expect(withAttributeSpecs(rows, [])).toEqual(rows);
 		expect(withAttributeSpecs([], [])).toEqual([]);
 	});
 
 	it("is four rows at most", () => {
-		const rows = offerSpecs({ barMaterial: "steel", barShape: "square", barLengthCm: 110, maxLoadKg: 60 }, t);
+		const rows = offerSpecs(
+			{ barMaterial: "steel", barShape: "square", barLengthCm: 110, barColour: "black" },
+			t,
+		);
 		expect(withAttributeSpecs(rows, [dimensions])).toHaveLength(4);
 	});
 });

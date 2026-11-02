@@ -37,7 +37,7 @@ import { publishableProductImage } from "@/lib/product-image";
 import { FitmentProductsByIdsDocument } from "@/gql/graphql";
 import { resolveAvailability, AVAILABILITY_METADATA_KEY } from "@/ui/components/product/availability-badge";
 import { getLocaleConfigByLocale } from "@/config/locale";
-import { buildCardSpecs, specRefsFor } from "@/ui/components/plp/utils";
+import { cardSpecsFor } from "@/ui/components/plp/utils";
 import type { ListingSpec } from "@/ui/components/listing/listing-specs";
 import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
 import {
@@ -426,7 +426,7 @@ export async function resolveFitmentOffers(
 					),
 					completeSetIncludes: ref.completeSet?.includes ?? null,
 					facets: ref.facets ?? null,
-					specs: buildCardSpecs(localized.attributes, locale, specRefsFor(node.category?.slug)),
+					specs: cardSpecsFor(localized.attributes, locale, node.category?.slug),
 					isPurchasable: node.isAvailableForPurchase === true,
 					isDemo: false,
 				});

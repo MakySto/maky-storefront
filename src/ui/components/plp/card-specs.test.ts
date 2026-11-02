@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProductListItemFragment } from "@/gql/graphql";
-import { buildCardSpecs } from "./utils";
+import { buildCardSpecs, cardSpecsFor } from "./utils";
 
 type Attrs = ProductListItemFragment["attributes"];
 
@@ -110,6 +110,18 @@ describe("buildCardSpecs", () => {
 			]);
 			const elsewhere = buildCardSpecs(basket, "sk-SK");
 			expect(elsewhere.some((spec) => spec.key === "cfm:attribute:material")).toBe(false);
+		});
+
+		it("never says a load on the Kargo shelf, and still does elsewhere", () => {
+			const slug = "stresne-nosice-a-kose-na-dodavky";
+			expect(cardSpecsFor(basket, "sk-SK", slug).map((spec) => spec.key)).toEqual([
+				"cfm:attribute:material",
+				"dimensions",
+			]);
+			expect(cardSpecsFor(basket, "sk-SK", "stresne-boxy").map((spec) => spec.key)).toEqual([
+				"cfm:attribute:max_load",
+				"dimensions",
+			]);
 		});
 
 		it("joins the bars as a count and a length, only when both exist", () => {
