@@ -616,6 +616,12 @@ type GraphQLOptions<Variables> = {
 	 * response body, which are the two places a "timeout" used not to reach.
 	 */
 	signal?: AbortSignal;
+	/**
+	 * The operation to execute, for a document that carries several (the B2B readiness probe: one query executed,
+	 * the documents it checks only validated). Sent only when given; a document with one operation needs none, and
+	 * a name guessed from the text could pick the wrong one.
+	 */
+	operationName?: string;
 } & (Variables extends Record<string, never> ? { variables?: never } : { variables: Variables });
 
 type GraphQLResponse<T> = { data: T } | { errors: readonly { message: string }[] };
@@ -628,8 +634,11 @@ async function executeGraphQL<Result, Variables>(
 	options: GraphQLOptions<Variables> & { withAuth: boolean },
 ): Promise<GraphQLResult<Result>> {
 	const { variables, headers, cache, revalidate, tags, withAuth, retry, signal } = options;
+	const selectedOperation = options.operationName;
 
-	const operationName = operation.toString().match(/(?:query|mutation)\s+(\w+)/)?.[1] || "UnknownOperation";
+	const operationName =
+		selectedOperation ??
+		(operation.toString().match(/(?:query|mutation)\s+(\w+)/)?.[1] || "UnknownOperation");
 	const variablesForLog = variables ? formatVariablesForLog(variables) : undefined;
 
 	if (process.env.NODE_ENV === "development" && process.env.DEBUG_CACHE) {
@@ -653,6 +662,7 @@ async function executeGraphQL<Result, Variables>(
 		body: JSON.stringify({
 			query: operation.toString(),
 			...(variables && { variables }),
+			...(selectedOperation && { operationName: selectedOperation }),
 		}),
 		cache,
 		next: { revalidate, ...(tags?.length ? { tags: [...tags] } : {}) },

@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Diminuisci quantità",
 		"increaseQuantity": "Aumenta quantità",
 		"priceWithVat": "Prezzo IVA inclusa",
+		"priceWithoutVat": "Prezzo IVA esclusa: {price}",
 		"technicalParameters": "Specifiche tecniche",
 		"outerDimensions": "Dimensioni esterne",
 		"yes": "Sì",
@@ -587,7 +588,11 @@
 			"invalidValue": "Valore non valido",
 			"notFullyPaid": "Il pagamento non copre ancora l'intero totale dell'ordine. Aggiorna la pagina; se l'importo è stato autorizzato, completa l'ordine con il pulsante qui sotto. Non pagare di nuovo finché lo stato non è confermato.",
 			"alreadyCompleted": "Questo ordine è già stato inviato. Troverai la conferma nell'e-mail.",
-			"freeOrderTotalChanged": "Il totale dell'ordine è cambiato e ora richiede un pagamento. Controllalo e riprova."
+			"freeOrderTotalChanged": "Il totale dell'ordine è cambiato e ora richiede un pagamento. Controllalo e riprova.",
+			"checkoutLocked": "È già in corso un pagamento per questo ordine. Completalo o annullalo in modo sicuro prima di avviarne uno nuovo.",
+			"orderUpdated": "Il tuo ordine è stato aggiornato. Controlla il nuovo importo prima di pagare.",
+			"finalStateUnconfirmed": "Al momento non è stato possibile confermare il prezzo finale. Riprova.",
+			"completeBlockedNoNewPayment": "Al momento non è stato possibile completare l'ordine. Se hai già pagato, non avviare un nuovo pagamento: ricarica la pagina o contattaci."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Modalità di prova:</strong> questa è una conferma d'ordine simulata. Non è stato effettuato alcun pagamento reale.",
@@ -609,6 +614,65 @@
 		},
 		"meta": {
 			"title": "Checkout"
+		},
+		"b2b": {
+			"sectionTitle": "Acquisto aziendale",
+			"toggle": "Acquisto per un'azienda",
+			"toggleHint": "Indicheremo i dati dell'azienda in fattura.",
+			"companyName": "Ragione sociale",
+			"registrationId": "IČO",
+			"taxId": "DIČ",
+			"vatIdPlaceholder": "es. {example}",
+			"vatIdHint": "Con una partita IVA valida di un altro paese UE e la consegna in quel paese, la cessione può essere esente da IVA. Decidiamo dopo la verifica in VIES.",
+			"billingSameAsShipping": "L'indirizzo di fatturazione è uguale a quello di consegna",
+			"billingAddressTitle": "Indirizzo di fatturazione",
+			"billingSummaryTitle": "Dati di fatturazione",
+			"billingMissing": "Mancano i dati di fatturazione. Completali nel passaggio Dati.",
+			"taxedTotal": "Totale IVA inclusa: {total}",
+			"summaryExempt": "Senza IVA — esente ai sensi del § 43 della legge slovacca sull'IVA",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "Partita IVA"
+			},
+			"errors": {
+				"companyNameRequired": "Inserisci la ragione sociale.",
+				"registrationIdRequired": "Inserisci l'IČO.",
+				"registrationIdFormat": "L'IČO ha da 6 a 8 cifre.",
+				"taxIdFormat": "Il DIČ ha 10 cifre.",
+				"vatIdFormat": "Il numero non ha il formato di una partita IVA del paese selezionato. Controllalo.",
+				"tooLong": "Il valore è troppo lungo.",
+				"saveFailed": "Non è stato possibile salvare i dati dell'azienda. Riprova."
+			},
+			"status": {
+				"verifying": "Stiamo verificando la partita IVA…",
+				"exempt": "Partita IVA verificata. La cessione è esente da IVA; il prezzo indicato è senza IVA.",
+				"invalid": "VIES non ha confermato la partita IVA come valida per gli scambi intracomunitari. Controllala o continua con l'IVA.",
+				"unavailable": "Al momento la partita IVA non può essere verificata. Riprova tra poco o continua con l'IVA.",
+				"countryMismatch": "Senza IVA possiamo gestire automaticamente solo la consegna nel paese della tua partita IVA. Per un'altra consegna, contattaci.",
+				"identityReview": "I dati dell'azienda non corrispondono all'esito della verifica. Controlla i dati di fatturazione o contattaci.",
+				"skVat": "Con una partita IVA slovacca, l'acquisto è fatturato con IVA.",
+				"domesticDelivery": "Con consegna o ritiro in Slovacchia, l'acquisto è fatturato con IVA.",
+				"incomplete": "Decideremo sull'IVA quando i dati e il metodo di consegna saranno completi.",
+				"validPendingDelivery": "La partita IVA è valida in VIES. Decideremo sull'IVA dopo la scelta del metodo di consegna.",
+				"disabled": "Al momento non offriamo l'esenzione IVA automatica. Puoi completare l'acquisto aziendale con IVA.",
+				"serviceOff": "La verifica automatica della partita IVA non è al momento disponibile. Puoi completare l'acquisto aziendale al prezzo indicato nel riepilogo."
+			},
+			"actions": {
+				"continueWithVat": "Continua con IVA",
+				"retry": "Verifica di nuovo",
+				"recheck": "Controlla di nuovo",
+				"refreshStatus": "Aggiorna lo stato del pagamento",
+				"edit": "Modifica"
+			}
 		}
 	},
 	"footer": {

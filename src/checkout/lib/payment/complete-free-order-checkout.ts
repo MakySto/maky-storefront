@@ -14,6 +14,8 @@ export type CompleteFreeOrderCheckoutParams = {
 	shippingAddress: AddressFragment | null | undefined;
 	userAddresses: ReadonlyArray<AddressFragment> | undefined;
 	authenticated: boolean;
+	/** Company purchase: keep the billing address saved in the Information step (see `updateCheckoutBilling`). */
+	preserveBilling?: boolean;
 	refreshCheckout: (options?: { updateState?: boolean }) => Promise<ServerCheckout | null>;
 };
 
@@ -31,6 +33,7 @@ export async function completeFreeOrderCheckout({
 	shippingAddress,
 	userAddresses,
 	authenticated,
+	preserveBilling,
 	refreshCheckout,
 }: CompleteFreeOrderCheckoutParams): Promise<CompleteFreeOrderCheckoutResult> {
 	const billingResult = await updateCheckoutBilling({
@@ -41,6 +44,7 @@ export async function completeFreeOrderCheckout({
 		shippingAddress,
 		userAddresses,
 		authenticated,
+		preserveBilling,
 	});
 
 	if (!billingResult.ok) {
@@ -65,6 +69,11 @@ export async function completeFreeOrderCheckout({
 	const completeResult = await finalizeCheckoutOrder(checkoutToComplete.id, checkoutToComplete.channel.slug);
 
 	if (!completeResult.ok) {
+		// The zero-total preflight (company tax state) answered with a new quote: show it, so the next click is a
+		// decision about the current total — or the paid flow, if the total is no longer zero.
+		if (completeResult.code === "TOTAL_CHANGED" || completeResult.code === "B2B_CONTEXT_CHANGED") {
+			await refreshCheckout();
+		}
 		return { ok: false, kind: "complete", error: completeResult.error };
 	}
 

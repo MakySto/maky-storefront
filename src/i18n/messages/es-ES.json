@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Reducir cantidad",
 		"increaseQuantity": "Aumentar cantidad",
 		"priceWithVat": "Precio con IVA",
+		"priceWithoutVat": "Precio sin IVA: {price}",
 		"technicalParameters": "Especificaciones técnicas",
 		"outerDimensions": "Dimensiones exteriores",
 		"yes": "Sí",
@@ -587,7 +588,11 @@
 			"invalidValue": "Valor no válido",
 			"notFullyPaid": "El pago aún no cubre el total del pedido. Actualiza la página; si los fondos se han autorizado, completa el pedido con el botón de abajo. No pagues de nuevo hasta que se confirme el estado.",
 			"alreadyCompleted": "Este pedido ya se ha realizado. Encontrarás la confirmación en tu correo.",
-			"freeOrderTotalChanged": "El total del pedido ha cambiado y ahora requiere pago. Revísalo e inténtalo de nuevo."
+			"freeOrderTotalChanged": "El total del pedido ha cambiado y ahora requiere pago. Revísalo e inténtalo de nuevo.",
+			"checkoutLocked": "Ya hay un pago en curso para este pedido. Complétalo o cancélalo de forma segura antes de iniciar uno nuevo.",
+			"orderUpdated": "Tu pedido se ha actualizado. Revisa el nuevo importe antes de pagar.",
+			"finalStateUnconfirmed": "Ahora no hemos podido confirmar el precio final. Inténtalo de nuevo.",
+			"completeBlockedNoNewPayment": "Ahora no hemos podido completar el pedido. Si ya has pagado, no inicies un nuevo pago: recarga la página o contáctanos."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Modo de prueba:</strong> esta es una confirmación de pedido simulada. No se ha realizado ningún pago real.",
@@ -609,6 +614,65 @@
 		},
 		"meta": {
 			"title": "Finalizar compra"
+		},
+		"b2b": {
+			"sectionTitle": "Compra para empresa",
+			"toggle": "Compro para una empresa",
+			"toggleHint": "Indicaremos los datos de la empresa en la factura.",
+			"companyName": "Razón social",
+			"registrationId": "IČO",
+			"taxId": "DIČ",
+			"vatIdPlaceholder": "p. ej., {example}",
+			"vatIdHint": "Con un NIF-IVA válido de otro país de la UE y entrega en ese país, la entrega puede estar exenta de IVA. Lo decidimos tras comprobarlo en VIES.",
+			"billingSameAsShipping": "La dirección de facturación es la misma que la de entrega",
+			"billingAddressTitle": "Dirección de facturación",
+			"billingSummaryTitle": "Datos de facturación",
+			"billingMissing": "Faltan los datos de facturación. Complétalos en el paso Datos.",
+			"taxedTotal": "Total con IVA: {total}",
+			"summaryExempt": "Sin IVA — exento según el § 43 de la Ley eslovaca del IVA",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "NIF-IVA"
+			},
+			"errors": {
+				"companyNameRequired": "Introduce la razón social.",
+				"registrationIdRequired": "Introduce el IČO.",
+				"registrationIdFormat": "El IČO tiene de 6 a 8 dígitos.",
+				"taxIdFormat": "El DIČ tiene 10 dígitos.",
+				"vatIdFormat": "El número no tiene el formato de NIF-IVA del país seleccionado. Revísalo.",
+				"tooLong": "El valor es demasiado largo.",
+				"saveFailed": "No se han podido guardar los datos de la empresa. Inténtalo de nuevo."
+			},
+			"status": {
+				"verifying": "Comprobando el NIF-IVA…",
+				"exempt": "NIF-IVA verificado. La entrega está exenta de IVA; el precio indicado no incluye IVA.",
+				"invalid": "VIES no ha confirmado el NIF-IVA como válido para el comercio intracomunitario. Revísalo o continúa con IVA.",
+				"unavailable": "Ahora no se puede comprobar el NIF-IVA. Inténtalo dentro de un momento o continúa con IVA.",
+				"countryMismatch": "Sin IVA solo podemos tramitar automáticamente la entrega en el país de tu NIF-IVA. Para otra entrega, contáctanos.",
+				"identityReview": "Los datos de la empresa no coinciden con el resultado de la verificación. Revisa los datos de facturación o contáctanos.",
+				"skVat": "Con un NIF-IVA eslovaco, la compra se factura con IVA.",
+				"domesticDelivery": "Con entrega o recogida en Eslovaquia, la compra se factura con IVA.",
+				"incomplete": "Decidiremos sobre el IVA cuando estén completos los datos y el método de entrega.",
+				"validPendingDelivery": "El NIF-IVA es válido en VIES. Decidiremos sobre el IVA cuando elijas el método de entrega.",
+				"disabled": "Ahora no ofrecemos la exención automática de IVA. Puedes completar la compra para empresa con IVA.",
+				"serviceOff": "La verificación automática del NIF-IVA no está disponible ahora. Puedes completar la compra para empresa al precio indicado en el resumen."
+			},
+			"actions": {
+				"continueWithVat": "Continuar con IVA",
+				"retry": "Comprobar de nuevo",
+				"recheck": "Revisar de nuevo",
+				"refreshStatus": "Actualizar el estado del pago",
+				"edit": "Editar"
+			}
 		}
 	},
 	"footer": {

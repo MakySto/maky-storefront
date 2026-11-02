@@ -61,3 +61,8 @@ docs/contracts/comparison-table/
 # verbatim; their SHA-256 and git blob ids are recorded in PROVENANCE.json and re-verified by
 # editorjs-content.test.ts, and CFM pins the same bytes. Reformatting changes them.
 docs/contracts/maky-content/
+
+# MAKY-B2B-V1 schema extension, generated from the backend's schema.graphql by
+# scripts/b2b-schema-extension.mjs, whose --check compares the committed bytes with what it derives.
+# Reformatting it here would make that check fail on a file nobody changed.
+src/checkout/lib/b2b/maky-b2b-v1.graphql

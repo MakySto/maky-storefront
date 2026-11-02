@@ -10,6 +10,7 @@
 # Access (set up 2026-09-26 in CloudShell):
 #   maky-ec2-ssm-role (this server)  may READ  /maky/storefront/*
 #   maky-cms-role     (CMS server)   may WRITE /maky/storefront/cms/* only
+#   /maky/storefront/saleor/b2b-app-token (2026-11): put by an operator by hand (Saleor Dashboard → AWS console)
 #
 # Only the parameters named in MAPPINGS below are copied, each onto exactly one variable. A
 # parameter the CMS is allowed to write can therefore never override any other setting of the
@@ -33,6 +34,11 @@ AWS="${AWS_CLI:-$(command -v aws || echo /snap/bin/aws)}"
 # SSM parameter -> .env variable. Add a line here to hand the storefront a new secret.
 MAPPINGS=(
 	"/maky/storefront/cms/PAYLOAD_PREVIEW_API_KEY PAYLOAD_PREVIEW_API_KEY"
+	# The token of the Saleor app "MAKY B2B checkout - production" (MANAGE_TAXES + HANDLE_TAXES), server-only: the B2B
+	# checkout's attestation and its private state read. Written by an operator in the AWS console, never by
+	# maky-cms-role. A missing parameter is skipped like any other, so a green sync proves nothing about it:
+	# the running process says whether it holds a working token (GET /api/internal/b2b-readiness).
+	"/maky/storefront/saleor/b2b-app-token SALEOR_B2B_APP_TOKEN"
 )
 
 CHECK=0

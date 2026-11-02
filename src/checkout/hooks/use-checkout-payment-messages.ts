@@ -62,6 +62,9 @@ export function useCheckoutPaymentMessages() {
 			notFullyPaid: t("notFullyPaid"),
 			alreadyCompleted: t("alreadyCompleted"),
 			freeOrderTotalChanged: t("freeOrderTotalChanged"),
+			checkoutLocked: t("checkoutLocked"),
+			orderUpdated: t("orderUpdated"),
+			finalStateUnconfirmed: t("finalStateUnconfirmed"),
 		};
 
 		// Render-phase registration is deliberate (idempotent assignment): the plain libs
@@ -77,6 +80,8 @@ export function useCheckoutPaymentMessages() {
 			notFullyPaid: messages.notFullyPaid,
 			alreadyCompleted: messages.alreadyCompleted,
 			freeOrderTotalChanged: messages.freeOrderTotalChanged,
+			checkoutLocked: messages.checkoutLocked,
+			orderUpdated: messages.orderUpdated,
 		});
 
 		return messages;
