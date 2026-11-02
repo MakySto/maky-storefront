@@ -6,6 +6,7 @@ import { sortSizes } from "@/lib/sizes";
 import { getLocaleConfigByLocale, getLocaleFromChannel, localeConfig } from "@/config/locale";
 import { hasDiscountInPriceRange } from "@/lib/pricing";
 import { productHref } from "@/lib/product-url";
+import { baseSlugOfCategory } from "@/config/category-routes";
 import { KARGO_CATEGORY_SLUGS } from "@/config/kargo-slugs";
 import { formatAttributeValue } from "@/lib/product-attributes";
 import { publishableProductImage } from "@/lib/product-image";
@@ -283,7 +284,8 @@ export function transformToProductCard(
 		// it), so whichever way the main image was found, this is the next one — and absent when the
 		// product has only one, in which case the card simply does not swap.
 		hoverImage: gallery[1] ?? null,
-		specs: cardSpecsFor(product.attributes, locale, product.category?.slug),
+		// The shelf is told by the BASE slug: abroad the category carries its translated one.
+		specs: cardSpecsFor(product.attributes, locale, baseSlugOfCategory(channel, product.category)),
 		href: productHref(channel, product.slug),
 		channel,
 		isPurchasable: product.isAvailableForPurchase === true,
@@ -291,7 +293,12 @@ export function transformToProductCard(
 		colors,
 		sizes,
 		category: product.category
-			? { id: product.category.id, name: product.category.name, slug: product.category.slug }
+			? {
+					id: product.category.id,
+					name: product.category.name,
+					slug: product.category.slug,
+					baseSlug: baseSlugOfCategory(channel, product.category) ?? product.category.slug,
+				}
 			: null,
 		createdAt: product.created,
 		hasVariants: (product.variants?.length ?? 0) > 1,

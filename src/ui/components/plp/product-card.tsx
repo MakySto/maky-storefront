@@ -92,7 +92,8 @@ export interface ProductCardData {
 	badge?: "sale" | "new" | null;
 	colors?: { name: string; hex: string }[];
 	sizes?: string[];
-	category?: { id: string; name: string; slug: string } | null;
+	/** `baseSlug` is the category's Saleor slug, which `slug` is only on the Slovak shop: abroad it is the translated one. */
+	category?: { id: string; name: string; slug: string; baseSlug?: string } | null;
 	createdAt?: string | null;
 	hasVariants?: boolean;
 }
@@ -168,7 +169,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 	// (`config/quote-only.ts`): the card says so where the price would be.
 	const quoteOnly = quoteInsteadOfPrice({
 		isPurchasable: product.isPurchasable,
-		categorySlug: product.category?.slug,
+		categorySlug: product.category?.baseSlug ?? product.category?.slug,
 	});
 
 	// Only offer a direct add when there is genuinely nothing to choose.

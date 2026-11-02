@@ -2,7 +2,7 @@ import "server-only";
 
 import { getTranslations } from "next-intl/server";
 
-import { KARGO_CATEGORY_SLUGS } from "@/config/kargo-slugs";
+import { isKargoCategory } from "@/config/category-routes";
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import type { ProductCardData } from "@/ui/components/plp/product-card";
 import { isFitmentRefSellable, type FitmentCondition, type FitmentDataset } from "./contract";
@@ -61,8 +61,7 @@ function versionNoteOf(rows: VersionRows | undefined, locale: string): string | 
 }
 
 /** A card of the Nordrive Kargo shelf, whose parameters CFM writes to Saleor as attributes. */
-const isKargoCard = (card: ProductCardData) =>
-	card.category ? KARGO_CATEGORY_SLUGS.includes(card.category.slug) : false;
+const isKargoCard = (card: ProductCardData) => isKargoCategory(card.channel, card.category);
 
 /**
  * What a roof-rack set's listing card says about the SET, from CFM's export — the same words on the
