@@ -241,7 +241,7 @@ async function ProductContent({
 	// The page shows a quote button instead of a price here, so the markup states no price either.
 	const quoteOnly = quoteInsteadOfPrice({
 		isPurchasable: product.isAvailableForPurchase === true,
-		categorySlug: baseSlugOfCategory(params.channel, product.category?.slug),
+		categorySlug: baseSlugOfCategory(params.channel, product.category),
 	});
 
 	const productJsonLd = buildProductJsonLd({

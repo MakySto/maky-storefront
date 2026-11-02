@@ -285,7 +285,7 @@ export function transformToProductCard(
 		// product has only one, in which case the card simply does not swap.
 		hoverImage: gallery[1] ?? null,
 		// The shelf is told by the BASE slug: abroad the category carries its translated one.
-		specs: cardSpecsFor(product.attributes, locale, baseSlugOfCategory(channel, product.category?.slug)),
+		specs: cardSpecsFor(product.attributes, locale, baseSlugOfCategory(channel, product.category)),
 		href: productHref(channel, product.slug),
 		channel,
 		isPurchasable: product.isAvailableForPurchase === true,
@@ -297,7 +297,7 @@ export function transformToProductCard(
 					id: product.category.id,
 					name: product.category.name,
 					slug: product.category.slug,
-					baseSlug: baseSlugOfCategory(channel, product.category.slug) ?? product.category.slug,
+					baseSlug: baseSlugOfCategory(channel, product.category) ?? product.category.slug,
 				}
 			: null,
 		createdAt: product.created,

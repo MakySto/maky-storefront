@@ -205,7 +205,7 @@ export async function VariantSectionDynamic({
 	// (`config/quote-only.ts`): the page shows no price, and the link above stands alone.
 	const quoteOnly = quoteInsteadOfPrice({
 		isPurchasable,
-		categorySlug: baseSlugOfCategory(channel, product.category?.slug),
+		categorySlug: baseSlugOfCategory(channel, product.category),
 	});
 
 	const reviewSummary = reviewSummaryFor(product);

@@ -136,7 +136,10 @@ describe("buildCardSpecs", () => {
 	});
 
 	describe("a Kargo card in a foreign market", () => {
-		const DE_SLUG = "kargo-dachtraeger-und-dachkoerbe-fuer-transporter";
+		// The translated slug Saleor holds for the category in Germany (read 2026-11-02): no `kargo-` in front.
+		const DE_SLUG = "dachtraeger-und-dachkoerbe-fuer-transporter";
+		const KARGO_ID = "Q2F0ZWdvcnk6MzQ=";
+		const ROOF_RACKS_ID = "Q2F0ZWdvcnk6Mg==";
 		const german = [
 			attr("cfm:attribute:outer_length", "Länge", "420", "CM"),
 			attr("cfm:attribute:outer_width", "Breite", "180", "CM"),
@@ -144,8 +147,8 @@ describe("buildCardSpecs", () => {
 			attr("cfm:attribute:max_load", "Maximale Tragfähigkeit", "50", "KG"),
 			attr("cfm:attribute:material", "Material", "eloxiertes Aluminium"),
 		];
-		/** What the exact-locale boundary hands the card: the category with its TRANSLATED slug. */
-		const product = (slug: string) =>
+		/** What the exact-locale boundary hands the card: the category with its TRANSLATED slug, the id unchanged. */
+		const product = (slug: string, id = KARGO_ID) =>
 			({
 				id: "UHJvZHVjdDox",
 				name: "Dachkorb Nordrive Kargo",
@@ -154,7 +157,7 @@ describe("buildCardSpecs", () => {
 				rating: null,
 				created: null,
 				attributes: german,
-				category: { id: "Q2F0ZWdvcnk6MzQ=", name: "Kargo", slug },
+				category: { id, name: "Kargo", slug },
 				pricing: { priceRange: { start: { gross: { amount: 1, currency: "EUR" } } } },
 				thumbnail: null,
 				cardMedia: [],
@@ -173,9 +176,10 @@ describe("buildCardSpecs", () => {
 			const keys = (slug: string, channel: string, locale: string) =>
 				transformToProductCard(product(slug), channel, locale).specs?.map((spec) => spec.key);
 			const abroad = keys(DE_SLUG, "de-eur", "de-DE");
-			expect(keys("kargo-stresne-nosice-a-stresne-kose-na-dodavky", "sk-eur", "sk-SK")).toEqual(abroad);
 			expect(keys("stresne-nosice-a-kose-na-dodavky", "sk-eur", "sk-SK")).toEqual(abroad);
-			expect(keys("kargo-dachtraeger-und-dachkoerbe-fuer-lieferwagen", "at-eur", "de-AT")).toEqual(abroad);
+			expect(keys("kargo-stresne-nosice-a-stresne-kose-na-dodavky", "sk-eur", "sk-SK")).toEqual(abroad);
+			expect(keys(DE_SLUG, "at-eur", "de-AT")).toEqual(abroad);
+			expect(keys("kargo-dachtraeger-und-dachkoerbe-fuer-transporter", "de-eur", "de-DE")).toEqual(abroad);
 		});
 
 		it("carries the base slug of its category beside the translated one, for the rules keyed by it", () => {
@@ -184,13 +188,17 @@ describe("buildCardSpecs", () => {
 				slug: DE_SLUG,
 				baseSlug: "kargo-stresne-nosice-a-stresne-kose-na-dodavky",
 			});
-			const home = transformToProductCard(product("stresne-boxy"), "sk-eur", "sk-SK").category;
+			const home = transformToProductCard(
+				product("stresne-boxy", "Q2F0ZWdvcnk6OTk5"),
+				"sk-eur",
+				"sk-SK",
+			).category;
 			expect(home).toMatchObject({ slug: "stresne-boxy", baseSlug: "stresne-boxy" });
 		});
 
 		it("asks for a quote where the market does not sell it, under the translated slug too", () => {
-			const quote = (slug: string, channel: string, locale: string) => {
-				const category = transformToProductCard(product(slug), channel, locale).category;
+			const quote = (slug: string, channel: string, locale: string, id = KARGO_ID) => {
+				const category = transformToProductCard(product(slug, id), channel, locale).category;
 				return quoteInsteadOfPrice({
 					isPurchasable: false,
 					categorySlug: category?.baseSlug ?? category?.slug,
@@ -198,12 +206,13 @@ describe("buildCardSpecs", () => {
 			};
 			expect(quote("kargo-roof-racks-and-crossbars-for-vans", "us-usd", "en-US")).toBe(true);
 			expect(quote("kargo-van-roof-racks-and-crossbars", "ca-cad", "en-CA")).toBe(true);
+			expect(quote("stresne-nosice-a-kose-na-dodavky", "us-usd", "en-US")).toBe(true);
 			expect(quote(DE_SLUG, "de-eur", "de-DE")).toBe(true);
-			expect(quote("dachtraeger", "de-eur", "de-DE")).toBe(false);
+			expect(quote("dachtraeger", "de-eur", "de-DE", ROOF_RACKS_ID)).toBe(false);
 		});
 
 		it("leaves another shelf's translated slug alone: its load stays and no material is asked for", () => {
-			const card = transformToProductCard(product("dachtraeger"), "de-eur", "de-DE");
+			const card = transformToProductCard(product("dachtraeger", ROOF_RACKS_ID), "de-eur", "de-DE");
 			expect(card.specs?.map((spec) => spec.key)).toEqual(["cfm:attribute:max_load", "dimensions"]);
 		});
 	});

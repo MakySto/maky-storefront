@@ -1,6 +1,5 @@
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
-import { baseSlugOfCategory } from "@/config/category-routes";
 import type { SearchProduct } from "@/lib/search";
 import { formatPrice, getLocaleFromChannel } from "@/config/locale";
 import { quoteInsteadOfPrice } from "@/config/quote-only";
@@ -64,7 +63,7 @@ export async function SearchResultCard({
 	// Not sold in this market, in a category that asks for a quote instead of a price (`config/quote-only.ts`).
 	const quoteOnly = quoteInsteadOfPrice({
 		isPurchasable: product.isPurchasable,
-		categorySlug: baseSlugOfCategory(channel, product.categorySlug),
+		categorySlug: product.categorySlug,
 	});
 
 	return (

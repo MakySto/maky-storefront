@@ -87,7 +87,12 @@ describe("attachSetFacts on the Kargo shelf", () => {
 	it("tells the shelf in a foreign market too, where the category carries its translated slug", async () => {
 		const dataset = n15060Dataset();
 		for (const ref of rows(dataset)) ref.facets = { maxLoadKg: 50 };
-		const german = category("kargo-dachtraeger-und-dachkoerbe-fuer-transporter");
+		// The id is the category's, the slug the one Saleor holds for it in Germany (read 2026-11-02).
+		const german = {
+			id: "Q2F0ZWdvcnk6MzQ=",
+			name: "Kargo",
+			slug: "dachtraeger-und-dachkoerbe-fuer-transporter",
+		};
 		const result = await attach(dataset, "de-DE", [
 			card({ name: KARGO_NAME, channel: "de-eur", category: german, specs: [dimensions, load] }),
 		]);

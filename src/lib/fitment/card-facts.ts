@@ -61,7 +61,7 @@ function versionNoteOf(rows: VersionRows | undefined, locale: string): string | 
 }
 
 /** A card of the Nordrive Kargo shelf, whose parameters CFM writes to Saleor as attributes. */
-const isKargoCard = (card: ProductCardData) => isKargoCategory(card.channel, card.category?.slug);
+const isKargoCard = (card: ProductCardData) => isKargoCategory(card.channel, card.category);
 
 /**
  * What a roof-rack set's listing card says about the SET, from CFM's export — the same words on the
