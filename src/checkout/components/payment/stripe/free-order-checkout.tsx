@@ -50,6 +50,7 @@ export const FreeOrderCheckout: FC<FreeOrderCheckoutProps> = ({
 				shippingAddress: billing.shippingAddress,
 				userAddresses: billing.userAddresses,
 				authenticated: billing.authenticated,
+				preserveBilling: billing.preserveBilling,
 				refreshCheckout,
 			});
 

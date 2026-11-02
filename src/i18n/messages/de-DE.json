@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Menge verringern",
 		"increaseQuantity": "Menge erhöhen",
 		"priceWithVat": "Preis inkl. MwSt.",
+		"priceWithoutVat": "Preis ohne MwSt.: {price}",
 		"technicalParameters": "Technische Daten",
 		"outerDimensions": "Außenmaße",
 		"yes": "Ja",
@@ -590,7 +591,11 @@
 			"invalidValue": "Ungültiger Wert",
 			"notFullyPaid": "Die Zahlung deckt den Gesamtbetrag noch nicht ab. Aktualisieren Sie die Seite; falls der Betrag autorisiert wurde, schließen Sie die Bestellung unten ab. Zahlen Sie nicht erneut, bis der Status bestätigt ist.",
 			"alreadyCompleted": "Diese Bestellung wurde bereits aufgegeben. Die Bestätigung finden Sie in Ihrer E-Mail.",
-			"freeOrderTotalChanged": "Der Gesamtbetrag hat sich geändert und erfordert nun eine Zahlung. Prüfen Sie ihn und versuchen Sie es erneut."
+			"freeOrderTotalChanged": "Der Gesamtbetrag hat sich geändert und erfordert nun eine Zahlung. Prüfen Sie ihn und versuchen Sie es erneut.",
+			"checkoutLocked": "Für diese Bestellung läuft bereits eine Zahlung. Schließen Sie sie ab oder brechen Sie sie sicher ab, bevor Sie eine neue starten.",
+			"orderUpdated": "Ihre Bestellung wurde aktualisiert. Bitte prüfen Sie den neuen Betrag vor der Zahlung.",
+			"finalStateUnconfirmed": "Der Endpreis konnte gerade nicht bestätigt werden. Bitte versuchen Sie es erneut.",
+			"completeBlockedNoNewPayment": "Die Bestellung konnte gerade nicht abgeschlossen werden. Wenn Sie bereits bezahlt haben, starten Sie keine neue Zahlung: Laden Sie die Seite neu oder kontaktieren Sie uns."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Testmodus:</strong> Dies ist eine simulierte Bestellbestätigung. Es wurde keine echte Zahlung vorgenommen.",
@@ -612,6 +617,65 @@
 		},
 		"meta": {
 			"title": "Checkout"
+		},
+		"b2b": {
+			"sectionTitle": "Kauf auf Firma",
+			"toggle": "Ich kaufe für ein Unternehmen",
+			"toggleHint": "Die Firmendaten stehen auf der Rechnung.",
+			"companyName": "Firmenname",
+			"registrationId": "IČO",
+			"taxId": "DIČ",
+			"vatIdPlaceholder": "z. B. {example}",
+			"vatIdHint": "Mit einer gültigen USt-IdNr. aus einem anderen EU-Land und Lieferung in dieses Land kann die Lieferung umsatzsteuerfrei sein. Wir entscheiden nach der Prüfung in VIES.",
+			"billingSameAsShipping": "Rechnungsadresse ist gleich der Lieferadresse",
+			"billingAddressTitle": "Rechnungsadresse",
+			"billingSummaryTitle": "Rechnungsdaten",
+			"billingMissing": "Die Rechnungsdaten fehlen. Bitte ergänzen Sie sie im Schritt Angaben.",
+			"taxedTotal": "Zu zahlen inkl. MwSt.: {total}",
+			"summaryExempt": "Ohne MwSt. — steuerfrei nach § 43 des slowakischen Umsatzsteuergesetzes",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "USt-IdNr."
+			},
+			"errors": {
+				"companyNameRequired": "Bitte geben Sie den Firmennamen ein.",
+				"registrationIdRequired": "Bitte geben Sie die IČO ein.",
+				"registrationIdFormat": "Die IČO hat 6 bis 8 Ziffern.",
+				"taxIdFormat": "Die DIČ hat 10 Ziffern.",
+				"vatIdFormat": "Die Nummer hat nicht das Format einer USt-IdNr. des gewählten Landes. Bitte prüfen Sie sie.",
+				"tooLong": "Der Wert ist zu lang.",
+				"saveFailed": "Die Firmendaten konnten nicht gespeichert werden. Bitte versuchen Sie es erneut."
+			},
+			"status": {
+				"verifying": "Wir prüfen die USt-IdNr.…",
+				"exempt": "USt-IdNr. bestätigt. Die Lieferung ist umsatzsteuerfrei; der angezeigte Preis ist ohne MwSt.",
+				"invalid": "VIES hat die USt-IdNr. nicht als gültig für den innergemeinschaftlichen Handel bestätigt. Bitte prüfen Sie sie oder fahren Sie mit MwSt. fort.",
+				"unavailable": "Die USt-IdNr. kann gerade nicht geprüft werden. Versuchen Sie es gleich noch einmal oder fahren Sie mit MwSt. fort.",
+				"countryMismatch": "Ohne MwSt. können wir automatisch nur Lieferungen in das Land Ihrer USt-IdNr. abwickeln. Für eine andere Lieferung kontaktieren Sie uns bitte.",
+				"identityReview": "Die Firmendaten stimmen nicht mit dem Prüfergebnis überein. Bitte prüfen Sie die Rechnungsdaten oder kontaktieren Sie uns.",
+				"skVat": "Mit einer slowakischen USt-IdNr. wird der Kauf mit MwSt. berechnet.",
+				"domesticDelivery": "Bei Lieferung oder Abholung in der Slowakei wird der Kauf mit MwSt. berechnet.",
+				"incomplete": "Über die MwSt. entscheiden wir, sobald Lieferdaten und Versandart vollständig sind.",
+				"validPendingDelivery": "Die USt-IdNr. ist in VIES gültig. Über die MwSt. entscheiden wir nach der Wahl der Versandart.",
+				"disabled": "Eine automatische Steuerbefreiung bieten wir derzeit nicht an. Sie können den Firmenkauf mit MwSt. abschließen.",
+				"serviceOff": "Die automatische Prüfung der USt-IdNr. ist gerade nicht verfügbar. Sie können den Firmenkauf zum Preis in der Übersicht abschließen."
+			},
+			"actions": {
+				"continueWithVat": "Mit MwSt. fortfahren",
+				"retry": "Erneut prüfen",
+				"recheck": "Erneut überprüfen",
+				"refreshStatus": "Zahlungsstatus aktualisieren",
+				"edit": "Bearbeiten"
+			}
 		}
 	},
 	"footer": {

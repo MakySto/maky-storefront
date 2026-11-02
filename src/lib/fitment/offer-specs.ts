@@ -1,5 +1,6 @@
 /**
- * The facts a listing card prints about a roof-rack set, from CFM's own facets and nothing else.
+ * The facts a listing card prints about a roof-rack set, from CFM's own facets and, on the Kargo shelf, from the
+ * product's own Saleor attributes (`withAttributeSpecs`). Never from its name or its text.
  *
  * One function for every surface that lists sets — the vehicle page, the configurator and the
  * category shelf — so the same set says the same four things everywhere. Pure and free of
@@ -21,9 +22,10 @@
  * is — the bars' rating, not the roof's limit — so it cannot be read as permission.
  */
 
-import { barsInName, sizeInName } from "./set-title";
+import type { ListingSpec } from "@/ui/components/listing/listing-specs";
+import { BARS_SPEC_KEY } from "@/ui/components/listing/listing-specs";
 
-export type SpecKey = "material" | "shape" | "length" | "load" | "colour" | "dimensions" | "bars";
+export type SpecKey = "material" | "shape" | "length" | "load" | "colour";
 
 export type SpecRow = { key: SpecKey; label: string; value: string };
 
@@ -91,33 +93,46 @@ export function offerSpecs(
 	return rows.slice(0, options.max ?? MAX_SPEC_ROWS);
 }
 
-/** The words a name's own size is given a row with: the card's own, in the reader's language. */
-export type NameSizeLabels = { dimensions: string; bars: string };
+/**
+ * The attribute row that already says what a facet row would say again, so the two are never both printed:
+ * the card's own attributes (CFM writes them to Saleor for every product) win over the export's facets.
+ */
+const SAID_BY_ATTRIBUTE: Readonly<Record<SpecKey, string | undefined>> = {
+	material: "cfm:attribute:material",
+	shape: undefined,
+	length: BARS_SPEC_KEY,
+	load: "cfm:attribute:max_load",
+	colour: undefined,
+};
 
 /**
- * What the set's name states about its size, put first: the size of a basket ("420 × 180 × 12 cm") or the bars
- * of a kit sold as loose bars ("4 tyče 180 cm"), and only where the rows do not already say a size.
- *
- * CFM's facets carry neither, and the name is the one place that does: four baskets of one van that differ only
- * in their size would otherwise look the same on a shelf. The numbers are the name's own (`sizeInName`,
- * `barsInName`), never worked out, and a name that states none leaves the rows as they were. Four rows at most,
- * the size taking the first of them.
+ * No load row on the Kargo shelf, from either source. CFM writes no `max_load` attribute for a Kargo product, and
+ * the export's `maxLoadKg` (50 kg) is the rating of the fitting kit's parts, not of the basket or of the bars: a
+ * "Nosnosť 50 kg" beside a basket would be read as what the basket carries (CFM, 2026-11-02).
  */
-export function withNameSize<Row extends { key: string; label: string; value: string }>(
-	rows: readonly Row[],
-	name: string | null | undefined,
-	labels: NameSizeLabels,
+const NO_LOAD_ROW = new Set<string>(["load", "cfm:attribute:max_load"]);
+
+/**
+ * A product's own attribute rows first, then the export's facet rows for what the attributes do not say.
+ *
+ * For a shelf whose products CFM describes through Saleor attributes (the Nordrive Kargo baskets and bars carry
+ * their size, bars and material there, and a set's facets carry little or nothing of it). One source per fact: a
+ * facet row whose fact an attribute row already states is dropped, never printed beside it with another value.
+ * Never a load row (see `NO_LOAD_ROW`). Four rows at most.
+ */
+export function withAttributeSpecs(
+	facetRows: readonly SpecRow[],
+	attributeRows: readonly ListingSpec[],
 	max: number = MAX_SPEC_ROWS,
-): (Row | { key: "dimensions" | "bars"; label: string; value: string })[] {
-	if (!name || rows.some((row) => row.key === "dimensions" || row.key === "bars")) return [...rows];
-	const size = sizeInName(name);
-	const bars = size ? null : barsInName(name);
-	const added = size
-		? { key: "dimensions" as const, label: labels.dimensions, value: size }
-		: bars
-			? { key: "bars" as const, label: labels.bars, value: `${bars.count} × ${bars.lengthCm} cm` }
-			: null;
-	return added ? [added, ...rows].slice(0, max) : [...rows];
+): ListingSpec[] {
+	const own = attributeRows.filter((row) => !NO_LOAD_ROW.has(row.key));
+	const said = new Set(own.map((row) => row.key));
+	const rest = facetRows.filter((row) => {
+		if (NO_LOAD_ROW.has(row.key)) return false;
+		const covering = SAID_BY_ATTRIBUTE[row.key];
+		return !(covering && said.has(covering));
+	});
+	return [...own, ...rest].slice(0, max);
 }
 
 /** The `configurator` messages that word what a set contains. */

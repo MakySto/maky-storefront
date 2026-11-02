@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeIncludes, isCompleteSet, offerSpecs, withNameSize } from "./offer-specs";
+import { describeIncludes, isCompleteSet, offerSpecs, withAttributeSpecs } from "./offer-specs";
 
 const t = (key: string) => `[${key}]`;
 
@@ -76,43 +76,41 @@ describe("describeIncludes / isCompleteSet", () => {
 	});
 });
 
-describe("withNameSize", () => {
-	const NAME =
-		"Strešný kôš Nordrive Kargo Rack pre Volkswagen Crafter (od 2017), 420 × 180 × 12 cm, NKR4444+N30394";
-	const BARS =
-		"Strešný nosič Nordrive Kargo pre Volkswagen Crafter (od 2017), 4 tyče 180 cm, 4×N10015+N30394";
-	const labels = { dimensions: "Rozmery", bars: "Priečniky" };
+describe("withAttributeSpecs", () => {
+	const dimensions = { key: "dimensions", label: "Rozmery", value: "420 × 180 × 12 cm" };
+	const bars = { key: "bars", label: "Priečniky", value: "4 × 180 cm" };
+	const load = { key: "cfm:attribute:max_load", label: "Maximálna nosnosť", value: "50 kg" };
+	const material = { key: "cfm:attribute:material", label: "Materiál", value: "hliník" };
 
-	it("puts the size the name states first, ahead of the facts, four rows at most", () => {
+	it("puts the product's own attribute rows first and keeps the facts the attributes do not say", () => {
+		const rows = offerSpecs({ barColour: "black", barShape: "aero" }, t);
+		const merged = withAttributeSpecs(rows, [dimensions]);
+		expect(merged.map((row) => row.key)).toEqual(["dimensions", "shape", "colour"]);
+	});
+
+	it("never prints a fact twice: the attribute row wins over the facet that says the same", () => {
+		const rows = offerSpecs({ barMaterial: "aluminium", barLengthCm: 180 }, t);
+		const merged = withAttributeSpecs(rows, [bars, material]);
+		expect(merged.map((row) => row.key)).toEqual(["bars", "cfm:attribute:material"]);
+	});
+
+	it("never says a load: not the export's maxLoadKg, which is the fitting kit's rating, and not an attribute's", () => {
+		const rows = offerSpecs({ maxLoadKg: 50, barMaterial: "steel" }, t);
+		expect(withAttributeSpecs(rows, [dimensions]).map((row) => row.key)).toEqual(["dimensions", "material"]);
+		expect(withAttributeSpecs([], [dimensions, load])).toEqual([dimensions]);
+	});
+
+	it("is the facts alone without attributes (but for the load), and nothing for nothing", () => {
+		const rows = offerSpecs({ barShape: "square" }, t);
+		expect(withAttributeSpecs(rows, [])).toEqual(rows);
+		expect(withAttributeSpecs([], [])).toEqual([]);
+	});
+
+	it("is four rows at most", () => {
 		const rows = offerSpecs(
-			{ maxLoadKg: 75, barMaterial: "aluminium", barShape: "aero", barLengthCm: 118 },
+			{ barMaterial: "steel", barShape: "square", barLengthCm: 110, barColour: "black" },
 			t,
 		);
-		const sized = withNameSize(rows, NAME, labels);
-		expect(sized[0]).toEqual({ key: "dimensions", label: "Rozmery", value: "420 × 180 × 12 cm" });
-		expect(sized).toHaveLength(4);
-		expect(sized.slice(1).map((row) => row.key)).toEqual(["material", "shape", "length"]);
-	});
-
-	it("is the size alone for a basket with no facts, so four baskets of one van can be told apart", () => {
-		expect(withNameSize([], NAME, labels)).toEqual([
-			{ key: "dimensions", label: "Rozmery", value: "420 × 180 × 12 cm" },
-		]);
-	});
-
-	it("says the count and the length of the bars a kit is sold as", () => {
-		expect(withNameSize([], BARS, labels)).toEqual([
-			{ key: "bars", label: "Priečniky", value: "4 × 180 cm" },
-		]);
-	});
-
-	it("leaves the rows alone where the name states no size or a size is already there", () => {
-		const rows = offerSpecs({ barMaterial: "steel" }, t);
-		expect(withNameSize(rows, "Strešný nosič Thule SquareBar EVO Black Audi A6", labels)).toEqual(rows);
-		expect(withNameSize(rows, null, labels)).toEqual(rows);
-		const own = [{ key: "dimensions", label: "Rozmery", value: "190 × 80 × 40 cm" }];
-		expect(withNameSize(own, NAME, labels)).toEqual(own);
-		const bars = [{ key: "bars", label: "Priečniky", value: "2 × 120 cm" }];
-		expect(withNameSize(bars, BARS, labels)).toEqual(bars);
+		expect(withAttributeSpecs(rows, [dimensions])).toHaveLength(4);
 	});
 });

@@ -81,6 +81,42 @@ describe("Saleor search, abroad", () => {
 	});
 });
 
+describe("Saleor search, the category of a hit", () => {
+	it("is given by its base slug, though a foreign market carries the translated one", async () => {
+		const plain = hit("k", "DE", false);
+		const kargo = {
+			...plain,
+			node: {
+				...plain.node,
+				category: {
+					id: "Q2F0ZWdvcnk6MzQ=",
+					name: "Dachträger und Dachkörbe für Transporter",
+					// What Saleor holds for Germany (read 2026-11-02), already swapped in by the exact-locale boundary.
+					slug: "dachtraeger-und-dachkoerbe-fuer-transporter",
+					translation: {
+						name: "Dachträger und Dachkörbe für Transporter",
+						slug: "dachtraeger-und-dachkoerbe-fuer-transporter",
+					},
+				},
+			},
+		};
+		executePublicGraphQL.mockResolvedValue({
+			ok: true,
+			data: {
+				products: {
+					totalCount: 1,
+					edges: [kargo],
+					pageInfo: { hasNextPage: false, hasPreviousPage: false, endCursor: null, startCursor: null },
+				},
+			},
+		});
+
+		const result = await searchProducts({ query: "kargo", channel: "de-eur" });
+
+		expect(result.products[0]!.categorySlug).toBe("kargo-stresne-nosice-a-stresne-kose-na-dodavky");
+	});
+});
+
 describe('Saleor search never offers the grey "no image" GIF as a thumbnail', () => {
 	const PLACEHOLDER =
 		"https://cdn.maky.store/thumbnails/products/c32bc543a46f5bf4eff3becb79dffc196d598106ae2608c85b48516_14c60dff_thumbnail_4.gif";

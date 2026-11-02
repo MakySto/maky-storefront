@@ -2,6 +2,7 @@
 
 import { useState, type FC } from "react";
 import { useTranslations } from "next-intl";
+import { useCheckoutB2b } from "@/checkout/providers/checkout-b2b";
 import { Tag, ShieldCheck, ChevronDown, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type CheckoutFragment, type OrderFragment } from "@/checkout/graphql";
@@ -127,6 +128,10 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 	const t = useTranslations("checkout");
 	const { locale } = useLocale();
 	const tCart = useTranslations("cart");
+	// "Bez DPH — oslobodené podľa § 43" only on the backend's EXEMPT decision for this checkout — never because
+	// the tax happens to be 0 (export, a 100 % discount and a zero price all show 0 too).
+	const b2b = useCheckoutB2b();
+	const showB2bExemption = Boolean(checkout) && b2b.outcome?.kind === "exempt";
 
 	// Collapsed by default on mobile
 	const [isExpanded, setIsExpanded] = useState(false);
@@ -325,6 +330,9 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 								<span>{t("summary.vatIncluded")}</span>
 								<data value={tax}>{formatMoney(tax)}</data>
 							</p>
+						)}
+						{showB2bExemption && tax === 0 && (
+							<p className="text-status-success mt-1 text-xs">{t("b2b.summaryExempt")}</p>
 						)}
 					</section>
 

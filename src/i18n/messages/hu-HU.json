@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Mennyiség csökkentése",
 		"increaseQuantity": "Mennyiség növelése",
 		"priceWithVat": "Ár áfával",
+		"priceWithoutVat": "Ár áfa nélkül: {price}",
 		"technicalParameters": "Műszaki adatok",
 		"outerDimensions": "Külső méretek",
 		"yes": "Igen",
@@ -590,7 +591,11 @@
 			"invalidValue": "Érvénytelen érték",
 			"notFullyPaid": "A fizetés még nem fedezi a rendelés teljes összegét. Frissítse az oldalt; ha az összeget engedélyezték, fejezze be a rendelést az alábbi gombbal. Ne fizessen újra, amíg az állapot nincs megerősítve.",
 			"alreadyCompleted": "Ezt a rendelést már leadta. A visszaigazolást az e-mailjei között találja.",
-			"freeOrderTotalChanged": "A rendelés végösszege megváltozott, és most fizetést igényel. Ellenőrizze, majd próbálja újra."
+			"freeOrderTotalChanged": "A rendelés végösszege megváltozott, és most fizetést igényel. Ellenőrizze, majd próbálja újra.",
+			"checkoutLocked": "Ehhez a rendeléshez már folyamatban van egy fizetés. Fejezze be vagy szakítsa meg biztonságosan, mielőtt újat indítana.",
+			"orderUpdated": "A rendelés frissült. Fizetés előtt ellenőrizze az új összeget.",
+			"finalStateUnconfirmed": "A végső árat most nem sikerült megerősíteni. Próbálja újra.",
+			"completeBlockedNoNewPayment": "A rendelést most nem sikerült befejezni. Ha már fizetett, ne indítson új fizetést: frissítse az oldalt, vagy vegye fel velünk a kapcsolatot."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Tesztmód:</strong> Ez egy szimulált rendelés-visszaigazolás. Valódi fizetés nem történt.",
@@ -612,6 +617,65 @@
 		},
 		"meta": {
 			"title": "Pénztár"
+		},
+		"b2b": {
+			"sectionTitle": "Céges vásárlás",
+			"toggle": "Cég nevében vásárolok",
+			"toggleHint": "A cég adatait feltüntetjük a számlán.",
+			"companyName": "Cégnév",
+			"registrationId": "IČO",
+			"taxId": "DIČ",
+			"vatIdPlaceholder": "pl. {example}",
+			"vatIdHint": "Egy másik uniós ország érvényes közösségi adószámával és az adott országba történő szállítással az értékesítés áfamentes lehet. A VIES-ellenőrzés után döntünk.",
+			"billingSameAsShipping": "A számlázási cím megegyezik a szállítási címmel",
+			"billingAddressTitle": "Számlázási cím",
+			"billingSummaryTitle": "Számlázási adatok",
+			"billingMissing": "Hiányoznak a számlázási adatok. Pótolja őket az Adatok lépésben.",
+			"taxedTotal": "Fizetendő áfával: {total}",
+			"summaryExempt": "Áfa nélkül — mentes a szlovák áfatörvény 43. §-a alapján",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "Közösségi adószám"
+			},
+			"errors": {
+				"companyNameRequired": "Adja meg a cégnevet.",
+				"registrationIdRequired": "Adja meg az IČO-t.",
+				"registrationIdFormat": "Az IČO 6–8 számjegyből áll.",
+				"taxIdFormat": "A DIČ 10 számjegyből áll.",
+				"vatIdFormat": "A szám nem felel meg a kiválasztott ország közösségi adószámának formátumának. Ellenőrizze.",
+				"tooLong": "Az érték túl hosszú.",
+				"saveFailed": "A cég adatait nem sikerült menteni. Próbálja újra."
+			},
+			"status": {
+				"verifying": "Ellenőrizzük a közösségi adószámot…",
+				"exempt": "Közösségi adószám ellenőrizve. Az értékesítés áfamentes; a feltüntetett ár áfa nélküli.",
+				"invalid": "A VIES nem igazolta a közösségi adószámot érvényesként az EU-n belüli kereskedelemhez. Ellenőrizze, vagy folytassa áfával.",
+				"unavailable": "A közösségi adószám most nem ellenőrizhető. Próbálja újra egy kicsit később, vagy folytassa áfával.",
+				"countryMismatch": "Áfa nélkül automatikusan csak a közösségi adószám országába történő szállítást tudjuk kezelni. Más szállítás esetén vegye fel velünk a kapcsolatot.",
+				"identityReview": "A cég adatai nem egyeznek az ellenőrzés eredményével. Ellenőrizze a számlázási adatokat, vagy vegye fel velünk a kapcsolatot.",
+				"skVat": "Szlovák közösségi adószámmal a vásárlás áfával kerül számlázásra.",
+				"domesticDelivery": "Szlovákiai szállítás vagy átvétel esetén a vásárlás áfával kerül számlázásra.",
+				"incomplete": "Az áfáról akkor döntünk, amikor a szállítási adatok és a szállítási mód teljes.",
+				"validPendingDelivery": "A közösségi adószám érvényes a VIES-ben. Az áfáról a szállítási mód kiválasztása után döntünk.",
+				"disabled": "Automatikus áfamentességet jelenleg nem kínálunk. A céges vásárlást áfával fejezheti be.",
+				"serviceOff": "A közösségi adószám automatikus ellenőrzése jelenleg nem érhető el. A céges vásárlást az összesítőben szereplő áron fejezheti be."
+			},
+			"actions": {
+				"continueWithVat": "Folytatás áfával",
+				"retry": "Ellenőrzés újra",
+				"recheck": "Újbóli ellenőrzés",
+				"refreshStatus": "Fizetési állapot frissítése",
+				"edit": "Szerkesztés"
+			}
 		}
 	},
 	"footer": {

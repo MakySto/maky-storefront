@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { barsInName, sizeInName, splitSetTitle } from "./set-title";
+import { splitSetTitle } from "./set-title";
 import type { SetVehicle } from "./set-vehicle";
 
 const makes = ["Land Rover", "Mercedes-Benz", "Audi", "BMW", "Dacia", "EVO", "Škoda"];
@@ -188,43 +188,5 @@ describe("a name with a joining word and a stated size", () => {
 				makes: [...makes, "Volkswagen"],
 			})?.model,
 		).toBe("Dachkorb Nordrive Kargo Rack");
-	});
-});
-
-describe("sizeInName", () => {
-	it("reads the size a name states, in the name's own numbers", () => {
-		expect(
-			sizeInName("Strešný kôš Nordrive Kargo Rack pre Crafter (od 2017), 420 × 180 × 12 cm, NKR4444"),
-		).toBe("420 × 180 × 12 cm");
-		expect(sizeInName("Kôš 420x180x7 cm")).toBe("420 × 180 × 7 cm");
-		expect(sizeInName("Kôš 420,5 × 180 × 7,5 CM")).toBe("420,5 × 180 × 7,5 cm");
-	});
-
-	it("says nothing for a name that states no three-part size in centimetres", () => {
-		expect(
-			sizeInName("Strešný nosič Thule WingBar EVO Silver Audi A6 Avant FN (2025–) — Integrované lyžiny"),
-		).toBeNull();
-		expect(sizeInName("Tyč 150 × 20 cm")).toBeNull();
-		expect(sizeInName("Box 190 × 80 × 40 mm")).toBeNull();
-		expect(sizeInName("Verzia 1420 × 180 × 12 cm")).not.toBe("420 × 180 × 12 cm");
-		expect(sizeInName("")).toBeNull();
-	});
-});
-
-describe("barsInName", () => {
-	it("reads the count and the length of the bars a name states", () => {
-		expect(
-			barsInName("Strešný nosič Nordrive Kargo-Plus pre Crafter (od 2017), 4 tyče 180 cm, 4×N10045+N30394"),
-		).toEqual({
-			count: 4,
-			lengthCm: "180",
-		});
-		expect(barsInName("Nosič, 6 tyčí 180 cm")).toEqual({ count: 6, lengthCm: "180" });
-	});
-
-	it("says nothing for a name that states no bars in centimetres", () => {
-		expect(barsInName("Strešný nosič Thule WingBar EVO Silver Audi A6 Avant FN (2025–)")).toBeNull();
-		expect(barsInName("4 tyče 180 mm")).toBeNull();
-		expect(barsInName("Dachträger, 4 Stangen 180 cm")).toBeNull();
 	});
 });

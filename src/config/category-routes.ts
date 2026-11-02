@@ -1,7 +1,7 @@
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import { catalogLanguageForMarket } from "@/lib/catalog-content/language";
 import { categoryRoutePath, isCategorySlug, isLiveCategorySlug } from "./categories";
-import { KARGO_BASE_SLUG, KARGO_CATEGORY_ID, KARGO_PREVIOUS_SLUG } from "./kargo-slugs";
+import { KARGO_BASE_SLUG, KARGO_CATEGORY_ID, KARGO_CATEGORY_SLUGS, KARGO_PREVIOUS_SLUG } from "./kargo-slugs";
 
 export { KARGO_BASE_SLUG, KARGO_CATEGORY_SLUGS, KARGO_PREVIOUS_SLUG } from "./kargo-slugs";
 
@@ -316,6 +316,43 @@ export function categoryRootServes(marketOrChannel: string, baseSlug: string): b
  */
 export function categoryBaseSlug(marketOrChannel: string, segment: string): string {
 	return mappedCategoryFor(marketOrChannel, segment)?.baseSlug ?? segment;
+}
+
+/** What a product says about its category: Saleor's id, which no translation changes, and the slug of its market. */
+export interface CategoryRef {
+	readonly id?: string | null;
+	readonly slug?: string | null;
+}
+
+/**
+ * The base slug of the category a product carries in this market, or `null` for a product with none. Where a surface
+ * compares a category with a rule keyed by BASE slug (`quote-only.ts`, the Kargo shelf), it asks this first: abroad
+ * the exact-locale boundary (`resolveExactLocaleProduct`) swaps the TRANSLATED slug into the product's category.
+ *
+ * The id comes first. Saleor's translated slug is whatever CFM wrote and need not be the one in the table above
+ * (read 2026-11-02: Germany holds `dachtraeger-und-dachkoerbe-fuer-transporter`, the table has `kargo-dachtraeger-…`),
+ * while the id is the same in every language. A category the table does not know falls back to its slug.
+ */
+export function baseSlugOfCategory(
+	marketOrChannel: string,
+	category: CategoryRef | null | undefined,
+): string | null {
+	if (!category) return null;
+	const known = category.id ? BY_ID.get(category.id) : undefined;
+	if (known) return known.baseSlug;
+	return category.slug ? categoryBaseSlug(marketOrChannel, category.slug) : null;
+}
+
+/**
+ * Whether a category is the Nordrive Kargo shelf, whatever slug a product carries for it in this market.
+ *
+ * On the Slovak shop that is the base slug. Abroad it is the translated one, and comparing that with
+ * `KARGO_CATEGORY_SLUGS` answered "no" on every foreign card: the material, which only this shelf asks for, was
+ * missing from all of them (2026-11-02).
+ */
+export function isKargoCategory(marketOrChannel: string, category: CategoryRef | null | undefined): boolean {
+	const base = baseSlugOfCategory(marketOrChannel, category);
+	return base !== null && KARGO_CATEGORY_SLUGS.includes(base);
 }
 
 /** The canonical public segment of a category in this market. Unmapped slugs pass through. */

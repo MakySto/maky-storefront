@@ -25,6 +25,8 @@ describe("FALLBACK_PAYMENT_LIB_MESSAGES", () => {
 			notFullyPaid: enPayment.notFullyPaid,
 			alreadyCompleted: enPayment.alreadyCompleted,
 			freeOrderTotalChanged: enPayment.freeOrderTotalChanged,
+			checkoutLocked: enPayment.checkoutLocked,
+			orderUpdated: enPayment.orderUpdated,
 		};
 
 		expect(fallback).toEqual(expected);

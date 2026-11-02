@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { baseSlugForCategoryId, categoryUrlFor } from "@/config/category-routes";
+import { baseSlugForCategoryId, baseSlugOfCategory, categoryUrlFor } from "@/config/category-routes";
 import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
@@ -257,7 +257,7 @@ async function ProductContent({
 	// The page shows a quote button instead of a price here, so the markup states no price either.
 	const quoteOnly = quoteInsteadOfPrice({
 		isPurchasable: product.isAvailableForPurchase === true,
-		categorySlug: product.category?.slug,
+		categorySlug: baseSlugOfCategory(params.channel, product.category),
 	});
 
 	const productJsonLd = buildProductJsonLd({
