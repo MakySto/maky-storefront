@@ -155,6 +155,10 @@ Režim backendu (`MAKY_B2B_VAT_EXEMPTION_MODE`) storefront nečíta, kontrakt ho
 4. Stav sa vyhodnocuje spolu s cenami checkoutu v tej istej odpovedi (popis poľa), takže porovnanie súm vyššie je
    poistka, nie bežná cesta.
 5. `paymentLocked: Boolean!` je súčasť stavu.
+6. Rozsah: rozhodnutie nezávisí od produktov v košíku. Kontext, ktorý backend podpisuje (`Context.canonical` v
+   `saleor/checkout/maky_b2b.py`), tvorí kanál, mena, vstup, fakturačná a dodacia adresa a spôsob doručenia;
+   oslobodenie je natívny príznak `Checkout.tax_exemption`, teda pre celý checkout. `OUT_OF_SCOPE` je doručenie mimo
+   EÚ (US/CA), nie druh tovaru. Firemný nákup preto platí pre celý sortiment, nielen pre Kargo.
 
 Exportné kanály `us-usd` a `ca-cad`: storefront na nich B2B mutáciu ani VIES nikdy nevolá a firemné meno uloží iba ako
 fakturačnú firmu.

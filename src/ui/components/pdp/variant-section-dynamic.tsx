@@ -171,11 +171,10 @@ export async function VariantSectionDynamic({
 				)
 			: null;
 
-	// EU Kargo: Saleor's net under the gross, for information (zadanie 02). Nothing elsewhere, nothing before a
-	// variant is chosen, nothing where Saleor's net is not below its gross.
+	// EU markets, every product: Saleor's net under the gross, for information. Nothing on export markets, nothing
+	// before a variant is chosen, nothing where Saleor's net is not below its gross.
 	const net = informativeNetPrice({
 		channel,
-		category: product.category,
 		price: selectedVariant?.pricing?.price,
 	});
 	const netPrice = net ? formatMoney(net.amount, net.currency, locale) : null;
