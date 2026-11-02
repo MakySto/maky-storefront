@@ -329,7 +329,10 @@
 		"listingAllNotice": "You are viewing the range for all vehicles — it is not matched to your car ({vehicle}).",
 		"listingDefaultNone": "We have no verified set for {vehicle} yet, so you are seeing the range for all vehicles.",
 		"listingNotOnSaleTitle": "There are compatible sets for {vehicle} that are not on sale right now",
-		"listingNotOnSaleBody": "That does not mean nothing fits. We are adding these sets to the range — meanwhile you can browse all vehicles or write to us."
+		"listingNotOnSaleBody": "That does not mean nothing fits. We are adding these sets to the range — meanwhile you can browse all vehicles or write to us.",
+		"listingOtherShelfTitle": "There are no verified sets for {vehicle} in this category",
+		"listingOtherShelfBody": "The verified sets for your vehicle are in another category, not in this one.",
+		"listingOtherShelfAction": "See the sets in {category}"
 	},
 	"cart": {
 		"yourCart": "Your cart",

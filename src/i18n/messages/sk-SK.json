@@ -329,7 +329,10 @@
 		"listingAllNotice": "Zobrazujete ponuku pre všetky vozidlá — nie je vybraná podľa vášho auta ({vehicle}).",
 		"listingDefaultNone": "Pre {vehicle} zatiaľ nemáme overenú zostavu, preto vidíte ponuku pre všetky vozidlá.",
 		"listingNotOnSaleTitle": "Pre {vehicle} existujú kompatibilné zostavy, ktoré momentálne nie sú v predaji",
-		"listingNotOnSaleBody": "Neznamená to, že nič nepasuje. Zostavy pripravujeme do ponuky — medzitým si môžete pozrieť všetky vozidlá alebo nám napísať."
+		"listingNotOnSaleBody": "Neznamená to, že nič nepasuje. Zostavy pripravujeme do ponuky — medzitým si môžete pozrieť všetky vozidlá alebo nám napísať.",
+		"listingOtherShelfTitle": "Pre {vehicle} nemáme v tejto kategórii overené sady",
+		"listingOtherShelfBody": "Overené sady pre vaše vozidlo sú v inej kategórii, nie v tejto.",
+		"listingOtherShelfAction": "Zobraziť sady v kategórii {category}"
 	},
 	"cart": {
 		"yourCart": "Váš košík",

@@ -329,7 +329,10 @@
 		"listingAllNotice": "A kínálatot minden járműre látja – nem az Ön autójához ({vehicle}) igazítva.",
 		"listingDefaultNone": "A(z) {vehicle} járműhöz még nincs ellenőrzött készletünk, ezért a kínálatot minden járműre látja.",
 		"listingNotOnSaleTitle": "A(z) {vehicle} járműhöz vannak kompatibilis készletek, amelyek jelenleg nincsenek forgalomban",
-		"listingNotOnSaleBody": "Ez nem jelenti azt, hogy semmi sem illik. A készleteket most vesszük fel a kínálatba – addig megnézheti az összes járművet, vagy írhat nekünk."
+		"listingNotOnSaleBody": "Ez nem jelenti azt, hogy semmi sem illik. A készleteket most vesszük fel a kínálatba – addig megnézheti az összes járművet, vagy írhat nekünk.",
+		"listingOtherShelfTitle": "{vehicle} járműhöz ebben a kategóriában nincs ellenőrzött szett",
+		"listingOtherShelfBody": "Az Ön járművéhez ellenőrzött szettek egy másik kategóriában vannak, nem ebben.",
+		"listingOtherShelfAction": "Szettek megtekintése: {category}"
 	},
 	"cart": {
 		"yourCart": "Az Ön kosara",

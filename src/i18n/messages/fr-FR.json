@@ -329,7 +329,10 @@
 		"listingAllNotice": "Vous voyez l'offre pour tous les véhicules : elle n'est pas filtrée pour votre voiture ({vehicle}).",
 		"listingDefaultNone": "Nous n'avons pas encore d'ensemble vérifié pour {vehicle} ; vous voyez donc l'offre pour tous les véhicules.",
 		"listingNotOnSaleTitle": "Il existe des ensembles compatibles avec {vehicle} qui ne sont pas en vente pour le moment",
-		"listingNotOnSaleBody": "Cela ne veut pas dire que rien ne convient. Nous ajoutons ces ensembles à l'offre ; en attendant, vous pouvez voir tous les véhicules ou nous écrire."
+		"listingNotOnSaleBody": "Cela ne veut pas dire que rien ne convient. Nous ajoutons ces ensembles à l'offre ; en attendant, vous pouvez voir tous les véhicules ou nous écrire.",
+		"listingOtherShelfTitle": "Pour {vehicle}, aucun kit vérifié dans cette catégorie",
+		"listingOtherShelfBody": "Les kits vérifiés pour votre véhicule se trouvent dans une autre catégorie, pas dans celle-ci.",
+		"listingOtherShelfAction": "Voir les kits de la catégorie {category}"
 	},
 	"cart": {
 		"yourCart": "Votre panier",

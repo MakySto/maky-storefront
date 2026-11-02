@@ -329,7 +329,10 @@
 		"listingAllNotice": "Zobrazujete nabídku pro všechna vozidla — není vybraná podle vašeho auta ({vehicle}).",
 		"listingDefaultNone": "Pro {vehicle} zatím nemáme ověřenou sadu, proto vidíte nabídku pro všechna vozidla.",
 		"listingNotOnSaleTitle": "Pro {vehicle} existují kompatibilní sady, které momentálně nejsou v prodeji",
-		"listingNotOnSaleBody": "Neznamená to, že nic nepasuje. Sady připravujeme do nabídky — mezitím si můžete prohlédnout všechna vozidla nebo nám napsat."
+		"listingNotOnSaleBody": "Neznamená to, že nic nepasuje. Sady připravujeme do nabídky — mezitím si můžete prohlédnout všechna vozidla nebo nám napsat.",
+		"listingOtherShelfTitle": "Pro {vehicle} nemáme v této kategorii ověřené sady",
+		"listingOtherShelfBody": "Ověřené sady pro vaše vozidlo jsou v jiné kategorii, ne v této.",
+		"listingOtherShelfAction": "Zobrazit sady v kategorii {category}"
 	},
 	"cart": {
 		"yourCart": "Váš košík",
