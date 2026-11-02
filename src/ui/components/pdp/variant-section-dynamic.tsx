@@ -4,6 +4,7 @@ import { formatMoney, formatMoneyRange } from "@/lib/utils";
 import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { quoteReferenceFor, quoteRequestHref } from "@/lib/contact/quote-request";
 import { getDiscountInfo } from "@/lib/pricing";
+import { informativeNetPrice } from "@/lib/informative-net-price";
 import { type ProductDetailsQuery } from "@/gql/graphql";
 
 import Link from "next/link";
@@ -84,7 +85,10 @@ type VariantAttributes = Array<{
 }>;
 
 type VariantPricing = {
-	price?: { gross: { amount: number; currency: string } } | null;
+	price?: {
+		gross: { amount: number; currency: string };
+		net?: { amount: number; currency: string } | null;
+	} | null;
 	priceUndiscounted?: { gross: { amount: number; currency: string } } | null;
 } | null;
 
@@ -166,6 +170,15 @@ export async function VariantSectionDynamic({
 					locale,
 				)
 			: null;
+
+	// EU Kargo: Saleor's net under the gross, for information (zadanie 02). Nothing elsewhere, nothing before a
+	// variant is chosen, nothing where Saleor's net is not below its gross.
+	const net = informativeNetPrice({
+		channel,
+		category: product.category,
+		price: selectedVariant?.pricing?.price,
+	});
+	const netPrice = net ? formatMoney(net.amount, net.currency, locale) : null;
 
 	/**
 	 * Upper bound for the stepper. `quantityAvailable` is CAPPED by Saleor
@@ -344,6 +357,7 @@ export async function VariantSectionDynamic({
 				<AddToCart
 					price={price}
 					compareAtPrice={compareAtPrice}
+					netPrice={netPrice}
 					discountPercent={discountPercent}
 					disabled={isAddToCartDisabled}
 					disabledReason={disabledReason}

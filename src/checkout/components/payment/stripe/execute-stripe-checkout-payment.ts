@@ -39,7 +39,19 @@ export type StripeCheckoutPayResult =
 	| { ok: true }
 	| { ok: false; kind: "error"; message: string }
 	| { ok: false; kind: "billing"; errors: Record<string, string>; focusField?: string }
-	| { ok: false; kind: "price_change"; notice: CheckoutPriceChangeNotice };
+	| {
+			ok: false;
+			kind: "price_change";
+			notice: CheckoutPriceChangeNotice;
+			/**
+			 * The live quote the notice is about. The caller ADOPTS it (`setCheckout`), so the summary and the Stripe
+			 * Elements amount show the new total and the next click confirms it — a notice over the old snapshot would
+			 * repeat itself on every click.
+			 */
+			checkout: CheckoutFragment | null;
+	  }
+	/** The preflight refused to start a payment: a payment already in progress, or an unconfirmed final state. */
+	| { ok: false; kind: "blocked"; code: "CHECKOUT_LOCKED" | "FINAL_STATE_UNCONFIRMED"; message: string };
 
 type ExecuteStripeCheckoutPaymentParams = {
 	stripe: Stripe;
@@ -162,9 +174,30 @@ async function runStripeCheckoutPayment({
 			shippingAddress: billing.shippingAddress,
 			userAddresses: billing.userAddresses,
 			authenticated: billing.authenticated,
+			preserveBilling: billing.preserveBilling,
 		});
 
 		if (!billingResult.ok) {
+			if (billingResult.code === "CHECKOUT_LOCKED") {
+				return {
+					ok: false,
+					kind: "blocked",
+					code: "CHECKOUT_LOCKED",
+					message: billingResult.errors.billing ?? messages.checkoutLocked,
+				};
+			}
+			if (billingResult.code === "B2B_CONTEXT_CHANGED") {
+				const quote = await refreshCheckout({ updateState: false });
+				const shown = getCheckoutPayAmount(checkout);
+				const now = quote ? getCheckoutPayAmount(quote) : null;
+				const currency = (quote && getCheckoutPayCurrency(quote)) || getCheckoutPayCurrency(checkout) || "";
+				return {
+					ok: false,
+					kind: "price_change",
+					notice: buildCheckoutPriceChangeNotice(shown ?? now ?? 0, now ?? shown ?? 0, currency, "b2b"),
+					checkout: quote,
+				};
+			}
 			return {
 				ok: false,
 				kind: "billing",
@@ -202,6 +235,7 @@ async function runStripeCheckoutPayment({
 				ok: false,
 				kind: "price_change",
 				notice: buildCheckoutPriceChangeNotice(displayedAmount, payAmount, currency),
+				checkout: liveCheckout,
 			};
 		}
 
@@ -254,6 +288,26 @@ async function runStripeCheckoutPayment({
 		});
 
 		if (!initResult.ok) {
+			// The server preflight speaks in codes (zadanie 02, §4): a new quote is shown and confirmed again; a lock or
+			// an unconfirmed state starts nothing. Nothing here compares a translated string.
+			if (initResult.code === "TOTAL_CHANGED" || initResult.code === "B2B_CONTEXT_CHANGED") {
+				const quote = initResult.checkout ?? (await refreshCheckout({ updateState: false }));
+				const newAmount = quote ? getCheckoutPayAmount(quote) : null;
+				return {
+					ok: false,
+					kind: "price_change",
+					notice: buildCheckoutPriceChangeNotice(
+						displayedAmount ?? payAmount,
+						newAmount ?? payAmount,
+						(quote && getCheckoutPayCurrency(quote)) || currency,
+						initResult.code === "B2B_CONTEXT_CHANGED" ? "b2b" : "total",
+					),
+					checkout: quote,
+				};
+			}
+			if (initResult.code === "CHECKOUT_LOCKED" || initResult.code === "FINAL_STATE_UNCONFIRMED") {
+				return { ok: false, kind: "blocked", code: initResult.code, message: initResult.error };
+			}
 			return { ok: false, kind: "error", message: initResult.error };
 		}
 

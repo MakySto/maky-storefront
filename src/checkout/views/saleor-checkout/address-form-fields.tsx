@@ -130,6 +130,11 @@ interface AddressFieldsProps {
 	getFieldLabel: (field: AddressField) => string;
 	/** Function to check if field is required */
 	isRequiredField: (field: AddressField) => boolean;
+	/**
+	 * `false` while the country's address rules load or when they could not be read (`useAddressFormUtils`): then no
+	 * field is labelled optional, since the rules may still require it.
+	 */
+	rulesKnown?: boolean;
 	/** Current form values */
 	formData: Record<string, string>;
 	/** Validation errors */
@@ -146,6 +151,7 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 	orderedFields,
 	getFieldLabel,
 	isRequiredField,
+	rulesKnown = true,
 	formData,
 	errors,
 	onFieldChange,
@@ -169,7 +175,7 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 		const fieldLabel = (
 			<Label htmlFor={fieldId} className="text-sm font-medium">
 				{label}
-				{!isRequired && (
+				{!isRequired && rulesKnown && (
 					<span className="text-muted-foreground ml-1 font-normal">{t("common.optional")}</span>
 				)}
 			</Label>

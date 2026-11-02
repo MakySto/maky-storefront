@@ -4,6 +4,9 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { invariant } from "ts-invariant";
 
 import { CheckoutApp } from "@/checkout/checkout-app";
+import { isB2bEuChannel } from "@/checkout/lib/b2b/contract";
+import { isB2bCheckoutUiEnabled } from "@/checkout/lib/b2b/server/b2b-config";
+import { checkB2bReadiness } from "@/checkout/lib/b2b/server/b2b-readiness";
 import type { CheckoutLoadState, ServerCheckout, ShippingCountries } from "@/checkout/lib/checkout-types";
 import { updateCheckoutLanguageOnServer } from "@/checkout/lib/server/fetch-checkout";
 import {
@@ -125,6 +128,15 @@ export async function CheckoutSessionLoader({
 		shippingCountries = await getCheckoutSessionCountries(channelSlug);
 	}
 
+	// Company purchase: the UI flag and whether this process can offer the automatic exemption here. Readiness is
+	// asked only when the UI is on and the market is an EU one (cached per process, never a token in the answer).
+	const b2bUiEnabled = isB2bCheckoutUiEnabled();
+	const b2bConfig = {
+		uiEnabled: b2bUiEnabled,
+		exemptionAvailable:
+			b2bUiEnabled && loadState === "ready" && isB2bEuChannel(channelSlug) && (await checkB2bReadiness()).ok,
+	};
+
 	setRequestLocale(locale);
 	const messages = await getMessages();
 
@@ -137,6 +149,7 @@ export async function CheckoutSessionLoader({
 					initialCheckout={initialCheckout}
 					initialUser={initialUser}
 					shippingCountries={shippingCountries}
+					b2bConfig={b2bConfig}
 				/>
 			</LocaleProvider>
 		</NextIntlClientProvider>

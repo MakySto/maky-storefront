@@ -8,6 +8,7 @@ import { CheckoutDocumentTitle } from "@/checkout/components/checkout-document-t
 import { CheckoutSessionCleanup } from "@/checkout/components/checkout-session-cleanup";
 import { StripeCheckoutCompletionHost } from "@/checkout/components/payment/stripe/stripe-checkout-completion-host";
 import { setCheckoutTransport } from "@/checkout/lib/checkout-transport";
+import { CheckoutB2bProvider, type CheckoutB2bConfig } from "@/checkout/providers/checkout-b2b";
 import { CheckoutDataProvider } from "@/checkout/providers/checkout-data";
 import { CheckoutPaymentReturnErrorProvider } from "@/checkout/providers/checkout-payment-return-error";
 import { CheckoutSessionProvider } from "@/checkout/providers/checkout-session";
@@ -30,6 +31,8 @@ type CheckoutAppProps = {
 	initialCheckout: ServerCheckout | null;
 	initialUser: CheckoutUser | null;
 	shippingCountries: ShippingCountries;
+	/** Company purchase (MAKY-B2B-V1): two booleans from the server, never a token. */
+	b2bConfig: CheckoutB2bConfig;
 };
 
 // Installed at module scope, before any payment code can run (upstream pattern) —
@@ -53,6 +56,7 @@ export function CheckoutApp({
 	initialCheckout,
 	initialUser,
 	shippingCountries,
+	b2bConfig,
 }: CheckoutAppProps) {
 	return (
 		<AuthProvider>
@@ -64,18 +68,20 @@ export function CheckoutApp({
 						initialCheckout={initialCheckout}
 						shippingCountries={shippingCountries}
 					>
-						<CheckoutPaymentReturnErrorProvider>
-							<CheckoutDocumentTitle />
-							<Suspense fallback={null}>
-								<CheckoutSessionCleanup />
-								<StripeCheckoutCompletionHost />
-							</Suspense>
-							<ErrorBoundary FallbackComponent={PageNotFound}>
-								<Suspense fallback={<CheckoutSkeleton />}>
-									<SaleorCheckout />
+						<CheckoutB2bProvider config={b2bConfig}>
+							<CheckoutPaymentReturnErrorProvider>
+								<CheckoutDocumentTitle />
+								<Suspense fallback={null}>
+									<CheckoutSessionCleanup />
+									<StripeCheckoutCompletionHost />
 								</Suspense>
-							</ErrorBoundary>
-						</CheckoutPaymentReturnErrorProvider>
+								<ErrorBoundary FallbackComponent={PageNotFound}>
+									<Suspense fallback={<CheckoutSkeleton />}>
+										<SaleorCheckout />
+									</Suspense>
+								</ErrorBoundary>
+							</CheckoutPaymentReturnErrorProvider>
+						</CheckoutB2bProvider>
 					</CheckoutDataProvider>
 				</CheckoutSessionProvider>
 			</CheckoutUserProvider>

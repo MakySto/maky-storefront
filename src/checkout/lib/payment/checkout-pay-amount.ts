@@ -18,6 +18,8 @@ export type CheckoutPriceChangeNotice = {
 	previousAmount: number;
 	newAmount: number;
 	currency: string;
+	/** `b2b` when the company tax decision changed the quote (zadanie 02: "Objednávka sa aktualizovala"). */
+	reason?: "total" | "b2b";
 };
 
 /** Gross total to authorize at payment time — Saleor expects this on transactionInitialize. */
@@ -90,6 +92,7 @@ export function buildCheckoutPriceChangeNotice(
 	previousAmount: number,
 	nextAmount: number,
 	currency: string,
+	reason: "total" | "b2b" = "total",
 ): CheckoutPriceChangeNotice {
-	return { previousAmount, newAmount: nextAmount, currency };
+	return { previousAmount, newAmount: nextAmount, currency, reason };
 }

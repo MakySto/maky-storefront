@@ -8,4 +8,6 @@ export type StripeBillingContext = {
 	shippingAddress: AddressFragment | null | undefined;
 	userAddresses: ReadonlyArray<AddressFragment> | undefined;
 	authenticated: boolean;
+	/** Company purchase: the billing address saved in the Information step is not written again. */
+	preserveBilling?: boolean;
 };

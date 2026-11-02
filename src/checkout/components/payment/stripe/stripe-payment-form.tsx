@@ -52,7 +52,7 @@ export const StripePaymentForm: FC<StripePaymentFormProps> = ({
 	const elements = useElements();
 	const searchParams = useSearchParams();
 	const liveSearchParams = useLiveCheckoutSearchParams(searchParams);
-	const { refreshCheckout } = useCheckoutData();
+	const { refreshCheckout, setCheckout } = useCheckoutData();
 	const paymentMessages = useCheckoutPaymentMessages();
 	const [isLoading, setIsLoading] = useState(false);
 	const paymentElementChangeTypeRef = useRef<string | null>(null);
@@ -88,6 +88,9 @@ export const StripePaymentForm: FC<StripePaymentFormProps> = ({
 			if (result.kind === "billing") {
 				onBillingErrors(result.errors, result.focusField);
 			} else if (result.kind === "price_change") {
+				// Adopt the new quote: the summary and the Elements amount follow it, the next click confirms it.
+				if (result.checkout) setCheckout(result.checkout);
+				else await refreshCheckout();
 				onPriceChangeNotice(result.notice);
 			} else {
 				onError(result.message);

@@ -54,7 +54,7 @@ export const StripeExpressCheckout: FC<StripeExpressCheckoutProps> = ({
 	const elements = useElements();
 	const searchParams = useSearchParams();
 	const liveSearchParams = useLiveCheckoutSearchParams(searchParams);
-	const { refreshCheckout } = useCheckoutData();
+	const { refreshCheckout, setCheckout } = useCheckoutData();
 	const paymentMessages = useCheckoutPaymentMessages();
 	const [hasWallets, setHasWallets] = useState<boolean | null>(null);
 
@@ -94,8 +94,12 @@ export const StripeExpressCheckout: FC<StripeExpressCheckoutProps> = ({
 				}
 
 				if (result.kind === "price_change") {
-					onPriceChangeNotice(result.notice);
+					// Close the sheet on the old amount first; the adopted quote renews the Elements amount, and the
+					// customer opens the sheet again on the new one.
 					event.paymentFailed({ message: paymentMessages.totalChanged });
+					if (result.checkout) setCheckout(result.checkout);
+					else await refreshCheckout();
+					onPriceChangeNotice(result.notice);
 					return;
 				}
 
@@ -114,6 +118,7 @@ export const StripeExpressCheckout: FC<StripeExpressCheckoutProps> = ({
 			onPriceChangeNotice,
 			paymentMessages,
 			refreshCheckout,
+			setCheckout,
 			liveSearchParams,
 			stripe,
 		],
