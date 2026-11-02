@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Znížiť množstvo",
 		"increaseQuantity": "Zvýšiť množstvo",
 		"priceWithVat": "Cena s DPH",
+		"priceWithoutVat": "Cena bez DPH: {price}",
 		"technicalParameters": "Technické parametre",
 		"outerDimensions": "Vonkajšie rozmery",
 		"yes": "Áno",
@@ -587,7 +588,11 @@
 			"invalidValue": "Neplatná hodnota",
 			"notFullyPaid": "Platba zatiaľ nepokrýva celú sumu objednávky. Obnovte stránku — ak boli prostriedky autorizované, dokončite objednávku tlačidlom nižšie. Neplaťte znova, kým sa stav nepotvrdí.",
 			"alreadyCompleted": "Táto objednávka už bola odoslaná. Potvrdenie nájdete vo svojom e-maile.",
-			"freeOrderTotalChanged": "Celková cena objednávky sa zmenila a teraz vyžaduje platbu. Skontrolujte ju a skúste to znova."
+			"freeOrderTotalChanged": "Celková cena objednávky sa zmenila a teraz vyžaduje platbu. Skontrolujte ju a skúste to znova.",
+			"checkoutLocked": "Platba tejto objednávky už prebieha. Dokončite ju alebo ju bezpečne ukončite, kým začnete novú.",
+			"orderUpdated": "Objednávka sa aktualizovala. Skontrolujte novú sumu pred platbou.",
+			"finalStateUnconfirmed": "Konečnú cenu sa teraz nepodarilo potvrdiť. Skúste to znova.",
+			"completeBlockedNoNewPayment": "Objednávku sa teraz nepodarilo dokončiť. Ak ste už zaplatili, nezačínajte novú platbu: obnovte stránku alebo nás kontaktujte."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Testovací režim:</strong> Toto je simulované potvrdenie objednávky. Žiadna skutočná platba neprebehla.",
@@ -609,6 +614,65 @@
 		},
 		"meta": {
 			"title": "Pokladňa"
+		},
+		"b2b": {
+			"sectionTitle": "Nákup na firmu",
+			"toggle": "Nakupujem na firmu",
+			"toggleHint": "Údaje firmy uvedieme na faktúre.",
+			"companyName": "Obchodné meno",
+			"registrationId": "IČO",
+			"taxId": "DIČ",
+			"vatIdPlaceholder": "napr. DE123456789",
+			"vatIdHint": "S platným IČ DPH z inej krajiny EÚ a doručením do tejto krajiny môže byť dodanie oslobodené od DPH. Rozhodneme po overení vo VIES.",
+			"billingSameAsShipping": "Fakturačná adresa je rovnaká ako dodacia",
+			"billingAddressTitle": "Fakturačná adresa",
+			"billingSummaryTitle": "Fakturačné údaje",
+			"billingMissing": "Fakturačné údaje chýbajú. Doplňte ich v kroku Informácie.",
+			"taxedTotal": "Na úhradu s DPH: {total}",
+			"summaryExempt": "Bez DPH — oslobodené podľa § 43",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "IČ DPH"
+			},
+			"errors": {
+				"companyNameRequired": "Zadajte obchodné meno.",
+				"registrationIdRequired": "Zadajte IČO.",
+				"registrationIdFormat": "IČO má 6 až 8 číslic.",
+				"taxIdFormat": "DIČ má 10 číslic.",
+				"vatIdFormat": "Číslo nemá tvar IČ DPH zvolenej krajiny. Skontrolujte ho.",
+				"tooLong": "Hodnota je príliš dlhá.",
+				"saveFailed": "Firemné údaje sa nepodarilo uložiť. Skúste to znova."
+			},
+			"status": {
+				"verifying": "Overujeme IČ DPH…",
+				"exempt": "IČ DPH overené. Dodanie je oslobodené od DPH; uvedená cena je bez DPH.",
+				"invalid": "IČ DPH sa vo VIES nepotvrdilo ako platné pre obchod v rámci EÚ. Skontrolujte ho alebo pokračujte s DPH.",
+				"unavailable": "IČ DPH sa teraz nedá overiť. Skúste to o chvíľu alebo pokračujte s DPH.",
+				"countryMismatch": "Bez DPH vieme automaticky spracovať doručenie do krajiny vášho IČ DPH. Pri inom doručení nás kontaktujte.",
+				"identityReview": "Údaje firmy sa nezhodujú s výsledkom overenia. Skontrolujte fakturačné údaje alebo nás kontaktujte.",
+				"skVat": "Pri slovenskom IČ DPH sa nákup účtuje s DPH.",
+				"domesticDelivery": "Pri doručení alebo odbere na Slovensku sa nákup účtuje s DPH.",
+				"incomplete": "O DPH rozhodneme, keď budú doplnené dodacie údaje a spôsob doručenia.",
+				"validPendingDelivery": "IČ DPH je vo VIES platné. O DPH rozhodneme po výbere spôsobu doručenia.",
+				"disabled": "Automatické oslobodenie od DPH teraz neponúkame. Nákup na firmu dokončíte s DPH.",
+				"serviceOff": "Automatické overenie IČ DPH je teraz nedostupné. Nákup na firmu dokončíte za cenu uvedenú v súhrne."
+			},
+			"actions": {
+				"continueWithVat": "Pokračovať s DPH",
+				"retry": "Overiť znova",
+				"recheck": "Skontrolovať znova",
+				"refreshStatus": "Obnoviť stav platby",
+				"edit": "Upraviť"
+			}
 		}
 	},
 	"footer": {

@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Diminuer la quantité",
 		"increaseQuantity": "Augmenter la quantité",
 		"priceWithVat": "Prix TTC",
+		"priceWithoutVat": "Prix HT : {price}",
 		"technicalParameters": "Caractéristiques techniques",
 		"outerDimensions": "Dimensions extérieures",
 		"yes": "Oui",
@@ -587,7 +588,11 @@
 			"invalidValue": "Valeur non valide",
 			"notFullyPaid": "Le paiement ne couvre pas encore la totalité de la commande. Actualisez la page ; si les fonds ont été autorisés, finalisez la commande avec le bouton ci-dessous. Ne payez pas à nouveau tant que le statut n'est pas confirmé.",
 			"alreadyCompleted": "Cette commande a déjà été passée. Vous trouverez la confirmation dans votre e-mail.",
-			"freeOrderTotalChanged": "Le total de la commande a changé et nécessite maintenant un paiement. Vérifiez-le et réessayez."
+			"freeOrderTotalChanged": "Le total de la commande a changé et nécessite maintenant un paiement. Vérifiez-le et réessayez.",
+			"checkoutLocked": "Un paiement pour cette commande est déjà en cours. Terminez-le ou annulez-le en toute sécurité avant d'en commencer un nouveau.",
+			"orderUpdated": "Votre commande a été mise à jour. Vérifiez le nouveau montant avant de payer.",
+			"finalStateUnconfirmed": "Le prix final n'a pas pu être confirmé pour le moment. Réessayez.",
+			"completeBlockedNoNewPayment": "La commande n'a pas pu être finalisée pour le moment. Si vous avez déjà payé, ne lancez pas de nouveau paiement : actualisez la page ou contactez-nous."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Mode test :</strong> ceci est une confirmation de commande simulée. Aucun paiement réel n'a été effectué.",
@@ -609,6 +614,65 @@
 		},
 		"meta": {
 			"title": "Commande"
+		},
+		"b2b": {
+			"sectionTitle": "Achat professionnel",
+			"toggle": "J'achète pour une entreprise",
+			"toggleHint": "Nous indiquerons les coordonnées de l'entreprise sur la facture.",
+			"companyName": "Raison sociale",
+			"registrationId": "IČO",
+			"taxId": "DIČ",
+			"vatIdPlaceholder": "p. ex. DE123456789",
+			"vatIdHint": "Avec un numéro de TVA intracommunautaire valide d'un autre pays de l'UE et une livraison dans ce pays, la livraison peut être exonérée de TVA. Nous décidons après vérification dans VIES.",
+			"billingSameAsShipping": "L'adresse de facturation est identique à l'adresse de livraison",
+			"billingAddressTitle": "Adresse de facturation",
+			"billingSummaryTitle": "Données de facturation",
+			"billingMissing": "Les données de facturation manquent. Complétez-les à l'étape Informations.",
+			"taxedTotal": "À payer TTC : {total}",
+			"summaryExempt": "Hors TVA — exonéré selon le § 43 de la loi slovaque sur la TVA",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "N° TVA intracommunautaire"
+			},
+			"errors": {
+				"companyNameRequired": "Saisissez la raison sociale.",
+				"registrationIdRequired": "Saisissez l'IČO.",
+				"registrationIdFormat": "L'IČO comporte 6 à 8 chiffres.",
+				"taxIdFormat": "Le DIČ comporte 10 chiffres.",
+				"vatIdFormat": "Ce numéro n'a pas le format d'un numéro de TVA du pays choisi. Vérifiez-le.",
+				"tooLong": "La valeur est trop longue.",
+				"saveFailed": "Les données de l'entreprise n'ont pas pu être enregistrées. Réessayez."
+			},
+			"status": {
+				"verifying": "Vérification du numéro de TVA…",
+				"exempt": "Numéro de TVA vérifié. La livraison est exonérée de TVA ; le prix indiqué est hors TVA.",
+				"invalid": "VIES n'a pas confirmé ce numéro de TVA comme valide pour les échanges intracommunautaires. Vérifiez-le ou continuez avec la TVA.",
+				"unavailable": "Le numéro de TVA ne peut pas être vérifié pour le moment. Réessayez dans un instant ou continuez avec la TVA.",
+				"countryMismatch": "Nous ne pouvons traiter automatiquement une livraison hors TVA que vers le pays de votre numéro de TVA. Pour une autre livraison, contactez-nous.",
+				"identityReview": "Les données de l'entreprise ne correspondent pas au résultat de la vérification. Vérifiez les données de facturation ou contactez-nous.",
+				"skVat": "Avec un numéro de TVA slovaque, l'achat est facturé avec TVA.",
+				"domesticDelivery": "Pour une livraison ou un retrait en Slovaquie, l'achat est facturé avec TVA.",
+				"incomplete": "Nous déciderons de la TVA lorsque les données et le mode de livraison seront complets.",
+				"validPendingDelivery": "Le numéro de TVA est valide dans VIES. Nous déciderons de la TVA après le choix du mode de livraison.",
+				"disabled": "Nous ne proposons pas d'exonération automatique de TVA pour le moment. Vous pouvez finaliser votre achat professionnel avec TVA.",
+				"serviceOff": "La vérification automatique du numéro de TVA est indisponible pour le moment. Vous pouvez finaliser votre achat professionnel au prix indiqué dans le récapitulatif."
+			},
+			"actions": {
+				"continueWithVat": "Continuer avec la TVA",
+				"retry": "Vérifier à nouveau",
+				"recheck": "Contrôler à nouveau",
+				"refreshStatus": "Actualiser l'état du paiement",
+				"edit": "Modifier"
+			}
 		}
 	},
 	"footer": {

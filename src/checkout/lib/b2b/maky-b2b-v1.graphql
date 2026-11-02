@@ -1,0 +1,111 @@
+# MAKY-B2B-V1 — PROPOSED schema extension (storefront's reading of the shared contract, 2026-11-02).
+#
+# NOT a Saleor 3.23.31 schema and NOT the backend's output. It is what `checkout/lib/b2b/graphql.ts` is checked
+# against (`graphql.test.ts`) until the MAKY Backend (Saleor) session hands over its generated schema; then this file
+# is replaced by that schema's B2B part and the test runs against it. Names that the contract text does not fix
+# (the decision enum, the error type and enum) are the storefront's proposal: the storefront only reads `decision`
+# and `code` as strings, so a different enum NAME costs nothing, a different VALUE must be written into both handoffs.
+#
+# Deliberately outside `src/checkout/graphql/**`: that glob is what `pnpm generate:checkout` sends to the LIVE
+# Saleor before every build, and a document Saleor does not know would fail the production build.
+
+enum B2bVatVerificationStatus {
+	VALID
+	INVALID
+	UNAVAILABLE
+}
+
+enum CheckoutB2bTaxDecision {
+	EXEMPT
+	TAXED_NOT_COMPANY
+	TAXED_NO_VAT_ID
+	TAXED_SK_VAT
+	TAXED_DOMESTIC_DELIVERY
+	TAXED_COUNTRY_MISMATCH
+	TAXED_UNVERIFIED
+	TAXED_INVALID
+	TAXED_UNAVAILABLE
+	TAXED_IDENTITY_REVIEW
+	TAXED_STALE
+	TAXED_DISABLED
+	OUT_OF_SCOPE
+}
+
+"""
+The MAKY B2B § 43 state of one checkout. `effectiveTaxExemption` is the effectiveness of THIS regime, not every
+generic Saleor exemption.
+"""
+type CheckoutB2bTaxState {
+	"""
+	Opaque version of the current business context and protected revision. The storefront only carries it.
+	"""
+	contextVersion: String!
+	decision: CheckoutB2bTaxDecision!
+	effectiveTaxExemption: Boolean!
+	checkedAt: DateTime
+	expiresAt: DateTime
+}
+
+extend type Checkout {
+	b2bTaxState: CheckoutB2bTaxState
+}
+
+input CheckoutB2bVatVerificationInput {
+	vatId: String!
+	status: B2bVatVerificationStatus!
+	checkedAt: DateTime!
+	requestIdentifier: String
+	name: String
+	address: String
+}
+
+input CheckoutB2bTaxAttestationInput {
+	expectedContextVersion: String!
+	"""
+	`null` revokes the previous approval; it never keeps an old result.
+	"""
+	verification: CheckoutB2bVatVerificationInput
+}
+
+enum CheckoutB2bTaxAttestationErrorCode {
+	STALE_CONTEXT
+	INVALID_ATTESTATION
+	CHECKOUT_LOCKED
+	UNMANAGED_EXEMPTION_CONFLICT
+	NOT_FOUND
+	GRAPHQL_ERROR
+	INVALID
+	REQUIRED
+}
+
+type CheckoutB2bTaxAttestationError {
+	field: String
+	code: CheckoutB2bTaxAttestationErrorCode!
+	message: String
+}
+
+type CheckoutB2bTaxAttestationUpdate {
+	checkout: Checkout
+	errors: [CheckoutB2bTaxAttestationError!]!
+}
+
+extend type Mutation {
+	"""
+	Requires an active app with BOTH MANAGE_TAXES and HANDLE_TAXES (AND, not Saleor's default OR).
+	"""
+	checkoutB2bTaxAttestationUpdate(
+		id: ID!
+		input: CheckoutB2bTaxAttestationInput!
+	): CheckoutB2bTaxAttestationUpdate
+}
+
+# Codes the backend adds to the existing payment/address/metadata error enums (backend brief §3.4).
+extend enum CheckoutErrorCode {
+	B2B_TAX_CONTEXT_CHANGED
+	B2B_CHECKOUT_LOCKED
+}
+
+extend enum TransactionInitializeErrorCode {
+	B2B_TAX_CONTEXT_CHANGED
+	B2B_CHECKOUT_LOCKED
+}

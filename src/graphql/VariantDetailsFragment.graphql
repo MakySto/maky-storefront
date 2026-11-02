@@ -59,6 +59,11 @@ fragment VariantDetails on ProductVariant {
 				currency
 				amount
 			}
+			# The informative price without VAT on EU Kargo pages (lib/informative-net-price.ts): Saleor's own net.
+			net {
+				currency
+				amount
+			}
 		}
 		priceUndiscounted {
 			gross {

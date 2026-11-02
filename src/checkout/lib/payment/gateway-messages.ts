@@ -86,6 +86,10 @@ export type CheckoutPaymentLibMessages = {
 	alreadyCompleted: string;
 	/** `checkout.payment.freeOrderTotalChanged` */
 	freeOrderTotalChanged: string;
+	/** `checkout.payment.checkoutLocked` */
+	checkoutLocked: string;
+	/** `checkout.payment.orderUpdated` */
+	orderUpdated: string;
 };
 
 /**
@@ -107,6 +111,9 @@ const FALLBACK_PAYMENT_LIB_MESSAGES: CheckoutPaymentLibMessages = {
 	alreadyCompleted: "This order has already been placed. You will find the confirmation in your email.",
 	freeOrderTotalChanged:
 		"Your order total has changed and now requires payment. Please review and try again.",
+	checkoutLocked:
+		"A payment for this order is already in progress. Finish it, or cancel it safely, before starting a new one.",
+	orderUpdated: "Your order has been updated. Please review the new total before paying.",
 };
 
 let registeredPaymentLibMessages: CheckoutPaymentLibMessages | null = null;

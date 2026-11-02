@@ -14,6 +14,11 @@ interface AddToCartProps {
 	/** The availability line, rendered on the server (it needs the market's own labels). */
 	availability?: ReactNode;
 	compareAtPrice?: string | null;
+	/**
+	 * Saleor's price without VAT, formatted, where the page states it for information (EU Kargo,
+	 * `lib/informative-net-price.ts`). Printed under the gross price; never instead of it.
+	 */
+	netPrice?: string | null;
 	discountPercent?: number | null;
 	disabled?: boolean;
 	disabledReason?: "no-selection" | "out-of-stock" | "unavailable";
@@ -80,6 +85,7 @@ export function AddToCart({
 	price,
 	availability,
 	compareAtPrice,
+	netPrice,
 	discountPercent,
 	disabled = false,
 	disabledReason,
@@ -119,6 +125,11 @@ export function AddToCart({
 						)}
 					</div>
 					<p className="text-text-tertiary mt-2 text-[0.8125rem]">{t("priceWithVat")}</p>
+					{netPrice ? (
+						<p className="text-text-secondary mt-1 text-sm tabular-nums">
+							{t("priceWithoutVat", { price: netPrice })}
+						</p>
+					) : null}
 					{availability && <div className="mt-4">{availability}</div>}
 					{unavailable ? (
 						<p role="status" className="text-text-secondary mt-4 text-sm">

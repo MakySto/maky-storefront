@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Zmniejsz ilość",
 		"increaseQuantity": "Zwiększ ilość",
 		"priceWithVat": "Cena z VAT",
+		"priceWithoutVat": "Cena bez VAT: {price}",
 		"technicalParameters": "Dane techniczne",
 		"outerDimensions": "Wymiary zewnętrzne",
 		"yes": "Tak",
@@ -587,7 +588,11 @@
 			"invalidValue": "Nieprawidłowa wartość",
 			"notFullyPaid": "Płatność nie pokrywa jeszcze pełnej kwoty zamówienia. Odśwież stronę; jeśli środki zostały autoryzowane, dokończ zamówienie przyciskiem poniżej. Nie płać ponownie, dopóki status nie zostanie potwierdzony.",
 			"alreadyCompleted": "To zamówienie zostało już złożone. Potwierdzenie znajdziesz w e-mailu.",
-			"freeOrderTotalChanged": "Łączna kwota zamówienia zmieniła się i wymaga teraz płatności. Sprawdź ją i spróbuj ponownie."
+			"freeOrderTotalChanged": "Łączna kwota zamówienia zmieniła się i wymaga teraz płatności. Sprawdź ją i spróbuj ponownie.",
+			"checkoutLocked": "Płatność za to zamówienie jest już w toku. Dokończ ją lub bezpiecznie ją anuluj, zanim rozpoczniesz nową.",
+			"orderUpdated": "Twoje zamówienie zostało zaktualizowane. Sprawdź nową kwotę przed płatnością.",
+			"finalStateUnconfirmed": "Nie udało się teraz potwierdzić ostatecznej ceny. Spróbuj ponownie.",
+			"completeBlockedNoNewPayment": "Nie udało się teraz dokończyć zamówienia. Jeśli płatność została już wykonana, nie rozpoczynaj nowej: odśwież stronę lub skontaktuj się z nami."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Tryb testowy:</strong> To symulowane potwierdzenie zamówienia. Nie pobrano prawdziwej płatności.",
@@ -609,6 +614,65 @@
 		},
 		"meta": {
 			"title": "Finalizacja zamówienia"
+		},
+		"b2b": {
+			"sectionTitle": "Zakup na firmę",
+			"toggle": "Kupuję na firmę",
+			"toggleHint": "Dane firmy umieścimy na fakturze.",
+			"companyName": "Nazwa firmy",
+			"registrationId": "IČO",
+			"taxId": "DIČ",
+			"vatIdPlaceholder": "np. DE123456789",
+			"vatIdHint": "Z ważnym numerem VAT UE z innego kraju UE i dostawą do tego kraju dostawa może być zwolniona z VAT. Decydujemy po weryfikacji w VIES.",
+			"billingSameAsShipping": "Adres rozliczeniowy jest taki sam jak adres dostawy",
+			"billingAddressTitle": "Adres rozliczeniowy",
+			"billingSummaryTitle": "Dane rozliczeniowe",
+			"billingMissing": "Brakuje danych rozliczeniowych. Uzupełnij je w kroku Dane.",
+			"taxedTotal": "Do zapłaty z VAT: {total}",
+			"summaryExempt": "Bez VAT — zwolnione na podstawie § 43 słowackiej ustawy o VAT",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "NIP UE"
+			},
+			"errors": {
+				"companyNameRequired": "Podaj nazwę firmy.",
+				"registrationIdRequired": "Podaj IČO.",
+				"registrationIdFormat": "IČO ma od 6 do 8 cyfr.",
+				"taxIdFormat": "DIČ ma 10 cyfr.",
+				"vatIdFormat": "Numer nie ma formatu numeru VAT wybranego kraju. Sprawdź go.",
+				"tooLong": "Wartość jest za długa.",
+				"saveFailed": "Nie udało się zapisać danych firmy. Spróbuj ponownie."
+			},
+			"status": {
+				"verifying": "Sprawdzamy numer VAT…",
+				"exempt": "Numer VAT zweryfikowany. Dostawa jest zwolniona z VAT; podana cena nie zawiera VAT.",
+				"invalid": "VIES nie potwierdził numeru VAT jako ważnego w handlu wewnątrzwspólnotowym. Sprawdź go lub kontynuuj z VAT.",
+				"unavailable": "Numeru VAT nie można teraz sprawdzić. Spróbuj za chwilę lub kontynuuj z VAT.",
+				"countryMismatch": "Bez VAT możemy automatycznie obsłużyć tylko dostawę do kraju Twojego numeru VAT. W przypadku innej dostawy skontaktuj się z nami.",
+				"identityReview": "Dane firmy nie zgadzają się z wynikiem weryfikacji. Sprawdź dane rozliczeniowe lub skontaktuj się z nami.",
+				"skVat": "Ze słowackim numerem VAT zakup jest rozliczany z VAT.",
+				"domesticDelivery": "Przy dostawie lub odbiorze na Słowacji zakup jest rozliczany z VAT.",
+				"incomplete": "O VAT zdecydujemy, gdy dane i sposób dostawy będą kompletne.",
+				"validPendingDelivery": "Numer VAT jest ważny w VIES. O VAT zdecydujemy po wyborze sposobu dostawy.",
+				"disabled": "Obecnie nie oferujemy automatycznego zwolnienia z VAT. Zakup na firmę możesz dokończyć z VAT.",
+				"serviceOff": "Automatyczna weryfikacja numeru VAT jest teraz niedostępna. Zakup na firmę możesz dokończyć w cenie podanej w podsumowaniu."
+			},
+			"actions": {
+				"continueWithVat": "Kontynuuj z VAT",
+				"retry": "Sprawdź ponownie",
+				"recheck": "Zweryfikuj ponownie",
+				"refreshStatus": "Odśwież status płatności",
+				"edit": "Edytuj"
+			}
 		}
 	},
 	"footer": {

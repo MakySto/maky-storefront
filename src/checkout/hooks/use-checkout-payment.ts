@@ -35,6 +35,8 @@ type UseCheckoutPaymentParams = {
 	shippingAddress: AddressFragment | null | undefined;
 	userAddresses: ReadonlyArray<AddressFragment> | undefined;
 	authenticated: boolean;
+	/** Company purchase: keep the billing address saved in the Information step (see `updateCheckoutBilling`). */
+	preserveBilling?: boolean;
 };
 
 // Adopted from upstream use-checkout-payment; MAKY adaptation: navigateToOrderConfirmation
@@ -47,6 +49,7 @@ export function useCheckoutPayment({
 	shippingAddress,
 	userAddresses,
 	authenticated,
+	preserveBilling,
 }: UseCheckoutPaymentParams) {
 	const { refreshCheckout } = useCheckoutData();
 	const paymentMessages = useCheckoutPaymentMessages();
@@ -74,7 +77,7 @@ export function useCheckoutPayment({
 		}
 	}, []);
 
-	const setPriceChangeNoticeState = useCallback((notice: CheckoutPriceChangeNotice) => {
+	const setPriceChangeNoticeState = useCallback((notice: CheckoutPriceChangeNotice | null) => {
 		setPriceChangeNotice(notice);
 	}, []);
 
@@ -101,6 +104,7 @@ export function useCheckoutPayment({
 					shippingAddress,
 					userAddresses,
 					authenticated,
+					preserveBilling,
 				});
 
 				if (!billingResult.ok) {
@@ -189,6 +193,7 @@ export function useCheckoutPayment({
 			shippingAddress,
 			userAddresses,
 			authenticated,
+			preserveBilling,
 			provider,
 			refreshCheckout,
 			paymentMessages,
