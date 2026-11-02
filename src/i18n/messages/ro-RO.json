@@ -154,6 +154,15 @@
 				"play": "Redă videoclipul",
 				"note": "YouTube · se încarcă abia după clic"
 			},
+			"sections": {
+				"intro": "Descrierea produsului",
+				"compatibility": "Compatibilitate",
+				"usage": "Utilizare în practică",
+				"accessories": "Accesorii potrivite",
+				"brand": "Despre brand",
+				"closing": "Vă sfătuim"
+			},
+			"viewAccessory": "Vezi accesoriul",
 			"viewPart": "Vezi piesa",
 			"years": "{count, plural, one {# an} few {# ani} other {# de ani}}"
 		},

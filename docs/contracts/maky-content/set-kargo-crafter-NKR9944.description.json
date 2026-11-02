@@ -2,11 +2,56 @@
  "version": "maky-content/1:stresny-nosic",
  "blocks": [
   {
+   "type": "paragraph",
+   "id": "maky:kind",
+   "data": {
+    "text": "Kompletný strešný kôš s montážnou sadou"
+   }
+  },
+  {
+   "type": "list",
+   "id": "maky:facts",
+   "data": {
+    "style": "unordered",
+    "items": [
+     {
+      "content": "<strong>420 × 180 × 7 cm</strong> Rozmery koša",
+      "items": [],
+      "meta": {
+       "icon": "ruler"
+      }
+     },
+     {
+      "content": "<strong>Volkswagen Crafter</strong> Vozidlo",
+      "items": [],
+      "meta": {
+       "icon": "car"
+      }
+     },
+     {
+      "content": "<strong>L4, vysoká strecha</strong> Verzia vozidla",
+      "items": [],
+      "meta": {
+       "icon": "truck"
+      }
+     },
+     {
+      "content": "<strong>od 01/2017</strong> Obdobie výroby vozidla",
+      "items": [],
+      "meta": {
+       "icon": "calendar"
+      }
+     }
+    ]
+   }
+  },
+  {
    "type": "header",
    "data": {
     "level": 3,
     "text": "Strešný kôš Nordrive Kargo Rack pre Volkswagen Crafter"
-   }
+   },
+   "id": "maky:section:intro"
   },
   {
    "type": "paragraph",
@@ -45,7 +90,8 @@
    "data": {
     "level": 3,
     "text": "Pre ktoré vozidlo je určený"
-   }
+   },
+   "id": "maky:section:compatibility"
   },
   {
    "type": "paragraph",
@@ -55,12 +101,26 @@
   },
   {
    "type": "list",
+   "id": "maky:facts:compat",
    "data": {
     "style": "unordered",
     "items": [
-     "<strong>Vozidlo:</strong> Volkswagen Crafter od 01/2017",
-     "<strong>Verzia:</strong> dĺžka L4, vysoká strecha",
-     "<strong>Upevnenie:</strong> na pevné body strechy"
+     {
+      "content": "<strong>Volkswagen Crafter Van SY/SZ</strong> Vozidlo",
+      "items": []
+     },
+     {
+      "content": "<strong>od 01/2017</strong> Obdobie výroby",
+      "items": []
+     },
+     {
+      "content": "<strong>L4, vysoká strecha</strong> Verzia vozidla",
+      "items": []
+     },
+     {
+      "content": "<strong>na pevné body strechy</strong> Spôsob upevnenia",
+      "items": []
+     }
     ]
    }
   },
@@ -69,7 +129,8 @@
    "data": {
     "level": 3,
     "text": "Využitie pri práci"
-   }
+   },
+   "id": "maky:section:usage"
   },
   {
    "type": "paragraph",
@@ -180,7 +241,8 @@
    "data": {
     "level": 3,
     "text": "Doplnky ku košu"
-   }
+   },
+   "id": "maky:section:accessories"
   },
   {
    "type": "paragraph",
@@ -189,39 +251,28 @@
    }
   },
   {
-   "type": "image",
+   "type": "list",
+   "id": "maky:inbox:accessories",
    "data": {
-    "file": {
-     "url": "https://carfitmanager.com/media/fixture/n10234-roller.jpg"
-    },
-    "caption": "Zadný nakladací valec N10234",
-    "withBorder": false,
-    "stretched": false,
-    "withBackground": false
-   }
-  },
-  {
-   "type": "paragraph",
-   "data": {
-    "text": "Pri častom nakladaní rebríka či dlhých profilov oceníte oporu pri ich nasúvaní na kôš zo zadnej strany vozidla."
-   }
-  },
-  {
-   "type": "image",
-   "data": {
-    "file": {
-     "url": "https://carfitmanager.com/media/fixture/n10224-upper.jpg"
-    },
-    "caption": "Predná a zadná horná priečka N10224",
-    "withBorder": false,
-    "stretched": false,
-    "withBackground": false
-   }
-  },
-  {
-   "type": "paragraph",
-   "data": {
-    "text": "Pár horných priečok doplní konštrukciu na prednom a zadnom konci koša."
+    "style": "unordered",
+    "items": [
+     {
+      "content": "<strong>Zadný nakladací valec</strong> Pri častom nakladaní rebríka či dlhých profilov oceníte oporu pri ich nasúvaní na kôš zo zadnej strany vozidla.",
+      "items": [],
+      "meta": {
+       "productId": "UHJvZHVjdDoxMDIzNA==",
+       "code": "N10234"
+      }
+     },
+     {
+      "content": "<strong>Predná a zadná horná priečka</strong> Pár horných priečok doplní konštrukciu na prednom a zadnom konci koša.",
+      "items": [],
+      "meta": {
+       "productId": "UHJvZHVjdDoxMDIyNA==",
+       "code": "N10224"
+      }
+     }
+    ]
    }
   },
   {
@@ -337,7 +388,8 @@
    "data": {
     "level": 3,
     "text": "O značke Nordrive"
-   }
+   },
+   "id": "maky:section:brand"
   },
   {
    "type": "paragraph",
@@ -384,7 +436,8 @@
    "data": {
     "level": 3,
     "text": "Pripravte svoj Crafter na ďalšiu zákazku"
-   }
+   },
+   "id": "maky:section:closing"
   },
   {
    "type": "paragraph",

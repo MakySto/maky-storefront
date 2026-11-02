@@ -13,6 +13,8 @@ import {
 import {
 	descriptionSections,
 	groupParameters,
+	isTailSection,
+	sectionKindOfHtml,
 	templateFor,
 	TEMPERATURE_RANGE_REF,
 	type PageSections,
@@ -57,29 +59,55 @@ const DESCRIPTION_PROSE = cn(
 );
 
 /**
- * A description set as sections: one card for each heading the producer wrote. A section's heading is
- * the card's title, with a short brown rule above it. The running text keeps to a readable line
- * (about 70 characters); the cards the producer built (benefits, the box, the steps, the documents)
- * keep the card's width.
+ * A description set as sections: the sections of one card, a thin rule and a gap between them. A
+ * section's heading is its title; with no kind named on it (`maky:section:<kind>`) it carries a short
+ * brown rule above it, with one the small title the storefront writes over it takes that place. The
+ * running text keeps to a readable line (about 70 characters); the cards the producer built (benefits,
+ * the box, the steps, the documents) keep the card's width.
  */
-const SECTION_PROSE = cn(
-	"[&>div>h3]:before:bg-brand [&>div>h3]:before:mb-4 [&>div>h3]:before:block [&>div>h3]:before:h-[3px] [&>div>h3]:before:w-10 [&>div>h3]:before:rounded-full [&>div>h3]:before:content-[''] [&>div>h3]:mt-0 [&>div>h3]:mb-4 [&>div>h3]:text-2xl [&>div>h3]:font-extrabold [&>div>h3]:tracking-[-0.025em] [&>div>h3]:text-text-primary sm:[&>div>h3]:text-[1.875rem]",
-	"[&>div>p]:max-w-[44rem] [&>div>ul:not([class])]:max-w-[44rem] [&>div>ol:not([class])]:max-w-[44rem]",
+const SECTION_HEADING = cn(
+	"[&>div>h3]:mt-0 [&>div>h3]:mb-4 [&>div>h3]:text-2xl [&>div>h3]:font-extrabold [&>div>h3]:tracking-[-0.025em] [&>div>h3]:text-text-primary sm:[&>div>h3]:text-[1.875rem]",
+	"[&>div>h4]:text-text-primary [&>div>h4]:mt-0 [&>div>h4]:mb-2 [&>div>h4]:text-lg [&>div>h4]:font-bold",
+	"[&>div>p]:max-w-[70ch] [&>div>ul:not([class])]:max-w-[70ch] [&>div>ol:not([class])]:max-w-[70ch]",
 );
-
-/**
- * The pictures of a section stand in a column of their own beside its text from `lg` (on the right,
- * and on the left in every second card that has pictures, so the page does not read as one repeated
- * card) and under the text on a phone. Whole and never cropped, each with its caption.
- */
-const SECTION_FIGURES = cn(
-	"[&_figure]:bg-surface-secondary [&_figure]:ring-border-subtle [&_figure]:m-0 [&_figure]:overflow-hidden [&_figure]:rounded-md [&_figure]:p-0 [&_figure]:ring-1",
-	"[&_figure_img]:mx-auto [&_figure_img]:my-0 [&_figure_img]:h-auto [&_figure_img]:max-h-80 [&_figure_img]:w-full [&_figure_img]:object-contain",
-	"[&_figcaption]:text-text-secondary [&_figcaption]:bg-surface-card [&_figcaption]:border-border-subtle [&_figcaption]:m-0 [&_figcaption]:border-t [&_figcaption]:px-4 [&_figcaption]:py-3 [&_figcaption]:text-left [&_figcaption]:text-sm [&_figcaption]:leading-snug",
-);
+const SECTION_RULE =
+	"[&>div>h3]:before:bg-brand [&>div>h3]:before:mb-4 [&>div>h3]:before:block [&>div>h3]:before:h-[3px] [&>div>h3]:before:w-10 [&>div>h3]:before:rounded-full [&>div>h3]:before:content-['']";
+/** The opening paragraph of an introduction, under its heading: the lead. */
+const SECTION_LEAD =
+	"[&>div:nth-child(2)>p:first-child]:text-text-primary [&>div:nth-child(2)>p:first-child]:text-[1.0625rem] [&>div:nth-child(2)>p:first-child]:font-medium sm:[&>div:nth-child(2)>p:first-child]:text-lg";
 
 /** Whether a block of the description is a picture (`<figure>`): it goes to the section's picture column. */
 const isPicture = (html: string) => html.trimStart().startsWith("<figure");
+
+/** A heading of the fourth level opens a pair: its text, and the picture that belongs to it. */
+const isPairHeading = (html: string) => /^<h4[\s>]/.test(html);
+
+/** The text of a stretch of a section and the pictures that stand beside it, or under it when there are several. */
+interface Chunk {
+	text: string[];
+	pictures: string[];
+}
+
+const toChunk = (blocks: readonly string[]): Chunk => ({
+	text: blocks.filter((html) => !isPicture(html)),
+	pictures: blocks.filter(isPicture),
+});
+
+/**
+ * A section's blocks cut into the stretches a picture is set against. A section whose `h4` headings
+ * carry pictures is a row of pairs, one for each heading ("Konštrukcia": the modules and their photo,
+ * the fixing and its photo); any other section is one stretch.
+ */
+function chunksOf(blocks: readonly string[]): Chunk[] {
+	const firstPair = blocks.findIndex(isPairHeading);
+	if (firstPair === -1 || !blocks.slice(firstPair).some(isPicture)) return [toChunk(blocks)];
+	const parts: string[][] = [blocks.slice(0, firstPair)];
+	for (const html of blocks.slice(firstPair)) {
+		if (isPairHeading(html)) parts.push([html]);
+		else parts[parts.length - 1].push(html);
+	}
+	return parts.filter((part) => part.length > 0).map(toChunk);
+}
 
 /** The scrolling box `parseEditorJSToHtml` puts around a model comparison table. */
 const COMPARISON_REGION_CLASS = "maky-cmp-scroll";
@@ -160,8 +188,22 @@ export async function ProductSpecs({
 
 	// The sections in the order the cards follow each other.
 	// A description that carries pictures of its own is set as one card for each of its sections.
-	const sectionCards =
+	const allSections =
 		template.sections && descriptionHtml?.length ? descriptionSections(descriptionHtml) : null;
+	// The questions and the closing stand in cards of their own after the parameters; the rest is one card.
+	const sectionCards = allSections?.filter((section) => !isTailSection(section)) ?? null;
+	const tailCards = allSections?.filter(isTailSection) ?? [];
+	// Every second lone picture stands on the left, counted through the whole description, so the page
+	// does not read as one repeated card.
+	let lonePictures = 0;
+	const plan = (sectionCards ?? []).map((blocks) => ({
+		blocks,
+		kind: sectionKindOfHtml(blocks),
+		chunks: chunksOf(blocks).map((chunk) => ({
+			chunk,
+			flipped: chunk.pictures.length === 1 && lonePictures++ % 2 === 1,
+		})),
+	}));
 
 	const sections = [
 		hasDescription && { href: "#product-description", label: t("description") },
@@ -203,61 +245,35 @@ export async function ProductSpecs({
 				{hasDescription && sectionCards && (
 					<>
 						<h2 className="sr-only">{t("productDescription")}</h2>
-						{sectionCards.map((blocks, index, cards) => {
-							const pictures = blocks.filter(isPicture);
-							const text = pictures.length ? blocks.filter((html) => !isPicture(html)) : blocks;
-							// One picture stands beside the text; two or more are a row under it, so neither column
-							// is left with a gap the other one has filled.
-							const beside = pictures.length === 1;
-							// Every second card with a picture beside its text puts it on the left.
-							const flipped =
-								beside &&
-								cards.slice(0, index).filter((c) => c.filter(isPicture).length === 1).length % 2 === 1;
-							return (
-								<article
+						{/* The sections of the description are the sections of one card: a gap and a thin rule
+						    between them, not a raised panel for each. */}
+						<article id="product-description" className={cn(CARD, "flow-root")}>
+							{plan.map(({ kind, blocks, chunks }, index) => (
+								<section
 									// The sections have no identity of their own: the producer's order is the key.
 									key={`${index}-${blocks[0]}`}
-									id={index === 0 ? "product-description" : undefined}
-									className={cn(CARD, "flow-root", "scroll-mt-[calc(var(--header-offset)+1rem)]")}
+									className={cn(index > 0 && "border-border-subtle mt-10 border-t pt-10 lg:mt-12 lg:pt-12")}
 								>
-									<div
-										className={cn(
-											beside &&
-												"lg:grid lg:items-start lg:gap-x-12 " +
-													(flipped
-														? "lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]"
-														: "lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]"),
-										)}
-									>
-										<div className={cn(DESCRIPTION_PROSE, SECTION_PROSE, flipped && "lg:order-2")}>
-											{text.map((html) => (
-												<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
-											))}
-										</div>
-										{pictures.length > 0 && (
-											<div
-												className={cn(
-													SECTION_FIGURES,
-													beside
-														? cn("mt-6 lg:mt-0", flipped && "lg:order-1")
-														: "mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3",
-												)}
-											>
-												{pictures.map((html) => (
-													<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
-												))}
-											</div>
-										)}
-									</div>
-									{index === sectionCards.length - 1 && careInstructions && (
-										<div className="border-border-subtle bg-surface-secondary mt-8 rounded-xs border p-4 sm:p-5">
-											<h3 className="text-text-primary mb-2 font-semibold">{t("careInstructions")}</h3>
-											<p className="text-text-secondary leading-relaxed">{careInstructions}</p>
-										</div>
-									)}
-								</article>
-							);
-						})}
+									{kind && <SectionKicker>{t(`content.sections.${kind}`)}</SectionKicker>}
+									{chunks.map(({ chunk, flipped }, chunkIndex) => (
+										<SectionChunk
+											key={`${chunkIndex}-${chunk.text[0] ?? chunk.pictures[0]}`}
+											chunk={chunk}
+											flipped={flipped}
+											kicker={Boolean(kind)}
+											lead={kind === "intro" && chunkIndex === 0}
+											className={chunkIndex > 0 ? "mt-8 lg:mt-10" : undefined}
+										/>
+									))}
+								</section>
+							))}
+							{careInstructions && (
+								<div className="border-border-subtle bg-surface-secondary mt-8 rounded-xs border p-4 sm:p-5">
+									<h3 className="text-text-primary mb-2 font-semibold">{t("careInstructions")}</h3>
+									<p className="text-text-secondary leading-relaxed">{careInstructions}</p>
+								</div>
+							)}
+						</article>
 					</>
 				)}
 
@@ -388,8 +404,103 @@ export async function ProductSpecs({
 						<div className="maky-blk mt-0" dangerouslySetInnerHTML={{ __html: documents.body }} />
 					</article>
 				)}
+
+				{tailCards.map((blocks, index) => {
+					const kind = sectionKindOfHtml(blocks);
+					return (
+						<article
+							key={`${index}-${blocks[0]}`}
+							id={blocks.some((html) => html.includes('class="maky-faq"')) ? "product-faq" : undefined}
+							className={cn(CARD, kind === "closing" && "border-copper-100 bg-copper-50")}
+						>
+							{kind && <SectionKicker>{t(`content.sections.${kind}`)}</SectionKicker>}
+							<div
+								className={cn(
+									DESCRIPTION_PROSE,
+									SECTION_HEADING,
+									// A questions block carries its heading itself, at the size of a card's title.
+									"[&>div>.maky-blk>.maky-h]:text-text-primary [&>div>.maky-blk>.maky-h]:text-2xl [&>div>.maky-blk>.maky-h]:font-extrabold [&>div>.maky-blk>.maky-h]:tracking-[-0.025em] sm:[&>div>.maky-blk>.maky-h]:text-[1.875rem]",
+									!kind && SECTION_RULE,
+								)}
+							>
+								{blocks.map((html) => (
+									<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
+								))}
+							</div>
+						</article>
+					);
+				})}
 			</div>
 		</section>
+	);
+}
+
+/** The small title over a section's heading: a short brown rule and the kind of section, in the shopper's language. */
+function SectionKicker({ children }: { children: React.ReactNode }) {
+	return (
+		<p className="text-brand mb-3 flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] uppercase">
+			<span aria-hidden="true" className="bg-brand h-0.5 w-[22px] rounded-full" />
+			{children}
+		</p>
+	);
+}
+
+/**
+ * One stretch of a section: its text, and the pictures set against it. One picture stands beside the
+ * text, from `lg` in a column of half the width (on the left in every second stretch, `flipped`); two
+ * or more are a row under it, so neither side is left with a gap the other has filled. Whole, never
+ * cropped, the caption under each and outside its frame (`.maky-figs`, brand.css).
+ */
+function SectionChunk({
+	chunk,
+	flipped,
+	kicker,
+	lead,
+	className,
+}: {
+	chunk: Chunk;
+	flipped: boolean;
+	/** The section names its kind: the small title stands over the heading, so the heading has no rule of its own. */
+	kicker: boolean;
+	lead: boolean;
+	className?: string;
+}) {
+	const { text, pictures } = chunk;
+	const beside = pictures.length === 1;
+	return (
+		<div
+			className={cn(beside && "lg:grid lg:grid-cols-2 lg:items-center lg:gap-x-12 xl:gap-x-16", className)}
+		>
+			{text.length > 0 && (
+				<div
+					className={cn(
+						DESCRIPTION_PROSE,
+						SECTION_HEADING,
+						!kicker && SECTION_RULE,
+						lead && SECTION_LEAD,
+						flipped && "lg:order-2",
+					)}
+				>
+					{text.map((html) => (
+						<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
+					))}
+				</div>
+			)}
+			{pictures.length > 0 && (
+				<div
+					className={cn(
+						"maky-figs",
+						beside
+							? cn("mt-6 lg:mt-0", flipped && "lg:order-1")
+							: "mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3",
+					)}
+				>
+					{pictures.map((html) => (
+						<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
+					))}
+				</div>
+			)}
+		</div>
 	);
 }
 

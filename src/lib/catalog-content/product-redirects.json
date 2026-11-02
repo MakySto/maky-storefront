@@ -1,6 +1,6 @@
 {
 	"release": "zlucenie-20261030",
-	"source": "KARGO_301_SK_20261030_pre_M.tsv sha256 c614bdf329eb866f21e355692ae802447a594275f8c49896e9fe247736d68f83",
+	"source": "KARGO_301_SK_20261030_pre_M.tsv sha256 c614bdf329eb866f21e355692ae802447a594275f8c49896e9fe247736d68f83 + KARGO_301_SK_20261031_doplnok_pre_M.tsv sha256 98f25ae637e49b6cfa9dd0d8564d68e002c9b29e27898902b3e635e03633e392",
 	"exact": {
 		"sk": {
 			"stresny-kos-nordrive-kargo-rack-pre-citroen-berlingo-b9-l1-2008-2018-180-x-135-x-12-cm-nkr0302-n30202-n99970": "stresny-kos-nordrive-kargo-rack-pre-citroen-berlingo-b9-2008-2018-180-x-135-x-12-cm-nkr0302-n30202-n99970",
@@ -450,6 +450,7 @@
 			"stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-b9-l1-2008-2018-3-tyce-135-cm-3xn10035-n30203": "stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-b9-2008-2018-3-tyce-135-cm-3xn10035-n30203",
 			"stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-b9-l2-2008-2018-2-tyce-135-cm-2xn10035-n30202": "stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-b9-2008-2018-2-tyce-135-cm-2xn10035-n30202",
 			"stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-b9-l2-2008-2018-3-tyce-135-cm-3xn10035-n30203": "stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-b9-2008-2018-3-tyce-135-cm-3xn10035-n30203",
+			"stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-k9-2018-2022-3-tyce-150-cm-3xn10040-n30363": "stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-k9-od-2018-3-tyce-150-cm-3xn10040-n30363",
 			"stresny-nosic-nordrive-kargo-plus-pre-citroen-jumper-van-230-dlhy-razvor-h2-1994-2006-2-tyce-180-cm-2xn10045-n30022": "stresny-nosic-nordrive-kargo-plus-pre-citroen-jumper-van-230-1994-2006-2-tyce-180-cm-2xn10045-n30022",
 			"stresny-nosic-nordrive-kargo-plus-pre-citroen-jumper-van-230-dlhy-razvor-h2-1994-2006-3-tyce-180-cm-3xn10045-n30023": "stresny-nosic-nordrive-kargo-plus-pre-citroen-jumper-van-230-1994-2006-3-tyce-180-cm-3xn10045-n30023",
 			"stresny-nosic-nordrive-kargo-plus-pre-citroen-jumper-van-230-kratky-razvor-h1-1994-2006-2-tyce-180-cm-2xn10045-n30022": "stresny-nosic-nordrive-kargo-plus-pre-citroen-jumper-van-230-1994-2006-2-tyce-180-cm-2xn10045-n30022",
@@ -860,6 +861,7 @@
 			"stresny-nosic-nordrive-kargo-pre-citroen-berlingo-b9-l1-2008-2018-3-tyce-135-cm-3xn10005-n30203": "stresny-nosic-nordrive-kargo-pre-citroen-berlingo-b9-2008-2018-3-tyce-135-cm-3xn10005-n30203",
 			"stresny-nosic-nordrive-kargo-pre-citroen-berlingo-b9-l2-2008-2018-2-tyce-135-cm-2xn10005-n30202": "stresny-nosic-nordrive-kargo-pre-citroen-berlingo-b9-2008-2018-2-tyce-135-cm-2xn10005-n30202",
 			"stresny-nosic-nordrive-kargo-pre-citroen-berlingo-b9-l2-2008-2018-3-tyce-135-cm-3xn10005-n30203": "stresny-nosic-nordrive-kargo-pre-citroen-berlingo-b9-2008-2018-3-tyce-135-cm-3xn10005-n30203",
+			"stresny-nosic-nordrive-kargo-pre-citroen-berlingo-k9-2018-2022-3-tyce-150-cm-3xn10010-n30363": "stresny-nosic-nordrive-kargo-pre-citroen-berlingo-k9-od-2018-3-tyce-150-cm-3xn10010-n30363",
 			"stresny-nosic-nordrive-kargo-pre-citroen-jumper-van-230-dlhy-razvor-h2-1994-2006-2-tyce-180-cm-2xn10015-n30022": "stresny-nosic-nordrive-kargo-pre-citroen-jumper-van-230-1994-2006-2-tyce-180-cm-2xn10015-n30022",
 			"stresny-nosic-nordrive-kargo-pre-citroen-jumper-van-230-dlhy-razvor-h2-1994-2006-3-tyce-180-cm-3xn10015-n30023": "stresny-nosic-nordrive-kargo-pre-citroen-jumper-van-230-1994-2006-3-tyce-180-cm-3xn10015-n30023",
 			"stresny-nosic-nordrive-kargo-pre-citroen-jumper-van-230-kratky-razvor-h1-1994-2006-2-tyce-180-cm-2xn10015-n30022": "stresny-nosic-nordrive-kargo-pre-citroen-jumper-van-230-1994-2006-2-tyce-180-cm-2xn10015-n30022",

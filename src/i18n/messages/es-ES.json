@@ -154,6 +154,15 @@
 				"play": "Reproducir vídeo",
 				"note": "YouTube · se carga solo al hacer clic"
 			},
+			"sections": {
+				"intro": "Descripción del producto",
+				"compatibility": "Compatibilidad",
+				"usage": "Uso en la práctica",
+				"accessories": "Accesorios adecuados",
+				"brand": "Sobre la marca",
+				"closing": "Le asesoramos"
+			},
+			"viewAccessory": "Ver accesorio",
 			"viewPart": "Ver pieza",
 			"years": "{count, plural, one {# año} other {# años}}"
 		},

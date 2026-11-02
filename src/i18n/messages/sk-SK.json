@@ -154,6 +154,15 @@
 				"play": "Prehrať video",
 				"note": "YouTube · načíta sa až po kliknutí"
 			},
+			"sections": {
+				"intro": "Popis produktu",
+				"compatibility": "Kompatibilita",
+				"usage": "Využitie v praxi",
+				"accessories": "Vhodné doplnky",
+				"brand": "O značke",
+				"closing": "Poradíme vám"
+			},
+			"viewAccessory": "Pozrieť doplnok",
 			"viewPart": "Pozrieť diel",
 			"years": "{count, plural, one {# rok} few {# roky} many {# roka} other {# rokov}}"
 		},

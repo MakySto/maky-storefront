@@ -46,7 +46,7 @@ const BLOCK_TAGS: IWhiteList = {
 	blockquote: [],
 	caption: ["class"],
 	dd: [],
-	details: ["class"],
+	details: ["class", "open"],
 	div: ["class", "tabindex", "role", "aria-label"],
 	dl: [],
 	dt: [],
@@ -133,6 +133,26 @@ export type IconName = FeatureIcon | (typeof STRUCTURAL_ICONS)[number];
 export const ICON_NAMES: readonly IconName[] = [...FEATURE_ICONS, ...STRUCTURAL_ICONS];
 
 /**
+ * The kinds of section a description may name on a heading (`maky:section:<kind>`): the storefront
+ * writes the small title over the heading from its own words, in every language it is sold in.
+ */
+export const SECTION_KINDS = ["intro", "compatibility", "usage", "accessories", "brand", "closing"] as const;
+export type SectionKind = (typeof SECTION_KINDS)[number];
+
+/** The icons a key fact of the band may carry (`meta.icon` of a `maky:facts` item); a closed set, as the feature icons are. */
+export const FACT_ICON_NAMES = [
+	"ruler",
+	"car",
+	"truck",
+	"calendar",
+	"bike",
+	"package",
+	"scale",
+	"weight",
+] as const;
+export type FactIconName = (typeof FACT_ICON_NAMES)[number];
+
+/**
  * The classes of the typed content blocks, as one set for the tags that carry them. Every
  * renderer in `editorjs-content.ts` builds its markup from these and nothing else.
  */
@@ -179,6 +199,15 @@ const CONTENT_CLASS_TOKENS: readonly string[] = [
 	"maky-doc-a",
 	"maky-cta",
 	"maky-cta-a",
+	// a section heading that names its kind (`maky:section:<kind>`), the accessories' cards, the compatibility tiles
+	"maky-sec",
+	...SECTION_KINDS.map((kind) => `maky-sec-${kind}`),
+	"maky-inbox-acc",
+	"maky-tiles",
+	"maky-tl",
+	"maky-tl-k",
+	"maky-tl-v",
+	"maky-facts",
 	"maky-specs",
 	"maky-sg",
 	"maky-sg-t",
