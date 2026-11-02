@@ -19,6 +19,7 @@ import { StripeExpressCheckout } from "./stripe-express-checkout";
 import { StripePaymentProcessingOverlay } from "./stripe-payment-processing-overlay";
 import { type StripeBillingContext } from "./stripe-billing-context";
 import { useCheckoutPaymentMessages } from "@/checkout/hooks/use-checkout-payment-messages";
+import { usePaymentLockReporter } from "@/checkout/components/b2b/payment-lock-context";
 
 export type { StripeBillingContext } from "./stripe-billing-context";
 
@@ -54,6 +55,7 @@ export const StripePaymentForm: FC<StripePaymentFormProps> = ({
 	const liveSearchParams = useLiveCheckoutSearchParams(searchParams);
 	const { refreshCheckout, setCheckout } = useCheckoutData();
 	const paymentMessages = useCheckoutPaymentMessages();
+	const reportPaymentLock = usePaymentLockReporter();
 	const [isLoading, setIsLoading] = useState(false);
 	const paymentElementChangeTypeRef = useRef<string | null>(null);
 	const showExpressCheckout = isStripeExpressCheckoutEnabled();
@@ -92,6 +94,9 @@ export const StripePaymentForm: FC<StripePaymentFormProps> = ({
 				if (result.checkout) setCheckout(result.checkout);
 				else await refreshCheckout();
 				onPriceChangeNotice(result.notice);
+			} else if (result.kind === "blocked" && result.code === "CHECKOUT_LOCKED" && reportPaymentLock) {
+				// A payment already in progress: the step offers the way out (end it, then pay again).
+				reportPaymentLock();
 			} else {
 				onError(result.message);
 			}

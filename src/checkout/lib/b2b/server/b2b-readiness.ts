@@ -16,9 +16,10 @@ import { executeB2bAppGraphQL } from "./b2b-saleor-client";
  * (publicly) and stated (`evaluate-b2b.ts`), never replaced by "off".
  *
  * The probe is one request (`MakyB2bReadinessDocument`): it executes `app { … }` and makes Saleor VALIDATE the very
- * state query and attestation mutation this build sends. So the schema check names no type: an endpoint without the
- * contract, or with a field, argument or input type spelled differently, refuses the document (HTTP 400) and its
- * validation messages are reported in `schema.errors`.
+ * state query, attestation mutation and payment-lock release this build sends. So the schema check names no type: an
+ * endpoint without the contract (or with revision 1, which cannot release a lock), or with a field, argument or
+ * input type spelled differently, refuses the document (HTTP 400) and its validation messages are reported in
+ * `schema.errors`.
  *
  * Kept briefly per process so a checkout render does not cost a Saleor round trip each time.
  */
@@ -99,8 +100,8 @@ export async function checkB2bReadiness(
 	if (!config.requester) failures.push("requester-vat-id-missing");
 	if (!decision.allowed) failures.push("writes-blocked");
 
-	// The probe carries the attestation mutation (validated, never executed), so the write guard treats it as a
-	// write: where writes are blocked it is not sent, and `writes-blocked` already says the process is not ready.
+	// The probe carries the attestation and release mutations (validated, never executed), so the write guard treats
+	// it as a write: where writes are blocked it is not sent, and `writes-blocked` already says the process is not ready.
 	if (config.hasAppToken && readiness.endpointHost && decision.allowed) {
 		const result = await executeB2bAppGraphQL(
 			MakyB2bReadinessDocument,

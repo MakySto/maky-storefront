@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { GraphQLResult } from "@/lib/graphql";
 
 import { deriveExtension } from "../../../../scripts/b2b-schema-extension.mjs";
+import { B2B_PAYMENT_LOCK_RELEASE_STATUSES } from "./contract";
 import { B2B_DOCUMENTS, MAKY_B2B_READINESS_OPERATION } from "./graphql";
 import { checkB2bReadiness, resetB2bReadinessCache } from "./server/b2b-readiness";
 import { setB2bAppExecutorForTests } from "./server/b2b-saleor-client";
@@ -56,6 +57,10 @@ function saleorFor(schema: GraphQLSchema) {
 		checkoutB2bTaxAttestationUpdate: () => {
 			mutationExecuted = true;
 			return { errors: [], checkout: null };
+		},
+		checkoutB2bPaymentLockRelease: () => {
+			mutationExecuted = true;
+			return { errors: [], checkout: null, status: "RELEASED" };
 		},
 	};
 	const executor = async (
@@ -148,6 +153,21 @@ describe.skipIf(!havePinned)(
 			expect(String(B2B_DOCUMENTS.MakyB2bApplyVerificationDocument)).toMatch(/\bpaymentLocked\b/);
 		});
 
+		it("the lock release asks for the backend's status and for `paymentLocked` in the same answer", () => {
+			const release = String(B2B_DOCUMENTS.MakyB2bReleasePaymentLockDocument);
+			expect(release).toMatch(/checkoutB2bPaymentLockRelease\(id: \$id\)/);
+			expect(release).toMatch(/\bstatus\b/);
+			expect(release).toMatch(/errors \{\s*field\s*code\s*message\s*\}/);
+			expect(release).toMatch(/b2bTaxState \{[^}]*\bpaymentLocked\b/);
+			// The statuses and error codes the storefront maps are exactly the backend's.
+			const values = (name: string) =>
+				(backend!.getType(name) as unknown as { getValues: () => Array<{ name: string }> })
+					.getValues()
+					.map((value) => value.name);
+			expect(values("B2bPaymentLockReleaseStatus")).toEqual([...B2B_PAYMENT_LOCK_RELEASE_STATUSES]);
+			expect(values("CheckoutB2bPaymentLockReleaseErrorCode")).toEqual(["GRAPHQL_ERROR", "NOT_FOUND"]);
+		});
+
 		it("the readiness probe, executed on the backend's schema: ready, and the write is only validated", async () => {
 			const saleor = saleorFor(backend!);
 			setB2bAppExecutorForTests(saleor.executor as never);
@@ -180,11 +200,26 @@ describe.skipIf(!havePinned)(
 				/\n\s*"""(?:(?!""")[\s\S])*"""\s*\n\s*paymentLocked: Boolean!\n/,
 				"\n",
 			);
-			expect(withoutLock).not.toMatch(/paymentLocked/);
+			expect(withoutLock).not.toMatch(/^\s*paymentLocked: Boolean!/m);
 			setB2bAppExecutorForTests(saleorFor(extendSchema(base!, parse(withoutLock))).executor as never);
 			const readiness = await checkB2bReadiness({ fresh: true });
 			expect(readiness.failures).toContain("schema-contract-invalid");
 			expect(readiness.schema.errors.join("\n")).toMatch(/paymentLocked/);
+		});
+
+		it("a backend with revision 1 of the contract (no lock release) is not ready, and the mutation is named", async () => {
+			const revision1 = extensionSdl.replace(
+				/\n\s*"""(?:(?!""")[\s\S])*"""\s*\n\s*checkoutB2bPaymentLockRelease\([\s\S]*?\): CheckoutB2bPaymentLockRelease\n/,
+				"\n",
+			);
+			expect(revision1).not.toMatch(/^\s*checkoutB2bPaymentLockRelease\(/m);
+			const saleor = saleorFor(extendSchema(base!, parse(revision1)));
+			setB2bAppExecutorForTests(saleor.executor as never);
+			const readiness = await checkB2bReadiness({ fresh: true });
+			expect(readiness.ok).toBe(false);
+			expect(readiness.failures).toContain("schema-contract-invalid");
+			expect(readiness.schema.errors.join("\n")).toMatch(/checkoutB2bPaymentLockRelease/);
+			expect(saleor.mutationExecuted()).toBe(false);
 		});
 
 		it("a type name the documents do not spell cannot make the check wrong (the old probe asked for one)", async () => {

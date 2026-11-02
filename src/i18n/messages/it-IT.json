@@ -339,6 +339,7 @@
 		"addInvalid": "Controlla la quantità selezionata.",
 		"addNotFound": "Prodotto non trovato.",
 		"addFailed": "Non è stato possibile aggiungere il prodotto al carrello.",
+		"addPaymentLocked": "È già in corso un pagamento per il tuo ordine, quindi ora non è possibile aggiungere prodotti. Completalo oppure annullalo in modo sicuro alla cassa.",
 		"addUnconfirmed": "Non possiamo confermare se il prodotto è stato aggiunto. Controlla il carrello.",
 		"emptyCart": "Il carrello è vuoto",
 		"continueShopping": "Continua gli acquisti",
@@ -592,7 +593,8 @@
 			"checkoutLocked": "È già in corso un pagamento per questo ordine. Completalo o annullalo in modo sicuro prima di avviarne uno nuovo.",
 			"orderUpdated": "Il tuo ordine è stato aggiornato. Controlla il nuovo importo prima di pagare.",
 			"finalStateUnconfirmed": "Al momento non è stato possibile confermare il prezzo finale. Riprova.",
-			"completeBlockedNoNewPayment": "Al momento non è stato possibile completare l'ordine. Se hai già pagato, non avviare un nuovo pagamento: ricarica la pagina o contattaci."
+			"completeBlockedNoNewPayment": "Al momento non è stato possibile completare l'ordine. Se hai già pagato, non avviare un nuovo pagamento: ricarica la pagina o contattaci.",
+			"completeOfferChanged": "L'importo è cambiato, quindi l'ordine non è stato creato. Il denaro di questo pagamento verrà sbloccato automaticamente. Se hai bisogno di aiuto con l'ordine, contattaci."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Modalità di prova:</strong> questa è una conferma d'ordine simulata. Non è stato effettuato alcun pagamento reale.",
@@ -672,6 +674,34 @@
 				"recheck": "Controlla di nuovo",
 				"refreshStatus": "Aggiorna lo stato del pagamento",
 				"edit": "Modifica"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "È già in corso un pagamento per questo ordine, quindi ora i dati non possono essere modificati. Puoi completare il pagamento oppure annullarlo in modo sicuro e poi modificare i dati.",
+				"cart": "È già in corso un pagamento per questo ordine, quindi ora il carrello non può essere modificato. Puoi completare il pagamento oppure annullarlo in modo sicuro e poi modificare il carrello.",
+				"payment": "È già in corso un pagamento per questo ordine, quindi ora non se ne può avviare uno nuovo. Puoi annullare in modo sicuro il pagamento avviato e poi pagare di nuovo."
+			},
+			"releasing": "Annullamento del pagamento avviato…",
+			"waitingCancel": "Stiamo aspettando che il gestore dei pagamenti confermi l'annullamento. Di solito bastano pochi secondi.",
+			"waitingAttempt": "Il pagamento è ancora in fase di creazione. Tra un momento proveremo di nuovo ad annullarlo.",
+			"released": {
+				"details": "Il pagamento avviato è stato annullato. Ora puoi modificare i dati e salvarli.",
+				"cart": "Il pagamento avviato è stato annullato. Ora puoi modificare il carrello.",
+				"payment": "Il pagamento avviato è stato annullato. Controlla l'importo e paga di nuovo."
+			},
+			"funds": "Il pagamento è già stato ricevuto o è in attesa di conferma da parte della banca, quindi l'ordine non può più essere modificato. Completalo con i dati originali.",
+			"notConfirmed": "L'annullamento del pagamento non è ancora stato confermato. Riprova tra un momento, paga l'ordine con i dati originali oppure contattaci.",
+			"unavailable": "Ora non possiamo annullare il pagamento avviato. Puoi pagare l'ordine con i dati originali oppure contattarci.",
+			"failed": "Non è stato possibile annullare il pagamento avviato. Riprova tra un momento, paga l'ordine con i dati originali oppure contattaci.",
+			"actions": {
+				"releaseDetails": "Modifica i dati",
+				"releaseCart": "Modifica il carrello",
+				"releasePayment": "Annulla il pagamento avviato",
+				"retry": "Riprova",
+				"payOriginal": "Paga con i dati originali",
+				"finishOrder": "Completa l'ordine",
+				"contact": "Contatta il negozio"
 			}
 		}
 	},
@@ -927,6 +957,7 @@
 		"errorNotVerified": "Per il veicolo attualmente selezionato questo set non è verificato.",
 		"errorNotAvailable": "Questo set non è più a catalogo.",
 		"errorCartRejected": "Non è stato possibile aggiungere il set al carrello.",
+		"errorPaymentLocked": "È già in corso un pagamento per il tuo ordine, quindi ora non è possibile aggiungere il set. Completalo oppure annullalo in modo sicuro alla cassa.",
 		"errorLookupFailed": "Non possiamo confermare se il set è stato aggiunto. Controlla il carrello.",
 		"errorCatalogueUnavailable": "Al momento non è stato possibile verificare la disponibilità del set. Riprova.",
 		"errorGeneric": "Non è stato possibile aggiungere il set al carrello.",

@@ -339,6 +339,7 @@
 		"addInvalid": "Please check the quantity you selected.",
 		"addNotFound": "Product not found.",
 		"addFailed": "The product could not be added to your cart.",
+		"addPaymentLocked": "A payment for your order is already in progress, so nothing can be added right now. Finish it, or cancel it safely in the checkout.",
 		"addUnconfirmed": "We can't confirm whether the product was added. Please check your cart.",
 		"emptyCart": "Your cart is empty",
 		"continueShopping": "Continue shopping",
@@ -592,7 +593,8 @@
 			"checkoutLocked": "A payment for this order is already in progress. Finish it, or cancel it safely, before starting a new one.",
 			"orderUpdated": "Your order has been updated. Please review the new total before paying.",
 			"finalStateUnconfirmed": "We couldn't confirm the final price right now. Please try again.",
-			"completeBlockedNoNewPayment": "We couldn't complete the order right now. If you have already paid, don't start a new payment: refresh the page or contact us."
+			"completeBlockedNoNewPayment": "We couldn't complete the order right now. If you have already paid, don't start a new payment: refresh the page or contact us.",
+			"completeOfferChanged": "The amount has changed, so no order was created. The money from this payment will be released automatically. If you need help with the order, contact us."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Test mode:</strong> This is a simulated order confirmation. No real payment was taken.",
@@ -672,6 +674,34 @@
 				"recheck": "Review again",
 				"refreshStatus": "Refresh payment status",
 				"edit": "Edit"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "A payment for this order is already in progress, so the details can't be changed right now. You can finish the payment, or cancel it safely and then change the details.",
+				"cart": "A payment for this order is already in progress, so the cart can't be changed right now. You can finish the payment, or cancel it safely and then change the cart.",
+				"payment": "A payment for this order is already in progress, so a new one can't be started right now. You can safely cancel the payment you started and then pay again."
+			},
+			"releasing": "Cancelling the payment you started…",
+			"waitingCancel": "Waiting for the payment provider to confirm the cancellation. This usually takes a few seconds.",
+			"waitingAttempt": "The payment is still being set up. We'll try to cancel it again in a moment.",
+			"released": {
+				"details": "The payment you started is cancelled. You can now change the details and save them.",
+				"cart": "The payment you started is cancelled. You can now change the cart.",
+				"payment": "The payment you started is cancelled. Check the amount and pay again."
+			},
+			"funds": "The payment has already been received or is waiting for your bank's confirmation, so the order can no longer be changed. Complete it with the original details.",
+			"notConfirmed": "The cancellation hasn't been confirmed yet. Try again in a moment, pay for the order with the original details, or contact us.",
+			"unavailable": "We can't cancel the payment you started right now. You can pay for the order with the original details or contact us.",
+			"failed": "The payment you started couldn't be cancelled. Try again in a moment, pay for the order with the original details, or contact us.",
+			"actions": {
+				"releaseDetails": "Change details",
+				"releaseCart": "Change cart",
+				"releasePayment": "Cancel the started payment",
+				"retry": "Try again",
+				"payOriginal": "Pay with original details",
+				"finishOrder": "Complete order",
+				"contact": "Contact the shop"
 			}
 		}
 	},
@@ -927,6 +957,7 @@
 		"errorNotVerified": "This set isn't verified for the vehicle you currently have selected.",
 		"errorNotAvailable": "We no longer carry this set.",
 		"errorCartRejected": "We couldn't add the set to your cart.",
+		"errorPaymentLocked": "A payment for your order is already in progress, so the set can't be added right now. Finish it, or cancel it safely in the checkout.",
 		"errorLookupFailed": "We can't confirm whether the set was added. Please check your cart.",
 		"errorCatalogueUnavailable": "We couldn't check this set's availability just now. Please try again.",
 		"errorGeneric": "We couldn't add the set to your cart.",
