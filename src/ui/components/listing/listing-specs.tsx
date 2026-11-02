@@ -5,6 +5,23 @@ export type ListingSpec = { key: string; label: string; value: string };
 /** The spec whose label the CARD supplies, because no attribute carries a name for a combined size. */
 export const DIMENSIONS_SPEC_KEY = "dimensions";
 
+/** Likewise the bars of a kit ("4 × 180 cm"), put together from a count and a length. */
+export const BARS_SPEC_KEY = "bars";
+
+/** The words of the two combined rows, in the reader's language; every other row keeps its attribute's own name. */
+export function withComposedLabels(
+	specs: readonly ListingSpec[],
+	labels: { dimensions: string; bars: string },
+): ListingSpec[] {
+	return specs.map((spec) =>
+		spec.key === DIMENSIONS_SPEC_KEY
+			? { ...spec, label: labels.dimensions }
+			: spec.key === BARS_SPEC_KEY
+				? { ...spec, label: labels.bars }
+				: spec,
+	);
+}
+
 /**
  * The few parameters that tell two sets apart, as the shop already prints them: the label in grey on
  * the left, the value in dark text on the right, one line each — the way the product page's table and

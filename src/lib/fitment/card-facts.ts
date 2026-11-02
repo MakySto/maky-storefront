@@ -2,13 +2,14 @@ import "server-only";
 
 import { getTranslations } from "next-intl/server";
 
+import { KARGO_CATEGORY_SLUGS } from "@/config/kargo-slugs";
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import type { ProductCardData } from "@/ui/components/plp/product-card";
 import { isFitmentRefSellable, type FitmentCondition, type FitmentDataset } from "./contract";
 import { pickConditionText } from "./conditions";
 import { describeOfferFit, productFitIndex } from "./offer-fit";
 import type { ListingSpec } from "@/ui/components/listing/listing-specs";
-import { describeIncludes, offerSpecs, withNameSize } from "./offer-specs";
+import { describeIncludes, offerSpecs, withAttributeSpecs } from "./offer-specs";
 import { loadFitmentDataset } from "./provider";
 import { isDatasetStale } from "./resolve";
 import { productSetFacts } from "./set-facts";
@@ -59,6 +60,10 @@ function versionNoteOf(rows: VersionRows | undefined, locale: string): string | 
 	return texts.size === 1 && text ? text : null;
 }
 
+/** A card of the Nordrive Kargo shelf, whose parameters CFM writes to Saleor as attributes. */
+const isKargoCard = (card: ProductCardData) =>
+	card.category ? KARGO_CATEGORY_SLUGS.includes(card.category.slug) : false;
+
 /**
  * What a roof-rack set's listing card says about the SET, from CFM's export — the same words on the
  * category shelf, in search and anywhere else a Saleor product becomes a card.
@@ -89,17 +94,21 @@ export async function attachSetFacts(
 	const factsIndex = productSetFacts(dataset);
 	const makes = datasetMakeNames(dataset);
 	const versions = versionIndex(dataset);
-	const [tFit, tSpecs, tListing] = await Promise.all([
+	const [tFit, tSpecs] = await Promise.all([
 		getTranslations({ locale, namespace: "fitment" }),
 		getTranslations({ locale, namespace: "configurator" }),
-		getTranslations({ locale, namespace: "listing" }),
 	]);
 
 	return cards.map((card) => {
 		const fits = fitIndex.get(card.id);
 		const fit = describeOfferFit(fits, tFit, ROOF_LABEL_KEY);
 		const facts = factsIndex.get(card.id);
-		const specs: ListingSpec[] = facts ? offerSpecs(facts.facets, tSpecs) : [];
+		// A Kargo card's own attributes (size, bars, material, load: CFM writes them to Saleor for every product,
+		// with a vehicle's application or without one) come first; the export's facets only add what they do not say.
+		const facetRows = facts ? offerSpecs(facts.facets, tSpecs) : [];
+		const specs: ListingSpec[] = isKargoCard(card)
+			? withAttributeSpecs(facetRows, card.specs ?? [])
+			: facetRows;
 		const includes = facts ? describeIncludes(facts.includes, tSpecs) : null;
 		const versionNote = fit ? versionNoteOf(versions.get(card.id), locale) : null;
 		// The car and the years are said once, under a short name, only for a set whose roof and years
@@ -108,21 +117,11 @@ export async function attachSetFacts(
 			.map((generationId) => setVehicleOf(dataset, generationId, language))
 			.filter((vehicle): vehicle is SetVehicle => vehicle !== null);
 		const setTitle = fit ? splitSetTitle(card.name, { brand: card.brand, makes, vehicles }) : null;
-		// A basket's size is in its name and nowhere else the card reads, and taking the name apart drops it:
-		// it is said as a row of its own, first, unless the card's own attributes already give a size.
-		const held = specs.length > 0 ? specs : card.specs ?? [];
-		const sized = fit
-			? withNameSize(held, card.name, {
-					dimensions: tListing("specDimensions"),
-					bars: tListing("specBars"),
-				})
-			: held;
-		const withSize = sized.length > held.length || sized[0] !== held[0] ? sized : null;
 		return {
 			...card,
 			...(fit ? { fit } : {}),
 			...(setTitle ? { setTitle } : {}),
-			...(withSize ? { specs: withSize } : specs.length > 0 ? { specs } : {}),
+			...(specs.length > 0 ? { specs } : {}),
 			...(includes ? { includes } : {}),
 			...(versionNote ? { versionNote } : {}),
 		};

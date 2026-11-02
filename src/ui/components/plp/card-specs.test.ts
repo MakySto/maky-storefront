@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProductListItemFragment } from "@/gql/graphql";
-import { buildCardSpecs } from "./utils";
+import { buildCardSpecs, cardSpecsFor } from "./utils";
 
 type Attrs = ProductListItemFragment["attributes"];
 
@@ -84,6 +84,53 @@ describe("buildCardSpecs", () => {
 			);
 			// 60 kg over 3 bikes is 20 kg, and it is not on the card: only what the product carries is.
 			expect(specs.map((spec) => spec.label)).toEqual(["Počet bicyklov", "Celková nosnosť"]);
+		});
+	});
+
+	describe("a Kargo basket and a Kargo bar kit", () => {
+		const basket = [
+			attr("cfm:attribute:outer_length", "Dĺžka", "420", "CM"),
+			attr("cfm:attribute:outer_width", "Šírka", "180", "CM"),
+			attr("cfm:attribute:outer_height", "Výška", "12", "CM"),
+			attr("cfm:attribute:max_load", "Maximálna nosnosť", "50", "KG"),
+			attr("cfm:attribute:material", "Materiál", "hliník"),
+		];
+		const kit = [
+			attr("cfm:attribute:bar_count", "Počet priečnikov", "4"),
+			attr("cfm:attribute:bar_length", "Dĺžka priečnika", "180", "CM"),
+		];
+
+		it("says the size, the bars and the load, and the material only on the Kargo shelf", () => {
+			const onShelf = buildCardSpecs([...basket, ...kit], "sk-SK", ["cfm:attribute:material"]);
+			expect(onShelf.map((spec) => spec.key)).toEqual([
+				"cfm:attribute:max_load",
+				"cfm:attribute:material",
+				"dimensions",
+				"bars",
+			]);
+			const elsewhere = buildCardSpecs(basket, "sk-SK");
+			expect(elsewhere.some((spec) => spec.key === "cfm:attribute:material")).toBe(false);
+		});
+
+		it("never says a load on the Kargo shelf, and still does elsewhere", () => {
+			const slug = "stresne-nosice-a-kose-na-dodavky";
+			expect(cardSpecsFor(basket, "sk-SK", slug).map((spec) => spec.key)).toEqual([
+				"cfm:attribute:material",
+				"dimensions",
+			]);
+			expect(cardSpecsFor(basket, "sk-SK", "stresne-boxy").map((spec) => spec.key)).toEqual([
+				"cfm:attribute:max_load",
+				"dimensions",
+			]);
+		});
+
+		it("joins the bars as a count and a length, only when both exist", () => {
+			const both = buildCardSpecs(kit, "sk-SK");
+			expect(both).toHaveLength(1);
+			expect(both[0]).toMatchObject({ key: "bars" });
+			expect(both[0]!.value.replace(/\s/g, " ")).toBe("4 × 180 cm");
+			expect(buildCardSpecs([kit[0]!], "sk-SK")).toEqual([]);
+			expect(buildCardSpecs([kit[1]!], "sk-SK")).toEqual([]);
 		});
 	});
 });
