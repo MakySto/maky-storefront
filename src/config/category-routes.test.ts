@@ -17,6 +17,7 @@ import {
 	categoryRouteTable,
 	categorySegment,
 	categoryUrlFor,
+	isKargoCategory,
 	isLocalizedRootSegment,
 } from "./category-routes";
 
@@ -373,6 +374,21 @@ describe("the Nordrive Kargo van category", () => {
 		expect(categorySegment("at", "stresne-nosice")).toBe("dachtraeger");
 		expect(categorySegment("ca", "stresne-nosice")).toBe("roof-racks");
 		expect(categorySegment("ca", "thule-stresne-nosice")).toBe("thule-roof-racks");
+	});
+
+	it("is the Kargo shelf under whatever slug a card carries in its market, and no other category is", () => {
+		for (const [market, segment] of Object.entries(SEGMENTS)) {
+			// A product abroad carries the translated slug; the channel slug names the market as well as the friendly one.
+			expect(isKargoCategory(market, segment), market).toBe(true);
+			expect(isKargoCategory(CHANNEL_MAP[market]!.saleorSlug, segment), market).toBe(true);
+			expect(isKargoCategory(market, BASE), market).toBe(true);
+			expect(isKargoCategory(market, KARGO_PREVIOUS_SLUG), market).toBe(true);
+			expect(isKargoCategory(market, categorySegment(market, "stresne-nosice")), market).toBe(false);
+		}
+		// Another market's spelling is not this market's.
+		expect(isKargoCategory("cz", SEGMENTS.de!)).toBe(false);
+		expect(isKargoCategory("de", null)).toBe(false);
+		expect(isKargoCategory("de", "")).toBe(false);
 	});
 
 	it("keeps the old Kargo slug for the shelf and the quote button, while Saleor still names it", () => {

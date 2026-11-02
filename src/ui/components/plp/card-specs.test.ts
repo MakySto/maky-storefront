@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProductListItemFragment } from "@/gql/graphql";
-import { buildCardSpecs, cardSpecsFor } from "./utils";
+import { buildCardSpecs, cardSpecsFor, transformToProductCard } from "./utils";
 
 type Attrs = ProductListItemFragment["attributes"];
 
@@ -131,6 +131,55 @@ describe("buildCardSpecs", () => {
 			expect(both[0]!.value.replace(/\s/g, " ")).toBe("4 × 180 cm");
 			expect(buildCardSpecs([kit[0]!], "sk-SK")).toEqual([]);
 			expect(buildCardSpecs([kit[1]!], "sk-SK")).toEqual([]);
+		});
+	});
+
+	describe("a Kargo card in a foreign market", () => {
+		const DE_SLUG = "kargo-dachtraeger-und-dachkoerbe-fuer-transporter";
+		const german = [
+			attr("cfm:attribute:outer_length", "Länge", "420", "CM"),
+			attr("cfm:attribute:outer_width", "Breite", "180", "CM"),
+			attr("cfm:attribute:outer_height", "Höhe", "7", "CM"),
+			attr("cfm:attribute:max_load", "Maximale Tragfähigkeit", "50", "KG"),
+			attr("cfm:attribute:material", "Material", "eloxiertes Aluminium"),
+		];
+		/** What the exact-locale boundary hands the card: the category with its TRANSLATED slug. */
+		const product = (slug: string) =>
+			({
+				id: "UHJvZHVjdDox",
+				name: "Dachkorb Nordrive Kargo",
+				slug: "dachkorb-nordrive-kargo",
+				isAvailableForPurchase: true,
+				rating: null,
+				created: null,
+				attributes: german,
+				category: { id: "Q2F0ZWdvcnk6MzQ=", name: "Kargo", slug },
+				pricing: { priceRange: { start: { gross: { amount: 1, currency: "EUR" } } } },
+				thumbnail: null,
+				cardMedia: [],
+				variants: [],
+			}) as unknown as ProductListItemFragment;
+
+		it("says the material and no load, though its category carries the translated slug", () => {
+			const card = transformToProductCard(product(DE_SLUG), "de-eur", "de-DE");
+			expect(card.specs?.map((spec) => [spec.key, spec.label])).toEqual([
+				["cfm:attribute:material", "Material"],
+				["dimensions", ""],
+			]);
+		});
+
+		it("is the same card as in Slovakia, whichever slug the category carries", () => {
+			const keys = (slug: string, channel: string, locale: string) =>
+				transformToProductCard(product(slug), channel, locale).specs?.map((spec) => spec.key);
+			const abroad = keys(DE_SLUG, "de-eur", "de-DE");
+			expect(keys("kargo-stresne-nosice-a-stresne-kose-na-dodavky", "sk-eur", "sk-SK")).toEqual(abroad);
+			expect(keys("stresne-nosice-a-kose-na-dodavky", "sk-eur", "sk-SK")).toEqual(abroad);
+			expect(keys("kargo-dachtraeger-und-dachkoerbe-fuer-lieferwagen", "at-eur", "de-AT")).toEqual(abroad);
+		});
+
+		it("leaves another shelf's translated slug alone: its load stays and no material is asked for", () => {
+			const card = transformToProductCard(product("dachtraeger"), "de-eur", "de-DE");
+			expect(card.specs?.map((spec) => spec.key)).toEqual(["cfm:attribute:max_load", "dimensions"]);
 		});
 	});
 });

@@ -1,7 +1,7 @@
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import { catalogLanguageForMarket } from "@/lib/catalog-content/language";
 import { categoryRoutePath, isCategorySlug } from "./categories";
-import { KARGO_BASE_SLUG, KARGO_PREVIOUS_SLUG } from "./kargo-slugs";
+import { KARGO_BASE_SLUG, KARGO_CATEGORY_SLUGS, KARGO_PREVIOUS_SLUG } from "./kargo-slugs";
 
 export { KARGO_BASE_SLUG, KARGO_CATEGORY_SLUGS, KARGO_PREVIOUS_SLUG } from "./kargo-slugs";
 
@@ -247,6 +247,19 @@ export function mappedCategoryFor(marketOrChannel: string, segment: string): Loc
  */
 export function categoryBaseSlug(marketOrChannel: string, segment: string): string {
 	return mappedCategoryFor(marketOrChannel, segment)?.baseSlug ?? segment;
+}
+
+/**
+ * Whether a category is the Nordrive Kargo shelf, by whatever slug a product carries for it in this market.
+ *
+ * On the Slovak shop that is the base slug. Abroad the exact-locale boundary swaps the translated slug into the
+ * product's category (`resolveExactLocaleProduct`), so a card in Germany says `kargo-dachtraeger-und-…` and not
+ * `kargo-stresne-…`; comparing that with `KARGO_CATEGORY_SLUGS` answered "no" on every foreign card, and the
+ * material, which only this shelf asks for, was missing from all of them (2026-11-02). The table above maps every
+ * spelling the market uses back to the base slug, so the comparison is made on that.
+ */
+export function isKargoCategory(marketOrChannel: string, slug: string | null | undefined): boolean {
+	return Boolean(slug) && KARGO_CATEGORY_SLUGS.includes(categoryBaseSlug(marketOrChannel, slug!));
 }
 
 /** The canonical public segment of a category in this market. Unmapped slugs pass through. */

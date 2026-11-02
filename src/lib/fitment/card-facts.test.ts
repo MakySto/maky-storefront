@@ -84,6 +84,16 @@ describe("attachSetFacts on the Kargo shelf", () => {
 		expect(result.specs).toEqual([dimensions]);
 	});
 
+	it("tells the shelf in a foreign market too, where the category carries its translated slug", async () => {
+		const dataset = n15060Dataset();
+		for (const ref of rows(dataset)) ref.facets = { maxLoadKg: 50 };
+		const german = category("kargo-dachtraeger-und-dachkoerbe-fuer-transporter");
+		const result = await attach(dataset, "de-DE", [
+			card({ name: KARGO_NAME, channel: "de-eur", category: german, specs: [dimensions, load] }),
+		]);
+		expect(result.specs).toEqual([dimensions]);
+	});
+
 	it("keeps the attribute rows of a product the dataset has no row for", async () => {
 		const own = card({ id: "UHJvZHVjdDo5OTk5", name: KARGO_NAME, category: KARGO, specs: [dimensions] });
 		expect(await attach(n15060Dataset(), "sk-SK", [own])).toEqual(own);
