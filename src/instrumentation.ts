@@ -149,6 +149,19 @@ export async function register(): Promise<void> {
 		await prewarmLiveCategories();
 	}
 
+	// The makers each market sells, asked of Saleor one market at a time before the first visitors do.
+	// Without it every market asked for its brand counts at once on its first page, while the sitemap
+	// warm-up and the deploy's own checks kept Saleor busy, and the reads that ran out of time were the
+	// 500s on `/znacky` right after a restart (2026-11-03). The lists are kept in the process; a later
+	// fault shows the last answer instead of nothing. Off with MAKY_BRANDS_PREWARM=0.
+	if (!building && process.env.NODE_ENV === "production" && process.env.MAKY_BRANDS_PREWARM !== "0") {
+		void import("./lib/brands/catalog")
+			.then(({ prewarmBrandMakers }) => prewarmBrandMakers())
+			.catch((error: unknown) => {
+				console.warn("[brands] warm-up failed:", error instanceof Error ? error.message : error);
+			});
+	}
+
 	// The sitemap's product lists, built in the background so the first crawler (or the deploy's own
 	// check) finds them kept instead of walking Saleor for 14 to 18 seconds per market. Not awaited:
 	// it takes about a minute and must not hold the start, and it is what a request would have done
