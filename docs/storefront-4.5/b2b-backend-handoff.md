@@ -176,7 +176,15 @@ Porovnáva ich ako reťazce, takže generované enumy 3.23.31 ich znať nemusia.
 - presne ten dopyt na stav, tú mutáciu atestácie a tú mutáciu uvoľnenia zámku, ktoré storefront posiela. Saleor
   (`SaleorGraphQLBackend`) validuje celý dokument a vykoná iba pomenovanú operáciu, takže mutácie sa nevykonajú, ale
   endpoint bez kontraktu, s revíziou 1 alebo s iným poľom, argumentom či typom vstupu dokument odmietne (HTTP 400) so
-  správami validácie.
+  správami validácie;
+- hodnoty premenných `$id` a `$input` tých troch operácií (`MAKY_B2B_READINESS_PROBE_VARIABLES` v `graphql.ts`: id
+  `Checkout:00000000-0000-0000-0000-000000000000` ako globálne id, vstup `{ expectedContextVersion: "readiness-probe",
+verification: null }`). Kontrola ceny dopytu v Saleore (`CostValidator`, `saleor/graphql/core/validators/query_cost.py`)
+  číta argumenty **všetkých** operácií dokumentu cez `get_argument_values` a povinný argument bez hodnoty odmietne skôr,
+  než sa čokoľvek vykoná. Bez týchto hodnôt živý Saleor 3. 11. odpovedal HTTP 400 („…provided the variable "$id" which
+  was not provided“) a kontrola hlásila `schema-contract-invalid`, hoci backend kontrakt mal. Vykonávaná operácia
+  premenné nemá, takže sa nepoužijú: nečíta sa žiadny checkout a žiadna mutácia nebeží. Povinná premenná pridaná do
+  ktorejkoľvek operácie dokumentu potrebuje hodnotu, inak `graphql.test.ts` zlyhá.
 
 Introspekcia nie je potrebná a žiadny názov typu sa nekontroluje (pôvodná kontrola sa pýtala na `CheckoutB2bTaxState`,
 backend ho volá `B2bTaxState`).

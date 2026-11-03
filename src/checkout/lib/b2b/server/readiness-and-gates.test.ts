@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { GraphQLResult } from "@/lib/graphql";
 
-import type { MakyB2bReadinessQuery } from "../graphql";
+import {
+	MAKY_B2B_READINESS_OPERATION,
+	MAKY_B2B_READINESS_PROBE_VARIABLES,
+	type MakyB2bReadinessQuery,
+} from "../graphql";
 import {
 	admitB2bAction,
 	B2B_ACTION_WINDOW_MS,
@@ -131,6 +135,14 @@ describe("executeB2bAppGraphQL", () => {
 });
 
 describe("checkB2bReadiness (mocked Saleor)", () => {
+	it("sends values for the variables of the operations it only validates, and runs the readiness operation only", async () => {
+		const executor = answer(readyAnswer());
+		await checkB2bReadiness({ fresh: true });
+		const options = executor.mock.calls[0]?.[1] as unknown as { variables: unknown; operationName?: string };
+		expect(options.variables).toEqual(MAKY_B2B_READINESS_PROBE_VARIABLES);
+		expect(options.operationName).toBe(MAKY_B2B_READINESS_OPERATION);
+	});
+
 	it("ok with an active app holding exactly MANAGE_TAXES and HANDLE_TAXES on a schema with the contract", async () => {
 		answer(readyAnswer());
 		const readiness = await checkB2bReadiness({ fresh: true });

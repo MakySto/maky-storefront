@@ -2,7 +2,11 @@ import "server-only";
 
 import { saleorWriteDecision } from "@/lib/saleor/write-policy";
 
-import { MAKY_B2B_READINESS_OPERATION, MakyB2bReadinessDocument } from "../graphql";
+import {
+	MAKY_B2B_READINESS_OPERATION,
+	MAKY_B2B_READINESS_PROBE_VARIABLES,
+	MakyB2bReadinessDocument,
+} from "../graphql";
 import { readB2bRuntimeConfig } from "./b2b-config";
 import { executeB2bAppGraphQL } from "./b2b-saleor-client";
 
@@ -19,7 +23,9 @@ import { executeB2bAppGraphQL } from "./b2b-saleor-client";
  * state query, attestation mutation and payment-lock release this build sends. So the schema check names no type: an
  * endpoint without the contract (or with revision 1, which cannot release a lock), or with a field, argument or
  * input type spelled differently, refuses the document (HTTP 400) and its validation messages are reported in
- * `schema.errors`.
+ * `schema.errors`. The operations that are only validated get placeholder values for their variables
+ * (`MAKY_B2B_READINESS_PROBE_VARIABLES`): Saleor's cost check reads the arguments of every operation, and without
+ * them it refused the probe although the backend had the contract.
  *
  * Kept briefly per process so a checkout render does not cost a Saleor round trip each time.
  */
@@ -103,11 +109,10 @@ export async function checkB2bReadiness(
 	// The probe carries the attestation and release mutations (validated, never executed), so the write guard treats
 	// it as a write: where writes are blocked it is not sent, and `writes-blocked` already says the process is not ready.
 	if (config.hasAppToken && readiness.endpointHost && decision.allowed) {
-		const result = await executeB2bAppGraphQL(
-			MakyB2bReadinessDocument,
-			{},
-			{ signal: AbortSignal.timeout(8_000), operationName: MAKY_B2B_READINESS_OPERATION },
-		);
+		const result = await executeB2bAppGraphQL(MakyB2bReadinessDocument, MAKY_B2B_READINESS_PROBE_VARIABLES, {
+			signal: AbortSignal.timeout(8_000),
+			operationName: MAKY_B2B_READINESS_OPERATION,
+		});
 		if (!result.ok) {
 			if (result.error.kind === "invalid") {
 				readiness.schema = { contract: "invalid", errors: result.error.messages ?? [result.error.message] };
