@@ -339,6 +339,7 @@
 		"addInvalid": "Sprawdź wybraną ilość.",
 		"addNotFound": "Nie znaleziono produktu.",
 		"addFailed": "Nie udało się dodać produktu do koszyka.",
+		"addPaymentLocked": "Płatność za Twoje zamówienie jest już w toku, dlatego teraz nie można dodać produktów. Dokończ ją lub bezpiecznie ją anuluj w kasie.",
 		"addUnconfirmed": "Nie możemy potwierdzić, czy produkt został dodany. Sprawdź koszyk.",
 		"emptyCart": "Twój koszyk jest pusty",
 		"continueShopping": "Kontynuuj zakupy",
@@ -592,7 +593,8 @@
 			"checkoutLocked": "Płatność za to zamówienie jest już w toku. Dokończ ją lub bezpiecznie ją anuluj, zanim rozpoczniesz nową.",
 			"orderUpdated": "Twoje zamówienie zostało zaktualizowane. Sprawdź nową kwotę przed płatnością.",
 			"finalStateUnconfirmed": "Nie udało się teraz potwierdzić ostatecznej ceny. Spróbuj ponownie.",
-			"completeBlockedNoNewPayment": "Nie udało się teraz dokończyć zamówienia. Jeśli płatność została już wykonana, nie rozpoczynaj nowej: odśwież stronę lub skontaktuj się z nami."
+			"completeBlockedNoNewPayment": "Nie udało się teraz dokończyć zamówienia. Jeśli płatność została już wykonana, nie rozpoczynaj nowej: odśwież stronę lub skontaktuj się z nami.",
+			"completeOfferChanged": "Kwota się zmieniła, dlatego zamówienie nie zostało utworzone. Pieniądze z tej płatności zostaną zwolnione automatycznie. Jeśli potrzebujesz pomocy z zamówieniem, skontaktuj się z nami."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Tryb testowy:</strong> To symulowane potwierdzenie zamówienia. Nie pobrano prawdziwej płatności.",
@@ -672,6 +674,34 @@
 				"recheck": "Zweryfikuj ponownie",
 				"refreshStatus": "Odśwież status płatności",
 				"edit": "Edytuj"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "Płatność za to zamówienie jest już w toku, dlatego teraz nie można zmienić danych. Możesz dokończyć płatność albo bezpiecznie ją anulować, a potem zmienić dane.",
+				"cart": "Płatność za to zamówienie jest już w toku, dlatego teraz nie można zmienić koszyka. Możesz dokończyć płatność albo bezpiecznie ją anulować, a potem zmienić koszyk.",
+				"payment": "Płatność za to zamówienie jest już w toku, dlatego teraz nie można rozpocząć nowej. Możesz bezpiecznie anulować rozpoczętą płatność, a potem zapłacić ponownie."
+			},
+			"releasing": "Anulujemy rozpoczętą płatność…",
+			"waitingCancel": "Czekamy, aż operator płatności potwierdzi anulowanie płatności. Zwykle trwa to kilka sekund.",
+			"waitingAttempt": "Płatność jest jeszcze tworzona. Za chwilę spróbujemy ponownie ją anulować.",
+			"released": {
+				"details": "Rozpoczęta płatność została anulowana. Teraz możesz zmienić dane i je zapisać.",
+				"cart": "Rozpoczęta płatność została anulowana. Teraz możesz zmienić koszyk.",
+				"payment": "Rozpoczęta płatność została anulowana. Sprawdź kwotę i zapłać ponownie."
+			},
+			"funds": "Płatność została już przyjęta lub czeka na potwierdzenie banku, dlatego zamówienia nie można już zmienić. Dokończ je z pierwotnymi danymi.",
+			"notConfirmed": "Anulowanie płatności nie zostało jeszcze potwierdzone. Spróbuj ponownie za chwilę, zapłać za zamówienie z pierwotnymi danymi lub skontaktuj się z nami.",
+			"unavailable": "Nie możemy teraz anulować rozpoczętej płatności. Możesz zapłacić za zamówienie z pierwotnymi danymi lub skontaktować się z nami.",
+			"failed": "Nie udało się anulować rozpoczętej płatności. Spróbuj ponownie za chwilę, zapłać za zamówienie z pierwotnymi danymi lub skontaktuj się z nami.",
+			"actions": {
+				"releaseDetails": "Zmień dane",
+				"releaseCart": "Zmień koszyk",
+				"releasePayment": "Anuluj rozpoczętą płatność",
+				"retry": "Spróbuj ponownie",
+				"payOriginal": "Zapłać z pierwotnymi danymi",
+				"finishOrder": "Dokończ zamówienie",
+				"contact": "Skontaktuj się ze sklepem"
 			}
 		}
 	},
@@ -927,6 +957,7 @@
 		"errorNotVerified": "Dla aktualnie wybranego pojazdu ten zestaw nie jest potwierdzony.",
 		"errorNotAvailable": "Tego zestawu nie ma już w ofercie.",
 		"errorCartRejected": "Nie udało się dodać zestawu do koszyka.",
+		"errorPaymentLocked": "Płatność za Twoje zamówienie jest już w toku, dlatego teraz nie można dodać zestawu. Dokończ ją lub bezpiecznie ją anuluj w kasie.",
 		"errorLookupFailed": "Nie możemy potwierdzić, czy zestaw został dodany. Sprawdź, proszę, koszyk.",
 		"errorCatalogueUnavailable": "Nie udało się teraz sprawdzić dostępności zestawu. Spróbuj ponownie.",
 		"errorGeneric": "Nie udało się dodać zestawu do koszyka.",

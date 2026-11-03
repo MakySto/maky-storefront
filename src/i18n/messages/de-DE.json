@@ -339,6 +339,7 @@
 		"addInvalid": "Bitte prüfen Sie die gewählte Menge.",
 		"addNotFound": "Produkt wurde nicht gefunden.",
 		"addFailed": "Das Produkt konnte nicht in den Warenkorb gelegt werden.",
+		"addPaymentLocked": "Für Ihre Bestellung läuft bereits eine Zahlung, daher kann gerade nichts hinzugefügt werden. Schließen Sie sie ab oder brechen Sie sie an der Kasse sicher ab.",
 		"addUnconfirmed": "Wir können nicht bestätigen, ob das Produkt hinzugefügt wurde. Bitte prüfen Sie den Warenkorb.",
 		"emptyCart": "Ihr Warenkorb ist leer",
 		"continueShopping": "Weiter einkaufen",
@@ -592,7 +593,8 @@
 			"checkoutLocked": "Für diese Bestellung läuft bereits eine Zahlung. Schließen Sie sie ab oder brechen Sie sie sicher ab, bevor Sie eine neue starten.",
 			"orderUpdated": "Ihre Bestellung wurde aktualisiert. Bitte prüfen Sie den neuen Betrag vor der Zahlung.",
 			"finalStateUnconfirmed": "Der Endpreis konnte gerade nicht bestätigt werden. Bitte versuchen Sie es erneut.",
-			"completeBlockedNoNewPayment": "Die Bestellung konnte gerade nicht abgeschlossen werden. Wenn Sie bereits bezahlt haben, starten Sie keine neue Zahlung: Laden Sie die Seite neu oder kontaktieren Sie uns."
+			"completeBlockedNoNewPayment": "Die Bestellung konnte gerade nicht abgeschlossen werden. Wenn Sie bereits bezahlt haben, starten Sie keine neue Zahlung: Laden Sie die Seite neu oder kontaktieren Sie uns.",
+			"completeOfferChanged": "Der Betrag hat sich geändert, daher wurde keine Bestellung angelegt. Das Geld aus dieser Zahlung wird automatisch freigegeben. Wenn Sie Hilfe mit der Bestellung brauchen, kontaktieren Sie uns."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Testmodus:</strong> Dies ist eine simulierte Bestellbestätigung. Es wurde keine echte Zahlung vorgenommen.",
@@ -672,6 +674,34 @@
 				"recheck": "Erneut überprüfen",
 				"refreshStatus": "Zahlungsstatus aktualisieren",
 				"edit": "Bearbeiten"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "Für diese Bestellung läuft bereits eine Zahlung, daher können die Angaben gerade nicht geändert werden. Sie können die Zahlung abschließen oder sicher abbrechen und die Angaben danach ändern.",
+				"cart": "Für diese Bestellung läuft bereits eine Zahlung, daher kann der Warenkorb gerade nicht geändert werden. Sie können die Zahlung abschließen oder sicher abbrechen und den Warenkorb danach ändern.",
+				"payment": "Für diese Bestellung läuft bereits eine Zahlung, daher kann gerade keine neue gestartet werden. Sie können die begonnene Zahlung sicher abbrechen und danach erneut bezahlen."
+			},
+			"releasing": "Die begonnene Zahlung wird abgebrochen …",
+			"waitingCancel": "Wir warten, bis der Zahlungsanbieter den Abbruch der Zahlung bestätigt. Das dauert meist nur wenige Sekunden.",
+			"waitingAttempt": "Die Zahlung wird noch angelegt. Wir versuchen gleich erneut, sie abzubrechen.",
+			"released": {
+				"details": "Die begonnene Zahlung ist abgebrochen. Sie können die Angaben jetzt ändern und speichern.",
+				"cart": "Die begonnene Zahlung ist abgebrochen. Sie können den Warenkorb jetzt ändern.",
+				"payment": "Die begonnene Zahlung ist abgebrochen. Prüfen Sie den Betrag und bezahlen Sie erneut."
+			},
+			"funds": "Die Zahlung ist bereits eingegangen oder wartet auf die Bestätigung der Bank, daher kann die Bestellung nicht mehr geändert werden. Schließen Sie sie mit den ursprünglichen Angaben ab.",
+			"notConfirmed": "Der Abbruch der Zahlung ist noch nicht bestätigt. Versuchen Sie es gleich noch einmal, bezahlen Sie die Bestellung mit den ursprünglichen Angaben oder kontaktieren Sie uns.",
+			"unavailable": "Die begonnene Zahlung kann gerade nicht abgebrochen werden. Sie können die Bestellung mit den ursprünglichen Angaben bezahlen oder uns kontaktieren.",
+			"failed": "Die begonnene Zahlung konnte nicht abgebrochen werden. Versuchen Sie es gleich noch einmal, bezahlen Sie die Bestellung mit den ursprünglichen Angaben oder kontaktieren Sie uns.",
+			"actions": {
+				"releaseDetails": "Angaben ändern",
+				"releaseCart": "Warenkorb ändern",
+				"releasePayment": "Begonnene Zahlung abbrechen",
+				"retry": "Erneut versuchen",
+				"payOriginal": "Mit ursprünglichen Angaben bezahlen",
+				"finishOrder": "Bestellung abschließen",
+				"contact": "Shop kontaktieren"
 			}
 		}
 	},
@@ -927,6 +957,7 @@
 		"errorNotVerified": "Für das aktuell ausgewählte Fahrzeug ist dieses Set nicht geprüft.",
 		"errorNotAvailable": "Dieses Set ist nicht mehr im Angebot.",
 		"errorCartRejected": "Das Set konnte nicht in den Warenkorb gelegt werden.",
+		"errorPaymentLocked": "Für Ihre Bestellung läuft bereits eine Zahlung, daher kann das Set gerade nicht hinzugefügt werden. Schließen Sie sie ab oder brechen Sie sie an der Kasse sicher ab.",
 		"errorLookupFailed": "Wir können nicht bestätigen, ob das Set hinzugefügt wurde. Bitte prüfen Sie Ihren Warenkorb.",
 		"errorCatalogueUnavailable": "Die Verfügbarkeit des Sets konnte gerade nicht geprüft werden. Bitte versuchen Sie es noch einmal.",
 		"errorGeneric": "Das Set konnte nicht in den Warenkorb gelegt werden.",

@@ -1,7 +1,8 @@
 # MAKY-B2B-V1: čo storefront od backendu číta a posiela
 
-2\. 11. 2026 · storefront PR #84 do `release/r1-thule-20261001` (vetva `claude/project-thread-1shbdz`) · pre reláciu
-„MAKY Backend (Saleor)“ a pre toho, kto bude spájať obe strany v sandboxe.
+2\. 11. 2026 · storefront PR #84 do `release/r1-thule-20261001` (vetva `claude/project-thread-1shbdz`), doplnené v tú istú
+noc o revíziu 2 kontraktu (backend `572bd5e`: ukončenie začatej platby) · pre reláciu „MAKY Backend (Saleor)“ a pre toho,
+kto bude spájať obe strany v sandboxe.
 
 Tento súbor nie je druhý kontrakt. Kontrakt je text MAKY-B2B-V1 a schéma backendu. Tu je len to, ako ho storefront
 prečítal a v kóde použil. Pri rozdiele sa najprv opraví tento súbor aj backendový handoff, potom kód.
@@ -11,12 +12,14 @@ prečítal a v kóde použil. Pri rozdiele sa najprv opraví tento súbor aj bac
 - Všetko je vypnuté, kým proces nemá `B2B_CHECKOUT_UI_ENABLED=true`. Bez toho sa firemný blok neukáže, VIES sa nevolá
   a žiadny B2B dopyt nejde do Saleoru.
 - B2B dokumenty sú overené proti **skutočnej schéme backendu**: `src/checkout/lib/b2b/maky-b2b-v1.graphql` je vygenerovaný
-  z `saleor/graphql/schema.graphql` v MakySto/maky-saleor (PR #16, commit `68ca91a`), ako rozšírenie pripnutej schémy
-  3.23.31. Hlavička súboru nesie commit a sha256 zdroja.
+  z `saleor/graphql/schema.graphql` v MakySto/maky-saleor (PR #16, commit `572bd5e`, revízia 2 kontraktu), ako rozšírenie
+  pripnutej schémy 3.23.31. Hlavička súboru nesie commit a sha256 zdroja. Backend s revíziou 1 (bez
+  `checkoutB2bPaymentLockRelease`) kontrola pripravenosti odmietne ako `schema-contract-invalid`.
 - `graphql.test.ts` dokumenty proti tejto schéme validuje a kontrolu pripravenosti na nej aj **vykoná** (tak, ako ju vykoná
   Saleor). Proti čistej 3.23.31 alebo schéme bez niektorého čítaného poľa kontrola správne zlyhá a pomenuje pole.
 - Žiadny priechod cez Stripe test mode ani sandbox s patchom zatiaľ nebol. Backend v testoch storefrontu je maketa
-  so správaním podľa kontraktu (zámok, `STALE_CONTEXT`, odvolanie, nesúlad súm).
+  so správaním podľa kontraktu (zámok, `STALE_CONTEXT`, odvolanie, nesúlad súm, štyri odpovede uvoľnenia zámku).
+  Spoločný test v Stripe test mode s backendom je ďalší krok; bez izolovaného Saleoru sa urobiť nedá.
 - B2B dokumenty sú reťazce v `src/checkout/lib/b2b/graphql.ts`, mimo globu codegenu. Ten beží pred každým buildom proti
   živému Saleoru a pole, ktoré živá schéma nepozná, by build zastavilo.
 
@@ -45,9 +48,53 @@ checkout(id: $id) {
 
 Kým beží začatá platba (`paymentLocked: true`), storefront do backendu nič nezapisuje: nepýta sa VIES, neposiela atestáciu
 ani odvolanie. Zmrazené rozhodnutie platí tak, ako je, aj po 24 h platnosti odpovede VIES, takže opakovanie tej istej
-platby sa k nemu pripojí. Výnimka je `TAXED_STALE` pod zámkom (kontext sa zmenil po začatí platby): storefront ukáže
-„Platba tejto objednávky už prebieha…“ s tlačidlom na obnovenie stavu a platbu nepustí. Zámok na zápisoch
-(`CHECKOUT_LOCKED`, `B2B_CHECKOUT_LOCKED`) je vždy hláška o rozpracovanej platbe, nikdy chyba poľa.
+platby sa k nemu pripojí. Výnimka je `TAXED_STALE` pod zámkom (kontext sa zmenil po začatí platby): výsledok kontroly je
+„zamknuté“ a storefront ukáže panel na ukončenie platby (nižšie). Zámok na zápisoch (`CHECKOUT_LOCKED`,
+`B2B_CHECKOUT_LOCKED`) je vždy stav platby, nikdy chyba poľa.
+
+Revízia 2: zámok neskončí časom ani zamietnutou kartou (žiadnych 20 minút, žiadne `*_FAILURE`). Skončí iba zrušením
+pokusov (`CANCEL_SUCCESS`), plnou refundáciou, zlyhaním darčekovej karty alebo dôkazom, že pokus nevznikol (snapshot bez
+transakcie po `MAKY_B2B_PAYMENT_ATTEMPT_GRACE`, 5 minút). Tú istú ponuku možno vždy zaplatiť znova, bez uvoľnenia.
+
+### Ukončenie začatej platby (revízia 2, §5)
+
+Keď backend odmietne zmenu kódom `B2B_CHECKOUT_LOCKED` (alebo kontrola firmy vráti „zamknuté“), storefront namiesto
+chybovej vety ukáže panel „Platba tejto objednávky už prebieha…“ s tlačidlom na ukončenie platby („Zmeniť údaje“,
+v košíku „Upraviť košík“, v kroku Platba „Ukončiť začatú platbu“) a s „Zaplatiť s pôvodnými údajmi“. Panel je v kroku
+Informácie (adresa, firma, fakturačná adresa), v kroku Doprava, v kroku Platba (nová platba cez Stripe formulár alebo
+express odmietnutá pre zámok, alebo kontrola firmy „zamknuté“), pri riadku košíka (počet, odstránenie), pri pridaní do
+košíka (výpis, produkt) a pri sade z konfigurátora. Panel sa pri objavení posunie do zorného poľa (na mobile býva pod
+lepiacim tlačidlom).
+
+Tlačidlo zavolá serverovú akciu `releaseB2bPaymentLockAction`, ktorá s tokenom B2B aplikácie, **iba na serveri**, pošle:
+
+```graphql
+checkoutB2bPaymentLockRelease(id: $id) {
+	status
+	errors { field code message }
+	checkout { id b2bTaxState { contextVersion decision paymentLocked } }
+}
+```
+
+Pred volaním: B2B pokladňa zapnutá, id v tvare, aký storefront posiela, rozpočet 40 zápisov za 10 minút na checkout
+(spoločný s uložením vstupu a kontrolou), checkout sa dá prečítať, cookie prehliadača nemenuje iný checkout, na checkoute
+je firemný vstup (iba taký backend zamyká) a kontrola pripravenosti je v poriadku. Prehliadač dostane iba stav, boolean
+a kód, nikdy správu Saleoru ani token.
+
+| odpoveď                                                     | čo zákazník vidí a čo storefront urobí                                                                                                                                               |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `RELEASED` a `paymentLocked: false`                         | „Začatá platba je zrušená. Teraz môžete údaje zmeniť a uložiť.“ Zmenu urobí zákazník sám (to, čo napísal, ostane vo formulári).                                                      |
+| `RELEASED` bez `paymentLocked: false`                       | čaká ako pri `CANCELATION_REQUESTED`: zmena sa ponúkne iba na `paymentLocked: false` od backendu                                                                                     |
+| `CANCELATION_REQUESTED`                                     | „Čakáme, kým platobná brána potvrdí zrušenie platby…“; verejné čítanie `paymentLocked` po 1, 1, 1, 2, 2, 3, 3, 4, 5, 8 s (30 s), vlastný rozpočet 120 čítaní za 10 minút na checkout |
+| `ATTEMPT_BEING_CREATED`                                     | „Platba sa ešte zakladá…“; uvoľnenie znova po 2, 3, 5, 5, 5, 10 s (30 s), potom podľa novej odpovede                                                                                 |
+| `PAYMENT_HAS_FUNDS`                                         | „Platba je už prijatá alebo čaká na potvrdenie banky…“ a iba „Dokončiť objednávku“: zmena sa neponúkne                                                                               |
+| potvrdenie do 30 s neprišlo                                 | „Zrušenie platby zatiaľ nebolo potvrdené…“ a „Skúsiť znova“, „Zaplatiť s pôvodnými údajmi“, „Kontaktovať obchod“                                                                     |
+| `NOT_FOUND`, `GRAPHQL_ERROR`, PermissionDenied, sieť        | „Začatú platbu sa nepodarilo ukončiť…“ s tými istými tromi krokmi                                                                                                                    |
+| proces uvoľnenie neponúka (UI vypnuté, readiness, rozpočet) | „Začatú platbu teraz nemôžeme ukončiť…“ s „Zaplatiť s pôvodnými údajmi“ a „Kontaktovať obchod“                                                                                       |
+
+Storefront nikdy nerefunduje, nezakladá nový košík ani novú platbu a zmenu zákazníka za neho neuloží. S vypnutým UI kroky
+pokladne hovoria to, čo predtým (veta o rozpracovanej platbe); košík a pridanie do košíka zámok, ktorý pri vypnutom režime
+backendu nenastane, pomenujú tým istým panelom a uvoľnenie odpovie, že teraz nejde.
 
 ### Keď prístup aplikácie nefunguje
 
@@ -98,18 +145,24 @@ Na `checkoutB2bTaxAttestationUpdate` (`CheckoutB2bTaxAttestationErrorCode`): `ST
 `CHECKOUT_LOCKED` (rozpracovaná platba). `INVALID_ATTESTATION`, `UNMANAGED_EXEMPTION_CONFLICT`, `NOT_FOUND`,
 `INVALID`, `GRAPHQL_ERROR`, každý iný kód aj každá chyba transportu sú „nepotvrdené“.
 
+Na `checkoutB2bPaymentLockRelease` (`CheckoutB2bPaymentLockReleaseErrorCode`): `NOT_FOUND` (pole `id`) a
+`GRAPHQL_ERROR` sú „nepodarilo sa ukončiť“. Aplikácia bez `MANAGE_TAXES` a `HANDLE_TAXES` dostane PermissionDenied ako
+chybu GraphQL, storefront ju berie rovnako.
+
 Na existujúcich mutáciách storefront rozpozná `B2B_TAX_CONTEXT_CHANGED` a `B2B_CHECKOUT_LOCKED` (aj `CHECKOUT_LOCKED`).
 Porovnáva ich ako reťazce, takže generované enumy 3.23.31 ich znať nemusia. Backend ich pridal do `CheckoutErrorCode`,
 `MetadataErrorCode` (iba zámok), `PaymentErrorCode`, `TransactionInitializeErrorCode` a `OrderCreateFromCheckoutErrorCode`
 (iba zmena kontextu).
 
-| Mutácia                                                         | Čo storefront urobí                                                                                                   |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `checkoutBillingAddressUpdate` (krok Informácie aj Platba)      | zámok: hláška o rozpracovanej platbe, nie chyba poľa; zmena kontextu: nové načítanie a súhrn                          |
-| `checkoutShippingAddressUpdate`, `checkoutDeliveryMethodUpdate` | zámok: hláška o rozpracovanej platbe namiesto „neplatná adresa“                                                       |
-| `updateMetadata` na checkoute (uloženie `maky.b2b.input.v1`)    | zámok alebo zmena kontextu: rovnaké hlášky, vstup sa neuloží potichu                                                  |
-| `transactionInitialize`                                         | `B2B_CHECKOUT_LOCKED`: zablokované; `B2B_TAX_CONTEXT_CHANGED`: nové načítanie, nová suma pre súhrn aj Stripe Elements |
-| `checkoutComplete`                                              | to isté ako pri `transactionInitialize`                                                                               |
+| Mutácia                                                          | Čo storefront urobí                                                                                                                                                                                                                                                        |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checkoutBillingAddressUpdate` (krok Informácie aj Platba)       | zámok: panel na ukončenie platby, nie chyba poľa; zmena kontextu: nové načítanie a súhrn                                                                                                                                                                                   |
+| `checkoutShippingAddressUpdate`, `checkoutDeliveryMethodUpdate`  | zámok: panel na ukončenie platby namiesto „neplatná adresa“                                                                                                                                                                                                                |
+| `updateMetadata` na checkoute (uloženie `maky.b2b.input.v1`)     | zámok: panel; zmena kontextu: veta o aktualizovanej objednávke; vstup sa neuloží potichu                                                                                                                                                                                   |
+| `checkoutLinesAdd`, `checkoutLinesUpdate`, `checkoutLinesDelete` | zámok: panel pri riadku košíka, pri pridaní do košíka a pri sade z konfigurátora namiesto „skúste znova“                                                                                                                                                                   |
+| `checkoutAddPromoCode`, `checkoutRemovePromoCode`                | storefront zľavový kód nemá (mutácie sú iba v `src/checkout/graphql/checkout.graphql`, nič ich nevolá); kto ho pridá, pošle zámok (pole `promoCode`) do toho istého panelu                                                                                                 |
+| `transactionInitialize`                                          | `B2B_CHECKOUT_LOCKED`: panel v kroku Platba; `B2B_TAX_CONTEXT_CHANGED`: nové načítanie, nová suma pre súhrn aj Stripe Elements                                                                                                                                             |
+| `checkoutComplete`                                               | `B2B_TAX_CONTEXT_CHANGED` (objednávka by sa líšila od zaplatenej ponuky): „Suma sa zmenila, preto objednávka nevznikla. Peniaze z tejto platby sa uvoľnia automaticky…“; uvoľní ich Saleor vlastným mechanizmom pre checkouty, storefront nerefunduje a novú platbu nepýta |
 
 `taxExemptionManage` storefront nevolá, preto `TaxExemptionManageErrorCode.B2B_MANAGED_CHECKOUT` nepotrebuje.
 
@@ -120,9 +173,10 @@ Porovnáva ich ako reťazce, takže generované enumy 3.23.31 ich znať nemusia.
 
 - vykonávanú časť `app { id name isActive permissions { code } }`: aplikácia aktívna, `MANAGE_TAXES` aj `HANDLE_TAXES`;
   ďalšie oprávnenia sú iba varovanie;
-- presne ten dopyt na stav a tú mutáciu atestácie, ktoré storefront posiela. Saleor (`SaleorGraphQLBackend`) validuje
-  celý dokument a vykoná iba pomenovanú operáciu, takže mutácia sa nevykoná, ale endpoint bez kontraktu alebo s iným
-  poľom, argumentom či typom vstupu dokument odmietne (HTTP 400) so správami validácie.
+- presne ten dopyt na stav, tú mutáciu atestácie a tú mutáciu uvoľnenia zámku, ktoré storefront posiela. Saleor
+  (`SaleorGraphQLBackend`) validuje celý dokument a vykoná iba pomenovanú operáciu, takže mutácie sa nevykonajú, ale
+  endpoint bez kontraktu, s revíziou 1 alebo s iným poľom, argumentom či typom vstupu dokument odmietne (HTTP 400) so
+  správami validácie.
 
 Introspekcia nie je potrebná a žiadny názov typu sa nekontroluje (pôvodná kontrola sa pýtala na `CheckoutB2bTaxState`,
 backend ho volá `B2bTaxState`).
@@ -160,6 +214,11 @@ Režim backendu (`MAKY_B2B_VAT_EXEMPTION_MODE`) storefront nečíta, kontrakt ho
    oslobodenie je natívny príznak `Checkout.tax_exemption`, teda pre celý checkout. `OUT_OF_SCOPE` je doručenie mimo
    EÚ (US/CA), nie druh tovaru. Firemný nákup preto platí pre celý sortiment, nielen pre Kargo.
 
+7. Revízia 2 (`572bd5e`): `checkoutB2bPaymentLockRelease(id: ID!): CheckoutB2bPaymentLockRelease` s poliami `checkout`,
+   `status: B2bPaymentLockReleaseStatus` (`RELEASED`, `CANCELATION_REQUESTED`, `ATTEMPT_BEING_CREATED`,
+   `PAYMENT_HAS_FUNDS`) a `errors` (`CheckoutB2bPaymentLockReleaseErrorCode`: `GRAPHQL_ERROR`, `NOT_FOUND`); aplikácia
+   potrebuje `MANAGE_TAXES` aj `HANDLE_TAXES`. `paymentLocked` je `evaluation.frozen` alebo stav pokusov iný než `NONE`.
+
 Exportné kanály `us-usd` a `ca-cad`: storefront na nich B2B mutáciu ani VIES nikdy nevolá a firemné meno uloží iba ako
 fakturačnú firmu.
 
@@ -168,7 +227,9 @@ fakturačnú firmu.
 - Keď sa UI vypne (`false`) a v Saleore ostane staré účinné oslobodenie, storefront text § 43 neukáže. Odvolanie je
   úloha backendu pri vypnutí režimu. Vypnutie UI samo nič neodvolá.
 - Kartu, express aj nulovú objednávku storefront pustí iba na `ready` z kontroly pred platbou. Súbeh dvoch platieb
-  a zmenu po `transactionInitialize` stráži backend zámkom. Storefront zámok iba zobrazí.
+  a zmenu po `transactionInitialize` stráži backend zámkom. Storefront zámok zobrazí a ponúkne jeho ukončenie (vyššie).
+- Panel v Stripe formulári a v expresnej platbe (odmietnutá nová platba) je overený typmi a kódom, nie v prehliadači:
+  harness nemá Stripe. Patrí do spoločného testu v Stripe test mode.
 - Faktúry, KROS a refundy tu nie sú.
 
 ## Keď sa schéma backendu zmení

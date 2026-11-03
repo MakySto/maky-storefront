@@ -33,6 +33,8 @@ import { defaultSameAsShipping } from "@/checkout/lib/b2b/company-form-state";
 import { b2bStatusMessage } from "@/checkout/lib/b2b/status-message";
 import { B2bBillingSummary } from "@/checkout/components/b2b/b2b-billing-summary";
 import { B2bStatusNotice } from "@/checkout/components/b2b/b2b-status-notice";
+import { PaymentLockRecovery } from "@/checkout/components/b2b/payment-lock-recovery";
+import { PaymentLockReporterProvider } from "@/checkout/components/b2b/payment-lock-context";
 
 interface PaymentStepProps {
 	checkout: CheckoutFragment;
@@ -156,6 +158,15 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 		[clearReturnError, setPaymentError],
 	);
 
+	// A payment already in progress refused a new one (contract revision 2, §5): the panel that ends it takes the place
+	// of the error line. The key starts it afresh each time.
+	const [paymentLock, setPaymentLock] = useState({ key: 0, shown: false });
+	const reportPaymentLock = useCallback(() => {
+		clearReturnError();
+		setPaymentError("");
+		setPaymentLock((current) => ({ key: current.key + 1, shown: true }));
+	}, [clearReturnError, setPaymentError]);
+
 	useEffect(() => {
 		const stashedError = consumePaymentCompletionError();
 		if (stashedError) {
@@ -201,6 +212,9 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 		: null;
 	// "Pokračovať s DPH" confirms THIS taxed total; once confirmed the sentence stays, the button goes.
 	const offerTaxedConfirmation = b2b.gate.state === "needs_confirmation";
+	// The company check found the checkout locked: the same panel as a refused payment.
+	const outcomeLocked = b2bStatus !== null && b2b.outcome?.kind === "locked";
+	const showPaymentLock = b2b.config.uiEnabled && (paymentLock.shown || outcomeLocked);
 
 	const paymentContent = (
 		<>
@@ -278,7 +292,23 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 				/>
 			)}
 
-			{b2bStatus ? (
+			{showPaymentLock ? (
+				<PaymentLockRecovery
+					key={paymentLock.key}
+					checkoutId={checkout.id}
+					channelSlug={checkout.channel.slug}
+					localeSlug={locale}
+					subject="payment"
+					onReleased={() => {
+						// Stays on screen to say so; the new quote is confirmed before anything can be paid again.
+						setPaymentLock((current) => ({ ...current, shown: true }));
+						void refreshCheckout().then(() => (b2bChecksTax ? b2b.evaluate("confirm") : undefined));
+					}}
+					finishOrder={{ onClick: () => void refreshCheckout() }}
+				/>
+			) : null}
+
+			{b2bStatus && !outcomeLocked ? (
 				<B2bStatusNotice
 					message={b2bStatus}
 					pending={b2b.pending}
@@ -354,7 +384,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 	);
 
 	return (
-		<>
+		<PaymentLockReporterProvider value={b2b.config.uiEnabled ? reportPaymentLock : null}>
 			{usesClientSubmit ? (
 				<div className="space-y-8">{paymentContent}</div>
 			) : (
@@ -362,6 +392,6 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 					{paymentContent}
 				</form>
 			)}
-		</>
+		</PaymentLockReporterProvider>
 	);
 };

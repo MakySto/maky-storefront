@@ -5,7 +5,9 @@ import { AlertCircle, LoaderCircle, Minus, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { QUANTITY_FALLBACK_MAX } from "@/ui/components/ui/quantity-limits";
-import { deleteCartLine, updateCartLineQuantity } from "./actions";
+import { PaymentLockRecovery } from "@/checkout/components/b2b/payment-lock-recovery";
+import { buildCheckoutPath } from "@/session-bridge";
+import { deleteCartLine, updateCartLineQuantity, type CartMutationResult } from "./actions";
 
 type CartLineActionsProps = {
 	channel: string;
@@ -57,6 +59,16 @@ export function CartLineActions({
 	const [isPending, startTransition] = useTransition();
 	const [operation, setOperation] = useState<"update" | "remove" | null>(null);
 	const [failed, setFailed] = useState(false);
+	// A change refused because a payment is in progress: the way out instead of "try again". The key starts it afresh.
+	const [paymentLock, setPaymentLock] = useState({ key: 0, shown: false });
+	const settle = (result: CartMutationResult) => {
+		if (!result.ok && result.reason === "payment-locked") {
+			setFailed(false);
+			setPaymentLock((current) => ({ key: current.key + 1, shown: true }));
+			return;
+		}
+		setFailed(!result.ok);
+	};
 	const maximum = resolveMaximumQuantity({
 		quantity,
 		trackInventory,
@@ -68,10 +80,10 @@ export function CartLineActions({
 		if (isPending || nextQuantity < 1 || nextQuantity > maximum) return;
 		setOperation("update");
 		setFailed(false);
+		setPaymentLock((current) => (current.shown ? { ...current, shown: false } : current));
 		startTransition(async () => {
 			try {
-				const result = await updateCartLineQuantity(channel, checkoutId, lineId, nextQuantity);
-				setFailed(!result.ok);
+				settle(await updateCartLineQuantity(channel, checkoutId, lineId, nextQuantity));
 			} catch {
 				setFailed(true);
 			} finally {
@@ -84,10 +96,10 @@ export function CartLineActions({
 		if (isPending) return;
 		setOperation("remove");
 		setFailed(false);
+		setPaymentLock((current) => (current.shown ? { ...current, shown: false } : current));
 		startTransition(async () => {
 			try {
-				const result = await deleteCartLine(channel, checkoutId, lineId);
-				setFailed(!result.ok);
+				settle(await deleteCartLine(channel, checkoutId, lineId));
 			} catch {
 				setFailed(true);
 			} finally {
@@ -161,6 +173,18 @@ export function CartLineActions({
 					{t("updateFailed")}
 				</p>
 			)}
+
+			{paymentLock.shown ? (
+				<PaymentLockRecovery
+					key={paymentLock.key}
+					className="basis-full"
+					checkoutId={checkoutId}
+					channelSlug={channel}
+					subject="cart"
+					payOriginal={{ href: buildCheckoutPath({ checkoutId, step: "payment" }) }}
+					finishOrder={{ href: buildCheckoutPath({ checkoutId, step: "payment" }) }}
+				/>
+			) : null}
 		</div>
 	);
 }

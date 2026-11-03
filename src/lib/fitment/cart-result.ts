@@ -37,13 +37,25 @@ export type AddSetFailure =
 	/** Saleor answered the mutation and refused the line. Safe to try again. */
 	| "cart-rejected"
 	/**
+	 * A payment for this checkout is in progress and the backend refuses to change its lines until it has ended
+	 * (`B2B_CHECKOUT_LOCKED`). The card offers the way out of that payment, not "try again".
+	 */
+	| "payment-locked"
+	/**
 	 * The mutation was sent and its outcome is genuinely unknown. The shopper is told to
 	 * check the cart, and nothing invites a second click.
 	 */
 	| "lookup-failed"
 	| "invalid-input";
 
-export type AddSetResult = { ok: true } | { ok: false; reason: AddSetFailure };
+export type AddSetResult =
+	| { ok: true }
+	| {
+			ok: false;
+			reason: AddSetFailure;
+			/** With `payment-locked` only: the checkout whose payment is in progress, and its channel. */
+			paymentLock?: { checkoutId: string; channelSlug: string };
+	  };
 
 /**
  * Translate the shared action's answer into this feature's vocabulary.
@@ -61,6 +73,9 @@ export function toAddSetResult(outcome: AddToCartResult): AddSetResult {
 		case "unconfirmed":
 			return { ok: false, reason: "lookup-failed" };
 		case "rejected":
+			if (outcome.reason === "payment-locked") {
+				return { ok: false, reason: "payment-locked", paymentLock: outcome.paymentLock };
+			}
 			return {
 				ok: false,
 				reason: outcome.reason === "unavailable" ? "not-available" : "cart-rejected",

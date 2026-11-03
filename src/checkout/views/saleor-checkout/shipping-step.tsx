@@ -12,6 +12,7 @@ import { CheckoutSummaryContext, buildShippingSummaryRows } from "./checkout-sum
 import { useCheckout } from "@/checkout/hooks/use-checkout";
 import { isCheckoutLockedCode } from "@/checkout/lib/b2b/contract";
 import { useCheckoutB2b } from "@/checkout/providers/checkout-b2b";
+import { PaymentLockRecovery } from "@/checkout/components/b2b/payment-lock-recovery";
 import { formatShippingPrice } from "@/checkout/lib/utils/money";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
 import {
@@ -25,9 +26,16 @@ interface ShippingStepProps {
 	checkout: CheckoutFragment;
 	onBack: () => void;
 	onNext: () => void;
+	/** The payment step, for "pay the original order" when a started payment keeps the delivery from changing. */
+	onGoToPayment?: () => void;
 }
 
-export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout, onBack, onNext }) => {
+export const ShippingStep: FC<ShippingStepProps> = ({
+	checkout: initialCheckout,
+	onBack,
+	onNext,
+	onGoToPayment,
+}) => {
 	const t = useTranslations("checkout");
 	const { locale } = useLocale();
 	// Use live checkout data that updates after mutations
@@ -50,7 +58,9 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 	const [isSavingMethod, setIsSavingMethod] = useState(false);
 	const [isSubmittingLocal, setIsSubmittingLocal] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [lockedError, setLockedError] = useState(false);
+	// A delivery change refused because a payment is in progress: the panel that ends the payment (contract revision 2,
+	// §5) takes the place of the error line; the key starts it afresh each time.
+	const [paymentLock, setPaymentLock] = useState({ key: 0, shown: false });
 	const b2b = useCheckoutB2b();
 
 	// Summary rows for context display
@@ -82,7 +92,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 			const fieldErrors = result.data?.checkoutDeliveryMethodUpdate?.errors;
 			if (fieldErrors?.some((fieldError) => isCheckoutLockedCode(fieldError.code))) {
 				// A payment in progress, not a bad method (zadanie 02, §4).
-				setLockedError(true);
+				setPaymentLock((current) => ({ key: current.key + 1, shown: true }));
 				return false;
 			}
 			if (result.error || fieldErrors?.length) {
@@ -146,7 +156,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 
 			setIsSavingMethod(true);
 			try {
-				setLockedError(false);
+				setPaymentLock((current) => (current.shown ? { ...current, shown: false } : current));
 				const saved = await saveMethod(methodId);
 				if (!saved) {
 					setSelectedMethod(previous);
@@ -212,11 +222,26 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 			<section className="space-y-4">
 				<h2 className="text-lg font-semibold">{t("shipping.title")}</h2>
 
-				{error && (
+				{paymentLock.shown && b2b.config.uiEnabled ? (
+					<PaymentLockRecovery
+						key={paymentLock.key}
+						checkoutId={checkout.id}
+						channelSlug={checkout.channel.slug}
+						localeSlug={locale}
+						subject="details"
+						onReleased={() => {
+							// The customer picks the delivery again; nothing is changed for them.
+							setError(null);
+							void refetch();
+						}}
+						payOriginal={onGoToPayment ? { onClick: onGoToPayment } : undefined}
+						finishOrder={onGoToPayment ? { onClick: onGoToPayment } : undefined}
+					/>
+				) : error ? (
 					<p className="text-destructive text-sm" role="alert">
-						{lockedError ? t("payment.checkoutLocked") : error}
+						{paymentLock.shown ? t("payment.checkoutLocked") : error}
 					</p>
-				)}
+				) : null}
 
 				{fetching ? (
 					<div className="border-border flex items-center gap-3 rounded-lg border p-4">

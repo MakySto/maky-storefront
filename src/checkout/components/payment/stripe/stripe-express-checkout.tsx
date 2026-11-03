@@ -16,6 +16,7 @@ import { useCheckoutData } from "@/checkout/providers/checkout-data";
 import { executeStripeCheckoutPayment } from "./execute-stripe-checkout-payment";
 import { type StripeBillingContext } from "./stripe-billing-context";
 import { useCheckoutPaymentMessages } from "@/checkout/hooks/use-checkout-payment-messages";
+import { usePaymentLockReporter } from "@/checkout/components/b2b/payment-lock-context";
 
 const expressCheckoutOptions: StripeExpressCheckoutElementOptions = {
 	buttonType: {
@@ -56,6 +57,7 @@ export const StripeExpressCheckout: FC<StripeExpressCheckoutProps> = ({
 	const liveSearchParams = useLiveCheckoutSearchParams(searchParams);
 	const { refreshCheckout, setCheckout } = useCheckoutData();
 	const paymentMessages = useCheckoutPaymentMessages();
+	const reportPaymentLock = usePaymentLockReporter();
 	const [hasWallets, setHasWallets] = useState<boolean | null>(null);
 
 	const handleConfirm = useCallback(
@@ -103,7 +105,12 @@ export const StripeExpressCheckout: FC<StripeExpressCheckoutProps> = ({
 					return;
 				}
 
-				onError(result.message);
+				if (result.kind === "blocked" && result.code === "CHECKOUT_LOCKED" && reportPaymentLock) {
+					// A payment already in progress: the sheet closes, the step offers the way out.
+					reportPaymentLock();
+				} else {
+					onError(result.message);
+				}
 				event.paymentFailed({ message: result.message });
 				return;
 			}
@@ -118,6 +125,7 @@ export const StripeExpressCheckout: FC<StripeExpressCheckoutProps> = ({
 			onPriceChangeNotice,
 			paymentMessages,
 			refreshCheckout,
+			reportPaymentLock,
 			setCheckout,
 			liveSearchParams,
 			stripe,

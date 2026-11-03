@@ -9,13 +9,14 @@ import { toTypedDocument } from "@/checkout/lib/server/to-typed-document";
 import { executePublicGraphQL } from "@/lib/graphql";
 
 import { b2bInputMetadataEntry, parseB2bInput, serializeB2bInput } from "./b2b-input";
-import type { B2bEvaluationView, B2bSaveResult } from "./b2b-view";
+import type { B2bEvaluationView, B2bPaymentLockResult, B2bSaveResult } from "./b2b-view";
 import { isCheckoutLockedCode, isTaxContextChangedCode, type B2bInputV1 } from "./contract";
 import { countryOfVatId, normalizeVatId } from "./vat-id";
-import { admitB2bAction, isPlausibleCheckoutId } from "./server/action-gate";
+import { admitB2bAction, admitB2bLockRead, isPlausibleCheckoutId } from "./server/action-gate";
 import { isB2bCheckoutUiEnabled } from "./server/b2b-config";
 import { evaluateB2b, type EvaluateB2bMode } from "./server/evaluate-b2b";
-import { productionEvaluateB2bDeps } from "./server/evaluate-b2b-deps";
+import { productionEvaluateB2bDeps, productionPaymentLockDeps } from "./server/evaluate-b2b-deps";
+import { readB2bPaymentLock, releaseB2bPaymentLock } from "./server/payment-lock";
 
 /**
  * The B2B server actions the checkout views call. Next's server actions check the Origin header (same-origin) on
@@ -119,4 +120,32 @@ export async function evaluateB2bAction(params: {
 		{ checkoutId: params.checkoutId, mode },
 		productionEvaluateB2bDeps(typeof params.localeSlug === "string" ? params.localeSlug : undefined),
 	);
+}
+
+/**
+ * "Zmeniť údaje" on a locked checkout (contract revision 2, §5 a.): asks the backend, with the B2B app's token on
+ * the server, to end the started payment's attempts that hold no money. The browser gets the backend's status and
+ * whether the lock is gone; it lets the customer change anything only on `paymentLocked: false`.
+ */
+export async function releaseB2bPaymentLockAction(params: {
+	checkoutId: string;
+	localeSlug?: string;
+}): Promise<B2bPaymentLockResult> {
+	if (!isB2bCheckoutUiEnabled()) return { kind: "unavailable", cause: "ui-disabled" };
+	if (!isPlausibleCheckoutId(params.checkoutId)) return { kind: "failed", cause: "invalid" };
+	if (!admitB2bAction(params.checkoutId)) return { kind: "unavailable", cause: "rate-limited" };
+	return releaseB2bPaymentLock(
+		params.checkoutId,
+		productionPaymentLockDeps(typeof params.localeSlug === "string" ? params.localeSlug : undefined),
+	);
+}
+
+/** The wait after `CANCELATION_REQUESTED`: is `b2bTaxState.paymentLocked` false yet? Public read, no token. */
+export async function readB2bPaymentLockAction(params: {
+	checkoutId: string;
+}): Promise<B2bPaymentLockResult> {
+	if (!isB2bCheckoutUiEnabled()) return { kind: "unavailable", cause: "ui-disabled" };
+	if (!isPlausibleCheckoutId(params.checkoutId)) return { kind: "failed", cause: "invalid" };
+	if (!admitB2bLockRead(params.checkoutId)) return { kind: "unavailable", cause: "rate-limited" };
+	return readB2bPaymentLock(params.checkoutId, productionPaymentLockDeps());
 }
