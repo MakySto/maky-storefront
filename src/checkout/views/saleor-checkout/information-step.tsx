@@ -33,6 +33,7 @@ import { confirmsTaxedQuote } from "@/checkout/lib/b2b/payment-gate";
 import { b2bStatusMessage } from "@/checkout/lib/b2b/status-message";
 import { B2bCompanyFields } from "@/checkout/components/b2b/b2b-company-fields";
 import { B2bStatusNotice } from "@/checkout/components/b2b/b2b-status-notice";
+import { PaymentLockRecovery } from "@/checkout/components/b2b/payment-lock-recovery";
 import { useCheckoutB2b } from "@/checkout/providers/checkout-b2b";
 import { useAvailableShippingCountries } from "@/checkout/hooks/use-available-shipping-countries";
 import { useAddressFormUtils } from "@/checkout/components/address-form/use-address-form-utils";
@@ -64,6 +65,8 @@ type ContactView = "main" | "signIn" | "resetPassword";
 interface InformationStepProps {
 	checkout: CheckoutFragment;
 	onNext: () => void;
+	/** The payment step, for "pay the original order" when a started payment keeps the details from changing. */
+	onGoToPayment?: () => void;
 }
 
 /** After a save, these outcomes keep the customer on this step with the status card (they decide what next). */
@@ -76,7 +79,7 @@ function needsAttention(outcome: B2bUiOutcome): boolean {
 // Main Component
 // =============================================================================
 
-export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) => {
+export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, onGoToPayment }) => {
 	const t = useTranslations("checkout");
 	const { locale } = useLocale();
 	const router = useRouter();
@@ -208,6 +211,9 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 	const [errors, setErrors] = useState<Record<string, string>>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [formError, setFormError] = useState<string | null>(null);
+	// A change refused because a payment is in progress (contract revision 2, §5): the panel that ends the payment
+	// takes the place of the error line. The key starts it afresh each time a change is refused.
+	const [paymentLock, setPaymentLock] = useState({ key: 0, shown: false });
 
 	// Country-specific address configuration
 	const { orderedAddressFields, getFieldLabel, isRequiredField, countryAreaChoices, rulesKnown } =
@@ -215,6 +221,16 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 
 	// ----- Company purchase (MAKY-B2B-V1) -----
 	const b2b = useCheckoutB2b();
+	const b2bUiEnabled = b2b.config.uiEnabled;
+	const meetPaymentLock = useCallback(() => {
+		// With the B2B checkout switched off the step says what it said before; the way out is offered only with it on.
+		if (!b2bUiEnabled) {
+			setFormError(t("payment.checkoutLocked"));
+			return;
+		}
+		setFormError(null);
+		setPaymentLock((current) => ({ key: current.key + 1, shown: true }));
+	}, [b2bUiEnabled, t]);
 	const [b2bValue, setB2bValue] = useState<B2bCompanyFieldsValue>(() =>
 		initialCompanyFieldsValue(checkout, b2b.input, defaultCountry),
 	);
@@ -322,7 +338,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 				}
 				const billingErrors = billingResult.data?.checkoutBillingAddressUpdate?.errors ?? [];
 				if (billingErrors.some((error) => isCheckoutLockedCode(error.code))) {
-					setFormError(t("payment.checkoutLocked"));
+					meetPaymentLock();
 					return false;
 				}
 				if (billingErrors.some((error) => isTaxContextChangedCode(error.code))) {
@@ -353,9 +369,8 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 
 			const saved = await saveB2bInputAction({ checkoutId: checkout.id, input: validated.input });
 			if (!saved.ok) {
-				setFormError(
-					saved.code === "CHECKOUT_LOCKED" ? t("payment.checkoutLocked") : t("b2b.errors.saveFailed"),
-				);
+				if (saved.code === "CHECKOUT_LOCKED") meetPaymentLock();
+				else setFormError(t("b2b.errors.saveFailed"));
 				return false;
 			}
 
@@ -379,15 +394,8 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 				// Leaving the company purchase hides the company block and its status card: say it on the form.
 				if (turningOff) {
 					const kind = evaluation?.outcome.kind;
-					setFormError(
-						t(
-							kind === "locked"
-								? "payment.checkoutLocked"
-								: kind === "changed"
-									? "payment.orderUpdated"
-									: "payment.finalStateUnconfirmed",
-						),
-					);
+					if (kind === "locked") meetPaymentLock();
+					else setFormError(t(kind === "changed" ? "payment.orderUpdated" : "payment.finalStateUnconfirmed"));
 				}
 				setB2bAttention(true);
 				return false;
@@ -403,6 +411,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 			t,
 			b2b,
 			billingUtils.orderedAddressFields,
+			meetPaymentLock,
 		],
 	);
 
@@ -504,6 +513,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 			}
 
 			setFormError(null);
+			setPaymentLock((current) => (current.shown ? { ...current, shown: false } : current));
 			const company = b2b.config.uiEnabled ? validateCompany() : null;
 			setB2bErrors(company?.errors ?? {});
 			if (company && Object.keys(company.errors).length > 0 && Object.keys(newErrors).length === 0) {
@@ -608,7 +618,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 						const addressErrors = addressResult.data?.checkoutShippingAddressUpdate?.errors;
 						// A payment in progress is not an invalid address (zadanie 02, §4).
 						if (addressErrors?.some((err) => isCheckoutLockedCode(err.code))) {
-							setFormError(t("payment.checkoutLocked"));
+							meetPaymentLock();
 							return;
 						}
 						if (addressErrors?.length) {
@@ -652,7 +662,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 						}
 						const billingErrors = billingResult.data?.checkoutBillingAddressUpdate?.errors ?? [];
 						if (billingErrors.some((error) => isCheckoutLockedCode(error.code))) {
-							setFormError(t("payment.checkoutLocked"));
+							meetPaymentLock();
 							return;
 						}
 						if (billingErrors.some((error) => isTaxContextChangedCode(error.code))) {
@@ -720,6 +730,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 			b2bValue,
 			validateCompany,
 			saveCompany,
+			meetPaymentLock,
 		],
 	);
 
@@ -784,6 +795,18 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 	const recheckCompany = async () => {
 		const evaluation = await b2b.evaluate("evaluate");
 		if (evaluation && !needsAttention(evaluation.outcome)) setB2bAttention(false);
+	};
+
+	// The company check found the checkout locked (a started payment): the same panel as a refused save.
+	const outcomeLocked = b2bStatus !== null && b2b.outcome?.kind === "locked";
+	const showPaymentLock = b2b.config.uiEnabled && (paymentLock.shown || outcomeLocked);
+	const onPaymentLockReleased = () => {
+		// Stays on screen to say the payment is gone; the customer saves the change again themselves. Nothing is read
+		// back here: a new checkout from Saleor would put the stored address back into the form over what the customer
+		// typed (the sync effect above). The next save reads the checkout as it always does.
+		setPaymentLock((current) => ({ ...current, shown: true }));
+		// Locked by the company check: what the customer sent is already stored, so the check can simply run again.
+		if (outcomeLocked) void recheckCompany();
 	};
 
 	// ----- Render: Main Form -----
@@ -864,7 +887,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 					/>
 				) : null}
 
-				{b2bStatus ? (
+				{b2bStatus && !outcomeLocked ? (
 					<B2bStatusNotice
 						message={b2bStatus}
 						pending={b2b.pending}
@@ -875,6 +898,19 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext }) 
 							recheck: () => void recheckCompany(),
 							refreshStatus: () => void recheckCompany(),
 						}}
+					/>
+				) : null}
+
+				{showPaymentLock ? (
+					<PaymentLockRecovery
+						key={paymentLock.key}
+						checkoutId={checkout.id}
+						channelSlug={checkout.channel.slug}
+						localeSlug={locale}
+						subject="details"
+						onReleased={onPaymentLockReleased}
+						payOriginal={onGoToPayment ? { onClick: onGoToPayment } : undefined}
+						finishOrder={onGoToPayment ? { onClick: onGoToPayment } : undefined}
 					/>
 				) : null}
 

@@ -102,4 +102,28 @@ describe("cart line actions", () => {
 		expect(mocks.clearCheckoutCookieByValue).not.toHaveBeenCalled();
 		expect(mocks.revalidateStorefrontBrowsePath).not.toHaveBeenCalled();
 	});
+
+	it("says that a payment in progress refused the change, and changes nothing else", async () => {
+		// Contract MAKY-B2B-V1 revision 2: the lines of a checkout with a started payment cannot change. The cart line
+		// offers the way out of that payment instead of "try again".
+		const locked = [{ field: "lines", message: "locked", code: "B2B_CHECKOUT_LOCKED" }];
+		mocks.executeAuthenticatedGraphQL.mockResolvedValueOnce({
+			ok: true,
+			data: { checkoutLinesUpdate: { checkout: null, errors: locked } },
+		});
+		await expect(updateCartLineQuantity("sk-eur", "checkout-1", "line-1", 2)).resolves.toEqual({
+			ok: false,
+			reason: "payment-locked",
+		});
+		mocks.executeAuthenticatedGraphQL.mockResolvedValueOnce({
+			ok: true,
+			data: { checkoutLinesDelete: { checkout: checkout(), errors: locked } },
+		});
+		await expect(deleteCartLine("sk-eur", "checkout-1", "line-1")).resolves.toEqual({
+			ok: false,
+			reason: "payment-locked",
+		});
+		expect(mocks.clearCheckoutCookieByValue).not.toHaveBeenCalled();
+		expect(mocks.revalidateStorefrontBrowsePath).not.toHaveBeenCalled();
+	});
 });

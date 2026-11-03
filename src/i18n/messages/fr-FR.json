@@ -339,6 +339,7 @@
 		"addInvalid": "Veuillez vérifier la quantité choisie.",
 		"addNotFound": "Produit introuvable.",
 		"addFailed": "Impossible d'ajouter le produit au panier.",
+		"addPaymentLocked": "Un paiement pour votre commande est déjà en cours, rien ne peut donc être ajouté pour le moment. Terminez-le ou annulez-le en toute sécurité à la caisse.",
 		"addUnconfirmed": "Nous ne pouvons pas confirmer l'ajout du produit. Veuillez vérifier votre panier.",
 		"emptyCart": "Votre panier est vide",
 		"continueShopping": "Continuer mes achats",
@@ -592,7 +593,8 @@
 			"checkoutLocked": "Un paiement pour cette commande est déjà en cours. Terminez-le ou annulez-le en toute sécurité avant d'en commencer un nouveau.",
 			"orderUpdated": "Votre commande a été mise à jour. Vérifiez le nouveau montant avant de payer.",
 			"finalStateUnconfirmed": "Le prix final n'a pas pu être confirmé pour le moment. Réessayez.",
-			"completeBlockedNoNewPayment": "La commande n'a pas pu être finalisée pour le moment. Si vous avez déjà payé, ne lancez pas de nouveau paiement : actualisez la page ou contactez-nous."
+			"completeBlockedNoNewPayment": "La commande n'a pas pu être finalisée pour le moment. Si vous avez déjà payé, ne lancez pas de nouveau paiement : actualisez la page ou contactez-nous.",
+			"completeOfferChanged": "Le montant a changé, la commande n'a donc pas été créée. L'argent de ce paiement sera libéré automatiquement. Si vous avez besoin d'aide pour la commande, contactez-nous."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Mode test :</strong> ceci est une confirmation de commande simulée. Aucun paiement réel n'a été effectué.",
@@ -672,6 +674,34 @@
 				"recheck": "Contrôler à nouveau",
 				"refreshStatus": "Actualiser l'état du paiement",
 				"edit": "Modifier"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "Un paiement pour cette commande est déjà en cours, les informations ne peuvent donc pas être modifiées pour le moment. Vous pouvez terminer le paiement, ou l'annuler en toute sécurité puis modifier les informations.",
+				"cart": "Un paiement pour cette commande est déjà en cours, le panier ne peut donc pas être modifié pour le moment. Vous pouvez terminer le paiement, ou l'annuler en toute sécurité puis modifier le panier.",
+				"payment": "Un paiement pour cette commande est déjà en cours, un nouveau paiement ne peut donc pas être lancé pour le moment. Vous pouvez annuler en toute sécurité le paiement commencé puis payer à nouveau."
+			},
+			"releasing": "Annulation du paiement commencé…",
+			"waitingCancel": "Nous attendons que le prestataire de paiement confirme l'annulation. Cela prend généralement quelques secondes.",
+			"waitingAttempt": "Le paiement est encore en cours de création. Nous réessaierons de l'annuler dans un instant.",
+			"released": {
+				"details": "Le paiement commencé est annulé. Vous pouvez maintenant modifier les informations et les enregistrer.",
+				"cart": "Le paiement commencé est annulé. Vous pouvez maintenant modifier le panier.",
+				"payment": "Le paiement commencé est annulé. Vérifiez le montant et payez à nouveau."
+			},
+			"funds": "Le paiement a déjà été reçu ou attend la confirmation de la banque, la commande ne peut donc plus être modifiée. Finalisez-la avec les informations d'origine.",
+			"notConfirmed": "L'annulation du paiement n'est pas encore confirmée. Réessayez dans un instant, payez la commande avec les informations d'origine ou contactez-nous.",
+			"unavailable": "Nous ne pouvons pas annuler le paiement commencé pour le moment. Vous pouvez payer la commande avec les informations d'origine ou nous contacter.",
+			"failed": "Le paiement commencé n'a pas pu être annulé. Réessayez dans un instant, payez la commande avec les informations d'origine ou contactez-nous.",
+			"actions": {
+				"releaseDetails": "Modifier les informations",
+				"releaseCart": "Modifier le panier",
+				"releasePayment": "Annuler le paiement commencé",
+				"retry": "Réessayer",
+				"payOriginal": "Payer avec les informations d'origine",
+				"finishOrder": "Finaliser la commande",
+				"contact": "Contacter la boutique"
 			}
 		}
 	},
@@ -927,6 +957,7 @@
 		"errorNotVerified": "Cet ensemble n'est pas vérifié pour le véhicule actuellement sélectionné.",
 		"errorNotAvailable": "Cet ensemble n'est plus au catalogue.",
 		"errorCartRejected": "L'ensemble n'a pas pu être ajouté au panier.",
+		"errorPaymentLocked": "Un paiement pour votre commande est déjà en cours, l'ensemble ne peut donc pas être ajouté pour le moment. Terminez-le ou annulez-le en toute sécurité à la caisse.",
 		"errorLookupFailed": "Nous ne pouvons pas confirmer si l'ensemble a bien été ajouté. Merci de vérifier votre panier.",
 		"errorCatalogueUnavailable": "Impossible de vérifier la disponibilité de l'ensemble pour le moment. Merci de réessayer.",
 		"errorGeneric": "L'ensemble n'a pas pu être ajouté au panier.",

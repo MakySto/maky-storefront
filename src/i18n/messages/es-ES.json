@@ -339,6 +339,7 @@
 		"addInvalid": "Comprueba la cantidad seleccionada.",
 		"addNotFound": "Producto no encontrado.",
 		"addFailed": "No se ha podido añadir el producto al carrito.",
+		"addPaymentLocked": "Ya hay un pago en curso para tu pedido, por lo que ahora no se pueden añadir productos. Complétalo o cancélalo de forma segura en la caja.",
 		"addUnconfirmed": "No podemos confirmar si el producto se ha añadido. Comprueba el carrito.",
 		"emptyCart": "Tu carrito está vacío",
 		"continueShopping": "Seguir comprando",
@@ -592,7 +593,8 @@
 			"checkoutLocked": "Ya hay un pago en curso para este pedido. Complétalo o cancélalo de forma segura antes de iniciar uno nuevo.",
 			"orderUpdated": "Tu pedido se ha actualizado. Revisa el nuevo importe antes de pagar.",
 			"finalStateUnconfirmed": "Ahora no hemos podido confirmar el precio final. Inténtalo de nuevo.",
-			"completeBlockedNoNewPayment": "Ahora no hemos podido completar el pedido. Si ya has pagado, no inicies un nuevo pago: recarga la página o contáctanos."
+			"completeBlockedNoNewPayment": "Ahora no hemos podido completar el pedido. Si ya has pagado, no inicies un nuevo pago: recarga la página o contáctanos.",
+			"completeOfferChanged": "El importe ha cambiado, por lo que no se ha creado el pedido. El dinero de este pago se liberará automáticamente. Si necesitas ayuda con el pedido, contáctanos."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Modo de prueba:</strong> esta es una confirmación de pedido simulada. No se ha realizado ningún pago real.",
@@ -672,6 +674,34 @@
 				"recheck": "Revisar de nuevo",
 				"refreshStatus": "Actualizar el estado del pago",
 				"edit": "Editar"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "Ya hay un pago en curso para este pedido, por lo que ahora no se pueden cambiar los datos. Puedes completar el pago o cancelarlo de forma segura y después cambiar los datos.",
+				"cart": "Ya hay un pago en curso para este pedido, por lo que ahora no se puede cambiar el carrito. Puedes completar el pago o cancelarlo de forma segura y después modificar el carrito.",
+				"payment": "Ya hay un pago en curso para este pedido, por lo que ahora no se puede iniciar uno nuevo. Puedes cancelar de forma segura el pago iniciado y después volver a pagar."
+			},
+			"releasing": "Cancelando el pago iniciado…",
+			"waitingCancel": "Esperando a que la pasarela de pago confirme la cancelación. Suele tardar unos segundos.",
+			"waitingAttempt": "El pago todavía se está creando. Intentaremos cancelarlo de nuevo en un momento.",
+			"released": {
+				"details": "El pago iniciado está cancelado. Ahora puedes cambiar los datos y guardarlos.",
+				"cart": "El pago iniciado está cancelado. Ahora puedes modificar el carrito.",
+				"payment": "El pago iniciado está cancelado. Revisa el importe y vuelve a pagar."
+			},
+			"funds": "El pago ya se ha recibido o está pendiente de confirmación del banco, por lo que el pedido ya no se puede cambiar. Complétalo con los datos originales.",
+			"notConfirmed": "La cancelación del pago aún no se ha confirmado. Vuelve a intentarlo en un momento, paga el pedido con los datos originales o contáctanos.",
+			"unavailable": "Ahora no podemos cancelar el pago iniciado. Puedes pagar el pedido con los datos originales o contactarnos.",
+			"failed": "No se ha podido cancelar el pago iniciado. Vuelve a intentarlo en un momento, paga el pedido con los datos originales o contáctanos.",
+			"actions": {
+				"releaseDetails": "Cambiar datos",
+				"releaseCart": "Modificar carrito",
+				"releasePayment": "Cancelar el pago iniciado",
+				"retry": "Intentar de nuevo",
+				"payOriginal": "Pagar con los datos originales",
+				"finishOrder": "Completar pedido",
+				"contact": "Contactar con la tienda"
 			}
 		}
 	},
@@ -927,6 +957,7 @@
 		"errorNotVerified": "Este conjunto no está verificado para el vehículo seleccionado actualmente.",
 		"errorNotAvailable": "Este conjunto ya no está en el catálogo.",
 		"errorCartRejected": "No se ha podido añadir el conjunto a la cesta.",
+		"errorPaymentLocked": "Ya hay un pago en curso para tu pedido, por lo que ahora no se puede añadir el conjunto. Complétalo o cancélalo de forma segura en la caja.",
 		"errorLookupFailed": "No podemos confirmar si el conjunto se ha añadido. Compruebe la cesta, por favor.",
 		"errorCatalogueUnavailable": "No hemos podido comprobar la disponibilidad del conjunto en este momento. Inténtelo de nuevo, por favor.",
 		"errorGeneric": "No se ha podido añadir el conjunto a la cesta.",

@@ -121,6 +121,22 @@ describe("addVariantToCart", () => {
 		});
 	});
 
+	it("names the checkout and its channel when a payment in progress refused the line", async () => {
+		executeAuthenticatedGraphQL.mockResolvedValue(
+			ok({ checkout: null, errors: [{ code: "B2B_CHECKOUT_LOCKED", field: "lines", message: "locked" }] }),
+		);
+
+		// The card offers the way out of that payment for this very checkout; nothing is retried or re-created.
+		await expect(addVariantToCart(input)).resolves.toEqual({
+			status: "rejected",
+			reason: "payment-locked",
+			message: "locked",
+			paymentLock: { checkoutId: CHECKOUT.id, channelSlug: "sk-eur" },
+		});
+		expect(executeAuthenticatedGraphQL).toHaveBeenCalledTimes(1);
+		expect(saveIdToCookie).toHaveBeenCalledTimes(1);
+	});
+
 	it("reports a rejection even when Saleor also returns the checkout", async () => {
 		executeAuthenticatedGraphQL.mockResolvedValue(
 			ok({ checkout: CHECKOUT, errors: [{ code: "QUANTITY_GREATER_THAN_LIMIT", message: "max 5" }] }),

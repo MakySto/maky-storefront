@@ -1,12 +1,12 @@
 /**
  * MAKY-B2B-V1 — the storefront side of the contract shared with the Saleor backend patch.
  *
- * Source: `02_MAKY_Storefront_4_5_B2B_Zadanie.md` §1 "Spoločný kontrakt MAKY-B2B-V1" (2026-11-02), identical in
- * the backend brief. The GraphQL pieces it names (`checkoutB2bTaxAttestationUpdate`, `Checkout.b2bTaxState`) are a
- * PROPOSAL the backend implements; they do not exist in Saleor 3.23.31. Until the backend hands over its generated
- * schema, the documents that use them live in `./graphql.ts`, outside the codegen glob, and are validated against
- * `./maky-b2b-v1.graphql` (the proposed SDL) by `graphql.test.ts`. A rename on either side is written into both
- * handoffs first.
+ * Source: `MAKY-B2B-V1-CONTRACT.md` of MakySto/maky-saleor (revision 2, 2026-11-02; backend PR #16). The GraphQL
+ * pieces it names (`Checkout.b2bTaxState`, `checkoutB2bTaxAttestationUpdate`, `checkoutB2bPaymentLockRelease`) are
+ * fork-only: they do not exist in Saleor 3.23.31. The documents that use them live in `./graphql.ts`, outside the
+ * codegen glob, and are validated by `graphql.test.ts` against `./maky-b2b-v1.graphql`, which
+ * `scripts/b2b-schema-extension.mjs` generates from the backend's committed schema. A rename on either side is
+ * written into both handoffs first.
  *
  * Client-safe: no token, no environment, no I/O. The browser gets only `B2bClientState` (an outcome summary).
  */
@@ -52,6 +52,31 @@ export function isB2bDecision(value: unknown): value is B2bDecision {
 	return typeof value === "string" && (B2B_DECISIONS as readonly string[]).includes(value);
 }
 
+/**
+ * `status` of `checkoutB2bPaymentLockRelease` (contract revision 2, §5 "Obnova po začatej platbe"):
+ *
+ * - `RELEASED` — no attempt can take money any more; the checkout may be changed again;
+ * - `CANCELATION_REQUESTED` — attempts without money were asked to cancel through the payment app; the lock ends when
+ *   the app confirms (`b2bTaxState.paymentLocked` turns false), not before;
+ * - `ATTEMPT_BEING_CREATED` — a `transactionInitialize` is still running; ask again in a few seconds;
+ * - `PAYMENT_HAS_FUNDS` — money is authorized, charged or pending: no change is offered, the order is finished on the
+ *   original offer. The backend never refunds or cancels money for this, and neither does the storefront.
+ */
+export const B2B_PAYMENT_LOCK_RELEASE_STATUSES = [
+	"RELEASED",
+	"CANCELATION_REQUESTED",
+	"ATTEMPT_BEING_CREATED",
+	"PAYMENT_HAS_FUNDS",
+] as const;
+
+export type B2bPaymentLockReleaseStatus = (typeof B2B_PAYMENT_LOCK_RELEASE_STATUSES)[number];
+
+export function isB2bPaymentLockReleaseStatus(value: unknown): value is B2bPaymentLockReleaseStatus {
+	return (
+		typeof value === "string" && (B2B_PAYMENT_LOCK_RELEASE_STATUSES as readonly string[]).includes(value)
+	);
+}
+
 /** Error codes of `checkoutB2bTaxAttestationUpdate` the storefront acts on (minimum set from the contract). */
 export const B2B_ATTESTATION_ERROR_CODES = [
 	"STALE_CONTEXT",
@@ -64,8 +89,14 @@ export const B2B_ATTESTATION_ERROR_CODES = [
 export type B2bAttestationErrorCode = (typeof B2B_ATTESTATION_ERROR_CODES)[number];
 
 /**
- * Codes the backend adds to the EXISTING payment/address/metadata mutations' error enums (backend brief §3.4).
- * Compared as strings: Saleor 3.23.31's generated `CheckoutErrorCode` does not know them yet.
+ * Codes the backend adds to the EXISTING mutations' error enums (contract §0 and §8). Compared as strings: Saleor
+ * 3.23.31's generated `CheckoutErrorCode` does not know them.
+ *
+ * `B2B_CHECKOUT_LOCKED` answers a change during an active payment snapshot: addresses, delivery, the company input,
+ * lines and quantities (`checkoutLinesAdd/Update/Delete`, `checkoutLineDelete`) and promo codes
+ * (`checkoutAddPromoCode`/`checkoutRemovePromoCode`, `field` = `promoCode`). It is a payment state, never a bad field;
+ * the way out is `checkoutB2bPaymentLockRelease`. `B2B_TAX_CONTEXT_CHANGED` at `checkoutComplete` means the order
+ * would differ from the confirmed offer (also when more was paid): no order was created.
  */
 export const B2B_TAX_CONTEXT_CHANGED = "B2B_TAX_CONTEXT_CHANGED";
 export const B2B_CHECKOUT_LOCKED = "B2B_CHECKOUT_LOCKED";

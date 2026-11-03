@@ -4,6 +4,9 @@ import { createContext, useActionState, useContext } from "react";
 import { useTranslations } from "next-intl";
 import { AlertCircle, CheckCircle2, HelpCircle } from "lucide-react";
 
+import { PaymentLockRecovery } from "@/checkout/components/b2b/payment-lock-recovery";
+import { buildCheckoutPath } from "@/session-bridge";
+
 import type { AddToCartResult } from "./add-to-cart-result";
 
 type CartFormAction = (previous: AddToCartResult | null, formData: FormData) => Promise<AddToCartResult>;
@@ -56,6 +59,18 @@ export function CartForm({
 	);
 }
 
+/** `useActionState` hands back one object per submission: a stable number for it, for the panel's key. */
+const resultKeys = new WeakMap<object, number>();
+let lastResultKey = 0;
+function keyOfResult(result: object): number {
+	let key = resultKeys.get(result);
+	if (key === undefined) {
+		key = ++lastResultKey;
+		resultKeys.set(result, key);
+	}
+	return key;
+}
+
 function AddToCartStatus({
 	result,
 	quietSuccess,
@@ -97,6 +112,24 @@ function AddToCartStatus({
 		);
 	}
 
+	// A payment in progress keeps the cart from changing: the way out of it, for this very checkout.
+	if (result.reason === "payment-locked" && result.paymentLock) {
+		const { checkoutId, channelSlug } = result.paymentLock;
+		const payment = { href: buildCheckoutPath({ checkoutId, step: "payment" }) };
+		return (
+			<PaymentLockRecovery
+				// Each refused add starts the panel afresh; re-renders of the same answer keep it where it is.
+				key={keyOfResult(result)}
+				className="mt-2"
+				checkoutId={checkoutId}
+				channelSlug={channelSlug}
+				subject="cart"
+				payOriginal={payment}
+				finishOrder={payment}
+			/>
+		);
+	}
+
 	const message =
 		result.reason === "unavailable"
 			? t("addUnavailable")
@@ -104,7 +137,9 @@ function AddToCartStatus({
 				? t("addInvalid")
 				: result.reason === "not-found"
 					? t("addNotFound")
-					: t("addFailed");
+					: result.reason === "payment-locked"
+						? t("addPaymentLocked")
+						: t("addFailed");
 
 	return (
 		<p role="alert" className="text-status-danger mt-2 flex items-center gap-1.5 text-sm">

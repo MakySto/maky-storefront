@@ -497,10 +497,16 @@ export async function runCheckoutCompleteAction(
 		const completeOrderFailed = t("checkout.payment.completeOrderFailed");
 		const code = paymentCodeOf(payload.errors.map((error) => error.code));
 		if (code) {
-			// The payment may already be authorized: the message never asks for a new one.
+			// The payment may already be authorized: the message never asks for a new one. `B2B_TAX_CONTEXT_CHANGED` here
+			// means the order would differ from the offer the payment was made for (contract revision 2, §8, also when
+			// more was paid): no order was created, and Saleor releases that payment's money by its own mechanism.
 			return {
 				ok: false,
-				error: t("checkout.payment.completeBlockedNoNewPayment"),
+				error: t(
+					code === "B2B_CONTEXT_CHANGED"
+						? "checkout.payment.completeOfferChanged"
+						: "checkout.payment.completeBlockedNoNewPayment",
+				),
 				code,
 				fieldErrors: payload.errors.map((error) => ({
 					field: error.field,
