@@ -184,10 +184,32 @@ export type MakyB2bReadinessQuery = {
 		permissions: ReadonlyArray<{ code: string }> | null;
 	} | null;
 };
-export type MakyB2bReadinessQueryVariables = Record<string, never>;
-
 /** The operation of `MakyB2bReadinessDocument` that is executed; the other three are only validated. */
 export const MAKY_B2B_READINESS_OPERATION = "MakyB2bReadiness";
+
+/**
+ * Values for the variables of the three operations that are only validated (`$id`, `$input`).
+ *
+ * Saleor checks the cost of a request before it runs anything (`CostValidator`, `saleor/graphql/core/validators/
+ * query_cost.py`), and that check walks EVERY operation of the document, not only the one `operationName` names: it
+ * reads each field's arguments through graphql-core's `get_argument_values`, which refuses a required argument whose
+ * variable has no value. Without these values the live Saleor answered the probe with HTTP 400 ("Argument "id" of
+ * required type ID!" provided the variable "$id" which was not provided"), and readiness said
+ * `schema-contract-invalid` although the backend had the whole contract (server of the shop, 3. 11. 2026: with both
+ * values the same document is answered 200).
+ *
+ * Execution reads only the variables `MakyB2bReadiness` declares, which are none, so these are never used: no
+ * checkout is read and neither mutation runs. The id names no checkout (the nil UUID), and the input has the shape of
+ * `CheckoutB2bTaxAttestationInput`, so a Saleor that also coerced them would accept them. A required variable added to
+ * any operation of the document needs a value here; `graphql.test.ts` fails until it has one.
+ */
+export const MAKY_B2B_READINESS_PROBE_VARIABLES = {
+	/** `Checkout:00000000-0000-0000-0000-000000000000`, as a Saleor global id. */
+	id: "Q2hlY2tvdXQ6MDAwMDAwMDAtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDAw",
+	input: { expectedContextVersion: "readiness-probe", verification: null },
+} as const satisfies MakyB2bApplyVerificationMutationVariables;
+
+export type MakyB2bReadinessQueryVariables = typeof MAKY_B2B_READINESS_PROBE_VARIABLES;
 
 /**
  * Read-only readiness probe with the B2B app token.
@@ -201,7 +223,8 @@ export const MAKY_B2B_READINESS_OPERATION = "MakyB2bReadiness";
  * revision 1 of it, which has no `checkoutB2bPaymentLockRelease`), or with any name, field, argument or input type
  * spelled differently, answers HTTP 400 with the validation errors and runs nothing. No schema type name is spelled
  * out here: what is checked is exactly what is sent. The mutations are never executed: neither is the named
- * operation, and their required variables are not supplied.
+ * operation. Their variables still get values (`MAKY_B2B_READINESS_PROBE_VARIABLES`), because Saleor's cost check
+ * reads the arguments of every operation and refuses a required one without a value.
  */
 export const MakyB2bReadinessDocument = new TypedDocumentString<
 	MakyB2bReadinessQuery,
