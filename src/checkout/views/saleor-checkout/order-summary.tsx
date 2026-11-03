@@ -9,6 +9,7 @@ import { type CheckoutFragment, type OrderFragment } from "@/checkout/graphql";
 import { localeConfig } from "@/config/locale";
 import { useLocale } from "@/providers/locale-provider";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
+import { localizedAttributeValues, localizedName, orderLineName } from "@/checkout/lib/summary-line-names";
 
 // ============================================================================
 // Types
@@ -60,15 +61,13 @@ function extractCheckoutData(checkout: CheckoutFragment, productNameFallback: st
 		const variantImage = line.variant?.media?.find((m) => m.type === "IMAGE");
 		const productImage = line.variant?.product?.media?.find((m) => m.type === "IMAGE");
 		const image = variantImage || productImage;
-		const attributes =
-			line.variant?.attributes
-				?.map((attr) => attr.values[0]?.name)
-				.filter((name): name is string => Boolean(name)) || [];
+		// The market's own language: translation first, the Slovak base row only as the fallback.
+		const attributes = localizedAttributeValues(line.variant?.attributes);
 
 		return {
 			id: line.id,
 			quantity: line.quantity,
-			name: line.variant?.product?.name || productNameFallback,
+			name: localizedName(line.variant?.product, productNameFallback),
 			attributes,
 			imageUrl: image?.url,
 			imageAlt: image?.alt,
@@ -90,15 +89,12 @@ function extractCheckoutData(checkout: CheckoutFragment, productNameFallback: st
 
 function extractOrderData(order: OrderFragment, productNameFallback: string): OrderSummaryData {
 	const lines: LineItem[] = order.lines.map((line) => {
-		const attributes =
-			line.variant?.attributes
-				?.map((attr) => attr.values[0]?.name)
-				.filter((name): name is string => Boolean(name)) || [];
+		const attributes = localizedAttributeValues(line.variant?.attributes);
 
 		return {
 			id: line.id,
 			quantity: line.quantity,
-			name: line.productName || productNameFallback,
+			name: orderLineName(line, productNameFallback),
 			attributes,
 			imageUrl: line.thumbnail?.url,
 			imageAlt: line.thumbnail?.alt,

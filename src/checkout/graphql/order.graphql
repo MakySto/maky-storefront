@@ -36,6 +36,10 @@ fragment OrderLineFragment on OrderLine {
 	}
 	productName
 	variantName
+	# The name the order was placed under, in the order's language (Saleor stores it at
+	# checkoutComplete from the checkout's languageCode). productName is the Slovak base row.
+	translatedProductName
+	translatedVariantName
 	thumbnail(size: 128, format: WEBP) {
 		alt
 		url
