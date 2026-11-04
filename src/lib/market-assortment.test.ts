@@ -65,6 +65,33 @@ describe("getMarketAssortment", () => {
 		expect(offersFullRange(unknown)).toBe(true);
 	});
 
+	it("leaves a channel whose read failed alone for the pause, and says so once", async () => {
+		fetchStockedCategorySlugs.mockRejectedValue(new Error("deadline exceeded"));
+		const { getMarketAssortment } = await subject();
+		const warn = vi.mocked(console.warn);
+		warn.mockClear();
+
+		for (let i = 0; i < 6; i += 1) expect((await getMarketAssortment("cz-czk")).state).toBe("unknown");
+		// One read reached Saleor and one line was written; the other five renders did neither.
+		expect(fetchStockedCategorySlugs).toHaveBeenCalledTimes(1);
+		expect(warn).toHaveBeenCalledTimes(1);
+
+		// Another channel is not held back by it.
+		await getMarketAssortment("de-eur");
+		expect(fetchStockedCategorySlugs).toHaveBeenCalledTimes(2);
+
+		// After the pause the channel is asked again, and an answer ends the fault.
+		vi.useFakeTimers({ toFake: ["Date"] });
+		try {
+			vi.setSystemTime(Date.now() + 60_000);
+			fetchStockedCategorySlugs.mockResolvedValue(["stresne-nosice"]);
+			expect((await getMarketAssortment("cz-czk")).state).toBe("known");
+			expect(fetchStockedCategorySlugs).toHaveBeenCalledTimes(3);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it("remembers per channel: one market's answer never stands in for another's", async () => {
 		fetchStockedCategorySlugs
 			.mockResolvedValueOnce(["stresne-nosice", "stresne-boxy"])

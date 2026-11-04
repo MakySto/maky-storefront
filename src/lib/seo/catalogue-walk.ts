@@ -152,7 +152,7 @@ export async function fetchStockedCategorySlugs(
 	// the four fields the boundary requires, or the page is not-found there. The base slug is
 	// what comes back either way — `categoryUrlFor` turns it into the market's segment.
 	return nodes
-		.filter((node) => (node.products?.totalCount ?? 0) > 0)
+		.filter((node) => (node.products?.edges.length ?? 0) > 0)
 		.filter((node) => !localized || resolveExactLocaleCategory(node, locale) !== null)
 		.map((node) => node.slug);
 }

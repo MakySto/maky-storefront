@@ -302,10 +302,16 @@ function formatVariablesForLog(variables: Record<string, unknown>): string {
  * second. Removing it took a warm page from 204 ms to 22 ms and 24 concurrent visits from
  * 1.99 s to 0.26 s.
  *
+ * 2026-11-04: twelve was too many once the queries were no longer cheap. A restart sent a COUNT per
+ * category and per maker in every market, a client deadline does not cancel a query in Saleor, and the
+ * database behind it ran ~45 of them at once (3 s each) while about 300 requests a minute came from this
+ * box and a third of them ended as 499. Six slots keep the cheap reads (35 ms) as fast as before and cap
+ * what the expensive ones can pile up.
+ *
  * They stay configurable, because the numbers belong to this deployment and not to the code:
  * a hosted Saleor with a published rate limit would want the floor back.
  */
-const SALEOR_QUEUE_DEFAULTS = { maxConcurrent: 12, minDelayMs: 0 } as const;
+const SALEOR_QUEUE_DEFAULTS = { maxConcurrent: 6, minDelayMs: 0 } as const;
 
 /**
  * A setting that is not a usable number falls back rather than being passed on.
