@@ -149,31 +149,42 @@ export async function register(): Promise<void> {
 		await prewarmLiveCategories();
 	}
 
-	// The makers each market sells, asked of Saleor one market at a time before the first visitors do.
-	// Without it every market asked for its brand counts at once on its first page, while the sitemap
-	// warm-up and the deploy's own checks kept Saleor busy, and the reads that ran out of time were the
-	// 500s on `/znacky` right after a restart (2026-11-03). The lists are kept in the process; a later
-	// fault shows the last answer instead of nothing. Off with MAKY_BRANDS_PREWARM=0.
-	if (!building && process.env.NODE_ENV === "production" && process.env.MAKY_BRANDS_PREWARM !== "0") {
-		void import("./lib/brands/catalog")
-			.then(({ prewarmBrandMakers }) => prewarmBrandMakers())
-			.catch((error: unknown) => {
-				console.warn("[brands] warm-up failed:", error instanceof Error ? error.message : error);
-			});
-	}
-
+	// Two warm-ups ask Saleor for a lot — the makers' counts and the sitemap's product walks — and they
+	// go ONE AFTER THE OTHER, makers first. Together with the deploy's own checks they used to open every
+	// market's reads at the same moment, and three restarts within nine minutes (2026-11-04) left Saleor's
+	// database running dozens of COUNTs at once. Each stops at the first thing Saleor does not answer, and
+	// what it did not build is built by the request that needs it. Neither is awaited: they take minutes
+	// and must not hold the start.
+	//
+	// The makers each market sells, asked one market at a time before the first visitors do. Without it
+	// every market asked for its brand counts at once on its first page, and the reads that ran out of
+	// time were the 500s on `/znacky` right after a restart (2026-11-03). The lists are kept in the
+	// process; a later fault shows the last answer instead of nothing. Off with MAKY_BRANDS_PREWARM=0.
+	//
 	// The sitemap's product lists, built in the background so the first crawler (or the deploy's own
-	// check) finds them kept instead of walking Saleor for 14 to 18 seconds per market. Not awaited:
-	// it takes about a minute and must not hold the start, and it is what a request would have done
-	// anyway, only earlier. Only a production server: a dev session or a test has no use for it, and
-	// `next build` does not reach Saleor from here. Off with MAKY_SITEMAP_PREWARM=0.
-	if (!building && process.env.NODE_ENV === "production" && process.env.MAKY_SITEMAP_PREWARM !== "0") {
-		// The import is inside the chain on purpose: a warm-up that cannot even load must not stop the start.
-		void import("./lib/seo/product-walk")
-			.then(({ prewarmProductWalks }) => prewarmProductWalks())
-			.catch((error: unknown) => {
-				console.warn("[sitemap] warm-up failed:", error instanceof Error ? error.message : error);
-			});
+	// check) finds them kept instead of walking Saleor for 14 to 18 seconds per market. It is what a
+	// request would have done anyway, only earlier. Only a production server: a dev session or a test
+	// has no use for it, and `next build` does not reach Saleor from here. Off with MAKY_SITEMAP_PREWARM=0.
+	if (!building && process.env.NODE_ENV === "production") {
+		const warmBrands = process.env.MAKY_BRANDS_PREWARM !== "0";
+		const warmSitemap = process.env.MAKY_SITEMAP_PREWARM !== "0";
+		void (async () => {
+			if (warmBrands) {
+				// The import is inside the chain on purpose: a warm-up that cannot even load must not stop the start.
+				await import("./lib/brands/catalog")
+					.then(({ prewarmBrandMakers }) => prewarmBrandMakers())
+					.catch((error: unknown) => {
+						console.warn("[brands] warm-up failed:", error instanceof Error ? error.message : error);
+					});
+			}
+			if (warmSitemap) {
+				await import("./lib/seo/product-walk")
+					.then(({ prewarmProductWalks }) => prewarmProductWalks())
+					.catch((error: unknown) => {
+						console.warn("[sitemap] warm-up failed:", error instanceof Error ? error.message : error);
+					});
+			}
+		})();
 	}
 
 	// The fitment dataset, loaded before the first request instead of by it: after this, no

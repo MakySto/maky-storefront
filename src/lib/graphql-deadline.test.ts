@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LanguageCodeEnum } from "@/gql/graphql";
 
 import { CheckoutFindDocument } from "@/gql/graphql";
-import { executePublicGraphQL, executeRawGraphQL, retryPauseMs } from "./graphql";
+import { executePublicGraphQL, executeRawGraphQL, retryPauseMs, saleorQueueSettings } from "./graphql";
+
+/** The queue's slots: the tests fill all of them, whatever the default is. */
+const SLOTS = saleorQueueSettings().maxConcurrent;
 
 /**
  * A deadline is only real if it can end a request that never answers.
@@ -159,7 +162,7 @@ describe("a caller deadline also ends the wait for a queue slot", () => {
 		fetchMock = neverAnswers();
 		globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-		const holders = Array.from({ length: 12 }, () => new AbortController());
+		const holders = Array.from({ length: SLOTS }, () => new AbortController());
 		const held = holders.map((holder) => find(holder.signal));
 		// Let the twelve take their slots.
 		await new Promise((resolve) => setTimeout(resolve, 20));
@@ -183,7 +186,7 @@ describe("a caller deadline also ends the wait for a queue slot", () => {
 		// Twelve slow answers hold every slot for 300 ms; the thirteenth caller has 350 ms in all,
 		// so it reaches the wire with ~50 ms left, and its (never-answering) request is cut there.
 		fetchMock = neverAnswers();
-		for (let i = 0; i < 12; i++) {
+		for (let i = 0; i < SLOTS; i++) {
 			fetchMock.mockImplementationOnce(
 				() =>
 					new Promise<Response>((resolve) =>
@@ -193,12 +196,12 @@ describe("a caller deadline also ends the wait for a queue slot", () => {
 		}
 		globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-		const held = Array.from({ length: 12 }, () => find(AbortSignal.timeout(5_000)));
+		const held = Array.from({ length: SLOTS }, () => find(AbortSignal.timeout(5_000)));
 		await new Promise((resolve) => setTimeout(resolve, 5));
 		const result = await find(AbortSignal.timeout(350));
 
 		expect(result.ok).toBe(false);
-		expect(fetchMock.mock.calls.length, "it did go out").toBe(13);
+		expect(fetchMock.mock.calls.length, "it did go out").toBe(SLOTS + 1);
 		expect(!result.ok && result.error.queueStarved).toBe(true);
 		await Promise.all(held);
 	});
@@ -207,7 +210,7 @@ describe("a caller deadline also ends the wait for a queue slot", () => {
 		fetchMock = neverAnswers();
 		globalThis.fetch = fetchMock as unknown as typeof fetch;
 
-		const holders = Array.from({ length: 12 }, () => new AbortController());
+		const holders = Array.from({ length: SLOTS }, () => new AbortController());
 		const held = holders.map((holder) => find(holder.signal));
 		await new Promise((resolve) => setTimeout(resolve, 20));
 
@@ -215,7 +218,7 @@ describe("a caller deadline also ends the wait for a queue slot", () => {
 		const waiting = find(late.signal);
 		holders[0]!.abort();
 		await new Promise((resolve) => setTimeout(resolve, 50));
-		expect(fetchMock.mock.calls.length, "the waiting query takes the freed slot").toBe(13);
+		expect(fetchMock.mock.calls.length, "the waiting query takes the freed slot").toBe(SLOTS + 1);
 
 		late.abort();
 		for (const holder of holders) holder.abort();

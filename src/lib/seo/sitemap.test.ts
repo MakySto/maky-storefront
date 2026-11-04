@@ -101,8 +101,8 @@ const categoriesResult = {
 	data: {
 		categories: {
 			edges: [
-				{ node: { slug: "nosice-bicyklov", products: { totalCount: 1_204 } } },
-				{ node: { slug: "prazdna-kategoria", products: { totalCount: 0 } } },
+				{ node: { slug: "nosice-bicyklov", products: { edges: [{ node: { id: "p1" } }] } } },
+				{ node: { slug: "prazdna-kategoria", products: { edges: [] } } },
 			],
 			pageInfo: { hasNextPage: false, endCursor: "offset:2" },
 		},
@@ -246,10 +246,20 @@ describe("category URLs", () => {
 				data: {
 					categories: {
 						edges: [
-							{ node: { slug: "nosice-bicyklov", products: { totalCount: 1_204 } } },
-							{ node: { slug: "nosice-bicyklov-na-tazne-zariadenie", products: { totalCount: 50 } } },
-							{ node: { slug: "prislusenstvo-k-stresnym-boxom", products: { totalCount: 43 } } },
-							{ node: { slug: "thule-stresne-nosice", products: { totalCount: 0 } } },
+							{ node: { slug: "nosice-bicyklov", products: { edges: [{ node: { id: "p1" } }] } } },
+							{
+								node: {
+									slug: "nosice-bicyklov-na-tazne-zariadenie",
+									products: { edges: [{ node: { id: "p1" } }] },
+								},
+							},
+							{
+								node: {
+									slug: "prislusenstvo-k-stresnym-boxom",
+									products: { edges: [{ node: { id: "p1" } }] },
+								},
+							},
+							{ node: { slug: "thule-stresne-nosice", products: { edges: [] } } },
 						],
 						pageInfo: { hasNextPage: false, endCursor: "offset:4" },
 					},
@@ -281,7 +291,7 @@ describe("category URLs", () => {
 			ok: true as const,
 			data: {
 				categories: {
-					edges: slugs.map((slug) => ({ node: { slug, products: { totalCount: 7 } } })),
+					edges: slugs.map((slug) => ({ node: { slug, products: { edges: [{ node: { id: "p1" } }] } } })),
 					pageInfo: { hasNextPage: false, endCursor: `offset:${slugs.length}` },
 				},
 			},
@@ -411,7 +421,7 @@ describe("categories are walked to the end too", async () => {
 					data: {
 						categories: {
 							edges: Array.from({ length: end - start }, (_, i) => ({
-								node: { slug: `kategoria-${start + i + 1}`, products: { totalCount: 3 } },
+								node: { slug: `kategoria-${start + i + 1}`, products: { edges: [{ node: { id: "p1" } }] } },
 							})),
 							pageInfo: { hasNextPage: end < CATEGORY_COUNT, endCursor: `offset:${end}` },
 						},
@@ -441,7 +451,9 @@ describe("categories are walked to the end too", async () => {
 							ok: true as const,
 							data: {
 								categories: {
-									edges: [{ node: { slug: "nosice-bicyklov", products: { totalCount: 4 } } }],
+									edges: [
+										{ node: { slug: "nosice-bicyklov", products: { edges: [{ node: { id: "p1" } }] } } },
+									],
 									pageInfo: { hasNextPage: true, endCursor: "offset:100" },
 								},
 							},
@@ -467,7 +479,7 @@ describe("categories are walked to the end too", async () => {
 				ok: true as const,
 				data: {
 					categories: {
-						edges: [{ node: { slug: "nosice-bicyklov", products: { totalCount: 4 } } }],
+						edges: [{ node: { slug: "nosice-bicyklov", products: { edges: [{ node: { id: "p1" } }] } } }],
 						pageInfo: { hasNextPage: true, endCursor: cycle[after ?? ""] },
 					},
 				},
@@ -1012,7 +1024,7 @@ describe("a foreign market's sitemap is written in that market's own URLs", () =
 								node: {
 									name: "Strešné nosiče",
 									slug: "stresne-nosice",
-									products: { totalCount: 3 },
+									products: { edges: [{ node: { id: "p1" } }] },
 									translation: categoryTranslated
 										? {
 												name: "Dachträger",

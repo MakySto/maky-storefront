@@ -47,7 +47,7 @@ describe("Saleor request queue settings", () => {
 			SALEOR_MIN_REQUEST_DELAY_MS: undefined,
 		});
 		expect(s.minDelayMs).toBe(0);
-		expect(s.maxConcurrent).toBe(12);
+		expect(s.maxConcurrent).toBe(6);
 	});
 
 	it("takes explicit values from the environment", async () => {

@@ -116,24 +116,105 @@ describe("the makers a market sells, read from Saleor", () => {
 		expect(executePublicGraphQL).toHaveBeenCalledTimes(1);
 	});
 
-	it("shows the last answer when a later read fails, and has the entry expire within seconds", async () => {
+	it("shows the last answer at once when it is stale, asks again behind it, and has the entry expire within seconds", async () => {
 		vi.mocked(executePublicGraphQL).mockResolvedValueOnce(makers("thule") as never);
 		vi.mocked(executePublicGraphQL).mockResolvedValueOnce(counts(3) as never);
 		await stockedBrandSlugs(SK);
+		vi.mocked(executePublicGraphQL).mockClear();
 
 		// The process's answer is older than it may stand in for asking again.
 		vi.useFakeTimers({ toFake: ["Date"] });
 		vi.setSystemTime(Date.now() + 20 * 60_000);
 		try {
-			vi.mocked(executePublicGraphQL).mockResolvedValueOnce(makers("thule") as never);
-			vi.mocked(executePublicGraphQL).mockResolvedValueOnce(down as never);
+			vi.mocked(executePublicGraphQL).mockResolvedValueOnce(makers("thule", "yakima") as never);
+			vi.mocked(executePublicGraphQL).mockResolvedValueOnce(counts(3, 5) as never);
 			vi.mocked(cacheLife).mockClear();
 
+			// The visitor is answered from what the process holds, not after Saleor has counted again.
 			expect([...(await stockedBrandSlugs(SK))]).toEqual(["thule"]);
 			expect(vi.mocked(cacheLife).mock.calls.at(-1)?.[0]).toEqual(FAULT_CACHE_LIFE);
+
+			// The new answer arrives behind it, and the next read has it.
+			await vi.waitFor(() => expect(executePublicGraphQL).toHaveBeenCalledTimes(2));
+			await vi.waitFor(async () => expect([...(await stockedBrandSlugs(SK))]).toEqual(["thule", "yakima"]));
 		} finally {
 			vi.useRealTimers();
 		}
+	});
+
+	it("keeps showing the last answer when the read behind it fails, and leaves the market alone for a minute", async () => {
+		vi.mocked(executePublicGraphQL).mockResolvedValueOnce(makers("thule") as never);
+		vi.mocked(executePublicGraphQL).mockResolvedValueOnce(counts(3) as never);
+		await stockedBrandSlugs(SK);
+		vi.mocked(executePublicGraphQL).mockClear();
+
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(Date.now() + 20 * 60_000);
+		try {
+			vi.mocked(executePublicGraphQL).mockResolvedValueOnce(makers("thule") as never);
+			vi.mocked(executePublicGraphQL).mockResolvedValueOnce(down as never);
+			expect([...(await stockedBrandSlugs(SK))]).toEqual(["thule"]);
+			await vi.waitFor(() => expect(executePublicGraphQL).toHaveBeenCalledTimes(2));
+
+			vi.mocked(executePublicGraphQL).mockClear();
+			for (let i = 0; i < 5; i += 1) expect([...(await stockedBrandSlugs(SK))]).toEqual(["thule"]);
+			expect(executePublicGraphQL).not.toHaveBeenCalled();
+
+			// After the pause it is asked once more.
+			vi.setSystemTime(Date.now() + 61_000);
+			vi.mocked(executePublicGraphQL).mockResolvedValueOnce(makers("thule") as never);
+			vi.mocked(executePublicGraphQL).mockResolvedValueOnce(counts(4) as never);
+			await stockedBrandSlugs(SK);
+			await vi.waitFor(() => expect(executePublicGraphQL).toHaveBeenCalledTimes(2));
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("asks the counts a dozen makers at a time, one request after the other, and stops at the first that fails", async () => {
+		const slugs = Array.from({ length: 30 }, (_, i) => `maker-${i}`);
+		vi.mocked(executePublicGraphQL).mockResolvedValueOnce(makers(...slugs) as never);
+		vi.mocked(executePublicGraphQL).mockResolvedValueOnce(counts(...Array(12).fill(1)) as never);
+		vi.mocked(executePublicGraphQL).mockResolvedValueOnce(down as never);
+
+		await expect(stockedBrandSlugs(SK)).rejects.toThrow("[Brands] counts unavailable");
+
+		// The list, the first twelve, the second twelve (failed) — and not the last six.
+		expect(executePublicGraphQL).toHaveBeenCalledTimes(3);
+		const [first, second] = [1, 2].map((call) =>
+			String(vi.mocked(executePublicGraphQL).mock.calls[call]![0]),
+		);
+		expect(first.match(/totalCount/g)).toHaveLength(12);
+		expect(first).toContain('values: ["maker-0"]');
+		expect(second).toContain('values: ["maker-12"]');
+	});
+
+	it("does not ask a market again within the minute after a failure, from a request or the warm-up", async () => {
+		vi.mocked(executePublicGraphQL).mockResolvedValueOnce(makers("thule") as never);
+		vi.mocked(executePublicGraphQL).mockResolvedValueOnce(down as never);
+		await expect(stockedBrandSlugs(SK)).rejects.toThrow();
+		vi.mocked(executePublicGraphQL).mockClear();
+
+		await expect(stockedBrandSlugs(SK)).rejects.toThrow("[Brands] counts unavailable");
+		await prewarmBrandMakers({ gapMs: 0 });
+		expect(executePublicGraphQL).not.toHaveBeenCalled();
+	});
+
+	it("never counts more than two markets at the same moment", async () => {
+		let running = 0;
+		let overlap = 0;
+		vi.mocked(executePublicGraphQL).mockImplementation((async (document: unknown) => {
+			running += 1;
+			overlap = Math.max(overlap, running);
+			await new Promise((resolve) => setTimeout(resolve, 5));
+			running -= 1;
+			return String(document).includes("BrandCounts") ? counts(1) : makers("thule");
+		}) as never);
+
+		const markets = ["sk-eur", "cz-czk", "de-eur", "at-eur", "pl-pln", "hu-huf"];
+		await Promise.all(markets.map((channel) => stockedBrandSlugs(channel)));
+		expect(overlap).toBeLessThanOrEqual(2);
+		expect(executePublicGraphQL).toHaveBeenCalledTimes(markets.length * 2);
 	});
 
 	it("throws, as before, where no earlier answer exists — an outage is not 'this shop has no brands'", async () => {
@@ -145,7 +226,7 @@ describe("the makers a market sells, read from Saleor", () => {
 		);
 	});
 
-	it("is not asked again within the quarter hour it stands in for asking", async () => {
+	it("is not asked again within the ten minutes it stands in for asking", async () => {
 		vi.mocked(executePublicGraphQL).mockResolvedValueOnce(makers("thule") as never);
 		vi.mocked(executePublicGraphQL).mockResolvedValueOnce(counts(3) as never);
 		await stockedBrandSlugs(SK);
@@ -166,11 +247,21 @@ describe("the makers a market sells, read from Saleor", () => {
 			return String(document).includes("BrandCounts") ? counts(1) : makers("thule");
 		}) as never);
 
-		await expect(prewarmBrandMakers()).resolves.toBeUndefined();
+		await expect(prewarmBrandMakers({ gapMs: 0 })).resolves.toBeUndefined();
 		expect(overlap).toBe(1);
 
 		vi.mocked(executePublicGraphQL).mockResolvedValue(down as never);
 		__forgetBrandMakers();
-		await expect(prewarmBrandMakers()).resolves.toBeUndefined();
+		await expect(prewarmBrandMakers({ gapMs: 0 })).resolves.toBeUndefined();
+	});
+
+	it("warm-up stops at the first market Saleor cannot count, instead of asking the rest", async () => {
+		vi.mocked(executePublicGraphQL).mockImplementation((async (document: unknown) =>
+			String(document).includes("BrandCounts") ? down : makers("thule")) as never);
+
+		await prewarmBrandMakers({ gapMs: 0 });
+
+		// One market's list and its failed count: two requests, not two per live market.
+		expect(executePublicGraphQL).toHaveBeenCalledTimes(2);
 	});
 });

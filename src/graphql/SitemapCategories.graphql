@@ -1,4 +1,4 @@
-# Category slugs with a per-channel product count, so the sitemap can leave out the empty
+# Category slugs with whether the channel holds a product, so the sitemap can leave out the empty
 # ones. Eleven of the thirty categories on this catalogue currently hold no products in
 # sk-eur, `stresne-nosice` among them.
 #
@@ -28,8 +28,16 @@ query SitemapCategories(
 					seoTitle
 					seoDescription
 				}
-				products(channel: $channel) {
-					totalCount
+				# Whether the channel holds a product, never how many: `totalCount` is a COUNT over the
+				# channel's whole catalogue, run once per category and per market (9 612 of the 9 652
+				# products sit in one category), and a request that gave up on it did not stop Saleor
+				# from finishing it. One edge answers the only question asked here.
+				products(channel: $channel, first: 1) {
+					edges {
+						node {
+							id
+						}
+					}
 				}
 			}
 		}

@@ -26,7 +26,7 @@ import {
  * since PR 46 an empty or untranslated market is remembered for seconds only (so that a head never
  * outlives its stock), which for a category that is empty in eight markets meant up to eight heavy
  * reads every few seconds while its pages were requested. For a question with a one-line answer
- * that is a lot to put through the page bundle's request queue, whose twelve slots
+ * that is a lot to put through the page bundle's request queue, whose six slots
  * (`maxConcurrent` in `graphql.ts`) the header's own deadline-bound reads share.
  *
  * This asks with one alias per market for exactly what the two conditions read — the exact-locale

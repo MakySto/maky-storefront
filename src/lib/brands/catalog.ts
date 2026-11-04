@@ -2,6 +2,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { answered, faulted, rememberBriefly, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { BrandValuesDocument, TypedDocumentString } from "@/gql/graphql";
 import { CHANNEL_MAP } from "@/lib/channel-map";
+import { runDetached } from "@/lib/async/detached";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { getCmsBrands, type CmsBrand } from "@/lib/cms/brands";
 import { liveMarkets } from "@/lib/market-state";
@@ -62,8 +63,33 @@ const MAKERS_DEADLINE_MS = 2_500;
  */
 const COUNTS_DEADLINE_MS = 6_000;
 
-/** How long an answer kept in the process stands in for asking again (the boot warm-up fills it). */
-const FRESH_MS = 15 * 60_000;
+/**
+ * How long an answer kept in the process stands in for asking again (the boot warm-up fills it). Past
+ * it the kept answer is still SHOWN, and a fresh one is fetched behind it (see `readSaleorBrands`).
+ */
+const FRESH_MS = 10 * 60_000;
+
+/**
+ * How long a market that could not be counted is left alone. Counting is the heaviest read the shop
+ * makes (Saleor runs a COUNT per maker, and a client deadline does not cancel it there): asking again
+ * on every render of a slow Saleor is what turns a slow minute into a long one. Within the pause a
+ * market with no kept answer is a fault at once, without a request.
+ */
+const FAULT_PAUSE_MS = 60_000;
+
+/**
+ * Makers per counting request. One request with a hundred aliases is a hundred COUNTs that Saleor
+ * runs back to back on one connection, longer than any deadline we can give it; twelve at a time fit
+ * the deadline when Saleor is healthy, and when it is not, the first chunk that fails ends the
+ * market's attempt instead of the last.
+ */
+const COUNTS_CHUNK = 12;
+
+/** Markets being counted at once, boot warm-up and visitors together. */
+const MAX_COUNTING_MARKETS = 2;
+
+/** The pause between two markets at boot, so Saleor is asked for one market's counts at a time with room between. */
+const WARMUP_GAP_MS = 3_000;
 
 type Maker = { slug: string; name: string; productCount: number };
 type Kept = { readonly makers: readonly Maker[]; readonly at: number };
@@ -84,20 +110,72 @@ type Loaded =
  */
 const kept = new Map<string, Kept>();
 const loading = new Map<string, Promise<Loaded>>();
+/** Markets whose last count failed, and until when they are left alone. */
+const paused = new Map<string, { readonly until: number; readonly message: string }>();
+
+let counting = 0;
+const waitingToCount: Array<() => void> = [];
 
 /** For tests. */
 export function __forgetBrandMakers(): void {
 	kept.clear();
 	loading.clear();
+	paused.clear();
+	counting = 0;
+	waitingToCount.length = 0;
 }
 
-/** Saleor's makers with products in this channel, once at a time per channel. Never throws. */
+/** At most `MAX_COUNTING_MARKETS` markets are counted at once, however many ask. */
+async function whileCounting<T>(job: () => Promise<T>): Promise<T> {
+	if (counting >= MAX_COUNTING_MARKETS) await new Promise<void>((resolve) => waitingToCount.push(resolve));
+	else counting += 1;
+	try {
+		return await job();
+	} finally {
+		const next = waitingToCount.shift();
+		if (next) next();
+		else counting -= 1;
+	}
+}
+
+/**
+ * Saleor's makers with products in this channel, once at a time per channel. Never throws. A market
+ * whose last attempt failed is not asked again until `FAULT_PAUSE_MS` has passed.
+ */
 function loadMakers(channel: string): Promise<Loaded> {
 	const running = loading.get(channel);
 	if (running) return running;
-	const job = askSaleorForMakers(channel).finally(() => loading.delete(channel));
+	const pause = paused.get(channel);
+	if (pause && pause.until > Date.now()) return Promise.resolve({ ok: false, message: pause.message });
+
+	const job = whileCounting(() => askSaleorForMakers(channel))
+		.catch(
+			(error: unknown): Loaded => ({
+				ok: false,
+				message: `[Brands] ${error instanceof Error ? error.message : String(error)}`,
+			}),
+		)
+		.then((loaded) => {
+			if (loaded.ok) paused.delete(channel);
+			else paused.set(channel, { until: Date.now() + FAULT_PAUSE_MS, message: loaded.message });
+			return loaded;
+		})
+		.finally(() => loading.delete(channel));
 	loading.set(channel, job);
 	return job;
+}
+
+/** The counting document for one chunk of makers: `query BrandCounts { b0: products(…) { totalCount } … }`. */
+function countsDocument(chunk: readonly { slug: string }[]) {
+	const query = `query BrandCounts($channel: String!) {\n${chunk
+		.map(
+			(maker, index) =>
+				`\tb${index}: products(channel: $channel, first: 1, filter: { attributes: [{ slug: "manufacturer", values: ["${maker.slug}"] }] }) { totalCount }`,
+		)
+		.join("\n")}\n}`;
+	return new TypedDocumentString<Record<string, { totalCount: number | null } | null>, { channel: string }>(
+		query,
+	);
 }
 
 async function askSaleorForMakers(channel: string): Promise<Loaded> {
@@ -112,35 +190,28 @@ async function askSaleorForMakers(channel: string): Promise<Loaded> {
 		.map(({ node }) => ({ slug: node.slug ?? "", name: node.name ?? "" }))
 		.filter((maker) => maker.slug && maker.name && !NOT_A_BRAND.has(maker.slug));
 
-	// One request for every maker's count, each an aliased `products(...) { totalCount }` —
-	// instead of twenty-odd round trips per market. The slugs come from Saleor and are checked
-	// against the slug shape before they are written into the query.
+	// The slugs come from Saleor and are checked against the slug shape before they are written into
+	// the query. The counts go out a chunk at a time, one chunk after the other: the first one that
+	// fails ends the attempt, so a Saleor that is struggling is asked once, not once per chunk.
 	const safe = makers.filter((maker) => VALUE_SLUG.test(maker.slug));
 	// A catalogue with no maker at all is an answer, not a query: `query BrandCounts { }` is a
 	// syntax error that Saleor refuses.
 	if (safe.length === 0) return { ok: true, makers: [] };
 
-	const query = `query BrandCounts($channel: String!) {\n${safe
-		.map(
-			(maker, index) =>
-				`\tb${index}: products(channel: $channel, first: 1, filter: { attributes: [{ slug: "manufacturer", values: ["${maker.slug}"] }] }) { totalCount }`,
-		)
-		.join("\n")}\n}`;
-	const counts = await executePublicGraphQL(
-		new TypedDocumentString<Record<string, { totalCount: number | null } | null>, { channel: string }>(query),
-		{
+	const counted: Maker[] = [];
+	for (let from = 0; from < safe.length; from += COUNTS_CHUNK) {
+		const chunk = safe.slice(from, from + COUNTS_CHUNK);
+		const counts = await executePublicGraphQL(countsDocument(chunk), {
 			variables: { channel },
 			revalidate: 0,
 			retry: false,
 			signal: AbortSignal.timeout(COUNTS_DEADLINE_MS),
-		},
-	);
-	if (!counts.ok) return { ok: false, message: `[Brands] counts unavailable: ${counts.error.message}` };
-
-	const counted = safe.map((maker, index) => ({
-		...maker,
-		productCount: counts.data[`b${index}`]?.totalCount ?? 0,
-	}));
+		});
+		if (!counts.ok) return { ok: false, message: `[Brands] counts unavailable: ${counts.error.message}` };
+		chunk.forEach((maker, index) => {
+			counted.push({ ...maker, productCount: counts.data[`b${index}`]?.totalCount ?? 0 });
+		});
+	}
 	const stocked = counted.filter((maker) => maker.productCount > 0);
 	kept.set(channel, { makers: stocked, at: Date.now() });
 	return { ok: true, makers: stocked };
@@ -164,22 +235,30 @@ async function readSaleorBrands(channel: string): Promise<CachedRead<Maker[]>> {
 	const earlier = kept.get(channel);
 	if (earlier && Date.now() - earlier.at < FRESH_MS) return answered([...earlier.makers]);
 
-	const loaded = await loadMakers(channel);
-	if (loaded.ok) return answered(loaded.makers);
 	if (earlier) {
-		console.warn(`${loaded.message} — showing the last answer`);
+		// Stale-while-revalidate: the visitor gets the answer the process holds NOW and does not wait for
+		// Saleor to count again; the new one is fetched behind it (once per market, and not at all within
+		// the pause after a failure). The entry is remembered for seconds only, so that the next render
+		// after the refresh picks the fresh answer up instead of the old one for the entry's whole hour.
+		runDetached(() => void loadMakers(channel));
 		rememberBriefly();
 		return answered([...earlier.makers]);
 	}
+
+	const loaded = await loadMakers(channel);
+	if (loaded.ok) return answered(loaded.makers);
 	return faulted(loaded.message);
 }
 
 /**
- * Builds every live market's list once, one market at a time, so that a restart does not send all of
- * them to Saleor together with the first visitors. Never rejects; a market that could not be built is
- * built by the request that needs it.
+ * Builds every live market's list once, one market at a time with a pause between them, so that a
+ * restart does not send all of them to Saleor together with the first visitors. The first market that
+ * cannot be built ends the warm-up: Saleor is struggling, and the rest are built by the requests that
+ * need them, each at most once a minute. Never rejects.
  */
-export async function prewarmBrandMakers(): Promise<void> {
+export async function prewarmBrandMakers({
+	gapMs = WARMUP_GAP_MS,
+}: { readonly gapMs?: number } = {}): Promise<void> {
 	const started = Date.now();
 	const channels = [
 		...new Set(
@@ -190,16 +269,20 @@ export async function prewarmBrandMakers(): Promise<void> {
 	];
 	let built = 0;
 	for (const channel of channels) {
+		let ok = false;
 		try {
-			if ((await loadMakers(channel)).ok) built += 1;
+			ok = (await loadMakers(channel)).ok;
 		} catch {
 			// loadMakers does not throw; nothing here may stop the warm-up.
 		}
+		if (!ok) break;
+		built += 1;
+		if (gapMs > 0 && built < channels.length) await new Promise((resolve) => setTimeout(resolve, gapMs));
 	}
 	console.log(
 		`[brands] warm-up: ${built} of ${channels.length} maker lists built in ${Math.round(
 			(Date.now() - started) / 1000,
-		)} s`,
+		)} s${built < channels.length ? " (stopped at the first market that could not be built)" : ""}`,
 	);
 }
 
