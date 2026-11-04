@@ -10,7 +10,8 @@ import {
 } from "@/checkout/graphql";
 import type { CheckoutFetchResult } from "@/checkout/lib/checkout-types";
 import { toTypedDocument } from "@/checkout/lib/server/to-typed-document";
-import { checkoutGraphqlLocaleVariables } from "@/lib/checkout-locale";
+import { resolveFallbackLocale } from "@/checkout/lib/server/resolve-fallback-locale";
+import { checkoutGraphqlLocaleVariables, resolveCheckoutLocale } from "@/lib/checkout-locale";
 import { executePublicGraphQL } from "@/lib/graphql";
 
 const checkoutQueryDocument = toTypedDocument<CheckoutQuery, CheckoutQueryVariables>(CheckoutDocument);
@@ -19,15 +20,9 @@ const checkoutLanguageCodeUpdateDocument = toTypedDocument<
 	CheckoutLanguageCodeUpdateMutationVariables
 >(CheckoutLanguageCodeUpdateDocument);
 
-/**
- * Fetch a checkout for the checkout RSC page.
- *
- * Public read (§10, approved): the checkout ID is the credential — no customer session or
- * app token is required for Saleor to return the checkout by id.
- */
-export async function fetchCheckoutOnServer(
+async function readCheckout(
 	checkoutId: string,
-	localeSlug?: string,
+	localeSlug: string | undefined,
 ): Promise<CheckoutFetchResult> {
 	const result = await executePublicGraphQL(checkoutQueryDocument, {
 		variables: { id: checkoutId, ...checkoutGraphqlLocaleVariables(localeSlug) },
@@ -47,6 +42,34 @@ export async function fetchCheckoutOnServer(
 	}
 
 	return { ok: true, checkout: result.data.checkout ?? null };
+}
+
+/**
+ * Fetch a checkout for the checkout RSC page.
+ *
+ * Public read (§10, approved): the checkout ID is the credential — no customer session or
+ * app token is required for Saleor to return the checkout by id.
+ *
+ * Product and attribute translations are read in the language of the locale asked for. A caller
+ * that cannot name one (the payment transport and the price preflight carry no locale) used to get
+ * the store default, so a German checkout that went through a price change came back with Slovak
+ * product names. With no locale given, the visitor's market is the first guess and the checkout's
+ * own channel has the last word: when the two disagree the checkout is read again in its market.
+ * A caller that names a locale keeps getting exactly that locale.
+ */
+export async function fetchCheckoutOnServer(
+	checkoutId: string,
+	localeSlug?: string,
+): Promise<CheckoutFetchResult> {
+	if (localeSlug) return readCheckout(checkoutId, localeSlug);
+
+	const guess = await resolveFallbackLocale();
+	const first = await readCheckout(checkoutId, guess);
+	const channelSlug = first.ok ? first.checkout?.channel.slug : null;
+	if (!channelSlug) return first;
+
+	const channelLocale = resolveCheckoutLocale(channelSlug);
+	return channelLocale === guess ? first : readCheckout(checkoutId, channelLocale);
 }
 
 /**

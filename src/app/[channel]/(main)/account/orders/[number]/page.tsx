@@ -1,4 +1,4 @@
-import { formatDate, getLocaleFromChannel } from "@/config/locale";
+import { formatDate, getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { MapPin, CreditCard } from "lucide-react";
@@ -7,6 +7,7 @@ import { executeAuthenticatedGraphQL } from "@/lib/graphql";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { formatMoney } from "@/lib/utils";
 import { productPath } from "@/lib/product-url";
+import { accountOrderLineDisplay } from "@/lib/account-order-line-display";
 import { OrderTimeline } from "@/ui/components/account/order-timeline";
 import { OrderStatusBadge } from "@/ui/components/account/order-status-badge";
 import { type AddressDetailsFragment } from "@/gql/graphql";
@@ -27,7 +28,8 @@ export default async function OrderDetailPage({ params }: Props) {
 	// the vast majority of customers; a dedicated `orderByToken` query would be
 	// more efficient if order counts grow large.
 	const result = await executeAuthenticatedGraphQL(OrderByNumberDocument, {
-		variables: { first: 100 },
+		// The market's exact language code, so names read in the language of the page, not Slovak.
+		variables: { first: 100, languageCode: getLocaleConfigByLocale(locale).graphqlLanguageCode },
 		cache: "no-cache",
 	});
 
@@ -66,6 +68,7 @@ export default async function OrderDetailPage({ params }: Props) {
 							{order.lines.map((line) => {
 								if (!line.variant) return null;
 								const product = line.variant.product;
+								const display = accountOrderLineDisplay(line, line.variant);
 								const lineTotal = line.variant.pricing?.price?.gross
 									? line.variant.pricing.price.gross.amount * line.quantity
 									: null;
@@ -85,13 +88,13 @@ export default async function OrderDetailPage({ params }: Props) {
 										)}
 										<div className="min-w-0 flex-1">
 											<LinkWithChannel
-												href={productPath(product.slug)}
+												href={productPath(display.productSlug)}
 												className="text-sm font-medium hover:underline"
 											>
-												{product.name}
+												{display.productName}
 											</LinkWithChannel>
-											{line.variant.name !== line.variant.id && Boolean(line.variant.name) && (
-												<p className="text-muted-foreground text-[13px]">{line.variant.name}</p>
+											{display.variantName && (
+												<p className="text-muted-foreground text-[13px]">{display.variantName}</p>
 											)}
 											<p className="text-muted-foreground text-[13px]">
 												{t("order.quantity", { quantity: line.quantity })}
