@@ -330,7 +330,10 @@
 		"listingAllNotice": "Vedeți oferta pentru toate vehiculele — nu este filtrată pentru mașina dvs. ({vehicle}).",
 		"listingDefaultNone": "Pentru {vehicle} nu avem încă un set verificat, de aceea vedeți oferta pentru toate vehiculele.",
 		"listingNotOnSaleTitle": "Pentru {vehicle} există seturi compatibile care momentan nu sunt la vânzare",
-		"listingNotOnSaleBody": "Asta nu înseamnă că nimic nu se potrivește. Adăugăm aceste seturi în ofertă — între timp puteți vedea toate vehiculele sau ne puteți scrie."
+		"listingNotOnSaleBody": "Asta nu înseamnă că nimic nu se potrivește. Adăugăm aceste seturi în ofertă — între timp puteți vedea toate vehiculele sau ne puteți scrie.",
+		"listingOtherShelfTitle": "Pentru {vehicle} nu avem seturi verificate în această categorie",
+		"listingOtherShelfBody": "Seturile verificate pentru vehiculul dvs. sunt într-o altă categorie, nu în aceasta.",
+		"listingOtherShelfAction": "Vezi seturile din categoria {category}"
 	},
 	"cart": {
 		"yourCart": "Coșul dvs.",

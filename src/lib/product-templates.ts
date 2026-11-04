@@ -1,6 +1,7 @@
 import { type ProductContentBlock } from "@/lib/editorjs";
 import { type SpecFact } from "@/lib/editorjs-content";
 import { SECTION_KINDS, type SectionKind } from "@/lib/editorjs-sanitize";
+import { KARGO_CATEGORY_ID } from "@/config/kargo-slugs";
 
 /**
  * Product page templates: how a page is put together for a kind of product.
@@ -200,6 +201,17 @@ export const PRODUCT_TEMPLATES: Readonly<Record<string, ProductTemplate>> = {
 	[AUTOCHLADNICKA.id]: AUTOCHLADNICKA,
 	[STRESNY_NOSIC.id]: STRESNY_NOSIC,
 };
+
+/**
+ * The template of a kind of product whose description names none: the Kargo category (bars and baskets for vans)
+ * is set as a roof-rack set. CFM's translations reach Saleor as plain EditorJS, without the `maky-content/1:<template>`
+ * envelope and block ids of the Slovak description (read from Saleor 2026-11-02: `version` "2.30.8", no ids), so a
+ * foreign page would otherwise be drawn as the generic page. This takes nothing from the text: it only says how the
+ * blocks that are there are laid out.
+ */
+export function templateIdForCategory(categoryId: string | null | undefined): string | null {
+	return categoryId === KARGO_CATEGORY_ID ? STRESNY_NOSIC.id : null;
+}
 
 /** The template a description names, or the generic one when it names none or an unknown one. */
 export function templateFor(id: string | null | undefined): ProductTemplate {

@@ -148,6 +148,77 @@ const titleFor = async () => {
 
 const occurrences = (haystack: string, needle: string) => haystack.split(needle).length - 1;
 
+const descriptionOf = async () => {
+	const { generateMetadata } = await import("./page");
+	const meta = await generateMetadata({
+		params: Promise.resolve({ channel: "sk-eur", slug: "autochladnicky" }),
+		searchParams: Promise.resolve({}),
+	});
+	return meta.description;
+};
+
+describe("category meta description", () => {
+	const longText = "Dlhý text kategórie pre ľudí, ktorí chcú vedieť všetko. ".repeat(12).trim();
+	const asEditorJs = (text: string) => JSON.stringify({ blocks: [{ type: "paragraph", data: { text } }] });
+
+	it("keeps the SEO description it has", async () => {
+		expect(await descriptionOf()).toBe("Autochladničky do auta.");
+	});
+
+	it("cuts the page text at a word, to what a search result shows, when there is no SEO description", async () => {
+		category.seoDescription = "";
+		category.description = asEditorJs(longText);
+		const description = String(await descriptionOf());
+		expect(description.length).toBeLessThanOrEqual(156);
+		expect(description.endsWith("…")).toBe(true);
+		expect(longText.startsWith(description.slice(0, -1))).toBe(true);
+	});
+
+	it("keeps a short page text whole", async () => {
+		category.seoDescription = "";
+		category.description = asEditorJs("Krátky text kategórie.");
+		expect(await descriptionOf()).toBe("Krátky text kategórie.");
+	});
+});
+
+describe("the Kargo category abroad, while Saleor still holds its first slug", () => {
+	const SEGMENT = "kargo-dachtraeger-und-dachkoerbe-fuer-transporter";
+	const published = globalThis as typeof globalThis & { [key: symbol]: unknown };
+	let key: symbol;
+
+	beforeEach(async () => {
+		key = (await import("@/config/categories")).LIVE_CATEGORY_SLUGS_KEY;
+		published[key] = new Set(["stresne-nosice-a-kose-na-dodavky"]);
+		category = {
+			...category,
+			id: "Q2F0ZWdvcnk6MzQ=",
+			name: "Strešné nosiče a koše na dodávky",
+			slug: "stresne-nosice-a-kose-na-dodavky",
+			translation: {
+				name: "Dachträger und Dachkörbe für Transporter",
+				slug: "dachtraeger-und-dachkoerbe-fuer-transporter",
+				description: "{}",
+				seoTitle: "Dachträger und Dachkörbe für Transporter",
+				seoDescription: "Dachträger und Dachkörbe für Transporter.",
+			},
+		};
+	});
+	afterEach(() => {
+		delete published[key];
+	});
+
+	it("is read by the slug Saleor holds and answers at its canonical root", async () => {
+		const { generateMetadata } = await import("./page");
+		const meta = await generateMetadata({
+			params: Promise.resolve({ channel: "de-eur", slug: SEGMENT }),
+			searchParams: Promise.resolve({}),
+		});
+		expect(meta.alternates?.canonical).toBe(`https://maky.store/de/${SEGMENT}`);
+		const asked = reads.find((read) => read.operation === "ProductListByCategory");
+		expect((asked?.options.variables as { slug: string }).slug).toBe("stresne-nosice-a-kose-na-dodavky");
+	});
+});
+
 describe("category page title", () => {
 	it("an SEO title equal to the name: the name once, the brand once", async () => {
 		const title = await titleFor();

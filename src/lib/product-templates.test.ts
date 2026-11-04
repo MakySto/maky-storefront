@@ -13,6 +13,7 @@ import {
 	sheetFacts,
 	TEMPERATURE_RANGE_REF,
 	templateFor,
+	templateIdForCategory,
 	withoutSheetRepeats,
 	type PageSections,
 	type ParameterRow,
@@ -441,6 +442,23 @@ describe("descriptionSections", () => {
 		const blocks = ["<h3>A</h3>", "<p>1</p>", "<h3>B</h3>", "<p>2</p>"];
 		expect(descriptionSections(blocks).flat()).toEqual(blocks);
 		expect(descriptionSections([])).toEqual([]);
+	});
+});
+
+describe("templateIdForCategory", () => {
+	it("sets the Kargo category as a roof-rack set when its description names no template", () => {
+		const id = templateIdForCategory(btoa("Category:34"));
+		expect(id).toBe("stresny-nosic");
+		expect(templateFor(id).sectionsWhenPictured).toBe(true);
+		// A foreign Kargo description is plain EditorJS: pictures of its own are enough to lay it out as sections.
+		const plain = [{ html: "<h3>Titel</h3>" }, { html: '<figure><img src="x"></figure>' }];
+		expect(layoutFor(templateFor(id), plain).sections).toBe(true);
+	});
+
+	it("says nothing for any other category", () => {
+		expect(templateIdForCategory(btoa("Category:5"))).toBeNull();
+		expect(templateIdForCategory(null)).toBeNull();
+		expect(templateIdForCategory(undefined)).toBeNull();
 	});
 });
 

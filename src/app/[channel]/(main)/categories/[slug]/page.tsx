@@ -1,5 +1,11 @@
 import { Suspense } from "react";
-import { categoryBaseSlug, categorySegment, categoryUrlFor } from "@/config/category-routes";
+import {
+	baseSlugForCategoryId,
+	categoryBaseSlug,
+	categorySegment,
+	categoryUrlFor,
+	saleorSlugFor,
+} from "@/config/category-routes";
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
 import { getTranslations } from "next-intl/server";
@@ -35,7 +41,7 @@ import {
 import { getSceneryOrNone } from "@/lib/homepage/scenery";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { buildCanonicalUrl, counterpartAlternates } from "@/lib/seo/hreflang";
-import { marketOpenGraph } from "@/lib/seo/metadata";
+import { marketOpenGraph, truncateText } from "@/lib/seo/metadata";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import {
 	resolveVehicleListingFilter,
@@ -75,6 +81,14 @@ const CATEGORY_TAGLINES: Readonly<Record<string, string>> = {
 	roofTents: "tileRoofTents",
 	carFridges: "tileCarFridges",
 };
+
+/**
+ * The meta description a category without an SEO description of its own gets: the start of its page text, cut at a
+ * word to the length a search result shows. The whole text used to go in, and a long category text (bike carriers,
+ * the Kargo page) would have made a paragraph of it.
+ */
+const fallbackDescription = (text: string | null | undefined): string =>
+	text ? truncateText(text, 155) : "";
 
 /** A category that exists but holds nothing in the channel it was read for. */
 const categoryIsEmpty = (category: Category): boolean => (category.products?.totalCount ?? 0) === 0;
@@ -150,9 +164,16 @@ type PageProps = {
 const baseSlugOf = (params: { slug: string; channel: string }) =>
 	categoryBaseSlug(params.channel, params.slug);
 
+/**
+ * The slug Saleor is asked for: the base slug, except for a category that is being renamed there (Kargo),
+ * where it is whichever of its two slugs Saleor holds right now (`saleorSlugFor`). Addresses, the fitment
+ * shelf and the banner go by `baseSlugOf`.
+ */
+const saleorSlugOf = (params: { slug: string; channel: string }) => saleorSlugFor(baseSlugOf(params));
+
 export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 	const params = await props.params;
-	const outcome = await getCategoryOutcome(baseSlugOf(params), params.channel);
+	const outcome = await getCategoryOutcome(saleorSlugOf(params), params.channel);
 
 	if (outcome.status === "upstream-error") {
 		// Could not verify. `noindex`, no canonical, and no "not found" title —
@@ -198,7 +219,10 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 		return {
 			title,
 			description:
-				category.seoDescription || plainDescription || meaningfulTitle(category.seoTitle) || category.name,
+				category.seoDescription ||
+				fallbackDescription(plainDescription) ||
+				meaningfulTitle(category.seoTitle) ||
+				category.name,
 			robots: { index: false, follow: true, googleBot: { index: false, follow: true } },
 			// No canonical, deliberately: a self-canonical nominates the URL, which
 			// is the opposite of what noindex is here to say.
@@ -213,7 +237,10 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 	return {
 		title,
 		description:
-			category.seoDescription || plainDescription || meaningfulTitle(category.seoTitle) || category.name,
+			category.seoDescription ||
+			fallbackDescription(plainDescription) ||
+			meaningfulTitle(category.seoTitle) ||
+			category.name,
 		// Category listings had no canonical at all, while product pages have always
 		// had one. The toolbar appends ?sort= and filter params, so without this every
 		// sort order is a separate indexable URL competing with the clean one. Points
@@ -233,7 +260,7 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 			// the empty-in-this-channel branch above would have returned.
 			languages: counterpartAlternates(
 				REVERSE_MAP[params.channel] || params.channel,
-				await categoryCounterparts(baseSlugOf(params), params.channel, true, getCategoryMarketPresence),
+				await categoryCounterparts(saleorSlugOf(params), params.channel, true, getCategoryMarketPresence),
 			),
 		},
 		openGraph: marketOpenGraph(params.channel, canonical),
@@ -257,14 +284,15 @@ async function CategoryContent({
 }) {
 	const params = await paramsPromise;
 	const baseSlug = baseSlugOf(params);
+	const saleorSlug = saleorSlugOf(params);
 	const [outcome, t, navigation, scenery] = await Promise.all([
-		getCategoryOutcome(baseSlug, params.channel),
+		getCategoryOutcome(saleorSlug, params.channel),
 		getTranslations({ locale: getLocaleFromChannel(params.channel), namespace: "plp" }),
 		// The parent and the row of sub-categories are a way around the listing, not the listing:
 		// a fault leaves them out and the page renders as before.
-		getCategoryNavigation(baseSlug, params.channel).catch((error: unknown) => {
+		getCategoryNavigation(saleorSlug, params.channel).catch((error: unknown) => {
 			console.warn(
-				`[Listing] category navigation left out for ${baseSlug}:`,
+				`[Listing] category navigation left out for ${saleorSlug}:`,
 				error instanceof Error ? error.message : error,
 			);
 			return null;
@@ -300,7 +328,7 @@ async function CategoryContent({
 			{/* Own boundary: it asks the other live channels, and the listing must never wait. */}
 			<Suspense fallback={null}>
 				<CategorySwitchTargets
-					baseSlug={baseSlug}
+					baseSlug={saleorSlug}
 					channel={params.channel}
 					listedHere={!categoryIsEmpty(category)}
 				/>
@@ -328,6 +356,19 @@ async function CategoryContent({
 					params={paramsPromise}
 					searchParams={searchParams}
 					categoryLinks={navigation?.chips ?? null}
+					// A sub-shelf (Nordrive, Kargo, Thule …) that holds none of the car's sets points to its family's
+					// page, which is where the sets are, instead of saying they are not on sale.
+					familyShelf={
+						navigation?.parent && categoryFitmentKind(navigation.parent.baseSlug) !== null
+							? {
+									name: navigation.parent.name,
+									path: categoryUrlFor(
+										params.channel,
+										baseSlugForCategoryId(navigation.parent.id) ?? navigation.parent.baseSlug,
+									),
+								}
+							: null
+					}
 				/>
 			</Suspense>
 			{/* Below the listing, and in its own Suspense: reading the 9.7 MB catalogue
@@ -392,14 +433,18 @@ async function CategoryProducts({
 	params: paramsPromise,
 	searchParams: searchParamsPromise,
 	categoryLinks,
+	familyShelf,
 }: {
 	params: PageProps["params"];
 	searchParams: PageProps["searchParams"];
 	/** The category family for the side panel, when the page has a row of sub-categories. */
 	categoryLinks: readonly SubcategoryChip[] | null;
+	/** The family this shelf is a sub-shelf of, when the programme covers that family. */
+	familyShelf: { name: string; path: string } | null;
 }) {
 	const [params, searchParams] = await Promise.all([paramsPromise, searchParamsPromise]);
 	const baseSlug = baseSlugOf(params);
+	const saleorSlug = saleorSlugOf(params);
 
 	const sortBy = buildSortVariables(searchParams.sort);
 	const vehicleFilter = await resolveVehicleListingFilter(vehicleFilterRequestOf(searchParams.vehicle), {
@@ -420,17 +465,17 @@ async function CategoryProducts({
 		// The recommended order is Saleor's default order, grouped. A shopper's own order — by
 		// price, by date — applies to the whole listing at once and needs no groups.
 		sortBy ? null : getProductTypeGroups().catch(() => null),
-		getCategoryPriceBands(baseSlug, params.channel).catch((error: unknown) => {
+		getCategoryPriceBands(saleorSlug, params.channel).catch((error: unknown) => {
 			console.warn(
-				`[Listing] price filter left out for ${baseSlug}:`,
+				`[Listing] price filter left out for ${saleorSlug}:`,
 				error instanceof Error ? error.message : error,
 			);
 			return null;
 		}),
 		// The maker and volume filters, with their counts; a fault leaves them out.
-		getCategoryFacets(baseSlug, params.channel).catch((error: unknown) => {
+		getCategoryFacets(saleorSlug, params.channel).catch((error: unknown) => {
 			console.warn(
-				`[Listing] maker and volume filters left out for ${baseSlug}:`,
+				`[Listing] maker and volume filters left out for ${saleorSlug}:`,
 				error instanceof Error ? error.message : error,
 			);
 			return null;
@@ -460,7 +505,7 @@ async function CategoryProducts({
 					(slugLang) =>
 						executePublicGraphQL(ProductListByCategoryGroupedDocument, {
 							variables: {
-								slug: baseSlug,
+								slug: saleorSlug,
 								channel: params.channel,
 								lang,
 								slugLang,
@@ -524,7 +569,7 @@ async function CategoryProducts({
 			(slugLang) =>
 				executePublicGraphQL(ProductListByCategoryDocument, {
 					variables: {
-						slug: baseSlug,
+						slug: saleorSlug,
 						channel: params.channel,
 						lang,
 						slugLang,
@@ -565,7 +610,7 @@ async function CategoryProducts({
 
 	// Only the catalogue knows whether a verified set is on sale. When the car's whole list is
 	// hidden or withdrawn, say that, instead of an empty grid under "overené pre …".
-	const shownFilter = settleVehicleFilter(vehicleFilter, listing, searchParams);
+	const shownFilter = settleVehicleFilter(vehicleFilter, listing, searchParams, familyShelf);
 
 	const priceFilter: PriceFilter | null =
 		priceBands && priceBands.boundaries.length > 0
@@ -601,7 +646,11 @@ async function CategoryProducts({
 				pageInfo={listing.pageInfo}
 				priceFilter={priceFilter}
 				accessoryIds={listing.accessoryIds}
-				vehicleFilterEmpty={shownFilter.state === "empty" || shownFilter.state === "not-on-sale"}
+				vehicleFilterEmpty={
+					shownFilter.state === "empty" ||
+					shownFilter.state === "not-on-sale" ||
+					shownFilter.state === "other-shelf"
+				}
 				// The family's counts describe the WHOLE shelf (9 167 sets) and the list beside them is one
 				// car's (8). Two totals on one screen is a defect, so a narrowed list drops the numbers and
 				// keeps the links.

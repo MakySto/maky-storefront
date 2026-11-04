@@ -1,7 +1,7 @@
 import { CHANNEL_MAP, FRIENDLY_SLUGS, REVERSE_MAP } from "./channel-map";
 import { MARKET_LANGUAGE_CODE } from "@/config/market-language";
 import { isCategorySlug } from "@/config/categories";
-import { categoryBaseSlug, isLocalizedRootSegment } from "@/config/category-routes";
+import { categoryBaseSlug, isLocalizedRootSegment, saleorSlugFor } from "@/config/category-routes";
 import { previousProductSlug } from "./product-redirects";
 import { isMarketRootSegment } from "./route-policy";
 
@@ -635,7 +635,11 @@ export function classifyRoute(market: string, segments: readonly string[]): Gate
 		// Saleor is asked by base slug: `category(slug: "stresni-nosice")` answers null, and an
 		// armed gate would 404 the canonical category URL of every foreign market.
 		if (isLocalizedRootSegment(market, slug)) {
-			return { family: "category", slug: categoryBaseSlug(market, slug), channel: config.saleorSlug };
+			return {
+				family: "category",
+				slug: saleorSlugFor(categoryBaseSlug(market, slug)),
+				channel: config.saleorSlug,
+			};
 		}
 		const family: RouteFamily = isCategorySlug(slug) ? "category" : "product";
 		return { family, slug, channel: config.saleorSlug };
@@ -658,7 +662,7 @@ export function classifyRoute(market: string, segments: readonly string[]): Gate
 	// Same for a localized spelling under the retired `/categories/` form (`/cz/categories/stresni-nosice`).
 	return {
 		family,
-		slug: family === "category" ? categoryBaseSlug(market, slug) : slug,
+		slug: family === "category" ? saleorSlugFor(categoryBaseSlug(market, slug)) : slug,
 		channel: config.saleorSlug,
 	};
 }

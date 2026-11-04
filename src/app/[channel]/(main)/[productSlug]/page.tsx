@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { baseSlugOfCategory, categoryUrlFor } from "@/config/category-routes";
+import { baseSlugForCategoryId, baseSlugOfCategory, categoryUrlFor } from "@/config/category-routes";
 import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
@@ -36,7 +36,13 @@ import { withGalleryPhotos } from "@/lib/gallery-photos";
 import { getComparisonLabels } from "@/lib/comparison-labels";
 import { getContentLabels } from "@/lib/content-labels";
 import { extendedWarrantyYears } from "@/lib/product-attributes";
-import { layoutFor, liftSections, sheetFacts, templateFor } from "@/lib/product-templates";
+import {
+	layoutFor,
+	liftSections,
+	sheetFacts,
+	templateFor,
+	templateIdForCategory,
+} from "@/lib/product-templates";
 import { isSourceLocale } from "@/lib/saleor/exact-locale";
 import { publicSku } from "@/lib/product-code";
 import { publicEan } from "@/lib/product-ean";
@@ -200,7 +206,10 @@ async function ProductContent({
 	// The template the description names (or the generic one) decides which parts of it stand in
 	// cards of their own and how the key facts and parameters are put together; a description that
 	// carries pictures of its own is set as sections (`layoutFor`).
-	const template = layoutFor(templateFor(content?.template), content?.blocks ?? []);
+	const template = layoutFor(
+		templateFor(content?.template ?? templateIdForCategory(product.category?.id)),
+		content?.blocks ?? [],
+	);
 	const sections = content ? liftSections(content.blocks, template) : null;
 	// Whatever could not be drawn as intended is said once, in the log: no text was removed, but a
 	// producer that sends a block the reader cannot read should not go unnoticed — a warning that
@@ -231,7 +240,14 @@ async function ProductContent({
 			? [
 					{
 						label: product.category.name,
-						href: marketHref(params.channel, categoryUrlFor(params.channel, product.category.slug)),
+						// By id where the table knows it: abroad `slug` is whatever Saleor's translation says.
+						href: marketHref(
+							params.channel,
+							categoryUrlFor(
+								params.channel,
+								baseSlugForCategoryId(product.category.id) ?? product.category.slug,
+							),
+						),
 					},
 				]
 			: []),

@@ -13,3 +13,6 @@ export const KARGO_BASE_SLUG = "kargo-stresne-nosice-a-stresne-kose-na-dodavky";
 export const KARGO_PREVIOUS_SLUG = "stresne-nosice-a-kose-na-dodavky";
 /** What a product's category can be called while the rename is under way; never one without the other. */
 export const KARGO_CATEGORY_SLUGS: readonly string[] = [KARGO_BASE_SLUG, KARGO_PREVIOUS_SLUG];
+
+/** Saleor's id of the category, which no rename touches: the one thing that names it in every market and language. */
+export const KARGO_CATEGORY_ID = "Q2F0ZWdvcnk6MzQ=";

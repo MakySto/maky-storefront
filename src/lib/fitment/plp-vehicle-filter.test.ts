@@ -477,6 +477,19 @@ describe("when every verified set is hidden in the shop", () => {
 		});
 	});
 
+	it("points a sub-shelf to its family instead of saying the sets are not on sale", () => {
+		const family = { name: "Strešné nosiče", path: "/stresne-nosice" };
+		expect(settleVehicleFilter(active, { totalCount: 0 }, {}, family)).toEqual({
+			state: "other-shelf",
+			vehicleLabel: "Make Model Gen · 2022",
+			isDemo: false,
+			family,
+		});
+		// A listing that returned something, or one a price band may have emptied, is not touched.
+		expect(settleVehicleFilter(active, { totalCount: 3 }, {}, family)).toBe(active);
+		expect(settleVehicleFilter(active, { totalCount: 0 }, { price: "50-100" }, family)).toBe(active);
+	});
+
 	it("leaves a listing that returned something alone", () => {
 		expect(settleVehicleFilter(active, { totalCount: 3 }, {})).toBe(active);
 	});
