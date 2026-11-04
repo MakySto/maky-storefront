@@ -18,6 +18,7 @@ import { marketOpenGraph } from "@/lib/seo/metadata";
 import { getPaginatedListVariables } from "@/lib/utils";
 import { BrandMark } from "@/ui/components/brands/brand-mark";
 import { BrandProducts } from "@/ui/components/brands/brand-products";
+import { BrandsUnavailable } from "@/ui/components/brands/brands-unavailable";
 import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
 import { buildSortVariables } from "@/ui/components/plp/filter-utils";
 
@@ -77,7 +78,18 @@ export default function Page(props: PageProps) {
 
 async function BrandContent({ params: paramsPromise, searchParams: searchParamsPromise }: PageProps) {
 	const [{ channel, brand: slug }, searchParams] = await Promise.all([paramsPromise, searchParamsPromise]);
-	const brand = await brandOrNull(channel, slug);
+	// A fault in the makers' list is not "this market does not sell the maker": no 404, no 500.
+	const lookup = await brandOrNull(channel, slug).then(
+		(found) => ({ found }) as const,
+		(error: unknown) => {
+			console.warn("[Brands] brand page left unavailable:", error instanceof Error ? error.message : error);
+			return null;
+		},
+	);
+	if (!lookup) {
+		return <BrandsUnavailable channel={channel} retryHref={marketHref(channel, `/znacky/${slug}`)} />;
+	}
+	const brand = lookup.found;
 	if (!brand) notFound();
 
 	const locale = getLocaleFromChannel(channel);

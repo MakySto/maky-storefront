@@ -31,7 +31,8 @@
 		"check:catalog": "vitest run src/lib/catalog-content/whole-set.acceptance.test.ts src/lib/catalog-content/redirects.acceptance.test.ts src/lib/catalog-content/category-routes.acceptance.test.ts",
 		"check:published": "node scripts/checks/published-content.mjs",
 		"check:fridge": "node scripts/checks/fridge-attributes.mjs",
-		"generate:routing": "node scripts/generate-routing-constants.mjs"
+		"generate:routing": "node scripts/generate-routing-constants.mjs",
+		"generate:action-rewrites": "UPDATE_ACTION_REWRITES=1 vitest run src/proxy.action-rewrites.test.ts"
 	},
 	"dependencies": {
 		"@graphql-typed-document-node/core": "3.2.0",
