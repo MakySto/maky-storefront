@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -6,7 +7,7 @@ import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD, PHASE_PRODUCTION_SERV
 import FileSystemCacheModule from "next/dist/server/lib/incremental-cache/file-system-cache.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import BuildFilesOnDiskCache from "../../cache-handler.mjs";
+import BuildFilesOnDiskCache, { isPossibleServerAction } from "../../cache-handler.mjs";
 import { resolveNextConfig } from "../../next.config.js";
 
 /**
@@ -217,6 +218,179 @@ describe("cache-handler.mjs while the server runs", () => {
 		expect(await readFile(join(serverDir, "app", `${key}.html`), "utf8")).toBe("<p>made by the build</p>");
 		expect((await broken.get(key, PAGE_GET))?.value).toMatchObject({ html: "<p>kept in memory</p>" });
 	});
+});
+
+/**
+ * Next looks a page up for a Server Action too, and if the copy is stale it re-renders the page in the
+ * background with the action's own request: two parsers on one body, "Unexpected end of form", a 500 on a
+ * response whose action did run. The handler answers an action request with the page copy dated ahead of
+ * now. Reproduced on Next 16.3.6 in a minimal app (stale copy: every action 500, fresh copy: every one 200),
+ * and with this handler in that app every action answers 200 on a stale copy.
+ */
+describe("cache-handler.mjs and a Server Action on a stale page", () => {
+	const HOUR = 60 * 60 * 1000;
+	const FileSystemCache =
+		(FileSystemCacheModule as unknown as { default?: unknown }).default ?? FileSystemCacheModule;
+	const memoryCache = () =>
+		(FileSystemCache as unknown as { memoryCache: { get(key: string): { lastModified: number } } })
+			.memoryCache;
+
+	function newCacheFor(headers: Record<string, string> | undefined): Handler {
+		return new BuildFilesOnDiskCache({
+			dev: false,
+			fs: nodeFs,
+			flushToDisk: false,
+			serverDistDir: serverDir,
+			revalidatedTags: [],
+			maxMemoryCacheSize: 8 * 1024 * 1024,
+			_requestHeaders: headers,
+		});
+	}
+
+	/** A page kept in memory whose copy was made an hour ago. */
+	async function oldPage(prefix: string) {
+		const key = uniqueKey(prefix);
+		await newCacheFor({}).set(key, page("<p>an hour old</p>"), PAGE_SET);
+		memoryCache().get(key).lastModified = Date.now() - HOUR;
+		return key;
+	}
+
+	it("returns the page copy dated ahead of now to a request with a Next-Action header", async () => {
+		const key = await oldPage("/de-eur/produkt");
+
+		const entry = await newCacheFor({ "next-action": "6012abcd" }).get(key, PAGE_GET);
+
+		expect(entry?.lastModified).toBeGreaterThan(Date.now());
+		expect(entry?.value).toMatchObject({ kind: "APP_PAGE", html: "<p>an hour old</p>", postponed: "{}" });
+	});
+
+	it("does the same for a form post without the header (a page submitted without JavaScript)", async () => {
+		const key = await oldPage("/de-eur/formular");
+
+		const multipart = await newCacheFor({ "content-type": "multipart/form-data; boundary=----x" }).get(
+			key,
+			PAGE_GET,
+		);
+		const urlencoded = await newCacheFor({ "content-type": "application/x-www-form-urlencoded" }).get(
+			key,
+			PAGE_GET,
+		);
+
+		expect(multipart?.lastModified).toBeGreaterThan(Date.now());
+		expect(urlencoded?.lastModified).toBeGreaterThan(Date.now());
+	});
+
+	it("hands back a copy: the stored entry keeps its own age, so plain requests still see a stale page", async () => {
+		const key = await oldPage("/de-eur/kopia");
+
+		const forAction = await newCacheFor({ "next-action": "6012abcd" }).get(key, PAGE_GET);
+		const forVisitor = await newCacheFor({ accept: "text/html" }).get(key, PAGE_GET);
+
+		expect(forVisitor?.lastModified).toBeLessThan(Date.now() - HOUR / 2);
+		expect(forVisitor).not.toBe(forAction);
+		expect(forVisitor?.value).toBe(forAction?.value);
+	});
+
+	it.each([
+		["no headers at all", undefined],
+		["a plain visit", { accept: "text/html", "user-agent": "Googlebot" }],
+		["an RSC navigation", { rsc: "1", "next-router-state-tree": "%5B%5D" }],
+		["a JSON post that is not a form", { "content-type": "application/json" }],
+		["an empty Next-Action header", { "next-action": "" }],
+	])("leaves the page copy as it is for %s", async (_name, headers) => {
+		const key = await oldPage("/de-eur/ostatne");
+
+		const entry = await newCacheFor(headers).get(key, PAGE_GET);
+
+		expect(entry?.lastModified).toBeLessThan(Date.now() - HOUR / 2);
+	});
+
+	it("touches only page copies: a fetch result keeps its own stamp for an action request too", async () => {
+		const key = uniqueKey("fetch-for-action");
+		const fetchData = {
+			kind: "FETCH",
+			data: { headers: {}, body: "x", url: "https://api.maky.store/graphql/", status: 200 },
+			revalidate: 300,
+		} as unknown as EntryData;
+		await newCacheFor({}).set(key, fetchData, {
+			fetchCache: true,
+			tags: [],
+			fetchIdx: 0,
+			fetchUrl: "x",
+		} as unknown as SetContext);
+		memoryCache().get(key).lastModified = Date.now() - HOUR;
+
+		const entry = await newCacheFor({ "next-action": "6012abcd" }).get(key, {
+			kind: "FETCH",
+			tags: [],
+			softTags: [],
+			fetchIdx: 0,
+			fetchUrl: "x",
+		} as unknown as GetContext);
+
+		expect(entry?.lastModified).toBeLessThan(Date.now() - HOUR / 2);
+	});
+
+	it("answers nothing for a page it has not got, as before", async () => {
+		await expect(
+			newCacheFor({ "next-action": "6012abcd" }).get(uniqueKey("/de-eur/neznama"), PAGE_GET),
+		).resolves.toBeNull();
+	});
+
+	it("recognises a possible Server Action the way Next does, by header or by form content type", () => {
+		expect(isPossibleServerAction({ "next-action": "x" })).toBe(true);
+		expect(isPossibleServerAction({ "content-type": "Multipart/Form-Data; boundary=b" })).toBe(true);
+		expect(
+			isPossibleServerAction({ "content-type": "application/x-www-form-urlencoded; charset=UTF-8" }),
+		).toBe(true);
+		expect(isPossibleServerAction({ "content-type": "text/plain;charset=UTF-8" })).toBe(false);
+		expect(isPossibleServerAction({ "content-type": "multipart/mixed" })).toBe(false);
+		expect(isPossibleServerAction({})).toBe(false);
+		expect(isPossibleServerAction(undefined)).toBe(false);
+	});
+
+	// The property Next's own code acts on: `isStale` on the entry of its IncrementalCache. Next schedules the
+	// background re-render of the page when it is `true` or `-1` and the request is a Server Action.
+	it("makes Next's IncrementalCache call the copy fresh for an action and stale for a plain request", async () => {
+		(globalThis as { AsyncLocalStorage?: unknown }).AsyncLocalStorage ??= AsyncLocalStorage;
+		const { IncrementalCache } = (await import(
+			"next/dist/server/lib/incremental-cache/index.js"
+		)) as unknown as {
+			IncrementalCache: new (options: Record<string, unknown>) => {
+				get(key: string, ctx: unknown): Promise<{ isStale?: boolean | -1 } | null>;
+			};
+		};
+		const key = await oldPage("/de-eur/next");
+		const lookup = (headers: Record<string, string>) =>
+			new IncrementalCache({
+				fs: nodeFs,
+				dev: false,
+				requestHeaders: headers,
+				minimalMode: false,
+				serverDistDir: serverDir,
+				flushToDisk: false,
+				maxMemoryCacheSize: 8 * 1024 * 1024,
+				allowedRevalidateHeaderKeys: [],
+				getPrerenderManifest: () => ({
+					version: 4,
+					routes: {},
+					dynamicRoutes: {},
+					notFoundRoutes: [],
+					preview: { previewModeId: "id", previewModeSigningKey: "key", previewModeEncryptionKey: "key" },
+				}),
+				CurCacheHandler: BuildFilesOnDiskCache,
+			}).get(key, { kind: "APP_PAGE", isRoutePPREnabled: true, isFallback: false });
+
+		const visitor = await lookup({ accept: "text/html" });
+		const action = await lookup({
+			"next-action": "6012abcd",
+			"content-type": "multipart/form-data; boundary=b",
+		});
+
+		expect(visitor?.isStale).toBe(true);
+		expect(action?.isStale).toBeFalsy();
+		expect(action?.isStale).not.toBe(-1);
+	}, 30_000);
 });
 
 describe("cache-handler.mjs while the build runs", () => {

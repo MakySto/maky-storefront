@@ -822,12 +822,27 @@ the box) and never removed it. The sitemap names some 238 000 URLs; 19 501 pages
 - **`cache-handler.mjs`**, set as `cacheHandler` in `next.config.js` for the production build and server (not for
   `NEXT_OUTPUT=standalone`, development or tests). `next start` reads it from the `next.config.js` of the checkout, not
   from the build: an older build put back from a snapshot runs with it too, and a checkout without the file brings the
-  stock cache, and its disk growth, back (checked with the stock build in a project directory that has the handler). It is Next's own `FileSystemCache` with one change, in `set`:
+  stock cache, and its disk growth, back (checked with the stock build in a project directory that has the handler). It is Next's own `FileSystemCache` with one change in `set`:
   an entry is written to disk only while the build runs, or when its file is already there (a page the build made
   is refreshed in place, so a restart still picks up the regenerated version). Anything else lives in the memory
-  LRU and nowhere else. `get` is untouched, so tags, `revalidatePath` / `revalidateTag` and stale-while-revalidate
-  work exactly as before. Any doubt (an unknown kind, a path that cannot be built) means memory only: this class
-  can write less than the stock one, never more. `cacheMaxMemorySize` is 256 MB (Next's default is 50), for the page
+  LRU and nowhere else. `get` is untouched for every request except one that can be a Server Action (below), so
+  tags, `revalidatePath` / `revalidateTag` and stale-while-revalidate work exactly as before. Any doubt (an unknown
+  kind, a path that cannot be built) means memory only: this class can write less than the stock one, never more.
+  The second change is in `get` and is about Server Actions, not about the disk: **a Server Action on a page whose
+  stored copy is stale answered 500** (found 2026-11-04). With Cache Components Next looks the page up for an action,
+  and for a stale copy it schedules a background re-render of the page with the action's own request (same `req`,
+  `res`, header and body). That render enters the action handler a second time on a body the first pass is
+  reading: one parser fails with "Unexpected end of form" and sets the shared response to 500, the other runs the
+  action (the cart line is added) and renders the page. It repeats on every click until a plain visit refreshes
+  the copy, so it showed after a restart (build copies are old) and while Saleor was slow (a failed read gives
+  the page a 5 second life). The handler is made per request and is given its headers; to a request with a
+  `next-action` header or a form content type it returns the page copy dated a minute ahead, which Next counts as
+  fresh, so the second render is never scheduled. It returns a copy and writes nothing; the resumable state is
+  the same. A Next upgrade may fix it upstream (the same app on 16.4.5 answers 200; the lookup is still in the
+  code of 16.3.8, which was read and not run), after which this can go; until then
+  `src/config/cache-handler.test.ts` pins it, through Next's own `IncrementalCache`. Never answer it by a
+  proxy rule that skips the action or by a rewrite table (PR 91, reverted): the stale copy is looked up in any
+  case. `cacheMaxMemorySize` is 256 MB (Next's default is 50), for the page
   store and for the `"use cache"` store each: about a thousand market pages next to the whole prerendered set, 412 MB
   more than today once both stores are full (up to some 550 MB: the page store counts characters, and V8 keeps a
   string with a letter outside Latin-1, such as the č or ł of the Czech and Polish pages, at two bytes a character).
