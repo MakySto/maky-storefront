@@ -24,6 +24,7 @@ import { __forgetRootContext, hasRootContext } from "./lib/async/detached";
 import { datasetHashFromText } from "./lib/fitment/dataset-hash";
 import fixtureDataset from "./lib/fitment/fixtures/dataset-v1.json";
 import { __resetFitmentMemo } from "./lib/fitment/provider";
+import { __bootWarmupsSettled } from "./lib/boot-warmups";
 import { stopMemoryLog } from "./lib/memory-log";
 
 /**
@@ -86,7 +87,10 @@ async function boot(env: Record<string, string | undefined>): Promise<Captured> 
 const withdrawalLine = (c: Captured): string =>
 	[...c.log, ...c.warn, ...c.error].find((line) => line.startsWith("[withdrawal] form=")) ?? "";
 
-afterEach(() => {
+afterEach(async () => {
+	// The warm-ups are a background chain that one test starts and may leave running: it would call its
+	// mocks in the next test, after their `mockClear`. Wait for it to end, then reset (no timers).
+	await __bootWarmupsSettled();
 	vi.unstubAllEnvs();
 	vi.unstubAllGlobals();
 	vi.restoreAllMocks();
