@@ -53,6 +53,8 @@ import { type FitmentOffer } from "@/lib/fitment/offers";
 import { type SetTitle } from "@/lib/fitment/set-title";
 import { type FitmentVerdict } from "@/lib/fitment/contract";
 import { fitStatementFor, presentCardFailure } from "./configurator-card-state";
+import { PaymentLockRecovery } from "@/checkout/components/b2b/payment-lock-recovery";
+import { buildCheckoutPath } from "@/session-bridge";
 
 export type ResultCard = {
 	offer: FitmentOffer;
@@ -94,6 +96,9 @@ export function ConfiguratorResults({
 	const [pending, startTransition] = useTransition();
 	const [busyId, setBusyId] = useState<string | null>(null);
 	const [errors, setErrors] = useState<Record<string, AddSetFailure>>({});
+	// For a set refused because a payment is in progress: the checkout to end that payment for (contract MAKY-B2B-V1
+	// revision 2), and a key that starts the panel afresh at every refused add.
+	const [paymentLocks, setPaymentLocks] = useState<Record<string, { checkoutId: string; key: number }>>({});
 
 	const add = (offer: FitmentOffer) => {
 		if (offer.isPurchasable !== true || offer.isDemo) return;
@@ -112,6 +117,16 @@ export function ConfiguratorResults({
 				});
 				if (!result.ok) {
 					setErrors((current) => ({ ...current, [offer.saleorVariantId]: result.reason }));
+					const lock = result.reason === "payment-locked" ? result.paymentLock : undefined;
+					if (lock) {
+						setPaymentLocks((current) => ({
+							...current,
+							[offer.saleorVariantId]: {
+								checkoutId: lock.checkoutId,
+								key: (current[offer.saleorVariantId]?.key ?? 0) + 1,
+							},
+						}));
+					}
 					return;
 				}
 				router.refresh();
@@ -299,7 +314,27 @@ export function ConfiguratorResults({
 
 							<div className={ACTION_ROW}>
 								<div className="space-y-2">
-									{failure?.tone === "status" ? (
+									{errors[offer.saleorVariantId] === "payment-locked" &&
+									paymentLocks[offer.saleorVariantId] ? (
+										<PaymentLockRecovery
+											key={paymentLocks[offer.saleorVariantId]!.key}
+											checkoutId={paymentLocks[offer.saleorVariantId]!.checkoutId}
+											channelSlug={channel}
+											subject="cart"
+											payOriginal={{
+												href: buildCheckoutPath({
+													checkoutId: paymentLocks[offer.saleorVariantId]!.checkoutId,
+													step: "payment",
+												}),
+											}}
+											finishOrder={{
+												href: buildCheckoutPath({
+													checkoutId: paymentLocks[offer.saleorVariantId]!.checkoutId,
+													step: "payment",
+												}),
+											}}
+										/>
+									) : failure?.tone === "status" ? (
 										// Deliberately not an error, and not red: we do not know that it
 										// failed, and a refusal-looking message invites a second click on a
 										// mutation that is not idempotent. Same presentation as the listing's

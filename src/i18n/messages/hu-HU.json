@@ -342,6 +342,7 @@
 		"addInvalid": "Kérjük, ellenőrizze a megadott mennyiséget.",
 		"addNotFound": "A termék nem található.",
 		"addFailed": "A terméket nem sikerült a kosárba tenni.",
+		"addPaymentLocked": "A rendeléséhez már folyamatban van egy fizetés, ezért most nem adható hozzá termék. Fejezze be, vagy szakítsa meg biztonságosan a pénztárban.",
 		"addUnconfirmed": "Nem tudjuk megerősíteni, hogy a termék bekerült-e. Kérjük, ellenőrizze a kosarat.",
 		"emptyCart": "A kosara üres",
 		"continueShopping": "Vásárlás folytatása",
@@ -595,7 +596,8 @@
 			"checkoutLocked": "Ehhez a rendeléshez már folyamatban van egy fizetés. Fejezze be vagy szakítsa meg biztonságosan, mielőtt újat indítana.",
 			"orderUpdated": "A rendelés frissült. Fizetés előtt ellenőrizze az új összeget.",
 			"finalStateUnconfirmed": "A végső árat most nem sikerült megerősíteni. Próbálja újra.",
-			"completeBlockedNoNewPayment": "A rendelést most nem sikerült befejezni. Ha már fizetett, ne indítson új fizetést: frissítse az oldalt, vagy vegye fel velünk a kapcsolatot."
+			"completeBlockedNoNewPayment": "A rendelést most nem sikerült befejezni. Ha már fizetett, ne indítson új fizetést: frissítse az oldalt, vagy vegye fel velünk a kapcsolatot.",
+			"completeOfferChanged": "Az összeg megváltozott, ezért a rendelés nem jött létre. A fizetés összege automatikusan felszabadul. Ha segítségre van szüksége a rendeléssel kapcsolatban, vegye fel velünk a kapcsolatot."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Tesztmód:</strong> Ez egy szimulált rendelés-visszaigazolás. Valódi fizetés nem történt.",
@@ -675,6 +677,34 @@
 				"recheck": "Újbóli ellenőrzés",
 				"refreshStatus": "Fizetési állapot frissítése",
 				"edit": "Szerkesztés"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "Ehhez a rendeléshez már folyamatban van egy fizetés, ezért az adatok most nem módosíthatók. A fizetést befejezheti, vagy biztonságosan megszakíthatja, majd módosíthatja az adatokat.",
+				"cart": "Ehhez a rendeléshez már folyamatban van egy fizetés, ezért a kosár most nem módosítható. A fizetést befejezheti, vagy biztonságosan megszakíthatja, majd módosíthatja a kosarat.",
+				"payment": "Ehhez a rendeléshez már folyamatban van egy fizetés, ezért most nem indítható új. A megkezdett fizetést biztonságosan megszakíthatja, majd újra fizethet."
+			},
+			"releasing": "A megkezdett fizetés megszakítása folyamatban…",
+			"waitingCancel": "Várjuk, hogy a fizetési szolgáltató megerősítse a fizetés megszakítását. Ez általában néhány másodpercig tart.",
+			"waitingAttempt": "A fizetés létrehozása még folyamatban van. Egy pillanat múlva újra megpróbáljuk megszakítani.",
+			"released": {
+				"details": "A megkezdett fizetés megszakadt. Most módosíthatja és mentheti az adatokat.",
+				"cart": "A megkezdett fizetés megszakadt. Most módosíthatja a kosarat.",
+				"payment": "A megkezdett fizetés megszakadt. Ellenőrizze az összeget, és fizessen újra."
+			},
+			"funds": "A fizetés már beérkezett, vagy a bank megerősítésére vár, ezért a rendelés már nem módosítható. Fejezze be az eredeti adatokkal.",
+			"notConfirmed": "A fizetés megszakítását még nem erősítették meg. Próbálja újra egy pillanat múlva, fizesse ki a rendelést az eredeti adatokkal, vagy vegye fel velünk a kapcsolatot.",
+			"unavailable": "A megkezdett fizetést most nem tudjuk megszakítani. A rendelést kifizetheti az eredeti adatokkal, vagy felveheti velünk a kapcsolatot.",
+			"failed": "A megkezdett fizetést nem sikerült megszakítani. Próbálja újra egy pillanat múlva, fizesse ki a rendelést az eredeti adatokkal, vagy vegye fel velünk a kapcsolatot.",
+			"actions": {
+				"releaseDetails": "Adatok módosítása",
+				"releaseCart": "Kosár módosítása",
+				"releasePayment": "Megkezdett fizetés megszakítása",
+				"retry": "Újrapróbálás",
+				"payOriginal": "Fizetés az eredeti adatokkal",
+				"finishOrder": "Rendelés befejezése",
+				"contact": "Kapcsolatfelvétel"
 			}
 		}
 	},
@@ -930,6 +960,7 @@
 		"errorNotVerified": "Ez a szett nincs ellenőrizve a jelenleg kiválasztott járműhöz.",
 		"errorNotAvailable": "Ez a szett már nem szerepel a kínálatunkban.",
 		"errorCartRejected": "A szettet nem sikerült kosárba helyezni.",
+		"errorPaymentLocked": "A rendeléséhez már folyamatban van egy fizetés, ezért a szett most nem adható hozzá. Fejezze be, vagy szakítsa meg biztonságosan a pénztárban.",
 		"errorLookupFailed": "Nem tudjuk megerősíteni, hogy a szett bekerült-e a kosárba. Kérjük, ellenőrizze a kosarat.",
 		"errorCatalogueUnavailable": "A szett elérhetőségét most nem sikerült ellenőrizni. Kérjük, próbálja újra.",
 		"errorGeneric": "A szettet nem sikerült kosárba helyezni.",

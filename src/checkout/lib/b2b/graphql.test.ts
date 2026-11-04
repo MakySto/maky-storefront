@@ -1,13 +1,33 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-import { buildSchema, extendSchema, graphql, parse, validate, type GraphQLSchema } from "graphql";
+import {
+	buildSchema,
+	extendSchema,
+	getArgumentValues,
+	getVariableValues,
+	graphql,
+	Kind,
+	parse,
+	TypeInfo,
+	validate,
+	visit,
+	visitWithTypeInfo,
+	type DocumentNode,
+	type GraphQLSchema,
+} from "graphql";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type { GraphQLResult } from "@/lib/graphql";
 
 import { deriveExtension } from "../../../../scripts/b2b-schema-extension.mjs";
-import { B2B_DOCUMENTS, MAKY_B2B_READINESS_OPERATION } from "./graphql";
+import { B2B_PAYMENT_LOCK_RELEASE_STATUSES } from "./contract";
+import {
+	B2B_DOCUMENTS,
+	MAKY_B2B_READINESS_OPERATION,
+	MAKY_B2B_READINESS_PROBE_VARIABLES,
+	MakyB2bReadinessDocument,
+} from "./graphql";
 import { checkB2bReadiness, resetB2bReadinessCache } from "./server/b2b-readiness";
 import { setB2bAppExecutorForTests } from "./server/b2b-saleor-client";
 
@@ -42,20 +62,68 @@ const APP = {
 };
 
 /**
- * A Saleor stand-in for one schema: like `SaleorGraphQLBackend`, it validates the WHOLE document and answers an
- * invalid one with HTTP 400 and the errors (handed over as the transport does: status and response text); a valid
- * one runs the operation named by `operationName` only. The mutation's resolver records a call, so a probe that
- * executed the write would be seen.
+ * Saleor's cost check (`CostValidator`, `saleor/graphql/core/validators/query_cost.py`) as it treats variables: before
+ * anything runs, it reads the arguments of every field of EVERY operation in the document through graphql-core's
+ * `get_argument_values`, which refuses a required argument whose variable has no value, whatever `operationName`
+ * says. The live Saleor answered the readiness probe sent without `$id` and `$input` with HTTP 400 and exactly this
+ * refusal (server of the shop, 3. 11. 2026). graphql-js's `getArgumentValues` applies the same rule.
+ */
+function costCheckErrors(
+	schema: GraphQLSchema,
+	document: DocumentNode,
+	variables: Record<string, unknown> | undefined,
+): string[] {
+	const errors: string[] = [];
+	const typeInfo = new TypeInfo(schema);
+	visit(
+		document,
+		visitWithTypeInfo(typeInfo, {
+			Field(node) {
+				const field = typeInfo.getFieldDef();
+				if (!field || !node.arguments?.length) return;
+				try {
+					getArgumentValues(field, node, variables);
+				} catch (error) {
+					errors.push((error as Error).message);
+				}
+			},
+		}),
+	);
+	return errors;
+}
+
+/** What the transport hands over for Saleor's HTTP 400 with GraphQL errors. */
+function http400(messages: string[]): GraphQLResult<unknown> {
+	const body = JSON.stringify({ errors: messages.map((message) => ({ message })) });
+	return {
+		ok: false,
+		error: { type: "http", statusCode: 400, message: `HTTP 400: Bad Request\n${body}`, isRetryable: false },
+	} as GraphQLResult<unknown>;
+}
+
+/**
+ * A Saleor stand-in for one schema: like `SaleorGraphQLBackend`, it validates the WHOLE document, then checks its
+ * cost over every operation (`costCheckErrors`), and answers a refused one with HTTP 400 and the errors (handed over
+ * as the transport does: status and response text); an accepted one runs the operation named by `operationName`
+ * only. The resolvers record what ran, so a probe that executed a write or read a checkout would be seen.
  */
 function saleorFor(schema: GraphQLSchema) {
 	const calls: Array<{ operationName?: string }> = [];
 	let mutationExecuted = false;
+	let checkoutRead = false;
 	const rootValue = {
 		app: () => APP,
-		checkout: () => null,
+		checkout: () => {
+			checkoutRead = true;
+			return null;
+		},
 		checkoutB2bTaxAttestationUpdate: () => {
 			mutationExecuted = true;
 			return { errors: [], checkout: null };
+		},
+		checkoutB2bPaymentLockRelease: () => {
+			mutationExecuted = true;
+			return { errors: [], checkout: null, status: "RELEASED" };
 		},
 	};
 	const executor = async (
@@ -64,19 +132,11 @@ function saleorFor(schema: GraphQLSchema) {
 	): Promise<GraphQLResult<unknown>> => {
 		calls.push({ operationName: options.operationName });
 		const source = String(document);
-		const errors = validate(schema, parse(source));
-		if (errors.length) {
-			const body = JSON.stringify({ errors: errors.map((error) => ({ message: error.message })) });
-			return {
-				ok: false,
-				error: {
-					type: "http",
-					statusCode: 400,
-					message: `HTTP 400: Bad Request\n${body}`,
-					isRetryable: false,
-				},
-			} as GraphQLResult<unknown>;
-		}
+		const ast = parse(source);
+		const errors = validate(schema, ast);
+		if (errors.length) return http400(errors.map((error) => error.message));
+		const costErrors = costCheckErrors(schema, ast, options.variables as Record<string, unknown> | undefined);
+		if (costErrors.length) return http400(costErrors);
 		const result = await graphql({
 			schema,
 			source,
@@ -96,7 +156,7 @@ function saleorFor(schema: GraphQLSchema) {
 		}
 		return { ok: true, data: result.data } as GraphQLResult<unknown>;
 	};
-	return { executor, calls, mutationExecuted: () => mutationExecuted };
+	return { executor, calls, mutationExecuted: () => mutationExecuted, checkoutRead: () => checkoutRead };
 }
 
 describe.skipIf(!havePinned)(
@@ -148,6 +208,21 @@ describe.skipIf(!havePinned)(
 			expect(String(B2B_DOCUMENTS.MakyB2bApplyVerificationDocument)).toMatch(/\bpaymentLocked\b/);
 		});
 
+		it("the lock release asks for the backend's status and for `paymentLocked` in the same answer", () => {
+			const release = String(B2B_DOCUMENTS.MakyB2bReleasePaymentLockDocument);
+			expect(release).toMatch(/checkoutB2bPaymentLockRelease\(id: \$id\)/);
+			expect(release).toMatch(/\bstatus\b/);
+			expect(release).toMatch(/errors \{\s*field\s*code\s*message\s*\}/);
+			expect(release).toMatch(/b2bTaxState \{[^}]*\bpaymentLocked\b/);
+			// The statuses and error codes the storefront maps are exactly the backend's.
+			const values = (name: string) =>
+				(backend!.getType(name) as unknown as { getValues: () => Array<{ name: string }> })
+					.getValues()
+					.map((value) => value.name);
+			expect(values("B2bPaymentLockReleaseStatus")).toEqual([...B2B_PAYMENT_LOCK_RELEASE_STATUSES]);
+			expect(values("CheckoutB2bPaymentLockReleaseErrorCode")).toEqual(["GRAPHQL_ERROR", "NOT_FOUND"]);
+		});
+
 		it("the readiness probe, executed on the backend's schema: ready, and the write is only validated", async () => {
 			const saleor = saleorFor(backend!);
 			setB2bAppExecutorForTests(saleor.executor as never);
@@ -161,6 +236,50 @@ describe.skipIf(!havePinned)(
 			});
 			expect(saleor.calls).toEqual([{ operationName: MAKY_B2B_READINESS_OPERATION }]);
 			expect(saleor.mutationExecuted()).toBe(false);
+			// The placeholder id is never used to read a checkout.
+			expect(saleor.checkoutRead()).toBe(false);
+		});
+
+		it("Saleor's cost check refuses the probe without values for the variables it only validates (3. 11.)", async () => {
+			// The same three requests the server of the shop sent to the live Saleor, with the same three answers.
+			const saleor = saleorFor(backend!);
+			const send = (variables: Record<string, unknown>) =>
+				saleor.executor(MakyB2bReadinessDocument, { variables, operationName: MAKY_B2B_READINESS_OPERATION });
+			// The messages of an HTTP 400, as Saleor sends them in the body.
+			const refused = (result: GraphQLResult<unknown>) => {
+				expect(result).toMatchObject({ ok: false, error: { statusCode: 400 } });
+				const text = result.ok ? "" : result.error.message;
+				const body = JSON.parse(text.slice(text.indexOf("{"))) as { errors: Array<{ message: string }> };
+				return body.errors.map((error) => error.message).join("\n");
+			};
+			const nothing = refused(await send({}));
+			expect(nothing).toMatch(/variable "\$id" which was not provided/);
+			const idOnly = refused(await send({ id: MAKY_B2B_READINESS_PROBE_VARIABLES.id }));
+			expect(idOnly).toMatch(/variable "\$input" which was not provided/);
+			expect(idOnly).not.toMatch(/"\$id"/);
+			expect(await send({ ...MAKY_B2B_READINESS_PROBE_VARIABLES })).toEqual({ ok: true, data: { app: APP } });
+			expect(saleor.mutationExecuted()).toBe(false);
+			expect(saleor.checkoutRead()).toBe(false);
+		});
+
+		it("the placeholders have the types of the variables they stand for", () => {
+			// Not needed by the cost check, which takes the raw value; a Saleor that coerced them would still accept them.
+			const ast = parse(String(MakyB2bReadinessDocument));
+			const result = validate(backend!, ast);
+			expect(result).toEqual([]);
+			for (const operation of ast.definitions) {
+				if (operation.kind !== Kind.OPERATION_DEFINITION || !operation.variableDefinitions?.length) continue;
+				const values = Object.fromEntries(
+					operation.variableDefinitions.map((definition) => [
+						definition.variable.name.value,
+						MAKY_B2B_READINESS_PROBE_VARIABLES[
+							definition.variable.name.value as keyof typeof MAKY_B2B_READINESS_PROBE_VARIABLES
+						],
+					]),
+				);
+				const coerced = getVariableValues(backend!, operation.variableDefinitions, values);
+				expect(coerced.errors ?? []).toEqual([]);
+			}
 		});
 
 		it("the same probe on plain 3.23.31: not ready, and Saleor's validation says what is missing", async () => {
@@ -180,11 +299,26 @@ describe.skipIf(!havePinned)(
 				/\n\s*"""(?:(?!""")[\s\S])*"""\s*\n\s*paymentLocked: Boolean!\n/,
 				"\n",
 			);
-			expect(withoutLock).not.toMatch(/paymentLocked/);
+			expect(withoutLock).not.toMatch(/^\s*paymentLocked: Boolean!/m);
 			setB2bAppExecutorForTests(saleorFor(extendSchema(base!, parse(withoutLock))).executor as never);
 			const readiness = await checkB2bReadiness({ fresh: true });
 			expect(readiness.failures).toContain("schema-contract-invalid");
 			expect(readiness.schema.errors.join("\n")).toMatch(/paymentLocked/);
+		});
+
+		it("a backend with revision 1 of the contract (no lock release) is not ready, and the mutation is named", async () => {
+			const revision1 = extensionSdl.replace(
+				/\n\s*"""(?:(?!""")[\s\S])*"""\s*\n\s*checkoutB2bPaymentLockRelease\([\s\S]*?\): CheckoutB2bPaymentLockRelease\n/,
+				"\n",
+			);
+			expect(revision1).not.toMatch(/^\s*checkoutB2bPaymentLockRelease\(/m);
+			const saleor = saleorFor(extendSchema(base!, parse(revision1)));
+			setB2bAppExecutorForTests(saleor.executor as never);
+			const readiness = await checkB2bReadiness({ fresh: true });
+			expect(readiness.ok).toBe(false);
+			expect(readiness.failures).toContain("schema-contract-invalid");
+			expect(readiness.schema.errors.join("\n")).toMatch(/checkoutB2bPaymentLockRelease/);
+			expect(saleor.mutationExecuted()).toBe(false);
 		});
 
 		it("a type name the documents do not spell cannot make the check wrong (the old probe asked for one)", async () => {
@@ -199,6 +333,46 @@ describe.skipIf(!havePinned)(
 		});
 	},
 );
+
+/**
+ * The variables Saleor's cost check needs a value for: every one that an operation of the document declares as
+ * required (non-null, without a default). Needs no schema, so it runs on the production box too.
+ */
+function requiredVariablesWithoutValue(source: string, values: Record<string, unknown>): string[] {
+	const missing = new Set<string>();
+	for (const definition of parse(source).definitions) {
+		if (definition.kind !== Kind.OPERATION_DEFINITION) continue;
+		for (const variable of definition.variableDefinitions ?? []) {
+			const name = variable.variable.name.value;
+			const required = variable.type.kind === Kind.NON_NULL_TYPE && !variable.defaultValue;
+			if (required && values[name] == null) missing.add(name);
+		}
+	}
+	return [...missing].sort();
+}
+
+describe("the readiness probe gives every required variable of its document a value", () => {
+	const document = String(MakyB2bReadinessDocument);
+
+	it("with the values it sends, none is missing", () => {
+		expect(requiredVariablesWithoutValue(document, MAKY_B2B_READINESS_PROBE_VARIABLES)).toEqual([]);
+	});
+
+	it("without them, the two the live Saleor asked for are missing (the refusal of 3. 11.)", () => {
+		expect(requiredVariablesWithoutValue(document, {})).toEqual(["id", "input"]);
+	});
+
+	it("an operation added to the document with a required variable that has no value is caught", () => {
+		const added = `${document}\n\nquery MakyB2bSomethingNew($code: String!) {\n\tapp {\n\t\tid\n\t}\n}`;
+		expect(requiredVariablesWithoutValue(added, MAKY_B2B_READINESS_PROBE_VARIABLES)).toEqual(["code"]);
+	});
+
+	it("the placeholder id names no checkout: the nil UUID as a Saleor global id", () => {
+		expect(Buffer.from(MAKY_B2B_READINESS_PROBE_VARIABLES.id, "base64").toString("utf8")).toBe(
+			"Checkout:00000000-0000-0000-0000-000000000000",
+		);
+	});
+});
 
 describe("the extension is the backend's, generated", () => {
 	it("names the backend commit and the hash of the schema it came from", () => {

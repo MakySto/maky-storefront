@@ -111,6 +111,7 @@ export const SaleorCheckout: FC = () => {
 									<InformationStep
 										checkout={checkout}
 										onNext={() => goToStep(isShippingRequired ? "SHIPPING" : "PAYMENT")}
+										onGoToPayment={() => goToStep("PAYMENT")}
 									/>
 								)}
 								{currentStep.id === "SHIPPING" && (
@@ -118,6 +119,7 @@ export const SaleorCheckout: FC = () => {
 										checkout={checkout}
 										onBack={() => goToStep("INFO", "replace")}
 										onNext={() => goToStep("PAYMENT")}
+										onGoToPayment={() => goToStep("PAYMENT")}
 									/>
 								)}
 								{currentStep.id === "PAYMENT" && (

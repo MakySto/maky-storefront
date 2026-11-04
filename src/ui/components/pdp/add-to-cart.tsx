@@ -15,7 +15,7 @@ interface AddToCartProps {
 	availability?: ReactNode;
 	compareAtPrice?: string | null;
 	/**
-	 * Saleor's price without VAT, formatted, where the page states it for information (EU Kargo,
+	 * Saleor's price without VAT, formatted, where the page states it for information (EU markets, every product,
 	 * `lib/informative-net-price.ts`). Printed under the gross price; never instead of it.
 	 */
 	netPrice?: string | null;

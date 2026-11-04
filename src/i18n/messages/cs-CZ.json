@@ -342,6 +342,7 @@
 		"addInvalid": "Zkontrolujte prosím zvolené množství.",
 		"addNotFound": "Produkt se nepodařilo najít.",
 		"addFailed": "Produkt se nepodařilo přidat do košíku.",
+		"addPaymentLocked": "Platba vaší objednávky již probíhá, proto teď nelze přidat zboží. Dokončete ji, nebo ji bezpečně ukončete v pokladně.",
 		"addUnconfirmed": "Nevíme, zda se produkt přidal. Zkontrolujte prosím košík.",
 		"emptyCart": "Váš košík je prázdný",
 		"continueShopping": "Pokračovat v nákupu",
@@ -595,7 +596,8 @@
 			"checkoutLocked": "Platba této objednávky již probíhá. Dokončete ji, nebo ji bezpečně ukončete, než začnete novou.",
 			"orderUpdated": "Objednávka se aktualizovala. Před platbou zkontrolujte novou částku.",
 			"finalStateUnconfirmed": "Konečnou cenu se teď nepodařilo potvrdit. Zkuste to znovu.",
-			"completeBlockedNoNewPayment": "Objednávku se teď nepodařilo dokončit. Pokud jste již zaplatili, nezačínejte novou platbu: obnovte stránku, nebo nás kontaktujte."
+			"completeBlockedNoNewPayment": "Objednávku se teď nepodařilo dokončit. Pokud jste již zaplatili, nezačínejte novou platbu: obnovte stránku, nebo nás kontaktujte.",
+			"completeOfferChanged": "Částka se změnila, proto objednávka nevznikla. Peníze z této platby se uvolní automaticky. Pokud potřebujete s objednávkou pomoci, kontaktujte nás."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Testovací režim:</strong> Toto je simulované potvrzení objednávky. Žádná skutečná platba neproběhla.",
@@ -675,6 +677,34 @@
 				"recheck": "Zkontrolovat znovu",
 				"refreshStatus": "Obnovit stav platby",
 				"edit": "Upravit"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "Platba této objednávky již probíhá, proto teď nelze údaje změnit. Platbu můžete dokončit, nebo ji bezpečně ukončit a potom údaje změnit.",
+				"cart": "Platba této objednávky již probíhá, proto teď nelze košík změnit. Platbu můžete dokončit, nebo ji bezpečně ukončit a potom košík upravit.",
+				"payment": "Platba této objednávky již probíhá, proto teď nelze začít novou. Zahájenou platbu můžete bezpečně ukončit a potom zaplatit znovu."
+			},
+			"releasing": "Ukončujeme zahájenou platbu…",
+			"waitingCancel": "Čekáme, až platební brána potvrdí zrušení platby. Obvykle to trvá několik sekund.",
+			"waitingAttempt": "Platba se ještě zakládá. Za chvíli ji zkusíme ukončit znovu.",
+			"released": {
+				"details": "Zahájená platba je zrušena. Teď můžete údaje změnit a uložit.",
+				"cart": "Zahájená platba je zrušena. Teď můžete košík upravit.",
+				"payment": "Zahájená platba je zrušena. Zkontrolujte částku a zaplaťte znovu."
+			},
+			"funds": "Platba je již přijata nebo čeká na potvrzení banky, proto nelze objednávku měnit. Dokončete ji s původními údaji.",
+			"notConfirmed": "Zrušení platby zatím nebylo potvrzeno. Zkuste to za chvíli znovu, zaplaťte objednávku s původními údaji, nebo nás kontaktujte.",
+			"unavailable": "Zahájenou platbu teď nemůžeme ukončit. Objednávku můžete zaplatit s původními údaji, nebo nás kontaktovat.",
+			"failed": "Zahájenou platbu se nepodařilo ukončit. Zkuste to za chvíli znovu, zaplaťte objednávku s původními údaji, nebo nás kontaktujte.",
+			"actions": {
+				"releaseDetails": "Změnit údaje",
+				"releaseCart": "Upravit košík",
+				"releasePayment": "Ukončit zahájenou platbu",
+				"retry": "Zkusit znovu",
+				"payOriginal": "Zaplatit s původními údaji",
+				"finishOrder": "Dokončit objednávku",
+				"contact": "Kontaktovat obchod"
 			}
 		}
 	},
@@ -930,6 +960,7 @@
 		"errorNotVerified": "Pro aktuálně vybrané vozidlo není tato sestava ověřená.",
 		"errorNotAvailable": "Tato sestava už není v nabídce.",
 		"errorCartRejected": "Sestavu se nepodařilo přidat do košíku.",
+		"errorPaymentLocked": "Platba vaší objednávky již probíhá, proto teď nelze přidat sestavu. Dokončete ji, nebo ji bezpečně ukončete v pokladně.",
 		"errorLookupFailed": "Nedokážeme potvrdit, jestli se sestava přidala. Zkontrolujte prosím košík.",
 		"errorCatalogueUnavailable": "Dostupnost sestavy se teď nepodařilo ověřit. Zkuste to prosím znovu.",
 		"errorGeneric": "Sestavu se nepodařilo přidat do košíku.",

@@ -342,6 +342,7 @@
 		"addInvalid": "Verificați cantitatea selectată.",
 		"addNotFound": "Produsul nu a fost găsit.",
 		"addFailed": "Produsul nu a putut fi adăugat în coș.",
+		"addPaymentLocked": "O plată pentru comanda dumneavoastră este deja în curs, așa că acum nu se pot adăuga produse. Finalizați-o sau anulați-o în siguranță la finalizarea comenzii.",
 		"addUnconfirmed": "Nu putem confirma dacă produsul a fost adăugat. Verificați coșul.",
 		"emptyCart": "Coșul este gol",
 		"continueShopping": "Continuă cumpărăturile",
@@ -595,7 +596,8 @@
 			"checkoutLocked": "O plată pentru această comandă este deja în curs. Finalizați-o sau anulați-o în siguranță înainte de a începe una nouă.",
 			"orderUpdated": "Comanda a fost actualizată. Verificați noua sumă înainte de plată.",
 			"finalStateUnconfirmed": "Prețul final nu a putut fi confirmat acum. Încercați din nou.",
-			"completeBlockedNoNewPayment": "Comanda nu a putut fi finalizată acum. Dacă ați plătit deja, nu începeți o nouă plată: reîmprospătați pagina sau contactați-ne."
+			"completeBlockedNoNewPayment": "Comanda nu a putut fi finalizată acum. Dacă ați plătit deja, nu începeți o nouă plată: reîmprospătați pagina sau contactați-ne.",
+			"completeOfferChanged": "Suma s-a modificat, așa că comanda nu a fost creată. Banii din această plată vor fi eliberați automat. Dacă aveți nevoie de ajutor cu comanda, contactați-ne."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Mod de testare:</strong> Aceasta este o confirmare simulată. Nu a fost efectuată nicio plată reală.",
@@ -675,6 +677,34 @@
 				"recheck": "Controlați din nou",
 				"refreshStatus": "Actualizați starea plății",
 				"edit": "Editați"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "O plată pentru această comandă este deja în curs, așa că datele nu pot fi modificate acum. Puteți finaliza plata sau o puteți anula în siguranță și apoi modifica datele.",
+				"cart": "O plată pentru această comandă este deja în curs, așa că coșul nu poate fi modificat acum. Puteți finaliza plata sau o puteți anula în siguranță și apoi modifica coșul.",
+				"payment": "O plată pentru această comandă este deja în curs, așa că acum nu se poate începe una nouă. Puteți anula în siguranță plata începută și apoi plăti din nou."
+			},
+			"releasing": "Anulăm plata începută…",
+			"waitingCancel": "Așteptăm ca procesatorul de plăți să confirme anularea plății. De obicei durează câteva secunde.",
+			"waitingAttempt": "Plata este încă în curs de creare. Vom încerca din nou să o anulăm în câteva momente.",
+			"released": {
+				"details": "Plata începută a fost anulată. Acum puteți modifica datele și le puteți salva.",
+				"cart": "Plata începută a fost anulată. Acum puteți modifica coșul.",
+				"payment": "Plata începută a fost anulată. Verificați suma și plătiți din nou."
+			},
+			"funds": "Plata a fost deja primită sau așteaptă confirmarea băncii, așa că comanda nu mai poate fi modificată. Finalizați-o cu datele inițiale.",
+			"notConfirmed": "Anularea plății nu a fost încă confirmată. Încercați din nou în câteva momente, plătiți comanda cu datele inițiale sau contactați-ne.",
+			"unavailable": "Nu putem anula acum plata începută. Puteți plăti comanda cu datele inițiale sau ne puteți contacta.",
+			"failed": "Plata începută nu a putut fi anulată. Încercați din nou în câteva momente, plătiți comanda cu datele inițiale sau contactați-ne.",
+			"actions": {
+				"releaseDetails": "Modificați datele",
+				"releaseCart": "Modificați coșul",
+				"releasePayment": "Anulați plata începută",
+				"retry": "Încercați din nou",
+				"payOriginal": "Plătiți cu datele inițiale",
+				"finishOrder": "Finalizați comanda",
+				"contact": "Contactați magazinul"
 			}
 		}
 	},
@@ -930,6 +960,7 @@
 		"errorNotVerified": "Pentru vehiculul selectat în acest moment, acest set nu este verificat.",
 		"errorNotAvailable": "Acest set nu mai este în ofertă.",
 		"errorCartRejected": "Setul nu a putut fi adăugat în coș.",
+		"errorPaymentLocked": "O plată pentru comanda dumneavoastră este deja în curs, așa că acum nu se poate adăuga setul. Finalizați-o sau anulați-o în siguranță la finalizarea comenzii.",
 		"errorLookupFailed": "Nu putem confirma dacă setul a fost adăugat. Vă rugăm să verificați coșul.",
 		"errorCatalogueUnavailable": "Nu am putut verifica disponibilitatea setului în acest moment. Vă rugăm să încercați din nou.",
 		"errorGeneric": "Setul nu a putut fi adăugat în coș.",

@@ -1,13 +1,13 @@
-import { isKargoCategory, type CategoryRef } from "@/config/category-routes";
 import { isB2bEuChannel } from "@/checkout/lib/b2b/contract";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 
 /**
- * The informative price without VAT under the main (gross) price on the product page — zadanie 02, "Ceny na
- * produkte a v košíku": EU markets, the roof racks and roof baskets for vans only.
+ * The informative price without VAT under the main (gross) price on the product page, in the EU markets of
+ * MAKY-B2B-V1.
  *
- * Which products: the one verified configuration of that shelf, the Nordrive Kargo category
- * (`isKargoCategory`: its Saleor id first, then its base slug in every market), never the word "Kargo" in a name.
+ * Which products: every product. A company may buy anything in the shop as a company, not only the Kargo shelf
+ * (Marek, 2. 11. 2026; zadanie 02 had named only the roof racks and baskets for vans), and the backend's exemption
+ * does not depend on what is in the cart either.
  * Which markets: the EU channels of MAKY-B2B-V1; US and Canada are export markets with no VAT line at all.
  * Which number: Saleor's own `pricing.price.net` of the variant on the page, never a figure worked out here from
  * the gross. When Saleor's net is not below its gross (no tax configured for that channel, a free item) the line
@@ -22,7 +22,6 @@ type Money = { amount: number; currency: string };
 export type InformativeNetPriceInput = {
 	/** The route's channel or market (`sk-eur` or `sk`). */
 	channel: string;
-	category: CategoryRef | null | undefined;
 	/** The selected variant's pricing; nothing before a variant is chosen. */
 	price: { gross?: Money | null; net?: Money | null } | null | undefined;
 };
@@ -30,7 +29,6 @@ export type InformativeNetPriceInput = {
 export function informativeNetPrice(input: InformativeNetPriceInput): Money | null {
 	const saleorChannel = CHANNEL_MAP[input.channel]?.saleorSlug ?? input.channel;
 	if (!isB2bEuChannel(saleorChannel)) return null;
-	if (!isKargoCategory(input.channel, input.category)) return null;
 	const gross = input.price?.gross;
 	const net = input.price?.net;
 	if (!gross || !net) return null;

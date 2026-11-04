@@ -64,6 +64,23 @@ describe("classifyCheckoutErrors", () => {
 		expect(result).toEqual({ status: "rejected", reason: "unavailable", message: "only 2 left" });
 	});
 
+	it.each(["B2B_CHECKOUT_LOCKED", "CHECKOUT_LOCKED"])(
+		"reads %s as a payment in progress, ahead of anything else Saleor raised",
+		(code) => {
+			// Contract MAKY-B2B-V1 revision 2: a started payment locks the lines. That is not a property of this line,
+			// so "out of stock" beside it is not the thing to say: the way out of the payment is.
+			const result = classifyCheckoutErrors([
+				{ code: "INSUFFICIENT_STOCK", message: "only 2 left" },
+				{ code, message: "Checkout is locked by a payment in progress." },
+			]);
+			expect(result).toEqual({
+				status: "rejected",
+				reason: "payment-locked",
+				message: "Checkout is locked by a payment in progress.",
+			});
+		},
+	);
+
 	it("never returns an empty message", () => {
 		expect(classifyCheckoutErrors([{ code: "INSUFFICIENT_STOCK", message: "  " }])?.message).toBe(
 			"INSUFFICIENT_STOCK",
