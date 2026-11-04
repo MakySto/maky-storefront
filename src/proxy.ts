@@ -810,19 +810,5 @@ export const config = {
 	// Static files and root metadata routes are now recognised inside `proxy()`
 	// from a generated list instead. That costs one Set lookup on requests that
 	// used to skip the proxy entirely, and buys a gate with no hole in it.
-	//
-	// A server action (a request with a `Next-Action` header) is skipped as well. For every request it
-	// matches, Next clones the request body so that the proxy and the page can both read it, and under
-	// load that clone loses the body of the first action a fresh process receives: the action fails
-	// with "Unexpected end of form" and add to cart answers 500 (8 of 8 runs on a cold process, 0 of 3
-	// with the proxy skipped; Next 16.3.6 and 16.4.5 share the code). An action needs none of the
-	// proxy's work - it is not a page, it is not indexed, it sets no market cookie - except the URL
-	// rewrite, which `next.config.js` does for it from `lib/action-rewrites.generated.json`;
-	// `proxy.action-rewrites.test.ts` holds the two to the same destinations.
-	matcher: [
-		{
-			source: "/((?!api/|_next/).*)",
-			missing: [{ type: "header", key: "next-action" }],
-		},
-	],
+	matcher: ["/((?!api/|_next/).*)"],
 };

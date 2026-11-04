@@ -6,7 +6,6 @@ import createNextIntlPlugin from "next-intl/plugin";
 import { main as guardLiveBuild } from "./scripts/ops/guard-live-build.mjs";
 import { CMS_MEDIA_BASE_URL } from "./src/config/cms-media.js";
 import { HTML_LIMITED_BOTS } from "./src/config/html-limited-bots.js";
-import actionRewrites from "./src/lib/action-rewrites.generated.json" with { type: "json" };
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const cmsMediaBaseUrl = new URL(CMS_MEDIA_BASE_URL);
@@ -180,14 +179,6 @@ const config = {
 			: process.env.NEXT_OUTPUT === "export"
 				? "export"
 				: undefined,
-
-	// Where a server action goes. `proxy.ts` skips a request with a `Next-Action` header (its matcher says why:
-	// the body clone), so the market prefix, the localized cart word and the category roots that the proxy
-	// rewrites for a page are rewritten here for an action. Generated from the same tables the proxy reads:
-	// `src/lib/action-rewrites.ts`, held to the proxy by `src/proxy.action-rewrites.test.ts`.
-	async rewrites() {
-		return { beforeFiles: actionRewrites, afterFiles: [], fallback: [] };
-	},
 
 	// Cache headers for static assets and API routes
 	async headers() {
