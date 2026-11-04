@@ -166,25 +166,11 @@ export async function register(): Promise<void> {
 	// request would have done anyway, only earlier. Only a production server: a dev session or a test
 	// has no use for it, and `next build` does not reach Saleor from here. Off with MAKY_SITEMAP_PREWARM=0.
 	if (!building && process.env.NODE_ENV === "production") {
-		const warmBrands = process.env.MAKY_BRANDS_PREWARM !== "0";
-		const warmSitemap = process.env.MAKY_SITEMAP_PREWARM !== "0";
-		void (async () => {
-			if (warmBrands) {
-				// The import is inside the chain on purpose: a warm-up that cannot even load must not stop the start.
-				await import("./lib/brands/catalog")
-					.then(({ prewarmBrandMakers }) => prewarmBrandMakers())
-					.catch((error: unknown) => {
-						console.warn("[brands] warm-up failed:", error instanceof Error ? error.message : error);
-					});
-			}
-			if (warmSitemap) {
-				await import("./lib/seo/product-walk")
-					.then(({ prewarmProductWalks }) => prewarmProductWalks())
-					.catch((error: unknown) => {
-						console.warn("[sitemap] warm-up failed:", error instanceof Error ? error.message : error);
-					});
-			}
-		})();
+		const { startBootWarmups } = await import("./lib/boot-warmups");
+		startBootWarmups({
+			brands: process.env.MAKY_BRANDS_PREWARM !== "0",
+			sitemap: process.env.MAKY_SITEMAP_PREWARM !== "0",
+		});
 	}
 
 	// The fitment dataset, loaded before the first request instead of by it: after this, no
