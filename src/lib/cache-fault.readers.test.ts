@@ -45,6 +45,7 @@ import { getCategoryFacets } from "@/lib/listing/category-facets";
 import { getCategoryNavigation } from "@/lib/listing/category-navigation";
 import { getCategoryPriceBands } from "@/lib/listing/category-prices";
 import { getProductTypeGroups } from "@/lib/listing/product-groups";
+import { __forgetBrandMakers } from "@/lib/brands/catalog";
 import { __forgetAssortments, getMarketAssortment } from "@/lib/market-assortment";
 import { getProductOutcome } from "@/lib/saleor/product-outcome";
 import { getProductMarketPresence } from "@/lib/saleor/product-presence";
@@ -64,6 +65,7 @@ const FAULT = FAULT_CACHE_LIFE;
 beforeEach(() => {
 	vi.clearAllMocks();
 	__forgetAssortments();
+	__forgetBrandMakers();
 	vi.spyOn(console, "warn").mockImplementation(() => {});
 	vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -170,7 +172,8 @@ describe("a reader whose upstream is down", () => {
 	});
 
 	it("brand counts are a fault of their own, with the same lifetime", async () => {
-		mocks.executePublicGraphQL.mockResolvedValue({
+		// The makers answer; the counts, the second request, do not.
+		mocks.executePublicGraphQL.mockResolvedValueOnce({
 			ok: true,
 			data: { attribute: { choices: { edges: [{ node: { slug: "thule", name: "Thule" } }] } } },
 		});
