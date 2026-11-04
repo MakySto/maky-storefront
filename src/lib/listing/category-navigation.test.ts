@@ -4,7 +4,7 @@ import { CHANNEL_MAP } from "@/lib/channel-map";
 
 vi.mock("@/lib/graphql", () => ({ executePublicGraphQL: vi.fn() }));
 
-const { buildCategoryNavigation } = await import("./category-navigation");
+const { buildCategoryNavigation, withinFamily } = await import("./category-navigation");
 
 /**
  * The row of sub-categories and the breadcrumb parent, built from the tree Saleor answers
@@ -171,6 +171,41 @@ describe("category navigation", () => {
 			"Príslušenstvo k nosičom bicyklov",
 			"Nosiče bicyklov na zadné dvere",
 		]);
+	});
+
+	it("keeps the whole name of a sub-category that goes on with 'and …' instead of cutting it to a fragment", () => {
+		// "Strešné nosiče a koše na dodávky" in the row of "Strešné nosiče" used to read "A koše na dodávky".
+		const racks = node("stresne-nosice", "Strešné nosiče", 9357);
+		const navigation = buildCategoryNavigation(
+			{
+				...racks,
+				parent: null,
+				children: edges([
+					node("stresne-nosice-thule", "Strešné nosiče Thule", 9157),
+					node("stresne-nosice-a-kose-na-dodavky", "Strešné nosiče a koše na dodávky", 200),
+				]),
+			},
+			SK,
+			"sk-SK",
+		);
+		expect(navigation.chips?.map((chip) => chip.label)).toEqual([
+			null,
+			"Thule",
+			"Strešné nosiče a koše na dodávky",
+		]);
+	});
+
+	it.each([
+		["Dachträger und Körbe für Transporter", "Dachträger", "de-DE"],
+		["Roof racks and baskets for vans", "Roof racks", "en-US"],
+		["Střešní nosiče a koše na dodávky", "Střešní nosiče", "cs-CZ"],
+		["Bagażniki dachowe i kosze do vanów", "Bagażniki dachowe", "pl-PL"],
+	])("does not shorten %s in the row of %s", (name, family, locale) => {
+		expect(withinFamily(name, family, locale)).toBe(name);
+	});
+
+	it("still shortens a qualifier to its own words", () => {
+		expect(withinFamily("Dachträger für Vans", "Dachträger", "de-DE")).toBe("Für Vans");
 	});
 
 	it("answers nothing for a category Saleor does not have", () => {

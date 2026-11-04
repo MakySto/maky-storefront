@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { type ProductContentBlock } from "./editorjs";
 import {
+	descriptionSections,
 	GENERIC_FACTS,
 	groupParameters,
+	hasOwnPictures,
+	isTailSection,
+	layoutFor,
 	liftSections,
 	PRODUCT_TEMPLATES,
+	sectionKindOfHtml,
 	sheetFacts,
 	TEMPERATURE_RANGE_REF,
 	templateFor,
+	templateIdForCategory,
+	withoutSheetRepeats,
 	type PageSections,
 	type ParameterRow,
 } from "./product-templates";
@@ -123,7 +130,30 @@ describe("liftSections", () => {
 			comparison: null,
 			documents: null,
 			specs: null,
+			kind: null,
+			facts: null,
 		});
+	});
+
+	it("lifts the kind of product and the key facts for a template that names them, and keeps them otherwise", () => {
+		const blocks: ProductContentBlock[] = [
+			{ html: "<p>Kôš</p>", section: "kind", body: "Kompletný kôš" },
+			{
+				html: "<ul>tiles</ul>",
+				section: "facts",
+				facts: [{ label: "Rozmery", value: "420 cm", icon: "ruler" }],
+			},
+			{ html: "<p>Úvod</p>" },
+		];
+		const lifted = liftSections(blocks, templateFor("stresny-nosic"));
+		expect(lifted.kind).toBe("Kompletný kôš");
+		expect(lifted.facts).toEqual([{ label: "Rozmery", value: "420 cm", icon: "ruler" }]);
+		expect(lifted.description).toEqual(["<p>Úvod</p>"]);
+		const kept = liftSections(blocks, templateFor("autochladnicka"));
+		expect(kept.kind).toBeNull();
+		expect(kept.description).toEqual(["<p>Kôš</p>", "<ul>tiles</ul>", "<p>Úvod</p>"]);
+		// The facts the producer wrote are the band; the sheet only stands in for them.
+		expect(sheetFacts(lifted, templateFor("stresny-nosic"))).toEqual(lifted.facts);
 	});
 });
 
@@ -197,6 +227,8 @@ describe("the roof-rack template", () => {
 			comparison: null,
 			documents: null,
 			specs,
+			kind: null,
+			facts: null,
 		});
 
 		it("are the sheet's rows in the order CFM wrote them, as written", () => {
@@ -316,5 +348,162 @@ describe("groupParameters", () => {
 			["power", [attr("rated_power")]],
 			["other", [attr("zz")]],
 		]);
+	});
+});
+
+describe("layoutFor", () => {
+	const pictured: ProductContentBlock[] = [
+		{ html: "<h3>Úvod</h3>" },
+		{ html: "<figure><img src='/a.jpg'></figure>" },
+	];
+	const plain: ProductContentBlock[] = [{ html: "<p>Úvod</p>" }];
+
+	it("sets a roof-rack description with pictures of its own as sections and keeps its documents in them", () => {
+		const laid = layoutFor(templateFor("stresny-nosic"), pictured);
+		expect(laid.sections).toBe(true);
+		expect(laid.lift).toEqual(["specs", "kind", "facts"]);
+		expect(hasOwnPictures(pictured)).toBe(true);
+	});
+
+	it("leaves a roof-rack description without pictures of its own as the one card it was approved as", () => {
+		expect(layoutFor(templateFor("stresny-nosic"), plain)).toBe(templateFor("stresny-nosic"));
+	});
+
+	it("leaves a template that did not ask for it alone, pictures or not", () => {
+		expect(layoutFor(templateFor("autochladnicka"), pictured).sections).toBeUndefined();
+		expect(layoutFor(templateFor(null), pictured).sections).toBeUndefined();
+	});
+});
+
+describe("descriptionSections", () => {
+	it("starts a section at every heading the producer wrote, and one for what stands before the first", () => {
+		const sections = descriptionSections([
+			"<p>Lead</p>",
+			"<h3>A</h3>",
+			"<p>a1</p>",
+			"<figure></figure>",
+			'<section class="maky-blk not-prose"><h3 class="maky-h">B</h3><ul></ul></section>',
+			"<aside class='maky-callout'></aside>",
+			"<h3>C</h3>",
+		]);
+		expect(sections).toEqual([
+			["<p>Lead</p>"],
+			["<h3>A</h3>", "<p>a1</p>", "<figure></figure>"],
+			[
+				'<section class="maky-blk not-prose"><h3 class="maky-h">B</h3><ul></ul></section>',
+				"<aside class='maky-callout'></aside>",
+			],
+			["<h3>C</h3>"],
+		]);
+	});
+
+	it("keeps the steps of a procedure in the card of the section they carry out", () => {
+		const steps =
+			'<section class="maky-blk not-prose"><h3 class="maky-h">Postup montáže</h3><ol class="maky-steps"><li>1</li></ol></section>';
+		const sections = descriptionSections(["<h3>Montáž koša</h3>", "<p>text</p>", steps, "<h3>Doplnky</h3>"]);
+		expect(sections).toEqual([["<h3>Montáž koša</h3>", "<p>text</p>", steps], ["<h3>Doplnky</h3>"]]);
+		// With nothing before them they are a card of their own, as before.
+		expect(descriptionSections([steps])).toEqual([[steps]]);
+	});
+
+	it("keeps the benefits of an introduction and the documents of an assembly in their sections too", () => {
+		const role = (title: string, list: string) =>
+			`<section class="maky-blk not-prose"><h3 class="maky-h">${title}</h3>${list}</section>`;
+		const benefits = role("Čo oceníte", '<ul class="maky-benefits"><li>1</li></ul>');
+		const docs = role("Návody", '<ul class="maky-docs"><li>1</li></ul>');
+		const box = role("V balení", '<ul class="maky-inbox"><li>1</li></ul>');
+		expect(
+			descriptionSections([
+				'<h3 class="maky-sec maky-sec-intro">Úvod</h3>',
+				"<p>a</p>",
+				benefits,
+				"<h3>B</h3>",
+				docs,
+				box,
+			]),
+		).toEqual([
+			['<h3 class="maky-sec maky-sec-intro">Úvod</h3>', "<p>a</p>", benefits],
+			["<h3>B</h3>", docs],
+			[box],
+		]);
+	});
+
+	it("knows the kind a section names, and which sections stand in cards of their own", () => {
+		expect(sectionKindOfHtml(['<h3 class="maky-sec maky-sec-usage">Využitie</h3>', "<p>a</p>"])).toBe(
+			"usage",
+		);
+		expect(sectionKindOfHtml(["<h3>Bez druhu</h3>"])).toBeNull();
+		expect(isTailSection(['<h3 class="maky-sec maky-sec-closing">Záver</h3>'])).toBe(true);
+		expect(isTailSection(['<section class="maky-blk"><div class="maky-faq"></div></section>'])).toBe(true);
+		expect(isTailSection(["<h3>Montáž</h3>"])).toBe(false);
+	});
+
+	it("drops and reorders nothing", () => {
+		const blocks = ["<h3>A</h3>", "<p>1</p>", "<h3>B</h3>", "<p>2</p>"];
+		expect(descriptionSections(blocks).flat()).toEqual(blocks);
+		expect(descriptionSections([])).toEqual([]);
+	});
+});
+
+describe("templateIdForCategory", () => {
+	it("sets the Kargo category as a roof-rack set when its description names no template", () => {
+		const id = templateIdForCategory(btoa("Category:34"));
+		expect(id).toBe("stresny-nosic");
+		expect(templateFor(id).sectionsWhenPictured).toBe(true);
+		// A foreign Kargo description is plain EditorJS: pictures of its own are enough to lay it out as sections.
+		const plain = [{ html: "<h3>Titel</h3>" }, { html: '<figure><img src="x"></figure>' }];
+		expect(layoutFor(templateFor(id), plain).sections).toBe(true);
+	});
+
+	it("says nothing for any other category", () => {
+		expect(templateIdForCategory(btoa("Category:5"))).toBeNull();
+		expect(templateIdForCategory(null)).toBeNull();
+		expect(templateIdForCategory(undefined)).toBeNull();
+	});
+});
+
+describe("withoutSheetRepeats", () => {
+	const sheet = [
+		{ label: "Rozmery koša", value: "420 × 180 × 7 cm" },
+		{ label: "Materiál koša", value: "eloxovaný hliník" },
+	];
+	const rows = [
+		{ label: "Materiál", values: ["eloxovaný hliník"] },
+		{ label: "Farba", values: ["strieborná"] },
+	];
+
+	it("drops the attribute rows whose value the sheet already says, and the outer dimensions with them", () => {
+		const out = withoutSheetRepeats(rows, "420\u00a0×\u00a0180 × 7 cm", sheet);
+		expect(out.rows.map((r) => r.label)).toEqual(["Farba"]);
+		expect(out.outerDimensions).toBeNull();
+	});
+
+	it("keeps a row whose value the sheet does not carry, and dimensions that differ", () => {
+		const out = withoutSheetRepeats(rows, "180 × 135 × 7 cm", [
+			{ label: "Rozmery koša", value: "420 × 180 × 7 cm" },
+		]);
+		expect(out.rows).toHaveLength(2);
+		expect(out.outerDimensions).toBe("180 × 135 × 7 cm");
+	});
+
+	it("matches the same figures in any language and spelling of the sign", () => {
+		const out = withoutSheetRepeats(
+			[{ label: "Material", values: ["Eloxiertes Aluminium"] }],
+			"420x180x7 cm",
+			[
+				{ label: "Maße", value: "420 × 180 × 7 cm" },
+				{ label: "Material des Korbs", value: "eloxiertes Aluminium" },
+			],
+		);
+		expect(out.rows).toEqual([]);
+		expect(out.outerDimensions).toBeNull();
+	});
+
+	it("drops nothing when the page has no sheet", () => {
+		for (const none of [null, undefined, []]) {
+			const out = withoutSheetRepeats(rows, "1 × 2 × 3 cm", none);
+			expect(out.rows).toHaveLength(2);
+			expect(out.outerDimensions).toBe("1 × 2 × 3 cm");
+		}
 	});
 });

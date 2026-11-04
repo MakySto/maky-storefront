@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Reducir cantidad",
 		"increaseQuantity": "Aumentar cantidad",
 		"priceWithVat": "Precio con IVA",
+		"priceWithoutVat": "Precio sin IVA: {price}",
 		"technicalParameters": "Especificaciones técnicas",
 		"outerDimensions": "Dimensiones exteriores",
 		"yes": "Sí",
@@ -154,11 +155,22 @@
 				"play": "Reproducir vídeo",
 				"note": "YouTube · se carga solo al hacer clic"
 			},
+			"sections": {
+				"intro": "Descripción del producto",
+				"compatibility": "Compatibilidad",
+				"usage": "Uso en la práctica",
+				"accessories": "Accesorios adecuados",
+				"brand": "Sobre la marca",
+				"closing": "Le asesoramos"
+			},
+			"viewAccessory": "Ver accesorio",
+			"viewPart": "Ver pieza",
 			"years": "{count, plural, one {# año} other {# años}}"
 		},
 		"keyFeatures": "Características principales",
 		"productDescription": "Descripción del producto",
 		"imageCounter": "Imagen {current} de {total}",
+		"illustrativeImage": "Imagen ilustrativa",
 		"trustPaymentTitle": "Pago seguro",
 		"trustPaymentText": "Conexión cifrada",
 		"trustShippingTitle": "Envío",
@@ -318,7 +330,10 @@
 		"listingAllNotice": "Está viendo la oferta para todos los vehículos: no está filtrada para su coche ({vehicle}).",
 		"listingDefaultNone": "Todavía no tenemos un conjunto verificado para {vehicle}, por eso ve la oferta para todos los vehículos.",
 		"listingNotOnSaleTitle": "Hay conjuntos compatibles con {vehicle} que ahora mismo no están a la venta",
-		"listingNotOnSaleBody": "Eso no significa que nada encaje. Estamos incorporando estos conjuntos a la oferta; mientras tanto puede ver todos los vehículos o escribirnos."
+		"listingNotOnSaleBody": "Eso no significa que nada encaje. Estamos incorporando estos conjuntos a la oferta; mientras tanto puede ver todos los vehículos o escribirnos.",
+		"listingOtherShelfTitle": "Para {vehicle} no hay kits verificados en esta categoría",
+		"listingOtherShelfBody": "Los kits verificados para tu vehículo están en otra categoría, no en esta.",
+		"listingOtherShelfAction": "Ver los kits de la categoría {category}"
 	},
 	"cart": {
 		"yourCart": "Tu carrito",
@@ -327,6 +342,7 @@
 		"addInvalid": "Comprueba la cantidad seleccionada.",
 		"addNotFound": "Producto no encontrado.",
 		"addFailed": "No se ha podido añadir el producto al carrito.",
+		"addPaymentLocked": "Ya hay un pago en curso para tu pedido, por lo que ahora no se pueden añadir productos. Complétalo o cancélalo de forma segura en la caja.",
 		"addUnconfirmed": "No podemos confirmar si el producto se ha añadido. Comprueba el carrito.",
 		"emptyCart": "Tu carrito está vacío",
 		"continueShopping": "Seguir comprando",
@@ -576,7 +592,12 @@
 			"invalidValue": "Valor no válido",
 			"notFullyPaid": "El pago aún no cubre el total del pedido. Actualiza la página; si los fondos se han autorizado, completa el pedido con el botón de abajo. No pagues de nuevo hasta que se confirme el estado.",
 			"alreadyCompleted": "Este pedido ya se ha realizado. Encontrarás la confirmación en tu correo.",
-			"freeOrderTotalChanged": "El total del pedido ha cambiado y ahora requiere pago. Revísalo e inténtalo de nuevo."
+			"freeOrderTotalChanged": "El total del pedido ha cambiado y ahora requiere pago. Revísalo e inténtalo de nuevo.",
+			"checkoutLocked": "Ya hay un pago en curso para este pedido. Complétalo o cancélalo de forma segura antes de iniciar uno nuevo.",
+			"orderUpdated": "Tu pedido se ha actualizado. Revisa el nuevo importe antes de pagar.",
+			"finalStateUnconfirmed": "Ahora no hemos podido confirmar el precio final. Inténtalo de nuevo.",
+			"completeBlockedNoNewPayment": "Ahora no hemos podido completar el pedido. Si ya has pagado, no inicies un nuevo pago: recarga la página o contáctanos.",
+			"completeOfferChanged": "El importe ha cambiado, por lo que no se ha creado el pedido. El dinero de este pago se liberará automáticamente. Si necesitas ayuda con el pedido, contáctanos."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Modo de prueba:</strong> esta es una confirmación de pedido simulada. No se ha realizado ningún pago real.",
@@ -598,6 +619,93 @@
 		},
 		"meta": {
 			"title": "Finalizar compra"
+		},
+		"b2b": {
+			"sectionTitle": "Compra para empresa",
+			"toggle": "Compro para una empresa",
+			"toggleHint": "Indicaremos los datos de la empresa en la factura.",
+			"companyName": "Razón social",
+			"registrationId": "IČO",
+			"taxId": "DIČ",
+			"vatIdPlaceholder": "p. ej., {example}",
+			"vatIdHint": "Con un NIF-IVA válido de otro país de la UE y entrega en ese país, la entrega puede estar exenta de IVA. Lo decidimos tras comprobarlo en VIES.",
+			"billingSameAsShipping": "La dirección de facturación es la misma que la de entrega",
+			"billingAddressTitle": "Dirección de facturación",
+			"billingSummaryTitle": "Datos de facturación",
+			"billingMissing": "Faltan los datos de facturación. Complétalos en el paso Datos.",
+			"taxedTotal": "Total con IVA: {total}",
+			"summaryExempt": "Sin IVA — exento según el § 43 de la Ley eslovaca del IVA",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "NIF-IVA"
+			},
+			"errors": {
+				"companyNameRequired": "Introduce la razón social.",
+				"registrationIdRequired": "Introduce el IČO.",
+				"registrationIdFormat": "El IČO tiene de 6 a 8 dígitos.",
+				"taxIdFormat": "El DIČ tiene 10 dígitos.",
+				"vatIdFormat": "El número no tiene el formato de NIF-IVA del país seleccionado. Revísalo.",
+				"tooLong": "El valor es demasiado largo.",
+				"saveFailed": "No se han podido guardar los datos de la empresa. Inténtalo de nuevo."
+			},
+			"status": {
+				"verifying": "Comprobando el NIF-IVA…",
+				"exempt": "NIF-IVA verificado. La entrega está exenta de IVA; el precio indicado no incluye IVA.",
+				"invalid": "VIES no ha confirmado el NIF-IVA como válido para el comercio intracomunitario. Revísalo o continúa con IVA.",
+				"unavailable": "Ahora no se puede comprobar el NIF-IVA. Inténtalo dentro de un momento o continúa con IVA.",
+				"countryMismatch": "Sin IVA solo podemos tramitar automáticamente la entrega en el país de tu NIF-IVA. Para otra entrega, contáctanos.",
+				"identityReview": "Los datos de la empresa no coinciden con el resultado de la verificación. Revisa los datos de facturación o contáctanos.",
+				"skVat": "Con un NIF-IVA eslovaco, la compra se factura con IVA.",
+				"domesticDelivery": "Con entrega o recogida en Eslovaquia, la compra se factura con IVA.",
+				"incomplete": "Decidiremos sobre el IVA cuando estén completos los datos y el método de entrega.",
+				"validPendingDelivery": "El NIF-IVA es válido en VIES. Decidiremos sobre el IVA cuando elijas el método de entrega.",
+				"disabled": "Ahora no ofrecemos la exención automática de IVA. Puedes completar la compra para empresa con IVA.",
+				"serviceOff": "La verificación automática del NIF-IVA no está disponible ahora. Puedes completar la compra para empresa al precio indicado en el resumen."
+			},
+			"actions": {
+				"continueWithVat": "Continuar con IVA",
+				"retry": "Comprobar de nuevo",
+				"recheck": "Revisar de nuevo",
+				"refreshStatus": "Actualizar el estado del pago",
+				"edit": "Editar"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "Ya hay un pago en curso para este pedido, por lo que ahora no se pueden cambiar los datos. Puedes completar el pago o cancelarlo de forma segura y después cambiar los datos.",
+				"cart": "Ya hay un pago en curso para este pedido, por lo que ahora no se puede cambiar el carrito. Puedes completar el pago o cancelarlo de forma segura y después modificar el carrito.",
+				"payment": "Ya hay un pago en curso para este pedido, por lo que ahora no se puede iniciar uno nuevo. Puedes cancelar de forma segura el pago iniciado y después volver a pagar."
+			},
+			"releasing": "Cancelando el pago iniciado…",
+			"waitingCancel": "Esperando a que la pasarela de pago confirme la cancelación. Suele tardar unos segundos.",
+			"waitingAttempt": "El pago todavía se está creando. Intentaremos cancelarlo de nuevo en un momento.",
+			"released": {
+				"details": "El pago iniciado está cancelado. Ahora puedes cambiar los datos y guardarlos.",
+				"cart": "El pago iniciado está cancelado. Ahora puedes modificar el carrito.",
+				"payment": "El pago iniciado está cancelado. Revisa el importe y vuelve a pagar."
+			},
+			"funds": "El pago ya se ha recibido o está pendiente de confirmación del banco, por lo que el pedido ya no se puede cambiar. Complétalo con los datos originales.",
+			"notConfirmed": "La cancelación del pago aún no se ha confirmado. Vuelve a intentarlo en un momento, paga el pedido con los datos originales o contáctanos.",
+			"unavailable": "Ahora no podemos cancelar el pago iniciado. Puedes pagar el pedido con los datos originales o contactarnos.",
+			"failed": "No se ha podido cancelar el pago iniciado. Vuelve a intentarlo en un momento, paga el pedido con los datos originales o contáctanos.",
+			"actions": {
+				"releaseDetails": "Cambiar datos",
+				"releaseCart": "Modificar carrito",
+				"releasePayment": "Cancelar el pago iniciado",
+				"retry": "Intentar de nuevo",
+				"payOriginal": "Pagar con los datos originales",
+				"finishOrder": "Completar pedido",
+				"contact": "Contactar con la tienda"
+			}
 		}
 	},
 	"footer": {
@@ -852,9 +960,19 @@
 		"errorNotVerified": "Este conjunto no está verificado para el vehículo seleccionado actualmente.",
 		"errorNotAvailable": "Este conjunto ya no está en el catálogo.",
 		"errorCartRejected": "No se ha podido añadir el conjunto a la cesta.",
+		"errorPaymentLocked": "Ya hay un pago en curso para tu pedido, por lo que ahora no se puede añadir el conjunto. Complétalo o cancélalo de forma segura en la caja.",
 		"errorLookupFailed": "No podemos confirmar si el conjunto se ha añadido. Compruebe la cesta, por favor.",
 		"errorCatalogueUnavailable": "No hemos podido comprobar la disponibilidad del conjunto en este momento. Inténtelo de nuevo, por favor.",
-		"errorGeneric": "No se ha podido añadir el conjunto a la cesta."
+		"errorGeneric": "No se ha podido añadir el conjunto a la cesta.",
+		"facetAerodynamic": "Aerodinámico",
+		"facetWing": "Perfil de ala",
+		"facetTubular": "Tubular",
+		"facetColourBlack": "Negro",
+		"facetColourSilver": "Plateado",
+		"facetColourAlu": "Aluminio natural",
+		"propertyBarLength": "Longitud de las barras",
+		"propertyColour": "Color",
+		"propertyBarLoad": "Carga de las barras"
 	},
 	"catalog": {
 		"makeIndexTitle": "Elija las barras de techo según su vehículo",
@@ -868,7 +986,7 @@
 		"offersPartial": "No se ha podido cargar parte de la oferta, por lo que la lista puede estar incompleta.",
 		"previewNotice": "Vista previa de una página no publicada. No se muestra a los visitantes.",
 		"offersTitleGeneration": "Conjuntos para esta generación",
-		"offersBrowseNote": "Cada conjunto solo es válido para el tipo de techo y los años indicados. Los conjuntos no están filtrados para su coche: al elegir su vehículo le mostraremos solo los que le encajan.",
+		"offersBrowseNote": "Cada conjunto es válido solo para el tipo de techo y los años indicados; las diferencias se ven en las tarjetas. ¿Otro coche? Cámbielo en la cabecera.",
 		"offersGroupOther": "Sin tipo de techo indicado"
 	},
 	"company": {
@@ -1117,5 +1235,15 @@
 		"description": "Los fabricantes de barras de techo, cofres, portabicicletas y otros equipos cuyos productos puedes comprar aquí.",
 		"productCount": "{count, plural, one {# producto} other {# productos}}",
 		"brandDescription": "Productos {brand} en MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Vista del listado",
+		"viewGrid": "Cuadrícula",
+		"viewList": "Lista",
+		"viewSet": "Ver conjunto",
+		"specDimensions": "Dimensiones",
+		"specBars": "Barras",
+		"roofFilterLabel": "Tipo de techo",
+		"roofFilterAll": "Todos"
 	}
 }

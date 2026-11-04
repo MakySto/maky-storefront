@@ -146,4 +146,11 @@ describe('getGalleryImages never publishes the grey "no image" GIF', () => {
 		const gallery = getGalleryImages({ media: [image(1)], variants: [variant, {}] }, variant);
 		expect(gallery.map((row) => row.url)).toEqual([image(8).url]);
 	});
+
+	it("marks a picture CFM says is an illustration, and no other", () => {
+		const marked: GalleryMedia = { ...image(1), metadata: [{ key: "cfm_illustrative", value: "true" }] };
+		const other: GalleryMedia = { ...image(2), metadata: [{ key: "cfm_illustrative", value: "false" }] };
+		const gallery = getGalleryImages({ media: [marked, other, image(3)], variants: [{}] }, null);
+		expect(gallery.map((row) => row.illustrative)).toEqual([true, undefined, undefined]);
+	});
 });

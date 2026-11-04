@@ -38,6 +38,8 @@ interface ShippingAddressSectionProps {
 	orderedAddressFields: AddressField[];
 	getFieldLabel: (field: AddressField) => string;
 	isRequiredField: (field: AddressField) => boolean;
+	/** The country's rules have loaded; until then no field is labelled optional. */
+	rulesKnown?: boolean;
 	countryAreaChoices?: Array<{ raw?: unknown; verbose?: unknown }>;
 }
 
@@ -62,6 +64,7 @@ export const ShippingAddressSection: FC<ShippingAddressSectionProps> = ({
 	orderedAddressFields,
 	getFieldLabel,
 	isRequiredField,
+	rulesKnown,
 	countryAreaChoices,
 }) => {
 	const t = useTranslations("checkout");
@@ -123,6 +126,7 @@ export const ShippingAddressSection: FC<ShippingAddressSectionProps> = ({
 						orderedFields={orderedAddressFields}
 						getFieldLabel={getFieldLabel}
 						isRequiredField={isRequiredField}
+						rulesKnown={rulesKnown}
 						formData={formData}
 						errors={errors}
 						onFieldChange={onFieldChange}

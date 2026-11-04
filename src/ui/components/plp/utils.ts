@@ -6,8 +6,11 @@ import { sortSizes } from "@/lib/sizes";
 import { getLocaleConfigByLocale, getLocaleFromChannel, localeConfig } from "@/config/locale";
 import { hasDiscountInPriceRange } from "@/lib/pricing";
 import { productHref } from "@/lib/product-url";
+import { baseSlugOfCategory } from "@/config/category-routes";
+import { KARGO_CATEGORY_SLUGS } from "@/config/kargo-slugs";
 import { formatAttributeValue } from "@/lib/product-attributes";
 import { publishableProductImage } from "@/lib/product-image";
+import { BARS_SPEC_KEY, DIMENSIONS_SPEC_KEY, type ListingSpec } from "@/ui/components/listing/listing-specs";
 
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
 
@@ -28,6 +31,137 @@ const NOTE_REFS = [
 ] as const;
 
 type ListAttributes = ProductListItemFragment["attributes"];
+
+/**
+ * The parameters a card prints, most telling first, for products that are NOT vehicle sets (a set's
+ * parameters come from CFM's facets — `lib/fitment/offer-specs`). What separates two roof boxes is
+ * the volume, two bike carriers the count, two fridges the capacity and the power; whatever the
+ * product carries is shown, whatever it lacks is simply absent — never a "–", never a default.
+ *
+ * Labels are the attribute's own translated name, so a German card says "Volumen" because Saleor's
+ * German translation of the attribute does.
+ */
+const SPEC_REFS = [
+	"cfm:attribute:volume",
+	"cfm:attribute:net_volume",
+	"cfm:attribute:bike_capacity",
+	"cfm:attribute:ski_snowboard_capacity",
+	"cfm:attribute:ski_count",
+	"cfm:attribute:max_load",
+	"cfm:attribute:max_load_per_bike",
+	"cfm:attribute:rated_power",
+	"cfm:attribute:temperature_min",
+	"cfm:attribute:weight",
+] as const;
+
+const DIMENSION_REFS = [
+	"cfm:attribute:outer_length",
+	"cfm:attribute:outer_width",
+	"cfm:attribute:outer_height",
+] as const;
+
+const isKargoSlug = (slug: string | null | undefined) => (slug ? KARGO_CATEGORY_SLUGS.includes(slug) : false);
+
+/**
+ * What a Nordrive Kargo basket or bar kit adds to those: the material it is made of. Asked for only on that
+ * shelf — a `material` attribute on another shelf's products is not a card parameter there.
+ */
+const KARGO_SPEC_REFS = ["cfm:attribute:material"] as const;
+
+/**
+ * A Kargo product has no load on its card: CFM writes no `max_load` for it, and the export's 50 kg is the fitting
+ * kit's rating, not the basket's or the bars' (CFM, 2026-11-02).
+ */
+const KARGO_SKIPPED_REFS = ["cfm:attribute:max_load"] as const;
+
+/** The card parameters of a product, by the base slug of its category: the common ones, plus or minus the shelf's own. */
+export const cardSpecsFor = (
+	attributes: ListAttributes,
+	locale: string,
+	categorySlug: string | null | undefined,
+): ListingSpec[] =>
+	isKargoSlug(categorySlug)
+		? buildCardSpecs(attributes, locale, KARGO_SPEC_REFS, KARGO_SKIPPED_REFS)
+		: buildCardSpecs(attributes, locale);
+
+/** A kit of loose bars: how many, and how long each one is (cm). */
+const BAR_COUNT_REF = "cfm:attribute:bar_count";
+const BAR_LENGTH_REF = "cfm:attribute:bar_length";
+
+/** A card is a summary: four parameters, the rest is on the product page. */
+const MAX_CARD_SPECS = 4;
+
+export function buildCardSpecs(
+	attributes: ListAttributes,
+	locale: string,
+	/** Further attributes this shelf's cards print, after the common ones. */
+	extraRefs: readonly string[] = [],
+	/** Common attributes this shelf's cards never print. */
+	skipRefs: readonly string[] = [],
+): ListingSpec[] {
+	const specs: ListingSpec[] = [];
+	for (const ref of [...SPEC_REFS, ...extraRefs]) {
+		if (skipRefs.includes(ref)) continue;
+		const attr = attributes?.find((a) => a.attribute.externalReference === ref);
+		const raw = attr?.values[0]?.name;
+		if (!attr || !raw || !attr.attribute.name) continue;
+		specs.push({
+			key: ref,
+			label: attr.attribute.name,
+			value: formatAttributeValue(raw, attr.attribute, locale),
+		});
+	}
+
+	// "190 × 80 × 40 cm" — the three outer measurements as one fact, only when all three exist:
+	// two of three is not a size.
+	const sizes = DIMENSION_REFS.map((ref) => {
+		const attr = attributes?.find((a) => a.attribute.externalReference === ref);
+		const raw = attr?.values[0]?.name;
+		return attr && raw ? { attr, raw } : null;
+	});
+	if (sizes.every(Boolean)) {
+		const parts = sizes.map((size) => formatAttributeValue(size!.raw, size!.attr.attribute, locale));
+		const unit = parts.map((part) => part.replace(/^[\d\s.,]+/, "").trim()).find(Boolean) ?? "";
+		const numbers = parts.map((part) => part.replace(/[^\d\s.,]+$/, "").trim());
+		specs.push({
+			key: DIMENSIONS_SPEC_KEY,
+			// The word is the card's to say (a translation context lives there, not here).
+			label: "",
+			value: `${numbers.join(" × ")}${unit ? ` ${unit}` : ""}`,
+		});
+	}
+
+	// "4 × 180 cm" — the bars of a kit as one fact, only when both the count and the length exist.
+	const count = attributes?.find((a) => a.attribute.externalReference === BAR_COUNT_REF);
+	const length = attributes?.find((a) => a.attribute.externalReference === BAR_LENGTH_REF);
+	const countRaw = count?.values[0]?.name;
+	const lengthRaw = length?.values[0]?.name;
+	if (count && length && countRaw && lengthRaw) {
+		specs.push({
+			key: BARS_SPEC_KEY,
+			label: "",
+			value: `${formatAttributeValue(countRaw, count.attribute, locale)} × ${formatAttributeValue(
+				lengthRaw,
+				length.attribute,
+				locale,
+			)}`,
+		});
+	}
+
+	return specs.slice(0, MAX_CARD_SPECS);
+}
+
+/**
+ * The product's real photographs, in the gallery's order. A video shares the list and is not a
+ * photograph; the grey "no image" GIF is not one either. A fixture without a `type` counts as an
+ * image — the field only ever says VIDEO for the one thing that is not.
+ */
+function galleryImages(media: ProductListItemFragment["cardMedia"]): string[] {
+	return (media ?? [])
+		.filter((item) => (item as { type?: string }).type !== "VIDEO")
+		.map((item) => publishableProductImage(item.url))
+		.filter((url): url is string => Boolean(url));
+}
 
 const attributeValue = (attributes: ListAttributes, ref: string) =>
 	attributes?.find((a) => a.attribute.externalReference === ref)?.values[0]?.name ?? null;
@@ -114,6 +248,8 @@ export function transformToProductCard(
 	const colors = extractColorsFromVariants(product.variants);
 	const sizes = extractSizesFromVariants(product.variants);
 
+	const gallery = galleryImages(product.cardMedia);
+
 	const variants = product.variants ?? [];
 	// Card-level add-to-cart only makes sense when there is nothing to choose.
 	// Anything with a real variant choice sends the customer to the detail page.
@@ -142,12 +278,14 @@ export function transformToProductCard(
 		currency: startPrice?.currency ?? localeConfig.fallbackCurrency,
 		// The "no image" GIF some imports carry is no image either — `lib/product-image.ts`.
 		// When it is the thumbnail, the gallery's first real photo stands in, as on the PDP.
-		image:
-			publishableProductImage(product.thumbnail?.url) ??
-			product.cardMedia?.map((media) => publishableProductImage(media.url)).find(Boolean) ??
-			"/placeholder.svg",
+		image: publishableProductImage(product.thumbnail?.url) ?? gallery[0] ?? "/placeholder.svg",
 		imageAlt: product.thumbnail?.alt ?? product.name,
-		hoverImage: null, // Would need additional media in fragment
+		// The second photograph of the gallery. The first is the thumbnail (or the one standing in for
+		// it), so whichever way the main image was found, this is the next one — and absent when the
+		// product has only one, in which case the card simply does not swap.
+		hoverImage: gallery[1] ?? null,
+		// The shelf is told by the BASE slug: abroad the category carries its translated one.
+		specs: cardSpecsFor(product.attributes, locale, baseSlugOfCategory(channel, product.category)),
 		href: productHref(channel, product.slug),
 		channel,
 		isPurchasable: product.isAvailableForPurchase === true,
@@ -155,7 +293,12 @@ export function transformToProductCard(
 		colors,
 		sizes,
 		category: product.category
-			? { id: product.category.id, name: product.category.name, slug: product.category.slug }
+			? {
+					id: product.category.id,
+					name: product.category.name,
+					slug: product.category.slug,
+					baseSlug: baseSlugOfCategory(channel, product.category) ?? product.category.slug,
+				}
 			: null,
 		createdAt: product.created,
 		hasVariants: (product.variants?.length ?? 0) > 1,

@@ -21,6 +21,8 @@
  * Minimal product type for rendering search results.
  * Transform your search engine's response to this format for the UI.
  */
+import type { ProductCardData } from "@/ui/components/plp/product-card";
+
 export interface SearchProduct {
 	id: string;
 	name: string;
@@ -38,6 +40,13 @@ export interface SearchProduct {
 	 * orderable — the same rule the listing card and the PDP follow.
 	 */
 	isPurchasable: boolean;
+	/**
+	 * The same card data a category listing builds for the same product, so a hit looks and reads like
+	 * the product does everywhere else — photograph, maker, parameters, price, availability. Absent
+	 * for a provider that cannot produce it, and then the hit renders as the minimal card it always
+	 * was.
+	 */
+	card?: ProductCardData;
 	/** Optional: for highlighting matched text */
 	highlights?: {
 		name?: string;

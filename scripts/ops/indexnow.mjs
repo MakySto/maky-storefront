@@ -4,7 +4,8 @@
 //
 //   node scripts/ops/indexnow.mjs                                   # dry run: reads the sitemaps, prints the plan, sends nothing
 //   node scripts/ops/indexnow.mjs --kinds pages --fire              # the "pages" shards of every market
-//   node scripts/ops/indexnow.mjs --kinds products,vehicles --state ~/indexnow-state.json --fire
+//   node scripts/ops/indexnow.mjs --kinds pages,products,vehicles --state /var/lib/maky-indexnow/state.json --fire
+//                                                                   # what the daily timer runs
 //   node scripts/ops/indexnow.mjs --urls /cz/autochladnicky,/sk/autochladnicky --fire
 //
 // Why it exists. On 2026-10-08 Bing Webmaster Tools showed https://maky.store/cz/autochladnicky as
@@ -27,14 +28,25 @@
 //      the run stops before sending anything.
 //   4. A cap per run (`--max`, default 10 000, never above 50 000) and batches of 5 000. IndexNow is
 //      for URLs that are new or changed, not for telling an engine the same thing every hour; the
-//      state file (`--state`) is what makes a second run send only what the first did not.
-//   5. Any answer other than 200 or 202 stops the run. 429 in particular means the engine finds us
-//      too chatty: wait, then run again; the state file has kept the progress.
+//      state file (`--state`) is what makes a second run send only what the first did not. With it a
+//      run sends, in this order, the URLs it has never sent (in the order the sitemaps list them, so
+//      a backlog drains market by market) and then those whose sitemap `lastmod` is later than the
+//      time they were sent, none of them more than once per `--resend-after-days` (default 7).
+//      Products and vehicles go out only with a state file: without one every run would send the
+//      same first `--max` URLs again.
+//   5. Only a 200 counts as sent. A 202 means "received, the key file has not been checked yet", and
+//      that is not an acceptance: on 2026-10-08 the 177 URLs of the first run got a 202, were written
+//      to the state file as sent, and Bing Webmaster Tools never listed them. A 202 now stops the run,
+//      records nothing and exits 3, so the next run sends those URLs again. Any other answer stops
+//      the run too; 429 in particular means the engine finds us too chatty: wait, then run again,
+//      the state file has kept the progress.
 //
 // Run it where the public site and api.indexnow.org are both reachable (the web server). It reads
 // nothing from .env, touches neither PM2 nor nginx nor the build, and writes only the state file.
+// `scripts/ops/systemd/` holds the timer that runs it once a day.
 //
 // Exit 0 = dry run printed, or everything sent. 1 = a read or a submission failed. 2 = refused.
+// 3 = the engine answered 202: received, not confirmed, nothing from that request recorded.
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import process from "node:process";
@@ -47,7 +59,11 @@ export const DEFAULT_ENDPOINT = "https://api.indexnow.org/indexnow";
 export const BATCH_SIZE = 5_000;
 export const DEFAULT_MAX = 10_000;
 export const HARD_MAX = 50_000;
+/** A URL that changed after it was sent is told again only when the last telling is this old. */
+export const DEFAULT_RESEND_DAYS = 7;
 export const KINDS = ["pages", "products", "vehicles"];
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const REQUEST_TIMEOUT_MS = 60_000;
 const publicDir = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..", "public");
@@ -68,6 +84,22 @@ export function parseLocs(xml) {
 	return out;
 }
 
+/**
+ * `{ loc, lastmod }` of every `<url>` of a sitemap shard, entities decoded. An entry without a
+ * `<loc>` is skipped. `lastmod` is `null` when the entry has none, which is how pages and vehicles
+ * are listed on purpose (docs/design/seo-indexing-bing.md): only products carry one.
+ */
+export function parseEntries(xml) {
+	const out = [];
+	for (const match of String(xml).matchAll(/<url>([\s\S]*?)<\/url>/g)) {
+		const [loc] = parseLocs(match[1]);
+		if (!loc) continue;
+		const lastmod = /<lastmod>\s*([^<]*?)\s*<\/lastmod>/.exec(match[1])?.[1];
+		out.push({ loc, lastmod: lastmod || null });
+	}
+	return out;
+}
+
 /** `https://maky.store/sitemaps/cz-pages-1.xml` -> `{ market: "cz", kind: "pages", part: 1 }`, else null. */
 export function classifyShard(url) {
 	const match = /\/sitemaps\/([a-z]{2})-(pages|products|vehicles)-([1-9][0-9]*)\.xml$/.exec(String(url));
@@ -84,34 +116,68 @@ export function selectShards(locs, { kinds, markets }) {
 }
 
 /**
- * Absolute, deduplicated URLs of the site's own host. `inputs` may be paths (`/cz/x`) or full
- * URLs. Anything else — another host, another scheme, something that is not a URL — comes back in
- * `rejected` untouched, because the caller must decide what to do about it, not this function.
+ * Absolute, deduplicated URLs of the site's own host, each with the `lastmod` its sitemap entry
+ * carried (`null` when it had none). `inputs` are paths (`/cz/x`), full URLs, or `{ loc, lastmod }`
+ * entries as `parseEntries` makes them. Anything else — another host, another scheme, something
+ * that is not a URL — comes back in `rejected` untouched, because the caller must decide what to do
+ * about it, not this function.
  */
-export function normaliseUrls(inputs, site) {
+export function normaliseEntries(inputs, site) {
 	const base = new URL(site);
 	const seen = new Set();
-	const urls = [];
+	const entries = [];
 	const rejected = [];
 	for (const input of inputs) {
+		const loc = typeof input === "string" ? input : input.loc;
 		let url;
 		try {
-			url = new URL(String(input).trim(), base);
+			url = new URL(String(loc).trim(), base);
 		} catch {
-			rejected.push(input);
+			rejected.push(loc);
 			continue;
 		}
 		if (url.protocol !== base.protocol || url.host !== base.host) {
-			rejected.push(input);
+			rejected.push(loc);
 			continue;
 		}
 		url.hash = "";
 		const href = url.href;
 		if (seen.has(href)) continue;
 		seen.add(href);
-		urls.push(href);
+		entries.push({ url: href, lastmod: typeof input === "string" ? null : input.lastmod ?? null });
 	}
-	return { urls, rejected };
+	return { entries, rejected };
+}
+
+/** The same without the `lastmod`: absolute, deduplicated URLs of the site's own host. */
+export function normaliseUrls(inputs, site) {
+	const { entries, rejected } = normaliseEntries(inputs, site);
+	return { urls: entries.map((entry) => entry.url), rejected };
+}
+
+/**
+ * What still needs telling, in the order it goes out: first the URLs that were never sent, in the
+ * order the sitemaps list them, then those that changed since they were sent. A URL has changed when
+ * its sitemap `lastmod` is later than the time the state file holds for it, and it is told again
+ * only if that time is at least `resendAfterMs` ago. A URL without a `lastmod` (pages, vehicles) is
+ * sent once. A recorded time that is not a date is read as "sent": a damaged state file must make a
+ * run send less, not more.
+ */
+export function selectPending(entries, submitted, { now, resendAfterMs }) {
+	const fresh = [];
+	const changed = [];
+	for (const { url, lastmod } of entries) {
+		const stamp = submitted[url];
+		if (!stamp) {
+			fresh.push(url);
+			continue;
+		}
+		const sentAt = Date.parse(stamp);
+		const modifiedAt = lastmod ? Date.parse(lastmod) : Number.NaN;
+		if (Number.isNaN(sentAt) || Number.isNaN(modifiedAt)) continue;
+		if (modifiedAt > sentAt && now - sentAt >= resendAfterMs) changed.push(url);
+	}
+	return { fresh, changed };
 }
 
 export function chunk(list, size) {
@@ -148,13 +214,21 @@ export function buildPayload({ site, key, urlList }) {
 	return { host: base.host, key, keyLocation: `${base.origin}/${key}.txt`, urlList };
 }
 
-/** What a status from the IndexNow endpoint means. Only 200 and 202 let the run go on. */
+/**
+ * What a status from the IndexNow endpoint means. Only a 200 lets the run go on, and only a 200 is
+ * written to the state file. A 202 is "received, key not checked yet": the engine may drop the
+ * URLs, as Bing did with the 177 of 2026-10-08, so it is `unconfirmed`, not accepted.
+ */
 export function interpretStatus(status) {
 	switch (status) {
 		case 200:
 			return { ok: true, note: "accepted" };
 		case 202:
-			return { ok: true, note: "received, the engine has not checked the key file yet" };
+			return {
+				ok: false,
+				unconfirmed: true,
+				note: "received, but the engine has not checked the key file yet: not an acceptance, NOT counted as sent",
+			};
 		case 400:
 			return { ok: false, note: "bad request: the payload was not understood" };
 		case 403:
@@ -199,6 +273,7 @@ const OPTIONS = {
 	urls: { type: "string", default: "" },
 	max: { type: "string", default: String(DEFAULT_MAX) },
 	state: { type: "string", default: "" },
+	"resend-after-days": { type: "string", default: String(DEFAULT_RESEND_DAYS) },
 	pause: { type: "string", default: "1000" },
 	fire: { type: "boolean", default: false },
 };
@@ -234,6 +309,12 @@ export function readOptions(argv) {
 	if (!Number.isInteger(pause) || pause < 0) {
 		return { error: `--pause is milliseconds, 0 or more (got ${values.pause})` };
 	}
+	const resendAfterDays = Number(values["resend-after-days"]);
+	if (!Number.isInteger(resendAfterDays) || resendAfterDays < 0 || resendAfterDays > 3650) {
+		return {
+			error: `--resend-after-days is a whole number of days from 0 to 3650 (got ${values["resend-after-days"]})`,
+		};
+	}
 	try {
 		new URL(values.site);
 		new URL(values.endpoint);
@@ -248,6 +329,7 @@ export function readOptions(argv) {
 		urls: csv(values.urls),
 		max,
 		state: values.state,
+		resendAfterDays,
 		pause,
 		fire: values.fire,
 	};
@@ -276,6 +358,12 @@ export async function main(argv, deps = {}) {
 		return 2;
 	}
 	const { site, endpoint, kinds, markets, max, pause, fire } = options;
+	if (fire && options.urls.length === 0 && !options.state && kinds.some((kind) => kind !== "pages")) {
+		log(
+			"refused: products and vehicles are sent only with --state; without it every run would send the same first URLs again.",
+		);
+		return 2;
+	}
 
 	let key;
 	try {
@@ -292,7 +380,7 @@ export async function main(argv, deps = {}) {
 		return response.text();
 	};
 
-	// 1. Which URLs.
+	// 1. Which URLs. Each candidate is a string (named) or `{ loc, lastmod }` (read from a shard).
 	let candidates;
 	if (options.urls.length > 0) {
 		candidates = options.urls;
@@ -315,19 +403,19 @@ export async function main(argv, deps = {}) {
 		}
 		candidates = [];
 		for (const shard of shards) {
-			let locs;
+			let shardEntries;
 			try {
-				locs = parseLocs(await get(shard));
+				shardEntries = parseEntries(await get(shard));
 			} catch (error) {
 				log(`failed: could not read a sitemap shard: ${error.message}`);
 				return 1;
 			}
-			log(`  ${shard.replace(site, "")}: ${locs.length} URLs`);
-			candidates.push(...locs);
+			log(`  ${shard.replace(site, "")}: ${shardEntries.length} URLs`);
+			for (const entry of shardEntries) candidates.push(entry); // not push(...): a shard can hold tens of thousands
 		}
 	}
 
-	const { urls, rejected } = normaliseUrls(candidates, site);
+	const { entries, rejected } = normaliseEntries(candidates, site);
 	if (rejected.length > 0) {
 		log(`refused: ${rejected.length} URL(s) are not on ${new URL(site).host}, for example ${rejected[0]}`);
 		return 2;
@@ -343,17 +431,27 @@ export async function main(argv, deps = {}) {
 		return 2;
 	}
 	const named = options.urls.length > 0;
-	const pending = named ? urls : urls.filter((url) => !state.submitted[url]);
+	const resendAfterMs = options.resendAfterDays * DAY_MS;
+	const { fresh, changed } = named
+		? { fresh: entries.map((entry) => entry.url), changed: [] }
+		: selectPending(entries, state.submitted, { now: now().getTime(), resendAfterMs });
+	const pending = [...fresh, ...changed];
 	const toSend = pending.slice(0, max);
 	const batches = chunk(toSend, BATCH_SIZE);
 
 	log(
-		`${urls.length} URLs found, ${urls.length - pending.length} already sent (state), ${
+		`${entries.length} URLs found, ${entries.length - pending.length} already sent (state), ${
 			pending.length
 		} pending, ` +
 			`${toSend.length} in this run${pending.length > toSend.length ? ` (capped by --max ${max})` : ""}, ` +
 			`${batches.length} request(s) of up to ${BATCH_SIZE}.`,
 	);
+	if (!named && changed.length > 0) {
+		log(
+			`  of the pending: ${fresh.length} never sent, ${changed.length} changed since they were sent ` +
+				`(told again at most every ${options.resendAfterDays} day(s)).`,
+		);
+	}
 	for (const url of toSend.slice(0, 5)) log(`  e.g. ${url}`);
 
 	// 3. Is the key file really being served?
@@ -405,6 +503,13 @@ export async function main(argv, deps = {}) {
 				verdict.note
 			})`,
 		);
+		if (verdict.unconfirmed) {
+			log(
+				`stopped after ${sent} URL(s) sent in this run; this request is not recorded as sent, so the next run sends it again. ` +
+					`If the answer stays 202, look in the web server's nginx log for the engine reading ${keyUrl}.`,
+			);
+			return 3;
+		}
 		if (!verdict.ok) {
 			log(`stopped after ${sent} URL(s) sent in this run.`);
 			return 1;

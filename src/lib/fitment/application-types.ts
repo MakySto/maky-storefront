@@ -19,6 +19,14 @@ export type ApplicationRow = {
 	doors: number[] | null;
 	conditionCodes: string[];
 	/**
+	 * What the source says is true of THIS car and this product: a van's version ("Určené len pre
+	 * verziu: dĺžka L2 …"), the fixing, a note. `text` is the dataset's own words for the reading
+	 * locale, or null where the source has none in it and only a code is known; one condition is
+	 * one entry, the same twice only once. A car that appears twice with different versions is two
+	 * rows, and this is what tells them apart.
+	 */
+	conditions: { code: string; text: string | null }[];
+	/**
 	 * The SOURCE accepted this row for this product. False for held, unreviewed,
 	 * conflicting or rejected rows, which must not read as confirmed.
 	 *

@@ -1,6 +1,9 @@
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import { catalogLanguageForMarket } from "@/lib/catalog-content/language";
-import { categoryRoutePath, isCategorySlug } from "./categories";
+import { categoryRoutePath, isCategorySlug, isLiveCategorySlug } from "./categories";
+import { KARGO_BASE_SLUG, KARGO_CATEGORY_ID, KARGO_CATEGORY_SLUGS, KARGO_PREVIOUS_SLUG } from "./kargo-slugs";
+
+export { KARGO_BASE_SLUG, KARGO_CATEGORY_SLUGS, KARGO_PREVIOUS_SLUG } from "./kargo-slugs";
 
 /**
  * Localized category URLs — the one table that ties a market to its category segments.
@@ -52,6 +55,20 @@ import { categoryRoutePath, isCategorySlug } from "./categories";
  * 3348ecc6). The USA and Canada followed in a second run (CFM d221edc9) with the English translation: `EN` for
  * `us-usd` and `EN_CA` for `ca-cad`, both with the slug `thule-roof-racks`, so one `en` segment serves both.
  *
+ * ## Nordrive Kargo (2026-10-30)
+ *
+ * `kargo-stresne-nosice-a-stresne-kose-na-dodavky` (Category:34, a child of the root) holds the roof bars and baskets
+ * for vans. The owner named it "Kargo strešné nosiče a strešné koše na dodávky" (2026-10-30) and chose the Kargo
+ * spelling for every market, with Austria and Canada spelled apart from Germany and the USA (`marketSegments`): the
+ * German shop says Transporter, the Austrian one Lieferwagen; the American one cargo vans, the Canadian one
+ * commercial vans. The slugs are the ones CFM writes as the category's translations. The row is checked against
+ * what Saleor holds once CFM has written them.
+ *
+ * The category had the slug `stresne-nosice-a-kose-na-dodavky` for its first night on the Slovak shop. Saleor and
+ * the shop cannot change at the same instant, so `KARGO_PREVIOUS_SLUG` is still accepted wherever a product's
+ * category decides something (the shelf, the quote button), and the old root answers a 301 to the new one once
+ * Saleor holds the new slug (`proxy.ts`).
+ *
  * ## What this does NOT move
  *
  * Product slugs, model and generation slugs, and the three RELEASE-4 pages each foreign
@@ -80,8 +97,19 @@ export interface LocalizedCategory {
 	readonly baseSlug: string;
 	/** Saleor global id, read anonymously on 2026-09-16. Checked by `pnpm check:category-routes`. */
 	readonly saleorId: string;
-	/** Canonical URL segment per catalogue language. `sk` is always the base slug. */
+	/** Canonical URL segment per catalogue language. `sk` is the base slug, unless the row says otherwise. */
 	readonly segments: Readonly<Record<CatalogLanguage, string>>;
+	/**
+	 * Markets that read a language but spell the category differently: Austria against Germany, Canada against
+	 * the USA (Kargo, 2026-10-30). Keyed by market (`at`, `ca`); every other market reads `segments`.
+	 */
+	readonly marketSegments?: Readonly<Partial<Record<string, string>>>;
+	/**
+	 * Spellings this category had in a market before its row looked like this: the translated slug Saleor held
+	 * (`dachtraeger-und-dachkoerbe-fuer-transporter`) while the page was still reached under `/categories/`. They are
+	 * addresses that exist in links, bookmarks and indexes, so each one answers a 301 to the canonical root.
+	 */
+	readonly legacySegments?: Readonly<Partial<Record<string, readonly string[]>>>;
 }
 
 const ROOF_RACK_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
@@ -108,6 +136,19 @@ const CAR_FRIDGE_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
 	es: "neveras-de-coche",
 	ro: "frigidere-auto",
 	en: "portable-refrigerators-freezers",
+};
+
+const KARGO_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
+	sk: "kargo-stresne-nosice-a-stresne-kose-na-dodavky",
+	cs: "kargo-stresni-nosice-a-stresni-kose-na-dodavky",
+	de: "kargo-dachtraeger-und-dachkoerbe-fuer-transporter",
+	pl: "kargo-bagazniki-dachowe-i-kosze-dachowe-do-samochodow-dostawczych",
+	hu: "kargo-tetocsomagtartok-es-tetokosarak-kisteherautokra",
+	it: "kargo-barre-portatutto-e-ceste-portacarico-per-furgoni",
+	fr: "kargo-barres-et-galeries-de-toit-pour-utilitaires",
+	es: "kargo-barras-de-techo-y-portaequipajes-para-furgonetas",
+	ro: "kargo-bare-transversale-si-cosuri-portbagaj-pentru-autoutilitare",
+	en: "kargo-roof-racks-and-crossbars-for-vans",
 };
 
 export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
@@ -141,17 +182,48 @@ export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 			]),
 		) as Record<CatalogLanguage, string>,
 	},
+	{
+		baseSlug: KARGO_BASE_SLUG,
+		saleorId: KARGO_CATEGORY_ID,
+		segments: KARGO_SEGMENTS,
+		marketSegments: {
+			at: "kargo-dachtraeger-und-dachkoerbe-fuer-lieferwagen",
+			ca: "kargo-van-roof-racks-and-crossbars",
+		},
+		// The slugs of the category's first translations, read from Saleor on 2026-11-02 (Category:34, still
+		// named "Strešné nosiče a koše na dodávky"). Slovakia, the USA and Canada have none.
+		legacySegments: {
+			cz: ["stresni-nosice-a-kose-na-dodavky"],
+			de: ["dachtraeger-und-dachkoerbe-fuer-transporter"],
+			at: ["dachtraeger-und-dachkoerbe-fuer-transporter"],
+			pl: ["bagazniki-dachowe-i-kosze-do-samochodow-dostawczych"],
+			hu: ["tetocsomagtartok-es-tetokosarak-kisteherautokra"],
+			ro: ["bare-transversale-si-cosuri-portbagaj-pentru-autoutilitare"],
+			fr: ["barres-de-toit-et-galeries-pour-utilitaires"],
+			it: ["barre-portatutto-e-cesti-per-furgoni"],
+			es: ["barras-de-techo-y-bacas-para-furgonetas"],
+		},
+	},
 ];
 
 const BY_BASE = new Map(LOCALIZED_CATEGORIES.map((category) => [category.baseSlug, category]));
+const KARGO_ROW = BY_BASE.get(KARGO_BASE_SLUG)!;
 
-/** `language → segment → category`, for the localized spellings only (not the base slugs). */
-const BY_SEGMENT = new Map<string, Map<string, LocalizedCategory>>(
-	CATALOG_LANGUAGES.map((language) => [
-		language,
-		new Map(LOCALIZED_CATEGORIES.map((category) => [category.segments[language], category])),
-	]),
-);
+/** Saleor's global id → the row, for the places that know a category by id and not by a slug. */
+const BY_ID = new Map(LOCALIZED_CATEGORIES.map((category) => [category.saleorId, category]));
+
+/**
+ * The base slug of a mapped category named by its Saleor id, or `null`. A foreign page learns a category's
+ * slug from a translation, which can be any spelling; its id never changes.
+ */
+export function baseSlugForCategoryId(id: string | null | undefined): string | null {
+	return (id && BY_ID.get(id)?.baseSlug) || null;
+}
+
+/** The segment a category has in this market: the market's own spelling when the row has one, else its language's. */
+function segmentIn(category: LocalizedCategory, market: string, language: CatalogLanguage): string {
+	return category.marketSegments?.[market] ?? category.segments[language];
+}
 
 /** `sk` or `sk-eur` → `sk`. Both key spaces are disjoint, so one helper serves pages and the proxy. */
 function marketOf(marketOrChannel: string): string | null {
@@ -167,6 +239,28 @@ function languageOf(marketOrChannel: string): CatalogLanguage | null {
 		: null;
 }
 
+/** `market → segment → category`, for the localized spellings only (not the base slugs). */
+const BY_SEGMENT = new Map<string, Map<string, LocalizedCategory>>(
+	Object.keys(CHANNEL_MAP).flatMap((market) => {
+		const language = languageOf(market);
+		return language
+			? [
+					[
+						market,
+						new Map<string, LocalizedCategory>([
+							...LOCALIZED_CATEGORIES.flatMap((category) =>
+								(category.legacySegments?.[market] ?? []).map((legacy) => [legacy, category] as const),
+							),
+							...LOCALIZED_CATEGORIES.map(
+								(category) => [segmentIn(category, market, language), category] as const,
+							),
+						]),
+					] as const,
+				]
+			: [];
+	}),
+);
+
 /**
  * The base slug a URL segment names in this market, or `null` when it names no mapped category.
  *
@@ -175,9 +269,42 @@ function languageOf(marketOrChannel: string): CatalogLanguage | null {
  * category it has no translated slug for.
  */
 export function mappedCategoryFor(marketOrChannel: string, segment: string): LocalizedCategory | null {
+	const market = marketOf(marketOrChannel);
+	if (!market || !languageOf(market)) return null;
+	return (
+		BY_SEGMENT.get(market)?.get(segment) ??
+		BY_BASE.get(segment) ??
+		// The slug Kargo had for its first night. Abroad it never was an address worth keeping, so it names the row;
+		// in Slovakia it is the live root until Saleor holds the new slug (`renamedCategoryTarget`).
+		(segment === KARGO_PREVIOUS_SLUG && market !== "sk" ? KARGO_ROW : null)
+	);
+}
+
+/**
+ * The slug to ask Saleor for. Identity everywhere else is the base slug, but the Kargo category has two while it
+ * is renamed in Saleor: the new one once the live category list holds it, the old one until then. The shop's
+ * addresses follow the table either way, so the rename in Saleor needs no release.
+ */
+export function saleorSlugFor(baseSlug: string): string {
+	if (baseSlug !== KARGO_BASE_SLUG && baseSlug !== KARGO_PREVIOUS_SLUG) return baseSlug;
+	if (isLiveCategorySlug(KARGO_BASE_SLUG)) return KARGO_BASE_SLUG;
+	if (isLiveCategorySlug(KARGO_PREVIOUS_SLUG)) return KARGO_PREVIOUS_SLUG;
+	return baseSlug;
+}
+
+/**
+ * Is there a root URL for this category in this market? Everywhere the proxy knows the slug (`isCategorySlug`);
+ * abroad also a mapped category whose localized segment differs from its base slug, because that segment is
+ * routed by the table alone and does not wait for Saleor to hold the slug.
+ */
+export function categoryRootServes(marketOrChannel: string, baseSlug: string): boolean {
+	if (isCategorySlug(baseSlug)) return true;
+	const market = marketOf(marketOrChannel);
 	const language = languageOf(marketOrChannel);
-	if (!language) return null;
-	return BY_SEGMENT.get(language)?.get(segment) ?? BY_BASE.get(segment) ?? null;
+	const category = BY_BASE.get(baseSlug);
+	return Boolean(
+		market && language && market !== "sk" && category && segmentIn(category, market, language) !== baseSlug,
+	);
 }
 
 /**
@@ -191,11 +318,49 @@ export function categoryBaseSlug(marketOrChannel: string, segment: string): stri
 	return mappedCategoryFor(marketOrChannel, segment)?.baseSlug ?? segment;
 }
 
+/** What a product says about its category: Saleor's id, which no translation changes, and the slug of its market. */
+export interface CategoryRef {
+	readonly id?: string | null;
+	readonly slug?: string | null;
+}
+
+/**
+ * The base slug of the category a product carries in this market, or `null` for a product with none. Where a surface
+ * compares a category with a rule keyed by BASE slug (`quote-only.ts`, the Kargo shelf), it asks this first: abroad
+ * the exact-locale boundary (`resolveExactLocaleProduct`) swaps the TRANSLATED slug into the product's category.
+ *
+ * The id comes first. Saleor's translated slug is whatever CFM wrote and need not be the one in the table above
+ * (read 2026-11-02: Germany holds `dachtraeger-und-dachkoerbe-fuer-transporter`, the table has `kargo-dachtraeger-…`),
+ * while the id is the same in every language. A category the table does not know falls back to its slug.
+ */
+export function baseSlugOfCategory(
+	marketOrChannel: string,
+	category: CategoryRef | null | undefined,
+): string | null {
+	if (!category) return null;
+	const known = category.id ? BY_ID.get(category.id) : undefined;
+	if (known) return known.baseSlug;
+	return category.slug ? categoryBaseSlug(marketOrChannel, category.slug) : null;
+}
+
+/**
+ * Whether a category is the Nordrive Kargo shelf, whatever slug a product carries for it in this market.
+ *
+ * On the Slovak shop that is the base slug. Abroad it is the translated one, and comparing that with
+ * `KARGO_CATEGORY_SLUGS` answered "no" on every foreign card: the material, which only this shelf asks for, was
+ * missing from all of them (2026-11-02).
+ */
+export function isKargoCategory(marketOrChannel: string, category: CategoryRef | null | undefined): boolean {
+	const base = baseSlugOfCategory(marketOrChannel, category);
+	return base !== null && KARGO_CATEGORY_SLUGS.includes(base);
+}
+
 /** The canonical public segment of a category in this market. Unmapped slugs pass through. */
 export function categorySegment(marketOrChannel: string, slug: string): string {
 	const category = mappedCategoryFor(marketOrChannel, slug);
+	const market = marketOf(marketOrChannel);
 	const language = languageOf(marketOrChannel);
-	return category && language ? category.segments[language] : slug;
+	return category && market && language ? segmentIn(category, market, language) : slug;
 }
 
 /**
@@ -208,7 +373,10 @@ export function categorySegment(marketOrChannel: string, slug: string): string {
 export function categoryUrlFor(marketOrChannel: string, slug: string): string {
 	const base = categoryBaseSlug(marketOrChannel, slug);
 	const segment = categorySegment(marketOrChannel, base);
-	return isCategorySlug(base) ? `/${segment}` : categoryRoutePath(segment);
+	if (categoryRootServes(marketOrChannel, base)) return `/${segment}`;
+	// Kargo in Slovakia before Saleor holds the new slug: the root that serves is the old one, not `/categories/…`.
+	if (base === KARGO_BASE_SLUG && isCategorySlug(KARGO_PREVIOUS_SLUG)) return `/${KARGO_PREVIOUS_SLUG}`;
+	return categoryRoutePath(segment);
 }
 
 /**
@@ -219,9 +387,37 @@ export function categoryUrlFor(marketOrChannel: string, slug: string): string {
  * is not a URL this market has.
  */
 export function isLocalizedRootSegment(market: string, segment: string): boolean {
-	const language = languageOf(market);
-	const category = language ? BY_SEGMENT.get(language)?.get(segment) : undefined;
+	const category = BY_SEGMENT.get(marketOf(market) ?? "")?.get(segment);
 	return Boolean(category && category.baseSlug !== segment);
+}
+
+/**
+ * Where an old Kargo category URL lives now, or `null` when it is still the live one.
+ *
+ * `rest` is the normalized path after the market, split into segments; the result is market-relative and keeps
+ * everything below the root. Two kinds of old address:
+ *
+ * - the Slovak slug of the first night (`stresne-nosice-a-kose-na-dodavky`). In Slovakia it answers only once
+ *   Saleor holds the new slug and no longer the old one (`isCategorySlug`, which reads the live category list):
+ *   until CFM has renamed the category the old root is the one that serves, and a redirect would take a working
+ *   listing away. Abroad the new root serves already (it asks Saleor for whichever slug it holds, `saleorSlugFor`),
+ *   so the old one answers at once;
+ * - a foreign market's first translated slug (`legacySegments`), always.
+ */
+export function renamedCategoryTarget(market: string, rest: readonly string[]): string | null {
+	const first = rest[0];
+	const key = marketOf(market);
+	if (!first || !key) return null;
+	const target = () => "/" + [categorySegment(market, KARGO_BASE_SLUG), ...rest.slice(1)].join("/");
+
+	if (first === KARGO_PREVIOUS_SLUG) {
+		// Slovakia keeps the old root until Saleor holds the new slug and drops the old one.
+		if (key === "sk" && (!isCategorySlug(KARGO_BASE_SLUG) || isCategorySlug(KARGO_PREVIOUS_SLUG)))
+			return null;
+		return target();
+	}
+	// A foreign spelling the category had before the table named it: the canonical root, at once.
+	return KARGO_ROW.legacySegments?.[key]?.includes(first) ? target() : null;
 }
 
 export interface CategoryRouteRow {
@@ -247,7 +443,7 @@ export function categoryRouteTable(): readonly CategoryRouteRow[] {
 		const language = languageOf(market);
 		if (!language) continue;
 		for (const category of LOCALIZED_CATEGORIES) {
-			const segment = category.segments[language];
+			const segment = segmentIn(category, market, language);
 			rows.push({
 				market,
 				channel: config.saleorSlug,

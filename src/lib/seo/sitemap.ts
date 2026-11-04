@@ -1,11 +1,11 @@
 import { type MetadataRoute } from "next";
+import { fetchStockedCategorySlugs, REVALIDATE_SECONDS, sitemapTag } from "@/lib/seo/catalogue-walk";
 import {
-	collectConnection,
-	fetchStockedCategorySlugs,
-	PAGE_SIZE,
-	REVALIDATE_SECONDS,
-	sitemapTag,
-} from "@/lib/seo/catalogue-walk";
+	fetchProductPage,
+	fetchProductSlugs,
+	localizedEntries,
+	peekProductSlugs,
+} from "@/lib/seo/product-walk";
 
 export { sitemapTag };
 import { categoryUrlFor } from "@/config/category-routes";
@@ -20,9 +20,8 @@ import { catalogRedirectTarget } from "@/lib/catalog-content/redirects";
 import { catalogLanguageForMarket, loadCatalogView } from "@/lib/catalog-content/resolve";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
-import { SitemapProductsDocument, SitemapProductCountDocument } from "@/gql/graphql";
-import { getLocaleConfigByLocale } from "@/config/locale";
-import { isSourceLocale, resolveExactLocaleProduct } from "@/lib/saleor/exact-locale";
+import { SitemapProductCountDocument } from "@/gql/graphql";
+import { isSourceLocale } from "@/lib/saleor/exact-locale";
 
 /**
  * ## A sitemap index and shards, not one file (COMMERCE-2 M5)
@@ -119,109 +118,6 @@ export async function staticPathsFor(market: string): Promise<readonly string[]>
  * a product entry serializes to about 250 bytes, so 40 000 is ~10 MB and well inside both.
  */
 export const MAX_URLS_PER_SITEMAP = 40_000;
-
-interface ProductEntry {
-	slug: string;
-	updatedAt: string | null;
-}
-
-/**
- * Every product URL in one channel, in the market's OWN spelling.
- *
- * Slovakia reads the base row, so its URL is `Product.slug` and the query stays two fields.
- * A foreign market's URL is the translated slug CFM allocates, and the product only exists
- * there when the exact-locale boundary accepts it — the same boundary the PDP, the listing
- * and the offers use. Anything it refuses is dropped here rather than published as a URL that
- * answers with the not-found body.
- */
-function fetchProductSlugs(channel: string, locale: string): Promise<ProductEntry[]> {
-	const key = `${channel}\u0000${locale}`;
-	const running = walksInFlight.get(key);
-	if (running) return running;
-	const walk = walkProductSlugs(channel, locale).finally(() => walksInFlight.delete(key));
-	walksInFlight.set(key, walk);
-	return walk;
-}
-
-/**
- * One product walk per channel and language at a time, in this process.
- *
- * Measured on a fresh build (2026-09-27): a foreign market's walk is 92 pages and takes ~14 s
- * cold, 0.3 s warm; Slovakia ~6.5 s cold. Next locks a cache MISS per fetch key, but its
- * incremental cache is created per request ("incremental-cache is request specific",
- * next-server.js), so two requests arriving while the cache is cold — right after a deploy, a
- * crawler and a second crawler on the same shard — each walked the whole catalogue. A second
- * caller now joins the walk already running. A failed walk fails both, which is the policy: an
- * error, never a short list. The map holds only walks in flight, so nothing here outlives them.
- */
-const walksInFlight = new Map<string, Promise<ProductEntry[]>>();
-
-async function walkProductSlugs(channel: string, locale: string): Promise<ProductEntry[]> {
-	const localized = !isSourceLocale(locale);
-	const nodes = await collectConnection(`${channel}: product`, (after) =>
-		fetchProductPage(channel, locale, after),
-	);
-
-	if (!localized) {
-		return nodes
-			.filter((node) => Boolean(node.slug))
-			.map((node) => ({ slug: node.slug, updatedAt: node.updatedAt ?? null }));
-	}
-
-	const entries = localizedEntries(nodes, locale);
-	const dropped = nodes.length - entries.length;
-	if (dropped > 0) {
-		console.log(
-			`[sitemap] ${channel}: ${dropped} of ${nodes.length} products are not translated for ${
-				getLocaleConfigByLocale(locale).graphqlLanguageCode
-			}`,
-		);
-	}
-	return entries;
-}
-
-type ProductNode = NonNullable<Awaited<ReturnType<typeof fetchProductPage>>>["edges"][number]["node"];
-
-/**
- * One page of a channel's product walk. The index reads the FIRST page too (`countIsExact`), with
- * the very same variables, so the two share one cached answer rather than asking twice.
- */
-async function fetchProductPage(
-	channel: string,
-	locale: string,
-	after: string | null,
-	options: { readonly deadlineMs?: number } = {},
-) {
-	const localized = !isSourceLocale(locale);
-	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
-	const result = await executePublicGraphQL(SitemapProductsDocument, {
-		variables: { channel, first: PAGE_SIZE, after, lang, localized },
-		revalidate: REVALIDATE_SECONDS,
-		tags: [sitemapTag(channel)],
-		// A bounded single attempt, for the index's look at the first page. The deadline is not part
-		// of Next's cache key, so the walk still shares the answer.
-		...(options.deadlineMs ? { retry: false, signal: AbortSignal.timeout(options.deadlineMs) } : {}),
-	});
-	if (!result.ok) {
-		logUpstreamError("sitemap-products", upstreamError(result), {
-			channel,
-			after: after ?? "start",
-		});
-		return null;
-	}
-	return result.data.products ?? null;
-}
-
-/** The products the exact-locale boundary accepts in this language, at their translated slug. */
-function localizedEntries(nodes: readonly ProductNode[], locale: string): ProductEntry[] {
-	const entries: ProductEntry[] = [];
-	for (const node of nodes) {
-		const localizedNode = resolveExactLocaleProduct(node, locale);
-		if (!localizedNode?.slug) continue;
-		entries.push({ slug: localizedNode.slug, updatedAt: node.updatedAt ?? null });
-	}
-	return entries;
-}
 
 /**
  * The CFM vehicle pages — `/sk/stresne-nosice/bmw/x3/g01` and its 1 473 siblings.
@@ -391,6 +287,11 @@ async function fetchProductCount(channel: string): Promise<number | null> {
  */
 async function productShardPlan(market: string): Promise<SitemapShard[]> {
 	const { saleorSlug: channel, locale } = CHANNEL_MAP[market];
+	// A kept list is the exact count, in the very state the shards will serve it: no round trip at
+	// all. The count below is for a process that has not built one yet.
+	const kept = peekProductSlugs(channel, locale);
+	if (kept) return planShards(market, "products", kept.length);
+
 	const total = await fetchProductCount(channel);
 	if (total !== null && total <= MAX_URLS_PER_SITEMAP && (await countIsExact(channel, locale, total))) {
 		return planShards(market, "products", total);
@@ -408,14 +309,17 @@ async function productShardPlan(market: string): Promise<SitemapShard[]> {
  * which reads the real entries, would answer 404 to the URL the index had just named (Codex
  * review, 2026-09-27; not seen on production, where all eleven foreign markets carry 9 157 of
  * 9 157). So abroad the first page must show one accepted product; if it does not, the exact walk
- * decides. The first page is the walk's own first page (`fetchProductPage`), cached with it.
+ * decides. The first page is read through the data cache (`cached`), tagged with the channel.
  */
 /** Cold, one page takes ~150 ms (a 92-page walk is ~14 s); warm, it is a cache read. */
 const FIRST_PAGE_DEADLINE_MS = 5_000;
 
 async function countIsExact(channel: string, locale: string, total: number): Promise<boolean> {
 	if (total === 0 || isSourceLocale(locale)) return true;
-	const first = await fetchProductPage(channel, locale, null, { deadlineMs: FIRST_PAGE_DEADLINE_MS });
+	const first = await fetchProductPage(channel, locale, null, {
+		deadlineMs: FIRST_PAGE_DEADLINE_MS,
+		cached: true,
+	});
 	// The page did not come: nothing is learned about the translations, so the count stands, as it
 	// did before this check. Falling back to the walk would only send the request that just failed
 	// again, with a full retry ladder (review 2026-09-27), and the shard fails loudly by itself if

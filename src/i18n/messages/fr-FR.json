@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Diminuer la quantité",
 		"increaseQuantity": "Augmenter la quantité",
 		"priceWithVat": "Prix TTC",
+		"priceWithoutVat": "Prix HT : {price}",
 		"technicalParameters": "Caractéristiques techniques",
 		"outerDimensions": "Dimensions extérieures",
 		"yes": "Oui",
@@ -154,11 +155,22 @@
 				"play": "Lire la vidéo",
 				"note": "YouTube · ne se charge qu'après le clic"
 			},
+			"sections": {
+				"intro": "Description du produit",
+				"compatibility": "Compatibilité",
+				"usage": "Utilisation au quotidien",
+				"accessories": "Accessoires adaptés",
+				"brand": "À propos de la marque",
+				"closing": "Nous vous conseillons"
+			},
+			"viewAccessory": "Voir l'accessoire",
+			"viewPart": "Voir la pièce",
 			"years": "{count, plural, one {# an} other {# ans}}"
 		},
 		"keyFeatures": "Caractéristiques principales",
 		"productDescription": "Description du produit",
 		"imageCounter": "Image {current} sur {total}",
+		"illustrativeImage": "Image d'illustration",
 		"trustPaymentTitle": "Paiement sécurisé",
 		"trustPaymentText": "Connexion chiffrée",
 		"trustShippingTitle": "Livraison",
@@ -318,7 +330,10 @@
 		"listingAllNotice": "Vous voyez l'offre pour tous les véhicules : elle n'est pas filtrée pour votre voiture ({vehicle}).",
 		"listingDefaultNone": "Nous n'avons pas encore d'ensemble vérifié pour {vehicle} ; vous voyez donc l'offre pour tous les véhicules.",
 		"listingNotOnSaleTitle": "Il existe des ensembles compatibles avec {vehicle} qui ne sont pas en vente pour le moment",
-		"listingNotOnSaleBody": "Cela ne veut pas dire que rien ne convient. Nous ajoutons ces ensembles à l'offre ; en attendant, vous pouvez voir tous les véhicules ou nous écrire."
+		"listingNotOnSaleBody": "Cela ne veut pas dire que rien ne convient. Nous ajoutons ces ensembles à l'offre ; en attendant, vous pouvez voir tous les véhicules ou nous écrire.",
+		"listingOtherShelfTitle": "Pour {vehicle}, aucun kit vérifié dans cette catégorie",
+		"listingOtherShelfBody": "Les kits vérifiés pour votre véhicule se trouvent dans une autre catégorie, pas dans celle-ci.",
+		"listingOtherShelfAction": "Voir les kits de la catégorie {category}"
 	},
 	"cart": {
 		"yourCart": "Votre panier",
@@ -327,6 +342,7 @@
 		"addInvalid": "Veuillez vérifier la quantité choisie.",
 		"addNotFound": "Produit introuvable.",
 		"addFailed": "Impossible d'ajouter le produit au panier.",
+		"addPaymentLocked": "Un paiement pour votre commande est déjà en cours, rien ne peut donc être ajouté pour le moment. Terminez-le ou annulez-le en toute sécurité à la caisse.",
 		"addUnconfirmed": "Nous ne pouvons pas confirmer l'ajout du produit. Veuillez vérifier votre panier.",
 		"emptyCart": "Votre panier est vide",
 		"continueShopping": "Continuer mes achats",
@@ -576,7 +592,12 @@
 			"invalidValue": "Valeur non valide",
 			"notFullyPaid": "Le paiement ne couvre pas encore la totalité de la commande. Actualisez la page ; si les fonds ont été autorisés, finalisez la commande avec le bouton ci-dessous. Ne payez pas à nouveau tant que le statut n'est pas confirmé.",
 			"alreadyCompleted": "Cette commande a déjà été passée. Vous trouverez la confirmation dans votre e-mail.",
-			"freeOrderTotalChanged": "Le total de la commande a changé et nécessite maintenant un paiement. Vérifiez-le et réessayez."
+			"freeOrderTotalChanged": "Le total de la commande a changé et nécessite maintenant un paiement. Vérifiez-le et réessayez.",
+			"checkoutLocked": "Un paiement pour cette commande est déjà en cours. Terminez-le ou annulez-le en toute sécurité avant d'en commencer un nouveau.",
+			"orderUpdated": "Votre commande a été mise à jour. Vérifiez le nouveau montant avant de payer.",
+			"finalStateUnconfirmed": "Le prix final n'a pas pu être confirmé pour le moment. Réessayez.",
+			"completeBlockedNoNewPayment": "La commande n'a pas pu être finalisée pour le moment. Si vous avez déjà payé, ne lancez pas de nouveau paiement : actualisez la page ou contactez-nous.",
+			"completeOfferChanged": "Le montant a changé, la commande n'a donc pas été créée. L'argent de ce paiement sera libéré automatiquement. Si vous avez besoin d'aide pour la commande, contactez-nous."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Mode test :</strong> ceci est une confirmation de commande simulée. Aucun paiement réel n'a été effectué.",
@@ -598,6 +619,93 @@
 		},
 		"meta": {
 			"title": "Commande"
+		},
+		"b2b": {
+			"sectionTitle": "Achat professionnel",
+			"toggle": "J'achète pour une entreprise",
+			"toggleHint": "Nous indiquerons les coordonnées de l'entreprise sur la facture.",
+			"companyName": "Raison sociale",
+			"registrationId": "IČO",
+			"taxId": "DIČ",
+			"vatIdPlaceholder": "p. ex. {example}",
+			"vatIdHint": "Avec un numéro de TVA intracommunautaire valide d'un autre pays de l'UE et une livraison dans ce pays, la livraison peut être exonérée de TVA. Nous décidons après vérification dans VIES.",
+			"billingSameAsShipping": "L'adresse de facturation est identique à l'adresse de livraison",
+			"billingAddressTitle": "Adresse de facturation",
+			"billingSummaryTitle": "Données de facturation",
+			"billingMissing": "Les données de facturation manquent. Complétez-les à l'étape Informations.",
+			"taxedTotal": "À payer TTC : {total}",
+			"summaryExempt": "Hors TVA — exonéré selon le § 43 de la loi slovaque sur la TVA",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "N° TVA intracommunautaire"
+			},
+			"errors": {
+				"companyNameRequired": "Saisissez la raison sociale.",
+				"registrationIdRequired": "Saisissez l'IČO.",
+				"registrationIdFormat": "L'IČO comporte 6 à 8 chiffres.",
+				"taxIdFormat": "Le DIČ comporte 10 chiffres.",
+				"vatIdFormat": "Ce numéro n'a pas le format d'un numéro de TVA du pays choisi. Vérifiez-le.",
+				"tooLong": "La valeur est trop longue.",
+				"saveFailed": "Les données de l'entreprise n'ont pas pu être enregistrées. Réessayez."
+			},
+			"status": {
+				"verifying": "Vérification du numéro de TVA…",
+				"exempt": "Numéro de TVA vérifié. La livraison est exonérée de TVA ; le prix indiqué est hors TVA.",
+				"invalid": "VIES n'a pas confirmé ce numéro de TVA comme valide pour les échanges intracommunautaires. Vérifiez-le ou continuez avec la TVA.",
+				"unavailable": "Le numéro de TVA ne peut pas être vérifié pour le moment. Réessayez dans un instant ou continuez avec la TVA.",
+				"countryMismatch": "Nous ne pouvons traiter automatiquement une livraison hors TVA que vers le pays de votre numéro de TVA. Pour une autre livraison, contactez-nous.",
+				"identityReview": "Les données de l'entreprise ne correspondent pas au résultat de la vérification. Vérifiez les données de facturation ou contactez-nous.",
+				"skVat": "Avec un numéro de TVA slovaque, l'achat est facturé avec TVA.",
+				"domesticDelivery": "Pour une livraison ou un retrait en Slovaquie, l'achat est facturé avec TVA.",
+				"incomplete": "Nous déciderons de la TVA lorsque les données et le mode de livraison seront complets.",
+				"validPendingDelivery": "Le numéro de TVA est valide dans VIES. Nous déciderons de la TVA après le choix du mode de livraison.",
+				"disabled": "Nous ne proposons pas d'exonération automatique de TVA pour le moment. Vous pouvez finaliser votre achat professionnel avec TVA.",
+				"serviceOff": "La vérification automatique du numéro de TVA est indisponible pour le moment. Vous pouvez finaliser votre achat professionnel au prix indiqué dans le récapitulatif."
+			},
+			"actions": {
+				"continueWithVat": "Continuer avec la TVA",
+				"retry": "Vérifier à nouveau",
+				"recheck": "Contrôler à nouveau",
+				"refreshStatus": "Actualiser l'état du paiement",
+				"edit": "Modifier"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "Un paiement pour cette commande est déjà en cours, les informations ne peuvent donc pas être modifiées pour le moment. Vous pouvez terminer le paiement, ou l'annuler en toute sécurité puis modifier les informations.",
+				"cart": "Un paiement pour cette commande est déjà en cours, le panier ne peut donc pas être modifié pour le moment. Vous pouvez terminer le paiement, ou l'annuler en toute sécurité puis modifier le panier.",
+				"payment": "Un paiement pour cette commande est déjà en cours, un nouveau paiement ne peut donc pas être lancé pour le moment. Vous pouvez annuler en toute sécurité le paiement commencé puis payer à nouveau."
+			},
+			"releasing": "Annulation du paiement commencé…",
+			"waitingCancel": "Nous attendons que le prestataire de paiement confirme l'annulation. Cela prend généralement quelques secondes.",
+			"waitingAttempt": "Le paiement est encore en cours de création. Nous réessaierons de l'annuler dans un instant.",
+			"released": {
+				"details": "Le paiement commencé est annulé. Vous pouvez maintenant modifier les informations et les enregistrer.",
+				"cart": "Le paiement commencé est annulé. Vous pouvez maintenant modifier le panier.",
+				"payment": "Le paiement commencé est annulé. Vérifiez le montant et payez à nouveau."
+			},
+			"funds": "Le paiement a déjà été reçu ou attend la confirmation de la banque, la commande ne peut donc plus être modifiée. Finalisez-la avec les informations d'origine.",
+			"notConfirmed": "L'annulation du paiement n'est pas encore confirmée. Réessayez dans un instant, payez la commande avec les informations d'origine ou contactez-nous.",
+			"unavailable": "Nous ne pouvons pas annuler le paiement commencé pour le moment. Vous pouvez payer la commande avec les informations d'origine ou nous contacter.",
+			"failed": "Le paiement commencé n'a pas pu être annulé. Réessayez dans un instant, payez la commande avec les informations d'origine ou contactez-nous.",
+			"actions": {
+				"releaseDetails": "Modifier les informations",
+				"releaseCart": "Modifier le panier",
+				"releasePayment": "Annuler le paiement commencé",
+				"retry": "Réessayer",
+				"payOriginal": "Payer avec les informations d'origine",
+				"finishOrder": "Finaliser la commande",
+				"contact": "Contacter la boutique"
+			}
 		}
 	},
 	"footer": {
@@ -852,9 +960,19 @@
 		"errorNotVerified": "Cet ensemble n'est pas vérifié pour le véhicule actuellement sélectionné.",
 		"errorNotAvailable": "Cet ensemble n'est plus au catalogue.",
 		"errorCartRejected": "L'ensemble n'a pas pu être ajouté au panier.",
+		"errorPaymentLocked": "Un paiement pour votre commande est déjà en cours, l'ensemble ne peut donc pas être ajouté pour le moment. Terminez-le ou annulez-le en toute sécurité à la caisse.",
 		"errorLookupFailed": "Nous ne pouvons pas confirmer si l'ensemble a bien été ajouté. Merci de vérifier votre panier.",
 		"errorCatalogueUnavailable": "Impossible de vérifier la disponibilité de l'ensemble pour le moment. Merci de réessayer.",
-		"errorGeneric": "L'ensemble n'a pas pu être ajouté au panier."
+		"errorGeneric": "L'ensemble n'a pas pu être ajouté au panier.",
+		"facetAerodynamic": "Aérodynamique",
+		"facetWing": "Profil aile",
+		"facetTubular": "Tubulaire",
+		"facetColourBlack": "Noir",
+		"facetColourSilver": "Argent",
+		"facetColourAlu": "Aluminium naturel",
+		"propertyBarLength": "Longueur des barres",
+		"propertyColour": "Couleur",
+		"propertyBarLoad": "Charge des barres"
 	},
 	"catalog": {
 		"makeIndexTitle": "Choisissez vos barres de toit selon votre véhicule",
@@ -868,7 +986,7 @@
 		"offersPartial": "Une partie de l'offre n'a pas pu être chargée, la liste peut donc être incomplète.",
 		"previewNotice": "Aperçu d'une page non publiée. Elle n'est pas affichée aux visiteurs.",
 		"offersTitleGeneration": "Ensembles pour cette génération",
-		"offersBrowseNote": "Chaque ensemble ne vaut que pour le type de toit et les années indiqués. Les ensembles ne sont pas filtrés pour votre voiture : une fois votre véhicule choisi, nous ne montrons que ceux qui lui conviennent.",
+		"offersBrowseNote": "Chaque ensemble ne vaut que pour le type de toit et les années indiqués ; les différences se voient sur les fiches. Un autre véhicule ? Changez-le dans l'en-tête.",
 		"offersGroupOther": "Type de toit non précisé"
 	},
 	"company": {
@@ -1117,5 +1235,15 @@
 		"description": "Les fabricants de barres de toit, coffres, porte-vélos et autres équipements dont vous trouverez les produits chez nous.",
 		"productCount": "{count, plural, one {# produit} other {# produits}}",
 		"brandDescription": "Les produits {brand} chez MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Affichage de la liste",
+		"viewGrid": "Grille",
+		"viewList": "Liste",
+		"viewSet": "Voir l'ensemble",
+		"specDimensions": "Dimensions",
+		"specBars": "Barres",
+		"roofFilterLabel": "Type de toit",
+		"roofFilterAll": "Tous"
 	}
 }

@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Mennyiség csökkentése",
 		"increaseQuantity": "Mennyiség növelése",
 		"priceWithVat": "Ár áfával",
+		"priceWithoutVat": "Ár áfa nélkül: {price}",
 		"technicalParameters": "Műszaki adatok",
 		"outerDimensions": "Külső méretek",
 		"yes": "Igen",
@@ -154,11 +155,22 @@
 				"play": "Videó lejátszása",
 				"note": "YouTube · csak a kattintás után töltődik be"
 			},
+			"sections": {
+				"intro": "Termékleírás",
+				"compatibility": "Kompatibilitás",
+				"usage": "Használat a gyakorlatban",
+				"accessories": "Megfelelő kiegészítők",
+				"brand": "A márkáról",
+				"closing": "Segítünk a választásban"
+			},
+			"viewAccessory": "Kiegészítő megtekintése",
+			"viewPart": "Alkatrész megtekintése",
 			"years": "{count, plural, other {# év}}"
 		},
 		"keyFeatures": "Fő jellemzők",
 		"productDescription": "Termékleírás",
 		"imageCounter": "{current}. kép / {total}",
+		"illustrativeImage": "Illusztráció",
 		"trustPaymentTitle": "Biztonságos fizetés",
 		"trustPaymentText": "Titkosított kapcsolat",
 		"trustShippingTitle": "Szállítás",
@@ -318,7 +330,10 @@
 		"listingAllNotice": "A kínálatot minden járműre látja – nem az Ön autójához ({vehicle}) igazítva.",
 		"listingDefaultNone": "A(z) {vehicle} járműhöz még nincs ellenőrzött készletünk, ezért a kínálatot minden járműre látja.",
 		"listingNotOnSaleTitle": "A(z) {vehicle} járműhöz vannak kompatibilis készletek, amelyek jelenleg nincsenek forgalomban",
-		"listingNotOnSaleBody": "Ez nem jelenti azt, hogy semmi sem illik. A készleteket most vesszük fel a kínálatba – addig megnézheti az összes járművet, vagy írhat nekünk."
+		"listingNotOnSaleBody": "Ez nem jelenti azt, hogy semmi sem illik. A készleteket most vesszük fel a kínálatba – addig megnézheti az összes járművet, vagy írhat nekünk.",
+		"listingOtherShelfTitle": "{vehicle} járműhöz ebben a kategóriában nincs ellenőrzött szett",
+		"listingOtherShelfBody": "Az Ön járművéhez ellenőrzött szettek egy másik kategóriában vannak, nem ebben.",
+		"listingOtherShelfAction": "Szettek megtekintése: {category}"
 	},
 	"cart": {
 		"yourCart": "Az Ön kosara",
@@ -327,6 +342,7 @@
 		"addInvalid": "Kérjük, ellenőrizze a megadott mennyiséget.",
 		"addNotFound": "A termék nem található.",
 		"addFailed": "A terméket nem sikerült a kosárba tenni.",
+		"addPaymentLocked": "A rendeléséhez már folyamatban van egy fizetés, ezért most nem adható hozzá termék. Fejezze be, vagy szakítsa meg biztonságosan a pénztárban.",
 		"addUnconfirmed": "Nem tudjuk megerősíteni, hogy a termék bekerült-e. Kérjük, ellenőrizze a kosarat.",
 		"emptyCart": "A kosara üres",
 		"continueShopping": "Vásárlás folytatása",
@@ -576,7 +592,12 @@
 			"invalidValue": "Érvénytelen érték",
 			"notFullyPaid": "A fizetés még nem fedezi a rendelés teljes összegét. Frissítse az oldalt; ha az összeget engedélyezték, fejezze be a rendelést az alábbi gombbal. Ne fizessen újra, amíg az állapot nincs megerősítve.",
 			"alreadyCompleted": "Ezt a rendelést már leadta. A visszaigazolást az e-mailjei között találja.",
-			"freeOrderTotalChanged": "A rendelés végösszege megváltozott, és most fizetést igényel. Ellenőrizze, majd próbálja újra."
+			"freeOrderTotalChanged": "A rendelés végösszege megváltozott, és most fizetést igényel. Ellenőrizze, majd próbálja újra.",
+			"checkoutLocked": "Ehhez a rendeléshez már folyamatban van egy fizetés. Fejezze be vagy szakítsa meg biztonságosan, mielőtt újat indítana.",
+			"orderUpdated": "A rendelés frissült. Fizetés előtt ellenőrizze az új összeget.",
+			"finalStateUnconfirmed": "A végső árat most nem sikerült megerősíteni. Próbálja újra.",
+			"completeBlockedNoNewPayment": "A rendelést most nem sikerült befejezni. Ha már fizetett, ne indítson új fizetést: frissítse az oldalt, vagy vegye fel velünk a kapcsolatot.",
+			"completeOfferChanged": "Az összeg megváltozott, ezért a rendelés nem jött létre. A fizetés összege automatikusan felszabadul. Ha segítségre van szüksége a rendeléssel kapcsolatban, vegye fel velünk a kapcsolatot."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Tesztmód:</strong> Ez egy szimulált rendelés-visszaigazolás. Valódi fizetés nem történt.",
@@ -598,6 +619,93 @@
 		},
 		"meta": {
 			"title": "Pénztár"
+		},
+		"b2b": {
+			"sectionTitle": "Céges vásárlás",
+			"toggle": "Cég nevében vásárolok",
+			"toggleHint": "A cég adatait feltüntetjük a számlán.",
+			"companyName": "Cégnév",
+			"registrationId": "IČO",
+			"taxId": "DIČ",
+			"vatIdPlaceholder": "pl. {example}",
+			"vatIdHint": "Egy másik uniós ország érvényes közösségi adószámával és az adott országba történő szállítással az értékesítés áfamentes lehet. A VIES-ellenőrzés után döntünk.",
+			"billingSameAsShipping": "A számlázási cím megegyezik a szállítási címmel",
+			"billingAddressTitle": "Számlázási cím",
+			"billingSummaryTitle": "Számlázási adatok",
+			"billingMissing": "Hiányoznak a számlázási adatok. Pótolja őket az Adatok lépésben.",
+			"taxedTotal": "Fizetendő áfával: {total}",
+			"summaryExempt": "Áfa nélkül — mentes a szlovák áfatörvény 43. §-a alapján",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "Közösségi adószám"
+			},
+			"errors": {
+				"companyNameRequired": "Adja meg a cégnevet.",
+				"registrationIdRequired": "Adja meg az IČO-t.",
+				"registrationIdFormat": "Az IČO 6–8 számjegyből áll.",
+				"taxIdFormat": "A DIČ 10 számjegyből áll.",
+				"vatIdFormat": "A szám nem felel meg a kiválasztott ország közösségi adószámának formátumának. Ellenőrizze.",
+				"tooLong": "Az érték túl hosszú.",
+				"saveFailed": "A cég adatait nem sikerült menteni. Próbálja újra."
+			},
+			"status": {
+				"verifying": "Ellenőrizzük a közösségi adószámot…",
+				"exempt": "Közösségi adószám ellenőrizve. Az értékesítés áfamentes; a feltüntetett ár áfa nélküli.",
+				"invalid": "A VIES nem igazolta a közösségi adószámot érvényesként az EU-n belüli kereskedelemhez. Ellenőrizze, vagy folytassa áfával.",
+				"unavailable": "A közösségi adószám most nem ellenőrizhető. Próbálja újra egy kicsit később, vagy folytassa áfával.",
+				"countryMismatch": "Áfa nélkül automatikusan csak a közösségi adószám országába történő szállítást tudjuk kezelni. Más szállítás esetén vegye fel velünk a kapcsolatot.",
+				"identityReview": "A cég adatai nem egyeznek az ellenőrzés eredményével. Ellenőrizze a számlázási adatokat, vagy vegye fel velünk a kapcsolatot.",
+				"skVat": "Szlovák közösségi adószámmal a vásárlás áfával kerül számlázásra.",
+				"domesticDelivery": "Szlovákiai szállítás vagy átvétel esetén a vásárlás áfával kerül számlázásra.",
+				"incomplete": "Az áfáról akkor döntünk, amikor a szállítási adatok és a szállítási mód teljes.",
+				"validPendingDelivery": "A közösségi adószám érvényes a VIES-ben. Az áfáról a szállítási mód kiválasztása után döntünk.",
+				"disabled": "Automatikus áfamentességet jelenleg nem kínálunk. A céges vásárlást áfával fejezheti be.",
+				"serviceOff": "A közösségi adószám automatikus ellenőrzése jelenleg nem érhető el. A céges vásárlást az összesítőben szereplő áron fejezheti be."
+			},
+			"actions": {
+				"continueWithVat": "Folytatás áfával",
+				"retry": "Ellenőrzés újra",
+				"recheck": "Újbóli ellenőrzés",
+				"refreshStatus": "Fizetési állapot frissítése",
+				"edit": "Szerkesztés"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "Ehhez a rendeléshez már folyamatban van egy fizetés, ezért az adatok most nem módosíthatók. A fizetést befejezheti, vagy biztonságosan megszakíthatja, majd módosíthatja az adatokat.",
+				"cart": "Ehhez a rendeléshez már folyamatban van egy fizetés, ezért a kosár most nem módosítható. A fizetést befejezheti, vagy biztonságosan megszakíthatja, majd módosíthatja a kosarat.",
+				"payment": "Ehhez a rendeléshez már folyamatban van egy fizetés, ezért most nem indítható új. A megkezdett fizetést biztonságosan megszakíthatja, majd újra fizethet."
+			},
+			"releasing": "A megkezdett fizetés megszakítása folyamatban…",
+			"waitingCancel": "Várjuk, hogy a fizetési szolgáltató megerősítse a fizetés megszakítását. Ez általában néhány másodpercig tart.",
+			"waitingAttempt": "A fizetés létrehozása még folyamatban van. Egy pillanat múlva újra megpróbáljuk megszakítani.",
+			"released": {
+				"details": "A megkezdett fizetés megszakadt. Most módosíthatja és mentheti az adatokat.",
+				"cart": "A megkezdett fizetés megszakadt. Most módosíthatja a kosarat.",
+				"payment": "A megkezdett fizetés megszakadt. Ellenőrizze az összeget, és fizessen újra."
+			},
+			"funds": "A fizetés már beérkezett, vagy a bank megerősítésére vár, ezért a rendelés már nem módosítható. Fejezze be az eredeti adatokkal.",
+			"notConfirmed": "A fizetés megszakítását még nem erősítették meg. Próbálja újra egy pillanat múlva, fizesse ki a rendelést az eredeti adatokkal, vagy vegye fel velünk a kapcsolatot.",
+			"unavailable": "A megkezdett fizetést most nem tudjuk megszakítani. A rendelést kifizetheti az eredeti adatokkal, vagy felveheti velünk a kapcsolatot.",
+			"failed": "A megkezdett fizetést nem sikerült megszakítani. Próbálja újra egy pillanat múlva, fizesse ki a rendelést az eredeti adatokkal, vagy vegye fel velünk a kapcsolatot.",
+			"actions": {
+				"releaseDetails": "Adatok módosítása",
+				"releaseCart": "Kosár módosítása",
+				"releasePayment": "Megkezdett fizetés megszakítása",
+				"retry": "Újrapróbálás",
+				"payOriginal": "Fizetés az eredeti adatokkal",
+				"finishOrder": "Rendelés befejezése",
+				"contact": "Kapcsolatfelvétel"
+			}
 		}
 	},
 	"footer": {
@@ -852,9 +960,19 @@
 		"errorNotVerified": "Ez a szett nincs ellenőrizve a jelenleg kiválasztott járműhöz.",
 		"errorNotAvailable": "Ez a szett már nem szerepel a kínálatunkban.",
 		"errorCartRejected": "A szettet nem sikerült kosárba helyezni.",
+		"errorPaymentLocked": "A rendeléséhez már folyamatban van egy fizetés, ezért a szett most nem adható hozzá. Fejezze be, vagy szakítsa meg biztonságosan a pénztárban.",
 		"errorLookupFailed": "Nem tudjuk megerősíteni, hogy a szett bekerült-e a kosárba. Kérjük, ellenőrizze a kosarat.",
 		"errorCatalogueUnavailable": "A szett elérhetőségét most nem sikerült ellenőrizni. Kérjük, próbálja újra.",
-		"errorGeneric": "A szettet nem sikerült kosárba helyezni."
+		"errorGeneric": "A szettet nem sikerült kosárba helyezni.",
+		"facetAerodynamic": "Aerodinamikus",
+		"facetWing": "Szárnyprofil",
+		"facetTubular": "Csöves",
+		"facetColourBlack": "Fekete",
+		"facetColourSilver": "Ezüst",
+		"facetColourAlu": "Natúr alumínium",
+		"propertyBarLength": "Keresztrudak hossza",
+		"propertyColour": "Szín",
+		"propertyBarLoad": "Keresztrudak teherbírása"
 	},
 	"catalog": {
 		"makeIndexTitle": "Válasszon tetőcsomagtartót jármű szerint",
@@ -868,7 +986,7 @@
 		"offersPartial": "A kínálat egy részét nem sikerült betölteni, ezért a lista hiányos lehet.",
 		"previewNotice": "Nem közzétett oldal előnézete. A látogatók nem látják.",
 		"offersTitleGeneration": "Készletek ehhez a generációhoz",
-		"offersBrowseNote": "Minden készlet csak a megadott tetőtípusra és évjáratokra érvényes. A készletek nincsenek az Ön autójához igazítva – a jármű kiválasztása után csak a hozzá illőket mutatjuk.",
+		"offersBrowseNote": "Minden szett csak a feltüntetett tetőtípusra és évjáratokra érvényes, a különbségek a kártyákon láthatók. Másik autó? Módosítsa a fejlécben.",
 		"offersGroupOther": "Nincs megadott tetőtípus"
 	},
 	"company": {
@@ -1117,5 +1235,15 @@
 		"description": "A tetőcsomagtartók, tetőboxok, kerékpártartók és más felszerelések gyártói, akiknek termékeit nálunk megvásárolhatja.",
 		"productCount": "{count, plural, other {# termék}}",
 		"brandDescription": "{brand} termékek a MAKY.STORE kínálatában."
+	},
+	"listing": {
+		"viewLabel": "A lista megjelenítése",
+		"viewGrid": "Rács",
+		"viewList": "Lista",
+		"viewSet": "Szett megtekintése",
+		"specDimensions": "Méretek",
+		"specBars": "Keresztrudak",
+		"roofFilterLabel": "Tetőtípus",
+		"roofFilterAll": "Összes"
 	}
 }

@@ -11,6 +11,7 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/ui/components/ui/sheet";
+import { ListingViewSwitch } from "@/ui/components/listing/listing-view-switch";
 import type { ActiveFilter, SortOption } from "./filter-bar";
 import { ListingFilterPanel, type ListingFilterPanelProps } from "./listing-filter-panel";
 
@@ -108,6 +109,8 @@ export function ListingToolbar({
 							</SheetContent>
 						</Sheet>
 					)}
+
+					<ListingViewSwitch />
 
 					<label className="relative flex items-center gap-2">
 						<span className="text-text-secondary hidden text-sm sm:inline">{tCommon("sortBy")}</span>

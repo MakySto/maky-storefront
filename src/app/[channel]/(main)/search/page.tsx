@@ -8,6 +8,7 @@ import { searchProducts } from "@/lib/search";
 import { SearchResults } from "@/ui/components/search-results";
 import { Pagination } from "@/ui/components/pagination";
 import { SearchSort } from "./search-sort";
+import { ListingViewSwitch } from "@/ui/components/listing/listing-view-switch";
 import { SearchIcon } from "lucide-react";
 import { marketHref } from "@/lib/channel-map";
 import { brandConfig, formatPageTitle } from "@/config/brand";
@@ -172,7 +173,10 @@ async function SearchContent({
 						{tPlp("productCount", { count: pagination.totalCount })}
 					</p>
 				</div>
-				<SearchSort />
+				<div className="flex flex-wrap items-center gap-2">
+					<ListingViewSwitch />
+					<SearchSort />
+				</div>
 			</div>
 
 			{/* Results grid */}

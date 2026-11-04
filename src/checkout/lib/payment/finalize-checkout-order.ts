@@ -7,7 +7,12 @@ import {
 import { formatCheckoutCompleteError } from "@/checkout/lib/payment/format-checkout-complete-error";
 import { navigateToOrderConfirmation } from "@/checkout/lib/navigate-to-order";
 
-export type FinalizeCheckoutOrderResult = { ok: true; orderId: string } | { ok: false; error: string };
+import type { PaymentPreflightCode } from "@/checkout/lib/checkout-action-types";
+import type { ServerCheckout } from "@/checkout/lib/checkout-types";
+
+export type FinalizeCheckoutOrderResult =
+	| { ok: true; orderId: string }
+	| { ok: false; error: string; code?: PaymentPreflightCode; checkout?: ServerCheckout | null };
 
 let finalizeInFlight: Promise<FinalizeCheckoutOrderResult> | null = null;
 let finalizeCheckoutId: string | null = null;
@@ -30,7 +35,7 @@ export async function finalizeCheckoutOrder(
 			const error = formatCheckoutCompleteError(result.error);
 			stashPaymentCompletionError(error);
 			clearPaymentCompleting();
-			return { ok: false, error };
+			return { ok: false, error, code: result.code, checkout: result.checkout };
 		}
 
 		// Client nav — see @/checkout/lib/navigate-to-order (server redirect would false-trigger payment errors).

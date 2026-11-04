@@ -6,6 +6,7 @@ import {
 	describeOfferFit,
 	groupRoofOf,
 	offerFitOf,
+	roofsOf,
 	offerFitsByProduct,
 	productFitIndex,
 	type OfferFit,
@@ -69,6 +70,7 @@ describe("offerFitOf", () => {
 			yearTo: 2021,
 			roofTypes: ["flush-rails"],
 			bodyTypes: ["suv"],
+			generationIds: ["gen-1"],
 		});
 	});
 
@@ -118,6 +120,18 @@ describe("offerFitsByProduct", () => {
 			application({ products: ["p1"], qualifiers: { roofTypes: ["naked-roof"] } }),
 		]);
 		expect(different.get("p1")).toHaveLength(2);
+	});
+
+	it("remembers every generation behind a fit, for each product on its own", () => {
+		const fits = offerFitsByProduct([
+			application({ products: ["p1", "p2"], generationId: "gen-1" }),
+			application({ products: ["p1"], generationId: "gen-2" }),
+			application({ products: ["p1"], generationId: "gen-2" }),
+		]);
+		expect(fits.get("p1")).toHaveLength(1);
+		expect(fits.get("p1")?.[0]?.generationIds).toEqual(["gen-1", "gen-2"]);
+		// p2 was reached through the first application only; p1's second generation is not its.
+		expect(fits.get("p2")?.[0]?.generationIds).toEqual(["gen-1"]);
 	});
 });
 
@@ -197,5 +211,36 @@ describe("groupRoofOf", () => {
 	it("has no group for a set that names no roof", () => {
 		expect(groupRoofOf(undefined)).toBeNull();
 		expect(groupRoofOf([{ yearFrom: 1, yearTo: null, roofTypes: null, bodyTypes: null }])).toBeNull();
+	});
+});
+
+describe("roofsOf", () => {
+	const fit = (roofTypes: OfferFit["roofTypes"]): OfferFit => ({
+		yearFrom: 1,
+		yearTo: null,
+		roofTypes,
+		bodyTypes: null,
+	});
+
+	it("keeps every roof a set is made for, in the listing's order, not only the first", () => {
+		expect(roofsOf([fit(["naked-roof", "raised-rails"])])).toEqual(["raised-rails", "naked-roof"]);
+	});
+
+	it("takes the roofs of every application of the set once", () => {
+		expect(roofsOf([fit(["flush-rails"]), fit(["raised-rails", "flush-rails"])])).toEqual([
+			"raised-rails",
+			"flush-rails",
+		]);
+	});
+
+	it("names no roof for a set that names none", () => {
+		expect(roofsOf(undefined)).toEqual([]);
+		expect(roofsOf([fit(null)])).toEqual([]);
+	});
+
+	it("agrees with groupRoofOf about the roof a set is sorted under", () => {
+		expect(groupRoofOf([fit(["naked-roof", "flush-rails"])])).toBe(
+			roofsOf([fit(["naked-roof", "flush-rails"])])[0],
+		);
 	});
 });

@@ -1,0 +1,972 @@
+{
+	"document_type": "editorial_content_pack",
+	"version": 2,
+	"created_at": "2026-10-30",
+	"scope": "Osem kategórií z priloženého návrhu; 10 redakčných jazykov.",
+	"deployment_status": "Navrhnuté texty; tento súbor nevykonáva import ani publikovanie.",
+	"target_field": "seoDescription",
+	"integration_notes": [
+		"category_key je orientačný kľúč tohto podkladu, nie existujúce databázové ID. Kategórie priraďte k existujúcim CFM/Saleor ID pomocou uvedenej slovenskej cesty.",
+		"Cudzie slugs ani URL sa nevytvárajú. Lokálne názvy kategórií sú pomôcka na čítanie, nie pokyn premenovať kategórie.",
+		"Základné texty sú v records. optional_market_overrides sú samostatné a defaultne sa nepoužijú.",
+		"AT/CA nie sú ďalšie redakčné jazyky. Voliteľné varianty použite iba tam, kde existuje samostatné nastavenie textu pre trh; neprepisujte nimi zdieľané de/en texty.",
+		"Neorezávať mechanicky na 155 znakov. Počet znakov zahŕňa medzery a interpunkciu.",
+		"Texty spravovať v CFM a doručovať existujúcim exportom do Saleoru; storefront má čítať príslušný seoDescription.",
+		"Zmena meta popisu nemení URL, canonical, hreflang, H1 ani viditeľný popis kategórie.",
+		"Porovnanie parametrov opisuje výber z produktových údajov; nesľubuje samostatný nástroj na porovnávanie."
+	],
+	"routes": [
+		{
+			"route": "/sk",
+			"market": "Slovensko",
+			"locale": "sk",
+			"note": "Základná jazyková verzia"
+		},
+		{
+			"route": "/cz",
+			"market": "Česko",
+			"locale": "cs",
+			"note": "Jazyk cs; route /cz"
+		},
+		{
+			"route": "/us",
+			"market": "USA",
+			"locale": "en",
+			"note": "Základná anglická verzia"
+		},
+		{
+			"route": "/ca",
+			"market": "Kanada",
+			"locale": "en",
+			"note": "Základná en; voliteľný text CA je oddelene"
+		},
+		{
+			"route": "/de",
+			"market": "Nemecko",
+			"locale": "de",
+			"note": "Základná nemecká verzia"
+		},
+		{
+			"route": "/at",
+			"market": "Rakúsko",
+			"locale": "de",
+			"note": "Základná de; voliteľný text AT je oddelene"
+		},
+		{
+			"route": "/pl",
+			"market": "Poľsko",
+			"locale": "pl",
+			"note": "Základná jazyková verzia"
+		},
+		{
+			"route": "/hu",
+			"market": "Maďarsko",
+			"locale": "hu",
+			"note": "Základná jazyková verzia"
+		},
+		{
+			"route": "/ro",
+			"market": "Rumunsko",
+			"locale": "ro",
+			"note": "Základná jazyková verzia"
+		},
+		{
+			"route": "/it",
+			"market": "Taliansko",
+			"locale": "it",
+			"note": "Základná jazyková verzia"
+		},
+		{
+			"route": "/fr",
+			"market": "Francúzsko",
+			"locale": "fr",
+			"note": "Základná jazyková verzia"
+		},
+		{
+			"route": "/es",
+			"market": "Španielsko",
+			"locale": "es",
+			"note": "Základná jazyková verzia"
+		}
+	],
+	"records": [
+		{
+			"category_key": "roof_racks",
+			"source_sk_path": "/sk/stresne-nosice",
+			"locale": "sk",
+			"category_label_sk": "Strešné nosiče",
+			"category_label_local": "Strešné nosiče",
+			"seo_description": "Vyberte si strešný nosič podľa svojho auta a typu strechy. Na vhodné priečniky upevníte strešný box, nosič bicyklov alebo lyží.",
+			"character_count": 127
+		},
+		{
+			"category_key": "roof_boxes",
+			"source_sk_path": "/sk/stresne-boxy",
+			"locale": "sk",
+			"category_label_sk": "Strešné boxy",
+			"category_label_local": "Strešné boxy",
+			"seo_description": "Strešné boxy na auto pre batožinu aj dovolenkovú výbavu. Vyberte si veľkosť, ktorú potrebujete, a nechajte v aute viac miesta pre posádku.",
+			"character_count": 138
+		},
+		{
+			"category_key": "ski_racks",
+			"source_sk_path": "/sk/nosice-lyzi",
+			"locale": "sk",
+			"category_label_sk": "Nosiče lyží a snowboardov",
+			"category_label_local": "Nosiče lyží a snowboardov",
+			"seo_description": "Nosiče lyží a snowboardov pre pohodlnejšiu cestu na hory. Vyberte si podľa počtu lyží či snowboardov a spôsobu uchytenia.",
+			"character_count": 121
+		},
+		{
+			"category_key": "roof_tents",
+			"source_sk_path": "/sk/stresne-stany",
+			"locale": "sk",
+			"category_label_sk": "Strešné stany",
+			"category_label_local": "Strešné stany",
+			"seo_description": "Vyberte si strešný stan na auto a vezmite si miesto na spanie so sebou. Veľkosť a počet miest prispôsobte tomu, s kým cestujete.",
+			"character_count": 128
+		},
+		{
+			"category_key": "nordrive_roof_racks",
+			"source_sk_path": "/sk/nordrive-stresne-nosice",
+			"locale": "sk",
+			"category_label_sk": "Strešné nosiče Nordrive",
+			"category_label_local": "Strešné nosiče Nordrive",
+			"seo_description": "Vyberte si strešné nosiče Nordrive podľa modelu auta, roku výroby a typu strechy. Vhodné priečniky využijete pre box aj nosiče športovej výbavy.",
+			"character_count": 144
+		},
+		{
+			"category_key": "thule_roof_racks",
+			"source_sk_path": "/sk/thule-stresne-nosice",
+			"locale": "sk",
+			"category_label_sk": "Strešné nosiče Thule",
+			"category_label_local": "Strešné nosiče Thule",
+			"seo_description": "Strešné nosiče Thule na montáž boxov, nosičov bicyklov a lyží. Nájdite priečniky pre svoje auto podľa modelu, roku výroby a typu strechy.",
+			"character_count": 137
+		},
+		{
+			"category_key": "menabo_roof_racks",
+			"source_sk_path": "/sk/menabo-stresne-nosice",
+			"locale": "sk",
+			"category_label_sk": "Strešné nosiče Menabo",
+			"category_label_local": "Strešné nosiče Menabo",
+			"seo_description": "Vyberte si strešné nosiče Menabo pre svoje auto. S vhodným boxom alebo nosičom bicyklov využijete strechu a uvoľníte miesto v aute.",
+			"character_count": 131
+		},
+		{
+			"category_key": "green_valley_roof_racks",
+			"source_sk_path": "/sk/green-valley-stresne-nosice",
+			"locale": "sk",
+			"category_label_sk": "Strešné nosiče Green Valley",
+			"category_label_local": "Strešné nosiče Green Valley",
+			"seo_description": "Strešné nosiče Green Valley na dovolenku aj výlety s bicyklami. Nájdite vhodné priečniky podľa svojho auta a typu strechy.",
+			"character_count": 122
+		},
+		{
+			"category_key": "roof_racks",
+			"source_sk_path": "/sk/stresne-nosice",
+			"locale": "cs",
+			"category_label_sk": "Strešné nosiče",
+			"category_label_local": "Střešní nosiče",
+			"seo_description": "Střešní nosiče a příčníky pro vaše auto. Vybírejte podle vozu a typu střechy a připravte si základ pro box, nosič kol či lyží.",
+			"character_count": 126
+		},
+		{
+			"category_key": "roof_boxes",
+			"source_sk_path": "/sk/stresne-boxy",
+			"locale": "cs",
+			"category_label_sk": "Strešné boxy",
+			"category_label_local": "Střešní boxy",
+			"seo_description": "Střešní boxy na auto pro více místa na zavazadla. Porovnejte objem a rozměry a vyberte box na dovolenou i víkendové výlety.",
+			"character_count": 123
+		},
+		{
+			"category_key": "ski_racks",
+			"source_sk_path": "/sk/nosice-lyzi",
+			"locale": "cs",
+			"category_label_sk": "Nosiče lyží a snowboardov",
+			"category_label_local": "Nosiče lyží a snowboardů",
+			"seo_description": "Nosiče lyží a snowboardů na auto. Porovnejte kapacitu a uchycení a uvolněte místo v autě na pohodlnější cestu za sněhem.",
+			"character_count": 120
+		},
+		{
+			"category_key": "roof_tents",
+			"source_sk_path": "/sk/stresne-stany",
+			"locale": "cs",
+			"category_label_sk": "Strešné stany",
+			"category_label_local": "Střešní stany",
+			"seo_description": "Střešní stany na auto pro pohodlné spaní na cestách. Vybírejte podle rozměrů a počtu osob a připravte se na další výlet.",
+			"character_count": 120
+		},
+		{
+			"category_key": "nordrive_roof_racks",
+			"source_sk_path": "/sk/nordrive-stresne-nosice",
+			"locale": "cs",
+			"category_label_sk": "Strešné nosiče Nordrive",
+			"category_label_local": "Střešní nosiče Nordrive",
+			"seo_description": "Střešní nosiče Nordrive pro každodenní jízdy i dovolenou. Vyberte sestavu podle modelu auta, roku výroby a typu střechy.",
+			"character_count": 120
+		},
+		{
+			"category_key": "thule_roof_racks",
+			"source_sk_path": "/sk/thule-stresne-nosice",
+			"locale": "cs",
+			"category_label_sk": "Strešné nosiče Thule",
+			"category_label_local": "Střešní nosiče Thule",
+			"seo_description": "Střešní nosiče Thule jako základ pro box, nosič kol nebo lyží. Vyberte sestavu podle svého auta a typu střechy a vyrazte na cesty.",
+			"character_count": 130
+		},
+		{
+			"category_key": "menabo_roof_racks",
+			"source_sk_path": "/sk/menabo-stresne-nosice",
+			"locale": "cs",
+			"category_label_sk": "Strešné nosiče Menabo",
+			"category_label_local": "Střešní nosiče Menabo",
+			"seo_description": "Střešní nosiče Menabo pro více možností na cestách. Porovnejte sestavy podle vozu a typu střechy a připravte auto na další výlet.",
+			"character_count": 129
+		},
+		{
+			"category_key": "green_valley_roof_racks",
+			"source_sk_path": "/sk/green-valley-stresne-nosice",
+			"locale": "cs",
+			"category_label_sk": "Strešné nosiče Green Valley",
+			"category_label_local": "Střešní nosiče Green Valley",
+			"seo_description": "Střešní nosiče Green Valley pro zavazadla a sportovní výbavu. Vyberte sestavu podle auta a typu střechy na dovolenou i kratší cesty.",
+			"character_count": 132
+		},
+		{
+			"category_key": "roof_racks",
+			"source_sk_path": "/sk/stresne-nosice",
+			"locale": "en",
+			"category_label_sk": "Strešné nosiče",
+			"category_label_local": "Roof racks",
+			"seo_description": "Roof racks and crossbars for your car. Choose a system by vehicle and roof type for your cargo box, bike rack or ski rack.",
+			"character_count": 122
+		},
+		{
+			"category_key": "roof_boxes",
+			"source_sk_path": "/sk/stresne-boxy",
+			"locale": "en",
+			"category_label_sk": "Strešné boxy",
+			"category_label_local": "Roof cargo boxes",
+			"seo_description": "Roof cargo boxes for extra luggage space. Compare capacity and dimensions to find the right box for road trips and weekend getaways.",
+			"character_count": 132
+		},
+		{
+			"category_key": "ski_racks",
+			"source_sk_path": "/sk/nosice-lyzi",
+			"locale": "en",
+			"category_label_sk": "Nosiče lyží a snowboardov",
+			"category_label_local": "Ski and snowboard racks",
+			"seo_description": "Ski and snowboard racks for your car. Compare capacity and mounting options and free up space inside for your next trip to the slopes.",
+			"character_count": 134
+		},
+		{
+			"category_key": "roof_tents",
+			"source_sk_path": "/sk/stresne-stany",
+			"locale": "en",
+			"category_label_sk": "Strešné stany",
+			"category_label_local": "Rooftop tents",
+			"seo_description": "Rooftop tents for comfortable nights on the road. Compare dimensions and sleeping capacity to find the right tent for your next camping trip.",
+			"character_count": 141
+		},
+		{
+			"category_key": "nordrive_roof_racks",
+			"source_sk_path": "/sk/nordrive-stresne-nosice",
+			"locale": "en",
+			"category_label_sk": "Strešné nosiče Nordrive",
+			"category_label_local": "Nordrive roof racks",
+			"seo_description": "Nordrive roof racks for everyday trips and vacations. Choose your rack system by vehicle model, year and roof type.",
+			"character_count": 115
+		},
+		{
+			"category_key": "thule_roof_racks",
+			"source_sk_path": "/sk/thule-stresne-nosice",
+			"locale": "en",
+			"category_label_sk": "Strešné nosiče Thule",
+			"category_label_local": "Thule roof racks",
+			"seo_description": "Thule roof racks provide a base for cargo boxes, bike racks and ski racks. Find a rack system for your vehicle and roof type.",
+			"character_count": 125
+		},
+		{
+			"category_key": "menabo_roof_racks",
+			"source_sk_path": "/sk/menabo-stresne-nosice",
+			"locale": "en",
+			"category_label_sk": "Strešné nosiče Menabo",
+			"category_label_local": "Menabo roof racks",
+			"seo_description": "Menabo roof racks for your next adventure. Compare rack systems by vehicle and roof type and make room for the gear you want to bring.",
+			"character_count": 134
+		},
+		{
+			"category_key": "green_valley_roof_racks",
+			"source_sk_path": "/sk/green-valley-stresne-nosice",
+			"locale": "en",
+			"category_label_sk": "Strešné nosiče Green Valley",
+			"category_label_local": "Green Valley roof racks",
+			"seo_description": "Green Valley roof racks for luggage and sports gear. Choose a system by vehicle and roof type for road trips and weekend getaways.",
+			"character_count": 130
+		},
+		{
+			"category_key": "roof_racks",
+			"source_sk_path": "/sk/stresne-nosice",
+			"locale": "de",
+			"category_label_sk": "Strešné nosiče",
+			"category_label_local": "Dachträger",
+			"seo_description": "Dachträger und Querträger für Ihr Auto. Wählen Sie nach Fahrzeug und Dachtyp die passende Basis für Dachboxen, Fahrrad- oder Skiträger.",
+			"character_count": 135
+		},
+		{
+			"category_key": "roof_boxes",
+			"source_sk_path": "/sk/stresne-boxy",
+			"locale": "de",
+			"category_label_sk": "Strešné boxy",
+			"category_label_local": "Dachboxen",
+			"seo_description": "Dachboxen für mehr Platz im Auto. Vergleichen Sie Volumen und Maße und finden Sie die passende Box für Urlaub und Wochenendausflüge.",
+			"character_count": 132
+		},
+		{
+			"category_key": "ski_racks",
+			"source_sk_path": "/sk/nosice-lyzi",
+			"locale": "de",
+			"category_label_sk": "Nosiče lyží a snowboardov",
+			"category_label_local": "Ski- und Snowboardträger",
+			"seo_description": "Ski- und Snowboardträger für Ihr Auto. Vergleichen Sie Kapazität und Befestigung und schaffen Sie mehr Platz für die Fahrt in den Schnee.",
+			"character_count": 137
+		},
+		{
+			"category_key": "roof_tents",
+			"source_sk_path": "/sk/stresne-stany",
+			"locale": "de",
+			"category_label_sk": "Strešné stany",
+			"category_label_local": "Dachzelte",
+			"seo_description": "Dachzelte für komfortable Nächte unterwegs. Vergleichen Sie Maße und Schlafplätze und wählen Sie Ihr Zelt für den nächsten Campingurlaub.",
+			"character_count": 137
+		},
+		{
+			"category_key": "nordrive_roof_racks",
+			"source_sk_path": "/sk/nordrive-stresne-nosice",
+			"locale": "de",
+			"category_label_sk": "Strešné nosiče Nordrive",
+			"category_label_local": "Nordrive Dachträger",
+			"seo_description": "Nordrive Dachträger für Alltag und Urlaub. Wählen Sie die passenden Dachträger nach Fahrzeugmodell, Baujahr und Dachtyp.",
+			"character_count": 120
+		},
+		{
+			"category_key": "thule_roof_racks",
+			"source_sk_path": "/sk/thule-stresne-nosice",
+			"locale": "de",
+			"category_label_sk": "Strešné nosiče Thule",
+			"category_label_local": "Thule Dachträger",
+			"seo_description": "Thule Dachträger als Basis für Dachboxen, Fahrrad- und Skiträger. Finden Sie das passende Trägersystem für Ihr Fahrzeug und Ihren Dachtyp.",
+			"character_count": 138
+		},
+		{
+			"category_key": "menabo_roof_racks",
+			"source_sk_path": "/sk/menabo-stresne-nosice",
+			"locale": "de",
+			"category_label_sk": "Strešné nosiče Menabo",
+			"category_label_local": "Menabo Dachträger",
+			"seo_description": "Menabo Dachträger für Ihre nächste Reise. Vergleichen Sie Trägersysteme nach Fahrzeug und Dachtyp und schaffen Sie Platz für Ihre Ausrüstung.",
+			"character_count": 141
+		},
+		{
+			"category_key": "green_valley_roof_racks",
+			"source_sk_path": "/sk/green-valley-stresne-nosice",
+			"locale": "de",
+			"category_label_sk": "Strešné nosiče Green Valley",
+			"category_label_local": "Green Valley Dachträger",
+			"seo_description": "Green Valley Dachträger für Gepäck und Sportausrüstung. Wählen Sie nach Fahrzeug und Dachtyp die passende Basis für Urlaub und Ausflüge.",
+			"character_count": 136
+		},
+		{
+			"category_key": "roof_racks",
+			"source_sk_path": "/sk/stresne-nosice",
+			"locale": "pl",
+			"category_label_sk": "Strešné nosiče",
+			"category_label_local": "Bagażniki dachowe",
+			"seo_description": "Bagażniki dachowe i belki do Twojego auta. Dobierz zestaw do modelu i rodzaju dachu, aby zamontować box lub uchwyty na rowery czy narty.",
+			"character_count": 136
+		},
+		{
+			"category_key": "roof_boxes",
+			"source_sk_path": "/sk/stresne-boxy",
+			"locale": "pl",
+			"category_label_sk": "Strešné boxy",
+			"category_label_local": "Boxy dachowe",
+			"seo_description": "Boxy dachowe na wakacje i weekendowe wyjazdy. Porównaj pojemność i wymiary, zyskaj miejsce na bagaż i więcej swobody w samochodzie.",
+			"character_count": 131
+		},
+		{
+			"category_key": "ski_racks",
+			"source_sk_path": "/sk/nosice-lyzi",
+			"locale": "pl",
+			"category_label_sk": "Nosiče lyží a snowboardov",
+			"category_label_local": "Uchwyty na narty i snowboard",
+			"seo_description": "Uchwyty na narty i snowboard do samochodu. Porównaj pojemność i sposób mocowania, zabierz sprzęt na stok i zyskaj więcej miejsca w aucie.",
+			"character_count": 137
+		},
+		{
+			"category_key": "roof_tents",
+			"source_sk_path": "/sk/stresne-stany",
+			"locale": "pl",
+			"category_label_sk": "Strešné stany",
+			"category_label_local": "Namioty dachowe",
+			"seo_description": "Namioty dachowe na weekendowe wypady i dłuższe podróże. Porównaj wymiary oraz liczbę miejsc i wybierz namiot na kolejną wyprawę.",
+			"character_count": 128
+		},
+		{
+			"category_key": "nordrive_roof_racks",
+			"source_sk_path": "/sk/nordrive-stresne-nosice",
+			"locale": "pl",
+			"category_label_sk": "Strešné nosiče Nordrive",
+			"category_label_local": "Bagażniki dachowe Nordrive",
+			"seo_description": "Bagażniki dachowe Nordrive na co dzień i na wakacje. Dobierz zestaw do modelu, rocznika i rodzaju dachu swojego samochodu.",
+			"character_count": 122
+		},
+		{
+			"category_key": "thule_roof_racks",
+			"source_sk_path": "/sk/thule-stresne-nosice",
+			"locale": "pl",
+			"category_label_sk": "Strešné nosiče Thule",
+			"category_label_local": "Bagażniki dachowe Thule",
+			"seo_description": "Bagażniki dachowe Thule pod box i uchwyty na sprzęt sportowy. Wybierz zestaw do swojego samochodu i rodzaju dachu, by zabrać więcej na wyjazd.",
+			"character_count": 142
+		},
+		{
+			"category_key": "menabo_roof_racks",
+			"source_sk_path": "/sk/menabo-stresne-nosice",
+			"locale": "pl",
+			"category_label_sk": "Strešné nosiče Menabo",
+			"category_label_local": "Bagażniki dachowe Menabo",
+			"seo_description": "Bagażniki dachowe Menabo na kolejne wyjazdy. Dobierz zestaw do auta i rodzaju dachu, aby zabrać ze sobą więcej sprzętu.",
+			"character_count": 119
+		},
+		{
+			"category_key": "green_valley_roof_racks",
+			"source_sk_path": "/sk/green-valley-stresne-nosice",
+			"locale": "pl",
+			"category_label_sk": "Strešné nosiče Green Valley",
+			"category_label_local": "Bagażniki dachowe Green Valley",
+			"seo_description": "Bagażniki dachowe Green Valley na bagaż i sprzęt sportowy. Wybierz zestaw do modelu i rodzaju dachu swojego auta na urlop i krótsze wypady.",
+			"character_count": 139
+		},
+		{
+			"category_key": "roof_racks",
+			"source_sk_path": "/sk/stresne-nosice",
+			"locale": "hu",
+			"category_label_sk": "Strešné nosiče",
+			"category_label_local": "Tetőcsomagtartók",
+			"seo_description": "Autós tetőcsomagtartók és keresztrudak. Válassz az autód típusa és tetőkialakítása alapján, és teremts helyet tetőboxnak vagy sporteszköztartóknak.",
+			"character_count": 147
+		},
+		{
+			"category_key": "roof_boxes",
+			"source_sk_path": "/sk/stresne-boxy",
+			"locale": "hu",
+			"category_label_sk": "Strešné boxy",
+			"category_label_local": "Tetőboxok",
+			"seo_description": "Tetőboxok nyaraláshoz és hétvégi kirándulásokhoz. Hasonlítsd össze az űrtartalmat és a méreteket, és hagyj több helyet az utastérben.",
+			"character_count": 133
+		},
+		{
+			"category_key": "ski_racks",
+			"source_sk_path": "/sk/nosice-lyzi",
+			"locale": "hu",
+			"category_label_sk": "Nosiče lyží a snowboardov",
+			"category_label_local": "Síléc- és snowboardtartók",
+			"seo_description": "Síléctartók és snowboardtartók autóra. Hasonlítsd össze a tartók kapacitását és rögzítését, és indulj kényelmesebben síelni.",
+			"character_count": 124
+		},
+		{
+			"category_key": "roof_tents",
+			"source_sk_path": "/sk/stresne-stany",
+			"locale": "hu",
+			"category_label_sk": "Strešné stany",
+			"category_label_local": "Tetősátrak",
+			"seo_description": "Autós tetősátrak hétvégi kirándulásokhoz és hosszabb utakhoz. Hasonlítsd össze a méreteket és a férőhelyek számát, és válassz sátrat a következő kalandhoz.",
+			"character_count": 155
+		},
+		{
+			"category_key": "nordrive_roof_racks",
+			"source_sk_path": "/sk/nordrive-stresne-nosice",
+			"locale": "hu",
+			"category_label_sk": "Strešné nosiče Nordrive",
+			"category_label_local": "Nordrive tetőcsomagtartók",
+			"seo_description": "Nordrive tetőcsomagtartók hétköznapokra és nyaraláshoz. Válassz készletet az autód modellje, évjárata és tetőkialakítása alapján.",
+			"character_count": 129
+		},
+		{
+			"category_key": "thule_roof_racks",
+			"source_sk_path": "/sk/thule-stresne-nosice",
+			"locale": "hu",
+			"category_label_sk": "Strešné nosiče Thule",
+			"category_label_local": "Thule tetőcsomagtartók",
+			"seo_description": "Thule tetőcsomagtartók tetőboxok és sporteszköztartók felszereléséhez. Válassz készletet az autód típusa és tetőkialakítása alapján.",
+			"character_count": 132
+		},
+		{
+			"category_key": "menabo_roof_racks",
+			"source_sk_path": "/sk/menabo-stresne-nosice",
+			"locale": "hu",
+			"category_label_sk": "Strešné nosiče Menabo",
+			"category_label_local": "Menabo tetőcsomagtartók",
+			"seo_description": "Menabo tetőcsomagtartók, hogy több felszerelés férjen el. Válassz készletet az autód és a tető típusa alapján, és készülj a következő útra.",
+			"character_count": 139
+		},
+		{
+			"category_key": "green_valley_roof_racks",
+			"source_sk_path": "/sk/green-valley-stresne-nosice",
+			"locale": "hu",
+			"category_label_sk": "Strešné nosiče Green Valley",
+			"category_label_local": "Green Valley tetőcsomagtartók",
+			"seo_description": "Green Valley tetőcsomagtartók utazáshoz és sporthoz. Válassz készletet az autód típusa és tetőkialakítása alapján, hétvégére vagy nyaralásra.",
+			"character_count": 141
+		},
+		{
+			"category_key": "roof_racks",
+			"source_sk_path": "/sk/stresne-nosice",
+			"locale": "ro",
+			"category_label_sk": "Strešné nosiče",
+			"category_label_local": "Bare transversale auto",
+			"seo_description": "Bare transversale auto pentru cutii portbagaj și suporturi de biciclete sau schiuri. Alege setul după modelul mașinii și tipul plafonului.",
+			"character_count": 138
+		},
+		{
+			"category_key": "roof_boxes",
+			"source_sk_path": "/sk/stresne-boxy",
+			"locale": "ro",
+			"category_label_sk": "Strešné boxy",
+			"category_label_local": "Cutii portbagaj de plafon",
+			"seo_description": "Cutii portbagaj de plafon pentru mai mult loc în mașină. Compară capacitatea și dimensiunile și pregătește bagajele pentru vacanțe și weekenduri.",
+			"character_count": 145
+		},
+		{
+			"category_key": "ski_racks",
+			"source_sk_path": "/sk/nosice-lyzi",
+			"locale": "ro",
+			"category_label_sk": "Nosiče lyží a snowboardov",
+			"category_label_local": "Suporturi pentru schiuri și snowboard",
+			"seo_description": "Suporturi auto pentru schiuri și snowboard. Compară capacitatea și sistemul de prindere, ia echipamentul la munte și lasă mai mult loc în mașină.",
+			"character_count": 145
+		},
+		{
+			"category_key": "roof_tents",
+			"source_sk_path": "/sk/stresne-stany",
+			"locale": "ro",
+			"category_label_sk": "Strešné stany",
+			"category_label_local": "Corturi auto de plafon",
+			"seo_description": "Corturi auto de plafon pentru nopți confortabile în călătorii. Compară dimensiunile și numărul de locuri și alege cortul pentru următoarea ieșire.",
+			"character_count": 146
+		},
+		{
+			"category_key": "nordrive_roof_racks",
+			"source_sk_path": "/sk/nordrive-stresne-nosice",
+			"locale": "ro",
+			"category_label_sk": "Strešné nosiče Nordrive",
+			"category_label_local": "Bare transversale Nordrive",
+			"seo_description": "Bare transversale Nordrive pentru drumurile de zi cu zi și vacanțe. Alege setul după modelul, anul de fabricație și tipul plafonului mașinii.",
+			"character_count": 141
+		},
+		{
+			"category_key": "thule_roof_racks",
+			"source_sk_path": "/sk/thule-stresne-nosice",
+			"locale": "ro",
+			"category_label_sk": "Strešné nosiče Thule",
+			"category_label_local": "Bare transversale Thule",
+			"seo_description": "Bare transversale Thule, baza pentru cutia portbagaj și suporturile de biciclete sau schiuri. Alege după mașină și tipul plafonului.",
+			"character_count": 132
+		},
+		{
+			"category_key": "menabo_roof_racks",
+			"source_sk_path": "/sk/menabo-stresne-nosice",
+			"locale": "ro",
+			"category_label_sk": "Strešné nosiče Menabo",
+			"category_label_local": "Bare transversale Menabo",
+			"seo_description": "Bare transversale Menabo pentru mai mult echipament în călătorii. Compară seturile după mașină și tipul plafonului și pregătește mașina de drum.",
+			"character_count": 144
+		},
+		{
+			"category_key": "green_valley_roof_racks",
+			"source_sk_path": "/sk/green-valley-stresne-nosice",
+			"locale": "ro",
+			"category_label_sk": "Strešné nosiče Green Valley",
+			"category_label_local": "Bare transversale Green Valley",
+			"seo_description": "Bare transversale Green Valley pentru bagaje și echipament sportiv. Alege setul după mașină și tipul plafonului, pentru vacanțe și ieșiri de weekend.",
+			"character_count": 149
+		},
+		{
+			"category_key": "roof_racks",
+			"source_sk_path": "/sk/stresne-nosice",
+			"locale": "it",
+			"category_label_sk": "Strešné nosiče",
+			"category_label_local": "Barre portatutto",
+			"seo_description": "Barre portatutto per la tua auto. Scegli il sistema in base al veicolo e al tipo di tetto per montare box, portabici o portasci.",
+			"character_count": 128
+		},
+		{
+			"category_key": "roof_boxes",
+			"source_sk_path": "/sk/stresne-boxy",
+			"locale": "it",
+			"category_label_sk": "Strešné boxy",
+			"category_label_local": "Box da tetto",
+			"seo_description": "Box da tetto per portare più bagagli. Confronta capienza e dimensioni e trova lo spazio in più per le vacanze e i weekend fuori porta.",
+			"character_count": 134
+		},
+		{
+			"category_key": "ski_racks",
+			"source_sk_path": "/sk/nosice-lyzi",
+			"locale": "it",
+			"category_label_sk": "Nosiče lyží a snowboardov",
+			"category_label_local": "Portasci e portasnowboard",
+			"seo_description": "Portasci e portasnowboard per le tue giornate sulla neve. Confronta capacità e sistemi di fissaggio e libera spazio nell'abitacolo.",
+			"character_count": 131
+		},
+		{
+			"category_key": "roof_tents",
+			"source_sk_path": "/sk/stresne-stany",
+			"locale": "it",
+			"category_label_sk": "Strešné stany",
+			"category_label_local": "Tende da tetto",
+			"seo_description": "Tende da tetto per dormire comodi in viaggio. Confronta dimensioni e numero di posti e scegli il modello per la tua prossima avventura.",
+			"character_count": 135
+		},
+		{
+			"category_key": "nordrive_roof_racks",
+			"source_sk_path": "/sk/nordrive-stresne-nosice",
+			"locale": "it",
+			"category_label_sk": "Strešné nosiče Nordrive",
+			"category_label_local": "Barre portatutto Nordrive",
+			"seo_description": "Barre portatutto Nordrive per gli spostamenti quotidiani e le vacanze. Scegli in base a modello, anno e tipo di tetto della tua auto.",
+			"character_count": 133
+		},
+		{
+			"category_key": "thule_roof_racks",
+			"source_sk_path": "/sk/thule-stresne-nosice",
+			"locale": "it",
+			"category_label_sk": "Strešné nosiče Thule",
+			"category_label_local": "Barre portatutto Thule",
+			"seo_description": "Barre portatutto Thule: la base per box, portabici e portasci. Scegli il sistema in base alla tua auto e al tipo di tetto.",
+			"character_count": 122
+		},
+		{
+			"category_key": "menabo_roof_racks",
+			"source_sk_path": "/sk/menabo-stresne-nosice",
+			"locale": "it",
+			"category_label_sk": "Strešné nosiče Menabo",
+			"category_label_local": "Barre portatutto Menabo",
+			"seo_description": "Barre portatutto Menabo per partire con la tua attrezzatura. Confronta i sistemi in base al veicolo e al tipo di tetto e prepara il prossimo viaggio.",
+			"character_count": 149
+		},
+		{
+			"category_key": "green_valley_roof_racks",
+			"source_sk_path": "/sk/green-valley-stresne-nosice",
+			"locale": "it",
+			"category_label_sk": "Strešné nosiče Green Valley",
+			"category_label_local": "Barre portatutto Green Valley",
+			"seo_description": "Barre portatutto Green Valley per bagagli e attrezzatura sportiva. Scegli il sistema in base alla tua auto e al tipo di tetto, per vacanze e weekend.",
+			"character_count": 149
+		},
+		{
+			"category_key": "roof_racks",
+			"source_sk_path": "/sk/stresne-nosice",
+			"locale": "fr",
+			"category_label_sk": "Strešné nosiče",
+			"category_label_local": "Barres de toit",
+			"seo_description": "Barres de toit pour votre voiture. Choisissez selon le véhicule et le type de toit pour installer un coffre, un porte-vélos ou un porte-skis.",
+			"character_count": 141
+		},
+		{
+			"category_key": "roof_boxes",
+			"source_sk_path": "/sk/stresne-boxy",
+			"locale": "fr",
+			"category_label_sk": "Strešné boxy",
+			"category_label_local": "Coffres de toit",
+			"seo_description": "Coffres de toit pour emporter plus de bagages. Comparez les volumes et les dimensions pour vos vacances et vos escapades du week-end.",
+			"character_count": 133
+		},
+		{
+			"category_key": "ski_racks",
+			"source_sk_path": "/sk/nosice-lyzi",
+			"locale": "fr",
+			"category_label_sk": "Nosiče lyží a snowboardov",
+			"category_label_local": "Porte-skis et porte-snowboards",
+			"seo_description": "Porte-skis et porte-snowboards pour vos sorties à la neige. Comparez la capacité et les fixations pour libérer de la place dans la voiture.",
+			"character_count": 139
+		},
+		{
+			"category_key": "roof_tents",
+			"source_sk_path": "/sk/stresne-stany",
+			"locale": "fr",
+			"category_label_sk": "Strešné stany",
+			"category_label_local": "Tentes de toit",
+			"seo_description": "Tentes de toit pour dormir confortablement en voyage. Comparez les dimensions et le nombre de places pour préparer votre prochaine escapade.",
+			"character_count": 140
+		},
+		{
+			"category_key": "nordrive_roof_racks",
+			"source_sk_path": "/sk/nordrive-stresne-nosice",
+			"locale": "fr",
+			"category_label_sk": "Strešné nosiče Nordrive",
+			"category_label_local": "Barres de toit Nordrive",
+			"seo_description": "Barres de toit Nordrive pour le quotidien et les vacances. Choisissez votre système selon le modèle, l'année et le type de toit de votre voiture.",
+			"character_count": 145
+		},
+		{
+			"category_key": "thule_roof_racks",
+			"source_sk_path": "/sk/thule-stresne-nosice",
+			"locale": "fr",
+			"category_label_sk": "Strešné nosiče Thule",
+			"category_label_local": "Barres de toit Thule",
+			"seo_description": "Barres de toit Thule pour installer un coffre, un porte-vélos ou un porte-skis. Choisissez votre système selon votre voiture et son type de toit.",
+			"character_count": 145
+		},
+		{
+			"category_key": "menabo_roof_racks",
+			"source_sk_path": "/sk/menabo-stresne-nosice",
+			"locale": "fr",
+			"category_label_sk": "Strešné nosiče Menabo",
+			"category_label_local": "Barres de toit Menabo",
+			"seo_description": "Barres de toit Menabo pour préparer vos prochaines escapades. Comparez les systèmes selon votre véhicule et son type de toit.",
+			"character_count": 125
+		},
+		{
+			"category_key": "green_valley_roof_racks",
+			"source_sk_path": "/sk/green-valley-stresne-nosice",
+			"locale": "fr",
+			"category_label_sk": "Strešné nosiče Green Valley",
+			"category_label_local": "Barres de toit Green Valley",
+			"seo_description": "Barres de toit Green Valley pour vos bagages et équipements sportifs. Choisissez selon votre voiture et son type de toit, pour les vacances ou le week-end.",
+			"character_count": 155
+		},
+		{
+			"category_key": "roof_racks",
+			"source_sk_path": "/sk/stresne-nosice",
+			"locale": "es",
+			"category_label_sk": "Strešné nosiče",
+			"category_label_local": "Barras de techo",
+			"seo_description": "Barras de techo para tu coche. Elige el sistema según el vehículo y el tipo de techo para montar cofres, portabicicletas o portaesquís.",
+			"character_count": 135
+		},
+		{
+			"category_key": "roof_boxes",
+			"source_sk_path": "/sk/stresne-boxy",
+			"locale": "es",
+			"category_label_sk": "Strešné boxy",
+			"category_label_local": "Cofres de techo",
+			"seo_description": "Cofres de techo para llevar más equipaje. Compara capacidad y medidas y gana espacio para tus vacaciones y escapadas de fin de semana.",
+			"character_count": 134
+		},
+		{
+			"category_key": "ski_racks",
+			"source_sk_path": "/sk/nosice-lyzi",
+			"locale": "es",
+			"category_label_sk": "Nosiče lyží a snowboardov",
+			"category_label_local": "Portaesquís y portatablas de snowboard",
+			"seo_description": "Portaesquís y portatablas de snowboard. Compara capacidad y fijaciones y libera espacio en el coche para tu próxima escapada a la nieve.",
+			"character_count": 136
+		},
+		{
+			"category_key": "roof_tents",
+			"source_sk_path": "/sk/stresne-stany",
+			"locale": "es",
+			"category_label_sk": "Strešné stany",
+			"category_label_local": "Tiendas de techo",
+			"seo_description": "Tiendas de techo para dormir cómodamente durante el viaje. Compara medidas y número de plazas y prepara tu próxima escapada.",
+			"character_count": 124
+		},
+		{
+			"category_key": "nordrive_roof_racks",
+			"source_sk_path": "/sk/nordrive-stresne-nosice",
+			"locale": "es",
+			"category_label_sk": "Strešné nosiče Nordrive",
+			"category_label_local": "Barras de techo Nordrive",
+			"seo_description": "Barras de techo Nordrive para el día a día y las vacaciones. Elige el sistema según el modelo, el año y el tipo de techo de tu coche.",
+			"character_count": 133
+		},
+		{
+			"category_key": "thule_roof_racks",
+			"source_sk_path": "/sk/thule-stresne-nosice",
+			"locale": "es",
+			"category_label_sk": "Strešné nosiče Thule",
+			"category_label_local": "Barras de techo Thule",
+			"seo_description": "Barras de techo Thule: la base para cofres, portabicicletas y portaesquís. Elige el sistema según tu coche y su tipo de techo.",
+			"character_count": 126
+		},
+		{
+			"category_key": "menabo_roof_racks",
+			"source_sk_path": "/sk/menabo-stresne-nosice",
+			"locale": "es",
+			"category_label_sk": "Strešné nosiče Menabo",
+			"category_label_local": "Barras de techo Menabo",
+			"seo_description": "Barras de techo Menabo para viajar con tu equipo. Compara los sistemas según el vehículo y el tipo de techo y prepara tu próxima salida.",
+			"character_count": 136
+		},
+		{
+			"category_key": "green_valley_roof_racks",
+			"source_sk_path": "/sk/green-valley-stresne-nosice",
+			"locale": "es",
+			"category_label_sk": "Strešné nosiče Green Valley",
+			"category_label_local": "Barras de techo Green Valley",
+			"seo_description": "Barras de techo Green Valley para equipaje y material deportivo. Elige según tu coche y su tipo de techo, para las vacaciones y escapadas.",
+			"character_count": 138
+		}
+	],
+	"optional_market_overrides": [
+		{
+			"market": "at",
+			"locale": "de",
+			"category_key": "roof_racks",
+			"source_sk_path": "/sk/stresne-nosice",
+			"category_label_sk": "Strešné nosiče",
+			"seo_description": "Dachträger und Querträger für Ihr Auto. Finden Sie nach Fahrzeug und Dachtyp die richtige Basis für Dachboxen, Fahrrad- oder Skiträger.",
+			"character_count": 135
+		},
+		{
+			"market": "at",
+			"locale": "de",
+			"category_key": "roof_boxes",
+			"source_sk_path": "/sk/stresne-boxy",
+			"category_label_sk": "Strešné boxy",
+			"seo_description": "Dachboxen für den Urlaub und Ausflüge am Wochenende. Vergleichen Sie Volumen und Maße und schaffen Sie zusätzlichen Platz fürs Gepäck.",
+			"character_count": 134
+		},
+		{
+			"market": "at",
+			"locale": "de",
+			"category_key": "ski_racks",
+			"source_sk_path": "/sk/nosice-lyzi",
+			"category_label_sk": "Nosiče lyží a snowboardov",
+			"seo_description": "Ski- und Snowboardträger für die nächste Fahrt in die Berge. Wählen Sie nach Kapazität und Befestigung und gewinnen Sie Platz im Auto.",
+			"character_count": 134
+		},
+		{
+			"market": "at",
+			"locale": "de",
+			"category_key": "roof_tents",
+			"source_sk_path": "/sk/stresne-stany",
+			"category_label_sk": "Strešné stany",
+			"seo_description": "Dachzelte für Campingausflüge und längere Reisen. Vergleichen Sie Maße und Schlafplätze und finden Sie Ihr Zelt für Nächte unterwegs.",
+			"character_count": 133
+		},
+		{
+			"market": "at",
+			"locale": "de",
+			"category_key": "nordrive_roof_racks",
+			"source_sk_path": "/sk/nordrive-stresne-nosice",
+			"category_label_sk": "Strešné nosiče Nordrive",
+			"seo_description": "Nordrive Dachträger für den Alltag und die Urlaubsfahrt. Finden Sie Ihr Trägersystem nach Fahrzeugmodell, Baujahr und Dachtyp.",
+			"character_count": 126
+		},
+		{
+			"market": "at",
+			"locale": "de",
+			"category_key": "thule_roof_racks",
+			"source_sk_path": "/sk/thule-stresne-nosice",
+			"category_label_sk": "Strešné nosiče Thule",
+			"seo_description": "Thule Dachträger für Ihr Auto. Wählen Sie nach Fahrzeug und Dachtyp die passende Basis für Dachboxen, Fahrrad- und Skiträger.",
+			"character_count": 125
+		},
+		{
+			"market": "at",
+			"locale": "de",
+			"category_key": "menabo_roof_racks",
+			"source_sk_path": "/sk/menabo-stresne-nosice",
+			"category_label_sk": "Strešné nosiče Menabo",
+			"seo_description": "Menabo Dachträger für Ausflüge und Urlaubsreisen. Vergleichen Sie die Systeme nach Fahrzeug und Dachtyp und planen Sie Ihre nächste Tour.",
+			"character_count": 137
+		},
+		{
+			"market": "at",
+			"locale": "de",
+			"category_key": "green_valley_roof_racks",
+			"source_sk_path": "/sk/green-valley-stresne-nosice",
+			"category_label_sk": "Strešné nosiče Green Valley",
+			"seo_description": "Green Valley Dachträger für Reisen mit Gepäck und Sportausrüstung. Finden Sie das passende Trägersystem nach Fahrzeug und Dachtyp.",
+			"character_count": 130
+		},
+		{
+			"market": "ca",
+			"locale": "en",
+			"category_key": "roof_racks",
+			"source_sk_path": "/sk/stresne-nosice",
+			"category_label_sk": "Strešné nosiče",
+			"seo_description": "Roof racks and crossbars for your vehicle. Choose a system by model, year and roof type for a cargo box, bike carrier or ski rack.",
+			"character_count": 130
+		},
+		{
+			"market": "ca",
+			"locale": "en",
+			"category_key": "roof_boxes",
+			"source_sk_path": "/sk/stresne-boxy",
+			"category_label_sk": "Strešné boxy",
+			"seo_description": "Roof cargo boxes for road trips and weekends away. Compare storage capacity and dimensions and keep more room inside for your passengers.",
+			"character_count": 137
+		},
+		{
+			"market": "ca",
+			"locale": "en",
+			"category_key": "ski_racks",
+			"source_sk_path": "/sk/nosice-lyzi",
+			"category_label_sk": "Nosiče lyží a snowboardov",
+			"seo_description": "Ski and snowboard racks for trips to the slopes. Compare carrying capacity and mounting options to keep your winter gear outside the cabin.",
+			"character_count": 139
+		},
+		{
+			"market": "ca",
+			"locale": "en",
+			"category_key": "roof_tents",
+			"source_sk_path": "/sk/stresne-stany",
+			"category_label_sk": "Strešné stany",
+			"seo_description": "Rooftop tents for weekend camping and longer road trips. Compare sizes and sleeping capacity and find a tent for your next getaway.",
+			"character_count": 131
+		},
+		{
+			"market": "ca",
+			"locale": "en",
+			"category_key": "nordrive_roof_racks",
+			"source_sk_path": "/sk/nordrive-stresne-nosice",
+			"category_label_sk": "Strešné nosiče Nordrive",
+			"seo_description": "Nordrive roof racks for daily use and weekend escapes. Find a rack system suited to your vehicle model, year and roof type.",
+			"character_count": 123
+		},
+		{
+			"market": "ca",
+			"locale": "en",
+			"category_key": "thule_roof_racks",
+			"source_sk_path": "/sk/thule-stresne-nosice",
+			"category_label_sk": "Strešné nosiče Thule",
+			"seo_description": "Thule roof racks for carrying more on your travels. Choose by vehicle and roof type to add a cargo box, bike carrier or ski rack.",
+			"character_count": 129
+		},
+		{
+			"market": "ca",
+			"locale": "en",
+			"category_key": "menabo_roof_racks",
+			"source_sk_path": "/sk/menabo-stresne-nosice",
+			"category_label_sk": "Strešné nosiče Menabo",
+			"seo_description": "Menabo roof racks for your next road trip. Compare systems by vehicle and roof type and leave more room inside for the journey.",
+			"character_count": 127
+		},
+		{
+			"market": "ca",
+			"locale": "en",
+			"category_key": "green_valley_roof_racks",
+			"source_sk_path": "/sk/green-valley-stresne-nosice",
+			"category_label_sk": "Strešné nosiče Green Valley",
+			"seo_description": "Green Valley roof racks for travel and outdoor gear. Choose a system by vehicle and roof type for camping trips and weekends away.",
+			"character_count": 130
+		}
+	],
+	"sources": [
+		{
+			"type": "user_attachment",
+			"name": "seo-popisy-kategorii-navrh.md",
+			"purpose": "Rozsah ôsmich kategórií a existujúce slovenské cesty."
+		},
+		{
+			"url": "https://developers.google.com/search/docs/appearance/snippet",
+			"purpose": "Odporúčania pre unikátne a opisné meta popisy; 155 znakov nie je pevný limit Googlu."
+		}
+	],
+	"revision_note": "Slovenské meta popisy prepísané prirodzenejším jazykom podľa pripomienky používateľa; bez výrazu zostava."
+}

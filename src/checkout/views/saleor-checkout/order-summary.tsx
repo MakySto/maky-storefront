@@ -2,12 +2,14 @@
 
 import { useState, type FC } from "react";
 import { useTranslations } from "next-intl";
+import { useCheckoutB2b } from "@/checkout/providers/checkout-b2b";
 import { Tag, ShieldCheck, ChevronDown, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type CheckoutFragment, type OrderFragment } from "@/checkout/graphql";
 import { localeConfig } from "@/config/locale";
 import { useLocale } from "@/providers/locale-provider";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
+import { localizedAttributeValues, localizedName, orderLineName } from "@/checkout/lib/summary-line-names";
 
 // ============================================================================
 // Types
@@ -59,15 +61,13 @@ function extractCheckoutData(checkout: CheckoutFragment, productNameFallback: st
 		const variantImage = line.variant?.media?.find((m) => m.type === "IMAGE");
 		const productImage = line.variant?.product?.media?.find((m) => m.type === "IMAGE");
 		const image = variantImage || productImage;
-		const attributes =
-			line.variant?.attributes
-				?.map((attr) => attr.values[0]?.name)
-				.filter((name): name is string => Boolean(name)) || [];
+		// The market's own language: translation first, the Slovak base row only as the fallback.
+		const attributes = localizedAttributeValues(line.variant?.attributes);
 
 		return {
 			id: line.id,
 			quantity: line.quantity,
-			name: line.variant?.product?.name || productNameFallback,
+			name: localizedName(line.variant?.product, productNameFallback),
 			attributes,
 			imageUrl: image?.url,
 			imageAlt: image?.alt,
@@ -89,15 +89,12 @@ function extractCheckoutData(checkout: CheckoutFragment, productNameFallback: st
 
 function extractOrderData(order: OrderFragment, productNameFallback: string): OrderSummaryData {
 	const lines: LineItem[] = order.lines.map((line) => {
-		const attributes =
-			line.variant?.attributes
-				?.map((attr) => attr.values[0]?.name)
-				.filter((name): name is string => Boolean(name)) || [];
+		const attributes = localizedAttributeValues(line.variant?.attributes);
 
 		return {
 			id: line.id,
 			quantity: line.quantity,
-			name: line.productName || productNameFallback,
+			name: orderLineName(line, productNameFallback),
 			attributes,
 			imageUrl: line.thumbnail?.url,
 			imageAlt: line.thumbnail?.alt,
@@ -127,6 +124,10 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 	const t = useTranslations("checkout");
 	const { locale } = useLocale();
 	const tCart = useTranslations("cart");
+	// "Bez DPH — oslobodené podľa § 43" only on the backend's EXEMPT decision for this checkout — never because
+	// the tax happens to be 0 (export, a 100 % discount and a zero price all show 0 too).
+	const b2b = useCheckoutB2b();
+	const showB2bExemption = Boolean(checkout) && b2b.outcome?.kind === "exempt";
 
 	// Collapsed by default on mobile
 	const [isExpanded, setIsExpanded] = useState(false);
@@ -325,6 +326,9 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 								<span>{t("summary.vatIncluded")}</span>
 								<data value={tax}>{formatMoney(tax)}</data>
 							</p>
+						)}
+						{showB2bExemption && tax === 0 && (
+							<p className="text-status-success mt-1 text-xs">{t("b2b.summaryExempt")}</p>
 						)}
 					</section>
 

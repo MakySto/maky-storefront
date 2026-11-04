@@ -11,6 +11,7 @@ import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { buildCanonicalUrl } from "@/lib/seo/hreflang";
 import { marketOpenGraph } from "@/lib/seo/metadata";
 import { BrandMark } from "@/ui/components/brands/brand-mark";
+import { BrandsUnavailable } from "@/ui/components/brands/brands-unavailable";
 import { CategoryHero } from "@/ui/components/plp";
 
 /**
@@ -68,9 +69,14 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 
 async function BrandGrid({ channel }: { channel: string }) {
 	const [brands, t] = await Promise.all([
-		getBrands(channel),
+		getBrands(channel).catch((error: unknown) => {
+			console.warn("[Brands] index left unavailable:", error instanceof Error ? error.message : error);
+			return null;
+		}),
 		getTranslations({ locale: getLocaleFromChannel(channel), namespace: "brands" }),
 	]);
+	// An unknown answer is not an empty list: say so, and offer to ask again.
+	if (!brands) return <BrandsUnavailable channel={channel} retryHref={marketHref(channel, "/znacky")} />;
 
 	return (
 		<section className="max-w-page mx-auto w-full px-4 pt-8 pb-16 sm:px-6 lg:px-8 lg:pt-10">

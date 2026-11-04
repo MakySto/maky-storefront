@@ -38,6 +38,8 @@ fragment PaymentGatewayFragment on PaymentGateway {
 fragment CheckoutFragment on Checkout {
 	id
 	email
+	# MAKY-B2B-V1: the customer's company input (public metadata, input only — never proof of an exemption).
+	b2bInput: metafield(key: "maky.b2b.input.v1")
 	discount {
 		...Money
 	}

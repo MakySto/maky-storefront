@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { categoryUrlFor } from "@/config/category-routes";
+import { baseSlugForCategoryId, baseSlugOfCategory, categoryUrlFor } from "@/config/category-routes";
 import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
@@ -30,11 +30,19 @@ import {
 	VariantSectionError,
 } from "@/ui/components/pdp";
 import { getLocaleFromChannel } from "@/config/locale";
-import { parseProductContent } from "@/lib/editorjs";
+import { parseProductContent, productIdsInContent } from "@/lib/editorjs";
+import { resolveContentProducts } from "@/lib/content-products";
+import { withGalleryPhotos } from "@/lib/gallery-photos";
 import { getComparisonLabels } from "@/lib/comparison-labels";
 import { getContentLabels } from "@/lib/content-labels";
 import { extendedWarrantyYears } from "@/lib/product-attributes";
-import { liftSections, sheetFacts, templateFor } from "@/lib/product-templates";
+import {
+	layoutFor,
+	liftSections,
+	sheetFacts,
+	templateFor,
+	templateIdForCategory,
+} from "@/lib/product-templates";
 import { isSourceLocale } from "@/lib/saleor/exact-locale";
 import { publicSku } from "@/lib/product-code";
 import { publicEan } from "@/lib/product-ean";
@@ -185,17 +193,23 @@ async function ProductContent({
 	const selectedVariant = variants.find((v) => v.id === selectedVariantId);
 
 	const locale = getLocaleFromChannel(params.channel);
-	const [comparisonLabels, contentLabels] = await Promise.all([
+	const [comparisonLabels, contentLabels, contentProducts] = await Promise.all([
 		getComparisonLabels(locale),
 		getContentLabels(locale, params.channel),
+		// The parts a set's box names, asked of this market's catalogue; none when the description names none.
+		resolveContentProducts(productIdsInContent(product.description), params.channel, locale),
 	]);
-	const content = parseProductContent(product.description, {
+	const content = parseProductContent(withGalleryPhotos(product.description, product.media), {
 		comparison: comparisonLabels,
-		content: contentLabels,
+		content: { ...contentLabels, products: contentProducts },
 	});
 	// The template the description names (or the generic one) decides which parts of it stand in
-	// cards of their own and how the key facts and parameters are put together.
-	const template = templateFor(content?.template);
+	// cards of their own and how the key facts and parameters are put together; a description that
+	// carries pictures of its own is set as sections (`layoutFor`).
+	const template = layoutFor(
+		templateFor(content?.template ?? templateIdForCategory(product.category?.id)),
+		content?.blocks ?? [],
+	);
 	const sections = content ? liftSections(content.blocks, template) : null;
 	// Whatever could not be drawn as intended is said once, in the log: no text was removed, but a
 	// producer that sends a block the reader cannot read should not go unnoticed — a warning that
@@ -226,7 +240,14 @@ async function ProductContent({
 			? [
 					{
 						label: product.category.name,
-						href: marketHref(params.channel, categoryUrlFor(params.channel, product.category.slug)),
+						// By id where the table knows it: abroad `slug` is whatever Saleor's translation says.
+						href: marketHref(
+							params.channel,
+							categoryUrlFor(
+								params.channel,
+								baseSlugForCategoryId(product.category.id) ?? product.category.slug,
+							),
+						),
 					},
 				]
 			: []),
@@ -236,7 +257,7 @@ async function ProductContent({
 	// The page shows a quote button instead of a price here, so the markup states no price either.
 	const quoteOnly = quoteInsteadOfPrice({
 		isPurchasable: product.isAvailableForPurchase === true,
-		categorySlug: product.category?.slug,
+		categorySlug: baseSlugOfCategory(params.channel, product.category),
 	});
 
 	const productJsonLd = buildProductJsonLd({
@@ -301,6 +322,8 @@ async function ProductContent({
 		// on a catalogue that holds none. `sale_to_order` makes it BackOrder, which
 		// is what the badge beside the price already tells the customer.
 		availabilityMode: product.variants?.find((v) => v.metafield)?.metafield,
+		// Real stock only where a variant is tracked AND has quantity; the same test the badge applies.
+		trackInventory: product.variants?.some((v) => v.trackInventory === true && Boolean(v.quantityAvailable)),
 		variantCount: product.variants?.length ?? 0,
 	});
 
@@ -349,6 +372,16 @@ async function ProductContent({
 					<ProductGallery images={images} productName={product.name} />
 
 					<div className="flex flex-col">
+						{/* What kind of product it is, in the description's own words ("Kompletný strešný kôš s
+						    montážnou sadou"), for the templates that lift it: between the category row above
+						    and the name (both order 2, so the document order decides). */}
+						{sections?.kind && (
+							<p
+								className="text-brand order-2 mt-4 text-[0.8125rem] font-bold tracking-[0.1em] uppercase"
+								// Text only, already escaped (`plainText` in the parser): its entities stay entities.
+								dangerouslySetInnerHTML={{ __html: sections.kind }}
+							/>
+						)}
 						{/* The whole name, never split: a roof-rack set's name carries the car and the roof
 						    type, and cutting it at a dash would be guessing. A long one is set a size
 						    smaller so it does not push the price off the first screen. */}
@@ -409,8 +442,14 @@ async function ProductContent({
 					careInstructions={careInstructions}
 					locale={locale}
 					// The product's own second photo beside the description, when the gallery has one:
-					// never a stock picture, never one the gallery does not already show.
-					image={images[1] ? { url: images[1].url, alt: images[1].alt ?? product.name } : null}
+					// never a stock picture, never one the gallery does not already show. Not where the
+					// description is set as sections: it shows its own pictures, and the gallery's file
+					// is often the very one the section about the fastening shows again.
+					image={
+						!template.sections && images[1]
+							? { url: images[1].url, alt: images[1].alt ?? product.name }
+							: null
+					}
 				/>
 
 				{/* Who makes it — name, postal address, e-mail — for a brand the shop has the maker's details of

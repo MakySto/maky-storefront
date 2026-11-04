@@ -86,6 +86,8 @@ fragment ProductListItem on Product {
 	# a gallery of ten. Aliased so it never merges with a query's own `media` selection.
 	cardMedia: media {
 		url
+		# Videos live in the same list; the card's photographs are the images only.
+		type
 	}
 	variants {
 		id

@@ -7,9 +7,19 @@ export type GalleryMedia = {
 	alt?: string | null;
 	type?: string | null;
 	sortOrder?: number | null;
+	metadata?: readonly { key: string; value: string }[] | null;
 };
 
-export type GalleryImage = { id?: string | null; url: string; alt: string | null | undefined };
+/** CFM marks a picture that shows the system on a vehicle, not this very product, with this public metadata key. */
+export const ILLUSTRATIVE_KEY = "cfm_illustrative";
+
+export type GalleryImage = {
+	id?: string | null;
+	url: string;
+	alt: string | null | undefined;
+	/** The picture is an illustration of the system, not of this product: the gallery says so on it. */
+	illustrative?: boolean;
+};
 
 type GalleryProduct = {
 	media?: readonly GalleryMedia[] | null;
@@ -37,7 +47,16 @@ const images = (media: readonly GalleryMedia[] | null | undefined): GalleryImage
 			if (bHasOrder) return 1;
 			return a.index - b.index;
 		})
-		.map(({ item }) => ({ id: item.id, url: item.url, alt: item.alt }));
+		.map(({ item }) => ({
+			id: item.id,
+			url: item.url,
+			alt: item.alt,
+			...(item.metadata?.some(
+				(row) => row.key === ILLUSTRATIVE_KEY && row.value.trim().toLowerCase() === "true",
+			)
+				? { illustrative: true }
+				: {}),
+		}));
 
 /**
  * The PDP gallery, in the order Saleor holds the media — primary first.

@@ -151,7 +151,10 @@ export async function addVariantToCart(input: {
 		const rejection = classifyCheckoutErrors(payload.errors ?? []);
 		if (rejection) {
 			console.error("[cart] add-to-cart rejected:", rejection.message);
-			return rejection;
+			// The customer is offered the way out of the payment in progress, for this very checkout.
+			return rejection.reason === "payment-locked"
+				? { ...rejection, paymentLock: { checkoutId, channelSlug: channel } }
+				: rejection;
 		}
 
 		// Saleor reports success by returning the checkout. No checkout and no

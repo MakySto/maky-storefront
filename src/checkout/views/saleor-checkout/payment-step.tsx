@@ -27,6 +27,14 @@ import { usesClientPaymentSubmit } from "@/checkout/lib/payment";
 import { consumePaymentCompletionError } from "@/checkout/lib/payment/checkout-payment-completion";
 import { AuthorizedPaymentRecovery } from "@/checkout/components/payment/stripe/authorized-payment-recovery";
 import { useCheckoutPaymentReturnError } from "@/checkout/providers/checkout-payment-return-error";
+import { useCheckoutB2b } from "@/checkout/providers/checkout-b2b";
+import { useCheckoutData } from "@/checkout/providers/checkout-data";
+import { defaultSameAsShipping } from "@/checkout/lib/b2b/company-form-state";
+import { b2bStatusMessage } from "@/checkout/lib/b2b/status-message";
+import { B2bBillingSummary } from "@/checkout/components/b2b/b2b-billing-summary";
+import { B2bStatusNotice } from "@/checkout/components/b2b/b2b-status-notice";
+import { PaymentLockRecovery } from "@/checkout/components/b2b/payment-lock-recovery";
+import { PaymentLockReporterProvider } from "@/checkout/components/b2b/payment-lock-context";
 
 interface PaymentStepProps {
 	checkout: CheckoutFragment;
@@ -59,7 +67,21 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 	const shippingAddress = checkout.shippingAddress;
 
 	const [isPaymentBusy, setIsPaymentBusy] = useState(false);
-	const [sameAsBilling, setSameAsBilling] = useState(isShippingRequired && hasShippingAddress);
+	// From what is STORED, so Payment, Back/Forward and a reload agree: "same as delivery" only when there is no
+	// billing address yet or the stored one is the delivery address. A different billing company is never
+	// replaced by a copy of the delivery address (zadanie 02, §2).
+	const [sameAsBilling, setSameAsBilling] = useState(() => defaultSameAsShipping(checkout));
+
+	// Company purchase: the billing address (and company) was saved in the Information step and is not written
+	// again here; the payment waits for the backend's confirmed state.
+	const b2b = useCheckoutB2b();
+	const { refreshCheckout } = useCheckoutData();
+	const preserveBilling = b2b.businessMode && Boolean(checkout.billingAddress);
+	const b2bChecksTax = b2b.businessMode && b2b.euMarket;
+	const { evaluate: evaluateB2b } = b2b;
+	useEffect(() => {
+		if (b2bChecksTax) void evaluateB2b("confirm");
+	}, [b2bChecksTax, evaluateB2b]);
 	const [billingData, setBillingData] = useState<BillingAddressData>(() => ({
 		countryCode: (checkout.billingAddress?.country?.code as CountryCode) || "US",
 		formData: {
@@ -120,6 +142,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 		shippingAddress,
 		userAddresses: user?.addresses,
 		authenticated,
+		preserveBilling,
 	});
 
 	const usesClientSubmit = usesClientPaymentSubmit(provider);
@@ -134,6 +157,15 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 		},
 		[clearReturnError, setPaymentError],
 	);
+
+	// A payment already in progress refused a new one (contract revision 2, §5): the panel that ends it takes the place
+	// of the error line. The key starts it afresh each time.
+	const [paymentLock, setPaymentLock] = useState({ key: 0, shown: false });
+	const reportPaymentLock = useCallback(() => {
+		clearReturnError();
+		setPaymentError("");
+		setPaymentLock((current) => ({ key: current.key + 1, shown: true }));
+	}, [clearReturnError, setPaymentError]);
 
 	useEffect(() => {
 		const stashedError = consumePaymentCompletionError();
@@ -167,7 +199,22 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 			: t("payment.processingPayment")
 		: t("placeOrder");
 
-	const isDisabled = isLoading || (!canSubmit && !isFreeOrder);
+	const isDisabled = isLoading || (!canSubmit && !isFreeOrder) || !b2b.gate.allowed;
+
+	const b2bStatus = b2bChecksTax
+		? b2bStatusMessage({
+				outcome: b2b.outcome,
+				pending: b2b.pending || (b2b.outcome === null && !b2b.gate.allowed),
+				vies: b2b.vies,
+				hasVatId: Boolean(b2b.input?.vatId),
+				exemptionAvailable: b2b.exemptionAvailable,
+			})
+		: null;
+	// "Pokračovať s DPH" confirms THIS taxed total; once confirmed the sentence stays, the button goes.
+	const offerTaxedConfirmation = b2b.gate.state === "needs_confirmation";
+	// The company check found the checkout locked: the same panel as a refused payment.
+	const outcomeLocked = b2bStatus !== null && b2b.outcome?.kind === "locked";
+	const showPaymentLock = b2b.config.uiEnabled && (paymentLock.shown || outcomeLocked);
 
 	const paymentContent = (
 		<>
@@ -178,7 +225,11 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 				>
 					<AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
 					<div>
-						<p className="font-medium text-amber-800">{t("payment.priceChangedTitle")}</p>
+						<p className="font-medium text-amber-800">
+							{priceChangeNotice.reason === "b2b"
+								? t("payment.orderUpdated")
+								: t("payment.priceChangedTitle")}
+						</p>
 						<p className="mt-1 text-sm text-amber-700">
 							{t("payment.priceChangedBody", {
 								previousTotal: getFormattedMoney(
@@ -220,19 +271,60 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 			{/* Client-submit (Stripe): billing ABOVE the payment UI so the Pay button — rendered
 			    inside the Stripe form — is the LAST interaction on the page. Server-submit keeps
 			    billing above the shared Pay row at the bottom. */}
-			<BillingAddressSection
-				billingAddress={checkout.billingAddress}
-				shippingAddress={shippingAddress}
-				userAddresses={authenticated ? (user?.addresses as AddressFragment[]) : undefined}
-				defaultBillingAddressId={user?.defaultBillingAddress?.id}
-				isShippingRequired={isShippingRequired}
-				errors={errors}
-				onChange={handleBillingDataChange}
-				onSameAsShippingChange={setSameAsBilling}
-				initialSameAsShipping={sameAsBilling}
-			/>
+			{b2b.businessMode && b2b.input ? (
+				<B2bBillingSummary
+					billingAddress={checkout.billingAddress}
+					input={b2b.input}
+					onEdit={onGoToInformation}
+					disabled={isPaymentBusy}
+				/>
+			) : (
+				<BillingAddressSection
+					billingAddress={checkout.billingAddress}
+					shippingAddress={shippingAddress}
+					userAddresses={authenticated ? (user?.addresses as AddressFragment[]) : undefined}
+					defaultBillingAddressId={user?.defaultBillingAddress?.id}
+					isShippingRequired={isShippingRequired}
+					errors={errors}
+					onChange={handleBillingDataChange}
+					onSameAsShippingChange={setSameAsBilling}
+					initialSameAsShipping={sameAsBilling}
+				/>
+			)}
 
-			{shouldShowPaymentMethodArea(checkout) ? (
+			{showPaymentLock ? (
+				<PaymentLockRecovery
+					key={paymentLock.key}
+					checkoutId={checkout.id}
+					channelSlug={checkout.channel.slug}
+					localeSlug={locale}
+					subject="payment"
+					onReleased={() => {
+						// Stays on screen to say so; the new quote is confirmed before anything can be paid again.
+						setPaymentLock((current) => ({ ...current, shown: true }));
+						void refreshCheckout().then(() => (b2bChecksTax ? b2b.evaluate("confirm") : undefined));
+					}}
+					finishOrder={{ onClick: () => void refreshCheckout() }}
+				/>
+			) : null}
+
+			{b2bStatus && !outcomeLocked ? (
+				<B2bStatusNotice
+					message={b2bStatus}
+					pending={b2b.pending}
+					detail={offerTaxedConfirmation ? t("b2b.taxedTotal", { total: totalStr }) : undefined}
+					on={{
+						continueWithVat: offerTaxedConfirmation ? () => b2b.confirmTaxed() : undefined,
+						retry: () => void b2b.evaluate("evaluate"),
+						recheck: () => void b2b.evaluate("confirm"),
+						refreshStatus: () => {
+							void refreshCheckout().then(() => b2b.evaluate("confirm"));
+						},
+					}}
+				/>
+			) : null}
+
+			{shouldShowPaymentMethodArea(checkout) && b2b.gate.allowed ? (
 				<PaymentMethodArea
 					provider={provider}
 					checkout={checkout}
@@ -243,6 +335,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 						shippingAddress,
 						userAddresses: user?.addresses,
 						authenticated,
+						preserveBilling,
 					}}
 					onPaymentError={handlePaymentError}
 					onBillingErrors={setBillingErrors}
@@ -291,7 +384,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 	);
 
 	return (
-		<>
+		<PaymentLockReporterProvider value={b2b.config.uiEnabled ? reportPaymentLock : null}>
 			{usesClientSubmit ? (
 				<div className="space-y-8">{paymentContent}</div>
 			) : (
@@ -299,6 +392,6 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 					{paymentContent}
 				</form>
 			)}
-		</>
+		</PaymentLockReporterProvider>
 	);
 };

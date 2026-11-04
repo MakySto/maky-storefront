@@ -46,17 +46,19 @@ import {
 	type UserSetDefaultAddressMutation,
 	type UserSetDefaultAddressMutationVariables,
 } from "@/checkout/graphql";
+import { isCheckoutLockedCode, isTaxContextChangedCode } from "@/checkout/lib/b2b/contract";
+import { isB2bCheckoutUiEnabled } from "@/checkout/lib/b2b/server/b2b-config";
+import { productionEvaluateB2bDeps } from "@/checkout/lib/b2b/server/evaluate-b2b-deps";
+import { runPaymentPreflight } from "@/checkout/lib/b2b/server/payment-preflight";
 import type {
 	CheckoutCompleteActionResult,
 	PaymentGatewaysInitializeActionResult,
+	PaymentPreflightCode,
 	TransactionInitializeActionResult,
 	TransactionProcessActionResult,
 } from "@/checkout/lib/checkout-action-types";
 import type { CheckoutFetchResult } from "@/checkout/lib/checkout-types";
-import {
-	getCheckoutPayAmount,
-	hasMaterialCheckoutTotalChange,
-} from "@/checkout/lib/payment/checkout-pay-amount";
+import { getCheckoutPayAmount } from "@/checkout/lib/payment/checkout-pay-amount";
 import { getDummyPaymentGuardError } from "@/checkout/lib/payment/providers/dummy";
 import { isDummyPaymentAllowed } from "@/checkout/lib/payment/providers/dummy";
 import { getStripePaymentGuardError, isStripePaymentEnabled } from "@/checkout/lib/payment/providers/stripe";
@@ -339,20 +341,22 @@ export async function initializeCheckoutTransactionAction(
 		return { ok: false, error: t("checkout.errors.cardPaymentsDisabled") };
 	}
 
-	// Defense in depth: never trust the client-supplied amount. Saleor re-validates
-	// coverage at checkoutComplete, but rejecting here avoids authorizing a wrong amount.
-	if (typeof variables.amount === "number") {
-		const live = await fetchCheckoutOnServer(variables.checkoutId);
-		if (!live.ok || !live.checkout) {
-			const t = await getPaymentActionTranslator(localeSlug);
-			return { ok: false, error: t("checkout.errors.totalVerifyFailed") };
-		}
-
-		const liveAmount = getCheckoutPayAmount(live.checkout);
-		if (liveAmount === null || hasMaterialCheckoutTotalChange(liveAmount, variables.amount)) {
-			const t = await getPaymentActionTranslator(localeSlug);
-			return { ok: false, error: t("checkout.payment.totalChanged") };
-		}
+	// Defense in depth: never trust the client-supplied amount, and check whether or not one was sent. The preflight
+	// re-reads the checkout, confirms the B2B tax state where that workflow applies, and compares the live amount due
+	// with the one the customer was shown. Saleor re-validates coverage at checkoutComplete; this keeps a wrong or
+	// unconfirmed amount from being authorized at all.
+	const preflight = await runPaymentPreflight(
+		{ checkoutId: variables.checkoutId, expectedAmount: variables.amount },
+		productionEvaluateB2bDeps(localeSlug),
+	);
+	if (preflight.kind !== "ready") {
+		const t = await getPaymentActionTranslator(localeSlug);
+		return {
+			ok: false,
+			error: preflightMessage(t, preflight.code, preflight.cause),
+			code: preflight.code,
+			checkout: preflight.checkout,
+		};
 	}
 
 	const result = await executePublicGraphQL(transactionInitializeDoc, { variables, cache: "no-cache" });
@@ -369,6 +373,18 @@ export async function initializeCheckoutTransactionAction(
 
 	if (payload.errors?.length) {
 		const t = await getPaymentActionTranslator(localeSlug);
+		// The backend's own guard (MAKY-B2B-V1) on the same mutation, by code — never by its message.
+		const code = paymentCodeOf(payload.errors.map((error) => error.code));
+		if (code) {
+			const live =
+				code === "B2B_CONTEXT_CHANGED" ? await fetchCheckoutOnServer(variables.checkoutId, localeSlug) : null;
+			return {
+				ok: false,
+				error: preflightMessage(t, code, "backend"),
+				code,
+				checkout: live?.ok ? live.checkout : null,
+			};
+		}
 		return {
 			ok: false,
 			error: payload.errors[0].message ?? t("checkout.payment.gateways.paymentInitFailed"),
@@ -376,6 +392,32 @@ export async function initializeCheckoutTransactionAction(
 	}
 
 	return { ok: true, data: payload };
+}
+
+/** A B2B code of the backend on initialize/complete, as a payment preflight code. */
+function paymentCodeOf(codes: ReadonlyArray<unknown>): PaymentPreflightCode | null {
+	if (codes.some(isCheckoutLockedCode)) return "CHECKOUT_LOCKED";
+	if (codes.some(isTaxContextChangedCode)) return "B2B_CONTEXT_CHANGED";
+	return null;
+}
+
+function preflightMessage(
+	t: Awaited<ReturnType<typeof getPaymentActionTranslator>>,
+	code: PaymentPreflightCode,
+	cause: string,
+): string {
+	switch (code) {
+		case "TOTAL_CHANGED":
+			return t("checkout.payment.totalChanged");
+		case "B2B_CONTEXT_CHANGED":
+			return t("checkout.payment.orderUpdated");
+		case "CHECKOUT_LOCKED":
+			return t("checkout.payment.checkoutLocked");
+		case "FINAL_STATE_UNCONFIRMED":
+			return cause === "checkout-read-failed" || cause === "checkout-not-found" || cause === "no-total"
+				? t("checkout.errors.totalVerifyFailed")
+				: t("checkout.payment.finalStateUnconfirmed");
+	}
 }
 
 export async function processCheckoutTransactionAction(
@@ -413,6 +455,28 @@ export async function runCheckoutCompleteAction(
 	checkoutId: string,
 	localeSlug?: string,
 ): Promise<CheckoutCompleteActionResult> {
+	// A zero-total order never passes transactionInitialize, so its B2B state is confirmed here (zadanie 02, §4).
+	// Only while the B2B checkout is switched on, and only for a zero total: a paid checkout completes on the
+	// payment it already has, and nothing here may stand in its way.
+	if (isB2bCheckoutUiEnabled()) {
+		const live = await fetchCheckoutOnServer(checkoutId, localeSlug);
+		if (live.ok && live.checkout && getCheckoutPayAmount(live.checkout) === 0 && live.checkout.b2bInput) {
+			const preflight = await runPaymentPreflight(
+				{ checkoutId, expectedAmount: 0 },
+				productionEvaluateB2bDeps(localeSlug),
+			);
+			if (preflight.kind !== "ready") {
+				const t = await getPaymentActionTranslator(localeSlug);
+				return {
+					ok: false,
+					error: preflightMessage(t, preflight.code, preflight.cause),
+					code: preflight.code,
+					checkout: preflight.checkout,
+				};
+			}
+		}
+	}
+
 	const result = await executePublicGraphQL(completeDoc, {
 		variables: { checkoutId },
 		cache: "no-cache",
@@ -431,6 +495,26 @@ export async function runCheckoutCompleteAction(
 	if (payload.errors?.length) {
 		const t = await getPaymentActionTranslator(localeSlug);
 		const completeOrderFailed = t("checkout.payment.completeOrderFailed");
+		const code = paymentCodeOf(payload.errors.map((error) => error.code));
+		if (code) {
+			// The payment may already be authorized: the message never asks for a new one. `B2B_TAX_CONTEXT_CHANGED` here
+			// means the order would differ from the offer the payment was made for (contract revision 2, §8, also when
+			// more was paid): no order was created, and Saleor releases that payment's money by its own mechanism.
+			return {
+				ok: false,
+				error: t(
+					code === "B2B_CONTEXT_CHANGED"
+						? "checkout.payment.completeOfferChanged"
+						: "checkout.payment.completeBlockedNoNewPayment",
+				),
+				code,
+				fieldErrors: payload.errors.map((error) => ({
+					field: error.field,
+					message: error.message ?? completeOrderFailed,
+					code: error.code,
+				})),
+			};
+		}
 		return {
 			ok: false,
 			error: payload.errors[0].message ?? completeOrderFailed,

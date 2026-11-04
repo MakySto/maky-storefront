@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Reduce cantitatea",
 		"increaseQuantity": "Crește cantitatea",
 		"priceWithVat": "Preț cu TVA",
+		"priceWithoutVat": "Preț fără TVA: {price}",
 		"technicalParameters": "Specificații tehnice",
 		"outerDimensions": "Dimensiuni exterioare",
 		"yes": "Da",
@@ -154,11 +155,22 @@
 				"play": "Redă videoclipul",
 				"note": "YouTube · se încarcă abia după clic"
 			},
+			"sections": {
+				"intro": "Descrierea produsului",
+				"compatibility": "Compatibilitate",
+				"usage": "Utilizare în practică",
+				"accessories": "Accesorii potrivite",
+				"brand": "Despre brand",
+				"closing": "Vă sfătuim"
+			},
+			"viewAccessory": "Vezi accesoriul",
+			"viewPart": "Vezi piesa",
 			"years": "{count, plural, one {# an} few {# ani} other {# de ani}}"
 		},
 		"keyFeatures": "Caracteristici principale",
 		"productDescription": "Descrierea produsului",
 		"imageCounter": "Imaginea {current} din {total}",
+		"illustrativeImage": "Imagine ilustrativă",
 		"trustPaymentTitle": "Plată securizată",
 		"trustPaymentText": "Conexiune criptată",
 		"trustShippingTitle": "Livrare",
@@ -318,7 +330,10 @@
 		"listingAllNotice": "Vedeți oferta pentru toate vehiculele — nu este filtrată pentru mașina dvs. ({vehicle}).",
 		"listingDefaultNone": "Pentru {vehicle} nu avem încă un set verificat, de aceea vedeți oferta pentru toate vehiculele.",
 		"listingNotOnSaleTitle": "Pentru {vehicle} există seturi compatibile care momentan nu sunt la vânzare",
-		"listingNotOnSaleBody": "Asta nu înseamnă că nimic nu se potrivește. Adăugăm aceste seturi în ofertă — între timp puteți vedea toate vehiculele sau ne puteți scrie."
+		"listingNotOnSaleBody": "Asta nu înseamnă că nimic nu se potrivește. Adăugăm aceste seturi în ofertă — între timp puteți vedea toate vehiculele sau ne puteți scrie.",
+		"listingOtherShelfTitle": "Pentru {vehicle} nu avem seturi verificate în această categorie",
+		"listingOtherShelfBody": "Seturile verificate pentru vehiculul dvs. sunt într-o altă categorie, nu în aceasta.",
+		"listingOtherShelfAction": "Vezi seturile din categoria {category}"
 	},
 	"cart": {
 		"yourCart": "Coșul dvs.",
@@ -327,6 +342,7 @@
 		"addInvalid": "Verificați cantitatea selectată.",
 		"addNotFound": "Produsul nu a fost găsit.",
 		"addFailed": "Produsul nu a putut fi adăugat în coș.",
+		"addPaymentLocked": "O plată pentru comanda dumneavoastră este deja în curs, așa că acum nu se pot adăuga produse. Finalizați-o sau anulați-o în siguranță la finalizarea comenzii.",
 		"addUnconfirmed": "Nu putem confirma dacă produsul a fost adăugat. Verificați coșul.",
 		"emptyCart": "Coșul este gol",
 		"continueShopping": "Continuă cumpărăturile",
@@ -576,7 +592,12 @@
 			"invalidValue": "Valoare nevalidă",
 			"notFullyPaid": "Plata nu acoperă încă totalul comenzii. Reîncărcați pagina și, dacă fondurile au fost autorizate, finalizați comanda folosind butonul de mai jos. Nu plătiți din nou până la confirmarea stării.",
 			"alreadyCompleted": "Această comandă a fost deja plasată. Veți găsi confirmarea în e-mail.",
-			"freeOrderTotalChanged": "Totalul comenzii s-a modificat și acum necesită plată. Verificați suma și încercați din nou."
+			"freeOrderTotalChanged": "Totalul comenzii s-a modificat și acum necesită plată. Verificați suma și încercați din nou.",
+			"checkoutLocked": "O plată pentru această comandă este deja în curs. Finalizați-o sau anulați-o în siguranță înainte de a începe una nouă.",
+			"orderUpdated": "Comanda a fost actualizată. Verificați noua sumă înainte de plată.",
+			"finalStateUnconfirmed": "Prețul final nu a putut fi confirmat acum. Încercați din nou.",
+			"completeBlockedNoNewPayment": "Comanda nu a putut fi finalizată acum. Dacă ați plătit deja, nu începeți o nouă plată: reîmprospătați pagina sau contactați-ne.",
+			"completeOfferChanged": "Suma s-a modificat, așa că comanda nu a fost creată. Banii din această plată vor fi eliberați automat. Dacă aveți nevoie de ajutor cu comanda, contactați-ne."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Mod de testare:</strong> Aceasta este o confirmare simulată. Nu a fost efectuată nicio plată reală.",
@@ -598,6 +619,93 @@
 		},
 		"meta": {
 			"title": "Finalizarea comenzii"
+		},
+		"b2b": {
+			"sectionTitle": "Cumpărare pe firmă",
+			"toggle": "Cumpăr pe firmă",
+			"toggleHint": "Vom trece datele firmei pe factură.",
+			"companyName": "Denumirea firmei",
+			"registrationId": "IČO",
+			"taxId": "DIČ",
+			"vatIdPlaceholder": "de ex. {example}",
+			"vatIdHint": "Cu un cod de TVA valabil dintr-o altă țară UE și livrare în acea țară, livrarea poate fi scutită de TVA. Decidem după verificarea în VIES.",
+			"billingSameAsShipping": "Adresa de facturare este aceeași cu adresa de livrare",
+			"billingAddressTitle": "Adresa de facturare",
+			"billingSummaryTitle": "Date de facturare",
+			"billingMissing": "Lipsesc datele de facturare. Completați-le la pasul Informații.",
+			"taxedTotal": "De plată cu TVA: {total}",
+			"summaryExempt": "Fără TVA — scutit conform § 43 din legea slovacă a TVA",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "Cod TVA"
+			},
+			"errors": {
+				"companyNameRequired": "Introduceți denumirea firmei.",
+				"registrationIdRequired": "Introduceți IČO.",
+				"registrationIdFormat": "IČO are între 6 și 8 cifre.",
+				"taxIdFormat": "DIČ are 10 cifre.",
+				"vatIdFormat": "Numărul nu are formatul unui cod de TVA al țării selectate. Verificați-l.",
+				"tooLong": "Valoarea este prea lungă.",
+				"saveFailed": "Datele firmei nu au putut fi salvate. Încercați din nou."
+			},
+			"status": {
+				"verifying": "Verificăm codul de TVA…",
+				"exempt": "Cod de TVA verificat. Livrarea este scutită de TVA; prețul afișat este fără TVA.",
+				"invalid": "VIES nu a confirmat codul de TVA ca valabil pentru comerțul intracomunitar. Verificați-l sau continuați cu TVA.",
+				"unavailable": "Codul de TVA nu poate fi verificat acum. Încercați din nou peste puțin timp sau continuați cu TVA.",
+				"countryMismatch": "Fără TVA putem procesa automat doar livrarea în țara codului dumneavoastră de TVA. Pentru altă livrare, contactați-ne.",
+				"identityReview": "Datele firmei nu corespund rezultatului verificării. Verificați datele de facturare sau contactați-ne.",
+				"skVat": "Cu un cod de TVA slovac, achiziția se facturează cu TVA.",
+				"domesticDelivery": "La livrare sau ridicare în Slovacia, achiziția se facturează cu TVA.",
+				"incomplete": "Vom decide asupra TVA când datele și metoda de livrare vor fi complete.",
+				"validPendingDelivery": "Codul de TVA este valabil în VIES. Vom decide asupra TVA după alegerea metodei de livrare.",
+				"disabled": "Momentan nu oferim scutirea automată de TVA. Puteți finaliza cumpărarea pe firmă cu TVA.",
+				"serviceOff": "Verificarea automată a codului de TVA nu este disponibilă acum. Puteți finaliza cumpărarea pe firmă la prețul din rezumat."
+			},
+			"actions": {
+				"continueWithVat": "Continuați cu TVA",
+				"retry": "Verificați din nou",
+				"recheck": "Controlați din nou",
+				"refreshStatus": "Actualizați starea plății",
+				"edit": "Editați"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "O plată pentru această comandă este deja în curs, așa că datele nu pot fi modificate acum. Puteți finaliza plata sau o puteți anula în siguranță și apoi modifica datele.",
+				"cart": "O plată pentru această comandă este deja în curs, așa că coșul nu poate fi modificat acum. Puteți finaliza plata sau o puteți anula în siguranță și apoi modifica coșul.",
+				"payment": "O plată pentru această comandă este deja în curs, așa că acum nu se poate începe una nouă. Puteți anula în siguranță plata începută și apoi plăti din nou."
+			},
+			"releasing": "Anulăm plata începută…",
+			"waitingCancel": "Așteptăm ca procesatorul de plăți să confirme anularea plății. De obicei durează câteva secunde.",
+			"waitingAttempt": "Plata este încă în curs de creare. Vom încerca din nou să o anulăm în câteva momente.",
+			"released": {
+				"details": "Plata începută a fost anulată. Acum puteți modifica datele și le puteți salva.",
+				"cart": "Plata începută a fost anulată. Acum puteți modifica coșul.",
+				"payment": "Plata începută a fost anulată. Verificați suma și plătiți din nou."
+			},
+			"funds": "Plata a fost deja primită sau așteaptă confirmarea băncii, așa că comanda nu mai poate fi modificată. Finalizați-o cu datele inițiale.",
+			"notConfirmed": "Anularea plății nu a fost încă confirmată. Încercați din nou în câteva momente, plătiți comanda cu datele inițiale sau contactați-ne.",
+			"unavailable": "Nu putem anula acum plata începută. Puteți plăti comanda cu datele inițiale sau ne puteți contacta.",
+			"failed": "Plata începută nu a putut fi anulată. Încercați din nou în câteva momente, plătiți comanda cu datele inițiale sau contactați-ne.",
+			"actions": {
+				"releaseDetails": "Modificați datele",
+				"releaseCart": "Modificați coșul",
+				"releasePayment": "Anulați plata începută",
+				"retry": "Încercați din nou",
+				"payOriginal": "Plătiți cu datele inițiale",
+				"finishOrder": "Finalizați comanda",
+				"contact": "Contactați magazinul"
+			}
 		}
 	},
 	"footer": {
@@ -852,9 +960,19 @@
 		"errorNotVerified": "Pentru vehiculul selectat în acest moment, acest set nu este verificat.",
 		"errorNotAvailable": "Acest set nu mai este în ofertă.",
 		"errorCartRejected": "Setul nu a putut fi adăugat în coș.",
+		"errorPaymentLocked": "O plată pentru comanda dumneavoastră este deja în curs, așa că acum nu se poate adăuga setul. Finalizați-o sau anulați-o în siguranță la finalizarea comenzii.",
 		"errorLookupFailed": "Nu putem confirma dacă setul a fost adăugat. Vă rugăm să verificați coșul.",
 		"errorCatalogueUnavailable": "Nu am putut verifica disponibilitatea setului în acest moment. Vă rugăm să încercați din nou.",
-		"errorGeneric": "Setul nu a putut fi adăugat în coș."
+		"errorGeneric": "Setul nu a putut fi adăugat în coș.",
+		"facetAerodynamic": "Aerodinamic",
+		"facetWing": "Profil aripă",
+		"facetTubular": "Tubular",
+		"facetColourBlack": "Negru",
+		"facetColourSilver": "Argintiu",
+		"facetColourAlu": "Aluminiu natural",
+		"propertyBarLength": "Lungimea barelor",
+		"propertyColour": "Culoare",
+		"propertyBarLoad": "Capacitatea barelor"
 	},
 	"catalog": {
 		"makeIndexTitle": "Alegeți barele de acoperiș după vehicul",
@@ -868,7 +986,7 @@
 		"offersPartial": "O parte din ofertă nu a putut fi încărcată, așa că lista poate fi incompletă.",
 		"previewNotice": "Previzualizarea unei pagini nepublicate. Nu este afișată vizitatorilor.",
 		"offersTitleGeneration": "Seturi pentru această generație",
-		"offersBrowseNote": "Fiecare set este valabil doar pentru tipul de acoperiș și anii indicați. Seturile nu sunt filtrate pentru mașina dvs. — după ce alegeți vehiculul, vi le arătăm doar pe cele potrivite.",
+		"offersBrowseNote": "Fiecare set este valabil doar pentru tipul de plafon și anii indicați, iar diferențele se văd pe carduri. Aveți altă mașină? Schimbați-o în antet.",
 		"offersGroupOther": "Fără tip de acoperiș indicat"
 	},
 	"company": {
@@ -1117,5 +1235,15 @@
 		"description": "Producătorii de bare portbagaj, cutii de plafon, suporturi de biciclete și alte echipamente ale căror produse le găsiți la noi.",
 		"productCount": "{count, plural, one {# produs} few {# produse} other {# de produse}}",
 		"brandDescription": "Produse {brand} în oferta MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Afișarea listei",
+		"viewGrid": "Grilă",
+		"viewList": "Listă",
+		"viewSet": "Vezi setul",
+		"specDimensions": "Dimensiuni",
+		"specBars": "Bare transversale",
+		"roofFilterLabel": "Tipul acoperișului",
+		"roofFilterAll": "Toate"
 	}
 }

@@ -37,13 +37,24 @@ fragment OrderFullDetails on Order {
 	lines {
 		id
 		quantity
+		# What the order was placed under, in the order's language; the fallback when the product
+		# has no translation (any more) in the language of the market the page is read in.
+		translatedProductName
+		translatedVariantName
 		variant {
 			id
 			name
+			translation(languageCode: $languageCode) {
+				name
+			}
 			product {
 				id
 				name
 				slug
+				translation(languageCode: $languageCode) {
+					name
+					slug
+				}
 				thumbnail {
 					url
 					alt
@@ -74,7 +85,7 @@ fragment OrderFullDetails on Order {
 	}
 }
 
-query OrderByNumber($first: Int) {
+query OrderByNumber($first: Int, $languageCode: LanguageCodeEnum! = SK) {
 	me {
 		orders(first: $first) {
 			edges {

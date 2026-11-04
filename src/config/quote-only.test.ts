@@ -9,6 +9,12 @@ describe("quoteInsteadOfPrice", () => {
 		expect(quoteInsteadOfPrice({ isPurchasable: false, categorySlug: KARGO })).toBe(true);
 	});
 
+	it("hides it under the new category slug too, and under the old one until Saleor is renamed", () => {
+		for (const categorySlug of ["kargo-stresne-nosice-a-stresne-kose-na-dodavky", KARGO]) {
+			expect(quoteInsteadOfPrice({ isPurchasable: false, categorySlug }), categorySlug).toBe(true);
+		}
+	});
+
 	it("keeps the price where the channel sells it — the market decides, not the category", () => {
 		expect(quoteInsteadOfPrice({ isPurchasable: true, categorySlug: KARGO })).toBe(false);
 	});

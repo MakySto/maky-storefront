@@ -9,10 +9,11 @@
 # `externalReference` is selected so the caller can VERIFY that the product which came
 # back is the one the fitment row meant, rather than trusting the row's own copy of it.
 #
-# `metafield(key: "cfm_availability_mode")` is the catalogue's availability fact. This
-# catalogue is sale-to-order: trackInventory is false and `quantityAvailable` answers a
-# synthetic cap (50 for every variant, confirmed live), so it may only be used to detect
-# a hard zero — never to make a positive stock claim.
+# `metafield(key: "cfm_availability_mode")` is the catalogue's availability fact. The
+# catalogue is sale-to-order: `trackInventory` is false and `quantityAvailable` answers a
+# synthetic cap (50, confirmed live), so it may only detect a hard zero. The exception is
+# a variant CFM tracks against the Oasis warehouse: `trackInventory` is true and its
+# quantity is real stock, which is the only thing that may be shown as "in stock".
 #
 # It is selected on the VARIANT first and on the product second. CFM publishes it on the
 # ProductVariant — measured live 2026-09-06: the pre-existing catalogue carries it on
@@ -74,6 +75,13 @@ query FitmentProductsByIds($ids: [ID!]!, $channel: String!, $first: Int!, $lang:
 					url
 					alt
 				}
+				# The gallery's stored files, only for the card's second photograph (shown on hover).
+				# Aliased so it never merges with another selection of `media`; the card takes the
+				# SECOND real image and nothing at all when the product has just one.
+				cardMedia: media {
+					url
+					type
+				}
 				category {
 					id
 					name
@@ -87,6 +95,7 @@ query FitmentProductsByIds($ids: [ID!]!, $channel: String!, $first: Int!, $lang:
 					id
 					name
 					quantityAvailable
+					trackInventory
 					metafield(key: "cfm_availability_mode")
 					pricing {
 						price {

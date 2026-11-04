@@ -1,10 +1,14 @@
 import {
 	escapeHtml,
+	FACT_ICON_NAMES,
 	FEATURE_ICONS,
 	plainText,
+	SECTION_KINDS,
 	sanitizeInline,
+	type FactIconName,
 	type FeatureIcon,
 	type IconName,
+	type SectionKind,
 } from "./editorjs-sanitize";
 import {
 	POSTER_WIDTH,
@@ -23,8 +27,10 @@ import {
  *
  * - the document's `version` is `maky-content/1` or `maky-content/1:<template>`;
  * - a block's `id` names its role: `maky:callout:tip|info|warn`, `maky:benefits`, `maky:inbox`,
- *   `maky:features`, `maky:steps`, `maky:faq`, `maky:specs`, `maky:documents`, `maky:video` (a `#2`
- *   suffix only keeps a repeated role unique);
+ *   `maky:features`, `maky:steps`, `maky:faq`, `maky:specs`, `maky:documents`, `maky:video`,
+ *   `maky:cta`, `maky:facts`, `maky:kind` (a `#2` suffix only keeps a repeated role unique);
+ * - a heading's `id` may name the kind of section it opens, `maky:section:<kind>`; the storefront
+ *   writes the small title over the heading from its own words;
  * - an unmarked `header` directly above a marked block is that block's title.
  *
  * The contract, with the sample both repositories test against, is
@@ -52,7 +58,19 @@ const PROFILE_MAJOR = 1;
 type CalloutKind = "tip" | "info" | "warn";
 const CALLOUT_KINDS: readonly CalloutKind[] = ["tip", "info", "warn"];
 
-type Role = "callout" | "benefits" | "inbox" | "features" | "steps" | "faq" | "specs" | "documents" | "video";
+type Role =
+	| "callout"
+	| "benefits"
+	| "inbox"
+	| "features"
+	| "steps"
+	| "faq"
+	| "specs"
+	| "documents"
+	| "video"
+	| "cta"
+	| "facts"
+	| "kind";
 const ROLES: readonly Role[] = [
 	"callout",
 	"benefits",
@@ -63,6 +81,9 @@ const ROLES: readonly Role[] = [
 	"specs",
 	"documents",
 	"video",
+	"cta",
+	"facts",
+	"kind",
 ];
 
 /** The fixed words of the blocks, in the shopper's language. Never taken from the document. */
@@ -83,6 +104,24 @@ export interface ContentLabels {
 	 * link to `href`. Absent where no wording is known, and the sentence then stays text.
 	 */
 	configurator?: { phrase: string; href: string };
+	/**
+	 * The products a document names (`meta.productId` of a box item), as this market's catalogue answered
+	 * for them: only a product that is published here and complete in this language is in the map. An item
+	 * whose product is not in it is drawn without picture and link; nothing is guessed in its place.
+	 */
+	products?: ReadonlyMap<string, ContentProduct>;
+	/** What a box item that links to its product says it does: "Pozrieť diel". */
+	viewPart?: string;
+	/** The same for an accessory (`maky:inbox:accessories`): "Pozrieť doplnok". */
+	viewAccessory?: string;
+}
+
+/** What the catalogue answered for a product a document names. */
+export interface ContentProduct {
+	/** The product's page in this market. */
+	href: string;
+	/** The picture, as an address of this site's image optimizer; null when the product has none. */
+	image: string | null;
 }
 
 export interface ContentBlock {
@@ -143,6 +182,13 @@ export function isUnknownRole(id: unknown): boolean {
 	if (typeof id !== "string") return false;
 	const found = MARKER.exec(id);
 	return Boolean(found && !(ROLES as readonly string[]).includes(found[1]));
+}
+
+/** The kind of section a heading's id names (`maky:section:usage`), or null for any other id. */
+export function sectionKindOf(id: unknown): SectionKind | null {
+	if (typeof id !== "string") return null;
+	const found = /^maky:section:([a-z]+)$/.exec(id);
+	return found && (SECTION_KINDS as readonly string[]).includes(found[1]) ? (found[1] as SectionKind) : null;
 }
 
 // ─── Reading items ───────────────────────────────────────────────────────────────────────────
@@ -206,6 +252,8 @@ function textParts(content: string, extra = ""): string {
 export interface SpecFact {
 	label: string;
 	value: string;
+	/** The icon the producer named for a `maky:facts` item, from the closed set; a sheet's row has none. */
+	icon?: FactIconName;
 }
 
 /** A role's body, or the reason it cannot be drawn as that role. */
@@ -304,15 +352,83 @@ function benefitsBody(items: Item[]): Body {
 	return { html: `<ul class="maky-benefits">${rows.join("")}</ul>` };
 }
 
-function inboxBody(items: Item[]): Body {
+/** The code of a part: letters, digits and the few marks a set code carries (`2×N10035+N30302`). */
+const PART_CODE = /^[A-Za-z0-9][A-Za-z0-9 ._×+-]{0,39}$/;
+/** A Saleor global id, as `meta.productId` carries it. */
+const PRODUCT_ID = /^[A-Za-z0-9+/=_-]{1,100}$/;
+/** The only picture address a part may carry: this site's image optimizer, asked by `content-products.ts`. */
+const OPTIMIZED_IMAGE = /^\/_next\/image\?url=[^\s"'<>]+$/;
+
+interface PartMeta {
+	qty: number | null;
+	unit: string;
+	code: string;
+	productId: string;
+}
+
+/** What an item of the box says about the part it names: how many, of what unit, which code, which product. */
+function partMeta(item: Item): PartMeta {
+	const meta = item.meta ?? {};
+	const qty =
+		typeof meta.qty === "number" && Number.isInteger(meta.qty) && meta.qty > 0 && meta.qty < 1000
+			? meta.qty
+			: null;
+	const unit = typeof meta.unit === "string" ? plainText(sanitizeInline(meta.unit)).trim().slice(0, 40) : "";
+	const code = typeof meta.code === "string" && PART_CODE.test(meta.code.trim()) ? meta.code.trim() : "";
+	const productId =
+		typeof meta.productId === "string" && PRODUCT_ID.test(meta.productId) ? meta.productId : "";
+	return { qty, unit, code, productId };
+}
+
+/** The ids of the products the boxes of a document name, in order, each once. */
+export function contentProductIds(blocks: readonly ContentBlock[]): string[] {
+	const ids = new Set<string>();
+	for (const block of blocks) {
+		if (readMarker(block.id)?.role !== "inbox" || block.type !== "list") continue;
+		const items = Array.isArray(block.data?.items) ? block.data.items : [];
+		for (const raw of items) {
+			const item = readItem(raw);
+			if (item && partMeta(item).productId) ids.add(partMeta(item).productId);
+		}
+	}
+	return [...ids];
+}
+
+function inboxBody(items: Item[], labels: ContentLabels, kind: string | null): Body {
 	if (items.some((item) => item.children.length > 0)) return refuse("an item of the box has nested items");
-	const rows = items.map(
-		(item) =>
-			`<li><span class="maky-tile" aria-hidden="true">${ico("package")}</span>${textParts(
+	const rows = items.map((item) => {
+		const part = partMeta(item);
+		const product = part.productId ? labels.products?.get(part.productId) : undefined;
+		const image = product?.image && OPTIMIZED_IMAGE.test(product.image) ? product.image : null;
+		const counted = [part.qty ? `${part.qty}${part.unit ? ` × ${part.unit}` : ""}` : part.unit, part.code]
+			.filter(Boolean)
+			.join(" · ");
+		// An item that says nothing but its text is the box item it always was.
+		if (!counted && !product) {
+			return `<li><span class="maky-tile" aria-hidden="true">${ico("package")}</span>${textParts(
 				item.content,
-			)}</li>`,
-	);
-	return { html: `<ul class="maky-inbox">${rows.join("")}</ul>` };
+			)}</li>`;
+		}
+		const lead = image
+			? `<span class="maky-part-img" aria-hidden="true"><img src="${escapeHtml(
+					image,
+				)}" alt="" width="128" height="128" loading="lazy" decoding="async"></span>`
+			: `<span class="maky-tile" aria-hidden="true">${ico("package")}</span>`;
+		const body = `${lead}${textParts(
+			item.content,
+			counted ? `<span class="maky-part-qty">${counted}</span>` : "",
+		)}`;
+		// An accessory is not a part of the set: its card says so, in its own words.
+		const goLabel = kind === "accessories" ? labels.viewAccessory : labels.viewPart;
+		const go = goLabel ? `<span class="maky-part-go">${escapeHtml(goLabel)}</span>` : "";
+		const inner = product
+			? `<a class="maky-part-a" href="${escapeHtml(product.href)}">${body}${go}</a>`
+			: `<span class="maky-part-a">${body}</span>`;
+		return `<li class="maky-part">${inner}</li>`;
+	});
+	return {
+		html: `<ul class="maky-inbox${kind === "accessories" ? " maky-inbox-acc" : ""}">${rows.join("")}</ul>`,
+	};
 }
 
 function stepsBody(items: Item[]): Body {
@@ -351,16 +467,19 @@ function featuresBody(items: Item[]): Body {
 
 function faqBody(items: Item[]): Body {
 	const rows: string[] = [];
-	for (const item of items) {
+	for (const [index, item] of items.entries()) {
 		if (item.children.length !== 1) return refuse("a question needs exactly one answer");
 		const answer = readItem(item.children[0]);
 		if (!answer || answer.children.length > 0 || !visibleText(answer.content)) {
 			return refuse("an answer is not readable");
 		}
 		rows.push(
-			`<details class="maky-qa"><summary class="maky-q"><span>${sanitizeInline(item.content)}</span>${ico(
-				"chevron",
-			)}</summary><div class="maky-a">${sanitizeInline(answer.content)}</div></details>`,
+			// The first question is open: the page shows how an answer looks before the shopper asks for one.
+			`<details class="maky-qa"${index === 0 ? " open" : ""}><summary class="maky-q"><span>${sanitizeInline(
+				item.content,
+			)}</span>${ico("chevron")}</summary><div class="maky-a">${sanitizeInline(
+				answer.content,
+			)}</div></details>`,
 		);
 	}
 	return { html: `<div class="maky-faq">${rows.join("")}</div>` };
@@ -387,10 +506,61 @@ function documentsBody(items: Item[]): Body {
 				`<span class="maky-txt"><a class="maky-doc-a" href="${escapeHtml(
 					url,
 				)}" target="_blank" rel="noopener noreferrer">${title}</a>` +
-				`${meta ? `<span class="maky-d">${meta}</span>` : ""}</span>${ico("download")}</li>`,
+				// The mark at the end says "this saves a file", which is true of a file on this site; a
+				// maker's PDF on its own host is opened in a tab, and the page does not say it saves.
+				`${meta ? `<span class="maky-d">${meta}</span>` : ""}</span>${
+					url.startsWith("/") ? ico("download") : ""
+				}</li>`,
 		);
 	}
 	return { html: `<ul class="maky-docs">${rows.join("")}</ul>` };
+}
+
+/**
+ * A call to action: one button, from a list of one item that is a single link ("Poradiť s výberom").
+ * The link is https or a path on this site, as a document's is, and opens in the same tab: it is
+ * a way on in the shop (the contact page, a form), not a file. The label is the link's own text.
+ */
+function ctaBody(items: Item[]): Body {
+	const [item, ...rest] = items;
+	if (!item || rest.length > 0 || item.children.length > 0) return refuse("a call to action is one link");
+	const found = DOCUMENT_LINK.exec(item.content);
+	const url = found ? decodeAmpersands(found[1]) : "";
+	if (!found || !isDocumentUrl(url) || plainText(found[3]).trim()) {
+		return refuse("a call to action is one link that is https or on this site");
+	}
+	const label = plainText(found[2]).trim();
+	if (!label) return refuse("a call to action has no label");
+	return {
+		html: `<div class="maky-cta"><a class="maky-cta-a" href="${escapeHtml(url)}">${label}</a></div>`,
+	};
+}
+
+const isFactIcon = (name: unknown): name is FactIconName =>
+	typeof name === "string" && (FACT_ICON_NAMES as readonly string[]).includes(name);
+
+/**
+ * Key facts: a list whose items are `<strong>value</strong> name` ("420 × 180 × 7 cm", "Rozmery koša"),
+ * each with an icon of the closed set where the producer names one (`meta.icon`). Drawn as tiles. A
+ * template that lifts them sets them as the band under the gallery (`PageSections.facts`); anywhere
+ * else they stay tiles in the description.
+ */
+function factsBody(items: Item[]): Body {
+	const facts: SpecFact[] = [];
+	const tiles: string[] = [];
+	for (const item of items) {
+		if (item.children.length > 0) return refuse("a fact has nested items");
+		const { title, text } = splitTitle(item.content);
+		const value = plainText(title).trim();
+		const label = plainText(text).trim();
+		if (!value || !label) return refuse("a fact is a value in bold and its name after it");
+		const icon = isFactIcon(item.meta?.icon) ? item.meta.icon : undefined;
+		facts.push({ label, value, ...(icon ? { icon } : {}) });
+		tiles.push(
+			`<li class="maky-tl"><span class="maky-tl-v">${title}</span><span class="maky-tl-k">${text}</span></li>`,
+		);
+	}
+	return { html: `<ul class="maky-tiles">${tiles.join("")}</ul>`, facts };
 }
 
 /**
@@ -528,6 +698,14 @@ export function renderRole(
 		return { role: "callout", html: body.html, title: null, body: body.html };
 	}
 
+	if (marker.role === "kind") {
+		// The short name of the kind of product: one paragraph, set over the title by a template that lifts
+		// it, and a plain paragraph anywhere else.
+		const text = block.type === "paragraph" ? sanitizeInline(block.data?.text) : "";
+		if (!visibleText(text)) return { problem: "kind is carried by one paragraph with text" };
+		return { role: "kind", html: `<p>${text}</p>`, title: null, body: text };
+	}
+
 	let body: Body;
 	if (marker.role === "video") {
 		body = videoBody(block, labels);
@@ -545,7 +723,7 @@ export function renderRole(
 					body = benefitsBody(items);
 					break;
 				case "inbox":
-					body = inboxBody(items);
+					body = inboxBody(items, labels, marker.kind);
 					break;
 				case "steps":
 					body = stepsBody(items);
@@ -558,6 +736,12 @@ export function renderRole(
 					break;
 				case "documents":
 					body = documentsBody(items);
+					break;
+				case "cta":
+					body = ctaBody(items);
+					break;
+				case "facts":
+					body = factsBody(items);
 					break;
 				default:
 					body = refuse(`${marker.role} is not drawn from a list`);

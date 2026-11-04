@@ -14,6 +14,8 @@ export interface LightboxImage {
 	id?: string | null;
 	url: string;
 	alt?: string | null;
+	/** The picture illustrates the system and is not this product: the carousel says so on it. */
+	illustrative?: boolean;
 }
 
 interface ImageLightboxProps {

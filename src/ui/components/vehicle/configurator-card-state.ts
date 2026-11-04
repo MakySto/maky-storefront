@@ -40,6 +40,7 @@ const MESSAGE_KEY: Record<AddSetFailure, string> = {
 	"out-of-stock": "__common.outOfStock",
 	"catalogue-unavailable": "errorCatalogueUnavailable",
 	"cart-rejected": "errorCartRejected",
+	"payment-locked": "errorPaymentLocked",
 	"lookup-failed": "errorLookupFailed",
 	"invalid-input": "errorGeneric",
 };

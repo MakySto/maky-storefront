@@ -1,4 +1,4 @@
-import { mappedCategoryFor } from "@/config/category-routes";
+import { categorySegment, mappedCategoryFor } from "@/config/category-routes";
 import { catalogLanguageForMarket } from "./language";
 import { isBorrowedCatalogPath } from "./borrowed-routes";
 import { catalogRedirectTarget } from "./redirects";
@@ -30,7 +30,7 @@ export function categoryAliasTarget(market: string, rest: readonly string[]): st
 	const category = mappedCategoryFor(market, first);
 	if (!category) return null;
 
-	const segment = category.segments[language as keyof typeof category.segments];
+	const segment = categorySegment(market, category.baseSlug);
 	if (!segment || segment === category.baseSlug) return null;
 
 	const tail = rest.slice(1);

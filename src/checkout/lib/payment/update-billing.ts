@@ -1,4 +1,5 @@
 import { getAddressInputData } from "@/checkout/components/address-form/utils";
+import { isCheckoutLockedCode, isTaxContextChangedCode } from "@/checkout/lib/b2b/contract";
 import { type CountryCode, type AddressFragment } from "@/checkout/graphql";
 import { getCheckoutTransport } from "@/checkout/lib/checkout-transport";
 import { getCheckoutPaymentLibMessages } from "@/checkout/lib/payment/gateway-messages";
@@ -8,7 +9,18 @@ import { type BillingAddressData } from "@/checkout/components/payment";
 
 export type BillingUpdateResult =
 	| { ok: true }
-	| { ok: false; errors: Record<string, string>; focusField?: string };
+	| {
+			ok: false;
+			errors: Record<string, string>;
+			focusField?: string;
+			/**
+			 * A payment-process state, not an invalid address (zadanie 02, §4): `CHECKOUT_LOCKED` leads to the recovery
+			 * UI without another write or a new intent, `B2B_CONTEXT_CHANGED` to a refreshed quote.
+			 */
+			code?: BillingStateCode;
+	  };
+
+export type BillingStateCode = "CHECKOUT_LOCKED" | "B2B_CONTEXT_CHANGED";
 
 type UpdateBillingParams = {
 	checkoutId: string;
@@ -18,7 +30,29 @@ type UpdateBillingParams = {
 	shippingAddress: AddressFragment | null | undefined;
 	userAddresses: ReadonlyArray<AddressFragment> | undefined;
 	authenticated: boolean;
+	/**
+	 * The billing address on the checkout is authoritative and is NOT written again: a company purchase saved it in
+	 * the Information step (company name included) and the B2B decision was made on it. Copying the delivery address
+	 * here would replace the invoiced company with the delivery one.
+	 */
+	preserveBilling?: boolean;
 };
+
+/** The codes that make a failed billing write a payment-process state instead of a form error. */
+function billingStateCodeOf(codes: ReadonlyArray<unknown>): BillingStateCode | null {
+	if (codes.some(isCheckoutLockedCode)) return "CHECKOUT_LOCKED";
+	if (codes.some(isTaxContextChangedCode)) return "B2B_CONTEXT_CHANGED";
+	return null;
+}
+
+function stateFailure(code: BillingStateCode): BillingUpdateResult {
+	const messages = getCheckoutPaymentLibMessages();
+	return {
+		ok: false,
+		code,
+		errors: { billing: code === "CHECKOUT_LOCKED" ? messages.checkoutLocked : messages.orderUpdated },
+	};
+}
 
 /** Persists billing address on checkout before payment. */
 export async function updateCheckoutBilling(params: UpdateBillingParams): Promise<BillingUpdateResult> {
@@ -30,7 +64,12 @@ export async function updateCheckoutBilling(params: UpdateBillingParams): Promis
 		shippingAddress,
 		userAddresses,
 		authenticated,
+		preserveBilling,
 	} = params;
+
+	if (preserveBilling) {
+		return { ok: true };
+	}
 
 	const needsBillingForm = !sameAsBilling || !hasShippingAddress;
 
@@ -78,6 +117,10 @@ export async function updateCheckoutBilling(params: UpdateBillingParams): Promis
 
 		if (!result.ok) {
 			const messages = getCheckoutPaymentLibMessages();
+			const stateCode = billingStateCodeOf((result.fieldErrors ?? []).map((error) => error.code));
+			if (stateCode) {
+				return stateFailure(stateCode);
+			}
 			if (result.fieldErrors?.length) {
 				const errorMap: Record<string, string> = {};
 				result.fieldErrors.forEach((err) => {
@@ -115,6 +158,10 @@ export async function updateCheckoutBilling(params: UpdateBillingParams): Promis
 		});
 
 		if (!result.ok) {
+			const stateCode = billingStateCodeOf((result.fieldErrors ?? []).map((error) => error.code));
+			if (stateCode) {
+				return stateFailure(stateCode);
+			}
 			return {
 				ok: false,
 				errors: { billing: result.error ?? getCheckoutPaymentLibMessages().billingSaveFailed },

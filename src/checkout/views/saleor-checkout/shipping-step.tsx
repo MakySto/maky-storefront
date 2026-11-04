@@ -10,6 +10,9 @@ import { type CheckoutFragment } from "@/checkout/graphql";
 import { checkoutDeliveryMethodUpdateAction } from "@/checkout/lib/actions";
 import { CheckoutSummaryContext, buildShippingSummaryRows } from "./checkout-summary-context";
 import { useCheckout } from "@/checkout/hooks/use-checkout";
+import { isCheckoutLockedCode } from "@/checkout/lib/b2b/contract";
+import { useCheckoutB2b } from "@/checkout/providers/checkout-b2b";
+import { PaymentLockRecovery } from "@/checkout/components/b2b/payment-lock-recovery";
 import { formatShippingPrice } from "@/checkout/lib/utils/money";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
 import {
@@ -23,9 +26,16 @@ interface ShippingStepProps {
 	checkout: CheckoutFragment;
 	onBack: () => void;
 	onNext: () => void;
+	/** The payment step, for "pay the original order" when a started payment keeps the delivery from changing. */
+	onGoToPayment?: () => void;
 }
 
-export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout, onBack, onNext }) => {
+export const ShippingStep: FC<ShippingStepProps> = ({
+	checkout: initialCheckout,
+	onBack,
+	onNext,
+	onGoToPayment,
+}) => {
 	const t = useTranslations("checkout");
 	const { locale } = useLocale();
 	// Use live checkout data that updates after mutations
@@ -48,6 +58,10 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 	const [isSavingMethod, setIsSavingMethod] = useState(false);
 	const [isSubmittingLocal, setIsSubmittingLocal] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	// A delivery change refused because a payment is in progress: the panel that ends the payment (contract revision 2,
+	// §5) takes the place of the error line; the key starts it afresh each time.
+	const [paymentLock, setPaymentLock] = useState({ key: 0, shown: false });
+	const b2b = useCheckoutB2b();
 
 	// Summary rows for context display
 	const summaryRows = buildShippingSummaryRows(checkout, locale);
@@ -76,14 +90,24 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 			);
 
 			const fieldErrors = result.data?.checkoutDeliveryMethodUpdate?.errors;
+			if (fieldErrors?.some((fieldError) => isCheckoutLockedCode(fieldError.code))) {
+				// A payment in progress, not a bad method (zadanie 02, §4).
+				setPaymentLock((current) => ({ key: current.key + 1, shown: true }));
+				return false;
+			}
 			if (result.error || fieldErrors?.length) {
 				return false;
 			}
 
 			await refetch();
+			// The delivery method is part of the company tax context: let the backend decide again. Not awaited —
+			// the payment step confirms the state before anything can be paid, and a newer call supersedes this one.
+			if (b2b.businessMode && b2b.euMarket) {
+				void b2b.evaluate("evaluate");
+			}
 			return true;
 		},
-		[checkout.id, refetch, locale],
+		[checkout.id, refetch, locale, b2b],
 	);
 
 	// The server-persisted method is the source of truth for what reads as selected. When it
@@ -132,6 +156,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 
 			setIsSavingMethod(true);
 			try {
+				setPaymentLock((current) => (current.shown ? { ...current, shown: false } : current));
 				const saved = await saveMethod(methodId);
 				if (!saved) {
 					setSelectedMethod(previous);
@@ -197,7 +222,26 @@ export const ShippingStep: FC<ShippingStepProps> = ({ checkout: initialCheckout,
 			<section className="space-y-4">
 				<h2 className="text-lg font-semibold">{t("shipping.title")}</h2>
 
-				{error && <p className="text-destructive text-sm">{error}</p>}
+				{paymentLock.shown && b2b.config.uiEnabled ? (
+					<PaymentLockRecovery
+						key={paymentLock.key}
+						checkoutId={checkout.id}
+						channelSlug={checkout.channel.slug}
+						localeSlug={locale}
+						subject="details"
+						onReleased={() => {
+							// The customer picks the delivery again; nothing is changed for them.
+							setError(null);
+							void refetch();
+						}}
+						payOriginal={onGoToPayment ? { onClick: onGoToPayment } : undefined}
+						finishOrder={onGoToPayment ? { onClick: onGoToPayment } : undefined}
+					/>
+				) : error ? (
+					<p className="text-destructive text-sm" role="alert">
+						{paymentLock.shown ? t("payment.checkoutLocked") : error}
+					</p>
+				) : null}
 
 				{fetching ? (
 					<div className="border-border flex items-center gap-3 rounded-lg border p-4">

@@ -8,7 +8,7 @@ import { getComparisonLabels } from "@/lib/comparison-labels";
 import { getContentLabels } from "@/lib/content-labels";
 import { parseProductContent } from "@/lib/editorjs";
 import { formatProductAttributeValue, type AttributeInput } from "@/lib/product-attributes";
-import { liftSections, sheetFacts, templateFor } from "@/lib/product-templates";
+import { layoutFor, liftSections, sheetFacts, templateFor } from "@/lib/product-templates";
 import { ProductHighlights } from "./product-highlights";
 import { ProductSpecs } from "./product-specs";
 
@@ -358,5 +358,166 @@ describe.each([
 		const plain = attribute("warranty_years", "Warranty", "3");
 		expect(formatProductAttributeValue(plain, locale, undefined, years, beside)).toEqual([years(3)]);
 		expect(years(3)).toMatch(/3/);
+	});
+});
+
+/**
+ * A Nordrive Kargo page, from the sample both repositories are to agree on (`set-kargo-crafter-NKR9944`):
+ * the description carries pictures of its own, so it is set as sections, the maker's PDFs get their card and
+ * the gallery's second photo is not drawn beside it.
+ */
+describe("a Kargo set's page", async () => {
+	const sample = readFileSync(
+		path.join(process.cwd(), "docs/contracts/maky-content/set-kargo-crafter-NKR9944.description.json"),
+		"utf8",
+	);
+	const labels = await getContentLabels(SK, "sk-eur");
+	const content = parseProductContent(sample, { content: labels });
+	const template = layoutFor(templateFor(content?.template), content?.blocks ?? []);
+	const sections = liftSections(content?.blocks ?? [], template);
+	const page = () =>
+		render(
+			ProductSpecs({
+				descriptionHtml: sections.description,
+				documents: sections.documents,
+				specs: sections.specs,
+				template,
+				attributes: [],
+				locale: SK,
+				image: { url: "/gallery-second.jpg", alt: "druhá fotka galérie" },
+			}),
+		);
+
+	it("is set as the sections of one card, under one heading for the whole description", async () => {
+		const html = await page();
+		expect(html).toContain('<h2 class="sr-only">Popis produktu</h2>');
+		expect(html.match(/id="product-description"/g)).toHaveLength(1);
+		// One raised card for the description; a hairline and a gap between its sections, not a card each.
+		const card = html.slice(html.indexOf('<article id="product-description"'), html.indexOf("</article>"));
+		expect(card.match(/<section class="[^"]*border-t/g)?.length).toBeGreaterThan(5);
+		expect(card).toContain("<h3>Čo dostanete v balení</h3>");
+		// The questions and the closing stand in cards of their own, after the parameters.
+		expect(html.indexOf('id="technical-parameters"')).toBeLessThan(html.indexOf('id="product-faq"'));
+		expect(card).not.toContain("maky-faq");
+	});
+
+	it("writes the kind of section over a heading that names it, in the shopper's language", async () => {
+		const html = await page();
+		for (const word of [
+			"Popis produktu",
+			"Kompatibilita",
+			"Využitie v praxi",
+			"Vhodné doplnky",
+			"O značke",
+			"Poradíme vám",
+		]) {
+			expect(html).toMatch(new RegExp(`uppercase">[^<]*<span[^>]*></span>${word}</p>`));
+		}
+	});
+
+	it("puts a lone picture of a section beside its text and several in a row under it, none among the paragraphs", async () => {
+		const html = await page();
+		const beside = html.split("lg:grid lg:grid-cols-2").slice(1);
+		expect(beside.length).toBeGreaterThan(1);
+		// The picture column is at least half the card, and the text column holds no picture.
+		for (const part of beside) expect(part.split('class="maky-figs')[0]).not.toContain("<figure>");
+		// Every second lone picture stands on the left.
+		expect(html).toContain("lg:order-1");
+		expect(html).toContain("lg:order-2");
+		const rows = await render(
+			ProductSpecs({
+				descriptionHtml: [
+					"<h3>Doplnky</h3>",
+					"<p>Text</p>",
+					"<figure><img src='/a.jpg' alt=''></figure>",
+					"<figure><img src='/b.jpg' alt=''></figure>",
+				],
+				template: { ...template, sections: true },
+				attributes: [],
+				locale: SK,
+			}),
+		);
+		expect(rows).toContain("sm:grid-cols-2 xl:grid-cols-3");
+	});
+
+	it("sets a section with pictures under its small headings as pairs, one picture for each", async () => {
+		const html = await render(
+			ProductSpecs({
+				descriptionHtml: [
+					"<h3>Konštrukcia a upevnenie</h3>",
+					"<h4>Moduly</h4>",
+					"<p>Text modulov</p>",
+					"<figure><img src='/a.jpg' alt=''></figure>",
+					"<h4>Upevnenie</h4>",
+					"<p>Text upevnenia</p>",
+					"<figure><img src='/b.jpg' alt=''></figure>",
+				],
+				template: { ...template, sections: true },
+				attributes: [],
+				locale: SK,
+			}),
+		);
+		expect(html.match(/lg:grid lg:grid-cols-2/g)).toHaveLength(2);
+		expect(html.indexOf("Text modulov")).toBeLessThan(html.indexOf("/a.jpg"));
+		expect(html.indexOf("/a.jpg")).toBeLessThan(html.indexOf("Text upevnenia"));
+		// The pair's text and its picture change sides from one pair to the next.
+		expect(html).toContain("lg:order-2");
+	});
+
+	it("does not draw the gallery's photo beside it: the description shows its own pictures", async () => {
+		const html = await page();
+		expect(html).not.toContain("gallery-second.jpg");
+		expect(html).toContain("<figure>");
+	});
+
+	it("keeps the maker's PDFs in the assembly, under the steps, and not in a card of their own", async () => {
+		const html = await page();
+		expect(html).not.toContain('<article id="product-documents"');
+		expect(html).not.toContain('href="#product-documents"');
+		expect(html.match(/lampa\.it\/pdf\/AZ\/N\/N10205-M-01\.pdf/g)).toHaveLength(1);
+		const steps = html.indexOf('class="maky-steps"');
+		const docs = html.indexOf('class="maky-docs"');
+		const warning = html.indexOf("maky-callout-warn");
+		expect(steps).toBeGreaterThan(0);
+		expect(steps).toBeLessThan(docs);
+		expect(docs).toBeLessThan(warning);
+	});
+
+	it("keeps the set's sheet in its own card and every section of the document, in its order", async () => {
+		const html = await page();
+		expect(html).toContain('<section id="technical-parameters"');
+		const order = [
+			"Prečo kôš Kargo Rack",
+			"Čo dostanete v balení",
+			"Doplnky ku košu",
+			"Montáž a návody",
+			"Dôležité upozornenia",
+		];
+		const at = order.map((heading) => html.indexOf(heading));
+		expect(at.every((index) => index > 0)).toBe(true);
+		expect([...at].sort((a, b) => a - b)).toEqual(at);
+	});
+
+	it("is one card with the gallery photo beside it for a description that carries no pictures of its own", async () => {
+		const thule = parseProductContent(
+			readFileSync(
+				path.join(process.cwd(), "docs/contracts/maky-content/set-thule-71732.description.json"),
+				"utf8",
+			),
+			{ content: labels },
+		);
+		const laid = layoutFor(templateFor(thule?.template), thule?.blocks ?? []);
+		expect(laid.sections).toBeUndefined();
+		const html = await render(
+			ProductSpecs({
+				descriptionHtml: liftSections(thule?.blocks ?? [], laid).description,
+				template: laid,
+				attributes: [],
+				locale: SK,
+				image: { url: "/gallery-second.jpg", alt: "druhá fotka galérie" },
+			}),
+		);
+		expect(html.match(/<article/g)).toHaveLength(1);
+		expect(html).toContain("gallery-second.jpg");
 	});
 });

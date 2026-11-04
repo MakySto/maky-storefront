@@ -123,18 +123,47 @@ POST names them; the engine fetches them soon after. It does not decide what get
 
   ```bash
   node scripts/ops/indexnow.mjs --kinds pages                  # plan only; also says whether the key file is served
-  node scripts/ops/indexnow.mjs --kinds pages --state ~/indexnow-state.json --fire
-  node scripts/ops/indexnow.mjs --kinds vehicles,products --max 10000 --state ~/indexnow-state.json --fire
+  node scripts/ops/indexnow.mjs --kinds pages --fire           # about 190 URLs in one request; needs no state file
+  node scripts/ops/indexnow.mjs --kinds pages,products,vehicles --state /var/lib/maky-indexnow/state.json --fire
   node scripts/ops/indexnow.mjs --urls /cz/autochladnicky,/cz/<product> --fire     # after a publish
   ```
 
-  `pages` is the home pages, categories and content pages of every market (about 180 URLs): start there.
-  Products and vehicles are about 140 000: with `--state`, each run sends the next `--max` URLs and the
-  last one says "nothing to send". `--urls` ignores the state, because a URL is named when it has just changed.
+  `pages` is the home pages, categories and content pages of every market (about 190 URLs): start there.
+  Products and vehicles are about 140 000. They go out only with `--state`, because without it every run would
+  send the same first `--max` URLs again. With it, a run sends first the URLs it has never sent (in sitemap
+  order, so a backlog drains market by market), then those whose sitemap `lastmod` is later than the time
+  they were sent, none of them more than once per `--resend-after-days` (default 7). Only products carry a
+  `lastmod`; a page or a vehicle is told once. `--urls` ignores the state, because a URL is named when it has
+  just changed.
 
+- **Only a 200 counts as sent.** The endpoint answers 200 (accepted) or 202 (received, the key file has not
+  been checked yet). On 2026-10-08 the first run, 177 URLs, got a 202, the tool wrote all of them to the state
+  file as sent, and Bing Webmaster Tools never listed them. The site was not at fault: the key file was served
+  as `text/plain` with exactly the key, and the next two submissions (2 and 9 URLs on 2026-10-12) were
+  answered with a 200. A 202 now stops the run, records nothing and exits 3, so the next run sends the same
+  URLs again.
 - **What stops it.** Not firing unless the public site serves the key file; any URL off the site's host; a
-  typo in an option; any answer other than 200 or 202 (403: key file not reachable or wrong; 422: URLs
-  not of the host; 429: too many requests, wait and run again, the state file has kept the progress).
+  typo in an option; products or vehicles without `--state`; any answer other than 200 (202: exit 3, nothing
+  recorded; 403: key file not reachable or wrong; 422: URLs not of the host; 429: too many requests, wait and
+  run again, the state file has kept the progress).
+- **The daily run.** `scripts/ops/systemd/maky-indexnow.timer` starts `maky-indexnow.service` at 06:20 UTC every
+  day. That hour is clear of the CarFitManager 4.5 windows on the same box (01:30 to 02:04 and 03:15 to 05:00
+  UTC, Mondays also about 02:30 to 03:04), and the service skips the day while a deploy holds its lock. A run
+  sends at most 10 000 URLs, at low priority, under a 768 MB ceiling and without swap, so the first backlog
+  (140 000 URLs or more; a dry run says how many are pending) is told over a few weeks and after that a run
+  sends what is new or changed. `--max` in the unit is raised once a week of runs looks clean. The
+  progress lives in `/var/lib/maky-indexnow/state.json`, outside the checkout, so a deploy does not touch it.
+  A person installs it once on the web server (the commands are at the top of the service file); the deploy
+  does not. `journalctl -u maky-indexnow.service` shows every run with the endpoint's answers, and
+  `sudo systemctl disable --now maky-indexnow.timer` stops it. If `maky-storefront` restarts, its memory passes
+  6 GB (CLAUDE.md section 13.3.1) or the nginx log shows 5xx answers on a day it ran, stop the timer first and
+  look second.
+- **Reading Bing Webmaster Tools.** The IndexNow report names two sources. "Self" is what this tool sent.
+  "Cloudflare" is Cloudflare's Crawler Hints, which names only cached static files (robots.txt, the favicon,
+  fonts, images) and does no harm. Times are shown in the account's time zone, not UTC. "Indexing insights"
+  counts URLs sent, crawled and indexed; a submission shows there within about a day. The first thing to look
+  for is the crawl: `bingbot` asking for the URLs in the nginx log. Whether Bing then indexes them is Bing's
+  decision.
 - **Etiquette.** Send what is new or changed, not the whole site every hour. Only URLs that are indexable:
   the sitemap-driven mode sends sitemap URLs only; `--urls` sends whatever it is given.
 - **In Bing Webmaster Tools** (Marek's account): "URL Inspection", paste the URL, "Request indexing" for a
@@ -326,3 +355,56 @@ exceeded` lines for `stresne-nosice`, none with the sentence about waiting for a
 its error log, not checked from here). If the count does not fall and the lines are not `queueStarved`, the trigger is
 the re-read of the list after each catalogue event, and the next step is to refresh the list in the background with a
 longer deadline and not to expire it at once; this change does not do that.
+
+## 8. The product shards: why a cold one took 18 seconds, and what keeps it from being cold (2026-10-30)
+
+**What was seen.** On the box, `/sitemap.xml` answered in 0.8 s and `sk-products-1.xml` (6.3 MB) in 17.9 s cold. The deploy
+of PR 73 timed out three times on the check that reads that shard (`urlopen`, 60 s). The log carried
+`[upstream-error] SitemapCategories: deadline exceeded` for `sk-eur`, `hu-huf` and others.
+
+**Why a shard was slow.** A product shard is built from a walk of the whole Saleor catalogue, 92 to 120 pages of 100
+products read one after another (a cursor connection cannot be read in parallel): ~18 s for Slovakia, ~14 s for a foreign
+market, whose pages also carry every translation the exact-locale boundary reads (0.5 to 1 MB a page). The walk was held
+by Next's data cache under the tag `sitemap:{channel}`, and three things made that cache the wrong place for it:
+
+- `/api/revalidate` expires the tag **immediately** on every product, category and translation event of the channel, so
+  the first crawler after an event paid the whole walk again, in front of the crawler.
+- The entries are memory-only (`cache-handler.mjs`). Twelve markets of 0.5 to 1 MB pages are about a gigabyte against a
+  256 MB LRU that every rendered page shares: they were evicted before they were reused, and they pushed pages out
+  (CLAUDE.md §13.3.1 already named "keep the large `sitemap` responses out of the shared LRU" as the first thing to try).
+- A crawler asking for all shards, or the deploy gate reading all 36 one after another, starts up to twelve walks at once,
+  which is every Saleor slot (`maxConcurrent` 12 in `graphql.ts`); a page render and the deploy's own check queue behind
+  them. That is how a 18 s read becomes a 60 s one right after a restart.
+
+Not the cause: Saleor's speed (a page of the walk is ~0.15 s), the size of the shard (6.3 MB is far under Google's 50 MB
+and 50 000 URLs; it is built in memory and serialised in milliseconds once the list exists) and the index
+(`/sitemap.xml` is one count per market).
+
+**What changed.** `src/lib/seo/sitemap-snapshot.ts` keeps the walk's result (a slug and a date per product) per channel
+and language in the process, and `src/lib/seo/product-walk.ts` is the walk behind it.
+
+- A shard is answered from the kept list at once, whatever its age. A list older than an hour, or one a catalogue event
+  came after (and at least five minutes old: a CFM publish is hundreds of events, one rebuild covers them), is rebuilt in
+  the background and replaces the old one only when the walk is complete. A failed rebuild keeps the old list and waits a
+  minute; a list older than a day is not served unless a rebuild succeeds, so a catalogue that cannot be read for a day is
+  an error and not last week's list. A short list is still never served.
+- Rebuilds run two at a time, not twelve, and outside the request that started them (`runDetached`).
+- The walk no longer goes through the data cache (`cache: "no-store"`), so it does not fill the LRU.
+- The process builds every live market's list at boot (`prewarmProductWalks`, called from `instrumentation.ts`, about a
+  minute of two connections), so the first crawler and the deploy's check usually find them ready. `MAKY_SITEMAP_PREWARM=0`
+  switches it off.
+- The index counts from the kept list when there is one (no count query and no page), and plans from the count as before
+  when there is not.
+- `/api/revalidate` marks the channel's list due (`markSitemapStale`) next to the tag it already expires, which still
+  serves the categories, the count and the index's first page.
+
+**What it does not change.** The first walk in a process (right after a start, until the boot warm-up has reached that
+market) still takes 14 to 18 s, and a request that arrives then joins it. `SitemapCategories` read by the header
+(`market-assortment.ts`, 1.5 s deadline) is untouched: the sitemap's `pages` shard reads the same list without a deadline.
+The deploy script's `urlopen(timeout=60)` is untouched.
+
+**How to read the result.** After the deploy: the `[sitemap] warm-up: N of 12 product lists built in S s` line at boot;
+the nginx `request_time` of `/sitemaps/*-products-1.xml`, which should be tens of milliseconds from the first request
+after that line; and the count of `[sitemap] … rebuild failed` lines. Whether Googlebot and Bingbot ever gave up on a cold
+shard is not in anything read from here (Search Console's Sitemaps report would say "Couldn't fetch"); Bing's traffic was
+healthy at the last reading (952 requests in 40 hours, 936 of them 200, reading the shards).

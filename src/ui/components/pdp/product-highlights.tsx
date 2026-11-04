@@ -2,6 +2,8 @@ import { getTranslations } from "next-intl/server";
 import {
 	BikeIcon,
 	BluetoothIcon,
+	CalendarIcon,
+	CarFrontIcon,
 	FoldHorizontalIcon,
 	PackageIcon,
 	PanelTopOpenIcon,
@@ -10,6 +12,7 @@ import {
 	ScaleIcon,
 	SnowflakeIcon,
 	ThermometerSnowflakeIcon,
+	TruckIcon,
 	WeightIcon,
 	ZapIcon,
 	type LucideIcon,
@@ -33,6 +36,8 @@ import { cn } from "@/lib/utils";
 const FACT_ICONS: Readonly<Record<FactIcon, LucideIcon>> = {
 	bike: BikeIcon,
 	bluetooth: BluetoothIcon,
+	calendar: CalendarIcon,
+	car: CarFrontIcon,
 	fold: FoldHorizontalIcon,
 	opening: PanelTopOpenIcon,
 	package: PackageIcon,
@@ -41,6 +46,7 @@ const FACT_ICONS: Readonly<Record<FactIcon, LucideIcon>> = {
 	snowflake: SnowflakeIcon,
 	temperature: ThermometerSnowflakeIcon,
 	tilt: RotateCcwIcon,
+	truck: TruckIcon,
 	weight: WeightIcon,
 	zap: ZapIcon,
 };
@@ -159,9 +165,10 @@ export async function ProductHighlights({
 	const items: Highlight[] =
 		attributeItems.length >= 2
 			? attributeItems
-			: sheet.slice(0, MAX_HIGHLIGHTS).map(({ label, value }, index) => ({
+			: sheet.slice(0, MAX_HIGHLIGHTS).map(({ label, value, icon }, index) => ({
 					key: `sheet:${index}`,
-					icon: null,
+					// An icon only where the producer named one: nothing in a plain row says which fits.
+					icon: icon ? FACT_ICONS[icon] : null,
 					value,
 					label,
 				}));

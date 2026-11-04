@@ -4,11 +4,13 @@ import { formatMoney, formatMoneyRange } from "@/lib/utils";
 import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { quoteReferenceFor, quoteRequestHref } from "@/lib/contact/quote-request";
 import { getDiscountInfo } from "@/lib/pricing";
+import { informativeNetPrice } from "@/lib/informative-net-price";
 import { type ProductDetailsQuery } from "@/gql/graphql";
 
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getLocaleFromChannel } from "@/config/locale";
+import { baseSlugOfCategory } from "@/config/category-routes";
 import { marketHref } from "@/lib/channel-map";
 import { AddToCart } from "./add-to-cart";
 import { VariantSelectionSection } from "./variant-selection";
@@ -83,7 +85,10 @@ type VariantAttributes = Array<{
 }>;
 
 type VariantPricing = {
-	price?: { gross: { amount: number; currency: string } } | null;
+	price?: {
+		gross: { amount: number; currency: string };
+		net?: { amount: number; currency: string } | null;
+	} | null;
 	priceUndiscounted?: { gross: { amount: number; currency: string } } | null;
 } | null;
 
@@ -166,6 +171,14 @@ export async function VariantSectionDynamic({
 				)
 			: null;
 
+	// EU markets, every product: Saleor's net under the gross, for information. Nothing on export markets, nothing
+	// before a variant is chosen, nothing where Saleor's net is not below its gross.
+	const net = informativeNetPrice({
+		channel,
+		price: selectedVariant?.pricing?.price,
+	});
+	const netPrice = net ? formatMoney(net.amount, net.currency, locale) : null;
+
 	/**
 	 * Upper bound for the stepper. `quantityAvailable` is CAPPED by Saleor
 	 * (≈50) rather than being real stock, so it is safe as a ceiling but must
@@ -202,7 +215,10 @@ export async function VariantSectionDynamic({
 
 	// A category that asks for a quote instead of a price, where this market does not sell the product
 	// (`config/quote-only.ts`): the page shows no price, and the link above stands alone.
-	const quoteOnly = quoteInsteadOfPrice({ isPurchasable, categorySlug: product.category?.slug });
+	const quoteOnly = quoteInsteadOfPrice({
+		isPurchasable,
+		categorySlug: baseSlugOfCategory(channel, product.category),
+	});
 
 	const reviewSummary = reviewSummaryFor(product);
 
@@ -340,6 +356,7 @@ export async function VariantSectionDynamic({
 				<AddToCart
 					price={price}
 					compareAtPrice={compareAtPrice}
+					netPrice={netPrice}
 					discountPercent={discountPercent}
 					disabled={isAddToCartDisabled}
 					disabledReason={disabledReason}

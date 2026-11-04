@@ -66,7 +66,8 @@ describe("ConfiguratorResults catalog-only offer", () => {
 		expect(html).toContain("Catalog roof rack");
 		expect(html).toContain("$189.99");
 		expect(html).toContain("This product is not available to order right now.");
-		expect(html).toContain("View product");
+		// The way on to the product is the card itself: its title is the link.
+		expect(html).toMatch(/<h3[^>]*><a [^>]*href="\/us\/catalog-roof-rack"/);
 		expect(html).toMatch(
 			/<button[^>]*disabled=""[^>]*>[^<]*This product is not available to order right now\.<\/button>/,
 		);

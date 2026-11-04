@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Zmniejsz ilość",
 		"increaseQuantity": "Zwiększ ilość",
 		"priceWithVat": "Cena z VAT",
+		"priceWithoutVat": "Cena bez VAT: {price}",
 		"technicalParameters": "Dane techniczne",
 		"outerDimensions": "Wymiary zewnętrzne",
 		"yes": "Tak",
@@ -154,11 +155,22 @@
 				"play": "Odtwórz film",
 				"note": "YouTube · wczyta się dopiero po kliknięciu"
 			},
+			"sections": {
+				"intro": "Opis produktu",
+				"compatibility": "Kompatybilność",
+				"usage": "Zastosowanie w praktyce",
+				"accessories": "Pasujące akcesoria",
+				"brand": "O marce",
+				"closing": "Doradzimy"
+			},
+			"viewAccessory": "Zobacz akcesorium",
+			"viewPart": "Zobacz część",
 			"years": "{count, plural, one {# rok} few {# lata} many {# lat} other {# roku}}"
 		},
 		"keyFeatures": "Najważniejsze cechy",
 		"productDescription": "Opis produktu",
 		"imageCounter": "Zdjęcie {current} z {total}",
+		"illustrativeImage": "Zdjęcie poglądowe",
 		"trustPaymentTitle": "Bezpieczna płatność",
 		"trustPaymentText": "Szyfrowane połączenie",
 		"trustShippingTitle": "Dostawa",
@@ -318,7 +330,10 @@
 		"listingAllNotice": "Widzisz ofertę dla wszystkich pojazdów — nie jest dopasowana do Twojego auta ({vehicle}).",
 		"listingDefaultNone": "Dla {vehicle} nie mamy jeszcze zweryfikowanego zestawu, dlatego widzisz ofertę dla wszystkich pojazdów.",
 		"listingNotOnSaleTitle": "Dla {vehicle} istnieją zgodne zestawy, które obecnie nie są w sprzedaży",
-		"listingNotOnSaleBody": "To nie znaczy, że nic nie pasuje. Dodajemy te zestawy do oferty — w międzyczasie możesz przejrzeć wszystkie pojazdy lub napisać do nas."
+		"listingNotOnSaleBody": "To nie znaczy, że nic nie pasuje. Dodajemy te zestawy do oferty — w międzyczasie możesz przejrzeć wszystkie pojazdy lub napisać do nas.",
+		"listingOtherShelfTitle": "Dla {vehicle} nie mamy w tej kategorii sprawdzonych zestawów",
+		"listingOtherShelfBody": "Sprawdzone zestawy dla Twojego pojazdu są w innej kategorii, nie w tej.",
+		"listingOtherShelfAction": "Zobacz zestawy w kategorii {category}"
 	},
 	"cart": {
 		"yourCart": "Twój koszyk",
@@ -327,6 +342,7 @@
 		"addInvalid": "Sprawdź wybraną ilość.",
 		"addNotFound": "Nie znaleziono produktu.",
 		"addFailed": "Nie udało się dodać produktu do koszyka.",
+		"addPaymentLocked": "Płatność za Twoje zamówienie jest już w toku, dlatego teraz nie można dodać produktów. Dokończ ją lub bezpiecznie ją anuluj w kasie.",
 		"addUnconfirmed": "Nie możemy potwierdzić, czy produkt został dodany. Sprawdź koszyk.",
 		"emptyCart": "Twój koszyk jest pusty",
 		"continueShopping": "Kontynuuj zakupy",
@@ -576,7 +592,12 @@
 			"invalidValue": "Nieprawidłowa wartość",
 			"notFullyPaid": "Płatność nie pokrywa jeszcze pełnej kwoty zamówienia. Odśwież stronę; jeśli środki zostały autoryzowane, dokończ zamówienie przyciskiem poniżej. Nie płać ponownie, dopóki status nie zostanie potwierdzony.",
 			"alreadyCompleted": "To zamówienie zostało już złożone. Potwierdzenie znajdziesz w e-mailu.",
-			"freeOrderTotalChanged": "Łączna kwota zamówienia zmieniła się i wymaga teraz płatności. Sprawdź ją i spróbuj ponownie."
+			"freeOrderTotalChanged": "Łączna kwota zamówienia zmieniła się i wymaga teraz płatności. Sprawdź ją i spróbuj ponownie.",
+			"checkoutLocked": "Płatność za to zamówienie jest już w toku. Dokończ ją lub bezpiecznie ją anuluj, zanim rozpoczniesz nową.",
+			"orderUpdated": "Twoje zamówienie zostało zaktualizowane. Sprawdź nową kwotę przed płatnością.",
+			"finalStateUnconfirmed": "Nie udało się teraz potwierdzić ostatecznej ceny. Spróbuj ponownie.",
+			"completeBlockedNoNewPayment": "Nie udało się teraz dokończyć zamówienia. Jeśli płatność została już wykonana, nie rozpoczynaj nowej: odśwież stronę lub skontaktuj się z nami.",
+			"completeOfferChanged": "Kwota się zmieniła, dlatego zamówienie nie zostało utworzone. Pieniądze z tej płatności zostaną zwolnione automatycznie. Jeśli potrzebujesz pomocy z zamówieniem, skontaktuj się z nami."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Tryb testowy:</strong> To symulowane potwierdzenie zamówienia. Nie pobrano prawdziwej płatności.",
@@ -598,6 +619,93 @@
 		},
 		"meta": {
 			"title": "Finalizacja zamówienia"
+		},
+		"b2b": {
+			"sectionTitle": "Zakup na firmę",
+			"toggle": "Kupuję na firmę",
+			"toggleHint": "Dane firmy umieścimy na fakturze.",
+			"companyName": "Nazwa firmy",
+			"registrationId": "IČO",
+			"taxId": "DIČ",
+			"vatIdPlaceholder": "np. {example}",
+			"vatIdHint": "Z ważnym numerem VAT UE z innego kraju UE i dostawą do tego kraju dostawa może być zwolniona z VAT. Decydujemy po weryfikacji w VIES.",
+			"billingSameAsShipping": "Adres rozliczeniowy jest taki sam jak adres dostawy",
+			"billingAddressTitle": "Adres rozliczeniowy",
+			"billingSummaryTitle": "Dane rozliczeniowe",
+			"billingMissing": "Brakuje danych rozliczeniowych. Uzupełnij je w kroku Dane.",
+			"taxedTotal": "Do zapłaty z VAT: {total}",
+			"summaryExempt": "Bez VAT — zwolnione na podstawie § 43 słowackiej ustawy o VAT",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "NIP UE"
+			},
+			"errors": {
+				"companyNameRequired": "Podaj nazwę firmy.",
+				"registrationIdRequired": "Podaj IČO.",
+				"registrationIdFormat": "IČO ma od 6 do 8 cyfr.",
+				"taxIdFormat": "DIČ ma 10 cyfr.",
+				"vatIdFormat": "Numer nie ma formatu numeru VAT wybranego kraju. Sprawdź go.",
+				"tooLong": "Wartość jest za długa.",
+				"saveFailed": "Nie udało się zapisać danych firmy. Spróbuj ponownie."
+			},
+			"status": {
+				"verifying": "Sprawdzamy numer VAT…",
+				"exempt": "Numer VAT zweryfikowany. Dostawa jest zwolniona z VAT; podana cena nie zawiera VAT.",
+				"invalid": "VIES nie potwierdził numeru VAT jako ważnego w handlu wewnątrzwspólnotowym. Sprawdź go lub kontynuuj z VAT.",
+				"unavailable": "Numeru VAT nie można teraz sprawdzić. Spróbuj za chwilę lub kontynuuj z VAT.",
+				"countryMismatch": "Bez VAT możemy automatycznie obsłużyć tylko dostawę do kraju Twojego numeru VAT. W przypadku innej dostawy skontaktuj się z nami.",
+				"identityReview": "Dane firmy nie zgadzają się z wynikiem weryfikacji. Sprawdź dane rozliczeniowe lub skontaktuj się z nami.",
+				"skVat": "Ze słowackim numerem VAT zakup jest rozliczany z VAT.",
+				"domesticDelivery": "Przy dostawie lub odbiorze na Słowacji zakup jest rozliczany z VAT.",
+				"incomplete": "O VAT zdecydujemy, gdy dane i sposób dostawy będą kompletne.",
+				"validPendingDelivery": "Numer VAT jest ważny w VIES. O VAT zdecydujemy po wyborze sposobu dostawy.",
+				"disabled": "Obecnie nie oferujemy automatycznego zwolnienia z VAT. Zakup na firmę możesz dokończyć z VAT.",
+				"serviceOff": "Automatyczna weryfikacja numeru VAT jest teraz niedostępna. Zakup na firmę możesz dokończyć w cenie podanej w podsumowaniu."
+			},
+			"actions": {
+				"continueWithVat": "Kontynuuj z VAT",
+				"retry": "Sprawdź ponownie",
+				"recheck": "Zweryfikuj ponownie",
+				"refreshStatus": "Odśwież status płatności",
+				"edit": "Edytuj"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "Płatność za to zamówienie jest już w toku, dlatego teraz nie można zmienić danych. Możesz dokończyć płatność albo bezpiecznie ją anulować, a potem zmienić dane.",
+				"cart": "Płatność za to zamówienie jest już w toku, dlatego teraz nie można zmienić koszyka. Możesz dokończyć płatność albo bezpiecznie ją anulować, a potem zmienić koszyk.",
+				"payment": "Płatność za to zamówienie jest już w toku, dlatego teraz nie można rozpocząć nowej. Możesz bezpiecznie anulować rozpoczętą płatność, a potem zapłacić ponownie."
+			},
+			"releasing": "Anulujemy rozpoczętą płatność…",
+			"waitingCancel": "Czekamy, aż operator płatności potwierdzi anulowanie płatności. Zwykle trwa to kilka sekund.",
+			"waitingAttempt": "Płatność jest jeszcze tworzona. Za chwilę spróbujemy ponownie ją anulować.",
+			"released": {
+				"details": "Rozpoczęta płatność została anulowana. Teraz możesz zmienić dane i je zapisać.",
+				"cart": "Rozpoczęta płatność została anulowana. Teraz możesz zmienić koszyk.",
+				"payment": "Rozpoczęta płatność została anulowana. Sprawdź kwotę i zapłać ponownie."
+			},
+			"funds": "Płatność została już przyjęta lub czeka na potwierdzenie banku, dlatego zamówienia nie można już zmienić. Dokończ je z pierwotnymi danymi.",
+			"notConfirmed": "Anulowanie płatności nie zostało jeszcze potwierdzone. Spróbuj ponownie za chwilę, zapłać za zamówienie z pierwotnymi danymi lub skontaktuj się z nami.",
+			"unavailable": "Nie możemy teraz anulować rozpoczętej płatności. Możesz zapłacić za zamówienie z pierwotnymi danymi lub skontaktować się z nami.",
+			"failed": "Nie udało się anulować rozpoczętej płatności. Spróbuj ponownie za chwilę, zapłać za zamówienie z pierwotnymi danymi lub skontaktuj się z nami.",
+			"actions": {
+				"releaseDetails": "Zmień dane",
+				"releaseCart": "Zmień koszyk",
+				"releasePayment": "Anuluj rozpoczętą płatność",
+				"retry": "Spróbuj ponownie",
+				"payOriginal": "Zapłać z pierwotnymi danymi",
+				"finishOrder": "Dokończ zamówienie",
+				"contact": "Skontaktuj się ze sklepem"
+			}
 		}
 	},
 	"footer": {
@@ -852,9 +960,19 @@
 		"errorNotVerified": "Dla aktualnie wybranego pojazdu ten zestaw nie jest potwierdzony.",
 		"errorNotAvailable": "Tego zestawu nie ma już w ofercie.",
 		"errorCartRejected": "Nie udało się dodać zestawu do koszyka.",
+		"errorPaymentLocked": "Płatność za Twoje zamówienie jest już w toku, dlatego teraz nie można dodać zestawu. Dokończ ją lub bezpiecznie ją anuluj w kasie.",
 		"errorLookupFailed": "Nie możemy potwierdzić, czy zestaw został dodany. Sprawdź, proszę, koszyk.",
 		"errorCatalogueUnavailable": "Nie udało się teraz sprawdzić dostępności zestawu. Spróbuj ponownie.",
-		"errorGeneric": "Nie udało się dodać zestawu do koszyka."
+		"errorGeneric": "Nie udało się dodać zestawu do koszyka.",
+		"facetAerodynamic": "Aerodynamiczny",
+		"facetWing": "Skrzydłowy",
+		"facetTubular": "Rurowy",
+		"facetColourBlack": "Czarny",
+		"facetColourSilver": "Srebrny",
+		"facetColourAlu": "Aluminium naturalne",
+		"propertyBarLength": "Długość belek",
+		"propertyColour": "Kolor",
+		"propertyBarLoad": "Nośność poprzeczek"
 	},
 	"catalog": {
 		"makeIndexTitle": "Wybierz bagażnik według pojazdu",
@@ -868,7 +986,7 @@
 		"offersPartial": "Nie udało się wczytać części oferty, dlatego lista może być niepełna.",
 		"previewNotice": "Podgląd nieopublikowanej strony. Odwiedzający jej nie widzą.",
 		"offersTitleGeneration": "Zestawy dla tej generacji",
-		"offersBrowseNote": "Każdy zestaw obowiązuje tylko dla podanego typu dachu i lat. Zestawy nie są dopasowane do Twojego auta — po wyborze pojazdu pokażemy tylko te, które pasują.",
+		"offersBrowseNote": "Każdy zestaw obowiązuje tylko dla podanego typu dachu i lat, różnice widać na kartach. Masz inne auto? Zmień je w nagłówku.",
 		"offersGroupOther": "Bez podanego typu dachu"
 	},
 	"company": {
@@ -1117,5 +1235,15 @@
 		"description": "Producenci bagażników dachowych, boksów, uchwytów na rowery i innego wyposażenia, których produkty kupisz u nas.",
 		"productCount": "{count, plural, one {# produkt} few {# produkty} other {# produktów}}",
 		"brandDescription": "Produkty marki {brand} w ofercie MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Widok listy produktów",
+		"viewGrid": "Siatka",
+		"viewList": "Lista",
+		"viewSet": "Zobacz zestaw",
+		"specDimensions": "Wymiary",
+		"specBars": "Belki",
+		"roofFilterLabel": "Typ dachu",
+		"roofFilterAll": "Wszystkie"
 	}
 }

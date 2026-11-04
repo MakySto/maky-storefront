@@ -113,7 +113,7 @@ export const BillingAddressSection: FC<BillingAddressSectionProps> = ({
 		phone: billingAddress?.phone || "",
 	});
 
-	const { orderedAddressFields, getFieldLabel, isRequiredField, countryAreaChoices } =
+	const { orderedAddressFields, getFieldLabel, isRequiredField, countryAreaChoices, rulesKnown } =
 		useAddressFormUtils(countryCode);
 
 	// Notify parent of changes
@@ -226,6 +226,7 @@ export const BillingAddressSection: FC<BillingAddressSectionProps> = ({
 										orderedFields={orderedAddressFields}
 										getFieldLabel={getFieldLabel}
 										isRequiredField={isRequiredField}
+										rulesKnown={rulesKnown}
 										formData={formData}
 										errors={errors}
 										onFieldChange={updateField}
@@ -293,6 +294,7 @@ export const BillingAddressSection: FC<BillingAddressSectionProps> = ({
 								orderedFields={orderedAddressFields}
 								getFieldLabel={getFieldLabel}
 								isRequiredField={isRequiredField}
+								rulesKnown={rulesKnown}
 								formData={formData}
 								errors={errors}
 								onFieldChange={updateField}

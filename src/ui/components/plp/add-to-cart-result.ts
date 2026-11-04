@@ -1,3 +1,5 @@
+import { isCheckoutLockedCode } from "@/checkout/lib/b2b/contract";
+
 /**
  * Exported as the contract Lane B consumes: its configurator switches on
  * `reason` to pick a message, so this union is public even though nothing
@@ -15,6 +17,12 @@ export type AddToCartRejection =
 	| "not-found"
 	/** The checkout could not be created or read at all. Nothing was attempted. */
 	| "checkout"
+	/**
+	 * A payment for this checkout is in progress, and the backend refuses to change its lines until it has ended
+	 * (`B2B_CHECKOUT_LOCKED`, contract MAKY-B2B-V1 revision 2). Not "try again": the way out is to finish that payment,
+	 * or to end it (`PaymentLockRecovery`) and then add the item.
+	 */
+	| "payment-locked"
 	/** Saleor refused for a reason we do not model. */
 	| "rejected";
 
@@ -25,7 +33,13 @@ export type AddToCartResult =
 	 * Saleor answered, and said no. Safe to tell the customer it did not happen,
 	 * and safe to let them try again.
 	 */
-	| { status: "rejected"; reason: AddToCartRejection; message: string }
+	| {
+			status: "rejected";
+			reason: AddToCartRejection;
+			message: string;
+			/** With `payment-locked` only: the checkout whose payment is in progress, and its channel. */
+			paymentLock?: { checkoutId: string; channelSlug: string };
+	  }
 	/**
 	 * We do not know whether the line was added.
 	 *
@@ -65,6 +79,16 @@ type AddToCartRejected = Extract<AddToCartResult, { status: "rejected" }>;
 
 export function classifyCheckoutErrors(errors: readonly CheckoutErrorLike[]): AddToCartRejected | null {
 	if (errors.length === 0) return null;
+
+	// A payment in progress is not a property of this line: nothing else is worth saying until it has ended.
+	const locked = errors.find((error) => isCheckoutLockedCode(error.code));
+	if (locked) {
+		return {
+			status: "rejected",
+			reason: "payment-locked",
+			message: locked.message?.trim() || locked.code || "a payment for this checkout is in progress",
+		};
+	}
 
 	// Report the most actionable one rather than the first: "out of stock" is
 	// worth saying, "GRAPHQL_ERROR" is not.

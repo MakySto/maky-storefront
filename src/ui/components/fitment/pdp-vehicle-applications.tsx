@@ -38,11 +38,17 @@ async function renderApplications(saleorProductId: string) {
 
 	// The request's language (this component has no channel prop; `connection()` above makes the
 	// header read legitimate), so the first page is named like the pages the client asks for next.
-	const language = (await getLocale()).split("-")[0];
-	const initial = await listProductApplications(saleorProductId, { language });
+	const locale = await getLocale();
+	const language = locale.split("-")[0];
+	const initial = await listProductApplications(saleorProductId, { language, locale });
 	if (initial.unavailable) return null;
 
 	return (
-		<ProductVehicleApplications saleorProductId={saleorProductId} initial={initial} language={language} />
+		<ProductVehicleApplications
+			saleorProductId={saleorProductId}
+			initial={initial}
+			language={language}
+			locale={locale}
+		/>
 	);
 }

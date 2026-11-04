@@ -40,6 +40,9 @@ vi.mock("next-intl/server", () => ({
 		}),
 }));
 
+// The heart is a client component with its own translation context; no assertion here is about it.
+vi.mock("@/ui/components/wishlist/wishlist-button", () => ({ WishlistButton: () => null }));
+
 import { type FitmentOffer, type FitmentOffers } from "@/lib/fitment/offers";
 import { CatalogOfferList } from "./offer-list";
 
@@ -105,7 +108,9 @@ const SK = {
 	title: "Kompatibilné zostavy",
 	count7: "7 zostáv",
 	onOrder: "Na objednávku",
-	outOfStock: "Momentálne nedostupné",
+	// The one deliberate change to the old copy: a sold-out set says what its product page says
+	// ("Vypredané", `common.outOfStock`), not the configurator's "Momentálne nedostupné".
+	outOfStock: "Vypredané",
 	// The market format, with the no-break space Intl puts before the sign.
 	price: "72,00\u00a0€",
 	lookupFailed:

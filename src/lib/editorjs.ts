@@ -1,13 +1,16 @@
 import xss from "xss";
 import {
+	contentProductIds,
 	hasText,
 	isUnknownRole,
 	readEnvelope,
 	readMarker,
+	sectionKindOf,
 	renderRole,
 	type ContentBlock,
 	type ContentIssue,
 	type ContentLabels,
+	type ContentProduct,
 	type SpecFact,
 } from "./editorjs-content";
 import {
@@ -19,7 +22,7 @@ import {
 } from "./editorjs-sanitize";
 
 export { TABLE_SCROLL_CLASS };
-export type { ContentLabels };
+export type { ContentLabels, ContentProduct };
 
 type EditorJSBlock = ContentBlock;
 
@@ -349,6 +352,9 @@ function renderBlock(block: EditorJSBlock): string | null {
 	}
 }
 
+/** Whether a heading has words a shopper would read. */
+const visibleHeading = (text: unknown): boolean => plainText(sanitizeInline(text)).trim().length > 0;
+
 function parseContent(content: string): EditorJSContent | null {
 	try {
 		const parsed = JSON.parse(content) as unknown;
@@ -366,6 +372,18 @@ export function isEditorJSContent(content: string | null | undefined): boolean {
 	return Boolean(content && parseContent(content));
 }
 
+/**
+ * The Saleor ids of the products a typed document names in the boxes of its set (`meta.productId`),
+ * for the page to ask the catalogue about before it draws them. At most `MAX_CONTENT_PRODUCTS`:
+ * a box that names more is not one a shopper reads.
+ */
+export const MAX_CONTENT_PRODUCTS = 24;
+export function productIdsInContent(content: string | null | undefined): string[] {
+	const parsed = content ? parseContent(content) : null;
+	if (!parsed || !readEnvelope(parsed.version).typed) return [];
+	return contentProductIds(parsed.blocks).slice(0, MAX_CONTENT_PRODUCTS);
+}
+
 /** One rendered block of a description, in document order. */
 export interface ProductContentBlock {
 	html: string;
@@ -373,7 +391,7 @@ export interface ProductContentBlock {
 	 * Which section a template may lift this block into, when it is one: the model comparison, the
 	 * documents and the parameter sheet each have a card of their own on a template page.
 	 */
-	section?: "comparison" | "documents" | "specs";
+	section?: "comparison" | "documents" | "specs" | "kind" | "facts";
 	/** A lifted block's own heading (sanitized inline HTML) and its body without it, for the page that sets the heading itself. */
 	title?: string | null;
 	body?: string;
@@ -432,6 +450,15 @@ export function parseProductContent(
 		const next = blocks[index + 1];
 
 		if (typed && labels) {
+			// A heading that names the kind of section it opens: drawn as the heading it is, with the kind in
+			// its class, so the page can write the small title over it in the shopper's language.
+			const kind = block.type === "header" ? sectionKindOf(block.id) : null;
+			if (kind && visibleHeading(block.data?.text)) {
+				rendered.push({
+					html: `<h3 class="maky-sec maky-sec-${kind}">${sanitizeInline(block.data?.text)}</h3>`,
+				});
+				continue;
+			}
 			// A heading directly above a marked block is that block's title.
 			const header = block.type === "header" && !block.id && next && readMarker(next.id) ? block : null;
 			const target = header ? next : block;
@@ -440,17 +467,21 @@ export function parseProductContent(
 				const outcome = renderRole(target, marker, header, labels);
 				if (!("problem" in outcome)) {
 					rendered.push(
-						outcome.role === "documents"
-							? { html: outcome.html, section: "documents", title: outcome.title, body: outcome.body }
-							: outcome.role === "specs"
-								? {
-										html: outcome.html,
-										section: "specs",
-										title: outcome.title,
-										body: outcome.body,
-										facts: outcome.facts ?? [],
-									}
-								: { html: outcome.html },
+						outcome.role === "kind"
+							? { html: outcome.html, section: "kind", body: plainText(outcome.body) }
+							: outcome.role === "facts" && !marker.kind
+								? { html: outcome.html, section: "facts", facts: outcome.facts ?? [] }
+								: outcome.role === "documents"
+									? { html: outcome.html, section: "documents", title: outcome.title, body: outcome.body }
+									: outcome.role === "specs"
+										? {
+												html: outcome.html,
+												section: "specs",
+												title: outcome.title,
+												body: outcome.body,
+												facts: outcome.facts ?? [],
+											}
+										: { html: outcome.html },
 					);
 					if (header) index += 1;
 					continue;

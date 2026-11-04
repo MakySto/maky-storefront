@@ -1,5 +1,7 @@
 import { type ProductContentBlock } from "@/lib/editorjs";
 import { type SpecFact } from "@/lib/editorjs-content";
+import { SECTION_KINDS, type SectionKind } from "@/lib/editorjs-sanitize";
+import { KARGO_CATEGORY_ID } from "@/config/kargo-slugs";
 
 /**
  * Product page templates: how a page is put together for a kind of product.
@@ -15,7 +17,7 @@ import { type SpecFact } from "@/lib/editorjs-content";
  */
 
 /** The parts of a description a template may set as sections of their own. */
-type LiftedSection = "comparison" | "documents" | "specs";
+type LiftedSection = "comparison" | "documents" | "specs" | "kind" | "facts";
 
 export type FactIcon =
 	| "bike"
@@ -29,7 +31,10 @@ export type FactIcon =
 	| "tilt"
 	| "weight"
 	| "zap"
-	| "opening";
+	| "opening"
+	| "car"
+	| "truck"
+	| "calendar";
 
 /** A fact of the key-facts band: one attribute, or the range two of them span. */
 export type KeyFact = { kind: "attribute"; ref: string; icon: FactIcon } | { kind: "range"; icon: FactIcon };
@@ -61,6 +66,15 @@ export interface ProductTemplate {
 	 * product with the attribute but another template keeps the statutory line.
 	 */
 	warrantyRef?: string;
+	/**
+	 * A description of this template that carries pictures of its own (`<figure>`) is set as sections —
+	 * the sections of one card, their pictures beside the text, the questions and the closing in cards of
+	 * their own (`layoutFor`, `descriptionSections`). A description without pictures of its own stays one
+	 * card, as it was approved.
+	 */
+	sectionsWhenPictured?: boolean;
+	/** Set by `layoutFor`: the description is laid out as one card per section (`descriptionSections`). */
+	sections?: boolean;
 }
 
 const attr = (key: string): string => `cfm:attribute:${key}`;
@@ -175,16 +189,29 @@ const AUTOCHLADNICKA: ProductTemplate = {
  */
 const STRESNY_NOSIC: ProductTemplate = {
 	id: "stresny-nosic",
-	lift: ["specs"],
+	// The sheet, the short name of the kind of product (over the title) and the key facts (the band).
+	lift: ["specs", "kind", "facts"],
 	facts: [],
 	factsFromSheet: true,
 	groups: [],
+	sectionsWhenPictured: true,
 };
 
 export const PRODUCT_TEMPLATES: Readonly<Record<string, ProductTemplate>> = {
 	[AUTOCHLADNICKA.id]: AUTOCHLADNICKA,
 	[STRESNY_NOSIC.id]: STRESNY_NOSIC,
 };
+
+/**
+ * The template of a kind of product whose description names none: the Kargo category (bars and baskets for vans)
+ * is set as a roof-rack set. CFM's translations reach Saleor as plain EditorJS, without the `maky-content/1:<template>`
+ * envelope and block ids of the Slovak description (read from Saleor 2026-11-02: `version` "2.30.8", no ids), so a
+ * foreign page would otherwise be drawn as the generic page. This takes nothing from the text: it only says how the
+ * blocks that are there are laid out.
+ */
+export function templateIdForCategory(categoryId: string | null | undefined): string | null {
+	return categoryId === KARGO_CATEGORY_ID ? STRESNY_NOSIC.id : null;
+}
 
 /** The template a description names, or the generic one when it names none or an unknown one. */
 export function templateFor(id: string | null | undefined): ProductTemplate {
@@ -195,6 +222,72 @@ export function templateFor(id: string | null | undefined): ProductTemplate {
 
 // ─── Sections of the description ─────────────────────────────────────────────────────────────
 
+/** Whether the description carries pictures of its own (`image` blocks), as against the gallery's. */
+export function hasOwnPictures(blocks: readonly ProductContentBlock[]): boolean {
+	return blocks.some((block) => block.html.includes("<figure"));
+}
+
+/**
+ * The template a page is laid out with once its description has been read. A template that asks for
+ * it (`sectionsWhenPictured`) sets a pictured description as sections; the gallery's second photo is
+ * then not drawn beside the description (the page asks `template.sections`), because the description
+ * shows its own and the same file would stand there twice. The documents stay in the section that
+ * names them (the assembly), as the steps do.
+ */
+export function layoutFor(
+	template: ProductTemplate,
+	blocks: readonly ProductContentBlock[],
+): ProductTemplate {
+	if (!template.sectionsWhenPictured || !hasOwnPictures(blocks)) return template;
+	return { ...template, sections: true };
+}
+
+/** A block that opens a section: a plain heading, or a role that carries its heading (`maky-h`). */
+const SECTION_START = /^(?:<h3[\s>]|<section class="maky-blk[^"]*"><h3 class="maky-h">)/;
+
+/**
+ * The roles that carry out what the section before them describes, under a heading of their own: the
+ * strengths a text has just introduced, the steps of a procedure, the documents of an assembly. They
+ * stay in that section, under their own heading, and are not a section of one short list.
+ */
+const FOLLOWS_PREVIOUS =
+	/^<section class="maky-blk[^"]*"><h3 class="maky-h">[\s\S]*?<(?:ul|ol) class="maky-(?:benefits|steps|docs)"/;
+
+/**
+ * The description's blocks cut into sections, in document order: a new section starts at every
+ * heading the producer wrote (`h3`), and whatever stands before the first heading is a section of
+ * its own. Nothing is dropped or reordered.
+ */
+export function descriptionSections(blocks: readonly string[]): string[][] {
+	const sections: string[][] = [];
+	for (const html of blocks) {
+		if (sections.length === 0 || SECTION_START.test(html)) sections.push([html]);
+		else sections[sections.length - 1].push(html);
+	}
+	return sections.reduce<string[][]>((merged, section) => {
+		const previous = merged[merged.length - 1];
+		if (previous && FOLLOWS_PREVIOUS.test(section[0])) previous.push(...section);
+		else merged.push(section);
+		return merged;
+	}, []);
+}
+
+/** The kind of section a card opens with (`maky:section:<kind>` on its heading), or null. */
+export function sectionKindOfHtml(section: readonly string[]): SectionKind | null {
+	const found = /^<h3 class="maky-sec maky-sec-([a-z]+)">/.exec(section[0] ?? "");
+	return found && (SECTION_KINDS as readonly string[]).includes(found[1]) ? (found[1] as SectionKind) : null;
+}
+
+/**
+ * Whether a section stands in a card of its own after the parameters, not among the sections of the
+ * description's one card: the questions and the closing.
+ */
+export function isTailSection(section: readonly string[]): boolean {
+	return (
+		sectionKindOfHtml(section) === "closing" || section.some((html) => html.includes('class="maky-faq"'))
+	);
+}
+
 export interface PageSections {
 	/** The blocks that stay in the description's card. */
 	description: string[];
@@ -204,6 +297,10 @@ export interface PageSections {
 	documents: { title: string | null; body: string } | null;
 	/** The parameter sheet, set in a card of its own, or null. Its rows are also kept as plain text, for the key-facts band. */
 	specs: { title: string | null; body: string; facts: readonly SpecFact[] } | null;
+	/** The short name of the kind of product, to stand over the title, or null. */
+	kind: string | null;
+	/** The key facts the producer wrote for the band (`maky:facts`), or null. */
+	facts: readonly SpecFact[] | null;
 }
 
 /**
@@ -215,8 +312,28 @@ export function liftSections(
 	blocks: readonly ProductContentBlock[],
 	template: ProductTemplate,
 ): PageSections {
-	const sections: PageSections = { description: [], comparison: null, documents: null, specs: null };
+	const sections: PageSections = {
+		description: [],
+		comparison: null,
+		documents: null,
+		specs: null,
+		kind: null,
+		facts: null,
+	};
 	for (const block of blocks) {
+		if (block.section === "kind" && template.lift.includes("kind") && !sections.kind && block.body) {
+			sections.kind = block.body;
+			continue;
+		}
+		if (
+			block.section === "facts" &&
+			template.lift.includes("facts") &&
+			!sections.facts &&
+			block.facts?.length
+		) {
+			sections.facts = block.facts;
+			continue;
+		}
 		if (block.section === "comparison" && template.lift.includes("comparison") && !sections.comparison) {
 			sections.comparison = block.html;
 		} else if (block.section === "documents" && template.lift.includes("documents") && !sections.documents) {
@@ -248,8 +365,45 @@ const MAX_FACT_LENGTH = 48;
  * says. The page's band takes them only when the product's attributes gave it too little.
  */
 export function sheetFacts(sections: PageSections | null, template: ProductTemplate): readonly SpecFact[] {
+	// The facts the producer wrote for the band come first, icons and all; the sheet's rows stand in for them.
+	const own = sections?.facts?.filter(
+		({ label, value }) => label && value && value.length <= MAX_FACT_LENGTH,
+	);
+	if (own?.length) return own;
 	if (!template.factsFromSheet || !sections?.specs) return [];
 	return sections.specs.facts.filter(({ label, value }) => label && value && value.length <= MAX_FACT_LENGTH);
+}
+
+/** A value as it is compared with another: case, spacing and the sign between dimensions do not tell two values apart. */
+const comparable = (value: string): string =>
+	value
+		.toLowerCase()
+		.replace(/[\u00a0\u202f\s]+/g, " ")
+		.replace(/\s*[×x]\s*/g, "×")
+		.replace(/[\s.;,]+$/, "")
+		.trim();
+
+/**
+ * The attribute rows a card that already prints the description's parameter sheet still has to print: the
+ * ones whose value the sheet does not already say. A Kargo basket's sheet has "Rozmery koša 420 × 180 × 7 cm" and
+ * "Materiál koša eloxovaný hliník", and its attributes the very same figures as "Vonkajšie rozmery" and
+ * "Materiál"; printed together the page says everything twice. The rows are matched by VALUE, which reads the
+ * same in every language, never by label, which does not; a row whose value the sheet does not carry stays.
+ * With no sheet nothing is dropped.
+ */
+export function withoutSheetRepeats<Row extends { values: readonly string[] }>(
+	rows: readonly Row[],
+	outerDimensions: string | null,
+	sheet: readonly SpecFact[] | null | undefined,
+): { rows: Row[]; outerDimensions: string | null } {
+	const stated = new Set((sheet ?? []).map(({ value }) => comparable(value ?? "")).filter(Boolean));
+	if (stated.size === 0) return { rows: [...rows], outerDimensions };
+	const repeats = (values: readonly string[]) =>
+		values.length > 0 && stated.has(comparable(values.join(", ")));
+	return {
+		rows: rows.filter((row) => !repeats(row.values)),
+		outerDimensions: outerDimensions && stated.has(comparable(outerDimensions)) ? null : outerDimensions,
+	};
 }
 
 // ─── Grouped parameters ──────────────────────────────────────────────────────────────────────

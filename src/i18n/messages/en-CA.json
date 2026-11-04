@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Decrease quantity",
 		"increaseQuantity": "Increase quantity",
 		"priceWithVat": "Final price",
+		"priceWithoutVat": "Price excl. VAT: {price}",
 		"technicalParameters": "Technical specifications",
 		"outerDimensions": "Outer dimensions",
 		"yes": "Yes",
@@ -154,11 +155,22 @@
 				"play": "Play video",
 				"note": "YouTube · loads only after you click"
 			},
+			"sections": {
+				"intro": "Product description",
+				"compatibility": "Compatibility",
+				"usage": "In everyday use",
+				"accessories": "Suitable accessories",
+				"brand": "About the brand",
+				"closing": "We can help"
+			},
+			"viewAccessory": "View accessory",
+			"viewPart": "View part",
 			"years": "{count, plural, one {# year} other {# years}}"
 		},
 		"keyFeatures": "Key features",
 		"productDescription": "Product description",
 		"imageCounter": "Image {current} of {total}",
+		"illustrativeImage": "Illustrative image",
 		"trustPaymentTitle": "Secure payment",
 		"trustPaymentText": "Encrypted connection",
 		"trustShippingTitle": "Shipping",
@@ -318,7 +330,10 @@
 		"listingAllNotice": "You are viewing the range for all vehicles — it is not matched to your car ({vehicle}).",
 		"listingDefaultNone": "We have no verified set for {vehicle} yet, so you are seeing the range for all vehicles.",
 		"listingNotOnSaleTitle": "There are compatible sets for {vehicle} that are not on sale right now",
-		"listingNotOnSaleBody": "That does not mean nothing fits. We are adding these sets to the range — meanwhile you can browse all vehicles or write to us."
+		"listingNotOnSaleBody": "That does not mean nothing fits. We are adding these sets to the range — meanwhile you can browse all vehicles or write to us.",
+		"listingOtherShelfTitle": "There are no verified sets for {vehicle} in this category",
+		"listingOtherShelfBody": "The verified sets for your vehicle are in another category, not in this one.",
+		"listingOtherShelfAction": "See the sets in {category}"
 	},
 	"cart": {
 		"yourCart": "Your cart",
@@ -327,6 +342,7 @@
 		"addInvalid": "Please check the quantity you selected.",
 		"addNotFound": "Product not found.",
 		"addFailed": "The product could not be added to your cart.",
+		"addPaymentLocked": "A payment for your order is already in progress, so nothing can be added right now. Finish it, or cancel it safely in the checkout.",
 		"addUnconfirmed": "We can't confirm whether the product was added. Please check your cart.",
 		"emptyCart": "Your cart is empty",
 		"continueShopping": "Continue shopping",
@@ -576,7 +592,12 @@
 			"invalidValue": "Invalid value",
 			"notFullyPaid": "The payment does not yet cover the full order total. Refresh the page — if the funds were authorized, complete the order using the button below. Do not pay again until the status is confirmed.",
 			"alreadyCompleted": "This order has already been placed. You will find the confirmation in your email.",
-			"freeOrderTotalChanged": "Your order total has changed and now requires payment. Please review and try again."
+			"freeOrderTotalChanged": "Your order total has changed and now requires payment. Please review and try again.",
+			"checkoutLocked": "A payment for this order is already in progress. Finish it, or cancel it safely, before starting a new one.",
+			"orderUpdated": "Your order has been updated. Please review the new total before paying.",
+			"finalStateUnconfirmed": "We couldn't confirm the final price right now. Please try again.",
+			"completeBlockedNoNewPayment": "We couldn't complete the order right now. If you have already paid, don't start a new payment: refresh the page or contact us.",
+			"completeOfferChanged": "The amount has changed, so no order was created. The money from this payment will be released automatically. If you need help with the order, contact us."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Test mode:</strong> This is a simulated order confirmation. No real payment was taken.",
@@ -598,6 +619,93 @@
 		},
 		"meta": {
 			"title": "Checkout"
+		},
+		"b2b": {
+			"sectionTitle": "Business purchase",
+			"toggle": "I'm buying for a company",
+			"toggleHint": "We'll put the company details on the invoice.",
+			"companyName": "Company name",
+			"registrationId": "Company ID (IČO)",
+			"taxId": "Tax ID (DIČ)",
+			"vatIdPlaceholder": "e.g. {example}",
+			"vatIdHint": "With a valid VAT ID from another EU country and delivery to that country, the supply may be exempt from VAT. We decide after checking it in VIES.",
+			"billingSameAsShipping": "Billing address is the same as the delivery address",
+			"billingAddressTitle": "Billing address",
+			"billingSummaryTitle": "Billing details",
+			"billingMissing": "Billing details are missing. Please add them in the Information step.",
+			"taxedTotal": "Total including VAT: {total}",
+			"summaryExempt": "Without VAT — exempt under § 43 of the Slovak VAT Act",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "VAT ID"
+			},
+			"errors": {
+				"companyNameRequired": "Enter the company name.",
+				"registrationIdRequired": "Enter the company ID (IČO).",
+				"registrationIdFormat": "The IČO has 6 to 8 digits.",
+				"taxIdFormat": "The DIČ has 10 digits.",
+				"vatIdFormat": "This doesn't look like a VAT ID of the selected country. Please check it.",
+				"tooLong": "This value is too long.",
+				"saveFailed": "The company details could not be saved. Please try again."
+			},
+			"status": {
+				"verifying": "Checking the VAT ID…",
+				"exempt": "VAT ID verified. The supply is exempt from VAT; the price shown excludes VAT.",
+				"invalid": "VIES did not confirm this VAT ID as valid for intra-EU trade. Please check it or continue with VAT.",
+				"unavailable": "The VAT ID can't be checked right now. Try again in a moment or continue with VAT.",
+				"countryMismatch": "We can process a VAT-free supply automatically only for delivery to the country of your VAT ID. For other deliveries, please contact us.",
+				"identityReview": "The company details don't match the verification result. Please check the billing details or contact us.",
+				"skVat": "With a Slovak VAT ID, the purchase is charged with VAT.",
+				"domesticDelivery": "For delivery or pickup in Slovakia, the purchase is charged with VAT.",
+				"incomplete": "We'll decide on VAT once the delivery details and delivery method are complete.",
+				"validPendingDelivery": "The VAT ID is valid in VIES. We'll decide on VAT once you choose a delivery method.",
+				"disabled": "We don't offer automatic VAT exemption at the moment. You can complete your business purchase with VAT.",
+				"serviceOff": "Automatic VAT ID verification is unavailable right now. You can complete your business purchase at the price shown in the summary."
+			},
+			"actions": {
+				"continueWithVat": "Continue with VAT",
+				"retry": "Check again",
+				"recheck": "Review again",
+				"refreshStatus": "Refresh payment status",
+				"edit": "Edit"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "A payment for this order is already in progress, so the details can't be changed right now. You can finish the payment, or cancel it safely and then change the details.",
+				"cart": "A payment for this order is already in progress, so the cart can't be changed right now. You can finish the payment, or cancel it safely and then change the cart.",
+				"payment": "A payment for this order is already in progress, so a new one can't be started right now. You can safely cancel the payment you started and then pay again."
+			},
+			"releasing": "Cancelling the payment you started…",
+			"waitingCancel": "Waiting for the payment provider to confirm the cancellation. This usually takes a few seconds.",
+			"waitingAttempt": "The payment is still being set up. We'll try to cancel it again in a moment.",
+			"released": {
+				"details": "The payment you started is cancelled. You can now change the details and save them.",
+				"cart": "The payment you started is cancelled. You can now change the cart.",
+				"payment": "The payment you started is cancelled. Check the amount and pay again."
+			},
+			"funds": "The payment has already been received or is waiting for your bank's confirmation, so the order can no longer be changed. Complete it with the original details.",
+			"notConfirmed": "The cancellation hasn't been confirmed yet. Try again in a moment, pay for the order with the original details, or contact us.",
+			"unavailable": "We can't cancel the payment you started right now. You can pay for the order with the original details or contact us.",
+			"failed": "The payment you started couldn't be cancelled. Try again in a moment, pay for the order with the original details, or contact us.",
+			"actions": {
+				"releaseDetails": "Change details",
+				"releaseCart": "Change cart",
+				"releasePayment": "Cancel the started payment",
+				"retry": "Try again",
+				"payOriginal": "Pay with original details",
+				"finishOrder": "Complete order",
+				"contact": "Contact the shop"
+			}
 		}
 	},
 	"footer": {
@@ -852,9 +960,19 @@
 		"errorNotVerified": "This set isn't verified for the vehicle you currently have selected.",
 		"errorNotAvailable": "We no longer carry this set.",
 		"errorCartRejected": "We couldn't add the set to your cart.",
+		"errorPaymentLocked": "A payment for your order is already in progress, so the set can't be added right now. Finish it, or cancel it safely in the checkout.",
 		"errorLookupFailed": "We can't confirm whether the set was added. Please check your cart.",
 		"errorCatalogueUnavailable": "We couldn't check this set's availability just now. Please try again.",
-		"errorGeneric": "We couldn't add the set to your cart."
+		"errorGeneric": "We couldn't add the set to your cart.",
+		"facetAerodynamic": "Aerodynamic",
+		"facetWing": "Wing profile",
+		"facetTubular": "Tubular",
+		"facetColourBlack": "Black",
+		"facetColourSilver": "Silver",
+		"facetColourAlu": "Natural aluminium",
+		"propertyBarLength": "Bar length",
+		"propertyColour": "Colour",
+		"propertyBarLoad": "Bar load rating"
 	},
 	"catalog": {
 		"makeIndexTitle": "Choose a roof rack by vehicle",
@@ -868,7 +986,7 @@
 		"offersPartial": "Part of the offer could not be loaded, so the list may be incomplete.",
 		"previewNotice": "Preview of an unpublished page. It is not shown to visitors.",
 		"offersTitleGeneration": "Sets for this generation",
-		"offersBrowseNote": "Each set applies only to the roof type and years shown. The sets are not matched to your car — once you choose your vehicle we show only the ones that fit it.",
+		"offersBrowseNote": "Each set applies only to the roof type and years shown, and the differences are on the cards. Another car? Change it in the header.",
 		"offersGroupOther": "No roof type stated"
 	},
 	"company": {
@@ -1117,5 +1235,15 @@
 		"description": "The makers of roof racks, roof boxes, bike carriers and more whose products you can buy here.",
 		"productCount": "{count, plural, one {# product} other {# products}}",
 		"brandDescription": "{brand} products at MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Listing view",
+		"viewGrid": "Grid",
+		"viewList": "List",
+		"viewSet": "View set",
+		"specDimensions": "Dimensions",
+		"specBars": "Crossbars",
+		"roofFilterLabel": "Roof type",
+		"roofFilterAll": "All"
 	}
 }

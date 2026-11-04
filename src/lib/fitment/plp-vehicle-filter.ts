@@ -139,6 +139,18 @@ export type VehicleListingFilter =
 	 * invitation to look at everything: the sets exist, and the shop is not selling them yet.
 	 */
 	| { state: "not-on-sale"; vehicleLabel: string | null; isDemo: boolean }
+	/**
+	 * Narrowed to this car's verified sets on a SUB-shelf (Nordrive, Kargo, Thule …) that holds none of them: they
+	 * belong to another shelf of the same family. Says nothing about whether they are on sale — the family's own
+	 * page is where that is told — and points there. Never "not on sale": the Nordrive shelf for a van said so
+	 * while the Kargo baskets for that van sold one shelf over.
+	 */
+	| {
+			state: "other-shelf";
+			vehicleLabel: string | null;
+			isDemo: boolean;
+			family: { name: string; path: string };
+	  }
 	/** Requested and answered. `productIds` is non-empty by construction. */
 	| {
 			state: "active";
@@ -297,11 +309,15 @@ export function settleVehicleFilter(
 	filter: VehicleListingFilter,
 	listing: { totalCount: number },
 	searchParams: Record<string, string | string[] | undefined>,
+	/** The family this shelf is a sub-shelf of, when that family is a shelf the programme covers: its name and channel-relative path. */
+	family: { name: string; path: string } | null = null,
 ): VehicleListingFilter {
 	if (filter.state !== "active" || listing.totalCount > 0) return filter;
 	if (OTHER_NARROWING_PARAMS.some((key) => searchParams[key] !== undefined && searchParams[key] !== "")) {
 		return filter;
 	}
+	if (family)
+		return { state: "other-shelf", vehicleLabel: filter.vehicleLabel, isDemo: filter.isDemo, family };
 	return { state: "not-on-sale", vehicleLabel: filter.vehicleLabel, isDemo: filter.isDemo };
 }
 

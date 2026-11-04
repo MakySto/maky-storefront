@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Snížit množství",
 		"increaseQuantity": "Zvýšit množství",
 		"priceWithVat": "Cena s DPH",
+		"priceWithoutVat": "Cena bez DPH: {price}",
 		"technicalParameters": "Technické parametry",
 		"outerDimensions": "Vnější rozměry",
 		"yes": "Ano",
@@ -154,11 +155,22 @@
 				"play": "Přehrát video",
 				"note": "YouTube · načte se až po kliknutí"
 			},
+			"sections": {
+				"intro": "Popis produktu",
+				"compatibility": "Kompatibilita",
+				"usage": "Využití v praxi",
+				"accessories": "Vhodné doplňky",
+				"brand": "O značce",
+				"closing": "Poradíme vám"
+			},
+			"viewAccessory": "Zobrazit doplněk",
+			"viewPart": "Zobrazit díl",
 			"years": "{count, plural, one {# rok} few {# roky} many {# roku} other {# let}}"
 		},
 		"keyFeatures": "Hlavní vlastnosti",
 		"productDescription": "Popis produktu",
 		"imageCounter": "Obrázek {current} z {total}",
+		"illustrativeImage": "Ilustrativní zobrazení",
 		"trustPaymentTitle": "Bezpečná platba",
 		"trustPaymentText": "Šifrované spojení",
 		"trustShippingTitle": "Doprava",
@@ -318,7 +330,10 @@
 		"listingAllNotice": "Zobrazujete nabídku pro všechna vozidla — není vybraná podle vašeho auta ({vehicle}).",
 		"listingDefaultNone": "Pro {vehicle} zatím nemáme ověřenou sadu, proto vidíte nabídku pro všechna vozidla.",
 		"listingNotOnSaleTitle": "Pro {vehicle} existují kompatibilní sady, které momentálně nejsou v prodeji",
-		"listingNotOnSaleBody": "Neznamená to, že nic nepasuje. Sady připravujeme do nabídky — mezitím si můžete prohlédnout všechna vozidla nebo nám napsat."
+		"listingNotOnSaleBody": "Neznamená to, že nic nepasuje. Sady připravujeme do nabídky — mezitím si můžete prohlédnout všechna vozidla nebo nám napsat.",
+		"listingOtherShelfTitle": "Pro {vehicle} nemáme v této kategorii ověřené sady",
+		"listingOtherShelfBody": "Ověřené sady pro vaše vozidlo jsou v jiné kategorii, ne v této.",
+		"listingOtherShelfAction": "Zobrazit sady v kategorii {category}"
 	},
 	"cart": {
 		"yourCart": "Váš košík",
@@ -327,6 +342,7 @@
 		"addInvalid": "Zkontrolujte prosím zvolené množství.",
 		"addNotFound": "Produkt se nepodařilo najít.",
 		"addFailed": "Produkt se nepodařilo přidat do košíku.",
+		"addPaymentLocked": "Platba vaší objednávky již probíhá, proto teď nelze přidat zboží. Dokončete ji, nebo ji bezpečně ukončete v pokladně.",
 		"addUnconfirmed": "Nevíme, zda se produkt přidal. Zkontrolujte prosím košík.",
 		"emptyCart": "Váš košík je prázdný",
 		"continueShopping": "Pokračovat v nákupu",
@@ -576,7 +592,12 @@
 			"invalidValue": "Neplatná hodnota",
 			"notFullyPaid": "Platba zatím nepokrývá celou cenu objednávky. Obnovte stránku; pokud byly prostředky autorizovány, dokončete objednávku tlačítkem níže. Neplaťte znovu, dokud nebude stav potvrzen.",
 			"alreadyCompleted": "Tato objednávka už byla odeslána. Potvrzení najdete v e-mailu.",
-			"freeOrderTotalChanged": "Celková cena objednávky se změnila a nyní vyžaduje platbu. Zkontrolujte ji a zkuste to znovu."
+			"freeOrderTotalChanged": "Celková cena objednávky se změnila a nyní vyžaduje platbu. Zkontrolujte ji a zkuste to znovu.",
+			"checkoutLocked": "Platba této objednávky již probíhá. Dokončete ji, nebo ji bezpečně ukončete, než začnete novou.",
+			"orderUpdated": "Objednávka se aktualizovala. Před platbou zkontrolujte novou částku.",
+			"finalStateUnconfirmed": "Konečnou cenu se teď nepodařilo potvrdit. Zkuste to znovu.",
+			"completeBlockedNoNewPayment": "Objednávku se teď nepodařilo dokončit. Pokud jste již zaplatili, nezačínejte novou platbu: obnovte stránku, nebo nás kontaktujte.",
+			"completeOfferChanged": "Částka se změnila, proto objednávka nevznikla. Peníze z této platby se uvolní automaticky. Pokud potřebujete s objednávkou pomoci, kontaktujte nás."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Testovací režim:</strong> Toto je simulované potvrzení objednávky. Žádná skutečná platba neproběhla.",
@@ -598,6 +619,93 @@
 		},
 		"meta": {
 			"title": "Pokladna"
+		},
+		"b2b": {
+			"sectionTitle": "Nákup na firmu",
+			"toggle": "Nakupuji na firmu",
+			"toggleHint": "Údaje firmy uvedeme na faktuře.",
+			"companyName": "Název firmy",
+			"registrationId": "IČO",
+			"taxId": "DIČ",
+			"vatIdPlaceholder": "např. {example}",
+			"vatIdHint": "S platným DIČ (VAT) z jiné země EU a doručením do této země může být dodání osvobozeno od DPH. Rozhodneme po ověření ve VIES.",
+			"billingSameAsShipping": "Fakturační adresa je stejná jako doručovací",
+			"billingAddressTitle": "Fakturační adresa",
+			"billingSummaryTitle": "Fakturační údaje",
+			"billingMissing": "Fakturační údaje chybí. Doplňte je v kroku Údaje.",
+			"taxedTotal": "K úhradě s DPH: {total}",
+			"summaryExempt": "Bez DPH — osvobozeno podle § 43 slovenského zákona o DPH",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "DIČ (VAT)"
+			},
+			"errors": {
+				"companyNameRequired": "Zadejte název firmy.",
+				"registrationIdRequired": "Zadejte IČO.",
+				"registrationIdFormat": "IČO má 6 až 8 číslic.",
+				"taxIdFormat": "DIČ má 10 číslic.",
+				"vatIdFormat": "Číslo nemá tvar DIČ (VAT) zvolené země. Zkontrolujte ho.",
+				"tooLong": "Hodnota je příliš dlouhá.",
+				"saveFailed": "Údaje firmy se nepodařilo uložit. Zkuste to znovu."
+			},
+			"status": {
+				"verifying": "Ověřujeme DIČ…",
+				"exempt": "DIČ ověřeno. Dodání je osvobozeno od DPH; uvedená cena je bez DPH.",
+				"invalid": "VIES nepotvrdil DIČ jako platné pro obchod v rámci EU. Zkontrolujte ho, nebo pokračujte s DPH.",
+				"unavailable": "DIČ teď nelze ověřit. Zkuste to za chvíli, nebo pokračujte s DPH.",
+				"countryMismatch": "Bez DPH umíme automaticky zpracovat doručení do země vašeho DIČ. Při jiném doručení nás kontaktujte.",
+				"identityReview": "Údaje firmy neodpovídají výsledku ověření. Zkontrolujte fakturační údaje, nebo nás kontaktujte.",
+				"skVat": "Se slovenským IČ DPH se nákup účtuje s DPH.",
+				"domesticDelivery": "Při doručení nebo vyzvednutí na Slovensku se nákup účtuje s DPH.",
+				"incomplete": "O DPH rozhodneme, až budou doplněny doručovací údaje a způsob doručení.",
+				"validPendingDelivery": "DIČ je ve VIES platné. O DPH rozhodneme po výběru způsobu doručení.",
+				"disabled": "Automatické osvobození od DPH teď nenabízíme. Nákup na firmu dokončíte s DPH.",
+				"serviceOff": "Automatické ověření DIČ je teď nedostupné. Nákup na firmu dokončíte za cenu uvedenou v souhrnu."
+			},
+			"actions": {
+				"continueWithVat": "Pokračovat s DPH",
+				"retry": "Ověřit znovu",
+				"recheck": "Zkontrolovat znovu",
+				"refreshStatus": "Obnovit stav platby",
+				"edit": "Upravit"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "Platba této objednávky již probíhá, proto teď nelze údaje změnit. Platbu můžete dokončit, nebo ji bezpečně ukončit a potom údaje změnit.",
+				"cart": "Platba této objednávky již probíhá, proto teď nelze košík změnit. Platbu můžete dokončit, nebo ji bezpečně ukončit a potom košík upravit.",
+				"payment": "Platba této objednávky již probíhá, proto teď nelze začít novou. Zahájenou platbu můžete bezpečně ukončit a potom zaplatit znovu."
+			},
+			"releasing": "Ukončujeme zahájenou platbu…",
+			"waitingCancel": "Čekáme, až platební brána potvrdí zrušení platby. Obvykle to trvá několik sekund.",
+			"waitingAttempt": "Platba se ještě zakládá. Za chvíli ji zkusíme ukončit znovu.",
+			"released": {
+				"details": "Zahájená platba je zrušena. Teď můžete údaje změnit a uložit.",
+				"cart": "Zahájená platba je zrušena. Teď můžete košík upravit.",
+				"payment": "Zahájená platba je zrušena. Zkontrolujte částku a zaplaťte znovu."
+			},
+			"funds": "Platba je již přijata nebo čeká na potvrzení banky, proto nelze objednávku měnit. Dokončete ji s původními údaji.",
+			"notConfirmed": "Zrušení platby zatím nebylo potvrzeno. Zkuste to za chvíli znovu, zaplaťte objednávku s původními údaji, nebo nás kontaktujte.",
+			"unavailable": "Zahájenou platbu teď nemůžeme ukončit. Objednávku můžete zaplatit s původními údaji, nebo nás kontaktovat.",
+			"failed": "Zahájenou platbu se nepodařilo ukončit. Zkuste to za chvíli znovu, zaplaťte objednávku s původními údaji, nebo nás kontaktujte.",
+			"actions": {
+				"releaseDetails": "Změnit údaje",
+				"releaseCart": "Upravit košík",
+				"releasePayment": "Ukončit zahájenou platbu",
+				"retry": "Zkusit znovu",
+				"payOriginal": "Zaplatit s původními údaji",
+				"finishOrder": "Dokončit objednávku",
+				"contact": "Kontaktovat obchod"
+			}
 		}
 	},
 	"footer": {
@@ -852,9 +960,19 @@
 		"errorNotVerified": "Pro aktuálně vybrané vozidlo není tato sestava ověřená.",
 		"errorNotAvailable": "Tato sestava už není v nabídce.",
 		"errorCartRejected": "Sestavu se nepodařilo přidat do košíku.",
+		"errorPaymentLocked": "Platba vaší objednávky již probíhá, proto teď nelze přidat sestavu. Dokončete ji, nebo ji bezpečně ukončete v pokladně.",
 		"errorLookupFailed": "Nedokážeme potvrdit, jestli se sestava přidala. Zkontrolujte prosím košík.",
 		"errorCatalogueUnavailable": "Dostupnost sestavy se teď nepodařilo ověřit. Zkuste to prosím znovu.",
-		"errorGeneric": "Sestavu se nepodařilo přidat do košíku."
+		"errorGeneric": "Sestavu se nepodařilo přidat do košíku.",
+		"facetAerodynamic": "aerodynamický",
+		"facetWing": "křídlový",
+		"facetTubular": "trubkový",
+		"facetColourBlack": "černá",
+		"facetColourSilver": "stříbrná",
+		"facetColourAlu": "hliníková",
+		"propertyBarLength": "Délka příčníků",
+		"propertyColour": "Barva",
+		"propertyBarLoad": "Nosnost příčníků"
 	},
 	"catalog": {
 		"makeIndexTitle": "Vyberte nosič podle vozidla",
@@ -868,7 +986,7 @@
 		"offersPartial": "Část nabídky se nepodařilo načíst, seznam proto nemusí být úplný.",
 		"previewNotice": "Náhled nepublikované stránky. Návštěvníkům se nezobrazuje.",
 		"offersTitleGeneration": "Sady pro tuto generaci",
-		"offersBrowseNote": "Každá sada platí jen pro uvedený typ střechy a roky. Sady nejsou vybrané podle vašeho auta — po výběru vozidla vám ukážeme jen ty, které na něj pasují.",
+		"offersBrowseNote": "Každá sestava platí jen pro uvedený typ střechy a roky, rozdíly vidíte přímo na kartách. Máte jiné auto? Změňte ho v záhlaví.",
 		"offersGroupOther": "Bez určeného typu střechy"
 	},
 	"company": {
@@ -1117,5 +1235,15 @@
 		"description": "Výrobci střešních nosičů, boxů, nosičů kol a další výbavy, jejichž produkty u nás koupíte.",
 		"productCount": "{count, plural, one {# produkt} few {# produkty} other {# produktů}}",
 		"brandDescription": "Produkty značky {brand} v nabídce MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Zobrazení výpisu",
+		"viewGrid": "Mřížka",
+		"viewList": "Seznam",
+		"viewSet": "Zobrazit sestavu",
+		"specDimensions": "Rozměry",
+		"specBars": "Příčníky",
+		"roofFilterLabel": "Typ střechy",
+		"roofFilterAll": "Všechny"
 	}
 }

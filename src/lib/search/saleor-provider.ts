@@ -9,9 +9,11 @@ import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
 import { SearchProductsDocument, OrderDirection, ProductOrderField } from "@/gql/graphql";
 import type { SearchProduct, SearchResult, SearchPagination } from "./types";
+import { baseSlugOfCategory } from "@/config/category-routes";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
 import { publishableProductImage } from "@/lib/product-image";
+import { transformToProductCard } from "@/ui/components/plp/utils";
 
 interface SearchOptions {
 	query: string;
@@ -82,8 +84,10 @@ export async function searchProducts(options: SearchOptions): Promise<SearchResu
 		price: node.pricing?.priceRange?.start?.gross.amount ?? 0,
 		currency: node.pricing?.priceRange?.start?.gross.currency ?? localeConfig.fallbackCurrency,
 		categoryName: node.category?.name,
-		categorySlug: node.category?.slug,
+		// The BASE slug: abroad the category carries its translated one, and the rules keyed by slug read the base.
+		categorySlug: baseSlugOfCategory(channel, node.category) ?? undefined,
 		isPurchasable: node.isAvailableForPurchase === true,
+		card: transformToProductCard(node, channel, locale),
 	}));
 
 	const pagination: SearchPagination = {

@@ -38,10 +38,22 @@ describe("toAddSetResult", () => {
 		},
 	);
 
+	it("keeps a payment in progress apart from a refusal, with the checkout it is for", () => {
+		const paymentLock = { checkoutId: "Q2hlY2tvdXQ6MQ==", channelSlug: "de-eur" };
+		expect(
+			toAddSetResult({ status: "rejected", reason: "payment-locked", message: "locked", paymentLock }),
+		).toEqual({ ok: false, reason: "payment-locked", paymentLock });
+		expect(toAddSetResult({ status: "rejected", reason: "payment-locked", message: "locked" })).toEqual({
+			ok: false,
+			reason: "payment-locked",
+		});
+	});
+
 	it("never answers ok for anything but a confirmed add", () => {
 		const everythingElse: AddToCartResult[] = [
 			{ status: "unconfirmed", message: "" },
 			...REJECTIONS.map((reason): AddToCartResult => ({ status: "rejected", reason, message: "" })),
+			{ status: "rejected", reason: "payment-locked", message: "" },
 		];
 		for (const outcome of everythingElse) expect(toAddSetResult(outcome).ok).toBe(false);
 	});

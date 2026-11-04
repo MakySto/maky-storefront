@@ -122,6 +122,7 @@
 		"decreaseQuantity": "Menge verringern",
 		"increaseQuantity": "Menge erhöhen",
 		"priceWithVat": "Preis inkl. MwSt.",
+		"priceWithoutVat": "Preis ohne MwSt.: {price}",
 		"technicalParameters": "Technische Daten",
 		"outerDimensions": "Außenmaße",
 		"yes": "Ja",
@@ -154,11 +155,22 @@
 				"play": "Video abspielen",
 				"note": "YouTube · wird erst nach dem Klick geladen"
 			},
+			"sections": {
+				"intro": "Produktbeschreibung",
+				"compatibility": "Kompatibilität",
+				"usage": "Einsatz in der Praxis",
+				"accessories": "Passendes Zubehör",
+				"brand": "Über die Marke",
+				"closing": "Wir beraten Sie"
+			},
+			"viewAccessory": "Zubehör ansehen",
+			"viewPart": "Teil ansehen",
 			"years": "{count, plural, one {# Jahr} other {# Jahre}}"
 		},
 		"keyFeatures": "Wichtigste Merkmale",
 		"productDescription": "Produktbeschreibung",
 		"imageCounter": "Bild {current} von {total}",
+		"illustrativeImage": "Symbolbild",
 		"trustPaymentTitle": "Sichere Zahlung",
 		"trustPaymentText": "Verschlüsselte Verbindung",
 		"trustShippingTitle": "Versand",
@@ -318,7 +330,10 @@
 		"listingAllNotice": "Sie sehen das Angebot für alle Fahrzeuge – es ist nicht auf Ihr Auto ({vehicle}) abgestimmt.",
 		"listingDefaultNone": "Für {vehicle} haben wir noch keinen geprüften Satz, deshalb sehen Sie das Angebot für alle Fahrzeuge.",
 		"listingNotOnSaleTitle": "Für {vehicle} gibt es passende Sätze, die derzeit nicht im Verkauf sind",
-		"listingNotOnSaleBody": "Das heißt nicht, dass nichts passt. Wir nehmen die Sätze ins Angebot auf – bis dahin können Sie alle Fahrzeuge ansehen oder uns schreiben."
+		"listingNotOnSaleBody": "Das heißt nicht, dass nichts passt. Wir nehmen die Sätze ins Angebot auf – bis dahin können Sie alle Fahrzeuge ansehen oder uns schreiben.",
+		"listingOtherShelfTitle": "Für {vehicle} gibt es in dieser Kategorie keine geprüften Sätze",
+		"listingOtherShelfBody": "Die geprüften Sätze für Ihr Fahrzeug stehen in einer anderen Kategorie, nicht in dieser.",
+		"listingOtherShelfAction": "Sätze in „{category}“ ansehen"
 	},
 	"cart": {
 		"yourCart": "Ihr Warenkorb",
@@ -327,6 +342,7 @@
 		"addInvalid": "Bitte prüfen Sie die gewählte Menge.",
 		"addNotFound": "Produkt wurde nicht gefunden.",
 		"addFailed": "Das Produkt konnte nicht in den Warenkorb gelegt werden.",
+		"addPaymentLocked": "Für Ihre Bestellung läuft bereits eine Zahlung, daher kann gerade nichts hinzugefügt werden. Schließen Sie sie ab oder brechen Sie sie an der Kasse sicher ab.",
 		"addUnconfirmed": "Wir können nicht bestätigen, ob das Produkt hinzugefügt wurde. Bitte prüfen Sie den Warenkorb.",
 		"emptyCart": "Ihr Warenkorb ist leer",
 		"continueShopping": "Weiter einkaufen",
@@ -576,7 +592,12 @@
 			"invalidValue": "Ungültiger Wert",
 			"notFullyPaid": "Die Zahlung deckt den Gesamtbetrag noch nicht ab. Aktualisieren Sie die Seite; falls der Betrag autorisiert wurde, schließen Sie die Bestellung unten ab. Zahlen Sie nicht erneut, bis der Status bestätigt ist.",
 			"alreadyCompleted": "Diese Bestellung wurde bereits aufgegeben. Die Bestätigung finden Sie in Ihrer E-Mail.",
-			"freeOrderTotalChanged": "Der Gesamtbetrag hat sich geändert und erfordert nun eine Zahlung. Prüfen Sie ihn und versuchen Sie es erneut."
+			"freeOrderTotalChanged": "Der Gesamtbetrag hat sich geändert und erfordert nun eine Zahlung. Prüfen Sie ihn und versuchen Sie es erneut.",
+			"checkoutLocked": "Für diese Bestellung läuft bereits eine Zahlung. Schließen Sie sie ab oder brechen Sie sie sicher ab, bevor Sie eine neue starten.",
+			"orderUpdated": "Ihre Bestellung wurde aktualisiert. Bitte prüfen Sie den neuen Betrag vor der Zahlung.",
+			"finalStateUnconfirmed": "Der Endpreis konnte gerade nicht bestätigt werden. Bitte versuchen Sie es erneut.",
+			"completeBlockedNoNewPayment": "Die Bestellung konnte gerade nicht abgeschlossen werden. Wenn Sie bereits bezahlt haben, starten Sie keine neue Zahlung: Laden Sie die Seite neu oder kontaktieren Sie uns.",
+			"completeOfferChanged": "Der Betrag hat sich geändert, daher wurde keine Bestellung angelegt. Das Geld aus dieser Zahlung wird automatisch freigegeben. Wenn Sie Hilfe mit der Bestellung brauchen, kontaktieren Sie uns."
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Testmodus:</strong> Dies ist eine simulierte Bestellbestätigung. Es wurde keine echte Zahlung vorgenommen.",
@@ -598,6 +619,93 @@
 		},
 		"meta": {
 			"title": "Checkout"
+		},
+		"b2b": {
+			"sectionTitle": "Kauf auf Firma",
+			"toggle": "Ich kaufe für ein Unternehmen",
+			"toggleHint": "Die Firmendaten stehen auf der Rechnung.",
+			"companyName": "Firmenname",
+			"registrationId": "IČO",
+			"taxId": "DIČ",
+			"vatIdPlaceholder": "z. B. {example}",
+			"vatIdHint": "Mit einer gültigen UID-Nummer aus einem anderen EU-Land und Lieferung in dieses Land kann die Lieferung umsatzsteuerfrei sein. Wir entscheiden nach der Prüfung in VIES.",
+			"billingSameAsShipping": "Rechnungsadresse ist gleich der Lieferadresse",
+			"billingAddressTitle": "Rechnungsadresse",
+			"billingSummaryTitle": "Rechnungsdaten",
+			"billingMissing": "Die Rechnungsdaten fehlen. Bitte ergänzen Sie sie im Schritt Angaben.",
+			"taxedTotal": "Zu zahlen inkl. MwSt.: {total}",
+			"summaryExempt": "Ohne MwSt. — steuerfrei nach § 43 des slowakischen Umsatzsteuergesetzes",
+			"vatLabel": {
+				"SK": "IČ DPH",
+				"CZ": "DIČ",
+				"DE": "USt-IdNr.",
+				"AT": "UID-Nummer",
+				"PL": "NIP UE",
+				"HU": "Közösségi adószám",
+				"IT": "Partita IVA",
+				"FR": "N° TVA intracommunautaire",
+				"ES": "NIF-IVA",
+				"RO": "Cod TVA",
+				"generic": "UID-Nummer"
+			},
+			"errors": {
+				"companyNameRequired": "Bitte geben Sie den Firmennamen ein.",
+				"registrationIdRequired": "Bitte geben Sie die IČO ein.",
+				"registrationIdFormat": "Die IČO hat 6 bis 8 Ziffern.",
+				"taxIdFormat": "Die DIČ hat 10 Ziffern.",
+				"vatIdFormat": "Die Nummer hat nicht das Format einer UID-Nummer des gewählten Landes. Bitte prüfen Sie sie.",
+				"tooLong": "Der Wert ist zu lang.",
+				"saveFailed": "Die Firmendaten konnten nicht gespeichert werden. Bitte versuchen Sie es erneut."
+			},
+			"status": {
+				"verifying": "Wir prüfen die UID-Nummer …",
+				"exempt": "UID-Nummer bestätigt. Die Lieferung ist umsatzsteuerfrei; der angezeigte Preis ist ohne MwSt.",
+				"invalid": "VIES hat die UID-Nummer nicht als gültig für den innergemeinschaftlichen Handel bestätigt. Bitte prüfen Sie sie oder fahren Sie mit MwSt. fort.",
+				"unavailable": "Die UID-Nummer kann gerade nicht geprüft werden. Versuchen Sie es gleich noch einmal oder fahren Sie mit MwSt. fort.",
+				"countryMismatch": "Ohne MwSt. können wir automatisch nur Lieferungen in das Land Ihrer UID-Nummer abwickeln. Für eine andere Lieferung kontaktieren Sie uns bitte.",
+				"identityReview": "Die Firmendaten stimmen nicht mit dem Prüfergebnis überein. Bitte prüfen Sie die Rechnungsdaten oder kontaktieren Sie uns.",
+				"skVat": "Mit einer slowakischen UID-Nummer wird der Kauf mit MwSt. berechnet.",
+				"domesticDelivery": "Bei Lieferung oder Abholung in der Slowakei wird der Kauf mit MwSt. berechnet.",
+				"incomplete": "Über die MwSt. entscheiden wir, sobald Lieferdaten und Versandart vollständig sind.",
+				"validPendingDelivery": "Die UID-Nummer ist in VIES gültig. Über die MwSt. entscheiden wir nach der Wahl der Versandart.",
+				"disabled": "Eine automatische Steuerbefreiung bieten wir derzeit nicht an. Sie können den Firmenkauf mit MwSt. abschließen.",
+				"serviceOff": "Die automatische Prüfung der UID-Nummer ist gerade nicht verfügbar. Sie können den Firmenkauf zum Preis in der Übersicht abschließen."
+			},
+			"actions": {
+				"continueWithVat": "Mit MwSt. fortfahren",
+				"retry": "Erneut prüfen",
+				"recheck": "Erneut überprüfen",
+				"refreshStatus": "Zahlungsstatus aktualisieren",
+				"edit": "Bearbeiten"
+			}
+		},
+		"paymentLock": {
+			"locked": {
+				"details": "Für diese Bestellung läuft bereits eine Zahlung, daher können die Angaben gerade nicht geändert werden. Sie können die Zahlung abschließen oder sicher abbrechen und die Angaben danach ändern.",
+				"cart": "Für diese Bestellung läuft bereits eine Zahlung, daher kann der Warenkorb gerade nicht geändert werden. Sie können die Zahlung abschließen oder sicher abbrechen und den Warenkorb danach ändern.",
+				"payment": "Für diese Bestellung läuft bereits eine Zahlung, daher kann gerade keine neue gestartet werden. Sie können die begonnene Zahlung sicher abbrechen und danach erneut bezahlen."
+			},
+			"releasing": "Die begonnene Zahlung wird abgebrochen …",
+			"waitingCancel": "Wir warten, bis der Zahlungsanbieter den Abbruch der Zahlung bestätigt. Das dauert meist nur wenige Sekunden.",
+			"waitingAttempt": "Die Zahlung wird noch angelegt. Wir versuchen gleich erneut, sie abzubrechen.",
+			"released": {
+				"details": "Die begonnene Zahlung ist abgebrochen. Sie können die Angaben jetzt ändern und speichern.",
+				"cart": "Die begonnene Zahlung ist abgebrochen. Sie können den Warenkorb jetzt ändern.",
+				"payment": "Die begonnene Zahlung ist abgebrochen. Prüfen Sie den Betrag und bezahlen Sie erneut."
+			},
+			"funds": "Die Zahlung ist bereits eingegangen oder wartet auf die Bestätigung der Bank, daher kann die Bestellung nicht mehr geändert werden. Schließen Sie sie mit den ursprünglichen Angaben ab.",
+			"notConfirmed": "Der Abbruch der Zahlung ist noch nicht bestätigt. Versuchen Sie es gleich noch einmal, bezahlen Sie die Bestellung mit den ursprünglichen Angaben oder kontaktieren Sie uns.",
+			"unavailable": "Die begonnene Zahlung kann gerade nicht abgebrochen werden. Sie können die Bestellung mit den ursprünglichen Angaben bezahlen oder uns kontaktieren.",
+			"failed": "Die begonnene Zahlung konnte nicht abgebrochen werden. Versuchen Sie es gleich noch einmal, bezahlen Sie die Bestellung mit den ursprünglichen Angaben oder kontaktieren Sie uns.",
+			"actions": {
+				"releaseDetails": "Angaben ändern",
+				"releaseCart": "Warenkorb ändern",
+				"releasePayment": "Begonnene Zahlung abbrechen",
+				"retry": "Erneut versuchen",
+				"payOriginal": "Mit ursprünglichen Angaben bezahlen",
+				"finishOrder": "Bestellung abschließen",
+				"contact": "Shop kontaktieren"
+			}
 		}
 	},
 	"footer": {
@@ -852,9 +960,19 @@
 		"errorNotVerified": "Für das aktuell ausgewählte Fahrzeug ist dieses Set nicht geprüft.",
 		"errorNotAvailable": "Dieses Set ist nicht mehr im Angebot.",
 		"errorCartRejected": "Das Set konnte nicht in den Warenkorb gelegt werden.",
+		"errorPaymentLocked": "Für Ihre Bestellung läuft bereits eine Zahlung, daher kann das Set gerade nicht hinzugefügt werden. Schließen Sie sie ab oder brechen Sie sie an der Kasse sicher ab.",
 		"errorLookupFailed": "Wir können nicht bestätigen, ob das Set hinzugefügt wurde. Bitte prüfen Sie Ihren Warenkorb.",
 		"errorCatalogueUnavailable": "Die Verfügbarkeit des Sets konnte gerade nicht geprüft werden. Bitte versuchen Sie es noch einmal.",
-		"errorGeneric": "Das Set konnte nicht in den Warenkorb gelegt werden."
+		"errorGeneric": "Das Set konnte nicht in den Warenkorb gelegt werden.",
+		"facetAerodynamic": "Aerodynamisch",
+		"facetWing": "Flügelprofil",
+		"facetTubular": "Rohrprofil",
+		"facetColourBlack": "Schwarz",
+		"facetColourSilver": "Silber",
+		"facetColourAlu": "Alu natur",
+		"propertyBarLength": "Länge der Querträger",
+		"propertyColour": "Farbe",
+		"propertyBarLoad": "Traglast Querträger"
 	},
 	"catalog": {
 		"makeIndexTitle": "Dachträger nach Fahrzeug auswählen",
@@ -868,7 +986,7 @@
 		"offersPartial": "Ein Teil des Angebots konnte nicht geladen werden, die Liste ist daher möglicherweise nicht vollständig.",
 		"previewNotice": "Vorschau einer unveröffentlichten Seite. Besucher sehen sie nicht.",
 		"offersTitleGeneration": "Sätze für diese Generation",
-		"offersBrowseNote": "Jeder Satz gilt nur für die angegebene Dachform und die genannten Baujahre. Die Sätze sind nicht auf Ihr Auto abgestimmt – nach der Fahrzeugwahl zeigen wir nur die passenden.",
+		"offersBrowseNote": "Jedes Set gilt nur für die angegebene Dachform und die genannten Baujahre – die Unterschiede sehen Sie direkt auf den Karten. Anderes Fahrzeug? Ändern Sie es oben in der Kopfzeile.",
 		"offersGroupOther": "Ohne angegebene Dachform"
 	},
 	"company": {
@@ -1117,5 +1235,15 @@
 		"description": "Die Hersteller von Dachträgern, Dachboxen, Fahrradträgern und weiterer Ausrüstung, deren Produkte Sie bei uns kaufen.",
 		"productCount": "{count, plural, one {# Produkt} other {# Produkte}}",
 		"brandDescription": "Produkte der Marke {brand} bei MAKY.STORE."
+	},
+	"listing": {
+		"viewLabel": "Ansicht der Produktliste",
+		"viewGrid": "Raster",
+		"viewList": "Liste",
+		"viewSet": "Set ansehen",
+		"specDimensions": "Maße",
+		"specBars": "Querträger",
+		"roofFilterLabel": "Dachtyp",
+		"roofFilterAll": "Alle"
 	}
 }

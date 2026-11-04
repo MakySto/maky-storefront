@@ -148,6 +148,11 @@ export const useAddressFormUtils = (countryCode: CountryCode = defaultCountry) =
 		[getLocalizedFieldLabel, localizedFields, t],
 	);
 
+	// Only once the country's rules are in can a field be called optional ("nepovinné"). While they load (also after a
+	// country change, when the previous country's rules are still held) or when they could not be read, no field is
+	// labelled optional; Saleor still names what is missing when the form is sent.
+	const rulesKnown = !fetching && validationRules !== undefined;
+
 	// Calculate ordered address fields from validation rules
 	const orderedAddressFields = useMemo(() => {
 		if (validationRules?.allowedFields) {
@@ -164,6 +169,7 @@ export const useAddressFormUtils = (countryCode: CountryCode = defaultCountry) =
 		hasAllRequiredFields,
 		getMissingFieldsFromAddress,
 		fetching,
+		rulesKnown,
 		...validationRules,
 		allowedFields: validationRules?.allowedFields as AddressField[] | undefined,
 	};

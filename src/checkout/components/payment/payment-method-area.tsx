@@ -17,6 +17,7 @@ type PaymentMethodAreaProps = {
 		shippingAddress: AddressFragment | null | undefined;
 		userAddresses: ReadonlyArray<AddressFragment> | undefined;
 		authenticated: boolean;
+		preserveBilling?: boolean;
 	};
 	onPaymentError?: (message: string) => void;
 	onBillingErrors?: (errors: Record<string, string>, focusField?: string) => void;

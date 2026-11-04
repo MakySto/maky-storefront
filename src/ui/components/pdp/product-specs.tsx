@@ -11,9 +11,13 @@ import {
 	type AttributeInput,
 } from "@/lib/product-attributes";
 import {
+	descriptionSections,
 	groupParameters,
+	isTailSection,
+	sectionKindOfHtml,
 	templateFor,
 	TEMPERATURE_RANGE_REF,
+	withoutSheetRepeats,
 	type PageSections,
 	type ParameterRow,
 	type ProductTemplate,
@@ -54,6 +58,57 @@ const DESCRIPTION_PROSE = cn(
 	"[&>div:first-child>p:first-child]:text-text-primary [&>div:first-child>p:first-child]:text-[1.0625rem] [&>div:first-child>p:first-child]:font-medium sm:[&>div:first-child>p:first-child]:text-lg",
 	"prose-ul:pl-5 prose-li:my-1 prose-li:marker:text-brand",
 );
+
+/**
+ * A description set as sections: the sections of one card, a thin rule and a gap between them. A
+ * section's heading is its title; with no kind named on it (`maky:section:<kind>`) it carries a short
+ * brown rule above it, with one the small title the storefront writes over it takes that place. The
+ * running text keeps to a readable line (about 70 characters); the cards the producer built (benefits,
+ * the box, the steps, the documents) keep the card's width.
+ */
+const SECTION_HEADING = cn(
+	"[&>div>h3]:mt-0 [&>div>h3]:mb-4 [&>div>h3]:text-2xl [&>div>h3]:font-extrabold [&>div>h3]:tracking-[-0.025em] [&>div>h3]:text-text-primary sm:[&>div>h3]:text-[1.875rem]",
+	"[&>div>h4]:text-text-primary [&>div>h4]:mt-0 [&>div>h4]:mb-2 [&>div>h4]:text-lg [&>div>h4]:font-bold",
+	"[&>div>p]:max-w-[70ch] [&>div>ul:not([class])]:max-w-[70ch] [&>div>ol:not([class])]:max-w-[70ch]",
+);
+const SECTION_RULE =
+	"[&>div>h3]:before:bg-brand [&>div>h3]:before:mb-4 [&>div>h3]:before:block [&>div>h3]:before:h-[3px] [&>div>h3]:before:w-10 [&>div>h3]:before:rounded-full [&>div>h3]:before:content-['']";
+/** The opening paragraph of an introduction, under its heading: the lead. */
+const SECTION_LEAD =
+	"[&>div:nth-child(2)>p:first-child]:text-text-primary [&>div:nth-child(2)>p:first-child]:text-[1.0625rem] [&>div:nth-child(2)>p:first-child]:font-medium sm:[&>div:nth-child(2)>p:first-child]:text-lg";
+
+/** Whether a block of the description is a picture (`<figure>`): it goes to the section's picture column. */
+const isPicture = (html: string) => html.trimStart().startsWith("<figure");
+
+/** A heading of the fourth level opens a pair: its text, and the picture that belongs to it. */
+const isPairHeading = (html: string) => /^<h4[\s>]/.test(html);
+
+/** The text of a stretch of a section and the pictures that stand beside it, or under it when there are several. */
+interface Chunk {
+	text: string[];
+	pictures: string[];
+}
+
+const toChunk = (blocks: readonly string[]): Chunk => ({
+	text: blocks.filter((html) => !isPicture(html)),
+	pictures: blocks.filter(isPicture),
+});
+
+/**
+ * A section's blocks cut into the stretches a picture is set against. A section whose `h4` headings
+ * carry pictures is a row of pairs, one for each heading ("Konštrukcia": the modules and their photo,
+ * the fixing and its photo); any other section is one stretch.
+ */
+function chunksOf(blocks: readonly string[]): Chunk[] {
+	const firstPair = blocks.findIndex(isPairHeading);
+	if (firstPair === -1 || !blocks.slice(firstPair).some(isPicture)) return [toChunk(blocks)];
+	const parts: string[][] = [blocks.slice(0, firstPair)];
+	for (const html of blocks.slice(firstPair)) {
+		if (isPairHeading(html)) parts.push([html]);
+		else parts[parts.length - 1].push(html);
+	}
+	return parts.filter((part) => part.length > 0).map(toChunk);
+}
 
 /** The scrolling box `parseEditorJSToHtml` puts around a model comparison table. */
 const COMPARISON_REGION_CLASS = "maky-cmp-scroll";
@@ -118,12 +173,16 @@ export async function ProductSpecs({
 	const range = template.groups.some((group) => group.refs.includes(TEMPERATURE_RANGE_REF))
 		? formatTemperatureRange(attributes, locale, (min, max) => t("content.range", { min, max }))
 		: null;
-	const rows = range
+	const allRows = range
 		? withTemperatureRange(attributeRows, range.full, t("content.temperatureRange"))
 		: attributeRows;
+	// Under the description's own sheet the attributes keep only what the sheet does not already say.
+	const { rows, outerDimensions } = withoutSheetRepeats(
+		allRows,
+		formatOuterDimensions(attributes, locale),
+		specs?.facts,
+	);
 	const groups = groupParameters(template, rows);
-
-	const outerDimensions = formatOuterDimensions(attributes, locale);
 	const hasDescription = Boolean(descriptionHtml?.length || careInstructions);
 	const hasAttributeParameters = rows.length > 0 || Boolean(outerDimensions);
 	const hasTechnicalParameters = hasAttributeParameters || Boolean(specs);
@@ -133,6 +192,24 @@ export async function ProductSpecs({
 	if (!hasDescription && !hasTechnicalParameters && !hasComparison && !hasDocuments) return null;
 
 	// The sections in the order the cards follow each other.
+	// A description that carries pictures of its own is set as one card for each of its sections.
+	const allSections =
+		template.sections && descriptionHtml?.length ? descriptionSections(descriptionHtml) : null;
+	// The questions and the closing stand in cards of their own after the parameters; the rest is one card.
+	const sectionCards = allSections?.filter((section) => !isTailSection(section)) ?? null;
+	const tailCards = allSections?.filter(isTailSection) ?? [];
+	// Every second lone picture stands on the left, counted through the whole description, so the page
+	// does not read as one repeated card.
+	let lonePictures = 0;
+	const plan = (sectionCards ?? []).map((blocks) => ({
+		blocks,
+		kind: sectionKindOfHtml(blocks),
+		chunks: chunksOf(blocks).map((chunk) => ({
+			chunk,
+			flipped: chunk.pictures.length === 1 && lonePictures++ % 2 === 1,
+		})),
+	}));
+
 	const sections = [
 		hasDescription && { href: "#product-description", label: t("description") },
 		hasComparison && { href: "#model-comparison", label: t("content.navComparison") },
@@ -170,7 +247,42 @@ export async function ProductSpecs({
 			{/* The description with the product's photo beside its opening, then the parameters at
 			    full width in two columns — the approved page's order. */}
 			<div className="mt-5 grid gap-4 lg:mt-6 lg:gap-5">
-				{hasDescription && (
+				{hasDescription && sectionCards && (
+					<>
+						<h2 className="sr-only">{t("productDescription")}</h2>
+						{/* The sections of the description are the sections of one card: a gap and a thin rule
+						    between them, not a raised panel for each. */}
+						<article id="product-description" className={cn(CARD, "flow-root")}>
+							{plan.map(({ kind, blocks, chunks }, index) => (
+								<section
+									// The sections have no identity of their own: the producer's order is the key.
+									key={`${index}-${blocks[0]}`}
+									className={cn(index > 0 && "border-border-subtle mt-10 border-t pt-10 lg:mt-12 lg:pt-12")}
+								>
+									{kind && <SectionKicker>{t(`content.sections.${kind}`)}</SectionKicker>}
+									{chunks.map(({ chunk, flipped }, chunkIndex) => (
+										<SectionChunk
+											key={`${chunkIndex}-${chunk.text[0] ?? chunk.pictures[0]}`}
+											chunk={chunk}
+											flipped={flipped}
+											kicker={Boolean(kind)}
+											lead={kind === "intro" && chunkIndex === 0}
+											className={chunkIndex > 0 ? "mt-8 lg:mt-10" : undefined}
+										/>
+									))}
+								</section>
+							))}
+							{careInstructions && (
+								<div className="border-border-subtle bg-surface-secondary mt-8 rounded-xs border p-4 sm:p-5">
+									<h3 className="text-text-primary mb-2 font-semibold">{t("careInstructions")}</h3>
+									<p className="text-text-secondary leading-relaxed">{careInstructions}</p>
+								</div>
+							)}
+						</article>
+					</>
+				)}
+
+				{hasDescription && !sectionCards && (
 					<article
 						id="product-description"
 						aria-labelledby="product-description-heading"
@@ -297,8 +409,103 @@ export async function ProductSpecs({
 						<div className="maky-blk mt-0" dangerouslySetInnerHTML={{ __html: documents.body }} />
 					</article>
 				)}
+
+				{tailCards.map((blocks, index) => {
+					const kind = sectionKindOfHtml(blocks);
+					return (
+						<article
+							key={`${index}-${blocks[0]}`}
+							id={blocks.some((html) => html.includes('class="maky-faq"')) ? "product-faq" : undefined}
+							className={cn(CARD, kind === "closing" && "border-copper-100 bg-copper-50")}
+						>
+							{kind && <SectionKicker>{t(`content.sections.${kind}`)}</SectionKicker>}
+							<div
+								className={cn(
+									DESCRIPTION_PROSE,
+									SECTION_HEADING,
+									// A questions block carries its heading itself, at the size of a card's title.
+									"[&>div>.maky-blk>.maky-h]:text-text-primary [&>div>.maky-blk>.maky-h]:text-2xl [&>div>.maky-blk>.maky-h]:font-extrabold [&>div>.maky-blk>.maky-h]:tracking-[-0.025em] sm:[&>div>.maky-blk>.maky-h]:text-[1.875rem]",
+									!kind && SECTION_RULE,
+								)}
+							>
+								{blocks.map((html) => (
+									<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
+								))}
+							</div>
+						</article>
+					);
+				})}
 			</div>
 		</section>
+	);
+}
+
+/** The small title over a section's heading: a short brown rule and the kind of section, in the shopper's language. */
+function SectionKicker({ children }: { children: React.ReactNode }) {
+	return (
+		<p className="text-brand mb-3 flex items-center gap-2.5 text-xs font-bold tracking-[0.12em] uppercase">
+			<span aria-hidden="true" className="bg-brand h-0.5 w-[22px] rounded-full" />
+			{children}
+		</p>
+	);
+}
+
+/**
+ * One stretch of a section: its text, and the pictures set against it. One picture stands beside the
+ * text, from `lg` in a column of half the width (on the left in every second stretch, `flipped`); two
+ * or more are a row under it, so neither side is left with a gap the other has filled. Whole, never
+ * cropped, the caption under each and outside its frame (`.maky-figs`, brand.css).
+ */
+function SectionChunk({
+	chunk,
+	flipped,
+	kicker,
+	lead,
+	className,
+}: {
+	chunk: Chunk;
+	flipped: boolean;
+	/** The section names its kind: the small title stands over the heading, so the heading has no rule of its own. */
+	kicker: boolean;
+	lead: boolean;
+	className?: string;
+}) {
+	const { text, pictures } = chunk;
+	const beside = pictures.length === 1;
+	return (
+		<div
+			className={cn(beside && "lg:grid lg:grid-cols-2 lg:items-center lg:gap-x-12 xl:gap-x-16", className)}
+		>
+			{text.length > 0 && (
+				<div
+					className={cn(
+						DESCRIPTION_PROSE,
+						SECTION_HEADING,
+						!kicker && SECTION_RULE,
+						lead && SECTION_LEAD,
+						flipped && "lg:order-2",
+					)}
+				>
+					{text.map((html) => (
+						<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
+					))}
+				</div>
+			)}
+			{pictures.length > 0 && (
+				<div
+					className={cn(
+						"maky-figs",
+						beside
+							? cn("mt-6 lg:mt-0", flipped && "lg:order-1")
+							: "mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3",
+					)}
+				>
+					{pictures.map((html) => (
+						<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
+					))}
+				</div>
+			)}
+		</div>
 	);
 }
 

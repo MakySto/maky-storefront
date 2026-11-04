@@ -271,6 +271,44 @@ export async function VehicleListingFilter({
 		);
 	}
 
+	// Narrowed on a sub-shelf that holds none of this car's sets: they are on another shelf of the family.
+	if (filter.state === "other-shelf") {
+		return (
+			<div
+				data-testid="vehicle-other-shelf"
+				className={cn(
+					"border-border-subtle bg-surface-card rounded-sm border px-5 py-10 text-center shadow-xs sm:px-8 sm:py-12",
+					className,
+				)}
+			>
+				<span className="bg-status-info-bg text-status-info mx-auto flex h-12 w-12 items-center justify-center rounded-full">
+					<Car className="h-6 w-6" aria-hidden="true" />
+				</span>
+				<h2 className="text-text-primary mt-4 text-lg font-semibold sm:text-xl">
+					{t("listingOtherShelfTitle", { vehicle: filter.vehicleLabel ?? "" })}
+				</h2>
+				<p className="text-text-secondary mx-auto mt-2 max-w-xl text-sm sm:text-base">
+					{t("listingOtherShelfBody")}
+				</p>
+				<div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-5">
+					<LinkWithChannel
+						href={filter.family.path}
+						className="bg-cta text-cta-text hover:bg-cta-hover focus-visible:ring-ring inline-flex h-12 items-center justify-center rounded-xs px-6 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
+					>
+						{t("listingOtherShelfAction", { category: filter.family.name })}
+					</LinkWithChannel>
+					<LinkWithChannel
+						href={allHref}
+						className="text-text-link hover:text-text-link-hover text-sm font-medium underline decoration-1 underline-offset-2"
+					>
+						{t("listingModeAll")}
+					</LinkWithChannel>
+					{changeVehicle}
+				</div>
+			</div>
+		);
+	}
+
 	// Narrowed, and nothing matched: the listing's whole content. It says what happened in the
 	// shopper's terms and offers the three ways on — the full range, another car, a person.
 	if (filter.state === "empty") {

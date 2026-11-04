@@ -28,6 +28,12 @@ export type OfferFit = {
 	/** What the application constrains. `null` = it names no roof — nothing is said, never a guess. */
 	roofTypes: readonly RoofType[] | null;
 	bodyTypes: readonly BodyType[] | null;
+	/**
+	 * The generations of the applications these facts come from — which car the set is made for, to
+	 * name it the way the rest of the shop does. Not part of the identity of a fit: applications with
+	 * the same facts are still one statement (`sameFit`), and every generation behind it is listed.
+	 */
+	generationIds?: readonly string[];
 };
 
 export function offerFitOf(application: FitmentApplication): OfferFit {
@@ -38,6 +44,7 @@ export function offerFitOf(application: FitmentApplication): OfferFit {
 		yearTo: application.window.to?.year ?? null,
 		roofTypes: roofs && roofs.length > 0 ? roofs : null,
 		bodyTypes: bodies && bodies.length > 0 ? bodies : null,
+		generationIds: [application.generationId],
 	};
 }
 
@@ -62,9 +69,17 @@ export function offerFitsByProduct(applications: Iterable<FitmentApplication>): 
 		if (application.negative) continue;
 		const fit = offerFitOf(application);
 		for (const ref of application.products) {
+			// A copy for each product: the generations behind a fit are collected per product.
 			const list = byProduct.get(ref.saleorProductId);
-			if (!list) byProduct.set(ref.saleorProductId, [fit]);
-			else if (!list.some((known) => sameFit(known, fit))) list.push(fit);
+			if (!list) {
+				byProduct.set(ref.saleorProductId, [{ ...fit }]);
+				continue;
+			}
+			const known = list.find((other) => sameFit(other, fit));
+			if (!known) list.push({ ...fit });
+			else if (!known.generationIds?.includes(application.generationId)) {
+				known.generationIds = [...(known.generationIds ?? []), application.generationId];
+			}
 		}
 	}
 	return byProduct;
@@ -100,11 +115,15 @@ export const ROOF_GROUP_ORDER: readonly RoofType[] = [
 	"rain-gutter",
 ];
 
-/** The roof a set is grouped under on a page that mixes several: its first, else none. */
-export function groupRoofOf(fits: readonly OfferFit[] | undefined): RoofType | null {
+/** Every roof a set is made for, in the listing's order: how often a shopper's roof is this one, roughly. */
+export function roofsOf(fits: readonly OfferFit[] | undefined): RoofType[] {
 	const roofs = fits?.flatMap((fit) => fit.roofTypes ?? []) ?? [];
-	for (const roof of ROOF_GROUP_ORDER) if (roofs.includes(roof)) return roof;
-	return null;
+	return ROOF_GROUP_ORDER.filter((roof) => roofs.includes(roof));
+}
+
+/** The roof a set is sorted under on a page that mixes several: its first, else none. */
+export function groupRoofOf(fits: readonly OfferFit[] | undefined): RoofType | null {
+	return roofsOf(fits)[0] ?? null;
 }
 
 /**
