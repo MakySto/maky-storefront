@@ -26,7 +26,7 @@ const setCookie = (res: Response) => res.headers.get("set-cookie") ?? "";
 
 describe("order confirmation handoff", () => {
 	it("is reached: the proxy matcher covers both checkout routes", () => {
-		const matcher = new RegExp(`^${config.matcher[0].source}$`);
+		const matcher = new RegExp(`^${config.matcher[0]}$`);
 		expect(matcher.test("/checkout")).toBe(true);
 		expect(matcher.test(CONFIRMATION)).toBe(true);
 	});
