@@ -86,7 +86,11 @@ async function boot(env: Record<string, string | undefined>): Promise<Captured> 
 const withdrawalLine = (c: Captured): string =>
 	[...c.log, ...c.warn, ...c.error].find((line) => line.startsWith("[withdrawal] form=")) ?? "";
 
-afterEach(() => {
+afterEach(async () => {
+	// The warm-ups `register` starts are not awaited, and a test that releases one (`finish()`) returns before the chain
+	// behind it has reached its next call. Let those calls land in the test that started them: counted into the next one,
+	// they made it fail on a machine where the chain is a little slower than the test (2026-11-04).
+	await new Promise<void>((resolve) => setTimeout(resolve, 50));
 	vi.unstubAllEnvs();
 	vi.unstubAllGlobals();
 	vi.restoreAllMocks();
