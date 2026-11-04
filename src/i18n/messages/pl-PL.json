@@ -330,7 +330,10 @@
 		"listingAllNotice": "Widzisz ofertę dla wszystkich pojazdów — nie jest dopasowana do Twojego auta ({vehicle}).",
 		"listingDefaultNone": "Dla {vehicle} nie mamy jeszcze zweryfikowanego zestawu, dlatego widzisz ofertę dla wszystkich pojazdów.",
 		"listingNotOnSaleTitle": "Dla {vehicle} istnieją zgodne zestawy, które obecnie nie są w sprzedaży",
-		"listingNotOnSaleBody": "To nie znaczy, że nic nie pasuje. Dodajemy te zestawy do oferty — w międzyczasie możesz przejrzeć wszystkie pojazdy lub napisać do nas."
+		"listingNotOnSaleBody": "To nie znaczy, że nic nie pasuje. Dodajemy te zestawy do oferty — w międzyczasie możesz przejrzeć wszystkie pojazdy lub napisać do nas.",
+		"listingOtherShelfTitle": "Dla {vehicle} nie mamy w tej kategorii sprawdzonych zestawów",
+		"listingOtherShelfBody": "Sprawdzone zestawy dla Twojego pojazdu są w innej kategorii, nie w tej.",
+		"listingOtherShelfAction": "Zobacz zestawy w kategorii {category}"
 	},
 	"cart": {
 		"yourCart": "Twój koszyk",

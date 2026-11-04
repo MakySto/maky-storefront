@@ -135,6 +135,25 @@ describe("every verified set is hidden in the shop", () => {
 	});
 });
 
+describe("a sub-shelf that holds none of the car's sets", () => {
+	const otherShelf: FilterState = {
+		state: "other-shelf",
+		vehicleLabel: CAR,
+		isDemo: false,
+		family: { name: "Strešné nosiče", path: "/stresne-nosice" },
+	};
+
+	it("sends the shopper to the family's page and does not claim the sets are not on sale", async () => {
+		const html = (await render(otherShelf))!;
+		expect(html).toContain('data-testid="vehicle-other-shelf"');
+		expect(html).toContain("Pre BMW X5 E70 · 2012 nemáme v tejto kategórii overené sady");
+		expect(html).toContain("Zobraziť sady v kategórii Strešné nosiče");
+		expect(html).toContain('href="/sk/stresne-nosice"');
+		expect(html).not.toContain("nie sú v predaji");
+		expect(html).toContain("Všetky vozidlá");
+	});
+});
+
 describe("the states that already existed keep what they said", () => {
 	it("asks for a car when there is none, in the full-width bar", async () => {
 		const html = (await render({ state: "no-vehicle", requested: false }))!;

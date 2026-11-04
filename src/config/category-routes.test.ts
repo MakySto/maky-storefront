@@ -18,8 +18,12 @@ import {
 	categorySegment,
 	baseSlugOfCategory,
 	categoryUrlFor,
+	baseSlugForCategoryId,
+	categoryRootServes,
 	isKargoCategory,
 	isLocalizedRootSegment,
+	renamedCategoryTarget,
+	saleorSlugFor,
 } from "./category-routes";
 
 /**
@@ -432,5 +436,88 @@ describe("the Nordrive Kargo van category", () => {
 
 	it("keeps the old Kargo slug for the shelf and the quote button, while Saleor still names it", () => {
 		expect(KARGO_CATEGORY_SLUGS).toEqual([BASE, KARGO_PREVIOUS_SLUG]);
+	});
+});
+
+describe("the Kargo category while Saleor still holds its first slug (read 2026-11-02)", () => {
+	const BASE = "kargo-stresne-nosice-a-stresne-kose-na-dodavky";
+	const published = globalThis as typeof globalThis & { [LIVE_CATEGORY_SLUGS_KEY]?: ReadonlySet<string> };
+	// The slugs CFM wrote as the category's first translations, typed out from the Saleor read.
+	const FIRST_TRANSLATIONS: Readonly<Record<string, string>> = {
+		cz: "stresni-nosice-a-kose-na-dodavky",
+		de: "dachtraeger-und-dachkoerbe-fuer-transporter",
+		at: "dachtraeger-und-dachkoerbe-fuer-transporter",
+		pl: "bagazniki-dachowe-i-kosze-do-samochodow-dostawczych",
+		hu: "tetocsomagtartok-es-tetokosarak-kisteherautokra",
+		ro: "bare-transversale-si-cosuri-portbagaj-pentru-autoutilitare",
+		fr: "barres-de-toit-et-galeries-pour-utilitaires",
+		it: "barre-portatutto-e-cesti-per-furgoni",
+		es: "barras-de-techo-y-bacas-para-furgonetas",
+	};
+
+	beforeEach(() => {
+		published[LIVE_CATEGORY_SLUGS_KEY] = new Set([KARGO_PREVIOUS_SLUG]);
+	});
+	afterEach(() => {
+		delete published[LIVE_CATEGORY_SLUGS_KEY];
+	});
+
+	it("asks Saleor for the slug it holds, and for the new one the moment it holds that", () => {
+		expect(saleorSlugFor(BASE)).toBe(KARGO_PREVIOUS_SLUG);
+		expect(saleorSlugFor(KARGO_PREVIOUS_SLUG)).toBe(KARGO_PREVIOUS_SLUG);
+		published[LIVE_CATEGORY_SLUGS_KEY] = new Set([BASE]);
+		expect(saleorSlugFor(BASE)).toBe(BASE);
+		published[LIVE_CATEGORY_SLUGS_KEY] = new Set([BASE, KARGO_PREVIOUS_SLUG]);
+		expect(saleorSlugFor(BASE)).toBe(BASE);
+		delete published[LIVE_CATEGORY_SLUGS_KEY];
+		expect(saleorSlugFor(BASE)).toBe(BASE);
+		expect(saleorSlugFor("stresne-nosice")).toBe("stresne-nosice");
+	});
+
+	it("names the category by its id, whatever slug a translation gave it", () => {
+		expect(baseSlugForCategoryId(btoa("Category:34"))).toBe(BASE);
+		expect(baseSlugForCategoryId(btoa("Category:5"))).toBe("nordrive-stresne-nosice");
+		expect(baseSlugForCategoryId(btoa("Category:999"))).toBeNull();
+		expect(baseSlugForCategoryId(null)).toBeNull();
+	});
+
+	it("serves the localized root abroad at once, and keeps Slovakia on its old root until the rename", () => {
+		for (const market of Object.keys(CHANNEL_MAP).filter((m) => m !== "sk")) {
+			expect(categoryRootServes(market, BASE), market).toBe(true);
+			expect(categoryUrlFor(market, BASE), market).not.toContain("/categories/");
+		}
+		expect(categoryRootServes("sk", BASE)).toBe(false);
+		expect(categoryUrlFor("sk", KARGO_PREVIOUS_SLUG)).toBe(`/${KARGO_PREVIOUS_SLUG}`);
+		// A chip that knows the category by id asks for the new base slug: it must not land on `/categories/…`.
+		expect(categoryUrlFor("sk", BASE)).toBe(`/${KARGO_PREVIOUS_SLUG}`);
+	});
+
+	it("reads every first translated slug as the category, and links it to the canonical root", () => {
+		for (const [market, legacy] of Object.entries(FIRST_TRANSLATIONS)) {
+			expect(categoryBaseSlug(market, legacy), market).toBe(BASE);
+			expect(categoryUrlFor(market, legacy), market).toBe(`/${categorySegment(market, BASE)}`);
+			expect(renamedCategoryTarget(market, [legacy]), market).toBe(`/${categorySegment(market, BASE)}`);
+			expect(renamedCategoryTarget(market, [legacy, "x", "y"]), market).toBe(
+				`/${categorySegment(market, BASE)}/x/y`,
+			);
+		}
+	});
+
+	it("sends the Slovak first slug to the new root abroad at once, and in Slovakia only after the rename", () => {
+		for (const market of Object.keys(CHANNEL_MAP).filter((m) => m !== "sk")) {
+			expect(renamedCategoryTarget(market, [KARGO_PREVIOUS_SLUG]), market).toBe(
+				`/${categorySegment(market, BASE)}`,
+			);
+		}
+		expect(renamedCategoryTarget("sk", [KARGO_PREVIOUS_SLUG])).toBeNull();
+		published[LIVE_CATEGORY_SLUGS_KEY] = new Set([BASE]);
+		expect(renamedCategoryTarget("sk", [KARGO_PREVIOUS_SLUG])).toBe(`/${BASE}`);
+	});
+
+	it("leaves another language's spelling and other roots alone", () => {
+		expect(renamedCategoryTarget("de", [FIRST_TRANSLATIONS.pl!])).toBeNull();
+		expect(renamedCategoryTarget("de", ["dachtraeger"])).toBeNull();
+		expect(renamedCategoryTarget("sk", ["stresne-nosice"])).toBeNull();
+		expect(renamedCategoryTarget("de", [])).toBeNull();
 	});
 });

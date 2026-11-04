@@ -20,6 +20,7 @@ import { productRedirectTarget } from "./lib/catalog-content/product-redirects";
 import { CATEGORY_ROUTE_PREFIX, isCategorySlug } from "./config/categories";
 import {
 	categoryBaseSlug,
+	categoryRootServes,
 	categorySegment,
 	isLocalizedRootSegment,
 	renamedCategoryTarget,
@@ -396,7 +397,7 @@ async function route(request: NextRequest) {
 	// `config/category-routes.ts` maps. Slovakia is unchanged: its segment is the slug.
 	if (first && FRIENDLY_SLUGS.has(first) && segments.length === 3 && segments[1] === CATEGORY_ROUTE_PREFIX) {
 		const base = categoryBaseSlug(first, segments[2]);
-		if (isCategorySlug(base)) {
+		if (categoryRootServes(first, base)) {
 			const url = request.nextUrl.clone();
 			url.pathname = "/" + first + "/" + categorySegment(first, base);
 			return NextResponse.redirect(url, 308);

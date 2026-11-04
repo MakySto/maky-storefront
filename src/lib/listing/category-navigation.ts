@@ -1,6 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { CategoryNavigationDocument, type CategoryNavigationNodeFragment } from "@/gql/graphql";
-import { categoryUrlFor } from "@/config/category-routes";
+import { baseSlugForCategoryId, categoryUrlFor } from "@/config/category-routes";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { answered, faulted, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
@@ -139,7 +139,9 @@ export function buildCategoryNavigation(
 		return {
 			id: node.id,
 			baseSlug: node.slug,
-			href: marketHref(channel, categoryUrlFor(channel, localized.slug)),
+			// By id where the table knows the category: abroad `localized.slug` is a translation, which can
+			// be any spelling, and one the table does not list leaves the chip on `/categories/…`.
+			href: marketHref(channel, categoryUrlFor(channel, baseSlugForCategoryId(node.id) ?? localized.slug)),
 			name: localized.name,
 			count: productCount(node),
 		};

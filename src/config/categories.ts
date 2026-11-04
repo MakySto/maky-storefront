@@ -245,6 +245,11 @@ export function isCategorySlug(slug: string): boolean {
 	return CATEGORY_SLUGS.has(slug) || (liveCategorySlugs()?.has(slug) ?? false);
 }
 
+/** Has the running server loaded this slug from Saleor itself? The floor does not count: that is what Saleor holds NOW. */
+export function isLiveCategorySlug(slug: string): boolean {
+	return liveCategorySlugs()?.has(slug) ?? false;
+}
+
 /**
  * The fitment product kind on this category's shelf, or `null` when the compatibility
  * programme makes no claim about it.

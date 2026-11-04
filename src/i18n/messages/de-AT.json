@@ -330,7 +330,10 @@
 		"listingAllNotice": "Sie sehen das Angebot für alle Fahrzeuge – es ist nicht auf Ihr Auto ({vehicle}) abgestimmt.",
 		"listingDefaultNone": "Für {vehicle} haben wir noch keinen geprüften Satz, deshalb sehen Sie das Angebot für alle Fahrzeuge.",
 		"listingNotOnSaleTitle": "Für {vehicle} gibt es passende Sätze, die derzeit nicht im Verkauf sind",
-		"listingNotOnSaleBody": "Das heißt nicht, dass nichts passt. Wir nehmen die Sätze ins Angebot auf – bis dahin können Sie alle Fahrzeuge ansehen oder uns schreiben."
+		"listingNotOnSaleBody": "Das heißt nicht, dass nichts passt. Wir nehmen die Sätze ins Angebot auf – bis dahin können Sie alle Fahrzeuge ansehen oder uns schreiben.",
+		"listingOtherShelfTitle": "Für {vehicle} gibt es in dieser Kategorie keine geprüften Sätze",
+		"listingOtherShelfBody": "Die geprüften Sätze für Ihr Fahrzeug stehen in einer anderen Kategorie, nicht in dieser.",
+		"listingOtherShelfAction": "Sätze in „{category}“ ansehen"
 	},
 	"cart": {
 		"yourCart": "Ihr Warenkorb",
