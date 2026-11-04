@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { NextRequest } from "next/server";
 import { getPathMatch } from "next/dist/shared/lib/router/utils/path-match";
-import { prepareDestination } from "next/dist/shared/lib/router/utils/prepare-destination";
+import { matchHas, prepareDestination } from "next/dist/shared/lib/router/utils/prepare-destination";
 import { afterEach, describe, expect, it } from "vitest";
 import { CATEGORY_SLUGS, LIVE_CATEGORY_SLUGS_KEY } from "./config/categories";
 import { categoryRouteTable } from "./config/category-routes";
@@ -29,26 +29,45 @@ describe("action rewrites file", () => {
 
 	it("only ever applies to a request that carries a Next-Action header", () => {
 		for (const rule of buildActionRewrites()) {
-			expect(rule.has).toEqual([{ type: "header", key: "next-action" }]);
+			expect(rule.has).toEqual([{ type: "header", key: "next-action", value: ".+" }]);
 		}
 	});
 });
 
-/** What Next does with one rewrite: the first rule whose source matches. */
-function rewritten(pathname: string): string | null {
+/**
+ * What Next does with an action POST to `pathname?search`: the first rewrite whose source and `has` condition
+ * match, with the parameters it captured and the query it hands to the page (`resolve-routes.js`, the same
+ * three calls in the same order). `actionId` is the `Next-Action` header; none means a page load.
+ */
+function rewrittenWith(
+	pathname: string,
+	query: Record<string, string> = {},
+	actionId: string | null = "40b2476b95106f3acd11781a847d37fecad1748409",
+): { pathname: string; query: Record<string, unknown> } | null {
+	const headers: Record<string, string> = actionId ? { "next-action": actionId } : {};
 	for (const rule of buildActionRewrites()) {
 		const params = getPathMatch(rule.source, { removeUnnamedParams: true, strict: true })(pathname);
 		if (!params) continue;
-		const prepared = prepareDestination({
-			appendParamsToQuery: false,
+		const hasParams = matchHas(
+			{ headers } as unknown as Parameters<typeof matchHas>[0],
+			query,
+			rule.has,
+			undefined,
+		);
+		if (!hasParams) continue;
+		Object.assign(params, hasParams);
+		const { parsedDestination } = prepareDestination({
+			appendParamsToQuery: true,
 			destination: rule.destination,
 			params: params as Record<string, string | string[]>,
-			query: {},
+			query,
 		});
-		return prepared.parsedDestination.pathname;
+		return { pathname: parsedDestination.pathname, query: parsedDestination.query };
 	}
 	return null;
 }
+
+const rewritten = (pathname: string) => rewrittenWith(pathname)?.pathname ?? null;
 
 const req = (path: string) => new NextRequest(new URL(`https://maky.store${path}`));
 
@@ -125,6 +144,20 @@ describe("the rewrites name the page the proxy names", () => {
 		expect(redirected.length).toBeLessThan(compared / 4);
 	});
 
+	it("passes encoded characters of a path on as they came", async () => {
+		live[LIVE_CATEGORY_SLUGS_KEY] = new Set(markets.flatMap((m) => categoryRootsFor(m)));
+		for (const path of [
+			"/sk/stresne-nosice/skoda/%C5%A1koda-octavia/3rd-gen.5e",
+			"/de/dachtraeger/vw/golf%20vii/5g",
+			"/sk/produkt-a%2Bb",
+			"/sk/a.b/c",
+		]) {
+			const expected = await proxied(path);
+			expect(expected, path).not.toBeNull();
+			expect(rewritten(path), path).toBe(expected);
+		}
+	});
+
 	it("knows the roots the proxy knows: every base slug and every localized segment", () => {
 		for (const market of markets) {
 			const roots = new Set(categoryRootsFor(market));
@@ -152,6 +185,24 @@ describe("the rewrites name the page the proxy names", () => {
 			"/sk-eur/cart",
 		]) {
 			expect(rewritten(path), path).toBeNull();
+		}
+	});
+});
+
+describe("what the page sees after an action", () => {
+	it("gets the query it was opened with, and nothing more", () => {
+		// `?variant=` is the product page's selected variant; an extra key would reach every link built from searchParams.
+		const query = { variant: "abc", page: "2" };
+		for (const path of ["/de/warenkorb", "/sk/stresne-nosice/bmw", "/sk/nejaky-produkt", "/us/cart", "/sk"]) {
+			const result = rewrittenWith(path, query);
+			expect(result, path).not.toBeNull();
+			expect(result!.query, path).toEqual(query);
+		}
+	});
+
+	it("rewrites nothing without a Next-Action header", () => {
+		for (const path of ["/de/warenkorb", "/sk/stresne-nosice", "/sk"]) {
+			expect(rewrittenWith(path, {}, null), path).toBeNull();
 		}
 	});
 });

@@ -25,11 +25,19 @@ import { CART_SEGMENT_BY_MARKET, CHANNEL_MAP } from "./channel-map";
  */
 export interface ActionRewrite {
 	source: string;
-	has: [{ type: "header"; key: "next-action" }];
+	has: [{ type: "header"; key: "next-action"; value: string }];
 	destination: string;
 }
 
-const HAS_ACTION: ActionRewrite["has"] = [{ type: "header", key: "next-action" }];
+/**
+ * The `value` is not decoration. A `has` header condition without one makes Next capture the header's value as a
+ * rewrite parameter (`nextaction`), and a parameter the destination does not use is appended to its query string:
+ * the page rendered after an action would see `?nextaction=<action id>` in its `searchParams`, and a listing
+ * that rebuilds its links from them would carry it into pagination and filters. With a value that has no named
+ * group, the condition is still "an action header is present" and nothing is captured
+ * (`proxy.action-rewrites.test.ts` reads the query Next would hand to the page).
+ */
+const HAS_ACTION: ActionRewrite["has"] = [{ type: "header", key: "next-action", value: ".+" }];
 
 /** The category root spellings a market serves under its own prefix: the base slugs and its localized ones. */
 export function categoryRootsFor(market: string): string[] {

@@ -4,7 +4,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/sk-eur/cart"
@@ -14,7 +15,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/sk-eur/categories/:root/:rest*"
@@ -24,7 +26,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/sk-eur/:path*"
@@ -34,7 +37,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/cz-czk/cart"
@@ -44,7 +48,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/cz-czk/categories/:root/:rest*"
@@ -54,7 +59,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/cz-czk/:path*"
@@ -64,7 +70,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/de-eur/cart"
@@ -74,7 +81,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/de-eur/categories/:root/:rest*"
@@ -84,7 +92,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/de-eur/:path*"
@@ -94,7 +103,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/at-eur/cart"
@@ -104,7 +114,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/at-eur/categories/:root/:rest*"
@@ -114,7 +125,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/at-eur/:path*"
@@ -124,7 +136,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/pl-pln/cart"
@@ -134,7 +147,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/pl-pln/categories/:root/:rest*"
@@ -144,7 +158,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/pl-pln/:path*"
@@ -154,7 +169,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/hu-huf/cart"
@@ -164,7 +180,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/hu-huf/categories/:root/:rest*"
@@ -174,7 +191,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/hu-huf/:path*"
@@ -184,7 +202,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/it-eur/cart"
@@ -194,7 +213,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/it-eur/categories/:root/:rest*"
@@ -204,7 +224,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/it-eur/:path*"
@@ -214,7 +235,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/fr-eur/cart"
@@ -224,7 +246,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/fr-eur/categories/:root/:rest*"
@@ -234,7 +257,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/fr-eur/:path*"
@@ -244,7 +268,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/es-eur/cart"
@@ -254,7 +279,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/es-eur/categories/:root/:rest*"
@@ -264,7 +290,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/es-eur/:path*"
@@ -274,7 +301,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/ro-ron/cart"
@@ -284,7 +312,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/ro-ron/categories/:root/:rest*"
@@ -294,7 +323,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/ro-ron/:path*"
@@ -304,7 +334,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/us-usd/categories/:root/:rest*"
@@ -314,7 +345,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/us-usd/:path*"
@@ -324,7 +356,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/ca-cad/categories/:root/:rest*"
@@ -334,7 +367,8 @@
 		"has": [
 			{
 				"type": "header",
-				"key": "next-action"
+				"key": "next-action",
+				"value": ".+"
 			}
 		],
 		"destination": "/ca-cad/:path*"
