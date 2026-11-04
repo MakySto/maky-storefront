@@ -340,6 +340,30 @@ describe("the makers' lists at boot", () => {
 		expect(prewarmBrandMakers).not.toHaveBeenCalled();
 	});
 
+	it("starts the sitemap's product lists only after the makers' lists are done, not beside them", async () => {
+		let finish!: () => void;
+		prewarmBrandMakers.mockImplementationOnce(() => new Promise<void>((resolve) => (finish = resolve)));
+
+		await boot({ ...SECRETS, NODE_ENV: "production" });
+		await vi.waitFor(() => expect(prewarmBrandMakers).toHaveBeenCalledTimes(1));
+		await new Promise<void>((resolve) => setTimeout(resolve, 20));
+		expect(prewarmProductWalks).not.toHaveBeenCalled();
+
+		finish();
+		await vi.waitFor(() => expect(prewarmProductWalks).toHaveBeenCalledTimes(1));
+	});
+
+	it("still warms the sitemap when the makers' warm-up is switched off or fails", async () => {
+		await boot({ ...SECRETS, NODE_ENV: "production", MAKY_BRANDS_PREWARM: "0" });
+		await vi.waitFor(() => expect(prewarmProductWalks).toHaveBeenCalledTimes(1));
+		expect(prewarmBrandMakers).not.toHaveBeenCalled();
+
+		prewarmProductWalks.mockClear();
+		prewarmBrandMakers.mockRejectedValueOnce(new Error("Saleor is down"));
+		await boot({ ...SECRETS, NODE_ENV: "production" });
+		await vi.waitFor(() => expect(prewarmProductWalks).toHaveBeenCalledTimes(1));
+	});
+
 	it("does not stop the start when the warm-up fails", async () => {
 		prewarmBrandMakers.mockRejectedValueOnce(new Error("Saleor is down"));
 

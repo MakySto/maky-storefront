@@ -60,7 +60,7 @@ export const RETRY_AFTER_FAILURE_MS = 60 * 1000;
 /** Beyond this age the old answer is no longer served unless a fresh build succeeds. */
 export const MAX_STALE_MS = 24 * 60 * 60 * 1000;
 
-/** Rebuilds that may be walking Saleor at the same time (twelve slots are shared with every page). */
+/** Rebuilds that may be walking Saleor at the same time (the queue's six slots are shared with every page). */
 export const MAX_BACKGROUND_BUILDS = 2;
 
 interface Entry {

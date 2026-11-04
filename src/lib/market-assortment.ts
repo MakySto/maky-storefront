@@ -2,7 +2,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { categoriesFor } from "@/config/categories";
 import { getLocaleFromChannel } from "@/config/locale";
-import { settle, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
+import { faulted, settle, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { CACHE_PROFILES } from "@/lib/cache-manifest";
 import { fetchStockedCategorySlugs, sitemapTag } from "@/lib/seo/catalogue-walk";
 
@@ -45,6 +45,22 @@ const DEADLINE_MS = 1_500;
 const lastKnown = new Map<string, ReadonlySet<string>>();
 
 /**
+ * After a failed read the channel is not asked again for this long. The fault is remembered by the
+ * cache for 5 seconds only (below), and the read behind it is the category walk the sitemap makes —
+ * a Saleor that is struggling answered it with a COUNT per category, a client deadline does not stop
+ * that there, and a cold process (nothing remembered, so every category linked) asked again on every
+ * 5-second expiry in every market. The answer in the meantime is the fault itself, which
+ * `getMarketAssortment` already turns into the last answer, or into "link everything".
+ */
+const FAULT_PAUSE_MS = 45_000;
+
+/** The channels whose last read failed, with when and why. */
+const lastFault = new Map<string, { readonly at: number; readonly message: string }>();
+
+/** When each channel's fault was last logged: one line per pause is enough to see it. */
+const lastWarned = new Map<string, number>();
+
+/**
  * A fault comes out of the cache as a value that is remembered for seconds (`@/lib/cache-fault`): a throw
  * out of a `"use cache"` function fails the prerender it happens in, and the header of EVERY page
  * asks for this. `getMarketAssortment` below still takes it as the fault it is.
@@ -53,9 +69,16 @@ async function readOfferedCategories(channel: string): Promise<CachedRead<string
 	"use cache";
 	cacheLife(CACHE_PROFILES.sitemap.cacheProfile);
 	cacheTag(sitemapTag(channel));
-	return settle(() =>
+
+	const fault = lastFault.get(channel);
+	if (fault && Date.now() - fault.at < FAULT_PAUSE_MS) return faulted(fault.message);
+
+	const read = await settle(() =>
 		fetchStockedCategorySlugs(channel, getLocaleFromChannel(channel), { deadlineMs: DEADLINE_MS }),
 	);
+	if (read.ok) lastFault.delete(channel);
+	else lastFault.set(channel, { at: Date.now(), message: read.message });
+	return read;
 }
 
 export async function getMarketAssortment(channel: string): Promise<MarketAssortment> {
@@ -65,12 +88,17 @@ export async function getMarketAssortment(channel: string): Promise<MarketAssort
 		return { state: "known", categories };
 	} catch (error) {
 		const remembered = lastKnown.get(channel);
-		console.warn(
-			`[assortment] ${channel}: categories could not be read, ${
-				remembered ? "using the last answer" : "linking all"
-			}:`,
-			error instanceof Error ? error.message : error,
-		);
+		// This runs on every render of every page, and one fault used to be ~47 log lines.
+		const now = Date.now();
+		if (now - (lastWarned.get(channel) ?? 0) >= FAULT_PAUSE_MS) {
+			lastWarned.set(channel, now);
+			console.warn(
+				`[assortment] ${channel}: categories could not be read, ${
+					remembered ? "using the last answer" : "linking all"
+				}:`,
+				error instanceof Error ? error.message : error,
+			);
+		}
 		return remembered ? { state: "remembered", categories: remembered } : { state: "unknown" };
 	}
 }
@@ -92,4 +120,6 @@ export function offersFullRange(assortment: MarketAssortment): boolean {
 /** For tests: forget every remembered answer. */
 export function __forgetAssortments(): void {
 	lastKnown.clear();
+	lastFault.clear();
+	lastWarned.clear();
 }
