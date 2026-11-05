@@ -89,7 +89,11 @@ export async function getMarketAssortment(channel: string): Promise<MarketAssort
 	} catch (error) {
 		const remembered = lastKnown.get(channel);
 		// This runs on every render of every page, and one fault used to be ~47 log lines.
-		const now = Date.now();
+		// Not `Date.now()`: read here, outside the cached read, it fails the prerender this render is part
+		// of ("unstable value `Date.now()` while prerendering"), and this branch runs exactly when the read
+		// failed. The throw then replaces the fallback below and the page answers 500 (/at/, 2026-11-05
+		// 22:18 UTC, the first minutes of a cold process behind a slow Saleor).
+		const now = Math.round(performance.timeOrigin + performance.now());
 		if (now - (lastWarned.get(channel) ?? 0) >= FAULT_PAUSE_MS) {
 			lastWarned.set(channel, now);
 			console.warn(
