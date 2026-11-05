@@ -7,7 +7,7 @@ import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import type { ProductCardData } from "@/ui/components/plp/product-card";
 import { isFitmentRefSellable, type FitmentCondition, type FitmentDataset } from "./contract";
 import { pickConditionText } from "./conditions";
-import { describeOfferFit, productFitIndex } from "./offer-fit";
+import { describeSetFit, productFitIndex } from "./offer-fit";
 import type { ListingSpec } from "@/ui/components/listing/listing-specs";
 import { describeIncludes, offerSpecs, withAttributeSpecs } from "./offer-specs";
 import { loadFitmentDataset } from "./provider";
@@ -67,7 +67,7 @@ const isKargoCard = (card: ProductCardData) => isKargoCategory(card.channel, car
  * What a roof-rack set's listing card says about the SET, from CFM's export — the same words on the
  * category shelf, in search and anywhere else a Saleor product becomes a card.
  *
- *   fit       the roof and the years the set is made for, from its application
+ *   fit       the roof and the years the set is made for, from its application(s)
  *   setTitle  its name taken apart into the product and the car, when that can be done
  *   specs     load, material, bar shape, bar length (and colour when there is room)
  *   includes  what CFM documents the box to contain
@@ -75,8 +75,10 @@ const isKargoCard = (card: ProductCardData) => isKargoCategory(card.channel, car
  * A product the dataset has no row for keeps the card exactly as it was, and so does every card when
  * the dataset is unavailable or past its date (the product page's rule): a missing export removes
  * these facts, it never invents or defaults one. The rows that may speak for a set are the product
- * page's too (accepted, sellable, positive), and where they disagree the card says nothing about the
- * point. Statements about the SET only — never "fits", with a car chosen or without one.
+ * page's too (accepted, sellable, positive). A set made for one car in several versions has several
+ * applications, and the card tells all their windows ("2022 – 2026, od 2023"); where they name
+ * different roofs it says nothing about the point. Statements about the SET only — never "fits",
+ * with a car chosen or without one.
  */
 export async function attachSetFacts(
 	cards: readonly ProductCardData[],
@@ -100,7 +102,7 @@ export async function attachSetFacts(
 
 	return cards.map((card) => {
 		const fits = fitIndex.get(card.id);
-		const fit = describeOfferFit(fits, tFit, ROOF_LABEL_KEY);
+		const fit = describeSetFit(fits, tFit, ROOF_LABEL_KEY);
 		const facts = factsIndex.get(card.id);
 		// A Kargo card's own attributes (size, bars, material, load: CFM writes them to Saleor for every product,
 		// with a vehicle's application or without one) come first; the export's facets only add what they do not say.
@@ -111,8 +113,10 @@ export async function attachSetFacts(
 		const includes = facts ? describeIncludes(facts.includes, tSpecs) : null;
 		const versionNote = fit ? versionNoteOf(versions.get(card.id), locale) : null;
 		// The car and the years are said once, under a short name, only for a set whose roof and years
-		// come from its own application — those lines are what replaces the long name's tail.
-		const vehicles = (fits?.[0]?.generationIds ?? [])
+		// come from its own application — those lines are what replaces the long name's tail. The cars
+		// are those of every application of the set, each once.
+		const generationIds = [...new Set(fits?.flatMap((each) => each.generationIds ?? []) ?? [])];
+		const vehicles = generationIds
 			.map((generationId) => setVehicleOf(dataset, generationId, language))
 			.filter((vehicle): vehicle is SetVehicle => vehicle !== null);
 		const setTitle = fit ? splitSetTitle(card.name, { brand: card.brand, makes, vehicles }) : null;
