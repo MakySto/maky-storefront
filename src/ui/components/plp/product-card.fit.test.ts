@@ -74,6 +74,31 @@ describe("ProductCard — what the set is for", () => {
 	});
 });
 
+describe("ProductCard — a set made for one car in several versions", () => {
+	// The Nordrive Kargo basket for the Mercedes-Benz T-Class has two applications: 2022–2026 and from 2023.
+	const kargo: ProductCardData = {
+		...product,
+		name: "Strešný kôš Nordrive Kargo Rack pre Mercedes-Benz trieda T W420 (od 2022), 180 × 135 × 12 cm, NKR0302+N30423",
+		productCode: "NKR0302+N30423",
+		fit: { roof: "Pevné body", years: "2022 – 2026, od 2023" },
+		setTitle: { model: "Strešný kôš Nordrive Kargo Rack", vehicle: "Mercedes-Benz Trieda T W420" },
+	};
+
+	it("tells the car once with all its windows, under the short name", () => {
+		const html = renderToStaticMarkup(createElement(ProductCard, { product: kargo }));
+		const car = html.match(/data-testid="card-vehicle"[^>]*>(.*?)<\/p>/s)?.[1] ?? "";
+		expect(car.replace(/<[^>]+>/g, "")).toBe("Mercedes-Benz Trieda T W420 · 2022 – 2026, od 2023");
+		expect(html).toContain("Strešný kôš Nordrive Kargo Rack");
+		expect(html).not.toContain("trieda T W420 (od 2022)");
+	});
+
+	it("is a set like its neighbours: the long name and the code are not printed", () => {
+		const html = renderToStaticMarkup(createElement(ProductCard, { product: kargo }));
+		expect(html).not.toContain("NKR0302");
+		expect(html).not.toContain("180 × 135 × 12 cm");
+	});
+});
+
 describe("ProductCard — the line over a set's name on a phone", () => {
 	const set: ProductCardData = {
 		...product,
