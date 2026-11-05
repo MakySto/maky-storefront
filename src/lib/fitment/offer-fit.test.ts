@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
-import type { FitmentApplication, FitmentDataset } from "./contract";
+import { isFitmentRefSellable, type FitmentApplication, type FitmentDataset } from "./contract";
 import {
 	describeOfferFit,
+	describeSetFit,
 	groupRoofOf,
 	offerFitOf,
 	roofsOf,
@@ -122,6 +123,27 @@ describe("offerFitsByProduct", () => {
 		expect(different.get("p1")).toHaveLength(2);
 	});
 
+	it("counts only the product rows the caller lets speak", () => {
+		const held = application({ products: ["p1"] });
+		held.products[0]!.qaStatus = "hold";
+		held.products[0]!.eligibility = { sellable: false, reasons: ["withheld_by_supplier_data_review"] };
+		const later = application({
+			products: ["p1"],
+			window: {
+				from: { year: 2022 },
+				to: null,
+				startPrecision: "year",
+				endPrecision: "open",
+				reconciledToGeneration: false,
+			},
+		});
+		expect(offerFitsByProduct([held, later]).get("p1")).toHaveLength(2);
+		expect(offerFitsByProduct([held, later], isFitmentRefSellable).get("p1")).toEqual([
+			expect.objectContaining({ yearFrom: 2022, yearTo: null }),
+		]);
+		expect(offerFitsByProduct([held], isFitmentRefSellable).has("p1")).toBe(false);
+	});
+
 	it("remembers every generation behind a fit, for each product on its own", () => {
 		const fits = offerFitsByProduct([
 			application({ products: ["p1", "p2"], generationId: "gen-1" }),
@@ -141,6 +163,28 @@ describe("productFitIndex", () => {
 	it("is built once per dataset and returns the same index for it", () => {
 		expect(productFitIndex(dataset)).toBe(productFitIndex(dataset));
 		expect(productFitIndex(dataset).get("p1")?.[0]?.yearFrom).toBe(2018);
+	});
+
+	it("never lets a row CFM holds back speak for a set, as the product page never lets it", () => {
+		const held = application({
+			products: ["p1", "p2"],
+			window: {
+				from: { year: 2022 },
+				to: null,
+				startPrecision: "year",
+				endPrecision: "open",
+				reconciledToGeneration: false,
+			},
+		});
+		// p1 holds a window beside an accepted one, p2 holds only the withheld row
+		held.products[0]!.qaStatus = "hold";
+		held.products[0]!.eligibility = { sellable: false, reasons: ["withheld_by_supplier_data_review"] };
+		held.products[1]!.qaStatus = "hold";
+		held.products[1]!.eligibility = { sellable: false, reasons: ["withheld_by_supplier_data_review"] };
+		const withHeld = { applications: [application({ products: ["p1"] }), held] } as unknown as FitmentDataset;
+		expect(productFitIndex(withHeld).get("p1")).toHaveLength(1);
+		expect(productFitIndex(withHeld).get("p1")?.[0]?.yearFrom).toBe(2018);
+		expect(productFitIndex(withHeld).has("p2")).toBe(false);
 	});
 
 	it("is tied to the dataset OBJECT, so a refreshed dataset never reads an old index", () => {
@@ -192,6 +236,118 @@ describe("describeOfferFit", () => {
 		expect(describeOfferFit(undefined, t, ROOF_LABEL_KEY)).toBeNull();
 		expect(describeOfferFit([], t, ROOF_LABEL_KEY)).toBeNull();
 		expect(describeOfferFit([fit(), fit({ yearFrom: 2022, yearTo: null })], t, ROOF_LABEL_KEY)).toBeNull();
+	});
+});
+
+describe("describeSetFit", () => {
+	const fit = (over: Partial<OfferFit> = {}): OfferFit => ({
+		yearFrom: 2018,
+		yearTo: 2021,
+		roofTypes: ["flush-rails"],
+		bodyTypes: null,
+		...over,
+	});
+
+	it("says what describeOfferFit says for a set with one application, word for word", () => {
+		for (const one of [
+			fit(),
+			fit({ yearTo: null }),
+			fit({ yearFrom: 2020, yearTo: 2020 }),
+			fit({ roofTypes: null }),
+			fit({ roofTypes: ["raised-rails", "flush-rails"] }),
+		]) {
+			expect(describeSetFit([one], t, ROOF_LABEL_KEY)).toEqual(describeOfferFit([one], t, ROOF_LABEL_KEY));
+		}
+	});
+
+	it("tells every window of a set made for one car in several versions, earliest first", () => {
+		// the Nordrive Kargo basket for the Mercedes-Benz T-Class: the long van 2022–2026, the standard one from 2023
+		const later = fit({ yearFrom: 2023, yearTo: null });
+		const earlier = fit({ yearFrom: 2022, yearTo: 2026 });
+		expect(describeSetFit([later, earlier], t, ROOF_LABEL_KEY)).toEqual({
+			roof: "Integrované pozdĺžniky",
+			years: "2022 – 2026, od 2023",
+		});
+	});
+
+	it("leaves a gap between two windows a gap, and a span nobody names unsaid", () => {
+		expect(
+			describeSetFit(
+				[fit({ yearFrom: 1999, yearTo: 2011 }), fit({ yearFrom: 2014, yearTo: null })],
+				t,
+				ROOF_LABEL_KEY,
+			)?.years,
+		).toBe("1999 – 2011, od 2014");
+		// two windows that only overlap are two windows: neither lies inside the other
+		expect(
+			describeSetFit(
+				[fit({ yearFrom: 2010, yearTo: 2015 }), fit({ yearFrom: 2014, yearTo: 2020 })],
+				t,
+				ROOF_LABEL_KEY,
+			)?.years,
+		).toBe("2010 – 2015, 2014 – 2020");
+	});
+
+	it("does not repeat a window that lies inside another, nor one that two applications share", () => {
+		const years = (...windows: Array<[number, number | null]>) =>
+			describeSetFit(
+				windows.map(([yearFrom, yearTo]) => fit({ yearFrom, yearTo })),
+				t,
+				ROOF_LABEL_KEY,
+			)?.years;
+		expect(years([2012, 2017], [2012, 2018])).toBe("2012 – 2018");
+		expect(years([2018, 2022], [2018, null])).toBe("od 2018");
+		expect(years([1995, 2000], [1986, 2000])).toBe("1986 – 2000");
+		expect(years([2010, 2014], [2010, 2022], [2010, 2014])).toBe("2010 – 2022");
+		// applications that differ only in the body type, which the card does not print
+		expect(
+			describeSetFit([fit({ bodyTypes: ["van"] }), fit({ bodyTypes: ["mpv"] })], t, ROOF_LABEL_KEY),
+		).toEqual({ roof: "Integrované pozdĺžniky", years: "2018 – 2021" });
+	});
+
+	it("takes the same roofs written in another order for the same roofs", () => {
+		const result = describeSetFit(
+			[
+				fit({ roofTypes: ["raised-rails", "flush-rails"] }),
+				fit({ roofTypes: ["flush-rails", "raised-rails"], yearFrom: 2022, yearTo: null }),
+			],
+			t,
+			ROOF_LABEL_KEY,
+		);
+		expect(result).toEqual({
+			roof: "Pozdĺžniky nad strechou, Integrované pozdĺžniky",
+			years: "2018 – 2021, od 2022",
+		});
+	});
+
+	it("names no roof when no application names one", () => {
+		const result = describeSetFit(
+			[fit({ roofTypes: null }), fit({ roofTypes: null, yearFrom: 2022, yearTo: null })],
+			t,
+			ROOF_LABEL_KEY,
+		);
+		expect(result).toEqual({ roof: null, years: "2018 – 2021, od 2022" });
+	});
+
+	it("is silent where the applications do not name the same roofs: which window goes with which roof?", () => {
+		const later = { yearFrom: 2022, yearTo: null };
+		expect(
+			describeSetFit([fit(), fit({ ...later, roofTypes: ["naked-roof"] })], t, ROOF_LABEL_KEY),
+		).toBeNull();
+		// one names a roof, the other none: the second could be any roof
+		expect(describeSetFit([fit(), fit({ ...later, roofTypes: null })], t, ROOF_LABEL_KEY)).toBeNull();
+		expect(describeSetFit([fit({ roofTypes: null }), fit(later)], t, ROOF_LABEL_KEY)).toBeNull();
+	});
+
+	it("says nothing for a set with no application", () => {
+		expect(describeSetFit(undefined, t, ROOF_LABEL_KEY)).toBeNull();
+		expect(describeSetFit([], t, ROOF_LABEL_KEY)).toBeNull();
+	});
+
+	it("does not reorder the list it is given", () => {
+		const fits = [fit({ yearFrom: 2023, yearTo: null }), fit({ yearFrom: 2022, yearTo: 2026 })];
+		describeSetFit(fits, t, ROOF_LABEL_KEY);
+		expect(fits.map((each) => each.yearFrom)).toEqual([2023, 2022]);
 	});
 });
 

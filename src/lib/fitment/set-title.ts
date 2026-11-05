@@ -101,7 +101,19 @@ export function splitSetTitle(
 	const confirmed = own.find((vehicle) =>
 		vehicle.generation.some((generation) => wordHits(spelled, generation).length > 0),
 	);
-	return { model, vehicle: confirmed ? confirmed.label : spelled };
+	return { model, vehicle: confirmed ? confirmed.label : carWords(spelled) };
+}
+
+/**
+ * The years in parentheses and what follows them: "(2008–2014), 180 × 150 × 12 cm, NKR0303+N30183". A
+ * Kargo name carries its years, its size and its code after the car; the card tells the years from the
+ * application and the size and the code from its own rows, so the car is what stands before them.
+ */
+const YEARS_AND_SIZE = /\s*\([^()]*\b(?:19|20)\d{2}\b[^()]*\)\s*(?:[,;].*)?$/u;
+
+/** The car as the name spells it, without the years and the size that follow it. */
+function carWords(spelled: string): string {
+	return spelled.replace(YEARS_AND_SIZE, "").trim() || spelled;
 }
 
 /**

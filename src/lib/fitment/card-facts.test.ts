@@ -21,7 +21,7 @@ vi.mock("./provider", () => ({ loadFitmentDataset }));
 
 import type { ProductCardData } from "@/ui/components/plp/product-card";
 import { attachSetFacts } from "./card-facts";
-import { AUDI_OFFER, n15060Dataset } from "./fixtures/n15060";
+import { AUDI_OFFER, PASSAT_VARIANT_B9, n15060Dataset } from "./fixtures/n15060";
 
 const NAME = "Strešný nosič Nordrive Helio Black Audi A4 Avant B8 (2008–2015) — Integrované lyžiny";
 
@@ -157,6 +157,81 @@ describe("attachSetFacts with a van's version", () => {
 	});
 });
 
+describe("attachSetFacts with a set made for one car in several versions", () => {
+	const own = (dataset: ReturnType<typeof n15060Dataset>) =>
+		dataset.applications.filter((a) => a.products.some((p) => p.saleorProductId === AUDI_OFFER.productId));
+
+	/** A second application of the same set for the same car, with a window of its own. */
+	function addWindow(dataset: ReturnType<typeof n15060Dataset>, from: number, to: number | null) {
+		const copy = structuredClone(own(dataset)[0]!);
+		copy.applicationId = `app:window-${from}`;
+		copy.window = {
+			...copy.window,
+			from: { year: from, month: 6 },
+			to: to === null ? null : { year: to, month: 6 },
+			endPrecision: to === null ? "open" : "month",
+		};
+		dataset.applications.push(copy);
+		return copy;
+	}
+
+	it("tells every window, earliest first, and still takes the name apart: the car once", async () => {
+		const dataset = n15060Dataset();
+		addWindow(dataset, 2023, null);
+		const result = await attach(dataset);
+		expect(result.fit).toEqual({ roof: "Integrované pozdĺžniky", years: "2008 – 2015, od 2023" });
+		expect(result.setTitle).toEqual({ model: "Nordrive Helio Black", vehicle: "AUDI A4 Avant B8" });
+	});
+
+	it("does not repeat a window that lies inside another", async () => {
+		const dataset = n15060Dataset();
+		addWindow(dataset, 2009, 2013);
+		expect((await attach(dataset)).fit?.years).toBe("2008 – 2015");
+	});
+
+	it("says nothing where the applications name different roofs", async () => {
+		const dataset = n15060Dataset();
+		addWindow(dataset, 2023, null).qualifiers = { roofTypes: ["naked-roof"] };
+		const result = await attach(dataset);
+		expect(result.fit).toBeUndefined();
+		expect(result.setTitle).toBeUndefined();
+	});
+
+	it("lets a row CFM holds back say nothing: its window is not the set's", async () => {
+		const dataset = n15060Dataset();
+		const held = addWindow(dataset, 2023, null);
+		held.products[0]!.qaStatus = "hold";
+		held.products[0]!.eligibility = { sellable: false, reasons: ["held"] };
+		expect((await attach(dataset)).fit?.years).toBe("2008 – 2015");
+	});
+
+	it("names the cars of every application, each once", async () => {
+		const dataset = n15060Dataset();
+		// the second window is for another generation, which the name does not say
+		addWindow(dataset, 2023, null).generationId = PASSAT_VARIANT_B9;
+		const result = await attach(dataset);
+		expect(result.fit?.years).toBe("2008 – 2015, od 2023");
+		expect(result.setTitle).toEqual({ model: "Nordrive Helio Black", vehicle: "AUDI A4 Avant B8" });
+	});
+
+	it("says the version only where every window names the same", async () => {
+		const L4 = { code: "van-version", text: { "sk-SK": "Určené len pre verziu: dĺžka L4, vysoká strecha." } };
+		const L3 = { code: "van-version", text: { "sk-SK": "Určené len pre verziu: dĺžka L3, vysoká strecha." } };
+		const same = n15060Dataset();
+		addWindow(same, 2023, null);
+		for (const application of own(same)) application.conditions = [L4];
+		expect((await attach(same)).versionNote).toBe("Určené len pre verziu: dĺžka L4, vysoká strecha.");
+
+		const different = n15060Dataset();
+		const later = addWindow(different, 2023, null);
+		own(different)[0]!.conditions = [L4];
+		later.conditions = [L3];
+		const result = await attach(different);
+		expect(result.versionNote).toBeUndefined();
+		expect(result.fit?.years).toBe("2008 – 2015, od 2023");
+	});
+});
+
 describe("attachSetFacts", () => {
 	it("puts the set's own facts on its card", async () => {
 		const result = await attach(n15060Dataset());
@@ -178,6 +253,9 @@ describe("attachSetFacts", () => {
 		const result = await attach(dataset);
 		expect(result.specs).toBeUndefined();
 		expect(result.includes).toBeUndefined();
+		// nor does the held row's window or roof
+		expect(result.fit).toBeUndefined();
+		expect(result.setTitle).toBeUndefined();
 	});
 
 	it("says nothing about the contents where the rows document different boxes", async () => {
