@@ -70,6 +70,60 @@ describe("splitSetTitle", () => {
 	});
 });
 
+describe("splitSetTitle with a car the dataset cannot confirm", () => {
+	// A Kargo name carries its years and its size after the car; the card tells the years from the
+	// application and the size from its own rows, so the car's own words stop where the years begin.
+	const kargoMakes = [...makes, "Citroën", "Iveco"];
+
+	it("keeps the name's own words for the car, without the years and the size that follow it", () => {
+		expect(
+			splitSetTitle(
+				"Strešný kôš Nordrive Kargo Rack pre Citroën Nemo (2008–2014), 180 × 150 × 12 cm, NKR0303+N30183",
+				{ makes: kargoMakes },
+			),
+		).toEqual({ model: "Strešný kôš Nordrive Kargo Rack", vehicle: "Citroën Nemo" });
+		expect(
+			splitSetTitle(
+				"Strešný nosič Nordrive Kargo pre Iveco Daily (od 1999), 3 tyče 180 cm, 3×N10015+N30093",
+				{
+					makes: kargoMakes,
+				},
+			),
+		).toEqual({ model: "Strešný nosič Nordrive Kargo", vehicle: "Iveco Daily" });
+	});
+
+	it("does the same in the words of another market", () => {
+		expect(
+			splitSetTitle(
+				"Dachkorb Nordrive Kargo Rack für Citroën Nemo (ab 2008), 180 × 150 × 12 cm, NKR0303+N30183",
+				{ makes: kargoMakes },
+			),
+		).toEqual({ model: "Dachkorb Nordrive Kargo Rack", vehicle: "Citroën Nemo" });
+	});
+
+	it("leaves the words alone when no years stand in parentheses", () => {
+		expect(
+			splitSetTitle("Strešný kôš Nordrive Kargo Rack pre Citroën Nemo, 180 × 150 × 12 cm", {
+				makes: kargoMakes,
+			}),
+		).toEqual({ model: "Strešný kôš Nordrive Kargo Rack", vehicle: "Citroën Nemo, 180 × 150 × 12 cm" });
+	});
+
+	it("still words the car the shop's way when the name confirms it", () => {
+		const trieda: SetVehicle = {
+			make: ["Mercedes-Benz"],
+			generation: ["W420"],
+			label: "Mercedes-Benz Trieda T W420",
+		};
+		expect(
+			splitSetTitle(
+				"Strešný kôš Nordrive Kargo Rack pre Mercedes-Benz trieda T W420 (od 2022), 180 × 135 × 12 cm, NKR0302+N30423",
+				{ makes, vehicles: [trieda] },
+			),
+		).toEqual({ model: "Strešný kôš Nordrive Kargo Rack", vehicle: "Mercedes-Benz Trieda T W420" });
+	});
+});
+
 describe("splitSetTitle with makes that overlap", () => {
 	const NAME = "Strešný nosič Nordrive Helio Land Rover Discovery 5 (2017–) — Pevné body";
 	const expected = { model: "Nordrive Helio", vehicle: "Land Rover Discovery 5" };
@@ -179,9 +233,11 @@ describe("a name with a joining word and a stated size", () => {
 		"Strešný kôš Nordrive Kargo Rack pre Volkswagen Crafter Van SY/SZ (od 2017), 420 × 180 × 12 cm, NKR4444+N30394";
 
 	it("does not leave the joining word hanging at the end of the product", () => {
+		// The car is the name's own words up to its years: the years come from the application, the size
+		// and the code are the card's own rows (see "a car the dataset cannot confirm" below).
 		expect(splitSetTitle(KARGO, { makes: [...makes, "Volkswagen"] })).toEqual({
 			model: "Strešný kôš Nordrive Kargo Rack",
-			vehicle: "Volkswagen Crafter Van SY/SZ (od 2017), 420 × 180 × 12 cm, NKR4444+N30394",
+			vehicle: "Volkswagen Crafter Van SY/SZ",
 		});
 		expect(
 			splitSetTitle("Dachkorb Nordrive Kargo Rack für Volkswagen Crafter", {
