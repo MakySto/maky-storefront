@@ -1308,6 +1308,16 @@
 		"fitShowFitting": "Afișați lanțurile care se potrivesc",
 		"fitHowToFind": "Nu cunoașteți dimensiunea? Cum o găsiți pe anvelopă",
 		"buttonNoFit": "Nu se potrivește dimensiunii dumneavoastră",
-		"buttonConfirm": "Confirmați condiția"
+		"buttonConfirm": "Confirmați condiția",
+		"listingPickTitle": "Ce dimensiune au anvelopele dumneavoastră?",
+		"listingPickBody": "O indicați o singură dată, iar magazinul o ține minte. Apoi vă arătăm doar produsele care se potrivesc.",
+		"listingModeGroup": "Afișarea ofertei",
+		"listingModeTyres": "Pentru anvelopele mele",
+		"listingModeAll": "Toate lanțurile",
+		"listingActive": "Afișăm doar produsele pentru dimensiunea {size}.",
+		"listingAllNotice": "Vedeți toate produsele, nefiltrate după dimensiunea dumneavoastră ({size}).",
+		"listingDefaultNone": "Pentru dimensiunea {size} nu avem acum în ofertă nimic care să se potrivească, de aceea vedeți toate produsele.",
+		"listingEmptyTitle": "Pentru dimensiunea {size} nu avem acum în ofertă nimic care să se potrivească",
+		"listingEmptyBody": "Verificați dimensiunea pe anvelopă sau consultați toate produsele. Vă sfătuim cu plăcere și personal."
 	}
 }

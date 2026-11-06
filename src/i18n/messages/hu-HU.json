@@ -1308,6 +1308,16 @@
 		"fitShowFitting": "A megfelelő hóláncok megtekintése",
 		"fitHowToFind": "Nem ismeri a méretet? Így találja meg az abroncson",
 		"buttonNoFit": "Nem illik az Ön méretére",
-		"buttonConfirm": "Erősítse meg a feltételt"
+		"buttonConfirm": "Erősítse meg a feltételt",
+		"listingPickTitle": "Milyen méretűek az Ön abroncsai?",
+		"listingPickBody": "Egyszer adja meg, az áruház megjegyzi. Ezután csak a hozzá illő termékeket mutatjuk.",
+		"listingModeGroup": "A kínálat megjelenítése",
+		"listingModeTyres": "Az én abroncsaimhoz",
+		"listingModeAll": "Minden hólánc",
+		"listingActive": "Csak a(z) {size} méretre való termékeket mutatjuk.",
+		"listingAllNotice": "Az összes terméket látja, nem az Ön mérete ({size}) szerint szűrve.",
+		"listingDefaultNone": "A(z) {size} méretre jelenleg nincs semmi a kínálatunkban, ami illene rá, ezért az összes terméket látja.",
+		"listingEmptyTitle": "A(z) {size} méretre jelenleg nincs semmi a kínálatunkban, ami illene rá",
+		"listingEmptyBody": "Ellenőrizze a méretet az abroncson, vagy nézze meg az összes terméket. Szívesen tanácsot adunk személyesen is."
 	}
 }

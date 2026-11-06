@@ -1308,6 +1308,16 @@
 		"fitShowFitting": "Mostra le catene adatte",
 		"fitHowToFind": "Non conosci la misura? Come trovarla sul pneumatico",
 		"buttonNoFit": "Non adatto alla tua misura",
-		"buttonConfirm": "Conferma la condizione"
+		"buttonConfirm": "Conferma la condizione",
+		"listingPickTitle": "Che misura hanno i tuoi pneumatici?",
+		"listingPickBody": "Inseriscila una volta e il negozio la ricorda. Poi ti mostriamo solo i prodotti adatti.",
+		"listingModeGroup": "Visualizzazione dell'offerta",
+		"listingModeTyres": "Per i miei pneumatici",
+		"listingModeAll": "Tutte le catene",
+		"listingActive": "Mostriamo solo i prodotti per la misura {size}.",
+		"listingAllNotice": "Stai vedendo tutti i prodotti, non filtrati in base alla tua misura ({size}).",
+		"listingDefaultNone": "Per la misura {size} al momento non abbiamo nulla di adatto nell'offerta, quindi vedi tutti i prodotti.",
+		"listingEmptyTitle": "Per la misura {size} al momento non abbiamo nulla di adatto nell'offerta",
+		"listingEmptyBody": "Controlla la misura sul pneumatico oppure guarda tutti i prodotti. Ti consigliamo volentieri anche di persona."
 	}
 }

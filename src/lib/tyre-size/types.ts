@@ -105,6 +105,18 @@ export type TyreFit =
 /** What the product page knows about this product and the remembered size: no size yet, or the verdict for it. */
 export type TyreFitView = TyreFit | { readonly kind: "no-size" };
 
+/**
+ * How a LISTING CARD speaks of the shopper's tyre size: the product page's four verdicts (its box's `data-fit`), in
+ * the one word each. `fits` is the manufacturer's list with no condition, `fits-supplier` the supplier's data from the
+ * previous shop's card, `fits-with-condition` a size the list attaches a make or model of tyre to.
+ */
+export type TyreCardFitKind = "fits" | "fits-supplier" | "fits-with-condition" | "no-fit";
+
+export interface TyreCardFit {
+	readonly size: string;
+	readonly kind: TyreCardFitKind;
+}
+
 /** What a cart or order line says about the choice, read back from its public metadata. */
 export type TyreLineChoice =
 	| {

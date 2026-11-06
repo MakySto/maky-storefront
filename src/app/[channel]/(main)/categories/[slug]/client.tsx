@@ -36,11 +36,11 @@ interface CategoryPageClientProps {
 	 */
 	accessoryIds?: readonly string[];
 	/**
-	 * The vehicle filter narrowed this listing to nothing. Its own panel above says so and
-	 * offers the ways on; a second "no products" line and an idle toolbar would only
-	 * contradict it.
+	 * A fit filter (the car on a roof-rack shelf, the tyre size on the snow-chain shelf) narrowed this listing to
+	 * nothing. Its own panel above says so and offers the ways on; a second "no products" line and an idle toolbar
+	 * would only contradict it.
 	 */
-	vehicleFilterEmpty?: boolean;
+	fitFilterEmpty?: boolean;
 	/** The category family for the side panel, "Všetko" first, with each one's count. */
 	categoryLinks?: readonly SubcategoryChip[] | null;
 	/** The makers on this shelf, with counts (`getCategoryFacets`); empty = no maker filter. */
@@ -118,7 +118,7 @@ export function CategoryPageClient({
 	pageInfo,
 	priceFilter = null,
 	accessoryIds = [],
-	vehicleFilterEmpty = false,
+	fitFilterEmpty = false,
 	categoryLinks = null,
 	brandFacets = [],
 	volumeFacets = [],
@@ -200,7 +200,7 @@ export function CategoryPageClient({
 		return first ? { beforeProductId: first.id, label: t("accessoriesHeading") } : null;
 	}, [accessoryIds, filteredProducts, t]);
 
-	if (vehicleFilterEmpty && filteredProducts.length === 0) return null;
+	if (fitFilterEmpty && filteredProducts.length === 0) return null;
 
 	const hasPanel =
 		Boolean(categoryLinks?.length) ||

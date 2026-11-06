@@ -10,7 +10,8 @@ import { type ProductDetailsQuery } from "@/gql/graphql";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getLocaleFromChannel } from "@/config/locale";
-import { baseSlugOfCategory } from "@/config/category-routes";
+import { baseSlugOfCategory, categoryUrlFor } from "@/config/category-routes";
+import { TYRE_SHELF_SLUG } from "@/config/tyre-shelves";
 import { marketHref } from "@/lib/channel-map";
 import { AddToCart } from "./add-to-cart";
 import { VariantSelectionSection } from "./variant-selection";
@@ -27,6 +28,7 @@ import { WishlistButton } from "@/ui/components/wishlist/wishlist-button";
 import { reviewSummaryFor } from "@/lib/reviews/summary";
 import { PdpCompatibility } from "@/ui/components/fitment/pdp-compatibility";
 import { readRememberedTyreSize } from "@/lib/tyre-size/remembered";
+import { tyreFilterHref } from "@/lib/tyre-size/listing-param";
 import { tyreSelectionInputFromForm } from "@/lib/tyre-size/selection";
 import { isTyreSizeControlled } from "@/lib/tyre-size/size-index";
 import { tyreFitViewOf } from "@/lib/tyre-size/size-lookup";
@@ -410,7 +412,20 @@ export async function VariantSectionDynamic({
 					channel={channel}
 				/>
 
-				{tyreView ? <TyreSizeGate view={tyreView}>{purchase}</TyreSizeGate> : purchase}
+				{tyreView ? (
+					// For a size this product does not fit, the box offers the shelf narrowed to that size.
+					<TyreSizeGate
+						view={tyreView}
+						fittingHref={marketHref(
+							channel,
+							tyreFilterHref(categoryUrlFor(channel, TYRE_SHELF_SLUG), {}, true),
+						)}
+					>
+						{purchase}
+					</TyreSizeGate>
+				) : (
+					purchase
+				)}
 			</CartForm>
 
 			{/* Purchase confidence - order:6, outside the form (nothing submittable). */}

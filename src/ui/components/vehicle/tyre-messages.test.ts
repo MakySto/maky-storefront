@@ -35,7 +35,9 @@ const FILES = [
 	"src/ui/components/vehicle/vehicle-selector-sheet.tsx",
 	"src/ui/components/vehicle/vehicle-selector-launcher.tsx",
 	"src/ui/components/plp/cart-form.tsx",
+	"src/ui/components/plp/tyre-fit-line.tsx",
 	"src/ui/components/cart/tyre-choice-line.tsx",
+	"src/ui/components/fitment/tyre-listing-filter.tsx",
 ];
 
 const read = (file: string) => readFileSync(path.join(process.cwd(), file), "utf8");
@@ -72,12 +74,19 @@ function firstArguments(source: string, name: string): string[] {
 	return found;
 }
 
-/** The keys a file asks of the `tyreSize` namespace: through every translator it binds to it, including `cond ? "a" : "b"`. */
+/**
+ * The keys a file asks of the `tyreSize` namespace: through every translator it binds to it, including `cond ? "a" : "b"`.
+ * A client component binds it with `useTranslations("tyreSize")`, a server one with
+ * `await getTranslations({ locale, namespace: "tyreSize" })`.
+ */
 function keysUsedIn(file: string): string[] {
 	const source = read(file);
-	const names = [...source.matchAll(/const\s+(\w+)\s*=\s*useTranslations\(\s*"tyreSize"\s*\)/g)].map(
-		(m) => m[1],
-	);
+	const names = [
+		...source.matchAll(/const\s+(\w+)\s*=\s*useTranslations\(\s*"tyreSize"\s*\)/g),
+		...source.matchAll(
+			/const\s+(\w+)\s*=\s*await\s+getTranslations\(\s*\{[^}]*namespace:\s*"tyreSize"[^}]*\}\s*\)/g,
+		),
+	].map((m) => m[1]);
 	const keys = new Set<string>();
 	for (const name of names) {
 		for (const argument of firstArguments(source, name)) {
@@ -108,6 +117,26 @@ describe("the tyre-size texts the components ask for", () => {
 		);
 		expect(found["src/ui/components/plp/cart-form.tsx"]).toEqual(
 			expect.arrayContaining(["errorRequired", "errorInvalid", "errorCondition"]),
+		);
+		expect(found["src/ui/components/plp/tyre-fit-line.tsx"]).toEqual(
+			expect.arrayContaining(["fitFitsTitle", "fitSupplierTitle", "fitConditionTitle", "fitNoFitTitle"]),
+		);
+		// The listing control is a server component: its translator is found by the second form.
+		expect(found["src/ui/components/fitment/tyre-listing-filter.tsx"]).toEqual(
+			expect.arrayContaining([
+				"listingPickTitle",
+				"listingPickBody",
+				"listingModeGroup",
+				"listingModeTyres",
+				"listingModeAll",
+				"listingActive",
+				"listingAllNotice",
+				"listingDefaultNone",
+				"listingEmptyTitle",
+				"listingEmptyBody",
+				"fitEnter",
+				"fitChange",
+			]),
 		);
 	});
 

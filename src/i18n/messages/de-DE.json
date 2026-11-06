@@ -1308,6 +1308,16 @@
 		"fitShowFitting": "Passende Schneeketten anzeigen",
 		"fitHowToFind": "Größe unbekannt? So finden Sie sie auf dem Reifen",
 		"buttonNoFit": "Passt nicht auf Ihre Größe",
-		"buttonConfirm": "Bedingung bestätigen"
+		"buttonConfirm": "Bedingung bestätigen",
+		"listingPickTitle": "Welche Reifengröße haben Sie?",
+		"listingPickBody": "Sie geben sie einmal an, und der Shop merkt sie sich. Danach zeigen wir Ihnen nur die Produkte, die darauf passen.",
+		"listingModeGroup": "Ansicht des Angebots",
+		"listingModeTyres": "Für meine Reifen",
+		"listingModeAll": "Alle Schneeketten",
+		"listingActive": "Wir zeigen nur Produkte für die Größe {size}.",
+		"listingAllNotice": "Sie sehen alle Produkte, nicht nach Ihrer Reifengröße ({size}) ausgewählt.",
+		"listingDefaultNone": "Für die Größe {size} haben wir derzeit nichts im Angebot, was darauf passt – deshalb sehen Sie alle Produkte.",
+		"listingEmptyTitle": "Für die Größe {size} haben wir derzeit nichts im Angebot, was darauf passt",
+		"listingEmptyBody": "Prüfen Sie die Größe auf dem Reifen oder sehen Sie sich alle Produkte an. Wir beraten Sie gern auch persönlich."
 	}
 }

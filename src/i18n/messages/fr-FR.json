@@ -1308,6 +1308,16 @@
 		"fitShowFitting": "Voir les chaînes qui conviennent",
 		"fitHowToFind": "Vous ne connaissez pas la dimension ? Où la trouver sur le pneu",
 		"buttonNoFit": "Ne convient pas à votre dimension",
-		"buttonConfirm": "Confirmez la condition"
+		"buttonConfirm": "Confirmez la condition",
+		"listingPickTitle": "Quelle est la dimension de vos pneus ?",
+		"listingPickBody": "Indiquez-la une fois et la boutique s'en souvient. Nous vous montrerons ensuite uniquement les produits qui conviennent.",
+		"listingModeGroup": "Affichage de l'offre",
+		"listingModeTyres": "Pour mes pneus",
+		"listingModeAll": "Toutes les chaînes",
+		"listingActive": "Nous affichons uniquement les produits pour la dimension {size}.",
+		"listingAllNotice": "Vous voyez tous les produits, non filtrés selon votre dimension ({size}).",
+		"listingDefaultNone": "Pour la dimension {size}, nous n'avons actuellement rien qui convienne dans notre offre ; vous voyez donc tous les produits.",
+		"listingEmptyTitle": "Pour la dimension {size}, nous n'avons actuellement rien qui convienne dans notre offre",
+		"listingEmptyBody": "Vérifiez la dimension sur le pneu ou consultez tous les produits. Nous vous conseillons volontiers aussi en personne."
 	}
 }

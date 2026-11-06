@@ -1308,6 +1308,16 @@
 		"fitShowFitting": "Pokaż łańcuchy, które pasują",
 		"fitHowToFind": "Nie znasz rozmiaru? Jak go znaleźć na oponie",
 		"buttonNoFit": "Nie pasuje do Twojego rozmiaru",
-		"buttonConfirm": "Potwierdź warunek"
+		"buttonConfirm": "Potwierdź warunek",
+		"listingPickTitle": "Jaki rozmiar mają Twoje opony?",
+		"listingPickBody": "Podajesz go raz, a sklep go zapamiętuje. Potem pokażemy Ci tylko produkty, które pasują.",
+		"listingModeGroup": "Widok oferty",
+		"listingModeTyres": "Dla moich opon",
+		"listingModeAll": "Wszystkie łańcuchy",
+		"listingActive": "Pokazujemy tylko produkty dla rozmiaru {size}.",
+		"listingAllNotice": "Widzisz wszystkie produkty, nie wybrane według Twojego rozmiaru ({size}).",
+		"listingDefaultNone": "Dla rozmiaru {size} nie mamy teraz w ofercie nic, co by pasowało, dlatego widzisz wszystkie produkty.",
+		"listingEmptyTitle": "Dla rozmiaru {size} nie mamy teraz w ofercie nic, co by pasowało",
+		"listingEmptyBody": "Sprawdź rozmiar na oponie lub zobacz wszystkie produkty. Chętnie doradzimy Ci też osobiście."
 	}
 }

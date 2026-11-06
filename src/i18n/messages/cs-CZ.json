@@ -1308,6 +1308,16 @@
 		"fitShowFitting": "Zobrazit řetězy, které sedí",
 		"fitHowToFind": "Neznáte rozměr? Jak ho najdete na pneumatice",
 		"buttonNoFit": "Nesedí na váš rozměr",
-		"buttonConfirm": "Potvrďte podmínku"
+		"buttonConfirm": "Potvrďte podmínku",
+		"listingPickTitle": "Jaký rozměr pneumatik máte?",
+		"listingPickBody": "Zadáte ho jednou a obchod si ho zapamatuje. Potom vám ukážeme jen produkty, které na něj sedí.",
+		"listingModeGroup": "Zobrazení nabídky",
+		"listingModeTyres": "Pro moje pneumatiky",
+		"listingModeAll": "Všechny řetězy",
+		"listingActive": "Zobrazujeme jen produkty pro rozměr {size}.",
+		"listingAllNotice": "Zobrazujete všechny produkty, nejsou vybrané podle vašeho rozměru ({size}).",
+		"listingDefaultNone": "Pro rozměr {size} teď v nabídce nemáme nic, co by na něj sedělo, proto vidíte všechny produkty.",
+		"listingEmptyTitle": "Pro rozměr {size} teď v nabídce nemáme nic, co by na něj sedělo",
+		"listingEmptyBody": "Zkontrolujte rozměr na pneumatice, nebo si prohlédněte všechny produkty. Rádi vám poradíme i osobně."
 	}
 }

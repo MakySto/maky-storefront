@@ -1308,6 +1308,16 @@
 		"fitShowFitting": "Ver las cadenas que encajan",
 		"fitHowToFind": "¿No sabes la medida? Cómo encontrarla en el neumático",
 		"buttonNoFit": "No encaja en tu medida",
-		"buttonConfirm": "Confirma la condición"
+		"buttonConfirm": "Confirma la condición",
+		"listingPickTitle": "¿Qué medida tienen tus neumáticos?",
+		"listingPickBody": "La indicas una vez y la tienda la recuerda. Después te mostramos solo los productos que encajan.",
+		"listingModeGroup": "Vista de la oferta",
+		"listingModeTyres": "Para mis neumáticos",
+		"listingModeAll": "Todas las cadenas",
+		"listingActive": "Mostramos solo los productos para la medida {size}.",
+		"listingAllNotice": "Estás viendo todos los productos, sin filtrar por tu medida ({size}).",
+		"listingDefaultNone": "Ahora mismo no tenemos nada en la oferta que encaje en {size}, por eso ves todos los productos.",
+		"listingEmptyTitle": "Ahora mismo no tenemos nada en la oferta que encaje en {size}",
+		"listingEmptyBody": "Comprueba la medida en el neumático o consulta todos los productos. Estaremos encantados de asesorarte también en persona."
 	}
 }

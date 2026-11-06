@@ -1308,6 +1308,16 @@
 		"fitShowFitting": "Show chains that fit",
 		"fitHowToFind": "Don't know your size? How to find it on the tire",
 		"buttonNoFit": "Doesn't fit your size",
-		"buttonConfirm": "Confirm the condition"
+		"buttonConfirm": "Confirm the condition",
+		"listingPickTitle": "What size are your tires?",
+		"listingPickBody": "Enter it once and the shop will remember it. Then we'll show only the products that fit.",
+		"listingModeGroup": "Listing view",
+		"listingModeTyres": "For my tires",
+		"listingModeAll": "All chains",
+		"listingActive": "Showing only products for size {size}.",
+		"listingAllNotice": "You're viewing all products, not filtered to your size ({size}).",
+		"listingDefaultNone": "We don't currently have anything that fits {size}, so you're seeing all products.",
+		"listingEmptyTitle": "We don't currently have anything that fits {size}",
+		"listingEmptyBody": "Check the size on your tire or browse all products. We're happy to advise you in person, too."
 	}
 }

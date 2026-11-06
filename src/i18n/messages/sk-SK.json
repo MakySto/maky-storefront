@@ -1308,6 +1308,16 @@
 		"fitShowFitting": "Zobraziť reťaze, ktoré sedia",
 		"fitHowToFind": "Neviete rozmer? Ako ho nájdete na pneumatike",
 		"buttonNoFit": "Nesedí na váš rozmer",
-		"buttonConfirm": "Potvrďte podmienku"
+		"buttonConfirm": "Potvrďte podmienku",
+		"listingPickTitle": "Aký rozmer pneumatík máte?",
+		"listingPickBody": "Zadáte ho raz a obchod si ho zapamätá. Potom vám ukážeme len produkty, ktoré naň sedia.",
+		"listingModeGroup": "Zobrazenie ponuky",
+		"listingModeTyres": "Pre moje pneumatiky",
+		"listingModeAll": "Všetky reťaze",
+		"listingActive": "Zobrazujeme len produkty pre rozmer {size}.",
+		"listingAllNotice": "Zobrazujete všetky produkty, nie sú vybrané podľa vášho rozmeru ({size}).",
+		"listingDefaultNone": "Pre rozmer {size} teraz nemáme v ponuke nič, čo by naň sedelo, preto vidíte všetky produkty.",
+		"listingEmptyTitle": "Pre rozmer {size} teraz nemáme v ponuke nič, čo by naň sedelo",
+		"listingEmptyBody": "Skontrolujte rozmer na pneumatike alebo si pozrite všetky produkty. Radi vám poradíme aj osobne."
 	}
 }

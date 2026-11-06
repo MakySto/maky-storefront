@@ -46,6 +46,7 @@ import { chooseVehicle } from "@/lib/garage/actions";
 import { GARAGE_MAX_VEHICLES } from "@/lib/garage/limits";
 import { searchWithoutPagination, vehicleConfirmDestination } from "@/lib/garage/confirm-destination";
 import { REVERSE_MAP } from "@/lib/channel-map";
+import { afterTyreSize } from "@/lib/tyre-size/after-size";
 import { TyreSizeTab, useTyreSelector } from "./tyre-size-tab";
 
 export type VehicleDraft = Draft;
@@ -181,11 +182,17 @@ export function VehicleSelectorSheet({
 
 	/**
 	 * After a tyre size was saved or forgotten. The size is a cookie, so every server-rendered surface that speaks of
-	 * it (the product page's fit box, the header button) has to be rendered again.
+	 * it (the product page's fit box, the header button) has to be rendered again. From the homepage a saved size leads
+	 * to the snow-chain shelf narrowed to it, and on that shelf the old size's page position goes (`afterTyreSize`).
+	 * Read at click time, like the car's, rather than through `useSearchParams`, which would put a Suspense requirement
+	 * on a component the header mounts on every page.
 	 */
-	const finishTyres = () => {
+	const finishTyres = (size: string | null) => {
 		onOpenChange(false);
-		router.refresh();
+		const next = afterTyreSize({ pathname, channel, search: window.location.search, size });
+		if (next.kind === "push") router.push(next.path);
+		else if (next.kind === "replace") router.replace(next.path);
+		else router.refresh();
 	};
 	const tyres = useTyreSelector({ onDone: finishTyres });
 
