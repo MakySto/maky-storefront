@@ -1245,5 +1245,31 @@
 		"specBars": "Belki",
 		"roofFilterLabel": "Typ dachu",
 		"roofFilterAll": "Wszystkie"
+	},
+	"tyreSize": {
+		"heading": "Rozmiar Twoich opon",
+		"intro": "Właściwy produkt dobiera się według rozmiaru opony. Znajdziesz go na jej boku, na przykład 205/55 R16.",
+		"rim": "Średnica felgi",
+		"rimPlaceholder": "Wybierz średnicę",
+		"size": "Rozmiar opony",
+		"sizePlaceholder": "Wybierz rozmiar",
+		"sizePlaceholderFirst": "Najpierw wybierz średnicę felgi",
+		"notListed": "Nie ma Twojego rozmiaru? Według listy ten produkt nie pasuje wtedy do Twoich opon. Wybierz inny lub napisz do nas.",
+		"conditionOnly": "Dla rozmiaru {size} ten produkt pasuje tylko do opon: {tyres}.",
+		"conditionNot": "Dla rozmiaru {size} ten produkt nie pasuje do opon: {tyres}.",
+		"confirmOnly": "Potwierdzam, że moje opony to: {tyres}.",
+		"confirmNot": "Potwierdzam, że moje opony to nie: {tyres}.",
+		"knowsCode": "Znam kod produktu i teraz nie wybieram rozmiaru",
+		"knowsCodeNote": "W takim przypadku dopasowanie do swoich opon sprawdzasz samodzielnie. W zamówieniu zostanie zapisane, że produkt wybrano bez rozmiaru.",
+		"sourceManufacturer": "Rozmiary według listy producenta.",
+		"sourceSupplier": "Rozmiary według danych dostawcy z dotychczasowej karty produktu, a nie według listy producenta. Przed zamówieniem sprawdź je na swojej oponie.",
+		"selectSize": "Wybierz rozmiar",
+		"errorRequired": "Wybierz rozmiar opon, abyśmy mogli dodać produkt do koszyka.",
+		"errorInvalid": "Wybrany rozmiar nie należy do tego produktu. Wybierz rozmiar z listy.",
+		"errorCondition": "Potwierdź warunek dla wybranego rozmiaru i spróbuj ponownie.",
+		"lineSize": "Rozmiar opony: {size}",
+		"lineOnly": "Tylko do opon: {tyres}",
+		"lineNot": "Nie do opon: {tyres}",
+		"lineCode": "Rozmiar nie podany, produkt wybrany bez rozmiaru"
 	}
 }

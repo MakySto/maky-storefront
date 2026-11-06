@@ -8,6 +8,7 @@ import { formatPrice } from "@/config/locale";
 import { marketHref } from "@/lib/channel-map";
 import { compareAtLineTotal } from "@/lib/pricing";
 import { productHref } from "@/lib/product-url";
+import { TyreChoiceLine } from "./tyre-choice-line";
 import { checkoutLineDisplay } from "@/lib/checkout-line-display";
 import { useLocale } from "@/providers/locale-provider";
 import { buildCheckoutPath } from "@/session-bridge";
@@ -102,6 +103,7 @@ function DrawerLine({
 							{t("variantLabel", { variant: line.variant.name })}
 						</p>
 					) : null}
+					<TyreChoiceLine metadata={line.metadata} className="mt-1.5" />
 					{fitment ? <CartLineFit fitment={fitment} className="mt-2" onNavigate={closeCart} /> : null}
 				</div>
 			</div>

@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { type CheckoutFindQuery } from "@/gql/graphql";
 import { CheckoutLink } from "./checkout-link";
 import * as Checkout from "@/lib/checkout";
+import { TyreChoiceLine } from "@/ui/components/cart/tyre-choice-line";
 import { checkoutLineDisplay } from "@/lib/checkout-line-display";
 import { getLocaleFromChannel, formatPrice } from "@/config/locale";
 import { compareAtLineTotal } from "@/lib/pricing";
@@ -131,6 +132,7 @@ async function CartItem({
 									{t("variantLabel", { variant: line.variant.name })}
 								</p>
 							) : null}
+							<TyreChoiceLine metadata={line.metadata} className="mt-1.5 text-sm" />
 							{fitment ? <CartLineFit fitment={fitment} className="mt-2" /> : null}
 						</div>
 						<div className="hidden sm:block">

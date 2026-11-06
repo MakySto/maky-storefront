@@ -1245,5 +1245,31 @@
 		"specBars": "Příčníky",
 		"roofFilterLabel": "Typ střechy",
 		"roofFilterAll": "Všechny"
+	},
+	"tyreSize": {
+		"heading": "Rozměr vašich pneumatik",
+		"intro": "Správný produkt se vybírá podle rozměru pneumatiky. Najdete ho na jejím boku, například 205/55 R16.",
+		"rim": "Průměr disku",
+		"rimPlaceholder": "Vyberte průměr",
+		"size": "Rozměr pneumatiky",
+		"sizePlaceholder": "Vyberte rozměr",
+		"sizePlaceholderFirst": "Nejprve vyberte průměr disku",
+		"notListed": "Nenašli jste svůj rozměr? Podle seznamu pak tento produkt na vaše pneumatiky nesedí. Vyberte jiný nebo nám napište.",
+		"conditionOnly": "Pro rozměr {size} sedí tento produkt jen na pneumatiky: {tyres}.",
+		"conditionNot": "Pro rozměr {size} tento produkt nesedí na pneumatiky: {tyres}.",
+		"confirmOnly": "Potvrzuji, že mé pneumatiky jsou: {tyres}.",
+		"confirmNot": "Potvrzuji, že mé pneumatiky nejsou: {tyres}.",
+		"knowsCode": "Kód produktu znám a rozměr teď nevybírám",
+		"knowsCodeNote": "Shodu s vašimi pneumatikami si v tom případě ověřujete sami. V objednávce bude uvedeno, že jste produkt zvolili bez rozměru.",
+		"sourceManufacturer": "Rozměry podle seznamu výrobce.",
+		"sourceSupplier": "Rozměry podle údajů dodavatele na dosavadní kartě produktu, ne podle seznamu výrobce. Před objednávkou si je ověřte podle své pneumatiky.",
+		"selectSize": "Vyberte rozměr",
+		"errorRequired": "Vyberte rozměr pneumatik, abychom mohli produkt přidat do košíku.",
+		"errorInvalid": "Zvolený rozměr k tomuto produktu nepatří. Vyberte rozměr ze seznamu.",
+		"errorCondition": "Potvrďte podmínku u zvoleného rozměru a zkuste to znovu.",
+		"lineSize": "Rozměr pneumatik: {size}",
+		"lineOnly": "Jen na pneumatiky: {tyres}",
+		"lineNot": "Ne na pneumatiky: {tyres}",
+		"lineCode": "Rozměr neuveden, produkt zvolen bez rozměru"
 	}
 }

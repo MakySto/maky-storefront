@@ -1245,5 +1245,31 @@
 		"specBars": "Bare transversale",
 		"roofFilterLabel": "Tipul acoperișului",
 		"roofFilterAll": "Toate"
+	},
+	"tyreSize": {
+		"heading": "Dimensiunea anvelopelor dumneavoastră",
+		"intro": "Produsul potrivit depinde de dimensiunea anvelopei. O găsiți pe flancul anvelopei, de exemplu 205/55 R16.",
+		"rim": "Diametrul jantei",
+		"rimPlaceholder": "Alegeți diametrul",
+		"size": "Dimensiunea anvelopei",
+		"sizePlaceholder": "Alegeți dimensiunea",
+		"sizePlaceholderFirst": "Alegeți mai întâi diametrul jantei",
+		"notListed": "Nu vă găsiți dimensiunea? Conform listei, acest produs nu se potrivește anvelopelor dumneavoastră. Alegeți altul sau scrieți-ne.",
+		"conditionOnly": "Pentru dimensiunea {size}, acest produs se potrivește doar anvelopelor: {tyres}.",
+		"conditionNot": "Pentru dimensiunea {size}, acest produs nu se potrivește anvelopelor: {tyres}.",
+		"confirmOnly": "Confirm că anvelopele mele sunt: {tyres}.",
+		"confirmNot": "Confirm că anvelopele mele nu sunt: {tyres}.",
+		"knowsCode": "Cunosc codul produsului și nu aleg acum o dimensiune",
+		"knowsCodeNote": "În acest caz verificați singur compatibilitatea cu anvelopele dumneavoastră. În comandă va fi menționat că ați ales produsul fără dimensiune.",
+		"sourceManufacturer": "Dimensiuni conform listei producătorului.",
+		"sourceSupplier": "Dimensiuni conform datelor furnizorului de pe fișa anterioară a produsului, nu conform listei producătorului. Verificați-le pe anvelopa dumneavoastră înainte de comandă.",
+		"selectSize": "Alegeți dimensiunea",
+		"errorRequired": "Alegeți dimensiunea anvelopelor, ca să putem adăuga produsul în coș.",
+		"errorInvalid": "Dimensiunea aleasă nu aparține acestui produs. Alegeți o dimensiune din listă.",
+		"errorCondition": "Confirmați condiția pentru dimensiunea aleasă și încercați din nou.",
+		"lineSize": "Dimensiunea anvelopei: {size}",
+		"lineOnly": "Doar pentru anvelopele: {tyres}",
+		"lineNot": "Nu pentru anvelopele: {tyres}",
+		"lineCode": "Dimensiune nespecificată, produs ales fără dimensiune"
 	}
 }
