@@ -109,6 +109,11 @@ fragment CheckoutFragment on Checkout {
 fragment CheckoutLineFragment on CheckoutLine {
 	id
 	quantity
+	# The tyre size the shopper chose on a snow chain or sock (`lib/tyre-size`).
+	metadata {
+		key
+		value
+	}
 	totalPrice {
 		gross {
 			currency

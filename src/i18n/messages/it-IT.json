@@ -1245,5 +1245,31 @@
 		"specBars": "Barre",
 		"roofFilterLabel": "Tipo di tetto",
 		"roofFilterAll": "Tutti"
+	},
+	"tyreSize": {
+		"heading": "Misura dei tuoi pneumatici",
+		"intro": "Il prodotto giusto dipende dalla misura del pneumatico. La trovi sul fianco, ad esempio 205/55 R16.",
+		"rim": "Diametro del cerchio",
+		"rimPlaceholder": "Scegli il diametro",
+		"size": "Misura del pneumatico",
+		"sizePlaceholder": "Scegli la misura",
+		"sizePlaceholderFirst": "Scegli prima il diametro del cerchio",
+		"notListed": "Non trovi la tua misura? Secondo l'elenco, questo prodotto non è adatto ai tuoi pneumatici. Scegline un altro o scrivici.",
+		"conditionOnly": "Per la misura {size} questo prodotto è adatto solo ai pneumatici: {tyres}.",
+		"conditionNot": "Per la misura {size} questo prodotto non è adatto ai pneumatici: {tyres}.",
+		"confirmOnly": "Confermo che i miei pneumatici sono: {tyres}.",
+		"confirmNot": "Confermo che i miei pneumatici non sono: {tyres}.",
+		"knowsCode": "Conosco il codice del prodotto e ora non scelgo la misura",
+		"knowsCodeNote": "In tal caso verifichi tu la compatibilità con i tuoi pneumatici. Nell'ordine sarà indicato che hai scelto il prodotto senza misura.",
+		"sourceManufacturer": "Misure secondo l'elenco del produttore.",
+		"sourceSupplier": "Misure secondo i dati del fornitore sulla precedente scheda prodotto, non secondo l'elenco del produttore. Verificale con il tuo pneumatico prima di ordinare.",
+		"selectSize": "Scegli la misura",
+		"errorRequired": "Scegli la misura dei tuoi pneumatici per poter aggiungere il prodotto al carrello.",
+		"errorInvalid": "La misura scelta non appartiene a questo prodotto. Scegli una misura dall'elenco.",
+		"errorCondition": "Conferma la condizione per la misura scelta e riprova.",
+		"lineSize": "Misura del pneumatico: {size}",
+		"lineOnly": "Solo per pneumatici: {tyres}",
+		"lineNot": "Non per pneumatici: {tyres}",
+		"lineCode": "Misura non indicata, prodotto scelto senza misura"
 	}
 }

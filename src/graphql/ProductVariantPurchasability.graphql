@@ -1,6 +1,8 @@
 query ProductVariantPurchasability($id: ID!, $channel: String!) {
 	productVariant(id: $id, channel: $channel) {
 		id
+		# The public code (the variant's name): which products ask for a tyre size is decided by it (`lib/tyre-size`).
+		name
 		product {
 			id
 			isAvailableForPurchase

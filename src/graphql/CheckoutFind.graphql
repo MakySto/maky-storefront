@@ -16,6 +16,11 @@ query CheckoutFind($id: ID!, $languageCode: LanguageCodeEnum!) {
 		lines {
 			id
 			quantity
+			# The tyre size the shopper chose on a snow chain or sock (`lib/tyre-size`), written by the add-to-cart action.
+			metadata {
+				key
+				value
+			}
 			totalPrice {
 				gross {
 					amount

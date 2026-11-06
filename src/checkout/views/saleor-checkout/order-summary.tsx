@@ -10,6 +10,8 @@ import { localeConfig } from "@/config/locale";
 import { useLocale } from "@/providers/locale-provider";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 import { localizedAttributeValues, localizedName, orderLineName } from "@/checkout/lib/summary-line-names";
+import type { MetadataItem } from "@/lib/tyre-size/line-metadata";
+import { TyreChoiceLine } from "@/ui/components/cart/tyre-choice-line";
 
 // ============================================================================
 // Types
@@ -23,6 +25,8 @@ interface LineItem {
 	imageUrl?: string | null;
 	imageAlt?: string | null;
 	totalAmount: number;
+	/** The line's public metadata: where a snow chain or sock carries the tyre size the customer chose. */
+	metadata?: readonly MetadataItem[] | null;
 }
 
 interface OrderSummaryData {
@@ -72,6 +76,7 @@ function extractCheckoutData(checkout: CheckoutFragment, productNameFallback: st
 			imageUrl: image?.url,
 			imageAlt: image?.alt,
 			totalAmount: line.totalPrice?.gross?.amount || 0,
+			metadata: line.metadata,
 		};
 	});
 
@@ -99,6 +104,7 @@ function extractOrderData(order: OrderFragment, productNameFallback: string): Or
 			imageUrl: line.thumbnail?.url,
 			imageAlt: line.thumbnail?.alt,
 			totalAmount: line.totalPrice?.gross?.amount || 0,
+			metadata: line.metadata,
 		};
 	});
 
@@ -269,6 +275,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 												{line.attributes.join(" / ")}
 											</p>
 										)}
+										<TyreChoiceLine metadata={line.metadata} className="mt-0.5" />
 									</div>
 
 									{/* Price */}

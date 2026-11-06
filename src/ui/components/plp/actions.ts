@@ -5,9 +5,19 @@ import {
 	revalidateStorefrontChrome,
 } from "@/lib/auth/revalidate-storefront-chrome";
 
-import { CheckoutAddLineDocument, ProductVariantPurchasabilityDocument } from "@/gql/graphql";
+import {
+	CheckoutAddLineDocument,
+	CheckoutAddSizedLineDocument,
+	CheckoutLinesUpdateDocument,
+	ProductVariantPurchasabilityDocument,
+} from "@/gql/graphql";
 import { executeAuthenticatedGraphQL, executePublicGraphQL } from "@/lib/graphql";
 import * as Checkout from "@/lib/checkout";
+import { publicProductCode } from "@/lib/product-code";
+import { tyreSelectionKey, tyreSelectionToMetadata } from "@/lib/tyre-size/line-metadata";
+import { resolveTyreSelection, tyreSelectionInputFromForm } from "@/lib/tyre-size/selection";
+import { isTyreSizeControlled } from "@/lib/tyre-size/size-index";
+import type { TyreRefusal, TyreSelection, TyreSelectionInput } from "@/lib/tyre-size/types";
 import { clampQuantity } from "@/ui/components/ui/quantity-limits";
 import {
 	classifyCheckoutErrors,
@@ -15,8 +25,18 @@ import {
 	READ_BACK_BUDGET_MS,
 	readBackVerdict,
 	READ_BACK_DELAYS_MS,
+	type AddToCartRejection,
 	type AddToCartResult,
 } from "./add-to-cart-result";
+import { lineOfChoice, quantityOfVariant } from "./cart-lines";
+
+/** Why a tyre choice was not accepted, as the reason a form shows. Each is a different sentence to the customer. */
+const SIZE_REASON: Record<TyreRefusal, Extract<AddToCartRejection, `size-${string}`>> = {
+	required: "size-required",
+	"unknown-size": "size-invalid",
+	"condition-required": "size-condition",
+	"condition-mismatch": "size-condition",
+};
 
 /**
  * Put one variant in the cart and say what actually happened.
@@ -31,12 +51,22 @@ import {
  * success nor a failure and it must NEVER be retried automatically — a retry is
  * how one click becomes two lines. Everything before the mutation is a clean
  * failure, because nothing was attempted yet.
+ *
+ * A snow chain or sock is the one product that is added WITH something: the tyre size the customer chose
+ * (`lib/tyre-size`). Which products those are is decided here, from the variant's own public code as Saleor
+ * answers it, and not from anything the form says: every path that reaches this function — the product page, a
+ * listing card, the vehicle configurator — meets the same check, and none of them can add such a product without
+ * a size that belongs to its code, or the customer's own statement that they know the code. The choice is written
+ * on the cart line (it reaches the order line from there), the same size added again raises that line's quantity,
+ * and a different size is a second line.
  */
 export async function addVariantToCart(input: {
 	channel: string;
 	variantId: string;
 	quantity: number;
 	maxQuantity?: number | null;
+	/** What the form said about the tyre choice, before any check. Only snow chains and socks look at it. */
+	tyre?: TyreSelectionInput | null;
 }): Promise<AddToCartResult> {
 	const { channel, variantId } = input;
 	if (!channel || !variantId) {
@@ -66,6 +96,7 @@ export async function addVariantToCart(input: {
 	// Hidden form fields and client payloads are attacker-controlled, and a stale PLP/PDP
 	// may outlive a catalogue change. Fail closed while the request is still a read: no
 	// checkout is created, no cookie is written and no mutation is attempted.
+	let publicCode: string | null = null;
 	try {
 		const verification = await executePublicGraphQL(ProductVariantPurchasabilityDocument, {
 			variables: { id: decodedVariantId, channel },
@@ -86,6 +117,7 @@ export async function addVariantToCart(input: {
 				message: "product is not available for purchase in this market",
 			};
 		}
+		publicCode = publicProductCode(verification.data.productVariant);
 	} catch (error) {
 		console.error("[cart] purchasability lookup threw:", error);
 		return {
@@ -95,8 +127,25 @@ export async function addVariantToCart(input: {
 		};
 	}
 
+	// A snow chain or sock needs a size that belongs to its code. Still a read: refused before any checkout exists.
+	let tyre: TyreSelection | null = null;
+	if (publicCode !== null && isTyreSizeControlled(publicCode)) {
+		const checked = resolveTyreSelection(publicCode, input.tyre);
+		if (!checked.ok) {
+			return {
+				status: "rejected",
+				reason: SIZE_REASON[checked.refusal],
+				message: `tyre choice refused: ${checked.refusal}`,
+			};
+		}
+		tyre = checked.selection;
+	}
+	// The key of the line this add belongs to: null for every other product (all lines of the variant count).
+	const choiceKey = tyre ? tyreSelectionKey(tyre) : null;
+
 	let checkoutId: string;
 	let quantityBefore = 0;
+	let sameChoice: { id: string; quantity: number } | null = null;
 	try {
 		const ensured = await Checkout.findOrCreate({
 			checkoutId: await Checkout.getIdFromCookies(channel),
@@ -118,7 +167,11 @@ export async function addVariantToCart(input: {
 		checkoutId = ensured.checkout.id;
 		// Recorded so an unclear result can be settled by READING rather than by
 		// sending the write again.
-		quantityBefore = quantityOfVariant(ensured.checkout, decodedVariantId);
+		quantityBefore = quantityOfVariant(ensured.checkout, decodedVariantId, choiceKey);
+		if (choiceKey !== null) {
+			const line = lineOfChoice(ensured.checkout, decodedVariantId, choiceKey);
+			sameChoice = line ? { id: line.id, quantity: line.quantity } : null;
+		}
 	} catch (error) {
 		// Still before the mutation, so nothing can have been written.
 		return {
@@ -131,18 +184,21 @@ export async function addVariantToCart(input: {
 	// From here on a failure is "unconfirmed", never "rejected": the request may
 	// have reached Saleor.
 	try {
-		const result = await executeAuthenticatedGraphQL(CheckoutAddLineDocument, {
-			variables: { id: checkoutId, productVariantId: decodedVariantId, quantity },
-			cache: "no-cache",
+		const result = await sendLine({
+			checkoutId,
+			variantId: decodedVariantId,
+			quantity,
+			tyre,
+			sameChoice,
 		});
 
 		if (!result.ok) {
-			console.error("[cart] add-to-cart transport failure:", result.error.message);
+			console.error("[cart] add-to-cart transport failure:", result.message);
 			revalidateCart(channel);
-			return reconcile(checkoutId, decodedVariantId, quantityBefore, quantity, result.error.message);
+			return reconcile(checkoutId, decodedVariantId, choiceKey, quantityBefore, quantity, result.message);
 		}
 
-		const payload = result.data.checkoutLinesAdd;
+		const payload = result.payload;
 		if (!payload) {
 			revalidateCart(channel);
 			return { status: "unconfirmed", message: "the mutation returned no payload" };
@@ -172,11 +228,78 @@ export async function addVariantToCart(input: {
 		return reconcile(
 			checkoutId,
 			decodedVariantId,
+			choiceKey,
 			quantityBefore,
 			quantity,
 			error instanceof Error ? error.message : "unknown error",
 		);
 	}
+}
+
+type LineWrite =
+	| { ok: false; message: string }
+	| {
+			ok: true;
+			payload:
+				| {
+						checkout?: unknown;
+						errors?: readonly { code?: string | null; field?: string | null; message?: string | null }[];
+				  }
+				| null
+				| undefined;
+	  };
+
+/**
+ * The one write: which mutation depends on what is being added, and all three answer in the same shape.
+ *
+ * - Any other product: `checkoutLinesAdd`, exactly as before this feature.
+ * - A snow chain or sock whose size is not yet in the cart: `checkoutLinesAdd` with `forceNewLine`, so that
+ *   a second size becomes a second line instead of replacing the first line's metadata, and with the choice as
+ *   the line's metadata.
+ * - The same size again: the existing line's quantity is raised with `checkoutLinesUpdate`, so the cart does not
+ *   fill with two lines of one size. That one sets an absolute quantity, which makes it safe to settle by reading.
+ */
+async function sendLine(args: {
+	checkoutId: string;
+	variantId: string;
+	quantity: number;
+	tyre: TyreSelection | null;
+	sameChoice: { id: string; quantity: number } | null;
+}): Promise<LineWrite> {
+	const { checkoutId, variantId, quantity, tyre, sameChoice } = args;
+
+	if (tyre && sameChoice) {
+		const result = await executeAuthenticatedGraphQL(CheckoutLinesUpdateDocument, {
+			variables: { checkoutId, lines: [{ lineId: sameChoice.id, quantity: sameChoice.quantity + quantity }] },
+			cache: "no-cache",
+		});
+		return result.ok
+			? { ok: true, payload: result.data.checkoutLinesUpdate }
+			: { ok: false, message: result.error.message };
+	}
+
+	if (tyre) {
+		const result = await executeAuthenticatedGraphQL(CheckoutAddSizedLineDocument, {
+			variables: {
+				id: checkoutId,
+				productVariantId: variantId,
+				quantity,
+				metadata: tyreSelectionToMetadata(tyre),
+			},
+			cache: "no-cache",
+		});
+		return result.ok
+			? { ok: true, payload: result.data.checkoutLinesAdd }
+			: { ok: false, message: result.error.message };
+	}
+
+	const result = await executeAuthenticatedGraphQL(CheckoutAddLineDocument, {
+		variables: { id: checkoutId, productVariantId: variantId, quantity },
+		cache: "no-cache",
+	});
+	return result.ok
+		? { ok: true, payload: result.data.checkoutLinesAdd }
+		: { ok: false, message: result.error.message };
 }
 
 /**
@@ -191,15 +314,6 @@ export async function addVariantToCart(input: {
 function revalidateCart(channel: string) {
 	revalidateStorefrontBrowsePath(channel, "/cart");
 	revalidateStorefrontChrome(channel);
-}
-
-type LinesHolder = { lines?: readonly { quantity: number; variant?: { id?: string } | null }[] | null };
-
-/** `variantId` must already be decoded — see the note in `addVariantToCart`. */
-function quantityOfVariant(checkout: LinesHolder | null | undefined, variantId: string): number {
-	return (checkout?.lines ?? [])
-		.filter((line) => line.variant?.id === variantId)
-		.reduce((total, line) => total + line.quantity, 0);
 }
 
 /**
@@ -223,6 +337,7 @@ function quantityOfVariant(checkout: LinesHolder | null | undefined, variantId: 
 async function reconcile(
 	checkoutId: string,
 	variantId: string,
+	choiceKey: string | null,
 	quantityBefore: number,
 	quantityRequested: number,
 	message: string,
@@ -236,10 +351,18 @@ async function reconcile(
 	const expiry = setTimeout(() => deadline.abort(), READ_BACK_BUDGET_MS);
 
 	try {
-		return await settleByReading(checkoutId, variantId, quantityBefore, quantityRequested, message, {
-			startedAt,
-			signal: deadline.signal,
-		});
+		return await settleByReading(
+			checkoutId,
+			variantId,
+			choiceKey,
+			quantityBefore,
+			quantityRequested,
+			message,
+			{
+				startedAt,
+				signal: deadline.signal,
+			},
+		);
 	} finally {
 		clearTimeout(expiry);
 		// Nothing may go out under this deadline once the phase is over.
@@ -250,6 +373,7 @@ async function reconcile(
 async function settleByReading(
 	checkoutId: string,
 	variantId: string,
+	choiceKey: string | null,
 	quantityBefore: number,
 	quantityRequested: number,
 	message: string,
@@ -258,7 +382,7 @@ async function settleByReading(
 	const { startedAt, signal } = phase;
 
 	for (let attempt = 0; ; attempt++) {
-		const after = await readQuantity(checkoutId, variantId, signal);
+		const after = await readQuantity(checkoutId, variantId, choiceKey, signal);
 		const verdict = readBackVerdict({ before: quantityBefore, requested: quantityRequested, after });
 
 		if (verdict === "landed") {
@@ -300,11 +424,12 @@ async function settleByReading(
 async function readQuantity(
 	checkoutId: string,
 	variantId: string,
+	choiceKey: string | null,
 	signal: AbortSignal,
 ): Promise<number | null> {
 	try {
 		const result = await Checkout.lookup(checkoutId, { signal, retry: false });
-		return result.status === "found" ? quantityOfVariant(result.checkout, variantId) : null;
+		return result.status === "found" ? quantityOfVariant(result.checkout, variantId, choiceKey) : null;
 	} catch {
 		return null;
 	}
@@ -339,6 +464,7 @@ export async function addListingItemToCartWithResult(formData: FormData): Promis
 		variantId: String(formData.get("variantId") ?? ""),
 		quantity: Number.parseInt(String(formData.get("quantity") ?? ""), 10),
 		maxQuantity: Number.isFinite(rawMax) ? rawMax : null,
+		tyre: tyreSelectionInputFromForm(formData),
 	});
 }
 

@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { isPlaceholderProductImage } from "@/lib/product-image";
 import type { SetTitle } from "@/lib/fitment/set-title";
+import { isTyreSizeCode } from "@/lib/tyre-size/codes";
 import { useLocale } from "@/providers/locale-provider";
 import { addListingItemToCartAction } from "./actions";
 import { CartForm } from "./cart-form";
@@ -172,9 +173,13 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 		categorySlug: product.category?.baseSlug ?? product.category?.slug,
 	});
 
-	// Only offer a direct add when there is genuinely nothing to choose.
+	// Only offer a direct add when there is genuinely nothing to choose. A snow chain or sock always has something
+	// to choose: the tyre size, which is picked on its page (`lib/tyre-size`), so its card links there instead.
 	const canAddDirectly =
-		product.isPurchasable && Boolean(product.variantId) && product.quantityAvailable !== 0;
+		product.isPurchasable &&
+		Boolean(product.variantId) &&
+		product.quantityAvailable !== 0 &&
+		!isTyreSizeCode(product.productCode);
 
 	// A product mid-import has no thumbnail yet. Show a quiet placeholder rather
 	// than the broken-image glyph, which reads as a fault in the shop. Same for the grey

@@ -1245,5 +1245,31 @@
 		"specBars": "Querträger",
 		"roofFilterLabel": "Dachtyp",
 		"roofFilterAll": "Alle"
+	},
+	"tyreSize": {
+		"heading": "Größe Ihrer Reifen",
+		"intro": "Das passende Produkt richtet sich nach der Reifengröße. Sie steht auf der Reifenflanke, zum Beispiel 205/55 R16.",
+		"rim": "Felgendurchmesser",
+		"rimPlaceholder": "Durchmesser wählen",
+		"size": "Reifengröße",
+		"sizePlaceholder": "Größe wählen",
+		"sizePlaceholderFirst": "Wählen Sie zuerst den Felgendurchmesser",
+		"notListed": "Ihre Größe fehlt? Dann passt dieses Produkt laut Liste nicht auf Ihre Reifen. Wählen Sie ein anderes oder schreiben Sie uns.",
+		"conditionOnly": "Für die Größe {size} passt dieses Produkt nur auf Reifen: {tyres}.",
+		"conditionNot": "Für die Größe {size} passt dieses Produkt nicht auf Reifen: {tyres}.",
+		"confirmOnly": "Ich bestätige: Meine Reifen sind {tyres}.",
+		"confirmNot": "Ich bestätige: Meine Reifen sind nicht {tyres}.",
+		"knowsCode": "Ich kenne den Produktcode und wähle jetzt keine Größe",
+		"knowsCodeNote": "Die Passform zu Ihren Reifen prüfen Sie dann selbst. In der Bestellung wird vermerkt, dass Sie das Produkt ohne Größe gewählt haben.",
+		"sourceManufacturer": "Größen laut Liste des Herstellers.",
+		"sourceSupplier": "Größen laut Angaben des Lieferanten auf der bisherigen Produktkarte, nicht laut Herstellerliste. Prüfen Sie sie vor der Bestellung anhand Ihres Reifens.",
+		"selectSize": "Größe wählen",
+		"errorRequired": "Wählen Sie die Reifengröße, damit wir das Produkt in den Warenkorb legen können.",
+		"errorInvalid": "Die gewählte Größe gehört nicht zu diesem Produkt. Wählen Sie eine Größe aus der Liste.",
+		"errorCondition": "Bestätigen Sie die Bedingung zur gewählten Größe und versuchen Sie es erneut.",
+		"lineSize": "Reifengröße: {size}",
+		"lineOnly": "Nur für Reifen: {tyres}",
+		"lineNot": "Nicht für Reifen: {tyres}",
+		"lineCode": "Keine Größe angegeben, Produkt ohne Größe gewählt"
 	}
 }

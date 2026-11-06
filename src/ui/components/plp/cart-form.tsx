@@ -79,6 +79,7 @@ function AddToCartStatus({
 	quietSuccess: boolean;
 }) {
 	const t = useTranslations("cart");
+	const tTyre = useTranslations("tyreSize");
 
 	// The quiet form keeps its status region in the DOM from the start, so the announcement is a
 	// change to a region that already exists — the form assistive tech reliably reads.
@@ -139,7 +140,15 @@ function AddToCartStatus({
 					? t("addNotFound")
 					: result.reason === "payment-locked"
 						? t("addPaymentLocked")
-						: t("addFailed");
+						: // A snow chain or sock added without a size that belongs to it (`lib/tyre-size`): the way out
+							// is on the product page, so each says what to choose.
+							result.reason === "size-required"
+							? tTyre("errorRequired")
+							: result.reason === "size-invalid"
+								? tTyre("errorInvalid")
+								: result.reason === "size-condition"
+									? tTyre("errorCondition")
+									: t("addFailed");
 
 	return (
 		<p role="alert" className="text-status-danger mt-2 flex items-center gap-1.5 text-sm">
