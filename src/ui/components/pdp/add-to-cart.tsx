@@ -8,7 +8,7 @@ import { ShoppingCartIcon } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { QuantityStepper } from "@/ui/components/ui/quantity-stepper";
 import { cn } from "@/lib/utils";
-import { useTyreSizeGate } from "./tyre-size-picker";
+import { gateButtonKey, gateButtonLook, HELD_BACK_LABEL, useTyreSizeGate } from "./tyre-fit-box";
 
 interface AddToCartProps {
 	price: string;
@@ -50,24 +50,28 @@ function AddToCartButton({
 	const t = useTranslations("product");
 	const tCommon = useTranslations("common");
 	const tTyre = useTranslations("tyreSize");
-	// A snow chain or sock is added with the tyre size the customer chose. Until that choice is complete the
-	// button says so and takes them to it instead of submitting a form the server would refuse.
+	// A snow chain or sock is added with the tyre size the customer told the shop. Until that choice is complete the
+	// button says what is missing (no size, a size that does not fit, a condition to confirm) and takes them to it
+	// instead of submitting a form the server would refuse.
 	const gate = useTyreSizeGate();
-	const needsSize = !disabled && gate !== null && !gate.complete;
+	const holdBack = !disabled && gate !== null && !gate.complete ? gate : null;
+	const look = gateButtonLook(holdBack);
 
 	const getButtonText = () => {
 		if (pending) return t("addingToCart");
-		if (!disabled) return needsSize ? tTyre("selectSize") : tCommon("addToCart");
+		if (!disabled) return holdBack ? tTyre(gateButtonKey(holdBack)) : tCommon("addToCart");
 		if (disabledReason === "out-of-stock") return tCommon("outOfStock");
 		return t("selectOptions");
 	};
 
 	return (
 		<Button
-			type={needsSize ? "button" : "submit"}
-			onClick={needsSize ? () => gate?.focusPicker() : undefined}
+			type={holdBack ? "button" : "submit"}
+			onClick={holdBack ? (event) => holdBack.take(event.currentTarget) : undefined}
 			size="lg"
 			disabled={disabled || pending}
+			variant={look.variant}
+			aria-disabled={look["aria-disabled"]}
 			// min-w-0 + truncate, mirroring the listing card's AddButton. Without it the
 			// flex item keeps its default `min-width: auto` and refuses to go below the
 			// label's width, so stepper + button demanded 365px inside a 328px column on
@@ -75,6 +79,8 @@ function AddToCartButton({
 			className={cn(
 				"h-14 min-w-0 flex-1 rounded-xs text-base font-semibold shadow-md transition-all duration-200 hover:shadow-lg",
 				pending && "opacity-80",
+				holdBack && "px-3 sm:px-8",
+				look.className,
 			)}
 		>
 			{/* The icon goes below sm. With the stepper beside it the button has ~190px on a
@@ -83,7 +89,7 @@ function AddToCartButton({
 			<ShoppingCartIcon
 				className={cn("hidden h-5 w-5 shrink-0 transition-transform sm:inline", pending && "scale-90")}
 			/>
-			<span className="truncate">{getButtonText()}</span>
+			<span className={holdBack && !pending ? HELD_BACK_LABEL : "truncate"}>{getButtonText()}</span>
 		</Button>
 	);
 }

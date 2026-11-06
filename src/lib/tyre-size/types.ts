@@ -82,26 +82,28 @@ export type TyreRefusal =
 	/** The acknowledged condition is not the one the list attaches to this size. */
 	| "condition-mismatch";
 
-/** The picker's data for one code: serialisable, small (at most a few hundred rows), nothing internal. */
-export interface TyrePickerData {
-	readonly code: string;
-	/**
-	 * True when the sizes are the manufacturer's own list; false when they are the supplier's data from the previous
-	 * shop's cards. The page says which in the customer's language; the list's own label is Slovak and stays out.
-	 */
-	readonly fromManufacturerList: boolean;
-	readonly rims: readonly { readonly rim: string; readonly sizes: readonly TyrePickerSize[] }[];
-	/** Only the conditions this code uses. */
-	readonly conditions: Readonly<
-		Record<string, { readonly mode: TyreConditionMode; readonly tyres: readonly string[] }>
-	>;
-}
+/**
+ * Whether one product fits the size the shopper told the shop (`size-lookup.ts` answers it from the list; the
+ * product page draws it). Client-safe on purpose: the page hands this small object to the browser, never the list.
+ */
+export type TyreFit =
+	/** The list of this code holds the size. `condition` is what the list attaches to it, if anything. */
+	| {
+			readonly kind: "fits";
+			readonly size: string;
+			/** The manufacturer's own list, or the supplier's data from the previous shop's card. */
+			readonly fromManufacturerList: boolean;
+			readonly condition: {
+				readonly key: string;
+				readonly mode: TyreConditionMode;
+				readonly tyres: readonly string[];
+			} | null;
+	  }
+	/** The code is size-controlled and its list does not hold the size. */
+	| { readonly kind: "no-fit"; readonly size: string };
 
-export interface TyrePickerSize {
-	readonly label: string;
-	/** Key into `TyrePickerData.conditions`, or "" when the size carries none. */
-	readonly conditionKey: string;
-}
+/** What the product page knows about this product and the remembered size: no size yet, or the verdict for it. */
+export type TyreFitView = TyreFit | { readonly kind: "no-size" };
 
 /** What a cart or order line says about the choice, read back from its public metadata. */
 export type TyreLineChoice =

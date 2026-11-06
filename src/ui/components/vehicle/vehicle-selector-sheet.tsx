@@ -19,7 +19,16 @@
  *     feet that do not attach to their car.
  */
 
-import { useCallback, useState, useTransition, type ReactNode } from "react";
+import {
+	useCallback,
+	useId,
+	useRef,
+	useState,
+	useTransition,
+	type KeyboardEvent,
+	type ReactNode,
+	type RefObject,
+} from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Check, ChevronLeft, Loader2 } from "lucide-react";
@@ -37,8 +46,16 @@ import { chooseVehicle } from "@/lib/garage/actions";
 import { GARAGE_MAX_VEHICLES } from "@/lib/garage/limits";
 import { searchWithoutPagination, vehicleConfirmDestination } from "@/lib/garage/confirm-destination";
 import { REVERSE_MAP } from "@/lib/channel-map";
+import { TyreSizeTab, useTyreSelector } from "./tyre-size-tab";
 
 export type VehicleDraft = Draft;
+
+/**
+ * The window has two tabs because it answers two different questions with the same gesture: "which car is it?" (roof
+ * racks, boxes, carriers) and "which tyres?" (snow chains and socks, which are chosen by tyre size and not by car).
+ */
+const TABS = ["vehicle", "tyres"] as const;
+export type SelectorTab = (typeof TABS)[number];
 
 type Draft = {
 	makeId?: string;
@@ -65,10 +82,25 @@ type Draft = {
 };
 
 type Props = {
-	/** The clickable element. Rendered inside SheetTrigger via asChild by the caller. */
-	children: ReactNode;
+	/**
+	 * The clickable element(s). Rendered inside SheetTrigger via asChild by the caller. Optional: a surface that opens
+	 * the window from somewhere else (a buy button that asks for the tyre size) mounts it with no trigger of its own.
+	 */
+	children?: ReactNode;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	/**
+	 * The tab the window opens on. The vehicle, as it always has: a roof-rack surface asks for a car. A snow-chain
+	 * surface asks for the tyres.
+	 */
+	initialTab?: SelectorTab;
+	/**
+	 * The element to give the focus back to when the window closes, for a surface with more than one way in. Left to
+	 * itself Radix returns the focus to the LAST trigger that mounted, which is the wrong button when the window was
+	 * opened by another trigger or by a button that is not one. The element is cleared once used; one that has left the
+	 * page falls back to Radix's own choice.
+	 */
+	returnFocusRef?: RefObject<HTMLElement | null>;
 	/**
 	 * Where the questions start. The homepage and listing fields (`VehicleQuickSelect`) answer
 	 * make, model and year in place and open this sheet only for what a car still needs —
@@ -94,14 +126,24 @@ const BODY_LABEL_KEYS: Record<BodyType, string> = {
 	pickup: "bodyPickup",
 };
 
-export function VehicleSelectorSheet({ children, open, onOpenChange, initialDraft }: Props) {
+export function VehicleSelectorSheet({
+	children,
+	open,
+	onOpenChange,
+	initialDraft,
+	initialTab,
+	returnFocusRef,
+}: Props) {
 	const t = useTranslations("fitment");
 	// Save failures come from the garage action, so they read from the garage namespace.
 	const tg = useTranslations("garage");
+	const tt = useTranslations("tyreSize");
 	const locale = useLocale();
 	const router = useRouter();
 	const pathname = usePathname();
 	const { channel } = useParams<{ channel?: string }>();
+	const tabsId = useId();
+	const [tab, setTab] = useState<SelectorTab>(initialTab ?? "vehicle");
 	const [draft, setDraft] = useState<Draft>({});
 	const [step, setStep] = useState<SelectorStep | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -137,9 +179,63 @@ export function VehicleSelectorSheet({ children, open, onOpenChange, initialDraf
 		[language],
 	);
 
+	/**
+	 * After a tyre size was saved or forgotten. The size is a cookie, so every server-rendered surface that speaks of
+	 * it (the product page's fit box, the header button) has to be rendered again.
+	 */
+	const finishTyres = () => {
+		onOpenChange(false);
+		router.refresh();
+	};
+	const tyres = useTyreSelector({ onDone: finishTyres });
+
+	// Each tab loads what it shows when it is first looked at after the window opens, not before: a window opened on
+	// the tyres should not ask the server for the car makes, and one opened on the vehicle not for the tyre steps.
+	// Switching back and forth keeps what the shopper has typed or chosen on either side.
+	const vehicleStale = useRef(true);
+	const tyresStale = useRef(true);
+	const loadTab = (which: SelectorTab) => {
+		if (which === "vehicle") {
+			if (!vehicleStale.current) return;
+			vehicleStale.current = false;
+			applyDraft(initialDraft ?? {});
+			return;
+		}
+		if (!tyresStale.current) return;
+		tyresStale.current = false;
+		tyres.open();
+	};
+
 	const handleOpenChange = (nextOpen: boolean) => {
 		onOpenChange(nextOpen);
-		if (nextOpen) applyDraft(initialDraft ?? {});
+		if (!nextOpen) return;
+		const start = initialTab ?? "vehicle";
+		setTab(start);
+		vehicleStale.current = true;
+		tyresStale.current = true;
+		loadTab(start);
+	};
+
+	const showTab = (next: SelectorTab) => {
+		setTab(next);
+		loadTab(next);
+	};
+
+	// Arrow keys move between the two tabs, as the tab pattern asks; focus follows the selection.
+	const onTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+		const index = TABS.indexOf(tab);
+		const next =
+			event.key === "ArrowRight" || event.key === "ArrowLeft"
+				? TABS[(index + (event.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length]
+				: event.key === "Home"
+					? TABS[0]
+					: event.key === "End"
+						? TABS[TABS.length - 1]
+						: undefined;
+		if (!next) return;
+		event.preventDefault();
+		showTab(next);
+		document.getElementById(`${tabsId}-${next}-tab`)?.focus();
 	};
 
 	// Clearing downstream answers is the whole point: a model left over from another
@@ -298,190 +394,253 @@ export function VehicleSelectorSheet({ children, open, onOpenChange, initialDraf
 	return (
 		<Sheet open={open} onOpenChange={handleOpenChange}>
 			{children}
-			<SheetContent side="right" className="flex w-full flex-col p-0 sm:max-w-md">
+			<SheetContent
+				side="right"
+				// The title names it; there is no separate description, and saying so keeps Radix from warning about one.
+				aria-describedby={undefined}
+				onCloseAutoFocus={(event) => {
+					if (!returnFocusRef) return;
+					const opener = returnFocusRef.current;
+					returnFocusRef.current = null;
+					if (opener?.isConnected) {
+						event.preventDefault();
+						opener.focus();
+					}
+				}}
+				className="flex w-full flex-col p-0 sm:max-w-md"
+			>
 				<SheetHeader className="border-border-default flex-row items-center justify-between border-b px-4 py-4">
-					<SheetTitle>{t("selector.title")}</SheetTitle>
+					<SheetTitle>{tt("selectorTitle")}</SheetTitle>
 					<SheetCloseButton />
 				</SheetHeader>
 
-				{step?.isFixture && (
-					<p className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed border-b border-current/20 px-4 py-2 text-xs">
-						{t("demoNotice")}
-					</p>
-				)}
+				<div
+					role="tablist"
+					aria-label={tt("tabsLabel")}
+					onKeyDown={onTabKeyDown}
+					className="border-border-default flex shrink-0 border-b px-4"
+				>
+					{TABS.map((id) => (
+						<button
+							key={id}
+							type="button"
+							role="tab"
+							id={`${tabsId}-${id}-tab`}
+							aria-selected={tab === id}
+							aria-controls={`${tabsId}-${id}-panel`}
+							tabIndex={tab === id ? 0 : -1}
+							onClick={() => showTab(id)}
+							className={cn(
+								"focus-visible:ring-ring -mb-px h-11 flex-1 border-b-2 px-3 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-hidden",
+								tab === id
+									? "border-action-primary text-text-primary font-semibold"
+									: "text-text-secondary hover:text-text-primary border-transparent font-medium",
+							)}
+						>
+							{id === "vehicle" ? tt("tabVehicle") : tt("tabTyres")}
+						</button>
+					))}
+				</div>
 
-				<div className="flex-1 overflow-y-auto px-4 py-4">
-					{loading && !step && (
-						<p className="text-text-tertiary flex items-center gap-2 text-sm">
-							<Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-							{t("selector.loading")}
-						</p>
-					)}
+				{tab === "vehicle" ? (
+					<div
+						role="tabpanel"
+						id={`${tabsId}-vehicle-panel`}
+						aria-labelledby={`${tabsId}-vehicle-tab`}
+						className="flex min-h-0 flex-1 flex-col"
+					>
+						{step?.isFixture && (
+							<p className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed border-b border-current/20 px-4 py-2 text-xs">
+								{t("demoNotice")}
+							</p>
+						)}
 
-					{step?.unavailable && (
-						<p className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed rounded-md border border-current/20 px-3 py-2 text-sm">
-							{t("selector.unavailable")}
-						</p>
-					)}
-
-					{step && !step.unavailable && (
-						<div className="space-y-6">
-							<Breadcrumb
-								draft={draft}
-								generationName={generation?.name ?? null}
-								onBack={goBack}
-								backLabel={t("selector.back")}
-							/>
-
-							{!draft.makeId && (
-								<OptionList
-									legend={t("selector.chooseMake")}
-									options={step.makes.map((m) => ({ key: m.id, label: m.name }))}
-									onPick={(key, label) => pickMake(key, label)}
-									emptyLabel={t("selector.emptyStep")}
-								/>
+						<div className="flex-1 overflow-y-auto px-4 py-4">
+							{loading && !step && (
+								<p className="text-text-tertiary flex items-center gap-2 text-sm">
+									<Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+									{t("selector.loading")}
+								</p>
 							)}
 
-							{draft.makeId && !draft.modelId && (
-								<OptionList
-									legend={t("selector.chooseModel")}
-									options={(step.models ?? []).map((m) => ({ key: m.id, label: m.name }))}
-									onPick={(key, label) => pickModel(key, label)}
-									emptyLabel={t("selector.emptyStep")}
-								/>
+							{step?.unavailable && (
+								<p className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed rounded-md border border-current/20 px-3 py-2 text-sm">
+									{t("selector.unavailable")}
+								</p>
 							)}
 
-							{/* Year of MANUFACTURE, before any generation. It is the fact the
-							    shopper can read off their registration document; "B9" is not. */}
-							{draft.modelId && draft.year === undefined && (
-								<OptionList
-									legend={t("selector.chooseYear")}
-									hint={t("selector.yearHelp")}
-									options={(step.years ?? []).map((y) => ({ key: String(y), label: String(y) }))}
-									onPick={(key) => pickYear(Number(key))}
-									emptyLabel={t("selector.emptyStep")}
-									columns
-								/>
+							{step && !step.unavailable && (
+								<div className="space-y-6">
+									<Breadcrumb
+										draft={draft}
+										generationName={generation?.name ?? null}
+										onBack={goBack}
+										backLabel={t("selector.back")}
+									/>
+
+									{!draft.makeId && (
+										<OptionList
+											legend={t("selector.chooseMake")}
+											options={step.makes.map((m) => ({ key: m.id, label: m.name }))}
+											onPick={(key, label) => pickMake(key, label)}
+											emptyLabel={t("selector.emptyStep")}
+										/>
+									)}
+
+									{draft.makeId && !draft.modelId && (
+										<OptionList
+											legend={t("selector.chooseModel")}
+											options={(step.models ?? []).map((m) => ({ key: m.id, label: m.name }))}
+											onPick={(key, label) => pickModel(key, label)}
+											emptyLabel={t("selector.emptyStep")}
+										/>
+									)}
+
+									{/* Year of MANUFACTURE, before any generation. It is the fact the
+								    shopper can read off their registration document; "B9" is not. */}
+									{draft.modelId && draft.year === undefined && (
+										<OptionList
+											legend={t("selector.chooseYear")}
+											hint={t("selector.yearHelp")}
+											options={(step.years ?? []).map((y) => ({ key: String(y), label: String(y) }))}
+											onPick={(key) => pickYear(Number(key))}
+											emptyLabel={t("selector.emptyStep")}
+											columns
+										/>
+									)}
+
+									{/* Only when one year genuinely names two generations. The question
+								    is answerable by looking at the car, never a bare internal code. */}
+									{step.generationCandidates && (
+										<OptionList
+											legend={t("selector.chooseVariant")}
+											hint={t("selector.variantHelp")}
+											options={step.generationCandidates.map((g) => ({
+												key: g.id,
+												label: candidateLabel(g, t),
+											}))}
+											onPick={(key) => pickGenerationCandidate(key)}
+											emptyLabel={t("selector.emptyStep")}
+										/>
+									)}
+
+									{generation && qualifiers?.roofTypes && (
+										<RoofConfirmation
+											roofTypes={qualifiers.roofTypes}
+											answer={draft.roofAnswer}
+											onAnswer={(answer) => setDraft((d) => ({ ...d, roofAnswer: answer }))}
+											t={t}
+										/>
+									)}
+
+									{generation && qualifiers?.bodyTypes && (
+										<OptionList
+											legend={t("selector.chooseBodyType")}
+											selected={draft.bodyType}
+											options={qualifiers.bodyTypes.map((b) => ({ key: b, label: t(BODY_LABEL_KEYS[b]) }))}
+											onPick={(key) => setDraft((d) => ({ ...d, bodyType: key as BodyType }))}
+											emptyLabel={t("selector.emptyStep")}
+										/>
+									)}
+
+									{generation && qualifiers?.doors && (
+										<OptionList
+											legend={t("selector.chooseDoors")}
+											selected={draft.doors === undefined ? undefined : String(draft.doors)}
+											options={qualifiers.doors.map((d) => ({ key: String(d), label: String(d) }))}
+											onPick={(key) => setDraft((d) => ({ ...d, doors: Number(key) }))}
+											emptyLabel={t("selector.emptyStep")}
+											columns
+										/>
+									)}
+
+									{/* Asked only when it decides something, and answerable with "I don't
+								    know" — which yields NEEDS_DETAIL, not a guess in either direction. */}
+									{generation && needsMonth && (
+										<OptionList
+											legend={t("selector.chooseMonth")}
+											hint={t("selector.monthHelp")}
+											selected={
+												draft.monthAnswer === undefined
+													? undefined
+													: draft.monthAnswer.kind === "unknown"
+														? "unknown"
+														: String(draft.monthAnswer.month)
+											}
+											options={[
+												...monthOptions(locale),
+												{ key: "unknown", label: t("selector.monthUnknown") },
+											]}
+											onPick={(key) =>
+												setDraft((d) => ({
+													...d,
+													monthAnswer:
+														key === "unknown" ? { kind: "unknown" } : { kind: "month", month: Number(key) },
+												}))
+											}
+											emptyLabel={t("selector.emptyStep")}
+											columns
+										/>
+									)}
+								</div>
 							)}
 
-							{/* Only when one year genuinely names two generations. The question
-							    is answerable by looking at the car, never a bare internal code. */}
-							{step.generationCandidates && (
-								<OptionList
-									legend={t("selector.chooseVariant")}
-									hint={t("selector.variantHelp")}
-									options={step.generationCandidates.map((g) => ({
-										key: g.id,
-										label: candidateLabel(g, t),
-									}))}
-									onPick={(key) => pickGenerationCandidate(key)}
-									emptyLabel={t("selector.emptyStep")}
-								/>
-							)}
-
-							{generation && qualifiers?.roofTypes && (
-								<RoofConfirmation
-									roofTypes={qualifiers.roofTypes}
-									answer={draft.roofAnswer}
-									onAnswer={(answer) => setDraft((d) => ({ ...d, roofAnswer: answer }))}
-									t={t}
-								/>
-							)}
-
-							{generation && qualifiers?.bodyTypes && (
-								<OptionList
-									legend={t("selector.chooseBodyType")}
-									selected={draft.bodyType}
-									options={qualifiers.bodyTypes.map((b) => ({ key: b, label: t(BODY_LABEL_KEYS[b]) }))}
-									onPick={(key) => setDraft((d) => ({ ...d, bodyType: key as BodyType }))}
-									emptyLabel={t("selector.emptyStep")}
-								/>
-							)}
-
-							{generation && qualifiers?.doors && (
-								<OptionList
-									legend={t("selector.chooseDoors")}
-									selected={draft.doors === undefined ? undefined : String(draft.doors)}
-									options={qualifiers.doors.map((d) => ({ key: String(d), label: String(d) }))}
-									onPick={(key) => setDraft((d) => ({ ...d, doors: Number(key) }))}
-									emptyLabel={t("selector.emptyStep")}
-									columns
-								/>
-							)}
-
-							{/* Asked only when it decides something, and answerable with "I don't
-							    know" — which yields NEEDS_DETAIL, not a guess in either direction. */}
-							{generation && needsMonth && (
-								<OptionList
-									legend={t("selector.chooseMonth")}
-									hint={t("selector.monthHelp")}
-									selected={
-										draft.monthAnswer === undefined
-											? undefined
-											: draft.monthAnswer.kind === "unknown"
-												? "unknown"
-												: String(draft.monthAnswer.month)
-									}
-									options={[...monthOptions(locale), { key: "unknown", label: t("selector.monthUnknown") }]}
-									onPick={(key) =>
-										setDraft((d) => ({
-											...d,
-											monthAnswer:
-												key === "unknown" ? { kind: "unknown" } : { kind: "month", month: Number(key) },
-										}))
-									}
-									emptyLabel={t("selector.emptyStep")}
-									columns
-								/>
+							{error && (
+								<p
+									role="alert"
+									className="bg-status-danger-bg text-status-danger border-status-danger-border mt-4 rounded-md border px-3 py-2 text-sm"
+								>
+									{error}
+								</p>
 							)}
 						</div>
-					)}
 
-					{error && (
-						<p
-							role="alert"
-							className="bg-status-danger-bg text-status-danger border-status-danger-border mt-4 rounded-md border px-3 py-2 text-sm"
-						>
-							{error}
-						</p>
-					)}
-				</div>
-
-				<div className="border-border-default border-t px-4 py-4">
-					<Button
-						type="button"
-						onClick={confirm}
-						disabled={!canConfirm || saving}
-						// Brand action colour, not the purchase CTA and not the compatibility
-						// green: confirming a vehicle is neither a purchase nor a fit claim.
-						className="bg-action-primary text-action-primary-text hover:bg-action-primary-hover w-full"
+						<div className="border-border-default border-t px-4 py-4">
+							<Button
+								type="button"
+								onClick={confirm}
+								disabled={!canConfirm || saving}
+								// Brand action colour, not the purchase CTA and not the compatibility
+								// green: confirming a vehicle is neither a purchase nor a fit claim.
+								className="bg-action-primary text-action-primary-text hover:bg-action-primary-hover w-full"
+							>
+								{saving ? (
+									<Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+								) : (
+									<Check className="h-4 w-4" aria-hidden="true" />
+								)}
+								{t("selector.confirm")}
+							</Button>
+							{/*
+							 * The only way into the garage from anywhere but the configurator page.
+							 *
+							 * `/{market}/garage` has always worked and every car on it has a working
+							 * delete button, but nothing outside `VehicleSummary` — which renders on
+							 * `/{market}/konfigurator` only — ever linked to it. So a shopper who
+							 * filled the three slots was told to "remove some first" by a message
+							 * that offered no way to do it, and the owner of the shop could not find
+							 * the page either. The header opens this sheet, so one link here makes
+							 * the garage reachable from the header as well.
+							 */}
+							<LinkWithChannel
+								href="/garage"
+								onClick={() => onOpenChange(false)}
+								className="text-text-secondary hover:text-text-primary mt-3 block text-center text-sm underline underline-offset-4"
+							>
+								{t("myGarage")}
+							</LinkWithChannel>
+						</div>
+					</div>
+				) : (
+					<div
+						role="tabpanel"
+						id={`${tabsId}-tyres-panel`}
+						aria-labelledby={`${tabsId}-tyres-tab`}
+						className="flex min-h-0 flex-1 flex-col"
 					>
-						{saving ? (
-							<Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-						) : (
-							<Check className="h-4 w-4" aria-hidden="true" />
-						)}
-						{t("selector.confirm")}
-					</Button>
-					{/*
-					 * The only way into the garage from anywhere but the configurator page.
-					 *
-					 * `/{market}/garage` has always worked and every car on it has a working
-					 * delete button, but nothing outside `VehicleSummary` — which renders on
-					 * `/{market}/konfigurator` only — ever linked to it. So a shopper who
-					 * filled the three slots was told to "remove some first" by a message
-					 * that offered no way to do it, and the owner of the shop could not find
-					 * the page either. The header opens this sheet, so one link here makes
-					 * the garage reachable from the header as well.
-					 */}
-					<LinkWithChannel
-						href="/garage"
-						onClick={() => onOpenChange(false)}
-						className="text-text-secondary hover:text-text-primary mt-3 block text-center text-sm underline underline-offset-4"
-					>
-						{t("myGarage")}
-					</LinkWithChannel>
-				</div>
+						<TyreSizeTab selector={tyres} />
+					</div>
+				)}
 			</SheetContent>
 		</Sheet>
 	);

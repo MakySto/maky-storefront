@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { throttle } from "lodash-es";
 import { Button } from "@/ui/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useTyreSizeGate } from "./tyre-size-picker";
+import { gateButtonKey, gateButtonLook, HELD_BACK_LABEL, useTyreSizeGate } from "./tyre-fit-box";
 
 /** Scroll threshold (in pixels) before showing the sticky bar */
 const SCROLL_THRESHOLD = 500;
@@ -43,25 +43,37 @@ function StickyAddButton() {
 	const tCommon = useTranslations("common");
 	const tProduct = useTranslations("product");
 	const tTyre = useTranslations("tyreSize");
-	// A snow chain or sock needs its tyre size first: the bar takes the customer to the choice instead of submitting.
+	// A snow chain or sock needs its tyre size first: the bar says what is missing and takes the customer to it
+	// instead of submitting.
 	const gate = useTyreSizeGate();
-	const needsSize = gate !== null && !gate.complete;
+	const holdBack = gate !== null && !gate.complete ? gate : null;
+	const look = gateButtonLook(holdBack);
 
 	return (
 		<Button
-			type={needsSize ? "button" : "submit"}
-			onClick={needsSize ? () => gate?.focusPicker() : undefined}
+			type={holdBack ? "button" : "submit"}
+			onClick={holdBack ? (event) => holdBack.take(event.currentTarget) : undefined}
 			size="lg"
 			disabled={pending}
+			variant={look.variant}
+			aria-disabled={look["aria-disabled"]}
 			className={cn(
 				"h-12 min-w-[130px] shrink-0 rounded-xs font-semibold",
 				// Override transition to prevent flash on state change
 				"transition-none disabled:opacity-100",
+				// A held-back label is longer than "Pridať do košíka": it may take two lines but not the room the price
+				// needs beside it (without the cap it took 250 px of a 360 px bar and the price wrapped onto two lines).
+				holdBack && "max-w-[11rem] px-3",
+				look.className,
 			)}
 		>
 			<ShoppingCartIcon className="h-4 w-4" aria-hidden />
-			<span className="truncate">
-				{pending ? tProduct("addingToCart") : needsSize ? tTyre("selectSize") : tCommon("addToCart")}
+			<span className={holdBack && !pending ? HELD_BACK_LABEL : "truncate"}>
+				{pending
+					? tProduct("addingToCart")
+					: holdBack
+						? tTyre(gateButtonKey(holdBack))
+						: tCommon("addToCart")}
 			</span>
 		</Button>
 	);
@@ -81,6 +93,10 @@ export function StickyBar({ productName, price, show = false }: StickyBarProps) 
 		<div
 			className={cn(
 				"border-border-subtle bg-surface-card fixed right-0 bottom-0 left-0 z-[var(--z-header)] border-t shadow-xl transition-transform duration-300 md:hidden",
+				// Not part of the form's flow: the form spaces its children with `space-y-6`, whose bottom margin
+				// lifts a fixed bar off the screen edge by 24px whenever something follows it (the tyre gate's
+				// "how do I find the size" link does). Hidden, 24px of the bar then showed under every phone screen.
+				"mb-0!",
 				isVisible ? "translate-y-0" : "translate-y-full",
 			)}
 		>

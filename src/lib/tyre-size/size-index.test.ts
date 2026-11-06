@@ -6,13 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { isTyreSizeCode, TYRE_SIZE_CODE_LIST } from "./codes";
 
-import {
-	isTyreSizeControlled,
-	parseTyreSizeIndex,
-	tyrePickerData,
-	tyreSizeIndex,
-	tyreSizeProduct,
-} from "./size-index";
+import { isTyreSizeControlled, parseTyreSizeIndex, tyreSizeIndex, tyreSizeProduct } from "./size-index";
 
 const DATA = join(__dirname, "data");
 const FILE = join(DATA, "velkosti_20261105.json");
@@ -131,62 +125,6 @@ describe("tyreSizeProduct", () => {
 		const sizes = tyreSizeProduct("N16061")!.sizes.map(([label]) => label);
 		expect(sizes).toContain("145/70 R12");
 		expect(sizes).not.toContain("145/70 R13");
-	});
-});
-
-describe("tyrePickerData", () => {
-	it("groups a code's sizes by rim, in numeric order, with every size once", () => {
-		const data = tyrePickerData("N17144")!;
-		const rims = data.rims.map((group) => Number.parseFloat(group.rim));
-		expect(rims).toEqual([...rims].sort((a, b) => a - b));
-		expect(new Set(data.rims.map((group) => group.rim)).size).toBe(data.rims.length);
-		const listed = data.rims.flatMap((group) => group.sizes.map((size) => size.label));
-		expect(new Set(listed).size).toBe(listed.length);
-		expect(listed).toHaveLength(tyreSizeProduct("N17144")!.sizes.length);
-	});
-
-	it("orders half-inch rims between whole ones", () => {
-		const all = Object.keys(tyreSizeIndex().products)
-			.map((code) => tyrePickerData(code)!)
-			.find((data) => data.rims.some((group) => group.rim.includes(".")))!;
-		const rims = all.rims.map((group) => Number.parseFloat(group.rim));
-		expect(rims).toEqual([...rims].sort((a, b) => a - b));
-	});
-
-	it("hands the picker only the conditions the code uses, each with its direction", () => {
-		const data = tyrePickerData("N16128")!;
-		expect(Object.keys(data.conditions).sort()).toEqual(["c01", "c10"]);
-		expect(data.conditions.c01).toEqual({ mode: "only", tyres: ["Bridgestone Duravis Rxxx"] });
-		expect(data.conditions.c10).toEqual({ mode: "not", tyres: ["Kleber", "Michelin", "Continental"] });
-		const conditional = data.rims.flatMap((group) => group.sizes).filter((size) => size.conditionKey !== "");
-		expect(conditional.map((size) => [size.label, size.conditionKey])).toEqual(
-			expect.arrayContaining([
-				["195/75 R16", "c10"],
-				["215/60 R16", "c01"],
-			]),
-		);
-	});
-
-	it("says whose list the sizes are, and does not call the previous shop's cards a manufacturer's list", () => {
-		expect(tyrePickerData("N16061")!.fromManufacturerList).toBe(true);
-		expect(tyrePickerData("D0190")!.fromManufacturerList).toBe(false);
-		// The list's own labels say the same in words, and the card source says it is not the manufacturer's list.
-		const { sources, products } = tyreSizeIndex();
-		expect(sources[products.N16061.source].label).toMatch(/výrobcu Lampa/);
-		expect(sources[products.D0190.source].label).toMatch(/nie list výrobcu/);
-	});
-
-	it("is null for a code that is not size-controlled", () => {
-		expect(tyrePickerData("A7604")).toBeNull();
-		expect(tyrePickerData(null)).toBeNull();
-	});
-
-	it("carries nothing internal into the page", () => {
-		for (const code of Object.keys(tyreSizeIndex().products)) {
-			const text = JSON.stringify(tyrePickerData(code)).toLowerCase();
-			expect(text.includes("cfmp"), code).toBe(false);
-			expect(text.includes("tazar"), code).toBe(false);
-		}
 	});
 });
 
