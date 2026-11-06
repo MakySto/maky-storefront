@@ -6,6 +6,12 @@ fragment Money on Money {
 fragment OrderLineFragment on OrderLine {
 	id
 	quantity
+	# The tyre size the shopper chose on a snow chain or sock, copied from the checkout line at order
+	# placement (`lib/tyre-size`).
+	metadata {
+		key
+		value
+	}
 	variant {
 		name
 		attributes(variantSelection: ALL) {

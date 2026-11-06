@@ -1245,5 +1245,31 @@
 		"specBars": "Barras",
 		"roofFilterLabel": "Tipo de techo",
 		"roofFilterAll": "Todos"
+	},
+	"tyreSize": {
+		"heading": "Medida de tus neumáticos",
+		"intro": "El producto adecuado depende de la medida del neumático. La encontrarás en el lateral, por ejemplo 205/55 R16.",
+		"rim": "Diámetro de la llanta",
+		"rimPlaceholder": "Elige el diámetro",
+		"size": "Medida del neumático",
+		"sizePlaceholder": "Elige la medida",
+		"sizePlaceholderFirst": "Primero elige el diámetro de la llanta",
+		"notListed": "¿No encuentras tu medida? Según la lista, este producto no encaja en tus neumáticos. Elige otro o escríbenos.",
+		"conditionOnly": "Para la medida {size}, este producto solo encaja en neumáticos: {tyres}.",
+		"conditionNot": "Para la medida {size}, este producto no encaja en neumáticos: {tyres}.",
+		"confirmOnly": "Confirmo que mis neumáticos son: {tyres}.",
+		"confirmNot": "Confirmo que mis neumáticos no son: {tyres}.",
+		"knowsCode": "Conozco el código del producto y ahora no elijo medida",
+		"knowsCodeNote": "En ese caso, la compatibilidad con tus neumáticos la compruebas tú. En el pedido constará que elegiste el producto sin medida.",
+		"sourceManufacturer": "Medidas según la lista del fabricante.",
+		"sourceSupplier": "Medidas según los datos del proveedor en la ficha anterior del producto, no según la lista del fabricante. Compruébalas con tu neumático antes de pedir.",
+		"selectSize": "Elige la medida",
+		"errorRequired": "Elige la medida de tus neumáticos para que podamos añadir el producto al carrito.",
+		"errorInvalid": "La medida elegida no corresponde a este producto. Elige una medida de la lista.",
+		"errorCondition": "Confirma la condición de la medida elegida e inténtalo de nuevo.",
+		"lineSize": "Medida del neumático: {size}",
+		"lineOnly": "Solo para neumáticos: {tyres}",
+		"lineNot": "No para neumáticos: {tyres}",
+		"lineCode": "Sin medida indicada, producto elegido sin medida"
 	}
 }

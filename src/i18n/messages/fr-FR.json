@@ -1245,5 +1245,31 @@
 		"specBars": "Barres",
 		"roofFilterLabel": "Type de toit",
 		"roofFilterAll": "Tous"
+	},
+	"tyreSize": {
+		"heading": "Dimension de vos pneus",
+		"intro": "Le bon produit dépend de la dimension du pneu. Elle figure sur le flanc, par exemple 205/55 R16.",
+		"rim": "Diamètre de la jante",
+		"rimPlaceholder": "Choisir le diamètre",
+		"size": "Dimension du pneu",
+		"sizePlaceholder": "Choisir la dimension",
+		"sizePlaceholderFirst": "Choisissez d'abord le diamètre de la jante",
+		"notListed": "Vous ne trouvez pas votre dimension ? Selon la liste, ce produit ne convient alors pas à vos pneus. Choisissez-en un autre ou écrivez-nous.",
+		"conditionOnly": "Pour la dimension {size}, ce produit convient uniquement aux pneus : {tyres}.",
+		"conditionNot": "Pour la dimension {size}, ce produit ne convient pas aux pneus : {tyres}.",
+		"confirmOnly": "Je confirme que mes pneus sont : {tyres}.",
+		"confirmNot": "Je confirme que mes pneus ne sont pas : {tyres}.",
+		"knowsCode": "Je connais le code du produit et je ne choisis pas de dimension maintenant",
+		"knowsCodeNote": "Dans ce cas, vous vérifiez vous-même la compatibilité avec vos pneus. La commande mentionnera que vous avez choisi le produit sans dimension.",
+		"sourceManufacturer": "Dimensions selon la liste du fabricant.",
+		"sourceSupplier": "Dimensions selon les données du fournisseur sur l'ancienne fiche produit, et non selon la liste du fabricant. Vérifiez-les avec votre pneu avant de commander.",
+		"selectSize": "Choisir la dimension",
+		"errorRequired": "Choisissez la dimension de vos pneus pour que nous puissions ajouter le produit au panier.",
+		"errorInvalid": "La dimension choisie n'appartient pas à ce produit. Choisissez une dimension dans la liste.",
+		"errorCondition": "Confirmez la condition liée à la dimension choisie et réessayez.",
+		"lineSize": "Dimension du pneu : {size}",
+		"lineOnly": "Uniquement pour les pneus : {tyres}",
+		"lineNot": "Pas pour les pneus : {tyres}",
+		"lineCode": "Dimension non indiquée, produit choisi sans dimension"
 	}
 }

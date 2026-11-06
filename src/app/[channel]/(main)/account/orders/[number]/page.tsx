@@ -1,3 +1,4 @@
+import { TyreChoiceLine } from "@/ui/components/cart/tyre-choice-line";
 import { formatDate, getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -96,6 +97,7 @@ export default async function OrderDetailPage({ params }: Props) {
 											{display.variantName && (
 												<p className="text-muted-foreground text-[13px]">{display.variantName}</p>
 											)}
+											<TyreChoiceLine metadata={line.metadata} className="mt-0.5 text-[13px]" />
 											<p className="text-muted-foreground text-[13px]">
 												{t("order.quantity", { quantity: line.quantity })}
 											</p>

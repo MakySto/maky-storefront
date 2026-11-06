@@ -26,6 +26,9 @@ import { StarRating } from "@/ui/components/product/star-rating";
 import { WishlistButton } from "@/ui/components/wishlist/wishlist-button";
 import { reviewSummaryFor } from "@/lib/reviews/summary";
 import { PdpCompatibility } from "@/ui/components/fitment/pdp-compatibility";
+import { tyreSelectionInputFromForm } from "@/lib/tyre-size/selection";
+import { tyrePickerData } from "@/lib/tyre-size/size-index";
+import { TyreSizeGate } from "./tyre-size-picker";
 
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
 
@@ -206,6 +209,9 @@ export async function VariantSectionDynamic({
 	// The EAN, as CFM publishes it on the variant (`cfm_ean`) and only when it can be a real GTIN —
 	// `publicEan` checks it again. Nothing when the product has none: a blank, never a placeholder.
 	const ean = publicEan(selectedVariant ?? variants[0]);
+	// A snow chain or sock is one manufacturer's code that fits many tyre sizes: the customer chooses the size here
+	// and it travels with the add (`lib/tyre-size`). Null for every other product, and for one this market cannot sell.
+	const tyrePicker = isPurchasable ? tyrePickerData(productCode) : null;
 
 	// A product the shop shows but cannot sell in this market offers a quote instead of a buy button: the link
 	// opens the contact page with the product (its name and public code) in the URL's fragment.
@@ -254,6 +260,8 @@ export async function VariantSectionDynamic({
 			variantId: selectedVariantID,
 			quantity,
 			maxQuantity,
+			// What the picker sent; `addVariantToCart` decides from Saleor's own code whether the product needs it.
+			tyre: tyreSelectionInputFromForm(formData),
 		});
 
 		if (outcome.status !== "added") {
@@ -261,6 +269,52 @@ export async function VariantSectionDynamic({
 		}
 		return outcome;
 	}
+
+	// The price, the availability, the quantity and the buy buttons. For a snow chain or sock they sit inside the
+	// tyre-size gate, which puts the size choice above them and holds the buttons until it is complete.
+	const purchase = (
+		<>
+			{/* Add to Cart — the price, then what the catalogue says about availability, then the
+				    quantity and the button. The badge renders here on the server and is handed to the
+				    client component as an element. */}
+			<AddToCart
+				price={price}
+				compareAtPrice={compareAtPrice}
+				netPrice={netPrice}
+				discountPercent={discountPercent}
+				disabled={isAddToCartDisabled}
+				disabledReason={disabledReason}
+				maxQuantity={maxQuantity}
+				quoteHref={quoteHref}
+				quoteOnly={quoteOnly}
+				availability={
+					isPurchasable ? (
+						<AvailabilityBadge
+							label={tCommon}
+							// Falls back to the product's mode so a multi-variant product answers
+							// before anything is picked. It used to render NOTHING until the
+							// customer chose a variant, and a blank where availability belongs
+							// reads as "in stock" — on a catalogue that holds none.
+							mode={selectedVariant?.metafield ?? productAvailabilityMode}
+							// A tracked positive quantity is real channel/warehouse stock and
+							// overrides a stale sale-to-order metafield.
+							trackInventory={selectedVariant?.trackInventory}
+							// Still the SELECTED variant's, and undefined when there is no
+							// selection: unknown, which resolveAvailability treats as unknown
+							// rather than as zero. A hard zero on a chosen variant still wins.
+							quantityAvailable={selectedVariant?.quantityAvailable}
+							detailed
+						/>
+					) : undefined
+				}
+			/>
+
+			{/* Sticky Add to Cart Bar (Mobile) */}
+			{isPurchasable ? (
+				<StickyBar productName={product.name} price={price} show={!isAddToCartDisabled} />
+			) : null}
+		</>
+	);
 
 	return (
 		<>
@@ -350,45 +404,7 @@ export async function VariantSectionDynamic({
 					channel={channel}
 				/>
 
-				{/* Add to Cart — the price, then what the catalogue says about availability, then the
-				    quantity and the button. The badge renders here on the server and is handed to the
-				    client component as an element. */}
-				<AddToCart
-					price={price}
-					compareAtPrice={compareAtPrice}
-					netPrice={netPrice}
-					discountPercent={discountPercent}
-					disabled={isAddToCartDisabled}
-					disabledReason={disabledReason}
-					maxQuantity={maxQuantity}
-					quoteHref={quoteHref}
-					quoteOnly={quoteOnly}
-					availability={
-						isPurchasable ? (
-							<AvailabilityBadge
-								label={tCommon}
-								// Falls back to the product's mode so a multi-variant product answers
-								// before anything is picked. It used to render NOTHING until the
-								// customer chose a variant, and a blank where availability belongs
-								// reads as "in stock" — on a catalogue that holds none.
-								mode={selectedVariant?.metafield ?? productAvailabilityMode}
-								// A tracked positive quantity is real channel/warehouse stock and
-								// overrides a stale sale-to-order metafield.
-								trackInventory={selectedVariant?.trackInventory}
-								// Still the SELECTED variant's, and undefined when there is no
-								// selection: unknown, which resolveAvailability treats as unknown
-								// rather than as zero. A hard zero on a chosen variant still wins.
-								quantityAvailable={selectedVariant?.quantityAvailable}
-								detailed
-							/>
-						) : undefined
-					}
-				/>
-
-				{/* Sticky Add to Cart Bar (Mobile) */}
-				{isPurchasable ? (
-					<StickyBar productName={product.name} price={price} show={!isAddToCartDisabled} />
-				) : null}
+				{tyrePicker ? <TyreSizeGate data={tyrePicker}>{purchase}</TyreSizeGate> : purchase}
 			</CartForm>
 
 			{/* Purchase confidence - order:6, outside the form (nothing submittable). */}

@@ -92,6 +92,44 @@ describe("getMarketAssortment", () => {
 		}
 	});
 
+	it("answers a failed read without reading `Date` outside the cached read, which would fail a prerender", async () => {
+		// Next throws on `Date.now()` read outside a cache scope while a route is prerendered, and the
+		// branch that answers a failed read runs exactly then. A `Date.now()` there turned a slow Saleor
+		// into a 500 for the whole page (/at/, 2026-11-05) instead of "the last answer" or "link all".
+		// The cached read (`readOfferedCategories`) may read it: a cache scope allows it.
+		const real = Date.now.bind(Date);
+		const outsideCache: string[] = [];
+		vi.spyOn(Date, "now").mockImplementation(() => {
+			const stack = new Error().stack ?? "";
+			if (stack.includes("getMarketAssortment") && !stack.includes("readOfferedCategories")) {
+				outsideCache.push(stack.split("\n")[2]?.trim() ?? "?");
+				throw new Error("unstable value `Date.now()` while prerendering");
+			}
+			return real();
+		});
+		try {
+			const { getMarketAssortment } = await subject();
+
+			// nothing remembered: every category stays linked, and one line says so
+			fetchStockedCategorySlugs.mockRejectedValue(new Error("deadline exceeded"));
+			vi.mocked(console.warn).mockClear();
+			expect((await getMarketAssortment("at-eur")).state).toBe("unknown");
+			expect(console.warn).toHaveBeenCalledTimes(1);
+
+			// something remembered: the last answer stands in
+			fetchStockedCategorySlugs.mockReset();
+			fetchStockedCategorySlugs
+				.mockResolvedValueOnce(["stresne-nosice"])
+				.mockRejectedValue(new Error("timeout"));
+			await getMarketAssortment("pl-pln");
+			expect((await getMarketAssortment("pl-pln")).state).toBe("remembered");
+
+			expect(outsideCache).toEqual([]);
+		} finally {
+			vi.mocked(Date.now).mockRestore();
+		}
+	});
+
 	it("remembers per channel: one market's answer never stands in for another's", async () => {
 		fetchStockedCategorySlugs
 			.mockResolvedValueOnce(["stresne-nosice", "stresne-boxy"])

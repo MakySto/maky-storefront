@@ -66,3 +66,8 @@ docs/contracts/maky-content/
 # scripts/b2b-schema-extension.mjs, whose --check compares the committed bytes with what it derives.
 # Reformatting it here would make that check fail on a file nobody changed.
 src/checkout/lib/b2b/maky-b2b-v1.graphql
+
+# The tyre-size index for the snow-chain and snow-sock codes is the producer's own output (CFM), copied in
+# verbatim; its SHA-256, git blob id and seal are recorded in PROVENANCE.json and re-verified by
+# src/lib/tyre-size/size-index.test.ts, and CFM pins the same bytes. Reformatting changes them.
+src/lib/tyre-size/data/

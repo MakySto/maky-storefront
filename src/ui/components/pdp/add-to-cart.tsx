@@ -8,6 +8,7 @@ import { ShoppingCartIcon } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { QuantityStepper } from "@/ui/components/ui/quantity-stepper";
 import { cn } from "@/lib/utils";
+import { useTyreSizeGate } from "./tyre-size-picker";
 
 interface AddToCartProps {
 	price: string;
@@ -48,17 +49,23 @@ function AddToCartButton({
 	const { pending } = useFormStatus();
 	const t = useTranslations("product");
 	const tCommon = useTranslations("common");
+	const tTyre = useTranslations("tyreSize");
+	// A snow chain or sock is added with the tyre size the customer chose. Until that choice is complete the
+	// button says so and takes them to it instead of submitting a form the server would refuse.
+	const gate = useTyreSizeGate();
+	const needsSize = !disabled && gate !== null && !gate.complete;
 
 	const getButtonText = () => {
 		if (pending) return t("addingToCart");
-		if (!disabled) return tCommon("addToCart");
+		if (!disabled) return needsSize ? tTyre("selectSize") : tCommon("addToCart");
 		if (disabledReason === "out-of-stock") return tCommon("outOfStock");
 		return t("selectOptions");
 	};
 
 	return (
 		<Button
-			type="submit"
+			type={needsSize ? "button" : "submit"}
+			onClick={needsSize ? () => gate?.focusPicker() : undefined}
 			size="lg"
 			disabled={disabled || pending}
 			// min-w-0 + truncate, mirroring the listing card's AddButton. Without it the

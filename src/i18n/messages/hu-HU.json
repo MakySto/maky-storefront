@@ -1245,5 +1245,31 @@
 		"specBars": "Keresztrudak",
 		"roofFilterLabel": "Tetőtípus",
 		"roofFilterAll": "Összes"
+	},
+	"tyreSize": {
+		"heading": "Az Ön gumiabroncsainak mérete",
+		"intro": "A megfelelő termék a gumiabroncs méretétől függ. Az abroncs oldalán találja, például 205/55 R16.",
+		"rim": "Felni átmérője",
+		"rimPlaceholder": "Válasszon átmérőt",
+		"size": "Gumiabroncs mérete",
+		"sizePlaceholder": "Válasszon méretet",
+		"sizePlaceholderFirst": "Először válassza ki a felni átmérőjét",
+		"notListed": "Nem találja a méretét? A lista szerint ez a termék nem illik az Ön gumiabroncsaira. Válasszon másikat, vagy írjon nekünk.",
+		"conditionOnly": "A(z) {size} méretnél ez a termék csak ezekre az abroncsokra illik: {tyres}.",
+		"conditionNot": "A(z) {size} méretnél ez a termék nem illik ezekre az abroncsokra: {tyres}.",
+		"confirmOnly": "Megerősítem, hogy az abroncsaim: {tyres}.",
+		"confirmNot": "Megerősítem, hogy az abroncsaim nem ezek: {tyres}.",
+		"knowsCode": "Ismerem a termék kódját, és most nem választok méretet",
+		"knowsCodeNote": "Ebben az esetben az abroncsokhoz való illeszkedést Ön ellenőrzi. A rendelésen szerepelni fog, hogy a terméket méret nélkül választotta.",
+		"sourceManufacturer": "A méretek a gyártó listája szerint.",
+		"sourceSupplier": "A méretek a szállító adatai szerint, a termék korábbi adatlapjáról, nem a gyártó listájából. Rendelés előtt ellenőrizze őket az abroncsa alapján.",
+		"selectSize": "Válasszon méretet",
+		"errorRequired": "Válassza ki az abroncs méretét, hogy a terméket a kosárba tehessük.",
+		"errorInvalid": "A kiválasztott méret nem tartozik ehhez a termékhez. Válasszon a listából.",
+		"errorCondition": "Erősítse meg a kiválasztott mérethez tartozó feltételt, és próbálja újra.",
+		"lineSize": "Abroncsméret: {size}",
+		"lineOnly": "Csak ezekhez az abroncsokhoz: {tyres}",
+		"lineNot": "Nem ezekhez az abroncsokhoz: {tyres}",
+		"lineCode": "Méret nincs megadva, a termék méret nélkül kiválasztva"
 	}
 }

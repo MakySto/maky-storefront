@@ -1,0 +1,15 @@
+{
+  "cfm_branch": "claude/project-thread-vnrafq",
+  "cfm_commit": "f9424d3fe44ff3dcc8345db52f1949746c609f44",
+  "files": {
+    "velkosti_20261105.json": {
+      "cfm_copy": "backend/artifacts/snehove_retaze/velkosti_20261105.json",
+      "git_blob_sha1": "ac4063a0e6821f0849e684af6ef8fc903feec6af",
+      "self_sha256": "206e4fe463be3bb9c642d2e343db5b0ccadd76fbad201e3659dca98a732a2543",
+      "sha256": "900ede7ea47f0671874a1828d81640ba3ba704e1f6cac86f8075d72d751f3697"
+    }
+  },
+  "producer": "backend/docs/runbooks/snehove_retaze_produkty_20261105/build_velkosti.py",
+  "profile": "maky.tyre-size-index/1",
+  "values_source": "the sealed batch of 145 snow-chain and snow-sock products (batch id snehove_retaze_produkty_20261105): the manufacturer's fit list and, for the DAC and Menabo codes, the previous shop's cards. Public data only (code, tyre size, rim, tyre condition, source label); no internal CFM id, price or supplier name."
+}

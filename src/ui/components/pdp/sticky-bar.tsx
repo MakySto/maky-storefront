@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { throttle } from "lodash-es";
 import { Button } from "@/ui/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTyreSizeGate } from "./tyre-size-picker";
 
 /** Scroll threshold (in pixels) before showing the sticky bar */
 const SCROLL_THRESHOLD = 500;
@@ -41,10 +42,15 @@ function StickyAddButton() {
 	// locales; the button simply never used them.
 	const tCommon = useTranslations("common");
 	const tProduct = useTranslations("product");
+	const tTyre = useTranslations("tyreSize");
+	// A snow chain or sock needs its tyre size first: the bar takes the customer to the choice instead of submitting.
+	const gate = useTyreSizeGate();
+	const needsSize = gate !== null && !gate.complete;
 
 	return (
 		<Button
-			type="submit"
+			type={needsSize ? "button" : "submit"}
+			onClick={needsSize ? () => gate?.focusPicker() : undefined}
 			size="lg"
 			disabled={pending}
 			className={cn(
@@ -54,7 +60,9 @@ function StickyAddButton() {
 			)}
 		>
 			<ShoppingCartIcon className="h-4 w-4" aria-hidden />
-			<span className="truncate">{pending ? tProduct("addingToCart") : tCommon("addToCart")}</span>
+			<span className="truncate">
+				{pending ? tProduct("addingToCart") : needsSize ? tTyre("selectSize") : tCommon("addToCart")}
+			</span>
 		</Button>
 	);
 }
