@@ -2,7 +2,7 @@ import "server-only";
 
 import rawIndex from "./data/velkosti_20261105.json";
 
-import type { TyreCondition, TyrePickerData, TyreSizeIndex, TyreSizeProduct, TyreSizeRow } from "./types";
+import type { TyreCondition, TyreSizeIndex, TyreSizeProduct, TyreSizeRow } from "./types";
 
 /**
  * The tyre sizes of the snow-chain and snow-sock codes (CFM's `velkosti_20261105.json`, copied in verbatim).
@@ -14,7 +14,7 @@ import type { TyreCondition, TyrePickerData, TyreSizeIndex, TyreSizeProduct, Tyr
  * the list attaches to some sizes never disappears.
  *
  * Server-only on purpose. A client component that imported this would put the whole list in the browser; the page
- * hands the picker only the rows of the one code it shows (`tyrePickerData`).
+ * hands the browser only the verdict for the one code it shows and the one size the shopper gave (`size-lookup`).
  */
 
 const SCHEMA = "maky.tyre-size-index/1";
@@ -132,31 +132,5 @@ export function isTyreSizeControlled(code: string | null | undefined): boolean {
 /** The manufacturer's own list, as against the previous shop's cards: the customer is told which one it is. */
 const MANUFACTURER_SOURCE = /^manufacturer_list/;
 
-const numeric = (rim: string): number => Number.parseFloat(rim);
-
-/** The rows of one code, grouped by rim in ascending order, for the picker. `null` for a code that is not size-controlled. */
-export function tyrePickerData(code: string | null | undefined): TyrePickerData | null {
-	const product = tyreSizeProduct(code);
-	if (!product || !code) return null;
-
-	const byRim = new Map<string, { label: string; conditionKey: string }[]>();
-	const usedConditions: Record<string, { mode: TyreCondition["mode"]; tyres: readonly string[] }> = {};
-	for (const [label, rim, conditionKey] of product.sizes) {
-		const group = byRim.get(rim) ?? [];
-		group.push({ label, conditionKey });
-		byRim.set(rim, group);
-		if (conditionKey !== "") {
-			const condition = INDEX.conditions[conditionKey];
-			usedConditions[conditionKey] = { mode: condition.mode, tyres: [...condition.tyres] };
-		}
-	}
-
-	return {
-		code,
-		fromManufacturerList: MANUFACTURER_SOURCE.test(product.source),
-		rims: [...byRim.entries()]
-			.sort(([a], [b]) => numeric(a) - numeric(b))
-			.map(([rim, sizes]) => ({ rim, sizes })),
-		conditions: usedConditions,
-	};
-}
+/** Is this source key the manufacturer's own list (and not the supplier's data from the previous shop's cards)? */
+export const isManufacturerListSource = (source: string): boolean => MANUFACTURER_SOURCE.test(source);

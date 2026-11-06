@@ -1,0 +1,23 @@
+# The id and the variants' names of every product a category lists in a channel, for a shelf whose products are
+# named by a code and chosen by a fact the shopper gave (a tyre size). The public code is the variant's name.
+# See `src/lib/listing/shelf-codes.ts`.
+query CategoryProductCodes($slug: String!, $channel: String!, $first: Int!, $after: String) {
+	category(slug: $slug) {
+		products(channel: $channel, first: $first, after: $after) {
+			totalCount
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
+			edges {
+				node {
+					id
+					variants {
+						id
+						name
+					}
+				}
+			}
+		}
+	}
+}

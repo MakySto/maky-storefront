@@ -10,7 +10,8 @@ import { type ProductDetailsQuery } from "@/gql/graphql";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getLocaleFromChannel } from "@/config/locale";
-import { baseSlugOfCategory } from "@/config/category-routes";
+import { baseSlugOfCategory, categoryUrlFor } from "@/config/category-routes";
+import { TYRE_SHELF_SLUG } from "@/config/tyre-shelves";
 import { marketHref } from "@/lib/channel-map";
 import { AddToCart } from "./add-to-cart";
 import { VariantSelectionSection } from "./variant-selection";
@@ -26,9 +27,12 @@ import { StarRating } from "@/ui/components/product/star-rating";
 import { WishlistButton } from "@/ui/components/wishlist/wishlist-button";
 import { reviewSummaryFor } from "@/lib/reviews/summary";
 import { PdpCompatibility } from "@/ui/components/fitment/pdp-compatibility";
+import { readRememberedTyreSize } from "@/lib/tyre-size/remembered";
+import { tyreFilterHref } from "@/lib/tyre-size/listing-param";
 import { tyreSelectionInputFromForm } from "@/lib/tyre-size/selection";
-import { tyrePickerData } from "@/lib/tyre-size/size-index";
-import { TyreSizeGate } from "./tyre-size-picker";
+import { isTyreSizeControlled } from "@/lib/tyre-size/size-index";
+import { tyreFitViewOf } from "@/lib/tyre-size/size-lookup";
+import { TyreSizeGate } from "./tyre-fit-box";
 
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
 
@@ -209,9 +213,12 @@ export async function VariantSectionDynamic({
 	// The EAN, as CFM publishes it on the variant (`cfm_ean`) and only when it can be a real GTIN —
 	// `publicEan` checks it again. Nothing when the product has none: a blank, never a placeholder.
 	const ean = publicEan(selectedVariant ?? variants[0]);
-	// A snow chain or sock is one manufacturer's code that fits many tyre sizes: the customer chooses the size here
-	// and it travels with the add (`lib/tyre-size`). Null for every other product, and for one this market cannot sell.
-	const tyrePicker = isPurchasable ? tyrePickerData(productCode) : null;
+	// A snow chain or sock is one manufacturer's code that fits many tyre sizes. The shopper gives their size once, in
+	// the vehicle selector, and this page says whether the product fits it; the size travels with the add
+	// (`lib/tyre-size`). Null for every other product, and for one this market cannot sell. The cookie is read only
+	// for the products it is about.
+	const tyreSizeControlled = isPurchasable && isTyreSizeControlled(productCode);
+	const tyreView = tyreSizeControlled ? tyreFitViewOf(productCode, await readRememberedTyreSize()) : null;
 
 	// A product the shop shows but cannot sell in this market offers a quote instead of a buy button: the link
 	// opens the contact page with the product (its name and public code) in the URL's fragment.
@@ -271,7 +278,8 @@ export async function VariantSectionDynamic({
 	}
 
 	// The price, the availability, the quantity and the buy buttons. For a snow chain or sock they sit inside the
-	// tyre-size gate, which puts the size choice above them and holds the buttons until it is complete.
+	// tyre-size gate, which puts the answer about the shopper's size above them and holds the buttons until the
+	// choice is complete.
 	const purchase = (
 		<>
 			{/* Add to Cart — the price, then what the catalogue says about availability, then the
@@ -404,7 +412,20 @@ export async function VariantSectionDynamic({
 					channel={channel}
 				/>
 
-				{tyrePicker ? <TyreSizeGate data={tyrePicker}>{purchase}</TyreSizeGate> : purchase}
+				{tyreView ? (
+					// For a size this product does not fit, the box offers the shelf narrowed to that size.
+					<TyreSizeGate
+						view={tyreView}
+						fittingHref={marketHref(
+							channel,
+							tyreFilterHref(categoryUrlFor(channel, TYRE_SHELF_SLUG), {}, true),
+						)}
+					>
+						{purchase}
+					</TyreSizeGate>
+				) : (
+					purchase
+				)}
 			</CartForm>
 
 			{/* Purchase confidence - order:6, outside the form (nothing submittable). */}
