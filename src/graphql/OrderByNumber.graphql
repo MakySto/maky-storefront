@@ -37,6 +37,11 @@ fragment OrderFullDetails on Order {
 	lines {
 		id
 		quantity
+		# The tyre size the customer chose on a snow chain or sock, copied from the cart line (`lib/tyre-size`).
+		metadata {
+			key
+			value
+		}
 		# What the order was placed under, in the order's language; the fallback when the product
 		# has no translation (any more) in the language of the market the page is read in.
 		translatedProductName

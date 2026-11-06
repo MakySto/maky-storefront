@@ -23,6 +23,15 @@ export type AddToCartRejection =
 	 * or to end it (`PaymentLockRecovery`) and then add the item.
 	 */
 	| "payment-locked"
+	/**
+	 * A snow chain or sock was sent without a tyre size (and without the customer's own statement that they know the
+	 * code). Nothing was attempted. The way out is to choose a size on the product page.
+	 */
+	| "size-required"
+	/** The size is not one of this code's. Nothing was attempted. */
+	| "size-invalid"
+	/** The size carries a condition on the tyres that was not acknowledged. Nothing was attempted. */
+	| "size-condition"
 	/** Saleor refused for a reason we do not model. */
 	| "rejected";
 

@@ -1,0 +1,49 @@
+# A cart line that carries the shopper's tyre size (snow chains and snow socks, `lib/tyre-size`).
+#
+# One product on this shop is one manufacturer's code, and the size the customer chose belongs to the LINE, not to
+# the variant. Two things make that work in Saleor, and both are verified against the pinned Saleor source:
+#
+# - `forceNewLine: true`. Without it Saleor merges an added variant into the existing line of that variant and
+#   OVERWRITES that line's metadata, so a second size would silently replace the first. With it the line is new.
+#   The server action adds a second line only for a size that has none yet; the same size again goes through
+#   `CheckoutLinesUpdate` (one line, a higher quantity).
+# - `metadata`. The line's public metadata is copied onto the order line when the order is placed, which is how
+#   the chosen size reaches the order.
+#
+# A separate document and not two more variables on `CheckoutAddLine`, on purpose: that one is what every other
+# product in the shop is added with, and it stays byte for byte as it was.
+mutation CheckoutAddSizedLine(
+	$id: ID!
+	$productVariantId: ID!
+	$quantity: Int!
+	$metadata: [MetadataInput!]!
+) {
+	checkoutLinesAdd(
+		id: $id
+		lines: [{ quantity: $quantity, variantId: $productVariantId, forceNewLine: true, metadata: $metadata }]
+	) {
+		checkout {
+			id
+			lines {
+				id
+				quantity
+				metadata {
+					key
+					value
+				}
+				variant {
+					id
+					name
+					product {
+						name
+					}
+				}
+			}
+		}
+		errors {
+			field
+			code
+			message
+		}
+	}
+}
