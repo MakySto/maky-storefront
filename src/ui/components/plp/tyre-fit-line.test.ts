@@ -12,7 +12,7 @@ import { ProductCard, type ProductCardData } from "./product-card";
 import { TyreFitLine } from "./tyre-fit-line";
 
 /**
- * What a snow-chain card says about the size the shopper gave: the product page's four answers, in its own words.
+ * What a snow-chain card says about the size the shopper gave: the product page's answers, in its own words.
  */
 
 const LOCALES = [
@@ -49,29 +49,33 @@ const inLocale = (locale: string, child: ReturnType<typeof createElement>) =>
 		createElement(Provider, { locale, timeZone: "UTC", messages: messages(locale) }, child),
 	);
 
-const fit = (kind: TyreCardFitKind, size = "205/55 R16"): TyreCardFit => ({ size, kind });
+/** next-intl escapes an apostrophe the way React does, so the expected text has to as well. */
+const escaped = (text: string) => text.replace(/'/g, "&#x27;");
+
+const SIZE = "205/55 R16";
+const fit = (kind: TyreCardFitKind, size = SIZE): TyreCardFit => ({ size, kind });
 
 describe("the card's line about the tyre size", () => {
-	it("says what the product page's box says, for each of the four answers", () => {
+	it("says what the product page's row says, for each of the four answers", () => {
 		const t = messages("sk-SK").tyreSize as Record<string, string>;
 		const words: Record<TyreCardFitKind, string> = {
-			fits: t.fitFitsTitle,
-			"fits-supplier": t.fitSupplierTitle,
-			"fits-with-condition": t.fitConditionTitle,
-			"no-fit": t.fitNoFitTitle.replace("{size}", "205/55 R16"),
+			fits: t.fitFitsTitle.replace("{size}", SIZE),
+			"fits-supplier": t.fitSupplierTitle.replace("{size}", SIZE),
+			ask: t.cardAsk,
+			"no-fit": t.fitNoFitTitle.replace("{size}", SIZE),
 		};
 		for (const kind of Object.keys(words) as TyreCardFitKind[]) {
 			const html = inLocale("sk-SK", createElement(TyreFitLine, { fit: fit(kind) }));
-			expect(html, kind).toContain(words[kind]);
+			expect(html, kind).toContain(escaped(words[kind]));
 			expect(html, kind).toContain(`data-fit="${kind}"`);
 			expect(html, kind).toContain('data-testid="card-tyre-fit"');
 		}
 	});
 
-	it("shows a confirmed fit in the fit colours and a doubtful one in the unconfirmed colours", () => {
+	it("shows a confirmed fit in the fit colours and a doubtful or open one in the unconfirmed colours", () => {
 		const fits = inLocale("sk-SK", createElement(TyreFitLine, { fit: fit("fits") }));
 		expect(fits).toContain("text-fitment-fits");
-		for (const kind of ["fits-supplier", "fits-with-condition"] as const) {
+		for (const kind of ["fits-supplier", "ask"] as const) {
 			const html = inLocale("sk-SK", createElement(TyreFitLine, { fit: fit(kind) }));
 			expect(html, kind).toContain("text-fitment-unconfirmed");
 			expect(html, kind).not.toContain("text-fitment-fits");
@@ -85,14 +89,22 @@ describe("the card's line about the tyre size", () => {
 		expect(html).not.toMatch(/\bbg-/);
 	});
 
+	it("asks without a size in the words: the question is about the tyres, the size is already known", () => {
+		const html = inLocale("sk-SK", createElement(TyreFitLine, { fit: fit("ask") }));
+		expect(html).not.toContain(SIZE);
+	});
+
 	it("uses the market's own words, with the size filled in, in every language", () => {
 		for (const locale of LOCALES) {
 			const t = messages(locale).tyreSize as Record<string, string>;
-			const html = inLocale(locale, createElement(TyreFitLine, { fit: fit("no-fit") }));
-			expect(html, locale).toContain(t.fitNoFitTitle.replace("{size}", "205/55 R16").replace(/'/g, "&#x27;"));
-			expect(html, locale).not.toContain("{size}");
+			const noFit = inLocale(locale, createElement(TyreFitLine, { fit: fit("no-fit") }));
+			expect(noFit, locale).toContain(escaped(t.fitNoFitTitle.replace("{size}", SIZE)));
+			expect(noFit, locale).not.toContain("{size}");
 			const plain = inLocale(locale, createElement(TyreFitLine, { fit: fit("fits") }));
-			expect(plain, locale).toContain(t.fitFitsTitle.replace(/'/g, "&#x27;"));
+			expect(plain, locale).toContain(escaped(t.fitFitsTitle.replace("{size}", SIZE)));
+			expect(plain, locale).not.toContain("{size}");
+			const ask = inLocale(locale, createElement(TyreFitLine, { fit: fit("ask") }));
+			expect(ask, locale).toContain(escaped(t.cardAsk));
 		}
 	});
 });
@@ -118,12 +130,15 @@ describe("on the listing card", () => {
 
 	it("carries the line when the card has a verdict, and nothing when it has none", () => {
 		expect(html(card(fit("fits")))).toContain('data-testid="card-tyre-fit"');
+		expect(html(card(fit("ask")))).toContain('data-fit="ask"');
 		expect(html(card())).not.toContain("card-tyre-fit");
 	});
 
 	it("still sends the shopper to the page, where the size is confirmed, and offers no quick add", () => {
-		const withFit = html(card(fit("fits")));
-		expect(withFit).toContain('href="/snow-chains"');
-		expect(withFit).not.toContain("<form");
+		for (const kind of ["fits", "ask", "no-fit"] as const) {
+			const withFit = html(card(fit(kind)));
+			expect(withFit, kind).toContain('href="/snow-chains"');
+			expect(withFit, kind).not.toContain("<form");
+		}
 	});
 });

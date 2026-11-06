@@ -4,11 +4,10 @@ import { type ReactNode } from "react";
 import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import { useTranslations } from "next-intl";
-import { ShoppingCartIcon } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { QuantityStepper } from "@/ui/components/ui/quantity-stepper";
 import { cn } from "@/lib/utils";
-import { gateButtonKey, gateButtonLook, HELD_BACK_LABEL, useTyreSizeGate } from "./tyre-fit-box";
+import { GateIcon, gateButtonKey, gateButtonLook, HELD_BACK_LABEL, useTyreSizeGate } from "./tyre-fit-box";
 
 interface AddToCartProps {
 	price: string;
@@ -37,6 +36,12 @@ interface AddToCartProps {
 	 * product can be ordered.
 	 */
 	quoteOnly?: boolean;
+	/**
+	 * What belongs between the price and the buy row (the snow chain's one-line answer about the shopper's tyres) and
+	 * under the buy row (its quiet "I know the code" line). Rendered by the server, drawn here in place.
+	 */
+	beforeBuy?: ReactNode;
+	afterBuy?: ReactNode;
 }
 
 function AddToCartButton({
@@ -51,8 +56,8 @@ function AddToCartButton({
 	const tCommon = useTranslations("common");
 	const tTyre = useTranslations("tyreSize");
 	// A snow chain or sock is added with the tyre size the customer told the shop. Until that choice is complete the
-	// button says what is missing (no size, a size that does not fit, a condition to confirm) and takes them to it
-	// instead of submitting a form the server would refuse.
+	// button says what the next step is (give the size, answer the question, go to the size that fits) and takes them
+	// there instead of submitting a form the server would refuse.
 	const gate = useTyreSizeGate();
 	const holdBack = !disabled && gate !== null && !gate.complete ? gate : null;
 	const look = gateButtonLook(holdBack);
@@ -71,7 +76,7 @@ function AddToCartButton({
 			size="lg"
 			disabled={disabled || pending}
 			variant={look.variant}
-			aria-disabled={look["aria-disabled"]}
+			data-testid="buy-button"
 			// min-w-0 + truncate, mirroring the listing card's AddButton. Without it the
 			// flex item keeps its default `min-width: auto` and refuses to go below the
 			// label's width, so stepper + button demanded 365px inside a 328px column on
@@ -86,7 +91,8 @@ function AddToCartButton({
 			{/* The icon goes below sm. With the stepper beside it the button has ~190px on a
 			    360px phone, and icon + "Pridať do košíka" wanted ~200 — so the label ellipsised
 			    to "Pridať do…". A truncated call to action is worse than no icon. */}
-			<ShoppingCartIcon
+			<GateIcon
+				gate={holdBack}
 				className={cn("hidden h-5 w-5 shrink-0 transition-transform sm:inline", pending && "scale-90")}
 			/>
 			<span className={holdBack && !pending ? HELD_BACK_LABEL : "truncate"}>{getButtonText()}</span>
@@ -105,6 +111,8 @@ export function AddToCart({
 	maxQuantity,
 	quoteHref,
 	quoteOnly = false,
+	beforeBuy,
+	afterBuy,
 }: AddToCartProps) {
 	const t = useTranslations("product");
 	const tCart = useTranslations("cart");
@@ -165,12 +173,16 @@ export function AddToCart({
 					</Link>
 				) : null
 			) : (
-				/* Buy row: quantity + CTA. The stepper writes name="quantity" into the
-				   surrounding form, which both this button and the sticky bar submit. */
-				<div className="flex items-stretch gap-3">
-					<QuantityStepper name="quantity" max={maxQuantity} disabled={disabled} size="large" />
-					<AddToCartButton disabled={disabled} disabledReason={disabledReason} />
-				</div>
+				<>
+					{beforeBuy}
+					{/* Buy row: quantity + CTA. The stepper writes name="quantity" into the
+					   surrounding form, which both this button and the sticky bar submit. */}
+					<div className="flex items-stretch gap-3">
+						<QuantityStepper name="quantity" max={maxQuantity} disabled={disabled} size="large" />
+						<AddToCartButton disabled={disabled} disabledReason={disabledReason} />
+					</div>
+					{afterBuy}
+				</>
 			)}
 		</div>
 	);

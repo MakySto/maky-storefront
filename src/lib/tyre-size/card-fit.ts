@@ -1,33 +1,26 @@
 import "server-only";
 
 import type { ProductCardData } from "@/ui/components/plp/product-card";
-import { tyreFit } from "./size-lookup";
-import type { TyreCardFit, TyreFit } from "./types";
+import { tyreCardFitOf, type TyreAnswers } from "./choice";
+import { isKnownTyreSize } from "./size-lookup";
 
 /**
- * The one word a card says about a product and the shopper's size, from the same verdict the product page draws
- * (`size-lookup.tyreFit`): the condition outranks the source, as in the page's box, because a fit that depends on the
- * make of the tyre is not a plain fit whoever listed it.
- */
-export function tyreCardFitOf(fit: TyreFit): TyreCardFit {
-	if (fit.kind === "no-fit") return { size: fit.size, kind: "no-fit" };
-	return {
-		size: fit.size,
-		kind: fit.condition ? "fits-with-condition" : fit.fromManufacturerList ? "fits" : "fits-supplier",
-	};
-}
-
-/**
- * Give each size-controlled card its verdict for the size the shopper gave.
+ * Give each size-controlled card its verdict for the size the shopper gave, from the same function the product page
+ * and the narrowing use (`choice.ts`), so a card, its page and the list it stands in never disagree.
  *
  * A card whose code is not one of the size-controlled products is untouched (it has nothing to say about tyres), and
- * with no size every card is: a verdict needs a question. It reads the card's own code, so it needs nothing from the
+ * with no size every card is: a verdict needs a question. So is every card for a size no list holds: "does not fit"
+ * would be a claim, and all the shop can say is that it cannot verify the size. It reads the card's own code, so it needs nothing from the
  * shop beyond the cards it is handed, and it says the same on every page that shows the card.
  */
-export function attachTyreFit(cards: readonly ProductCardData[], size: string | null): ProductCardData[] {
-	if (!size) return [...cards];
+export function attachTyreFit(
+	cards: readonly ProductCardData[],
+	size: string | null,
+	answers: TyreAnswers = {},
+): ProductCardData[] {
+	if (!size || !isKnownTyreSize(size)) return [...cards];
 	return cards.map((card) => {
-		const fit = tyreFit(card.productCode, size);
-		return fit ? { ...card, tyreFit: tyreCardFitOf(fit) } : card;
+		const fit = tyreCardFitOf(card.productCode, size, answers);
+		return fit ? { ...card, tyreFit: fit } : card;
 	});
 }

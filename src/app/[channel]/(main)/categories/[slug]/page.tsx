@@ -56,8 +56,13 @@ import { VehicleListingFilter } from "@/ui/components/fitment/vehicle-listing-fi
 import { TyreListingFilter } from "@/ui/components/fitment/tyre-listing-filter";
 import { attachSetFacts } from "@/lib/fitment/card-facts";
 import { attachTyreFit } from "@/lib/tyre-size/card-fit";
-import { tyreFilterRequestOf } from "@/lib/tyre-size/listing-param";
-import { resolveTyreListingFilter, tyreFilterIds, tyreFilterSize } from "@/lib/tyre-size/plp-tyre-filter";
+import { tyreFilterRequestOf, tyreSizeParamOf } from "@/lib/tyre-size/listing-param";
+import {
+	resolveTyreListingFilter,
+	tyreFilterAnswers,
+	tyreFilterIds,
+	tyreFilterSize,
+} from "@/lib/tyre-size/plp-tyre-filter";
 import { CatalogMakeIndex } from "@/ui/components/catalog/make-index";
 import { HeroBenefits } from "@/ui/components/homepage/hero-benefits";
 import { STOREFRONT_CATEGORIES, categoryFitmentKind } from "@/config/categories";
@@ -157,6 +162,7 @@ type PageProps = {
 		sizes?: string;
 		vehicle?: string;
 		tyres?: string;
+		tyreSize?: string;
 		brand?: string;
 		volume?: string;
 	}>;
@@ -479,10 +485,11 @@ async function CategoryProducts({
 			categorySlug: baseSlug,
 			language: catalogLanguageForChannel(params.channel),
 		}),
-		resolveTyreListingFilter(tyreFilterRequestOf(searchParams.tyres), {
-			categorySlug: baseSlug,
-			channel: params.channel,
-		}),
+		resolveTyreListingFilter(
+			tyreFilterRequestOf(searchParams.tyres),
+			{ categorySlug: baseSlug, channel: params.channel },
+			tyreSizeParamOf(searchParams.tyreSize),
+		),
 	]);
 	const volume = volumeBand(searchParams.volume);
 	const filter = buildFilterVariables({
@@ -642,7 +649,7 @@ async function CategoryProducts({
 		categoryFitmentKind(baseSlug) !== null ? await attachSetFacts(baseCards, locale) : baseCards;
 	// On the snow-chain shelf each card also says whether it fits the size the shopper gave, in the product page's own
 	// words; with no size, or on any other shelf, the cards are untouched.
-	const productCards = attachTyreFit(factCards, tyreFilterSize(tyreFilter));
+	const productCards = attachTyreFit(factCards, tyreFilterSize(tyreFilter), tyreFilterAnswers(tyreFilter));
 
 	// Only the catalogue knows whether a verified set is on sale. When the car's whole list is
 	// hidden or withdrawn, say that, instead of an empty grid under "overené pre …".

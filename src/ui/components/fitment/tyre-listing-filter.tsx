@@ -39,7 +39,10 @@ export async function TyreListingFilter({
 	searchParams: Record<string, string | string[] | undefined>;
 	className?: string;
 }) {
-	if (filter.state === "out-of-scope" || filter.state === "unavailable") return null;
+	if (filter.state === "out-of-scope") return null;
+	// The shop's products could not be read: with no size there is nothing to say; with one, the shopper is told that the
+	// list is NOT narrowed instead of seeing nothing happen, and keeps the way to change the size.
+	if (filter.state === "unavailable" && filter.size === null) return null;
 
 	const locale = getLocaleFromChannel(channel);
 	const t = await getTranslations({ locale, namespace: "tyreSize" });
@@ -71,8 +74,10 @@ export async function TyreListingFilter({
 		);
 	}
 
-	const narrowedHref = tyreFilterHref(basePath, searchParams, true);
-	const allHref = tyreFilterHref(basePath, searchParams, false);
+	// The size is in the links, so a link that is sent on shows the same list to whoever opens it.
+	const linkSize = "size" in filter ? filter.size : null;
+	const narrowedHref = tyreFilterHref(basePath, searchParams, true, linkSize);
+	const allHref = tyreFilterHref(basePath, searchParams, false, linkSize);
 	const changeSize = (
 		<TyreSizeLauncher label={t("fitChange")} className="text-text-link hover:text-text-link-hover text-sm" />
 	);
@@ -82,12 +87,32 @@ export async function TyreListingFilter({
 			narrowedHref={narrowedHref}
 			allHref={allHref}
 			groupLabel={t("listingModeGroup")}
-			narrowedLabel={t("listingModeTyres")}
+			narrowedLabel={t("listingModeTyres", { size: linkSize ?? "" })}
 			allLabel={t("listingModeAll")}
 			icon={CircleDotIcon}
 			testId="tyre-mode-switch"
 		/>
 	);
+
+	if (filter.state === "unavailable") {
+		return (
+			<div
+				data-testid="tyre-listing-unavailable"
+				className={cn(
+					"border-border-subtle bg-surface-card flex flex-wrap items-center gap-x-4 gap-y-3 rounded-sm border p-3 shadow-xs sm:p-4",
+					className,
+				)}
+			>
+				<span className="bg-surface-secondary text-text-secondary flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+					<CircleDotIcon className="h-4 w-4" aria-hidden="true" />
+				</span>
+				<p className="text-text-primary min-w-[12rem] flex-1 text-sm font-medium" role="status">
+					{t("listingUnavailable", { size: filter.size ?? "" })}
+				</p>
+				{changeSize}
+			</div>
+		);
+	}
 
 	// Not narrowed, with a size known. Either the shopper chose all chains, or nothing the shop lists fits the size —
 	// and the words say which, because "you are looking at everything" and "we have nothing for your size" are
@@ -108,10 +133,22 @@ export async function TyreListingFilter({
 				<p className="text-text-primary min-w-[12rem] flex-1 text-sm font-medium">
 					{filter.reason === "none-fit"
 						? t("listingDefaultNone", { size: filter.size })
-						: t("listingAllNotice", { size: filter.size })}
+						: filter.reason === "unlisted"
+							? t("listingUnlisted", { size: filter.size })
+							: t("listingAllNotice", { size: filter.size })}
 				</p>
 				<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-					{modeSwitch("all")}
+					{/* A size no list holds has no narrowed list to switch to: the switch would lead nowhere. */}
+					{filter.reason === "unlisted" ? (
+						<LinkWithChannel
+							href="/kontakt"
+							className="text-text-link hover:text-text-link-hover text-sm font-medium underline decoration-1 underline-offset-2"
+						>
+							{tFit("listingContact")}
+						</LinkWithChannel>
+					) : (
+						modeSwitch("all")
+					)}
 					{changeSize}
 				</div>
 			</div>
@@ -157,8 +194,8 @@ export async function TyreListingFilter({
 		);
 	}
 
-	// active — narrowed to the products whose list holds this size: one line that says so, the switch, and the way to
-	// change the size.
+	// active: narrowed to the products that fit this size (and the ones that depend on an answer the shopper can still
+	// give): one line that says so, the switch, and the way to change the size.
 	return (
 		<div
 			data-testid="tyre-listing-active"

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { GATE_BUTTON_KEY } from "@/ui/components/pdp/tyre-fit-box";
+import { GATE_BUTTON_KEYS } from "@/ui/components/pdp/tyre-fit-box";
 
 /**
  * Every `tyreSize` key the components ask for exists in every language.
@@ -90,7 +90,7 @@ function keysUsedIn(file: string): string[] {
 	const keys = new Set<string>();
 	for (const name of names) {
 		for (const argument of firstArguments(source, name)) {
-			// In `mode === "only" ? "conditionOnly" : "conditionNot"` the keys are what follows the single "?".
+			// In `confirmed ? "fitFitsTitle" : "fitSupplierTitle"` the keys are what follows the single "?".
 			const branches = argument.split(/(?<!\?)\?(?!\?)/);
 			const texts = branches.length > 1 ? branches.slice(1).join("?") : argument;
 			for (const literal of texts.matchAll(/"([A-Za-z]+)"/g)) keys.add(literal[1]);
@@ -104,10 +104,52 @@ describe("the tyre-size texts the components ask for", () => {
 		// A scan that matches nothing would pass for ever.
 		const found = Object.fromEntries(FILES.map((file) => [file, keysUsedIn(file)]));
 		expect(found["src/ui/components/pdp/tyre-fit-box.tsx"]).toEqual(
-			expect.arrayContaining(["fitNoSizeTitle", "fitEnter", "conditionOnly", "conditionNot", "fitHowToFind"]),
+			expect.arrayContaining([
+				"fitNoSizeTitle",
+				"fitEnter",
+				"fitChange",
+				"fitUnlistedTitle",
+				"fitFitsTitle",
+				"fitFitsAnswer",
+				"fitFitsOtherMake",
+				"fitFitsOtherModel",
+				"fitAskTitle",
+				"askMake",
+				"askModel",
+				"askOtherMake",
+				"askOtherModel",
+				"askWhy",
+				"fitOtherTitle",
+				"fitOtherTitleCode",
+				"fitOtherTitleMany",
+				"fitOtherLink",
+				"fitNoFitTitle",
+				"fitNoFitElsewhere",
+				"fitNoFitNowhere",
+				"knowsCode",
+				"knowsCodeNote",
+				"knowsCodeUndo",
+				"errorAnswer",
+			]),
 		);
 		expect(found["src/ui/components/vehicle/tyre-size-tab.tsx"]).toEqual(
-			expect.arrayContaining(["tabHeading", "inputLabel", "useSize", "forget", "errorSave"]),
+			expect.arrayContaining([
+				"tabHeading",
+				"tabLead",
+				"selectWidth",
+				"selectProfile",
+				"selectRim",
+				"inputLabel",
+				"matchListed",
+				"matchUnlisted",
+				"unknownTitle",
+				"enterFull",
+				"enterBySteps",
+				"howTitle",
+				"useSize",
+				"forget",
+				"errorSave",
+			]),
 		);
 		expect(found["src/ui/components/vehicle/vehicle-selector-sheet.tsx"]).toEqual(
 			expect.arrayContaining(["selectorTitle", "tabsLabel", "tabVehicle", "tabTyres"]),
@@ -119,7 +161,7 @@ describe("the tyre-size texts the components ask for", () => {
 			expect.arrayContaining(["errorRequired", "errorInvalid", "errorCondition"]),
 		);
 		expect(found["src/ui/components/plp/tyre-fit-line.tsx"]).toEqual(
-			expect.arrayContaining(["fitFitsTitle", "fitSupplierTitle", "fitConditionTitle", "fitNoFitTitle"]),
+			expect.arrayContaining(["fitFitsTitle", "fitSupplierTitle", "cardAsk", "fitNoFitTitle"]),
 		);
 		// The listing control is a server component: its translator is found by the second form.
 		expect(found["src/ui/components/fitment/tyre-listing-filter.tsx"]).toEqual(
@@ -134,6 +176,8 @@ describe("the tyre-size texts the components ask for", () => {
 				"listingDefaultNone",
 				"listingEmptyTitle",
 				"listingEmptyBody",
+				"listingUnlisted",
+				"listingUnavailable",
 				"fitEnter",
 				"fitChange",
 			]),
@@ -146,16 +190,15 @@ describe("the tyre-size texts the components ask for", () => {
 		for (const file of FILES) {
 			for (const key of keysUsedIn(file)) if (!messages[key]) missing.push(`${file}: ${key}`);
 		}
-		for (const key of Object.values(GATE_BUTTON_KEY))
-			if (!messages[key]) missing.push(`GATE_BUTTON_KEY: ${key}`);
+		for (const key of GATE_BUTTON_KEYS) if (!messages[key]) missing.push(`GATE_BUTTON_KEYS: ${key}`);
 		expect(missing).toEqual([]);
 	});
 
 	it.each(LOCALES)("%s keeps no text that nothing asks for any more", (locale) => {
-		const asked = new Set<string>(Object.values(GATE_BUTTON_KEY));
+		const asked = new Set<string>(GATE_BUTTON_KEYS);
 		for (const file of FILES) for (const key of keysUsedIn(file)) asked.add(key);
 		// The cart line shows what was chosen with keys built from the line's metadata, not written out at the call.
-		for (const key of ["lineSize", "lineOnly", "lineNot", "lineCode"]) asked.add(key);
+		for (const key of ["lineSize", "lineOnly", "lineNot", "lineCode", "lineAnswer"]) asked.add(key);
 		const unused = Object.keys(tyreMessages(locale)).filter((key) => !asked.has(key));
 		expect(unused).toEqual([]);
 	});

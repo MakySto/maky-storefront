@@ -2,30 +2,31 @@ import { TYRE_FIELDS } from "./fields";
 import type { TyreFitView } from "./types";
 
 /**
- * What the product page makes of the shopper's remembered size, without React: whether the buy buttons may submit,
- * why not when they may not, and exactly which values the form carries. The page draws this and a test drives it
- * against the server's own check (`selection.ts`), so what the form sends is what the server accepts, or refuses
- * for the reason the page gave.
+ * What the product page makes of the shopper's tyres, without React: whether the buy button may submit, why not when
+ * it may not, and exactly which values the form carries. The page draws this and a test drives it against the
+ * server's own check (`selection.ts`), so what the form sends is what the server accepts, or refuses for the reason
+ * the page gave.
  *
- * Client-safe: nothing here imports the list. The server hands the page a `TyreFit`, one small object.
+ * Client-safe: nothing here imports the list. The server hands the page a `TyreFitView`, one small object.
  */
 
 export type { TyreFitView };
 
-/** Why a buy button holds back and takes the shopper to the choice instead: each one is a different button text. */
-export type TyreGateReason =
-	/** No size yet: the button takes the shopper to the window that asks for it. */
-	| "choose"
-	/** The size is known and this product does not fit it. */
-	| "no-fit"
-	/** The size fits only on certain tyres, and the shopper has not said theirs are those. */
-	| "confirm";
+/**
+ * Why the buy button holds back, and what it does instead. Each one is a different button text and a different next
+ * step, because a button that only says "does not fit" tells the shopper nothing they can do:
+ *
+ *   `choose`   no size yet: opens the window that asks for it.
+ *   `ask`      one question about their tyres decides the size: takes them to it.
+ *   `other`    a code of this model in another size fits and the shop sells it: goes to its page.
+ *   `find`     this one does not fit, others the shop sells do: goes to the list narrowed to the size.
+ *   `contact`  the shop cannot verify the size or sells nothing for it: goes to the people who can.
+ */
+export type TyreGateReason = "choose" | "ask" | "other" | "find" | "contact";
 
-/** The two things the shopper can still say on the page itself. */
+/** What the shopper can still say on the page itself: that they know the code and give no size. */
 export interface TyreFitChoice {
-	/** The condition on the size has been ticked. Meaningless for a size without a condition. */
-	readonly acknowledged: boolean;
-	/** The shopper says they know this code and gives no size. Honoured only while no size is known. */
+	/** The shopper says they know this code and gives no size. Honoured only while the shop cannot answer for a size. */
 	readonly knowsCode: boolean;
 }
 
@@ -40,39 +41,43 @@ export interface TyreFitState {
 const nothingChosen = {
 	[TYRE_FIELDS.mode]: "size",
 	[TYRE_FIELDS.size]: "",
-	[TYRE_FIELDS.condition]: "",
+	[TYRE_FIELDS.answer]: "",
 } as const;
+
+const codeOnly = {
+	complete: true,
+	reason: null,
+	fields: { ...nothingChosen, [TYRE_FIELDS.mode]: "code" },
+} as const satisfies TyreFitState;
 
 export function tyreFitState(view: TyreFitView, choice: TyreFitChoice): TyreFitState {
 	switch (view.kind) {
 		case "no-size":
-			// "I know the code" is a statement made INSTEAD of giving a size. Once a size is known the list has
-			// spoken and the statement no longer overrules it: a size that does not fit is changed, not argued with.
-			return choice.knowsCode
-				? { complete: true, reason: null, fields: { ...nothingChosen, [TYRE_FIELDS.mode]: "code" } }
-				: { complete: false, reason: "choose", fields: nothingChosen };
-		case "no-fit":
-			// The size is deliberately not sent: the server would refuse it, and the button does not submit.
-			return { complete: false, reason: "no-fit", fields: nothingChosen };
-		case "fits": {
-			const { condition } = view;
-			if (condition === null) {
-				return {
-					complete: true,
-					reason: null,
-					fields: { ...nothingChosen, [TYRE_FIELDS.size]: view.size },
-				};
-			}
+			// "I know the code" is a statement made INSTEAD of giving a size. Once a size is known and the shop can
+			// answer for it the list has spoken and the statement no longer overrules it.
+			return choice.knowsCode ? codeOnly : { complete: false, reason: "choose", fields: nothingChosen };
+		case "unlisted":
+			// The shop cannot verify this size, which is not "it does not fit": the shopper who knows the code may buy.
+			return choice.knowsCode ? codeOnly : { complete: false, reason: "contact", fields: nothingChosen };
+		case "ask":
+			return { complete: false, reason: "ask", fields: nothingChosen };
+		case "other": {
+			// Where the right size is sold if the shop sells it; else the list of what it does sell for the size; else people.
+			const sold = view.alternatives.some((alternative) => alternative.href !== null);
 			return {
-				complete: choice.acknowledged,
-				reason: choice.acknowledged ? null : "confirm",
-				fields: {
-					...nothingChosen,
-					[TYRE_FIELDS.size]: view.size,
-					// The condition travels only once it is ticked: ticking is the shopper's acknowledgement.
-					[TYRE_FIELDS.condition]: choice.acknowledged ? condition.key : "",
-				},
+				complete: false,
+				reason: sold ? "other" : view.elsewhere ? "find" : "contact",
+				fields: nothingChosen,
 			};
 		}
+		case "no-fit":
+			// The size is deliberately not sent: the server would refuse it, and the button does not submit.
+			return { complete: false, reason: view.elsewhere ? "find" : "contact", fields: nothingChosen };
+		case "fits":
+			return {
+				complete: true,
+				reason: null,
+				fields: { ...nothingChosen, [TYRE_FIELDS.size]: view.size, [TYRE_FIELDS.answer]: view.answer ?? "" },
+			};
 	}
 }

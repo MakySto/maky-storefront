@@ -2,12 +2,11 @@
 
 import { useSyncExternalStore } from "react";
 import { useFormStatus } from "react-dom";
-import { ShoppingCartIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { throttle } from "lodash-es";
 import { Button } from "@/ui/components/ui/button";
 import { cn } from "@/lib/utils";
-import { gateButtonKey, gateButtonLook, HELD_BACK_LABEL, useTyreSizeGate } from "./tyre-fit-box";
+import { GateIcon, gateButtonKey, gateButtonLook, HELD_BACK_LABEL, useTyreSizeGate } from "./tyre-fit-box";
 
 /** Scroll threshold (in pixels) before showing the sticky bar */
 const SCROLL_THRESHOLD = 500;
@@ -43,7 +42,7 @@ function StickyAddButton() {
 	const tCommon = useTranslations("common");
 	const tProduct = useTranslations("product");
 	const tTyre = useTranslations("tyreSize");
-	// A snow chain or sock needs its tyre size first: the bar says what is missing and takes the customer to it
+	// A snow chain or sock needs its tyre size first: the bar says what the next step is and takes the customer to it
 	// instead of submitting.
 	const gate = useTyreSizeGate();
 	const holdBack = gate !== null && !gate.complete ? gate : null;
@@ -56,7 +55,7 @@ function StickyAddButton() {
 			size="lg"
 			disabled={pending}
 			variant={look.variant}
-			aria-disabled={look["aria-disabled"]}
+			data-testid="sticky-buy-button"
 			className={cn(
 				"h-12 min-w-[130px] shrink-0 rounded-xs font-semibold",
 				// Override transition to prevent flash on state change
@@ -67,7 +66,7 @@ function StickyAddButton() {
 				look.className,
 			)}
 		>
-			<ShoppingCartIcon className="h-4 w-4" aria-hidden />
+			<GateIcon gate={holdBack} className="h-4 w-4 shrink-0" />
 			<span className={holdBack && !pending ? HELD_BACK_LABEL : "truncate"}>
 				{pending
 					? tProduct("addingToCart")
@@ -95,7 +94,7 @@ export function StickyBar({ productName, price, show = false }: StickyBarProps) 
 				"border-border-subtle bg-surface-card fixed right-0 bottom-0 left-0 z-[var(--z-header)] border-t shadow-xl transition-transform duration-300 md:hidden",
 				// Not part of the form's flow: the form spaces its children with `space-y-6`, whose bottom margin
 				// lifts a fixed bar off the screen edge by 24px whenever something follows it (the tyre gate's
-				// "how do I find the size" link does). Hidden, 24px of the bar then showed under every phone screen.
+				// quiet "I know the code" line does). Hidden, 24px of the bar then showed under every phone screen.
 				"mb-0!",
 				isVisible ? "translate-y-0" : "translate-y-full",
 			)}

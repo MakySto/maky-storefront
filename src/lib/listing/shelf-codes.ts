@@ -27,6 +27,8 @@ import { publicProductCode } from "@/lib/product-code";
 export interface ShelfCode {
 	readonly code: string;
 	readonly productId: string;
+	/** The product's page, for a link to "the size you need" from another size of the same model. */
+	readonly slug: string;
 }
 
 const READ_ALL_LIMIT = 600;
@@ -46,7 +48,7 @@ export function shelfCodesFromNodes(nodes: readonly Node[]): ShelfCode[] {
 		// Exactly one variant, as the listing card requires before it names a code (`transformToProductCard`).
 		if (variants.length !== 1) continue;
 		const code = publicProductCode(variants[0]);
-		if (code) codes.push({ code, productId: node.id });
+		if (code) codes.push({ code, productId: node.id, slug: node.slug });
 	}
 	return codes;
 }

@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveTyreSelection } from "./selection";
 import { tyreSizeIndex } from "./size-index";
 import {
 	isKnownTyreSize,
+	isPlausibleTyreSize,
+	isRememberableTyreSize,
+	resolveTyreInput,
 	resolveTyreText,
-	tyreFit,
-	tyreFitViewOf,
 	tyreLabelFromSteps,
 	tyreSizeEntries,
 	tyreSizeKey,
@@ -124,131 +124,52 @@ describe("a size typed or copied is matched to the list's own label, never conve
 	});
 });
 
-describe("does this product fit this size", () => {
-	it("is a yes for a size the list holds for the code", () => {
-		const [code, product] = products[0];
-		const [label] = product.sizes[0];
-		const fit = tyreFit(code, label);
-		expect(fit?.kind).toBe("fits");
+describe("a size that is well-formed but not on the list is still the shopper's size", () => {
+	// A tyre that exists (an SUV on 21-inch rims) and that no snow chain of the list is made for.
+	it("is the fixture it claims to be: a plausible size the list does not hold", () => {
+		expect(labels).not.toContain("205/40 R21");
 	});
 
-	it("says which list the size comes from, and the condition the list attaches", () => {
-		const conditional = products.find(([, product]) => product.sizes.some(([, , key]) => key !== ""))!;
-		const [code, product] = conditional;
-		const [label, , key] = product.sizes.find(([, , conditionKey]) => conditionKey !== "")!;
-		const fit = tyreFit(code, label);
-		expect(fit).toMatchObject({ kind: "fits", size: label });
-		if (fit?.kind !== "fits") throw new Error("expected a fit");
-		expect(fit.condition?.key).toBe(key);
-		expect(fit.condition?.tyres.length).toBeGreaterThan(0);
-		expect(typeof fit.fromManufacturerList).toBe("boolean");
-
-		const plain = products.flatMap(([c, p]) => p.sizes.filter(([, , k]) => k === "").map(([l]) => [c, l]))[0];
-		expect(tyreFit(plain[0], plain[1])).toMatchObject({ kind: "fits", condition: null });
+	it("tells a listed size from a plausible one the list does not hold", () => {
+		expect(resolveTyreInput("205/55r16")).toEqual({ label: "205/55 R16", listed: true });
+		expect(resolveTyreInput("205/40 R21")).toEqual({ label: "205/40 R21", listed: false });
+		expect(resolveTyreInput("205/40R21 100V")).toEqual({ label: "205/40 R21", listed: false });
+		expect(resolveTyreInput("205 40 21")).toEqual({ label: "205/40 R21", listed: false });
 	});
 
-	it("tells the manufacturer's own list from the supplier's data", () => {
-		const bySource = (manufacturer: boolean) =>
-			products.find(([, product]) => /^manufacturer_list/.test(product.source) === manufacturer);
-		const manufacturer = bySource(true)!;
-		const supplier = bySource(false)!;
-		expect(tyreFit(manufacturer[0], manufacturer[1].sizes[0][0])).toMatchObject({
-			fromManufacturerList: true,
-		});
-		expect(tyreFit(supplier[0], supplier[1].sizes[0][0])).toMatchObject({ fromManufacturerList: false });
+	it("keeps the list's spelling for a listed size and the standard spelling for the rest", () => {
+		expect(resolveTyreInput("175r13")).toEqual({ label: "175 R13", listed: true });
+		expect(resolveTyreInput("4.00 - 12")).toEqual({ label: "4.00-12", listed: true });
 	});
 
-	it("is a no for a size the code's list does not hold, even when another code's does", () => {
-		const [code, product] = products[0];
-		const own = new Set(product.sizes.map(([label]) => label));
-		const foreign = labels.find((label) => !own.has(label))!;
-		expect(tyreFit(code, foreign)).toEqual({ kind: "no-fit", size: foreign });
-	});
-
-	it("has nothing to say when there is no size, or the code is not size-controlled", () => {
-		const [code, product] = products[0];
-		expect(tyreFit(code, null)).toBeNull();
-		expect(tyreFit(code, "")).toBeNull();
-		expect(tyreFit("THULE-123", product.sizes[0][0])).toBeNull();
-		expect(tyreFit(null, product.sizes[0][0])).toBeNull();
-		expect(tyreFit(undefined, product.sizes[0][0])).toBeNull();
-		expect(tyreFit("constructor", product.sizes[0][0])).toBeNull();
-	});
-
-	it("agrees with the add-to-cart check on EVERY size of EVERY code", () => {
-		for (const [code, product] of products) {
-			for (const [label, , key] of product.sizes) {
-				const fit = tyreFit(code, label);
-				expect(fit?.kind, `${code} ${label}`).toBe("fits");
-				// What the page would let a customer submit for this fit, the server accepts.
-				const accepted = resolveTyreSelection(code, {
-					mode: "size",
-					size: label,
-					conditionKey: fit?.kind === "fits" && fit.condition ? fit.condition.key : "",
-				});
-				expect(accepted.ok, `${code} ${label}`).toBe(true);
-				expect(fit?.kind === "fits" ? fit.condition?.key ?? "" : "?").toBe(key);
-			}
+	it("is no size when it is not a tyre's size at all", () => {
+		for (const text of ["", "   ", "nič", "205", "205/55", "R16", "x".repeat(200)]) {
+			expect(resolveTyreInput(text), JSON.stringify(text)).toBeNull();
 		}
-	});
-
-	it("is a no exactly where the add-to-cart check says the size is not the code's", () => {
-		for (const [code, product] of products.slice(0, 20)) {
-			const own = new Set(product.sizes.map(([label]) => label));
-			for (const label of labels.filter((candidate) => !own.has(candidate)).slice(0, 25)) {
-				expect(tyreFit(code, label)?.kind, `${code} ${label}`).toBe("no-fit");
-				expect(resolveTyreSelection(code, { mode: "size", size: label, conditionKey: "" })).toEqual({
-					ok: false,
-					refusal: "unknown-size",
-				});
-			}
+		// Outside the range of tyres that exist: width 125-395, profile 25-90, rim 10-24.
+		for (const text of ["205/55 R61", "999/55 R16", "205/99 R16", "205/10 R16", "205/55 R9", "100/55 R16"]) {
+			expect(resolveTyreInput(text), text).toBeNull();
 		}
-	});
-});
-
-describe("what the product page is told about a product", () => {
-	const [code, product] = products[0];
-	const size = product.sizes[0][0];
-
-	it("is nothing for a product that is not size-controlled, whatever the size", () => {
-		expect(tyreFitViewOf("A7604", size)).toBeNull();
-		expect(tyreFitViewOf("A7604", null)).toBeNull();
-		expect(tyreFitViewOf(null, size)).toBeNull();
-		expect(tyreFitViewOf(undefined, size)).toBeNull();
-		expect(tyreFitViewOf("constructor", size)).toBeNull();
+		for (const value of [undefined, null, 205, {}, ["205/55 R16"]])
+			expect(resolveTyreInput(value)).toBeNull();
 	});
 
-	it("is 'no size yet' for a size-controlled product when the shopper has told the shop nothing", () => {
-		expect(tyreFitViewOf(code, null)).toEqual({ kind: "no-size" });
-		expect(tyreFitViewOf(code, undefined)).toEqual({ kind: "no-size" });
-		expect(tyreFitViewOf(code, "")).toEqual({ kind: "no-size" });
+	it("says what may be remembered: a size of the list, or a well-formed one", () => {
+		expect(isRememberableTyreSize("205/55 R16")).toBe(true);
+		expect(isRememberableTyreSize("205/40 R21")).toBe(true);
+		expect(isRememberableTyreSize("175 R13")).toBe(true);
+		expect(isRememberableTyreSize("205/55 R61")).toBe(false);
+		expect(isRememberableTyreSize("205/55R16")).toBe(false);
+		expect(isRememberableTyreSize("")).toBe(false);
+		expect(isRememberableTyreSize(205)).toBe(false);
+		expect(isPlausibleTyreSize("205/40 R21")).toBe(true);
+		expect(isPlausibleTyreSize("175 R13")).toBe(false);
+		expect(isPlausibleTyreSize("4.00-12")).toBe(false);
 	});
 
-	it("is the verdict once a size is known", () => {
-		expect(tyreFitViewOf(code, size)).toEqual(tyreFit(code, size));
-		const own = new Set(product.sizes.map(([label]) => label));
-		const foreign = labels.find((label) => !own.has(label))!;
-		expect(tyreFitViewOf(code, foreign)).toEqual({ kind: "no-fit", size: foreign });
-	});
-
-	it("carries nothing internal into the page", () => {
-		for (const [productCode, one] of products) {
-			const text = JSON.stringify(tyreFitViewOf(productCode, one.sizes[0][0])).toLowerCase();
-			expect(text.includes("cfmp"), productCode).toBe(false);
-			expect(text.includes("tazar"), productCode).toBe(false);
-		}
-	});
-
-	it("names the conditions of a size in the shopper's terms: the direction and the tyres", () => {
-		expect(tyreFitViewOf("N16128", "215/60 R16")).toEqual({
-			kind: "fits",
-			size: "215/60 R16",
-			fromManufacturerList: true,
-			condition: { key: "c01", mode: "only", tyres: ["Bridgestone Duravis Rxxx"] },
-		});
-		expect(tyreFitViewOf("N16128", "195/75 R16")).toMatchObject({
-			condition: { key: "c10", mode: "not", tyres: ["Kleber", "Michelin", "Continental"] },
-		});
+	it("no plausible size is mistaken for a listed one", () => {
+		expect(isKnownTyreSize("205/40 R21")).toBe(false);
+		expect(tyreSizeEntries("205/40 R21")).toEqual([]);
 	});
 });
 

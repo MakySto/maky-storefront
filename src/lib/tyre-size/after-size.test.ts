@@ -6,9 +6,10 @@ const at = (pathname: string, size: string | null, search = "") =>
 	afterTyreSize({ pathname, channel: "sk-eur", search, size });
 
 describe("after the shopper gave a tyre size", () => {
-	it("leads from the market root to the snow-chain shelf narrowed to the size", () => {
-		expect(at("/sk", "205/55 R16")).toEqual({ kind: "push", path: "/sk/snehove-retaze?tyres=1" });
-		expect(at("/sk/", "205/55 R16")).toEqual({ kind: "push", path: "/sk/snehove-retaze?tyres=1" });
+	it("leads from the market root to the snow-chain shelf narrowed to the size, and carries the size in the link", () => {
+		const path = "/sk/snehove-retaze?tyres=1&tyreSize=205%2F55+R16";
+		expect(at("/sk", "205/55 R16")).toEqual({ kind: "push", path });
+		expect(at("/sk/", "205/55 R16")).toEqual({ kind: "push", path });
 	});
 
 	it("does not lead anywhere when the size was forgotten, or from a market that does not sell the shelf", () => {

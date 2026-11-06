@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon, TriangleAlertIcon, XIcon } from "lucide-react";
+import { CheckIcon, CircleHelpIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
@@ -24,10 +24,7 @@ import { TONE_CLASSES } from "@/ui/components/fitment/verdict-presentation";
 const LOOK: Record<TyreCardFitKind, { tone: string; icon: typeof CheckIcon }> = {
 	fits: { tone: cn("rounded-xs px-2 py-1", TONE_CLASSES.fits), icon: CheckIcon },
 	"fits-supplier": { tone: cn("rounded-xs px-2 py-1", TONE_CLASSES.unconfirmed), icon: TriangleAlertIcon },
-	"fits-with-condition": {
-		tone: cn("rounded-xs px-2 py-1", TONE_CLASSES.unconfirmed),
-		icon: TriangleAlertIcon,
-	},
+	ask: { tone: cn("rounded-xs px-2 py-1", TONE_CLASSES.unconfirmed), icon: CircleHelpIcon },
 	"no-fit": { tone: "rounded-xs px-2 py-1 text-text-tertiary", icon: XIcon },
 };
 
@@ -37,11 +34,11 @@ export function TyreFitLine({ fit, className }: { fit: TyreCardFit; className?: 
 	const label =
 		fit.kind === "no-fit"
 			? t("fitNoFitTitle", { size: fit.size })
-			: fit.kind === "fits-with-condition"
-				? t("fitConditionTitle")
+			: fit.kind === "ask"
+				? t("cardAsk")
 				: fit.kind === "fits-supplier"
-					? t("fitSupplierTitle")
-					: t("fitFitsTitle");
+					? t("fitSupplierTitle", { size: fit.size })
+					: t("fitFitsTitle", { size: fit.size });
 
 	return (
 		<p

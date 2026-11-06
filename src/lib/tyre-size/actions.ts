@@ -10,15 +10,26 @@
 
 import { cookies } from "next/headers";
 
-import { encodeTyreMemory, TYRE_MEMORY_COOKIE, TYRE_MEMORY_MAX_AGE } from "./memory";
-import { readRememberedTyreSize } from "./remembered";
 import {
-	isKnownTyreSize,
-	resolveTyreText,
+	encodeTyreMemory,
+	hasOwnEntry,
+	isEmptyTyreMemory,
+	TYRE_MEMORY_COOKIE,
+	TYRE_MEMORY_MAX_AGE,
+	withEntry,
+	entryFor,
+} from "./memory";
+import { isAnswerTo, tyreQuestionOf } from "./questions";
+import { readRememberedTyre, readTyreMemory, validAnswers } from "./remembered";
+import { tyreSizeIndex } from "./size-index";
+import {
+	isRememberableTyreSize,
+	resolveTyreInput,
 	tyreLabelFromSteps,
 	tyreSteps,
 	type TyreSteps,
 } from "./size-lookup";
+import { readActiveVehicleKey } from "./vehicle-context";
 
 export type TyreStepInput = {
 	/** What the shopper typed or pasted. Matched to the list, never converted. */
@@ -30,12 +41,16 @@ export type TyreStepInput = {
 };
 
 export type TyreStepResult = {
-	/** The size already remembered, as the list spells it. */
+	/** The size already remembered for the car in use, as the list spells it. */
 	current: string | null;
+	/** A car is in use: the size the shopper gives now is remembered for it. */
+	vehicleInUse: boolean;
 	steps: TyreSteps;
-	/** The list's size the input names, or null. */
+	/** The size the input names, or null. */
 	match: string | null;
-	/** Something was typed and the list holds no such size. */
+	/** `match` is a size the shop's lists hold. False for a well-formed size they do not: it is remembered, not verified. */
+	listed: boolean;
+	/** Something was typed and it is no size at all. */
 	unknownText: boolean;
 };
 
@@ -48,18 +63,27 @@ const wholeNumber = (value: unknown): number | undefined =>
  * vehicle selector's steps.
  */
 export async function loadTyreStep(input: TyreStepInput = {}): Promise<TyreStepResult> {
-	const current = await readRememberedTyreSize();
+	const [remembered, vehicleKey] = await Promise.all([readRememberedTyre(), readActiveVehicleKey()]);
+	const current = remembered?.size ?? null;
+	const vehicleInUse = vehicleKey !== null;
 	const width = wholeNumber(input.width);
 	const profile = wholeNumber(input.profile);
 	const steps = tyreSteps(width, width === undefined ? undefined : profile);
 
 	if (typeof input.text === "string" && input.text.trim() !== "") {
-		const match = resolveTyreText(input.text);
-		return { current, steps, match, unknownText: match === null };
+		const resolved = resolveTyreInput(input.text);
+		return {
+			current,
+			vehicleInUse,
+			steps,
+			match: resolved?.label ?? null,
+			listed: resolved?.listed ?? false,
+			unknownText: resolved === null,
+		};
 	}
 
 	const match = tyreLabelFromSteps(width, profile, input.rim);
-	return { current, steps, match, unknownText: false };
+	return { current, vehicleInUse, steps, match, listed: match !== null, unknownText: false };
 }
 
 export type RememberTyreResult =
@@ -81,23 +105,73 @@ function cookieOptions() {
 	};
 }
 
-/** Remember this size: the list's own label, exactly. A size the list does not hold is refused, not stored. */
-export async function rememberTyreSize(size: unknown): Promise<RememberTyreResult> {
-	if (!isKnownTyreSize(size)) return { ok: false, error: "unknown-size" };
+type Memory = Awaited<ReturnType<typeof readTyreMemory>>;
+
+async function write(memory: Memory): Promise<boolean> {
 	try {
-		(await cookies()).set(TYRE_MEMORY_COOKIE, encodeTyreMemory(size), cookieOptions());
+		const jar = await cookies();
+		if (isEmptyTyreMemory(memory)) jar.delete(TYRE_MEMORY_COOKIE);
+		else jar.set(TYRE_MEMORY_COOKIE, encodeTyreMemory(memory), cookieOptions());
+		return true;
 	} catch {
-		return { ok: false, error: "write-failed" };
+		return false;
 	}
-	return { ok: true, size };
 }
 
-/** Forget the size: the shopper takes it back, and every page stops narrowing by it. */
+/**
+ * Remember this size for the car in use (or for no car, when none is): a size of the list, exactly, or a well-formed
+ * size the list does not hold. Anything else is refused, not stored. A new size starts without answers: they were
+ * about the old tyres.
+ */
+export async function rememberTyreSize(size: unknown): Promise<RememberTyreResult> {
+	if (!isRememberableTyreSize(size)) return { ok: false, error: "unknown-size" };
+	const [memory, vehicleKey] = await Promise.all([readTyreMemory(), readActiveVehicleKey()]);
+	const existing = entryFor(memory, vehicleKey);
+	// The same size again keeps what was said about it.
+	const answers = existing?.size === size && hasOwnEntry(memory, vehicleKey) ? existing.answers : {};
+	const ok = await write(withEntry(memory, vehicleKey, { size, answers }));
+	return ok ? { ok: true, size } : { ok: false, error: "write-failed" };
+}
+
+export type RememberAnswerResult =
+	| { ok: true }
+	| { ok: false; error: "no-size" | "not-an-answer" | "write-failed" };
+
+/**
+ * Remember what the shopper said about their tyres in answer to a question of the list. Refused when there is no size
+ * to hang it on, or when it is not an answer to a question the list asks (everything a client sends is attacker-shaped).
+ */
+export async function rememberTyreAnswer(
+	questionKey: unknown,
+	answer: unknown,
+): Promise<RememberAnswerResult> {
+	const question =
+		typeof questionKey === "string"
+			? Object.values(tyreSizeIndex().conditions)
+					.map(tyreQuestionOf)
+					.find((candidate) => candidate.key === questionKey)
+			: undefined;
+	if (!question || !isAnswerTo(question, answer)) return { ok: false, error: "not-an-answer" };
+
+	const [memory, vehicleKey, remembered] = await Promise.all([
+		readTyreMemory(),
+		readActiveVehicleKey(),
+		readRememberedTyre(),
+	]);
+	if (!remembered) return { ok: false, error: "no-size" };
+	// The answer is about the tyres the shopper is looking at: it is written into that car's entry, and when that
+	// entry is only borrowed (the size was given with no car), into a copy of it for this car.
+	const answers = { ...validAnswers(entryFor(memory, vehicleKey)?.answers ?? {}), [question.key]: answer };
+	const ok = await write(withEntry(memory, vehicleKey, { size: remembered.size, answers }));
+	return ok ? { ok: true } : { ok: false, error: "write-failed" };
+}
+
+/** Forget the size for the car in use: the shopper takes it back, and every page stops narrowing by it. */
 export async function forgetTyreSize(): Promise<{ ok: boolean }> {
-	try {
-		(await cookies()).delete(TYRE_MEMORY_COOKIE);
-		return { ok: true };
-	} catch {
-		return { ok: false };
-	}
+	const [memory, vehicleKey] = await Promise.all([readTyreMemory(), readActiveVehicleKey()]);
+	// With a car in use, "forget" removes what was said for it and, when that is only the borrowed one, the free size.
+	const own = hasOwnEntry(memory, vehicleKey);
+	const next =
+		own || vehicleKey === null ? withEntry(memory, vehicleKey, null) : withEntry(memory, null, null);
+	return { ok: await write(next) };
 }

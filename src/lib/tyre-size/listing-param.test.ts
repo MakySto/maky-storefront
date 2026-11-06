@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { searchAfterTyreChange, tyreFilterHref, tyreFilterRequestOf } from "./listing-param";
+import { searchAfterTyreChange, tyreFilterHref, tyreFilterRequestOf, tyreSizeParamOf } from "./listing-param";
 
 describe("what the URL asks of a snow-chain listing", () => {
 	it("reads the three answers", () => {
@@ -15,6 +15,42 @@ describe("what the URL asks of a snow-chain listing", () => {
 		expect(tyreFilterRequestOf("yes")).toBe("default");
 		expect(tyreFilterRequestOf("")).toBe("default");
 		expect(tyreFilterRequestOf([])).toBe("default");
+	});
+});
+
+describe("the size a link carries", () => {
+	it("reads the text of ?tyreSize=, the first of a repeated one, and leaves matching it to the reader", () => {
+		expect(tyreSizeParamOf("205/55 R16")).toBe("205/55 R16");
+		expect(tyreSizeParamOf(["205/55 R16", "175 R13"])).toBe("205/55 R16");
+		expect(tyreSizeParamOf("205/55r16")).toBe("205/55r16");
+	});
+
+	it("reads nothing, an empty value or an absurdly long one as no size", () => {
+		expect(tyreSizeParamOf(undefined)).toBeUndefined();
+		expect(tyreSizeParamOf("")).toBeUndefined();
+		expect(tyreSizeParamOf("   ")).toBeUndefined();
+		expect(tyreSizeParamOf([])).toBeUndefined();
+		expect(tyreSizeParamOf("x".repeat(41))).toBeUndefined();
+	});
+
+	it("is put in the link when the link is about one size, and replaces an older one", () => {
+		const href = tyreFilterHref(
+			"/snehove-retaze",
+			{ tyreSize: "175 R13", sort: "price_asc" },
+			true,
+			"205/55 R16",
+		);
+		const query = new URLSearchParams(href.split("?")[1]);
+		expect(query.get("tyreSize")).toBe("205/55 R16");
+		expect(query.getAll("tyreSize")).toHaveLength(1);
+		expect(query.get("sort")).toBe("price_asc");
+		expect(href).toContain("tyreSize=205%2F55+R16");
+	});
+
+	it("is left out when the link is not about a size, and an old one is not carried into 'all chains'", () => {
+		expect(tyreFilterHref("/snehove-retaze", {}, true)).toBe("/snehove-retaze?tyres=1");
+		expect(tyreFilterHref("/snehove-retaze", { tyreSize: "175 R13" }, false)).toBe("/snehove-retaze?tyres=0");
+		expect(tyreFilterHref("/snehove-retaze", {}, true, null)).toBe("/snehove-retaze?tyres=1");
 	});
 });
 
@@ -53,6 +89,11 @@ describe("after the shopper changed their size without leaving the page", () => 
 		expect(searchAfterTyreChange("?tyres=0")).toBe("");
 		expect(searchAfterTyreChange("?tyres=1")).toBe("");
 		expect(searchAfterTyreChange("cursor=abc")).toBe("");
+	});
+
+	it("drops the size the link carried: it was the old size", () => {
+		expect(searchAfterTyreChange("?tyres=1&tyreSize=175+R13&sort=price_asc")).toBe("?sort=price_asc");
+		expect(searchAfterTyreChange("?tyreSize=175+R13")).toBe("");
 	});
 
 	it("is null when there was nothing to drop, so the page re-renders in place instead of navigating to itself", () => {

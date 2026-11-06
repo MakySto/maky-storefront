@@ -1,7 +1,6 @@
 import "server-only";
 
-import { isManufacturerListSource, tyreSizeIndex, tyreSizeProduct } from "./size-index";
-import type { TyreFit, TyreFitView } from "./types";
+import { tyreSizeIndex } from "./size-index";
 
 /**
  * The tyre-size list seen from the size's side.
@@ -146,45 +145,51 @@ export function resolveTyreText(text: unknown): string | null {
 	return null;
 }
 
+/**
+ * A size no list holds, but a well-formed one: the shop can match nothing to it and so cannot verify it. The limits are
+ * those of tyres that exist (width 125-395 mm, profile 25-90 %, rim 10-24"), so a mistyped "205/55 R61" is no size.
+ */
+function plausibleStandardLabel(width: number, profile: number, rim: number): string | null {
+	return width >= 125 && width <= 395 && profile >= 25 && profile <= 90 && rim >= 10 && rim <= 24
+		? `${width}/${profile} R${rim}`
+		: null;
+}
+
+/** Is this label a well-formed standard size (`205/55 R16`) in the range of tyres that exist? */
+export function isPlausibleTyreSize(size: unknown): size is string {
+	if (typeof size !== "string") return false;
+	const match = STANDARD_LABEL.exec(size);
+	return (
+		match !== null && plausibleStandardLabel(Number(match[1]), Number(match[2]), Number(match[3])) === size
+	);
+}
+
+/** Can the shop remember this as the shopper's size: a size of the list, or a well-formed one the list does not hold? */
+export const isRememberableTyreSize = (size: unknown): size is string =>
+	isKnownTyreSize(size) || isPlausibleTyreSize(size);
+
+/**
+ * What a shopper typed, matched to the list's own label (`listed`), or, failing that, read as a well-formed standard
+ * size the list does not hold (`unlisted`: remembered, but the shop says it cannot verify it). `null` is no size at all.
+ *
+ * Whether the shop SELLS something for a size and whether the size is a real size are two different questions: a
+ * customer with 255/40 R19 has a perfectly good tyre, and "we do not know that size" would be an insult.
+ */
+export function resolveTyreInput(text: unknown): { label: string; listed: boolean } | null {
+	const listed = resolveTyreText(text);
+	if (listed !== null) return { label: listed, listed: true };
+	if (typeof text !== "string") return null;
+	const cleaned = text.normalize("NFKC").trim();
+	if (cleaned === "" || cleaned.length > 40) return null;
+	const spelled = STANDARD_TEXT.exec(cleaned);
+	if (!spelled) return null;
+	const label = plausibleStandardLabel(Number(spelled[1]), Number(spelled[2]), Number(spelled[3]));
+	return label === null ? null : { label, listed: false };
+}
+
 /** The codes whose list holds this size (ascending), with the condition each attaches. Empty for an unknown size. */
 export function tyreSizeEntries(size: string): readonly SizeEntry[] {
 	return build().bySize.get(size) ?? [];
-}
-
-export type { TyreFit };
-
-/**
- * Does the product with this public code fit this size? `null` when the code is not one of the size-controlled
- * products, or no size is known: there is nothing to say about those, and nothing is said.
- */
-export function tyreFit(code: string | null | undefined, size: string | null | undefined): TyreFit | null {
-	if (typeof size !== "string" || size === "") return null;
-	const product = tyreSizeProduct(code);
-	if (!product) return null;
-
-	const row = product.sizes.find(([label]) => label === size);
-	if (!row) return { kind: "no-fit", size };
-
-	const conditionKey = row[2];
-	const listed = conditionKey === "" ? null : tyreSizeIndex().conditions[conditionKey];
-	return {
-		kind: "fits",
-		size,
-		fromManufacturerList: isManufacturerListSource(product.source),
-		condition: listed ? { key: conditionKey, mode: listed.mode, tyres: [...listed.tyres] } : null,
-	};
-}
-
-/**
- * What the product page needs for one product: `null` when it is not size-controlled (the page says nothing about
- * tyres), `no-size` when it is and the shopper has not told the shop a size, the verdict otherwise.
- */
-export function tyreFitViewOf(
-	code: string | null | undefined,
-	size: string | null | undefined,
-): TyreFitView | null {
-	if (!tyreSizeProduct(code)) return null;
-	return tyreFit(code, size) ?? { kind: "no-size" };
 }
 
 export interface TyreSteps {

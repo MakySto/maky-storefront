@@ -50,7 +50,7 @@ export function afterTyreSize({
 	if (segments.length === 1) {
 		if (size === null || !TYRE_SHELF_MARKETS.has(market)) return { kind: "refresh" };
 		const shelf = categoryUrlFor(channel ?? market, TYRE_SHELF_SLUG);
-		return { kind: "push", path: `/${market}${tyreFilterHref(shelf, {}, true)}` };
+		return { kind: "push", path: `/${market}${tyreFilterHref(shelf, {}, true, size)}` };
 	}
 
 	if (`/${segments.slice(1).join("/")}` === categoryUrlFor(channel ?? market, TYRE_SHELF_SLUG)) {

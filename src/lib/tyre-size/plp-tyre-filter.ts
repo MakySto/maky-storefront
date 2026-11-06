@@ -4,9 +4,10 @@ import { saleorSlugFor } from "@/config/category-routes";
 import { isTyreShelf } from "@/config/tyre-shelves";
 import { NO_PRODUCTS_SENTINEL_ID } from "@/lib/fitment/plp-vehicle-filter";
 import { getShelfCodes } from "@/lib/listing/shelf-codes";
+import { fittingCodes, type TyreAnswers } from "./choice";
 import type { TyreFilterRequest } from "./listing-param";
-import { readRememberedTyreSize } from "./remembered";
-import { tyreSizeEntries } from "./size-lookup";
+import { readRememberedTyre } from "./remembered";
+import { isKnownTyreSize, resolveTyreInput } from "./size-lookup";
 
 /**
  * "Show me only what fits my tyres" on the snow-chain listing.
@@ -29,7 +30,7 @@ import { tyreSizeEntries } from "./size-lookup";
  *   - **It only answers for the shelf the sizes belong to** (`config/tyre-shelves`). Anywhere else there is no
  *     question to ask and nothing to say.
  *   - **It does not guess when the shop cannot be asked.** If the shop's list of products cannot be read the listing is
- *     NOT narrowed and the filter says nothing: an empty or short list is a claim that nothing else fits, and that is
+ *     NOT narrowed and the control says so, with the size kept: an empty or short list is a claim that nothing else fits, and that is
  *     the one thing not known then. The cards still carry their own verdicts (`card-fit`).
  *   - **It names what is on sale and nothing else.** The ids come from what Saleor lists in this channel, so a hidden,
  *     unpublished or unavailable product is not in the narrowed list, and "not on sale" needs no state of its own.
@@ -40,54 +41,83 @@ export type TyreListingFilter =
 	/** Not the shelf the tyre sizes belong to. The listing shows nothing about tyres. */
 	| { state: "out-of-scope" }
 	/**
-	 * The shop's products could not be read (`size`: the remembered size, when it was read first). The listing is NOT
-	 * narrowed and nothing is said about narrowing; the cards still carry their own verdicts for `size`.
+	 * The shop's products could not be read (`size`: the size the page is about, when it was read first). The listing is
+	 * NOT narrowed; the control keeps the size and says so, because a shopper who gave one must not wonder why nothing
+	 * happened. The cards still carry their own verdicts for `size`.
 	 */
-	| { state: "unavailable"; size: string | null }
-	/** No size remembered. The listing is NOT narrowed; `requested` says the shopper asked for the narrowed list. */
+	| { state: "unavailable"; size: string | null; answers: TyreAnswers }
+	/** No size known. The listing is NOT narrowed; `requested` says the shopper asked for the narrowed list. */
 	| { state: "no-size"; requested: boolean }
 	/**
 	 * A size, and the listing is NOT narrowed. `all`: the shopper chose all chains. `none-fit`: nothing the shop lists
-	 * fits this size, so the shelf stays whole instead of ending in a panel nobody asked for.
+	 * fits this size, so the shelf stays whole instead of ending in a panel nobody asked for. `unlisted`: the size is a
+	 * well-formed one no list holds, so the shop cannot say what fits it, which is not "nothing fits".
 	 */
-	| { state: "offered"; size: string; reason: "all" | "none-fit" }
+	| { state: "offered"; size: string; reason: "all" | "none-fit" | "unlisted"; answers: TyreAnswers }
 	/** Asked for and answered: nothing the shop lists fits this size. */
-	| { state: "empty"; size: string }
-	/** Narrowed to the products whose list holds this size. `productIds` is non-empty by construction. */
-	| { state: "active"; size: string; productIds: string[] };
+	| { state: "empty"; size: string; answers: TyreAnswers }
+	/**
+	 * Narrowed to the products that fit this size, plus those that fit it depending on an answer about the tyres the
+	 * shopper has not given (their cards say to ask). `productIds` is non-empty by construction.
+	 */
+	| { state: "active"; size: string; productIds: string[]; answers: TyreAnswers };
 
 export type TyreListingScope = { categorySlug?: string; channel: string };
+
+/**
+ * The size the page is about and what the shopper said about their tyres.
+ *
+ * A link may carry its own size (`?tyreSize=`): it then shows the list for THAT size to whoever opens it. The answers
+ * about the tyres belong to the shopper's own size, so they are used only when the two are the same.
+ */
+async function sizeOfPage(
+	urlSize: string | undefined,
+): Promise<{ size: string; answers: TyreAnswers } | null> {
+	const remembered = await readRememberedTyre();
+	const fromLink = urlSize === undefined ? null : resolveTyreInput(urlSize)?.label ?? null;
+	if (fromLink !== null) {
+		return { size: fromLink, answers: remembered?.size === fromLink ? remembered.answers : {} };
+	}
+	return remembered ? { size: remembered.size, answers: remembered.answers } : null;
+}
 
 export async function resolveTyreListingFilter(
 	request: TyreFilterRequest,
 	scope: TyreListingScope,
+	urlSize?: string,
 ): Promise<TyreListingFilter> {
 	try {
 		const baseSlug = scope.categorySlug;
 		if (!baseSlug || !isTyreShelf(baseSlug)) return { state: "out-of-scope" };
 
-		const size = await readRememberedTyreSize();
-		if (!size) return { state: "no-size", requested: request === "tyres" };
+		const page = await sizeOfPage(urlSize);
+		if (!page) return { state: "no-size", requested: request === "tyres" };
+		const { size, answers } = page;
 
 		// `?tyres=0` is the shopper's own word and nothing below may override it.
-		if (request === "all") return { state: "offered", size, reason: "all" };
+		if (request === "all") return { state: "offered", size, reason: "all", answers };
+		// A size no list holds cannot be narrowed by: the shop cannot say what fits it, and says so.
+		if (!isKnownTyreSize(size)) return { state: "offered", size, reason: "unlisted", answers };
 		// A DEFAULT answer that is not a list must not be a dead end the shopper never asked for: it leaves the shelf
 		// whole and says so. The same answer to an explicit `?tyres=1` keeps its own panel.
 		const byDefault = request === "default";
 
 		const codes = await getShelfCodes(saleorSlugFor(baseSlug), scope.channel);
-		if (!codes) return { state: "unavailable", size };
+		if (!codes) return { state: "unavailable", size, answers };
 
-		const fitting = new Set(tyreSizeEntries(size).map((entry) => entry.code));
+		const fitting = fittingCodes(size, answers);
 		// De-duplicated: the same product is on the map once, but a code is not promised to be unique.
 		const productIds = [...new Set(codes.filter(({ code }) => fitting.has(code)).map((c) => c.productId))];
 		if (productIds.length === 0) {
-			return byDefault ? { state: "offered", size, reason: "none-fit" } : { state: "empty", size };
+			return byDefault
+				? { state: "offered", size, reason: "none-fit", answers }
+				: { state: "empty", size, answers };
 		}
-		return { state: "active", size, productIds };
+		return { state: "active", size, productIds, answers };
 	} catch (error) {
 		console.error("[tyres] listing filter failed:", error);
-		return { state: "unavailable", size: await readRememberedTyreSize().catch(() => null) };
+		const page = await sizeOfPage(urlSize).catch(() => null);
+		return { state: "unavailable", size: page?.size ?? null, answers: page?.answers ?? {} };
 	}
 }
 
@@ -103,7 +133,12 @@ export function tyreFilterIds(filter: TyreListingFilter): string[] | undefined {
 	return undefined;
 }
 
-/** The size the shopper gave, when this filter knows it — what the cards' verdicts are about. */
+/** The size the page is about, when this filter knows it: what the cards' verdicts are about. */
 export function tyreFilterSize(filter: TyreListingFilter): string | null {
 	return "size" in filter ? filter.size : null;
+}
+
+/** What the shopper said about their tyres, for the cards' verdicts. */
+export function tyreFilterAnswers(filter: TyreListingFilter): TyreAnswers {
+	return "answers" in filter ? filter.answers : {};
 }
