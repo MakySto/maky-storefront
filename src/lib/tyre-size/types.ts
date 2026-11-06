@@ -59,7 +59,15 @@ export type TyreSelection =
 			readonly mode: "size";
 			readonly size: string;
 			readonly rim: string;
-			readonly condition: { readonly mode: TyreConditionMode; readonly tyres: readonly string[] } | null;
+			/**
+			 * The condition the list attaches to this size, and what the shopper said about their tyres (`answer`: the
+			 * make or model from the condition they have, or `NO_MATCH_ANSWER` for "none of those").
+			 */
+			readonly condition: {
+				readonly mode: TyreConditionMode;
+				readonly tyres: readonly string[];
+				readonly answer: string;
+			} | null;
 			/** Key of the list's source for this code (the manufacturer's list, or the previous shop's card). */
 			readonly basis: string;
 			readonly listId: string;
@@ -68,7 +76,7 @@ export type TyreSelection =
 
 /** What a client sends about the choice, before any check. Every field is attacker-shaped. */
 export type TyreSelectionInput =
-	| { readonly mode: "size"; readonly size: string; readonly conditionKey: string }
+	| { readonly mode: "size"; readonly size: string; readonly answer: string }
 	| { readonly mode: "code" };
 
 /** Why a choice was not accepted. Each one is a different sentence to the customer. */
@@ -77,30 +85,81 @@ export type TyreRefusal =
 	| "required"
 	/** The size is not in the list of this code. */
 	| "unknown-size"
-	/** The size carries a condition the customer has not acknowledged. */
+	/** The size carries a condition on the tyre and the customer has not said which tyres they have. */
 	| "condition-required"
-	/** The acknowledged condition is not the one the list attaches to this size. */
+	/** What the customer said about their tyres rules this code out for the size (or is not an answer to its question). */
 	| "condition-mismatch";
 
-/** The picker's data for one code: serialisable, small (at most a few hundred rows), nothing internal. */
-export interface TyrePickerData {
-	readonly code: string;
-	/**
-	 * True when the sizes are the manufacturer's own list; false when they are the supplier's data from the previous
-	 * shop's cards. The page says which in the customer's language; the list's own label is Slovak and stays out.
-	 */
-	readonly fromManufacturerList: boolean;
-	readonly rims: readonly { readonly rim: string; readonly sizes: readonly TyrePickerSize[] }[];
-	/** Only the conditions this code uses. */
-	readonly conditions: Readonly<
-		Record<string, { readonly mode: TyreConditionMode; readonly tyres: readonly string[] }>
-	>;
+/**
+ * The question a size's condition asks: which make (or model) of tyre do you have? The same question serves the
+ * code that fits only on those tyres and the code that fits on any other, so the answer picks between them.
+ */
+export interface TyreQuestion {
+	/** Stable id: the tyres, sorted, joined. The cookie keys the shopper's answer by it. */
+	readonly key: string;
+	/** `make` when the list names makes ("Michelin"), `model` when it names a model ("Michelin Alpin"). */
+	readonly subject: "make" | "model";
+	/** What the shopper may say they have, as the list writes it. "None of these" is always offered besides. */
+	readonly options: readonly string[];
 }
 
-export interface TyrePickerSize {
-	readonly label: string;
-	/** Key into `TyrePickerData.conditions`, or "" when the size carries none. */
-	readonly conditionKey: string;
+/** A chain of the same model family that does fit the size, when this one does not. */
+export interface TyreAlternative {
+	readonly code: string;
+	/** The physical size as the family names it ("22,5"); the code when the family has no name for it. */
+	readonly sizeLabel: string;
+	/** Where it is sold, or `null` when the shop does not list it (yet): the page then says so and does not link. */
+	readonly href: string | null;
+}
+
+/**
+ * What the product page knows about this product and the size the shopper gave (`choice.ts` answers it from the
+ * list; the page draws it). Client-safe on purpose: the page hands this small object to the browser, never the list.
+ *
+ * Five different things, because "no" is not one answer:
+ *   `no-size`   nothing asked yet.
+ *   `unlisted`  the size is a well-formed one that no list holds: the shop CANNOT VERIFY it, which is not "it does not fit".
+ *   `fits`      the list holds the size for this code (with the shopper's answer when the list attaches a tyre condition).
+ *   `ask`       the list holds the size for this code only on certain tyres: one question decides it.
+ *   `other`     this code does not fit, a code of the same model family does.
+ *   `no-fit`    nothing of this family fits.
+ *
+ * `elsewhere` (on `other` and `no-fit`) says whether the shopper can still find a chain for this size: in the lists it
+ * is true whenever some code holds the size, and the page narrows it to what the shop actually sells
+ * (`withPublishedOffer`), so that "see the chains that fit" is never promised for a list the shop does not offer.
+ */
+export type TyreFitView =
+	| { readonly kind: "no-size" }
+	| { readonly kind: "unlisted"; readonly size: string }
+	| {
+			readonly kind: "fits";
+			readonly size: string;
+			/** The manufacturer's own list, or the supplier's data from the previous shop's card. */
+			readonly fromManufacturerList: boolean;
+			/** What the shopper said about their tyres when the list asked, else `null`. */
+			readonly answer: string | null;
+			/** The question the list asked, when it asked one (and the answer decided), else `null`. */
+			readonly question: TyreQuestion | null;
+	  }
+	| { readonly kind: "ask"; readonly size: string; readonly question: TyreQuestion }
+	| {
+			readonly kind: "other";
+			readonly size: string;
+			readonly alternatives: readonly TyreAlternative[];
+			readonly elsewhere: boolean;
+	  }
+	| { readonly kind: "no-fit"; readonly size: string; readonly elsewhere: boolean };
+
+/**
+ * How a LISTING CARD speaks of the shopper's tyre size: the product page's verdicts, in one word each. `fits` is the
+ * manufacturer's list (with the shopper's answer when it asked one), `fits-supplier` the supplier's data from the
+ * previous shop's card, `ask` a size that fits only on certain tyres and the shopper has not said which they have.
+ */
+export type TyreCardFitKind = "fits" | "fits-supplier" | "ask" | "no-fit";
+
+export interface TyreCardFit {
+	readonly size: string;
+	readonly kind: TyreCardFitKind;
 }
 
 /** What a cart or order line says about the choice, read back from its public metadata. */
@@ -108,6 +167,11 @@ export type TyreLineChoice =
 	| {
 			readonly mode: "size";
 			readonly size: string;
-			readonly condition: { readonly mode: TyreConditionMode; readonly tyres: readonly string[] } | null;
+			readonly condition: {
+				readonly mode: TyreConditionMode;
+				readonly tyres: readonly string[];
+				/** What the shopper said they have; `""` on a line written before the answer was recorded. */
+				readonly answer: string;
+			} | null;
 	  }
 	| { readonly mode: "code" };

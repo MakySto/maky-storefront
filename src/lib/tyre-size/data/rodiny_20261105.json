@@ -1,0 +1,647 @@
+{
+	"schema": "maky.tyre-families/1",
+	"id": "snehove-retaze-20261105",
+	"origin": {
+		"batch": "snehove_retaze_produkty_20261105",
+		"batch_file_sha256": "ec31a5760f9bd8ec500f6757c609b09063d162486b86ebf69750e5f7921080b2",
+		"batch_self_sha256": "d527c98d5258781150ce880c19438804412be010bceeb6246a548713dd677b5e",
+		"producer": "scripts/ops/build-tyre-families.mjs"
+	},
+	"families": {
+		"dac-active": {
+			"label": "DAC Active Series",
+			"kind": "sock"
+		},
+		"dac-blue-ice": {
+			"label": "DAC Blue ICE",
+			"kind": "chain"
+		},
+		"dac-easy-go": {
+			"label": "DAC Easy GO",
+			"kind": "sock"
+		},
+		"dac-oto-top-16": {
+			"label": "DAC oto TOP 16 mm",
+			"kind": "chain"
+		},
+		"dac-super-x": {
+			"label": "DAC Maranello Super X",
+			"kind": "sock"
+		},
+		"gran-pree-ponozky": {
+			"label": "Gran Pree textilné ponožky",
+			"kind": "sock"
+		},
+		"menabo-snow-socks": {
+			"label": "Menabo Snow Socks",
+			"kind": "sock"
+		},
+		"snowdrive-nx7": {
+			"label": "SnowDrive Hybrid NX-7",
+			"kind": "chain"
+		},
+		"snowdrive-pilot-pro": {
+			"label": "SnowDrive Pilot-Pro",
+			"kind": "chain"
+		},
+		"snowdrive-ponozky": {
+			"label": "SnowDrive textilné ponožky",
+			"kind": "sock"
+		},
+		"snowdrive-r9": {
+			"label": "SnowDrive R-9",
+			"kind": "chain"
+		},
+		"snowdrive-s16": {
+			"label": "SnowDrive S-16",
+			"kind": "chain"
+		},
+		"snowdrive-wx9": {
+			"label": "SnowDrive WX-9",
+			"kind": "chain"
+		}
+	},
+	"products": {
+		"D0190": {
+			"family": "dac-oto-top-16",
+			"size": "190"
+		},
+		"D0200": {
+			"family": "dac-oto-top-16",
+			"size": "200"
+		},
+		"D0210": {
+			"family": "dac-oto-top-16",
+			"size": "210"
+		},
+		"D0220": {
+			"family": "dac-oto-top-16",
+			"size": "220"
+		},
+		"D0225": {
+			"family": "dac-oto-top-16",
+			"size": "225"
+		},
+		"D0230": {
+			"family": "dac-oto-top-16",
+			"size": "230"
+		},
+		"D0240": {
+			"family": "dac-oto-top-16",
+			"size": "240"
+		},
+		"D0245": {
+			"family": "dac-oto-top-16",
+			"size": "245"
+		},
+		"D0247": {
+			"family": "dac-oto-top-16",
+			"size": "247"
+		},
+		"D0250": {
+			"family": "dac-oto-top-16",
+			"size": "250"
+		},
+		"D0255": {
+			"family": "dac-oto-top-16",
+			"size": "255"
+		},
+		"D0260": {
+			"family": "dac-oto-top-16",
+			"size": "260"
+		},
+		"D0265": {
+			"family": "dac-oto-top-16",
+			"size": "265"
+		},
+		"D0270": {
+			"family": "dac-oto-top-16",
+			"size": "270"
+		},
+		"D0275": {
+			"family": "dac-oto-top-16",
+			"size": "275"
+		},
+		"D1738": {
+			"family": "dac-blue-ice",
+			"size": "MIS.100"
+		},
+		"D1739": {
+			"family": "dac-blue-ice",
+			"size": "MIS.110"
+		},
+		"D1740": {
+			"family": "dac-blue-ice",
+			"size": "MIS.120"
+		},
+		"D1741": {
+			"family": "dac-blue-ice",
+			"size": "MIS.130"
+		},
+		"D1742": {
+			"family": "dac-blue-ice",
+			"size": "MIS.20"
+		},
+		"D1743": {
+			"family": "dac-blue-ice",
+			"size": "MIS.30"
+		},
+		"D1744": {
+			"family": "dac-blue-ice",
+			"size": "MIS.40"
+		},
+		"D1745": {
+			"family": "dac-blue-ice",
+			"size": "MIS.50"
+		},
+		"D1746": {
+			"family": "dac-blue-ice",
+			"size": "MIS.60"
+		},
+		"D1747": {
+			"family": "dac-blue-ice",
+			"size": "MIS.70"
+		},
+		"D1748": {
+			"family": "dac-blue-ice",
+			"size": "MIS.80"
+		},
+		"D1749": {
+			"family": "dac-blue-ice",
+			"size": "MIS.90"
+		},
+		"D1750": {
+			"family": "dac-blue-ice",
+			"size": "MIS.95"
+		},
+		"D5012": {
+			"family": "dac-blue-ice",
+			"size": "MIS.140"
+		},
+		"D7075": {
+			"family": "dac-active",
+			"size": "XS"
+		},
+		"D7076": {
+			"family": "dac-active",
+			"size": "S"
+		},
+		"D7077": {
+			"family": "dac-active",
+			"size": "M"
+		},
+		"D7078": {
+			"family": "dac-active",
+			"size": "L"
+		},
+		"D7079": {
+			"family": "dac-active",
+			"size": "XL"
+		},
+		"D7080": {
+			"family": "dac-active",
+			"size": "XXL"
+		},
+		"D7648": {
+			"family": "dac-super-x",
+			"size": null
+		},
+		"D7649": {
+			"family": "dac-super-x",
+			"size": null
+		},
+		"D7650": {
+			"family": "dac-super-x",
+			"size": null
+		},
+		"D7651": {
+			"family": "dac-super-x",
+			"size": null
+		},
+		"D7792": {
+			"family": "dac-easy-go",
+			"size": null
+		},
+		"D7793": {
+			"family": "dac-easy-go",
+			"size": null
+		},
+		"D7794": {
+			"family": "dac-easy-go",
+			"size": null
+		},
+		"D7795": {
+			"family": "dac-easy-go",
+			"size": null
+		},
+		"D7796": {
+			"family": "dac-easy-go",
+			"size": null
+		},
+		"D7797": {
+			"family": "dac-easy-go",
+			"size": null
+		},
+		"M0001389": {
+			"family": "menabo-snow-socks",
+			"size": "T53"
+		},
+		"M0001390": {
+			"family": "menabo-snow-socks",
+			"size": "T54"
+		},
+		"M0001391": {
+			"family": "menabo-snow-socks",
+			"size": "T81"
+		},
+		"M0001392": {
+			"family": "menabo-snow-socks",
+			"size": "T82"
+		},
+		"M0001393": {
+			"family": "menabo-snow-socks",
+			"size": "T83"
+		},
+		"N15980": {
+			"family": "snowdrive-nx7",
+			"size": "6"
+		},
+		"N15981": {
+			"family": "snowdrive-nx7",
+			"size": "6,5"
+		},
+		"N15982": {
+			"family": "snowdrive-nx7",
+			"size": "7"
+		},
+		"N15983": {
+			"family": "snowdrive-nx7",
+			"size": "7,5"
+		},
+		"N15984": {
+			"family": "snowdrive-nx7",
+			"size": "8"
+		},
+		"N15985": {
+			"family": "snowdrive-nx7",
+			"size": "8,5"
+		},
+		"N15986": {
+			"family": "snowdrive-nx7",
+			"size": "9"
+		},
+		"N15987": {
+			"family": "snowdrive-nx7",
+			"size": "9,5"
+		},
+		"N15988": {
+			"family": "snowdrive-nx7",
+			"size": "9,7"
+		},
+		"N15989": {
+			"family": "snowdrive-nx7",
+			"size": "10"
+		},
+		"N15992": {
+			"family": "snowdrive-nx7",
+			"size": "12"
+		},
+		"N15993": {
+			"family": "snowdrive-nx7",
+			"size": "12,5"
+		},
+		"N15994": {
+			"family": "snowdrive-nx7",
+			"size": "13"
+		},
+		"N16061": {
+			"family": "snowdrive-r9",
+			"size": "1"
+		},
+		"N16062": {
+			"family": "snowdrive-r9",
+			"size": "2"
+		},
+		"N16063": {
+			"family": "snowdrive-r9",
+			"size": "3"
+		},
+		"N16065": {
+			"family": "snowdrive-r9",
+			"size": "4"
+		},
+		"N16066": {
+			"family": "snowdrive-r9",
+			"size": "4,5"
+		},
+		"N16067": {
+			"family": "snowdrive-r9",
+			"size": "5"
+		},
+		"N16068": {
+			"family": "snowdrive-r9",
+			"size": "6"
+		},
+		"N16069": {
+			"family": "snowdrive-r9",
+			"size": "6,5"
+		},
+		"N16070": {
+			"family": "snowdrive-r9",
+			"size": "7"
+		},
+		"N16071": {
+			"family": "snowdrive-r9",
+			"size": "7,5"
+		},
+		"N16072": {
+			"family": "snowdrive-r9",
+			"size": "8"
+		},
+		"N16073": {
+			"family": "snowdrive-r9",
+			"size": "8,5"
+		},
+		"N16074": {
+			"family": "snowdrive-r9",
+			"size": "9"
+		},
+		"N16075": {
+			"family": "snowdrive-r9",
+			"size": "9,5"
+		},
+		"N16076": {
+			"family": "snowdrive-r9",
+			"size": "10"
+		},
+		"N16078": {
+			"family": "snowdrive-r9",
+			"size": "12"
+		},
+		"N16079": {
+			"family": "snowdrive-r9",
+			"size": "13"
+		},
+		"N16080": {
+			"family": "snowdrive-r9",
+			"size": "14"
+		},
+		"N16081": {
+			"family": "snowdrive-r9",
+			"size": "9,7"
+		},
+		"N16082": {
+			"family": "snowdrive-r9",
+			"size": "12,5"
+		},
+		"N16101": {
+			"family": "snowdrive-s16",
+			"size": "19"
+		},
+		"N16102": {
+			"family": "snowdrive-s16",
+			"size": "20"
+		},
+		"N16103": {
+			"family": "snowdrive-s16",
+			"size": "21"
+		},
+		"N16104": {
+			"family": "snowdrive-s16",
+			"size": "22"
+		},
+		"N16105": {
+			"family": "snowdrive-s16",
+			"size": "22,5"
+		},
+		"N16106": {
+			"family": "snowdrive-s16",
+			"size": "23"
+		},
+		"N16107": {
+			"family": "snowdrive-s16",
+			"size": "24"
+		},
+		"N16108": {
+			"family": "snowdrive-s16",
+			"size": "24,5"
+		},
+		"N16109": {
+			"family": "snowdrive-s16",
+			"size": "25"
+		},
+		"N16110": {
+			"family": "snowdrive-s16",
+			"size": "24,7"
+		},
+		"N16111": {
+			"family": "snowdrive-s16",
+			"size": "25,5"
+		},
+		"N16112": {
+			"family": "snowdrive-s16",
+			"size": "26"
+		},
+		"N16113": {
+			"family": "snowdrive-s16",
+			"size": "26,5"
+		},
+		"N16114": {
+			"family": "snowdrive-s16",
+			"size": "27"
+		},
+		"N16115": {
+			"family": "snowdrive-s16",
+			"size": "27,5"
+		},
+		"N16118": {
+			"family": "snowdrive-s16",
+			"size": "24,8"
+		},
+		"N16119": {
+			"family": "snowdrive-s16",
+			"size": "25,8"
+		},
+		"N16120": {
+			"family": "snowdrive-s16",
+			"size": "26,3"
+		},
+		"N16122": {
+			"family": "snowdrive-s16",
+			"size": "26,7"
+		},
+		"N16125": {
+			"family": "snowdrive-s16",
+			"size": "27,4"
+		},
+		"N16127": {
+			"family": "snowdrive-s16",
+			"size": "23,5"
+		},
+		"N16128": {
+			"family": "snowdrive-s16",
+			"size": "22,7"
+		},
+		"N16270": {
+			"family": "snowdrive-pilot-pro",
+			"size": null
+		},
+		"N16271": {
+			"family": "snowdrive-pilot-pro",
+			"size": null
+		},
+		"N16272": {
+			"family": "snowdrive-pilot-pro",
+			"size": null
+		},
+		"N16273": {
+			"family": "snowdrive-pilot-pro",
+			"size": null
+		},
+		"N16274": {
+			"family": "snowdrive-pilot-pro",
+			"size": null
+		},
+		"N16275": {
+			"family": "snowdrive-pilot-pro",
+			"size": null
+		},
+		"N16276": {
+			"family": "snowdrive-pilot-pro",
+			"size": null
+		},
+		"N16277": {
+			"family": "snowdrive-pilot-pro",
+			"size": null
+		},
+		"N16278": {
+			"family": "snowdrive-pilot-pro",
+			"size": null
+		},
+		"N17140": {
+			"family": "snowdrive-ponozky",
+			"size": null
+		},
+		"N17141": {
+			"family": "snowdrive-ponozky",
+			"size": null
+		},
+		"N17142": {
+			"family": "snowdrive-ponozky",
+			"size": null
+		},
+		"N17143": {
+			"family": "snowdrive-ponozky",
+			"size": null
+		},
+		"N17144": {
+			"family": "snowdrive-ponozky",
+			"size": null
+		},
+		"N17145": {
+			"family": "snowdrive-ponozky",
+			"size": null
+		},
+		"N17149": {
+			"family": "gran-pree-ponozky",
+			"size": null
+		},
+		"N17150": {
+			"family": "gran-pree-ponozky",
+			"size": null
+		},
+		"N17151": {
+			"family": "gran-pree-ponozky",
+			"size": null
+		},
+		"N17152": {
+			"family": "gran-pree-ponozky",
+			"size": null
+		},
+		"N17153": {
+			"family": "gran-pree-ponozky",
+			"size": null
+		},
+		"N17154": {
+			"family": "gran-pree-ponozky",
+			"size": null
+		},
+		"NGD02001": {
+			"family": "snowdrive-wx9",
+			"size": "1"
+		},
+		"NGD02002": {
+			"family": "snowdrive-wx9",
+			"size": "2"
+		},
+		"NGD02003": {
+			"family": "snowdrive-wx9",
+			"size": "3"
+		},
+		"NGD02005": {
+			"family": "snowdrive-wx9",
+			"size": "4"
+		},
+		"NGD02006": {
+			"family": "snowdrive-wx9",
+			"size": "4,5"
+		},
+		"NGD02007": {
+			"family": "snowdrive-wx9",
+			"size": "5"
+		},
+		"NGD02009": {
+			"family": "snowdrive-wx9",
+			"size": "6"
+		},
+		"NGD02010": {
+			"family": "snowdrive-wx9",
+			"size": "6,5"
+		},
+		"NGD02011": {
+			"family": "snowdrive-wx9",
+			"size": "7"
+		},
+		"NGD02012": {
+			"family": "snowdrive-wx9",
+			"size": "7,5"
+		},
+		"NGD02013": {
+			"family": "snowdrive-wx9",
+			"size": "8"
+		},
+		"NGD02014": {
+			"family": "snowdrive-wx9",
+			"size": "8,5"
+		},
+		"NGD02015": {
+			"family": "snowdrive-wx9",
+			"size": "9"
+		},
+		"NGD02016": {
+			"family": "snowdrive-wx9",
+			"size": "9,5"
+		},
+		"NGD02017": {
+			"family": "snowdrive-wx9",
+			"size": "9,7"
+		},
+		"NGD02018": {
+			"family": "snowdrive-wx9",
+			"size": "10"
+		},
+		"NGD02019": {
+			"family": "snowdrive-wx9",
+			"size": "12"
+		},
+		"NGD02021": {
+			"family": "snowdrive-wx9",
+			"size": "13"
+		},
+		"NGD02022": {
+			"family": "snowdrive-wx9",
+			"size": "14"
+		}
+	},
+	"self_sha256": "a70652dc4b73902722ee294386bcc18550dcecbe9dff30a74d927ead2c47f70b"
+}
