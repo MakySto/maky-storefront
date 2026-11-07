@@ -156,6 +156,48 @@ describe("scripts/ops/indexnow.mjs, the pieces", () => {
 		expect(selectShards(locs, { kinds: ["products"], markets: ["sk"] })).toHaveLength(0);
 	});
 
+	it("reads the kinds in the order they were asked for, and keeps the index's order inside a kind", () => {
+		// The index lists market by market, a market's products before its vehicle pages.
+		const locs = [
+			"cz-pages-1",
+			"cz-products-1",
+			"cz-vehicles-1",
+			"sk-pages-1",
+			"sk-products-1",
+			"sk-products-2",
+			"sk-vehicles-1",
+		].map((s) => `${SITE}/sitemaps/${s}.xml`);
+		const names = (kinds: string[]) =>
+			selectShards(locs, { kinds, markets: [] }).map((loc: string) =>
+				loc.slice(`${SITE}/sitemaps/`.length, -4),
+			);
+		expect(names(["pages", "vehicles", "products"])).toEqual([
+			"cz-pages-1",
+			"sk-pages-1",
+			"cz-vehicles-1",
+			"sk-vehicles-1",
+			"cz-products-1",
+			"sk-products-1",
+			"sk-products-2",
+		]);
+		expect(names(["vehicles", "pages"])).toEqual([
+			"cz-vehicles-1",
+			"sk-vehicles-1",
+			"cz-pages-1",
+			"sk-pages-1",
+		]);
+		// Asked in the old order, it reads in the old order: nothing is reordered behind the caller's back.
+		expect(names(["pages", "products", "vehicles"])).toEqual([
+			"cz-pages-1",
+			"sk-pages-1",
+			"cz-products-1",
+			"sk-products-1",
+			"sk-products-2",
+			"cz-vehicles-1",
+			"sk-vehicles-1",
+		]);
+	});
+
 	it("keeps only absolute URLs of the site's own host, once each, and hands back the rest", () => {
 		const { urls, rejected } = normaliseUrls(
 			[
@@ -594,7 +636,7 @@ describe("scripts/ops/systemd, the daily run", () => {
 	const unit = readFileSync(join(root, "scripts/ops/systemd/maky-indexnow.service"), "utf8");
 	const timer = readFileSync(join(root, "scripts/ops/systemd/maky-indexnow.timer"), "utf8");
 
-	it("starts the tool with options it accepts: every kind, a state file outside the checkout, --fire", () => {
+	it("starts the tool with options it accepts: pages first, then vehicle pages, a state file outside the checkout, --fire", () => {
 		const line = unit.split("\n").find((l) => l.startsWith("ExecStart="));
 		expect(line).toBeDefined();
 		const args = (line as string)
@@ -603,7 +645,9 @@ describe("scripts/ops/systemd, the daily run", () => {
 			.split(/\s+/);
 		const options = readOptions(args);
 		expect(options.error).toBeUndefined();
-		expect(options).toMatchObject({ fire: true, kinds: ["pages", "products", "vehicles"], max: 10_000 });
+		// Products are not in the daily run: Bing flagged 10 000 a day as batch mode and the log showed no effect
+		// (docs/design/seo-indexing-bing.md, section 9). The pages with their own texts go first.
+		expect(options).toMatchObject({ fire: true, kinds: ["pages", "vehicles"], max: 2_000 });
 		// A deploy replaces the checkout's files; the progress must not live there.
 		expect(options.state).toMatch(/^\/var\/lib\/maky-indexnow\//);
 		expect(unit).toMatch(/^StateDirectory=maky-indexnow$/m);

@@ -4,8 +4,8 @@
 //
 //   node scripts/ops/indexnow.mjs                                   # dry run: reads the sitemaps, prints the plan, sends nothing
 //   node scripts/ops/indexnow.mjs --kinds pages --fire              # the "pages" shards of every market
-//   node scripts/ops/indexnow.mjs --kinds pages,products,vehicles --state /var/lib/maky-indexnow/state.json --fire
-//                                                                   # what the daily timer runs
+//   node scripts/ops/indexnow.mjs --kinds pages,vehicles --max 2000 --state /var/lib/maky-indexnow/state.json --fire
+//                                                                   # what the daily timer runs (pages first)
 //   node scripts/ops/indexnow.mjs --urls /cz/autochladnicky,/sk/autochladnicky --fire
 //
 // Why it exists. On 2026-10-08 Bing Webmaster Tools showed https://maky.store/cz/autochladnicky as
@@ -29,9 +29,10 @@
 //   4. A cap per run (`--max`, default 10 000, never above 50 000) and batches of 5 000. IndexNow is
 //      for URLs that are new or changed, not for telling an engine the same thing every hour; the
 //      state file (`--state`) is what makes a second run send only what the first did not. With it a
-//      run sends, in this order, the URLs it has never sent (in the order the sitemaps list them, so
-//      a backlog drains market by market) and then those whose sitemap `lastmod` is later than the
-//      time they were sent, none of them more than once per `--resend-after-days` (default 7).
+//      run sends, in this order, the URLs it has never sent (kind by kind in the order `--kinds`
+//      names them, and inside a kind in the order the sitemaps list them, so a backlog drains market
+//      by market) and then those whose sitemap `lastmod` is later than the time they were sent, none
+//      of them more than once per `--resend-after-days` (default 7).
 //      Products and vehicles go out only with a state file: without one every run would send the
 //      same first `--max` URLs again.
 //   5. Only a 200 counts as sent. A 202 means "received, the key file has not been checked yet", and
@@ -106,13 +107,30 @@ export function classifyShard(url) {
 	return match ? { market: match[1], kind: match[2], part: Number(match[3]) } : null;
 }
 
-/** The shards of the index that are of the asked kinds and, when given, the asked markets. */
+/**
+ * The shards of the index that are of the asked kinds and, when given, the asked markets, in the
+ * order the kinds were asked for: `--kinds pages,vehicles,products` reads every market's pages
+ * first, then every market's vehicle pages, then the products. Inside a kind the index's own order
+ * stays (market by market, part by part).
+ *
+ * The order is what a capped run cuts at. Until 2026-11-07 the shards went out in the index's order,
+ * market by market with a market's products ahead of its vehicle pages, so after three days of
+ * 10 000 the run had told Bing about 28 495 products, 52 pages and the vehicle pages of ONE market
+ * (1 453 of 17 401), and had not reached the vehicle pages of the other eleven markets at all: the
+ * pages with their own editorial text, the ones Bing is most likely to keep, were at the back of
+ * the queue.
+ */
 export function selectShards(locs, { kinds, markets }) {
-	return locs.filter((loc) => {
-		const shard = classifyShard(loc);
-		if (!shard || !kinds.includes(shard.kind)) return false;
-		return markets.length === 0 || markets.includes(shard.market);
-	});
+	const rank = (loc) => kinds.indexOf(classifyShard(loc)?.kind);
+	return locs
+		.filter((loc) => {
+			const shard = classifyShard(loc);
+			if (!shard || !kinds.includes(shard.kind)) return false;
+			return markets.length === 0 || markets.includes(shard.market);
+		})
+		.map((loc, position) => ({ loc, position, rank: rank(loc) }))
+		.sort((a, b) => a.rank - b.rank || a.position - b.position)
+		.map(({ loc }) => loc);
 }
 
 /**
