@@ -134,7 +134,10 @@ export type TyreFitView =
 	| {
 			readonly kind: "fits";
 			readonly size: string;
-			/** The manufacturer's own list, or the supplier's data from the previous shop's card. */
+			/**
+			 * The manufacturer's own list, or the supplier's data from the previous shop's card. It changes the words under
+			 * the verdict and nothing else: a size the shop holds for the product fits, whichever list it came from.
+			 */
 			readonly fromManufacturerList: boolean;
 			/** What the shopper said about their tyres when the list asked, else `null`. */
 			readonly answer: string | null;
@@ -151,15 +154,20 @@ export type TyreFitView =
 	| { readonly kind: "no-fit"; readonly size: string; readonly elsewhere: boolean };
 
 /**
- * How a LISTING CARD speaks of the shopper's tyre size: the product page's verdicts, in one word each. `fits` is the
- * manufacturer's list (with the shopper's answer when it asked one), `fits-supplier` the supplier's data from the
- * previous shop's card, `ask` a size that fits only on certain tyres and the shopper has not said which they have.
+ * How a LISTING CARD speaks of the shopper's tyre size: the product page's verdicts, in one word each. `fits` is a
+ * size the shop holds for the product (with the shopper's answer when the list asked one), `ask` a size that fits only
+ * on certain tyres and the shopper has not said which they have, `no-fit` a size the product's list does not hold.
  */
-export type TyreCardFitKind = "fits" | "fits-supplier" | "ask" | "no-fit";
+export type TyreCardFitKind = "fits" | "ask" | "no-fit";
 
 export interface TyreCardFit {
 	readonly size: string;
 	readonly kind: TyreCardFitKind;
+	/**
+	 * On `fits` only: what the shopper said about their tyres when the list asked and that answer decided it, else
+	 * `null`. The card's add-to-cart sends it back with the size, because the server checks the pair again.
+	 */
+	readonly answer?: string | null;
 }
 
 /** What a cart or order line says about the choice, read back from its public metadata. */

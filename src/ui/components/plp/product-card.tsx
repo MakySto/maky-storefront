@@ -27,6 +27,7 @@ import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { isPlaceholderProductImage } from "@/lib/product-image";
 import type { SetTitle } from "@/lib/fitment/set-title";
 import { isTyreSizeCode } from "@/lib/tyre-size/codes";
+import { TYRE_FIELDS } from "@/lib/tyre-size/fields";
 import type { TyreCardFit } from "@/lib/tyre-size/types";
 import { useLocale } from "@/providers/locale-provider";
 import { addListingItemToCartAction } from "./actions";
@@ -139,9 +140,9 @@ interface ProductCardProps {
  *   price  ● availability
  *   quantity + add
  *
- * - The photo is the product from Saleor, WHOLE (`object-contain` on the card's own white): a
- *   3:2 window on a phone, where one card spans the screen and a squarer one was mostly white
- *   above and below a roof box; 5:4 from 640px, in the narrower cards of a multi-column grid.
+ * - The photo is the product from Saleor, WHOLE (`object-contain` on the card's own white), in a
+ *   square window that is the card's whole width (owner, 2026-11-07: the previews are to take
+ *   almost the whole width of every card, not a small picture in a wide, low window).
  * - The maker and the product's category (its market's own name, from Saleor) share one quiet
  *   line, the category in plain text, never a badge; a long one ("Nosiče bicyklov na ťažné
  *   zariadenie") wraps rather than being cut to a stub.
@@ -165,6 +166,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 	const tCart = useTranslations("cart");
 	const tFit = useTranslations("fitment");
 	const tListing = useTranslations("listing");
+	const tTyre = useTranslations("tyreSize");
 	const { locale } = useLocale();
 
 	const formatPrice = (amount: number, currency: string) =>
@@ -180,13 +182,17 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 		categorySlug: product.category?.baseSlug ?? product.category?.slug,
 	});
 
-	// Only offer a direct add when there is genuinely nothing to choose. A snow chain or sock always has something
-	// to choose: the tyre size, which is picked on its page (`lib/tyre-size`), so its card links there instead.
+	// Only offer a direct add when there is nothing left to choose. A snow chain or sock is added WITH a tyre size
+	// (`lib/tyre-size`): its card adds in one click when the card already holds a size that fits it (`tyreFit`,
+	// green: the size the shopper gave and the product's list holds), exactly like a roof-rack card with the car
+	// chosen. With no size, a size that does not fit or a question still to be answered it links to the page, where
+	// that is settled. The server checks the pair again whatever the form says (`resolveTyreSelection`).
+	const tyreFits = product.tyreFit?.kind === "fits" ? product.tyreFit : null;
 	const canAddDirectly =
 		product.isPurchasable &&
 		Boolean(product.variantId) &&
 		product.quantityAvailable !== 0 &&
-		!isTyreSizeCode(product.productCode);
+		(!isTyreSizeCode(product.productCode) || tyreFits !== null);
 
 	// A product mid-import has no thumbnail yet. Show a quiet placeholder rather
 	// than the broken-image glyph, which reads as a fault in the shop. Same for the grey
@@ -398,6 +404,13 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 							<input type="hidden" name="channel" value={product.channel} />
 							<input type="hidden" name="variantId" value={product.variantId ?? ""} />
 							<input type="hidden" name="maxQuantity" value={product.quantityAvailable ?? ""} />
+							{tyreFits && (
+								<>
+									<input type="hidden" name={TYRE_FIELDS.mode} value="size" />
+									<input type="hidden" name={TYRE_FIELDS.size} value={tyreFits.size} />
+									<input type="hidden" name={TYRE_FIELDS.answer} value={tyreFits.answer ?? ""} />
+								</>
+							)}
 							{purchase === "stepper" ? (
 								<QuantityStepper name="quantity" max={product.quantityAvailable ?? undefined} compact />
 							) : (
@@ -410,7 +423,11 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 					// Button is a plain <button> in this codebase — no asChild slot — so
 					// the link carries the styling itself.
 					<Link href={product.href} className={DETAIL_LINK}>
-						{isSet ? tListing("viewSet") : tCommon("viewDetail")}
+						{product.tyreFit?.kind === "ask"
+							? tTyre("buttonAsk")
+							: isSet
+								? tListing("viewSet")
+								: tCommon("viewDetail")}
 					</Link>
 				)}
 			</div>

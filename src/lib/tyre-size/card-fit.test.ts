@@ -21,17 +21,18 @@ const MAKE_KEY = "Continental|Kleber|Michelin";
 describe("what a card says about the shopper's size", () => {
 	it("is attached to the cards of size-controlled products only", () => {
 		const cards = attachTyreFit([card("N16128", "a"), card("A7604", "b"), card(null, "c")], "215/70 R15");
-		expect(cards[0]!.tyreFit).toEqual({ size: "215/70 R15", kind: "fits" });
+		expect(cards[0]!.tyreFit).toEqual({ size: "215/70 R15", kind: "fits", answer: null });
 		// Not a snow chain or sock: nothing to say about tyres.
 		expect(cards[1]!.tyreFit).toBeUndefined();
 		expect(cards[2]!.tyreFit).toBeUndefined();
 		expect(cards.map((c) => c.id)).toEqual(["a", "b", "c"]);
 	});
 
-	it("says what the supplier's data says where the previous shop's card is the only source", () => {
+	it("says fits where the previous shop's card is the only source, as it does for the maker's list", () => {
 		expect(attachTyreFit([card("D0190")], "165/75 R14")[0]!.tyreFit).toEqual({
 			size: "165/75 R14",
-			kind: "fits-supplier",
+			kind: "fits",
+			answer: null,
 		});
 	});
 
@@ -52,7 +53,7 @@ describe("what a card says about the shopper's size", () => {
 		const [a, b] = attachTyreFit([card("N16105", "a"), card("N16128", "b")], "195/75 R16", {
 			[MAKE_KEY]: "Michelin",
 		});
-		expect(a.tyreFit).toEqual({ size: "195/75 R16", kind: "fits" });
+		expect(a.tyreFit).toEqual({ size: "195/75 R16", kind: "fits", answer: "Michelin" });
 		expect(b.tyreFit).toEqual({ size: "195/75 R16", kind: "no-fit" });
 	});
 
