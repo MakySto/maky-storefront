@@ -4,6 +4,7 @@ import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { readGarage } from "@/lib/garage/state";
 import { getLocale } from "@/config/locale.server";
 import { vehicleShortLabel } from "@/lib/garage/label";
+import { readRememberedTyreSize } from "@/lib/tyre-size/remembered";
 import { cn } from "@/lib/utils";
 import { VehicleSelectorLauncher } from "./vehicle-selector-launcher";
 
@@ -46,6 +47,8 @@ export async function ActiveVehicleLauncher({
 	// has no channel prop. `connection()` above makes the header read legitimate here.
 	const garage = await readGarage(dataset, (await getLocale()).split("-")[0]);
 	if (garage.status === "disabled") return null;
+	// The tyre size the shopper gave is a cookie of its own, checked against the tyre list: the button carries it.
+	const tyreSize = await readRememberedTyreSize();
 
 	return (
 		<VehicleSelectorLauncher
@@ -53,6 +56,7 @@ export async function ActiveVehicleLauncher({
 			vehicleLabel={vehicleShortLabel(
 				garage.active ? { ...garage.active, year: garage.active.stored.y } : null,
 			)}
+			tyreSize={tyreSize}
 			className={className}
 		/>
 	);

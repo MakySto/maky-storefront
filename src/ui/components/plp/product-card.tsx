@@ -27,10 +27,12 @@ import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { isPlaceholderProductImage } from "@/lib/product-image";
 import type { SetTitle } from "@/lib/fitment/set-title";
 import { isTyreSizeCode } from "@/lib/tyre-size/codes";
+import type { TyreCardFit } from "@/lib/tyre-size/types";
 import { useLocale } from "@/providers/locale-provider";
 import { addListingItemToCartAction } from "./actions";
 import { CartForm } from "./cart-form";
 import { AddButton } from "./listing-add-to-cart";
+import { TyreFitLine } from "./tyre-fit-line";
 
 export interface ProductCardData {
 	id: string;
@@ -59,6 +61,11 @@ export interface ProductCardData {
 	 * several versions says nothing and its page does.
 	 */
 	versionNote?: string | null;
+	/**
+	 * What the card says about the shopper's tyre size, for a snow chain or sock when the shopper has given one
+	 * (`lib/tyre-size/card-fit`). Absent for every other product, and for every product while no size is known.
+	 */
+	tyreFit?: TyreCardFit | null;
 	productCode?: string | null;
 	/** Set only when the product has exactly one variant. */
 	variantId?: string | null;
@@ -318,6 +325,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 						<span>{tFit("cardYears", { years: product.fit.years })}</span>
 					</p>
 				)}
+				{product.tyreFit && <TyreFitLine fit={product.tyreFit} className="mt-2" />}
 			</div>
 
 			<div className={SPECS_BLOCK}>

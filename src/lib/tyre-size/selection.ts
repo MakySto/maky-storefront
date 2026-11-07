@@ -1,6 +1,7 @@
 import "server-only";
 
 import { TYRE_FIELDS } from "./fields";
+import { answerFits, isAnswerTo, tyreQuestionOf } from "./questions";
 import { TYRE_SIZE_LIST_ID, tyreSizeIndex, tyreSizeProduct } from "./size-index";
 import type { TyreRefusal, TyreSelection, TyreSelectionInput } from "./types";
 
@@ -21,7 +22,7 @@ export function tyreSelectionInputFromForm(form: FormLike): TyreSelectionInput |
 		return {
 			mode: "size",
 			size: text(form.get(TYRE_FIELDS.size)),
-			conditionKey: text(form.get(TYRE_FIELDS.condition)),
+			answer: text(form.get(TYRE_FIELDS.answer)),
 		};
 	}
 	return null;
@@ -34,11 +35,12 @@ export type TyreSelectionResult =
 /**
  * Check a choice against the list of one code.
  *
- * Exact match only. The size must be a label of this code, character for character, as the picker offered it:
- * "205/55R16" is not "205/55 R16", and a size that belongs to another code is not this code's. A size with a
- * condition (only on these tyres, or not on these) is accepted only together with the key of that very condition,
- * which the picker sends after the customer ticked it; a condition cannot be skipped by omitting it, nor
- * swapped for a different one. A size without a condition ignores whatever condition the form carried.
+ * Exact match only. The size must be a label of this code, character for character: "205/55R16" is not
+ * "205/55 R16", and a size that belongs to another code is not this code's. A size with a condition on the tyres
+ * (only on these, or not on these) is accepted only with an ANSWER to that condition's question that the condition
+ * allows: "Michelin" for "only Kleber / Michelin / Continental", "other" for "not Kleber / Michelin / Continental".
+ * The condition cannot be skipped by omitting the answer, nor met by an answer that is not one of the question's
+ * options. A size without a condition ignores whatever answer the form carried.
  *
  * `mode: "code"` is the customer's own statement that this code is the one they need. It is accepted, and
  * recorded as exactly that: the shop does not say the code fits their tyres.
@@ -59,12 +61,14 @@ export function resolveTyreSelection(
 	if (!row) return { ok: false, refusal: "unknown-size" };
 
 	const [size, rim, conditionKey] = row;
-	let condition: { mode: "only" | "not"; tyres: readonly string[] } | null = null;
+	let condition: { mode: "only" | "not"; tyres: readonly string[]; answer: string } | null = null;
 	if (conditionKey !== "") {
-		if (input.conditionKey === "") return { ok: false, refusal: "condition-required" };
-		if (input.conditionKey !== conditionKey) return { ok: false, refusal: "condition-mismatch" };
 		const listed = tyreSizeIndex().conditions[conditionKey];
-		condition = { mode: listed.mode, tyres: [...listed.tyres] };
+		if (input.answer === "") return { ok: false, refusal: "condition-required" };
+		if (!isAnswerTo(tyreQuestionOf(listed), input.answer) || !answerFits(listed, input.answer)) {
+			return { ok: false, refusal: "condition-mismatch" };
+		}
+		condition = { mode: listed.mode, tyres: [...listed.tyres], answer: input.answer };
 	}
 
 	return {
