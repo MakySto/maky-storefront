@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  *
  * The parent owns the box (aspect ratio, width, background) and must be `relative` inside an
  * ancestor marked `group/card`; this fills it. That is what lets one component serve the grid
- * (a 4:3 window on top) and the list (a square on the left) without knowing which it is in.
+ * (a square window on top) and the list (a square on the left) without knowing which it is in.
  *
  * Honest by construction:
  *   - the second photograph is the product's own next gallery image, never another product's;
@@ -94,7 +94,7 @@ function ListingMediaState({
 				sizes={sizes}
 				priority={priority}
 				className={cn(
-					"object-contain p-2 transition-[opacity,transform] duration-500 ease-out sm:p-3",
+					"object-contain p-1.5 transition-[opacity,transform] duration-500 ease-out",
 					ready
 						? "group-focus-within/card:opacity-0 group-hover/card:opacity-0"
 						: "motion-safe:group-hover/card:scale-[1.03]",
@@ -113,7 +113,7 @@ function ListingMediaState({
 					fallback={<></>}
 					onLoad={() => setReady(true)}
 					className={cn(
-						"object-contain p-2 opacity-0 transition-opacity duration-500 ease-out sm:p-3",
+						"object-contain p-1.5 opacity-0 transition-opacity duration-500 ease-out",
 						ready && "group-focus-within/card:opacity-100 group-hover/card:opacity-100",
 						className,
 					)}

@@ -31,12 +31,15 @@ export const MEDIA_COLUMN =
 	"relative group-data-[view=list]/lv:sm:static group-data-[view=list]/lv:sm:col-start-1 group-data-[view=list]/lv:sm:row-span-2 group-data-[view=list]/lv:sm:row-start-1";
 
 /**
- * The photograph's window: a wide, low ratio, because the products are bars and boxes — a taller
- * window was mostly white above and below. The product is shown whole (`object-contain`) with a
- * small inner margin. In a list from `sm` it is the card's full height.
+ * The photograph's window: a square, the card's whole width (owner, 2026-11-07: the previews should take almost the
+ * whole width of the card, on every product). The photographs on the chain and roof-rack shelves are close to square
+ * with the product filling most of the canvas, so the old wide, low window (16:10, capped at 11rem) shrank each to
+ * the height of the window and left a third of the card's width empty on both sides. The product is still shown
+ * whole (`object-contain`), never cropped, with a small inner margin (`ListingMedia`). In a list from `sm` it is the
+ * card's full height.
  */
 export const MEDIA_BOX =
-	"bg-surface-card relative block aspect-[16/10] max-h-44 w-full overflow-hidden group-data-[view=list]/lv:sm:aspect-auto group-data-[view=list]/lv:sm:h-full group-data-[view=list]/lv:sm:max-h-none group-data-[view=list]/lv:sm:min-h-36";
+	"bg-surface-card relative block aspect-square w-full overflow-hidden group-data-[view=list]/lv:sm:aspect-auto group-data-[view=list]/lv:sm:h-full group-data-[view=list]/lv:sm:min-h-36";
 
 /** What the set is: maker, name, and what it is for. A heading, so it is short. */
 export const FACTS_COLUMN =
