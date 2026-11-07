@@ -53,7 +53,16 @@ import {
 } from "@/lib/fitment/plp-vehicle-filter";
 import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import { VehicleListingFilter } from "@/ui/components/fitment/vehicle-listing-filter";
+import { TyreListingFilter } from "@/ui/components/fitment/tyre-listing-filter";
 import { attachSetFacts } from "@/lib/fitment/card-facts";
+import { attachTyreFit } from "@/lib/tyre-size/card-fit";
+import { tyreFilterRequestOf, tyreSizeParamOf } from "@/lib/tyre-size/listing-param";
+import {
+	resolveTyreListingFilter,
+	tyreFilterAnswers,
+	tyreFilterIds,
+	tyreFilterSize,
+} from "@/lib/tyre-size/plp-tyre-filter";
 import { CatalogMakeIndex } from "@/ui/components/catalog/make-index";
 import { HeroBenefits } from "@/ui/components/homepage/hero-benefits";
 import { STOREFRONT_CATEGORIES, categoryFitmentKind } from "@/config/categories";
@@ -152,6 +161,8 @@ type PageProps = {
 		colors?: string;
 		sizes?: string;
 		vehicle?: string;
+		tyres?: string;
+		tyreSize?: string;
 		brand?: string;
 		volume?: string;
 	}>;
@@ -467,14 +478,23 @@ async function CategoryProducts({
 	const saleorSlug = saleorSlugOf(params);
 
 	const sortBy = buildSortVariables(searchParams.sort);
-	const vehicleFilter = await resolveVehicleListingFilter(vehicleFilterRequestOf(searchParams.vehicle), {
-		categorySlug: baseSlug,
-		language: catalogLanguageForChannel(params.channel),
-	});
+	// Two questions about what fits the shopper, each asked only of the shelf it belongs to: the car on a roof-rack
+	// shelf, the tyre size on the snow-chain shelf. A shelf is never both, so at most one of them narrows the list.
+	const [vehicleFilter, tyreFilter] = await Promise.all([
+		resolveVehicleListingFilter(vehicleFilterRequestOf(searchParams.vehicle), {
+			categorySlug: baseSlug,
+			language: catalogLanguageForChannel(params.channel),
+		}),
+		resolveTyreListingFilter(
+			tyreFilterRequestOf(searchParams.tyres),
+			{ categorySlug: baseSlug, channel: params.channel },
+			tyreSizeParamOf(searchParams.tyreSize),
+		),
+	]);
 	const volume = volumeBand(searchParams.volume);
 	const filter = buildFilterVariables({
 		priceRange: searchParams.price,
-		vehicleProductIds: vehicleFilterIds(vehicleFilter),
+		vehicleProductIds: vehicleFilterIds(vehicleFilter) ?? tyreFilterIds(tyreFilter),
 		brandSlugs: parseBrandParam(searchParams.brand),
 		volumeRange: volume ? volumeRange(volume) : null,
 	});
@@ -625,8 +645,11 @@ async function CategoryProducts({
 	const baseCards = localized.products.map((product) =>
 		transformToProductCard(product, params.channel, locale),
 	);
-	const productCards =
+	const factCards =
 		categoryFitmentKind(baseSlug) !== null ? await attachSetFacts(baseCards, locale) : baseCards;
+	// On the snow-chain shelf each card also says whether it fits the size the shopper gave, in the product page's own
+	// words; with no size, or on any other shelf, the cards are untouched.
+	const productCards = attachTyreFit(factCards, tyreFilterSize(tyreFilter), tyreFilterAnswers(tyreFilter));
 
 	// Only the catalogue knows whether a verified set is on sale. When the car's whole list is
 	// hidden or withdrawn, say that, instead of an empty grid under "overené pre …".
@@ -658,6 +681,12 @@ async function CategoryProducts({
 					basePath={categoryUrlFor(params.channel, baseSlug)}
 					searchParams={searchParams}
 				/>
+				<TyreListingFilter
+					channel={params.channel}
+					filter={tyreFilter}
+					basePath={categoryUrlFor(params.channel, baseSlug)}
+					searchParams={searchParams}
+				/>
 			</div>
 			<CategoryPageClient
 				products={productCards}
@@ -666,21 +695,25 @@ async function CategoryProducts({
 				pageInfo={listing.pageInfo}
 				priceFilter={priceFilter}
 				accessoryIds={listing.accessoryIds}
-				vehicleFilterEmpty={
+				fitFilterEmpty={
 					shownFilter.state === "empty" ||
 					shownFilter.state === "not-on-sale" ||
-					shownFilter.state === "other-shelf"
+					shownFilter.state === "other-shelf" ||
+					tyreFilter.state === "empty"
 				}
 				// The family's counts describe the WHOLE shelf (9 167 sets) and the list beside them is one
 				// car's (8). Two totals on one screen is a defect, so a narrowed list drops the numbers and
 				// keeps the links.
 				categoryLinks={
-					shownFilter.state === "active"
+					shownFilter.state === "active" || tyreFilter.state === "active"
 						? categoryLinks?.map((link) => ({ ...link, count: undefined })) ?? null
 						: categoryLinks
 				}
-				brandFacets={facets?.brands ?? []}
-				volumeFacets={facets?.volumes ?? []}
+				// The makers and volumes are counted over the whole shelf. A list narrowed to the products that fit a
+				// size is a handful of them, and a count that describes the shelf beside a list that is not would be two
+				// totals on one screen: the narrowed list has no maker filter, "all chains" has it.
+				brandFacets={tyreFilter.state === "active" ? [] : facets?.brands ?? []}
+				volumeFacets={tyreFilter.state === "active" ? [] : facets?.volumes ?? []}
 			/>
 		</>
 	);

@@ -8,6 +8,7 @@ import {
 } from "@/lib/fitment/plp-vehicle-filter";
 import { cn } from "@/lib/utils";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
+import { ListingModeSwitch } from "@/ui/components/fitment/listing-mode-switch";
 import { VehicleSelectorLauncher } from "@/ui/components/vehicle/vehicle-selector-launcher";
 import { VehicleQuickSelect } from "@/ui/components/vehicle/vehicle-quick-select";
 import { loadSelectorStep } from "@/lib/fitment/selector-actions";
@@ -39,12 +40,8 @@ import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
  * Choosing a car still never narrows the list by itself: that stays an explicit click.
  */
 /**
- * "Pre moje auto" | "Všetky vozidlá" — which of the two lists the shopper is looking at.
- *
- * The selected side is filled and the other is plain, in two different colours (green for the
- * list that is checked against the car, the brand's own for "all"), so a glance says which list
- * this is without reading a sentence. A real link on each side: the unselected one switches, the
- * selected one is `aria-current` and goes nowhere new.
+ * "Pre moje auto" | "Všetky vozidlá" — which of the two lists the shopper is looking at. The control itself is the
+ * listing switch the snow-chain shelf uses too (`ListingModeSwitch`); this only names the car's two sides.
  */
 function ModeSwitch({
 	current,
@@ -57,38 +54,17 @@ function ModeSwitch({
 	allHref: string;
 	t: (key: string) => string;
 }) {
-	const segment =
-		"inline-flex h-10 items-center justify-center gap-2 px-4 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-hidden";
 	return (
-		<div
-			role="group"
-			aria-label={t("listingModeGroup")}
-			data-testid="vehicle-mode-switch"
-			className="border-border-default bg-surface-card inline-flex overflow-hidden rounded-xs border"
-		>
-			<LinkWithChannel
-				href={vehicleHref}
-				aria-current={current === "vehicle" ? "true" : undefined}
-				className={cn(
-					segment,
-					current === "vehicle" ? "bg-cta text-cta-text" : "text-text-primary hover:bg-surface-muted",
-				)}
-			>
-				<Car className="h-4 w-4 shrink-0" aria-hidden="true" />
-				{t("listingModeVehicle")}
-			</LinkWithChannel>
-			<LinkWithChannel
-				href={allHref}
-				aria-current={current === "all" ? "true" : undefined}
-				className={cn(
-					segment,
-					"border-border-default border-l",
-					current === "all" ? "bg-brand text-brand-text" : "text-text-primary hover:bg-surface-muted",
-				)}
-			>
-				{t("listingModeAll")}
-			</LinkWithChannel>
-		</div>
+		<ListingModeSwitch
+			current={current === "vehicle" ? "narrowed" : "all"}
+			narrowedHref={vehicleHref}
+			allHref={allHref}
+			groupLabel={t("listingModeGroup")}
+			narrowedLabel={t("listingModeVehicle")}
+			allLabel={t("listingModeAll")}
+			icon={Car}
+			testId="vehicle-mode-switch"
+		/>
 	);
 }
 

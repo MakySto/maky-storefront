@@ -15,6 +15,8 @@ export const TYRE_META = {
 	size: "maky_tyre_size",
 	conditionMode: "maky_tyre_condition_mode",
 	conditionTyres: "maky_tyre_condition_tyres",
+	/** What the shopper said about their tyres when the size's condition asked: a make or model of the condition, or "other". */
+	answer: "maky_tyre_answer",
 	list: "maky_tyre_list",
 	basis: "maky_tyre_basis",
 } as const;
@@ -36,6 +38,7 @@ export function tyreSelectionToMetadata(selection: TyreSelection): MetadataItem[
 			items.push(
 				{ key: TYRE_META.conditionMode, value: selection.condition.mode },
 				{ key: TYRE_META.conditionTyres, value: selection.condition.tyres.join(TYRE_LIST_SEPARATOR) },
+				{ key: TYRE_META.answer, value: selection.condition.answer },
 			);
 		}
 		items.push({ key: TYRE_META.basis, value: selection.basis });
@@ -76,7 +79,12 @@ export function tyreChoiceFromMetadata(
 	return {
 		mode: "size",
 		size,
-		condition: { mode: conditionMode, tyres: conditionTyres.split(TYRE_LIST_SEPARATOR) },
+		condition: {
+			mode: conditionMode,
+			tyres: conditionTyres.split(TYRE_LIST_SEPARATOR),
+			// A line written before the answer was recorded carries none: it shows the condition as it did.
+			answer: valueOf(metadata, TYRE_META.answer),
+		},
 	};
 }
 
@@ -88,7 +96,9 @@ export function tyreChoiceFromMetadata(
 export function tyreChoiceKey(choice: TyreLineChoice | null): string {
 	if (!choice) return "";
 	if (choice.mode === "code") return "code";
-	const condition = choice.condition ? `${choice.condition.mode}:${choice.condition.tyres.join("|")}` : "";
+	const condition = choice.condition
+		? `${choice.condition.mode}:${choice.condition.tyres.join("|")}:${choice.condition.answer}`
+		: "";
 	return `size|${choice.size}|${condition}`;
 }
 

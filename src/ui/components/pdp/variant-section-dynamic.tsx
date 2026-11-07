@@ -10,7 +10,8 @@ import { type ProductDetailsQuery } from "@/gql/graphql";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getLocaleFromChannel } from "@/config/locale";
-import { baseSlugOfCategory } from "@/config/category-routes";
+import { baseSlugOfCategory, categoryUrlFor } from "@/config/category-routes";
+import { TYRE_SHELF_SLUG } from "@/config/tyre-shelves";
 import { marketHref } from "@/lib/channel-map";
 import { AddToCart } from "./add-to-cart";
 import { VariantSelectionSection } from "./variant-selection";
@@ -26,9 +27,17 @@ import { StarRating } from "@/ui/components/product/star-rating";
 import { WishlistButton } from "@/ui/components/wishlist/wishlist-button";
 import { reviewSummaryFor } from "@/lib/reviews/summary";
 import { PdpCompatibility } from "@/ui/components/fitment/pdp-compatibility";
+import { saleorSlugFor } from "@/config/category-routes";
+import { getShelfCodes } from "@/lib/listing/shelf-codes";
+import { productHref } from "@/lib/product-url";
+import { tyreViewOf, type TyreAnswers } from "@/lib/tyre-size/choice";
+import { readRememberedTyre } from "@/lib/tyre-size/remembered";
+import { tyreFilterHref } from "@/lib/tyre-size/listing-param";
 import { tyreSelectionInputFromForm } from "@/lib/tyre-size/selection";
-import { tyrePickerData } from "@/lib/tyre-size/size-index";
-import { TyreSizeGate } from "./tyre-size-picker";
+import { applyShopOffer } from "@/lib/tyre-size/shop-offer";
+import { isTyreSizeControlled } from "@/lib/tyre-size/size-index";
+import type { TyreFitView } from "@/lib/tyre-size/types";
+import { TyreFitRow, TyreKnowsCode, TyreSizeGate } from "./tyre-fit-box";
 
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
 
@@ -209,9 +218,19 @@ export async function VariantSectionDynamic({
 	// The EAN, as CFM publishes it on the variant (`cfm_ean`) and only when it can be a real GTIN —
 	// `publicEan` checks it again. Nothing when the product has none: a blank, never a placeholder.
 	const ean = publicEan(selectedVariant ?? variants[0]);
-	// A snow chain or sock is one manufacturer's code that fits many tyre sizes: the customer chooses the size here
-	// and it travels with the add (`lib/tyre-size`). Null for every other product, and for one this market cannot sell.
-	const tyrePicker = isPurchasable ? tyrePickerData(productCode) : null;
+	// A snow chain or sock is one manufacturer's code that fits many tyre sizes. The shopper gives their size once, in
+	// the vehicle selector, and this page says whether the product fits it; the size travels with the add
+	// (`lib/tyre-size`). Null for every other product, and for one this market cannot sell. The cookie is read only
+	// for the products it is about.
+	const tyreSizeControlled = isPurchasable && isTyreSizeControlled(productCode);
+	const rememberedTyre = tyreSizeControlled ? await readRememberedTyre() : null;
+	const tyreView = tyreSizeControlled
+		? await withShopOffer(
+				tyreViewOf(productCode, rememberedTyre?.size, rememberedTyre?.answers),
+				channel,
+				rememberedTyre?.answers ?? {},
+			)
+		: null;
 
 	// A product the shop shows but cannot sell in this market offers a quote instead of a buy button: the link
 	// opens the contact page with the product (its name and public code) in the URL's fragment.
@@ -271,7 +290,8 @@ export async function VariantSectionDynamic({
 	}
 
 	// The price, the availability, the quantity and the buy buttons. For a snow chain or sock they sit inside the
-	// tyre-size gate, which puts the size choice above them and holds the buttons until it is complete.
+	// tyre-size gate, which puts the answer about the shopper's size above them and holds the buttons until the
+	// choice is complete.
 	const purchase = (
 		<>
 			{/* Add to Cart — the price, then what the catalogue says about availability, then the
@@ -287,6 +307,8 @@ export async function VariantSectionDynamic({
 				maxQuantity={maxQuantity}
 				quoteHref={quoteHref}
 				quoteOnly={quoteOnly}
+				beforeBuy={tyreView ? <TyreFitRow /> : undefined}
+				afterBuy={tyreView ? <TyreKnowsCode /> : undefined}
 				availability={
 					isPurchasable ? (
 						<AvailabilityBadge
@@ -404,7 +426,29 @@ export async function VariantSectionDynamic({
 					channel={channel}
 				/>
 
-				{tyrePicker ? <TyreSizeGate data={tyrePicker}>{purchase}</TyreSizeGate> : purchase}
+				{tyreView ? (
+					// What the shopper's tyres mean for this product, in one line above the buy button. Where a button that
+					// does not buy takes them: the chains that fit the size, or the people who can verify it.
+					<TyreSizeGate
+						view={tyreView}
+						hrefs={{
+							find: marketHref(
+								channel,
+								tyreFilterHref(
+									categoryUrlFor(channel, TYRE_SHELF_SLUG),
+									{},
+									true,
+									"size" in tyreView ? tyreView.size : null,
+								),
+							),
+							contact: quoteRequestHref(channel, quoteReferenceFor(product.name, productCode)),
+						}}
+					>
+						{purchase}
+					</TyreSizeGate>
+				) : (
+					purchase
+				)}
 			</CartForm>
 
 			{/* Purchase confidence - order:6, outside the form (nothing submittable). */}
@@ -415,6 +459,27 @@ export async function VariantSectionDynamic({
 			) : null}
 		</>
 	);
+}
+
+/**
+ * Reads what the shop publishes in this channel for the verdicts that need it, and lets `applyShopOffer` correct the
+ * verdict by it. Read only for `other` and `no-fit`; a failed read is "unknown" (`null`), never "nothing".
+ */
+async function withShopOffer(
+	view: TyreFitView | null,
+	channel: string,
+	answers: TyreAnswers,
+): Promise<TyreFitView | null> {
+	if (view === null) return null;
+	if (view.kind !== "other" && view.kind !== "no-fit") return view;
+
+	let listed: Awaited<ReturnType<typeof getShelfCodes>> = null;
+	try {
+		listed = await getShelfCodes(saleorSlugFor(TYRE_SHELF_SLUG), channel);
+	} catch {
+		listed = null;
+	}
+	return applyShopOffer(view, listed, answers, (slug) => productHref(channel, slug));
 }
 
 /**

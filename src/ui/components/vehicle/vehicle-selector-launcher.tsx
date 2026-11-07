@@ -46,6 +46,11 @@ type Props = {
 	 * for what the click actually does.
 	 */
 	label?: string;
+	/**
+	 * The tyre size the shopper has given (`lib/tyre-size/memory`), as the list spells it. The header buttons carry it
+	 * beside the car; with no car it is all they carry, and the click then opens the window on the tyres.
+	 */
+	tyreSize?: string | null;
 	className?: string;
 };
 
@@ -53,29 +58,52 @@ export function VehicleSelectorLauncher({
 	variant = "inline",
 	vehicleLabel,
 	label: labelOverride,
+	tyreSize,
 	className,
 }: Props) {
 	const [open, setOpen] = useState(false);
 	const tNav = useTranslations("nav");
 	const tFitment = useTranslations("fitment");
+	const tTyre = useTranslations("tyreSize");
 
 	const fallback =
 		variant === "header" || variant === "compact" || variant === "icon"
 			? tNav("selectVehicle")
 			: tFitment("selectVehicle");
 	const car = vehicleLabel?.trim() || null;
-	const label = labelOverride?.trim() || car || fallback;
+	// Only the buttons of the header and the phone search row speak of the tyres: the hero, a listing's field and the
+	// links are about the car, and the product page has its own box for the size.
+	const sizeShown = variant === "header" || variant === "compact" || variant === "icon";
+	const size = sizeShown && tyreSize?.trim() ? tyreSize.trim() : null;
+	const tyresOnly = Boolean(size) && !car && !labelOverride?.trim();
+	const label = labelOverride?.trim() || car || (size ? tTyre("headerTyres", { size }) : fallback);
 
 	// The header's green button speaks in two lines: what it is and what the click does.
 	// "Vybrať vozidlo / Pre jednoduchší výber" without a car; the car and "Zmeniť vozidlo"
-	// with one. Its accessible name is those two lines, read in order.
-	const hint = car ? tFitment("changeVehicle") : tNav("selectVehicleHint");
+	// with one. Its accessible name is those two lines, read in order. A tyre size joins the second line beside a
+	// car ("205/55 R16 · Zmeniť") and is the first line with none ("Pneumatiky 205/55 R16 / Zmeniť").
+	const hint = car
+		? size
+			? tTyre("headerHint", { size })
+			: tFitment("changeVehicle")
+		: size
+			? tTyre("changeShort")
+			: tNav("selectVehicleHint");
 	// The 44px square beside the phone search names the car only to assistive tech; the
 	// filled button with a check is how it shows one is chosen.
-	const iconLabel = car ? `${tNav("vehicleSaved")}: ${car}. ${tFitment("changeVehicle")}` : fallback;
+	const chosen = Boolean(car || size);
+	const iconLabel = chosen
+		? [
+				car ? `${tNav("vehicleSaved")}: ${car}` : null,
+				size ? tTyre("headerTyres", { size }) : null,
+				tFitment("changeVehicle"),
+			]
+				.filter(Boolean)
+				.join(". ")
+		: fallback;
 
 	return (
-		<VehicleSelectorSheet open={open} onOpenChange={setOpen}>
+		<VehicleSelectorSheet open={open} onOpenChange={setOpen} initialTab={tyresOnly ? "tyres" : "vehicle"}>
 			{/* Radix's Trigger hardcodes type="button" and forwards it through asChild, so
 			    this is safe even inside the PDP's add-to-cart <form>. */}
 			<SheetTrigger asChild>
@@ -106,7 +134,7 @@ export function VehicleSelectorLauncher({
 						variant === "icon" &&
 							cn(
 								"relative inline-flex h-11 w-11 items-center justify-center rounded-xs border transition-colors",
-								car
+								chosen
 									? "border-cta bg-cta text-cta-text hover:bg-cta-hover"
 									: "border-status-success-border bg-status-success-bg text-status-success hover:border-cta",
 							),
@@ -130,7 +158,7 @@ export function VehicleSelectorLauncher({
 							aria-hidden="true"
 						/>
 					)}
-					{variant === "icon" && car && (
+					{variant === "icon" && chosen && (
 						<span
 							aria-hidden="true"
 							className="bg-surface-card text-cta absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full shadow-sm"
