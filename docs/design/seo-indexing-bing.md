@@ -45,9 +45,10 @@ only if the webhook subscription selects `category { slug }`). Section 4 is writ
 case cannot bite either, and section 6 shows how a stale answer of that kind reaches a crawler and what was
 changed so that it cannot.
 
-"Almost nothing is indexed" in the screenshot's question is a separate matter: no technical block was found
-(see above), and a new domain with twelve markets and well over a hundred thousand URLs is read by Bing over
-weeks. IndexNow (section 5) is the lever the site itself has.
+"Almost nothing is indexed" in the screenshot's question is a separate matter: no block of the whole site was
+found (see above; section 9 lists the specific defects that were), and a domain whose catalogue grew from a few
+hundred products to well over a hundred thousand URLs in twelve markets is read by Bing over weeks. IndexNow
+(section 5) is the lever the site itself has.
 
 ## 2. Where `noindex` stays, and why
 
@@ -87,9 +88,15 @@ rm -f "$F"
 ```
 
 Expected for an indexable page: `HTTP/2 200`, no `x-robots-tag`, `index, follow`, one canonical. Bing is
-among the `htmlLimitedBots` (`src/config/html-limited-bots.js`), so it gets the finished page with its head
-metadata, not the streamed shell: this is the page it indexes, and a probe with another user agent proves
-less. Compare the size with the ranges in section 1 when the robots line looks right but something feels off.
+among the `htmlLimitedBots` (`src/config/html-limited-bots.js`), so its head metadata (title, robots, canonical)
+is resolved before the response starts and is not streamed in afterwards: a probe with another user agent
+proves less about the head. That says nothing about the **body**. A product page's content sits inside a
+`<Suspense>` boundary (`[productSlug]/page.tsx`: `ProductPage` renders `ProductContent` behind
+`ProductPageSkeleton`), so it arrives after the skeleton as a `<div hidden id="S:…">` block that an inline script
+swaps in. A renderer that runs that script sees the product; a parser that only reads the HTML sees the skeleton
+and a hidden block. Which of the two Bing's indexer is for a given visit is not knowable from the server (section
+9, "Not proven"). Compare the size with the ranges in section 1 when the robots line looks right but something
+feels off.
 
 ## 4. Launch order for a category in a market
 
@@ -126,6 +133,9 @@ POST names them; the engine fetches them soon after. It does not decide what get
   node scripts/ops/indexnow.mjs --kinds pages --fire           # about 190 URLs in one request; needs no state file
   node scripts/ops/indexnow.mjs --kinds pages,products,vehicles --state /var/lib/maky-indexnow/state.json --fire
   node scripts/ops/indexnow.mjs --urls /cz/autochladnicky,/cz/<product> --fire     # after a publish
+  # the two timers (below):
+  node scripts/ops/indexnow.mjs --mode changes --state /var/lib/maky-indexnow/state.json --seen /var/lib/maky-indexnow/seen.json --fire
+  node scripts/ops/indexnow.mjs --mode backlog --state /var/lib/maky-indexnow/state.json --fire
   ```
 
   `pages` is the home pages, categories and content pages of every market (about 190 URLs): start there.
@@ -143,29 +153,61 @@ POST names them; the engine fetches them soon after. It does not decide what get
   answered with a 200. A 202 now stops the run, records nothing and exits 3, so the next run sends the same
   URLs again.
 - **What stops it.** Not firing unless the public site serves the key file; any URL off the site's host; a
-  typo in an option; products or vehicles without `--state`; any answer other than 200 (202: exit 3, nothing
+  typo in an option; products or vehicles without `--state`; `--mode changes` without both `--state` and
+  `--seen`, and `--mode backlog` without `--state`; a snapshot file that is not one; any answer other than 200 (202: exit 3, nothing
   recorded; 403: key file not reachable or wrong; 422: URLs not of the host; 429: too many requests, wait and
   run again, the state file has kept the progress).
-- **The daily run.** `scripts/ops/systemd/maky-indexnow.timer` starts `maky-indexnow.service` at 06:20 UTC every
-  day. That hour is clear of the CarFitManager 4.5 windows on the same box (01:30 to 02:04 and 03:15 to 05:00
-  UTC, Mondays also about 02:30 to 03:04), and the service skips the day while a deploy holds its lock. With the
-  unit as it is in the repository (section 9) a run tells Bing about the pages first and then the vehicle pages, at
-  most 2 000 URLs, at low priority, under a 768 MB ceiling and without swap; the products are not in it. The unit
-  installed on 2026-10-31 sent up to 10 000 URLs of every kind a day, market by market, products first. The
-  progress lives in `/var/lib/maky-indexnow/state.json`, outside the checkout, so a deploy does not touch it.
-  A person installs it once on the web server (the commands are at the top of the service file); the deploy
-  does not. `journalctl -u maky-indexnow.service` shows every run with the endpoint's answers, and
-  `sudo systemctl disable --now maky-indexnow.timer` stops it. If `maky-storefront` restarts, its memory passes
-  6 GB (CLAUDE.md section 13.3.1) or the nginx log shows 5xx answers on a day it ran, stop the timer first and
-  look second.
+- **The two runs.** Until 2026-11-07 there was one: a daily batch of the URLs never sent, then those whose
+  `lastmod` had moved, 10 000 a run, in sitemap order. A new product waited behind the backlog; a product that
+  was gone was never mentioned, because the sitemap no longer lists it; a page or a vehicle page that changed was
+  not looked at again at all (they carry no `lastmod`). Bing's own recommendation is the opposite shape: tell it
+  when something happens. There are now two units, `--mode` of the same tool, that take turns on one lock
+  (`/var/lib/maky-indexnow/run.lock`) because both write the state file:
+
+  - **`maky-indexnow-changes`, every hour at :40 UTC except 01:40 to 04:40** (the CarFitManager windows, 01:30 to
+    02:04 and 03:15 to 05:00 UTC, Mondays also about 02:30 to 03:04; a run in the gap sees everything since the last
+    one, because it compares the sitemaps with a snapshot, not with the clock). It keeps `seen.json`, a snapshot of
+    every URL of the sitemaps with its `lastmod`, and tells the engine, in this order, at most 1 000 a run: the URLs
+    that are **gone** (a removed product, the old address of a renamed one), the ones that **appeared**, the products
+    whose `lastmod` **moved**. Products, vehicle pages and pages. The first run only takes the snapshot and announces
+    nothing: what existed before it is the backlog's business. What keeps it from announcing what is not a change:
+    a group of shards (a market's pages, products or vehicles, however many parts) that cannot be read in full, or
+    comes back empty where it held URLs, is left exactly as it was and fails the run; a URL missing from the sitemaps
+    is called gone only when an earlier look at least 45 minutes before missed it too (a sitemap built while a read
+    failed is shorter for a minute); when more than a quarter of a group's dates move in one run (and more than 50)
+    that is a rewrite of the dates, as on 2026-10-29 when Saleor dated 96 % of the Slovak products the same day, and
+    it is recorded and not announced; a URL already in the state file as sent is recorded, not announced as new; a
+    changed URL is announced at most once a day. A text change of a page or a vehicle page is not visible to it
+    (no `lastmod`); it is announced by naming the URLs, `--urls`.
+  - **`maky-indexnow` (the unit installed on 2026-10-31), once a day at 06:20 UTC, `--mode backlog`.** The URLs of
+    the pages and vehicle pages that were never sent, pages first, at most 2 000 a day (about 16 000 were unsent on
+    7 November: eight days). It never re-announces a changed URL; the hourly run does that. Products are not in
+    it: 2 000 a day is a choice about how much to say per day, not a finding that they do not matter, and the
+    products reach Bing through the hourly run when they appear, go or change, and otherwise through the sitemap.
+
+  Both skip while a deploy holds its lock, run at low priority without swap (768 MB for the backlog; 1 GB for the
+  hourly run, whose snapshot of 256 000 URLs made a 26 MB file and peaked about 300 MB above the bare interpreter
+  in a synthetic run, one second a run), and keep their progress in `/var/lib/maky-indexnow/`, outside the
+  checkout. **Merging this changes nothing on the server.** A person installs the units once (the commands are at
+  the top of each service file) and the installed copy in `/etc/systemd/system` is what runs: the unit installed
+  on 2026-10-31 still sends up to 10 000 URLs of every kind a day, products first, until it is replaced. The
+  tool's default mode is the tool as it was, so an old unit keeps working with the new script.
+  `journalctl -u maky-indexnow-changes.service` and `journalctl -u maky-indexnow.service` show every run with the
+  endpoint's answers, and `sudo systemctl disable --now maky-indexnow-changes.timer` stops the hourly one. If
+  `maky-storefront` restarts, its memory passes 6 GB (CLAUDE.md section 13.3.1) or the nginx log shows 5xx
+  answers on a day it ran, stop the timers first and look second.
+
 - **Reading Bing Webmaster Tools.** The IndexNow report names two sources. "Self" is what this tool sent.
   "Cloudflare" is Cloudflare's Crawler Hints, which names only cached static files (robots.txt, the favicon,
   fonts, images) and does no harm. Times are shown in the account's time zone, not UTC. "Indexing insights"
   counts URLs sent, crawled and indexed; a submission shows there within about a day. The first thing to look
   for is the crawl: `bingbot` asking for the URLs in the nginx log. Whether Bing then indexes them is Bing's
   decision.
-- **Etiquette.** Send what is new or changed, not the whole site every hour. Only URLs that are indexable:
-  the sitemap-driven mode sends sitemap URLs only; `--urls` sends whatever it is given.
+- **Etiquette.** Send what is new, gone or changed, not the whole site every hour. A 200 means the engine accepted
+  the message, not that it will index the page. A URL that is gone may be sent: the engine then learns it should
+  look again and finds a 404 or a redirect. Only URLs that are indexable otherwise: the sitemap-driven modes send
+  sitemap URLs (and the gone ones, which were); `--urls` sends whatever it is given. The protocol accepts up to
+  10 000 URLs in one POST; the tool uses 5 000.
 - **In Bing Webmaster Tools** (Marek's account): "URL Inspection", paste the URL, "Request indexing" for a
   single page (a small daily allowance), and "Sitemaps" once with `https://maky.store/sitemap.xml`. IndexNow does
   the same for many URLs without a person.
@@ -409,71 +451,129 @@ after that line; and the count of `[sitemap] … rebuild failed` lines. Whether 
 shard is not in anything read from here (Search Console's Sitemaps report would say "Couldn't fetch"); Bing's traffic was
 healthy at the last reading (952 requests in 40 hours, 936 of them 200, reading the shards).
 
-## 9. Why Bing keeps so few of the pages: what was measured, what changed on 2026-11-07
+## 9. Why Bing keeps so few of the pages: what was measured, what was found, what changed (2026-11-07)
 
 Written after Marek sent thirteen screenshots of Bing Webmaster Tools and Search Console (4 to 7 November): 256 200
-URLs in the sitemap, about 635 in Bing's index. The long form, with the reasoning and the decisions it leaves for
-Marek, is in the project's files; this is the part the code depends on. Everything here comes from the web server's
-nginx log and the screenshots; the cloud session could not reach `maky.store`.
+URLs in the sitemap, about 635 in Bing's Site Explorer index. The long form, with the reasoning and the decisions it
+leaves for Marek, is in the project's files; this is the part the code depends on. The first version of this section
+said that nothing technical blocked Bing; Marek's review the same evening showed that was too categorical, and the
+list below is what it found. Everything here comes from the web server's nginx log, the screenshots and the code; the
+cloud session could not reach `maky.store` or Bing, so what only Bing can say is under "Not proven".
 
-**Nothing blocks Bing.** `robots.txt` answers 200 with 552 bytes and no rule that touches a page of the shop; the
-sitemap index (36 shards) was processed on 3 November with no error and no warning; Bingbot got 200 on 16 092 of 16 611
-requests with its user agent (17 to 31 October), the rest mostly scanners that claim to be Bingbot and ask for
-`wp-content` and `.env`, and no soft 404 was found. 503 came twice in that time and 14 times in four seconds on
-2 November while a build ran. Search Console shows three warnings on `robots.txt`; the file has exactly three
+**No block of the whole site was found.** `robots.txt` answers 200 with 552 bytes and no rule that touches a page of
+the shop; the sitemap index (36 shards) was processed on 3 November with no error and no warning; Bingbot got 200 on
+16 092 of 16 611 requests with its user agent (17 to 31 October), the rest mostly scanners that claim to be Bingbot and
+ask for `wp-content` and `.env`, and no soft 404 was found. 503 came twice in that time and 14 times in four seconds
+on 2 November while a build ran. Search Console shows three warnings on `robots.txt`; the file has exactly three
 `Crawl-delay` lines (ClaudeBot, SemrushBot, AhrefsBot), which Google does not read, the likely cause (the text of the
-warning was not in the screenshot). Bingbot has no delay.
+warning was not in the screenshot). A `Crawl-delay` in a group that names other bots does not apply to Bingbot, which
+has no group of its own. `/_next/`, scripts, styles and images are not disallowed and should stay so.
+
+**What the review found, and what was done about it.**
+
+| Finding                                                                                                                                                                                                                              | State                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Old addresses of the WooCommerce shop (products at the root) are listed by Bing among the indexed pages and answer 404 with no redirect. The registry planned on 2026-08-06 (`seo-hard-404-analysis-20260806.md`, C5) shipped empty. | **Fixed for one**: `lib/legacy-root-redirects.ts`, one 301 for Thule Epos 2 (978100). The 404 guard for every other unknown address stays. Peruzzo Pure Instinct 2 waits for its SKU/EAN; the Spinder TX2 S30005 is not S30011. |
+| IndexNow ran as one daily batch: new, removed and changed products were not announced, a removed one never (the sitemap no longer lists it), a changed page never (no `lastmod`).                                                    | **Fixed in code**, section 5: an hourly `changes` run and a daily `backlog` run. **Not installed**: a person has to replace the unit on the server.                                                                             |
+| `/znacky` and `/znacky/<maker>` are linked from every page and were in no sitemap.                                                                                                                                                   | **Fixed**: the pages shard lists them for a market whose channel sells a maker.                                                                                                                                                 |
+| The header search was a Server Action: a POST to an opaque id on every page of every market.                                                                                                                                         | **Fixed**: a GET form to `/{market}/search?query=`; the search page trims.                                                                                                                                                      |
+| A temporary data fault answers HTTP 200 with `noindex` on categories, collections, CMS pages and a brand's page; only products have a 503 for crawlers (`bot-preflight.ts`).                                                         | **Open**, below.                                                                                                                                                                                                                |
+| `/` redirects by IP: a crawler that comes from the United States is sent to `/us` (307), while `x-default` names the first live market (`/sk`). CLAUDE.md section 5 says no hard IP redirect for language or country.                | **Open**: a decision for Marek, below.                                                                                                                                                                                          |
+| A product page's body is in a streamed block even for Bingbot (section 3).                                                                                                                                                           | **Not proven** at Bing's side.                                                                                                                                                                                                  |
+| `lastmod` of the products is Saleor's `updatedAt`, and 25 518 of the 26 691 Slovak products carry 29 October.                                                                                                                        | **Open**: a date that moves for all products at once says nothing and may teach Bing to ignore the rest.                                                                                                                        |
+
+**A temporary fault and the status line.** Under `cacheComponents` the status of a page is the shell's, so a page cannot
+turn a fault into a 5xx itself. For products the proxy asks the page's own resolver before the status is committed and
+answers a crawler 503 with `Retry-After` on a proven `upstream-error` (`bot-preflight.ts`). The others have no such step:
+a category answers 200, `noindex, nofollow`, no canonical and an error body (`categories/[slug]/page.tsx`, both
+`generateMetadata` and the page); a brand's page answers `noindex, follow` when its lookup fails, because the metadata
+treats a fault like an absence (`znacky/[brand]/page.tsx`, `.catch(() => null)`); the brand index stays indexable on a
+fault. The existence gate would give a crawler 503 while Saleor's breaker is open, but it ships off and the category
+family was `not-armed` on 20 October (`x-maky-gate` on any category response shows what is armed now). How often it
+happens: the production error log read on 2026-10-08 (1.17 million lines) held no `scope: category` error; count
+`"scope":"category"` since the last deploy before deciding. Bing reads `noindex` once and does not come back soon (the
+`cz/autochladnicky` case of 8 October is that mechanism). The two remedies, neither built here because the sandbox
+has no Saleor to measure either against a production build: arm the gate for the `category` family in `sk` (its
+documented canary, `market-launch-checklist.md`, which also gives absent categories a real 404), or move the
+category resolver out of the page into `lib/saleor/` as `product-outcome.ts` did and add the same loopback preflight.
 
 **Where the URLs are lost.** From the nginx log, 20 October to 3 November: Bingbot asked for 20 725 different URLs
 (20 519 of them in the sitemaps, 8.0 % of 256 178): pages 70 of 200, vehicle pages 3 438 of 17 401 (19.8 %), products
 17 011 of 238 577 (7.1 %). Its daily requests rose from 312 (17 October) to 2 428 (29 October), before the daily IndexNow
-submissions began on 1 November. Webmaster Tools says the same from its side: the first recommendation, and the only one marked high, is
-"our crawl capacity for your site is limited". Of the URLs it has classified from IndexNow, 356 are indexed, 61 are
-flagged "content quality", 49 "found but not indexed", 3 are not crawlable, 1 redirects, and 95 are found and not yet
-crawled. Bing reads slowly (about 1 400 different URLs a day). Of the 466 it has judged (356 + 61 + 49) it keeps 76 %,
-but 565 URLs are a small, non-random sample out of 47 900 submitted, and the two measures disagree: 20 519 URLs read
-against 635 in Site Explorer's index. Either Site Explorer lags by weeks or Bing drops most of what it reads; the
-screenshots cannot tell which, an export a week apart can. Every one of the eleven sample URLs under "content
-quality" is a per-car roof-bar kit (Thule, Nordrive); so are eight of the ten visible under "not yet crawled", the
-other two are vehicle pages.
+submissions began on 1 November. Webmaster Tools says the same from its side: the first recommendation, and the only
+one marked high, is "our crawl capacity for your site is limited". Of the URLs it has classified from IndexNow, 356 are
+indexed, 61 are flagged "content quality", 49 "found but not indexed", 3 are not crawlable (403 or 5xx), 1 redirects,
+and 95 are found and not yet crawled. Bing reads slowly (about 1 400 different URLs a day). 20 519 URLs read against 635
+in Site Explorer's index are not a contradiction: reading a page is not keeping it, Site Explorer's list holds old
+addresses of 2025 beside the new ones, and a screenshot of an index shows the state, not the movement. A falling
+green curve is not proof of de-indexing either; only an export of the indexed list a week apart shows a page leaving.
+Every one of the eleven sample URLs under "content quality" is a per-car roof-bar kit (Thule, Nordrive); so are eight
+of the ten visible under "not yet crawled", the other two are vehicle pages.
 
 **What those 256 000 URLs are.** 238 577 are products, and most of them are roof-bar kits per car: the Slovak Thule
 range alone is 9 445 products in the live list of the Slovak channel, 1 476 combinations of car, years and mounting
 type in up to seven bar variants each (ProBar, SquareBar, WingBar Evo and Edge, SlideBar; silver or black; 6.4 on
-average), and the Nordrive category held 9 157 more when `check:nav` last counted it. Each market lists them again, and two pairs of markets share a language (us and ca, English, 39 482
-URLs; de and at, German, 41 892). The sitemap grew from 137 356 URLs on 8 October to 245 639 on 31 October and
-256 178 on 3 November, so Bing has had the present sitemap for four weeks, not since September. That is what Bing
-sees: very many near-identical URLs on a site with almost no links in (129 backlinks on the root page) and 6 clicks
-and 98 impressions in the period shown. A code change does not remove it; it is a decision about what the sitemap and
-the markets offer, and the project's long form puts it to Marek.
+average), and the Nordrive category held 9 157 more when `check:nav` last counted it. Each market lists them again, and
+two pairs of markets share a language (us and ca, English, 39 482 URLs; de and at, German, 41 892). The sitemap grew
+from 137 356 URLs on 8 October to 245 639 on 31 October and 256 178 on 3 November, so Bing has had the present
+sitemap for four weeks. The domain itself is not new to Bing (discovered in 2019; the index holds products of 2025); the
+catalogue and the structure are. What Bing sees is very many similar URLs on a site with few links in (129 links to the
+root page, not 129 referring domains) and 6 clicks and 98 impressions in the period shown.
 
-**IndexNow did not help, and the way it ran was wrong in two ways.** URLs sent on 1 November were fetched by Bingbot
-within 24 hours in 0.9 % of cases, those not yet sent in 0.7 % (2 November: 0.8 % and 1.2 %), and Webmaster Tools now
-recommends against "batch mode". Its own report counts 47 900 URLs submitted and, beside them, 45 "indexed" and 53
-"crawled" (the period is not stated). The order was market by market with each market's products before its vehicle
-pages, so in three days (30 000 URLs) 28 495 products, 52 pages and the vehicle pages of one market (1 453 of 17 401)
-went out; the vehicle pages of eleven markets, the pages with their own editorial text, had not been reached.
-Cloudflare's Crawler Hints are a second source in the report and name only cached static files (fonts, SVG, `robots.txt`).
-The "indexed" line of the IndexNow report falls on its last days because a submission is judged days later; two
-screenshots do not show a page leaving the index, an export of the indexed list a week apart would.
+Similar is not the same as identical, and the difference decides what may be consolidated. Two pages that carry the same
+parts at the same price are one product to a visitor (the Espace RHN 2023-2025 and the Espace 2025 kit: parts 186172,
+710600 and 711300, 379,85 EUR); those can be one page, and a decision for Marek and CFM. Kits that differ in bar type,
+colour or mounting are different products, and "one carrier per car" would remove choices a buyer makes. Nothing is
+consolidated here; the check that finds the identical ones belongs in CFM, which owns the kits.
+
+**IndexNow: no effect could be shown, and the way it ran was wrong in three ways.** URLs sent on 1 November were fetched
+by Bingbot within 24 hours in 0.9 % of cases, those not yet sent in 0.7 % (2 November: 0.8 % and 1.2 %). That is too few
+to say anything in either direction, and a fetch is not an index entry; the 200 of the endpoint means the message was
+accepted, not that the page will be indexed. Webmaster Tools now recommends against "batch mode". Its own report counts
+47 900 URLs submitted and, beside them, 45 "indexed" and 53 "crawled" (the period is not stated). The three faults: the
+order (market by market with each market's products before its vehicle pages, so in three days, 30 000 URLs, 28 495
+products, 52 pages and the vehicle pages of one market went out; the vehicle pages of eleven markets, the pages with
+their own editorial text, had not been reached); the form (a daily batch of what had never been sent, where the form
+Bing recommends is a message when something happens); and what it could not say (a new product waited behind the
+backlog, a removed one was never mentioned, a changed page or vehicle page was not looked at again). Cloudflare's Crawler
+Hints are a second source in the report and name cached static files (fonts, SVG, `robots.txt`) as well as pages; they
+do no harm.
 
 **Changed here.**
 
-- `robots.ts`: `Disallow: /*?*ACTION_`. Bingbot submits the header search form (a Server Action) as a GET, with its own
-  words in the box, and was logged on `/us?%24ACTION_3%3A0=…&search=2026` and kin: 215 of 21 934 requests (1.0 %), a
-  new set with every build (the action ids change), each a 307 to the same page. It is the "limit URL parameters" of
-  Bing's crawl-capacity recommendation, and it is small.
-- `indexnow.mjs` reads the kinds in the order `--kinds` names them, and the daily unit now sends `pages,vehicles`, 2 000
-  a day (about 16 000 are unsent: eight days), and no products. The measurement is the one used on 1 to 3 November
-  (`IndexNow_zasah_skript.mjs` in the project's files): of the URLs told on a day, the share Bingbot fetched within 24
-  hours, against the share of the URLs not yet told. If the told ones are fetched clearly more often, add `products`
-  back or raise `--max`; if not after the eight days, IndexNow is not the lever and the timer can go. It is still a
-  daily batch, the form Bing recommends against; telling Bing when a page changes (a Saleor webhook, or the CFM
-  release) is the proper form and is not built here.
+- `robots.ts`: `Disallow: /*?*ACTION_`. Bingbot submitted the header search form (a Server Action) as a GET, with its own
+  words in the box, and was logged on `/us?%24ACTION_3%3A0=…&search=2026` and kin: 215 of 21 934 requests (1.0 %), a new
+  set with every build (the action ids change), each a 307 to the same page. It is the "limit URL parameters" of Bing's
+  crawl-capacity recommendation, and it is small. The form is a GET form now (above), so there will be no new ones; the
+  rule stays for the ones Bing already has.
+- `indexnow.mjs` and its units: section 5.
+- `lib/legacy-root-redirects.ts`: an exact table of old root addresses and the one current page each of them lives at,
+  in front of the root gate in `proxy.ts`. An entry needs the same manufacturer article number, EAN or SKU on both
+  sides; there is no rule that turns an unknown address into a redirect (not to `/sk`, not to the home page), because
+  that is the generator of junk the gate was written to close. Adding one: the address from Webmaster Tools'
+  Site Explorer export, the current product found by article number, open and its own canonical, a line and a comment.
+- The pages shard lists the brand index and the makers' pages (`lib/seo/sitemap.ts`).
+- The header search is a GET form (`header-search.tsx`).
 
-**Not changed, on purpose.** `lastmod` stays off the pages and vehicle pages (the snapshot carries one date for the
-whole export, see the comment in `sitemap.ts`); products keep Saleor's `updatedAt`. HTML keeps `private, no-store` and no validators (`ETag`, `Last-Modified`), so
-every Bing revisit is a full download, 260 to 274 KB for a product page (49 KB gzip for the one measured, of which
-155 KB of the 274 is the RSC payload): a cost to weigh against a conditional-response layer, not a defect found. Short category descriptions are CFM's
-(`category-seo-descriptions.mjs` holds the Slovak ones); the market listing `/products` (34 to 51 characters) is the
-storefront's own and is left.
+**Not proven, and what would prove it.**
+
+- **What Bing indexes of a product page.** Its body arrives in a streamed block (section 3). Webmaster Tools'
+  URL Inspection, "Live URL", then the crawled page and its HTML, for the Espace kit from "content quality", the
+  current Thule Epos 2 and one vehicle page: is the product's name, price and description in the rendered page or only
+  in the hidden block? This decides whether a thin-looking page is thin or only unread, and it should be known before the
+  catalogue is cut.
+- **Which three URLs answered 403 or 5xx** (the "not crawlable" line): the same inspection, and the nginx log for the
+  hour.
+- **Bing's crawl rate.** Crawl Control shows 8 to 10 blue blocks in the screenshot; Marek reports that the
+  default is five. This was not verified from Bing's documentation (the page needs a browser), so do not click "Default"
+  on the assumption that it raises the rate: it may lower it.
+- **Who is Bingbot.** The 16 611 requests are by user agent. Bing's reverse DNS or its published IP ranges separate the
+  real one from the scanners; the nginx log of 7 to 14 days with that filter is the number that counts.
+
+**Not changed, on purpose.** `lastmod` stays off the pages and vehicle pages (the snapshot carries one date for the whole
+export, see the comment in `sitemap.ts`); products keep Saleor's `updatedAt`. HTML keeps `private, no-store` and no
+validators (`ETag`, `Last-Modified`), so every Bing revisit is a full download, 260 to 274 KB for a product page (49 KB
+gzip for the one measured, of which 155 KB of the 274 is the RSC payload): a cost to weigh against a conditional-response
+layer, not a defect found. Short category descriptions are CFM's (`category-seo-descriptions.mjs` holds the Slovak ones;
+the snow-chain category is among the short ones); the market listing `/products` (34 to 51 characters) is the
+storefront's own and is left. German for Germany and Austria is the same text on both, which is a CFM matter as well.
