@@ -107,15 +107,6 @@ const render = (view: TyreFitView, locale = "sk-SK") =>
 		),
 	);
 
-/** React escapes text in markup: "won't" is written "won&#x27;t". */
-const escaped = (text: string) =>
-	text
-		.replaceAll("&", "&amp;")
-		.replaceAll("<", "&lt;")
-		.replaceAll(">", "&gt;")
-		.replaceAll("'", "&#x27;")
-		.replaceAll('"', "&quot;");
-
 const field = (html: string, name: string) =>
 	html.match(new RegExp(`<input type="hidden" name="${name}" value="([^"]*)"`))?.[1];
 
@@ -371,12 +362,18 @@ describe("a size the model has in another code", () => {
 });
 
 describe("a size from the supplier's data, not the maker's list", () => {
-	it("says so, in the colour of 'not confirmed', and keeps the caution in front of the shopper", () => {
+	// Owner, 2026-11-07: a size the shop holds for the product is a green "fits", whichever list holds it. The list is
+	// named in small words under the row; the old amber warning ("check the size yourself before ordering") over a
+	// buy button told a shopper who had just entered their size to do the shop's work.
+	it("is as green as the maker's list, names its source quietly, and does not tell the shopper to check it", () => {
 		const html = render(SUPPLIER);
-		expect(html).toContain('data-fit="fits-supplier"');
+		expect(html).toContain('data-fit="fits"');
+		expect(html).toContain("Rozmer vyhovuje");
 		expect(html).toContain("Podľa údajov dodávateľa");
-		expect(html).toContain(escaped(messages("sk-SK").tyreSize.sourceSupplier));
-		expect(html).toContain("bg-fitment-unconfirmed-bg");
+		expect(html).toContain("bg-fitment-fits-bg");
+		expect(html).not.toContain("bg-fitment-unconfirmed-bg");
+		expect(html).not.toContain("lucide-triangle-alert");
+		expect(html).not.toContain("overte");
 		expect(html).toContain('data-gate="complete"');
 	});
 });
