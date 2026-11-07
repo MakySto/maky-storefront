@@ -430,9 +430,12 @@ warning was not in the screenshot). Bingbot has no delay.
 submissions began on 1 November. Webmaster Tools says the same from its side: the first recommendation, and the only one marked high, is
 "our crawl capacity for your site is limited". Of the URLs it has classified from IndexNow, 356 are indexed, 61 are
 flagged "content quality", 49 "found but not indexed", 3 are not crawlable, 1 redirects, and 95 are found and not yet
-crawled. So Bing reads slowly (about 1 400 different URLs a day) and keeps 356 of the 466 it has judged; the
-bottleneck is how much it reads. Every one of the eleven sample URLs under "content quality" is a per-car roof-bar kit
-(Thule, Nordrive); so are eight of the ten visible under "not yet crawled", the other two are vehicle pages.
+crawled. Bing reads slowly (about 1 400 different URLs a day). Of the 466 it has judged (356 + 61 + 49) it keeps 76 %,
+but 565 URLs are a small, non-random sample out of 47 900 submitted, and the two measures disagree: 20 519 URLs read
+against 635 in Site Explorer's index. Either Site Explorer lags by weeks or Bing drops most of what it reads; the
+screenshots cannot tell which, an export a week apart can. Every one of the eleven sample URLs under "content
+quality" is a per-car roof-bar kit (Thule, Nordrive); so are eight of the ten visible under "not yet crawled", the
+other two are vehicle pages.
 
 **What those 256 000 URLs are.** 238 577 are products, and most of them are roof-bar kits per car: the Slovak Thule
 range alone is 9 445 products in the live list of the Slovak channel, 1 476 combinations of car, years and mounting
@@ -446,7 +449,8 @@ the markets offer, and the project's long form puts it to Marek.
 
 **IndexNow did not help, and the way it ran was wrong in two ways.** URLs sent on 1 November were fetched by Bingbot
 within 24 hours in 0.9 % of cases, those not yet sent in 0.7 % (2 November: 0.8 % and 1.2 %), and Webmaster Tools now
-recommends against "batch mode". The order was market by market with each market's products before its vehicle
+recommends against "batch mode". Its own report counts 47 900 URLs submitted and, beside them, 45 "indexed" and 53
+"crawled" (the period is not stated). The order was market by market with each market's products before its vehicle
 pages, so in three days (30 000 URLs) 28 495 products, 52 pages and the vehicle pages of one market (1 453 of 17 401)
 went out; the vehicle pages of eleven markets, the pages with their own editorial text, had not been reached.
 Cloudflare's Crawler Hints are a second source in the report and name only cached static files (fonts, SVG, `robots.txt`).
@@ -463,7 +467,9 @@ screenshots do not show a page leaving the index, an export of the indexed list 
   a day (about 16 000 are unsent: eight days), and no products. The measurement is the one used on 1 to 3 November
   (`IndexNow_zasah_skript.mjs` in the project's files): of the URLs told on a day, the share Bingbot fetched within 24
   hours, against the share of the URLs not yet told. If the told ones are fetched clearly more often, add `products`
-  back or raise `--max`; if not after the eight days, IndexNow is not the lever and the timer can go.
+  back or raise `--max`; if not after the eight days, IndexNow is not the lever and the timer can go. It is still a
+  daily batch, the form Bing recommends against; telling Bing when a page changes (a Saleor webhook, or the CFM
+  release) is the proper form and is not built here.
 
 **Not changed, on purpose.** `lastmod` stays off the pages and vehicle pages (the snapshot carries one date for the
 whole export, see the comment in `sitemap.ts`); products keep Saleor's `updatedAt`. HTML keeps `private, no-store` and no validators (`ETag`, `Last-Modified`), so
