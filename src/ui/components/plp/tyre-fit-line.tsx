@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon, CircleHelpIcon, TriangleAlertIcon, XIcon } from "lucide-react";
+import { CheckIcon, CircleHelpIcon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
@@ -10,20 +10,22 @@ import { TONE_CLASSES } from "@/ui/components/fitment/verdict-presentation";
 /**
  * What a snow-chain card says about the tyre size the shopper gave: the product page's verdict in one line.
  *
- * The same four answers as the page's box (`tyre-fit-box`), in the same words (the `tyreSize` messages the box
+ * The same three answers as the page's box (`tyre-fit-box`), in the same words (the `tyreSize` messages the box
  * already uses), so a card and its page never disagree about "does it fit":
  *
- *   fits                 the manufacturer's list holds the size            green, a tick
- *   fits-supplier        the supplier's data from the previous shop's card amber, a warning
- *   fits-with-condition  the list attaches a tyre make or model to it      amber, a warning
- *   no-fit               the list does not hold the size                   quiet, a cross
+ *   fits   the shop holds the size for the product      green, a tick
+ *   ask    the list attaches a tyre make or model to it  amber, a question mark
+ *   no-fit the list does not hold the size              quiet, a cross
+ *
+ * There is no fourth, "fits, but check it yourself": the owner (2026-11-07) wants a card green when the product has the
+ * size and absent from the narrowed list when it has not, like the roof racks. Where the size came from is said on the
+ * product page, in small words under the green row, not as a warning on the card.
  *
  * "Does not fit" is deliberately not the red of the box: beside it stand 130 other cards that say the same when the
  * shopper asked for all chains, and a wall of red would shout louder than the one answer they came for.
  */
 const LOOK: Record<TyreCardFitKind, { tone: string; icon: typeof CheckIcon }> = {
 	fits: { tone: cn("rounded-xs px-2 py-1", TONE_CLASSES.fits), icon: CheckIcon },
-	"fits-supplier": { tone: cn("rounded-xs px-2 py-1", TONE_CLASSES.unconfirmed), icon: TriangleAlertIcon },
 	ask: { tone: cn("rounded-xs px-2 py-1", TONE_CLASSES.unconfirmed), icon: CircleHelpIcon },
 	"no-fit": { tone: "rounded-xs px-2 py-1 text-text-tertiary", icon: XIcon },
 };
@@ -36,9 +38,7 @@ export function TyreFitLine({ fit, className }: { fit: TyreCardFit; className?: 
 			? t("fitNoFitTitle", { size: fit.size })
 			: fit.kind === "ask"
 				? t("cardAsk")
-				: fit.kind === "fits-supplier"
-					? t("fitSupplierTitle", { size: fit.size })
-					: t("fitFitsTitle", { size: fit.size });
+				: t("fitFitsTitle", { size: fit.size });
 
 	return (
 		<p

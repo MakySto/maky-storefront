@@ -348,24 +348,30 @@ describe("what a listing card says", () => {
 		expect(tyreCardFitOf(undefined, "205/55 R16")).toBeNull();
 	});
 
-	it("says 'fits' on the manufacturer's list and 'fits, by the supplier' on the previous shop's card", () => {
+	it("says 'fits' alike on the manufacturer's list and on the previous shop's card (owner, 2026-11-07)", () => {
 		const manufacturer = products.find(([, product]) => isManufacturerListSource(product.source))!;
 		const supplier = products.find(([, product]) => !isManufacturerListSource(product.source))!;
-		expect(tyreCardFitOf(manufacturer[0], manufacturer[1].sizes[0][0])).toEqual({
-			size: manufacturer[1].sizes[0][0],
+		const plain = (product: (typeof products)[number][1]) =>
+			product.sizes.find(([, , condition]) => condition === "")![0];
+		expect(tyreCardFitOf(manufacturer[0], plain(manufacturer[1]))).toEqual({
+			size: plain(manufacturer[1]),
 			kind: "fits",
+			answer: null,
 		});
-		expect(tyreCardFitOf(supplier[0], supplier[1].sizes[0][0])).toEqual({
-			size: supplier[1].sizes[0][0],
-			kind: "fits-supplier",
+		expect(tyreCardFitOf(supplier[0], plain(supplier[1]))).toEqual({
+			size: plain(supplier[1]),
+			kind: "fits",
+			answer: null,
 		});
 	});
 
 	it("asks while the question is open, and says fits or no-fit once it is answered", () => {
 		expect(tyreCardFitOf("N16105", "195/75 R16")).toEqual({ size: "195/75 R16", kind: "ask" });
+		// The answer that decided it travels with the verdict: the card's add sends it back to the server.
 		expect(tyreCardFitOf("N16105", "195/75 R16", { [MAKE_KEY]: "Kleber" })).toEqual({
 			size: "195/75 R16",
 			kind: "fits",
+			answer: "Kleber",
 		});
 		expect(tyreCardFitOf("N16105", "195/75 R16", { [MAKE_KEY]: NO_MATCH_ANSWER })).toEqual({
 			size: "195/75 R16",
@@ -375,6 +381,72 @@ describe("what a listing card says", () => {
 
 	it("says no-fit for a size the code's list does not hold", () => {
 		expect(tyreCardFitOf("N16061", "205/55 R16")).toEqual({ size: "205/55 R16", kind: "no-fit" });
+	});
+});
+
+describe("a card's one-click add and the server", () => {
+	// The card adds with the pair it shows (its size, and the answer that decided it). The server checks that pair against
+	// the product's own list again, so a card that said "fits" must never be refused, and a card that said anything else
+	// must never have its pair accepted: the card's button cannot promise what the server will not do.
+	const SIZES = [
+		"205/55 R16",
+		"195/75 R16",
+		"215/60 R16",
+		"145/70 R12",
+		"270/75 R15",
+		"165/75 R14",
+		UNLISTED,
+	];
+	const ANSWER_SETS: TyreAnswers[] = [
+		{},
+		{ [MAKE_KEY]: "Michelin" },
+		{ [MAKE_KEY]: NO_MATCH_ANSWER },
+		{ [DURAVIS]: NO_MATCH_ANSWER },
+	];
+
+	it("is accepted for every product, size and answer where the card says fits, whichever list holds the size", () => {
+		let checked = 0;
+		for (const size of SIZES) {
+			for (const answers of ANSWER_SETS) {
+				for (const [code] of products) {
+					const fit = tyreCardFitOf(code, size, answers);
+					if (fit?.kind !== "fits") continue;
+					const refused = resolveTyreSelection(code, {
+						mode: "size",
+						size: fit.size,
+						answer: fit.answer ?? "",
+					});
+					expect(refused.ok, `${code} ${size} ${JSON.stringify(answers)}`).toBe(true);
+					checked += 1;
+				}
+			}
+		}
+		expect(checked).toBeGreaterThan(100);
+	});
+
+	it("is refused for every product, size and answer where the card does not say fits", () => {
+		for (const size of SIZES) {
+			for (const answers of ANSWER_SETS) {
+				for (const [code] of products) {
+					const fit = tyreCardFitOf(code, size, answers);
+					if (!fit || fit.kind === "fits") continue;
+					const result = resolveTyreSelection(code, { mode: "size", size, answer: "" });
+					expect(result.ok, `${code} ${size} ${fit.kind}`).toBe(false);
+				}
+			}
+		}
+	});
+
+	it("carries the previous shop's products too: a held size is a fit, with no warning kind left to say otherwise", () => {
+		const supplier = products.filter(([, product]) => !isManufacturerListSource(product.source));
+		expect(supplier.length).toBeGreaterThan(0);
+		for (const [code, product] of supplier) {
+			const [size, , condition] = product.sizes[0];
+			const fit = tyreCardFitOf(code, size);
+			expect(fit, code).toEqual(
+				condition === "" ? { size, kind: "fits", answer: null } : { size, kind: "ask" },
+			);
+		}
 	});
 });
 

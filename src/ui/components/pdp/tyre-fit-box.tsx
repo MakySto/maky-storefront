@@ -457,23 +457,24 @@ export function TyreFitRow() {
 			});
 
 		case "fits": {
-			const confirmed = view.fromManufacturerList;
+			// Green whichever list the size came from (owner, 2026-11-07): the shop holds the size for this product, and
+			// the row says so. The list is named in small words under it, never as "check it yourself" over a green buy
+			// button, which told a shopper who had just entered their size to do the shop's work.
 			let sub: string;
-			if (!confirmed) sub = t("sourceSupplier");
-			else if (view.question && view.answer !== null && view.answer !== NO_MATCH_ANSWER) {
+			if (view.question && view.answer !== null && view.answer !== NO_MATCH_ANSWER) {
 				sub = t("fitFitsAnswer", { answer: view.answer });
 			} else if (view.question) {
 				sub = t(view.question.subject === "make" ? "fitFitsOtherMake" : "fitFitsOtherModel", {
 					tyres: view.question.options.join(TYRE_LIST_SEPARATOR),
 				});
 			} else {
-				sub = t("fitFitsManufacturer");
+				sub = t(view.fromManufacturerList ? "fitFitsManufacturer" : "fitFitsSupplier");
 			}
 			return row({
-				fit: confirmed ? "fits" : "fits-supplier",
-				tone: confirmed ? TONE_CLASSES.fits : TONE_CLASSES.unconfirmed,
-				icon: icon(confirmed ? CheckIcon : TriangleAlertIcon),
-				title: t(confirmed ? "fitFitsTitle" : "fitSupplierTitle", { size: view.size }),
+				fit: "fits",
+				tone: TONE_CLASSES.fits,
+				icon: icon(CheckIcon),
+				title: t("fitFitsTitle", { size: view.size }),
 				sub,
 			});
 		}

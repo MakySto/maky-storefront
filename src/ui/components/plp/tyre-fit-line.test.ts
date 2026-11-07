@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./actions", () => ({ addListingItemToCartAction: vi.fn() }));
 
+import { TYRE_FIELDS } from "@/lib/tyre-size/fields";
 import type { TyreCardFit, TyreCardFitKind } from "@/lib/tyre-size/types";
 import { ProductCard, type ProductCardData } from "./product-card";
 import { TyreFitLine } from "./tyre-fit-line";
@@ -53,14 +54,14 @@ const inLocale = (locale: string, child: ReturnType<typeof createElement>) =>
 const escaped = (text: string) => text.replace(/'/g, "&#x27;");
 
 const SIZE = "205/55 R16";
-const fit = (kind: TyreCardFitKind, size = SIZE): TyreCardFit => ({ size, kind });
+const fit = (kind: TyreCardFitKind, size = SIZE): TyreCardFit =>
+	kind === "fits" ? { size, kind, answer: null } : { size, kind };
 
 describe("the card's line about the tyre size", () => {
-	it("says what the product page's row says, for each of the four answers", () => {
+	it("says what the product page's row says, for each of the three answers", () => {
 		const t = messages("sk-SK").tyreSize as Record<string, string>;
 		const words: Record<TyreCardFitKind, string> = {
 			fits: t.fitFitsTitle.replace("{size}", SIZE),
-			"fits-supplier": t.fitSupplierTitle.replace("{size}", SIZE),
 			ask: t.cardAsk,
 			"no-fit": t.fitNoFitTitle.replace("{size}", SIZE),
 		};
@@ -72,14 +73,25 @@ describe("the card's line about the tyre size", () => {
 		}
 	});
 
-	it("shows a confirmed fit in the fit colours and a doubtful or open one in the unconfirmed colours", () => {
+	it("shows a fit in the fit colours and an open question in the unconfirmed colours, and nothing in between", () => {
 		const fits = inLocale("sk-SK", createElement(TyreFitLine, { fit: fit("fits") }));
 		expect(fits).toContain("text-fitment-fits");
-		for (const kind of ["fits-supplier", "ask"] as const) {
-			const html = inLocale("sk-SK", createElement(TyreFitLine, { fit: fit(kind) }));
-			expect(html, kind).toContain("text-fitment-unconfirmed");
-			expect(html, kind).not.toContain("text-fitment-fits");
+		expect(fits).not.toContain("text-fitment-unconfirmed");
+		const ask = inLocale("sk-SK", createElement(TyreFitLine, { fit: fit("ask") }));
+		expect(ask).toContain("text-fitment-unconfirmed");
+		expect(ask).not.toContain("text-fitment-fits");
+	});
+
+	it("has no 'check it yourself' warning for a size the shop holds, whichever list holds it (owner, 2026-11-07)", () => {
+		for (const locale of LOCALES) {
+			const t = messages(locale).tyreSize as Record<string, string>;
+			expect(t.fitSupplierTitle, locale).toBeUndefined();
+			expect(t.sourceSupplier, locale).toBeUndefined();
 		}
+		// A tick, never the warning triangle, on every green card.
+		const html = inLocale("sk-SK", createElement(TyreFitLine, { fit: fit("fits") }));
+		expect(html).toContain("lucide-check");
+		expect(html).not.toContain("lucide-triangle-alert");
 	});
 
 	it("keeps 'does not fit' quiet: no red, no filled badge, because 130 cards may say it at once", () => {
@@ -110,7 +122,7 @@ describe("the card's line about the tyre size", () => {
 });
 
 describe("on the listing card", () => {
-	const card = (tyreFit?: TyreCardFit): ProductCardData => ({
+	const card = (tyreFit?: TyreCardFit, more: Partial<ProductCardData> = {}): ProductCardData => ({
 		id: "product-1",
 		name: "Snow chains",
 		slug: "snow-chains",
@@ -125,8 +137,14 @@ describe("on the listing card", () => {
 		channel: "sk-eur",
 		isPurchasable: true,
 		tyreFit,
+		...more,
 	});
-	const html = (product: ProductCardData) => inLocale("sk-SK", createElement(ProductCard, { product }));
+	const html = (product: ProductCardData, purchase: "stepper" | "button" = "button") =>
+		inLocale("sk-SK", createElement(ProductCard, { product, purchase }));
+	/** The value of a hidden input of the card's form, by name. */
+	const field = (markup: string, name: string): string | null =>
+		markup.match(new RegExp(`<input type="hidden" name="${name}" value="([^"]*)"`))?.[1] ?? null;
+	const t = messages("sk-SK") as { common: Record<string, string>; tyreSize: Record<string, string> };
 
 	it("carries the line when the card has a verdict, and nothing when it has none", () => {
 		expect(html(card(fit("fits")))).toContain('data-testid="card-tyre-fit"');
@@ -134,11 +152,51 @@ describe("on the listing card", () => {
 		expect(html(card())).not.toContain("card-tyre-fit");
 	});
 
-	it("still sends the shopper to the page, where the size is confirmed, and offers no quick add", () => {
-		for (const kind of ["fits", "ask", "no-fit"] as const) {
-			const withFit = html(card(fit(kind)));
-			expect(withFit, kind).toContain('href="/snow-chains"');
-			expect(withFit, kind).not.toContain("<form");
+	it("adds in one click when the card holds a size that fits, with that size, like a roof rack with the car chosen", () => {
+		const markup = html(card(fit("fits")));
+		expect(markup).toContain("<form");
+		expect(markup).toContain(escaped(t.common.addToCartShort));
+		expect(markup).not.toContain(escaped(t.common.viewDetail));
+		expect(field(markup, TYRE_FIELDS.mode)).toBe("size");
+		expect(field(markup, TYRE_FIELDS.size)).toBe(SIZE);
+		expect(field(markup, TYRE_FIELDS.answer)).toBe("");
+		expect(field(markup, "variantId")).toBe("variant-1");
+		expect(field(markup, "quantity")).toBe("1");
+	});
+
+	it("sends the answer that made it fit along with the size, because the server checks the pair", () => {
+		const markup = html(card({ size: SIZE, kind: "fits", answer: "Michelin" }));
+		expect(field(markup, TYRE_FIELDS.answer)).toBe("Michelin");
+	});
+
+	it("sends the shopper to the page, and to the question, when the size depends on their tyres", () => {
+		const markup = html(card(fit("ask")));
+		expect(markup).toContain('href="/snow-chains"');
+		expect(markup).toContain(escaped(t.tyreSize.buttonAsk));
+		expect(markup).not.toContain("<form");
+	});
+
+	it("sends the shopper to the page when the size does not fit, and when no size is known", () => {
+		for (const withFit of [card(fit("no-fit")), card(undefined)]) {
+			const markup = html(withFit);
+			expect(markup).toContain('href="/snow-chains"');
+			expect(markup).toContain(escaped(t.common.viewDetail));
+			expect(markup).not.toContain("<form");
 		}
+	});
+
+	it("still links to the page when the product cannot be bought right now, whatever it fits", () => {
+		for (const more of [{ quantityAvailable: 0 }, { isPurchasable: false }, { variantId: null }]) {
+			const markup = html(card(fit("fits"), more));
+			expect(markup, JSON.stringify(more)).not.toContain("<form");
+			expect(markup, JSON.stringify(more)).toContain('href="/snow-chains"');
+		}
+	});
+
+	it("keeps every other product's add exactly as it was, with no tyre field", () => {
+		const markup = html(card(undefined, { productCode: "A7604" }));
+		expect(markup).toContain("<form");
+		expect(field(markup, TYRE_FIELDS.mode)).toBeNull();
+		expect(field(markup, TYRE_FIELDS.size)).toBeNull();
 	});
 });

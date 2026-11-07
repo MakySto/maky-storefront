@@ -90,7 +90,7 @@ function keysUsedIn(file: string): string[] {
 	const keys = new Set<string>();
 	for (const name of names) {
 		for (const argument of firstArguments(source, name)) {
-			// In `confirmed ? "fitFitsTitle" : "fitSupplierTitle"` the keys are what follows the single "?".
+			// In `kind === "no-fit" ? "fitNoFitTitle" : "fitFitsTitle"` the keys are what follows the single "?".
 			const branches = argument.split(/(?<!\?)\?(?!\?)/);
 			const texts = branches.length > 1 ? branches.slice(1).join("?") : argument;
 			for (const literal of texts.matchAll(/"([A-Za-z]+)"/g)) keys.add(literal[1]);
@@ -161,7 +161,7 @@ describe("the tyre-size texts the components ask for", () => {
 			expect.arrayContaining(["errorRequired", "errorInvalid", "errorCondition"]),
 		);
 		expect(found["src/ui/components/plp/tyre-fit-line.tsx"]).toEqual(
-			expect.arrayContaining(["fitFitsTitle", "fitSupplierTitle", "cardAsk", "fitNoFitTitle"]),
+			expect.arrayContaining(["fitFitsTitle", "cardAsk", "fitNoFitTitle"]),
 		);
 		// The listing control is a server component: its translator is found by the second form.
 		expect(found["src/ui/components/fitment/tyre-listing-filter.tsx"]).toEqual(

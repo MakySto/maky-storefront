@@ -34,7 +34,7 @@ const card = (productCode: string): ProductCardData => ({
 });
 
 describe("ProductCard of a product that is added with a tyre size", () => {
-	it("links to the page where the size is chosen, and offers no quick add", () => {
+	it("links to the page where the size is chosen while no size is known, and offers no quick add", () => {
 		const html = renderToStaticMarkup(createElement(ProductCard, { product: card("N16061") }));
 
 		expect(html).toContain("View product");
@@ -42,6 +42,30 @@ describe("ProductCard of a product that is added with a tyre size", () => {
 		expect(html).not.toContain("<form");
 		expect(html).not.toContain('name="variantId"');
 		expect(html).not.toContain(">Add to cart<");
+	});
+
+	it("adds in one click once the card holds a size that fits it, and says which", () => {
+		const html = renderToStaticMarkup(
+			createElement(ProductCard, {
+				product: { ...card("N16061"), tyreFit: { size: "215/55 R17", kind: "fits", answer: null } },
+			}),
+		);
+
+		expect(html).toContain("<form");
+		expect(html).toContain('name="variantId"');
+		expect(html).toContain('name="tyreMode" value="size"');
+		expect(html).toContain('name="tyreSize" value="215/55 R17"');
+		expect(html).not.toContain("View product");
+	});
+
+	it("keeps the link for a size that does not fit, and for one that still needs a question answered", () => {
+		for (const kind of ["no-fit", "ask"] as const) {
+			const html = renderToStaticMarkup(
+				createElement(ProductCard, { product: { ...card("N16061"), tyreFit: { size: "215/55 R17", kind } } }),
+			);
+			expect(html, kind).not.toContain("<form");
+			expect(html, kind).toContain('href="/snow-chains"');
+		}
 	});
 
 	it("keeps the quick add for every other purchasable product", () => {
