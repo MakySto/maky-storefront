@@ -38,7 +38,14 @@ function build(
 		makes: [{ id: "fiat", name: "Fiat" }],
 		models: [{ id: "panda", makeId: "fiat", name: "Panda" }],
 		generations: [
-			{ id: "p319", modelId: "panda", name: "319", productionYearFrom: 2011, productionYearTo: null },
+			{
+				id: "p319",
+				modelId: "panda",
+				name: "319",
+				productionYearFrom: 2011,
+				productionYearTo: null,
+				qualifiers: {},
+			},
 		],
 		applications: [
 			{
