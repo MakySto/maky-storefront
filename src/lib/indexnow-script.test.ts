@@ -631,12 +631,12 @@ describe("scripts/ops/indexnow.mjs, a run", () => {
 	});
 });
 
-describe("scripts/ops/systemd, the daily run", () => {
+describe("scripts/ops/systemd, the daily run (the backlog)", () => {
 	const root = process.cwd();
 	const unit = readFileSync(join(root, "scripts/ops/systemd/maky-indexnow.service"), "utf8");
 	const timer = readFileSync(join(root, "scripts/ops/systemd/maky-indexnow.timer"), "utf8");
 
-	it("starts the tool with options it accepts: pages first, then vehicle pages, a state file outside the checkout, --fire", () => {
+	it("starts the tool in backlog mode with options it accepts: pages first, then vehicle pages, a state file outside the checkout, --fire", () => {
 		const line = unit.split("\n").find((l) => l.startsWith("ExecStart="));
 		expect(line).toBeDefined();
 		const args = (line as string)
@@ -645,9 +645,10 @@ describe("scripts/ops/systemd, the daily run", () => {
 			.split(/\s+/);
 		const options = readOptions(args);
 		expect(options.error).toBeUndefined();
-		// Products are not in the daily run: Bing flagged 10 000 a day as batch mode and the log showed no effect
-		// (docs/design/seo-indexing-bing.md, section 9). The pages with their own texts go first.
-		expect(options).toMatchObject({ fire: true, kinds: ["pages", "vehicles"], max: 2_000 });
+		// Products are not in the daily run: Bing flagged 10 000 a day as batch mode (docs/design/seo-indexing-bing.md,
+		// section 9); they are announced when they appear, go or change, by the hourly run. The pages with their own
+		// texts go first, and the daily run sends only what was never sent.
+		expect(options).toMatchObject({ fire: true, mode: "backlog", kinds: ["pages", "vehicles"], max: 2_000 });
 		// A deploy replaces the checkout's files; the progress must not live there.
 		expect(options.state).toMatch(/^\/var\/lib\/maky-indexnow\//);
 		expect(unit).toMatch(/^StateDirectory=maky-indexnow$/m);

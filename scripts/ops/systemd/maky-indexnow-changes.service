@@ -1,0 +1,56 @@
+# IndexNow, the hourly run: tell Bing and the other engines what CHANGED on maky.store.
+#
+# Run every hour by maky-indexnow-changes.timer. Installed by a person on the web server, not by the
+# deploy: see "The two runs" in docs/design/seo-indexing-bing.md (section 5). Merging a change to this file
+# changes nothing on the server; the installed copy in /etc/systemd/system is what runs.
+#
+# What one run does: reads the public sitemaps (pages, vehicle pages and products of every market),
+# compares them with the snapshot of the last look (/var/lib/maky-indexnow/seen.json) and sends to
+# api.indexnow.org, in this order, at most 1 000 URLs: the ones that are GONE (a removed product, the old
+# address of a renamed one), the ones that appeared, the products whose `lastmod` moved. A URL goes out at
+# most once a day. It records what the engine accepted in the snapshot and in the state file, reads
+# nothing from .env and touches neither PM2, nginx nor the build.
+#
+# The first run only takes the snapshot and announces nothing. What was already there is not "news"; the
+# URLs the engine has never been told about are the daily run's work (maky-indexnow.service, --mode backlog).
+# A market, a kind or a group of shards that cannot be read in full is left exactly as it was and the run
+# fails (exit 1) so that it shows in `systemctl --failed`; the next hour reads it again.
+#
+#   sudo install -m 644 scripts/ops/systemd/maky-indexnow-changes.service scripts/ops/systemd/maky-indexnow-changes.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now maky-indexnow-changes.timer
+#   systemctl list-timers 'maky-indexnow*'                       # when each runs next
+#   journalctl -u maky-indexnow-changes.service --since "-1 day" # what it announced, with the answers
+#   sudo systemctl disable --now maky-indexnow-changes.timer     # stop it; the snapshot and the state file keep the progress
+[Unit]
+Description=IndexNow, announce what changed on maky.store (new, removed and changed URLs, products included)
+Documentation=file:///opt/storefront/docs/design/seo-indexing-bing.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/storefront
+
+# Not while a deploy runs. deploy-production.sh holds this lock for its whole length; flock exits 1
+# when it is held, and systemd treats an ExecCondition exit of 1 to 254 as "skip", not "failed".
+# The next hour looks at the same snapshot and finds what this one did not.
+ExecCondition=/usr/bin/flock -n /run/lock/maky-storefront-deploy.lock -c true
+
+# The snapshot and the state file live in /var/lib/maky-indexnow, which systemd creates for User=ubuntu.
+# Both IndexNow units write the state file, so they take turns: run.lock is held for the whole run, and a
+# unit that finds it held waits (a run is seconds long) instead of overwriting the other one's progress.
+# A 200 is recorded; a 202 or anything else stops the run and fails the unit.
+ExecStart=/usr/bin/flock -w 900 /var/lib/maky-indexnow/run.lock /usr/bin/env node scripts/ops/indexnow.mjs --mode changes --state /var/lib/maky-indexnow/state.json --seen /var/lib/maky-indexnow/seen.json --fire
+StateDirectory=maky-indexnow
+
+# A small job that must never compete with the shop: low priority, a memory ceiling, no swap. The snapshot
+# holds every URL of the sitemaps: 256 000 of them made a 26 MB file and a peak of about 300 MB above the
+# bare interpreter in a synthetic run (2026-11-07), so 1 GB leaves room for the catalogue to double.
+Nice=15
+MemoryMax=1G
+MemorySwapMax=0
+TimeoutStartSec=30min
+NoNewPrivileges=yes

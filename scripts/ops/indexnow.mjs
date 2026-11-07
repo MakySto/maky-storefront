@@ -4,9 +4,19 @@
 //
 //   node scripts/ops/indexnow.mjs                                   # dry run: reads the sitemaps, prints the plan, sends nothing
 //   node scripts/ops/indexnow.mjs --kinds pages --fire              # the "pages" shards of every market
-//   node scripts/ops/indexnow.mjs --kinds pages,vehicles --max 2000 --state /var/lib/maky-indexnow/state.json --fire
-//                                                                   # what the daily timer runs (pages first)
 //   node scripts/ops/indexnow.mjs --urls /cz/autochladnicky,/sk/autochladnicky --fire
+//
+// The two timers on the web server run it in one of two modes, never in both at once:
+//
+//   --mode changes   what happened to the site since the last look: URLs that appeared, URLs that are
+//                    gone (a product that was removed, the old address of a renamed one) and products whose
+//                    `lastmod` moved. Every hour. Products included.
+//   --mode backlog   the URLs of the sitemap that were never sent, a limited number a day, pages and
+//                    vehicle pages first. It sends nothing that "changes" would have.
+//
+//   node scripts/ops/indexnow.mjs --mode changes --state /var/lib/maky-indexnow/state.json \
+//        --seen /var/lib/maky-indexnow/seen.json --fire
+//   node scripts/ops/indexnow.mjs --mode backlog --state /var/lib/maky-indexnow/state.json --fire
 //
 // Why it exists. On 2026-10-08 Bing Webmaster Tools showed https://maky.store/cz/autochladnicky as
 // "Not indexed due to NOINDEX directive". The page had been served `noindex` at the one moment Bing
@@ -41,6 +51,29 @@
 //      records nothing and exits 3, so the next run sends those URLs again. Any other answer stops
 //      the run too; 429 in particular means the engine finds us too chatty: wait, then run again,
 //      the state file has kept the progress.
+//   6. `--mode changes` tells the engine about a real change and nothing else. It keeps a snapshot of
+//      the sitemaps (`--seen`) and each run compares the sitemaps with it: a URL that is not in the
+//      snapshot is new, one that is no longer in the sitemap is gone (a removed product, the old
+//      address of a renamed one), a product whose `lastmod` is later than the snapshot's has changed.
+//      The first run only takes the snapshot and announces nothing: what existed before it is the
+//      backlog's business. A new market or a new kind is taken the same way. Five things keep it from
+//      announcing what is not a change:
+//        - a group of shards (a market's pages, products or vehicle pages, however many parts it has)
+//          that cannot be read in full is left alone, and a group that comes back empty where it held
+//          URLs is a failed read, not a removal of all of them;
+//        - a URL already in the state file as sent is recorded and not announced as new;
+//        - when more than a quarter of a group's `lastmod` dates move at once, that is a rewrite of the
+//          dates (on 2026-10-29 Saleor dated 96 % of the Slovak products the same day), not a quarter of
+//          the catalogue changing: the dates are recorded and nothing is announced;
+//        - a changed URL is announced at most once per `--resend-after-days` (one day in this mode): a
+//          product touched again within the day is held back, its snapshot date stays old, and the next
+//          run after the day finds it again and tells the engine once;
+//        - at most `--max` a run (1 000 by default); what does not fit is found again by the next run.
+//      Pages and vehicle pages carry no `lastmod` on purpose (src/lib/seo/sitemap.ts), so for them it
+//      sees a page appear and disappear, not a text change; a text change is announced by naming the
+//      URLs (`--urls`).
+//   7. `--mode backlog` is the earlier daily run reduced to its first half: the URLs never sent, in the
+//      order of `--kinds`, `--max` a run. It never re-announces a changed URL; `changes` does that.
 //
 // Run it where the public site and api.indexnow.org are both reachable (the web server). It reads
 // nothing from .env, touches neither PM2 nor nginx nor the build, and writes only the state file.
@@ -63,6 +96,21 @@ export const HARD_MAX = 50_000;
 /** A URL that changed after it was sent is told again only when the last telling is this old. */
 export const DEFAULT_RESEND_DAYS = 7;
 export const KINDS = ["pages", "products", "vehicles"];
+export const MODES = ["sweep", "changes", "backlog"];
+/**
+ * What each mode does when `--kinds` and `--max` are not given. `sweep` is the tool as it was before
+ * the modes: the pages shards, 10 000 a run.
+ */
+export const MODE_DEFAULTS = {
+	sweep: { kinds: "pages", max: DEFAULT_MAX, resendAfterDays: DEFAULT_RESEND_DAYS },
+	// A product can be touched several times a day; telling the engine about it more than once a day adds noise, not news.
+	changes: { kinds: "pages,vehicles,products", max: 1_000, resendAfterDays: 1 },
+	backlog: { kinds: "pages,vehicles", max: 2_000, resendAfterDays: DEFAULT_RESEND_DAYS },
+};
+/** More than this share of a group's `lastmod` dates moving in one run is a rewrite of the dates, not changes. */
+export const BULK_CHANGE_SHARE = 0.25;
+/** ... but a group has to be bigger than this before the share means anything. */
+export const BULK_CHANGE_MIN = 50;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -283,15 +331,107 @@ export function writeState(path, state) {
 	renameSync(tmp, path);
 }
 
+// ============================================================================
+// `--mode changes`: the snapshot and the comparison
+// ============================================================================
+
+/**
+ * The group a shard belongs to: `https://maky.store/sitemaps/sk-products-2.xml` -> `sk-products`.
+ * A market's products are one group however many parts they are cut into, because the cut moves: a
+ * product that was the last of part 1 yesterday is the first of part 2 today, and that is not a
+ * removal and an addition.
+ */
+export function groupOf(shardUrl) {
+	const shard = classifyShard(shardUrl);
+	return shard ? `${shard.market}-${shard.kind}` : null;
+}
+
+/** `{ [url]: lastmod }` of normalised entries; an entry without a `lastmod` keeps the empty string. */
+export function snapshotOf(entries) {
+	const out = {};
+	for (const { url, lastmod } of entries) out[url] = lastmod ?? "";
+	return out;
+}
+
+/**
+ * The snapshot of the last look, `{ version: 1, takenAt, groups: { "sk-products": { [url]: lastmod } } }`,
+ * or `null` when there is none yet (or no path): a run without a snapshot takes one and announces nothing.
+ * A file that is not a snapshot is an error, never an empty one: starting over would announce nothing and
+ * hide that the file was damaged.
+ */
+export function readSeen(path) {
+	if (!path || !existsSync(path)) return null;
+	const parsed = JSON.parse(readFileSync(path, "utf8"));
+	if (parsed?.version !== 1 || typeof parsed.groups !== "object" || parsed.groups === null) {
+		throw new Error(`${path} is not an IndexNow snapshot file (version 1)`);
+	}
+	return parsed;
+}
+
+/** Atomic, like the state file, and compact: the snapshot holds every URL of the sitemaps. */
+export function writeSeen(path, seen) {
+	mkdirSync(dirname(path), { recursive: true });
+	const tmp = `${path}.tmp-${process.pid}`;
+	writeFileSync(tmp, JSON.stringify(seen) + "\n");
+	renameSync(tmp, path);
+}
+
+/**
+ * What happened to one group between the snapshot (`previous`, `{ [url]: lastmod }`) and the sitemaps
+ * now (`entries`, as `normaliseEntries` makes them):
+ *
+ *   added     in the sitemaps, not in the snapshot
+ *   removed   in the snapshot, no longer in the sitemaps
+ *   changed   in both, and the `lastmod` is later than the snapshot's
+ *   absorbed  in both, and the `lastmod` differs in a way that says nothing about the page: it appeared
+ *             where there was none, it vanished, it went backwards, it is not a date; or it is one of
+ *             `changed` that moved together with so many others that it is a rewrite of the dates
+ *             (`bulk`). Recorded in the snapshot, never announced.
+ */
+export function diffGroup(previous, entries) {
+	const current = new Map();
+	for (const { url, lastmod } of entries) current.set(url, lastmod ?? "");
+
+	const added = [];
+	const changed = [];
+	const absorbed = [];
+	for (const [url, lastmod] of current) {
+		if (!Object.hasOwn(previous, url)) {
+			added.push({ url, lastmod });
+			continue;
+		}
+		const before = previous[url];
+		if (before === lastmod) continue;
+		const was = Date.parse(before);
+		const is = Date.parse(lastmod);
+		if (Number.isNaN(was) || Number.isNaN(is) || is <= was) absorbed.push({ url, lastmod });
+		else changed.push({ url, lastmod });
+	}
+	const removed = Object.keys(previous).filter((url) => !current.has(url));
+
+	const bulk = changed.length > Math.max(BULK_CHANGE_MIN, Math.floor(BULK_CHANGE_SHARE * current.size));
+	return {
+		added,
+		removed,
+		changed: bulk ? [] : changed,
+		absorbed: bulk ? [...absorbed, ...changed] : absorbed,
+		bulk,
+		size: current.size,
+	};
+}
+
 const OPTIONS = {
 	site: { type: "string", default: DEFAULT_SITE },
 	endpoint: { type: "string", default: DEFAULT_ENDPOINT },
-	kinds: { type: "string", default: "pages" },
+	mode: { type: "string", default: "sweep" },
+	// No default for these three: the mode decides (MODE_DEFAULTS).
+	kinds: { type: "string", default: "" },
 	markets: { type: "string", default: "" },
 	urls: { type: "string", default: "" },
-	max: { type: "string", default: String(DEFAULT_MAX) },
+	max: { type: "string", default: "" },
 	state: { type: "string", default: "" },
-	"resend-after-days": { type: "string", default: String(DEFAULT_RESEND_DAYS) },
+	seen: { type: "string", default: "" },
+	"resend-after-days": { type: "string", default: "" },
 	pause: { type: "string", default: "1000" },
 	fire: { type: "boolean", default: false },
 };
@@ -310,7 +450,17 @@ export function readOptions(argv) {
 	} catch (error) {
 		return { error: error.message };
 	}
-	const kinds = csv(values.kinds);
+	const mode = values.mode;
+	if (!MODES.includes(mode)) {
+		return { error: `--mode takes ${MODES.join(", ")} (got ${values.mode || "nothing"})` };
+	}
+	if (mode !== "sweep" && values.urls) {
+		return {
+			error: `--urls names URLs to send as they are; it belongs to the default mode, not to --mode ${mode}`,
+		};
+	}
+	const defaults = MODE_DEFAULTS[mode];
+	const kinds = csv(values.kinds || defaults.kinds);
 	const unknown = kinds.filter((kind) => !KINDS.includes(kind));
 	if (kinds.length === 0 || unknown.length > 0) {
 		return { error: `--kinds takes ${KINDS.join(", ")} (got ${values.kinds || "nothing"})` };
@@ -319,7 +469,7 @@ export function readOptions(argv) {
 	if (markets.some((market) => !/^[a-z]{2}$/.test(market))) {
 		return { error: `--markets takes two-letter market codes, e.g. sk,cz (got ${values.markets})` };
 	}
-	const max = Number(values.max);
+	const max = Number(values.max || defaults.max);
 	if (!Number.isInteger(max) || max < 1 || max > HARD_MAX) {
 		return { error: `--max is a whole number from 1 to ${HARD_MAX} (got ${values.max})` };
 	}
@@ -327,7 +477,7 @@ export function readOptions(argv) {
 	if (!Number.isInteger(pause) || pause < 0) {
 		return { error: `--pause is milliseconds, 0 or more (got ${values.pause})` };
 	}
-	const resendAfterDays = Number(values["resend-after-days"]);
+	const resendAfterDays = Number(values["resend-after-days"] || defaults.resendAfterDays);
 	if (!Number.isInteger(resendAfterDays) || resendAfterDays < 0 || resendAfterDays > 3650) {
 		return {
 			error: `--resend-after-days is a whole number of days from 0 to 3650 (got ${values["resend-after-days"]})`,
@@ -342,11 +492,13 @@ export function readOptions(argv) {
 	return {
 		site: values.site.replace(/\/$/, ""),
 		endpoint: values.endpoint,
+		mode,
 		kinds,
 		markets,
 		urls: csv(values.urls),
 		max,
 		state: values.state,
+		seen: values.seen,
 		resendAfterDays,
 		pause,
 		fire: values.fire,
@@ -358,6 +510,255 @@ export function readOptions(argv) {
 // ============================================================================
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Sends the batches, one request each. `accepted(batch)` runs after every 200, so the caller records
+ * exactly what the engine took and nothing else. Returns `{ sent, code }`: `code` is `null` when every
+ * batch was accepted, else the exit code the run ends with (1 a refusal or a failure, 3 a 202).
+ */
+async function sendBatches(batches, run, accepted) {
+	const { log, doFetch, wait, site, endpoint, key, keyUrl, pause } = run;
+	let sent = 0;
+	for (const [index, batch] of batches.entries()) {
+		if (index > 0 && pause > 0) await wait(pause);
+		const payload = buildPayload({ site, key, urlList: batch });
+		let response;
+		try {
+			response = await doFetch(endpoint, {
+				method: "POST",
+				headers: { "content-type": "application/json; charset=utf-8" },
+				body: JSON.stringify(payload),
+				signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+			});
+		} catch (error) {
+			log(`failed: request ${index + 1} of ${batches.length} did not get an answer: ${error.message}`);
+			return { sent, code: 1 };
+		}
+		const verdict = interpretStatus(response.status);
+		log(
+			`request ${index + 1} of ${batches.length}: ${batch.length} URLs -> ${response.status} (${
+				verdict.note
+			})`,
+		);
+		if (verdict.unconfirmed) {
+			log(
+				`stopped after ${sent} URL(s) sent in this run; this request is not recorded as sent, so the next run sends it again. ` +
+					`If the answer stays 202, look in the web server's nginx log for the engine reading ${keyUrl}.`,
+			);
+			return { sent, code: 3 };
+		}
+		if (!verdict.ok) {
+			log(`stopped after ${sent} URL(s) sent in this run.`);
+			return { sent, code: 1 };
+		}
+		sent += batch.length;
+		accepted(batch);
+	}
+	return { sent, code: null };
+}
+
+/**
+ * `--mode changes`: compare the sitemaps with the snapshot of the last look and announce what is new,
+ * gone or changed. See rule 6 at the top for what counts and what does not.
+ *
+ * Order of a run: removed URLs first (an address the index still holds and the site no longer
+ * serves is the one that is wrong right now), then new ones, then changed ones; inside each, the
+ * kinds in the order of `--kinds`. The snapshot and the state file are written after every request
+ * the engine answered with a 200, and only for the URLs of that request.
+ */
+async function runChanges(run) {
+	const { options, log, get, now, key, keyUrl } = run;
+	const { site, kinds, markets, max, fire } = options;
+	const resendAfterMs = options.resendAfterDays * DAY_MS;
+
+	let state;
+	let seen;
+	try {
+		state = readState(options.state);
+		seen = readSeen(options.seen);
+	} catch (error) {
+		log(`refused: ${error.message}`);
+		return 2;
+	}
+	const firstLook = seen === null;
+	seen ??= { version: 1, takenAt: null, groups: {} };
+
+	let shards;
+	try {
+		shards = selectShards(parseLocs(await get(`${site}/sitemap.xml`)), { kinds, markets });
+	} catch (error) {
+		log(`failed: could not read the sitemap index: ${error.message}`);
+		return 1;
+	}
+	if (shards.length === 0) {
+		log(
+			`refused: the sitemap index lists no ${kinds.join("/")} shard${
+				markets.length ? ` for ${markets.join(",")}` : ""
+			}.`,
+		);
+		return 2;
+	}
+	/** A market's kind -> its shards, in the order `selectShards` put them. */
+	const groups = new Map();
+	for (const shard of shards) {
+		const group = groupOf(shard);
+		groups.set(group, [...(groups.get(group) ?? []), shard]);
+	}
+
+	const removed = [];
+	const added = [];
+	const changed = [];
+	/** Recorded in the snapshot, never announced. */
+	const quiet = [];
+	/** Changed, but told less than `--resend-after-days` ago: not announced, not recorded, found again next run. */
+	const held = [];
+	/** Groups seen for the first time, whole. */
+	const taken = new Map();
+	/** Groups that could not be read in full this time. */
+	const unread = [];
+
+	for (const [group, parts] of groups) {
+		const raw = [];
+		try {
+			for (const part of parts) {
+				for (const entry of parseEntries(await get(part))) raw.push(entry); // not push(...): a shard can hold tens of thousands
+			}
+		} catch (error) {
+			unread.push(group);
+			log(`failed: ${group} could not be read (${error.message}); its snapshot stays as it was.`);
+			continue;
+		}
+		const { entries, rejected } = normaliseEntries(raw, site);
+		if (rejected.length > 0) {
+			log(`refused: ${rejected.length} URL(s) are not on ${new URL(site).host}, for example ${rejected[0]}`);
+			return 2;
+		}
+
+		const before = seen.groups[group];
+		if (!before) {
+			taken.set(group, snapshotOf(entries));
+			log(`  ${group}: ${entries.length} URLs, seen for the first time: recorded, not announced`);
+			continue;
+		}
+		const known = Object.keys(before).length;
+		if (entries.length === 0 && known > 0) {
+			unread.push(group);
+			log(
+				`failed: ${group} came back empty where the snapshot holds ${known} URLs. That is a failed read, ` +
+					`not ${known} removals; its snapshot stays as it was.`,
+			);
+			continue;
+		}
+
+		const diff = diffGroup(before, entries);
+		for (const url of diff.removed) removed.push({ group, url, lastmod: null });
+		// Sent already, by the backlog or by hand: part of the snapshot from now on, no second message.
+		for (const entry of diff.added) (state.submitted[entry.url] ? quiet : added).push({ group, ...entry });
+		for (const entry of diff.changed) {
+			const sentAt = Date.parse(state.submitted[entry.url] ?? "");
+			const recently = !Number.isNaN(sentAt) && now().getTime() - sentAt < resendAfterMs;
+			(recently ? held : changed).push({ group, ...entry });
+		}
+		for (const entry of diff.absorbed) quiet.push({ group, ...entry });
+		log(
+			`  ${group}: ${diff.size} URLs, ${diff.added.length} added, ${diff.removed.length} removed, ${diff.changed.length} changed`,
+		);
+		if (diff.bulk) {
+			log(
+				`  ${group}: ${diff.absorbed.length} dates moved in one run, more than ${Math.round(
+					BULK_CHANGE_SHARE * 100,
+				)} % of the group. That is a rewrite of the dates, not that many changes: recorded, not announced.`,
+			);
+		}
+	}
+
+	const plan = [
+		...removed.map((op) => ({ ...op, change: "removed" })),
+		...added.map((op) => ({ ...op, change: "added" })),
+		...changed.map((op) => ({ ...op, change: "changed" })),
+	];
+	const toSend = plan.slice(0, max);
+	const batches = chunk(
+		toSend.map((op) => op.url),
+		BATCH_SIZE,
+	);
+	log(
+		`${firstLook ? "first look" : "since the last look"}: ${removed.length} removed, ${
+			added.length
+		} added, ` +
+			`${changed.length} changed; ${quiet.length} recorded without a message; ` +
+			`${held.length} held back (told less than ${options.resendAfterDays} day(s) ago); ${toSend.length} in this run` +
+			`${
+				plan.length > toSend.length
+					? ` (capped by --max ${max}; the rest is found again by the next run)`
+					: ""
+			}, ` +
+			`${batches.length} request(s) of up to ${BATCH_SIZE}.`,
+	);
+	for (const op of toSend.slice(0, 5)) log(`  e.g. ${op.change}: ${op.url}`);
+	const exitCode = unread.length > 0 ? 1 : 0;
+	if (unread.length > 0) log(`${unread.length} group(s) could not be read: ${unread.join(", ")}.`);
+
+	if (!fire) {
+		log(
+			firstLook
+				? "dry run: nothing was sent and nothing was written. The first run with --fire takes the snapshot and announces nothing."
+				: "dry run: nothing was sent and nothing was written. Add --fire to send.",
+		);
+		return exitCode;
+	}
+
+	// What needs no message is written down first, so a run that then fails does not look at it again.
+	for (const [group, snapshot] of taken) seen.groups[group] = snapshot;
+	for (const { group, url, lastmod } of quiet) (seen.groups[group] ??= {})[url] = lastmod ?? "";
+	if (taken.size > 0 || quiet.length > 0) {
+		seen.takenAt = now().toISOString();
+		writeSeen(options.seen, seen);
+	}
+
+	if (toSend.length === 0) {
+		log("nothing to send.");
+		return exitCode;
+	}
+	let keyServed = false;
+	try {
+		keyServed = (await get(keyUrl)).trim() === key;
+	} catch {
+		keyServed = false;
+	}
+	if (!keyServed) {
+		log(`key file: ${keyUrl} does NOT serve the key (is the build with public/${key}.txt deployed?).`);
+		log("refused: the engine would reject the submission (403) until the key file is served.");
+		return 2;
+	}
+
+	const byUrl = new Map(toSend.map((op) => [op.url, op]));
+	const counts = { removed: 0, added: 0, changed: 0 };
+	const { sent, code } = await sendBatches(batches, run, (batch) => {
+		const stamp = now().toISOString();
+		for (const url of batch) {
+			const op = byUrl.get(url);
+			counts[op.change] += 1;
+			const snapshot = (seen.groups[op.group] ??= {});
+			if (op.change === "removed") {
+				delete snapshot[url];
+				delete state.submitted[url];
+			} else {
+				snapshot[url] = op.lastmod ?? "";
+				state.submitted[url] = stamp;
+			}
+		}
+		seen.takenAt = stamp;
+		writeState(options.state, state);
+		writeSeen(options.seen, seen);
+	});
+	if (code !== null) return code;
+	log(
+		`done: ${sent} URL(s) sent (${counts.removed} removed, ${counts.added} added, ${counts.changed} changed)` +
+			`${plan.length > sent ? `; ${plan.length - sent} more wait for the next run` : ""}.`,
+	);
+	return exitCode;
+}
 
 /**
  * `deps` exists for the tests: `fetch`, `log`, `now`, `sleep` and the directory the key is read
@@ -375,7 +776,18 @@ export async function main(argv, deps = {}) {
 		log("usage: see the top of scripts/ops/indexnow.mjs");
 		return 2;
 	}
-	const { site, endpoint, kinds, markets, max, pause, fire } = options;
+	const { site, endpoint, mode, kinds, markets, max, pause, fire } = options;
+	if (fire && mode === "changes" && (!options.state || !options.seen)) {
+		log(
+			"refused: --mode changes needs --state (what was sent) and --seen (the snapshot of the sitemaps) to send; " +
+				"without them every run would announce the same things again.",
+		);
+		return 2;
+	}
+	if (fire && mode === "backlog" && !options.state) {
+		log("refused: --mode backlog needs --state; without it every run would send the same first URLs again.");
+		return 2;
+	}
 	if (fire && options.urls.length === 0 && !options.state && kinds.some((kind) => kind !== "pages")) {
 		log(
 			"refused: products and vehicles are sent only with --state; without it every run would send the same first URLs again.",
@@ -397,6 +809,9 @@ export async function main(argv, deps = {}) {
 		if (!response.ok) throw new Error(`${url} answered ${response.status}`);
 		return response.text();
 	};
+	const run = { options, log, get, doFetch, now, wait, site, endpoint, key, keyUrl, pause };
+
+	if (mode === "changes") return runChanges(run);
 
 	// 1. Which URLs. Each candidate is a string (named) or `{ loc, lastmod }` (read from a shard).
 	let candidates;
@@ -453,7 +868,9 @@ export async function main(argv, deps = {}) {
 	const { fresh, changed } = named
 		? { fresh: entries.map((entry) => entry.url), changed: [] }
 		: selectPending(entries, state.submitted, { now: now().getTime(), resendAfterMs });
-	const pending = [...fresh, ...changed];
+	// The backlog is what was never sent. What changed after it was sent is `--mode changes`' business,
+	// and an old `lastmod` is no reason for the backlog to go back over its own tracks.
+	const pending = mode === "backlog" ? [...fresh] : [...fresh, ...changed];
 	const toSend = pending.slice(0, max);
 	const batches = chunk(toSend, BATCH_SIZE);
 
@@ -464,7 +881,7 @@ export async function main(argv, deps = {}) {
 			`${toSend.length} in this run${pending.length > toSend.length ? ` (capped by --max ${max})` : ""}, ` +
 			`${batches.length} request(s) of up to ${BATCH_SIZE}.`,
 	);
-	if (!named && changed.length > 0) {
+	if (!named && mode === "sweep" && changed.length > 0) {
 		log(
 			`  of the pending: ${fresh.length} never sent, ${changed.length} changed since they were sent ` +
 				`(told again at most every ${options.resendAfterDays} day(s)).`,
@@ -499,46 +916,13 @@ export async function main(argv, deps = {}) {
 	}
 
 	// 4. Send.
-	let sent = 0;
-	for (const [index, batch] of batches.entries()) {
-		if (index > 0 && pause > 0) await wait(pause);
-		const payload = buildPayload({ site, key, urlList: batch });
-		let response;
-		try {
-			response = await doFetch(endpoint, {
-				method: "POST",
-				headers: { "content-type": "application/json; charset=utf-8" },
-				body: JSON.stringify(payload),
-				signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-			});
-		} catch (error) {
-			log(`failed: request ${index + 1} of ${batches.length} did not get an answer: ${error.message}`);
-			return 1;
-		}
-		const verdict = interpretStatus(response.status);
-		log(
-			`request ${index + 1} of ${batches.length}: ${batch.length} URLs -> ${response.status} (${
-				verdict.note
-			})`,
-		);
-		if (verdict.unconfirmed) {
-			log(
-				`stopped after ${sent} URL(s) sent in this run; this request is not recorded as sent, so the next run sends it again. ` +
-					`If the answer stays 202, look in the web server's nginx log for the engine reading ${keyUrl}.`,
-			);
-			return 3;
-		}
-		if (!verdict.ok) {
-			log(`stopped after ${sent} URL(s) sent in this run.`);
-			return 1;
-		}
-		sent += batch.length;
-		if (options.state) {
-			const stamp = now().toISOString();
-			for (const url of batch) state.submitted[url] = stamp;
-			writeState(options.state, state);
-		}
-	}
+	const { sent, code } = await sendBatches(batches, run, (batch) => {
+		if (!options.state) return;
+		const stamp = now().toISOString();
+		for (const url of batch) state.submitted[url] = stamp;
+		writeState(options.state, state);
+	});
+	if (code !== null) return code;
 	log(`done: ${sent} URL(s) sent.`);
 	return 0;
 }
