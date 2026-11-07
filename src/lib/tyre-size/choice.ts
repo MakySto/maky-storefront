@@ -131,7 +131,13 @@ export function fittingCodes(size: string, answers: TyreAnswers = {}): Set<strin
 	return codes;
 }
 
-/** What a listing card says; `null` for a card that is not a size-controlled product. */
+/**
+ * What a listing card says; `null` for a card that is not a size-controlled product.
+ *
+ * A size the shop holds for the product is a "fits", whichever list it came from: the owner's rule (2026-11-07) is that
+ * a card is green when the product has the shopper's size and is not shown at all (in the narrowed list) when it does
+ * not. The source stays on the view (`fromManufacturerList`), where the product page puts it in small words.
+ */
 export function tyreCardFitOf(
 	code: string | null | undefined,
 	size: string,
@@ -141,5 +147,5 @@ export function tyreCardFitOf(
 	if (!evaluation) return null;
 	if (evaluation.kind === "no") return { size, kind: "no-fit" };
 	if (evaluation.kind === "ask") return { size, kind: "ask" };
-	return { size, kind: evaluation.fromManufacturerList ? "fits" : "fits-supplier" };
+	return { size, kind: "fits", answer: evaluation.answer };
 }
