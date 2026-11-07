@@ -232,6 +232,7 @@ async function renderCompatibility({
 			result={result}
 			vehicleLabel={vehicleLabel}
 			vehicleDetail={vehicleDetail}
+			year={active?.selection.year ?? null}
 			includes={includes}
 			isDemo={isDemoDataset(dataset)}
 			locale={locale}

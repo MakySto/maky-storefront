@@ -73,6 +73,11 @@ export type ResultCard = {
 	verdict: FitmentVerdict;
 	/** Whose application data this fit rests on, when the verdict is the manufacturer's. */
 	supplier: string | null;
+	/**
+	 * Only for `MAY_FIT_BY_MONTH`: the sentence that says from which month (or until which) the set
+	 * is valid — "Platí od 03/2025, overte mesiac výroby." Present means the card is NOT a fit.
+	 */
+	monthCaveat?: string | null;
 };
 
 export function ConfiguratorResults({
@@ -145,96 +150,100 @@ export function ConfiguratorResults({
 	return (
 		<ListingViewRoot>
 			<ul className={CARD_GRID}>
-				{cards.map(({ offer, title, fit, conditions, unresolvedConditions, verdict, supplier }, index) => {
-					const outOfStock = offer.availability === "out-of-stock";
-					const catalogOnly = offer.isPurchasable !== true;
-					// A set this market does not sell, in a category that asks for a quote instead of a price
-					// (`config/quote-only.ts`): no price, and the way to ask in place of the disabled button.
-					const quoteOnly = quoteInsteadOfPrice({
-						isPurchasable: offer.isPurchasable,
-						categorySlug: offer.categorySlug,
-					});
-					// Whose word this set's fit rests on. An unnamed supplier degrades to the
-					// same fallback CompatibilityBox uses, never to silence and never to
-					// "verified".
-					const statement = fitStatementFor(verdict, supplier, unresolvedConditions > 0);
-					const failure = presentCardFailure(errors[offer.saleorVariantId]);
-					const message = failure
-						? failure.messageKey.startsWith("__common.")
-							? tc(failure.messageKey.slice("__common.".length))
-							: t(failure.messageKey)
-						: null;
-					// The same four parameters and the same contents line the vehicle page and the
-					// category shelf print for this set.
-					const facetRows = offerSpecs(offer.facets, t);
-					const specs =
-						offer.categorySlug && KARGO_CATEGORY_SLUGS.includes(offer.categorySlug)
-							? withComposedLabels(withAttributeSpecs(facetRows, offer.specs ?? []), {
-									dimensions: tListing("specDimensions"),
-									bars: tListing("specBars"),
-								})
-							: facetRows;
-					const includes = describeIncludes(offer.completeSetIncludes, t);
-					const kicker = cardKicker(offer.name, offer.brand, offer.categoryName);
+				{cards.map(
+					(
+						{ offer, title, fit, conditions, unresolvedConditions, verdict, supplier, monthCaveat },
+						index,
+					) => {
+						const outOfStock = offer.availability === "out-of-stock";
+						const catalogOnly = offer.isPurchasable !== true;
+						// A set this market does not sell, in a category that asks for a quote instead of a price
+						// (`config/quote-only.ts`): no price, and the way to ask in place of the disabled button.
+						const quoteOnly = quoteInsteadOfPrice({
+							isPurchasable: offer.isPurchasable,
+							categorySlug: offer.categorySlug,
+						});
+						// Whose word this set's fit rests on. An unnamed supplier degrades to the
+						// same fallback CompatibilityBox uses, never to silence and never to
+						// "verified".
+						const statement = fitStatementFor(verdict, supplier, unresolvedConditions > 0);
+						const failure = presentCardFailure(errors[offer.saleorVariantId]);
+						const message = failure
+							? failure.messageKey.startsWith("__common.")
+								? tc(failure.messageKey.slice("__common.".length))
+								: t(failure.messageKey)
+							: null;
+						// The same four parameters and the same contents line the vehicle page and the
+						// category shelf print for this set.
+						const facetRows = offerSpecs(offer.facets, t);
+						const specs =
+							offer.categorySlug && KARGO_CATEGORY_SLUGS.includes(offer.categorySlug)
+								? withComposedLabels(withAttributeSpecs(facetRows, offer.specs ?? []), {
+										dimensions: tListing("specDimensions"),
+										bars: tListing("specBars"),
+									})
+								: facetRows;
+						const includes = describeIncludes(offer.completeSetIncludes, t);
+						const kicker = cardKicker(offer.name, offer.brand, offer.categoryName);
 
-					return (
-						<li key={offer.saleorVariantId} className={CARD} data-testid="configurator-card">
-							<div className={MEDIA_COLUMN}>
-								{/* Saleor 3.23 prepares media asynchronously, so a freshly imported thumbnail can
+						return (
+							<li key={offer.saleorVariantId} className={CARD} data-testid="configurator-card">
+								<div className={MEDIA_COLUMN}>
+									{/* Saleor 3.23 prepares media asynchronously, so a freshly imported thumbnail can
 								    answer 503 for a moment. The shared image shows a placeholder and retries once;
 								    a bare <Image> would leave a broken card. A demo set has no photograph, and it
 								    must never borrow one from a real product. */}
-								<div className={MEDIA_BOX}>
-									<ListingMedia
-										src={offer.thumbnailUrl}
-										alt={offer.thumbnailAlt ?? offer.name}
-										hoverSrc={offer.hoverImageUrl}
-										sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 340px"
-										priority={index === 0}
-										emptyLabel={offer.isDemo ? t("demoPlaceholder") : tProduct("noImageAvailable")}
-									/>
-								</div>
-								<div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
-									{isCompleteSet(offer.completeSetIncludes) && (
-										<span className="bg-fitment-fits-bg text-fitment-fits inline-block rounded-xs px-2 py-0.5 text-xs font-semibold">
-											{t("completeSet")}
-										</span>
-									)}
-									{offer.isDemo && (
-										<span className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed inline-block rounded-xs px-2 py-0.5 text-xs font-semibold">
-											{t("demoBadge")}
-										</span>
-									)}
-								</div>
-							</div>
-
-							<div className={FACTS_COLUMN}>
-								{(kicker.brand || kicker.category) && (
-									<p className="text-text-tertiary line-clamp-1 text-xs leading-snug">
-										{kicker.brand && (
-											<span className="text-text-secondary font-bold tracking-[0.07em] uppercase">
-												{kicker.brand}
+									<div className={MEDIA_BOX}>
+										<ListingMedia
+											src={offer.thumbnailUrl}
+											alt={offer.thumbnailAlt ?? offer.name}
+											hoverSrc={offer.hoverImageUrl}
+											sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 340px"
+											priority={index === 0}
+											emptyLabel={offer.isDemo ? t("demoPlaceholder") : tProduct("noImageAvailable")}
+										/>
+									</div>
+									<div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
+										{isCompleteSet(offer.completeSetIncludes) && (
+											<span className="bg-fitment-fits-bg text-fitment-fits inline-block rounded-xs px-2 py-0.5 text-xs font-semibold">
+												{t("completeSet")}
 											</span>
 										)}
-										{kicker.brand && kicker.category && <span aria-hidden="true"> · </span>}
-										{kicker.category && <span>{kicker.category}</span>}
-									</p>
-								)}
-								<h3 className={cn(TITLE, "sm:min-h-0", !(kicker.brand || kicker.category) && "mt-0")}>
-									{offer.slug ? (
-										<LinkWithChannel
-											href={`/${offer.slug}`}
-											className="text-text-primary decoration-brand/40 underline-offset-[3px] hover:underline focus-visible:outline-hidden"
-										>
-											<span className="absolute inset-0" aria-hidden="true" />
-											{title?.model ?? offer.name}
-										</LinkWithChannel>
-									) : (
-										title?.model ?? offer.name
-									)}
-								</h3>
+										{offer.isDemo && (
+											<span className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed inline-block rounded-xs px-2 py-0.5 text-xs font-semibold">
+												{t("demoBadge")}
+											</span>
+										)}
+									</div>
+								</div>
 
-								{/*
+								<div className={FACTS_COLUMN}>
+									{(kicker.brand || kicker.category) && (
+										<p className="text-text-tertiary line-clamp-1 text-xs leading-snug">
+											{kicker.brand && (
+												<span className="text-text-secondary font-bold tracking-[0.07em] uppercase">
+													{kicker.brand}
+												</span>
+											)}
+											{kicker.brand && kicker.category && <span aria-hidden="true"> · </span>}
+											{kicker.category && <span>{kicker.category}</span>}
+										</p>
+									)}
+									<h3 className={cn(TITLE, "sm:min-h-0", !(kicker.brand || kicker.category) && "mt-0")}>
+										{offer.slug ? (
+											<LinkWithChannel
+												href={`/${offer.slug}`}
+												className="text-text-primary decoration-brand/40 underline-offset-[3px] hover:underline focus-visible:outline-hidden"
+											>
+												<span className="absolute inset-0" aria-hidden="true" />
+												{title?.model ?? offer.name}
+											</LinkWithChannel>
+										) : (
+											title?.model ?? offer.name
+										)}
+									</h3>
+
+									{/*
 								  The fit statement belongs to THIS set, not to the page — and it must
 								  say whose word it is. Both sentences here used to begin "Overené",
 								  for every offerable card. Since MANUFACTURER_FIT became offerable
@@ -242,179 +251,189 @@ export function ConfiguratorResults({
 								  part for a car is the manufacturer's statement, not our
 								  verification. Only VERIFIED_FIT earns the word.
 								*/}
-								<p
-									className={
-										unresolvedConditions > 0
-											? "text-fitment-unconfirmed mt-2 text-sm font-medium"
-											: "text-fitment-fits mt-2 text-sm font-medium"
-									}
-								>
-									{statement.supplier === undefined
-										? t(statement.key)
-										: t(statement.key, { supplier: statement.supplier ?? tf("supplierFallback") })}
-								</p>
-
-								{fit && (
 									<p
-										className="text-text-secondary mt-1 text-[0.8125rem] leading-snug"
-										data-testid="card-fit"
+										className={
+											unresolvedConditions > 0 || verdict === "MAY_FIT_BY_MONTH"
+												? "text-fitment-unconfirmed mt-2 text-sm font-medium"
+												: "text-fitment-fits mt-2 text-sm font-medium"
+										}
 									>
-										{fit.roof ? `${tf("cardRoof", { roof: fit.roof })} · ` : ""}
-										{tf("cardYears", { years: fit.years })}
+										{statement.supplier === undefined
+											? t(statement.key)
+											: t(statement.key, { supplier: statement.supplier ?? tf("supplierFallback") })}
 									</p>
-								)}
-							</div>
 
-							<div className={SPECS_BLOCK}>
-								<ListingSpecs specs={specs} className="border-border-subtle border-t pt-2.5" />
-
-								{includes && (
-									<p className="text-text-secondary mt-2.5 text-[0.8125rem] leading-snug">
-										<span className="font-medium">{t("setIncludes")}: </span>
-										{includes}
-									</p>
-								)}
-
-								{conditions.length > 0 && (
-									<ul className="text-text-secondary mt-2.5 list-disc space-y-1 pl-4 text-[0.8125rem]">
-										{conditions.map((text) => (
-											<li key={text}>{text}</li>
-										))}
-									</ul>
-								)}
-
-								{unresolvedConditions > 0 && (
-									<p className="text-fitment-unconfirmed mt-2.5 flex items-start gap-1.5 text-sm">
-										<Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-										{t("cardConditionsIncomplete")}
-									</p>
-								)}
-							</div>
-
-							<div className={PRICE_ROW}>
-								{quoteOnly ? (
-									<span className="text-text-primary text-base leading-tight font-semibold">
-										{tProduct("requestQuote")}
-									</span>
-								) : offer.price ? (
-									<span className="text-price-current text-xl leading-tight font-extrabold tracking-[-0.02em] whitespace-nowrap tabular-nums">
-										{formatPrice(offer.price.amount, offer.price.currency, locale)}
-									</span>
-								) : (
-									// Never another variant's price standing in for this one.
-									<span className="text-text-tertiary text-sm">{t("priceUnavailable")}</span>
-								)}
-								{offer.isPurchasable && offer.availability === "in-stock" && (
-									<span className="text-status-success text-xs font-semibold">{tc("inStock")}</span>
-								)}
-								{offer.isPurchasable && offer.availability === "on-demand" && (
-									<span className="text-status-info text-xs font-semibold">{tc("onDemand")}</span>
-								)}
-							</div>
-
-							<div className={ACTION_ROW}>
-								<div className="space-y-2">
-									{errors[offer.saleorVariantId] === "payment-locked" &&
-									paymentLocks[offer.saleorVariantId] ? (
-										<PaymentLockRecovery
-											key={paymentLocks[offer.saleorVariantId]!.key}
-											checkoutId={paymentLocks[offer.saleorVariantId]!.checkoutId}
-											channelSlug={channel}
-											subject="cart"
-											payOriginal={{
-												href: buildCheckoutPath({
-													checkoutId: paymentLocks[offer.saleorVariantId]!.checkoutId,
-													step: "payment",
-												}),
-											}}
-											finishOrder={{
-												href: buildCheckoutPath({
-													checkoutId: paymentLocks[offer.saleorVariantId]!.checkoutId,
-													step: "payment",
-												}),
-											}}
-										/>
-									) : failure?.tone === "status" ? (
-										// Deliberately not an error, and not red: we do not know that it
-										// failed, and a refusal-looking message invites a second click on a
-										// mutation that is not idempotent. Same presentation as the listing's
-										// cart form for the same outcome.
-										<p role="status" className="text-text-secondary flex items-start gap-1.5 text-sm">
-											<HelpCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-											{message}
+									{monthCaveat && (
+										<p
+											className="text-fitment-unconfirmed mt-1 text-[0.8125rem] leading-snug font-medium"
+											data-testid="card-month-caveat"
+										>
+											{monthCaveat}
 										</p>
-									) : (
-										failure && (
-											<p role="alert" className="text-fitment-no-fit text-sm">
-												{message}
-											</p>
-										)
 									)}
 
-									<div className="flex flex-wrap gap-2">
-										{offer.isDemo ? (
-											<Button type="button" variant="outline-solid" disabled className="flex-1">
-												{t("demoNoPurchase")}
-											</Button>
-										) : quoteOnly ? (
-											// The purchase colour, as on the product page: this is the one action here.
-											<Link
-												href={quoteRequestHref(channel, quoteReferenceFor(offer.name))}
-												className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-10 flex-1 items-center justify-center rounded-md px-3 text-sm font-medium transition-colors"
-											>
-												{tProduct("requestQuote")}
-											</Link>
-										) : catalogOnly ? (
-											<Button type="button" variant="outline-solid" disabled className="flex-1">
-												{tCart("addUnavailable")}
-											</Button>
-										) : failure?.primaryAction === "check-cart" ? (
-											// The add may well have landed. The control now under the cursor
-											// takes the shopper to look, rather than sending the same
-											// non-idempotent mutation a second time. Adding again stays
-											// available as a separate, differently-labelled decision made
-											// AFTER looking, and no timer re-enables anything.
-											<>
-												<LinkWithChannel
-													href="/cart"
-													className="bg-action-primary text-action-primary-text hover:bg-action-primary-hover inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium transition-colors"
+									{fit && (
+										<p
+											className="text-text-secondary mt-1 text-[0.8125rem] leading-snug"
+											data-testid="card-fit"
+										>
+											{fit.roof ? `${tf("cardRoof", { roof: fit.roof })} · ` : ""}
+											{tf("cardYears", { years: fit.years })}
+										</p>
+									)}
+								</div>
+
+								<div className={SPECS_BLOCK}>
+									<ListingSpecs specs={specs} className="border-border-subtle border-t pt-2.5" />
+
+									{includes && (
+										<p className="text-text-secondary mt-2.5 text-[0.8125rem] leading-snug">
+											<span className="font-medium">{t("setIncludes")}: </span>
+											{includes}
+										</p>
+									)}
+
+									{conditions.length > 0 && (
+										<ul className="text-text-secondary mt-2.5 list-disc space-y-1 pl-4 text-[0.8125rem]">
+											{conditions.map((text) => (
+												<li key={text}>{text}</li>
+											))}
+										</ul>
+									)}
+
+									{unresolvedConditions > 0 && (
+										<p className="text-fitment-unconfirmed mt-2.5 flex items-start gap-1.5 text-sm">
+											<Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+											{t("cardConditionsIncomplete")}
+										</p>
+									)}
+								</div>
+
+								<div className={PRICE_ROW}>
+									{quoteOnly ? (
+										<span className="text-text-primary text-base leading-tight font-semibold">
+											{tProduct("requestQuote")}
+										</span>
+									) : offer.price ? (
+										<span className="text-price-current text-xl leading-tight font-extrabold tracking-[-0.02em] whitespace-nowrap tabular-nums">
+											{formatPrice(offer.price.amount, offer.price.currency, locale)}
+										</span>
+									) : (
+										// Never another variant's price standing in for this one.
+										<span className="text-text-tertiary text-sm">{t("priceUnavailable")}</span>
+									)}
+									{offer.isPurchasable && offer.availability === "in-stock" && (
+										<span className="text-status-success text-xs font-semibold">{tc("inStock")}</span>
+									)}
+									{offer.isPurchasable && offer.availability === "on-demand" && (
+										<span className="text-status-info text-xs font-semibold">{tc("onDemand")}</span>
+									)}
+								</div>
+
+								<div className={ACTION_ROW}>
+									<div className="space-y-2">
+										{errors[offer.saleorVariantId] === "payment-locked" &&
+										paymentLocks[offer.saleorVariantId] ? (
+											<PaymentLockRecovery
+												key={paymentLocks[offer.saleorVariantId]!.key}
+												checkoutId={paymentLocks[offer.saleorVariantId]!.checkoutId}
+												channelSlug={channel}
+												subject="cart"
+												payOriginal={{
+													href: buildCheckoutPath({
+														checkoutId: paymentLocks[offer.saleorVariantId]!.checkoutId,
+														step: "payment",
+													}),
+												}}
+												finishOrder={{
+													href: buildCheckoutPath({
+														checkoutId: paymentLocks[offer.saleorVariantId]!.checkoutId,
+														step: "payment",
+													}),
+												}}
+											/>
+										) : failure?.tone === "status" ? (
+											// Deliberately not an error, and not red: we do not know that it
+											// failed, and a refusal-looking message invites a second click on a
+											// mutation that is not idempotent. Same presentation as the listing's
+											// cart form for the same outcome.
+											<p role="status" className="text-text-secondary flex items-start gap-1.5 text-sm">
+												<HelpCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+												{message}
+											</p>
+										) : (
+											failure && (
+												<p role="alert" className="text-fitment-no-fit text-sm">
+													{message}
+												</p>
+											)
+										)}
+
+										<div className="flex flex-wrap gap-2">
+											{offer.isDemo ? (
+												<Button type="button" variant="outline-solid" disabled className="flex-1">
+													{t("demoNoPurchase")}
+												</Button>
+											) : quoteOnly ? (
+												// The purchase colour, as on the product page: this is the one action here.
+												<Link
+													href={quoteRequestHref(channel, quoteReferenceFor(offer.name))}
+													className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-10 flex-1 items-center justify-center rounded-md px-3 text-sm font-medium transition-colors"
 												>
-													<ShoppingCart className="h-4 w-4" aria-hidden="true" />
-													{t("checkCart")}
-												</LinkWithChannel>
+													{tProduct("requestQuote")}
+												</Link>
+											) : catalogOnly ? (
+												<Button type="button" variant="outline-solid" disabled className="flex-1">
+													{tCart("addUnavailable")}
+												</Button>
+											) : failure?.primaryAction === "check-cart" ? (
+												// The add may well have landed. The control now under the cursor
+												// takes the shopper to look, rather than sending the same
+												// non-idempotent mutation a second time. Adding again stays
+												// available as a separate, differently-labelled decision made
+												// AFTER looking, and no timer re-enables anything.
+												<>
+													<LinkWithChannel
+														href="/cart"
+														className="bg-action-primary text-action-primary-text hover:bg-action-primary-hover inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium transition-colors"
+													>
+														<ShoppingCart className="h-4 w-4" aria-hidden="true" />
+														{t("checkCart")}
+													</LinkWithChannel>
+													<Button
+														type="button"
+														variant="outline-solid"
+														disabled={pending || outOfStock}
+														onClick={() => add(offer)}
+													>
+														{busyId === offer.saleorVariantId && pending && (
+															<Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+														)}
+														{t("addAgain")}
+													</Button>
+												</>
+											) : (
 												<Button
 													type="button"
-													variant="outline-solid"
 													disabled={pending || outOfStock}
 													onClick={() => add(offer)}
+													className="flex-1"
 												>
-													{busyId === offer.saleorVariantId && pending && (
+													{busyId === offer.saleorVariantId && pending ? (
 														<Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+													) : (
+														<ShoppingCart className="h-4 w-4" aria-hidden="true" />
 													)}
-													{t("addAgain")}
+													{outOfStock ? tc("outOfStock") : t("addToCart")}
 												</Button>
-											</>
-										) : (
-											<Button
-												type="button"
-												disabled={pending || outOfStock}
-												onClick={() => add(offer)}
-												className="flex-1"
-											>
-												{busyId === offer.saleorVariantId && pending ? (
-													<Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-												) : (
-													<ShoppingCart className="h-4 w-4" aria-hidden="true" />
-												)}
-												{outOfStock ? tc("outOfStock") : t("addToCart")}
-											</Button>
-										)}
+											)}
+										</div>
 									</div>
 								</div>
-							</div>
-						</li>
-					);
-				})}
+							</li>
+						);
+					},
+				)}
 			</ul>
 		</ListingViewRoot>
 	);

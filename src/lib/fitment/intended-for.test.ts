@@ -190,9 +190,9 @@ describe("presentFitment on the real N15060 offers", () => {
 		expect(presentFitment(result, audi).kind).toBe("verdict");
 	});
 
-	it("a boundary year without its month still asks for the month", () => {
+	it("a boundary year without its month says the fit depends on the month — and is still the verdict's box", () => {
 		const result = resolveFitment(dataset, { ...AUDI_2012, year: 2008 }, { ...offer(AUDI_OFFER) });
-		expect(result.verdict).toBe("NEEDS_DETAIL");
+		expect(result.verdict).toBe("MAY_FIT_BY_MONTH");
 		expect(presentFitment(result, audi).kind).toBe("verdict");
 	});
 

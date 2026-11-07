@@ -250,10 +250,13 @@ describe("PDP compatibility on the N15060 offers", () => {
 		expect(text).not.toContain("Určené pre");
 	});
 
-	it("a boundary year still asks for the month", async () => {
+	it("a boundary year without a month says the set MAY fit and from which month — never a plain fit", async () => {
 		readGarage.mockResolvedValue(garageWith({ ...AUDI_2012, year: 2008 }));
 		const { text } = await render("sk-eur", AUDI_OFFER);
-		expect(text).toContain("Potrebujeme ešte jeden údaj");
+		expect(text).toContain("Môže pasovať — závisí od mesiaca výroby");
+		expect(text).toMatch(/Platí (od|do) \d{2}\/2008, overte mesiac výroby\./);
+		expect(text).not.toContain("Kompatibilné");
+		expect(text).not.toContain("Overen");
 	});
 
 	it("a vehicle page that does not answer in time leaves the name unlinked, never missing", async () => {
