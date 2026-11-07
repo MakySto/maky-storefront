@@ -102,7 +102,12 @@ const submitted = () =>
 				(JSON.parse(readFileSync(state, "utf8")) as { submitted: Record<string, string> }).submitted,
 			)
 		: [];
-type Seen = { version: number; takenAt: string | null; groups: Record<string, Record<string, string>> };
+type Seen = {
+	version: number;
+	takenAt: string | null;
+	groups: Record<string, Record<string, string>>;
+	gone?: Record<string, Record<string, string>>;
+};
 const seenNow = () => readSeen(seenFile) as Seen | null;
 const snapshot = (group: string) => Object.keys(seenNow()?.groups[group] ?? {});
 const url = (path: string) => `${SITE}${path}`;
@@ -166,18 +171,28 @@ describe("--mode changes, what it announces", () => {
 		const w = SHOP();
 		await changes(w);
 
+		// First look at the loss: b-product is missing. One look is not enough to call it gone.
+		w.files["/sitemaps/sk-products-1.xml"] = shard(
+			["/sk/a-product", "2026-10-29T10:00:00.000Z"],
+			["/sk/c-product", "2026-10-29T10:00:00.000Z"],
+		);
+		expect(await changes(w)).toBe(0);
+		expect(w.posts).toHaveLength(0);
+		expect(logLines.join("\n")).toMatch(/1 missing but not yet confirmed/);
+		expect(seenNow()?.gone?.["sk-products"]).toEqual({ [url("/sk/b-product")]: START.toISOString() });
+
+		// An hour later it is still missing, and a product appeared and another one changed meanwhile.
+		clock = hoursLater(1);
 		w.files["/sitemaps/sk-products-1.xml"] = shard(
 			["/sk/a-product", "2026-11-08T08:00:00.000Z"], // changed
-			["/sk/c-product", "2026-10-29T10:00:00.000Z"], // untouched; b-product is gone
+			["/sk/c-product", "2026-10-29T10:00:00.000Z"],
 			["/sk/d-product", "2026-11-08T07:00:00.000Z"], // new
 		);
-
 		expect(await changes(w)).toBe(0);
 
 		expect(w.posts).toHaveLength(1);
 		expect(w.posts[0]?.urlList).toEqual([url("/sk/b-product"), url("/sk/d-product"), url("/sk/a-product")]);
 		expect(w.posts[0]).toMatchObject({ host: "maky.store", key: KEY });
-		expect(logLines.join("\n")).toMatch(/1 removed, 1 added, 1 changed/);
 		expect(logLines.join("\n")).toMatch(/done: 3 URL\(s\) sent \(1 removed, 1 added, 1 changed\)/);
 
 		// What was told is what is recorded: the removed one is forgotten, the others are the new baseline.
@@ -186,16 +201,63 @@ describe("--mode changes, what it announces", () => {
 			url("/sk/c-product"),
 			url("/sk/d-product"),
 		]);
+		expect(seenNow()?.gone).toEqual({});
 		expect(submitted()).toEqual(expect.arrayContaining([url("/sk/a-product"), url("/sk/d-product")]));
 		expect(submitted()).not.toContain(url("/sk/b-product"));
 
 		// A third look at the same sitemaps repeats nothing.
 		w.posts.length = 0;
+		clock = hoursLater(2);
 		await changes(w);
 		expect(w.posts).toHaveLength(0);
 	});
 
-	it("announces a rename as the old address gone and the new one there, in one message", async () => {
+	it("does not call a URL gone because one look missed it", async () => {
+		const w = SHOP();
+		await changes(w);
+		const complete = w.files["/sitemaps/sk-products-1.xml"] as string;
+
+		// A sitemap built while a read failed is shorter for a minute...
+		w.files["/sitemaps/sk-products-1.xml"] = shard(["/sk/a-product", "2026-10-29T10:00:00.000Z"]);
+		await changes(w);
+		expect(w.posts).toHaveLength(0);
+
+		// ...and whole again at the next look: nothing was gone, nothing is told, the marks are forgotten.
+		clock = hoursLater(1);
+		w.files["/sitemaps/sk-products-1.xml"] = complete;
+		await changes(w);
+		expect(w.posts).toHaveLength(0);
+		expect(seenNow()?.gone).toEqual({});
+		expect(snapshot("sk-products")).toHaveLength(3);
+
+		// A later loss starts the wait from its own first look, not from the old one.
+		clock = hoursLater(2);
+		w.files["/sitemaps/sk-products-1.xml"] = shard(["/sk/a-product", "2026-10-29T10:00:00.000Z"]);
+		await changes(w);
+		clock = hoursLater(2.25);
+		await changes(w);
+		expect(w.posts).toHaveLength(0);
+	});
+
+	it("waits for a second look at least 45 minutes after the first before it calls a URL gone", async () => {
+		const w = SHOP();
+		await changes(w);
+		w.files["/sitemaps/sk-products-1.xml"] = shard(
+			["/sk/a-product", "2026-10-29T10:00:00.000Z"],
+			["/sk/c-product", "2026-10-29T10:00:00.000Z"],
+		);
+
+		await changes(w); // 12:00, the first look at the loss
+		clock = new Date(START.getTime() + 10 * 60_000);
+		await changes(w); // 12:10, a second look right behind it proves nothing
+		expect(w.posts).toHaveLength(0);
+
+		clock = new Date(START.getTime() + 50 * 60_000);
+		await changes(w); // 12:50
+		expect(w.posts.map((p) => p.urlList)).toEqual([[url("/sk/b-product")]]);
+	});
+
+	it("announces a rename as the new address at once and the old one, gone, at the next look", async () => {
 		const w = SHOP();
 		await changes(w);
 
@@ -205,9 +267,11 @@ describe("--mode changes, what it announces", () => {
 			["/sk/c-product", "2026-10-29T10:00:00.000Z"],
 		);
 		await changes(w);
+		expect(w.posts.map((p) => p.urlList)).toEqual([[url("/sk/a-product-renamed")]]);
 
-		expect(w.posts).toHaveLength(1);
-		expect(w.posts[0]?.urlList).toEqual([url("/sk/a-product"), url("/sk/a-product-renamed")]);
+		clock = hoursLater(1);
+		await changes(w);
+		expect(w.posts.map((p) => p.urlList)).toEqual([[url("/sk/a-product-renamed")], [url("/sk/a-product")]]);
 	});
 
 	it("holds a change back when the URL was told less than a day ago, and tells it once the day has passed", async () => {
@@ -243,7 +307,7 @@ describe("--mode changes, what it announces", () => {
 		expect(w.posts).toHaveLength(2);
 	});
 
-	it("never holds back a new or a removed URL: the pause is for changes of a page that was just told", async () => {
+	it("never holds back a new URL, and tells a removed one at the second look however soon after it was told", async () => {
 		const w = SHOP();
 		await changes(w);
 
@@ -255,30 +319,38 @@ describe("--mode changes, what it announces", () => {
 		);
 		await changes(w); // d is new: told
 
-		clock = hoursLater(1);
+		// d is gone an hour later; that is told on the look after the one that missed it.
 		w.files["/sitemaps/sk-products-1.xml"] = shard(
 			["/sk/a-product", "2026-10-29T10:00:00.000Z"],
 			["/sk/b-product", "2026-10-29T10:00:00.000Z"],
 			["/sk/c-product", "2026-10-29T10:00:00.000Z"],
-		); // d is gone an hour later: that is told too
+		);
+		clock = hoursLater(1);
+		await changes(w);
+		expect(w.posts).toHaveLength(1);
+		clock = hoursLater(2);
 		await changes(w);
 
 		expect(w.posts.map((p) => p.urlList)).toEqual([[url("/sk/d-product")], [url("/sk/d-product")]]);
 		expect(submitted()).not.toContain(url("/sk/d-product"));
 	});
 
-	it("announces a page and a vehicle page that appear, and a page that goes", async () => {
+	it("announces a page and a vehicle page that appear at once, and a page that goes at the next look", async () => {
 		const w = SHOP();
 		await changes(w);
 
 		w.files["/sitemaps/sk-pages-1.xml"] = shard(["/sk"], ["/sk/autochladnicky"]); // stresne-nosice is gone
 		w.files["/sitemaps/sk-vehicles-1.xml"] = shard(["/sk/stresne-nosice/skoda"], ["/sk/stresne-nosice/audi"]);
 		await changes(w);
+		expect(w.posts.map((p) => p.urlList)).toEqual([
+			[url("/sk/autochladnicky"), url("/sk/stresne-nosice/audi")],
+		]);
 
-		expect(w.posts[0]?.urlList).toEqual([
-			url("/sk/stresne-nosice"),
-			url("/sk/autochladnicky"),
-			url("/sk/stresne-nosice/audi"),
+		clock = hoursLater(1);
+		await changes(w);
+		expect(w.posts.map((p) => p.urlList)).toEqual([
+			[url("/sk/autochladnicky"), url("/sk/stresne-nosice/audi")],
+			[url("/sk/stresne-nosice")],
 		]);
 	});
 

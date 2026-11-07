@@ -56,7 +56,7 @@
 //      snapshot is new, one that is no longer in the sitemap is gone (a removed product, the old
 //      address of a renamed one), a product whose `lastmod` is later than the snapshot's has changed.
 //      The first run only takes the snapshot and announces nothing: what existed before it is the
-//      backlog's business. A new market or a new kind is taken the same way. Five things keep it from
+//      backlog's business. A new market or a new kind is taken the same way. Six things keep it from
 //      announcing what is not a change:
 //        - a group of shards (a market's pages, products or vehicle pages, however many parts it has)
 //          that cannot be read in full is left alone, and a group that comes back empty where it held
@@ -65,6 +65,10 @@
 //        - when more than a quarter of a group's `lastmod` dates move at once, that is a rewrite of the
 //          dates (on 2026-10-29 Saleor dated 96 % of the Slovak products the same day), not a quarter of
 //          the catalogue changing: the dates are recorded and nothing is announced;
+//        - a URL that is missing from the sitemaps is announced as gone only when an earlier look, at least
+//          45 minutes before, missed it too (`seen.gone` keeps the first time); one that is back in
+//          the meantime is forgotten. A sitemap built while a read failed is shorter for a minute, and that
+//          must not read as "these pages are gone";
 //        - a changed URL is announced at most once per `--resend-after-days` (one day in this mode): a
 //          product touched again within the day is held back, its snapshot date stays old, and the next
 //          run after the day finds it again and tells the engine once;
@@ -111,6 +115,12 @@ export const MODE_DEFAULTS = {
 export const BULK_CHANGE_SHARE = 0.25;
 /** ... but a group has to be bigger than this before the share means anything. */
 export const BULK_CHANGE_MIN = 50;
+/**
+ * A URL that is missing from the sitemaps is announced as gone only when it was missing in an earlier look
+ * at least this long ago too. One look is not enough: a sitemap that was built while a read failed is
+ * shorter for a minute, and "gone" told about a page that is there is a message the engine acts on.
+ */
+export const GONE_CONFIRM_MINUTES = 45;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -557,6 +567,14 @@ async function sendBatches(batches, run, accepted) {
 	return { sent, code: null };
 }
 
+/** The snapshot without the empty `gone` groups, so the file does not collect an empty object per group. */
+function pruned(seen) {
+	const gone = Object.fromEntries(
+		Object.entries(seen.gone ?? {}).filter(([, marks]) => Object.keys(marks).length > 0),
+	);
+	return { ...seen, gone };
+}
+
 /**
  * `--mode changes`: compare the sitemaps with the snapshot of the last look and announce what is new,
  * gone or changed. See rule 6 at the top for what counts and what does not.
@@ -582,6 +600,10 @@ async function runChanges(run) {
 	}
 	const firstLook = seen === null;
 	seen ??= { version: 1, takenAt: null, groups: {} };
+	/** `{ [group]: { [url]: when it was first missed } }`: the removals that wait for a second look. */
+	seen.gone ??= {};
+	const confirmAfterMs = GONE_CONFIRM_MINUTES * 60_000;
+	let goneMarksChanged = false;
 
 	let shards;
 	try {
@@ -612,6 +634,8 @@ async function runChanges(run) {
 	const quiet = [];
 	/** Changed, but told less than `--resend-after-days` ago: not announced, not recorded, found again next run. */
 	const held = [];
+	/** Missing from the sitemaps, but not (yet) in two looks that far apart: not announced, found again next run. */
+	const unconfirmed = [];
 	/** Groups seen for the first time, whole. */
 	const taken = new Map();
 	/** Groups that could not be read in full this time. */
@@ -651,7 +675,26 @@ async function runChanges(run) {
 		}
 
 		const diff = diffGroup(before, entries);
-		for (const url of diff.removed) removed.push({ group, url, lastmod: null });
+		const marks = (seen.gone[group] ??= {});
+		const missingNow = new Set(diff.removed);
+		for (const url of Object.keys(marks)) {
+			if (!missingNow.has(url)) {
+				delete marks[url]; // back in the sitemap, or no longer in the snapshot
+				goneMarksChanged = true;
+			}
+		}
+		for (const url of diff.removed) {
+			const firstMissed = Date.parse(marks[url] ?? "");
+			if (Number.isNaN(firstMissed)) {
+				marks[url] = now().toISOString();
+				goneMarksChanged = true;
+				unconfirmed.push({ group, url });
+			} else if (now().getTime() - firstMissed < confirmAfterMs) {
+				unconfirmed.push({ group, url });
+			} else {
+				removed.push({ group, url, lastmod: null });
+			}
+		}
 		// Sent already, by the backlog or by hand: part of the snapshot from now on, no second message.
 		for (const entry of diff.added) (state.submitted[entry.url] ? quiet : added).push({ group, ...entry });
 		for (const entry of diff.changed) {
@@ -687,7 +730,8 @@ async function runChanges(run) {
 			added.length
 		} added, ` +
 			`${changed.length} changed; ${quiet.length} recorded without a message; ` +
-			`${held.length} held back (told less than ${options.resendAfterDays} day(s) ago); ${toSend.length} in this run` +
+			`${held.length} held back (told less than ${options.resendAfterDays} day(s) ago), ` +
+			`${unconfirmed.length} missing but not yet confirmed; ${toSend.length} in this run` +
 			`${
 				plan.length > toSend.length
 					? ` (capped by --max ${max}; the rest is found again by the next run)`
@@ -711,9 +755,9 @@ async function runChanges(run) {
 	// What needs no message is written down first, so a run that then fails does not look at it again.
 	for (const [group, snapshot] of taken) seen.groups[group] = snapshot;
 	for (const { group, url, lastmod } of quiet) (seen.groups[group] ??= {})[url] = lastmod ?? "";
-	if (taken.size > 0 || quiet.length > 0) {
+	if (taken.size > 0 || quiet.length > 0 || goneMarksChanged) {
 		seen.takenAt = now().toISOString();
-		writeSeen(options.seen, seen);
+		writeSeen(options.seen, pruned(seen));
 	}
 
 	if (toSend.length === 0) {
@@ -743,6 +787,7 @@ async function runChanges(run) {
 			if (op.change === "removed") {
 				delete snapshot[url];
 				delete state.submitted[url];
+				delete seen.gone[op.group]?.[url];
 			} else {
 				snapshot[url] = op.lastmod ?? "";
 				state.submitted[url] = stamp;
@@ -750,7 +795,7 @@ async function runChanges(run) {
 		}
 		seen.takenAt = stamp;
 		writeState(options.state, state);
-		writeSeen(options.seen, seen);
+		writeSeen(options.seen, pruned(seen));
 	});
 	if (code !== null) return code;
 	log(
