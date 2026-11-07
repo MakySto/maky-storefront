@@ -28,6 +28,7 @@ import {
 	CheckoutLinesUpdateDocument,
 } from "@/gql/graphql";
 import { TYRE_META } from "@/lib/tyre-size/line-metadata";
+import { NO_MATCH_ANSWER } from "@/lib/tyre-size/questions";
 import { tyreSizeProduct } from "@/lib/tyre-size/size-index";
 import { addListingItemToCartWithResult, addVariantToCart } from "./actions";
 
@@ -73,7 +74,8 @@ const SIZE_A = "145/70 R12";
 const SIZE_B = tyreSizeProduct("N16061")!
 	.sizes.map(([label]) => label)
 	.find((label) => label !== SIZE_A)!;
-const size = (value: string, conditionKey = "") => ({ mode: "size" as const, size: value, conditionKey });
+/** What the form sends: the size and, where the size depends on the tyres, the shopper's answer about them. */
+const size = (value: string, answer = "") => ({ mode: "size" as const, size: value, answer });
 
 beforeEach(() => {
 	vi.useFakeTimers();
@@ -135,16 +137,38 @@ describe("a snow chain without a valid tyre choice is never added", () => {
 		nothingSent();
 	});
 
-	it("asks for the condition on a size that carries one, and refuses a different condition", async () => {
+	it("asks for the answer on a size that depends on the tyres, and refuses an answer the size does not allow", async () => {
 		executePublicGraphQL.mockResolvedValue(purchasable("N16128"));
+		// 215/60 R16 is made for N16128 only on a Bridgestone Duravis.
 		await expect(addVariantToCart({ ...input, tyre: size("215/60 R16") })).resolves.toMatchObject({
 			status: "rejected",
 			reason: "size-condition",
 		});
-		await expect(addVariantToCart({ ...input, tyre: size("215/60 R16", "c10") })).resolves.toMatchObject({
+		// "Other tyres" is a real answer to the question, but it is the answer for the OTHER code of the model.
+		await expect(
+			addVariantToCart({ ...input, tyre: size("215/60 R16", NO_MATCH_ANSWER) }),
+		).resolves.toMatchObject({
 			status: "rejected",
 			reason: "size-condition",
 		});
+		// And an answer the question never offered is no answer at all.
+		await expect(addVariantToCart({ ...input, tyre: size("215/60 R16", "Goodyear") })).resolves.toMatchObject(
+			{
+				status: "rejected",
+				reason: "size-condition",
+			},
+		);
+		nothingSent();
+	});
+
+	it("refuses the sibling's tyres on this code: Michelin answers N16105, not N16128", async () => {
+		executePublicGraphQL.mockResolvedValue(purchasable("N16128"));
+		await expect(addVariantToCart({ ...input, tyre: size("195/75 R16", "Michelin") })).resolves.toMatchObject(
+			{
+				status: "rejected",
+				reason: "size-condition",
+			},
+		);
 		nothingSent();
 	});
 
@@ -209,9 +233,9 @@ describe("a chain with a valid size", () => {
 		expect(query).toContain("metadata: $metadata");
 	});
 
-	it("writes the condition the customer acknowledged", async () => {
+	it("writes the condition the size carries and the answer the customer gave to it", async () => {
 		executePublicGraphQL.mockResolvedValue(purchasable("N16128"));
-		await expect(addVariantToCart({ ...input, tyre: size("195/75 R16", "c10") })).resolves.toEqual({
+		await expect(addVariantToCart({ ...input, tyre: size("195/75 R16", NO_MATCH_ANSWER) })).resolves.toEqual({
 			status: "added",
 		});
 		const { metadata } = executeAuthenticatedGraphQL.mock.calls[0][1].variables;
@@ -221,7 +245,32 @@ describe("a chain with a valid size", () => {
 			[TYRE_META.size]: "195/75 R16",
 			[TYRE_META.conditionMode]: "not",
 			[TYRE_META.conditionTyres]: "Kleber / Michelin / Continental",
+			[TYRE_META.answer]: NO_MATCH_ANSWER,
 		});
+	});
+
+	it("writes the named tyre when the size is made for one make or model only", async () => {
+		executePublicGraphQL.mockResolvedValue(purchasable("N16105"));
+		await expect(addVariantToCart({ ...input, tyre: size("195/75 R16", "Michelin") })).resolves.toEqual({
+			status: "added",
+		});
+		const { metadata } = executeAuthenticatedGraphQL.mock.calls[0][1].variables;
+		expect(
+			Object.fromEntries(metadata.map((m: { key: string; value: string }) => [m.key, m.value])),
+		).toMatchObject({
+			[TYRE_META.conditionMode]: "only",
+			[TYRE_META.answer]: "Michelin",
+		});
+	});
+
+	it("writes no answer for a size that asked no question, whatever answer the form carried", async () => {
+		await expect(addVariantToCart({ ...input, tyre: size("145/70 R12", "Michelin") })).resolves.toEqual({
+			status: "added",
+		});
+		const { metadata } = executeAuthenticatedGraphQL.mock.calls[0][1].variables;
+		const written = Object.fromEntries(metadata.map((m: { key: string; value: string }) => [m.key, m.value]));
+		expect(written[TYRE_META.answer]).toBeUndefined();
+		expect(written[TYRE_META.conditionMode]).toBeUndefined();
 	});
 
 	it("raises the quantity of the line that already holds that size, and adds no second line", async () => {
@@ -274,7 +323,46 @@ describe("a chain with a valid size", () => {
 				]),
 			]),
 		);
-		await expect(addVariantToCart({ ...input, tyre: size("195/75 R16", "c10") })).resolves.toEqual({
+		await expect(addVariantToCart({ ...input, tyre: size("195/75 R16", NO_MATCH_ANSWER) })).resolves.toEqual({
+			status: "added",
+		});
+		expect(executeAuthenticatedGraphQL.mock.calls[0][0]).toBe(CheckoutAddSizedLineDocument);
+	});
+
+	it("raises the quantity of the line that holds the same size under the same answer", async () => {
+		executePublicGraphQL.mockResolvedValue(purchasable("N16105"));
+		findOrCreate.mockResolvedValue(
+			ready([
+				sizeLine("line-a", 1, "195/75 R16", [
+					{ key: TYRE_META.conditionMode, value: "only" },
+					{ key: TYRE_META.conditionTyres, value: "Kleber / Michelin / Continental" },
+					{ key: TYRE_META.answer, value: "Michelin" },
+				]),
+			]),
+		);
+		executeAuthenticatedGraphQL.mockResolvedValue(updated);
+		await expect(addVariantToCart({ ...input, tyre: size("195/75 R16", "Michelin") })).resolves.toEqual({
+			status: "added",
+		});
+		expect(executeAuthenticatedGraphQL.mock.calls[0][0]).toBe(CheckoutLinesUpdateDocument);
+		expect(executeAuthenticatedGraphQL.mock.calls[0][1].variables).toEqual({
+			checkoutId: CHECKOUT_ID,
+			lines: [{ lineId: "line-a", quantity: 2 }],
+		});
+	});
+
+	it("keeps the same size under another answer on a line of its own: the line is the tyres the shopper has", async () => {
+		executePublicGraphQL.mockResolvedValue(purchasable("N16105"));
+		findOrCreate.mockResolvedValue(
+			ready([
+				sizeLine("line-a", 1, "195/75 R16", [
+					{ key: TYRE_META.conditionMode, value: "only" },
+					{ key: TYRE_META.conditionTyres, value: "Kleber / Michelin / Continental" },
+					{ key: TYRE_META.answer, value: "Kleber" },
+				]),
+			]),
+		);
+		await expect(addVariantToCart({ ...input, tyre: size("195/75 R16", "Michelin") })).resolves.toEqual({
 			status: "added",
 		});
 		expect(executeAuthenticatedGraphQL.mock.calls[0][0]).toBe(CheckoutAddSizedLineDocument);

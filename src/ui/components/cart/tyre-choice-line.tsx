@@ -7,6 +7,7 @@ import {
 	tyreChoiceFromMetadata,
 	type MetadataItem,
 } from "@/lib/tyre-size/line-metadata";
+import { NO_MATCH_ANSWER } from "@/lib/tyre-size/questions";
 import { cn } from "@/lib/utils";
 
 /**
@@ -46,9 +47,13 @@ export function TyreChoiceLine({
 			<p className="text-text-primary font-medium">{t("lineSize", { size: choice.size })}</p>
 			{choice.condition ? (
 				<p className="text-muted-foreground mt-0.5">
-					{t(choice.condition.mode === "only" ? "lineOnly" : "lineNot", {
-						tyres: choice.condition.tyres.join(TYRE_LIST_SEPARATOR),
-					})}
+					{/* What the shopper said about their tyres, when it was recorded; the list's own condition as written
+					    for a line from before the question existed. */}
+					{choice.condition.answer !== "" && choice.condition.answer !== NO_MATCH_ANSWER
+						? t("lineAnswer", { answer: choice.condition.answer })
+						: t(choice.condition.mode === "only" ? "lineOnly" : "lineNot", {
+								tyres: choice.condition.tyres.join(TYRE_LIST_SEPARATOR),
+							})}
 				</p>
 			) : null}
 		</div>

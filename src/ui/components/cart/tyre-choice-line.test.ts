@@ -78,6 +78,19 @@ const SIZE_ONLY = [
 	{ key: "maky_tyre_basis", value: "manufacturer_list_2026_10" },
 ];
 
+/** The same lines once the shopper has said which tyres they have: the answer is written beside the condition. */
+const SIZE_ONLY_ANSWERED = [...SIZE_ONLY, { key: "maky_tyre_answer", value: "Bridgestone Duravis Rxxx" }];
+const SIZE_ONLY_MAKE_ANSWERED = [
+	{ key: "maky_tyre_mode", value: "size" },
+	{ key: "maky_tyre_list", value: "snehove-retaze-20261105" },
+	{ key: "maky_tyre_size", value: "195/75 R16" },
+	{ key: "maky_tyre_condition_mode", value: "only" },
+	{ key: "maky_tyre_condition_tyres", value: "Kleber / Michelin / Continental" },
+	{ key: "maky_tyre_answer", value: "Michelin" },
+	{ key: "maky_tyre_basis", value: "manufacturer_list_2026_10" },
+];
+const SIZE_NOT_ANSWERED = [...SIZE_NOT, { key: "maky_tyre_answer", value: "other" }];
+
 const CODE = [
 	{ key: "maky_tyre_mode", value: "code" },
 	{ key: "maky_tyre_list", value: "snehove-retaze-20261105" },
@@ -99,6 +112,24 @@ describe("TyreChoiceLine", () => {
 		const only = render("sk-SK", SIZE_ONLY);
 		expect(only).toContain("Rozmer pneumatík: 215/60 R16");
 		expect(only).toContain("Iba na pneumatiky: Bridgestone Duravis Rxxx");
+	});
+
+	it("names the tyres the shopper said they have, once they did, instead of the list's condition", () => {
+		const make = render("sk-SK", SIZE_ONLY_MAKE_ANSWERED);
+		expect(make).toContain("Rozmer pneumatík: 195/75 R16");
+		expect(make).toContain("Pneumatiky: Michelin");
+		expect(make).not.toContain("Iba na pneumatiky");
+
+		const model = render("sk-SK", SIZE_ONLY_ANSWERED);
+		expect(model).toContain("Pneumatiky: Bridgestone Duravis Rxxx");
+		expect(model).not.toContain("Iba na pneumatiky");
+	});
+
+	it("keeps the list's own words for the answer 'other tyres', which names no tyre", () => {
+		const html = render("sk-SK", SIZE_NOT_ANSWERED);
+		expect(html).toContain("Nie na pneumatiky: Kleber / Michelin / Continental");
+		expect(html).not.toContain("Pneumatiky: other");
+		expect(html).not.toContain(">other<");
 	});
 
 	it("says plainly that the customer chose the product without a size", () => {
@@ -124,14 +155,26 @@ describe("TyreChoiceLine", () => {
 	});
 
 	it.each(LOCALES)("%s: every state is written out, with no raw message key", (locale) => {
-		for (const metadata of [SIZE, SIZE_NOT, SIZE_ONLY, CODE]) {
+		for (const metadata of [
+			SIZE,
+			SIZE_NOT,
+			SIZE_ONLY,
+			SIZE_ONLY_ANSWERED,
+			SIZE_ONLY_MAKE_ANSWERED,
+			SIZE_NOT_ANSWERED,
+			CODE,
+		]) {
 			const html = render(locale, metadata);
 			expect(html, locale).not.toBe("");
-			expect(html, locale).not.toMatch(/tyreSize\.|MISSING_MESSAGE|lineSize|lineCode|lineOnly|lineNot/);
+			expect(html, locale).not.toMatch(
+				/tyreSize\.|MISSING_MESSAGE|lineSize|lineCode|lineOnly|lineNot|lineAnswer|\{(size|tyres|answer)\}/,
+			);
 		}
 		// Every state names what it needs: the size, and the makes of the condition.
 		expect(render(locale, SIZE)).toContain("145/70 R12");
 		expect(render(locale, SIZE_NOT)).toContain("Kleber / Michelin / Continental");
 		expect(render(locale, SIZE_ONLY)).toContain("Bridgestone Duravis Rxxx");
+		expect(render(locale, SIZE_ONLY_MAKE_ANSWERED)).toContain("Michelin");
+		expect(render(locale, SIZE_ONLY_MAKE_ANSWERED)).not.toContain("Kleber / Michelin / Continental");
 	});
 });

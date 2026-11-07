@@ -1,6 +1,17 @@
 {
   "cfm_branch": "claude/project-thread-vnrafq",
   "cfm_commit": "f9424d3fe44ff3dcc8345db52f1949746c609f44",
+  "derived": {
+    "rodiny_20261105.json": {
+      "batch_file_sha256": "ec31a5760f9bd8ec500f6757c609b09063d162486b86ebf69750e5f7921080b2",
+      "batch_self_sha256": "d527c98d5258781150ce880c19438804412be010bceeb6246a548713dd677b5e",
+      "from": "backend/artifacts/snehove_retaze/produkty_20261105.json (batch snehove_retaze_produkty_20261105)",
+      "producer": "scripts/ops/build-tyre-families.mjs",
+      "self_sha256": "a70652dc4b73902722ee294386bcc18550dcecbe9dff30a74d927ead2c47f70b",
+      "sha256": "da88e92a46154cac43a756f2f9d106b8850765b9abd30be5672dbc7702c6fa59",
+      "values_source": "the public code (pn), the family key, the family's brand and line and the size label printed in the product's name, copied from the sealed batch. Which other codes the shop may offer when a code does not fit a size; it decides nothing about fit (the size list does)."
+    }
+  },
   "files": {
     "velkosti_20261105.json": {
       "cfm_copy": "backend/artifacts/snehove_retaze/velkosti_20261105.json",
