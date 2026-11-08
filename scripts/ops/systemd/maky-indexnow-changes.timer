@@ -1,0 +1,17 @@
+# Every hour at :40 UTC, except from 01:40 to 04:40.
+#
+# Those five runs are the ones that would fall inside the CarFitManager 4.5 windows on the same box: 01:30 to
+# 02:04 and 03:15 to 05:00 UTC every day, and on Mondays also about 02:30 to 03:04 UTC (the fitment renewal).
+# 00:40 is 50 minutes clear of the first window and 05:40 is 40 minutes clear of the last. A deploy is kept
+# out by the lock the service checks, not by the clock. What happens in the gap is not lost: the snapshot
+# is compared with the sitemaps, not with the clock, so the 05:40 run sees everything since 00:40.
+[Unit]
+Description=IndexNow, what changed, every hour
+
+[Timer]
+OnCalendar=*-*-* 00,05..23:40:00 UTC
+# After a reboot or an outage, run the hour that was missed.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

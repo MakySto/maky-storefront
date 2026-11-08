@@ -1,20 +1,23 @@
-# IndexNow: tell Bing and the other engines which maky.store URLs are new or changed.
+# IndexNow, the daily run: work down the backlog of URLs the engines were never told about.
 #
 # Run once a day by maky-indexnow.timer. Installed by a person on the web server, not by the deploy:
-# see "The daily run" in docs/design/seo-indexing-bing.md (section 5).
+# see "The two runs" in docs/design/seo-indexing-bing.md (section 5). Merging a change to this file
+# changes nothing on the server; the installed copy in /etc/systemd/system is what runs.
 #
-# What one run does: reads the public sitemaps, sends the next 10 000 URLs it has not sent yet (then
-# those that changed since they were sent) to api.indexnow.org, and writes what the engine accepted
-# to the state file. It reads nothing from .env and touches neither PM2, nginx nor the build.
+# What one run does: reads the public sitemaps, sends the next 2 000 page and vehicle-page URLs it has
+# never sent to api.indexnow.org, and writes what the engine accepted to the state file. It sends
+# nothing that has CHANGED: new, removed and changed URLs, products included, are the hourly run's work
+# (maky-indexnow-changes.service). It reads nothing from .env and touches neither PM2, nginx nor the build.
 #
 #   sudo install -m 644 scripts/ops/systemd/maky-indexnow.service scripts/ops/systemd/maky-indexnow.timer /etc/systemd/system/
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable --now maky-indexnow.timer
+#   systemctl cat maky-indexnow.service | grep ExecStart      # the line that is really installed
 #   systemctl list-timers maky-indexnow.timer                 # when it runs next
 #   journalctl -u maky-indexnow.service --since "-2 days"     # what it sent, with the answers
 #   sudo systemctl disable --now maky-indexnow.timer          # stop it; the state file keeps the progress
 [Unit]
-Description=IndexNow, send new and changed maky.store URLs to Bing
+Description=IndexNow, the backlog of maky.store URLs the engines were never told about
 Documentation=file:///opt/storefront/docs/design/seo-indexing-bing.md
 After=network-online.target
 Wants=network-online.target
@@ -30,12 +33,22 @@ WorkingDirectory=/opt/storefront
 # Tomorrow's run picks up what today's did not send.
 ExecCondition=/usr/bin/flock -n /run/lock/maky-storefront-deploy.lock -c true
 
-# The state file lives in /var/lib/maky-indexnow, which systemd creates for User=ubuntu.
-# 10 000 a day. The first backlog (140 000 URLs or more; a dry run says how many are pending) is told
-# over a few weeks, then a day's run sends only what is new or changed. Raise --max here, then
-# `systemctl daemon-reload`, once a week of runs looks clean. A 200 is recorded; a 202 or anything
-# else stops the run and fails the unit.
-ExecStart=/usr/bin/env node scripts/ops/indexnow.mjs --kinds pages,products,vehicles --max 10000 --state /var/lib/maky-indexnow/state.json --fire
+# The state file lives in /var/lib/maky-indexnow, which systemd creates for User=ubuntu. Both IndexNow
+# units write it, so they take turns: run.lock is held for the whole run, and a unit that finds it held
+# waits (a run is seconds long) instead of overwriting the other one's progress.
+#
+# Pages and vehicle pages only, 2 000 a day, pages first. This is a choice about how much to say per
+# day, not a finding that the other URLs do not matter: until 2026-11-07 the daily run sent 10 000 URLs of
+# every kind, market by market, products first (1 to 3 November: 30 000 URLs, 28 495 of them products),
+# and Bing Webmaster Tools then reported "IndexNow is in batch mode" (not recommended). The nginx log
+# could not say whether it had helped (0.9 % of the URLs sent on 1 November were fetched by Bingbot within
+# 24 hours, against 0.7 % of the ones not sent: too few, and a fetch is not an index entry). The products
+# (238 577 of the 256 178 sitemap URLs) are told when they appear, go or change, by the hourly run, and
+# otherwise found through the sitemap; the pages and the vehicle pages are the ones with their own texts.
+# About 16 000 of them were unsent on 7 November: eight days at 2 000, after which this run has nothing to
+# send until a page or a vehicle appears. A 200 is recorded; a 202 or anything else stops the run and fails
+# the unit.
+ExecStart=/usr/bin/flock -w 900 /var/lib/maky-indexnow/run.lock /usr/bin/env node scripts/ops/indexnow.mjs --mode backlog --kinds pages,vehicles --max 2000 --state /var/lib/maky-indexnow/state.json --fire
 StateDirectory=maky-indexnow
 
 # A small job that must never compete with the shop: low priority, a memory ceiling, no swap.

@@ -21,6 +21,25 @@ describe("robots.txt", () => {
 		expect(list(group("*")?.disallow)).toContain("/api/");
 	});
 
+	// Bingbot submits the header search form (a Server Action) as GET and was logged on
+	// `/us?%24ACTION_3%3A0=…&search=2026` and its siblings: a URL space that changes with every build.
+	it("keeps crawlers off the form-submission URLs of the search Server Action, encoded or not", () => {
+		const disallow = list(group("*")?.disallow);
+		expect(disallow).toContain("/*?*ACTION_");
+		// The rule is a robots.txt pattern: `*` is any run of characters. Evaluate it the way a crawler does.
+		const blocked = (path: string) =>
+			new RegExp(`^${"/*?*ACTION_".replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}`).test(path);
+		expect(blocked("/us?%24ACTION_3%3A0=%7B%22id%22%3A%22a%22%7D&search=2026")).toBe(true);
+		expect(blocked("/?%24ACTION_2%3A0=x&search=")).toBe(true);
+		expect(blocked("/sk?$ACTION_2:0=x&search=")).toBe(true);
+		// Real pages, and the search page itself, stay crawlable.
+		expect(blocked("/sk/stresne-nosice/bmw/x3/g01")).toBe(false);
+		expect(blocked("/sk/search?query=thule")).toBe(false);
+		expect(blocked("/sk/stresny-nosic-thule-wingbar-evo-silver-bmw-x3-g01-2017-2024-fixacne-body")).toBe(
+			false,
+		);
+	});
+
 	it("slows ClaudeBot, SemrushBot and AhrefsBot without blocking them", () => {
 		for (const agent of ["ClaudeBot", "SemrushBot", "AhrefsBot"]) {
 			const rule = group(agent);

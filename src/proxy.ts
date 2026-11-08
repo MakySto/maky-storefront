@@ -12,6 +12,7 @@ import {
 	marketHref,
 } from "./lib/channel-map";
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
+import { legacyRootRedirectTarget } from "./lib/legacy-root-redirects";
 import { orderConfirmationHandoff } from "./lib/order-confirmation-handoff";
 import { marketSlugRedirect, sameCfmProduct } from "./lib/market-slug-redirects";
 import { marketLanguageCode } from "./config/market-language";
@@ -756,6 +757,26 @@ async function route(request: NextRequest) {
 			res.headers.set("cache-control", CMS_PREVIEW_CACHE_CONTROL);
 		}
 		return res;
+	}
+
+	// A PAGE OF THE OLD SHOP THAT MOVED -> one permanent redirect to where it lives now.
+	//
+	// The gate below is right that an unknown first segment is not a page, and it stays. But the
+	// domain was a WooCommerce shop with its products at the root, search engines still list some of
+	// them, and a product that exists today under another address must not answer 404 for it
+	// (Bing Webmaster Tools, 2026-11-07: /nosic-bicyklov-thule-epos-2-978100). The table is explicit,
+	// product by product, and decided here, in front of the 404 and behind everything that serves
+	// something, so an entry can never take a market, a category or a file over. See
+	// src/lib/legacy-root-redirects.ts for what may go in it and what may not.
+	if (first && !RESERVED_FIRST_SEGMENTS.has(first)) {
+		const moved = legacyRootRedirectTarget(pathname);
+		if (moved) {
+			// Built from the origin, not cloned from the request: a clone remembers that the old address
+			// ended in a slash (the old shop's did) and puts it back on the new one.
+			const url = new URL(moved, request.nextUrl.origin);
+			url.search = request.nextUrl.search;
+			return NextResponse.redirect(url, 301);
+		}
 	}
 
 	// INVALID FIRST SEGMENT -> real 404.
