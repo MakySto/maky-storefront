@@ -1,6 +1,6 @@
 {
-	"release": "20260915.2",
-	"source": "CFM_CONTENT_DELIVERY_20260915_RELEASE4.md (1121 Legacy Kombi BP -> BH, 1348 H-1 Van TQ -> A1, with CatalogPageUrlHistory); ES root: CFM_CONTENT_DELIVERY_20260913_H1_REEXPORT.md; 2026-10-18 merged generations: CFM45_odpoved_20261018.md point 2 (12 pages x 12 markets = 144 pairs, the page itself stays in the export as retired); 2026-10-22 merged Nordrive generations: CFM message of 2026-10-22 point 4 (8 pages x 12 markets = 96 pairs, stranky.tsv sha256 bdcebd65..., the page itself stays in the export as retired until M confirms the 301); 2026-10-30 merged Nordrive generations: CFM message of 2026-10-30 (Roky aut) (Fiat Sedici 2006 and Peugeot 806 1994-2002 x 12 markets = 24 pairs, 301-presmerovanie-cesty-z26-20261022.tsv sha256 c12ed43d..., map of retired ids 4 sha256 e7a7c96a..., the page itself stays in the export as retired until M confirms the 301); 2026-11-08: the model page /volkswagen/up (CFM page 616) and the generation page /nissan/navara-pick-up/d40 (CFM page 984) leave the 2026-10-18 and 2026-10-22 batches in every language, 10 x 2 = 20 rows, because CFM pointed both pages at the new nodes (model 8290, generation 13792) and published them again in content release revision 72 (the 301 now hid two live pages and their tiles and sitemap rows); /volkswagen/up/up stays retired",
+	"release": "20260915.2+20261108.2",
+	"source": "CFM_CONTENT_DELIVERY_20260915_RELEASE4.md (1121 Legacy Kombi BP -> BH, 1348 H-1 Van TQ -> A1, with CatalogPageUrlHistory); ES root: CFM_CONTENT_DELIVERY_20260913_H1_REEXPORT.md; 2026-10-18 merged generations: CFM45_odpoved_20261018.md point 2 (12 pages x 12 markets = 144 pairs, the page itself stays in the export as retired); 2026-10-22 merged Nordrive generations: CFM message of 2026-10-22 point 4 (8 pages x 12 markets = 96 pairs, stranky.tsv sha256 bdcebd65..., the page itself stays in the export as retired until M confirms the 301); 2026-10-30 merged Nordrive generations: CFM message of 2026-10-30 (Roky aut) (Fiat Sedici 2006 and Peugeot 806 1994-2002 x 12 markets = 24 pairs, 301-presmerovanie-cesty-z26-20261022.tsv sha256 c12ed43d..., map of retired ids 4 sha256 e7a7c96a..., the page itself stays in the export as retired until M confirms the 301); 2026-11-08: the model page /volkswagen/up (CFM page 616) and the generation page /nissan/navara-pick-up/d40 (CFM page 984) leave the 2026-10-18 and 2026-10-22 batches in every language, 10 x 2 = 20 rows, because CFM pointed both pages at the new nodes (model 8290, generation 13792) and published them again in content release revision 72 (the 301 now hid two live pages and their tiles and sitemap rows); /volkswagen/up/up stays retired; 2026-11-08 content release 3 (manifest 46) with dataset 3.0.0-full-20261107.1: the six vehicle pages the release retired into model pages (retired id -> the successor model's page), in every language",
 	"exact": {
 		"sk": {
 			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -24,7 +24,13 @@
 			"/stresne-nosice/renault/kadjar/2015-2022": "/stresne-nosice/renault/kadjar",
 			"/stresne-nosice/lancia/zeta/1994-2003": "/stresne-nosice/lancia/zeta",
 			"/stresne-nosice/fiat/sedici/2006": "/stresne-nosice/fiat/sedici",
-			"/stresne-nosice/peugeot/806/1994-2002": "/stresne-nosice/peugeot/806"
+			"/stresne-nosice/peugeot/806/1994-2002": "/stresne-nosice/peugeot/806",
+			"/stresne-nosice/subaru/xv/2012-2023": "/stresne-nosice/subaru/xv",
+			"/stresne-nosice/dacia/duster/2010-2024": "/stresne-nosice/dacia/duster",
+			"/stresne-nosice/ford/kuga/2008-2019": "/stresne-nosice/ford/kuga",
+			"/stresne-nosice/volkswagen/passat-variant/b5": "/stresne-nosice/volkswagen/passat-variant",
+			"/stresne-nosice/volkswagen/touareg/2002-2018": "/stresne-nosice/volkswagen/touareg",
+			"/stresne-nosice/ford/mondeo-kombi/1993-2007": "/stresne-nosice/ford/mondeo-kombi"
 		},
 		"cs": {
 			"/stresni-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -50,7 +56,13 @@
 			"/stresni-nosice/renault/kadjar/2015-2022": "/stresni-nosice/renault/kadjar",
 			"/stresni-nosice/lancia/zeta/1994-2003": "/stresni-nosice/lancia/zeta",
 			"/stresni-nosice/fiat/sedici/2006": "/stresni-nosice/fiat/sedici",
-			"/stresni-nosice/peugeot/806/1994-2002": "/stresni-nosice/peugeot/806"
+			"/stresni-nosice/peugeot/806/1994-2002": "/stresni-nosice/peugeot/806",
+			"/stresni-nosice/subaru/xv/2012-2023": "/stresni-nosice/subaru/xv",
+			"/stresni-nosice/dacia/duster/2010-2024": "/stresni-nosice/dacia/duster",
+			"/stresni-nosice/ford/kuga/2008-2019": "/stresni-nosice/ford/kuga",
+			"/stresni-nosice/volkswagen/passat-variant/b5": "/stresni-nosice/volkswagen/passat-variant",
+			"/stresni-nosice/volkswagen/touareg/2002-2018": "/stresni-nosice/volkswagen/touareg",
+			"/stresni-nosice/ford/mondeo-kombi/1993-2007": "/stresni-nosice/ford/mondeo-kombi"
 		},
 		"en": {
 			"/roof-racks/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -76,7 +88,13 @@
 			"/roof-racks/renault/kadjar/2015-2022": "/roof-racks/renault/kadjar",
 			"/roof-racks/lancia/zeta/1994-2003": "/roof-racks/lancia/zeta",
 			"/roof-racks/fiat/sedici/2006": "/roof-racks/fiat/sedici",
-			"/roof-racks/peugeot/806/1994-2002": "/roof-racks/peugeot/806"
+			"/roof-racks/peugeot/806/1994-2002": "/roof-racks/peugeot/806",
+			"/roof-racks/subaru/xv/2012-2023": "/roof-racks/subaru/xv",
+			"/roof-racks/dacia/duster/2010-2024": "/roof-racks/dacia/duster",
+			"/roof-racks/ford/kuga/2008-2019": "/roof-racks/ford/kuga",
+			"/roof-racks/volkswagen/passat-variant/b5": "/roof-racks/volkswagen/passat-variant",
+			"/roof-racks/volkswagen/touareg/2002-2018": "/roof-racks/volkswagen/touareg",
+			"/roof-racks/ford/mondeo-kombi/1993-2007": "/roof-racks/ford/mondeo-kombi"
 		},
 		"de": {
 			"/dachtraeger/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -102,7 +120,13 @@
 			"/dachtraeger/renault/kadjar/2015-2022": "/dachtraeger/renault/kadjar",
 			"/dachtraeger/lancia/zeta/1994-2003": "/dachtraeger/lancia/zeta",
 			"/dachtraeger/fiat/sedici/2006": "/dachtraeger/fiat/sedici",
-			"/dachtraeger/peugeot/806/1994-2002": "/dachtraeger/peugeot/806"
+			"/dachtraeger/peugeot/806/1994-2002": "/dachtraeger/peugeot/806",
+			"/dachtraeger/subaru/xv/2012-2023": "/dachtraeger/subaru/xv",
+			"/dachtraeger/dacia/duster/2010-2024": "/dachtraeger/dacia/duster",
+			"/dachtraeger/ford/kuga/2008-2019": "/dachtraeger/ford/kuga",
+			"/dachtraeger/volkswagen/passat-variant/b5": "/dachtraeger/volkswagen/passat-variant",
+			"/dachtraeger/volkswagen/touareg/2002-2018": "/dachtraeger/volkswagen/touareg",
+			"/dachtraeger/ford/mondeo-kombi/1993-2007": "/dachtraeger/ford/mondeo-kombi"
 		},
 		"pl": {
 			"/bagazniki-dachowe/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -128,7 +152,13 @@
 			"/bagazniki-dachowe/renault/kadjar/2015-2022": "/bagazniki-dachowe/renault/kadjar",
 			"/bagazniki-dachowe/lancia/zeta/1994-2003": "/bagazniki-dachowe/lancia/zeta",
 			"/bagazniki-dachowe/fiat/sedici/2006": "/bagazniki-dachowe/fiat/sedici",
-			"/bagazniki-dachowe/peugeot/806/1994-2002": "/bagazniki-dachowe/peugeot/806"
+			"/bagazniki-dachowe/peugeot/806/1994-2002": "/bagazniki-dachowe/peugeot/806",
+			"/bagazniki-dachowe/subaru/xv/2012-2023": "/bagazniki-dachowe/subaru/xv",
+			"/bagazniki-dachowe/dacia/duster/2010-2024": "/bagazniki-dachowe/dacia/duster",
+			"/bagazniki-dachowe/ford/kuga/2008-2019": "/bagazniki-dachowe/ford/kuga",
+			"/bagazniki-dachowe/volkswagen/passat-variant/b5": "/bagazniki-dachowe/volkswagen/passat-variant",
+			"/bagazniki-dachowe/volkswagen/touareg/2002-2018": "/bagazniki-dachowe/volkswagen/touareg",
+			"/bagazniki-dachowe/ford/mondeo-kombi/1993-2007": "/bagazniki-dachowe/ford/mondeo-kombi"
 		},
 		"hu": {
 			"/tetocsomagtartok/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -154,7 +184,13 @@
 			"/tetocsomagtartok/renault/kadjar/2015-2022": "/tetocsomagtartok/renault/kadjar",
 			"/tetocsomagtartok/lancia/zeta/1994-2003": "/tetocsomagtartok/lancia/zeta",
 			"/tetocsomagtartok/fiat/sedici/2006": "/tetocsomagtartok/fiat/sedici",
-			"/tetocsomagtartok/peugeot/806/1994-2002": "/tetocsomagtartok/peugeot/806"
+			"/tetocsomagtartok/peugeot/806/1994-2002": "/tetocsomagtartok/peugeot/806",
+			"/tetocsomagtartok/subaru/xv/2012-2023": "/tetocsomagtartok/subaru/xv",
+			"/tetocsomagtartok/dacia/duster/2010-2024": "/tetocsomagtartok/dacia/duster",
+			"/tetocsomagtartok/ford/kuga/2008-2019": "/tetocsomagtartok/ford/kuga",
+			"/tetocsomagtartok/volkswagen/passat-variant/b5": "/tetocsomagtartok/volkswagen/passat-variant",
+			"/tetocsomagtartok/volkswagen/touareg/2002-2018": "/tetocsomagtartok/volkswagen/touareg",
+			"/tetocsomagtartok/ford/mondeo-kombi/1993-2007": "/tetocsomagtartok/ford/mondeo-kombi"
 		},
 		"ro": {
 			"/bare-transversale/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -180,7 +216,13 @@
 			"/bare-transversale/renault/kadjar/2015-2022": "/bare-transversale/renault/kadjar",
 			"/bare-transversale/lancia/zeta/1994-2003": "/bare-transversale/lancia/zeta",
 			"/bare-transversale/fiat/sedici/2006": "/bare-transversale/fiat/sedici",
-			"/bare-transversale/peugeot/806/1994-2002": "/bare-transversale/peugeot/806"
+			"/bare-transversale/peugeot/806/1994-2002": "/bare-transversale/peugeot/806",
+			"/bare-transversale/subaru/xv/2012-2023": "/bare-transversale/subaru/xv",
+			"/bare-transversale/dacia/duster/2010-2024": "/bare-transversale/dacia/duster",
+			"/bare-transversale/ford/kuga/2008-2019": "/bare-transversale/ford/kuga",
+			"/bare-transversale/volkswagen/passat-variant/b5": "/bare-transversale/volkswagen/passat-variant",
+			"/bare-transversale/volkswagen/touareg/2002-2018": "/bare-transversale/volkswagen/touareg",
+			"/bare-transversale/ford/mondeo-kombi/1993-2007": "/bare-transversale/ford/mondeo-kombi"
 		},
 		"fr": {
 			"/barres-de-toit/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -206,7 +248,13 @@
 			"/barres-de-toit/renault/kadjar/2015-2022": "/barres-de-toit/renault/kadjar",
 			"/barres-de-toit/lancia/zeta/1994-2003": "/barres-de-toit/lancia/zeta",
 			"/barres-de-toit/fiat/sedici/2006": "/barres-de-toit/fiat/sedici",
-			"/barres-de-toit/peugeot/806/1994-2002": "/barres-de-toit/peugeot/806"
+			"/barres-de-toit/peugeot/806/1994-2002": "/barres-de-toit/peugeot/806",
+			"/barres-de-toit/subaru/xv/2012-2023": "/barres-de-toit/subaru/xv",
+			"/barres-de-toit/dacia/duster/2010-2024": "/barres-de-toit/dacia/duster",
+			"/barres-de-toit/ford/kuga/2008-2019": "/barres-de-toit/ford/kuga",
+			"/barres-de-toit/volkswagen/passat-variant/b5": "/barres-de-toit/volkswagen/passat-variant",
+			"/barres-de-toit/volkswagen/touareg/2002-2018": "/barres-de-toit/volkswagen/touareg",
+			"/barres-de-toit/ford/mondeo-kombi/1993-2007": "/barres-de-toit/ford/mondeo-kombi"
 		},
 		"it": {
 			"/barre-portatutto/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -232,7 +280,13 @@
 			"/barre-portatutto/renault/kadjar/2015-2022": "/barre-portatutto/renault/kadjar",
 			"/barre-portatutto/lancia/zeta/1994-2003": "/barre-portatutto/lancia/zeta",
 			"/barre-portatutto/fiat/sedici/2006": "/barre-portatutto/fiat/sedici",
-			"/barre-portatutto/peugeot/806/1994-2002": "/barre-portatutto/peugeot/806"
+			"/barre-portatutto/peugeot/806/1994-2002": "/barre-portatutto/peugeot/806",
+			"/barre-portatutto/subaru/xv/2012-2023": "/barre-portatutto/subaru/xv",
+			"/barre-portatutto/dacia/duster/2010-2024": "/barre-portatutto/dacia/duster",
+			"/barre-portatutto/ford/kuga/2008-2019": "/barre-portatutto/ford/kuga",
+			"/barre-portatutto/volkswagen/passat-variant/b5": "/barre-portatutto/volkswagen/passat-variant",
+			"/barre-portatutto/volkswagen/touareg/2002-2018": "/barre-portatutto/volkswagen/touareg",
+			"/barre-portatutto/ford/mondeo-kombi/1993-2007": "/barre-portatutto/ford/mondeo-kombi"
 		},
 		"es": {
 			"/barras-de-techo/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
@@ -260,7 +314,13 @@
 			"/barras-de-techo/renault/kadjar/2015-2022": "/barras-de-techo/renault/kadjar",
 			"/barras-de-techo/lancia/zeta/1994-2003": "/barras-de-techo/lancia/zeta",
 			"/barras-de-techo/fiat/sedici/2006": "/barras-de-techo/fiat/sedici",
-			"/barras-de-techo/peugeot/806/1994-2002": "/barras-de-techo/peugeot/806"
+			"/barras-de-techo/peugeot/806/1994-2002": "/barras-de-techo/peugeot/806",
+			"/barras-de-techo/subaru/xv/2012-2023": "/barras-de-techo/subaru/xv",
+			"/barras-de-techo/dacia/duster/2010-2024": "/barras-de-techo/dacia/duster",
+			"/barras-de-techo/ford/kuga/2008-2019": "/barras-de-techo/ford/kuga",
+			"/barras-de-techo/volkswagen/passat-variant/b5": "/barras-de-techo/volkswagen/passat-variant",
+			"/barras-de-techo/volkswagen/touareg/2002-2018": "/barras-de-techo/volkswagen/touareg",
+			"/barras-de-techo/ford/mondeo-kombi/1993-2007": "/barras-de-techo/ford/mondeo-kombi"
 		}
 	},
 	"roots": {
