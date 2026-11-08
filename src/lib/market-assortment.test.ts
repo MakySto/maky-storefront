@@ -156,4 +156,22 @@ describe("offersFullRange", () => {
 		expect(offersFullRange({ state: "known", categories: new Set(ALL.slice(0, 5)) })).toBe(false);
 		expect(offersFullRange({ state: "known", categories: new Set(["stresne-nosice"]) })).toBe(false);
 	});
+
+	it("does not need the snow chains: the range lines of the site text do not name them", async () => {
+		const { offersFullRange } = await subject();
+		// A market with the whole range and no chains (the USA, Canada) still sells what the lines say...
+		expect(offersFullRange({ state: "known", categories: new Set(ALL) })).toBe(true);
+		// ...and having the chains does not make up for a missing shelf the lines do name.
+		expect(
+			offersFullRange({ state: "known", categories: new Set([...ALL.slice(0, 5), "snehove-retaze"]) }),
+		).toBe(false);
+	});
+
+	it("links the chains only where the market stocks them", async () => {
+		const { offersCategory } = await subject();
+		expect(
+			offersCategory({ state: "known", categories: new Set(["snehove-retaze"]) }, "snehove-retaze"),
+		).toBe(true);
+		expect(offersCategory({ state: "known", categories: new Set(ALL) }, "snehove-retaze")).toBe(false);
+	});
 });
