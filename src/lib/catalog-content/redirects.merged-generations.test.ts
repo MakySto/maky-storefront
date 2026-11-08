@@ -8,18 +8,23 @@ import { catalogLanguageForMarket } from "./language";
 import { CATALOG_REDIRECTS, catalogRedirectTarget } from "./redirects";
 
 /**
- * The twelve vehicle pages CFM retires when it merges duplicate generations (CFM 4.5, 2026-10-18,
- * point 2 of their answer): twelve pages in each of the twelve markets, 144 pairs.
+ * The vehicle pages CFM retires when it merges duplicate generations (CFM 4.5, 2026-10-18, point 2 of
+ * their answer): twelve pages in each of the twelve markets, 144 pairs. Eleven are still answered here,
+ * 132 pairs: the twelfth, the VW Up model page `volkswagen/up`, left the table on 2026-11-08 (see below).
  *
  * The list below is typed in from their message and is NOT derived from `redirects.json`, so the
  * JSON is checked against what CFM sent, not against itself. Each side is `brand/model/generation`
  * without the category: the category is the market's own root, which this test asks the storefront
  * (`categorySegment`) rather than repeating, so a CFM spelling that differs from ours fails here.
  *
- * Eight pages have a successor generation with a page of its own. Four have none, and go one level
- * up: a model page for Lexus UX and KGM XLV, the brand page for Volkswagen. The VW Up model page does
- * not exist (the remaining model has no page in the export, and the vehicle route renders only a node
- * that has one), so the brand is the nearest live address.
+ * Eight pages have a successor generation with a page of its own. Three have none, and go one level
+ * up: a model page for Lexus UX and KGM XLV, the brand page for the old VW Up! generation page
+ * `volkswagen/up/up`.
+ *
+ * The VW Up model page `volkswagen/up` was the twelfth. It went to the brand because the remaining
+ * model had no page in the export. On 2026-11-08 CFM pointed that page at the new model (8290) and
+ * published it again, with the new generation `volkswagen/up/aa` below it, so a 301 would hide a live
+ * page, its tile and its sitemap row. It is in `redirects.republished-up-d40.test.ts` now.
  */
 const PAGES: readonly (readonly [from: string, to: string])[] = [
 	["renault/twingo/ii-open-air", "renault/twingo/iii"],
@@ -33,7 +38,6 @@ const PAGES: readonly (readonly [from: string, to: string])[] = [
 	["lexus/ux/za1", "lexus/ux"],
 	["kgm/xlv/2016-2021", "kgm/xlv"],
 	["volkswagen/up/up", "volkswagen"],
-	["volkswagen/up", "volkswagen"],
 ];
 
 const MARKETS = Object.keys(CHANNEL_MAP).filter((market) => catalogLanguageForMarket(market));
@@ -52,10 +56,10 @@ const pathnameOf = (res: Response) => {
 };
 
 describe("the merged-generation pages", () => {
-	it("are twelve pages in twelve markets, 144 pairs", () => {
-		expect(PAGES).toHaveLength(12);
+	it("are eleven pages in twelve markets, 132 pairs", () => {
+		expect(PAGES).toHaveLength(11);
 		expect(MARKETS).toHaveLength(12);
-		expect(PAGES.length * MARKETS.length).toBe(144);
+		expect(PAGES.length * MARKETS.length).toBe(132);
 	});
 
 	it("agree with the one example CFM wrote out", () => {
@@ -74,7 +78,7 @@ describe("the merged-generation pages", () => {
 		}
 	});
 
-	it("are all the table holds for them: no entry beyond the 120 language rows", () => {
+	it("are all the table holds for them: no entry beyond the 110 language rows", () => {
 		const languages = new Set(MARKETS.map((market) => catalogLanguageForMarket(market)!));
 		expect(languages.size).toBe(10);
 		for (const language of languages) {
@@ -131,6 +135,7 @@ describe("the merged-generation pages", () => {
 	it("do not touch the model and brand pages they lead to, nor a sibling generation", async () => {
 		for (const path of [
 			"/sk/stresne-nosice/volkswagen",
+			"/sk/stresne-nosice/volkswagen/up",
 			"/sk/stresne-nosice/lexus/ux",
 			"/sk/stresne-nosice/volkswagen/golf",
 			"/sk/stresne-nosice/renault/twingo/ii",

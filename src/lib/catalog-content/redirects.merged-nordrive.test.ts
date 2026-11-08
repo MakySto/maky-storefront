@@ -8,25 +8,30 @@ import { catalogLanguageForMarket } from "./language";
 import { CATALOG_REDIRECTS, catalogRedirectTarget } from "./redirects";
 
 /**
- * The eight generation pages CFM retires when it moves the Nordrive sets of eight merged cars onto
- * the cars of the same model (CFM 4.5, 2026-10-22, points 1 and 4): eight pages in each of the twelve
- * markets, 96 pairs, the second batch after the twelve of 2026-10-18 (`redirects.merged-generations.test.ts`).
+ * The generation pages CFM retires when it moves the Nordrive sets of eight merged cars onto the cars of
+ * the same model (CFM 4.5, 2026-10-22, points 1 and 4): eight pages in each of the twelve markets, 96
+ * pairs, the second batch after the twelve of 2026-10-18 (`redirects.merged-generations.test.ts`). Seven
+ * are still answered here, 84 pairs: the eighth, Navara D40 `nissan/navara-pick-up/d40`, left the table
+ * on 2026-11-08 (see below).
  *
  * The list below is typed in from their message and is NOT derived from `redirects.json`, so the JSON is
  * checked against what CFM sent, not against itself. Each side is `brand/model/generation` or
  * `brand/model` without the category: the category is the market's own root, which this test asks the
  * storefront (`categorySegment`) rather than repeating.
  *
- * None of the eight has a successor generation with a page of its own (the surviving generation has no
+ * None of the seven has a successor generation with a page of its own (the surviving generation has no
  * page in the export), so every pair goes one level up, to the model page, which the vehicle route
  * renders. Sedici and Peugeot 806 stayed in this batch; their generation pages were retired in the next one
  * (`redirects.merged-nordrive-sedici-806.test.ts`, 2026-10-30), their model pages never redirect.
+ *
+ * Navara D40 was the eighth. On 2026-11-08 CFM pointed its page at the surviving generation (13792, 2005 to
+ * 2015) and published it again, so a 301 would hide a live page, its tile and its sitemap row. It is in
+ * `redirects.republished-up-d40.test.ts` now.
  */
 const PAGES: readonly (readonly [from: string, to: string])[] = [
 	["citroen/c4-cactus/2014-2018", "citroen/c4-cactus"],
 	["citroen/c4-spacetourer/2018", "citroen/c4-spacetourer"],
 	["dacia/bigster/2025", "dacia/bigster"],
-	["nissan/navara-pick-up/d40", "nissan/navara-pick-up"],
 	["opel/antara/2006-2011", "opel/antara"],
 	["opel/crossland-x/2021", "opel/crossland-x"],
 	["renault/kadjar/2015-2022", "renault/kadjar"],
@@ -37,6 +42,7 @@ const PAGES: readonly (readonly [from: string, to: string])[] = [
 const STAY = [
 	"fiat/sedici",
 	"peugeot/806",
+	"nissan/navara-pick-up/d40",
 	"nissan/navara-pick-up/d23",
 	"citroen/grand-c4-spacetourer/3a",
 ] as const;
@@ -57,10 +63,10 @@ const pathnameOf = (res: Response) => {
 };
 
 describe("the merged Nordrive generation pages", () => {
-	it("are eight pages in twelve markets, 96 pairs", () => {
-		expect(PAGES).toHaveLength(8);
+	it("are seven pages in twelve markets, 84 pairs", () => {
+		expect(PAGES).toHaveLength(7);
 		expect(MARKETS).toHaveLength(12);
-		expect(PAGES.length * MARKETS.length).toBe(96);
+		expect(PAGES.length * MARKETS.length).toBe(84);
 	});
 
 	it("agree with the one example CFM wrote out", () => {
@@ -78,7 +84,7 @@ describe("the merged Nordrive generation pages", () => {
 		}
 	});
 
-	it("are all the table holds for them: no entry beyond the 80 language rows", () => {
+	it("are all the table holds for them: no entry beyond the 70 language rows", () => {
 		const languages = new Set(MARKETS.map((market) => catalogLanguageForMarket(market)!));
 		expect(languages.size).toBe(10);
 		for (const language of languages) {
@@ -132,7 +138,7 @@ describe("the merged Nordrive generation pages", () => {
 		expect(pathnameOf(rsc)).toBe(`/de/${category("de")}/${to}`);
 	});
 
-	it("leave Sedici, Peugeot 806 and the sibling generations alone", async () => {
+	it("leave Sedici, Peugeot 806, Navara D40 and the sibling generations alone", async () => {
 		for (const market of MARKETS) {
 			for (const page of STAY) {
 				const path = `/${market}/${category(market)}/${page}`;
