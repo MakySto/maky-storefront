@@ -95,6 +95,8 @@ export function CategoryGrid({
 								href={marketHref(channel, categoryUrlFor(channel, category.slug))}
 								className={cn(
 									"group relative isolate flex aspect-[7/8] flex-col justify-end overflow-hidden rounded-sm shadow-sm transition-shadow duration-300 hover:shadow-xl",
+									// Seven in a row are about 180px wide: taller, so the words still leave room for the picture.
+									crowded && "xl:aspect-[7/10]",
 									"focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden",
 									photo?.kind === "scene" ? "bg-scrim" : "from-surface-muted to-sand-400 bg-linear-to-b",
 								)}
@@ -120,7 +122,10 @@ export function CategoryGrid({
 											"-z-10 transition-transform duration-700 ease-out motion-safe:group-hover:scale-[1.06]",
 											photo.kind === "scene"
 												? "object-cover object-[var(--tile-pos)]"
-												: "object-contain px-4 pt-5 pb-20 mix-blend-multiply",
+												: // The picture stops above the words: from sm the name takes two lines and the tagline
+													// two more (about 7rem with the padding), and a picture that reached into them
+													// put white letters on a light wheel or fridge (owner, 2026-11-08).
+													"object-contain px-4 pt-5 pb-20 mix-blend-multiply sm:pb-[7.5rem]",
 										)}
 									/>
 								)}
@@ -130,7 +135,9 @@ export function CategoryGrid({
 										"absolute inset-x-0 bottom-0 -z-10 bg-linear-to-t to-transparent",
 										photo?.kind === "scene"
 											? "from-scrim/90 via-scrim/35 h-3/4"
-											: "from-scrim/85 via-scrim/25 h-1/2",
+											: // From sm taller and darker than the old half-height fade (a phone has no tagline and keeps it): the words of a tile whose picture is a
+												// light cut-out (a wheel, a rack, a fridge) stand on beige, and white on beige did not read.
+												"from-scrim/85 via-scrim/25 sm:from-scrim/90 sm:via-scrim/55 h-1/2 sm:h-[62%] sm:via-70%",
 									)}
 								/>
 								{/* One text block of the same shape on every tile: two lines kept for the name,
