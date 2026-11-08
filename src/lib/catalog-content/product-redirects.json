@@ -1,6 +1,6 @@
 {
-	"release": "zlucenie-20261030",
-	"source": "KARGO_301_SK_20261030_pre_M.tsv sha256 c614bdf329eb866f21e355692ae802447a594275f8c49896e9fe247736d68f83 + KARGO_301_SK_20261031_doplnok_pre_M.tsv sha256 98f25ae637e49b6cfa9dd0d8564d68e002c9b29e27898902b3e635e03633e392",
+	"release": "zlucenie-20261030+berlingo-k9-20261106",
+	"source": "KARGO_301_SK_20261030_pre_M.tsv sha256 c614bdf329eb866f21e355692ae802447a594275f8c49896e9fe247736d68f83 + KARGO_301_SK_20261031_doplnok_pre_M.tsv sha256 98f25ae637e49b6cfa9dd0d8564d68e002c9b29e27898902b3e635e03633e392 + CFM message 2026-11-06 (six hidden Berlingo K9 Kargo sets, old to replacement: the SK pairs as CFM wrote them, the nine other markets from the live translated slugs)",
 	"exact": {
 		"sk": {
 			"stresny-kos-nordrive-kargo-rack-pre-citroen-berlingo-b9-l1-2008-2018-180-x-135-x-12-cm-nkr0302-n30202-n99970": "stresny-kos-nordrive-kargo-rack-pre-citroen-berlingo-b9-2008-2018-180-x-135-x-12-cm-nkr0302-n30202-n99970",
@@ -9,6 +9,8 @@
 			"stresny-kos-nordrive-kargo-rack-pre-citroen-berlingo-b9-l1-2008-2018-180-x-135-x-7-cm-nkr0802-n30203": "stresny-kos-nordrive-kargo-rack-pre-citroen-berlingo-b9-2008-2018-180-x-135-x-7-cm-nkr0802-n30203",
 			"stresny-kos-nordrive-kargo-rack-pre-citroen-berlingo-b9-l2-2008-2018-210-x-135-x-12-cm-nkr0402-n30203": "stresny-kos-nordrive-kargo-rack-pre-citroen-berlingo-b9-2008-2018-210-x-135-x-12-cm-nkr0402-n30203",
 			"stresny-kos-nordrive-kargo-rack-pre-citroen-berlingo-b9-l2-2008-2018-210-x-135-x-7-cm-nkr0902-n30203": "stresny-kos-nordrive-kargo-rack-pre-citroen-berlingo-b9-2008-2018-210-x-135-x-7-cm-nkr0902-n30203",
+			"stresny-kos-nordrive-kargo-rack-pre-citroen-berlingo-k9-od-2022-210-x-150-x-12-cm-nkr0403-3xn30363": "stresny-kos-nordrive-kargo-rack-pre-citroen-berlingo-k9-2018-2022-210-x-150-x-12-cm-nkr0403-n30363",
+			"stresny-kos-nordrive-kargo-rack-pre-citroen-berlingo-k9-od-2022-210-x-150-x-7-cm-nkr0903-3xn30363": "stresny-kos-nordrive-kargo-rack-pre-citroen-berlingo-k9-2018-2022-210-x-150-x-7-cm-nkr0903-n30363",
 			"stresny-kos-nordrive-kargo-rack-pre-citroen-jumper-van-230-dlhy-razvor-h2-1994-2006-330-x-180-x-12-cm-nkr2344-n30023": "stresny-kos-nordrive-kargo-rack-pre-citroen-jumper-van-230-1994-2006-330-x-180-x-12-cm-nkr2344-n30023",
 			"stresny-kos-nordrive-kargo-rack-pre-citroen-jumper-van-230-dlhy-razvor-h2-1994-2006-330-x-180-x-7-cm-nkr7844-n30023": "stresny-kos-nordrive-kargo-rack-pre-citroen-jumper-van-230-1994-2006-330-x-180-x-7-cm-nkr7844-n30023",
 			"stresny-kos-nordrive-kargo-rack-pre-citroen-jumper-van-230-kratky-razvor-h1-1994-2006-300-x-180-x-12-cm-nkr2244-n30023": "stresny-kos-nordrive-kargo-rack-pre-citroen-jumper-van-230-1994-2006-300-x-180-x-12-cm-nkr2244-n30023",
@@ -451,6 +453,8 @@
 			"stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-b9-l2-2008-2018-2-tyce-135-cm-2xn10035-n30202": "stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-b9-2008-2018-2-tyce-135-cm-2xn10035-n30202",
 			"stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-b9-l2-2008-2018-3-tyce-135-cm-3xn10035-n30203": "stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-b9-2008-2018-3-tyce-135-cm-3xn10035-n30203",
 			"stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-k9-2018-2022-3-tyce-150-cm-3xn10040-n30363": "stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-k9-od-2018-3-tyce-150-cm-3xn10040-n30363",
+			"stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-k9-od-2022-2-tyce-150-cm-2xn10040-2xn30362": "stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-k9-2018-2022-2-tyce-150-cm-2xn10040-n30362",
+			"stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-k9-od-2022-3-tyce-150-cm-3xn10040-3xn30363": "stresny-nosic-nordrive-kargo-plus-pre-citroen-berlingo-k9-od-2018-3-tyce-150-cm-3xn10040-n30363",
 			"stresny-nosic-nordrive-kargo-plus-pre-citroen-jumper-van-230-dlhy-razvor-h2-1994-2006-2-tyce-180-cm-2xn10045-n30022": "stresny-nosic-nordrive-kargo-plus-pre-citroen-jumper-van-230-1994-2006-2-tyce-180-cm-2xn10045-n30022",
 			"stresny-nosic-nordrive-kargo-plus-pre-citroen-jumper-van-230-dlhy-razvor-h2-1994-2006-3-tyce-180-cm-3xn10045-n30023": "stresny-nosic-nordrive-kargo-plus-pre-citroen-jumper-van-230-1994-2006-3-tyce-180-cm-3xn10045-n30023",
 			"stresny-nosic-nordrive-kargo-plus-pre-citroen-jumper-van-230-kratky-razvor-h1-1994-2006-2-tyce-180-cm-2xn10045-n30022": "stresny-nosic-nordrive-kargo-plus-pre-citroen-jumper-van-230-1994-2006-2-tyce-180-cm-2xn10045-n30022",
@@ -862,6 +866,8 @@
 			"stresny-nosic-nordrive-kargo-pre-citroen-berlingo-b9-l2-2008-2018-2-tyce-135-cm-2xn10005-n30202": "stresny-nosic-nordrive-kargo-pre-citroen-berlingo-b9-2008-2018-2-tyce-135-cm-2xn10005-n30202",
 			"stresny-nosic-nordrive-kargo-pre-citroen-berlingo-b9-l2-2008-2018-3-tyce-135-cm-3xn10005-n30203": "stresny-nosic-nordrive-kargo-pre-citroen-berlingo-b9-2008-2018-3-tyce-135-cm-3xn10005-n30203",
 			"stresny-nosic-nordrive-kargo-pre-citroen-berlingo-k9-2018-2022-3-tyce-150-cm-3xn10010-n30363": "stresny-nosic-nordrive-kargo-pre-citroen-berlingo-k9-od-2018-3-tyce-150-cm-3xn10010-n30363",
+			"stresny-nosic-nordrive-kargo-pre-citroen-berlingo-k9-od-2022-2-tyce-150-cm-2xn10010-2xn30362": "stresny-nosic-nordrive-kargo-pre-citroen-berlingo-k9-2018-2022-2-tyce-150-cm-2xn10010-n30362",
+			"stresny-nosic-nordrive-kargo-pre-citroen-berlingo-k9-od-2022-3-tyce-150-cm-3xn10010-3xn30363": "stresny-nosic-nordrive-kargo-pre-citroen-berlingo-k9-od-2018-3-tyce-150-cm-3xn10010-n30363",
 			"stresny-nosic-nordrive-kargo-pre-citroen-jumper-van-230-dlhy-razvor-h2-1994-2006-2-tyce-180-cm-2xn10015-n30022": "stresny-nosic-nordrive-kargo-pre-citroen-jumper-van-230-1994-2006-2-tyce-180-cm-2xn10015-n30022",
 			"stresny-nosic-nordrive-kargo-pre-citroen-jumper-van-230-dlhy-razvor-h2-1994-2006-3-tyce-180-cm-3xn10015-n30023": "stresny-nosic-nordrive-kargo-pre-citroen-jumper-van-230-1994-2006-3-tyce-180-cm-3xn10015-n30023",
 			"stresny-nosic-nordrive-kargo-pre-citroen-jumper-van-230-kratky-razvor-h1-1994-2006-2-tyce-180-cm-2xn10015-n30022": "stresny-nosic-nordrive-kargo-pre-citroen-jumper-van-230-1994-2006-2-tyce-180-cm-2xn10015-n30022",
@@ -1268,6 +1274,78 @@
 			"stresny-nosic-nordrive-kargo-pre-volkswagen-transporter-tv-dlhy-razvor-od-2025-3-tyce-150-cm-3xn10010-n30443": "stresny-nosic-nordrive-kargo-pre-volkswagen-transporter-tv-od-2025-3-tyce-150-cm-3xn10010-n30443",
 			"stresny-nosic-nordrive-kargo-pre-volkswagen-transporter-tv-kratky-razvor-od-2025-2-tyce-150-cm-2xn10010-n30442": "stresny-nosic-nordrive-kargo-pre-volkswagen-transporter-tv-od-2025-2-tyce-150-cm-2xn10010-n30442",
 			"stresny-nosic-nordrive-kargo-pre-volkswagen-transporter-tv-kratky-razvor-od-2025-3-tyce-150-cm-3xn10010-n30443": "stresny-nosic-nordrive-kargo-pre-volkswagen-transporter-tv-od-2025-3-tyce-150-cm-3xn10010-n30443"
+		},
+		"cz": {
+			"stresni-kos-nordrive-kargo-rack-pro-citroen-berlingo-k9-od-2022-210-150-12-cm-nkr0403-3-n30363": "stresni-kos-nordrive-kargo-rack-pro-citroen-berlingo-k9-2018-2022-210-150-12-cm-nkr0403-n30363",
+			"stresni-kos-nordrive-kargo-rack-pro-citroen-berlingo-k9-od-2022-210-150-7-cm-nkr0903-3-n30363": "stresni-kos-nordrive-kargo-rack-pro-citroen-berlingo-k9-2018-2022-210-150-7-cm-nkr0903-n30363",
+			"stresni-nosic-nordrive-kargo-plus-pro-citroen-berlingo-k9-od-2022-2-tyce-150-cm-2-n10040-2-n30362": "stresni-nosic-nordrive-kargo-plus-pro-citroen-berlingo-k9-2018-2022-2-tyce-150-cm-2-n10040-n30362",
+			"stresni-nosic-nordrive-kargo-plus-pro-citroen-berlingo-k9-od-2022-3-tyce-150-cm-3-n10040-3-n30363": "stresni-nosic-nordrive-kargo-plus-pro-citroen-berlingo-k9-od-2018-3-tyce-150-cm-3-n10040-n30363",
+			"stresni-nosic-nordrive-kargo-pro-citroen-berlingo-k9-od-2022-2-tyce-150-cm-2-n10010-2-n30362": "stresni-nosic-nordrive-kargo-pro-citroen-berlingo-k9-2018-2022-2-tyce-150-cm-2-n10010-n30362",
+			"stresni-nosic-nordrive-kargo-pro-citroen-berlingo-k9-od-2022-3-tyce-150-cm-3-n10010-3-n30363": "stresni-nosic-nordrive-kargo-pro-citroen-berlingo-k9-od-2018-3-tyce-150-cm-3-n10010-n30363"
+		},
+		"de": {
+			"dachkorb-nordrive-kargo-rack-fur-citroen-berlingo-k9-ab-2022-210-150-12-cm-nkr0403-3-n30363": "dachkorb-nordrive-kargo-rack-fur-citroen-berlingo-k9-2018-2022-210-150-12-cm-nkr0403-n30363",
+			"dachkorb-nordrive-kargo-rack-fur-citroen-berlingo-k9-ab-2022-210-150-7-cm-nkr0903-3-n30363": "dachkorb-nordrive-kargo-rack-fur-citroen-berlingo-k9-2018-2022-210-150-7-cm-nkr0903-n30363",
+			"dachtrager-nordrive-kargo-fur-citroen-berlingo-k9-ab-2022-2-barren-150-cm-2-n10010-2-n30362": "dachtrager-nordrive-kargo-fur-citroen-berlingo-k9-2018-2022-2-barren-150-cm-2-n10010-n30362",
+			"dachtrager-nordrive-kargo-fur-citroen-berlingo-k9-ab-2022-3-barren-150-cm-3-n10010-3-n30363": "dachtrager-nordrive-kargo-fur-citroen-berlingo-k9-ab-2018-3-barren-150-cm-3-n10010-n30363",
+			"dachtrager-nordrive-kargo-plus-fur-citroen-berlingo-k9-ab-2022-2-barren-150-cm-2-n10040-2-n30362": "dachtrager-nordrive-kargo-plus-fur-citroen-berlingo-k9-2018-2022-2-barren-150-cm-2-n10040-n30362",
+			"dachtrager-nordrive-kargo-plus-fur-citroen-berlingo-k9-ab-2022-3-barren-150-cm-3-n10040-3-n30363": "dachtrager-nordrive-kargo-plus-fur-citroen-berlingo-k9-ab-2018-3-barren-150-cm-3-n10040-n30363"
+		},
+		"at": {
+			"dachkorb-nordrive-kargo-rack-fur-citroen-berlingo-k9-ab-2022-210-150-12-cm-nkr0403-3-n30363": "dachkorb-nordrive-kargo-rack-fur-citroen-berlingo-k9-2018-2022-210-150-12-cm-nkr0403-n30363",
+			"dachkorb-nordrive-kargo-rack-fur-citroen-berlingo-k9-ab-2022-210-150-7-cm-nkr0903-3-n30363": "dachkorb-nordrive-kargo-rack-fur-citroen-berlingo-k9-2018-2022-210-150-7-cm-nkr0903-n30363",
+			"dachtrager-nordrive-kargo-fur-citroen-berlingo-k9-ab-2022-2-barren-150-cm-2-n10010-2-n30362": "dachtrager-nordrive-kargo-fur-citroen-berlingo-k9-2018-2022-2-barren-150-cm-2-n10010-n30362",
+			"dachtrager-nordrive-kargo-fur-citroen-berlingo-k9-ab-2022-3-barren-150-cm-3-n10010-3-n30363": "dachtrager-nordrive-kargo-fur-citroen-berlingo-k9-ab-2018-3-barren-150-cm-3-n10010-n30363",
+			"dachtrager-nordrive-kargo-plus-fur-citroen-berlingo-k9-ab-2022-2-barren-150-cm-2-n10040-2-n30362": "dachtrager-nordrive-kargo-plus-fur-citroen-berlingo-k9-2018-2022-2-barren-150-cm-2-n10040-n30362",
+			"dachtrager-nordrive-kargo-plus-fur-citroen-berlingo-k9-ab-2022-3-barren-150-cm-3-n10040-3-n30363": "dachtrager-nordrive-kargo-plus-fur-citroen-berlingo-k9-ab-2018-3-barren-150-cm-3-n10040-n30363"
+		},
+		"pl": {
+			"bagaznik-dachowy-nordrive-kargo-do-citroen-berlingo-k9-od-2022-2-belki-150-cm-2-n10010-2-n30362": "bagaznik-dachowy-nordrive-kargo-do-citroen-berlingo-k9-2018-2022-2-belki-150-cm-2-n10010-n30362",
+			"bagaznik-dachowy-nordrive-kargo-do-citroen-berlingo-k9-od-2022-3-belki-150-cm-3-n10010-3-n30363": "bagaznik-dachowy-nordrive-kargo-do-citroen-berlingo-k9-od-2018-3-belki-150-cm-3-n10010-n30363",
+			"bagaznik-dachowy-nordrive-kargo-plus-do-citroen-berlingo-k9-od-2022-2-belki-150-cm-2-n10040-2-n30362": "bagaznik-dachowy-nordrive-kargo-plus-do-citroen-berlingo-k9-2018-2022-2-belki-150-cm-2-n10040-n30362",
+			"bagaznik-dachowy-nordrive-kargo-plus-do-citroen-berlingo-k9-od-2022-3-belki-150-cm-3-n10040-3-n30363": "bagaznik-dachowy-nordrive-kargo-plus-do-citroen-berlingo-k9-od-2018-3-belki-150-cm-3-n10040-n30363",
+			"kosz-dachowy-nordrive-kargo-rack-do-citroen-berlingo-k9-od-2022-210-150-12-cm-nkr0403-3-n30363": "kosz-dachowy-nordrive-kargo-rack-do-citroen-berlingo-k9-2018-2022-210-150-12-cm-nkr0403-n30363",
+			"kosz-dachowy-nordrive-kargo-rack-do-citroen-berlingo-k9-od-2022-210-150-7-cm-nkr0903-3-n30363": "kosz-dachowy-nordrive-kargo-rack-do-citroen-berlingo-k9-2018-2022-210-150-7-cm-nkr0903-n30363"
+		},
+		"hu": {
+			"nordrive-kargo-plus-tetocsomagtarto-citroen-berlingo-k9-tipushoz-2022-tol-2-rud-150-cm-2-n10040-2-n30362": "nordrive-kargo-plus-tetocsomagtarto-citroen-berlingo-k9-tipushoz-2018-2022-2-rud-150-cm-2-n10040-n30362",
+			"nordrive-kargo-plus-tetocsomagtarto-citroen-berlingo-k9-tipushoz-2022-tol-3-rud-150-cm-3-n10040-3-n30363": "nordrive-kargo-plus-tetocsomagtarto-citroen-berlingo-k9-tipushoz-2018-tol-3-rud-150-cm-3-n10040-n30363",
+			"nordrive-kargo-rack-tetokosar-citroen-berlingo-k9-tipushoz-2022-evjarattol-210-150-12-cm-nkr0403-3-n30363": "nordrive-kargo-rack-tetokosar-citroen-berlingo-k9-tipushoz-2018-2022-210-150-12-cm-nkr0403-n30363",
+			"nordrive-kargo-rack-tetokosar-citroen-berlingo-k9-tipushoz-2022-evjarattol-210-150-7-cm-nkr0903-3-n30363": "nordrive-kargo-rack-tetokosar-citroen-berlingo-k9-tipushoz-2018-2022-210-150-7-cm-nkr0903-n30363",
+			"nordrive-kargo-tetocsomagtarto-citroen-berlingo-k9-tipushoz-2022-tol-2-rud-150-cm-2-n10010-2-n30362": "nordrive-kargo-tetocsomagtarto-citroen-berlingo-k9-tipushoz-2018-2022-2-rud-150-cm-2-n10010-n30362",
+			"nordrive-kargo-tetocsomagtarto-citroen-berlingo-k9-tipushoz-2022-tol-3-rud-150-cm-3-n10010-3-n30363": "nordrive-kargo-tetocsomagtarto-citroen-berlingo-k9-tipushoz-2018-tol-3-rud-150-cm-3-n10010-n30363"
+		},
+		"it": {
+			"barre-portatutto-nordrive-kargo-per-citroen-berlingo-k9-dal-2022-2-barre-150-cm-2-n10010-2-n30362": "barre-portatutto-nordrive-kargo-per-citroen-berlingo-k9-2018-2022-2-barre-150-cm-2-n10010-n30362",
+			"barre-portatutto-nordrive-kargo-per-citroen-berlingo-k9-dal-2022-3-barre-150-cm-3-n10010-3-n30363": "barre-portatutto-nordrive-kargo-per-citroen-berlingo-k9-dal-2018-3-barre-150-cm-3-n10010-n30363",
+			"barre-portatutto-nordrive-kargo-plus-per-citroen-berlingo-k9-dal-2022-2-barre-150-cm-2-n10040-2-n30362": "barre-portatutto-nordrive-kargo-plus-per-citroen-berlingo-k9-2018-2022-2-barre-150-cm-2-n10040-n30362",
+			"barre-portatutto-nordrive-kargo-plus-per-citroen-berlingo-k9-dal-2022-3-barre-150-cm-3-n10040-3-n30363": "barre-portatutto-nordrive-kargo-plus-per-citroen-berlingo-k9-dal-2018-3-barre-150-cm-3-n10040-n30363",
+			"cestello-da-tetto-nordrive-kargo-rack-per-citroen-berlingo-k9-dal-2022-210-150-12-cm-nkr0403-3-n30363": "cestello-da-tetto-nordrive-kargo-rack-per-citroen-berlingo-k9-2018-2022-210-150-12-cm-nkr0403-n30363",
+			"cestello-da-tetto-nordrive-kargo-rack-per-citroen-berlingo-k9-dal-2022-210-150-7-cm-nkr0903-3-n30363": "cestello-da-tetto-nordrive-kargo-rack-per-citroen-berlingo-k9-2018-2022-210-150-7-cm-nkr0903-n30363"
+		},
+		"fr": {
+			"barres-de-toit-nordrive-kargo-plus-pour-citroen-berlingo-k9-a-partir-de-2022-2-barres-transversales-150-cm-2-n10040-2-n30362": "barres-de-toit-nordrive-kargo-plus-pour-citroen-berlingo-k9-2018-2022-2-barres-transversales-150-cm-2-n10040-n30362",
+			"barres-de-toit-nordrive-kargo-plus-pour-citroen-berlingo-k9-a-partir-de-2022-3-barres-transversales-150-cm-3-n10040-3-n30363": "barres-de-toit-nordrive-kargo-plus-pour-citroen-berlingo-k9-a-partir-de-2018-3-barres-transversales-150-cm-3-n10040-n30363",
+			"barres-de-toit-nordrive-kargo-pour-citroen-berlingo-k9-a-partir-de-2022-2-barres-transversales-150-cm-2-n10010-2-n30362": "barres-de-toit-nordrive-kargo-pour-citroen-berlingo-k9-2018-2022-2-barres-transversales-150-cm-2-n10010-n30362",
+			"barres-de-toit-nordrive-kargo-pour-citroen-berlingo-k9-a-partir-de-2022-3-barres-transversales-150-cm-3-n10010-3-n30363": "barres-de-toit-nordrive-kargo-pour-citroen-berlingo-k9-a-partir-de-2018-3-barres-transversales-150-cm-3-n10010-n30363",
+			"galerie-de-toit-nordrive-kargo-rack-pour-citroen-berlingo-k9-a-partir-de-2022-210-150-12-cm-nkr0403-3-n30363": "galerie-de-toit-nordrive-kargo-rack-pour-citroen-berlingo-k9-2018-2022-210-150-12-cm-nkr0403-n30363",
+			"galerie-de-toit-nordrive-kargo-rack-pour-citroen-berlingo-k9-a-partir-de-2022-210-150-7-cm-nkr0903-3-n30363": "galerie-de-toit-nordrive-kargo-rack-pour-citroen-berlingo-k9-2018-2022-210-150-7-cm-nkr0903-n30363"
+		},
+		"es": {
+			"barras-de-techo-nordrive-kargo-para-citroen-berlingo-k9-desde-2022-2-barras-de-150-cm-2-n10010-2-n30362": "barras-de-techo-nordrive-kargo-para-citroen-berlingo-k9-2018-2022-2-barras-de-150-cm-2-n10010-n30362",
+			"barras-de-techo-nordrive-kargo-para-citroen-berlingo-k9-desde-2022-3-barras-de-150-cm-3-n10010-3-n30363": "barras-de-techo-nordrive-kargo-para-citroen-berlingo-k9-desde-2018-3-barras-de-150-cm-3-n10010-n30363",
+			"barras-de-techo-nordrive-kargo-plus-para-citroen-berlingo-k9-desde-2022-2-barras-de-150-cm-2-n10040-2-n30362": "barras-de-techo-nordrive-kargo-plus-para-citroen-berlingo-k9-2018-2022-2-barras-de-150-cm-2-n10040-n30362",
+			"barras-de-techo-nordrive-kargo-plus-para-citroen-berlingo-k9-desde-2022-3-barras-de-150-cm-3-n10040-3-n30363": "barras-de-techo-nordrive-kargo-plus-para-citroen-berlingo-k9-desde-2018-3-barras-de-150-cm-3-n10040-n30363",
+			"portaequipajes-de-techo-nordrive-kargo-rack-para-citroen-berlingo-k9-desde-2022-210-150-12-cm-nkr0403-3-n30363": "portaequipajes-de-techo-nordrive-kargo-rack-para-citroen-berlingo-k9-2018-2022-210-150-12-cm-nkr0403-n30363",
+			"portaequipajes-de-techo-nordrive-kargo-rack-para-citroen-berlingo-k9-desde-2022-210-150-7-cm-nkr0903-3-n30363": "portaequipajes-de-techo-nordrive-kargo-rack-para-citroen-berlingo-k9-2018-2022-210-150-7-cm-nkr0903-n30363"
+		},
+		"ro": {
+			"portbagaj-de-plafon-nordrive-kargo-pentru-citroen-berlingo-k9-din-2022-2-bare-150-cm-2-n10010-2-n30362": "portbagaj-de-plafon-nordrive-kargo-pentru-citroen-berlingo-k9-2018-2022-2-bare-150-cm-2-n10010-n30362",
+			"portbagaj-de-plafon-nordrive-kargo-pentru-citroen-berlingo-k9-din-2022-3-bare-150-cm-3-n10010-3-n30363": "portbagaj-de-plafon-nordrive-kargo-pentru-citroen-berlingo-k9-din-2018-3-bare-150-cm-3-n10010-n30363",
+			"portbagaj-de-plafon-nordrive-kargo-plus-pentru-citroen-berlingo-k9-din-2022-2-bare-150-cm-2-n10040-2-n30362": "portbagaj-de-plafon-nordrive-kargo-plus-pentru-citroen-berlingo-k9-2018-2022-2-bare-150-cm-2-n10040-n30362",
+			"portbagaj-de-plafon-nordrive-kargo-plus-pentru-citroen-berlingo-k9-din-2022-3-bare-150-cm-3-n10040-3-n30363": "portbagaj-de-plafon-nordrive-kargo-plus-pentru-citroen-berlingo-k9-din-2018-3-bare-150-cm-3-n10040-n30363",
+			"portbagaj-tip-grilaj-nordrive-kargo-rack-pentru-citroen-berlingo-k9-din-2022-210-150-12-cm-nkr0403-3-n30363": "portbagaj-tip-grilaj-nordrive-kargo-rack-pentru-citroen-berlingo-k9-2018-2022-210-150-12-cm-nkr0403-n30363",
+			"portbagaj-tip-grilaj-nordrive-kargo-rack-pentru-citroen-berlingo-k9-din-2022-210-150-7-cm-nkr0903-3-n30363": "portbagaj-tip-grilaj-nordrive-kargo-rack-pentru-citroen-berlingo-k9-2018-2022-210-150-7-cm-nkr0903-n30363"
 		}
 	}
 }

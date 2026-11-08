@@ -76,6 +76,17 @@ describe("what a card is allowed to say about the fit", () => {
 		expect(statement.supplier).toBe("Nordrive");
 	});
 
+	it("never gives a set whose fit depends on the month a fit's words", () => {
+		// Without its own branch this fell through to `cardVerifiedFit`: "Overené pre vaše vozidlo".
+		for (const supplier of ["Nordrive", null]) {
+			for (const conditions of [false, true]) {
+				expect(fitStatementFor("MAY_FIT_BY_MONTH", supplier, conditions)).toEqual({
+					key: "cardMayFitByMonth",
+				});
+			}
+		}
+	});
+
 	it("keeps the verified wording for a VERIFIED_FIT with conditions", () => {
 		expect(fitStatementFor("VERIFIED_FIT", "Nordrive", true)).toEqual({ key: "cardQualifiedFit" });
 	});

@@ -156,6 +156,12 @@ export type VehicleListingFilter =
 			state: "active";
 			vehicleLabel: string | null;
 			productIds: string[];
+			/**
+			 * True when some of `productIds` are sets whose fit depends on the month of manufacture
+			 * (`MAY_FIT_BY_MONTH`): they are listed — a year with no month never hides a product — and
+			 * the banner says they are not a certain fit.
+			 */
+			monthDependent: boolean;
 			isDemo: boolean;
 	  };
 
@@ -253,8 +259,13 @@ export async function resolveVehicleListingFilter(
 				: { state: "empty", vehicleLabel, isDemo };
 		}
 
-		// De-duplicated: one product can be verified through several application rows.
-		const candidates = [...new Set(outcome.verified.map((o) => o.ref.saleorProductId))];
+		// De-duplicated: one product can be verified through several application rows. The sets whose fit
+		// depends on the month join the verified ones (Marek, 2026-11-07: a year with no month never
+		// hides a product); the banner tells them apart from a certain fit.
+		const monthIds = new Set(outcome.monthDependent.map((o) => o.ref.saleorProductId));
+		const candidates = [
+			...new Set([...outcome.verified, ...outcome.monthDependent].map((o) => o.ref.saleorProductId)),
+		];
 		const productIds = candidates.filter(isSaleorProductId);
 		if (productIds.length < candidates.length) {
 			console.error(
@@ -269,7 +280,13 @@ export async function resolveVehicleListingFilter(
 				: { state: "empty", vehicleLabel, isDemo };
 		}
 
-		return { state: "active", vehicleLabel, productIds, isDemo };
+		return {
+			state: "active",
+			vehicleLabel,
+			productIds,
+			monthDependent: productIds.some((id) => monthIds.has(id)),
+			isDemo,
+		};
 	} catch (error) {
 		console.error("[fitment] listing vehicle filter failed:", error);
 		return { state: "unavailable" };

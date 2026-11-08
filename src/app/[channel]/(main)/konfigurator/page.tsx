@@ -8,6 +8,7 @@ import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { resolveVehicleOutcome } from "@/lib/fitment/resolve";
 import { isDemoDataset, resolveFitmentOffers } from "@/lib/fitment/offers";
 import { renderConditions } from "@/lib/fitment/conditions";
+import { monthCaveatOf, monthCaveatText } from "@/lib/fitment/month-caveat";
 import { describeOfferFit, offerFitsByProduct } from "@/lib/fitment/offer-fit";
 import { datasetMakeNames, splitSetTitle } from "@/lib/fitment/set-title";
 import { setVehicleOf, type SetVehicle } from "@/lib/fitment/set-vehicle";
@@ -102,14 +103,22 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 
 	const outcome = resolveVehicleOutcome(dataset, active.selection);
 
-	// Only verified sets become an offer. An unconfirmed or disputed row is explained
-	// below, never listed with a buy button.
-	const verifiedRefs = outcome.verified.map((o) => o.ref);
-	const offers = await resolveFitmentOffers(verifiedRefs, channel, locale, { dataset });
+	// Verified sets become an offer, and so do the sets whose fit depends on the month of manufacture
+	// (Marek, 2026-11-07: a product is never hidden because the shopper gave a year and no month) —
+	// but the second kind is listed AFTER the first and never in a fit's words: its card is amber and
+	// says from which month the set is valid. An unconfirmed or disputed row is explained below,
+	// never listed with a buy button.
+	const shown = [...outcome.verified, ...outcome.monthDependent];
+	const offers = await resolveFitmentOffers(
+		shown.map((o) => o.ref),
+		channel,
+		locale,
+		{ dataset },
+	);
 
 	const makeNames = datasetMakeNames(dataset);
 	const cards: ResultCard[] = offers.offers.map((offer) => {
-		const match = outcome.verified.find((o) => o.ref.saleorProductId === offer.saleorProductId);
+		const match = shown.find((o) => o.ref.saleorProductId === offer.saleorProductId);
 		const conditions = renderConditions(match?.result.conditions ?? [], locale, (code) => {
 			const key = CONDITION_LABEL_KEY[code];
 			return key ? tf(key) : null;
@@ -134,8 +143,14 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 			// worst row, and the sentence must name that row's source, not a constant.
 			verdict: match?.result.verdict ?? "MANUFACTURER_FIT",
 			supplier: match?.result.product?.evidence.supplier ?? null,
+			monthCaveat:
+				match?.result.verdict === "MAY_FIT_BY_MONTH"
+					? monthCaveatText(monthCaveatOf(match.result.matched, active.selection.year), tf)
+					: null,
 		};
 	});
+	// Certain fits first, the month-dependent ones after them, whatever order the catalogue answered in.
+	cards.sort((a, b) => Number(a.verdict === "MAY_FIT_BY_MONTH") - Number(b.verdict === "MAY_FIT_BY_MONTH"));
 
 	return (
 		<div className="mt-6 space-y-6">
@@ -163,7 +178,7 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 				t={t}
 				hasOffers={cards.length > 0}
 				unanswerable={outcome.unanswerable}
-				verifiedCount={outcome.verified.length}
+				verifiedCount={shown.length}
 				unconfirmedCount={outcome.unconfirmed.length}
 				compatibleCount={offers.compatibleCount}
 				lookupFailed={offers.lookupFailed}

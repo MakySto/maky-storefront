@@ -339,6 +339,11 @@ export async function VehicleListingFilter({
 				<p className="text-text-primary text-sm font-medium">
 					{t("listingActive", { vehicle: filter.vehicleLabel ?? "" })}
 				</p>
+				{filter.monthDependent && (
+					<p className="text-fitment-unconfirmed mt-1 text-[0.8125rem]" data-testid="listing-month-note">
+						{t("monthNoteListing")}
+					</p>
+				)}
 				{filter.isDemo && <p className="text-text-tertiary mt-1 text-xs">{t("demoNotice")}</p>}
 			</div>
 			<div className="flex flex-wrap items-center gap-x-4 gap-y-2">

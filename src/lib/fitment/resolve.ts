@@ -20,6 +20,7 @@
 import {
 	CONFIGURATOR_PRODUCT_KIND,
 	isFitmentOfferable,
+	isMonthDependentOffer,
 	matchWindow,
 	type QaStatus,
 	type WindowMatch,
@@ -139,6 +140,54 @@ function dedupeConditions(applications: FitmentApplication[]): FitmentCondition[
 	return [...seen.values()];
 }
 
+/**
+ * The answer for a product whose only open question is the manufacture month: the same evidence
+ * ladder as a certain fit, ending in `MAY_FIT_BY_MONTH` instead of a fit. `null` when the product
+ * would not be offerable even with the month (a held, disputed or unreviewed row, evidence that is
+ * neither verified nor the manufacturer's own list, no named product): the caller then keeps the
+ * plain question.
+ *
+ * It needs a named product, as a fit does: a vehicle-level "something may fit" is not a claim this
+ * feature makes — `resolveVehicleOutcome` asks product by product.
+ */
+function resolveMonthDependent(
+	dataset: FitmentDataset,
+	applications: FitmentApplication[],
+	coverage: FitmentCoverageLevel,
+	options: ResolveOptions,
+): FitmentResult | null {
+	if (!options.saleorProductId) return null;
+	const isOffer = (p: FitmentProductRef) =>
+		p.saleorProductId === options.saleorProductId &&
+		(options.saleorVariantId === undefined || p.saleorVariantId === options.saleorVariantId);
+	const refs = applications
+		.map((a) => a.products.find(isOffer))
+		.filter((r): r is NonNullable<typeof r> => Boolean(r));
+	const worst = pickWorstRef(refs);
+	if (!worst || worst.qaStatus !== "accepted") return null;
+	const standsBehind =
+		worst.verification === "cfm-verified" || worst.evidence.kind === "manufacturer-application";
+	if (!standsBehind) return null;
+	return {
+		verdict: "MAY_FIT_BY_MONTH",
+		coverage,
+		product: {
+			evidence: worst.evidence,
+			qaStatus: worst.qaStatus,
+			verification: worst.verification,
+			eligibility: worst.eligibility,
+		},
+		matched: applications,
+		conditions: dedupeConditions(applications),
+		dataset: {
+			datasetVersion: dataset.datasetVersion,
+			generatedAt: dataset.generatedAt,
+			schemaVersion: dataset.schemaVersion,
+		},
+		reason: "manufacture-month-required",
+	};
+}
+
 export type ResolveOptions = {
 	/** Restrict to applications offering this product. Used by the PDP. */
 	saleorProductId?: string;
@@ -197,12 +246,24 @@ export function resolveFitment(
 	let undecidable = false;
 	/** A window that only the manufacture month can settle. */
 	let needsMonth = false;
+	/**
+	 * Applications that WOULD match if the month were known: every other test (qualifiers
+	 * included) passed, only the month is missing. Kept apart from `positives` so that nothing
+	 * downstream can mistake them for a fit.
+	 */
+	const monthPositives: FitmentApplication[] = [];
+	let monthNegative = false;
 
 	for (const application of relevant) {
 		const window = windowMatches(application, selection);
 		if (window === "out") continue;
 		if (window === "needs-detail") {
 			needsMonth = true;
+			const qualifier = matchQualifiers(application.qualifiers, selection);
+			if (qualifier === "match") {
+				if (application.negative) monthNegative = true;
+				else monthPositives.push(application);
+			}
 			continue;
 		}
 		const qualifier = matchQualifiers(application.qualifiers, selection);
@@ -291,10 +352,17 @@ export function resolveFitment(
 		return { ...emptyResult("AMBIGUOUS", "qualifier-not-answered", dataset), coverage };
 	}
 
-	// A window we could have matched if the shopper had told us their month. Asked for
-	// before absence is interpreted, and never rounded into a yes or a no.
+	// A window we could have matched if the shopper had told us their month. Never rounded into a
+	// yes or a no, and — since 2026-11-07 — never a reason to hide the product either: where the
+	// month is the ONLY thing missing and the source would stand behind the row, the answer is
+	// "may fit, depending on the month" (`MAY_FIT_BY_MONTH`), carrying the windows so the surface
+	// can say from which month the set is valid.
 	if (needsMonth) {
-		return { ...emptyResult("NEEDS_DETAIL", "manufacture-month-required", dataset), coverage };
+		const mayFit =
+			monthPositives.length > 0 && !monthNegative && negatives.length === 0
+				? resolveMonthDependent(dataset, monthPositives, coverage, options)
+				: null;
+		return mayFit ?? { ...emptyResult("NEEDS_DETAIL", "manufacture-month-required", dataset), coverage };
 	}
 
 	if (negatives.length > 0) {
@@ -404,6 +472,13 @@ export function resolveCandidates(
 export type VehicleOutcome = {
 	/** Only these may be offered. Never UNKNOWN, STALE, AMBIGUOUS or a provider outage. */
 	verified: ProductOutcome[];
+	/**
+	 * Sets that fit if the manufacture month turns out to be on the right side of a window edge
+	 * (`MAY_FIT_BY_MONTH`), and the source will sell them. SHOWN, never hidden, and never said to
+	 * fit: surfaces list them next to `verified` but with the caution, and a month removes the
+	 * wrong side. Disjoint from `verified` and `unconfirmed`.
+	 */
+	monthDependent: ProductOutcome[];
 	/** Resolved but not offerable — kept so the UI can explain rather than stay silent. */
 	unconfirmed: ProductOutcome[];
 	/** Positively ruled out for this exact selection. */
@@ -431,6 +506,7 @@ export function resolveVehicleOutcome(
 	const base = resolveFitment(dataset, selection, { now: options.now });
 	const empty: VehicleOutcome = {
 		verified: [],
+		monthDependent: [],
 		unconfirmed: [],
 		rejected: [],
 		unanswerable: true,
@@ -460,11 +536,18 @@ export function resolveVehicleOutcome(
 		// as a fit yet is not sellable. The second half used to be impossible; now a
 		// disputed product can match perfectly and still be refused, and the shopper is
 		// owed an explanation rather than silence.
+		monthDependent: outcomes.filter((o) =>
+			isMonthDependentOffer({ verdict: o.result.verdict, eligibility: o.result.product?.eligibility }),
+		),
 		unconfirmed: outcomes.filter(
 			(o) =>
-				isInconclusiveVerdict(o.result.verdict) ||
-				(o.result.verdict !== "NO_FIT" &&
-					!isFitmentOfferable({ verdict: o.result.verdict, eligibility: o.result.product?.eligibility })),
+				!isMonthDependentOffer({ verdict: o.result.verdict, eligibility: o.result.product?.eligibility }) &&
+				(isInconclusiveVerdict(o.result.verdict) ||
+					(o.result.verdict !== "NO_FIT" &&
+						!isFitmentOfferable({
+							verdict: o.result.verdict,
+							eligibility: o.result.product?.eligibility,
+						}))),
 		),
 		rejected: outcomes.filter((o) => o.result.verdict === "NO_FIT"),
 		unanswerable: false,

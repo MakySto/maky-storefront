@@ -243,3 +243,50 @@ describe("CFM's plan of 14 October 2026 (fixture)", () => {
 		expect(retiredIdCounts(alive).moved).toBe(0);
 	});
 });
+
+/**
+ * The second delivery CFM announced on 7 November 2026: the map is cumulative, the 99 + 14 + 1 entries above
+ * stay, and 15 more arrive in the same dataset — 14 summary labels split into two or three live generations
+ * of one model (`generations_split`, as the Transporter "T5/T6" label into 7E and SJ) and one merge
+ * (`generations`, Subaru Outback into BS). Synthetic: it proves the shape is read, not that CFM delivered it.
+ */
+describe("the second delivery: 15 more entries on top of the plan", () => {
+	const base = plan as unknown as RetiredVehicleIds;
+	const modelTarget = Object.values(base.models ?? {})[0]!;
+	const baseTargets = [
+		...new Set<string>(Object.values(base.generations ?? {})),
+		...Object.values(base.generations_split ?? {}).flat(),
+	];
+
+	// 14 labels: the first seven split in two, the next seven in three, each over its own model.
+	const models = Array.from({ length: 15 }, (_, i) => ({ id: `md-new-${i}`, makeId: "mk" }));
+	const generations: { id: string; modelId: string }[] = baseTargets.map((id) => ({
+		id,
+		modelId: modelTarget,
+	}));
+	const split: Record<string, string[]> = {};
+	for (let i = 0; i < 14; i += 1) {
+		const parts = Array.from({ length: i < 7 ? 2 : 3 }, (_, j) => `gn-new-${i}-${j}`);
+		for (const id of parts) generations.push({ id, modelId: `md-new-${i}` });
+		split[`gn-label-${i}`] = parts;
+	}
+	generations.push({ id: "gn-bs", modelId: "md-new-14" });
+
+	const retired: RetiredVehicleIds = {
+		...base,
+		generations: { ...base.generations, "gn-outback": "gn-bs" },
+		generations_split: { ...base.generations_split, ...split },
+	};
+	const d = dataset({ models: [{ id: modelTarget, makeId: "mk" }, ...models], generations, retired });
+
+	it("is read whole, cumulatively: nothing is dropped and the old entries are still believed", () => {
+		expect(retiredIdCounts(d)).toEqual({ moved: 100, split: 28, models: 1, dropped: 0 });
+	});
+
+	it("leads a label to its live generations, and its page to the model", () => {
+		const fate = generationFate(d, "gn-label-9");
+		expect(fate.kind === "split" ? [...fate.candidates].sort() : []).toEqual(split["gn-label-9"]!.sort());
+		expect(successorOf(d, "gn-label-9")).toBe("md-new-9");
+		expect(successorOf(d, "gn-outback")).toBe("gn-bs");
+	});
+});
