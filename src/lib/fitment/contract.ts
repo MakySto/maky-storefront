@@ -561,8 +561,26 @@ export const FITMENT_VERDICTS = [
 	/**
 	 * Everything matches except one answer we do not have — typically the month, on a
 	 * boundary year. Not a fit and NOT a refusal: the shopper is asked, not guessed at.
+	 *
+	 * Since 2026-11-07 this is what is left of that question: a set that would be a fit if the
+	 * month were known is `MAY_FIT_BY_MONTH` and is shown. `NEEDS_DETAIL` remains only where
+	 * the month would not make the product offerable anyway (a held or disputed row).
 	 */
 	"NEEDS_DETAIL",
+	/**
+	 * The set is documented for this car and the year sits on the edge of a window the source
+	 * knows to the month, and the shopper has not given a month (or said "I do not know").
+	 *
+	 * Marek's decision, 2026-11-07: a product is never hidden because a month is unknown. The set
+	 * is SHOWN, on both sides of the edge (the older generation's set and the newer one's), each
+	 * with its window — "Platí od 03/2025, overte mesiac výroby" — and it must never read as a
+	 * certain fit: amber, never green, never "overené" and never "kompatibilné". Giving the month
+	 * removes the wrong side and turns the right one into an ordinary fit.
+	 *
+	 * Purchasable (`isFitmentPurchasable`) but NOT offerable in the strict sense
+	 * (`isFitmentOfferable`): every surface that says "fits" asks the strict one.
+	 */
+	"MAY_FIT_BY_MONTH",
 	"NO_FIT",
 	"UNKNOWN",
 	"AMBIGUOUS",
@@ -639,6 +657,29 @@ export function isFitmentOfferable(input: {
 }
 
 /**
+ * A set the shopper may put in the cart although the month decides: `MAY_FIT_BY_MONTH` for a row
+ * the source will sell. Not a fit and never said to be one — the card and the cart line carry the
+ * caution — but not a reason to hide the product either (Marek, 2026-11-07).
+ */
+export function isMonthDependentOffer(input: {
+	verdict: FitmentVerdict;
+	eligibility?: FitmentEligibility | null;
+}): boolean {
+	return input.verdict === "MAY_FIT_BY_MONTH" && input.eligibility?.sellable === true;
+}
+
+/**
+ * Whether the add-to-cart gate lets this answer through: a fit, or a fit that depends on the
+ * manufacture month. The strict `isFitmentOfferable` stays the only test for the word "fits".
+ */
+export function isFitmentPurchasable(input: {
+	verdict: FitmentVerdict;
+	eligibility?: FitmentEligibility | null;
+}): boolean {
+	return isFitmentOfferable(input) || isMonthDependentOffer(input);
+}
+
+/**
  * The product half of `isFitmentOfferable`, for a surface with no verdict to ask.
  *
  * A vehicle category page lists what fits a whole generation rather than answering for
@@ -705,7 +746,12 @@ function compareBoundary(
 	}
 	// Same year as the boundary. Only a known month on BOTH sides can decide it.
 	if (precision !== "month" || boundary.month === undefined) return "in";
-	if (month === undefined) return "needs-detail";
+	if (month === undefined) {
+		// A window that starts in January or ends in December takes in every month of its boundary
+		// year: nothing to ask. (A month the shopper gives cannot fall outside 1..12.)
+		if (side === "start" ? boundary.month <= 1 : boundary.month >= 12) return "in";
+		return "needs-detail";
+	}
 	const inside = side === "start" ? month >= boundary.month : month <= boundary.month;
 	return inside ? "in" : "out";
 }

@@ -198,6 +198,41 @@ describe("the hand-off to the shared cart action", () => {
 	});
 });
 
+describe("a set whose fit depends on the month of manufacture", () => {
+	/** The same set, but its window opens in July of the vehicle's year — and the shopper gave no month. */
+	function monthDataset(sellable: boolean): FitmentDataset {
+		return {
+			...DATASET,
+			applications: [
+				{
+					...DATASET.applications[0]!,
+					window: windowOf([2020, 7], null),
+					products: [{ ...SET, eligibility: { sellable, reasons: sellable ? [] : ["held"] } }],
+				},
+			],
+		};
+	}
+
+	it("can be added: the card and the cart line say the month decides (Marek, 2026-11-07)", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: monthDataset(true), status: {} });
+		await expect(addConfiguredSetToCart(input(SET))).resolves.toEqual({ ok: true });
+		expect(addVariantToCart).toHaveBeenCalledTimes(1);
+	});
+
+	it("is still refused when the source will not sell the row", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: monthDataset(false), status: {} });
+		await expect(addConfiguredSetToCart(input(SET))).resolves.toEqual({ ok: false, reason: "not-verified" });
+		expect(addVariantToCart).not.toHaveBeenCalled();
+	});
+
+	it("is refused once the month says the set is for the other side of the edge", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: monthDataset(true), status: {} });
+		readActiveSelection.mockResolvedValue({ ...VEHICLE, manufactureMonth: 3 });
+		await expect(addConfiguredSetToCart(input(SET))).resolves.toEqual({ ok: false, reason: "not-verified" });
+		expect(addVariantToCart).not.toHaveBeenCalled();
+	});
+});
+
 describe("nothing reaches the cart unless every gate passes", () => {
 	it("refuses when there is no active vehicle", async () => {
 		readActiveSelection.mockResolvedValue(null);

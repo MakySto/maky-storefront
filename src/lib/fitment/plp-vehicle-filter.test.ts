@@ -157,6 +157,38 @@ describe("what narrows the listing, and what must not", () => {
 		expect(filter).toMatchObject({ state: "active", productIds: [gid(1), gid(2)] });
 	});
 
+	it("keeps the sets that depend on the month of manufacture in the list, and says so", async () => {
+		// A year with no month never hides a product (Marek, 2026-11-07): gid(1) is certain for 2022,
+		// gid(2) opens in 07/2022 and gid(3) is valid until 02/2022, so the month decides both.
+		const d = dataset([gid(1), gid(2), gid(3)]);
+		d.applications[1]!.window = {
+			from: { year: 2022, month: 7 },
+			to: null,
+			startPrecision: "month",
+			endPrecision: "open",
+			reconciledToGeneration: false,
+		};
+		d.applications[2]!.window = {
+			from: { year: 2018 },
+			to: { year: 2022, month: 2 },
+			startPrecision: "year",
+			endPrecision: "month",
+			reconciledToGeneration: false,
+		};
+		loadFitmentDataset.mockResolvedValue({ dataset: d });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+
+		const filter = await resolveVehicleListingFilter(true);
+		expect(filter).toMatchObject({ state: "active", monthDependent: true });
+		expect(vehicleFilterIds(filter)?.sort()).toEqual([gid(1), gid(2), gid(3)].sort());
+	});
+
+	it("says nothing about the month when every listed set is a certain fit", async () => {
+		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1)]) });
+		readGarage.mockResolvedValue(garageWith(SELECTION));
+		expect(await resolveVehicleListingFilter(true)).toMatchObject({ state: "active", monthDependent: false });
+	});
+
 	it("does not narrow when there is no usable saved car", async () => {
 		loadFitmentDataset.mockResolvedValue({ dataset: dataset([gid(1)]) });
 		readGarage.mockResolvedValue(garageWith(null));
@@ -466,6 +498,7 @@ describe("when every verified set is hidden in the shop", () => {
 		state: "active",
 		vehicleLabel: "Make Model Gen · 2022",
 		productIds: [gid(1)],
+		monthDependent: false,
 		isDemo: false,
 	};
 
