@@ -1,6 +1,10 @@
 # Photos for the homepage category tiles. Read-only; images are not per channel, so the
 # channel only decides which cache tags the answer carries.
-query HomeCategoryImages($slugs: [String!]!) {
+#
+# A category without a picture of its own is shown by one of its products (the first by name,
+# in the channel the scenery is read from): the shelf's own stored photo, never an invented one.
+# The snow chains had no tile photo for this reason on the day they joined the homepage.
+query HomeCategoryImages($slugs: [String!]!, $channel: String!) {
 	categories(filter: { slugs: $slugs }, first: 20) {
 		edges {
 			node {
@@ -8,6 +12,15 @@ query HomeCategoryImages($slugs: [String!]!) {
 				slug
 				backgroundImage(size: 1024, format: WEBP) {
 					url
+				}
+				products(first: 1, channel: $channel, sortBy: { field: NAME, direction: ASC }) {
+					edges {
+						node {
+							thumbnail(size: 1024, format: WEBP) {
+								url
+							}
+						}
+					}
 				}
 			}
 		}

@@ -332,10 +332,19 @@ console.log(
 );
 
 let otherFailed = 0;
+const withheldSlugs = new Set(withheld.map((category) => category.slug));
 for (const slug of rest) {
 	const row = await checkCategory(slug, { strict: false });
 	if (row.problems.length > 0) otherFailed += 1;
 	print(row);
+	// Information, not a failure: a shelf that sells but is linked from nowhere is how the snow chains
+	// were found only through the configurator (2026-11-08). Withholding one is the owner's call, but it
+	// should be a call somebody sees.
+	if (withheldSlugs.has(slug) && (row.count ?? 0) > 0) {
+		console.log(
+			`          NOTE: holds ${row.count} products in ${CHANNEL} and is linked from nowhere (surfaces: [] in src/config/categories.ts)`,
+		);
+	}
 }
 for (const slug of beyond) {
 	const row = await checkCategory(slug, { strict: false });
