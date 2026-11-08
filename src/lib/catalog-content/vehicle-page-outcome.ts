@@ -1,5 +1,6 @@
 import "server-only";
 
+import { REVERSE_MAP } from "@/lib/channel-map";
 import { isCatalogPreviewEnabled, visibilityOf } from "@/lib/catalog-content/publication";
 import { retiredVehiclePageHref } from "@/lib/catalog-content/retired-page";
 import {
@@ -44,7 +45,8 @@ export async function vehiclePageOutcome(
 	// A market whose catalogue has no language has no vehicle pages at all.
 	if (!language) return { status: "absent", reason: "no-language" };
 
-	const view = await loadCatalogView(language);
+	// The SYNC-1 line reads the catalogue by language AND market (release-call-sites.test.ts); the release line ignores the second argument.
+	const view = await loadCatalogView(language, REVERSE_MAP[channel] ?? channel);
 	if (!view.ready) return { status: "undetermined" };
 
 	const node = resolveVehiclePath(view.tree, categorySlug, segments);
