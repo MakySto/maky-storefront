@@ -1,9 +1,24 @@
 import { describe, expect, it } from "vitest";
 
+import { CHANNEL_MAP } from "@/lib/channel-map";
+
 import { afterTyreSize } from "./after-size";
 
 const at = (pathname: string, size: string | null, search = "") =>
 	afterTyreSize({ pathname, channel: "sk-eur", search, size });
+
+/** The market's own address of the shelf, as CFM writes it as the category's translated slug (see `category-routes`). */
+const SHELF_ADDRESS: Readonly<Record<string, string>> = {
+	cz: "snehove-retezy",
+	de: "schneeketten",
+	at: "schneeketten",
+	pl: "lancuchy-sniegowe",
+	hu: "holancok",
+	it: "catene-da-neve",
+	fr: "chaines-a-neige",
+	es: "cadenas-de-nieve",
+	ro: "lanturi-de-zapada",
+};
 
 describe("after the shopper gave a tyre size", () => {
 	it("leads from the market root to the snow-chain shelf narrowed to the size, and carries the size in the link", () => {
@@ -12,11 +27,39 @@ describe("after the shopper gave a tyre size", () => {
 		expect(at("/sk/", "205/55 R16")).toEqual({ kind: "push", path });
 	});
 
+	it("leads from the root of each of the nine EU markets to the shelf at that market's own address", () => {
+		for (const [market, segment] of Object.entries(SHELF_ADDRESS)) {
+			const answer = afterTyreSize({
+				pathname: `/${market}`,
+				channel: CHANNEL_MAP[market]!.saleorSlug,
+				search: "",
+				size: "205/55 R16",
+			});
+			expect(answer, market).toEqual({
+				kind: "push",
+				path: `/${market}/${segment}?tyres=1&tyreSize=205%2F55+R16`,
+			});
+		}
+	});
+
 	it("does not lead anywhere when the size was forgotten, or from a market that does not sell the shelf", () => {
 		expect(at("/sk", null)).toEqual({ kind: "refresh" });
-		expect(afterTyreSize({ pathname: "/cz", channel: "cz-czk", search: "", size: "205/55 R16" })).toEqual({
-			kind: "refresh",
-		});
+		for (const market of Object.keys(SHELF_ADDRESS)) {
+			const channel = CHANNEL_MAP[market]!.saleorSlug;
+			expect(afterTyreSize({ pathname: `/${market}`, channel, search: "", size: null }), market).toEqual({
+				kind: "refresh",
+			});
+		}
+		// The USA and Canada were not part of the foreign chain run: the shelf holds nothing there.
+		for (const market of ["us", "ca"]) {
+			const channel = CHANNEL_MAP[market]!.saleorSlug;
+			expect(
+				afterTyreSize({ pathname: `/${market}`, channel, search: "", size: "205/55 R16" }),
+				market,
+			).toEqual({
+				kind: "refresh",
+			});
+		}
 	});
 
 	it("never moves the shopper off any other page, a cart and a checkout among them", () => {
@@ -48,6 +91,18 @@ describe("on the snow-chain shelf itself", () => {
 			kind: "replace",
 			path: "/sk/snehove-retaze",
 		});
+	});
+
+	it("does the same at the market's own address of the shelf", () => {
+		for (const [market, segment] of Object.entries(SHELF_ADDRESS)) {
+			const answer = afterTyreSize({
+				pathname: `/${market}/${segment}`,
+				channel: CHANNEL_MAP[market]!.saleorSlug,
+				search: "?cursor=abc&tyres=0&sort=price_asc",
+				size: "205/55 R16",
+			});
+			expect(answer, market).toEqual({ kind: "replace", path: `/${market}/${segment}?sort=price_asc` });
+		}
 	});
 
 	it("renders in place when there was nothing to drop", () => {

@@ -1207,6 +1207,87 @@ describe("the Thule category address", () => {
 	});
 });
 
+/**
+ * The snow-chain category has one address per market (2026-11-08). CFM writes the 145 chains to the nine EU markets with
+ * the category's translated slug (`schneeketten`, `holancok`, …), which the product page links under `/categories/`,
+ * while the base slug answered at the root: two addresses for one category, one of them a Slovak word in the German
+ * shop. The USA, Canada and Slovakia keep the base slug: CFM writes no English slug in this run.
+ */
+describe("the snow-chain category address", () => {
+	const BASE = "snehove-retaze";
+	const rows = categoryRouteTable().filter((row) => row.baseSlug === BASE);
+	const abroad = rows.filter((row) => row.segment !== row.baseSlug);
+	const location = (res: Response) => {
+		const value = res.headers.get("location");
+		return value ? new URL(value) : null;
+	};
+
+	it("has a localized address in the nine EU markets and the base slug in Slovakia, the USA and Canada", () => {
+		expect(rows.map((row) => row.market)).toEqual(Object.keys(CHANNEL_MAP));
+		expect(abroad.map((row) => row.market)).toEqual(["cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro"]);
+		expect(rows.filter((row) => row.segment === BASE).map((row) => row.market)).toEqual(["sk", "us", "ca"]);
+	});
+
+	it("serves the market's own address with no redirect, onto the category route", async () => {
+		expect(rows).toHaveLength(12);
+		for (const row of rows) {
+			const res = await proxy(req(row.path));
+			expect(res.headers.get("location"), row.path).toBeNull();
+			expect(res.headers.get("x-middleware-rewrite"), row.path).toContain(
+				`/${row.channel}/categories/${row.segment}`,
+			);
+		}
+	});
+
+	it("sends the Slovak spelling to the EU markets' own address with a 301, query kept", async () => {
+		expect(abroad).toHaveLength(9);
+		for (const row of abroad) {
+			const res = await proxy(req(`/${row.market}/${BASE}?tyres=1&utm_source=x`));
+			expect(res.status, row.market).toBe(301);
+			expect(location(res)?.pathname, row.market).toBe(row.path);
+			expect(location(res)?.search, row.market).toBe("?tyres=1&utm_source=x");
+		}
+	});
+
+	it("sends the /categories/ spellings, the base slug and the translated one, to it with a 308", async () => {
+		for (const row of rows) {
+			for (const spelling of new Set([row.baseSlug, row.segment])) {
+				const res = await proxy(req(`/${row.market}/categories/${spelling}`));
+				expect(res.status, `${row.market} ${spelling}`).toBe(308);
+				expect(location(res)?.pathname, `${row.market} ${spelling}`).toBe(row.path);
+			}
+		}
+	});
+
+	it("does not take another language's spelling for a category", async () => {
+		for (const path of ["/cz/schneeketten", "/de/snehove-retezy", "/us/schneeketten", "/sk/schneeketten"]) {
+			const res = await proxy(req(path));
+			expect(res.status, path).not.toBe(301);
+			expect(res.status, path).not.toBe(308);
+			expect(res.headers.get("x-middleware-rewrite"), path).not.toContain("/categories/");
+		}
+	});
+
+	it("keeps Slovakia, the USA and Canada where they were: the base slug, no redirect", async () => {
+		for (const row of rows.filter((candidate) => candidate.segment === BASE)) {
+			const res = await proxy(req(`/${row.market}/${BASE}?tyres=1`));
+			expect(res.headers.get("location"), row.market).toBeNull();
+			expect(res.headers.get("x-middleware-rewrite"), row.market).toContain(
+				`/${row.channel}/categories/${BASE}`,
+			);
+		}
+	});
+
+	it("takes Austria to the German spelling, which it reads, and nothing to a spelling of its own", async () => {
+		const res = await proxy(req(`/at/${BASE}`));
+		expect(res.status).toBe(301);
+		expect(location(res)?.pathname).toBe("/at/schneeketten");
+		const own = await proxy(req("/at/schneeketten"));
+		expect(own.headers.get("location")).toBeNull();
+		expect(own.headers.get("x-middleware-rewrite")).toContain("/at-eur/categories/schneeketten");
+	});
+});
+
 describe("sitemap index and shards (COMMERCE-2 M5)", () => {
 	it("hands /sitemap.xml and the shards to their routes, not to the invalid-first-segment 404", async () => {
 		for (const path of ["/sitemap.xml", "/sitemaps/sk-products-1.xml", "/sitemaps/sk-pages-1.xml"]) {
