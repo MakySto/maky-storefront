@@ -51,7 +51,7 @@ import { getStepNumber } from "./flow";
 // Extracted components
 import { SignInForm, ResetPasswordForm } from "@/checkout/components/contact";
 import { ContactSection, ShippingAddressSection } from "./sections";
-import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, REVERSE_MAP, marketHref } from "@/lib/channel-map";
 import { Checkbox } from "@/ui/components/ui/checkbox";
 import { Label } from "@/ui/components/ui/label";
 import { MobileStickyAction } from "./mobile-sticky-action";
@@ -574,7 +574,12 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, on
 								email,
 								password: accountPassword,
 								channel: checkout.channel.slug,
-								redirectUrl: window.location.href,
+								// The activation link: Saleor replaces this URL's query with ?email=…&token=…,
+								// so the checkout URL would lose its checkout id. /login/confirm activates.
+								redirectUrl: `${window.location.origin}${marketHref(
+									checkout.channel.slug,
+									"/login/confirm",
+								)}`,
 							},
 						});
 						if (registerResult.data?.accountRegister?.errors?.length) {

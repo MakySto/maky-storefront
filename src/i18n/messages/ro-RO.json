@@ -1164,6 +1164,17 @@
 			"title": "Dreptul de retragere și returnarea produselor",
 			"body": "Cum vă puteți retrage din această comandă sau returna produse aflați pe pagina despre retragere și returnări.",
 			"cta": "Retragere și returnări"
+		},
+		"confirmAccount": {
+			"metaTitle": "Activarea contului",
+			"pendingTitle": "Vă activăm contul…",
+			"successTitle": "Contul dumneavoastră este activat",
+			"successText": "Vă mulțumim că v-ați confirmat adresa de e-mail. Acum vă puteți autentifica cu parola aleasă la înregistrare.",
+			"signIn": "Autentificare",
+			"failedTitle": "Contul nu a putut fi activat",
+			"linkInvalid": "Acest link nu mai este valabil. Dacă v-ați activat deja contul, autentificați-vă pur și simplu.",
+			"failed": "Contul nu a putut fi activat. Vă rugăm să încercați mai târziu sau să ne scrieți la info@maky.store.",
+			"backToSignIn": "Înapoi la autentificare"
 		}
 	},
 	"contact": {

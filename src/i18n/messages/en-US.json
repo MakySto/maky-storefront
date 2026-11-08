@@ -1164,6 +1164,17 @@
 			"title": "Cancel a purchase or return items",
 			"body": "To find out how to cancel this order or return items, see our cancellations and returns page.",
 			"cta": "Cancellations and returns"
+		},
+		"confirmAccount": {
+			"metaTitle": "Activate your account",
+			"pendingTitle": "Activating your account…",
+			"successTitle": "Your account is activated",
+			"successText": "Thank you for confirming your email address. You can now sign in with the password you chose when you registered.",
+			"signIn": "Sign in",
+			"failedTitle": "We couldn't activate your account",
+			"linkInvalid": "This link is no longer valid. If you have already activated your account, simply sign in.",
+			"failed": "We couldn't activate your account. Please try again later or email us at info@maky.store.",
+			"backToSignIn": "Back to sign in"
 		}
 	},
 	"contact": {

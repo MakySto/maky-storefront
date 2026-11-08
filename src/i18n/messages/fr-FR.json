@@ -1164,6 +1164,17 @@
 			"title": "Droit de rétractation et retour",
 			"body": "Pour savoir comment vous rétracter de cette commande ou retourner des articles, consultez la page dédiée à la rétractation et aux retours.",
 			"cta": "Rétractation et retours"
+		},
+		"confirmAccount": {
+			"metaTitle": "Activation du compte",
+			"pendingTitle": "Activation de votre compte…",
+			"successTitle": "Votre compte est activé",
+			"successText": "Merci d'avoir confirmé votre adresse e-mail. Vous pouvez maintenant vous connecter avec le mot de passe choisi lors de votre inscription.",
+			"signIn": "Se connecter",
+			"failedTitle": "Impossible d'activer le compte",
+			"linkInvalid": "Ce lien n'est plus valable. Si vous avez déjà activé votre compte, connectez-vous simplement.",
+			"failed": "Impossible d'activer le compte. Veuillez réessayer plus tard ou nous écrire à info@maky.store.",
+			"backToSignIn": "Retour à la connexion"
 		}
 	},
 	"contact": {

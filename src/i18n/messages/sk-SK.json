@@ -1164,6 +1164,17 @@
 			"title": "Odstúpenie od zmluvy",
 			"body": "Od tejto objednávky môžete odstúpiť do 14 dní od prevzatia tovaru, pri objednávkach z účtu do 30 dní. Odstúpiť môžete od celej objednávky alebo len od vybraných položiek.",
 			"cta": "Odstúpiť od zmluvy"
+		},
+		"confirmAccount": {
+			"metaTitle": "Aktivácia účtu",
+			"pendingTitle": "Aktivujeme váš účet…",
+			"successTitle": "Účet je aktivovaný",
+			"successText": "Ďakujeme za potvrdenie e-mailovej adresy. Teraz sa môžete prihlásiť heslom, ktoré ste si zvolili pri registrácii.",
+			"signIn": "Prihlásiť sa",
+			"failedTitle": "Účet sa nepodarilo aktivovať",
+			"linkInvalid": "Tento odkaz už nie je platný. Ak ste účet už aktivovali, jednoducho sa prihláste.",
+			"failed": "Účet sa nepodarilo aktivovať. Skúste to prosím neskôr alebo nám napíšte na info@maky.store.",
+			"backToSignIn": "Späť na prihlásenie"
 		}
 	},
 	"contact": {
