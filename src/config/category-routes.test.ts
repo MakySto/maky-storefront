@@ -6,7 +6,7 @@ import {
 	STOREFRONT_CATEGORIES,
 	categoryUrl,
 } from "@/config/categories";
-import { TYRE_SHELF_SLUG } from "@/config/tyre-shelves";
+import { TYRE_SHELF_MARKETS, TYRE_SHELF_SLUG } from "@/config/tyre-shelves";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { MARKET_ROOT_SEGMENTS } from "@/lib/routing.generated";
 import {
@@ -352,6 +352,17 @@ describe("the snow-chain category", () => {
 		for (const market of Object.keys(SEGMENTS)) {
 			expect(categoryUrlFor(market, TYRE_SHELF_SLUG), market).toBe(`/${SEGMENTS[market]}`);
 		}
+	});
+
+	it("is led to from a market's homepage exactly where it is sold, and every such market has its address in the table", () => {
+		// A tyre size given on the homepage leads to the shelf only in a market that sells it. Slovakia and the nine EU
+		// markets of the foreign chain run do; the USA and Canada do not (CFM wrote nothing there). A market added to
+		// `TYRE_SHELF_MARKETS` without its row in the table would send the shopper to a second, untranslated address.
+		expect([...TYRE_SHELF_MARKETS].sort()).toEqual(["sk", ...OFFERED].sort());
+		for (const market of TYRE_SHELF_MARKETS) {
+			expect(categoryUrlFor(market, TYRE_SHELF_SLUG), market).toBe(`/${SEGMENTS[market]}`);
+		}
+		for (const market of ["us", "ca"]) expect(TYRE_SHELF_MARKETS.has(market), market).toBe(false);
 	});
 
 	it("is one address, whether the link carries the base slug or the slug Saleor translated", () => {
