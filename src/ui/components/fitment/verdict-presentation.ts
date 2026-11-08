@@ -39,7 +39,7 @@ export function toneForVerdict(verdict: FitmentVerdict): VerdictTone {
 			return "universal";
 		default:
 			// UNKNOWN, AMBIGUOUS, STALE, PROVIDER_UNAVAILABLE, NEEDS_DETAIL,
-			// NO_VEHICLE_SELECTED.
+			// MAY_FIT_BY_MONTH (shown, and amber on purpose: never a promise), NO_VEHICLE_SELECTED.
 			return "unconfirmed";
 	}
 }
@@ -56,6 +56,7 @@ export const VERDICT_LABEL_KEY: Record<FitmentVerdict, string> = {
 	VERIFIED_FIT: "verdictVerified",
 	MANUFACTURER_FIT: "verdictManufacturer",
 	NEEDS_DETAIL: "verdictNeedsDetail",
+	MAY_FIT_BY_MONTH: "verdictMayFitByMonth",
 	NO_FIT: "verdictNoFit",
 	UNKNOWN: "verdictUnknown",
 	AMBIGUOUS: "verdictAmbiguous",
@@ -70,6 +71,7 @@ export const VERDICT_DETAIL_KEY: Record<FitmentVerdict, string> = {
 	VERIFIED_FIT: "verdictVerifiedDetail",
 	MANUFACTURER_FIT: "verdictManufacturerDetail",
 	NEEDS_DETAIL: "verdictNeedsDetailDetail",
+	MAY_FIT_BY_MONTH: "verdictMayFitByMonthDetail",
 	NO_FIT: "verdictNoFitDetail",
 	UNKNOWN: "verdictUnknownDetail",
 	AMBIGUOUS: "verdictAmbiguousDetail",

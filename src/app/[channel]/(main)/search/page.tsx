@@ -87,8 +87,12 @@ async function SearchContent({
 		notFound();
 	}
 
-	// Handle array values (redirect to first valid)
-	const query = Array.isArray(queryParam) ? queryParam.find((v) => v.length > 0) : queryParam;
+	// Handle array values (redirect to first valid). The header's form is a plain GET, so what the
+	// shopper typed arrives as it was typed, a trailing space from a phone keyboard included; the
+	// server action that used to carry it trimmed first, and the search is for the words.
+	const query = (
+		Array.isArray(queryParam) ? queryParam.find((v) => v.trim().length > 0) : queryParam
+	)?.trim();
 
 	if (!query) {
 		notFound();

@@ -1,5 +1,4 @@
 import { getLocaleFromChannel } from "@/config/locale";
-import { redirect } from "next/navigation";
 import { SearchIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { marketHref } from "@/lib/channel-map";
@@ -8,8 +7,15 @@ import { getMarketAssortment, offersFullRange } from "@/lib/market-assortment";
 /**
  * The header search: one wide field with its button inside the right edge.
  *
- * A server action, so it searches without JavaScript. The button is a real submit button —
- * Enter was the only way to search before, which a pointer user had to know.
+ * A plain GET form to the search page (`/{market}/search?query=…`), so it searches without
+ * JavaScript and a crawler reads it as the search form it is. It was a server action until
+ * 2026-11-07: every page of every market then carried a form whose target is an opaque action id
+ * and a POST, which tells a crawler nothing and is a request the search page cannot be linked from.
+ * The button is a real submit button — Enter was the only way to search before, which a pointer user
+ * had to know.
+ *
+ * Whitespace alone is no query: `pattern` refuses it in the browser, as the action's own `trim()`
+ * check used to, and the search page trims what it receives.
  */
 export async function HeaderSearch({ channel }: { channel: string }) {
 	const locale = getLocaleFromChannel(channel);
@@ -19,21 +25,19 @@ export async function HeaderSearch({ channel }: { channel: string }) {
 		getMarketAssortment(channel),
 	]);
 
-	async function onSubmit(formData: FormData) {
-		"use server";
-		const search = formData.get("search") as string;
-		if (search && search.trim().length > 0) {
-			redirect(marketHref(channel, `/search?query=${encodeURIComponent(search.trim())}`));
-		}
-	}
-
 	return (
-		<form action={onSubmit} role="search" className="group relative w-full max-w-3xl">
+		<form
+			action={marketHref(channel, "/search")}
+			method="get"
+			role="search"
+			className="group relative w-full max-w-3xl"
+		>
 			<label className="block">
 				<span className="sr-only">{t("searchAriaLabel")}</span>
 				<input
 					type="text"
-					name="search"
+					name="query"
+					pattern=".*\S.*"
 					// The example names shelves, so it names only what this market sells.
 					placeholder={offersFullRange(assortment) ? t("searchPlaceholder") : t("searchPlaceholderRoofRacks")}
 					autoComplete="off"

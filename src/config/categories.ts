@@ -55,7 +55,10 @@ export const STOREFRONT_CATEGORIES: readonly StorefrontCategory[] = [
 		slug: "snehove-retaze",
 		key: "snowChains",
 		surfaces: [],
-		withheldReason: "0 products in sk-eur — the tile would lead to an empty listing",
+		withheldReason:
+			"No tile or menu slot has been asked for: linking the shelf is a business decision. It holds 145 " +
+			"products in sk-eur since 2026-11-07 and is reached by its address and by the tyre-size filter " +
+			"(`config/tyre-shelves.ts`).",
 	},
 	{
 		slug: "tazne-zariadenia",

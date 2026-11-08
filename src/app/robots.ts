@@ -56,6 +56,14 @@ export default function robots(): MetadataRoute.Robots {
 		"/api/",
 		"/orders",
 		"/account",
+		// The header search form is a Server Action. Bing's crawler submits it as a plain GET and fills
+		// the box with whatever it likes, so the log holds URLs like `/us?%24ACTION_3%3A0=…&search=2026`
+		// (215 of 21 934 Bingbot requests, 1.0 %, 17 October to 3 November 2026): every one a 307 to the
+		// same page, and a new set of them with every build, because the action ids change with it.
+		// Bing Webmaster Tools names this class itself ("exclude unusable URLs with robots.txt, limit URL
+		// parameters", crawl-capacity recommendation of 7 November). `ACTION_` matches the encoded
+		// `%24ACTION_` and the raw `$ACTION_`; no real URL of the shop carries it (slugs are lower case).
+		"/*?*ACTION_",
 		// NOTE: /sk-eur/* is intentionally NOT disallowed — the proxy already
 		// 301-redirects it to /sk/*, and the product/page canonicals now point
 		// to /sk/*. Blocking it in robots would stop crawlers from seeing the

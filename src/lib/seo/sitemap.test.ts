@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { executePublicGraphQL, loadCatalogView } = vi.hoisted(() => ({
+const { executePublicGraphQL, loadCatalogView, stockedBrandSlugs } = vi.hoisted(() => ({
 	executePublicGraphQL: vi.fn(),
 	loadCatalogView: vi.fn(),
+	stockedBrandSlugs: vi.fn(),
 }));
 
 vi.mock("@/lib/graphql", () => ({ executePublicGraphQL }));
+/** The makers a channel sells are `lib/brands/catalog.ts`' business and have a test of their own. */
+vi.mock("@/lib/brands/catalog", () => ({ stockedBrandSlugs }));
 /**
  * Only the LOADER is mocked. `catalogServesMarket` stays real, because the
  * language gate is one of the things under test here and a hand-written copy of it
@@ -180,6 +183,9 @@ beforeEach(() => {
 	// MAKY_CATALOG_CONTENT_PATH serves. The vehicle-page tests opt in.
 	loadCatalogView.mockReset();
 	loadCatalogView.mockResolvedValue({ ready: false, reason: "no snapshot", status: catalogStatus(null) });
+	// No maker unless a test names some: the pages shard of most tests is the one it was before the brand pages.
+	stockedBrandSlugs.mockReset();
+	stockedBrandSlugs.mockResolvedValue(new Set<string>());
 	// The sitemap asks the live category list to be current. With no Saleor endpoint that is a no-op,
 	// so no test here reaches for a real one because the shell it runs in happens to have one set;
 	// the tests of categories created in Saleor install a fake.
@@ -234,6 +240,67 @@ describe("the whole catalogue, or an error", () => {
 			`${BASE}/sk/categories/nosice-bicyklov`,
 		);
 		expect(urls).toContain(`${BASE}/sk/kontakt`);
+	});
+});
+
+describe("the brand pages", () => {
+	const pagesShard = async (id = "sk-pages-1") =>
+		(await sitemapShardEntries(id))?.map((entry) => entry.url) ?? [];
+
+	it("lists the index and one page for each maker the channel sells, by slug", async () => {
+		serve((after) => productPage(after));
+		stockedBrandSlugs.mockResolvedValue(new Set(["yakima", "thule", "menabo"]));
+
+		const urls = await pagesShard();
+
+		expect(urls).toEqual(
+			expect.arrayContaining([
+				`${BASE}/sk/znacky`,
+				`${BASE}/sk/znacky/menabo`,
+				`${BASE}/sk/znacky/thule`,
+				`${BASE}/sk/znacky/yakima`,
+			]),
+		);
+		const brands = urls.filter((url) => url.includes("/znacky"));
+		expect(brands, "the index first, then the makers in slug order").toEqual([
+			`${BASE}/sk/znacky`,
+			`${BASE}/sk/znacky/menabo`,
+			`${BASE}/sk/znacky/thule`,
+			`${BASE}/sk/znacky/yakima`,
+		]);
+		expect(stockedBrandSlugs).toHaveBeenCalledWith("sk-eur");
+	});
+
+	it("lists nothing of the kind for a channel that sells no maker: the page would be an empty list", async () => {
+		serve((after) => productPage(after));
+		stockedBrandSlugs.mockResolvedValue(new Set<string>());
+
+		expect((await pagesShard()).filter((url) => url.includes("/znacky"))).toEqual([]);
+	});
+
+	it("is shorter, and not an error, while the makers cannot be counted", async () => {
+		serve((after) => productPage(after));
+		stockedBrandSlugs.mockRejectedValue(new Error("[Brands] counts unavailable"));
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		const urls = await pagesShard();
+
+		expect(urls).toContain(`${BASE}/sk`);
+		expect(urls).toContain(`${BASE}/sk/nosice-bicyklov`);
+		expect(urls.filter((url) => url.includes("/znacky"))).toEqual([]);
+		expect(warn).toHaveBeenCalledWith(expect.stringContaining("brand pages left out of the pages shard"));
+		warn.mockRestore();
+	});
+
+	it("gives the brand pages no lastmod: the only timestamp here is the moment the shard was built", async () => {
+		serve((after) => productPage(after));
+		stockedBrandSlugs.mockResolvedValue(new Set(["thule"]));
+
+		const entries = (await sitemapShardEntries("sk-pages-1")) ?? [];
+		const brandEntries = entries.filter((entry) => entry.url.includes("/znacky"));
+
+		expect(brandEntries).toHaveLength(2);
+		for (const entry of brandEntries) expect(entry.lastModified).toBeUndefined();
 	});
 });
 

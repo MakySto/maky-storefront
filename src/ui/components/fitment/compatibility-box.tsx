@@ -4,6 +4,7 @@ import { AlertTriangle, Check, CircleHelp, Globe, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type FitmentResult, type FitmentVerdict } from "@/lib/fitment/contract";
 import { renderConditions } from "@/lib/fitment/conditions";
+import { monthCaveatOf, monthCaveatText } from "@/lib/fitment/month-caveat";
 import {
 	CONDITION_LABEL_KEY,
 	TONE_CLASSES,
@@ -40,6 +41,11 @@ type Props = {
 	vehicleDetail?: string | null;
 	/** What the export documents the set to contain, already worded; shown under a fit, never under another verdict. */
 	includes?: string | null;
+	/**
+	 * The shopper's year of manufacture. Only read for `MAY_FIT_BY_MONTH`, to say from which month
+	 * (or until which) the set is valid — "Platí od 03/2025, overte mesiac výroby".
+	 */
+	year?: number | null;
 	/** Rendered under the verdict — the "choose a vehicle" affordance. */
 	action?: React.ReactNode;
 	/** True when the answer came from demo data rather than a real provider. */
@@ -53,6 +59,7 @@ const VERDICT_ICON: Record<FitmentVerdict, typeof Check> = {
 	VERIFIED_FIT: Check,
 	MANUFACTURER_FIT: Check,
 	NEEDS_DETAIL: CircleHelp,
+	MAY_FIT_BY_MONTH: CircleHelp,
 	NO_FIT: X,
 	UNKNOWN: CircleHelp,
 	AMBIGUOUS: CircleHelp,
@@ -67,6 +74,7 @@ export async function CompatibilityBox({
 	vehicleLabel,
 	vehicleDetail,
 	includes = null,
+	year = null,
 	action,
 	isDemo,
 	locale,
@@ -111,7 +119,15 @@ export async function CompatibilityBox({
 	const detail =
 		needsVehicle && !vehicleLabel
 			? t("verdictSelectVehicleDetail")
-			: t(detailKey, { vehicle: vehicleLabel ?? "", supplier });
+			: t(detailKey, {
+					vehicle: vehicleLabel ?? "",
+					supplier,
+					// Only the month-dependent sentence reads it; every other message ignores the value.
+					caveat:
+						result.verdict === "MAY_FIT_BY_MONTH" && year !== null
+							? monthCaveatText(monthCaveatOf(result.matched, year), t)
+							: "",
+				});
 
 	// A fit is said in two lines, not three sentences (third pass, 2026-09-24): the verdict names
 	// whose word it is ("Kompatibilné podľa údajov výrobcu"), and the line under it names the car

@@ -37,5 +37,20 @@ export function isTyreShelf(baseSlug: string | null | undefined): boolean {
  * The markets (friendly slugs, `/sk`) whose shop sells the shelf. Only there does a tyre size given on the homepage lead
  * to it: on any other market the shelf holds nothing yet, and sending a shopper to an empty page because they answered
  * a question is worse than leaving them where they were. Add a market here on the day CFM opens the shelf in it.
+ *
+ * Slovakia since 2026-11-07. The nine EU markets of the foreign chain run (CZ, DE, AT, PL, HU, IT, FR, ES, RO) since
+ * 2026-11-08, when CFM finished writing the 140 offers in each of them and opened the purchase (program end 10:47 UTC).
+ * The USA and Canada were not part of that run and are not here; each of them gets its row when CFM opens the shelf there.
  */
-export const TYRE_SHELF_MARKETS: ReadonlySet<string> = new Set(["sk"]);
+export const TYRE_SHELF_MARKETS: ReadonlySet<string> = new Set([
+	"sk",
+	"cz",
+	"de",
+	"at",
+	"pl",
+	"hu",
+	"it",
+	"fr",
+	"es",
+	"ro",
+]);

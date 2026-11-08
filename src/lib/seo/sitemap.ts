@@ -9,6 +9,7 @@ import {
 
 export { sitemapTag };
 import { categoryUrlFor } from "@/config/category-routes";
+import { stockedBrandSlugs } from "@/lib/brands/catalog";
 import { ensureFreshLiveCategories } from "@/lib/live-categories";
 import { getBaseUrl } from "@/lib/seo/config";
 import { CHANNEL_MAP } from "@/lib/channel-map";
@@ -183,7 +184,41 @@ async function catalogEntriesFor(market: string): Promise<MetadataRoute.Sitemap>
 }
 
 /**
- * One market's navigational pages: home, listing, stocked categories, static and CMS routes.
+ * `/znacky` and one page for each maker this channel sells (`/znacky/thule`).
+ *
+ * The navigation links the index from every page, the index links every maker, and the sitemap listed
+ * none of them until 2026-11-07 (`znacky` is a `catalogue` route, which `staticPathsFor` does not read).
+ * The rule is the navigation's own (`visibleNavLinks`): a market whose channel sells no maker has no
+ * brand pages worth naming, and only an authoritative answer decides that.
+ *
+ * ## A fault leaves the brand pages out of this answer and never fails the shard
+ *
+ * The same shard carries the home page and the categories, the deploy gate reads every shard whole and a
+ * crawler does too, so a maker list that cannot be counted at that moment (a cold start, a busy Saleor)
+ * must not cost them a 5xx. The shard is simply shorter for as long as the fault lasts. The IndexNow
+ * `changes` run does not read that as "these pages are gone": it calls a URL gone only after two looks.
+ *
+ * Sorted by slug: Saleor's order of the makers is the order of its attribute values, which an editor can
+ * change, and a shard that reorders itself says nothing about the pages.
+ */
+async function brandPathsFor(channel: string): Promise<readonly string[]> {
+	let stocked: ReadonlySet<string>;
+	try {
+		stocked = await stockedBrandSlugs(channel);
+	} catch (error) {
+		console.warn(
+			`[sitemap] brand pages left out of the pages shard of ${channel}: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
+		);
+		return [];
+	}
+	if (stocked.size === 0) return [];
+	return ["/znacky", ...[...stocked].sort().map((slug) => `/znacky/${slug}`)];
+}
+
+/**
+ * One market's navigational pages: home, listing, stocked categories, the makers, static and CMS routes.
  *
  * No `lastModified` on these. It is a claim about when the content last changed, and the
  * only timestamp available here is the moment this file ran — which would mark every URL as
@@ -211,6 +246,14 @@ async function pageEntriesFor(market: string): Promise<MetadataRoute.Sitemap> {
 			url: `${base}/${market}${categoryUrlFor(market, slug)}`,
 			changeFrequency: "weekly",
 			priority: 0.7,
+		});
+	}
+
+	for (const path of await brandPathsFor(channel)) {
+		entries.push({
+			url: `${base}/${market}${path}`,
+			changeFrequency: "weekly",
+			priority: 0.5,
 		});
 	}
 

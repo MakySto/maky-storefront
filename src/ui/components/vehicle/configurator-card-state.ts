@@ -104,6 +104,8 @@ export function fitStatementFor(
 	supplier: string | null | undefined,
 	hasUnresolvedConditions: boolean,
 ): FitStatement {
+	// Not a fit, and the card must not borrow a fit's words: amber, and it says the month decides.
+	if (verdict === "MAY_FIT_BY_MONTH") return { key: "cardMayFitByMonth" };
 	if (verdict === "MANUFACTURER_FIT") {
 		return {
 			key: hasUnresolvedConditions ? "cardManufacturerQualifiedFit" : "cardManufacturerFit",

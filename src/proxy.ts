@@ -12,6 +12,7 @@ import {
 	marketHref,
 } from "./lib/channel-map";
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
+import { legacyRootRedirectTarget } from "./lib/legacy-root-redirects";
 import { orderConfirmationHandoff } from "./lib/order-confirmation-handoff";
 import { marketSlugRedirect, sameCfmProduct } from "./lib/market-slug-redirects";
 import { marketLanguageCode } from "./config/market-language";
@@ -26,6 +27,7 @@ import {
 	renamedCategoryTarget,
 } from "./config/category-routes";
 import { categoryAliasTarget } from "./lib/catalog-content/category-aliases";
+import { isVehiclePageGateEnabled, preflightVehiclePage } from "./lib/catalog-content/vehicle-page-preflight";
 import { keepLiveCategoriesFresh } from "./lib/live-categories";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/routing.generated";
 import { isMarketLive, liveMarkets, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
@@ -701,6 +703,52 @@ async function route(request: NextRequest) {
 			(isCategorySlug(normalized[1]) || isLocalizedRootSegment(first, normalized[1]))
 				? CATEGORY_ROUTE_PREFIX + "/" + segments.slice(1).join("/")
 				: undefined;
+		// A VEHICLE CATEGORY ADDRESS WITH NO PAGE -> real 404; one CFM merged away -> 301 to what remained.
+		//
+		// `/sk/stresne-nosice/volkswagen/transporter` names a model the fitment tree has and CFM has not
+		// written a page for. The route answers it with `notFound()`, but a PPR route has flushed its
+		// shell by then: HTTP 200, title "MAKY.STORE", no H1, `noindex` — an empty page (Marek, 2026-11-07:
+		// there are no empty pages). The status can only be chosen here, from the page's own resolution
+		// (`vehicle-page-outcome.ts`, asked over loopback); only a definite answer changes anything, so an
+		// app that cannot be asked, or a catalogue it cannot read, serves the request as before. In every
+		// market: a market with no catalogue text yet has no vehicle pages, and says so with a 404.
+		if (
+			internalRest &&
+			normalized.length >= 3 &&
+			(request.method === "GET" || request.method === "HEAD") &&
+			isVehiclePageGateEnabled()
+		) {
+			const decoded = normalized.slice(2).map((part) => {
+				try {
+					return decodeURIComponent(part);
+				} catch {
+					return null;
+				}
+			});
+			const root = (() => {
+				try {
+					return decodeURIComponent(normalized[1]);
+				} catch {
+					return null;
+				}
+			})();
+			if (root !== null && decoded.every((part): part is string => part !== null)) {
+				const answer = await preflightVehiclePage(CHANNEL_MAP[first].saleorSlug, root, decoded);
+				if (answer.verdict === "redirect") {
+					const url = request.nextUrl.clone();
+					url.pathname = answer.href;
+					return NextResponse.redirect(url, 301);
+				}
+				if (answer.verdict === "absent") {
+					const url = request.nextUrl.clone();
+					url.pathname = "/_not-found";
+					return NextResponse.rewrite(url, {
+						status: 404,
+						headers: { "x-robots-tag": "noindex", "x-maky-vehicle-page": "absent" },
+					});
+				}
+			}
+		}
 		const res = marketRewrite(request, first, gateVerdict, internalRest);
 		if (preflight) res.headers.set("x-maky-preflight", preflight);
 		// A preview is never indexed or stored, in a live market as much as in any other.
@@ -709,6 +757,26 @@ async function route(request: NextRequest) {
 			res.headers.set("cache-control", CMS_PREVIEW_CACHE_CONTROL);
 		}
 		return res;
+	}
+
+	// A PAGE OF THE OLD SHOP THAT MOVED -> one permanent redirect to where it lives now.
+	//
+	// The gate below is right that an unknown first segment is not a page, and it stays. But the
+	// domain was a WooCommerce shop with its products at the root, search engines still list some of
+	// them, and a product that exists today under another address must not answer 404 for it
+	// (Bing Webmaster Tools, 2026-11-07: /nosic-bicyklov-thule-epos-2-978100). The table is explicit,
+	// product by product, and decided here, in front of the 404 and behind everything that serves
+	// something, so an entry can never take a market, a category or a file over. See
+	// src/lib/legacy-root-redirects.ts for what may go in it and what may not.
+	if (first && !RESERVED_FIRST_SEGMENTS.has(first)) {
+		const moved = legacyRootRedirectTarget(pathname);
+		if (moved) {
+			// Built from the origin, not cloned from the request: a clone remembers that the old address
+			// ended in a slash (the old shop's did) and puts it back on the new one.
+			const url = new URL(moved, request.nextUrl.origin);
+			url.search = request.nextUrl.search;
+			return NextResponse.redirect(url, 301);
+		}
 	}
 
 	// INVALID FIRST SEGMENT -> real 404.

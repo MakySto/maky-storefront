@@ -56,7 +56,13 @@ async function render(filter: FilterState, searchParams: Record<string, string> 
 	return element === null ? null : renderToStaticMarkup(element);
 }
 
-const active: FilterState = { state: "active", vehicleLabel: CAR, productIds: ["x"], isDemo: false };
+const active: FilterState = {
+	state: "active",
+	vehicleLabel: CAR,
+	productIds: ["x"],
+	monthDependent: false,
+	isDemo: false,
+};
 
 describe("the two-way switch", () => {
 	it("marks 'Pre moje auto' as the current side while the list is narrowed to the car", async () => {
