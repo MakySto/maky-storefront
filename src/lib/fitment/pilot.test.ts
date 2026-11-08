@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import pilot from "./fixtures/pilot-3.0.0-20260906.2.json";
 import { isFitmentOfferable, type VehicleSelection } from "./contract";
 import { resolveFitment } from "./resolve";
+import { monthCaveatOf } from "./month-caveat";
 
 /**
  * CFM's real 3.0.0 pilot, read the way a shopper's answers reach it.
@@ -102,7 +103,12 @@ describe("an open-ended window, month-precise at the start", () => {
 			saleorProductId: COURIER_SET,
 			now: READ_AT,
 		});
-		expect(unknownMonth.verdict).toBe("NEEDS_DETAIL");
+		// Not hidden, not a fit: it may fit, depending on the month (Marek, 2026-11-07).
+		expect(unknownMonth.verdict).toBe("MAY_FIT_BY_MONTH");
+		expect(
+			isFitmentOfferable({ verdict: unknownMonth.verdict, eligibility: unknownMonth.product?.eligibility }),
+		).toBe(false);
+		expect(monthCaveatOf(unknownMonth.matched, 2023)).toEqual({ kind: "from", from: "11/2023" });
 
 		// The window opens in November, so November is in and October is not.
 		expect(
@@ -128,10 +134,10 @@ describe("a window clamped at one end only", () => {
 		expect(result.verdict).toBe("MANUFACTURER_FIT");
 	});
 
-	it("still needs one at the month-precise end", () => {
-		expect(resolveFitment(dataset, a6(2005), { saleorProductId: A6_SET, now: READ_AT }).verdict).toBe(
-			"NEEDS_DETAIL",
-		);
+	it("still depends on one at the month-precise end", () => {
+		const unknownMonth = resolveFitment(dataset, a6(2005), { saleorProductId: A6_SET, now: READ_AT });
+		expect(unknownMonth.verdict).toBe("MAY_FIT_BY_MONTH");
+		expect(monthCaveatOf(unknownMonth.matched, 2005)).toEqual({ kind: "to", to: "02/2005" });
 		expect(resolveFitment(dataset, a6(2005, 2), { saleorProductId: A6_SET, now: READ_AT }).verdict).toBe(
 			"MANUFACTURER_FIT",
 		);

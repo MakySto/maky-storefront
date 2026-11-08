@@ -6,6 +6,7 @@ import {
 	STOREFRONT_CATEGORIES,
 	categoryUrl,
 } from "@/config/categories";
+import { TYRE_SHELF_MARKETS, TYRE_SHELF_SLUG } from "@/config/tyre-shelves";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { MARKET_ROOT_SEGMENTS } from "@/lib/routing.generated";
 import {
@@ -307,6 +308,120 @@ describe("the Thule roof-rack category", () => {
 		// The base slug is a spelling nowhere: Slovakia keeps it, the English markets reach it as the base slug.
 		for (const market of ["sk", "us", "ca"]) {
 			expect(isLocalizedRootSegment(market, "thule-stresne-nosice"), market).toBe(false);
+		}
+	});
+});
+
+describe("the snow-chain category", () => {
+	// What CFM writes as the category's translated slug in the nine EU languages
+	// (SNEHOVE_RETAZE_CATEGORY_L10N_MANIFEST of the foreign chain run, 2026-11-08), typed out so the row has to keep it.
+	// Austria reads the German translation. The USA and Canada are not part of the run, so no English slug exists and
+	// their address stays the base slug.
+	const BASE = "snehove-retaze";
+	const SEGMENTS: Readonly<Record<string, string>> = {
+		sk: BASE,
+		cz: "snehove-retezy",
+		de: "schneeketten",
+		at: "schneeketten",
+		pl: "lancuchy-sniegowe",
+		hu: "holancok",
+		it: "catene-da-neve",
+		fr: "chaines-a-neige",
+		es: "cadenas-de-nieve",
+		ro: "lanturi-de-zapada",
+		us: BASE,
+		ca: BASE,
+	};
+	const OFFERED = Object.keys(SEGMENTS).filter((market) => !["sk", "us", "ca"].includes(market));
+	const chains = LOCALIZED_CATEGORIES.find((category) => category.baseSlug === BASE);
+
+	it("has the segment CFM writes in the nine EU markets and the base slug everywhere else", () => {
+		const rows = categoryRouteTable().filter((row) => row.baseSlug === BASE);
+		expect(rows).toHaveLength(12);
+		for (const row of rows) expect(row.path, row.market).toBe(`/${row.market}/${SEGMENTS[row.market]}`);
+		expect(OFFERED).toHaveLength(9);
+	});
+
+	it("is the Saleor category it names (Category:9)", () => {
+		expect(chains?.saleorId).toBe(btoa("Category:9"));
+		expect(baseSlugForCategoryId(btoa("Category:9"))).toBe(BASE);
+	});
+
+	it("is the shelf the tyre-size filter narrows, so a rename of its slug has to come here", () => {
+		expect(TYRE_SHELF_SLUG).toBe(BASE);
+		for (const market of Object.keys(SEGMENTS)) {
+			expect(categoryUrlFor(market, TYRE_SHELF_SLUG), market).toBe(`/${SEGMENTS[market]}`);
+		}
+	});
+
+	it("is led to from a market's homepage exactly where it is sold, and every such market has its address in the table", () => {
+		// A tyre size given on the homepage leads to the shelf only in a market that sells it. Slovakia and the nine EU
+		// markets of the foreign chain run do; the USA and Canada do not (CFM wrote nothing there). A market added to
+		// `TYRE_SHELF_MARKETS` without its row in the table would send the shopper to a second, untranslated address.
+		expect([...TYRE_SHELF_MARKETS].sort()).toEqual(["sk", ...OFFERED].sort());
+		for (const market of TYRE_SHELF_MARKETS) {
+			expect(categoryUrlFor(market, TYRE_SHELF_SLUG), market).toBe(`/${SEGMENTS[market]}`);
+		}
+		for (const market of ["us", "ca"]) expect(TYRE_SHELF_MARKETS.has(market), market).toBe(false);
+	});
+
+	it("is one address, whether the link carries the base slug or the slug Saleor translated", () => {
+		// The product page links with the translated slug, the shelf link and the size filter with the base one.
+		for (const [market, segment] of Object.entries(SEGMENTS)) {
+			expect(categoryUrlFor(market, BASE), market).toBe(`/${segment}`);
+			expect(categoryUrlFor(market, segment), market).toBe(`/${segment}`);
+			expect(categoryUrlFor(CHANNEL_MAP[market]!.saleorSlug, segment), market).toBe(`/${segment}`);
+			expect(categoryBaseSlug(market, segment), market).toBe(BASE);
+			expect(categoryUrlFor(market, segment), market).not.toContain("/categories/");
+		}
+	});
+
+	it("is found by its id on a product, whatever slug the product's category carries in the market", () => {
+		for (const market of OFFERED) {
+			expect(baseSlugOfCategory(market, { id: btoa("Category:9"), slug: SEGMENTS[market] }), market).toBe(
+				BASE,
+			);
+			expect(baseSlugOfCategory(market, { slug: SEGMENTS[market] }), market).toBe(BASE);
+		}
+	});
+
+	it("shares Germany's spelling in Austria: one language, no spelling of its own", () => {
+		expect(chains?.marketSegments).toBeUndefined();
+		expect(chains?.legacySegments).toBeUndefined();
+		expect(SEGMENTS.at).toBe(SEGMENTS.de);
+		expect(isLocalizedRootSegment("at", SEGMENTS.de!)).toBe(true);
+		expect(categorySegment("at", BASE)).toBe(categorySegment("de", BASE));
+	});
+
+	it("is a root only in the market's own spelling, and nowhere in Slovakia, the USA and Canada", () => {
+		for (const market of OFFERED)
+			expect(isLocalizedRootSegment(market, SEGMENTS[market]!), market).toBe(true);
+		for (const market of ["sk", "us", "ca"]) {
+			// The base slug is a spelling nowhere: these markets reach the category through the category list.
+			expect(isLocalizedRootSegment(market, BASE), market).toBe(false);
+		}
+		expect(isLocalizedRootSegment("cz", SEGMENTS.de!)).toBe(false);
+		expect(isLocalizedRootSegment("de", SEGMENTS.cz!)).toBe(false);
+		expect(isLocalizedRootSegment("de", SEGMENTS.fr!)).toBe(false);
+		expect(isLocalizedRootSegment("us", SEGMENTS.de!)).toBe(false);
+		expect(isLocalizedRootSegment("sk", SEGMENTS.cz!)).toBe(false);
+	});
+
+	it("moves nothing in the markets that are not part of the run", () => {
+		// Before this row the USA and Canada answered at the base slug, and they still do.
+		expect(categoryUrlFor("us", BASE)).toBe(`/${BASE}`);
+		expect(categoryUrlFor("ca", BASE)).toBe(`/${BASE}`);
+		expect(categoryRootServes("us", BASE)).toBe(true);
+		expect(categoryRootServes("sk", BASE)).toBe(true);
+		// Another category's address is not changed by the new row.
+		expect(categoryUrlFor("de", "stresne-nosice")).toBe("/dachtraeger");
+		expect(categoryUrlFor("de", "autochladnicky")).toBe("/kuehlboxen-fuers-auto");
+	});
+
+	it("keeps its spellings clear of every other category's, in every language", () => {
+		for (const language of CATALOG_LANGUAGES) {
+			const spellings = LOCALIZED_CATEGORIES.map((category) => category.segments[language]);
+			expect(new Set(spellings).size, language).toBe(spellings.length);
 		}
 	});
 });

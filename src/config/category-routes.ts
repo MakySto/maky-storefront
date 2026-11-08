@@ -69,6 +69,19 @@ export { KARGO_BASE_SLUG, KARGO_CATEGORY_SLUGS, KARGO_PREVIOUS_SLUG } from "./ka
  * category decides something (the shelf, the quote button), and the old root answers a 301 to the new one once
  * Saleor holds the new slug (`proxy.ts`).
  *
+ * ## Snow chains and snow socks (2026-11-08)
+ *
+ * `snehove-retaze` (Category:9, no parent) is the shelf of the 145 chains and socks, sold in Slovakia since 2026-11-07.
+ * CFM writes them to the nine EU markets together with the category's translations, whose slugs are in the row below
+ * (`SNEHOVE_RETAZE_CATEGORY_L10N_MANIFEST`, file sha256 `33a86b3a…f6e4`). Without a row, the product page's category link
+ * built from the translated slug Saleor returns goes to `/de/categories/schneeketten` while the base slug answers at
+ * `/de/snehove-retaze`: one category, two public addresses, and a Slovak word in the German shop. Austria reads the
+ * German translation, so it shares Germany's segment and needs no `marketSegments`.
+ *
+ * The USA and Canada are not part of that run: CFM writes no English translation of this category, so the English
+ * markets keep the base slug as their address (their `en` segment IS the base slug, which the table reads as "no
+ * localized spelling"). The day CFM writes an English one, the row gets its segment here and nowhere else.
+ *
  * ## What this does NOT move
  *
  * Product slugs, model and generation slugs, and the three RELEASE-4 pages each foreign
@@ -151,6 +164,20 @@ const KARGO_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
 	en: "kargo-roof-racks-and-crossbars-for-vans",
 };
 
+const SNOW_CHAIN_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
+	sk: "snehove-retaze",
+	cs: "snehove-retezy",
+	de: "schneeketten",
+	pl: "lancuchy-sniegowe",
+	hu: "holancok",
+	it: "catene-da-neve",
+	fr: "chaines-a-neige",
+	es: "cadenas-de-nieve",
+	ro: "lanturi-de-zapada",
+	// No English translation is written yet (the USA and Canada are not part of the run): the base slug stays.
+	en: "snehove-retaze",
+};
+
 export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 	{
 		baseSlug: "stresne-nosice",
@@ -203,6 +230,11 @@ export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 			it: ["barre-portatutto-e-cesti-per-furgoni"],
 			es: ["barras-de-techo-y-bacas-para-furgonetas"],
 		},
+	},
+	{
+		baseSlug: "snehove-retaze",
+		saleorId: "Q2F0ZWdvcnk6OQ==",
+		segments: SNOW_CHAIN_SEGMENTS,
 	},
 ];
 

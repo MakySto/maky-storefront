@@ -28,7 +28,7 @@
 import { addVariantToCart } from "@/ui/components/plp/actions";
 import { getLocaleFromChannel } from "@/config/locale";
 import { readActiveSelection } from "@/lib/garage/state";
-import { CONFIGURATOR_PRODUCT_KIND, isFitmentOfferable } from "./contract";
+import { CONFIGURATOR_PRODUCT_KIND, isFitmentPurchasable } from "./contract";
 import { loadFitmentDataset } from "./provider";
 import { isDemoDataset, verifyPurchasable } from "./offers";
 import { resolveFitment } from "./resolve";
@@ -67,7 +67,9 @@ export async function addConfiguredSetToCart(input: {
 	// to show a button decides here whether the write happens — one function, so a
 	// disagreement between them is not expressible.
 	const fitment = resolveFitment(dataset, selection, { saleorProductId });
-	if (!isFitmentOfferable({ verdict: fitment.verdict, eligibility: fitment.product?.eligibility })) {
+	// A set whose fit depends on the month of manufacture passes too (Marek, 2026-11-07): the card and the
+	// cart line say so; it is the shopper's choice between the two sides of a window edge.
+	if (!isFitmentPurchasable({ verdict: fitment.verdict, eligibility: fitment.product?.eligibility })) {
 		return {
 			ok: false,
 			reason: fitment.verdict === "PROVIDER_UNAVAILABLE" ? "provider-unavailable" : "not-verified",
