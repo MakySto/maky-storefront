@@ -113,12 +113,15 @@ export function offersCategory(assortment: MarketAssortment, slug: string): bool
 }
 
 /**
- * The market sells every category the homepage names — so a text that lists them all ("strešné
+ * The market sells every category those texts name (a category flagged `inRangeText: false`, such as the
+ * snow chains, is linked where stocked but is not in the lines, so its absence changes nothing) — so a text that lists them all ("strešné
  * nosiče, boxy, nosiče bicyklov, strešné stany a autochladničky") is true here. Where it is not,
  * the page says what IS sold instead of promising the rest.
  */
 export function offersFullRange(assortment: MarketAssortment): boolean {
-	return categoriesFor("home").every((category) => offersCategory(assortment, category.slug));
+	return categoriesFor("home")
+		.filter((category) => category.inRangeText !== false)
+		.every((category) => offersCategory(assortment, category.slug));
 }
 
 /** For tests: forget every remembered answer. */

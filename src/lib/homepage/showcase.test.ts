@@ -149,10 +149,63 @@ describe("category tile photos", () => {
 			"nosice-bicyklov",
 			"nosice-lyzi",
 			"stresne-stany",
+			"snehove-retaze",
 			"autochladnicky",
 		]) {
 			expect(tags).toContain(`category:${SK}:sk-SK:${slug}`);
 		}
+	});
+
+	it("shows a category without a picture of its own by its first product's photo, and never a placeholder", async () => {
+		const edge = (url: string | null) => ({ node: { thumbnail: url ? { url } : null } });
+		answers.HomeCategoryImages = {
+			ok: true,
+			data: {
+				categories: {
+					edges: [
+						{
+							node: {
+								id: "1",
+								slug: "snehove-retaze",
+								backgroundImage: null,
+								products: { edges: [edge("https://cdn.example/chain.webp")] },
+							},
+						},
+						{
+							node: {
+								id: "2",
+								slug: "stresne-nosice",
+								backgroundImage: { url: "https://cdn.example/racks.webp" },
+								products: { edges: [edge("https://cdn.example/other.webp")] },
+							},
+						},
+						{
+							node: {
+								id: "3",
+								slug: "autochladnicky",
+								backgroundImage: null,
+								products: {
+									edges: [
+										edge("https://cdn.maky.store/thumbnails/products/c32bc543a46f5bf4_1_thumbnail_4.gif"),
+									],
+								},
+							},
+						},
+						{ node: { id: "4", slug: "stresne-boxy", backgroundImage: null, products: { edges: [] } } },
+					],
+				},
+			},
+		};
+		const images = await getHomeCategoryImages(SK);
+
+		expect(images).toEqual({
+			"snehove-retaze": "https://cdn.example/chain.webp",
+			// Its own picture wins over a product's.
+			"stresne-nosice": "https://cdn.example/racks.webp",
+		});
+		// Taken from the Slovak channel, where the shelves' products are listed.
+		expect(sent[0]?.variables).toMatchObject({ channel: SK });
+		expect(tags).toContain(`category:${SK}:sk-SK:snehove-retaze`);
 	});
 
 	it("throws on a fault rather than caching an empty set of photos", async () => {

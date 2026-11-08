@@ -36,6 +36,13 @@ export interface StorefrontCategory {
 	readonly surfaces: readonly CategorySurface[];
 	/** Why a category is not surfaced. Required when `surfaces` is empty. */
 	readonly withheldReason?: string;
+	/**
+	 * `false` when the site's range lines ("roof racks, boxes, bike carriers, tents and fridges" in the
+	 * homepage title, the hero lead, the footer and the search field) do not name this category. Such a
+	 * category is linked wherever it is stocked, but a market without it still sells "the full range"
+	 * those lines describe (`offersFullRange`). Default `true`.
+	 */
+	readonly inRangeText?: boolean;
 }
 
 /**
@@ -47,19 +54,20 @@ export const STOREFRONT_CATEGORIES: readonly StorefrontCategory[] = [
 	{ slug: "stresne-boxy", key: "roofBoxes", surfaces: ["nav", "home"] },
 	{ slug: "nosice-bicyklov", key: "bikeCarriers", surfaces: ["nav", "home"] },
 	{ slug: "nosice-lyzi", key: "skiCarriers", surfaces: ["nav", "home"] },
+	// Linked from the menu, the "all categories" panel, the footer and the homepage since 2026-11-08 (owner:
+	// "why is the chains shelf reachable only through the configurator?"). Until then it was withheld on the
+	// reasoning that linking it was a business decision nobody had taken; it held 145 products in sk-eur
+	// from 2026-11-07 and the nine EU markets of the foreign run from 2026-11-08, and the owner wants it found.
+	// Where a market does not stock it (the USA, Canada) `lib/market-assortment.ts` leaves the link out, so
+	// nothing here leads to "not found". The shelf is also reached by the tyre-size filter (`config/tyre-shelves.ts`).
+	// Not named in the range lines of the site text (title, hero lead, footer, search field): those list
+	// the roof-rack, box, carrier, tent and fridge shelves, and a market that lacks the chains still sells
+	// that range (`inRangeText: false`).
+	{ slug: "snehove-retaze", key: "snowChains", surfaces: ["nav", "home"], inRangeText: false },
 	// In the desktop row since the 2026-09 redesign's second pass: the approved header links
 	// the roof tents and the fridges directly (`header.config.ts` decides from which width).
 	{ slug: "stresne-stany", key: "roofTents", surfaces: ["nav", "home"] },
 	{ slug: "autochladnicky", key: "carFridges", surfaces: ["nav", "home"] },
-	{
-		slug: "snehove-retaze",
-		key: "snowChains",
-		surfaces: [],
-		withheldReason:
-			"No tile or menu slot has been asked for: linking the shelf is a business decision. It holds 145 " +
-			"products in sk-eur since 2026-11-07 and is reached by its address and by the tyre-size filter " +
-			"(`config/tyre-shelves.ts`).",
-	},
 	{
 		slug: "tazne-zariadenia",
 		key: "towBars",
