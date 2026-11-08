@@ -70,6 +70,14 @@ describe("storefront category catalogue", () => {
 		expect(categoriesFor("home").length).toBeGreaterThan(0);
 	});
 
+	it("links the snow chains from the menu, the all-categories panel and the homepage", () => {
+		for (const surface of ["nav", "home"] as const) {
+			expect(categoriesFor(surface).map((c) => c.slug)).toContain("snehove-retaze");
+		}
+		// The row, the panel and the footer take the chains from the catalogue, not from a second list.
+		expect(HEADER_PRIMARY_NAV.some((item) => item.href === "/snehove-retaze")).toBe(true);
+	});
+
 	it("names every surfaced category in all 12 locale files", () => {
 		const surfaced = STOREFRONT_CATEGORIES.filter((c) => c.surfaces.length > 0);
 		for (const locale of LOCALES) {
@@ -78,6 +86,12 @@ describe("storefront category catalogue", () => {
 			};
 			for (const category of surfaced) {
 				expect(messages.nav?.[category.key], `${locale} is missing nav.${category.key}`).toBeTruthy();
+			}
+			// A homepage tile carries a line under its name; a missing one shows in that market only.
+			const home = (messages as { home?: Record<string, string> }).home;
+			for (const category of surfaced.filter((c) => c.surfaces.includes("home"))) {
+				const line = `tile${category.key[0]!.toUpperCase()}${category.key.slice(1)}`;
+				expect(home?.[line], `${locale} is missing home.${line}`).toBeTruthy();
 			}
 		}
 	});

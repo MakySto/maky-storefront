@@ -32,13 +32,16 @@ const TAGLINES: Readonly<Record<string, string>> = {
 	skiCarriers: "tileSkiCarriers",
 	roofTents: "tileRoofTents",
 	carFridges: "tileCarFridges",
+	snowChains: "tileSnowChains",
 };
 
 /**
- * The six main categories as photographic tiles (premium redesign 2026-09).
+ * The main categories as photographic tiles (premium redesign 2026-09; seven since the snow chains
+ * joined on 2026-11-08).
  *
- * The photo fills the tile and the name sits over a dark fade at its foot. Six in a row on a wide
- * desktop — short visual entries, not product cards — three on a tablet, two on a phone.
+ * The photo fills the tile and the name sits over a dark fade at its foot. On a wide desktop they
+ * stand in one row (six, or seven when the market sells the chains too) — short visual entries,
+ * not product cards — three on a tablet, two on a phone.
  *
  * `photos` is `null` while it streams in or when it could not be read; every tile keeps its name,
  * its link and its size either way, so the swap moves nothing. Names come from the same `nav`
@@ -61,6 +64,9 @@ export function CategoryGrid({
 	const params = useParams<{ channel: string }>();
 	const channel = params.channel;
 	const categories = categoriesFor("home").filter((category) => offered.includes(category.slug));
+	// Seven tiles share one row from xl, each about 180px wide: the name steps down a size so that
+	// "Autochladničky" stays inside its tile, and a long word breaks rather than runs out of it.
+	const crowded = categories.length > 6;
 
 	// One tile is not a choice between categories: a market that sells a single shelf reaches it
 	// from the hero, the menu and the vehicle block, and the section would stand there as a lone
@@ -72,7 +78,14 @@ export function CategoryGrid({
 			<h2 className="text-text-primary text-2xl font-extrabold tracking-[-0.025em] sm:text-[1.875rem]">
 				{th("categoriesTitle")}
 			</h2>
-			<ul role="list" className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-6">
+			<ul
+				role="list"
+				className={cn(
+					"mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3",
+					// A seventh tile must not stand alone in a second row: seven fit one row from xl.
+					crowded ? "xl:grid-cols-7" : "xl:grid-cols-6",
+				)}
+			>
 				{categories.map((category, index) => {
 					const photo = photos?.[category.slug];
 					const tagline = TAGLINES[category.key];
@@ -125,7 +138,12 @@ export function CategoryGrid({
 								    ("Nosiče bicyklov") no longer lifts its tile's words above its neighbours'. */}
 								<div className="flex items-end justify-between gap-2 p-3.5 sm:p-4">
 									<span className="min-w-0">
-										<span className="text-text-inverse flex min-h-[2lh] items-end text-base leading-tight font-extrabold tracking-[-0.01em] sm:text-lg xl:text-xl">
+										<span
+											className={cn(
+												"text-text-inverse flex min-h-[2lh] items-end text-base leading-tight font-extrabold tracking-[-0.01em] break-words sm:text-lg",
+												crowded ? "xl:text-[1.0625rem]" : "xl:text-xl",
+											)}
+										>
 											{t(category.key)}
 										</span>
 										{tagline && (

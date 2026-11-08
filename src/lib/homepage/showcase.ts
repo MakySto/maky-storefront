@@ -9,6 +9,7 @@ import { productHref } from "@/lib/product-url";
 import { resolveExactLocaleProduct } from "@/lib/saleor/exact-locale";
 import { publishableProductImage } from "@/lib/product-image";
 import { HERO_SCENERY } from "@/config/storefront-imagery";
+import { CHANNEL_MAP } from "@/lib/channel-map";
 
 /**
  * What the homepage shows from Saleor besides the featured collection and the scenery: each
@@ -20,6 +21,13 @@ import { HERO_SCENERY } from "@/config/storefront-imagery";
 
 /** Category slug (the Slovak base slug from `@/config/categories`) → photo URL. */
 export type CategoryImages = Readonly<Record<string, string>>;
+
+/**
+ * The channel a category's product photo is taken from when the category has none of its own.
+ * Photos are the same in every market, and the shelves' products are listed in the Slovak
+ * channel (as for the scenery, `lib/homepage/scenery.ts`).
+ */
+const PHOTO_SOURCE_CHANNEL = CHANNEL_MAP.sk.saleorSlug;
 
 /**
  * Photos decorate; they never hold the page up. One attempt with a deadline instead of the
@@ -46,7 +54,7 @@ async function readHomeCategoryImages(channel: string): Promise<CachedRead<Categ
 	for (const slug of slugs) cacheTag(buildTag(CACHE_PROFILES.categories, { channel, locale, slug }));
 
 	const result = await executePublicGraphQL(HomeCategoryImagesDocument, {
-		variables: { slugs },
+		variables: { slugs, channel: PHOTO_SOURCE_CHANNEL },
 		revalidate: 0,
 		retry: false,
 		signal: AbortSignal.timeout(PHOTO_DEADLINE_MS),
@@ -55,7 +63,12 @@ async function readHomeCategoryImages(channel: string): Promise<CachedRead<Categ
 
 	const images: Record<string, string> = {};
 	for (const { node } of result.data.categories?.edges ?? []) {
-		if (node.backgroundImage?.url) images[node.slug] = node.backgroundImage.url;
+		// The category's own picture first; else one of its products' stored photos, never a
+		// grey "no image" placeholder.
+		const own = node.backgroundImage?.url;
+		const product = publishableProductImage(node.products?.edges[0]?.node.thumbnail?.url);
+		const url = own || product;
+		if (url) images[node.slug] = url;
 	}
 	return answered(images);
 }
