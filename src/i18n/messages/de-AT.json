@@ -1041,7 +1041,8 @@
 			"signInDescription": "Melden Sie sich an, um Ihre Bestellungen und gespeicherten Adressen zu sehen.",
 			"signUpTitle": "Registrieren",
 			"signUpDescription": "Erstellen Sie ein Konto und haben Sie Ihre Adressen und Bestellungen an einem Ort.",
-			"accountTitle": "Mein Konto"
+			"accountTitle": "Mein Konto",
+			"confirmTitle": "Konto aktivieren"
 		},
 		"form": {
 			"showPassword": "Passwort anzeigen",
@@ -1164,6 +1165,15 @@
 			"title": "Rücktrittsrecht",
 			"body": "Wie Sie von dieser Bestellung zurücktreten können, erfahren Sie auf der Seite zum Rücktrittsrecht.",
 			"cta": "Zum Rücktrittsrecht"
+		},
+		"confirm": {
+			"pending": "Wir aktivieren Ihr Konto…",
+			"successTitle": "Ihr Konto ist aktiviert",
+			"successBody": "Vielen Dank, Ihre E-Mail-Adresse ist bestätigt. Sie können sich jetzt anmelden.",
+			"invalidTitle": "Der Link ist ungültig",
+			"invalidBody": "Der Aktivierungslink ist ungültig oder abgelaufen. Versuchen Sie, sich anzumelden. Wenn Ihr Konto weiterhin nicht aktiv ist, schreiben Sie uns, wir helfen Ihnen gern.",
+			"errorTitle": "Das Konto konnte nicht aktiviert werden",
+			"errorBody": "Etwas ist schiefgelaufen. Bitte öffnen Sie den Link aus der E-Mail in Kürze erneut."
 		}
 	},
 	"contact": {

@@ -1041,7 +1041,8 @@
 			"signInDescription": "Prihláste sa do svojho účtu a pozrite si objednávky a uložené adresy.",
 			"signUpTitle": "Registrácia",
 			"signUpDescription": "Vytvorte si účet a majte svoje adresy a objednávky na jednom mieste.",
-			"accountTitle": "Môj účet"
+			"accountTitle": "Môj účet",
+			"confirmTitle": "Aktivácia účtu"
 		},
 		"form": {
 			"showPassword": "Zobraziť heslo",
@@ -1164,6 +1165,15 @@
 			"title": "Odstúpenie od zmluvy",
 			"body": "Od tejto objednávky môžete odstúpiť do 14 dní od prevzatia tovaru, pri objednávkach z účtu do 30 dní. Odstúpiť môžete od celej objednávky alebo len od vybraných položiek.",
 			"cta": "Odstúpiť od zmluvy"
+		},
+		"confirm": {
+			"pending": "Aktivujeme váš účet…",
+			"successTitle": "Účet je aktivovaný",
+			"successBody": "Ďakujeme, váš e-mail je potvrdený. Teraz sa môžete prihlásiť.",
+			"invalidTitle": "Odkaz nie je platný",
+			"invalidBody": "Aktivačný odkaz je neplatný alebo mu vypršala platnosť. Skúste sa prihlásiť. Ak účet stále nie je aktivovaný, napíšte nám a radi vám pomôžeme.",
+			"errorTitle": "Účet sa nepodarilo aktivovať",
+			"errorBody": "Niečo sa pokazilo. Skúste odkaz z e-mailu otvoriť znova o chvíľu."
 		}
 	},
 	"contact": {

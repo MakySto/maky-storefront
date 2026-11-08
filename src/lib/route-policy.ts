@@ -84,6 +84,7 @@ export const ROUTE_POLICY: readonly MarketRoutePolicy[] = [
 	// --- Private -------------------------------------------------------------------
 	{ segment: "account", kind: "private", markets: "all", indexable: false },
 	{ segment: "cart", kind: "private", markets: "all", indexable: false },
+	{ segment: "confirm-account", kind: "private", markets: "all", indexable: false },
 	{ segment: "login", kind: "private", markets: "all", indexable: false },
 	{ segment: "orders", kind: "private", markets: "all", indexable: false },
 	{ segment: "signup", kind: "private", markets: "all", indexable: false },

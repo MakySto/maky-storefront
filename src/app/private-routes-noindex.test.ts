@@ -24,6 +24,7 @@ const ROUTES = [
 	// Covers the whole /account subtree: no child overrides `robots`.
 	"[channel]/(main)/account/layout.tsx",
 	"[channel]/(main)/orders/page.tsx",
+	"[channel]/(main)/confirm-account/page.tsx",
 	"[channel]/(main)/login/page.tsx",
 	"[channel]/(main)/signup/page.tsx",
 	// Outside `[channel]`, which is exactly why it was missed: it never sees the market

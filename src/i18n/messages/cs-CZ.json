@@ -1041,7 +1041,8 @@
 			"signInDescription": "Přihlaste se ke svému účtu a prohlédněte si objednávky a uložené adresy.",
 			"signUpTitle": "Registrace",
 			"signUpDescription": "Vytvořte si účet a mějte své adresy a objednávky na jednom místě.",
-			"accountTitle": "Můj účet"
+			"accountTitle": "Můj účet",
+			"confirmTitle": "Aktivace účtu"
 		},
 		"form": {
 			"showPassword": "Zobrazit heslo",
@@ -1164,6 +1165,15 @@
 			"title": "Odstoupení od smlouvy",
 			"body": "Jak od této objednávky odstoupit, najdete na stránce o odstoupení od smlouvy.",
 			"cta": "Odstoupit od smlouvy"
+		},
+		"confirm": {
+			"pending": "Aktivujeme váš účet…",
+			"successTitle": "Účet je aktivován",
+			"successBody": "Děkujeme, váš e-mail je potvrzen. Nyní se můžete přihlásit.",
+			"invalidTitle": "Odkaz není platný",
+			"invalidBody": "Aktivační odkaz je neplatný nebo mu vypršela platnost. Zkuste se přihlásit. Pokud účet stále není aktivní, napište nám a rádi vám pomůžeme.",
+			"errorTitle": "Účet se nepodařilo aktivovat",
+			"errorBody": "Něco se pokazilo. Zkuste odkaz z e-mailu otevřít znovu za chvíli."
 		}
 	},
 	"contact": {

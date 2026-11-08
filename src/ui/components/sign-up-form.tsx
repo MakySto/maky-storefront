@@ -72,7 +72,9 @@ export function SignUpForm({ legal }: Props) {
 					firstName,
 					lastName,
 					channel: params.channel,
-					redirectUrl: `${window.location.origin}${marketHref(params.channel, "/login")}`,
+					// The activation link must not land on /login: that page reads ?email&token as a
+					// password reset. /confirm-account calls Saleor's confirmAccount.
+					redirectUrl: `${window.location.origin}${marketHref(params.channel, "/confirm-account")}`,
 				}),
 			});
 

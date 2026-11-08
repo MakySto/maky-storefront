@@ -1041,7 +1041,8 @@
 			"signInDescription": "Connectez-vous à votre compte pour consulter vos commandes et vos adresses enregistrées.",
 			"signUpTitle": "Créer un compte",
 			"signUpDescription": "Créez un compte pour retrouver vos adresses et vos commandes au même endroit.",
-			"accountTitle": "Mon compte"
+			"accountTitle": "Mon compte",
+			"confirmTitle": "Activation du compte"
 		},
 		"form": {
 			"showPassword": "Afficher le mot de passe",
@@ -1164,6 +1165,15 @@
 			"title": "Droit de rétractation et retour",
 			"body": "Pour savoir comment vous rétracter de cette commande ou retourner des articles, consultez la page dédiée à la rétractation et aux retours.",
 			"cta": "Rétractation et retours"
+		},
+		"confirm": {
+			"pending": "Activation de votre compte…",
+			"successTitle": "Votre compte est activé",
+			"successBody": "Merci, votre adresse e-mail est confirmée. Vous pouvez maintenant vous connecter.",
+			"invalidTitle": "Ce lien n’est pas valide",
+			"invalidBody": "Le lien d’activation est invalide ou a expiré. Essayez de vous connecter. Si votre compte n’est toujours pas actif, écrivez-nous, nous vous aiderons volontiers.",
+			"errorTitle": "Impossible d’activer votre compte",
+			"errorBody": "Une erreur s’est produite. Rouvrez le lien de l’e-mail dans quelques instants."
 		}
 	},
 	"contact": {

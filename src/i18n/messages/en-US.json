@@ -1041,7 +1041,8 @@
 			"signInDescription": "Sign in to your account to see your orders and saved addresses.",
 			"signUpTitle": "Create an account",
 			"signUpDescription": "Create an account to keep your addresses and orders in one place.",
-			"accountTitle": "My account"
+			"accountTitle": "My account",
+			"confirmTitle": "Activate account"
 		},
 		"form": {
 			"showPassword": "Show password",
@@ -1164,6 +1165,15 @@
 			"title": "Cancel a purchase or return items",
 			"body": "To find out how to cancel this order or return items, see our cancellations and returns page.",
 			"cta": "Cancellations and returns"
+		},
+		"confirm": {
+			"pending": "Activating your account…",
+			"successTitle": "Your account is active",
+			"successBody": "Thank you, your email address is confirmed. You can sign in now.",
+			"invalidTitle": "This link is not valid",
+			"invalidBody": "The activation link is invalid or has expired. Try signing in. If your account is still not active, write to us and we will be glad to help.",
+			"errorTitle": "We could not activate your account",
+			"errorBody": "Something went wrong. Please open the link from the email again in a moment."
 		}
 	},
 	"contact": {

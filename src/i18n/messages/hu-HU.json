@@ -1041,7 +1041,8 @@
 			"signInDescription": "Jelentkezzen be fiókjába, és tekintse meg rendeléseit és mentett címeit.",
 			"signUpTitle": "Regisztráció",
 			"signUpDescription": "Hozzon létre egy fiókot, és legyenek címei és rendelései egy helyen.",
-			"accountTitle": "Fiókom"
+			"accountTitle": "Fiókom",
+			"confirmTitle": "Fiók aktiválása"
 		},
 		"form": {
 			"showPassword": "Jelszó megjelenítése",
@@ -1164,6 +1165,15 @@
 			"title": "Elállási jog és visszaküldés",
 			"body": "Arról, hogyan állhat el ettől a rendeléstől vagy küldhet vissza termékeket, az elállásról és visszaküldésről szóló oldalon tájékozódhat.",
 			"cta": "Elállás és visszaküldés"
+		},
+		"confirm": {
+			"pending": "Aktiváljuk a fiókját…",
+			"successTitle": "A fiók aktiválva",
+			"successBody": "Köszönjük, e-mail-címét megerősítettük. Most már bejelentkezhet.",
+			"invalidTitle": "A link érvénytelen",
+			"invalidBody": "Az aktiváló link érvénytelen vagy lejárt. Próbáljon meg bejelentkezni. Ha a fiók továbbra sem aktív, írjon nekünk, és szívesen segítünk.",
+			"errorTitle": "Nem sikerült aktiválni a fiókot",
+			"errorBody": "Valami hiba történt. Kis idő múlva nyissa meg újra az e-mailben kapott linket."
 		}
 	},
 	"contact": {

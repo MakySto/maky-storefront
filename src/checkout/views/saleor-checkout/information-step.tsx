@@ -51,7 +51,7 @@ import { getStepNumber } from "./flow";
 // Extracted components
 import { SignInForm, ResetPasswordForm } from "@/checkout/components/contact";
 import { ContactSection, ShippingAddressSection } from "./sections";
-import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, REVERSE_MAP, marketHref } from "@/lib/channel-map";
 import { Checkbox } from "@/ui/components/ui/checkbox";
 import { Label } from "@/ui/components/ui/label";
 import { MobileStickyAction } from "./mobile-sticky-action";
@@ -574,7 +574,12 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, on
 								email,
 								password: accountPassword,
 								channel: checkout.channel.slug,
-								redirectUrl: window.location.href,
+								// Not window.location.href: the checkout reads ?token as a password
+								// reset, so the activation link opened "set new password" there.
+								redirectUrl: `${window.location.origin}${marketHref(
+									checkout.channel.slug,
+									"/confirm-account",
+								)}`,
 							},
 						});
 						if (registerResult.data?.accountRegister?.errors?.length) {

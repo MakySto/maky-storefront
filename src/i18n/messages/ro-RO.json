@@ -1041,7 +1041,8 @@
 			"signInDescription": "Autentificați-vă în cont pentru a vedea comenzile și adresele salvate.",
 			"signUpTitle": "Creare cont",
 			"signUpDescription": "Creați un cont și aveți adresele și comenzile într-un singur loc.",
-			"accountTitle": "Contul meu"
+			"accountTitle": "Contul meu",
+			"confirmTitle": "Activarea contului"
 		},
 		"form": {
 			"showPassword": "Afișați parola",
@@ -1164,6 +1165,15 @@
 			"title": "Dreptul de retragere și returnarea produselor",
 			"body": "Cum vă puteți retrage din această comandă sau returna produse aflați pe pagina despre retragere și returnări.",
 			"cta": "Retragere și returnări"
+		},
+		"confirm": {
+			"pending": "Vă activăm contul…",
+			"successTitle": "Contul este activat",
+			"successBody": "Vă mulțumim, adresa de e-mail este confirmată. Acum vă puteți autentifica.",
+			"invalidTitle": "Linkul nu este valid",
+			"invalidBody": "Linkul de activare nu este valid sau a expirat. Încercați să vă autentificați. Dacă contul tot nu este activ, scrieți-ne și vă ajutăm cu plăcere.",
+			"errorTitle": "Contul nu a putut fi activat",
+			"errorBody": "Ceva nu a funcționat. Deschideți din nou linkul din e-mail peste câteva momente."
 		}
 	},
 	"contact": {

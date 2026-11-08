@@ -1041,7 +1041,8 @@
 			"signInDescription": "Accedi al tuo account per vedere i tuoi ordini e gli indirizzi salvati.",
 			"signUpTitle": "Crea un account",
 			"signUpDescription": "Crea un account e ritrova indirizzi e ordini in un unico posto.",
-			"accountTitle": "Il mio account"
+			"accountTitle": "Il mio account",
+			"confirmTitle": "Attivazione account"
 		},
 		"form": {
 			"showPassword": "Mostra password",
@@ -1164,6 +1165,15 @@
 			"title": "Diritto di recesso e restituzione",
 			"body": "Per sapere come recedere da questo ordine o restituire articoli, consulta la pagina su recesso e resi.",
 			"cta": "Recesso e resi"
+		},
+		"confirm": {
+			"pending": "Stiamo attivando il tuo account…",
+			"successTitle": "Il tuo account è attivo",
+			"successBody": "Grazie, il tuo indirizzo e-mail è confermato. Ora puoi accedere.",
+			"invalidTitle": "Il link non è valido",
+			"invalidBody": "Il link di attivazione non è valido o è scaduto. Prova ad accedere. Se l’account non è ancora attivo, scrivici e saremo lieti di aiutarti.",
+			"errorTitle": "Non è stato possibile attivare l’account",
+			"errorBody": "Si è verificato un problema. Riapri tra poco il link ricevuto via e-mail."
 		}
 	},
 	"contact": {

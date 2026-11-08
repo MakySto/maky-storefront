@@ -1041,7 +1041,8 @@
 			"signInDescription": "Inicia sesión en tu cuenta para ver tus pedidos y direcciones guardadas.",
 			"signUpTitle": "Crear una cuenta",
 			"signUpDescription": "Crea una cuenta y ten tus direcciones y pedidos en un solo lugar.",
-			"accountTitle": "Mi cuenta"
+			"accountTitle": "Mi cuenta",
+			"confirmTitle": "Activación de la cuenta"
 		},
 		"form": {
 			"showPassword": "Mostrar contraseña",
@@ -1164,6 +1165,15 @@
 			"title": "Derecho de desistimiento y devolución",
 			"body": "Consulta cómo desistir de este pedido o devolver artículos en la página de desistimiento y devoluciones.",
 			"cta": "Desistimiento y devoluciones"
+		},
+		"confirm": {
+			"pending": "Estamos activando tu cuenta…",
+			"successTitle": "Tu cuenta está activada",
+			"successBody": "Gracias, tu dirección de correo electrónico está confirmada. Ya puedes iniciar sesión.",
+			"invalidTitle": "El enlace no es válido",
+			"invalidBody": "El enlace de activación no es válido o ha caducado. Intenta iniciar sesión. Si tu cuenta sigue sin estar activa, escríbenos y te ayudaremos encantados.",
+			"errorTitle": "No se ha podido activar la cuenta",
+			"errorBody": "Algo ha fallado. Vuelve a abrir el enlace del correo dentro de un momento."
 		}
 	},
 	"contact": {

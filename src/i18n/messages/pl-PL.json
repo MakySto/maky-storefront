@@ -1041,7 +1041,8 @@
 			"signInDescription": "Zaloguj się na swoje konto, aby zobaczyć zamówienia i zapisane adresy.",
 			"signUpTitle": "Rejestracja",
 			"signUpDescription": "Załóż konto i miej adresy i zamówienia w jednym miejscu.",
-			"accountTitle": "Moje konto"
+			"accountTitle": "Moje konto",
+			"confirmTitle": "Aktywacja konta"
 		},
 		"form": {
 			"showPassword": "Pokaż hasło",
@@ -1164,6 +1165,15 @@
 			"title": "Odstąpienie od umowy i zwrot towaru",
 			"body": "Jak odstąpić od tego zamówienia lub zwrócić towar, dowiesz się na stronie o odstąpieniu od umowy i zwrotach.",
 			"cta": "Odstąpienie i zwroty"
+		},
+		"confirm": {
+			"pending": "Aktywujemy Twoje konto…",
+			"successTitle": "Konto zostało aktywowane",
+			"successBody": "Dziękujemy, Twój adres e-mail został potwierdzony. Możesz się teraz zalogować.",
+			"invalidTitle": "Link jest nieprawidłowy",
+			"invalidBody": "Link aktywacyjny jest nieprawidłowy lub wygasł. Spróbuj się zalogować. Jeśli konto nadal nie jest aktywne, napisz do nas, chętnie pomożemy.",
+			"errorTitle": "Nie udało się aktywować konta",
+			"errorBody": "Coś poszło nie tak. Spróbuj za chwilę ponownie otworzyć link z wiadomości e-mail."
 		}
 	},
 	"contact": {
