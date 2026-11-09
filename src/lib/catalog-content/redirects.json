@@ -1,10 +1,8 @@
 {
 	"release": "20260915.2+20261108.2",
-	"source": "CFM_CONTENT_DELIVERY_20260915_RELEASE4.md (1121 Legacy Kombi BP -> BH, 1348 H-1 Van TQ -> A1, with CatalogPageUrlHistory); ES root: CFM_CONTENT_DELIVERY_20260913_H1_REEXPORT.md; 2026-10-18 merged generations: CFM45_odpoved_20261018.md point 2 (12 pages x 12 markets = 144 pairs, the page itself stays in the export as retired); 2026-10-22 merged Nordrive generations: CFM message of 2026-10-22 point 4 (8 pages x 12 markets = 96 pairs, stranky.tsv sha256 bdcebd65..., the page itself stays in the export as retired until M confirms the 301); 2026-10-30 merged Nordrive generations: CFM message of 2026-10-30 (Roky aut) (Fiat Sedici 2006 and Peugeot 806 1994-2002 x 12 markets = 24 pairs, 301-presmerovanie-cesty-z26-20261022.tsv sha256 c12ed43d..., map of retired ids 4 sha256 e7a7c96a..., the page itself stays in the export as retired until M confirms the 301); 2026-11-08: the model page /volkswagen/up (CFM page 616) and the generation page /nissan/navara-pick-up/d40 (CFM page 984) leave the 2026-10-18 and 2026-10-22 batches in every language, 10 x 2 = 20 rows, because CFM pointed both pages at the new nodes (model 8290, generation 13792) and published them again in content release revision 72 (the 301 now hid two live pages and their tiles and sitemap rows); /volkswagen/up/up stays retired; 2026-11-08 content release 3 (manifest 46) with dataset 3.0.0-full-20261107.1: the six vehicle pages the release retired into model pages (retired id -> the successor model's page), in every language",
+	"source": "CFM_CONTENT_DELIVERY_20260915_RELEASE4.md (1121 Legacy Kombi BP -> BH, 1348 H-1 Van TQ -> A1, with CatalogPageUrlHistory); ES root: CFM_CONTENT_DELIVERY_20260913_H1_REEXPORT.md; 2026-10-18 merged generations: CFM45_odpoved_20261018.md point 2 (12 pages x 12 markets = 144 pairs, the page itself stays in the export as retired); 2026-10-22 merged Nordrive generations: CFM message of 2026-10-22 point 4 (8 pages x 12 markets = 96 pairs, stranky.tsv sha256 bdcebd65..., the page itself stays in the export as retired until M confirms the 301); 2026-10-30 merged Nordrive generations: CFM message of 2026-10-30 (Roky aut) (Fiat Sedici 2006 and Peugeot 806 1994-2002 x 12 markets = 24 pairs, 301-presmerovanie-cesty-z26-20261022.tsv sha256 c12ed43d..., map of retired ids 4 sha256 e7a7c96a..., the page itself stays in the export as retired until M confirms the 301); 2026-11-08: the model page /volkswagen/up (CFM page 616) and the generation page /nissan/navara-pick-up/d40 (CFM page 984) leave the 2026-10-18 and 2026-10-22 batches in every language, 10 x 2 = 20 rows, because CFM pointed both pages at the new nodes (model 8290, generation 13792) and published them again in content release revision 72 (the 301 now hid two live pages and their tiles and sitemap rows); /volkswagen/up/up stays retired; 2026-11-08 content release 3 (manifest 46) with dataset 3.0.0-full-20261107.1: the six vehicle pages the release retired into model pages (retired id -> the successor model's page), in every language; 2026-11-08 (second change): the generation pages /subaru/legacy-kombi/bp (CFM page 1121, node 13441, 14 products, 2003-2009) and /hyundai/h-1-van/tq (CFM page 1348, node 14356, 4 products, 2008-2021) leave the RELEASE-4 rows in every language, 40 rows, 20 for each page (the Slovak spelling under a foreign market and the localized one), because both pages are published, indexable and carry Slovak text in content release revision 72, and both generations are nodes of dataset 3.0.0-full-20261107.1 with their own years, so the 301 hid two live pages, their tiles and their sitemap rows (CFM server read, 2026-11-08 17:55 UTC: no CatalogPageUrlHistory row leads from BP to BH or from TQ to A1); BH and A1 stay ordinary pages",
 	"exact": {
 		"sk": {
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
 			"/stresne-nosice/renault/twingo/ii-open-air": "/stresne-nosice/renault/twingo/iii",
 			"/stresne-nosice/ford/tourneo-connect/gran-mk2-facelift": "/stresne-nosice/ford/tourneo-connect/v408",
 			"/stresne-nosice/dr-automobiles/dr-70/dr-70": "/stresne-nosice/dr-automobiles/dr-70/dr-70-2024",
@@ -33,10 +31,6 @@
 			"/stresne-nosice/ford/mondeo-kombi/1993-2007": "/stresne-nosice/ford/mondeo-kombi"
 		},
 		"cs": {
-			"/stresni-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/stresni-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
 			"/stresni-nosice/renault/twingo/ii-open-air": "/stresni-nosice/renault/twingo/iii",
 			"/stresni-nosice/ford/tourneo-connect/gran-mk2-facelift": "/stresni-nosice/ford/tourneo-connect/v408",
 			"/stresni-nosice/dr-automobiles/dr-70/dr-70": "/stresni-nosice/dr-automobiles/dr-70/dr-70-2024",
@@ -65,10 +59,6 @@
 			"/stresni-nosice/ford/mondeo-kombi/1993-2007": "/stresni-nosice/ford/mondeo-kombi"
 		},
 		"en": {
-			"/roof-racks/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/roof-racks/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
 			"/roof-racks/renault/twingo/ii-open-air": "/roof-racks/renault/twingo/iii",
 			"/roof-racks/ford/tourneo-connect/gran-mk2-facelift": "/roof-racks/ford/tourneo-connect/v408",
 			"/roof-racks/dr-automobiles/dr-70/dr-70": "/roof-racks/dr-automobiles/dr-70/dr-70-2024",
@@ -97,10 +87,6 @@
 			"/roof-racks/ford/mondeo-kombi/1993-2007": "/roof-racks/ford/mondeo-kombi"
 		},
 		"de": {
-			"/dachtraeger/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/dachtraeger/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
 			"/dachtraeger/renault/twingo/ii-open-air": "/dachtraeger/renault/twingo/iii",
 			"/dachtraeger/ford/tourneo-connect/gran-mk2-facelift": "/dachtraeger/ford/tourneo-connect/v408",
 			"/dachtraeger/dr-automobiles/dr-70/dr-70": "/dachtraeger/dr-automobiles/dr-70/dr-70-2024",
@@ -129,10 +115,6 @@
 			"/dachtraeger/ford/mondeo-kombi/1993-2007": "/dachtraeger/ford/mondeo-kombi"
 		},
 		"pl": {
-			"/bagazniki-dachowe/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/bagazniki-dachowe/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
 			"/bagazniki-dachowe/renault/twingo/ii-open-air": "/bagazniki-dachowe/renault/twingo/iii",
 			"/bagazniki-dachowe/ford/tourneo-connect/gran-mk2-facelift": "/bagazniki-dachowe/ford/tourneo-connect/v408",
 			"/bagazniki-dachowe/dr-automobiles/dr-70/dr-70": "/bagazniki-dachowe/dr-automobiles/dr-70/dr-70-2024",
@@ -161,10 +143,6 @@
 			"/bagazniki-dachowe/ford/mondeo-kombi/1993-2007": "/bagazniki-dachowe/ford/mondeo-kombi"
 		},
 		"hu": {
-			"/tetocsomagtartok/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/tetocsomagtartok/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
 			"/tetocsomagtartok/renault/twingo/ii-open-air": "/tetocsomagtartok/renault/twingo/iii",
 			"/tetocsomagtartok/ford/tourneo-connect/gran-mk2-facelift": "/tetocsomagtartok/ford/tourneo-connect/v408",
 			"/tetocsomagtartok/dr-automobiles/dr-70/dr-70": "/tetocsomagtartok/dr-automobiles/dr-70/dr-70-2024",
@@ -193,10 +171,6 @@
 			"/tetocsomagtartok/ford/mondeo-kombi/1993-2007": "/tetocsomagtartok/ford/mondeo-kombi"
 		},
 		"ro": {
-			"/bare-transversale/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/bare-transversale/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
 			"/bare-transversale/renault/twingo/ii-open-air": "/bare-transversale/renault/twingo/iii",
 			"/bare-transversale/ford/tourneo-connect/gran-mk2-facelift": "/bare-transversale/ford/tourneo-connect/v408",
 			"/bare-transversale/dr-automobiles/dr-70/dr-70": "/bare-transversale/dr-automobiles/dr-70/dr-70-2024",
@@ -225,10 +199,6 @@
 			"/bare-transversale/ford/mondeo-kombi/1993-2007": "/bare-transversale/ford/mondeo-kombi"
 		},
 		"fr": {
-			"/barres-de-toit/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/barres-de-toit/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
 			"/barres-de-toit/renault/twingo/ii-open-air": "/barres-de-toit/renault/twingo/iii",
 			"/barres-de-toit/ford/tourneo-connect/gran-mk2-facelift": "/barres-de-toit/ford/tourneo-connect/v408",
 			"/barres-de-toit/dr-automobiles/dr-70/dr-70": "/barres-de-toit/dr-automobiles/dr-70/dr-70-2024",
@@ -257,10 +227,6 @@
 			"/barres-de-toit/ford/mondeo-kombi/1993-2007": "/barres-de-toit/ford/mondeo-kombi"
 		},
 		"it": {
-			"/barre-portatutto/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/barre-portatutto/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
 			"/barre-portatutto/renault/twingo/ii-open-air": "/barre-portatutto/renault/twingo/iii",
 			"/barre-portatutto/ford/tourneo-connect/gran-mk2-facelift": "/barre-portatutto/ford/tourneo-connect/v408",
 			"/barre-portatutto/dr-automobiles/dr-70/dr-70": "/barre-portatutto/dr-automobiles/dr-70/dr-70-2024",
@@ -289,12 +255,6 @@
 			"/barre-portatutto/ford/mondeo-kombi/1993-2007": "/barre-portatutto/ford/mondeo-kombi"
 		},
 		"es": {
-			"/barras-de-techo/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/stresne-nosice/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/bacas-de-techo/subaru/legacy-kombi/bp": "/stresne-nosice/subaru/legacy-kombi/bh",
-			"/barras-de-techo/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
-			"/stresne-nosice/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
-			"/bacas-de-techo/hyundai/h-1-van/tq": "/stresne-nosice/hyundai/h-1-van/a1",
 			"/barras-de-techo/renault/twingo/ii-open-air": "/barras-de-techo/renault/twingo/iii",
 			"/barras-de-techo/ford/tourneo-connect/gran-mk2-facelift": "/barras-de-techo/ford/tourneo-connect/v408",
 			"/barras-de-techo/dr-automobiles/dr-70/dr-70": "/barras-de-techo/dr-automobiles/dr-70/dr-70-2024",

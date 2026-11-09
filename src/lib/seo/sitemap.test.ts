@@ -34,6 +34,7 @@ import sitemap, {
 	sitemapShards,
 } from "./sitemap";
 import { REVERSE_MAP } from "@/lib/channel-map";
+import { CATALOG_REDIRECTS } from "@/lib/catalog-content/redirects";
 import { resetLiveCategoriesForTests } from "@/lib/live-categories";
 import { prewarmProductWalks } from "./product-walk";
 import {
@@ -751,35 +752,59 @@ describe("the vehicle pages", () => {
 		entries.map((e) => e.url).filter((u) => u.includes("/stresne-nosice/"));
 
 	/**
-	 * 2026-10-01: CFM's Thule data brought the Subaru Legacy BP generation back into the fitment
-	 * tree — a node with a URL and a published page — while the storefront still answers that URL
-	 * with a 301 to BH (RELEASE-4). The tree is built from fitment, so the node is there and the
-	 * page is indexable; the sitemap must not advertise an address that redirects.
+	 * A node can be live in the fitment tree while the storefront still answers its URL with a 301
+	 * (2026-10-01: CFM's Thule data brought the Subaru Legacy BP generation back into the tree while
+	 * RELEASE-4 still sent its address to BH). The tree is built from fitment, so the node is there
+	 * and the page is indexable; the sitemap must not advertise an address that redirects.
+	 *
+	 * Any row of the table shows it, so the first one is taken: a release that publishes that page
+	 * again changes the table and not this test (BP went that way on 2026-11-08, see below).
 	 */
 	it("never advertises a page that is retired and redirects", async () => {
+		const [retired, replacement] = Object.entries(CATALOG_REDIRECTS.exact.sk ?? {})[0] ?? [];
+		expect(retired, "the Slovak table needs at least one row").toBeDefined();
 		serve((after) => productPage(after, 0));
 		loadCatalogView.mockResolvedValue(
 			catalogView("sk", [
 				...DELIVERY,
-				{
-					urlPath: "/stresne-nosice/subaru/legacy-kombi/bp",
-					state: "published",
-					indexable: true,
-					hasEditorialText: true,
-				},
-				{
-					urlPath: "/stresne-nosice/subaru/legacy-kombi/bh",
-					state: "published",
-					indexable: true,
-					hasEditorialText: true,
-				},
+				{ urlPath: retired!, state: "published", indexable: true, hasEditorialText: true },
+				{ urlPath: replacement!, state: "published", indexable: true, hasEditorialText: true },
 			]),
 		);
 
 		const urls = vehicleUrls(await sitemap());
-		expect(urls).not.toContain(`${BASE}/sk/stresne-nosice/subaru/legacy-kombi/bp`);
+		expect(urls).not.toContain(`${BASE}/sk${retired}`);
 		// Its replacement is an ordinary page and stays.
-		expect(urls).toContain(`${BASE}/sk/stresne-nosice/subaru/legacy-kombi/bh`);
+		expect(urls).toContain(`${BASE}/sk${replacement}`);
+	});
+
+	/**
+	 * 2026-11-08: Legacy Kombi BP and H-1 Van TQ, which RELEASE-4 had sent to BH and A1, are published
+	 * in CFM with text and are nodes of the live dataset again, so their rows left the table. They are
+	 * ordinary pages, listed next to the two they were once sent to.
+	 */
+	it("advertises the Legacy Kombi BP and H-1 Van TQ pages, which the table no longer moves", async () => {
+		const paths = [
+			"/stresne-nosice/subaru/legacy-kombi/bp",
+			"/stresne-nosice/subaru/legacy-kombi/bh",
+			"/stresne-nosice/hyundai/h-1-van/tq",
+			"/stresne-nosice/hyundai/h-1-van/a1",
+		];
+		serve((after) => productPage(after, 0));
+		loadCatalogView.mockResolvedValue(
+			catalogView("sk", [
+				...DELIVERY,
+				...paths.map((urlPath) => ({
+					urlPath,
+					state: "published" as const,
+					indexable: true,
+					hasEditorialText: true,
+				})),
+			]),
+		);
+
+		const urls = vehicleUrls(await sitemap());
+		for (const path of paths) expect(urls, path).toContain(`${BASE}/sk${path}`);
 	});
 
 	it("lists only pages that are published, indexable AND have text", async () => {
