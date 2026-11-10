@@ -18,6 +18,7 @@ import {
 	visibilityOf,
 } from "@/lib/catalog-content/publication";
 import { catalogRedirectTarget } from "@/lib/catalog-content/redirects";
+import { hasOpenablePage } from "@/lib/catalog-content/openable";
 import {
 	catalogLanguageForChannel,
 	catalogLanguageForMarket,
@@ -313,13 +314,16 @@ async function VehiclePage({ params }: Params) {
 		// link would land somewhere the words do not describe, so the words stay and the anchor goes.
 		if (catalogRedirectTarget(market, urlPath)) return false;
 		const target = view.tree.byUrlPath.get(urlPath);
-		// Unknown paths are left alone: this predicate exists to catch pages that are
-		// known AND withheld, not to police every href in the copy.
-		return !target?.page || isPubliclyVisible(target.page);
+		// Unknown paths are left alone: this predicate exists to catch vehicles that are
+		// known and have no page to open (withheld, or no text in this language), not to
+		// police every href in the copy.
+		return !target || hasOpenablePage(target);
 	};
 
-	// Tiles for children a visitor can actually open. A tile onto a not-found body is a
-	// worse experience than one fewer tile.
+	// The children this page reasons about. The tiles are narrowed further, to the children that open
+	// (`hasOpenablePage`): a vehicle CFM wrote no text for in this language answers 404, and a tile onto a
+	// 404 is a worse experience than one fewer tile. The single-generation offer below still sees all of
+	// them, so a model whose only generation has no page keeps its listing.
 	const children = (view.tree.childrenOf.get(node.vehicleId) ?? []).filter(
 		// Not a page that redirects either: its tile would be a hop to somewhere the next tile
 		// already points, and the page it names no longer renders.
@@ -357,7 +361,7 @@ async function VehiclePage({ params }: Params) {
 			// An unpublished ancestor keeps its place in the trail and loses its link:
 			// dropping it would misdescribe where this page sits, and `BreadcrumbItem`
 			// already renders a hrefless crumb as plain text with no JSON-LD `item`.
-			...(ancestor.page && !isPubliclyVisible(ancestor.page) ? {} : { href: tileHref(channel, ancestor) }),
+			...(hasOpenablePage(ancestor) ? { href: tileHref(channel, ancestor) } : {}),
 		})),
 		{ label: node.name },
 	];
@@ -390,7 +394,7 @@ async function VehiclePage({ params }: Params) {
 					<ContentBlocks blocks={top} market={market} id="top" linkable={isLinkable} />
 				</div>
 
-				<ChildTiles channel={channel} nodes={children} />
+				<ChildTiles channel={channel} nodes={children.filter(hasOpenablePage)} />
 			</div>
 
 			{/* Products only where the page names ONE generation: the first level at which the fitment
