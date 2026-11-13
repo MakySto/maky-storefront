@@ -1173,6 +1173,17 @@
 			"title": "Odstoupení od smlouvy",
 			"body": "Jak od této objednávky odstoupit, najdete na stránce o odstoupení od smlouvy.",
 			"cta": "Odstoupit od smlouvy"
+		},
+		"confirmAccount": {
+			"metaTitle": "Aktivace účtu",
+			"pendingTitle": "Aktivujeme váš účet…",
+			"successTitle": "Účet je aktivován",
+			"successText": "Děkujeme za potvrzení e-mailové adresy. Nyní se můžete přihlásit heslem, které jste si zvolili při registraci.",
+			"signIn": "Přihlásit se",
+			"failedTitle": "Účet se nepodařilo aktivovat",
+			"linkInvalid": "Tento odkaz již není platný. Pokud jste účet již aktivovali, jednoduše se přihlaste.",
+			"failed": "Účet se nepodařilo aktivovat. Zkuste to prosím později nebo nám napište na info@maky.store.",
+			"backToSignIn": "Zpět na přihlášení"
 		}
 	},
 	"contact": {

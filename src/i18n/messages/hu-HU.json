@@ -1173,6 +1173,17 @@
 			"title": "Elállási jog és visszaküldés",
 			"body": "Arról, hogyan állhat el ettől a rendeléstől vagy küldhet vissza termékeket, az elállásról és visszaküldésről szóló oldalon tájékozódhat.",
 			"cta": "Elállás és visszaküldés"
+		},
+		"confirmAccount": {
+			"metaTitle": "Fiók aktiválása",
+			"pendingTitle": "Aktiváljuk a fiókját…",
+			"successTitle": "A fiókja aktiválva",
+			"successText": "Köszönjük, hogy megerősítette e-mail-címét. Most már bejelentkezhet a regisztrációkor választott jelszavával.",
+			"signIn": "Bejelentkezés",
+			"failedTitle": "Nem sikerült aktiválni a fiókot",
+			"linkInvalid": "Ez a link már nem érvényes. Ha már aktiválta a fiókját, egyszerűen jelentkezzen be.",
+			"failed": "Nem sikerült aktiválni a fiókot. Kérjük, próbálja újra később, vagy írjon nekünk az info@maky.store címre.",
+			"backToSignIn": "Vissza a bejelentkezéshez"
 		}
 	},
 	"contact": {

@@ -1173,6 +1173,17 @@
 			"title": "Widerrufsrecht",
 			"body": "Wie Sie diese Bestellung widerrufen können, erfahren Sie auf der Seite zum Widerrufsrecht.",
 			"cta": "Zum Widerrufsrecht"
+		},
+		"confirmAccount": {
+			"metaTitle": "Konto aktivieren",
+			"pendingTitle": "Wir aktivieren Ihr Konto…",
+			"successTitle": "Ihr Konto ist aktiviert",
+			"successText": "Vielen Dank für die Bestätigung Ihrer E-Mail-Adresse. Sie können sich jetzt mit dem Passwort anmelden, das Sie bei der Registrierung gewählt haben.",
+			"signIn": "Anmelden",
+			"failedTitle": "Das Konto konnte nicht aktiviert werden",
+			"linkInvalid": "Dieser Link ist nicht mehr gültig. Wenn Sie Ihr Konto bereits aktiviert haben, melden Sie sich einfach an.",
+			"failed": "Das Konto konnte nicht aktiviert werden. Bitte versuchen Sie es später erneut oder schreiben Sie uns an info@maky.store.",
+			"backToSignIn": "Zurück zur Anmeldung"
 		}
 	},
 	"contact": {
