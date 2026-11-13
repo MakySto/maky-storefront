@@ -1173,6 +1173,17 @@
 			"title": "Odstąpienie od umowy i zwrot towaru",
 			"body": "Jak odstąpić od tego zamówienia lub zwrócić towar, dowiesz się na stronie o odstąpieniu od umowy i zwrotach.",
 			"cta": "Odstąpienie i zwroty"
+		},
+		"confirmAccount": {
+			"metaTitle": "Aktywacja konta",
+			"pendingTitle": "Aktywujemy Państwa konto…",
+			"successTitle": "Konto zostało aktywowane",
+			"successText": "Dziękujemy za potwierdzenie adresu e-mail. Mogą się Państwo teraz zalogować hasłem wybranym podczas rejestracji.",
+			"signIn": "Zaloguj się",
+			"failedTitle": "Nie udało się aktywować konta",
+			"linkInvalid": "Ten link jest już nieaktualny. Jeśli konto zostało już aktywowane, wystarczy się zalogować.",
+			"failed": "Nie udało się aktywować konta. Prosimy spróbować później lub napisać do nas na info@maky.store.",
+			"backToSignIn": "Powrót do logowania"
 		}
 	},
 	"contact": {

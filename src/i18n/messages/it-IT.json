@@ -1173,6 +1173,17 @@
 			"title": "Diritto di recesso e restituzione",
 			"body": "Per sapere come recedere da questo ordine o restituire articoli, consulta la pagina su recesso e resi.",
 			"cta": "Recesso e resi"
+		},
+		"confirmAccount": {
+			"metaTitle": "Attivazione account",
+			"pendingTitle": "Stiamo attivando il Suo account…",
+			"successTitle": "Il Suo account è attivo",
+			"successText": "Grazie per aver confermato il Suo indirizzo e-mail. Ora può accedere con la password scelta al momento della registrazione.",
+			"signIn": "Accedi",
+			"failedTitle": "Non è stato possibile attivare l'account",
+			"linkInvalid": "Questo link non è più valido. Se ha già attivato l'account, acceda semplicemente.",
+			"failed": "Non è stato possibile attivare l'account. La preghiamo di riprovare più tardi o di scriverci a info@maky.store.",
+			"backToSignIn": "Torna all'accesso"
 		}
 	},
 	"contact": {

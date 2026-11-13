@@ -17,6 +17,7 @@ export type AccountAction =
 	| "signUp"
 	| "forgotPassword"
 	| "setPassword"
+	| "confirmAccount"
 	| "passwordChange"
 	| "profile"
 	| "address"
@@ -28,6 +29,7 @@ const FALLBACK: Readonly<Record<AccountAction, string>> = {
 	signUp: "account.errors.signUpFailed",
 	forgotPassword: "checkout.contactSection.resetLinkSendFailed",
 	setPassword: "checkout.contactSection.resetPassword.failed",
+	confirmAccount: "account.confirmAccount.failed",
 	passwordChange: "account.errors.passwordChangeFailed",
 	profile: "account.errors.profileSaveFailed",
 	address: "account.errors.addressSaveFailed",
@@ -65,7 +67,10 @@ function byAction(action: AccountAction, code: string): string | undefined {
 		case "JWT_INVALID_TOKEN":
 		case "JWT_SIGNATURE_EXPIRED":
 			// Saleor rejects a used or expired reset link as INVALID on the `token` field.
-			return action === "setPassword" ? "checkout.contactSection.resetPassword.linkInvalid" : undefined;
+			if (action === "setPassword") return "checkout.contactSection.resetPassword.linkInvalid";
+			// Used, expired or already confirmed: Saleor rejects the activation token the same way.
+			if (action === "confirmAccount") return "account.confirmAccount.linkInvalid";
+			return undefined;
 		default:
 			return undefined;
 	}

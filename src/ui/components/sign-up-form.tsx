@@ -72,7 +72,9 @@ export function SignUpForm({ legal }: Props) {
 					firstName,
 					lastName,
 					channel: params.channel,
-					redirectUrl: `${window.location.origin}${marketHref(params.channel, "/login")}`,
+					// Saleor appends ?email=…&token=… to this URL in the activation e-mail. It must not be
+					// /login, which reads those two as a password reset (fixed 2026-11-08).
+					redirectUrl: `${window.location.origin}${marketHref(params.channel, "/login/confirm")}`,
 				}),
 			});
 

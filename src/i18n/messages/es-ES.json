@@ -1173,6 +1173,17 @@
 			"title": "Derecho de desistimiento y devolución",
 			"body": "Consulta cómo desistir de este pedido o devolver artículos en la página de desistimiento y devoluciones.",
 			"cta": "Desistimiento y devoluciones"
+		},
+		"confirmAccount": {
+			"metaTitle": "Activar cuenta",
+			"pendingTitle": "Estamos activando su cuenta…",
+			"successTitle": "Su cuenta está activada",
+			"successText": "Gracias por confirmar su dirección de correo electrónico. Ya puede iniciar sesión con la contraseña que eligió al registrarse.",
+			"signIn": "Iniciar sesión",
+			"failedTitle": "No se ha podido activar la cuenta",
+			"linkInvalid": "Este enlace ya no es válido. Si ya ha activado su cuenta, simplemente inicie sesión.",
+			"failed": "No se ha podido activar la cuenta. Inténtelo de nuevo más tarde o escríbanos a info@maky.store.",
+			"backToSignIn": "Volver a iniciar sesión"
 		}
 	},
 	"contact": {

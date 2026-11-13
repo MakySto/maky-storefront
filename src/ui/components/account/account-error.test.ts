@@ -8,6 +8,7 @@ const ACTIONS: AccountAction[] = [
 	"signUp",
 	"forgotPassword",
 	"setPassword",
+	"confirmAccount",
 	"passwordChange",
 	"profile",
 	"address",
@@ -59,6 +60,11 @@ describe("accountErrorKey", () => {
 			"checkout.contactSection.resetPassword.linkInvalid",
 		);
 		expect(accountErrorKey("address", "INVALID")).toBe("account.errors.addressSaveFailed");
+	});
+
+	it("reads a used, expired or already used activation link as such", () => {
+		expect(accountErrorKey("confirmAccount", "INVALID")).toBe("account.confirmAccount.linkInvalid");
+		expect(accountErrorKey("confirmAccount", "NETWORK")).toBe("account.confirmAccount.failed");
 	});
 
 	it("never falls through to Saleor's own message: an unknown code gets the form's text", () => {
