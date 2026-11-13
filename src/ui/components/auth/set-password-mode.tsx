@@ -11,6 +11,33 @@ import { Label } from "@/ui/components/ui/label";
 import { marketHref } from "@/lib/channel-map";
 import { accountErrorKey } from "@/ui/components/account/account-error";
 
+/**
+ * Answers of the password form that can also mean "this is an account-activation link". Until
+ * 2026-11-13 sign-up sent the activation e-mail to /login, which opens this form, so e-mails sent
+ * before then still do.
+ */
+const MAYBE_ACTIVATION_LINK_CODES = new Set([
+	"INVALID",
+	"INVALID_TOKEN",
+	"JWT_INVALID_TOKEN",
+	"ACCOUNT_NOT_CONFIRMED",
+	"INACTIVE",
+]);
+
+/** True when Saleor's confirmAccount takes the e-mail and token of the link (see /api/auth/confirm-account). */
+async function confirmsAccount(email: string, token: string): Promise<boolean> {
+	try {
+		const response = await fetch("/api/auth/confirm-account", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ email, token }),
+		});
+		return ((await response.json()) as { success?: boolean }).success === true;
+	} catch {
+		return false;
+	}
+}
+
 type Props = {
 	email: string;
 	token: string;
@@ -20,6 +47,7 @@ export function SetPasswordMode({ email, token }: Props) {
 	const t = useTranslations("account");
 	// The checkout's reset form already has these texts in every language.
 	const tReset = useTranslations("checkout.contactSection.resetPassword");
+	const tConfirm = useTranslations("account.confirmAccount");
 	const tr = useTranslations();
 	const router = useRouter();
 	const params = useParams<{ channel: string }>();
@@ -31,6 +59,7 @@ export function SetPasswordMode({ email, token }: Props) {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState(false);
+	const [activated, setActivated] = useState(false);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -69,6 +98,11 @@ export function SetPasswordMode({ email, token }: Props) {
 				const err = data.errors[0];
 				// Saleor's message is only read to recognise a dead link that came back without a code.
 				const code = err.code ?? (/token/i.test(err.message ?? "") ? "INVALID_TOKEN" : null);
+				// A token Saleor accepts for confirmAccount proves the e-mail address just as well.
+				if (code && MAYBE_ACTIVATION_LINK_CODES.has(code) && (await confirmsAccount(email, token))) {
+					setActivated(true);
+					return;
+				}
 				setError(tr(accountErrorKey("setPassword", code)));
 				return;
 			}
@@ -87,6 +121,28 @@ export function SetPasswordMode({ email, token }: Props) {
 			setIsSubmitting(false);
 		}
 	};
+
+	if (activated) {
+		return (
+			<div className="mx-auto my-16 w-full max-w-md">
+				<div className="border-border bg-card rounded-lg border p-8 shadow-sm">
+					<div className="flex flex-col items-center gap-4 text-center" aria-live="polite">
+						<div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+							<CheckCircle className="h-8 w-8 text-green-600" aria-hidden="true" />
+						</div>
+						<h1 className="text-2xl font-semibold">{tConfirm("successTitle")}</h1>
+						<p className="text-muted-foreground">{tConfirm("successText")}</p>
+						<Link
+							href={marketHref(params.channel, "/login")}
+							className="bg-primary text-primary-foreground hover:bg-primary/90 mt-2 inline-flex h-12 w-full items-center justify-center rounded-md px-6 font-semibold"
+						>
+							{tConfirm("signIn")}
+						</Link>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	if (success) {
 		return (
