@@ -221,7 +221,9 @@ async function presence() {
 	return getCategoryMarketPresence(SLUG);
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+	// What the process keeps between reads is the module's own state; each case starts without it.
+	(await import("./category-presence")).__forgetCategoryPresence();
 	vi.stubEnv("NEXT_PUBLIC_SALEOR_API_URL", "https://api.example.test/graphql/");
 	vi.stubEnv("MAKY_LIVE_MARKETS", MARKETS.join(","));
 	catalogue = [complete()];

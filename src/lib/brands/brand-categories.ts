@@ -2,6 +2,7 @@ import { cacheLife, cacheTag } from "next/cache";
 
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { BrandCategoriesDocument, type BrandCategoriesQuery } from "@/gql/graphql";
+import { createKeptRead } from "@/lib/cache/kept-read";
 import { settle, type CachedRead } from "@/lib/cache-fault";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { resolveExactLocaleCategorySummary } from "@/lib/saleor/exact-locale";
@@ -23,7 +24,16 @@ export interface BrandCategory {
 	readonly productCount: number;
 }
 
-const DEADLINE_MS = 4_000;
+/**
+ * A visitor waits this long at most for a market's counts, and only when the process holds none yet. The
+ * read itself is given far longer and goes on after the visitor has left, so the next one finds it:
+ * `pro-user`, the biggest maker, needs more than the 4 s this used to be (24 "deadline exceeded" in the log
+ * of 2026-11-15, 18:57 UTC on) and every one of them was thrown away and asked again (`@/lib/cache/kept-read`).
+ */
+const WAIT_MS = 4_000;
+const LOAD_DEADLINE_MS = 15_000;
+const FRESH_MS = 10 * 60_000;
+const PAUSE_MS = 15_000;
 
 type Node = NonNullable<BrandCategoriesQuery["categories"]>["edges"][number]["node"];
 
@@ -56,7 +66,11 @@ export function brandCategoriesFromNodes(nodes: readonly Node[], locale: string)
 }
 
 /** The read itself. It throws on a fault; `settle` below turns that into a value before the cache keeps it. */
-async function askSaleorForBrandCategories(channel: string, brandSlug: string): Promise<BrandCategory[]> {
+async function askSaleorForBrandCategories(
+	channel: string,
+	brandSlug: string,
+	signal: AbortSignal,
+): Promise<BrandCategory[]> {
 	const locale = getLocaleFromChannel(channel);
 	const result = await executePublicGraphQL(BrandCategoriesDocument, {
 		variables: {
@@ -66,7 +80,7 @@ async function askSaleorForBrandCategories(channel: string, brandSlug: string): 
 		},
 		revalidate: 0,
 		retry: false,
-		signal: AbortSignal.timeout(DEADLINE_MS),
+		signal,
 	});
 	if (!result.ok)
 		throw new Error(`[Brands] categories unavailable for ${brandSlug}: ${result.error.message}`);
@@ -76,13 +90,26 @@ async function askSaleorForBrandCategories(channel: string, brandSlug: string): 
 	);
 }
 
+const keptCategories = createKeptRead<{ channel: string; brandSlug: string }, BrandCategory[]>({
+	name: "brand-categories",
+	freshMs: FRESH_MS,
+	pauseMs: PAUSE_MS,
+	loadDeadlineMs: LOAD_DEADLINE_MS,
+	load: ({ channel, brandSlug }, signal) => askSaleorForBrandCategories(channel, brandSlug, signal),
+});
+
+/** For tests. */
+export function __forgetBrandCategories(): void {
+	keptCategories.forget();
+}
+
 async function readBrandCategories(channel: string, brandSlug: string): Promise<CachedRead<BrandCategory[]>> {
 	"use cache";
 	// The life of the makers' list itself (`catalog.ts`), and its tags: what refreshes the brands refreshes this.
 	cacheLife("hours");
 	cacheTag("brands", `brands:${channel}`);
 
-	return settle(() => askSaleorForBrandCategories(channel, brandSlug));
+	return settle(() => keptCategories.read(`${channel}\u0000${brandSlug}`, { channel, brandSlug }, WAIT_MS));
 }
 
 /**

@@ -1,13 +1,19 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { CategoryNavigationDocument, type CategoryNavigationNodeFragment } from "@/gql/graphql";
+import {
+	CategoryNavigationDocument,
+	ListingProductTypesDocument,
+	type CategoryNavigationQuery,
+	type CategoryNavigationNodeFragment,
+} from "@/gql/graphql";
 import { baseSlugForCategoryId, categoryUrlFor } from "@/config/category-routes";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
-import { answered, faulted, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
+import { createKeptRead } from "@/lib/cache/kept-read";
+import { answered, settle, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
 import { marketHref } from "@/lib/channel-map";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { resolveExactLocaleCategory } from "@/lib/saleor/exact-locale";
-import { getProductTypeGroups } from "./product-groups";
+import { getProductTypeGroups, splitProductTypes } from "./product-groups";
 
 /**
  * Where a category sits in the tree, for its listing: the parent for the breadcrumb, and the
@@ -55,8 +61,76 @@ type NavCategory = NavNode & {
 	children?: { edges: ReadonlyArray<{ node: NavNode }> } | null;
 };
 
-/** The row is secondary to the listing: one attempt with a deadline, never the retry ladder. */
-const NAVIGATION_DEADLINE_MS = 2_000;
+/**
+ * The row is secondary to the listing, so no visitor waits for it longer than this, and only when the
+ * process holds no answer for the category yet (`@/lib/cache/kept-read`). One attempt, never the retry ladder.
+ */
+const WAIT_MS = 2_000;
+/** What one load may take in all: the roof-rack family counts 25 000 products in six places, 1.5 to 1.9 s. */
+const LOAD_DEADLINE_MS = 8_000;
+const FRESH_MS = 60_000;
+const PAUSE_MS = 10_000;
+
+interface NavigationRequest {
+	readonly baseSlug: string;
+	readonly channel: string;
+	/** The accessory product types, or `null` when the split is not known (the row then keeps Saleor's order). */
+	readonly accessoryTypes: readonly string[] | null;
+}
+
+const keptNavigation = createKeptRead<NavigationRequest, CategoryNavigationQuery["category"]>({
+	name: "category-navigation",
+	freshMs: FRESH_MS,
+	pauseMs: PAUSE_MS,
+	loadDeadlineMs: LOAD_DEADLINE_MS,
+	load: async ({ baseSlug, channel, accessoryTypes }, signal) => {
+		const locale = getLocaleFromChannel(channel);
+		const result = await executePublicGraphQL(CategoryNavigationDocument, {
+			variables: {
+				slug: baseSlug,
+				channel,
+				lang: getLocaleConfigByLocale(locale).graphqlLanguageCode,
+				accessoryTypes: accessoryTypes ? [...accessoryTypes] : null,
+				withAccessories: accessoryTypes !== null,
+			},
+			revalidate: 0,
+			retry: false,
+			signal,
+		});
+		if (!result.ok) {
+			// `queueStarved`: the deadline went on waiting for a Saleor slot in this process, not on Saleor.
+			const starved = result.error.queueStarved ? " [queueStarved]" : "";
+			throw new Error(
+				`[Listing] category navigation unavailable for ${baseSlug}: ${result.error.message}${starved}`,
+			);
+		}
+		return result.data.category;
+	},
+});
+
+const navigationKey = (baseSlug: string, channel: string) => `${channel}\u0000${baseSlug}`;
+
+/** For tests. */
+export function __forgetCategoryNavigation(): void {
+	keptNavigation.forget();
+}
+
+/**
+ * Reads the row of one category into the process, waiting for all of it. For the boot warm-up. It asks
+ * for the product types itself (a `"use cache"` reader cannot be called from outside a render) and
+ * resolves to whether the process now holds an answer.
+ */
+export async function prewarmCategoryNavigation(baseSlug: string, channel: string): Promise<boolean> {
+	const types = await executePublicGraphQL(ListingProductTypesDocument, {
+		revalidate: 3600,
+		signal: AbortSignal.timeout(LOAD_DEADLINE_MS),
+	});
+	// Without the split the row would be ordered differently from the one a visit builds, so an answer
+	// read without it is not kept: the warm-up stops here and the first visit loads it.
+	if (!types.ok) return false;
+	const accessoryTypes = splitProductTypes(types.data.productTypes)?.accessories ?? null;
+	return keptNavigation.prewarm(navigationKey(baseSlug, channel), { baseSlug, channel, accessoryTypes });
+}
 
 /**
  * Throws on a fault to the caller, so "no row" is never taken for an answer and the page renders
@@ -72,34 +146,22 @@ async function readCategoryNavigation(
 ): Promise<CachedRead<CategoryNavigation>> {
 	"use cache";
 	const locale = getLocaleFromChannel(channel);
-	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
 	cacheLife(CACHE_PROFILES.categories.cacheProfile);
 	cacheTag(buildTag(CACHE_PROFILES.categories, { channel, locale, slug: baseSlug }));
 
 	// Without the split the sub-categories keep Saleor's order; nothing else depends on it.
 	const groups = await getProductTypeGroups().catch(() => null);
 
-	const result = await executePublicGraphQL(CategoryNavigationDocument, {
-		variables: {
-			slug: baseSlug,
-			channel,
-			lang,
-			accessoryTypes: groups ? [...groups.accessories] : null,
-			withAccessories: groups !== null,
-		},
-		revalidate: 0,
-		retry: false,
-		signal: AbortSignal.timeout(NAVIGATION_DEADLINE_MS),
-	});
-	if (!result.ok) {
-		// `queueStarved`: the deadline went on waiting for a Saleor slot in this process, not on Saleor.
-		const starved = result.error.queueStarved ? " [queueStarved]" : "";
-		return faulted(
-			`[Listing] category navigation unavailable for ${baseSlug}: ${result.error.message}${starved}`,
-		);
-	}
+	const read = await settle(() =>
+		keptNavigation.read(
+			navigationKey(baseSlug, channel),
+			{ baseSlug, channel, accessoryTypes: groups ? groups.accessories : null },
+			WAIT_MS,
+		),
+	);
+	if (!read.ok) return read;
 
-	const category = result.data.category;
+	const category = read.value;
 	// A renamed parent or sibling changes the row as well as this category's own event does.
 	for (const node of relatives(category)) {
 		cacheTag(buildTag(CACHE_PROFILES.categories, { channel, locale, slug: node.slug }));

@@ -3,6 +3,7 @@ import { cache } from "react";
 
 import { getLocaleConfigByLocale } from "@/config/locale";
 import { TypedDocumentString } from "@/gql/graphql";
+import { createKeptRead } from "@/lib/cache/kept-read";
 import { CACHE_PROFILES, applyCacheProfile, buildTag } from "@/lib/cache-manifest";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { executePublicGraphQL, type GraphQLResult } from "@/lib/graphql";
@@ -13,6 +14,7 @@ import {
 	catchUpstreamError,
 	logUpstreamError,
 	upstreamError,
+	upstreamErrorFromRejection,
 	type ResourceOutcome,
 	type UpstreamError,
 } from "@/lib/saleor/resource-outcome";
@@ -67,8 +69,16 @@ import {
  *   product and category events `/api/revalidate` already sends expire it unchanged.
  */
 
-/** How long the category page waits for the other markets' answer before leaving them out. */
+/**
+ * How long the category page waits for the other markets' answer before leaving them out, and only when
+ * the process holds none yet: the read itself is given `LOAD_DEADLINE_MS` and goes on after the page has
+ * left, so the next visit finds it (`@/lib/cache/kept-read`). `stresne-nosice` needs up to 1.7 s, and 90
+ * answers ran out of the 1.5 s on 2026-11-15, each thrown away and asked again by the next visit.
+ */
 export const CATEGORY_PRESENCE_DEADLINE_MS = 1_500;
+const LOAD_DEADLINE_MS = 8_000;
+const FRESH_MS = 60_000;
+const PAUSE_MS = 10_000;
 
 type PresenceTranslation = {
 	name?: string | null;
@@ -172,9 +182,9 @@ function readStockedMarkets(
 async function readPresence(
 	baseSlug: string,
 	markets: readonly string[],
+	// One deadline for both requests: the load is given its time once, not twice.
+	signal: AbortSignal,
 ): Promise<ResourceOutcome<readonly string[]>> {
-	// One deadline for both requests: the page waits for the answer, not for the answer twice.
-	const signal = AbortSignal.timeout(CATEGORY_PRESENCE_DEADLINE_MS);
 	const ask = <Data>(document: string) =>
 		executePublicGraphQL(new TypedDocumentString<Data, { slug: string }>(document), {
 			variables: { slug: baseSlug },
@@ -197,6 +207,50 @@ async function readPresence(
 	);
 }
 
+/** A fault of the load, carrying the outcome the page logs, through the keeper that only knows throws. */
+class PresenceFault extends Error {
+	constructor(readonly outcome: UpstreamError) {
+		super(outcome.message);
+	}
+}
+
+const keptPresence = createKeptRead<
+	{ baseSlug: string; markets: readonly string[] },
+	ResourceOutcome<readonly string[]>
+>({
+	name: "category-presence",
+	freshMs: FRESH_MS,
+	pauseMs: PAUSE_MS,
+	loadDeadlineMs: LOAD_DEADLINE_MS,
+	load: async ({ baseSlug, markets }, signal) => {
+		const outcome = await readPresence(baseSlug, markets, signal);
+		if (outcome.status === "upstream-error") throw new PresenceFault(outcome);
+		return outcome;
+	},
+});
+
+/** For tests. */
+export function __forgetCategoryPresence(): void {
+	keptPresence.forget();
+}
+
+/** The kept answer, or the fault in the shape the page logs it in. Never throws. */
+async function readPresenceKept(
+	baseSlug: string,
+	markets: readonly string[],
+): Promise<ResourceOutcome<readonly string[]>> {
+	try {
+		return await keptPresence.read(
+			`${baseSlug}\u0000${markets.join(",")}`,
+			{ baseSlug, markets },
+			CATEGORY_PRESENCE_DEADLINE_MS,
+		);
+	} catch (error) {
+		if (error instanceof PresenceFault) return error.outcome;
+		return upstreamErrorFromRejection(error);
+	}
+}
+
 async function getCategoryMarketPresenceCached(
 	baseSlug: string,
 	markets: readonly string[],
@@ -215,7 +269,7 @@ async function getCategoryMarketPresenceCached(
 	}
 
 	// A fault is the `upstream-error` outcome, remembered for seconds (`cachedOutcome`), not thrown.
-	return cachedOutcome(() => readPresence(baseSlug, markets));
+	return cachedOutcome(() => readPresenceKept(baseSlug, markets));
 }
 
 /**
