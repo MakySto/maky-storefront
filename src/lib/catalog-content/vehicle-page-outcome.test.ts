@@ -151,3 +151,38 @@ describe("what is not an absence", () => {
 		expect(loadCatalogView).not.toHaveBeenCalled();
 	});
 });
+
+describe("below the snow-chain shelf the address is a tyre size, not a car", () => {
+	it("a size and a rim of the sealed list are found, without the catalogue being read at all", async () => {
+		loadCatalogView.mockResolvedValue({ ready: false, reason: "no snapshot", status: {} });
+		expect(await vehiclePageOutcome("sk-eur", "snehove-retaze", ["205-60-r16"])).toEqual({ status: "found" });
+		expect(await vehiclePageOutcome("sk-eur", "snehove-retaze", ["r16"])).toEqual({ status: "found" });
+		// Under the market's own spelling of the shelf, as the proxy passes it.
+		expect(await vehiclePageOutcome("cz-czk", "snehove-retezy", ["205-60-r16"])).toEqual({ status: "found" });
+		expect(loadCatalogView).not.toHaveBeenCalled();
+	});
+
+	it("an address the shelf does not have is absent, and never undetermined: a real 404", async () => {
+		loadCatalogView.mockResolvedValue({ ready: false, reason: "no snapshot", status: {} });
+		for (const path of [
+			["volkswagen"],
+			["205-60-R16"],
+			["650-17-r17"],
+			["205-40-r21"],
+			["205-60-r16", "x"],
+		]) {
+			expect(await vehiclePageOutcome("sk-eur", "snehove-retaze", path), path.join("/")).toEqual({
+				status: "absent",
+				reason: "no-page",
+			});
+		}
+		expect(retiredVehiclePageHref).not.toHaveBeenCalled();
+	});
+
+	it("a market that does not sell the shelf has no tyre pages", async () => {
+		expect(await vehiclePageOutcome("us-usd", "snehove-retaze", ["205-60-r16"])).toEqual({
+			status: "absent",
+			reason: "no-page",
+		});
+	});
+});

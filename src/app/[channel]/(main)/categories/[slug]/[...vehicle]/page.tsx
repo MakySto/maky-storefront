@@ -39,6 +39,8 @@ import { CatalogOfferList } from "@/ui/components/catalog/offer-list";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
 import { RouteLoading } from "@/ui/components/route-loading";
 import { canonicalCatalogPath } from "@/lib/catalog-content/category-aliases";
+import { tyreRouteOf } from "@/lib/tyre-size/size-page-route";
+import { TyrePageView, tyrePageMetadata } from "./tyre-page";
 
 /**
  * The vehicle category pages: `/sk/stresne-nosice/[make]/[model]/[generation]`.
@@ -86,6 +88,10 @@ async function resolve(channel: string, categorySlug: string, vehicle: string[])
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
 	const { channel, slug, vehicle } = await params;
+	// Below the snow-chain shelf the address names a tyre size or a rim, not a car (`tyre-page.tsx`).
+	const tyre = tyreRouteOf(channel, slug, vehicle);
+	if (tyre.status === "page") return tyrePageMetadata(channel, tyre.page);
+	if (tyre.status === "absent") return { robots: { index: false, follow: false } };
 	const resolved = await resolve(channel, slug, vehicle);
 	if (!resolved) return { robots: { index: false, follow: false } };
 
@@ -278,6 +284,11 @@ export default function Page(props: Params) {
 
 async function VehiclePage({ params }: Params) {
 	const { channel, slug, vehicle } = await params;
+	// The snow-chain shelf has no vehicle pages: a path below it is a tyre-size page or nothing.
+	const tyre = tyreRouteOf(channel, slug, vehicle);
+	if (tyre.status === "page") return <TyrePageView channel={channel} page={tyre.page} />;
+	if (tyre.status === "absent") notFound();
+
 	const resolved = await resolve(channel, slug, vehicle);
 	if (!resolved) {
 		// A page CFM merged into another one (a duplicate generation) keeps answering for the old

@@ -1,0 +1,37 @@
+# The price and the photograph of every product a category lists in a channel, for a shelf that shows its products
+# grouped by model (the snow-chain shelf: 145 products, thirteen models). The public code is the variant's name.
+# See `src/lib/tyre-size/family-cards.ts`.
+query CategoryProductOffers($slug: String!, $channel: String!, $first: Int!, $after: String) {
+	category(slug: $slug) {
+		products(channel: $channel, first: $first, after: $after) {
+			totalCount
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
+			edges {
+				node {
+					id
+					# The same rendition the listing card asks for (`ProductListItem`), so both show one file.
+					thumbnail(size: 4096, format: ORIGINAL) {
+						url
+					}
+					pricing {
+						priceRange {
+							start {
+								gross {
+									amount
+									currency
+								}
+							}
+						}
+					}
+					variants {
+						id
+						name
+					}
+				}
+			}
+		}
+	}
+}
