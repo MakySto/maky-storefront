@@ -269,6 +269,73 @@ describe("a translated slug that already means something else", () => {
 	});
 });
 
+/**
+ * A page that names a category holds the slug Saleor hands it: the translated one of its market. When that slug did
+ * not become the address, the link built from it must still not be `/{market}/categories/{slug}` (owner, 2026-11-15).
+ */
+describe("a translated slug that did not become the address", () => {
+	it("leads to the address the category does have, and the product that holds the slug keeps it", async () => {
+		const { world } = installFakeSaleor();
+		world.categories.push(NEW);
+		world.translations[NEW] = { ...TRANSLATIONS };
+		world.translatedProducts["zukuenftige-kategorie"] = ["de-eur:DE"];
+		await refreshLiveCategories();
+
+		expect(categoryBaseSlug("de", "zukuenftige-kategorie")).toBe(NEW);
+		expect(categoryUrlFor("de", "zukuenftige-kategorie")).toBe(`/${NEW}`);
+		// The category is known by its id as well, which the listing navigation asks first.
+		expect(baseSlugForCategoryId(ID)).toBe(NEW);
+
+		// The retired form of the link answers a permanent redirect to the base-slug address, not a listing under it.
+		const retired = await proxy(req("/de/categories/zukuenftige-kategorie"));
+		expect(retired.status).toBe(308);
+		expect(where(retired)).toBe(`/de/${NEW}`);
+
+		// The alias is never routed at the root: the product's slug is not a category there.
+		expect(isLocalizedRootSegment("de", "zukuenftige-kategorie")).toBe(false);
+		// Every other market took its spelling.
+		expect(categoryUrlFor("pl", "przyszla-kategoria")).toBe("/przyszla-kategoria");
+	});
+
+	it("leads to the base slug while Saleor cannot say yet, and moves to the spelling once it can", async () => {
+		const { world } = installFakeSaleor();
+		world.translations["opravne-sady"] = { DE: "reparatursaetze" };
+		world.probeErrors = true;
+		await refreshLiveCategories();
+		expect(categoryUrlFor("de", "reparatursaetze")).toBe("/opravne-sady");
+
+		world.probeErrors = false;
+		vi.setSystemTime(T0 + 10_000);
+		await refreshLiveCategories({ force: true });
+		expect(categoryUrlFor("de", "reparatursaetze")).toBe("/reparatursaetze");
+		expect(categoryUrlFor("de", "opravne-sady")).toBe("/reparatursaetze");
+	});
+
+	it("names no category when two of them claim it: a link built from it is the one that cannot be placed", async () => {
+		const { world } = installFakeSaleor();
+		world.categories.push(NEW, "its-twin");
+		world.translations[NEW] = { DE: "gleiches-wort" };
+		world.translations["its-twin"] = { DE: "gleiches-wort" };
+		await refreshLiveCategories();
+
+		expect(categoryBaseSlug("de", "gleiches-wort")).toBe("gleiches-wort");
+	});
+
+	it("is the slug Saleor holds for a table category that the table spells otherwise", async () => {
+		const { world } = installFakeSaleor();
+		world.translations["snehove-retaze"] = { DE: "schneeketten-neu" };
+		await refreshLiveCategories();
+
+		// The table's row is the address: nothing is learned and nothing is refused.
+		expect(liveCategoriesStats().localized).toEqual({});
+		expect(liveCategoriesStats().localizedRefused).toEqual({});
+		expect(categoryUrlFor("de", "schneeketten-neu")).toBe("/schneeketten");
+		const retired = await proxy(req("/de/categories/schneeketten-neu"));
+		expect(retired.status).toBe(308);
+		expect(where(retired)).toBe("/de/schneeketten");
+	});
+});
+
 describe("a category the table already knows", () => {
 	it("keeps the table's spelling where it has one, and learns Saleor's only where the table has none", async () => {
 		const { world } = installFakeSaleor();

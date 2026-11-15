@@ -13,6 +13,7 @@ import {
 	type LexicalNode,
 } from "@/lib/cms/lexical";
 import { cmsPathForRelationship } from "@/lib/cms/link-routes";
+import { canonicalOwnCategoryHref } from "@/lib/cms/own-category-link";
 import { marketHref } from "@/lib/channel-map";
 
 /**
@@ -95,7 +96,11 @@ function renderLinkNode(node: LexicalNode, channel: string, key: string): ReactN
 
 	if (link.url) {
 		return (
-			<a key={key} href={link.url} {...(link.newTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+			<a
+				key={key}
+				href={canonicalOwnCategoryHref(link.url)}
+				{...(link.newTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+			>
 				{children}
 			</a>
 		);
