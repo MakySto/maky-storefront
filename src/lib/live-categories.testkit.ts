@@ -22,6 +22,8 @@ export interface FakeSaleor {
 	translatedProducts: Record<string, string[]>;
 	/** Category base slug → Saleor language code → the translated slug CFM wrote. */
 	translations: Record<string, Record<string, string>>;
+	/** Category base slug → its Saleor id. A category without an entry is `Category:<slug>`. */
+	ids: Record<string, string>;
 	/** Every request throws, as a refused connection does. */
 	down: boolean;
 	/** The list answers, but with a GraphQL `errors` array next to partial data. */
@@ -54,6 +56,7 @@ export function fakeSaleor(overrides: Partial<FakeSaleor> = {}): {
 		products: {},
 		translatedProducts: {},
 		translations: {},
+		ids: {},
 		down: false,
 		listErrors: false,
 		failAfterFirstPage: false,
@@ -88,7 +91,7 @@ export function fakeSaleor(overrides: Partial<FakeSaleor> = {}): {
 			const end = start + world.pageSize;
 			const edges = world.categories.slice(start, end).map((slug) => ({
 				node: {
-					id: `Category:${slug}`,
+					id: world.ids[slug] ?? `Category:${slug}`,
 					slug,
 					...Object.fromEntries(
 						aliases.map(([, alias, code]) => {

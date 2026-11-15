@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { type CmsBlockLink } from "@/lib/cms/blocks";
 import { cmsPathForRelationship } from "@/lib/cms/link-routes";
+import { canonicalOwnCategoryHref } from "@/lib/cms/own-category-link";
 import { marketHref } from "@/lib/channel-map";
 
 function logDegraded(event: string, detail: Record<string, unknown>): void {
@@ -55,7 +56,9 @@ export function CmsLink({ link, channel }: { link: CmsBlockLink; channel: string
 		return <span className={`${shared} ${style} cursor-default opacity-60`}>{link.label}</span>;
 	}
 
-	const href = link.target.kind === "external" ? link.target.url : marketHref(channel, path!);
+	// A link to a category of this shop written in the retired `/categories/` form is shown at the category's address.
+	const href =
+		link.target.kind === "external" ? canonicalOwnCategoryHref(link.target.url) : marketHref(channel, path!);
 
 	const external = link.target.kind === "external";
 
