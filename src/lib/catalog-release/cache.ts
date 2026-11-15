@@ -4,7 +4,15 @@ import { randomBytes } from "node:crypto";
 import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { type ContentEntry, type FitmentEntry, parseContentEntry, parseFitmentEntry } from "./manifest";
+import {
+	type ContentEntry,
+	type FitmentEntry,
+	type TyreFileEntry,
+	type TyreSizesEntry,
+	parseContentEntry,
+	parseFitmentEntry,
+	parseTyreSizesEntry,
+} from "./manifest";
 
 /**
  * What this process had verified and in use the last time that changed, so that a restart begins from it.
@@ -55,6 +63,11 @@ export type CacheDocument = {
 	readonly manifestVersion: number | null;
 	readonly content: Readonly<Record<string, ContentEntry>>;
 	readonly fitment: FitmentEntry | null;
+	/**
+	 * The tyre-size list and its model families: two files, kept and restored as one pair. Absent in a set
+	 * recorded before the pair existed, which is the same as none.
+	 */
+	readonly tyreSizes?: TyreSizesEntry | null;
 };
 
 function root(dir: string): string {
@@ -118,6 +131,26 @@ function fitmentDocument(entry: FitmentEntry): Record<string, unknown> {
 	};
 }
 
+function tyreFileDocument(entry: TyreFileEntry): Record<string, unknown> {
+	return {
+		file: entry.file,
+		sha256: entry.sha256,
+		bytes: entry.bytes,
+		contract: { schema: entry.schema },
+		selfSha256: entry.selfSha256,
+	};
+}
+
+/** The tyre-size pair as the manifest writes it, for the same reason. */
+function tyreSizesDocument(entry: TyreSizesEntry): Record<string, unknown> {
+	return {
+		release: entry.release,
+		id: entry.id,
+		index: tyreFileDocument(entry.index),
+		families: tyreFileDocument(entry.families),
+	};
+}
+
 export async function writeActive(dir: string, held: CacheDocument): Promise<void> {
 	const document = {
 		artifact: ARTIFACT,
@@ -125,6 +158,8 @@ export async function writeActive(dir: string, held: CacheDocument): Promise<voi
 		manifestVersion: held.manifestVersion,
 		content: held.content,
 		fitment: held.fitment ? fitmentDocument(held.fitment) : null,
+		// A record written before the pair existed has no such key, and a build from before it ignores the key.
+		...(held.tyreSizes ? { tyreSizes: tyreSizesDocument(held.tyreSizes) } : {}),
 	};
 	await writeAtomically(dir, ACTIVE_FILE, JSON.stringify(document, null, 1));
 }
@@ -161,6 +196,8 @@ export async function readActive(dir: string): Promise<CacheDocument | null> {
 			: null,
 		content,
 		fitment: document.fitment == null ? null : parseFitmentEntry(document.fitment),
+		// Named only when a pair was recorded, so a set without one reads back exactly as it was written.
+		...(document.tyreSizes == null ? {} : { tyreSizes: parseTyreSizesEntry(document.tyreSizes) }),
 	};
 }
 
@@ -169,6 +206,7 @@ export function filesOf(held: CacheDocument): string[] {
 	return [
 		...Object.values(held.content).map((entry) => entry.file),
 		...(held.fitment ? [held.fitment.file] : []),
+		...(held.tyreSizes ? [held.tyreSizes.index.file, held.tyreSizes.families.file] : []),
 	];
 }
 

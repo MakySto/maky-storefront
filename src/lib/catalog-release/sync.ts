@@ -10,6 +10,7 @@ import type { FitmentDataset } from "@/lib/fitment/contract";
 import { transportChecksum } from "@/lib/fitment/dataset-hash";
 import { expectedSaleorInstance } from "@/lib/fitment/saleor-instance";
 import { validateFitmentDataset } from "@/lib/fitment/validate";
+import { activateTyreLists, resetTyreListsToBuild } from "@/lib/tyre-size/active-lists";
 
 import { type CacheDocument, filesOf, loadFile, prune, readActive, storeFile, writeActive } from "./cache";
 import { type ReleaseConfig, type ReleaseSetting, describePointer, releaseSetting } from "./config";
@@ -20,6 +21,8 @@ import {
 	ReleaseFailure,
 	type ReleaseFault,
 	type ReleaseManifest,
+	type TyreFileEntry,
+	type TyreSizesEntry,
 	fileUrl,
 	parseManifest,
 } from "./manifest";
@@ -48,6 +51,12 @@ import {
  *     the page already shows. Those settings answer for a market only until its first verified file.
  *   - CONTENT AND FITMENT ARE INDEPENDENT. They are joined on `vehicleId` at render time; neither waits
  *     for the other and neither's failure touches the other.
+ *   - THE TYRE-SIZE LIST AND ITS MODEL FAMILIES ARE ONE PAIR (manifest 1.1.0, `tyreSizes`). Both files are
+ *     downloaded and verified, and then the pair goes through the same gate the build's own copy passes
+ *     (`activateTyreLists`): both seals are their content's, the ids are equal, every code has a family. The
+ *     two are swapped in one step or not at all. Until a manifest names a pair the process serves the copy
+ *     it was built with, and a pair that fails changes nothing: a size switched off in CFM leaves the shop
+ *     when the pair without it verifies, with no deploy.
  *   - A RESTART MAY BEGIN FROM THE LAST VERIFIED RELEASE (opt-in, `MAKY_RELEASE_CACHE_DIR`, see `cache.ts`).
  *     The first pass restores it from disk, through the same checks a download gets and before the network
  *     is asked anything. Without it, a restart forgets and the older settings answer until the first pass has
@@ -103,6 +112,20 @@ type FitmentState = {
 	retryAt: number;
 };
 
+type TyreSizesSlot = {
+	readonly entry: TyreSizesEntry;
+	readonly activatedAt: number;
+};
+
+type TyreSizesState = {
+	/** The pair this process activated from a manifest or from the cache. `null`: the build's own copy answers. */
+	active: TyreSizesSlot | null;
+	desired: TyreSizesEntry | null;
+	fault: ReleaseFault | null;
+	failures: number;
+	retryAt: number;
+};
+
 type ManifestState = {
 	held: { readonly manifest: ReleaseManifest; readonly sha256: string } | null;
 	etag: string | null;
@@ -129,6 +152,7 @@ type ReleaseState = {
 	readonly manifest: ManifestState;
 	readonly targets: Map<string, TargetState>;
 	readonly fitment: FitmentState;
+	readonly tyreSizes: TyreSizesState;
 	readonly cache: CacheState;
 	timer: ReturnType<typeof setTimeout> | null;
 	running: Promise<void> | null;
@@ -155,6 +179,7 @@ function shared(): ReleaseState {
 		},
 		targets: new Map(),
 		fitment: { active: null, desired: null, fault: null, failures: 0, retryAt: 0 },
+		tyreSizes: { active: null, desired: null, fault: null, failures: 0, retryAt: 0 },
 		cache: { restored: false, stored: new Set(), dirty: false },
 		timer: null,
 		running: null,
@@ -168,6 +193,8 @@ export function __resetReleaseState(): void {
 	const scope = globalThis as WithState;
 	if (scope[STATE]?.timer) clearTimeout(scope[STATE].timer);
 	delete scope[STATE];
+	// The pair a release put in place belongs to the state that put it there.
+	resetTyreListsToBuild();
 }
 
 /** Exported for tests only: resolves when the pass in flight, if any, has settled. */
@@ -390,6 +417,47 @@ function failManifest(state: ReleaseState, fault: ReleaseFault): void {
 	);
 }
 
+/** The same pair: the same two files under the same release number. */
+function sameTyrePair(a: TyreSizesEntry, b: TyreSizesEntry): boolean {
+	return (
+		a.release === b.release && a.index.sha256 === b.index.sha256 && a.families.sha256 === b.families.sha256
+	);
+}
+
+/**
+ * What the manifest now says about the tyre-size pair.
+ *
+ * A manifest that names none leaves the pair being served where it is, as a market that left the manifest
+ * keeps its content: CFM takes a size away by publishing the pair without it, never by a missing section. A
+ * section this build cannot read is reported and equally changes nothing.
+ */
+function applyTyreSizes(state: ReleaseState, manifest: ReleaseManifest): void {
+	const tyres = state.tyreSizes;
+	if (manifest.tyreSizesFault) {
+		tyres.desired = null;
+		tyres.fault = manifest.tyreSizesFault;
+		logOnce(
+			state,
+			"tyre-sizes",
+			`tyre sizes: ${manifest.tyreSizesFault.code}: ${manifest.tyreSizesFault.message}; keeping what is served`,
+			"error",
+		);
+		return;
+	}
+	const wanted = manifest.tyreSizes;
+	if (wanted === null) {
+		tyres.desired = null;
+		tyres.fault = null;
+		return;
+	}
+	if (!tyres.desired || !sameTyrePair(tyres.desired, wanted)) {
+		tyres.failures = 0;
+		tyres.retryAt = 0;
+		tyres.fault = null;
+	}
+	tyres.desired = wanted;
+}
+
 /** What the manifest now wants: new work for every target whose file changed, nothing for the rest. */
 function applyManifest(state: ReleaseState, manifest: ReleaseManifest): void {
 	const named = new Set(Object.keys(manifest.content));
@@ -424,6 +492,8 @@ function applyManifest(state: ReleaseState, manifest: ReleaseManifest): void {
 		slot.desired = null;
 		slot.fault = null;
 	}
+
+	applyTyreSizes(state, manifest);
 
 	const fitment = state.fitment;
 	const wanted = manifest.fitment;
@@ -715,6 +785,103 @@ async function activateFitment(state: ReleaseState, config: ReleaseConfig): Prom
 	}
 }
 
+/** Bytes → the document the manifest described: these exact bytes, this schema, this seal. Not yet a pair. */
+function verifyTyreFile(bytes: Uint8Array, entry: TyreFileEntry): unknown {
+	const sha256 = createHash("sha256").update(bytes).digest("hex");
+	if (sha256 !== entry.sha256) {
+		throw new ReleaseFailure(
+			"file_hash_mismatch",
+			`${entry.file}: sha256 ${sha256.slice(0, 12)}… but the manifest says ${entry.sha256.slice(0, 12)}…`,
+		);
+	}
+	let body: unknown;
+	try {
+		body = JSON.parse(new TextDecoder().decode(bytes));
+	} catch {
+		throw new ReleaseFailure("tyre_sizes_invalid", `${entry.file} is not JSON`);
+	}
+	const document = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>;
+	if (document.schema !== entry.schema) {
+		throw new ReleaseFailure(
+			"tyre_sizes_invalid",
+			`${entry.file} is ${JSON.stringify(document.schema)}, the manifest says ${entry.schema}`,
+		);
+	}
+	// The seal is recomputed from the content at the gate below. Here it only has to be the one the manifest
+	// approved: a well-formed list that is not the approved one is not the delivery.
+	if (document.self_sha256 !== entry.selfSha256) {
+		throw new ReleaseFailure(
+			"tyre_sizes_invalid",
+			`${entry.file} carries a seal other than the one the manifest names`,
+		);
+	}
+	return body;
+}
+
+/**
+ * Both verified files → the pair in use, in one step. Throws with the contract code when the two are not a
+ * pair this process may serve; nothing has changed then.
+ */
+function adoptTyreSizes(entry: TyreSizesEntry, indexBytes: Uint8Array, familiesBytes: Uint8Array): void {
+	const index = verifyTyreFile(indexBytes, entry.index);
+	const families = verifyTyreFile(familiesBytes, entry.families);
+	const id = (index as { id?: unknown }).id;
+	if (id !== entry.id) {
+		throw new ReleaseFailure(
+			"tyre_sizes_invalid",
+			`${entry.index.file} is the list ${JSON.stringify(id)}, the manifest says ${JSON.stringify(entry.id)}`,
+		);
+	}
+	const activation = activateTyreLists(index, families, entry.release);
+	if (!activation.ok) throw new ReleaseFailure("tyre_sizes_invalid", activation.reason);
+}
+
+async function activateTyreSizes(state: ReleaseState, config: ReleaseConfig): Promise<void> {
+	const tyres = state.tyreSizes;
+	const entry = tyres.desired;
+	const manifest = state.manifest.held?.manifest;
+	if (!entry || !manifest || tyres.retryAt > wallClockMs()) return;
+	if (tyres.active && sameTyrePair(tyres.active.entry, entry)) return;
+
+	try {
+		const indexBytes = await downloadFile(
+			fileUrl(manifest.base, entry.index.file),
+			entry.index.bytes,
+			config.fileTimeoutMs,
+		);
+		const familiesBytes = await downloadFile(
+			fileUrl(manifest.base, entry.families.file),
+			entry.families.bytes,
+			config.fileTimeoutMs,
+		);
+		adoptTyreSizes(entry, indexBytes, familiesBytes);
+		tyres.active = { entry, activatedAt: wallClockMs() };
+		tyres.fault = null;
+		tyres.failures = 0;
+		tyres.retryAt = 0;
+		state.logged.delete("tyre-sizes");
+		console.log(
+			`[release] tyre sizes active: ${entry.id} release ${entry.release} ` +
+				`(list ${entry.index.selfSha256.slice(0, 12)}…, families ${entry.families.selfSha256.slice(0, 12)}…)`,
+		);
+		state.cache.dirty = true;
+		await remember(state, config, entry.index.file, indexBytes);
+		await remember(state, config, entry.families.file, familiesBytes);
+	} catch (error) {
+		const fault =
+			error instanceof ReleaseFailure
+				? error.fault
+				: { code: "file_unreachable" as const, message: describe(error) };
+		tyres.fault = fault;
+		tyres.failures += 1;
+		tyres.retryAt = wallClockMs() + backoff(tyres.failures);
+		const keeping = tyres.active
+			? `keeping release ${tyres.active.entry.release}`
+			: "keeping the build's own list";
+		logOnce(state, "tyre-sizes", `tyre sizes: ${fault.code}: ${fault.message}; ${keeping}`, "error");
+	}
+}
+
 // ── what is kept for the next boot ───────────────────────────────────────────
 
 /** Keep verified bytes for the next boot. Best effort: a cache that cannot be written is one line, never a failure. */
@@ -744,8 +911,19 @@ function keptSet(state: ReleaseState): CacheDocument | null {
 	}
 	const active = state.fitment.active;
 	const fitment = active && state.cache.stored.has(active.entry.file) ? active.entry : null;
-	if (fitment === null && Object.keys(content).length === 0) return null;
-	return { manifestVersion: state.manifest.held?.manifest.manifestVersion ?? null, content, fitment };
+	const pair = state.tyreSizes.active?.entry;
+	// Both files or neither: half a pair on disk is nothing a restart could use.
+	const tyreSizes =
+		pair && state.cache.stored.has(pair.index.file) && state.cache.stored.has(pair.families.file)
+			? pair
+			: null;
+	if (fitment === null && tyreSizes === null && Object.keys(content).length === 0) return null;
+	return {
+		manifestVersion: state.manifest.held?.manifest.manifestVersion ?? null,
+		content,
+		fitment,
+		tyreSizes,
+	};
 }
 
 /**
@@ -848,6 +1026,22 @@ async function restore(state: ReleaseState, config: ReleaseConfig): Promise<void
 		}
 	}
 
+	const pair = recorded.tyreSizes;
+	if (pair && !state.tyreSizes.active) {
+		try {
+			const indexBytes = await loadFile(dir, pair.index.file, pair.index.bytes);
+			const familiesBytes = await loadFile(dir, pair.families.file, pair.families.bytes);
+			adoptTyreSizes(pair, indexBytes, familiesBytes);
+			state.tyreSizes.active = { entry: pair, activatedAt: wallClockMs() };
+			state.cache.stored.add(pair.index.file);
+			state.cache.stored.add(pair.families.file);
+			restored.push(`tyre sizes ${pair.id}@${pair.release}`);
+		} catch (error) {
+			const fault = error instanceof ReleaseFailure ? error.fault.message : describe(error);
+			refused.push(`tyre sizes (${pair.index.file}, ${pair.families.file}): ${fault}`);
+		}
+	}
+
 	if (restored.length > 0) {
 		console.log(
 			`[release] restored from the cache: ${restored.join(
@@ -874,6 +1068,7 @@ async function reconcile(state: ReleaseState, config: ReleaseConfig): Promise<vo
 		await new Promise<void>((resolve) => setImmediate(resolve));
 	}
 	await activateFitment(state, config);
+	await activateTyreSizes(state, config);
 }
 
 async function pass(state: ReleaseState, setting: ReleaseSetting): Promise<void> {
@@ -1057,6 +1252,11 @@ export type ReleaseView = {
 		} | null;
 		readonly fault: ReleaseFault | null;
 	};
+	readonly tyreSizes: {
+		readonly desired: TyreSizesEntry | null;
+		readonly active: { readonly entry: TyreSizesEntry; readonly activatedAt: number } | null;
+		readonly fault: ReleaseFault | null;
+	};
 };
 
 /** A copy of what this process holds. Reading it loads nothing, contacts nothing and changes nothing. */
@@ -1097,6 +1297,11 @@ export function inspectRelease(): ReleaseView {
 						activatedAt: state.fitment.active.activatedAt,
 					}
 				: null,
+		},
+		tyreSizes: {
+			desired: state.tyreSizes.desired,
+			fault: state.tyreSizes.fault,
+			active: state.tyreSizes.active ? { ...state.tyreSizes.active } : null,
 		},
 	};
 }

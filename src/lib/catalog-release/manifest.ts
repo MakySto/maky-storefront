@@ -23,6 +23,13 @@ export const MANIFEST_MAX_BYTES = 1_048_576;
 /** A content file is ~10 MB and the fitment dataset ~8 MB; this is the ceiling, not an expectation. */
 export const FILE_MAX_BYTES = 64 * 1_048_576;
 
+/** The tyre-size list is ~130 KB and the model families ~11 KB. Anything near this is not one of them. */
+export const TYRE_FILE_MAX_BYTES = 8 * 1_048_576;
+
+/** The schemas of the two tyre-size files this build reads. A different one is a different file. */
+export const TYRE_INDEX_SCHEMA = "maky.tyre-size-index/1";
+export const TYRE_FAMILIES_SCHEMA = "maky.tyre-families/1";
+
 /**
  * Why a manifest, a file or a target was refused. The codes are the contract's (section 8) and
  * travel to CFM in the status document, where the admin shows them next to the target.
@@ -41,7 +48,8 @@ export type ReleaseErrorCode =
 	| "file_invalid"
 	| "file_language_mismatch"
 	| "fitment_hash_mismatch"
-	| "fitment_invalid";
+	| "fitment_invalid"
+	| "tyre_sizes_invalid";
 
 export type ReleaseFault = { readonly code: ReleaseErrorCode; readonly message: string };
 
@@ -68,6 +76,28 @@ export type FitmentEntry = {
 	readonly datasetHash: string;
 };
 
+/** One of the two tyre-size files. `selfSha256` is the seal the file states about its own content. */
+export type TyreFileEntry = {
+	readonly file: string;
+	readonly sha256: string;
+	readonly bytes: number;
+	readonly schema: string;
+	readonly selfSha256: string;
+};
+
+/**
+ * The snow-chain tyre-size list and its model families (manifest 1.1.0, section `tyreSizes`).
+ *
+ * Two files and ONE release: the families name the codes of that list and of no other, so the pair is
+ * taken together or not at all. `release` is CFM's counter for the pair and `id` the name both files carry.
+ */
+export type TyreSizesEntry = {
+	readonly release: number;
+	readonly id: string;
+	readonly index: TyreFileEntry;
+	readonly families: TyreFileEntry;
+};
+
 export type ReleaseManifest = {
 	readonly manifestVersion: number;
 	readonly generatedAt: string;
@@ -77,6 +107,10 @@ export type ReleaseManifest = {
 	/** Keyed by market code. */
 	readonly content: Readonly<Record<string, ContentEntry>>;
 	readonly fitment: FitmentEntry | null;
+	/** `null` when the manifest names no pair: the process keeps the one it serves. */
+	readonly tyreSizes: TyreSizesEntry | null;
+	/** Why the `tyreSizes` section could not be read, when it is there and is not what this build reads. */
+	readonly tyreSizesFault: ReleaseFault | null;
 	readonly selfSha256: string;
 };
 
@@ -200,6 +234,60 @@ export function parseFitmentEntry(raw: unknown): FitmentEntry {
 	};
 }
 
+function parseTyreFile(raw: unknown, what: string, schema: string): TyreFileEntry {
+	const entry = record(raw, what);
+	const contract = record(entry.contract, `${what}.contract`);
+	if (contract.schema !== schema) {
+		refuse(
+			"tyre_sizes_invalid",
+			`${what}.contract.schema is ${JSON.stringify(contract.schema)}, expected ${schema}`,
+		);
+	}
+	const bytes = size(entry.bytes, `${what}.bytes`);
+	if (bytes > TYRE_FILE_MAX_BYTES)
+		refuse("manifest_invalid", `${what}.bytes exceeds ${TYRE_FILE_MAX_BYTES} bytes`);
+	return {
+		file: fileName(entry.file, `${what}.file`),
+		sha256: hash(entry.sha256, `${what}.sha256`),
+		bytes,
+		schema,
+		selfSha256: hash(entry.selfSha256, `${what}.selfSha256`),
+	};
+}
+
+/** The `tyreSizes` section, as the manifest writes it. Exported because the restart cache keeps it in the same shape. */
+export function parseTyreSizesEntry(raw: unknown): TyreSizesEntry {
+	const entry = record(raw, "tyreSizes");
+	const index = parseTyreFile(entry.index, "tyreSizes.index", TYRE_INDEX_SCHEMA);
+	const families = parseTyreFile(entry.families, "tyreSizes.families", TYRE_FAMILIES_SCHEMA);
+	if (index.file === families.file)
+		refuse("tyre_sizes_invalid", "tyreSizes names one file for both the list and the families");
+	return {
+		release: whole(entry.release, "tyreSizes.release", 1),
+		id: text(entry.id, "tyreSizes.id"),
+		index,
+		families,
+	};
+}
+
+/**
+ * The section, or the reason it cannot be used, without refusing the manifest it came in.
+ *
+ * Everything else in a manifest is refused as a whole, and that is right for the 1.0 body. This section is a
+ * later addition with one consumer of its own: a mistake in it must not be able to hold back the catalogue
+ * text of twelve markets and the fitment dataset, which do not depend on it. The process keeps the pair it
+ * serves, the fault goes into the status document under `tyreSizes`, and the rest of the manifest is acted on.
+ */
+function tyreSizesOf(raw: unknown): Pick<ReleaseManifest, "tyreSizes" | "tyreSizesFault"> {
+	if (raw === undefined || raw === null) return { tyreSizes: null, tyreSizesFault: null };
+	try {
+		return { tyreSizes: parseTyreSizesEntry(raw), tyreSizesFault: null };
+	} catch (error) {
+		if (!(error instanceof ReleaseFailure)) throw error;
+		return { tyreSizes: null, tyreSizesFault: { code: "tyre_sizes_invalid", message: error.fault.message } };
+	}
+}
+
 function parseBase(value: unknown, pointerUrl: string): string {
 	const base = text(value, "base");
 	let parsed: URL;
@@ -275,6 +363,7 @@ function parseDocument(document: Record<string, unknown>, pointerUrl: string): R
 		contentContract: { artifact: CONTENT_ARTIFACT, schemaVersion: contentVersion },
 		content: targets,
 		fitment: document.fitment === null ? null : parseFitmentEntry(document.fitment),
+		...tyreSizesOf(document.tyreSizes),
 		selfSha256,
 	};
 }

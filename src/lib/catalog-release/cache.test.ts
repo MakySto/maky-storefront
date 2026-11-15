@@ -15,7 +15,7 @@ import {
 	storeFile,
 	writeActive,
 } from "./cache";
-import type { ContentEntry, FitmentEntry } from "./manifest";
+import type { ContentEntry, FitmentEntry, TyreSizesEntry } from "./manifest";
 
 /**
  * The files a restart begins from, on a real directory.
@@ -42,6 +42,28 @@ const FITMENT: FitmentEntry = {
 	schemaVersion: "3.0.0",
 	datasetVersion: "3.0.0-test.1",
 	datasetHash: "c".repeat(64),
+};
+
+/** The record as it is on disk, for the cases that look at or damage the pair in it. */
+type Written = { tyreSizes: { families?: unknown } };
+
+const TYRE_SIZES: TyreSizesEntry = {
+	release: 4,
+	id: "snehove-retaze-20261105",
+	index: {
+		file: `maky_tyre_size_index_1-${"d".repeat(16)}.json`,
+		sha256: "d".repeat(64),
+		bytes: 132_926,
+		schema: "maky.tyre-size-index/1",
+		selfSha256: "e".repeat(64),
+	},
+	families: {
+		file: `maky_tyre_families_1-${"f".repeat(16)}.json`,
+		sha256: "f".repeat(64),
+		bytes: 11_116,
+		schema: "maky.tyre-families/1",
+		selfSha256: "9".repeat(64),
+	},
 };
 
 let dir: string;
@@ -141,6 +163,54 @@ describe("the record of what was in use", () => {
 			schemaVersion: 1,
 			fitment: { file: FITMENT.file, contract: { schemaVersion: "3.0.0" }, datasetHash: FITMENT.datasetHash },
 		});
+	});
+
+	it("keeps the tyre-size pair as one entry with its two files, and reads it back as written", async () => {
+		const withPair: CacheDocument = { ...held, tyreSizes: TYRE_SIZES };
+		await writeActive(dir, withPair);
+
+		expect(await readActive(dir)).toEqual(withPair);
+		const written = JSON.parse(await readFile(join(subdirectory(), ACTIVE_FILE), "utf8")) as Written;
+		expect(written.tyreSizes).toEqual({
+			release: 4,
+			id: "snehove-retaze-20261105",
+			index: {
+				file: TYRE_SIZES.index.file,
+				sha256: TYRE_SIZES.index.sha256,
+				bytes: 132_926,
+				contract: { schema: "maky.tyre-size-index/1" },
+				selfSha256: TYRE_SIZES.index.selfSha256,
+			},
+			families: {
+				file: TYRE_SIZES.families.file,
+				sha256: TYRE_SIZES.families.sha256,
+				bytes: 11_116,
+				contract: { schema: "maky.tyre-families/1" },
+				selfSha256: TYRE_SIZES.families.selfSha256,
+			},
+		});
+		// Both files are named by the record, so a prune keeps both.
+		expect(filesOf(withPair)).toEqual(
+			expect.arrayContaining([TYRE_SIZES.index.file, TYRE_SIZES.families.file]),
+		);
+	});
+
+	it("writes no pair into a record that has none, so a record from before pairs existed is still what is written", async () => {
+		await writeActive(dir, held);
+
+		const written = JSON.parse(await readFile(join(subdirectory(), ACTIVE_FILE), "utf8")) as Written;
+		expect("tyreSizes" in written).toBe(false);
+		expect((await readActive(dir))?.tyreSizes).toBeUndefined();
+	});
+
+	it("cannot be read as a cache when the pair it records is not a pair", async () => {
+		await writeActive(dir, { ...held, tyreSizes: TYRE_SIZES });
+		const path = join(subdirectory(), ACTIVE_FILE);
+		const written = JSON.parse(await readFile(path, "utf8")) as Written;
+		delete written.tyreSizes.families;
+		await writeFile(path, JSON.stringify(written));
+
+		await expect(readActive(dir)).rejects.toThrow("tyreSizes.families");
 	});
 
 	it("can say that no dataset was in use, and that no manifest was ever seen", async () => {

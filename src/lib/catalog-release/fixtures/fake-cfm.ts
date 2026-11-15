@@ -135,6 +135,46 @@ export function rawFitmentFile(text: string): FitmentFile {
 	};
 }
 
+/** One of the two tyre-size files, as bytes and as what a manifest says about them. */
+export type TyreFile = {
+	readonly name: string;
+	readonly bytes: Uint8Array;
+	readonly sha256: string;
+	readonly schema: string;
+	/** The seal the document itself states. */
+	readonly selfSha256: string;
+};
+
+/**
+ * A tyre-size list or a families file as CFM publishes it: the document, serialised, under a name that
+ * carries its content hash. The document is taken as given, seal included, so a test decides whether it is
+ * a sealed one.
+ */
+export function tyreFile(prefix: string, document: Doc): TyreFile {
+	const bytes = encoder.encode(JSON.stringify(document));
+	const sha256 = createHash("sha256").update(bytes).digest("hex");
+	return {
+		name: `${prefix}-${sha256.slice(0, 16)}.json`,
+		bytes,
+		sha256,
+		schema: String(document.schema),
+		selfSha256: String(document.self_sha256),
+	};
+}
+
+/** The name the list file gives itself, which is what CFM writes into the section. */
+function listIdOf(index: TyreFile): string {
+	return String((JSON.parse(new TextDecoder().decode(index.bytes)) as Doc).id);
+}
+
+export type TyreSizesSpec = {
+	readonly release: number;
+	readonly index: TyreFile;
+	readonly families: TyreFile;
+	/** Only to state something the list does not say, so that a test can make them disagree. */
+	readonly id?: string;
+};
+
 export type TargetSpec = {
 	readonly file: ContentFile;
 	readonly release: number;
@@ -147,6 +187,8 @@ export type ManifestSpec = {
 	readonly version: number;
 	readonly targets: Readonly<Record<string, TargetSpec>>;
 	readonly fitment?: { readonly file: FitmentFile; readonly release: number } | null;
+	/** Left out, the manifest is a 1.0.0 one with no `tyreSizes` key at all. */
+	readonly tyreSizes?: TyreSizesSpec | null;
 	/** Change the document before it is sealed, to build the one wrong thing a test is about. */
 	readonly edit?: (document: Doc) => void;
 };
@@ -192,6 +234,25 @@ export function manifestDocument(spec: ManifestSpec): Doc {
 				}
 			: null,
 	};
+	if (spec.tyreSizes !== undefined) {
+		const pair = spec.tyreSizes;
+		const entry = (file: TyreFile): Doc => ({
+			file: file.name,
+			sha256: file.sha256,
+			bytes: file.bytes.byteLength,
+			contract: { schema: file.schema },
+			selfSha256: file.selfSha256,
+		});
+		document.schemaVersion = "1.1.0";
+		document.tyreSizes = pair
+			? {
+					release: pair.release,
+					id: pair.id ?? listIdOf(pair.index),
+					index: entry(pair.index),
+					families: entry(pair.families),
+				}
+			: null;
+	}
 	spec.edit?.(document);
 	document.selfSha256 = manifestSelfSha256(document);
 	return document;
@@ -235,6 +296,10 @@ export class FakeCfm {
 		const document = manifestDocument(spec);
 		for (const target of Object.values(spec.targets)) this.add(target.file);
 		if (spec.fitment) this.add(spec.fitment.file);
+		if (spec.tyreSizes) {
+			this.add(spec.tyreSizes.index);
+			this.add(spec.tyreSizes.families);
+		}
 		this.serve(encoder.encode(JSON.stringify(document, null, 1)));
 		return document;
 	}

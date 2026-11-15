@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import example from "./fixtures/manifest.example.json";
+import exampleWithTyreSizes from "./fixtures/manifest-1.1.0.example.json";
 import { FILE_MAX_BYTES, fileUrl, manifestSelfSha256, parseManifest } from "./manifest";
 
 /**
@@ -177,6 +178,142 @@ describe("a manifest is refused as a whole", () => {
 		expect(codeOf(bytes, "https://other.example/media/fitment/releases/MANIFEST.json")).toBe(
 			"manifest_origin",
 		);
+	});
+});
+
+describe("the tyre-size pair (manifest 1.1.0)", () => {
+	const SECTION = {
+		release: 4,
+		id: "snehove-retaze-20261105",
+		index: {
+			file: "maky_tyre_size_index_1-78ed7b5db8a1e4f8.json",
+			sha256: "78ed7b5db8a1e4f8cb06598797c5f3f8d2b1b61baaceb2b18b26b3236758042d",
+			bytes: 132926,
+			contract: { schema: "maky.tyre-size-index/1" },
+			selfSha256: "a66c5ac4fc757cbe1901321ff885e65980aec0ca96878bd728af7bcffcab0176",
+		},
+		families: {
+			file: "maky_tyre_families_1-da88e92a46154cac.json",
+			sha256: "da88e92a46154cac43a756f2f9d106b8850765b9abd30be5672dbc7702c6fa59",
+			bytes: 11116,
+			contract: { schema: "maky.tyre-families/1" },
+			selfSha256: "a70652dc4b73902722ee294386bcc18550dcecbe9dff30a74d927ead2c47f70b",
+		},
+	};
+
+	function withSection(change: (section: Doc) => void = () => undefined) {
+		const parsed = parseManifest(
+			sealed((doc) => {
+				doc.schemaVersion = "1.1.0";
+				doc.tyreSizes = structuredClone(SECTION);
+				change(doc.tyreSizes as Doc);
+			}),
+			POINTER,
+		);
+		if (!parsed.ok) throw new Error(parsed.fault.message);
+		return parsed.manifest;
+	}
+
+	it("is read from CFM's own 1.1.0 example, hashed to the number CFM computed", () => {
+		// `fixtures/manifest-1.1.0.example.json` is byte for byte the example beside CFM's contract (CFM PR 117,
+		// 2026-11-15). Its two files are the samples CFM built that day: the list with `pages`, the families with `name`.
+		expect(manifestSelfSha256(exampleWithTyreSizes)).toBe(exampleWithTyreSizes.selfSha256);
+		expect(exampleWithTyreSizes.selfSha256.startsWith("e35e1cc0")).toBe(true);
+
+		const bytes = readFileSync(join(__dirname, "fixtures", "manifest-1.1.0.example.json"));
+		const parsed = parseManifest(bytes, POINTER);
+		if (!parsed.ok) throw new Error(parsed.fault.message);
+		expect(parsed.sha256).toBe("83cb2c0164ff352340fbd5f8c734e98ce7378b2b0309acf42664f182e99fe370");
+		const { manifest } = parsed;
+		expect(manifest.manifestVersion).toBe(7);
+		expect(manifest.tyreSizesFault).toBeNull();
+		expect(manifest.tyreSizes).toMatchObject({
+			release: 3,
+			id: "snehove-retaze-20261105",
+			index: {
+				file: "maky_tyre_size_index_1-05a0eff62a893a13.json",
+				sha256: "05a0eff62a893a133b21bbb2c39f0c9d520de993e3fe079229f2c3e90b317d37",
+				bytes: 144169,
+				schema: "maky.tyre-size-index/1",
+			},
+			families: {
+				file: "maky_tyre_families_1-9215c71407e57f80.json",
+				sha256: "9215c71407e57f8075a0a69bf72891d05940fe6bf1277b5295e39067f051b372",
+				bytes: 11199,
+				schema: "maky.tyre-families/1",
+			},
+		});
+		// The 1.0 body beside it reads as before.
+		expect(Object.keys(manifest.content).sort()).toEqual(["at", "de", "sk", "us"]);
+		expect(manifest.fitment).not.toBeNull();
+	});
+
+	it("is absent from a 1.0.0 manifest, which names no pair and has no fault", () => {
+		const parsed = parseManifest(
+			sealed(() => undefined),
+			POINTER,
+		);
+		if (!parsed.ok) throw new Error(parsed.fault.message);
+		expect(parsed.manifest.tyreSizes).toBeNull();
+		expect(parsed.manifest.tyreSizesFault).toBeNull();
+	});
+
+	it("is read as one release with two files", () => {
+		const manifest = withSection();
+		expect(manifest.tyreSizesFault).toBeNull();
+		expect(manifest.tyreSizes).toEqual({
+			release: 4,
+			id: "snehove-retaze-20261105",
+			index: {
+				file: SECTION.index.file,
+				sha256: SECTION.index.sha256,
+				bytes: 132926,
+				schema: "maky.tyre-size-index/1",
+				selfSha256: SECTION.index.selfSha256,
+			},
+			families: {
+				file: SECTION.families.file,
+				sha256: SECTION.families.sha256,
+				bytes: 11116,
+				schema: "maky.tyre-families/1",
+				selfSha256: SECTION.families.selfSha256,
+			},
+		});
+	});
+
+	it("may be null: CFM has not enrolled the pair yet", () => {
+		const parsed = parseManifest(
+			sealed((doc) => {
+				doc.schemaVersion = "1.1.0";
+				doc.tyreSizes = null;
+			}),
+			POINTER,
+		);
+		if (!parsed.ok) throw new Error(parsed.fault.message);
+		expect(parsed.manifest.tyreSizes).toBeNull();
+		expect(parsed.manifest.tyreSizesFault).toBeNull();
+	});
+
+	it.each([
+		["a missing list", (section: Doc) => delete section.index],
+		["a missing seal", (section: Doc) => delete section.families.selfSha256],
+		[
+			"a schema this build does not read",
+			(section: Doc) => (section.families.contract.schema = "maky.tyre-families/2"),
+		],
+		["a release of zero", (section: Doc) => (section.release = 0)],
+		["no id", (section: Doc) => delete section.id],
+		["a file of a hundred megabytes", (section: Doc) => (section.index.bytes = 100 * 1_048_576)],
+		["a file name that is a path", (section: Doc) => (section.families.file = "a/b.json")],
+		["a section that is a list", (section: Doc) => (section.index = [])],
+	])("with %s is a fault of the section, and the manifest around it is still read", (_what, change) => {
+		const manifest = withSection(change);
+		expect(manifest.tyreSizes).toBeNull();
+		expect(manifest.tyreSizesFault?.code).toBe("tyre_sizes_invalid");
+		expect(manifest.tyreSizesFault?.message).toContain("tyreSizes");
+		// The 1.0 body is untouched by it.
+		expect(Object.keys(manifest.content).sort()).toEqual(["at", "de", "sk", "us"]);
+		expect(manifest.fitment?.datasetVersion).toBe("3.0.0-full-example.1");
 	});
 });
 
