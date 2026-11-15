@@ -58,6 +58,7 @@ import { TyreListingFilter } from "@/ui/components/fitment/tyre-listing-filter";
 import { attachSetFacts } from "@/lib/fitment/card-facts";
 import { attachTyreFit } from "@/lib/tyre-size/card-fit";
 import { tyreFilterRequestOf, tyreSizeParamOf } from "@/lib/tyre-size/listing-param";
+import { tyreListingCanonicalPath } from "@/lib/tyre-size/size-page-route";
 import {
 	resolveTyreListingFilter,
 	tyreFilterAnswers,
@@ -277,8 +278,15 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 	// A later page of the listing is its own canonical; a narrowed or re-ordered list still points at
 	// the category (`listingCanonical`, the one place that decides it).
 	const searchParams = await props.searchParams;
-	const canonical = listingCanonical(firstPage, searchParams);
-	const laterPage = forwardPageCursor(searchParams) !== null;
+	// The chain shelf narrowed by a tyre size is a copy of that size's page, not of the shelf.
+	const sizePagePath = await tyreListingCanonicalPath(params.channel, baseSlugOf(params), searchParams);
+	const sizePage = sizePagePath
+		? buildCanonicalUrl(REVERSE_MAP[params.channel] || params.channel, sizePagePath)
+		: null;
+	const canonical = listingCanonical(firstPage, searchParams, sizePage);
+	// Neither is this category in another market: another market's page two holds other products, and the
+	// size page names its own counterparts.
+	const laterPage = forwardPageCursor(searchParams) !== null || sizePage !== null;
 
 	return {
 		title,

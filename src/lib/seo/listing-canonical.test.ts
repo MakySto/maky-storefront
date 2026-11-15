@@ -46,6 +46,22 @@ describe("listingCanonical", () => {
 		},
 	);
 
+	it("is the selection's own page when it has one, on any page of the list and in any order", () => {
+		const own = `${BASE}/205-60-r16`;
+		expect(listingCanonical(BASE, { tyres: "1", tyreSize: "205/60 R16" }, own)).toBe(own);
+		expect(listingCanonical(BASE, { tyreSize: "205/60 R16", sort: "price-asc" }, own)).toBe(own);
+		expect(listingCanonical(BASE, { tyreSize: "205/60 R16", cursor: "abc", direction: "next" }, own)).toBe(
+			own,
+		);
+	});
+
+	it("is unchanged when the selection has no page of its own", () => {
+		expect(listingCanonical(BASE, { tyreSize: "205/60 R99" }, null)).toBe(BASE);
+		expect(listingCanonical(BASE, { cursor: "abc", direction: "next" }, null)).toBe(
+			`${BASE}?cursor=abc&direction=next`,
+		);
+	});
+
 	it("does not take a repeated or empty cursor for a page", () => {
 		expect(forwardPageCursor({ cursor: ["a", "b"] })).toBeNull();
 		expect(forwardPageCursor({ cursor: "" })).toBeNull();

@@ -6,6 +6,8 @@ import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 import { getShelfCodes, type ShelfCode } from "@/lib/listing/shelf-codes";
 import { indexableMarkets } from "@/lib/market-state";
 import type { MarketCounterpart } from "@/lib/seo/hreflang";
+import { tyreFilterRequestOf, tyreSizeParamOf } from "./listing-param";
+import { resolveTyreInput } from "./size-lookup";
 import {
 	indexableTyrePageSlugs,
 	tyreFamilyOffer,
@@ -88,6 +90,44 @@ export async function indexableTyrePagePaths(market: string): Promise<string[]> 
 	const offer = await readTyreShelfOffer(channel);
 	if (!offer) return [];
 	return indexableTyrePageSlugs(offer.onSale).map((slug) => tyrePagePath(market, slug));
+}
+
+/**
+ * The size page a shelf listing narrowed by `?tyreSize=` is a copy of, as a market-relative path, or `null` when the
+ * listing has none and its canonical stays the shelf.
+ *
+ * `?tyres=1&tyreSize=205%2F55+R16` shows the products the size page shows, under an address only the selector writes.
+ * Its canonical was the shelf, which told a search engine that a list of the eleven chains for one size is a copy of
+ * the list of all 145. The size page is what it is a copy of. Sorting, price, maker and a cursor do not change the
+ * answer: they show the same products in another order or fewer of them, and the size page holds them all.
+ *
+ * `null`, and so the shelf as before, for: another category; a market that does not sell the shelf; `?tyres=0`, which
+ * is the whole shelf with the size only on the cards; a size the list does not hold or that has no page; a size page
+ * that is not indexed in this channel (a canonical must not name a `noindex` page); and a shop that cannot be asked
+ * what it sells, where nothing is claimed about the size.
+ *
+ * Only the size the LINK names counts. A size the shopper has remembered narrows the same listing by default, but
+ * the address is then the shelf's own and a robot, which remembers nothing, is shown the whole shelf there.
+ */
+export async function tyreListingCanonicalPath(
+	channel: string,
+	categoryBase: string,
+	searchParams: Readonly<Record<string, string | string[] | undefined>>,
+): Promise<string | null> {
+	if (!isTyreShelf(categoryBase)) return null;
+	if (tyreFilterRequestOf(searchParams.tyres) === "all") return null;
+	const raw = tyreSizeParamOf(searchParams.tyreSize);
+	if (raw === undefined) return null;
+	const page = tyreSizePageOf(resolveTyreInput(raw)?.label);
+	if (!page) return null;
+	const path = tyreSizePagePath(channel, page.label);
+	if (!path) return null;
+	try {
+		const offer = await readTyreShelfOffer(channel);
+		return offer && tyreSizeOffer(page.label, offer.onSale).indexable ? path : null;
+	} catch {
+		return null;
+	}
 }
 
 /** May this page be indexed in a channel that sells these codes? A rim page: when one of its sizes may. */
