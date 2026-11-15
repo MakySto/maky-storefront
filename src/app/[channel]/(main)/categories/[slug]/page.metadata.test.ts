@@ -92,7 +92,9 @@ vi.mock("@/lib/graphql", async (importOriginal) => ({
 // The not-found branch asks for the market's "not found" title; there is no request to take a locale from.
 vi.mock("next-intl/server", async (importOriginal) => ({
 	...(await importOriginal<typeof import("next-intl/server")>()),
-	getTranslations: async () => (key: string) => key,
+	// With values, the key and what it was given: enough to see which sentence was asked for, and of what.
+	getTranslations: async () => (key: string, values?: Record<string, unknown>) =>
+		values ? `${key} ${JSON.stringify(values)}` : key,
 }));
 
 // `applyCacheProfile` tags the entry; outside a Next render there is nothing to tag. The calls to
@@ -178,6 +180,75 @@ describe("category meta description", () => {
 		category.seoDescription = "";
 		category.description = asEditorJs("Krátky text kategórie.");
 		expect(await descriptionOf()).toBe("Krátky text kategórie.");
+	});
+
+	// 19 of the 28 Slovak categories answered with their bare name here (2026-11-15).
+	it("is a sentence about the category and what it holds, never the bare name, when it has no text at all", async () => {
+		category.seoDescription = "";
+		category.description = null;
+		expect(await descriptionOf()).toBe('categoryMetaDescription {"category":"Autochladničky","count":12}');
+	});
+
+	it("keeps the name for an empty category, which is not indexed and has nothing to count", async () => {
+		category.seoDescription = "";
+		(category.products as { totalCount: number }).totalCount = 0;
+		expect(await descriptionOf()).toBe("Autochladničky");
+	});
+});
+
+/**
+ * Page two used to name page one as its canonical, which tells a crawler it is a copy and leaves the
+ * products it links to the sitemap alone. Google: "Don't use the first page of a paginated sequence as
+ * the canonical page."
+ */
+describe("a later page of the listing", () => {
+	const metaFor = async (searchParams: Record<string, string | undefined>) => {
+		const { generateMetadata } = await import("./page");
+		return generateMetadata({
+			params: Promise.resolve({ channel: "sk-eur", slug: "autochladnicky" }),
+			searchParams: Promise.resolve(searchParams),
+		});
+	};
+
+	beforeEach(() => {
+		vi.stubEnv("MAKY_LIVE_MARKETS", "sk,cz,de");
+		vi.stubEnv("MAKY_INDEXABLE_MARKETS", "sk,cz,de");
+	});
+
+	it("is its own canonical, in the form the pagination link has", async () => {
+		const meta = await metaFor({ cursor: "WyJhIiwgIjEyIl0=", direction: "next" });
+		expect(meta.alternates?.canonical).toBe(
+			"https://maky.store/sk/autochladnicky?cursor=WyJhIiwgIjEyIl0%3D&direction=next",
+		);
+		expect(meta.robots).toBeUndefined();
+	});
+
+	it("names no other market: page two elsewhere holds other products", async () => {
+		const meta = await metaFor({ cursor: "WyJhIiwgIjEyIl0=", direction: "next" });
+		expect(meta.alternates?.languages).toBeUndefined();
+		expect(
+			reads.map((read) => read.operation).filter((operation) => operation.startsWith("CategoryMarket")),
+		).toEqual([]);
+	});
+
+	it("still points at the category when the list is re-ordered, narrowed or walked backwards", async () => {
+		const variants: Record<string, string>[] = [
+			{ sort: "price-asc" },
+			{ cursor: "abc", direction: "next", sort: "price-asc" },
+			{ cursor: "abc", direction: "next", brand: "thule" },
+			{ cursor: "abc", direction: "next", tyreSize: "205-55-16" },
+			{ cursor: "abc", direction: "prev" },
+			{ cursor: "", direction: "next" },
+		];
+		for (const searchParams of variants) {
+			const meta = await metaFor(searchParams);
+			expect(meta.alternates?.canonical, JSON.stringify(searchParams)).toBe(
+				"https://maky.store/sk/autochladnicky",
+			);
+			expect(Object.keys(meta.alternates?.languages ?? {}), JSON.stringify(searchParams)).toContain(
+				"x-default",
+			);
+		}
 	});
 });
 

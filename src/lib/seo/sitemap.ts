@@ -9,7 +9,9 @@ import {
 
 export { sitemapTag };
 import { categoryUrlFor } from "@/config/category-routes";
+import { TYRE_SHELF_SLUG } from "@/config/tyre-shelves";
 import { stockedBrandSlugs } from "@/lib/brands/catalog";
+import { indexableTyrePagePaths } from "@/lib/tyre-size/size-page-route";
 import { ensureFreshLiveCategories } from "@/lib/live-categories";
 import { getBaseUrl } from "@/lib/seo/config";
 import { CHANNEL_MAP } from "@/lib/channel-map";
@@ -218,6 +220,27 @@ async function brandPathsFor(channel: string): Promise<readonly string[]> {
 }
 
 /**
+ * The snow-chain shelf's tyre-size and rim pages this market may be indexed for
+ * (`/snehove-retaze/r16`, `/snehove-retaze/205-60-r16`): the sizes the sealed list holds for at least two products
+ * the channel sells. The same rule as the pages' own `robots` (`isTyrePageIndexable`), read from the same function.
+ *
+ * A fault leaves them out of this answer and never fails the shard, for the reason the brand pages give above: the
+ * shard carries the home page and the categories too.
+ */
+async function tyrePagePathsFor(market: string): Promise<readonly string[]> {
+	try {
+		return await indexableTyrePagePaths(market);
+	} catch (error) {
+		console.warn(
+			`[sitemap] tyre-size pages left out of the pages shard of ${market}: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
+		);
+		return [];
+	}
+}
+
+/**
  * One market's navigational pages: home, listing, stocked categories, the makers, static and CMS routes.
  *
  * No `lastModified` on these. It is a claim about when the content last changed, and the
@@ -240,13 +263,25 @@ async function pageEntriesFor(market: string): Promise<MetadataRoute.Sitemap> {
 		{ url: `${base}/${market}/products`, changeFrequency: "daily", priority: 0.8 },
 	];
 
-	for (const slug of await fetchStockedCategorySlugs(channel, CHANNEL_MAP[market].locale)) {
+	const stocked = await fetchStockedCategorySlugs(channel, CHANNEL_MAP[market].locale);
+	for (const slug of stocked) {
 		entries.push({
 			// The market's canonical spelling: `/cz/stresni-nosice`, never the Slovak root abroad.
 			url: `${base}/${market}${categoryUrlFor(market, slug)}`,
 			changeFrequency: "weekly",
 			priority: 0.7,
 		});
+	}
+
+	// The snow-chain shelf's pages by tyre size and by rim, only where the shelf itself is a page.
+	if (stocked.includes(TYRE_SHELF_SLUG)) {
+		for (const path of await tyrePagePathsFor(market)) {
+			entries.push({
+				url: `${base}/${market}${path}`,
+				changeFrequency: "weekly",
+				priority: 0.5,
+			});
+		}
 	}
 
 	for (const path of await brandPathsFor(channel)) {

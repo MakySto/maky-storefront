@@ -1,0 +1,46 @@
+# The product feeds Google Merchant Center fetches, written once a night.
+#
+# Run by maky-merchant-feed.timer. Installed by a person on the web server, not by the deploy: merging a
+# change to this file changes nothing on the server; the installed copy in /etc/systemd/system is what runs.
+#
+# What one run does: asks the running shop on 127.0.0.1:3000 for the catalogue of each market named in
+# --markets, step by step, and writes one file per market into /var/lib/maky-feeds, which the shop serves
+# at /feeds/google-<market>.xml.gz. What a feed item says is decided by the shop (src/lib/merchant-feed),
+# by the functions the product page uses; this run only writes it down. A market that cannot be read in
+# full keeps the file of the night before, and so does one whose feed would be empty or less than half
+# of the last one. It reads one variable from /opt/storefront/.env (the secret of the shop's internal
+# routes), sends it only to 127.0.0.1, and touches neither PM2, nginx nor the build.
+#
+#   systemctl cat maky-merchant-feed.service | grep ExecStart      # the line that is really installed
+#   systemctl list-timers maky-merchant-feed.timer                 # when it runs next
+#   journalctl -u maky-merchant-feed.service --since "-2 days"     # what it read, wrote and left out
+#   cat /var/lib/maky-feeds/status.json                            # the last feed of each market in numbers
+[Unit]
+Description=Product feeds of maky.store for Google Merchant Center
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/storefront
+
+# Not while a deploy runs. deploy-production.sh holds this lock for its whole length; flock exits 1
+# when it is held, and systemd treats an ExecCondition exit of 1 to 254 as "skip", not "failed".
+# A deploy that starts during a run stops the shop under it: the steps fail, and last night's files stay.
+ExecCondition=/usr/bin/flock -n /run/lock/maky-storefront-deploy.lock -c true
+
+# Slovakia only: the pilot. A market is added here when its feed has been looked at (a dry run names
+# what it would write and what it leaves out) and Merchant Center has delivery set up for its country.
+ExecStart=/usr/bin/env node scripts/ops/merchant-feed.mjs --markets sk --write
+# /var/lib/maky-feeds, created for User=ubuntu and readable by the shop, which runs as ubuntu too.
+StateDirectory=maky-feeds
+StateDirectoryMode=0755
+
+# A small job that must never compete with the shop: low priority, a memory ceiling, no swap.
+Nice=15
+MemoryMax=512M
+MemorySwapMax=0
+TimeoutStartSec=90min
+NoNewPrivileges=yes

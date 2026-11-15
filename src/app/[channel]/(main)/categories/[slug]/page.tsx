@@ -43,6 +43,7 @@ import {
 import { getSceneryOrNone } from "@/lib/homepage/scenery";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { buildCanonicalUrl, counterpartAlternates } from "@/lib/seo/hreflang";
+import { forwardPageCursor, listingCanonical } from "@/lib/seo/listing-canonical";
 import { marketOpenGraph, truncateText } from "@/lib/seo/metadata";
 import { buildSortVariables, buildFilterVariables } from "@/ui/components/plp/filter-utils";
 import {
@@ -64,6 +65,9 @@ import {
 	tyreFilterSize,
 } from "@/lib/tyre-size/plp-tyre-filter";
 import { CatalogMakeIndex } from "@/ui/components/catalog/make-index";
+import { TyreFamilyDirectory } from "@/ui/components/fitment/tyre-family-directory";
+import { TyreSizeDirectory } from "@/ui/components/fitment/tyre-size-directory";
+import { isTyreShelf } from "@/config/tyre-shelves";
 import { HeroBenefits } from "@/ui/components/homepage/hero-benefits";
 import { STOREFRONT_CATEGORIES, categoryFitmentKind } from "@/config/categories";
 import { CategoryPageClient } from "./client";
@@ -100,6 +104,28 @@ const CATEGORY_TAGLINES: Readonly<Record<string, string>> = {
  */
 const fallbackDescription = (text: string | null | undefined): string =>
 	text ? truncateText(text, 155) : "";
+
+/**
+ * The description of a category for a search result: its own SEO description, else the start of its page
+ * text, else one sentence built from what is known of it, its name and how much it holds in this market.
+ *
+ * The last step used to be the bare name: 19 of the 28 Slovak categories had a meta description that was
+ * the category's name and nothing else (measured 2026-11-15; Bing reported the same pages as "meta
+ * description too short"). The sentence is a floor, not the text: whatever CFM writes into Saleor wins.
+ */
+function categoryMetaDescription(
+	category: Category,
+	plainDescription: string | null,
+	sentence: (values: { category: string; count: number }) => string,
+): string {
+	const own = category.seoDescription || fallbackDescription(plainDescription);
+	if (own) return own;
+	const count = category.products?.totalCount ?? 0;
+	// An empty category has nothing to count; it is `noindex` and keeps the name.
+	return count > 0
+		? sentence({ category: category.name, count })
+		: meaningfulTitle(category.seoTitle) || category.name;
+}
 
 /** A category that exists but holds nothing in the channel it was read for. */
 const categoryIsEmpty = (category: Category): boolean => (category.products?.totalCount ?? 0) === 0;
@@ -213,6 +239,10 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 	// A description that is an article (lead, then sections) speaks with its lead only.
 	const plainDescription =
 		readCategoryArticle(category.description)?.heroText ?? parseEditorJSToText(category.description);
+	const tPlp = await getTranslations({ locale: getLocaleFromChannel(params.channel), namespace: "plp" });
+	const description = categoryMetaDescription(category, plainDescription, (values) =>
+		tPlp("categoryMetaDescription", values),
+	);
 
 	// The SEO title when Saleor has one, the name when it does not — and the brand once.
 	// This used to be `${name} | ${seoTitle || parent title}`, which printed the category
@@ -233,33 +263,31 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 	if (categoryIsEmpty(category)) {
 		return {
 			title,
-			description:
-				category.seoDescription ||
-				fallbackDescription(plainDescription) ||
-				meaningfulTitle(category.seoTitle) ||
-				category.name,
+			description,
 			robots: { index: false, follow: true, googleBot: { index: false, follow: true } },
 			// No canonical, deliberately: a self-canonical nominates the URL, which
 			// is the opposite of what noindex is here to say.
 		};
 	}
 
-	const canonical = buildCanonicalUrl(
+	const firstPage = buildCanonicalUrl(
 		REVERSE_MAP[params.channel] || params.channel,
 		categoryUrlFor(params.channel, baseSlugOf(params)),
 	);
+	// A later page of the listing is its own canonical; a narrowed or re-ordered list still points at
+	// the category (`listingCanonical`, the one place that decides it).
+	const searchParams = await props.searchParams;
+	const canonical = listingCanonical(firstPage, searchParams);
+	const laterPage = forwardPageCursor(searchParams) !== null;
 
 	return {
 		title,
-		description:
-			category.seoDescription ||
-			fallbackDescription(plainDescription) ||
-			meaningfulTitle(category.seoTitle) ||
-			category.name,
+		description,
 		// Category listings had no canonical at all, while product pages have always
 		// had one. The toolbar appends ?sort= and filter params, so without this every
 		// sort order is a separate indexable URL competing with the clean one. Points
-		// at the bare path, deliberately dropping the query. No hreflang: the slugs are
+		// at the bare path, deliberately dropping the query (a later page of the listing
+		// excepted, see `listingCanonical` above). No hreflang: the slugs are
 		// Slovak and the other markets' category pages are unverified — matching what
 		// the PDP does rather than asserting pages that may not resolve.
 		alternates: {
@@ -273,10 +301,21 @@ export const generateMetadata = async (props: PageProps): Promise<Metadata> => {
 			// and holds products — the two conditions under which that page is indexable too. The
 			// other markets are one cached read (`getCategoryMarketPresence`); this page is listed, or
 			// the empty-in-this-channel branch above would have returned.
-			languages: counterpartAlternates(
-				REVERSE_MAP[params.channel] || params.channel,
-				await categoryCounterparts(saleorSlugOf(params), params.channel, true, getCategoryMarketPresence),
-			),
+			// A later page has no counterpart: another market's page two holds other products, and its
+			// first page is not this page in another language.
+			...(laterPage
+				? {}
+				: {
+						languages: counterpartAlternates(
+							REVERSE_MAP[params.channel] || params.channel,
+							await categoryCounterparts(
+								saleorSlugOf(params),
+								params.channel,
+								true,
+								getCategoryMarketPresence,
+							),
+						),
+					}),
 		},
 		openGraph: marketOpenGraph(params.channel, canonical),
 	};
@@ -387,6 +426,13 @@ async function CategoryContent({
 					}
 				/>
 			</Suspense>
+			{/* The snow-chain shelf's way to its pages by tyre size and by rim. Its own boundary: it asks what the
+			    channel sells, and the listing must never wait for it. Nothing on any other shelf. */}
+			{isTyreShelf(baseSlug) ? (
+				<Suspense fallback={null}>
+					<TyreSizeDirectory channel={params.channel} />
+				</Suspense>
+			) : null}
 			{/* The article's sections: below the listing, server-rendered in full, no interaction needed. */}
 			{article && article.body.length > 0 ? (
 				<section
@@ -688,6 +734,13 @@ async function CategoryProducts({
 					searchParams={searchParams}
 				/>
 			</div>
+			{/* The snow-chain shelf by model, before a shopper has said anything: no tyre size, and the listing as it
+			    opens (no page, order or filter of their own). Its own boundary, so the products never wait for it. */}
+			{tyreFilter.state === "no-size" && isUntouchedListing(searchParams) ? (
+				<Suspense fallback={null}>
+					<TyreFamilyDirectory channel={params.channel} />
+				</Suspense>
+			) : null}
 			<CategoryPageClient
 				products={productCards}
 				totalCount={listing.totalCount}
@@ -717,6 +770,12 @@ async function CategoryProducts({
 			/>
 		</>
 	);
+}
+
+/** The listing exactly as it opens: the shopper has not paged, ordered or filtered it. */
+const LISTING_STATE_PARAMS = ["cursor", "direction", "sort", "price", "brand", "volume", "colors", "sizes"];
+function isUntouchedListing(searchParams: Record<string, string | string[] | undefined>): boolean {
+	return LISTING_STATE_PARAMS.every((name) => searchParams[name] === undefined);
 }
 
 function PageSkeleton() {

@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { brandConfig } from "@/config/brand";
+import { categoryUrlFor } from "@/config/category-routes";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { ProductListPaginatedDocument } from "@/gql/graphql";
+import { brandCategoryList, brandTitle, getBrandCategories } from "@/lib/brands/brand-categories";
 import { getBrand, type Brand } from "@/lib/brands/catalog";
 import { marketHref, REVERSE_MAP } from "@/lib/channel-map";
 import { cmsMediaObjectPosition } from "@/lib/cms/blocks";
@@ -14,12 +16,13 @@ import { BRAND_ATTRIBUTE_SLUG } from "@/lib/listing/facet-params";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
 import { resolveExactLocaleProducts } from "@/lib/saleor/exact-locale";
 import { buildCanonicalUrl } from "@/lib/seo/hreflang";
+import { listingCanonical } from "@/lib/seo/listing-canonical";
 import { marketOpenGraph } from "@/lib/seo/metadata";
 import { getPaginatedListVariables } from "@/lib/utils";
 import { BrandMark } from "@/ui/components/brands/brand-mark";
 import { BrandProducts } from "@/ui/components/brands/brand-products";
 import { BrandsUnavailable } from "@/ui/components/brands/brands-unavailable";
-import { CategoryHero, transformToProductCard } from "@/ui/components/plp";
+import { CategoryHero, SubcategoryNav, transformToProductCard } from "@/ui/components/plp";
 import { buildSortVariables } from "@/ui/components/plp/filter-utils";
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -43,16 +46,31 @@ async function brandOrNull(channel: string, slug: string): Promise<Brand | null>
  * no page: the content says so and the metadata keeps it out of the index.
  */
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
-	const { channel, brand: slug } = await props.params;
-	const t = await getTranslations({ locale: getLocaleFromChannel(channel), namespace: "brands" });
+	const [{ channel, brand: slug }, searchParams] = await Promise.all([props.params, props.searchParams]);
+	const locale = getLocaleFromChannel(channel);
+	const t = await getTranslations({ locale, namespace: "brands" });
 	const brand = await brandOrNull(channel, slug).catch(() => null);
 	if (!brand)
 		return { title: `${t("title")} | ${brandConfig.siteName}`, robots: { index: false, follow: true } };
 
-	const canonical = buildCanonicalUrl(REVERSE_MAP[channel] || channel, `/znacky/${brand.slug}`);
+	// What the maker sells here, by category: "Thule: Strešné nosiče, Strešné boxy" and the counts. The
+	// title was the maker's name alone and the description one sentence shared by every maker.
+	const categories = await getBrandCategories(channel, brand.slug);
+	// A later page of the list is its own canonical (`listingCanonical`); a re-ordered one is not.
+	const canonical = listingCanonical(
+		buildCanonicalUrl(REVERSE_MAP[channel] || channel, `/znacky/${brand.slug}`),
+		searchParams,
+	);
 	return {
-		title: `${brand.name} | ${brandConfig.siteName}`,
-		description: brand.shortDescription ?? t("brandDescription", { brand: brand.name }),
+		title: `${brandTitle(brand.name, categories)} | ${brandConfig.siteName}`,
+		description:
+			brand.shortDescription ??
+			(categories.length > 0
+				? t("brandDescriptionCategories", {
+						brand: brand.name,
+						categories: brandCategoryList(categories, locale),
+					})
+				: t("brandDescription", { brand: brand.name })),
 		alternates: { canonical },
 		openGraph: marketOpenGraph(channel, canonical),
 	};
@@ -94,9 +112,11 @@ async function BrandContent({ params: paramsPromise, searchParams: searchParamsP
 
 	const locale = getLocaleFromChannel(channel);
 	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
-	const [t, tNav] = await Promise.all([
+	const [t, tNav, categories] = await Promise.all([
 		getTranslations({ locale, namespace: "brands" }),
 		getTranslations({ locale, namespace: "nav" }),
+		// One cached read, shared with the metadata. None when Saleor did not answer: the row is left out.
+		getBrandCategories(channel, brand.slug),
 	]);
 
 	const result = await executePublicGraphQL(ProductListPaginatedDocument, {
@@ -150,6 +170,23 @@ async function BrandContent({ params: paramsPromise, searchParams: searchParamsP
 					) : null
 				}
 			/>
+			{categories.length > 0 ? (
+				<div className="max-w-page mx-auto w-full px-4 pt-5 sm:px-6 sm:pt-6 lg:px-8">
+					{/* The maker's categories, each a link to that category narrowed to the maker: the way from
+					    "Thule" to "Thule roof boxes", for a shopper and for a crawler. */}
+					<SubcategoryNav
+						label={t("brandCategories", { brand: brand.name })}
+						allLabel={brand.name}
+						chips={categories.map((category) => ({
+							id: category.id,
+							href: `${marketHref(channel, categoryUrlFor(channel, category.slug))}?brand=${brand.slug}`,
+							name: category.name,
+							label: category.name,
+							current: false,
+						}))}
+					/>
+				</div>
+			) : null}
 			<BrandProducts
 				products={localized.products.map((product) => transformToProductCard(product, channel, locale))}
 				totalCount={products.totalCount ?? 0}

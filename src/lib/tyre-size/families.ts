@@ -79,3 +79,18 @@ export function tyreFamilyCodes(code: string | null | undefined): readonly strin
 export function tyreSizeLabelOf(code: string): string {
 	return DATA.sizeOf.get(code) ?? code;
 }
+
+/** Every family of the list, ascending by key. */
+export function tyreFamilies(): readonly TyreFamily[] {
+	return [...DATA.families.values()].sort((a, b) => a.key.localeCompare(b.key));
+}
+
+/** The family a key names, or `null`. */
+export function tyreFamilyByKey(key: string | null | undefined): TyreFamily | null {
+	return typeof key === "string" ? DATA.families.get(key) ?? null : null;
+}
+
+/** Every code of a family, ascending. Empty for a key that names none. */
+export function tyreCodesOfFamily(key: string): readonly string[] {
+	return DATA.codesOf.get(key) ?? [];
+}

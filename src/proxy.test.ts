@@ -1288,6 +1288,17 @@ describe("the snow-chain category address", () => {
 	});
 });
 
+describe("product feeds for Merchant Center", () => {
+	it("hands /feeds/<file> to its route, which answers the 404 for a name it does not serve", async () => {
+		for (const path of ["/feeds/google-sk.xml.gz", "/feeds/anything-else"]) {
+			const res = await proxy(req(path));
+			expect(res.status, path).not.toBe(404);
+			expect(res.headers.get("x-middleware-rewrite"), path).toBeNull();
+			expect(res.headers.get("x-middleware-next"), path).toBe("1");
+		}
+	});
+});
+
 describe("sitemap index and shards (COMMERCE-2 M5)", () => {
 	it("hands /sitemap.xml and the shards to their routes, not to the invalid-first-segment 404", async () => {
 		for (const path of ["/sitemap.xml", "/sitemaps/sk-products-1.xml", "/sitemaps/sk-pages-1.xml"]) {

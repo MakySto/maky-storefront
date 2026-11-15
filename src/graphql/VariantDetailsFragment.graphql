@@ -7,6 +7,9 @@ fragment VariantDetails on ProductVariant {
 	# `lib/product-ean` checks it again before anything shows it. Absent on products CFM has not
 	# published it for yet, which is a blank, not an error.
 	ean: metafield(key: "cfm_ean")
+	# The EANs of the parts a set is made of (PUBLIC variant metadata, JSON text). A set has no EAN of its
+	# own; `lib/component-eans` reads this and checks every number again. Absent on everything else.
+	componentEans: metafield(key: "cfm_component_eans")
 	quantityAvailable
 	# Distinguishes real warehouse stock from Saleor's synthetic checkout cap when
 	# inventory tracking is disabled. A tracked positive quantity must win over a
