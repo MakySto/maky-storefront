@@ -20,10 +20,10 @@ const products = Object.entries(index.products);
 const labels = [...new Set(products.flatMap(([, product]) => product.sizes.map(([label]) => label)))];
 
 describe("the list seen from the size's side", () => {
-	it("holds every row of the list, once: the same 5 324 rows, turned over", () => {
+	it("holds every row of the list, once: the same 5 323 rows, turned over", () => {
 		const rows = labels.reduce((sum, label) => sum + tyreSizeEntries(label).length, 0);
 		expect(rows).toBe(index.counts.sizes);
-		expect(labels).toHaveLength(981);
+		expect(labels).toHaveLength(980);
 	});
 
 	it("answers for every code of the list, and for no other", () => {
@@ -186,7 +186,7 @@ describe("the steps offer only what the list holds", () => {
 		for (const usual of [175, 185, 195, 205, 215, 225, 235]) {
 			expect(widths.find((width) => width.value === usual)?.common, String(usual)).toBe(true);
 		}
-		expect(widths).toHaveLength(43);
+		expect(widths).toHaveLength(42);
 	});
 
 	it("offers the profiles that exist for a width, then the rims that exist for both", () => {
@@ -216,8 +216,8 @@ describe("the steps offer only what the list holds", () => {
 				}
 			}
 		}
-		// Every standard label of the list is reachable that way: 865 of the 981.
-		expect(paths).toBe(865);
+		// Every standard label of the list is reachable that way: 864 of the 980.
+		expect(paths).toBe(864);
 	});
 
 	it("builds a label only from what was offered", () => {

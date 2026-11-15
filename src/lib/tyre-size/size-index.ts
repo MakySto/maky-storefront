@@ -7,7 +7,7 @@ import type { TyreCondition, TyreSizeIndex, TyreSizeProduct, TyreSizeRow } from 
 /**
  * The tyre sizes of the snow-chain and snow-sock codes (CFM's `velkosti_20261105.json`, copied in verbatim).
  *
- * One product on this shop is one manufacturer's code, and one code fits dozens to hundreds of tyre sizes (5 324
+ * One product on this shop is one manufacturer's code, and one code fits dozens to hundreds of tyre sizes (5 323
  * rows over 145 codes). The size the customer chose is not a variant of the product; it is data on the cart line.
  * This list is what decides, on the page and again on the server when the line is added, whether a size belongs to
  * a code: a size is never converted, never rounded to a neighbour, and the condition on a tyre make or model that

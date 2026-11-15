@@ -25,8 +25,8 @@ import {
  * here is invented but which codes a channel sells.
  *
  *   1. One size has one address, and it is the list's own label.
- *   2. Only a standard size in the range of real tyres is a page: old spellings, half-inch rims and a source's typing
- *      error (`650/17 R17`) are not.
+ *   2. Only a standard size in the range of real tyres is a page: old spellings, half-inch rims and a row outside
+ *      that range (`275/20 R20`) are not.
  *   3. Whether a page may be indexed is decided by what the channel SELLS, never by the list alone.
  */
 
@@ -74,10 +74,12 @@ describe("which address is a page", () => {
 			Object.values(tyreSizeIndex().products).flatMap((product) => product.sizes.map(([label]) => label)),
 		);
 		// Each of these IS in the list, so the product page and the selector answer for it; none gets an address.
-		for (const label of ["650/17 R17", "175 R13", "5.00-12", "205/65 R17,5", "275/20 R20"]) {
+		for (const label of ["120/80 R10", "175 R13", "5.00-12", "205/65 R17,5", "275/20 R20"]) {
 			expect(labels.has(label), `${label} is a row of the list`).toBe(true);
 			expect(tyreSizePageOf(label), label).toBeNull();
 		}
+		// A row CFM took out of the list (D0245, 2026-11-15) is not a row any more, and has no address either.
+		expect(labels.has("650/17 R17")).toBe(false);
 		expect(tyrePageOf(["650-17-r17"])).toBeNull();
 	});
 
