@@ -1,6 +1,8 @@
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { liveMarkets } from "@/lib/market-state";
+import { getLocaleFromChannel } from "@/config/locale";
 import { prewarmCategoryNavigation } from "./category-navigation";
+import { prewarmCategoryOutcome } from "./category-outcome";
 import { prewarmCategoryPriceBands } from "./category-prices";
 
 /**
@@ -16,7 +18,7 @@ const BIG_CATEGORIES: readonly string[] = ["stresne-nosice"];
 const GAP_MS = 500;
 
 /**
- * Reads the price bands and the row of sub-categories of the big categories into the process, one market
+ * Reads the category itself, its price bands and its row of sub-categories of the big categories into the process, one market
  * after the other, so that the first visitors after a restart find them kept instead of waiting 2 s for
  * them or going without (`@/lib/cache/kept-read`). It is what the first visit would have done, only
  * earlier and with all the time Saleor needs. Never rejects: a read that fails is left to the visit.
@@ -38,12 +40,13 @@ export async function prewarmBigCategories({
 		for (const slug of BIG_CATEGORIES) {
 			asked += 1;
 			try {
-				// Together, they are two different questions of two different Saleor resolvers.
-				const [bands, navigation] = await Promise.all([
+				// Together, they are three different questions of different Saleor resolvers.
+				const [outcome, bands, navigation] = await Promise.all([
+					prewarmCategoryOutcome(slug, channel, getLocaleFromChannel(channel)),
 					prewarmCategoryPriceBands(slug, channel, true),
 					prewarmCategoryNavigation(slug, channel),
 				]);
-				if (bands && navigation) held += 1;
+				if (outcome && bands && navigation) held += 1;
 			} catch {
 				// Neither rejects; nothing here may stop the start.
 			}

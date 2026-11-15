@@ -18,6 +18,7 @@ import { isCategorySlug } from "@/config/categories";
 import { liveCategoriesStats, resetLiveCategoriesForTests } from "@/lib/live-categories";
 import { installFakeSaleor } from "@/lib/live-categories.testkit";
 import { CHANNEL_MAP } from "@/lib/channel-map";
+import { __forgetAllKept, createKeptRead } from "@/lib/cache/kept-read";
 import {
 	MIN_REFRESH_AFTER_EVENT_MS,
 	readSnapshot,
@@ -436,5 +437,56 @@ describe("a product that exists only under its translated slug (exact-locale v2)
 			"fitment-offers:sk-eur:sk-SK",
 			"sitemap:sk-eur",
 		]);
+	});
+});
+
+describe("what the process keeps under the category entries (kept reads)", () => {
+	// The same name and key shape as `@/lib/listing/category-outcome`, so what the webhook reaches is what the page reads.
+	const KEY = "at-eur\u0000de-AT\u0000stresne-nosice";
+	const seed = async () => {
+		let answer = "old";
+		const kept = createKeptRead<string, string>({
+			name: "category",
+			freshMs: 300_000,
+			pauseMs: 10_000,
+			loadDeadlineMs: 5_000,
+			load: async () => answer,
+		});
+		await kept.read(KEY, "arg", 1_000);
+		answer = "new";
+		return kept;
+	};
+
+	beforeEach(() => __forgetAllKept());
+	afterEach(() => __forgetAllKept());
+
+	it("a category event drops them, so the next visit reads the new answer", async () => {
+		const kept = await seed();
+		await post({ category: { slug: "stresne-nosice" }, channel: { slug: "at-eur" } });
+		await expect(kept.read(KEY, "arg", 1_000)).resolves.toBe("new");
+	});
+
+	it("a product event leaves the old answer for one more visit and reads a new one behind it", async () => {
+		const kept = await seed();
+		await post({
+			product: { slug: "n60012", channel: { slug: "at-eur" }, category: { slug: "stresne-nosice" } },
+		});
+		await expect(kept.read(KEY, "arg", 1_000)).resolves.toBe("old");
+		await new Promise((resolve) => setTimeout(resolve, 5));
+		await expect(kept.read(KEY, "arg", 1_000)).resolves.toBe("new");
+	});
+
+	it("the manual purge of a category drops them as well, and so does a full purge", async () => {
+		const kept = await seed();
+		await GET(
+			new NextRequest(
+				"https://maky.store/api/revalidate?resource=category&channel=at-eur&locale=de-AT&slug=stresne-nosice",
+			) as never,
+		);
+		await expect(kept.read(KEY, "arg", 1_000)).resolves.toBe("new");
+
+		const again = await seed();
+		await GET(new NextRequest("https://maky.store/api/revalidate?all=1") as never);
+		await expect(again.read(KEY, "arg", 1_000)).resolves.toBe("new");
 	});
 });

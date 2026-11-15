@@ -56,6 +56,8 @@ describe("price bands", () => {
 		for (const [, options] of mocks.executePublicGraphQL.mock.calls) {
 			expect(options.variables.first).toBe(1);
 			expect(options.variables.sortBy.field).toBe("PRICE");
+			// Saleor counts the whole category for a selected `totalCount`; nothing here reads it.
+			expect(options.variables.withTotal).toBe(false);
 		}
 	});
 
@@ -64,6 +66,28 @@ describe("price bands", () => {
 		await getCategoryPriceBands("nosice-lyzi", SK);
 		expect(mocks.executePublicGraphQL).toHaveBeenCalledTimes(1);
 		expect(mocks.executePublicGraphQL.mock.calls[0]![1].variables.first).toBe(100);
+		// The first page decides from the count, so it asks for it.
+		expect(mocks.executePublicGraphQL.mock.calls[0]![1].variables.withTotal).not.toBe(false);
+	});
+
+	it("the later pages of a small category do not ask for the count again", async () => {
+		const page = (hasNextPage: boolean, totalCount: number) => ({
+			ok: true,
+			data: {
+				category: {
+					products: {
+						totalCount,
+						pageInfo: { hasNextPage, endCursor: hasNextPage ? "c1" : null },
+						edges: [{ node: { pricing: { priceRange: { start: { gross: money(20) } } } } }],
+					},
+				},
+			},
+		});
+		mocks.executePublicGraphQL.mockResolvedValueOnce(page(true, 150)).mockResolvedValueOnce(page(false, 150));
+		await getCategoryPriceBands("autochladnicky", SK);
+		const [first, second] = mocks.executePublicGraphQL.mock.calls.map(([, options]) => options.variables);
+		expect(first.withTotal).not.toBe(false);
+		expect(second.withTotal).toBe(false);
 	});
 
 	it("a Saleor that answers late is not asked again by the next visit, and the late answer is kept", async () => {

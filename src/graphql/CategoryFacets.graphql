@@ -1,10 +1,19 @@
 # The maker and the volume of every product a category listing holds in a channel, for the
 # listing's "Značka" and "Objem" filters and their counts. Read only when the listing is small
 # enough to read whole; see `src/lib/listing/category-facets.ts`. Read-only.
-query CategoryFacets($slug: String!, $channel: String!, $first: Int!, $after: String) {
+#
+# `$withTotal`: only the first page needs the count (it decides whether the category is small enough); the
+# later pages leave it out, because Saleor counts the whole category for every page that selects it.
+query CategoryFacets(
+	$slug: String!
+	$channel: String!
+	$first: Int!
+	$after: String
+	$withTotal: Boolean = true
+) {
 	category(slug: $slug) {
 		products(channel: $channel, first: $first, after: $after) {
-			totalCount
+			totalCount @include(if: $withTotal)
 			pageInfo {
 				hasNextPage
 				endCursor

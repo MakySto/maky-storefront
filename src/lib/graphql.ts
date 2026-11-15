@@ -1,6 +1,7 @@
 import { type TypedDocumentString } from "../gql/graphql";
 import { isWriteOperation } from "@/lib/graphql-operation";
 import { saleorWriteDecision } from "@/lib/saleor/write-policy";
+import { recordSaleorWire } from "@/lib/saleor-traffic";
 
 // ============================================================================
 // Result Types - Explicit error handling without exceptions
@@ -474,6 +475,7 @@ async function fetchWithRetry(
 	const maxRetries = retryBudget ?? config.maxRetries;
 
 	for (let attempt = 0; attempt <= maxRetries; attempt++) {
+		const wireStarted = performance.now();
 		try {
 			let response: Response;
 
@@ -514,6 +516,8 @@ async function fetchWithRetry(
 				response = await fetchWithTimeout(url, input, timeoutMs);
 			}
 
+			recordSaleorWire(operationName, performance.now() - wireStarted, response.status < 500);
+
 			// Retry on 429 (rate limit) or 5xx (server errors)
 			if ((response.status === 429 || response.status >= 500) && attempt < maxRetries) {
 				const retryDelayMs = retryPauseMs(attempt, response.headers.get("Retry-After"), delayMs);
@@ -537,6 +541,7 @@ async function fetchWithRetry(
 			// AbortError. Matching only the latter silently reclassified it.
 			const isTimeout =
 				error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
+			recordSaleorWire(operationName, performance.now() - wireStarted, false);
 			// The caller has stopped waiting. Retrying would put another request on
 			// the wire for an answer nobody will read.
 			if (input.signal?.aborted) {

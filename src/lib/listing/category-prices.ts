@@ -9,7 +9,7 @@ import {
 import { getLocaleFromChannel } from "@/config/locale";
 import { createKeptRead } from "@/lib/cache/kept-read";
 import { settle, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
-import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
+import { CACHE_PROFILES, CATEGORY_PAGE_LIFE, buildTag } from "@/lib/cache-manifest";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { priceBoundaries, spanBoundaries } from "@/ui/components/plp/price-ranges";
 
@@ -100,7 +100,7 @@ async function readCategoryPriceBands(
 ): Promise<CachedRead<CategoryPriceBands | null>> {
 	"use cache";
 	const locale = getLocaleFromChannel(channel);
-	cacheLife(CACHE_PROFILES.categories.cacheProfile);
+	cacheLife(CATEGORY_PAGE_LIFE);
 	cacheTag(buildTag(CACHE_PROFILES.categories, { channel, locale, slug: baseSlug }));
 
 	return settle(() => keptBands.read(bandsKey(baseSlug, channel), { baseSlug, channel, large }, WAIT_MS));
@@ -112,7 +112,13 @@ async function computeCategoryPriceBands(
 	large: boolean,
 	signal: AbortSignal,
 ): Promise<CategoryPriceBands | null> {
-	const read = async (variables: { first: number; after?: string | null; sortBy?: ProductOrder }) => {
+	// `withTotal` only for the read that decides from the count; Saleor counts the whole category for each.
+	const read = async (variables: {
+		first: number;
+		after?: string | null;
+		sortBy?: ProductOrder;
+		withTotal?: boolean;
+	}) => {
 		const result = await executePublicGraphQL(CategoryPricesDocument, {
 			variables: { slug: baseSlug, channel, ...variables },
 			revalidate: 0,
@@ -138,7 +144,7 @@ async function computeCategoryPriceBands(
 		const amounts = gross(firstPage);
 		let page = firstPage;
 		while (page.pageInfo.hasNextPage) {
-			const next = await read({ first: PAGE, after: page.pageInfo.endCursor });
+			const next = await read({ first: PAGE, after: page.pageInfo.endCursor, withTotal: false });
 			if (!next) break;
 			amounts.push(...gross(next));
 			page = next;
@@ -148,8 +154,16 @@ async function computeCategoryPriceBands(
 	}
 
 	const [cheapest, dearest] = await Promise.all([
-		read({ first: 1, sortBy: { field: "PRICE" as ProductOrderField, direction: "ASC" as OrderDirection } }),
-		read({ first: 1, sortBy: { field: "PRICE" as ProductOrderField, direction: "DESC" as OrderDirection } }),
+		read({
+			first: 1,
+			sortBy: { field: "PRICE" as ProductOrderField, direction: "ASC" as OrderDirection },
+			withTotal: false,
+		}),
+		read({
+			first: 1,
+			sortBy: { field: "PRICE" as ProductOrderField, direction: "DESC" as OrderDirection },
+			withTotal: false,
+		}),
 	]);
 	const low = cheapest ? gross(cheapest)[0] : undefined;
 	const high = dearest ? gross(dearest)[0] : undefined;

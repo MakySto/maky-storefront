@@ -36,6 +36,7 @@ vi.mock("@/lib/market-state", () => ({ liveMarkets: () => ["sk", "cz"] }));
 
 import { getBrands, stockedBrandSlugs } from "@/lib/brands/catalog";
 import { FAULT_CACHE_LIFE } from "@/lib/cache-fault";
+import { CATEGORY_PAGE_LIFE } from "@/lib/cache-manifest";
 import { getAdviceGuide } from "@/lib/cms/advice-guide";
 import { getCmsBrands } from "@/lib/cms/brands";
 import { getCmsScenery } from "@/lib/cms/scenery";
@@ -54,7 +55,7 @@ const SK = "sk-eur";
 const DOWN = { ok: false, error: { type: "network", message: "deadline exceeded", isRetryable: true } };
 
 /** What the entry asked for in one `cacheLife` call: one of Next's profiles by name, or the fault lifetime. */
-type Lifetime = string | typeof FAULT_CACHE_LIFE;
+type Lifetime = string | typeof FAULT_CACHE_LIFE | typeof CATEGORY_PAGE_LIFE;
 
 /** The lifetimes the entry asked for, in order. */
 const lifetimes = () => mocks.cacheLife.mock.calls.map(([profile]) => profile as Lifetime);
@@ -138,20 +139,20 @@ describe("a reader whose upstream is down", () => {
 			"price bands",
 			() => getCategoryPriceBands("stresne-nosice", SK),
 			/\[Listing\] prices unavailable for stresne-nosice: deadline exceeded/,
-			["minutes", FAULT],
+			[CATEGORY_PAGE_LIFE, FAULT],
 		],
 		[
 			"category facets",
 			() => getCategoryFacets("stresne-nosice", SK),
 			/\[Listing\] facets unavailable for stresne-nosice: deadline exceeded/,
-			["minutes", FAULT],
+			[CATEGORY_PAGE_LIFE, FAULT],
 		],
 		[
 			// Its own profile, then the product types it asks for first (itself a fault, brief), then its own fault.
 			"category navigation",
 			() => getCategoryNavigation("stresne-nosice", SK),
 			/\[Listing\] category navigation unavailable for stresne-nosice: deadline exceeded/,
-			["minutes", "hours", FAULT, FAULT],
+			[CATEGORY_PAGE_LIFE, "hours", FAULT, FAULT],
 		],
 	];
 

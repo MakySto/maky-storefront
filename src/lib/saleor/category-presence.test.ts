@@ -9,6 +9,8 @@ import {
 } from "graphql";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { CATEGORY_PAGE_LIFE } from "@/lib/cache-manifest";
+
 import { ProductListByCategoryDocument } from "@/gql/graphql";
 import { FAULT_CACHE_LIFE } from "@/lib/cache-fault";
 import { resolveExactLocaleCategory } from "@/lib/saleor/exact-locale";
@@ -395,7 +397,7 @@ describe("two requests, by slug", () => {
 		delete catalogue[0]!.translations.HU;
 		const outcome = await presence();
 		expect(outcome).toEqual({ status: "found", resource: ["sk", "cz", "at", "ca"] });
-		expect(lives).toEqual(["minutes"]);
+		expect(lives).toEqual([CATEGORY_PAGE_LIFE]);
 	});
 });
 

@@ -43,6 +43,12 @@ export interface ExpiringMemo<V> {
 	getStale(key: string): V | undefined;
 	/** Replaces any existing entry for `key`, marks it fresh, and reschedules its expiry. */
 	set(key: string, value: V, ttlMs: number): void;
+	/** Marks the entry stale now, keeping its value: it is still there to fall back on. */
+	expire(key: string): void;
+	/** Throws the entry away. */
+	delete(key: string): void;
+	/** Every key held, fresh or stale. */
+	keys(): string[];
 	clear(): void;
 	/** For tests and diagnostics — entries held, fresh or stale. */
 	readonly size: number;
@@ -80,6 +86,16 @@ export function createExpiringMemo<V>(): ExpiringMemo<V> {
 			timer.unref?.();
 			timers.set(key, timer);
 		},
+		expire: (key) => {
+			cancel(key);
+			const entry = entries.get(key);
+			if (entry) entry.fresh = false;
+		},
+		delete: (key) => {
+			cancel(key);
+			entries.delete(key);
+		},
+		keys: () => [...entries.keys()],
 		clear: () => {
 			for (const key of [...timers.keys()]) cancel(key);
 			entries.clear();

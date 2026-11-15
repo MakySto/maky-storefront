@@ -1,10 +1,22 @@
 # The prices a category listing holds in a channel, for the price filter's bands — every
 # price when the listing is small, only the cheapest and dearest when it is not.
 # See `src/lib/listing/category-prices.ts`.
-query CategoryPrices($slug: String!, $channel: String!, $first: Int!, $after: String, $sortBy: ProductOrder) {
+#
+# `$withTotal` is asked only by the read that needs the count. Saleor counts (`COUNT(*)` over the whole
+# category) only for a `totalCount` that is selected, and that count is the costliest query on the database
+# behind it (Performance Insights, 2026-11-15): the two price-sorted reads of a big category and every later
+# page leave it out.
+query CategoryPrices(
+	$slug: String!
+	$channel: String!
+	$first: Int!
+	$after: String
+	$sortBy: ProductOrder
+	$withTotal: Boolean = true
+) {
 	category(slug: $slug) {
 		products(channel: $channel, first: $first, after: $after, sortBy: $sortBy) {
-			totalCount
+			totalCount @include(if: $withTotal)
 			pageInfo {
 				hasNextPage
 				endCursor

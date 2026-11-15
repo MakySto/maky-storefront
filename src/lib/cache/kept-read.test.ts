@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createKeptRead } from "./kept-read";
+import { __forgetAllKept, createKeptRead, invalidateKept } from "./kept-read";
 
 /**
  * The scenario this exists for (2026-11-15, `/sk/stresne-nosice`): Saleor needs 1.7 s for a read whose
@@ -36,6 +36,7 @@ function keeper(load: (arg: string, signal: AbortSignal) => Promise<string>) {
 }
 
 beforeEach(() => {
+	__forgetAllKept();
 	vi.useFakeTimers();
 	vi.spyOn(console, "warn").mockImplementation(() => {});
 });
@@ -211,5 +212,81 @@ describe("prewarm", () => {
 		const warmed = kept.prewarm("k", "arg");
 		await vi.advanceTimersByTimeAsync(10);
 		await expect(warmed).resolves.toBe(false);
+	});
+});
+
+describe("an answer that is given no life", () => {
+	const keeperWith = (
+		freshMs: (value: string) => number,
+		load: (arg: string, signal: AbortSignal) => Promise<string>,
+	) =>
+		createKeptRead<string, string>({
+			name: "test-life",
+			freshMs,
+			pauseMs: PAUSE,
+			loadDeadlineMs: LOAD,
+			load,
+		});
+
+	it("is not kept, and replaces the earlier answer so that it is not served stale afterwards", async () => {
+		const { state, load } = source();
+		state.delay = 10;
+		const kept = keeperWith((value) => (value === "A" ? FRESH : 0), load);
+
+		const first = kept.read("k", "arg", 2_000);
+		await vi.advanceTimersByTimeAsync(10);
+		await expect(first).resolves.toBe("A");
+
+		await vi.advanceTimersByTimeAsync(FRESH + 1);
+		state.answer = "EMPTY";
+		// Stale: the old answer once, the new one behind it.
+		const second = kept.read("k", "arg", 2_000);
+		await expect(second).resolves.toBe("A");
+		await vi.advanceTimersByTimeAsync(10);
+
+		// The new answer has no life: the next visit waits for a load of its own instead of being handed "A".
+		const third = kept.read("k", "arg", 2_000);
+		await vi.advanceTimersByTimeAsync(10);
+		await expect(third).resolves.toBe("EMPTY");
+		expect(load).toHaveBeenCalledTimes(3);
+	});
+});
+
+describe("taking answers out of use", () => {
+	it("`drop` makes the next visit wait for a new answer; `stale` hands the old one once and reads a new one behind it", async () => {
+		const { state, load } = source();
+		state.delay = 10;
+		const kept = keeper(load);
+		const warm = kept.read("a", "arg", 2_000);
+		await vi.advanceTimersByTimeAsync(10);
+		await warm;
+		const warm2 = kept.read("b", "arg", 2_000);
+		await vi.advanceTimersByTimeAsync(10);
+		await warm2;
+
+		state.answer = "B";
+		expect(invalidateKept((name, key) => name === "test-read" && key === "a", "drop")).toBe(1);
+		expect(invalidateKept((_name, key) => key === "b", "stale")).toBe(1);
+
+		const dropped = kept.read("a", "arg", 2_000);
+		await vi.advanceTimersByTimeAsync(10);
+		await expect(dropped).resolves.toBe("B");
+
+		await expect(kept.read("b", "arg", 2_000)).resolves.toBe("A");
+		await vi.advanceTimersByTimeAsync(10);
+		await expect(kept.read("b", "arg", 2_000)).resolves.toBe("B");
+	});
+
+	it("reaches the answers another copy of the module holds, because the state is the process's and not the module's", async () => {
+		const { load } = source();
+		const one = keeper(load);
+		const other = keeper(load);
+		const warm = one.read("k", "arg", 2_000);
+		await vi.advanceTimersByTimeAsync(1_700);
+		await warm;
+		load.mockClear();
+
+		await expect(other.read("k", "arg", 2_000)).resolves.toBe("A");
+		expect(load).not.toHaveBeenCalled();
 	});
 });

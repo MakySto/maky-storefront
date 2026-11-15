@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { FAULT_CACHE_LIFE } from "@/lib/cache-fault";
+import { CATEGORY_PAGE_LIFE } from "@/lib/cache-manifest";
+import { __forgetAllKept } from "@/lib/cache/kept-read";
 
 /**
  * A category's `<title>` names the category once and the shop once.
@@ -112,6 +114,7 @@ vi.mock("next/cache", async (importOriginal) => ({
 }));
 
 beforeEach(() => {
+	__forgetAllKept();
 	getShelfCodes.mockReset();
 	missing = false;
 	presenceOverrides = {};
@@ -462,7 +465,7 @@ describe("how long a category answer is remembered", () => {
 	it("a stocked category keeps the life of its profile", async () => {
 		await metadataFor();
 		expect(lives.length).toBeGreaterThan(0);
-		expect(lives.every((profile) => profile === "minutes")).toBe(true);
+		expect(lives.every((profile) => profile === CATEGORY_PAGE_LIFE)).toBe(true);
 	});
 
 	it("an empty category is remembered for seconds, as a fault is", async () => {

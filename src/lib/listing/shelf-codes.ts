@@ -2,7 +2,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { CategoryProductCodesDocument, type CategoryProductCodesQuery } from "@/gql/graphql";
 import { getLocaleFromChannel } from "@/config/locale";
 import { settle, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
-import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
+import { CACHE_PROFILES, CATEGORY_PAGE_LIFE, buildTag } from "@/lib/cache-manifest";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { publicProductCode } from "@/lib/product-code";
 
@@ -64,7 +64,7 @@ export async function getShelfCodes(baseSlug: string, channel: string): Promise<
 async function readShelfCodes(baseSlug: string, channel: string): Promise<CachedRead<ShelfCode[] | null>> {
 	"use cache";
 	const locale = getLocaleFromChannel(channel);
-	cacheLife(CACHE_PROFILES.categories.cacheProfile);
+	cacheLife(CATEGORY_PAGE_LIFE);
 	cacheTag(buildTag(CACHE_PROFILES.categories, { channel, locale, slug: baseSlug }));
 
 	return settle(() => computeShelfCodes(baseSlug, channel));

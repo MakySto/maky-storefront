@@ -4,7 +4,7 @@ import { cache } from "react";
 import { getLocaleConfigByLocale } from "@/config/locale";
 import { TypedDocumentString } from "@/gql/graphql";
 import { createKeptRead } from "@/lib/cache/kept-read";
-import { CACHE_PROFILES, applyCacheProfile, buildTag } from "@/lib/cache-manifest";
+import { CACHE_PROFILES, applyCategoryPageCache, buildTag } from "@/lib/cache-manifest";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { executePublicGraphQL, type GraphQLResult } from "@/lib/graphql";
 import { liveMarkets } from "@/lib/market-state";
@@ -265,7 +265,7 @@ async function getCategoryMarketPresenceCached(
 			locale: CHANNEL_MAP[market]!.locale,
 			slug: baseSlug,
 		};
-		if (index === 0) applyCacheProfile(CACHE_PROFILES.categories, identity);
+		if (index === 0) applyCategoryPageCache(identity);
 		else cacheTag(buildTag(CACHE_PROFILES.categories, identity));
 	}
 

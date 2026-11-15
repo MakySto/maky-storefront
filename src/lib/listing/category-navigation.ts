@@ -9,7 +9,7 @@ import { baseSlugForCategoryId, categoryUrlFor } from "@/config/category-routes"
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
 import { createKeptRead } from "@/lib/cache/kept-read";
 import { answered, settle, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
-import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
+import { CACHE_PROFILES, CATEGORY_PAGE_LIFE, buildTag } from "@/lib/cache-manifest";
 import { marketHref } from "@/lib/channel-map";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { resolveExactLocaleCategory } from "@/lib/saleor/exact-locale";
@@ -147,7 +147,7 @@ async function readCategoryNavigation(
 ): Promise<CachedRead<CategoryNavigation>> {
 	"use cache";
 	const locale = getLocaleFromChannel(channel);
-	cacheLife(CACHE_PROFILES.categories.cacheProfile);
+	cacheLife(CATEGORY_PAGE_LIFE);
 	cacheTag(buildTag(CACHE_PROFILES.categories, { channel, locale, slug: baseSlug }));
 
 	// Without the split the sub-categories keep Saleor's order; nothing else depends on it.
