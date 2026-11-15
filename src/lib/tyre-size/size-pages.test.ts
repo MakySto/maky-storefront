@@ -9,6 +9,9 @@ import {
 	indexableTyrePageSlugs,
 	offeredTyreRims,
 	popularTyreSizes,
+	tyreFamilyOffer,
+	tyreFamilyPageOf,
+	tyreFamilyPages,
 	tyrePageOf,
 	tyreRimPages,
 	tyreSizeOffer,
@@ -152,6 +155,7 @@ describe("the pages a search engine is told about", () => {
 			(page) => tyreSizeOffer(page.label, new Set(["N16075", "N17143"])).codes.length === 2,
 		);
 		expect(both.length).toBeGreaterThan(0);
+		// The two codes are of two families, one product each: no family page is named.
 		expect(slugs.filter((slug) => !slug.startsWith("r"))).toEqual(both.map((page) => page.slug));
 		for (const page of both) {
 			expect(slugs.indexOf(`r${page.rim}`)).toBeGreaterThanOrEqual(0);
@@ -162,9 +166,11 @@ describe("the pages a search engine is told about", () => {
 
 	it("covers the whole list when the channel sells every code", () => {
 		const slugs = indexableTyrePageSlugs(ALL_CODES);
-		const sizes = slugs.filter((slug) => !/^r\d\d$/.test(slug));
+		const sizes = slugs.filter((slug) => /^\d{3}-\d{2}-r\d{2}$/.test(slug));
 		expect(new Set(slugs).size).toBe(slugs.length);
 		expect(sizes.length).toBe(tyreSizePages().filter((page) => fittingCodes(page.label).size >= 2).length);
+		// The thirteen model families come first, each of them a page.
+		expect(slugs.slice(0, 13)).toEqual(tyreFamilyPages().map((family) => family.slug));
 		for (const slug of slugs) expect(tyrePageOf([slug]), slug).not.toBeNull();
 	});
 });
@@ -192,5 +198,82 @@ describe("the shortcuts on the shelf", () => {
 		expect(offeredTyreRims(new Set())).toEqual([]);
 		expect(offeredTyreRims(null)).toEqual(tyreRimPages());
 		expect(offeredTyreRims(new Set(["N16075"])).length).toBeGreaterThan(0);
+	});
+});
+
+describe("the pages by model family", () => {
+	it("gives each of the thirteen families one address, which is its key, and no address that reads as a size", () => {
+		const families = tyreFamilyPages();
+		expect(families).toHaveLength(13);
+		for (const family of families) {
+			expect(family.slug).toBe(family.key);
+			expect(family.slug).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+			expect(family.slug).not.toMatch(/^r\d\d$/);
+			expect(family.slug).not.toMatch(/^\d{3}-\d{2}-r\d{2}$/);
+			expect(tyrePageOf([family.slug])).toEqual(family);
+		}
+		expect(tyrePageOf(["snowdrive-r9"])).toEqual({
+			kind: "family",
+			key: "snowdrive-r9",
+			slug: "snowdrive-r9",
+			name: "SnowDrive R-9",
+			product: "chain",
+		});
+		expect(tyrePageOf(["SnowDrive-R9"])).toBeNull();
+		expect(tyrePageOf(["snowdrive-r9", "x"])).toBeNull();
+		expect(tyrePageOf(["thule-easy-fit"])).toBeNull();
+	});
+
+	it("names a model without a noun, so a page in any language can say chains or socks itself", () => {
+		// Pinned whole: a new label that carries a Slovak word must be seen here, not on a German page.
+		expect(Object.fromEntries(tyreFamilyPages().map((family) => [family.key, family.name]))).toEqual({
+			"dac-active": "DAC Active Series",
+			"dac-blue-ice": "DAC Blue ICE",
+			"dac-easy-go": "DAC Easy GO",
+			"dac-oto-top-16": "DAC oto TOP 16 mm",
+			"dac-super-x": "DAC Maranello Super X",
+			"gran-pree-ponozky": "Gran Pree",
+			"menabo-snow-socks": "Menabo Snow Socks",
+			"snowdrive-nx7": "SnowDrive Hybrid NX-7",
+			"snowdrive-pilot-pro": "SnowDrive Pilot-Pro",
+			"snowdrive-ponozky": "SnowDrive",
+			"snowdrive-r9": "SnowDrive R-9",
+			"snowdrive-s16": "SnowDrive S-16",
+			"snowdrive-wx9": "SnowDrive WX-9",
+		});
+		expect(tyreFamilyPageOf("N16075")?.key).toBe("snowdrive-r9");
+		expect(tyreFamilyPageOf("N17143")?.product).toBe("sock");
+		expect(tyreFamilyPageOf("X0000")).toBeNull();
+		expect(tyreFamilyPageOf(null)).toBeNull();
+	});
+
+	it("offers what the channel sells of a family, and indexes it from two products up", () => {
+		const whole = tyreFamilyOffer("snowdrive-r9", ALL_CODES);
+		expect(whole.codes.length).toBeGreaterThan(2);
+		expect(whole.codes).toEqual([...whole.codes].sort());
+		expect(whole.indexable).toBe(true);
+		expect(whole.sizes).toBeGreaterThan(whole.codes.length);
+		expect(whole.rims).toEqual([...whole.rims].sort((a, b) => Number(a) - Number(b)));
+		for (const rim of whole.rims) expect(tyrePageOf([`r${rim}`]), rim).not.toBeNull();
+
+		const one = tyreFamilyOffer("snowdrive-r9", new Set(["N16075"]));
+		expect(one.codes).toEqual(["N16075"]);
+		expect(one.indexable).toBe(false);
+		// Only what the one code on sale is listed for.
+		expect(one.sizes).toBeLessThan(whole.sizes);
+
+		expect(tyreFamilyOffer("snowdrive-r9", new Set())).toEqual({
+			codes: [],
+			sizes: 0,
+			rims: [],
+			indexable: false,
+		});
+		expect(tyreFamilyOffer("no-such-family", ALL_CODES).codes).toEqual([]);
+	});
+
+	it("puts every code of the list in exactly one family's offer", () => {
+		const offered = tyreFamilyPages().flatMap((family) => tyreFamilyOffer(family.key, ALL_CODES).codes);
+		expect(offered.length).toBe(ALL_CODES.size);
+		expect(new Set(offered)).toEqual(ALL_CODES);
 	});
 });

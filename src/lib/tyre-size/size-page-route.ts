@@ -8,6 +8,7 @@ import { indexableMarkets } from "@/lib/market-state";
 import type { MarketCounterpart } from "@/lib/seo/hreflang";
 import {
 	indexableTyrePageSlugs,
+	tyreFamilyOffer,
 	tyrePageOf,
 	tyreSizeOffer,
 	tyreSizePageOf,
@@ -27,7 +28,7 @@ import {
  * What a path below a category names, as far as tyre pages go.
  *
  * `not-shelf`: not the snow-chain shelf, so nothing here applies and the caller carries on as before. On the shelf
- * the answer is final: `page` is a size or a rim page, `absent` is an address the shelf does not have (a size the
+ * the answer is final: `page` is a size, a rim or a family page, `absent` is an address the shelf does not have (a size the
  * list does not hold, a second spelling, or a market that does not sell the shelf).
  */
 export type TyreRoute =
@@ -91,9 +92,9 @@ export async function indexableTyrePagePaths(market: string): Promise<string[]> 
 
 /** May this page be indexed in a channel that sells these codes? A rim page: when one of its sizes may. */
 export function isTyrePageIndexable(page: TyrePage, onSale: ReadonlySet<string>): boolean {
-	return page.kind === "size"
-		? tyreSizeOffer(page.label, onSale).indexable
-		: tyreSizePagesOfRim(page.rim).some((size) => tyreSizeOffer(size.label, onSale).indexable);
+	if (page.kind === "size") return tyreSizeOffer(page.label, onSale).indexable;
+	if (page.kind === "family") return tyreFamilyOffer(page.key, onSale).indexable;
+	return tyreSizePagesOfRim(page.rim).some((size) => tyreSizeOffer(size.label, onSale).indexable);
 }
 
 /**

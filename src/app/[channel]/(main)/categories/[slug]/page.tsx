@@ -64,6 +64,7 @@ import {
 	tyreFilterSize,
 } from "@/lib/tyre-size/plp-tyre-filter";
 import { CatalogMakeIndex } from "@/ui/components/catalog/make-index";
+import { TyreFamilyDirectory } from "@/ui/components/fitment/tyre-family-directory";
 import { TyreSizeDirectory } from "@/ui/components/fitment/tyre-size-directory";
 import { isTyreShelf } from "@/config/tyre-shelves";
 import { HeroBenefits } from "@/ui/components/homepage/hero-benefits";
@@ -697,6 +698,13 @@ async function CategoryProducts({
 					searchParams={searchParams}
 				/>
 			</div>
+			{/* The snow-chain shelf by model, before a shopper has said anything: no tyre size, and the listing as it
+			    opens (no page, order or filter of their own). Its own boundary, so the products never wait for it. */}
+			{tyreFilter.state === "no-size" && isUntouchedListing(searchParams) ? (
+				<Suspense fallback={null}>
+					<TyreFamilyDirectory channel={params.channel} />
+				</Suspense>
+			) : null}
 			<CategoryPageClient
 				products={productCards}
 				totalCount={listing.totalCount}
@@ -726,6 +734,12 @@ async function CategoryProducts({
 			/>
 		</>
 	);
+}
+
+/** The listing exactly as it opens: the shopper has not paged, ordered or filtered it. */
+const LISTING_STATE_PARAMS = ["cursor", "direction", "sort", "price", "brand", "volume", "colors", "sizes"];
+function isUntouchedListing(searchParams: Record<string, string | string[] | undefined>): boolean {
+	return LISTING_STATE_PARAMS.every((name) => searchParams[name] === undefined);
 }
 
 function PageSkeleton() {

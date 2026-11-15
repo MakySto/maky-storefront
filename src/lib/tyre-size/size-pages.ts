@@ -1,7 +1,7 @@
 import "server-only";
 
 import { fittingCodes } from "./choice";
-import { tyreFamilyOf } from "./families";
+import { tyreCodesOfFamily, tyreFamilies, tyreFamilyByKey, tyreFamilyOf, type TyreFamily } from "./families";
 import { tyreSizeIndex } from "./size-index";
 import { isPlausibleTyreSize } from "./size-lookup";
 
@@ -48,7 +48,22 @@ export interface TyreRimPage {
 	readonly slug: string;
 }
 
-export type TyrePage = TyreSizePage | TyreRimPage;
+/**
+ * One model family (`/sk/snehove-retaze/snowdrive-r9`): the same chain or sock in each of its sizes. The shelf lists
+ * 145 products and most of them are one of thirteen models in another size; this is the page that says so, and the
+ * one a search for the model's name can land on.
+ */
+export interface TyreFamilyPage {
+	readonly kind: "family";
+	/** The family's key in the sealed family file, which is also its URL segment. */
+	readonly key: string;
+	readonly slug: string;
+	/** The model's name with no noun in it: `SnowDrive R-9`, `Gran Pree`. The page says "chains" or "socks" itself. */
+	readonly name: string;
+	readonly product: "chain" | "sock";
+}
+
+export type TyrePage = TyreSizePage | TyreRimPage | TyreFamilyPage;
 
 const LABEL = /^(\d{3})\/(\d{2}) R(\d{2})$/;
 const SIZE_SLUG = /^(\d{3})-(\d{2})-r(\d{2})$/;
@@ -101,6 +116,22 @@ function build(): Pages {
 }
 
 /**
+ * The family file writes two sock families with the Slovak noun in the label ("SnowDrive textilné ponožky"). A page
+ * in twelve languages says the noun itself, so the name it prints is the label without it.
+ */
+const LABEL_NOUN = / textilné ponožky$/;
+
+function familyPage(family: TyreFamily): TyreFamilyPage {
+	return {
+		kind: "family",
+		key: family.key,
+		slug: family.key,
+		name: family.label.replace(LABEL_NOUN, ""),
+		product: family.kind,
+	};
+}
+
+/**
  * The page a path below the shelf names, or `null` when it names none: one segment, spelled exactly as the shop
  * spells it. `205-60-R16`, `205-60-r16/x` and a size the list does not hold are not pages.
  */
@@ -110,7 +141,52 @@ export function tyrePageOf(segments: readonly string[]): TyrePage | null {
 	if (typeof segment !== "string") return null;
 	if (SIZE_SLUG.test(segment)) return build().bySlug.get(segment) ?? null;
 	const rim = RIM_SLUG.exec(segment)?.[1];
-	return rim !== undefined && build().byRim.has(rim) ? { kind: "rim", rim, slug: segment } : null;
+	if (rim !== undefined) return build().byRim.has(rim) ? { kind: "rim", rim, slug: segment } : null;
+	const family = tyreFamilyByKey(segment);
+	return family ? familyPage(family) : null;
+}
+
+/** Every family page, ascending by key. */
+export function tyreFamilyPages(): readonly TyreFamilyPage[] {
+	return tyreFamilies().map(familyPage);
+}
+
+/** The page of the family a code belongs to, or `null` for a code that is not on the list. */
+export function tyreFamilyPageOf(code: string | null | undefined): TyreFamilyPage | null {
+	const family = tyreFamilyOf(code);
+	return family ? familyPage(family) : null;
+}
+
+export interface TyreFamilyOffer {
+	/** The family's codes the channel sells, ascending. */
+	readonly codes: readonly string[];
+	/** How many different tyre sizes those codes are listed for, old spellings included. */
+	readonly sizes: number;
+	/** The rims with a page that those codes are listed for, ascending. */
+	readonly rims: readonly string[];
+	/** At least `MIN_PRODUCTS_TO_INDEX` products: the page may be indexed and listed in the sitemap. */
+	readonly indexable: boolean;
+}
+
+/** What the channel offers of a family: its codes that are on sale, and what the list says they cover. */
+export function tyreFamilyOffer(key: string, onSale: ReadonlySet<string>): TyreFamilyOffer {
+	const codes = tyreCodesOfFamily(key).filter((code) => onSale.has(code));
+	const labels = new Set<string>();
+	const rims = new Set<string>();
+	const products = tyreSizeIndex().products;
+	for (const code of codes) {
+		for (const [label] of products[code]?.sizes ?? []) {
+			labels.add(label);
+			const page = build().byLabel.get(label);
+			if (page) rims.add(page.rim);
+		}
+	}
+	return {
+		codes,
+		sizes: labels.size,
+		rims: [...rims].sort((a, b) => Number(a) - Number(b)),
+		indexable: codes.length >= MIN_PRODUCTS_TO_INDEX,
+	};
 }
 
 /** The page of a size, by the list's label, or `null` for a size that has none (an old spelling, a half-inch rim). */
@@ -158,11 +234,14 @@ export function tyreSizeOffer(label: string, onSale: ReadonlySet<string>): TyreS
 }
 
 /**
- * The pages a search engine may be told about in a channel that sells these codes: every size with enough
- * products, and every rim that has at least one such size. Segments, in the order rim page first, then its sizes.
+ * The pages a search engine may be told about in a channel that sells these codes: every family and every size with
+ * enough products, and every rim that has at least one such size. Segments, in the order families first, then each
+ * rim page followed by its sizes.
  */
 export function indexableTyrePageSlugs(onSale: ReadonlySet<string>): string[] {
-	const slugs: string[] = [];
+	const slugs: string[] = tyreFamilyPages()
+		.filter((family) => tyreFamilyOffer(family.key, onSale).indexable)
+		.map((family) => family.slug);
 	for (const [rim, sizes] of build().byRim) {
 		const indexable = sizes.filter((size) => tyreSizeOffer(size.label, onSale).indexable);
 		if (indexable.length === 0) continue;

@@ -96,6 +96,20 @@ describe("what the channel sells", () => {
 		expect(isTyrePageIndexable(RIM, new Set(["N16075"]))).toBe(false);
 		expect(isTyrePageIndexable(RIM, new Set())).toBe(false);
 	});
+
+	it("decides a family page by how many of its products the channel sells, and routes it on the shelf", () => {
+		const family = tyrePageOf(["snowdrive-r9"])!;
+		expect(family.kind).toBe("family");
+		expect(isTyrePageIndexable(family, new Set(["N16061", "N16075"]))).toBe(true);
+		expect(isTyrePageIndexable(family, new Set(["N16075", "N17143"]))).toBe(false);
+		expect(tyreRouteOf("sk-eur", "snehove-retaze", ["snowdrive-r9"])).toEqual({
+			status: "page",
+			page: family,
+		});
+		expect(tyreRouteOf("cz", "snehove-retezy", ["snowdrive-r9"]).status).toBe("page");
+		expect(tyreRouteOf("sk-eur", "stresne-nosice", ["snowdrive-r9"])).toEqual({ status: "not-shelf" });
+		expect(tyrePagePath("de", family.slug)).toBe("/schneeketten/snowdrive-r9");
+	});
 });
 
 describe("the sitemap's paths", () => {

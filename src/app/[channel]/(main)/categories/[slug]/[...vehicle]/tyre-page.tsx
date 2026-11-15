@@ -19,27 +19,34 @@ import { jsonLdScriptProps } from "@/lib/seo";
 import { marketOpenGraph } from "@/lib/seo/metadata";
 import { attachTyreFit } from "@/lib/tyre-size/card-fit";
 import { tyreFamilyOf } from "@/lib/tyre-size/families";
+import { readRememberedTyre } from "@/lib/tyre-size/remembered";
+import { isKnownTyreSize } from "@/lib/tyre-size/size-lookup";
 import {
 	isTyrePageIndexable,
 	readTyreShelfOffer,
 	tyrePageCounterparts,
 	tyrePagePath,
+	tyreSizePagePath,
 	type TyreShelfOffer,
 } from "@/lib/tyre-size/size-page-route";
 import {
+	tyreFamilyOffer,
 	tyreSizeOffer,
 	tyreSizePagesOfRim,
+	type TyreFamilyPage,
 	type TyrePage,
 	type TyreRimPage,
 	type TyreSizePage,
 } from "@/lib/tyre-size/size-pages";
 import { Breadcrumbs, type BreadcrumbItem } from "@/ui/components/breadcrumbs";
+import { TyreListingFilter } from "@/ui/components/fitment/tyre-listing-filter";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
 import { ProductGrid, transformToProductCard, type ProductCardData } from "@/ui/components/plp";
 import { buildFilterVariables } from "@/ui/components/plp/filter-utils";
 
 /**
- * The snow-chain shelf's pages by tyre size (`/sk/snehove-retaze/205-60-r16`) and by rim (`/sk/snehove-retaze/r16`).
+ * The snow-chain shelf's pages by tyre size (`/sk/snehove-retaze/205-60-r16`), by rim (`/sk/snehove-retaze/r16`) and
+ * by model family (`/sk/snehove-retaze/snowdrive-r9`).
  *
  * They live in the catch-all below the category, where the roof-rack shelf keeps its vehicle pages, and follow the
  * same rule: the page is whatever the URL names and says the same to everyone. The size of the address is NOT the
@@ -75,12 +82,18 @@ export async function tyrePageMetadata(channel: string, page: TyrePage): Promise
 	const offer = await offerOrNull(channel);
 
 	const title = formatPageTitleOnce(
-		page.kind === "size" ? t("sizeMetaTitle", { size: page.label }) : t("rimMetaTitle", { rim: page.rim }),
+		page.kind === "size"
+			? t("sizeMetaTitle", { size: page.label })
+			: page.kind === "rim"
+				? t("rimMetaTitle", { rim: page.rim })
+				: t(page.product === "sock" ? "familySockMetaTitle" : "familyChainMetaTitle", { name: page.name }),
 	);
 	const description =
 		page.kind === "size"
 			? t("sizeMetaDescription", { size: page.label })
-			: t("rimMetaDescription", { rim: page.rim });
+			: page.kind === "rim"
+				? t("rimMetaDescription", { rim: page.rim })
+				: t("familyMetaDescription", { name: page.name });
 
 	// Could not verify what the shop sells: no canonical and no index, as the category page answers a fault.
 	if (!offer) return { title, description, robots: { index: false, follow: false } };
@@ -348,6 +361,163 @@ async function RimSizes({ channel, page }: { channel: string; page: TyreRimPage 
 	);
 }
 
+/** What a card says about the shopper's own size, as a rank: the sizes that fit come first. */
+const fitRank = (card: ProductCardData): number =>
+	card.tyreFit?.kind === "fits" ? 0 : card.tyreFit?.kind === "ask" ? 1 : 2;
+
+/**
+ * The sizes of one model family, as the shop's own product cards.
+ *
+ * Unlike a size page, this one has no size of its own, and the question a shopper brings to it is "which of these
+ * fourteen is mine?". So it reads the size the shopper once gave the shop: the cards then carry the same verdict as
+ * on the listing and the sizes that fit come first. With no size the cards are plain and the page asks for one, with
+ * the listing's own panel. A visitor without the cookie, a crawler among them, sees the plain list in the family's
+ * order.
+ */
+async function FamilyProducts({ channel, page }: { channel: string; page: TyreFamilyPage }) {
+	const locale = getLocaleFromChannel(channel);
+	const t = await getTranslations({ locale, namespace: "tyrePages" });
+	const shelfPath = categoryUrlFor(channel, TYRE_SHELF_SLUG);
+	const shelfHref = marketHref(channel, shelfPath);
+
+	const offer = await offerOrNull(channel);
+	if (!offer) {
+		return (
+			<p className="text-text-secondary mt-6 text-sm" role="status" data-testid="tyre-page-unavailable">
+				{t("unavailable")}{" "}
+				<Link href={shelfHref} className="text-text-link hover:text-text-link-hover underline">
+					{t("allChains")}
+				</Link>
+			</p>
+		);
+	}
+
+	const family = tyreFamilyOffer(page.key, offer.onSale);
+	const onSale = new Set(family.codes);
+	const productIds = [
+		...new Set(offer.products.filter(({ code }) => onSale.has(code)).map((p) => p.productId)),
+	];
+	const [listing, remembered] = await Promise.all([
+		loadCards(channel, locale, productIds),
+		readRememberedTyre().catch(() => null),
+	]);
+
+	if (listing.cards.length === 0) {
+		return (
+			<div
+				className="border-border-subtle bg-surface-card mt-6 rounded-sm border p-5"
+				data-testid="tyre-page-empty"
+			>
+				<p className="text-text-primary text-base font-semibold">
+					{t("familyEmptyTitle", { name: page.name })}
+				</p>
+				<p className="text-text-secondary mt-1 text-sm">{t("emptyBody")}</p>
+				<Link
+					href={shelfHref}
+					className="text-text-link hover:text-text-link-hover mt-3 inline-block text-sm font-medium underline"
+				>
+					{t("allChains")}
+				</Link>
+			</div>
+		);
+	}
+
+	// A size the list does not hold says nothing about any card, so it is treated as no size here.
+	const size = remembered && isKnownTyreSize(remembered.size) ? remembered.size : null;
+	const byCode = [...listing.cards].sort((a, b) => (a.productCode ?? "").localeCompare(b.productCode ?? ""));
+	const cards = attachTyreFit(byCode, size, remembered?.answers ?? {}).sort(
+		(a, b) => fitRank(a) - fitRank(b),
+	);
+	const anyFits = cards.some((card) => fitRank(card) < 2);
+	const sizePath = size ? tyreSizePagePath(channel, size) : null;
+
+	const cheapest = cards.reduce((low, card) => (card.price < low.price ? card : low), cards[0]!);
+	const price = new Intl.NumberFormat(locale, { style: "currency", currency: cheapest.currency }).format(
+		cheapest.price,
+	);
+	const facts: [string, string][] = [
+		[t("familyFactSizes"), String(cards.length)],
+		[t("familyFactTyres"), String(family.sizes)],
+		...(family.rims.length > 0
+			? ([[t("familyFactRims"), `R${family.rims[0]} – R${family.rims.at(-1)}`]] as [string, string][])
+			: []),
+		[t("familyFactPrice"), price],
+	];
+	const itemListProps = jsonLdScriptProps(
+		buildItemListJsonLd(cards.map((card) => ({ name: card.name, href: card.href }))),
+	);
+
+	return (
+		<>
+			<dl
+				className="border-border-subtle bg-surface-card mt-6 grid max-w-3xl grid-cols-2 gap-x-6 gap-y-4 rounded-sm border p-4 sm:grid-cols-4 sm:p-5"
+				data-testid="tyre-family-facts"
+			>
+				{facts.map(([label, value]) => (
+					<div key={label}>
+						<dt className="text-text-tertiary text-xs font-semibold tracking-[0.06em] uppercase">{label}</dt>
+						<dd className="text-text-primary mt-1 text-lg font-bold tabular-nums">{value}</dd>
+					</div>
+				))}
+			</dl>
+
+			<section className="mt-8" aria-labelledby="tyre-page-products" data-testid="tyre-page-products">
+				{itemListProps && <script {...itemListProps} />}
+				<h2
+					id="tyre-page-products"
+					className="text-text-primary text-lg font-bold tracking-[-0.01em] sm:text-xl"
+				>
+					{t("familyProductsHeading", { name: page.name })}
+				</h2>
+				{size === null ? (
+					<TyreListingFilter
+						channel={channel}
+						filter={{ state: "no-size", requested: false }}
+						basePath={shelfPath}
+						searchParams={{}}
+						className="mt-4"
+					/>
+				) : (
+					<p className="text-text-secondary mt-1 text-sm" data-testid="tyre-family-size">
+						{anyFits ? t("familyYourSize", { size }) : t("familyNoneFit", { size })}
+						{!anyFits && sizePath && (
+							<>
+								{" "}
+								<Link
+									href={marketHref(channel, sizePath)}
+									className="text-text-link hover:text-text-link-hover font-medium underline"
+								>
+									{t("familySizeLink", { size })}
+								</Link>
+							</>
+						)}
+					</p>
+				)}
+				<div className="mt-5">
+					<ProductGrid products={cards} columns="full" />
+				</div>
+			</section>
+
+			{family.rims.length > 0 && (
+				<section className="border-border-default mt-12 border-t pt-8" aria-labelledby="tyre-family-rims">
+					<h2 id="tyre-family-rims" className="text-text-primary text-lg font-bold tracking-[-0.01em]">
+						{t("familyRimsHeading", { name: page.name })}
+					</h2>
+					<ul className="mt-4 flex flex-wrap gap-2">
+						{family.rims.map((rim) => (
+							<li key={rim}>
+								<Link href={marketHref(channel, tyrePagePath(channel, `r${rim}`))} className={CHIP}>
+									{t("rimCrumb", { rim })}
+								</Link>
+							</li>
+						))}
+					</ul>
+				</section>
+			)}
+		</>
+	);
+}
+
 function LinksSkeleton() {
 	return <div className="bg-surface-muted mt-4 h-40 animate-pulse rounded-sm" />;
 }
@@ -357,14 +527,36 @@ export async function TyrePageView({ channel, page }: { channel: string; page: T
 	const t = await getTranslations({ locale });
 	const shelfPath = categoryUrlFor(channel, TYRE_SHELF_SLUG);
 	const shelfHref = marketHref(channel, shelfPath);
-	const rimHref = marketHref(channel, tyrePagePath(channel, `r${page.rim}`));
+	const rimHref = page.kind === "family" ? null : marketHref(channel, tyrePagePath(channel, `r${page.rim}`));
 
+	const heading =
+		page.kind === "size"
+			? t("tyrePages.sizeHeading", { size: page.label })
+			: page.kind === "rim"
+				? t("tyrePages.rimHeading", { rim: page.rim })
+				: t(page.product === "sock" ? "tyrePages.familySockHeading" : "tyrePages.familyChainHeading", {
+						name: page.name,
+					});
+	const lead =
+		page.kind === "size"
+			? t("tyrePages.sizeLead", { size: page.label })
+			: page.kind === "rim"
+				? t("tyrePages.rimLead", { rim: page.rim })
+				: t("tyrePages.familyLead", { name: page.name });
+
+	const tail: BreadcrumbItem[] =
+		page.kind === "family"
+			? [{ label: page.name }]
+			: page.kind === "rim"
+				? [{ label: t("tyrePages.rimCrumb", { rim: page.rim }) }]
+				: [
+						{ label: t("tyrePages.rimCrumb", { rim: page.rim }), href: rimHref ?? undefined },
+						{ label: page.label },
+					];
 	const crumbs: BreadcrumbItem[] = [
 		{ label: t("nav.home"), href: marketHref(channel) },
 		{ label: t("nav.snowChains"), href: shelfHref },
-		...(page.kind === "size"
-			? [{ label: t("tyrePages.rimCrumb", { rim: page.rim }), href: rimHref }, { label: page.label }]
-			: [{ label: t("tyrePages.rimCrumb", { rim: page.rim }) }]),
+		...tail,
 	];
 
 	return (
@@ -372,18 +564,10 @@ export async function TyrePageView({ channel, page }: { channel: string; page: T
 			<TyreSwitchTargets page={page} />
 			<Breadcrumbs items={crumbs} />
 
-			<h1 className="text-text-primary mt-4 text-2xl font-bold break-words sm:text-3xl">
-				{page.kind === "size"
-					? t("tyrePages.sizeHeading", { size: page.label })
-					: t("tyrePages.rimHeading", { rim: page.rim })}
-			</h1>
-			<p className="text-text-secondary mt-3 max-w-3xl text-base leading-relaxed">
-				{page.kind === "size"
-					? t("tyrePages.sizeLead", { size: page.label })
-					: t("tyrePages.rimLead", { rim: page.rim })}
-			</p>
+			<h1 className="text-text-primary mt-4 text-2xl font-bold break-words sm:text-3xl">{heading}</h1>
+			<p className="text-text-secondary mt-3 max-w-3xl text-base leading-relaxed">{lead}</p>
 
-			{page.kind === "size" ? (
+			{page.kind === "size" && rimHref ? (
 				<>
 					<Suspense fallback={<ProductsSkeleton />}>
 						<SizeProducts channel={channel} page={page} />
@@ -406,11 +590,15 @@ export async function TyrePageView({ channel, page }: { channel: string; page: T
 						</p>
 					</section>
 				</>
-			) : (
+			) : page.kind === "rim" ? (
 				<Suspense fallback={<LinksSkeleton />}>
 					<RimSizes channel={channel} page={page} />
 				</Suspense>
-			)}
+			) : page.kind === "family" ? (
+				<Suspense fallback={<ProductsSkeleton />}>
+					<FamilyProducts channel={channel} page={page} />
+				</Suspense>
+			) : null}
 
 			<section className="border-border-default mt-10 max-w-3xl border-t pt-8">
 				<h2 className="text-text-primary text-lg font-bold tracking-[-0.01em]">{t("tyreSize.howTitle")}</h2>
