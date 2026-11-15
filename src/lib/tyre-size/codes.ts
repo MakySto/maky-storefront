@@ -3,7 +3,7 @@
  * `data/velkosti_20261105.json`.
  *
  * A copy of the list's code names ONLY, small enough for the browser, for the places that must know "does this card
- * need a size" without carrying 5 324 rows: the listing card hides its quick-add for these, because the add would
+ * need a size" without carrying 5 323 rows: the listing card hides its quick-add for these, because the add would
  * be refused without a size. It decides nothing about what may be added: that is the server's check against the list
  * itself (`size-index.ts`). `size-index.test.ts` pins this set to the list's codes, so the two cannot drift apart.
  */

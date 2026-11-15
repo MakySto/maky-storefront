@@ -1,6 +1,6 @@
 {
-  "cfm_branch": "claude/project-thread-vnrafq",
-  "cfm_commit": "f9424d3fe44ff3dcc8345db52f1949746c609f44",
+  "cfm_branch": "master",
+  "cfm_commit": "6d9962d6cdcbe25c892fc5d102ba3245edf03887",
   "derived": {
     "rodiny_20261105.json": {
       "batch_file_sha256": "ec31a5760f9bd8ec500f6757c609b09063d162486b86ebf69750e5f7921080b2",
@@ -15,9 +15,9 @@
   "files": {
     "velkosti_20261105.json": {
       "cfm_copy": "backend/artifacts/snehove_retaze/velkosti_20261105.json",
-      "git_blob_sha1": "ac4063a0e6821f0849e684af6ef8fc903feec6af",
-      "self_sha256": "206e4fe463be3bb9c642d2e343db5b0ccadd76fbad201e3659dca98a732a2543",
-      "sha256": "900ede7ea47f0671874a1828d81640ba3ba704e1f6cac86f8075d72d751f3697"
+      "git_blob_sha1": "e0803924888bf96ce49cf02b6093aae7c1e0beff",
+      "self_sha256": "a66c5ac4fc757cbe1901321ff885e65980aec0ca96878bd728af7bcffcab0176",
+      "sha256": "78ed7b5db8a1e4f8cb06598797c5f3f8d2b1b61baaceb2b18b26b3236758042d"
     }
   },
   "producer": "backend/docs/runbooks/snehove_retaze_produkty_20261105/build_velkosti.py",

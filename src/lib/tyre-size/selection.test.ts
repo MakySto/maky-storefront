@@ -250,7 +250,7 @@ describe("resolveTyreSelection", () => {
 				conditional += 1;
 			}
 		}
-		expect(accepted).toBe(5324);
+		expect(accepted).toBe(5323);
 		expect(conditional).toBeGreaterThan(0);
 	});
 });

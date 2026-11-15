@@ -77,9 +77,9 @@ describe("parseTyreSizeIndex", () => {
 	it("accepts the committed list and reports what it holds", () => {
 		const index = tyreSizeIndex();
 		expect(index.id).toBe("snehove-retaze-20261105");
-		expect(index.counts).toEqual({ conditional_products: 27, conditions: 16, products: 145, sizes: 5324 });
+		expect(index.counts).toEqual({ conditional_products: 27, conditions: 16, products: 145, sizes: 5323 });
 		expect(Object.keys(index.products)).toHaveLength(145);
-		expect(Object.values(index.products).reduce((total, p) => total + p.sizes.length, 0)).toBe(5324);
+		expect(Object.values(index.products).reduce((total, p) => total + p.sizes.length, 0)).toBe(5323);
 	});
 
 	it("refuses a list that is not the one that was meant to ship", () => {

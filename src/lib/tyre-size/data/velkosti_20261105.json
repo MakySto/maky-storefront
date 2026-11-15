@@ -1,6 +1,6 @@
 {
 "conditions":{"c01":{"mode":"only","raw":"Bridgestone Duravis Rxxx","tyres":["Bridgestone Duravis Rxxx"]},"c02":{"mode":"only","raw":"Continental / Goodyear","tyres":["Continental","Goodyear"]},"c03":{"mode":"only","raw":"Continental / Michelin","tyres":["Continental","Michelin"]},"c04":{"mode":"only","raw":"Kleber / Michelin / Continental","tyres":["Kleber","Michelin","Continental"]},"c05":{"mode":"only","raw":"Kleber Krisalp","tyres":["Kleber Krisalp"]},"c06":{"mode":"only","raw":"Michelin Alpin","tyres":["Michelin Alpin"]},"c07":{"mode":"not","raw":"No Bridgestone Duravis Rxxx","tyres":["Bridgestone Duravis Rxxx"]},"c08":{"mode":"not","raw":"No Continental / No Goodyear","tyres":["Continental","Goodyear"]},"c09":{"mode":"not","raw":"No Continental / No Michelin","tyres":["Continental","Michelin"]},"c10":{"mode":"not","raw":"No Kleber / No Michelin / No Continental","tyres":["Kleber","Michelin","Continental"]},"c11":{"mode":"not","raw":"No Kleber Krisalp","tyres":["Kleber Krisalp"]},"c12":{"mode":"not","raw":"No Michelin Alpin","tyres":["Michelin Alpin"]},"c13":{"mode":"not","raw":"No Nokian TRI-2","tyres":["Nokian TRI-2"]},"c14":{"mode":"not","raw":"No Pirelli Winter","tyres":["Pirelli Winter"]},"c15":{"mode":"only","raw":"Nokian TRI-2","tyres":["Nokian TRI-2"]},"c16":{"mode":"only","raw":"Pirelli Winter","tyres":["Pirelli Winter"]}},
-"counts":{"conditional_products":27,"conditions":16,"products":145,"sizes":5324},
+"counts":{"conditional_products":27,"conditions":16,"products":145,"sizes":5323},
 "id":"snehove-retaze-20261105",
 "origin":{"batch":"snehove_retaze_produkty_20261105","batch_file_sha256":"ec31a5760f9bd8ec500f6757c609b09063d162486b86ebf69750e5f7921080b2","batch_self_sha256":"d527c98d5258781150ce880c19438804412be010bceeb6246a548713dd677b5e","producer":"backend/docs/runbooks/snehove_retaze_produkty_20261105/build_velkosti.py"},
 "products":{
@@ -11,7 +11,7 @@
 "D0225":{"sizes":[["205/75 R14","14",""],["245/60 R14","14",""],["195/75 R15","15",""],["195/80 R15","15",""],["205/70 R15","15",""],["205/75 R15","15",""],["215/65 R15","15",""],["215/70 R15","15",""],["185/75 R16","16",""],["205/65 R16","16",""]],"source":"previous_shop_card"},
 "D0230":{"sizes":[["215/75 R14","14",""],["205/80 R15","15",""],["215/75 R15","15",""],["225/70 R15","15",""],["195/75 R16","16",""],["205/70 R16","16",""],["215/65 R16","16",""],["215/70 R16","16",""]],"source":"previous_shop_card"},
 "D0240":{"sizes":[["215/80 R15","15",""],["225/75 R15","15",""],["235/70 R15","15",""],["255/60 R15","15",""],["205/75 R16","16",""],["205/80 R16","16",""],["225/65 R16","16",""],["235/60 R16","16",""],["205/65 R17,5","17.5",""]],"source":"previous_shop_card"},
-"D0245":{"sizes":[["235/70 R15","15",""],["235/75 R15","15",""],["215/75 R16","16",""],["215/80 R16","16",""],["225/70 R16","16",""],["225/75 R16","16",""],["225/60 R17","17",""],["650/17 R17","17",""]],"source":"previous_shop_card"},
+"D0245":{"sizes":[["235/70 R15","15",""],["235/75 R15","15",""],["215/75 R16","16",""],["215/80 R16","16",""],["225/70 R16","16",""],["225/75 R16","16",""],["225/60 R17","17",""]],"source":"previous_shop_card"},
 "D0247":{"sizes":[["255/70 R15","15",""],["235/70 R16","16",""],["235/65 R17","17",""],["225/75 R17,5","17.5",""]],"source":"previous_shop_card"},
 "D0250":{"sizes":[["265/70 R15","15",""],["235/80 R16","16",""],["245/70 R16","16",""],["245/75 R16","16",""],["255/65 R16","16",""],["245/65 R17","17",""],["205/75 R17,5","17.5",""],["215/75 R17,5","17.5",""]],"source":"previous_shop_card"},
 "D0255":{"sizes":[["255/75 R15","15",""],["265/75 R15","15",""],["255/70 R16","16",""],["255/60 R17","17",""],["275/55 R17","17",""],["255/55 R18","18",""],["255/60 R18","18",""],["285/50 R18","18",""],["255/50 R19","19",""]],"source":"previous_shop_card"},
@@ -151,6 +151,6 @@
 "NGD02022":{"sizes":[["225/70 R16","16",""],["235/70 R16","16",""],["215/70 R17","17",""],["225/65 R17","17",""],["235/60 R17","17",""],["245/55 R17","17",""],["225/60 R18","18",""],["235/55 R18","18",""],["245/50 R18","18",""],["225/55 R19","19",""],["245/45 R19","19",""],["275/35 R19","19",""],["245/40 R20","20",""],["265/35 R20","20",""],["285/30 R20","20",""]],"source":"manufacturer_list_2026_10"}
 },
 "schema":"maky.tyre-size-index/1",
-"self_sha256":"206e4fe463be3bb9c642d2e343db5b0ccadd76fbad201e3659dca98a732a2543",
+"self_sha256":"a66c5ac4fc757cbe1901321ff885e65980aec0ca96878bd728af7bcffcab0176",
 "sources":{"manufacturer_list_2026_10":{"label":"kompatibilitný list výrobcu Lampa (október 2026)"},"previous_shop_card":{"label":"údaje dodávateľa na kartách doterajšieho e-shopu (nie list výrobcu)"}}
 }

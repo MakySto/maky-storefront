@@ -14,6 +14,7 @@ import {
 	indexableTyrePagePaths,
 	isTyrePageIndexable,
 	readTyreShelfOffer,
+	tyreListingCanonicalPath,
 	tyrePageCounterparts,
 	tyrePagePath,
 	tyreRouteOf,
@@ -109,6 +110,78 @@ describe("what the channel sells", () => {
 		expect(tyreRouteOf("cz", "snehove-retezy", ["snowdrive-r9"]).status).toBe("page");
 		expect(tyreRouteOf("sk-eur", "stresne-nosice", ["snowdrive-r9"])).toEqual({ status: "not-shelf" });
 		expect(tyrePagePath("de", family.slug)).toBe("/schneeketten/snowdrive-r9");
+	});
+});
+
+describe("the canonical of a shelf listing narrowed by a tyre size", () => {
+	const LINK = { tyres: "1", tyreSize: "205/60 R16" };
+
+	it("is the size's page, at the market's own address", async () => {
+		getShelfCodes.mockResolvedValue(shelf("N16075", "N17143"));
+		expect(await tyreListingCanonicalPath("sk-eur", "snehove-retaze", LINK)).toBe(
+			"/snehove-retaze/205-60-r16",
+		);
+		expect(await tyreListingCanonicalPath("cz-czk", "snehove-retaze", LINK)).toBe(
+			"/snehove-retezy/205-60-r16",
+		);
+	});
+
+	it("reads the size as the listing reads it, however the link spells it", async () => {
+		getShelfCodes.mockResolvedValue(shelf("N16075", "N17143"));
+		for (const tyreSize of ["205/60 R16", "205/60R16", "205 60 16", "205/60 r16"]) {
+			expect(await tyreListingCanonicalPath("sk-eur", "snehove-retaze", { tyreSize }), tyreSize).toBe(
+				"/snehove-retaze/205-60-r16",
+			);
+		}
+	});
+
+	it("is the same page in any order, narrowed further or on a later page of the list", async () => {
+		getShelfCodes.mockResolvedValue(shelf("N16075", "N17143"));
+		for (const more of [{ sort: "price-asc" }, { brand: "dac" }, { cursor: "abc", direction: "next" }]) {
+			expect(
+				await tyreListingCanonicalPath("sk-eur", "snehove-retaze", { ...LINK, ...more }),
+				JSON.stringify(more),
+			).toBe("/snehove-retaze/205-60-r16");
+		}
+	});
+
+	it("stays the shelf for the whole shelf with the size only on the cards", async () => {
+		getShelfCodes.mockResolvedValue(shelf("N16075", "N17143"));
+		expect(
+			await tyreListingCanonicalPath("sk-eur", "snehove-retaze", { tyres: "0", tyreSize: "205/60 R16" }),
+		).toBeNull();
+	});
+
+	it("stays the shelf without a size in the link, and Saleor is not asked", async () => {
+		expect(await tyreListingCanonicalPath("sk-eur", "snehove-retaze", {})).toBeNull();
+		expect(await tyreListingCanonicalPath("sk-eur", "snehove-retaze", { tyres: "1" })).toBeNull();
+		expect(await tyreListingCanonicalPath("sk-eur", "snehove-retaze", { tyreSize: "" })).toBeNull();
+		expect(getShelfCodes).not.toHaveBeenCalled();
+	});
+
+	it("stays the shelf for a size without a page, and Saleor is not asked", async () => {
+		for (const tyreSize of ["205/60 R99", "650/17 R17", "nonsense", "205-55-16-x"]) {
+			expect(await tyreListingCanonicalPath("sk-eur", "snehove-retaze", { tyreSize }), tyreSize).toBeNull();
+		}
+		expect(getShelfCodes).not.toHaveBeenCalled();
+	});
+
+	it("never names a size page that is not indexed in the channel", async () => {
+		getShelfCodes.mockResolvedValue(shelf("N16075"));
+		expect(await tyreListingCanonicalPath("sk-eur", "snehove-retaze", LINK)).toBeNull();
+		getShelfCodes.mockResolvedValue(null);
+		expect(await tyreListingCanonicalPath("sk-eur", "snehove-retaze", LINK)).toBeNull();
+	});
+
+	it("claims nothing when the shop cannot be asked", async () => {
+		getShelfCodes.mockRejectedValue(new Error("saleor is down"));
+		expect(await tyreListingCanonicalPath("sk-eur", "snehove-retaze", LINK)).toBeNull();
+	});
+
+	it("is nothing off the shelf or in a market that does not sell it, and Saleor is not asked", async () => {
+		expect(await tyreListingCanonicalPath("sk-eur", "stresne-nosice", LINK)).toBeNull();
+		expect(await tyreListingCanonicalPath("us-usd", "snehove-retaze", LINK)).toBeNull();
+		expect(getShelfCodes).not.toHaveBeenCalled();
 	});
 });
 
