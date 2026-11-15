@@ -271,7 +271,7 @@ describe("a run", () => {
 			items: 3,
 			skipped: { "no-brand": 3 },
 		});
-		expect(readdirSync(out).sort()).toEqual(["google-sk.xml.gz", "status.json"]);
+		expect(readdirSync(out).sort()).toEqual(["google-sk.xml.gz", "offers-sk.json", "status.json"]);
 		expect(lines.join("\n")).toContain("left out: no-brand 3");
 	});
 
@@ -297,7 +297,7 @@ describe("a run", () => {
 		const second = world(twoSteps, { status: (_call, url) => (url.searchParams.get("after") ? 502 : 200) });
 		expect(await second.run("--write")).toBe(1);
 		expect(readFileSync(join(second.out, "google-sk.xml.gz")).equals(before)).toBe(true);
-		expect(readdirSync(second.out).sort()).toEqual(["google-sk.xml.gz", "status.json"]);
+		expect(readdirSync(second.out).sort()).toEqual(["google-sk.xml.gz", "offers-sk.json", "status.json"]);
 		expect(second.lines.join("\n")).toContain("The feed of the last run stays");
 	});
 
