@@ -1,5 +1,13 @@
 import { CATEGORY_SLUGS, LIVE_CATEGORY_SLUGS_KEY } from "@/config/categories";
-import { isLocalizedRootSegment } from "@/config/category-routes";
+import { getLocaleConfigByLocale } from "@/config/locale";
+import {
+	type LearnedCategory,
+	clearLearnedCategories,
+	isLocalizedRootSegment,
+	mappedCategoryFor,
+	tableSpelling,
+	publishLearnedCategories,
+} from "@/config/category-routes";
 import { CHANNEL_MAP, FRIENDLY_SLUGS, SALEOR_SLUGS, cartSegment } from "./channel-map";
 import { MARKET_ROOT_SEGMENTS } from "./routing.generated";
 
@@ -13,6 +21,16 @@ import { MARKET_ROOT_SEGMENTS } from "./routing.generated";
  * `src/config/categories.ts`, and a category that list did not name kept its `/categories/…`
  * URL until somebody added it and shipped a build. That list is now the FLOOR of the set, and
  * this module adds the rest from Saleor.
+ *
+ * ## The same for the address in a foreign market (owner, 2026-11-15)
+ *
+ * A category has a localized address abroad: the slug of the translation CFM writes for the language
+ * that market reads (`/de/einzelteile-fuer-dachtraeger`). Until now each one needed a row in
+ * `config/category-routes.ts` and a release, and a category without one was linked under `/de/categories/…`.
+ * The same list query now asks for the translated slug in every language the markets read, and a spelling
+ * that no product, route, market or other category holds in that market becomes the address, with the
+ * `/categories/…` form and the Slovak spelling answering a permanent redirect to it (`proxy.ts`, unchanged).
+ * The table's own rows still win where they have a spelling; Saleor fills the rest.
  *
  * ## Why a set that is loaded, and not a question asked per URL
  *
@@ -89,6 +107,17 @@ interface LiveState {
 	admitted: ReadonlySet<string>;
 	/** Slug → why it was not admitted, so a refusal is logged when it appears and not every minute. */
 	refused: ReadonlyMap<string, string>;
+	/** The localized spellings admitted so far, by `base|market`. `config/category-routes.ts` holds a copy. */
+	localized: ReadonlyMap<string, LocalizedSpelling>;
+	/** `base|market` → why its translated slug was not admitted, logged once when it appears. */
+	localizedRefused: ReadonlyMap<string, string>;
+}
+
+interface LocalizedSpelling {
+	readonly base: string;
+	readonly id: string;
+	readonly market: string;
+	readonly segment: string;
 }
 
 const STATE_KEY = Symbol.for("maky.live-categories.state.v1");
@@ -104,6 +133,8 @@ function state(): LiveState {
 		again: false,
 		admitted: new Set(),
 		refused: new Map(),
+		localized: new Map(),
+		localizedRefused: new Map(),
 	};
 	return shared[STATE_KEY];
 }
@@ -122,6 +153,7 @@ export function resetLiveCategoriesForTests(): void {
 	};
 	delete shared[STATE_KEY];
 	delete shared[LIVE_CATEGORY_SLUGS_KEY];
+	clearLearnedCategories();
 }
 
 export function liveCategoriesStats(): {
@@ -131,6 +163,9 @@ export function liveCategoriesStats(): {
 	inFlight: boolean;
 	admitted: readonly string[];
 	refused: Readonly<Record<string, string>>;
+	/** `base|market` → the localized spelling the server routes. */
+	localized: Readonly<Record<string, string>>;
+	localizedRefused: Readonly<Record<string, string>>;
 } {
 	const s = state();
 	return {
@@ -140,15 +175,45 @@ export function liveCategoriesStats(): {
 		inFlight: s.inFlight !== null,
 		admitted: [...s.admitted].sort(),
 		refused: Object.fromEntries(s.refused),
+		localized: Object.fromEntries([...s.localized].map(([key, spelling]) => [key, spelling.segment])),
+		localizedRefused: Object.fromEntries(s.localizedRefused),
 	};
 }
 
 // --- talking to Saleor -----------------------------------------------------------
 
-const LIST_QUERY =
-	"query C($after:String){categories(first:" +
-	PAGE_SIZE +
-	",after:$after){pageInfo{hasNextPage endCursor} edges{node{slug}}}}";
+/**
+ * The Saleor language each foreign market reads, by market. Slovakia reads the base row: its address is the
+ * base slug and it has no translation to ask for. Austria and Canada read their own regional records (`DE_AT`,
+ * `EN_CA`), exactly as the exact-locale boundary does.
+ */
+function marketLanguages(): ReadonlyMap<string, string> {
+	return new Map(
+		Object.entries(CHANNEL_MAP)
+			.filter(([market]) => market !== "sk")
+			.map(([market, config]) => [
+				market,
+				String(getLocaleConfigByLocale(config.locale).graphqlLanguageCode),
+			]),
+	);
+}
+
+const LANGUAGE_SHAPE = /^[A-Z]{2}(?:_[A-Z]{2})?$/;
+
+/** One list query for the base slugs, the ids and the translated slug in each language a foreign market reads. */
+function listQuery(): string {
+	const languages = [...new Set(marketLanguages().values())]
+		.filter((code) => LANGUAGE_SHAPE.test(code))
+		.sort();
+	const translations = languages.map((code) => `t_${code}:translation(languageCode:${code}){slug}`).join(" ");
+	return (
+		"query C($after:String){categories(first:" +
+		PAGE_SIZE +
+		",after:$after){pageInfo{hasNextPage endCursor} edges{node{id slug " +
+		translations +
+		"}}}}"
+	);
+}
 
 function endpoint(): string | undefined {
 	return process.env.NEXT_PUBLIC_SALEOR_API_URL || undefined;
@@ -185,7 +250,27 @@ async function ask(
 	}
 }
 
-function parseConnection(value: unknown): { slugs: string[]; next: string | null } | null {
+interface ListedCategory {
+	readonly slug: string;
+	readonly id: string | null;
+	/** Saleor language code → the translated slug, where the category has one. */
+	readonly translated: Readonly<Record<string, string>>;
+}
+
+function parseNode(node: unknown): ListedCategory | null {
+	if (typeof node !== "object" || node === null) return null;
+	const record = node as Record<string, unknown>;
+	if (typeof record.slug !== "string") return null;
+	const translated: Record<string, string> = {};
+	for (const [key, value] of Object.entries(record)) {
+		if (!key.startsWith("t_") || typeof value !== "object" || value === null) continue;
+		const slug = (value as { slug?: unknown }).slug;
+		if (typeof slug === "string" && slug !== "") translated[key.slice(2)] = slug;
+	}
+	return { slug: record.slug, id: typeof record.id === "string" ? record.id : null, translated };
+}
+
+function parseConnection(value: unknown): { nodes: ListedCategory[]; next: string | null } | null {
 	if (typeof value !== "object" || value === null) return null;
 	const { edges, pageInfo } = value as {
 		edges?: unknown;
@@ -193,19 +278,20 @@ function parseConnection(value: unknown): { slugs: string[]; next: string | null
 	};
 	if (!Array.isArray(edges) || typeof pageInfo !== "object" || pageInfo === null) return null;
 
-	const slugs: string[] = [];
+	const nodes: ListedCategory[] = [];
 	for (const edge of edges) {
-		const slug = (edge as { node?: { slug?: unknown } } | null)?.node?.slug;
+		const node = parseNode((edge as { node?: unknown } | null)?.node);
 		// One malformed row makes the whole page untrustworthy.
-		if (typeof slug !== "string") return null;
-		slugs.push(slug);
+		if (!node) return null;
+		nodes.push(node);
 	}
 	const more = pageInfo.hasNextPage === true;
 	if (more && typeof pageInfo.endCursor !== "string") return null;
-	return { slugs, next: more ? (pageInfo.endCursor as string) : null };
+	return { nodes, next: more ? (pageInfo.endCursor as string) : null };
 }
 
 interface Listing {
+	readonly categories: readonly ListedCategory[];
 	readonly slugs: readonly string[];
 	/** False when a later page failed or the walk hit its page cap: usable, but it may not remove anything. */
 	readonly complete: boolean;
@@ -213,17 +299,23 @@ interface Listing {
 
 /** Every category Saleor holds, by base slug. Null when not even the first page could be read. */
 async function listCategories(url: string): Promise<Listing | null> {
-	const slugs: string[] = [];
+	const query = listQuery();
+	const categories: ListedCategory[] = [];
+	const done = (complete: boolean): Listing => ({
+		categories,
+		slugs: categories.map((category) => category.slug),
+		complete,
+	});
 	let after: string | null = null;
 	for (let page = 0; page < MAX_PAGES; page += 1) {
-		const data = await ask(url, LIST_QUERY, { after });
+		const data = await ask(url, query, { after });
 		const connection = parseConnection(data?.categories);
-		if (!connection) return page === 0 ? null : { slugs, complete: false };
-		slugs.push(...connection.slugs);
-		if (!connection.next) return { slugs, complete: true };
+		if (!connection) return page === 0 ? null : done(false);
+		categories.push(...connection.nodes);
+		if (!connection.next) return done(true);
 		after = connection.next;
 	}
-	return { slugs, complete: false };
+	return done(false);
 }
 
 type Collision = { verdict: "clear" } | { verdict: "taken"; channel: string } | { verdict: "unknown" };
@@ -271,6 +363,173 @@ function refusalReason(slug: string): string | null {
 		if (isLocalizedRootSegment(market, slug)) return `a localized category segment in ${market}`;
 	}
 	return null;
+}
+
+// --- the address in a foreign market -------------------------------------------------
+
+/** A translated slug Saleor holds for a category, in the language one market reads. */
+interface Candidate {
+	readonly base: string;
+	readonly id: string;
+	readonly market: string;
+	readonly channel: string;
+	readonly language: string;
+	readonly segment: string;
+}
+
+const keyOf = (base: string, market: string) => `${base}|${market}`;
+
+/** Candidates probed per load; the rest wait for the next one. A category with nine translations is nine. */
+const MAX_SEGMENT_PROBES_PER_LOAD = 60;
+/** Candidates per request: two aliased lookups each. */
+const SEGMENT_PROBE_BATCH = 10;
+
+function candidatesOf(categories: readonly ListedCategory[]): Candidate[] {
+	const languages = marketLanguages();
+	const found: Candidate[] = [];
+	for (const category of categories) {
+		if (!category.id) continue;
+		for (const [market, language] of languages) {
+			const segment = category.translated[language];
+			const channel = CHANNEL_MAP[market]?.saleorSlug;
+			if (!segment || segment === category.slug || !channel) continue;
+			// What the table spells already is not learned a second time.
+			if (tableSpelling(category.slug, market) === segment) continue;
+			found.push({ base: category.slug, id: category.id, market, channel, language, segment });
+		}
+	}
+	return found;
+}
+
+/**
+ * Why a translated slug must NOT become the address of a category in a market, or null.
+ *
+ * `/{market}/{slug}` is shared with the market's products, its routes, its cart word and every
+ * category, so a spelling is taken only where none of them holds it. Products are asked about separately.
+ */
+function segmentRefusal(
+	candidate: Candidate,
+	bases: ReadonlySet<string>,
+	claims: ReadonlyMap<string, number>,
+): string | null {
+	const { segment, market, base } = candidate;
+	if (!SLUG_SHAPE.test(segment)) return "not a plain lower-case slug";
+	if (MARKET_ROOT_SEGMENTS.has(segment)) return "the name of a real route";
+	if (FRIENDLY_SLUGS.has(segment) || SALEOR_SLUGS.has(segment)) return "the name of a market";
+	if (cartSegment(market) === segment) return "the market's cart route";
+	if (bases.has(segment)) return "the base slug of another category";
+	const owner = mappedCategoryFor(market, segment);
+	if (owner && owner.baseSlug !== base) return `a spelling of ${owner.baseSlug} in ${market}`;
+	if ((claims.get(`${market}|${segment}`) ?? 0) > 1)
+		return "claimed by more than one category in this market";
+	return null;
+}
+
+type SegmentVerdict = { verdict: "clear" } | { verdict: "taken" } | { verdict: "unknown" };
+
+/**
+ * Does a product in the market's channel hold this slug, as a base slug or as the translated one?
+ *
+ * A foreign product's public slug is its translation (`fusssatz-nordrive-evos-…`), so both lookups are asked, in
+ * one request for the whole batch. `clear` needs every answer to be a present null: a missing answer is
+ * `unknown`, never `clear`, so a Saleor that is unwell cannot admit a spelling by not answering.
+ */
+async function segmentCollisions(
+	url: string,
+	batch: readonly Candidate[],
+): Promise<ReadonlyMap<Candidate, SegmentVerdict>> {
+	const verdicts = new Map<Candidate, SegmentVerdict>();
+	const usable = batch.filter(
+		(c) => SLUG_SHAPE.test(c.segment) && CHANNEL_SHAPE.test(c.channel) && LANGUAGE_SHAPE.test(c.language),
+	);
+	for (const c of batch) if (!usable.includes(c)) verdicts.set(c, { verdict: "unknown" });
+	if (usable.length === 0) return verdicts;
+
+	const fields = usable.flatMap((c, index) => [
+		`b${index}:product(slug:"${c.segment}",channel:"${c.channel}"){id}`,
+		`t${index}:product(slug:"${c.segment}",channel:"${c.channel}",slugLanguageCode:${c.language}){id}`,
+	]);
+	const data = await ask(url, `query S{${fields.join(" ")}}`, {});
+	for (const [index, c] of usable.entries()) {
+		if (!data) {
+			verdicts.set(c, { verdict: "unknown" });
+			continue;
+		}
+		const base = data[`b${index}`];
+		const translated = data[`t${index}`];
+		if (base === undefined || translated === undefined) verdicts.set(c, { verdict: "unknown" });
+		else if (base !== null || translated !== null) verdicts.set(c, { verdict: "taken" });
+		else verdicts.set(c, { verdict: "clear" });
+	}
+	return verdicts;
+}
+
+/**
+ * The localized spellings to route after this load, and the refusals to report.
+ *
+ * Kept as they were while Saleor still holds the same translated slug (no new question), and while the listing is
+ * incomplete for a category it did not reach. A complete listing without the category, or with another slug, drops
+ * it: the old address goes with the translation.
+ */
+async function learnSpellings(
+	url: string,
+	listing: Listing,
+	s: LiveState,
+): Promise<{ localized: Map<string, LocalizedSpelling>; refused: Map<string, string> }> {
+	const candidates = candidatesOf(listing.categories);
+	const listed = new Set(listing.slugs);
+	const bases = new Set([...CATEGORY_SLUGS, ...listing.slugs]);
+
+	const claims = new Map<string, number>();
+	for (const c of candidates)
+		claims.set(`${c.market}|${c.segment}`, (claims.get(`${c.market}|${c.segment}`) ?? 0) + 1);
+
+	const localized = new Map<string, LocalizedSpelling>();
+	for (const [key, spelling] of s.localized) {
+		if (!listed.has(spelling.base) && !listing.complete) localized.set(key, spelling);
+	}
+	const refused = new Map<string, string>();
+	const pending: Candidate[] = [];
+	for (const c of candidates) {
+		const key = keyOf(c.base, c.market);
+		const reason = segmentRefusal(c, bases, claims);
+		if (reason) {
+			refused.set(key, `${c.segment}: ${reason}`);
+			continue;
+		}
+		const before = s.localized.get(key);
+		if (before && before.segment === c.segment && before.id === c.id) localized.set(key, before);
+		else pending.push(c);
+	}
+
+	// Past the budget: neither admitted nor refused, asked again at the next load.
+	const budget = pending.slice(0, MAX_SEGMENT_PROBES_PER_LOAD);
+	for (let at = 0; at < budget.length; at += SEGMENT_PROBE_BATCH) {
+		const batch = budget.slice(at, at + SEGMENT_PROBE_BATCH);
+		const verdicts = await segmentCollisions(url, batch);
+		for (const c of batch) {
+			const key = keyOf(c.base, c.market);
+			const verdict = verdicts.get(c)?.verdict ?? "unknown";
+			if (verdict === "clear")
+				localized.set(key, { base: c.base, id: c.id, market: c.market, segment: c.segment });
+			else if (verdict === "taken")
+				refused.set(key, `${c.segment}: a product holds this slug in ${c.channel}`);
+			// `unknown`: not admitted yet, and asked again at the next load.
+		}
+	}
+	return { localized, refused };
+}
+
+function learnedRowsOf(localized: ReadonlyMap<string, LocalizedSpelling>): LearnedCategory[] {
+	const byBase = new Map<string, { id: string; segments: Record<string, string> }>();
+	for (const spelling of localized.values()) {
+		const row = byBase.get(spelling.base) ?? { id: spelling.id, segments: {} };
+		row.segments[spelling.market] = spelling.segment;
+		byBase.set(spelling.base, row);
+	}
+	return [...byBase]
+		.sort(([a], [b]) => a.localeCompare(b))
+		.map(([baseSlug, row]) => ({ baseSlug, saleorId: row.id, segments: row.segments }));
 }
 
 // --- the load ------------------------------------------------------------------------
@@ -326,11 +585,33 @@ async function load(url: string): Promise<void> {
 		// `unknown`: not admitted yet, and asked again at the next load.
 	}
 
+	const spellings = await learnSpellings(url, listing, s);
+
 	const added = [...admitted].filter((slug) => !s.admitted.has(slug));
 	const removed = [...s.admitted].filter((slug) => !admitted.has(slug));
 	const newlyRefused = [...refused].filter(([slug, reason]) => s.refused.get(slug) !== reason);
 
 	if (added.length > 0 || removed.length > 0 || s.loadedAt === 0) publish(admitted);
+
+	const spellingsChanged =
+		spellings.localized.size !== s.localized.size ||
+		[...spellings.localized].some(([key, spelling]) => s.localized.get(key)?.segment !== spelling.segment);
+	if (spellingsChanged || s.loadedAt === 0) publishLearnedCategories(learnedRowsOf(spellings.localized));
+	for (const [key, spelling] of spellings.localized) {
+		if (s.localized.get(key)?.segment === spelling.segment) continue;
+		log(`now routing ${spelling.base} in ${spelling.market} at /${spelling.market}/${spelling.segment}`);
+	}
+	for (const [key] of s.localized) {
+		if (!spellings.localized.has(key)) log(`no longer routing the spelling of ${key.replace("|", " in ")}`);
+	}
+	for (const [key, reason] of spellings.refused) {
+		if (s.localizedRefused.get(key) === reason) continue;
+		console.warn(
+			`[live-categories] Saleor holds a translated slug for ${JSON.stringify(
+				key.replace("|", " in "),
+			)} but it is NOT routed: ${reason}`,
+		);
+	}
 	if (s.failures > 0) log(`Saleor answered again after ${s.failures} failed load(s)`);
 	if (added.length > 0)
 		log(`now routing ${added.length} new categor${added.length === 1 ? "y" : "ies"}: ${added.join(", ")}`);
@@ -346,6 +627,8 @@ async function load(url: string): Promise<void> {
 
 	s.admitted = admitted;
 	s.refused = refused;
+	s.localized = spellings.localized;
+	s.localizedRefused = spellings.refused;
 	s.failures = 0;
 	s.notBefore = 0;
 	s.loadedAt = now;
@@ -468,4 +751,6 @@ export async function prewarmLiveCategories({
 		`floor=${CATEGORY_SLUGS.size} live=${s.admitted.size} refused=${s.refused.size} ` +
 			`loaded=${s.loadedAt !== 0 ? "yes" : "no"}`,
 	);
+	// A line of its own: `deploy-production.sh` reads the one above by its exact shape.
+	log(`localized spellings=${s.localized.size} refused=${s.localizedRefused.size}`);
 }
