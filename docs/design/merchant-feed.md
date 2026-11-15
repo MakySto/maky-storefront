@@ -99,6 +99,55 @@ is what makes that legitimate. On the page the same set shows the EANs of all it
 `status.json` beside the feeds holds, per market, when the feed was written, how many products were read,
 how many items it has and how many were left out by reason. It is not served.
 
+## Between two fetches: the Merchant API
+
+Owner, 2026-11-15: the feed is the main source, and the Merchant API is added for one thing only, a
+price or an availability that changed since the feed was fetched. Two main sources for the same products
+would overwrite each other, so there is exactly one, the feed.
+
+What Google's own description of the API says (read 2026-11-15 from the discovery documents of
+`merchantapi.googleapis.com`, versions `products_v1`, `datasources_v1`, `accounts_v1`, `quota_v1`, and
+from the guides; nothing of it was tried on the account):
+
+- The Content API for Shopping was retired on 2026-08-18. The Merchant API v1 is its successor.
+- The API cannot change a product that came from a file: `productInputs.insert` takes API data sources
+  only. The documented way to change price and availability of a feed's products is a **supplemental**
+  data source of type API, linked in the default rule of the feed's (primary) source. The rule is an
+  ordered list; with the supplemental source ahead of `self`, an attribute the supplemental source
+  states wins and every other attribute is the feed's.
+- A project in Google Cloud has to be registered with the Merchant Center account once
+  (`developerRegistration:registerGcp`); without it every call answers 401.
+- The legacy "Content API" source in the account (primary, type API, no products) is not used. It is a
+  second main source, which is what the owner's decision rules out.
+
+`scripts/ops/merchant-api.mjs`, run by `maky-merchant-api.timer` every hour, does it:
+
+1. It walks the same internal route as the feed writer. The price and the availability it sends are
+   the page's, by the same functions.
+2. It compares each product with what Google was last told: by an earlier run if it ever sent that
+   product (the supplemental source wins, so what it holds is what Google shows), otherwise by the last
+   written feed. The feed writer leaves that record beside every feed, `offers-<market>.json`.
+3. Only a difference is sent, and only for a product the feed names: the supplemental source cannot add
+   a product. A product new since the feed waits for the next feed.
+4. A product the walk no longer finds is told `out_of_stock` when two runs in a row missed it.
+5. A walk that did not reach the end sends nothing. More than a quarter of the feed differing at once
+   sends nothing without `--force`.
+6. Before sending, it reads the account and refuses unless the feed's source exists and exactly one
+   supplemental API source is linked ahead of it. `--check` prints the same and the quota; `--show <id>`
+   prints what Google holds for one product. Both only read.
+7. A sale that ended while the feed of the morning still states the sale price is ended by its dates
+   (`salePriceEffectiveDate` closed at the time of the run): a supplemental source can state an
+   attribute, it cannot take one away.
+
+The key of the Google service account is a SecureString in AWS SSM
+(`/maky/storefront/google/merchant-api-key`). The program reads it at run time through the server's own
+role, holds it in memory and writes it nowhere; it is not copied into `.env` (the shop's process has no
+use for it, and `sync-secrets.sh` rightly refuses a value with quotes and line breaks). It is never in
+this repository, in a log or in a message.
+
+Set the fetch in Merchant Center soon after the feed is written (05:05 UTC). The record the hourly run
+compares with is the feed as written; Google holds it only once it has fetched it.
+
 ## What is not verified yet
 
 Saleor is not reachable from where this was written. Checked: the items against the page's structured
@@ -108,6 +157,13 @@ passed code generation against the schema of Saleor 3.23.31), the time a whole S
 how many products the first feed holds. The first dry run on the server answers all three and changes
 nothing.
 
+For the Merchant API nothing has been tried on the account: the program was run against a stand-in for
+Google that checks the signature of the sign-in and the shape of each request. To be seen on the account:
+that the default rule of a file source can hold the supplemental source (set in Merchant Center; whether
+the API may set it for a file source is not stated), how long an accepted change takes to show, the
+quota (`--check` prints it), and with `--show` on the first real case that a sale ended by its dates is
+shown at the full price.
+
 ## Order of work after the merge
 
 1. Deploy the build (the routes come with it).
@@ -115,5 +171,9 @@ nothing.
 3. Install the timer, first run with `--write`, look at `/feeds/google-sk.xml.gz`.
 4. In Merchant Center: add the file as a product source for Slovakia with a daily fetch, and set the
    delivery prices for Slovakia.
-5. Another market when its dry run has been looked at and its delivery is set in Merchant Center:
+5. The Merchant API, once the feed is a source in Merchant Center: a project in Google Cloud with the
+   Merchant API enabled and a service account, added as a user of the Merchant Center account; its key
+   into AWS SSM; in Merchant Center a supplemental source of type API linked ahead of the feed's;
+   `--check` on the server, a dry run, then the hourly timer.
+6. Another market when its dry run has been looked at and its delivery is set in Merchant Center:
    add it to `--markets` in the installed unit.
