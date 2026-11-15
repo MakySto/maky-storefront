@@ -88,6 +88,7 @@
 		"reviewCount": "{count, plural, =0 {Keine Bewertungen} one {# Bewertung} other {# Bewertungen}}",
 		"sku": "Artikelnummer",
 		"ean": "EAN",
+		"componentEans": "EAN der Teile",
 		"brand": "Marke",
 		"weight": "Gewicht",
 		"dimensions": "Maße",
@@ -764,6 +765,7 @@
 	},
 	"plp": {
 		"productCount": "{count, plural, one {# Produkt} other {# Produkte}}",
+		"categoryMetaDescription": "{category} bei MAKY.STORE: {count, plural, one {# Produkt} other {# Produkte}}. Preise und Verfügbarkeit auf einen Blick, Rückgabe innerhalb von 14 Tagen.",
 		"noProductsMatch": "Keine Produkte entsprechen Ihren Filtern.",
 		"listingEmpty": "Hier sind noch keine Produkte vorhanden.",
 		"listingUntranslated": "Die Produkte dieses Sortiments sind in dieser Sprache noch nicht verfügbar.",
@@ -1254,7 +1256,9 @@
 		"title": "Marken",
 		"description": "Die Hersteller von Dachträgern, Dachboxen, Fahrradträgern und weiterer Ausrüstung, deren Produkte Sie bei uns kaufen.",
 		"productCount": "{count, plural, one {# Produkt} other {# Produkte}}",
-		"brandDescription": "Produkte der Marke {brand} bei MAKY.STORE."
+		"brandDescription": "Produkte der Marke {brand} bei MAKY.STORE.",
+		"brandDescriptionCategories": "Produkte der Marke {brand} bei MAKY.STORE: {categories}.",
+		"brandCategories": "Kategorien von {brand}"
 	},
 	"listing": {
 		"viewLabel": "Ansicht der Produktliste",

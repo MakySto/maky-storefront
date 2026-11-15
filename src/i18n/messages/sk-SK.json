@@ -88,6 +88,7 @@
 		"reviewCount": "{count, plural, =0 {Žiadne recenzie} one {# recenzia} few {# recenzie} other {# recenzií}}",
 		"sku": "SKU",
 		"ean": "EAN",
+		"componentEans": "EAN dielov",
 		"brand": "Značka",
 		"weight": "Hmotnosť",
 		"dimensions": "Rozmery",
@@ -764,6 +765,7 @@
 	},
 	"plp": {
 		"productCount": "{count, plural, one {# produkt} few {# produkty} other {# produktov}}",
+		"categoryMetaDescription": "{category} v ponuke MAKY.STORE: {count, plural, one {# produkt} few {# produkty} other {# produktov}}. Ceny a dostupnosť na jednom mieste, vrátenie tovaru do 14 dní.",
 		"noProductsMatch": "Žiadne produkty nezodpovedajú filtrom.",
 		"listingEmpty": "Zatiaľ tu nie sú žiadne produkty.",
 		"listingUntranslated": "Produkty z tejto ponuky zatiaľ nie sú dostupné v tomto jazyku.",
@@ -1254,7 +1256,9 @@
 		"title": "Značky",
 		"description": "Výrobcovia strešných nosičov, boxov, nosičov bicyklov a ďalšej výbavy, ktorých produkty u nás kúpite.",
 		"productCount": "{count, plural, one {# produkt} few {# produkty} other {# produktov}}",
-		"brandDescription": "Produkty značky {brand} v ponuke MAKY.STORE."
+		"brandDescription": "Produkty značky {brand} v ponuke MAKY.STORE.",
+		"brandDescriptionCategories": "Produkty značky {brand} v ponuke MAKY.STORE: {categories}.",
+		"brandCategories": "Kategórie značky {brand}"
 	},
 	"listing": {
 		"viewLabel": "Zobrazenie výpisu",

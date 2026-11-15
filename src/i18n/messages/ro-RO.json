@@ -88,6 +88,7 @@
 		"reviewCount": "{count, plural, =0 {Nicio recenzie} one {# recenzie} few {# recenzii} other {# recenzii}}",
 		"sku": "Cod produs",
 		"ean": "EAN",
+		"componentEans": "EAN piese",
 		"brand": "Marcă",
 		"weight": "Greutate",
 		"dimensions": "Dimensiuni",
@@ -764,6 +765,7 @@
 	},
 	"plp": {
 		"productCount": "{count, plural, one {# produs} few {# produse} other {# produse}}",
+		"categoryMetaDescription": "{category} la MAKY.STORE: {count, plural, one {# produs} few {# produse} other {# de produse}}. Prețuri și disponibilitate într-un singur loc, retur în 14 zile.",
 		"noProductsMatch": "Niciun produs nu corespunde filtrelor.",
 		"listingEmpty": "Aici nu există încă produse.",
 		"listingUntranslated": "Produsele din această selecție nu sunt încă disponibile în această limbă.",
@@ -1254,7 +1256,9 @@
 		"title": "Mărci",
 		"description": "Producătorii de bare portbagaj, cutii de plafon, suporturi de biciclete și alte echipamente ale căror produse le găsiți la noi.",
 		"productCount": "{count, plural, one {# produs} few {# produse} other {# de produse}}",
-		"brandDescription": "Produse {brand} în oferta MAKY.STORE."
+		"brandDescription": "Produse {brand} în oferta MAKY.STORE.",
+		"brandDescriptionCategories": "Produse {brand} în oferta MAKY.STORE: {categories}.",
+		"brandCategories": "Categorii {brand}"
 	},
 	"listing": {
 		"viewLabel": "Afișarea listei",

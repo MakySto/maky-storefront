@@ -1,5 +1,6 @@
 import { publicProductCode } from "@/lib/product-code";
 import { publicEan } from "@/lib/product-ean";
+import { publicComponentEans, type ComponentRole } from "@/lib/component-eans";
 import { formatMoney, formatMoneyRange } from "@/lib/utils";
 import { quoteInsteadOfPrice } from "@/config/quote-only";
 import { quoteReferenceFor, quoteRequestHref } from "@/lib/contact/quote-request";
@@ -50,6 +51,17 @@ interface VariantSectionDynamicProps {
 	/** The product's own warranty in years when it is longer than the statutory two (`extendedWarrantyYears`). */
 	warrantyYears?: number | null;
 }
+
+/** The `configurator` messages that name a set's parts ("priečniky", "pätky", "montážny kit"); none for "other". */
+const COMPONENT_ROLE_MESSAGE: Record<
+	ComponentRole,
+	"includesBars" | "includesFeet" | "includesFittingKit" | null
+> = {
+	bars: "includesBars",
+	feet: "includesFeet",
+	kit: "includesFittingKit",
+	other: null,
+};
 
 /**
  * Narrow Saleor variants to exactly what the client component declares.
@@ -218,6 +230,11 @@ export async function VariantSectionDynamic({
 	// The EAN, as CFM publishes it on the variant (`cfm_ean`) and only when it can be a real GTIN —
 	// `publicEan` checks it again. Nothing when the product has none: a blank, never a placeholder.
 	const ean = publicEan(selectedVariant ?? variants[0]);
+	// A set has no EAN of its own; its parts do, and CFM publishes them beside the set (`cfm_component_eans`).
+	// Shown under the set's code so the numbers on the boxes can be matched, and found by a search for one.
+	const componentEans = publicComponentEans((selectedVariant ?? variants[0])?.componentEans);
+	const tParts =
+		componentEans.length > 0 ? await getTranslations({ locale, namespace: "configurator" }) : null;
 	// A snow chain or sock is one manufacturer's code that fits many tyre sizes. The shopper gives their size once, in
 	// the vehicle selector, and this page says whether the product fits it; the size travels with the add
 	// (`lib/tyre-size`). Null for every other product, and for one this market cannot sell. The cookie is read only
@@ -391,6 +408,22 @@ export async function VariantSectionDynamic({
 					<span className="text-text-tertiary min-w-0 text-xs">
 						{tProduct("ean")}: <span className="font-medium tabular-nums">{ean}</span>
 					</span>
+				)}
+				{componentEans.length > 0 && tParts && (
+					<dl className="text-text-tertiary flex w-full min-w-0 flex-wrap gap-x-4 gap-y-1 text-xs">
+						<dt className="w-full sm:w-auto">{tProduct("componentEans")}:</dt>
+						{componentEans.map((part) => {
+							const role = COMPONENT_ROLE_MESSAGE[part.role];
+							return (
+								<dd key={part.ean} className="min-w-0">
+									{role ? `${tParts(role)} ` : ""}
+									<span className="[overflow-wrap:anywhere]">{part.code}</span>
+									{part.qty > 1 ? ` (${part.qty}×)` : ""}:{" "}
+									<span className="font-medium tabular-nums">{part.ean}</span>
+								</dd>
+							);
+						})}
+					</dl>
 				)}
 			</div>
 

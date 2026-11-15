@@ -88,6 +88,7 @@
 		"reviewCount": "{count, plural, =0 {Sin opiniones} one {# opinión} other {# opiniones}}",
 		"sku": "Referencia",
 		"ean": "EAN",
+		"componentEans": "EAN de las piezas",
 		"brand": "Marca",
 		"weight": "Peso",
 		"dimensions": "Dimensiones",
@@ -764,6 +765,7 @@
 	},
 	"plp": {
 		"productCount": "{count, plural, one {# producto} other {# productos}}",
+		"categoryMetaDescription": "{category} en MAKY.STORE: {count, plural, one {# producto} other {# productos}}. Precios y disponibilidad en un solo lugar, devolución en 14 días.",
 		"noProductsMatch": "Ningún producto coincide con los filtros.",
 		"listingEmpty": "Todavía no hay productos aquí.",
 		"listingUntranslated": "Los productos de esta selección aún no están disponibles en este idioma.",
@@ -1254,7 +1256,9 @@
 		"title": "Marcas",
 		"description": "Los fabricantes de barras de techo, cofres, portabicicletas y otros equipos cuyos productos puedes comprar aquí.",
 		"productCount": "{count, plural, one {# producto} other {# productos}}",
-		"brandDescription": "Productos {brand} en MAKY.STORE."
+		"brandDescription": "Productos {brand} en MAKY.STORE.",
+		"brandDescriptionCategories": "Productos {brand} en MAKY.STORE: {categories}.",
+		"brandCategories": "Categorías de {brand}"
 	},
 	"listing": {
 		"viewLabel": "Vista del listado",

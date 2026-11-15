@@ -82,6 +82,14 @@ export function buildProductJsonLd(options: {
 	gtin?: string | null;
 	brand?: string | null;
 	url?: string;
+	/**
+	 * The channel (or market) the page is rendered for. With it every offer states the return window of
+	 * that market, next to the offer, which is where Google's merchant listing reads it: the policy on the
+	 * homepage's `OnlineStore` is not on the product page, and Search Console reported 19 006 offers
+	 * without `hasMerchantReturnPolicy` (2026-11-15). Without it, or for a channel that is not a market,
+	 * the offer says nothing about returns.
+	 */
+	channel?: string | null;
 	/** Single variant pricing */
 	price?: {
 		amount: number;
@@ -146,6 +154,7 @@ export function buildProductJsonLd(options: {
 		gtin,
 		brand,
 		url,
+		channel,
 		price,
 		priceRange,
 		inStock = true,
@@ -163,6 +172,9 @@ export function buildProductJsonLd(options: {
 	// A reference to the shop the homepage describes in full, not a second, nameless
 	// organisation per product — see `organizationReference`.
 	const seller = organizationReference();
+	// What is true of every offer of this shop in this market: the goods are new, and they can be
+	// sent back within the window the returns page states.
+	const terms = offerTerms(channel);
 
 	const base = {
 		"@context": "https://schema.org" as const,
@@ -202,6 +214,7 @@ export function buildProductJsonLd(options: {
 					),
 					priceCurrency: variant.price!.currency,
 					price: variant.price!.amount,
+					...terms,
 					seller,
 				},
 			})),
@@ -227,6 +240,7 @@ export function buildProductJsonLd(options: {
 				availability: offerAvailability,
 				priceCurrency: exact.currency,
 				price: exact.amount,
+				...terms,
 				seller,
 			}
 		: priceRange
@@ -240,6 +254,7 @@ export function buildProductJsonLd(options: {
 					lowPrice: priceRange.lowPrice,
 					highPrice: priceRange.highPrice,
 					offerCount: variantCount,
+					...terms,
 					seller,
 				}
 			: undefined;
@@ -379,6 +394,41 @@ function marketOf(channel: string): string | null {
 }
 
 /**
+ * The return policy of one market, as schema.org states it: the window every buyer gets (`RETURN_DAYS`)
+ * and the returns page of that market. Fees and the return method stay unsaid, for the reason given at
+ * `RETURN_DAYS`.
+ */
+function returnPolicyFor(market: string, applicableCountry: string | string[]) {
+	return {
+		"@type": "MerchantReturnPolicy" as const,
+		applicableCountry,
+		returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow" as const,
+		merchantReturnDays: RETURN_DAYS,
+		merchantReturnLink: `${getBaseUrl()}/${market}${RETURNS_PAGE_PATH}`,
+	};
+}
+
+/**
+ * What every offer says beside its price: the condition, and the return policy of the market the page
+ * belongs to.
+ *
+ * `NewCondition` is a fact of the catalogue, not a default: the shop sells no used or refurbished goods.
+ * The return policy names one country, the market's own, because the offer on `/de/…` is the German
+ * offer; the store-wide list of twelve stays on the homepage's `OnlineStore`.
+ *
+ * No `shippingDetails`. An `OfferShippingDetails` is read for its `shippingRate`, and the rate depends
+ * on the parcel and the destination and is calculated at checkout (CLAUDE.md §9). It arrives with a
+ * price table the owner confirms, not with a number invented here.
+ */
+function offerTerms(channel: string | null | undefined) {
+	const market = channel ? marketOf(channel) : null;
+	return {
+		itemCondition: "https://schema.org/NewCondition" as const,
+		...(market ? { hasMerchantReturnPolicy: returnPolicyFor(market, CHANNEL_MAP[market]!.country) } : {}),
+	};
+}
+
+/**
  * Organization markup — as `OnlineStore`, the subtype Google asks an e-commerce site to use.
  *
  * Every identifying value comes from `src/config/company.ts`, the one place the operating
@@ -418,13 +468,7 @@ export function buildOrganizationJsonLd(channel: string) {
 		},
 		vatID: companyInfo.icDph,
 		taxID: companyInfo.dic,
-		hasMerchantReturnPolicy: {
-			"@type": "MerchantReturnPolicy",
-			applicableCountry: marketCountries(),
-			returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
-			merchantReturnDays: RETURN_DAYS,
-			merchantReturnLink: `${base}/${market}${RETURNS_PAGE_PATH}`,
-		},
+		hasMerchantReturnPolicy: returnPolicyFor(market, marketCountries()),
 		hasShippingService: {
 			"@type": "ShippingService",
 			fulfillmentType: "FulfillmentTypeDelivery",

@@ -374,3 +374,74 @@ describe("buildProductJsonLd — internal identifiers never publish", () => {
 		expect(JSON.stringify(data)).not.toContain("CFMP-");
 	});
 });
+
+/**
+ * What the offer says beside its price. Search Console counted 19 006 product pages without
+ * `hasMerchantReturnPolicy` in the offer on 2026-11-15: the policy was on the homepage's `OnlineStore`
+ * only, and a merchant listing is read from the product page.
+ */
+describe("product JSON-LD offer terms", () => {
+	const offer = (data: ReturnType<typeof buildProductJsonLd>) =>
+		(data as { offers?: Record<string, unknown> }).offers;
+	const price = { amount: 129.9, currency: "EUR" };
+
+	it("states that the goods are new", () => {
+		expect(offer(buildProductJsonLd({ name: "Nosič", price }))).toMatchObject({
+			itemCondition: "https://schema.org/NewCondition",
+		});
+	});
+
+	it("states the market's own return window and returns page, by channel or by market", () => {
+		for (const channel of ["de-eur", "de"]) {
+			expect(offer(buildProductJsonLd({ name: "Träger", price, channel }))).toMatchObject({
+				hasMerchantReturnPolicy: {
+					"@type": "MerchantReturnPolicy",
+					applicableCountry: "DE",
+					returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+					merchantReturnDays: 14,
+					merchantReturnLink: expect.stringMatching(/\/de\/reklamacie-a-vratenie$/),
+				},
+			});
+		}
+	});
+
+	it("never promises who pays for a return or how it travels back", () => {
+		const policy = offer(buildProductJsonLd({ name: "Nosič", price, channel: "sk-eur" }))!
+			.hasMerchantReturnPolicy as Record<string, unknown>;
+		expect(policy.applicableCountry).toBe("SK");
+		for (const key of ["returnFees", "returnMethod", "returnShippingFeesAmount"]) {
+			expect(policy).not.toHaveProperty(key);
+		}
+	});
+
+	it("says nothing about returns for a channel that is not a market, or for none", () => {
+		expect(
+			offer(buildProductJsonLd({ name: "Nosič", price, channel: "default-channel" })),
+		).not.toHaveProperty("hasMerchantReturnPolicy");
+		expect(offer(buildProductJsonLd({ name: "Nosič", price }))).not.toHaveProperty("hasMerchantReturnPolicy");
+	});
+
+	it("states no shipping rate: the price of delivery is calculated at checkout", () => {
+		expect(offer(buildProductJsonLd({ name: "Nosič", price, channel: "sk-eur" }))).not.toHaveProperty(
+			"shippingDetails",
+		);
+	});
+
+	it("gives every variant of a product group the same terms", () => {
+		const data = buildProductJsonLd({
+			name: "Box",
+			channel: "cz-czk",
+			variants: [
+				{ sku: "A", price: { amount: 100, currency: "CZK" } },
+				{ sku: "B", price: { amount: 120, currency: "CZK" } },
+			],
+		}) as unknown as { hasVariant: { offers: Record<string, unknown> }[] };
+		expect(data.hasVariant).toHaveLength(2);
+		for (const variant of data.hasVariant) {
+			expect(variant.offers).toMatchObject({
+				itemCondition: "https://schema.org/NewCondition",
+				hasMerchantReturnPolicy: { applicableCountry: "CZ", merchantReturnDays: 14 },
+			});
+		}
+	});
+});
