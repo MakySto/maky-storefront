@@ -18,7 +18,7 @@ import { isPlausibleTyreSize } from "./size-lookup";
  *
  *   - **Only a standard size** (`205/60 R16`: width, profile, whole-inch rim) in the range of tyres that exist
  *     (`isPlausibleTyreSize`). The list also carries old spellings (`175 R13`, `5.00-12`), half-inch truck rims
- *     and a few rows that are plainly a typing error of their source (`650/17 R17`); the product page and the
+ *     and a few rows outside that range (`275/20 R20`, `120/80 R10`); the product page and the
  *     selector still answer for them, but they get no address of their own.
  *   - **The address is the list's own label and nothing else**: `205-60-r16` is `205/60 R16`. No second spelling
  *     resolves, so one size has one URL.
