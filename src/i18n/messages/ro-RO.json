@@ -1360,5 +1360,31 @@
 		"listingUnlisted": "Pentru dimensiunea {size} nu avem listă de lanțuri, de aceea le vedeți pe toate. Scrieți-ne și vă sfătuim.",
 		"listingUnavailable": "Selecția după dimensiunea {size} nu a putut fi încărcată acum, vedeți toate lanțurile.",
 		"cardAsk": "Precizați anvelopele"
+	},
+	"tyrePages": {
+		"sizeMetaTitle": "Lanțuri de zăpadă {size} și șosete de zăpadă",
+		"sizeMetaDescription": "Lanțuri de zăpadă și șosete de zăpadă pentru anvelope {size}. Doar modele care se potrivesc acestei dimensiuni conform listelor de dimensiuni. Comparați prețurile și comandați online.",
+		"sizeHeading": "Lanțuri de zăpadă {size}",
+		"sizeLead": "Lanțuri de zăpadă și lanțuri textile (șosete de zăpadă) care, conform listelor de dimensiuni, se potrivesc anvelopelor {size}. Dimensiunea se află pe flancul anvelopei.",
+		"sizeCount": "În ofertă pentru {size}: lanțuri de zăpadă {chains}, șosete de zăpadă {socks}. Prețuri de la {price}.",
+		"chainsHeading": "Lanțuri de zăpadă pentru anvelope {size}",
+		"socksHeading": "Șosete de zăpadă pentru anvelope {size}",
+		"conditionNote": "La unele modele mărimea depinde de marca sau de modelul anvelopei. Cardul vă spune acest lucru, iar pe pagina produsului este suficient să răspundeți la o întrebare.",
+		"emptyTitle": "Pentru dimensiunea {size} nu avem momentan nimic în ofertă",
+		"emptyBody": "Vedeți celelalte dimensiuni sau scrieți-ne, vă sfătuim cu plăcere.",
+		"unavailable": "Oferta pentru această dimensiune nu a putut fi încărcată acum. Încercați din nou peste puțin timp.",
+		"allChains": "Toate lanțurile de zăpadă",
+		"otherSizesHeading": "Alte dimensiuni pentru jante R{rim}",
+		"rimLink": "Toate dimensiunile R{rim}",
+		"rimCrumb": "R{rim}",
+		"rimMetaTitle": "Lanțuri de zăpadă R{rim} după dimensiunea anvelopei",
+		"rimMetaDescription": "Lanțuri de zăpadă și șosete de zăpadă pentru jante de {rim} țoli. Alegeți dimensiunea anvelopelor și vedeți doar modelele care se potrivesc.",
+		"rimHeading": "Lanțuri de zăpadă pentru jante R{rim}",
+		"rimLead": "Alegeți dimensiunea anvelopelor dumneavoastră. La fiecare dimensiune vedeți doar lanțurile și șosetele de zăpadă care se potrivesc conform listelor de dimensiuni.",
+		"widthGroup": "Lățime {width} mm",
+		"sourceNote": "Dimensiunile provin din listele producătorilor și din datele furnizorului. La fiecare produs este indicată sursa.",
+		"directoryHeading": "Lanțuri de zăpadă după dimensiunea anvelopei",
+		"directoryLead": "Alegeți diametrul jantei, apoi dimensiunea exactă.",
+		"popularHeading": "Cele mai frecvente dimensiuni"
 	}
 }

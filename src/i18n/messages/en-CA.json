@@ -1360,5 +1360,31 @@
 		"listingUnlisted": "We have no chain list for size {size}, so you see all of them. Write to us and we'll advise you.",
 		"listingUnavailable": "The selection by size {size} couldn't be loaded right now, so you see all chains.",
 		"cardAsk": "Tell us your tires"
+	},
+	"tyrePages": {
+		"sizeMetaTitle": "Snow chains {size} and snow socks",
+		"sizeMetaDescription": "Snow chains and snow socks for {size} tires. Only models that fit this size according to the size lists. Compare prices and order online.",
+		"sizeHeading": "Snow chains {size}",
+		"sizeLead": "Snow chains and textile snow chains (snow socks) that fit {size} tires according to the size lists. You will find the size on the tire's sidewall.",
+		"sizeCount": "On offer for {size}: snow chains {chains}, snow socks {socks}. Prices from {price}.",
+		"chainsHeading": "Snow chains for {size} tires",
+		"socksHeading": "Snow socks for {size} tires",
+		"conditionNote": "For some models the size depends on the make or model of the tire. The card says so, and one answer on the product page settles it.",
+		"emptyTitle": "We have nothing for size {size} at the moment",
+		"emptyBody": "Browse the other sizes or write to us, we are happy to advise.",
+		"unavailable": "The offer for this size could not be loaded right now. Please try again in a moment.",
+		"allChains": "All snow chains",
+		"otherSizesHeading": "More sizes for R{rim} wheels",
+		"rimLink": "All R{rim} sizes",
+		"rimCrumb": "R{rim}",
+		"rimMetaTitle": "Snow chains R{rim} by tire size",
+		"rimMetaDescription": "Snow chains and snow socks for {rim}-inch wheels. Choose your tire size and see only the models that fit it.",
+		"rimHeading": "Snow chains for R{rim} wheels",
+		"rimLead": "Choose the size of your tires. For each size you see only the snow chains and snow socks that fit it according to the size lists.",
+		"widthGroup": "Width {width} mm",
+		"sourceNote": "The sizes come from the manufacturers' lists and from the supplier's data. Each product says which source it is.",
+		"directoryHeading": "Snow chains by tire size",
+		"directoryLead": "Choose the wheel diameter, then the exact size.",
+		"popularHeading": "Most common sizes"
 	}
 }

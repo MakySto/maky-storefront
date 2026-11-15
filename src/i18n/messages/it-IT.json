@@ -1360,5 +1360,31 @@
 		"listingUnlisted": "Non abbiamo un elenco di catene per la misura {size}, quindi le vedi tutte. Scrivici e ti consiglieremo.",
 		"listingUnavailable": "La selezione per la misura {size} non è stata caricata, vedi tutte le catene.",
 		"cardAsk": "Precisa gli pneumatici"
+	},
+	"tyrePages": {
+		"sizeMetaTitle": "Catene da neve {size} e calze da neve",
+		"sizeMetaDescription": "Catene da neve e calze da neve per pneumatici {size}. Solo modelli adatti a questa misura secondo gli elenchi delle misure. Confronta i prezzi e ordina online.",
+		"sizeHeading": "Catene da neve {size}",
+		"sizeLead": "Catene da neve e catene tessili (calze da neve) adatte agli pneumatici {size} secondo gli elenchi delle misure. La misura si trova sul fianco dello pneumatico.",
+		"sizeCount": "In offerta per {size}: catene da neve {chains}, calze da neve {socks}. Prezzi da {price}.",
+		"chainsHeading": "Catene da neve per pneumatici {size}",
+		"socksHeading": "Calze da neve per pneumatici {size}",
+		"conditionNote": "Per alcuni modelli la taglia dipende dalla marca o dal modello dello pneumatico. La scheda lo indica e nella pagina del prodotto basta rispondere a una domanda.",
+		"emptyTitle": "Per la misura {size} al momento non abbiamo nulla in offerta",
+		"emptyBody": "Guarda le altre misure oppure scrivici, ti consigliamo volentieri.",
+		"unavailable": "Non è stato possibile caricare l'offerta per questa misura. Riprova tra un momento.",
+		"allChains": "Tutte le catene da neve",
+		"otherSizesHeading": "Altre misure per cerchi R{rim}",
+		"rimLink": "Tutte le misure R{rim}",
+		"rimCrumb": "R{rim}",
+		"rimMetaTitle": "Catene da neve R{rim} per misura dello pneumatico",
+		"rimMetaDescription": "Catene da neve e calze da neve per cerchi da {rim} pollici. Scegli la misura dei tuoi pneumatici e vedi solo i modelli adatti.",
+		"rimHeading": "Catene da neve per cerchi R{rim}",
+		"rimLead": "Scegli la misura dei tuoi pneumatici. Per ogni misura vedi solo le catene e le calze da neve adatte secondo gli elenchi delle misure.",
+		"widthGroup": "Larghezza {width} mm",
+		"sourceNote": "Le misure provengono dagli elenchi dei produttori e dai dati del fornitore. Ogni prodotto indica la fonte.",
+		"directoryHeading": "Catene da neve per misura dello pneumatico",
+		"directoryLead": "Scegli il diametro del cerchio, poi la misura esatta.",
+		"popularHeading": "Misure più comuni"
 	}
 }

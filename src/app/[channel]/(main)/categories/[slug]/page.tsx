@@ -64,6 +64,8 @@ import {
 	tyreFilterSize,
 } from "@/lib/tyre-size/plp-tyre-filter";
 import { CatalogMakeIndex } from "@/ui/components/catalog/make-index";
+import { TyreSizeDirectory } from "@/ui/components/fitment/tyre-size-directory";
+import { isTyreShelf } from "@/config/tyre-shelves";
 import { HeroBenefits } from "@/ui/components/homepage/hero-benefits";
 import { STOREFRONT_CATEGORIES, categoryFitmentKind } from "@/config/categories";
 import { CategoryPageClient } from "./client";
@@ -387,6 +389,13 @@ async function CategoryContent({
 					}
 				/>
 			</Suspense>
+			{/* The snow-chain shelf's way to its pages by tyre size and by rim. Its own boundary: it asks what the
+			    channel sells, and the listing must never wait for it. Nothing on any other shelf. */}
+			{isTyreShelf(baseSlug) ? (
+				<Suspense fallback={null}>
+					<TyreSizeDirectory channel={params.channel} />
+				</Suspense>
+			) : null}
 			{/* The article's sections: below the listing, server-rendered in full, no interaction needed. */}
 			{article && article.body.length > 0 ? (
 				<section

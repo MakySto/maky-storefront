@@ -7,6 +7,7 @@ import {
 	loadCatalogView,
 	resolveVehiclePath,
 } from "@/lib/catalog-content/resolve";
+import { tyreRouteOf } from "@/lib/tyre-size/size-page-route";
 
 /**
  * What a visitor asking for `/{market}/{category}/{make}[/{model}[/{generation}]]` will be shown, decided
@@ -40,6 +41,13 @@ export async function vehiclePageOutcome(
 	categorySlug: string,
 	segments: readonly string[],
 ): Promise<VehiclePageOutcome> {
+	// The snow-chain shelf has no vehicle pages; below it live the tyre-size pages, which the sealed size list
+	// decides without the catalogue (`lib/tyre-size/size-pages`). Answered first, so a size's address is never
+	// called absent because the vehicle tree does not know it, and an address the shelf does not have is a 404.
+	const tyre = tyreRouteOf(channel, categorySlug, segments);
+	if (tyre.status === "page") return { status: "found" };
+	if (tyre.status === "absent") return { status: "absent", reason: "no-page" };
+
 	const language = catalogLanguageForChannel(channel);
 	// A market whose catalogue has no language has no vehicle pages at all.
 	if (!language) return { status: "absent", reason: "no-language" };

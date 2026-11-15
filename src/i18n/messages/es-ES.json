@@ -1360,5 +1360,31 @@
 		"listingUnlisted": "No tenemos lista de cadenas para la medida {size}, por eso ves todas. Escríbenos y te asesoraremos.",
 		"listingUnavailable": "No se pudo cargar ahora la selección por la medida {size}; ves todas las cadenas.",
 		"cardAsk": "Precisa tus neumáticos"
+	},
+	"tyrePages": {
+		"sizeMetaTitle": "Cadenas de nieve {size} y calcetines de nieve",
+		"sizeMetaDescription": "Cadenas de nieve y calcetines de nieve para neumáticos {size}. Solo modelos que sirven para esta medida según las listas de medidas. Compara precios y pide online.",
+		"sizeHeading": "Cadenas de nieve {size}",
+		"sizeLead": "Cadenas de nieve y cadenas textiles (calcetines de nieve) que, según las listas de medidas, sirven para neumáticos {size}. La medida está en el lateral del neumático.",
+		"sizeCount": "En oferta para {size}: cadenas de nieve {chains}, calcetines de nieve {socks}. Precios desde {price}.",
+		"chainsHeading": "Cadenas de nieve para neumáticos {size}",
+		"socksHeading": "Calcetines de nieve para neumáticos {size}",
+		"conditionNote": "En algunos modelos la talla depende de la marca o del modelo del neumático. La tarjeta lo indica y en la página del producto basta con responder a una pregunta.",
+		"emptyTitle": "Para la medida {size} no tenemos nada en la oferta por ahora",
+		"emptyBody": "Mira las demás medidas o escríbenos, te asesoramos con gusto.",
+		"unavailable": "No se ha podido cargar la oferta para esta medida. Inténtalo de nuevo en un momento.",
+		"allChains": "Todas las cadenas de nieve",
+		"otherSizesHeading": "Más medidas para llantas R{rim}",
+		"rimLink": "Todas las medidas R{rim}",
+		"rimCrumb": "R{rim}",
+		"rimMetaTitle": "Cadenas de nieve R{rim} por medida de neumático",
+		"rimMetaDescription": "Cadenas de nieve y calcetines de nieve para llantas de {rim} pulgadas. Elige la medida de tus neumáticos y verás solo los modelos que sirven.",
+		"rimHeading": "Cadenas de nieve para llantas R{rim}",
+		"rimLead": "Elige la medida de tus neumáticos. En cada medida verás solo las cadenas y los calcetines de nieve que sirven según las listas de medidas.",
+		"widthGroup": "Anchura {width} mm",
+		"sourceNote": "Las medidas proceden de las listas de los fabricantes y de los datos del proveedor. En cada producto se indica de qué fuente.",
+		"directoryHeading": "Cadenas de nieve por medida de neumático",
+		"directoryLead": "Elige el diámetro de la llanta y después la medida exacta.",
+		"popularHeading": "Medidas más habituales"
 	}
 }
