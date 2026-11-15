@@ -1,0 +1,24 @@
+# The top-level categories and what one maker holds in each, in THIS channel: the brand page's
+# title, description and its row of category links. A category's `products` counts its whole
+# subtree. Read-only; see `src/lib/brands/brand-categories.ts`.
+query BrandCategories($channel: String!, $lang: LanguageCodeEnum!, $brand: [String!]!) {
+	categories(level: 0, first: 50) {
+		edges {
+			node {
+				id
+				slug
+				name
+				translation(languageCode: $lang) {
+					name
+				}
+				products(
+					channel: $channel
+					first: 1
+					filter: { attributes: [{ slug: "manufacturer", values: $brand }] }
+				) {
+					totalCount
+				}
+			}
+		}
+	}
+}

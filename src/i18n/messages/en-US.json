@@ -88,6 +88,7 @@
 		"reviewCount": "{count, plural, =0 {No reviews} one {# review} other {# reviews}}",
 		"sku": "SKU",
 		"ean": "EAN",
+		"componentEans": "Part EANs",
 		"brand": "Brand",
 		"weight": "Weight",
 		"dimensions": "Dimensions",
@@ -764,6 +765,7 @@
 	},
 	"plp": {
 		"productCount": "{count, plural, one {# product} other {# products}}",
+		"categoryMetaDescription": "{category} at MAKY.STORE: {count, plural, one {# product} other {# products}}. Prices and availability in one place, returns within 14 days.",
 		"noProductsMatch": "No products match your filters.",
 		"listingEmpty": "There are no products here yet.",
 		"listingUntranslated": "The products in this listing are not available in this language yet.",
@@ -1254,7 +1256,9 @@
 		"title": "Brands",
 		"description": "The makers of roof racks, roof boxes, bike carriers and more whose products you can buy here.",
 		"productCount": "{count, plural, one {# product} other {# products}}",
-		"brandDescription": "{brand} products at MAKY.STORE."
+		"brandDescription": "{brand} products at MAKY.STORE.",
+		"brandDescriptionCategories": "{brand} products at MAKY.STORE: {categories}.",
+		"brandCategories": "{brand} categories"
 	},
 	"listing": {
 		"viewLabel": "Listing view",

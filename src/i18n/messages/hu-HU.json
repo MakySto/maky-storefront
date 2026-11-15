@@ -88,6 +88,7 @@
 		"reviewCount": "{count, plural, =0 {Nincs vélemény} one {# vélemény} other {# vélemény}}",
 		"sku": "Cikkszám",
 		"ean": "EAN",
+		"componentEans": "Az alkatrészek EAN-kódjai",
 		"brand": "Márka",
 		"weight": "Súly",
 		"dimensions": "Méretek",
@@ -764,6 +765,7 @@
 	},
 	"plp": {
 		"productCount": "{count, plural, one {# termék} other {# termék}}",
+		"categoryMetaDescription": "{category} a MAKY.STORE kínálatában: {count} termék. Árak és elérhetőség egy helyen, visszaküldés 14 napon belül.",
 		"noProductsMatch": "Nincs a szűrőknek megfelelő termék.",
 		"listingEmpty": "Itt még nincsenek termékek.",
 		"listingUntranslated": "Ennek a kínálatnak a termékei ezen a nyelven még nem érhetők el.",
@@ -1254,7 +1256,9 @@
 		"title": "Márkák",
 		"description": "A tetőcsomagtartók, tetőboxok, kerékpártartók és más felszerelések gyártói, akiknek termékeit nálunk megvásárolhatja.",
 		"productCount": "{count, plural, other {# termék}}",
-		"brandDescription": "{brand} termékek a MAKY.STORE kínálatában."
+		"brandDescription": "{brand} termékek a MAKY.STORE kínálatában.",
+		"brandDescriptionCategories": "{brand} termékek a MAKY.STORE kínálatában: {categories}.",
+		"brandCategories": "{brand} kategóriák"
 	},
 	"listing": {
 		"viewLabel": "A lista megjelenítése",

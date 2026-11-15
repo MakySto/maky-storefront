@@ -70,7 +70,12 @@ from the index either.
 | Legal pages of a market with no approved copy                          | `noindex, nofollow`     | The page 404s; the metadata must agree.                                                                                      |
 | CMS preview (Draft Mode)                                               | `noindex, nofollow`     | `private, no-store`; a draft is never indexed.                                                                               |
 | A market that is not live                                              | `X-Robots-Tag: noindex` | `MAKY_LIVE_MARKETS`; today there is none (all twelve are live and indexable).                                                |
-| Junk paths, unknown sitemap shards                                     | 404 + `noindex`         | The proxy and the sitemap route.                                                                                             |
+
+A later page of a category or brand listing (`?cursor=…&direction=next`) is indexable and is its own canonical,
+without hreflang; a re-ordered or narrowed list and a page reached by "previous" keep the bare address as
+their canonical (`src/lib/seo/listing-canonical.ts`, since 2026-11-15). Google's guidance for paginated
+listings is that page two must not name page one as its canonical.
+| Junk paths, unknown sitemap shards | 404 + `noindex` | The proxy and the sitemap route. |
 
 Every public page of a live market that holds content is indexable: home, stocked categories, products,
 brand pages with brands, vehicle pages CFM marks indexable, the legal and content pages. If one of them
