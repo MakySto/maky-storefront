@@ -2,6 +2,7 @@ import "server-only";
 
 import { fittingCodes } from "./choice";
 import { tyreCodesOfFamily, tyreFamilies, tyreFamilyByKey, tyreFamilyOf, type TyreFamily } from "./families";
+import { perTyreLists } from "./active-lists";
 import { tyreSizeIndex } from "./size-index";
 import { isPlausibleTyreSize } from "./size-lookup";
 
@@ -82,14 +83,18 @@ interface Pages {
 	readonly byRim: ReadonlyMap<string, readonly TyreSizePage[]>;
 }
 
-let pages: Pages | null = null;
-
-function build(): Pages {
-	if (pages) return pages;
+/** Built once per list, and again for a list that replaces it (`perTyreLists`). */
+const build = perTyreLists(({ index }): Pages => {
+	// Which sizes have a page is CFM's to say (`pages` in the list). Until the list says, the shop's own rule
+	// stands in: a standard size in the range of tyres that exist.
+	const named = index.pages ? new Set(index.pages) : null;
 	const byLabel = new Map<string, TyreSizePage>();
-	for (const product of Object.values(tyreSizeIndex().products)) {
+	for (const product of Object.values(index.products)) {
 		for (const [label] of product.sizes) {
-			if (byLabel.has(label) || !isPlausibleTyreSize(label)) continue;
+			if (byLabel.has(label)) continue;
+			if (named ? !named.has(label) : !isPlausibleTyreSize(label)) continue;
+			// The address is built from the standard spelling and from nothing else; a size named in any other
+			// spelling has no address the shop could give it, and gets none.
 			const match = LABEL.exec(label);
 			if (!match) continue;
 			byLabel.set(label, {
@@ -111,9 +116,8 @@ function build(): Pages {
 		bySlug.set(page.slug, page);
 		byRim.set(page.rim, [...(byRim.get(page.rim) ?? []), page]);
 	}
-	pages = { bySlug, byLabel, byRim };
-	return pages;
-}
+	return { bySlug, byLabel, byRim };
+});
 
 /**
  * The family file writes two sock families with the Slovak noun in the label ("SnowDrive textilné ponožky"). A page
@@ -126,7 +130,8 @@ function familyPage(family: TyreFamily): TyreFamilyPage {
 		kind: "family",
 		key: family.key,
 		slug: family.key,
-		name: family.label.replace(LABEL_NOUN, ""),
+		// CFM's own name for the model when the file carries one; the label with the noun cut off until it does.
+		name: family.name ?? family.label.replace(LABEL_NOUN, ""),
 		product: family.kind,
 	};
 }

@@ -2,7 +2,7 @@ import "server-only";
 
 import { TYRE_FIELDS } from "./fields";
 import { answerFits, isAnswerTo, tyreQuestionOf } from "./questions";
-import { TYRE_SIZE_LIST_ID, tyreSizeIndex, tyreSizeProduct } from "./size-index";
+import { tyreSizeIndex, tyreSizeListId, tyreSizeProduct } from "./size-index";
 import type { TyreRefusal, TyreSelection, TyreSelectionInput } from "./types";
 
 export { TYRE_FIELDS };
@@ -53,7 +53,7 @@ export function resolveTyreSelection(
 	if (!product) return { ok: false, refusal: "unknown-size" };
 	if (!input) return { ok: false, refusal: "required" };
 
-	if (input.mode === "code") return { ok: true, selection: { mode: "code", listId: TYRE_SIZE_LIST_ID } };
+	if (input.mode === "code") return { ok: true, selection: { mode: "code", listId: tyreSizeListId() } };
 
 	if (input.mode !== "size" || input.size === "") return { ok: false, refusal: "required" };
 
@@ -73,6 +73,6 @@ export function resolveTyreSelection(
 
 	return {
 		ok: true,
-		selection: { mode: "size", size, rim, condition, basis: product.source, listId: TYRE_SIZE_LIST_ID },
+		selection: { mode: "size", size, rim, condition, basis: product.source, listId: tyreSizeListId() },
 	};
 }

@@ -32,6 +32,11 @@ export interface TyreSizeIndex {
 	readonly conditions: Readonly<Record<string, TyreCondition>>;
 	readonly sources: Readonly<Record<string, { readonly label: string }>>;
 	readonly products: Readonly<Record<string, TyreSizeProduct>>;
+	/**
+	 * The sizes that have a page of their own on the shop, by label, when CFM says which (optional). Absent, the
+	 * shop decides by its own rule (`size-pages`), as it did before CFM said.
+	 */
+	readonly pages?: readonly string[];
 	readonly counts: {
 		readonly conditional_products: number;
 		readonly conditions: number;
