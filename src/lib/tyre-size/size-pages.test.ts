@@ -25,8 +25,8 @@ import {
  * here is invented but which codes a channel sells.
  *
  *   1. One size has one address, and it is the list's own label.
- *   2. Only a standard size in the range of real tyres is a page: old spellings, half-inch rims and a row outside
- *      that range (`275/20 R20`) are not.
+ *   2. A size is a page when CFM's list names it (`pages`), and CFM names the sizes in the standard spelling: old
+ *      spellings and half-inch rims are rows of the list without an address.
  *   3. Whether a page may be indexed is decided by what the channel SELLS, never by the list alone.
  */
 
@@ -69,14 +69,22 @@ describe("which address is a page", () => {
 		}
 	});
 
-	it("gives no page to a row that is not a standard size of a real tyre", () => {
+	it("gives a page to exactly the sizes CFM's list names, and to no other row", () => {
 		const labels = new Set(
 			Object.values(tyreSizeIndex().products).flatMap((product) => product.sizes.map(([label]) => label)),
 		);
-		// Each of these IS in the list, so the product page and the selector answer for it; none gets an address.
-		for (const label of ["120/80 R10", "175 R13", "5.00-12", "205/65 R17,5", "275/20 R20"]) {
+		const named = new Set(tyreSizeIndex().pages);
+		// Each of these IS in the list, so the product page and the selector answer for it; CFM names none of them,
+		// and none gets an address.
+		for (const label of ["175 R13", "5.00-12", "205/65 R17,5"]) {
 			expect(labels.has(label), `${label} is a row of the list`).toBe(true);
+			expect(named.has(label), `${label} is not named`).toBe(false);
 			expect(tyreSizePageOf(label), label).toBeNull();
+		}
+		// Sizes outside the range of usual car tyres are pages when CFM names them. The shop holds no range of its own.
+		for (const label of ["120/80 R10", "120/80 R12", "275/20 R20"]) {
+			expect(named.has(label), `${label} is named`).toBe(true);
+			expect(tyreSizePageOf(label)?.label, label).toBe(label);
 		}
 		// A row CFM took out of the list (D0245, 2026-11-15) is not a row any more, and has no address either.
 		expect(labels.has("650/17 R17")).toBe(false);
@@ -85,7 +93,8 @@ describe("which address is a page", () => {
 
 	it("lists every page once, ascending by rim, width and profile, and every one resolves", () => {
 		const pages = tyreSizePages();
-		expect(pages.length).toBe(860);
+		expect(pages.length).toBe(864);
+		expect(new Set(pages.map((page) => page.label))).toEqual(new Set(tyreSizeIndex().pages));
 		expect(new Set(pages.map((page) => page.slug)).size).toBe(pages.length);
 		for (const page of pages) expect(tyrePageOf([page.slug])).toEqual(page);
 		const key = (page: (typeof pages)[number]) => Number(page.rim) * 1e6 + page.width * 1e3 + page.profile;

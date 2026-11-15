@@ -30,9 +30,12 @@ function canonical(value: unknown): string {
 
 const clone = () => structuredClone(raw);
 
-describe("the vendored tyre-size list is the producer's file, unchanged", () => {
+describe("the vendored tyre-size list is the file CFM published, unchanged", () => {
 	const provenance = JSON.parse(readFileSync(join(DATA, "PROVENANCE.json"), "utf8")) as {
-		files: Record<string, { sha256: string; self_sha256: string; git_blob_sha1: string }>;
+		files: Record<
+			string,
+			{ sha256: string; self_sha256: string; git_blob_sha1: string; bytes: number; published_as: string }
+		>;
 	};
 	const pinned = provenance.files["velkosti_20261105.json"];
 
@@ -41,6 +44,9 @@ describe("the vendored tyre-size list is the producer's file, unchanged", () => 
 		expect(sidecar[1]).toBe("velkosti_20261105.json");
 		expect(sha256(bytes)).toBe(sidecar[0]);
 		expect(sha256(bytes)).toBe(pinned.sha256);
+		expect(bytes.length).toBe(pinned.bytes);
+		// CFM publishes a file under its schema and the first sixteen characters of its sha256.
+		expect(pinned.published_as).toBe(`maky_tyre_size_index_1-${sha256(bytes).slice(0, 16)}.json`);
 	});
 
 	it("has the git blob id the provenance records", () => {
@@ -80,6 +86,7 @@ describe("parseTyreSizeIndex", () => {
 		expect(index.counts).toEqual({ conditional_products: 27, conditions: 16, products: 145, sizes: 5323 });
 		expect(Object.keys(index.products)).toHaveLength(145);
 		expect(Object.values(index.products).reduce((total, p) => total + p.sizes.length, 0)).toBe(5323);
+		expect(index.pages).toHaveLength(864);
 	});
 
 	it("refuses a list that is not the one that was meant to ship", () => {
@@ -103,6 +110,11 @@ describe("parseTyreSizeIndex", () => {
 		expect(mutate((c) => (c.counts.sizes += 1))).toThrow(/counts/);
 		expect(mutate((c) => (c.counts.conditional_products -= 1))).toThrow(/counts/);
 		expect(mutate((c) => delete c.self_sha256)).toThrow(/seal/);
+		// Which sizes have a page is CFM's to say; a list that does not say is refused, the shop has no rule of its own.
+		expect(mutate((c) => delete c.pages)).toThrow(/pages is missing/);
+		expect(mutate((c) => (c.pages = "205/55 R16"))).toThrow(/not a list of sizes/);
+		expect(mutate((c) => c.pages.push("205/60 R99"))).toThrow(/which no product of the list has/);
+		expect(mutate((c) => c.pages.push(c.pages[0]))).toThrow(/twice/);
 	});
 });
 

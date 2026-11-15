@@ -4,7 +4,6 @@ import { fittingCodes } from "./choice";
 import { tyreCodesOfFamily, tyreFamilies, tyreFamilyByKey, tyreFamilyOf, type TyreFamily } from "./families";
 import { perTyreLists } from "./active-lists";
 import { tyreSizeIndex } from "./size-index";
-import { isPlausibleTyreSize } from "./size-lookup";
 
 /**
  * The snow-chain shelf seen as pages a search can land on: one page for a tyre size
@@ -17,10 +16,10 @@ import { isPlausibleTyreSize } from "./size-lookup";
  *
  * What is a page, and what is not:
  *
- *   - **Only a standard size** (`205/60 R16`: width, profile, whole-inch rim) in the range of tyres that exist
- *     (`isPlausibleTyreSize`). The list also carries old spellings (`175 R13`, `5.00-12`), half-inch truck rims
- *     and a few rows outside that range (`275/20 R20`, `120/80 R10`); the product page and the
- *     selector still answer for them, but they get no address of their own.
+ *   - **CFM says which sizes have a page** (`pages` in the list, the owner's rule of 2026-11-15), and the shop
+ *     draws them: it holds no rule of its own about which size deserves one. The list also carries old spellings
+ *     (`175 R13`, `5.00-12`) and half-inch truck rims; the product page and the selector still answer for them,
+ *     and a size CFM does not name has no address.
  *   - **The address is the list's own label and nothing else**: `205-60-r16` is `205/60 R16`. No second spelling
  *     resolves, so one size has one URL.
  *   - **Whether a page may be indexed is a fact about the shop, not about the list**: it depends on what the
@@ -85,14 +84,13 @@ interface Pages {
 
 /** Built once per list, and again for a list that replaces it (`perTyreLists`). */
 const build = perTyreLists(({ index }): Pages => {
-	// Which sizes have a page is CFM's to say (`pages` in the list). Until the list says, the shop's own rule
-	// stands in: a standard size in the range of tyres that exist.
-	const named = index.pages ? new Set(index.pages) : null;
+	// Which sizes have a page is CFM's to say (`pages` in the list), and nothing here adds to it or takes from it.
+	const named = new Set(index.pages);
 	const byLabel = new Map<string, TyreSizePage>();
 	for (const product of Object.values(index.products)) {
 		for (const [label] of product.sizes) {
 			if (byLabel.has(label)) continue;
-			if (named ? !named.has(label) : !isPlausibleTyreSize(label)) continue;
+			if (!named.has(label)) continue;
 			// The address is built from the standard spelling and from nothing else; a size named in any other
 			// spelling has no address the shop could give it, and gets none.
 			const match = LABEL.exec(label);
@@ -119,19 +117,14 @@ const build = perTyreLists(({ index }): Pages => {
 	return { bySlug, byLabel, byRim };
 });
 
-/**
- * The family file writes two sock families with the Slovak noun in the label ("SnowDrive textilné ponožky"). A page
- * in twelve languages says the noun itself, so the name it prints is the label without it.
- */
-const LABEL_NOUN = / textilné ponožky$/;
-
 function familyPage(family: TyreFamily): TyreFamilyPage {
 	return {
 		kind: "family",
 		key: family.key,
 		slug: family.key,
-		// CFM's own name for the model when the file carries one; the label with the noun cut off until it does.
-		name: family.name ?? family.label.replace(LABEL_NOUN, ""),
+		// CFM's own name for the model where its label carries a Slovak noun ("SnowDrive textilné ponožky" is named
+		// "SnowDrive"), and its label as written everywhere else. The shop cuts nothing off either.
+		name: family.name ?? family.label,
 		product: family.kind,
 	};
 }

@@ -23,7 +23,7 @@ import { tyreFamilyPages, tyrePageOf, tyreSizePageOf, tyreSizePages } from "./si
  *   1. A process starts on the build's own copy.
  *   2. A row CFM removed is gone from the selector, from the server's check and from the pages, at once.
  *   3. A pair that is not one pair, was changed after sealing or is older than what is served changes nothing.
- *   4. Which sizes have a page, and what a model is called, are CFM's to say once its files say it.
+ *   4. Which sizes have a page, and what a model is called, are CFM's to say: the shop has no rule of its own.
  */
 
 const DATA = join(__dirname, "data");
@@ -32,7 +32,7 @@ type RawIndex = {
 	counts: { sizes: number; products: number; conditional_products: number; conditions: number };
 	self_sha256: string;
 	id: string;
-	pages?: string[];
+	pages: string[];
 };
 type RawFamilies = TyreFamiliesFile & { self_sha256: string };
 
@@ -116,12 +116,16 @@ describe("a row CFM removed", () => {
 		}
 		expect(removed).toBeGreaterThan(0);
 		index.counts.sizes -= removed;
+		// CFM names the pages from the rows it publishes, so the size leaves that list with its last row.
+		index.pages = index.pages.filter((label) => label !== size);
 		expect(isKnownTyreSize(size)).toBe(true);
+		expect(tyrePageOf(["120-80-r12"])?.kind).toBe("size");
 		expect(tyreSteps().widths.some((width) => width.value === 120)).toBe(true);
 
 		expect(activateTyreLists(sealedIndex(index), buildFamilies(), 1).ok).toBe(true);
 		expect(isKnownTyreSize(size)).toBe(false);
 		expect(tyreSizeEntries(size)).toEqual([]);
+		expect(tyrePageOf(["120-80-r12"])).toBeNull();
 		// `120/80 R10` is still a row, so the width is still offered; the rim that went with the removed size is not.
 		expect(tyreSteps(120, 80).rims).toEqual(["10"]);
 	});
@@ -240,22 +244,36 @@ describe("what is computed from the pair", () => {
 	});
 });
 
-describe("which sizes have a page, once CFM says", () => {
-	it("is the shop's own rule while the list does not say", () => {
-		expect(activeTyreLists().index.pages).toBeUndefined();
-		expect(tyreSizePages()).toHaveLength(860);
-		expect(tyreSizePageOf("120/80 R10")).toBeNull();
+describe("which sizes have a page is CFM's to say", () => {
+	it("is what the build's own copy names: CFM's list as published, sizes outside the usual range included", () => {
+		expect(activeTyreLists().index.pages).toHaveLength(864);
+		expect(new Set(tyreSizePages().map((page) => page.label))).toEqual(
+			new Set(activeTyreLists().index.pages),
+		);
+		expect(tyreSizePages()).toHaveLength(864);
+		expect(tyreSizePageOf("120/80 R10")?.slug).toBe("120-80-r10");
+		expect(tyreSizePageOf("275/20 R20")?.slug).toBe("275-20-r20");
 	});
 
-	it("is exactly what the list names, and the shop's own range no longer decides", () => {
+	it("refuses a list that does not say, because the shop has no rule to put in its place", () => {
+		const { pages: _pages, ...silent } = buildIndex();
+		const result = activateTyreLists(sealedIndex(silent as RawIndex), buildFamilies(), 1);
+		expect(result).toMatchObject({ ok: false });
+		expect(JSON.stringify(result)).toContain("pages is missing");
+		// Nothing changed: the pair that was served is still served, pages and all.
+		expect(activeTyreLists().source).toEqual({ kind: "build" });
+		expect(tyreSizePages()).toHaveLength(864);
+	});
+
+	it("is exactly what the list names, and no range of the shop's own decides", () => {
 		const index = buildIndex();
 		index.pages = ["120/80 R10", "205/55 R16", "205/60 R16"];
 		expect(activateTyreLists(sealedIndex(index), buildFamilies(), 1).ok).toBe(true);
 
 		expect(tyreSizePages().map((page) => page.label)).toEqual(["120/80 R10", "205/55 R16", "205/60 R16"]);
-		// A size the shop's own range kept out is a page because CFM named it...
+		// A size outside the range of usual car tyres is a page because CFM named it...
 		expect(tyrePageOf(["120-80-r10"])?.kind).toBe("size");
-		// ...and a size the shop's own rule would have made a page is none, because CFM did not.
+		// ...and an everyday size is none, because CFM did not.
 		expect(tyreSizePageOf("195/65 R15")).toBeNull();
 		expect(tyrePageOf(["195-65-r15"])).toBeNull();
 		// The size itself is still a size of the list: the selector and the cart answer for it.
@@ -280,12 +298,23 @@ describe("which sizes have a page, once CFM says", () => {
 	});
 });
 
-describe("what a model is called, once CFM says", () => {
+describe("what a model is called is CFM's to say", () => {
 	const page = (key: string) => tyreFamilyPages().find((family) => family.key === key);
 
-	it("is the label without its Slovak noun while the file gives no name", () => {
-		expect(tyreFamilyOf("D0245")?.name).toBeNull();
+	it("is CFM's name where the file gives one, and its label as written where it gives none", () => {
+		// The two sock families carry a Slovak noun in the label, and CFM names them without it.
+		expect(tyreFamilyOf("N17143")?.label).toBe("SnowDrive textilné ponožky");
 		expect(page("snowdrive-ponozky")?.name).toBe("SnowDrive");
+		expect(page("gran-pree-ponozky")?.name).toBe("Gran Pree");
+		expect(tyreFamilyOf("D0245")?.name).toBeNull();
+		expect(page(tyreFamilyOf("D0245")!.key)?.name).toBe(tyreFamilyOf("D0245")!.label);
+	});
+
+	it("cuts nothing off a label: a family CFM gives no name is printed as CFM wrote it", () => {
+		const families = buildFamilies();
+		delete families.families["snowdrive-ponozky"].name;
+		expect(activateTyreLists(buildIndex(), sealedFamilies(families), 1).ok).toBe(true);
+		expect(page("snowdrive-ponozky")?.name).toBe("SnowDrive textilné ponožky");
 	});
 
 	it("is the file's own name, printed as given", () => {
@@ -295,7 +324,7 @@ describe("what a model is called, once CFM says", () => {
 		expect(activateTyreLists(buildIndex(), sealedFamilies(families), 1).ok).toBe(true);
 		expect(page("snowdrive-ponozky")?.name).toBe("SnowDrive Textile");
 		expect(page("dac-blue-ice")?.name).toBe("DAC Blue ICE MIS");
-		// A family the file gives no name keeps the rule it had.
+		// A family this change did not touch keeps the name the file gave it.
 		expect(page("gran-pree-ponozky")?.name).toBe("Gran Pree");
 	});
 
