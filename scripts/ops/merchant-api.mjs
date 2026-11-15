@@ -5,6 +5,7 @@
 //   node scripts/ops/merchant-api.mjs --check              # reads the Merchant Center account: is everything linked?
 //   node scripts/ops/merchant-api.mjs --show <offer id>    # what Google holds for one product now
 //   node scripts/ops/merchant-api.mjs --market sk --fire   # sends the changes
+//   node scripts/ops/merchant-api.mjs --register --account <id>   # once: registers the Google Cloud project with the account
 //
 // What it is, and what it is not. The feed (`merchant-feed.mjs`, `/feeds/google-<market>.xml.gz`) is the
 // source of the products: Google fetches it once a day, and a product exists in Merchant Center because
@@ -27,8 +28,10 @@
 //
 // Rules this file enforces rather than documents:
 //
-//   1. Dry run by default. `--fire` is the only way anything leaves the machine. `--check` and `--show`
-//      read from Google and change nothing.
+//   1. Dry run by default. `--fire` is the only way a product changes at Google. `--check` and `--show`
+//      read from Google and change nothing. `--register` is the one-time step Google asks for before any
+//      other call is answered: it ties the Google Cloud project of the key to the Merchant Center account
+//      named with `--account`, and does nothing when that is already so.
 //   2. A walk that did not reach the end of the catalogue sends nothing: "not seen" must never be taken
 //      for "gone".
 //   3. A product the walk no longer finds (withdrawn from sale, or it lost its price, picture or brand) is
@@ -127,6 +130,8 @@ export function readOptions(argv) {
 			"send-pause-ms": { type: "string", default: String(DEFAULT_SEND_PAUSE_MS) },
 			check: { type: "boolean", default: false },
 			show: { type: "string" },
+			register: { type: "boolean", default: false },
+			"developer-email": { type: "string" },
 			fire: { type: "boolean", default: false },
 			force: { type: "boolean", default: false },
 		},
@@ -152,8 +157,20 @@ export function readOptions(argv) {
 			"--key-ssm takes the name of an SSM parameter, like /maky/storefront/google/merchant-api-key",
 		);
 	}
-	const modes = [values.check, values.show !== undefined, values.fire].filter(Boolean).length;
-	if (modes > 1) throw new Error("--check, --show and --fire are three different runs: name one");
+	const modes = [values.check, values.show !== undefined, values.fire, values.register].filter(
+		Boolean,
+	).length;
+	if (modes > 1) throw new Error("--check, --show, --register and --fire are different runs: name one");
+	if (values.register && values.account === undefined) {
+		throw new Error("--register needs --account: the number of the Merchant Center account to register with");
+	}
+	const developerEmail = values["developer-email"];
+	if (
+		developerEmail !== undefined &&
+		(!values.register || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(developerEmail))
+	) {
+		throw new Error("--developer-email goes with --register and takes one e-mail address of a person");
+	}
 	return {
 		market: values.market,
 		origin: values.origin.replace(/\/+$/, ""),
@@ -171,6 +188,8 @@ export function readOptions(argv) {
 		sendPauseMs: number("send-pause-ms", { min: 0, max: 60_000 }),
 		check: values.check,
 		show: values.show ?? null,
+		register: values.register,
+		developerEmail: developerEmail ?? null,
 		fire: values.fire,
 		force: values.force,
 	};
@@ -616,16 +635,18 @@ export async function main(argv, deps = {}) {
 	}
 	const { market } = options;
 
-	/** Signs in and reads the account. Only the runs that talk to Google come here. */
-	const connect = async () => {
-		const key = await loadKey(options, deps);
-		const client = googleClient({
-			key,
+	/** Signs in as the service account. Only the runs that talk to Google come here. */
+	const signedIn = async () =>
+		googleClient({
+			key: await loadKey(options, deps),
 			fetchImpl,
 			now,
 			apiBase: deps.apiBase ?? API_BASE,
 			tokenUrl: deps.tokenUrl ?? TOKEN_URL,
 		});
+	/** Signs in and reads the account. */
+	const connect = async () => {
+		const client = await signedIn();
 		const found = await discover({
 			client,
 			market,
@@ -634,6 +655,44 @@ export async function main(argv, deps = {}) {
 		});
 		return { client, found };
 	};
+
+	if (options.register) {
+		try {
+			const client = await signedIn();
+			const already = await client.call("GET", "accounts/v1/accounts:getAccountForGcpRegistration");
+			const registered = String(already.json?.name ?? "")
+				.split("/")
+				.pop();
+			if (already.status === 200 && registered === options.account) {
+				log(
+					`account ${options.account}: the Google Cloud project of this key is registered already. Nothing was changed.`,
+				);
+				return 0;
+			}
+			if (already.status === 200 && registered) {
+				log(
+					`refused: the Google Cloud project of this key is registered with account ${registered}, not ${options.account}.`,
+				);
+				return 2;
+			}
+			const answer = await client.call(
+				"POST",
+				`accounts/v1/accounts/${options.account}/developerRegistration:registerGcp`,
+				{ body: options.developerEmail ? { developerEmail: options.developerEmail } : {} },
+			);
+			if (answer.status !== 200) {
+				log(`failed: the registration was not accepted (${googleMessage(answer)}).`);
+				return 1;
+			}
+			log(
+				`account ${options.account}: the Google Cloud project of this key is registered. Google answers its calls within about five minutes; then run --check.`,
+			);
+			return 0;
+		} catch (error) {
+			log(`failed: ${error instanceof Error ? error.message : String(error)}.`);
+			return 1;
+		}
+	}
 
 	if (options.check || options.show !== null) {
 		try {

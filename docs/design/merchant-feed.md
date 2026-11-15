@@ -116,7 +116,8 @@ from the guides; nothing of it was tried on the account):
   ordered list; with the supplemental source ahead of `self`, an attribute the supplemental source
   states wins and every other attribute is the feed's.
 - A project in Google Cloud has to be registered with the Merchant Center account once
-  (`developerRegistration:registerGcp`); without it every call answers 401.
+  (`developerRegistration:registerGcp`); without it every call answers 401. `--register --account <id>`
+  does that one call, and nothing when the project is registered already.
 - The legacy "Content API" source in the account (primary, type API, no products) is not used. It is a
   second main source, which is what the owner's decision rules out.
 

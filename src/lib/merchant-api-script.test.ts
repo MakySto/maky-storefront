@@ -159,6 +159,7 @@ function world(
 		insert?: (call: number, body: Record<string, unknown>) => { status: number; message?: string };
 		token?: number;
 		shopStatus?: (call: number) => number;
+		registeredWith?: string;
 	} = {},
 ) {
 	const lines: string[] = [];
@@ -167,6 +168,7 @@ function world(
 		[];
 	const outside: string[] = [];
 	const tokens: string[] = [];
+	const registrations: Record<string, unknown>[] = [];
 	let shopCalls = 0;
 	let insertCalls = 0;
 
@@ -210,6 +212,15 @@ function world(
 		if (authorization !== "Bearer a-test-token")
 			return Response.json({ error: { message: "no token" } }, { status: 401 });
 
+		if (url.pathname === "/accounts/v1/accounts:getAccountForGcpRegistration") {
+			return google.registeredWith
+				? Response.json({ name: `accounts/${google.registeredWith}` })
+				: Response.json({ error: { message: "GCP project is not registered" } }, { status: 401 });
+		}
+		if (url.pathname === `/accounts/v1/accounts/${ACCOUNT}/developerRegistration:registerGcp`) {
+			registrations.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+			return Response.json({ name: `accounts/${ACCOUNT}/developerRegistration`, gcpIds: ["1"] });
+		}
 		if (url.pathname === "/accounts/v1/accounts") {
 			return Response.json({
 				accounts: (google.accounts ?? [ACCOUNT]).map((id) => ({ name: `accounts/${id}`, accountId: id })),
@@ -268,7 +279,7 @@ function world(
 			sendRetryWaitsMs: [1, 2],
 			readKey: async () => keyText,
 		});
-	return { run, lines, sleeps, inserts, outside, tokens, text: () => lines.join("\n") };
+	return { run, lines, sleeps, inserts, outside, tokens, registrations, text: () => lines.join("\n") };
 }
 
 describe("the request", () => {
@@ -698,6 +709,40 @@ describe("the account", () => {
 		expect(w.text()).toContain("V1==: price 899.00 EUR, sale price none, IN_STOCK");
 		const missing = world(shop);
 		expect(await missing.run("--show", "nothing")).toBe(1);
+	});
+});
+
+describe("the one-time registration", () => {
+	it("needs the account named, and is a run of its own", () => {
+		expect(() => readOptions(["--register"])).toThrow(/needs --account/);
+		expect(() => readOptions(["--register", "--account", ACCOUNT, "--fire"])).toThrow(/different runs/);
+		expect(() => readOptions(["--developer-email", "a@example.com"])).toThrow(/goes with --register/);
+		expect(() =>
+			readOptions(["--register", "--account", ACCOUNT, "--developer-email", "not an address"]),
+		).toThrow(/e-mail address/);
+	});
+
+	it("registers the project of the key with the account, and never prints the contact address", async () => {
+		const w = world([]);
+		expect(await w.run("--register", "--account", ACCOUNT, "--developer-email", "somebody@example.com")).toBe(
+			0,
+		);
+		expect(w.registrations).toEqual([{ developerEmail: "somebody@example.com" }]);
+		expect(w.text()).toContain("is registered. Google answers its calls within about five minutes");
+		expect(w.text()).not.toContain("somebody@example.com");
+	});
+
+	it("does nothing when the project is registered already", async () => {
+		const w = world([], { registeredWith: ACCOUNT });
+		expect(await w.run("--register", "--account", ACCOUNT)).toBe(0);
+		expect(w.registrations).toEqual([]);
+		expect(w.text()).toContain("registered already. Nothing was changed");
+	});
+
+	it("refuses when the project belongs to another account", async () => {
+		const w = world([], { registeredWith: "7654321" });
+		expect(await w.run("--register", "--account", ACCOUNT)).toBe(2);
+		expect(w.registrations).toEqual([]);
 	});
 });
 
