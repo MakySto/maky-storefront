@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import example from "./fixtures/manifest.example.json";
+import exampleWithTyreSizes from "./fixtures/manifest-1.1.0.example.json";
 import { FILE_MAX_BYTES, fileUrl, manifestSelfSha256, parseManifest } from "./manifest";
 
 /**
@@ -212,6 +213,40 @@ describe("the tyre-size pair (manifest 1.1.0)", () => {
 		if (!parsed.ok) throw new Error(parsed.fault.message);
 		return parsed.manifest;
 	}
+
+	it("is read from CFM's own 1.1.0 example, hashed to the number CFM computed", () => {
+		// `fixtures/manifest-1.1.0.example.json` is byte for byte the example beside CFM's contract (CFM PR 117,
+		// 2026-11-15). Its two files are the samples CFM built that day: the list with `pages`, the families with `name`.
+		expect(manifestSelfSha256(exampleWithTyreSizes)).toBe(exampleWithTyreSizes.selfSha256);
+		expect(exampleWithTyreSizes.selfSha256.startsWith("e35e1cc0")).toBe(true);
+
+		const bytes = readFileSync(join(__dirname, "fixtures", "manifest-1.1.0.example.json"));
+		const parsed = parseManifest(bytes, POINTER);
+		if (!parsed.ok) throw new Error(parsed.fault.message);
+		expect(parsed.sha256).toBe("83cb2c0164ff352340fbd5f8c734e98ce7378b2b0309acf42664f182e99fe370");
+		const { manifest } = parsed;
+		expect(manifest.manifestVersion).toBe(7);
+		expect(manifest.tyreSizesFault).toBeNull();
+		expect(manifest.tyreSizes).toMatchObject({
+			release: 3,
+			id: "snehove-retaze-20261105",
+			index: {
+				file: "maky_tyre_size_index_1-05a0eff62a893a13.json",
+				sha256: "05a0eff62a893a133b21bbb2c39f0c9d520de993e3fe079229f2c3e90b317d37",
+				bytes: 144169,
+				schema: "maky.tyre-size-index/1",
+			},
+			families: {
+				file: "maky_tyre_families_1-9215c71407e57f80.json",
+				sha256: "9215c71407e57f8075a0a69bf72891d05940fe6bf1277b5295e39067f051b372",
+				bytes: 11199,
+				schema: "maky.tyre-families/1",
+			},
+		});
+		// The 1.0 body beside it reads as before.
+		expect(Object.keys(manifest.content).sort()).toEqual(["at", "de", "sk", "us"]);
+		expect(manifest.fitment).not.toBeNull();
+	});
 
 	it("is absent from a 1.0.0 manifest, which names no pair and has no fault", () => {
 		const parsed = parseManifest(

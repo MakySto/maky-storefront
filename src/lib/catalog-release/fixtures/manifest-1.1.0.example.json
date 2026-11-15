@@ -1,0 +1,92 @@
+{
+ "artifact": "MAKY_RELEASE_MANIFEST",
+ "schemaVersion": "1.1.0",
+ "manifestVersion": 7,
+ "generatedAt": "2026-10-05T09:30:12.481230+00:00",
+ "publisher": "carfitmanager",
+ "base": "https://cfm.example/media/fitment/releases/",
+ "rules": {
+  "activation": "per-target",
+  "contentSelection": "by-target",
+  "contentAndFitment": "independent",
+  "sharedFiles": "identical-bytes-share-one-file"
+ },
+ "content": {
+  "contract": {
+   "artifact": "CATALOG_CONTENT_SNAPSHOT",
+   "schemaVersion": "1.0.0"
+  },
+  "targets": {
+   "at": {
+    "market": "at",
+    "language": "de",
+    "file": "maky_catalog_content_1.0.0-de-228e98800e1357ad.json",
+    "sha256": "228e98800e1357ad075c73e54dedd25ffb40e1d29a657d845297e57cfad0c48c",
+    "bytes": 1832411,
+    "release": 2,
+    "pages": 412
+   },
+   "de": {
+    "market": "de",
+    "language": "de",
+    "file": "maky_catalog_content_1.0.0-de-228e98800e1357ad.json",
+    "sha256": "228e98800e1357ad075c73e54dedd25ffb40e1d29a657d845297e57cfad0c48c",
+    "bytes": 1832411,
+    "release": 3,
+    "pages": 412
+   },
+   "sk": {
+    "market": "sk",
+    "language": "sk",
+    "file": "maky_catalog_content_1.0.0-sk-52068f4e05c9138c.json",
+    "sha256": "52068f4e05c9138cb6dd1fd1c4df30c3966ed12ca805736166fa12ad32d31ffa",
+    "bytes": 1790233,
+    "release": 5,
+    "pages": 412
+   },
+   "us": {
+    "market": "us",
+    "language": "en",
+    "file": "maky_catalog_content_1.0.0-en-8d5a3bb6562ffef3.json",
+    "sha256": "8d5a3bb6562ffef349802545b2e2d8eaf14eb703439ce73a36ef2efadd8cc587",
+    "bytes": 1655120,
+    "release": 1,
+    "pages": 398
+   }
+  }
+ },
+ "fitment": {
+  "file": "maky_fitment_3.0.0-full-example.1-731644a817482eaf.json",
+  "sha256": "731644a817482eaf7c6568a904b69aea93e0023ed8b90c2c3ad1f2a7bb5eecc9",
+  "bytes": 8123456,
+  "release": 2,
+  "contract": {
+   "schemaVersion": "3.0.0"
+  },
+  "datasetVersion": "3.0.0-full-example.1",
+  "datasetHash": "5e85b22ecf3402bfd37d572e2043ab1537a019f227d3c5c43108e831b4bde60a"
+ },
+ "tyreSizes": {
+  "release": 3,
+  "id": "snehove-retaze-20261105",
+  "index": {
+   "file": "maky_tyre_size_index_1-05a0eff62a893a13.json",
+   "sha256": "05a0eff62a893a133b21bbb2c39f0c9d520de993e3fe079229f2c3e90b317d37",
+   "bytes": 144169,
+   "contract": {
+    "schema": "maky.tyre-size-index/1"
+   },
+   "selfSha256": "d96e7b60e891ff90686042347cc87ffe8b8da6eb3dcc2e794fe4aa66606d0ef6"
+  },
+  "families": {
+   "file": "maky_tyre_families_1-9215c71407e57f80.json",
+   "sha256": "9215c71407e57f8075a0a69bf72891d05940fe6bf1277b5295e39067f051b372",
+   "bytes": 11199,
+   "contract": {
+    "schema": "maky.tyre-families/1"
+   },
+   "selfSha256": "9e4e739e1d562456ba2d96c33bfb71ed521d217c5c9d527f054fd8fa99270211"
+  }
+ },
+ "selfSha256": "e35e1cc0ffbdbfde48f7fb9cbe8c71d33a1c3fdc5f60fa260d10780721b5847c"
+}
