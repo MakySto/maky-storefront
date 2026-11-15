@@ -18,6 +18,10 @@ export interface FakeSaleor {
 	pageSize: number;
 	/** Product slug → the channels that hold a product with it. */
 	products: Record<string, string[]>;
+	/** Product slug → `channel:LANGUAGE` pairs where a product holds it as its translated slug. */
+	translatedProducts: Record<string, string[]>;
+	/** Category base slug → Saleor language code → the translated slug CFM wrote. */
+	translations: Record<string, Record<string, string>>;
 	/** Every request throws, as a refused connection does. */
 	down: boolean;
 	/** The list answers, but with a GraphQL `errors` array next to partial data. */
@@ -34,6 +38,10 @@ export interface FakeSaleor {
 	probeCalls: number;
 	/** The probe queries, as sent. */
 	probeQueries: string[];
+	/** The translated-spelling probes, as sent (one per batch of candidates). */
+	spellingProbeQueries: string[];
+	/** The list queries, as sent. */
+	listQueries: string[];
 }
 
 export function fakeSaleor(overrides: Partial<FakeSaleor> = {}): {
@@ -44,6 +52,8 @@ export function fakeSaleor(overrides: Partial<FakeSaleor> = {}): {
 		categories: [...CATEGORY_SLUGS],
 		pageSize: 100,
 		products: {},
+		translatedProducts: {},
+		translations: {},
 		down: false,
 		listErrors: false,
 		failAfterFirstPage: false,
@@ -52,6 +62,8 @@ export function fakeSaleor(overrides: Partial<FakeSaleor> = {}): {
 		listCalls: 0,
 		probeCalls: 0,
 		probeQueries: [],
+		spellingProbeQueries: [],
+		listQueries: [],
 		...overrides,
 	};
 
@@ -69,10 +81,23 @@ export function fakeSaleor(overrides: Partial<FakeSaleor> = {}): {
 
 		if (query.includes("categories(")) {
 			world.listCalls += 1;
+			world.listQueries.push(query);
+			const aliases = [...query.matchAll(/(t_[A-Z_]+):translation\(languageCode:([A-Z_]+)\)\{slug\}/g)];
 			const start = variables.after ? Number(variables.after.replace("cursor:", "")) : 0;
 			if (start > 0 && world.failAfterFirstPage) return new Response("bad gateway", { status: 502 });
 			const end = start + world.pageSize;
-			const edges = world.categories.slice(start, end).map((slug) => ({ node: { slug } }));
+			const edges = world.categories.slice(start, end).map((slug) => ({
+				node: {
+					id: `Category:${slug}`,
+					slug,
+					...Object.fromEntries(
+						aliases.map(([, alias, code]) => {
+							const translated = world.translations[slug]?.[code!];
+							return [alias!, translated ? { slug: translated } : null];
+						}),
+					),
+				},
+			}));
 			const more = end < world.categories.length;
 			const connection = { edges, pageInfo: { hasNextPage: more, endCursor: more ? `cursor:${end}` : null } };
 			const response = answer(
@@ -82,6 +107,21 @@ export function fakeSaleor(overrides: Partial<FakeSaleor> = {}): {
 			);
 			world.afterList?.();
 			return response;
+		}
+
+		if (query.includes('product(slug:"')) {
+			world.spellingProbeQueries.push(query);
+			if (world.probeErrors) return answer({ errors: [{ message: "unavailable" }] });
+			const data: Record<string, unknown> = {};
+			for (const [, alias, slug, channel, code] of query.matchAll(
+				/([bt]\d+):product\(slug:"([a-z0-9-]+)",channel:"([a-z-]+)"(?:,slugLanguageCode:([A-Z_]+))?\)/g,
+			)) {
+				const held = code
+					? (world.translatedProducts[slug!] ?? []).includes(`${channel}:${code}`)
+					: (world.products[slug!] ?? []).includes(channel!);
+				data[alias!] = held ? { id: `Product:${slug}` } : null;
+			}
+			return answer({ data });
 		}
 
 		if (query.includes("product(")) {

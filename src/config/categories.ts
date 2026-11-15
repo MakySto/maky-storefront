@@ -116,6 +116,10 @@ export const OTHER_CATEGORY_SLUGS: readonly string[] = [
 	"ochranne-mreze-a-bariery",
 	"ochranne-potahy-do-auta",
 	"opravne-sady",
+	// 2026-11-15: parts and feet sold on their own (Category:35, and Category:36 below it). Named here so a build made
+	// while Saleor cannot be asked links them at the root and not under `/categories/`.
+	"diely-stresnych-nosicov",
+	"patky-stresnych-nosicov",
 	"prepravne-klietky-pre-psov-do-auta",
 	"prislusenstvo-k-nosicom-bicyklov",
 	"prislusenstvo-k-nosicom-lyzi",

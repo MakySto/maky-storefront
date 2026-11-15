@@ -82,6 +82,32 @@ export { KARGO_BASE_SLUG, KARGO_CATEGORY_SLUGS, KARGO_PREVIOUS_SLUG } from "./ka
  * markets keep the base slug as their address (their `en` segment IS the base slug, which the table reads as "no
  * localized spelling"). The day CFM writes an English one, the row gets its segment here and nowhere else.
  *
+ * ## Roof-rack parts and feet (2026-11-15)
+ *
+ * `diely-stresnych-nosicov` (Category:35, a child of the roof-rack root) and its child `patky-stresnych-nosicov`
+ * (Category:36) hold the parts sold on their own: the first four are Nordrive Evos foot packs, sold in Slovakia and in
+ * the nine EU markets since 2026-11-15. CFM wrote both categories' translations in that run, with the slugs in the two
+ * rows below (`DIELY_CATEGORY_L10N_MANIFEST`, file sha256 `0b4c5d2f…def4`, 18 translations). Without the rows the
+ * German shop answered the feet at `/de/patky-stresnych-nosicov`, a Slovak word, and the product page's category link,
+ * built from the translated slug Saleor returns, went to `/de/categories/fusssaetze-fuer-dachtraeger`. Austria has
+ * texts of its own (`DE_AT`), so it is spelled apart from Germany (`marketSegments`), as Kargo is.
+ *
+ * The USA and Canada are not part of that run: no English translation exists, so their `en` segment is the base slug.
+ *
+ * ## A category the table has no row for (2026-11-15)
+ *
+ * The owner wants no address with `/categories/` anywhere, for every category to come, so the rows above are no
+ * longer the only way to a localized address. `lib/live-categories.ts` reads each category's translated slug in the
+ * language every foreign market reads (Austria `DE_AT`, Canada `EN_CA`), keeps the ones that no product, route,
+ * market, cart word or other category holds in that market, and publishes them here (`publishLearnedCategories`).
+ * A category CFM translates tomorrow therefore has `/de/<translated slug>` with no row and no release, and the
+ * `/categories/…` form and the Slovak spelling answer a permanent redirect to it, as they do for the rows.
+ *
+ * The table wins wherever it spells a category in a market. Saleor fills in only what it leaves as the base slug
+ * (snow chains in the USA and Canada until now), and only for a category it names at all: the rows stay for what
+ * they carry that a translation cannot (Austria spelled apart from Germany before `DE_AT` existed, `legacySegments`,
+ * the vehicle tree CFM publishes under the language's root).
+ *
  * ## What this does NOT move
  *
  * Product slugs, model and generation slugs, and the three RELEASE-4 pages each foreign
@@ -178,6 +204,34 @@ const SNOW_CHAIN_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
 	en: "snehove-retaze",
 };
 
+const RACK_PART_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
+	sk: "diely-stresnych-nosicov",
+	cs: "dily-stresnich-nosicu",
+	de: "einzelteile-fuer-dachtraeger",
+	pl: "czesci-bagaznikow-dachowych",
+	hu: "tetocsomagtarto-alkatreszek",
+	it: "componenti-per-portapacchi-da-tetto",
+	fr: "pieces-pour-barres-de-toit",
+	es: "piezas-para-barras-de-techo",
+	ro: "piese-pentru-bare-de-acoperis",
+	// No English translation is written yet (the USA and Canada are not part of the run): the base slug stays.
+	en: "diely-stresnych-nosicov",
+};
+
+const RACK_FOOT_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
+	sk: "patky-stresnych-nosicov",
+	cs: "patky-stresnich-nosicu",
+	de: "fusssaetze-fuer-dachtraeger",
+	pl: "stopy-bagaznikow-dachowych",
+	hu: "tetocsomagtarto-talpak",
+	it: "piedi-per-portapacchi-da-tetto",
+	fr: "pieds-pour-barres-de-toit",
+	es: "pies-para-barras-de-techo",
+	ro: "picioare-pentru-bare-de-acoperis",
+	// As above: no English translation yet.
+	en: "patky-stresnych-nosicov",
+};
+
 export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 	{
 		baseSlug: "stresne-nosice",
@@ -236,26 +290,22 @@ export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 		saleorId: "Q2F0ZWdvcnk6OQ==",
 		segments: SNOW_CHAIN_SEGMENTS,
 	},
+	{
+		baseSlug: "diely-stresnych-nosicov",
+		saleorId: "Q2F0ZWdvcnk6MzU=",
+		segments: RACK_PART_SEGMENTS,
+		marketSegments: { at: "dachtraeger-einzelteile" },
+	},
+	{
+		baseSlug: "patky-stresnych-nosicov",
+		saleorId: "Q2F0ZWdvcnk6MzY=",
+		segments: RACK_FOOT_SEGMENTS,
+		marketSegments: { at: "traegerfuesse-fuer-dachtraeger" },
+	},
 ];
 
-const BY_BASE = new Map(LOCALIZED_CATEGORIES.map((category) => [category.baseSlug, category]));
-const KARGO_ROW = BY_BASE.get(KARGO_BASE_SLUG)!;
-
-/** Saleor's global id → the row, for the places that know a category by id and not by a slug. */
-const BY_ID = new Map(LOCALIZED_CATEGORIES.map((category) => [category.saleorId, category]));
-
-/**
- * The base slug of a mapped category named by its Saleor id, or `null`. A foreign page learns a category's
- * slug from a translation, which can be any spelling; its id never changes.
- */
-export function baseSlugForCategoryId(id: string | null | undefined): string | null {
-	return (id && BY_ID.get(id)?.baseSlug) || null;
-}
-
-/** The segment a category has in this market: the market's own spelling when the row has one, else its language's. */
-function segmentIn(category: LocalizedCategory, market: string, language: CatalogLanguage): string {
-	return category.marketSegments?.[market] ?? category.segments[language];
-}
+const STATIC_BY_BASE = new Map(LOCALIZED_CATEGORIES.map((category) => [category.baseSlug, category]));
+const KARGO_ROW = STATIC_BY_BASE.get(KARGO_BASE_SLUG)!;
 
 /** `sk` or `sk-eur` → `sk`. Both key spaces are disjoint, so one helper serves pages and the proxy. */
 function marketOf(marketOrChannel: string): string | null {
@@ -271,27 +321,156 @@ function languageOf(marketOrChannel: string): CatalogLanguage | null {
 		: null;
 }
 
-/** `market → segment → category`, for the localized spellings only (not the base slugs). */
-const BY_SEGMENT = new Map<string, Map<string, LocalizedCategory>>(
-	Object.keys(CHANNEL_MAP).flatMap((market) => {
+/** The segment a category has in this market: the market's own spelling when the row has one, else its language's. */
+function segmentIn(category: LocalizedCategory, market: string, language: CatalogLanguage): string {
+	return category.marketSegments?.[market] ?? category.segments[language];
+}
+
+// --- what the running server has learned from Saleor ---------------------------------------------------------
+
+/**
+ * Where `src/lib/live-categories.ts` publishes what it read from Saleor's category translations, on `globalThis`.
+ * A key and not an import, for the reason `LIVE_CATEGORY_SLUGS_KEY` is one: the proxy and the route handlers are
+ * separate bundles of one process, and this file reaches the browser, where the key is simply absent and the table
+ * below answers alone.
+ */
+export const LEARNED_CATEGORIES_KEY: unique symbol = Symbol.for("maky.category-routes.learned.v1");
+
+/**
+ * One category as Saleor holds it: its id, and per market the slug of the translation that market reads.
+ *
+ * `segments` names only the markets where the slug differs from the base slug, so an absent market means "no
+ * localized spelling". The server checks each segment before it publishes it (a product, a route, a market or
+ * another category must not hold it); this file takes what it is given.
+ */
+export interface LearnedCategory {
+	readonly baseSlug: string;
+	readonly saleorId: string;
+	readonly segments: Readonly<Record<string, string>>;
+}
+
+function learnedRows(): readonly LearnedCategory[] | undefined {
+	return (globalThis as typeof globalThis & { [LEARNED_CATEGORIES_KEY]?: readonly LearnedCategory[] })[
+		LEARNED_CATEGORIES_KEY
+	];
+}
+
+/** Hand the table the localized spellings the running server has read from Saleor. Replaces what was published before. */
+export function publishLearnedCategories(rows: readonly LearnedCategory[]): void {
+	(globalThis as typeof globalThis & { [LEARNED_CATEGORIES_KEY]?: readonly LearnedCategory[] })[
+		LEARNED_CATEGORIES_KEY
+	] = rows.map((row) => ({ ...row, segments: { ...row.segments } }));
+}
+
+/** Test seam: process state by design. */
+export function clearLearnedCategories(): void {
+	delete (globalThis as typeof globalThis & { [LEARNED_CATEGORIES_KEY]?: readonly LearnedCategory[] })[
+		LEARNED_CATEGORIES_KEY
+	];
+}
+
+interface RouteView {
+	readonly rows: readonly LocalizedCategory[];
+	readonly byBase: ReadonlyMap<string, LocalizedCategory>;
+	readonly byId: ReadonlyMap<string, LocalizedCategory>;
+	/** `market → segment → category`, for the localized spellings only (not the base slugs). */
+	readonly bySegment: ReadonlyMap<string, ReadonlyMap<string, LocalizedCategory>>;
+}
+
+/** The rows above, plus what Saleor holds beyond them. The table wins wherever it has a spelling. */
+function mergedRows(): readonly LocalizedCategory[] {
+	const learned = learnedRows() ?? [];
+	if (learned.length === 0) return LOCALIZED_CATEGORIES;
+	const byBase = new Map(learned.map((row) => [row.baseSlug, row]));
+
+	const rows = LOCALIZED_CATEGORIES.map((category): LocalizedCategory => {
+		const row = byBase.get(category.baseSlug);
+		if (!row) return category;
+		// A market the row spells as the base slug has no localized spelling yet (snow chains in the USA and Canada
+		// before CFM writes an English translation): Saleor's translation is the spelling the day it lands.
+		const filled: Record<string, string> = {};
+		for (const [market, segment] of Object.entries(row.segments)) {
+			const language = languageOf(market);
+			if (market === "sk" || !language) continue;
+			if (segmentIn(category, market, language) === category.baseSlug) filled[market] = segment;
+		}
+		return Object.keys(filled).length === 0
+			? category
+			: { ...category, marketSegments: { ...category.marketSegments, ...filled } };
+	});
+
+	for (const row of learned) {
+		if (STATIC_BY_BASE.has(row.baseSlug)) continue;
+		const segments = Object.fromEntries(
+			CATALOG_LANGUAGES.map((language) => [language, row.baseSlug]),
+		) as Record<CatalogLanguage, string>;
+		const marketSegments = Object.fromEntries(
+			Object.entries(row.segments).filter(([market]) => market !== "sk" && languageOf(market) !== null),
+		);
+		rows.push({ baseSlug: row.baseSlug, saleorId: row.saleorId, segments, marketSegments });
+	}
+	return rows;
+}
+
+let cachedView:
+	| { readonly key: readonly LearnedCategory[] | undefined; readonly view: RouteView }
+	| undefined;
+
+/** The indexes of the table, rebuilt only when the server publishes something new. */
+function routeView(): RouteView {
+	const key = learnedRows();
+	if (cachedView && cachedView.key === key) return cachedView.view;
+
+	const rows = mergedRows();
+	const bySegment = new Map<string, Map<string, LocalizedCategory>>();
+	for (const market of Object.keys(CHANNEL_MAP)) {
 		const language = languageOf(market);
-		return language
-			? [
-					[
-						market,
-						new Map<string, LocalizedCategory>([
-							...LOCALIZED_CATEGORIES.flatMap((category) =>
-								(category.legacySegments?.[market] ?? []).map((legacy) => [legacy, category] as const),
-							),
-							...LOCALIZED_CATEGORIES.map(
-								(category) => [segmentIn(category, market, language), category] as const,
-							),
-						]),
-					] as const,
-				]
-			: [];
-	}),
-);
+		if (!language) continue;
+		const segments = new Map<string, LocalizedCategory>();
+		for (const category of rows) {
+			for (const legacy of category.legacySegments?.[market] ?? []) segments.set(legacy, category);
+		}
+		// A spelling a category from the table already holds is never taken over by one learned from Saleor.
+		for (const category of rows.filter((row) => STATIC_BY_BASE.has(row.baseSlug))) {
+			segments.set(segmentIn(category, market, language), category);
+		}
+		for (const category of rows.filter((row) => !STATIC_BY_BASE.has(row.baseSlug))) {
+			const segment = segmentIn(category, market, language);
+			if (!segments.has(segment)) segments.set(segment, category);
+		}
+		bySegment.set(market, segments);
+	}
+
+	const view: RouteView = {
+		rows,
+		byBase: new Map(rows.map((category) => [category.baseSlug, category])),
+		byId: new Map(rows.map((category) => [category.saleorId, category])),
+		bySegment,
+	};
+	cachedView = { key, view };
+	return view;
+}
+
+/**
+ * The spelling the TABLE (not Saleor) gives a category in a market, or `null` when it has none there: the base slug,
+ * and every market of Slovakia, count as none. What the server learns from Saleor is only what this does not say.
+ */
+export function tableSpelling(baseSlug: string, marketOrChannel: string): string | null {
+	const category = STATIC_BY_BASE.get(baseSlug);
+	const market = marketOf(marketOrChannel);
+	const language = languageOf(marketOrChannel);
+	if (!category || !market || !language || market === "sk") return null;
+	const segment = segmentIn(category, market, language);
+	return segment === baseSlug ? null : segment;
+}
+
+/**
+ * The base slug of a mapped category named by its Saleor id, or `null`. A foreign page learns a category's
+ * slug from a translation, which can be any spelling; its id never changes.
+ */
+export function baseSlugForCategoryId(id: string | null | undefined): string | null {
+	return (id && routeView().byId.get(id)?.baseSlug) || null;
+}
 
 /**
  * The base slug a URL segment names in this market, or `null` when it names no mapped category.
@@ -304,8 +483,8 @@ export function mappedCategoryFor(marketOrChannel: string, segment: string): Loc
 	const market = marketOf(marketOrChannel);
 	if (!market || !languageOf(market)) return null;
 	return (
-		BY_SEGMENT.get(market)?.get(segment) ??
-		BY_BASE.get(segment) ??
+		routeView().bySegment.get(market)?.get(segment) ??
+		routeView().byBase.get(segment) ??
 		// The slug Kargo had for its first night. Abroad it never was an address worth keeping, so it names the row;
 		// in Slovakia it is the live root until Saleor holds the new slug (`renamedCategoryTarget`).
 		(segment === KARGO_PREVIOUS_SLUG && market !== "sk" ? KARGO_ROW : null)
@@ -333,7 +512,7 @@ export function categoryRootServes(marketOrChannel: string, baseSlug: string): b
 	if (isCategorySlug(baseSlug)) return true;
 	const market = marketOf(marketOrChannel);
 	const language = languageOf(marketOrChannel);
-	const category = BY_BASE.get(baseSlug);
+	const category = routeView().byBase.get(baseSlug);
 	return Boolean(
 		market && language && market !== "sk" && category && segmentIn(category, market, language) !== baseSlug,
 	);
@@ -370,7 +549,7 @@ export function baseSlugOfCategory(
 	category: CategoryRef | null | undefined,
 ): string | null {
 	if (!category) return null;
-	const known = category.id ? BY_ID.get(category.id) : undefined;
+	const known = category.id ? routeView().byId.get(category.id) : undefined;
 	if (known) return known.baseSlug;
 	return category.slug ? categoryBaseSlug(marketOrChannel, category.slug) : null;
 }
@@ -419,7 +598,9 @@ export function categoryUrlFor(marketOrChannel: string, slug: string): string {
  * is not a URL this market has.
  */
 export function isLocalizedRootSegment(market: string, segment: string): boolean {
-	const category = BY_SEGMENT.get(marketOf(market) ?? "")?.get(segment);
+	const category = routeView()
+		.bySegment.get(marketOf(market) ?? "")
+		?.get(segment);
 	return Boolean(category && category.baseSlug !== segment);
 }
 
@@ -474,7 +655,7 @@ export function categoryRouteTable(): readonly CategoryRouteRow[] {
 	for (const [market, config] of Object.entries(CHANNEL_MAP)) {
 		const language = languageOf(market);
 		if (!language) continue;
-		for (const category of LOCALIZED_CATEGORIES) {
+		for (const category of routeView().rows) {
 			const segment = segmentIn(category, market, language);
 			rows.push({
 				market,
