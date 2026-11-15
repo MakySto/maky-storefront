@@ -33,7 +33,11 @@ ExecCondition=/usr/bin/flock -n /run/lock/maky-storefront-deploy.lock -c true
 
 # Slovakia only: the pilot. A market is added here when its feed has been looked at (a dry run names
 # what it would write and what it leaves out) and Merchant Center has delivery set up for its country.
-ExecStart=/usr/bin/env node scripts/ops/merchant-feed.mjs --markets sk --write
+#
+# The second lock is shared with maky-merchant-api.service, which walks the same catalogue every hour:
+# the two never walk it at once. The feed waits for an hourly run to end (it takes minutes); an hourly
+# run that finds the feed being written skips its turn.
+ExecStart=/usr/bin/flock -w 1800 /var/lib/maky-feeds/run.lock /usr/bin/env node scripts/ops/merchant-feed.mjs --markets sk --write
 # /var/lib/maky-feeds, created for User=ubuntu and readable by the shop, which runs as ubuntu too.
 StateDirectory=maky-feeds
 StateDirectoryMode=0755

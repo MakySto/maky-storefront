@@ -1,0 +1,51 @@
+# Price and availability changes for Google Merchant Center, between two fetches of the feed.
+#
+# Run by maky-merchant-api.timer. Installed by a person on the web server, not by the deploy: merging a
+# change to this file changes nothing on the server; the installed copy in /etc/systemd/system is what runs.
+#
+# What one run does: asks the running shop on 127.0.0.1:3000 for the Slovak catalogue, step by step,
+# compares each product's price and availability with what Google was last told (by the feed of the
+# night, or by an earlier run of this unit) and sends only the differences to the Merchant API, into the
+# supplemental data source that Merchant Center joins onto the feed. It adds no product and removes
+# none; a product the shop no longer sells is told "out of stock" after two runs missed it. A walk that
+# does not reach the end sends nothing, and so does a run in which more than a quarter of the feed
+# differs at once. See the head of scripts/ops/merchant-api.mjs for every rule.
+#
+# What it reads: one variable from /opt/storefront/.env (the secret of the shop's internal routes, sent
+# only to 127.0.0.1), and the key of the Google service account from AWS SSM
+# (/maky/storefront/google/merchant-api-key, a SecureString, through the server's own role). The key is
+# held in memory for the run and written nowhere. It writes /var/lib/maky-feeds/api-sk.json and touches
+# neither PM2, nginx nor the build.
+#
+#   systemctl cat maky-merchant-api.service | grep ExecStart        # the line that is really installed
+#   systemctl list-timers maky-merchant-api.timer                   # when it runs next
+#   journalctl -u maky-merchant-api.service --since "-1 day"        # what each run compared and sent
+#   node scripts/ops/merchant-api.mjs                               # the plan of this moment, sends nothing
+#   node scripts/ops/merchant-api.mjs --check                       # the account: sources, link, quota
+[Unit]
+Description=Price and availability changes of maky.store for Google Merchant Center
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/storefront
+
+# Not while a deploy runs: the shop is stopped under the walk, and a walk that fails sends nothing anyway.
+ExecCondition=/usr/bin/flock -n /run/lock/maky-storefront-deploy.lock -c true
+
+# Not while the feed is being written (maky-merchant-feed.service holds the same lock): flock leaves with
+# 75 at once, which is a turn skipped, not a failure.
+ExecStart=/usr/bin/flock -n -E 75 /var/lib/maky-feeds/run.lock /usr/bin/env node scripts/ops/merchant-api.mjs --market sk --fire
+SuccessExitStatus=75
+StateDirectory=maky-feeds
+StateDirectoryMode=0755
+
+# A small job that must never compete with the shop: low priority, a memory ceiling, no swap.
+Nice=15
+MemoryMax=512M
+MemorySwapMax=0
+TimeoutStartSec=45min
+NoNewPrivileges=yes

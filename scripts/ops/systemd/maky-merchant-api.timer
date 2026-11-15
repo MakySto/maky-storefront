@@ -1,0 +1,19 @@
+# Every hour at a quarter past (UTC), except from 01:15 to 04:15.
+#
+# The hours left out are the CarFitManager 4.5 windows on the same box (01:30 to 02:04 and 03:15 to
+# 05:00 UTC every day, on Mondays also about 02:30 to 03:04 UTC), as for the IndexNow run: a walk of the
+# catalogue does not belong beside them, and nobody shops for a roof box at three in the morning. A
+# quarter past keeps it away from the IndexNow run of the same box (40 minutes past) and puts the first
+# run after the feed of 05:05 UTC at 06:15; the run of 05:15 skips its turn while the feed is being
+# written. How often is a matter of how long one walk of the Slovak catalogue takes on the box: the
+# walk must end well before the next one starts. Measure it with a dry run before changing this line.
+[Unit]
+Description=Price and availability changes for Google Merchant Center, every hour
+
+[Timer]
+OnCalendar=*-*-* 00,05..23:15:00 UTC
+# A run that was missed is not made up for: the next one compares the same things.
+Persistent=false
+
+[Install]
+WantedBy=timers.target

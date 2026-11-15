@@ -28,6 +28,10 @@
 // and Google asks for a date with that. The item carries the working days the page states as the longest
 // wait ("dodanie 5–10 pracovných dní" → 10), and the date is counted from the day of the run.
 //
+// Beside each feed it writes `offers-<market>.json`: the price(s) and the availability the feed stated
+// for every item. `merchant-api.mjs` compares the shop of each hour with that record and tells Google
+// only what changed since. The record is not served: `/feeds/` answers the feed files and nothing else.
+//
 // Run it on the web server, as the timer in scripts/ops/systemd does. It touches neither PM2, nginx nor
 // the build, and writes only into its own directory.
 //
@@ -277,7 +281,71 @@ function writeStatus(dir, status) {
 	renameSync(`${path}.tmp`, path);
 }
 
-class StepError extends Error {}
+export class StepError extends Error {}
+
+/**
+ * What an item says about its offer, in the words of the feed: the two prices, the availability, and for
+ * a made-to-order item the working days its date is counted from. `merchant-api.mjs` compares the shop
+ * of this hour with it, so it is written beside every feed (`offers-<market>.json`).
+ */
+export function offerOf(item) {
+	return {
+		p: formatPrice(item.price),
+		s: item.salePrice ? formatPrice(item.salePrice) : null,
+		a: item.availability,
+		d: item.availability === "backorder" && item.backorderWorkingDays ? item.backorderWorkingDays : null,
+	};
+}
+
+/** Two offers say the same when their keys are equal. The date of a made-to-order item moves every day and is not part of it. */
+export function offerKey(offer) {
+	return `${offer.p}|${offer.s ?? ""}|${offer.a}`;
+}
+
+export const offersFileName = (market) => `offers-${market}.json`;
+
+function writeJson(path, value) {
+	writeFileSync(`${path}.tmp`, `${JSON.stringify(value)}\n`);
+	renameSync(`${path}.tmp`, path);
+}
+
+/**
+ * Reads one step of a market from the shop's internal route, with its retries. A 404 is not retried: the
+ * route is absent or the secret is not the shop's.
+ */
+export function stepReader({ origin, secret, pageSize, fetchImpl, sleep, retryWaits = RETRY_WAITS_MS }) {
+	return async (market, after) => {
+		const url = new URL(ROUTE, origin);
+		url.searchParams.set("market", market);
+		url.searchParams.set("first", String(pageSize));
+		if (after) url.searchParams.set("after", after);
+
+		let last = "";
+		for (let attempt = 0; attempt <= retryWaits.length; attempt += 1) {
+			if (attempt > 0) await sleep(retryWaits[attempt - 1]);
+			try {
+				const response = await fetchImpl(url, {
+					headers: { authorization: `Bearer ${secret}` },
+					signal: AbortSignal.timeout(STEP_TIMEOUT_MS),
+				});
+				if (response.status === 404) {
+					throw new StepError(
+						`${market}: the shop answered 404 (the market is not open, the build has no feed route, or the secret is not this shop's)`,
+					);
+				}
+				if (response.status !== 200) {
+					last = `HTTP ${response.status}`;
+					continue;
+				}
+				return await response.json();
+			} catch (error) {
+				if (error instanceof StepError) throw error;
+				last = error instanceof Error ? error.message : String(error);
+			}
+		}
+		throw new StepError(`${market}: a step could not be read (${last})`);
+	};
+}
 
 /**
  * The file a feed is written into before it takes its final name: gzip, opened at once (so there is a
@@ -406,38 +474,14 @@ export async function main(argv, deps = {}) {
 		return 2;
 	}
 
-	/** One step, with its retries. A 404 is not retried: the route is absent or the secret is not the shop's. */
-	const getStep = async (market, after) => {
-		const url = new URL(ROUTE, options.origin);
-		url.searchParams.set("market", market);
-		url.searchParams.set("first", String(options.pageSize));
-		if (after) url.searchParams.set("after", after);
-
-		let last = "";
-		for (let attempt = 0; attempt <= retryWaits.length; attempt += 1) {
-			if (attempt > 0) await sleep(retryWaits[attempt - 1]);
-			try {
-				const response = await fetchImpl(url, {
-					headers: { authorization: `Bearer ${secret}` },
-					signal: AbortSignal.timeout(STEP_TIMEOUT_MS),
-				});
-				if (response.status === 404) {
-					throw new StepError(
-						`${market}: the shop answered 404 (the market is not open, the build has no feed route, or the secret is not this shop's)`,
-					);
-				}
-				if (response.status !== 200) {
-					last = `HTTP ${response.status}`;
-					continue;
-				}
-				return await response.json();
-			} catch (error) {
-				if (error instanceof StepError) throw error;
-				last = error instanceof Error ? error.message : String(error);
-			}
-		}
-		throw new StepError(`${market}: a step could not be read (${last})`);
-	};
+	const getStep = stepReader({
+		origin: options.origin,
+		secret,
+		pageSize: options.pageSize,
+		fetchImpl,
+		sleep,
+		retryWaits,
+	});
 
 	const maxPages = options.write ? null : options.maxPages ?? DRY_RUN_PAGES;
 	if (options.write) mkdirSync(options.out, { recursive: true });
@@ -452,6 +496,7 @@ export async function main(argv, deps = {}) {
 		const temporary = `${target}.tmp-${process.pid}`;
 		let feed = null;
 		let sample = null;
+		const offers = {};
 
 		try {
 			if (options.write) {
@@ -467,7 +512,10 @@ export async function main(argv, deps = {}) {
 				onItem: async (item) => {
 					const xml = renderItem(item, { now: started });
 					sample ??= xml;
-					if (feed) await feed.write(xml);
+					if (feed) {
+						await feed.write(xml);
+						offers[item.id] = offerOf(item);
+					}
 				},
 			});
 
@@ -517,6 +565,14 @@ export async function main(argv, deps = {}) {
 				bytes: statSync(target).size,
 			};
 			writeStatus(options.out, status);
+			// After the feed, never before it: if this write fails, the record is older than the feed and
+			// `merchant-api.mjs` sends a value the feed already has, which costs a request and nothing else.
+			writeJson(join(options.out, offersFileName(market)), {
+				version: 1,
+				market,
+				generatedAt: started.toISOString(),
+				offers,
+			});
 			log(`${summary}. Written: ${target} (${status.markets[market].bytes} bytes).`);
 		} catch (error) {
 			if (feed) await feed.abandon();
