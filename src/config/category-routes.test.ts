@@ -426,6 +426,146 @@ describe("the snow-chain category", () => {
 	});
 });
 
+describe("the roof-rack part categories", () => {
+	// What CFM wrote as the two categories' translated slugs in the nine EU languages (DIELY_CATEGORY_L10N_MANIFEST of the
+	// part run, 2026-11-15, 18 translations), typed out so the rows have to keep them. Austria has a translation of its
+	// own (DE_AT). The USA and Canada are not part of the run, so no English slug exists and their address stays the
+	// base slug.
+	const CASES = [
+		{
+			base: "diely-stresnych-nosicov",
+			id: btoa("Category:35"),
+			segments: {
+				sk: "diely-stresnych-nosicov",
+				cz: "dily-stresnich-nosicu",
+				de: "einzelteile-fuer-dachtraeger",
+				at: "dachtraeger-einzelteile",
+				pl: "czesci-bagaznikow-dachowych",
+				hu: "tetocsomagtarto-alkatreszek",
+				it: "componenti-per-portapacchi-da-tetto",
+				fr: "pieces-pour-barres-de-toit",
+				es: "piezas-para-barras-de-techo",
+				ro: "piese-pentru-bare-de-acoperis",
+				us: "diely-stresnych-nosicov",
+				ca: "diely-stresnych-nosicov",
+			} as Readonly<Record<string, string>>,
+		},
+		{
+			base: "patky-stresnych-nosicov",
+			id: btoa("Category:36"),
+			segments: {
+				sk: "patky-stresnych-nosicov",
+				cz: "patky-stresnich-nosicu",
+				de: "fusssaetze-fuer-dachtraeger",
+				at: "traegerfuesse-fuer-dachtraeger",
+				pl: "stopy-bagaznikow-dachowych",
+				hu: "tetocsomagtarto-talpak",
+				it: "piedi-per-portapacchi-da-tetto",
+				fr: "pieds-pour-barres-de-toit",
+				es: "pies-para-barras-de-techo",
+				ro: "picioare-pentru-bare-de-acoperis",
+				us: "patky-stresnych-nosicov",
+				ca: "patky-stresnych-nosicov",
+			} as Readonly<Record<string, string>>,
+		},
+	];
+	const OFFERED = ["cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro"];
+	// Both categories are newer than the build's own list, so the running server knows their base slugs from Saleor's
+	// category list, as it does on the live site. Abroad the table alone routes the localized spelling.
+	const published = globalThis as typeof globalThis & { [LIVE_CATEGORY_SLUGS_KEY]?: ReadonlySet<string> };
+	beforeEach(() => {
+		published[LIVE_CATEGORY_SLUGS_KEY] = new Set(CASES.map((c) => c.base));
+	});
+	afterEach(() => {
+		delete published[LIVE_CATEGORY_SLUGS_KEY];
+	});
+
+	it.each(CASES)(
+		"$base has the segment CFM wrote in the nine EU markets and the base slug elsewhere",
+		(c) => {
+			const rows = categoryRouteTable().filter((row) => row.baseSlug === c.base);
+			expect(rows).toHaveLength(12);
+			for (const row of rows) expect(row.path, row.market).toBe(`/${row.market}/${c.segments[row.market]}`);
+			expect(OFFERED.every((market) => c.segments[market] !== c.base)).toBe(true);
+		},
+	);
+
+	it.each(CASES)("$base is the Saleor category it names", (c) => {
+		expect(LOCALIZED_CATEGORIES.find((category) => category.baseSlug === c.base)?.saleorId).toBe(c.id);
+		expect(baseSlugForCategoryId(c.id)).toBe(c.base);
+	});
+
+	it.each(CASES)(
+		"$base is one address, whether the link carries the base slug or the translated one",
+		(c) => {
+			// The product page and the breadcrumb link with the translated slug Saleor returns, the shop's own links with
+			// the base one.
+			for (const [market, segment] of Object.entries(c.segments)) {
+				expect(categoryUrlFor(market, c.base), market).toBe(`/${segment}`);
+				expect(categoryUrlFor(market, segment), market).toBe(`/${segment}`);
+				expect(categoryUrlFor(CHANNEL_MAP[market]!.saleorSlug, segment), market).toBe(`/${segment}`);
+				expect(categoryBaseSlug(market, segment), market).toBe(c.base);
+				expect(categoryUrlFor(market, segment), market).not.toContain("/categories/");
+			}
+		},
+	);
+
+	it.each(CASES)(
+		"$base is found by its id on a product, whatever slug the category carries in the market",
+		(c) => {
+			for (const market of OFFERED) {
+				expect(baseSlugOfCategory(market, { id: c.id, slug: c.segments[market] }), market).toBe(c.base);
+				expect(baseSlugOfCategory(market, { slug: c.segments[market] }), market).toBe(c.base);
+			}
+		},
+	);
+
+	it.each(CASES)(
+		"$base is spelled apart in Austria and Germany, and neither takes the other's spelling",
+		(c) => {
+			expect(c.segments.at).not.toBe(c.segments.de);
+			expect(categorySegment("at", c.base)).toBe(c.segments.at);
+			expect(categorySegment("de", c.base)).toBe(c.segments.de);
+			expect(isLocalizedRootSegment("at", c.segments.at!)).toBe(true);
+			expect(isLocalizedRootSegment("de", c.segments.de!)).toBe(true);
+			expect(isLocalizedRootSegment("at", c.segments.de!)).toBe(false);
+			expect(isLocalizedRootSegment("de", c.segments.at!)).toBe(false);
+		},
+	);
+
+	it.each(CASES)(
+		"$base is a root only in the market's own spelling, and nowhere in Slovakia, the USA and Canada",
+		(c) => {
+			for (const market of OFFERED)
+				expect(isLocalizedRootSegment(market, c.segments[market]!), market).toBe(true);
+			for (const market of ["sk", "us", "ca"]) {
+				// The base slug is a spelling nowhere: these markets reach the category through the category list.
+				expect(isLocalizedRootSegment(market, c.base), market).toBe(false);
+			}
+			expect(isLocalizedRootSegment("cz", c.segments.de!)).toBe(false);
+			expect(isLocalizedRootSegment("us", c.segments.de!)).toBe(false);
+		},
+	);
+
+	it.each(CASES)(
+		"$base has its localized address abroad before the server has read Saleor's category list",
+		(c) => {
+			delete published[LIVE_CATEGORY_SLUGS_KEY];
+			for (const market of OFFERED) {
+				expect(categoryUrlFor(market, c.base), market).toBe(`/${c.segments[market]}`);
+				expect(categoryUrlFor(market, c.segments[market]!), market).toBe(`/${c.segments[market]}`);
+			}
+		},
+	);
+
+	it("keeps the two categories apart in every market", () => {
+		const [parts, feet] = CASES;
+		for (const market of Object.keys(parts!.segments)) {
+			expect(parts!.segments[market], market).not.toBe(feet!.segments[market]);
+		}
+	});
+});
+
 describe("the Nordrive Kargo van category", () => {
 	// Typed out from the table the owner chose on 2026-10-30 (names in `Kargo_kategoria_nazvy_a_slugy_20261030.md`),
 	// not derived from the code: Austria and Canada are spelled apart from Germany and the USA.
