@@ -491,7 +491,9 @@ describe("how long a category answer is remembered", () => {
 describe("the other markets of a category", () => {
 	const hreflangFor = async () => (await metadataFor()).alternates?.languages;
 
-	beforeEach(() => {
+	beforeEach(async () => {
+		// What the process keeps of the markets' answer between visits is the module's own state.
+		(await import("@/lib/saleor/category-presence")).__forgetCategoryPresence();
 		vi.stubEnv("MAKY_LIVE_MARKETS", "sk,cz,de,at,pl,hu");
 		vi.stubEnv("MAKY_INDEXABLE_MARKETS", "sk,cz,de,at,pl,hu");
 	});

@@ -161,6 +161,9 @@ export async function register(): Promise<void> {
 	// time were the 500s on `/znacky` right after a restart (2026-11-03). The lists are kept in the
 	// process; a later fault shows the last answer instead of nothing. Off with MAKY_BRANDS_PREWARM=0.
 	//
+	// The roof-rack category's price bands and row of sub-categories, read before the first visitor needs
+	// them (Saleor takes 1.5 to 1.9 s for each, longer than a visit waits). Off with MAKY_CATEGORIES_PREWARM=0.
+	//
 	// The sitemap's product lists, built in the background so the first crawler (or the deploy's own
 	// check) finds them kept instead of walking Saleor for 14 to 18 seconds per market. It is what a
 	// request would have done anyway, only earlier. Only a production server: a dev session or a test
@@ -168,6 +171,7 @@ export async function register(): Promise<void> {
 	if (!building && process.env.NODE_ENV === "production") {
 		const { startBootWarmups } = await import("./lib/boot-warmups");
 		startBootWarmups({
+			categories: process.env.MAKY_CATEGORIES_PREWARM !== "0",
 			brands: process.env.MAKY_BRANDS_PREWARM !== "0",
 			sitemap: process.env.MAKY_SITEMAP_PREWARM !== "0",
 		});

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { cacheLife } from "next/cache";
 import { FAULT_CACHE_LIFE } from "@/lib/cache-fault";
 import { executePublicGraphQL } from "@/lib/graphql";
+import { __forgetBrandCategories } from "@/lib/brands/brand-categories";
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ cacheLife: vi.fn(), cacheTag: vi.fn() }));
@@ -109,6 +110,7 @@ describe("the brand page's description", () => {
 
 describe("getBrandCategories", () => {
 	beforeEach(() => {
+		__forgetBrandCategories();
 		vi.mocked(executePublicGraphQL).mockReset();
 		vi.mocked(cacheLife).mockReset();
 	});

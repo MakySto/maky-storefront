@@ -41,9 +41,9 @@ import { getCmsBrands } from "@/lib/cms/brands";
 import { getCmsScenery } from "@/lib/cms/scenery";
 import { getHeroShowcase, getHomeCategoryImages } from "@/lib/homepage/showcase";
 import { getScenery } from "@/lib/homepage/scenery";
-import { getCategoryFacets } from "@/lib/listing/category-facets";
-import { getCategoryNavigation } from "@/lib/listing/category-navigation";
-import { getCategoryPriceBands } from "@/lib/listing/category-prices";
+import { __forgetCategoryFacets, getCategoryFacets } from "@/lib/listing/category-facets";
+import { __forgetCategoryNavigation, getCategoryNavigation } from "@/lib/listing/category-navigation";
+import { __forgetCategoryPriceBands, getCategoryPriceBands } from "@/lib/listing/category-prices";
 import { getProductTypeGroups } from "@/lib/listing/product-groups";
 import { __forgetBrandMakers } from "@/lib/brands/catalog";
 import { __forgetAssortments, getMarketAssortment } from "@/lib/market-assortment";
@@ -66,6 +66,10 @@ beforeEach(() => {
 	vi.clearAllMocks();
 	__forgetAssortments();
 	__forgetBrandMakers();
+	// What the listing's readers keep between reads is the module's own state.
+	__forgetCategoryFacets();
+	__forgetCategoryNavigation();
+	__forgetCategoryPriceBands();
 	vi.spyOn(console, "warn").mockImplementation(() => {});
 	vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -161,6 +165,8 @@ describe("a reader whose upstream is down", () => {
 
 	it("category navigation: a deadline spent waiting for a Saleor slot says so, and only then", async () => {
 		await expect(getCategoryNavigation("stresne-nosice", SK)).rejects.toThrow(/deadline exceeded$/);
+		// The key is left alone for a few seconds after a fault; the second read is a fresh one.
+		__forgetCategoryNavigation();
 		mocks.executePublicGraphQL.mockResolvedValue({ ok: false, error: { ...DOWN.error, queueStarved: true } });
 		await expect(getCategoryNavigation("stresne-nosice", SK)).rejects.toThrow(
 			/category navigation unavailable for stresne-nosice: deadline exceeded \[queueStarved\]$/,

@@ -7,6 +7,7 @@ import {
 	type ProductOrderField,
 } from "@/gql/graphql";
 import { getLocaleFromChannel } from "@/config/locale";
+import { createKeptRead } from "@/lib/cache/kept-read";
 import { settle, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
 import { executePublicGraphQL } from "@/lib/graphql";
@@ -26,10 +27,23 @@ export interface CategoryPriceBands {
 	readonly boundaries: readonly number[];
 }
 
-const READ_ALL_LIMIT = 300;
+/** The most products a category may hold for every price to be read (`category-facets.ts` reads the same). */
+export const READ_ALL_LIMIT = 300;
 const PAGE = 100;
-/** The bands are a convenience; they never hold the listing up. */
-const DEADLINE_MS = 2_000;
+/**
+ * The bands are a convenience; a visitor never waits for them longer than this, and only when the process
+ * holds no answer for the category yet (see `@/lib/cache/kept-read`).
+ */
+const WAIT_MS = 2_000;
+/** What one load may take in all. Nobody waits for it: the roof-rack sets need 1.5 to 1.9 s per read. */
+const LOAD_DEADLINE_MS = 8_000;
+/**
+ * The bands are cut points between the cheapest and the dearest (or quartiles): ten minutes old they are as
+ * good as new. Every refresh of the roof-rack sets is two price-sorted queries over 26 000 products, which
+ * Saleor keeps computing after a client has given up, so it is not repeated every minute in every market.
+ */
+const FRESH_MS = 10 * 60_000;
+const PAUSE_MS = 10_000;
 
 type Products = NonNullable<NonNullable<CategoryPricesQuery["category"]>["products"]>;
 
@@ -40,46 +54,87 @@ type Products = NonNullable<NonNullable<CategoryPricesQuery["category"]>["produc
 export async function getCategoryPriceBands(
 	baseSlug: string,
 	channel: string,
+	/** What the caller already knows: the category holds more than `READ_ALL_LIMIT` products here. */
+	large = false,
 ): Promise<CategoryPriceBands | null> {
-	return valueOrThrow(await readCategoryPriceBands(baseSlug, channel));
+	return valueOrThrow(await readCategoryPriceBands(baseSlug, channel, large));
+}
+
+interface BandsRequest {
+	readonly baseSlug: string;
+	readonly channel: string;
+	readonly large: boolean;
+}
+
+const keptBands = createKeptRead<BandsRequest, CategoryPriceBands | null>({
+	name: "price-bands",
+	freshMs: FRESH_MS,
+	pauseMs: PAUSE_MS,
+	loadDeadlineMs: LOAD_DEADLINE_MS,
+	load: ({ baseSlug, channel, large }, signal) => computeCategoryPriceBands(baseSlug, channel, large, signal),
+});
+
+const bandsKey = (baseSlug: string, channel: string) => `${channel}\u0000${baseSlug}`;
+
+/**
+ * Reads the bands of one category into the process, waiting for all of it. For the boot warm-up of the
+ * categories whose first read is the slow one; resolves to whether the process now holds an answer.
+ */
+export function prewarmCategoryPriceBands(
+	baseSlug: string,
+	channel: string,
+	large: boolean,
+): Promise<boolean> {
+	return keptBands.prewarm(bandsKey(baseSlug, channel), { baseSlug, channel, large });
+}
+
+/** For tests. */
+export function __forgetCategoryPriceBands(): void {
+	keptBands.forget();
 }
 
 async function readCategoryPriceBands(
 	baseSlug: string,
 	channel: string,
+	large: boolean,
 ): Promise<CachedRead<CategoryPriceBands | null>> {
 	"use cache";
 	const locale = getLocaleFromChannel(channel);
 	cacheLife(CACHE_PROFILES.categories.cacheProfile);
 	cacheTag(buildTag(CACHE_PROFILES.categories, { channel, locale, slug: baseSlug }));
 
-	return settle(() => computeCategoryPriceBands(baseSlug, channel));
+	return settle(() => keptBands.read(bandsKey(baseSlug, channel), { baseSlug, channel, large }, WAIT_MS));
 }
 
 async function computeCategoryPriceBands(
 	baseSlug: string,
 	channel: string,
+	large: boolean,
+	signal: AbortSignal,
 ): Promise<CategoryPriceBands | null> {
 	const read = async (variables: { first: number; after?: string | null; sortBy?: ProductOrder }) => {
 		const result = await executePublicGraphQL(CategoryPricesDocument, {
 			variables: { slug: baseSlug, channel, ...variables },
 			revalidate: 0,
 			retry: false,
-			signal: AbortSignal.timeout(DEADLINE_MS),
+			signal,
 		});
 		if (!result.ok) throw new Error(`[Listing] prices unavailable for ${baseSlug}: ${result.error.message}`);
 		return result.data.category?.products ?? null;
 	};
 
-	const firstPage = await read({ first: PAGE });
-	if (!firstPage) return null;
+	// A category the caller knows to be big goes straight to its two ends. The page used to be read first
+	// only to learn the total, which for the roof-rack sets was a hundred products with their prices read
+	// for nothing, one whole round trip in front of the two that count.
+	const firstPage = large ? null : await read({ first: PAGE });
+	if (!large && !firstPage) return null;
 
 	const gross = (products: Products) =>
 		products.edges.flatMap(({ node }) =>
 			node.pricing?.priceRange?.start?.gross ? [node.pricing.priceRange.start.gross] : [],
 		);
 
-	if ((firstPage.totalCount ?? 0) <= READ_ALL_LIMIT) {
+	if (firstPage && (firstPage.totalCount ?? 0) <= READ_ALL_LIMIT) {
 		const amounts = gross(firstPage);
 		let page = firstPage;
 		while (page.pageInfo.hasNextPage) {

@@ -80,7 +80,7 @@ import { lookupBySlug } from "@/lib/saleor/slug-lookup";
 import { getCategoryMarketPresence } from "@/lib/saleor/category-presence";
 import { categoryCounterparts } from "@/lib/seo/category-counterparts";
 import { getCategoryNavigation } from "@/lib/listing/category-navigation";
-import { getCategoryPriceBands } from "@/lib/listing/category-prices";
+import { READ_ALL_LIMIT, getCategoryPriceBands } from "@/lib/listing/category-prices";
 import { getCategoryFacets } from "@/lib/listing/category-facets";
 import { parseBrandParam, volumeBand, volumeRange } from "@/lib/listing/facet-params";
 import { getProductTypeGroups } from "@/lib/listing/product-groups";
@@ -418,6 +418,9 @@ async function CategoryContent({
 				<CategoryProducts
 					params={paramsPromise}
 					searchParams={searchParams}
+					// What the category lookup above already counted: the side reads of a shelf this big skip the
+					// hundred-product page they would otherwise read only to find that out.
+					large={(category.products?.totalCount ?? 0) > READ_ALL_LIMIT}
 					categoryLinks={navigation?.chips ?? null}
 					// A sub-shelf (Nordrive, Kargo, Thule …) that holds none of the car's sets points to its family's
 					// page, which is where the sets are, instead of saying they are not on sale.
@@ -517,11 +520,14 @@ interface CategoryListing {
 async function CategoryProducts({
 	params: paramsPromise,
 	searchParams: searchParamsPromise,
+	large,
 	categoryLinks,
 	familyShelf,
 }: {
 	params: PageProps["params"];
 	searchParams: PageProps["searchParams"];
+	/** The category holds more products in this channel than the price bands and the facets read whole. */
+	large: boolean;
 	/** The category family for the side panel, when the page has a row of sub-categories. */
 	categoryLinks: readonly SubcategoryChip[] | null;
 	/** The family this shelf is a sub-shelf of, when the programme covers that family. */
@@ -559,7 +565,7 @@ async function CategoryProducts({
 		// The recommended order is Saleor's default order, grouped. A shopper's own order — by
 		// price, by date — applies to the whole listing at once and needs no groups.
 		sortBy ? null : getProductTypeGroups().catch(() => null),
-		getCategoryPriceBands(saleorSlug, params.channel).catch((error: unknown) => {
+		getCategoryPriceBands(saleorSlug, params.channel, large).catch((error: unknown) => {
 			console.warn(
 				`[Listing] price filter left out for ${saleorSlug}:`,
 				error instanceof Error ? error.message : error,
@@ -567,7 +573,7 @@ async function CategoryProducts({
 			return null;
 		}),
 		// The maker and volume filters, with their counts; a fault leaves them out.
-		getCategoryFacets(saleorSlug, params.channel).catch((error: unknown) => {
+		getCategoryFacets(saleorSlug, params.channel, large).catch((error: unknown) => {
 			console.warn(
 				`[Listing] maker and volume filters left out for ${saleorSlug}:`,
 				error instanceof Error ? error.message : error,

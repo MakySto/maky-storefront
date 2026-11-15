@@ -1,10 +1,12 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { CategoryFacetsDocument, type CategoryFacetsQuery } from "@/gql/graphql";
 import { getLocaleFromChannel } from "@/config/locale";
-import { settle, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
+import { createKeptRead } from "@/lib/cache/kept-read";
+import { answered, settle, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
 import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { VOLUME_BANDS, bandOfVolume } from "./facet-params";
+import { READ_ALL_LIMIT } from "./category-prices";
 
 /**
  * The makers and the volume bands a category holds in a channel, with how many products each —
@@ -36,9 +38,13 @@ export interface CategoryFacets {
 	readonly volumes: readonly VolumeFacet[];
 }
 
-const READ_ALL_LIMIT = 300;
 const PAGE = 100;
-const DEADLINE_MS = 2_000;
+/** A visitor waits this long at most, and only when the process holds no answer yet (`@/lib/cache/kept-read`). */
+const WAIT_MS = 2_000;
+const LOAD_DEADLINE_MS = 8_000;
+/** The counts per maker and volume band: five minutes old is as good as new. */
+const FRESH_MS = 5 * 60_000;
+const PAUSE_MS = 10_000;
 /** The volume filter is offered when most of the shelf states a volume. */
 const VOLUME_SHARE = 0.4;
 
@@ -83,32 +89,64 @@ export function facetsFromNodes(nodes: readonly Node[]): CategoryFacets {
 }
 
 /**
- * Throws on a fault to the caller: an outage must not become "no filters" for minutes. Inside the
- * cache it is a value that is remembered for seconds only (`@/lib/cache-fault`).
+ * Throws on a fault to the caller: an outage must not become "no filters" for minutes. Inside the cache it
+ * is a value that is remembered for seconds only (`@/lib/cache-fault`).
+ *
+ * `large` is what the caller already knows, that the category holds more than `READ_ALL_LIMIT` products
+ * here. Such a category has no facets, and the first page of a hundred products used to be read, with
+ * their attributes, only to find that out.
  */
-export async function getCategoryFacets(baseSlug: string, channel: string): Promise<CategoryFacets | null> {
-	return valueOrThrow(await readCategoryFacets(baseSlug, channel));
+export async function getCategoryFacets(
+	baseSlug: string,
+	channel: string,
+	large = false,
+): Promise<CategoryFacets | null> {
+	return valueOrThrow(await readCategoryFacets(baseSlug, channel, large));
+}
+
+interface FacetsRequest {
+	readonly baseSlug: string;
+	readonly channel: string;
+}
+
+const keptFacets = createKeptRead<FacetsRequest, CategoryFacets | null>({
+	name: "category-facets",
+	freshMs: FRESH_MS,
+	pauseMs: PAUSE_MS,
+	loadDeadlineMs: LOAD_DEADLINE_MS,
+	load: ({ baseSlug, channel }, signal) => computeCategoryFacets(baseSlug, channel, signal),
+});
+
+/** For tests. */
+export function __forgetCategoryFacets(): void {
+	keptFacets.forget();
 }
 
 async function readCategoryFacets(
 	baseSlug: string,
 	channel: string,
+	large: boolean,
 ): Promise<CachedRead<CategoryFacets | null>> {
 	"use cache";
 	const locale = getLocaleFromChannel(channel);
 	cacheLife(CACHE_PROFILES.categories.cacheProfile);
 	cacheTag(buildTag(CACHE_PROFILES.categories, { channel, locale, slug: baseSlug }));
 
-	return settle(() => computeCategoryFacets(baseSlug, channel));
+	if (large) return answered(null);
+	return settle(() => keptFacets.read(`${channel}\u0000${baseSlug}`, { baseSlug, channel }, WAIT_MS));
 }
 
-async function computeCategoryFacets(baseSlug: string, channel: string): Promise<CategoryFacets | null> {
+async function computeCategoryFacets(
+	baseSlug: string,
+	channel: string,
+	signal: AbortSignal,
+): Promise<CategoryFacets | null> {
 	const read = async (after: string | null) => {
 		const result = await executePublicGraphQL(CategoryFacetsDocument, {
 			variables: { slug: baseSlug, channel, first: PAGE, after },
 			revalidate: 0,
 			retry: false,
-			signal: AbortSignal.timeout(DEADLINE_MS),
+			signal,
 		});
 		if (!result.ok) throw new Error(`[Listing] facets unavailable for ${baseSlug}: ${result.error.message}`);
 		return result.data.category?.products ?? null;

@@ -1,6 +1,6 @@
 /**
- * The two warm-ups a production server runs in the background after it starts, ONE AFTER THE OTHER:
- * the makers' counts first, then the sitemap's product lists (why they do not run side by side is
+ * The warm-ups a production server runs in the background after it starts, ONE AFTER THE OTHER:
+ * the big categories' side reads first, then the makers' counts, then the sitemap's product lists (why they do not run side by side is
  * written at the call in `src/instrumentation.ts`).
  *
  * Its own module, and not a closure in `register()`, so that the chain has a name and a handle: a test
@@ -18,11 +18,21 @@ const running = new Set<Promise<void>>();
 export function startBootWarmups({
 	brands,
 	sitemap,
+	categories = false,
 }: {
 	readonly brands: boolean;
 	readonly sitemap: boolean;
+	/** The big categories' price bands and sub-category rows, first: a visitor can be waiting for them. */
+	readonly categories?: boolean;
 }): void {
 	const chain = (async () => {
+		if (categories) {
+			await import("./listing/category-prewarm")
+				.then(({ prewarmBigCategories }) => prewarmBigCategories())
+				.catch((error: unknown) => {
+					console.warn("[categories] warm-up failed:", error instanceof Error ? error.message : error);
+				});
+		}
 		if (brands) {
 			await import("./brands/catalog")
 				.then(({ prewarmBrandMakers }) => prewarmBrandMakers())
