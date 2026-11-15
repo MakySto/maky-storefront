@@ -96,6 +96,25 @@ describe("a key never answered", () => {
 		expect(load).toHaveBeenCalledTimes(2);
 	});
 
+	it("writes a slow answer to the log with its duration, and a quick one not at all", async () => {
+		vi.spyOn(console, "log").mockImplementation(() => {});
+		const { state, load } = source();
+		const kept = keeper(load);
+		state.delay = 50;
+		const quick = kept.read("quick", "arg", 2_000);
+		await vi.advanceTimersByTimeAsync(50);
+		await quick;
+		expect(console.log).not.toHaveBeenCalled();
+
+		state.delay = 1_700;
+		const slow = kept.read("slow", "arg", 2_000);
+		await vi.advanceTimersByTimeAsync(1_700);
+		await slow;
+		expect(vi.mocked(console.log).mock.calls[0]?.join(" ")).toMatch(
+			/\[test-read\] slow answered after \d+ ms$/,
+		);
+	});
+
 	it("keeps `null` as an answer", async () => {
 		const kept = createKeptRead<string, string | null>({
 			name: "test-read",
@@ -155,8 +174,9 @@ describe("a key with an answer", () => {
 
 		expect(load).toHaveBeenCalledTimes(1);
 		expect(console.warn).toHaveBeenCalledTimes(1);
+		// With the time, the duration and what the visitors get meanwhile: the server's own log has none of them.
 		expect(vi.mocked(console.warn).mock.calls[0]?.join(" ")).toMatch(
-			/\[test-read\] refresh failed for k, the earlier answer stays:.*deadline exceeded/,
+			/^\d{4}-\d\d-\d\dT[\d:.]+Z \[test-read\] k failed after \d+ ms, the earlier answer stays: .*deadline exceeded/,
 		);
 
 		// After the pause it asks again, and a source that is back replaces the answer.

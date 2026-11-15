@@ -67,6 +67,13 @@ export interface KeptRead<Arg, Value> {
 	forget(): void;
 }
 
+/** A load slower than this is written to the log, so a Saleor that is getting slow shows before it times out. */
+const SLOW_LOAD_MS = 1_000;
+
+const stamp = () => new Date().toISOString();
+/** The key joins its parts with a NUL; the log shows a slash. */
+const shown = (key: string) => key.replaceAll("\u0000", "/");
+
 export function createKeptRead<Arg, Value>(options: KeptReadOptions<Arg, Value>): KeptRead<Arg, Value> {
 	// Boxed, so that `null` (a category with no price bands) is an answer and `undefined` is "none held".
 	const answers = createExpiringMemo<{ readonly value: Value }>();
@@ -81,21 +88,27 @@ export function createKeptRead<Arg, Value>(options: KeptReadOptions<Arg, Value>)
 		const pause = paused.get(key);
 		if (pause) return Promise.reject(pause);
 
+		const started = performance.now();
 		const job = runDetached(() => options.load(arg, AbortSignal.timeout(options.loadDeadlineMs)))
 			.then((value) => {
 				answers.set(key, { value }, options.freshMs);
+				const took = Math.round(performance.now() - started);
+				// The server's log carries no time and no duration of a read that ran out; these two lines do.
+				if (took >= SLOW_LOAD_MS) {
+					console.log(`${stamp()} [${options.name}] ${shown(key)} answered after ${took} ms`);
+				}
 				return value;
 			})
 			.catch((error: unknown) => {
 				const failure = error instanceof Error ? error : new Error(String(error));
 				paused.set(key, failure, options.pauseMs);
-				// With an earlier answer held nobody sees this fault, so the log is the only place it shows.
-				if (answers.getStale(key)) {
-					console.warn(
-						`[${options.name}] refresh failed for ${key}, the earlier answer stays:`,
+				const took = Math.round(performance.now() - started);
+				// One line per failed load (a key is left alone after it), with the answer the visitors get meanwhile.
+				console.warn(
+					`${stamp()} [${options.name}] ${shown(key)} failed after ${took} ms` +
+						(answers.getStale(key) ? ", the earlier answer stays: " : ", no answer held: ") +
 						failure.message,
-					);
-				}
+				);
 				throw failure;
 			})
 			.finally(() => {
