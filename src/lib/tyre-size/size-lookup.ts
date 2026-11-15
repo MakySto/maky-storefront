@@ -1,6 +1,6 @@
 import "server-only";
 
-import { tyreSizeIndex } from "./size-index";
+import { perTyreLists } from "./active-lists";
 
 /**
  * The tyre-size list seen from the size's side.
@@ -53,13 +53,10 @@ interface Lookup {
 /** How many widths the first step offers before "more": enough for the usual passenger and van sizes. */
 const COMMON_WIDTHS = 12;
 
-let lookup: Lookup | null = null;
-
-function build(): Lookup {
-	if (lookup) return lookup;
-
+/** Built once per list, and again for a list that replaces it (`perTyreLists`). */
+const build = perTyreLists(({ index }): Lookup => {
 	const bySize = new Map<string, SizeEntry[]>();
-	for (const [code, product] of Object.entries(tyreSizeIndex().products)) {
+	for (const [code, product] of Object.entries(index.products)) {
 		for (const [label, , conditionKey] of product.sizes) {
 			const entries = bySize.get(label) ?? [];
 			entries.push({ code, conditionKey });
@@ -114,9 +111,8 @@ function build(): Lookup {
 		.slice(0, COMMON_WIDTHS)
 		.map(([width]) => width);
 
-	lookup = { bySize, byKey, standard, commonWidths: new Set(common) };
-	return lookup;
-}
+	return { bySize, byKey, standard, commonWidths: new Set(common) };
+});
 
 /** Is this label one of the list's sizes, spelled as the list spells it? */
 export function isKnownTyreSize(size: unknown): size is string {

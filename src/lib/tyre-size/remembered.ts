@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { entryFor, decodeTyreMemory, hasOwnEntry, TYRE_MEMORY_COOKIE, type TyreMemory } from "./memory";
 import type { TyreAnswers } from "./choice";
 import { isAnswerTo, tyreQuestionOf } from "./questions";
-import { tyreSizeIndex } from "./size-index";
+import { perTyreLists } from "./active-lists";
 import { isRememberableTyreSize } from "./size-lookup";
 import { readActiveVehicleKey } from "./vehicle-context";
 
@@ -30,17 +30,15 @@ export interface RememberedTyre {
 	readonly forThisVehicle: boolean;
 }
 
-let questions: ReadonlyMap<string, ReturnType<typeof tyreQuestionOf>> | null = null;
-function knownQuestions() {
-	if (questions) return questions;
+/** The questions the list asks, by key; rebuilt for a list that replaces the one being served. */
+const knownQuestions = perTyreLists(({ index }) => {
 	const map = new Map<string, ReturnType<typeof tyreQuestionOf>>();
-	for (const condition of Object.values(tyreSizeIndex().conditions)) {
+	for (const condition of Object.values(index.conditions)) {
 		const question = tyreQuestionOf(condition);
 		map.set(question.key, question);
 	}
-	questions = map;
 	return map;
-}
+});
 
 /** Only the answers that answer a question the list asks. */
 export function validAnswers(raw: Readonly<Record<string, string>>): TyreAnswers {

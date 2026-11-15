@@ -1,8 +1,9 @@
 import "server-only";
 
-import rawIndex from "./data/velkosti_20261105.json";
+import { activeTyreLists } from "./active-lists";
+import type { TyreSizeIndex, TyreSizeProduct } from "./types";
 
-import type { TyreCondition, TyreSizeIndex, TyreSizeProduct, TyreSizeRow } from "./types";
+export { parseTyreSizeIndex } from "./size-index-file";
 
 /**
  * The tyre sizes of the snow-chain and snow-sock codes (CFM's `velkosti_20261105.json`, copied in verbatim).
@@ -13,105 +14,22 @@ import type { TyreCondition, TyreSizeIndex, TyreSizeProduct, TyreSizeRow } from 
  * a code: a size is never converted, never rounded to a neighbour, and the condition on a tyre make or model that
  * the list attaches to some sizes never disappears.
  *
+ * Which list that is, is not fixed at build time: the copy in `data/` is what a process starts with, and a list CFM
+ * publishes later takes its place without a deploy (`active-lists.ts`). So nothing here, and nothing that reads
+ * this, may keep the list or anything computed from it in a module-level constant: ask each time
+ * (`perTyreLists` for what is costly to compute).
+ *
  * Server-only on purpose. A client component that imported this would put the whole list in the browser; the page
  * hands the browser only the verdict for the one code it shows and the one size the shopper gave (`size-lookup`).
  */
 
-const SCHEMA = "maky.tyre-size-index/1";
-
-const fail = (message: string): never => {
-	throw new Error(`tyre-size index: ${message}`);
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-	typeof value === "object" && value !== null && !Array.isArray(value);
-
-const isText = (value: unknown): value is string => typeof value === "string" && value.trim() !== "";
-
-/**
- * Check the list's shape and its own bookkeeping, and return it typed.
- *
- * Strict because everything downstream trusts it: an unknown source, a condition key that does not exist, a size
- * twice in one code or a count that does not add up means the file is not the one that was meant to ship, and the
- * add-to-cart check must not run on it. Exported for the test; the module checks its own copy once, at load.
- */
-export function parseTyreSizeIndex(raw: unknown): TyreSizeIndex {
-	if (!isRecord(raw)) return fail("the list is not an object");
-	if (raw.schema !== SCHEMA) return fail(`schema ${String(raw.schema)} is not ${SCHEMA}`);
-	if (!isText(raw.id)) return fail("no id");
-	if (!isRecord(raw.conditions) || !isRecord(raw.sources) || !isRecord(raw.products)) {
-		return fail("conditions, sources and products must be objects");
-	}
-
-	const conditions: Record<string, TyreCondition> = {};
-	for (const [key, value] of Object.entries(raw.conditions)) {
-		if (!isRecord(value)) return fail(`condition ${key} is not an object`);
-		const { mode, raw: words, tyres } = value;
-		if (mode !== "only" && mode !== "not") return fail(`condition ${key} has mode ${String(mode)}`);
-		if (!isText(words)) return fail(`condition ${key} has no text`);
-		if (!Array.isArray(tyres) || tyres.length === 0 || !tyres.every(isText)) {
-			return fail(`condition ${key} names no tyres`);
-		}
-		conditions[key] = { mode, raw: words, tyres: [...tyres] };
-	}
-
-	for (const [key, value] of Object.entries(raw.sources)) {
-		if (!isRecord(value) || !isText(value.label)) return fail(`source ${key} has no label`);
-	}
-
-	const products: Record<string, TyreSizeProduct> = {};
-	let sizes = 0;
-	const conditional = new Set<string>();
-	for (const [code, value] of Object.entries(raw.products)) {
-		if (!isRecord(value)) return fail(`product ${code} is not an object`);
-		if (typeof value.source !== "string" || !Object.hasOwn(raw.sources, value.source)) {
-			return fail(`product ${code} has an unknown source`);
-		}
-		if (!Array.isArray(value.sizes) || value.sizes.length === 0) return fail(`product ${code} has no sizes`);
-		const seen = new Set<string>();
-		const rows: TyreSizeRow[] = [];
-		for (const row of value.sizes) {
-			if (!Array.isArray(row) || row.length !== 3)
-				return fail(`product ${code} has a row that is not a triple`);
-			const [label, rim, conditionKey] = row as unknown[];
-			if (!isText(label) || !isText(rim) || typeof conditionKey !== "string") {
-				return fail(`product ${code} has a malformed row`);
-			}
-			if (label !== label.trim()) return fail(`product ${code}: size ${label} has stray whitespace`);
-			if (conditionKey !== "" && !Object.hasOwn(conditions, conditionKey)) {
-				return fail(`product ${code}: size ${label} names the unknown condition ${conditionKey}`);
-			}
-			if (seen.has(label)) return fail(`product ${code}: size ${label} appears twice`);
-			seen.add(label);
-			if (conditionKey !== "") conditional.add(code);
-			rows.push([label, rim, conditionKey]);
-		}
-		sizes += rows.length;
-		products[code] = { source: value.source, sizes: rows };
-	}
-
-	const counts = raw.counts;
-	if (
-		!isRecord(counts) ||
-		counts.products !== Object.keys(products).length ||
-		counts.sizes !== sizes ||
-		counts.conditions !== Object.keys(conditions).length ||
-		counts.conditional_products !== conditional.size
-	) {
-		return fail("the counts do not match the content");
-	}
-	if (!isRecord(raw.origin) || !isText(raw.self_sha256)) return fail("no origin or seal");
-
-	return raw as unknown as TyreSizeIndex;
+/** The list's own id ("snehove-retaze-20261105"): written on the cart line so a later reader knows which list it was checked against. */
+export function tyreSizeListId(): string {
+	return activeTyreLists().index.id;
 }
 
-const INDEX: TyreSizeIndex = parseTyreSizeIndex(rawIndex);
-
-/** The list's own id ("snehove-retaze-20261105"): written on the cart line so a later reader knows which list it was checked against. */
-export const TYRE_SIZE_LIST_ID: string = INDEX.id;
-
 export function tyreSizeIndex(): TyreSizeIndex {
-	return INDEX;
+	return activeTyreLists().index;
 }
 
 /**
@@ -122,7 +40,8 @@ export function tyreSizeIndex(): TyreSizeIndex {
  */
 export function tyreSizeProduct(code: string | null | undefined): TyreSizeProduct | null {
 	if (typeof code !== "string" || code === "") return null;
-	return Object.hasOwn(INDEX.products, code) ? INDEX.products[code] : null;
+	const { products } = tyreSizeIndex();
+	return Object.hasOwn(products, code) ? products[code] : null;
 }
 
 export function isTyreSizeControlled(code: string | null | undefined): boolean {
