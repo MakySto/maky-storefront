@@ -80,4 +80,18 @@ describe("parseWebhookPayload", () => {
 	it.each([null, undefined, "a string", 42, []])("survives %s", (payload) => {
 		expect(parseWebhookPayload(payload).kind).toBe("unknown");
 	});
+
+	it("carries the event type the subscription selected, for the log", () => {
+		expect(
+			parseWebhookPayload({
+				__typename: "ProductVariantOutOfStock",
+				productVariant: { product: { slug: "n1" } },
+			}),
+		).toMatchObject({ kind: "product", slug: "n1", eventType: "ProductVariantOutOfStock" });
+		expect(parseWebhookPayload({ __typename: "CategoryUpdated", category: { slug: "c" } })).toMatchObject({
+			kind: "category",
+			eventType: "CategoryUpdated",
+		});
+		expect(parseWebhookPayload({ product: { slug: "n1" } })).not.toHaveProperty("eventType");
+	});
 });

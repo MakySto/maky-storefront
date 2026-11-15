@@ -11,6 +11,7 @@
 #   maky-ec2-ssm-role (this server)  may READ  /maky/storefront/*
 #   maky-cms-role     (CMS server)   may WRITE /maky/storefront/cms/* only
 #   /maky/storefront/saleor/b2b-app-token (2026-11): put by an operator by hand (Saleor Dashboard → AWS console)
+#   /maky/storefront/saleor/webhook-secret (2026-11): put by an operator by hand (AWS console)
 #
 # Only the parameters named in MAPPINGS below are copied, each onto exactly one variable. A
 # parameter the CMS is allowed to write can therefore never override any other setting of the
@@ -39,6 +40,12 @@ MAPPINGS=(
 	# maky-cms-role. A missing parameter is skipped like any other, so a green sync proves nothing about it:
 	# the running process says whether it holds a working token (GET /api/internal/b2b-readiness).
 	"/maky/storefront/saleor/b2b-app-token SALEOR_B2B_APP_TOKEN"
+	# The secret key of the Saleor webhook that calls POST /api/revalidate (HMAC-SHA256 of the body in `Saleor-Signature`,
+	# checked by src/lib/api-auth.ts). Generated and written by an operator in the AWS console, never by maky-cms-role;
+	# the same value is entered in the webhook in Saleor. Without it every signed call from Saleor is answered 401. A missing
+	# parameter is skipped like any other, so a green sync proves nothing about it: check the variable is set in .env
+	# (set/empty, never the value) and that the log has no `[Revalidate] Invalid signature or secret` after the first delivery.
+	"/maky/storefront/saleor/webhook-secret SALEOR_WEBHOOK_SECRET"
 )
 
 CHECK=0

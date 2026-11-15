@@ -1,5 +1,5 @@
 import { revalidatePath, revalidateTag } from "next/cache";
-import { NextRequest } from "next/server";
+import { NextRequest, after } from "next/server";
 import { CACHE_PROFILES, buildTag, buildPath } from "@/lib/cache-manifest";
 import { extractBearerToken, verifySecret, verifyWebhookSignature } from "@/lib/api-auth";
 import { getLocaleFromChannel } from "@/config/locale";
@@ -12,6 +12,7 @@ import { refreshLiveCategories } from "@/lib/live-categories";
 import { markSitemapStale } from "@/lib/seo/sitemap-snapshot";
 import { expireCategoryAnswers } from "@/lib/listing/category-invalidation";
 import { invalidateKept } from "@/lib/cache/kept-read";
+import { abandonFlush, flushThrottled, submitThrottled } from "@/lib/revalidate-throttle";
 
 /**
  * Webhook endpoint for cache invalidation.
@@ -143,6 +144,31 @@ function revalidateProductMisses(channel: string, locale: string, tags: string[]
 	tags.push(tag);
 }
 
+/**
+ * Runs `work` through the throttle (`@/lib/revalidate-throttle`): now, or once at the end of the window
+ * for every event that arrived inside it. The flush runs in `after()`, which keeps the request store the
+ * revalidation calls need; its tags and paths are not in this request's response (they were not expired
+ * by it), and the count of deferred units goes to the log.
+ */
+function throttledRevalidation(key: string, work: () => void): "ran" | "deferred" {
+	const submitted = submitThrottled(key, work);
+	if (submitted.outcome === "ran") return "ran";
+	if (submitted.flushInMs !== null) {
+		const wait = submitted.flushInMs + 50;
+		try {
+			after(async () => {
+				await new Promise((resolve) => setTimeout(resolve, wait));
+				flushThrottled(key);
+			});
+		} catch {
+			// No request scope to hold the flush (a test, or a Next that refuses). The work stays pending: the next
+			// event past the window carries it, and the entries expire on their own lifetime otherwise.
+			abandonFlush(key);
+		}
+	}
+	return "deferred";
+}
+
 // ============================================================================
 // POST — Saleor webhook
 // ============================================================================
@@ -171,6 +197,8 @@ export async function POST(request: NextRequest) {
 
 		const revalidatedPaths: string[] = [];
 		const revalidatedTags: string[] = [];
+		/** Units of market-wide work this event left to the end of the throttle window. */
+		let deferred = 0;
 
 		const channels = targetChannels(resource.channel);
 		if (!channels) {
@@ -200,8 +228,27 @@ export async function POST(request: NextRequest) {
 			// with the URL that replaced it.
 			const slugs = [slug, previousSlug].filter((value): value is string => Boolean(value));
 
+			// What one event expires for ONE record goes out at once; what it expires for the whole market (the
+			// product list, the category's listing, the offers, the homepage, the sitemap data) goes through the
+			// throttle for a product event, because a catalogue write is hundreds of events
+			// (`@/lib/revalidate-throttle`). The order of the calls is the order of the answer CFM checks.
+			const expireProductList = () => {
+				revalidatePath(`/${channel}/products`);
+				revalidatedPaths.push(`/${channel}/products`);
+			};
+			/** The homepage carries listing modules built from the same catalogue. */
+			const expireHomeAndSitemap = () => {
+				revalidatePath(`/${channel}`);
+				revalidatedPaths.push(`/${channel}`);
+				// This channel's sitemap shards and the index entry counting them. The Saleor walk behind
+				// them is tagged per channel, so a Czech event re-reads the Czech catalogue only.
+				const sitemapTag = buildTag(CACHE_PROFILES.sitemap, { channel, locale });
+				revalidateTag(sitemapTag, IMMEDIATE);
+				revalidatedTags.push(sitemapTag);
+			};
+
 			switch (kind) {
-				case "product":
+				case "product": {
 					for (const value of slugs) {
 						revalidateProfile(
 							CACHE_PROFILES.products,
@@ -212,23 +259,29 @@ export async function POST(request: NextRequest) {
 							revalidatedPaths,
 						);
 					}
-					revalidatePath(`/${channel}/products`);
-					revalidatedPaths.push(`/${channel}/products`);
+					if (throttledRevalidation(`list:${channel}`, expireProductList) === "deferred") deferred++;
 					if (categorySlug) {
-						revalidateCategory(channel, locale, categorySlug, revalidatedTags, revalidatedPaths, "stale");
+						const base = categoryBaseSlug(channel, categorySlug);
+						const category = () =>
+							revalidateCategory(channel, locale, categorySlug, revalidatedTags, revalidatedPaths, "stale");
+						if (throttledRevalidation(`category:${channel}:${base}`, category) === "deferred") deferred++;
 					}
-					// Price, publication and purchasability all show on the generation pages
-					// too, and those read the product outside any `"use cache"` entry.
-					revalidateOffers(channel, locale, revalidatedTags);
-					revalidateProductMisses(channel, locale, revalidatedTags);
+					// Price, publication and purchasability all show on the generation pages too, and those
+					// read the product outside any `"use cache"` entry.
+					const rest = () => {
+						revalidateOffers(channel, locale, revalidatedTags);
+						revalidateProductMisses(channel, locale, revalidatedTags);
+						expireHomeAndSitemap();
+					};
+					if (throttledRevalidation(`market:${channel}`, rest) === "deferred") deferred++;
 					break;
+				}
 
 				case "category":
 					for (const value of slugs) {
 						revalidateCategory(channel, locale, value, revalidatedTags, revalidatedPaths, "drop");
 					}
-					revalidatePath(`/${channel}/products`);
-					revalidatedPaths.push(`/${channel}/products`);
+					expireProductList();
 					// The offer prints the category's name, and refuses a product whose
 					// category has no translation — so a category translation landing or
 					// changing decides what a generation page may list.
@@ -236,6 +289,7 @@ export async function POST(request: NextRequest) {
 					// The same refusal decides whether a PDP exists: a product waiting only
 					// for its category's translation was cached as not-found.
 					revalidateProductMisses(channel, locale, revalidatedTags);
+					expireHomeAndSitemap();
 					break;
 
 				case "collection":
@@ -249,28 +303,23 @@ export async function POST(request: NextRequest) {
 							revalidatedPaths,
 						);
 					}
+					expireHomeAndSitemap();
 					break;
 
-				default:
-					revalidatePath(`/${channel}/products`);
-					revalidatedPaths.push(`/${channel}/products`);
+				default: {
 					// An event we cannot name — an attribute or attribute-value translation,
 					// for instance — can still be the last field a product was missing.
-					revalidateProductMisses(channel, locale, revalidatedTags);
+					const unnamed = () => {
+						revalidateProductMisses(channel, locale, revalidatedTags);
+						expireHomeAndSitemap();
+					};
+					if (throttledRevalidation(`list:${channel}`, expireProductList) === "deferred") deferred++;
+					if (throttledRevalidation(`market:${channel}`, unnamed) === "deferred") deferred++;
+				}
 			}
 
-			// The homepage carries listing modules built from the same catalogue.
-			revalidatePath(`/${channel}`);
-			revalidatedPaths.push(`/${channel}`);
-
-			// This channel's sitemap shards and the index entry counting them. The Saleor walk behind
-			// them is tagged per channel, so a Czech event re-reads the Czech catalogue only.
-			const sitemapTag = buildTag(CACHE_PROFILES.sitemap, { channel, locale });
-			revalidateTag(sitemapTag, IMMEDIATE);
-			revalidatedTags.push(sitemapTag);
-			// The product list the shards serve is kept in this process (`sitemap-snapshot.ts`), not in
-			// the data cache the tag above reaches. This marks it due for a rebuild in the background;
-			// the shards go on answering from the kept list until the new one is complete.
+			// The sitemap's kept product list is marked due on every event, throttled or not: it is a timestamp,
+			// and the rebuild it asks for has its own spacing (`MIN_REFRESH_AFTER_EVENT_MS`).
 			markSitemapStale(channel);
 		}
 
@@ -310,6 +359,8 @@ export async function POST(request: NextRequest) {
 			paths: sanitizedPaths,
 			tags: sanitizedTags,
 			existence,
+			...(resource.eventType ? { event: resource.eventType.replace(/[\r\n]/g, "") } : {}),
+			...(deferred > 0 ? { deferred } : {}),
 		});
 		return Response.json({ paths: revalidatedPaths, tags: revalidatedTags, success: true });
 	} catch (error) {

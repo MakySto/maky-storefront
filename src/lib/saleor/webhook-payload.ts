@@ -21,6 +21,11 @@ interface WebhookResource {
 	 * still have to be refreshed even though no detail page can be targeted.
 	 */
 	unnamedProduct?: boolean;
+	/**
+	 * The GraphQL type of the event (`ProductUpdated`, `ProductVariantOutOfStock`, …), when the subscription
+	 * selected `__typename`. Absent when it did not, and then nothing is known of what changed.
+	 */
+	eventType?: string;
 }
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
@@ -57,6 +62,9 @@ const channelOf = (node: Record<string, unknown> | null): string | undefined =>
 export function parseWebhookPayload(payload: unknown): WebhookResource {
 	const data = asRecord(payload);
 	if (!data) return { kind: "unknown" };
+	const eventType = asString(data.__typename);
+	const withType = (resource: WebhookResource): WebhookResource =>
+		eventType ? { ...resource, eventType } : resource;
 
 	// A translation event wraps the translated resource; the interesting slug is
 	// the base one, since that is what the cache key is built from.
@@ -71,41 +79,41 @@ export function parseWebhookPayload(payload: unknown): WebhookResource {
 
 	if (productNode) {
 		const category = asRecord(productNode.category);
-		return {
+		return withType({
 			kind: "product",
 			slug: slugOf(productNode),
 			previousSlug: previousSlugOf(productNode, data, translation),
 			channel: channelOf(productNode) ?? channelOf(data),
 			categorySlug: slugOf(category),
-		};
+		});
 	}
 
 	// A media event whose subscription selected only `productId`. We cannot name
 	// the page, but pretending nothing happened is worse than refreshing the
 	// listing and the sitemap.
 	if (media) {
-		return { kind: "product", unnamedProduct: true, channel: channelOf(data) };
+		return withType({ kind: "product", unnamedProduct: true, channel: channelOf(data) });
 	}
 
 	const categoryNode = asRecord(data.category) ?? asRecord(translation?.category);
 	if (categoryNode) {
-		return {
+		return withType({
 			kind: "category",
 			slug: slugOf(categoryNode),
 			previousSlug: previousSlugOf(categoryNode, data, translation),
 			channel: channelOf(data),
-		};
+		});
 	}
 
 	const collectionNode = asRecord(data.collection) ?? asRecord(translation?.collection);
 	if (collectionNode) {
-		return {
+		return withType({
 			kind: "collection",
 			slug: slugOf(collectionNode),
 			previousSlug: previousSlugOf(collectionNode, data, translation),
 			channel: channelOf(collectionNode) ?? channelOf(data),
-		};
+		});
 	}
 
-	return { kind: "unknown" };
+	return withType({ kind: "unknown" });
 }
