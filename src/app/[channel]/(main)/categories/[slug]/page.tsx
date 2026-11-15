@@ -65,6 +65,9 @@ import {
 	tyreFilterSize,
 } from "@/lib/tyre-size/plp-tyre-filter";
 import { CatalogMakeIndex } from "@/ui/components/catalog/make-index";
+import { TyreFamilyDirectory } from "@/ui/components/fitment/tyre-family-directory";
+import { TyreSizeDirectory } from "@/ui/components/fitment/tyre-size-directory";
+import { isTyreShelf } from "@/config/tyre-shelves";
 import { HeroBenefits } from "@/ui/components/homepage/hero-benefits";
 import { STOREFRONT_CATEGORIES, categoryFitmentKind } from "@/config/categories";
 import { CategoryPageClient } from "./client";
@@ -423,6 +426,13 @@ async function CategoryContent({
 					}
 				/>
 			</Suspense>
+			{/* The snow-chain shelf's way to its pages by tyre size and by rim. Its own boundary: it asks what the
+			    channel sells, and the listing must never wait for it. Nothing on any other shelf. */}
+			{isTyreShelf(baseSlug) ? (
+				<Suspense fallback={null}>
+					<TyreSizeDirectory channel={params.channel} />
+				</Suspense>
+			) : null}
 			{/* The article's sections: below the listing, server-rendered in full, no interaction needed. */}
 			{article && article.body.length > 0 ? (
 				<section
@@ -724,6 +734,13 @@ async function CategoryProducts({
 					searchParams={searchParams}
 				/>
 			</div>
+			{/* The snow-chain shelf by model, before a shopper has said anything: no tyre size, and the listing as it
+			    opens (no page, order or filter of their own). Its own boundary, so the products never wait for it. */}
+			{tyreFilter.state === "no-size" && isUntouchedListing(searchParams) ? (
+				<Suspense fallback={null}>
+					<TyreFamilyDirectory channel={params.channel} />
+				</Suspense>
+			) : null}
 			<CategoryPageClient
 				products={productCards}
 				totalCount={listing.totalCount}
@@ -753,6 +770,12 @@ async function CategoryProducts({
 			/>
 		</>
 	);
+}
+
+/** The listing exactly as it opens: the shopper has not paged, ordered or filtered it. */
+const LISTING_STATE_PARAMS = ["cursor", "direction", "sort", "price", "brand", "volume", "colors", "sizes"];
+function isUntouchedListing(searchParams: Record<string, string | string[] | undefined>): boolean {
+	return LISTING_STATE_PARAMS.every((name) => searchParams[name] === undefined);
 }
 
 function PageSkeleton() {

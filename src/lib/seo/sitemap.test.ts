@@ -1,14 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { executePublicGraphQL, loadCatalogView, stockedBrandSlugs } = vi.hoisted(() => ({
+const { executePublicGraphQL, loadCatalogView, stockedBrandSlugs, getShelfCodes } = vi.hoisted(() => ({
 	executePublicGraphQL: vi.fn(),
 	loadCatalogView: vi.fn(),
 	stockedBrandSlugs: vi.fn(),
+	getShelfCodes: vi.fn(),
 }));
 
 vi.mock("@/lib/graphql", () => ({ executePublicGraphQL }));
 /** The makers a channel sells are `lib/brands/catalog.ts`' business and have a test of their own. */
 vi.mock("@/lib/brands/catalog", () => ({ stockedBrandSlugs }));
+/** Which codes the snow-chain shelf sells is `lib/listing/shelf-codes.ts`' business; the sizes are the sealed list's own. */
+vi.mock("@/lib/listing/shelf-codes", () => ({ getShelfCodes }));
 /**
  * Only the LOADER is mocked. `catalogServesMarket` stays real, because the
  * language gate is one of the things under test here and a hand-written copy of it
@@ -186,6 +189,9 @@ beforeEach(() => {
 	// No maker unless a test names some: the pages shard of most tests is the one it was before the brand pages.
 	stockedBrandSlugs.mockReset();
 	stockedBrandSlugs.mockResolvedValue(new Set<string>());
+	// The snow-chain shelf sells nothing unless a test stocks it.
+	getShelfCodes.mockReset();
+	getShelfCodes.mockResolvedValue([]);
 	// The sitemap asks the live category list to be current. With no Saleor endpoint that is a no-op,
 	// so no test here reaches for a real one because the shell it runs in happens to have one set;
 	// the tests of categories created in Saleor install a fake.
@@ -240,6 +246,77 @@ describe("the whole catalogue, or an error", () => {
 			`${BASE}/sk/categories/nosice-bicyklov`,
 		);
 		expect(urls).toContain(`${BASE}/sk/kontakt`);
+	});
+});
+
+describe("the snow-chain shelf's pages by tyre size", () => {
+	const pagesShard = async (id = "sk-pages-1") =>
+		(await sitemapShardEntries(id))?.map((entry) => entry.url) ?? [];
+	const stockedShelf = {
+		ok: true as const,
+		data: {
+			categories: {
+				edges: [
+					{ node: { slug: "nosice-bicyklov", products: { edges: [{ node: { id: "p1" } }] } } },
+					{ node: { slug: "snehove-retaze", products: { edges: [{ node: { id: "p2" } }] } } },
+				],
+				pageInfo: { hasNextPage: false, endCursor: "offset:2" },
+			},
+		},
+	};
+	const sells = (...codes: string[]) =>
+		getShelfCodes.mockResolvedValue(codes.map((code) => ({ code, productId: `gid-${code}`, slug: code })));
+
+	it("lists a rim and the sizes at least two products on sale fit, below the shelf's own address", async () => {
+		serve(
+			(after) => productPage(after),
+			() => stockedShelf,
+		);
+		sells("N16075", "N17143");
+
+		const urls = await pagesShard();
+
+		expect(urls).toContain(`${BASE}/sk/snehove-retaze`);
+		expect(urls).toContain(`${BASE}/sk/snehove-retaze/r16`);
+		expect(urls).toContain(`${BASE}/sk/snehove-retaze/205-60-r16`);
+		expect(getShelfCodes).toHaveBeenCalledWith("snehove-retaze", "sk-eur");
+		const tyrePages = urls.filter((url) => url.startsWith(`${BASE}/sk/snehove-retaze/`));
+		expect(new Set(tyrePages).size).toBe(tyrePages.length);
+	});
+
+	it("lists none while only one product fits: that page is not indexed, so it is not advertised", async () => {
+		serve(
+			(after) => productPage(after),
+			() => stockedShelf,
+		);
+		sells("N16075");
+
+		expect((await pagesShard()).filter((url) => url.includes("/snehove-retaze/"))).toEqual([]);
+	});
+
+	it("lists none where the shelf itself is not a page of the market, and does not ask what it sells", async () => {
+		serve((after) => productPage(after));
+		sells("N16075", "N17143");
+
+		expect((await pagesShard()).filter((url) => url.includes("/snehove-retaze"))).toEqual([]);
+		expect(getShelfCodes).not.toHaveBeenCalled();
+	});
+
+	it("is shorter, and not an error, while the shelf's products cannot be read", async () => {
+		serve(
+			(after) => productPage(after),
+			() => stockedShelf,
+		);
+		getShelfCodes.mockRejectedValue(new Error("[Listing] product codes unavailable"));
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		const urls = await pagesShard();
+
+		expect(urls).toContain(`${BASE}/sk`);
+		expect(urls).toContain(`${BASE}/sk/snehove-retaze`);
+		expect(urls.filter((url) => url.includes("/snehove-retaze/"))).toEqual([]);
+		expect(warn).toHaveBeenCalledWith(expect.stringContaining("tyre-size pages left out of the pages shard"));
+		warn.mockRestore();
 	});
 });
 
