@@ -134,6 +134,15 @@ export async function register(): Promise<void> {
 		const { memoryLogSeconds, startMemoryLog } = await import("./lib/memory-log");
 		const seconds = memoryLogSeconds(process.env.MAKY_MEMORY_LOG_SECONDS);
 		if (seconds > 0) startMemoryLog(seconds);
+
+		// What this process asks Saleor, by operation, once a minute (src/lib/saleor-traffic.ts). Off with
+		// MAKY_SALEOR_TRAFFIC_LOG_SECONDS=0; an unreadable value is the default, not a flood.
+		const trafficRaw = Number(process.env.MAKY_SALEOR_TRAFFIC_LOG_SECONDS ?? "60");
+		const trafficSeconds = Number.isInteger(trafficRaw) && trafficRaw >= 0 ? trafficRaw : 60;
+		if (trafficSeconds > 0) {
+			const { startSaleorTrafficLog } = await import("./lib/saleor-traffic");
+			startSaleorTrafficLog(Math.max(10, Math.min(3600, trafficSeconds)));
+		}
 	}
 
 	// The category slugs the proxy tells a category from a product with: the build's floor plus

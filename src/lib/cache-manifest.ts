@@ -119,6 +119,20 @@ const profiles = {
 
 export const CACHE_PROFILES = profiles;
 
+/**
+ * The life of the entries a category PAGE reads (its category, price bands, filters, row of sub-categories,
+ * shelf codes, hreflang counterparts): refreshed at most every 5 minutes, where the `minutes` profile did it
+ * every minute. Owner's choice, 2026-11-15, after the Saleor database was found saturated by the counts these
+ * entries repeat across 12 markets (`COUNT(*)` over 26 000 products is its costliest query). A change Saleor
+ * announces does not wait: the webhook expires the tag at once (`/api/revalidate`), and what the process
+ * keeps under it goes with it (`@/lib/listing/category-invalidation`). Product pages, the cart and the
+ * homepage showcase keep their own lives.
+ *
+ * `stale` and `expire` are what `minutes` has (Next's shell floor of 300 s, and an hour); only `revalidate`
+ * differs. `categories.cacheProfile` stays `minutes` for the manifest the dashboard reads.
+ */
+export const CATEGORY_PAGE_LIFE = { stale: 300, revalidate: 300, expire: 3600 } as const;
+
 // ============================================================================
 // Helpers for "use cache" functions
 // ============================================================================
@@ -131,6 +145,12 @@ export const CACHE_PROFILES = profiles;
  * type, so we cast through `string`. This is safe because CacheLifeProfile
  * only contains valid Next.js built-in profile names.
  */
+/** `applyCacheProfile` for the entries a category page reads: `CATEGORY_PAGE_LIFE` and the category tag. */
+export function applyCategoryPageCache(identity: CacheIdentity) {
+	cacheLife(CATEGORY_PAGE_LIFE);
+	cacheTag(buildTag(profiles.categories, identity));
+}
+
 export function applyCacheProfile(profile: CacheProfile, identity: CacheIdentity) {
 	(cacheLife as (p: string) => void)(profile.cacheProfile);
 	cacheTag(buildTag(profile, identity));

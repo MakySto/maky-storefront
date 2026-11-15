@@ -10,6 +10,8 @@ import { productMissTagFor } from "@/lib/saleor/product-cache-tags";
 import { forgetProductExistence } from "@/lib/route-existence";
 import { refreshLiveCategories } from "@/lib/live-categories";
 import { markSitemapStale } from "@/lib/seo/sitemap-snapshot";
+import { expireCategoryAnswers } from "@/lib/listing/category-invalidation";
+import { invalidateKept } from "@/lib/cache/kept-read";
 
 /**
  * Webhook endpoint for cache invalidation.
@@ -97,8 +99,18 @@ function isKnownChannel(channel: string): boolean {
  * (`/cz-czk/categories/stresni-nosice`, served publicly as `/cz/stresni-nosice`). CFM may send
  * either spelling, so both are resolved through `config/category-routes.ts` rather than trusted.
  */
-function revalidateCategory(channel: string, locale: string, slug: string, tags: string[], paths: string[]) {
+function revalidateCategory(
+	channel: string,
+	locale: string,
+	slug: string,
+	tags: string[],
+	paths: string[],
+	/** `drop`: the category itself changed. `stale`: a product in it did (`expireCategoryAnswers`). */
+	kept: "drop" | "stale",
+) {
 	const base = categoryBaseSlug(channel, slug);
+	// The answers the process keeps under the entry the tag expires (`@/lib/cache/kept-read`).
+	expireCategoryAnswers(channel, base, kept);
 	const segment = categorySegment(channel, base);
 	revalidateProfile(CACHE_PROFILES.categories, channel, locale, base, tags, paths);
 	if (segment !== base) {
@@ -203,7 +215,7 @@ export async function POST(request: NextRequest) {
 					revalidatePath(`/${channel}/products`);
 					revalidatedPaths.push(`/${channel}/products`);
 					if (categorySlug) {
-						revalidateCategory(channel, locale, categorySlug, revalidatedTags, revalidatedPaths);
+						revalidateCategory(channel, locale, categorySlug, revalidatedTags, revalidatedPaths, "stale");
 					}
 					// Price, publication and purchasability all show on the generation pages
 					// too, and those read the product outside any `"use cache"` entry.
@@ -213,7 +225,7 @@ export async function POST(request: NextRequest) {
 
 				case "category":
 					for (const value of slugs) {
-						revalidateCategory(channel, locale, value, revalidatedTags, revalidatedPaths);
+						revalidateCategory(channel, locale, value, revalidatedTags, revalidatedPaths, "drop");
 					}
 					revalidatePath(`/${channel}/products`);
 					revalidatedPaths.push(`/${channel}/products`);
@@ -351,6 +363,8 @@ export async function GET(request: NextRequest) {
 	if (all === "1" || all === "true") {
 		revalidatePath("/", "layout");
 		revalidatedPaths.push("/ (all routes)");
+		// Everything the process keeps under those entries goes too (`@/lib/cache/kept-read`).
+		invalidateKept(() => true, "drop");
 
 		const fixedTagProfiles = Object.values(CACHE_PROFILES).filter((p) => !p.tagPattern.includes("{"));
 		for (const p of fixedTagProfiles) {
@@ -393,6 +407,7 @@ export async function GET(request: NextRequest) {
 			return Response.json({ error: "locale does not belong to channel" }, { status: 400 });
 		}
 		revalidateProfile(profile, channel, locale, slug, revalidatedTags, revalidatedPaths);
+		if (resource === "category") expireCategoryAnswers(channel, categoryBaseSlug(channel, slug), "drop");
 	}
 
 	if (path) {
@@ -413,6 +428,9 @@ export async function GET(request: NextRequest) {
 		);
 		revalidateTag(tag, profile);
 		revalidatedTags.push(tag);
+		// `category:{channel}:{locale}:{slug}`: what is kept under that entry goes with it.
+		const [kind, tagChannel, , tagSlug] = tag.split(":");
+		if (kind === "category" && tagChannel && tagSlug) expireCategoryAnswers(tagChannel, tagSlug, "drop");
 	}
 
 	console.log("[Revalidate] Done:", { paths: revalidatedPaths, tags: revalidatedTags });

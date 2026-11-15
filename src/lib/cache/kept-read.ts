@@ -1,5 +1,5 @@
 import { runDetached } from "@/lib/async/detached";
-import { createExpiringMemo } from "./expiring-memo";
+import { createExpiringMemo, type ExpiringMemo } from "./expiring-memo";
 
 /**
  * A slow Saleor read that the visitor never waits for twice.
@@ -45,8 +45,12 @@ import { createExpiringMemo } from "./expiring-memo";
 export interface KeptReadOptions<Arg, Value> {
 	/** For the log lines and the "still loading" message. */
 	readonly name: string;
-	/** How long an answer is served without asking again. */
-	readonly freshMs: number;
+	/**
+	 * How long an answer is served without asking again. A function decides per answer, and 0 means "do not
+	 * keep this one": it is neither served fresh nor stale, and the next read asks again (for an answer that
+	 * must never outlive the moment, such as "this category is empty", which ends on its own).
+	 */
+	readonly freshMs: number | ((value: Value) => number);
 	/** How long a key is left alone after a failed load. */
 	readonly pauseMs: number;
 	/** How long a load may take in all. Nobody is made to wait for all of it. */
@@ -74,12 +78,69 @@ const stamp = () => new Date().toISOString();
 /** The key joins its parts with a NUL; the log shows a slash. */
 const shown = (key: string) => key.replaceAll("\u0000", "/");
 
+/**
+ * What one kept read holds. It lives on `globalThis`, by the name of the read: the pages, the route handlers
+ * and the instrumentation are separate module graphs (see `@/lib/async/detached`), each with its own copy of
+ * every module, and the boot warm-up and a revalidation webhook must reach the SAME answers a page reads.
+ */
+interface KeptState {
+	readonly answers: ExpiringMemo<{ readonly value: unknown; readonly keep: boolean }>;
+	readonly paused: ExpiringMemo<Error>;
+	readonly loading: Map<string, Promise<unknown>>;
+}
+
+const STATES = Symbol.for("maky.kept-read.states");
+const statesOf = (): Map<string, KeptState> => {
+	const scope = globalThis as typeof globalThis & { [STATES]?: Map<string, KeptState> };
+	return (scope[STATES] ??= new Map());
+};
+
+/**
+ * Takes the answers of the reads that `which` names out of use, because what they describe has changed
+ * (a Saleor webhook, `/api/revalidate`). Callable from any bundle.
+ *
+ * - `drop`: the answer is gone, and the next read waits for a new one, as it did before answers were kept.
+ *   For a change that must show at once (the category itself changed).
+ * - `stale`: the answer stays as the fallback and is served ONE more time while a new one is read behind it.
+ *   For the drift a product event causes (a count, a price band), where nobody is hurt by one old answer.
+ *
+ * Returns how many answers it touched.
+ */
+export function invalidateKept(
+	which: (name: string, key: string) => boolean,
+	mode: "drop" | "stale",
+): number {
+	let touched = 0;
+	for (const [name, state] of statesOf()) {
+		for (const key of state.answers.keys()) {
+			if (!which(name, key)) continue;
+			if (mode === "drop") state.answers.delete(key);
+			else state.answers.expire(key);
+			state.paused.delete(key);
+			touched += 1;
+		}
+	}
+	return touched;
+}
+
 export function createKeptRead<Arg, Value>(options: KeptReadOptions<Arg, Value>): KeptRead<Arg, Value> {
+	const states = statesOf();
+	let state = states.get(options.name);
+	if (!state) {
+		state = { answers: createExpiringMemo(), paused: createExpiringMemo(), loading: new Map() };
+		states.set(options.name, state);
+	}
 	// Boxed, so that `null` (a category with no price bands) is an answer and `undefined` is "none held".
-	const answers = createExpiringMemo<{ readonly value: Value }>();
+	// `keep` is false for an answer `freshMs` gave no life: it is held for a moment only so that it REPLACES
+	// the earlier answer, which must not be served stale for an answer that has since been given.
+	const answers = state.answers as ExpiringMemo<{ readonly value: Value; readonly keep: boolean }>;
+	const heldAnswer = (key: string) => {
+		const box = answers.getStale(key);
+		return box?.keep ? box : undefined;
+	};
 	/** A key whose last load failed: present while it is left alone. */
-	const paused = createExpiringMemo<Error>();
-	const loading = new Map<string, Promise<Value>>();
+	const paused = state.paused;
+	const loading = state.loading as Map<string, Promise<Value>>;
 
 	/** Joins the load running for `key`, or starts one, or says the key is being left alone. */
 	function load(key: string, arg: Arg): Promise<Value> {
@@ -91,7 +152,8 @@ export function createKeptRead<Arg, Value>(options: KeptReadOptions<Arg, Value>)
 		const started = performance.now();
 		const job = runDetached(() => options.load(arg, AbortSignal.timeout(options.loadDeadlineMs)))
 			.then((value) => {
-				answers.set(key, { value }, options.freshMs);
+				const fresh = typeof options.freshMs === "function" ? options.freshMs(value) : options.freshMs;
+				answers.set(key, { value, keep: fresh > 0 }, fresh > 0 ? fresh : 1);
 				const took = Math.round(performance.now() - started);
 				// The server's log carries no time and no duration of a read that ran out; these two lines do.
 				if (took >= SLOW_LOAD_MS) {
@@ -106,7 +168,7 @@ export function createKeptRead<Arg, Value>(options: KeptReadOptions<Arg, Value>)
 				// One line per failed load (a key is left alone after it), with the answer the visitors get meanwhile.
 				console.warn(
 					`${stamp()} [${options.name}] ${shown(key)} failed after ${took} ms` +
-						(answers.getStale(key) ? ", the earlier answer stays: " : ", no answer held: ") +
+						(heldAnswer(key) ? ", the earlier answer stays: " : ", no answer held: ") +
 						failure.message,
 				);
 				throw failure;
@@ -124,9 +186,9 @@ export function createKeptRead<Arg, Value>(options: KeptReadOptions<Arg, Value>)
 	return {
 		async read(key, arg, waitMs) {
 			const fresh = answers.get(key);
-			if (fresh) return fresh.value;
+			if (fresh?.keep) return fresh.value;
 
-			const stale = answers.getStale(key);
+			const stale = heldAnswer(key);
 			if (stale) {
 				// Behind the answer; a pause or a failure is logged where it happens, once, not per visit.
 				load(key, arg).catch(() => undefined);
@@ -147,12 +209,12 @@ export function createKeptRead<Arg, Value>(options: KeptReadOptions<Arg, Value>)
 		},
 
 		async prewarm(key, arg) {
-			if (answers.get(key)) return true;
+			if (answers.get(key)?.keep) return true;
 			try {
 				await load(key, arg);
 				return true;
 			} catch {
-				return answers.getStale(key) !== undefined;
+				return heldAnswer(key) !== undefined;
 			}
 		},
 
@@ -162,4 +224,13 @@ export function createKeptRead<Arg, Value>(options: KeptReadOptions<Arg, Value>)
 			loading.clear();
 		},
 	};
+}
+
+/** For tests: every kept read in the process starts empty. */
+export function __forgetAllKept(): void {
+	for (const state of statesOf().values()) {
+		state.answers.clear();
+		state.paused.clear();
+		state.loading.clear();
+	}
 }

@@ -3,7 +3,7 @@ import { CategoryFacetsDocument, type CategoryFacetsQuery } from "@/gql/graphql"
 import { getLocaleFromChannel } from "@/config/locale";
 import { createKeptRead } from "@/lib/cache/kept-read";
 import { answered, settle, valueOrThrow, type CachedRead } from "@/lib/cache-fault";
-import { CACHE_PROFILES, buildTag } from "@/lib/cache-manifest";
+import { CACHE_PROFILES, CATEGORY_PAGE_LIFE, buildTag } from "@/lib/cache-manifest";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { VOLUME_BANDS, bandOfVolume } from "./facet-params";
 import { READ_ALL_LIMIT } from "./category-prices";
@@ -129,7 +129,7 @@ async function readCategoryFacets(
 ): Promise<CachedRead<CategoryFacets | null>> {
 	"use cache";
 	const locale = getLocaleFromChannel(channel);
-	cacheLife(CACHE_PROFILES.categories.cacheProfile);
+	cacheLife(CATEGORY_PAGE_LIFE);
 	cacheTag(buildTag(CACHE_PROFILES.categories, { channel, locale, slug: baseSlug }));
 
 	if (large) return answered(null);
@@ -141,9 +141,10 @@ async function computeCategoryFacets(
 	channel: string,
 	signal: AbortSignal,
 ): Promise<CategoryFacets | null> {
-	const read = async (after: string | null) => {
+	// Only the first page selects the count: Saleor counts the whole category for each page that does.
+	const read = async (after: string | null, withTotal: boolean) => {
 		const result = await executePublicGraphQL(CategoryFacetsDocument, {
-			variables: { slug: baseSlug, channel, first: PAGE, after },
+			variables: { slug: baseSlug, channel, first: PAGE, after, withTotal },
 			revalidate: 0,
 			retry: false,
 			signal,
@@ -152,11 +153,11 @@ async function computeCategoryFacets(
 		return result.data.category?.products ?? null;
 	};
 
-	let page = await read(null);
+	let page = await read(null, true);
 	if (!page || (page.totalCount ?? 0) > READ_ALL_LIMIT) return null;
 	const nodes: Node[] = page.edges.map(({ node }) => node);
 	while (page.pageInfo.hasNextPage) {
-		const next = await read(page.pageInfo.endCursor ?? null);
+		const next = await read(page.pageInfo.endCursor ?? null, false);
 		if (!next) break;
 		nodes.push(...next.edges.map(({ node }) => node));
 		page = next;

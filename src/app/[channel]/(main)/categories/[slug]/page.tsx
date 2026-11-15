@@ -20,11 +20,10 @@ import {
 	cachedOutcome,
 	catchUpstreamError,
 	logUpstreamError,
-	toOutcome,
 	upstreamError,
 	type ResourceOutcome,
 } from "@/lib/saleor/resource-outcome";
-import { CACHE_PROFILES, applyCacheProfile } from "@/lib/cache-manifest";
+import { applyCategoryPageCache } from "@/lib/cache-manifest";
 import { rememberBriefly } from "@/lib/cache-fault";
 import { getPaginatedListVariables } from "@/lib/utils";
 import { ProductsPerPage } from "@/app/config";
@@ -80,6 +79,7 @@ import { lookupBySlug } from "@/lib/saleor/slug-lookup";
 import { getCategoryMarketPresence } from "@/lib/saleor/category-presence";
 import { categoryCounterparts } from "@/lib/seo/category-counterparts";
 import { getCategoryNavigation } from "@/lib/listing/category-navigation";
+import { readCategoryOutcome } from "@/lib/listing/category-outcome";
 import { READ_ALL_LIMIT, getCategoryPriceBands } from "@/lib/listing/category-prices";
 import { getCategoryFacets } from "@/lib/listing/category-facets";
 import { parseBrandParam, volumeBand, volumeRange } from "@/lib/listing/facet-params";
@@ -137,30 +137,13 @@ async function getCategoryOutcomeCached(
 	locale: string,
 ): Promise<ResourceOutcome<Category>> {
 	"use cache";
-	applyCacheProfile(CACHE_PROFILES.categories, { channel, locale, slug });
-	const lang = getLocaleConfigByLocale(locale).graphqlLanguageCode;
+	applyCategoryPageCache({ channel, locale, slug });
 
 	// A fault is remembered for seconds only (`cachedOutcome`): an outage must not be remembered as
 	// "this category does not exist" for up to an hour, nor thrown out of the cache, where it
-	// would fail the prerender that is waiting for it.
-	const outcome = await cachedOutcome(async () => {
-		const result = await lookupBySlug(
-			locale,
-			(data: ProductListByCategoryQuery) => data.category,
-			(slugLang) =>
-				executePublicGraphQL(ProductListByCategoryDocument, {
-					variables: { slug, channel, lang, slugLang, first: 1 },
-					// NOT `revalidate: 300`. This entry has its own life (the profile above), and a
-					// fetch under it that is cached as well is a second, older answer: the data cache
-					// serves a stale entry however old it is and refreshes it behind the request, so
-					// a prerender that found this entry stale was handed the previous read again.
-					// Found on 2026-10-08: a category whose products had arrived a few minutes
-					// earlier answered `noindex` to Bing's first visit, with the full listing under it.
-					cache: "no-store",
-				}),
-		);
-		return toOutcome(result, (data) => resolveExactLocaleCategory(data.category, locale));
-	});
+	// would fail the prerender that is waiting for it. The read itself keeps its last answer and
+	// refreshes it behind the visitor (`@/lib/listing/category-outcome`).
+	const outcome = await cachedOutcome(() => readCategoryOutcome(slug, channel, locale));
 
 	// An empty category and a category without its translation are states that end on their own,
 	// when the products or the texts arrive, and `noindex` is the one answer a crawler does not
