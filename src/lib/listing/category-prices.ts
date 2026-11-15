@@ -37,8 +37,12 @@ const PAGE = 100;
 const WAIT_MS = 2_000;
 /** What one load may take in all. Nobody waits for it: the roof-rack sets need 1.5 to 1.9 s per read. */
 const LOAD_DEADLINE_MS = 8_000;
-/** The bands move with the stock in quartiles; a minute-old answer is as good as a fresh one. */
-const FRESH_MS = 60_000;
+/**
+ * The bands are cut points between the cheapest and the dearest (or quartiles): ten minutes old they are as
+ * good as new. Every refresh of the roof-rack sets is two price-sorted queries over 26 000 products, which
+ * Saleor keeps computing after a client has given up, so it is not repeated every minute in every market.
+ */
+const FRESH_MS = 10 * 60_000;
 const PAUSE_MS = 10_000;
 
 type Products = NonNullable<NonNullable<CategoryPricesQuery["category"]>["products"]>;

@@ -42,7 +42,8 @@ const PAGE = 100;
 /** A visitor waits this long at most, and only when the process holds no answer yet (`@/lib/cache/kept-read`). */
 const WAIT_MS = 2_000;
 const LOAD_DEADLINE_MS = 8_000;
-const FRESH_MS = 60_000;
+/** The counts per maker and volume band: five minutes old is as good as new. */
+const FRESH_MS = 5 * 60_000;
 const PAUSE_MS = 10_000;
 /** The volume filter is offered when most of the shelf states a volume. */
 const VOLUME_SHARE = 0.4;

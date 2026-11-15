@@ -68,7 +68,8 @@ type NavCategory = NavNode & {
 const WAIT_MS = 2_000;
 /** What one load may take in all: the roof-rack family counts 25 000 products in six places, 1.5 to 1.9 s. */
 const LOAD_DEADLINE_MS = 8_000;
-const FRESH_MS = 60_000;
+/** The counts on the chips: five minutes old is as good as new (a product event expires the cache entry, which then asks this for the answer it holds). */
+const FRESH_MS = 5 * 60_000;
 const PAUSE_MS = 10_000;
 
 interface NavigationRequest {

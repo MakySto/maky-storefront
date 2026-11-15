@@ -77,7 +77,8 @@ import {
  */
 export const CATEGORY_PRESENCE_DEADLINE_MS = 1_500;
 const LOAD_DEADLINE_MS = 8_000;
-const FRESH_MS = 60_000;
+/** Which markets carry the category; a market appears or leaves with its stock, and five minutes is soon enough. */
+const FRESH_MS = 5 * 60_000;
 const PAUSE_MS = 10_000;
 
 type PresenceTranslation = {
