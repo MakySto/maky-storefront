@@ -1,0 +1,92 @@
+# One page of a channel's catalogue for the Google Merchant feed (`lib/merchant-feed`).
+#
+# The fields are the product page's own (`ProductDetails`), because a feed item is made from the very
+# object the page builds its structured data from, after the same exact-locale boundary: abroad a product
+# exists only with its whole translation, attributes included, and its URL is the translated slug.
+# Added to them: the variant's weight, which Merchant Center asks for and no page shows yet.
+query MerchantFeedProducts($channel: String!, $first: Int!, $after: String, $lang: LanguageCodeEnum!) {
+	products(channel: $channel, first: $first, after: $after) {
+		edges {
+			node {
+				id
+				isAvailableForPurchase
+				name
+				slug
+				description
+				seoTitle
+				seoDescription
+				translation(languageCode: $lang) {
+					name
+					slug
+					description
+					seoTitle
+					seoDescription
+				}
+				thumbnail(size: 1024, format: WEBP) {
+					url
+					alt
+				}
+				media {
+					id
+					url
+					sortOrder
+					alt
+					type
+				}
+				category {
+					id
+					name
+					slug
+					translation(languageCode: $lang) {
+						name
+						slug
+					}
+				}
+				attributes {
+					values {
+						name
+						slug
+						translation(languageCode: $lang) {
+							name
+						}
+					}
+					attribute {
+						name
+						slug
+						translation(languageCode: $lang) {
+							name
+						}
+						externalReference
+					}
+				}
+				variants {
+					...VariantDetails
+					weight {
+						value
+						unit
+					}
+				}
+				pricing {
+					priceRange {
+						start {
+							gross {
+								amount
+								currency
+							}
+						}
+						stop {
+							gross {
+								amount
+								currency
+							}
+						}
+					}
+				}
+			}
+		}
+		pageInfo {
+			hasNextPage
+			endCursor
+		}
+	}
+}

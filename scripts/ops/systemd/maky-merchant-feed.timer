@@ -1,0 +1,16 @@
+# Once a night at 05:05 UTC (06:05 in Bratislava in winter, 07:05 in summer).
+#
+# After the CarFitManager 4.5 windows on the same box (01:30 to 02:04 and 03:15 to 05:00 UTC every day,
+# on Mondays also about 02:30 to 03:04 UTC), so the feed states the prices and texts of that night, and
+# before the morning: set the fetch in Merchant Center an hour or more later. A deploy is kept out by
+# the lock the service checks, not by the clock.
+[Unit]
+Description=Product feeds for Google Merchant Center, once a night
+
+[Timer]
+OnCalendar=*-*-* 05:05:00 UTC
+# After a reboot or an outage, run the night that was missed.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

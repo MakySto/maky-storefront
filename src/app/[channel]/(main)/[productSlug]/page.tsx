@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-import { baseSlugForCategoryId, baseSlugOfCategory, categoryUrlFor } from "@/config/category-routes";
-import { quoteInsteadOfPrice } from "@/config/quote-only";
+import { baseSlugForCategoryId, categoryUrlFor } from "@/config/category-routes";
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
 import { meaningfulTitle } from "@/config/brand";
@@ -44,12 +43,8 @@ import {
 	templateIdForCategory,
 } from "@/lib/product-templates";
 import { isSourceLocale } from "@/lib/saleor/exact-locale";
-import { publicSku } from "@/lib/product-code";
-import { publicEan } from "@/lib/product-ean";
+import { productJsonLdOptions } from "@/lib/seo/product-jsonld-options";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
-
-/** CFM's manufacturer attribute, keyed on externalReference — see product-attributes.ts. */
-const MANUFACTURER_REF = "cfm:attribute:manufacturer";
 
 // ============================================================================
 // Data
@@ -254,80 +249,9 @@ async function ProductContent({
 		{ label: product.name },
 	];
 
-	// The page shows a quote button instead of a price here, so the markup states no price either.
-	const quoteOnly = quoteInsteadOfPrice({
-		isPurchasable: product.isAvailableForPurchase === true,
-		categorySlug: baseSlugOfCategory(params.channel, product.category),
-	});
-
-	const productJsonLd = buildProductJsonLd({
-		name: product.name,
-		description: product.seoDescription || product.name,
-		images: images.length > 0 ? images.map((img) => img.url) : undefined,
-		// The manufacturer attribute, never the category. `category.name` here
-		// declared "Strešné boxy" to be the brand of every roof box in structured
-		// data. Same defect the listing card already had fixed; the JSON-LD was
-		// missed. Absent attribute → no `brand` key, which is better than a wrong one.
-		brand: product.attributes?.find((a) => a.attribute.externalReference === MANUFACTURER_REF)?.values[0]
-			?.name,
-		// Use the exact-locale slug resolved by the storefront boundary, matching
-		// the canonical URL advertised for this localized product.
-		url: productHref(params.channel, product.slug),
-		// The market, so the offer states its return window and that the goods are new.
-		channel: params.channel,
-		// `sku` only. An `mpn` used to be emitted from the same value, which made
-		// MAKY's internal composite identifier a claim about the manufacturer's part
-		// number — it is not one, in any reading.
-		//
-		// Through `publicSku`, never `sourceSku || sku`. That fallback reached raw
-		// `variant.sku` whenever CFM had not set `cfm_source_sku` — which is the
-		// whole catalogue — and so published the internal identifier to Google on
-		// 94% of pages once the Nordrive cohort went live. The visible code has
-		// always been correct; only this path bypassed the module that makes it so.
-		sku: publicSku(product.variants?.[0]) ?? undefined,
-		// The EAN CFM published on the variant, as `gtin13` (or the length it has). `publicEan` and the
-		// builder both refuse a number that cannot be a GTIN; a product CFM has none for says nothing.
-		gtin: publicEan(product.variants?.[0]) ?? undefined,
-		isPurchasable: product.isAvailableForPurchase === true,
-		priceRange:
-			product.pricing?.priceRange?.start?.gross && !quoteOnly
-				? {
-						lowPrice: product.pricing.priceRange.start.gross.amount,
-						highPrice:
-							product.pricing.priceRange.stop?.gross?.amount || product.pricing.priceRange.start.gross.amount,
-						currency: product.pricing.priceRange.start.gross.currency,
-					}
-				: null,
-		// The real variants, so a single-variant product gets its EXACT price and
-		// SKU in an Offer instead of a 299-to-299 AggregateOffer band, and a
-		// multi-variant one becomes a ProductGroup whose members each carry their
-		// own. Every product in the live catalogue is single-variant today, so this
-		// is the arm that actually renders.
-		variants: (product.variants ?? []).map((v) => ({
-			sku: publicSku(v),
-			gtin: publicEan(v),
-			name: v.name,
-			// No price in the markup where the page shows none (`config/quote-only.ts`).
-			price:
-				v.pricing?.price?.gross && !quoteOnly
-					? { amount: v.pricing.price.gross.amount, currency: v.pricing.price.gross.currency }
-					: null,
-			inStock: Boolean(v.quantityAvailable),
-			trackInventory: v.trackInventory,
-			availabilityMode: v.metafield,
-		})),
-		inStock: product.variants?.some((v) => v.quantityAvailable) ?? false,
-		// The CFM-owned availability fact, taken from the first variant that
-		// publishes one — it is a product-level decision that Saleor happens to
-		// carry on the variant. Without it the offer said InStock, derived from a
-		// `quantityAvailable` of 50 that is a configuration cap rather than stock,
-		// on a catalogue that holds none. `sale_to_order` makes it BackOrder, which
-		// is what the badge beside the price already tells the customer.
-		availabilityMode: product.variants?.find((v) => v.metafield)?.metafield,
-		// Real stock only where a variant is tracked AND has quantity; the same test the badge applies.
-		trackInventory: product.variants?.some((v) => v.trackInventory === true && Boolean(v.quantityAvailable)),
-		variantCount: product.variants?.length ?? 0,
-	});
+	// What the structured data says about the product: one function, because the feed for Google Merchant
+	// has to say the same (`lib/seo/product-jsonld-options.ts`).
+	const productJsonLd = buildProductJsonLd(productJsonLdOptions(product, params.channel, images));
 
 	// No manual LCP preload here. The gallery's first <Image> carries `priority`,
 	// and next/image already emits a preload with the correct `imagesrcset` for the

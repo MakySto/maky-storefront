@@ -35,8 +35,15 @@ export interface JsonLdVariant {
 	availabilityMode?: string | null;
 }
 
-/** Schema.org availability, from the same facts the visible badge uses. */
-function availabilityOf(inStock: boolean, availabilityMode?: string | null, trackInventory?: boolean | null) {
+/**
+ * Schema.org availability, from the same facts the visible badge uses. Exported for the Merchant feed
+ * (`lib/merchant-feed/item.ts`), which has to say about a product what its page says.
+ */
+export function availabilityOf(
+	inStock: boolean,
+	availabilityMode?: string | null,
+	trackInventory?: boolean | null,
+) {
 	if (!inStock) return "https://schema.org/OutOfStock" as const;
 	// Real tracked stock wins over stale sourcing metadata, matching the badge.
 	if (trackInventory === true) return "https://schema.org/InStock" as const;
@@ -378,6 +385,18 @@ const DELIVERY_REGIONS = [
 	},
 	{ countries: ["US", "CA"], transitDays: { min: 7, max: 14 } },
 ] as const;
+
+/**
+ * The delivery window of a market in working days, as the badge beside the price states it, or `null`
+ * for a channel that is no market. The Merchant feed dates a product that is made to order with it.
+ */
+export function transitDaysFor(channelOrMarket: string): { min: number; max: number } | null {
+	const market = REVERSE_MAP[channelOrMarket] ?? channelOrMarket;
+	const country = CHANNEL_MAP[market]?.country;
+	if (!country) return null;
+	const region = DELIVERY_REGIONS.find((entry) => (entry.countries as readonly string[]).includes(country));
+	return region ? { ...region.transitDays } : null;
+}
 
 /** Working days, in the plain form Google's examples use. */
 const WORKING_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;

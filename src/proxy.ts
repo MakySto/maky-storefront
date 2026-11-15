@@ -69,8 +69,11 @@ import {
  * `sitemaps` holds the sitemap shards the index at `/sitemap.xml` names
  * (`/sitemaps/sk-products-1.xml`). Their route answers a real 404 for any name it does not
  * serve, so reserving the segment opens nothing.
+ *
+ * `feeds` holds the product feeds Merchant Center fetches (`/feeds/google-sk.xml.gz`), under the same
+ * rule: a name that is not a known market's feed is a real 404.
  */
-const RESERVED_FIRST_SEGMENTS = new Set(["checkout", "api", "_next", ".well-known", "sitemaps"]);
+const RESERVED_FIRST_SEGMENTS = new Set(["checkout", "api", "_next", ".well-known", "sitemaps", "feeds"]);
 
 /**
  * Detect the best market for a visitor based on cookie, geo, or language.
