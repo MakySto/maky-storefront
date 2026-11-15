@@ -4,6 +4,8 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { cache } from "react";
 import { createExpiringMemo } from "@/lib/cache/expiring-memo";
+import { releaseEnabled } from "@/lib/catalog-release/config";
+import { releasedContent } from "@/lib/catalog-release/sync";
 import { type CatalogContentPage, type CatalogContentSnapshot, parseContentSnapshot } from "./contract";
 
 /**
@@ -50,10 +52,19 @@ import { type CatalogContentPage, type CatalogContentSnapshot, parseContentSnaps
  * published `SHA256SUMS_CONTENT_<date>` manifest and pins every language by basename.
  * Worth having: CFM's dated filenames are NOT immutable — the 2026-09-11 artifact was
  * re-exported in place under the same name, with different bytes.
+ *
+ * ## A release manifest outranks both
+ *
+ * With `MAKY_RELEASE_MANIFEST_URL` set, a market is answered from the file CFM's manifest names for
+ * THAT MARKET, once `src/lib/catalog-release/sync.ts` has downloaded and verified it (mode `release`).
+ * Two markets that read one language can then hold different files, which is what lets CFM publish
+ * Germany and Austria separately. The settings above answer for a market only until it has had its
+ * first verified file, so switching a deploy over changes nothing a visitor sees, and never again after:
+ * they may be older than what the page already shows.
  */
 
 export type CatalogContentStatus = {
-	readonly mode: "disabled" | "file" | "http";
+	readonly mode: "disabled" | "file" | "http" | "release";
 	readonly unavailableReason: string | null;
 	readonly language: string | null;
 	readonly generatedAt: string | null;
@@ -270,14 +281,50 @@ async function loadWithMemo(language: string): Promise<CatalogContentLoad> {
 }
 
 /**
+ * What the older settings hold for this language right now. Read only: it never triggers a load, so the
+ * status endpoint can report on it without causing it.
+ */
+export function peekCatalogContent(language: string): CatalogContentStatus | null {
+	if (!LANGUAGE_RE.test(language)) return null;
+	const from = source(language);
+	if (!from) return null;
+	const held = memo.getStale(`${from.mode}:${from.location}:${language}`);
+	return held?.snapshot ? held.status : null;
+}
+
+/**
  * Wrapped in React `cache()` so the several places that need it during one render share a
  * single load. The language is part of the cache key, which is what makes it safe for one
  * render to touch more than one market.
+ *
+ * `market` is the TARGET: the friendly market code (`de`, `at`), not the Saleor channel. It is what
+ * selects the file when the process follows a release manifest, so every caller that knows its market
+ * passes it. Omitted, the answer is by language alone, which is exactly what it always was.
  */
 export const loadCatalogContent = cache(async function loadCatalogContent(
 	language: string,
+	market?: string,
 ): Promise<CatalogContentLoad> {
-	return loadWithMemo(language);
+	if (market) {
+		const released = releasedContent(market, language);
+		if (released) return released;
+	}
+	const older = await loadWithMemo(language);
+	// With release mode on and no older setting at all, "no source" would be a misleading reason: say what
+	// the market is actually waiting for.
+	if (
+		older.snapshot === null &&
+		market &&
+		releaseEnabled() &&
+		LANGUAGE_RE.test(language) &&
+		!source(language)
+	) {
+		return unavailable(
+			"release",
+			`waiting for the first verified release of market ${JSON.stringify(market)}`,
+		);
+	}
+	return older;
 });
 
 /** Every page, keyed the two ways the consumer looks them up. */

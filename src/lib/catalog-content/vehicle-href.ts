@@ -18,11 +18,11 @@ import { catalogLanguageForChannel, loadCatalogView } from "./resolve";
 export async function vehiclePageHref(channel: string, vehicleId: string): Promise<string | null> {
 	const language = catalogLanguageForChannel(channel);
 	if (!language) return null;
-	const view = await loadCatalogView(language);
+	const market = REVERSE_MAP[channel] ?? channel;
+	const view = await loadCatalogView(language, market);
 	if (!view.ready) return null;
 	const node = view.tree.byVehicleId.get(vehicleId);
 	if (!node?.page || !isPubliclyVisible(node.page)) return null;
-	const market = REVERSE_MAP[channel] ?? channel;
 	if (catalogRedirectTarget(market, node.urlPath)) return null;
 	return marketHref(channel, canonicalCatalogPath(market, node.urlPath));
 }

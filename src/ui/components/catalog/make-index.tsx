@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { getLocaleFromChannel } from "@/config/locale";
-import { marketHref } from "@/lib/channel-map";
+import { REVERSE_MAP, marketHref } from "@/lib/channel-map";
 import { isPubliclyVisible } from "@/lib/catalog-content/publication";
 import { catalogLanguageForChannel, loadCatalogView } from "@/lib/catalog-content/resolve";
 
@@ -33,7 +33,7 @@ export async function CatalogMakeIndex({ channel, slug }: { channel: string; slu
 	const language = catalogLanguageForChannel(channel);
 	if (!language) return null;
 
-	const view = await loadCatalogView(language);
+	const view = await loadCatalogView(language, REVERSE_MAP[channel] ?? channel);
 	if (!view.ready) return null;
 
 	const makes = view.tree.makes
