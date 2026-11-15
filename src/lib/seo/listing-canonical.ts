@@ -15,8 +15,10 @@
  * - a page reached by "previous": it shows what a "next" page already shows under another address, and
  *   one of the two has to be the copy.
  *
- * One place on purpose: a listing that grows a param of its own (a tyre size with its own page) decides
- * here where its canonical goes.
+ * One exception: a selection that has a page of its own. The snow-chain shelf narrowed by a tyre size
+ * shows what that size's page shows (`/snehove-retaze/205-60-r16`), so that page is its canonical, on
+ * any page of the list and in any order. The caller says which page it is (`ownPage`,
+ * `tyreListingCanonicalPath`); this is still the one place that decides where a listing's canonical goes.
  */
 const NARROWING_PARAMS = [
 	"sort",
@@ -41,8 +43,16 @@ export function forwardPageCursor(searchParams: ListingSearchParams): string | n
 	return cursor;
 }
 
-/** `canonical` for the first page and for every variant of it; the page's own address for a later page. */
-export function listingCanonical(canonical: string, searchParams: ListingSearchParams): string {
+/**
+ * `canonical` for the first page and for every variant of it; the page's own address for a later page;
+ * `ownPage`, when the selection the address makes has a page of its own.
+ */
+export function listingCanonical(
+	canonical: string,
+	searchParams: ListingSearchParams,
+	ownPage?: string | null,
+): string {
+	if (ownPage) return ownPage;
 	const cursor = forwardPageCursor(searchParams);
 	if (cursor === null) return canonical;
 	// URLSearchParams, as `Pagination` builds its links: the canonical is the address that was followed.

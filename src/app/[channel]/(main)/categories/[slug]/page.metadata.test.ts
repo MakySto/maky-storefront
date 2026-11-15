@@ -89,6 +89,10 @@ vi.mock("@/lib/graphql", async (importOriginal) => ({
 	},
 }));
 
+// What the channel sells on the snow-chain shelf, by public code: the scan the tyre-size pages are decided by.
+const { getShelfCodes } = vi.hoisted(() => ({ getShelfCodes: vi.fn() }));
+vi.mock("@/lib/listing/shelf-codes", () => ({ getShelfCodes }));
+
 // The not-found branch asks for the market's "not found" title; there is no request to take a locale from.
 vi.mock("next-intl/server", async (importOriginal) => ({
 	...(await importOriginal<typeof import("next-intl/server")>()),
@@ -108,6 +112,7 @@ vi.mock("next/cache", async (importOriginal) => ({
 }));
 
 beforeEach(() => {
+	getShelfCodes.mockReset();
 	missing = false;
 	presenceOverrides = {};
 	presenceFault = false;
@@ -249,6 +254,87 @@ describe("a later page of the listing", () => {
 				"x-default",
 			);
 		}
+	});
+});
+
+describe("the snow-chain shelf narrowed by a tyre size", () => {
+	const metaFor = async (searchParams: Record<string, string | undefined>, channel = "sk-eur") => {
+		const { generateMetadata } = await import("./page");
+		return generateMetadata({
+			params: Promise.resolve({ channel, slug: channel === "sk-eur" ? "snehove-retaze" : "snehove-retezy" }),
+			searchParams: Promise.resolve(searchParams),
+		});
+	};
+	const shelf = (...codes: string[]) => codes.map((code) => ({ code, productId: `gid-${code}`, slug: code }));
+
+	beforeEach(() => {
+		vi.stubEnv("MAKY_LIVE_MARKETS", "sk,cz,de");
+		vi.stubEnv("MAKY_INDEXABLE_MARKETS", "sk,cz,de");
+		getShelfCodes.mockResolvedValue(shelf("N16075", "N17143"));
+	});
+
+	it("names the size's page as its canonical and as og:url, not the shelf", async () => {
+		const meta = await metaFor({ tyres: "1", tyreSize: "205/60 R16" });
+		expect(meta.alternates?.canonical).toBe("https://maky.store/sk/snehove-retaze/205-60-r16");
+		expect(meta.openGraph?.url).toBe("https://maky.store/sk/snehove-retaze/205-60-r16");
+		expect(meta.robots).toBeUndefined();
+	});
+
+	it("does so at the market's own address", async () => {
+		category = {
+			...category,
+			translation: {
+				name: "Sněhové řetězy",
+				slug: "snehove-retezy",
+				description: "{}",
+				seoTitle: "Sněhové řetězy",
+				seoDescription: "Sněhové řetězy a textilní návleky.",
+			},
+		};
+		const meta = await metaFor({ tyres: "1", tyreSize: "205/60 R16" }, "cz-czk");
+		expect(meta.alternates?.canonical).toBe("https://maky.store/cz/snehove-retezy/205-60-r16");
+	});
+
+	it("names no other market: the size page names its own", async () => {
+		const meta = await metaFor({ tyres: "1", tyreSize: "205/60 R16" });
+		expect(meta.alternates?.languages).toBeUndefined();
+		expect(
+			reads.map((read) => read.operation).filter((operation) => operation.startsWith("CategoryMarket")),
+		).toEqual([]);
+	});
+
+	it("keeps the shelf as the canonical where the size has no indexed page", async () => {
+		const variants: Record<string, string>[] = [
+			{},
+			{ tyres: "1" },
+			{ tyres: "0", tyreSize: "205/60 R16" },
+			{ tyres: "1", tyreSize: "205/60 R99" },
+		];
+		for (const searchParams of variants) {
+			const meta = await metaFor(searchParams);
+			expect(meta.alternates?.canonical, JSON.stringify(searchParams)).toBe(
+				"https://maky.store/sk/snehove-retaze",
+			);
+			expect(Object.keys(meta.alternates?.languages ?? {}), JSON.stringify(searchParams)).toContain(
+				"x-default",
+			);
+		}
+		getShelfCodes.mockResolvedValue(shelf("N16075"));
+		const one = await metaFor({ tyres: "1", tyreSize: "205/60 R16" });
+		expect(one.alternates?.canonical).toBe("https://maky.store/sk/snehove-retaze");
+		getShelfCodes.mockRejectedValue(new Error("saleor is down"));
+		const fault = await metaFor({ tyres: "1", tyreSize: "205/60 R16" });
+		expect(fault.alternates?.canonical).toBe("https://maky.store/sk/snehove-retaze");
+	});
+
+	it("does not ask what the shelf sells for another category", async () => {
+		const { generateMetadata } = await import("./page");
+		const meta = await generateMetadata({
+			params: Promise.resolve({ channel: "sk-eur", slug: "autochladnicky" }),
+			searchParams: Promise.resolve({ tyreSize: "205/60 R16" }),
+		});
+		expect(meta.alternates?.canonical).toBe("https://maky.store/sk/autochladnicky");
+		expect(getShelfCodes).not.toHaveBeenCalled();
 	});
 });
 
