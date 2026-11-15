@@ -1288,6 +1288,89 @@ describe("the snow-chain category address", () => {
 	});
 });
 
+/**
+ * The two roof-rack part categories have one address per market (2026-11-15). CFM wrote the first four foot packs to
+ * the nine EU markets with the categories' translated slugs (`fusssaetze-fuer-dachtraeger`, …), which the product page
+ * linked under `/categories/`, while the base slug answered at the root: `/de/patky-stresnych-nosicov`, a Slovak word in
+ * the German shop. Austria has a spelling of its own. Slovakia, the USA and Canada keep the base slug, which the
+ * running server learns from Saleor's category list (the categories are newer than the build's own list).
+ */
+describe.each(["diely-stresnych-nosicov", "patky-stresnych-nosicov"])(
+	"the roof-rack part category address: %s",
+	(BASE) => {
+		const rows = categoryRouteTable().filter((row) => row.baseSlug === BASE);
+		const abroad = rows.filter((row) => row.segment !== row.baseSlug);
+		const published = globalThis as typeof globalThis & { [LIVE_CATEGORY_SLUGS_KEY]?: ReadonlySet<string> };
+		const location = (res: Response) => {
+			const value = res.headers.get("location");
+			return value ? new URL(value) : null;
+		};
+		afterEach(() => {
+			delete published[LIVE_CATEGORY_SLUGS_KEY];
+		});
+
+		it("has a localized address in the nine EU markets and the base slug in Slovakia, the USA and Canada", () => {
+			expect(rows.map((row) => row.market)).toEqual(Object.keys(CHANNEL_MAP));
+			expect(abroad.map((row) => row.market)).toEqual(["cz", "de", "at", "pl", "hu", "it", "fr", "es", "ro"]);
+			expect(rows.filter((row) => row.segment === BASE).map((row) => row.market)).toEqual(["sk", "us", "ca"]);
+		});
+
+		it("serves the EU markets' own address with no redirect, onto the category route, before Saleor's list is read", async () => {
+			expect(abroad).toHaveLength(9);
+			for (const row of abroad) {
+				const res = await proxy(req(row.path));
+				expect(res.headers.get("location"), row.path).toBeNull();
+				expect(res.headers.get("x-middleware-rewrite"), row.path).toContain(
+					`/${row.channel}/categories/${row.segment}`,
+				);
+			}
+		});
+
+		it("sends the Slovak spelling to the EU markets' own address with a 301, query kept", async () => {
+			for (const row of abroad) {
+				const res = await proxy(req(`/${row.market}/${BASE}?utm_source=x`));
+				expect(res.status, row.market).toBe(301);
+				expect(location(res)?.pathname, row.market).toBe(row.path);
+				expect(location(res)?.search, row.market).toBe("?utm_source=x");
+			}
+		});
+
+		it("sends the /categories/ spellings, the base slug and the translated one, to it with a 308", async () => {
+			for (const row of abroad) {
+				for (const spelling of new Set([row.baseSlug, row.segment])) {
+					const res = await proxy(req(`/${row.market}/categories/${spelling}`));
+					expect(res.status, `${row.market} ${spelling}`).toBe(308);
+					expect(location(res)?.pathname, `${row.market} ${spelling}`).toBe(row.path);
+				}
+			}
+		});
+
+		it("gives Austria and Germany each their own spelling, and sends the other's nowhere", async () => {
+			const at = rows.find((row) => row.market === "at")!;
+			const de = rows.find((row) => row.market === "de")!;
+			expect(at.segment).not.toBe(de.segment);
+			for (const [market, foreign] of [
+				["at", de.segment],
+				["de", at.segment],
+				["cz", de.segment],
+				["sk", de.segment],
+			] as const) {
+				const res = await proxy(req(`/${market}/${foreign}`));
+				expect(res.status, `${market} ${foreign}`).not.toBe(301);
+				expect(res.status, `${market} ${foreign}`).not.toBe(308);
+				expect(res.headers.get("x-middleware-rewrite"), `${market} ${foreign}`).not.toContain("/categories/");
+			}
+		});
+
+		it("keeps Slovakia where it was once the server has read the category from Saleor: the base slug, no redirect", async () => {
+			published[LIVE_CATEGORY_SLUGS_KEY] = new Set([BASE]);
+			const res = await proxy(req(`/sk/${BASE}`));
+			expect(res.headers.get("location")).toBeNull();
+			expect(res.headers.get("x-middleware-rewrite")).toContain(`/sk-eur/categories/${BASE}`);
+		});
+	},
+);
+
 describe("sitemap index and shards (COMMERCE-2 M5)", () => {
 	it("hands /sitemap.xml and the shards to their routes, not to the invalid-first-segment 404", async () => {
 		for (const path of ["/sitemap.xml", "/sitemaps/sk-products-1.xml", "/sitemaps/sk-pages-1.xml"]) {

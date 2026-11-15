@@ -82,6 +82,18 @@ export { KARGO_BASE_SLUG, KARGO_CATEGORY_SLUGS, KARGO_PREVIOUS_SLUG } from "./ka
  * markets keep the base slug as their address (their `en` segment IS the base slug, which the table reads as "no
  * localized spelling"). The day CFM writes an English one, the row gets its segment here and nowhere else.
  *
+ * ## Roof-rack parts and feet (2026-11-15)
+ *
+ * `diely-stresnych-nosicov` (Category:35, a child of the roof-rack root) and its child `patky-stresnych-nosicov`
+ * (Category:36) hold the parts sold on their own: the first four are Nordrive Evos foot packs, sold in Slovakia and in
+ * the nine EU markets since 2026-11-15. CFM wrote both categories' translations in that run, with the slugs in the two
+ * rows below (`DIELY_CATEGORY_L10N_MANIFEST`, file sha256 `0b4c5d2f…def4`, 18 translations). Without the rows the
+ * German shop answered the feet at `/de/patky-stresnych-nosicov`, a Slovak word, and the product page's category link,
+ * built from the translated slug Saleor returns, went to `/de/categories/fusssaetze-fuer-dachtraeger`. Austria has
+ * texts of its own (`DE_AT`), so it is spelled apart from Germany (`marketSegments`), as Kargo is.
+ *
+ * The USA and Canada are not part of that run: no English translation exists, so their `en` segment is the base slug.
+ *
  * ## What this does NOT move
  *
  * Product slugs, model and generation slugs, and the three RELEASE-4 pages each foreign
@@ -178,6 +190,34 @@ const SNOW_CHAIN_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
 	en: "snehove-retaze",
 };
 
+const RACK_PART_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
+	sk: "diely-stresnych-nosicov",
+	cs: "dily-stresnich-nosicu",
+	de: "einzelteile-fuer-dachtraeger",
+	pl: "czesci-bagaznikow-dachowych",
+	hu: "tetocsomagtarto-alkatreszek",
+	it: "componenti-per-portapacchi-da-tetto",
+	fr: "pieces-pour-barres-de-toit",
+	es: "piezas-para-barras-de-techo",
+	ro: "piese-pentru-bare-de-acoperis",
+	// No English translation is written yet (the USA and Canada are not part of the run): the base slug stays.
+	en: "diely-stresnych-nosicov",
+};
+
+const RACK_FOOT_SEGMENTS: Readonly<Record<CatalogLanguage, string>> = {
+	sk: "patky-stresnych-nosicov",
+	cs: "patky-stresnich-nosicu",
+	de: "fusssaetze-fuer-dachtraeger",
+	pl: "stopy-bagaznikow-dachowych",
+	hu: "tetocsomagtarto-talpak",
+	it: "piedi-per-portapacchi-da-tetto",
+	fr: "pieds-pour-barres-de-toit",
+	es: "pies-para-barras-de-techo",
+	ro: "picioare-pentru-bare-de-acoperis",
+	// As above: no English translation yet.
+	en: "patky-stresnych-nosicov",
+};
+
 export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 	{
 		baseSlug: "stresne-nosice",
@@ -235,6 +275,18 @@ export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 		baseSlug: "snehove-retaze",
 		saleorId: "Q2F0ZWdvcnk6OQ==",
 		segments: SNOW_CHAIN_SEGMENTS,
+	},
+	{
+		baseSlug: "diely-stresnych-nosicov",
+		saleorId: "Q2F0ZWdvcnk6MzU=",
+		segments: RACK_PART_SEGMENTS,
+		marketSegments: { at: "dachtraeger-einzelteile" },
+	},
+	{
+		baseSlug: "patky-stresnych-nosicov",
+		saleorId: "Q2F0ZWdvcnk6MzY=",
+		segments: RACK_FOOT_SEGMENTS,
+		marketSegments: { at: "traegerfuesse-fuer-dachtraeger" },
 	},
 ];
 
