@@ -19,6 +19,27 @@ function text(value: string, format = 0) {
 	return { type: "text", text: value, format };
 }
 
+describe("LexicalContent — a link to a category of the shop", () => {
+	it("is shown at the category's address, not in the retired /categories/ form (owner, 2026-11-15)", () => {
+		vi.stubEnv("NEXT_PUBLIC_STOREFRONT_URL", "https://maky.store");
+		try {
+			const html = render({
+				children: [
+					paragraph({
+						type: "link",
+						fields: { url: "https://maky.store/sk/categories/stresne-nosice", linkType: "custom" },
+						children: [text("Strešné nosiče")],
+					}),
+				],
+			});
+			expect(html).toContain('href="https://maky.store/sk/stresne-nosice"');
+			expect(html).not.toContain("/categories/");
+		} finally {
+			vi.unstubAllEnvs();
+		}
+	});
+});
+
 describe("LexicalContent — the shapes in production content", () => {
 	it("renders paragraphs of plain text", () => {
 		const html = render({ children: [paragraph(text("MAKY.STORE je slovenský e-shop."))] });

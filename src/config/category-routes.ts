@@ -108,6 +108,17 @@ export { KARGO_BASE_SLUG, KARGO_CATEGORY_SLUGS, KARGO_PREVIOUS_SLUG } from "./ka
  * they carry that a translation cannot (Austria spelled apart from Germany before `DE_AT` existed, `legacySegments`,
  * the vehicle tree CFM publishes under the language's root).
  *
+ * A category is told from the table's row by its Saleor ID, not by its slug: Saleor still holds the Kargo shelf under
+ * the slug of its first night while the row is named `kargo-…`, and the nine translations Saleor holds for it are the
+ * row's `legacySegments`. The first deploy of this read (2026-11-15 18:00 UTC) compared slugs, took the shelf's own
+ * translations for another category's spellings and logged nine refusals that were nothing of the kind.
+ *
+ * A translated slug that does not become the address (a product or another category holds it, two categories claim
+ * it, or it is not the one the table spells) is still the slug Saleor hands a page when it names that category, so
+ * it is kept as an ALIAS: `categoryBaseSlug` finds the category by it, and the link or the `/categories/…` form
+ * lands on the address the category does have. An alias is never routed at the root: the product that holds the
+ * slug keeps it.
+ *
  * ## What this does NOT move
  *
  * Product slugs, model and generation slugs, and the three RELEASE-4 pages each foreign
@@ -305,6 +316,7 @@ export const LOCALIZED_CATEGORIES: readonly LocalizedCategory[] = [
 ];
 
 const STATIC_BY_BASE = new Map(LOCALIZED_CATEGORIES.map((category) => [category.baseSlug, category]));
+const STATIC_BY_ID = new Map(LOCALIZED_CATEGORIES.map((category) => [category.saleorId, category]));
 const KARGO_ROW = STATIC_BY_BASE.get(KARGO_BASE_SLUG)!;
 
 /** `sk` or `sk-eur` → `sk`. Both key spaces are disjoint, so one helper serves pages and the proxy. */
@@ -342,11 +354,16 @@ export const LEARNED_CATEGORIES_KEY: unique symbol = Symbol.for("maky.category-r
  * `segments` names only the markets where the slug differs from the base slug, so an absent market means "no
  * localized spelling". The server checks each segment before it publishes it (a product, a route, a market or
  * another category must not hold it); this file takes what it is given.
+ *
+ * `aliases` are the other translated slugs Saleor holds for the category, by market: the ones that did not become its
+ * address. They are never routed; they only let `categoryBaseSlug` find the category from the slug Saleor hands a page.
+ * `baseSlug` is the slug Saleor holds NOW, which is not the table's for a category the table names differently.
  */
 export interface LearnedCategory {
 	readonly baseSlug: string;
 	readonly saleorId: string;
 	readonly segments: Readonly<Record<string, string>>;
+	readonly aliases?: Readonly<Record<string, readonly string[]>>;
 }
 
 function learnedRows(): readonly LearnedCategory[] | undefined {
@@ -375,16 +392,22 @@ interface RouteView {
 	readonly byId: ReadonlyMap<string, LocalizedCategory>;
 	/** `market → segment → category`, for the localized spellings only (not the base slugs). */
 	readonly bySegment: ReadonlyMap<string, ReadonlyMap<string, LocalizedCategory>>;
+	/** Saleor id → the base slug the table or the server names the category by, for every category the server read. */
+	readonly baseById: ReadonlyMap<string, string>;
+	/** `market → alias → base slug`: translated slugs that name a category without being the address it is routed at. */
+	readonly aliases: ReadonlyMap<string, ReadonlyMap<string, string>>;
 }
 
 /** The rows above, plus what Saleor holds beyond them. The table wins wherever it has a spelling. */
 function mergedRows(): readonly LocalizedCategory[] {
 	const learned = learnedRows() ?? [];
 	if (learned.length === 0) return LOCALIZED_CATEGORIES;
-	const byBase = new Map(learned.map((row) => [row.baseSlug, row]));
+	const learnedById = new Map(learned.map((row) => [row.saleorId, row]));
+	const learnedByBase = new Map(learned.map((row) => [row.baseSlug, row]));
 
 	const rows = LOCALIZED_CATEGORIES.map((category): LocalizedCategory => {
-		const row = byBase.get(category.baseSlug);
+		// By id first: Saleor can hold a table category under another slug than the row's (the Kargo shelf).
+		const row = learnedById.get(category.saleorId) ?? learnedByBase.get(category.baseSlug);
 		if (!row) return category;
 		// A market the row spells as the base slug has no localized spelling yet (snow chains in the USA and Canada
 		// before CFM writes an English translation): Saleor's translation is the spelling the day it lands.
@@ -400,13 +423,16 @@ function mergedRows(): readonly LocalizedCategory[] {
 	});
 
 	for (const row of learned) {
-		if (STATIC_BY_BASE.has(row.baseSlug)) continue;
+		// A table category is never a second row, whatever slug Saleor holds it under.
+		if (STATIC_BY_BASE.has(row.baseSlug) || STATIC_BY_ID.has(row.saleorId)) continue;
 		const segments = Object.fromEntries(
 			CATALOG_LANGUAGES.map((language) => [language, row.baseSlug]),
 		) as Record<CatalogLanguage, string>;
 		const marketSegments = Object.fromEntries(
 			Object.entries(row.segments).filter(([market]) => market !== "sk" && languageOf(market) !== null),
 		);
+		// A category with aliases only has no address of its own to add: it is its base slug in every market.
+		if (Object.keys(marketSegments).length === 0) continue;
 		rows.push({ baseSlug: row.baseSlug, saleorId: row.saleorId, segments, marketSegments });
 	}
 	return rows;
@@ -441,11 +467,33 @@ function routeView(): RouteView {
 		bySegment.set(market, segments);
 	}
 
+	const byBase = new Map(rows.map((category) => [category.baseSlug, category]));
+	const baseById = new Map(rows.map((category) => [category.saleorId, category.baseSlug]));
+	const aliases = new Map<string, Map<string, string>>();
+	for (const row of learnedRows() ?? []) {
+		// The table's name for a category it holds wins over the slug Saleor holds it under.
+		if (!baseById.has(row.saleorId)) baseById.set(row.saleorId, row.baseSlug);
+		const base = baseById.get(row.saleorId)!;
+		for (const [market, slugs] of Object.entries(row.aliases ?? {})) {
+			const routed = bySegment.get(market);
+			if (!routed) continue;
+			const found = aliases.get(market) ?? new Map<string, string>();
+			for (const slug of slugs) {
+				// A slug some category is routed at, or any base slug, names that category already.
+				if (routed.has(slug) || byBase.has(slug)) continue;
+				found.set(slug, base);
+			}
+			if (found.size > 0) aliases.set(market, found);
+		}
+	}
+
 	const view: RouteView = {
 		rows,
-		byBase: new Map(rows.map((category) => [category.baseSlug, category])),
+		byBase,
 		byId: new Map(rows.map((category) => [category.saleorId, category])),
 		bySegment,
+		baseById,
+		aliases,
 	};
 	cachedView = { key, view };
 	return view;
@@ -454,22 +502,30 @@ function routeView(): RouteView {
 /**
  * The spelling the TABLE (not Saleor) gives a category in a market, or `null` when it has none there: the base slug,
  * and every market of Slovakia, count as none. What the server learns from Saleor is only what this does not say.
+ *
+ * The category is found by its Saleor id when the caller has one, and by the slug otherwise: Saleor can hold a table
+ * category under a slug other than the row's, and the id is what names it then.
  */
-export function tableSpelling(baseSlug: string, marketOrChannel: string): string | null {
-	const category = STATIC_BY_BASE.get(baseSlug);
+export function tableSpelling(
+	baseSlug: string,
+	marketOrChannel: string,
+	saleorId?: string | null,
+): string | null {
+	const category = (saleorId ? STATIC_BY_ID.get(saleorId) : undefined) ?? STATIC_BY_BASE.get(baseSlug);
 	const market = marketOf(marketOrChannel);
 	const language = languageOf(marketOrChannel);
 	if (!category || !market || !language || market === "sk") return null;
 	const segment = segmentIn(category, market, language);
-	return segment === baseSlug ? null : segment;
+	return segment === category.baseSlug ? null : segment;
 }
 
 /**
- * The base slug of a mapped category named by its Saleor id, or `null`. A foreign page learns a category's
- * slug from a translation, which can be any spelling; its id never changes.
+ * The base slug of a category named by its Saleor id, or `null`. A foreign page learns a category's slug from a
+ * translation, which can be any spelling; its id never changes. Every category the server has read from Saleor
+ * answers, not only the ones with an address of their own.
  */
 export function baseSlugForCategoryId(id: string | null | undefined): string | null {
-	return (id && routeView().byId.get(id)?.baseSlug) || null;
+	return (id && routeView().baseById.get(id)) || null;
 }
 
 /**
@@ -523,10 +579,15 @@ export function categoryRootServes(marketOrChannel: string, baseSlug: string): b
  *
  * An unmapped segment is returned unchanged: every other category is still addressed by its
  * base slug, and a translated slug Saleor holds but this table does not is left for
- * `lookupBySlug` to resolve rather than guessed at.
+ * `lookupBySlug` to resolve rather than guessed at. The exception is an ALIAS the server read from Saleor: a
+ * translated slug of a category that did not become its address (a product holds it, two categories claim it). It
+ * names the category, so a link built from it goes to the address the category has and not to `/categories/…`.
  */
 export function categoryBaseSlug(marketOrChannel: string, segment: string): string {
-	return mappedCategoryFor(marketOrChannel, segment)?.baseSlug ?? segment;
+	const mapped = mappedCategoryFor(marketOrChannel, segment);
+	if (mapped) return mapped.baseSlug;
+	const market = marketOf(marketOrChannel);
+	return (market && routeView().aliases.get(market)?.get(segment)) || segment;
 }
 
 /** What a product says about its category: Saleor's id, which no translation changes, and the slug of its market. */
@@ -549,8 +610,8 @@ export function baseSlugOfCategory(
 	category: CategoryRef | null | undefined,
 ): string | null {
 	if (!category) return null;
-	const known = category.id ? routeView().byId.get(category.id) : undefined;
-	if (known) return known.baseSlug;
+	const known = category.id ? routeView().baseById.get(category.id) : undefined;
+	if (known) return known;
 	return category.slug ? categoryBaseSlug(marketOrChannel, category.slug) : null;
 }
 

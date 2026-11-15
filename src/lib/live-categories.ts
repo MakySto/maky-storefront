@@ -30,7 +30,12 @@ import { MARKET_ROOT_SEGMENTS } from "./routing.generated";
  * The same list query now asks for the translated slug in every language the markets read, and a spelling
  * that no product, route, market or other category holds in that market becomes the address, with the
  * `/categories/…` form and the Slovak spelling answering a permanent redirect to it (`proxy.ts`, unchanged).
- * The table's own rows still win where they have a spelling; Saleor fills the rest.
+ * The table's own rows still win where they have a spelling, told apart by the Saleor ID because Saleor can hold a
+ * table category under another slug (the Kargo shelf); Saleor fills the rest.
+ *
+ * A translated slug that does not become the address (a product holds it, two categories claim it, or the table
+ * spells the category otherwise) is still the slug Saleor hands a page that names the category, so it is kept as an
+ * alias: the link built from it goes to the address the category does have, and never to `/categories/…`.
  *
  * ## Why a set that is loaded, and not a question asked per URL
  *
@@ -111,6 +116,8 @@ interface LiveState {
 	localized: ReadonlyMap<string, LocalizedSpelling>;
 	/** `base|market` → why its translated slug was not admitted, logged once when it appears. */
 	localizedRefused: ReadonlyMap<string, string>;
+	/** What was last handed to `config/category-routes.ts` (spellings and aliases), to publish again only on a change. */
+	published: string;
 }
 
 interface LocalizedSpelling {
@@ -135,6 +142,7 @@ function state(): LiveState {
 		refused: new Map(),
 		localized: new Map(),
 		localizedRefused: new Map(),
+		published: "",
 	};
 	return shared[STATE_KEY];
 }
@@ -384,7 +392,8 @@ const MAX_SEGMENT_PROBES_PER_LOAD = 60;
 /** Candidates per request: two aliased lookups each. */
 const SEGMENT_PROBE_BATCH = 10;
 
-function candidatesOf(categories: readonly ListedCategory[]): Candidate[] {
+/** Every translated slug Saleor holds for a category, in the language a foreign market reads, that is not its base slug. */
+function translationsOf(categories: readonly ListedCategory[]): Candidate[] {
 	const languages = marketLanguages();
 	const found: Candidate[] = [];
 	for (const category of categories) {
@@ -393,13 +402,18 @@ function candidatesOf(categories: readonly ListedCategory[]): Candidate[] {
 			const segment = category.translated[language];
 			const channel = CHANNEL_MAP[market]?.saleorSlug;
 			if (!segment || segment === category.slug || !channel) continue;
-			// What the table spells already is not learned a second time.
-			if (tableSpelling(category.slug, market) === segment) continue;
 			found.push({ base: category.slug, id: category.id, market, channel, language, segment });
 		}
 	}
 	return found;
 }
+
+/**
+ * Does the table spell this category in this market? Then its row is the address and nothing Saleor holds for it there
+ * is a candidate for one: not to be learned, and not to be refused either, since the category is not competing with
+ * itself. Found by the Saleor id, because Saleor can hold a table category under another slug than the row's.
+ */
+const tableHolds = (c: Candidate): boolean => tableSpelling(c.base, c.market, c.id) !== null;
 
 /**
  * Why a translated slug must NOT become the address of a category in a market, or null.
@@ -412,14 +426,15 @@ function segmentRefusal(
 	bases: ReadonlySet<string>,
 	claims: ReadonlyMap<string, number>,
 ): string | null {
-	const { segment, market, base } = candidate;
+	const { segment, market, id } = candidate;
 	if (!SLUG_SHAPE.test(segment)) return "not a plain lower-case slug";
 	if (MARKET_ROOT_SEGMENTS.has(segment)) return "the name of a real route";
 	if (FRIENDLY_SLUGS.has(segment) || SALEOR_SLUGS.has(segment)) return "the name of a market";
 	if (cartSegment(market) === segment) return "the market's cart route";
 	if (bases.has(segment)) return "the base slug of another category";
+	// Another category, by id: a slug can differ between the table and Saleor for one and the same category.
 	const owner = mappedCategoryFor(market, segment);
-	if (owner && owner.baseSlug !== base) return `a spelling of ${owner.baseSlug} in ${market}`;
+	if (owner && owner.saleorId !== id) return `a spelling of ${owner.baseSlug} in ${market}`;
 	if ((claims.get(`${market}|${segment}`) ?? 0) > 1)
 		return "claimed by more than one category in this market";
 	return null;
@@ -464,24 +479,49 @@ async function segmentCollisions(
 	return verdicts;
 }
 
+interface Learned {
+	readonly localized: Map<string, LocalizedSpelling>;
+	readonly refused: Map<string, string>;
+	/** The translated slugs that name a category without being the address it is routed at. */
+	readonly aliases: readonly Candidate[];
+}
+
 /**
- * The localized spellings to route after this load, and the refusals to report.
+ * Does this translated slug name its category without being the address the category is routed at?
+ *
+ * Such a slug is what Saleor hands a page that names the category, so it must lead to the address the category does
+ * have. Not when two categories claim it (it names neither), not when it is another category's base slug (it names
+ * that one), and not when it is the spelling the table routes the category at anyway.
+ */
+function isAlias(
+	c: Candidate,
+	localized: ReadonlyMap<string, LocalizedSpelling>,
+	bases: ReadonlySet<string>,
+	claims: ReadonlyMap<string, number>,
+): boolean {
+	if (localized.get(keyOf(c.base, c.market))?.segment === c.segment) return false;
+	if (!SLUG_SHAPE.test(c.segment)) return false;
+	if ((claims.get(`${c.market}|${c.segment}`) ?? 0) > 1) return false;
+	if (bases.has(c.segment)) return false;
+	return tableSpelling(c.base, c.market, c.id) !== c.segment;
+}
+
+/**
+ * The localized spellings to route after this load, the refusals to report, and the aliases to remember.
  *
  * Kept as they were while Saleor still holds the same translated slug (no new question), and while the listing is
  * incomplete for a category it did not reach. A complete listing without the category, or with another slug, drops
  * it: the old address goes with the translation.
  */
-async function learnSpellings(
-	url: string,
-	listing: Listing,
-	s: LiveState,
-): Promise<{ localized: Map<string, LocalizedSpelling>; refused: Map<string, string> }> {
-	const candidates = candidatesOf(listing.categories);
+async function learnSpellings(url: string, listing: Listing, s: LiveState): Promise<Learned> {
+	const translations = translationsOf(listing.categories);
+	// Where the table spells a category its row decides, and there is nothing to learn and nothing to refuse.
+	const candidates = translations.filter((c) => !tableHolds(c));
 	const listed = new Set(listing.slugs);
 	const bases = new Set([...CATEGORY_SLUGS, ...listing.slugs]);
 
 	const claims = new Map<string, number>();
-	for (const c of candidates)
+	for (const c of translations)
 		claims.set(`${c.market}|${c.segment}`, (claims.get(`${c.market}|${c.segment}`) ?? 0) + 1);
 
 	const localized = new Map<string, LocalizedSpelling>();
@@ -517,19 +557,44 @@ async function learnSpellings(
 			// `unknown`: not admitted yet, and asked again at the next load.
 		}
 	}
-	return { localized, refused };
+	const aliases = translations.filter((c) => isAlias(c, localized, bases, claims));
+	return { localized, refused, aliases };
 }
 
-function learnedRowsOf(localized: ReadonlyMap<string, LocalizedSpelling>): LearnedCategory[] {
-	const byBase = new Map<string, { id: string; segments: Record<string, string> }>();
-	for (const spelling of localized.values()) {
-		const row = byBase.get(spelling.base) ?? { id: spelling.id, segments: {} };
-		row.segments[spelling.market] = spelling.segment;
-		byBase.set(spelling.base, row);
+/** What `config/category-routes.ts` is handed: the spellings routed, and the aliases, per category, in a fixed order. */
+function learnedRowsOf(learned: Pick<Learned, "localized" | "aliases">): LearnedCategory[] {
+	interface Draft {
+		id: string;
+		segments: Record<string, string>;
+		aliases: Record<string, string[]>;
 	}
+	const byBase = new Map<string, Draft>();
+	const draft = (base: string, id: string): Draft => {
+		const row = byBase.get(base) ?? { id, segments: {}, aliases: {} };
+		byBase.set(base, row);
+		return row;
+	};
+	for (const spelling of learned.localized.values())
+		draft(spelling.base, spelling.id).segments[spelling.market] = spelling.segment;
+	for (const alias of learned.aliases) {
+		const row = draft(alias.base, alias.id);
+		(row.aliases[alias.market] ??= []).push(alias.segment);
+	}
+	const byKey = <T>(record: Record<string, T>): Record<string, T> =>
+		Object.fromEntries(Object.entries(record).sort(([a], [b]) => a.localeCompare(b)));
 	return [...byBase]
 		.sort(([a], [b]) => a.localeCompare(b))
-		.map(([baseSlug, row]) => ({ baseSlug, saleorId: row.id, segments: row.segments }));
+		.map(([baseSlug, row]): LearnedCategory => {
+			const aliases = byKey(
+				Object.fromEntries(Object.entries(row.aliases).map(([m, slugs]) => [m, slugs.sort()])),
+			);
+			return {
+				baseSlug,
+				saleorId: row.id,
+				segments: byKey(row.segments),
+				...(Object.keys(aliases).length > 0 ? { aliases } : {}),
+			};
+		});
 }
 
 // --- the load ------------------------------------------------------------------------
@@ -593,10 +658,13 @@ async function load(url: string): Promise<void> {
 
 	if (added.length > 0 || removed.length > 0 || s.loadedAt === 0) publish(admitted);
 
-	const spellingsChanged =
-		spellings.localized.size !== s.localized.size ||
-		[...spellings.localized].some(([key, spelling]) => s.localized.get(key)?.segment !== spelling.segment);
-	if (spellingsChanged || s.loadedAt === 0) publishLearnedCategories(learnedRowsOf(spellings.localized));
+	// The spellings AND the aliases go to the route table together, and again only when either has changed.
+	const learnedRows = learnedRowsOf(spellings);
+	const signature = JSON.stringify(learnedRows);
+	if (signature !== s.published || s.loadedAt === 0) {
+		publishLearnedCategories(learnedRows);
+		s.published = signature;
+	}
 	for (const [key, spelling] of spellings.localized) {
 		if (s.localized.get(key)?.segment === spelling.segment) continue;
 		log(`now routing ${spelling.base} in ${spelling.market} at /${spelling.market}/${spelling.segment}`);
@@ -609,7 +677,7 @@ async function load(url: string): Promise<void> {
 		console.warn(
 			`[live-categories] Saleor holds a translated slug for ${JSON.stringify(
 				key.replace("|", " in "),
-			)} but it is NOT routed: ${reason}`,
+			)} but it is NOT routed as the address: ${reason}; the category keeps the address of its base slug`,
 		);
 	}
 	if (s.failures > 0) log(`Saleor answered again after ${s.failures} failed load(s)`);
