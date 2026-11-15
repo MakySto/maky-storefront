@@ -651,12 +651,25 @@ describe("the account", () => {
 		);
 	});
 
-	it("says when the supplemental source is linked after the feed, where it changes nothing", async () => {
-		const text = await refusal([
-			feedSource([{ self: true }, { supplementalDataSourceName: SUPPLEMENTAL }]),
-			apiSource(),
-		]);
-		expect(text).toContain("linked AFTER the feed");
+	it("sends when the two are linked by a rule the API does not show, and says what that means", async () => {
+		writeOffers({ V1: offer("899.00 EUR") });
+		const byRule = apiSource({
+			supplementalProductDataSource: { referencingPrimaryDataSources: [{ primaryDataSourceName: PRIMARY }] },
+		});
+		const w = world(shop, { sources: [feedSource(null), byRule] });
+		expect(await w.run("--fire")).toBe(0);
+		expect(w.inserts).toHaveLength(1);
+
+		const check = world(shop, { sources: [feedSource(null), byRule] });
+		expect(await check.run("--check")).toBe(0);
+		expect(check.text()).toContain("linked to the feed by a rule the API does not show");
+	});
+
+	it("says so when the supplemental source stands behind the feed in the default rule", async () => {
+		const behind = [feedSource([{ self: true }, { supplementalDataSourceName: SUPPLEMENTAL }]), apiSource()];
+		const check = world(shop, { sources: behind });
+		expect(await check.run("--check")).toBe(0);
+		expect(check.text()).toContain("linked BEHIND the feed in the default rule");
 	});
 
 	it("refuses a supplemental source made for another language or label", async () => {
@@ -698,7 +711,9 @@ describe("the account", () => {
 		expect(w.text()).toContain(
 			'the feed\'s source "Feed SK" (sk~SK, fetched daily at 07:00 Europe/Bratislava)',
 		);
-		expect(w.text()).toContain('supplemental API source "MAKY API" is linked ahead of the feed');
+		expect(w.text()).toContain(
+			'supplemental API source "MAKY API" is linked ahead of the feed in the default rule',
+		);
 		expect(w.text()).toContain("12 used of 70000 a day, 1000 a minute");
 		expect(w.outside.filter((line) => line.startsWith("POST") && !line.includes("oauth2"))).toEqual([]);
 	});

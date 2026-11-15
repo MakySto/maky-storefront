@@ -12,7 +12,7 @@
 // the feed names it (owner, 2026-11-15). The Merchant API cannot change a product that came from a file
 // ("Only API data sources are supported"), so this program writes into a second, SUPPLEMENTAL data source
 // of type API that Merchant Center joins onto the feed's: for a product it holds, its price and
-// availability stand in front of the feed's; everything else, and every product it does not hold, is the
+// availability stand in for the feed's; everything else, and every product it does not hold, is the
 // feed's. It never adds a product and never removes one.
 //
 // The shop says what an offer is, here as in the feed: this program walks the same internal route
@@ -23,8 +23,9 @@
 // `merchant-feed.mjs` beside the feed), the offer the shop states now is compared with what Google was
 // last told: by this program if it ever sent that product, otherwise by the feed. Only a difference is
 // sent, as one `productInputs:insert` with the id, the feed label, the language, the price(s) and the
-// availability. A product the supplemental source holds is kept true from then on, because there its
-// value wins over the feed's.
+// availability. A product this program once sent is compared with what it sent from then on, not with
+// the feed: under either way of linking the two sources that is never wrong, at worst a value the feed
+// has caught up with is sent once more.
 //
 // Rules this file enforces rather than documents:
 //
@@ -41,8 +42,12 @@
 //      that is a failed read, a currency or tax switch, or a rewrite, and the next feed carries it anyway.
 //      A run sends at most `--max` changes; the rest wait for the next run.
 //   5. Before anything is sent the account is read: the feed's data source must exist, and exactly one
-//      supplemental API source must be linked in its default rule AHEAD of the feed itself. Linked after
-//      it, or not at all, every request would be accepted by Google and change nothing.
+//      supplemental API source must be linked to it. Not linked, every request would be accepted by
+//      Google and change nothing. HOW it is linked is set in Merchant Center, and the right way is the
+//      attribute rule "take latest" for price and availability: the newer of feed and API wins, so a
+//      value this program sent is replaced by the next feed even if the program has stopped running.
+//      Linked ahead of the feed in the default rule it also works, but a value sent here then stays in
+//      front of the feed until it is sent again; `--check` says which of the two it finds.
 //   6. The key of the Google service account is read at run time from AWS SSM (a SecureString, by name)
 //      or from a file named on the command line. It is never written to disk by this program, never
 //      printed, and the signed request for a token goes to Google's token address only. The shop's
@@ -541,23 +546,32 @@ export async function discover({ client, market, account, dataSource }) {
 		(reference) => reference.supplementalDataSourceName,
 	);
 
+	/**
+	 * How a supplemental source is joined onto the feed's: ahead of it or behind it in the default rule,
+	 * or by a rule the API does not show (an attribute rule set in Merchant Center, "take latest" among
+	 * them). `null` when it is not joined at all.
+	 */
+	const linkOf = (source) => {
+		if (ahead.includes(source.name)) return "ahead";
+		if (behind.includes(source.name)) return "behind";
+		const referencing = source.supplementalProductDataSource.referencingPrimaryDataSources ?? [];
+		return referencing.some((reference) => reference.primaryDataSourceName === primary.name) ? "rule" : null;
+	};
+
 	const apiSources = sources.filter(
 		(source) => source.supplementalProductDataSource && source.input === "API",
 	);
 	const wanted = dataSource ? `accounts/${accountId}/dataSources/${dataSource}` : null;
 	const linked = apiSources.filter(
-		(source) => ahead.includes(source.name) && (!wanted || source.name === wanted),
+		(source) => linkOf(source) !== null && (!wanted || source.name === wanted),
 	);
 	if (linked.length !== 1) {
-		const late = apiSources.filter((source) => behind.includes(source.name));
 		throw new GoogleError(
 			linked.length > 1
-				? `${linked.length} supplemental API sources are linked ahead of the feed: name one with --data-source`
-				: late.length > 0
-					? `the supplemental API source "${late[0].displayName}" is linked AFTER the feed in the default rule, so the feed's values would win: move it ahead of the feed`
-					: apiSources.length > 0
-						? `the supplemental API source "${apiSources[0].displayName}" exists and is not linked to the feed's source "${primary.displayName}": link it in the default rule, ahead of the feed`
-						: `there is no supplemental data source of type API: create one in Merchant Center and link it to "${primary.displayName}"`,
+				? `${linked.length} supplemental API sources are linked to the feed: name one with --data-source`
+				: apiSources.length > 0
+					? `the supplemental API source "${apiSources[0].displayName}" exists and is not linked to the feed's source "${primary.displayName}": link it there in Merchant Center`
+					: `there is no supplemental data source of type API: create one in Merchant Center and link it to "${primary.displayName}"`,
 		);
 	}
 	const supplemental = linked[0];
@@ -589,8 +603,25 @@ export async function discover({ client, market, account, dataSource }) {
 			displayName: primary.displayName,
 			fetch: primary.fileInput?.fetchSettings ?? null,
 		},
-		supplemental: { name: supplemental.name, displayName: supplemental.displayName },
+		supplemental: {
+			name: supplemental.name,
+			displayName: supplemental.displayName,
+			link: linkOf(supplemental),
+		},
 	};
+}
+
+/** What the way the two sources are joined means for a value sent here. */
+export function describeLink(supplemental) {
+	const name = `supplemental API source "${supplemental.displayName}"`;
+	switch (supplemental.link) {
+		case "rule":
+			return `${name} is linked to the feed by a rule the API does not show. With "take latest" for price and availability the newer of feed and API wins.`;
+		case "ahead":
+			return `${name} is linked ahead of the feed in the default rule: a value sent here stays in front of the feed's until it is sent again, also when this program stops running. "Take latest" for price and availability is the safer rule.`;
+		default:
+			return `${name} is linked BEHIND the feed in the default rule: a value sent here shows only if an attribute rule takes price and availability from it ("take latest"). Look with --show after the first send.`;
+	}
 }
 
 /** The account's allowance for product inputs, as Google states it today. Never a reason to fail a check. */
@@ -703,9 +734,7 @@ export async function main(argv, deps = {}) {
 						found.contentLanguage
 					}~${found.feedLabel}, fetched ${describeFetch(found.primary.fetch)}).`,
 				);
-				log(
-					`supplemental API source "${found.supplemental.displayName}" is linked ahead of the feed: changes sent here will show.`,
-				);
+				log(describeLink(found.supplemental));
 				log(await describeQuota(client, found.accountId));
 				return 0;
 			}
