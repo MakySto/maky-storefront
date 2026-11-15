@@ -2,7 +2,7 @@ import "server-only";
 
 import { catalogLanguageForMarket } from "@/lib/catalog-content/language";
 
-import type { ReleaseFault } from "./manifest";
+import type { ReleaseFault, TyreFileEntry } from "./manifest";
 import type { ReleaseView, TargetView } from "./sync";
 
 /**
@@ -60,6 +60,31 @@ export type FitmentStatus = {
 	readonly error: StatusError;
 };
 
+type TyreFileStatus = {
+	readonly file: string | null;
+	readonly sha256: string | null;
+	/** The seal of the file in use, recomputed from its content by this process. */
+	readonly selfSha256: string | null;
+};
+
+/**
+ * The snow-chain tyre-size list and its model families: one pair, one status.
+ *
+ * `source` is `manifest` for a pair this process verified from a manifest file, and `build` for the copy the
+ * build carries, which answers until the first pair has verified. Only `manifest` + `active` confirms that a
+ * published pair was adopted: a build that happens to carry the same list has not taken the release.
+ */
+export type TyreSizesStatus = {
+	readonly id: string | null;
+	readonly release: number | null;
+	readonly index: TyreFileStatus;
+	readonly families: TyreFileStatus;
+	readonly state: State;
+	readonly source: "manifest" | "build" | "none";
+	readonly activatedAt: string | null;
+	readonly error: StatusError;
+};
+
 export type CatalogStatusDocument = {
 	readonly artifact: typeof STATUS_ARTIFACT;
 	readonly schemaVersion: typeof STATUS_SCHEMA_VERSION;
@@ -74,6 +99,12 @@ export type CatalogStatusDocument = {
 	};
 	readonly content: { readonly targets: Readonly<Record<string, TargetStatus>> };
 	readonly fitment: FitmentStatus | null;
+	/**
+	 * Present once a manifest has named a pair (or a `tyreSizes` section this build could not read), absent
+	 * before: a process that was never asked for one has nothing to confirm, and the document then is exactly
+	 * the 1.0.0 one.
+	 */
+	readonly tyreSizes?: TyreSizesStatus;
 };
 
 /** What the older settings hold right now. Peeks only: they never trigger a load. */
@@ -85,6 +116,12 @@ export type LegacyPeek = {
 		readonly sha256: string | null;
 		readonly datasetHash: string | null;
 		readonly datasetVersion: string | null;
+	} | null;
+	/** The pair the build carries, which is what answers while no manifest pair is active. */
+	readonly tyreSizes?: () => {
+		readonly id: string;
+		readonly indexSeal: string;
+		readonly familiesSeal: string;
 	} | null;
 };
 
@@ -161,6 +198,46 @@ function fitmentStatus(view: ReleaseView["fitment"], legacy: LegacyPeek): Fitmen
 	};
 }
 
+function tyreFile(entry: TyreFileEntry): TyreFileStatus {
+	return { file: entry.file, sha256: entry.sha256, selfSha256: entry.selfSha256 };
+}
+
+function tyreSizesStatus(view: ReleaseView["tyreSizes"], legacy: LegacyPeek): TyreSizesStatus | undefined {
+	if (view.active) {
+		const { entry, activatedAt } = view.active;
+		const wanted = view.desired;
+		const current =
+			view.fault === null &&
+			(wanted === null ||
+				(wanted.release === entry.release &&
+					wanted.index.sha256 === entry.index.sha256 &&
+					wanted.families.sha256 === entry.families.sha256));
+		return {
+			id: entry.id,
+			release: entry.release,
+			index: tyreFile(entry.index),
+			families: tyreFile(entry.families),
+			state: current ? "active" : "stale",
+			source: "manifest",
+			activatedAt: iso(activatedAt),
+			error: current ? null : error(view.fault),
+		};
+	}
+	// No manifest has asked for a pair: nothing for CFM to confirm, and nothing to report.
+	if (!view.desired && !view.fault) return undefined;
+	const held = legacy.tyreSizes?.() ?? null;
+	return {
+		id: held?.id ?? null,
+		release: null,
+		index: { file: null, sha256: null, selfSha256: held?.indexSeal ?? null },
+		families: { file: null, sha256: null, selfSha256: held?.familiesSeal ?? null },
+		state: held ? "stale" : "missing",
+		source: held ? "build" : "none",
+		activatedAt: null,
+		error: error(view.fault),
+	};
+}
+
 /**
  * `operator` adds what identifies the process (its pid and start time) for someone who holds the
  * revalidate secret. Everything else is the same for everyone and carries nothing secret: file names,
@@ -175,6 +252,7 @@ export function buildCatalogStatus(
 	for (const target of [...view.targets].sort((a, b) => a.market.localeCompare(b.market))) {
 		targets[target.market] = targetStatus(target, legacy);
 	}
+	const tyreSizes = tyreSizesStatus(view.tyreSizes, legacy);
 	return {
 		artifact: STATUS_ARTIFACT,
 		schemaVersion: STATUS_SCHEMA_VERSION,
@@ -193,5 +271,6 @@ export function buildCatalogStatus(
 		},
 		content: { targets },
 		fitment: fitmentStatus(view.fitment, legacy),
+		...(tyreSizes ? { tyreSizes } : {}),
 	};
 }

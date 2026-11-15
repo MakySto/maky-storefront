@@ -5,6 +5,7 @@ import { peekCatalogContent } from "@/lib/catalog-content/snapshot";
 import { buildCatalogStatus } from "@/lib/catalog-release/status";
 import { inspectRelease } from "@/lib/catalog-release/sync";
 import { fitmentRuntimeStatus } from "@/lib/fitment/provider";
+import { activeTyreLists } from "@/lib/tyre-size/active-lists";
 
 /**
  * What the RUNNING process serves for the catalogue — the answer CFM waits for before it calls a published
@@ -51,6 +52,16 @@ export async function GET(request: NextRequest): Promise<Response> {
 							datasetVersion: held.datasetVersion,
 						}
 					: null;
+			},
+			tyreSizes: () => {
+				// Asked only while no manifest pair is active, which is when the pair in use is the build's own.
+				// A build whose two files do not belong together has no pair to report.
+				try {
+					const { index, seals } = activeTyreLists();
+					return { id: index.id, indexSeal: seals.index, familiesSeal: seals.families };
+				} catch {
+					return null;
+				}
 			},
 		},
 		{ operator: verifySecret(extractBearerToken(request)) },
