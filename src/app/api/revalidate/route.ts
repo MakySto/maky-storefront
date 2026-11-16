@@ -14,6 +14,7 @@ import { expireCategoryAnswers } from "@/lib/listing/category-invalidation";
 import { invalidateKept } from "@/lib/cache/kept-read";
 import { abandonFlush, flushThrottled, submitThrottled } from "@/lib/revalidate-throttle";
 import { verifySaleorJws } from "@/lib/saleor/webhook-jws";
+import { detailAllowed, recordRevalidateRequest, type Outcome } from "@/lib/revalidate-stats";
 
 /**
  * Webhook endpoint for cache invalidation.
@@ -189,7 +190,47 @@ function throttledRevalidation(key: string, work: () => void): "ran" | "deferred
 // POST — Saleor webhook
 // ============================================================================
 
+/** What the handler learns about a request that the timing around it reports. */
+interface RequestNote {
+	/** The event type (`ProductUpdated`), or the kind of resource when the body names none. */
+	type?: string;
+	/** A verified Saleor event that was only logged. */
+	loggedOnly?: boolean;
+}
+
+/**
+ * Times the handling and counts it (`@/lib/revalidate-stats`): one `[revalidate-events]` line a minute says how
+ * many requests of which type, what became of them and how long they took, so "answers inside a second" can be read
+ * off the log after a night of CFM writes instead of assumed.
+ */
 export async function POST(request: NextRequest) {
+	const started = performance.now();
+	const note: RequestNote = {};
+	let response: Response | undefined;
+	try {
+		response = await handlePost(request, note);
+		return response;
+	} finally {
+		const status = response?.status ?? 500;
+		const outcome: Outcome =
+			status === 401
+				? "unauthorized"
+				: status === 503
+					? "key-unavailable"
+					: status >= 400
+						? "rejected"
+						: note.loggedOnly
+							? "logged-only"
+							: "applied";
+		recordRevalidateRequest({
+			type: note.type ?? request.headers.get("saleor-event") ?? undefined,
+			outcome,
+			ms: performance.now() - started,
+		});
+	}
+}
+
+async function handlePost(request: NextRequest, note: RequestNote) {
 	// The bytes, not the text: a JWS with an unencoded payload is a signature over exactly these.
 	const bytes = new Uint8Array(await request.arrayBuffer());
 	const rawBody = Buffer.from(bytes).toString("utf8");
@@ -200,21 +241,25 @@ export async function POST(request: NextRequest) {
 		const jws = await verifySaleorJws(bytes, signature);
 		if (!jws.ok && jws.kind === "unavailable") {
 			// Not a refusal: Saleor repeats a 5xx (10 s, 20 s, … for five tries) and never repeats a 401.
-			console.error(
-				"[Revalidate] Saleor's signing key could not be read:",
-				jws.reason.replace(/[\r\n]/g, ""),
-			);
+			if (detailAllowed("key-unavailable")) {
+				console.error(
+					"[Revalidate] Saleor's signing key could not be read:",
+					jws.reason.replace(/[\r\n]/g, ""),
+				);
+			}
 			return Response.json({ error: "Signing key unavailable" }, { status: 503 });
 		}
 		if (!jws.ok) {
-			console.warn("[Revalidate] Invalid signature or secret (JWS):", jws.reason.replace(/[\r\n]/g, ""));
+			if (detailAllowed("unauthorized")) {
+				console.warn("[Revalidate] Invalid signature or secret (JWS):", jws.reason.replace(/[\r\n]/g, ""));
+			}
 			return Response.json({ error: "Unauthorized" }, { status: 401 });
 		}
 		fromSaleor = true;
 	} else if (!verifyWebhookSignature(rawBody, signature)) {
 		const token = extractBearerToken(request) ?? request.headers.get("x-revalidate-secret");
 		if (!verifySecret(token)) {
-			console.warn("[Revalidate] Invalid signature or secret");
+			if (detailAllowed("unauthorized")) console.warn("[Revalidate] Invalid signature or secret");
 			return Response.json({ error: "Unauthorized" }, { status: 401 });
 		}
 	}
@@ -228,16 +273,21 @@ export async function POST(request: NextRequest) {
 
 		const resource = parseWebhookPayload(payload);
 		const { kind, slug, previousSlug, categorySlug, unnamedProduct } = resource;
+		note.type = resource.eventType ?? request.headers.get("saleor-event") ?? kind;
 
 		if (fromSaleor && !saleorEventsApplied()) {
-			const clean = (value: string | undefined) => value?.replace(/[\r\n]/g, "");
-			console.log("[Revalidate] Saleor event, verified, NOT applied (SALEOR_WEBHOOK_APPLY is not 1):", {
-				event: clean(resource.eventType ?? request.headers.get("saleor-event") ?? undefined),
-				type: kind,
-				slug: clean(slug),
-				category: clean(categorySlug),
-				channel: clean(resource.channel),
-			});
+			note.loggedOnly = true;
+			// The first few of a window print in full (the shape is what this mode is for); the rest are counted.
+			if (detailAllowed("logged-only")) {
+				const clean = (value: string | undefined) => value?.replace(/[\r\n]/g, "");
+				console.log("[Revalidate] Saleor event, verified, NOT applied (SALEOR_WEBHOOK_APPLY is not 1):", {
+					event: clean(resource.eventType ?? request.headers.get("saleor-event") ?? undefined),
+					type: kind,
+					slug: clean(slug),
+					category: clean(categorySlug),
+					channel: clean(resource.channel),
+				});
+			}
 			return Response.json({ success: true, applied: false });
 		}
 
@@ -456,15 +506,18 @@ export async function POST(request: NextRequest) {
 		const sanitizedSlug = slug?.replace(/[\r\n]/g, "") ?? "";
 		const sanitizedPaths = revalidatedPaths.map((s) => s.replace(/[\r\n]/g, ""));
 		const sanitizedTags = revalidatedTags.map((s) => s.replace(/[\r\n]/g, ""));
-		console.log("[Revalidate] Success:", {
-			type: kind,
-			slug: sanitizedSlug,
-			paths: sanitizedPaths,
-			tags: sanitizedTags,
-			existence,
-			...(resource.eventType ? { event: resource.eventType.replace(/[\r\n]/g, "") } : {}),
-			...(deferred > 0 ? { deferred } : {}),
-		});
+		// A request of Saleor's is one of thousands in a catalogue write: the first few of a window print their
+		// paths and tags, the rest are in the minute's `[revalidate-events]` line. CFM's own calls print as before.
+		if (!fromSaleor || detailAllowed("applied"))
+			console.log("[Revalidate] Success:", {
+				type: kind,
+				slug: sanitizedSlug,
+				paths: sanitizedPaths,
+				tags: sanitizedTags,
+				existence,
+				...(resource.eventType ? { event: resource.eventType.replace(/[\r\n]/g, "") } : {}),
+				...(deferred > 0 ? { deferred } : {}),
+			});
 		return Response.json({ paths: revalidatedPaths, tags: revalidatedTags, success: true });
 	} catch (error) {
 		console.error("[Revalidate] Error:", error);
