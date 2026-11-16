@@ -35,7 +35,7 @@ export const CheckoutSummaryContext: FC<CheckoutSummaryContextProps> = ({ rows, 
 		<section className="divide-border border-border divide-y rounded-lg border text-sm">
 			{rows.map((row) => (
 				<div key={row.labelKey} className="flex items-start gap-4 p-4">
-					<span className="text-muted-foreground w-16 shrink-0 pt-0.5">{t(row.labelKey)}</span>
+					<span className="text-muted-foreground w-24 shrink-0 pt-0.5">{t(row.labelKey)}</span>
 					<span className="min-w-0 flex-1 break-words">
 						{row.valueKey ? t(row.valueKey) : row.value ?? ""}
 					</span>
@@ -68,6 +68,25 @@ export function formatAddressLine(address: CheckoutFragment["shippingAddress"], 
 	)}`;
 }
 
+/**
+ * The delivery address with the phone as Saleor stored it. Saleor reads a number without a calling code as a number
+ * of the delivery country, so a customer who typed a foreign number that way sees here, with the calling code, which
+ * number the courier will call, while "Change" is still one click away.
+ */
+export function formatDeliveryLine(address: CheckoutFragment["shippingAddress"], locale?: string): string {
+	const line = formatAddressLine(address, locale);
+	const phone = address?.phone?.trim();
+	return phone ? `${line} · ${phone}` : line;
+}
+
+/** A shipping method's name: Saleor's translation for the customer's language when there is one. */
+export function shippingMethodName(method: {
+	name: string;
+	translation?: { name?: string | null } | null;
+}): string {
+	return method.translation?.name?.trim() || method.name;
+}
+
 /** Get shipping method display string */
 export function formatShippingMethod(checkout: CheckoutFragment, locale?: string): string {
 	const deliveryMethod = checkout.deliveryMethod;
@@ -83,7 +102,7 @@ export function formatShippingMethod(checkout: CheckoutFragment, locale?: string
 
 	const priceStr = formatShippingPrice(checkout.shippingPrice?.gross, locale);
 
-	return `${method.name}${priceStr ? ` · ${priceStr}` : ""}`;
+	return `${shippingMethodName(method)}${priceStr ? ` · ${priceStr}` : ""}`;
 }
 
 /** Build standard summary rows for shipping step. `locale` localizes the country name. */
@@ -92,7 +111,7 @@ export function buildShippingSummaryRows(checkout: CheckoutFragment, locale?: st
 		{ labelKey: "summary.contact", value: checkout.email || "", onChangeStep: 1 },
 		{
 			labelKey: "summary.shipTo",
-			value: formatAddressLine(checkout.shippingAddress, locale),
+			value: formatDeliveryLine(checkout.shippingAddress, locale),
 			onChangeStep: 1,
 		},
 	];
@@ -107,7 +126,7 @@ export function buildPaymentSummaryRows(checkout: CheckoutFragment, locale?: str
 		rows.push(
 			{
 				labelKey: "summary.shipTo",
-				value: formatAddressLine(checkout.shippingAddress, locale),
+				value: formatDeliveryLine(checkout.shippingAddress, locale),
 				onChangeStep: 1,
 			},
 			{ labelKey: "summary.method", value: formatShippingMethod(checkout, locale), onChangeStep: 2 },

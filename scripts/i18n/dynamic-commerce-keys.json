@@ -111,6 +111,16 @@
 			"callSite": "src/checkout/lib/address-errors.ts",
 			"source": "phoneRefusalMessage() in the same file; the translator comes from the address server actions (src/checkout/lib/actions.ts) and from the account address dialog",
 			"keys": ["checkout.addressForm.phoneInvalid", "checkout.addressForm.phoneInvalidIntl"]
+		},
+		{
+			"pattern": "t(\"checkout.addressForm.fieldInvalid\") / t(\"checkout.addressForm.postalCodeInvalid\") / t(\"checkout.addressForm.notAvailableInCountry\") through a passed-in translator",
+			"callSite": "src/checkout/lib/address-errors.ts",
+			"source": "localizeAddressErrors() in the same file; the translator comes from the address server actions (src/checkout/lib/actions.ts)",
+			"keys": [
+				"checkout.addressForm.fieldInvalid",
+				"checkout.addressForm.postalCodeInvalid",
+				"checkout.addressForm.notAvailableInCountry"
+			]
 		}
 	]
 }

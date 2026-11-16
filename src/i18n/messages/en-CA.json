@@ -428,6 +428,7 @@
 			"emailInvalid": "Enter a valid email address",
 			"passwordRequired": "Password is required",
 			"passwordTooShort": "Password must be at least 8 characters",
+			"passwordTooWeak": "The password is too simple. Choose a longer password that is not a common word and not only numbers.",
 			"selectShippingAddress": "Select a shipping address",
 			"emailSaveFailed": "We couldn't save your email address",
 			"accountCreateFailed": "We couldn't create your account",
@@ -473,7 +474,11 @@
 			"selectBillingAddressTitle": "Select a billing address",
 			"phoneHint": "e.g. {example}. For a number from another country, include the country code, e.g. {foreign}.",
 			"phoneInvalid": "This phone number is not valid for the delivery country ({country}). Enter it like {example}, or with the country code, e.g. {foreign}.",
-			"phoneInvalidIntl": "This phone number with a country code is not valid. Please check it, e.g. {foreign}."
+			"phoneInvalidIntl": "This phone number with a country code is not valid. Please check it, e.g. {foreign}.",
+			"fieldInvalid": "The {field} field does not hold a valid value. Please check it.",
+			"postalCodeInvalid": "The postal code is not in the format used in {country}. Please enter it as {example}.",
+			"notAvailableInCountry": "We cannot deliver the items in your cart to {country} in the quantity you asked for right now. Choose another delivery country or change your cart.",
+			"savedAddressPhoneNote": "The address you picked has no phone number. The courier needs one for the delivery, so please add it."
 		},
 		"errors": {
 			"invalidValue": "Invalid value",
@@ -608,7 +613,9 @@
 			"orderUpdated": "Your order has been updated. Please review the new total before paying.",
 			"finalStateUnconfirmed": "We couldn't confirm the final price right now. Please try again.",
 			"completeBlockedNoNewPayment": "We couldn't complete the order right now. If you have already paid, don't start a new payment: refresh the page or contact us.",
-			"completeOfferChanged": "The amount has changed, so no order was created. The money from this payment will be released automatically. If you need help with the order, contact us."
+			"completeOfferChanged": "The amount has changed, so no order was created. The money from this payment will be released automatically. If you need help with the order, contact us.",
+			"deliveryPhoneMissing": "The delivery address has no phone number. The courier needs one for the delivery, so please add it before you pay.",
+			"addDeliveryPhone": "Add a phone number"
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Test mode:</strong> This is a simulated order confirmation. No real payment was taken.",

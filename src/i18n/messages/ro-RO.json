@@ -428,6 +428,7 @@
 			"emailInvalid": "Introduceți o adresă de e-mail validă",
 			"passwordRequired": "Parola este obligatorie",
 			"passwordTooShort": "Parola trebuie să conțină cel puțin 8 caractere",
+			"passwordTooWeak": "Parola este prea simplă. Alegeți o parolă mai lungă, care să nu fie un cuvânt obișnuit și nici doar cifre.",
 			"selectShippingAddress": "Selectați o adresă de livrare",
 			"emailSaveFailed": "Adresa de e-mail nu a putut fi salvată",
 			"accountCreateFailed": "Contul nu a putut fi creat",
@@ -473,7 +474,11 @@
 			"selectBillingAddressTitle": "Selectați o adresă de facturare",
 			"phoneHint": "De ex. {example}. Pentru un număr străin, introduceți prefixul țării, de ex. {foreign}.",
 			"phoneInvalid": "Numărul de telefon nu este valid pentru țara de livrare ({country}). Introduceți-l în forma {example} sau cu prefixul țării, de ex. {foreign}.",
-			"phoneInvalidIntl": "Numărul de telefon cu prefix nu este valid. Verificați-l, de ex. {foreign}."
+			"phoneInvalidIntl": "Numărul de telefon cu prefix nu este valid. Verificați-l, de ex. {foreign}.",
+			"fieldInvalid": "Câmpul {field} nu conține o valoare validă. Vă rugăm să îl verificați.",
+			"postalCodeInvalid": "Codul poștal nu are formatul folosit în această țară ({country}). Introduceți-l în formatul {example}.",
+			"notAvailableInCountry": "Momentan nu putem livra produsele din coș în această țară ({country}) în cantitatea cerută. Alegeți altă țară de livrare sau modificați coșul.",
+			"savedAddressPhoneNote": "Adresa aleasă nu are număr de telefon. Curierul are nevoie de el la livrare, vă rugăm să îl adăugați."
 		},
 		"errors": {
 			"invalidValue": "Valoare nevalidă",
@@ -608,7 +613,9 @@
 			"orderUpdated": "Comanda a fost actualizată. Verificați noua sumă înainte de plată.",
 			"finalStateUnconfirmed": "Prețul final nu a putut fi confirmat acum. Încercați din nou.",
 			"completeBlockedNoNewPayment": "Comanda nu a putut fi finalizată acum. Dacă ați plătit deja, nu începeți o nouă plată: reîmprospătați pagina sau contactați-ne.",
-			"completeOfferChanged": "Suma s-a modificat, așa că comanda nu a fost creată. Banii din această plată vor fi eliberați automat. Dacă aveți nevoie de ajutor cu comanda, contactați-ne."
+			"completeOfferChanged": "Suma s-a modificat, așa că comanda nu a fost creată. Banii din această plată vor fi eliberați automat. Dacă aveți nevoie de ajutor cu comanda, contactați-ne.",
+			"deliveryPhoneMissing": "Adresa de livrare nu are număr de telefon. Curierul are nevoie de el la livrare, de aceea adăugați-l înainte de plată.",
+			"addDeliveryPhone": "Adăugați numărul de telefon"
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Mod de testare:</strong> Aceasta este o confirmare simulată. Nu a fost efectuată nicio plată reală.",

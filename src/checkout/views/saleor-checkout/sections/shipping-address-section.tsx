@@ -41,6 +41,12 @@ interface ShippingAddressSectionProps {
 	/** The country's rules have loaded; until then no field is labelled optional. */
 	rulesKnown?: boolean;
 	countryAreaChoices?: Array<{ raw?: unknown; verbose?: unknown }>;
+
+	/**
+	 * Set when the saved address picked from the list has no phone number: the delivery phone is required, so the
+	 * customer adds it here for this order. `countryCode` is the country of that address.
+	 */
+	savedAddressPhone?: { value: string; countryCode: CountryCode; onChange: (value: string) => void };
 }
 
 // =============================================================================
@@ -66,6 +72,7 @@ export const ShippingAddressSection: FC<ShippingAddressSectionProps> = ({
 	isRequiredField,
 	rulesKnown,
 	countryAreaChoices,
+	savedAddressPhone,
 }) => {
 	const t = useTranslations("checkout");
 	const { locale } = useLocale();
@@ -89,6 +96,20 @@ export const ShippingAddressSection: FC<ShippingAddressSectionProps> = ({
 						onAddNew={() => onShowNewAddressForm(true)}
 					/>
 					{errors.address && <FieldError error={errors.address} />}
+					{savedAddressPhone ? (
+						<div className="space-y-3">
+							<p className="text-muted-foreground text-sm">{t("addressForm.savedAddressPhoneNote")}</p>
+							<AddressFields
+								orderedFields={["phone"]}
+								getFieldLabel={getFieldLabel}
+								isRequiredField={() => true}
+								formData={{ phone: savedAddressPhone.value }}
+								errors={errors}
+								onFieldChange={(_field, value) => savedAddressPhone.onChange(value)}
+								countryCode={savedAddressPhone.countryCode}
+							/>
+						</div>
+					) : null}
 				</>
 			) : (
 				<>

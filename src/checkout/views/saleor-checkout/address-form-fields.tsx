@@ -33,8 +33,12 @@ export const addressFieldPairs: [AddressField, AddressField][] = [
 // Shared Components
 // =============================================================================
 
-export const FieldError: FC<{ error?: string }> = ({ error }) =>
-	error ? <p className="text-destructive text-sm">{error}</p> : null;
+export const FieldError: FC<{ error?: string; id?: string }> = ({ error, id }) =>
+	error ? (
+		<p id={id} role="alert" className="text-destructive text-sm">
+			{error}
+		</p>
+	) : null;
 
 interface FormSelectProps {
 	id: string;
@@ -118,6 +122,8 @@ export const FormInput: FC<FormInputProps> = ({
 			maxLength={maxLength}
 			autoComplete={autoComplete}
 			inputMode={inputMode}
+			aria-invalid={error ? true : undefined}
+			aria-describedby={error ? `${id}-error` : undefined}
 			className={cn("h-12", Icon && "pl-10", error && "border-destructive", className)}
 		/>
 	</div>
@@ -206,7 +212,7 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 							label: verbose as string,
 						}))}
 					/>
-					<FieldError error={error} />
+					<FieldError error={error} id={`${fieldId}-error`} />
 				</div>
 			);
 		}
@@ -232,7 +238,7 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 				{isPhone && !error && (
 					<p className="text-muted-foreground text-xs">{t("addressForm.phoneHint", phoneHint)}</p>
 				)}
-				<FieldError error={error} />
+				<FieldError error={error} id={`${fieldId}-error`} />
 			</div>
 		);
 	};

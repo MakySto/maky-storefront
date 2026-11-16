@@ -17,8 +17,14 @@
 		"cart.variantLabel": {
 			"variant": "variant name from Saleor backend data"
 		},
+		"checkout.addressForm.fieldInvalid": {
+			"field": "The localized address-field label, e.g. 'Mesto' (already translated via the address field label keys)"
+		},
 		"checkout.addressForm.fieldRequired": {
 			"field": "The localized address-field label, e.g. 'Mesto' / 'PSČ' (already translated via the address field label keys)"
+		},
+		"checkout.addressForm.notAvailableInCountry": {
+			"country": "The localized name of the delivery country, e.g. 'Deutschland'"
 		},
 		"checkout.addressForm.phoneHint": {
 			"example": "The delivery country's example number in national form, e.g. '01512 3456789' (from src/checkout/lib/consts/phone-examples.ts; not translated)",
@@ -31,6 +37,10 @@
 		},
 		"checkout.addressForm.phoneInvalidIntl": {
 			"foreign": "An example number of another country with its calling code, e.g. '+421 912 123 456' (not translated)"
+		},
+		"checkout.addressForm.postalCodeInvalid": {
+			"country": "The localized name of the address country, e.g. 'Deutschland'",
+			"example": "The country's example postal code from Saleor's address rules, e.g. '10115' (not translated)"
 		},
 		"checkout.confirmation.emailNoticeWithAddress": {
 			"confirmationEmail": "customer e-mail address the order confirmation will be sent to (order.userEmail; never empty — the Generic variant renders otherwise)"

@@ -633,6 +633,54 @@
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
+		"checkout.addressForm.fieldInvalid": {
+			"source": "The {field} field does not hold a valid value. Please check it.",
+			"context": "Error under an address field (delivery, billing, company billing) when Saleor refuses its value and there is no more specific text for it. Replaces Saleor's English text.",
+			"kind": "validation",
+			"placeholders": {
+				"field": "The localized address-field label, e.g. 'Mesto' (already translated via the address field label keys)"
+			},
+			"callSites": [
+				"src/checkout/lib/address-errors.ts (dynamic: t(\"checkout.addressForm.fieldInvalid\" / \"…postalCodeInvalid\" / \"…notAvailableInCountry\") through a passed-in translator)"
+			],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.addressForm.postalCodeInvalid": {
+			"source": "The postal code is not in the format used in {country}. Please enter it as {example}.",
+			"context": "Error under the postal code field when Saleor refuses its format for the address country. Replaces Saleor's English text.",
+			"kind": "validation",
+			"placeholders": {
+				"country": "The localized name of the address country, e.g. 'Deutschland'",
+				"example": "The country's example postal code from Saleor's address rules, e.g. '10115' (not translated)"
+			},
+			"callSites": [
+				"src/checkout/lib/address-errors.ts (dynamic: t(\"checkout.addressForm.fieldInvalid\" / \"…postalCodeInvalid\" / \"…notAvailableInCountry\") through a passed-in translator)"
+			],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.addressForm.notAvailableInCountry": {
+			"source": "We cannot deliver the items in your cart to {country} in the quantity you asked for right now. Choose another delivery country or change your cart.",
+			"context": "Error on the Information step (form level, above the Continue button) when Saleor refuses the delivery address because the cart's items are not in stock for that country in the quantity asked for.",
+			"kind": "error",
+			"placeholders": {
+				"country": "The localized name of the delivery country, e.g. 'Deutschland'"
+			},
+			"callSites": [
+				"src/checkout/lib/address-errors.ts (dynamic: t(\"checkout.addressForm.fieldInvalid\" / \"…postalCodeInvalid\" / \"…notAvailableInCountry\") through a passed-in translator)"
+			],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.addressForm.savedAddressPhoneNote": {
+			"source": "The address you picked has no phone number. The courier needs one for the delivery, so please add it.",
+			"context": "Line above the phone field shown under the saved-address list of a signed-in customer when the address picked has no phone number (the delivery phone is required).",
+			"kind": "visible",
+			"callSites": ["src/checkout/views/saleor-checkout/sections/shipping-address-section.tsx:101"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
 		"checkout.addressForm.selectBillingAddressTitle": {
 			"source": "Select a billing address",
 			"context": "Title of the mobile bottom-sheet address picker when a logged-in user chooses a saved billing address.",
@@ -1441,6 +1489,14 @@
 			"context": "On submit of the Information step, guest checkout with 'create account' checked, when the password is shorter than 8 characters (the minimum 8 is also hardcoded in the validation code)",
 			"kind": "validation",
 			"callSites": ["src/checkout/views/saleor-checkout/information-step.tsx:265"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.info.passwordTooWeak": {
+			"source": "The password is too simple. Choose a longer password that is not a common word and not only numbers.",
+			"context": "Error under the password field of the Information step (guest checkout with 'create account' checked) when Saleor refuses the password as too common, too similar to the e-mail or only numbers. Replaces Saleor's English text.",
+			"kind": "validation",
+			"callSites": ["src/checkout/views/saleor-checkout/information-step.tsx:627"],
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
@@ -2415,7 +2471,7 @@
 		},
 		"checkout.summary.vatIncluded": {
 			"source": "of which VAT",
-			"context": "Sub-line directly under the order-summary grand total, naming the VAT already CONTAINED in that total \u2014 not an amount added to it. Rendered from Saleor's server-computed TaxedMoney.tax (checkout.totalPrice.tax / order.total.tax); the storefront never derives it from a rate. Hidden entirely when the figure is zero. Translate as \"of which\", never in a way that reads as an addend, and use the market's statutory VAT term (SK: DPH).",
+			"context": "Sub-line directly under the order-summary grand total, naming the VAT already CONTAINED in that total — not an amount added to it. Rendered from Saleor's server-computed TaxedMoney.tax (checkout.totalPrice.tax / order.total.tax); the storefront never derives it from a rate. Hidden entirely when the figure is zero. Translate as \"of which\", never in a way that reads as an addend, and use the market's statutory VAT term (SK: DPH).",
 			"kind": "visible",
 			"maxLength": 20,
 			"legallySensitive": true,
@@ -3756,6 +3812,22 @@
 			"callSites": [
 				"apps/smtp/src/modules/smtp/default-templates.ts (via enrichEmailPayloadWithI18n i18n block)"
 			]
+		},
+		"checkout.payment.deliveryPhoneMissing": {
+			"source": "The delivery address has no phone number. The courier needs one for the delivery, so please add it before you pay.",
+			"context": "Warning box on the Payment step when the stored delivery address has no phone number (a cart saved before the phone became required). The payment form is not shown until the number is added.",
+			"kind": "error",
+			"callSites": ["src/checkout/views/saleor-checkout/payment-step.tsx:338"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.payment.addDeliveryPhone": {
+			"source": "Add a phone number",
+			"context": "Link-style button inside the missing-delivery-phone warning on the Payment step; takes the customer back to the Information step.",
+			"kind": "cta",
+			"callSites": ["src/checkout/views/saleor-checkout/payment-step.tsx:345"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
 		}
 	}
 }

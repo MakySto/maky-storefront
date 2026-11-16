@@ -428,6 +428,7 @@
 			"emailInvalid": "Geben Sie eine gültige E-Mail-Adresse ein",
 			"passwordRequired": "Passwort ist erforderlich",
 			"passwordTooShort": "Das Passwort muss mindestens 8 Zeichen lang sein",
+			"passwordTooWeak": "Das Passwort ist zu einfach. Wählen Sie ein längeres Passwort, das kein gängiges Wort ist und nicht nur aus Zahlen besteht.",
 			"selectShippingAddress": "Wählen Sie eine Lieferadresse",
 			"emailSaveFailed": "Die E-Mail-Adresse konnte nicht gespeichert werden",
 			"accountCreateFailed": "Das Konto konnte nicht erstellt werden",
@@ -473,7 +474,11 @@
 			"selectBillingAddressTitle": "Rechnungsadresse auswählen",
 			"phoneHint": "z. B. {example}. Ausländische Nummern bitte mit Landesvorwahl eingeben, z. B. {foreign}.",
 			"phoneInvalid": "Die Telefonnummer ist für das Lieferland ({country}) nicht gültig. Bitte im Format {example} oder mit Landesvorwahl eingeben, z. B. {foreign}.",
-			"phoneInvalidIntl": "Die Telefonnummer mit Landesvorwahl ist nicht gültig. Bitte prüfen Sie sie, z. B. {foreign}."
+			"phoneInvalidIntl": "Die Telefonnummer mit Landesvorwahl ist nicht gültig. Bitte prüfen Sie sie, z. B. {foreign}.",
+			"fieldInvalid": "Das Feld {field} enthält keinen gültigen Wert. Bitte prüfen Sie die Eingabe.",
+			"postalCodeInvalid": "Die Postleitzahl hat nicht das Format, das in {country} verwendet wird. Bitte geben Sie sie im Format {example} ein.",
+			"notAvailableInCountry": "Die Artikel im Warenkorb können wir derzeit nicht in der gewünschten Menge nach {country} liefern. Wählen Sie ein anderes Lieferland oder ändern Sie den Warenkorb.",
+			"savedAddressPhoneNote": "Bei der gewählten Adresse fehlt die Telefonnummer. Der Zusteller braucht sie für die Lieferung, bitte ergänzen Sie sie."
 		},
 		"errors": {
 			"invalidValue": "Ungültiger Wert",
@@ -608,7 +613,9 @@
 			"orderUpdated": "Ihre Bestellung wurde aktualisiert. Bitte prüfen Sie den neuen Betrag vor der Zahlung.",
 			"finalStateUnconfirmed": "Der Endpreis konnte gerade nicht bestätigt werden. Bitte versuchen Sie es erneut.",
 			"completeBlockedNoNewPayment": "Die Bestellung konnte gerade nicht abgeschlossen werden. Wenn Sie bereits bezahlt haben, starten Sie keine neue Zahlung: Laden Sie die Seite neu oder kontaktieren Sie uns.",
-			"completeOfferChanged": "Der Betrag hat sich geändert, daher wurde keine Bestellung angelegt. Das Geld aus dieser Zahlung wird automatisch freigegeben. Wenn Sie Hilfe mit der Bestellung brauchen, kontaktieren Sie uns."
+			"completeOfferChanged": "Der Betrag hat sich geändert, daher wurde keine Bestellung angelegt. Das Geld aus dieser Zahlung wird automatisch freigegeben. Wenn Sie Hilfe mit der Bestellung brauchen, kontaktieren Sie uns.",
+			"deliveryPhoneMissing": "Bei der Lieferadresse fehlt die Telefonnummer. Der Zusteller braucht sie für die Lieferung, bitte ergänzen Sie sie vor der Zahlung.",
+			"addDeliveryPhone": "Telefonnummer ergänzen"
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Testmodus:</strong> Dies ist eine simulierte Bestellbestätigung. Es wurde keine echte Zahlung vorgenommen.",
