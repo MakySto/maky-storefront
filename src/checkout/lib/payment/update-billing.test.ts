@@ -15,6 +15,7 @@ const fakeTransport: CheckoutTransport = {
 	initializeTransaction: vi.fn(),
 	processTransaction: vi.fn(),
 	completeCheckout: vi.fn(),
+	completeCodCheckout: vi.fn(),
 };
 
 const shippingAddress = {

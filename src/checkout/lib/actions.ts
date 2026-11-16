@@ -67,6 +67,8 @@ import type {
 } from "@/checkout/lib/checkout-action-types";
 import type { CheckoutFetchResult } from "@/checkout/lib/checkout-types";
 import { getCheckoutPayAmount } from "@/checkout/lib/payment/checkout-pay-amount";
+import { codOffer, isCodMethod, isWithinCodMax } from "@/checkout/lib/cod";
+import type { ServerCheckout } from "@/checkout/lib/checkout-types";
 import { getDummyPaymentGuardError } from "@/checkout/lib/payment/providers/dummy";
 import { isDummyPaymentAllowed } from "@/checkout/lib/payment/providers/dummy";
 import { getStripePaymentGuardError, isStripePaymentEnabled } from "@/checkout/lib/payment/providers/stripe";
@@ -548,15 +550,38 @@ export async function processCheckoutTransactionAction(
 	return { ok: true, data: payload };
 }
 
+/**
+ * A checkout that Saleor would only have accepted as paid, and that is not.
+ *
+ * Cash on delivery needs the channel to take an order without a payment ("Allow unpaid orders"), and with that
+ * switched on Saleor no longer refuses a card checkout whose payment does not cover it. This puts the refusal
+ * back for the card path: where cash on delivery is on offer, an order with a sum to pay is only created without
+ * a payment through `runCodCheckoutCompleteAction`. Checkouts that are offered no cash on delivery are left to
+ * Saleor as before.
+ */
+function isUnpaidWhereCodIsOffered(checkout: ServerCheckout): boolean {
+	const amount = getCheckoutPayAmount(checkout);
+	return (
+		amount !== null &&
+		amount > 0 &&
+		checkout.authorizeStatus !== "FULL" &&
+		(checkout.shippingMethods ?? []).some(isCodMethod)
+	);
+}
+
+/** How long a payment that has just been confirmed is given to show on the checkout before it is called unpaid. */
+const PAYMENT_STATUS_SETTLE_MS = 1500;
+
 export async function runCheckoutCompleteAction(
 	checkoutId: string,
 	localeSlug?: string,
 ): Promise<CheckoutCompleteActionResult> {
+	const live = await fetchCheckoutOnServer(checkoutId, localeSlug);
+
 	// A zero-total order never passes transactionInitialize, so its B2B state is confirmed here (zadanie 02, §4).
 	// Only while the B2B checkout is switched on, and only for a zero total: a paid checkout completes on the
 	// payment it already has, and nothing here may stand in its way.
 	if (isB2bCheckoutUiEnabled()) {
-		const live = await fetchCheckoutOnServer(checkoutId, localeSlug);
 		if (live.ok && live.checkout && getCheckoutPayAmount(live.checkout) === 0 && live.checkout.b2bInput) {
 			const preflight = await runPaymentPreflight(
 				{ checkoutId, expectedAmount: 0 },
@@ -574,6 +599,58 @@ export async function runCheckoutCompleteAction(
 		}
 	}
 
+	// A checkout that could not be read is left to Saleor, as it always was.
+	if (live.ok && live.checkout && isUnpaidWhereCodIsOffered(live.checkout)) {
+		await new Promise((resolve) => setTimeout(resolve, PAYMENT_STATUS_SETTLE_MS));
+		const again = await fetchCheckoutOnServer(checkoutId, localeSlug);
+		if (!again.ok || !again.checkout || isUnpaidWhereCodIsOffered(again.checkout)) {
+			const t = await getPaymentActionTranslator(localeSlug);
+			return { ok: false, error: t("checkout.payment.notFullyPaid") };
+		}
+	}
+
+	return completeCheckoutOnSaleor(checkoutId, localeSlug);
+}
+
+/**
+ * Places an order that is paid on delivery (`lib/cod.ts`). Nothing the browser says is taken on trust: the
+ * checkout is read again, its company tax state confirmed where that applies, the total compared with the one the
+ * customer was shown, and the order is only created when the checkout really is on a cash-on-delivery delivery
+ * and within its limit.
+ */
+export async function runCodCheckoutCompleteAction(
+	checkoutId: string,
+	expectedAmount: number,
+	localeSlug?: string,
+): Promise<CheckoutCompleteActionResult> {
+	const preflight = await runPaymentPreflight(
+		{ checkoutId, expectedAmount },
+		productionEvaluateB2bDeps(localeSlug),
+	);
+	if (preflight.kind !== "ready") {
+		const t = await getPaymentActionTranslator(localeSlug);
+		return {
+			ok: false,
+			error: preflightMessage(t, preflight.code, preflight.cause),
+			code: preflight.code,
+			checkout: preflight.checkout,
+		};
+	}
+
+	const offer = codOffer(preflight.checkout);
+	if (!offer?.selected || !isWithinCodMax(offer, getCheckoutPayAmount(preflight.checkout))) {
+		const t = await getPaymentActionTranslator(localeSlug);
+		return { ok: false, error: t("checkout.payment.codUnavailable"), checkout: preflight.checkout };
+	}
+
+	return completeCheckoutOnSaleor(checkoutId, localeSlug);
+}
+
+/** `checkoutComplete` itself and what follows it; the callers above decide whether it may run. */
+async function completeCheckoutOnSaleor(
+	checkoutId: string,
+	localeSlug?: string,
+): Promise<CheckoutCompleteActionResult> {
 	const result = await executePublicGraphQL(completeDoc, {
 		variables: { checkoutId },
 		cache: "no-cache",

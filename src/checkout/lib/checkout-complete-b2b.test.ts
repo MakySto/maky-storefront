@@ -61,6 +61,10 @@ describe("runCheckoutCompleteAction with a B2B refusal", () => {
 	it("completes once, and starts nothing else", async () => {
 		executePublicGraphQL.mockResolvedValue(refusal("B2B_TAX_CONTEXT_CHANGED"));
 		await runCheckoutCompleteAction(ID, "sk");
-		expect(executePublicGraphQL).toHaveBeenCalledTimes(1);
+		// One read of the checkout (the action looks whether an unpaid order may be created at all,
+		// `checkout-complete-cod.test.ts`), one `checkoutComplete`, and nothing after the refusal.
+		const documents = executePublicGraphQL.mock.calls.map(([document]) => String(document));
+		expect(documents.filter((document) => document.includes("checkoutComplete"))).toHaveLength(1);
+		expect(documents).toHaveLength(2);
 	});
 });

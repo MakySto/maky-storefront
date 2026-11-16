@@ -207,6 +207,12 @@ export function Sk({ channel }: { channel: string }) {
 				predávajúci ich neukladá ani k nim nemá prístup.
 			</p>
 			<p>
+				Pri doručení na Slovensko môžete zaplatiť aj na dobierku, teda pri prevzatí zásielky. Za dobierku
+				účtujeme poplatok <strong>3,00 €</strong>; je súčasťou celkovej ceny, ktorú uvidíte pred odoslaním
+				objednávky. Dobierku ponúkame pri objednávkach do 500 € vrátane dopravy a poplatku. Či je dostupná pre
+				konkrétnu objednávku, sa zobrazí v pokladni.
+			</p>
+			<p>
 				Ak objednávku nemožno prijať a platba už prebehla, bezodkladne vám vrátime prijatú sumu. Po vzniku
 				zmluvy nemožno jej podmienky jednostranne meniť len preto, že dodávateľ zmenil cenu alebo dostupnosť.
 			</p>
@@ -321,7 +327,9 @@ export function Sk({ channel }: { channel: string }) {
 			</p>
 			<p>
 				Platbu vrátime rovnakým spôsobom, akým ste platili, pokiaľ výslovne nesúhlasíte s iným spôsobom bez
-				poplatkov pre vás. Poukaz na ďalší nákup nie je povinnou náhradou vrátenia peňazí.
+				poplatkov pre vás. Pri objednávke zaplatenej na dobierku vás požiadame o číslo bankového účtu a platbu
+				vrátime prevodom; ak s tým nesúhlasíte, dohodneme sa na inom spôsobe bez poplatkov pre vás. Poukaz na
+				ďalší nákup nie je povinnou náhradou vrátenia peňazí.
 			</p>
 			<p>
 				Ak sme vám neponúkli vyzdvihnutie, môžeme s vrátením platieb počkať do doručenia tovaru alebo

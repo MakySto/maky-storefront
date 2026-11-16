@@ -7,7 +7,7 @@ const route = legalRoute({
 		sk: {
 			title: "Doprava a platba",
 			description:
-				"Tovar doručujeme cez FedEx a Slovenskú poštu. Pozrite si informácie o cene dopravy, dodaní objednávky a online platbe cez Stripe.",
+				"Tovar doručujeme cez FedEx a Slovenskú poštu. Pozrite si informácie o cene dopravy, dodaní objednávky, online platbe cez Stripe a dobierke.",
 			Body: Sk,
 		},
 		cs: {
