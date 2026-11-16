@@ -9,7 +9,16 @@ const { revalidatePath, revalidateTag, verifySecret, verifyWebhookSignature, ext
 		extractBearerToken: vi.fn(),
 	}));
 
+const { afterCallbacks } = vi.hoisted(() => ({ afterCallbacks: [] as Array<() => Promise<void>> }));
+
 vi.mock("next/cache", () => ({ revalidatePath, revalidateTag }));
+// `after` needs a live request; here it only records what the route asked to run behind the response.
+vi.mock("next/server", async (importOriginal) => ({
+	...(await importOriginal<typeof import("next/server")>()),
+	after: (callback: () => Promise<void>) => {
+		afterCallbacks.push(callback);
+	},
+}));
 vi.mock("@/lib/api-auth", () => ({ verifySecret, verifyWebhookSignature, extractBearerToken }));
 
 import { NextRequest } from "next/server";
@@ -18,6 +27,9 @@ import { isCategorySlug } from "@/config/categories";
 import { liveCategoriesStats, resetLiveCategoriesForTests } from "@/lib/live-categories";
 import { installFakeSaleor } from "@/lib/live-categories.testkit";
 import { CHANNEL_MAP } from "@/lib/channel-map";
+import { REVALIDATE_WINDOW_MS, __resetRevalidateThrottle } from "@/lib/revalidate-throttle";
+import { __resetSaleorJwks } from "@/lib/saleor/webhook-jws";
+import { makeSaleorSigner } from "@/lib/saleor/webhook-jws.testkit";
 import { __forgetAllKept, createKeptRead } from "@/lib/cache/kept-read";
 import {
 	MIN_REFRESH_AFTER_EVENT_MS,
@@ -40,6 +52,9 @@ const taggedWith = (fragment: string) =>
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	afterCallbacks.length = 0;
+	__resetRevalidateThrottle();
+	__resetSaleorJwks();
 	verifyWebhookSignature.mockReturnValue(true);
 	verifySecret.mockReturnValue(true);
 	extractBearerToken.mockReturnValue(null);
@@ -233,6 +248,8 @@ describe("category events and the localized roots (COMMERCE-2 M1)", () => {
 	it("purges the base-slug cache entry and the localized page path, whichever spelling CFM sends", async () => {
 		for (const slug of ["stresne-nosice", "stresni-nosice"]) {
 			vi.clearAllMocks();
+			// The second spelling is a new event of the same market: past the throttle window.
+			__resetRevalidateThrottle();
 			verifyWebhookSignature.mockReturnValue(true);
 			const response = await post({
 				product: { slug: "n60012", channel: { slug: "cz-czk" }, category: { slug } },
@@ -298,13 +315,13 @@ describe("a category event and the live category list", () => {
 		expect(isCategorySlug("stresne-nosice")).toBe(true);
 	});
 
-	it("waits two seconds for a Saleor that does not answer, and not a moment longer", async () => {
+	it("waits 0.7 seconds for a Saleor that does not answer, and not a moment longer (Saleor holds a worker meanwhile)", async () => {
 		vi.useFakeTimers();
 		vi.stubGlobal("fetch", () => new Promise<Response>(() => {}));
 		vi.stubEnv("NEXT_PUBLIC_SALEOR_API_URL", "https://saleor.test/graphql/");
 
 		const answered = post({ category: { slug: NEW }, channel: "sk-eur" });
-		await vi.advanceTimersByTimeAsync(1_900);
+		await vi.advanceTimersByTimeAsync(600);
 		expect(revalidateTag, "still waiting for the live list").not.toHaveBeenCalled();
 
 		await vi.advanceTimersByTimeAsync(200);
@@ -488,5 +505,229 @@ describe("what the process keeps under the category entries (kept reads)", () =>
 		const again = await seed();
 		await GET(new NextRequest("https://maky.store/api/revalidate?all=1") as never);
 		await expect(again.read(KEY, "arg", 1_000)).resolves.toBe("new");
+	});
+});
+
+describe("a burst of product events (throttle, `@/lib/revalidate-throttle`)", () => {
+	const productEvent = (n: number) => ({
+		product: { slug: `n${n}`, channel: { slug: "at-eur" }, category: { slug: "stresne-nosice" } },
+	});
+	const countOf = (fragment: string) => taggedWith(fragment).length;
+	const pathCount = (path: string) => revalidatePath.mock.calls.filter((call) => call[0] === path).length;
+
+	it("expires each product at once but the market-wide entries once for 500 events", async () => {
+		vi.useFakeTimers();
+		for (let n = 0; n < 500; n++) await post(productEvent(n));
+
+		// One record each: not coalesced.
+		expect(countOf("product:at-eur:de-AT:n")).toBe(500);
+		// Everything that is the market's or the category's: the leading event only.
+		expect(countOf("category:at-eur:de-AT:stresne-nosice")).toBe(1);
+		expect(countOf("fitment-offers:at-eur")).toBe(1);
+		expect(countOf("product-miss:at-eur")).toBe(1);
+		expect(countOf("sitemap:at-eur")).toBe(1);
+		expect(pathCount("/at-eur")).toBe(1);
+		expect(pathCount("/at-eur/products")).toBe(1);
+		// One flush per unit of work, not one per event: the list, the category and the rest of the market.
+		expect(afterCallbacks).toHaveLength(3);
+	});
+
+	it("runs what the window held once, at its end", async () => {
+		vi.useFakeTimers();
+		for (let n = 0; n < 50; n++) await post(productEvent(n));
+		expect(countOf("fitment-offers:at-eur")).toBe(1);
+
+		const flushes = afterCallbacks.map((callback) => callback());
+		await vi.advanceTimersByTimeAsync(REVALIDATE_WINDOW_MS + 100);
+		await Promise.all(flushes);
+
+		expect(countOf("category:at-eur:de-AT:stresne-nosice")).toBe(2);
+		expect(countOf("fitment-offers:at-eur")).toBe(2);
+		expect(countOf("sitemap:at-eur")).toBe(2);
+		expect(pathCount("/at-eur")).toBe(2);
+		expect(pathCount("/at-eur/products")).toBe(2);
+	});
+
+	it("flushes nothing when nothing arrived inside the window, and the next event past it runs at once", async () => {
+		vi.useFakeTimers();
+		await post(productEvent(1));
+		expect(afterCallbacks).toHaveLength(0);
+
+		vi.setSystemTime(Date.now() + REVALIDATE_WINDOW_MS + 1);
+		await post(productEvent(2));
+		expect(countOf("fitment-offers:at-eur")).toBe(2);
+		expect(afterCallbacks).toHaveLength(0);
+	});
+
+	it("keeps the markets apart: a burst in one does not hold back another", async () => {
+		vi.useFakeTimers();
+		for (let n = 0; n < 5; n++) await post(productEvent(n));
+		await post({ product: { slug: "n1", channel: { slug: "cz-czk" } } });
+
+		expect(countOf("fitment-offers:cz-czk")).toBe(1);
+		expect(countOf("fitment-offers:at-eur")).toBe(1);
+	});
+
+	it("does not hold back an event about a category itself", async () => {
+		vi.useFakeTimers();
+		await post(productEvent(1));
+		await post({ category: { slug: "stresne-nosice" }, channel: "at-eur" });
+		await post({ category: { slug: "stresne-nosice" }, channel: "at-eur" });
+
+		expect(countOf("category:at-eur:de-AT:stresne-nosice")).toBe(3);
+	});
+
+	it("still answers every event with its own record, and says what it deferred", async () => {
+		vi.useFakeTimers();
+		await post(productEvent(1));
+		const logged = vi.spyOn(console, "log").mockImplementation(() => {});
+		const response = await post(productEvent(2));
+
+		expect(await response.json()).toMatchObject({ success: true, tags: ["product:at-eur:de-AT:n2"] });
+		expect(logged).toHaveBeenCalledWith("[Revalidate] Success:", expect.objectContaining({ deferred: 3 }));
+	});
+
+	it("an unnamed event (an attribute translation) is throttled the same way", async () => {
+		vi.useFakeTimers();
+		for (let n = 0; n < 20; n++) await post({ channel: "at-eur" });
+
+		expect(countOf("product-miss:at-eur")).toBe(1);
+		expect(countOf("sitemap:at-eur")).toBe(1);
+	});
+});
+
+describe("events signed by Saleor (JWS, plan 16. 11.)", () => {
+	const signer = makeSaleorSigner();
+	const category = { id: "Q2F0", slug: "stresne-nosice", parent: { id: "Q2F0Ng==", slug: "auto-moto" } };
+	const product = {
+		id: "UHJv",
+		slug: "n60012",
+		category,
+		collections: [{ id: "Q29s", slug: "thule" }],
+		channelListings: [{ channel: { slug: "at-eur" } }],
+	};
+
+	const signed = (body: unknown, header?: string) => {
+		const text = JSON.stringify(body);
+		return POST(
+			new Request("https://maky.store/api/revalidate", {
+				method: "POST",
+				body: text,
+				headers: { "saleor-signature": header ?? signer.signBody(text), "saleor-event": "product_updated" },
+			}) as never,
+		);
+	};
+
+	beforeEach(() => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => Response.json(signer.jwks())),
+		);
+		vi.stubEnv("NEXT_PUBLIC_SALEOR_API_URL", "https://api.example.test/graphql/");
+		vi.spyOn(console, "log").mockImplementation(() => {});
+	});
+
+	it("verifies and logs, but expires nothing, until SALEOR_WEBHOOK_APPLY=1", async () => {
+		const response = await signed({ __typename: "ProductUpdated", product });
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ success: true, applied: false });
+		expect(revalidateTag).not.toHaveBeenCalled();
+		expect(revalidatePath).not.toHaveBeenCalled();
+		expect(console.log).toHaveBeenCalledWith(
+			expect.stringContaining("NOT applied"),
+			expect.objectContaining({ event: "ProductUpdated", type: "product", slug: "n60012" }),
+		);
+	});
+
+	it("applies a verified product event once the switch is on: product, category, parent and collection", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		const response = await signed({ __typename: "ProductUpdated", product });
+
+		expect(response.status).toBe(200);
+		expect(revalidateTag).toHaveBeenCalledWith("product:at-eur:de-AT:n60012", { expire: 0 });
+		expect(revalidateTag).toHaveBeenCalledWith("category:at-eur:de-AT:stresne-nosice", { expire: 0 });
+		expect(revalidateTag).toHaveBeenCalledWith("category:at-eur:de-AT:auto-moto", { expire: 0 });
+		expect(revalidateTag).toHaveBeenCalledWith("collection:at-eur:de-AT:thule", { expire: 0 });
+		// No channel in the event: every market.
+		expect(new Set(taggedWith("product:").map((call) => String(call[0]).split(":")[1]))).toEqual(
+			new Set(ALL_CHANNELS),
+		);
+	});
+
+	it("a discounted price event reaches only the channel it names", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		await signed({
+			__typename: "ProductVariantDiscountedPriceUpdated",
+			channel: { slug: "cz-czk" },
+			discountedVariant: { id: "v", sku: "s", product },
+		});
+
+		expect(new Set(taggedWith("product:").map((call) => String(call[0]).split(":")[1]))).toEqual(
+			new Set(["cz-czk"]),
+		);
+	});
+
+	it("a menu event expires the navigation of each market and nothing of the catalogue", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		const response = await signed({
+			__typename: "MenuItemUpdated",
+			menuItem: { id: "i", menu: { id: "m", slug: "navbar" } },
+		});
+
+		expect(response.status).toBe(200);
+		expect(taggedWith("navigation:")).toHaveLength(ALL_CHANNELS.length);
+		expect(taggedWith("footer-menu:")).toHaveLength(ALL_CHANNELS.length);
+		expect(taggedWith("sitemap:")).toHaveLength(0);
+		expect(revalidatePath).not.toHaveBeenCalled();
+	});
+
+	it("an attribute event expires nothing", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		const response = await signed({
+			__typename: "AttributeValueUpdated",
+			attributeValue: { id: "v", slug: "thule" },
+		});
+
+		expect(response.status).toBe(200);
+		expect(revalidateTag).not.toHaveBeenCalled();
+		expect(revalidatePath).not.toHaveBeenCalled();
+	});
+
+	it("a category event also drops the parent's answers", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		await signed({ __typename: "CategoryUpdated", category });
+
+		expect(revalidateTag).toHaveBeenCalledWith("category:sk-eur:sk-SK:stresne-nosice", { expire: 0 });
+		expect(revalidateTag).toHaveBeenCalledWith("category:sk-eur:sk-SK:auto-moto", { expire: 0 });
+	});
+
+	it("answers 401 to a wrong signature and never expires anything", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		const body = { __typename: "ProductUpdated", product };
+		const forged = signer.signBody(JSON.stringify({ ...body, product: { ...product, slug: "other" } }));
+
+		expect((await signed(body, forged)).status).toBe(401);
+		expect(revalidateTag).not.toHaveBeenCalled();
+	});
+
+	it("answers 503 when Saleor's key cannot be read, so Saleor repeats the delivery", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => new Response("down", { status: 502 })),
+		);
+
+		expect((await signed({ __typename: "ProductUpdated", product })).status).toBe(503);
+		expect(revalidateTag).not.toHaveBeenCalled();
+	});
+
+	it("still lets CFM's bearer calls through while the Saleor events are only logged", async () => {
+		const response = await post({ product: { slug: "n60012", channel: { slug: "at-eur" } } });
+
+		expect(response.status).toBe(200);
+		expect(revalidateTag).toHaveBeenCalledWith("product:at-eur:de-AT:n60012", { expire: 0 });
 	});
 });
