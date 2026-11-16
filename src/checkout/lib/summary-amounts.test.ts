@@ -37,7 +37,7 @@ describe("summaryAmounts", () => {
 	});
 
 	describe("a code on the goods", () => {
-		it("keeps the owner's lines at their own prices and gives a fixed code a row (ZLAVA20EUR)", () => {
+		it("keeps the owner's lines at their own prices and gives a fixed code a row", () => {
 			const result = summaryAmounts({
 				subtotal: 290.98,
 				shipping: 5.99,
