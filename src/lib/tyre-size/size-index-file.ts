@@ -93,18 +93,16 @@ export function parseTyreSizeIndex(raw: unknown): TyreSizeIndex {
 	}
 	if (!isRecord(raw.origin) || !isText(raw.self_sha256)) return fail("no origin or seal");
 
-	// Which sizes have a page is CFM's to say, and optional. What it names must be sizes of this very list, once.
-	if (raw.pages !== undefined) {
-		if (!Array.isArray(raw.pages) || !raw.pages.every(isText)) return fail("pages is not a list of sizes");
-		const listed = new Set(
-			Object.values(products).flatMap((product) => product.sizes.map(([label]) => label)),
-		);
-		const named = new Set<string>();
-		for (const label of raw.pages as string[]) {
-			if (!listed.has(label)) return fail(`pages names ${label}, which no product of the list has`);
-			if (named.has(label)) return fail(`pages names ${label} twice`);
-			named.add(label);
-		}
+	// Which sizes have a page is CFM's to say, and the shop has no rule to fall back on: a list that does not say is
+	// not one the shop can draw pages from. What it names must be sizes of this very list, once.
+	if (raw.pages === undefined) return fail("pages is missing: CFM names the sizes that have a page");
+	if (!Array.isArray(raw.pages) || !raw.pages.every(isText)) return fail("pages is not a list of sizes");
+	const listed = new Set(Object.values(products).flatMap((product) => product.sizes.map(([label]) => label)));
+	const named = new Set<string>();
+	for (const label of raw.pages as string[]) {
+		if (!listed.has(label)) return fail(`pages names ${label}, which no product of the list has`);
+		if (named.has(label)) return fail(`pages names ${label} twice`);
+		named.add(label);
 	}
 
 	return raw as unknown as TyreSizeIndex;

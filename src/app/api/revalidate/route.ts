@@ -1,5 +1,5 @@
 import { revalidatePath, revalidateTag } from "next/cache";
-import { NextRequest } from "next/server";
+import { NextRequest, after } from "next/server";
 import { CACHE_PROFILES, buildTag, buildPath } from "@/lib/cache-manifest";
 import { extractBearerToken, verifySecret, verifyWebhookSignature } from "@/lib/api-auth";
 import { getLocaleFromChannel } from "@/config/locale";
@@ -12,6 +12,8 @@ import { refreshLiveCategories } from "@/lib/live-categories";
 import { markSitemapStale } from "@/lib/seo/sitemap-snapshot";
 import { expireCategoryAnswers } from "@/lib/listing/category-invalidation";
 import { invalidateKept } from "@/lib/cache/kept-read";
+import { abandonFlush, flushThrottled, submitThrottled } from "@/lib/revalidate-throttle";
+import { verifySaleorJws } from "@/lib/saleor/webhook-jws";
 
 /**
  * Webhook endpoint for cache invalidation.
@@ -27,8 +29,23 @@ import { invalidateKept } from "@/lib/cache/kept-read";
  * - Falls back to Bearer token / x-revalidate-secret header
  */
 
-/** How long a category event waits for the live category list to reload. */
-const LIVE_CATEGORIES_WAIT_MS = 2_000;
+/**
+ * How long a category event waits for the live category list to reload. Saleor holds one of its two Celery
+ * workers for as long as this answer takes (and gives up on it after 18 s), so the whole handler has to
+ * answer well inside a second.
+ */
+const LIVE_CATEGORIES_WAIT_MS = 700;
+
+/**
+ * Whether an event from Saleor (a request with a verified JWS) is acted on. Until `SALEOR_WEBHOOK_APPLY=1`
+ * is in `.env` the route only verifies and logs it, which is how the subscription is checked against the real
+ * Saleor before it is allowed to expire anything. CFM's calls (Bearer) and the legacy HMAC are not held back.
+ */
+const saleorEventsApplied = () => process.env.SALEOR_WEBHOOK_APPLY === "1";
+
+/** `Saleor-Signature` of a JWS is `<protected>..<signature>`; the legacy HMAC is a bare hex string. */
+const isDetachedJws = (signature: string | null): signature is string =>
+	!!signature && signature.includes("..");
 
 // ============================================================================
 // Revalidation helper — keeps the switch cases DRY
@@ -143,15 +160,58 @@ function revalidateProductMisses(channel: string, locale: string, tags: string[]
 	tags.push(tag);
 }
 
+/**
+ * Runs `work` through the throttle (`@/lib/revalidate-throttle`): now, or once at the end of the window
+ * for every event that arrived inside it. The flush runs in `after()`, which keeps the request store the
+ * revalidation calls need; its tags and paths are not in this request's response (they were not expired
+ * by it), and the count of deferred units goes to the log.
+ */
+function throttledRevalidation(key: string, work: () => void): "ran" | "deferred" {
+	const submitted = submitThrottled(key, work);
+	if (submitted.outcome === "ran") return "ran";
+	if (submitted.flushInMs !== null) {
+		const wait = submitted.flushInMs + 50;
+		try {
+			after(async () => {
+				await new Promise((resolve) => setTimeout(resolve, wait));
+				flushThrottled(key);
+			});
+		} catch {
+			// No request scope to hold the flush (a test, or a Next that refuses). The work stays pending: the next
+			// event past the window carries it, and the entries expire on their own lifetime otherwise.
+			abandonFlush(key);
+		}
+	}
+	return "deferred";
+}
+
 // ============================================================================
 // POST — Saleor webhook
 // ============================================================================
 
 export async function POST(request: NextRequest) {
-	const rawBody = await request.text();
+	// The bytes, not the text: a JWS with an unencoded payload is a signature over exactly these.
+	const bytes = new Uint8Array(await request.arrayBuffer());
+	const rawBody = Buffer.from(bytes).toString("utf8");
 
 	const signature = request.headers.get("saleor-signature");
-	if (!verifyWebhookSignature(rawBody, signature)) {
+	let fromSaleor = false;
+	if (isDetachedJws(signature)) {
+		const jws = await verifySaleorJws(bytes, signature);
+		if (!jws.ok && jws.kind === "unavailable") {
+			// Not a refusal: Saleor repeats a 5xx (10 s, 20 s, … for five tries) and never repeats a 401.
+			console.error(
+				"[Revalidate] Saleor's signing key could not be read:",
+				jws.reason.replace(/[\r\n]/g, ""),
+			);
+			return Response.json({ error: "Signing key unavailable" }, { status: 503 });
+		}
+		if (!jws.ok) {
+			console.warn("[Revalidate] Invalid signature or secret (JWS):", jws.reason.replace(/[\r\n]/g, ""));
+			return Response.json({ error: "Unauthorized" }, { status: 401 });
+		}
+		fromSaleor = true;
+	} else if (!verifyWebhookSignature(rawBody, signature)) {
 		const token = extractBearerToken(request) ?? request.headers.get("x-revalidate-secret");
 		if (!verifySecret(token)) {
 			console.warn("[Revalidate] Invalid signature or secret");
@@ -169,8 +229,25 @@ export async function POST(request: NextRequest) {
 		const resource = parseWebhookPayload(payload);
 		const { kind, slug, previousSlug, categorySlug, unnamedProduct } = resource;
 
+		if (fromSaleor && !saleorEventsApplied()) {
+			const clean = (value: string | undefined) => value?.replace(/[\r\n]/g, "");
+			console.log("[Revalidate] Saleor event, verified, NOT applied (SALEOR_WEBHOOK_APPLY is not 1):", {
+				event: clean(resource.eventType ?? request.headers.get("saleor-event") ?? undefined),
+				type: kind,
+				slug: clean(slug),
+				category: clean(categorySlug),
+				channel: clean(resource.channel),
+			});
+			return Response.json({ success: true, applied: false });
+		}
+
 		const revalidatedPaths: string[] = [];
 		const revalidatedTags: string[] = [];
+		/** Units of market-wide work this event left to the end of the throttle window. */
+		let deferred = 0;
+
+		/** A menu or an attribute changes no URL and no listing. */
+		const touchesCatalogue = kind !== "menu" && kind !== "attribute";
 
 		const channels = targetChannels(resource.channel);
 		if (!channels) {
@@ -200,8 +277,27 @@ export async function POST(request: NextRequest) {
 			// with the URL that replaced it.
 			const slugs = [slug, previousSlug].filter((value): value is string => Boolean(value));
 
+			// What one event expires for ONE record goes out at once; what it expires for the whole market (the
+			// product list, the category's listing, the offers, the homepage, the sitemap data) goes through the
+			// throttle for a product event, because a catalogue write is hundreds of events
+			// (`@/lib/revalidate-throttle`). The order of the calls is the order of the answer CFM checks.
+			const expireProductList = () => {
+				revalidatePath(`/${channel}/products`);
+				revalidatedPaths.push(`/${channel}/products`);
+			};
+			/** The homepage carries listing modules built from the same catalogue. */
+			const expireHomeAndSitemap = () => {
+				revalidatePath(`/${channel}`);
+				revalidatedPaths.push(`/${channel}`);
+				// This channel's sitemap shards and the index entry counting them. The Saleor walk behind
+				// them is tagged per channel, so a Czech event re-reads the Czech catalogue only.
+				const sitemapTag = buildTag(CACHE_PROFILES.sitemap, { channel, locale });
+				revalidateTag(sitemapTag, IMMEDIATE);
+				revalidatedTags.push(sitemapTag);
+			};
+
 			switch (kind) {
-				case "product":
+				case "product": {
 					for (const value of slugs) {
 						revalidateProfile(
 							CACHE_PROFILES.products,
@@ -212,23 +308,62 @@ export async function POST(request: NextRequest) {
 							revalidatedPaths,
 						);
 					}
-					revalidatePath(`/${channel}/products`);
-					revalidatedPaths.push(`/${channel}/products`);
+					if (throttledRevalidation(`list:${channel}`, expireProductList) === "deferred") deferred++;
 					if (categorySlug) {
-						revalidateCategory(channel, locale, categorySlug, revalidatedTags, revalidatedPaths, "stale");
+						const base = categoryBaseSlug(channel, categorySlug);
+						const category = () =>
+							revalidateCategory(channel, locale, categorySlug, revalidatedTags, revalidatedPaths, "stale");
+						if (throttledRevalidation(`category:${channel}:${base}`, category) === "deferred") deferred++;
 					}
-					// Price, publication and purchasability all show on the generation pages
-					// too, and those read the product outside any `"use cache"` entry.
-					revalidateOffers(channel, locale, revalidatedTags);
-					revalidateProductMisses(channel, locale, revalidatedTags);
+					// Saleor lists a category's products together with those of its subcategories, so the parent's
+					// listing changes with the product as well.
+					if (resource.parentCategorySlug) {
+						const parent = resource.parentCategorySlug;
+						const base = categoryBaseSlug(channel, parent);
+						const work = () =>
+							revalidateCategory(channel, locale, parent, revalidatedTags, revalidatedPaths, "stale");
+						if (throttledRevalidation(`category:${channel}:${base}`, work) === "deferred") deferred++;
+					}
+					// Price, publication and purchasability all show on the generation pages too, and those
+					// read the product outside any `"use cache"` entry.
+					const rest = () => {
+						revalidateOffers(channel, locale, revalidatedTags);
+						revalidateProductMisses(channel, locale, revalidatedTags);
+						expireHomeAndSitemap();
+					};
+					if (throttledRevalidation(`market:${channel}`, rest) === "deferred") deferred++;
+					// Joining or leaving a collection shows on the collection's own page.
+					for (const collection of resource.collectionSlugs ?? []) {
+						const work = () =>
+							revalidateProfile(
+								CACHE_PROFILES.collections,
+								channel,
+								locale,
+								collection,
+								revalidatedTags,
+								revalidatedPaths,
+							);
+						if (throttledRevalidation(`collection:${channel}:${collection}`, work) === "deferred") deferred++;
+					}
 					break;
+				}
 
 				case "category":
 					for (const value of slugs) {
 						revalidateCategory(channel, locale, value, revalidatedTags, revalidatedPaths, "drop");
 					}
-					revalidatePath(`/${channel}/products`);
-					revalidatedPaths.push(`/${channel}/products`);
+					// A category created, renamed, moved or deleted changes its parent's list of subcategories.
+					if (resource.parentCategorySlug) {
+						revalidateCategory(
+							channel,
+							locale,
+							resource.parentCategorySlug,
+							revalidatedTags,
+							revalidatedPaths,
+							"drop",
+						);
+					}
+					expireProductList();
 					// The offer prints the category's name, and refuses a product whose
 					// category has no translation — so a category translation landing or
 					// changing decides what a generation page may list.
@@ -236,6 +371,7 @@ export async function POST(request: NextRequest) {
 					// The same refusal decides whether a PDP exists: a product waiting only
 					// for its category's translation was cached as not-found.
 					revalidateProductMisses(channel, locale, revalidatedTags);
+					expireHomeAndSitemap();
 					break;
 
 				case "collection":
@@ -249,37 +385,53 @@ export async function POST(request: NextRequest) {
 							revalidatedPaths,
 						);
 					}
+					expireHomeAndSitemap();
 					break;
 
-				default:
-					revalidatePath(`/${channel}/products`);
-					revalidatedPaths.push(`/${channel}/products`);
+				case "menu": {
+					// The menus the header and the footer print, per market.
+					const work = () => {
+						for (const profile of [CACHE_PROFILES.navigation, CACHE_PROFILES.footerMenu]) {
+							const tag = buildTag(profile, { channel, locale });
+							revalidateTag(tag, IMMEDIATE);
+							revalidatedTags.push(tag);
+						}
+					};
+					if (throttledRevalidation(`menu:${channel}`, work) === "deferred") deferred++;
+					break;
+				}
+
+				case "attribute":
+					// The filters and brand names are printed by entries that expire on their own lifetime; there is
+					// no tag to reach them by name, and expiring a whole market for a renamed attribute value costs
+					// more than the minutes it would save.
+					break;
+
+				default: {
 					// An event we cannot name — an attribute or attribute-value translation,
 					// for instance — can still be the last field a product was missing.
-					revalidateProductMisses(channel, locale, revalidatedTags);
+					const unnamed = () => {
+						revalidateProductMisses(channel, locale, revalidatedTags);
+						expireHomeAndSitemap();
+					};
+					if (throttledRevalidation(`list:${channel}`, expireProductList) === "deferred") deferred++;
+					if (throttledRevalidation(`market:${channel}`, unnamed) === "deferred") deferred++;
+				}
 			}
 
-			// The homepage carries listing modules built from the same catalogue.
-			revalidatePath(`/${channel}`);
-			revalidatedPaths.push(`/${channel}`);
-
-			// This channel's sitemap shards and the index entry counting them. The Saleor walk behind
-			// them is tagged per channel, so a Czech event re-reads the Czech catalogue only.
-			const sitemapTag = buildTag(CACHE_PROFILES.sitemap, { channel, locale });
-			revalidateTag(sitemapTag, IMMEDIATE);
-			revalidatedTags.push(sitemapTag);
-			// The product list the shards serve is kept in this process (`sitemap-snapshot.ts`), not in
-			// the data cache the tag above reaches. This marks it due for a rebuild in the background;
-			// the shards go on answering from the kept list until the new one is complete.
-			markSitemapStale(channel);
+			// The sitemap's kept product list is marked due on every catalogue event, throttled or not: it is a
+			// timestamp, and the rebuild it asks for has its own spacing (`MIN_REFRESH_AFTER_EVENT_MS`).
+			if (touchesCatalogue) markSitemapStale(channel);
 		}
 
 		// Publishing, unpublishing or renaming changes which URLs exist, so the
 		// sitemap is stale too — and it is the one surface a crawler reads first. The index and
 		// the shards are request-time routes over the tagged walk expired above; the path purge
 		// stays for any cached rendering of the index itself.
-		revalidatePath("/sitemap.xml");
-		revalidatedPaths.push("/sitemap.xml");
+		if (touchesCatalogue) {
+			revalidatePath("/sitemap.xml");
+			revalidatedPaths.push("/sitemap.xml");
+		}
 
 		// The proxy's existence gate keeps its own answers (60 s "absent", 300 s "exists"), outside
 		// every tag above. Without this a product published in a market answered 404 at its new
@@ -310,6 +462,8 @@ export async function POST(request: NextRequest) {
 			paths: sanitizedPaths,
 			tags: sanitizedTags,
 			existence,
+			...(resource.eventType ? { event: resource.eventType.replace(/[\r\n]/g, "") } : {}),
+			...(deferred > 0 ? { deferred } : {}),
 		});
 		return Response.json({ paths: revalidatedPaths, tags: revalidatedTags, success: true });
 	} catch (error) {
