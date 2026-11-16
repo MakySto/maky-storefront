@@ -121,6 +121,18 @@
 				"checkout.addressForm.postalCodeInvalid",
 				"checkout.addressForm.notAvailableInCountry"
 			]
+		},
+		{
+			"pattern": "t(\"checkout.promo.empty\") / t(\"checkout.promo.invalid\") / t(\"checkout.promo.notApplicable\") / t(\"checkout.promo.paymentInProgress\") / t(\"checkout.promo.failed\") through a passed-in translator",
+			"callSite": "src/checkout/lib/promo-code.ts",
+			"source": "promoCodeRefusalMessage() in the same file; the translator comes from the promo-code server core (src/checkout/lib/server/promo-code.ts), which the checkout and the cart actions call",
+			"keys": [
+				"checkout.promo.empty",
+				"checkout.promo.invalid",
+				"checkout.promo.notApplicable",
+				"checkout.promo.paymentInProgress",
+				"checkout.promo.failed"
+			]
 		}
 	]
 }

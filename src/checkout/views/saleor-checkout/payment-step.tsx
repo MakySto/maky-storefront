@@ -35,6 +35,8 @@ import { B2bBillingSummary } from "@/checkout/components/b2b/b2b-billing-summary
 import { B2bStatusNotice } from "@/checkout/components/b2b/b2b-status-notice";
 import { PaymentLockRecovery } from "@/checkout/components/b2b/payment-lock-recovery";
 import { PaymentLockReporterProvider } from "@/checkout/components/b2b/payment-lock-context";
+import { OrderLegalNote } from "@/checkout/components/payment/order-legal-note";
+import { CheckoutPromoCode } from "@/checkout/components/promo-code/checkout-promo-code";
 
 interface PaymentStepProps {
 	checkout: CheckoutFragment;
@@ -349,6 +351,10 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 				</div>
 			) : null}
 
+			{/* A discount code or a gift card: here, where the final sum is in view and a delivery is already chosen
+			    (a delivery voucher needs one). Locked while a payment is being confirmed. */}
+			<CheckoutPromoCode checkout={checkout} disabled={isPaymentBusy || isLoading} />
+
 			{shouldShowPaymentMethodArea(checkout) && b2b.gate.allowed && !deliveryPhoneMissing ? (
 				<PaymentMethodArea
 					provider={provider}
@@ -368,6 +374,8 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 					onPaymentActivityChange={setIsPaymentBusy}
 				/>
 			) : null}
+
+			{!usesClientSubmit ? <OrderLegalNote channelSlug={checkout.channel.slug} /> : null}
 
 			<div className="flex items-center justify-between">
 				<button

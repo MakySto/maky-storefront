@@ -61,6 +61,15 @@
 			"previousTotal": "Formatted previous order total including currency symbol (getFormattedMoney)",
 			"newTotal": "Formatted new order total including currency symbol (getFormattedMoney)"
 		},
+		"checkout.promo.giftCard": {
+			"code": "last characters of the gift card code, as Saleor shows them (e.g. AB12)"
+		},
+		"checkout.promo.giftCardBalance": {
+			"amount": "the card's current balance, already formatted as money in the market's locale"
+		},
+		"checkout.promo.remove": {
+			"code": "the discount code as applied, or the last characters of the gift card"
+		},
 		"checkout.shipping.deliveryEstimate": {
 			"min": "method.minimumDeliveryDays (number)",
 			"max": "method.maximumDeliveryDays (number); also drives the plural branch"
@@ -71,6 +80,9 @@
 		"checkout.steps.progress": {
 			"current": "current 1-based step number",
 			"stepCount": "total number of visible checkout steps (2 or 3)"
+		},
+		"checkout.summary.discountAppliedCode": {
+			"code": "the discount code the customer applied, as Saleor stores it"
 		},
 		"email.accountChangeEmailConfirm.intro": {
 			"firstName": "customer first name from the Notify payload (user.first_name); the *Generic variant renders when it is missing"
