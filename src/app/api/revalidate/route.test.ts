@@ -29,6 +29,7 @@ import { installFakeSaleor } from "@/lib/live-categories.testkit";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { REVALIDATE_WINDOW_MS, __resetRevalidateThrottle } from "@/lib/revalidate-throttle";
 import { __resetSaleorJwks } from "@/lib/saleor/webhook-jws";
+import { STATS_WINDOW_MS, __resetRevalidateStats, flushStats } from "@/lib/revalidate-stats";
 import { makeSaleorSigner } from "@/lib/saleor/webhook-jws.testkit";
 import { __forgetAllKept, createKeptRead } from "@/lib/cache/kept-read";
 import {
@@ -55,6 +56,7 @@ beforeEach(() => {
 	afterCallbacks.length = 0;
 	__resetRevalidateThrottle();
 	__resetSaleorJwks();
+	__resetRevalidateStats();
 	verifyWebhookSignature.mockReturnValue(true);
 	verifySecret.mockReturnValue(true);
 	extractBearerToken.mockReturnValue(null);
@@ -729,5 +731,80 @@ describe("events signed by Saleor (JWS, plan 16. 11.)", () => {
 
 		expect(response.status).toBe(200);
 		expect(revalidateTag).toHaveBeenCalledWith("product:at-eur:de-AT:n60012", { expire: 0 });
+	});
+
+	it("counts a catalogue write instead of printing it: 500 events leave a handful of lines and one summary", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "");
+		for (let n = 0; n < 500; n++) {
+			await signed({
+				__typename: n % 2 ? "ProductUpdated" : "ProductVariantUpdated",
+				product: { ...product, slug: `n${n}` },
+			});
+		}
+		const printed = vi
+			.mocked(console.log)
+			.mock.calls.filter((call) => String(call[0]).includes("NOT applied"));
+		expect(printed).toHaveLength(5);
+
+		flushStats();
+		const summary = vi
+			.mocked(console.log)
+			.mock.calls.map((call) => String(call[0]))
+			.find((line) => line.startsWith("[revalidate-events]"));
+		expect(summary).toMatch(
+			/total=500 \| ProductUpdated=250 ProductVariantUpdated=250 \| logged-only=500 \| ms avg=\d+ p95=\d+ max=\d+ over1s=0$/,
+		);
+	});
+
+	it("does the same once the events are applied: 5 full Success lines, the rest counted", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		for (let n = 0; n < 40; n++)
+			await signed({ __typename: "ProductUpdated", product: { ...product, slug: `n${n}` } });
+
+		const printed = vi.mocked(console.log).mock.calls.filter((call) => call[0] === "[Revalidate] Success:");
+		expect(printed).toHaveLength(5);
+		flushStats();
+		const summary = vi
+			.mocked(console.log)
+			.mock.calls.map((call) => String(call[0]))
+			.find((line) => line.startsWith("[revalidate-events]"));
+		expect(summary).toContain("total=40 | ProductUpdated=40 | applied=40");
+	});
+
+	it("counts refusals and an unreadable key apart, and prints only the first few of each", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const body = { __typename: "ProductUpdated", product };
+		const forged = signer.signBody(JSON.stringify({ ...body, product: { ...product, slug: "other" } }));
+		for (let n = 0; n < 30; n++) await signed(body, forged);
+		expect(warn).toHaveBeenCalledTimes(5);
+
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => new Response("down", { status: 502 })),
+		);
+		__resetSaleorJwks();
+		await signed(body);
+
+		flushStats();
+		const summary = vi
+			.mocked(console.log)
+			.mock.calls.map((call) => String(call[0]))
+			.find((line) => line.startsWith("[revalidate-events]"));
+		expect(summary).toContain("unauthorized=30 key-unavailable=1");
+	});
+
+	it("ends its window on its own and prints the summary without another request", async () => {
+		vi.useFakeTimers();
+		await signed({ __typename: "ProductUpdated", product });
+		expect(
+			vi.mocked(console.log).mock.calls.some((call) => String(call[0]).startsWith("[revalidate-events]")),
+		).toBe(false);
+
+		await vi.advanceTimersByTimeAsync(STATS_WINDOW_MS + 1);
+		expect(
+			vi.mocked(console.log).mock.calls.some((call) => String(call[0]).startsWith("[revalidate-events]")),
+		).toBe(true);
 	});
 });
