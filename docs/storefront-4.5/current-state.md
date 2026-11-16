@@ -556,7 +556,7 @@ Do overenia na skutočnom Dashboarde sa popisy CoolZ v Saleor Dashboarde neuprav
 - **Zhrnutie** ukazuje telefón tak, ako ho Saleor uložil, aj s predvoľbou (číslo bez predvoľby číta ako číslo krajiny doručenia). Názov dopravy berie preklad zo Saleoru, ak tam je (`shippingMethods.translation`).
 - **Overené na živom webe 16. 11. (maky.store/de, bez objednávky):** prázdny telefón je odmietnutý nemeckou vetou, slovenské číslo pri nemeckej adrese dostane vetu s nemeckým príkladom, PSČ `1011` vetu s príkladom zo Saleoru (`postalCodeExamples` funguje), s platnými údajmi sa otvoril krok Doprava aj Platba. Názov dopravy ostáva „CE 5-15kg“, lebo Saleor preň nemá preklad. Správanie Kanady s malými písmenami v PSČ overené nie je. Skúška v cloude: skutočné kroky pokladne proti falošnému Saleoru, 98 kontrol, snímky v súboroch projektu.
 
-## Pokladňa: zľavový kód, zhrnutie a veta pri objednávke (16. 11. 2026, to isté vlákno; PR do vydania, zlúčenie až po Marekovej karte, nenasadené)
+## Pokladňa: zľavový kód, zhrnutie a veta pri objednávke (16. 11. 2026, to isté vlákno; PR 131, zlúčený 16. 11. po Marekovej karte; nasadenie cez vlákno Server webu)
 
 Marek 16. 11. rozhodol: zľavové kódy a darčekové poukážky chce, pri tlačidle objednávky môže byť odkaz na podmienky, DPH 23 % do zahraničia je zatiaľ správna, chladničky v USA a Kanade sa neriešia, na Slovensku chce dobierku (tá v tomto PR nie je, čaká na jeho rozhodnutia o poplatku a nastavení kanála).
 
