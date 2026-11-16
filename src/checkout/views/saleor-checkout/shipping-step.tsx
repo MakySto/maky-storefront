@@ -8,7 +8,11 @@ import { useLocale } from "@/providers/locale-provider";
 import { cn } from "@/lib/utils";
 import { type CheckoutFragment } from "@/checkout/graphql";
 import { checkoutDeliveryMethodUpdateAction } from "@/checkout/lib/actions";
-import { CheckoutSummaryContext, buildShippingSummaryRows } from "./checkout-summary-context";
+import {
+	CheckoutSummaryContext,
+	buildShippingSummaryRows,
+	shippingMethodName,
+} from "./checkout-summary-context";
 import { useCheckout } from "@/checkout/hooks/use-checkout";
 import { isCheckoutLockedCode } from "@/checkout/lib/b2b/contract";
 import { useCheckoutB2b } from "@/checkout/providers/checkout-b2b";
@@ -304,7 +308,7 @@ export const ShippingStep: FC<ShippingStepProps> = ({
 									<Icon className={cn("h-5 w-5", isEco ? "text-green-600" : "text-muted-foreground")} />
 									<div className="flex-1">
 										<div className="flex items-center gap-2">
-											<span className="font-medium">{method.name}</span>
+											<span className="font-medium">{shippingMethodName(method)}</span>
 											{isEco && (
 												<span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">
 													{t("shipping.ecoBadge")}

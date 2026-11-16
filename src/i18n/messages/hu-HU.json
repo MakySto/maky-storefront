@@ -428,6 +428,7 @@
 			"emailInvalid": "Adjon meg érvényes e-mail-címet",
 			"passwordRequired": "A jelszó megadása kötelező",
 			"passwordTooShort": "A jelszónak legalább 8 karakterből kell állnia",
+			"passwordTooWeak": "A jelszó túl egyszerű. Válasszon hosszabb jelszót, amely nem gyakori szó, és nem csak számokból áll.",
 			"selectShippingAddress": "Válasszon szállítási címet",
 			"emailSaveFailed": "Az e-mail-címet nem sikerült menteni",
 			"accountCreateFailed": "A fiókot nem sikerült létrehozni",
@@ -473,7 +474,11 @@
 			"selectBillingAddressTitle": "Számlázási cím kiválasztása",
 			"phoneHint": "Pl. {example}. Külföldi számot országhívó előtaggal adjon meg, pl. {foreign}.",
 			"phoneInvalid": "A telefonszám nem érvényes a szállítási országban ({country}). Adja meg így: {example}, vagy országhívó előtaggal, pl. {foreign}.",
-			"phoneInvalidIntl": "Az országhívó előtaggal megadott telefonszám nem érvényes. Kérjük, ellenőrizze, pl. {foreign}."
+			"phoneInvalidIntl": "Az országhívó előtaggal megadott telefonszám nem érvényes. Kérjük, ellenőrizze, pl. {foreign}.",
+			"fieldInvalid": "A(z) {field} mező értéke nem érvényes. Kérjük, ellenőrizze.",
+			"postalCodeInvalid": "Az irányítószám formátuma nem felel meg az ebben az országban ({country}) használtnak. Kérjük, ebben a formában adja meg: {example}.",
+			"notAvailableInCountry": "A kosárban lévő termékeket jelenleg nem tudjuk a kért mennyiségben ebbe az országba ({country}) szállítani. Válasszon másik szállítási országot, vagy módosítsa a kosarat.",
+			"savedAddressPhoneNote": "A kiválasztott címhez nincs telefonszám. A futárnak szüksége van rá a kézbesítéshez, kérjük, adja meg."
 		},
 		"errors": {
 			"invalidValue": "Érvénytelen érték",
@@ -608,7 +613,9 @@
 			"orderUpdated": "A rendelés frissült. Fizetés előtt ellenőrizze az új összeget.",
 			"finalStateUnconfirmed": "A végső árat most nem sikerült megerősíteni. Próbálja újra.",
 			"completeBlockedNoNewPayment": "A rendelést most nem sikerült befejezni. Ha már fizetett, ne indítson új fizetést: frissítse az oldalt, vagy vegye fel velünk a kapcsolatot.",
-			"completeOfferChanged": "Az összeg megváltozott, ezért a rendelés nem jött létre. A fizetés összege automatikusan felszabadul. Ha segítségre van szüksége a rendeléssel kapcsolatban, vegye fel velünk a kapcsolatot."
+			"completeOfferChanged": "Az összeg megváltozott, ezért a rendelés nem jött létre. A fizetés összege automatikusan felszabadul. Ha segítségre van szüksége a rendeléssel kapcsolatban, vegye fel velünk a kapcsolatot.",
+			"deliveryPhoneMissing": "A szállítási címhez nincs telefonszám. A futárnak szüksége van rá a kézbesítéshez, ezért fizetés előtt adja meg.",
+			"addDeliveryPhone": "Telefonszám megadása"
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Tesztmód:</strong> Ez egy szimulált rendelés-visszaigazolás. Valódi fizetés nem történt.",

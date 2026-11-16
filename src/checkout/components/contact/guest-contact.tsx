@@ -78,7 +78,9 @@ export const GuestContact: FC<GuestContactProps> = ({
 				<div className="relative">
 					<Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
+						id="email"
 						type="email"
+						aria-label={t("emailPlaceholder")}
 						placeholder={t("emailPlaceholder")}
 						value={email}
 						onChange={(e) => onEmailChange(e.target.value)}
@@ -113,7 +115,9 @@ export const GuestContact: FC<GuestContactProps> = ({
 						<div className="relative">
 							<Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 							<Input
+								id="password"
 								type={showPassword ? "text" : "password"}
+								aria-label={t("createAccountPasswordPlaceholder")}
 								placeholder={t("createAccountPasswordPlaceholder")}
 								value={password}
 								onChange={(e) => onPasswordChange(e.target.value)}

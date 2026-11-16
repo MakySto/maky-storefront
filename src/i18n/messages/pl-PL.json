@@ -428,6 +428,7 @@
 			"emailInvalid": "Wpisz prawidłowy adres e-mail",
 			"passwordRequired": "Hasło jest wymagane",
 			"passwordTooShort": "Hasło musi mieć co najmniej 8 znaków",
+			"passwordTooWeak": "Hasło jest zbyt proste. Wybierz dłuższe hasło, które nie jest popularnym słowem ani samymi cyframi.",
 			"selectShippingAddress": "Wybierz adres dostawy",
 			"emailSaveFailed": "Nie udało się zapisać adresu e-mail",
 			"accountCreateFailed": "Nie udało się utworzyć konta",
@@ -473,7 +474,11 @@
 			"selectBillingAddressTitle": "Wybierz adres rozliczeniowy",
 			"phoneHint": "Np. {example}. Numer zagraniczny podaj z numerem kierunkowym kraju, np. {foreign}.",
 			"phoneInvalid": "Numer telefonu nie jest prawidłowy dla kraju dostawy ({country}). Wpisz go w formacie {example} lub z numerem kierunkowym kraju, np. {foreign}.",
-			"phoneInvalidIntl": "Numer telefonu z numerem kierunkowym kraju jest nieprawidłowy. Sprawdź go, np. {foreign}."
+			"phoneInvalidIntl": "Numer telefonu z numerem kierunkowym kraju jest nieprawidłowy. Sprawdź go, np. {foreign}.",
+			"fieldInvalid": "Pole {field} nie zawiera prawidłowej wartości. Sprawdź je, proszę.",
+			"postalCodeInvalid": "Kod pocztowy nie ma formatu używanego w tym kraju ({country}). Wpisz go w formacie {example}.",
+			"notAvailableInCountry": "Produktów z koszyka nie możemy teraz dostarczyć do tego kraju ({country}) w żądanej ilości. Wybierz inny kraj dostawy lub zmień koszyk.",
+			"savedAddressPhoneNote": "Wybrany adres nie ma numeru telefonu. Kurier potrzebuje go przy doręczeniu, uzupełnij go, proszę."
 		},
 		"errors": {
 			"invalidValue": "Nieprawidłowa wartość",
@@ -608,7 +613,9 @@
 			"orderUpdated": "Twoje zamówienie zostało zaktualizowane. Sprawdź nową kwotę przed płatnością.",
 			"finalStateUnconfirmed": "Nie udało się teraz potwierdzić ostatecznej ceny. Spróbuj ponownie.",
 			"completeBlockedNoNewPayment": "Nie udało się teraz dokończyć zamówienia. Jeśli płatność została już wykonana, nie rozpoczynaj nowej: odśwież stronę lub skontaktuj się z nami.",
-			"completeOfferChanged": "Kwota się zmieniła, dlatego zamówienie nie zostało utworzone. Pieniądze z tej płatności zostaną zwolnione automatycznie. Jeśli potrzebujesz pomocy z zamówieniem, skontaktuj się z nami."
+			"completeOfferChanged": "Kwota się zmieniła, dlatego zamówienie nie zostało utworzone. Pieniądze z tej płatności zostaną zwolnione automatycznie. Jeśli potrzebujesz pomocy z zamówieniem, skontaktuj się z nami.",
+			"deliveryPhoneMissing": "Adres dostawy nie ma numeru telefonu. Kurier potrzebuje go przy doręczeniu, dlatego uzupełnij go przed płatnością.",
+			"addDeliveryPhone": "Uzupełnij numer telefonu"
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Tryb testowy:</strong> To symulowane potwierdzenie zamówienia. Nie pobrano prawdziwej płatności.",

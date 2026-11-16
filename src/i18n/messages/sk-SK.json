@@ -428,6 +428,7 @@
 			"emailInvalid": "Zadajte platnú e-mailovú adresu",
 			"passwordRequired": "Heslo je povinné",
 			"passwordTooShort": "Heslo musí mať aspoň 8 znakov",
+			"passwordTooWeak": "Heslo je príliš jednoduché. Zvoľte dlhšie heslo, ktoré nie je bežné slovo ani iba čísla.",
 			"selectShippingAddress": "Vyberte dodaciu adresu",
 			"emailSaveFailed": "Nepodarilo sa uložiť e-mailovú adresu",
 			"accountCreateFailed": "Nepodarilo sa vytvoriť účet",
@@ -473,7 +474,11 @@
 			"selectBillingAddressTitle": "Vyberte fakturačnú adresu",
 			"phoneHint": "Napr. {example}. Zahraničné číslo zadajte s predvoľbou krajiny, napr. {foreign}.",
 			"phoneInvalid": "Telefónne číslo nie je platné pre krajinu doručenia ({country}). Zadajte ho v tvare {example} alebo s predvoľbou krajiny, napr. {foreign}.",
-			"phoneInvalidIntl": "Telefónne číslo s predvoľbou nie je platné. Skontrolujte ho, napr. {foreign}."
+			"phoneInvalidIntl": "Telefónne číslo s predvoľbou nie je platné. Skontrolujte ho, napr. {foreign}.",
+			"fieldInvalid": "Pole {field} nemá platnú hodnotu. Skontrolujte ho, prosím.",
+			"postalCodeInvalid": "PSČ nemá tvar, aký sa používa v krajine {country}. Zadajte ho v tvare {example}.",
+			"notAvailableInCountry": "Tovar z košíka do krajiny {country} teraz nevieme doručiť v požadovanom množstve. Zvoľte inú krajinu doručenia alebo upravte košík.",
+			"savedAddressPhoneNote": "Pri vybranej adrese chýba telefónne číslo. Kuriér ho potrebuje pri doručení, doplňte ho, prosím."
 		},
 		"errors": {
 			"invalidValue": "Neplatná hodnota",
@@ -608,7 +613,9 @@
 			"orderUpdated": "Objednávka sa aktualizovala. Skontrolujte novú sumu pred platbou.",
 			"finalStateUnconfirmed": "Konečnú cenu sa teraz nepodarilo potvrdiť. Skúste to znova.",
 			"completeBlockedNoNewPayment": "Objednávku sa teraz nepodarilo dokončiť. Ak ste už zaplatili, nezačínajte novú platbu: obnovte stránku alebo nás kontaktujte.",
-			"completeOfferChanged": "Suma sa zmenila, preto objednávka nevznikla. Peniaze z tejto platby sa uvoľnia automaticky. Ak potrebujete s objednávkou pomôcť, kontaktujte nás."
+			"completeOfferChanged": "Suma sa zmenila, preto objednávka nevznikla. Peniaze z tejto platby sa uvoľnia automaticky. Ak potrebujete s objednávkou pomôcť, kontaktujte nás.",
+			"deliveryPhoneMissing": "Pri dodacej adrese chýba telefónne číslo. Kuriér ho potrebuje pri doručení, preto ho pred platbou doplňte.",
+			"addDeliveryPhone": "Doplniť telefónne číslo"
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Testovací režim:</strong> Toto je simulované potvrdenie objednávky. Žiadna skutočná platba neprebehla.",

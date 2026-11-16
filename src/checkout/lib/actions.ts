@@ -19,12 +19,14 @@ import {
 	type CheckoutDeliveryMethodUpdateMutation,
 	type CheckoutDeliveryMethodUpdateMutationVariables,
 	CheckoutEmailUpdateDocument,
+	type CheckoutErrorFragment,
 	type CheckoutEmailUpdateMutation,
 	type CheckoutEmailUpdateMutationVariables,
 	CheckoutMetadataUpdateDocument,
 	type CheckoutMetadataUpdateMutation,
 	type CheckoutMetadataUpdateMutationVariables,
 	CheckoutShippingAddressUpdateDocument,
+	type CountryCode,
 	type CheckoutShippingAddressUpdateMutation,
 	type CheckoutShippingAddressUpdateMutationVariables,
 	PaymentGatewaysInitializeDocument,
@@ -46,7 +48,12 @@ import {
 	type UserSetDefaultAddressMutation,
 	type UserSetDefaultAddressMutationVariables,
 } from "@/checkout/graphql";
-import { localizeAddressErrors, type AddressErrorLike } from "@/checkout/lib/address-errors";
+import {
+	hasPostalCodeRefusal,
+	localizeAddressErrors,
+	missingDeliveryPhoneError,
+	type AddressErrorLike,
+} from "@/checkout/lib/address-errors";
 import { isCheckoutLockedCode, isTaxContextChangedCode } from "@/checkout/lib/b2b/contract";
 import { isB2bCheckoutUiEnabled } from "@/checkout/lib/b2b/server/b2b-config";
 import { productionEvaluateB2bDeps } from "@/checkout/lib/b2b/server/evaluate-b2b-deps";
@@ -197,13 +204,39 @@ export async function checkoutEmailUpdateAction(
 	);
 }
 
+/**
+ * What both address mutations are sent with: Saleor checks the fields as before, and keeps the address as the
+ * customer wrote it. Its normalisation upper-cases the city (in Hungary and Canada also the name and the street),
+ * and the customer then met "BRATISLAVA" in the summary and in the form they came back to. The phone is still
+ * stored in the international form: that is Saleor's own field type, not this switch.
+ */
+const KEEP_ADDRESS_AS_TYPED = { enableFieldsNormalization: false } as const;
+
 export async function checkoutShippingAddressUpdateAction(
 	variables: NoLang<CheckoutShippingAddressUpdateMutationVariables>,
 	localeSlug?: string,
 ) {
+	// The delivery phone is required in every market (owner, 2026-11-16). Checked here too, so no path of the
+	// checkout can store a delivery address the courier cannot call about.
+	if (!variables.shippingAddress.phone?.trim()) {
+		const t = await addressTranslator(localeSlug);
+		const refused: MutationResult<CheckoutShippingAddressUpdateMutation> = {
+			data: {
+				checkoutShippingAddressUpdate: {
+					errors: [missingDeliveryPhoneError(t.t) as CheckoutErrorFragment],
+					checkout: null,
+				},
+			},
+		};
+		return refused;
+	}
 	const result = toResult(
 		await executePublicGraphQL(shippingAddressUpdateDoc, {
-			variables: { ...variables, ...checkoutGraphqlLocaleVariables(localeSlug) },
+			variables: {
+				...variables,
+				validationRules: { ...KEEP_ADDRESS_AS_TYPED, ...variables.validationRules },
+				...checkoutGraphqlLocaleVariables(localeSlug),
+			},
 			cache: "no-cache",
 		}),
 	);
@@ -220,7 +253,11 @@ export async function checkoutBillingAddressUpdateAction(
 ) {
 	const result = toResult(
 		await executePublicGraphQL(billingAddressUpdateDoc, {
-			variables: { ...variables, ...checkoutGraphqlLocaleVariables(localeSlug) },
+			variables: {
+				...variables,
+				validationRules: { ...KEEP_ADDRESS_AS_TYPED, ...variables.validationRules },
+				...checkoutGraphqlLocaleVariables(localeSlug),
+			},
 			cache: "no-cache",
 		}),
 	);
@@ -231,15 +268,29 @@ export async function checkoutBillingAddressUpdateAction(
 	return result;
 }
 
-/** Saleor's English per-field address errors, replaced by our text where we explain them (see `address-errors`). */
+async function addressTranslator(localeSlug?: string) {
+	const locale = await resolveFallbackLocale(localeSlug);
+	const translate = await getTranslations({ locale });
+	return { locale, t: (key: string, values?: Record<string, string>) => translate(key, values) };
+}
+
+/** Saleor's English per-field address errors, replaced by our text in the customer's language (see `address-errors`). */
 async function translateAddressErrors<T extends AddressErrorLike>(
 	errors: T[],
 	address: { country?: string | null; phone?: string | null } | null | undefined,
 	localeSlug?: string,
 ): Promise<T[]> {
-	const locale = await resolveFallbackLocale(localeSlug);
-	const t = await getTranslations({ locale });
-	return localizeAddressErrors(errors, { t: (key, values) => t(key, values), locale, address }) ?? errors;
+	const { locale, t } = await addressTranslator(localeSlug);
+	// Only a refused postal code costs the second read: the country's own example of one, from Saleor's rules.
+	let postalCodeExample: string | null = null;
+	if (address?.country && hasPostalCodeRefusal(errors)) {
+		const rules = await executePublicGraphQL(validationRulesDoc, {
+			variables: { countryCode: address.country as CountryCode },
+			cache: "no-cache",
+		});
+		postalCodeExample = rules.ok ? rules.data.addressValidationRules?.postalCodeExamples?.[0] ?? null : null;
+	}
+	return localizeAddressErrors(errors, { t, locale, address, postalCodeExample }) ?? errors;
 }
 
 export async function checkoutDeliveryMethodUpdateAction(

@@ -428,6 +428,7 @@
 			"emailInvalid": "Introduce un correo electrónico válido",
 			"passwordRequired": "La contraseña es obligatoria",
 			"passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+			"passwordTooWeak": "La contraseña es demasiado sencilla. Elija una contraseña más larga que no sea una palabra común ni solo números.",
 			"selectShippingAddress": "Selecciona una dirección de envío",
 			"emailSaveFailed": "No se ha podido guardar el correo electrónico",
 			"accountCreateFailed": "No se ha podido crear la cuenta",
@@ -473,7 +474,11 @@
 			"selectBillingAddressTitle": "Selecciona una dirección de facturación",
 			"phoneHint": "P. ej. {example}. Si el número es de otro país, añade el prefijo del país, p. ej. {foreign}.",
 			"phoneInvalid": "El número de teléfono no es válido para el país de entrega ({country}). Introdúcelo como {example} o con el prefijo del país, p. ej. {foreign}.",
-			"phoneInvalidIntl": "El número de teléfono con prefijo no es válido. Compruébalo, p. ej. {foreign}."
+			"phoneInvalidIntl": "El número de teléfono con prefijo no es válido. Compruébalo, p. ej. {foreign}.",
+			"fieldInvalid": "El campo {field} no contiene un valor válido. Revíselo, por favor.",
+			"postalCodeInvalid": "El código postal no tiene el formato que se usa en {country}. Introdúzcalo con el formato {example}.",
+			"notAvailableInCountry": "Ahora mismo no podemos entregar los artículos de la cesta en {country} en la cantidad solicitada. Elija otro país de entrega o modifique la cesta.",
+			"savedAddressPhoneNote": "La dirección elegida no tiene número de teléfono. El repartidor lo necesita para la entrega; añádalo, por favor."
 		},
 		"errors": {
 			"invalidValue": "Valor no válido",
@@ -608,7 +613,9 @@
 			"orderUpdated": "Tu pedido se ha actualizado. Revisa el nuevo importe antes de pagar.",
 			"finalStateUnconfirmed": "Ahora no hemos podido confirmar el precio final. Inténtalo de nuevo.",
 			"completeBlockedNoNewPayment": "Ahora no hemos podido completar el pedido. Si ya has pagado, no inicies un nuevo pago: recarga la página o contáctanos.",
-			"completeOfferChanged": "El importe ha cambiado, por lo que no se ha creado el pedido. El dinero de este pago se liberará automáticamente. Si necesitas ayuda con el pedido, contáctanos."
+			"completeOfferChanged": "El importe ha cambiado, por lo que no se ha creado el pedido. El dinero de este pago se liberará automáticamente. Si necesitas ayuda con el pedido, contáctanos.",
+			"deliveryPhoneMissing": "La dirección de entrega no tiene número de teléfono. El repartidor lo necesita para la entrega; añádalo antes de pagar.",
+			"addDeliveryPhone": "Añadir número de teléfono"
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Modo de prueba:</strong> esta es una confirmación de pedido simulada. No se ha realizado ningún pago real.",
