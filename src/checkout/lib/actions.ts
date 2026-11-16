@@ -70,7 +70,13 @@ import { getCheckoutPayAmount } from "@/checkout/lib/payment/checkout-pay-amount
 import { getDummyPaymentGuardError } from "@/checkout/lib/payment/providers/dummy";
 import { isDummyPaymentAllowed } from "@/checkout/lib/payment/providers/dummy";
 import { getStripePaymentGuardError, isStripePaymentEnabled } from "@/checkout/lib/payment/providers/stripe";
+import type { PromoCodeRemoval } from "@/checkout/lib/promo-code";
 import { fetchCheckoutOnServer } from "@/checkout/lib/server/fetch-checkout";
+import {
+	addPromoCodeOnServer,
+	removePromoCodeOnServer,
+	type PromoCodeResult,
+} from "@/checkout/lib/server/promo-code";
 import { resolveFallbackLocale } from "@/checkout/lib/server/resolve-fallback-locale";
 import { toTypedDocument } from "@/checkout/lib/server/to-typed-document";
 import {
@@ -303,6 +309,24 @@ export async function checkoutDeliveryMethodUpdateAction(
 			cache: "no-cache",
 		}),
 	);
+}
+
+/**
+ * A discount code or a gift card, from the checkout's order summary. Saleor decides whether it is good; a refusal
+ * comes back as a sentence in the customer's language (`promo-code`).
+ */
+export async function checkoutAddPromoCodeAction(
+	input: { checkoutId: string; promoCode: string },
+	localeSlug?: string,
+): Promise<PromoCodeResult> {
+	return addPromoCodeOnServer(input.checkoutId, input.promoCode, localeSlug);
+}
+
+export async function checkoutRemovePromoCodeAction(
+	input: { checkoutId: string; removal: PromoCodeRemoval },
+	localeSlug?: string,
+): Promise<PromoCodeResult> {
+	return removePromoCodeOnServer(input.checkoutId, input.removal, localeSlug);
 }
 
 export async function checkoutCustomerAttachAction(

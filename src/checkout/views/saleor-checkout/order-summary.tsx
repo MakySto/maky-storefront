@@ -10,6 +10,7 @@ import { localeConfig } from "@/config/locale";
 import { useLocale } from "@/providers/locale-provider";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 import { localizedAttributeValues, localizedName, orderLineName } from "@/checkout/lib/summary-line-names";
+import { summaryAmounts } from "@/checkout/lib/summary-amounts";
 import type { MetadataItem } from "@/lib/tyre-size/line-metadata";
 import { TyreChoiceLine } from "@/ui/components/cart/tyre-choice-line";
 
@@ -45,7 +46,14 @@ interface OrderSummaryData {
 	 * market on destination VAT — and the storefront would be the one that is wrong.
 	 */
 	tax: number;
+	/** What a discount code took off, as Saleor reports it. Where it is shown is `summaryAmounts`' decision. */
 	discount: number;
+	/** The discount code itself, named beside the amount it took off. */
+	voucherCode: string | null;
+	/** Known for a checkout; a placed order's query does not carry its gift cards. */
+	hasGiftCard?: boolean;
+	/** A delivery was chosen, so a delivery price of 0 is a price (a free-delivery code), not "not known yet". */
+	shippingChosen: boolean;
 	total: number;
 	editable?: boolean;
 }
@@ -87,6 +95,9 @@ function extractCheckoutData(checkout: CheckoutFragment, productNameFallback: st
 		shipping: checkout.shippingPrice?.gross?.amount || 0,
 		tax: checkout.totalPrice?.tax?.amount || 0,
 		discount: checkout.discount?.amount || 0,
+		voucherCode: checkout.voucherCode?.trim() || null,
+		hasGiftCard: (checkout.giftCards?.length ?? 0) > 0,
+		shippingChosen: Boolean(checkout.deliveryMethod),
 		total: checkout.totalPrice?.gross?.amount || 0,
 		editable: true,
 	};
@@ -117,6 +128,8 @@ function extractOrderData(order: OrderFragment, productNameFallback: string): Or
 		shipping: order.shippingPrice?.gross?.amount || 0,
 		tax: order.total?.tax?.amount || 0,
 		discount,
+		voucherCode: order.voucher?.code?.trim() || null,
+		shippingChosen: Boolean(order.deliveryMethod),
 		total: order.total?.gross?.amount || 0,
 		editable: false,
 	};
@@ -150,7 +163,20 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 		return null;
 	}
 
-	const { lines, currency, subtotal, shipping, tax, discount, total } = data;
+	const {
+		lines,
+		currency,
+		subtotal,
+		shipping,
+		tax,
+		discount,
+		voucherCode,
+		hasGiftCard,
+		shippingChosen,
+		total,
+	} = data;
+	// A discount code is already inside the rows Saleor returns; a gift card is not (`summary-amounts.ts`).
+	const { deduction, appliedDiscount } = summaryAmounts({ subtotal, shipping, total, discount, hasGiftCard });
 	const itemCount = lines.reduce((acc, line) => acc + line.quantity, 0);
 
 	const formatMoney = (amount: number) => {
@@ -299,12 +325,12 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 							</div>
 							<div className="flex justify-between">
 								<dt className="text-muted-foreground">{tCart("shipping")}</dt>
-								<dd>{shipping > 0 ? formatMoney(shipping) : "—"}</dd>
+								<dd>{shipping > 0 || shippingChosen ? formatMoney(shipping) : "—"}</dd>
 							</div>
-							{discount > 0 && (
-								<div className="flex justify-between text-green-600">
-									<dt>{t("summary.discount")}</dt>
-									<dd>-{formatMoney(discount)}</dd>
+							{deduction && (
+								<div className="text-status-success flex justify-between" data-testid="summary-deduction">
+									<dt>{deduction.kind === "giftCard" ? t("summary.giftCard") : t("summary.discount")}</dt>
+									<dd>−{formatMoney(deduction.amount)}</dd>
 								</div>
 							)}
 						</dl>
@@ -332,6 +358,25 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 							<p className="text-muted-foreground mt-1 flex justify-between text-xs tabular-nums">
 								<span>{t("summary.vatIncluded")}</span>
 								<data value={tax}>{formatMoney(tax)}</data>
+							</p>
+						)}
+						{/*
+						 * A discount code under the total, for the same reason as the VAT: Saleor has already taken it
+						 * off the rows above, so it is a statement about the total and not one more thing to subtract.
+						 */}
+						{appliedDiscount > 0 && (
+							<p
+								className="text-status-success mt-1 flex justify-between gap-3 text-xs tabular-nums"
+								data-testid="summary-applied-discount"
+							>
+								<span className="min-w-0 break-words">
+									{voucherCode
+										? t("summary.discountAppliedCode", { code: voucherCode })
+										: t("summary.discountApplied")}
+								</span>
+								<data value={appliedDiscount} className="shrink-0">
+									{formatMoney(appliedDiscount)}
+								</data>
 							</p>
 						)}
 						{showB2bExemption && tax === 0 && (

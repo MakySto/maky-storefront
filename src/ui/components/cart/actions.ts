@@ -8,6 +8,9 @@ import {
 import { CheckoutDeleteLinesDocument, CheckoutLinesUpdateDocument } from "@/gql/graphql";
 import * as Checkout from "@/lib/checkout";
 import { isCheckoutLockedCode } from "@/checkout/lib/b2b/contract";
+import type { PromoCodeRefusal, PromoCodeRemoval } from "@/checkout/lib/promo-code";
+import { addPromoCodeOnServer, removePromoCodeOnServer } from "@/checkout/lib/server/promo-code";
+import { getLocaleFromChannel } from "@/config/locale";
 
 /**
  * `payment-locked`: a payment for this checkout is in progress and the backend refuses to change its lines
@@ -80,6 +83,35 @@ export async function updateCartLineQuantity(
 	if (payload?.errors.length) return refusal(payload.errors);
 	if (!payload?.checkout) return { ok: false };
 
+	revalidateCart(channel);
+	return { ok: true };
+}
+
+/** A code from the cart page: `ok`, or the refusal with its sentence in the market's language. */
+export type CartPromoCodeResult = { ok: true } | { ok: false; refusal: PromoCodeRefusal; message: string };
+
+/**
+ * A discount code or a gift card typed in the cart. The same Saleor call as in the checkout
+ * (`checkout/lib/server/promo-code`); the cart page is a server render, so it is invalidated here.
+ */
+export async function applyCartPromoCode(
+	channel: string,
+	checkoutId: string,
+	promoCode: string,
+): Promise<CartPromoCodeResult> {
+	const result = await addPromoCodeOnServer(checkoutId, promoCode, getLocaleFromChannel(channel));
+	if (!result.ok) return { ok: false, refusal: result.refusal, message: result.message };
+	revalidateCart(channel);
+	return { ok: true };
+}
+
+export async function removeCartPromoCode(
+	channel: string,
+	checkoutId: string,
+	removal: PromoCodeRemoval,
+): Promise<CartPromoCodeResult> {
+	const result = await removePromoCodeOnServer(checkoutId, removal, getLocaleFromChannel(channel));
+	if (!result.ok) return { ok: false, refusal: result.refusal, message: result.message };
 	revalidateCart(channel);
 	return { ok: true };
 }

@@ -106,5 +106,21 @@ query CheckoutFind($id: ID!, $languageCode: LanguageCodeEnum!) {
 				currency
 			}
 		}
+		# A discount code or gift cards the customer applied (`checkout/lib/promo-code`), shown under the cart's total.
+		voucherCode
+		discountName
+		translatedDiscountName
+		discount {
+			amount
+			currency
+		}
+		giftCards {
+			id
+			displayCode
+			currentBalance {
+				amount
+				currency
+			}
+		}
 	}
 }

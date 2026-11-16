@@ -20,6 +20,7 @@ import { StripePaymentProcessingOverlay } from "./stripe-payment-processing-over
 import { type StripeBillingContext } from "./stripe-billing-context";
 import { useCheckoutPaymentMessages } from "@/checkout/hooks/use-checkout-payment-messages";
 import { usePaymentLockReporter } from "@/checkout/components/b2b/payment-lock-context";
+import { OrderLegalNote } from "@/checkout/components/payment/order-legal-note";
 
 export type { StripeBillingContext } from "./stripe-billing-context";
 
@@ -142,6 +143,7 @@ export const StripePaymentForm: FC<StripePaymentFormProps> = ({
 						paymentElementChangeTypeRef.current = event.value.type ?? null;
 					}}
 				/>
+				<OrderLegalNote channelSlug={checkout.channel.slug} />
 				<Button
 					type="button"
 					className="h-12 w-full md:w-auto md:min-w-[200px]"
