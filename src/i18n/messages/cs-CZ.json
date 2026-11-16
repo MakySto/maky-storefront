@@ -470,7 +470,10 @@
 				"postTown": "Poštovní město",
 				"prefecture": "Prefektura"
 			},
-			"selectBillingAddressTitle": "Vyberte fakturační adresu"
+			"selectBillingAddressTitle": "Vyberte fakturační adresu",
+			"phoneHint": "Např. {example}. Zahraniční číslo zadejte s předvolbou země, např. {foreign}.",
+			"phoneInvalid": "Telefonní číslo není platné pro zemi doručení ({country}). Zadejte ho ve tvaru {example} nebo s předvolbou země, např. {foreign}.",
+			"phoneInvalidIntl": "Telefonní číslo s předvolbou není platné. Zkontrolujte ho, např. {foreign}."
 		},
 		"errors": {
 			"invalidValue": "Neplatná hodnota",

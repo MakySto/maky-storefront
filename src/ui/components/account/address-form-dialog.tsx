@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useCallback, useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { Plus, Pencil } from "lucide-react";
 import { type AddressDetailsFragment } from "@/gql/graphql";
@@ -17,6 +17,8 @@ import {
 	SheetCloseButton,
 } from "@/ui/components/ui/sheet";
 import { createAddress, updateAddress } from "@/app/[channel]/(main)/account/actions";
+import { phoneRefusalMessage } from "@/checkout/lib/address-errors";
+import { normalizePhoneInput } from "@/checkout/lib/phone";
 import { accountErrorKey } from "@/ui/components/account/account-error";
 import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
 
@@ -32,6 +34,7 @@ export function AddressFormDialog({ address }: Props) {
 	const isEditing = !!address;
 	const t = useTranslations("account.address");
 	const tr = useTranslations();
+	const locale = useLocale();
 	const tCheckout = useTranslations("checkout");
 	const optional = (label: string) => `${label} ${tCheckout("common.optional")}`;
 	// The example in the country field is the market's own country (it was "US" everywhere).
@@ -65,16 +68,23 @@ export function AddressFormDialog({ address }: Props) {
 				if (!result.success) {
 					const field = result.field ? labels[result.field] : undefined;
 					setError(
-						field
-							? tr("account.errors.invalidField", { field })
-							: tr(accountErrorKey("address", result.code)),
+						result.field === "phone" && result.code !== "REQUIRED"
+							? phoneRefusalMessage({
+									t: tr,
+									locale,
+									countryCode: String(formData.get("country") ?? "").toUpperCase(),
+									phone: normalizePhoneInput(String(formData.get("phone") ?? "")),
+								})
+							: field
+								? tr("account.errors.invalidField", { field })
+								: tr(accountErrorKey("address", result.code)),
 					);
 				} else {
 					setOpen(false);
 				}
 			});
 		},
-		[isEditing, startTransition, labels, tr],
+		[isEditing, startTransition, labels, tr, locale],
 	);
 
 	return (

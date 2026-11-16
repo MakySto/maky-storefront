@@ -131,6 +131,7 @@ export const ShippingAddressSection: FC<ShippingAddressSectionProps> = ({
 						errors={errors}
 						onFieldChange={onFieldChange}
 						countryAreaChoices={countryAreaChoices}
+						countryCode={countryCode}
 					/>
 				</>
 			)}

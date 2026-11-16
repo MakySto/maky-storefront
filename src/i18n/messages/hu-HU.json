@@ -470,7 +470,10 @@
 				"postTown": "Postai település",
 				"prefecture": "Prefektúra"
 			},
-			"selectBillingAddressTitle": "Számlázási cím kiválasztása"
+			"selectBillingAddressTitle": "Számlázási cím kiválasztása",
+			"phoneHint": "Pl. {example}. Külföldi számot országhívó előtaggal adjon meg, pl. {foreign}.",
+			"phoneInvalid": "A telefonszám nem érvényes a szállítási országban ({country}). Adja meg így: {example}, vagy országhívó előtaggal, pl. {foreign}.",
+			"phoneInvalidIntl": "Az országhívó előtaggal megadott telefonszám nem érvényes. Kérjük, ellenőrizze, pl. {foreign}."
 		},
 		"errors": {
 			"invalidValue": "Érvénytelen érték",

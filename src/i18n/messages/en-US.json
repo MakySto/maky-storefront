@@ -470,7 +470,10 @@
 				"postTown": "Post town",
 				"prefecture": "Prefecture"
 			},
-			"selectBillingAddressTitle": "Select a billing address"
+			"selectBillingAddressTitle": "Select a billing address",
+			"phoneHint": "e.g. {example}. For a number from another country, include the country code, e.g. {foreign}.",
+			"phoneInvalid": "This phone number is not valid for the delivery country ({country}). Enter it like {example}, or with the country code, e.g. {foreign}.",
+			"phoneInvalidIntl": "This phone number with a country code is not valid. Please check it, e.g. {foreign}."
 		},
 		"errors": {
 			"invalidValue": "Invalid value",

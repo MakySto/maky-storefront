@@ -470,7 +470,10 @@
 				"postTown": "Ort",
 				"prefecture": "Präfektur"
 			},
-			"selectBillingAddressTitle": "Rechnungsadresse auswählen"
+			"selectBillingAddressTitle": "Rechnungsadresse auswählen",
+			"phoneHint": "z. B. {example}. Ausländische Nummern bitte mit Landesvorwahl eingeben, z. B. {foreign}.",
+			"phoneInvalid": "Die Telefonnummer ist für das Lieferland ({country}) nicht gültig. Bitte im Format {example} oder mit Landesvorwahl eingeben, z. B. {foreign}.",
+			"phoneInvalidIntl": "Die Telefonnummer mit Landesvorwahl ist nicht gültig. Bitte prüfen Sie sie, z. B. {foreign}."
 		},
 		"errors": {
 			"invalidValue": "Ungültiger Wert",

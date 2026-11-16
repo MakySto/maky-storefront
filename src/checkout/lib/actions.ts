@@ -46,6 +46,7 @@ import {
 	type UserSetDefaultAddressMutation,
 	type UserSetDefaultAddressMutationVariables,
 } from "@/checkout/graphql";
+import { localizeAddressErrors, type AddressErrorLike } from "@/checkout/lib/address-errors";
 import { isCheckoutLockedCode, isTaxContextChangedCode } from "@/checkout/lib/b2b/contract";
 import { isB2bCheckoutUiEnabled } from "@/checkout/lib/b2b/server/b2b-config";
 import { productionEvaluateB2bDeps } from "@/checkout/lib/b2b/server/evaluate-b2b-deps";
@@ -200,24 +201,45 @@ export async function checkoutShippingAddressUpdateAction(
 	variables: NoLang<CheckoutShippingAddressUpdateMutationVariables>,
 	localeSlug?: string,
 ) {
-	return toResult(
+	const result = toResult(
 		await executePublicGraphQL(shippingAddressUpdateDoc, {
 			variables: { ...variables, ...checkoutGraphqlLocaleVariables(localeSlug) },
 			cache: "no-cache",
 		}),
 	);
+	const payload = result.data?.checkoutShippingAddressUpdate;
+	if (payload?.errors?.length) {
+		payload.errors = await translateAddressErrors(payload.errors, variables.shippingAddress, localeSlug);
+	}
+	return result;
 }
 
 export async function checkoutBillingAddressUpdateAction(
 	variables: NoLang<CheckoutBillingAddressUpdateMutationVariables>,
 	localeSlug?: string,
 ) {
-	return toResult(
+	const result = toResult(
 		await executePublicGraphQL(billingAddressUpdateDoc, {
 			variables: { ...variables, ...checkoutGraphqlLocaleVariables(localeSlug) },
 			cache: "no-cache",
 		}),
 	);
+	const payload = result.data?.checkoutBillingAddressUpdate;
+	if (payload?.errors?.length) {
+		payload.errors = await translateAddressErrors(payload.errors, variables.billingAddress, localeSlug);
+	}
+	return result;
+}
+
+/** Saleor's English per-field address errors, replaced by our text where we explain them (see `address-errors`). */
+async function translateAddressErrors<T extends AddressErrorLike>(
+	errors: T[],
+	address: { country?: string | null; phone?: string | null } | null | undefined,
+	localeSlug?: string,
+): Promise<T[]> {
+	const locale = await resolveFallbackLocale(localeSlug);
+	const t = await getTranslations({ locale });
+	return localizeAddressErrors(errors, { t: (key, values) => t(key, values), locale, address }) ?? errors;
 }
 
 export async function checkoutDeliveryMethodUpdateAction(
