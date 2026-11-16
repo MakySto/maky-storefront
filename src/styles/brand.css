@@ -624,18 +624,28 @@
 /*
  * Wide product content scrolls in its own box.
  *
- * `parseEditorJSToHtml` wraps every rendered table in `.maky-prose-scroll`. The
- * table itself needs `max-content`, because @tailwindcss/typography sets
- * `width: 100%` on prose tables — which makes a wide table squash rather than
- * overflow, so the container would have nothing to scroll.
+ * `parseEditorJSToHtml` wraps every rendered table in `.maky-prose-scroll`.
+ *
+ * The box never widens what it stands in (`contain: inline-size`). `overflow-x: auto` alone does not
+ * do that: a scrolling box still reports the width of its content to its parent, and a parent that
+ * sizes itself by content (a grid or flex item, which keeps `min-width: auto`) grows with it. That is
+ * how the tyre-size table of a snow chain made its card 536px wide on a 360px phone on 2026-11-16:
+ * the whole page panned sideways and the buy bar's button stood off the screen.
+ *
+ * A table of three or more columns keeps its natural width (`max-content`) and scrolls, because
+ * @tailwindcss/typography sets `width: 100%` on prose tables, which makes a wide table squash rather
+ * than overflow. A table of two columns is a label and its value: it stays as wide as the box and
+ * its text wraps, so a long value (the tyre sizes of one rim, in one cell) is read without scrolling
+ * a single line sideways, with nothing on a phone to say that it scrolls.
  */
 @layer base {
 	.maky-prose-scroll {
 		overflow-x: auto;
 		max-width: 100%;
+		contain: inline-size;
 	}
 
-	.maky-prose-scroll > table {
+	.maky-prose-scroll > table:has(tr > :nth-child(3)) {
 		min-width: max-content;
 	}
 }

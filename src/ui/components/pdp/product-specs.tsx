@@ -218,7 +218,10 @@ export async function ProductSpecs({
 	].filter((section): section is { href: string; label: string } => Boolean(section));
 
 	return (
-		<section className="mt-10 lg:mt-14">
+		// `break-words` is inherited by everything below: a word longer than the line (a German compound in
+		// a heading, an address without a space) breaks where the line ends. Unbroken, it runs out of its
+		// card and widens the page as surely as a table does.
+		<section className="mt-10 break-words lg:mt-14">
 			{/* The sections this product has, as a row of jump links: one hairline under the row, the
 			    current one underlined in brown — not another raised panel. Links, not a tab widget:
 			    everything stays on the page and readable without a click, and an empty section never
@@ -245,8 +248,14 @@ export async function ProductSpecs({
 			)}
 
 			{/* The description with the product's photo beside its opening, then the parameters at
-			    full width in two columns — the approved page's order. */}
-			<div className="mt-5 grid gap-4 lg:mt-6 lg:gap-5">
+			    full width in two columns — the approved page's order.
+
+			    `[&>*]:min-w-0` is load-bearing on phones, as it is on the page's gallery row: this is a grid
+			    of one implicit column, whose items keep `min-width: auto`, so a card could not be narrower
+			    than the widest thing in its text. The tyre-size table of a snow chain made the description
+			    card 536px wide on a 360px phone (2026-11-16): the page panned sideways and the buy bar, which
+			    is as wide as the page, had its button off the screen. */}
+			<div className="mt-5 grid gap-4 lg:mt-6 lg:gap-5 [&>*]:min-w-0">
 				{hasDescription && sectionCards && (
 					<>
 						<h2 className="sr-only">{t("productDescription")}</h2>
