@@ -7,6 +7,7 @@ import { Input } from "@/ui/components/ui/input";
 import { Label } from "@/ui/components/ui/label";
 import { cn } from "@/lib/utils";
 import { type AddressField } from "@/checkout/components/address-form/types";
+import { phoneHintValues } from "@/checkout/lib/phone";
 import { autocompleteTags, typeTags } from "@/checkout/lib/consts/input-attributes";
 
 // =============================================================================
@@ -90,6 +91,7 @@ interface FormInputProps {
 	maxLength?: number;
 	className?: string;
 	autoComplete?: string;
+	inputMode?: "tel";
 }
 
 export const FormInput: FC<FormInputProps> = ({
@@ -103,6 +105,7 @@ export const FormInput: FC<FormInputProps> = ({
 	maxLength,
 	className,
 	autoComplete,
+	inputMode,
 }) => (
 	<div className="relative">
 		{Icon && <Icon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />}
@@ -114,6 +117,7 @@ export const FormInput: FC<FormInputProps> = ({
 			onChange={(e) => onChange(e.target.value)}
 			maxLength={maxLength}
 			autoComplete={autoComplete}
+			inputMode={inputMode}
 			className={cn("h-12", Icon && "pl-10", error && "border-destructive", className)}
 		/>
 	</div>
@@ -145,6 +149,8 @@ interface AddressFieldsProps {
 	countryAreaChoices?: Array<{ raw?: unknown; verbose?: unknown }>;
 	/** ID prefix for form fields (e.g., "billing-") */
 	idPrefix?: string;
+	/** Country of this address: the phone field shows that country's example number and says how to write it. */
+	countryCode?: string;
 }
 
 export const AddressFields: FC<AddressFieldsProps> = ({
@@ -157,8 +163,10 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 	onFieldChange,
 	countryAreaChoices,
 	idPrefix = "",
+	countryCode,
 }) => {
 	const t = useTranslations("checkout");
+	const phoneHint = phoneHintValues(countryCode);
 
 	const renderField = (field: AddressField): ReactNode => {
 		if (field === "countryCode") return null;
@@ -203,20 +211,27 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 			);
 		}
 
-		// Text input
+		// Text input. The phone shows the delivery country's example as placeholder and says, under the field, how the
+		// number is written, so the customer does not have to guess (Saleor accepts the national form of the delivery
+		// country and any number with a calling code).
+		const isPhone = field === "phone";
 		return (
 			<div key={field} className="space-y-1.5">
 				{fieldLabel}
 				<FormInput
 					id={fieldId}
 					type={inputType}
-					placeholder={label}
+					placeholder={isPhone ? phoneHint.example : label}
 					value={formData[field] || ""}
 					onChange={(value) => onFieldChange(field, value)}
 					error={error}
 					icon={Icon}
 					autoComplete={autoComplete}
+					inputMode={isPhone ? "tel" : undefined}
 				/>
+				{isPhone && !error && (
+					<p className="text-muted-foreground text-xs">{t("addressForm.phoneHint", phoneHint)}</p>
+				)}
 				<FieldError error={error} />
 			</div>
 		);

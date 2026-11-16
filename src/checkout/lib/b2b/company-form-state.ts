@@ -1,4 +1,5 @@
 import type { AddressInput, CountryCode } from "@/checkout/graphql";
+import { normalizePhoneInput } from "@/checkout/lib/phone";
 
 import { b2bFormValuesFrom, type B2bFormErrors } from "./b2b-input";
 import type { B2bInputV1 } from "./contract";
@@ -114,9 +115,12 @@ export function companyBillingAddressInput(
 	if (value.billingSameAsShipping && shippingInput) {
 		return { ...shippingInput, companyName };
 	}
-	const entries = Object.entries(value.billingForm).filter(
-		([, fieldValue]) => fieldValue && fieldValue.trim(),
-	);
+	const entries = Object.entries(value.billingForm)
+		.map(
+			([field, fieldValue]) =>
+				[field, field === "phone" ? normalizePhoneInput(fieldValue) : fieldValue] as const,
+		)
+		.filter(([, fieldValue]) => fieldValue && fieldValue.trim());
 	return { ...Object.fromEntries(entries), country: value.billingCountry, companyName } as AddressInput;
 }
 

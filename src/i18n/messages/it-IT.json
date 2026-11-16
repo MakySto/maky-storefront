@@ -470,7 +470,10 @@
 				"postTown": "Località postale",
 				"prefecture": "Prefettura"
 			},
-			"selectBillingAddressTitle": "Seleziona un indirizzo di fatturazione"
+			"selectBillingAddressTitle": "Seleziona un indirizzo di fatturazione",
+			"phoneHint": "Es. {example}. Per un numero estero indica il prefisso internazionale, es. {foreign}.",
+			"phoneInvalid": "Il numero di telefono non è valido per il paese di consegna ({country}). Inseriscilo nel formato {example} oppure con il prefisso internazionale, es. {foreign}.",
+			"phoneInvalidIntl": "Il numero di telefono con prefisso internazionale non è valido. Controllalo, es. {foreign}."
 		},
 		"errors": {
 			"invalidValue": "Valore non valido",

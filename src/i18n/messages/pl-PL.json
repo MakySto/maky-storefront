@@ -470,7 +470,10 @@
 				"postTown": "Miejscowość pocztowa",
 				"prefecture": "Prefektura"
 			},
-			"selectBillingAddressTitle": "Wybierz adres rozliczeniowy"
+			"selectBillingAddressTitle": "Wybierz adres rozliczeniowy",
+			"phoneHint": "Np. {example}. Numer zagraniczny podaj z numerem kierunkowym kraju, np. {foreign}.",
+			"phoneInvalid": "Numer telefonu nie jest prawidłowy dla kraju dostawy ({country}). Wpisz go w formacie {example} lub z numerem kierunkowym kraju, np. {foreign}.",
+			"phoneInvalidIntl": "Numer telefonu z numerem kierunkowym kraju jest nieprawidłowy. Sprawdź go, np. {foreign}."
 		},
 		"errors": {
 			"invalidValue": "Nieprawidłowa wartość",
