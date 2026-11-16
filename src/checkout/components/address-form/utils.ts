@@ -68,6 +68,11 @@ export const getAddressInputData = ({
 		},
 		{} as Record<string, unknown>,
 	);
+	// Saleor no longer rewrites the address (`KEEP_ADDRESS_AS_TYPED` in the checkout actions), so the one rewrite
+	// every country's rules agree on is done here: a postal code has no small letters ("k1a 0b1" → "K1A 0B1").
+	if (typeof filtered.postalCode === "string") {
+		filtered.postalCode = filtered.postalCode.trim().toUpperCase();
+	}
 	// The phone goes to Saleor in the shape it reads as the customer meant it ("00421…" → "+421…", blanks dropped).
 	if (typeof filtered.phone === "string") {
 		const phone = normalizePhoneInput(filtered.phone);

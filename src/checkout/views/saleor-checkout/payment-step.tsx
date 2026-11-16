@@ -199,7 +199,11 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 			: t("payment.processingPayment")
 		: t("placeOrder");
 
-	const isDisabled = isLoading || (!canSubmit && !isFreeOrder) || !b2b.gate.allowed;
+	// A delivery address stored before the phone became required (a cart from an earlier visit) has none: the
+	// customer adds it in the first step before anything can be paid.
+	const deliveryPhoneMissing = isShippingRequired && hasShippingAddress && !shippingAddress?.phone?.trim();
+
+	const isDisabled = isLoading || (!canSubmit && !isFreeOrder) || !b2b.gate.allowed || deliveryPhoneMissing;
 
 	const b2bStatus = b2bChecksTax
 		? b2bStatusMessage({
@@ -324,7 +328,28 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 				/>
 			) : null}
 
-			{shouldShowPaymentMethodArea(checkout) && b2b.gate.allowed ? (
+			{deliveryPhoneMissing ? (
+				<div
+					className="bg-status-warning-bg border-status-warning-border text-foreground flex items-start gap-3 rounded-lg border p-4"
+					role="alert"
+				>
+					<AlertTriangle className="text-status-warning mt-0.5 h-5 w-5 shrink-0" />
+					<div className="space-y-2">
+						<p className="text-sm">{t("payment.deliveryPhoneMissing")}</p>
+						{onGoToInformation ? (
+							<button
+								type="button"
+								onClick={onGoToInformation}
+								className="text-sm font-medium underline underline-offset-2 hover:no-underline"
+							>
+								{t("payment.addDeliveryPhone")}
+							</button>
+						) : null}
+					</div>
+				</div>
+			) : null}
+
+			{shouldShowPaymentMethodArea(checkout) && b2b.gate.allowed && !deliveryPhoneMissing ? (
 				<PaymentMethodArea
 					provider={provider}
 					checkout={checkout}

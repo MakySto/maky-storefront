@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, type FC } from "react";
+import { useState, useEffect, useCallback, useRef, type FC } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useLocale } from "@/providers/locale-provider";
@@ -42,6 +42,10 @@ import {
 	getAddressInputDataFromAddress,
 	isMatchingAddressData,
 } from "@/checkout/components/address-form/utils";
+import { type AddressField } from "@/checkout/components/address-form/types";
+import { placeAddressErrors, type AddressErrorLike } from "@/checkout/lib/address-errors";
+import { focusFirstInvalidField } from "@/checkout/lib/focus-invalid";
+import { normalizePhoneInput } from "@/checkout/lib/phone";
 import { useUser } from "@/checkout/hooks/use-user";
 import { useCheckout } from "@/checkout/hooks/use-checkout";
 import { syncAuthSurfacesAfterSignIn } from "@/lib/auth/sync-auth-surfaces-after-sign-in";
@@ -216,8 +220,28 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, on
 	const [paymentLock, setPaymentLock] = useState({ key: 0, shown: false });
 
 	// Country-specific address configuration
-	const { orderedAddressFields, getFieldLabel, isRequiredField, countryAreaChoices, rulesKnown } =
-		useAddressFormUtils(countryCode);
+	const {
+		orderedAddressFields,
+		getFieldLabel,
+		isRequiredField: isRequiredBySaleor,
+		countryAreaChoices,
+		rulesKnown,
+	} = useAddressFormUtils(countryCode);
+	// The delivery phone is required in every market (owner, 2026-11-16): the courier calls it. Saleor's own rules
+	// never ask for a phone, so the rule is ours; the billing forms keep it optional.
+	const isRequiredField = useCallback(
+		(field: AddressField) => field === "phone" || isRequiredBySaleor(field),
+		[isRequiredBySaleor],
+	);
+	// A saved address without a number (the address book does not ask for one): the customer adds it here, for this
+	// order, under the list.
+	const [savedAddressPhone, setSavedAddressPhone] = useState("");
+	// The inputs to take the customer to once the form can be used again. While a save runs the fields are disabled
+	// (with the company purchase on), and a disabled input cannot take the focus: the request waits for that render.
+	const focusRequest = useRef<readonly string[] | null>(null);
+	const requestFocus = (ids: readonly string[]) => {
+		focusRequest.current = ids;
+	};
 
 	// ----- Company purchase (MAKY-B2B-V1) -----
 	const b2b = useCheckoutB2b();
@@ -244,6 +268,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, on
 			? user.addresses.find((address) => address.id === selectedAddressId)
 			: undefined;
 	const deliveryCountry = (selectedSavedAddress?.country?.code as CountryCode | undefined) ?? countryCode;
+	const savedAddressNeedsPhone = Boolean(selectedSavedAddress) && !selectedSavedAddress?.phone?.trim();
 	const canUseShippingAddress = checkout.isShippingRequired;
 
 	const handleB2bChange = (next: B2bCompanyFieldsValue) => {
@@ -502,10 +527,12 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, on
 				if (authenticated && user?.addresses?.length && !showNewAddressForm) {
 					if (!selectedAddressId) {
 						newErrors.address = t("info.selectShippingAddress");
+					} else if (savedAddressNeedsPhone && !normalizePhoneInput(savedAddressPhone)) {
+						newErrors.phone = t("addressForm.fieldRequired", { field: t("phone") });
 					}
 				} else {
 					orderedAddressFields.forEach((field) => {
-						if (isRequiredField(field) && !formData[field]) {
+						if (isRequiredField(field) && !formData[field]?.trim()) {
 							newErrors[field] = t("addressForm.fieldRequired", { field: getFieldLabel(field) });
 						}
 					});
@@ -528,18 +555,26 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, on
 
 			setErrors(newErrors);
 			if (Object.keys(newErrors).length > 0) {
-				// Focus the first invalid field
-				const firstErrorField = Object.keys(newErrors)[0];
-				const element = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
-				element?.focus();
+				requestFocus(Object.keys(newErrors));
 				return;
 			}
 
-			// The delivery inputs on screen (none when a saved address is picked from the list).
-			const shippingFields =
-				checkout.isShippingRequired && !(authenticated && user?.addresses?.length && !showNewAddressForm)
-					? orderedAddressFields
-					: [];
+			// The delivery inputs on screen: the form's, or only the phone asked under a saved address without one.
+			const pickedFromList = Boolean(authenticated && user?.addresses?.length && !showNewAddressForm);
+			const shippingFields: readonly string[] = !checkout.isShippingRequired
+				? []
+				: pickedFromList
+					? savedAddressNeedsPhone
+						? ["phone"]
+						: []
+					: orderedAddressFields;
+			/** Saleor's answer about the delivery address, each error where the customer can see it. */
+			const showAddressErrors = (addressErrors: ReadonlyArray<AddressErrorLike>) => {
+				const placed = placeAddressErrors(addressErrors, shippingFields, t("errors.invalidValue"));
+				setErrors(placed.fields);
+				if (placed.form.length) setFormError(placed.form.join(" "));
+				requestFocus(Object.keys(placed.fields));
+			};
 
 			// ----- Save to Saleor -----
 			setIsSubmitting(true);
@@ -559,11 +594,11 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, on
 					}
 					const emailErrors = emailResult.data?.checkoutEmailUpdate?.errors;
 					if (emailErrors?.length) {
-						const errorMap: Record<string, string> = {};
-						emailErrors.forEach((err) => {
-							errorMap[err.field || "email"] = err.message || t("errors.invalidValue");
-						});
-						setErrors(errorMap);
+						// Saleor's text is English: a refused address is said as our own check says it, anything else
+						// as "could not be saved". Either way at the e-mail field, the only input this is about.
+						const refused = emailErrors.some((err) => err.field === "email" && err.code !== "REQUIRED");
+						setErrors({ email: refused ? t("info.emailInvalid") : t("info.emailSaveFailed") });
+						requestFocus(["email"]);
 						return;
 					}
 
@@ -585,7 +620,13 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, on
 						if (registerResult.data?.accountRegister?.errors?.length) {
 							const err = registerResult.data.accountRegister.errors[0];
 							if (err.code !== "UNIQUE") {
-								setErrors({ password: err.message || t("info.accountCreateFailed") });
+								// Every PASSWORD_* code says the password is not good enough; Saleor's sentence is English.
+								setErrors({
+									password: String(err.code).startsWith("PASSWORD_")
+										? t("info.passwordTooWeak")
+										: t("info.accountCreateFailed"),
+								});
+								requestFocus(["password"]);
 								return;
 							}
 						}
@@ -602,6 +643,10 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, on
 						const selectedAddress = user.addresses.find((a) => a.id === selectedAddressId);
 						if (selectedAddress) {
 							addressInput = getAddressInputDataFromAddress(selectedAddress);
+							if (!addressInput.phone) {
+								const phone = normalizePhoneInput(savedAddressPhone);
+								if (phone) addressInput = { ...addressInput, phone };
+							}
 						}
 					} else {
 						addressInput = getAddressInputData({ ...formData, countryCode });
@@ -627,12 +672,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, on
 							return;
 						}
 						if (addressErrors?.length) {
-							const errorMap: Record<string, string> = {};
-							addressErrors.forEach((err) => {
-								const field = err.field || "streetAddress1";
-								errorMap[field] = err.message || t("errors.invalidValue");
-							});
-							setErrors(errorMap);
+							showAddressErrors(addressErrors);
 							return;
 						}
 						savedShippingInput = addressInput;
@@ -721,6 +761,8 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, on
 			user?.addresses,
 			showNewAddressForm,
 			selectedAddressId,
+			savedAddressNeedsPhone,
+			savedAddressPhone,
 			orderedAddressFields,
 			isRequiredField,
 			getFieldLabel,
@@ -746,6 +788,14 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, on
 		},
 		[submitInformation],
 	);
+
+	// Runs after every render: a pending focus request is served by the first render in which the form is usable.
+	const formLocked = b2b.config.uiEnabled && (isSubmitting || b2b.pending);
+	useEffect(() => {
+		if (formLocked || !focusRequest.current) return;
+		focusFirstInvalidField(focusRequest.current);
+		focusRequest.current = null;
+	});
 
 	// ----- Render: Password Reset -----
 	if (contactView === "resetPassword") {
@@ -823,7 +873,7 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, on
 
 	// While the step saves or the company is being checked nothing can be edited, so every answer is about the values
 	// that were sent. With B2B off the form behaves as it did before.
-	const locked = b2b.config.uiEnabled && (isSubmitting || b2b.pending);
+	const locked = formLocked;
 
 	return (
 		<form className="space-y-8" onSubmit={handleSubmit} noValidate aria-busy={locked || undefined}>
@@ -876,6 +926,18 @@ export const InformationStep: FC<InformationStepProps> = ({ checkout, onNext, on
 						isRequiredField={isRequiredField}
 						rulesKnown={rulesKnown}
 						countryAreaChoices={countryAreaChoices}
+						savedAddressPhone={
+							savedAddressNeedsPhone
+								? {
+										value: savedAddressPhone,
+										countryCode: deliveryCountry,
+										onChange: (value) => {
+											setSavedAddressPhone(value);
+											if (errors.phone) setErrors((prev) => ({ ...prev, phone: "" }));
+										},
+									}
+								: undefined
+						}
 					/>
 				)}
 

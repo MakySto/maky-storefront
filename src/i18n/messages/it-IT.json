@@ -428,6 +428,7 @@
 			"emailInvalid": "Inserisci un indirizzo e-mail valido",
 			"passwordRequired": "La password è obbligatoria",
 			"passwordTooShort": "La password deve contenere almeno 8 caratteri",
+			"passwordTooWeak": "La password è troppo semplice. Scegli una password più lunga, che non sia una parola comune né composta solo da numeri.",
 			"selectShippingAddress": "Seleziona un indirizzo di spedizione",
 			"emailSaveFailed": "Non è stato possibile salvare l'indirizzo e-mail",
 			"accountCreateFailed": "Non è stato possibile creare l'account",
@@ -473,7 +474,11 @@
 			"selectBillingAddressTitle": "Seleziona un indirizzo di fatturazione",
 			"phoneHint": "Es. {example}. Per un numero estero indica il prefisso internazionale, es. {foreign}.",
 			"phoneInvalid": "Il numero di telefono non è valido per il paese di consegna ({country}). Inseriscilo nel formato {example} oppure con il prefisso internazionale, es. {foreign}.",
-			"phoneInvalidIntl": "Il numero di telefono con prefisso internazionale non è valido. Controllalo, es. {foreign}."
+			"phoneInvalidIntl": "Il numero di telefono con prefisso internazionale non è valido. Controllalo, es. {foreign}.",
+			"fieldInvalid": "Il campo {field} non contiene un valore valido. Controllalo, per favore.",
+			"postalCodeInvalid": "Il CAP non ha il formato usato in questo Paese ({country}). Inseriscilo nel formato {example}.",
+			"notAvailableInCountry": "Al momento non possiamo consegnare gli articoli del carrello in questo Paese ({country}) nella quantità richiesta. Scegli un altro Paese di consegna o modifica il carrello.",
+			"savedAddressPhoneNote": "L’indirizzo scelto non ha un numero di telefono. Il corriere ne ha bisogno per la consegna, aggiungilo per favore."
 		},
 		"errors": {
 			"invalidValue": "Valore non valido",
@@ -608,7 +613,9 @@
 			"orderUpdated": "Il tuo ordine è stato aggiornato. Controlla il nuovo importo prima di pagare.",
 			"finalStateUnconfirmed": "Al momento non è stato possibile confermare il prezzo finale. Riprova.",
 			"completeBlockedNoNewPayment": "Al momento non è stato possibile completare l'ordine. Se hai già pagato, non avviare un nuovo pagamento: ricarica la pagina o contattaci.",
-			"completeOfferChanged": "L'importo è cambiato, quindi l'ordine non è stato creato. Il denaro di questo pagamento verrà sbloccato automaticamente. Se hai bisogno di aiuto con l'ordine, contattaci."
+			"completeOfferChanged": "L'importo è cambiato, quindi l'ordine non è stato creato. Il denaro di questo pagamento verrà sbloccato automaticamente. Se hai bisogno di aiuto con l'ordine, contattaci.",
+			"deliveryPhoneMissing": "L’indirizzo di consegna non ha un numero di telefono. Il corriere ne ha bisogno per la consegna, aggiungilo prima di pagare.",
+			"addDeliveryPhone": "Aggiungi il numero di telefono"
 		},
 		"confirmation": {
 			"demoBanner": "<strong>Modalità di prova:</strong> questa è una conferma d'ordine simulata. Non è stato effettuato alcun pagamento reale.",

@@ -19,6 +19,8 @@ fragment ValidationRulesFragment on AddressValidationData {
 	countryAreaType
 	postalCodeType
 	cityType
+	# The country's own example of a postal code, for the message when one is refused (`address-errors`).
+	postalCodeExamples
 	countryAreaChoices {
 		raw
 		verbose
@@ -77,6 +79,10 @@ fragment CheckoutFragment on Checkout {
 	shippingMethods {
 		id
 		name
+		# The method's name in the customer's language, when Saleor holds one (Dashboard → Translations).
+		translation(languageCode: $languageCode) {
+			name
+		}
 		price {
 			...Money
 		}
