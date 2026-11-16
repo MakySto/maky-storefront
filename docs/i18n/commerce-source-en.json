@@ -594,42 +594,106 @@
 			"runtimeStatus": "production"
 		},
 		"checkout.addressForm.phoneHint": {
-			"source": "e.g. {example}. For a number from another country, include the country code, e.g. {foreign}.",
-			"context": "Helper line under the phone field of every address form (delivery, billing, company billing): shows how the number is written so the customer does not have to guess. Small muted text.",
+			"source": "e.g. {example}",
+			"context": "Helper line under the phone field of every address form (delivery, billing, company billing): the delivery country's own number in both forms, so the customer does not have to guess. Small muted text. Never another country's number.",
 			"kind": "visible",
 			"placeholders": {
-				"example": "The delivery country's example number in national form, e.g. '01512 3456789' (from src/checkout/lib/consts/phone-examples.ts; not translated)",
-				"foreign": "An example number of another country with its calling code, e.g. '+421 912 123 456' (not translated)"
+				"example": "The delivery country's example in both forms, joined by `phoneExamplePair`, e.g. '01512 3456789 or +49 1512 3456789' (not translated)"
 			},
-			"callSites": ["src/checkout/views/saleor-checkout/address-form-fields.tsx:233"],
+			"callSites": ["src/checkout/views/saleor-checkout/address-form-fields.tsx"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.addressForm.phoneExamplePair": {
+			"source": "{national} or {international}",
+			"context": "Joins the national and the international form of one country's example number inside the phone hint and the phone errors ('{national} or {international}').",
+			"kind": "visible",
+			"placeholders": {
+				"national": "The example as written at home, e.g. '01512 3456789' (from src/checkout/lib/consts/phone-examples.ts; not translated)",
+				"international": "The same number with the country's calling code, e.g. '+49 1512 3456789' (not translated)"
+			},
+			"callSites": [
+				"src/checkout/views/saleor-checkout/address-form-fields.tsx",
+				"src/checkout/lib/address-errors.ts (dynamic: phoneRefusalMessage() picks the text through a passed-in translator)"
+			],
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
 		"checkout.addressForm.phoneInvalid": {
-			"source": "This phone number is not valid for the delivery country ({country}). Enter it like {example}, or with the country code, e.g. {foreign}.",
-			"context": "Error under the phone field when Saleor refuses a number written without a calling code (not valid in the address country). Replaces Saleor's English text.",
+			"source": "This phone number is not valid. Please check it. Example ({country}): {example}.",
+			"context": "Error under the phone field when Saleor refuses a number and no more specific reason can be told. Replaces Saleor's English text.",
 			"kind": "validation",
 			"placeholders": {
-				"country": "The localized name of the address country, e.g. 'Deutschland'",
-				"example": "The delivery country's example number in national form, e.g. '01512 3456789' (from src/checkout/lib/consts/phone-examples.ts; not translated)",
-				"foreign": "An example number of another country with its calling code, e.g. '+421 912 123 456' (not translated)"
+				"example": "The example number of the country the number belongs to: both forms joined by `phoneExamplePair` ('01512 3456789 or +49 1512 3456789'), or the international form alone when the customer wrote a calling code (not translated)",
+				"country": "The localized name of the country the example belongs to, e.g. 'Deutschland'"
 			},
 			"callSites": [
-				"src/checkout/lib/address-errors.ts (dynamic: t(\"checkout.addressForm.phoneInvalid\" / \"…phoneInvalidIntl\") through a passed-in translator)"
+				"src/checkout/lib/address-errors.ts (dynamic: phoneRefusalMessage() picks the text through a passed-in translator)"
 			],
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
-		"checkout.addressForm.phoneInvalidIntl": {
-			"source": "This phone number with a country code is not valid. Please check it, e.g. {foreign}.",
-			"context": "Error under the phone field when Saleor refuses a number written with a calling code (+… or 00…). Replaces Saleor's English text.",
+		"checkout.addressForm.phoneInvalidNoExample": {
+			"source": "This phone number is not valid. Please check it, or enter it with the country code.",
+			"context": "The same error for a country that has no example number.",
+			"kind": "validation",
+			"callSites": [
+				"src/checkout/lib/address-errors.ts (dynamic: phoneRefusalMessage() picks the text through a passed-in translator)"
+			],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.addressForm.phoneTooShort": {
+			"source": "This phone number is too short; a digit is probably missing. Example ({country}): {example}.",
+			"context": "Error under the phone field when the refused number is a digit or two short for its country.",
 			"kind": "validation",
 			"placeholders": {
-				"foreign": "An example number of another country with its calling code, e.g. '+421 912 123 456' (not translated)"
+				"example": "The example number of the country the number belongs to: both forms joined by `phoneExamplePair` ('01512 3456789 or +49 1512 3456789'), or the international form alone when the customer wrote a calling code (not translated)",
+				"country": "The localized name of the country the example belongs to, e.g. 'Deutschland'"
 			},
 			"callSites": [
-				"src/checkout/lib/address-errors.ts (dynamic: t(\"checkout.addressForm.phoneInvalid\" / \"…phoneInvalidIntl\") through a passed-in translator)"
+				"src/checkout/lib/address-errors.ts (dynamic: phoneRefusalMessage() picks the text through a passed-in translator)"
 			],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.addressForm.phoneTooLong": {
+			"source": "This phone number is too long; there is probably one digit too many. Example ({country}): {example}.",
+			"context": "Error under the phone field when the refused number has a digit or two too many for its country.",
+			"kind": "validation",
+			"placeholders": {
+				"example": "The example number of the country the number belongs to: both forms joined by `phoneExamplePair` ('01512 3456789 or +49 1512 3456789'), or the international form alone when the customer wrote a calling code (not translated)",
+				"country": "The localized name of the country the example belongs to, e.g. 'Deutschland'"
+			},
+			"callSites": [
+				"src/checkout/lib/address-errors.ts (dynamic: phoneRefusalMessage() picks the text through a passed-in translator)"
+			],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.addressForm.phoneOtherCountry": {
+			"source": "This number is not valid for the delivery country ({country}). If it is a number from another country ({otherCountry}), enter it with the country code: {suggestion}.",
+			"context": "Error under the phone field when the refused number is a mobile number of another market written without its calling code (a Slovak '0901 234 561' on an order to Germany). Offers the same number with the calling code.",
+			"kind": "validation",
+			"placeholders": {
+				"country": "The localized name of the delivery country, e.g. 'Deutschland'",
+				"otherCountry": "The localized name of the country the number looks like it belongs to, e.g. 'Slowakei'",
+				"suggestion": "The customer's own number with that country's calling code, e.g. '+421 901 234 561' (not translated)"
+			},
+			"callSites": [
+				"src/checkout/lib/address-errors.ts (dynamic: phoneRefusalMessage() picks the text through a passed-in translator)"
+			],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.addressForm.phoneUseSuggestion": {
+			"source": "Use {suggestion}",
+			"context": "Button under the phone error that puts the suggested number (the customer's own number with a calling code) into the field.",
+			"kind": "cta",
+			"placeholders": {
+				"suggestion": "The customer's own number with a calling code, e.g. '+421 901 234 561' (not translated)"
+			},
+			"callSites": ["src/checkout/views/saleor-checkout/address-form-fields.tsx"],
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},

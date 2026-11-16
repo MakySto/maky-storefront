@@ -7,7 +7,8 @@ import { PHONE_EXAMPLES } from "@/checkout/lib/consts/phone-examples";
  * country of the address; a number with a country calling code is valid for any address). The storefront does not
  * second-guess it, because a client-side rule that is stricter than Saleor's would turn a real customer away. What
  * it does is (1) send the number in a shape Saleor reads the way the customer meant it, (2) show what shape is
- * expected before the customer has to guess, and (3) say it in the customer's language when Saleor refuses.
+ * expected before the customer has to guess, and (3) say in the customer's language what is wrong when Saleor
+ * refuses (`phone-diagnosis.ts`).
  */
 
 /** Characters people put into a phone number besides digits: spaces, dots, dashes, slashes, brackets. */
@@ -51,20 +52,25 @@ export function phoneExamplesFor(
 	return entry ? { national: entry[0], international: entry[1] } : null;
 }
 
-/**
- * An international example of another country than the delivery one (Slovak by default, Czech when the delivery
- * country is Slovakia): shows a customer who lives abroad what the number looks like with the calling code.
- */
-export function foreignPhoneExample(countryCode: string | null | undefined): string {
-	const own = countryCode?.toUpperCase();
-	return phoneExamplesFor(own === "SK" ? "CZ" : "SK")?.international ?? "+421 912 123 456";
+export type PhoneHintValues = { national: string; international: string };
+
+/** A number as it is shown inside a sentence: its groups stay on one line ("+49 1512 3456789" never breaks after +49). */
+export function unbrokenPhone(text: string): string {
+	return text.replace(/ /g, "\u00a0");
 }
 
-export type PhoneHintValues = { example: string; foreign: string };
-
-/** Values for the `phoneHint` / `phoneInvalid*` texts; the example falls back to the international one. */
-export function phoneHintValues(countryCode: string | null | undefined): PhoneHintValues {
-	const foreign = foreignPhoneExample(countryCode);
-	const own = phoneExamplesFor(countryCode);
-	return { example: own?.national ?? foreign, foreign };
+/**
+ * The two ways the delivery country's own number is written, for the hint under the phone field: at home
+ * ("0912 123 456") and with the country's calling code ("+421 912 123 456"). Null when the country has no example;
+ * the field then shows no hint. The example is always the delivery country's: a German address shows a German
+ * number and the German calling code, whatever storefront the customer is on (owner, 2026-11-16).
+ */
+export function phoneHintValues(countryCode: string | null | undefined): PhoneHintValues | null {
+	const examples = phoneExamplesFor(countryCode);
+	return (
+		examples && {
+			national: unbrokenPhone(examples.national),
+			international: unbrokenPhone(examples.international),
+		}
+	);
 }
