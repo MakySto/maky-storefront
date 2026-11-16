@@ -431,6 +431,7 @@
 			"hideSummary": "Bestellübersicht ausblenden",
 			"productFallback": "Produkt",
 			"discount": "Rabatt",
+			"discountCode": "Rabatt ({code})",
 			"giftCard": "Geschenkgutschein",
 			"discountApplied": "Angewendeter Rabatt",
 			"discountAppliedCode": "Angewendeter Rabatt ({code})",

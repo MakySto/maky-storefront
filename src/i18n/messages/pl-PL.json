@@ -431,6 +431,7 @@
 			"hideSummary": "Ukryj podsumowanie zamówienia",
 			"productFallback": "Produkt",
 			"discount": "Rabat",
+			"discountCode": "Rabat ({code})",
 			"giftCard": "Karta podarunkowa",
 			"discountApplied": "Zastosowany rabat",
 			"discountAppliedCode": "Zastosowany rabat ({code})",

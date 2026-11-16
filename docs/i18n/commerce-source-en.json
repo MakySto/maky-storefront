@@ -2468,6 +2468,20 @@
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
+		"checkout.summary.discountCode": {
+			"source": "Discount ({code})",
+			"context": "Row in the order summary (cart, checkout, placed order) for a discount code, above the total: the goods keep their own prices and this row takes the discount off.",
+			"kind": "visible",
+			"placeholders": {
+				"code": "The discount code the customer entered, e.g. 'SAVE10' (not translated)"
+			},
+			"callSites": [
+				"src/checkout/views/saleor-checkout/order-summary.tsx",
+				"src/app/[channel]/(main)/cart/page.tsx"
+			],
+			"usageCount": 2,
+			"runtimeStatus": "production"
+		},
 		"checkout.summary.giftCard": {
 			"source": "Gift card",
 			"context": "Row in the order-summary amounts list, above the total: the part of the order a gift card pays. Shown with a minus amount, only when a gift card is applied.",

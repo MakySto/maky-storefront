@@ -431,6 +431,7 @@
 			"hideSummary": "Hide order summary",
 			"productFallback": "Product",
 			"discount": "Discount",
+			"discountCode": "Discount ({code})",
 			"giftCard": "Gift card",
 			"discountApplied": "Discount applied",
 			"discountAppliedCode": "Discount applied ({code})",

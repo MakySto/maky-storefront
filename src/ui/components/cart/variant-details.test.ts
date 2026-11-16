@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getVariantDetails } from "./variant-details";
+import { customerVariantName, getVariantDetails } from "./variant-details";
 
 const attr = (name: string, slug: string, value: string | null) => ({
 	attribute: { name, slug },
@@ -61,5 +61,27 @@ describe("getVariantDetails", () => {
 
 		expect(only.isColor).toBe(false);
 		expect(only.colorHex).toBeUndefined();
+	});
+});
+
+describe("customerVariantName", () => {
+	it("does not show a stock code as the variant (owner's screenshots, 2026-11-16)", () => {
+		for (const name of ["N16274", "TK20409", "M0000964|M0001254", "n16274", "1234567", "SD090-N16274"]) {
+			expect(customerVariantName({ id: "x", name }), name).toBeNull();
+		}
+	});
+
+	it("keeps a name that tells the customer something", () => {
+		for (const name of ["XL", "Čierna", "9 mm", "Pre 2 bicykle", "090", "Skupina 090"]) {
+			expect(customerVariantName({ id: "x", name }), name).toBe(name);
+		}
+	});
+
+	it("is nothing for an empty name or one that is only the variant's id", () => {
+		expect(
+			customerVariantName({ id: "UHJvZHVjdFZhcmlhbnQ6MQ==", name: "UHJvZHVjdFZhcmlhbnQ6MQ==" }),
+		).toBeNull();
+		expect(customerVariantName({ id: "x", name: "  " })).toBeNull();
+		expect(customerVariantName({ id: "x", name: null })).toBeNull();
 	});
 });

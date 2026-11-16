@@ -18,7 +18,7 @@ import type { CartLineFitment } from "@/ui/components/fitment/cart-line-fitment"
 import { CartLineActions } from "./cart-line-actions";
 import { CartLineFit } from "./cart-line-fit";
 import { useCart } from "./cart-context";
-import { getVariantDetails } from "./variant-details";
+import { customerVariantName, getVariantDetails } from "./variant-details";
 
 type Checkout = NonNullable<CheckoutFindQuery["checkout"]>;
 type CartLine = Checkout["lines"][number];
@@ -98,9 +98,9 @@ function DrawerLine({
 								.map((detail) => t("variantAttribute", { name: detail.name, value: detail.value }))
 								.join(" · ")}
 						</p>
-					) : line.variant.name && line.variant.name !== line.variant.id ? (
+					) : customerVariantName(line.variant) ? (
 						<p className="text-muted-foreground mt-1 line-clamp-2 text-xs break-all">
-							{t("variantLabel", { variant: line.variant.name })}
+							{t("variantLabel", { variant: customerVariantName(line.variant) ?? "" })}
 						</p>
 					) : null}
 					<TyreChoiceLine metadata={line.metadata} className="mt-1.5" />

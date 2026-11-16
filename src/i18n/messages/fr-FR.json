@@ -431,6 +431,7 @@
 			"hideSummary": "Masquer le récapitulatif",
 			"productFallback": "Produit",
 			"discount": "Remise",
+			"discountCode": "Remise ({code})",
 			"giftCard": "Carte cadeau",
 			"discountApplied": "Remise appliquée",
 			"discountAppliedCode": "Remise appliquée ({code})",

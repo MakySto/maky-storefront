@@ -431,6 +431,7 @@
 			"hideSummary": "Ocultar resumen del pedido",
 			"productFallback": "Producto",
 			"discount": "Descuento",
+			"discountCode": "Descuento ({code})",
 			"giftCard": "Tarjeta regalo",
 			"discountApplied": "Descuento aplicado",
 			"discountAppliedCode": "Descuento aplicado ({code})",

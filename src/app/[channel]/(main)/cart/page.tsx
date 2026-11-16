@@ -15,7 +15,7 @@ import { CartLineActions } from "@/ui/components/cart/cart-line-actions";
 import { CartPromoCode } from "@/ui/components/cart/cart-promo-code";
 import { appliedPromoCodes } from "@/checkout/lib/promo-code";
 import { summaryAmounts } from "@/checkout/lib/summary-amounts";
-import { getVariantDetails } from "@/ui/components/cart/variant-details";
+import { customerVariantName, getVariantDetails } from "@/ui/components/cart/variant-details";
 import { CartLineFit } from "@/ui/components/cart/cart-line-fit";
 import { cartLineFitments, type CartLineFitment } from "@/ui/components/fitment/cart-line-fitment";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
@@ -47,7 +47,11 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	);
 }
 
-function CartLinePrice({ line, locale }: { line: CartLine; locale: string }) {
+/**
+ * The line's price. `shownTotal` is what the summary's rows are built from (`summary-amounts`): with a discount
+ * code on the goods it is the line at its own price, and the code has a row of its own under the lines.
+ */
+function CartLinePrice({ line, locale, shownTotal }: { line: CartLine; locale: string; shownTotal: number }) {
 	const compareAt = compareAtLineTotal({
 		price: line.variant.pricing?.price?.gross.amount,
 		priceUndiscounted: line.variant.pricing?.priceUndiscounted?.gross.amount,
@@ -63,7 +67,7 @@ function CartLinePrice({ line, locale }: { line: CartLine; locale: string }) {
 				</p>
 			) : null}
 			<p className="font-semibold tabular-nums">
-				{formatPrice(line.totalPrice.gross.amount, line.totalPrice.gross.currency, locale)}
+				{formatPrice(shownTotal, line.totalPrice.gross.currency, locale)}
 			</p>
 		</div>
 	);
@@ -75,12 +79,14 @@ async function CartItem({
 	channel,
 	locale,
 	fitment,
+	shownTotal,
 }: {
 	line: CartLine;
 	checkoutId: string;
 	channel: string;
 	locale: string;
 	fitment?: CartLineFitment;
+	shownTotal: number;
 }) {
 	const t = await getTranslations({ locale, namespace: "cart" });
 	const details = getVariantDetails(line.variant);
@@ -130,16 +136,16 @@ async function CartItem({
 										.map((detail) => t("variantAttribute", { name: detail.name, value: detail.value }))
 										.join(" · ")}
 								</p>
-							) : line.variant.name && line.variant.name !== line.variant.id ? (
+							) : customerVariantName(line.variant) ? (
 								<p className="text-muted-foreground mt-1 line-clamp-2 text-sm break-all">
-									{t("variantLabel", { variant: line.variant.name })}
+									{t("variantLabel", { variant: customerVariantName(line.variant) ?? "" })}
 								</p>
 							) : null}
 							<TyreChoiceLine metadata={line.metadata} className="mt-1.5 text-sm" />
 							{fitment ? <CartLineFit fitment={fitment} className="mt-2" /> : null}
 						</div>
 						<div className="hidden sm:block">
-							<CartLinePrice line={line} locale={locale} />
+							<CartLinePrice line={line} locale={locale} shownTotal={shownTotal} />
 						</div>
 					</div>
 				</div>
@@ -156,7 +162,7 @@ async function CartItem({
 					quantityLimitPerCustomer={line.variant.quantityLimitPerCustomer}
 				/>
 				<div className="sm:hidden">
-					<CartLinePrice line={line} locale={locale} />
+					<CartLinePrice line={line} locale={locale} shownTotal={shownTotal} />
 				</div>
 			</div>
 		</li>
@@ -212,13 +218,21 @@ async function CartContent({ channel }: { channel: string }) {
 	const currency = checkout.totalPrice.gross.currency;
 	const shipping = checkout.shippingPrice.gross.amount;
 	const promo = appliedPromoCodes(checkout);
-	// A gift card only lowers the total: without a row of its own the two figures above it would not add up to it.
-	const { deduction } = summaryAmounts({
+	// A discount code is shown as a row of its own and the lines keep their prices; a gift card has its row too
+	// (`summary-amounts`). The figures above the total always add up to it.
+	const amounts = summaryAmounts({
 		subtotal: checkout.subtotalPrice.gross.amount,
 		shipping,
 		total: checkout.totalPrice.gross.amount,
 		discount: checkout.discount?.amount ?? 0,
 		hasGiftCard: promo.giftCards.length > 0,
+		lines: checkout.lines.map((line) => {
+			const unit = line.variant.pricing?.price?.gross.amount;
+			return {
+				total: line.totalPrice.gross.amount,
+				listTotal: typeof unit === "number" ? Math.round(unit * line.quantity * 100) / 100 : null,
+			};
+		}),
 	});
 
 	return (
@@ -227,10 +241,11 @@ async function CartContent({ channel }: { channel: string }) {
 			<div className="mt-7 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
 				<div>
 					<ul data-testid="CartProductList" role="list" className="space-y-4">
-						{checkout.lines.map((line) => (
+						{checkout.lines.map((line, index) => (
 							<CartItem
 								key={line.id}
 								line={line}
+								shownTotal={amounts.lineTotals?.[index] ?? line.totalPrice.gross.amount}
 								checkoutId={checkoutId}
 								channel={channel}
 								locale={locale}
@@ -253,11 +268,7 @@ async function CartContent({ channel }: { channel: string }) {
 						<div className="flex items-center justify-between gap-4">
 							<span className="text-muted-foreground">{t("subtotal")}</span>
 							<span className="tabular-nums">
-								{formatPrice(
-									checkout.subtotalPrice.gross.amount,
-									checkout.subtotalPrice.gross.currency,
-									locale,
-								)}
+								{formatPrice(amounts.subtotal, checkout.subtotalPrice.gross.currency, locale)}
 							</span>
 						</div>
 						<div className="flex items-start justify-between gap-4">
@@ -271,13 +282,30 @@ async function CartContent({ channel }: { channel: string }) {
 									: t("shippingAtCheckout")}
 							</span>
 						</div>
-						{deduction ? (
+						{amounts.discount > 0 ? (
+							<div
+								className="text-status-success flex items-center justify-between gap-4"
+								data-testid="cart-discount"
+							>
+								<span className="min-w-0 break-words">
+									{checkout.voucherCode
+										? tSummary("discountCode", { code: checkout.voucherCode })
+										: tSummary("discount")}
+								</span>
+								<span className="shrink-0 tabular-nums">
+									−{formatPrice(amounts.discount, currency, locale)}
+								</span>
+							</div>
+						) : null}
+						{amounts.giftCard > 0 ? (
 							<div
 								className="text-status-success flex items-center justify-between gap-4"
 								data-testid="cart-deduction"
 							>
-								<span>{deduction.kind === "giftCard" ? tSummary("giftCard") : tSummary("discount")}</span>
-								<span className="tabular-nums">−{formatPrice(deduction.amount, currency, locale)}</span>
+								<span>{tSummary("giftCard")}</span>
+								<span className="shrink-0 tabular-nums">
+									−{formatPrice(amounts.giftCard, currency, locale)}
+								</span>
 							</div>
 						) : null}
 						{/* Until a delivery is chosen the sum holds no shipping, and its label says so. */}

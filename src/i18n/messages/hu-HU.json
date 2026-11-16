@@ -431,6 +431,7 @@
 			"hideSummary": "Rendelés összesítésének elrejtése",
 			"productFallback": "Termék",
 			"discount": "Kedvezmény",
+			"discountCode": "Kedvezmény ({code})",
 			"giftCard": "Ajándékutalvány",
 			"discountApplied": "Érvényesített kedvezmény",
 			"discountAppliedCode": "Érvényesített kedvezmény ({code})",

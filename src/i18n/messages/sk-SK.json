@@ -431,6 +431,7 @@
 			"hideSummary": "Skryť zhrnutie objednávky",
 			"productFallback": "Produkt",
 			"discount": "Zľava",
+			"discountCode": "Zľava ({code})",
 			"giftCard": "Darčeková poukážka",
 			"discountApplied": "Uplatnená zľava",
 			"discountAppliedCode": "Uplatnená zľava ({code})",

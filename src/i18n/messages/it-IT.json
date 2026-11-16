@@ -431,6 +431,7 @@
 			"hideSummary": "Nascondi riepilogo ordine",
 			"productFallback": "Prodotto",
 			"discount": "Sconto",
+			"discountCode": "Sconto ({code})",
 			"giftCard": "Carta regalo",
 			"discountApplied": "Sconto applicato",
 			"discountAppliedCode": "Sconto applicato ({code})",

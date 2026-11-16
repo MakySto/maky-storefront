@@ -146,7 +146,7 @@ export const StripePaymentForm: FC<StripePaymentFormProps> = ({
 				<OrderLegalNote channelSlug={checkout.channel.slug} />
 				<Button
 					type="button"
-					className="h-12 w-full md:w-auto md:min-w-[200px]"
+					className="h-14 w-full text-base font-semibold"
 					disabled={isLoading || !stripe || !elements}
 					onClick={() => void handlePay()}
 				>

@@ -431,6 +431,7 @@
 			"hideSummary": "Skrýt souhrn objednávky",
 			"productFallback": "Produkt",
 			"discount": "Sleva",
+			"discountCode": "Sleva ({code})",
 			"giftCard": "Dárkový poukaz",
 			"discountApplied": "Uplatněná sleva",
 			"discountAppliedCode": "Uplatněná sleva ({code})",

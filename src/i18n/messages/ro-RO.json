@@ -431,6 +431,7 @@
 			"hideSummary": "Ascunde rezumatul comenzii",
 			"productFallback": "Produs",
 			"discount": "Reducere",
+			"discountCode": "Reducere ({code})",
 			"giftCard": "Card cadou",
 			"discountApplied": "Reducere aplicată",
 			"discountAppliedCode": "Reducere aplicată ({code})",
