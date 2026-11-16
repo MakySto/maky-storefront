@@ -12,6 +12,9 @@ import { compareAtLineTotal } from "@/lib/pricing";
 import { getHrefForVariant } from "@/lib/utils";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { CartLineActions } from "@/ui/components/cart/cart-line-actions";
+import { CartPromoCode } from "@/ui/components/cart/cart-promo-code";
+import { appliedPromoCodes } from "@/checkout/lib/promo-code";
+import { summaryAmounts } from "@/checkout/lib/summary-amounts";
 import { getVariantDetails } from "@/ui/components/cart/variant-details";
 import { CartLineFit } from "@/ui/components/cart/cart-line-fit";
 import { cartLineFitments, type CartLineFitment } from "@/ui/components/fitment/cart-line-fitment";
@@ -164,6 +167,7 @@ async function CartContent({ channel }: { channel: string }) {
 	const locale = getLocaleFromChannel(channel);
 	const t = await getTranslations({ locale, namespace: "cart" });
 	const tCheckout = await getTranslations({ locale, namespace: "checkout.common" });
+	const tSummary = await getTranslations({ locale, namespace: "checkout.summary" });
 	const checkoutId = await Checkout.getIdFromCookies(channel);
 	const lookup = await Checkout.lookup(checkoutId, { locale });
 
@@ -207,6 +211,15 @@ async function CartContent({ channel }: { channel: string }) {
 	);
 	const currency = checkout.totalPrice.gross.currency;
 	const shipping = checkout.shippingPrice.gross.amount;
+	const promo = appliedPromoCodes(checkout);
+	// A gift card only lowers the total: without a row of its own the two figures above it would not add up to it.
+	const { deduction } = summaryAmounts({
+		subtotal: checkout.subtotalPrice.gross.amount,
+		shipping,
+		total: checkout.totalPrice.gross.amount,
+		discount: checkout.discount?.amount ?? 0,
+		hasGiftCard: promo.giftCards.length > 0,
+	});
 
 	return (
 		<div className="mt-3">
@@ -258,6 +271,15 @@ async function CartContent({ channel }: { channel: string }) {
 									: t("shippingAtCheckout")}
 							</span>
 						</div>
+						{deduction ? (
+							<div
+								className="text-status-success flex items-center justify-between gap-4"
+								data-testid="cart-deduction"
+							>
+								<span>{deduction.kind === "giftCard" ? tSummary("giftCard") : tSummary("discount")}</span>
+								<span className="tabular-nums">−{formatPrice(deduction.amount, currency, locale)}</span>
+							</div>
+						) : null}
 						{/* Until a delivery is chosen the sum holds no shipping, and its label says so. */}
 						<div className="border-border flex items-center justify-between gap-4 border-t pt-4 text-lg font-semibold">
 							<span>{shipping > 0 ? t("total") : t("totalWithoutShipping")}</span>
@@ -266,6 +288,13 @@ async function CartContent({ channel }: { channel: string }) {
 							</span>
 						</div>
 					</div>
+					<CartPromoCode
+						channel={channel}
+						checkoutId={checkoutId}
+						locale={locale}
+						applied={promo}
+						className="border-border mt-5 border-t pt-5"
+					/>
 					<CheckoutLink checkoutId={checkoutId} className="mt-6 w-full" />
 					<p className="text-muted-foreground mt-4 flex items-center justify-center gap-2 text-xs">
 						<ShieldCheck className="h-4 w-4" aria-hidden />

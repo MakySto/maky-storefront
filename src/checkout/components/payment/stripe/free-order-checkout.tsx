@@ -4,6 +4,7 @@ import { useState, type FC } from "react";
 import { useTranslations } from "next-intl";
 import { type CheckoutFragment } from "@/checkout/graphql";
 import { Button } from "@/ui/components/ui/button";
+import { OrderLegalNote } from "@/checkout/components/payment/order-legal-note";
 import { LoadingSpinner } from "@/checkout/ui-kit/loading-spinner";
 import { clearPaymentCompleting } from "@/checkout/lib/payment/checkout-payment-completion";
 import { completeFreeOrderCheckout } from "@/checkout/lib/payment/complete-free-order-checkout";
@@ -80,6 +81,7 @@ export const FreeOrderCheckout: FC<FreeOrderCheckoutProps> = ({
 	return (
 		<div className="bg-muted/30 border-border space-y-4 rounded-lg border p-6">
 			<p className="text-muted-foreground text-sm">{paymentMessages.freeOrderBody(totalStr)}</p>
+			<OrderLegalNote channelSlug={checkout.channel.slug} />
 			<Button
 				type="button"
 				className="h-12 w-full md:w-auto md:min-w-[200px]"

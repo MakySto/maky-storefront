@@ -2404,6 +2404,35 @@
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
+		"checkout.summary.giftCard": {
+			"source": "Gift card",
+			"context": "Row in the order-summary amounts list, above the total: the part of the order a gift card pays. Shown with a minus amount, only when a gift card is applied.",
+			"kind": "visible",
+			"maxLength": 24,
+			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:332"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.summary.discountApplied": {
+			"source": "Discount applied",
+			"context": "Sub-line directly under the order-summary total, beside the VAT line: a discount that is ALREADY inside the amounts above (Saleor reduces the subtotal or the delivery price itself). A statement, not an addend: translate as 'discount applied', never as something still to subtract. Used when the discount has no code to name.",
+			"kind": "visible",
+			"maxLength": 28,
+			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:375"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.summary.discountAppliedCode": {
+			"source": "Discount applied ({code})",
+			"context": "The same sub-line under the order-summary total when the discount came from a code the customer typed; the code follows in brackets.",
+			"kind": "visible",
+			"placeholders": {
+				"code": "the discount code the customer applied, as Saleor stores it"
+			},
+			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx:374"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
 		"checkout.summary.hideSummary": {
 			"source": "Hide order summary",
 			"context": "Mobile collapsible order-summary toggle label while the summary is expanded.",
@@ -3827,6 +3856,155 @@
 			"kind": "cta",
 			"callSites": ["src/checkout/views/saleor-checkout/payment-step.tsx:345"],
 			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.payment.legalNote": {
+			"source": "By placing your order, you agree to our <terms>terms of service</terms>. Please also read our <privacy>privacy policy</privacy> and the <withdrawal>information on withdrawing from the contract</withdrawal>.",
+			"context": "Sentence directly above the order button on the Payment step (card form, zero-total order, and any method that submits the step's own form): what the customer agrees to by ordering. Rendered via t.rich; the three tag pairs become links to the market's terms, privacy notice and withdrawal information, opened in a new tab. Translators must keep <terms></terms>, <privacy></privacy> and <withdrawal></withdrawal>. Shown only in a market that serves all three pages.",
+			"kind": "visible",
+			"legallySensitive": true,
+			"callSites": ["src/checkout/components/payment/order-legal-note.tsx:32"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.promo.toggle": {
+			"source": "I have a discount code or gift card",
+			"context": "Link-style button that opens the code field in the discount-code box (cart page under the total, and the Payment step of the checkout); shown while no code is applied. One field takes both a discount code and a gift card code.",
+			"kind": "cta",
+			"callSites": ["src/checkout/components/promo-code/promo-code-box.tsx:223"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.promo.addAnother": {
+			"source": "Add another code",
+			"context": "The same button in the discount-code box (cart page under the total, and the Payment step of the checkout) once a code is already applied (a gift card can be added beside a discount code).",
+			"kind": "cta",
+			"callSites": ["src/checkout/components/promo-code/promo-code-box.tsx:223"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.promo.label": {
+			"source": "Discount code or gift card code",
+			"context": "Label of the code input in the discount-code box (cart page under the total, and the Payment step of the checkout).",
+			"kind": "visible",
+			"maxLength": 48,
+			"callSites": ["src/checkout/components/promo-code/promo-code-box.tsx:165"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.promo.apply": {
+			"source": "Apply",
+			"context": "Button beside the code input in the discount-code box (cart page under the total, and the Payment step of the checkout); sends the code to be checked.",
+			"kind": "cta",
+			"maxLength": 16,
+			"callSites": ["src/checkout/components/promo-code/promo-code-box.tsx:207"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.promo.applying": {
+			"source": "Checking…",
+			"context": "Label of the same button while the code is being checked.",
+			"kind": "loading",
+			"maxLength": 20,
+			"callSites": ["src/checkout/components/promo-code/promo-code-box.tsx:204"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.promo.remove": {
+			"source": "Remove code {code}",
+			"context": "Screen-reader label of the small x button that takes an applied discount code or gift card off the order.",
+			"kind": "aria",
+			"placeholders": {
+				"code": "the discount code as applied, or the last characters of the gift card"
+			},
+			"callSites": [
+				"src/checkout/components/promo-code/promo-code-box.tsx:122",
+				"src/checkout/components/promo-code/promo-code-box.tsx:150"
+			],
+			"usageCount": 2,
+			"runtimeStatus": "production"
+		},
+		"checkout.promo.appliedListLabel": {
+			"source": "Applied codes",
+			"context": "Screen-reader name of the list of applied codes above the code field.",
+			"kind": "aria",
+			"callSites": ["src/checkout/components/promo-code/promo-code-box.tsx:100"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.promo.giftCard": {
+			"source": "Gift card ending in {code}",
+			"context": "Name of an applied gift card in the list of applied codes. The full code is never shown, only its last characters.",
+			"kind": "visible",
+			"placeholders": {
+				"code": "last characters of the gift card code, as Saleor shows them (e.g. AB12)"
+			},
+			"callSites": ["src/checkout/components/promo-code/promo-code-box.tsx:137"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.promo.giftCardBalance": {
+			"source": "Balance {amount}",
+			"context": "Small line under an applied gift card: what the card still holds.",
+			"kind": "visible",
+			"placeholders": {
+				"amount": "the card's current balance, already formatted as money in the market's locale"
+			},
+			"callSites": ["src/checkout/components/promo-code/promo-code-box.tsx:140"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.promo.empty": {
+			"source": "Enter a code.",
+			"context": "Error under the code field when Apply is pressed with nothing typed.",
+			"kind": "validation",
+			"callSites": [
+				"src/checkout/components/promo-code/promo-code-box.tsx:61",
+				"src/checkout/lib/promo-code.ts (dynamic: t(\"checkout.promo.empty\") / t(\"checkout.promo.invalid\") / t(\"checkout.promo.notApplicable\") / t(\"checkout.promo.paymentInProgress\") / t(\"checkout.promo.failed\") through a passed-in translator)"
+			],
+			"usageCount": 2,
+			"runtimeStatus": "production"
+		},
+		"checkout.promo.invalid": {
+			"source": "We don't recognize this code, or it is no longer valid. Check that it is typed exactly.",
+			"context": "Error under the code field when the shop does not know the code (mistyped, expired, used up, or a gift card that is not active). Must not say which of those it is.",
+			"kind": "error",
+			"callSites": [
+				"src/checkout/lib/promo-code.ts (dynamic: t(\"checkout.promo.empty\") / t(\"checkout.promo.invalid\") / t(\"checkout.promo.notApplicable\") / t(\"checkout.promo.paymentInProgress\") / t(\"checkout.promo.failed\") through a passed-in translator)"
+			],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.promo.notApplicable": {
+			"source": "This code can't be used for this purchase. Some codes apply only above a certain amount, and a shipping code can be entered only after you choose a delivery option at checkout.",
+			"context": "Error under the code field when the code exists but does not fit this order: a minimum spend not reached, another market, or a delivery code entered before a delivery was chosen. Must not promise that the code will work later.",
+			"kind": "error",
+			"callSites": [
+				"src/checkout/lib/promo-code.ts (dynamic: t(\"checkout.promo.empty\") / t(\"checkout.promo.invalid\") / t(\"checkout.promo.notApplicable\") / t(\"checkout.promo.paymentInProgress\") / t(\"checkout.promo.failed\") through a passed-in translator)"
+			],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.promo.paymentInProgress": {
+			"source": "A payment is in progress, so the code can't be changed right now.",
+			"context": "Error under the code field when a code is added or removed while a payment for this order is being confirmed.",
+			"kind": "error",
+			"callSites": [
+				"src/checkout/lib/promo-code.ts (dynamic: t(\"checkout.promo.empty\") / t(\"checkout.promo.invalid\") / t(\"checkout.promo.notApplicable\") / t(\"checkout.promo.paymentInProgress\") / t(\"checkout.promo.failed\") through a passed-in translator)"
+			],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.promo.failed": {
+			"source": "We couldn't check the code. Please try again.",
+			"context": "Error under the code field when the code could not be checked at all (network or server failure).",
+			"kind": "error",
+			"callSites": [
+				"src/checkout/components/promo-code/promo-code-box.tsx:77",
+				"src/checkout/components/promo-code/promo-code-box.tsx:91",
+				"src/checkout/lib/promo-code.ts (dynamic: t(\"checkout.promo.empty\") / t(\"checkout.promo.invalid\") / t(\"checkout.promo.notApplicable\") / t(\"checkout.promo.paymentInProgress\") / t(\"checkout.promo.failed\") through a passed-in translator)"
+			],
+			"usageCount": 3,
 			"runtimeStatus": "production"
 		}
 	}
