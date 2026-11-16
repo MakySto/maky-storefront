@@ -568,7 +568,7 @@ Marek 16. 11. rozhodol: zľavové kódy a darčekové poukážky chce, pri tlač
 - **Overenie:** `pnpm test:run` celé zelené, zhoda 12 jazykov 0/0, brána obchodných textov bez nového porušenia (98 starých). Skutočný krok Platba, zhrnutie a pole kódu proti falošnému Saleoru, ktorý sa správa ako nameraný živý, v 12 jazykoch na počítači aj mobile (výsledok a snímky v súboroch projektu). **Na živom webe neoverené** do nasadenia: pole kódu so skutočným kupónom na skúšobnom košíku (bez objednávky).
 - **Otvorené:** dobierka (nastavenie kanála „Allow unpaid orders“, poplatok, strop sumy, dopravca: rozhodnutia Mareka); predaj darčekových poukážok na webe by bola samostatná funkcia; Saleor pri poukážke znižuje aj DPH v súčte (otázka pre účtovníčku, nie chyba webu); potvrdenie objednávky nedostáva zoznam poukážok, rozdiel medzi riadkami a súčtom tam číta ako poukážku.
 
-## Stránka produktu na mobile: popis nerozťahuje stránku (16. 11. 2026, vlákno „Opraviť tlačidlo košíka na mobile“)
+## Stránka produktu na mobile: popis nerozťahuje stránku (16. 11. 2026, vlákno „Opraviť tlačidlo košíka na mobile“; PR 132, zlúčený 16. 11. po Marekovom súhlase; nasadenie cez vlákno Server webu)
 
 Marek 16. 11. poslal snímky z telefónu (maky.store/de, snehové reťaze SnowDrive WX-9, NGD02001): stránka sa dala posunúť do strany, popis bol vpravo orezaný a zelené tlačidlo v dolnej lište stálo z väčšej časti mimo obrazovky. Na stránke Nordrive Kargo bolo všetko v poriadku.
 
