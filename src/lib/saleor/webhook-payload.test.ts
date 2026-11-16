@@ -94,4 +94,125 @@ describe("parseWebhookPayload", () => {
 		});
 		expect(parseWebhookPayload({ product: { slug: "n1" } })).not.toHaveProperty("eventType");
 	});
+
+	describe("the shapes of the Saleor subscription (docs/storefront-4.5, plan 16. 11.)", () => {
+		const category = {
+			id: "Q2F0ZWdvcnk6NjE=",
+			slug: "stresne-nosice",
+			parent: { id: "Q2F0ZWdvcnk6Ng==", slug: "auto-moto" },
+		};
+		const product = {
+			id: "UHJvZHVjdDox",
+			slug: "n60012",
+			updatedAt: "2026-11-16T09:12:03+00:00",
+			category,
+			collections: [{ id: "Q29sbGVjdGlvbjox", slug: "thule" }],
+			channelListings: [{ channel: { slug: "sk-eur" } }],
+		};
+
+		it("reads a product with its category, the category's parent and its collections", () => {
+			expect(parseWebhookPayload({ __typename: "ProductUpdated", issuedAt: "x", product })).toEqual({
+				kind: "product",
+				slug: "n60012",
+				categorySlug: "stresne-nosice",
+				parentCategorySlug: "auto-moto",
+				collectionSlugs: ["thule"],
+				eventType: "ProductUpdated",
+			});
+		});
+
+		it("reads a variant through its product, and a discounted price event with its exact channel", () => {
+			expect(
+				parseWebhookPayload({
+					__typename: "ProductVariantUpdated",
+					productVariant: { id: "v", sku: "s", product },
+				}),
+			).toMatchObject({
+				kind: "product",
+				slug: "n60012",
+			});
+			const discounted = parseWebhookPayload({
+				__typename: "ProductVariantDiscountedPriceUpdated",
+				channel: { slug: "cz-czk" },
+				discountedVariant: { id: "v", sku: "s", product },
+			});
+			expect(discounted).toMatchObject({ kind: "product", slug: "n60012", channel: "cz-czk" });
+		});
+
+		it("reads a category with its parent", () => {
+			expect(parseWebhookPayload({ __typename: "CategoryUpdated", category })).toMatchObject({
+				kind: "category",
+				slug: "stresne-nosice",
+				parentCategorySlug: "auto-moto",
+			});
+		});
+
+		it("reads menus and menu items as navigation, attributes and values as attributes", () => {
+			expect(parseWebhookPayload({ __typename: "MenuUpdated", menu: { id: "m", slug: "navbar" } }).kind).toBe(
+				"menu",
+			);
+			expect(
+				parseWebhookPayload({
+					__typename: "MenuItemCreated",
+					menuItem: { id: "i", menu: { id: "m", slug: "footer" } },
+				}).kind,
+			).toBe("menu");
+			expect(
+				parseWebhookPayload({ __typename: "AttributeUpdated", attribute: { id: "a", slug: "brand" } }).kind,
+			).toBe("attribute");
+			expect(
+				parseWebhookPayload({
+					__typename: "AttributeValueCreated",
+					attributeValue: { id: "v", slug: "thule" },
+				}).kind,
+			).toBe("attribute");
+		});
+
+		it("names a translated product, category or collection by its BASE slug, not the translated one", () => {
+			expect(
+				parseWebhookPayload({
+					__typename: "TranslationUpdated",
+					translation: {
+						__typename: "ProductTranslation",
+						language: { code: "DE" },
+						slug: "dachtraeger-xl",
+						translatableContent: { productId: "UHJvZHVjdDox", slug: "n60012" },
+					},
+				}),
+			).toMatchObject({ kind: "product", slug: "n60012" });
+			expect(
+				parseWebhookPayload({
+					translation: {
+						__typename: "CategoryTranslation",
+						slug: "dachtraeger",
+						translatableContent: { categoryId: "c", slug: "stresne-nosice" },
+					},
+				}),
+			).toMatchObject({ kind: "category", slug: "stresne-nosice" });
+			expect(
+				parseWebhookPayload({
+					translation: {
+						__typename: "CollectionTranslation",
+						translatableContent: { collectionId: "c", slug: "thule" },
+					},
+				}),
+			).toMatchObject({ kind: "collection", slug: "thule" });
+		});
+
+		it("places a menu item translation under navigation and a variant translation nowhere", () => {
+			expect(
+				parseWebhookPayload({
+					translation: { __typename: "MenuItemTranslation", translatableContent: { menuItemId: "i" } },
+				}).kind,
+			).toBe("menu");
+			expect(
+				parseWebhookPayload({
+					translation: {
+						__typename: "ProductVariantTranslation",
+						translatableContent: { productVariantId: "v" },
+					},
+				}).kind,
+			).toBe("unknown");
+		});
+	});
 });

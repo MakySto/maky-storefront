@@ -28,6 +28,8 @@ import { liveCategoriesStats, resetLiveCategoriesForTests } from "@/lib/live-cat
 import { installFakeSaleor } from "@/lib/live-categories.testkit";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { REVALIDATE_WINDOW_MS, __resetRevalidateThrottle } from "@/lib/revalidate-throttle";
+import { __resetSaleorJwks } from "@/lib/saleor/webhook-jws";
+import { makeSaleorSigner } from "@/lib/saleor/webhook-jws.testkit";
 import { __forgetAllKept, createKeptRead } from "@/lib/cache/kept-read";
 import {
 	MIN_REFRESH_AFTER_EVENT_MS,
@@ -52,6 +54,7 @@ beforeEach(() => {
 	vi.clearAllMocks();
 	afterCallbacks.length = 0;
 	__resetRevalidateThrottle();
+	__resetSaleorJwks();
 	verifyWebhookSignature.mockReturnValue(true);
 	verifySecret.mockReturnValue(true);
 	extractBearerToken.mockReturnValue(null);
@@ -312,13 +315,13 @@ describe("a category event and the live category list", () => {
 		expect(isCategorySlug("stresne-nosice")).toBe(true);
 	});
 
-	it("waits two seconds for a Saleor that does not answer, and not a moment longer", async () => {
+	it("waits 0.7 seconds for a Saleor that does not answer, and not a moment longer (Saleor holds a worker meanwhile)", async () => {
 		vi.useFakeTimers();
 		vi.stubGlobal("fetch", () => new Promise<Response>(() => {}));
 		vi.stubEnv("NEXT_PUBLIC_SALEOR_API_URL", "https://saleor.test/graphql/");
 
 		const answered = post({ category: { slug: NEW }, channel: "sk-eur" });
-		await vi.advanceTimersByTimeAsync(1_900);
+		await vi.advanceTimersByTimeAsync(600);
 		expect(revalidateTag, "still waiting for the live list").not.toHaveBeenCalled();
 
 		await vi.advanceTimersByTimeAsync(200);
@@ -590,5 +593,141 @@ describe("a burst of product events (throttle, `@/lib/revalidate-throttle`)", ()
 
 		expect(countOf("product-miss:at-eur")).toBe(1);
 		expect(countOf("sitemap:at-eur")).toBe(1);
+	});
+});
+
+describe("events signed by Saleor (JWS, plan 16. 11.)", () => {
+	const signer = makeSaleorSigner();
+	const category = { id: "Q2F0", slug: "stresne-nosice", parent: { id: "Q2F0Ng==", slug: "auto-moto" } };
+	const product = {
+		id: "UHJv",
+		slug: "n60012",
+		category,
+		collections: [{ id: "Q29s", slug: "thule" }],
+		channelListings: [{ channel: { slug: "at-eur" } }],
+	};
+
+	const signed = (body: unknown, header?: string) => {
+		const text = JSON.stringify(body);
+		return POST(
+			new Request("https://maky.store/api/revalidate", {
+				method: "POST",
+				body: text,
+				headers: { "saleor-signature": header ?? signer.signBody(text), "saleor-event": "product_updated" },
+			}) as never,
+		);
+	};
+
+	beforeEach(() => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => Response.json(signer.jwks())),
+		);
+		vi.stubEnv("NEXT_PUBLIC_SALEOR_API_URL", "https://api.example.test/graphql/");
+		vi.spyOn(console, "log").mockImplementation(() => {});
+	});
+
+	it("verifies and logs, but expires nothing, until SALEOR_WEBHOOK_APPLY=1", async () => {
+		const response = await signed({ __typename: "ProductUpdated", product });
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ success: true, applied: false });
+		expect(revalidateTag).not.toHaveBeenCalled();
+		expect(revalidatePath).not.toHaveBeenCalled();
+		expect(console.log).toHaveBeenCalledWith(
+			expect.stringContaining("NOT applied"),
+			expect.objectContaining({ event: "ProductUpdated", type: "product", slug: "n60012" }),
+		);
+	});
+
+	it("applies a verified product event once the switch is on: product, category, parent and collection", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		const response = await signed({ __typename: "ProductUpdated", product });
+
+		expect(response.status).toBe(200);
+		expect(revalidateTag).toHaveBeenCalledWith("product:at-eur:de-AT:n60012", { expire: 0 });
+		expect(revalidateTag).toHaveBeenCalledWith("category:at-eur:de-AT:stresne-nosice", { expire: 0 });
+		expect(revalidateTag).toHaveBeenCalledWith("category:at-eur:de-AT:auto-moto", { expire: 0 });
+		expect(revalidateTag).toHaveBeenCalledWith("collection:at-eur:de-AT:thule", { expire: 0 });
+		// No channel in the event: every market.
+		expect(new Set(taggedWith("product:").map((call) => String(call[0]).split(":")[1]))).toEqual(
+			new Set(ALL_CHANNELS),
+		);
+	});
+
+	it("a discounted price event reaches only the channel it names", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		await signed({
+			__typename: "ProductVariantDiscountedPriceUpdated",
+			channel: { slug: "cz-czk" },
+			discountedVariant: { id: "v", sku: "s", product },
+		});
+
+		expect(new Set(taggedWith("product:").map((call) => String(call[0]).split(":")[1]))).toEqual(
+			new Set(["cz-czk"]),
+		);
+	});
+
+	it("a menu event expires the navigation of each market and nothing of the catalogue", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		const response = await signed({
+			__typename: "MenuItemUpdated",
+			menuItem: { id: "i", menu: { id: "m", slug: "navbar" } },
+		});
+
+		expect(response.status).toBe(200);
+		expect(taggedWith("navigation:")).toHaveLength(ALL_CHANNELS.length);
+		expect(taggedWith("footer-menu:")).toHaveLength(ALL_CHANNELS.length);
+		expect(taggedWith("sitemap:")).toHaveLength(0);
+		expect(revalidatePath).not.toHaveBeenCalled();
+	});
+
+	it("an attribute event expires nothing", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		const response = await signed({
+			__typename: "AttributeValueUpdated",
+			attributeValue: { id: "v", slug: "thule" },
+		});
+
+		expect(response.status).toBe(200);
+		expect(revalidateTag).not.toHaveBeenCalled();
+		expect(revalidatePath).not.toHaveBeenCalled();
+	});
+
+	it("a category event also drops the parent's answers", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		await signed({ __typename: "CategoryUpdated", category });
+
+		expect(revalidateTag).toHaveBeenCalledWith("category:sk-eur:sk-SK:stresne-nosice", { expire: 0 });
+		expect(revalidateTag).toHaveBeenCalledWith("category:sk-eur:sk-SK:auto-moto", { expire: 0 });
+	});
+
+	it("answers 401 to a wrong signature and never expires anything", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		const body = { __typename: "ProductUpdated", product };
+		const forged = signer.signBody(JSON.stringify({ ...body, product: { ...product, slug: "other" } }));
+
+		expect((await signed(body, forged)).status).toBe(401);
+		expect(revalidateTag).not.toHaveBeenCalled();
+	});
+
+	it("answers 503 when Saleor's key cannot be read, so Saleor repeats the delivery", async () => {
+		vi.stubEnv("SALEOR_WEBHOOK_APPLY", "1");
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => new Response("down", { status: 502 })),
+		);
+
+		expect((await signed({ __typename: "ProductUpdated", product })).status).toBe(503);
+		expect(revalidateTag).not.toHaveBeenCalled();
+	});
+
+	it("still lets CFM's bearer calls through while the Saleor events are only logged", async () => {
+		const response = await post({ product: { slug: "n60012", channel: { slug: "at-eur" } } });
+
+		expect(response.status).toBe(200);
+		expect(revalidateTag).toHaveBeenCalledWith("product:at-eur:de-AT:n60012", { expire: 0 });
 	});
 });

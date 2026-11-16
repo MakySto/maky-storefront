@@ -1,4 +1,4 @@
-type WebhookResourceKind = "product" | "category" | "collection" | "unknown";
+type WebhookResourceKind = "product" | "category" | "collection" | "menu" | "attribute" | "unknown";
 
 interface WebhookResource {
 	kind: WebhookResourceKind;
@@ -15,6 +15,10 @@ interface WebhookResource {
 	/** Saleor channel slug, when the event is channel-specific. */
 	channel?: string;
 	categorySlug?: string;
+	/** The parent of the category (the event's own for `category`, the product's for `product`). */
+	parentCategorySlug?: string;
+	/** The collections a product event lists, which a product joining or leaving one changes. */
+	collectionSlugs?: string[];
 	/**
 	 * True when the event clearly concerns a product we could not name — a media
 	 * event carrying only `productId`, for instance. The listing and the sitemap
@@ -36,6 +40,14 @@ const asString = (value: unknown): string | undefined =>
 
 const slugOf = (node: Record<string, unknown> | null): string | undefined =>
 	node ? asString(node.slug) : undefined;
+
+const slugsOf = (value: unknown): string[] =>
+	Array.isArray(value)
+		? value.flatMap((item) => {
+				const slug = slugOf(asRecord(item));
+				return slug ? [slug] : [];
+			})
+		: [];
 
 const previousSlugOf = (...nodes: (Record<string, unknown> | null)[]): string | undefined => {
 	for (const node of nodes) {
@@ -74,17 +86,22 @@ export function parseWebhookPayload(payload: unknown): WebhookResource {
 	const productNode =
 		asRecord(data.product) ??
 		asRecord(asRecord(data.productVariant)?.product) ??
+		// `ProductVariantDiscountedPriceUpdated` names its variant `discountedVariant` (the subscription aliases it).
+		asRecord(asRecord(data.discountedVariant)?.product) ??
 		asRecord(translation?.product) ??
 		asRecord(media?.product);
 
 	if (productNode) {
 		const category = asRecord(productNode.category);
+		const collectionSlugs = slugsOf(productNode.collections);
 		return withType({
 			kind: "product",
 			slug: slugOf(productNode),
 			previousSlug: previousSlugOf(productNode, data, translation),
 			channel: channelOf(productNode) ?? channelOf(data),
 			categorySlug: slugOf(category),
+			parentCategorySlug: slugOf(asRecord(category?.parent)),
+			...(collectionSlugs.length > 0 ? { collectionSlugs } : {}),
 		});
 	}
 
@@ -95,6 +112,24 @@ export function parseWebhookPayload(payload: unknown): WebhookResource {
 		return withType({ kind: "product", unnamedProduct: true, channel: channelOf(data) });
 	}
 
+	// A translation as the Saleor subscription selects it: the translated fields next to
+	// `translatableContent`, which names the object by its BASE slug (the translated slug sits on the
+	// translation itself and is not what any cache key is built from).
+	const content = asRecord(translation?.translatableContent);
+	const translatedKind = asString(translation?.__typename);
+	if (content && translatedKind) {
+		const base = asString(content.slug);
+		if (translatedKind === "ProductTranslation") {
+			return withType(base ? { kind: "product", slug: base } : { kind: "product", unnamedProduct: true });
+		}
+		if (translatedKind === "CategoryTranslation" && base) return withType({ kind: "category", slug: base });
+		if (translatedKind === "CollectionTranslation" && base)
+			return withType({ kind: "collection", slug: base });
+		if (translatedKind === "MenuItemTranslation") return withType({ kind: "menu" });
+		// A variant translation names no product: it is an event we cannot place.
+		return withType({ kind: "unknown" });
+	}
+
 	const categoryNode = asRecord(data.category) ?? asRecord(translation?.category);
 	if (categoryNode) {
 		return withType({
@@ -102,6 +137,7 @@ export function parseWebhookPayload(payload: unknown): WebhookResource {
 			slug: slugOf(categoryNode),
 			previousSlug: previousSlugOf(categoryNode, data, translation),
 			channel: channelOf(data),
+			parentCategorySlug: slugOf(asRecord(categoryNode.parent)),
 		});
 	}
 
@@ -114,6 +150,12 @@ export function parseWebhookPayload(payload: unknown): WebhookResource {
 			channel: channelOf(collectionNode) ?? channelOf(data),
 		});
 	}
+
+	// Navigation: a menu or one of its items (`navigation:` and `footer-menu:` read them).
+	if (asRecord(data.menu) || asRecord(data.menuItem)) return withType({ kind: "menu" });
+
+	// Attributes and their values (the filters, the brand names): the entries that print them expire on their own.
+	if (asRecord(data.attribute) || asRecord(data.attributeValue)) return withType({ kind: "attribute" });
 
 	return withType({ kind: "unknown" });
 }
