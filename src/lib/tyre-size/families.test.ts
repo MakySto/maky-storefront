@@ -20,22 +20,27 @@ const raw = JSON.parse(text) as TyreFamiliesFile & { self_sha256: string; origin
 const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
 const clone = () => structuredClone(raw);
 
-describe("the families file is the one the script makes from CFM's sealed batch", () => {
+describe("the families file is the one CFM published beside the size list, unchanged", () => {
 	it("carries a seal that anyone can recompute: the hash of the file with that field empty", () => {
 		const body = { ...raw, self_sha256: "" };
 		expect(sha256(`${JSON.stringify(body, null, "\t")}\n`)).toBe(raw.self_sha256);
 	});
 
-	it("is written exactly as the script writes it, so a rebuild changes no byte", () => {
+	it("is written the way its seal is taken: tab-indented JSON and one newline", () => {
 		expect(text).toBe(`${JSON.stringify(raw, null, "\t")}\n`);
 	});
 
-	it("is the file the provenance record pins, by its bytes and by its seal", () => {
+	it("is the file the sidecar and the provenance record pin, by its bytes and by its seal", () => {
 		const provenance = JSON.parse(readFileSync(join(__dirname, "data", "PROVENANCE.json"), "utf8")) as {
-			derived: Record<string, Record<string, string>>;
+			files: Record<string, Record<string, string | number>>;
 		};
-		const pinned = provenance.derived["rodiny_20261105.json"];
+		const pinned = provenance.files["rodiny_20261105.json"];
+		const sidecar = readFileSync(`${FILE}.sha256`, "utf8").trim().split(/\s+/);
+		expect(sidecar).toEqual([sha256(text), "rodiny_20261105.json"]);
 		expect(sha256(text)).toBe(pinned.sha256);
+		expect(Buffer.byteLength(text)).toBe(pinned.bytes);
+		// CFM publishes a file under its schema and the first sixteen characters of its sha256.
+		expect(pinned.published_as).toBe(`maky_tyre_families_1-${sha256(text).slice(0, 16)}.json`);
 		expect(raw.self_sha256).toBe(pinned.self_sha256);
 		expect(raw.origin.batch_file_sha256).toBe(pinned.batch_file_sha256);
 		expect(raw.origin.batch_self_sha256).toBe(pinned.batch_self_sha256);
@@ -45,7 +50,10 @@ describe("the families file is the one the script makes from CFM's sealed batch"
 		expect(raw.origin.batch).toBe("snehove_retaze_produkty_20261105");
 		expect(raw.origin.batch_file_sha256).toMatch(/^[0-9a-f]{64}$/);
 		expect(raw.origin.batch_self_sha256).toMatch(/^[0-9a-f]{64}$/);
-		expect(raw.origin.producer).toBe("scripts/ops/build-tyre-families.mjs");
+		// CFM makes the file; the shop has no producer of its own for it.
+		expect(raw.origin.producer).toBe(
+			"backend/docs/runbooks/snehove_retaze_produkty_20261105/build_rodiny.py",
+		);
 	});
 
 	it("holds public facts only: a public code, a family, a size label", () => {
@@ -64,8 +72,10 @@ describe("the families file is the one the script makes from CFM's sealed batch"
 		}
 		for (const product of Object.values(raw.products))
 			expect(Object.keys(product).sort()).toEqual(["family", "size"]);
-		for (const family of Object.values(raw.families))
-			expect(Object.keys(family).sort()).toEqual(["kind", "label"]);
+		for (const family of Object.values(raw.families)) {
+			const keys = Object.keys(family).sort();
+			expect(keys.filter((key) => key !== "name")).toEqual(["kind", "label"]);
+		}
 	});
 
 	it("belongs to the size list: the same id, and exactly the same 145 codes", () => {

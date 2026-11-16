@@ -5,7 +5,7 @@
 		"batch": "snehove_retaze_produkty_20261105",
 		"batch_file_sha256": "ec31a5760f9bd8ec500f6757c609b09063d162486b86ebf69750e5f7921080b2",
 		"batch_self_sha256": "d527c98d5258781150ce880c19438804412be010bceeb6246a548713dd677b5e",
-		"producer": "scripts/ops/build-tyre-families.mjs"
+		"producer": "backend/docs/runbooks/snehove_retaze_produkty_20261105/build_rodiny.py"
 	},
 	"families": {
 		"dac-active": {
@@ -30,7 +30,8 @@
 		},
 		"gran-pree-ponozky": {
 			"label": "Gran Pree textilné ponožky",
-			"kind": "sock"
+			"kind": "sock",
+			"name": "Gran Pree"
 		},
 		"menabo-snow-socks": {
 			"label": "Menabo Snow Socks",
@@ -46,7 +47,8 @@
 		},
 		"snowdrive-ponozky": {
 			"label": "SnowDrive textilné ponožky",
-			"kind": "sock"
+			"kind": "sock",
+			"name": "SnowDrive"
 		},
 		"snowdrive-r9": {
 			"label": "SnowDrive R-9",
@@ -643,5 +645,5 @@
 			"size": "14"
 		}
 	},
-	"self_sha256": "a70652dc4b73902722ee294386bcc18550dcecbe9dff30a74d927ead2c47f70b"
+	"self_sha256": "9e4e739e1d562456ba2d96c33bfb71ed521d217c5c9d527f054fd8fa99270211"
 }

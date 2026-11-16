@@ -9,8 +9,8 @@ export type { TyreFamiliesFile, TyreFamily } from "./families-file";
 /**
  * Which snow-chain code belongs to which model family, and what the family calls its size ("22,7").
  *
- * CFM's sealed batch of the 145 products carries it (`families`, and a family key on every product); this is a
- * public-facts-only copy made by `scripts/ops/build-tyre-families.mjs`, sealed like the size list. It decides one
+ * CFM's sealed batch of the 145 products carries it (`families`, and a family key on every product); CFM makes a
+ * public-facts-only file from it and publishes it beside the size list, sealed like the list. It decides one
  * thing: which OTHER codes the shop may offer when a code does not fit the size the shopper gave: the same model in
  * the size that does. It decides nothing about whether a code fits; the size list does.
  *
