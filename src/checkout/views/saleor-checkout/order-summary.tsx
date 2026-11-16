@@ -11,6 +11,7 @@ import { useLocale } from "@/providers/locale-provider";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 import { localizedAttributeValues, localizedName, orderLineName } from "@/checkout/lib/summary-line-names";
 import { summaryAmounts } from "@/checkout/lib/summary-amounts";
+import { codFeeInDelivery } from "@/checkout/lib/cod";
 import type { MetadataItem } from "@/lib/tyre-size/line-metadata";
 import { TyreChoiceLine } from "@/ui/components/cart/tyre-choice-line";
 
@@ -56,6 +57,8 @@ interface OrderSummaryData {
 	voucherCode: string | null;
 	/** Known for a checkout; a placed order's query does not carry its gift cards. */
 	hasGiftCard?: boolean;
+	/** The cash-on-delivery fee inside the delivery price, when the checkout is on cash on delivery (`lib/cod.ts`). */
+	codFee: number;
 	/** A delivery was chosen, so a delivery price of 0 is a price (a free-delivery code), not "not known yet". */
 	shippingChosen: boolean;
 	total: number;
@@ -110,6 +113,7 @@ function extractCheckoutData(checkout: CheckoutFragment, productNameFallback: st
 		tax: checkout.totalPrice?.tax?.amount || 0,
 		discount: checkout.discount?.amount || 0,
 		shippingListPrice: chosenDelivery?.price?.amount ?? null,
+		codFee: codFeeInDelivery(checkout),
 		voucherCode: checkout.voucherCode?.trim() || null,
 		hasGiftCard: (checkout.giftCards?.length ?? 0) > 0,
 		shippingChosen: Boolean(checkout.deliveryMethod),
@@ -145,6 +149,9 @@ function extractOrderData(order: OrderFragment, productNameFallback: string): Or
 		tax: order.total?.tax?.amount || 0,
 		discount,
 		shippingListPrice: null,
+		// A placed order carries its own delivery method only, not the one it was the cash-on-delivery version of:
+		// the fee stays inside the delivery row there.
+		codFee: 0,
 		voucherCode: order.voucher?.code?.trim() || null,
 		shippingChosen: Boolean(order.deliveryMethod),
 		total: order.total?.gross?.amount || 0,
@@ -191,6 +198,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 		hasGiftCard: data.hasGiftCard,
 		lines: lines.map((line) => ({ total: line.totalAmount, listTotal: line.listTotal })),
 		shippingListPrice: data.shippingListPrice,
+		codFee: data.codFee,
 	});
 	const { subtotal, shipping, appliedDiscount } = amounts;
 	const lineTotal = (index: number) => amounts.lineTotals?.[index] ?? lines[index].totalAmount;
@@ -344,6 +352,12 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 								<dt className="text-muted-foreground">{tCart("shipping")}</dt>
 								<dd>{shipping > 0 || shippingChosen ? formatMoney(shipping) : "—"}</dd>
 							</div>
+							{amounts.codFee > 0 && (
+								<div className="flex justify-between gap-3" data-testid="summary-cod-fee">
+									<dt className="text-muted-foreground">{t("summary.codFee")}</dt>
+									<dd className="shrink-0">{formatMoney(amounts.codFee)}</dd>
+								</div>
+							)}
 							{amounts.discount > 0 && (
 								<div
 									className="text-status-success flex justify-between gap-3"

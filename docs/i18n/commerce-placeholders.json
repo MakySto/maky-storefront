@@ -57,6 +57,9 @@
 			"country": "The localized name of the address country, e.g. 'Deutschland'",
 			"example": "The country's example postal code from Saleor's address rules, e.g. '10115' (not translated)"
 		},
+		"checkout.confirmation.codNotice": {
+			"total": "The order total, formatted with currency, e.g. '106,99 €'"
+		},
 		"checkout.confirmation.emailNoticeWithAddress": {
 			"confirmationEmail": "customer e-mail address the order confirmation will be sent to (order.userEmail; never empty — the Generic variant renders otherwise)"
 		},
@@ -65,6 +68,13 @@
 		},
 		"checkout.contactSection.resetLinkSent": {
 			"email": "the email address the customer typed into the sign-in form"
+		},
+		"checkout.payment.codBody": {
+			"total": "The order total with the cash-on-delivery fee, formatted with currency, e.g. '106,99 €'",
+			"fee": "The cash-on-delivery fee, formatted with currency, e.g. '3,00 €'"
+		},
+		"checkout.payment.codOverMax": {
+			"max": "The highest order total for cash on delivery, formatted with currency, e.g. '500,00 €'"
 		},
 		"checkout.payment.freeOrderBody": {
 			"total": "Formatted order total with currency, e.g. 0,00 €"

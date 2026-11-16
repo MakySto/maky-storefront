@@ -56,6 +56,11 @@ fragment ShippingFragment on ShippingMethod {
 	name
 	minimumDeliveryDays
 	maximumDeliveryDays
+	# An order whose delivery method carries `maky_cod_for` is paid on delivery (`lib/cod.ts`).
+	metadata {
+		key
+		value
+	}
 }
 
 fragment OrderFragment on Order {

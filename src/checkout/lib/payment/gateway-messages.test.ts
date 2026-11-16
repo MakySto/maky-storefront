@@ -27,6 +27,7 @@ describe("FALLBACK_PAYMENT_LIB_MESSAGES", () => {
 			freeOrderTotalChanged: enPayment.freeOrderTotalChanged,
 			checkoutLocked: enPayment.checkoutLocked,
 			orderUpdated: enPayment.orderUpdated,
+			codUnavailable: enPayment.codUnavailable,
 		};
 
 		expect(fallback).toEqual(expected);

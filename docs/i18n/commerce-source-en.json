@@ -942,6 +942,25 @@
 			"usageCount": 2,
 			"runtimeStatus": "production"
 		},
+		"checkout.confirmation.paymentLabel": {
+			"source": "Payment",
+			"context": "Label of the payment row (banknote icon) on the order-confirmation card; shown only for an order paid on delivery.",
+			"kind": "visible",
+			"callSites": ["src/checkout/views/order-confirmation/order-confirmation.tsx"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.confirmation.codNotice": {
+			"source": "Cash on delivery: you pay {total} when your parcel is delivered.",
+			"context": "Text of the payment row on the order-confirmation card for an order paid on delivery: what the courier will collect.",
+			"kind": "visible",
+			"placeholders": {
+				"total": "The order total, formatted with currency, e.g. '106,99 €'"
+			},
+			"callSites": ["src/checkout/views/order-confirmation/order-confirmation.tsx"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
 		"checkout.confirmation.confirmedTitle": {
 			"source": "We have received your order",
 			"context": "h2 heading of the order-details card on the confirmation page. Approved lifecycle wording: the order is RECEIVED (awaiting manual review in the dashboard), never claimed as confirmed — ORDER_CONFIRMED is a later manual step.",
@@ -2491,6 +2510,15 @@
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},
+		"checkout.summary.codFee": {
+			"source": "Cash on delivery",
+			"context": "Row in the order-summary amounts list (checkout), between delivery and the total: the cash-on-delivery fee. Cash on delivery (Slovak: dobierka) = the customer pays the courier in cash or by card when the parcel is handed over. Use the everyday local term (cs Dobírka, de Nachnahme, hu Utánvét, it Contrassegno, pl Płatność przy odbiorze / pobranie, ro Ramburs, es Contra reembolso, fr Paiement à la livraison).",
+			"kind": "visible",
+			"maxLength": 24,
+			"callSites": ["src/checkout/views/saleor-checkout/order-summary.tsx"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
 		"checkout.summary.discountApplied": {
 			"source": "Discount applied",
 			"context": "Sub-line directly under the order-summary total, beside the VAT line: a discount that is ALREADY inside the amounts above (Saleor reduces the subtotal or the delivery price itself). A statement, not an addend: translate as 'discount applied', never as something still to subtract. Used when the discount has no code to name.",
@@ -3933,6 +3961,91 @@
 			"context": "Link-style button inside the missing-delivery-phone warning on the Payment step; takes the customer back to the Information step.",
 			"kind": "cta",
 			"callSites": ["src/checkout/views/saleor-checkout/payment-step.tsx:345"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.payment.methodTitle": {
+			"source": "Payment method",
+			"context": "Heading above the two ways of paying on the Payment step (pay online / cash on delivery). Shown only where the chosen delivery can be paid on delivery.",
+			"kind": "title",
+			"callSites": ["src/checkout/components/payment/cod/payment-method-choice.tsx"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.payment.methodOnline": {
+			"source": "Pay online",
+			"context": "First option of the way-of-paying choice on the Payment step: pay now, online (card and the other online methods of the payment form below).",
+			"kind": "visible",
+			"maxLength": 32,
+			"callSites": ["src/checkout/components/payment/cod/payment-method-choice.tsx"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.payment.methodOnlineNote": {
+			"source": "Pay now by card or another online method.",
+			"context": "One-line note under the 'Pay online' option.",
+			"kind": "visible",
+			"callSites": ["src/checkout/components/payment/cod/payment-method-choice.tsx"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.payment.methodCod": {
+			"source": "Cash on delivery",
+			"context": "Second option of the way-of-paying choice on the Payment step. Cash on delivery (Slovak: dobierka) = the customer pays the courier in cash or by card when the parcel is handed over. Use the everyday local term (cs Dobírka, de Nachnahme, hu Utánvét, it Contrassegno, pl Płatność przy odbiorze / pobranie, ro Ramburs, es Contra reembolso, fr Paiement à la livraison).",
+			"kind": "visible",
+			"maxLength": 32,
+			"callSites": ["src/checkout/components/payment/cod/payment-method-choice.tsx"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.payment.methodCodNote": {
+			"source": "Pay when your parcel is delivered.",
+			"context": "One-line note under the 'Cash on delivery' option: when the customer pays.",
+			"kind": "visible",
+			"callSites": ["src/checkout/components/payment/cod/payment-method-choice.tsx"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.payment.codOverMax": {
+			"source": "Cash on delivery is available for orders up to {max}.",
+			"context": "Note under the 'Cash on delivery' option when the order is above the highest total that may be paid on delivery; the option cannot be chosen then.",
+			"kind": "visible",
+			"placeholders": {
+				"max": "The highest order total for cash on delivery, formatted with currency, e.g. '500,00 €'"
+			},
+			"callSites": ["src/checkout/components/payment/cod/payment-method-choice.tsx"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.payment.codBody": {
+			"source": "You pay {total} when your parcel is delivered. The cash on delivery fee of {fee} is included.",
+			"context": "Text above the order button when cash on delivery is chosen: what the customer will pay the courier, and that the fee is already in that sum.",
+			"kind": "visible",
+			"placeholders": {
+				"total": "The order total with the cash-on-delivery fee, formatted with currency, e.g. '106,99 €'",
+				"fee": "The cash-on-delivery fee, formatted with currency, e.g. '3,00 €'"
+			},
+			"callSites": ["src/checkout/hooks/use-checkout-payment-messages.ts"],
+			"usageCount": 1,
+			"runtimeStatus": "production"
+		},
+		"checkout.payment.codUnavailable": {
+			"source": "Cash on delivery is no longer available for this order. Please review your order and choose a payment method again.",
+			"context": "The order could not be placed with cash on delivery because it no longer qualifies (the delivery or the total changed in the meantime); the customer chooses the way of paying again. Nothing was charged.",
+			"kind": "error",
+			"callSites": [
+				"src/checkout/hooks/use-checkout-payment-messages.ts",
+				"src/checkout/hooks/use-checkout-payment-messages.ts (dynamic: registerCheckoutPaymentLibMessages(...) — payment libs read translated copy from the registry)",
+				"src/checkout/lib/actions.ts"
+			],
+			"usageCount": 3,
+			"runtimeStatus": "production"
+		},
+		"checkout.payment.methodChangeFailed": {
+			"source": "The payment method could not be changed. Please try again.",
+			"context": "Switching between 'Pay online' and 'Cash on delivery' could not be saved; the previous choice stays.",
+			"kind": "error",
+			"callSites": ["src/checkout/components/payment/cod/payment-method-choice.tsx"],
 			"usageCount": 1,
 			"runtimeStatus": "production"
 		},

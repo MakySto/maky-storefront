@@ -65,6 +65,8 @@ export function useCheckoutPaymentMessages() {
 			checkoutLocked: t("checkoutLocked"),
 			orderUpdated: t("orderUpdated"),
 			finalStateUnconfirmed: t("finalStateUnconfirmed"),
+			codUnavailable: t("codUnavailable"),
+			codBody: (total: string, fee: string) => t("codBody", { total, fee }),
 		};
 
 		// Render-phase registration is deliberate (idempotent assignment): the plain libs
@@ -82,6 +84,7 @@ export function useCheckoutPaymentMessages() {
 			freeOrderTotalChanged: messages.freeOrderTotalChanged,
 			checkoutLocked: messages.checkoutLocked,
 			orderUpdated: messages.orderUpdated,
+			codUnavailable: messages.codUnavailable,
 		});
 
 		return messages;
