@@ -35,10 +35,16 @@ export const CheckoutSummaryContext: FC<CheckoutSummaryContextProps> = ({ rows, 
 		<section className="divide-border border-border divide-y rounded-lg border text-sm">
 			{rows.map((row) => (
 				<div key={row.labelKey} className="flex items-start gap-4 p-4">
-					<span className="text-muted-foreground w-24 shrink-0 pt-0.5">{t(row.labelKey)}</span>
-					<span className="min-w-0 flex-1 break-words">
-						{row.valueKey ? t(row.valueKey) : row.value ?? ""}
-					</span>
+					{/* On a phone the label sits above its value: beside it the value had a column too narrow for a phone
+					    number or an e-mail address, and both broke in the middle. */}
+					<div className="min-w-0 flex-1 sm:flex sm:items-start sm:gap-4">
+						<span className="text-muted-foreground block sm:w-24 sm:shrink-0 sm:pt-0.5">
+							{t(row.labelKey)}
+						</span>
+						<span className="block min-w-0 break-words sm:flex-1">
+							{row.valueKey ? t(row.valueKey) : row.value ?? ""}
+						</span>
+					</div>
 					{row.onChangeStep !== undefined && onGoToStep && (
 						<button
 							type="button"

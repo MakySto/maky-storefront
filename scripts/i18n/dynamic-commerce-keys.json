@@ -107,10 +107,17 @@
 			]
 		},
 		{
-			"pattern": "t(\"checkout.addressForm.phoneInvalid\") / t(\"checkout.addressForm.phoneInvalidIntl\") through a passed-in translator",
+			"pattern": "t(\"checkout.addressForm.phoneInvalid\" / \"…phoneTooShort\" / \"…phoneTooLong\" / \"…phoneOtherCountry\" / \"…phoneInvalidNoExample\" / \"…phoneExamplePair\") through a passed-in translator",
 			"callSite": "src/checkout/lib/address-errors.ts",
 			"source": "phoneRefusalMessage() in the same file; the translator comes from the address server actions (src/checkout/lib/actions.ts) and from the account address dialog",
-			"keys": ["checkout.addressForm.phoneInvalid", "checkout.addressForm.phoneInvalidIntl"]
+			"keys": [
+				"checkout.addressForm.phoneInvalid",
+				"checkout.addressForm.phoneInvalidNoExample",
+				"checkout.addressForm.phoneTooShort",
+				"checkout.addressForm.phoneTooLong",
+				"checkout.addressForm.phoneOtherCountry",
+				"checkout.addressForm.phoneExamplePair"
+			]
 		},
 		{
 			"pattern": "t(\"checkout.addressForm.fieldInvalid\") / t(\"checkout.addressForm.postalCodeInvalid\") / t(\"checkout.addressForm.notAvailableInCountry\") through a passed-in translator",

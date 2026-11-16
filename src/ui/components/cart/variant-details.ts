@@ -57,3 +57,22 @@ export function getVariantDetails(variant: AttributeSource): VariantAttribute[] 
 	// Colour first: it is the attribute a shopper scans for.
 	return result.sort((a, b) => (a.isColor === b.isColor ? 0 : a.isColor ? -1 : 1));
 }
+
+/**
+ * A stock code, alone or several joined ("N16274", "TK20409", "M0000964|M0001254"). In this catalogue a variant
+ * without a choice of its own is named after its code.
+ */
+const STOCK_CODE = /^(?:[A-Z]{1,4}\d{3,}|\d{5,})(?:[|/_+-](?:[A-Z]{1,4}\d{3,}|\d{5,}))*$/;
+
+/**
+ * The variant's name when it tells a customer which variant they hold ("XL", "Čierna"), otherwise null.
+ *
+ * A cart line without selection attributes used to print "Variant: N16274", and a roof-rack set
+ * "Variant: M0000964|M0001254": the name of such a variant is a stock code, which says nothing to the customer
+ * and reads as a mistake (owner's screenshots, 2026-11-16). The product name on the line already says what it is.
+ */
+export function customerVariantName(variant: { id: string; name?: string | null }): string | null {
+	const name = variant.name?.trim();
+	if (!name || name === variant.id) return null;
+	return STOCK_CODE.test(name.toUpperCase()) ? null : name;
+}

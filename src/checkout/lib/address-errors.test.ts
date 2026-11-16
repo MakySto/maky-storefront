@@ -8,11 +8,14 @@ import {
 	placeAddressErrors,
 } from "@/checkout/lib/address-errors";
 
-/** A translator that shows which key and values it was asked for. */
+/**
+ * A translator that shows which key and values it was asked for. The numbers inside a sentence carry no-break
+ * spaces (`unbrokenPhone`); they are written here with plain ones so the expectations stay readable.
+ */
 const t = (key: string, values?: Record<string, string>) =>
 	`${key}|${Object.entries(values ?? {})
 		.map(([k, v]) => `${k}=${v}`)
-		.join(",")}`;
+		.join(",")}`.replace(/\u00a0/g, " ");
 
 describe("isPhoneRefusal", () => {
 	it("recognises Saleor's refusal of a phone number, by field and by its text", () => {
@@ -39,17 +42,56 @@ describe("isPhoneRefusal", () => {
 });
 
 describe("phoneRefusalMessage", () => {
-	it("explains the national shape of the delivery country and the calling-code form", () => {
-		const message = phoneRefusalMessage({ t, locale: "de-DE", countryCode: "DE", phone: "0901234561" });
-		expect(message).toContain("checkout.addressForm.phoneInvalid|");
-		expect(message).toContain("country=Deutschland");
-		expect(message).toContain("example=01512 3456789");
-		expect(message).toContain("foreign=+421 912 123 456");
+	const PAIR = "checkout.addressForm.phoneExamplePair|national=01512 3456789,international=+49 1512 3456789";
+
+	it("says a German number is a digit short, with the German example in both forms (owner's case, 2026-11-16)", () => {
+		const message = phoneRefusalMessage({ t, locale: "de-DE", countryCode: "DE", phone: "01513521456" });
+		expect(message).toBe(`checkout.addressForm.phoneTooShort|country=Deutschland,example=${PAIR}`);
+		expect(message).not.toContain("+421");
 	});
 
-	it("asks to check a number that already has a calling code", () => {
-		const message = phoneRefusalMessage({ t, locale: "sk-SK", countryCode: "DE", phone: "+421 901" });
-		expect(message).toContain("checkout.addressForm.phoneInvalidIntl|");
+	it("says a number is a digit too long", () => {
+		const message = phoneRefusalMessage({ t, locale: "de-DE", countryCode: "DE", phone: "0151 352145678" });
+		expect(message).toBe(`checkout.addressForm.phoneTooLong|country=Deutschland,example=${PAIR}`);
+	});
+
+	it("asks to check a number it cannot explain, again with the delivery country's own example only", () => {
+		const message = phoneRefusalMessage({ t, locale: "de-DE", countryCode: "DE", phone: "0123 4567890" });
+		expect(message).toBe(`checkout.addressForm.phoneInvalid|country=Deutschland,example=${PAIR}`);
+	});
+
+	it("offers a Slovak mobile number with its calling code on an order to Germany", () => {
+		const message = phoneRefusalMessage({ t, locale: "sk-SK", countryCode: "DE", phone: "0901 234 561" });
+		expect(message).toBe(
+			"checkout.addressForm.phoneOtherCountry|country=Nemecko,otherCountry=Slovensko,suggestion=+421 901 234 561",
+		);
+	});
+
+	it("explains a number with a calling code by the country of that code, in the international form alone", () => {
+		const short = phoneRefusalMessage({ t, locale: "sk-SK", countryCode: "DE", phone: "+421 90123456" });
+		expect(short).toBe("checkout.addressForm.phoneTooShort|country=Slovensko,example=+421 912 123 456");
+		const unknown = phoneRefusalMessage({ t, locale: "sk-SK", countryCode: "DE", phone: "+421 123" });
+		expect(unknown).toBe("checkout.addressForm.phoneInvalid|country=Nemecko,example=+49 1512 3456789");
+	});
+
+	it("keeps each number on one line", () => {
+		const raw = (key: string, values?: Record<string, string>) =>
+			`${key}|${Object.values(values ?? {}).join("|")}`;
+		const message = phoneRefusalMessage({
+			t: raw,
+			locale: "sk-SK",
+			countryCode: "DE",
+			phone: "0901 234 561",
+		});
+		expect(message).toContain("+421\u00a0901\u00a0234\u00a0561");
+		expect(phoneRefusalMessage({ t: raw, locale: "de-DE", countryCode: "DE", phone: "0123" })).toContain(
+			"+49\u00a01512\u00a03456789",
+		);
+	});
+
+	it("has a sentence without an example for a country that has none", () => {
+		const message = phoneRefusalMessage({ t, locale: "sk-SK", countryCode: "XX", phone: "123" });
+		expect(message).toBe("checkout.addressForm.phoneInvalidNoExample|");
 	});
 });
 
@@ -63,7 +105,7 @@ describe("localizeAddressErrors", () => {
 		)!;
 		expect(error.field).toBe("phone");
 		expect(error.code).toBe("INVALID");
-		expect(error.message).toContain("checkout.addressForm.phoneInvalid|");
+		expect(error.message).toContain("checkout.addressForm.phoneOtherCountry|");
 		expect(error.message).not.toContain("not a valid");
 	});
 

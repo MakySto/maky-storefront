@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-	foreignPhoneExample,
 	isInternationalPhone,
 	normalizePhoneInput,
 	phoneExamplesFor,
@@ -56,14 +55,29 @@ describe("phone examples", () => {
 		expect(phoneExamplesFor("de")?.international.startsWith("+49")).toBe(true);
 	});
 
-	it("shows a foreign calling-code example that is not the delivery country's own", () => {
-		expect(foreignPhoneExample("DE")).toMatch(/^\+421 /);
-		expect(foreignPhoneExample("SK")).toMatch(/^\+420 /);
+	it("shows the delivery country's own number in both forms, and nothing for a country without an example", () => {
+		const plain = (country: string) => {
+			const hint = phoneHintValues(country)!;
+			return {
+				national: hint.national.replace(/\u00a0/g, " "),
+				international: hint.international.replace(/\u00a0/g, " "),
+			};
+		};
+		expect(plain("DE")).toEqual({ national: "01512 3456789", international: "+49 1512 3456789" });
+		expect(plain("SK")).toEqual({ national: "0912 123 456", international: "+421 912 123 456" });
+		// Inside a sentence a number never breaks after its calling code.
+		expect(phoneHintValues("DE")!.international).toBe("+49\u00a01512\u00a03456789");
+		expect(phoneHintValues("XX")).toBeNull();
+		expect(phoneHintValues(undefined)).toBeNull();
 	});
 
-	it("falls back to the international example for a country without one", () => {
-		const hint = phoneHintValues("XX");
-		expect(hint.example).toBe(hint.foreign);
-		expect(phoneHintValues("DE").example).toBe(phoneExamplesFor("DE")!.national);
+	it("never shows one market another market's calling code (owner, 2026-11-16)", () => {
+		const codes: Record<string, string> = {
+			SK: "+421", CZ: "+420", DE: "+49", AT: "+43", PL: "+48", HU: "+36",
+			IT: "+39", RO: "+40", FR: "+33", ES: "+34", US: "+1", CA: "+1",
+		}; // prettier-ignore
+		for (const [country, code] of Object.entries(codes)) {
+			expect(phoneHintValues(country)!.international.startsWith(`${code}\u00a0`), country).toBe(true);
+		}
 	});
 });

@@ -26,17 +26,32 @@
 		"checkout.addressForm.notAvailableInCountry": {
 			"country": "The localized name of the delivery country, e.g. 'Deutschland'"
 		},
+		"checkout.addressForm.phoneExamplePair": {
+			"national": "The example as written at home, e.g. '01512 3456789' (from src/checkout/lib/consts/phone-examples.ts; not translated)",
+			"international": "The same number with the country's calling code, e.g. '+49 1512 3456789' (not translated)"
+		},
 		"checkout.addressForm.phoneHint": {
-			"example": "The delivery country's example number in national form, e.g. '01512 3456789' (from src/checkout/lib/consts/phone-examples.ts; not translated)",
-			"foreign": "An example number of another country with its calling code, e.g. '+421 912 123 456' (not translated)"
+			"example": "The delivery country's example in both forms, joined by `phoneExamplePair`, e.g. '01512 3456789 or +49 1512 3456789' (not translated)"
 		},
 		"checkout.addressForm.phoneInvalid": {
-			"country": "The localized name of the address country, e.g. 'Deutschland'",
-			"example": "The delivery country's example number in national form, e.g. '01512 3456789' (from src/checkout/lib/consts/phone-examples.ts; not translated)",
-			"foreign": "An example number of another country with its calling code, e.g. '+421 912 123 456' (not translated)"
+			"example": "The example number of the country the number belongs to: both forms joined by `phoneExamplePair` ('01512 3456789 or +49 1512 3456789'), or the international form alone when the customer wrote a calling code (not translated)",
+			"country": "The localized name of the country the example belongs to, e.g. 'Deutschland'"
 		},
-		"checkout.addressForm.phoneInvalidIntl": {
-			"foreign": "An example number of another country with its calling code, e.g. '+421 912 123 456' (not translated)"
+		"checkout.addressForm.phoneOtherCountry": {
+			"country": "The localized name of the delivery country, e.g. 'Deutschland'",
+			"otherCountry": "The localized name of the country the number looks like it belongs to, e.g. 'Slowakei'",
+			"suggestion": "The customer's own number with that country's calling code, e.g. '+421 901 234 561' (not translated)"
+		},
+		"checkout.addressForm.phoneTooLong": {
+			"example": "The example number of the country the number belongs to: both forms joined by `phoneExamplePair` ('01512 3456789 or +49 1512 3456789'), or the international form alone when the customer wrote a calling code (not translated)",
+			"country": "The localized name of the country the example belongs to, e.g. 'Deutschland'"
+		},
+		"checkout.addressForm.phoneTooShort": {
+			"example": "The example number of the country the number belongs to: both forms joined by `phoneExamplePair` ('01512 3456789 or +49 1512 3456789'), or the international form alone when the customer wrote a calling code (not translated)",
+			"country": "The localized name of the country the example belongs to, e.g. 'Deutschland'"
+		},
+		"checkout.addressForm.phoneUseSuggestion": {
+			"suggestion": "The customer's own number with a calling code, e.g. '+421 901 234 561' (not translated)"
 		},
 		"checkout.addressForm.postalCodeInvalid": {
 			"country": "The localized name of the address country, e.g. 'Deutschland'",
@@ -83,6 +98,9 @@
 		},
 		"checkout.summary.discountAppliedCode": {
 			"code": "the discount code the customer applied, as Saleor stores it"
+		},
+		"checkout.summary.discountCode": {
+			"code": "The discount code the customer entered, e.g. 'SAVE10' (not translated)"
 		},
 		"email.accountChangeEmailConfirm.intro": {
 			"firstName": "customer first name from the Notify payload (user.first_name); the *Generic variant renders when it is missing"

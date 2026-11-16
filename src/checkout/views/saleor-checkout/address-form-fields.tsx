@@ -1,13 +1,14 @@
 "use client";
 
 import { type FC, type ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { User, MapPin, Building, Phone, type LucideIcon } from "lucide-react";
 import { Input } from "@/ui/components/ui/input";
 import { Label } from "@/ui/components/ui/label";
 import { cn } from "@/lib/utils";
 import { type AddressField } from "@/checkout/components/address-form/types";
-import { phoneHintValues } from "@/checkout/lib/phone";
+import { phoneExamplesFor, phoneHintValues, unbrokenPhone } from "@/checkout/lib/phone";
+import { diagnosePhone } from "@/checkout/lib/phone-diagnosis";
 import { autocompleteTags, typeTags } from "@/checkout/lib/consts/input-attributes";
 
 // =============================================================================
@@ -172,6 +173,7 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 	countryCode,
 }) => {
 	const t = useTranslations("checkout");
+	const locale = useLocale();
 	const phoneHint = phoneHintValues(countryCode);
 
 	const renderField = (field: AddressField): ReactNode => {
@@ -217,17 +219,21 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 			);
 		}
 
-		// Text input. The phone shows the delivery country's example as placeholder and says, under the field, how the
-		// number is written, so the customer does not have to guess (Saleor accepts the national form of the delivery
-		// country and any number with a calling code).
+		// Text input. The phone shows the delivery country's own example as placeholder and, under the field, the two
+		// ways that country's number is written (at home and with its calling code), so the customer does not have to
+		// guess. When Saleor refused a number that is a mobile number of another market written without its calling
+		// code, the same number with the code is one tap away.
 		const isPhone = field === "phone";
+		const refused =
+			isPhone && error ? diagnosePhone(formData.phone, countryCode, locale.split("-")[1]) : null;
+		const suggestion = refused?.kind === "otherCountry" ? refused.suggestion : null;
 		return (
 			<div key={field} className="space-y-1.5">
 				{fieldLabel}
 				<FormInput
 					id={fieldId}
 					type={inputType}
-					placeholder={isPhone ? phoneHint.example : label}
+					placeholder={isPhone ? phoneExamplesFor(countryCode)?.national ?? label : label}
 					value={formData[field] || ""}
 					onChange={(value) => onFieldChange(field, value)}
 					error={error}
@@ -235,10 +241,22 @@ export const AddressFields: FC<AddressFieldsProps> = ({
 					autoComplete={autoComplete}
 					inputMode={isPhone ? "tel" : undefined}
 				/>
-				{isPhone && !error && (
-					<p className="text-muted-foreground text-xs">{t("addressForm.phoneHint", phoneHint)}</p>
+				{isPhone && !error && phoneHint && (
+					<p className="text-muted-foreground text-xs" data-testid={`${fieldId}-hint`}>
+						{t("addressForm.phoneHint", { example: t("addressForm.phoneExamplePair", phoneHint) })}
+					</p>
 				)}
 				<FieldError error={error} id={`${fieldId}-error`} />
+				{suggestion && (
+					<button
+						type="button"
+						data-testid={`${fieldId}-suggestion`}
+						onClick={() => onFieldChange(field, suggestion)}
+						className="border-input bg-background text-foreground hover:bg-accent inline-flex min-h-11 items-center rounded-md border px-3 text-sm font-medium"
+					>
+						{t("addressForm.phoneUseSuggestion", { suggestion: unbrokenPhone(suggestion) })}
+					</button>
+				)}
 			</div>
 		);
 	};
