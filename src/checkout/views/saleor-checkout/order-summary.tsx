@@ -26,6 +26,8 @@ interface LineItem {
 	imageUrl?: string | null;
 	imageAlt?: string | null;
 	totalAmount: number;
+	/** What the line costs without a discount code (catalogue price times quantity), when that is known. */
+	listTotal: number | null;
 	/** The line's public metadata: where a snow chain or sock carries the tyre size the customer chose. */
 	metadata?: readonly MetadataItem[] | null;
 }
@@ -48,6 +50,8 @@ interface OrderSummaryData {
 	tax: number;
 	/** What a discount code took off, as Saleor reports it. Where it is shown is `summaryAmounts`' decision. */
 	discount: number;
+	/** The listed price of the chosen delivery, when it is known: a delivery code is shown against it. */
+	shippingListPrice: number | null;
 	/** The discount code itself, named beside the amount it took off. */
 	voucherCode: string | null;
 	/** Known for a checkout; a placed order's query does not carry its gift cards. */
@@ -68,6 +72,12 @@ interface OrderSummaryProps {
 // Data Adapters
 // ============================================================================
 
+/** A unit price times the quantity, to the cent; null when the unit price is not known. */
+function listTotalOf(unitPrice: number | null | undefined, quantity: number): number | null {
+	if (typeof unitPrice !== "number" || !Number.isFinite(unitPrice)) return null;
+	return Math.round(unitPrice * quantity * 100) / 100;
+}
+
 function extractCheckoutData(checkout: CheckoutFragment, productNameFallback: string): OrderSummaryData {
 	const lines: LineItem[] = checkout.lines.map((line) => {
 		const variantImage = line.variant?.media?.find((m) => m.type === "IMAGE");
@@ -84,9 +94,13 @@ function extractCheckoutData(checkout: CheckoutFragment, productNameFallback: st
 			imageUrl: image?.url,
 			imageAlt: image?.alt,
 			totalAmount: line.totalPrice?.gross?.amount || 0,
+			listTotal: listTotalOf(line.variant?.pricing?.price?.gross?.amount, line.quantity),
 			metadata: line.metadata,
 		};
 	});
+	const chosenDelivery = checkout.shippingMethods?.find(
+		(method) => method.id === checkout.deliveryMethod?.id,
+	);
 
 	return {
 		lines,
@@ -95,6 +109,7 @@ function extractCheckoutData(checkout: CheckoutFragment, productNameFallback: st
 		shipping: checkout.shippingPrice?.gross?.amount || 0,
 		tax: checkout.totalPrice?.tax?.amount || 0,
 		discount: checkout.discount?.amount || 0,
+		shippingListPrice: chosenDelivery?.price?.amount ?? null,
 		voucherCode: checkout.voucherCode?.trim() || null,
 		hasGiftCard: (checkout.giftCards?.length ?? 0) > 0,
 		shippingChosen: Boolean(checkout.deliveryMethod),
@@ -115,6 +130,7 @@ function extractOrderData(order: OrderFragment, productNameFallback: string): Or
 			imageUrl: line.thumbnail?.url,
 			imageAlt: line.thumbnail?.alt,
 			totalAmount: line.totalPrice?.gross?.amount || 0,
+			listTotal: listTotalOf(line.undiscountedUnitPrice?.gross?.amount, line.quantity),
 			metadata: line.metadata,
 		};
 	});
@@ -128,6 +144,7 @@ function extractOrderData(order: OrderFragment, productNameFallback: string): Or
 		shipping: order.shippingPrice?.gross?.amount || 0,
 		tax: order.total?.tax?.amount || 0,
 		discount,
+		shippingListPrice: null,
 		voucherCode: order.voucher?.code?.trim() || null,
 		shippingChosen: Boolean(order.deliveryMethod),
 		total: order.total?.gross?.amount || 0,
@@ -163,20 +180,20 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 		return null;
 	}
 
-	const {
-		lines,
-		currency,
-		subtotal,
-		shipping,
-		tax,
-		discount,
-		voucherCode,
-		hasGiftCard,
-		shippingChosen,
+	const { lines, currency, tax, voucherCode, shippingChosen, total } = data;
+	// A discount code is taken out of the rows Saleor reduced and gets a row of its own, where the figures prove
+	// where it went; a gift card always has one (`summary-amounts.ts`).
+	const amounts = summaryAmounts({
+		subtotal: data.subtotal,
+		shipping: data.shipping,
 		total,
-	} = data;
-	// A discount code is already inside the rows Saleor returns; a gift card is not (`summary-amounts.ts`).
-	const { deduction, appliedDiscount } = summaryAmounts({ subtotal, shipping, total, discount, hasGiftCard });
+		discount: data.discount,
+		hasGiftCard: data.hasGiftCard,
+		lines: lines.map((line) => ({ total: line.totalAmount, listTotal: line.listTotal })),
+		shippingListPrice: data.shippingListPrice,
+	});
+	const { subtotal, shipping, appliedDiscount } = amounts;
+	const lineTotal = (index: number) => amounts.lineTotals?.[index] ?? lines[index].totalAmount;
 	const itemCount = lines.reduce((acc, line) => acc + line.quantity, 0);
 
 	const formatMoney = (amount: number) => {
@@ -269,7 +286,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 					{/* Products */}
 					<section className="border-border border-t">
 						<ul className="max-h-[280px] space-y-1 overflow-y-auto px-5 py-4 [scrollbar-gutter:stable]">
-							{lines.map((line) => (
+							{lines.map((line, index) => (
 								<li key={line.id} className="flex gap-4 py-2">
 									{/* Product image with quantity badge */}
 									<figure className="relative shrink-0">
@@ -295,7 +312,7 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 
 									{/* Product details */}
 									<div className="flex min-w-0 flex-1 flex-col justify-center">
-										<p className="truncate text-sm leading-tight font-medium">{line.name}</p>
+										<p className="text-sm leading-tight font-medium break-words">{line.name}</p>
 										{line.attributes.length > 0 && (
 											<p className="text-muted-foreground mt-0.5 truncate text-xs">
 												{line.attributes.join(" / ")}
@@ -306,10 +323,10 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 
 									{/* Price */}
 									<data
-										value={line.totalAmount}
+										value={lineTotal(index)}
 										className="flex flex-col justify-center text-sm font-medium tabular-nums"
 									>
-										{formatMoney(line.totalAmount)}
+										{formatMoney(lineTotal(index))}
 									</data>
 								</li>
 							))}
@@ -327,10 +344,24 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 								<dt className="text-muted-foreground">{tCart("shipping")}</dt>
 								<dd>{shipping > 0 || shippingChosen ? formatMoney(shipping) : "—"}</dd>
 							</div>
-							{deduction && (
-								<div className="text-status-success flex justify-between" data-testid="summary-deduction">
-									<dt>{deduction.kind === "giftCard" ? t("summary.giftCard") : t("summary.discount")}</dt>
-									<dd>−{formatMoney(deduction.amount)}</dd>
+							{amounts.discount > 0 && (
+								<div
+									className="text-status-success flex justify-between gap-3"
+									data-testid="summary-discount"
+								>
+									<dt className="min-w-0 break-words">
+										{voucherCode ? t("summary.discountCode", { code: voucherCode }) : t("summary.discount")}
+									</dt>
+									<dd className="shrink-0">−{formatMoney(amounts.discount)}</dd>
+								</div>
+							)}
+							{amounts.giftCard > 0 && (
+								<div
+									className="text-status-success flex justify-between gap-3"
+									data-testid="summary-deduction"
+								>
+									<dt>{t("summary.giftCard")}</dt>
+									<dd className="shrink-0">−{formatMoney(amounts.giftCard)}</dd>
 								</div>
 							)}
 						</dl>
@@ -361,8 +392,8 @@ export const OrderSummary: FC<OrderSummaryProps> = ({ checkout, order }) => {
 							</p>
 						)}
 						{/*
-						 * A discount code under the total, for the same reason as the VAT: Saleor has already taken it
-						 * off the rows above, so it is a statement about the total and not one more thing to subtract.
+						 * A discount code that could not be taken out of the rows above (`summary-amounts`): Saleor has
+						 * already taken it off them, so it is a statement about the total and not one more thing to subtract.
 						 */}
 						{appliedDiscount > 0 && (
 							<p

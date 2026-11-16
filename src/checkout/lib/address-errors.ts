@@ -1,6 +1,7 @@
 import { type CountryCode } from "@/checkout/graphql";
 import { getCountryName } from "@/checkout/lib/utils/locale";
-import { isInternationalPhone, phoneHintValues } from "@/checkout/lib/phone";
+import { isInternationalPhone, phoneHintValues, unbrokenPhone } from "@/checkout/lib/phone";
+import { diagnosePhone } from "@/checkout/lib/phone-diagnosis";
 import { isCheckoutLockedCode, isTaxContextChangedCode } from "@/checkout/lib/b2b/contract";
 
 /**
@@ -21,9 +22,18 @@ export function isPhoneRefusal(error: AddressErrorLike): boolean {
 	return error.field === "phone" || (!error.field && SALEOR_PHONE_TEXT.test(error.message ?? ""));
 }
 
+/** The country a locale's storefront sells in: "de-AT" is AT. A national number of that country is the likeliest slip. */
+function homeCountryOf(locale: string): string | undefined {
+	return locale.split("-")[1]?.toUpperCase();
+}
+
 /**
- * The text for a refused phone number: the shape the delivery country expects, and the calling-code form for a
- * customer who lives abroad. A number that already carries a calling code is told to be checked, with the example.
+ * The text for a refused phone number. It says what is wrong when that can be told (`phone-diagnosis`): a digit
+ * short, a digit too many, or a mobile number of another market written without its calling code, which is then
+ * offered with it. Otherwise it asks to check the number. Every variant ends with the example of the country the
+ * number belongs to, in the national and the international form of that same country; a number that already
+ * carries a calling code gets the international form alone. No variant shows another country's calling code
+ * unless the customer's own number is that country's.
  */
 export function phoneRefusalMessage(options: {
 	t: Translate;
@@ -32,15 +42,28 @@ export function phoneRefusalMessage(options: {
 	phone: string | null | undefined;
 }): string {
 	const { t, locale, countryCode, phone } = options;
-	const hint = phoneHintValues(countryCode);
-	if (isInternationalPhone(phone)) {
-		return t("checkout.addressForm.phoneInvalidIntl", { foreign: hint.foreign });
+	const nameOf = (code: string | null | undefined) =>
+		code ? getCountryName(code as CountryCode, locale) : "";
+	const diagnosis = diagnosePhone(phone, countryCode, homeCountryOf(locale));
+	if (diagnosis?.kind === "otherCountry") {
+		return t("checkout.addressForm.phoneOtherCountry", {
+			country: nameOf(countryCode),
+			otherCountry: nameOf(diagnosis.country),
+			suggestion: unbrokenPhone(diagnosis.suggestion),
+		});
 	}
-	return t("checkout.addressForm.phoneInvalid", {
-		country: countryCode ? getCountryName(countryCode as CountryCode, locale) : "",
-		example: hint.example,
-		foreign: hint.foreign,
-	});
+
+	const international = isInternationalPhone(phone);
+	const exampleCountry = diagnosis?.country ?? countryCode;
+	const examples = phoneHintValues(exampleCountry);
+	if (!examples) return t("checkout.addressForm.phoneInvalidNoExample");
+	const values = {
+		country: nameOf(exampleCountry),
+		example: international ? examples.international : t("checkout.addressForm.phoneExamplePair", examples),
+	};
+	if (diagnosis?.kind === "tooShort") return t("checkout.addressForm.phoneTooShort", values);
+	if (diagnosis?.kind === "tooLong") return t("checkout.addressForm.phoneTooLong", values);
+	return t("checkout.addressForm.phoneInvalid", values);
 }
 
 /** The label of an address field, by the key the address forms use for it (`use-address-form-utils`). */

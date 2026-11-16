@@ -135,6 +135,15 @@ fragment CheckoutLineFragment on CheckoutLine {
 		...Money
 	}
 	variant {
+		# The catalogue price (a catalogue promotion included): what the line costs before a discount code. The order
+		# summary shows the line at this price and the code as a row of its own (`summary-amounts`).
+		pricing {
+			price {
+				gross {
+					...Money
+				}
+			}
+		}
 		attributes(variantSelection: ALL) {
 			values {
 				name
