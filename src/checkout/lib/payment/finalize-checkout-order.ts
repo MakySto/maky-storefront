@@ -21,6 +21,8 @@ let finalizeCheckoutId: string | null = null;
 export async function finalizeCheckoutOrder(
 	checkoutId: string,
 	_channelSlug: string,
+	/** An order paid on delivery: completed without a payment, at the total the customer was shown (`lib/cod.ts`). */
+	cashOnDelivery?: { expectedAmount: number },
 ): Promise<FinalizeCheckoutOrderResult> {
 	if (finalizeInFlight && finalizeCheckoutId === checkoutId) {
 		return finalizeInFlight;
@@ -29,7 +31,10 @@ export async function finalizeCheckoutOrder(
 	const run = (async (): Promise<FinalizeCheckoutOrderResult> => {
 		markPaymentCompleting(checkoutId);
 
-		const result = await getCheckoutTransport().completeCheckout(checkoutId);
+		const transport = getCheckoutTransport();
+		const result = cashOnDelivery
+			? await transport.completeCodCheckout(checkoutId, cashOnDelivery.expectedAmount)
+			: await transport.completeCheckout(checkoutId);
 
 		if (!result.ok) {
 			const error = formatCheckoutCompleteError(result.error);

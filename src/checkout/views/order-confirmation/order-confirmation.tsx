@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle, Mail, MapPin, CreditCard } from "lucide-react";
+import { Banknote, CheckCircle, Mail, MapPin, CreditCard } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useOrder } from "@/checkout/hooks/use-order";
 import { OrderSummary } from "@/checkout/views/saleor-checkout/order-summary";
@@ -10,6 +10,8 @@ import { DefaultChannelSlug } from "@/app/config";
 import { marketHref } from "@/lib/channel-map";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
 import { useLocale } from "@/providers/locale-provider";
+import { isCodMethod } from "@/checkout/lib/cod";
+import { formatMoneyWithFallback } from "@/checkout/lib/utils/money";
 
 /** Format address for display */
 function formatAddress(
@@ -50,6 +52,11 @@ export const OrderConfirmation = () => {
 	const shippingAddress = order.shippingAddress;
 	const billingAddress = order.billingAddress;
 	const email = order.userEmail || "";
+	// Paid on delivery: the order's delivery method says so (`lib/cod.ts`). The customer is told what the courier
+	// will ask for, because nothing was charged and the page otherwise reads like a paid order.
+	const paidOnDelivery =
+		order.deliveryMethod?.__typename === "ShippingMethod" && isCodMethod(order.deliveryMethod);
+	const codTotal = paidOnDelivery ? formatMoneyWithFallback(order.total?.gross, locale) : "";
 
 	return (
 		<div className="bg-secondary min-h-screen">
@@ -119,6 +126,17 @@ export const OrderConfirmation = () => {
 													<p className="text-sm font-medium">{t("confirmation.billingAddressLabel")}</p>
 													<p className="text-muted-foreground text-sm">
 														{formatAddress(billingAddress, locale)}
+													</p>
+												</div>
+											</div>
+										)}
+										{paidOnDelivery && (
+											<div className="flex items-start gap-3" data-testid="confirmation-cod">
+												<Banknote className="text-muted-foreground mt-0.5 h-5 w-5 shrink-0" />
+												<div>
+													<p className="text-sm font-medium">{t("confirmation.paymentLabel")}</p>
+													<p className="text-muted-foreground text-sm">
+														{t("confirmation.codNotice", { total: codTotal })}
 													</p>
 												</div>
 											</div>

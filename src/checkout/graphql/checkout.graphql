@@ -88,6 +88,11 @@ fragment CheckoutFragment on Checkout {
 		}
 		maximumDeliveryDays
 		minimumDeliveryDays
+		# Cash on delivery: which method this one is the cash-on-delivery version of, and its limit (`lib/cod.ts`).
+		metadata {
+			key
+			value
+		}
 	}
 	totalPrice {
 		gross {

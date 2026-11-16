@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, type FC } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef, type FC } from "react";
 import { Truck, Clock, Leaf, ChevronLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/ui/components/ui/button";
@@ -15,6 +15,7 @@ import {
 } from "./checkout-summary-context";
 import { useCheckout } from "@/checkout/hooks/use-checkout";
 import { isCheckoutLockedCode } from "@/checkout/lib/b2b/contract";
+import { customerDeliveryMethodId, customerDeliveryMethods } from "@/checkout/lib/cod";
 import { useCheckoutB2b } from "@/checkout/providers/checkout-b2b";
 import { PaymentLockRecovery } from "@/checkout/components/b2b/payment-lock-recovery";
 import { formatShippingPrice } from "@/checkout/lib/utils/money";
@@ -46,12 +47,19 @@ export const ShippingStep: FC<ShippingStepProps> = ({
 	const { checkout: liveCheckout, fetching, refetch } = useCheckout();
 	const checkout = liveCheckout || initialCheckout;
 
-	const shippingMethods = checkout.shippingMethods || [];
+	// The cash-on-delivery versions of the methods are not deliveries of their own: the customer picks the delivery
+	// here and the way of paying in the payment step (`lib/cod.ts`). With cash on delivery already chosen, the
+	// delivery it belongs to reads as the chosen one, and picking it again changes nothing.
+	const offeredMethods = checkout.shippingMethods;
+	const shippingMethods = useMemo(() => customerDeliveryMethods(offeredMethods || []), [offeredMethods]);
 	const hasShippingAddress = !!checkout.shippingAddress;
 	// The fragment does not select __typename on deliveryMethod, so it is absent at runtime (same
 	// class of bug as the summary "Method —" fix); the selection invariants live in
 	// shipping-method-selection.ts (unit-tested there — vitest env has no DOM renderer).
-	const currentMethodId = resolvePersistedMethodId(checkout.deliveryMethod?.id, shippingMethods);
+	const currentMethodId = resolvePersistedMethodId(
+		customerDeliveryMethodId(checkout.deliveryMethod?.id, offeredMethods || []),
+		shippingMethods,
+	);
 
 	// Selection saves IMMEDIATELY on pick (summary + total must be truthful already on this
 	// step); Continue only navigates. On a failed save the previous choice is restored.

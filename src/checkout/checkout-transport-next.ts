@@ -5,6 +5,7 @@ import {
 	processCheckoutTransactionAction,
 	refreshCheckoutAction,
 	runCheckoutCompleteAction,
+	runCodCheckoutCompleteAction,
 } from "@/checkout/lib/actions";
 import type { CheckoutActionResult } from "@/checkout/lib/checkout-action-types";
 import type { CheckoutTransport } from "@/checkout/lib/checkout-transport";
@@ -59,4 +60,5 @@ export const nextCheckoutTransport: CheckoutTransport = {
 	initializeTransaction: initializeCheckoutTransactionAction,
 	processTransaction: processCheckoutTransactionAction,
 	completeCheckout: runCheckoutCompleteAction,
+	completeCodCheckout: runCodCheckoutCompleteAction,
 };

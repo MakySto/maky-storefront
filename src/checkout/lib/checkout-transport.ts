@@ -40,6 +40,11 @@ export type CheckoutTransport = {
 	) => Promise<TransactionProcessActionResult>;
 	/** `checkoutComplete` — converts a fully-paid checkout into an order. */
 	completeCheckout: (checkoutId: string) => Promise<CheckoutCompleteActionResult>;
+	/**
+	 * `checkoutComplete` for an order paid on delivery (`lib/cod.ts`): the host checks again that the checkout is on
+	 * a cash-on-delivery delivery, within its limit, and still at the total the customer was shown.
+	 */
+	completeCodCheckout: (checkoutId: string, expectedAmount: number) => Promise<CheckoutCompleteActionResult>;
 };
 
 // Module-level holder, set once by the checkout shell before any payment code runs.

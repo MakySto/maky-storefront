@@ -37,6 +37,11 @@ import { PaymentLockRecovery } from "@/checkout/components/b2b/payment-lock-reco
 import { PaymentLockReporterProvider } from "@/checkout/components/b2b/payment-lock-context";
 import { OrderLegalNote } from "@/checkout/components/payment/order-legal-note";
 import { CheckoutPromoCode } from "@/checkout/components/promo-code/checkout-promo-code";
+import { PaymentMethodChoice } from "@/checkout/components/payment/cod/payment-method-choice";
+import { CodOrderCheckout } from "@/checkout/components/payment/cod/cod-order-checkout";
+import { codOffer, isWithinCodMax } from "@/checkout/lib/cod";
+import { getCheckoutPayAmount } from "@/checkout/lib/payment/checkout-pay-amount";
+import { isCheckoutReadyToComplete } from "@/checkout/lib/payment/checkout-payment-status";
 
 interface PaymentStepProps {
 	checkout: CheckoutFragment;
@@ -147,8 +152,17 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 		preserveBilling,
 	});
 
-	const usesClientSubmit = usesClientPaymentSubmit(provider);
 	const isFreeOrder = isCheckoutFreeOrder(checkout);
+
+	// Cash on delivery (`lib/cod.ts`): on offer when the chosen delivery has a cash-on-delivery version in Saleor.
+	// Not for an order with nothing to pay, and not once a card payment already covers the order.
+	const cod = codOffer(checkout);
+	const codOnOffer = cod !== null && (cod.selected || (!isFreeOrder && !isCheckoutReadyToComplete(checkout)));
+	const codSelected = codOnOffer && Boolean(cod?.selected);
+	const codWithinMax = cod !== null && isWithinCodMax(cod, getCheckoutPayAmount(checkout));
+	const [isChoosingPayment, setIsChoosingPayment] = useState(false);
+	// With cash on delivery the order button is its own (as with Stripe), never the shared Pay row of a provider.
+	const usesClientSubmit = usesClientPaymentSubmit(provider) || codSelected;
 
 	const { error: returnError, clearError: clearReturnError } = useCheckoutPaymentReturnError();
 
@@ -268,7 +282,7 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 
 			<PaymentGatewayAlerts gateways={checkout.availablePaymentGateways} />
 
-			{usesClientSubmit && !isFreeOrder ? (
+			{usesClientSubmit && !isFreeOrder && !codSelected ? (
 				<AuthorizedPaymentRecovery checkout={checkout} onError={handlePaymentError} />
 			) : null}
 
@@ -355,7 +369,36 @@ export const PaymentStep: FC<PaymentStepProps> = ({
 			    (a delivery voucher needs one). Locked while a payment is being confirmed. */}
 			<CheckoutPromoCode checkout={checkout} disabled={isPaymentBusy || isLoading} />
 
-			{shouldShowPaymentMethodArea(checkout) && b2b.gate.allowed && !deliveryPhoneMissing ? (
+			{codOnOffer && cod && b2b.gate.allowed && !deliveryPhoneMissing ? (
+				<PaymentMethodChoice
+					checkout={checkout}
+					offer={cod}
+					disabled={isPaymentBusy || isLoading}
+					onSavingChange={setIsChoosingPayment}
+				/>
+			) : null}
+
+			{codSelected && cod ? (
+				b2b.gate.allowed && !deliveryPhoneMissing && codWithinMax ? (
+					<CodOrderCheckout
+						checkout={checkout}
+						offer={cod}
+						billing={{
+							billingData,
+							sameAsBilling,
+							hasShippingAddress,
+							shippingAddress,
+							userAddresses: user?.addresses,
+							authenticated,
+							preserveBilling,
+						}}
+						disabled={isChoosingPayment}
+						onError={handlePaymentError}
+						onBillingErrors={setBillingErrors}
+						onPaymentActivityChange={setIsPaymentBusy}
+					/>
+				) : null
+			) : shouldShowPaymentMethodArea(checkout) && b2b.gate.allowed && !deliveryPhoneMissing ? (
 				<PaymentMethodArea
 					provider={provider}
 					checkout={checkout}

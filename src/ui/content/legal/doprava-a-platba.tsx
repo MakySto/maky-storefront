@@ -60,6 +60,12 @@ export function Sk({ channel }: { channel: string }) {
 				Úplné údaje o platobnej karte neukladáme ani k nim nemáme prístup. Spracúva ich poskytovateľ platobnej
 				služby.
 			</p>
+			<p>
+				<strong>Dobierka.</strong> Pri doručení na Slovensko môžete zaplatiť aj pri prevzatí zásielky.
+				Poplatok za dobierku je <strong>3,00 €</strong> a pripočíta sa k cene dopravy; v pokladni ho uvidíte
+				ešte pred odoslaním objednávky. Dobierku ponúkame pri objednávkach do 500 € vrátane dopravy a
+				poplatku. Ak ju pokladňa pre vašu objednávku neponúkne, zaplaťte, prosím, online.
+			</p>
 
 			<h2>Keď zásielka dorazí</h2>
 			<p>

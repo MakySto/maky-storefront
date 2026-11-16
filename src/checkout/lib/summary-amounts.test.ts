@@ -28,6 +28,7 @@ describe("summaryAmounts", () => {
 		expect(result).toEqual({
 			subtotal: 185.01,
 			shipping: 5.99,
+			codFee: 0,
 			discount: 0,
 			giftCard: 0,
 			lineTotals: [95.01, 90],
@@ -50,6 +51,7 @@ describe("summaryAmounts", () => {
 			expect(result).toEqual({
 				subtotal: 310.98,
 				shipping: 5.99,
+				codFee: 0,
 				discount: 20,
 				giftCard: 0,
 				lineTotals: [234.99, 75.99],
@@ -113,6 +115,7 @@ describe("summaryAmounts", () => {
 			expect(summaryAmounts(sent)).toEqual({
 				subtotal: 150,
 				shipping: 5,
+				codFee: 0,
 				discount: 0,
 				giftCard: 0,
 				lineTotals: [80, 70],
@@ -144,6 +147,7 @@ describe("summaryAmounts", () => {
 			expect(result).toEqual({
 				subtotal: 175.76,
 				shipping: 5.99,
+				codFee: 0,
 				discount: 0,
 				giftCard: 0,
 				lineTotals: null,
@@ -167,6 +171,7 @@ describe("summaryAmounts", () => {
 			expect(result).toEqual({
 				subtotal: 185.01,
 				shipping: 5.99,
+				codFee: 0,
 				discount: 5.99,
 				giftCard: 0,
 				lineTotals: [95.01, 90],
@@ -259,6 +264,64 @@ describe("summaryAmounts", () => {
 		});
 		expect(result.giftCard).toBe(0);
 		expect(result.lineTotals).toEqual([219.88, 71.1]);
+	});
+
+	describe("cash on delivery", () => {
+		// Delivery 5.99 with a cash-on-delivery version at 8.99: Saleor charges 8.99 for the delivery.
+		it("gives the fee a row and leaves the delivery row at the delivery's own price", () => {
+			const result = summaryAmounts({
+				subtotal: 185.01,
+				shipping: 8.99,
+				total: 194,
+				discount: 0,
+				hasGiftCard: false,
+				lines: lines([95.01, 90]),
+				shippingListPrice: 8.99,
+				codFee: 3,
+			});
+			expect([result.shipping, result.codFee]).toEqual([5.99, 3]);
+			expect(Math.round((result.subtotal + result.shipping + result.codFee) * 100)).toBe(19400);
+		});
+
+		it("keeps a code on the goods in its own row beside the fee", () => {
+			const result = summaryAmounts({
+				subtotal: 290.98,
+				shipping: 8.99,
+				total: 299.97,
+				discount: 20,
+				hasGiftCard: false,
+				lines: lines([219.88, 71.1], [234.99, 75.99]),
+				shippingListPrice: 8.99,
+				codFee: 3,
+			});
+			expect([result.subtotal, result.shipping, result.codFee, result.discount]).toEqual([
+				310.98, 5.99, 3, 20,
+			]);
+			expect(Math.round((result.subtotal + result.shipping + result.codFee - result.discount) * 100)).toBe(
+				29997,
+			);
+		});
+
+		it("takes nothing out of a delivery row that does not hold the fee", () => {
+			// A free-delivery code that could not be shown as a row leaves a delivery of 0.
+			const result = summaryAmounts({
+				subtotal: 185.01,
+				shipping: 0,
+				total: 185.01,
+				discount: 0,
+				hasGiftCard: false,
+				codFee: 3,
+			});
+			expect([result.shipping, result.codFee]).toEqual([0, 0]);
+		});
+
+		it("has no fee row without cash on delivery", () => {
+			const input = { subtotal: 100, shipping: 5.99, total: 105.99, discount: 0, hasGiftCard: false };
+			expect(summaryAmounts(input).codFee).toBe(0);
+			expect(summaryAmounts({ ...input, codFee: 0 }).codFee).toBe(0);
+			expect(summaryAmounts({ ...input, codFee: null }).codFee).toBe(0);
+			expect(summaryAmounts({ ...input, codFee: Number.NaN }).shipping).toBe(5.99);
+		});
 	});
 
 	it("ignores rounding noise and a total above the rows", () => {

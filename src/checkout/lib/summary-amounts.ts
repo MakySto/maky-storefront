@@ -39,13 +39,20 @@ export type SummaryAmountsInput = {
 	lines?: ReadonlyArray<{ total: number; listTotal?: number | null }>;
 	/** The listed price of the chosen delivery, when one is chosen and its price is known. */
 	shippingListPrice?: number | null;
+	/**
+	 * The cash-on-delivery fee inside the delivery price, when the checkout is on cash on delivery (`lib/cod.ts`).
+	 * It gets a row of its own and the delivery row shows the delivery alone.
+	 */
+	codFee?: number | null;
 };
 
 export type SummaryAmounts = {
 	/** The goods row. With a code on the goods this is the sum before the code. */
 	subtotal: number;
-	/** The delivery row. With a delivery code this is the delivery's listed price. */
+	/** The delivery row. With a delivery code this is the delivery's listed price; without the cash-on-delivery fee. */
 	shipping: number;
+	/** The cash-on-delivery fee as a row of its own; 0 when there is none or it is not inside the delivery row. */
+	codFee: number;
 	/** The discount code as a row of its own; 0 when there is none or it could not be taken out of the rows. */
 	discount: number;
 	/** The gift card as a row of its own; 0 when there is none. */
@@ -64,11 +71,23 @@ const isAmount = (value: number | null | undefined): value is number =>
 	typeof value === "number" && Number.isFinite(value);
 
 export function summaryAmounts(input: SummaryAmountsInput): SummaryAmounts {
+	const rows = rowsOf(input);
+	// The fee is part of what Saleor charges for the delivery. It only leaves the delivery row when that row holds
+	// it (a free-delivery code that was not taken back out leaves a delivery of 0, and nothing to split).
+	const fee = isAmount(input.codFee) && input.codFee > 0 ? toCents(input.codFee) : 0;
+	if (fee > 0 && rows.shipping - fee >= -SAME_AMOUNT) {
+		return { ...rows, shipping: Math.max(0, toCents(rows.shipping - fee)), codFee: fee };
+	}
+	return rows;
+}
+
+function rowsOf(input: SummaryAmountsInput): SummaryAmounts {
 	const discount = isAmount(input.discount) && input.discount > 0 ? input.discount : 0;
 	const lines = input.lines ?? null;
 	const asSent: SummaryAmounts = {
 		subtotal: input.subtotal,
 		shipping: input.shipping,
+		codFee: 0,
 		discount: 0,
 		giftCard: 0,
 		lineTotals: lines ? lines.map((line) => line.total) : null,

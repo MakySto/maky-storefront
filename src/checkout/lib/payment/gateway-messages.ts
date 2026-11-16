@@ -90,6 +90,8 @@ export type CheckoutPaymentLibMessages = {
 	checkoutLocked: string;
 	/** `checkout.payment.orderUpdated` */
 	orderUpdated: string;
+	/** `checkout.payment.codUnavailable` */
+	codUnavailable: string;
 };
 
 /**
@@ -114,6 +116,8 @@ const FALLBACK_PAYMENT_LIB_MESSAGES: CheckoutPaymentLibMessages = {
 	checkoutLocked:
 		"A payment for this order is already in progress. Finish it, or cancel it safely, before starting a new one.",
 	orderUpdated: "Your order has been updated. Please review the new total before paying.",
+	codUnavailable:
+		"Cash on delivery is no longer available for this order. Please review your order and choose a payment method again.",
 };
 
 let registeredPaymentLibMessages: CheckoutPaymentLibMessages | null = null;

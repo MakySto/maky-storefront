@@ -4,6 +4,7 @@ import { type FC } from "react";
 import { useTranslations } from "next-intl";
 import { type CheckoutFragment } from "@/checkout/graphql";
 import { formatShippingPrice } from "@/checkout/lib/utils/money";
+import { codOffer } from "@/checkout/lib/cod";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
 
 interface SummaryRow {
@@ -102,11 +103,21 @@ export function formatShippingMethod(checkout: CheckoutFragment, locale?: string
 	// `shippingMethods` directly: a ShippingMethod id resolves to its name; a Warehouse (click & collect)
 	// id won't match any shipping method and falls through to "—".
 	const methodId = deliveryMethod?.id;
-	const method = checkout.shippingMethods?.find((m) => m.id === methodId);
+	const chosen = checkout.shippingMethods?.find((m) => m.id === methodId);
 
-	if (!method) return "—";
+	if (!chosen) return "—";
 
-	const priceStr = formatShippingPrice(checkout.shippingPrice?.gross, locale);
+	// With cash on delivery the checkout is on the delivery's cash-on-delivery version (`lib/cod.ts`): the row
+	// names the delivery the customer chose and its own price; the fee has its own line in the payment choice and
+	// in the order summary.
+	const cod = codOffer(checkout);
+	const method = cod?.selected ? cod.base : chosen;
+	const charged = checkout.shippingPrice?.gross;
+	const price =
+		cod?.selected && charged && charged.amount >= cod.fee
+			? { ...charged, amount: Math.round((charged.amount - cod.fee) * 100) / 100 }
+			: charged;
+	const priceStr = formatShippingPrice(price, locale);
 
 	return `${shippingMethodName(method)}${priceStr ? ` · ${priceStr}` : ""}`;
 }
