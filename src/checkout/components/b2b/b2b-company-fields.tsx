@@ -162,6 +162,7 @@ export const B2bCompanyFields: FC<B2bCompanyFieldsProps> = ({
 								}
 								countryAreaChoices={countryAreaChoices}
 								idPrefix="b2b-billing-"
+								countryCode={value.billingCountry}
 							/>
 						</div>
 					) : null}

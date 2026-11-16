@@ -5,6 +5,7 @@ import {
 	type AddressFormData,
 	type ApiAddressField,
 } from "../../components/address-form/types";
+import { normalizePhoneInput } from "@/checkout/lib/phone";
 import { getCountryName } from "@/checkout/lib/utils/locale";
 import {
 	type AddressFragment,
@@ -67,6 +68,12 @@ export const getAddressInputData = ({
 		},
 		{} as Record<string, unknown>,
 	);
+	// The phone goes to Saleor in the shape it reads as the customer meant it ("00421…" → "+421…", blanks dropped).
+	if (typeof filtered.phone === "string") {
+		const phone = normalizePhoneInput(filtered.phone);
+		if (phone) filtered.phone = phone;
+		else delete filtered.phone;
+	}
 
 	return {
 		...filtered,
@@ -100,7 +107,7 @@ export const getAddressInputDataFromAddress = (
 		...filtered,
 		country: country?.code as CountryCode,
 		// Only include phone if it has a value
-		...(phone ? { phone } : {}),
+		...(normalizePhoneInput(phone) ? { phone: normalizePhoneInput(phone) } : {}),
 	} as AddressInput;
 };
 

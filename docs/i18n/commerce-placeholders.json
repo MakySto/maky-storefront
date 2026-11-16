@@ -20,6 +20,18 @@
 		"checkout.addressForm.fieldRequired": {
 			"field": "The localized address-field label, e.g. 'Mesto' / 'PSČ' (already translated via the address field label keys)"
 		},
+		"checkout.addressForm.phoneHint": {
+			"example": "The delivery country's example number in national form, e.g. '01512 3456789' (from src/checkout/lib/consts/phone-examples.ts; not translated)",
+			"foreign": "An example number of another country with its calling code, e.g. '+421 912 123 456' (not translated)"
+		},
+		"checkout.addressForm.phoneInvalid": {
+			"country": "The localized name of the address country, e.g. 'Deutschland'",
+			"example": "The delivery country's example number in national form, e.g. '01512 3456789' (from src/checkout/lib/consts/phone-examples.ts; not translated)",
+			"foreign": "An example number of another country with its calling code, e.g. '+421 912 123 456' (not translated)"
+		},
+		"checkout.addressForm.phoneInvalidIntl": {
+			"foreign": "An example number of another country with its calling code, e.g. '+421 912 123 456' (not translated)"
+		},
 		"checkout.confirmation.emailNoticeWithAddress": {
 			"confirmationEmail": "customer e-mail address the order confirmation will be sent to (order.userEmail; never empty — the Generic variant renders otherwise)"
 		},

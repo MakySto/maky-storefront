@@ -470,7 +470,10 @@
 				"postTown": "Localidad postal",
 				"prefecture": "Prefectura"
 			},
-			"selectBillingAddressTitle": "Selecciona una dirección de facturación"
+			"selectBillingAddressTitle": "Selecciona una dirección de facturación",
+			"phoneHint": "P. ej. {example}. Si el número es de otro país, añade el prefijo del país, p. ej. {foreign}.",
+			"phoneInvalid": "El número de teléfono no es válido para el país de entrega ({country}). Introdúcelo como {example} o con el prefijo del país, p. ej. {foreign}.",
+			"phoneInvalidIntl": "El número de teléfono con prefijo no es válido. Compruébalo, p. ej. {foreign}."
 		},
 		"errors": {
 			"invalidValue": "Valor no válido",

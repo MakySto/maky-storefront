@@ -1,5 +1,6 @@
 "use server";
 
+import { normalizePhoneInput } from "@/checkout/lib/phone";
 import { revalidatePath } from "next/cache";
 import {
 	AccountUpdateDocument,
@@ -218,6 +219,6 @@ function extractAddressInput(formData: FormData): AddressInput {
 		postalCode: getFormStringOptional(formData, "postalCode"),
 		countryArea: getFormStringOptional(formData, "countryArea"),
 		country: getFormStringOptional(formData, "country") as CountryCode | undefined,
-		phone: getFormStringOptional(formData, "phone"),
+		phone: normalizePhoneInput(getFormStringOptional(formData, "phone")) || undefined,
 	};
 }

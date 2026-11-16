@@ -232,6 +232,7 @@ export const BillingAddressSection: FC<BillingAddressSectionProps> = ({
 										onFieldChange={updateField}
 										countryAreaChoices={countryAreaChoices}
 										idPrefix="billing-"
+										countryCode={countryCode}
 									/>
 								</>
 							) : (
@@ -300,6 +301,7 @@ export const BillingAddressSection: FC<BillingAddressSectionProps> = ({
 								onFieldChange={updateField}
 								countryAreaChoices={countryAreaChoices}
 								idPrefix="billing-"
+								countryCode={countryCode}
 							/>
 						</>
 					)}

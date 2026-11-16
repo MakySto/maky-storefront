@@ -470,7 +470,10 @@
 				"postTown": "Localitate poștală",
 				"prefecture": "Prefectură"
 			},
-			"selectBillingAddressTitle": "Selectați o adresă de facturare"
+			"selectBillingAddressTitle": "Selectați o adresă de facturare",
+			"phoneHint": "De ex. {example}. Pentru un număr străin, introduceți prefixul țării, de ex. {foreign}.",
+			"phoneInvalid": "Numărul de telefon nu este valid pentru țara de livrare ({country}). Introduceți-l în forma {example} sau cu prefixul țării, de ex. {foreign}.",
+			"phoneInvalidIntl": "Numărul de telefon cu prefix nu este valid. Verificați-l, de ex. {foreign}."
 		},
 		"errors": {
 			"invalidValue": "Valoare nevalidă",
