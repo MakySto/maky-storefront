@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseWebhookPayload } from "./webhook-payload";
+import { parseIssuedAtMs, parseWebhookPayload } from "./webhook-payload";
 
 /**
  * The parser understood four shapes and dropped everything else into
@@ -214,5 +214,22 @@ describe("parseWebhookPayload", () => {
 				}).kind,
 			).toBe("unknown");
 		});
+	});
+});
+
+describe("parseIssuedAtMs", () => {
+	it("reads Saleor's issuedAt, with its microseconds, as epoch milliseconds", () => {
+		expect(parseIssuedAtMs({ issuedAt: "2026-11-17T05:29:01.123456+00:00" })).toBe(
+			Date.UTC(2026, 10, 17, 5, 29, 1, 123),
+		);
+		expect(parseIssuedAtMs({ issuedAt: "2026-11-17T05:29:01Z" })).toBe(Date.UTC(2026, 10, 17, 5, 29, 1));
+	});
+
+	it("says nothing when it is absent, unreadable or not a string", () => {
+		expect(parseIssuedAtMs({})).toBeUndefined();
+		expect(parseIssuedAtMs({ issuedAt: "yesterday" })).toBeUndefined();
+		expect(parseIssuedAtMs({ issuedAt: 1794893341123 })).toBeUndefined();
+		expect(parseIssuedAtMs(null)).toBeUndefined();
+		expect(parseIssuedAtMs([])).toBeUndefined();
 	});
 });

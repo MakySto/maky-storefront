@@ -159,3 +159,15 @@ export function parseWebhookPayload(payload: unknown): WebhookResource {
 
 	return withType({ kind: "unknown" });
 }
+
+/**
+ * When Saleor says it issued the event (`issuedAt` of its `Event` interface, an ISO timestamp the subscription
+ * selects), in epoch milliseconds. Absent, unreadable or a non-string: `undefined`, and the caller has no delay
+ * to report rather than a made-up one.
+ */
+export function parseIssuedAtMs(payload: unknown): number | undefined {
+	const issuedAt = asString(asRecord(payload)?.issuedAt);
+	if (!issuedAt) return undefined;
+	const ms = Date.parse(issuedAt);
+	return Number.isFinite(ms) ? ms : undefined;
+}

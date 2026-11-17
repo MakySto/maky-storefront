@@ -137,6 +137,11 @@ export async function register(): Promise<void> {
 
 		// What this process asks Saleor, by operation, once a minute (src/lib/saleor-traffic.ts). Off with
 		// MAKY_SALEOR_TRAFFIC_LOG_SECONDS=0; an unreadable value is the default, not a flood.
+		// What /api/revalidate has counted but not yet written when the process is told to stop
+		// (src/lib/revalidate-shutdown.ts).
+		const { installRevalidateShutdown } = await import("./lib/revalidate-shutdown");
+		installRevalidateShutdown();
+
 		const trafficRaw = Number(process.env.MAKY_SALEOR_TRAFFIC_LOG_SECONDS ?? "60");
 		const trafficSeconds = Number.isInteger(trafficRaw) && trafficRaw >= 0 ? trafficRaw : 60;
 		if (trafficSeconds > 0) {
