@@ -21,6 +21,10 @@
  * (the first one past the window runs the latest closure), and the entries' own lifetime is the end
  * of the line.
  *
+ * The window is the caller's: 30 s for a single edit, five minutes while a batch lasts
+ * (`@/lib/revalidate-load`), because at 1 100 events a minute a 30 s window is still a rebuild of every
+ * market's lists twice a minute.
+ *
  * What is NOT coalesced: the one product page the event names (a single record), and any event
  * about a category itself (rare, and a rename must show at once). Those are the route's call.
  */
@@ -84,6 +88,11 @@ export function flushThrottled(key: string, now: number = Date.now()): boolean {
 export function abandonFlush(key: string): void {
 	const slot = slots().get(key);
 	if (slot) slot.flushScheduled = false;
+}
+
+/** The keys that are owed work right now: what a stopping process drops (see `flushStatsOnShutdown`'s caller). */
+export function pendingThrottledKeys(): string[] {
+	return [...slots()].filter(([, slot]) => slot.pending !== null).map(([key]) => key);
 }
 
 /** For tests. */
