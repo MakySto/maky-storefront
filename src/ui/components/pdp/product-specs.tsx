@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { cn } from "@/lib/utils";
+import type { SectionKind } from "@/lib/editorjs-sanitize";
 import { ComparisonScrollToCurrent } from "./comparison-scroll";
 import { VideoClickToPlay } from "./video-click-to-play";
 
@@ -14,7 +15,9 @@ import {
 	descriptionSections,
 	groupParameters,
 	isTailSection,
+	liftLeadHeading,
 	sectionKindOfHtml,
+	splitDescriptionTitle,
 	templateFor,
 	TEMPERATURE_RANGE_REF,
 	withoutSheetRepeats,
@@ -67,12 +70,12 @@ const DESCRIPTION_PROSE = cn(
  * the box, the steps, the documents) keep the card's width.
  */
 const SECTION_HEADING = cn(
-	"[&>div>h3]:mt-0 [&>div>h3]:mb-4 [&>div>h3]:text-2xl [&>div>h3]:font-extrabold [&>div>h3]:tracking-[-0.025em] [&>div>h3]:text-text-primary sm:[&>div>h3]:text-[1.875rem]",
+	"[&>div>:is(h2,h3)]:mt-0 [&>div>:is(h2,h3)]:mb-4 [&>div>:is(h2,h3)]:text-2xl [&>div>:is(h2,h3)]:font-extrabold [&>div>:is(h2,h3)]:tracking-[-0.025em] [&>div>:is(h2,h3)]:text-text-primary sm:[&>div>:is(h2,h3)]:text-[1.875rem]",
 	"[&>div>h4]:text-text-primary [&>div>h4]:mt-0 [&>div>h4]:mb-2 [&>div>h4]:text-lg [&>div>h4]:font-bold",
 	"[&>div>p]:max-w-[70ch] [&>div>ul:not([class])]:max-w-[70ch] [&>div>ol:not([class])]:max-w-[70ch]",
 );
 const SECTION_RULE =
-	"[&>div>h3]:before:bg-brand [&>div>h3]:before:mb-4 [&>div>h3]:before:block [&>div>h3]:before:h-[3px] [&>div>h3]:before:w-10 [&>div>h3]:before:rounded-full [&>div>h3]:before:content-['']";
+	"[&>div>:is(h2,h3)]:before:bg-brand [&>div>:is(h2,h3)]:before:mb-4 [&>div>:is(h2,h3)]:before:block [&>div>:is(h2,h3)]:before:h-[3px] [&>div>:is(h2,h3)]:before:w-10 [&>div>:is(h2,h3)]:before:rounded-full [&>div>:is(h2,h3)]:before:content-['']";
 /** The opening paragraph of an introduction, under its heading: the lead. */
 const SECTION_LEAD =
 	"[&>div:nth-child(2)>p:first-child]:text-text-primary [&>div:nth-child(2)>p:first-child]:text-[1.0625rem] [&>div:nth-child(2)>p:first-child]:font-medium sm:[&>div:nth-child(2)>p:first-child]:text-lg";
@@ -183,7 +186,20 @@ export async function ProductSpecs({
 		specs?.facts,
 	);
 	const groups = groupParameters(template, rows);
-	const hasDescription = Boolean(descriptionHtml?.length || careInstructions);
+	// The description's own title (its first block, a heading of the second level) is the card's heading;
+	// without one the card has none, and its name for assistive technology is the label.
+	const { title: descriptionTitle, body: descriptionBody } = splitDescriptionTitle(descriptionHtml);
+	const hasDescription = Boolean(descriptionBody.length || descriptionTitle || careInstructions);
+	const descriptionHeading = descriptionTitle ? (
+		<h2
+			id="product-description-heading"
+			className={CARD_TITLE}
+			dangerouslySetInnerHTML={{ __html: descriptionTitle }}
+		/>
+	) : null;
+	const descriptionLabel = descriptionTitle
+		? { "aria-labelledby": "product-description-heading" }
+		: { "aria-label": t("productDescription") };
 	const hasAttributeParameters = rows.length > 0 || Boolean(outerDimensions);
 	const hasTechnicalParameters = hasAttributeParameters || Boolean(specs);
 	const hasComparison = Boolean(comparisonHtml);
@@ -194,17 +210,23 @@ export async function ProductSpecs({
 	// The sections in the order the cards follow each other.
 	// A description that carries pictures of its own is set as one card for each of its sections.
 	const allSections =
-		template.sections && descriptionHtml?.length ? descriptionSections(descriptionHtml) : null;
+		template.sections && descriptionBody.length ? descriptionSections([...descriptionBody]) : null;
 	// The questions and the closing stand in cards of their own after the parameters; the rest is one card.
 	const sectionCards = allSections?.filter((section) => !isTailSection(section)) ?? null;
 	const tailCards = allSections?.filter(isTailSection) ?? [];
 	// Every second lone picture stands on the left, counted through the whole description, so the page
 	// does not read as one repeated card.
 	let lonePictures = 0;
-	const plan = (sectionCards ?? []).map((blocks) => ({
+	const plan = (sectionCards ?? []).map((blocks, sectionIndex) => ({
 		blocks,
 		kind: sectionKindOfHtml(blocks),
-		chunks: chunksOf(blocks).map((chunk) => ({
+		// A description with no title of its own opens with its first section's heading, which is then the
+		// page's second-level heading under the product's `h1` (Kargo's `h3`); the kind is read before it is lifted.
+		chunks: chunksOf(
+			sectionIndex === 0 && !descriptionTitle && sectionKindOfHtml(blocks) === "intro"
+				? liftLeadHeading(blocks)
+				: blocks,
+		).map((chunk) => ({
 			chunk,
 			flipped: chunk.pictures.length === 1 && lonePictures++ % 2 === 1,
 		})),
@@ -258,23 +280,23 @@ export async function ProductSpecs({
 			<div className="mt-5 grid gap-4 lg:mt-6 lg:gap-5 [&>*]:min-w-0">
 				{hasDescription && sectionCards && (
 					<>
-						<h2 className="sr-only">{t("productDescription")}</h2>
 						{/* The sections of the description are the sections of one card: a gap and a thin rule
 						    between them, not a raised panel for each. */}
-						<article id="product-description" className={cn(CARD, "flow-root")}>
+						<article id="product-description" {...descriptionLabel} className={cn(CARD, "flow-root")}>
+							{descriptionHeading}
 							{plan.map(({ kind, blocks, chunks }, index) => (
 								<section
 									// The sections have no identity of their own: the producer's order is the key.
 									key={`${index}-${blocks[0]}`}
 									className={cn(index > 0 && "border-border-subtle mt-10 border-t pt-10 lg:mt-12 lg:pt-12")}
 								>
-									{kind && <SectionKicker>{t(`content.sections.${kind}`)}</SectionKicker>}
+									{showKicker(kind) && <SectionKicker>{t(`content.sections.${kind}`)}</SectionKicker>}
 									{chunks.map(({ chunk, flipped }, chunkIndex) => (
 										<SectionChunk
 											key={`${chunkIndex}-${chunk.text[0] ?? chunk.pictures[0]}`}
 											chunk={chunk}
 											flipped={flipped}
-											kicker={Boolean(kind)}
+											kicker={showKicker(kind)}
 											lead={kind === "intro" && chunkIndex === 0}
 											className={chunkIndex > 0 ? "mt-8 lg:mt-10" : undefined}
 										/>
@@ -292,11 +314,7 @@ export async function ProductSpecs({
 				)}
 
 				{hasDescription && !sectionCards && (
-					<article
-						id="product-description"
-						aria-labelledby="product-description-heading"
-						className={cn(CARD, "flow-root")}
-					>
+					<article id="product-description" {...descriptionLabel} className={cn(CARD, "flow-root")}>
 						{/* The product's own photo floats beside the opening of the description, and the
 						    text runs on at full width under it. It used to stand in a sticky column of
 						    its own for the description's whole length, which held a long description — a
@@ -312,23 +330,21 @@ export async function ProductSpecs({
 								/>
 							</div>
 						)}
-						<h2 id="product-description-heading" className={CARD_TITLE}>
-							{t("productDescription")}
-						</h2>
-						{descriptionHtml?.length ? (
+						{descriptionHeading}
+						{descriptionBody.length ? (
 							<div className={DESCRIPTION_PROSE}>
-								{descriptionHtml.map((html) => (
+								{descriptionBody.map((html) => (
 									<div key={html} dangerouslySetInnerHTML={{ __html: html }} />
 								))}
 							</div>
 						) : null}
 						{/* Only a description with a model comparison ships the few lines that start its
 						    scrolling table at the current model. */}
-						{descriptionHtml?.some((html) => html.includes(COMPARISON_REGION_CLASS)) && (
+						{descriptionBody.some((html) => html.includes(COMPARISON_REGION_CLASS)) && (
 							<ComparisonScrollToCurrent />
 						)}
 						{/* Likewise only a description with a video ships the click that opens it. */}
-						{descriptionHtml?.some((html) => html.includes(VIDEO_LINK_CLASS)) && <VideoClickToPlay />}
+						{descriptionBody.some((html) => html.includes(VIDEO_LINK_CLASS)) && <VideoClickToPlay />}
 
 						{careInstructions && (
 							<div className="border-border-subtle bg-surface-secondary mt-8 rounded-xs border p-4 sm:p-5">
@@ -447,6 +463,15 @@ export async function ProductSpecs({
 			</div>
 		</section>
 	);
+}
+
+/**
+ * Whether a section of the description has the small title over its heading. The introduction has none:
+ * its title would be a general phrase ("Popis produktu") over the producer's own heading, and a page
+ * says nothing where the producer wrote nothing.
+ */
+function showKicker(kind: SectionKind | null): kind is Exclude<SectionKind, "intro"> {
+	return kind !== null && kind !== "intro";
 }
 
 /** The small title over a section's heading: a short brown rule and the kind of section, in the shopper's language. */

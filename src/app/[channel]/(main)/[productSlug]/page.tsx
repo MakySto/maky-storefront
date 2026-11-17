@@ -11,6 +11,7 @@ import { type ProductDetailsQuery } from "@/gql/graphql";
 import { buildPageMetadata, buildProductJsonLd } from "@/lib/seo";
 import { REVERSE_MAP, marketHref } from "@/lib/channel-map";
 import { counterpartAlternates } from "@/lib/seo/hreflang";
+import { metadataSeoTitle } from "@/lib/seo/seo-title";
 import { productCounterparts } from "@/lib/seo/product-counterparts";
 import { getProductMarketPresence } from "@/lib/saleor/product-presence";
 import { getProductOutcome, type LocalizedProduct } from "@/lib/saleor/product-outcome";
@@ -92,7 +93,12 @@ export async function generateMetadata(props: {
 	const hasExplicitSeoTitle = isSourceLocale(locale)
 		? Boolean(meaningfulTitle(product.seoTitle))
 		: Boolean(meaningfulTitle(product.translation?.seoTitle));
+	// A title longer than Saleor's field travels in the product's metadata (`lib/seo/seo-title.ts`); the
+	// field holds the version fitted to 70 characters. The whole one wins when it is there.
+	const wholeSeoTitle = metadataSeoTitle(product.metadata, locale);
 
+	// CFM's `seoDescription` is printed as it was sent; only the name, standing in for it, is trimmed.
+	const hasSeoDescription = Boolean(product.seoDescription?.trim());
 	const description = product.seoDescription || product.name;
 	// The gallery's first image, which already falls back to the thumbnail — and already
 	// leaves the "no image" placeholder out. A second `|| product.thumbnail?.url` here would
@@ -103,9 +109,10 @@ export async function generateMetadata(props: {
 
 	const metadata = buildPageMetadata({
 		channel: params.channel,
-		title: meaningfulTitle(product.seoTitle) ?? product.name,
-		titleSource: hasExplicitSeoTitle ? "seo" : "fallback",
+		title: wholeSeoTitle ?? meaningfulTitle(product.seoTitle) ?? product.name,
+		titleSource: wholeSeoTitle || hasExplicitSeoTitle ? "seo" : "fallback",
 		description,
+		descriptionSource: hasSeoDescription ? "seo" : "fallback",
 		image: ogImage,
 		url: productHref(params.channel, product.slug),
 		openGraph:

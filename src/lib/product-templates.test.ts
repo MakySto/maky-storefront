@@ -11,6 +11,7 @@ import {
 	PRODUCT_TEMPLATES,
 	sectionKindOfHtml,
 	sheetFacts,
+	splitDescriptionTitle,
 	TEMPERATURE_RANGE_REF,
 	templateFor,
 	templateIdForCategory,
@@ -505,5 +506,50 @@ describe("withoutSheetRepeats", () => {
 			expect(out.rows).toHaveLength(2);
 			expect(out.outerDimensions).toBe("1 × 2 × 3 cm");
 		}
+	});
+});
+
+describe("splitDescriptionTitle", () => {
+	it("takes the first block for the title when it is a heading of the second level, and leaves the rest as the text", () => {
+		expect(
+			splitDescriptionTitle([
+				"<h2>Snehové reťaze na diskoch R14 až R19</h2>",
+				"<p>Úvod.</p>",
+				"<h2>Ďalší</h2>",
+			]),
+		).toEqual({
+			title: "Snehové reťaze na diskoch R14 až R19",
+			body: ["<p>Úvod.</p>", "<h2>Ďalší</h2>"],
+		});
+	});
+
+	it("keeps the inline markup of the title: the producer's text is already sanitised", () => {
+		expect(splitDescriptionTitle(["<h2>16&nbsp;mm <strong>reťaze</strong></h2>", "<p>x</p>"]).title).toBe(
+			"16&nbsp;mm <strong>reťaze</strong>",
+		);
+	});
+
+	it("has no title when the first block is anything else: a heading of another level, a paragraph, a role", () => {
+		for (const first of [
+			"<h3>Nadpis</h3>",
+			"<h1>Nadpis</h1>",
+			"<p>Úvod.</p>",
+			'<h3 class="maky-sec maky-sec-intro">x</h3>',
+		]) {
+			const blocks = [first, "<p>x</p>"];
+			expect(splitDescriptionTitle(blocks)).toEqual({ title: null, body: blocks });
+		}
+	});
+
+	it("never takes a heading further down for the title", () => {
+		const blocks = ["<p>Úvod.</p>", "<h2>Nadpis</h2>"];
+		expect(splitDescriptionTitle(blocks)).toEqual({ title: null, body: blocks });
+	});
+
+	it("has no title for an empty heading, and none for no description at all", () => {
+		expect(splitDescriptionTitle(["<h2> </h2>", "<p>x</p>"]).title).toBeNull();
+		expect(splitDescriptionTitle(null)).toEqual({ title: null, body: [] });
+		expect(splitDescriptionTitle(undefined)).toEqual({ title: null, body: [] });
+		expect(splitDescriptionTitle([])).toEqual({ title: null, body: [] });
 	});
 });

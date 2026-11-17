@@ -390,10 +390,12 @@ describe("a Kargo set's page", async () => {
 
 	it("is set as the sections of one card, under one heading for the whole description", async () => {
 		const html = await page();
-		expect(html).toContain('<h2 class="sr-only">Popis produktu</h2>');
+		expect(html).toContain('id="product-description" aria-label="Popis produktu"');
 		expect(html.match(/id="product-description"/g)).toHaveLength(1);
 		// One raised card for the description; a hairline and a gap between its sections, not a card each.
 		const card = html.slice(html.indexOf('<article id="product-description"'), html.indexOf("</article>"));
+		// The fixed words are no heading any more (the other cards keep theirs): the card is named by a label.
+		expect(card).not.toContain("product-description-heading");
 		expect(card.match(/<section class="[^"]*border-t/g)?.length).toBeGreaterThan(5);
 		expect(card).toContain("<h3>Čo dostanete v balení</h3>");
 		// The questions and the closing stand in cards of their own, after the parameters.
@@ -403,16 +405,22 @@ describe("a Kargo set's page", async () => {
 
 	it("writes the kind of section over a heading that names it, in the shopper's language", async () => {
 		const html = await page();
-		for (const word of [
-			"Popis produktu",
-			"Kompatibilita",
-			"Využitie v praxi",
-			"Vhodné doplnky",
-			"O značke",
-			"Poradíme vám",
-		]) {
+		for (const word of ["Kompatibilita", "Využitie v praxi", "Vhodné doplnky", "O značke", "Poradíme vám"]) {
 			expect(html).toMatch(new RegExp(`uppercase">[^<]*<span[^>]*></span>${word}</p>`));
 		}
+		// The introduction has no small title: "Popis produktu" over the producer's own heading was the
+		// fixed phrase again, in another place (2026-11-17).
+		expect(html).not.toMatch(/uppercase">[^<]*<span[^>]*><\/span>Popis produktu<\/p>/);
+		expect(html).not.toContain("Popis produktu</");
+	});
+
+	it("draws the introduction's own heading as the second-level heading when the description has no title", async () => {
+		const html = await page();
+		const card = html.slice(html.indexOf('<article id="product-description"'), html.indexOf("</article>"));
+		// Kargo writes the heading as an h3 with its kind; the page draws it as the h2 under the product's h1.
+		expect(card).toMatch(/<h2 class="maky-sec maky-sec-intro">[^<]+<\/h2>/);
+		expect(card).not.toMatch(/<h3 class="maky-sec maky-sec-intro"/);
+		expect(card.match(/<h2[ >]/g)).toHaveLength(1);
 	});
 
 	it("puts a lone picture of a section beside its text and several in a row under it, none among the paragraphs", async () => {
@@ -519,5 +527,86 @@ describe("a Kargo set's page", async () => {
 		);
 		expect(html.match(/<article/g)).toHaveLength(1);
 		expect(html).toContain("gallery-second.jpg");
+	});
+});
+
+/**
+ * The description's title: CFM's first block, a heading of the second level, is the card's heading in
+ * place of the fixed words ("Popis produktu", "Produktbeschreibung"). Without one the card has no
+ * heading and the text starts the card.
+ */
+describe("the title of a description", () => {
+	const intro = "<p>SnowDrive S-16 sú zosilnené snehové reťaze.</p>";
+	const card = (html: string) =>
+		html.slice(html.indexOf('<article id="product-description"'), html.indexOf("</article>"));
+	const page = (descriptionHtml: string[], locale = SK) =>
+		render(ProductSpecs({ descriptionHtml, attributes: [], locale }));
+
+	it("is the heading of the card, once, and the fixed words are not said", async () => {
+		const html = await page([
+			"<h2>Snehové reťaze na diskoch R14 až R19: zosilnené články, montáž zvonka</h2>",
+			intro,
+			"<h2>Rozmery pneumatík pre kód N16105</h2>",
+			"<p>Tabuľka.</p>",
+		]);
+		const description = card(html);
+		expect(description).toContain('aria-labelledby="product-description-heading"');
+		expect(description).toContain(
+			'<h2 id="product-description-heading" class="text-text-primary mb-5 text-2xl font-extrabold tracking-[-0.025em] sm:text-[1.875rem]">Snehové reťaze na diskoch R14 až R19: zosilnené články, montáž zvonka</h2>',
+		);
+		expect(description.match(/Snehové reťaze na diskoch R14 až R19/g)).toHaveLength(1);
+		expect(description).not.toContain("Popis produktu");
+		// The text runs on under it; a heading further down stays a heading of the text.
+		expect(description.indexOf("product-description-heading")).toBeLessThan(
+			description.indexOf("zosilnené snehové reťaze"),
+		);
+		expect(description).toContain("<h2>Rozmery pneumatík pre kód N16105</h2>");
+	});
+
+	it("is said in the market's language and is nowhere replaced by the fixed words", async () => {
+		const html = await page(
+			["<h2>Schneeketten auf Felgen R14 bis R19: verstärkte Glieder</h2>", "<p>Text.</p>"],
+			"de-DE",
+		);
+		expect(html).toContain("Schneeketten auf Felgen R14 bis R19: verstärkte Glieder</h2>");
+		expect(html).not.toContain("Produktbeschreibung</h2>");
+	});
+
+	it("leaves the card without any heading when the description has none, and starts it with the text", async () => {
+		const html = await page([intro, "<h2>Rozmery pneumatík pre kód N16105</h2>", "<p>Tabuľka.</p>"]);
+		const description = card(html);
+		expect(description).toContain('id="product-description" aria-label="Popis produktu"');
+		expect(description).not.toContain("product-description-heading");
+		expect(description).not.toContain("Popis produktu</h2>");
+		expect(description.indexOf("<h2>")).toBeGreaterThan(description.indexOf("zosilnené snehové reťaze"));
+	});
+
+	it("does not mistake a heading of another level at the top for the title", async () => {
+		const html = await page(["<h3>Pre aké auto</h3>", intro]);
+		expect(card(html)).toContain("<h3>Pre aké auto</h3>");
+		expect(card(html)).not.toContain("product-description-heading");
+	});
+
+	it("is the heading of a description set as sections too", async () => {
+		const html = await render(
+			ProductSpecs({
+				descriptionHtml: [
+					"<h2>Strešný nosič na hladkú strechu</h2>",
+					"<p>Úvod.</p>",
+					"<h3>Pre aké auto</h3>",
+					"<p>Auto.</p>",
+				],
+				attributes: [],
+				locale: SK,
+				template: { ...templateFor("stresny-nosic"), sections: true },
+			}),
+		);
+		const description = card(html);
+		expect(description).toContain('aria-labelledby="product-description-heading"');
+		expect(description.match(/Strešný nosič na hladkú strechu/g)).toHaveLength(1);
+		expect(description.indexOf("product-description-heading")).toBeLessThan(
+			description.indexOf("<h3>Pre aké auto</h3>"),
+		);
+		expect(html).not.toContain('class="sr-only"');
 	});
 });
