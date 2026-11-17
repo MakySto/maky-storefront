@@ -100,3 +100,36 @@ describe("Open Graph", () => {
 		expect((rootMetadata.openGraph as OpenGraphOf).images).toEqual([DEFAULT_OG_IMAGE]);
 	});
 });
+
+describe("the meta description CFM sent", () => {
+	// 9 819 Slovak texts have a `seoDescription` longer than 155 characters; the page used to cut each at 155
+	// and end it with "…" (STOREFRONT_TEXT_STANDARD_V1: the lengths are recommendations, nothing is cut).
+	const long =
+		"Hliníkové priečniky s T-drážkou po celej dĺžke pre Alfa Romeo 159 Sportwagon 939 (2006–2008): kompletná súprava s pätkami na klasické lyžiny, montáž bez náradia, nosnosť do 100 kg, zámok v cene a dodanie do dvoch dní.";
+
+	it("is printed as sent when it is the product's seoDescription, in the page and in the share cards", () => {
+		expect(long.length).toBeGreaterThan(155);
+		const metadata = buildPageMetadata({
+			channel: "sk-eur",
+			title: "Nosič",
+			description: long,
+			descriptionSource: "seo",
+		});
+		expect(metadata.description).toBe(long);
+		expect((metadata.openGraph as { description?: string }).description).toBe(long);
+		expect((metadata.twitter as { description?: string }).description).toBe(long);
+	});
+
+	it("keeps the trim for a fallback and for a page that does not say where its description came from", () => {
+		for (const options of [{ descriptionSource: "fallback" as const }, {}]) {
+			const metadata = buildPageMetadata({
+				channel: "sk-eur",
+				title: "Nosič",
+				description: long,
+				...options,
+			});
+			expect(metadata.description!.length).toBeLessThanOrEqual(156);
+			expect(metadata.description!.endsWith("…")).toBe(true);
+		}
+	});
+});

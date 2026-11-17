@@ -92,6 +92,15 @@ Skrátený príklad (celý dokument je v ukážke):
 - **Názov, ktorý jednotku už hovorí.** Názov atribútu je v Saleore jeden pre všetky produkty a jednotku nesie v zátvorke: produkčné `warranty_years` je „Záruka (roky)“. Tabuľka parametrov píše názov vedľa hodnoty, takže „Záruka (roky) | 2 roky“ povie roky dvakrát; podľa hlásenia z nasadenia sa to stalo pri prvom nasadení tejto šablóny (4. 10. 2026, stránka TK20414), opravuje to samostatný PR. Preto tabuľka pri `warranty_years` a pri jednotkách, ktoré táto stránka pridala (`rated_power`, `net_volume`, `interior_height`, `input_current_ac`, `temperature_min`, `temperature_max`), nepíše jednotku, ktorú názov v zátvorke už hovorí: „Záruka (roky) | 2“, „Menovitý výkon (W) | 60“. Roky sa poznajú podľa slov z množného tvaru trhu (`product.content.years`: rok, roky, roka, rokov), merná jednotka podľa presnej značky; iná jednotka v zátvorke („(kW)“) sa za našu nepovažuje a naša ostane. Názov bez jednotky dostane jednotku ako doteraz („Záruka | 3 roky“, „Menovitý výkon | 60 W“), takže ak CFM atribút premenuje na „Záruka“, stránka bez zásahu napíše „3 roky“. Pás kľúčových faktov názov vedľa hodnoty nemá („Príkon 60 W“) a jednotku si necháva. Staršie jednotky (`weight`, `volume`, `max_load` a ďalšie) sa nemenia: tie sa vedľa názvov písali dávno a živé stránky ostávajú, aké sú.
 - **Pevné slová** (druh poznámky, názvy skupín, „Rozsah teplôt“, „{min} až {max}“, „rok/roky/rokov“, navigácia) sú v `product.content.*` vo všetkých 12 jazykových súboroch. Texty blokov a názvy riadkov sú text zo Saleoru, takže v cudzom trhu sú v tom jazyku, v akom prišiel preklad popisu.
 
+## Nadpis popisu (17. 11. 2026)
+
+Stránka produktu nemá pevný nadpis nad popisom („Popis produktu“, „Produktbeschreibung“ …) v žiadnom z 12 trhov. H1 je názov produktu.
+
+- **Nadpis karty popisu je PRVÝ blok popisu**, ak je to `header` úrovne 2 bez značky `maky:*` (v HTML presne `<h2>…</h2>`). Web ho vykreslí ako H2 karty (`id="product-description-heading"`) a z tela ho vyberie, aby sa neopakoval (`splitDescriptionTitle`, `src/lib/product-templates.ts`). Nadpis ďalej v texte ostáva nadpisom textu; heading inej úrovne na prvom mieste (H1, H3) nie je nadpisom karty. Pravidlo sa pozerá iba na prvý blok, platí pre popisy s typmi (`maky-content/1`) aj bez nich.
+- **Bez takého bloku karta nadpis nemá**: popis začne rovno textom, karta nesie `aria-label` (iba pre čítačky). Je to zámer: lepšie než prázdna fráza.
+- **Sady s oddielmi (Kargo)**: úvod píše CFM ako `h3` s druhom `intro`. Web nad ním nepíše malý titulok („POPIS PRODUKTU“ už nie), a keď popis nemá vlastný nadpis, kreslí tento nadpis ako H2, aby pod H1 nešla úroveň 3. Ďalšie oddiely majú svoj titulok a zostávajú H3.
+- Poradie nasadenia je bezpečné oboma smermi: web môže ísť pred nadpismi z CFM (popis začne textom), CFM pred webom (dva nadpisy za sebou, kým sa web nezmení).
+
 ## Čo sa stane, keď niečo nesedí
 
 Žiadny text sa nestratí. Čitateľ rozlišuje, čo je chyba producenta a čo by mohlo zákazníka poškodiť:

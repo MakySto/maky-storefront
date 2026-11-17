@@ -272,6 +272,46 @@ export function descriptionSections(blocks: readonly string[]): string[][] {
 	}, []);
 }
 
+/**
+ * A plain heading of the second level, as `parseProductContent` writes one: `<h2>text</h2>`. A heading
+ * with a role's mark never reaches here as a block of its own (it is that role's title), and a heading
+ * of the first level or the third is not the one the page takes for its own.
+ */
+const TITLE_BLOCK = /^<h2>([\s\S]*?)<\/h2>$/;
+
+/**
+ * The title CFM gives a description: its FIRST block, when that is a heading of the second level
+ * (`maky-content.md`, "The title of the description"). The card sets it as its own heading in place of
+ * the fixed words ("Popis produktu"), and the text goes on without it, so it is read once. A description
+ * with no such block has no title, and its card has no heading: the page does not say a thing nobody
+ * wrote. A heading further down is a heading of the text and stays where it is.
+ *
+ * The producer's side of the same rule is `leading_title` in CFM's `maky_content.py`.
+ */
+export function splitDescriptionTitle(blocks: readonly string[] | null | undefined): {
+	/** The title as sanitised inline HTML, or null. */
+	title: string | null;
+	/** The blocks that stay in the description's text. */
+	body: readonly string[];
+} {
+	const list = blocks ?? [];
+	const found = list.length > 0 ? TITLE_BLOCK.exec(list[0].trim()) : null;
+	const title = found?.[1].trim() ?? "";
+	if (!title) return { title: null, body: list };
+	return { title, body: list.slice(1) };
+}
+
+/**
+ * The opening heading of a description that has no title of its own, as an `h2`: a set page draws its
+ * introduction's heading (Kargo writes it as an `h3`) directly under the product's `h1`, and the card has
+ * no heading of its own over it, so it is the page's second-level heading. Anything else is returned as it is.
+ */
+export function liftLeadHeading(blocks: readonly string[]): string[] {
+	const [first, ...rest] = blocks;
+	if (first === undefined || !/^<h3[\s>]/.test(first) || !first.endsWith("</h3>")) return [...blocks];
+	return [`<h2${first.slice(3, -5)}</h2>`, ...rest];
+}
+
 /** The kind of section a card opens with (`maky:section:<kind>` on its heading), or null. */
 export function sectionKindOfHtml(section: readonly string[]): SectionKind | null {
 	const found = /^<h3 class="maky-sec maky-sec-([a-z]+)">/.exec(section[0] ?? "");

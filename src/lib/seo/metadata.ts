@@ -154,6 +154,12 @@ export function buildPageMetadata(options: {
 	titleSource?: "seo" | "fallback";
 	description?: string;
 	/**
+	 * Where the description came from. CFM's `seoDescription` is written to be read whole (70 to 155
+	 * characters is its recommendation, not a limit), so it is printed as sent; a fallback (the name) and
+	 * the other kinds of page keep the 155-character trim.
+	 */
+	descriptionSource?: "seo" | "fallback";
+	/**
 	 * The page's own image, when it has one. No dimensions are declared for it — they are
 	 * not known — and without one the page falls back to the generic share card instead of
 	 * shipping no og:image at all.
@@ -163,11 +169,24 @@ export function buildPageMetadata(options: {
 	/** Additional OpenGraph properties */
 	openGraph?: Record<string, string>;
 }): Metadata {
-	const { channel, title, titleSource = "fallback", description, image, url, openGraph: extraOg } = options;
+	const {
+		channel,
+		title,
+		titleSource = "fallback",
+		description,
+		descriptionSource = "fallback",
+		image,
+		url,
+		openGraph: extraOg,
+	} = options;
 
 	// Truncate for optimal display
 	const renderedTitle = titleSource === "seo" ? title : truncateText(title, 60);
-	const truncatedDescription = description ? truncateText(description, 155) : undefined;
+	const truncatedDescription = description
+		? descriptionSource === "seo"
+			? description
+			: truncateText(description, 155)
+		: undefined;
 
 	// The channel (main) layout defines a plain string title, which resets
 	// Next's title.template inheritance below it — the brand suffix must be

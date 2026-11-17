@@ -12,6 +12,12 @@ query ProductDetails(
 		description
 		seoTitle
 		seoDescription
+		# Public metadata: CFM writes the whole `<title>` here (`maky_seo_title:<language>`) when it is longer
+		# than Saleor's 70-character `seoTitle` field (`lib/seo/seo-title.ts`).
+		metadata {
+			key
+			value
+		}
 		translation(languageCode: $lang) {
 			name
 			slug
