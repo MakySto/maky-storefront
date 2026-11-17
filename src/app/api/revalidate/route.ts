@@ -5,7 +5,7 @@ import { extractBearerToken, verifySecret, verifyWebhookSignature } from "@/lib/
 import { getLocaleFromChannel } from "@/config/locale";
 import { CHANNEL_MAP, SALEOR_SLUGS } from "@/lib/channel-map";
 import { categoryBaseSlug, categorySegment } from "@/config/category-routes";
-import { parseWebhookPayload } from "@/lib/saleor/webhook-payload";
+import { parseIssuedAtMs, parseWebhookPayload } from "@/lib/saleor/webhook-payload";
 import { productMissTagFor } from "@/lib/saleor/product-cache-tags";
 import { forgetProductExistence } from "@/lib/route-existence";
 import { refreshLiveCategories } from "@/lib/live-categories";
@@ -15,6 +15,7 @@ import { invalidateKept } from "@/lib/cache/kept-read";
 import { abandonFlush, flushThrottled, submitThrottled } from "@/lib/revalidate-throttle";
 import { verifySaleorJws } from "@/lib/saleor/webhook-jws";
 import { detailAllowed, recordRevalidateRequest, type Outcome } from "@/lib/revalidate-stats";
+import { noteRevalidateArrival, revalidateWindowMs } from "@/lib/revalidate-load";
 
 /**
  * Webhook endpoint for cache invalidation.
@@ -165,10 +166,11 @@ function revalidateProductMisses(channel: string, locale: string, tags: string[]
  * Runs `work` through the throttle (`@/lib/revalidate-throttle`): now, or once at the end of the window
  * for every event that arrived inside it. The flush runs in `after()`, which keeps the request store the
  * revalidation calls need; its tags and paths are not in this request's response (they were not expired
- * by it), and the count of deferred units goes to the log.
+ * by it), and the count of deferred units goes to the log. `windowMs` is the request's own window: 30 s, or
+ * five minutes while a batch lasts (`@/lib/revalidate-load`).
  */
-function throttledRevalidation(key: string, work: () => void): "ran" | "deferred" {
-	const submitted = submitThrottled(key, work);
+function throttledRevalidation(key: string, work: () => void, windowMs: number): "ran" | "deferred" {
+	const submitted = submitThrottled(key, work, Date.now(), windowMs);
 	if (submitted.outcome === "ran") return "ran";
 	if (submitted.flushInMs !== null) {
 		const wait = submitted.flushInMs + 50;
@@ -196,6 +198,8 @@ interface RequestNote {
 	type?: string;
 	/** A verified Saleor event that was only logged. */
 	loggedOnly?: boolean;
+	/** Received minus `issuedAt`, for a signed delivery of Saleor that said when it was issued. */
+	delayMs?: number;
 }
 
 /**
@@ -205,10 +209,11 @@ interface RequestNote {
  */
 export async function POST(request: NextRequest) {
 	const started = performance.now();
+	const receivedAt = Date.now();
 	const note: RequestNote = {};
 	let response: Response | undefined;
 	try {
-		response = await handlePost(request, note);
+		response = await handlePost(request, note, receivedAt);
 		return response;
 	} finally {
 		const status = response?.status ?? 500;
@@ -226,11 +231,12 @@ export async function POST(request: NextRequest) {
 			type: note.type ?? request.headers.get("saleor-event") ?? undefined,
 			outcome,
 			ms: performance.now() - started,
+			...(note.delayMs !== undefined ? { delayMs: note.delayMs } : {}),
 		});
 	}
 }
 
-async function handlePost(request: NextRequest, note: RequestNote) {
+async function handlePost(request: NextRequest, note: RequestNote, receivedAt: number) {
 	// The bytes, not the text: a JWS with an unencoded payload is a signature over exactly these.
 	const bytes = new Uint8Array(await request.arrayBuffer());
 	const rawBody = Buffer.from(bytes).toString("utf8");
@@ -264,8 +270,19 @@ async function handlePost(request: NextRequest, note: RequestNote) {
 		}
 	}
 
+	// Past authentication: this request counts towards "a batch is running", which stretches the window.
+	noteRevalidateArrival(receivedAt);
+	const windowMs = revalidateWindowMs(receivedAt);
+	const throttled = (key: string, work: () => void) => throttledRevalidation(key, work, windowMs);
+
 	try {
 		const payload = JSON.parse(rawBody);
+
+		if (fromSaleor) {
+			// How long the notice took to get here, which Saleor reads to see whether its queue builds up.
+			const issuedAt = parseIssuedAtMs(payload);
+			if (issuedAt !== undefined) note.delayMs = receivedAt - issuedAt;
+		}
 
 		if (process.env.NODE_ENV === "development") {
 			console.log("[Revalidate] Raw payload:", JSON.stringify(payload, null, 2));
@@ -358,12 +375,12 @@ async function handlePost(request: NextRequest, note: RequestNote) {
 							revalidatedPaths,
 						);
 					}
-					if (throttledRevalidation(`list:${channel}`, expireProductList) === "deferred") deferred++;
+					if (throttled(`list:${channel}`, expireProductList) === "deferred") deferred++;
 					if (categorySlug) {
 						const base = categoryBaseSlug(channel, categorySlug);
 						const category = () =>
 							revalidateCategory(channel, locale, categorySlug, revalidatedTags, revalidatedPaths, "stale");
-						if (throttledRevalidation(`category:${channel}:${base}`, category) === "deferred") deferred++;
+						if (throttled(`category:${channel}:${base}`, category) === "deferred") deferred++;
 					}
 					// Saleor lists a category's products together with those of its subcategories, so the parent's
 					// listing changes with the product as well.
@@ -372,7 +389,7 @@ async function handlePost(request: NextRequest, note: RequestNote) {
 						const base = categoryBaseSlug(channel, parent);
 						const work = () =>
 							revalidateCategory(channel, locale, parent, revalidatedTags, revalidatedPaths, "stale");
-						if (throttledRevalidation(`category:${channel}:${base}`, work) === "deferred") deferred++;
+						if (throttled(`category:${channel}:${base}`, work) === "deferred") deferred++;
 					}
 					// Price, publication and purchasability all show on the generation pages too, and those
 					// read the product outside any `"use cache"` entry.
@@ -381,7 +398,7 @@ async function handlePost(request: NextRequest, note: RequestNote) {
 						revalidateProductMisses(channel, locale, revalidatedTags);
 						expireHomeAndSitemap();
 					};
-					if (throttledRevalidation(`market:${channel}`, rest) === "deferred") deferred++;
+					if (throttled(`market:${channel}`, rest) === "deferred") deferred++;
 					// Joining or leaving a collection shows on the collection's own page.
 					for (const collection of resource.collectionSlugs ?? []) {
 						const work = () =>
@@ -393,7 +410,7 @@ async function handlePost(request: NextRequest, note: RequestNote) {
 								revalidatedTags,
 								revalidatedPaths,
 							);
-						if (throttledRevalidation(`collection:${channel}:${collection}`, work) === "deferred") deferred++;
+						if (throttled(`collection:${channel}:${collection}`, work) === "deferred") deferred++;
 					}
 					break;
 				}
@@ -447,7 +464,7 @@ async function handlePost(request: NextRequest, note: RequestNote) {
 							revalidatedTags.push(tag);
 						}
 					};
-					if (throttledRevalidation(`menu:${channel}`, work) === "deferred") deferred++;
+					if (throttled(`menu:${channel}`, work) === "deferred") deferred++;
 					break;
 				}
 
@@ -464,8 +481,8 @@ async function handlePost(request: NextRequest, note: RequestNote) {
 						revalidateProductMisses(channel, locale, revalidatedTags);
 						expireHomeAndSitemap();
 					};
-					if (throttledRevalidation(`list:${channel}`, expireProductList) === "deferred") deferred++;
-					if (throttledRevalidation(`market:${channel}`, unnamed) === "deferred") deferred++;
+					if (throttled(`list:${channel}`, expireProductList) === "deferred") deferred++;
+					if (throttled(`market:${channel}`, unnamed) === "deferred") deferred++;
 				}
 			}
 

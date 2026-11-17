@@ -28,6 +28,7 @@ import { liveCategoriesStats, resetLiveCategoriesForTests } from "@/lib/live-cat
 import { installFakeSaleor } from "@/lib/live-categories.testkit";
 import { CHANNEL_MAP } from "@/lib/channel-map";
 import { REVALIDATE_WINDOW_MS, __resetRevalidateThrottle } from "@/lib/revalidate-throttle";
+import { BATCH_WINDOW_MS, __resetRevalidateLoad } from "@/lib/revalidate-load";
 import { __resetSaleorJwks } from "@/lib/saleor/webhook-jws";
 import { STATS_WINDOW_MS, __resetRevalidateStats, flushStats } from "@/lib/revalidate-stats";
 import { makeSaleorSigner } from "@/lib/saleor/webhook-jws.testkit";
@@ -55,6 +56,7 @@ beforeEach(() => {
 	vi.clearAllMocks();
 	afterCallbacks.length = 0;
 	__resetRevalidateThrottle();
+	__resetRevalidateLoad();
 	__resetSaleorJwks();
 	__resetRevalidateStats();
 	verifyWebhookSignature.mockReturnValue(true);
@@ -550,6 +552,51 @@ describe("a burst of product events (throttle, `@/lib/revalidate-throttle`)", ()
 		expect(pathCount("/at-eur/products")).toBe(2);
 	});
 
+	it("holds the market-wide entries for five minutes while a batch lasts, and the product page still goes at once", async () => {
+		vi.useFakeTimers();
+		// 150 events in a few seconds: past 100 a minute, so every window from there on is the batch's.
+		for (let n = 0; n < 150; n++) await post(productEvent(n));
+		expect(countOf("product:at-eur:de-AT:n149")).toBe(1);
+		expect(countOf("fitment-offers:at-eur")).toBe(1);
+
+		// The first window ran at the start of the burst: past its 30 s the next event would run again,
+		// as a quiet market would; in a batch it must wait for the five minutes.
+		vi.setSystemTime(Date.now() + REVALIDATE_WINDOW_MS + 1_000);
+		for (let n = 150; n < 200; n++) await post(productEvent(n));
+		expect(countOf("product:at-eur:de-AT:n199")).toBe(1);
+		expect(countOf("fitment-offers:at-eur")).toBe(1);
+		expect(countOf("category:at-eur:de-AT:stresne-nosice")).toBe(1);
+		expect(pathCount("/at-eur")).toBe(1);
+
+		// The flush asked for at the end of the window comes once the batch window is over, not before.
+		vi.setSystemTime(Date.now() + BATCH_WINDOW_MS);
+		await post(productEvent(200));
+		expect(countOf("fitment-offers:at-eur")).toBe(2);
+	});
+
+	it("keeps the 30 s window when only a few events arrive", async () => {
+		vi.useFakeTimers();
+		for (let n = 0; n < 20; n++) await post(productEvent(n));
+		vi.setSystemTime(Date.now() + REVALIDATE_WINDOW_MS + 1);
+		await post(productEvent(21));
+		expect(countOf("fitment-offers:at-eur")).toBe(2);
+	});
+
+	it("does not let refused requests make a batch", async () => {
+		vi.useFakeTimers();
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		verifyWebhookSignature.mockReturnValue(false);
+		verifySecret.mockReturnValue(false);
+		for (let n = 0; n < 300; n++) await post(productEvent(n));
+		verifyWebhookSignature.mockReturnValue(true);
+		verifySecret.mockReturnValue(true);
+
+		await post(productEvent(1));
+		vi.setSystemTime(Date.now() + REVALIDATE_WINDOW_MS + 1);
+		await post(productEvent(2));
+		expect(countOf("fitment-offers:at-eur")).toBe(2);
+	});
+
 	it("flushes nothing when nothing arrived inside the window, and the next event past it runs at once", async () => {
 		vi.useFakeTimers();
 		await post(productEvent(1));
@@ -793,6 +840,24 @@ describe("events signed by Saleor (JWS, plan 16. 11.)", () => {
 			.mock.calls.map((call) => String(call[0]))
 			.find((line) => line.startsWith("[revalidate-events]"));
 		expect(summary).toContain("unauthorized=30 key-unavailable=1");
+	});
+
+	it("reports how long a signed notice took to arrive, from issuedAt, in the minute's line", async () => {
+		const now = Date.now();
+		const issued = (agoMs: number) => new Date(now - agoMs).toISOString();
+		for (const agoMs of [100, 200, 300, 1_500]) {
+			await signed({ __typename: "ProductUpdated", issuedAt: issued(agoMs), product });
+		}
+		// A signed notice without issuedAt, and a bearer call of CFM's: no delay for either.
+		await signed({ __typename: "ProductUpdated", product });
+		await post({ product: { slug: "n1", channel: { slug: "at-eur" } }, issuedAt: issued(50_000) });
+
+		flushStats();
+		const summary = vi
+			.mocked(console.log)
+			.mock.calls.map((call) => String(call[0]))
+			.find((line) => line.startsWith("[revalidate-events]"));
+		expect(summary).toMatch(/ \| delay ms n=4 p95=1[45]\d\d max=1[45]\d\d$/);
 	});
 
 	it("ends its window on its own and prints the summary without another request", async () => {
