@@ -333,7 +333,12 @@ function renderBlock(block: EditorJSBlock): string | null {
 			const src = safeImageUrl(file.url ?? data.url);
 			if (!src) return null;
 			const caption = sanitizeInline(data.caption);
-			const alt = plainText(caption);
+			// The photograph's own alt (`withGalleryPhotos` takes it from the gallery, where CFM keeps it and
+			// Saleor does not drop it) is what a screen reader hears; the visible caption is another text and
+			// stays as the description has it. Without an alt the caption stands in, as it always did. The
+			// alt is plain text: its quotes and angle brackets are escaped, never read as markup.
+			const own = typeof data.alt === "string" ? data.alt.replace(/\s+/g, " ").trim() : "";
+			const alt = own ? escapeHtml(own) : plainText(caption);
 			const width = positiveDimension(data.width ?? file.width, 1024);
 			const height = positiveDimension(data.height ?? file.height, 768);
 			return `<figure><img src="${imageSource(

@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import { getComparisonLabels } from "@/lib/comparison-labels";
 import { getContentLabels } from "@/lib/content-labels";
 import { parseProductContent } from "@/lib/editorjs";
+import { withGalleryPhotos } from "@/lib/gallery-photos";
 import { formatProductAttributeValue, type AttributeInput } from "@/lib/product-attributes";
 import { layoutFor, liftSections, sheetFacts, templateFor } from "@/lib/product-templates";
 import { ProductHighlights } from "./product-highlights";
@@ -366,6 +367,172 @@ describe.each([
  * the description carries pictures of its own, so it is set as sections, the maker's PDFs get their card and
  * the gallery's second photo is not drawn beside it.
  */
+describe("a bike carrier's page (Pro-USER Diamant FG3)", async () => {
+	// The description is rebuilt from CFM's text preview of 18. 11. 2026 (`docs/contracts/maky-content/`
+	// `nosic-bicyklov-diamant-fg3.description.json`), not CFM's own document: it shows what the reader makes of
+	// that text, not what Saleor holds. The gallery's items are fixtures too, with the alt CFM wrote for each.
+	const sample = readFileSync(
+		path.join(process.cwd(), "docs/contracts/maky-content/nosic-bicyklov-diamant-fg3.description.json"),
+		"utf8",
+	);
+	const ALTS: Record<string, string> = {
+		"fg3-sklopeny.jpg": "Nosič Pro-USER Diamant FG3 sklopený aj s bicyklami na ťažnom zariadení auta",
+		"fg3-predny.jpg":
+			"Nosič 3 bicyklov Pro-USER Diamant FG3 – pohľad zozadu so svetlami a držiakom evidenčného čísla",
+		"fg3-rameno.jpg": "Odnímateľné upínacie rameno nosiča Pro-USER Diamant FG3",
+		"fg3-popruh-ebike.jpg": "Široký uzamykateľný popruh upínacieho ramena na ráme elektrobicykla",
+		"fg3-zlozeny.jpg": "Zložený nosič bicyklov Pro-USER Diamant FG3",
+		"rozsirenie-91749.jpg": "Prídavný nosič +1 bicykel Pro-USER pre rad Diamant FG",
+	};
+	const media = Object.entries(ALTS).map(([name, alt]) => ({
+		url: `https://cdn.maky.store/media/products/${name}`,
+		photo: `https://cdn.maky.store/thumbnails/products/${name}_1024.webp`,
+		type: "IMAGE",
+		alt,
+		metadata: [{ key: "cfm_source_url", value: `https://carfitmanager.com/media/fixture/${name}` }],
+	}));
+	const labels = await getContentLabels(SK, "sk-eur");
+	const attributes = [
+		attribute("bike_capacity", "Počet bicyklov", "3"),
+		attribute("max_load", "Max. nosnosť", "60"),
+		attribute("weight", "Hmotnosť nosiča", "22,3"),
+		{
+			attribute: {
+				name: "Vhodný pre e-bike",
+				slug: "ebike-compatible",
+				externalReference: "cfm:attribute:ebike_compatible",
+				inputType: "BOOLEAN",
+				unit: null,
+			},
+			values: [{ name: "Áno", boolean: true }],
+		},
+		attribute("manufacturer", "Výrobca", "Pro-USER"),
+	] as AttributeInput[];
+
+	const prepare = (description: string) => {
+		const content = parseProductContent(withGalleryPhotos(description, media), { content: labels });
+		const template = layoutFor(templateFor(content?.template), content?.blocks ?? []);
+		return { content, template, sections: liftSections(content?.blocks ?? [], template) };
+	};
+	const { content, template, sections } = prepare(sample);
+	const page = () =>
+		render(
+			ProductSpecs({
+				descriptionHtml: sections.description,
+				documents: sections.documents,
+				specs: sections.specs,
+				template,
+				attributes,
+				locale: SK,
+				image: { url: "/gallery-second.jpg", alt: "druhá fotka galérie" },
+			}),
+		);
+
+	it("is read as the bike carrier's template, as sections, with nothing the reader had to refuse", () => {
+		expect(content?.template).toBe("nosic-bicyklov");
+		expect(content?.issues).toEqual([]);
+		expect(template.id).toBe("nosic-bicyklov");
+		expect(template.sections).toBe(true);
+	});
+
+	it("says each parameter once: an attribute the sheet already names is not a second row, whatever its value says", async () => {
+		const html = await page();
+		const sheet = html.slice(
+			html.indexOf('id="technical-parameters"'),
+			html.indexOf('id="product-documents"'),
+		);
+		// The sheet's own wording stays ("3 (+1 s rozšírením TK91749)"), the attribute's "3" is not printed beside it.
+		expect(sheet.match(/<dt[^>]*>Počet bicyklov<\/dt>/g)).toHaveLength(1);
+		expect(rowValue(sheet, "Počet bicyklov")).toBe("3 (+1 s rozšírením TK91749)");
+		expect(sheet.match(/<dt[^>]*>Max\. nosnosť<\/dt>/g)).toHaveLength(1);
+		expect(rowValue(sheet, "Max. nosnosť")).toBe("60 kg");
+		expect(sheet.match(/<dt[^>]*>Vhodný pre e-bike<\/dt>/g)).toHaveLength(1);
+		// What the sheet does not say is kept: the maker is the product's own.
+		expect(rowValue(sheet, "Výrobca")).toBe("Pro-USER");
+		// The sheet keeps the producer's groups.
+		for (const group of ["Kapacita", "Bicykle", "Upevnenie na auto", "Funkcie a zabezpečenie", "Rozmery"]) {
+			expect(sheet).toContain(group);
+		}
+	});
+
+	it("calls each photograph by the alt CFM wrote in the gallery, and keeps its caption as the caption", async () => {
+		const html = await page();
+		for (const [name, alt] of Object.entries(ALTS)) {
+			expect(html, name).toContain(
+				`src="https://cdn.maky.store/thumbnails/products/${name}_1024.webp" alt="${alt}"`,
+			);
+		}
+		expect(html).toContain(
+			"<figcaption>Sklopený nosič s naloženými bicyklami uvoľní prístup k piatym dverám.</figcaption>",
+		);
+		// The alt is not the caption's text, and the caption is not the alt's.
+		expect(html).not.toContain('alt="Sklopený nosič s naloženými bicyklami uvoľní');
+		expect(html).not.toContain(`<figcaption>${ALTS["fg3-sklopeny.jpg"]}</figcaption>`);
+		expect(html.match(/<figcaption>/g)?.length).toBeGreaterThanOrEqual(6);
+	});
+
+	it("falls back to the caption as the alt for a photograph the gallery does not hold, as before", async () => {
+		const { sections: bare } = prepare(
+			sample.replace(
+				/"https:\/\/carfitmanager\.com\/media\/fixture\/fg3-rameno\.jpg"/,
+				'"https://carfitmanager.com/media/fixture/unknown.jpg"',
+			),
+		);
+		const html = await render(
+			ProductSpecs({ descriptionHtml: bare.description, template, attributes: [], locale: SK }),
+		);
+		expect(html).toContain('alt="Upínacie ramená sa dajú nasadiť aj odobrať."');
+	});
+
+	it("keeps the producer's facts in the text, next to the paragraph that asks the shopper to compare them", async () => {
+		const html = await page();
+		const card = html.slice(html.indexOf('<article id="product-description"'), html.indexOf("</article>"));
+		expect(sections.facts).toBeNull();
+		expect(card).toContain("maky-tiles");
+		for (const value of ["3 bicykle (+1)", "135 cm", "8 cm", "35 cm", "23 cm"]) expect(card).toContain(value);
+		expect(card.indexOf("Aké bicykle na nosič naložíte")).toBeLessThan(card.indexOf("maky-tiles"));
+	});
+
+	it("opens with the band the product's attributes make, not with rows of the sheet", async () => {
+		const band = await render(
+			ProductHighlights({ attributes, locale: SK, template, sheet: sheetFacts(sections, template) }),
+		);
+		expect(band).toContain("Pre 3 bicykle");
+		expect(band).not.toContain("Počet bicyklov");
+		expect(sheetFacts(sections, template)).toEqual([]);
+	});
+
+	it("sets the maker's manual in a card of its own, after the parameters and before the questions", async () => {
+		const html = await page();
+		expect(html).toContain('href="#product-documents"');
+		expect(html.indexOf('id="technical-parameters"')).toBeLessThan(html.indexOf('id="product-documents"'));
+		expect(html.indexOf('id="product-documents"')).toBeLessThan(html.indexOf('id="product-faq"'));
+		const documents = html.slice(html.indexOf('id="product-documents"'), html.indexOf('id="product-faq"'));
+		expect(documents).toContain("Návod výrobcu (PDF)");
+		expect(documents).toContain("Pro-USER Diamant FG – návod na montáž a bezpečnostné pokyny");
+		// Once: not in the assembly section as well.
+		expect(html.match(/návod na montáž a bezpečnostné pokyny/g)).toHaveLength(1);
+	});
+
+	it("does not draw the gallery's second photo beside the description, which shows its own", async () => {
+		expect(await page()).not.toContain("druhá fotka galérie");
+	});
+
+	it("puts the two films in the text with the click that opens them, and loads nothing of YouTube", async () => {
+		const html = await page();
+		expect(html.match(/maky-video-a/g)).toHaveLength(2);
+		expect(html).not.toContain("<iframe");
+	});
+
+	it("is the generic page for the same document without the template's name: nothing is lifted", () => {
+		const unnamed = JSON.stringify({ ...(JSON.parse(sample) as object), version: "maky-content/1" });
+		const generic = prepare(unnamed);
+		expect(generic.template.id).toBe("generic");
+		expect(generic.sections.specs).toBeNull();
+		expect(generic.sections.documents).toBeNull();
+	});
+});
+
 describe("a Kargo set's page", async () => {
 	const sample = readFileSync(
 		path.join(process.cwd(), "docs/contracts/maky-content/set-kargo-crafter-NKR9944.description.json"),

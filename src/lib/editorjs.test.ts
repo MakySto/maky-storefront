@@ -36,6 +36,57 @@ describe("safe Editor.js rendering", () => {
 		expect(result).toContain('loading="lazy"');
 	});
 
+	it("calls a photograph by its own alt when the block has one, and keeps the caption as the visible text", () => {
+		const result = parseEditorJSToHtml(
+			document([
+				{
+					type: "image",
+					data: {
+						file: { url: "https://img.example/rack.webp" },
+						caption: "Upínacie ramená sa dajú odobrať.",
+						alt: "Rameno nosiča",
+					},
+				},
+			]),
+		)?.join("");
+		expect(result).toContain('alt="Rameno nosiča"');
+		expect(result).toContain("<figcaption>Upínacie ramená sa dajú odobrať.</figcaption>");
+	});
+
+	it("falls back to the caption for the alt when the block has none or a blank one", () => {
+		for (const alt of [undefined, "", "   ", 7, null]) {
+			const result = parseEditorJSToHtml(
+				document([
+					{ type: "image", data: { file: { url: "https://img.example/rack.webp" }, caption: "Nosič", alt } },
+				]),
+			)?.join("");
+			expect(result, String(alt)).toContain('alt="Nosič"');
+		}
+	});
+
+	it("never lets a quote or a tag in an alt out of its attribute", () => {
+		const result = parseEditorJSToHtml(
+			document([
+				{
+					type: "image",
+					data: { file: { url: "https://img.example/rack.webp" }, alt: '" onerror="x" <i>FG3</i> &' },
+				},
+			]),
+		)?.join("");
+		expect(result).toContain('alt="&quot; onerror=&quot;x&quot; &lt;i&gt;FG3&lt;/i&gt; &amp;"');
+		// Whatever the alt says, the tag carries the six attributes it always does and no other.
+		const tag = /<img [^>]*>/.exec(result ?? "")?.[0] ?? "";
+		expect(tag.match(/ ([a-z]+)="/g)?.map((name) => name.trim())).toEqual([
+			'src="',
+			'alt="',
+			'width="',
+			'height="',
+			'loading="',
+			'decoding="',
+		]);
+		expect(result?.match(/<img /g)).toHaveLength(1);
+	});
+
 	it("asks this site's optimizer for a photograph that CFM serves", () => {
 		const url = "https://carfitmanager.com/media/kargo/ford-tourneo-courier-b460.jpg";
 		const result = parseEditorJSToHtml(
