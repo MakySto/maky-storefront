@@ -17,11 +17,13 @@ import { readGarage } from "@/lib/garage/state";
 import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import { ConfiguratorResults, type ResultCard } from "@/ui/components/vehicle/configurator-results";
 import { VehicleSelectorLauncher } from "@/ui/components/vehicle/vehicle-selector-launcher";
+import { draftFromVehicle } from "@/ui/components/vehicle/draft-from-vehicle";
 import { VehicleSummary } from "@/ui/components/vehicle/vehicle-summary";
 import {
 	BODY_LABEL_KEY,
 	CONDITION_LABEL_KEY,
 	ROOF_LABEL_KEY,
+	variantLabelKey,
 } from "@/ui/components/fitment/verdict-presentation";
 import { cn } from "@/lib/utils";
 
@@ -99,6 +101,9 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 	const qualifierLabels = [
 		active.stored.b ? tf(BODY_LABEL_KEY[active.stored.b]) : null,
 		active.stored.r ? tf(ROOF_LABEL_KEY[active.stored.r]) : tf("roofUnconfirmed"),
+		// The roof variants the car's generation asks: an unanswered one is said as such, so the shopper
+		// can see why sets made for one version are not listed (see `resolve.ts`, "qualifier-not-answered").
+		...active.variants.map((variant) => tf(variantLabelKey(variant))),
 	].filter((v): v is string => Boolean(v));
 
 	const outcome = resolveVehicleOutcome(dataset, active.selection);
@@ -163,6 +168,23 @@ async function ConfiguratorContent({ channel }: { channel: string }) {
 				qualifiers={qualifierLabels}
 				isDemo={isDemo}
 			/>
+
+			{/* The car's generation asks about a version of the car (glass roof, a van's roof height) and the
+			    shopper has not said: sets made for one version are held back, and this says why and lets them
+			    answer in place (Garage: a car saved before the question existed is asked again, not assumed). */}
+			{active.variants.some((variant) => variant.value === null) && (
+				<div className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed rounded-lg border border-current/15 p-4">
+					<p className="text-sm font-medium">{tf("variantPendingTitle")}</p>
+					<p className="mt-1 text-sm opacity-90">{tf("variantPendingDetail")}</p>
+					<div className="mt-3">
+						<VehicleSelectorLauncher
+							variant="inline"
+							label={tf("answerVariant")}
+							initialDraft={draftFromVehicle(active)}
+						/>
+					</div>
+				</div>
+			)}
 
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">

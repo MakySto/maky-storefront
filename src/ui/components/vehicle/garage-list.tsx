@@ -17,7 +17,8 @@ import { Car, Check, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { cn } from "@/lib/utils";
 import { removeVehicle, setActiveVehicle } from "@/lib/garage/actions";
-import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
+import { ROOF_LABEL_KEY, variantLabelKey } from "@/ui/components/fitment/verdict-presentation";
+import { type VariantDetail } from "@/lib/garage/label";
 import { type RoofType } from "@/lib/fitment/contract";
 import { ChooseGeneration } from "./choose-generation";
 
@@ -27,6 +28,8 @@ export type GarageListVehicle = {
 	generationName: string | null;
 	year: number;
 	roofType: RoofType | null;
+	/** The glass-roof / roof-height questions the car's generation asks, with the answers given. */
+	variants?: VariantDetail[];
 	unresolved: boolean;
 	/** The car's generation was merged by CFM and the year does not settle which remains. */
 	choose?: { makeId: string; modelId: string; options: string[] } | null;
@@ -114,6 +117,7 @@ export function GarageList({
 									<p className="text-text-tertiary text-sm">
 										{vehicle.year}
 										{` · ${vehicle.roofType ? tf(ROOF_LABEL_KEY[vehicle.roofType]) : tf("roofUnconfirmed")}`}
+										{(vehicle.variants ?? []).map((variant) => ` · ${tf(variantLabelKey(variant))}`)}
 									</p>
 								</>
 							)}

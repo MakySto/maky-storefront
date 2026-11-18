@@ -138,6 +138,9 @@ export function VehicleQuickSelect({
 		!qualifiers?.roofTypes &&
 		!qualifiers?.bodyTypes &&
 		!qualifiers?.doors &&
+		// A glass roof / a high roof is asked where the generation's sets differ in it: the sheet asks it.
+		!qualifiers?.glassRoof &&
+		!qualifiers?.roofHeight &&
 		!step?.monthDecides;
 
 	const confirm = () => {

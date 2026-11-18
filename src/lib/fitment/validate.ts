@@ -19,6 +19,9 @@
 import {
 	BODY_TYPES,
 	EVIDENCE_KINDS,
+	GLASS_ROOF_VALUES,
+	QUALIFIER_VARIANTS_SINCE,
+	ROOF_HEIGHT_VALUES,
 	PRODUCT_KINDS,
 	QA_STATUSES,
 	ROOF_TYPES,
@@ -174,7 +177,13 @@ function isNonEmptyString(value: unknown): value is string {
 }
 
 /** An empty array on a qualifier is a data error: it reads as "no value fits". */
-function validateQualifiers(raw: unknown, path: string, errors: string[]): void {
+function validateQualifiers(
+	raw: unknown,
+	path: string,
+	errors: string[],
+	/** The dataset's declared version: the roof variants exist only from `QUALIFIER_VARIANTS_SINCE`. */
+	schemaVersion?: string,
+): void {
 	if (raw === undefined) return;
 	if (!isRecord(raw)) {
 		errors.push(`${path}: qualifiers must be an object`);
@@ -184,10 +193,18 @@ function validateQualifiers(raw: unknown, path: string, errors: string[]): void 
 		["roofTypes", ROOF_TYPES],
 		["bodyTypes", BODY_TYPES],
 		["doors", "number"],
+		["glassRoof", GLASS_ROOF_VALUES],
+		["roofHeight", ROOF_HEIGHT_VALUES],
 	];
 	for (const [key, allowed] of checks) {
 		const value = raw[key];
 		if (value === undefined) continue;
+		// A 3.0.0 file that carries a roof variant would be read by every older build as a file without
+		// it, so a set made for one variant would be offered for both. Refused here, by name.
+		if ((key === "glassRoof" || key === "roofHeight") && schemaVersion !== QUALIFIER_VARIANTS_SINCE) {
+			errors.push(`${path}.${key}: needs schemaVersion ${QUALIFIER_VARIANTS_SINCE}`);
+			continue;
+		}
 		if (!Array.isArray(value)) {
 			errors.push(`${path}.${key}: must be an array`);
 			continue;
@@ -242,6 +259,8 @@ export function validateFitmentDataset(raw: unknown, options: ValidateOptions = 
 	const warnings: string[] = [];
 
 	if (!isRecord(raw)) return { ok: false, errors: ["dataset is not an object"] };
+
+	const schemaVersion = typeof raw.schemaVersion === "string" ? raw.schemaVersion : undefined;
 
 	// Exact match, not "any compatible major". Accepting `2.1` because it looked close
 	// enough is precisely how a dataset carrying month boundaries would have been read as
@@ -384,7 +403,7 @@ export function validateFitmentDataset(raw: unknown, options: ValidateOptions = 
 		if (generation.productionYearTo !== null && typeof generation.productionYearTo !== "number") {
 			errors.push(`generations[${i}]: productionYearTo must be a number or null`);
 		}
-		validateQualifiers(generation.qualifiers, `generations[${i}].qualifiers`, errors);
+		validateQualifiers(generation.qualifiers, `generations[${i}].qualifiers`, errors, schemaVersion);
 	}
 
 	const applicationIds = new Set<string>();
@@ -403,7 +422,7 @@ export function validateFitmentDataset(raw: unknown, options: ValidateOptions = 
 			errors.push(`${path}: unknown generationId "${String(application.generationId)}"`);
 		}
 		validateWindow(application.window, `${path}.window`, errors);
-		validateQualifiers(application.qualifiers, `${path}.qualifiers`, errors);
+		validateQualifiers(application.qualifiers, `${path}.qualifiers`, errors, schemaVersion);
 
 		if (!Array.isArray(application.conditions)) {
 			errors.push(`${path}: conditions must be an array`);

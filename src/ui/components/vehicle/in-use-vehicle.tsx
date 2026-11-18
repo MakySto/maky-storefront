@@ -21,19 +21,22 @@ import { Car, Loader2, Plus } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { saveActiveVehicle } from "@/lib/garage/actions";
 import { GARAGE_MAX_VEHICLES } from "@/lib/garage/limits";
-import { joinVehicleDetail } from "@/lib/garage/label";
-import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
+import { joinVehicleDetail, type VariantDetail } from "@/lib/garage/label";
+import { ROOF_LABEL_KEY, variantLabelKey } from "@/ui/components/fitment/verdict-presentation";
 import { type RoofType } from "@/lib/fitment/contract";
 
 export function InUseVehicle({
 	label,
 	year,
 	roofType,
+	variants = [],
 	atLimit,
 }: {
 	label: string | null;
 	year: number;
 	roofType: RoofType | null;
+	/** The glass-roof / roof-height questions this car's generation asks, with the answers given. */
+	variants?: VariantDetail[];
 	atLimit: boolean;
 }) {
 	const t = useTranslations("garage");
@@ -43,6 +46,7 @@ export function InUseVehicle({
 	const details = joinVehicleDetail([
 		String(year),
 		roofType ? tf(ROOF_LABEL_KEY[roofType]) : tf("roofUnconfirmed"),
+		...variants.map((variant) => tf(variantLabelKey(variant))),
 	]);
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);

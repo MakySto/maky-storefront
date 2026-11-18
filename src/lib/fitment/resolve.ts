@@ -32,6 +32,9 @@ import {
 	type FitmentQualifiers,
 	type FitmentResult,
 	type FitmentVerdict,
+	type GlassRoof,
+	type RoofHeight,
+	type VariantKey,
 	isInconclusiveVerdict,
 	type ProductKind,
 	type VehicleSelection,
@@ -106,14 +109,59 @@ function matchQualifier<T>(constrained: T[] | undefined, answer: T | undefined):
 }
 
 function matchQualifiers(qualifiers: FitmentQualifiers, selection: VehicleSelection): QualifierMatch {
-	const outcomes: QualifierMatch[] = [
+	return matchQualifiersDetailed(qualifiers, selection).outcome;
+}
+
+/**
+ * The same comparison, with the part the roof variants play kept apart.
+ *
+ * `glassRoof` and `roofHeight` are not like the other qualifiers: they say which of two versions of
+ * ONE car a set was made for, and the same set is sold for the other version as another set. A miss
+ * on them is therefore not an absence of data but a statement ("this set is for the car without a
+ * glass roof"), and an unanswered one is a question the shopper can be asked by name.
+ *
+ *   - `variantMiss`: the application misses on a variant the shopper answered, and on nothing else
+ *     (an unanswered roof type does not matter: no roof turns the other version's set into this one's).
+ *     This is what `resolveFitment` may call NO_FIT without a complete make.
+ *   - `unanswered`: the variants the application constrains and the shopper has not answered.
+ */
+function matchQualifiersDetailed(
+	qualifiers: FitmentQualifiers,
+	selection: VehicleSelection,
+): { outcome: QualifierMatch; variantMiss: boolean; unanswered: VariantKey[] } {
+	const others: QualifierMatch[] = [
 		matchQualifier(qualifiers.roofTypes, selection.roofType),
 		matchQualifier(qualifiers.bodyTypes, selection.bodyType),
 		matchQualifier(qualifiers.doors, selection.doors),
 	];
-	if (outcomes.includes("miss")) return "miss";
-	if (outcomes.includes("undecidable")) return "undecidable";
-	return "match";
+	const variants: [VariantKey, QualifierMatch][] = [
+		["glassRoof", matchQualifier<GlassRoof>(qualifiers.glassRoof, selection.glassRoof)],
+		["roofHeight", matchQualifier<RoofHeight>(qualifiers.roofHeight, selection.roofHeight)],
+	];
+	const unanswered = variants.filter(([, m]) => m === "undecidable").map(([key]) => key);
+	const outcomes = [...others, ...variants.map(([, m]) => m)];
+	const variantMiss =
+		variants.some(([, m]) => m === "miss") && others.every((m) => m !== "miss") && unanswered.length === 0;
+	if (outcomes.includes("miss")) return { outcome: "miss", variantMiss, unanswered };
+	if (outcomes.includes("undecidable")) return { outcome: "undecidable", variantMiss: false, unanswered };
+	return { outcome: "match", variantMiss: false, unanswered: [] };
+}
+
+/** The variants a set is made for, as its own applications state them — each value once, in the contract's order. */
+function variantsMadeFor(applications: FitmentApplication[]): {
+	glassRoof?: GlassRoof[];
+	roofHeight?: RoofHeight[];
+} {
+	const glass = new Set<GlassRoof>();
+	const height = new Set<RoofHeight>();
+	for (const application of applications) {
+		for (const value of application.qualifiers.glassRoof ?? []) glass.add(value);
+		for (const value of application.qualifiers.roofHeight ?? []) height.add(value);
+	}
+	return {
+		...(glass.size > 0 ? { glassRoof: (["with", "without"] as const).filter((v) => glass.has(v)) } : {}),
+		...(height.size > 0 ? { roofHeight: (["standard", "high"] as const).filter((v) => height.has(v)) } : {}),
+	};
 }
 
 /**
@@ -244,6 +292,13 @@ export function resolveFitment(
 	const positives: FitmentApplication[] = [];
 	const negatives: FitmentApplication[] = [];
 	let undecidable = false;
+	/** The roof variants (`glassRoof`, `roofHeight`) the shopper has not answered and an application needs. */
+	const unansweredVariants = new Set<VariantKey>();
+	/**
+	 * Applications of this product that cover the shopper's year and every other answer, and miss on
+	 * the roof variant only: the set exists, for the other version of this car.
+	 */
+	const variantMisses: FitmentApplication[] = [];
 	/** A window that only the manufacture month can settle. */
 	let needsMonth = false;
 	/**
@@ -266,10 +321,14 @@ export function resolveFitment(
 			}
 			continue;
 		}
-		const qualifier = matchQualifiers(application.qualifiers, selection);
-		if (qualifier === "miss") continue;
-		if (qualifier === "undecidable") {
+		const detailed = matchQualifiersDetailed(application.qualifiers, selection);
+		if (detailed.outcome === "miss") {
+			if (detailed.variantMiss && !application.negative) variantMisses.push(application);
+			continue;
+		}
+		if (detailed.outcome === "undecidable") {
 			undecidable = true;
+			for (const key of detailed.unanswered) unansweredVariants.add(key);
 			continue;
 		}
 		(application.negative ? negatives : positives).push(application);
@@ -349,7 +408,11 @@ export function resolveFitment(
 	// An unanswered qualifier outranks an absent row: we should ask the question before
 	// concluding anything, including "no".
 	if (undecidable) {
-		return { ...emptyResult("AMBIGUOUS", "qualifier-not-answered", dataset), coverage };
+		return {
+			...emptyResult("AMBIGUOUS", "qualifier-not-answered", dataset),
+			coverage,
+			...(unansweredVariants.size > 0 ? { variant: { ask: [...unansweredVariants] } } : {}),
+		};
 	}
 
 	// A window we could have matched if the shopper had told us their month. Never rounded into a
@@ -370,6 +433,18 @@ export function resolveFitment(
 			...emptyResult("NO_FIT", "explicit-negative-row", dataset),
 			coverage,
 			conditions: dedupeConditions(negatives),
+		};
+	}
+
+	// The set is documented for the OTHER version of this very car (the one with, or without, a glass
+	// roof; the high or the standard roof). That is not an absence: the source names this product, for
+	// this generation and these years, and says which version it is for. The shopper answered, and the
+	// answer is the other one. Only for a named product: a vehicle-level question has no set to speak for.
+	if (variantMisses.length > 0 && options.saleorProductId) {
+		return {
+			...emptyResult("NO_FIT", "other-roof-variant", dataset),
+			coverage,
+			variant: { madeFor: variantsMadeFor(variantMisses) },
 		};
 	}
 

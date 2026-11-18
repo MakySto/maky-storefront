@@ -72,3 +72,22 @@ export function roofOptionsFor(
 			generation.qualifiers?.roofTypes?.filter((r): r is NonNullable<typeof r> => Boolean(r)) ?? null,
 	});
 }
+
+/**
+ * The glass-roof / roof-height answer: stored when the generation asks and the shopper gave one,
+ * never invented, and dropped for a generation that does not ask.
+ *
+ * "Neviem" arrives as `undefined` and leaves as `undefined`: the car is kept, the resolver cannot say
+ * which version of a set is theirs, and the sets made for one version only are not offered. Refusing
+ * the save would be wrong (the car is real); filling in the common version would be wrong too, and
+ * is exactly what this question exists to prevent. A value outside the contract is refused.
+ */
+export function resolveVariantAnswer<T extends string>(
+	asked: boolean,
+	allowed: readonly T[],
+	answer: T | undefined,
+): T | "invalid" | undefined {
+	if (answer === undefined) return undefined;
+	if (!asked) return undefined;
+	return allowed.includes(answer) ? answer : "invalid";
+}
