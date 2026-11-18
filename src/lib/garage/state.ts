@@ -19,7 +19,9 @@ import "server-only";
 import { cookies } from "next/headers";
 
 import { type FitmentDataset, type VehicleSelection, vehicleNodeName } from "@/lib/fitment/contract";
+import { variantAsked } from "@/lib/fitment/selector-plan";
 import { resolveGarageMode } from "./config";
+import { variantDetails, type VariantDetail } from "./label";
 import {
 	decodeGarageCookie,
 	EMPTY_GARAGE,
@@ -45,6 +47,12 @@ export type ResolvedVehicle = {
 	 * dropped, and it is never matched to a near-miss.
 	 */
 	unresolved: boolean;
+	/**
+	 * The roof variants the car's generation asks about, each with what the shopper said (`null` =
+	 * not said, e.g. a car saved before the question existed). Empty for a car that does not differ in
+	 * them: nothing extra is asked or shown for it.
+	 */
+	variants: VariantDetail[];
 	/**
 	 * Set when the car's generation was merged or dissolved by CFM and its year does not settle
 	 * which of the generations that remain is the shopper's. `unresolved` is true as well, so every
@@ -143,6 +151,18 @@ function labelsFor(dataset: FitmentDataset | null, vehicle: StoredVehicle, langu
 	};
 }
 
+function variantsFor(dataset: FitmentDataset | null, vehicle: StoredVehicle): VariantDetail[] {
+	if (!dataset) return [];
+	const generation = dataset.generations.find((g) => g.id === vehicle.g);
+	if (!generation) return [];
+	const q = generation.qualifiers ?? {};
+	const subject = { id: generation.id, glassRoof: q.glassRoof, roofHeight: q.roofHeight };
+	const asked = (["glassRoof", "roofHeight"] as const).filter((key) =>
+		variantAsked(dataset.applications, subject, key),
+	);
+	return variantDetails(asked, vehicle);
+}
+
 function resolveOne(
 	dataset: FitmentDataset | null,
 	stored: StoredVehicle,
@@ -150,7 +170,12 @@ function resolveOne(
 	language?: string | null,
 ): ResolvedVehicle {
 	if (!dataset || !choice) {
-		return { stored, selection: toVehicleSelection(stored), ...labelsFor(dataset, stored, language) };
+		return {
+			stored,
+			selection: toVehicleSelection(stored),
+			...labelsFor(dataset, stored, language),
+			variants: variantsFor(dataset, stored),
+		};
 	}
 	const options = choice.candidates
 		.map((id) => dataset.generations.find((g) => g.id === id))
@@ -169,6 +194,7 @@ function resolveOne(
 		...labelsFor(dataset, choice.vehicle, language),
 		generationName: null,
 		unresolved: true,
+		variants: [],
 		choose: { makeId: choice.vehicle.k, modelId: choice.vehicle.m, candidates: options },
 	};
 }

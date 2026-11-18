@@ -14,6 +14,7 @@ import { datasetSpeaksForProduct, resolveFitment } from "@/lib/fitment/resolve";
 import { GARAGE_COOKIE_NAME } from "@/lib/garage/cookie";
 import {
 	joinVehicleDetail,
+	vehicleDisplayName,
 	vehicleDetailParts,
 	vehicleModelLabel,
 	vehicleShortLabel,
@@ -21,7 +22,8 @@ import {
 import { readGarage } from "@/lib/garage/state";
 import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
-import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
+import { ROOF_LABEL_KEY, variantLabelKey } from "@/ui/components/fitment/verdict-presentation";
+import { draftFromVehicle } from "@/ui/components/vehicle/draft-from-vehicle";
 import { VehicleSelectorLauncher } from "@/ui/components/vehicle/vehicle-selector-launcher";
 import { CompatibilityBox } from "./compatibility-box";
 import { IntendedForBox } from "./intended-for-box";
@@ -195,24 +197,35 @@ async function renderCompatibility({
 	// verdict, so this is belt and braces rather than a reachable branch.
 	const deadEnd = result.verdict === "NO_FIT" || (result.verdict === "UNKNOWN" && active !== null);
 
-	const action = deadEnd ? (
-		<LinkWithChannel
-			href="/konfigurator"
-			className="border-border-default text-text-primary hover:bg-surface-muted inline-flex h-10 items-center rounded-md border px-3 text-sm font-medium transition-colors"
-		>
-			{t("showCompatible")}
-		</LinkWithChannel>
-	) : vehicleLabel ? (
-		// The car is named in the box already: the action is a quiet "Zmeniť vozidlo", once.
-		<VehicleSelectorLauncher
-			variant="link"
-			label={t("changeVehicle")}
-			vehicleLabel={vehicleLabel}
-			className="min-h-7 text-sm"
-		/>
-	) : (
-		<VehicleSelectorLauncher variant="inline" />
-	);
+	// An open question about a roof variant is answered where the shopper meets it: the window opens on
+	// their car, and asks only what is missing.
+	const asksVariant = result.verdict === "AMBIGUOUS" && (result.variant?.ask?.length ?? 0) > 0;
+
+	const action =
+		asksVariant && active ? (
+			<VehicleSelectorLauncher
+				variant="inline"
+				label={t("answerVariant")}
+				initialDraft={draftFromVehicle(active)}
+			/>
+		) : deadEnd ? (
+			<LinkWithChannel
+				href="/konfigurator"
+				className="border-border-default text-text-primary hover:bg-surface-muted inline-flex h-10 items-center rounded-md border px-3 text-sm font-medium transition-colors"
+			>
+				{t("showCompatible")}
+			</LinkWithChannel>
+		) : vehicleLabel ? (
+			// The car is named in the box already: the action is a quiet "Zmeniť vozidlo", once.
+			<VehicleSelectorLauncher
+				variant="link"
+				label={t("changeVehicle")}
+				vehicleLabel={vehicleLabel}
+				className="min-h-7 text-sm"
+			/>
+		) : (
+			<VehicleSelectorLauncher variant="inline" />
+		);
 
 	// The configuration the answer is about. The roof decides which feet fit, so an
 	// unconfirmed one is stated as unconfirmed rather than left blank — a shopper cannot
@@ -221,6 +234,7 @@ async function renderCompatibility({
 	const vehicleDetail = active
 		? joinVehicleDetail([
 				detail.roofType ? t(ROOF_LABEL_KEY[detail.roofType]) : t("roofUnconfirmed"),
+				...(active?.variants ?? []).map((variant) => t(variantLabelKey(variant))),
 				detail.month
 					? new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(2000, detail.month - 1))
 					: null,
@@ -231,6 +245,7 @@ async function renderCompatibility({
 		<CompatibilityBox
 			result={result}
 			vehicleLabel={vehicleLabel}
+			vehicleName={vehicleDisplayName(active)}
 			vehicleDetail={vehicleDetail}
 			year={active?.selection.year ?? null}
 			includes={includes}

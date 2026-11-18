@@ -6,7 +6,9 @@ import { type FitmentResult, type FitmentVerdict } from "@/lib/fitment/contract"
 import { renderConditions } from "@/lib/fitment/conditions";
 import { monthCaveatOf, monthCaveatText } from "@/lib/fitment/month-caveat";
 import {
+	askVariantKey,
 	CONDITION_LABEL_KEY,
+	noFitVariantKey,
 	TONE_CLASSES,
 	toneForVerdict,
 	VERDICT_DETAIL_KEY,
@@ -33,6 +35,11 @@ type Props = {
 	result: FitmentResult;
 	/** Resolved label of the active vehicle, e.g. "Škoda Octavia IV (NX), 2022". */
 	vehicleLabel: string | null;
+	/**
+	 * The car's name without the year ("Toyota Yaris XP210"), for the sentences that put it in the
+	 * middle of a clause ("určená len pre {vehicle} s presklenou strechou"). Falls back to the label.
+	 */
+	vehicleName?: string | null;
 	/**
 	 * The configuration the verdict is about — roof type, and the month if the shopper
 	 * gave one. Rendered under the answer so the claim can be checked against the car it
@@ -72,6 +79,7 @@ const VERDICT_ICON: Record<FitmentVerdict, typeof Check> = {
 export async function CompatibilityBox({
 	result,
 	vehicleLabel,
+	vehicleName,
 	vehicleDetail,
 	includes = null,
 	year = null,
@@ -103,7 +111,15 @@ export async function CompatibilityBox({
 
 	// Every detail string that mentions a vehicle takes {vehicle}. With no vehicle
 	// resolved we must not print an empty gap, so the generic prompt is used instead.
-	const detailKey = VERDICT_DETAIL_KEY[result.verdict];
+	// A roof variant of the car decides this answer: the sentence says which, rather than the generic
+	// one ("typ strechy alebo karosérie") that would send the shopper looking for the wrong question.
+	const variantDetailKey =
+		result.verdict === "NO_FIT" && result.variant?.madeFor
+			? noFitVariantKey(result.variant.madeFor)
+			: result.verdict === "AMBIGUOUS" && result.variant?.ask
+				? askVariantKey(result.variant.ask)
+				: null;
+	const detailKey = variantDetailKey ?? VERDICT_DETAIL_KEY[result.verdict];
 	const needsVehicle =
 		detailKey !== "verdictSelectVehicleDetail" &&
 		detailKey !== "verdictUniversalDetail" &&
@@ -120,7 +136,7 @@ export async function CompatibilityBox({
 		needsVehicle && !vehicleLabel
 			? t("verdictSelectVehicleDetail")
 			: t(detailKey, {
-					vehicle: vehicleLabel ?? "",
+					vehicle: (variantDetailKey ? vehicleName : null) ?? vehicleLabel ?? "",
 					supplier,
 					// Only the month-dependent sentence reads it; every other message ignores the value.
 					caveat:

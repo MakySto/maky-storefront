@@ -21,7 +21,15 @@
  * COUNT chosen for usability, not the byte budget, which has room to spare.
  */
 
-import { type RoofType, type BodyType, type VehicleSelection } from "@/lib/fitment/contract";
+import {
+	GLASS_ROOF_VALUES,
+	ROOF_HEIGHT_VALUES,
+	type BodyType,
+	type GlassRoof,
+	type RoofHeight,
+	type RoofType,
+	type VehicleSelection,
+} from "@/lib/fitment/contract";
 import { GARAGE_MAX_VEHICLES } from "./limits";
 import { fromBase64Url, signValue, toBase64Url, verifyValue } from "./signature";
 
@@ -64,6 +72,14 @@ export type StoredVehicle = {
 	/** roofType — ABSENT when the shopper could not confirm it. Never inferred. */ r?: RoofType;
 	/** bodyType */ b?: BodyType;
 	/** doors */ d?: number;
+	/**
+	 * Glass roof — ABSENT when the shopper did not say, or the car does not differ in it. Never
+	 * inferred. A car saved before the question existed has none, and is asked again where a
+	 * generation asks (the resolver answers AMBIGUOUS until then).
+	 */
+	gr?: GlassRoof;
+	/** Roof height of a van, as `gr`. */
+	rh?: RoofHeight;
 	/**
 	 * Month of MANUFACTURE, 1-12. Optional and must stay optional: not every supplier
 	 * states months, and a window that gave only a year cannot be narrowed by one.
@@ -137,6 +153,8 @@ export function toVehicleSelection(vehicle: StoredVehicle): VehicleSelection {
 		...(vehicle.r ? { roofType: vehicle.r } : {}),
 		...(vehicle.b ? { bodyType: vehicle.b } : {}),
 		...(vehicle.d !== undefined ? { doors: vehicle.d } : {}),
+		...(vehicle.gr ? { glassRoof: vehicle.gr } : {}),
+		...(vehicle.rh ? { roofHeight: vehicle.rh } : {}),
 		...(vehicle.mo !== undefined ? { manufactureMonth: vehicle.mo } : {}),
 	};
 }
@@ -150,6 +168,8 @@ export function fromVehicleSelection(selection: VehicleSelection): StoredVehicle
 		...(selection.roofType ? { r: selection.roofType } : {}),
 		...(selection.bodyType ? { b: selection.bodyType } : {}),
 		...(selection.doors !== undefined ? { d: selection.doors } : {}),
+		...(selection.glassRoof ? { gr: selection.glassRoof } : {}),
+		...(selection.roofHeight ? { rh: selection.roofHeight } : {}),
 		...(selection.manufactureMonth !== undefined ? { mo: selection.manufactureMonth } : {}),
 	};
 }
@@ -164,6 +184,8 @@ export function sameVehicle(a: StoredVehicle, b: StoredVehicle): boolean {
 		a.r === b.r &&
 		a.b === b.b &&
 		a.d === b.d &&
+		a.gr === b.gr &&
+		a.rh === b.rh &&
 		a.mo === b.mo
 	);
 }
@@ -178,6 +200,8 @@ function isStoredVehicle(value: unknown): value is StoredVehicle {
 	if (v.r !== undefined && typeof v.r !== "string") return false;
 	if (v.b !== undefined && typeof v.b !== "string") return false;
 	if (v.d !== undefined && (typeof v.d !== "number" || !Number.isInteger(v.d))) return false;
+	// A value this build does not know is not a car the shopper cannot keep: `stripUnknownVariants`
+	// has already taken it off, and the car is simply unanswered there.
 	// The month is validated in `stripInvalidMonth` instead of here, so that a bad month
 	// costs the month rather than the whole car.
 	return true;
@@ -186,6 +210,21 @@ function isStoredVehicle(value: unknown): value is StoredVehicle {
 /** 1-12, or nothing. */
 function isMonth(value: unknown): value is number {
 	return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 12;
+}
+
+/**
+ * Remove a glass-roof or roof-height value this build does not know, and keep the car.
+ *
+ * A value outside the contract would be read by the resolver as an answer that matches no set, and
+ * the shopper would be told nothing fits a car that was merely stored by another build. Unanswered
+ * is the honest state, and the shopper is asked again.
+ */
+function stripUnknownVariants(value: unknown): unknown {
+	if (typeof value !== "object" || value === null) return value;
+	const { gr, rh, ...rest } = value as Record<string, unknown>;
+	const glass = (GLASS_ROOF_VALUES as readonly unknown[]).includes(gr);
+	const height = (ROOF_HEIGHT_VALUES as readonly unknown[]).includes(rh);
+	return { ...rest, ...(glass ? { gr } : {}), ...(height ? { rh } : {}) };
 }
 
 /**
@@ -219,7 +258,11 @@ export function normalizePayload(raw: unknown): GaragePayload | null {
 	if (typeof value.v !== "number" || !SUPPORTED_PAYLOAD_VERSIONS.includes(value.v as 1 | 2 | 3)) return null;
 	if (!Array.isArray(value.c)) return null;
 
-	const vehicles = value.c.map(stripInvalidMonth).filter(isStoredVehicle).slice(0, GARAGE_MAX_VEHICLES);
+	const vehicles = value.c
+		.map(stripInvalidMonth)
+		.map(stripUnknownVariants)
+		.filter(isStoredVehicle)
+		.slice(0, GARAGE_MAX_VEHICLES);
 	// An over-long or partly corrupt list is truncated rather than rejected: losing a
 	// third car is a smaller harm than losing the whole garage, and the shopper can see
 	// what survived.
@@ -231,7 +274,7 @@ export function normalizePayload(raw: unknown): GaragePayload | null {
 	// The car in use, if it is not already saved. A `u` that duplicates a saved car is
 	// not an error — it is what happens when the shopper re-picks a car they already
 	// keep — so it collapses onto the saved copy rather than being stored twice.
-	const rawInUse = stripInvalidMonth(value.u);
+	const rawInUse = stripUnknownVariants(stripInvalidMonth(value.u));
 	const inUse = isStoredVehicle(rawInUse) ? rawInUse : null;
 	const savedIndex = inUse ? vehicles.findIndex((v) => sameVehicle(v, inUse)) : -1;
 

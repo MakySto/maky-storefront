@@ -23,6 +23,7 @@ import {
 	resolveGenerationForYear,
 	resolveSingleValued,
 	roofChoicesFor,
+	variantAsked,
 	yearsForModel,
 	type GenerationCandidate,
 } from "./selector-plan";
@@ -134,6 +135,9 @@ function qualifiersFor(
 		roofTypes: roofTypes.length > 0 ? roofTypes : null,
 		bodyTypes: body.ask,
 		doors: doors.ask,
+		// Asked only where the dataset says this generation's sets differ in it; see `variantAsked`.
+		glassRoof: variantAsked(applications, generation, "glassRoof"),
+		roofHeight: variantAsked(applications, generation, "roofHeight"),
 		resolved: {
 			...(body.fill ? { bodyType: body.fill } : {}),
 			...(doors.fill !== null ? { doors: doors.fill } : {}),
