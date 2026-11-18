@@ -1,0 +1,1022 @@
+{
+	"version": "maky-content/1:nosic-bicyklov",
+	"blocks": [
+		{
+			"type": "header",
+			"data": {
+				"level": 2,
+				"text": "Sklopný a skladací nosič na 3 bicykle aj e-biky"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Rodinný výlet, víkend na trailoch alebo dovolenka pri mori – keď idú bicykle s vami, nemusia sa tlačiť v kufri ani na streche. <strong>Nosič Pro-USER Diamant FG3 odvezie na ťažnom zariadení tri bicykle vrátane elektrobicyklov</strong> a vďaka sklápaniu nohou sa do batožinového priestoru dostanete aj s naloženými bicyklami."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Nosič bicyklov na ťažné zariadenie, ľudovo „na guľu“, nasadíte rýchlo a bez náradia. Stačí ho zaistiť rýchloupínacou pákou a zamknúť kľúčom. Nosič má vlastné osvetlenie, držiak tabuľky s evidenčným číslom a zástrčku 7-pin aj 13-pin v jednom kryte. Po sezóne ho zložíte na hrúbku 31 cm a odložíte v garáži alebo pivnici."
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Čo oceníte na každom výlete"
+			}
+		},
+		{
+			"type": "list",
+			"id": "maky:benefits",
+			"data": {
+				"style": "unordered",
+				"items": [
+					"<strong>Tri bicykle vrátane elektrobicyklov</strong> Celková nosnosť 60 kg, koľajnice pre plášte do šírky 8 cm a široké popruhy na hrubé rámy e-bikov. Keď potrebujete viac, nosič rozšírite o <a href=\"/sk/pridavny-nosic-bicykla-pro-user-tk91749\">miesto pre štvrtý bicykel</a>.",
+					"<strong>Do kufra aj s bicyklami</strong> Poistku uvoľníte nohou a nosič aj s bicyklami plynulo sklopíte dozadu. Piate dvere otvoríte bez toho, aby ste museli čokoľvek skladať.",
+					"<strong>Zamknutý nosič aj bicykle</strong> Páku rýchloupínača zamknete na guli, uzamykateľné sú aj držiaky rámov. Všetky zámky otvára jeden kľúč.",
+					"<strong>Bez hľadania adaptéra</strong> Zástrčka obsahuje 7-pinový aj 13-pinový konektor v jednom kryte. Nosič tak pripojíte k obom bežným typom zásuviek ťažného zariadenia.",
+					"<strong>Odnímateľné držiaky rámov</strong> Držiaky odoberiete a ich polohu prispôsobíte na ráme nosiča aj na bicykli – tam, kde bicykel drží najstabilnejšie.",
+					"<strong>Zložený na 31 cm</strong> Po zložení meria nosič 31 × 74 × 82 cm. Zmestí sa na policu v garáži a ľahko ho prenesiete."
+				]
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Aké bicykle na nosič naložíte"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Nosič na 3 bicykle Diamant FG3 je určený pre horské, trekingové, mestské aj elektrické bicykle. Pred objednaním sa oplatí porovnať tri rozmery vašich bicyklov s limitmi nosiča: rázvor, šírku plášťa a obvod rámu v mieste, kde ho bude držať upínacie rameno."
+			}
+		},
+		{
+			"type": "list",
+			"id": "maky:facts",
+			"data": {
+				"style": "unordered",
+				"items": [
+					{
+						"content": "<strong>3 bicykle (+1)</strong> Počet bicyklov",
+						"items": [],
+						"meta": {
+							"icon": "bike"
+						}
+					},
+					{
+						"content": "<strong>60 kg</strong> Celková nosnosť",
+						"items": [],
+						"meta": {
+							"icon": "weight"
+						}
+					},
+					{
+						"content": "<strong>135 cm</strong> Max. rázvor bicykla",
+						"items": [],
+						"meta": {
+							"icon": "ruler"
+						}
+					},
+					{
+						"content": "<strong>8 cm</strong> Max. šírka plášťa",
+						"items": [],
+						"meta": {
+							"icon": "ruler"
+						}
+					},
+					{
+						"content": "<strong>35 cm</strong> Max. obvod rámu",
+						"items": [],
+						"meta": {
+							"icon": "ruler"
+						}
+					},
+					{
+						"content": "<strong>23 cm</strong> Vzdialenosť koľajníc",
+						"items": [],
+						"meta": {
+							"icon": "ruler"
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "<strong>Ako to zmerať:</strong> rázvor je vzdialenosť medzi osami predného a zadného kolesa. Obvod rámu zmeriate krajčírskym metrom okolo rúrky, na ktorú pôjde upínacie rameno. Pri dlhých bicykloch, napríklad niektorých e-MTB, si rázvor pred objednaním radšej overte."
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Sklopný nosič: do kufra aj s naloženými bicyklami"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Na zastávke cestou k moru alebo pri vykladaní batožiny nemusíte bicykle sťahovať. Poistku sklápania uvoľníte nohou, nosič pridržíte za bicykel a sklopíte ho dozadu. Batožinový priestor potom otvoríte úplne bežne."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "<strong>Máte elektricky ovládané piate dvere?</strong> Pri jazde s nosičom ich prepnite na ručné ovládanie a otvárajte ich až po sklopení nosiča. Inak by mohli naraziť do bicyklov."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Pred jazdou nosič vždy vyklopte späť do hornej polohy a skontrolujte, že je v nej zaistený. So sklopeným nosičom sa jazdiť nesmie."
+			}
+		},
+		{
+			"type": "image",
+			"data": {
+				"file": {
+					"url": "https://carfitmanager.com/media/fixture/fg3-sklopeny.jpg"
+				},
+				"caption": "Sklopený nosič s naloženými bicyklami uvoľní prístup k piatym dverám.",
+				"withBorder": false,
+				"stretched": false,
+				"withBackground": false
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Konštrukcia a upevnenie"
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 4,
+				"text": "Rýchloupínanie na guľu s uzamykateľnou pákou"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Nosič nasadíte na guľu ťažného zariadenia a zaistíte pákou rýchloupínača – bez náradia. Páku zamknete kľúčom, čím nosič zabezpečíte proti uvoľneniu aj krádeži. Ak by na niektorej guli nesedel úplne pevne, rýchloupínač sa dá doladiť nastavovacou skrutkou podľa návodu."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Nosný rám je z ocele s práškovou povrchovou úpravou, koľajnice na kolesá sú hliníkové."
+			}
+		},
+		{
+			"type": "image",
+			"data": {
+				"file": {
+					"url": "https://carfitmanager.com/media/fixture/fg3-predny.jpg"
+				},
+				"caption": "Diamant FG3 so zadnými svetlami a držiakom tabuľky s evidenčným číslom.",
+				"withBorder": false,
+				"stretched": false,
+				"withBackground": false
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 4,
+				"text": "Odnímateľné držiaky rámov"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Každý bicykel drží na ráme nosiča vlastné upínacie rameno. Ramená sa dajú odobrať a ich polohu prispôsobíte na ráme nosiča aj na bicykli. Výrobca odporúča upínať ich čo najvyššie – bicykel tak drží najstabilnejšie."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Pri FG3 je v balení navyše prídavný držiak, ktorý spojí rámy susedných bicyklov."
+			}
+		},
+		{
+			"type": "image",
+			"data": {
+				"file": {
+					"url": "https://carfitmanager.com/media/fixture/fg3-rameno.jpg"
+				},
+				"caption": "Upínacie ramená sa dajú nasadiť aj odobrať.",
+				"withBorder": false,
+				"stretched": false,
+				"withBackground": false
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 4,
+				"text": "Široké popruhy aj pre e-biky"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Popruhy upínacích ramien sú široké a uzamykateľné, takže si poradia aj s hrubými rámami elektrobicyklov s integrovanou batériou – až do obvodu 35 cm."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Kolesá v koľajniciach zaistíte popruhmi a na záver ešte spoločným popruhom okolo bicyklov a rámu nosiča. Pred každou jazdou skontrolujte, že všetky popruhy pevne držia a nie sú poškodené."
+			}
+		},
+		{
+			"type": "image",
+			"data": {
+				"file": {
+					"url": "https://carfitmanager.com/media/fixture/fg3-popruh-ebike.jpg"
+				},
+				"caption": "Široký popruh obopne aj rám e-biku s batériou v rúrke.",
+				"withBorder": false,
+				"stretched": false,
+				"withBackground": false
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 4,
+				"text": "Osvetlenie a zástrčka 7/13-pin"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Nosič má halogénové zadné svetlá a sklopný držiak tabuľky s evidenčným číslom. Zástrčka obsahuje 7-pinový aj 13-pinový konektor v jednom kryte. Nepoužitý konektor zakryjete dodanou krytkou. Cúvacie svetlo nosiča funguje len pri 13-pinovej zásuvke."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Funkčnosť všetkých svetiel skontrolujte pred každou jazdou."
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Po sezóne zaberie minimum miesta"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Rozložený nosič meria 140 × 74 × 82 cm. Po zložení sa zmenší na kompaktný balík 31 × 74 × 82 cm, ktorý odložíte na policu v garáži alebo v pivnici."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "S hmotnosťou 22,3 kg patrí trojbicyklový nosič k ťažším kusom výbavy. Výrobca k nemu preto ponúka <a href=\"/sk/nosice-bicyklov-prislusenstvo\">voliteľné príslušenstvo</a> – prepravné kolieska, nástenný držiak, úložnú tašku a nájazdovú rampu, ktorá uľahčí nakladanie ťažkých e-bikov. Príslušenstvo sa objednáva samostatne."
+			}
+		},
+		{
+			"type": "image",
+			"data": {
+				"file": {
+					"url": "https://carfitmanager.com/media/fixture/fg3-zlozeny.jpg"
+				},
+				"caption": "Zložený Diamant FG3 má hrúbku iba 31 cm.",
+				"withBorder": false,
+				"stretched": false,
+				"withBackground": false
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Koľko môžete naložiť"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Pri nosiči bicyklov na ťažné zariadenie platia dva limity naraz. Prvým je nosnosť samotného nosiča – 60 kg. Druhým je povolené zvislé zaťaženie gule vášho ťažného zariadenia, do ktorého sa počíta <strong>nosič aj bicykle spolu</strong>. Údaj nájdete na typovom štítku ťažného zariadenia. Bežné hodnoty sú napríklad 75 alebo 100 kg, pri niektorých vozidlách však môže byť povolené zaťaženie aj nižšie."
+			}
+		},
+		{
+			"type": "table",
+			"data": {
+				"withHeadings": true,
+				"content": [
+					[
+						"Povolené zvislé zaťaženie gule",
+						"Max. hmotnosť bicyklov – FG3",
+						"FG3 s rozšírením na 4. bicykel"
+					],
+					[
+						"50 kg",
+						"27 kg",
+						"25 kg"
+					],
+					[
+						"60 kg",
+						"37 kg",
+						"35 kg"
+					],
+					[
+						"75 kg",
+						"52 kg",
+						"50 kg"
+					],
+					[
+						"90 kg a viac",
+						"60 kg (limit nosiča)",
+						"60 kg (limit nosiča)"
+					]
+				]
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Hodnoty sú zaokrúhlené nadol. Vychádzajú z hmotnosti nosiča 22,3 kg a rozšírenia 2,5 kg."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "<strong>Príklad:</strong> dva elektrobicykle po 24 kg vážia spolu 48 kg. Pri povolenom zvislom zaťažení 75 kg je limit 52 kg, takže ich odveziete. Tri takéto bicykle by vážili 72 kg – to je viac, ako unesie samotný nosič."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "<strong>Ako naložiť bicykle správne</strong>"
+			}
+		},
+		{
+			"type": "list",
+			"data": {
+				"style": "unordered",
+				"items": [
+					"Pred jazdou z bicyklov odoberte všetky voľné diely – batérie e-bikov, pumpy, tašky, košíky, detské sedačky, fľaše aj navigácie. Výrobca to odporúča a náklad sa zároveň odľahčí.",
+					"Najťažší bicykel nakladajte do koľajnice najbližšie k autu. Ak vezete jediný bicykel, patrí práve tam.",
+					"Upínacie ramená umiestnite na rám čo najvyššie."
+				]
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Rozšírenie nosiča na štvrtý bicykel"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Keď vyrážate na výlet s celou rodinou, doplníte nosič o prídavnú koľajnicu s upínacím ramenom. Na nosič sa nacvakne bez náradia a po výlete ju jednoducho odoberiete."
+			}
+		},
+		{
+			"type": "list",
+			"data": {
+				"style": "unordered",
+				"items": [
+					"<strong>Nosnosť prídavnej koľajnice:</strong> 15 kg.",
+					"<strong>Max. rázvor bicykla:</strong> 120 cm.",
+					"<strong>Max. šírka plášťa:</strong> 6 cm.",
+					"<strong>Hmotnosť rozšírenia:</strong> 2,5 kg."
+				]
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Štvrté miesto je preto určené pre menší a ľahší bicykel – napríklad detský, cestný alebo mestský bez elektropohonu. Celková nosnosť nosiča zostáva aj s rozšírením 60 kg."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "<strong><a href=\"/sk/pridavny-nosic-bicykla-pro-user-tk91749\">Prídavný nosič +1 bicykel TK91749</a> · objednáva sa samostatne</strong>"
+			}
+		},
+		{
+			"type": "image",
+			"data": {
+				"file": {
+					"url": "https://carfitmanager.com/media/fixture/rozsirenie-91749.jpg"
+				},
+				"caption": "Prídavná koľajnica s upínacím ramenom pre štvrtý bicykel.",
+				"withBorder": false,
+				"stretched": false,
+				"withBackground": false
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Diamant FG3, FG2 alebo FG2 Plus?"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Všetky nosiče radu Diamant majú nosnosť 60 kg, sklápanie, skladanie aj uzamykanie. Líšia sa počtom miest, hmotnosťou a tým, koľko kilogramov vám pri rovnakom ťažnom zariadení zostane na bicykle."
+			}
+		},
+		{
+			"type": "table",
+			"data": {
+				"withHeadings": true,
+				"content": [
+					[
+						"",
+						"Diamant FG3",
+						"Diamant FG2",
+						"Diamant FG2 Plus"
+					],
+					[
+						"Počet bicyklov",
+						"3",
+						"2",
+						"2"
+					],
+					[
+						"S rozšírením TK91749",
+						"4",
+						"3",
+						"3"
+					],
+					[
+						"Hmotnosť nosiča",
+						"22,3 kg",
+						"17 kg",
+						"18 kg"
+					],
+					[
+						"Na bicykle pri guli 75 kg",
+						"52 kg",
+						"58 kg",
+						"57 kg"
+					],
+					[
+						"Kedy sa hodí",
+						"tri bicykle v základe",
+						"dva ťažké e-biky",
+						"autá s veľkými piatymi dverami"
+					]
+				]
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Hmotnosti FG2 a FG2 Plus podľa návodu výrobcu."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "<strong>Diamant FG3</strong> je správna voľba, keď vozíte tri bicykle pravidelne alebo chcete mať možnosť odviezť aj štvrtý."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "<strong><a href=\"/sk/nosic-2-bicyklov-pro-user-diamant-fg2\">Diamant FG2</a></strong> sa oplatí, ak vozíte dva ťažké e-biky a tretie miesto nepotrebujete. Je o 5 kg ľahší, takže vám pri rovnakom ťažnom zariadení nechá na bicykle viac."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "<strong><a href=\"/sk/nosic-2-bicyklov-pro-user-diamant-fg2-plus\">Diamant FG2 Plus</a></strong> má predĺžené uchytenie, ktoré vytvorí väčší odstup medzi nosičom a autom. Hodí sa pre vozidlá s veľkými piatymi dverami, napríklad dodávky."
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Pasuje na vaše ťažné zariadenie"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "<strong>Nosič Diamant FG3 pasuje na všetky štandardné ťažné zariadenia s guľou, ktoré sa predávajú a montujú na osobné autá v EÚ.</strong> Typ ťažného zariadenia pri výbere riešiť nemusíte – nosič nasadíte priamo na guľu, bez adaptérov a úprav."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Bez starostí je aj elektrické pripojenie. Zástrčka nosiča obsahuje 7-pinový aj 13-pinový konektor, takže pasuje k obom bežným typom zásuviek."
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 4,
+				"text": "Technické požiadavky výrobcu"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Pre úplnosť uvádzame podmienky z návodu výrobcu. Pri menších autách sa oplatí pozrieť najmä na D-hodnotu a zvislé zaťaženie – oba údaje nájdete na typovom štítku ťažného zariadenia."
+			}
+		},
+		{
+			"type": "list",
+			"data": {
+				"style": "unordered",
+				"items": [
+					"<strong>Guľa:</strong> štandardný priemer 50 mm, trieda A-50 podľa EC 94/20 alebo ECE R55.",
+					"<strong>Materiál gule:</strong> oceľ min. St52 alebo liatina GG52. Nie hliník, iné ľahké kovy ani plast.",
+					"<strong>D-hodnota ťažného zariadenia:</strong> viac ako 7,6 kN.",
+					"<strong>Zvislé zaťaženie gule:</strong> musí pokryť hmotnosť nosiča aj bicyklov (pozrite tabuľku vyššie).",
+					"<strong>Vozidlo:</strong> osobné auto."
+				]
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Čo dostanete v balení"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Nosič príde takmer pripravený na použitie. Pred prvou jazdou naň podľa návodu namontujete tabuľku s evidenčným číslom a upínacie ramená."
+			}
+		},
+		{
+			"type": "list",
+			"id": "maky:inbox",
+			"data": {
+				"style": "unordered",
+				"items": [
+					"<strong>Nosič Diamant FG3</strong> so zadnými svetlami, sklopným držiakom evidenčného čísla a zástrčkou 7/13-pin",
+					"<strong>Upínacie ramená</strong> dlhé a krátke odnímateľné rameno a prídavný držiak, ktorý spája rámy susedných bicyklov",
+					"<strong>Popruhy</strong> 3 popruhy na predné kolesá a 1 bezpečnostný popruh okolo rámov bicyklov",
+					"<strong>2 kľúče</strong> jeden kľúč otvára zámok rýchloupínača aj zámky ramien",
+					"<strong>Návod na montáž</strong> s bezpečnostnými pokynmi a zoznamom náhradných dielov"
+				]
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Rozšírenie na štvrtý bicykel, prepravné kolieska, nástenný držiak, taška a nájazdová rampa nie sú súčasťou balenia."
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Montáž na auto a nakladanie"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Nosič nasadíte na auto bez náradia za pár minút. Bicykle potom naložíte jeden po druhom, od najťažšieho."
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 4,
+				"text": "Postup krok za krokom"
+			}
+		},
+		{
+			"type": "list",
+			"id": "maky:steps",
+			"data": {
+				"style": "ordered",
+				"items": [
+					"<strong>Príprava</strong> Auto zaparkujte na rovine a zatiahnite ručnú brzdu. Guľu ťažného zariadenia očistite od nečistôt a mastnoty. Ak je na nej vrstva laku, výrobca odporúča ju opatrne odstrániť – nosič potom drží najpevnejšie.",
+					"<strong>Nasadenie na guľu</strong> Nosič nasaďte na guľu, zaistite ho pákou a zamknite. Vyberte kľúč a skontrolujte, že nosič drží pevne.",
+					"<strong>Svetlá a evidenčné číslo</strong> Zapojte zástrčku do zásuvky. Sklopte držiak evidenčného čísla, kým nezacvakne, a nechajte zapadnúť poistný čap. Skontrolujte svetlá.",
+					"<strong>Naloženie bicyklov</strong> Z bicyklov odoberte voľné diely vrátane batérie. Najťažší bicykel uložte do koľajnice najbližšie k autu.",
+					"<strong>Upnutie</strong> Kolesá zaistite popruhmi v koľajniciach, rámy upínacími ramenami čo najvyššie a na záver spoločným popruhom okolo bicyklov a rámu nosiča.",
+					"<strong>Kontrola po pár kilometroch</strong> Nosič sa na guli po niekoľkých kilometroch usadí. Zastavte, skontrolujte upevnenie nosiča aj bicyklov a v prípade potreby ich dotiahnite."
+				]
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Kroky približujú postup. Pri montáži sa riaďte úplným návodom výrobcu."
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 4,
+				"text": "Návod výrobcu (PDF)"
+			}
+		},
+		{
+			"type": "list",
+			"id": "maky:documents",
+			"data": {
+				"style": "unordered",
+				"items": [
+					"<a href=\"https://carfitmanager.com/media/fixture/pro-user-diamant-fg-navod.pdf\">Pro-USER Diamant FG – návod na montáž a bezpečnostné pokyny</a> PDF · NL, DE, EN, FR"
+				]
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 4,
+				"text": "Dôležité pred jazdou"
+			}
+		},
+		{
+			"type": "list",
+			"id": "maky:callout:warn",
+			"data": {
+				"style": "unordered",
+				"items": [
+					"Nejazdite rýchlejšie ako 130 km/h. Cez spomaľovacie prahy prechádzajte rýchlosťou najviac 10 km/h.",
+					"Nikdy nejazdite so sklopeným nosičom a nepoužívajte ho v náročnom teréne.",
+					"Neprekračujte nosnosť nosiča 60 kg, povolené zvislé zaťaženie gule ani najväčšiu povolenú hmotnosť vozidla.",
+					"Na bicykle nedávajte plachty ani obaly – zvyšujú odpor vzduchu a môžu sa za jazdy uvoľniť.",
+					"Pred každou jazdou skontrolujte svetlá, upevnenie nosiča a stav popruhov. Opotrebované popruhy vymeňte.",
+					"Náklad nesmie presahovať obrys vozidla ani nosiča. Ak je výfuk blízko bicyklov, použite deflektor výfukových plynov.",
+					"S nosičom je auto dlhšie a mení sa jeho ovládateľnosť. Prispôsobte rýchlosť a vyhnite sa prudkým manévrom."
+				]
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Starostlivosť o nosič"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Nosič stačí umývať vlažnou vodou s jemným čistiacim prostriedkom a mäkkou handričkou, bez riedidiel. Po jazdách v zime alebo pri mori z neho zmyte soľ. Nechajte ho voľne vyschnúť a na dlhší čas ho uložte na suché miesto."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Oceľové diely chráni prášková farba. Ak sa poškodí, dajte ju čo najskôr opraviť – predĺžite tým životnosť nosiča."
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Pozrite si nosič v akcii"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Na videách uvidíte, ako sa nosič na bicykle nasadzuje na auto, ako sa upínajú bicykle a ako funguje sklápanie."
+			}
+		},
+		{
+			"type": "embed",
+			"id": "maky:video",
+			"data": {
+				"service": "youtube",
+				"source": "https://www.youtube.com/watch?v=F8t_BkyU-wE",
+				"embed": "https://www.youtube.com/embed/F8t_BkyU-wE",
+				"width": 580,
+				"height": 320,
+				"caption": "Pro-USER Diamant FG3 v praxi"
+			}
+		},
+		{
+			"type": "embed",
+			"id": "maky:video",
+			"data": {
+				"service": "youtube",
+				"source": "https://www.youtube.com/watch?v=glRBm6i9iEA",
+				"embed": "https://www.youtube.com/embed/glRBm6i9iEA",
+				"width": 580,
+				"height": 320,
+				"caption": "Produktové video radu Diamant"
+			}
+		},
+		{
+			"type": "header",
+			"id": "maky:section:brand",
+			"data": {
+				"level": 3,
+				"text": "Pro-USER: nosiče z Holandska"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "<strong>Nosiče bicyklov Pro-USER vyrába holandská spoločnosť Tradekar Benelux BV.</strong> Rad Diamant tvoria nosiče na ťažné zariadenie pre dva a tri bicykle – FG2, FG2 Plus a FG3. Spája ich rýchloupínanie s uzamykateľnou pákou, sklápanie, skladanie a možnosť rozšírenia o ďalší bicykel."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Pre vás to znamená overenú konštrukciu, dostupné náhradné diely a príslušenstvo, ktoré si môžete dokúpiť aj neskôr – keď deti dorastú alebo pribudne ďalší bicykel."
+			}
+		},
+		{
+			"type": "header",
+			"id": "maky:section:closing",
+			"data": {
+				"level": 3,
+				"text": "Pripravte sa na ďalší výlet s bicyklami"
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "Nosič bicyklov Pro-USER Diamant FG3 odvezie tri bicykle vrátane e-bikov, umožní vám prístup do kufra aj s naloženými bicyklami a po sezóne zaberie minimum miesta."
+			}
+		},
+		{
+			"type": "paragraph",
+			"data": {
+				"text": "<strong>Nie ste si istí, či nosič pasuje na vaše auto a bicykle?</strong> Pošlite nám typ auta, údaj zo štítku ťažného zariadenia a hmotnosť aj rázvor jednotlivých bicyklov. Radi vám poradíme. Ďalšie modely nájdete v kategórii <a href=\"/sk/nosice-bicyklov-na-tazne-zariadenie\">Nosiče bicyklov na ťažné zariadenie</a>."
+			}
+		},
+		{
+			"type": "list",
+			"id": "maky:cta",
+			"data": {
+				"style": "unordered",
+				"items": [
+					"<a href=\"/sk/kontakt\">Poradiť s výberom</a>"
+				]
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Technické parametre"
+			}
+		},
+		{
+			"type": "table",
+			"id": "maky:specs",
+			"data": {
+				"withHeadings": false,
+				"content": [
+					[
+						"Kapacita",
+						""
+					],
+					[
+						"Počet bicyklov",
+						"3 (+1 s rozšírením TK91749)"
+					],
+					[
+						"Max. nosnosť",
+						"60 kg"
+					],
+					[
+						"Hmotnosť nosiča",
+						"22,3 kg"
+					],
+					[
+						"Vhodný pre e-bike",
+						"áno"
+					],
+					[
+						"Bicykle",
+						""
+					],
+					[
+						"Max. rázvor",
+						"135 cm"
+					],
+					[
+						"Max. šírka plášťa",
+						"8 cm"
+					],
+					[
+						"Max. obvod rámu",
+						"35 cm"
+					],
+					[
+						"Vzdialenosť koľajníc",
+						"23 cm"
+					],
+					[
+						"Upevnenie rámu",
+						"odnímateľné rameno s popruhom"
+					],
+					[
+						"Upevnenie na auto",
+						""
+					],
+					[
+						"Spôsob upevnenia",
+						"rýchloupínač na guľu, uzamykateľná páka"
+					],
+					[
+						"Guľa ťažného zariadenia",
+						"Ø 50 mm (A-50)"
+					],
+					[
+						"D-hodnota ťažného zariadenia",
+						"> 7,6 kN"
+					],
+					[
+						"Max. rýchlosť",
+						"130 km/h"
+					],
+					[
+						"Funkcie a zabezpečenie",
+						""
+					],
+					[
+						"Sklopný",
+						"áno, ovládanie nohou"
+					],
+					[
+						"Skladací",
+						"áno"
+					],
+					[
+						"Uzamykanie",
+						"nosič na guli aj bicykle"
+					],
+					[
+						"Systém jedného kľúča",
+						"áno"
+					],
+					[
+						"Rozmery",
+						""
+					],
+					[
+						"Rozložený",
+						"140 × 74 × 82 cm"
+					],
+					[
+						"Zložený",
+						"31 × 74 × 82 cm"
+					],
+					[
+						"Elektroinštalácia",
+						""
+					],
+					[
+						"Zástrčka",
+						"7-pin aj 13-pin"
+					],
+					[
+						"Osvetlenie",
+						"halogénové"
+					],
+					[
+						"Cúvacie svetlo",
+						"len cez 13-pin"
+					],
+					[
+						"Ostatné",
+						""
+					],
+					[
+						"Materiál",
+						"oceľ s práškovou úpravou, hliník"
+					],
+					[
+						"Farba",
+						"strieborná"
+					],
+					[
+						"Záruka výrobcu",
+						"3 roky"
+					],
+					[
+						"Kód produktu",
+						"TK91764"
+					],
+					[
+						"Kód výrobcu",
+						"91764"
+					]
+				]
+			}
+		},
+		{
+			"type": "header",
+			"data": {
+				"level": 3,
+				"text": "Často kladené otázky (FAQ)"
+			}
+		},
+		{
+			"type": "list",
+			"id": "maky:faq",
+			"data": {
+				"style": "unordered",
+				"items": [
+					{
+						"content": "Odveziem na nosiči tri elektrobicykle?",
+						"items": [
+							{
+								"content": "Väčšinou nie. Celková nosnosť nosiča je 60 kg a bežný e-bike váži viac ako 20 kg, takže tri elektrobicykle limit zvyčajne prekročia. Dva e-biky s nosičom bežne odveziete – pozrite si tabuľku v časti Koľko môžete naložiť a porovnajte ju so zvislým zaťažením vašej gule.",
+								"items": []
+							}
+						]
+					},
+					{
+						"content": "Potrebujem 13-pinovú zásuvku?",
+						"items": [
+							{
+								"content": "Nie. Zástrčka nosiča obsahuje 7-pinový aj 13-pinový konektor, takže ho pripojíte k obom typom zásuviek bez adaptéra. Cúvacie svetlo nosiča však funguje len pri 13-pinovej zásuvke.",
+								"items": []
+							}
+						]
+					},
+					{
+						"content": "Dostanem sa do kufra, keď sú bicykle naložené?",
+						"items": [
+							{
+								"content": "Áno. Nosič aj s bicyklami sklopíte nohou dozadu a piate dvere otvoríte. Elektricky ovládané dvere pri jazde s nosičom prepnite na ručné ovládanie a otvárajte ich až po sklopení nosiča.",
+								"items": []
+							}
+						]
+					},
+					{
+						"content": "Dá sa nosič rozšíriť na štyri bicykle?",
+						"items": [
+							{
+								"content": "Áno, <a href=\"/sk/pridavny-nosic-bicykla-pro-user-tk91749\">prídavným nosičom TK91749</a>, ktorý sa objednáva samostatne. Štvrtý bicykel môže vážiť najviac 15 kg, mať rázvor do 120 cm a plášte do šírky 6 cm. Celková nosnosť zostáva 60 kg.",
+								"items": []
+							}
+						]
+					},
+					{
+						"content": "Zmestia sa na nosič bicykle s hrubými plášťami?",
+						"items": [
+							{
+								"content": "Koľajnice sú vhodné pre plášte so šírkou do 8 cm. Na prídavnej koľajnici pre štvrtý bicykel je limit 6 cm.",
+								"items": []
+							}
+						]
+					},
+					{
+						"content": "Pasuje nosič na moje ťažné zariadenie?",
+						"items": [
+							{
+								"content": "Áno. Nosič pasuje na všetky štandardné ťažné zariadenia s guľou, ktoré sa predávajú a montujú na osobné autá v EÚ, a zástrčku pripojíte k 7-pinovej aj 13-pinovej zásuvke. Pri menších autách si na štítku ťažného zariadenia overte D-hodnotu (nad 7,6 kN) a povolené zvislé zaťaženie gule.",
+								"items": []
+							}
+						]
+					},
+					{
+						"content": "Ako rýchlo môžem s nosičom jazdiť?",
+						"items": [
+							{
+								"content": "Najviac 130 km/h a cez spomaľovacie prahy najviac 10 km/h. S nosičom je auto dlhšie, preto sa vyhnite aj prudkým manévrom.",
+								"items": []
+							}
+						]
+					},
+					{
+						"content": "Treba pred jazdou vybrať batériu z e-biku?",
+						"items": [
+							{
+								"content": "Áno, výrobca odporúča pred jazdou odobrať z bicyklov všetky voľné diely vrátane batérií. Bicykle sú tak počas jazdy bezpečnejšie a ľahšie.",
+								"items": []
+							}
+						]
+					},
+					{
+						"content": "Ako nosič uskladním?",
+						"items": [
+							{
+								"content": "Zložený nosič meria 31 × 74 × 82 cm. Výrobca k nemu ponúka aj prepravné kolieska, nástenný držiak a úložnú tašku, ktoré sa objednávajú samostatne.",
+								"items": []
+							}
+						]
+					}
+				]
+			}
+		}
+	]
+}
