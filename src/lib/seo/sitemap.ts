@@ -413,6 +413,24 @@ async function countIsExact(channel: string, locale: string, total: number): Pro
 
 export type SitemapShardKind = "pages" | "products" | "vehicles";
 
+/**
+ * The `pages` shard of a market is always exactly one shard, so the index plans it without reading it.
+ *
+ * The index has to NAME the shards, and the number of `pages` shards is not a question: the shard always holds
+ * the market's home and its listing, so it is never empty, and it holds a few hundred URLs at the most (the
+ * stocked categories, the tyre-size and rim pages, the makers, the static routes), so it can never come near
+ * `MAX_URLS_PER_SITEMAP`. Counting it nevertheless meant building it for the index: per market the category list
+ * (a product probe per category), the makers' counts (a COUNT per maker in Saleor), the snow-chain shelf's codes
+ * and the CMS routes, twelve markets at once, on a process that has just started and whose Saleor slots the
+ * boot warm-up already holds. After 2 161 more sets that took 52 s (2026-11-18) and the deploy's 25 s check
+ * failed three times. The shard itself still does that work, once, when somebody fetches it.
+ *
+ * The `urls` of such a shard is therefore not a count of entries and nothing may read it as one (the index
+ * renders `<loc>` only). A fault in what the shard reads shows on the shard, which answers 5xx, instead of on the
+ * index: a crawler that gets the index and then a failing shard keeps the shard it had, as it does for any shard.
+ */
+const PAGES_SHARD_PLANNED_URLS = 1;
+
 const SHARD_KINDS: readonly SitemapShardKind[] = ["pages", "products", "vehicles"];
 
 function entriesOf(market: string, kind: SitemapShardKind): Promise<MetadataRoute.Sitemap> {
@@ -462,11 +480,11 @@ export function planShards(market: string, kind: SitemapShardKind, count: number
 export async function sitemapShards(): Promise<SitemapShard[]> {
 	const perMarket = await Promise.all(
 		indexableMarkets().map(async (market) => {
-			// `pages` and `vehicles` are cheap to enumerate — a static route table and the local
-			// catalogue snapshot, measured at 0.2 s and 0.3 s per market. `products` is not, and
-			// is planned from a count instead; see `productShardPlan`.
+			// `pages` is planned without reading anything, see `PAGES_SHARD_PLANNED_URLS`. `vehicles` is
+			// cheap to enumerate — the local catalogue snapshot, measured at 0.3 s per market. `products`
+			// is not, and is planned from a count instead; see `productShardPlan`.
 			const [pages, products, vehicles] = await Promise.all([
-				entriesOf(market, "pages").then((entries) => planShards(market, "pages", entries.length)),
+				Promise.resolve(planShards(market, "pages", PAGES_SHARD_PLANNED_URLS)),
 				productShardPlan(market),
 				entriesOf(market, "vehicles").then((entries) => planShards(market, "vehicles", entries.length)),
 			]);
