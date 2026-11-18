@@ -38,8 +38,17 @@
  */
 export const FITMENT_SCHEMA_VERSION = "3.0.0";
 
+/**
+ * 3.1.0 is 3.0.0 plus the `glassRoof` / `roofHeight` qualifiers (CFM, 2026-11-17) and nothing else.
+ * Both are read; a build older than this one reads neither 3.1.0 nor anything it carries.
+ */
+export const FITMENT_SCHEMA_VERSION_VARIANTS = "3.1.0";
+
 /** Exact-match allow list. Add a version here only once this build can read it. */
-export const SUPPORTED_SCHEMA_VERSIONS: readonly string[] = [FITMENT_SCHEMA_VERSION];
+export const SUPPORTED_SCHEMA_VERSIONS: readonly string[] = [
+	FITMENT_SCHEMA_VERSION,
+	FITMENT_SCHEMA_VERSION_VARIANTS,
+];
 
 /** Prefix of the stable CFM integration identity. */
 export const CFM_EXTERNAL_REFERENCE_PREFIX = "cfm:product:";
@@ -125,15 +134,39 @@ export const BODY_TYPES = [
 export type BodyType = (typeof BODY_TYPES)[number];
 
 /**
+ * Whether the car has a glass (panoramic) roof. The same set number is often made twice for
+ * one car, once for each; a shopper knows this about their car by looking at it.
+ */
+export const GLASS_ROOF_VALUES = ["with", "without"] as const;
+export type GlassRoof = (typeof GLASS_ROOF_VALUES)[number];
+
+/** The height of a van's roof. Unlike the roof interface above, a shopper can see it. */
+export const ROOF_HEIGHT_VALUES = ["standard", "high"] as const;
+export type RoofHeight = (typeof ROOF_HEIGHT_VALUES)[number];
+
+/**
  * The qualifiers a single application row constrains. An ABSENT key means
  * "this application does not care about that qualifier" — not "no values".
  * An empty array is a data error and is rejected by the validator.
+ *
+ * `glassRoof` and `roofHeight` (CFM, 2026-11-17) are the variants of one car that the manufacturer
+ * sells different sets for. On an APPLICATION they restrict the set; on a GENERATION they say the
+ * applications of that generation differ in it, which is what makes the selector ask. The key is
+ * known to this build and is NOT optional to understand: a build that did not know it would read
+ * a set made for the car without a glass roof as a set for every car. That is why a dataset that
+ * carries them must say `schemaVersion` 3.1.0 (`QUALIFIER_VARIANTS_SINCE`): a build that does not
+ * know the version refuses the whole file and keeps the one it holds, instead of ignoring the key.
  */
 export type FitmentQualifiers = {
 	roofTypes?: RoofType[];
 	bodyTypes?: BodyType[];
 	doors?: number[];
+	glassRoof?: GlassRoof[];
+	roofHeight?: RoofHeight[];
 };
+
+/** The schema version that introduced `glassRoof` and `roofHeight`. A dataset using them must declare it. */
+export const QUALIFIER_VARIANTS_SINCE = FITMENT_SCHEMA_VERSION_VARIANTS;
 
 // ---------------------------------------------------------------------------
 // Vehicle tree
@@ -218,6 +251,10 @@ export type VehicleSelection = {
 	roofType?: RoofType;
 	bodyType?: BodyType;
 	doors?: number;
+	/** Answered only where the generation's applications differ in it. Never filled in. */
+	glassRoof?: GlassRoof;
+	/** As `glassRoof`: a van's roof height, asked only where it decides a set. */
+	roofHeight?: RoofHeight;
 };
 
 // ---------------------------------------------------------------------------
@@ -622,7 +659,21 @@ export type FitmentResult = {
 	} | null;
 	/** Machine-readable reason, for diagnostics and tests. Never rendered raw. */
 	reason: string;
+	/**
+	 * Set when the answer turns on a roof VARIANT of the car (`glassRoof`, `roofHeight`):
+	 *
+	 *   - `ask`: AMBIGUOUS because the shopper has not said, for these variants. The surface asks it.
+	 *   - `madeFor`: NO_FIT because the set is documented for the OTHER variant of this very car, in
+	 *     the variants the set is made for. The surface says which, never a bare "nepasuje".
+	 */
+	variant?: {
+		ask?: VariantKey[];
+		madeFor?: { glassRoof?: GlassRoof[]; roofHeight?: RoofHeight[] };
+	};
 };
+
+/** The roof variants of a car this contract can ask about. */
+export type VariantKey = "glassRoof" | "roofHeight";
 
 /** The only verdict that may render as an independently confirmed state. */
 export function isPositiveVerdict(verdict: FitmentVerdict): boolean {

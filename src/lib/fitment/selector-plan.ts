@@ -33,7 +33,10 @@ import {
 	type BodyType,
 	type FitmentApplication,
 	type FitmentDataset,
+	type GlassRoof,
+	type RoofHeight,
 	type RoofType,
+	type VariantKey,
 	vehicleNodeName,
 } from "./contract";
 
@@ -48,6 +51,9 @@ export type GenerationCandidate = {
 	doors: number[] | null;
 	/** The roofs this generation was sold with — what the car can have, not what we stock. */
 	roofTypes: RoofType[] | null;
+	/** The roof variants the dataset says the applications of this generation differ in. */
+	glassRoof?: GlassRoof[] | null;
+	roofHeight?: RoofHeight[] | null;
 };
 
 /** How the year resolved against the model's generations. */
@@ -72,6 +78,8 @@ function toCandidate(g: GenerationLike, language?: string | null): GenerationCan
 		bodyTypes: g.qualifiers?.bodyTypes?.length ? g.qualifiers.bodyTypes : null,
 		doors: g.qualifiers?.doors?.length ? g.qualifiers.doors : null,
 		roofTypes: g.qualifiers?.roofTypes?.length ? g.qualifiers.roofTypes : null,
+		glassRoof: g.qualifiers?.glassRoof?.length ? g.qualifiers.glassRoof : null,
+		roofHeight: g.qualifiers?.roofHeight?.length ? g.qualifiers.roofHeight : null,
 	};
 }
 
@@ -168,6 +176,29 @@ export function roofChoicesFor(
 		for (const roof of app.qualifiers.roofTypes ?? []) seen.add(roof);
 	}
 	return [...seen];
+}
+
+/**
+ * Does the shopper have to say whether the car has a glass roof / a high roof?
+ *
+ * Yes when the dataset says the generation varies in it (`generation.qualifiers`), or when any
+ * application of the generation is made for one version only (the applications' own words are
+ * unioned in, as for the roof type, so a generation with an incomplete list cannot hide a set that
+ * would then be offered for the wrong version). Asked even when only ONE version is named: that a
+ * set exists only for the car without a glass roof says nothing about the shopper's car.
+ *
+ * Never "filled in" from a single value, and never skipped for a generation that does not name it:
+ * a car that does not differ in this is asked nothing extra.
+ */
+export function variantAsked(
+	applications: Pick<FitmentApplication, "generationId" | "qualifiers">[],
+	generation: { id: string; glassRoof?: GlassRoof[] | null; roofHeight?: RoofHeight[] | null },
+	key: VariantKey,
+): boolean {
+	if ((generation[key]?.length ?? 0) > 0) return true;
+	return (applications ?? []).some(
+		(app) => app.generationId === generation.id && (app.qualifiers[key]?.length ?? 0) > 0,
+	);
 }
 
 /**

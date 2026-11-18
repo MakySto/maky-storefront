@@ -119,12 +119,12 @@ describe("rejections that would otherwise be silent", () => {
 		expect(!result.ok && result.errors.join(" ")).toContain("not supported");
 	});
 
-	it("refuses a newer MINOR of the same major — this is the whole point of 3.0.0", () => {
+	it("refuses a newer MINOR of the same major that this build does not know (3.1.0 is read, see below)", () => {
 		// The gate used to accept any `2.x`. A dataset carrying month boundaries would
 		// then have been read by a build that ignores them: every unknown field dropped,
 		// every decision still made from years, and nothing reporting a problem. An
 		// unreadable dataset must be refused, not partially understood.
-		const result = check({ ...valid(), schemaVersion: "3.1.0" });
+		const result = check({ ...valid(), schemaVersion: "3.2.0" });
 		expect(result.ok).toBe(false);
 		expect(!result.ok && result.errors.join(" ")).toContain("not supported");
 	});

@@ -1,4 +1,4 @@
-import { type BodyType, type RoofType } from "./contract";
+import { type BodyType, type GlassRoof, type RoofHeight, type RoofType } from "./contract";
 import { type GenerationCandidate } from "./selector-plan";
 
 /**
@@ -26,6 +26,13 @@ export type SelectorQualifiers = {
 	 */
 	bodyTypes: BodyType[] | null;
 	doors: number[] | null;
+	/**
+	 * Whether to ask "does your car have a glass (panoramic) roof?" — true only for a generation whose
+	 * sets differ in it. Answered yes, no or "I do not know"; never filled in, never defaulted.
+	 */
+	glassRoof: boolean;
+	/** As `glassRoof`, for a van's roof height ("standard" or "high"). */
+	roofHeight: boolean;
 	/** Values settled by the generation itself. The client sends these back unchanged. */
 	resolved: { bodyType?: BodyType; doors?: number };
 };
@@ -89,3 +96,14 @@ export type RoofAnswer = { kind: "confirmed"; roofType: RoofType } | { kind: "ot
  * is neither a fit nor a rejection, and the shopper is told what would settle it.
  */
 export type MonthAnswer = { kind: "month"; month: number } | { kind: "unknown" };
+
+/**
+ * The shopper's answer to "does your car have a glass roof?" or "does it have a high roof?".
+ *
+ * `unsure` is an answer and not a refusal: it leaves the value unset, the resolver says it cannot
+ * confirm which version of the set is theirs, and the sets made for one version only are not
+ * offered. It must never collapse into either of the two values.
+ */
+export type VariantAnswer<T extends GlassRoof | RoofHeight> =
+	| { kind: "value"; value: T }
+	| { kind: "unsure" };

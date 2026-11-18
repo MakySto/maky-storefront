@@ -90,6 +90,7 @@ async function GarageContent({ channel }: { channel: string }) {
 					}
 					year={garage.active.stored.y}
 					roofType={garage.active.stored.r ?? null}
+					variants={garage.active.variants}
 					atLimit={garage.vehicles.length >= GARAGE_MAX_VEHICLES}
 				/>
 			)}
@@ -129,6 +130,7 @@ async function GarageContent({ channel }: { channel: string }) {
 							generationName: v.generationName,
 							year: v.stored.y,
 							roofType: v.stored.r ?? null,
+							variants: v.variants,
 							unresolved: v.unresolved,
 							choose: v.choose
 								? {

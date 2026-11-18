@@ -38,9 +38,20 @@ import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetCloseButton } from "@/ui/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { type BodyType, type RoofType, type VehicleSelection } from "@/lib/fitment/contract";
+import {
+	type BodyType,
+	type GlassRoof,
+	type RoofHeight,
+	type RoofType,
+	type VehicleSelection,
+} from "@/lib/fitment/contract";
 import { loadSelectorStep } from "@/lib/fitment/selector-actions";
-import { type MonthAnswer, type RoofAnswer, type SelectorStep } from "@/lib/fitment/selector-types";
+import {
+	type MonthAnswer,
+	type RoofAnswer,
+	type SelectorStep,
+	type VariantAnswer,
+} from "@/lib/fitment/selector-types";
 import { type GenerationCandidate } from "@/lib/fitment/selector-plan";
 import { chooseVehicle } from "@/lib/garage/actions";
 import { GARAGE_MAX_VEHICLES } from "@/lib/garage/limits";
@@ -58,7 +69,7 @@ export type VehicleDraft = Draft;
 const TABS = ["vehicle", "tyres"] as const;
 export type SelectorTab = (typeof TABS)[number];
 
-type Draft = {
+export type Draft = {
 	makeId?: string;
 	makeName?: string;
 	modelId?: string;
@@ -80,6 +91,12 @@ type Draft = {
 	monthAnswer?: MonthAnswer;
 	bodyType?: BodyType;
 	doors?: number;
+	/**
+	 * Whether the car has a glass roof / a high roof, asked only where the generation's sets differ in
+	 * it. "Neviem" is an answer and is kept as one; neither value is ever assumed.
+	 */
+	glassRoofAnswer?: VariantAnswer<GlassRoof>;
+	roofHeightAnswer?: VariantAnswer<RoofHeight>;
 };
 
 type Props = {
@@ -269,9 +286,20 @@ export function VehicleSelectorSheet({
 	const goBack = () => {
 		const d = draft;
 		// Unwind in the order the questions were asked, newest first.
-		if (d.roofAnswer !== undefined || d.monthAnswer !== undefined) {
+		if (
+			d.roofAnswer !== undefined ||
+			d.monthAnswer !== undefined ||
+			d.glassRoofAnswer !== undefined ||
+			d.roofHeightAnswer !== undefined
+		) {
 			setError(null);
-			setDraft({ ...d, roofAnswer: undefined, monthAnswer: undefined });
+			setDraft({
+				...d,
+				roofAnswer: undefined,
+				monthAnswer: undefined,
+				glassRoofAnswer: undefined,
+				roofHeightAnswer: undefined,
+			});
 			return;
 		}
 		if (d.generationId) {
@@ -303,6 +331,10 @@ export function VehicleSelectorSheet({
 	const needsRoof = Boolean(qualifiers?.roofTypes) && draft.roofAnswer === undefined;
 	const needsBody = Boolean(qualifiers?.bodyTypes) && draft.bodyType === undefined;
 	const needsDoors = Boolean(qualifiers?.doors) && draft.doors === undefined;
+	// Asked only where this generation's sets differ in it; any answer, "Neviem" included, settles the
+	// step. A car that does not differ in this is asked nothing extra.
+	const needsGlassRoof = Boolean(qualifiers?.glassRoof) && draft.glassRoofAnswer === undefined;
+	const needsRoofHeight = Boolean(qualifiers?.roofHeight) && draft.roofHeightAnswer === undefined;
 	// Asked only when a month-precise window boundary falls on this year. When every
 	// window here is year-precise the month cannot move the answer, so there is no
 	// question — and "I don't know" is a valid answer to the one we do ask.
@@ -312,7 +344,9 @@ export function VehicleSelectorSheet({
 		Boolean(draft.makeId && draft.modelId && generation && draft.year !== undefined) &&
 		!needsRoof &&
 		!needsBody &&
-		!needsDoors;
+		!needsDoors &&
+		!needsGlassRoof &&
+		!needsRoofHeight;
 
 	const confirm = () => {
 		if (!canConfirm || !generation) return;
@@ -335,6 +369,10 @@ export function VehicleSelectorSheet({
 			...((draft.doors ?? qualifiers?.resolved.doors) !== undefined
 				? { doors: (draft.doors ?? qualifiers?.resolved.doors)! }
 				: {}),
+			// Only a stated version travels. "Neviem" sends nothing: the resolver then cannot say which
+			// version of a set is theirs, and the sets made for one version only are not offered.
+			...(draft.glassRoofAnswer?.kind === "value" ? { glassRoof: draft.glassRoofAnswer.value } : {}),
+			...(draft.roofHeightAnswer?.kind === "value" ? { roofHeight: draft.roofHeightAnswer.value } : {}),
 			// Only a stated month travels. "Neviem" deliberately sends nothing, so the
 			// window comparison stays unresolved and answers NEEDS_DETAIL.
 			...(draft.monthAnswer?.kind === "month" ? { manufactureMonth: draft.monthAnswer.month } : {}),
@@ -537,6 +575,32 @@ export function VehicleSelectorSheet({
 											answer={draft.roofAnswer}
 											onAnswer={(answer) => setDraft((d) => ({ ...d, roofAnswer: answer }))}
 											t={t}
+										/>
+									)}
+
+									{generation && qualifiers?.glassRoof && (
+										<VariantQuestion
+											legend={t("selector.glassRoofLegend")}
+											help={t("selector.glassRoofHelp")}
+											yes={{ value: "with", label: t("selector.glassRoofYes") }}
+											no={{ value: "without", label: t("selector.glassRoofNo") }}
+											answer={draft.glassRoofAnswer}
+											onAnswer={(answer) => setDraft((d) => ({ ...d, glassRoofAnswer: answer }))}
+											unsureLabel={t("selector.variantUnsure")}
+											unsureHelp={t("selector.variantUnsureHelp")}
+										/>
+									)}
+
+									{generation && qualifiers?.roofHeight && (
+										<VariantQuestion
+											legend={t("selector.roofHeightLegend")}
+											help={t("selector.roofHeightHelp")}
+											yes={{ value: "high", label: t("selector.roofHeightYes") }}
+											no={{ value: "standard", label: t("selector.roofHeightNo") }}
+											answer={draft.roofHeightAnswer}
+											onAnswer={(answer) => setDraft((d) => ({ ...d, roofHeightAnswer: answer }))}
+											unsureLabel={t("selector.variantUnsure")}
+											unsureHelp={t("selector.variantUnsureHelp")}
 										/>
 									)}
 
@@ -769,6 +833,62 @@ function RoofConfirmation({
 					className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed mt-2 rounded-md px-3 py-2 text-sm"
 				>
 					{t("selector.roofUnsureHelp")}
+				</p>
+			)}
+		</fieldset>
+	);
+}
+
+/**
+ * A yes / no / "I do not know" question about a version of the car the shopper can see for themselves:
+ * a glass roof, a high van roof. Both values and "Neviem" are equal buttons and none is preselected:
+ * a default here is a set sold for a car it was not made for.
+ */
+function VariantQuestion<T extends GlassRoof | RoofHeight>({
+	legend,
+	help,
+	yes,
+	no,
+	answer,
+	onAnswer,
+	unsureLabel,
+	unsureHelp,
+}: {
+	legend: string;
+	help: string;
+	yes: { value: T; label: string };
+	no: { value: T; label: string };
+	answer: VariantAnswer<T> | undefined;
+	onAnswer: (answer: VariantAnswer<T>) => void;
+	unsureLabel: string;
+	unsureHelp: string;
+}) {
+	const selected = answer === undefined ? undefined : answer.kind === "value" ? answer.value : "unsure";
+	return (
+		<fieldset>
+			<legend className="text-text-primary mb-1 text-sm font-medium">{legend}</legend>
+			<p className="text-text-tertiary mb-2 text-xs">{help}</p>
+			<div className="flex flex-col gap-2">
+				{[yes, no].map((option) => (
+					<RoofChoice
+						key={option.value}
+						label={option.label}
+						active={selected === option.value}
+						onClick={() => onAnswer({ kind: "value", value: option.value })}
+					/>
+				))}
+				<RoofChoice
+					label={unsureLabel}
+					active={selected === "unsure"}
+					onClick={() => onAnswer({ kind: "unsure" })}
+				/>
+			</div>
+			{answer?.kind === "unsure" && (
+				<p
+					role="status"
+					className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed mt-2 rounded-md px-3 py-2 text-sm"
+				>
+					{unsureHelp}
 				</p>
 			)}
 		</fieldset>
