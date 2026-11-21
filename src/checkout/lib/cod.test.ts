@@ -7,6 +7,7 @@ import {
 	codTotal,
 	customerDeliveryMethodId,
 	customerDeliveryMethods,
+	isCodDelivery,
 	isCodMethod,
 	isWithinCodMax,
 } from "./cod";
@@ -55,6 +56,18 @@ describe("the delivery step", () => {
 		expect(isCodMethod({ metadata: null })).toBe(false);
 		expect(isCodMethod({ metadata: [{ key: COD_FOR_KEY, value: "  " }] })).toBe(false);
 		expect(isCodMethod(cod())).toBe(true);
+	});
+
+	// What the order query returns for `deliveryMethod`: the fields of the fragment and no `__typename`. The first
+	// live order on delivery showed no note on its confirmation because the page asked for the type's name.
+	it("tells a paid-on-delivery order from the delivery method as the order query returns it", () => {
+		const asReturned = { name: "Courier, cash on delivery", metadata: cod().metadata };
+		expect("__typename" in asReturned).toBe(false);
+		expect(isCodDelivery(asReturned)).toBe(true);
+		expect(isCodDelivery({ name: "Courier", metadata: [] })).toBe(false);
+		expect(isCodDelivery({})).toBe(false);
+		expect(isCodDelivery(null)).toBe(false);
+		expect(isCodDelivery(undefined)).toBe(false);
 	});
 });
 

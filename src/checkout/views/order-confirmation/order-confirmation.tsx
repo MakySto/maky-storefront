@@ -10,7 +10,7 @@ import { DefaultChannelSlug } from "@/app/config";
 import { marketHref } from "@/lib/channel-map";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
 import { useLocale } from "@/providers/locale-provider";
-import { isCodMethod } from "@/checkout/lib/cod";
+import { isCodDelivery } from "@/checkout/lib/cod";
 import { formatMoneyWithFallback } from "@/checkout/lib/utils/money";
 
 /** Format address for display */
@@ -54,8 +54,7 @@ export const OrderConfirmation = () => {
 	const email = order.userEmail || "";
 	// Paid on delivery: the order's delivery method says so (`lib/cod.ts`). The customer is told what the courier
 	// will ask for, because nothing was charged and the page otherwise reads like a paid order.
-	const paidOnDelivery =
-		order.deliveryMethod?.__typename === "ShippingMethod" && isCodMethod(order.deliveryMethod);
+	const paidOnDelivery = isCodDelivery(order.deliveryMethod);
 	const codTotal = paidOnDelivery ? formatMoneyWithFallback(order.total?.gross, locale) : "";
 
 	return (
