@@ -11,6 +11,7 @@ import {
 	tyreSizeLabelOf,
 	type TyreFamiliesFile,
 } from "./families";
+import { isTyreSizeCode } from "./codes";
 import { tyreSizeIndex } from "./size-index";
 
 const FILE = join(__dirname, "data", "rodiny_20261105.json");
@@ -78,12 +79,25 @@ describe("the families file is the one CFM published beside the size list, uncha
 		}
 	});
 
-	it("belongs to the size list: the same id, and exactly the same 145 codes", () => {
+	it("belongs to the size list: the same id, and exactly the same 153 codes", () => {
 		const index = tyreSizeIndex();
 		expect(raw.id).toBe(index.id);
 		expect(Object.keys(raw.products).sort()).toEqual(Object.keys(index.products).sort());
-		expect(Object.keys(raw.products)).toHaveLength(145);
-		expect(Object.keys(raw.families)).toHaveLength(13);
+		expect(Object.keys(raw.products)).toHaveLength(153);
+		expect(Object.keys(raw.families)).toHaveLength(14);
+	});
+
+	it("holds the eight Pilot-Pro XL codes as one family, so the listing card asks for a size instead of adding them", () => {
+		const codes = Array.from({ length: 8 }, (_, i) => `N${16280 + i}`);
+		for (const code of codes) {
+			expect(isTyreSizeCode(code), code).toBe(true);
+			expect(tyreSizeIndex().products[code], code).toBeDefined();
+			expect(raw.products[code]?.family, code).toBe("snowdrive-pilot-pro-xl");
+		}
+		expect(raw.families["snowdrive-pilot-pro-xl"]).toEqual({
+			label: "SnowDrive Pilot-Pro XL",
+			kind: "chain",
+		});
 	});
 
 	it("leaves no family empty", () => {

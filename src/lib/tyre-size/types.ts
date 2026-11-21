@@ -2,7 +2,7 @@
  * The shapes of the tyre-size feature, shared by the server (the list, the check at add-to-cart) and the client
  * (the picker on the product page, the cart's display of what was chosen).
  *
- * Nothing here imports the list itself: `size-index.ts` is server-only and large (5 323 rows), and a client
+ * Nothing here imports the list itself: `size-index.ts` is server-only and large (5 806 rows), and a client
  * module must be able to import these types without pulling it into the browser bundle.
  */
 

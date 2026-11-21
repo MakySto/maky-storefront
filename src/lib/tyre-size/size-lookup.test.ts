@@ -20,7 +20,7 @@ const products = Object.entries(index.products);
 const labels = [...new Set(products.flatMap(([, product]) => product.sizes.map(([label]) => label)))];
 
 describe("the list seen from the size's side", () => {
-	it("holds every row of the list, once: the same 5 323 rows, turned over", () => {
+	it("holds every row of the list, once: the same 5 806 rows, turned over", () => {
 		const rows = labels.reduce((sum, label) => sum + tyreSizeEntries(label).length, 0);
 		expect(rows).toBe(index.counts.sizes);
 		expect(labels).toHaveLength(980);
