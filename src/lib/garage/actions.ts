@@ -17,9 +17,10 @@
 
 import { cookies } from "next/headers";
 
-import { type VehicleSelection } from "@/lib/fitment/contract";
+import { GLASS_ROOF_VALUES, ROOF_HEIGHT_VALUES, type VehicleSelection } from "@/lib/fitment/contract";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
-import { resolveQualifier, resolveRoofAnswer, roofOptionsFor } from "./selection";
+import { resolveQualifier, resolveRoofAnswer, resolveVariantAnswer, roofOptionsFor } from "./selection";
+import { variantAsked } from "@/lib/fitment/selector-plan";
 import { resolveGarageMode } from "./config";
 import {
 	encodeGarageCookie,
@@ -169,6 +170,30 @@ async function validateSelection(
 	const doors = resolveQualifier(q.doors, selection.doors);
 	if (doors === "invalid") return { ok: false, error: "invalid-qualifier" };
 	if (doors !== undefined) normalized.doors = doors;
+
+	// The roof variants (glass roof, a van's roof height): kept only where the SAME rule the selector
+	// used says the generation asks, and never filled in — an unanswered one is stored as nothing and
+	// the resolver asks again. See `resolveVariantAnswer`.
+	const generationVariants = {
+		id: generation.id,
+		glassRoof: q.glassRoof,
+		roofHeight: q.roofHeight,
+	};
+	const glassRoof = resolveVariantAnswer(
+		variantAsked(dataset.applications, generationVariants, "glassRoof"),
+		GLASS_ROOF_VALUES,
+		selection.glassRoof,
+	);
+	if (glassRoof === "invalid") return { ok: false, error: "invalid-qualifier" };
+	if (glassRoof !== undefined) normalized.glassRoof = glassRoof;
+
+	const roofHeight = resolveVariantAnswer(
+		variantAsked(dataset.applications, generationVariants, "roofHeight"),
+		ROOF_HEIGHT_VALUES,
+		selection.roofHeight,
+	);
+	if (roofHeight === "invalid") return { ok: false, error: "invalid-qualifier" };
+	if (roofHeight !== undefined) normalized.roofHeight = roofHeight;
 
 	// The month of MANUFACTURE, when the shopper gave one. Optional by contract and it
 	// must stay optional — not every supplier states months, and a window that gave only

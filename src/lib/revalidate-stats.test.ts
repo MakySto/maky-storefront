@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+	BATCH_EVENTS_PER_MINUTE,
 	DETAIL_PER_WINDOW,
 	STATS_WINDOW_MS,
 	__resetRevalidateStats,
 	detailAllowed,
 	flushStats,
+	flushStatsOnShutdown,
 	recordRevalidateRequest,
 } from "./revalidate-stats";
 
@@ -86,5 +88,72 @@ describe("revalidate stats", () => {
 		expect(lines[0]).not.toContain("\n");
 		expect(lines[0]!.split(" | ")[1]!.split(" ").length).toBeLessThanOrEqual(41);
 		expect(lines[0]).toContain("other=");
+	});
+
+	it("adds the delay of signed deliveries to the line, and leaves the line as it was when there is none", () => {
+		for (let n = 1; n <= 100; n++) {
+			recordRevalidateRequest({ type: "ProductUpdated", outcome: "applied", ms: 5, delayMs: n * 10 });
+		}
+		// Not signed by Saleor (or no issuedAt): counted, but with no delay.
+		recordRevalidateRequest({ type: "ProductUpdated", outcome: "applied", ms: 5 });
+		flushStats();
+		expect(lines[0]).toMatch(/over1s=0 \| delay ms n=100 p95=950 max=1000$/);
+
+		recordRevalidateRequest({ type: "ProductUpdated", outcome: "applied", ms: 5 });
+		flushStats();
+		expect(lines[1]).not.toContain("delay");
+	});
+
+	it("does not turn a clock skew into a negative delay", () => {
+		recordRevalidateRequest({ type: "ProductUpdated", outcome: "applied", ms: 5, delayMs: -300 });
+		flushStats();
+		expect(lines[0]).toContain("delay ms n=1 p95=0 max=0");
+	});
+
+	it("writes the window in progress when the process stops", () => {
+		recordRevalidateRequest({ type: "ProductUpdated", outcome: "applied", ms: 5 });
+		expect(lines).toHaveLength(0);
+		flushStatsOnShutdown();
+		expect(lines).toHaveLength(1);
+		expect(lines[0]).toContain("total=1");
+	});
+
+	describe("a batch", () => {
+		const busyMinute = async (delayMs: number) => {
+			for (let n = 0; n < BATCH_EVENTS_PER_MINUTE; n++) {
+				recordRevalidateRequest({ type: "ProductUpdated", outcome: "applied", ms: 1, delayMs });
+			}
+			await vi.advanceTimersByTimeAsync(STATS_WINDOW_MS + 1);
+		};
+
+		it("is summed up once, with the delay over all of its requests, when a quiet minute follows", async () => {
+			await busyMinute(100);
+			await busyMinute(2_000);
+			expect(lines.filter((line) => line.startsWith("[revalidate-batch]"))).toHaveLength(0);
+
+			recordRevalidateRequest({ type: "ProductUpdated", outcome: "applied", ms: 1 });
+			await vi.advanceTimersByTimeAsync(STATS_WINDOW_MS + 1);
+
+			const summary = lines.filter((line) => line.startsWith("[revalidate-batch]"));
+			expect(summary).toHaveLength(1);
+			expect(summary[0]).toContain("busy_minutes=2 total=200 | delay ms n=200 p95=2000 max=2000");
+		});
+
+		it("is summed up when the traffic just stops, without another request", async () => {
+			await busyMinute(300);
+			await vi.advanceTimersByTimeAsync(STATS_WINDOW_MS + 10_000);
+			expect(lines.filter((line) => line.startsWith("[revalidate-batch]"))).toHaveLength(1);
+		});
+
+		it("is summed up at shutdown, and a slow minute that is not a batch prints no summary", async () => {
+			await busyMinute(50);
+			flushStatsOnShutdown();
+			expect(lines.filter((line) => line.startsWith("[revalidate-batch]"))).toHaveLength(1);
+
+			lines.length = 0;
+			recordRevalidateRequest({ type: "ProductUpdated", outcome: "applied", ms: 1 });
+			await vi.advanceTimersByTimeAsync(STATS_WINDOW_MS + 1);
+			expect(lines.filter((line) => line.startsWith("[revalidate-batch]"))).toHaveLength(0);
+		});
 	});
 });

@@ -1,4 +1,11 @@
-import { type BodyType, type FitmentVerdict, type RoofType } from "@/lib/fitment/contract";
+import {
+	type BodyType,
+	type FitmentVerdict,
+	type GlassRoof,
+	type RoofHeight,
+	type RoofType,
+	type VariantKey,
+} from "@/lib/fitment/contract";
 
 /**
  * How a verdict looks, in one place.
@@ -108,3 +115,46 @@ export const CONDITION_LABEL_KEY: Record<string, string> = {
 	"rail-spacing-measure": "conditionRailSpacing",
 	"panoramic-roof-limit": "conditionPanoramicRoof",
 };
+
+/**
+ * The words for one roof variant of a car, in the `fitment` namespace: what the shopper said, or —
+ * when they have not — that it is unconfirmed, so it is never read as "no glass roof" by default.
+ */
+export function variantLabelKey(detail: { key: VariantKey; value: GlassRoof | RoofHeight | null }): string {
+	if (detail.key === "glassRoof") {
+		return detail.value === "with"
+			? "variantGlassRoofWith"
+			: detail.value === "without"
+				? "variantGlassRoofWithout"
+				: "variantGlassRoofUnconfirmed";
+	}
+	return detail.value === "high"
+		? "variantRoofHeightHigh"
+		: detail.value === "standard"
+			? "variantRoofHeightStandard"
+			: "variantRoofHeightUnconfirmed";
+}
+
+/** The sentence for a set made for the OTHER version of this car: `{vehicle}` and the version it is for. */
+export function noFitVariantKey(madeFor: {
+	glassRoof?: readonly GlassRoof[];
+	roofHeight?: readonly RoofHeight[];
+}): string | null {
+	const glass = madeFor.glassRoof;
+	const height = madeFor.roofHeight;
+	if (glass?.length === 1 && !height?.length) {
+		return glass[0] === "with" ? "noFitGlassRoofWith" : "noFitGlassRoofWithout";
+	}
+	if (height?.length === 1 && !glass?.length) {
+		return height[0] === "high" ? "noFitRoofHeightHigh" : "noFitRoofHeightStandard";
+	}
+	// Both named, or a version-list we cannot say in one clause: the plain sentence, never a guess.
+	return null;
+}
+
+/** The sentence under AMBIGUOUS when the open question is a roof variant: it names the question. */
+export function askVariantKey(ask: readonly VariantKey[]): string | null {
+	if (ask.length === 1) return ask[0] === "glassRoof" ? "askGlassRoof" : "askRoofHeight";
+	if (ask.length > 1) return "askGlassRoofAndHeight";
+	return null;
+}

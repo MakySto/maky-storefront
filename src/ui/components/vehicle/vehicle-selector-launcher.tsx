@@ -31,7 +31,7 @@ import { useTranslations } from "next-intl";
 
 import { SheetTrigger } from "@/ui/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { VehicleSelectorSheet } from "./vehicle-selector-sheet";
+import { VehicleSelectorSheet, type Draft } from "./vehicle-selector-sheet";
 
 type Variant = "header" | "hero" | "primary" | "compact" | "inline" | "link" | "icon";
 
@@ -51,6 +51,11 @@ type Props = {
 	 * beside the car; with no car it is all they carry, and the click then opens the window on the tyres.
 	 */
 	tyreSize?: string | null;
+	/**
+	 * Where the window starts. Left out, it starts at the make. A surface that asks for ONE missing
+	 * answer about the car in use (a glass roof) passes the car (`draftFromVehicle`).
+	 */
+	initialDraft?: Draft;
 	className?: string;
 };
 
@@ -59,6 +64,7 @@ export function VehicleSelectorLauncher({
 	vehicleLabel,
 	label: labelOverride,
 	tyreSize,
+	initialDraft,
 	className,
 }: Props) {
 	const [open, setOpen] = useState(false);
@@ -103,7 +109,12 @@ export function VehicleSelectorLauncher({
 		: fallback;
 
 	return (
-		<VehicleSelectorSheet open={open} onOpenChange={setOpen} initialTab={tyresOnly ? "tyres" : "vehicle"}>
+		<VehicleSelectorSheet
+			open={open}
+			onOpenChange={setOpen}
+			initialTab={tyresOnly ? "tyres" : "vehicle"}
+			initialDraft={initialDraft}
+		>
 			{/* Radix's Trigger hardcodes type="button" and forwards it through asChild, so
 			    this is safe even inside the PDP's add-to-cart <form>. */}
 			<SheetTrigger asChild>

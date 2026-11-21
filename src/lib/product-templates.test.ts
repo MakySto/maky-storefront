@@ -11,6 +11,7 @@ import {
 	PRODUCT_TEMPLATES,
 	sectionKindOfHtml,
 	sheetFacts,
+	splitDescriptionTitle,
 	TEMPERATURE_RANGE_REF,
 	templateFor,
 	templateIdForCategory,
@@ -57,6 +58,46 @@ describe("templateFor", () => {
 
 	it("registers each template under its own id", () => {
 		for (const [id, template] of Object.entries(PRODUCT_TEMPLATES)) expect(template.id).toBe(id);
+	});
+
+	it("knows the bike carrier by the name CFM writes, and sets a pictured description as sections", () => {
+		const carrier = templateFor("nosic-bicyklov");
+		expect(carrier.id).toBe("nosic-bicyklov");
+		// The sheet, the kind and the manual stand in places of their own; the key facts stay in the text,
+		// where the producer wrote them, because a lifted block that the band does not use is gone.
+		expect(carrier.lift).toEqual(["specs", "kind", "documents"]);
+		expect(carrier.groups).toEqual([]);
+		expect(carrier.factsFromSheet).toBe(false);
+		const pictured = [{ html: "<h3>Titel</h3>" }, { html: '<figure><img src="x"></figure>' }];
+		expect(layoutFor(carrier, pictured).sections).toBe(true);
+		// Without a picture of its own the description stays one card, as an approved page does.
+		expect(layoutFor(carrier, [{ html: "<p>text</p>" }]).sections).toBeUndefined();
+		// It reads no warranty: only the fridges do.
+		expect(carrier.warrantyRef).toBeUndefined();
+	});
+
+	it("draws a bike carrier's description lifted and in order: the sheet and the manual out, the facts stay", () => {
+		const blocks: ProductContentBlock[] = [
+			{ html: "<p>lead</p>" },
+			{
+				html: '<ul class="maky-tiles">t</ul>',
+				section: "facts",
+				facts: [{ label: "Nosnosť", value: "60 kg" }],
+			},
+			{
+				html: "<div>sheet</div>",
+				section: "specs",
+				title: "Technické parametre",
+				body: "<dl>s</dl>",
+				facts: [],
+			},
+			{ html: "<section>manual</section>", section: "documents", title: "Návod", body: "<ul>d</ul>" },
+		];
+		const sections = liftSections(blocks, templateFor("nosic-bicyklov"));
+		expect(sections.specs?.body).toBe("<dl>s</dl>");
+		expect(sections.documents?.body).toBe("<ul>d</ul>");
+		expect(sections.facts).toBeNull();
+		expect(sections.description).toEqual(["<p>lead</p>", '<ul class="maky-tiles">t</ul>']);
 	});
 });
 
@@ -499,11 +540,87 @@ describe("withoutSheetRepeats", () => {
 		expect(out.outerDimensions).toBeNull();
 	});
 
+	it("drops a row the sheet names, whatever way its value is written: one row said twice", () => {
+		const out = withoutSheetRepeats(
+			[
+				{ label: "Počet bicyklov", values: ["3"] },
+				{ label: "Skladací", values: ["Áno"] },
+				{ label: "Výrobca", values: ["Pro-USER"] },
+			],
+			null,
+			[
+				{ label: "Počet bicyklov", value: "3 (+1 s rozšírením TK91749)" },
+				{ label: "Skladací", value: "áno" },
+			],
+		);
+		expect(out.rows.map((r) => r.label)).toEqual(["Výrobca"]);
+	});
+
+	it("compares names without case, spacing or a closing colon, and only on the page's own sheet", () => {
+		const row = (label: string) => [{ label, values: ["x"] }];
+		const sheetOf = (label: string) => [{ label, value: "y" }];
+		expect(withoutSheetRepeats(row("Počet  bicyklov:"), null, sheetOf("počet bicyklov")).rows).toEqual([]);
+		expect(withoutSheetRepeats(row("Počet\u00a0bicyklov"), null, sheetOf("Počet bicyklov ")).rows).toEqual(
+			[],
+		);
+		// Another name is another row, however alike.
+		expect(
+			withoutSheetRepeats(row("Počet bicyklov"), null, sheetOf("Počet bicyklov na streche")).rows,
+		).toHaveLength(1);
+		// A row with no name is never matched by name.
+		expect(withoutSheetRepeats([{ values: ["x"] }], null, sheetOf("")).rows).toHaveLength(1);
+	});
+
 	it("drops nothing when the page has no sheet", () => {
 		for (const none of [null, undefined, []]) {
 			const out = withoutSheetRepeats(rows, "1 × 2 × 3 cm", none);
 			expect(out.rows).toHaveLength(2);
 			expect(out.outerDimensions).toBe("1 × 2 × 3 cm");
 		}
+	});
+});
+
+describe("splitDescriptionTitle", () => {
+	it("takes the first block for the title when it is a heading of the second level, and leaves the rest as the text", () => {
+		expect(
+			splitDescriptionTitle([
+				"<h2>Snehové reťaze na diskoch R14 až R19</h2>",
+				"<p>Úvod.</p>",
+				"<h2>Ďalší</h2>",
+			]),
+		).toEqual({
+			title: "Snehové reťaze na diskoch R14 až R19",
+			body: ["<p>Úvod.</p>", "<h2>Ďalší</h2>"],
+		});
+	});
+
+	it("keeps the inline markup of the title: the producer's text is already sanitised", () => {
+		expect(splitDescriptionTitle(["<h2>16&nbsp;mm <strong>reťaze</strong></h2>", "<p>x</p>"]).title).toBe(
+			"16&nbsp;mm <strong>reťaze</strong>",
+		);
+	});
+
+	it("has no title when the first block is anything else: a heading of another level, a paragraph, a role", () => {
+		for (const first of [
+			"<h3>Nadpis</h3>",
+			"<h1>Nadpis</h1>",
+			"<p>Úvod.</p>",
+			'<h3 class="maky-sec maky-sec-intro">x</h3>',
+		]) {
+			const blocks = [first, "<p>x</p>"];
+			expect(splitDescriptionTitle(blocks)).toEqual({ title: null, body: blocks });
+		}
+	});
+
+	it("never takes a heading further down for the title", () => {
+		const blocks = ["<p>Úvod.</p>", "<h2>Nadpis</h2>"];
+		expect(splitDescriptionTitle(blocks)).toEqual({ title: null, body: blocks });
+	});
+
+	it("has no title for an empty heading, and none for no description at all", () => {
+		expect(splitDescriptionTitle(["<h2> </h2>", "<p>x</p>"]).title).toBeNull();
+		expect(splitDescriptionTitle(null)).toEqual({ title: null, body: [] });
+		expect(splitDescriptionTitle(undefined)).toEqual({ title: null, body: [] });
+		expect(splitDescriptionTitle([])).toEqual({ title: null, body: [] });
 	});
 });

@@ -34,6 +34,7 @@ import {
 } from "@/lib/fitment/contract";
 import { generationFate, modelFate } from "@/lib/fitment/retired-ids";
 import { type GaragePayload, sameVehicle, type StoredVehicle } from "./cookie";
+import { variantAsked } from "@/lib/fitment/selector-plan";
 import { roofOptionsFor } from "./selection";
 
 export type StoredVehicleUpgrade =
@@ -90,6 +91,21 @@ function onGeneration(
 	const roof = vehicle.r !== undefined && roofs.includes(vehicle.r) ? vehicle.r : undefined;
 	const body = keepOnly<BodyType>(generation.qualifiers.bodyTypes, vehicle.b);
 	const doors = keepOnly<number>(generation.qualifiers.doors, vehicle.d);
+	// The roof variants are the shopper's own fact about their car, carried to the new generation only
+	// where it still asks the same question; never filled in (`variantAsked`).
+	const variants = {
+		id: generation.id,
+		glassRoof: generation.qualifiers.glassRoof,
+		roofHeight: generation.qualifiers.roofHeight,
+	};
+	const glassRoof =
+		vehicle.gr !== undefined && variantAsked(dataset.applications, variants, "glassRoof")
+			? vehicle.gr
+			: undefined;
+	const roofHeight =
+		vehicle.rh !== undefined && variantAsked(dataset.applications, variants, "roofHeight")
+			? vehicle.rh
+			: undefined;
 
 	return {
 		k: model.makeId,
@@ -99,6 +115,8 @@ function onGeneration(
 		...(roof ? { r: roof } : {}),
 		...(body ? { b: body } : {}),
 		...(doors !== undefined ? { d: doors } : {}),
+		...(glassRoof ? { gr: glassRoof } : {}),
+		...(roofHeight ? { rh: roofHeight } : {}),
 		...(vehicle.mo !== undefined ? { mo: vehicle.mo } : {}),
 	};
 }

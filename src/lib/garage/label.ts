@@ -10,7 +10,7 @@
  * the current dataset, so any name assembled from them would be a guess.
  */
 
-import { type RoofType } from "@/lib/fitment/contract";
+import { type GlassRoof, type RoofHeight, type RoofType, type VariantKey } from "@/lib/fitment/contract";
 
 export type VehicleNameParts = {
 	makeName: string | null;
@@ -101,4 +101,21 @@ export function vehicleDetailParts(vehicle: VehicleSpec | null | undefined): {
 /** Join already-translated detail pieces with the shared separator, dropping the empty ones. */
 export function joinVehicleDetail(parts: readonly (string | null | undefined)[]): string {
 	return parts.filter((part): part is string => Boolean(part && part.trim())).join(SEPARATOR);
+}
+
+/**
+ * One roof variant the shopper is asked about for this car (glass roof, a van's roof height), and
+ * what they said: `null` is "not said", which must be shown as not said and never as a default.
+ */
+export type VariantDetail = { key: VariantKey; value: GlassRoof | RoofHeight | null };
+
+/** The questions this car's generation asks, in a fixed order, each with the stored answer. */
+export function variantDetails(
+	asked: readonly VariantKey[],
+	stored: { gr?: GlassRoof; rh?: RoofHeight },
+): VariantDetail[] {
+	const out: VariantDetail[] = [];
+	if (asked.includes("glassRoof")) out.push({ key: "glassRoof", value: stored.gr ?? null });
+	if (asked.includes("roofHeight")) out.push({ key: "roofHeight", value: stored.rh ?? null });
+	return out;
 }

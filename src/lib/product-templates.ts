@@ -197,9 +197,36 @@ const STRESNY_NOSIC: ProductTemplate = {
 	sectionsWhenPictured: true,
 };
 
+/**
+ * A bike carrier (today the three Pro-USER Diamant FG: TK91759, TK91763, TK91764). Like a roof-rack set it
+ * writes its figures in the description — the parameter sheet (`maky:specs`) — and carries pictures of its
+ * own, so a description with pictures is set as sections. What it lifts out of the description: the sheet,
+ * the short name of the kind of product and the documents (the maker's manual), each in the place the page
+ * has for it. What it does not do:
+ *
+ * - It does not lift the key facts (`maky:facts`). The band under the gallery is made of the product's
+ *   attributes whenever they give it two facts, and only then; a facts block that was lifted and not used
+ *   would be gone from the page, and for a bike carrier it is the block that sets the carrier's limits
+ *   (the wheelbase, the tyre width, the frame) beside the text that asks the shopper to compare them. It
+ *   stays where CFM wrote it.
+ * - It has no registry of groups: the sheet's own groups ("Kapacita", "Bicykle" …) are the producer's.
+ * - The band is never made of the first rows of the sheet (`factsFromSheet`).
+ *
+ * Without the name `maky-content/1:nosic-bicyklov` the description is drawn as the generic page.
+ */
+const NOSIC_BICYKLOV: ProductTemplate = {
+	id: "nosic-bicyklov",
+	lift: ["specs", "kind", "documents"],
+	facts: [],
+	factsFromSheet: false,
+	groups: [],
+	sectionsWhenPictured: true,
+};
+
 export const PRODUCT_TEMPLATES: Readonly<Record<string, ProductTemplate>> = {
 	[AUTOCHLADNICKA.id]: AUTOCHLADNICKA,
 	[STRESNY_NOSIC.id]: STRESNY_NOSIC,
+	[NOSIC_BICYKLOV.id]: NOSIC_BICYKLOV,
 };
 
 /**
@@ -270,6 +297,46 @@ export function descriptionSections(blocks: readonly string[]): string[][] {
 		else merged.push(section);
 		return merged;
 	}, []);
+}
+
+/**
+ * A plain heading of the second level, as `parseProductContent` writes one: `<h2>text</h2>`. A heading
+ * with a role's mark never reaches here as a block of its own (it is that role's title), and a heading
+ * of the first level or the third is not the one the page takes for its own.
+ */
+const TITLE_BLOCK = /^<h2>([\s\S]*?)<\/h2>$/;
+
+/**
+ * The title CFM gives a description: its FIRST block, when that is a heading of the second level
+ * (`maky-content.md`, "The title of the description"). The card sets it as its own heading in place of
+ * the fixed words ("Popis produktu"), and the text goes on without it, so it is read once. A description
+ * with no such block has no title, and its card has no heading: the page does not say a thing nobody
+ * wrote. A heading further down is a heading of the text and stays where it is.
+ *
+ * The producer's side of the same rule is `leading_title` in CFM's `maky_content.py`.
+ */
+export function splitDescriptionTitle(blocks: readonly string[] | null | undefined): {
+	/** The title as sanitised inline HTML, or null. */
+	title: string | null;
+	/** The blocks that stay in the description's text. */
+	body: readonly string[];
+} {
+	const list = blocks ?? [];
+	const found = list.length > 0 ? TITLE_BLOCK.exec(list[0].trim()) : null;
+	const title = found?.[1].trim() ?? "";
+	if (!title) return { title: null, body: list };
+	return { title, body: list.slice(1) };
+}
+
+/**
+ * The opening heading of a description that has no title of its own, as an `h2`: a set page draws its
+ * introduction's heading (Kargo writes it as an `h3`) directly under the product's `h1`, and the card has
+ * no heading of its own over it, so it is the page's second-level heading. Anything else is returned as it is.
+ */
+export function liftLeadHeading(blocks: readonly string[]): string[] {
+	const [first, ...rest] = blocks;
+	if (first === undefined || !/^<h3[\s>]/.test(first) || !first.endsWith("</h3>")) return [...blocks];
+	return [`<h2${first.slice(3, -5)}</h2>`, ...rest];
 }
 
 /** The kind of section a card opens with (`maky:section:<kind>` on its heading), or null. */
@@ -383,25 +450,41 @@ const comparable = (value: string): string =>
 		.replace(/[\s.;,]+$/, "")
 		.trim();
 
+/** A label as it is compared with another: case, spacing and a closing colon or full stop do not tell two apart. */
+const comparableLabel = (label: string): string =>
+	label
+		.toLowerCase()
+		.replace(/[  \s]+/g, " ")
+		.replace(/[\s:.;,]+$/, "")
+		.trim();
+
 /**
  * The attribute rows a card that already prints the description's parameter sheet still has to print: the
- * ones whose value the sheet does not already say. A Kargo basket's sheet has "Rozmery koša 420 × 180 × 7 cm" and
+ * ones the sheet does not already say. A Kargo basket's sheet has "Rozmery koša 420 × 180 × 7 cm" and
  * "Materiál koša eloxovaný hliník", and its attributes the very same figures as "Vonkajšie rozmery" and
- * "Materiál"; printed together the page says everything twice. The rows are matched by VALUE, which reads the
- * same in every language, never by label, which does not; a row whose value the sheet does not carry stays.
- * With no sheet nothing is dropped.
+ * "Materiál"; printed together the page says everything twice. Two ways a row is a repeat:
+ *
+ * - its VALUE is a value the sheet states, which reads the same in every language;
+ * - its NAME is a name of the sheet's rows, even when the value is written another way: the sheet's
+ *   "Počet bicyklov 3 (+1 s rozšírením TK91749)" and the attribute "Počet bicyklov 3" are one row said
+ *   twice, and the sheet — the producer's own wording of that product — is the one that stays. A name is
+ *   compared only on this page, where the sheet and the attributes are in one language, never across pages.
+ *
+ * A row neither of whose marks the sheet carries stays. With no sheet nothing is dropped.
  */
-export function withoutSheetRepeats<Row extends { values: readonly string[] }>(
+export function withoutSheetRepeats<Row extends { label?: string; values: readonly string[] }>(
 	rows: readonly Row[],
 	outerDimensions: string | null,
 	sheet: readonly SpecFact[] | null | undefined,
 ): { rows: Row[]; outerDimensions: string | null } {
 	const stated = new Set((sheet ?? []).map(({ value }) => comparable(value ?? "")).filter(Boolean));
-	if (stated.size === 0) return { rows: [...rows], outerDimensions };
-	const repeats = (values: readonly string[]) =>
-		values.length > 0 && stated.has(comparable(values.join(", ")));
+	const named = new Set((sheet ?? []).map(({ label }) => comparableLabel(label ?? "")).filter(Boolean));
+	if (stated.size === 0 && named.size === 0) return { rows: [...rows], outerDimensions };
+	const repeats = (row: Row) =>
+		(row.values.length > 0 && stated.has(comparable(row.values.join(", ")))) ||
+		(Boolean(row.label) && named.has(comparableLabel(row.label ?? "")));
 	return {
-		rows: rows.filter((row) => !repeats(row.values)),
+		rows: rows.filter((row) => !repeats(row)),
 		outerDimensions: outerDimensions && stated.has(comparable(outerDimensions)) ? null : outerDimensions,
 	};
 }

@@ -114,7 +114,7 @@ describe("the HTTP provider answers, or says why not", () => {
 	});
 
 	it("refuses a schema version this build does not implement", async () => {
-		respondWith(delivered({ schemaVersion: "3.1.0" }));
+		respondWith(delivered({ schemaVersion: "3.2.0" }));
 		const { dataset, status } = await load();
 		expect(dataset).toBeNull();
 		expect(status.unavailableReason).toBe("payload-invalid");
@@ -550,7 +550,7 @@ describe("a payload that fails validation never replaces a good one", () => {
 	const refused: [string, string][] = [
 		["content changed under its datasetHash", tampered],
 		["a payload built for another Saleor instance", delivered({ saleorInstance: "staging.example.test" })],
-		["a schema this build does not implement", delivered({ schemaVersion: "3.1.0" })],
+		["a schema this build does not implement", delivered({ schemaVersion: "3.2.0" })],
 	];
 
 	it.each(refused)("keeps the good dataset when the refresh brings %s", async (_what, body) => {
