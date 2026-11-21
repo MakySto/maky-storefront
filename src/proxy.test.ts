@@ -767,7 +767,7 @@ describe("retired vehicle pages", () => {
  * Slovakia keeps `/sk/stresne-nosice`. Driven from the route table, so every market is walked:
  * the root, a make, a model and a generation under it, the old Slovak spelling as a one-hop
  * alias, the RELEASE-4 pages each foreign catalogue still publishes under the Slovak root, and
- * the retired BP/TQ pages spelled either way.
+ * the BP/TQ pages that RELEASE-4 retired and CFM published again, spelled either way.
  */
 describe("localized category roots (COMMERCE-2 M1)", () => {
 	const roots = categoryRouteTable().filter((row) => row.baseSlug === "stresne-nosice");
@@ -844,18 +844,38 @@ describe("localized category roots (COMMERCE-2 M1)", () => {
 		}
 	});
 
-	it("still answers the retired BP and TQ pages, spelled either way, with their replacement directly", async () => {
-		for (const row of foreign) {
-			for (const [from, to] of [
-				["/stresne-nosice/subaru/legacy-kombi/bp", "/stresne-nosice/subaru/legacy-kombi/bh"],
-				[`/${row.segment}/subaru/legacy-kombi/bp`, "/stresne-nosice/subaru/legacy-kombi/bh"],
-				["/stresne-nosice/hyundai/h-1-van/tq", "/stresne-nosice/hyundai/h-1-van/a1"],
-				[`/${row.segment}/hyundai/h-1-van/tq`, "/stresne-nosice/hyundai/h-1-van/a1"],
-			]) {
-				const res = await proxy(req(`/${row.market}${from}`));
-				expect(res.status, `/${row.market}${from}`).toBe(301);
-				expect(location(res)?.pathname, `/${row.market}${from}`).toBe(`/${row.market}${to}`);
+	/**
+	 * RELEASE-4 (2026-09-15) retired Legacy Kombi BP and H-1 Van TQ and sent them to BH and A1. On
+	 * 2026-11-08 both are published in CFM with text and are nodes of the live dataset with their own
+	 * years (BP 2003 to 2009, TQ 2008 to 2021), so their rows left the table: the localized spelling
+	 * is a page in every market, and the Slovak spelling abroad takes the one hop every other page takes.
+	 */
+	it("serves the BP and TQ pages CFM published again, and takes the Slovak spelling abroad to them in one hop", async () => {
+		const pages = ["/subaru/legacy-kombi/bp", "/hyundai/h-1-van/tq"];
+		for (const row of roots) {
+			for (const page of pages) {
+				const path = `/${row.market}/${row.segment}${page}`;
+				const res = await proxy(req(path));
+				expect(res.status, path).not.toBe(301);
+				expect(res.headers.get("location"), path).toBeNull();
+				expect(res.headers.get("x-middleware-rewrite"), path).toContain(
+					`/${row.channel}/categories/${row.segment}${page}`,
+				);
 			}
+		}
+		for (const row of foreign) {
+			for (const page of pages) {
+				const path = `/${row.market}/stresne-nosice${page}`;
+				const res = await proxy(req(path));
+				expect(res.status, path).toBe(301);
+				expect(location(res)?.pathname, path).toBe(`/${row.market}/${row.segment}${page}`);
+			}
+		}
+		// Spain's first root moves in one hop too, and lands on the page itself, not on BH.
+		for (const page of pages) {
+			const res = await proxy(req(`/es/bacas-de-techo${page}`));
+			expect(res.status, page).toBe(301);
+			expect(location(res)?.pathname, page).toBe(`/es/barras-de-techo${page}`);
 		}
 	});
 
