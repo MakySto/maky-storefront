@@ -5,7 +5,14 @@
 		"batch": "snehove_retaze_produkty_20261105",
 		"batch_file_sha256": "ec31a5760f9bd8ec500f6757c609b09063d162486b86ebf69750e5f7921080b2",
 		"batch_self_sha256": "d527c98d5258781150ce880c19438804412be010bceeb6246a548713dd677b5e",
-		"producer": "backend/docs/runbooks/snehove_retaze_produkty_20261105/build_rodiny.py"
+		"producer": "backend/docs/runbooks/snehove_retaze_produkty_20261105/build_rodiny.py",
+		"supplements": [
+			{
+				"batch": "snehove_retaze_produkty_xl_20261120",
+				"batch_file_sha256": "8370205838f6405951ce782c06a1af9d134dc213dc19df43a20e093b2fcbf39b",
+				"batch_self_sha256": "20ed1bc282d78428c04b27e22698fed90db8cf1125402dd2ddbd42a266724d3a"
+			}
+		]
 	},
 	"families": {
 		"dac-active": {
@@ -43,6 +50,10 @@
 		},
 		"snowdrive-pilot-pro": {
 			"label": "SnowDrive Pilot-Pro",
+			"kind": "chain"
+		},
+		"snowdrive-pilot-pro-xl": {
+			"label": "SnowDrive Pilot-Pro XL",
 			"kind": "chain"
 		},
 		"snowdrive-ponozky": {
@@ -520,6 +531,38 @@
 			"family": "snowdrive-pilot-pro",
 			"size": null
 		},
+		"N16280": {
+			"family": "snowdrive-pilot-pro-xl",
+			"size": null
+		},
+		"N16281": {
+			"family": "snowdrive-pilot-pro-xl",
+			"size": null
+		},
+		"N16282": {
+			"family": "snowdrive-pilot-pro-xl",
+			"size": null
+		},
+		"N16283": {
+			"family": "snowdrive-pilot-pro-xl",
+			"size": null
+		},
+		"N16284": {
+			"family": "snowdrive-pilot-pro-xl",
+			"size": null
+		},
+		"N16285": {
+			"family": "snowdrive-pilot-pro-xl",
+			"size": null
+		},
+		"N16286": {
+			"family": "snowdrive-pilot-pro-xl",
+			"size": null
+		},
+		"N16287": {
+			"family": "snowdrive-pilot-pro-xl",
+			"size": null
+		},
 		"N17140": {
 			"family": "snowdrive-ponozky",
 			"size": null
@@ -645,5 +688,5 @@
 			"size": "14"
 		}
 	},
-	"self_sha256": "9e4e739e1d562456ba2d96c33bfb71ed521d217c5c9d527f054fd8fa99270211"
+	"self_sha256": "40db984c517af6280f2bbec3af1dce6dba4e8faa1ced8bae7e2c423121c6ae9e"
 }

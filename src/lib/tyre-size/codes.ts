@@ -3,7 +3,7 @@
  * `data/velkosti_20261105.json`.
  *
  * A copy of the list's code names ONLY, small enough for the browser, for the places that must know "does this card
- * need a size" without carrying 5 323 rows: the listing card hides its quick-add for these, because the add would
+ * need a size" without carrying 5 806 rows: the listing card hides its quick-add for these, because the add would
  * be refused without a size. It decides nothing about what may be added: that is the server's check against the list
  * itself (`size-index.ts`). `size-index.test.ts` pins this set to the list's codes, so the two cannot drift apart.
  */
@@ -122,6 +122,14 @@ const CODES: readonly string[] = [
 	"N16276",
 	"N16277",
 	"N16278",
+	"N16280",
+	"N16281",
+	"N16282",
+	"N16283",
+	"N16284",
+	"N16285",
+	"N16286",
+	"N16287",
 	"N17140",
 	"N17141",
 	"N17142",

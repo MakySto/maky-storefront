@@ -41,6 +41,16 @@ export function isCodMethod(method: Pick<CodMethodLike, "metadata"> | null | und
 	return codBaseId(method) !== null;
 }
 
+/**
+ * Whether an order is paid on delivery, told from the delivery method the order query returns. That query does
+ * not select `__typename` on `deliveryMethod`, so the name of the type is absent at runtime and must not be
+ * asked for: the metadata says it, and a pickup point carries none.
+ */
+export function isCodDelivery(deliveryMethod: object | null | undefined): boolean {
+	if (!deliveryMethod || !("metadata" in deliveryMethod)) return false;
+	return isCodMethod(deliveryMethod as Pick<CodMethodLike, "metadata">);
+}
+
 /** The methods a customer chooses a delivery from: the cash-on-delivery versions are not deliveries of their own. */
 export function customerDeliveryMethods<M extends CodMethodLike>(methods: ReadonlyArray<M>): M[] {
 	return methods.filter((method) => !isCodMethod(method));

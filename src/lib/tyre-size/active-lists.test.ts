@@ -68,7 +68,7 @@ describe("the pair a process starts on", () => {
 		expect(lists.source).toEqual({ kind: "build" });
 		expect(lists.seals.index).toBe(buildIndex().self_sha256);
 		expect(lists.seals.families).toBe(buildFamilies().self_sha256);
-		expect(lists.index.counts.products).toBe(145);
+		expect(lists.index.counts.products).toBe(153);
 		expect(tyreSizeListId()).toBe("snehove-retaze-20261105");
 	});
 

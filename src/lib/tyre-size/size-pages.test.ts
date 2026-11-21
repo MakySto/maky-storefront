@@ -180,8 +180,8 @@ describe("the pages a search engine is told about", () => {
 		const sizes = slugs.filter((slug) => /^\d{3}-\d{2}-r\d{2}$/.test(slug));
 		expect(new Set(slugs).size).toBe(slugs.length);
 		expect(sizes.length).toBe(tyreSizePages().filter((page) => fittingCodes(page.label).size >= 2).length);
-		// The thirteen model families come first, each of them a page.
-		expect(slugs.slice(0, 13)).toEqual(tyreFamilyPages().map((family) => family.slug));
+		// The fourteen model families come first, each of them a page.
+		expect(slugs.slice(0, 14)).toEqual(tyreFamilyPages().map((family) => family.slug));
 		for (const slug of slugs) expect(tyrePageOf([slug]), slug).not.toBeNull();
 	});
 });
@@ -213,9 +213,9 @@ describe("the shortcuts on the shelf", () => {
 });
 
 describe("the pages by model family", () => {
-	it("gives each of the thirteen families one address, which is its key, and no address that reads as a size", () => {
+	it("gives each of the fourteen families one address, which is its key, and no address that reads as a size", () => {
 		const families = tyreFamilyPages();
-		expect(families).toHaveLength(13);
+		expect(families).toHaveLength(14);
 		for (const family of families) {
 			expect(family.slug).toBe(family.key);
 			expect(family.slug).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
@@ -247,6 +247,7 @@ describe("the pages by model family", () => {
 			"menabo-snow-socks": "Menabo Snow Socks",
 			"snowdrive-nx7": "SnowDrive Hybrid NX-7",
 			"snowdrive-pilot-pro": "SnowDrive Pilot-Pro",
+			"snowdrive-pilot-pro-xl": "SnowDrive Pilot-Pro XL",
 			"snowdrive-ponozky": "SnowDrive",
 			"snowdrive-r9": "SnowDrive R-9",
 			"snowdrive-s16": "SnowDrive S-16",

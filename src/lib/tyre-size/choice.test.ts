@@ -301,7 +301,7 @@ describe("the codes a narrowed listing shows", () => {
 		const open = fittingCodes("195/75 R16");
 		expect(open.has("N16105")).toBe(true);
 		expect(open.has("N16128")).toBe(true);
-		expect(open.size).toBe(10);
+		expect(open.size).toBe(11);
 	});
 
 	it("drops the code an answer rules out", () => {
@@ -311,7 +311,7 @@ describe("the codes a narrowed listing shows", () => {
 		const other = fittingCodes("195/75 R16", { [MAKE_KEY]: NO_MATCH_ANSWER });
 		expect(other.has("N16105")).toBe(false);
 		expect(other.has("N16128")).toBe(true);
-		expect(other.size).toBe(9);
+		expect(other.size).toBe(10);
 	});
 
 	it("holds nothing for a size the list does not hold", () => {
