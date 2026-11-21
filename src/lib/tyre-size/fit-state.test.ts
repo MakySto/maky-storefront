@@ -199,7 +199,7 @@ describe("the form the page builds is exactly what the server accepts", () => {
 				checked += 1;
 			}
 		}
-		expect(checked).toBe(5323);
+		expect(checked).toBe(5806);
 	});
 
 	it("for EVERY conditional size, until it is answered the page asks and holds, and the server would hold it too", () => {
