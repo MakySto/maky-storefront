@@ -21,6 +21,11 @@ describe("the cursor of a search page", () => {
 			cursor: "WyJhIl0=",
 		});
 		expect(parseSearchCursor(saleorCursor("brand", "abc")).kind).toBe("saleor");
+		expect(parseSearchCursor(saleorCursor("racks", "abc"))).toEqual({
+			kind: "saleor",
+			variant: "racks",
+			cursor: "abc",
+		});
 	});
 
 	it("reads a bare cursor, from a link older than this, as the words as typed", () => {

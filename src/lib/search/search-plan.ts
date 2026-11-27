@@ -13,10 +13,12 @@ export const SEARCH_PAGE_SIZE = 20;
  * found something; a later page must ask the same one, and cannot decide again from a cursor.
  *
  *   full     the words as typed
+ *   racks    the words without the roof racks' own name ("Dachträger Thule Golf" → "Thule Golf"):
+ *            the sets are found by Slovak text, and every one of them is a roof rack
  *   vehicle  only the words that name the car ("Montagekit Golf" → "Golf")
  *   brand    the words with a misspelt maker corrected (`brand-typos.ts`)
  */
-export type SaleorVariant = "full" | "vehicle" | "brand";
+export type SaleorVariant = "full" | "racks" | "vehicle" | "brand";
 
 export type SearchCursor =
 	| { readonly kind: "start" }
@@ -24,8 +26,18 @@ export type SearchCursor =
 	| { readonly kind: "shelf"; readonly offset: number }
 	| { readonly kind: "saleor"; readonly variant: SaleorVariant; readonly cursor: string };
 
-const VARIANT_LETTER: Readonly<Record<SaleorVariant, string>> = { full: "f", vehicle: "v", brand: "b" };
-const LETTER_VARIANT: Readonly<Record<string, SaleorVariant>> = { f: "full", v: "vehicle", b: "brand" };
+const VARIANT_LETTER: Readonly<Record<SaleorVariant, string>> = {
+	full: "f",
+	racks: "r",
+	vehicle: "v",
+	brand: "b",
+};
+const LETTER_VARIANT: Readonly<Record<string, SaleorVariant>> = {
+	f: "full",
+	r: "racks",
+	v: "vehicle",
+	b: "brand",
+};
 
 export function shelfCursor(offset: number): string {
 	return `shelf.${Math.max(0, Math.floor(offset))}`;
@@ -43,7 +55,7 @@ export function parseSearchCursor(raw: string | null | undefined): SearchCursor 
 	if (!raw) return { kind: "start" };
 	const shelf = /^shelf\.(\d{1,6})$/.exec(raw);
 	if (shelf) return { kind: "shelf", offset: Number(shelf[1]) };
-	const saleor = /^([fvb])\.(.+)$/.exec(raw);
+	const saleor = /^([frvb])\.(.+)$/.exec(raw);
 	if (saleor) return { kind: "saleor", variant: LETTER_VARIANT[saleor[1]!]!, cursor: saleor[2]! };
 	return { kind: "saleor", variant: "full", cursor: raw };
 }

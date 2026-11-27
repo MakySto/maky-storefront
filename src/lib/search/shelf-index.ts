@@ -331,6 +331,28 @@ export function searchShelf(index: ShelfIndex, query: string, options: ShelfSear
 	return { hits: [], mode: "all" };
 }
 
+/**
+ * Whether the product's own name, or one of its codes, carries every one of `words`.
+ *
+ * The index finds a product by its category and its parameters too, which is right for "nosič
+ * bicyklov" and wrong for "nosič Kuga": the fitting kits for a Kuga are "parts of roof racks" by
+ * category, and a customer who asks for a carrier for a Kuga did not ask for a kit. The caller
+ * uses this to tell the two apart (`search-answer.ts`).
+ */
+export function nameCarries(doc: ShelfDoc, words: readonly string[], language: string): boolean {
+	const named = searchWords(doc.name, language);
+	const codes = new Set(codeKeys(doc.name));
+	for (const code of doc.codes ?? []) {
+		for (const part of code.split(/[|+×]/)) {
+			const key = codeKey(part);
+			if (key) codes.add(key);
+		}
+	}
+	return words.every(
+		(word) => named.some((own) => wordGrade(word, own) > 0) || (/\d/.test(word) && codes.has(codeKey(word))),
+	);
+}
+
 export type ShelfSort = "relevance" | "price-asc" | "price-desc" | "name" | "newest";
 
 /** The hits in the order the shopper chose. Relevance is the order they arrived in. */
