@@ -101,8 +101,8 @@ describe("OfferCard", () => {
 	});
 
 	it("prints the fit as a statement of the set, never a green promise", () => {
-		const html = render({}, { fit: { roof: "Integrované pozdĺžniky", years: "2018 – 2021" } });
-		expect(html).toContain("Strecha: Integrované pozdĺžniky · Roky: 2018 – 2021");
+		const html = render({}, { fit: { roof: "Integrované lyžiny", years: "2018 – 2021" } });
+		expect(html).toContain("Strecha: Integrované lyžiny · Roky: 2018 – 2021");
 		expect(html).not.toMatch(/kompatibiln|overen/i);
 	});
 
@@ -177,7 +177,7 @@ describe("OfferCard", () => {
 				{ brand: "Nordrive", categoryName: "Strešné nosiče" },
 				{
 					title: { model: "Nordrive Quadra Black", vehicle: "BMW Rad 5 Touring G31" },
-					fit: { roof: "Integrované pozdĺžniky", years: "2017 – 2024" },
+					fit: { roof: "Integrované lyžiny", years: "2017 – 2024" },
 				},
 			);
 			const at = (marker: string) => html.indexOf(marker);
@@ -193,9 +193,9 @@ describe("OfferCard", () => {
 	});
 
 	it("keeps the whole name and the fit line when the name cannot be taken apart", () => {
-		const html = render({}, { fit: { roof: "Integrované pozdĺžniky", years: "2018 – 2021" } });
+		const html = render({}, { fit: { roof: "Integrované lyžiny", years: "2018 – 2021" } });
 		expect(html).toContain("Nordrive Silenzio Silver");
-		expect(html).toContain("Strecha: Integrované pozdĺžniky · Roky: 2018 – 2021");
+		expect(html).toContain("Strecha: Integrované lyžiny · Roky: 2018 – 2021");
 	});
 
 	describe("the action", () => {

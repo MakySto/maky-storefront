@@ -126,25 +126,22 @@ describe("what the page says about its sets", () => {
 
 	it("puts the roof and the years the set is made for on every card", async () => {
 		const rendered = await text(MIXED, MIXED_FITS);
-		expect(rendered).toContain("Strecha: Integrované pozdĺžniky · Roky: 2018 – 2021");
-		expect(rendered).toContain("Strecha: Pozdĺžniky nad strechou · Roky: 2018 – 2021");
+		expect(rendered).toContain("Strecha: Integrované lyžiny · Roky: 2018 – 2021");
+		expect(rendered).toContain("Strecha: Klasické lyžiny · Roky: 2018 – 2021");
 		// An open window reads "od", not a made-up end.
-		expect(rendered).toContain("Strecha: Integrované pozdĺžniky · Roky: od 2022");
+		expect(rendered).toContain("Strecha: Integrované lyžiny · Roky: od 2022");
 	});
 
 	it("offers a roof filter where the page mixes several roofs, and counts each", async () => {
 		const rendered = await text(MIXED, MIXED_FITS);
 		// All of them, then the classic roof, then integrated, then the sets that name no roof last —
 		// one list of every set, not one shelf per roof.
-		const order = [
-			"Všetky",
-			"Pozdĺžniky nad strechou",
-			"Integrované pozdĺžniky",
-			"Bez určeného typu strechy",
-		].map((label) => rendered.indexOf(`|${label}|`));
+		const order = ["Všetky", "Klasické lyžiny", "Integrované lyžiny", "Bez určeného typu strechy"].map(
+			(label) => rendered.indexOf(`|${label}|`),
+		);
 		expect(order.every((at) => at >= 0)).toBe(true);
 		expect([...order].sort((a, b) => a - b)).toEqual(order);
-		expect(rendered).toContain("|Integrované pozdĺžniky|2|");
+		expect(rendered).toContain("|Integrované lyžiny|2|");
 		expect(rendered).toContain("|Všetky|4|");
 		expect(rendered).not.toContain('<h3 class="text-text-primary text-base');
 	});
@@ -164,10 +161,10 @@ describe("what the page says about its sets", () => {
 		);
 		// p0 is both an integrated-rails set and a raised-rails set: it is found under either chip.
 		expect(rendered).toContain("|Všetky|2|");
-		expect(rendered).toContain("|Pozdĺžniky nad strechou|2|");
-		expect(rendered).toContain("|Integrované pozdĺžniky|1|");
+		expect(rendered).toContain("|Klasické lyžiny|2|");
+		expect(rendered).toContain("|Integrované lyžiny|1|");
 		// Two roofs on a card are said, and nothing adds to the cart until the shopper has chosen.
-		expect(rendered).toContain("Strecha: Integrované pozdĺžniky, Pozdĺžniky nad strechou");
+		expect(rendered).toContain("Strecha: Integrované lyžiny, Klasické lyžiny");
 		expect(rendered).not.toContain("data-add");
 	});
 
@@ -215,7 +212,7 @@ describe("what the page says about its sets", () => {
 		const rendered = await text(MIXED, single);
 		expect(rendered).not.toContain("|Bez určeného typu strechy|");
 		expect(rendered).not.toContain("|Všetky|");
-		expect(rendered).toContain("Strecha: Integrované pozdĺžniky · Roky: 2018 – 2021");
+		expect(rendered).toContain("Strecha: Integrované lyžiny · Roky: 2018 – 2021");
 	});
 
 	it("says nothing about a roof for a set that names none — it never fills one in", async () => {

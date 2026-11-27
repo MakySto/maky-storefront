@@ -32,7 +32,7 @@ export async function VehicleSummary({
 	modelName: string | null;
 	generationName: string | null;
 	year: number | null;
-	/** Already-translated qualifier labels, e.g. ["Kombi", "Integrované pozdĺžniky"]. */
+	/** Already-translated qualifier labels, e.g. ["Kombi", "Integrované lyžiny"]. */
 	qualifiers: string[];
 	isDemo: boolean;
 	className?: string;

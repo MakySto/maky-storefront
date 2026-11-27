@@ -28,6 +28,12 @@ export const PUBLIC_ASSET_PATHS: ReadonlySet<string> = new Set([
 	"/logo-dark.svg",
 	"/logo-deer.webp",
 	"/logo.svg",
+	"/roof-types/fixed-points.webp",
+	"/roof-types/flush-rails.webp",
+	"/roof-types/normal-roof.webp",
+	"/roof-types/rain-gutters.webp",
+	"/roof-types/raised-rails.webp",
+	"/roof-types/roof-tracks.webp",
 	"/screenshot.png",
 	"/site.webmanifest",
 ]);
