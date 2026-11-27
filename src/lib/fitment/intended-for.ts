@@ -35,7 +35,9 @@ import {
 	type FitmentResult,
 	type FitmentWindow,
 	type RoofType,
+	type VehicleGeneration,
 	vehicleNodeName,
+	windowWithinProduction,
 } from "./contract";
 import { pickConditionText } from "./conditions";
 import { ABSENT_UNDER_PARTIAL_COVERAGE, isDatasetStale } from "./resolve";
@@ -50,6 +52,7 @@ export interface IntendedVehicle {
 	 * join the saved car (`vehicleDisplayName`), so the two cars on one screen are named alike.
 	 */
 	readonly name: string;
+	/** The years the set is made for, as far as the car was built (`windowWithinProduction`). */
 	readonly window: FitmentWindow;
 	readonly roofTypes: readonly RoofType[];
 	readonly bodyTypes: readonly BodyType[];
@@ -63,7 +66,14 @@ export interface IntendedVehicle {
 }
 
 type Names = {
-	readonly generation: ReadonlyMap<string, { readonly name: string; readonly modelId: string }>;
+	readonly generation: ReadonlyMap<
+		string,
+		{
+			readonly name: string;
+			readonly modelId: string;
+			readonly production: Pick<VehicleGeneration, "productionYearFrom" | "productionYearTo">;
+		}
+	>;
 	readonly model: ReadonlyMap<string, { readonly name: string; readonly makeId: string }>;
 	readonly make: ReadonlyMap<string, string>;
 };
@@ -82,7 +92,10 @@ function namesOf(dataset: FitmentDataset, language?: string | null): Names {
 	if (!names) {
 		names = {
 			generation: new Map(
-				dataset.generations.map((g) => [g.id, { name: vehicleNodeName(g, language), modelId: g.modelId }]),
+				dataset.generations.map((g) => [
+					g.id,
+					{ name: vehicleNodeName(g, language), modelId: g.modelId, production: g },
+				]),
 			),
 			model: new Map(
 				dataset.models.map((m) => [m.id, { name: vehicleNodeName(m, language), makeId: m.makeId }]),
@@ -137,17 +150,26 @@ export function intendedVehiclesFor(
 		if (!ref || ref.qaStatus !== "accepted" || !ref.eligibility.sellable) continue;
 		const name = vehicleName(names, application.generationId);
 		if (!name) continue;
-		out.push(intended(application, name, locale ?? null));
+		out.push(
+			intended(application, name, names.generation.get(application.generationId)?.production, locale ?? null),
+		);
 	}
 	return out;
 }
 
-function intended(application: FitmentApplication, name: string, locale: string | null): IntendedVehicle {
+function intended(
+	application: FitmentApplication,
+	name: string,
+	production: Pick<VehicleGeneration, "productionYearFrom" | "productionYearTo"> | undefined,
+	locale: string | null,
+): IntendedVehicle {
 	return {
 		applicationId: application.applicationId,
 		generationId: application.generationId,
 		name,
-		window: application.window,
+		// The years of the set as far as the car was built: a window that runs past the generation's last
+		// year is not printed as years of a car nobody made then (CFM, 2026-11-27).
+		window: windowWithinProduction(application.window, production),
 		roofTypes: application.qualifiers.roofTypes ?? [],
 		bodyTypes: application.qualifiers.bodyTypes ?? [],
 		conditions: conditionTexts(application, locale),

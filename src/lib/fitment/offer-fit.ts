@@ -11,10 +11,12 @@
  * ## Years are the APPLICATION's, not the car's
  *
  * `window` is the manufacturer's: the years this set is made for. The generation's production
- * years are a different fact (see `contract.ts`) and are not used here — a car built 2015–2021
+ * years are a different fact (see `contract.ts`) and never widen it — a car built 2015–2021
  * may have a set for 2017–2021 only, and printing the car's span on the card would claim a fit
- * for years nobody states one for. Years only: the month decides a purchase in the resolver, and
- * on a card it is noise.
+ * for years nobody states one for. They only narrow it: a window that runs past the last year the
+ * car was built is printed up to that year (`windowWithinProduction`; CFM, 2026-11-27, keeps the set
+ * maker's window as it is when it moves a generation's years). Years only: the month decides a
+ * purchase in the resolver, and on a card it is noise.
  *
  * Pure and free of `server-only`: the shape is shared by server components and tests.
  */
@@ -26,7 +28,28 @@ import {
 	type FitmentDataset,
 	type FitmentProductRef,
 	type RoofType,
+	type VehicleGeneration,
+	windowWithinProduction,
 } from "./contract";
+
+/** The car's years of production, by generation id: what cuts a window to the years the car was built. */
+export type ProductionYearsOf = (
+	generationId: string,
+) => Pick<VehicleGeneration, "productionYearFrom" | "productionYearTo"> | undefined;
+
+const PRODUCTION = new WeakMap<Pick<FitmentDataset, "generations">, ProductionYearsOf>();
+
+/** `ProductionYearsOf` for one dataset, built once per dataset object. */
+export function productionYearsOf(dataset: Pick<FitmentDataset, "generations">): ProductionYearsOf {
+	let lookup = PRODUCTION.get(dataset);
+	if (!lookup) {
+		// A dataset without generations (a partial one in a test) cuts nothing: the window is printed as given.
+		const byId = new Map((dataset.generations ?? []).map((g) => [g.id, g]));
+		lookup = (generationId) => byId.get(generationId);
+		PRODUCTION.set(dataset, lookup);
+	}
+	return lookup;
+}
 
 export type OfferFit = {
 	yearFrom: number;
@@ -43,12 +66,13 @@ export type OfferFit = {
 	generationIds?: readonly string[];
 };
 
-export function offerFitOf(application: FitmentApplication): OfferFit {
+export function offerFitOf(application: FitmentApplication, production?: ProductionYearsOf): OfferFit {
 	const roofs = application.qualifiers.roofTypes;
 	const bodies = application.qualifiers.bodyTypes;
+	const window = windowWithinProduction(application.window, production?.(application.generationId));
 	return {
-		yearFrom: application.window.from.year,
-		yearTo: application.window.to?.year ?? null,
+		yearFrom: window.from.year,
+		yearTo: window.to?.year ?? null,
 		roofTypes: roofs && roofs.length > 0 ? roofs : null,
 		bodyTypes: bodies && bodies.length > 0 ? bodies : null,
 		generationIds: [application.generationId],
@@ -69,16 +93,19 @@ function sameFit(a: OfferFit, b: OfferFit): boolean {
  *
  * A negative row says a set does NOT fit and is not an application of it. Identical facts from
  * two rows collapse to one — the same set reached through two rows is still one statement.
- * `speaks` says which product rows may be counted at all; by default every one is.
+ * `speaks` says which product rows may be counted at all; by default every one is. `production`
+ * cuts each window to the years its car was built (`offerFitOf`); every surface that has the dataset
+ * passes it, so the card and the product page print the same years.
  */
 export function offerFitsByProduct(
 	applications: Iterable<FitmentApplication>,
 	speaks: (ref: FitmentProductRef) => boolean = () => true,
+	production?: ProductionYearsOf,
 ): Map<string, OfferFit[]> {
 	const byProduct = new Map<string, OfferFit[]>();
 	for (const application of applications) {
 		if (application.negative) continue;
-		const fit = offerFitOf(application);
+		const fit = offerFitOf(application, production);
 		for (const ref of application.products) {
 			if (!speaks(ref)) continue;
 			// A copy for each product: the generations behind a fit are collected per product.
@@ -114,7 +141,7 @@ const INDEX = new WeakMap<FitmentDataset, ReadonlyMap<string, readonly OfferFit[
 export function productFitIndex(dataset: FitmentDataset): ReadonlyMap<string, readonly OfferFit[]> {
 	let index = INDEX.get(dataset);
 	if (!index) {
-		index = offerFitsByProduct(dataset.applications, isFitmentRefSellable);
+		index = offerFitsByProduct(dataset.applications, isFitmentRefSellable, productionYearsOf(dataset));
 		INDEX.set(dataset, index);
 	}
 	return index;
