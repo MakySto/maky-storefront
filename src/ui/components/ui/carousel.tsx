@@ -202,7 +202,9 @@ const CarouselPrevious = React.forwardRef<HTMLButtonElement, React.ComponentProp
 				{...props}
 			>
 				<ChevronLeft className="h-4 w-4" />
-				<span className="sr-only">Previous slide</span>
+				{/* Only when the caller gave no label of its own: the gallery passes a translated
+				    `aria-label`, and this English text then sat in a Slovak or German page for nothing. */}
+				{!props["aria-label"] && <span className="sr-only">Previous slide</span>}
 			</Button>
 		);
 	},
@@ -230,7 +232,7 @@ const CarouselNext = React.forwardRef<HTMLButtonElement, React.ComponentProps<ty
 				{...props}
 			>
 				<ChevronRight className="h-4 w-4" />
-				<span className="sr-only">Next slide</span>
+				{!props["aria-label"] && <span className="sr-only">Next slide</span>}
 			</Button>
 		);
 	},
