@@ -334,6 +334,7 @@
 			"roofSkipNote": "Without the roof type we cannot confirm compatibility. You can add it at any time.",
 			"roofMissing": "Is your roof type not listed? For this car and year we only have racks for the types shown.",
 			"roofMissingContact": "Contact us and we will check.",
+			"yearNoSet": "We don't have a roof rack set for this vehicle for the year {year} yet.",
 			"glassRoofLegend": "Does your car have a glass (panoramic) roof?",
 			"glassRoofHelp": "Sets differ depending on whether the roof has a glass panel. Look at the roof of your car from outside or from inside.",
 			"glassRoofYes": "Yes, it has a glass roof",
@@ -346,7 +347,9 @@
 			"variantUnsureHelp": "Without this answer we cannot show you sets made for one version of the car only. You can add the answer later.",
 			"chooseMonth": "In which month was the car built?",
 			"monthHelp": "We are asking for the month of MANUFACTURE, not first registration. In this year it decides compatibility.",
-			"monthUnknown": "I don't know"
+			"monthUnknown": "I don't know",
+			"generationOlder": "Older generation",
+			"generationNewer": "Newer generation"
 		},
 		"verdictQualified": "Fits with conditions",
 		"verdictQualifiedDetail": "This set is verified for your vehicle, but it comes with an installation requirement we can't spell out for you right now.",
@@ -1079,7 +1082,14 @@
 		"previewNotice": "Preview of an unpublished page. It is not shown to visitors.",
 		"offersTitleGeneration": "Sets for this generation",
 		"offersBrowseNote": "Each set applies only to the roof type and years shown, and the differences are on the cards. Another car? Change it in the header.",
-		"offersGroupOther": "No roof type stated"
+		"offersGroupOther": "No roof type stated",
+		"viewYearLabel": "Model year",
+		"viewAllYears": "All years",
+		"viewAllBrands": "All brands",
+		"viewRoofEmpty": "We have no set here for the roof type {roof}.",
+		"viewRoofYearEmpty": "We have no set here for the roof type {roof} and the year {year}.",
+		"viewYearEmpty": "We have no set here for the year {year}.",
+		"viewEmptyHint": "Choose another roof type or year."
 	},
 	"company": {
 		"operatedBy": "Seller:",

@@ -334,6 +334,7 @@
 			"roofSkipNote": "Bez typu dachu nie potwierdzimy kompatybilności. Możesz go uzupełnić w każdej chwili.",
 			"roofMissing": "Nie ma tu Twojego typu dachu? Dla tego auta i rocznika mamy bagażniki tylko do podanych typów.",
 			"roofMissingContact": "Napisz do nas, sprawdzimy.",
+			"yearNoSet": "Dla rocznika {year} nie mamy jeszcze zestawu bagażnika dachowego do tego pojazdu.",
 			"glassRoofLegend": "Czy Twoje auto ma szklany (panoramiczny) dach?",
 			"glassRoofHelp": "Zestawy różnią się zależnie od tego, czy w dachu jest szklany panel. Spójrz na dach auta z zewnątrz lub od środka.",
 			"glassRoofYes": "Tak, ma szklany dach",
@@ -346,7 +347,9 @@
 			"variantUnsureHelp": "Bez tej odpowiedzi nie pokażemy zestawów przeznaczonych tylko dla jednej wersji auta. Odpowiedź możesz uzupełnić później.",
 			"chooseMonth": "W którym miesiącu wyprodukowano samochód?",
 			"monthHelp": "Pytamy o miesiąc PRODUKCJI, nie pierwszej rejestracji. W tym roku decyduje o kompatybilności.",
-			"monthUnknown": "Nie wiem"
+			"monthUnknown": "Nie wiem",
+			"generationOlder": "Starsza generacja",
+			"generationNewer": "Nowsza generacja"
 		},
 		"verdictQualified": "Pasuje z warunkami montażu",
 		"verdictQualifiedDetail": "Ten zestaw jest potwierdzony dla Twojego pojazdu, ale obowiązuje przy nim warunek montażu, którego nie umiemy Ci teraz zrozumiale przedstawić.",
@@ -1079,7 +1082,14 @@
 		"previewNotice": "Podgląd nieopublikowanej strony. Odwiedzający jej nie widzą.",
 		"offersTitleGeneration": "Zestawy dla tej generacji",
 		"offersBrowseNote": "Każdy zestaw obowiązuje tylko dla podanego typu dachu i lat, różnice widać na kartach. Masz inne auto? Zmień je w nagłówku.",
-		"offersGroupOther": "Bez podanego typu dachu"
+		"offersGroupOther": "Bez podanego typu dachu",
+		"viewYearLabel": "Rok produkcji",
+		"viewAllYears": "Wszystkie lata",
+		"viewAllBrands": "Wszystkie marki",
+		"viewRoofEmpty": "Dla typu dachu {roof} nie mamy tu zestawu.",
+		"viewRoofYearEmpty": "Dla typu dachu {roof} i rocznika {year} nie mamy tu zestawu.",
+		"viewYearEmpty": "Dla rocznika {year} nie mamy tu zestawu.",
+		"viewEmptyHint": "Wybierz inny typ dachu lub rok."
 	},
 	"company": {
 		"operatedBy": "Sprzedawca:",

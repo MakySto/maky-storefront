@@ -334,6 +334,7 @@
 			"roofSkipNote": "Bez typu strechy vám kompatibilitu nevieme potvrdiť. Doplniť ho môžete kedykoľvek.",
 			"roofMissing": "Váš typ strechy tu nie je? Pre toto auto a rok máme nosiče len na uvedené typy.",
 			"roofMissingContact": "Napíšte nám, overíme to.",
+			"yearNoSet": "Pre rok {year} zatiaľ nemáme pre toto vozidlo zostavu strešného nosiča.",
 			"glassRoofLegend": "Má vaše auto presklenú (panoramatickú) strechu?",
 			"glassRoofHelp": "Sady sa líšia podľa toho, či je v streche sklenený panel. Pozrite sa na strechu auta zvonku alebo zvnútra.",
 			"glassRoofYes": "Áno, má presklenú strechu",
@@ -346,7 +347,9 @@
 			"variantUnsureHelp": "Bez tejto odpovede vám nevieme ukázať sady určené len pre jednu verziu auta. Odpoveď môžete doplniť neskôr.",
 			"chooseMonth": "V ktorom mesiaci bolo vozidlo vyrobené?",
 			"monthHelp": "Pýtame sa na mesiac VÝROBY, nie prvej registrácie. Pri tomto roku o kompatibilite rozhoduje.",
-			"monthUnknown": "Neviem"
+			"monthUnknown": "Neviem",
+			"generationOlder": "Staršia generácia",
+			"generationNewer": "Novšia generácia"
 		},
 		"verdictQualified": "Pasuje s podmienkami",
 		"verdictQualifiedDetail": "Táto zostava je pre vaše vozidlo overená, ale viaže sa na montážnu podmienku, ktorú vám teraz nevieme zrozumiteľne uviesť.",
@@ -1079,7 +1082,14 @@
 		"previewNotice": "Náhľad nepublikovanej stránky. Návštevníkom sa nezobrazuje.",
 		"offersTitleGeneration": "Zostavy pre túto generáciu",
 		"offersBrowseNote": "Každá zostava platí len pre uvedený typ strechy a roky, rozdiely vidíte priamo na kartách. Máte iné auto? Zmeňte ho v hlavičke.",
-		"offersGroupOther": "Bez určeného typu strechy"
+		"offersGroupOther": "Bez určeného typu strechy",
+		"viewYearLabel": "Rok výroby",
+		"viewAllYears": "Všetky roky",
+		"viewAllBrands": "Všetky značky",
+		"viewRoofEmpty": "Pre typ strechy {roof} tu zostavu nemáme.",
+		"viewRoofYearEmpty": "Pre typ strechy {roof} a rok {year} tu zostavu nemáme.",
+		"viewYearEmpty": "Pre rok {year} tu zostavu nemáme.",
+		"viewEmptyHint": "Vyberte iný typ strechy alebo rok."
 	},
 	"company": {
 		"operatedBy": "Internetový obchod prevádzkuje:",

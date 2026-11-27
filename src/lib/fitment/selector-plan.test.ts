@@ -7,6 +7,7 @@ import {
 	resolveSingleValued,
 	roofChoicesFor,
 	roofChoicesOnOffer,
+	setOnOfferInYear,
 	yearsForModel,
 } from "./selector-plan";
 import { resolveFitment } from "./resolve";
@@ -193,6 +194,54 @@ describe("the selector offers the roofs a set is on offer for in the shopper's Y
 	it("does not add the generation's own list: a roof nobody has a set for is not a choice", () => {
 		const generation = { id: "dfk", roofTypes: ["fixpoint" as const] };
 		expect(roofChoicesOnOffer(kuga, generation, 2024)).toEqual(["flush-rails", "naked-roof"]);
+	});
+});
+
+describe("the selector knows a year it has no set for, and says so before the car is confirmed", () => {
+	const setApp = (
+		id: string,
+		window: ReturnType<typeof windowOf>,
+		over: Parameters<typeof anApplication>[0] = {},
+	) =>
+		anApplication({
+			applicationId: id,
+			generationId: "dfk",
+			window,
+			products: [aProduct({ saleorProductId: `set-${id}`, saleorVariantId: `variant-${id}` })],
+			...over,
+		});
+	const dfk = { id: "dfk" };
+
+	it("has a set in the years a window covers, and none outside them", () => {
+		const apps = [setApp("a", windowOf([2019], [2020])), setApp("b", windowOf([2023], null))];
+		expect(setOnOfferInYear(apps, dfk, 2020)).toBe(true);
+		expect(setOnOfferInYear(apps, dfk, 2024)).toBe(true);
+		expect(setOnOfferInYear(apps, dfk, 2021)).toBe(false);
+		expect(setOnOfferInYear(apps, dfk, 2018)).toBe(false);
+	});
+
+	it("counts a set that names no roof: no roof to ask about is not nothing on offer", () => {
+		const apps = [setApp("plain", windowOf([2019], null))];
+		expect(roofChoicesOnOffer(apps, dfk, 2024)).toEqual([]);
+		expect(setOnOfferInYear(apps, dfk, 2024)).toBe(true);
+	});
+
+	it("does not count a negative row, a held product, another kind or another generation", () => {
+		const apps = [
+			setApp("neg", windowOf([2019], null), { negative: true }),
+			setApp("held", windowOf([2019], null), {
+				products: [
+					aProduct({
+						qaStatus: "hold",
+						eligibility: { sellable: false, reasons: ["known_mapping_suspect"] },
+					}),
+				],
+			}),
+			setApp("box", windowOf([2019], null), { products: [aProduct({ productKind: "roof-box" })] }),
+			setApp("other", windowOf([2019], null), { generationId: "mk1" }),
+		];
+		expect(setOnOfferInYear(apps, dfk, 2024)).toBe(false);
+		expect(setOnOfferInYear([], dfk, 2024)).toBe(false);
 	});
 });
 

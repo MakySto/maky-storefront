@@ -20,6 +20,11 @@ export type SelectorQualifiers = {
 	 */
 	roofTypes: RoofType[] | null;
 	/**
+	 * True when no set at all is on offer for this generation in the chosen year
+	 * (`setOnOfferInYear`). The selector says so before the car is confirmed. Absent is false.
+	 */
+	noSetForYear?: boolean;
+	/**
 	 * Asked only when the chosen generation genuinely varies. A single value is a fact
 	 * about the generation the shopper already picked, so it is filled in below rather
 	 * than asked — and, crucially, rather than dropped.

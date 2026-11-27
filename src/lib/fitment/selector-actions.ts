@@ -23,6 +23,7 @@ import {
 	resolveGenerationForYear,
 	resolveSingleValued,
 	roofChoicesOnOffer,
+	setOnOfferInYear,
 	variantAsked,
 	yearsForModel,
 	type GenerationCandidate,
@@ -136,6 +137,7 @@ function qualifiersFor(
 
 	return {
 		roofTypes: roofTypes.length > 0 ? roofTypes : null,
+		noSetForYear: !setOnOfferInYear(applications, generation, year),
 		bodyTypes: body.ask,
 		doors: doors.ask,
 		// Asked only where the dataset says this generation's sets differ in it; see `variantAsked`.

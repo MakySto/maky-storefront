@@ -334,6 +334,7 @@
 			"roofSkipNote": "Sin el tipo de techo no podemos confirmar la compatibilidad. Puede añadirlo en cualquier momento.",
 			"roofMissing": "¿Su tipo de techo no aparece? Para este coche y año solo tenemos barras para los tipos indicados.",
 			"roofMissingContact": "Escríbanos y lo comprobaremos.",
+			"yearNoSet": "Para el año {year} todavía no tenemos un conjunto de barras de techo para este vehículo.",
 			"glassRoofLegend": "¿Tiene su coche techo de cristal (panorámico)?",
 			"glassRoofHelp": "Los kits varían según si el techo lleva un panel de cristal. Mire el techo de su coche por fuera o por dentro.",
 			"glassRoofYes": "Sí, tiene techo de cristal",
@@ -346,7 +347,9 @@
 			"variantUnsureHelp": "Sin esta respuesta no podemos mostrarle kits pensados solo para una versión del coche. Puede completar la respuesta más tarde.",
 			"chooseMonth": "¿En qué mes se fabricó el coche?",
 			"monthHelp": "Preguntamos por el mes de FABRICACIÓN, no de la primera matriculación. Ese año decide la compatibilidad.",
-			"monthUnknown": "No lo sé"
+			"monthUnknown": "No lo sé",
+			"generationOlder": "Generación anterior",
+			"generationNewer": "Generación más reciente"
 		},
 		"verdictQualified": "Compatible con condiciones",
 		"verdictQualifiedDetail": "Este conjunto está verificado para su vehículo, pero está sujeto a una condición de montaje que ahora no podemos indicarle de forma comprensible.",
@@ -1079,7 +1082,14 @@
 		"previewNotice": "Vista previa de una página no publicada. No se muestra a los visitantes.",
 		"offersTitleGeneration": "Conjuntos para esta generación",
 		"offersBrowseNote": "Cada conjunto es válido solo para el tipo de techo y los años indicados; las diferencias se ven en las tarjetas. ¿Otro coche? Cámbielo en la cabecera.",
-		"offersGroupOther": "Sin tipo de techo indicado"
+		"offersGroupOther": "Sin tipo de techo indicado",
+		"viewYearLabel": "Año de fabricación",
+		"viewAllYears": "Todos los años",
+		"viewAllBrands": "Todas las marcas",
+		"viewRoofEmpty": "Aquí no tenemos ningún conjunto para el tipo de techo {roof}.",
+		"viewRoofYearEmpty": "Aquí no tenemos ningún conjunto para el tipo de techo {roof} y el año {year}.",
+		"viewYearEmpty": "Aquí no tenemos ningún conjunto para el año {year}.",
+		"viewEmptyHint": "Elija otro tipo de techo u otro año."
 	},
 	"company": {
 		"operatedBy": "Vendedor:",

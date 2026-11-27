@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { searchWithoutPagination, vehicleConfirmDestination } from "./confirm-destination";
+import {
+	searchWithoutPagination,
+	vehicleConfirmDestination,
+	vehiclePageDestination,
+} from "./confirm-destination";
 
 /**
  * The homepage dead end, and the pages that must NOT move.
@@ -90,5 +94,76 @@ describe("pagination after a change of vehicle", () => {
 	it("says null when there is nothing to drop, so the caller re-renders in place", () => {
 		expect(searchWithoutPagination("?vehicle=1")).toBeNull();
 		expect(searchWithoutPagination("")).toBeNull();
+	});
+});
+
+/**
+ * The confirmed car's own page, with the year and the roof in the address (owner, 2026-11-27: the
+ * configurator has to give addresses a shopper can save and share, and one listing, not two).
+ */
+describe("landing on the car's own page", () => {
+	const KUGA = "/sk/stresne-nosice/ford/kuga/dfk";
+	const view = { year: 2024, roof: "flush-rails" } as const;
+
+	it("goes there from the market root, with the year and the roof in the address", () => {
+		expect(vehiclePageDestination("/sk", KUGA, view)).toBe(`${KUGA}?year=2024&roof=flush-rails`);
+		expect(vehiclePageDestination("/sk/", KUGA, view)).toBe(`${KUGA}?year=2024&roof=flush-rails`);
+	});
+
+	it("carries only what the shopper said: no roof when they went on without one", () => {
+		expect(vehiclePageDestination("/sk", KUGA, { year: 2024, roof: null })).toBe(`${KUGA}?year=2024`);
+	});
+
+	it("goes there from the configurator, from the roof-rack shelf and from another car's page", () => {
+		for (const from of [
+			"/sk/konfigurator",
+			"/sk/stresne-nosice",
+			"/sk/stresne-nosice/skoda",
+			"/sk/stresne-nosice/skoda/octavia-combi/nx",
+			KUGA,
+		]) {
+			expect(vehiclePageDestination(from, KUGA, view), from).toBe(`${KUGA}?year=2024&roof=flush-rails`);
+		}
+	});
+
+	it("reads the shelf off the page's own address, so it works in a market's own words", () => {
+		const de = "/de/dachtraeger/ford/kuga/dfk";
+		expect(vehiclePageDestination("/de/dachtraeger", de, view)).toBe(`${de}?year=2024&roof=flush-rails`);
+		// The Slovak spelling of the shelf is not the German market's shelf.
+		expect(vehiclePageDestination("/de/stresne-nosice", de, view)).toBeNull();
+	});
+
+	it("stays on a product, a brand's shelf and every other listing: they answer in place", () => {
+		for (const from of [
+			"/sk/stresny-nosic-nordrive-helio-black",
+			"/sk/thule-stresne-nosice",
+			"/sk/stresne-boxy",
+			"/sk/products",
+			"/sk/garage",
+			"/sk/poradna",
+		]) {
+			expect(vehiclePageDestination(from, KUGA, view), from).toBeNull();
+		}
+	});
+
+	it("never interrupts a task in progress", () => {
+		for (const from of [
+			"/sk/cart",
+			"/checkout",
+			"/sk/checkout",
+			"/sk/orders",
+			"/sk/account/profile",
+			"/sk/login",
+		]) {
+			expect(vehiclePageDestination(from, KUGA, view), from).toBeNull();
+		}
+	});
+
+	it("does nothing where the market has no page for the car, or the page is another market's", () => {
+		expect(vehiclePageDestination("/sk", null, view)).toBeNull();
+		expect(vehiclePageDestination("/cz", KUGA, view)).toBeNull();
+		// Not a vehicle page at all: a market and nothing else, or a path with no market.
+		expect(vehiclePageDestination("/sk", "/sk", view)).toBeNull();
+		expect(vehiclePageDestination("/sk", "/stresne-nosice/ford/kuga/dfk", view)).toBeNull();
 	});
 });

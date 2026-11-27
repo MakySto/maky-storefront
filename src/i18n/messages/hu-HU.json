@@ -334,6 +334,7 @@
 			"roofSkipNote": "Tetőtípus nélkül nem tudjuk megerősíteni a kompatibilitást. Bármikor megadhatja később.",
 			"roofMissing": "Nem találja a tetőtípusát? Ehhez az autóhoz és évjárathoz csak a felsorolt típusokhoz van csomagtartónk.",
 			"roofMissingContact": "Írjon nekünk, ellenőrizzük.",
+			"yearNoSet": "A {year}. évhez ehhez a járműhöz még nincs tetőcsomagtartó-szettünk.",
 			"glassRoofLegend": "Van az autójának üvegteteje (panorámatető)?",
 			"glassRoofHelp": "A készletek attól függnek, hogy van-e a tetőn üvegelem. Nézze meg az autó tetejét kívülről vagy belülről.",
 			"glassRoofYes": "Igen, van üvegteteje",
@@ -346,7 +347,9 @@
 			"variantUnsureHelp": "E válasz nélkül nem tudunk olyan készleteket mutatni, amelyek csak az autó egyik változatához valók. A választ később is kiegészítheti.",
 			"chooseMonth": "Melyik hónapban gyártották az autót?",
 			"monthHelp": "A GYÁRTÁS hónapját kérdezzük, nem az első forgalomba helyezését. Ebben az évben ez dönt a kompatibilitásról.",
-			"monthUnknown": "Nem tudom"
+			"monthUnknown": "Nem tudom",
+			"generationOlder": "Régebbi generáció",
+			"generationNewer": "Újabb generáció"
 		},
 		"verdictQualified": "Feltételekkel illik az Ön járművére",
 		"verdictQualifiedDetail": "Ezt a szettet ellenőriztük az Ön járművéhez, de tartozik hozzá egy szerelési feltétel, amelyet most nem tudunk érthetően megfogalmazni.",
@@ -1079,7 +1082,14 @@
 		"previewNotice": "Nem közzétett oldal előnézete. A látogatók nem látják.",
 		"offersTitleGeneration": "Készletek ehhez a generációhoz",
 		"offersBrowseNote": "Minden szett csak a feltüntetett tetőtípusra és évjáratokra érvényes, a különbségek a kártyákon láthatók. Másik autó? Módosítsa a fejlécben.",
-		"offersGroupOther": "Nincs megadott tetőtípus"
+		"offersGroupOther": "Nincs megadott tetőtípus",
+		"viewYearLabel": "Gyártási év",
+		"viewAllYears": "Minden év",
+		"viewAllBrands": "Minden márka",
+		"viewRoofEmpty": "Ehhez a tetőtípushoz ({roof}) itt nincs szettünk.",
+		"viewRoofYearEmpty": "Ehhez a tetőtípushoz ({roof}) és a {year}. évhez itt nincs szettünk.",
+		"viewYearEmpty": "A {year}. évhez itt nincs szettünk.",
+		"viewEmptyHint": "Válasszon másik tetőtípust vagy évet."
 	},
 	"company": {
 		"operatedBy": "Az eladó:",

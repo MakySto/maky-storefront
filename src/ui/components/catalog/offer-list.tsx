@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { marketHref } from "@/lib/channel-map";
 import { type FitmentOffer, type FitmentOffers } from "@/lib/fitment/offers";
@@ -12,8 +13,35 @@ import { ListingViewRoot, ListingViewToggle } from "@/ui/components/listing/list
 import { splitSetTitle } from "@/lib/fitment/set-title";
 import { type SetFacts } from "@/lib/fitment/set-facts";
 import { type SetVehicle } from "@/lib/fitment/set-vehicle";
+import { cn } from "@/lib/utils";
+import { brandKey, vehicleViewQuery, type VehicleView } from "@/lib/fitment/vehicle-view";
 import { OfferCard, type OfferCardLabels } from "./offer-card";
-import { RoofFilteredList } from "./offer-roof-filter";
+import { OfferViewSelect } from "./offer-view-select";
+
+/**
+ * What the page's address narrows the list to, and what it can be narrowed to.
+ *
+ * `year` is already applied by the caller: `offers` and `fits` hold the sets of that year only, so
+ * the counts beside each roof are that year's. `roof`, `brand` and `sort` are applied here. Every
+ * control is a link to `path` with other parameters: the address is the state (see
+ * `lib/fitment/vehicle-view.ts`).
+ */
+export type OfferListView = VehicleView & {
+	/** The years with at least one set, newest first. */
+	years: readonly number[];
+	/** This page without parameters, market prefix included. */
+	path: string;
+};
+
+/** The shop's pill, as the category chips above its listings. */
+const chip = (selected: boolean) =>
+	cn(
+		"inline-flex h-10 items-center justify-center gap-2 rounded-xs border px-4 text-sm font-semibold whitespace-nowrap shadow-xs transition-colors",
+		"focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden",
+		selected
+			? "border-brand bg-brand text-brand-text"
+			: "border-border-default bg-surface-card text-text-primary hover:border-brand hover:text-brand",
+	);
 
 /**
  * The products a generation page offers.
@@ -43,6 +71,7 @@ export async function CatalogOfferList({
 	vehicles,
 	facts,
 	title,
+	view,
 }: {
 	offers: FitmentOffers;
 	channel: string;
@@ -75,6 +104,12 @@ export async function CatalogOfferList({
 	 * itself "compatible" — nothing on it has been matched to anyone's car.
 	 */
 	fits?: ReadonlyMap<string, readonly OfferFit[]>;
+	/**
+	 * The year and the roof the address names. With it the roofs are links that narrow the list, the
+	 * year can be chosen, and a set of the chosen roof adds to the cart from its card. Without it the
+	 * list is every set, with nothing to narrow it by.
+	 */
+	view?: OfferListView;
 }) {
 	const t = await getTranslations({ locale });
 	const tf = fits ? await getTranslations({ locale, namespace: "fitment" }) : null;
@@ -85,6 +120,31 @@ export async function CatalogOfferList({
 				<h2 className="text-text-primary text-lg font-semibold">{t("configurator.resultsTitle")}</h2>
 				<p className="bg-status-warning-bg text-status-warning border-status-warning-border mt-3 rounded-md border px-3 py-2 text-sm">
 					{t("catalog.offersLookupFailed")}
+				</p>
+			</section>
+		);
+	}
+
+	// A year with nothing in it says so, and offers the way back to every year. The sentences below
+	// are about the car as a whole and would be untrue of it: other years may well have sets.
+	if (offers.offers.length === 0 && view && view.year !== null) {
+		return (
+			<section className="mt-8" data-testid="catalog-offers">
+				<h2 className="text-text-primary text-lg font-semibold">{t("configurator.resultsTitle")}</h2>
+				<p className="text-text-secondary mt-3 text-sm">
+					{t("catalog.viewYearEmpty", { year: view.year })}{" "}
+					<Link
+						href={`${view.path}${vehicleViewQuery({
+							year: null,
+							roof: view.roof,
+							brand: view.brand,
+							sort: view.sort,
+						})}`}
+						scroll={false}
+						className="text-text-primary font-medium underline underline-offset-2"
+					>
+						{t("catalog.viewAllYears")}
+					</Link>
 				</p>
 			</section>
 		);
@@ -229,8 +289,64 @@ export async function CatalogOfferList({
 		.filter((group) => group.count > 0);
 
 	// A page that names ONE roof leaves nothing to choose: each card is the set for that roof and
-	// adds to the cart itself. A page that mixes roofs sends the shopper to the set, to say which is theirs.
+	// adds to the cart itself. A page that mixes roofs sends the shopper to the set, to say which is
+	// theirs, until the address names the roof: then every set shown is one made for it.
 	const oneRoof = groups.length === 1 && groups[0]!.key !== "none";
+	const active = view?.roof ?? null;
+	const ofRoof = (roof: RoofType | null) =>
+		roof ? sorted.filter((row) => row.roofs.includes(roof)) : sorted;
+	const inRoof = ofRoof(active);
+	const direct = oneRoof || active !== null;
+
+	// The makers among the sets of this year and this roof, the one with the most sets first. A maker
+	// the address names but this list has no set of is not applied: a maker never empties the list,
+	// and the control shows every maker again.
+	const keyOf = (row: Row) => (row.offer.brand ? brandKey(row.offer.brand) : "");
+	const brands = [
+		...inRoof
+			.reduce((found, row) => {
+				const key = keyOf(row);
+				if (!key) return found;
+				const known = found.get(key);
+				return found.set(key, { key, label: row.offer.brand!, count: (known?.count ?? 0) + 1 });
+			}, new Map<string, { key: string; label: string; count: number }>())
+			.values(),
+	].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, locale));
+	const brand = view?.brand && brands.some((maker) => maker.key === view.brand) ? view.brand : null;
+	const ofBrand = brand ? inRoof.filter((row) => keyOf(row) === brand) : inRoof;
+
+	// The page's own order, or by the exact variant's price. A set without a price goes last either way.
+	const sort = view?.sort ?? null;
+	const shown = sort
+		? [...ofBrand].sort((a, b) => {
+				const [x, y] = [a.offer.price?.amount ?? null, b.offer.price?.amount ?? null];
+				if (x === null || y === null) return x === y ? 0 : x === null ? 1 : -1;
+				return sort === "price_asc" ? x - y : y - x;
+			})
+		: ofBrand;
+
+	// Every control's address keeps the rest of the view. A roof's link keeps the maker only when that
+	// roof has a set of it, so an address does not carry a maker its own list ignores.
+	const hrefFor = (next: Partial<VehicleView>) =>
+		`${view?.path ?? ""}${vehicleViewQuery({
+			year: view?.year ?? null,
+			roof: active,
+			brand,
+			sort,
+			...next,
+		})}`;
+	const brandUnder = (roof: RoofType | null) =>
+		brand && ofRoof(roof).some((row) => keyOf(row) === brand) ? brand : null;
+	// The roofs to choose from: the ones this year has sets for, and the one the address names even
+	// when it has none, so the shopper sees what is chosen and can leave it.
+	const roofChips = groups.filter((group) => group.key !== "none");
+	if (active && !roofChips.some((group) => group.key === active)) {
+		roofChips.unshift({ key: active, label: tFit(ROOF_LABEL_KEY[active]), count: 0 });
+	}
+	const chooseRoof = view && (groups.length > 1 || active !== null);
+	const chooseYear = view && (view.years.length > 1 || view.year !== null);
+	const chooseBrand = view && brands.length > 1;
+	const chooseSort = view && (ofBrand.length > 1 || sort !== null);
 
 	return (
 		<ListingViewRoot>
@@ -240,29 +356,123 @@ export async function CatalogOfferList({
 						{/* The page's own H1 names the car; this heading is for the outline, the toolbar shows the count. */}
 						<h2 className="sr-only">{title ?? t("catalog.offersTitleGeneration")}</h2>
 						<p className="text-text-primary text-sm font-medium">
-							{t("configurator.resultsCount", { count: offers.offers.length })}
+							{t("configurator.resultsCount", { count: shown.length })}
 						</p>
 					</div>
-					<ListingViewToggle labels={toggleLabels} />
+					<div className="flex flex-wrap items-center gap-3">
+						{chooseYear ? (
+							<OfferViewSelect
+								label={t("catalog.viewYearLabel")}
+								value={view.year === null ? "" : String(view.year)}
+								options={[
+									{
+										value: "",
+										label: t("catalog.viewAllYears"),
+										href: hrefFor({ year: null }),
+									},
+									// A year from the address that has no set of its own stays in the list while it is chosen.
+									...[...new Set([...(view.year === null ? [] : [view.year]), ...view.years])]
+										.sort((a, b) => b - a)
+										.map((year) => ({
+											value: String(year),
+											label: String(year),
+											href: hrefFor({ year }),
+										})),
+								]}
+							/>
+						) : null}
+						{chooseBrand ? (
+							<OfferViewSelect
+								label={t("plp.brand")}
+								value={brand ?? ""}
+								options={[
+									{ value: "", label: t("catalog.viewAllBrands"), href: hrefFor({ brand: null }) },
+									...brands.map((maker) => ({
+										value: maker.key,
+										label: `${maker.label} (${maker.count})`,
+										href: hrefFor({ brand: maker.key }),
+									})),
+								]}
+							/>
+						) : null}
+						{chooseSort ? (
+							<OfferViewSelect
+								label={t("common.sortBy")}
+								value={sort ?? ""}
+								options={[
+									{ value: "", label: t("plp.featured"), href: hrefFor({ sort: null }) },
+									{
+										value: "price_asc",
+										label: t("plp.priceLowToHigh"),
+										href: hrefFor({ sort: "price_asc" }),
+									},
+									{
+										value: "price_desc",
+										label: t("plp.priceHighToLow"),
+										href: hrefFor({ sort: "price_desc" }),
+									},
+								]}
+							/>
+						) : null}
+						<ListingViewToggle labels={toggleLabels} />
+					</div>
 				</div>
 				<p className="text-text-secondary mt-2 max-w-prose text-sm">{t("catalog.offersBrowseNote")}</p>
 
 				{notices}
 
-				{groups.length > 1 ? (
-					<RoofFilteredList
-						items={sorted.map((row, index) => ({
-							id: row.offer.saleorVariantId,
-							roofs: row.roofs.length > 0 ? row.roofs : ["none"],
-							node: card(row.offer, index === 0, oneRoof),
-						}))}
-						groups={groups}
-						labels={{ group: tl("roofFilterLabel"), all: tl("roofFilterAll") }}
-					/>
-				) : (
+				{chooseRoof ? (
+					<nav
+						aria-label={tl("roofFilterLabel")}
+						className="scrollbar-hide -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 py-0.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+					>
+						<Link
+							href={hrefFor({ roof: null, brand: brandUnder(null) })}
+							scroll={false}
+							prefetch={false}
+							aria-current={active === null ? "true" : undefined}
+							className={chip(active === null)}
+						>
+							{tl("roofFilterAll")}
+							<span className="text-[0.8125rem] font-medium tabular-nums opacity-80">{sorted.length}</span>
+						</Link>
+						{roofChips.map((group) => (
+							<Link
+								key={group.key}
+								href={hrefFor({ roof: group.key as RoofType, brand: brandUnder(group.key as RoofType) })}
+								scroll={false}
+								prefetch={false}
+								aria-current={active === group.key ? "true" : undefined}
+								className={chip(active === group.key)}
+							>
+								{group.label}
+								<span className="text-[0.8125rem] font-medium tabular-nums opacity-80">{group.count}</span>
+							</Link>
+						))}
+					</nav>
+				) : null}
+
+				{shown.length > 0 ? (
 					<ul className={`${CARD_GRID} mt-4`}>
-						{sorted.map((row, index) => card(row.offer, index === 0, oneRoof))}
+						{shown.map((row, index) => card(row.offer, index === 0, direct))}
 					</ul>
+				) : (
+					// The roof the address names has no set here (for this year). Said in those words, with
+					// the other roofs and their counts one row above, never as "nothing fits your car".
+					<p className="text-text-secondary mt-4 max-w-prose text-sm">
+						{active && view?.year != null
+							? t("catalog.viewRoofYearEmpty", { roof: tFit(ROOF_LABEL_KEY[active]), year: view.year })
+							: active
+								? t("catalog.viewRoofEmpty", { roof: tFit(ROOF_LABEL_KEY[active]) })
+								: null}{" "}
+						{t("catalog.viewEmptyHint")}{" "}
+						<Link
+							href={marketHref(channel, "/kontakt")}
+							className="text-text-primary font-medium underline underline-offset-2"
+						>
+							{tFit("selector.roofMissingContact")}
+						</Link>
+					</p>
 				)}
 			</section>
 		</ListingViewRoot>

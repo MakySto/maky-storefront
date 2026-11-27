@@ -32,6 +32,12 @@ import { datasetMakeNames } from "@/lib/fitment/set-title";
 import { productSetFacts } from "@/lib/fitment/set-facts";
 import { setVehicleOf, type SetVehicle } from "@/lib/fitment/set-vehicle";
 import { offerFitsByProduct } from "@/lib/fitment/offer-fit";
+import {
+	applicationsForYear,
+	parseVehicleView,
+	yearsOnOffer,
+	type ViewSearch,
+} from "@/lib/fitment/vehicle-view";
 import { loadFitmentDataset } from "@/lib/fitment/provider";
 import { Breadcrumbs, type BreadcrumbItem } from "@/ui/components/breadcrumbs";
 import { ContentBlocks } from "@/ui/components/catalog/content-blocks";
@@ -46,8 +52,10 @@ import { TyrePageView, tyrePageMetadata } from "./tyre-page";
  * The vehicle category pages: `/sk/stresne-nosice/[make]/[model]/[generation]`.
  *
  * Three levels and no more. A year or a roof type refines the choice INSIDE a generation
- * page; neither becomes its own URL, because that would be tens of thousands of pages
- * saying nearly the same thing.
+ * page; neither becomes its own page, because that would be tens of thousands of pages
+ * saying nearly the same thing. They are parameters of the generation page (`?year=2024&roof=flush-rails`,
+ * `lib/fitment/vehicle-view.ts`): the address can be saved and sent and shows everybody the same
+ * sets, and the canonical address stays the page without them, so nothing new is indexed.
  *
  * The vehicle is whatever the URL names. It is deliberately NOT the car saved in the
  * visitor's Garage: a public category has to say the same thing to everyone, and someone
@@ -55,7 +63,10 @@ import { TyrePageView, tyrePageMetadata } from "./tyre-page";
  * because they once saved one.
  */
 
-type Params = { params: Promise<{ channel: string; slug: string; vehicle: string[] }> };
+type Params = {
+	params: Promise<{ channel: string; slug: string; vehicle: string[] }>;
+	searchParams?: Promise<ViewSearch>;
+};
 
 async function resolve(channel: string, categorySlug: string, vehicle: string[]) {
 	// This market's own language, so `/de/...` reads the German artifact and never the
@@ -231,10 +242,16 @@ async function Offers({
 	vehicleId,
 	channel,
 	locale,
+	path,
+	search,
 }: {
 	vehicleId: string;
 	channel: string;
 	locale: string;
+	/** The address of the page that lists these sets, without parameters. */
+	path: string;
+	/** The page's parameters. Read here, inside the dynamic part, so the shell stays prerendered. */
+	search?: Promise<ViewSearch>;
 }) {
 	const language = catalogLanguageForChannel(channel);
 	if (!language) return null;
@@ -242,8 +259,19 @@ async function Offers({
 	const view = await loadCatalogView(language, REVERSE_MAP[channel] ?? channel);
 	if (!view.ready) return null;
 
-	const applications = view.tree.applicationsOf.get(vehicleId) ?? [];
-	if (applications.length === 0) return null;
+	const every = view.tree.applicationsOf.get(vehicleId) ?? [];
+	if (every.length === 0) return null;
+
+	// The year and the roof the address names. The year narrows the applications here, so the sets
+	// asked of Saleor, the facts on the cards and the counts beside each roof are that year's; the
+	// roof is narrowed by the list, which still has to count the other roofs.
+	const generation = view.tree.byVehicleId.get(vehicleId);
+	const span = { from: generation?.productionYearFrom, to: generation?.productionYearTo };
+	// The parameters first: they are request data, and the clock is read only after them.
+	const asked = (await search) ?? {};
+	const currentYear = new Date().getUTCFullYear();
+	const chosen = parseVehicleView(asked, span, currentYear);
+	const applications = applicationsForYear(every, chosen.year);
 
 	const fitment = await loadFitmentDataset();
 	const offers = await resolveFitmentOffers(uniqueProductRefs([...applications]), channel, locale, {
@@ -267,6 +295,7 @@ async function Offers({
 			vehicles={vehicles}
 			facts={dataset ? productSetFacts(dataset) : undefined}
 			fits={offerFitsByProduct(applications)}
+			view={{ ...chosen, years: yearsOnOffer(every, span, currentYear), path }}
 		/>
 	);
 }
@@ -284,7 +313,7 @@ export default function Page(props: Params) {
 	);
 }
 
-async function VehiclePage({ params }: Params) {
+async function VehiclePage({ params, searchParams }: Params) {
 	const { channel, slug, vehicle } = await params;
 	// The snow-chain shelf has no vehicle pages: a path below it is a tyre-size page or nothing.
 	const tyre = tyreRouteOf(channel, slug, vehicle);
@@ -415,7 +444,15 @@ async function VehiclePage({ params }: Params) {
 			{offersFor ? (
 				<div className="max-w-page mx-auto w-full px-4 sm:px-6 lg:px-8">
 					<Suspense fallback={<OfferSkeleton title={t("configurator.resultsTitle")} />}>
-						<Offers vehicleId={offersFor.vehicleId} channel={channel} locale={locale} />
+						<Offers
+							vehicleId={offersFor.vehicleId}
+							channel={channel}
+							locale={locale}
+							// The page's own address, not the generation's: a model with one generation lists
+							// that generation's sets under the model's address, and the links stay on it.
+							path={tileHref(channel, node)}
+							search={searchParams}
+						/>
 					</Suspense>
 				</div>
 			) : null}
