@@ -45,7 +45,8 @@ export async function IntendedForBox({
 
 	const { from, to } = windowBounds(first.window);
 	const facts = [
-		to === null ? t("yearFromOnly", { from }) : t("yearRange", { from, to }),
+		// One year is said once, as the cards say it (`offer-fit.ts`): a window cut to the car's years can be one.
+		to === null ? t("yearFromOnly", { from }) : to === from ? from : t("yearRange", { from, to }),
 		first.bodyTypes.map((body) => t(BODY_LABEL_KEY[body])).join(", "),
 		first.roofTypes.map((roof) => t(ROOF_LABEL_KEY[roof])).join(", "),
 	].filter(Boolean);

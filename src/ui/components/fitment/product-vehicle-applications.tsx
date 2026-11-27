@@ -36,9 +36,13 @@ type Props = {
 const SEARCH_FROM = 8;
 
 function yearsOf(row: ApplicationRow, t: ReturnType<typeof useTranslations>): string {
+	// One year is one year: a window cut to the years the car was built can end in the year it starts
+	// (a Citigo NE1 built 2019-2020 with a set from 2020), and "2020 – 2020" says it twice.
 	return row.yearTo === null
 		? t("yearFromOnly", { from: row.yearFrom })
-		: t("yearRange", { from: row.yearFrom, to: row.yearTo });
+		: row.yearTo === row.yearFrom
+			? String(row.yearFrom)
+			: t("yearRange", { from: row.yearFrom, to: row.yearTo });
 }
 
 /**
