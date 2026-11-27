@@ -78,3 +78,19 @@ describe("the Všetky kategórie button", () => {
 		expect(source("header-nav-row.tsx")).toContain("items={allCategories}");
 	});
 });
+
+/**
+ * The header's own links are handed to client components, so what a server component writes as
+ * their `href` is written into the page too (see `marketNavHref`). Measured on the live store on
+ * 2026-11-27, before this change, on a DE and a US page: `/login` and `/oblubene` were there bare.
+ */
+describe("the header's account and favourites links", () => {
+	it("are given with the market, not as a bare path", () => {
+		const actions = source("header-actions.tsx");
+		expect(actions).toContain('href={marketHref(channel, "/oblubene")}');
+		expect(actions).not.toContain('href="/oblubene"');
+		const account = readFileSync(join(HERE, "../nav/components/user-menu/user-menu-container.tsx"), "utf8");
+		expect(account).toContain('href={marketHref(channel, "/login")}');
+		expect(account).not.toContain('href="/login"');
+	});
+});
