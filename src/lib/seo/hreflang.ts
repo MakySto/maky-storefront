@@ -5,7 +5,7 @@
  * proper <link rel="alternate" hreflang="..."> tags for all 12 markets.
  */
 
-import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, REVERSE_MAP, localizeMarketPath } from "@/lib/channel-map";
 import { indexableMarkets } from "@/lib/market-state";
 import { marketHasRoute, routePolicyFor } from "@/lib/route-policy";
 import { getBaseUrl } from "./config";
@@ -150,7 +150,9 @@ function entriesFor(markets: readonly string[], base: string, normalizedPath: st
 		// the old rule it would silently have emitted a duplicate bare language, and
 		// a cluster with two pages claiming the same hreflang is ignored wholesale.
 		hreflang: CHANNEL_MAP[market].locale,
-		url: `${base}/${market}${normalizedPath}`,
+		// Each market's own address for the page: `/sk/doprava-a-platba`, `/de/versand-und-zahlung`
+		// (`ROUTE_WORDS`). An alternate that redirects is not a reciprocal one.
+		url: `${base}/${market}${localizeMarketPath(market, normalizedPath)}`,
 	}));
 
 	// x-default → the first live market, not a hardcoded `sk`. If sk is ever taken
@@ -158,7 +160,7 @@ function entriesFor(markets: readonly string[], base: string, normalizedPath: st
 	// single worst entry in the cluster.
 	alternates.push({
 		hreflang: "x-default",
-		url: `${base}/${markets[0]}${normalizedPath}`,
+		url: `${base}/${markets[0]}${localizeMarketPath(markets[0]!, normalizedPath)}`,
 	});
 
 	return alternates;
@@ -170,7 +172,9 @@ function entriesFor(markets: readonly string[], base: string, normalizedPath: st
 export function buildCanonicalUrl(market: string, path: string = ""): string {
 	const base = getBaseUrl();
 	const normalizedPath = path && !path.startsWith("/") ? `/${path}` : path;
-	return `${base}/${market}${normalizedPath}`;
+	// The market's own word for a route (`/us/brands/thule`, never `/us/znacky/thule`): the directory
+	// name abroad is an address that redirects, and a canonical must not point at a redirect.
+	return `${base}/${market}${localizeMarketPath(market, normalizedPath)}`;
 }
 
 /**

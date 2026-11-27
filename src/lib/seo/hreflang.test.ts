@@ -145,9 +145,26 @@ describe("buildHreflangAlternates — page-level eligibility", () => {
 		expect(urls).toEqual(
 			expect.arrayContaining([
 				expect.stringContaining("/sk/odstupenie-od-zmluvy/vzorovy-formular"),
-				expect.stringContaining("/de/odstupenie-od-zmluvy/vzorovy-formular"),
+				// Each market under its own words (`ROUTE_WORDS`): the Slovak address abroad redirects,
+				// and an alternate that redirects is not reciprocated.
+				expect.stringContaining("/cz/odstoupeni-od-smlouvy/vzorovy-formular"),
+				expect.stringContaining("/de/widerrufsrecht/musterformular"),
 			]),
 		);
+		expect(urls.join(" ")).not.toContain("/de/odstupenie-od-zmluvy");
+	});
+
+	it("names a page that is one word in every market by that market's word", async () => {
+		const build = await subject("sk,de,us");
+		const paths = Object.fromEntries(
+			build("/doprava-a-platba").map((e) => [e.hreflang, new URL(e.url).pathname]),
+		);
+		expect(paths).toEqual({
+			"sk-SK": "/sk/doprava-a-platba",
+			"de-DE": "/de/versand-und-zahlung",
+			"en-US": "/us/shipping-and-payment",
+			"x-default": "/sk/doprava-a-platba",
+		});
 	});
 });
 

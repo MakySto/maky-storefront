@@ -399,7 +399,7 @@ describe("product JSON-LD offer terms", () => {
 					applicableCountry: "DE",
 					returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
 					merchantReturnDays: 14,
-					merchantReturnLink: expect.stringMatching(/\/de\/reklamacie-a-vratenie$/),
+					merchantReturnLink: expect.stringMatching(/\/de\/reklamation-und-ruecksendung$/),
 				},
 			});
 		}

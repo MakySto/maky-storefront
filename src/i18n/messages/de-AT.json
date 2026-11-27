@@ -90,6 +90,7 @@
 		"sku": "Artikelnummer",
 		"ean": "EAN",
 		"componentEans": "EAN der Teile",
+		"setParts": "Das Set besteht aus diesen Teilen:",
 		"brand": "Marke",
 		"weight": "Gewicht",
 		"dimensions": "Maße",

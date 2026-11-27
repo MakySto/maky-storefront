@@ -57,7 +57,7 @@ export function switchTargetFor(
 
 	const search = typeof window === "undefined" ? "" : window.location.search;
 	const pathAfterMarket = here.replace(new RegExp(`^/(${currentMarket}|${channel})(?=/|$)`), "");
-	return marketSwitchHref(target, `${pathAfterMarket}${search}`);
+	return marketSwitchHref(target, `${pathAfterMarket}${search}`, currentMarket);
 }
 
 /**

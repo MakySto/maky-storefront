@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { companyInfo } from "@/config/company";
-import { CHANNEL_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, marketHref } from "@/lib/channel-map";
 import { marketHasRoute } from "@/lib/route-policy";
 import {
 	RETURNS_PAGE_PATH,
@@ -230,8 +230,16 @@ describe("the return policy states the statutory window and nothing unconfirmed"
 			// Owner, 2026-11-18, as every market's returns page says: the customer pays for sending back.
 			returnFees: "https://schema.org/ReturnFeesCustomerResponsibility",
 			returnMethod: "https://schema.org/ReturnByMail",
-			merchantReturnLink: `https://maky.store/${market}/reklamacie-a-vratenie`,
+			// The market's own address for the page (`ROUTE_WORDS`), which is the one that answers 200.
+			merchantReturnLink: `https://maky.store${marketHref(market, RETURNS_PAGE_PATH)}`,
 		});
+		// Spelled out for three markets, so the helper above cannot agree with a wrong table by itself.
+		const spelled: Record<string, string> = {
+			sk: "https://maky.store/sk/reklamacie-a-vratenie",
+			de: "https://maky.store/de/reklamation-und-ruecksendung",
+			us: "https://maky.store/us/returns",
+		};
+		if (spelled[market]) expect(returnPolicy(market).merchantReturnLink).toBe(spelled[market]);
 		// The link is a page this market actually serves — not a 404 with a return policy on it.
 		expect(marketHasRoute(market, RETURNS_PAGE_PATH.slice(1))).toBe(true);
 	});

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CHANNEL_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, marketHref } from "@/lib/channel-map";
 import {
 	QUOTE_REFERENCE_MAX,
 	cleanQuoteReference,
@@ -94,7 +94,8 @@ describe("quoteReferenceFor", () => {
 
 describe("quoteRequestHref", () => {
 	it("opens the contact page of the market with the product in the fragment", () => {
-		expect(quoteRequestHref(US, FRIDGE)).toBe("/us/kontakt#quote=PRO-USER%20CoolZ%2083%20l%20(TK20410)");
+		// The market's own word for the contact page (`ROUTE_WORDS`), so the link needs no redirect.
+		expect(quoteRequestHref(US, FRIDGE)).toBe("/us/contact#quote=PRO-USER%20CoolZ%2083%20l%20(TK20410)");
 		expect(quoteRequestHref(SK, FRIDGE)).toBe("/sk/kontakt#quote=PRO-USER%20CoolZ%2083%20l%20(TK20410)");
 		expect(quoteRequestHref(DE, FRIDGE).startsWith("/de/kontakt#quote=")).toBe(true);
 	});
@@ -114,7 +115,10 @@ describe("quoteRequestHref", () => {
 
 	it("does not put a market other than the product's own into the link", () => {
 		for (const [market, row] of Object.entries(CHANNEL_MAP)) {
-			expect(quoteRequestHref(row.saleorSlug, FRIDGE).startsWith(`/${market}/kontakt#`), market).toBe(true);
+			expect(
+				quoteRequestHref(row.saleorSlug, FRIDGE).startsWith(`${marketHref(market, "/kontakt")}#`),
+				market,
+			).toBe(true);
 		}
 	});
 });

@@ -38,6 +38,7 @@ import { tyreSelectionInputFromForm } from "@/lib/tyre-size/selection";
 import { applyShopOffer } from "@/lib/tyre-size/shop-offer";
 import { isTyreSizeControlled } from "@/lib/tyre-size/size-index";
 import type { TyreFitView } from "@/lib/tyre-size/types";
+import { SetParts } from "./set-parts";
 import { TyreFitRow, TyreKnowsCode, TyreSizeGate } from "./tyre-fit-box";
 
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
@@ -410,20 +411,19 @@ export async function VariantSectionDynamic({
 					</span>
 				)}
 				{componentEans.length > 0 && tParts && (
-					<dl className="text-text-tertiary flex w-full min-w-0 flex-wrap gap-x-4 gap-y-1 text-xs">
-						<dt className="w-full sm:w-auto">{tProduct("componentEans")}:</dt>
-						{componentEans.map((part) => {
-							const role = COMPONENT_ROLE_MESSAGE[part.role];
-							return (
-								<dd key={part.ean} className="min-w-0">
-									{role ? `${tParts(role)} ` : ""}
-									<span className="[overflow-wrap:anywhere]">{part.code}</span>
-									{part.qty > 1 ? ` (${part.qty}×)` : ""}:{" "}
-									<span className="font-medium tabular-nums">{part.ean}</span>
-								</dd>
-							);
-						})}
-					</dl>
+					<SetParts
+						parts={componentEans}
+						labels={{
+							heading: tProduct("setParts"),
+							compactHeading: tProduct("componentEans"),
+							ean: tProduct("ean"),
+							roleName: (role) => {
+								const key = COMPONENT_ROLE_MESSAGE[role];
+								return key ? tParts(key) : null;
+							},
+							locale,
+						}}
+					/>
 				)}
 			</div>
 

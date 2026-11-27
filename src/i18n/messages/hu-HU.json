@@ -90,6 +90,7 @@
 		"sku": "Cikkszám",
 		"ean": "EAN",
 		"componentEans": "Az alkatrészek EAN-kódjai",
+		"setParts": "A szett a következő részekből áll:",
 		"brand": "Márka",
 		"weight": "Súly",
 		"dimensions": "Méretek",
