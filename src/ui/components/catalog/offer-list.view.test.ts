@@ -44,6 +44,8 @@ vi.mock("./offer-view-select", () => ({
 			),
 		),
 }));
+// The roof links are the real ones; the router they would use is not part of a static render.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: () => undefined }) }));
 vi.mock("@/ui/components/wishlist/wishlist-button", () => ({ WishlistButton: () => null }));
 vi.mock("@/ui/components/plp/listing-add-to-cart", () => ({
 	ListingAddToCart: ({ variantId }: { variantId: string }) =>
