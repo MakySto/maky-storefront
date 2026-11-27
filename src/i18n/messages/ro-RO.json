@@ -334,6 +334,7 @@
 			"roofSkipNote": "Fără tipul de plafon nu putem confirma compatibilitatea. Îl puteți adăuga oricând.",
 			"roofMissing": "Tipul dumneavoastră de plafon nu apare? Pentru această mașină și acest an avem bare doar pentru tipurile afișate.",
 			"roofMissingContact": "Scrieți-ne și verificăm.",
+			"yearNoSet": "Pentru anul {year} nu avem încă un set de bare de plafon pentru acest vehicul.",
 			"glassRoofLegend": "Are mașina dvs. plafon de sticlă (panoramic)?",
 			"glassRoofHelp": "Seturile diferă după cum plafonul are sau nu un panou de sticlă. Priviți plafonul mașinii din exterior sau din interior.",
 			"glassRoofYes": "Da, are plafon de sticlă",

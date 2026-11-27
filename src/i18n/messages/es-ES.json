@@ -334,6 +334,7 @@
 			"roofSkipNote": "Sin el tipo de techo no podemos confirmar la compatibilidad. Puede añadirlo en cualquier momento.",
 			"roofMissing": "¿Su tipo de techo no aparece? Para este coche y año solo tenemos barras para los tipos indicados.",
 			"roofMissingContact": "Escríbanos y lo comprobaremos.",
+			"yearNoSet": "Para el año {year} todavía no tenemos un conjunto de barras de techo para este vehículo.",
 			"glassRoofLegend": "¿Tiene su coche techo de cristal (panorámico)?",
 			"glassRoofHelp": "Los kits varían según si el techo lleva un panel de cristal. Mire el techo de su coche por fuera o por dentro.",
 			"glassRoofYes": "Sí, tiene techo de cristal",

@@ -581,6 +581,23 @@ export function VehicleSelectorSheet({
 										/>
 									)}
 
+									{/* Said before the car is confirmed, not after: this year has no set of ours. The car can still be saved. */}
+									{generation && qualifiers?.noSetForYear && draft.year !== undefined && (
+										<p
+											role="status"
+											className="bg-status-info-bg text-status-info border-status-info-border rounded-md border px-3 py-2 text-sm"
+										>
+											{t("selector.yearNoSet", { year: draft.year })}{" "}
+											<LinkWithChannel
+												href="/kontakt"
+												onClick={() => onOpenChange(false)}
+												className="focus-visible:ring-ring rounded-xs font-medium text-inherit underline underline-offset-2 focus-visible:ring-2 focus-visible:outline-hidden"
+											>
+												{t("selector.roofMissingContact")}
+											</LinkWithChannel>
+										</p>
+									)}
+
 									{generation && qualifiers?.roofTypes && (
 										<RoofQuestion
 											roofTypes={qualifiers.roofTypes}
