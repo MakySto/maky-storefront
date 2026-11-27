@@ -94,24 +94,33 @@ describe("stepping through the tree — make, model, YEAR", () => {
 });
 
 describe("the roof type is confirmed EVERY time", () => {
-	it("asks even when the generation has exactly one known roof", async () => {
-		// THE REGRESSION. Kodiaq I is raised-rails only, and its application requires
-		// raised rails. The old selector dropped every single-valued qualifier as "no
+	it("asks even when exactly one roof is on offer", async () => {
+		// THE REGRESSION. The old selector dropped every single-valued qualifier as "no
 		// need to ask", saved nothing, and handed the resolver `roofType: undefined` —
 		// an unanswered qualifier, which is AMBIGUOUS, which offers the shopper nothing.
-		// Proven in isolation before this change:
+		// Proven in isolation before that change:
 		//   no roofType asked -> AMBIGUOUS (qualifier-not-answered)
 		//   roof confirmed    -> VERIFIED_FIT
-		const step = await loadSelectorStep({ makeId: "skoda", modelId: "skoda-kodiaq", year: 2019 });
-		expect(step.qualifiers?.roofTypes).toEqual(["raised-rails"]);
+		// The BMW 3 G20 has sets for flush rails only: one option, and still a question.
+		const step = await loadSelectorStep({ makeId: "bmw", modelId: "bmw-3", year: 2022 });
+		expect(step.qualifiers?.roofTypes).toEqual(["flush-rails"]);
 	});
 
-	it("offers the roofs the CAR can have, not only the ones we stock racks for", async () => {
-		// Octavia IV was sold with a naked roof and with flush rails; our applications
-		// only ever mention flush rails. Offering just that would leave a naked-roof
-		// owner no way to say so, and push them at the answer we wanted to hear.
+	it("offers the roofs a set is on offer for, not every roof the car was sold with", async () => {
+		// Octavia IV was sold with a naked roof and with flush rails; the sets are for flush
+		// rails only. Offering the naked roof too was a choice whose only outcome is "we have
+		// nothing for your car" (owner, 2026-11-27: offer only the roofs we have sets for).
+		// The owner of a naked roof still has a way to say so: the answers that are not a roof
+		// type stay under the list.
 		const step = await loadSelectorStep({ makeId: "skoda", modelId: "skoda-octavia", year: 2022 });
-		expect(step.qualifiers?.roofTypes?.sort()).toEqual(["flush-rails", "naked-roof"]);
+		expect(step.qualifiers?.roofTypes).toEqual(["flush-rails"]);
+	});
+
+	it("asks nothing where no set is on offer: there is nothing to tell apart", async () => {
+		// Kodiaq I has one row, for raised rails, and its product is unreviewed: not on offer.
+		const step = await loadSelectorStep({ makeId: "skoda", modelId: "skoda-kodiaq", year: 2019 });
+		expect(step.generation?.id).toBe("skoda-kodiaq-1");
+		expect(step.qualifiers?.roofTypes).toBeNull();
 	});
 });
 
