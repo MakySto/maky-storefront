@@ -1,11 +1,12 @@
 "use client";
 
-import { createContext, useActionState, useContext } from "react";
+import { createContext, useActionState, useContext, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { AlertCircle, CheckCircle2, HelpCircle } from "lucide-react";
 
 import { PaymentLockRecovery } from "@/checkout/components/b2b/payment-lock-recovery";
 import { buildCheckoutPath } from "@/session-bridge";
+import { useOpenCart } from "@/ui/components/cart/cart-context";
 
 import type { AddToCartResult } from "./add-to-cart-result";
 
@@ -31,6 +32,13 @@ export function useCartFormResult(): AddToCartResult | null {
  *
  * `useActionState` is what makes the result reachable in the DOM; the action,
  * the variant selection and the session are otherwise untouched.
+ *
+ * A confirmed add opens the cart drawer (owner, 2026-11-27). Until then the only sign was a small
+ * "Pridané do košíka." under the button, and the drawer, which shows the line that was just added
+ * and the way to the checkout, stayed closed: a shopper who wanted to pay had to find the cart
+ * icon in the header (audit of the live store, 2026-11-27, S1). It opens for the product page and
+ * for a listing card alike, and only for `added`: a refusal and a "we do not know" keep the
+ * customer where the message about them is.
  */
 export function CartForm({
 	action,
@@ -50,6 +58,14 @@ export function CartForm({
 	children: React.ReactNode;
 }) {
 	const [result, formAction] = useActionState(action, null);
+	const openCart = useOpenCart();
+
+	// One new `result` object per submission, so adding twice opens the drawer twice. The drawer's
+	// lines arrive with the action's own response (the action revalidates the cart), so by the time
+	// this effect runs the new line is already in it.
+	useEffect(() => {
+		if (shouldOpenCartAfter(result)) openCart?.();
+	}, [result, openCart]);
 
 	return (
 		<form action={formAction} className={className}>
@@ -57,6 +73,11 @@ export function CartForm({
 			<AddToCartStatus result={result} quietSuccess={quietSuccess} />
 		</form>
 	);
+}
+
+/** Whether an add-to-cart outcome opens the cart drawer: a confirmed add, and nothing else. */
+export function shouldOpenCartAfter(result: AddToCartResult | null): boolean {
+	return result?.status === "added";
 }
 
 /** `useActionState` hands back one object per submission: a stable number for it, for the panel's key. */

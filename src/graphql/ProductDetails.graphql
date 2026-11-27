@@ -51,6 +51,26 @@ query ProductDetails(
 				name
 				slug
 			}
+			# The shelves above it, for the breadcrumb ("Nosiče bicyklov > Na ťažné zariadenie"):
+			# two levels is as deep as the catalogue goes.
+			parent {
+				id
+				name
+				slug
+				translation(languageCode: $lang) {
+					name
+					slug
+				}
+				parent {
+					id
+					name
+					slug
+					translation(languageCode: $lang) {
+						name
+						slug
+					}
+				}
+			}
 		}
 		rating
 		attributes {

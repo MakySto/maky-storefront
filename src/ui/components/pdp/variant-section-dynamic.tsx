@@ -11,7 +11,7 @@ import { type ProductDetailsQuery } from "@/gql/graphql";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getLocaleFromChannel } from "@/config/locale";
-import { baseSlugOfCategory, categoryUrlFor } from "@/config/category-routes";
+import { baseSlugForCategoryId, baseSlugOfCategory, categoryUrlFor } from "@/config/category-routes";
 import { TYRE_SHELF_SLUG } from "@/config/tyre-shelves";
 import { marketHref } from "@/lib/channel-map";
 import { AddToCart } from "./add-to-cart";
@@ -38,6 +38,7 @@ import { tyreSelectionInputFromForm } from "@/lib/tyre-size/selection";
 import { applyShopOffer } from "@/lib/tyre-size/shop-offer";
 import { isTyreSizeControlled } from "@/lib/tyre-size/size-index";
 import type { TyreFitView } from "@/lib/tyre-size/types";
+import { SetParts } from "./set-parts";
 import { TyreFitRow, TyreKnowsCode, TyreSizeGate } from "./tyre-fit-box";
 
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
@@ -361,10 +362,18 @@ export async function VariantSectionDynamic({
 			    the product goes to this browser's favourites (`lib/wishlist`). */}
 			<div className="order-1 flex items-center gap-2">
 				<div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+					{/* The shelf the product is on, which for a set is its maker's ("Nordrive strešné nosiče"): the
+					    trail above goes through the car, so the maker's own shelf is one click from here. */}
 					{product.category && (
-						<span className="bg-surface-muted text-brand rounded-2xs px-3 py-1.5 text-[0.8125rem] font-semibold">
+						<Link
+							href={marketHref(
+								channel,
+								categoryUrlFor(channel, baseSlugForCategoryId(product.category.id) ?? product.category.slug),
+							)}
+							className="bg-surface-muted text-brand hover:text-brand-strong rounded-2xs px-3 py-1.5 text-[0.8125rem] font-semibold transition-colors"
+						>
 							{product.category.name}
-						</span>
+						</Link>
 					)}
 					{isOnSale && (
 						<Badge variant="destructive" className="text-xs">
@@ -410,20 +419,19 @@ export async function VariantSectionDynamic({
 					</span>
 				)}
 				{componentEans.length > 0 && tParts && (
-					<dl className="text-text-tertiary flex w-full min-w-0 flex-wrap gap-x-4 gap-y-1 text-xs">
-						<dt className="w-full sm:w-auto">{tProduct("componentEans")}:</dt>
-						{componentEans.map((part) => {
-							const role = COMPONENT_ROLE_MESSAGE[part.role];
-							return (
-								<dd key={part.ean} className="min-w-0">
-									{role ? `${tParts(role)} ` : ""}
-									<span className="[overflow-wrap:anywhere]">{part.code}</span>
-									{part.qty > 1 ? ` (${part.qty}×)` : ""}:{" "}
-									<span className="font-medium tabular-nums">{part.ean}</span>
-								</dd>
-							);
-						})}
-					</dl>
+					<SetParts
+						parts={componentEans}
+						labels={{
+							heading: tProduct("setParts"),
+							compactHeading: tProduct("componentEans"),
+							ean: tProduct("ean"),
+							roleName: (role) => {
+								const key = COMPONENT_ROLE_MESSAGE[role];
+								return key ? tParts(key) : null;
+							},
+							locale,
+						}}
+					/>
 				)}
 			</div>
 

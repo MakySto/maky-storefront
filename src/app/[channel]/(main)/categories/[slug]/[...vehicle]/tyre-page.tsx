@@ -553,11 +553,8 @@ export async function TyrePageView({ channel, page }: { channel: string; page: T
 						{ label: t("tyrePages.rimCrumb", { rim: page.rim }), href: rimHref ?? undefined },
 						{ label: page.label },
 					];
-	const crumbs: BreadcrumbItem[] = [
-		{ label: t("nav.home"), href: marketHref(channel) },
-		{ label: t("nav.snowChains"), href: shelfHref },
-		...tail,
-	];
+	// From the shelf, without "Domov", like every other trail of the shop's shelves.
+	const crumbs: BreadcrumbItem[] = [{ label: t("nav.snowChains"), href: shelfHref }, ...tail];
 
 	return (
 		<div className="max-w-page mx-auto w-full px-4 pt-8 pb-12 sm:px-6 lg:px-8">

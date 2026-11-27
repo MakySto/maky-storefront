@@ -8,9 +8,11 @@ import {
 	DEFAULT_MARKET,
 	COOKIE_NAME,
 	COOKIE_MAX_AGE,
-	cartSegment,
+	internalMarketPath,
+	localizeMarketPath,
 	marketHref,
 } from "./lib/channel-map";
+import { isKnownAbsentBrand } from "./lib/brands/stocked-slugs";
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
 import { legacyRootRedirectTarget } from "./lib/legacy-root-redirects";
 import { orderConfirmationHandoff } from "./lib/order-confirmation-handoff";
@@ -31,7 +33,7 @@ import { isVehiclePageGateEnabled, preflightVehiclePage } from "./lib/catalog-co
 import { keepLiveCategoriesFresh } from "./lib/live-categories";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/routing.generated";
 import { isMarketLive, liveMarkets, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
-import { isRouteMissingInMarket, routePolicyFor } from "./lib/route-policy";
+import { isRouteMissingInMarket, marketHasRoute, routePolicyFor } from "./lib/route-policy";
 import {
 	CMS_PREVIEW_CACHE_CONTROL,
 	CMS_PREVIEW_ROBOTS_HEADER,
@@ -356,30 +358,53 @@ async function route(request: NextRequest) {
 	// request that starts it is answered from what is known now. Nothing on this path waits.
 	if (first && FRIENDLY_SLUGS.has(first)) keepLiveCategoriesFresh();
 
-	// LOCALISED CART URL -> the shared internal `/cart` route.
+	// A ROUTE UNDER THE MARKET'S OWN WORD -> the shared internal route.
 	//
-	// The physical App Router directory stays language-neutral while shoppers and
-	// search engines see their market's word. This runs before the existence gate;
-	// otherwise `/sk/kosik` is indistinguishable from a product slug and can 404.
+	// The physical App Router directories stay as they are (`cart`, `kontakt`, `doprava-a-platba`,
+	// `znacky`, …) while shoppers and search engines see their market's word: `/sk/kosik`,
+	// `/de/warenkorb`, `/de/versand-und-zahlung`, `/us/brands/thule` (`ROUTE_WORDS` in
+	// `lib/channel-map.ts`). This runs before the existence gate; otherwise `/sk/kosik` is
+	// indistinguishable from a product slug and can 404.
 	//
-	// The decision uses the normalized pathname, while the rewrite keeps Next's
-	// `.rsc` and `/_segments/…segment.rsc` suffixes for client navigation.
+	// The directory name in a market that has a word of its own is the OLD address: the cart's since
+	// the cart was localised, the Slovak words abroad since 2026-11-27 (they were the only address
+	// those pages had until then, and they are in Google's index and in the mails we have sent). It
+	// answers one permanent redirect to the market's word and never a page.
+	//
+	// The decision uses the normalized pathname, while the redirect and the rewrite keep Next's
+	// `.rsc` and `/_segments/…segment.rsc` suffixes for client navigation. Only for a route this
+	// market has (`route-policy`): a word for a page the market does not serve is no address.
 	if (first && FRIENDLY_SLUGS.has(first)) {
-		const normalized = normalizePathname(pathname).split("/").filter(Boolean);
-		const requested = normalized.length === 2 ? normalized[1] : undefined;
-		const canonical = cartSegment(first);
+		const normalizedRest = "/" + normalizePathname(pathname).split("/").filter(Boolean).slice(1).join("/");
+		const rawRest = "/" + segments.slice(1).join("/");
 
-		if (requested === "cart" && canonical !== "cart") {
-			const rawRest = segments.slice(1).join("/");
+		const shown = localizeMarketPath(first, normalizedRest);
+		if (shown !== normalizedRest && marketHasRoute(first, normalizedRest.split("/")[1]!)) {
 			const url = request.nextUrl.clone();
-			url.pathname = marketHref(first, "/" + rawRest);
+			url.pathname = "/" + first + localizeMarketPath(first, rawRest);
 			return NextResponse.redirect(url, 308);
 		}
 
-		if (requested === canonical && canonical !== "cart") {
-			const rawRest = segments.slice(1).join("/");
-			const internalRest = "cart" + rawRest.slice(canonical.length);
-			return marketRewrite(request, first, null, internalRest);
+		const internal = internalMarketPath(first, normalizedRest);
+
+		// A MAKER THIS MARKET DOES NOT SELL -> real 404.
+		//
+		// The page finds that out inside a Suspense boundary, after the status line: it answered 200
+		// with an empty heading and `noindex` (audit 2026-11-27, D7). Decided here from the list the
+		// server last counted for this channel (`lib/brands/stocked-slugs.ts`), with no upstream call.
+		// A list this process has not counted yet is not an answer, and the page renders as before.
+		const maker = /^\/znacky\/([^/]+)$/.exec(internal);
+		if (maker && isKnownAbsentBrand(CHANNEL_MAP[first]!.saleorSlug, maker[1]!)) {
+			const url = request.nextUrl.clone();
+			url.pathname = "/_not-found";
+			return NextResponse.rewrite(url, {
+				status: 404,
+				headers: { "x-robots-tag": "noindex", "x-maky-brand": "absent" },
+			});
+		}
+
+		if (internal !== normalizedRest && marketHasRoute(first, internal.split("/")[1]!)) {
+			return marketRewrite(request, first, null, internalMarketPath(first, rawRest).slice(1));
 		}
 	}
 

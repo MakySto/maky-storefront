@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { baseSlugForCategoryId, categoryUrlFor } from "@/config/category-routes";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { type Metadata } from "next";
 import { meaningfulTitle } from "@/config/brand";
 import { ErrorBoundary } from "react-error-boundary";
@@ -16,6 +16,7 @@ import { productCounterparts } from "@/lib/seo/product-counterparts";
 import { getProductMarketPresence } from "@/lib/saleor/product-presence";
 import { getProductOutcome, type LocalizedProduct } from "@/lib/saleor/product-outcome";
 import { productHref } from "@/lib/product-url";
+import { loadProductTrail } from "@/lib/product-trail.server";
 import { Breadcrumbs } from "@/ui/components/breadcrumbs";
 import { getGalleryImages } from "@/ui/components/pdp/gallery-images";
 import { PdpVehicleApplications } from "@/ui/components/fitment/pdp-vehicle-applications";
@@ -233,30 +234,6 @@ async function ProductContent({
 			: null;
 	const careInstructions = extractCareInstructions(product);
 
-	const tCommon = await getTranslations({
-		locale: getLocaleFromChannel(params.channel),
-		namespace: "common",
-	});
-	const breadcrumbs = [
-		{ label: tCommon("home"), href: marketHref(params.channel) },
-		...(product.category
-			? [
-					{
-						label: product.category.name,
-						// By id where the table knows it: abroad `slug` is whatever Saleor's translation says.
-						href: marketHref(
-							params.channel,
-							categoryUrlFor(
-								params.channel,
-								baseSlugForCategoryId(product.category.id) ?? product.category.slug,
-							),
-						),
-					},
-				]
-			: []),
-		{ label: product.name },
-	];
-
 	// What the structured data says about the product: one function, because the feed for Google Merchant
 	// has to say the same (`lib/seo/product-jsonld-options.ts`).
 	const productJsonLd = buildProductJsonLd(productJsonLdOptions(product, params.channel, images));
@@ -287,11 +264,12 @@ async function ProductContent({
 			    on each side — and the loading skeleton next door is max-w-7xl too, so
 			    the page also jumped 160px wider the moment the content arrived. */}
 			<main className="max-w-page mx-auto w-full flex-1 px-4 pt-4 pb-16 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8 lg:pb-20">
-				{/* Shown on mobile now. It used to be `hidden sm:block`, which cost phone
-				    visitors the only "up to the category" control on the page — the trail
-				    stays on one scrollable line instead of wrapping, and drops its own
-				    (redundant) last crumb below `sm`. */}
-				<Breadcrumbs items={breadcrumbs} className="mb-5 lg:mb-6" />
+				{/* The way back to the shelf: through the car the set is made for, or through the shelves. Its own
+				    boundary, because the car comes from the catalogue release and the product must never wait for
+				    it; until it arrives the line is held empty, so nothing moves and nothing wrong is shown. */}
+				<Suspense fallback={<div aria-hidden className="mb-5 h-8 lg:mb-6" />}>
+					<ProductBreadcrumbs channel={params.channel} product={product} />
+				</Suspense>
 
 				{/* HERO — the gallery beside the purchase block (premium redesign 2026-09): the
 				    gallery takes a little over half, the purchase block the rest, both starting on
@@ -407,6 +385,14 @@ async function ProductContent({
 			</main>
 		</div>
 	);
+}
+
+async function ProductBreadcrumbs({ channel, product }: { channel: string; product: LocalizedProduct }) {
+	// The car comes from the fitment export and the catalogue release, which are read at request time, as the
+	// vehicle box further down reads them.
+	await connection();
+	const trail = await loadProductTrail({ channel, product });
+	return <Breadcrumbs items={trail} className="mb-5 lg:mb-6" />;
 }
 
 /**
