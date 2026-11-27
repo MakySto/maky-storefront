@@ -15,6 +15,11 @@ import { brandConfig, formatPageTitle } from "@/config/brand";
 import { routePolicyFor } from "@/lib/route-policy";
 import { searchView } from "./search-view";
 import { correctBrandTypos } from "@/lib/search/brand-typos";
+import { matchCategoryShortcuts } from "@/lib/search/category-shortcuts";
+import { CategoryShelfLinks } from "@/ui/components/search/category-shelf-links";
+import { categoriesFor } from "@/config/categories";
+import { categorySegment, categoryUrlFor } from "@/config/category-routes";
+import { getMarketAssortment, offersCategory } from "@/lib/market-assortment";
 
 /**
  * Internal search results are never for the index — `route-policy.ts` says so, and this is
@@ -80,6 +85,7 @@ async function SearchContent({
 	const locale = getLocaleFromChannel(params.channel);
 	const t = await getTranslations({ locale, namespace: "search" });
 	const tPlp = await getTranslations({ locale, namespace: "plp" });
+	const tNav = await getTranslations({ locale, namespace: "nav" });
 
 	// Extract and validate query
 	const queryParam = searchParams.query;
@@ -154,8 +160,14 @@ async function SearchContent({
 		return <SearchUnavailable query={query} channel={params.channel} />;
 	}
 
+	// The shelves the words name, read from what was typed and not from a corrected maker.
+	const shelves = await readCategoryShelves(params.channel, locale);
+	const named = matchCategoryShortcuts(query, shelves, locale);
+
 	if (view === "empty") {
-		return <EmptyState query={query} channel={params.channel} />;
+		// Nothing found: the shelf that was named, or failing that every shelf of this market, so
+		// that "browse our categories" in the line above is something the customer can do.
+		return <EmptyState query={query} channel={params.channel} shelves={named.length > 0 ? named : shelves} />;
 	}
 
 	return (
@@ -182,6 +194,9 @@ async function SearchContent({
 					<SearchSort />
 				</div>
 			</div>
+
+			{/* Only on the first page: further pages are reached from it. */}
+			{!cursor && <CategoryShelfLinks heading={tNav("categories")} shelves={named} className="mb-8" />}
 
 			{/* Results grid */}
 			<SearchResults products={products} channel={params.channel} />
@@ -264,10 +279,46 @@ async function SearchUnavailable({ query, channel }: { query: string; channel: s
 	);
 }
 
-async function EmptyState({ query, channel }: { query: string; channel: string }) {
+interface CategoryShelf {
+	readonly slug: string;
+	readonly label: string;
+	readonly aliases: readonly string[];
+	readonly href: string;
+}
+
+/**
+ * The shelves this market links from its menu, with the names a search is compared with
+ * (`lib/search/category-shortcuts.ts`). A shelf the market does not stock is left out, as it is
+ * in the menu, so nothing offered here leads to an empty page.
+ */
+async function readCategoryShelves(channel: string, locale: string): Promise<CategoryShelf[]> {
+	const [tNav, assortment] = await Promise.all([
+		getTranslations({ locale, namespace: "nav" }),
+		getMarketAssortment(channel),
+	]);
+	return categoriesFor("home")
+		.filter((category) => offersCategory(assortment, category.slug))
+		.map((category) => ({
+			slug: category.slug,
+			label: tNav(category.key),
+			aliases: [categorySegment(channel, category.slug)],
+			href: marketHref(channel, categoryUrlFor(channel, category.slug)),
+		}));
+}
+
+async function EmptyState({
+	query,
+	channel,
+	shelves,
+}: {
+	query: string;
+	channel: string;
+	shelves: readonly CategoryShelf[];
+}) {
 	const locale = getLocaleFromChannel(channel);
 	const t = await getTranslations({ locale, namespace: "search" });
 	const tPages = await getTranslations({ locale, namespace: "pages" });
+	const tNav = await getTranslations({ locale, namespace: "nav" });
 	return (
 		<div className="flex flex-col items-center justify-center py-16 text-center">
 			<div className="bg-muted mb-6 flex h-16 w-16 items-center justify-center rounded-full">
@@ -275,6 +326,11 @@ async function EmptyState({ query, channel }: { query: string; channel: string }
 			</div>
 			<h1 className="text-2xl font-semibold">{t("noResultsFor", { query })}</h1>
 			<p className="text-muted-foreground mt-2 max-w-md">{t("noResultsHelp")}</p>
+			<CategoryShelfLinks
+				heading={tNav("categories")}
+				shelves={shelves}
+				className="mt-6 max-w-2xl justify-center"
+			/>
 			<div className="mt-8 flex flex-col gap-3 sm:flex-row">
 				<Link
 					href={marketHref(channel, "/products")}
