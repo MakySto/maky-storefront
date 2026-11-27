@@ -26,7 +26,12 @@ import {
 } from "@/lib/catalog-content/resolve";
 import { retiredVehiclePageHref } from "@/lib/catalog-content/retired-page";
 import { splitContent } from "@/lib/catalog-content/text";
-import { type CatalogNode, type CatalogTree, ancestorsOf } from "@/lib/catalog-content/tree";
+import { type CatalogNode, type CatalogTree, ancestorsOf, nodeLabel } from "@/lib/catalog-content/tree";
+import {
+	vehiclePageAddress,
+	vehiclePageLinkable,
+	vehicleTrailSteps,
+} from "@/lib/catalog-content/vehicle-trail";
 import { resolveFitmentOffers, uniqueProductRefs } from "@/lib/fitment/offers";
 import { datasetMakeNames } from "@/lib/fitment/set-title";
 import { productSetFacts } from "@/lib/fitment/set-facts";
@@ -44,7 +49,6 @@ import { ContentBlocks } from "@/ui/components/catalog/content-blocks";
 import { CatalogOfferList } from "@/ui/components/catalog/offer-list";
 import { MarketSwitchTargets } from "@/ui/components/header/market-switch-targets";
 import { RouteLoading } from "@/ui/components/route-loading";
-import { canonicalCatalogPath } from "@/lib/catalog-content/category-aliases";
 import { tyreRouteOf } from "@/lib/tyre-size/size-page-route";
 import { TyrePageView, tyrePageMetadata } from "./tyre-page";
 
@@ -169,7 +173,7 @@ async function VehicleSwitchTargets({ vehicleId }: { vehicleId: string }) {
 function tileHref(channel: string, node: CatalogNode): string {
 	// A node with no page in this language carries the fitment dataset's Slovak path; link the
 	// market's own spelling, not a 301 to it.
-	return marketHref(channel, canonicalCatalogPath(REVERSE_MAP[channel] ?? channel, node.urlPath));
+	return vehiclePageAddress(channel, node);
 }
 
 /**
@@ -203,7 +207,7 @@ function ChildTiles({ channel, nodes }: { channel: string; nodes: readonly Catal
 						href={tileHref(channel, child)}
 						className="border-border-default hover:border-action-primary bg-surface-primary flex h-full flex-col rounded-lg border p-4 transition-colors"
 					>
-						<span className="text-text-primary font-medium break-words">{child.name}</span>
+						<span className="text-text-primary font-medium break-words">{nodeLabel(child)}</span>
 						{child.kind === "generation" && child.productionYearFrom ? (
 							<span className="text-text-tertiary mt-1 text-sm">
 								{child.productionYearFrom}
@@ -389,19 +393,22 @@ async function VehiclePage({ params, searchParams }: Params) {
 				? onlyGeneration[0]!
 				: null;
 
+	// The same steps, words and addresses as the trail of a product made for this car
+	// (`lib/product-trail.server.ts`): the shopper who opens a set finds the way back to this page in it.
+	// An unpublished ancestor keeps its place in the trail and loses its link: dropping it would
+	// misdescribe where this page sits.
 	const crumbs: BreadcrumbItem[] = [
 		// The market's canonical root, not the segment this URL happened to use: a borrowed Slovak
 		// page abroad (`/cz/stresne-nosice/subaru/legacy-kombi/bh`) sits in the Czech tree, whose
 		// root is `/cz/stresni-nosice`.
 		{ label: t("nav.roofRacks"), href: marketHref(channel, categoryUrlFor(channel, slug)) },
-		...ancestorsOf(view.tree, node).map((ancestor) => ({
-			label: ancestor.name,
-			// An unpublished ancestor keeps its place in the trail and loses its link:
-			// dropping it would misdescribe where this page sits, and `BreadcrumbItem`
-			// already renders a hrefless crumb as plain text with no JSON-LD `item`.
-			...(ancestor.page && !isPubliclyVisible(ancestor.page) ? {} : { href: tileHref(channel, ancestor) }),
-		})),
-		{ label: node.name },
+		...vehicleTrailSteps(view.tree, node, {
+			hrefOf: (step) => vehiclePageAddress(channel, step),
+			linkable: (step) => vehiclePageLinkable(channel, step),
+			years: (from, to) =>
+				to === null ? t("fitment.yearFromOnly", { from }) : t("fitment.yearRange", { from, to }),
+			linkLast: false,
+		}),
 	];
 
 	// A page with products takes the shop's own width from the crumbs down, so the heading, the

@@ -8,7 +8,7 @@ import {
 	tableSpelling,
 	publishLearnedCategories,
 } from "@/config/category-routes";
-import { CHANNEL_MAP, FRIENDLY_SLUGS, SALEOR_SLUGS, cartSegment } from "./channel-map";
+import { CHANNEL_MAP, FRIENDLY_SLUGS, SALEOR_SLUGS, cartSegment, routeWordsOf } from "./channel-map";
 import { MARKET_ROOT_SEGMENTS } from "./routing.generated";
 
 /**
@@ -368,6 +368,8 @@ function refusalReason(slug: string): string | null {
 	if (FRIENDLY_SLUGS.has(slug) || SALEOR_SLUGS.has(slug)) return "the name of a market";
 	for (const market of FRIENDLY_SLUGS) {
 		if (cartSegment(market) === slug) return "a market's cart route";
+		// The market's word for any other route (`/de/marken`, `/us/returns`): the proxy serves the route there.
+		if (routeWordsOf(market).includes(slug)) return `the word for a route in ${market}`;
 		if (isLocalizedRootSegment(market, slug)) return `a localized category segment in ${market}`;
 	}
 	return null;
@@ -431,6 +433,7 @@ function segmentRefusal(
 	if (MARKET_ROOT_SEGMENTS.has(segment)) return "the name of a real route";
 	if (FRIENDLY_SLUGS.has(segment) || SALEOR_SLUGS.has(segment)) return "the name of a market";
 	if (cartSegment(market) === segment) return "the market's cart route";
+	if (routeWordsOf(market).includes(segment)) return "the market's word for a route";
 	if (bases.has(segment)) return "the base slug of another category";
 	// Another category, by id: a slug can differ between the table and Saleor for one and the same category.
 	const owner = mappedCategoryFor(market, segment);

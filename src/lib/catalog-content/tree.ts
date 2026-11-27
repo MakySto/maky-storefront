@@ -1,4 +1,4 @@
-import { type FitmentApplication, type FitmentDataset } from "@/lib/fitment/contract";
+import { type FitmentApplication, type FitmentDataset, vehicleNodeName } from "@/lib/fitment/contract";
 import { type CatalogContentPage, type CatalogContentSnapshot } from "./contract";
 
 /**
@@ -26,6 +26,15 @@ export interface CatalogNode {
 	readonly vehicleId: string;
 	readonly kind: CatalogNodeKind;
 	readonly name: string;
+	/**
+	 * What a step of a trail, a tile or a heading calls this vehicle: the name the fitment export states
+	 * for the snapshot's language ("Rad 5 Touring", "Trieda A", "Porsche"), the one the garage, the cards
+	 * and the "Určené pre" box already use. `name` is the page's own navigation name, which for the same
+	 * car can read "5-Rad Touring", "A-Class" or "PORSCHE" (measured on the 2026-10-22 export: 87 of 1 478
+	 * differ). The model's own maker is left out of it ("Renault Laguna" under Renault is "Laguna"): the
+	 * step before it already says so. Absent on a node built without a snapshot language; `nodeLabel` falls back.
+	 */
+	readonly label?: string;
 	/** Language-agnostic, no market prefix. Taken from the artifacts, never derived. */
 	readonly urlPath: string;
 	readonly parentId: string | null;
@@ -61,6 +70,32 @@ export interface CatalogTree {
 /** The routing fields 3.0.0 actually carries; the shared type predates them. */
 type Routed = { readonly slug?: string; readonly urlPath?: string };
 
+function nonEmpty(text: string): string | undefined {
+	return text.trim() ? text.trim() : undefined;
+}
+
+/** "Renault Laguna" under Renault is "Laguna": the step before it names the maker. Never an empty label. */
+function withoutMaker(model: string, makers: readonly string[]): string | undefined {
+	const text = model.trim();
+	for (const maker of makers) {
+		const name = maker.trim();
+		if (!name || text.length <= name.length) continue;
+		if (!text.toLocaleLowerCase().startsWith(name.toLocaleLowerCase())) continue;
+		if (/[\p{L}\p{N}]/u.test(text[name.length] ?? "")) continue;
+		const rest = text
+			.slice(name.length)
+			.replace(/^[\s\-–—:]+/u, "")
+			.trim();
+		if (rest) return rest;
+	}
+	return nonEmpty(text);
+}
+
+/** The name a trail, a tile or a heading uses for a vehicle (see `CatalogNode.label`). */
+export function nodeLabel(node: Pick<CatalogNode, "name" | "label">): string {
+	return node.label ?? node.name;
+}
+
 function ancestorSort(a: CatalogNode, b: CatalogNode): number {
 	return a.name.localeCompare(b.name, "sk");
 }
@@ -71,6 +106,9 @@ export function buildCatalogTree(
 ): CatalogTree {
 	const pageByVehicleId = new Map<string, CatalogContentPage>();
 	for (const page of snapshot.pages) if (page.vehicleId) pageByVehicleId.set(page.vehicleId, page);
+
+	const language = snapshot.language;
+	const makeById = new Map((dataset?.makes ?? []).map((make) => [make.id, make]));
 
 	const byVehicleId = new Map<string, CatalogNode>();
 	const add = (node: CatalogNode) => {
@@ -88,6 +126,7 @@ export function buildCatalogTree(
 			vehicleId: make.id,
 			kind: "make",
 			name: page?.navName ?? make.name,
+			label: nonEmpty(vehicleNodeName(make, language)),
 			urlPath: pathOf(make as Routed, page),
 			parentId: null,
 			page,
@@ -99,6 +138,12 @@ export function buildCatalogTree(
 			vehicleId: model.id,
 			kind: "model",
 			name: page?.navName ?? model.name,
+			label: withoutMaker(
+				vehicleNodeName(model, language),
+				makeById.get(model.makeId)
+					? [makeById.get(model.makeId)!.name, vehicleNodeName(makeById.get(model.makeId)!, language)]
+					: [],
+			),
 			urlPath: pathOf(model as Routed, page),
 			parentId: model.makeId,
 			page,
@@ -110,6 +155,7 @@ export function buildCatalogTree(
 			vehicleId: generation.id,
 			kind: "generation",
 			name: page?.navName ?? generation.name,
+			label: nonEmpty(vehicleNodeName(generation, language)),
 			urlPath: pathOf(generation as Routed, page),
 			parentId: generation.modelId,
 			page,

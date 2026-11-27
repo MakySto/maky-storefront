@@ -1,6 +1,6 @@
 import { type WithContext, type Product, type ProductGroup } from "schema-dts";
 import { companyInfo } from "@/config/company";
-import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, REVERSE_MAP, marketHref } from "@/lib/channel-map";
 import { carriesInternalMarker } from "@/lib/product-code";
 import { gtinProperty, publicGtin } from "@/lib/product-ean";
 import { seoConfig, getBaseUrl } from "./config";
@@ -287,12 +287,15 @@ export function buildProductJsonLd(options: {
  * the difference between "maky.store › sk › gp-peruzzo-nosic-2-bicyklov-pz-gp019…"
  * and "Domov › Nosiče bicyklov › GP/Peruzzo nosič na 2 bicykle".
  *
- * Crumbs without an `href` (the current page) still get a position — the spec wants
- * the full trail — but no `item`, which is how you mark the terminal entry.
+ * The terminal crumb (the current page) has no `item`, which is how you mark it. A crumb in the middle
+ * that has none either (a vehicle page this application withholds, drawn as plain text) is left out: Google
+ * reports "missing field item" for a step that is neither the last nor a link, and the trail is a valid
+ * path without it. The page paints the same trail with that step as text, so only the markup omits it.
  *
  * @see https://developers.google.com/search/docs/appearance/structured-data/breadcrumb
  */
-export function buildBreadcrumbJsonLd(items: { label: string; href?: string }[]) {
+export function buildBreadcrumbJsonLd(trail: { label: string; href?: string }[]) {
+	const items = trail.filter((item, index) => item.href || index === trail.length - 1);
 	if (items.length < 2) return null;
 
 	const base = getBaseUrl();
@@ -434,7 +437,7 @@ function returnPolicyFor(market: string, applicableCountry: string | string[]) {
 		merchantReturnDays: RETURN_DAYS,
 		returnFees: RETURN_FEES,
 		returnMethod: RETURN_METHOD,
-		merchantReturnLink: `${getBaseUrl()}/${market}${RETURNS_PAGE_PATH}`,
+		merchantReturnLink: `${getBaseUrl()}${marketHref(market, RETURNS_PAGE_PATH)}`,
 	};
 }
 

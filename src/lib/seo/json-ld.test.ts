@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildProductJsonLd, shippingServiceId } from "./json-ld";
+import { buildBreadcrumbJsonLd, buildProductJsonLd, shippingServiceId } from "./json-ld";
 
 describe("product JSON-LD truthfulness", () => {
 	it("does not invent MAKY.STORE as a product brand", () => {
@@ -399,7 +399,7 @@ describe("product JSON-LD offer terms", () => {
 					applicableCountry: "DE",
 					returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
 					merchantReturnDays: 14,
-					merchantReturnLink: expect.stringMatching(/\/de\/reklamacie-a-vratenie$/),
+					merchantReturnLink: expect.stringMatching(/\/de\/reklamation-und-ruecksendung$/),
 				},
 			});
 		}
@@ -460,5 +460,28 @@ describe("product JSON-LD offer terms", () => {
 				shippingDetails: { hasShippingService: { "@id": shippingServiceId() } },
 			});
 		}
+	});
+});
+
+describe("buildBreadcrumbJsonLd with a withheld step", () => {
+	it("keeps every linked step and the terminal one, and leaves out a middle step with no link", () => {
+		const list = buildBreadcrumbJsonLd([
+			{ label: "Strešné nosiče", href: "/sk/stresne-nosice" },
+			{ label: "BMW", href: "/sk/stresne-nosice/bmw" },
+			{ label: "Rad 5 Touring" },
+			{ label: "G61 (od 2024)", href: "/sk/stresne-nosice/bmw/5-rad-touring/g61" },
+			{ label: "Nordrive Silenzio Silver" },
+		]);
+		expect(list?.itemListElement.map((entry) => [entry.position, entry.name, "item" in entry])).toEqual([
+			[1, "Strešné nosiče", true],
+			[2, "BMW", true],
+			[3, "G61 (od 2024)", true],
+			[4, "Nordrive Silenzio Silver", false],
+		]);
+	});
+
+	it("is the trail as painted when every step is a link", () => {
+		const list = buildBreadcrumbJsonLd([{ label: "A", href: "/sk/a" }, { label: "B" }]);
+		expect(list?.itemListElement).toHaveLength(2);
 	});
 });

@@ -119,21 +119,21 @@ describe("a search answered from the shop's own index", () => {
 		const first = await answerSearch({ query: "nosič", channel: "sk-eur" });
 		expect(first.result.products).toHaveLength(20);
 		expect(first.result.pagination).toMatchObject({
-			totalCount: 24,
+			totalCount: 26,
 			hasNextPage: true,
 			hasPreviousPage: false,
 			nextCursor: "shelf.20",
 		});
 
 		const second = await answerSearch({ query: "nosič", channel: "sk-eur", cursor: "shelf.20" });
-		expect(second.result.products).toHaveLength(4);
+		expect(second.result.products).toHaveLength(6);
 		expect(second.result.pagination).toMatchObject({
 			hasNextPage: false,
 			hasPreviousPage: true,
 			prevCursor: "shelf.0",
 		});
 		const seen = new Set([...first.result.products, ...second.result.products].map((product) => product.id));
-		expect(seen.size).toBe(24);
+		expect(seen.size).toBe(26);
 
 		// Past the end is the last page there is, never an empty one.
 		const beyond = await answerSearch({ query: "nosič", channel: "sk-eur", cursor: "shelf.4000" });
@@ -441,6 +441,162 @@ describe("a search that names a car", () => {
 		const answer = await answerSearch({ query: "strešný box", channel: "sk-eur" });
 		expect(answer.result.pagination.totalCount).toBe(9);
 		warn.mockRestore();
+	});
+});
+
+describe("roof-rack sets found without a car", () => {
+	it("offers to choose the car above them", async () => {
+		// Live, 2026-11-27: "wingbar" listed 6 601 sets whose cards all read "Thule WingBar Edge".
+		mocks.searchProducts.mockResolvedValueOnce(saleorFinds(6601));
+		const answer = await answerSearch({ query: "wingbar", channel: "sk-eur" });
+
+		expect(answer.result.pagination.totalCount).toBe(6601);
+		expect(answer.askForVehicle).toBe(true);
+	});
+
+	it("does not when the car is named: its own page is offered", async () => {
+		mocks.searchProducts.mockResolvedValueOnce(saleorFinds(92));
+		const answer = await answerSearch({ query: "wingbar octavia", channel: "sk-eur" });
+
+		expect(answer.vehicles.map((vehicle) => vehicle.id)).toEqual(["md:octavia"]);
+		expect(answer.askForVehicle).toBe(false);
+	});
+
+	it("does not above a few sets, which a code or a full name found", async () => {
+		mocks.searchProducts.mockResolvedValueOnce(saleorFinds(4));
+		const answer = await answerSearch({ query: "N21220", channel: "sk-eur" });
+
+		expect(answer.result.pagination.totalCount).toBe(4);
+		expect(answer.askForVehicle).toBe(false);
+	});
+
+	it("does not when Saleor's answer holds a product of the shelf", async () => {
+		const found = saleorFinds(30);
+		mocks.searchProducts.mockResolvedValueOnce({
+			...found,
+			products: [...found.products.slice(0, 2), { ...found.products[2]!, id: index.docs[0]!.id }],
+		});
+		const answer = await answerSearch({ query: "wingbar", channel: "sk-eur" });
+
+		expect(answer.askForVehicle).toBe(false);
+	});
+});
+
+describe("a search with a misspelt car", () => {
+	const setsFor = (text: string, result: SearchResult) =>
+		mocks.searchProducts.mockImplementation(async ({ query }: { query: string }) =>
+			query === text ? result : NOTHING,
+		);
+
+	it("answers for the car with the nearest name, says so, and pages that answer", async () => {
+		// Live, 2026-11-27: "octvia" and "oktavia" listed two fitting kits as "the closest".
+		setsFor("octavia", saleorFinds(218, { next: "abc" }));
+		const answer = await answerSearch({ query: "octvia", channel: "sk-eur" });
+
+		expect(saleorQueries()).toEqual(["octvia", "octavia"]);
+		expect(answer.note).toBe("car");
+		expect(answer.shownQuery).toBe("octavia");
+		expect(answer.vehicles.map((vehicle) => vehicle.id)).toEqual(["md:octavia"]);
+		expect(answer.result.pagination.totalCount).toBe(218);
+		expect(answer.result.pagination.nextCursor).toBe("c.f.abc");
+
+		// The next page is asked with the words as typed and that cursor: the corrected search goes on.
+		mocks.searchProducts.mockClear();
+		const second = await answerSearch({ query: "octvia", channel: "sk-eur", cursor: "c.f.abc" });
+		expect(mocks.searchProducts.mock.calls.map(([options]) => [options.query, options.cursor])).toEqual([
+			["octavia", "abc"],
+		]);
+		expect(second.note).toBe("car");
+		expect(second.shownQuery).toBe("octavia");
+	});
+
+	it("corrects the car beside the other words", async () => {
+		setsFor("strešný nosič octavia", saleorFinds(174));
+		const answer = await answerSearch({
+			query: "strešný nosič oktavia",
+			channel: "sk-eur",
+			namedShelves: ["stresne-nosice"],
+			roofRackWords: ["stresny", "nosic"],
+		});
+
+		expect(answer.note).toBe("car");
+		expect(answer.shownQuery).toBe("strešný nosič octavia");
+		expect(answer.result.pagination.totalCount).toBe(174);
+	});
+
+	it("keeps the answer to the words as typed when they found something", async () => {
+		mocks.searchProducts.mockResolvedValueOnce(saleorFinds(7));
+		const answer = await answerSearch({ query: "octvia", channel: "sk-eur" });
+
+		expect(saleorQueries()).toEqual(["octvia"]);
+		expect(answer.note).toBeNull();
+		expect(answer.shownQuery).toBe("octvia");
+	});
+
+	it("answers with the car's page and what the shelf holds for it when Saleor has no set", async () => {
+		const answer = await answerSearch({ query: "octvia", channel: "sk-eur" });
+
+		expect(answer.note).toBe("car");
+		expect(answer.vehicles.map((vehicle) => vehicle.id)).toEqual(["md:octavia"]);
+		expect(answer.result.products.every((product) => /Octavia/.test(product.name))).toBe(true);
+	});
+
+	it("corrects nothing that is no car's name", async () => {
+		const answer = await answerSearch({ query: "autochladnicka 30l", channel: "sk-eur" });
+		expect(answer.note).toBe("closest");
+		expect(answer.shownQuery).toBe("autochladnicka 30l");
+	});
+
+	it("starts the words as typed again when the car can no longer be read from them", async () => {
+		mocks.readVehicleCatalog.mockResolvedValue({
+			names: { makes: [], models: [], generations: [] },
+			tree: {},
+		});
+		const answer = await answerSearch({ query: "octvia", channel: "sk-eur", cursor: "c.f.abc" });
+
+		expect(mocks.searchProducts.mock.calls.map(([options]) => [options.query, options.cursor])).toEqual([
+			["octvia", undefined],
+		]);
+		expect(answer.note).not.toBe("car");
+	});
+});
+
+describe("the roof racks named in a market whose shelf holds none of their parts", () => {
+	beforeEach(() => {
+		// The US and Canada sell the sets only: the shop's own index is empty there.
+		mocks.readShelfIndex.mockResolvedValue(buildShelfIndex([], "en"));
+	});
+	const asked = { channel: "us-usd", namedShelves: ["stresne-nosice"], roofRackWords: ["roof", "rack"] };
+
+	it("lists the sets under the offer to choose a car", async () => {
+		// Live, 2026-11-27: "roof rack" answered "No results" in a market with 22 000 roof racks.
+		mocks.searchProducts.mockImplementation(async ({ query }: { query: string }) =>
+			query === "strešný nosič" ? saleorFinds(22300, { next: "abc" }) : NOTHING,
+		);
+		const answer = await answerSearch({ ...asked, query: "roof rack" });
+
+		expect(saleorQueries()).toEqual(["roof rack", "strešný nosič"]);
+		expect(answer.askForVehicle).toBe(true);
+		expect(answer.note).toBeNull();
+		expect(answer.shownQuery).toBe("roof rack");
+		expect(answer.result.pagination.totalCount).toBe(22300);
+		expect(answer.result.pagination.nextCursor).toBe("r.abc");
+
+		mocks.searchProducts.mockClear();
+		await answerSearch({ ...asked, query: "roof rack", cursor: "r.abc" });
+		expect(mocks.searchProducts.mock.calls.map(([options]) => [options.query, options.cursor])).toEqual([
+			["strešný nosič", "abc"],
+		]);
+	});
+
+	it("still asks for the maker alone beside the shelf's name", async () => {
+		mocks.searchProducts.mockImplementation(async ({ query }: { query: string }) =>
+			query === "thule" ? saleorFinds(114) : NOTHING,
+		);
+		const answer = await answerSearch({ ...asked, query: "roof rack thule" });
+
+		expect(saleorQueries()).toEqual(["roof rack thule", "thule"]);
+		expect(answer.result.pagination.totalCount).toBe(114);
 	});
 });
 

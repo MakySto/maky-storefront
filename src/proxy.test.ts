@@ -548,7 +548,8 @@ describe("a route that exists, but not in this market", () => {
 
 		expect(await headerFor(`/${UNCOVERED_MARKET}/kontakt`)).toBe("noindex");
 		// The covered market's page is the other rule, and it is a different string.
-		expect(await headerFor("/us/kontakt")).toBe("noindex, nofollow");
+		// Under the market's own word since 2026-11-27; `/us/kontakt` is a redirect to it and carries no header.
+		expect(await headerFor("/us/contact")).toBe("noindex, nofollow");
 	});
 
 	it("leaves them alone on sk", async () => {

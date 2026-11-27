@@ -76,7 +76,8 @@ export const ROUTE_POLICY: readonly MarketRoutePolicy[] = [
 	{ segment: "collections", kind: "catalogue", markets: "all", indexable: true },
 	{ segment: "pages", kind: "catalogue", markets: "all", indexable: true },
 	// The makers this market sells, and each maker's products (`lib/brands/catalog.ts`). The
-	// segment is Slovak in every market, like the configurator's.
+	// DIRECTORY is Slovak; each market's address carries its own word (`ROUTE_WORDS` in
+	// `lib/channel-map.ts`: `/de/marken`, `/us/brands`). The same holds for the legal pages above.
 	{ segment: "znacky", kind: "catalogue", markets: "all", indexable: true },
 	// Search result pages are thin and infinite; crawling them wastes budget.
 	{ segment: "search", kind: "catalogue", markets: "all", indexable: false },
@@ -89,13 +90,15 @@ export const ROUTE_POLICY: readonly MarketRoutePolicy[] = [
 	{ segment: "signup", kind: "private", markets: "all", indexable: false },
 	// The garage and the configurator both render one visitor's saved vehicle, so there
 	// is no stable page for a crawler and both carry `robots: noindex` of their own.
-	// They exist in every market because the feature is not market-specific; note that
-	// the SEGMENTS are Slovak words, so localised route slugs are still an open question
-	// for whoever owns URL shape.
+	// They exist in every market because the feature is not market-specific. Both keep one
+	// word in every market: `garage` and `konfigurator` read the same in most of these
+	// languages, and the vehicle selector compares the address with them
+	// (`lib/garage/confirm-destination.ts`). The routes with a Slovak phrase for a name have
+	// each market's own word since 2026-11-27 (`ROUTE_WORDS`).
 	{ segment: "garage", kind: "private", markets: "all", indexable: false },
 	{ segment: "konfigurator", kind: "private", markets: "all", indexable: false },
 	// One browser's favourites (`lib/wishlist`): a list read in the browser, an empty shell to
-	// a crawler. Every market, like the garage; the segment is Slovak like the configurator's.
+	// a crawler. Every market, like the garage; under the market's own word (`/de/wunschliste`).
 	{ segment: "oblubene", kind: "private", markets: "all", indexable: false },
 ];
 

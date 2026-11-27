@@ -8,9 +8,11 @@ import {
 	DEFAULT_MARKET,
 	COOKIE_NAME,
 	COOKIE_MAX_AGE,
-	cartSegment,
+	internalMarketPath,
+	localizeMarketPath,
 	marketHref,
 } from "./lib/channel-map";
+import { isKnownAbsentBrand } from "./lib/brands/stocked-slugs";
 import { resolveLegacyProductSlug } from "./lib/product-redirects";
 import { legacyRootRedirectTarget } from "./lib/legacy-root-redirects";
 import { orderConfirmationHandoff } from "./lib/order-confirmation-handoff";
@@ -31,7 +33,7 @@ import { isVehiclePageGateEnabled, preflightVehiclePage } from "./lib/catalog-co
 import { keepLiveCategoriesFresh } from "./lib/live-categories";
 import { PUBLIC_ASSET_PATHS, METADATA_ROUTE_PATHS } from "./lib/routing.generated";
 import { isMarketLive, liveMarkets, PREVIEW_MARKET_ROBOTS_HEADER } from "./lib/market-state";
-import { isRouteMissingInMarket, routePolicyFor } from "./lib/route-policy";
+import { isRouteMissingInMarket, marketHasRoute, routePolicyFor } from "./lib/route-policy";
 import {
 	CMS_PREVIEW_CACHE_CONTROL,
 	CMS_PREVIEW_ROBOTS_HEADER,
@@ -45,6 +47,7 @@ import {
 	lookupTranslatedProduct,
 	normalizePathname,
 	saleorUnwell,
+	baseSlugAliasTarget,
 } from "./lib/route-existence";
 import { HTML_LIMITED_BOTS } from "./config/html-limited-bots.js";
 import {
@@ -152,6 +155,28 @@ async function movedMarketSlug(market: string, slug: string): Promise<string | n
 	const answer = await lookupTranslatedProduct(alias.newSlug, channel, language);
 	if (answer.verdict !== "exists") return null;
 	return sameCfmProduct(answer.externalReference, alias.cfmProductId) ? alias.newSlug : null;
+}
+
+/**
+ * The market's own slug for a product that was asked for by its Slovak (base) slug.
+ *
+ * Abroad a product is served under the base slug too, because the page looks the base row up
+ * first, and that left every product reachable at a second, untranslated address that answers
+ * 200 and is indexable (`/de/snehove-retaze-…-n16283`, 27 November 2026). The page names the
+ * translated slug as canonical; this makes the address itself say so, once and permanently.
+ *
+ * Redirects only on proof: Saleor says the slug is a base slug, the product has a different
+ * translated slug in this market, and that slug resolves here to the same product. A slug that
+ * is already the market's own, a product without a translation (it does not exist here either),
+ * a cs slug that is the same string as the sk one, a fault, an open breaker: the request is left
+ * alone. `MAKY_BASE_SLUG_REDIRECT=off` turns it off with a restart.
+ */
+async function baseSlugMarketTarget(market: string, slug: string): Promise<string | null> {
+	if (process.env.MAKY_BASE_SLUG_REDIRECT?.trim().toLowerCase() === "off") return null;
+	const language = marketLanguageCode(market);
+	const channel = CHANNEL_MAP[market]?.saleorSlug;
+	if (!language || !channel) return null;
+	return baseSlugAliasTarget(slug, channel, language);
 }
 
 /**
@@ -333,30 +358,53 @@ async function route(request: NextRequest) {
 	// request that starts it is answered from what is known now. Nothing on this path waits.
 	if (first && FRIENDLY_SLUGS.has(first)) keepLiveCategoriesFresh();
 
-	// LOCALISED CART URL -> the shared internal `/cart` route.
+	// A ROUTE UNDER THE MARKET'S OWN WORD -> the shared internal route.
 	//
-	// The physical App Router directory stays language-neutral while shoppers and
-	// search engines see their market's word. This runs before the existence gate;
-	// otherwise `/sk/kosik` is indistinguishable from a product slug and can 404.
+	// The physical App Router directories stay as they are (`cart`, `kontakt`, `doprava-a-platba`,
+	// `znacky`, …) while shoppers and search engines see their market's word: `/sk/kosik`,
+	// `/de/warenkorb`, `/de/versand-und-zahlung`, `/us/brands/thule` (`ROUTE_WORDS` in
+	// `lib/channel-map.ts`). This runs before the existence gate; otherwise `/sk/kosik` is
+	// indistinguishable from a product slug and can 404.
 	//
-	// The decision uses the normalized pathname, while the rewrite keeps Next's
-	// `.rsc` and `/_segments/…segment.rsc` suffixes for client navigation.
+	// The directory name in a market that has a word of its own is the OLD address: the cart's since
+	// the cart was localised, the Slovak words abroad since 2026-11-27 (they were the only address
+	// those pages had until then, and they are in Google's index and in the mails we have sent). It
+	// answers one permanent redirect to the market's word and never a page.
+	//
+	// The decision uses the normalized pathname, while the redirect and the rewrite keep Next's
+	// `.rsc` and `/_segments/…segment.rsc` suffixes for client navigation. Only for a route this
+	// market has (`route-policy`): a word for a page the market does not serve is no address.
 	if (first && FRIENDLY_SLUGS.has(first)) {
-		const normalized = normalizePathname(pathname).split("/").filter(Boolean);
-		const requested = normalized.length === 2 ? normalized[1] : undefined;
-		const canonical = cartSegment(first);
+		const normalizedRest = "/" + normalizePathname(pathname).split("/").filter(Boolean).slice(1).join("/");
+		const rawRest = "/" + segments.slice(1).join("/");
 
-		if (requested === "cart" && canonical !== "cart") {
-			const rawRest = segments.slice(1).join("/");
+		const shown = localizeMarketPath(first, normalizedRest);
+		if (shown !== normalizedRest && marketHasRoute(first, normalizedRest.split("/")[1]!)) {
 			const url = request.nextUrl.clone();
-			url.pathname = marketHref(first, "/" + rawRest);
+			url.pathname = "/" + first + localizeMarketPath(first, rawRest);
 			return NextResponse.redirect(url, 308);
 		}
 
-		if (requested === canonical && canonical !== "cart") {
-			const rawRest = segments.slice(1).join("/");
-			const internalRest = "cart" + rawRest.slice(canonical.length);
-			return marketRewrite(request, first, null, internalRest);
+		const internal = internalMarketPath(first, normalizedRest);
+
+		// A MAKER THIS MARKET DOES NOT SELL -> real 404.
+		//
+		// The page finds that out inside a Suspense boundary, after the status line: it answered 200
+		// with an empty heading and `noindex` (audit 2026-11-27, D7). Decided here from the list the
+		// server last counted for this channel (`lib/brands/stocked-slugs.ts`), with no upstream call.
+		// A list this process has not counted yet is not an answer, and the page renders as before.
+		const maker = /^\/znacky\/([^/]+)$/.exec(internal);
+		if (maker && isKnownAbsentBrand(CHANNEL_MAP[first]!.saleorSlug, maker[1]!)) {
+			const url = request.nextUrl.clone();
+			url.pathname = "/_not-found";
+			return NextResponse.rewrite(url, {
+				status: 404,
+				headers: { "x-robots-tag": "noindex", "x-maky-brand": "absent" },
+			});
+		}
+
+		if (internal !== normalizedRest && marketHasRoute(first, internal.split("/")[1]!)) {
+			return marketRewrite(request, first, null, internalMarketPath(first, rawRest).slice(1));
 		}
 	}
 
@@ -373,7 +421,10 @@ async function route(request: NextRequest) {
 		const rootSlug = resolveLegacyProductSlug(segments[2]);
 		// If that slug has also been replaced in this market, go to the replacement directly.
 		// Two redirects for one click is the chain the contract forbids.
-		const moved = await movedMarketSlug(first, rootSlug);
+		// The same for the Slovak slug under a foreign market's retired `/products/` shape.
+		const moved =
+			(await movedMarketSlug(first, rootSlug)) ??
+			(first !== DEFAULT_MARKET ? await baseSlugMarketTarget(first, rootSlug) : null);
 		const url = request.nextUrl.clone();
 		url.pathname = "/" + first + "/" + (moved ?? rootSlug);
 		return NextResponse.redirect(url, moved ? 301 : 308);
@@ -499,12 +550,17 @@ async function route(request: NextRequest) {
 	// legal pages are excluded by the same logic the existence gate uses. Slovakia never
 	// enters: its slug is the base row and CFM sends no SK entries.
 	//
+	// The second half is the Slovak slug itself in a foreign market (`baseSlugMarketTarget`): no map
+	// names it, because it was never a URL CFM allocated, yet the page serves it.
+	//
 	// Decided on the NORMALIZED path so an in-app `.rsc` navigation is sent to the plain
 	// replacement, which the client router then follows as a full navigation.
 	if (first && FRIENDLY_SLUGS.has(first) && first !== DEFAULT_MARKET) {
 		const decision = classifyRoute(first, normalizePathname(pathname).split("/").filter(Boolean));
 		if (decision?.family === "product") {
-			const moved = await movedMarketSlug(first, decision.slug);
+			// CFM's own old → new map first; then the Slovak base slug, which no map ever names.
+			const moved =
+				(await movedMarketSlug(first, decision.slug)) ?? (await baseSlugMarketTarget(first, decision.slug));
 			if (moved) {
 				const url = request.nextUrl.clone();
 				url.pathname = "/" + first + "/" + moved;

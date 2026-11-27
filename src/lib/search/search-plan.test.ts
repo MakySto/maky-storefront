@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	correctedCursor,
 	findTyreText,
 	onlyWords,
 	parseSearchCursor,
@@ -26,6 +27,19 @@ describe("the cursor of a search page", () => {
 			variant: "racks",
 			cursor: "abc",
 		});
+	});
+
+	it("marks a page of the answer that was given for a corrected car", () => {
+		expect(parseSearchCursor(correctedCursor(saleorCursor("full", "WyJhIl0=")))).toEqual({
+			kind: "corrected",
+			inner: "f.WyJhIl0=",
+		});
+		expect(parseSearchCursor(correctedCursor(shelfCursor(20)))).toEqual({
+			kind: "corrected",
+			inner: "shelf.20",
+		});
+		// The mark alone names no page.
+		expect(parseSearchCursor("c.").kind).toBe("saleor");
 	});
 
 	it("reads a bare cursor, from a link older than this, as the words as typed", () => {
