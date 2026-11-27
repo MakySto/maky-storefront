@@ -9,6 +9,7 @@ import { CheckoutHeader } from "@/checkout/views/saleor-checkout/checkout-header
 import { DefaultChannelSlug } from "@/app/config";
 import { marketHref } from "@/lib/channel-map";
 import { localizeCountryName } from "@/checkout/lib/utils/locale";
+import { cityLine } from "@/lib/address-city-line";
 import { useLocale } from "@/providers/locale-provider";
 import { isCodDelivery } from "@/checkout/lib/cod";
 import { formatMoneyWithFallback } from "@/checkout/lib/utils/money";
@@ -25,8 +26,7 @@ function formatAddress(
 ) {
 	return [
 		address.streetAddress1,
-		address.city,
-		address.postalCode,
+		cityLine(address),
 		localizeCountryName(address.country?.code, address.country?.country, locale),
 	]
 		.filter(Boolean)

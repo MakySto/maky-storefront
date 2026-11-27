@@ -12,6 +12,7 @@ import { accountOrderLineDisplay } from "@/lib/account-order-line-display";
 import { OrderTimeline } from "@/ui/components/account/order-timeline";
 import { OrderStatusBadge } from "@/ui/components/account/order-status-badge";
 import { type AddressDetailsFragment } from "@/gql/graphql";
+import { cityLine } from "@/lib/address-city-line";
 import { ResilientProductImage } from "@/ui/components/ui/resilient-product-image";
 
 type Props = {
@@ -230,9 +231,7 @@ function OrderAddress({ title, address }: { title: string; address: AddressDetai
 					</p>
 					<p className="text-muted-foreground">{address.streetAddress1}</p>
 					{address.streetAddress2 && <p className="text-muted-foreground">{address.streetAddress2}</p>}
-					<p className="text-muted-foreground">
-						{address.postalCode} {address.city}
-					</p>
+					<p className="text-muted-foreground">{cityLine(address)}</p>
 					<p className="text-muted-foreground">{address.country.country}</p>
 				</div>
 			</div>

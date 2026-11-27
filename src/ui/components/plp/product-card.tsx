@@ -30,6 +30,7 @@ import { isTyreSizeCode } from "@/lib/tyre-size/codes";
 import { TYRE_FIELDS } from "@/lib/tyre-size/fields";
 import type { TyreCardFit } from "@/lib/tyre-size/types";
 import { useLocale } from "@/providers/locale-provider";
+import { KeepTogether } from "@/ui/components/ui/keep-together";
 import { addListingItemToCartAction } from "./actions";
 import { CartForm } from "./cart-form";
 import { AddButton } from "./listing-add-to-cart";
@@ -284,7 +285,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 					>
 						{/* The whole card is the link's target area; the title carries its name. */}
 						<span className="absolute inset-0" aria-hidden="true" />
-						{shownName}
+						<KeepTogether text={shownName} />
 					</Link>
 				</h2>
 				{/* What the set is for. Taken apart: the car and the years on one line, the roof under
@@ -295,7 +296,7 @@ export function ProductCard({ product, priority = false, purchase = "stepper" }:
 							className="text-text-secondary mt-1 line-clamp-2 text-[0.8125rem] leading-snug"
 							data-testid="card-vehicle"
 						>
-							{product.setTitle.vehicle}
+							<KeepTogether text={product.setTitle.vehicle} />
 							<span aria-hidden="true"> · </span>
 							{product.fit.years}
 						</p>
