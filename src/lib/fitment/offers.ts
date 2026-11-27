@@ -266,7 +266,7 @@ function demoOffers(dataset: FitmentDataset, refs: FitmentProductRef[]): Fitment
 const MANUFACTURER_REF = "cfm:attribute:manufacturer";
 
 /** The maker named by the product's own manufacturer attribute; null when it carries none. */
-function manufacturerOf(
+export function manufacturerOf(
 	attributes: ReadonlyArray<{
 		attribute: { externalReference?: string | null };
 		values: ReadonlyArray<{ name?: string | null }>;

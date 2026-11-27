@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { buildBreadcrumbJsonLd, jsonLdScriptProps } from "@/lib/seo";
+import { BreadcrumbScroller } from "./breadcrumb-scroller";
 
 export interface BreadcrumbItem {
 	label: string;
@@ -20,18 +21,18 @@ interface BreadcrumbsProps {
 /**
  * Breadcrumb trail.
  *
- * This used to be three components: this one (correct `ol`/`li` semantics, but
- * hidden below `sm` on the PDP) plus hand-rolled `nav > span` copies inside
- * PageHeader and CategoryHero that shipped on mobile with no list semantics and no
- * `aria-label`. Same trail, three behaviours. Now one.
+ * This used to be three components: this one (correct `ol`/`li` semantics, but hidden below `sm` on the
+ * PDP) plus hand-rolled `nav > span` copies inside PageHeader and CategoryHero that shipped on mobile
+ * with no list semantics and no `aria-label`. Same trail, three behaviours. Now one.
  *
- * Mobile: the trail stays on a single scrollable line rather than wrapping to three
- * — wrapping is presumably what made it worth hiding in the first place. The terminal
- * crumb is dropped below `sm` when the trail is deeper than two, because it merely
- * repeats the `h1` directly beneath it and is always the longest label. A two-item
- * trail keeps its terminal crumb; hiding it there would leave a lone "Domov".
+ * Mobile: the trail stays on ONE line and is never cut short. It used to drop its last crumb below `sm`
+ * when the trail was deeper than two, so a listing ended "Strešné nosiče > FORD > Kuga" on a phone and
+ * "... > DFK" on a desktop, and a product's trail ended at its shelf. Now every crumb is there on every
+ * width; a trail wider than the screen scrolls sideways and starts scrolled to its END, where the page the
+ * shopper is on and the step back from it are (`BreadcrumbScroller`). A long last crumb is cut with an
+ * ellipsis rather than pushing the steps back out of sight.
  *
- * The structured data always carries the FULL trail regardless of what is painted.
+ * The structured data carries the same trail as the page paints.
  */
 export function Breadcrumbs({ items, tone = "default", jsonLd = true, className }: BreadcrumbsProps) {
 	if (items.length === 0) return null;
@@ -47,31 +48,31 @@ export function Breadcrumbs({ items, tone = "default", jsonLd = true, className 
 		<>
 			{jsonLdProps && <script {...jsonLdProps} />}
 			<nav aria-label="Breadcrumb" className={className}>
-				<ol className={`scrollbar-hide flex items-center gap-1.5 overflow-x-auto text-sm ${muted}`}>
+				<BreadcrumbScroller
+					className={`scrollbar-hide flex items-center gap-1.5 overflow-x-auto text-sm ${muted}`}
+				>
 					{items.map((item, index) => {
 						const isLast = index === items.length - 1;
-						// Deep trails drop their tail on phones — see the component note.
-						const hideOnMobile = isLast && items.length > 2;
 
 						return (
-							<li
-								key={`${item.label}-${index}`}
-								className={`flex shrink-0 items-center gap-1.5 ${hideOnMobile ? "hidden sm:flex" : ""}`}
-							>
+							<li key={`${item.label}-${index}`} className="flex shrink-0 items-center gap-1.5">
 								{index > 0 && <ChevronRight aria-hidden className="h-3.5 w-3.5 shrink-0" />}
 								{item.href && !isLast ? (
 									// On a photo the link must carry its own colour: the base `a { color: var(--text-link) }`
 									// beats the inherited white/70 and painted "Domov" copper on a dark image.
 									<Link
 										href={item.href}
-										className={`whitespace-nowrap transition-colors ${onImage ? muted : ""} ${hover}`}
+										className={`py-1.5 whitespace-nowrap transition-colors ${onImage ? muted : ""} ${hover}`}
 									>
 										{item.label}
 									</Link>
 								) : (
 									<span
 										aria-current={isLast ? "page" : undefined}
-										className={`font-medium whitespace-nowrap ${current}`}
+										title={isLast ? item.label : undefined}
+										className={`font-medium whitespace-nowrap ${current} ${
+											isLast ? "max-w-[18rem] truncate sm:max-w-[32rem]" : ""
+										}`}
 									>
 										{item.label}
 									</span>
@@ -79,7 +80,7 @@ export function Breadcrumbs({ items, tone = "default", jsonLd = true, className 
 							</li>
 						);
 					})}
-				</ol>
+				</BreadcrumbScroller>
 			</nav>
 		</>
 	);

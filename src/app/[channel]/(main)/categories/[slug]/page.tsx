@@ -363,11 +363,14 @@ async function CategoryContent({
 	const tHome = await getTranslations({ locale: getLocaleFromChannel(params.channel), namespace: "home" });
 	const tagline = CATEGORY_TAGLINES[STOREFRONT_CATEGORIES.find((c) => c.slug === baseSlug)?.key ?? ""];
 
-	const breadcrumbs = [
-		{ label: t("home"), href: marketHref(params.channel) },
-		...(navigation?.parent ? [{ label: navigation.parent.name, href: navigation.parent.href }] : []),
-		{ label: category.name, href: marketHref(params.channel, categoryUrlFor(params.channel, baseSlug)) },
-	];
+	// From the shelf down, as a product's trail goes (`lib/product-trail.server.ts`), and without "Domov": the
+	// logo leads home. A top-level shelf has nothing above it to go back to, so it draws no trail at all.
+	const breadcrumbs = navigation?.parent
+		? [
+				{ label: navigation.parent.name, href: navigation.parent.href },
+				{ label: category.name, href: marketHref(params.channel, categoryUrlFor(params.channel, baseSlug)) },
+			]
+		: [];
 
 	return (
 		<>
