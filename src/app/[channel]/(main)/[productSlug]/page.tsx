@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { connection } from "next/server";
 import { type Metadata } from "next";
 import { meaningfulTitle } from "@/config/brand";
@@ -15,6 +15,7 @@ import { metadataSeoTitle } from "@/lib/seo/seo-title";
 import { productCounterparts } from "@/lib/seo/product-counterparts";
 import { getProductMarketPresence } from "@/lib/saleor/product-presence";
 import { getProductOutcome, type LocalizedProduct } from "@/lib/saleor/product-outcome";
+import { baseSlugAliasTarget } from "@/lib/saleor/base-slug-alias";
 import { productHref } from "@/lib/product-url";
 import { loadProductTrail } from "@/lib/product-trail.server";
 import { Breadcrumbs } from "@/ui/components/breadcrumbs";
@@ -192,6 +193,15 @@ async function ProductContent({
 	}
 
 	const product = outcome.resource;
+
+	// Asked for by its Slovak slug in a foreign market: the product is found (the base row is
+	// looked up first), but this is not its address here. Decided from the product already read,
+	// so it costs Saleor nothing. The status line is gone by now (the shell is flushed), so a
+	// visitor is moved by the document itself; a crawler was answered 301 in the proxy, from the
+	// same read (`lib/saleor/base-slug-alias.ts`).
+	const ownSlug = baseSlugAliasTarget(params.productSlug, product, getLocaleFromChannel(params.channel));
+	if (ownSlug) permanentRedirect(productHref(params.channel, ownSlug, searchParams.variant));
+
 	const variants = product.variants || [];
 	const selectedVariantId = searchParams.variant || (variants.length === 1 ? variants[0].id : undefined);
 	const selectedVariant = variants.find((v) => v.id === selectedVariantId);

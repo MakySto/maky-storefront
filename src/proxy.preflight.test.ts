@@ -120,6 +120,75 @@ describe("a crawler on a product page, the page's own read failing", () => {
 	});
 });
 
+/**
+ * The Slovak slug of a product in a foreign market (2026-11-27, `/de/snehove-retaze-…-n16283`).
+ * The page finds the product by its base slug, so the address answered 200 beside the market's
+ * own. The read the preflight makes already knows the market's slug: the crawler is answered 301
+ * from it, and Saleor is asked nothing by the proxy — the first version of this asked Saleor about
+ * every foreign product address, about 1.5 requests a second on the live site.
+ */
+describe("a crawler asking for the Slovak slug in a foreign market", () => {
+	const SK = "snehove-retaze-snowdrive-pilot-pro-xl-s-celnou-montazou-n16283";
+	const DE = "schneeketten-snowdrive-pilot-pro-xl-mit-frontmontage-n16283";
+	const movedTo = (slug: string) => () => json({ status: "found", movedTo: slug });
+
+	it("gets one permanent redirect to the market's own slug, query kept, and Saleor is not asked", async () => {
+		const net = network({ loopback: movedTo(DE) });
+		const res = await proxy(ask(`/de/${SK}?variant=abc`, GOOGLEBOT));
+
+		expect(res.status).toBe(301);
+		expect(res.headers.get("location")).toBe(`https://maky.store/de/${DE}?variant=abc`);
+		expect(res.headers.get("x-maky-preflight")).toMatch(/^found:moved;\d+ms$/);
+		expect(net.loopbackCalls()).toHaveLength(1);
+		expect(net.saleorCalls()).toHaveLength(0);
+	});
+
+	it("asks the page's resolver in the market's own channel, US and Canada included", async () => {
+		for (const [market, channel] of [
+			["at", "at-eur"],
+			["us", "us-usd"],
+			["ca", "ca-cad"],
+		] as const) {
+			const net = network({ loopback: movedTo("own-slug-n16283") });
+			const res = await proxy(ask(`/${market}/${SK}`, BINGBOT));
+
+			expect(res.status, market).toBe(301);
+			expect(res.headers.get("location")).toBe(`https://maky.store/${market}/own-slug-n16283`);
+			expect(new URL(String(net.loopbackCalls()[0]![0])).searchParams.get("channel")).toBe(channel);
+		}
+	});
+
+	it("is served the market's own address as always: no redirect, so no loop", async () => {
+		const net = network({ loopback: resolver("found") });
+		const res = await proxy(ask(`/de/${DE}`, GOOGLEBOT));
+
+		expect(res.status).toBe(200);
+		expect(res.headers.get("location")).toBeNull();
+		expect(net.saleorCalls()).toHaveLength(0);
+	});
+
+	it("is not sent to the address it already asked for, whatever the resolver says", async () => {
+		network({ loopback: movedTo(SK) });
+		const res = await proxy(ask(`/cz/${SK}`, GOOGLEBOT));
+
+		expect(res.status).toBe(200);
+		expect(res.headers.get("location")).toBeNull();
+	});
+});
+
+describe("a visitor on any product address, Slovak slug or not", () => {
+	it("costs no loopback and no Saleor question in the proxy; the page moves them itself", async () => {
+		const net = network({});
+		const res = await proxy(
+			ask("/de/snehove-retaze-snowdrive-pilot-pro-xl-s-celnou-montazou-n16283", CHROME),
+		);
+
+		expect(res.status).toBe(200);
+		expect(res.headers.get("location")).toBeNull();
+		expect(net.mock).not.toHaveBeenCalled();
+	});
+});
+
 describe("anything else is the response it was before", () => {
 	it("a found product is rewritten to the page as always, and says what the preflight saw", async () => {
 		network({ loopback: resolver("found") });

@@ -112,12 +112,30 @@ describe("preflightProductOutcome", () => {
 		});
 	}
 
+	it("carries the market's own slug of a found product, and only a clean URL segment", async () => {
+		const ask = (body: unknown) =>
+			preflightProductOutcome("x", "de-eur", { port: "3000", fetchImpl: stub(() => json(body)) });
+
+		expect(await ask({ status: "found", movedTo: "schneeketten-pilot-pro-xl-n16283" })).toMatchObject({
+			verdict: "found",
+			movedTo: "schneeketten-pilot-pro-xl-n16283",
+		});
+		for (const movedTo of ["https://evil.test/x", "/de/x", "a b", "", 7, null]) {
+			const answer = await ask({ status: "found", movedTo });
+			expect(answer.verdict, String(movedTo)).toBe("found");
+			expect("movedTo" in answer, String(movedTo)).toBe(false);
+		}
+		// Only a found product has an address to move to.
+		expect("movedTo" in (await ask({ status: "not-found", movedTo: "x-1" }))).toBe(false);
+	});
+
 	it("waits longer than the resolver's own deadline, so a slow Saleor is answered by the resolver", () => {
 		expect(PREFLIGHT_TIMEOUT_MS).toBeGreaterThan(PRODUCT_DEADLINE_MS);
 	});
 
 	it("reports what it concluded, and how long it took", () => {
 		expect(describePreflight({ verdict: "found", ms: 3 })).toBe("found;3ms");
+		expect(describePreflight({ verdict: "found", ms: 3, movedTo: "x-1" })).toBe("found:moved;3ms");
 		expect(describePreflight({ verdict: "skipped", reason: "timeout", ms: 9500 })).toBe(
 			"skipped:timeout;9500ms",
 		);
