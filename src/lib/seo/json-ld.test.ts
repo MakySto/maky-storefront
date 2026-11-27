@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildProductJsonLd } from "./json-ld";
+import { buildProductJsonLd, shippingServiceId } from "./json-ld";
 
 describe("product JSON-LD truthfulness", () => {
 	it("does not invent MAKY.STORE as a product brand", () => {
@@ -405,13 +405,16 @@ describe("product JSON-LD offer terms", () => {
 		}
 	});
 
-	it("never promises who pays for a return or how it travels back", () => {
+	it("states that the customer pays for sending the goods back, by mail, and names no amount", () => {
 		const policy = offer(buildProductJsonLd({ name: "Nosič", price, channel: "sk-eur" }))!
 			.hasMerchantReturnPolicy as Record<string, unknown>;
-		expect(policy.applicableCountry).toBe("SK");
-		for (const key of ["returnFees", "returnMethod", "returnShippingFeesAmount"]) {
-			expect(policy).not.toHaveProperty(key);
-		}
+		expect(policy).toMatchObject({
+			applicableCountry: "SK",
+			returnFees: "https://schema.org/ReturnFeesCustomerResponsibility",
+			returnMethod: "https://schema.org/ReturnByMail",
+		});
+		// Google: with ReturnFeesCustomerResponsibility, no returnShippingFeesAmount.
+		expect(policy).not.toHaveProperty("returnShippingFeesAmount");
 	});
 
 	it("says nothing about returns for a channel that is not a market, or for none", () => {
@@ -421,10 +424,23 @@ describe("product JSON-LD offer terms", () => {
 		expect(offer(buildProductJsonLd({ name: "Nosič", price }))).not.toHaveProperty("hasMerchantReturnPolicy");
 	});
 
-	it("states no shipping rate: the price of delivery is calculated at checkout", () => {
-		expect(offer(buildProductJsonLd({ name: "Nosič", price, channel: "sk-eur" }))).not.toHaveProperty(
-			"shippingDetails",
-		);
+	it("points at the shop's shipping policy by @id alone, and states no rate", () => {
+		for (const channel of ["sk-eur", "us", "cz-czk"]) {
+			const terms = offer(buildProductJsonLd({ name: "Nosič", price, channel }))!;
+			// Exactly this, nothing beside it: the price of delivery is calculated at checkout.
+			expect(terms.shippingDetails).toEqual({
+				"@type": "OfferShippingDetails",
+				hasShippingService: { "@id": shippingServiceId() },
+			});
+			expect(shippingServiceId()).toMatch(/\/#shipping$/);
+		}
+	});
+
+	it("points at no shipping policy for a channel that is not a market, or for none", () => {
+		expect(
+			offer(buildProductJsonLd({ name: "Nosič", price, channel: "default-channel" })),
+		).not.toHaveProperty("shippingDetails");
+		expect(offer(buildProductJsonLd({ name: "Nosič", price }))).not.toHaveProperty("shippingDetails");
 	});
 
 	it("gives every variant of a product group the same terms", () => {
@@ -441,6 +457,7 @@ describe("product JSON-LD offer terms", () => {
 			expect(variant.offers).toMatchObject({
 				itemCondition: "https://schema.org/NewCondition",
 				hasMerchantReturnPolicy: { applicableCountry: "CZ", merchantReturnDays: 14 },
+				shippingDetails: { hasShippingService: { "@id": shippingServiceId() } },
 			});
 		}
 	});

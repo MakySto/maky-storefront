@@ -5,7 +5,7 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { GlobeIcon, ChevronDownIcon } from "lucide-react";
 import { REVERSE_MAP, marketSwitchHref } from "@/lib/channel-map";
-import { registeredMarketTarget } from "./market-switch-targets";
+import { registeredMarketTarget } from "./market-switch-registry";
 
 const MARKETS = [
 	{ slug: "sk", code: "sk", label: "Slovensko", lang: "SK", currency: "EUR", symbol: "€" },
@@ -53,7 +53,7 @@ export function switchTargetFor(
 ) {
 	const here = typeof window === "undefined" ? fallbackPath : window.location.pathname;
 	const registered = registeredMarketTarget(here, target);
-	if (registered !== undefined) return registered === null ? `/${target}` : `/${target}${registered}`;
+	if (registered !== undefined) return registered ?? `/${target}`;
 
 	const search = typeof window === "undefined" ? "" : window.location.search;
 	const pathAfterMarket = here.replace(new RegExp(`^/(${currentMarket}|${channel})(?=/|$)`), "");

@@ -115,6 +115,19 @@ describe("the shop is one entity, identified the same way everywhere", () => {
 		expect(organizationId()).toBe(organization("sk")["@id"]);
 	});
 
+	it.each(MARKETS)(
+		"%s: the offer's shippingDetails points at the shipping service the homepage states",
+		(market) => {
+			const product = buildProductJsonLd({
+				name: "Nosič",
+				price: { amount: 147, currency: "EUR" },
+				channel: channelOf(market),
+			}) as unknown as { offers: Json };
+			const pointer = (product.offers.shippingDetails as { hasShippingService: Json }).hasShippingService;
+			expect(pointer).toEqual({ "@id": (organization(market).hasShippingService as Json)["@id"] });
+		},
+	);
+
 	it("says nothing for a channel that is not a market", () => {
 		expect(buildOrganizationJsonLd("xx-eur")).toBeNull();
 		expect(buildWebSiteJsonLd("xx-eur")).toBeNull();
@@ -214,17 +227,20 @@ describe("the return policy states the statutory window and nothing unconfirmed"
 			returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
 			// NOT 30: the extension is for signed-in registered customers only.
 			merchantReturnDays: 14,
+			// Owner, 2026-11-18, as every market's returns page says: the customer pays for sending back.
+			returnFees: "https://schema.org/ReturnFeesCustomerResponsibility",
+			returnMethod: "https://schema.org/ReturnByMail",
 			merchantReturnLink: `https://maky.store/${market}/reklamacie-a-vratenie`,
 		});
 		// The link is a page this market actually serves — not a 404 with a return policy on it.
 		expect(marketHasRoute(market, RETURNS_PAGE_PATH.slice(1))).toBe(true);
 	});
 
-	it("names no fee, no method, no return-shipping amount and no refund terms", () => {
+	it("names no return-shipping amount, no other fee and no refund terms", () => {
+		// With ReturnFeesCustomerResponsibility Google asks for no amount, and none is known: what a
+		// return costs depends on the parcel and the carrier the customer chooses (CLAUDE.md §9).
 		const policy = JSON.stringify(returnPolicy("sk"));
 		for (const key of [
-			"returnFees",
-			"returnMethod",
 			"returnShippingFeesAmount",
 			"returnLabelSource",
 			"customerRemorseReturnFees",
@@ -272,6 +288,8 @@ describe("the shipping policy states delivery times and never a price", () => {
 	it("is a delivery service with exactly those two conditions, and names no carrier", () => {
 		const service = organization("sk").hasShippingService as Json;
 		expect(service["@type"]).toBe("ShippingService");
+		// Every offer points here (`shippingDetails.hasShippingService`), so the id is pinned literally.
+		expect(service["@id"]).toBe("https://maky.store/#shipping");
 		expect(service.fulfillmentType).toBe("FulfillmentTypeDelivery");
 		expect(shippingConditions("sk")).toHaveLength(2);
 		const markup = JSON.stringify(service);
