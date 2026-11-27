@@ -1110,7 +1110,18 @@
 		"metaDescription": "Risultati della ricerca nel catalogo {siteName}.",
 		"unavailableTitle": "La ricerca non è temporaneamente disponibile",
 		"unavailableHelp": "Al momento non è stato possibile caricare i risultati per «{query}». Riprova tra poco o sfoglia le nostre categorie.",
-		"correctedFrom": "Non abbiamo trovato nulla per «{query}», quindi mostriamo i risultati per il marchio più simile."
+		"correctedFrom": "Non abbiamo trovato nulla per «{query}», quindi mostriamo i risultati per il marchio più simile.",
+		"vehicleHeading": "Portapacchi da tetto per {vehicle}",
+		"vehicleHelp": "Il portapacchi si sceglie in base alla versione dell'auto e al tipo di tetto. Scegli la tua auto e ti mostriamo i kit adatti.",
+		"vehicleOpen": "Mostra i portapacchi per {vehicle}",
+		"vehicleGenerations": "Versione",
+		"vehicleRelated": "Modelli affini",
+		"vehicleAskHeading": "Il portapacchi si sceglie in base all'auto",
+		"vehicleAskHelp": "Ogni auto ha un tetto diverso. Scegli marca e modello e ti mostriamo i portapacchi adatti alla tua auto.",
+		"vehicleAskCta": "Scegli l'auto",
+		"tyreHeading": "Catene da neve per pneumatici {size}",
+		"tyreCta": "Mostra le catene per questa misura",
+		"closestNote": "Non abbiamo trovato una corrispondenza esatta. Mostriamo i prodotti più simili."
 	},
 	"account": {
 		"welcomeBack": "Bentornato",

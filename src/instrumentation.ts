@@ -178,6 +178,10 @@ export async function register(): Promise<void> {
 	// The roof-rack category's price bands and row of sub-categories, read before the first visitor needs
 	// them (Saleor takes 1.5 to 1.9 s for each, longer than a visit waits). Off with MAKY_CATEGORIES_PREWARM=0.
 	//
+	// The search's own index of each market's shelf (`lib/search/shelf-source.ts`): under a thousand
+	// products per market, read one market after another, about a minute in all. Without it the first
+	// search of a market after a restart is answered by Saleor's search alone. Off with MAKY_SEARCH_PREWARM=0.
+	//
 	// The sitemap's product lists, built in the background so the first crawler (or the deploy's own
 	// check) finds them kept instead of walking Saleor for 14 to 18 seconds per market. It is what a
 	// request would have done anyway, only earlier. Only a production server: a dev session or a test
@@ -187,6 +191,7 @@ export async function register(): Promise<void> {
 		startBootWarmups({
 			categories: process.env.MAKY_CATEGORIES_PREWARM !== "0",
 			brands: process.env.MAKY_BRANDS_PREWARM !== "0",
+			search: process.env.MAKY_SEARCH_PREWARM !== "0",
 			sitemap: process.env.MAKY_SITEMAP_PREWARM !== "0",
 		});
 	}

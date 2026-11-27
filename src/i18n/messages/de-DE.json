@@ -1110,7 +1110,18 @@
 		"metaDescription": "Suchergebnisse im Sortiment von {siteName}.",
 		"unavailableTitle": "Die Suche ist vorübergehend nicht verfügbar",
 		"unavailableHelp": "Die Ergebnisse für „{query}“ konnten gerade nicht geladen werden. Bitte versuchen Sie es in Kürze erneut oder stöbern Sie in unseren Kategorien.",
-		"correctedFrom": "Für „{query}“ haben wir nichts gefunden und zeigen daher Ergebnisse für die ähnlichste Marke."
+		"correctedFrom": "Für „{query}“ haben wir nichts gefunden und zeigen daher Ergebnisse für die ähnlichste Marke.",
+		"vehicleHeading": "Dachträger für {vehicle}",
+		"vehicleHelp": "Der passende Träger hängt von der Ausführung des Fahrzeugs und vom Dachtyp ab. Wählen Sie Ihr Fahrzeug, und wir zeigen die Sets, die darauf passen.",
+		"vehicleOpen": "Dachträger für {vehicle} anzeigen",
+		"vehicleGenerations": "Ausführung",
+		"vehicleRelated": "Verwandte Modelle",
+		"vehicleAskHeading": "Den Dachträger wählen Sie nach Fahrzeug",
+		"vehicleAskHelp": "Jedes Fahrzeug hat ein anderes Dach. Wählen Sie Marke und Modell, und wir zeigen die Träger, die auf Ihr Fahrzeug passen.",
+		"vehicleAskCta": "Fahrzeug wählen",
+		"tyreHeading": "Schneeketten für Reifen {size}",
+		"tyreCta": "Ketten für diese Größe anzeigen",
+		"closestNote": "Wir haben keinen genauen Treffer gefunden. Wir zeigen die ähnlichsten Produkte."
 	},
 	"account": {
 		"welcomeBack": "Willkommen zurück",

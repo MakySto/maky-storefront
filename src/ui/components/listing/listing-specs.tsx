@@ -44,10 +44,16 @@ export function ListingSpecs({ specs, className }: { specs: readonly ListingSpec
 			{specs.map((spec) => (
 				<div
 					key={spec.key}
-					className="flex min-w-0 items-baseline justify-between gap-3 group-data-[view=list]/lv:sm:justify-start group-data-[view=list]/lv:sm:gap-1.5"
+					// In a narrow card a pair that does not fit on one line puts the value on the next one,
+					// at the right edge, with both in whole words. It used to keep the label in one piece
+					// (`shrink-0`) and cut the value inside a word to fit beside it: "Flügelprofi / l" in the
+					// German listing (2026-11-27). `break-words` stays for a single word wider than the card.
+					className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 group-data-[view=list]/lv:sm:flex-nowrap group-data-[view=list]/lv:sm:justify-start group-data-[view=list]/lv:sm:gap-1.5"
 				>
-					<dt className="text-text-tertiary shrink-0">{spec.label}</dt>
-					<dd className="text-text-primary min-w-0 text-right font-medium break-words group-data-[view=list]/lv:sm:text-left">
+					<dt className="text-text-tertiary max-w-full break-words group-data-[view=list]/lv:sm:shrink-0">
+						{spec.label}
+					</dt>
+					<dd className="text-text-primary ml-auto max-w-full text-right font-medium break-words group-data-[view=list]/lv:sm:ml-0 group-data-[view=list]/lv:sm:min-w-0 group-data-[view=list]/lv:sm:text-left">
 						{spec.value}
 					</dd>
 				</div>
