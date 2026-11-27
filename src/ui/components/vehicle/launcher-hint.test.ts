@@ -20,9 +20,10 @@ describe("the second line of the header's vehicle button", () => {
 		expect(hint("Ford Kuga DFK · 2024", "Integrované lyžiny", null)).toBe("Integrované lyžiny · Zmeniť");
 	});
 
-	it("puts the roof first and the repeated word last, so a narrow button cuts the least", () => {
+	it("names the roof and the tyre size without the repeated word, which the button never had room for", () => {
+		// On the live header "Hladká strecha · 205/65 R16 · Zmeniť" was cut to "… · Zme…".
 		expect(hint("Ford Kuga DFK · 2024", "Integrované lyžiny", "205/55 R16")).toBe(
-			"Integrované lyžiny · 205/55 R16 · Zmeniť",
+			"Integrované lyžiny · 205/55 R16",
 		);
 	});
 
