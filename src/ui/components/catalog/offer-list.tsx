@@ -14,16 +14,17 @@ import { splitSetTitle } from "@/lib/fitment/set-title";
 import { type SetFacts } from "@/lib/fitment/set-facts";
 import { type SetVehicle } from "@/lib/fitment/set-vehicle";
 import { cn } from "@/lib/utils";
-import { vehicleViewQuery, type VehicleView } from "@/lib/fitment/vehicle-view";
+import { brandKey, vehicleViewQuery, type VehicleView } from "@/lib/fitment/vehicle-view";
 import { OfferCard, type OfferCardLabels } from "./offer-card";
-import { OfferYearSelect } from "./offer-year-select";
+import { OfferViewSelect } from "./offer-view-select";
 
 /**
  * What the page's address narrows the list to, and what it can be narrowed to.
  *
  * `year` is already applied by the caller: `offers` and `fits` hold the sets of that year only, so
- * the counts beside each roof are that year's. `roof` is applied here. Every control is a link to
- * `path` with other parameters: the address is the state (see `lib/fitment/vehicle-view.ts`).
+ * the counts beside each roof are that year's. `roof`, `brand` and `sort` are applied here. Every
+ * control is a link to `path` with other parameters: the address is the state (see
+ * `lib/fitment/vehicle-view.ts`).
  */
 export type OfferListView = VehicleView & {
 	/** The years with at least one set, newest first. */
@@ -133,7 +134,12 @@ export async function CatalogOfferList({
 				<p className="text-text-secondary mt-3 text-sm">
 					{t("catalog.viewYearEmpty", { year: view.year })}{" "}
 					<Link
-						href={`${view.path}${vehicleViewQuery({ year: null, roof: view.roof })}`}
+						href={`${view.path}${vehicleViewQuery({
+							year: null,
+							roof: view.roof,
+							brand: view.brand,
+							sort: view.sort,
+						})}`}
 						scroll={false}
 						className="text-text-primary font-medium underline underline-offset-2"
 					>
@@ -287,10 +293,50 @@ export async function CatalogOfferList({
 	// theirs, until the address names the roof: then every set shown is one made for it.
 	const oneRoof = groups.length === 1 && groups[0]!.key !== "none";
 	const active = view?.roof ?? null;
-	const shown = active ? sorted.filter((row) => row.roofs.includes(active)) : sorted;
+	const ofRoof = (roof: RoofType | null) =>
+		roof ? sorted.filter((row) => row.roofs.includes(roof)) : sorted;
+	const inRoof = ofRoof(active);
 	const direct = oneRoof || active !== null;
 
-	const hrefFor = (next: VehicleView) => `${view?.path ?? ""}${vehicleViewQuery(next)}`;
+	// The makers among the sets of this year and this roof, the one with the most sets first. A maker
+	// the address names but this list has no set of is not applied: a maker never empties the list,
+	// and the control shows every maker again.
+	const keyOf = (row: Row) => (row.offer.brand ? brandKey(row.offer.brand) : "");
+	const brands = [
+		...inRoof
+			.reduce((found, row) => {
+				const key = keyOf(row);
+				if (!key) return found;
+				const known = found.get(key);
+				return found.set(key, { key, label: row.offer.brand!, count: (known?.count ?? 0) + 1 });
+			}, new Map<string, { key: string; label: string; count: number }>())
+			.values(),
+	].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, locale));
+	const brand = view?.brand && brands.some((maker) => maker.key === view.brand) ? view.brand : null;
+	const ofBrand = brand ? inRoof.filter((row) => keyOf(row) === brand) : inRoof;
+
+	// The page's own order, or by the exact variant's price. A set without a price goes last either way.
+	const sort = view?.sort ?? null;
+	const shown = sort
+		? [...ofBrand].sort((a, b) => {
+				const [x, y] = [a.offer.price?.amount ?? null, b.offer.price?.amount ?? null];
+				if (x === null || y === null) return x === y ? 0 : x === null ? 1 : -1;
+				return sort === "price_asc" ? x - y : y - x;
+			})
+		: ofBrand;
+
+	// Every control's address keeps the rest of the view. A roof's link keeps the maker only when that
+	// roof has a set of it, so an address does not carry a maker its own list ignores.
+	const hrefFor = (next: Partial<VehicleView>) =>
+		`${view?.path ?? ""}${vehicleViewQuery({
+			year: view?.year ?? null,
+			roof: active,
+			brand,
+			sort,
+			...next,
+		})}`;
+	const brandUnder = (roof: RoofType | null) =>
+		brand && ofRoof(roof).some((row) => keyOf(row) === brand) ? brand : null;
 	// The roofs to choose from: the ones this year has sets for, and the one the address names even
 	// when it has none, so the shopper sees what is chosen and can leave it.
 	const roofChips = groups.filter((group) => group.key !== "none");
@@ -299,6 +345,8 @@ export async function CatalogOfferList({
 	}
 	const chooseRoof = view && (groups.length > 1 || active !== null);
 	const chooseYear = view && (view.years.length > 1 || view.year !== null);
+	const chooseBrand = view && brands.length > 1;
+	const chooseSort = view && (ofBrand.length > 1 || sort !== null);
 
 	return (
 		<ListingViewRoot>
@@ -313,14 +361,14 @@ export async function CatalogOfferList({
 					</div>
 					<div className="flex flex-wrap items-center gap-3">
 						{chooseYear ? (
-							<OfferYearSelect
+							<OfferViewSelect
 								label={t("catalog.viewYearLabel")}
 								value={view.year === null ? "" : String(view.year)}
 								options={[
 									{
 										value: "",
 										label: t("catalog.viewAllYears"),
-										href: hrefFor({ year: null, roof: active }),
+										href: hrefFor({ year: null }),
 									},
 									// A year from the address that has no set of its own stays in the list while it is chosen.
 									...[...new Set([...(view.year === null ? [] : [view.year]), ...view.years])]
@@ -328,8 +376,41 @@ export async function CatalogOfferList({
 										.map((year) => ({
 											value: String(year),
 											label: String(year),
-											href: hrefFor({ year, roof: active }),
+											href: hrefFor({ year }),
 										})),
+								]}
+							/>
+						) : null}
+						{chooseBrand ? (
+							<OfferViewSelect
+								label={t("plp.brand")}
+								value={brand ?? ""}
+								options={[
+									{ value: "", label: t("catalog.viewAllBrands"), href: hrefFor({ brand: null }) },
+									...brands.map((maker) => ({
+										value: maker.key,
+										label: `${maker.label} (${maker.count})`,
+										href: hrefFor({ brand: maker.key }),
+									})),
+								]}
+							/>
+						) : null}
+						{chooseSort ? (
+							<OfferViewSelect
+								label={t("common.sortBy")}
+								value={sort ?? ""}
+								options={[
+									{ value: "", label: t("plp.featured"), href: hrefFor({ sort: null }) },
+									{
+										value: "price_asc",
+										label: t("plp.priceLowToHigh"),
+										href: hrefFor({ sort: "price_asc" }),
+									},
+									{
+										value: "price_desc",
+										label: t("plp.priceHighToLow"),
+										href: hrefFor({ sort: "price_desc" }),
+									},
 								]}
 							/>
 						) : null}
@@ -346,7 +427,7 @@ export async function CatalogOfferList({
 						className="scrollbar-hide -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 py-0.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
 					>
 						<Link
-							href={hrefFor({ year: view.year, roof: null })}
+							href={hrefFor({ roof: null, brand: brandUnder(null) })}
 							scroll={false}
 							prefetch={false}
 							aria-current={active === null ? "true" : undefined}
@@ -358,7 +439,7 @@ export async function CatalogOfferList({
 						{roofChips.map((group) => (
 							<Link
 								key={group.key}
-								href={hrefFor({ year: view.year, roof: group.key as RoofType })}
+								href={hrefFor({ roof: group.key as RoofType, brand: brandUnder(group.key as RoofType) })}
 								scroll={false}
 								prefetch={false}
 								aria-current={active === group.key ? "true" : undefined}
