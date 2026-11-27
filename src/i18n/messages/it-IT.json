@@ -1084,6 +1084,7 @@
 		"offersGroupOther": "Tipo di tetto non indicato",
 		"viewYearLabel": "Anno di produzione",
 		"viewAllYears": "Tutti gli anni",
+		"viewAllBrands": "Tutte le marche",
 		"viewRoofEmpty": "Qui non abbiamo un set per il tipo di tetto {roof}.",
 		"viewRoofYearEmpty": "Qui non abbiamo un set per il tipo di tetto {roof} e l'anno {year}.",
 		"viewYearEmpty": "Qui non abbiamo un set per l'anno {year}.",

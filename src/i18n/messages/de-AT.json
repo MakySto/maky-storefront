@@ -1084,6 +1084,7 @@
 		"offersGroupOther": "Ohne angegebene Dachform",
 		"viewYearLabel": "Baujahr",
 		"viewAllYears": "Alle Baujahre",
+		"viewAllBrands": "Alle Marken",
 		"viewRoofEmpty": "Für den Dachtyp {roof} haben wir hier kein Set.",
 		"viewRoofYearEmpty": "Für den Dachtyp {roof} und das Baujahr {year} haben wir hier kein Set.",
 		"viewYearEmpty": "Für das Baujahr {year} haben wir hier kein Set.",
