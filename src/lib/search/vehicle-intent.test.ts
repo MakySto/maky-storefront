@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type VehicleNames, productWordsOf, readVehicleIntent } from "./vehicle-intent";
+import { type VehicleNames, correctVehicleTypos, productWordsOf, readVehicleIntent } from "./vehicle-intent";
 
 /** A few cars of the live dataset (3.0.0-full-20261022.2), by the names it gives them. */
 const names: VehicleNames = {
@@ -134,5 +134,65 @@ describe("the shop's own product words", () => {
 		// A kit is found by its car; it must not stop "octavia" from being read as one.
 		expect(words.has("octavia")).toBe(false);
 		expect(words.has("nordrive")).toBe(false);
+	});
+});
+
+describe("a misspelt car", () => {
+	const corrected = (query: string, cars: VehicleNames = names) =>
+		correctVehicleTypos(query, cars, "sk", { productWords });
+
+	it.each([
+		["octvia", "octavia"],
+		["oktavia", "octavia"],
+		["ocatvia", "octavia"],
+		["kamik", "kamiq"],
+		["contryman", "countryman"],
+		["nosič oktavia", "nosič octavia"],
+		["škoda octvia 2019", "škoda octavia 2019"],
+		["volkswagn golf", "volkswagen golf"],
+		["wolkswagen", "volkswagen"],
+		["mercedez", "mercedes"],
+	])("%s is read as %s", (typed, meant) => {
+		expect(corrected(typed)).toBe(meant);
+	});
+
+	it.each([
+		// Spelt right, or declined: nothing to correct.
+		"octavia",
+		"octaviu",
+		"nosič na kugu",
+		// Four letters are one letter from too much.
+		"golv",
+		"kuda",
+		// The shop's own products: "Spark" is a roof box and "Discovery" a bike carrier here.
+		"sparc",
+		"discovry",
+		// The words every model line shares are no car.
+		"kombi",
+		"sporty",
+		// No car's name is near.
+		"autochladnicka",
+		"priecniky",
+	])("%s is left as typed", (typed) => {
+		expect(corrected(typed)).toBeNull();
+	});
+
+	it("corrects nothing when two cars are equally near", () => {
+		const twins: VehicleNames = {
+			makes: [
+				{ id: "mk:hyundai", name: "Hyundai" },
+				{ id: "mk:tvr", name: "TVR" },
+			],
+			models: [
+				{ id: "md:tucson", makeId: "mk:hyundai", name: "Tucson" },
+				{ id: "md:tuscan", makeId: "mk:tvr", name: "Tuscan" },
+			],
+			generations: [],
+		};
+		expect(corrected("tucsan", twins)).toBeNull();
+		// One of them alone is the nearest, and so is the nearer of the two.
+		expect(corrected("tucsan", { ...twins, models: [twins.models[0]!] })).toBe("tucson");
+		expect(corrected("tucsn", twins)).toBe("tucson");
+		expect(corrected("hundai tucsn", twins)).toBe("hyundai tucson");
 	});
 });
