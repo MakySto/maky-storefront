@@ -6,6 +6,7 @@ import {
 	resolveGenerationForYear,
 	resolveSingleValued,
 	roofChoicesFor,
+	roofChoicesOnOffer,
 	yearsForModel,
 } from "./selector-plan";
 import { resolveFitment } from "./resolve";
@@ -114,6 +115,84 @@ describe("roof choices describe the CAR, not the catalogue", () => {
 
 	it("returns nothing when no roof constraint exists anywhere — then it IS resolved", () => {
 		expect(roofChoicesFor([anApplication({ generationId: "g" })], { id: "g" })).toEqual([]);
+	});
+});
+
+describe("the selector offers the roofs a set is on offer for in the shopper's YEAR", () => {
+	// The shape of the Ford Kuga DFK (2019 onwards) in the export: raised rails only for the cars of
+	// 2019 and 2020, flush rails from 2019, a naked roof from 2020.
+	const roofApp = (
+		id: string,
+		roof: "raised-rails" | "flush-rails" | "naked-roof",
+		window: ReturnType<typeof windowOf>,
+	) =>
+		anApplication({
+			applicationId: id,
+			generationId: "dfk",
+			window,
+			qualifiers: { roofTypes: [roof] },
+			products: [aProduct({ saleorProductId: `set-${id}`, saleorVariantId: `variant-${id}` })],
+		});
+	const kuga = [
+		roofApp("raised", "raised-rails", windowOf([2019], [2020])),
+		roofApp("flush", "flush-rails", windowOf([2019, 9], null)),
+		roofApp("naked", "naked-roof", windowOf([2020], null)),
+	];
+	const dfk = { id: "dfk" };
+
+	it("does not offer a roof whose sets end before the car was built", () => {
+		// The defect: a 2024 car was offered raised rails, and choosing them led to an empty result.
+		expect(roofChoicesOnOffer(kuga, dfk, 2024)).toEqual(["flush-rails", "naked-roof"]);
+	});
+
+	it("offers it for the years its sets cover", () => {
+		expect(roofChoicesOnOffer(kuga, dfk, 2020)).toEqual(["raised-rails", "flush-rails", "naked-roof"]);
+	});
+
+	it("does not offer a roof whose sets start after the car was built", () => {
+		expect(roofChoicesOnOffer(kuga, dfk, 2019)).toEqual(["raised-rails", "flush-rails"]);
+	});
+
+	it("keeps a roof whose window edge the month decides: that set is still shown", () => {
+		// 2019 is the boundary year of a window that starts in September. Without a month the set is
+		// listed with a caution, so its roof has to be on the list.
+		expect(roofChoicesOnOffer(kuga, dfk, 2019)).toContain("flush-rails");
+	});
+
+	it("ignores a negative row, a held product and a product of another kind", () => {
+		const apps = [
+			{ ...roofApp("neg", "raised-rails", windowOf([2019], null)), negative: true },
+			anApplication({
+				applicationId: "held",
+				generationId: "dfk",
+				window: windowOf([2019], null),
+				qualifiers: { roofTypes: ["flush-rails"] },
+				products: [
+					aProduct({
+						qaStatus: "hold",
+						eligibility: { sellable: false, reasons: ["known_mapping_suspect"] },
+					}),
+				],
+			}),
+			anApplication({
+				applicationId: "box",
+				generationId: "dfk",
+				window: windowOf([2019], null),
+				qualifiers: { roofTypes: ["naked-roof"] },
+				products: [aProduct({ productKind: "roof-box" })],
+			}),
+		];
+		expect(roofChoicesOnOffer(apps, dfk, 2024)).toEqual([]);
+	});
+
+	it("ignores another generation's applications, and asks nothing when the year has no set", () => {
+		expect(roofChoicesOnOffer(kuga, { id: "other" }, 2024)).toEqual([]);
+		expect(roofChoicesOnOffer(kuga, dfk, 2018)).toEqual([]);
+	});
+
+	it("does not add the generation's own list: a roof nobody has a set for is not a choice", () => {
+		const generation = { id: "dfk", roofTypes: ["fixpoint" as const] };
+		expect(roofChoicesOnOffer(kuga, generation, 2024)).toEqual(["flush-rails", "naked-roof"]);
 	});
 });
 

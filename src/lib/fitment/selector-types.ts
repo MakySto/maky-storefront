@@ -13,10 +13,10 @@ export type SelectorOption = { id: string; name: string };
 
 export type SelectorQualifiers = {
 	/**
-	 * Roof types this generation is known to appear with — ALWAYS present when the
-	 * dataset expresses any, including when there is exactly one. The shopper confirms
-	 * the roof every time; a list of what we can offer is not evidence of what the car
-	 * has. `null` means the dataset expresses no roof constraint at all.
+	 * The roof types a set is on offer for, for this generation in the chosen YEAR
+	 * (`roofChoicesOnOffer`) — present including when there is exactly one. The shopper confirms
+	 * the roof every time; a list of what we can offer is not evidence of what the car has.
+	 * `null` means no set that names a roof is on offer for this year: nothing to tell apart.
 	 */
 	roofTypes: RoofType[] | null;
 	/**
