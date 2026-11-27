@@ -6,6 +6,7 @@ import { runDetached } from "@/lib/async/detached";
 import { executePublicGraphQL } from "@/lib/graphql";
 import { getCmsBrands, type CmsBrand } from "@/lib/cms/brands";
 import { liveMarkets } from "@/lib/market-state";
+import { __forgetStockedBrands, publishStockedBrands } from "./stocked-slugs";
 
 /**
  * The shop's brands for one market: Saleor's makers that this channel sells, dressed with the
@@ -119,6 +120,7 @@ const waitingToCount: Array<() => void> = [];
 /** For tests. */
 export function __forgetBrandMakers(): void {
 	kept.clear();
+	__forgetStockedBrands();
 	loading.clear();
 	paused.clear();
 	counting = 0;
@@ -214,6 +216,11 @@ async function askSaleorForMakers(channel: string): Promise<Loaded> {
 	}
 	const stocked = counted.filter((maker) => maker.productCount > 0);
 	kept.set(channel, { makers: stocked, at: Date.now() });
+	// For the proxy, which answers 404 for a maker this channel does not sell (`stocked-slugs.ts`).
+	publishStockedBrands(
+		channel,
+		stocked.map((maker) => maker.slug),
+	);
 	return { ok: true, makers: stocked };
 }
 

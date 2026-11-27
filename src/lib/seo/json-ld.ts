@@ -1,6 +1,6 @@
 import { type WithContext, type Product, type ProductGroup } from "schema-dts";
 import { companyInfo } from "@/config/company";
-import { CHANNEL_MAP, REVERSE_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, REVERSE_MAP, marketHref } from "@/lib/channel-map";
 import { carriesInternalMarker } from "@/lib/product-code";
 import { gtinProperty, publicGtin } from "@/lib/product-ean";
 import { seoConfig, getBaseUrl } from "./config";
@@ -437,7 +437,7 @@ function returnPolicyFor(market: string, applicableCountry: string | string[]) {
 		merchantReturnDays: RETURN_DAYS,
 		returnFees: RETURN_FEES,
 		returnMethod: RETURN_METHOD,
-		merchantReturnLink: `${getBaseUrl()}/${market}${RETURNS_PAGE_PATH}`,
+		merchantReturnLink: `${getBaseUrl()}${marketHref(market, RETURNS_PAGE_PATH)}`,
 	};
 }
 

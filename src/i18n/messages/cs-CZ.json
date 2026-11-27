@@ -90,6 +90,7 @@
 		"sku": "Kód produktu",
 		"ean": "EAN",
 		"componentEans": "EAN dílů",
+		"setParts": "Sestava se skládá z těchto dílů:",
 		"brand": "Značka",
 		"weight": "Hmotnost",
 		"dimensions": "Rozměry",

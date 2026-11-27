@@ -32,6 +32,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
 	);
 }
 
+/**
+ * Opens the cart drawer, or `null` where there is no drawer to open.
+ *
+ * For a component that is also rendered outside the shop's main layout (a preview, a test, a
+ * route that has no header): `useCart` throws there, and an add-to-cart form must not stop
+ * working because the drawer it would have opened does not exist.
+ */
+export function useOpenCart(): (() => void) | null {
+	return useContext(CartContext)?.openCart ?? null;
+}
+
 export function useCart() {
 	const context = useContext(CartContext);
 	if (!context) {

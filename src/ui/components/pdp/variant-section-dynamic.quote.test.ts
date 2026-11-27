@@ -3,7 +3,7 @@ import path from "node:path";
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { createTranslator } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
-import { CHANNEL_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, marketHref } from "@/lib/channel-map";
 import { AddToCart } from "./add-to-cart";
 import { PurchaseTrust } from "./purchase-trust";
 import { StickyBar } from "./sticky-bar";
@@ -103,7 +103,9 @@ describe("a product that cannot be ordered in the market", () => {
 		for (const [market, row] of Object.entries(CHANNEL_MAP)) {
 			const tree = await section(row.saleorSlug, productOf({ purchasable: false }));
 			const props = purchaseProps(tree);
-			expect(props.quoteHref, market).toBe(`/${market}/kontakt#quote=${encodeURIComponent(REFERENCE)}`);
+			expect(props.quoteHref, market).toBe(
+				`${marketHref(market, "/kontakt")}#quote=${encodeURIComponent(REFERENCE)}`,
+			);
 			expect(props.disabled, market).toBe(true);
 			expect(props.disabledReason, market).toBe("unavailable");
 		}
@@ -131,7 +133,7 @@ describe("a product that cannot be ordered in the market", () => {
 		const props = purchaseProps(
 			await section(CHANNEL_MAP.us.saleorSlug, productOf({ purchasable: false, variantName: "Black" })),
 		);
-		expect(props.quoteHref).toBe(`/us/kontakt#quote=${encodeURIComponent(NAME)}`);
+		expect(props.quoteHref).toBe(`/us/contact#quote=${encodeURIComponent(NAME)}`);
 	});
 });
 

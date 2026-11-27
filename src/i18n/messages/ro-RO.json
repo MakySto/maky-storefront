@@ -90,6 +90,7 @@
 		"sku": "Cod produs",
 		"ean": "EAN",
 		"componentEans": "EAN piese",
+		"setParts": "Setul este format din aceste piese:",
 		"brand": "Marcă",
 		"weight": "Greutate",
 		"dimensions": "Dimensiuni",

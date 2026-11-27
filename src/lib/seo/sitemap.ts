@@ -14,7 +14,7 @@ import { stockedBrandSlugs } from "@/lib/brands/catalog";
 import { indexableTyrePagePaths } from "@/lib/tyre-size/size-page-route";
 import { ensureFreshLiveCategories } from "@/lib/live-categories";
 import { getBaseUrl } from "@/lib/seo/config";
-import { CHANNEL_MAP } from "@/lib/channel-map";
+import { CHANNEL_MAP, localizeMarketPath } from "@/lib/channel-map";
 import { indexableMarkets } from "@/lib/market-state";
 import { marketHasRoute, ROUTE_POLICY } from "@/lib/route-policy";
 import { cmsRouteAvailable } from "@/lib/cms/availability";
@@ -284,9 +284,11 @@ async function pageEntriesFor(market: string): Promise<MetadataRoute.Sitemap> {
 		}
 	}
 
+	// The makers and the static routes under the market's own words (`ROUTE_WORDS`): `/de/marken/thule`,
+	// `/de/versand-und-zahlung`. The directory names abroad redirect, and a sitemap lists no redirects.
 	for (const path of await brandPathsFor(channel)) {
 		entries.push({
-			url: `${base}/${market}${path}`,
+			url: `${base}/${market}${localizeMarketPath(market, path)}`,
 			changeFrequency: "weekly",
 			priority: 0.5,
 		});
@@ -295,7 +297,7 @@ async function pageEntriesFor(market: string): Promise<MetadataRoute.Sitemap> {
 	// Whatever static and CMS routes this market actually has, per route-policy.
 	for (const path of await staticPathsFor(market)) {
 		entries.push({
-			url: `${base}/${market}${path}`,
+			url: `${base}/${market}${localizeMarketPath(market, path)}`,
 			changeFrequency: "monthly",
 			priority: 0.3,
 		});
