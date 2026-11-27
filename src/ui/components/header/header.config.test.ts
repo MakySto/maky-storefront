@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { categoriesFor, categoryHref } from "@/config/categories";
-import { ALL_CATEGORIES_NAV, HEADER_PRIMARY_NAV, localizedNavHref } from "./header.config";
+import { channelHref } from "@/ui/atoms/link-with-channel";
+import { ALL_CATEGORIES_NAV, HEADER_PRIMARY_NAV, localizedNavHref, marketNavHref } from "./header.config";
 
 const HERE = join(__dirname);
 const source = (file: string) => readFileSync(join(HERE, file), "utf8");
@@ -21,6 +22,30 @@ describe("category navigation lists", () => {
 		expect(localizedNavHref("sk-eur", "/stresne-nosice")).toBe("/stresne-nosice");
 		expect(localizedNavHref("cz-czk", "/stresne-nosice")).toBe("/stresni-nosice");
 		expect(localizedNavHref("sk-eur", "/poradna")).toBe("/poradna");
+	});
+
+	// Search Console, November 2026: a crawler reads every string in the page's RSC payload that
+	// looks like a path and asks for it from the root of the domain, where no market is routed.
+	// What the server hands a client link must therefore already be an address of the market.
+	it("hands the client links the market's own address, never a bare path", () => {
+		expect(marketNavHref("sk-eur", "/stresne-nosice")).toBe("/sk/stresne-nosice");
+		expect(marketNavHref("de-eur", "/stresne-nosice")).toBe("/de/dachtraeger");
+		expect(marketNavHref("us-usd", "/stresne-nosice")).toBe("/us/roof-racks");
+		expect(marketNavHref("at-eur", "/stresne-nosice")).toBe("/at/dachtraeger");
+		expect(marketNavHref("ca-cad", "/stresne-nosice")).toMatch(/^\/ca\/[^/]+$/);
+		expect(marketNavHref("de-eur", "/poradna")).toBe("/de/poradna");
+	});
+
+	it("does not put the market on twice when the link is rendered", () => {
+		for (const channel of ["sk-eur", "de-eur", "at-eur", "us-usd", "ca-cad"]) {
+			const href = marketNavHref(channel, "/stresne-nosice");
+			expect(channelHref(channel, href), channel).toBe(href);
+		}
+		// A bare path still gets its market, as every caller that passes one relies on.
+		expect(channelHref("de-eur", "/dachtraeger")).toBe("/de/dachtraeger");
+		expect(channelHref("sk-eur", "/sk-nosic-bez-trhu")).toBe("/sk/sk-nosic-bez-trhu");
+		expect(channelHref("sk-eur", "/sk?x=1")).toBe("/sk?x=1");
+		expect(channelHref("sk-eur", "/sk#a")).toBe("/sk#a");
 	});
 });
 
@@ -51,5 +76,21 @@ describe("the Všetky kategórie button", () => {
 		expect(trigger).toContain("DropdownMenuTrigger");
 		expect(trigger).toContain("DropdownMenuContent");
 		expect(source("header-nav-row.tsx")).toContain("items={allCategories}");
+	});
+});
+
+/**
+ * The header's own links are handed to client components, so what a server component writes as
+ * their `href` is written into the page too (see `marketNavHref`). Measured on the live store on
+ * 2026-11-27, before this change, on a DE and a US page: `/login` and `/oblubene` were there bare.
+ */
+describe("the header's account and favourites links", () => {
+	it("are given with the market, not as a bare path", () => {
+		const actions = source("header-actions.tsx");
+		expect(actions).toContain('href={marketHref(channel, "/oblubene")}');
+		expect(actions).not.toContain('href="/oblubene"');
+		const account = readFileSync(join(HERE, "../nav/components/user-menu/user-menu-container.tsx"), "utf8");
+		expect(account).toContain('href={marketHref(channel, "/login")}');
+		expect(account).not.toContain('href="/login"');
 	});
 });

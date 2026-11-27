@@ -4,7 +4,7 @@ import { getLocaleFromChannel } from "@/config/locale";
 import { visibleNavLinks } from "@/lib/cms/availability";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { CategoryIcon } from "@/ui/components/shared/category-icons";
-import { ADVICE_NAV, ALL_CATEGORIES_NAV, BRANDS_NAV, localizedNavHref } from "./header.config";
+import { ADVICE_NAV, ALL_CATEGORIES_NAV, BRANDS_NAV, marketNavHref } from "./header.config";
 
 const rowClass =
 	"text-text-primary hover:bg-surface-muted flex min-h-12 items-center gap-3 rounded-md px-1 py-2 text-base font-medium transition-colors";
@@ -35,7 +35,7 @@ export async function HeaderMenuNav({ channel }: { channel: string }) {
 			<ul className="divide-border-subtle mt-2 divide-y">
 				{categories.map((item) => (
 					<li key={item.key}>
-						<LinkWithChannel href={localizedNavHref(channel, item.href)} className={rowClass}>
+						<LinkWithChannel href={marketNavHref(channel, item.href)} className={rowClass}>
 							<span className={iconClass}>
 								<CategoryIcon categoryKey={item.key} className="h-5 w-5" />
 							</span>
@@ -48,7 +48,7 @@ export async function HeaderMenuNav({ channel }: { channel: string }) {
 			{(brands || advice) && (
 				<div className="border-border-subtle mt-4 border-t pt-4">
 					{brands && (
-						<LinkWithChannel href={brands.href} className={rowClass}>
+						<LinkWithChannel href={marketNavHref(channel, brands.href)} className={rowClass}>
 							<span className={iconClass}>
 								<TagsIcon className="h-5 w-5" aria-hidden />
 							</span>
@@ -57,7 +57,7 @@ export async function HeaderMenuNav({ channel }: { channel: string }) {
 						</LinkWithChannel>
 					)}
 					{advice && (
-						<LinkWithChannel href={advice.href} className={rowClass}>
+						<LinkWithChannel href={marketNavHref(channel, advice.href)} className={rowClass}>
 							<span className={iconClass}>
 								<BookOpenIcon className="h-5 w-5" aria-hidden />
 							</span>

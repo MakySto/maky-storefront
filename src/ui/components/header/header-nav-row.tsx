@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { getLocaleFromChannel } from "@/config/locale";
 import { AllCategoriesTrigger } from "./all-categories-trigger";
 import { HeaderPrimaryNav } from "./header-primary-nav";
-import { ALL_CATEGORIES_NAV, HEADER_UTILITY_NAV, localizedNavHref } from "./header.config";
+import { ALL_CATEGORIES_NAV, HEADER_UTILITY_NAV, marketNavHref } from "./header.config";
 import { visibleNavLinks } from "@/lib/cms/availability";
 import {
 	ActiveVehicleLauncher,
@@ -15,14 +15,14 @@ export async function HeaderNavRow({ channel }: { channel: string }) {
 	// Only the shelves this market offers — the rule the row, the phone menu and the footer share.
 	const allCategories = (await visibleNavLinks(channel, ALL_CATEGORIES_NAV)).map((item) => ({
 		key: item.key,
-		href: localizedNavHref(channel, item.href),
+		href: marketNavHref(channel, item.href),
 		label: t(item.key),
 	}));
 	// "Značky" and "Poradňa" in the menu too: in the row they are the first to give way, and the
 	// menu is where they stay at every width.
 	const secondary = (await visibleNavLinks(channel, HEADER_UTILITY_NAV)).map((item) => ({
 		key: item.key,
-		href: localizedNavHref(channel, item.href),
+		href: marketNavHref(channel, item.href),
 		label: t(item.key),
 	}));
 
