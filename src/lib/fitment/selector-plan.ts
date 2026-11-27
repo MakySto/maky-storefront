@@ -227,6 +227,29 @@ export function roofChoicesOnOffer(
 }
 
 /**
+ * Is ANY set on offer for this generation in this year? Counted as the roof question counts it
+ * (`roofChoicesOnOffer`): an application of the generation that is not a negative one, whose window
+ * the year is not outside of, with a set that may be sold. A set that names no roof counts here, so
+ * "no roof to ask about" and "nothing for this year" are not the same answer.
+ *
+ * False is what the selector says out loud before the shopper confirms the car (owner, 2026-11-27:
+ * the configurator ended on "nothing found" without having said why).
+ */
+export function setOnOfferInYear(
+	applications: readonly FitmentApplication[],
+	generation: Pick<GenerationCandidate, "id">,
+	year: number,
+): boolean {
+	return applications.some(
+		(app) =>
+			app.generationId === generation.id &&
+			!app.negative &&
+			matchWindow(app.window, year) !== "out" &&
+			app.products.some((ref) => ref.productKind === CONFIGURATOR_PRODUCT_KIND && isFitmentRefSellable(ref)),
+	);
+}
+
+/**
  * Does the shopper have to say whether the car has a glass roof / a high roof?
  *
  * Yes when the dataset says the generation varies in it (`generation.qualifiers`), or when any

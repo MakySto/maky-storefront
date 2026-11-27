@@ -334,6 +334,7 @@
 			"roofSkipNote": "Bez typu strechy vám kompatibilitu nevieme potvrdiť. Doplniť ho môžete kedykoľvek.",
 			"roofMissing": "Váš typ strechy tu nie je? Pre toto auto a rok máme nosiče len na uvedené typy.",
 			"roofMissingContact": "Napíšte nám, overíme to.",
+			"yearNoSet": "Pre rok {year} zatiaľ nemáme pre toto vozidlo zostavu strešného nosiča.",
 			"glassRoofLegend": "Má vaše auto presklenú (panoramatickú) strechu?",
 			"glassRoofHelp": "Sady sa líšia podľa toho, či je v streche sklenený panel. Pozrite sa na strechu auta zvonku alebo zvnútra.",
 			"glassRoofYes": "Áno, má presklenú strechu",

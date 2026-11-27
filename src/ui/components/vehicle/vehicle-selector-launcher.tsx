@@ -31,6 +31,9 @@ import { useTranslations } from "next-intl";
 
 import { SheetTrigger } from "@/ui/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { type RoofType } from "@/lib/fitment/contract";
+import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
+import { launcherHint } from "./launcher-hint";
 import { VehicleSelectorSheet, type Draft } from "./vehicle-selector-sheet";
 
 type Variant = "header" | "hero" | "primary" | "compact" | "inline" | "link" | "icon";
@@ -52,6 +55,11 @@ type Props = {
 	 */
 	tyreSize?: string | null;
 	/**
+	 * The roof type the shopper confirmed for the car in use. The header's button names it on its second line;
+	 * absent or null, the line is what it was.
+	 */
+	roofType?: RoofType | null;
+	/**
 	 * Where the window starts. Left out, it starts at the make. A surface that asks for ONE missing
 	 * answer about the car in use (a glass roof) passes the car (`draftFromVehicle`).
 	 */
@@ -64,6 +72,7 @@ export function VehicleSelectorLauncher({
 	vehicleLabel,
 	label: labelOverride,
 	tyreSize,
+	roofType,
 	initialDraft,
 	className,
 }: Props) {
@@ -88,19 +97,24 @@ export function VehicleSelectorLauncher({
 	// "Vybrať vozidlo / Pre jednoduchší výber" without a car; the car and "Zmeniť vozidlo"
 	// with one. Its accessible name is those two lines, read in order. A tyre size joins the second line beside a
 	// car ("205/55 R16 · Zmeniť") and is the first line with none ("Pneumatiky 205/55 R16 / Zmeniť").
-	const hint = car
-		? size
-			? tTyre("headerHint", { size })
-			: tFitment("changeVehicle")
-		: size
-			? tTyre("changeShort")
-			: tNav("selectVehicleHint");
+	// A roof the shopper confirmed joins it in front: "Integrované lyžiny · Zmeniť" (`launcher-hint.ts`).
+	const roof = car && roofType ? tFitment(ROOF_LABEL_KEY[roofType]) : null;
+	const hint = launcherHint(
+		{ car, roof, size },
+		{
+			changeVehicle: tFitment("changeVehicle"),
+			changeShort: tTyre("changeShort"),
+			selectVehicleHint: tNav("selectVehicleHint"),
+			sizeHint: (value) => tTyre("headerHint", { size: value }),
+		},
+	);
 	// The 44px square beside the phone search names the car only to assistive tech; the
 	// filled button with a check is how it shows one is chosen.
 	const chosen = Boolean(car || size);
 	const iconLabel = chosen
 		? [
 				car ? `${tNav("vehicleSaved")}: ${car}` : null,
+				roof,
 				size ? tTyre("headerTyres", { size }) : null,
 				tFitment("changeVehicle"),
 			]

@@ -57,6 +57,8 @@ export async function ActiveVehicleLauncher({
 				garage.active ? { ...garage.active, year: garage.active.stored.y } : null,
 			)}
 			tyreSize={tyreSize}
+			// Only for a car the current dataset still knows: the label above is null for any other.
+			roofType={garage.active && !garage.active.unresolved ? garage.active.stored.r ?? null : null}
 			className={className}
 		/>
 	);
