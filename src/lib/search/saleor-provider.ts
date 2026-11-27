@@ -1,13 +1,20 @@
 /**
- * Saleor Search Implementation
+ * Saleor's own search.
  *
- * Uses Saleor's built-in GraphQL search for the demo.
- * Replace this with Typesense/Algolia/Meilisearch for production.
+ * It reads the base-language (Slovak) text only, so it is no longer the first thing a search asks:
+ * `search-answer.ts` answers from the shop's own index of the shelf and comes here for what that
+ * index does not hold, the roof-rack sets above all, which are found by a car's name, a maker or
+ * a code, the same in every language.
  */
 
 import { executePublicGraphQL } from "@/lib/graphql";
 import { logUpstreamError, upstreamError } from "@/lib/saleor/resource-outcome";
-import { SearchProductsDocument, OrderDirection, ProductOrderField } from "@/gql/graphql";
+import {
+	SearchProductsDocument,
+	OrderDirection,
+	ProductOrderField,
+	type ProductListItemFragment,
+} from "@/gql/graphql";
 import type { SearchProduct, SearchResult, SearchPagination } from "./types";
 import { baseSlugOfCategory } from "@/config/category-routes";
 import { getLocaleConfigByLocale, getLocaleFromChannel } from "@/config/locale";
@@ -24,16 +31,10 @@ interface SearchOptions {
 	sortBy?: "relevance" | "price-asc" | "price-desc" | "name" | "newest";
 }
 
-/**
- * Search products using Saleor's GraphQL API.
- *
- * For production, replace this with your search engine of choice.
- * See the examples in ./index.ts for Typesense, Algolia, Meilisearch.
- */
+/** One page of Saleor's answer to `query`, as the results the page renders. */
 export async function searchProducts(options: SearchOptions): Promise<SearchResult> {
 	const { query, channel, limit = 20, cursor, direction = "forward", sortBy = "relevance" } = options;
-	const locale = getLocaleFromChannel(channel);
-	const localeConfig = getLocaleConfigByLocale(locale);
+	const localeConfig = getLocaleConfigByLocale(getLocaleFromChannel(channel));
 
 	const { field, order } = mapSortToSaleor(sortBy);
 
@@ -68,13 +69,39 @@ export async function searchProducts(options: SearchOptions): Promise<SearchResu
 	}
 
 	const products = result.data.products;
-	const localized = resolveExactLocaleProducts(
+	const { products: searchProducts, dropped } = toSearchProducts(
 		products.edges.map(({ node }) => node),
-		locale,
+		channel,
 	);
 
-	// Transform to common SearchProduct format
-	const searchProducts: SearchProduct[] = localized.products.map((node) => ({
+	const pagination: SearchPagination = {
+		totalCount: dropped > 0 ? searchProducts.length : products.totalCount ?? 0,
+		totalCountIsEstimate: dropped > 0,
+		hasNextPage: products.pageInfo.hasNextPage,
+		hasPreviousPage: products.pageInfo.hasPreviousPage,
+		nextCursor: products.pageInfo.endCursor ?? undefined,
+		prevCursor: products.pageInfo.startCursor ?? undefined,
+	};
+
+	return {
+		products: searchProducts,
+		pagination,
+	};
+}
+
+/**
+ * Saleor's product rows as the results the page renders, in the market's own language. A row the
+ * exact-locale boundary refuses is left out and counted. Shared with the shop's own search
+ * (`search-answer.ts`), so a hit looks the same whichever of the two found it.
+ */
+export function toSearchProducts(
+	nodes: readonly ProductListItemFragment[],
+	channel: string,
+): { products: SearchProduct[]; dropped: number } {
+	const locale = getLocaleFromChannel(channel);
+	const localeConfig = getLocaleConfigByLocale(locale);
+	const localized = resolveExactLocaleProducts(nodes, locale);
+	const products: SearchProduct[] = localized.products.map((node) => ({
 		id: node.id,
 		name: node.name,
 		slug: node.slug,
@@ -89,20 +116,7 @@ export async function searchProducts(options: SearchOptions): Promise<SearchResu
 		isPurchasable: node.isAvailableForPurchase === true,
 		card: transformToProductCard(node, channel, locale),
 	}));
-
-	const pagination: SearchPagination = {
-		totalCount: localized.dropped > 0 ? searchProducts.length : products.totalCount ?? 0,
-		totalCountIsEstimate: localized.dropped > 0,
-		hasNextPage: products.pageInfo.hasNextPage,
-		hasPreviousPage: products.pageInfo.hasPreviousPage,
-		nextCursor: products.pageInfo.endCursor ?? undefined,
-		prevCursor: products.pageInfo.startCursor ?? undefined,
-	};
-
-	return {
-		products: searchProducts,
-		pagination,
-	};
+	return { products, dropped: localized.dropped };
 }
 
 function mapSortToSaleor(sortBy: SearchOptions["sortBy"]): {
@@ -120,7 +134,10 @@ function mapSortToSaleor(sortBy: SearchOptions["sortBy"]): {
 			return { field: ProductOrderField.Date, order: OrderDirection.Desc };
 		case "relevance":
 		default:
-			// Saleor doesn't have relevance sort, use Rating as proxy
-			return { field: ProductOrderField.Rating, order: OrderDirection.Desc };
+			// Saleor's own rank of a search, best first. It was `Rating` until 2026-11-27, a field no
+			// product of this shop carries, so "relevance" was no order at all: "kuga" listed straps
+			// before the Kuga's own sets. `Rank` exists only beside the `search` filter, which this
+			// query always sends.
+			return { field: ProductOrderField.Rank, order: OrderDirection.Desc };
 	}
 }

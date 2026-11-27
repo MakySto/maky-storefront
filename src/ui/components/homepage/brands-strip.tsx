@@ -53,15 +53,21 @@ export async function BrandsStrip({ channel }: { channel: string }) {
 						/>
 					</Link>
 				</div>
-				<ul className="mt-6 grid grid-cols-3 items-center gap-x-4 gap-y-6 sm:grid-cols-5 lg:flex lg:justify-between lg:gap-x-6">
+				{/* Three to a row on a phone, and a wordmark is then about 105 px wide: "GREEN VALLEY" in one
+				    line ran into "SNOWDRIVE" beside it (2026-11-27). There a name of two words takes two
+				    lines and the type is a size smaller; from `sm` up it is one line as before. */}
+				<ul className="mt-6 grid grid-cols-3 items-center gap-x-2 gap-y-6 sm:grid-cols-5 sm:gap-x-4 lg:flex lg:justify-between lg:gap-x-6">
 					{brands.map((brand) => (
-						<li key={brand.slug} className="flex justify-center">
+						<li key={brand.slug} className="flex min-w-0 justify-center">
 							<Link
 								href={marketHref(channel, `/znacky/${brand.slug}`)}
 								aria-label={brand.name}
 								className="hover:text-brand focus-visible:ring-ring rounded-xs transition-[color,opacity] hover:opacity-80 focus-visible:ring-2 focus-visible:outline-hidden"
 							>
-								<BrandMark brand={brand} className="text-lg sm:text-xl xl:text-[1.375rem]" />
+								<BrandMark
+									brand={brand}
+									className="text-center text-base leading-tight whitespace-normal sm:text-xl sm:whitespace-nowrap xl:text-[1.375rem]"
+								/>
 							</Link>
 						</li>
 					))}

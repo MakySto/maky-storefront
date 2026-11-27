@@ -1,10 +1,13 @@
 import { getLocaleFromChannel } from "@/config/locale";
-import { Suspense } from "react";
+import { type ReactNode, Suspense } from "react";
 import { type Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { searchProducts } from "@/lib/search";
+import { answerSearch, ROOF_RACK_SHELF } from "@/lib/search/search-answer";
+import { categorySynonyms } from "@/lib/search/synonyms";
+import { catalogLanguageForChannel } from "@/lib/catalog-content/language";
+import { SearchSignpost, VehicleShortcuts } from "@/ui/components/search/search-shortcuts";
 import { SearchResults } from "@/ui/components/search-results";
 import { Pagination } from "@/ui/components/pagination";
 import { SearchSort } from "./search-sort";
@@ -14,7 +17,11 @@ import { marketHref } from "@/lib/channel-map";
 import { brandConfig, formatPageTitle } from "@/config/brand";
 import { routePolicyFor } from "@/lib/route-policy";
 import { searchView } from "./search-view";
-import { correctBrandTypos } from "@/lib/search/brand-typos";
+import { matchCategoryShortcuts } from "@/lib/search/category-shortcuts";
+import { CategoryShelfLinks } from "@/ui/components/search/category-shelf-links";
+import { categoriesFor } from "@/config/categories";
+import { categorySegment, categoryUrlFor } from "@/config/category-routes";
+import { getMarketAssortment, offersCategory } from "@/lib/market-assortment";
 
 /**
  * Internal search results are never for the index — `route-policy.ts` says so, and this is
@@ -80,6 +87,7 @@ async function SearchContent({
 	const locale = getLocaleFromChannel(params.channel);
 	const t = await getTranslations({ locale, namespace: "search" });
 	const tPlp = await getTranslations({ locale, namespace: "plp" });
+	const tNav = await getTranslations({ locale, namespace: "nav" });
 
 	// Extract and validate query
 	const queryParam = searchParams.query;
@@ -120,33 +128,20 @@ async function SearchContent({
 		? (sortParam as "relevance" | "price-asc" | "price-desc" | "name" | "newest")
 		: "relevance";
 
-	// Search using Saleor
-	const search = (text: string) =>
-		searchProducts({
-			query: text,
-			channel: params.channel,
-			limit: 20,
-			cursor,
-			direction,
-			sortBy,
-		});
-	let result = await search(query);
-	let shownQuery = query;
-	let correctedFrom: string | null = null;
+	// What the words mean before what they find: the shelves they name decide which products come
+	// first, and whether a car that is named is wanted for its roof racks (`search-answer.ts`).
+	const shelves = await readCategoryShelves(params.channel, locale);
+	const named = matchCategoryShortcuts(query, shelves, locale);
 
-	// Nothing found, and a word is one or two letters away from a maker the shop sells
-	// ("tule" → "thule"): ask again with the maker, and say so (`brand-typos.ts`). The same
-	// correction runs on every page of the answer, so pagination and sorting stay consistent.
-	if (searchView(result) === "empty") {
-		const corrected = correctBrandTypos(query);
-		const retried = corrected ? await search(corrected) : null;
-		if (corrected && retried && searchView(retried) === "results") {
-			result = retried;
-			shownQuery = corrected;
-			correctedFrom = query;
-		}
-	}
-
+	const answer = await answerSearch({
+		query,
+		channel: params.channel,
+		cursor,
+		direction,
+		sortBy,
+		namedShelves: named.map((shelf) => shelf.slug),
+	});
+	const { result, shownQuery } = answer;
 	const { products, pagination } = result;
 	const view = searchView(result);
 
@@ -154,8 +149,59 @@ async function SearchContent({
 		return <SearchUnavailable query={query} channel={params.channel} />;
 	}
 
+	const vehicleCards = answer.vehicles.map((vehicle) => ({
+		id: vehicle.id,
+		heading: t("vehicleHeading", { vehicle: vehicle.title }),
+		openLabel: t("vehicleOpen", { vehicle: vehicle.title }),
+		href: vehicle.href,
+		generations: vehicle.generations,
+		related: vehicle.related,
+	}));
+	const roofRacks = shelves.find((shelf) => shelf.slug === ROOF_RACK_SHELF);
+	// The answers that are not a list of products: the car's own page, the offer to choose a car,
+	// the page of a tyre size. Shown on the first page only, and also where no product was found.
+	const signposts = cursor ? null : (
+		<>
+			<VehicleShortcuts
+				cards={vehicleCards}
+				help={t("vehicleHelp")}
+				generationsLabel={t("vehicleGenerations")}
+				relatedLabel={t("vehicleRelated")}
+				className="mb-6"
+			/>
+			{answer.askForVehicle && roofRacks ? (
+				<SearchSignpost
+					heading={t("vehicleAskHeading")}
+					help={t("vehicleAskHelp")}
+					cta={t("vehicleAskCta")}
+					href={roofRacks.href}
+					testId="search-vehicle-ask"
+					className="mb-6"
+				/>
+			) : null}
+			{answer.tyre ? (
+				<SearchSignpost
+					heading={t("tyreHeading", { size: answer.tyre.label })}
+					cta={t("tyreCta")}
+					href={answer.tyre.href}
+					testId="search-tyre-size"
+					className="mb-6"
+				/>
+			) : null}
+		</>
+	);
+
 	if (view === "empty") {
-		return <EmptyState query={query} channel={params.channel} />;
+		// Nothing found: the shelf that was named, or failing that every shelf of this market, so
+		// that "browse our categories" in the line above is something the customer can do.
+		return (
+			<EmptyState
+				query={query}
+				channel={params.channel}
+				shelves={named.length > 0 ? named : shelves}
+				signposts={signposts}
+			/>
+		);
 	}
 
 	return (
@@ -164,9 +210,9 @@ async function SearchContent({
 			<div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
 					<h1 className="text-2xl font-semibold">{t("resultsFor", { query: shownQuery })}</h1>
-					{correctedFrom && (
+					{answer.note && (
 						<p className="text-muted-foreground mt-1 text-sm">
-							{t("correctedFrom", { query: correctedFrom })}
+							{answer.note === "brand" ? t("correctedFrom", { query }) : t("closestNote")}
 						</p>
 					)}
 					<p className="text-muted-foreground mt-1 text-sm">
@@ -182,6 +228,11 @@ async function SearchContent({
 					<SearchSort />
 				</div>
 			</div>
+
+			{signposts}
+
+			{/* Only on the first page: further pages are reached from it. */}
+			{!cursor && <CategoryShelfLinks heading={tNav("categories")} shelves={named} className="mb-8" />}
 
 			{/* Results grid */}
 			<SearchResults products={products} channel={params.channel} />
@@ -264,10 +315,52 @@ async function SearchUnavailable({ query, channel }: { query: string; channel: s
 	);
 }
 
-async function EmptyState({ query, channel }: { query: string; channel: string }) {
+interface CategoryShelf {
+	readonly slug: string;
+	readonly label: string;
+	readonly aliases: readonly string[];
+	readonly href: string;
+}
+
+/**
+ * The shelves this market links from its menu, with the names a search is compared with
+ * (`lib/search/category-shortcuts.ts`). A shelf the market does not stock is left out, as it is
+ * in the menu, so nothing offered here leads to an empty page.
+ */
+async function readCategoryShelves(channel: string, locale: string): Promise<CategoryShelf[]> {
+	const [tNav, assortment] = await Promise.all([
+		getTranslations({ locale, namespace: "nav" }),
+		getMarketAssortment(channel),
+	]);
+	const language = catalogLanguageForChannel(channel);
+	return categoriesFor("home")
+		.filter((category) => offersCategory(assortment, category.slug))
+		.map((category) => ({
+			slug: category.slug,
+			label: tNav(category.key),
+			// The address of the shelf and the other words the trade uses for it ("Grundträger",
+			// "autobox"): the same list the search index reads, so both know a shelf by the same names.
+			aliases: [categorySegment(channel, category.slug), ...categorySynonyms(language, category.slug)],
+			href: marketHref(channel, categoryUrlFor(channel, category.slug)),
+		}));
+}
+
+async function EmptyState({
+	query,
+	channel,
+	shelves,
+	signposts,
+}: {
+	query: string;
+	channel: string;
+	shelves: readonly CategoryShelf[];
+	/** The car's page, the offer to choose a car, a tyre size's page: an answer even with no product listed. */
+	signposts: ReactNode;
+}) {
 	const locale = getLocaleFromChannel(channel);
 	const t = await getTranslations({ locale, namespace: "search" });
 	const tPages = await getTranslations({ locale, namespace: "pages" });
+	const tNav = await getTranslations({ locale, namespace: "nav" });
 	return (
 		<div className="flex flex-col items-center justify-center py-16 text-center">
 			<div className="bg-muted mb-6 flex h-16 w-16 items-center justify-center rounded-full">
@@ -275,6 +368,12 @@ async function EmptyState({ query, channel }: { query: string; channel: string }
 			</div>
 			<h1 className="text-2xl font-semibold">{t("noResultsFor", { query })}</h1>
 			<p className="text-muted-foreground mt-2 max-w-md">{t("noResultsHelp")}</p>
+			{signposts ? <div className="mt-8 w-full max-w-2xl text-left">{signposts}</div> : null}
+			<CategoryShelfLinks
+				heading={tNav("categories")}
+				shelves={shelves}
+				className="mt-6 max-w-2xl justify-center"
+			/>
 			<div className="mt-8 flex flex-col gap-3 sm:flex-row">
 				<Link
 					href={marketHref(channel, "/products")}

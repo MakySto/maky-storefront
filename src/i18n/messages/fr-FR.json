@@ -1110,7 +1110,18 @@
 		"metaDescription": "Résultats de recherche dans le catalogue {siteName}.",
 		"unavailableTitle": "La recherche est temporairement indisponible",
 		"unavailableHelp": "Nous n'avons pas pu charger les résultats pour « {query} » pour le moment. Réessayez dans un instant ou parcourez nos catégories.",
-		"correctedFrom": "Nous n'avons rien trouvé pour « {query} » : voici les résultats pour la marque la plus proche."
+		"correctedFrom": "Nous n'avons rien trouvé pour « {query} » : voici les résultats pour la marque la plus proche.",
+		"vehicleHeading": "Barres de toit pour {vehicle}",
+		"vehicleHelp": "Les barres se choisissent selon la version du véhicule et le type de toit. Choisissez votre véhicule et nous affichons les kits compatibles.",
+		"vehicleOpen": "Voir les barres pour {vehicle}",
+		"vehicleGenerations": "Version",
+		"vehicleRelated": "Modèles proches",
+		"vehicleAskHeading": "Les barres de toit se choisissent selon le véhicule",
+		"vehicleAskHelp": "Chaque véhicule a un toit différent. Choisissez la marque et le modèle et nous affichons les barres compatibles avec votre véhicule.",
+		"vehicleAskCta": "Choisir le véhicule",
+		"tyreHeading": "Chaînes à neige pour pneus {size}",
+		"tyreCta": "Voir les chaînes pour cette dimension",
+		"closestNote": "Nous n'avons pas trouvé de correspondance exacte. Voici les produits les plus proches."
 	},
 	"account": {
 		"welcomeBack": "Bon retour",
