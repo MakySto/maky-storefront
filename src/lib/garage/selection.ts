@@ -61,7 +61,12 @@ export function resolveRoofAnswer<T>(available: T[], answer: T | undefined): Qua
 	return available.includes(answer) ? answer : "invalid";
 }
 
-/** The roofs the SELECTOR offered, so the garage validates against the same list. */
+/**
+ * Every roof the SELECTOR can offer for this generation, in any year, so the garage accepts what the
+ * shopper was shown. The selector itself offers the part of this list a set is on offer for in the
+ * chosen year (`roofChoicesOnOffer`); a car saved with a roof from the wider list stays valid, and the
+ * resolver simply has no set for it.
+ */
 export function roofOptionsFor(
 	dataset: Pick<FitmentDataset, "applications">,
 	generation: { id: string; qualifiers?: { roofTypes?: VehicleSelection["roofType"][] } },
