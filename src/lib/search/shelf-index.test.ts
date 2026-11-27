@@ -61,6 +61,15 @@ describe("the Slovak shelf", () => {
 		expect(names(sk, "nosiče lyží")[0]).toMatch(/^Nosič lyží/);
 	});
 
+	it("lists the shelf's own kind of product first among those the words fit alike", () => {
+		// No name begins with "strešný nosič na lyže"; the shelf's own name decides.
+		const found = names(sk, "strešný nosič na lyže", { preferRoots: new Set(["nosice-lyzi"]) });
+		const addOn = found.indexOf("GP nosič lyží pre nosiče bicyklov Peruzzo");
+		const named = found.map((name) => name.startsWith("Nosič lyží")).lastIndexOf(true);
+		expect(found.slice(0, 3).every((name) => name.startsWith("Nosič lyží"))).toBe(true);
+		expect(addOn).toBeGreaterThan(named);
+	});
+
 	it("does not read a maker alone as what the product is", () => {
 		// "Thule Allax S" is a dog crate; its name begins with the maker as every Thule accessory's does.
 		expect(names(sk, "thule")[0]).toBe("Nosič bicyklov Thule Epos 2 - 978");

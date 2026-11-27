@@ -94,6 +94,12 @@ export interface ShelfIndex {
 	readonly names: readonly (readonly string[])[];
 	/** Every word of a maker's name the shelf knows ("thule", "green", "valley"). */
 	readonly makers: ReadonlySet<string>;
+	/**
+	 * Per product, whether its name begins with a name of its own shelf ("Nosič lyží Menabo Iceberg"
+	 * on the ski carriers' shelf): the shelf's own kind of product, as against what is sold beside
+	 * it. Decides between products the words fit equally well.
+	 */
+	readonly shelfNamed: readonly boolean[];
 }
 
 const WEIGHT = {
@@ -168,7 +174,12 @@ export function buildShelfIndex(docs: readonly ShelfDoc[], language: string): Sh
 		}
 	});
 
-	return { language, docs, words, codes, names, makers };
+	const shelfNamed = docs.map((doc, index) =>
+		[...(doc.categoryNames ?? []), ...(doc.synonyms ?? [])].some((shelfName) =>
+			beginsWith(names[index]!, searchWords(shelfName, language)),
+		),
+	);
+	return { language, docs, words, codes, names, makers, shelfNamed };
 }
 
 /** One blank-separated piece of what was typed: its words, and the code it may be. */
@@ -292,6 +303,7 @@ function collect(
 	start: readonly string[],
 ): ShelfHit[] {
 	const hits: ShelfHit[] = [];
+	const named = new Map<ShelfDoc, number>();
 	index.docs.forEach((doc, docIndex) => {
 		let found = 0;
 		let score = 0;
@@ -307,6 +319,7 @@ function collect(
 		if (doc.accessory) score *= ACCESSORY_FACTOR;
 		if (doc.purchasable === false) score *= UNAVAILABLE_FACTOR;
 		hits.push({ doc, score });
+		named.set(doc, index.shelfNamed[docIndex] ? 0 : 1);
 	});
 	const preferred = (doc: ShelfDoc) =>
 		doc.rootCategorySlug && preferRoots.has(doc.rootCategorySlug) ? 0 : 1;
@@ -315,6 +328,9 @@ function collect(
 			preferred(a.doc) - preferred(b.doc) ||
 			b.score - a.score ||
 			Number(a.doc.accessory ?? false) - Number(b.doc.accessory ?? false) ||
+			// "strešný nosič na lyže" fits every product of the ski shelf alike, and the alphabet put
+			// "GP nosič lyží pre nosiče bicyklov" first (live, 2026-11-27).
+			named.get(a.doc)! - named.get(b.doc)! ||
 			a.doc.name.localeCompare(b.doc.name, index.language, { numeric: true }),
 	);
 }
