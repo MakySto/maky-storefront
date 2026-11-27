@@ -346,7 +346,9 @@
 			"variantUnsureHelp": "Fără acest răspuns nu vă putem arăta seturile făcute doar pentru o singură versiune a mașinii. Puteți completa răspunsul mai târziu.",
 			"chooseMonth": "În ce lună a fost fabricată mașina?",
 			"monthHelp": "Întrebăm de luna FABRICAȚIEI, nu a primei înmatriculări. În acest an ea decide compatibilitatea.",
-			"monthUnknown": "Nu știu"
+			"monthUnknown": "Nu știu",
+			"generationOlder": "Generația mai veche",
+			"generationNewer": "Generația mai nouă"
 		},
 		"verdictQualified": "Compatibil, cu condiții de montaj",
 		"verdictQualifiedDetail": "Acest set este verificat pentru vehiculul dumneavoastră, dar i se aplică o condiție de montaj pe care acum nu v-o putem prezenta clar.",
@@ -1079,7 +1081,13 @@
 		"previewNotice": "Previzualizarea unei pagini nepublicate. Nu este afișată vizitatorilor.",
 		"offersTitleGeneration": "Seturi pentru această generație",
 		"offersBrowseNote": "Fiecare set este valabil doar pentru tipul de plafon și anii indicați, iar diferențele se văd pe carduri. Aveți altă mașină? Schimbați-o în antet.",
-		"offersGroupOther": "Fără tip de acoperiș indicat"
+		"offersGroupOther": "Fără tip de acoperiș indicat",
+		"viewYearLabel": "An de fabricație",
+		"viewAllYears": "Toți anii",
+		"viewRoofEmpty": "Pentru tipul de acoperiș {roof} nu avem aici niciun set.",
+		"viewRoofYearEmpty": "Pentru tipul de acoperiș {roof} și anul {year} nu avem aici niciun set.",
+		"viewYearEmpty": "Pentru anul {year} nu avem aici niciun set.",
+		"viewEmptyHint": "Alegeți alt tip de acoperiș sau alt an."
 	},
 	"company": {
 		"operatedBy": "Vânzătorul:",

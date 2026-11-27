@@ -346,7 +346,9 @@
 			"variantUnsureHelp": "Ohne diese Antwort können wir Ihnen keine Sets zeigen, die nur für eine Ausführung bestimmt sind. Sie können die Angabe später ergänzen.",
 			"chooseMonth": "In welchem Monat wurde das Fahrzeug gebaut?",
 			"monthHelp": "Wir fragen nach dem PRODUKTIONSmonat, nicht der Erstzulassung. In diesem Jahr entscheidet er über die Kompatibilität.",
-			"monthUnknown": "Weiß ich nicht"
+			"monthUnknown": "Weiß ich nicht",
+			"generationOlder": "Ältere Generation",
+			"generationNewer": "Neuere Generation"
 		},
 		"verdictQualified": "Passt mit Montagebedingungen",
 		"verdictQualifiedDetail": "Dieses Set ist für Ihr Fahrzeug geprüft, es gilt aber eine Montagebedingung, die wir Ihnen gerade nicht verständlich wiedergeben können.",
@@ -1079,7 +1081,13 @@
 		"previewNotice": "Vorschau einer unveröffentlichten Seite. Besucher sehen sie nicht.",
 		"offersTitleGeneration": "Sätze für diese Generation",
 		"offersBrowseNote": "Jedes Set gilt nur für die angegebene Dachform und die genannten Baujahre – die Unterschiede sehen Sie direkt auf den Karten. Anderes Fahrzeug? Ändern Sie es oben in der Kopfzeile.",
-		"offersGroupOther": "Ohne angegebene Dachform"
+		"offersGroupOther": "Ohne angegebene Dachform",
+		"viewYearLabel": "Baujahr",
+		"viewAllYears": "Alle Baujahre",
+		"viewRoofEmpty": "Für den Dachtyp {roof} haben wir hier kein Set.",
+		"viewRoofYearEmpty": "Für den Dachtyp {roof} und das Baujahr {year} haben wir hier kein Set.",
+		"viewYearEmpty": "Für das Baujahr {year} haben wir hier kein Set.",
+		"viewEmptyHint": "Wählen Sie einen anderen Dachtyp oder ein anderes Baujahr."
 	},
 	"company": {
 		"operatedBy": "Anbieter:",

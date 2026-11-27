@@ -28,6 +28,9 @@ vi.mock("next-intl/server", () => ({
 		}),
 }));
 
+// The year select goes to an address through the router; rendered here, it only has to exist.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: () => undefined }) }));
+
 // The heart is a client component with its own translation context; no assertion here is about it.
 vi.mock("@/ui/components/wishlist/wishlist-button", () => ({ WishlistButton: () => null }));
 vi.mock("@/ui/components/plp/listing-add-to-cart", () => ({
@@ -37,7 +40,17 @@ vi.mock("@/ui/components/plp/listing-add-to-cart", () => ({
 
 import { type FitmentOffer, type FitmentOffers } from "@/lib/fitment/offers";
 import { type OfferFit } from "@/lib/fitment/offer-fit";
-import { CatalogOfferList } from "./offer-list";
+import { CatalogOfferList, type OfferListView } from "./offer-list";
+
+/** The page's address and what it narrows to: nothing, unless a test says otherwise. */
+const PAGE = "/sk/stresne-nosice/ford/kuga/dfk";
+const view = (over: Partial<OfferListView> = {}): OfferListView => ({
+	year: null,
+	roof: null,
+	years: [],
+	path: PAGE,
+	...over,
+});
 
 const offer = (i: number, over: Partial<FitmentOffer> = {}): FitmentOffer => ({
 	saleorProductId: `p${i}`,
@@ -87,10 +100,19 @@ const fit = (over: Partial<OfferFit> = {}): OfferFit => ({
 	...over,
 });
 
-async function text(value: FitmentOffers, fits: Map<string, OfferFit[]>, locale = "sk-SK"): Promise<string> {
-	const html = renderToStaticMarkup(
-		await CatalogOfferList({ offers: value, channel: "sk-eur", locale, fits }),
+async function markup(
+	value: FitmentOffers,
+	fits: Map<string, OfferFit[]>,
+	over: Partial<OfferListView> = {},
+	locale = "sk-SK",
+): Promise<string> {
+	return renderToStaticMarkup(
+		await CatalogOfferList({ offers: value, channel: "sk-eur", locale, fits, view: view(over) }),
 	);
+}
+
+async function text(value: FitmentOffers, fits: Map<string, OfferFit[]>, locale = "sk-SK"): Promise<string> {
+	const html = await markup(value, fits, {}, locale);
 	return html
 		.replace(/<!-- -->/g, "")
 		.replace(/<[^>]+>/g, "|")
@@ -134,13 +156,15 @@ describe("what the page says about its sets", () => {
 
 	it("offers a roof filter where the page mixes several roofs, and counts each", async () => {
 		const rendered = await text(MIXED, MIXED_FITS);
-		// All of them, then the classic roof, then integrated, then the sets that name no roof last —
-		// one list of every set, not one shelf per roof.
-		const order = ["Všetky", "Klasické lyžiny", "Integrované lyžiny", "Bez určeného typu strechy"].map(
-			(label) => rendered.indexOf(`|${label}|`),
+		// All of them, then the classic roof, then integrated: one list of every set, not one shelf per
+		// roof. A set that names no roof is counted under "all" and has no chip: an address can name a
+		// roof, and "no roof named" is not one.
+		const order = ["Všetky", "Klasické lyžiny", "Integrované lyžiny"].map((label) =>
+			rendered.indexOf(`|${label}|`),
 		);
 		expect(order.every((at) => at >= 0)).toBe(true);
 		expect([...order].sort((a, b) => a - b)).toEqual(order);
+		expect(rendered).not.toContain("|Bez určeného typu strechy|");
 		expect(rendered).toContain("|Integrované lyžiny|2|");
 		expect(rendered).toContain("|Všetky|4|");
 		expect(rendered).not.toContain('<h3 class="text-text-primary text-base');
@@ -187,6 +211,7 @@ describe("what the page says about its sets", () => {
 				channel: "sk-eur",
 				locale: "sk-SK",
 				fits: single,
+				view: view(),
 			}),
 		);
 		expect(html.match(/data-add="v\d"/g)).toHaveLength(3);
@@ -201,6 +226,7 @@ describe("what the page says about its sets", () => {
 				channel: "sk-eur",
 				locale: "sk-SK",
 				fits: new Map([["p0", [fit()]]]),
+				view: view(),
 			}),
 		);
 		expect(html).not.toContain("data-add");
@@ -222,6 +248,128 @@ describe("what the page says about its sets", () => {
 		);
 		expect(rendered).not.toContain("Strecha:");
 		expect(rendered).not.toContain("Roky:");
+	});
+});
+
+/**
+ * The year and the roof are in the ADDRESS (owner, 2026-11-27: the configurator has to give addresses
+ * a shopper can save and share). Every control is a link to this page with other parameters, and the
+ * list is what the address names, the same for whoever opens it.
+ */
+describe("a page narrowed by its address", () => {
+	/** The addresses of the roof links, in order. */
+	const hrefs = (html: string) =>
+		[...(html.match(/<nav[^>]*>(.*?)<\/nav>/s)?.[1] ?? "").matchAll(/<a[^>]*href="([^"]*)"/g)].map((m) =>
+			m[1]!.replace(/&amp;/g, "&"),
+		);
+
+	it("makes each roof a link to this page with the roof in the address", async () => {
+		const html = await markup(MIXED, MIXED_FITS);
+		expect(hrefs(html)).toEqual([PAGE, `${PAGE}?roof=raised-rails`, `${PAGE}?roof=flush-rails`]);
+		// Nothing is chosen: "all" is the current one.
+		expect(html).toMatch(/<a[^>]*aria-current="true"[^>]*>Všetky/);
+	});
+
+	it("keeps the year in every roof link, and the roof in every year", async () => {
+		const html = await markup(MIXED, MIXED_FITS, { year: 2020, years: [2022, 2021, 2020] });
+		expect(hrefs(html)).toEqual([
+			`${PAGE}?year=2020`,
+			`${PAGE}?year=2020&roof=raised-rails`,
+			`${PAGE}?year=2020&roof=flush-rails`,
+		]);
+		expect(html).toContain("Rok výroby");
+		expect(html).toMatch(/<option value="">Všetky roky<\/option>/);
+		expect(html).toMatch(/<option value="2020" selected="">2020<\/option>/);
+	});
+
+	it("shows only the sets of the roof the address names, and counts them", async () => {
+		const html = await markup(MIXED, MIXED_FITS, { roof: "flush-rails" });
+		expect(html).toContain("Set 0");
+		expect(html).toContain("Set 2");
+		expect(html).not.toContain("Set 1");
+		// The set that names no roof is not a set for this roof.
+		expect(html).not.toContain("Set 3");
+		expect(html).toContain("2 zostavy");
+		expect(html).toMatch(/<a[^>]*aria-current="true"[^>]*>Integrované lyžiny/);
+		// "All" still counts every set, and leads back to the whole page.
+		expect(html).toMatch(/<a[^>]*href="\/sk\/stresne-nosice\/ford\/kuga\/dfk"[^>]*>Všetky<span[^>]*>4</);
+	});
+
+	it("lets a set of the chosen roof add to the cart from its card", async () => {
+		const html = await markup(MIXED, MIXED_FITS, { roof: "flush-rails" });
+		expect(html.match(/data-add="v\d"/g)).toEqual(['data-add="v2"', 'data-add="v0"']);
+		expect(html).not.toContain("Zobraziť zostavu");
+	});
+
+	it("names the roof and the year when the address asks for a roof this year has no set for", async () => {
+		const html = await markup(MIXED, MIXED_FITS, { roof: "t-track", year: 2020, years: [2020] });
+		expect(html).toContain("Pre typ strechy Strecha s T-drážkou a rok 2020 tu zostavu nemáme.");
+		expect(html).toContain("Vyberte iný typ strechy alebo rok.");
+		expect(html).toMatch(/<a[^>]*href="\/sk\/kontakt"[^>]*>Napíšte nám, overíme to\./);
+		// The chosen roof is shown as chosen, with nothing in it, beside the roofs that have sets.
+		expect(html).toMatch(/<a[^>]*aria-current="true"[^>]*>Strecha s T-drážkou<span[^>]*>0</);
+		expect(html).toContain("0 zostáv");
+		expect(html).not.toContain("data-add");
+		// Never the sentence about the car as a whole.
+		expect(html).not.toContain("Pre toto vozidlo zatiaľ nemáme overenú zostavu");
+	});
+
+	it("names the roof alone when no year is asked", async () => {
+		const html = await markup(MIXED, MIXED_FITS, { roof: "t-track" });
+		expect(html).toContain("Pre typ strechy Strecha s T-drážkou tu zostavu nemáme.");
+	});
+
+	it("says a year has no set and offers every year, instead of calling the car unverified", async () => {
+		const html = await markup(offers(), new Map(), { year: 2026, roof: "flush-rails", years: [2020] });
+		expect(html).toContain("Pre rok 2026 tu zostavu nemáme.");
+		expect(html).toMatch(
+			/<a[^>]*href="\/sk\/stresne-nosice\/ford\/kuga\/dfk\?roof=flush-rails"[^>]*>Všetky roky/,
+		);
+		expect(html).not.toContain("Pre toto vozidlo zatiaľ nemáme overenú zostavu");
+	});
+
+	it("offers no year where there is one year or none, and no roof where there is one roof", async () => {
+		const single = new Map<string, OfferFit[]>(["p0", "p1"].map((id) => [id, [fit()]]));
+		const html = await markup(
+			offers({ offers: [offer(0), offer(1)], compatibleCount: 2, purchasableCount: 2 }),
+			single,
+			{ years: [2020] },
+		);
+		expect(html).not.toContain("Rok výroby");
+		expect(html).not.toContain("aria-current");
+	});
+
+	it.each([
+		"cs-CZ",
+		"de-AT",
+		"de-DE",
+		"en-CA",
+		"en-US",
+		"es-ES",
+		"fr-FR",
+		"hu-HU",
+		"it-IT",
+		"pl-PL",
+		"ro-RO",
+		"sk-SK",
+	])("%s says all of it in its own words", async (locale) => {
+		const messages = load(locale);
+		for (const html of [
+			await markup(MIXED, MIXED_FITS, { roof: "t-track", year: 2020, years: [2021, 2020] }, locale),
+			await markup(MIXED, MIXED_FITS, { roof: "t-track" }, locale),
+			await markup(offers(), new Map(), { year: 2026 }, locale),
+		]) {
+			expect(html).not.toMatch(/catalog\.view|\{roof\}|\{year\}/);
+		}
+		const empty = await markup(
+			MIXED,
+			MIXED_FITS,
+			{ roof: "t-track", year: 2020, years: [2021, 2020] },
+			locale,
+		);
+		expect(empty).toContain(messages.catalog.viewYearLabel);
+		expect(empty).toContain(messages.catalog.viewEmptyHint);
+		expect(empty).toContain(messages.fitment.roofTTrack);
 	});
 });
 
