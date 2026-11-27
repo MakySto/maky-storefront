@@ -1,6 +1,6 @@
 # The product feed for Google Merchant Center
 
-State: 15 November 2026. Written, tested, not deployed, not installed on the server. The pilot is Slovakia.
+State: 27 November 2026. The Slovak feed has been live since 15 November. The unit in the repository now lists all twelve markets; it runs on the server only when a person installs it (see "Order of work", step 6).
 
 ## Why a feed
 
@@ -186,5 +186,19 @@ shown at the full price.
    Merchant API enabled and a service account, added as a user of the Merchant Center account; its key
    into AWS SSM; in Merchant Center a supplemental source of type API linked ahead of the feed's;
    `--check` on the server, a dry run, then the hourly timer.
-6. Another market when its dry run has been looked at and its delivery is set in Merchant Center:
-   add it to `--markets` in the installed unit.
+6. The other eleven markets (27 November, owner's go-ahead on the server thread): Merchant Center has
+   delivery set for all eleven foreign countries, so the unit lists every market
+   (`--markets sk,cz,de,at,pl,hu,it,fr,es,ro,us,ca`, the pilot first, limit 150 minutes). Before the
+   installed unit is changed, a dry run of one market of each kind (`--markets de`, `--markets us`) is looked at:
+   the counts, the first item, `shipping_weight`, the currency. Then the installed unit is replaced by the one in
+   the repository and the first run is watched. The feed addresses are `/feeds/google-<market>.xml.gz`.
+
+## Weight in the feed, measured
+
+The writer states `shipping_weight` for every item whose variant has a weight in Saleor, and states nothing
+for the others. Measured on the live Slovak feed of 27 November 05:12 UTC (29 110 items): 10 272 have a
+weight (all in kg), 18 838 have none. By product type: Nordrive roof racks 9 157 of 9 157, dog cages 25 of 25,
+roof boxes 55 of 60, towbar boxes 37 of 41; **Thule roof racks 0 of 12 044, Menabo 0 of 3 506, Green Valley 0 of
+2 751, snow chains 0 of 153**. The weight does not depend on the market, so the other eleven feeds have the same
+gaps. Where Merchant Center is told to charge by weight, an item without one cannot be placed in a weight
+band; until the sets have weights, delivery for them stays a flat price per country.
