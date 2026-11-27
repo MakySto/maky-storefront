@@ -17,6 +17,10 @@
  *     them. A roof is never filled in (`selection.ts`); a body or door count the new generation
  *     settles by having one value is filled in, as the selector does.
  *   - A year the remaining generation was never built in is not carried over: the shopper is asked.
+ *   - A generation that STAYS but whose years of production changed is read the same way: a saved year
+ *     it was not built in is asked again (Caddy 2K moved to end in 2015 while a car is saved as 2018),
+ *     because the garage's own write path refuses that year and the shopper's earlier answer was given
+ *     under data that said otherwise. Nothing is moved by the year alone.
  *   - Compatibility is not carried at all. It is never stored (`cookie.ts`); the resolver answers
  *     it against the current dataset, for the car this returns, as for any other.
  *
@@ -136,8 +140,29 @@ export function upgradeStoredVehicle(
 		const generation = generationById(vehicle.g)!;
 		const model = dataset.models.find((m) => m.id === generation.modelId);
 		const modelWas = modelFate(dataset, vehicle.m);
-		if (!model || modelWas.kind !== "moved" || modelWas.to !== model.id) return { kind: "unchanged" };
-		return { kind: "moved", vehicle: { ...vehicle, k: model.makeId, m: model.id } };
+		const repaired =
+			model && modelWas.kind === "moved" && modelWas.to === model.id
+				? { ...vehicle, k: model.makeId, m: model.id }
+				: null;
+		// CFM may also move the END (or the start) of a generation that stays: Caddy 2K to 2015, Audi Q3
+		// F3 to 2025. The id is live and the year the shopper gave is now a year the generation was not
+		// built in, so the garage's own write path would refuse it (`year-out-of-range`) while the read
+		// path kept answering for the car: the saved "Caddy 2K 2018" would go on being shown sets made
+		// for the 2K. The shopper chose that generation when the data said it was built then; the data
+		// now says otherwise, so the question goes back to them. Never settled by the year alone: they
+		// answered the same question once, and a silent move would overwrite that answer.
+		if (model && !builtIn(generation, vehicle.y, now)) {
+			const siblings = dataset.generations.filter((g) => g.modelId === model.id);
+			const byYear = siblings.filter((g) => g.id !== generation.id && builtIn(g, vehicle.y, now));
+			// Nothing else of the model was built that year either: show them the model's own generations
+			// and let them correct the year in the selector, rather than keep a car no generation owns.
+			return chooseAmong(
+				dataset,
+				repaired ?? vehicle,
+				(byYear.length > 0 ? byYear : siblings).map((g) => g.id),
+			);
+		}
+		return repaired ? { kind: "moved", vehicle: repaired } : { kind: "unchanged" };
 	}
 
 	if (fate.kind === "moved") {
