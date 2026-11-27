@@ -1110,7 +1110,18 @@
 		"metaDescription": "Resultados de búsqueda en el catálogo de {siteName}.",
 		"unavailableTitle": "La búsqueda no está disponible temporalmente",
 		"unavailableHelp": "No hemos podido cargar los resultados de «{query}» en este momento. Vuelve a intentarlo en un momento o explora nuestras categorías.",
-		"correctedFrom": "No hemos encontrado nada para «{query}», así que mostramos resultados de la marca más parecida."
+		"correctedFrom": "No hemos encontrado nada para «{query}», así que mostramos resultados de la marca más parecida.",
+		"vehicleHeading": "Barras de techo para {vehicle}",
+		"vehicleHelp": "Las barras se eligen según la versión del coche y el tipo de techo. Elige tu coche y te mostramos los kits compatibles.",
+		"vehicleOpen": "Ver barras para {vehicle}",
+		"vehicleGenerations": "Versión",
+		"vehicleRelated": "Modelos relacionados",
+		"vehicleAskHeading": "Las barras de techo se eligen según el coche",
+		"vehicleAskHelp": "Cada coche tiene un techo distinto. Elige la marca y el modelo y te mostramos las barras compatibles con tu coche.",
+		"vehicleAskCta": "Elegir coche",
+		"tyreHeading": "Cadenas de nieve para neumáticos {size}",
+		"tyreCta": "Ver cadenas para esta medida",
+		"closestNote": "No hemos encontrado una coincidencia exacta. Mostramos los productos más parecidos."
 	},
 	"account": {
 		"welcomeBack": "Bienvenido de nuevo",

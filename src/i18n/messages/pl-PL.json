@@ -1110,7 +1110,18 @@
 		"metaDescription": "Wyniki wyszukiwania w ofercie {siteName}.",
 		"unavailableTitle": "Wyszukiwarka jest chwilowo niedostępna",
 		"unavailableHelp": "Nie udało się teraz wczytać wyników dla „{query}”. Spróbuj ponownie za chwilę lub przejrzyj nasze kategorie.",
-		"correctedFrom": "Nie znaleźliśmy nic dla „{query}”, dlatego pokazujemy wyniki dla najbardziej podobnej marki."
+		"correctedFrom": "Nie znaleźliśmy nic dla „{query}”, dlatego pokazujemy wyniki dla najbardziej podobnej marki.",
+		"vehicleHeading": "Bagażniki dachowe do {vehicle}",
+		"vehicleHelp": "Bagażnik dobiera się do wersji auta i rodzaju dachu. Wybierz swoje auto, a pokażemy zestawy, które do niego pasują.",
+		"vehicleOpen": "Pokaż bagażniki do {vehicle}",
+		"vehicleGenerations": "Wersja",
+		"vehicleRelated": "Pokrewne modele",
+		"vehicleAskHeading": "Bagażnik dachowy dobierzesz do auta",
+		"vehicleAskHelp": "Każde auto ma inny dach. Wybierz markę i model, a pokażemy bagażniki, które pasują do Twojego auta.",
+		"vehicleAskCta": "Wybierz auto",
+		"tyreHeading": "Łańcuchy śniegowe na opony {size}",
+		"tyreCta": "Pokaż łańcuchy na ten rozmiar",
+		"closestNote": "Nie znaleźliśmy dokładnego dopasowania. Pokazujemy najbliższe produkty."
 	},
 	"account": {
 		"welcomeBack": "Witamy ponownie",

@@ -1,0 +1,15 @@
+# One page of the shop's own search answer, as the cards a category listing shows for the same
+# products. The index (`src/lib/search/shelf-index.ts`) decides WHICH products and in what order;
+# this reads them fresh, so the price and the availability on a result are never the index's.
+#
+# By `ids:`, the one bulk lookup Saleor offers (see `FitmentProductsByIds.graphql`). The order of
+# the answer is Saleor's, not the order asked for: the caller puts it back.
+query SearchProductsByIds($ids: [ID!]!, $channel: String!, $first: Int!, $lang: LanguageCodeEnum!) {
+	products(first: $first, channel: $channel, filter: { ids: $ids }) {
+		edges {
+			node {
+				...ProductListItem
+			}
+		}
+	}
+}
