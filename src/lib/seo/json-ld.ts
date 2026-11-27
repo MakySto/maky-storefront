@@ -356,11 +356,20 @@ export const RETURNS_PAGE_PATH = "/reklamacie-a-vratenie";
  * crawler reads the number as the policy for every buyer, so it has to be the one every
  * buyer actually gets.
  *
- * Deliberately absent: `returnFees`, `returnMethod` and any return-shipping amount. Who
- * pays for a return, and how an oversized parcel travels back, is not confirmed per
- * shipping class yet (CLAUDE.md §9); a guess published here would be a promise.
+ * Who pays and how the goods travel back (owner, 2026-11-18, as the returns page of every market
+ * states it): the customer bears the direct cost of a change-of-mind return and sends the goods
+ * with a carrier of their choice — `ReturnFeesCustomerResponsibility` and `ReturnByMail`. Google
+ * asks for no `returnShippingFeesAmount` with that value, and none is stated: what a return costs
+ * depends on the parcel and the carrier the customer picks, and a number here would be a promise
+ * (CLAUDE.md §9). A defect the shop answers for is a claim, not a return, and is not described here.
  */
 const RETURN_DAYS = 14;
+
+/** `/<market>/reklamacie-a-vratenie` says it in every language: the direct cost of sending back is the customer's. */
+const RETURN_FEES = "https://schema.org/ReturnFeesCustomerResponsibility" as const;
+
+/** The customer ships the goods back; no market offers a return in a store or at a kiosk. */
+const RETURN_METHOD = "https://schema.org/ReturnByMail" as const;
 
 /**
  * Delivery time by destination, in working days — the same windows `common.onDemand` promises
@@ -413,9 +422,9 @@ function marketOf(channel: string): string | null {
 }
 
 /**
- * The return policy of one market, as schema.org states it: the window every buyer gets (`RETURN_DAYS`)
- * and the returns page of that market. Fees and the return method stay unsaid, for the reason given at
- * `RETURN_DAYS`.
+ * The return policy of one market, as schema.org states it: the window every buyer gets (`RETURN_DAYS`),
+ * who pays for sending the goods back and how they travel (`RETURN_FEES`, `RETURN_METHOD`), and the
+ * returns page of that market. No amount, for the reason given at `RETURN_DAYS`.
  */
 function returnPolicyFor(market: string, applicableCountry: string | string[]) {
 	return {
@@ -423,8 +432,18 @@ function returnPolicyFor(market: string, applicableCountry: string | string[]) {
 		applicableCountry,
 		returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow" as const,
 		merchantReturnDays: RETURN_DAYS,
+		returnFees: RETURN_FEES,
+		returnMethod: RETURN_METHOD,
 		merchantReturnLink: `${getBaseUrl()}/${market}${RETURNS_PAGE_PATH}`,
 	};
+}
+
+/**
+ * The shop's one shipping policy: the `ShippingService` on the homepage's `OnlineStore`, which every
+ * offer points at instead of restating it.
+ */
+export function shippingServiceId(): string {
+	return `${getBaseUrl()}/#shipping`;
 }
 
 /**
@@ -435,15 +454,27 @@ function returnPolicyFor(market: string, applicableCountry: string | string[]) {
  * The return policy names one country, the market's own, because the offer on `/de/…` is the German
  * offer; the store-wide list of twelve stays on the homepage's `OnlineStore`.
  *
- * No `shippingDetails`. An `OfferShippingDetails` is read for its `shippingRate`, and the rate depends
- * on the parcel and the destination and is calculated at checkout (CLAUDE.md §9). It arrives with a
- * price table the owner confirms, not with a number invented here.
+ * `shippingDetails` is a pointer and nothing else: an `OfferShippingDetails` whose only property is
+ * `hasShippingService` with only an `@id`, the form Google gives for an offer that refers to the shop's
+ * own shipping policy. No `shippingRate`: the price depends on the parcel and the destination and is
+ * calculated at checkout (CLAUDE.md §9); what Google shows as a rate comes from the shipping settings
+ * in Merchant Center, which the owner keeps, not from a number in this file.
+ *
+ * @see https://developers.google.com/search/docs/appearance/structured-data/merchant-listing
  */
 function offerTerms(channel: string | null | undefined) {
 	const market = channel ? marketOf(channel) : null;
 	return {
 		itemCondition: "https://schema.org/NewCondition" as const,
-		...(market ? { hasMerchantReturnPolicy: returnPolicyFor(market, CHANNEL_MAP[market]!.country) } : {}),
+		...(market
+			? {
+					hasMerchantReturnPolicy: returnPolicyFor(market, CHANNEL_MAP[market]!.country),
+					shippingDetails: {
+						"@type": "OfferShippingDetails" as const,
+						hasShippingService: { "@id": shippingServiceId() },
+					},
+				}
+			: {}),
 	};
 }
 
@@ -490,6 +521,7 @@ export function buildOrganizationJsonLd(channel: string) {
 		hasMerchantReturnPolicy: returnPolicyFor(market, marketCountries()),
 		hasShippingService: {
 			"@type": "ShippingService",
+			"@id": shippingServiceId(),
 			fulfillmentType: "FulfillmentTypeDelivery",
 			shippingConditions: DELIVERY_REGIONS.map((region) => ({
 				"@type": "ShippingConditions",
