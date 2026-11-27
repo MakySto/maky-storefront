@@ -142,6 +142,15 @@ const ROWS: readonly SampleRow[] = [
 		cs: "Nosič kol Peruzzo Pure Instinct 4 na tažné zařízení pro 4 kola",
 	},
 	{
+		id: "614",
+		category: "nosice-bicyklov-na-tazne-zariadenie",
+		root: "nosice-bicyklov",
+		brand: "Spinder",
+		price: 1089,
+		codes: ["SP110010"],
+		sk: "Nosič 2 bicyklov Spinder SX2",
+	},
+	{
 		id: "299",
 		category: "nosice-bicyklov-na-tazne-zariadenie",
 		root: "nosice-bicyklov",
