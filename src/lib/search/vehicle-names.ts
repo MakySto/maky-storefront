@@ -1,6 +1,7 @@
 import "server-only";
 
 import { isPubliclyVisible } from "@/lib/catalog-content/publication";
+import { REVERSE_MAP } from "@/lib/channel-map";
 import { catalogLanguageForChannel, loadCatalogView } from "@/lib/catalog-content/resolve";
 import type { CatalogNode, CatalogTree } from "@/lib/catalog-content/tree";
 import { vehiclePageHref } from "@/lib/catalog-content/vehicle-href";
@@ -26,7 +27,7 @@ const KEPT = new WeakMap<object, Map<string, VehicleNames>>();
 export async function readVehicleCatalog(channel: string): Promise<VehicleCatalog | null> {
 	const language = catalogLanguageForChannel(channel);
 	if (!language) return null;
-	const [view, fitment] = await Promise.all([loadCatalogView(language), loadFitmentDataset()]);
+	const [view, fitment] = await Promise.all([loadCatalogView(language, REVERSE_MAP[channel] ?? channel), loadFitmentDataset()]);
 	const dataset = fitment.dataset;
 	if (!view.ready || !dataset) return null;
 	const { tree } = view;
