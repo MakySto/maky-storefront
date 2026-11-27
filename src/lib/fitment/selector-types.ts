@@ -78,15 +78,18 @@ export const EMPTY_STEP: SelectorStep = {
 };
 
 /**
- * The shopper's answer to "does your car have this roof?".
+ * The shopper's answer to "which roof does your car have?".
  *
- * Three values, and the two that are not a roof type must never collapse into one.
- * "Iný typ" says the roof is not among the ones we hold data for; "Neviem rozpoznať"
- * says they cannot tell. Both leave `roofType` unset, so the resolver reports that it
- * cannot confirm — which is true — instead of a fit derived from the only value we
- * happened to have.
+ * Two values. `unsure` is the shopper who cannot tell and goes on without a roof type: it leaves
+ * `roofType` unset, so the resolver reports that it cannot confirm, which is true, instead of a fit
+ * derived from the only value we happened to have.
+ *
+ * There used to be a third, "Iný typ" (another type). It led nowhere: the selector offers the roofs
+ * a set is on offer for (`roofChoicesOnOffer`), so "another one" could only ever end on "nothing
+ * found", and the owner asked for it to go (2026-11-27). A shopper whose roof is not offered is told
+ * so beside the choices, with the way to ask us.
  */
-export type RoofAnswer = { kind: "confirmed"; roofType: RoofType } | { kind: "other" } | { kind: "unsure" };
+export type RoofAnswer = { kind: "confirmed"; roofType: RoofType } | { kind: "unsure" };
 
 /**
  * The shopper's answer to "which month was it built?".

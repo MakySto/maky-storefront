@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock("./client", () => ({ fetchCmsPage: vi.fn() }));
 
-const { adviceGuideFromBlocks } = await import("./advice-guide");
+const { adviceGuideFromBlocks, roofGuidePath } = await import("./advice-guide");
 
 const common = { id: null, blockName: null, markets: null };
 const text = (value: string) => ({ type: "text", text: value, format: 0 });
@@ -71,5 +71,23 @@ describe("advice guide outline", () => {
 		expect(guide?.topics[0]?.text?.endsWith("…")).toBe(true);
 		expect(guide?.topics[0]?.text?.length).toBeLessThanOrEqual(91);
 		expect(adviceGuideFromBlocks([])).toBeNull();
+	});
+});
+
+describe("the selector's link to the roof section", () => {
+	const guide = (anchors: string[]) => ({
+		title: "Poradňa",
+		lead: null,
+		topics: anchors.map((anchor) => ({ anchor, title: anchor, text: null })),
+	});
+
+	it("points at the roof section when the guide has one", () => {
+		expect(roofGuidePath(guide(["ako-vybrat", "typ-strechy"]))).toBe("/poradna#typ-strechy");
+	});
+
+	it("is nothing without that section: a guide that does not explain roofs is not linked as if it did", () => {
+		expect(roofGuidePath(guide(["ako-vybrat"]))).toBeNull();
+		expect(roofGuidePath(guide([]))).toBeNull();
+		expect(roofGuidePath(null)).toBeNull();
 	});
 });

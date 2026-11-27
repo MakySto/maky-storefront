@@ -7,7 +7,7 @@ import { type IntendedVehicle, sharedConditions, windowBounds } from "@/lib/fitm
 import { BODY_LABEL_KEY, ROOF_LABEL_KEY } from "./verdict-presentation";
 
 /**
- * "Určené pre: AUDI A4 Avant B8 · 05/2008 – 10/2015 · Kombi · Integrované pozdĺžniky", above the
+ * "Určené pre: AUDI A4 Avant B8 · 05/2008 – 10/2015 · Kombi · Integrované lyžiny", above the
  * price — what this offer is made for, and the way to the offers for the shopper's own car.
  *
  * Neutral on purpose: not the amber of "we cannot confirm" and not the red of a misfit. It is a
