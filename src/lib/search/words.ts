@@ -162,7 +162,7 @@ export function wordGrade(asked: string, named: string): number {
 }
 
 /** Optimal-string-alignment distance, cut off once it passes `limit`. */
-function editDistance(a: string, b: string, limit: number): number {
+export function editDistance(a: string, b: string, limit: number): number {
 	if (Math.abs(a.length - b.length) > limit) return limit + 1;
 	let prevPrev: number[] = [];
 	let prev = Array.from({ length: b.length + 1 }, (_, j) => j);

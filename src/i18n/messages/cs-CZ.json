@@ -1112,6 +1112,7 @@
 		"unavailableTitle": "Vyhledávání je dočasně nedostupné",
 		"unavailableHelp": "Výsledky pro „{query}“ se nám teď nepodařilo načíst. Zkuste to za chvíli znovu nebo si projděte naše kategorie.",
 		"correctedFrom": "Pro „{query}“ jsme nic nenašli, proto zobrazujeme výsledky pro nejbližší značku.",
+		"correctedCar": "Pro „{query}“ jsme nic nenašli, proto zobrazujeme výsledky pro auto s nejbližším názvem.",
 		"vehicleHeading": "Střešní nosiče pro {vehicle}",
 		"vehicleHelp": "Nosič se vybírá podle provedení auta a typu střechy. Vyberte své auto a ukážeme sestavy, které na něj sedí.",
 		"vehicleOpen": "Zobrazit nosiče pro {vehicle}",

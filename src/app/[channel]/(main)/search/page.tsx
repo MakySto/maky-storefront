@@ -224,7 +224,11 @@ async function SearchContent({
 					<h1 className="text-2xl font-semibold">{t("resultsFor", { query: shownQuery })}</h1>
 					{answer.note && (
 						<p className="text-muted-foreground mt-1 text-sm">
-							{answer.note === "brand" ? t("correctedFrom", { query }) : t("closestNote")}
+							{answer.note === "brand"
+								? t("correctedFrom", { query })
+								: answer.note === "car"
+									? t("correctedCar", { query })
+									: t("closestNote")}
 						</p>
 					)}
 					<p className="text-muted-foreground mt-1 text-sm">

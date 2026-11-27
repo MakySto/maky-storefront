@@ -27,9 +27,9 @@ import { codeKey, codeKeys, fuzzyGrade, isNumberWord, searchWords, wordGrade } f
  *
  * Every word asked for must be found in the product (in its name, its maker, its category, the
  * other words the trade uses for that category, a parameter, or as a code). Where it was found
- * decides the weight, how well it matched (`wordGrade`) scales it, and an accessory or spare part
- * ranks below the thing it belongs to: "strešný box" lists roof boxes, then the bags and covers
- * for one.
+ * decides the weight, how well it matched (`wordGrade`) scales it, a name that begins with the
+ * words asked ranks above one that only holds them, and an accessory or spare part ranks below the
+ * thing it belongs to: "strešný box" lists roof boxes, then the bags and covers for one.
  *
  * When the words name a shelf ("strešný box", "Fahrradträger"), the caller passes that shelf and its
  * products come first: a bike carrier "na strešný nosič" also carries both words of "strešný
@@ -90,6 +90,10 @@ export interface ShelfIndex {
 	readonly words: ReadonlyMap<string, readonly Posting[]>;
 	/** Code → the products it names. */
 	readonly codes: ReadonlyMap<string, readonly number[]>;
+	/** Per product, the words of its name in their order. */
+	readonly names: readonly (readonly string[])[];
+	/** Every word of a maker's name the shelf knows ("thule", "green", "valley"). */
+	readonly makers: ReadonlySet<string>;
 }
 
 const WEIGHT = {
@@ -103,6 +107,12 @@ const WEIGHT = {
 	attribute: 2,
 	code: 40,
 	codePrefix: 15,
+	/**
+	 * Added once to a product whose name BEGINS with the words asked, in their order: "nosič lyží"
+	 * is first the "Nosič lyží Menabo Iceberg" and after it the "GP nosič lyží pre nosiče bicyklov",
+	 * an add-on for a bike carrier that led the list by the alphabet (live, 2026-11-27).
+	 */
+	nameStart: 3,
 } as const;
 
 /** An accessory's score against the product it belongs to. */
@@ -113,6 +123,8 @@ const UNAVAILABLE_FACTOR = 0.9;
 export function buildShelfIndex(docs: readonly ShelfDoc[], language: string): ShelfIndex {
 	const words = new Map<string, Posting[]>();
 	const codes = new Map<string, number[]>();
+	const names = docs.map((doc) => searchWords(doc.name, language));
+	const makers = new Set(docs.flatMap((doc) => searchWords(doc.brand ?? "", language)));
 
 	docs.forEach((doc, index) => {
 		const heaviest = new Map<string, number>();
@@ -120,9 +132,7 @@ export function buildShelfIndex(docs: readonly ShelfDoc[], language: string): Sh
 			if ((heaviest.get(word) ?? 0) < weight) heaviest.set(word, weight);
 		};
 
-		searchWords(doc.name, language).forEach((word, position) =>
-			note(word, WEIGHT.name + (position < 3 ? WEIGHT.nameLead : 0)),
-		);
+		names[index]!.forEach((word, position) => note(word, WEIGHT.name + (position < 3 ? WEIGHT.nameLead : 0)));
 		for (const word of searchWords(doc.brand ?? "", language)) note(word, WEIGHT.brand);
 		(doc.categoryNames ?? []).forEach((name, depth) => {
 			for (const word of searchWords(name, language)) {
@@ -158,7 +168,7 @@ export function buildShelfIndex(docs: readonly ShelfDoc[], language: string): Sh
 		}
 	});
 
-	return { language, docs, words, codes };
+	return { language, docs, words, codes, names, makers };
 }
 
 /** One blank-separated piece of what was typed: its words, and the code it may be. */
@@ -252,11 +262,34 @@ function gradeEachPiece(index: ShelfIndex, pieces: readonly Piece[], grade: Grad
 	});
 }
 
+/**
+ * The words asked, when a name that begins with them says what the product IS. Not for a search
+ * by maker alone ("thule" names every Thule product alike, wherever the name puts the word) and
+ * not for one that holds a code.
+ */
+function startWords(index: ShelfIndex, pieces: readonly Piece[]): readonly string[] {
+	if (pieces.some((piece) => piece.words.length === 0)) return [];
+	const asked = pieces.flatMap((piece) => piece.words);
+	return asked.every((word) => index.makers.has(word) || isNumberWord(word)) ? [] : asked;
+}
+
+function beginsWith(name: readonly string[], asked: readonly string[]): boolean {
+	return (
+		asked.length > 0 &&
+		asked.length <= name.length &&
+		asked.every((word, position) => wordGrade(word, name[position]!) >= SAME_WORD)
+	);
+}
+
+/** `wordGrade` of a word and its own other endings ("nosiče" for "nosič"). */
+const SAME_WORD = 0.9;
+
 function collect(
 	index: ShelfIndex,
 	graded: readonly Map<number, number>[],
 	needed: number,
 	preferRoots: ReadonlySet<string>,
+	start: readonly string[],
 ): ShelfHit[] {
 	const hits: ShelfHit[] = [];
 	index.docs.forEach((doc, docIndex) => {
@@ -270,6 +303,7 @@ function collect(
 			}
 		}
 		if (found < needed) return;
+		if (found === graded.length && beginsWith(index.names[docIndex]!, start)) score += WEIGHT.nameStart;
 		if (doc.accessory) score *= ACCESSORY_FACTOR;
 		if (doc.purchasable === false) score *= UNAVAILABLE_FACTOR;
 		hits.push({ doc, score });
@@ -306,21 +340,22 @@ export function searchShelf(index: ShelfIndex, query: string, options: ShelfSear
 	const pieces = piecesOf(query, index.language);
 	if (pieces.length === 0) return { hits: [], mode: "all" };
 	const preferRoots = options.preferRoots ?? NO_ROOTS;
+	const start = startWords(index, pieces);
 
 	if (options.match !== "closest") {
 		const exact = gradePieces(index, pieces, wordGrade);
-		return { hits: collect(index, exact, pieces.length, preferRoots), mode: "all" };
+		return { hits: collect(index, exact, pieces.length, preferRoots, start), mode: "all" };
 	}
 
 	const forgiving: Grader = (asked, named) => wordGrade(asked, named) || fuzzyGrade(asked, named);
 	const fuzzy = gradePieces(index, pieces, forgiving);
-	const corrected = collect(index, fuzzy, pieces.length, preferRoots);
+	const corrected = collect(index, fuzzy, pieces.length, preferRoots, start);
 	if (corrected.length > 0) return { hits: corrected, mode: "corrected" };
 
 	// Most of the words, and at least two of them: one word out of three is not "the closest".
 	if (pieces.length >= 2) {
 		const needed = Math.max(Math.ceil(pieces.length / 2), pieces.length >= 3 ? 2 : 1);
-		let most = collect(index, fuzzy, needed, preferRoots);
+		let most = collect(index, fuzzy, needed, preferRoots, start);
 		// The words name a shelf: only that shelf can be close to them. "střešní box" in a market
 		// with no roof box is not answered with everything else that goes on a roof.
 		if (preferRoots.size > 0) {
