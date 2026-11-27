@@ -147,7 +147,7 @@ describe("PDP compatibility on the N15060 offers", () => {
 		const { markup, text } = await render("sk-eur", AUDI_OFFER);
 
 		expect(text).toContain("Určené pre: AUDI A4 Avant B8");
-		expect(text).toContain("05/2008 – 10/2015 · Kombi · Integrované pozdĺžniky");
+		expect(text).toContain("05/2008 – 10/2015 · Kombi · Integrované lyžiny");
 		expect(text).toContain("Pozrieť nosiče pre Passat Variant B9");
 		expect(markup).toContain('href="/sk/stresne-nosice/audi/a4-avant/b8"');
 		expect(markup).toContain('href="/sk/konfigurator"');
@@ -183,7 +183,7 @@ describe("PDP compatibility on the N15060 offers", () => {
 
 		const passat = await render("sk-eur", PASSAT_OFFER);
 		expect(passat.text).toContain("Určené pre: VOLKSWAGEN Passat Variant B9");
-		expect(passat.text).toContain("od 2024 · Kombi · Integrované pozdĺžniky");
+		expect(passat.text).toContain("od 2024 · Kombi · Integrované lyžiny");
 		expect(passat.text).toContain("Pozrieť nosiče pre A4 Avant B8");
 		// No vehicle page for the Passat in this fixture: the name stands, unlinked.
 		expect(passat.markup).not.toContain('href="/sk/stresne-nosice/volkswagen');

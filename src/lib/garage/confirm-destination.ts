@@ -36,6 +36,7 @@
  */
 
 import { FRIENDLY_SLUGS } from "@/lib/channel-map";
+import { vehicleViewQuery, type VehicleView } from "@/lib/fitment/vehicle-view";
 
 /** Reserved for the market segment itself: `/sk` is one segment, `/sk/anything` is two. */
 const MARKET_ROOT_SEGMENT_COUNT = 1;
@@ -57,6 +58,49 @@ export function vehicleConfirmDestination(pathname: string): string | null {
 	// exactly the failure this function exists to avoid. `/sk/cart` has two segments and
 	// passed its test, which is how the hole survived it.
 	return FRIENDLY_SLUGS.has(segments[0]!) ? "/konfigurator" : null;
+}
+
+/** The page that answers for whichever car the garage holds. A reserved root segment in every market. */
+const CONFIGURATOR_SEGMENT = "konfigurator";
+
+/**
+ * The confirmed car's OWN page, with the year and the roof in the address, or `null` to fall back
+ * to the rule above.
+ *
+ * The owner asked for addresses a shopper can save and send (2026-11-27), and for the selector to
+ * end where the category's vehicle pages already are, so that there is one listing and not two.
+ * `vehiclePath` is that page in this market (`loadVehiclePagePath`), market prefix included, and it
+ * is `null` where the market has no page for the car: then nothing here applies.
+ *
+ * The same caution as above decides WHERE this may move the shopper from. It is the places whose
+ * whole subject is "which sets are for my car", where staying would leave them looking at an
+ * answer for a different question:
+ *
+ *   - the market root, which used to send them to `/konfigurator`;
+ *   - `/konfigurator` itself;
+ *   - the roof-rack shelf and the vehicle pages below it. The shelf is read off `vehiclePath`
+ *     (its first two segments), so no category slug is spelled here, in any language.
+ *
+ * A product page, a brand's shelf, the cart, the checkout and the account stay where they are and
+ * re-render in place: the product page's box answers for the new car, a brand's shelf keeps its
+ * vehicle filter, and nobody is pushed out of a task because they picked a car.
+ */
+export function vehiclePageDestination(
+	pathname: string,
+	vehiclePath: string | null,
+	view: VehicleView,
+): string | null {
+	if (!vehiclePath) return null;
+	const here = pathname.split("/").filter(Boolean);
+	const page = vehiclePath.split("/").filter(Boolean);
+	// A vehicle page is market / shelf / make / model / generation. Anything shorter is not one.
+	if (page.length < 3 || !FRIENDLY_SLUGS.has(page[0]!) || here[0] !== page[0]) return null;
+
+	const atRoot = here.length === MARKET_ROOT_SEGMENT_COUNT;
+	const atConfigurator = here.length === 2 && here[1] === CONFIGURATOR_SEGMENT;
+	const onShelf = here.length >= 2 && here[1] === page[1];
+	if (!atRoot && !atConfigurator && !onShelf) return null;
+	return `${vehiclePath}${vehicleViewQuery(view)}`;
 }
 
 /**

@@ -37,7 +37,7 @@ describe("splitSetTitle", () => {
 
 	it("prefers the longer make at the same place", () => {
 		expect(
-			splitSetTitle("Strešný nosič Nordrive Helio Land Rover Discovery 5 (2017–) — Pevné body", {
+			splitSetTitle("Strešný nosič Nordrive Helio Land Rover Discovery 5 (2017–) — Fixačné body", {
 				brand: "Nordrive",
 				makes,
 			}),
@@ -125,7 +125,7 @@ describe("splitSetTitle with a car the dataset cannot confirm", () => {
 });
 
 describe("splitSetTitle with makes that overlap", () => {
-	const NAME = "Strešný nosič Nordrive Helio Land Rover Discovery 5 (2017–) — Pevné body";
+	const NAME = "Strešný nosič Nordrive Helio Land Rover Discovery 5 (2017–) — Fixačné body";
 	const expected = { model: "Nordrive Helio", vehicle: "Land Rover Discovery 5" };
 
 	// "Rover" is a make of its own as well as the end of "Land Rover": the car starts at the longer one,
@@ -188,7 +188,7 @@ describe("splitSetTitle with the car the set is for", () => {
 
 	it("keeps Land Rover's own Range Rover inside the car", () => {
 		expect(
-			splitSetTitle("Strešný nosič Nordrive Helio Land Rover Range Rover Evoque (2019–) — Pevné body", {
+			splitSetTitle("Strešný nosič Nordrive Helio Land Rover Range Rover Evoque (2019–) — Fixačné body", {
 				brand: "Nordrive",
 				makes: ["Land Rover", "Rover"],
 				vehicles: [car("Land Rover", "L551", "Land Rover Range Rover Evoque L551")],

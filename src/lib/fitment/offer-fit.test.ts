@@ -55,9 +55,9 @@ function application(
 /** A translator over the Slovak words the cards print. */
 const t = (key: string, values?: Record<string, string | number>) => {
 	const messages: Record<string, string> = {
-		roofRaisedRails: "Pozdĺžniky nad strechou",
-		roofFlushRails: "Integrované pozdĺžniky",
-		roofNakedRoof: "Holá strecha",
+		roofRaisedRails: "Klasické lyžiny",
+		roofFlushRails: "Integrované lyžiny",
+		roofNakedRoof: "Hladká strecha",
 		yearRange: "{from} – {to}",
 		yearFromOnly: "od {from}",
 	};
@@ -209,7 +209,7 @@ describe("describeOfferFit", () => {
 
 	it("words the roof and the years", () => {
 		expect(describeOfferFit([fit()], t, ROOF_LABEL_KEY)).toEqual({
-			roof: "Integrované pozdĺžniky",
+			roof: "Integrované lyžiny",
 			years: "2018 – 2021",
 		});
 	});
@@ -228,7 +228,7 @@ describe("describeOfferFit", () => {
 	it("lists several roofs an application accepts", () => {
 		expect(
 			describeOfferFit([fit({ roofTypes: ["raised-rails", "flush-rails"] })], t, ROOF_LABEL_KEY)?.roof,
-		).toBe("Pozdĺžniky nad strechou, Integrované pozdĺžniky");
+		).toBe("Klasické lyžiny, Integrované lyžiny");
 	});
 
 	it("stays silent for a set with no application, or with more than one", () => {
@@ -265,7 +265,7 @@ describe("describeSetFit", () => {
 		const later = fit({ yearFrom: 2023, yearTo: null });
 		const earlier = fit({ yearFrom: 2022, yearTo: 2026 });
 		expect(describeSetFit([later, earlier], t, ROOF_LABEL_KEY)).toEqual({
-			roof: "Integrované pozdĺžniky",
+			roof: "Integrované lyžiny",
 			years: "2022 – 2026, od 2023",
 		});
 	});
@@ -302,7 +302,7 @@ describe("describeSetFit", () => {
 		// applications that differ only in the body type, which the card does not print
 		expect(
 			describeSetFit([fit({ bodyTypes: ["van"] }), fit({ bodyTypes: ["mpv"] })], t, ROOF_LABEL_KEY),
-		).toEqual({ roof: "Integrované pozdĺžniky", years: "2018 – 2021" });
+		).toEqual({ roof: "Integrované lyžiny", years: "2018 – 2021" });
 	});
 
 	it("takes the same roofs written in another order for the same roofs", () => {
@@ -315,7 +315,7 @@ describe("describeSetFit", () => {
 			ROOF_LABEL_KEY,
 		);
 		expect(result).toEqual({
-			roof: "Pozdĺžniky nad strechou, Integrované pozdĺžniky",
+			roof: "Klasické lyžiny, Integrované lyžiny",
 			years: "2018 – 2021, od 2022",
 		});
 	});

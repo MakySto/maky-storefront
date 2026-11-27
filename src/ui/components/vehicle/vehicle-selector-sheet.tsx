@@ -34,7 +34,6 @@ import { useLocale, useTranslations } from "next-intl";
 import { Check, ChevronLeft, Loader2 } from "lucide-react";
 
 import { Button } from "@/ui/components/ui/button";
-import { ROOF_LABEL_KEY } from "@/ui/components/fitment/verdict-presentation";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetCloseButton } from "@/ui/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -42,22 +41,28 @@ import {
 	type BodyType,
 	type GlassRoof,
 	type RoofHeight,
-	type RoofType,
 	type VehicleSelection,
 } from "@/lib/fitment/contract";
 import { loadSelectorStep } from "@/lib/fitment/selector-actions";
+import { loadRoofGuidePath } from "@/lib/fitment/roof-guide-action";
 import {
 	type MonthAnswer,
 	type RoofAnswer,
 	type SelectorStep,
 	type VariantAnswer,
 } from "@/lib/fitment/selector-types";
-import { type GenerationCandidate } from "@/lib/fitment/selector-plan";
+import { BODY_LABEL_KEYS, candidateLabel } from "./candidate-label";
 import { chooseVehicle } from "@/lib/garage/actions";
 import { GARAGE_MAX_VEHICLES } from "@/lib/garage/limits";
-import { searchWithoutPagination, vehicleConfirmDestination } from "@/lib/garage/confirm-destination";
+import {
+	searchWithoutPagination,
+	vehicleConfirmDestination,
+	vehiclePageDestination,
+} from "@/lib/garage/confirm-destination";
+import { loadVehiclePagePath } from "@/lib/catalog-content/vehicle-page-action";
 import { REVERSE_MAP } from "@/lib/channel-map";
 import { afterTyreSize } from "@/lib/tyre-size/after-size";
+import { RoofQuestion } from "./roof-question";
 import { TyreSizeTab, useTyreSelector } from "./tyre-size-tab";
 
 export type VehicleDraft = Draft;
@@ -79,8 +84,8 @@ export type Draft = {
 	/** Only ever set when the year landed in two generations and the shopper separated them. */
 	generationId?: string;
 	/**
-	 * The roof answer, not a roof type. "Iný typ" and "Neviem rozpoznať" are answers, and
-	 * neither of them is the single roof type we happen to stock for this car.
+	 * The roof answer, not a roof type. Going on without one ("Pokračovať bez typu strechy") is
+	 * an answer, and it is not the single roof type we happen to stock for this car.
 	 */
 	roofAnswer?: RoofAnswer;
 	/**
@@ -128,22 +133,6 @@ type Props = {
 	initialDraft?: Draft;
 };
 
-// One map, imported — this file used to carry a byte-identical copy of it, which is two
-// places for six roof names to drift apart.
-const ROOF_LABEL_KEYS = ROOF_LABEL_KEY;
-
-const BODY_LABEL_KEYS: Record<BodyType, string> = {
-	hatchback: "bodyHatchback",
-	estate: "bodyEstate",
-	saloon: "bodySaloon",
-	suv: "bodySuv",
-	mpv: "bodyMpv",
-	van: "bodyVan",
-	coupe: "bodyCoupe",
-	convertible: "bodyConvertible",
-	pickup: "bodyPickup",
-};
-
 export function VehicleSelectorSheet({
 	children,
 	open,
@@ -165,6 +154,9 @@ export function VehicleSelectorSheet({
 	const [draft, setDraft] = useState<Draft>({});
 	const [step, setStep] = useState<SelectorStep | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	// Where the roof question's "detailed guide" link goes in this market, once asked for; `null` is "nowhere".
+	const [roofGuidePath, setRoofGuidePath] = useState<string | null>(null);
+	const roofGuideAsked = useRef(false);
 	const [loading, startLoading] = useTransition();
 	const [saving, startSaving] = useTransition();
 
@@ -192,9 +184,15 @@ export function VehicleSelectorSheet({
 					language,
 				});
 				setStep(result);
+				// The guide link belongs to the roof question, so it is asked for when that question first
+				// appears, and not awaited: the question does not wait for the CMS.
+				if (result.qualifiers?.roofTypes && !roofGuideAsked.current) {
+					roofGuideAsked.current = true;
+					void loadRoofGuidePath(channel).then(setRoofGuidePath, () => undefined);
+				}
 			});
 		},
-		[language],
+		[language, channel],
 	);
 
 	/**
@@ -350,9 +348,9 @@ export function VehicleSelectorSheet({
 
 	const confirm = () => {
 		if (!canConfirm || !generation) return;
-		// Only a CONFIRMED roof becomes a roof type. "Iný typ" and "Neviem rozpoznať" are
-		// real answers and they are not this one — carrying either of them through as the
-		// single roof we stock is exactly the substitution this flow exists to prevent.
+		// Only a CONFIRMED roof becomes a roof type. Going on without one is a real answer
+		// and it is not this one — carrying it through as the single roof we stock is
+		// exactly the substitution this flow exists to prevent.
 		// Leaving it unset makes the resolver say it cannot confirm, which is the truth.
 		const roofType = draft.roofAnswer?.kind === "confirmed" ? draft.roofAnswer.roofType : undefined;
 		const selection: VehicleSelection = {
@@ -385,6 +383,20 @@ export function VehicleSelectorSheet({
 			if (result.ok) {
 				setDraft({});
 				onOpenChange(false);
+
+				// The car's own page, with the year and the roof in the address: an address the
+				// shopper can save and send, and the same listing the category's vehicle pages show.
+				// Only from the places that are about "which sets are for my car", and only where
+				// this market has such a page (`vehiclePageDestination`); otherwise as before.
+				const ownPage = vehiclePageDestination(
+					pathname,
+					await loadVehiclePagePath(channel, selection.generationId),
+					{ year: selection.year, roof: roofType ?? null },
+				);
+				if (ownPage) {
+					router.push(ownPage);
+					return;
+				}
 
 				// From the homepage, confirming used to close the sheet and do nothing
 				// else — the hero asks for the car and the answer never arrives. Every
@@ -562,7 +574,7 @@ export function VehicleSelectorSheet({
 											hint={t("selector.variantHelp")}
 											options={step.generationCandidates.map((g) => ({
 												key: g.id,
-												label: candidateLabel(g, t),
+												label: candidateLabel(g, t, step.generationCandidates ?? []),
 											}))}
 											onPick={(key) => pickGenerationCandidate(key)}
 											emptyLabel={t("selector.emptyStep")}
@@ -570,10 +582,12 @@ export function VehicleSelectorSheet({
 									)}
 
 									{generation && qualifiers?.roofTypes && (
-										<RoofConfirmation
+										<RoofQuestion
 											roofTypes={qualifiers.roofTypes}
 											answer={draft.roofAnswer}
 											onAnswer={(answer) => setDraft((d) => ({ ...d, roofAnswer: answer }))}
+											guidePath={roofGuidePath}
+											onLeave={() => onOpenChange(false)}
 											t={t}
 										/>
 									)}
@@ -733,113 +747,6 @@ function monthOptions(locale: string): { key: string; label: string }[] {
 }
 
 /**
- * A generation candidate, named the way a person can answer it.
- *
- * Body type and door count first, production span second. Never the bare internal name on
- * its own: "B9" and "939" are our keys, and asking somebody to pick between two of them is
- * asking them to guess.
- */
-function candidateLabel(g: GenerationCandidate, t: (key: string) => string): string {
-	const shape = g.bodyTypes?.length === 1 ? t(BODY_LABEL_KEYS[g.bodyTypes[0]!]) : null;
-	// An open-ended generation reads "2015\u2013", which is the ordinary way a production
-	// span that has not ended is written.
-	const span = `${g.productionYearFrom}\u2013${g.productionYearTo ?? ""}`;
-	return [shape, span, g.name].filter(Boolean).join(" \u00b7 ");
-}
-
-/**
- * The roof question, asked EVERY time — including when we know exactly one answer.
- *
- * This component exists because the previous code treated "we hold one roof type for this
- * generation" as "the roof type is settled". It is not. It is a fact about our catalogue,
- * and the shopper's roof is a fact about their car; the two are unrelated, and the first
- * cannot stand in for the second. With one option the question is a single picture and a
- * yes/no, which is a smaller ask than a list — not a reason to skip it.
- *
- * "Iný typ" and "Neviem rozpoznať" are answers, and neither becomes a roof type. They
- * leave the selection without one, the resolver reports that it cannot confirm, and the
- * shopper gets help identifying the roof instead of a fit we invented for them.
- */
-function RoofConfirmation({
-	roofTypes,
-	answer,
-	onAnswer,
-	t,
-}: {
-	roofTypes: RoofType[];
-	answer: RoofAnswer | undefined;
-	onAnswer: (answer: RoofAnswer) => void;
-	t: (key: string) => string;
-}) {
-	const single = roofTypes.length === 1 ? roofTypes[0]! : null;
-	const selectedKey =
-		answer === undefined ? undefined : answer.kind === "confirmed" ? answer.roofType : answer.kind;
-
-	return (
-		<fieldset>
-			<legend className="text-text-primary mb-1 text-sm font-medium">
-				{single ? t("selector.confirmRoofType") : t("selector.chooseRoofType")}
-			</legend>
-			<p className="text-text-tertiary mb-2 text-xs">{t("selector.roofTypeHelp")}</p>
-
-			{single ? (
-				<div className="border-border-default mb-2 rounded-md border p-3">
-					<RoofIllustration roofType={single} />
-					<p className="text-text-primary mt-2 text-sm font-medium">{t(ROOF_LABEL_KEYS[single])}</p>
-					<p className="text-text-secondary mt-1 text-sm">{t("selector.roofSingleQuestion")}</p>
-				</div>
-			) : null}
-
-			<div className="flex flex-col gap-2">
-				{single ? (
-					<RoofChoice
-						label={t("selector.roofYes")}
-						active={selectedKey === single}
-						onClick={() => onAnswer({ kind: "confirmed", roofType: single })}
-					/>
-				) : (
-					roofTypes.map((roof) => (
-						<RoofChoice
-							key={roof}
-							label={t(ROOF_LABEL_KEYS[roof])}
-							active={selectedKey === roof}
-							onClick={() => onAnswer({ kind: "confirmed", roofType: roof })}
-						/>
-					))
-				)}
-				<RoofChoice
-					label={t("selector.roofOther")}
-					active={selectedKey === "other"}
-					onClick={() => onAnswer({ kind: "other" })}
-				/>
-				<RoofChoice
-					label={t("selector.roofUnsure")}
-					active={selectedKey === "unsure"}
-					onClick={() => onAnswer({ kind: "unsure" })}
-				/>
-			</div>
-
-			{answer?.kind === "other" && (
-				<p
-					role="status"
-					className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed mt-2 rounded-md px-3 py-2 text-sm"
-				>
-					{t("selector.roofOtherHelp")}
-				</p>
-			)}
-			{answer?.kind === "unsure" && (
-				<p
-					role="status"
-					className="bg-fitment-unconfirmed-bg text-fitment-unconfirmed mt-2 rounded-md px-3 py-2 text-sm"
-				>
-					{t("selector.roofUnsureHelp")}
-				</p>
-			)}
-		</fieldset>
-	);
-}
-
-/**
  * A yes / no / "I do not know" question about a version of the car the shopper can see for themselves:
  * a glass roof, a high van roof. Both values and "Neviem" are equal buttons and none is preselected:
  * a default here is a set sold for a car it was not made for.
@@ -908,50 +815,6 @@ function RoofChoice({ label, active, onClick }: { label: string; active: boolean
 		>
 			{label}
 		</button>
-	);
-}
-
-/**
- * A schematic roof, drawn rather than photographed.
- *
- * The question is "does your car look like this?", so it needs a picture. A line drawing
- * is honest about being schematic, carries no brand, needs no asset pipeline and no
- * network request, and is legible in both themes because it inherits `currentColor`.
- */
-function RoofIllustration({ roofType }: { roofType: RoofType }) {
-	return (
-		<svg viewBox="0 0 160 60" className="text-text-secondary h-16 w-full" role="img" aria-hidden="true">
-			{/* Car silhouette, shared by every variant. */}
-			<path
-				d="M18 46 L30 30 Q34 25 42 25 L108 25 Q118 25 124 31 L142 46"
-				fill="none"
-				stroke="currentColor"
-				strokeWidth="2"
-				strokeLinecap="round"
-			/>
-			<line x1="10" y1="46" x2="150" y2="46" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-			{roofType === "raised-rails" && (
-				<>
-					<path d="M44 22 L106 22" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-					<path d="M48 22 L48 26 M102 22 L102 26" stroke="currentColor" strokeWidth="2" />
-				</>
-			)}
-			{roofType === "flush-rails" && (
-				<path d="M46 24 L104 24" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-			)}
-			{roofType === "fixpoint" && (
-				<>
-					<circle cx="52" cy="25" r="2.5" fill="currentColor" />
-					<circle cx="98" cy="25" r="2.5" fill="currentColor" />
-				</>
-			)}
-			{roofType === "rain-gutter" && (
-				<path d="M40 27 L110 27" stroke="currentColor" strokeWidth="2" strokeDasharray="4 3" />
-			)}
-			{roofType === "t-track" && (
-				<path d="M46 23 L104 23 M46 26 L104 26" stroke="currentColor" strokeWidth="1.5" />
-			)}
-		</svg>
 	);
 }
 

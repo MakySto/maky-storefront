@@ -35,8 +35,8 @@ describe("the vehicle label", () => {
 	});
 
 	it("reports an unconfirmed roof as unconfirmed rather than guessing one", () => {
-		// The roof decides which feet fit. "Iný typ" and "Neviem rozpoznať" are real
-		// answers, and substituting the common roof for them is the substitution the
+		// The roof decides which feet fit. Going on without a roof type is a real
+		// answer, and substituting the common roof for it is the substitution the
 		// whole selector is built to avoid.
 		expect(vehicleDetailParts({ ...OCTAVIA, year: 2024 })).toEqual({
 			roofType: null,
@@ -58,9 +58,7 @@ describe("the vehicle label", () => {
 	});
 
 	it("joins detail pieces with the shared separator and drops the empty ones", () => {
-		expect(joinVehicleDetail(["Integrované pozdĺžniky", null, "marec"])).toBe(
-			"Integrované pozdĺžniky · marec",
-		);
+		expect(joinVehicleDetail(["Integrované lyžiny", null, "marec"])).toBe("Integrované lyžiny · marec");
 		expect(joinVehicleDetail([null, undefined, "  "])).toBe("");
 	});
 });
