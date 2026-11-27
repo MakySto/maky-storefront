@@ -20,8 +20,16 @@ import {
 	shelfCursor,
 	withoutWords,
 } from "./search-plan";
-import { type ShelfHit, type ShelfIndex, type ShelfSort, searchShelf, sortShelfHits } from "./shelf-index";
+import {
+	type ShelfHit,
+	type ShelfIndex,
+	type ShelfSort,
+	nameCarries,
+	searchShelf,
+	sortShelfHits,
+} from "./shelf-index";
 import { readShelfIndex } from "./shelf-source";
+import { searchWords } from "./words";
 import type { SearchResult } from "./types";
 import {
 	NO_VEHICLE,
@@ -48,9 +56,13 @@ import { type VehicleShortcut, readVehicleCatalog, vehicleShortcuts } from "./ve
  * ## Where the products come from, in this order
  *
  *   1. the shop's own index of the shelf, every word as typed (`shelf-index.ts`): the market's own
- *      language, ranked;
+ *      language, ranked. When the roof racks themselves are wanted (for a car, or by the shelf's
+ *      name beside a maker or a model), only the products whose own name carries the other words
+ *      ("kit octavia"); the rest of what the index holds comes after Saleor's sets (3);
  *   2. Saleor's search with the same words: the roof-rack sets, which the index does not hold and
- *      which are found by a car, a maker or a code, the same in every language;
+ *      which are found by a car, a maker or a code, the same in every language. Their text is
+ *      Slovak, so the roof racks' name in the market's language is left out of a second try
+ *      ("Dachträger Thule Golf" asks for "Thule Golf": every set is a roof rack);
  *   3. Saleor again with only the car's words, when a car was named ("Montagekit Golf" finds
  *      nothing in Slovak text, "Golf" does);
  *   4. a misspelt maker corrected (`brand-typos.ts`): the index, then Saleor, and the page says so;
@@ -88,6 +100,8 @@ export interface SearchRequest {
 	readonly sortBy?: ShelfSort;
 	/** Base slugs of the shelves the words name (`category-shortcuts.ts`), read by the page. */
 	readonly namedShelves?: readonly string[];
+	/** The words by which the query names the roof racks (`wordsNaming`), when it does. */
+	readonly roofRackWords?: readonly string[];
 }
 
 /** The shop's product words per index and set of car names: computed once, on the first search. */
@@ -107,11 +121,26 @@ function productWordsFor(index: ShelfIndex, names: VehicleNames): Set<string> {
 	return words;
 }
 
+/** Every word of a maker's name the shelf knows ("thule", "green", "valley"), per index. */
+const MAKER_WORDS = new WeakMap<ShelfIndex, Set<string>>();
+
+function makerWordsFor(index: ShelfIndex): Set<string> {
+	let words = MAKER_WORDS.get(index);
+	if (!words) {
+		words = new Set(index.docs.flatMap((doc) => searchWords(doc.brand ?? "", index.language)));
+		MAKER_WORDS.set(index, words);
+	}
+	return words;
+}
+
 export async function answerSearch(request: SearchRequest): Promise<SearchAnswer> {
 	const { query, channel, direction = "forward", sortBy = "relevance" } = request;
 	const locale = getLocaleFromChannel(channel);
 	const language = catalogLanguageForChannel(channel) ?? locale.split("-")[0]!.toLowerCase();
 	const named = new Set(request.namedShelves ?? []);
+	// The roof racks named beside another shelf are what the other thing is carried on ("nosič
+	// bicyklov na strešný nosič", "strešný nosič na lyže"): the other shelf is the one asked for.
+	if (named.size > 1) named.delete(ROOF_RACK_SHELF);
 	let cursor = parseSearchCursor(request.cursor);
 
 	// A tyre size, and the search without it.
@@ -143,11 +172,15 @@ export async function answerSearch(request: SearchRequest): Promise<SearchAnswer
 	if (carNamed && !forRoofRacks)
 		productQuery = withoutWords(productQuery, intent.words, language) || productQuery;
 	const carWords = forRoofRacks ? onlyWords(productQuery, intent.words, language) : "";
+	const racksNamed = named.size === 1 && named.has(ROOF_RACK_SHELF);
+	const rackWords = new Set(racksNamed ? request.roofRackWords ?? [] : []);
+	// What is asked of the sets beside being roof racks ("Dachträger Thule Golf" → "Thule Golf").
+	const racksQuery = rackWords.size > 0 ? withoutWords(productQuery, rackWords, language) : "";
 
 	const vehicles = forRoofRacks && catalog ? await vehicleShortcuts(channel, intent, catalog.tree) : [];
 	const frame = {
 		vehicles,
-		askForVehicle: !carNamed && named.has(ROOF_RACK_SHELF),
+		askForVehicle: !carNamed && racksNamed,
 		tyre,
 	};
 
@@ -171,15 +204,18 @@ export async function answerSearch(request: SearchRequest): Promise<SearchAnswer
 		};
 	};
 	const textOf = (variant: SaleorVariant): string =>
-		variant === "vehicle"
-			? carWords || productQuery
-			: variant === "brand"
-				? correctBrandTypos(productQuery) ?? productQuery
-				: productQuery;
+		variant === "racks"
+			? racksQuery || productQuery
+			: variant === "vehicle"
+				? carWords || productQuery
+				: variant === "brand"
+					? correctBrandTypos(productQuery) ?? productQuery
+					: productQuery;
 	const saleorAnswer = (variant: SaleorVariant, result: SearchResult): SearchAnswer => ({
 		...frame,
 		result,
-		shownQuery: variant === "full" ? query : textOf(variant),
+		// The roof racks' name left out changes nothing of what was asked: the sets are roof racks.
+		shownQuery: variant === "full" || variant === "racks" ? query : textOf(variant),
 		note: variant === "brand" ? "brand" : variant === "vehicle" ? "closest" : null,
 	});
 	const shelfAnswer = async (
@@ -207,17 +243,49 @@ export async function answerSearch(request: SearchRequest): Promise<SearchAnswer
 	const offset = cursor.kind === "shelf" ? cursor.offset : 0;
 
 	const exact = index ? searchShelf(index, productQuery, { preferRoots: named }).hits : [];
-	if (exact.length > 0) return shelfAnswer(exact, false, offset);
+	// The roof racks themselves are wanted, for a car or by the shelf's name: they are the sets,
+	// which Saleor holds. The index answers first only with products whose own NAME carries the
+	// other words: "kit octavia" is the fitting kit, while "octavia" and "nosič Kuga" met the kits
+	// by their category alone and listed two kits where the car has hundreds of sets, and "strešný
+	// nosič thule" listed three bike carriers "na strešný nosič" (live, 2026-11-27). The shelf
+	// named alone ("strešný nosič") stays with the index and the offer to choose a car.
+	const besides = searchWords(
+		withoutWords(withoutWords(productQuery, intent.words, language), rackWords, language),
+		language,
+	);
+	const forSets = forRoofRacks || (racksNamed && besides.length > 0);
+	// A maker says whose roof rack, not which part: "nordrive octavia" and "strešný nosič nordrive"
+	// still ask for the sets, "strešný nosič pätky" and "kit octavia" for the part. The makers are
+	// the shelf's as a whole, because the roof-rack parts carry theirs only in the name.
+	const makers = index ? makerWordsFor(index) : new Set<string>();
+	const namesAPart = besides.some((word) => !makers.has(word));
+	const first = !forSets
+		? exact
+		: namesAPart
+			? exact.filter(
+					(hit) =>
+						(!racksNamed || hit.doc.rootCategorySlug === ROOF_RACK_SHELF) &&
+						nameCarries(hit.doc, besides, language),
+				)
+			: [];
+	if (first.length > 0) return shelfAnswer(first, false, offset);
 
 	if (cursor.kind === "start") {
 		const full = await fromSaleor("full", productQuery);
 		if (full.unavailable || found(full)) return saleorAnswer("full", full);
 
-		if (carWords && carWords !== productQuery) {
+		if (racksQuery && racksQuery !== productQuery) {
+			const sets = await fromSaleor("racks", racksQuery);
+			if (found(sets)) return saleorAnswer("racks", sets);
+		}
+		if (carWords && carWords !== productQuery && carWords !== racksQuery) {
 			const byCar = await fromSaleor("vehicle", carWords);
 			if (found(byCar)) return saleorAnswer("vehicle", byCar);
 		}
 	}
+	// Saleor has no such set: what the index holds for the words after all (and the later pages
+	// of that answer, which do not ask Saleor again).
+	if (exact.length > 0) return shelfAnswer(exact, false, offset);
 
 	// A misspelt maker: the index first, as for the maker spelt right, then Saleor. Outside the
 	// block above, so that a later page of the index's answer finds the same products again.

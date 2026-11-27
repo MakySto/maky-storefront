@@ -50,7 +50,7 @@ export function SearchSort() {
 				<Button variant="outline-solid" size="sm" className="gap-2">
 					<ArrowUpDown className="h-4 w-4" />
 					<span className="hidden sm:inline">{currentLabel}</span>
-					<span className="sm:hidden">Sort</span>
+					<span className="sm:hidden">{t("sort")}</span>
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-48">

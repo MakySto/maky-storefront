@@ -17,7 +17,8 @@ import { marketHref } from "@/lib/channel-map";
 import { brandConfig, formatPageTitle } from "@/config/brand";
 import { routePolicyFor } from "@/lib/route-policy";
 import { searchView } from "./search-view";
-import { matchCategoryShortcuts } from "@/lib/search/category-shortcuts";
+import { MAX_CATEGORY_SHORTCUTS, matchCategoryShortcuts } from "@/lib/search/category-shortcuts";
+import { namedShelves, wordsNaming, type ShelfNames } from "@/lib/search/named-shelves";
 import { CategoryShelfLinks } from "@/ui/components/search/category-shelf-links";
 import { categoriesFor } from "@/config/categories";
 import { categorySegment, categoryUrlFor } from "@/config/category-routes";
@@ -130,8 +131,18 @@ async function SearchContent({
 
 	// What the words mean before what they find: the shelves they name decide which products come
 	// first, and whether a car that is named is wanted for its roof racks (`search-answer.ts`).
-	const shelves = await readCategoryShelves(params.channel, locale);
-	const named = matchCategoryShortcuts(query, shelves, locale);
+	const { shelves, known } = await readCategoryShelves(params.channel, locale);
+	// Two readings of the same words. The shelves a search NAMES decide what is listed
+	// (`named-shelves.ts`: a name held whole, and of every shelf of the shop, so that a shelf this
+	// market does not stock is still known to be what was asked for). The shelves it is OFFERED as
+	// links are read more generously (`category-shortcuts.ts`: "nosič" offers every carrier).
+	const language = catalogLanguageForChannel(params.channel) ?? locale;
+	const namedSlugs = namedShelves(query, language, known);
+	const roofRackNames = known.find((shelf) => shelf.slug === ROOF_RACK_SHELF);
+	const named = [
+		...shelves.filter((shelf) => namedSlugs.includes(shelf.slug)),
+		...matchCategoryShortcuts(query, shelves, locale).filter((shelf) => !namedSlugs.includes(shelf.slug)),
+	].slice(0, MAX_CATEGORY_SHORTCUTS);
 
 	const answer = await answerSearch({
 		query,
@@ -139,7 +150,8 @@ async function SearchContent({
 		cursor,
 		direction,
 		sortBy,
-		namedShelves: named.map((shelf) => shelf.slug),
+		namedShelves: namedSlugs,
+		roofRackWords: roofRackNames ? wordsNaming(query, language, roofRackNames) : [],
 	});
 	const { result, shownQuery } = answer;
 	const { products, pagination } = result;
@@ -326,23 +338,41 @@ interface CategoryShelf {
  * The shelves this market links from its menu, with the names a search is compared with
  * (`lib/search/category-shortcuts.ts`). A shelf the market does not stock is left out, as it is
  * in the menu, so nothing offered here leads to an empty page.
+ *
+ * `known` is every shelf of the shop with all its names, stocked here or not: what a search can
+ * NAME (`lib/search/named-shelves.ts`). The other words customers use (`synonyms.ts`) are among
+ * those names and not among a link's aliases: "cyklonosič" would offer the bike carriers to
+ * everybody who types "nosič".
  */
-async function readCategoryShelves(channel: string, locale: string): Promise<CategoryShelf[]> {
+async function readCategoryShelves(
+	channel: string,
+	locale: string,
+): Promise<{ shelves: CategoryShelf[]; known: ShelfNames[] }> {
 	const [tNav, assortment] = await Promise.all([
 		getTranslations({ locale, namespace: "nav" }),
 		getMarketAssortment(channel),
 	]);
 	const language = catalogLanguageForChannel(channel);
-	return categoriesFor("home")
-		.filter((category) => offersCategory(assortment, category.slug))
-		.map((category) => ({
-			slug: category.slug,
-			label: tNav(category.key),
-			// The address of the shelf and the other words the trade uses for it ("Grundträger",
-			// "autobox"): the same list the search index reads, so both know a shelf by the same names.
-			aliases: [categorySegment(channel, category.slug), ...categorySynonyms(language, category.slug)],
-			href: marketHref(channel, categoryUrlFor(channel, category.slug)),
-		}));
+	const all = categoriesFor("home").map((category) => ({
+		slug: category.slug,
+		label: tNav(category.key),
+		segment: categorySegment(channel, category.slug),
+	}));
+	return {
+		shelves: all
+			.filter((shelf) => offersCategory(assortment, shelf.slug))
+			.map((shelf) => ({
+				slug: shelf.slug,
+				label: shelf.label,
+				// The address of the shelf: the other word the trade uses for it in this market.
+				aliases: [shelf.segment],
+				href: marketHref(channel, categoryUrlFor(channel, shelf.slug)),
+			})),
+		known: all.map((shelf) => ({
+			slug: shelf.slug,
+			names: [shelf.label, shelf.segment, ...categorySynonyms(language, shelf.slug)],
+		})),
+	};
 }
 
 async function EmptyState({

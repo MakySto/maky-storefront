@@ -21,8 +21,19 @@ export interface VehicleCatalog {
 	readonly tree: CatalogTree;
 }
 
-/** By the dataset this process holds: the names are cut into words once per dataset, not per search. */
+/**
+ * By the dataset this process holds and the catalogue file the tree was built from: the names are
+ * cut into words once per pair, not per search.
+ *
+ * The file and not the language: the names are the tree's, and two markets that read one language
+ * can be served different files (Germany and Austria, once they are published apart), as can one
+ * market before and after a catalogue release. Keyed by language alone, the second would be
+ * answered with the first one's cars.
+ */
 const KEPT = new WeakMap<object, Map<string, VehicleNames>>();
+
+/** More than the twelve markets hold at once; older files of a market are let go. */
+const KEPT_PER_DATASET = 32;
 
 export async function readVehicleCatalog(channel: string): Promise<VehicleCatalog | null> {
 	const language = catalogLanguageForChannel(channel);
@@ -32,12 +43,14 @@ export async function readVehicleCatalog(channel: string): Promise<VehicleCatalo
 	if (!view.ready || !dataset) return null;
 	const { tree } = view;
 
-	let byLanguage = KEPT.get(dataset);
-	if (!byLanguage) {
-		byLanguage = new Map();
-		KEPT.set(dataset, byLanguage);
+	let byFile = KEPT.get(dataset);
+	if (!byFile) {
+		byFile = new Map();
+		KEPT.set(dataset, byFile);
 	}
-	let names = byLanguage.get(language);
+	// Without a digest (a source that reports none) the names are built for this search only.
+	const file = view.status.sha256 ? `${language}:${view.status.sha256}` : null;
+	let names = file ? byFile.get(file) : undefined;
 	if (!names) {
 		const alt = (node: { name: string; displayNames?: Partial<Record<string, string>> }, shown: string) =>
 			[node.name, node.displayNames?.[language]].filter(
@@ -69,7 +82,10 @@ export async function readVehicleCatalog(channel: string): Promise<VehicleCatalo
 					: [];
 			}),
 		};
-		byLanguage.set(language, names);
+		if (file) {
+			if (byFile.size >= KEPT_PER_DATASET) byFile.delete(byFile.keys().next().value!);
+			byFile.set(file, names);
+		}
 	}
 	return { names, tree };
 }
