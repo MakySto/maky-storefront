@@ -48,7 +48,15 @@ import { INTERNAL_TOKEN_HEADER, internalLoopbackToken } from "./internal-token";
 export type PreflightVerdict = "found" | "not-found" | "upstream-error";
 
 export type PreflightAnswer =
-	| { readonly verdict: PreflightVerdict; readonly ms: number }
+	| {
+			readonly verdict: PreflightVerdict;
+			readonly ms: number;
+			/**
+			 * `found` only: the market's own slug, when the product was asked for by its Slovak one
+			 * (`lib/saleor/base-slug-alias.ts`). The proxy answers 301 to it.
+			 */
+			readonly movedTo?: string;
+	  }
 	| { readonly verdict: "skipped"; readonly reason: string; readonly ms: number };
 
 export const PREFLIGHT_PATH = "/api/internal/product-outcome";
@@ -65,6 +73,9 @@ export function isBotPreflightEnabled(): boolean {
 }
 
 const VERDICTS: readonly PreflightVerdict[] = ["found", "not-found", "upstream-error"];
+
+/** A product slug as a URL carries it: the pattern `exact-locale.ts` holds translated slugs to. */
+const URL_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export interface PreflightOptions {
 	/** The port `next start` listens on. `start-server` sets `PORT` to the port it actually bound. */
@@ -114,7 +125,13 @@ export async function preflightProductOutcome(
 		if (status === "undetermined") return skipped("undetermined");
 		const verdict = VERDICTS.find((candidate) => candidate === status);
 		if (!verdict) return skipped("malformed");
-		return { verdict, ms: Math.round(now() - started) };
+		const movedTo = verdict === "found" ? (body as { movedTo?: unknown }).movedTo : undefined;
+		return {
+			verdict,
+			ms: Math.round(now() - started),
+			// Only a clean URL segment may become a `Location`; anything else is left out.
+			...(typeof movedTo === "string" && URL_SLUG.test(movedTo) ? { movedTo } : {}),
+		};
 	} catch (error) {
 		const name = error instanceof Error ? error.name : "";
 		return skipped(name === "TimeoutError" || name === "AbortError" ? "timeout" : "transport");
@@ -152,5 +169,5 @@ export function __resetSkipLog(): void {
 export function describePreflight(answer: PreflightAnswer): string {
 	return answer.verdict === "skipped"
 		? `skipped:${answer.reason};${answer.ms}ms`
-		: `${answer.verdict};${answer.ms}ms`;
+		: `${answer.verdict}${answer.movedTo ? ":moved" : ""};${answer.ms}ms`;
 }

@@ -452,8 +452,6 @@ export interface TranslatedProductAnswer {
 	readonly externalReference: string | null;
 	/** The owner's BASE slug, when the slug resolved: what a product event names it by. */
 	readonly baseSlug?: string | null;
-	/** `baseSlugAliasTarget` only: the product's own slug in the market's language, when it has one. */
-	readonly translatedSlug?: string | null;
 }
 
 const UNKNOWN_PRODUCT: TranslatedProductAnswer = { verdict: "unknown", externalReference: null };
@@ -513,23 +511,7 @@ export async function lookupTranslatedProduct(
 	languageCode: string,
 	now: number = Date.now(),
 ): Promise<TranslatedProductAnswer> {
-	return identityLookup(
-		`${channel}:${languageCode}:${slug}`,
-		() => askTranslatedUpstream(slug, channel, languageCode),
-		now,
-	);
-}
-
-/**
- * The cached, deduplicated, breaker-guarded half of an identity question. `key` starts with the
- * channel, which is what `forgetProductExistence` reads to drop what a product event made stale.
- */
-async function identityLookup(
-	key: string,
-	ask: () => Promise<TranslatedProductAnswer>,
-	now: number,
-	negativeTtlMs: number = NEGATIVE_TTL_MS,
-): Promise<TranslatedProductAnswer> {
+	const key = `${channel}:${languageCode}:${slug}`;
 	const s = state();
 
 	const hit = s.identityCache.get(key);
@@ -548,7 +530,7 @@ async function identityLookup(
 
 	s.concurrent += 1;
 	const epoch = s.epoch;
-	const pending: Promise<TranslatedProductAnswer> = ask()
+	const pending: Promise<TranslatedProductAnswer> = askTranslatedUpstream(slug, channel, languageCode)
 		.then((answer) => {
 			if (answer.verdict === "unknown") {
 				s.consecutiveFaults += 1;
@@ -566,7 +548,7 @@ async function identityLookup(
 			if (s.epoch !== epoch) return answer;
 			s.identityCache.set(key, {
 				answer,
-				expiresAt: Date.now() + (answer.verdict === "exists" ? POSITIVE_TTL_MS : negativeTtlMs),
+				expiresAt: Date.now() + (answer.verdict === "exists" ? POSITIVE_TTL_MS : NEGATIVE_TTL_MS),
 			});
 			while (s.identityCache.size > MAX_ENTRIES) {
 				const oldest = s.identityCache.keys().next();
@@ -582,91 +564,6 @@ async function identityLookup(
 
 	s.identityInFlight.set(key, pending);
 	return pending;
-}
-
-// --- the base-slug question: a foreign URL that carries the Slovak slug --------------
-//
-// `lookupBySlug` asks the base row first, so a product is served at its Slovak slug in every
-// market, whatever its translated slug is. The page names the translated one as canonical, but the
-// Slovak address answers 200 and `index, follow` (27 November 2026: `/de/snehove-retaze-…-n16283`).
-// This asks the same base question and brings the product's own slug in the market's language
-// back with it, so the proxy can send the visitor there once.
-
-const BASE_SLUG_QUERY =
-	"query B($s:String!,$c:String!,$l:LanguageCodeEnum!){product(slug:$s,channel:$c){id slug externalReference translation(languageCode:$l){slug}}}";
-
-/** What a translated product slug may look like in a URL: `exact-locale.ts` pins the same pattern. */
-const URL_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
-async function askBaseSlugUpstream(
-	slug: string,
-	channel: string,
-	languageCode: string,
-): Promise<TranslatedProductAnswer> {
-	const endpoint = process.env.NEXT_PUBLIC_SALEOR_API_URL;
-	if (!endpoint) return UNKNOWN_PRODUCT;
-
-	try {
-		const response = await fetch(endpoint, {
-			method: "POST",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ query: BASE_SLUG_QUERY, variables: { s: slug, c: channel, l: languageCode } }),
-			signal: AbortSignal.timeout(TIMEOUT_MS),
-			cache: "no-store",
-		});
-		if (!response.ok) return UNKNOWN_PRODUCT;
-
-		const body: unknown = await response.json();
-		if (typeof body !== "object" || body === null) return UNKNOWN_PRODUCT;
-		const payload = body as { data?: Record<string, unknown> | null; errors?: unknown };
-		if (payload.errors) return UNKNOWN_PRODUCT;
-		if (payload.data == null || !("product" in payload.data)) return UNKNOWN_PRODUCT;
-
-		const product = payload.data.product as {
-			externalReference?: string | null;
-			translation?: { slug?: string | null } | null;
-		} | null;
-		// Not a base slug: either the market's own translated slug (the normal URL) or nothing.
-		if (product == null) return { verdict: "absent", externalReference: null };
-		return {
-			verdict: "exists",
-			externalReference: product.externalReference ?? null,
-			baseSlug: slugOf(product),
-			translatedSlug: product.translation?.slug ?? null,
-		};
-	} catch {
-		return UNKNOWN_PRODUCT;
-	}
-}
-
-/**
- * The market's own slug for the product that `slug` names as a BASE slug, or null when there is
- * nothing to move: the slug is the market's own (the normal URL), the product has no translated
- * slug, the two are the same string (cs and sk write some products identically), or the target
- * cannot be shown to serve the same product. Null also on any fault, which leaves the request alone.
- *
- * The target is checked by the question the page itself asks of a translated slug, and it has to
- * resolve to the product the base slug named, so a redirect never lands on someone else's page.
- */
-export async function baseSlugAliasTarget(
-	slug: string,
-	channel: string,
-	languageCode: string,
-	now: number = Date.now(),
-): Promise<string | null> {
-	const base = await identityLookup(
-		`${channel}:@base:${languageCode}:${slug}`,
-		() => askBaseSlugUpstream(slug, channel, languageCode),
-		now,
-		POSITIVE_TTL_MS,
-	);
-	if (base.verdict !== "exists") return null;
-
-	const target = base.translatedSlug?.trim();
-	if (!target || target === slug || !URL_SLUG.test(target) || !base.baseSlug) return null;
-
-	const served = await lookupTranslatedProduct(target, channel, languageCode, now);
-	return served.verdict === "exists" && served.baseSlug === base.baseSlug ? target : null;
 }
 
 // --- classification -------------------------------------------------------------
